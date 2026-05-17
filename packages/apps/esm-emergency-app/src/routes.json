@@ -59,6 +59,18 @@
   ],
   "extensions": [
     {
+      "name": "emergency-dashboard-link",
+      "component": "emergencyDashboardLink",
+      "slot": "homepage-dashboard-slot",
+      "meta": {
+        "name": "emergency",
+        "title": "emergencyDepartment"
+      },
+      "order": 15,
+      "online": true,
+      "offline": false
+    },
+    {
       "name": "Priority I Card",
       "component": "priorityICard",
       "slot": "emergency-priority-card-slot",

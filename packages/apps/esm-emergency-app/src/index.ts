@@ -16,8 +16,10 @@
  * - Extensions: header, alerts, metrics, queue table, priority cards (standalone + integrated)
  * - Modals: serve, remove, transition, move, clear queue entries
  */
-import { defineConfigSchema, getAsyncLifecycle } from '@openmrs/esm-framework';
+import { defineConfigSchema, getAsyncLifecycle, getSyncLifecycle } from '@openmrs/esm-framework';
 import { configSchema } from './config-schema';
+import { createDashboardLink } from './createDashboardLink.component';
+import { dashboardMeta } from './dashboard.meta';
 
 const moduleName = '@sihsalus/esm-emergency-app';
 
@@ -49,6 +51,11 @@ export function startupApp() {
  * Kept for potential internal use or future integration
  */
 export const root = getAsyncLifecycle(() => import('./root.component'), options);
+
+export const emergencyDashboardLink = getSyncLifecycle(createDashboardLink(dashboardMeta), {
+  featureName: 'emergency-dashboard-link',
+  moduleName,
+});
 
 /**
  * Emergency Home Page

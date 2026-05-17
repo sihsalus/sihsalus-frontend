@@ -3,7 +3,7 @@ import { Download, Launch } from '@carbon/react/icons';
 import { PageHeader, PageHeaderContent, RegistrationPictogram, useConfig } from '@openmrs/esm-framework';
 import { useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 
 import { moduleName } from '../constants';
 import { useAdmissions } from '../resources/admissions.resource';
@@ -30,6 +30,7 @@ function escapeCsvValue(value: string) {
 export default function AdmissionHome() {
   const { t } = useTranslation(moduleName);
   const navigate = useNavigate();
+  const location = useLocation();
   const config = useConfig() as AdmissionConfig;
   const { admissions, error, isLoading } = useAdmissions(config.admissionReportPageSize ?? 50);
   const [searchTerm, setSearchTerm] = useState('');
@@ -104,6 +105,8 @@ export default function AdmissionHome() {
     URL.revokeObjectURL(url);
   };
 
+  const mergePath = location.pathname.includes('/home/') ? '/admission/merge' : '/merge';
+
   return (
     <main className={styles.page}>
       <PageHeader className={styles.header}>
@@ -111,7 +114,7 @@ export default function AdmissionHome() {
           title={t('admissionReportByUps', 'Reporte de admisiones por UPS')}
           illustration={<RegistrationPictogram />}
         />
-        <Button kind="secondary" renderIcon={Launch} onClick={() => navigate('/merge')}>
+        <Button kind="secondary" renderIcon={Launch} onClick={() => navigate(mergePath)}>
           {t('mergeDuplicatePatients', 'Fusionar historias duplicadas')}
         </Button>
       </PageHeader>

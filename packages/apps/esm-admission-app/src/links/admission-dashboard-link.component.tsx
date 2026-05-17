@@ -3,14 +3,17 @@ import { ConfigurableLink } from '@openmrs/esm-framework';
 import classNames from 'classnames';
 import { useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
+import { BrowserRouter, useLocation } from 'react-router-dom';
 
-import { basePath, moduleName } from '../constants';
+import { moduleName } from '../constants';
 
-export default function AdmissionDashboardLink() {
+function AdmissionDashboardLinkExtension() {
   const { t } = useTranslation(moduleName);
-  const href = `${globalThis.getOpenmrsSpaBase().slice(0, -1)}${basePath}`;
+  const location = useLocation();
+  const dashboardPath = '/home/admission';
+  const href = `${globalThis.getOpenmrsSpaBase().slice(0, -1)}${dashboardPath}`;
 
-  const isActive = useMemo(() => window.location.pathname.includes(basePath), []);
+  const isActive = useMemo(() => location.pathname.includes(dashboardPath), [location.pathname]);
 
   return (
     <ConfigurableLink
@@ -23,5 +26,13 @@ export default function AdmissionDashboardLink() {
         <span className="sihsalus-side-nav__text">{t('admissionReportByUps', 'Reporte de admisiones por UPS')}</span>
       </span>
     </ConfigurableLink>
+  );
+}
+
+export default function AdmissionDashboardLink() {
+  return (
+    <BrowserRouter>
+      <AdmissionDashboardLinkExtension />
+    </BrowserRouter>
   );
 }

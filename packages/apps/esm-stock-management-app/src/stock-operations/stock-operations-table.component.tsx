@@ -184,6 +184,7 @@ const StockOperations: React.FC<StockOperationsTableProps> = () => {
                     className={styles.datePicker}
                     datePickerType="range"
                     dateFormat={DATE_PICKER_CONTROL_FORMAT}
+                    locale="en"
                     onChange={([startDate, endDate]) => handleDateFilterChange([startDate, endDate])}
                     value={[selectedFromDate, selectedToDate]}
                   >
@@ -215,31 +216,38 @@ const StockOperations: React.FC<StockOperationsTableProps> = () => {
               <TableHead>
                 <TableRow>
                   <TableExpandHeader />
-                  {headers.map(
-                    (header: any) =>
+                  {headers.map((header: any) => {
+                    const { key, ...headerProps } = getHeaderProps({
+                      header,
+                      isSortable: header.isSortable,
+                    });
+
+                    return (
                       header.key !== 'details' && (
                         <TableHeader
-                          {...getHeaderProps({
-                            header,
-                            isSortable: header.isSortable,
-                          })}
+                          {...headerProps}
                           className={isDesktop ? styles.desktopHeader : styles.tabletHeader}
-                          key={`${header.key}`}
+                          key={key}
                         >
                           {header.header?.content ?? header.header}
                         </TableHeader>
-                      ),
-                  )}
+                      )
+                    );
+                  })}
                   <TableHeader></TableHeader>
                 </TableRow>
               </TableHead>
               <TableBody>
                 {rows?.map((row: any, index) => {
-                  const props = getRowProps({ row });
+                  const { key, ...rowProps } = getRowProps({ row });
                   const expandedRowProps = getExpandedRowProps({ row });
                   return (
                     <React.Fragment key={row.id}>
-                      <TableExpandRow className={isDesktop ? styles.desktopRow : styles.tabletRow} {...props}>
+                      <TableExpandRow
+                        className={isDesktop ? styles.desktopRow : styles.tabletRow}
+                        key={key}
+                        {...rowProps}
+                      >
                         {row.cells.map((cell) => (
                           <TableCell key={cell.id}>
                             {cell?.info?.header === 'stockOperationItems' ? (

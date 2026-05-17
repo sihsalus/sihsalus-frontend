@@ -2,6 +2,7 @@ import { InlineNotification, MultiSelect, Stack } from '@carbon/react';
 import { DndContext, type DragEndEvent } from '@dnd-kit/core';
 import { arrayMove, SortableContext, verticalListSortingStrategy } from '@dnd-kit/sortable';
 import { fetchConceptById } from '@resources/concept.resource';
+import type { QuestionAnswerOption } from '@sihsalus/esm-form-engine-lib';
 import type { Concept } from '@types';
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -69,13 +70,12 @@ const SelectAnswers: React.FC = () => {
       if (!answerExistsInSelected && !answerExistsInAdded) {
         setAddedAnswers((prevAnswers) => [...prevAnswers, newAnswer]);
         setFormField((prevFormField) => {
-          const existingAnswers = prevFormField.questionOptions?.answers ?? [];
-          existingAnswers.push({ concept: concept.uuid, label: concept.display });
+          const existingAnswers = (prevFormField.questionOptions?.answers ?? []) as Array<QuestionAnswerOption>;
           return {
             ...prevFormField,
             questionOptions: {
               ...prevFormField.questionOptions,
-              answers: existingAnswers,
+              answers: [...existingAnswers, { concept: concept.uuid, label: concept.display }],
             },
           };
         });
@@ -88,7 +88,7 @@ const SelectAnswers: React.FC = () => {
     (id: string) => {
       setAddedAnswers((prevAnswers) => prevAnswers.filter((answer) => answer.id !== id));
       setFormField((prevFormField) => {
-        const selectedAnswers = prevFormField.questionOptions?.answers ?? [];
+        const selectedAnswers = (prevFormField.questionOptions?.answers ?? []) as Array<QuestionAnswerOption>;
         return {
           ...prevFormField,
           questionOptions: {
@@ -109,7 +109,7 @@ const SelectAnswers: React.FC = () => {
         text: answer.display,
       })) ?? [];
 
-    const formFieldAnswers = formField.questionOptions?.answers ?? [];
+    const formFieldAnswers = (formField.questionOptions?.answers ?? []) as Array<QuestionAnswerOption>;
 
     // If no answers from concept but we have form field answers, use those
     if (conceptAnswerItems.length === 0 && formFieldAnswers.length > 0) {
@@ -177,7 +177,7 @@ const SelectAnswers: React.FC = () => {
 
       if (active.id !== over.id) {
         setFormField((prevFormField) => {
-          const currentAnswers = prevFormField.questionOptions?.answers ?? [];
+          const currentAnswers = (prevFormField.questionOptions?.answers ?? []) as Array<QuestionAnswerOption>;
           const oldIndex = currentAnswers.findIndex((a) => a.concept === active.id);
           const newIndex = currentAnswers.findIndex((a) => a.concept === over.id);
           if (oldIndex === -1 || newIndex === -1) return prevFormField;

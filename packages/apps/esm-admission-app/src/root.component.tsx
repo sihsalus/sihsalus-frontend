@@ -1,5 +1,5 @@
-import { AppErrorBoundary } from '@sihsalus/esm-rbac';
 import { useLeftNav } from '@openmrs/esm-framework';
+import { AppErrorBoundary } from '@sihsalus/esm-rbac';
 import { BrowserRouter, Route, Routes } from 'react-router-dom';
 
 import { basePath } from './constants';
@@ -18,7 +18,10 @@ export default function Root() {
   return (
     <AppErrorBoundary appName="esm-admission-app">
       <div className={styles.root}>
-        <BrowserRouter basename={`${globalThis.getOpenmrsSpaBase().slice(0, -1)}${basePath}`}>
+        <BrowserRouter
+          basename={`${globalThis.getOpenmrsSpaBase().slice(0, -1)}${basePath}`}
+          future={{ v7_relativeSplatPath: true, v7_startTransition: true }}
+        >
           <Routes>
             <Route index element={<AdmissionHome />} />
             <Route path="merge" element={<PatientMerge />} />

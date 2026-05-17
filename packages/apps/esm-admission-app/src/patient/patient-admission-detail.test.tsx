@@ -28,7 +28,7 @@ const mockUsePatientVisitHistory = vi.mocked(usePatientVisitHistory);
 
 function renderPatientAdmissionDetail(route = '/patient/patient-uuid') {
   return render(
-    <MemoryRouter initialEntries={[route]}>
+    <MemoryRouter initialEntries={[route]} future={{ v7_relativeSplatPath: true, v7_startTransition: true }}>
       <Routes>
         <Route path="/patient/:patientUuid" element={<PatientAdmissionDetail />} />
       </Routes>
@@ -161,7 +161,10 @@ describe('PatientAdmissionDetail', () => {
 
     mockUsePatientVisitHistory.mockReturnValueOnce({ visits: [], error: new Error('boom'), isLoading: false });
     rerender(
-      <MemoryRouter initialEntries={['/patient/patient-uuid']}>
+      <MemoryRouter
+        initialEntries={['/patient/patient-uuid']}
+        future={{ v7_relativeSplatPath: true, v7_startTransition: true }}
+      >
         <Routes>
           <Route path="/patient/:patientUuid" element={<PatientAdmissionDetail />} />
         </Routes>
@@ -171,7 +174,10 @@ describe('PatientAdmissionDetail', () => {
 
     mockUsePatientVisitHistory.mockReturnValueOnce({ visits: [], error: undefined, isLoading: false });
     rerender(
-      <MemoryRouter initialEntries={['/patient/patient-uuid']}>
+      <MemoryRouter
+        initialEntries={['/patient/patient-uuid']}
+        future={{ v7_relativeSplatPath: true, v7_startTransition: true }}
+      >
         <Routes>
           <Route path="/patient/:patientUuid" element={<PatientAdmissionDetail />} />
         </Routes>
@@ -195,7 +201,10 @@ describe('PatientAdmissionDetail', () => {
       isLoading: false,
     });
     rerender(
-      <MemoryRouter initialEntries={['/patient/patient-uuid']}>
+      <MemoryRouter
+        initialEntries={['/patient/patient-uuid']}
+        future={{ v7_relativeSplatPath: true, v7_startTransition: true }}
+      >
         <Routes>
           <Route path="/patient/:patientUuid" element={<PatientAdmissionDetail />} />
         </Routes>
@@ -209,7 +218,10 @@ describe('PatientAdmissionDetail', () => {
       isLoading: false,
     });
     rerender(
-      <MemoryRouter initialEntries={['/patient/patient-uuid']}>
+      <MemoryRouter
+        initialEntries={['/patient/patient-uuid']}
+        future={{ v7_relativeSplatPath: true, v7_startTransition: true }}
+      >
         <Routes>
           <Route path="/patient/:patientUuid" element={<PatientAdmissionDetail />} />
         </Routes>

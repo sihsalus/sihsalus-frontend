@@ -16,8 +16,7 @@
     "packages/libs/*"
   ],
   "scripts": {
-    "start:dev": "cross-env SIHSALUS_BACKEND_URL=http://gidis-hsc-dev.inf.pucp.edu.pe SIHSALUS_FHIR_BASE=http://gidis-hsc-dev.inf.pucp.edu.pe/openmrs/ws/fhir2/R4 node packages/tooling/scripts/start-dev.js",
-    "start:qlty": "cross-env SIHSALUS_BACKEND_URL=http://gidis-hsc-qlty.inf.pucp.edu.pe SIHSALUS_FHIR_BASE=http://gidis-hsc-qlty.inf.pucp.edu.pe/openmrs/ws/fhir2/R4 node packages/tooling/scripts/start-dev.js",
+    "start": "node packages/tooling/scripts/start-dev.js",
     "build": "turbo run build",
     "package:spa": "turbo run build --filter='./packages/apps/*' && node packages/tooling/scripts/generate-assemble-config.js && node packages/tooling/scripts/assemble-importmap.js && node packages/tooling/scripts/validate-spa-artifact.js",
     "test": "cross-env TZ=UTC turbo run test --concurrency=1",

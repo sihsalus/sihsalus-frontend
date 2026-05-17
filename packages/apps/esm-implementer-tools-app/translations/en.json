@@ -28,7 +28,7 @@
   "jsonEditor": "JSON editor",
   "loading": "Loading",
   "missing": "Missing",
-  "missingBackendDependenciesMessage": "{{missingCount}} backend module(s) are missing and {{versionMismatchCount}} have incompatible versions. Check the Backend Modules tab in the Implementer Tools for details. Examples: {{examples}}",
+  "missingBackendDependenciesMessage": "{{missingCount}} backend module(s) are missing and {{versionMismatchCount}} have incompatible versions. Check the Backend Modules tab in the Implementer Tools for details.",
   "moduleName": "Module name",
   "modulesWithMissingDependenciesWarning": "Some modules have unresolved backend dependencies",
   "noConceptsFoundText": "No matching concepts found",
@@ -48,5 +48,6 @@
   "updateConfig": "Update config",
   "uuidValidationMessage": "Value must be a valid UUID string",
   "value": "Value",
-  "viewModules": "View modules"
+  "viewModules": "View modules",
+  "examples": "Examples"
 }

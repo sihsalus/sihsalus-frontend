@@ -3,7 +3,7 @@
 const { spawn, spawnSync } = require('child_process');
 const { existsSync, statSync } = require('fs');
 const net = require('net');
-const { resolve } = require('path');
+const { extname, join, resolve } = require('path');
 
 const envPath = resolve(process.cwd(), '.env');
 const hadBackendBeforeDotenv = Boolean(process.env.SIHSALUS_BACKEND_URL);
@@ -167,7 +167,7 @@ async function startWithProxy(cliArgs) {
   const cliManagedPaths = new Set(['/importmap.json', '/routes.registry.json', '/routes.json']);
 
   const app = express();
-  const staticHandler = express.static(distSpa, { index: false });
+  const staticHandler = express.static(distSpa, { index: 'index.html' });
 
   app.get(sessionPath, async (req, res) => {
     const authorization = req.get('authorization');
@@ -217,6 +217,13 @@ async function startWithProxy(cliArgs) {
       return next();
     }
     staticHandler(req, res, next);
+  });
+
+  app.get(`${spaPath}/*`, (req, res, next) => {
+    if (cliManagedPaths.has(req.path) || extname(req.path)) {
+      return next();
+    }
+    res.sendFile(join(distSpa, 'index.html'));
   });
 
   // Proxy everything else to the openmrs CLI (importmap, index.html, API, etc.)

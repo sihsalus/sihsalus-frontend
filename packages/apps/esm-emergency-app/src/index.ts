@@ -52,6 +52,11 @@ export function startupApp() {
  */
 export const root = getAsyncLifecycle(() => import('./root.component'), options);
 
+export const emergencyDashboard = getAsyncLifecycle(
+  () => import('./emergency-dashboard/emergency-dashboard.component'),
+  options,
+);
+
 export const emergencyDashboardLink = getSyncLifecycle(createDashboardLink(dashboardMeta), {
   featureName: 'emergency-dashboard-link',
   moduleName,

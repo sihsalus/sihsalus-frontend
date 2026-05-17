@@ -64,9 +64,17 @@
       "slot": "homepage-dashboard-slot",
       "meta": {
         "name": "emergency",
+        "slot": "emergency-dashboard-slot",
         "title": "emergencyDepartment"
       },
       "order": 15,
+      "online": true,
+      "offline": false
+    },
+    {
+      "name": "emergency-dashboard",
+      "component": "emergencyDashboard",
+      "slot": "emergency-dashboard-slot",
       "online": true,
       "offline": false
     },

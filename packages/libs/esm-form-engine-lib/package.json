@@ -47,6 +47,7 @@
   },
   "peerDependencies": {
     "@openmrs/esm-framework": "workspace:*",
+    "@openmrs/esm-styleguide": "workspace:*",
     "dayjs": "1.x",
     "i18next": "25.x",
     "react": "18.x",

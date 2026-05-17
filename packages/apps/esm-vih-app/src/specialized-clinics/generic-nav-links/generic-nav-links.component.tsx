@@ -45,7 +45,6 @@ const GenericLink: React.FC<{ title: string; path: string; basePath: string; ico
     <ConfigurableLink
       className={`cds--side-nav__link`}
       to={`${basePath}/${encodeURIComponent(specialClinicsDashboardPath)}?clinic=${path}`}
-      title={tooltip}
     >
       <span className={styles.menu}>
         <MaybeIcon icon={icon} className={styles.icon} size={16} />
@@ -55,8 +54,15 @@ const GenericLink: React.FC<{ title: string; path: string; basePath: string; ico
   );
 
   return (
-    <div>
-      <Tooltip align="right" label={tooltip} enterDelayMs={400} leaveDelayMs={100}>
+    <div className={styles.navItem}>
+      <Tooltip
+        align="right"
+        as="div"
+        className={styles.navTooltip}
+        label={tooltip}
+        enterDelayMs={400}
+        leaveDelayMs={100}
+      >
         {link}
       </Tooltip>
     </div>

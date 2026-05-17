@@ -31,13 +31,18 @@ function toCostStructureDto(data: CostStructureFormValues) {
       generalAdminAnnualCost: data.annualServicesCost.annualAdministrativeCost,
       generalServiceAnnualCost: data.annualServicesCost.annualGeneralCost,
     },
-    humanResourceCosts: data.humanResourceCost.map(({ quantity, timeMinutes, costMinutes, priceMonth }) => ({
-      quantity,
-      timeMinutes,
-      costMinutes,
-      priceMonth,
-    })),
-    equipmentCosts: data.equipmentCost.map(({ quantity, timeMinutes }) => ({
+    humanResourceCosts: data.humanResourceCost.map(
+      ({ humanResourceId, quantity, timeMinutes, costMinutes, priceMonth }) => ({
+        humanResourceId,
+        quantity,
+        timeMinutes,
+        costMinutes,
+        priceMonth,
+      }),
+    ),
+    equipmentCosts: data.equipmentCost.map(({ equipmentId, price, quantity, timeMinutes }) => ({
+      equipmentId,
+      price,
       quantity,
       timeMinutes,
     })),
@@ -45,11 +50,20 @@ function toCostStructureDto(data: CostStructureFormValues) {
       const totalConstruction = calculateTotalValidConsruction(infrastructure.areaM2, infrastructure.constructionCost);
 
       return {
+        infrastructureId: infrastructure.infrastructureId,
         annualUnitDep: calculateDepreciationByMinutes(totalConstruction),
         performanceTimeService: infrastructure.timePerformanceMinutes,
         productionProyected: data.publicServices[index]?.productionProyected ?? 0,
       };
     }),
+    supplyCosts: data.supplyCost.map(({ supplyId, adquisitionPrice, unitCost, quantityUsed, timeMinutes }) => ({
+      supplyId,
+      acquisitionPrice: adquisitionPrice,
+      unitCost,
+      quantityUsed,
+      timeMinutes,
+      partialCost: unitCost * quantityUsed,
+    })),
   };
 }
 

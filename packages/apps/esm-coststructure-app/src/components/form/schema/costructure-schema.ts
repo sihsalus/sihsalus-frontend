@@ -2,13 +2,13 @@ import { z } from 'zod';
 
 export const costStructureSchema = z.object({
   procedure: z.object({
-    conceptId: z.number(),
+    conceptId: z.number().positive('Debe seleccionar un procedimiento válido'),
     nameFull: z.string().min(1, 'Debe ingresar un procedimiento válido'),
     code: z.string().optional(),
   }),
   infrastructures: z.array(
     z.object({
-      infrastructureId: z.number(),
+      infrastructureId: z.number().positive('Debe seleccionar una infraestructura válida'),
       areaM2: z.number().nonnegative(),
       infrastructureName: z.string(),
       constructionCost: z.number().nonnegative(),
@@ -40,7 +40,7 @@ export const costStructureSchema = z.object({
   }),
   humanResourceCost: z.array(
     z.object({
-      humanResourceId: z.number(),
+      humanResourceId: z.number().positive('Debe seleccionar un recurso humano válido'),
       quantity: z.number().nonnegative(),
       timeMinutes: z.number().nonnegative(),
       priceMonth: z.number().nonnegative(),
@@ -49,7 +49,7 @@ export const costStructureSchema = z.object({
   ),
   equipmentCost: z.array(
     z.object({
-      equipmentId: z.number(),
+      equipmentId: z.number().positive('Debe seleccionar equipamiento válido'),
       quantity: z.number().nonnegative(),
       price: z.number().nonnegative(),
       usefullYears: z.number().nonnegative(),
@@ -58,16 +58,16 @@ export const costStructureSchema = z.object({
   ),
   supplyCost: z.array(
     z.object({
-      supplyId: z.number(),
+      supplyId: z.number().positive('Debe seleccionar un insumo válido'),
       adquisitionPrice: z.number().nonnegative(),
       quantityUsed: z.number().nonnegative(),
       timeMinutes: z.number().optional(),
       unitAcquisition: z.string(),
       unitConsumption: z.string(),
-      equivalence: z.number(),
+      equivalence: z.number().positive(),
       name: z.string(),
       type: z.string(),
-      unitCost: z.number(),
+      unitCost: z.number().nonnegative(),
     }),
   ),
 });

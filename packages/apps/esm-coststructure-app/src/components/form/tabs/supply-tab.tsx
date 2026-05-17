@@ -25,8 +25,8 @@ export default function SupplyTab({ form }: Props) {
   const { supply, isLoading } = useGetSupply();
   const supplyData = watch('supplyCost');
 
-  const handleSupplyChange = (index: number, field: { onChange: (val: string) => void }, id: string) => {
-    field.onChange(id);
+  const handleSupplyChange = (index: number, field: { onChange: (val: number) => void }, id: string) => {
+    field.onChange(Number(id));
     const selectedSupply = supply.find((sup) => sup.id === Number(id));
     if (selectedSupply) {
       setValue(`supplyCost.${index}.unitAcquisition`, selectedSupply.unitAcquisition);
@@ -104,7 +104,7 @@ export default function SupplyTab({ form }: Props) {
                                 value=""
                               />
                               {supply.map((sup) => (
-                                <SelectItem key={sup.id} text={sup.name} value={sup.id} />
+                                <SelectItem key={sup.id} text={sup.name} value={sup.id.toString()} />
                               ))}
                             </Select>
                           )}

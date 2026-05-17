@@ -1,27 +1,25 @@
+@use "@carbon/layout";
+@use "@openmrs/esm-styleguide/src/vars" as *;
+
 .page {
   width: 100%;
-  padding: 1.5rem;
+  padding: 0;
 }
 
 .header {
   display: flex;
-  align-items: flex-start;
+  align-items: center;
   justify-content: space-between;
-  gap: 1rem;
+  gap: layout.$spacing-05;
   margin-bottom: 1.5rem;
+  padding-right: layout.$spacing-03;
+  background-color: $ui-02;
+  border: 1px solid $ui-03;
+  border-left: 0;
 }
 
-.header h1 {
-  margin: 0;
-  font-size: 1.75rem;
-  font-weight: 600;
-  line-height: 1.25;
-}
-
-.header p {
-  max-width: 48rem;
-  margin: 0.5rem 0 0;
-  color: #525252;
+.content {
+  padding: 0 1.5rem 1.5rem;
 }
 
 .summary {
@@ -101,11 +99,16 @@
 
 @media (max-width: 42rem) {
   .page {
-    padding: 1rem;
+    padding: 0;
   }
 
   .header {
+    align-items: flex-start;
     flex-direction: column;
+  }
+
+  .content {
+    padding: 0 1rem 1rem;
   }
 
   .summary,

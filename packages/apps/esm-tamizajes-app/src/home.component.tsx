@@ -1,6 +1,6 @@
 import { Button, ClickableTile, Tag } from '@carbon/react';
-import { ArrowRight, CheckmarkOutline, Microscope, Pending, Search } from '@carbon/react/icons';
-import { PageHeader, PageHeaderContent } from '@openmrs/esm-framework';
+import { ArrowRight, CheckmarkOutline, Pending, Search } from '@carbon/react/icons';
+import { PageHeader, PageHeaderContent, PatientSearchPictogram } from '@openmrs/esm-framework';
 import React from 'react';
 import { useTranslation } from 'react-i18next';
 
@@ -56,7 +56,7 @@ const Home: React.FC = () => {
   return (
     <main className="omrs-main-content">
       <PageHeader className={styles.header}>
-        <PageHeaderContent title={t('tamizajes', 'Tamizajes')} illustration={<Microscope size={72} />} />
+        <PageHeaderContent title={t('tamizajes', 'Tamizajes')} illustration={<PatientSearchPictogram />} />
       </PageHeader>
       <section className={styles.container}>
         <div className={styles.hero}>

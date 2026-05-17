@@ -1,8 +1,14 @@
 @use "@carbon/styles/scss/spacing";
 @use "@carbon/styles/scss/type";
+@use "@openmrs/esm-styleguide/src/vars" as *;
 
 .header {
-  border-bottom: 1px solid var(--cds-border-subtle-01);
+  background-color: $ui-02;
+  border: 1px solid $ui-03;
+  border-left: 0;
+  display: flex;
+  justify-content: space-between;
+  padding-right: spacing.$spacing-03;
 }
 
 .container {

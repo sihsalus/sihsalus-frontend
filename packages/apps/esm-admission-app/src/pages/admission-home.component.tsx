@@ -1,6 +1,6 @@
 import { Button, InlineLoading, InlineNotification, Layer, Select, SelectItem, TextInput } from '@carbon/react';
 import { Download, Launch } from '@carbon/react/icons';
-import { useConfig } from '@openmrs/esm-framework';
+import { PageHeader, PageHeaderContent, RegistrationPictogram, useConfig } from '@openmrs/esm-framework';
 import { useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Link, useNavigate } from 'react-router-dom';
@@ -106,120 +106,122 @@ export default function AdmissionHome() {
 
   return (
     <main className={styles.page}>
-      <header className={styles.header}>
-        <div>
-          <h1>{t('admissionReportByUps', 'Reporte de admisiones por UPS')}</h1>
-          <p>{t('admissionReportSummary', 'Admisiones recientes agrupables por servicio/UPS, ubicación y estado.')}</p>
-        </div>
+      <PageHeader className={styles.header}>
+        <PageHeaderContent
+          title={t('admissionReportByUps', 'Reporte de admisiones por UPS')}
+          illustration={<RegistrationPictogram />}
+        />
         <Button kind="secondary" renderIcon={Launch} onClick={() => navigate('/merge')}>
           {t('mergeDuplicatePatients', 'Fusionar historias duplicadas')}
         </Button>
-      </header>
+      </PageHeader>
 
-      <section
-        className={styles.summary}
-        aria-label={t('admissionReportMetrics', 'Métricas del reporte de admisiones')}
-      >
-        <div>
-          <span>{t('reportedAdmissions', 'Admisiones reportadas')}</span>
-          <strong>{reportSummary.total}</strong>
-        </div>
-        <div>
-          <span>{t('activeAdmissions', 'Activas')}</span>
-          <strong>{reportSummary.active}</strong>
-        </div>
-        <div>
-          <span>{t('finishedAdmissions', 'Finalizadas')}</span>
-          <strong>{reportSummary.finished}</strong>
-        </div>
-        <div>
-          <span>{t('reportedUpsServices', 'UPS/servicios')}</span>
-          <strong>{reportSummary.services}</strong>
-        </div>
-      </section>
-
-      <section
-        className={styles.controls}
-        aria-label={t('admissionReportFilters', 'Filtros del reporte de admisiones')}
-      >
-        <TextInput
-          id="admission-report-search"
-          labelText={t('searchAdmissions', 'Buscar por paciente, HC, UPS o ubicación')}
-          placeholder={t('searchAdmissionsPlaceholder', 'Paciente, HC, UPS, ubicación...')}
-          value={searchTerm}
-          onChange={(event) => setSearchTerm(event.target.value)}
-        />
-        <Select
-          id="admission-status-filter"
-          labelText={t('filterByStatus', 'Filtrar por estado')}
-          value={statusFilter}
-          onChange={(event) => setStatusFilter(event.target.value)}
+      <div className={styles.content}>
+        <section
+          className={styles.summary}
+          aria-label={t('admissionReportMetrics', 'Métricas del reporte de admisiones')}
         >
-          <SelectItem value="all" text={t('allStatuses', 'Todos los estados')} />
-          {availableStatuses.map((status) => (
-            <SelectItem key={status} value={status} text={status} />
-          ))}
-        </Select>
-        <Button
-          kind="tertiary"
-          renderIcon={Download}
-          onClick={exportFilteredAdmissions}
-          disabled={filteredAdmissions.length === 0}
+          <div>
+            <span>{t('reportedAdmissions', 'Admisiones reportadas')}</span>
+            <strong>{reportSummary.total}</strong>
+          </div>
+          <div>
+            <span>{t('activeAdmissions', 'Activas')}</span>
+            <strong>{reportSummary.active}</strong>
+          </div>
+          <div>
+            <span>{t('finishedAdmissions', 'Finalizadas')}</span>
+            <strong>{reportSummary.finished}</strong>
+          </div>
+          <div>
+            <span>{t('reportedUpsServices', 'UPS/servicios')}</span>
+            <strong>{reportSummary.services}</strong>
+          </div>
+        </section>
+
+        <section
+          className={styles.controls}
+          aria-label={t('admissionReportFilters', 'Filtros del reporte de admisiones')}
         >
-          {t('exportCsv', 'Exportar CSV')}
-        </Button>
-      </section>
+          <TextInput
+            id="admission-report-search"
+            labelText={t('searchAdmissions', 'Buscar por paciente, HC, UPS o ubicación')}
+            placeholder={t('searchAdmissionsPlaceholder', 'Paciente, HC, UPS, ubicación...')}
+            value={searchTerm}
+            onChange={(event) => setSearchTerm(event.target.value)}
+          />
+          <Select
+            id="admission-status-filter"
+            labelText={t('filterByStatus', 'Filtrar por estado')}
+            value={statusFilter}
+            onChange={(event) => setStatusFilter(event.target.value)}
+          >
+            <SelectItem value="all" text={t('allStatuses', 'Todos los estados')} />
+            {availableStatuses.map((status) => (
+              <SelectItem key={status} value={status} text={status} />
+            ))}
+          </Select>
+          <Button
+            kind="tertiary"
+            renderIcon={Download}
+            onClick={exportFilteredAdmissions}
+            disabled={filteredAdmissions.length === 0}
+          >
+            {t('exportCsv', 'Exportar CSV')}
+          </Button>
+        </section>
 
-      {isLoading ? <InlineLoading description={t('loadingAdmissions', 'Cargando admisiones')} /> : null}
-      {error ? (
-        <InlineNotification
-          kind="error"
-          lowContrast
-          title={t('admissionReportError', 'No se pudo cargar el reporte de admisiones')}
-        />
-      ) : null}
+        {isLoading ? <InlineLoading description={t('loadingAdmissions', 'Cargando admisiones')} /> : null}
+        {error ? (
+          <InlineNotification
+            kind="error"
+            lowContrast
+            title={t('admissionReportError', 'No se pudo cargar el reporte de admisiones')}
+          />
+        ) : null}
 
-      <Layer>
-        <div className={styles.tableWrap}>
-          <table className={styles.table}>
-            <thead>
-              <tr>
-                <th>{t('date', 'Fecha')}</th>
-                <th>{t('time', 'Hora')}</th>
-                <th>{t('patient', 'Paciente')}</th>
-                <th>{t('medicalRecord', 'HC')}</th>
-                <th>{t('upsService', 'UPS/servicio')}</th>
-                <th>{t('location', 'Ubicación')}</th>
-                <th>{t('status', 'Estado')}</th>
-              </tr>
-            </thead>
-            <tbody>
-              {filteredAdmissions.map((admission) => (
-                <tr key={admission.uuid}>
-                  <td>{formatDate(admission.startDatetime)}</td>
-                  <td>{formatTime(admission.startDatetime)}</td>
-                  <td>
-                    {admission.patientUuid ? (
-                      <Link to={`/patient/${admission.patientUuid}`} className={styles.patientLink}>
-                        {admission.patientName}
-                      </Link>
-                    ) : (
-                      admission.patientName
-                    )}
-                  </td>
-                  <td>{admission.medicalRecordNumber}</td>
-                  <td>{admission.service}</td>
-                  <td>{admission.location}</td>
-                  <td>{admission.status}</td>
+        <Layer>
+          <div className={styles.tableWrap}>
+            <table className={styles.table}>
+              <thead>
+                <tr>
+                  <th>{t('date', 'Fecha')}</th>
+                  <th>{t('time', 'Hora')}</th>
+                  <th>{t('patient', 'Paciente')}</th>
+                  <th>{t('medicalRecord', 'HC')}</th>
+                  <th>{t('upsService', 'UPS/servicio')}</th>
+                  <th>{t('location', 'Ubicación')}</th>
+                  <th>{t('status', 'Estado')}</th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
-          {!isLoading && filteredAdmissions.length === 0 ? (
-            <p className={styles.empty}>{t('noAdmissionsFound', 'No se encontraron admisiones recientes.')}</p>
-          ) : null}
-        </div>
-      </Layer>
+              </thead>
+              <tbody>
+                {filteredAdmissions.map((admission) => (
+                  <tr key={admission.uuid}>
+                    <td>{formatDate(admission.startDatetime)}</td>
+                    <td>{formatTime(admission.startDatetime)}</td>
+                    <td>
+                      {admission.patientUuid ? (
+                        <Link to={`/patient/${admission.patientUuid}`} className={styles.patientLink}>
+                          {admission.patientName}
+                        </Link>
+                      ) : (
+                        admission.patientName
+                      )}
+                    </td>
+                    <td>{admission.medicalRecordNumber}</td>
+                    <td>{admission.service}</td>
+                    <td>{admission.location}</td>
+                    <td>{admission.status}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+            {!isLoading && filteredAdmissions.length === 0 ? (
+              <p className={styles.empty}>{t('noAdmissionsFound', 'No se encontraron admisiones recientes.')}</p>
+            ) : null}
+          </div>
+        </Layer>
+      </div>
     </main>
   );
 }

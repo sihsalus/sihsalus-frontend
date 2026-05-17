@@ -1,0 +1,13 @@
+{
+  "add": "Agregar",
+  "delete": "Eliminar",
+  "edit": "Editar",
+  "encounterDeleteFailed": "No se pudo eliminar la atención",
+  "encounterDeleted": "Atención eliminada",
+  "encounterSuccessfullyDeleted": "La atención fue eliminada correctamente",
+  "expandRow": "Expandir fila",
+  "noObservationsFound": "No se encontraron observaciones",
+  "terapiaFisica": "Terapia Física",
+  "terapiaFisicaTooltip": "Registra evaluación funcional, terapia física, rehabilitación y seguimiento del plan terapéutico.",
+  "physicalTherapyEncounters": "Atenciones de terapia física"
+}

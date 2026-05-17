@@ -1,0 +1,106 @@
+import { Button, DataTableSkeleton } from '@carbon/react';
+import { ErrorState, launchWorkspace, showModal, showSnackbar, useConfig } from '@openmrs/esm-framework';
+import { CardHeader, EmptyState } from '@openmrs/esm-patient-common-lib';
+import React from 'react';
+import { useTranslation } from 'react-i18next';
+
+import type { ConfigObject } from '../config-schema';
+import { deleteEncounter } from './encounter.resource';
+import PhysicalTherapyTable from './physical-therapy-table.component';
+import { physicalTherapyTableHeader, useEncounters } from './useEncounters';
+
+type PhysicalTherapyDashboardProps = { patientUuid: string };
+
+const patientFormEntryWorkspace = 'patient-form-entry-workspace';
+
+const PhysicalTherapyDashboard: React.FC<PhysicalTherapyDashboardProps> = ({ patientUuid }) => {
+  const { t } = useTranslation();
+  const { encounterTypeUuid, formUuid } = useConfig<ConfigObject>();
+  const { encounters, isLoading, error, mutate } = useEncounters(encounterTypeUuid, formUuid, patientUuid);
+  const clinicalFormTitle = t('terapiaFisica', 'Terapia Física');
+
+  const launchPhysicalTherapyForm = (encounterUuid = '') => {
+    launchWorkspace(patientFormEntryWorkspace, {
+      workspaceTitle: clinicalFormTitle,
+      mutateForm: mutate,
+      formInfo: {
+        encounterUuid,
+        formUuid,
+        additionalProps: {},
+      },
+    });
+  };
+
+  const handleDeleteEncounter = React.useCallback(
+    (encounterUuid: string, encounterTypeName?: string) => {
+      const close = showModal('delete-encounter-modal', {
+        close: () => close(),
+        encounterTypeName: encounterTypeName || clinicalFormTitle,
+        onConfirmation: () => {
+          const abortController = new AbortController();
+          deleteEncounter(encounterUuid, abortController)
+            .then(() => {
+              mutate?.();
+              showSnackbar({
+                isLowContrast: true,
+                title: t('encounterDeleted', 'Encounter deleted'),
+                subtitle: t('encounterSuccessfullyDeleted', 'Encounter successfully deleted'),
+                kind: 'success',
+              });
+            })
+            .catch(() => {
+              showSnackbar({
+                isLowContrast: false,
+                title: t('error', 'Error'),
+                subtitle: t('encounterDeleteFailed', "Encounter couldn't be deleted"),
+                kind: 'error',
+              });
+            });
+          close();
+        },
+      });
+    },
+    [clinicalFormTitle, mutate, t],
+  );
+
+  if (isLoading) {
+    return (
+      <DataTableSkeleton
+        headers={physicalTherapyTableHeader}
+        aria-label={t('physicalTherapyEncounters', 'Physical therapy encounters')}
+      />
+    );
+  }
+
+  if (error) {
+    return <ErrorState headerTitle={clinicalFormTitle} error={error} />;
+  }
+
+  if (encounters.length === 0) {
+    return (
+      <EmptyState
+        headerTitle={clinicalFormTitle}
+        displayText={clinicalFormTitle}
+        launchForm={() => launchPhysicalTherapyForm()}
+      />
+    );
+  }
+
+  return (
+    <div>
+      <CardHeader title={clinicalFormTitle}>
+        <Button onClick={() => launchPhysicalTherapyForm()} kind="ghost">
+          {t('add', 'Add')}
+        </Button>
+      </CardHeader>
+      <PhysicalTherapyTable
+        encounters={encounters}
+        onEdit={launchPhysicalTherapyForm}
+        onDelete={handleDeleteEncounter}
+        headers={physicalTherapyTableHeader}
+      />
+    </div>
+  );
+};
+
+export default PhysicalTherapyDashboard;

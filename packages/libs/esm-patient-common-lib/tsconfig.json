@@ -21,6 +21,9 @@
       "@openmrs/esm-react-utils": ["../../../node_modules/@openmrs/esm-react-utils/dist/index"],
       "@openmrs/esm-routes": ["../../../node_modules/@openmrs/esm-routes/dist/index"],
       "@openmrs/esm-state": ["../../../node_modules/@openmrs/esm-state/dist/index"],
+      "@openmrs/esm-styleguide": ["../../../node_modules/@openmrs/esm-styleguide/dist/internal"],
+      "@openmrs/esm-styleguide/src/internal": ["../../../node_modules/@openmrs/esm-styleguide/dist/internal"],
+      "@openmrs/esm-styleguide/src/public": ["../../../node_modules/@openmrs/esm-styleguide/dist/public"],
       "@openmrs/esm-translations": ["../../../node_modules/@openmrs/esm-translations/dist/index"],
       "@openmrs/esm-utils": ["../../../node_modules/@openmrs/esm-utils/dist/index"],
       "@openmrs/esm-api/src/public": ["../../../node_modules/@openmrs/esm-api/dist/public"],
@@ -37,6 +40,7 @@
       "@openmrs/esm-offline/src/public": ["../../../node_modules/@openmrs/esm-offline/dist/public"],
       "@openmrs/esm-react-utils/src/public": ["../../../node_modules/@openmrs/esm-react-utils/dist/public"],
       "@openmrs/esm-state/src/public": ["../../../node_modules/@openmrs/esm-state/dist/public"],
+      "@openmrs/esm-styleguide/src/index": ["../../../node_modules/@openmrs/esm-styleguide/dist/index"],
       "@openmrs/esm-translations/src/public": ["../../../node_modules/@openmrs/esm-translations/dist/public"]
     }
   }

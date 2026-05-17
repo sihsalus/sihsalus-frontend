@@ -1,5 +1,5 @@
 import { Button } from '@carbon/react';
-import { WatsonHealthStressBreathEditor } from '@carbon/react/icons';
+import { TaskAdd } from '@carbon/react/icons';
 import { launchWorkspace } from '@openmrs/esm-framework';
 import React from 'react';
 import { useTranslation } from 'react-i18next';
@@ -25,7 +25,7 @@ const MetricsHeader: React.FC<MetricsHeaderProps> = ({ activeTabIndex }) => {
       <div className={styles.actionBtn}>
         <Button
           kind="tertiary"
-          renderIcon={(props) => <WatsonHealthStressBreathEditor size={16} {...props} />}
+          renderIcon={(props) => <TaskAdd size={16} {...props} />}
           iconDescription={t('addCase', 'Add case')}
           onClick={handleAddCase}
           disabled={isDiscontinuationTab}

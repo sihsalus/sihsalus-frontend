@@ -1,4 +1,4 @@
-import { UserFollow } from '@carbon/react/icons';
+import { SearchLocate } from '@carbon/react/icons';
 import { ConfigurableLink } from '@openmrs/esm-framework';
 import last from 'lodash-es/last';
 import React, { useMemo } from 'react';
@@ -33,7 +33,7 @@ export function LinkExtension({ config }: { config: LinkConfig }): JSX.Element {
       className={`cds--side-nav__link ${name === urlSegment && 'active-left-nav-link'}`}
     >
       <span className="sihsalus-side-nav__item">
-        <UserFollow aria-hidden="true" className="sihsalus-side-nav__icon" size={20} />
+        <SearchLocate aria-hidden="true" className="sihsalus-side-nav__icon" size={20} />
         <span className="sihsalus-side-nav__text">{t(title, title)}</span>
       </span>
     </ConfigurableLink>

@@ -12,7 +12,7 @@
         "name": "tamizajes",
         "title": "Tamizajes",
         "slot": "tamizajes-home-slot",
-        "path": "/tamizajes"
+        "path": "/home/tamizajes"
       },
       "order": 45
     },

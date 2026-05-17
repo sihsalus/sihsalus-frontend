@@ -1,4 +1,4 @@
-import { UserFollow } from '@carbon/react/icons';
+import { Task, UserFollow } from '@carbon/react/icons';
 import { ConfigurableLink } from '@openmrs/esm-framework';
 import last from 'lodash-es/last';
 import React, { useMemo } from 'react';
@@ -8,13 +8,15 @@ import { BrowserRouter, useLocation } from 'react-router-dom';
 export interface LinkConfig {
   name: string;
   title: string;
+  icon?: 'task' | 'user-follow';
 }
 
 export function LinkExtension({ config }: { config: LinkConfig }): JSX.Element {
   const { t } = useTranslation();
-  const { name, title } = config;
+  const { icon = 'user-follow', name, title } = config;
   const location = useLocation();
   const spaBasePath = globalThis.getOpenmrsSpaBase() + 'home';
+  const Icon = icon === 'task' ? Task : UserFollow;
 
   let urlSegment = useMemo(() => decodeURIComponent(last(location.pathname.split('/'))), [location.pathname]);
 
@@ -33,7 +35,7 @@ export function LinkExtension({ config }: { config: LinkConfig }): JSX.Element {
       className={`cds--side-nav__link ${name === urlSegment && 'active-left-nav-link'}`}
     >
       <span className="sihsalus-side-nav__item">
-        <UserFollow aria-hidden="true" className="sihsalus-side-nav__icon" size={20} />
+        <Icon aria-hidden="true" className="sihsalus-side-nav__icon" size={20} />
         <span className="sihsalus-side-nav__text">{t(title, title)}</span>
       </span>
     </ConfigurableLink>

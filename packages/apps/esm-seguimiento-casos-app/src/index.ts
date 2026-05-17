@@ -23,6 +23,7 @@ export function startupApp(): void {
 
 export const caseManagementDashboardLink = getSyncLifecycle(
   createLeftPanelLink({
+    icon: 'task',
     name: 'case-monitoring',
     title: 'caseMonitoring',
   }),

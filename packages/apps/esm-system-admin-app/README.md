@@ -4,7 +4,7 @@
 
 The `System Administration` frontend module renders a page with a number of cards that link to different pages or applications outside the main EMR. These include the following:
 
-- [Legacy System administration](http://dev3.openmrs.org/openmrs/admin)
+- Legacy System administration (`/openmrs/admin` on the configured backend)
 - [Form builder](https://github.com/openmrs/openmrs-esm-form-builder)
 - [Open Concept Lab (OCL) module](https://github.com/openmrs/openmrs-esm-admin-tools/tree/main/packages/esm-admin-openconceptlab-app)
 

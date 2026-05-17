@@ -1,3 +1,3 @@
 export const baseName = `${globalThis.getOpenmrsSpaBase()}cost-structure`;
 
-export const baseUrl = 'ws/module/coststructure';
+export const baseUrl = 'module/coststructure';

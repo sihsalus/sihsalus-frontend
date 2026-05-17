@@ -24,7 +24,7 @@ corepack enable          # activa la versión de Yarn incluida en .yarn/releases
 nvm use                  # usa la versión definida en .nvmrc
 yarn install
 
-# 2. Configurar entorno (opcional — tiene defaults apuntando al servidor dev)
+# 2. Configurar entorno (recomendado)
 cp .env.example .env     # editar si se necesita apuntar a otro backend
 
 # 3. Levantar el dev server
@@ -37,7 +37,7 @@ SIHSALUS_PORT=3000 SIHSALUS_DEV_APPS=esm-login-app,esm-home-app yarn start
 # → http://localhost:3000/openmrs/spa/
 ```
 
-El dev server hace proxy de las peticiones de API al backend definido en `SIHSALUS_BACKEND_URL` (ver [.env.example](.env.example)).
+El dev server hace proxy de las peticiones de API al backend definido en `SIHSALUS_BACKEND_URL` (ver [.env.example](.env.example)). Si no se define, usa el backend dev por defecto y lo advierte al arrancar.
 
 ## Repository Structure
 
@@ -80,7 +80,7 @@ SIHSALUS_BACKEND_URL=http://... yarn start  # Apuntar a otro backend en esta ses
 
 ### Qué comando usar (`start` vs `serve` vs `serve:prod`)
 
-- `yarn start` (**recomendado para desarrollo diario**) usa [packages/tooling/start-dev.js](packages/tooling/start-dev.js), que lanza `openmrs develop` con `--importmap` y `--routes`, y además sirve assets/chunks desde `dist/spa` mediante proxy.
+- `yarn start` (**recomendado para desarrollo diario**) usa [packages/tooling/scripts/start-dev.js](packages/tooling/scripts/start-dev.js), que lanza `openmrs develop` con `--importmap` y `--routes`, y además sirve assets/chunks desde `dist/spa` mediante proxy.
 - `yarn serve` ejecuta `openmrs start` directo (ver [package.json](package.json)) después de compilar apps. En esta base, `openmrs start` hace descubrimiento local de módulos compilados (`packages/apps/*/dist`) y genera importmap/rutas en memoria (ver [packages/tooling/openmrs/src/commands/start.ts](packages/tooling/openmrs/src/commands/start.ts)).
 - `yarn serve:prod` compila todo + ejecuta `assemble-importmap.js` y luego `openmrs start`. El `dist/spa` generado queda como fallback estático durante el servido (también en [packages/tooling/openmrs/src/commands/start.ts](packages/tooling/openmrs/src/commands/start.ts)).
 
@@ -112,7 +112,7 @@ yarn test:e2e                               # Run Playwright E2E tests
 yarn lint                                   # ESLint all packages
 yarn typecheck                              # TypeScript check all packages
 yarn verify                                 # lint + typecheck + test
-yarn verify:changed --base origin/main      # Verify only changed workspaces in a PR branch
+yarn verify:changed --base origin/main      # Verify changed workspaces plus workspace dependents
 ```
 
 Repository discipline and workspace ownership expectations live in:
@@ -191,13 +191,15 @@ Custom modules with no upstream equivalent: `esm-atencion-ambulatoria-app`, `esm
 
 Crea un archivo `.env` en la raíz del repo (ver [.env.example](.env.example)):
 
-| Variable               | Default                             | Descripción                                                            |
-| ---------------------- | ----------------------------------- | ---------------------------------------------------------------------- |
-| `SIHSALUS_BACKEND_URL` | `http://gidis-hsc-dev.inf.pucp.edu.pe` | Backend OpenMRS al que se hace proxy en dev y se descarga el importmap |
-| `SIHSALUS_AUTH_MODE`   | `openmrs`                           | Modo de auth: `openmrs` (básico) o `keycloak` (OIDC)                   |
-| `SIHSALUS_FHIR_BASE`   | *(derivado del backend)*            | URL base de FHIR R4                                                    |
-| `SPA_PATH`             | `/openmrs/spa`                      | Base path para los assets del SPA                                      |
-| `API_URL`              | `/openmrs`                          | Base path de la API de OpenMRS                                         |
+| Variable                         | Default                                | Descripción                                                            |
+| -------------------------------- | -------------------------------------- | ---------------------------------------------------------------------- |
+| `SIHSALUS_BACKEND_URL`           | `http://gidis-hsc-dev.inf.pucp.edu.pe` | Backend OpenMRS al que se hace proxy en dev y se descarga el importmap |
+| `SIHSALUS_REQUIRE_BACKEND_URL`   | `false`                                | Si es `true`, `yarn start` falla cuando falta `SIHSALUS_BACKEND_URL`   |
+| `SIHSALUS_BACKEND_FETCH_TIMEOUT_MS` | `5000`                              | Timeout para descargar importmap/rutas del backend en `openmrs start`  |
+| `SIHSALUS_AUTH_MODE`             | `openmrs`                              | Modo de auth: `openmrs` (básico) o `keycloak` (OIDC)                   |
+| `SIHSALUS_FHIR_BASE`             | *(derivado del backend)*               | URL base de FHIR R4                                                    |
+| `SPA_PATH`                       | `/openmrs/spa`                         | Base path para los assets del SPA                                      |
+| `API_URL`                        | `/openmrs`                             | Base path de la API de OpenMRS                                         |
 
 ## HIPAA Compliance
 

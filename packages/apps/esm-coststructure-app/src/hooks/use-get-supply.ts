@@ -1,10 +1,3 @@
-import { openmrsFetch } from '@openmrs/esm-framework';
-import useSWR from 'swr';
-
-import { baseUrl } from '../constants';
-
-const API_URL = `${baseUrl}/supply`;
-
 export interface Supply {
   id: number;
   uuid: string;
@@ -16,13 +9,13 @@ export interface Supply {
 }
 
 const useGetSupply = () => {
-  const { data, error, isLoading, mutate } = useSWR<{ data: Supply[] }>(API_URL, openmrsFetch);
-
   return {
-    supply: data?.data ?? [],
-    isError: error,
-    isLoading,
-    mutate,
+    // The current coststructure OMOD does not expose /module/coststructure/supply.
+    // Keep the UI stable without issuing a request that always fails.
+    supply: [],
+    isError: undefined,
+    isLoading: false,
+    mutate: async () => [],
   };
 };
 

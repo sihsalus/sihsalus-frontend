@@ -1,0 +1,132 @@
+{
+  "$schema": "https://json.openmrs.org/routes.schema.json",
+  "backendDependencies": {
+    "webservices.rest": ">=2.2.0"
+  },
+  "extensions": [
+    {
+      "name": "case-monitoring-encounter-link",
+      "component": "caseEncounterDashboardLink",
+      "slot": "patient-chart-dashboard-slot",
+      "order": 14,
+      "meta": {
+        "columns": 1,
+        "columnSpan": 1,
+        "slot": "patient-chart-case-encounter-slot",
+        "title": "caseMonitoringEncounters",
+        "path": "seguimiento-casos",
+        "layoutMode": "anchored"
+      }
+    },
+    {
+      "name": "case-monitoring-encounter-table",
+      "slot": "patient-chart-case-encounter-slot",
+      "component": "caseEncounterTable",
+      "order": 0,
+      "online": true,
+      "offline": false
+    },
+    {
+      "name": "case-monitoring-dashboard-link",
+      "component": "caseManagementDashboardLink",
+      "slot": "homepage-dashboard-slot",
+      "meta": {
+        "name": "case-monitoring",
+        "title": "Monitoreo y seguimiento de casos",
+        "slot": "case-management-dashboard-slot",
+        "path": "/seguimiento/casos"
+      },
+      "order": 70
+    },
+    {
+      "name": "case-monitoring-wrap-component-view",
+      "slot": "case-management-dashboard-slot",
+      "component": "wrapComponent",
+      "order": 2,
+      "online": true,
+      "offline": false
+    },
+    {
+      "name": "vih-patient-chart-special-clinic-dashboard-slot",
+      "slot": "patient-chart-special-clinic-dashboard-slot",
+      "component": "genericDashboard"
+    },
+    {
+      "name": "vih-generic-nav-links",
+      "slot": "patient-chart-dashboard-slot",
+      "component": "genericNavLinks",
+      "order": 13,
+      "meta": {
+        "columns": 1,
+        "columnSpan": 1,
+        "slot": "patient-chart-special-clinic-dashboard-slot",
+        "path": "vih-special-clinics-dashboard",
+        "layoutMode": "anchored"
+      }
+    },
+    {
+      "name": "vih-hiv-care-and-treatment-dashboard-group-link",
+      "slot": "special-clinics-slot",
+      "component": "hivCareAndTreatMentSideNavGroup",
+      "meta": {
+        "slot": "hiv-care-and-treatment-slot",
+        "isFolder": true
+      }
+    },
+    {
+      "name": "vih-defaulter-tracing-dashboard-link",
+      "component": "defaulterTracingLink",
+      "slot": "hiv-care-and-treatment-slot",
+      "meta": {
+        "columns": 1,
+        "columnSpan": 1,
+        "slot": "patient-chart-defaulter-tracing-dashboard-slot",
+        "path": "vih-defaulter-tracing-dashboard",
+        "layoutMode": "anchored"
+      }
+    },
+    {
+      "name": "vih-defaulter-tracing-dashboard",
+      "slot": "patient-chart-defaulter-tracing-dashboard-slot",
+      "component": "defaulterTracing",
+      "order": 3,
+      "online": true,
+      "offline": false
+    },
+    {
+      "name": "vih-hts-dashboard-link",
+      "component": "htsDashboardLink",
+      "slot": "hiv-care-and-treatment-slot",
+      "meta": {
+        "columns": 1,
+        "columnSpan": 1,
+        "slot": "patient-chart-hts-dashboard-slot",
+        "path": "vih-hts-dashboard",
+        "layoutMode": "anchored"
+      }
+    },
+    {
+      "name": "vih-hts-clinical-view",
+      "slot": "patient-chart-hts-dashboard-slot",
+      "component": "htsClinicalView",
+      "order": 2,
+      "online": true,
+      "offline": false
+    }
+  ],
+  "modals": [],
+  "workspaces": [
+    {
+      "name": "case-management-form",
+      "component": "caseManagementForm",
+      "title": "Formulario de seguimiento de casos",
+      "type": "form"
+    },
+    {
+      "name": "end-relationship-form",
+      "component": "endRelationshipWorkspace",
+      "title": "Finalizar seguimiento",
+      "type": "form"
+    }
+  ]
+}

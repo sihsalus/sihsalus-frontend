@@ -1,0 +1,32 @@
+{
+  "$schema": "https://json.openmrs.org/routes.schema.json",
+  "backendDependencies": {
+    "webservices.rest": ">=2.2.0"
+  },
+  "extensions": [
+    {
+      "name": "psicologia-dashboard-link",
+      "component": "psicologiaDashboardLink",
+      "slot": "patient-chart-dashboard-slot",
+      "order": 13,
+      "meta": {
+        "slot": "patient-chart-psicologia-dashboard-slot",
+        "columns": 1,
+        "columnSpan": 1,
+        "title": "Psicología",
+        "path": "psicologia",
+        "icon": "omrs-icon-user-follow",
+        "tooltip": "psicologiaTooltip",
+        "layoutMode": "anchored"
+      }
+    },
+    {
+      "name": "psicologia-dashboard",
+      "component": "psicologiaDashboard",
+      "slot": "patient-chart-psicologia-dashboard-slot",
+      "order": 0,
+      "online": true,
+      "offline": false
+    }
+  ]
+}

@@ -112,6 +112,7 @@ export default function AdmissionHome() {
 
   return (
     <main className={styles.page}>
+      <h1 className={styles.visuallyHidden}>{t('admissionReportByUps', 'Reporte de admisiones por UPS')}</h1>
       <PageHeader className={styles.header}>
         <PageHeaderContent
           title={t('admissionReportByUps', 'Reporte de admisiones por UPS')}

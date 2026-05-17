@@ -7,7 +7,7 @@ import { moduleName } from '../constants';
 
 export default function AdmissionDashboardLink() {
   const { t } = useTranslation(moduleName);
-  const dashboardPath = '/home/admission';
+  const dashboardPath = '/admission';
   const href = `${globalThis.getOpenmrsSpaBase().slice(0, -1)}${dashboardPath}`;
 
   const isActive = globalThis.location.pathname.includes(dashboardPath);

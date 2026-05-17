@@ -78,10 +78,10 @@ describe('AdmissionHome', () => {
     expect(getMetricValue('Activas')).toHaveTextContent('1');
     expect(getMetricValue('Finalizadas')).toHaveTextContent('1');
     expect(getMetricValue('UPS/servicios')).toHaveTextContent('2');
-    const mergeButton = screen.getByRole('button', { name: /fusionar historias duplicadas/i });
-    expect(mergeButton).toBeInTheDocument();
-    fireEvent.click(mergeButton);
-    expect(window.location.pathname).toBe('/merge');
+    expect(screen.getByRole('link', { name: /fusionar historias duplicadas/i })).toHaveAttribute(
+      'href',
+      '/openmrs/spa/admission/merge',
+    );
     expect(mockUseAdmissions).toHaveBeenCalledWith(75);
   });
 

@@ -207,10 +207,13 @@ describe('admissions resources', () => {
       expect.objectContaining({
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: expect.objectContaining({
-          patientUuid: 'patient-uuid',
-          startDate: expect.any(String),
-        }),
+        body: expect.any(String),
+      }),
+    );
+    expect(JSON.parse((mockOpenmrsFetch.mock.calls[0]?.[1] as { body: string }).body)).toEqual(
+      expect.objectContaining({
+        patientUuid: 'patient-uuid',
+        startDate: expect.any(String),
       }),
     );
     expect(result.current.appointments[0]).toMatchObject({

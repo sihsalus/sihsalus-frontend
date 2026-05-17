@@ -52,6 +52,7 @@ function PopupHandler() {
               missingCount: missingDependencies.length,
               versionMismatchCount: versionMismatches.length,
               examples: dependencyExamples || t('none', 'None'),
+              interpolation: { escapeValue: false },
             }),
         title: backendError
           ? t('backendConnectionProblem', 'Backend Connection Problem')

@@ -9,6 +9,7 @@ const logFail = (msg) => console.error(`${chalk.red.bold('[assemble]')} ${chalk.
 const importmap = { imports: {} };
 const routesRegistry = {};
 const outDir = process.env.SPA_OUTPUT_DIR || 'dist/spa';
+const hostSharedWorkspacePackages = [];
 
 function copyFileReplacingIfNeeded(src, dest) {
   try {
@@ -127,6 +128,52 @@ for (const distDir of appDirs) {
 if (notBuilt.length > 0) {
   logWarn(`${notBuilt.length} local package(s) without dist — run 'yarn build' first:`);
   for (const name of notBuilt) logWarn(`  - ${name}`);
+}
+
+// ── Phase 1b: Copy local shared host libraries ───────────────────────────────
+// Some apps mark core OpenMRS libraries as Module Federation shared modules with
+// `import: false`, so they must be present in the app shell import map. These
+// libraries do not have routes, but the shell still needs their bundles to
+// register them in the shared scope before app remotes consume them.
+logInfo('Phase 1b: Local shared host libraries');
+for (const packageName of hostSharedWorkspacePackages) {
+  const packageDirName = packageName.replace(/^@openmrs\//, '');
+  const packageDir = path.join('packages/libs', packageDirName);
+  const pkgJsonPath = path.join(packageDir, 'package.json');
+
+  if (!fs.existsSync(pkgJsonPath)) {
+    logWarn(`SKIP [shared] ${packageName}: package.json not found at ${pkgJsonPath}`);
+    continue;
+  }
+
+  const pkg = JSON.parse(fs.readFileSync(pkgJsonPath, 'utf8'));
+  const entryField = pkg.browser || pkg.module || pkg.main;
+
+  if (!entryField) {
+    logWarn(`SKIP [shared] ${packageName}: no browser/module/main field in package.json`);
+    continue;
+  }
+
+  const entryFilePath = path.join(packageDir, entryField);
+  assertInsideDir(entryFilePath, packageDir, `${packageName} entryField`);
+
+  if (!fs.existsSync(entryFilePath)) {
+    logWarn(`SKIP [shared] ${packageName}: entry not found at ${entryField} — run build first`);
+    continue;
+  }
+
+  const entryFileName = path.basename(entryField);
+  const versionedSubdir = `${packageDirName}-${pkg.version || '0.0.0'}`;
+  const versionedDir = path.join(outDir, versionedSubdir);
+  const entryDir = path.dirname(entryFilePath);
+
+  fs.mkdirSync(versionedDir, { recursive: true });
+  fs.cpSync(entryDir, versionedDir, { recursive: true, force: true });
+
+  importmap.imports[pkg.name] = `./${versionedSubdir}/${entryFileName}`;
+  localBaseNames.add(pkg.name.replace(/^@[^/]+\//, ''));
+
+  logInfo(`OK [shared] ${pkg.name} -> ${versionedSubdir}/${entryFileName}`);
 }
 
 // ── Phase 2: Resolve modules from spa-assemble-config.json ───────────────────────

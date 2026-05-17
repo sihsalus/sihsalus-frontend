@@ -28,7 +28,7 @@
   "jsonEditor": "Editor por JSON",
   "loading": "Cargando",
   "missing": "Faltante",
-  "missingBackendDependenciesMessage": "Faltan {{missingCount}} módulo(s) backend y {{versionMismatchCount}} tienen versiones incompatibles. Consulte la pestaña Módulos Backend en las Herramientas del Implementador para más detalles. Ejemplos: {{examples}}",
+  "missingBackendDependenciesMessage": "Faltan {{missingCount}} módulo(s) backend y {{versionMismatchCount}} tienen versiones incompatibles. Consulte la pestaña Módulos Backend en las Herramientas del Implementador para más detalles.",
   "moduleName": "Nombre del módulo",
   "modulesWithMissingDependenciesWarning": "Algunos módulos tienen dependencias no resueltas en el backend",
   "noConceptsFoundText": "No se encontraron conceptos que coincidan",
@@ -48,5 +48,6 @@
   "updateConfig": "Actualizar configuración",
   "uuidValidationMessage": "El valor debe ser una cadena UUID válida",
   "value": "Valor",
-  "viewModules": "Ver módulos"
+  "viewModules": "Ver módulos",
+  "examples": "Ejemplos"
 }

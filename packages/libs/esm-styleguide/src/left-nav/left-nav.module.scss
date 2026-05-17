@@ -1,16 +1,45 @@
-@use '@carbon/type';
-@use '@carbon/layout';
-@use '../vars' as *;
+@use "@carbon/type";
+@use "@carbon/layout";
+@use "../vars" as *;
 
 .leftNav {
   border-inline-end: 1px solid $color-gray-30;
   padding-top: layout.$spacing-05;
-  transition: inline-size 300ms ease, width 300ms ease;
+  overflow: visible;
+  z-index: 8000;
+  transition:
+    inline-size 300ms ease,
+    width 300ms ease;
+
+  :global(.cds--popover-container.cds--tooltip),
+  :global(.cds--tooltip-trigger__wrapper) {
+    display: block;
+    width: 100%;
+  }
+
+  :global(.cds--popover-container.cds--tooltip) {
+    position: relative;
+    z-index: 9000;
+  }
+
+  :global(
+    .cds--popover-container.cds--tooltip
+      > .cds--tooltip-trigger__wrapper
+      > .cds--side-nav__link
+  ) {
+    display: flex;
+    inline-size: 100%;
+    max-inline-size: none;
+  }
+
+  :global(.cds--popover) {
+    z-index: 9001;
+  }
 
   // Left nav menu item
   :global(.cds--side-nav__link) {
     color: $text-02;
-    @include type.type-style('heading-compact-01');
+    @include type.type-style("heading-compact-01");
     padding: 0 1rem;
 
     &:focus,
@@ -61,7 +90,10 @@
     }
 
     :global(.sihsalus-side-nav__icon),
-    :global(.cds--side-nav__submenu > .cds--side-nav__icon:not(.cds--side-nav__submenu-chevron)) {
+    :global(
+      .cds--side-nav__submenu
+        > .cds--side-nav__icon:not(.cds--side-nav__submenu-chevron)
+    ) {
       margin-inline-end: 0;
     }
   }

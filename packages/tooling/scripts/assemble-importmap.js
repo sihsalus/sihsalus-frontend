@@ -388,12 +388,105 @@ function patchIndexHtml() {
   logInfo('Phase 6: Patching index.html');
 
   const importmapUrl = process.env.IMPORTMAP_URL || '';
-  const spaPath = process.env.SPA_PATH || '';
-  const apiUrl = process.env.API_URL || '';
+  const spaPath = process.env.SPA_PATH || '/openmrs/spa';
+  const apiUrl = process.env.API_URL || '/openmrs';
   const defaultLocale = process.env.SPA_DEFAULT_LOCALE || 'es';
-  const rawConfigUrls = (process.env.SPA_CONFIG_URLS || '').trim();
+  const rawConfigUrls = (process.env.SPA_CONFIG_URLS || `${spaPath}/frontend.json`).trim();
 
   let html = fs.readFileSync(indexPath, 'utf8');
+
+  const sihsalusErrorUiScript = `<script>
+(function () {
+  function getErrorMessage(error) {
+    if (error && typeof error.message === 'string') {
+      return error.message;
+    }
+    return typeof error === 'string' ? error : '';
+  }
+
+  function isMicrofrontendLoadError(error) {
+    var message = getErrorMessage(error);
+    return (
+      message.indexOf('died in status LOADING_SOURCE_CODE') >= 0 ||
+      message.indexOf("doesn't exist in shared scope") >= 0 ||
+      message.indexOf('Shared module') >= 0
+    );
+  }
+
+  function showMicrofrontendLoadError(error) {
+    console.error('[sihsalus] Microfrontend load failure:', error);
+    window.dispatchEvent(
+      new CustomEvent('openmrs:toast-shown', {
+        detail: {
+          kind: 'error',
+          title: 'No se pudo cargar la página',
+          description:
+            'No se pudo cargar un módulo de la aplicación. Recarga la página. Si el problema continúa, contacta a soporte.',
+        },
+      }),
+    );
+  }
+
+  function installOnErrorWrapper() {
+    if (window.onerror && window.onerror.__sihsalusWrapped) {
+      return;
+    }
+    var previousOnError = window.onerror;
+    function sihsalusOnError(message, source, lineno, colno, error) {
+      var reason = error || message;
+      if (isMicrofrontendLoadError(reason)) {
+        showMicrofrontendLoadError(reason);
+        return true;
+      }
+      return typeof previousOnError === 'function' ? previousOnError.apply(this, arguments) : false;
+    }
+    sihsalusOnError.__sihsalusWrapped = true;
+    window.onerror = sihsalusOnError;
+  }
+
+  installOnErrorWrapper();
+  window.setTimeout(installOnErrorWrapper, 0);
+  window.setTimeout(installOnErrorWrapper, 500);
+  window.setTimeout(installOnErrorWrapper, 1500);
+  window.setTimeout(installOnErrorWrapper, 3000);
+
+  if (window.__sihsalusErrorUiInstalled) {
+    return;
+  }
+  window.__sihsalusErrorUiInstalled = true;
+
+  window.addEventListener(
+    'error',
+    function (event) {
+      var reason = event.error || event.message;
+      if (isMicrofrontendLoadError(reason)) {
+        event.preventDefault();
+        event.stopImmediatePropagation();
+        showMicrofrontendLoadError(reason);
+      }
+    },
+    true,
+  );
+
+  window.addEventListener(
+    'unhandledrejection',
+    function (event) {
+      if (isMicrofrontendLoadError(event.reason)) {
+        event.preventDefault();
+        event.stopImmediatePropagation();
+        showMicrofrontendLoadError(event.reason);
+      }
+    },
+    true,
+  );
+})();
+</script>`;
+
+  html = html.replace(/<script>[\s\S]*?__sihsalusErrorUiInstalled[\s\S]*?<\/script>/, '');
+  const appShellScript = /(<body><script src="[^"]+"><\/script>)/;
+  html = appShellScript.test(html)
+    ? html.replace(appShellScript, `$1${sihsalusErrorUiScript}`)
+    : html.replace('</head>', `${sihsalusErrorUiScript}</head>`);
 
   // 1. Normalize importmap URL — replace both template variables and any hardcoded absolute URL
   //    (e.g. https://dev3.openmrs.org/openmrs/spa/importmap.json from upstream builds)
@@ -415,6 +508,7 @@ function patchIndexHtml() {
       .map((u) => `"${u}"`)
       .join(',');
     html = html.replace('"$SPA_CONFIG_URLS"', configUrlsJs);
+    html = html.replace(/configUrls:\s*\[[^\]]*\]/, `configUrls: [${configUrlsJs}]`);
   }
 
   // 3. General substitution — $VAR and ${VAR} forms

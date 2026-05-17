@@ -1,0 +1,13 @@
+{
+  "add": "Agregar",
+  "delete": "Eliminar",
+  "edit": "Editar",
+  "encounterDeleteFailed": "No se pudo eliminar la atención",
+  "encounterDeleted": "Atención eliminada",
+  "encounterSuccessfullyDeleted": "La atención fue eliminada correctamente",
+  "expandRow": "Expandir fila",
+  "noObservationsFound": "No se encontraron observaciones",
+  "psicologia": "Psicología",
+  "psicologiaTooltip": "Registra evaluación, consejería y seguimiento de salud mental dentro de la atención integral.",
+  "psychologyEncounters": "Atenciones de psicología"
+}

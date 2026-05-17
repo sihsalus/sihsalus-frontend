@@ -35,7 +35,6 @@ export const DashboardExtension = ({
     <ConfigurableLink
       className={classNames('cds--side-nav__link', { 'active-left-nav-link': path === navLink })}
       to={`${basePath}/${encodeURIComponent(path)}`}
-      title={translatedTooltip}
     >
       <span className={styles.menu}>
         <MaybeIcon icon={icon} className={styles.icon} size={16} />
@@ -45,9 +44,16 @@ export const DashboardExtension = ({
   );
 
   return (
-    <div key={path}>
+    <div key={path} className={styles.navItem}>
       {translatedTooltip ? (
-        <Tooltip align="right" label={translatedTooltip} enterDelayMs={400} leaveDelayMs={100}>
+        <Tooltip
+          align="right"
+          as="div"
+          className={styles.navTooltip}
+          label={translatedTooltip}
+          enterDelayMs={400}
+          leaveDelayMs={100}
+        >
           {link}
         </Tooltip>
       ) : (

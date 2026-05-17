@@ -3,7 +3,6 @@ import { mkdir, readFile, writeFile } from 'node:fs/promises';
 import { basename, dirname, resolve } from 'node:path';
 import { Readable } from 'node:stream';
 
-import axios from 'axios';
 import { prompt, type Question } from 'inquirer';
 import merge from 'lodash/merge';
 import npmRegistryFetch from 'npm-registry-fetch';
@@ -188,8 +187,13 @@ async function downloadPackage(
     const source = resolve(baseDir, esmVersion.substring(5));
     return readFile(source);
   } else if (esmVersion && /^https?:\/\//.test(esmVersion)) {
-    const response = await axios.get<Buffer>(esmVersion);
-    return response.data;
+    const response = await fetch(esmVersion);
+
+    if (!response.ok) {
+      throw new Error(`Failed to download ${esmVersion}: ${response.status} ${response.statusText}`);
+    }
+
+    return Buffer.from(await response.arrayBuffer());
   } else {
     const packageName = esmVersion ? `${esmName}@${esmVersion}` : esmName;
     const tarManifest = await pacote.manifest(packageName, fetchOptions);

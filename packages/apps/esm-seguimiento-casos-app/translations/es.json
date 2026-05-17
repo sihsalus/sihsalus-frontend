@@ -20,7 +20,7 @@
   "dateofend": "End Date",
   "dateofstart": "Start Date",
   "date": "Fecha",
-  "defaulterTracing": "Búsqueda y seguimiento de inasistentes",
+  "defaulterTracing": "Pérdida en el seguimiento",
   "demographics": "Datos demográficos",
   "department": "Departamento",
   "disabilities": "Discapacidad",
@@ -87,5 +87,9 @@
   "tracingNumber": "N.º de rastreo",
   "tracingType": "Tipo de rastreo",
   "visitDate": "Fecha de consulta",
-  "visitType": "Tipo de consulta"
+  "visitType": "Tipo de consulta",
+  "missedFollowUp": "Pérdida en el seguimiento",
+  "followUpDate": "Fecha de seguimiento",
+  "followUpType": "Tipo de seguimiento",
+  "followUpNumber": "N.º de seguimiento"
 }

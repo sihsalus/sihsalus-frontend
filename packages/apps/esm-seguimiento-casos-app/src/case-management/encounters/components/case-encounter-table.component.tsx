@@ -16,10 +16,11 @@ import { formatDate } from '@openmrs/esm-framework';
 import capitalize from 'lodash-es/capitalize';
 import React from 'react';
 import { useTranslation } from 'react-i18next';
-import type { Observation } from '../../types';
+
+import type { Observation } from '../../../types';
 import EncounterObservations from './encounter-observations/encounter-observations.component';
 
-interface GenericTableEncounter {
+interface CaseEncounterTableEncounter {
   uuid: string;
   encounterDatetime: string;
   visit?: { visitType?: { display?: string } };
@@ -27,31 +28,30 @@ interface GenericTableEncounter {
   obs?: Array<Observation>;
 }
 
-interface GenericTableRow {
+interface CaseEncounterTableRow {
   id: string;
   [key: string]: string;
 }
 
-type GenericTableProps = {
-  encounters: GenericTableEncounter[];
+type CaseEncounterTableProps = {
+  encounters: CaseEncounterTableEncounter[];
   onEdit: (encounterUuid: string) => void;
   onDelete: (encounterUuid: string, encounterTypeName?: string) => void;
   headers: { key: string; header: string }[];
-  rows?: GenericTableRow[];
+  rows?: CaseEncounterTableRow[];
 };
 
-const GenericTable: React.FC<GenericTableProps> = ({ encounters, onEdit, onDelete, headers, rows }) => {
+const CaseEncounterTable: React.FC<CaseEncounterTableProps> = ({ encounters, onEdit, onDelete, headers, rows }) => {
   const { t } = useTranslation();
-  function formatProviderName(display) {
-    if (!display) {
-      return '--';
-    }
-    return display.split('-')[0].trim();
+
+  function formatProviderName(display?: string) {
+    return display ? display.split('-')[0].trim() : '--';
   }
+
   const computedRows =
     rows ||
     encounters.map((encounter) => ({
-      id: `${encounter.uuid}`,
+      id: encounter.uuid,
       encounterDatetime: formatDate(new Date(encounter.encounterDatetime)),
       visitType: encounter.visit?.visitType?.display ?? '--',
       provider:
@@ -64,16 +64,17 @@ const GenericTable: React.FC<GenericTableProps> = ({ encounters, onEdit, onDelet
             )
           : '--',
     }));
+
   return (
     <DataTable size="sm" useZebraStyles rows={computedRows} headers={headers}>
       {({ rows, headers, getHeaderProps, getRowProps, getExpandedRowProps, getTableProps, getTableContainerProps }) => (
         <TableContainer {...getTableContainerProps()}>
-          <Table {...getTableProps()} aria-label={t('caseEncounters', 'Case management encounters')}>
+          <Table {...getTableProps()} aria-label={t('caseEncounters', 'Case follow-up encounters')}>
             <TableHead>
               <TableRow>
-                <TableExpandHeader aria-label="expand row" />
-                {headers.map((header, i) => (
-                  <TableHeader key={i} {...getHeaderProps({ header })}>
+                <TableExpandHeader aria-label={t('expandRow', 'Expand row')} />
+                {headers.map((header) => (
+                  <TableHeader key={header.key} {...getHeaderProps({ header })}>
                     {header.header}
                   </TableHeader>
                 ))}
@@ -87,20 +88,14 @@ const GenericTable: React.FC<GenericTableProps> = ({ encounters, onEdit, onDelet
                       <TableCell key={cell.id}>{cell.value}</TableCell>
                     ))}
                   </TableExpandRow>
-                  <TableExpandedRow
-                    colSpan={headers.length + 1}
-                    className="demo-expanded-td"
-                    {...getExpandedRowProps({ row })}
-                  >
-                    <>
-                      <EncounterObservations observations={encounters[index]['obs'] ?? []} />
-                      <Button onClick={() => onEdit(row.id)} kind="primary" size="sm">
-                        Edit
-                      </Button>
-                      <Button onClick={() => onDelete(row.id)} kind="danger" size="sm">
-                        Delete
-                      </Button>
-                    </>
+                  <TableExpandedRow colSpan={headers.length + 1} {...getExpandedRowProps({ row })}>
+                    <EncounterObservations observations={encounters[index].obs ?? []} />
+                    <Button onClick={() => onEdit(row.id)} kind="primary" size="sm">
+                      {t('edit', 'Edit')}
+                    </Button>
+                    <Button onClick={() => onDelete(row.id)} kind="danger" size="sm">
+                      {t('delete', 'Delete')}
+                    </Button>
                   </TableExpandedRow>
                 </React.Fragment>
               ))}
@@ -112,4 +107,4 @@ const GenericTable: React.FC<GenericTableProps> = ({ encounters, onEdit, onDelet
   );
 };
 
-export default GenericTable;
+export default CaseEncounterTable;

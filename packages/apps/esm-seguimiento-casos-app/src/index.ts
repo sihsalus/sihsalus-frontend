@@ -2,6 +2,7 @@ import { defineConfigSchema, getSyncLifecycle } from '@openmrs/esm-framework';
 import { createDashboardLink } from '@openmrs/esm-patient-common-lib';
 
 import CaseEncounterOverviewComponent from './case-management/encounters/case-encounter-overview.component';
+import MissedFollowUp from './case-management/missed-follow-up/missed-follow-up.component';
 import CaseManagementForm from './case-management/workspace/case-management.workspace';
 import EndRelationshipWorkspace from './case-management/workspace/case-management-workspace.component';
 import WrapComponent from './case-management/wrap/wrap.component';
@@ -41,7 +42,21 @@ export const caseEncounterDashboardLink = getSyncLifecycle(
   options,
 );
 
+export const missedFollowUpDashboardLink = getSyncLifecycle(
+  createDashboardLink({
+    icon: 'omrs-icon-calendar',
+    slot: 'patient-chart-missed-follow-up-slot',
+    columns: 1,
+    title: 'missedFollowUp',
+    path: 'perdida-seguimiento',
+    config: {},
+    moduleName,
+  } as Parameters<typeof createDashboardLink>[0] & { slot: string }),
+  options,
+);
+
 export const caseEncounterTable = getSyncLifecycle(CaseEncounterOverviewComponent, options);
+export const missedFollowUpDashboard = getSyncLifecycle(MissedFollowUp, options);
 export const caseManagementForm = getSyncLifecycle(CaseManagementForm, options);
 export const endRelationshipWorkspace = getSyncLifecycle(EndRelationshipWorkspace, options);
 export const wrapComponent = getSyncLifecycle(WrapComponent, options);

@@ -57,7 +57,6 @@ export const configSchema = {
       mentalHealthEvaluation: '1b9f21c5-928c-4077-bc95-dcd4b1a5a366', // Evaluación de Salud Mental — RM 856-2019
       malnutritionAnemiaCare: '91b5f447-e6f6-4ad0-8ec5-75151b46bd82', // Atención Desnutrición y Anemia — NTS 102
       chronicDiseaseFollowup: '3a542b3a-79a8-4c97-a65b-d6ccc84171a7', // Seguimiento Enf. Crónicas — NTS 067
-      hivTestingServices: '5cbb797f-bed5-4301-a3ce-6cc7eb7c687b', // Tamizaje de VIH — NTS 169
       tbTreatmentSupervision: 'a4133bfb-a43a-42ac-84a5-0367451e4f23', // Supervisión DOT TB — NTS 090
       covid19Management: '2314baf3-2876-4ff7-b7f2-a73e157eec57', // Manejo COVID-19 — NTS 094-2022
 
@@ -89,11 +88,8 @@ export const configSchema = {
       epicrisis: '(Página 16) Epicrisis',
       clinicalEncounterFormUuid: 'e958f902-64df-4819-afd4-7fb061f59308',
 
-      // HIV/HTS Forms
+      // Follow-up forms
       defaulterTracingFormUuid: 'a1a62d1e-2def-11e9-b210-d663bd873d93',
-      htsScreening: '04295648-7606-11e8-adc0-fa7ae01bbebc',
-      htsInitialTest: '402dc5d7-46da-42d4-b2be-f43ea4ad87b0',
-      htsRetest: 'b08471f6-0892-4bf7-ab2b-bf79797b8ea4',
 
       // Consulta Externa Forms
       consultaExternaForm: 'CE-001-CONSULTA EXTERNA',
@@ -124,13 +120,6 @@ export const configSchema = {
         encounterTypeUuid: 'bfbb5dc2-d3e6-41ea-ad86-101336e3e38f', // Atención Extramural
       },
     ],
-  },
-
-  // 4. SPECIAL CLINICS
-  specialClinics: {
-    _type: Type.Array,
-    _description: 'List of special clinics',
-    _default: [],
   },
 
   // 5. VITALS CONFIGURATION
@@ -361,7 +350,8 @@ export const configSchema = {
   // 12. SYSTEM IDENTIFIERS
   defaulterTracingEncounterUuid: {
     _type: Type.String,
-    _description: 'Encounter UUID for defaulter tracing',
+    _description:
+      'Encounter type UUID for missed follow-up / loss-to-follow-up tracing. Legacy key kept for compatibility.',
     _default: '1495edf8-2df2-11e9-b210-d663bd873d93',
   },
 
@@ -505,7 +495,6 @@ export interface ConfigObject {
     mentalHealthEvaluation: string;
     malnutritionAnemiaCare: string;
     chronicDiseaseFollowup: string;
-    hivTestingServices: string;
     tbTreatmentSupervision: string;
     covid19Management: string;
     medicationPrescriptionDispensation: string;
@@ -541,13 +530,10 @@ export interface ConfigObject {
     medicalProgressNote: string;
     epicrisis: string;
     clinicalEncounterFormUuid: string;
+    // Follow-up forms
+    defaulterTracingFormUuid: string;
     // Consulta Externa Forms
     consultaExternaForm: string;
-    // HIV/HTS Forms
-    defaulterTracingFormUuid: string;
-    htsScreening: string;
-    htsInitialTest: string;
-    htsRetest: string;
     // Hospital Forms
     medicalProgress: string;
     nursingNotes: string;
@@ -557,12 +543,6 @@ export interface ConfigObject {
   defaulterTracingEncounterUuid: string;
   clinicalEncounterUuid: string;
   concepts: Record<string, string>;
-  specialClinics: Array<{
-    id: string;
-    formUuid: string;
-    encounterTypeUuid: string;
-    title: string;
-  }>;
   registrationEncounterUuid: string;
   registrationObs: {
     encounterTypeUuid: string | null;

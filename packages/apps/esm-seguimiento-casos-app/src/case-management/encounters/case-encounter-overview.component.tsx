@@ -6,11 +6,11 @@ import { useTranslation } from 'react-i18next';
 import type { KeyedMutator } from 'swr';
 
 import type { ConfigObject } from '../../config-schema';
-import GenericTable from '../../specialized-clinics/generic-nav-links/generic-table.component';
 import { patientFormEntryWorkspace } from '../../utils/constants';
 
 import styles from './case-encounter-header.scss';
 import { deleteEncounter, useInfiniteVisits } from './case-encounter-table.resource';
+import CaseEncounterTable from './components/case-encounter-table.component';
 
 interface CaseEncounterProps {
   mutate: KeyedMutator<unknown>;
@@ -200,7 +200,7 @@ const CaseEncounterOverviewComponent = ({ patientUuid }: CaseEncounterOverviewCo
         </Layer>
       ) : (
         <div className={styles.widgetContainer}>
-          <GenericTable
+          <CaseEncounterTable
             encounters={results}
             onEdit={handleWorkspaceEditForm}
             onDelete={handleDeleteEncounter}

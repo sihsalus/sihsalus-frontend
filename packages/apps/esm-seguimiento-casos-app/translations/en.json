@@ -20,7 +20,7 @@
   "dateofend": "End Date",
   "dateofstart": "Start Date",
   "date": "Date",
-  "defaulterTracing": "Missed-visit tracing",
+  "defaulterTracing": "Loss to follow-up",
   "demographics": "Demographics",
   "department": "Department",
   "disabilities": "Disabilities",
@@ -53,7 +53,7 @@
   "loading": "Loading...",
   "loadingData": "Loading data",
   "manager": "Follow-up owner",
-  "missedAppointmentDate": "Date Missed Appointment",
+  "missedAppointmentDate": "Missed appointment date",
   "names": "Names",
   "noActiveCasesToDisplay": "There are no active follow-ups to display.",
   "noEncounterToDisplay": "There are no follow-up encounters to display for this patient.",
@@ -87,5 +87,9 @@
   "tracingNumber": "Tracing No.",
   "tracingType": "Tracing Type",
   "visitDate": "Screening Date",
-  "visitType": "Visit type"
+  "visitType": "Visit type",
+  "missedFollowUp": "Loss to follow-up",
+  "followUpDate": "Follow-up date",
+  "followUpType": "Follow-up type",
+  "followUpNumber": "Follow-up No."
 }

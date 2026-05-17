@@ -18,8 +18,8 @@ import { CardHeader, EmptyState, ErrorState } from '@openmrs/esm-patient-common-
 import { getObsFromEncounter } from '@sihsalus/esm-sihsalus-shared';
 import React from 'react';
 import { useTranslation } from 'react-i18next';
-import type { ConfigObject } from '../../../config-schema';
-import { usePatientTracing } from '../../../hooks/usePatientTracing';
+
+import type { ConfigObject } from '../../config-schema';
 import {
   Contacted_UUID,
   MissedAppointmentDate_UUID,
@@ -27,27 +27,27 @@ import {
   TracingNumber_UUID,
   TracingOutcome_UUID,
   TracingType_UUID,
-} from '../../../utils/constants';
-//TODO CHANGE THIS
+} from '../../utils/constants';
+import { useMissedFollowUp } from './missed-follow-up.resource';
 
-import styles from './defaulter-tracing.scss';
+import styles from './missed-follow-up.scss';
 
-interface PatientTracingProps {
+interface MissedFollowUpProps {
   patientUuid: string;
 }
 
-const DefaulterTracing: React.FC<PatientTracingProps> = ({ patientUuid }) => {
+const MissedFollowUp: React.FC<MissedFollowUpProps> = ({ patientUuid }) => {
   const { t } = useTranslation();
-  const config = useConfig<ConfigObject>();
-  const { formsList } = config ?? {};
-  const headerTitle = t('defaulterTracing', 'Defaulter Tracing');
-  const { encounters, isLoading, error, mutate } = usePatientTracing(patientUuid);
-  const handleOpenOrEditDefaulterTracingForm = (encounterUUID = '') => {
+  const { formsList } = useConfig<ConfigObject>();
+  const headerTitle = t('missedFollowUp', 'Pérdida en el seguimiento');
+  const { encounters, isLoading, error, mutate } = useMissedFollowUp(patientUuid);
+
+  const openMissedFollowUpForm = (encounterUuid = '') => {
     launchWorkspace(patientFormEntryWorkspace, {
-      workspaceTitle: 'Defaulter Tracing',
-      mutateForm: () => mutate(),
+      workspaceTitle: headerTitle,
+      mutateForm: mutate,
       formInfo: {
-        encounterUuid: encounterUUID,
+        encounterUuid,
         formUuid: formsList?.defaulterTracingFormUuid,
         patientUuid,
         visitTypeUuid: '',
@@ -55,41 +55,43 @@ const DefaulterTracing: React.FC<PatientTracingProps> = ({ patientUuid }) => {
       },
     });
   };
+
   const tableHeader = [
     {
       key: 'missedAppointmentDate',
-      header: t('missedAppointmentDate', 'Date Missed Appointment'),
+      header: t('missedAppointmentDate', 'Fecha de cita perdida'),
     },
     {
       key: 'visitDate',
-      header: t('visitDate', 'Tracing Date'),
+      header: t('followUpDate', 'Fecha de seguimiento'),
     },
     {
       key: 'tracingType',
-      header: t('tracingType', 'Tracing Type'),
+      header: t('followUpType', 'Tipo de seguimiento'),
     },
     {
       key: 'tracingNumber',
-      header: t('tracingNumber', 'Tracing No.'),
+      header: t('followUpNumber', 'N.º de seguimiento'),
     },
     {
       key: 'contacted',
-      header: t('contacted', 'Contacted'),
+      header: t('contacted', 'Contactado'),
     },
     {
       key: 'finalOutcome',
-      header: t('finalOutcome', 'Final Outcome'),
+      header: t('finalOutcome', 'Resultado final'),
     },
   ];
 
-  const tableRows = encounters.map((encounter, index) => {
+  const tableRows = encounters.map((encounter) => {
+    const missedAppointmentDate = getObsFromEncounter(encounter, MissedAppointmentDate_UUID);
+
     return {
-      id: `${encounter.uuid}`,
+      id: encounter.uuid,
       missedAppointmentDate:
-        getObsFromEncounter(encounter, MissedAppointmentDate_UUID) === '--' ||
-        getObsFromEncounter(encounter, MissedAppointmentDate_UUID) == null
+        missedAppointmentDate === '--' || missedAppointmentDate == null
           ? formatDate(parseDate(encounter.encounterDatetime))
-          : formatDate(parseDate(String(getObsFromEncounter(encounter, MissedAppointmentDate_UUID)))),
+          : formatDate(parseDate(String(missedAppointmentDate))),
       visitDate: formatDate(new Date(encounter.encounterDatetime)),
       tracingType: getObsFromEncounter(encounter, TracingType_UUID),
       tracingNumber: getObsFromEncounter(encounter, TracingNumber_UUID),
@@ -99,29 +101,26 @@ const DefaulterTracing: React.FC<PatientTracingProps> = ({ patientUuid }) => {
   });
 
   if (isLoading) {
-    return <DataTableSkeleton headers={tableHeader} aria-label="Defaulter Tracing" />;
+    return <DataTableSkeleton headers={tableHeader} aria-label={headerTitle} />;
   }
+
   if (error) {
-    return <ErrorState error={error} headerTitle={t('defaulterTracing', 'Defaulter Tracing')} />;
+    return <ErrorState error={error} headerTitle={headerTitle} />;
   }
+
   if (encounters.length === 0) {
-    return (
-      <EmptyState
-        displayText={t('defaulterTracing', 'Defaulter Tracing')}
-        headerTitle={t('defaulterTracing', 'Defaulter Tracing')}
-        launchForm={handleOpenOrEditDefaulterTracingForm}
-      />
-    );
+    return <EmptyState displayText={headerTitle} headerTitle={headerTitle} launchForm={openMissedFollowUpForm} />;
   }
+
   return (
     <div className={styles.widgetCard}>
       <CardHeader title={headerTitle}>
         <Button
           size="md"
           kind="ghost"
-          onClick={() => handleOpenOrEditDefaulterTracingForm()}
+          onClick={() => openMissedFollowUpForm()}
           renderIcon={(props) => <Add size={24} {...props} />}
-          iconDescription="Add"
+          iconDescription={t('add', 'Add')}
         >
           {t('add', 'Add')}
         </Button>
@@ -133,37 +132,27 @@ const DefaulterTracing: React.FC<PatientTracingProps> = ({ patientUuid }) => {
         headers={tableHeader}
         render={({ rows, headers, getHeaderProps, getRowProps, getTableProps, getTableContainerProps }) => (
           <TableContainer {...getTableContainerProps()}>
-            <Table size="sm" {...getTableProps()} aria-label={t('defaulterTracing', 'Defaulter tracing')}>
+            <Table size="sm" {...getTableProps()} aria-label={headerTitle}>
               <TableHead>
                 <TableRow>
-                  {headers.map((header, i) => (
-                    <TableHeader
-                      key={i}
-                      {...getHeaderProps({
-                        header,
-                      })}
-                    >
+                  {headers.map((header) => (
+                    <TableHeader key={header.key} {...getHeaderProps({ header })}>
                       {header.header}
                     </TableHeader>
                   ))}
-                  <TableHeader aria-label="overflow actions" />
+                  <TableHeader aria-label={t('actions', 'Actions')} />
                 </TableRow>
               </TableHead>
               <TableBody>
                 {rows.map((row, index) => (
-                  <TableRow
-                    key={row.id}
-                    {...getRowProps({
-                      row,
-                    })}
-                  >
+                  <TableRow key={row.id} {...getRowProps({ row })}>
                     {row.cells.map((cell) => (
                       <TableCell key={cell.id}>{cell.value}</TableCell>
                     ))}
                     <TableCell className="cds--table-column-menu">
-                      <OverflowMenu aria-label="overflow-menu" flipped={false}>
+                      <OverflowMenu aria-label={t('actions', 'Actions')} flipped={false}>
                         <OverflowMenuItem
-                          onClick={() => handleOpenOrEditDefaulterTracingForm(encounters[index]?.uuid)}
+                          onClick={() => openMissedFollowUpForm(encounters[index]?.uuid)}
                           itemText={t('edit', 'Edit')}
                         />
                       </OverflowMenu>
@@ -178,4 +167,5 @@ const DefaulterTracing: React.FC<PatientTracingProps> = ({ patientUuid }) => {
     </div>
   );
 };
-export default DefaulterTracing;
+
+export default MissedFollowUp;

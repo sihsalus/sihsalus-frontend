@@ -27,6 +27,28 @@
       "offline": false
     },
     {
+      "name": "missed-follow-up-dashboard-link",
+      "component": "missedFollowUpDashboardLink",
+      "slot": "patient-chart-dashboard-slot",
+      "order": 15,
+      "meta": {
+        "columns": 1,
+        "columnSpan": 1,
+        "slot": "patient-chart-missed-follow-up-slot",
+        "title": "missedFollowUp",
+        "path": "perdida-seguimiento",
+        "layoutMode": "anchored"
+      }
+    },
+    {
+      "name": "missed-follow-up-dashboard",
+      "slot": "patient-chart-missed-follow-up-slot",
+      "component": "missedFollowUpDashboard",
+      "order": 0,
+      "online": true,
+      "offline": false
+    },
+    {
       "name": "case-monitoring-dashboard-link",
       "component": "caseManagementDashboardLink",
       "slot": "homepage-dashboard-slot",

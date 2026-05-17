@@ -1,10 +1,16 @@
 import { Calendar, Location } from '@carbon/react/icons';
-import { formatDate, PageHeader, useConfig, useSession } from '@openmrs/esm-framework';
+import {
+  formatDate,
+  PageHeader,
+  PageHeaderContent,
+  PharmacyPictogram,
+  useConfig,
+  useSession,
+} from '@openmrs/esm-framework';
 import React from 'react';
 import { useTranslation } from 'react-i18next';
 import { type PharmacyConfig } from '../config-schema';
 import styles from './pharmacy-header.scss';
-import PharmacyIllustration from './pharmacy-illustration.component';
 
 export const PharmacyHeader: React.FC = () => {
   const { t } = useTranslation();
@@ -14,13 +20,7 @@ export const PharmacyHeader: React.FC = () => {
 
   return (
     <PageHeader className={styles.header}>
-      <div className={styles.leftJustifiedItems}>
-        <PharmacyIllustration />
-        <div className={styles.pageLabels}>
-          <p>{t('appName', config.appName)}</p>
-          <p className={styles.pageName}>{t('home', 'Home')}</p>
-        </div>
-      </div>
+      <PageHeaderContent title={t('appName', config.appName)} illustration={<PharmacyPictogram />} />
       <div className={styles.rightJustifiedItems}>
         <div className={styles.dateAndLocation}>
           <Location size={16} />

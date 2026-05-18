@@ -426,7 +426,7 @@ test('updates existing visit note when in edit mode', async () => {
   mockUpdateVisitNote.mockResolvedValueOnce({
     status: 200,
     body: 'Visit note updated',
-  } as Awaited<ReturnType<typeof updateVisitNote>>);
+  } as unknown as Awaited<ReturnType<typeof updateVisitNote>>);
   mockDeletePatientDiagnosis.mockResolvedValue({
     status: 204,
   } as Awaited<ReturnType<typeof deletePatientDiagnosis>>);
@@ -531,7 +531,7 @@ test('allows saving visit note without primary diagnosis when isPrimaryDiagnosis
   mockSaveVisitNote.mockResolvedValueOnce({
     status: 201,
     body: 'Visit note created',
-  } as Awaited<ReturnType<typeof saveVisitNote>>);
+  } as unknown as Awaited<ReturnType<typeof saveVisitNote>>);
   mockFetchDiagnosisConceptsByName.mockResolvedValue(diagnosisSearchResponse.results);
 
   renderVisitNotesForm();

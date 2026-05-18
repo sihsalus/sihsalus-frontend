@@ -89,6 +89,18 @@ interface VisitContextWithUuid {
   };
 }
 
+type EncounterObsValue = string | number | boolean | { uuid?: string; display?: string };
+
+interface EncounterFormObs {
+  concept?: {
+    uuid?: string;
+  };
+  formFieldNamespace?: string;
+  formFieldPath?: string;
+  uuid?: string;
+  value?: EncounterObsValue;
+}
+
 interface DiagnosesDisplayProps {
   fieldName: string;
   isDiagnosisNotSelected: (diagnosis: Concept) => boolean;
@@ -204,12 +216,7 @@ const VisitNotesForm: React.FC<PatientWorkspace2DefinitionProps<VisitNotesFormPr
   const [diagnosisTipos, setDiagnosisTipos] = useState<Record<string, string>>({});
 
   const visitNoteFormSchema = useMemo(() => createSchema(t), [t]);
-  const encounterObs = (encounter?.obs ?? []) as Array<{
-    concept?: { uuid?: string };
-    formFieldPath?: string;
-    uuid?: string;
-    value?: any;
-  }>;
+  const encounterObs = (encounter?.obs ?? []) as Array<EncounterFormObs>;
   const getEncounterObs = useCallback(
     (conceptUuid: string, formFieldPath?: string) =>
       encounterObs.find(
@@ -331,11 +338,7 @@ const VisitNotesForm: React.FC<PatientWorkspace2DefinitionProps<VisitNotesFormPr
 
         // Restore the exact MINSA diagnosis type saved alongside the encounter.
         // The formFieldPath ties the type obs back to its coded diagnosis.
-        const obsArray = (encounter.obs ?? []) as Array<{
-          formFieldNamespace?: string;
-          formFieldPath?: string;
-          value?: any;
-        }>;
+        const obsArray = (encounter.obs ?? []) as Array<EncounterFormObs>;
         const tipoObs = obsArray.filter(
           (o) =>
             o.formFieldNamespace === 'visit-notes' &&
@@ -346,7 +349,12 @@ const VisitNotesForm: React.FC<PatientWorkspace2DefinitionProps<VisitNotesFormPr
           const restored: Record<string, string> = {};
           tipoObs.forEach((o) => {
             const codedUuid = (o.formFieldPath as string).replace('tipo-dx-', '');
-            const valueUuid = typeof o.value === 'object' && o.value !== null ? o.value.uuid : o.value;
+            const valueUuid =
+              typeof o.value === 'object' && o.value !== null
+                ? o.value.uuid
+                : o.value != null
+                  ? String(o.value)
+                  : undefined;
             if (codedUuid && valueUuid) restored[codedUuid] = valueUuid;
           });
           setDiagnosisTipos(restored);
@@ -728,6 +736,7 @@ const VisitNotesForm: React.FC<PatientWorkspace2DefinitionProps<VisitNotesFormPr
       diagnosisTypeDefinitivoUuid,
       diagnosisTypePresuntivoUuid,
       encounter?.diagnoses,
+      encounter?.id,
       encounterNoteTextConceptUuid,
       encounterTypeUuid,
       formConceptUuid,
@@ -1203,15 +1212,15 @@ function DiagnosisSearch({
   const isTablet = useLayoutType() === 'tablet';
   const inputRef = useRef(null);
 
-  const searchInputFocus = () => {
+  const searchInputFocus = useCallback(() => {
     inputRef.current.focus();
-  };
+  }, []);
 
   useEffect(() => {
     if (error) {
       searchInputFocus();
     }
-  }, [error]);
+  }, [error, searchInputFocus]);
 
   return (
     <Controller

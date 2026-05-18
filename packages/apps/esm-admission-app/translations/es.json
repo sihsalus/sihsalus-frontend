@@ -7,7 +7,6 @@
   "admissionReportError": "No se pudo cargar el reporte de admisiones",
   "admissionReportFilters": "Filtros del reporte de admisiones",
   "admissionReportMetrics": "Métricas del reporte de admisiones",
-  "admissionReportSummary": "Admisiones recientes agrupables por servicio/UPS, ubicación y estado.",
   "age": "Edad",
   "ageBirthSex": "Edad/nacimiento/sexo",
   "allStatuses": "Todos los estados",

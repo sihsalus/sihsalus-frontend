@@ -2,12 +2,12 @@
   "add": "Add",
   "delete": "Delete",
   "edit": "Edit",
-  "encounterDeleteFailed": "Encounter couldn't be deleted",
   "encounterDeleted": "Encounter deleted",
+  "encounterDeleteFailed": "Encounter couldn't be deleted",
   "encounterSuccessfullyDeleted": "Encounter successfully deleted",
+  "error": "Error",
   "expandRow": "Expand row",
   "noObservationsFound": "No observations found",
   "psicologia": "Psychology",
-  "psicologiaTooltip": "Register mental health evaluation, counselling, and follow-up as part of integrated care.",
   "psychologyEncounters": "Psychology encounters"
 }

@@ -198,7 +198,9 @@
   "timeRecorded": "Time Recorded",
   "uterineHeight": "Uterine height",
   "uterineHeightChart": "Altura Uterina por Semana Gestacional",
-  "uterineHeightCm": "Altura Uterina (cm)",
+  "uterineHeightCm": "Uterine height (cm)",
+  "maternalHealthForms": "Maternal health forms",
+  "maternalHealthFormsInstructions": "Select the maternal health form you want to complete for this patient.",
   "value": "Value",
   "zScores": "Z-Scores"
 }

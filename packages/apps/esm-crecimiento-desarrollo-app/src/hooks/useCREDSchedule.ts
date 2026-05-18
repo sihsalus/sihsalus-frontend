@@ -177,7 +177,7 @@ export function useCREDSchedule(patientUuid: string): UseCREDScheduleResult {
     nextDueControl,
     overdueControls,
     completedCount,
-    totalCount: 33,
+    totalCount: controls.length,
     isLoading,
     error,
   };

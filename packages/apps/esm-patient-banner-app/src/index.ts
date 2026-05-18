@@ -43,4 +43,5 @@ export const patientBanner = getSyncLifecycle(patientBannerComponent, options);
   t('postalCode', 'Postal code')
   t('state', 'State')
   t('stateProvince', 'State')
+  t('additionalDetails', 'Additional details')
 */

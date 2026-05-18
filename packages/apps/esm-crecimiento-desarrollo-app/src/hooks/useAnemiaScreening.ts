@@ -16,7 +16,7 @@ interface AnemiaScreeningResult {
 }
 
 /**
- * Hook para tamizaje de anemia según NTS 137 (mod. RM 643-2018/MINSA):
+ * Hook para tamizaje de anemia según NTS 238:
  * - Primer dosaje de Hb a los 6 meses
  * - Frecuencia semestral hasta los 2 años
  * - Frecuencia anual a partir de los 2 años

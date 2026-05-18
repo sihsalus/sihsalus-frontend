@@ -10,12 +10,20 @@ const maternalFormKeys: Array<keyof ConfigObject['formsList']> = [
   'maternalHistory',
   'currentPregnancy',
   'atencionPrenatal',
+  'prenatalSupplementationForm',
   'screeningIndicatorsForm',
+  'psychoprophylaxisForm',
   'birthPlanForm',
   'deliveryOrAbortion',
   'SummaryOfLaborAndPostpartum',
   'immediatePostpartumPeriod',
   'postpartumControl',
+  'maternalDischargeForm',
+  'maternalReadmissionForm',
+  'obstetricsServiceForm',
+  'adolescentPregnancyCareForm',
+  'obstetricReferralForm',
+  'culturalBirthPreferencesForm',
   'perinatalMentalHealthForm',
   'maternalViolenceScreeningForm',
   'familyPlanningCounselingForm',
@@ -28,12 +36,20 @@ const formLabels: Partial<Record<keyof ConfigObject['formsList'], string>> = {
   maternalHistory: 'Antecedentes obstétricos',
   currentPregnancy: 'Embarazo actual',
   atencionPrenatal: 'Atención prenatal',
+  prenatalSupplementationForm: 'Suplementación gestante',
   screeningIndicatorsForm: 'Tamizaje prenatal',
+  psychoprophylaxisForm: 'Psicoprofilaxis obstétrica',
   birthPlanForm: 'Plan de parto',
   deliveryOrAbortion: 'Parto o aborto',
   SummaryOfLaborAndPostpartum: 'Resumen de parto y postparto',
   immediatePostpartumPeriod: 'Puerperio inmediato',
   postpartumControl: 'Control de puerperio',
+  maternalDischargeForm: 'Egreso materno',
+  maternalReadmissionForm: 'Reingreso materno',
+  obstetricsServiceForm: 'Servicio de obstetricia',
+  adolescentPregnancyCareForm: 'Atención diferenciada de gestante adolescente',
+  obstetricReferralForm: 'Referencia/contrarreferencia obstétrica',
+  culturalBirthPreferencesForm: 'Pertinencia cultural y preferencia de parto',
   perinatalMentalHealthForm: 'Salud mental perinatal',
   maternalViolenceScreeningForm: 'Tamizaje de violencia gestante',
   familyPlanningCounselingForm: 'Consejería y método anticonceptivo',
@@ -45,6 +61,22 @@ const formLabels: Partial<Record<keyof ConfigObject['formsList'], string>> = {
 const MaternalHealthFormsSelectorWorkspace: React.FC<DefaultPatientWorkspaceProps> = (props) => {
   const { t } = useTranslation();
   const config = useConfig<ConfigObject>();
+  const workspaceProps = props.workspaceProps ?? {};
+  const patientUuid = (props.patientUuid ?? workspaceProps.patientUuid ?? '') as string;
+  const closeWorkspace = (options?: { onWorkspaceClose?: () => void }) => {
+    void props.closeWorkspace({ discardUnsavedChanges: true }).then(() => {
+      options?.onWorkspaceClose?.();
+    });
+  };
+  const promptBeforeClosing = props.promptBeforeClosing ?? (() => {});
+  const closeWorkspaceWithSavedChanges =
+    props.closeWorkspaceWithSavedChanges ??
+    ((options?: { onWorkspaceClose?: () => void }) => {
+      void props.closeWorkspace({ discardUnsavedChanges: false }).then(() => {
+        options?.onWorkspaceClose?.();
+      });
+    });
+  const setTitle = props.setTitle ?? (() => {});
 
   const availableForms = useMemo<Array<CompletedFormInfo>>(() => {
     return maternalFormKeys.reduce<Array<CompletedFormInfo>>((forms, formKey) => {
@@ -80,10 +112,11 @@ const MaternalHealthFormsSelectorWorkspace: React.FC<DefaultPatientWorkspaceProp
 
   return (
     <FormsSelectorWorkspace
-      {...props}
       availableForms={availableForms}
       patientAge=""
       controlNumber={0}
+      patientUuid={patientUuid}
+      closeWorkspace={closeWorkspace}
       title={t('maternalHealthForms', 'Formularios de salud materna')}
       subtitle={t(
         'maternalHealthFormsInstructions',
@@ -91,6 +124,9 @@ const MaternalHealthFormsSelectorWorkspace: React.FC<DefaultPatientWorkspaceProp
       )}
       backWorkspace={null}
       onFormLaunch={launchForm}
+      promptBeforeClosing={promptBeforeClosing}
+      closeWorkspaceWithSavedChanges={closeWorkspaceWithSavedChanges}
+      setTitle={setTitle}
     />
   );
 };

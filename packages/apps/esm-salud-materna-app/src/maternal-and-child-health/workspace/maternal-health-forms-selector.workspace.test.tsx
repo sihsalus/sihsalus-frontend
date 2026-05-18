@@ -51,13 +51,12 @@ describe('MaternalHealthFormsSelectorWorkspace', () => {
     expect(screen.getByRole('button', { name: /antecedentes obstétricos/i })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: /embarazo actual/i })).toBeInTheDocument();
     expect(screen.getByText('backWorkspace:null')).toBeInTheDocument();
-    expect(mockFormsSelectorWorkspace).toHaveBeenCalledWith(
+    expect(mockFormsSelectorWorkspace.mock.calls[0][0]).toEqual(
       expect.objectContaining({
         patientAge: '',
         controlNumber: 0,
         backWorkspace: null,
       }),
-      undefined,
     );
   });
 

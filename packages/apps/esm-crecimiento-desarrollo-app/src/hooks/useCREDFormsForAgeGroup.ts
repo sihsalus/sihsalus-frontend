@@ -50,7 +50,7 @@ export function useCREDFormsForAgeGroup(config: ConfigObject, birthDate: string 
     if (!birthDate || !config?.CREDFormsByAgeGroup || !config?.formsList) return [];
 
     const days = calculateAgeInDays(birthDate);
-    const months = calculateAgeInMonths(birthDate);
+    const months = Math.max(1, calculateAgeInMonths(birthDate));
     const matchedGroup =
       days <= 28
         ? config.CREDFormsByAgeGroup.find(

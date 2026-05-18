@@ -33,6 +33,21 @@ const CREDFormsSelectorWorkspace: React.FC<CREDFormsSelectorWorkspaceProps> = (p
     props.backWorkspace !== undefined
       ? props.backWorkspace
       : ((workspaceProps.backWorkspace ?? 'wellchild-control-form') as string);
+  const patientUuid = (props.patientUuid ?? workspaceProps.patientUuid ?? '') as string;
+  const closeWorkspace = (options?: { onWorkspaceClose?: () => void }) => {
+    void props.closeWorkspace({ discardUnsavedChanges: true }).then(() => {
+      options?.onWorkspaceClose?.();
+    });
+  };
+  const promptBeforeClosing = props.promptBeforeClosing ?? (() => {});
+  const closeWorkspaceWithSavedChanges =
+    props.closeWorkspaceWithSavedChanges ??
+    ((options?: { onWorkspaceClose?: () => void }) => {
+      void props.closeWorkspace({ discardUnsavedChanges: false }).then(() => {
+        options?.onWorkspaceClose?.();
+      });
+    });
+  const setTitle = props.setTitle ?? (() => {});
 
   const launchForm = useCallback((form: Form, encounterUuid: string) => {
     launchWorkspace2(formEntryWorkspace, {
@@ -43,14 +58,18 @@ const CREDFormsSelectorWorkspace: React.FC<CREDFormsSelectorWorkspaceProps> = (p
 
   return (
     <FormsSelectorWorkspace
-      {...props}
       availableForms={availableForms}
       patientAge={patientAge}
       controlNumber={controlNumber}
+      patientUuid={patientUuid}
+      closeWorkspace={closeWorkspace}
       title={title}
       subtitle={subtitle}
       backWorkspace={backWorkspace}
       onFormLaunch={launchForm}
+      promptBeforeClosing={promptBeforeClosing}
+      closeWorkspaceWithSavedChanges={closeWorkspaceWithSavedChanges}
+      setTitle={setTitle}
     />
   );
 };

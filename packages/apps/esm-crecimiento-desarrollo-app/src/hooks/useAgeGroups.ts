@@ -19,7 +19,7 @@ function getConfiguredAgeGroupFromBirthDate(birthDate: string | Date, groups: Ag
     return getAgeGroupInDays(ageInDays, groups);
   }
 
-  const ageInMonths = calculateAgeInMonths(birthDate);
+  const ageInMonths = Math.max(1, calculateAgeInMonths(birthDate));
   return getAgeGroup(
     ageInMonths,
     groups.filter((group) => group.minMonths !== undefined && group.maxMonths !== undefined),

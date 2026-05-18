@@ -5,6 +5,7 @@
     "declaration": true,
     "declarationDir": "dist",
     "emitDeclarationOnly": true,
+    "allowArbitraryExtensions": true,
     "noEmit": false,
     "rootDir": "src",
     "skipLibCheck": true

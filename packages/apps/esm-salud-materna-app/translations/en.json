@@ -121,6 +121,8 @@
   "loading": "Loading...",
   "loadingData": "Loading data",
   "maternaHistory": "Antecedente de Historia Materna",
+  "maternalHealthForms": "Maternal health forms",
+  "maternalHealthFormsInstructions": "Select the maternal health form you want to complete for this patient.",
   "metricDisplayed": "Métrica mostrada",
   "movimientoFetal": "Fetal movement",
   "neverPerformed": "Nunca se ha hecho",
@@ -199,8 +201,6 @@
   "uterineHeight": "Uterine height",
   "uterineHeightChart": "Altura Uterina por Semana Gestacional",
   "uterineHeightCm": "Uterine height (cm)",
-  "maternalHealthForms": "Maternal health forms",
-  "maternalHealthFormsInstructions": "Select the maternal health form you want to complete for this patient.",
   "value": "Value",
   "zScores": "Z-Scores"
 }

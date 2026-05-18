@@ -1,5 +1,27 @@
 import { Type } from '@openmrs/esm-framework';
 
+export const defaultVisitNoteClinicalConceptUuids = {
+  chiefComplaintConceptUuid: '71b58cff-879b-4358-98d5-2165434d4324',
+  illnessDurationConceptUuid: '577876b1-0b6e-4c57-b4c3-7af969a1d501',
+  anamnesisConceptUuid: '6d99603e-ae9d-4838-8a09-ba75e27ff1e9',
+  biologicalFunctionsConceptUuid: '6d99603e-ae9d-4838-8a09-ba75e27ff1e9',
+  appetiteConceptUuid: 'f0000182-0000-4000-8000-000000000182',
+  thirstConceptUuid: 'f0000183-0000-4000-8000-000000000183',
+  sleepConceptUuid: 'f0000184-0000-4000-8000-000000000184',
+  moodConceptUuid: 'f0000185-0000-4000-8000-000000000185',
+  urineConceptUuid: 'f0000186-0000-4000-8000-000000000186',
+  bowelMovementsConceptUuid: 'f0000187-0000-4000-8000-000000000187',
+  soapSubjectiveConceptUuid: '6d99603e-ae9d-4838-8a09-ba75e27ff1e9',
+  soapObjectiveConceptUuid: '160532AAAAAAAAAAAAAAAAAAAAAAAAAAAAAA',
+  soapAssessmentConceptUuid: '160533AAAAAAAAAAAAAAAAAAAAAAAAAAAAAA',
+  soapPlanConceptUuid: '162169AAAAAAAAAAAAAAAAAAAAAAAAAAAAAA',
+  labOrdersConceptUuid: '01fe9e3c-7150-42ca-87db-8813fa630129',
+  proceduresConceptUuid: '162169AAAAAAAAAAAAAAAAAAAAAAAAAAAAAA',
+  prescriptionsConceptUuid: '1e9c5e02-b09f-41c6-83aa-dfed81bd0df5',
+  referralConceptUuid: '3f573194-bade-46bc-b5fd-59c36f5f697a',
+  nextAppointmentConceptUuid: '47ce3ee6-ee9f-4037-901b-2a6381c4b340',
+} as const;
+
 export default {
   clinicianEncounterRole: {
     _type: Type.UUID,
@@ -15,6 +37,101 @@ export default {
     _type: Type.ConceptUuid,
     _default: '162169AAAAAAAAAAAAAAAAAAAAAAAAAAAAAA',
     _description: 'Free text note field intended to capture unstructured description of the patient encounter',
+  },
+  chiefComplaintConceptUuid: {
+    _type: Type.ConceptUuid,
+    _default: defaultVisitNoteClinicalConceptUuids.chiefComplaintConceptUuid,
+    _description: 'Chief complaint / motive for consultation, reused from anamnesis when available',
+  },
+  illnessDurationConceptUuid: {
+    _type: Type.ConceptUuid,
+    _default: defaultVisitNoteClinicalConceptUuids.illnessDurationConceptUuid,
+    _description: 'Duration of current illness, reused from anamnesis when available',
+  },
+  anamnesisConceptUuid: {
+    _type: Type.ConceptUuid,
+    _default: defaultVisitNoteClinicalConceptUuids.anamnesisConceptUuid,
+    _description: 'Chronological illness story / anamnesis concept used as fallback source for subjective notes',
+  },
+  biologicalFunctionsConceptUuid: {
+    _type: Type.ConceptUuid,
+    _default: defaultVisitNoteClinicalConceptUuids.biologicalFunctionsConceptUuid,
+    _description: 'Summary of biological functions saved by visit notes with formFieldPath biological-functions',
+  },
+  appetiteConceptUuid: {
+    _type: Type.ConceptUuid,
+    _default: defaultVisitNoteClinicalConceptUuids.appetiteConceptUuid,
+    _description: 'Appetite biological function concept used to prefill visit notes',
+  },
+  thirstConceptUuid: {
+    _type: Type.ConceptUuid,
+    _default: defaultVisitNoteClinicalConceptUuids.thirstConceptUuid,
+    _description: 'Thirst biological function concept used to prefill visit notes',
+  },
+  sleepConceptUuid: {
+    _type: Type.ConceptUuid,
+    _default: defaultVisitNoteClinicalConceptUuids.sleepConceptUuid,
+    _description: 'Sleep biological function concept used to prefill visit notes',
+  },
+  moodConceptUuid: {
+    _type: Type.ConceptUuid,
+    _default: defaultVisitNoteClinicalConceptUuids.moodConceptUuid,
+    _description: 'Mood biological function concept used to prefill visit notes',
+  },
+  urineConceptUuid: {
+    _type: Type.ConceptUuid,
+    _default: defaultVisitNoteClinicalConceptUuids.urineConceptUuid,
+    _description: 'Urine biological function concept used to prefill visit notes',
+  },
+  bowelMovementsConceptUuid: {
+    _type: Type.ConceptUuid,
+    _default: defaultVisitNoteClinicalConceptUuids.bowelMovementsConceptUuid,
+    _description: 'Bowel movements biological function concept used to prefill visit notes',
+  },
+  soapSubjectiveConceptUuid: {
+    _type: Type.ConceptUuid,
+    _default: defaultVisitNoteClinicalConceptUuids.soapSubjectiveConceptUuid,
+    _description: 'SOAP subjective concept used by outpatient forms',
+  },
+  soapObjectiveConceptUuid: {
+    _type: Type.ConceptUuid,
+    _default: defaultVisitNoteClinicalConceptUuids.soapObjectiveConceptUuid,
+    _description: 'SOAP objective / physical exam concept used by outpatient forms',
+  },
+  soapAssessmentConceptUuid: {
+    _type: Type.ConceptUuid,
+    _default: defaultVisitNoteClinicalConceptUuids.soapAssessmentConceptUuid,
+    _description: 'SOAP assessment concept used by outpatient forms',
+  },
+  soapPlanConceptUuid: {
+    _type: Type.ConceptUuid,
+    _default: defaultVisitNoteClinicalConceptUuids.soapPlanConceptUuid,
+    _description: 'SOAP plan / treatment concept used by outpatient forms',
+  },
+  labOrdersConceptUuid: {
+    _type: Type.ConceptUuid,
+    _default: defaultVisitNoteClinicalConceptUuids.labOrdersConceptUuid,
+    _description: 'Auxiliary exams / lab orders concept used by outpatient forms',
+  },
+  proceduresConceptUuid: {
+    _type: Type.ConceptUuid,
+    _default: defaultVisitNoteClinicalConceptUuids.proceduresConceptUuid,
+    _description: 'Procedures concept used by outpatient forms',
+  },
+  prescriptionsConceptUuid: {
+    _type: Type.ConceptUuid,
+    _default: defaultVisitNoteClinicalConceptUuids.prescriptionsConceptUuid,
+    _description: 'Prescriptions concept used by outpatient forms',
+  },
+  referralConceptUuid: {
+    _type: Type.ConceptUuid,
+    _default: defaultVisitNoteClinicalConceptUuids.referralConceptUuid,
+    _description: 'Referral / interconsultation concept used by outpatient forms',
+  },
+  nextAppointmentConceptUuid: {
+    _type: Type.ConceptUuid,
+    _default: defaultVisitNoteClinicalConceptUuids.nextAppointmentConceptUuid,
+    _description: 'Next appointment concept used by outpatient forms',
   },
   encounterTypeUuid: {
     _type: Type.UUID,
@@ -56,6 +173,25 @@ export interface VisitNoteConfigObject {
   encounterTypeUuid: string;
   formConceptUuid: string;
   visitDiagnosesConceptUuid: string;
+  chiefComplaintConceptUuid: string;
+  illnessDurationConceptUuid: string;
+  anamnesisConceptUuid: string;
+  biologicalFunctionsConceptUuid: string;
+  appetiteConceptUuid: string;
+  thirstConceptUuid: string;
+  sleepConceptUuid: string;
+  moodConceptUuid: string;
+  urineConceptUuid: string;
+  bowelMovementsConceptUuid: string;
+  soapSubjectiveConceptUuid: string;
+  soapObjectiveConceptUuid: string;
+  soapAssessmentConceptUuid: string;
+  soapPlanConceptUuid: string;
+  labOrdersConceptUuid: string;
+  proceduresConceptUuid: string;
+  prescriptionsConceptUuid: string;
+  referralConceptUuid: string;
+  nextAppointmentConceptUuid: string;
   diagnosisTypeConceptUuid: string;
   diagnosisTypePresuntivoUuid: string;
   diagnosisTypeDefinitivoUuid: string;

@@ -50,12 +50,15 @@ import { useSWRConfig } from 'swr';
 import { z } from 'zod';
 import type { ConfigObject } from '../config-schema';
 import type { Concept, Diagnosis, DiagnosisPayload, VisitNotePayload } from '../types';
+import { defaultVisitNoteClinicalConceptUuids } from './visit-note-config-schema';
 import {
   deletePatientDiagnosis,
   fetchDiagnosisConceptsByName,
   savePatientDiagnosis,
   saveVisitNote,
   updateVisitNote,
+  useProviderSignatureDetails,
+  useVisitNoteClinicalContext,
   useVisitNotes,
 } from './visit-notes.resource';
 import styles from './visit-notes-form.scss';
@@ -63,6 +66,40 @@ import styles from './visit-notes-form.scss';
 type VisitNotesFormData = Omit<z.infer<ReturnType<typeof createSchema>>, 'images'> & {
   images?: UploadedFile[];
 };
+
+type VisitNoteTextFieldName =
+  | 'chiefComplaint'
+  | 'illnessDuration'
+  | 'biologicalFunctions'
+  | 'subjective'
+  | 'objective'
+  | 'assessment'
+  | 'plan'
+  | 'auxiliaryExams'
+  | 'procedures'
+  | 'prescriptions'
+  | 'referral'
+  | 'nextAppointment'
+  | 'clinicalNote';
+
+interface VisitContextWithUuid {
+  uuid?: string;
+  visit?: {
+    uuid?: string;
+  };
+}
+
+type EncounterObsValue = string | number | boolean | { uuid?: string; display?: string };
+
+interface EncounterFormObs {
+  concept?: {
+    uuid?: string;
+  };
+  formFieldNamespace?: string;
+  formFieldPath?: string;
+  uuid?: string;
+  value?: EncounterObsValue;
+}
 
 interface DiagnosesDisplayProps {
   fieldName: string;
@@ -78,11 +115,19 @@ interface DiagnosesDisplayProps {
 interface DiagnosisSearchProps {
   control: Control<VisitNotesFormData>;
   error?: object;
-  handleSearch: (fieldName: keyof VisitNotesFormData) => void;
+  handleSearch: (fieldName: 'primaryDiagnosisSearch' | 'secondaryDiagnosisSearch') => void;
   labelText: string;
-  name: 'noteDate' | 'primaryDiagnosisSearch' | 'secondaryDiagnosisSearch' | 'clinicalNote';
+  name: 'primaryDiagnosisSearch' | 'secondaryDiagnosisSearch';
   placeholder: string;
   setIsSearching: (isSearching: boolean) => void;
+}
+
+interface VisitNoteTextAreaRowProps {
+  control: Control<VisitNotesFormData>;
+  labelText: string;
+  name: VisitNoteTextFieldName;
+  placeholder: string;
+  rows?: number;
 }
 
 const createSchema = (_t: TFunction) => {
@@ -90,6 +135,18 @@ const createSchema = (_t: TFunction) => {
     noteDate: z.date(),
     primaryDiagnosisSearch: z.string(),
     secondaryDiagnosisSearch: z.string().optional(),
+    chiefComplaint: z.string().optional(),
+    illnessDuration: z.string().optional(),
+    biologicalFunctions: z.string().optional(),
+    subjective: z.string().optional(),
+    objective: z.string().optional(),
+    assessment: z.string().optional(),
+    plan: z.string().optional(),
+    auxiliaryExams: z.string().optional(),
+    procedures: z.string().optional(),
+    prescriptions: z.string().optional(),
+    referral: z.string().optional(),
+    nextAppointment: z.string().optional(),
     clinicalNote: z.string().optional(),
     images: z.array(z.any()).optional(),
   });
@@ -103,7 +160,7 @@ export interface VisitNotesFormProps {
 const VisitNotesForm: React.FC<PatientWorkspace2DefinitionProps<VisitNotesFormProps, {}>> = ({
   closeWorkspace,
   workspaceProps: { formContext, encounter },
-  groupProps: { patientUuid, patient },
+  groupProps: { patientUuid, patient, visitContext },
 }) => {
   const isEditing: boolean = Boolean(formContext === 'editing' && encounter?.id);
   const searchTimeoutInMs = 500;
@@ -111,17 +168,36 @@ const VisitNotesForm: React.FC<PatientWorkspace2DefinitionProps<VisitNotesFormPr
   const isTablet = useLayoutType() === 'tablet';
   const session = useSession();
   const { isPrimaryDiagnosisRequired, ...config } = useConfig<ConfigObject>();
+  const visitNoteConfig = {
+    ...defaultVisitNoteClinicalConceptUuids,
+    ...config.visitNoteConfig,
+  };
   const memoizedState = useMemo(() => ({ patientUuid, patient }), [patientUuid, patient]);
   const {
     clinicianEncounterRole,
     encounterNoteTextConceptUuid,
+    chiefComplaintConceptUuid,
+    illnessDurationConceptUuid,
+    biologicalFunctionsConceptUuid,
+    soapSubjectiveConceptUuid,
+    soapObjectiveConceptUuid,
+    soapAssessmentConceptUuid,
+    soapPlanConceptUuid,
+    labOrdersConceptUuid,
+    proceduresConceptUuid,
+    prescriptionsConceptUuid,
+    referralConceptUuid,
+    nextAppointmentConceptUuid,
     encounterTypeUuid,
     formConceptUuid,
     diagnosisTypeConceptUuid,
     diagnosisTypePresuntivoUuid,
     diagnosisTypeDefinitivoUuid,
     diagnosisTypeRepetitivoUuid,
-  } = config.visitNoteConfig;
+  } = visitNoteConfig;
+  const currentVisitContext = visitContext as VisitContextWithUuid | null | undefined;
+  const visitUuid = currentVisitContext?.visit?.uuid ?? currentVisitContext?.uuid;
+  const { clinicalContext } = useVisitNoteClinicalContext(patientUuid, visitUuid);
   const [isLoadingPrimaryDiagnoses, setIsLoadingPrimaryDiagnoses] = useState(false);
   const [isLoadingSecondaryDiagnoses, setIsLoadingSecondaryDiagnoses] = useState(false);
   const [isSearching, setIsSearching] = useState(false);
@@ -140,6 +216,27 @@ const VisitNotesForm: React.FC<PatientWorkspace2DefinitionProps<VisitNotesFormPr
   const [diagnosisTipos, setDiagnosisTipos] = useState<Record<string, string>>({});
 
   const visitNoteFormSchema = useMemo(() => createSchema(t), [t]);
+  const encounterObs = (encounter?.obs ?? []) as Array<EncounterFormObs>;
+  const getEncounterObs = useCallback(
+    (conceptUuid: string, formFieldPath?: string) =>
+      encounterObs.find(
+        (obs) => obs.concept?.uuid === conceptUuid && (!formFieldPath || obs.formFieldPath === formFieldPath),
+      ),
+    [encounterObs],
+  );
+  const getEncounterObsValue = useCallback(
+    (conceptUuid: string, formFieldPath?: string) => {
+      const obs = getEncounterObs(conceptUuid, formFieldPath);
+      if (obs?.value == null) {
+        return '';
+      }
+      if (typeof obs.value === 'object') {
+        return String(obs.value.display ?? obs.value.uuid ?? '');
+      }
+      return String(obs.value);
+    },
+    [getEncounterObs],
+  );
 
   const customResolver = useCallback(
     async (data, context, options) => {
@@ -176,11 +273,50 @@ const VisitNotesForm: React.FC<PatientWorkspace2DefinitionProps<VisitNotesFormPr
     defaultValues: {
       primaryDiagnosisSearch: '',
       noteDate: isEditing ? new Date(encounter.rawDatetime) : new Date(),
+      chiefComplaint: isEditing ? getEncounterObsValue(chiefComplaintConceptUuid) : '',
+      illnessDuration: isEditing ? getEncounterObsValue(illnessDurationConceptUuid) : '',
+      biologicalFunctions: isEditing
+        ? getEncounterObsValue(biologicalFunctionsConceptUuid, 'biological-functions')
+        : '',
+      subjective: isEditing ? getEncounterObsValue(soapSubjectiveConceptUuid) : '',
+      objective: isEditing ? getEncounterObsValue(soapObjectiveConceptUuid) : '',
+      assessment: isEditing ? getEncounterObsValue(soapAssessmentConceptUuid) : '',
+      plan: isEditing ? getEncounterObsValue(soapPlanConceptUuid, 'soap-plan') : '',
+      auxiliaryExams: isEditing ? getEncounterObsValue(labOrdersConceptUuid) : '',
+      procedures: isEditing ? getEncounterObsValue(proceduresConceptUuid, 'procedures') : '',
+      prescriptions: isEditing ? getEncounterObsValue(prescriptionsConceptUuid) : '',
+      referral: isEditing ? getEncounterObsValue(referralConceptUuid) : '',
+      nextAppointment: isEditing ? getEncounterObsValue(nextAppointmentConceptUuid) : '',
       clinicalNote: isEditing
         ? String(encounter?.obs?.find((obs) => obs.concept.uuid === encounterNoteTextConceptUuid)?.value || '')
         : '',
     },
   });
+
+  const prefillTextField = useCallback(
+    (fieldName: VisitNoteTextFieldName, value?: string) => {
+      if (isEditing || !value?.trim() || dirtyFields[fieldName] || watch(fieldName)) {
+        return;
+      }
+      setValue(fieldName, value, { shouldDirty: true });
+    },
+    [dirtyFields, isEditing, setValue, watch],
+  );
+
+  useEffect(() => {
+    prefillTextField('chiefComplaint', clinicalContext?.chiefComplaint);
+    prefillTextField('illnessDuration', clinicalContext?.illnessDuration);
+    prefillTextField('biologicalFunctions', clinicalContext?.biologicalFunctions);
+    prefillTextField('subjective', clinicalContext?.subjective);
+    prefillTextField('objective', clinicalContext?.objective);
+    prefillTextField('assessment', clinicalContext?.assessment);
+    prefillTextField('plan', clinicalContext?.plan);
+    prefillTextField('auxiliaryExams', clinicalContext?.auxiliaryExams);
+    prefillTextField('procedures', clinicalContext?.procedures);
+    prefillTextField('prescriptions', clinicalContext?.prescriptions);
+    prefillTextField('referral', clinicalContext?.referral);
+    prefillTextField('nextAppointment', clinicalContext?.nextAppointment);
+  }, [clinicalContext, prefillTextField]);
 
   useEffect(() => {
     if (encounter?.diagnoses?.length) {
@@ -202,11 +338,7 @@ const VisitNotesForm: React.FC<PatientWorkspace2DefinitionProps<VisitNotesFormPr
 
         // Restore the exact MINSA diagnosis type saved alongside the encounter.
         // The formFieldPath ties the type obs back to its coded diagnosis.
-        const obsArray = (encounter.obs ?? []) as Array<{
-          formFieldNamespace?: string;
-          formFieldPath?: string;
-          value?: any;
-        }>;
+        const obsArray = (encounter.obs ?? []) as Array<EncounterFormObs>;
         const tipoObs = obsArray.filter(
           (o) =>
             o.formFieldNamespace === 'visit-notes' &&
@@ -217,7 +349,12 @@ const VisitNotesForm: React.FC<PatientWorkspace2DefinitionProps<VisitNotesFormPr
           const restored: Record<string, string> = {};
           tipoObs.forEach((o) => {
             const codedUuid = (o.formFieldPath as string).replace('tipo-dx-', '');
-            const valueUuid = typeof o.value === 'object' && o.value !== null ? o.value.uuid : o.value;
+            const valueUuid =
+              typeof o.value === 'object' && o.value !== null
+                ? o.value.uuid
+                : o.value != null
+                  ? String(o.value)
+                  : undefined;
             if (codedUuid && valueUuid) restored[codedUuid] = valueUuid;
           });
           setDiagnosisTipos(restored);
@@ -241,6 +378,16 @@ const VisitNotesForm: React.FC<PatientWorkspace2DefinitionProps<VisitNotesFormPr
 
   const locationUuid = session?.sessionLocation?.uuid;
   const providerUuid = session?.currentProvider?.uuid;
+  const encounterProvider = encounter?.encounterProviders?.[0]?.provider;
+  const registeredProviderUuid = isEditing ? encounterProvider?.uuid : providerUuid;
+  const { providerSignatureDetails } = useProviderSignatureDetails(registeredProviderUuid);
+  const registeredProviderName =
+    providerSignatureDetails.name ??
+    encounterProvider?.person?.display ??
+    encounterProvider?.display ??
+    session?.currentProvider?.identifier;
+  const registeredProviderCode =
+    providerSignatureDetails.professionalRegistration ?? providerSignatureDetails.identifier;
 
   const debouncedSearch = useMemo(
     () =>
@@ -273,7 +420,7 @@ const VisitNotesForm: React.FC<PatientWorkspace2DefinitionProps<VisitNotesFormPr
   );
 
   const handleSearch = useCallback(
-    (fieldName: keyof VisitNotesFormData) => {
+    (fieldName: 'primaryDiagnosisSearch' | 'secondaryDiagnosisSearch') => {
       const fieldQuery = watch(fieldName);
       if (fieldQuery) {
         debouncedSearch(fieldQuery, fieldName);
@@ -392,7 +539,23 @@ const VisitNotesForm: React.FC<PatientWorkspace2DefinitionProps<VisitNotesFormPr
 
   const onSubmit = useCallback(
     (data: VisitNotesFormData) => {
-      const { noteDate, clinicalNote, images } = data;
+      const {
+        noteDate,
+        chiefComplaint,
+        illnessDuration,
+        biologicalFunctions,
+        subjective,
+        objective,
+        assessment,
+        plan,
+        auxiliaryExams,
+        procedures,
+        prescriptions,
+        referral,
+        nextAppointment,
+        clinicalNote,
+        images,
+      } = data;
 
       if (isPrimaryDiagnosisRequired && !selectedPrimaryDiagnoses.length) {
         return;
@@ -404,7 +567,34 @@ const VisitNotesForm: React.FC<PatientWorkspace2DefinitionProps<VisitNotesFormPr
         finalNoteDate = null;
       }
 
-      const existingClinicalNoteObs = encounter?.obs?.find((obs) => obs.concept.uuid === encounterNoteTextConceptUuid);
+      const buildTextObs = (conceptUuid: string, value?: string, formFieldPath?: string) => {
+        const trimmedValue = value?.trim();
+        if (!trimmedValue) {
+          return null;
+        }
+        const existingObs = getEncounterObs(conceptUuid, formFieldPath);
+        return {
+          concept: { uuid: conceptUuid, display: '' },
+          value: trimmedValue,
+          ...(formFieldPath && { formFieldNamespace: 'visit-notes', formFieldPath }),
+          ...(existingObs && { uuid: existingObs.uuid }),
+        };
+      };
+
+      const structuredObsList = [
+        buildTextObs(chiefComplaintConceptUuid, chiefComplaint),
+        buildTextObs(illnessDurationConceptUuid, illnessDuration),
+        buildTextObs(biologicalFunctionsConceptUuid, biologicalFunctions, 'biological-functions'),
+        buildTextObs(soapSubjectiveConceptUuid, subjective),
+        buildTextObs(soapObjectiveConceptUuid, objective),
+        buildTextObs(soapAssessmentConceptUuid, assessment),
+        buildTextObs(soapPlanConceptUuid, plan, 'soap-plan'),
+        buildTextObs(labOrdersConceptUuid, auxiliaryExams),
+        buildTextObs(proceduresConceptUuid, procedures, 'procedures'),
+        buildTextObs(prescriptionsConceptUuid, prescriptions),
+        buildTextObs(referralConceptUuid, referral),
+        buildTextObs(nextAppointmentConceptUuid, nextAppointment),
+      ].filter((obs): obs is NonNullable<ReturnType<typeof buildTextObs>> => Boolean(obs));
 
       // Persist the exact MINSA diagnosis type for each CIE-10 diagnosis.
       // This complements patientdiagnoses.certainty, which cannot represent
@@ -417,15 +607,18 @@ const VisitNotesForm: React.FC<PatientWorkspace2DefinitionProps<VisitNotesFormPr
       }));
 
       const obsPayload = [
-        ...(clinicalNote
+        ...(clinicalNote?.trim()
           ? [
               {
                 concept: { uuid: encounterNoteTextConceptUuid, display: '' },
-                value: clinicalNote,
-                ...(existingClinicalNoteObs && { uuid: existingClinicalNoteObs.uuid }),
+                value: clinicalNote.trim(),
+                ...(getEncounterObs(encounterNoteTextConceptUuid) && {
+                  uuid: getEncounterObs(encounterNoteTextConceptUuid).uuid,
+                }),
               },
             ]
           : []),
+        ...structuredObsList,
         ...tipoObsList,
       ];
 
@@ -534,27 +727,39 @@ const VisitNotesForm: React.FC<PatientWorkspace2DefinitionProps<VisitNotesFormPr
     },
     [
       clinicianEncounterRole,
+      chiefComplaintConceptUuid,
       closeWorkspace,
       combinedDiagnoses,
+      biologicalFunctionsConceptUuid,
       diagnosisTipos,
       diagnosisTypeConceptUuid,
       diagnosisTypeDefinitivoUuid,
       diagnosisTypePresuntivoUuid,
       encounter?.diagnoses,
       encounter?.id,
-      encounter?.obs,
       encounterNoteTextConceptUuid,
       encounterTypeUuid,
       formConceptUuid,
+      getEncounterObs,
       globalMutate,
+      illnessDurationConceptUuid,
       isEditing,
       isPrimaryDiagnosisRequired,
+      labOrdersConceptUuid,
       locationUuid,
       mutateAttachments,
       mutateVisitNotes,
+      nextAppointmentConceptUuid,
       patientUuid,
+      prescriptionsConceptUuid,
+      proceduresConceptUuid,
       providerUuid,
+      referralConceptUuid,
       selectedPrimaryDiagnoses.length,
+      soapAssessmentConceptUuid,
+      soapObjectiveConceptUuid,
+      soapPlanConceptUuid,
+      soapSubjectiveConceptUuid,
       t,
     ],
   );
@@ -600,6 +805,29 @@ const VisitNotesForm: React.FC<PatientWorkspace2DefinitionProps<VisitNotesFormPr
                     </ResponsiveWrapper>
                   )}
                 />
+              </Column>
+            </Row>
+            <Row className={styles.row}>
+              <Column sm={1}>
+                <span className={styles.columnLabel}>{t('responsibleProvider', 'Responsible provider')}</span>
+              </Column>
+              <Column sm={3}>
+                <Tile>
+                  <p>
+                    <strong>{registeredProviderName ?? t('providerNotConfigured', 'Provider not configured')}</strong>
+                  </p>
+                  <p>
+                    {t('professionalRegistration', 'Professional registration')}:{' '}
+                    {registeredProviderCode ??
+                      t('professionalRegistrationMissing', 'Not registered in provider profile')}
+                  </p>
+                  <p>
+                    {t(
+                      'providerSignatureSource',
+                      'Signature, seal and registration are resolved from the provider profile that records this encounter.',
+                    )}
+                  </p>
+                </Tile>
               </Column>
             </Row>
             <div className={styles.diagnosesText}>
@@ -765,6 +993,95 @@ const VisitNotesForm: React.FC<PatientWorkspace2DefinitionProps<VisitNotesFormPr
               </Column>
             </Row>
             <Row className={styles.row}>
+              <Column sm={4}>
+                <h3>{t('clinicalSummary', 'Clinical summary')}</h3>
+              </Column>
+            </Row>
+            <VisitNoteTextAreaRow
+              control={control}
+              name="chiefComplaint"
+              labelText={t('chiefComplaint', 'Chief complaint')}
+              placeholder={t('chiefComplaintPlaceholder', 'Main reason for the consultation')}
+            />
+            <VisitNoteTextAreaRow
+              control={control}
+              name="illnessDuration"
+              labelText={t('illnessDuration', 'Illness duration')}
+              placeholder={t('illnessDurationPlaceholder', 'For example: 3 days, 2 weeks')}
+              rows={2}
+            />
+            <VisitNoteTextAreaRow
+              control={control}
+              name="biologicalFunctions"
+              labelText={t('biologicalFunctions', 'Biological functions')}
+              placeholder={t('biologicalFunctionsPlaceholder', 'Appetite, thirst, sleep, mood, urine, bowel movements')}
+            />
+            <Row className={styles.row}>
+              <Column sm={4}>
+                <h3>{t('soapSection', 'SOAP assessment')}</h3>
+              </Column>
+            </Row>
+            <VisitNoteTextAreaRow
+              control={control}
+              name="subjective"
+              labelText={t('subjective', 'Subjective')}
+              placeholder={t('subjectivePlaceholder', 'Symptoms and relevant illness story')}
+            />
+            <VisitNoteTextAreaRow
+              control={control}
+              name="objective"
+              labelText={t('objective', 'Objective / physical exam')}
+              placeholder={t('objectivePlaceholder', 'Physical exam, vital findings and objective data')}
+            />
+            <VisitNoteTextAreaRow
+              control={control}
+              name="assessment"
+              labelText={t('assessment', 'Assessment')}
+              placeholder={t('assessmentPlaceholder', 'Clinical impression and interpretation of findings')}
+            />
+            <VisitNoteTextAreaRow
+              control={control}
+              name="plan"
+              labelText={t('plan', 'Treatment plan')}
+              placeholder={t('planPlaceholder', 'Therapeutic plan, indications and follow-up')}
+            />
+            <Row className={styles.row}>
+              <Column sm={4}>
+                <h3>{t('workPlan', 'Orders and continuity of care')}</h3>
+              </Column>
+            </Row>
+            <VisitNoteTextAreaRow
+              control={control}
+              name="auxiliaryExams"
+              labelText={t('auxiliaryExams', 'Auxiliary exams')}
+              placeholder={t('auxiliaryExamsPlaceholder', 'Requested or reviewed lab and imaging exams')}
+            />
+            <VisitNoteTextAreaRow
+              control={control}
+              name="procedures"
+              labelText={t('procedures', 'Procedures')}
+              placeholder={t('proceduresPlaceholder', 'Procedures performed or requested')}
+            />
+            <VisitNoteTextAreaRow
+              control={control}
+              name="prescriptions"
+              labelText={t('prescriptions', 'Prescriptions')}
+              placeholder={t('prescriptionsPlaceholder', 'Medication and dosage indications')}
+            />
+            <VisitNoteTextAreaRow
+              control={control}
+              name="referral"
+              labelText={t('referral', 'Referral / interconsultation')}
+              placeholder={t('referralPlaceholder', 'Destination service, reason and priority')}
+            />
+            <VisitNoteTextAreaRow
+              control={control}
+              name="nextAppointment"
+              labelText={t('nextAppointment', 'Next appointment')}
+              placeholder={t('nextAppointmentPlaceholder', 'Date or follow-up instruction')}
+              rows={2}
+            />
+            <Row className={styles.row}>
               <Column sm={1}>
                 <span className={styles.columnLabel}>{t('note', 'Note')}</span>
               </Column>
@@ -777,9 +1094,9 @@ const VisitNotesForm: React.FC<PatientWorkspace2DefinitionProps<VisitNotesFormPr
                       <TextArea
                         id="additionalNote"
                         rows={rows}
-                        labelText={t('clinicalNoteLabel', 'Write your notes')}
-                        placeholder={t('clinicalNotePlaceholder', 'Write any notes here')}
-                        value={value}
+                        labelText={t('clinicalNoteLabel', 'Additional notes')}
+                        placeholder={t('clinicalNotePlaceholder', 'Add observations that do not fit the fields above')}
+                        value={value ?? ''}
                         onBlur={onBlur}
                         onChange={(event) => {
                           onChange(event);
@@ -854,6 +1171,35 @@ const VisitNotesForm: React.FC<PatientWorkspace2DefinitionProps<VisitNotesFormPr
   );
 };
 
+function VisitNoteTextAreaRow({ control, labelText, name, placeholder, rows = 3 }: VisitNoteTextAreaRowProps) {
+  return (
+    <Row className={styles.row}>
+      <Column sm={1}>
+        <span className={styles.columnLabel}>{labelText}</span>
+      </Column>
+      <Column sm={3}>
+        <Controller
+          name={name}
+          control={control}
+          render={({ field: { onChange, onBlur, value } }) => (
+            <ResponsiveWrapper>
+              <TextArea
+                id={name}
+                rows={rows}
+                labelText={labelText}
+                placeholder={placeholder}
+                value={value ?? ''}
+                onBlur={onBlur}
+                onChange={onChange}
+              />
+            </ResponsiveWrapper>
+          )}
+        />
+      </Column>
+    </Row>
+  );
+}
+
 function DiagnosisSearch({
   name,
   control,
@@ -866,15 +1212,15 @@ function DiagnosisSearch({
   const isTablet = useLayoutType() === 'tablet';
   const inputRef = useRef(null);
 
-  const searchInputFocus = () => {
+  const searchInputFocus = useCallback(() => {
     inputRef.current.focus();
-  };
+  }, []);
 
   useEffect(() => {
     if (error) {
       searchInputFocus();
     }
-  }, [error]);
+  }, [error, searchInputFocus]);
 
   return (
     <Controller
@@ -896,7 +1242,7 @@ function DiagnosisSearch({
                 onChange(e);
                 handleSearch(name);
               }}
-              value={value instanceof Date ? value.toISOString() : value}
+              value={value ?? ''}
               onBlur={onBlur}
             />
           </ResponsiveWrapper>

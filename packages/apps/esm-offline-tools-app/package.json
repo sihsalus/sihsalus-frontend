@@ -9,7 +9,7 @@
   "scripts": {
     "start": "openmrs develop",
     "serve": "rspack serve --mode=development",
-    "debug": "npm run serve",
+    "debug": "yarn serve",
     "test": "vitest run --passWithNoTests",
     "test:watch": "vitest watch",
     "coverage": "vitest run --coverage --passWithNoTests",

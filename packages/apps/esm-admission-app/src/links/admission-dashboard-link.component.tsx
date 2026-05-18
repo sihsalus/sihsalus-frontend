@@ -1,16 +1,16 @@
 import { ReportData } from '@carbon/react/icons';
 import { ConfigurableLink } from '@openmrs/esm-framework';
 import classNames from 'classnames';
-import { useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 
-import { basePath, moduleName } from '../constants';
+import { moduleName } from '../constants';
 
 export default function AdmissionDashboardLink() {
   const { t } = useTranslation(moduleName);
-  const href = `${globalThis.getOpenmrsSpaBase().slice(0, -1)}${basePath}`;
+  const dashboardPath = '/admission';
+  const href = `${globalThis.getOpenmrsSpaBase().slice(0, -1)}${dashboardPath}`;
 
-  const isActive = useMemo(() => window.location.pathname.includes(basePath), []);
+  const isActive = globalThis.location.pathname.includes(dashboardPath);
 
   return (
     <ConfigurableLink

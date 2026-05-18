@@ -32,7 +32,7 @@ const testProps: PatientWorkspace2DefinitionProps<ProgramsFormProps, {}> = {
   closeWorkspace: mockCloseWorkspace,
   groupProps: {
     patientUuid: mockPatient.id,
-  patient: mockPatient as unknown as fhir.Patient,
+    patient: mockPatient as unknown as fhir.Patient,
     visitContext: null,
     mutateVisitContext: null,
   },

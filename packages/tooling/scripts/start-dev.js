@@ -17,6 +17,7 @@ const logFail = (msg) => console.error(`${chalk.red.bold('[start-dev]')} ${chalk
 const defaultBackend = 'http://gidis-hsc-dev.inf.pucp.edu.pe';
 const backend = process.env.SIHSALUS_BACKEND_URL || defaultBackend;
 const backendSource = hadBackendBeforeDotenv ? 'shell' : dotenvResult.parsed?.SIHSALUS_BACKEND_URL ? '.env' : 'default';
+const requireBackendUrl = process.env.SIHSALUS_REQUIRE_BACKEND_URL === 'true';
 const authMode = process.env.SIHSALUS_AUTH_MODE || 'openmrs';
 const fhirBase = process.env.SIHSALUS_FHIR_BASE || `${backend}/openmrs/ws/fhir2/R4`;
 const proxyPort = Number(process.env.SIHSALUS_PORT) || 8080;
@@ -60,6 +61,12 @@ function logStartupSummary({ mode, apps = [] }) {
 
 if (allowSelfSignedTls) {
   process.env.NODE_TLS_REJECT_UNAUTHORIZED = '0';
+}
+
+if (requireBackendUrl && backendSource === 'default') {
+  logFail('SIHSALUS_BACKEND_URL is required because SIHSALUS_REQUIRE_BACKEND_URL=true.');
+  logFail('  Set SIHSALUS_BACKEND_URL in the shell or in .env.');
+  process.exit(1);
 }
 
 function rewriteLocalDevSetCookie(setCookie) {

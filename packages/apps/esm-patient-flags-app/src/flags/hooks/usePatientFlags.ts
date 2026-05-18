@@ -50,6 +50,10 @@ export function usePatientFlags(patientUuid: string) {
   const patientFlags = patientFlagsData?.data?.results ?? [];
   const flagUuids = patientFlags.map((pf) => pf.flag.uuid);
 
+  // TODO backend: expose a patient-scoped endpoint that returns patient flags with their flag definition,
+  // priority, and tags in one response. The current REST API forces the frontend to fetch all flag
+  // definitions (`/patientflags/flag?v=full`) and join them client-side, which is wasteful and will not
+  // scale once qlty/prod have real flag definitions configured.
   const flagDefinitionsUrl = flagUuids.length > 0 ? `${restBaseUrl}/patientflags/flag?v=full` : null;
 
   const {

@@ -1,3 +1,4 @@
+import { WarningAlt } from '@carbon/react/icons';
 import { ConfigurableLink } from '@openmrs/esm-framework';
 import classNames from 'classnames';
 import React, { useMemo } from 'react';
@@ -28,7 +29,10 @@ function DashboardExtension({ dashboardLinkConfig }: { dashboardLinkConfig: Dash
       })}
       to={`${spaBasePath}/${name}`}
     >
-      {t(title)}
+      <span className="sihsalus-side-nav__item">
+        <WarningAlt aria-hidden="true" className="sihsalus-side-nav__icon" size={20} />
+        <span className="sihsalus-side-nav__text">{t(title, title)}</span>
+      </span>
     </ConfigurableLink>
   );
 }

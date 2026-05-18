@@ -6,6 +6,9 @@ import { createProxyMiddleware } from 'http-proxy-middleware';
 
 import { logInfo, logWarn, removeTrailingSlash } from '../utils';
 
+const upstreamSpaUrl = 'https://dev3.openmrs.org/openmrs/spa';
+const backendFetchTimeoutMs = Number(process.env.SIHSALUS_BACKEND_FETCH_TIMEOUT_MS) || 5000;
+
 export interface StartArgs {
   port: number;
   host: string;
@@ -15,13 +18,21 @@ export interface StartArgs {
 }
 
 async function fetchBackendJson(url: string): Promise<Record<string, unknown> | null> {
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), backendFetchTimeoutMs);
+
   try {
-    const response = await fetch(url);
+    const response = await fetch(url, { signal: controller.signal });
     if (response.ok) {
       return (await response.json()) as Record<string, unknown>;
     }
-  } catch {
+  } catch (error) {
+    if (error instanceof Error && error.name === 'AbortError') {
+      logWarn(`Timed out fetching ${url} after ${backendFetchTimeoutMs}ms`);
+    }
     // Backend not reachable — that's fine, we proceed with local-only
+  } finally {
+    clearTimeout(timeout);
   }
   return null;
 }
@@ -167,11 +178,11 @@ export async function runStart(args: StartArgs) {
   const pageUrl = `http://${host}:${port}${spaPath}`;
   const allowSelfSignedTls = process.env.SIHSALUS_ALLOW_SELF_SIGNED_TLS === 'true';
 
-  // Rewrite index.html to use local importmap and routes instead of dev3.openmrs.org
+  // Rewrite index.html to use local importmap and routes instead of the upstream demo shell URLs.
   // Also disable offline/service-worker to prevent stale caches during local dev.
   const indexContent = readFileSync(resolve(shellDist, 'index.html'), 'utf8')
-    .replace(/https:\/\/dev3\.openmrs\.org\/openmrs\/spa\/importmap\.json/g, `${spaPath}/importmap.json`)
-    .replace(/https:\/\/dev3\.openmrs\.org\/openmrs\/spa/g, spaPath)
+    .replaceAll(`${upstreamSpaUrl}/importmap.json`, `${spaPath}/importmap.json`)
+    .replaceAll(upstreamSpaUrl, spaPath)
     .replace(/href="\/openmrs\/spa/g, `href="${spaPath}`)
     .replace(/src="\/openmrs\/spa/g, `src="${spaPath}`)
     .replace(/offline:\s*true/g, 'offline: false');

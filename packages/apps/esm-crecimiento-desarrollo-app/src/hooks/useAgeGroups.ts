@@ -9,9 +9,22 @@ import {
   calculateAgeInDays,
   calculateAgeInMonths,
   getAgeGroup,
-  getAgeGroupFromBirthDate,
   getAgeGroupInDays,
 } from '../utils/age-group-utils';
+
+function getConfiguredAgeGroupFromBirthDate(birthDate: string | Date, groups: AgeGroup[]): AgeGroup | null {
+  const ageInDays = calculateAgeInDays(birthDate);
+
+  if (ageInDays <= 28) {
+    return getAgeGroupInDays(ageInDays, groups);
+  }
+
+  const ageInMonths = Math.max(1, calculateAgeInMonths(birthDate));
+  return getAgeGroup(
+    ageInMonths,
+    groups.filter((group) => group.minMonths !== undefined && group.maxMonths !== undefined),
+  );
+}
 
 /**
  * Hook que proporciona funciones relacionadas con grupos etarios usando la configuración del sistema
@@ -25,14 +38,14 @@ export function useAgeGroups() {
   const getAgeGroupForDisplay = useMemo(() => {
     return (birthDate: string | Date): AgeGroup | null => {
       if (!birthDate || ageGroupsCRED.length === 0) return null;
-      return getAgeGroupFromBirthDate(birthDate, ageGroupsCRED);
+      return getConfiguredAgeGroupFromBirthDate(birthDate, ageGroupsCRED);
     };
   }, [ageGroupsCRED]);
 
   const getAgeGroupForForms = useMemo(() => {
     return (birthDate: string | Date): AgeGroup | null => {
       if (!birthDate || ageGroupsForCREDForms.length === 0) return null;
-      return getAgeGroupFromBirthDate(birthDate, ageGroupsForCREDForms);
+      return getConfiguredAgeGroupFromBirthDate(birthDate, ageGroupsForCREDForms);
     };
   }, [ageGroupsForCREDForms]);
 
@@ -40,7 +53,10 @@ export function useAgeGroups() {
     return (ageInMonths: number, useFormsConfig = false): AgeGroup | null => {
       const groups = useFormsConfig ? ageGroupsForCREDForms : ageGroupsCRED;
       if (groups.length === 0) return null;
-      return getAgeGroup(ageInMonths, groups);
+      return getAgeGroup(
+        ageInMonths,
+        groups.filter((group) => group.minMonths !== undefined && group.maxMonths !== undefined),
+      );
     };
   }, [ageGroupsCRED, ageGroupsForCREDForms]);
 

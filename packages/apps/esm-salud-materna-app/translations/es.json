@@ -199,6 +199,8 @@
   "uterineHeight": "Altura uterina (cm)",
   "uterineHeightChart": "Altura Uterina por Semana Gestacional",
   "uterineHeightCm": "Altura Uterina (cm)",
+  "maternalHealthForms": "Formularios de salud materna",
+  "maternalHealthFormsInstructions": "Seleccione el formulario de salud materna que desea completar para esta paciente.",
   "value": "Valor",
   "zScores": "Z-Scores"
 }

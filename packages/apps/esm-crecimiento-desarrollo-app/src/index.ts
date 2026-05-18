@@ -1,6 +1,5 @@
 import { defineConfigSchema, getAsyncLifecycle, getSyncLifecycle } from '@openmrs/esm-framework';
 import { createDashboardLink } from '@openmrs/esm-patient-common-lib';
-import { FormsSelectorWorkspace } from '@sihsalus/esm-sihsalus-shared';
 import type React from 'react';
 
 import { createDashboardGroup } from './clinical-view-group/createDashboardGroup';
@@ -49,6 +48,7 @@ import VaccinationSchedule from './well-child-care/components/vaccination-schema
 import { EarlyStimulation } from './well-child-care/early-stimulation.component';
 import { NeonatalCare } from './well-child-care/neonatal-care.component';
 import { WellChildControl } from './well-child-care/well-child-control.component';
+import CREDFormsSelectorWorkspace from './well-child-care/workspace/cred-forms-selector.workspace';
 
 const moduleName = '@sihsalus/esm-cred-app';
 const options = {
@@ -204,7 +204,7 @@ export const antecedentesPatologicosFormWorkspace = getAsyncLifecycle(
   () => import('./well-child-care/antecedentes-patologicos-form.workspace'),
   options,
 );
-export const formsSelectorWorkspace = getSyncLifecycle(FormsSelectorWorkspace, options);
+export const formsSelectorWorkspace = getSyncLifecycle(CREDFormsSelectorWorkspace, options);
 export const testPeruanoFormWorkspace = getAsyncLifecycle(
   () => import('./well-child-care/workspace/test-peruano-form/test-peruano-form.component'),
   options,

@@ -18,7 +18,11 @@
   "scripts": {
     "start": "node packages/tooling/scripts/start-dev.js",
     "build": "turbo run build",
+    "build:apps": "turbo run build --filter='./packages/apps/*'",
+    "assemble": "node packages/tooling/scripts/generate-assemble-config.js && node packages/tooling/scripts/assemble-importmap.js && node packages/tooling/scripts/validate-spa-artifact.js",
     "package:spa": "turbo run build --filter='./packages/apps/*' && node packages/tooling/scripts/generate-assemble-config.js && node packages/tooling/scripts/assemble-importmap.js && node packages/tooling/scripts/validate-spa-artifact.js",
+    "serve": "openmrs start",
+    "serve:prod": "yarn build:apps && yarn assemble && openmrs start",
     "test": "cross-env TZ=UTC turbo run test --concurrency=1",
     "test:e2e": "playwright test",
     "format": "biome format --write .",

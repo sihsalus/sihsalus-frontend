@@ -10,7 +10,7 @@ import { getTemplateOrderBasketItem } from './drug-search/drug-search.resource';
 
 vi.mock('@openmrs/esm-framework', async () => {
   const actual = await vi.importActual('@openmrs/esm-framework');
-  const React = (await vi.importActual<typeof import('react')>('react'));
+  const React = await vi.importActual<typeof import('react')>('react');
 
   return {
     ...actual,

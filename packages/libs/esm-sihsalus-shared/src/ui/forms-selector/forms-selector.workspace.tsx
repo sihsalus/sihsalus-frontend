@@ -17,7 +17,7 @@ export interface FormsSelectorWorkspaceAdditionalProps {
   controlNumber: number;
   title?: string;
   subtitle?: string;
-  backWorkspace?: string;
+  backWorkspace?: string | null;
   onComplete?: () => void;
   onFormLaunch: FormLaunchHandler; // Generic form launcher function
 }
@@ -42,10 +42,15 @@ export default function FormsSelectorWorkspace({
   const { t } = useTranslation();
   const isTablet = useLayoutType() === 'tablet';
   const [completedForms, setCompletedForms] = useState<Set<string>>(new Set());
+  const shouldShowControlInfo = Boolean(patientAge) || controlNumber > 0;
 
   const backToPreviousWorkspace = useCallback(() => {
     closeWorkspace({
-      onWorkspaceClose: () => launchWorkspace(backWorkspace),
+      onWorkspaceClose: () => {
+        if (backWorkspace) {
+          launchWorkspace(backWorkspace);
+        }
+      },
       closeWorkspaceGroup: false,
     });
   }, [closeWorkspace, backWorkspace]);
@@ -92,14 +97,20 @@ export default function FormsSelectorWorkspace({
         {/* Header info */}
         <div>
           <div className={styles.sectionTitle}>{title || t('formsSelection', 'Selección de Formularios')}</div>
-          <div className={styles.controlInfoRow}>
-            <span>
-              {t('patientAge', 'Edad del paciente')}: {patientAge}
-            </span>
-            <span>
-              {t('controlNumber', 'Control #')}: {controlNumber}
-            </span>
-          </div>
+          {shouldShowControlInfo && (
+            <div className={styles.controlInfoRow}>
+              {patientAge && (
+                <span>
+                  {t('patientAge', 'Edad del paciente')}: {patientAge}
+                </span>
+              )}
+              {controlNumber > 0 && (
+                <span>
+                  {t('controlNumber', 'Control #')}: {controlNumber}
+                </span>
+              )}
+            </div>
+          )}
         </div>
 
         {/* Instructions */}

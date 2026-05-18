@@ -13,7 +13,19 @@
       "component": "admissionHomeDashboardLink",
       "name": "admission-home-dashboard-link",
       "slot": "homepage-dashboard-slot",
+      "meta": {
+        "name": "admission",
+        "slot": "admission-dashboard-slot",
+        "title": "admissionReportByUps"
+      },
       "order": 20
+    },
+    {
+      "component": "admissionHomeDashboard",
+      "name": "admission-home-dashboard",
+      "slot": "admission-dashboard-slot",
+      "online": true,
+      "offline": false
     },
     {
       "component": "admissionMergePatientsAction",

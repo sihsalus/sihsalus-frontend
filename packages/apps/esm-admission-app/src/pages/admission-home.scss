@@ -6,6 +6,17 @@
   padding: 0;
 }
 
+.visuallyHidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
 .header {
   display: flex;
   align-items: center;
@@ -16,6 +27,10 @@
   background-color: $ui-02;
   border: 1px solid $ui-03;
   border-left: 0;
+}
+
+.headerAction {
+  text-decoration: none;
 }
 
 .content {

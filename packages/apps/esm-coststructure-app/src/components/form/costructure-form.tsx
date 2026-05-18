@@ -8,8 +8,8 @@ import { useTranslation } from 'react-i18next';
 
 import { baseUrl } from '../../constants';
 import { type Procedure } from '../../hooks/use-get-procedures';
+import { calculateDepreciationByMinutes, calculateTotalValidConsruction } from '../../utils/infrastructure';
 import PageHeader from '../ui/PageHeader/pageHeader';
-
 import { ProcedureAutocomplete } from './autocomplete/procedure-autocomplete';
 import styles from './form.scss';
 import { type CostStructureFormValues, costStructureSchema } from './schema/costructure-schema';
@@ -20,6 +20,52 @@ import InfrastructureTab from './tabs/infrastructure-tab';
 import PublicServicesTab from './tabs/public-service-tab';
 import SummaryTab from './tabs/summary-tab';
 import SupplyTab from './tabs/supply-tab';
+
+function toCostStructureDto(data: CostStructureFormValues) {
+  return {
+    procedure: data.procedure,
+    anualServiceCost: {
+      energyAnnualCost: data.annualServicesCost.annualEnergyCost,
+      waterAnnualCost: data.annualServicesCost.annualWaterCost,
+      phonenetAnnualCost: data.annualServicesCost.annualPhoneNetCost,
+      generalAdminAnnualCost: data.annualServicesCost.annualAdministrativeCost,
+      generalServiceAnnualCost: data.annualServicesCost.annualGeneralCost,
+    },
+    humanResourceCosts: data.humanResourceCost.map(
+      ({ humanResourceId, quantity, timeMinutes, costMinutes, priceMonth }) => ({
+        humanResourceId,
+        quantity,
+        timeMinutes,
+        costMinutes,
+        priceMonth,
+      }),
+    ),
+    equipmentCosts: data.equipmentCost.map(({ equipmentId, price, quantity, timeMinutes }) => ({
+      equipmentId,
+      price,
+      quantity,
+      timeMinutes,
+    })),
+    infrastructureCosts: data.infrastructures.map((infrastructure, index) => {
+      const totalConstruction = calculateTotalValidConsruction(infrastructure.areaM2, infrastructure.constructionCost);
+
+      return {
+        infrastructureId: infrastructure.infrastructureId,
+        annualUnitDep: calculateDepreciationByMinutes(totalConstruction),
+        performanceTimeService: infrastructure.timePerformanceMinutes,
+        productionProyected: data.publicServices[index]?.productionProyected ?? 0,
+      };
+    }),
+    supplyCosts: data.supplyCost.map(({ supplyId, adquisitionPrice, unitCost, quantityUsed, timeMinutes }) => ({
+      supplyId,
+      acquisitionPrice: adquisitionPrice,
+      unitCost,
+      quantityUsed,
+      timeMinutes,
+      partialCost: unitCost * quantityUsed,
+    })),
+  };
+}
 
 export default function CostStructureForm() {
   const [selectedTab, setSelectedTab] = useState(0);
@@ -58,7 +104,7 @@ export default function CostStructureForm() {
       await openmrsFetch(`${baseUrl}`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: data,
+        body: JSON.stringify(toCostStructureDto(data)),
       });
       showSnackbar({
         kind: 'success',

@@ -24,7 +24,7 @@ interface ScreeningIndicatorsResult {
 
 /**
  * Hook para tamizajes obligatorios:
- * - CRED (NTS 137): Hemoglobina, desarrollo (EEDP/TEPSI), violencia, visual, auditivo
+ * - CRED (NTS 238): Hemoglobina, desarrollo (EDI/vigilancia), violencia, visual, auditivo
  * - Prenatal (NTS 159): VIH, Sífilis (RPR/VDRL), Hepatitis B (HBsAg)
  *
  * Usa: config.anemiaScreening.hemoglobinaConceptUuid para Hb

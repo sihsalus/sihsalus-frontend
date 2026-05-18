@@ -74,17 +74,19 @@ export function PatientBannerPatientInfo({ patient, renderedFrom }: PatientBanne
         <div className={styles.flexRow}>
           <span className={styles.patientName}>{name}</span>
 
-          {genderInfo && (
-            <div className={styles.gender}>
-              <GenderIcon gender={genderInfo.iconKey} />
-              <span>{genderInfo.displayText}</span>
-            </div>
-          )}
-
           <ExtensionSlot className={styles.tagsSlot} name="patient-banner-tags-slot" state={extensionState} />
         </div>
       </div>
       <div className={styles.demographics}>
+        {genderInfo && (
+          <>
+            <span className={styles.gender}>
+              <GenderIcon gender={genderInfo.iconKey} />
+              <span>{genderInfo.displayText}</span>
+            </span>
+            <span className={styles.separator}>&middot;</span>
+          </>
+        )}
         {patient.birthDate && (
           <>
             <span>{age(patient.birthDate)}</span>

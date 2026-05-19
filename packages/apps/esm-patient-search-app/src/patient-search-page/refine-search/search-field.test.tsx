@@ -6,6 +6,7 @@ import { type AdvancedPatientSearchState, type SearchFieldConfig } from '../../t
 
 import { usePersonAttributeType } from './person-attributes.resource';
 import { SearchField } from './search-field.component';
+import styles from './search-field.scss';
 
 vi.mock('./person-attributes.resource', async () => ({
   usePersonAttributeType: vi.fn(),

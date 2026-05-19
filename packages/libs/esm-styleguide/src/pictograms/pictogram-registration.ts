@@ -9,6 +9,7 @@ import ctScan from './svgs/ct-scan.svg';
 import dentistry from './svgs/dentistry.svg';
 import emergencyDepartment from './svgs/emergency-department.svg';
 import facility from './svgs/facility.svg';
+import fua from './svgs/fua.svg';
 import geriatrics from './svgs/geriatrics.svg';
 import gynaecology from './svgs/gynaecology.svg';
 import inPatient from './svgs/in-patient.svg';
@@ -37,6 +38,7 @@ export function setupPictograms() {
   addPictogramSvg('omrs-pict-dentistry', dentistry);
   addPictogramSvg('omrs-pict-emergency-department', emergencyDepartment);
   addPictogramSvg('omrs-pict-facility', facility);
+  addPictogramSvg('omrs-pict-fua', fua);
   addPictogramSvg('omrs-pict-geriatrics', geriatrics);
   addPictogramSvg('omrs-pict-gynaecology', gynaecology);
   addPictogramSvg('omrs-pict-in-patient', inPatient);

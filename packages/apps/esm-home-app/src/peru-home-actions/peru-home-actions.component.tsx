@@ -10,6 +10,7 @@ import { ConfigurableLink } from '@openmrs/esm-framework';
 import React from 'react';
 import { useTranslation } from 'react-i18next';
 
+import fuaIllustration from '../../../../libs/esm-styleguide/src/pictograms/svgs/fua.svg';
 import styles from './peru-home-actions.scss';
 
 type ActionIcon = React.ComponentType<{ className?: string; size?: number | string }>;
@@ -19,7 +20,8 @@ type Action = {
   descriptionKey: string;
   href: string;
   icon: ActionIcon;
-  illustrationId: string;
+  illustrationId?: string;
+  illustrationSrc?: string;
   toneClass: string;
 };
 
@@ -81,23 +83,31 @@ const actions = [
     descriptionKey: 'fuaDescription',
     href: '/home/fua-request',
     icon: Document,
-    /*No encontré un ícono que representara esta acción xd*/
-    illustrationId: 'omrs-pict-assessment-1',
+    illustrationSrc: fuaIllustration,
     toneClass: 'fuaAction',
   },
 ] satisfies Array<Action>;
 
-const ActionIllustration: React.FC<{ illustrationId: string }> = ({ illustrationId }) => (
-  <svg
-    className={styles.actionIllustration}
-    viewBox="0 0 80 80"
-    preserveAspectRatio="xMidYMid meet"
-    focusable="false"
-    aria-hidden="true"
-  >
-    <use href={`#${illustrationId}`} />
-  </svg>
-);
+const ActionIllustration: React.FC<{ illustrationId?: string; illustrationSrc?: string }> = ({
+  illustrationId,
+  illustrationSrc,
+}) => {
+  if (illustrationSrc) {
+    return <img className={styles.actionIllustration} src={illustrationSrc} alt="" />;
+  }
+
+  return (
+    <svg
+      className={styles.actionIllustration}
+      viewBox="0 0 80 80"
+      preserveAspectRatio="xMidYMid meet"
+      focusable="false"
+      aria-hidden="true"
+    >
+      <use href={`#${illustrationId}`} />
+    </svg>
+  );
+};
 
 const PeruHomeActions: React.FC = () => {
   const { t } = useTranslation();
@@ -105,7 +115,7 @@ const PeruHomeActions: React.FC = () => {
 
   return (
     <section className={styles.quickActions} aria-label={t('peruHomeActions', 'Accesos de admisión')}>
-      {actions.map(({ key, descriptionKey, href, icon: Icon, illustrationId, toneClass }) => (
+      {actions.map(({ key, descriptionKey, href, icon: Icon, illustrationId, illustrationSrc, toneClass }) => (
         <ConfigurableLink key={key} className={`${styles.actionLink} ${styles[toneClass]}`} to={`${spaBase}${href}`}>
           <span className={styles.actionHeader}>
             {/*<Icon className={styles.actionIcon} size={24} />*/}
@@ -115,7 +125,7 @@ const PeruHomeActions: React.FC = () => {
             </span>
           </span>
           <span className={styles.illustrationArea} aria-hidden="true">
-            <ActionIllustration illustrationId={illustrationId} />
+            <ActionIllustration illustrationId={illustrationId} illustrationSrc={illustrationSrc} />
           </span>
         </ConfigurableLink>
       ))}

@@ -374,7 +374,7 @@ const CreateReport: React.FC<CreateReportProps> = ({ model, closeWorkspace }) =>
                   id="report"
                   titleText={t('reportName', 'Report name')}
                   items={Array.isArray(reportTypes) ? reportTypes : [reportTypes]}
-                  itemToString={(item) => `${item?.name ?? item?.name ?? ''}`}
+                  itemToString={(item) => item?.name ?? ''}
                   placeholder={t('filter', 'Filter...')}
                   onChange={({ selectedItem }) => {
                     onChange(selectedItem.name);

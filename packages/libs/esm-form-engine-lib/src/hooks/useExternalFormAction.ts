@@ -43,7 +43,7 @@ interface UseExternalFormActionProps {
  *   new CustomEvent('ampath-form-action', {
  *     detail: {
  *       formUuid: '289417aa-31d5-3a06-bae8-a22d870bcf1d',
- *       patientUuid: '9ee7a509-d639-4d91-979a-cd605b4d0ad1/chart',
+ *       patientUuid: '9ee7a509-d639-4d91-979a-cd605b4d0ad1',
  *       action: 'onSubmit',
  *     },
  *   })

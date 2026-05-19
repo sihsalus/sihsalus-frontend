@@ -28,6 +28,14 @@
       "offline": true
     },
     {
+      "name": "global-home-nav-link",
+      "slot": "global-nav-menu-slot",
+      "component": "globalHomeNavLink",
+      "order": -100,
+      "online": true,
+      "offline": true
+    },
+    {
       "name": "home-widget-db-link",
       "slot": "homepage-dashboard-slot",
       "component": "homeWidgetDbLink",

@@ -46,9 +46,7 @@ function typePredicate(result: unknown): result is EvaluateReturnType {
     typeof result === 'number' ||
     typeof result === 'boolean' ||
     typeof result === 'undefined' ||
-    typeof result === 'object' || // Support for arbitrary objects
-    result === null ||
-    result === undefined
+    typeof result === 'object' // Support for null and arbitrary objects
   );
 }
 

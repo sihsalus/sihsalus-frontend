@@ -13,6 +13,8 @@ export enum ReportParameter {
   StockItem = 'StockItem',
   Limit = 'Limit',
   MostLeastMoving = 'MostLeastMoving',
+  Fulfillment = 'Fullfillment',
+  /** @deprecated Use `Fulfillment` instead. */
   Fullfillment = 'Fullfillment',
 }
 

@@ -106,10 +106,9 @@ const PeruHomeActions: React.FC = () => {
 
   return (
     <section className={styles.quickActions} aria-label={t('peruHomeActions', 'Accesos de admisión')}>
-      {actions.map(({ key, descriptionKey, href, icon: Icon, illustrationId, toneClass }) => (
+      {actions.map(({ key, descriptionKey, href, illustrationId, toneClass }) => (
         <ConfigurableLink key={key} className={`${styles.actionLink} ${styles[toneClass]}`} to={`${spaBase}${href}`}>
           <span className={styles.actionHeader}>
-            {/*<Icon className={styles.actionIcon} size={24} />*/}
             <span className={styles.actionText}>
               <strong>{t(key)}</strong>
               <span>{t(descriptionKey)}</span>

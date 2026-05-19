@@ -59,7 +59,7 @@ export const costStructureSchema = z.object({
   supplyCost: z.array(
     z.object({
       supplyId: z.number().positive('Debe seleccionar un insumo válido'),
-      adquisitionPrice: z.number().nonnegative(),
+      acquisitionPrice: z.number().nonnegative(),
       quantityUsed: z.number().nonnegative(),
       timeMinutes: z.number().optional(),
       unitAcquisition: z.string(),

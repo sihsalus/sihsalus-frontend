@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { useCallback, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { reportError } from '../utils/error-utils';
 
@@ -58,8 +58,8 @@ export function useExternalFormAction({
 }: UseExternalFormActionProps): void {
   const { t } = useTranslation();
 
-  useEffect(() => {
-    const handleFormAction = (event: Event): void => {
+  const handleFormAction = useCallback(
+    (event: Event): void => {
       const customEvent = event as CustomEvent<SubmitEventDetail>;
       const detail = customEvent.detail;
 
@@ -93,12 +93,18 @@ export function useExternalFormAction({
             reportError(new Error(`Unsupported form action: "${action}"`), t('formActionFailed', 'Form action failed'));
             break;
         }
+      } else {
+        // Intentionally ignore events that target a different form/patient instance.
+        // This hook listens globally, but only acts on events addressed to its current context.
       }
-    };
+    },
+    [formUuid, patientUuid, setIsSubmitting, setIsValidating, t],
+  );
 
+  useEffect(() => {
     window.addEventListener('ampath-form-action', handleFormAction);
     return (): void => {
       window.removeEventListener('ampath-form-action', handleFormAction);
     };
-  }, [formUuid, patientUuid, setIsSubmitting, setIsValidating, t]);
+  }, [handleFormAction]);
 }

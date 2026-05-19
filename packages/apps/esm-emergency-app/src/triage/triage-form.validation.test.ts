@@ -172,7 +172,7 @@ describe('assessValue', () => {
 // ============================================================================
 
 describe('validateVitalsAgainstRanges', () => {
-  const mockT = (key: string, defaultValue: string, options?: Record<string, unknown>) => {
+  const mockT = (_key: string, defaultValue: string, options?: Record<string, unknown>) => {
     let result = defaultValue;
     if (options) {
       for (const [k, v] of Object.entries(options)) {

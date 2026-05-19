@@ -6,6 +6,7 @@ import { type AdvancedPatientSearchState, type SearchFieldConfig } from '../../t
 
 import { usePersonAttributeType } from './person-attributes.resource';
 import { SearchField } from './search-field.component';
+import styles from './search-field.scss';
 
 vi.mock('./person-attributes.resource', async () => ({
   usePersonAttributeType: vi.fn(),
@@ -185,13 +186,25 @@ describe('SearchField', () => {
     };
 
     it('applies tablet styles when in tablet mode', () => {
-      render(<SearchField field={ageField} {...defaultProps} isTablet={true} />);
-      expect(screen.getByLabelText('Age')).toBeInTheDocument();
+      const { rerender } = render(<SearchField field={ageField} {...defaultProps} />);
+      const defaultInput = screen.getByLabelText('Age');
+      expect(defaultInput.closest('.cds--number')).not.toHaveClass('cds--number--lg');
+
+      rerender(<SearchField field={ageField} {...defaultProps} isTablet={true} />);
+      const tabletInput = screen.getByLabelText('Age');
+      expect(tabletInput).toBeInTheDocument();
+      expect(tabletInput.closest('.cds--number')).toHaveClass('cds--number--lg');
     });
 
     it('applies overlay styles when in overlay mode', () => {
-      render(<SearchField field={ageField} {...defaultProps} inTabletOrOverlay={true} />);
-      expect(screen.getByLabelText('Age')).toBeInTheDocument();
+      const { rerender } = render(<SearchField field={ageField} {...defaultProps} />);
+      const defaultInput = screen.getByLabelText('Age');
+      expect(defaultInput.closest(`.${styles.fieldTabletOrOverlay}`)).toBeNull();
+
+      rerender(<SearchField field={ageField} {...defaultProps} inTabletOrOverlay={true} />);
+      const overlayInput = screen.getByLabelText('Age');
+      expect(overlayInput).toBeInTheDocument();
+      expect(overlayInput.closest(`.${styles.fieldTabletOrOverlay}`)).not.toBeNull();
     });
   });
 });

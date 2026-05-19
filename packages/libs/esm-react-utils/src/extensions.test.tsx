@@ -43,7 +43,9 @@ describe('ExtensionSlot, Extension, and useExtensionSlotMeta', () => {
       return (
         <div>
           <ExtensionSlot name="Box" state={{ suffix }} />
-          <button onClick={toggleSuffix}>Toggle suffix</button>
+          <button type="button" onClick={toggleSuffix}>
+            Toggle suffix
+          </button>
         </div>
       );
     });
@@ -79,7 +81,9 @@ describe('ExtensionSlot, Extension, and useExtensionSlotMeta', () => {
             {suffix}
             <Extension state={{ suffix }} />
           </ExtensionSlot>
-          <button onClick={toggleSuffix}>Toggle suffix</button>
+          <button type="button" onClick={toggleSuffix}>
+            Toggle suffix
+          </button>
         </div>
       );
     });
@@ -174,7 +178,9 @@ describe('ExtensionSlot, Extension, and useExtensionSlotMeta', () => {
               </div>
             )}
           </ExtensionSlot>
-          <button onClick={toggleSuffix}>Toggle suffix</button>
+          <button type="button" onClick={toggleSuffix}>
+            Toggle suffix
+          </button>
         </div>
       );
     });

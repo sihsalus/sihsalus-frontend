@@ -182,9 +182,9 @@ test('typing in the diagnosis search input triggers a search', async () => {
   await user.type(searchBox, 'Diabetes Mellitus');
 
   // Wait for the search results to appear
-  const targetSearchResult = await screen.findByRole('menuitem', { name: 'Diabetes Mellitus' });
+  const targetSearchResult = await screen.findByRole('button', { name: 'Diabetes Mellitus' });
   expect(targetSearchResult).toBeInTheDocument();
-  expect(screen.getByRole('menuitem', { name: 'Diabetes Mellitus, Type II' })).toBeInTheDocument();
+  expect(screen.getByRole('button', { name: 'Diabetes Mellitus, Type II' })).toBeInTheDocument();
 
   // clicking on a search result displays the selected diagnosis as a tag
   await user.click(targetSearchResult);

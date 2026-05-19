@@ -14,7 +14,6 @@ const tamizajesDashboardMeta = {
   title: 'Tamizajes',
   path: 'tamizajes',
   icon: 'omrs-icon-lab-order',
-  tooltip: 'tamizajesTooltip',
   isLink: true,
 };
 

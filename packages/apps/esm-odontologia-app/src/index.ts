@@ -13,7 +13,6 @@ const odontologiaDashboardMeta = {
   title: 'Atención odontológica',
   path: 'atencion-odontologica',
   icon: 'omrs-icon-procedure-order',
-  tooltip: 'dentalAttentionTooltip',
   isLink: true,
 };
 

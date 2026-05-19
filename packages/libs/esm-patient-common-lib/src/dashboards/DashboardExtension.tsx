@@ -1,4 +1,3 @@
-import { Tooltip } from '@carbon/react';
 import { ConfigurableLink } from '@openmrs/esm-framework';
 import { MaybeIcon } from '@openmrs/esm-styleguide';
 import classNames from 'classnames';
@@ -34,6 +33,7 @@ export const DashboardExtension = ({
   const link = (
     <ConfigurableLink
       className={classNames('cds--side-nav__link', { 'active-left-nav-link': path === navLink })}
+      title={translatedTooltip}
       to={`${basePath}/${encodeURIComponent(path)}`}
     >
       <span className={styles.menu}>
@@ -45,20 +45,7 @@ export const DashboardExtension = ({
 
   return (
     <div key={path} className={styles.navItem}>
-      {translatedTooltip ? (
-        <Tooltip
-          align="right"
-          as="div"
-          className={styles.navTooltip}
-          label={translatedTooltip}
-          enterDelayMs={400}
-          leaveDelayMs={100}
-        >
-          {link}
-        </Tooltip>
-      ) : (
-        link
-      )}
+      {link}
     </div>
   );
 };

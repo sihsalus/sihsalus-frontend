@@ -61,11 +61,13 @@
     },
     "resolveJsonModule": true,
     "skipLibCheck": true,
+    "forceConsistentCasingInFileNames": true,
     "target": "esnext",
     "strict": false,
     "noImplicitAny": false,
     "strictNullChecks": false,
     "noUncheckedIndexedAccess": false,
+    "noFallthroughCasesInSwitch": true,
     "types": ["fhir", "node", "@testing-library/jest-dom", "vi-namespace"],
     "typeRoots": ["./types", "../node_modules/@types", "../node_modules"]
   },

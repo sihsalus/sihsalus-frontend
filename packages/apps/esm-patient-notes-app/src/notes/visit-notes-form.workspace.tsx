@@ -1277,13 +1277,10 @@ function DiagnosesDisplay({
         {searchResults.map((diagnosis, index) => {
           if (isDiagnosisNotSelected(diagnosis)) {
             return (
-              <li
-                className={styles.diagnosis}
-                key={index}
-                onClick={() => onAddDiagnosis(diagnosis, fieldName)}
-                role="menuitem"
-              >
-                {diagnosis.display}
+              <li className={styles.diagnosis} key={index}>
+                <button type="button" className={styles.diagnosis} onClick={() => onAddDiagnosis(diagnosis, fieldName)}>
+                  {diagnosis.display}
+                </button>
               </li>
             );
           }

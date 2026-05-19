@@ -10,7 +10,6 @@ import { ConfigurableLink } from '@openmrs/esm-framework';
 import React from 'react';
 import { useTranslation } from 'react-i18next';
 
-import fuaIllustration from '../../../../libs/esm-styleguide/src/pictograms/svgs/fua.svg';
 import styles from './peru-home-actions.scss';
 
 type ActionIcon = React.ComponentType<{ className?: string; size?: number | string }>;
@@ -21,7 +20,6 @@ type Action = {
   href: string;
   icon: ActionIcon;
   illustrationId?: string;
-  illustrationSrc?: string;
   toneClass: string;
 };
 
@@ -83,19 +81,12 @@ const actions = [
     descriptionKey: 'fuaDescription',
     href: '/home/fua-request',
     icon: Document,
-    illustrationSrc: fuaIllustration,
+    illustrationId: 'omrs-pict-fua',
     toneClass: 'fuaAction',
   },
 ] satisfies Array<Action>;
 
-const ActionIllustration: React.FC<{ illustrationId?: string; illustrationSrc?: string }> = ({
-  illustrationId,
-  illustrationSrc,
-}) => {
-  if (illustrationSrc) {
-    return <img className={styles.actionIllustration} src={illustrationSrc} alt="" />;
-  }
-
+const ActionIllustration: React.FC<{ illustrationId?: string }> = ({ illustrationId }) => {
   return (
     <svg
       className={styles.actionIllustration}
@@ -115,7 +106,7 @@ const PeruHomeActions: React.FC = () => {
 
   return (
     <section className={styles.quickActions} aria-label={t('peruHomeActions', 'Accesos de admisión')}>
-      {actions.map(({ key, descriptionKey, href, icon: Icon, illustrationId, illustrationSrc, toneClass }) => (
+      {actions.map(({ key, descriptionKey, href, icon: Icon, illustrationId, toneClass }) => (
         <ConfigurableLink key={key} className={`${styles.actionLink} ${styles[toneClass]}`} to={`${spaBase}${href}`}>
           <span className={styles.actionHeader}>
             {/*<Icon className={styles.actionIcon} size={24} />*/}
@@ -125,7 +116,7 @@ const PeruHomeActions: React.FC = () => {
             </span>
           </span>
           <span className={styles.illustrationArea} aria-hidden="true">
-            <ActionIllustration illustrationId={illustrationId} illustrationSrc={illustrationSrc} />
+            <ActionIllustration illustrationId={illustrationId} />
           </span>
         </ConfigurableLink>
       ))}

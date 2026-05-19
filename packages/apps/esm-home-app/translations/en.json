@@ -16,6 +16,7 @@
   "peruHomeActions": "Admission shortcuts",
   "registerPatient": "Register patient",
   "registerPatientDescription": "Prefer DNI; CE/CNV when applicable",
+  "returnToHome": "Volver al inicio",
   "searchPatient": "Search patient",
   "searchPatientDescription": "DNI, CE, CNV or HCE"
 }

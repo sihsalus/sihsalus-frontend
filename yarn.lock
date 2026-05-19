@@ -8031,6 +8031,7 @@ __metadata:
     husky: "npm:^8.0.3"
     i18next: "npm:^25.0.0"
     i18next-parser: "npm:^9.3.0"
+    jsep: "npm:^1.4.0"
     lint-staged: "npm:^15.2.2"
     lodash-es: "npm:^4.17.21"
     openmrs: "workspace:*"

@@ -29,12 +29,12 @@ async function getSessionLocation(apiBaseUrl: string, authorization: string, req
         return requestedUuid;
       }
 
-      console.warn(`Configured E2E login location ${requestedUuid} is not available; falling back to QLTY locations.`);
+      console.warn('Configured E2E login location is not available; falling back to QLTY locations.');
     }
 
     const locationsRes = await ctx.get(`${apiBaseUrl}/ws/rest/v1/location?v=default&limit=50`);
     if (!locationsRes.ok()) {
-      console.warn(`Could not load E2E login locations (${locationsRes.status()}): ${await locationsRes.text()}`);
+      console.warn(`Could not load E2E login locations (${locationsRes.status()}).`);
       return undefined;
     }
 
@@ -72,7 +72,7 @@ async function globalSetup() {
   });
 
   if (!res.ok()) {
-    throw new Error(`Login failed (${res.status()}): ${await res.text()}`);
+    throw new Error(`Login failed (${res.status()}).`);
   }
 
   await ctx.storageState({ path: 'e2e/storage-state.json' });

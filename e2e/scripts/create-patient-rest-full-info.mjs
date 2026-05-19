@@ -1,6 +1,12 @@
 const openmrsBase = process.env.OPENMRS_BASE ?? 'https://gidis-hsc-qlty.inf.pucp.edu.pe/openmrs';
-process.env.NODE_TLS_REJECT_UNAUTHORIZED = '0';
-const auth = `Basic ${Buffer.from(`${process.env.E2E_USERNAME ?? 'admin'}:${process.env.E2E_PASSWORD ?? 'Admin123'}`).toString('base64')}`;
+const username = process.env.E2E_USERNAME;
+const password = process.env.E2E_PASSWORD;
+
+if (!username || !password) {
+  throw new Error('E2E_USERNAME and E2E_PASSWORD are required to create a patient via REST.');
+}
+
+const auth = `Basic ${Buffer.from(`${username}:${password}`).toString('base64')}`;
 const runId = new Date().toISOString().replace(/\D/g, '').slice(4, 14);
 const givenName = `RestTest${runId}`;
 const dni = `97${runId.slice(-6)}`;

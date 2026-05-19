@@ -39,14 +39,13 @@ declare function getOpenmrsSpaBase(): string;
 
 // Minimal ambient declarations for Vitest globals used across tests.
 declare global {
-  const vi: any;
-  namespace vi {
+  const vi: {
     // vi.Mock is used in a few places for casting; provide a permissive alias.
-    type Mock = any;
-    function fn(...args: any[]): any;
-    function mocked<T>(t: T): T;
-    function importActual<T = any>(path: string): Promise<T>;
-  }
+    Mock: any;
+    fn(...args: any[]): any;
+    mocked<T>(t: T): T;
+    importActual<T = any>(path: string): Promise<T>;
+  };
 }
 
 export {};

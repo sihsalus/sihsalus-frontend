@@ -142,7 +142,7 @@ const CreateReport: React.FC<CreateReportProps> = ({ model, closeWorkspace }) =>
         setDisplayPatient(reportType.parameters?.some((p) => p === ReportParameter.Patient));
         setDisplayLimit(reportType.parameters?.some((p) => p === ReportParameter.Limit));
         setDisplayMostLeastMoving(reportType.parameters?.some((p) => p === ReportParameter.MostLeastMoving));
-        setDisplayFulfillment(reportType.parameters?.some((p) => p === ReportParameter.Fullfillment));
+        setDisplayFulfillment(reportType.parameters?.some((p) => p === ReportParameter.Fulfillment));
         hasResetParameters = true;
       }
     }
@@ -200,7 +200,7 @@ const CreateReport: React.FC<CreateReportProps> = ({ model, closeWorkspace }) =>
     const entries = [
       {
         display: displayFulfillment,
-        type: ReportParameter.Fullfillment,
+        type: ReportParameter.Fulfillment,
         value: (report.fullFillment ?? ['All']).join(','),
         desc: (report.fullFillment ?? [t('all', 'All')]).join(', '),
         label: t('fulfillment', 'Fulfillment'),
@@ -362,7 +362,7 @@ const CreateReport: React.FC<CreateReportProps> = ({ model, closeWorkspace }) =>
   };
 
   return (
-    <Form className={styles.container}>
+    <Form className={styles.container} onSubmit={handleSubmit(handleSave)}>
       <Stack className={styles.form} gap={5}>
         <>
           <FormGroup legendText={t('reportName', 'Report name')}>
@@ -377,8 +377,9 @@ const CreateReport: React.FC<CreateReportProps> = ({ model, closeWorkspace }) =>
                   itemToString={(item) => item?.name ?? ''}
                   placeholder={t('filter', 'Filter...')}
                   onChange={({ selectedItem }) => {
-                    onChange(selectedItem.name);
-                    handleReportNameChange(selectedItem.name);
+                    const selectedName = selectedItem?.name ?? '';
+                    onChange(selectedName);
+                    handleReportNameChange(selectedName);
                   }}
                 />
               )}
@@ -399,7 +400,7 @@ const CreateReport: React.FC<CreateReportProps> = ({ model, closeWorkspace }) =>
                     titleText={t('stockItemCategory', 'Stock Item Category')}
                     items={stockItemCategories}
                     onChange={({ selectedItem }) => {
-                      onChange(selectedItem.uuid);
+                      onChange(selectedItem?.uuid ?? '');
                     }}
                     itemToString={(item) => (item && item?.display ? `${item?.display}` : '')}
                     placeholder={t('filter', 'Filter...')}

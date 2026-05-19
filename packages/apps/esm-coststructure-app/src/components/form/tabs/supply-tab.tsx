@@ -250,7 +250,7 @@ export default function SupplyTab({ form }: Props) {
                         />
                       </td>
                       <td>{sup.unitCost}</td>
-                      <td>{calculateStandardCostSupply(sup.unitCost, sup.quantityUsed, sup.timeMinutes).toFixed(2)}</td>
+                      <td>{(calculateUnitCostSupply(sup.timeMinutes, sup.quantityUsed) * sup.quantityUsed).toFixed(2)}</td>
                     </tr>
                   );
                 })

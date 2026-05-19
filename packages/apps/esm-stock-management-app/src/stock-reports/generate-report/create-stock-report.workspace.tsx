@@ -142,7 +142,7 @@ const CreateReport: React.FC<CreateReportProps> = ({ model, closeWorkspace }) =>
         setDisplayPatient(reportType.parameters?.some((p) => p === ReportParameter.Patient));
         setDisplayLimit(reportType.parameters?.some((p) => p === ReportParameter.Limit));
         setDisplayMostLeastMoving(reportType.parameters?.some((p) => p === ReportParameter.MostLeastMoving));
-        setDisplayFulfillment(reportType.parameters?.some((p) => p === ReportParameter.Fulfillment));
+        setDisplayFulfillment(reportType.parameters?.some((p) => p === ReportParameter.Fullfillment));
         hasResetParameters = true;
       }
     }
@@ -200,7 +200,7 @@ const CreateReport: React.FC<CreateReportProps> = ({ model, closeWorkspace }) =>
     const entries = [
       {
         display: displayFulfillment,
-        type: ReportParameter.Fulfillment,
+        type: ReportParameter.Fullfillment,
         value: (report.fullFillment ?? ['All']).join(','),
         desc: (report.fullFillment ?? [t('all', 'All')]).join(', '),
         label: t('fulfillment', 'Fulfillment'),

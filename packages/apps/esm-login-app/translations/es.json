@@ -1,6 +1,6 @@
 {
-  "builtWith": "Desarrollado con",
   "backToLogin": "Volver al inicio de sesión",
+  "builtWith": "Desarrollado con",
   "cancel": "Cancelar",
   "change": "Cambiar",
   "changeLocation": "Cambiar ubicación",
@@ -38,9 +38,9 @@
   "passwordsDoNotMatch": "Las contraseñas no coinciden",
   "poweredBySubtext": "Historia clínica digital para la red Sihsalus",
   "pucpLogo": "Logo de la PUCP",
-  "rememberLocationForFutureLogins": "Recordar mi ubicación para futuros inicios de sesión",
   "recoverPassword": "Recuperar contraseña",
   "recoverPasswordHelp": "Ingresa tu usuario para que el administrador del establecimiento pueda identificar tu cuenta y restablecer tu contraseña.",
+  "rememberLocationForFutureLogins": "Recordar mi ubicación para futuros inicios de sesión",
   "requestPasswordRecovery": "Solicitar recuperación",
   "santaClotildeLogo": "Logo de Santa Clotilde",
   "selectLanguage": "Seleccionar idioma",

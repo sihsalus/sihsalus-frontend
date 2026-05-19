@@ -1,6 +1,6 @@
 {
-  "builtWith": "Built with",
   "backToLogin": "Back to log in",
+  "builtWith": "Built with",
   "cancel": "Cancel",
   "change": "Change",
   "changeLocation": "Change location",
@@ -38,9 +38,9 @@
   "passwordsDoNotMatch": "Passwords do not match",
   "poweredBySubtext": "Digital medical record for the Sihsalus network",
   "pucpLogo": "PUCP logo",
-  "rememberLocationForFutureLogins": "Remember my location for future logins",
   "recoverPassword": "Recover password",
   "recoverPasswordHelp": "Enter your username so the facility administrator can identify your account and reset your password.",
+  "rememberLocationForFutureLogins": "Remember my location for future logins",
   "requestPasswordRecovery": "Request password recovery",
   "santaClotildeLogo": "Santa Clotilde logo",
   "selectLanguage": "Select language",

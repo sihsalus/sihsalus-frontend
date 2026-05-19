@@ -1,6 +1,6 @@
 import { getLocale, openmrsFetch, restBaseUrl, useConfig } from '@openmrs/esm-framework';
 import dayjs from 'dayjs';
-import { useMemo } from 'react';
+import { useCallback, useMemo } from 'react';
 import useSWR from 'swr';
 import useSWRImmutable from 'swr/immutable';
 import { type Config } from '../config-schema';
@@ -116,12 +116,12 @@ export function useEmergencyQueueEntries(
 
   // Only use status from store if explicitly provided and not undefined/null/empty/'all'
   // Validate that statusUuid is a valid UUID format before using it
-  const isValidUuid = (uuid?: string): boolean => {
+  const isValidUuid = useCallback((uuid?: string): boolean => {
     if (!uuid || uuid === 'all' || uuid === '') return false;
     // Basic UUID format validation (8-4-4-4-12 hex digits)
     const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
     return uuidRegex.test(uuid);
-  };
+  }, []);
 
   const actualStatusUuid = useMemo(() => {
     // If statusUuid is explicitly provided, use it (but validate)
@@ -134,7 +134,7 @@ export function useEmergencyQueueEntries(
     // Emergency queries should NOT filter by status unless explicitly provided.
     // This avoids 500 errors when the concept doesn't exist in the backend.
     return undefined;
-  }, [statusUuid]);
+  }, [statusUuid, isValidUuid]);
 
   // Custom representation - same as Service Queues for full compatibility
   const customRepresentation =

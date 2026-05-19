@@ -29,6 +29,7 @@ export const reportSchema = z
     stockItemCategoryConceptUuid: z.string().optional(),
     reportSystemName: z.string().optional(),
     maxReorderLevelRatio: z.number().optional(),
+    fulfillment: z.string().array().optional(),
     fullFillment: z.string().array().optional(),
     limit: z.string().optional(),
     date: z.coerce.date().optional(),

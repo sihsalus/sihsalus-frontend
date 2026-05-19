@@ -54,7 +54,6 @@ vi.mock('react-hook-form', async () => ({
       fieldState: { error: undefined },
     }),
 }));
-it;
 
 describe('SearchField', () => {
   const defaultProps = {

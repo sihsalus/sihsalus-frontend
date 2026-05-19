@@ -50,17 +50,31 @@ export function deleteUserRoleScopes(ids: string[]) {
   });
 }
 
+function normalizeUserRoleScopePayload(item: UserRoleScope): UserRoleScope {
+  return {
+    ...item,
+    enabled: item?.enabled ?? true,
+    permanent: item?.permanent ?? true,
+    locations: (item?.locations ?? []).map((location) => ({
+      ...location,
+      enableDescendants: location?.enableDescendants ?? false,
+    })),
+    operationTypes: item?.operationTypes ?? [],
+  };
+}
+
 // createOrUpdateUserRoleScope
 export function createOrUpdateUserRoleScope(item: UserRoleScope) {
+  const payload = normalizeUserRoleScopePayload(item);
   const abortController = new AbortController();
-  const hasUuid = item.uuid != null;
-  const apiUrl = `${restBaseUrl}/stockmanagement/userrolescope${hasUuid ? '/' + item.uuid : ''}`;
+  const hasUuid = payload.uuid != null;
+  const apiUrl = `${restBaseUrl}/stockmanagement/userrolescope${hasUuid ? '/' + payload.uuid : ''}`;
   return openmrsFetch(apiUrl, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
     },
     signal: abortController.signal,
-    body: item,
+    body: payload,
   });
 }

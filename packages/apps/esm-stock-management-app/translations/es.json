@@ -467,6 +467,7 @@
   "updatePackingUnitTitle": "Unidad de Empaque",
   "uploadStockItems": "Subir Artículos de Inventario",
   "user": "Usuario",
+  "userRoleScopeSelfUpdate": "No se puede asignar un alcance de rol de usuario al usuario autenticado desde esta pantalla.",
   "userRequired": "El usuario es obligatorio",
   "userRoleScopes": "Ámbitos de rol de usuario",
   "useScopes": "User role scopes",

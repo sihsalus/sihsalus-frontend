@@ -467,6 +467,7 @@
   "uploadStockItems": "Upload stock items",
   "user": "User",
   "userRequired": "User is required",
+  "userRoleScopeSelfUpdate": "User role scopes cannot be assigned to the logged in user from this screen.",
   "userRoleScopes": "User role scopes",
   "useScopes": "User role scopes",
   "viewAll": "View all",

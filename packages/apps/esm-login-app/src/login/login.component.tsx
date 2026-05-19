@@ -1,4 +1,11 @@
-import { Button, InlineLoading, InlineNotification, PasswordInput, TextInput, Tile } from '@carbon/react';
+import {
+  Button,
+  InlineLoading,
+  InlineNotification,
+  PasswordInput,
+  TextInput,
+  Tile,
+} from '@carbon/react';
 import {
   ArrowRightIcon,
   getCoreTranslation,
@@ -9,7 +16,13 @@ import {
   useConnectivity,
   useSession,
 } from '@openmrs/esm-framework';
-import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import React, {
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from 'react';
 import { useTranslation } from 'react-i18next';
 import { useLocation, useNavigate } from 'react-router-dom';
 
@@ -23,24 +36,34 @@ export interface LoginReferrer {
   referrer?: string;
 }
 
-type LoginErrorKey = 'invalidCredentials' | 'serverUnavailable' | 'sessionEndpointNotFound';
+type LoginErrorKey =
+  | 'invalidCredentials'
+  | 'serverUnavailable'
+  | 'sessionEndpointNotFound';
+type LoginView = 'login' | 'passwordRecovery';
 
 // t('invalidCredentials', 'Invalid username or password')
 // t('serverUnavailable', 'The authentication server is not responding. Please try again later.')
 // t('sessionEndpointNotFound', 'The login service is not available at this backend address. Please contact support or try a different environment.')
 const loginErrorFallbacks = {
   invalidCredentials: 'Invalid username or password',
-  serverUnavailable: 'The authentication server is not responding. Please try again later.',
+  serverUnavailable:
+    'The authentication server is not responding. Please try again later.',
   sessionEndpointNotFound:
     'The login service is not available at this backend address. Please contact support or try a different environment.',
 } satisfies Record<LoginErrorKey, string>;
 
 function getLoginErrorKey(error: unknown): LoginErrorKey {
-  const session = (error as { session?: { backendUnavailable?: boolean } })?.session;
+  const session = (error as { session?: { backendUnavailable?: boolean } })
+    ?.session;
   const nestedError = (error as { error?: unknown })?.error;
   const errorToInspect = nestedError ?? error;
-  const status = (errorToInspect as { response?: { status?: number } })?.response?.status;
-  const message = errorToInspect instanceof Error ? errorToInspect.message : String(errorToInspect ?? '');
+  const status = (errorToInspect as { response?: { status?: number } })
+    ?.response?.status;
+  const message =
+    errorToInspect instanceof Error
+      ? errorToInspect.message
+      : String(errorToInspect ?? '');
 
   if (session?.backendUnavailable) {
     return 'serverUnavailable';
@@ -50,7 +73,12 @@ function getLoginErrorKey(error: unknown): LoginErrorKey {
     return 'sessionEndpointNotFound';
   }
 
-  if (status >= 500 || /failed to fetch|gateway timeout|status of 0|load failed|network/i.test(message)) {
+  if (
+    status >= 500 ||
+    /failed to fetch|gateway timeout|status of 0|load failed|network/i.test(
+      message,
+    )
+  ) {
     return 'serverUnavailable';
   }
 
@@ -77,9 +105,13 @@ const Login: React.FC = () => {
   const [errorMessage, setErrorMessage] = useState('');
   const [isLoggingIn, setIsLoggingIn] = useState(false);
   const [password, setPassword] = useState('');
+  const [activeView, setActiveView] = useState<LoginView>('login');
+  const [recoveryIdentifier, setRecoveryIdentifier] = useState('');
+  const [recoverySubmitted, setRecoverySubmitted] = useState(false);
   const [username, setUsername] = useState('');
   const [showPasswordField, setShowPasswordField] = useState(false);
   const passwordInputRef = useRef<HTMLInputElement>(null);
+  const recoveryInputRef = useRef<HTMLInputElement>(null);
   const usernameInputRef = useRef<HTMLInputElement>(null);
   const loginImageSrc = `${globalThis.getOpenmrsSpaBase()}login.png`;
   const sihsalusLogoSrc = `${globalThis.getOpenmrsSpaBase()}sihsalus-horizontal.svg`;
@@ -108,6 +140,12 @@ const Login: React.FC = () => {
     }
   }, [showPasswordField, showPasswordOnSeparateScreen]);
 
+  useEffect(() => {
+    if (activeView === 'passwordRecovery') {
+      recoveryInputRef.current?.focus();
+    }
+  }, [activeView]);
+
   const continueLogin = useCallback(() => {
     const currentUsername = usernameInputRef.current?.value?.trim();
     if (currentUsername) {
@@ -119,8 +157,34 @@ const Login: React.FC = () => {
     }
   }, []);
 
-  const changeUsername = useCallback((evt: React.ChangeEvent<HTMLInputElement>) => setUsername(evt.target.value), []);
-  const changePassword = useCallback((evt: React.ChangeEvent<HTMLInputElement>) => setPassword(evt.target.value), []);
+  const changeUsername = useCallback(
+    (evt: React.ChangeEvent<HTMLInputElement>) => setUsername(evt.target.value),
+    [],
+  );
+  const changePassword = useCallback(
+    (evt: React.ChangeEvent<HTMLInputElement>) => setPassword(evt.target.value),
+    [],
+  );
+  const changeRecoveryIdentifier = useCallback(
+    (evt: React.ChangeEvent<HTMLInputElement>) => {
+      setRecoveryIdentifier(evt.target.value);
+      setRecoverySubmitted(false);
+    },
+    [],
+  );
+
+  const openPasswordRecovery = useCallback(() => {
+    setErrorMessage('');
+    setRecoveryIdentifier(username.trim());
+    setRecoverySubmitted(false);
+    setActiveView('passwordRecovery');
+  }, [username]);
+
+  const returnToLogin = useCallback(() => {
+    setActiveView('login');
+    setRecoverySubmitted(false);
+    setTimeout(() => usernameInputRef.current?.focus(), 0);
+  }, []);
 
   const containerClassName = [
     styles.container,
@@ -132,7 +196,9 @@ const Login: React.FC = () => {
 
   const containerStyle = useMemo<React.CSSProperties | undefined>(() => {
     if (background.image) {
-      return { '--login-bg-image': `url(${interpolateUrl(background.image)})` } as React.CSSProperties;
+      return {
+        '--login-bg-image': `url(${interpolateUrl(background.image)})`,
+      } as React.CSSProperties;
     }
     if (background.color) {
       return { '--login-bg-color': background.color } as React.CSSProperties;
@@ -146,7 +212,8 @@ const Login: React.FC = () => {
       evt.stopPropagation();
 
       // If credentials were autofilled, input onChange might not have been called
-      const currentUsername = usernameInputRef.current?.value?.trim() || username;
+      const currentUsername =
+        usernameInputRef.current?.value?.trim() || username;
       const currentPassword = passwordInputRef.current?.value || password;
 
       if (showPasswordOnSeparateScreen && !showPasswordField) {
@@ -161,7 +228,10 @@ const Login: React.FC = () => {
 
       try {
         setIsLoggingIn(true);
-        const sessionStore = await refetchCurrentUser(currentUsername, currentPassword);
+        const sessionStore = await refetchCurrentUser(
+          currentUsername,
+          currentPassword,
+        );
         const session = sessionStore.session;
         const authenticated = sessionStore?.session?.authenticated;
 
@@ -170,7 +240,7 @@ const Login: React.FC = () => {
             let to = loginLinks?.loginSuccess || '/home';
             if (location?.state?.referrer) {
               if (location.state.referrer.startsWith('/')) {
-                to = `\${openmrsSpaBase}${location.state.referrer}`;
+                to = `${globalThis.spaBase}${location.state.referrer}`;
               } else {
                 to = location.state.referrer;
               }
@@ -213,9 +283,27 @@ const Login: React.FC = () => {
     ],
   );
 
+  const handleRecoverySubmit = useCallback(
+    (evt: React.FormEvent<HTMLFormElement>) => {
+      evt.preventDefault();
+
+      if (!recoveryIdentifier.trim()) {
+        recoveryInputRef.current?.focus();
+        return;
+      }
+
+      setRecoverySubmitted(true);
+    },
+    [recoveryIdentifier],
+  );
+
   if (!loginProvider || loginProvider.type === 'basic') {
     return (
-      <div className={containerClassName} style={containerStyle} data-testid="login-container">
+      <div
+        className={containerClassName}
+        style={containerStyle}
+        data-testid="login-container"
+      >
         <main className={styles.loginLayout}>
           <h1 className={styles.srOnly}>{t('login', 'Log in')}</h1>
           <div className={styles.imagePanel} aria-hidden="true">
@@ -241,23 +329,98 @@ const Login: React.FC = () => {
               <div className={styles.center}>
                 <Logo t={t} />
               </div>
-              <form onSubmit={handleSubmit}>
-                <div className={styles.inputGroup}>
-                  <TextInput
-                    id="username"
-                    type="text"
-                    name="username"
-                    autoComplete="username"
-                    labelText={t('username', 'Username')}
-                    value={username}
-                    onChange={changeUsername}
-                    ref={usernameInputRef}
-                    required
-                    autoFocus
-                  />
-                  {showPasswordOnSeparateScreen ? (
-                    <>
-                      <div className={showPasswordField ? undefined : styles.hiddenPasswordField}>
+              {activeView === 'login' ? (
+                <form onSubmit={handleSubmit}>
+                  <div className={styles.inputGroup}>
+                    <TextInput
+                      id="username"
+                      type="text"
+                      name="username"
+                      autoComplete="username"
+                      labelText={t('username', 'Username')}
+                      value={username}
+                      onChange={changeUsername}
+                      ref={usernameInputRef}
+                      required
+                      autoFocus
+                    />
+                    {showPasswordOnSeparateScreen ? (
+                      <>
+                        <div
+                          className={
+                            showPasswordField
+                              ? undefined
+                              : styles.hiddenPasswordField
+                          }
+                        >
+                          <PasswordInput
+                            id="password"
+                            labelText={t('password', 'Password')}
+                            name="password"
+                            autoComplete="current-password"
+                            onChange={changePassword}
+                            ref={passwordInputRef}
+                            required
+                            value={password}
+                            showPasswordLabel={t(
+                              'showPassword',
+                              'Show password',
+                            )}
+                            invalidText={t(
+                              'validValueRequired',
+                              'A valid value is required',
+                            )}
+                            aria-hidden={!showPasswordField}
+                            tabIndex={showPasswordField ? 0 : -1}
+                          />
+                        </div>
+                        {showPasswordField ? (
+                          <Button
+                            type="submit"
+                            className={styles.continueButton}
+                            renderIcon={(props) => (
+                              <ArrowRightIcon size={24} {...props} />
+                            )}
+                            iconDescription={t(
+                              'loginButtonIconDescription',
+                              'Log in button',
+                            )}
+                            disabled={!isLoginEnabled || isLoggingIn}
+                          >
+                            {isLoggingIn ? (
+                              <InlineLoading
+                                className={styles.loader}
+                                description={
+                                  t('loggingIn', 'Logging in') + '...'
+                                }
+                              />
+                            ) : (
+                              t('login', 'Log in')
+                            )}
+                          </Button>
+                        ) : (
+                          <Button
+                            type="submit"
+                            className={styles.continueButton}
+                            renderIcon={(props) => (
+                              <ArrowRightIcon size={24} {...props} />
+                            )}
+                            iconDescription={t(
+                              'continueToPassword',
+                              'Continue to password',
+                            )}
+                            onClick={(evt) => {
+                              evt.preventDefault();
+                              continueLogin();
+                            }}
+                            disabled={!isLoginEnabled}
+                          >
+                            {t('continue', 'Continue')}
+                          </Button>
+                        )}
+                      </>
+                    ) : (
+                      <>
                         <PasswordInput
                           id="password"
                           labelText={t('password', 'Password')}
@@ -268,17 +431,21 @@ const Login: React.FC = () => {
                           required
                           value={password}
                           showPasswordLabel={t('showPassword', 'Show password')}
-                          invalidText={t('validValueRequired', 'A valid value is required')}
-                          aria-hidden={!showPasswordField}
-                          tabIndex={showPasswordField ? 0 : -1}
+                          invalidText={t(
+                            'validValueRequired',
+                            'A valid value is required',
+                          )}
                         />
-                      </div>
-                      {showPasswordField ? (
                         <Button
                           type="submit"
                           className={styles.continueButton}
-                          renderIcon={(props) => <ArrowRightIcon size={24} {...props} />}
-                          iconDescription={t('loginButtonIconDescription', 'Log in button')}
+                          renderIcon={(props) => (
+                            <ArrowRightIcon size={24} {...props} />
+                          )}
+                          iconDescription={t(
+                            'loginButtonIconDescription',
+                            'Log in button',
+                          )}
                           disabled={!isLoginEnabled || isLoggingIn}
                         >
                           {isLoggingIn ? (
@@ -290,69 +457,120 @@ const Login: React.FC = () => {
                             t('login', 'Log in')
                           )}
                         </Button>
-                      ) : (
-                        <Button
-                          type="submit"
-                          className={styles.continueButton}
-                          renderIcon={(props) => <ArrowRightIcon size={24} {...props} />}
-                          iconDescription={t('continueToPassword', 'Continue to password')}
-                          onClick={(evt) => {
-                            evt.preventDefault();
-                            continueLogin();
-                          }}
-                          disabled={!isLoginEnabled}
-                        >
-                          {t('continue', 'Continue')}
-                        </Button>
-                      )}
-                    </>
-                  ) : (
-                    <>
-                      <PasswordInput
-                        id="password"
-                        labelText={t('password', 'Password')}
-                        name="password"
-                        autoComplete="current-password"
-                        onChange={changePassword}
-                        ref={passwordInputRef}
-                        required
-                        value={password}
-                        showPasswordLabel={t('showPassword', 'Show password')}
-                        invalidText={t('validValueRequired', 'A valid value is required')}
-                      />
-                      <Button
-                        type="submit"
-                        className={styles.continueButton}
-                        renderIcon={(props) => <ArrowRightIcon size={24} {...props} />}
-                        iconDescription={t('loginButtonIconDescription', 'Log in button')}
-                        disabled={!isLoginEnabled || isLoggingIn}
-                      >
-                        {isLoggingIn ? (
-                          <InlineLoading className={styles.loader} description={t('loggingIn', 'Logging in') + '...'} />
-                        ) : (
-                          t('login', 'Log in')
-                        )}
-                      </Button>
-                    </>
-                  )}
-                </div>
-                {errorMessage && (
-                  <div className={styles.errorMessage}>
-                    <InlineNotification
-                      kind="error"
-                      subtitle={t(errorMessage, loginErrorFallbacks[errorMessage as LoginErrorKey])}
-                      title={getCoreTranslation('error')}
-                      onClick={() => setErrorMessage('')}
-                    />
+                      </>
+                    )}
                   </div>
-                )}
-              </form>
+                  <Button
+                    type="button"
+                    kind="ghost"
+                    size="sm"
+                    className={styles.recoveryLinkButton}
+                    onClick={openPasswordRecovery}
+                  >
+                    {t('forgotPassword', 'Forgot your password?')}
+                  </Button>
+                  {errorMessage && (
+                    <div className={styles.errorMessage}>
+                      <InlineNotification
+                        kind="error"
+                        subtitle={t(
+                          errorMessage,
+                          loginErrorFallbacks[errorMessage as LoginErrorKey],
+                        )}
+                        title={getCoreTranslation('error')}
+                        onClick={() => setErrorMessage('')}
+                      />
+                    </div>
+                  )}
+                </form>
+              ) : (
+                <form
+                  className={styles.recoveryForm}
+                  onSubmit={handleRecoverySubmit}
+                >
+                  <div className={styles.recoveryHeader}>
+                    <h2 className={styles.recoveryTitle}>
+                      {t('recoverPassword', 'Recover password')}
+                    </h2>
+                    <p className={styles.recoveryDescription}>
+                      {t(
+                        'recoverPasswordHelp',
+                        'Enter your username so the facility administrator can identify your account and reset your password.',
+                      )}
+                    </p>
+                  </div>
+                  <div className={styles.inputGroup}>
+                    <TextInput
+                      id="password-recovery-identifier"
+                      type="text"
+                      name="password-recovery-identifier"
+                      autoComplete="username"
+                      labelText={t('passwordRecoveryUsername', 'Username')}
+                      value={recoveryIdentifier}
+                      onChange={changeRecoveryIdentifier}
+                      ref={recoveryInputRef}
+                      required
+                    />
+                    <Button
+                      type="submit"
+                      className={styles.continueButton}
+                      renderIcon={(props) => (
+                        <ArrowRightIcon size={24} {...props} />
+                      )}
+                      iconDescription={t(
+                        'requestPasswordRecovery',
+                        'Request password recovery',
+                      )}
+                    >
+                      {t(
+                        'requestPasswordRecovery',
+                        'Request password recovery',
+                      )}
+                    </Button>
+                  </div>
+                  {recoverySubmitted && (
+                    <InlineNotification
+                      className={styles.recoveryNotice}
+                      kind="info"
+                      lowContrast
+                      hideCloseButton
+                      title={t(
+                        'passwordRecoveryInstructionsTitle',
+                        'Ask an administrator for help',
+                      )}
+                      subtitle={t(
+                        'passwordRecoveryInstructions',
+                        'Ask the facility administrator to reset the password for {{username}}. Then return here and log in with the new password.',
+                        { username: recoveryIdentifier.trim() },
+                      )}
+                    />
+                  )}
+                  <Button
+                    type="button"
+                    kind="ghost"
+                    size="sm"
+                    className={styles.recoveryBackButton}
+                    onClick={returnToLogin}
+                  >
+                    {t('backToLogin', 'Back to log in')}
+                  </Button>
+                </form>
+              )}
             </Tile>
             <div className={styles.partnerSection}>
-              <p className={styles.partnerSubtitle}>{t('madeInCollaboration', 'Hecho en colaboración')}</p>
+              <p className={styles.partnerSubtitle}>
+                {t('madeInCollaboration', 'Hecho en colaboración')}
+              </p>
               <div className={styles.partnerLinks}>
-                <a href={globalThis.getOpenmrsSpaBase()} rel="noopener noreferrer" aria-label="Sihsalus">
-                  <img src={sihsalusLogoSrc} alt={t('sihsalusLogo', 'Sihsalus logo')} />
+                <a
+                  href={globalThis.getOpenmrsSpaBase()}
+                  rel="noopener noreferrer"
+                  aria-label="Sihsalus"
+                >
+                  <img
+                    src={sihsalusLogoSrc}
+                    alt={t('sihsalusLogo', 'Sihsalus logo')}
+                  />
                 </a>
                 <a
                   href="https://sanjosedelamazonas.org/"
@@ -360,7 +578,10 @@ const Login: React.FC = () => {
                   rel="noopener noreferrer"
                   aria-label="Santa Clotilde"
                 >
-                  <img src={santaClotildeLogoSrc} alt={t('santaClotildeLogo', 'Logo de Santa Clotilde')} />
+                  <img
+                    src={santaClotildeLogoSrc}
+                    alt={t('santaClotildeLogo', 'Logo de Santa Clotilde')}
+                  />
                 </a>
                 <a
                   className={styles.pucpLogoLink}
@@ -369,7 +590,10 @@ const Login: React.FC = () => {
                   rel="noopener noreferrer"
                   aria-label="PUCP"
                 >
-                  <img src={pucpLogoSrc} alt={t('pucpLogo', 'Logo de la PUCP')} />
+                  <img
+                    src={pucpLogoSrc}
+                    alt={t('pucpLogo', 'Logo de la PUCP')}
+                  />
                 </a>
               </div>
             </div>

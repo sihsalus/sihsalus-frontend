@@ -1,0 +1,31 @@
+@use "@carbon/styles/scss/theme";
+
+.customTile {
+  display: flex !important;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  background-color: theme.$layer-01;
+  border: 1px solid theme.$border-subtle-00;
+  border-radius: 4px;
+  padding: 1rem 0.5rem;
+  width: 8.75rem;
+  min-height: 7.5rem;
+  text-align: center;
+}
+
+.customTile:hover {
+  background-color: theme.$layer-hover-01;
+}
+
+.customTileTitle {
+  color: theme.$icon-secondary;
+}
+
+.customTileLabel {
+  font-size: 0.875rem;
+  line-height: 1.2;
+  color: theme.$text-primary;
+  overflow-wrap: anywhere;
+}

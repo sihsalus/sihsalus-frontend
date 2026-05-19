@@ -76,7 +76,7 @@ const TransitionQueueEntryModal: React.FC<TransitionQueueEntryModalProps> = ({ c
           });
           closeModal();
           mutateQueueEntries();
-          navigate({ to: `\${openmrsSpaBase}/patient/${queueEntry?.patientUuid}/chart` });
+          navigate({ to: `${globalThis.spaBase}/patient/${queueEntry?.patientUuid}/chart` });
         });
       },
       (error) => {

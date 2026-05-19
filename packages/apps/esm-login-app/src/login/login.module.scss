@@ -1,21 +1,21 @@
-@use "@carbon/layout";
-@use "@carbon/type";
-@use "@openmrs/esm-styleguide/src/vars" as *;
+@use '@carbon/layout';
+@use '@carbon/type';
+@use '@openmrs/esm-styleguide/src/vars' as *;
 
 .bodyShort01 {
-  @include type.type-style("body-compact-01");
+  @include type.type-style('body-compact-01');
 }
 
 .productiveHeading03 {
-  @include type.type-style("heading-03");
+  @include type.type-style('heading-03');
 }
 
 .label01 {
-  @include type.type-style("label-01");
+  @include type.type-style('label-01');
 }
 
 .caption01 {
-  @include type.type-style("legal-01");
+  @include type.type-style('legal-01');
 }
 
 .backButton {
@@ -165,7 +165,7 @@
 }
 
 .imagePanel::after {
-  content: "";
+  content: '';
   position: absolute;
   inset: 0;
   background:
@@ -297,6 +297,41 @@
   margin-top: layout.$spacing-06;
 }
 
+.recoveryLinkButton {
+  margin-top: layout.$spacing-03;
+  padding-left: 0;
+}
+
+.recoveryForm {
+  width: 100%;
+}
+
+.recoveryHeader {
+  margin-bottom: layout.$spacing-06;
+}
+
+.recoveryTitle {
+  @extend .productiveHeading03;
+  margin: 0 0 layout.$spacing-03;
+  color: var(--cds-text-primary);
+}
+
+.recoveryDescription {
+  @extend .bodyShort01;
+  margin: 0;
+  color: $text-02;
+}
+
+.recoveryNotice {
+  width: 100%;
+  margin-top: layout.$spacing-06;
+}
+
+.recoveryBackButton {
+  margin-top: layout.$spacing-03;
+  padding-left: 0;
+}
+
 .languageSwitcher {
   position: absolute;
   top: layout.$spacing-06;
@@ -349,7 +384,7 @@
     outline: none;
   }
 
-  &[aria-current="true"] {
+  &[aria-current='true'] {
     border-left: 0.25rem solid var(--brand-01);
     padding-left: calc(#{layout.$spacing-05} - 0.25rem);
     font-weight: 600;
@@ -380,7 +415,7 @@
   }
 
   .imagePanel {
-    min-height: 14rem;
+    display: none;
   }
 
   .formPanel {
@@ -388,21 +423,12 @@
     justify-content: center;
     gap: layout.$spacing-08;
     padding: layout.$spacing-11 layout.$spacing-05 layout.$spacing-08;
+    min-height: 100vh;
   }
 
   .languageSwitcher {
     top: layout.$spacing-05;
     right: layout.$spacing-05;
-  }
-}
-
-@media (max-width: 40rem) {
-  .imagePanel {
-    display: none;
-  }
-
-  .formPanel {
-    min-height: 100vh;
   }
 }
 

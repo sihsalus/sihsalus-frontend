@@ -11,7 +11,7 @@ interface EditPatientDetailsButtonProps {
 const EditPatientDetailsButton: React.FC<EditPatientDetailsButtonProps> = ({ patientUuid, onTransition }) => {
   const { t } = useTranslation(moduleName);
   const handleClick = React.useCallback(() => {
-    navigate({ to: `\${openmrsSpaBase}/patient/${patientUuid}/edit` });
+    navigate({ to: `${globalThis.spaBase}/patient/${patientUuid}/edit` });
     onTransition && onTransition();
   }, [onTransition, patientUuid]);
 

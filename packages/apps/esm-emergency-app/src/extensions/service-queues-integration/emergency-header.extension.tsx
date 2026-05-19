@@ -9,7 +9,6 @@
  * This extension decides internally whether to render based on the current location.
  * If it's not an emergency location, it returns null.
  */
-import React from 'react';
 import EmergencyHeader from '../../emergency-dashboard/emergency-header/emergency-header.component';
 import { useIsEmergencyLocation } from '../../utils/emergency-detection';
 

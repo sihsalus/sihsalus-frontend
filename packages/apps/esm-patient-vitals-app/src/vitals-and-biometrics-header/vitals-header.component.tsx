@@ -141,7 +141,7 @@ const VitalsHeader: React.FC<VitalsHeaderProps> = ({
             {!hideLinks && (
               <ConfigurableLink
                 className={styles.link}
-                to={`\${openmrsSpaBase}/patient/${patientUuid}/chart/Vitals & Biometrics`}
+                to={`${globalThis.spaBase}/patient/${patientUuid}/chart/Vitals & Biometrics`}
               >
                 {t('vitalsHistory', 'Vitals history')}
               </ConfigurableLink>

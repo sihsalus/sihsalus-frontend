@@ -23,7 +23,7 @@ import { type PatientRegistration } from './patient-registration/patient-registr
 export function setupOffline() {
   setupOfflineSync(patientRegistration, [], syncPatientRegistration, {
     onBeginEditSyncItem(syncItem) {
-      navigate({ to: `\${openmrsSpaBase}/patient/${syncItem.content.fhirPatient.id}/edit` });
+      navigate({ to: `${globalThis.spaBase}/patient/${syncItem.content.fhirPatient.id}/edit` });
     },
   });
 

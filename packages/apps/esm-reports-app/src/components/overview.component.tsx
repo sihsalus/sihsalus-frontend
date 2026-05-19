@@ -342,7 +342,7 @@ const OverviewComponent: React.FC = () => {
             className={styles.mainActionButton}
             iconDescription="Report schedule"
             kind="ghost"
-            onClick={() => navigate({ to: `\${openmrsSpaBase}/reports/scheduled-overview` })}
+            onClick={() => navigate({ to: `${globalThis.spaBase}/reports/scheduled-overview` })}
             renderIcon={() => <Calendar size={16} className={styles.actionButtonIcon} />}
           >
             {t('reportSchedule', 'Report schedule')}
@@ -351,7 +351,7 @@ const OverviewComponent: React.FC = () => {
             className={styles.mainActionButton}
             iconDescription="Report schedule"
             kind="ghost"
-            onClick={() => navigate({ to: `\${openmrsSpaBase}/reports/reports-data-overview` })}
+            onClick={() => navigate({ to: `${globalThis.spaBase}/reports/reports-data-overview` })}
             renderIcon={() => <Calendar size={16} className={styles.actionButtonIcon} />}
           >
             {t('viewReports', 'Reports Webview')}

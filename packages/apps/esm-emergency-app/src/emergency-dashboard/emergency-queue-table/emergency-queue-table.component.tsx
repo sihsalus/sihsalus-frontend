@@ -222,7 +222,7 @@ const EmergencyQueueTable: React.FC<EmergencyQueueTableProps> = ({ queueUuid }) 
 
   useEffect(() => {
     goTo(1);
-  }, [goTo, sortedQueueEntries]);
+  }, [goTo]);
 
   // Build rows using column components
   const rows = useMemo(() => {

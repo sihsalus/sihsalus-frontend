@@ -1,9 +1,9 @@
 import { Renew, UserMultiple } from '@carbon/react/icons';
 import { defineConfigSchema, getSyncLifecycle, registerBreadcrumbs } from '@openmrs/esm-framework';
+import { createDashboardLink } from '@openmrs/esm-patient-common-lib';
 
 import offlineToolsConfirmationModalComponent from './components/confirmation.modal';
 import { routes } from './constants';
-import { createDashboardLink } from './createDashboardLink';
 import { dashboardMeta } from './dashboard.meta';
 import OfflineToolsNavLink from './nav/offline-tools-nav-link.component';
 import offlineToolsNavItemsComponent from './nav/offline-tools-nav-menu.component';
@@ -76,17 +76,7 @@ export const offlineToolsPageActions = getSyncLifecycle(offlineToolsPageActionsC
 export const offlineToolsPatientChartActions = getSyncLifecycle(offlineToolsPatientChartComponent, options);
 
 export const offlineToolsPatientChartActionsDashboardLink = getSyncLifecycle(
-  createDashboardLink({
-    ...dashboardMeta,
-    // t('offline_actions_link', 'Acciones sin internet')
-    title: () =>
-      Promise.resolve(
-        globalThis.i18next?.t('offline_actions_link', {
-          defaultValue: 'Acciones sin internet',
-          ns: moduleName,
-        }) ?? 'Acciones sin internet',
-      ),
-  }),
+  createDashboardLink({ ...dashboardMeta, moduleName }),
   options,
 );
 

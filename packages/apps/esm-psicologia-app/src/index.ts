@@ -10,10 +10,9 @@ const moduleName = '@sihsalus/esm-psicologia-app';
 const psicologiaDashboardMeta = {
   slot: 'patient-chart-psicologia-dashboard-slot',
   columns: 1,
-  title: 'Psicología',
+  title: 'psicologia',
   path: 'psicologia',
   icon: 'omrs-icon-user-follow',
-  tooltip: 'psicologiaTooltip',
   isLink: true,
 };
 

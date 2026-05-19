@@ -3,5 +3,4 @@ export const dashboardMeta = {
   path: 'Imaging',
   title: 'Medical Imaging',
   icon: 'omrs-icon-user-xray',
-  tooltip: 'imagingTooltip',
 };

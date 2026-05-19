@@ -22,6 +22,5 @@ export const relationshipsDashboardMeta = {
   columns: 1,
   title: 'Ficha Familiar',
   path: 'relationships',
-  tooltip: 'familyRecordTooltip',
   config: {},
 } as const;

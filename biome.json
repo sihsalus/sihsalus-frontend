@@ -28,20 +28,20 @@
     "rules": {
       "recommended": true,
       "a11y": {
-        "noInteractiveElementToNoninteractiveRole": "off",
-        "noNoninteractiveElementToInteractiveRole": "off",
+        "noInteractiveElementToNoninteractiveRole": "error",
+        "noNoninteractiveElementToInteractiveRole": "error",
         "noLabelWithoutControl": "off",
         "noSvgWithoutTitle": "off",
         "useAltText": "off",
-        "useAriaPropsForRole": "off",
-        "useButtonType": "warn",
+        "useAriaPropsForRole": "error",
+        "useButtonType": "error",
         "useFocusableInteractive": "off",
-        "useHeadingContent": "off",
-        "useIframeTitle": "off",
-        "useKeyWithClickEvents": "off",
+        "useHeadingContent": "warn",
+        "useIframeTitle": "error",
+        "useKeyWithClickEvents": "warn",
         "useSemanticElements": "off",
-        "useValidAnchor": "off",
-        "useValidAriaRole": "warn"
+        "useValidAnchor": "warn",
+        "useValidAriaRole": "error"
       },
       "complexity": {
         "noBannedTypes": "off",
@@ -60,8 +60,8 @@
       },
       "correctness": {
         "noChildrenProp": "off",
-        "useExhaustiveDependencies": "warn",
-        "useJsxKeyInIterable": "off"
+        "useExhaustiveDependencies": "error",
+        "useJsxKeyInIterable": "error"
       },
       "performance": {
         "noAccumulatingSpread": "off",
@@ -89,17 +89,17 @@
       },
       "suspicious": {
         "noArrayIndexKey": "off",
-        "noAssignInExpressions": "off",
+        "noAssignInExpressions": "error",
         "noConfusingVoidType": "off",
         "noEmptyInterface": "off",
         "noExplicitAny": "warn",
-        "noGlobalIsNan": "off",
-        "noImplicitAnyLet": "off",
-        "noMisleadingCharacterClass": "off",
-        "noShorthandPropertyOverrides": "off",
-        "noShadowRestrictedNames": "off",
-        "noThenProperty": "off",
-        "noDoubleEquals": "warn"
+        "noGlobalIsNan": "error",
+        "noImplicitAnyLet": "warn",
+        "noMisleadingCharacterClass": "error",
+        "noShorthandPropertyOverrides": "error",
+        "noShadowRestrictedNames": "error",
+        "noThenProperty": "error",
+        "noDoubleEquals": "error"
       }
     }
   },

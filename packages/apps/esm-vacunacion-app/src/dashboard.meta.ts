@@ -6,5 +6,4 @@ export const dashboardMeta: DashboardLinkConfig & { slot: string } = {
   path: 'Vacunacion',
   title: 'vaccination',
   icon: 'omrs-icon-syringe',
-  tooltip: 'vaccinationTooltip',
 };

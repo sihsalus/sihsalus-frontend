@@ -29,13 +29,13 @@ const mockConfigInternalStore = configInternalStore as MockedStore<ConfigInterna
 function RenderConfig(props) {
   const config = useConfig();
 
-  return <button>{config[props.configKey]}</button>;
+  return <button type="button">{config[props.configKey]}</button>;
 }
 
 function RenderExternalConfig(props) {
   const config = useConfig({ externalModuleName: props.externalModuleName });
 
-  return <button>{config[props.configKey]}</button>;
+  return <button type="button">{config[props.configKey]}</button>;
 }
 
 function clearConfig() {

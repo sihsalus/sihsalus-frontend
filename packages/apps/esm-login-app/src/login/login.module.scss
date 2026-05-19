@@ -380,7 +380,7 @@
   }
 
   .imagePanel {
-    min-height: 14rem;
+    display: none;
   }
 
   .formPanel {
@@ -388,21 +388,12 @@
     justify-content: center;
     gap: layout.$spacing-08;
     padding: layout.$spacing-11 layout.$spacing-05 layout.$spacing-08;
+    min-height: 100vh;
   }
 
   .languageSwitcher {
     top: layout.$spacing-05;
     right: layout.$spacing-05;
-  }
-}
-
-@media (max-width: 40rem) {
-  .imagePanel {
-    display: none;
-  }
-
-  .formPanel {
-    min-height: 100vh;
   }
 }
 

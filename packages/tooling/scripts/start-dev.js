@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 
 const { spawn, spawnSync } = require('child_process');
-const { existsSync, statSync } = require('fs');
+const { existsSync, readFileSync, statSync } = require('fs');
 const net = require('net');
 const { extname, join, resolve } = require('path');
 
@@ -57,10 +57,6 @@ function logStartupSummary({ mode, apps = [] }) {
     logWarn('SIHSALUS_ALLOW_SELF_SIGNED_TLS=true; backend TLS certificate verification is disabled for local dev.');
   }
   console.log();
-}
-
-if (allowSelfSignedTls) {
-  process.env.NODE_TLS_REJECT_UNAUTHORIZED = '0';
 }
 
 if (requireBackendUrl && backendSource === 'default') {
@@ -153,6 +149,29 @@ function runWorkspaceBuild(workspaceName, workspaceRoot) {
   }
 }
 
+function createInMemoryRateLimit({ windowMs, max }) {
+  const requestsByIp = new Map();
+
+  return (req, res, next) => {
+    const now = Date.now();
+    const key = req.ip || req.socket.remoteAddress || 'unknown';
+    const current = requestsByIp.get(key);
+
+    if (!current || current.resetAt <= now) {
+      requestsByIp.set(key, { count: 1, resetAt: now + windowMs });
+      return next();
+    }
+
+    current.count += 1;
+    if (current.count > max) {
+      res.setHeader('retry-after', Math.ceil((current.resetAt - now) / 1000));
+      return res.status(429).send('Too many requests');
+    }
+
+    return next();
+  };
+}
+
 /**
  * Start a reverse proxy on port 8080 that:
  * 1. Serves pre-built bundles and chunks from dist/spa/ for /openmrs/spa/ paths
@@ -175,8 +194,17 @@ async function startWithProxy(cliArgs) {
 
   const app = express();
   const staticHandler = express.static(distSpa, { index: 'index.html' });
+  const spaIndexHtml = readFileSync(join(distSpa, 'index.html'), 'utf8');
+  const spaIndexRateLimit = createInMemoryRateLimit({
+    windowMs: Number(process.env.SIHSALUS_SPA_RATE_LIMIT_WINDOW_MS) || 60_000,
+    max: Number(process.env.SIHSALUS_SPA_RATE_LIMIT_MAX) || 300,
+  });
+  const sessionRateLimit = createInMemoryRateLimit({
+    windowMs: Number(process.env.SIHSALUS_SESSION_RATE_LIMIT_WINDOW_MS) || 60_000,
+    max: Number(process.env.SIHSALUS_SESSION_RATE_LIMIT_MAX) || 120,
+  });
 
-  app.get(sessionPath, async (req, res) => {
+  app.get(sessionPath, sessionRateLimit, async (req, res) => {
     const authorization = req.get('authorization');
     const cookie = req.get('cookie') || '';
 
@@ -226,11 +254,11 @@ async function startWithProxy(cliArgs) {
     staticHandler(req, res, next);
   });
 
-  app.get(`${spaPath}/*`, (req, res, next) => {
+  app.get(`${spaPath}/*`, spaIndexRateLimit, (req, res, next) => {
     if (cliManagedPaths.has(req.path) || extname(req.path)) {
       return next();
     }
-    res.sendFile(join(distSpa, 'index.html'));
+    res.type('html').send(spaIndexHtml);
   });
 
   // Proxy everything else to the openmrs CLI (importmap, index.html, API, etc.)

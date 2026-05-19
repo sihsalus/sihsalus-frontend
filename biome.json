@@ -68,7 +68,7 @@
         "noDelete": "off"
       },
       "security": {
-        "noGlobalEval": "off"
+        "noGlobalEval": "error"
       },
       "style": {
         "noInferrableTypes": "off",

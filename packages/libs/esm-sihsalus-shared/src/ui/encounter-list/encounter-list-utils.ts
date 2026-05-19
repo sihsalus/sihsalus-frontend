@@ -155,7 +155,7 @@ function extractDefaultValueBasedOnType(defaultValue: string | number | NamedCon
       // check for date
       return formatDate(parseDate(strValue));
     }
-  } else if (typeof defaultValue === 'object' && defaultValue !== null) {
+  } else if (typeof defaultValue === 'object') {
     return defaultValue?.name?.name ?? '--'; // extract the default name from the object
   }
   return '--';

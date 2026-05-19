@@ -11,8 +11,8 @@ interface SubmitEventDetail {
 interface UseExternalFormActionProps {
   patientUuid: string;
   formUuid: string;
-  setIsSubmitting: (boolean) => void;
-  setIsValidating: (boolean) => void;
+  setIsSubmitting: (isSubmitting: boolean) => void;
+  setIsValidating: (isValidating: boolean) => void;
 }
 
 /**

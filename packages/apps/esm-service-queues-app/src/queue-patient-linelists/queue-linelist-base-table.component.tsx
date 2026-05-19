@@ -114,7 +114,7 @@ const QueuePatientBaseTable: React.FC<QueuePatientTableProps> = ({
           id: entry.id,
           name: {
             content: (
-              <ConfigurableLink to={`\${openmrsSpaBase}/patient/${entry.patientUuid}/chart`}>
+              <ConfigurableLink to={`${globalThis.spaBase}/patient/${entry.patientUuid}/chart`}>
                 {entry.name}
               </ConfigurableLink>
             ),

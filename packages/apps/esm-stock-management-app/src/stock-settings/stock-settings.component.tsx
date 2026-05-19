@@ -20,7 +20,7 @@ function StockSettings() {
       <Button
         onClick={() =>
           navigate({
-            to: `\${openmrsBase}/admin/maintenance/settings.list?show=Stockmanagement`,
+            to: `${globalThis.openmrsBase}/admin/maintenance/settings.list?show=Stockmanagement`,
           })
         }
         size="md"

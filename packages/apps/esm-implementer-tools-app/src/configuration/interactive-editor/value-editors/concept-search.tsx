@@ -58,7 +58,7 @@ export function ConceptSearchBox({ setConcept, value }: ConceptSearchBoxProps) {
           if (!conceptToLookup) return null;
           if (isSearchingConcepts)
             return <InlineLoading className={styles.loader} description={t('searching', 'Searching') + '...'} />;
-          if (concepts && concepts.length && !isSearchingConcepts) {
+          if (concepts && concepts.length) {
             return (
               <StructuredListWrapper selection id={`searchbox-${id}`} className={styles.listbox}>
                 {concepts.map((concept: Concept) => (

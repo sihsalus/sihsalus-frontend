@@ -2,7 +2,6 @@ import {
   Button,
   DataTable,
   DataTableSkeleton,
-  InlineLoading,
   Table,
   TableBody,
   TableCell,
@@ -79,7 +78,6 @@ const PrenatalAntecedents: React.FC<NeonatalSummaryProps> = ({ patientUuid }) =>
     return (
       <div className={styles.widgetCard}>
         <CardHeader title={headerTitle}>
-          {isLoading && <InlineLoading description={t('loading', 'Loading...')} />}
           <Button kind="ghost" renderIcon={(props) => <AddIcon size={16} {...props} />} onClick={launchPerinatalForm}>
             {t('update', 'Actualizar')}
           </Button>

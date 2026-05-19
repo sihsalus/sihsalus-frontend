@@ -93,7 +93,7 @@ export default function SupplyTab({ form }: Props) {
                           control={control}
                           render={({ field }) => (
                             <Select
-                              id=""
+                              id={`supplyId-${index}`}
                               key={row.id}
                               {...field}
                               labelText=""

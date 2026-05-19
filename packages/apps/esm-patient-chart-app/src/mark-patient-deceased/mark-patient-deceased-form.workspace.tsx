@@ -42,14 +42,12 @@ const MarkPatientDeceasedForm: React.FC<DefaultPatientWorkspaceProps> = ({ close
     if (!searchTerm) {
       return causesOfDeath;
     }
-    return searchTerm
-      ? fuzzy
-          .filter(searchTerm, causesOfDeath, {
-            extract: (causeOfDeathConcept) => causeOfDeathConcept.display,
-          })
-          .sort((r1, r2) => r1.score - r2.score)
-          .map((result) => result.original)
-      : causesOfDeath;
+    return fuzzy
+      .filter(searchTerm, causesOfDeath, {
+        extract: (causeOfDeathConcept) => causeOfDeathConcept.display,
+      })
+      .sort((r1, r2) => r1.score - r2.score)
+      .map((result) => result.original);
   }, [searchTerm, causesOfDeath]);
 
   const handleSearchTermChange = (event: React.ChangeEvent<HTMLInputElement>) => {

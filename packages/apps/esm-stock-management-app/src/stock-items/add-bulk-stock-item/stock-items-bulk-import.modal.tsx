@@ -18,11 +18,8 @@ const ImportBulkStockItemsModal: React.FC<ImportBulkStockItemsModalProps> = ({ c
     }
 
     const formData = new FormData();
-
-    if (selectedFile) {
-      formData.append('file', selectedFile, 'Import_Stock_Items.csv');
-      formData.append('hasHeader', 'true');
-    }
+    formData.append('file', selectedFile, 'Import_Stock_Items.csv');
+    formData.append('hasHeader', 'true');
 
     uploadStockItems(formData).then(
       () => {

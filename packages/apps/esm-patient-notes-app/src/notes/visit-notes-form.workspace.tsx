@@ -1271,7 +1271,7 @@ function DiagnosesDisplay({
     return <Loader />;
   }
 
-  if (!isSearching && searchResults?.length > 0) {
+  if (searchResults?.length > 0) {
     return (
       <ul className={styles.diagnosisList}>
         {searchResults.map((diagnosis, index) => {

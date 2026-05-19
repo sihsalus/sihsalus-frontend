@@ -182,7 +182,6 @@ const FamilyHistory: React.FC<FamilyHistoryProps> = ({ patientUuid }) => {
   return (
     <div className={styles.widgetCard}>
       <CardHeader title={headerTitle}>
-        {isLoading && <DataTableSkeleton rowCount={5} />}
         <Button onClick={handleAddHistory} renderIcon={Add} kind="ghost">
           {t('add', 'Add')}
         </Button>

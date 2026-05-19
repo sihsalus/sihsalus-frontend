@@ -170,7 +170,7 @@ const Login: React.FC = () => {
             let to = loginLinks?.loginSuccess || '/home';
             if (location?.state?.referrer) {
               if (location.state.referrer.startsWith('/')) {
-                to = `\${openmrsSpaBase}${location.state.referrer}`;
+                to = `${globalThis.spaBase}${location.state.referrer}`;
               } else {
                 to = location.state.referrer;
               }

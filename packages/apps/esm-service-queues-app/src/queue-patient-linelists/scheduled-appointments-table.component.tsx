@@ -146,7 +146,7 @@ const AppointmentsTable: React.FC = () => {
       id: appointment.uuid,
       name: {
         content: (
-          <ConfigurableLink to={`\${openmrsSpaBase}/patient/${appointment.patient.uuid}/chart`}>
+          <ConfigurableLink to={`${globalThis.spaBase}/patient/${appointment.patient.uuid}/chart`}>
             {appointment.patient.name}
           </ConfigurableLink>
         ),

@@ -42,7 +42,7 @@ const TriageNote: React.FC<TriageNoteProps> = ({ notes, patientUuid, diagnoses }
             size="sm"
             kind="ghost"
             renderIcon={(props) => <ArrowRight size={16} {...props} />}
-            onClick={() => navigate({ to: `\${openmrsSpaBase}/patient/${patientUuid}/chart` })}
+            onClick={() => navigate({ to: `${globalThis.spaBase}/patient/${patientUuid}/chart` })}
             iconDescription={t('triageForm', 'Triage form')}
           >
             {t('triageForm', 'Triage form')}

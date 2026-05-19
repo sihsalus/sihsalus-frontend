@@ -122,7 +122,7 @@ const FuaEncounterWorkspace: React.FC<FuaEncounterWorkspaceProps> = (props) => {
         <Button kind="primary" onClick={() => setRetrySeed((seed) => seed + 1)}>
           {t('retry', 'Reintentar')}
         </Button>
-        <Button kind="secondary" onClick={() => navigate({ to: `\${openmrsSpaBase}/fua-request` })}>
+        <Button kind="secondary" onClick={() => navigate({ to: `${globalThis.spaBase}/fua-request` })}>
           {t('openFuaManagement', 'Abrir gestión FUA')}
         </Button>
       </div>
@@ -136,7 +136,7 @@ const FuaEncounterWorkspace: React.FC<FuaEncounterWorkspaceProps> = (props) => {
         )}
       </p>
       <div style={{ display: 'flex', gap: '0.75rem', flexWrap: 'wrap' }}>
-        <Button kind="secondary" onClick={() => navigate({ to: `\${openmrsSpaBase}/fua-request` })}>
+        <Button kind="secondary" onClick={() => navigate({ to: `${globalThis.spaBase}/fua-request` })}>
           {t('openFuaManagement', 'Abrir gestión FUA')}
         </Button>
         <Button kind="primary" onClick={() => setRetrySeed((seed) => seed + 1)}>

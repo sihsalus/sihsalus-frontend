@@ -16,6 +16,7 @@
   "peruHomeActions": "Accesos de admisión",
   "registerPatient": "Registrar paciente",
   "registerPatientDescription": "DNI preferente; CE/CNV si aplica",
+  "returnToHome": "Volver al inicio",
   "searchPatient": "Buscar paciente",
   "searchPatientDescription": "DNI, CE, CNV o HCE"
 }

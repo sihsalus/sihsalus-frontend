@@ -98,14 +98,14 @@ export const getQueryDetails = ({
         key: `reporting.library.cohortDefinition.builtIn.${gender}`,
       };
     });
-    let {
+    const {
       query: { rowFilters, customRowFilterCombination },
     } = queryDetails;
-    rowFilters = rowFilters.length > 0 ? [...rowFilters, ...rowFilterWithAllGenders] : rowFilterWithAllGenders;
-    const filters = rowFilters;
-    const filterCombination = customRowFilterCombination;
-    customRowFilterCombination = filterCombination
-      ? `(${filters.length - 2} OR ${filters.length - 1} OR ${filters.length}) AND ${filterCombination}`
+    const filters = rowFilters.length > 0 ? [...rowFilters, ...rowFilterWithAllGenders] : rowFilterWithAllGenders;
+
+    queryDetails.query.rowFilters = filters;
+    queryDetails.query.customRowFilterCombination = customRowFilterCombination
+      ? `(${filters.length - 2} OR ${filters.length - 1} OR ${filters.length}) AND ${customRowFilterCombination}`
       : '(1 OR 2 OR 3)';
   }
 

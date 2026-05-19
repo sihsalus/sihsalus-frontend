@@ -127,8 +127,7 @@ function parseSchedulingData(value?: string): StaffSchedulingData {
 }
 
 export function createClientId(prefix: string) {
-  const random = globalThis.crypto?.randomUUID?.() ?? Math.random().toString(36).slice(2);
-  return `${prefix}-${random}`;
+  return `${prefix}-${crypto.randomUUID()}`;
 }
 
 export function useStaffSchedulingData() {

@@ -1,11 +1,4 @@
-import {
-  Button,
-  InlineLoading,
-  InlineNotification,
-  PasswordInput,
-  TextInput,
-  Tile,
-} from '@carbon/react';
+import { Button, InlineLoading, InlineNotification, PasswordInput, TextInput, Tile } from '@carbon/react';
 import {
   ArrowRightIcon,
   getCoreTranslation,
@@ -16,13 +9,7 @@ import {
   useConnectivity,
   useSession,
 } from '@openmrs/esm-framework';
-import React, {
-  useCallback,
-  useEffect,
-  useMemo,
-  useRef,
-  useState,
-} from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useLocation, useNavigate } from 'react-router-dom';
 
@@ -36,10 +23,7 @@ export interface LoginReferrer {
   referrer?: string;
 }
 
-type LoginErrorKey =
-  | 'invalidCredentials'
-  | 'serverUnavailable'
-  | 'sessionEndpointNotFound';
+type LoginErrorKey = 'invalidCredentials' | 'serverUnavailable' | 'sessionEndpointNotFound';
 type LoginView = 'login' | 'passwordRecovery';
 
 // t('invalidCredentials', 'Invalid username or password')
@@ -47,23 +31,17 @@ type LoginView = 'login' | 'passwordRecovery';
 // t('sessionEndpointNotFound', 'The login service is not available at this backend address. Please contact support or try a different environment.')
 const loginErrorFallbacks = {
   invalidCredentials: 'Invalid username or password',
-  serverUnavailable:
-    'The authentication server is not responding. Please try again later.',
+  serverUnavailable: 'The authentication server is not responding. Please try again later.',
   sessionEndpointNotFound:
     'The login service is not available at this backend address. Please contact support or try a different environment.',
 } satisfies Record<LoginErrorKey, string>;
 
 function getLoginErrorKey(error: unknown): LoginErrorKey {
-  const session = (error as { session?: { backendUnavailable?: boolean } })
-    ?.session;
+  const session = (error as { session?: { backendUnavailable?: boolean } })?.session;
   const nestedError = (error as { error?: unknown })?.error;
   const errorToInspect = nestedError ?? error;
-  const status = (errorToInspect as { response?: { status?: number } })
-    ?.response?.status;
-  const message =
-    errorToInspect instanceof Error
-      ? errorToInspect.message
-      : String(errorToInspect ?? '');
+  const status = (errorToInspect as { response?: { status?: number } })?.response?.status;
+  const message = errorToInspect instanceof Error ? errorToInspect.message : String(errorToInspect ?? '');
 
   if (session?.backendUnavailable) {
     return 'serverUnavailable';
@@ -73,12 +51,7 @@ function getLoginErrorKey(error: unknown): LoginErrorKey {
     return 'sessionEndpointNotFound';
   }
 
-  if (
-    status >= 500 ||
-    /failed to fetch|gateway timeout|status of 0|load failed|network/i.test(
-      message,
-    )
-  ) {
+  if (status >= 500 || /failed to fetch|gateway timeout|status of 0|load failed|network/i.test(message)) {
     return 'serverUnavailable';
   }
 
@@ -157,21 +130,12 @@ const Login: React.FC = () => {
     }
   }, []);
 
-  const changeUsername = useCallback(
-    (evt: React.ChangeEvent<HTMLInputElement>) => setUsername(evt.target.value),
-    [],
-  );
-  const changePassword = useCallback(
-    (evt: React.ChangeEvent<HTMLInputElement>) => setPassword(evt.target.value),
-    [],
-  );
-  const changeRecoveryIdentifier = useCallback(
-    (evt: React.ChangeEvent<HTMLInputElement>) => {
-      setRecoveryIdentifier(evt.target.value);
-      setRecoverySubmitted(false);
-    },
-    [],
-  );
+  const changeUsername = useCallback((evt: React.ChangeEvent<HTMLInputElement>) => setUsername(evt.target.value), []);
+  const changePassword = useCallback((evt: React.ChangeEvent<HTMLInputElement>) => setPassword(evt.target.value), []);
+  const changeRecoveryIdentifier = useCallback((evt: React.ChangeEvent<HTMLInputElement>) => {
+    setRecoveryIdentifier(evt.target.value);
+    setRecoverySubmitted(false);
+  }, []);
 
   const openPasswordRecovery = useCallback(() => {
     setErrorMessage('');
@@ -212,8 +176,7 @@ const Login: React.FC = () => {
       evt.stopPropagation();
 
       // If credentials were autofilled, input onChange might not have been called
-      const currentUsername =
-        usernameInputRef.current?.value?.trim() || username;
+      const currentUsername = usernameInputRef.current?.value?.trim() || username;
       const currentPassword = passwordInputRef.current?.value || password;
 
       if (showPasswordOnSeparateScreen && !showPasswordField) {
@@ -228,10 +191,7 @@ const Login: React.FC = () => {
 
       try {
         setIsLoggingIn(true);
-        const sessionStore = await refetchCurrentUser(
-          currentUsername,
-          currentPassword,
-        );
+        const sessionStore = await refetchCurrentUser(currentUsername, currentPassword);
         const session = sessionStore.session;
         const authenticated = sessionStore?.session?.authenticated;
 
@@ -299,11 +259,7 @@ const Login: React.FC = () => {
 
   if (!loginProvider || loginProvider.type === 'basic') {
     return (
-      <div
-        className={containerClassName}
-        style={containerStyle}
-        data-testid="login-container"
-      >
+      <div className={containerClassName} style={containerStyle} data-testid="login-container">
         <main className={styles.loginLayout}>
           <h1 className={styles.srOnly}>{t('login', 'Log in')}</h1>
           <div className={styles.imagePanel} aria-hidden="true">
@@ -346,13 +302,7 @@ const Login: React.FC = () => {
                     />
                     {showPasswordOnSeparateScreen ? (
                       <>
-                        <div
-                          className={
-                            showPasswordField
-                              ? undefined
-                              : styles.hiddenPasswordField
-                          }
-                        >
+                        <div className={showPasswordField ? undefined : styles.hiddenPasswordField}>
                           <PasswordInput
                             id="password"
                             labelText={t('password', 'Password')}
@@ -362,14 +312,8 @@ const Login: React.FC = () => {
                             ref={passwordInputRef}
                             required
                             value={password}
-                            showPasswordLabel={t(
-                              'showPassword',
-                              'Show password',
-                            )}
-                            invalidText={t(
-                              'validValueRequired',
-                              'A valid value is required',
-                            )}
+                            showPasswordLabel={t('showPassword', 'Show password')}
+                            invalidText={t('validValueRequired', 'A valid value is required')}
                             aria-hidden={!showPasswordField}
                             tabIndex={showPasswordField ? 0 : -1}
                           />
@@ -378,21 +322,14 @@ const Login: React.FC = () => {
                           <Button
                             type="submit"
                             className={styles.continueButton}
-                            renderIcon={(props) => (
-                              <ArrowRightIcon size={24} {...props} />
-                            )}
-                            iconDescription={t(
-                              'loginButtonIconDescription',
-                              'Log in button',
-                            )}
+                            renderIcon={(props) => <ArrowRightIcon size={24} {...props} />}
+                            iconDescription={t('loginButtonIconDescription', 'Log in button')}
                             disabled={!isLoginEnabled || isLoggingIn}
                           >
                             {isLoggingIn ? (
                               <InlineLoading
                                 className={styles.loader}
-                                description={
-                                  t('loggingIn', 'Logging in') + '...'
-                                }
+                                description={t('loggingIn', 'Logging in') + '...'}
                               />
                             ) : (
                               t('login', 'Log in')
@@ -402,13 +339,8 @@ const Login: React.FC = () => {
                           <Button
                             type="submit"
                             className={styles.continueButton}
-                            renderIcon={(props) => (
-                              <ArrowRightIcon size={24} {...props} />
-                            )}
-                            iconDescription={t(
-                              'continueToPassword',
-                              'Continue to password',
-                            )}
+                            renderIcon={(props) => <ArrowRightIcon size={24} {...props} />}
+                            iconDescription={t('continueToPassword', 'Continue to password')}
                             onClick={(evt) => {
                               evt.preventDefault();
                               continueLogin();
@@ -431,21 +363,13 @@ const Login: React.FC = () => {
                           required
                           value={password}
                           showPasswordLabel={t('showPassword', 'Show password')}
-                          invalidText={t(
-                            'validValueRequired',
-                            'A valid value is required',
-                          )}
+                          invalidText={t('validValueRequired', 'A valid value is required')}
                         />
                         <Button
                           type="submit"
                           className={styles.continueButton}
-                          renderIcon={(props) => (
-                            <ArrowRightIcon size={24} {...props} />
-                          )}
-                          iconDescription={t(
-                            'loginButtonIconDescription',
-                            'Log in button',
-                          )}
+                          renderIcon={(props) => <ArrowRightIcon size={24} {...props} />}
+                          iconDescription={t('loginButtonIconDescription', 'Log in button')}
                           disabled={!isLoginEnabled || isLoggingIn}
                         >
                           {isLoggingIn ? (
@@ -473,10 +397,7 @@ const Login: React.FC = () => {
                     <div className={styles.errorMessage}>
                       <InlineNotification
                         kind="error"
-                        subtitle={t(
-                          errorMessage,
-                          loginErrorFallbacks[errorMessage as LoginErrorKey],
-                        )}
+                        subtitle={t(errorMessage, loginErrorFallbacks[errorMessage as LoginErrorKey])}
                         title={getCoreTranslation('error')}
                         onClick={() => setErrorMessage('')}
                       />
@@ -484,14 +405,9 @@ const Login: React.FC = () => {
                   )}
                 </form>
               ) : (
-                <form
-                  className={styles.recoveryForm}
-                  onSubmit={handleRecoverySubmit}
-                >
+                <form className={styles.recoveryForm} onSubmit={handleRecoverySubmit}>
                   <div className={styles.recoveryHeader}>
-                    <h2 className={styles.recoveryTitle}>
-                      {t('recoverPassword', 'Recover password')}
-                    </h2>
+                    <h2 className={styles.recoveryTitle}>{t('recoverPassword', 'Recover password')}</h2>
                     <p className={styles.recoveryDescription}>
                       {t(
                         'recoverPasswordHelp',
@@ -514,18 +430,10 @@ const Login: React.FC = () => {
                     <Button
                       type="submit"
                       className={styles.continueButton}
-                      renderIcon={(props) => (
-                        <ArrowRightIcon size={24} {...props} />
-                      )}
-                      iconDescription={t(
-                        'requestPasswordRecovery',
-                        'Request password recovery',
-                      )}
+                      renderIcon={(props) => <ArrowRightIcon size={24} {...props} />}
+                      iconDescription={t('requestPasswordRecovery', 'Request password recovery')}
                     >
-                      {t(
-                        'requestPasswordRecovery',
-                        'Request password recovery',
-                      )}
+                      {t('requestPasswordRecovery', 'Request password recovery')}
                     </Button>
                   </div>
                   {recoverySubmitted && (
@@ -534,10 +442,7 @@ const Login: React.FC = () => {
                       kind="info"
                       lowContrast
                       hideCloseButton
-                      title={t(
-                        'passwordRecoveryInstructionsTitle',
-                        'Ask an administrator for help',
-                      )}
+                      title={t('passwordRecoveryInstructionsTitle', 'Ask an administrator for help')}
                       subtitle={t(
                         'passwordRecoveryInstructions',
                         'Ask the facility administrator to reset the password for {{username}}. Then return here and log in with the new password.',
@@ -558,19 +463,10 @@ const Login: React.FC = () => {
               )}
             </Tile>
             <div className={styles.partnerSection}>
-              <p className={styles.partnerSubtitle}>
-                {t('madeInCollaboration', 'Hecho en colaboración')}
-              </p>
+              <p className={styles.partnerSubtitle}>{t('madeInCollaboration', 'Hecho en colaboración')}</p>
               <div className={styles.partnerLinks}>
-                <a
-                  href={globalThis.getOpenmrsSpaBase()}
-                  rel="noopener noreferrer"
-                  aria-label="Sihsalus"
-                >
-                  <img
-                    src={sihsalusLogoSrc}
-                    alt={t('sihsalusLogo', 'Sihsalus logo')}
-                  />
+                <a href={globalThis.getOpenmrsSpaBase()} rel="noopener noreferrer" aria-label="Sihsalus">
+                  <img src={sihsalusLogoSrc} alt={t('sihsalusLogo', 'Sihsalus logo')} />
                 </a>
                 <a
                   href="https://sanjosedelamazonas.org/"
@@ -578,10 +474,7 @@ const Login: React.FC = () => {
                   rel="noopener noreferrer"
                   aria-label="Santa Clotilde"
                 >
-                  <img
-                    src={santaClotildeLogoSrc}
-                    alt={t('santaClotildeLogo', 'Logo de Santa Clotilde')}
-                  />
+                  <img src={santaClotildeLogoSrc} alt={t('santaClotildeLogo', 'Logo de Santa Clotilde')} />
                 </a>
                 <a
                   className={styles.pucpLogoLink}
@@ -590,10 +483,7 @@ const Login: React.FC = () => {
                   rel="noopener noreferrer"
                   aria-label="PUCP"
                 >
-                  <img
-                    src={pucpLogoSrc}
-                    alt={t('pucpLogo', 'Logo de la PUCP')}
-                  />
+                  <img src={pucpLogoSrc} alt={t('pucpLogo', 'Logo de la PUCP')} />
                 </a>
               </div>
             </div>

@@ -33,6 +33,40 @@ const SafeSymbol = Object.freeze({
   keyFor: Symbol.keyFor.bind(Symbol),
 });
 
+const isSafePrototype = (prototype: unknown) => prototype === null || prototype === Object.prototype;
+const assertSafePrototype = (prototype: unknown, operation: string) => {
+  if (!isSafePrototype(prototype)) {
+    throw new TypeError(`Object.${operation} only supports null or Object.prototype`);
+  }
+};
+
+const assertSafePropertyKey = (property: PropertyKey, operation: string) => {
+  if (property === '__proto__' || property === 'prototype' || property === 'constructor') {
+    throw new TypeError(`Object.${operation} does not allow defining reserved property "${String(property)}"`);
+  }
+};
+
+const safeObjectCreate = (prototype: object | null, properties?: PropertyDescriptorMap & ThisType<unknown>) => {
+  assertSafePrototype(prototype, 'create');
+  return properties ? Object.create(prototype, properties) : Object.create(prototype);
+};
+
+const safeObjectDefineProperty = <T extends object>(
+  object: T,
+  property: PropertyKey,
+  attributes: PropertyDescriptor & ThisType<unknown>,
+) => {
+  assertSafePropertyKey(property, 'defineProperty');
+  assertSafePrototype(Object.getPrototypeOf(object), 'defineProperty');
+  return Object.defineProperty(object, property, attributes);
+};
+
+const safeObjectSetPrototypeOf = <T extends object>(object: T, prototype: object | null) => {
+  assertSafePrototype(prototype, 'setPrototypeOf');
+  assertSafePrototype(Object.getPrototypeOf(object), 'setPrototypeOf');
+  return Object.setPrototypeOf(object, prototype);
+};
+
 export const globals: Globals = {
   Array: SafeArray,
   Boolean,
@@ -59,14 +93,14 @@ export const globals: Globals = {
   Object: {
     ['__proto__']: null,
     assign: Object.assign.bind(Object),
-    create: Object.create.bind(Object),
-    defineProperty: Object.defineProperty.bind(Object),
+    create: safeObjectCreate,
+    defineProperty: safeObjectDefineProperty,
     fromEntries: Object.fromEntries.bind(Object),
     getPrototypeOf: Object.getPrototypeOf.bind(Object),
     hasOwn: Object.hasOwn.bind(Object),
     keys: Object.keys.bind(Object),
     is: Object.is.bind(Object),
-    setPrototypeOf: Object.setPrototypeOf.bind(Object),
+    setPrototypeOf: safeObjectSetPrototypeOf,
     values: Object.values.bind(Object),
   },
 };

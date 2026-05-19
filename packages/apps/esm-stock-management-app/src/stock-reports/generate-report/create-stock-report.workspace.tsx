@@ -144,7 +144,9 @@ const CreateReport: React.FC<CreateReportProps> = ({ model, closeWorkspace }) =>
         setDisplayPatient(reportType.parameters?.some((p) => p === ReportParameter.Patient));
         setDisplayLimit(reportType.parameters?.some((p) => p === ReportParameter.Limit));
         setDisplayMostLeastMoving(reportType.parameters?.some((p) => p === ReportParameter.MostLeastMoving));
-        setDisplayFulfillment(reportType.parameters?.some((p) => p === ReportParameter.Fulfillment));
+        setDisplayFulfillment(
+          reportType.parameters?.some((p) => p === ReportParameter.Fulfillment || p === ReportParameter.Fullfillment),
+        );
         hasResetParameters = true;
       }
     }

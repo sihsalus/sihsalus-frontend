@@ -21,12 +21,12 @@ export const globals: Globals = {
   encodeURIComponent,
   Object: {
     ['__proto__']: undefined,
-    assign: Object.assign.bind(null),
-    fromEntries: Object.fromEntries.bind(null),
-    hasOwn: Object.hasOwn.bind(null),
-    keys: Object.keys.bind(null),
-    is: Object.is.bind(null),
-    values: Object.values.bind(null),
+    assign: Object.assign.bind(Object),
+    fromEntries: Object.fromEntries.bind(Object),
+    hasOwn: Object.hasOwn.bind(Object),
+    keys: Object.keys.bind(Object),
+    is: Object.is.bind(Object),
+    values: Object.values.bind(Object),
   },
 };
 

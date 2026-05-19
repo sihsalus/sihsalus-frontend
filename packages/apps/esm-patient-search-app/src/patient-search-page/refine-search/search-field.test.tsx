@@ -185,13 +185,35 @@ describe('SearchField', () => {
     };
 
     it('applies tablet styles when in tablet mode', () => {
+      const { unmount } = render(<SearchField field={ageField} {...defaultProps} />);
+      const defaultInput = screen.getByLabelText('Age');
+      const defaultContainer = defaultInput.closest('div');
+      const defaultClassName = defaultContainer?.getAttribute('class') ?? '';
+      unmount();
+
       render(<SearchField field={ageField} {...defaultProps} isTablet={true} />);
-      expect(screen.getByLabelText('Age')).toBeInTheDocument();
+      const tabletInput = screen.getByLabelText('Age');
+      const tabletContainer = tabletInput.closest('div');
+      const tabletClassName = tabletContainer?.getAttribute('class') ?? '';
+
+      expect(tabletInput).toBeInTheDocument();
+      expect(tabletClassName).not.toEqual(defaultClassName);
     });
 
     it('applies overlay styles when in overlay mode', () => {
+      const { unmount } = render(<SearchField field={ageField} {...defaultProps} />);
+      const defaultInput = screen.getByLabelText('Age');
+      const defaultContainer = defaultInput.closest('div');
+      const defaultClassName = defaultContainer?.getAttribute('class') ?? '';
+      unmount();
+
       render(<SearchField field={ageField} {...defaultProps} inTabletOrOverlay={true} />);
-      expect(screen.getByLabelText('Age')).toBeInTheDocument();
+      const overlayInput = screen.getByLabelText('Age');
+      const overlayContainer = overlayInput.closest('div');
+      const overlayClassName = overlayContainer?.getAttribute('class') ?? '';
+
+      expect(overlayInput).toBeInTheDocument();
+      expect(overlayClassName).not.toEqual(defaultClassName);
     });
   });
 });

@@ -59,9 +59,19 @@ export function useExternalFormAction({
   const { t } = useTranslation();
 
   useEffect(() => {
-    const handleSubmit = (event: Event): void => {
+    const handleFormAction = (event: Event): void => {
       const customEvent = event as CustomEvent<SubmitEventDetail>;
-      const { formUuid: targetFormUuid, patientUuid: targetPatientUuid, action } = customEvent.detail;
+      const detail = customEvent.detail;
+
+      if (!detail) {
+        reportError(
+          new Error('The form action event is missing detail payload.'),
+          t('formActionFailed', 'Form action failed'),
+        );
+        return;
+      }
+
+      const { formUuid: targetFormUuid, patientUuid: targetPatientUuid, action } = detail;
 
       if (!action || !targetFormUuid || !targetPatientUuid) {
         reportError(
@@ -86,9 +96,9 @@ export function useExternalFormAction({
       }
     };
 
-    window.addEventListener('ampath-form-action', handleSubmit);
+    window.addEventListener('ampath-form-action', handleFormAction);
     return (): void => {
-      window.removeEventListener('ampath-form-action', handleSubmit);
+      window.removeEventListener('ampath-form-action', handleFormAction);
     };
   }, [formUuid, patientUuid, setIsSubmitting, setIsValidating, t]);
 }

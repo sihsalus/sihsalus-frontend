@@ -111,7 +111,7 @@ const StockReferences: React.FC<StockReferencesProps> = ({ stockItemUuid }) => {
     <FormProvider {...stockReferenceForm}>
       <DataTable
         rows={(items ?? []).map((item, idx) => ({ ...item, id: item.uuid || `ref-${idx}` })) as CustomTableRow[]}
-        headers={tableHeaders as any}
+        headers={tableHeaders as CustomTableHeader[]}
         isSortable={false}
         useZebraStyles
       >
@@ -210,7 +210,7 @@ const StockReferencesRow: React.FC<{
             placeholder={t('filter', 'Filter...')}
           />
         ) : (
-          (!isEditing || !row.uuid.startsWith('new-item')) && row?.stockSourceName
+          row?.stockSourceName
         )}
       </TableCell>
       <TableCell>

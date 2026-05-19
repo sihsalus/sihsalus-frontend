@@ -1,7 +1,6 @@
 import { ExtensionSlot, getConfig, getDefaultsFromConfigSchema, useConfig } from '@openmrs/esm-framework';
 import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import React from 'react';
 import { mockPatient, visitOverviewDetailMockData, visitOverviewDetailMockDataNotEmpty } from 'test-utils';
 
 import { type ChartConfig, esmPatientChartSchema } from '../../../config-schema';
@@ -70,10 +69,12 @@ describe('VisitSummary', () => {
     expect(screen.getByText(/^diagnoses$/i)).toBeInTheDocument();
     expect(malariaTag).toBeInTheDocument();
     expect(hivTag).toBeInTheDocument();
+    expect(screen.getByText(/^Definitivo$/)).toBeInTheDocument();
+    expect(screen.getByText(/^Presuntivo$/)).toBeInTheDocument();
 
-    expect(malariaTag.closest('div')).toHaveClass('cds--tag--red');
+    expect(malariaTag.closest('div')).toHaveClass('primaryDiagnosis');
 
-    expect(hivTag.closest('div')).toHaveClass('cds--tag--blue');
+    expect(hivTag.closest('div')).toHaveClass('secondaryDiagnosis');
   });
 
   it('should display notes, tests and medication summary', async () => {
@@ -86,6 +87,7 @@ describe('VisitSummary', () => {
 
     expect(screen.getByText(/^Diagnoses$/i)).toBeInTheDocument();
     expect(screen.getByText(/^Malaria, confirmed$/)).toBeInTheDocument();
+    expect(screen.getByText(/^Definitivo$/)).toBeInTheDocument();
     expect(screen.getByText(/HUMAN IMMUNODEFICIENCY VIRUS/i)).toBeInTheDocument();
     expect(screen.getByRole('tab', { name: /Medication/i })).toBeInTheDocument();
     expect(screen.getByRole('tab', { name: /Tests/i })).toBeInTheDocument();

@@ -94,15 +94,11 @@ const VisitTable: React.FC<VisitTableProps> = ({ showAllEncounters, visits, pati
   const [filter, setFilter] = useState('');
 
   const filteredRows = useMemo(() => {
-    if (!filter || filter == 'All') {
+    if (!filter || filter === 'All') {
       return visits;
     }
 
-    if (filter) {
-      return visits?.filter((encounter) => encounter.encounterType === filter);
-    }
-
-    return visits;
+    return visits?.filter((encounter) => encounter.encounterType === filter);
   }, [filter, visits]);
 
   const { results: paginatedVisits, goTo, currentPage } = usePagination(filteredRows ?? [], visitCount);

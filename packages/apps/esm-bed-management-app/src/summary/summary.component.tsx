@@ -35,6 +35,7 @@ const Summary: React.FC = () => {
 
           return (
             <WardCard
+              key={admissionLocation.ward.uuid}
               headerLabel={admissionLocation.ward.display}
               label={t('beds', 'Beds')}
               value={admissionLocation?.totalBeds}

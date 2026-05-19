@@ -76,9 +76,7 @@ const VitalsHeader: React.FC<VitalsHeaderProps> = ({
   }
 
   if (latestVitals && Object.keys(latestVitals)?.length && conceptMetadata?.length) {
-    const isActiveVisit = visitContext
-      ? Boolean(visitContext && !visitContext.stopDatetime)
-      : Boolean(currentVisit?.uuid);
+    const isActiveVisit = visitContext ? !visitContext.stopDatetime : Boolean(currentVisit?.uuid);
 
     const vitalsOverdueThresholdHours = config.vitals.vitalsOverdueThresholdHours ?? 12;
     const vitalsTakenTimeAgo = dayjs.duration(dayjs().diff(latestVitals?.date));
@@ -127,7 +125,18 @@ const VitalsHeader: React.FC<VitalsHeaderProps> = ({
 
     return (
       <div className={styles.container}>
-        <div className={styles.vitalsHeader} role="button" tabIndex={0} onClick={toggleDetailsPanel}>
+        <div
+          className={styles.vitalsHeader}
+          onClick={toggleDetailsPanel}
+          onKeyDown={(event) => {
+            if (event.key === 'Enter' || event.key === ' ') {
+              event.preventDefault();
+              toggleDetailsPanel();
+            }
+          }}
+          role="button"
+          tabIndex={0}
+        >
           <div className={styles.headerItems}>
             <span className={styles.heading}>{t('vitalsAndBiometrics', 'Vitals and biometrics')}</span>
             <span className={styles.bodyText}>
@@ -149,7 +158,9 @@ const VitalsHeader: React.FC<VitalsHeaderProps> = ({
           </div>
           {isValidating ? (
             <div className={styles.backgroundDataFetchingIndicator}>
-              <span>{isValidating ? <InlineLoading /> : null}</span>
+              <span>
+                <InlineLoading />
+              </span>
             </div>
           ) : null}
           {!hideLinks && (

@@ -43,8 +43,8 @@ const NewBedForm: React.FC<NewBedFormProps> = ({ showModal, onModalChange, mutat
         bedNumber: bedId,
         bedType,
         status: occupancyStatus.toUpperCase(),
-        row: parseInt(bedRow.toString()),
-        column: parseInt(bedColumn.toString()),
+        row: parseInt(bedRow.toString(), 10),
+        column: parseInt(bedColumn.toString(), 10),
         locationUuid: location.uuid,
       };
 

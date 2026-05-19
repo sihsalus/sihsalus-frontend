@@ -39,9 +39,9 @@ const EditBedForm: React.FC<EditBedFormProps> = ({ showModal, onModalChange, edi
       const bedPayload = {
         bedNumber: bedId,
         bedType,
-        column: parseInt(bedColumn),
+        column: parseInt(bedColumn, 10),
         locationUuid: bedLocation,
-        row: parseInt(bedRow),
+        row: parseInt(bedRow, 10),
         status: occupancyStatus.toUpperCase(),
       };
 

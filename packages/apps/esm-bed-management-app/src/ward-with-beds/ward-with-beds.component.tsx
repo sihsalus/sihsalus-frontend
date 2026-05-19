@@ -35,6 +35,24 @@ const renderCellValue = (value: React.ReactNode) => {
   return value;
 };
 
+function CustomTag({ condition }: { condition: boolean }) {
+  const { t } = useTranslation();
+
+  if (condition) {
+    return (
+      <Tag type="green" size="md">
+        {t('yes', 'Yes')}
+      </Tag>
+    );
+  }
+
+  return (
+    <Tag type="red" size="md">
+      {t('no', 'No')}
+    </Tag>
+  );
+}
+
 const WardWithBeds: React.FC = () => {
   const { t } = useTranslation();
   const { location } = useParams<RouteParams>();
@@ -71,24 +89,6 @@ const WardWithBeds: React.FC = () => {
       key: 'occupied',
     },
   ];
-
-  const CustomTag = ({ condition }: { condition: boolean }) => {
-    const { t } = useTranslation();
-
-    if (condition) {
-      return (
-        <Tag type="green" size="md">
-          {t('yes', 'Yes')}
-        </Tag>
-      );
-    }
-
-    return (
-      <Tag type="red" size="md">
-        {t('no', 'No')}
-      </Tag>
-    );
-  };
 
   const tableRows = useMemo(() => {
     return paginatedData?.map((bed) => ({

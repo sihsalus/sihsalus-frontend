@@ -3,7 +3,6 @@ import {
   ButtonSet,
   Checkbox,
   CheckboxGroup,
-  CheckboxSkeleton,
   ComboBox,
   Form,
   FormGroup,
@@ -137,7 +136,7 @@ function AllergyFormWorkspace(props: AllergyWorkspaceProps) {
   const { patient: fetchedPatient } = usePatient(patientUuid);
   const patient = patientFromGroup ?? fetchedPatient;
   const { allergens } = useAllergens();
-  const { allergicReactions, isLoading: isLoadingReactions } = useAllergicReactions();
+  const { allergicReactions } = useAllergicReactions();
   const { concepts } = useConfig<AllergiesConfigObject>();
   const { allergies, mutate } = useAllergies(patientUuid);
   const { t } = useTranslation();
@@ -305,7 +304,7 @@ function AllergyFormWorkspace(props: AllergyWorkspaceProps) {
 
       formValuesLoadedRef.current = true;
     }
-  }, [allergy, formContext, getAllergyFormDefaultValues, inEditMode, isLoadingReactions, setValue]);
+  }, [allergy, formContext, getAllergyFormDefaultValues, inEditMode, setValue]);
 
   const selectedAllergen = useWatch({
     control,
@@ -504,41 +503,31 @@ function AllergyFormWorkspace(props: AllergyWorkspaceProps) {
               <>
                 <div className={classNames({ [styles.checkboxContainer]: isTablet })}>
                   <FormGroup legendText="" data-testid="allergic-reactions-container">
-                    {isLoadingReactions ? (
-                      <>
-                        {Array.from({ length: 10 }).map((_, index) => (
-                          <CheckboxSkeleton key={`checkbox-skeleton-${index}`} />
-                        ))}
-                      </>
-                    ) : (
-                      <Controller
-                        name="allergicReactions"
-                        control={control}
-                        render={({ field: { onChange, value } }) => (
-                          <CheckboxGroup
-                            invalid={!!errors.allergicReactions}
-                            invalidText={errors.allergicReactions?.message}
-                            legendText={t('selectReactions', 'Select the reactions')}
-                          >
-                            {allergicReactionsItems.map(({ id, labelText }) => (
-                              <Checkbox
-                                checked={Array.isArray(value) && value.includes(id)}
-                                className={styles.checkbox}
-                                id={id}
-                                key={id}
-                                labelText={labelText}
-                                onChange={(_, { checked, id }) => {
-                                  const currentValue = Array.isArray(value) ? value : [];
-                                  onChange(
-                                    checked ? [...currentValue, id] : currentValue.filter((item) => item !== id),
-                                  );
-                                }}
-                              />
-                            ))}
-                          </CheckboxGroup>
-                        )}
-                      />
-                    )}
+                    <Controller
+                      name="allergicReactions"
+                      control={control}
+                      render={({ field: { onChange, value } }) => (
+                        <CheckboxGroup
+                          invalid={!!errors.allergicReactions}
+                          invalidText={errors.allergicReactions?.message}
+                          legendText={t('selectReactions', 'Select the reactions')}
+                        >
+                          {allergicReactionsItems.map(({ id, labelText }) => (
+                            <Checkbox
+                              checked={Array.isArray(value) && value.includes(id)}
+                              className={styles.checkbox}
+                              id={id}
+                              key={id}
+                              labelText={labelText}
+                              onChange={(_, { checked, id }) => {
+                                const currentValue = Array.isArray(value) ? value : [];
+                                onChange(checked ? [...currentValue, id] : currentValue.filter((item) => item !== id));
+                              }}
+                            />
+                          ))}
+                        </CheckboxGroup>
+                      )}
+                    />
                   </FormGroup>
                 </div>
                 {selectedAllergicReactions?.includes(otherConceptUuid) ? (

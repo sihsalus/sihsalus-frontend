@@ -1,6 +1,5 @@
 import { getDefaultsFromConfigSchema, useConfig } from '@openmrs/esm-framework';
 import { render, screen } from '@testing-library/react';
-import userEvent from '@testing-library/user-event';
 import React from 'react';
 import { mockOpenmrsId, mockPatient } from 'test-utils';
 
@@ -17,8 +16,8 @@ const mockUseConfig = vi.mocked(useConfig<RegistrationConfig>);
 vi.mock('../field.resource');
 
 const useConceptMockImpl = (uuid: string) => {
-  let data;
-  if (uuid == 'weight-uuid') {
+  let data: unknown;
+  if (uuid === 'weight-uuid') {
     data = {
       uuid: 'weight-uuid',
       display: 'Weight (kg)',
@@ -26,7 +25,7 @@ const useConceptMockImpl = (uuid: string) => {
       answers: [],
       setMembers: [],
     };
-  } else if (uuid == 'chief-complaint-uuid') {
+  } else if (uuid === 'chief-complaint-uuid') {
     data = {
       uuid: 'chief-complaint-uuid',
       display: 'Chief Complaint',
@@ -34,7 +33,7 @@ const useConceptMockImpl = (uuid: string) => {
       answers: [],
       setMembers: [],
     };
-  } else if (uuid == 'nationality-uuid') {
+  } else if (uuid === 'nationality-uuid') {
     data = {
       uuid: 'nationality-uuid',
       display: 'Nationality',
@@ -45,7 +44,7 @@ const useConceptMockImpl = (uuid: string) => {
       ],
       setMembers: [],
     };
-  } else if (uuid == 'vaccination-date-uuid') {
+  } else if (uuid === 'vaccination-date-uuid') {
     data = {
       uuid: 'vaccination-date-uuid',
       display: 'Vaccination Date',
@@ -57,13 +56,13 @@ const useConceptMockImpl = (uuid: string) => {
     throw Error(`Programming error, you probably didn't mean to do this: unknown concept uuid '${uuid}'`);
   }
   return {
-    data: data ?? null,
-    isLoading: !data,
+    data,
+    isLoading: false,
   };
 };
 
 const useConceptAnswersMockImpl = (uuid: string) => {
-  if (uuid == 'nationality-uuid') {
+  if (uuid === 'nationality-uuid') {
     return {
       data: [
         { display: 'USA', uuid: 'usa' },
@@ -72,7 +71,7 @@ const useConceptAnswersMockImpl = (uuid: string) => {
       isLoading: false,
       error: null,
     };
-  } else if (uuid == 'other-countries-uuid') {
+  } else if (uuid === 'other-countries-uuid') {
     return {
       data: [
         { display: 'Kenya', uuid: 'ke' },
@@ -81,7 +80,7 @@ const useConceptAnswersMockImpl = (uuid: string) => {
       isLoading: false,
       error: null,
     };
-  } else if (uuid == '') {
+  } else if (uuid === '') {
     return {
       data: [],
       isLoading: false,

@@ -14,7 +14,13 @@
     {
       "component": "adminCardLink",
       "name": "bed-management-admin-card-link",
-      "slot": "system-admin-page-card-link-slot"
+      "slot": "legacy-system-admin-page-card-link-slot"
+    },
+    {
+      "component": "bedManagementAppMenuItem",
+      "name": "bed-management-app-menu-item",
+      "slot": "app-menu-item-slot",
+      "order": 95
     },
     {
       "component": "adminLeftPanelLink",

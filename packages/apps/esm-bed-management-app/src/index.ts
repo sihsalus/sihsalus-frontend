@@ -20,6 +20,11 @@ export const root = getAsyncLifecycle(() => import('./root.component'), options)
 
 export const adminCardLink = getAsyncLifecycle(() => import('./admin-card-link.component'), options);
 
+export const bedManagementAppMenuItem = getAsyncLifecycle(
+  () => import('./bed-management-app-menu-item.component'),
+  options,
+);
+
 // t('summary', 'Summary')
 export const summaryLeftPanelLink = getSyncLifecycle(
   createLeftPanelLink({

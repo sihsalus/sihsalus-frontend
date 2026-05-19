@@ -22,6 +22,7 @@ describe.skip('openmrs-component-decorator', () => {
     const consoleError = vi.spyOn(console, 'error').mockImplementation(() => {});
     const DecoratedComp = openmrsComponentDecorator(opts)(CompThatThrows);
     render(<DecoratedComp />);
+    expect(screen.getByRole('alert')).toHaveTextContent('An error has occurred. Please try reloading the page.');
     // TO-DO assert the UX for broken react app is showing
     expect(consoleError).toHaveBeenNthCalledWith(
       1,
@@ -35,6 +36,15 @@ describe.skip('openmrs-component-decorator', () => {
   it('provides ComponentContext', () => {
     const DecoratedComp = openmrsComponentDecorator(opts)(CompWithConfig);
     render(<DecoratedComp />);
+  });
+
+  it('throws a specific error when options are invalid', () => {
+    expect(() => openmrsComponentDecorator({} as ComponentDecoratorOptions)).toThrow(
+      'Invalid options: featureName must be a non-empty string; moduleName must be a non-empty string',
+    );
+    expect(() => openmrsComponentDecorator(null as unknown as ComponentDecoratorOptions)).toThrow(
+      'Invalid options: expected an options object',
+    );
   });
 
   it('rendering a unsafe component in strict mode should log error in console', () => {
@@ -55,7 +65,7 @@ describe.skip('openmrs-component-decorator', () => {
 });
 
 function CompThatWorks() {
-  return <button>The button</button>;
+  return <button type="button">The button</button>;
 }
 
 const CompThatThrows = function () {
@@ -67,7 +77,7 @@ function CompWithConfig() {
   return <div>{moduleName}</div>;
 }
 
-class UnsafeComponent extends Component<any, any> {
+class UnsafeComponent extends Component<Record<string, never>, Record<string, never>> {
   UNSAFE_componentWillMount() {} // NOSONAR
 
   render() {

@@ -20,7 +20,7 @@ export const globals: Globals = {
   encodeURI,
   encodeURIComponent,
   Object: {
-    ['__proto__']: undefined,
+    ['__proto__']: null,
     assign: Object.assign.bind(Object),
     fromEntries: Object.fromEntries.bind(Object),
     hasOwn: Object.hasOwn.bind(Object),

@@ -63,7 +63,6 @@ export interface OpenmrsReactComponentProps {
 
 export interface OpenmrsReactComponentState {
   caughtError: any;
-  caughtErrorInfo: ErrorInfo | null;
   config: ComponentConfig;
 }
 
@@ -90,7 +89,6 @@ export function openmrsComponentDecorator<T>(userOpts: ComponentDecoratorOptions
         super(props);
         this.state = {
           caughtError: null,
-          caughtErrorInfo: null,
           config: {
             moduleName: opts.moduleName,
             featureName: opts.featureName,
@@ -114,7 +112,6 @@ export function openmrsComponentDecorator<T>(userOpts: ComponentDecoratorOptions
 
         this.setState({
           caughtError: err,
-          caughtErrorInfo: info,
         });
       }
 

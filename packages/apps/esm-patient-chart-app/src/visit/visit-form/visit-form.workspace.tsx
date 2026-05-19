@@ -1,8 +1,3 @@
-import classNames from 'classnames';
-import React, { useCallback, useEffect, useMemo, useState } from 'react';
-
-dayjs.extend(isSameOrBefore);
-
 import {
   Button,
   ButtonSet,
@@ -45,8 +40,10 @@ import {
   time12HourFormatRegex,
   useActivePatientEnrollment,
 } from '@openmrs/esm-patient-common-lib';
+import classNames from 'classnames';
 import dayjs from 'dayjs';
 import isSameOrBefore from 'dayjs/plugin/isSameOrBefore';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { Controller, FormProvider, useForm } from 'react-hook-form';
 import { useTranslation } from 'react-i18next';
 import { z } from 'zod';
@@ -73,6 +70,8 @@ import {
   type VisitFormData,
 } from './visit-form.resource';
 import styles from './visit-form.scss';
+
+dayjs.extend(isSameOrBefore);
 
 interface StartVisitFormProps extends DefaultPatientWorkspaceProps {
   /**

@@ -64,7 +64,10 @@ export function useExternalFormAction({
       const detail = customEvent.detail;
 
       if (!detail) {
-        reportError(new Error('The form action event is missing detail payload.'), t('formActionFailed', 'Form action failed'));
+        reportError(
+          new Error('The form action event is missing detail payload.'),
+          t('formActionFailed', 'Form action failed'),
+        );
         return;
       }
 

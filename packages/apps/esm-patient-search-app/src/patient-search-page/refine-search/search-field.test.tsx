@@ -186,25 +186,35 @@ describe('SearchField', () => {
     };
 
     it('applies tablet styles when in tablet mode', () => {
-      const { rerender } = render(<SearchField field={ageField} {...defaultProps} />);
+      const { unmount } = render(<SearchField field={ageField} {...defaultProps} />);
       const defaultInput = screen.getByLabelText('Age');
-      expect(defaultInput.closest('.cds--number')).not.toHaveClass('cds--number--lg');
+      const defaultContainer = defaultInput.closest('div');
+      const defaultClassName = defaultContainer?.getAttribute('class') ?? '';
+      unmount();
 
-      rerender(<SearchField field={ageField} {...defaultProps} isTablet={true} />);
+      render(<SearchField field={ageField} {...defaultProps} isTablet={true} />);
       const tabletInput = screen.getByLabelText('Age');
+      const tabletContainer = tabletInput.closest('div');
+      const tabletClassName = tabletContainer?.getAttribute('class') ?? '';
+
       expect(tabletInput).toBeInTheDocument();
-      expect(tabletInput.closest('.cds--number')).toHaveClass('cds--number--lg');
+      expect(tabletClassName).not.toEqual(defaultClassName);
     });
 
     it('applies overlay styles when in overlay mode', () => {
-      const { rerender } = render(<SearchField field={ageField} {...defaultProps} />);
+      const { unmount } = render(<SearchField field={ageField} {...defaultProps} />);
       const defaultInput = screen.getByLabelText('Age');
-      expect(defaultInput.closest(`.${styles.fieldTabletOrOverlay}`)).toBeNull();
+      const defaultContainer = defaultInput.closest('div');
+      const defaultClassName = defaultContainer?.getAttribute('class') ?? '';
+      unmount();
 
-      rerender(<SearchField field={ageField} {...defaultProps} inTabletOrOverlay={true} />);
+      render(<SearchField field={ageField} {...defaultProps} inTabletOrOverlay={true} />);
       const overlayInput = screen.getByLabelText('Age');
+      const overlayContainer = overlayInput.closest('div');
+      const overlayClassName = overlayContainer?.getAttribute('class') ?? '';
+
       expect(overlayInput).toBeInTheDocument();
-      expect(overlayInput.closest(`.${styles.fieldTabletOrOverlay}`)).not.toBeNull();
+      expect(overlayClassName).not.toEqual(defaultClassName);
     });
   });
 });

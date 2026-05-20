@@ -5,6 +5,7 @@ import {
   useVisitOrOfflineVisit,
 } from '@openmrs/esm-patient-common-lib';
 import React from 'react';
+import { useTranslation } from 'react-i18next';
 
 import { type LegacyFormEntryInfo } from '../forms/legacy-form-entry';
 
@@ -23,6 +24,7 @@ function isWorkspace2Props(props: HtmlFormEntryComponentProps): props is Workspa
 }
 
 const HtmlFormEntry: React.FC<HtmlFormEntryComponentProps> = (props) => {
+  const { t } = useTranslation();
   const isWorkspace2 = isWorkspace2Props(props);
   const patientUuid = isWorkspace2 ? props.groupProps.patientUuid : props.patientUuid;
   const closeWorkspaceWithSavedChanges = isWorkspace2
@@ -68,7 +70,7 @@ const HtmlFormEntry: React.FC<HtmlFormEntryComponentProps> = (props) => {
 
   if (isWorkspace2) {
     return (
-      <Workspace2 title="Clinical form" hasUnsavedChanges>
+      <Workspace2 title={formInfo?.name ?? t('clinicalForm', 'Clinical form')} hasUnsavedChanges>
         {content}
       </Workspace2>
     );

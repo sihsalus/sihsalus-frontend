@@ -296,7 +296,7 @@ const MarkPatientDeceasedForm: React.FC<MarkPatientDeceasedWorkspaceProps> = (pr
 
   if (isWorkspace2Props(props)) {
     return (
-      <Workspace2 title={t('markPatientDeceased', 'Mark patient deceased')} hasUnsavedChanges={isDirty}>
+      <Workspace2 title={t('markPatientDeceased', 'Marcar paciente como fallecido')} hasUnsavedChanges={isDirty}>
         {content}
       </Workspace2>
     );

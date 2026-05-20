@@ -46,10 +46,95 @@ function mergeRouteMaps(maps: OpenmrsRoutes[]): OpenmrsRoutes {
   const merged: OpenmrsRoutes = {};
   for (const map of maps) {
     if (map && typeof map === 'object') {
-      Object.assign(merged, map);
+      for (const [moduleName, routes] of Object.entries(map)) {
+        merged[moduleName] = mergeAppRoutes(merged[moduleName], routes);
+      }
     }
   }
   return merged;
+}
+
+function mergeAppRoutes(base: OpenmrsAppRoutes | undefined, override: OpenmrsAppRoutes): OpenmrsAppRoutes {
+  const merged = {
+    ...(base ?? {}),
+    ...override,
+  };
+  const baseRoutes = base as Record<string, Array<object> | undefined> | undefined;
+  const overrideRoutes = override as Record<string, Array<object> | undefined>;
+  const mergedRoutes = merged as Record<string, unknown>;
+
+  for (const key of [
+    'extensions',
+    'featureFlags',
+    'modals',
+    'pages',
+    'workspaceGroups',
+    'workspaceGroups2',
+    'workspaces',
+    'workspaces2',
+    'workspaceWindows2',
+  ] as const) {
+    const routeArray = mergeRouteArrays(baseRoutes?.[key], overrideRoutes[key]);
+    if (routeArray) {
+      mergedRoutes[key] = routeArray;
+    } else {
+      delete mergedRoutes[key];
+    }
+  }
+
+  return merged;
+}
+
+function mergeRouteArrays<T extends object>(base: Array<T> | undefined, override: Array<T> | undefined) {
+  if (!base && !override) {
+    return undefined;
+  }
+
+  if (!base?.length) {
+    return override ?? [];
+  }
+
+  if (!override?.length) {
+    return base;
+  }
+
+  const merged = new Map<string, T>();
+
+  for (const route of base) {
+    merged.set(getRouteArrayItemKey(route), route);
+  }
+
+  for (const route of override) {
+    merged.set(getRouteArrayItemKey(route), route);
+  }
+
+  return Array.from(merged.values());
+}
+
+function getRouteArrayItemKey(route: object) {
+  const routeLike = route as Record<string, unknown>;
+
+  if (typeof routeLike.name === 'string') {
+    return routeLike.name;
+  }
+
+  if (typeof routeLike.flagName === 'string') {
+    return `featureFlag:${routeLike.flagName}`;
+  }
+
+  if (typeof routeLike.routeRegex === 'string') {
+    return `routeRegex:${routeLike.routeRegex}`;
+  }
+
+  if (typeof routeLike.route === 'string') {
+    return `route:${routeLike.route}`;
+  }
+
+  if (typeof routeLike.component === 'string') {
+    return `component:${routeLike.component}`;
+  }
+
+  return JSON.stringify(route);
 }
 
 /**

@@ -45,6 +45,7 @@
   },
   "peerDependencies": {
     "@carbon/react": "1.x",
+    "@openmrs/esm-extensions": "*",
     "@openmrs/esm-framework": "*",
     "@openmrs/esm-patient-common-lib": "*",
     "@openmrs/esm-styleguide": "*",
@@ -59,6 +60,7 @@
     "swr": "2.x"
   },
   "devDependencies": {
+    "@openmrs/esm-extensions": "workspace:*",
     "@openmrs/esm-styleguide": "workspace:*",
     "@rspack/cli": "1.7.11",
     "@types/uuid": "^9.0.4",

@@ -123,6 +123,44 @@ describe('route-maps', () => {
       expect(map['@openmrs/esm-bar']).toEqual({ extensions: [] });
     });
 
+    it('preserves base workspaces when a development override is partial', async () => {
+      setDomRouteMaps([
+        {
+          '@openmrs/esm-foo': {
+            extensions: [{ name: 'summary', component: 'Summary', slot: 'patient-chart-slot' }],
+            modals: [{ name: 'confirm', component: 'ConfirmModal' }],
+            workspaces: [{ name: 'clinical-form', title: 'Clinical form', component: 'ClinicalForm' }],
+            workspaces2: [{ name: 'clinical-form', component: 'ClinicalForm', window: 'patient-chart-form' }],
+            workspaceWindows2: [{ name: 'patient-chart-form', group: 'patient-chart' }],
+          },
+        },
+      ]);
+      localStorage.setItem(
+        'openmrs-routes:@openmrs/esm-foo',
+        JSON.stringify({
+          extensions: [{ name: 'summary', component: 'NewSummary', slot: 'patient-chart-slot' }],
+        }),
+      );
+
+      const { setupRouteMapOverrides, getCurrentRouteMap } = await import('./route-maps');
+      await setupRouteMapOverrides();
+
+      const map = await getCurrentRouteMap();
+      expect(map['@openmrs/esm-foo'].extensions).toEqual([
+        { name: 'summary', component: 'NewSummary', slot: 'patient-chart-slot' },
+      ]);
+      expect(map['@openmrs/esm-foo'].modals).toEqual([{ name: 'confirm', component: 'ConfirmModal' }]);
+      expect(map['@openmrs/esm-foo'].workspaces).toEqual([
+        { name: 'clinical-form', title: 'Clinical form', component: 'ClinicalForm' },
+      ]);
+      expect(map['@openmrs/esm-foo'].workspaces2).toEqual([
+        { name: 'clinical-form', component: 'ClinicalForm', window: 'patient-chart-form' },
+      ]);
+      expect(map['@openmrs/esm-foo'].workspaceWindows2).toEqual([
+        { name: 'patient-chart-form', group: 'patient-chart' },
+      ]);
+    });
+
     it('getCurrentRouteMap merges base map with URL-fetched overrides', async () => {
       setDomRouteMaps([{ '@openmrs/esm-foo': { pages: [] } }]);
       localStorage.setItem('openmrs-routes:@openmrs/esm-foo', JSON.stringify('http://localhost:8080/routes.json'));

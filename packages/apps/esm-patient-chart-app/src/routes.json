@@ -244,13 +244,30 @@
       "name": "mark-patient-deceased-workspace-form",
       "component": "markPatientDeceasedForm",
       "title": "Mark patient deceased",
-      "type": "form"
+      "type": "form",
+      "canHide": true,
+      "canMaximize": true,
+      "width": "wider"
     },
     {
       "name": "start-visit-workspace-form",
       "component": "startVisitWorkspace",
       "title": "startVisitWorkspaceTitle",
       "type": "start-visit"
+    }
+  ],
+  "workspaces2": [
+    {
+      "name": "mark-patient-deceased-workspace-form",
+      "component": "markPatientDeceasedForm",
+      "window": "mark-patient-deceased-workspace-window"
+    }
+  ],
+  "workspaceWindows2": [
+    {
+      "name": "mark-patient-deceased-workspace-window",
+      "group": "patient-chart",
+      "width": "wider"
     }
   ],
   "workspaceGroups2": [

@@ -52,12 +52,9 @@ const StockOperationSubmissionFormStep: React.FC<StockOperationSubmissionFormSte
     let result: StockOperationDTO; // To store the result for returning
     await form.handleSubmit(async (formData) => {
       try {
-        const payloadData = formData as StockOperationItemDtoSchema & {
-          atLocationUuid?: string | null;
-          atLocationName?: string | null;
-        };
-        const atLocationUuid =
-          payloadData.atLocationUuid ?? (isReceiptOperation ? payloadData.destinationUuid : stockOperation?.atLocationUuid);
+        const payloadData = { ...formData } as StockOperationItemDtoSchema;
+        delete payloadData.atLocationUuid;
+        delete payloadData.atLocationName;
         // Get deleted items (items in stock operation bt not i form data)
         const itemsToDelete =
           stockOperation?.stockOperationItems?.reduce<Array<StockOperationItemDTO>>((prev, curr) => {
@@ -91,8 +88,6 @@ const StockOperationSubmissionFormStep: React.FC<StockOperationSubmissionFormSte
         // construct update payload
         const payload = {
           ...payloadData,
-          atLocationUuid,
-          atLocationName: payloadData.atLocationName ?? stockOperation?.atLocationName,
           // Remove other uuid if responsible person is set to other
           responsiblePersonUuid:
             payloadData.responsiblePersonUuid === otherUser.uuid ? undefined : payloadData.responsiblePersonUuid,
@@ -132,7 +127,7 @@ const StockOperationSubmissionFormStep: React.FC<StockOperationSubmissionFormSte
       }
     })(); // Call handleSubmit to trigger validation and submission
     return result; // Return the result after handleSubmit completes
-  }, [form, stockOperation, t, approvalRequired, isStockIssueOperation, isReceiptOperation, dismissWorkspace]);
+  }, [form, stockOperation, t, approvalRequired, isStockIssueOperation, dismissWorkspace]);
 
   const handleComplete = useCallback(() => {
     handleSave().then((operation) => {

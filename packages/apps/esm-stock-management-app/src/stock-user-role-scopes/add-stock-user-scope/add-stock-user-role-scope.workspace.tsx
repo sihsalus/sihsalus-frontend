@@ -68,6 +68,16 @@ const asBoolean = (value: unknown, fallback: boolean): boolean => {
   return value === true || value === false ? value : fallback;
 };
 
+const getRoleValue = (role: Role): string => {
+  const roleWithFallbacks = role as Role & { name?: string };
+  return roleWithFallbacks?.role ?? roleWithFallbacks?.display ?? roleWithFallbacks?.name ?? roleWithFallbacks?.uuid ?? '';
+};
+
+const getRoleLabel = (role: Role): string => {
+  const roleWithFallbacks = role as Role & { name?: string };
+  return roleWithFallbacks?.display ?? roleWithFallbacks?.role ?? roleWithFallbacks?.name ?? roleWithFallbacks?.uuid ?? '';
+};
+
 const AddStockUserRoleScope: React.FC<AddStockUserRoleScopeProps> = ({ model, editMode, closeWorkspace }) => {
   const { t } = useTranslation();
   const currentUser = useSession();
@@ -320,6 +330,9 @@ const AddStockUserRoleScope: React.FC<AddStockUserRoleScopeProps> = ({ model, ed
     );
   }
 
+  const roleOptions = user?.roles ?? roles;
+  const hasSelectedRoleOption = roleOptions?.some((role) => getRoleValue(role) === formModel?.role);
+
   return (
     <Form className={styles.container} onSubmit={addStockUserRole}>
       <Stack className={styles.form} gap={5}>
@@ -356,9 +369,18 @@ const AddStockUserRoleScope: React.FC<AddStockUserRoleScopeProps> = ({ model, ed
           {editMode ? (
             <SelectItem key={formModel?.role} value={formModel?.role} text={formModel?.role} />
           ) : (
-            (user?.roles ?? roles)?.map((role) => {
-              return <SelectItem key={role.role} value={role.role} text={role.display} />;
-            })
+            <>
+              {formModel?.role && !hasSelectedRoleOption && (
+                <SelectItem key={formModel.role} value={formModel.role} text={formModel.role} />
+              )}
+              {roleOptions?.map((role) => {
+                const roleValue = getRoleValue(role);
+                if (!roleValue) {
+                  return null;
+                }
+                return <SelectItem key={role.uuid ?? roleValue} value={roleValue} text={getRoleLabel(role)} />;
+              })}
+            </>
           )}
         </Select>
         <CheckboxGroup className={styles.checkboxGrid} legendText="">

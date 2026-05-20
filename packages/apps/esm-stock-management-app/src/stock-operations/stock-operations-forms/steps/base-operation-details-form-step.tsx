@@ -76,6 +76,10 @@ const BaseOperationDetailsFormStep: FC<BaseOperationDetailsFormStepProps> = ({
         if (shouldLockSource && sourceParties?.length) {
           const party = sourceParties[0];
           form.setValue('sourceUuid', party.uuid);
+          if (!stockOperationType?.hasDestination) {
+            form.setValue('atLocationUuid', party.locationUuid);
+            form.setValue('atLocationName', party.name);
+          }
         }
       }
 
@@ -84,6 +88,8 @@ const BaseOperationDetailsFormStep: FC<BaseOperationDetailsFormStepProps> = ({
         if (shouldLockDestination && destinationParties?.length) {
           const party = destinationParties[0];
           form.setValue('destinationUuid', party.uuid);
+          form.setValue('atLocationUuid', party.locationUuid);
+          form.setValue('atLocationName', party.name);
         }
       }
     }
@@ -166,6 +172,10 @@ const BaseOperationDetailsFormStep: FC<BaseOperationDetailsFormStepProps> = ({
               items={sourceParties}
               onChange={(data: { selectedItem: Party }) => {
                 field.onChange(data.selectedItem?.uuid);
+                if (!stockOperationType?.hasDestination) {
+                  form.setValue('atLocationUuid', data.selectedItem?.locationUuid ?? '');
+                  form.setValue('atLocationName', data.selectedItem?.name ?? '');
+                }
               }}
               selectedItem={sourceParties.find((p) => p.uuid === field.value)}
               itemToString={(item?: Party) => (item && item?.name ? translateStockLocation(t, item.name) : '')}
@@ -203,6 +213,8 @@ const BaseOperationDetailsFormStep: FC<BaseOperationDetailsFormStepProps> = ({
                 items={destinationParties}
                 onChange={(data: { selectedItem: Party }) => {
                   field.onChange(data.selectedItem?.uuid);
+                  form.setValue('atLocationUuid', data.selectedItem?.locationUuid ?? '');
+                  form.setValue('atLocationName', data.selectedItem?.name ?? '');
                 }}
                 selectedItem={destinationParties.find((p) => p.uuid === field.value)}
                 itemToString={(item?: Party) => (item && item?.name ? translateStockLocation(t, item.name) : '')}

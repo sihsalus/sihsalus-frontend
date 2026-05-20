@@ -95,6 +95,8 @@ const StockOperationForm: React.FC<StockOperationFormProps> = ({
         ) ?? [],
       sourceUuid: stockOperation?.sourceUuid ?? '',
       destinationUuid: stockOperation?.destinationUuid ?? '',
+      atLocationUuid: stockOperation?.atLocationUuid ?? '',
+      atLocationName: stockOperation?.atLocationName ?? '',
     },
     mode: 'all',
     values: stockRequisitionUuid

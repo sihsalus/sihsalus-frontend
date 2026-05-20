@@ -7776,7 +7776,7 @@ __metadata:
     rxjs: "npm:^6.6.7"
     sass: "npm:^1.70.0"
     swr: "npm:^2.2.4"
-    turbo: "npm:^2.9.1"
+    turbo: "npm:^2.9.14"
     typescript: "npm:6.0.3"
     vitest: "npm:^4.1.0"
     zod: "npm:^3.22.4"
@@ -7815,7 +7815,7 @@ __metadata:
     react-dom: "npm:^18.3.1"
     react-hook-form: "npm:^7.56.1"
     react-i18next: "npm:^16.0.0"
-    turbo: "npm:^2.9.1"
+    turbo: "npm:^2.9.14"
     typescript: "npm:6.0.3"
     vitest: "npm:^4.1.0"
     zod: "npm:^3.24.3"
@@ -7854,7 +7854,7 @@ __metadata:
     react-router-dom: "npm:^6.14.1"
     rxjs: "npm:^6.6.7"
     swr: "npm:^2.3.6"
-    turbo: "npm:^2.9.1"
+    turbo: "npm:^2.9.14"
     typescript: "npm:6.0.3"
     vitest: "npm:^4.1.0"
     zod: "npm:^4.1.12"
@@ -7970,7 +7970,7 @@ __metadata:
     react-to-print: "npm:^2.14.13"
     rxjs: "npm:^6.6.7"
     swr: "npm:^2.2.5"
-    turbo: "npm:^2.9.1"
+    turbo: "npm:^2.9.14"
     typescript: "npm:6.0.3"
     vitest: "npm:^4.1.0"
   peerDependencies:
@@ -8066,7 +8066,7 @@ __metadata:
     react-router-dom: "npm:^6.15.0"
     semver: "npm:^7.5.4"
     swr: "npm:^2.2.4"
-    turbo: "npm:^2.9.1"
+    turbo: "npm:^2.9.14"
     typescript: "npm:6.0.3"
     uuid: "npm:^9.0.1"
     vitest: "npm:^4.1.0"
@@ -8160,7 +8160,7 @@ __metadata:
     react-mde: "npm:^11.5.0"
     rxjs: "npm:^6.6.7"
     sass: "npm:^1.67.0"
-    turbo: "npm:^2.9.1"
+    turbo: "npm:^2.9.14"
     typescript: "npm:6.0.3"
     vitest: "npm:^4.1.0"
   peerDependencies:
@@ -8208,7 +8208,7 @@ __metadata:
     rimraf: "npm:^5.0.0"
     sass: "npm:^1.77.2"
     swr: "npm:^2.2.5"
-    turbo: "npm:^2.5.2"
+    turbo: "npm:^2.9.14"
     typescript: "npm:6.0.3"
     vitest: "npm:^4.1.0"
   peerDependencies:
@@ -8753,7 +8753,7 @@ __metadata:
     swc-loader: "npm:^0.2.3"
     swr: "npm:^2.x"
     ts-node: "npm:^10.9.2"
-    turbo: "npm:^2.9.1"
+    turbo: "npm:^2.9.14"
     typescript: "npm:6.0.3"
     vitest: "npm:^4.1.0"
     zod: "npm:^3.x"
@@ -9346,7 +9346,7 @@ __metadata:
     rxjs: "npm:^6.6.7"
     swc-loader: "npm:^0.2.3"
     swr: "npm:^2.2.4"
-    turbo: "npm:^2.9.1"
+    turbo: "npm:^2.9.14"
     typescript: "npm:6.0.3"
     vitest: "npm:^4.1.0"
     yup: "npm:^1.2.0"
@@ -9471,7 +9471,7 @@ __metadata:
     react-router-dom: "npm:^6.14.1"
     rxjs: "npm:^6.6.7"
     swc-loader: "npm:^0.2.3"
-    turbo: "npm:^2.9.1"
+    turbo: "npm:^2.9.14"
     typescript: "npm:6.0.3"
     vitest: "npm:^4.1.0"
   peerDependencies:
@@ -10199,31 +10199,10 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@turbo/darwin-64@npm:2.9.1":
-  version: 2.9.1
-  resolution: "@turbo/darwin-64@npm:2.9.1"
-  conditions: os=darwin & cpu=x64
-  languageName: node
-  linkType: hard
-
 "@turbo/darwin-64@npm:2.9.14":
   version: 2.9.14
   resolution: "@turbo/darwin-64@npm:2.9.14"
   conditions: os=darwin & cpu=x64
-  languageName: node
-  linkType: hard
-
-"@turbo/darwin-64@npm:2.9.6":
-  version: 2.9.6
-  resolution: "@turbo/darwin-64@npm:2.9.6"
-  conditions: os=darwin & cpu=x64
-  languageName: node
-  linkType: hard
-
-"@turbo/darwin-arm64@npm:2.9.1":
-  version: 2.9.1
-  resolution: "@turbo/darwin-arm64@npm:2.9.1"
-  conditions: os=darwin & cpu=arm64
   languageName: node
   linkType: hard
 
@@ -10234,38 +10213,10 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@turbo/darwin-arm64@npm:2.9.6":
-  version: 2.9.6
-  resolution: "@turbo/darwin-arm64@npm:2.9.6"
-  conditions: os=darwin & cpu=arm64
-  languageName: node
-  linkType: hard
-
-"@turbo/linux-64@npm:2.9.1":
-  version: 2.9.1
-  resolution: "@turbo/linux-64@npm:2.9.1"
-  conditions: os=linux & cpu=x64
-  languageName: node
-  linkType: hard
-
 "@turbo/linux-64@npm:2.9.14":
   version: 2.9.14
   resolution: "@turbo/linux-64@npm:2.9.14"
   conditions: os=linux & cpu=x64
-  languageName: node
-  linkType: hard
-
-"@turbo/linux-64@npm:2.9.6":
-  version: 2.9.6
-  resolution: "@turbo/linux-64@npm:2.9.6"
-  conditions: os=linux & cpu=x64
-  languageName: node
-  linkType: hard
-
-"@turbo/linux-arm64@npm:2.9.1":
-  version: 2.9.1
-  resolution: "@turbo/linux-arm64@npm:2.9.1"
-  conditions: os=linux & cpu=arm64
   languageName: node
   linkType: hard
 
@@ -10276,20 +10227,6 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@turbo/linux-arm64@npm:2.9.6":
-  version: 2.9.6
-  resolution: "@turbo/linux-arm64@npm:2.9.6"
-  conditions: os=linux & cpu=arm64
-  languageName: node
-  linkType: hard
-
-"@turbo/windows-64@npm:2.9.1":
-  version: 2.9.1
-  resolution: "@turbo/windows-64@npm:2.9.1"
-  conditions: os=win32 & cpu=x64
-  languageName: node
-  linkType: hard
-
 "@turbo/windows-64@npm:2.9.14":
   version: 2.9.14
   resolution: "@turbo/windows-64@npm:2.9.14"
@@ -10297,30 +10234,9 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@turbo/windows-64@npm:2.9.6":
-  version: 2.9.6
-  resolution: "@turbo/windows-64@npm:2.9.6"
-  conditions: os=win32 & cpu=x64
-  languageName: node
-  linkType: hard
-
-"@turbo/windows-arm64@npm:2.9.1":
-  version: 2.9.1
-  resolution: "@turbo/windows-arm64@npm:2.9.1"
-  conditions: os=win32 & cpu=arm64
-  languageName: node
-  linkType: hard
-
 "@turbo/windows-arm64@npm:2.9.14":
   version: 2.9.14
   resolution: "@turbo/windows-arm64@npm:2.9.14"
-  conditions: os=win32 & cpu=arm64
-  languageName: node
-  linkType: hard
-
-"@turbo/windows-arm64@npm:2.9.6":
-  version: 2.9.6
-  resolution: "@turbo/windows-arm64@npm:2.9.6"
   conditions: os=win32 & cpu=arm64
   languageName: node
   linkType: hard
@@ -25217,7 +25133,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"turbo@npm:2.9.14":
+"turbo@npm:2.9.14, turbo@npm:^2.9.14":
   version: 2.9.14
   resolution: "turbo@npm:2.9.14"
   dependencies:
@@ -25243,64 +25159,6 @@ __metadata:
   bin:
     turbo: bin/turbo
   checksum: 10c0/77a20c05ef588a9bac02500108af644ac1129b23f6f8db53054c9c7af98ed6a71e019172a0dd6d03920c6068c1a93ea80e6b2fb857bf70ba09616381bf07ea47
-  languageName: node
-  linkType: hard
-
-"turbo@npm:^2.5.2":
-  version: 2.9.6
-  resolution: "turbo@npm:2.9.6"
-  dependencies:
-    "@turbo/darwin-64": "npm:2.9.6"
-    "@turbo/darwin-arm64": "npm:2.9.6"
-    "@turbo/linux-64": "npm:2.9.6"
-    "@turbo/linux-arm64": "npm:2.9.6"
-    "@turbo/windows-64": "npm:2.9.6"
-    "@turbo/windows-arm64": "npm:2.9.6"
-  dependenciesMeta:
-    "@turbo/darwin-64":
-      optional: true
-    "@turbo/darwin-arm64":
-      optional: true
-    "@turbo/linux-64":
-      optional: true
-    "@turbo/linux-arm64":
-      optional: true
-    "@turbo/windows-64":
-      optional: true
-    "@turbo/windows-arm64":
-      optional: true
-  bin:
-    turbo: bin/turbo
-  checksum: 10c0/8f06bc9f4fa8caa446b72276ba0ab69dbcaf46ffbf536926f5d2759cc5d180f027a4065286ce03d6788306b5404d7a320d8354670cabd459c599fcdca83e4611
-  languageName: node
-  linkType: hard
-
-"turbo@npm:^2.9.1":
-  version: 2.9.1
-  resolution: "turbo@npm:2.9.1"
-  dependencies:
-    "@turbo/darwin-64": "npm:2.9.1"
-    "@turbo/darwin-arm64": "npm:2.9.1"
-    "@turbo/linux-64": "npm:2.9.1"
-    "@turbo/linux-arm64": "npm:2.9.1"
-    "@turbo/windows-64": "npm:2.9.1"
-    "@turbo/windows-arm64": "npm:2.9.1"
-  dependenciesMeta:
-    "@turbo/darwin-64":
-      optional: true
-    "@turbo/darwin-arm64":
-      optional: true
-    "@turbo/linux-64":
-      optional: true
-    "@turbo/linux-arm64":
-      optional: true
-    "@turbo/windows-64":
-      optional: true
-    "@turbo/windows-arm64":
-      optional: true
-  bin:
-    turbo: bin/turbo
-  checksum: 10c0/c474a2dbdc60534a66ce7e0dafa49cd21269334e8420cbae5026e4d99af5d5bcb5b1cfdb243deac61d41ff80b9fc0c42efc2b048241ae7753df961cb12c4c3d0
   languageName: node
   linkType: hard
 

@@ -22,8 +22,8 @@ describe('CustomOverflowMenu', () => {
 
     render(
       <CustomOverflowMenu menuTitle="Menu">
-        <li>Option 1</li>
-        <li>Option 2</li>
+        <CustomOverflowMenuItem itemText="Option 1" />
+        <CustomOverflowMenuItem itemText="Option 2" />
       </CustomOverflowMenu>,
     );
 
@@ -41,8 +41,8 @@ describe('CustomOverflowMenu', () => {
 
     render(
       <CustomOverflowMenu menuTitle="Menu">
-        <li>Option 1</li>
-        <li>Option 2</li>
+        <CustomOverflowMenuItem itemText="Option 1" />
+        <CustomOverflowMenuItem itemText="Option 2" />
       </CustomOverflowMenu>,
     );
 

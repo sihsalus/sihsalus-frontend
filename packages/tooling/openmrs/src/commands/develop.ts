@@ -158,7 +158,7 @@ export async function runDevelop(args: DevelopArgs) {
 
   configFiles.forEach((file, i) => {
     const url = localConfigUrls[i];
-    app.get(url, (_, res) => {
+    app.get(url, indexRateLimit, (_, res) => {
       res.contentType('application/json').send(readFileSync(resolve(process.cwd(), file)));
     });
   });

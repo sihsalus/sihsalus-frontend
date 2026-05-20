@@ -104,7 +104,6 @@
     "postcss": "8.5.10",
     "dompurify": "3.4.0",
     "follow-redirects": "1.16.0",
-    "path-to-regexp": "8.4.0",
     "flatted": "3.4.2",
     "lodash": "4.17.23",
     "lodash-es": "4.17.23",

@@ -18,7 +18,7 @@ import { DATE_PICKER_CONTROL_FORMAT, DATE_PICKER_FORMAT, MAIN_STORE_LOCATION_TAG
 import { type Party } from '../../../core/api/types/Party';
 import { type StockOperationDTO } from '../../../core/api/types/stockOperation/StockOperationDTO';
 import { OperationType, type StockOperationType } from '../../../core/api/types/stockOperation/StockOperationType';
-import { translateStockLocation } from '../../../core/utils/translationUtils';
+import { translateStockLocation, translateStockOperationType } from '../../../core/utils/translationUtils';
 import { type StockOperationItemDtoSchema } from '../../validation-schema';
 import useOperationTypePermisions from '../hooks/useOperationTypePermisions';
 import useParties from '../hooks/useParties';
@@ -113,7 +113,7 @@ const BaseOperationDetailsFormStep: FC<BaseOperationDetailsFormStepProps> = ({
   return (
     <Stack gap={4} className={styles.grid}>
       <div className={styles.heading}>
-        <h4>{`${stockOperationType.name} ${t('details', 'Details')}`}</h4>
+        <h4>{`${translateStockOperationType(t, stockOperationType.name)} ${t('details', 'Details')}`}</h4>
       </div>
       <Column>
         <Controller

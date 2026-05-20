@@ -3,7 +3,7 @@ import React, { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { StockFilters } from '../constants';
 import { StockOperationStatusTypes } from '../core/api/types/stockOperation/StockOperationStatus';
-import { translateStockOperationType } from '../core/utils/translationUtils';
+import { translateStockOperationStatus, translateStockOperationType } from '../core/utils/translationUtils';
 import styles from '../stock-items/stock-items-table.scss';
 import { getStockOperationTypes, useConcept } from '../stock-lookups/stock-lookups.resource';
 
@@ -38,7 +38,7 @@ const StockOperationsFilters: React.FC<StockOperationFiltersProps> = ({ conceptU
     }
 
     if (filterName === StockFilters.STATUS) {
-      return t(item.display, item.display);
+      return translateStockOperationStatus(t, item.display);
     }
 
     if (filterName === StockFilters.OPERATION) {

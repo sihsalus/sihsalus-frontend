@@ -216,7 +216,12 @@ const StockReports: React.FC = () => {
               }}
             >
               <TableToolbarContent className={styles.toolbarContent}>
-                <TableToolbarSearch persistent onChange={onInputChange} />
+                <TableToolbarSearch
+                  persistent
+                  labelText={t('filterTable', 'Filter table')}
+                  placeholder={t('filterTable', 'Filter table')}
+                  onChange={onInputChange}
+                />
                 <TableToolbarMenu>
                   <TableToolbarAction className={styles.toolbarMenuAction} onClick={handleRefresh}>
                     {t('refresh', 'Refresh')}
@@ -291,6 +296,9 @@ const StockReports: React.FC = () => {
         page={currentPage}
         pageSize={currentPageSize}
         pageSizes={pageSizes}
+        itemsPerPageText={t('itemsPerPage', 'Items per page:')}
+        pageNumberText={t('pageNumber', 'Page number')}
+        pageRangeText={(_, total) => t('pageRangeText', 'of {{total}} pages', { total })}
         totalItems={totalItems}
         onChange={({ pageSize, page }) => {
           if (pageSize !== currentPageSize) {

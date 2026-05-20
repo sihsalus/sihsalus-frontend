@@ -200,12 +200,8 @@ async function startWithProxy(cliArgs) {
     windowMs: Number(process.env.SIHSALUS_SPA_RATE_LIMIT_WINDOW_MS) || 60_000,
     max: Number(process.env.SIHSALUS_SPA_RATE_LIMIT_MAX) || 300,
   });
-  const sessionRateLimit = createInMemoryRateLimit({
-    windowMs: Number(process.env.SIHSALUS_SESSION_RATE_LIMIT_WINDOW_MS) || 60_000,
-    max: Number(process.env.SIHSALUS_SESSION_RATE_LIMIT_MAX) || 120,
-  });
 
-  app.get(sessionPath, sessionRateLimit, async (req, res) => {
+  app.get(sessionPath, async (req, res) => {
     const authorization = req.get('authorization');
     const cookie = req.get('cookie') || '';
 

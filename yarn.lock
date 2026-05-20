@@ -8460,6 +8460,7 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "@sihsalus/esm-patient-chart-app@workspace:packages/apps/esm-patient-chart-app"
   dependencies:
+    "@openmrs/esm-extensions": "workspace:*"
     "@openmrs/esm-styleguide": "workspace:*"
     "@rspack/cli": "npm:1.7.11"
     "@sihsalus/esm-rbac": "workspace:*"
@@ -8472,6 +8473,7 @@ __metadata:
     vitest: "npm:^4.1.0"
   peerDependencies:
     "@carbon/react": 1.x
+    "@openmrs/esm-extensions": "*"
     "@openmrs/esm-framework": "*"
     "@openmrs/esm-patient-common-lib": "*"
     "@openmrs/esm-styleguide": "*"

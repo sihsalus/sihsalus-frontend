@@ -136,7 +136,7 @@ function AllergyFormWorkspace(props: AllergyWorkspaceProps) {
   const { patient: fetchedPatient } = usePatient(patientUuid);
   const patient = patientFromGroup ?? fetchedPatient;
   const { allergens } = useAllergens();
-  const { allergicReactions } = useAllergicReactions();
+  const { allergicReactions, isLoading: isLoadingReactions } = useAllergicReactions();
   const { concepts } = useConfig<AllergiesConfigObject>();
   const { allergies, mutate } = useAllergies(patientUuid);
   const { t } = useTranslation();
@@ -304,7 +304,7 @@ function AllergyFormWorkspace(props: AllergyWorkspaceProps) {
 
       formValuesLoadedRef.current = true;
     }
-  }, [allergy, formContext, getAllergyFormDefaultValues, inEditMode, setValue]);
+  }, [allergy, formContext, getAllergyFormDefaultValues, inEditMode, isLoadingReactions, setValue]);
 
   const selectedAllergen = useWatch({
     control,

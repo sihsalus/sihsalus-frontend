@@ -1,19 +1,12 @@
-import {
-  ExtensionSlot,
-  launchWorkspaceGroup2,
-  setCurrentVisit,
-  setLeftNav,
-  unsetLeftNav,
-  usePatient,
-  useWorkspaces,
-  WorkspaceContainer,
-} from '@openmrs/esm-framework';
+import { ExtensionSlot, setCurrentVisit, setLeftNav, unsetLeftNav, usePatient } from '@openmrs/esm-framework';
 import { getPatientChartStore, useVisitOrOfflineVisit } from '@openmrs/esm-patient-common-lib';
+import { ComponentContext } from '@openmrs/esm-react-utils';
+import { launchWorkspaceGroup2, useWorkspaces, WorkspaceContainer } from '@openmrs/esm-styleguide';
 import classNames from 'classnames';
 import React, { useEffect, useMemo, useState } from 'react';
 import { useParams } from 'react-router-dom';
 
-import { spaBasePath } from '../constants';
+import { moduleName, spaBasePath } from '../constants';
 import Loader from '../loader/loader.component';
 import ChartReview from '../patient-chart/chart-review/chart-review.component';
 import SideMenuPanel from '../side-nav/side-menu.component';
@@ -56,7 +49,7 @@ const PatientChart: React.FC = () => {
     return () => {
       setCurrentVisit(null, null);
     };
-  }, [patientUuid]);
+  }, []);
 
   useEffect(() => {
     getPatientChartStore().setState({
@@ -124,7 +117,9 @@ const PatientChart: React.FC = () => {
           )}
         </div>
       </main>
-      <WorkspaceContainer showSiderailAndBottomNav={false} contextKey={`patient/${patientUuid}`} />
+      <ComponentContext.Provider value={{ moduleName, featureName: 'patient-chart' }}>
+        <WorkspaceContainer showSiderailAndBottomNav={false} contextKey={`patient/${patientUuid}`} />
+      </ComponentContext.Provider>
     </>
   );
 };

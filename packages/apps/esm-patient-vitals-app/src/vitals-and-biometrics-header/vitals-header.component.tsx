@@ -75,7 +75,7 @@ const VitalsHeader: React.FC<VitalsHeaderProps> = ({
     );
   }
 
-  if (latestVitals && Object.keys(latestVitals)?.length && conceptMetadata?.length) {
+  if (latestVitals && Object.keys(latestVitals).length && conceptMetadata?.length) {
     const isActiveVisit = visitContext ? !visitContext.stopDatetime : Boolean(currentVisit?.uuid);
 
     const vitalsOverdueThresholdHours = config.vitals.vitalsOverdueThresholdHours ?? 12;

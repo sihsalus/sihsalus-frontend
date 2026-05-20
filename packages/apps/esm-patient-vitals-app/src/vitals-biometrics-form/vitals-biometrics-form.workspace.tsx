@@ -20,8 +20,12 @@ import {
   usePatient,
   useSession,
   useVisit,
+  Workspace2,
 } from '@openmrs/esm-framework';
-import { type DefaultPatientWorkspaceProps } from '@openmrs/esm-patient-common-lib';
+import {
+  type DefaultPatientWorkspaceProps,
+  type PatientWorkspace2DefinitionProps,
+} from '@openmrs/esm-patient-common-lib';
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { useTranslation } from 'react-i18next';
@@ -73,13 +77,16 @@ const VitalsAndBiometricFormSchema = z
 
 export type VitalsBiometricsFormData = z.infer<typeof VitalsAndBiometricFormSchema>;
 
-const VitalsAndBiometricsForm: React.FC<DefaultPatientWorkspaceProps> = ({
-  patientUuid,
-  closeWorkspace,
-  closeWorkspaceWithSavedChanges,
-  promptBeforeClosing,
-}) => {
+type VitalsBiometricsWorkspace2Props = PatientWorkspace2DefinitionProps<object, object>;
+type VitalsBiometricsWorkspaceProps = DefaultPatientWorkspaceProps | VitalsBiometricsWorkspace2Props;
+
+function isWorkspace2Props(props: VitalsBiometricsWorkspaceProps): props is VitalsBiometricsWorkspace2Props {
+  return 'groupProps' in props && 'workspaceProps' in props;
+}
+
+const VitalsAndBiometricsForm: React.FC<VitalsBiometricsWorkspaceProps> = (props) => {
   const { t } = useTranslation();
+  const patientUuid = isWorkspace2Props(props) ? (props.groupProps?.patientUuid ?? '') : props.patientUuid;
   const isTablet = useLayoutType() === 'tablet';
   const config = useConfig<ConfigObject>();
   const biometricsUnitsSymbols = config.biometrics;
@@ -106,10 +113,46 @@ const VitalsAndBiometricsForm: React.FC<DefaultPatientWorkspaceProps> = ({
   });
 
   const hasUserUnsavedChanges = Object.keys(dirtyFields).length > 0;
+  const workspaceTitle = t('recordVitalsAndBiometrics', 'Record Vitals and Biometrics');
+
+  const closeCurrentWorkspace = useCallback(async () => {
+    if (isWorkspace2Props(props)) {
+      await props.closeWorkspace();
+      return;
+    }
+
+    props.closeWorkspace();
+  }, [props]);
+
+  const closeCurrentWorkspaceWithSavedChanges = useCallback(async () => {
+    if (isWorkspace2Props(props)) {
+      await props.closeWorkspace({ discardUnsavedChanges: true });
+      return;
+    }
+
+    props.closeWorkspaceWithSavedChanges();
+  }, [props]);
+
+  const renderWorkspace = useCallback(
+    (content: React.ReactNode) => {
+      if (isWorkspace2Props(props)) {
+        return (
+          <Workspace2 title={workspaceTitle} hasUnsavedChanges={hasUserUnsavedChanges}>
+            {content}
+          </Workspace2>
+        );
+      }
+
+      return content;
+    },
+    [hasUserUnsavedChanges, props, workspaceTitle],
+  );
 
   useEffect(() => {
-    promptBeforeClosing(() => hasUserUnsavedChanges);
-  }, [hasUserUnsavedChanges, promptBeforeClosing]);
+    if (!isWorkspace2Props(props)) {
+      props.promptBeforeClosing(() => hasUserUnsavedChanges);
+    }
+  }, [hasUserUnsavedChanges, props]);
 
   const encounterUuid = currentVisit?.encounters?.find(
     (encounter) => encounter?.form?.uuid === config.vitals.formUuid,
@@ -210,7 +253,7 @@ const VitalsAndBiometricsForm: React.FC<DefaultPatientWorkspaceProps> = ({
           .then((response) => {
             if (response.status === 201 || response.status === 200) {
               invalidateCachedVitalsAndBiometrics();
-              closeWorkspaceWithSavedChanges();
+              void closeCurrentWorkspaceWithSavedChanges();
               showSnackbar({
                 isLowContrast: true,
                 kind: 'success',
@@ -236,7 +279,7 @@ const VitalsAndBiometricsForm: React.FC<DefaultPatientWorkspaceProps> = ({
       }
     },
     [
-      closeWorkspaceWithSavedChanges,
+      closeCurrentWorkspaceWithSavedChanges,
       conceptMetadata,
       config.concepts,
       config.vitals.encounterTypeUuid,
@@ -248,7 +291,7 @@ const VitalsAndBiometricsForm: React.FC<DefaultPatientWorkspaceProps> = ({
   );
 
   if (config.vitals.useFormEngine) {
-    return (
+    return renderWorkspace(
       <ExtensionSlot
         name="form-widget-slot"
         state={{
@@ -259,14 +302,14 @@ const VitalsAndBiometricsForm: React.FC<DefaultPatientWorkspaceProps> = ({
           patientUuid: patientUuid ?? null,
           patient,
           encounterUuid,
-          closeWorkspaceWithSavedChanges,
+          closeWorkspaceWithSavedChanges: closeCurrentWorkspaceWithSavedChanges,
         }}
-      />
+      />,
     );
   }
 
   if (isLoading) {
-    return (
+    return renderWorkspace(
       <Form className={styles.form}>
         <div className={styles.grid}>
           <Stack>
@@ -293,11 +336,11 @@ const VitalsAndBiometricsForm: React.FC<DefaultPatientWorkspaceProps> = ({
           <ButtonSkeleton className={styles.button} />
           <ButtonSkeleton className={styles.button} />
         </ButtonSet>
-      </Form>
+      </Form>,
     );
   }
 
-  return (
+  return renderWorkspace(
     <Form className={styles.form} data-openmrs-role="Vitals and Biometrics Form">
       <div className={styles.grid}>
         <Stack>
@@ -611,7 +654,7 @@ const VitalsAndBiometricsForm: React.FC<DefaultPatientWorkspaceProps> = ({
       )}
 
       <ButtonSet className={isTablet ? styles.tablet : styles.desktop}>
-        <Button className={styles.button} kind="secondary" onClick={() => closeWorkspace()}>
+        <Button className={styles.button} kind="secondary" onClick={() => void closeCurrentWorkspace()}>
           {t('discard', 'Discard')}
         </Button>
         <Button
@@ -624,7 +667,7 @@ const VitalsAndBiometricsForm: React.FC<DefaultPatientWorkspaceProps> = ({
           {t('saveAndClose', 'Save and close')}
         </Button>
       </ButtonSet>
-    </Form>
+    </Form>,
   );
 };
 

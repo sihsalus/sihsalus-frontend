@@ -37,7 +37,25 @@ export type PatientWorkspace2DefinitionProps<
   WindowProps extends object,
 > = Workspace2DefinitionProps<WorkspaceProps, WindowProps, PatientWorkspaceGroupProps>;
 
-const legacyFirstPatientChartWorkspaces = new Set(['patient-form-entry-workspace']);
+const legacyFirstPatientChartWorkspaces = new Set<string>([
+  'start-visit-workspace-form',
+  'mark-patient-deceased-workspace-form',
+  'patient-vitals-biometrics-form-workspace',
+  'conditions-form-workspace',
+  'patient-allergy-form-workspace',
+  'visit-notes-form-workspace',
+  'clinical-forms-workspace',
+  'patient-form-entry-workspace',
+  'patient-html-form-entry-workspace',
+  'order-basket',
+  'patient-orders-form-workspace',
+  'test-results-form-workspace',
+  'orderable-concept-workspace',
+  'add-radiology-order',
+  'add-immunization-order',
+  'add-referral-order',
+  'appointments-form-workspace',
+]);
 
 const patientChartLegacyWorkspaceGroups = new Map<string, string>([
   ['clinical-forms-workspace', 'clinical-forms'],
@@ -135,12 +153,10 @@ function closeLegacyPatientChartWorkspaceGroup(workspaceName: string): boolean {
 export function launchPatientWorkspace(workspaceName: string, additionalProps?: object): void {
   const patientUuid = getPatientUuidFromStore();
   const shouldPreferLegacyWorkspace = legacyFirstPatientChartWorkspaces.has(workspaceName);
+  const workspace2Registered = !shouldPreferLegacyWorkspace && isWorkspace2Registered(workspaceName);
+  const patientChartWorkspace2 = workspace2Registered && isPatientChartWorkspace2(workspaceName);
 
-  if (
-    !shouldPreferLegacyWorkspace &&
-    isWorkspace2Registered(workspaceName) &&
-    isPatientChartWorkspace2(workspaceName)
-  ) {
+  if (workspace2Registered && patientChartWorkspace2) {
     if (closeOpenLegacyWorkspaces()) {
       void launchWorkspace2(workspaceName, additionalProps ?? null, null, getPatientWorkspaceGroupProps());
     }

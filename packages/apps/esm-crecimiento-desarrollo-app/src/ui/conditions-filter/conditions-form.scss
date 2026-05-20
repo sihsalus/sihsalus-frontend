@@ -1,7 +1,7 @@
-@use '@carbon/colors';
-@use '@carbon/layout';
-@use '@carbon/type';
-@use '@openmrs/esm-styleguide/src/vars' as *;
+@use "@carbon/colors";
+@use "@carbon/layout";
+@use "@carbon/type";
+@use "@openmrs/esm-styleguide/src/vars" as *;
 
 .condition {
   padding: layout.$spacing-04;
@@ -16,6 +16,16 @@
   }
 }
 
+.conditionButton {
+  width: 100%;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  cursor: pointer;
+  text-align: left;
+}
+
 .conditionsList {
   background-color: $ui-02;
   max-height: 14rem;
@@ -28,7 +38,7 @@
 }
 
 .emptyResults {
-  @include type.type-style('body-compact-01');
+  @include type.type-style("body-compact-01");
   color: $text-02;
   min-height: layout.$spacing-05;
   border: 1px solid $ui-03;
@@ -67,7 +77,7 @@
 }
 
 .conditionLabel {
-  @include type.type-style('body-compact-02');
+  @include type.type-style("body-compact-02");
 }
 
 .errorContainer {
@@ -87,7 +97,7 @@
 }
 
 .errorMessage {
-  @include type.type-style('label-02');
+  @include type.type-style("label-02");
   color: $danger;
   margin-top: layout.$spacing-03;
 }

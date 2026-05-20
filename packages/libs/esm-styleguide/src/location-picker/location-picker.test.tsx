@@ -1,4 +1,3 @@
-import React from 'react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import '@testing-library/jest-dom/vitest';
 import { type LoggedInUser, type Session } from '@openmrs/esm-api';
@@ -151,7 +150,7 @@ describe('LocationPicker', () => {
     });
 
     // Mock useLocations to return different results based on search query
-    mockUseLocations.mockImplementation((locationTag, count, searchQuery) => {
+    mockUseLocations.mockImplementation((_locationTag, _count, searchQuery) => {
       if (searchQuery === 'outpatient') {
         return {
           locations: outpatientClinicResponse.data.entry as any,
@@ -198,7 +197,7 @@ describe('LocationPicker', () => {
     });
 
     // Mock useLocations to return empty results when searching for non-existent location
-    mockUseLocations.mockImplementation((locationTag, count, searchQuery) => {
+    mockUseLocations.mockImplementation((_locationTag, _count, searchQuery) => {
       if (searchQuery === 'search_for_no_location') {
         return {
           locations: [] as any,
@@ -362,7 +361,7 @@ describe('LocationPicker', () => {
     });
 
     // Mock useLocations to return filtered results when searching
-    mockUseLocations.mockImplementation((locationTag, count, searchQuery) => {
+    mockUseLocations.mockImplementation((_locationTag, _count, searchQuery) => {
       if (searchQuery === 'mobile') {
         // Return only Mobile Clinic when searching for "mobile"
         const mobileClinic = mockLoginLocations.data.entry.find((entry) => entry.resource.name === 'Mobile Clinic');

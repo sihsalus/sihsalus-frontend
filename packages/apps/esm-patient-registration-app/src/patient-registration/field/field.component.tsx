@@ -1,5 +1,4 @@
 import { reportError, useConfig } from '@openmrs/esm-framework';
-import React from 'react';
 
 import { builtInFields, type RegistrationConfig } from '../../config-schema';
 import { getEffectiveRegistrationConfig } from '../peru-registration-config';

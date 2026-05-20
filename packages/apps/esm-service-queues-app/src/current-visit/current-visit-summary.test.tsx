@@ -1,5 +1,4 @@
 import { render, screen } from '@testing-library/react';
-import React from 'react';
 import { mockPastVisit } from 'test-utils';
 import { useVisit } from './current-visit.resource';
 import CurrentVisit from './current-visit-summary.component';

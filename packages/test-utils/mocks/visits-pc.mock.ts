@@ -257,7 +257,6 @@ export const visitOverviewDetailMockDataNotEmpty: { data: { results: Array<Visit
                   coded: {
                     uuid: 'malaria-concept-uuid',
                     display: 'Malaria, confirmed',
-                    links: [],
                   },
                 },
                 rank: 1,
@@ -271,7 +270,6 @@ export const visitOverviewDetailMockDataNotEmpty: { data: { results: Array<Visit
                   coded: {
                     uuid: 'hiv-concept-uuid',
                     display: 'HUMAN IMMUNODEFICIENCY VIRUS (HIV) DISEASE',
-                    links: [],
                   },
                 },
                 rank: 2,

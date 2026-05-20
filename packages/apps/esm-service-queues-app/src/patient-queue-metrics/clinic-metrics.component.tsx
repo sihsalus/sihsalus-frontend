@@ -1,6 +1,6 @@
 import { Dropdown } from '@carbon/react';
 import { isDesktop, useLayoutType } from '@openmrs/esm-framework';
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import { updateSelectedService, useSelectedQueueLocationUuid, useSelectedService } from '../helpers/helpers';

@@ -15,15 +15,7 @@ import {
   Tag,
   Tile,
 } from '@carbon/react';
-import {
-  ConfigurableLink,
-  isDesktop,
-  launchWorkspace,
-  showModal,
-  showSnackbar,
-  useLayoutType,
-  useSession,
-} from '@openmrs/esm-framework';
+import { ConfigurableLink, isDesktop, launchWorkspace, useLayoutType, useSession } from '@openmrs/esm-framework';
 import { CardHeader, EmptyDataIllustration } from '@openmrs/esm-patient-common-lib';
 import React, { useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';

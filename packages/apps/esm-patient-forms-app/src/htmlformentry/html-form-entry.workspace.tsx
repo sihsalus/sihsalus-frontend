@@ -70,7 +70,7 @@ const HtmlFormEntry: React.FC<HtmlFormEntryComponentProps> = (props) => {
 
   if (isWorkspace2) {
     return (
-      <Workspace2 title={formInfo?.name ?? t('clinicalForm', 'Clinical form')} hasUnsavedChanges>
+      <Workspace2 title={formInfo?.htmlForm?.formName ?? t('clinicalForm', 'Clinical form')} hasUnsavedChanges>
         {content}
       </Workspace2>
     );

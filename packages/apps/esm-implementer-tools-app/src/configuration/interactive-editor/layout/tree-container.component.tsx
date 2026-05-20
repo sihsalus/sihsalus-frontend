@@ -1,5 +1,5 @@
 import { StructuredListBody, StructuredListWrapper } from '@carbon/react';
-import React, { type ReactNode } from 'react';
+import { type ReactNode } from 'react';
 
 import styles from './layout.styles.scss';
 

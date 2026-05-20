@@ -12,7 +12,6 @@ import {
   useSession,
 } from '@openmrs/esm-framework';
 import { render, waitFor } from '@testing-library/react';
-import React from 'react';
 import { mutate } from 'swr';
 
 import RedirectLogout from './redirect-logout.component';

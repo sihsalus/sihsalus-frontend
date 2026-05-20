@@ -1,6 +1,5 @@
 import { type LoggedInUser, type Session, useSession } from '@openmrs/esm-framework';
 import { render, screen } from '@testing-library/react';
-import React from 'react';
 
 import { mockLoggedInUser } from '../../../test-utils/mocks/mock-user';
 

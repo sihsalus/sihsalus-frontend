@@ -4,7 +4,6 @@ import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import dayjs from 'dayjs';
 import utc from 'dayjs/plugin/utc';
-import React from 'react';
 import { getByTextWithMarkup, mockFhirConditionsResponse, mockPatient, searchedCondition } from 'test-utils';
 import { createCondition, useConditionsSearch } from './conditions.resource';
 import ConditionsForm, { type ConditionFormProps } from './conditions-form.workspace';

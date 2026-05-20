@@ -1,7 +1,6 @@
 import { showSnackbar } from '@openmrs/esm-framework';
 import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import React from 'react';
 import { deleteBillItem } from '../billing.resource';
 import DeleteLineItem from './delete-line-item-confirmation.modal';
 

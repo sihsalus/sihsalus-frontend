@@ -1,6 +1,6 @@
 import { Button, ButtonSkeleton, Row } from '@carbon/react';
 import { Microscope } from '@carbon/react/icons';
-import { launchWorkspace, useConfig } from '@openmrs/esm-framework';
+import { useConfig } from '@openmrs/esm-framework';
 import {
   launchPatientWorkspace,
   launchStartVisitPrompt,

@@ -7,7 +7,6 @@ import {
   useSession,
 } from '@openmrs/esm-framework';
 import { render, screen, waitFor } from '@testing-library/react';
-import React from 'react';
 import { of } from 'rxjs';
 
 import { mockSession } from '../test-utils/mocks/mock-session';

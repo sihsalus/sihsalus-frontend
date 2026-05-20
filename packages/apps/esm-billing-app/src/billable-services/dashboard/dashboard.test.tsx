@@ -1,5 +1,4 @@
 import { render } from '@testing-library/react';
-import React from 'react';
 import { waitForLoadingToFinish } from 'test-utils';
 import { useBillableServices } from '../billable-service.resource';
 import BillableServicesDashboard from './dashboard.component';

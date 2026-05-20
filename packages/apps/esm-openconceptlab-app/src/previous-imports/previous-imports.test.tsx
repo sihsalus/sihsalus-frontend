@@ -2,7 +2,6 @@ import { mockPreviousImports } from '@mocks/openconceptlab.mock';
 import { formatDatetime, openmrsFetch, usePagination } from '@openmrs/esm-framework';
 import { screen, waitFor } from '@testing-library/react';
 import { renderWithSwr } from '@tools/test-helpers';
-import React from 'react';
 
 import PreviousImports from './previous-imports.component';
 

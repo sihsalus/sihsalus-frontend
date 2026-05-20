@@ -130,7 +130,13 @@ export function useCREDSchedule(patientUuid: string): UseCREDScheduleResult {
     const completedControlNumbers = new Set(encounterMatches.keys());
     const appointmentMatches = matchAppointmentsToControls(
       schedule,
-      (appointments ?? []).filter((a) => a.status !== 'Cancelled'),
+      (appointments ?? [])
+        .filter((a) => a.status !== 'Cancelled')
+        .map((appointment) => ({
+          ...appointment,
+          startDateTime:
+            appointment.startDateTime instanceof Date ? appointment.startDateTime.getTime() : appointment.startDateTime,
+        })),
       completedControlNumbers,
     );
 

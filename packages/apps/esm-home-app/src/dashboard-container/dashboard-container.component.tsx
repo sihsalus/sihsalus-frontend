@@ -7,7 +7,6 @@ import {
   WorkspaceContainer,
 } from '@openmrs/esm-framework';
 import classNames from 'classnames';
-import React from 'react';
 import { useParams } from 'react-router-dom';
 
 import { type HomeConfig } from '../config-schema';

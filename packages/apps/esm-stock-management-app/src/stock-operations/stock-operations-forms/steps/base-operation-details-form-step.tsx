@@ -11,7 +11,7 @@ import {
 } from '@carbon/react';
 import { ArrowRight } from '@carbon/react/icons';
 import { ErrorState } from '@openmrs/esm-framework';
-import React, { type ChangeEvent, type FC, useEffect, useMemo } from 'react';
+import { type ChangeEvent, type FC, useEffect, useMemo } from 'react';
 import { Controller, useFormContext } from 'react-hook-form';
 import { useTranslation } from 'react-i18next';
 import { DATE_PICKER_CONTROL_FORMAT, DATE_PICKER_FORMAT, MAIN_STORE_LOCATION_TAG } from '../../../constants';

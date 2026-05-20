@@ -1,7 +1,6 @@
 import { reportError } from '@openmrs/esm-framework';
 import { render, screen, waitFor } from '@testing-library/react';
 import { Form, Formik } from 'formik';
-import React from 'react';
 import type { MockInstance } from 'vitest';
 
 import { useConceptAnswers } from '../field.resource';

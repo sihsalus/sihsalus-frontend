@@ -1,6 +1,5 @@
 import { render, screen } from '@testing-library/react';
 import { Form, Formik } from 'formik';
-import React from 'react';
 
 import { type Resources, ResourcesContext } from '../../../offline.resources';
 import { type FormValues } from '../../patient-registration.types';

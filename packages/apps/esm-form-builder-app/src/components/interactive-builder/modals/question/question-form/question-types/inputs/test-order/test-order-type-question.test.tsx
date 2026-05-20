@@ -100,7 +100,7 @@ describe('TestOrderTypeQuestion', () => {
     await user.type(conceptInput, 'test-concept');
 
     // Wait for the concept result to appear and click it
-    const conceptResult = await screen.findByRole('menuitem');
+    const conceptResult = await screen.findByText(/test concept/i);
     await user.click(conceptResult);
 
     // Verify that the form field was updated

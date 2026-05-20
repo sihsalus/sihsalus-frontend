@@ -4,7 +4,7 @@ import ace from 'ace-builds/src-noconflict/ace';
 import 'ace-builds/src-noconflict/mode-json';
 import 'ace-builds/src-noconflict/theme-dracula';
 import classNames from 'classnames';
-import React, { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import AceEditor from 'react-ace';
 import { useTranslation } from 'react-i18next';
 

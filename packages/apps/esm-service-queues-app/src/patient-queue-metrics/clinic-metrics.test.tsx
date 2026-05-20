@@ -7,7 +7,6 @@ import {
   useSession,
 } from '@openmrs/esm-framework';
 import { render, screen } from '@testing-library/react';
-import React from 'react';
 import { mockLocations, mockMetrics, mockServiceTypes, mockSession } from 'test-utils';
 
 import { type ConfigObject, configSchema } from '../config-schema';

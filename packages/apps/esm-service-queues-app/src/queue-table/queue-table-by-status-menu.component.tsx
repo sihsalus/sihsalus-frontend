@@ -1,7 +1,6 @@
 import { SideNavMenu } from '@carbon/react';
 import { ConfigurableLink } from '@openmrs/esm-framework';
 import classNames from 'classnames';
-import React from 'react';
 import { useTranslation } from 'react-i18next';
 import { BrowserRouter, generatePath, useMatch } from 'react-router-dom';
 

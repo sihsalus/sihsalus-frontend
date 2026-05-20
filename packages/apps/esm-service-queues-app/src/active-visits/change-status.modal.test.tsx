@@ -8,7 +8,6 @@ import {
 } from '@openmrs/esm-framework';
 import { render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import React from 'react';
 import { mockLocations, mockMappedQueueEntry, mockServices, mockSession } from 'test-utils';
 import type { MockInstance } from 'vitest';
 

@@ -1,4 +1,3 @@
-import React from 'react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import '@testing-library/jest-dom/vitest';
 import { useLayoutType } from '@openmrs/esm-react-utils';
@@ -42,8 +41,8 @@ describe('CustomOverflowMenu', () => {
 
     render(
       <CustomOverflowMenu menuTitle="Menu">
-        <li role="menuitem">Option 1</li>
-        <li role="menuitem">Option 2</li>
+        <li>Option 1</li>
+        <li>Option 2</li>
       </CustomOverflowMenu>,
     );
 

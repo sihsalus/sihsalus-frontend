@@ -1,6 +1,5 @@
 import { act, render, renderHook, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import React from 'react';
 import { type Concept } from '../core/api/types/concept/Concept';
 import { type StockSource } from '../core/api/types/stockOperation/StockSource';
 import { useConcept } from '../stock-lookups/stock-lookups.resource';

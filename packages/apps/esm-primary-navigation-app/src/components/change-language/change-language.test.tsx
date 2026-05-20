@@ -1,7 +1,6 @@
 import { type LoggedInUser, type Session, useSession } from '@openmrs/esm-framework';
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import React from 'react';
 
 import ChangeLanguageModal from './change-language.modal';
 

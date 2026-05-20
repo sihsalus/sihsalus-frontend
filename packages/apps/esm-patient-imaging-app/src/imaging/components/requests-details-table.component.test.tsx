@@ -1,12 +1,12 @@
 import * as framework from '@openmrs/esm-framework';
 import { usePagination } from '@openmrs/esm-framework';
 import { fireEvent, render, screen, waitFor, within } from '@testing-library/react';
-import React, { act } from 'react';
+import { act } from 'react';
 import RequestProcedureTable from './requests-details-table.component';
 
 vi.mock('react-i18next', () => ({
   useTranslation: () => ({
-    t: (key: string, defaultValue: string) => defaultValue,
+    t: (_key: string, defaultValue: string) => defaultValue,
   }),
 }));
 
@@ -41,7 +41,7 @@ vi.mock('@openmrs/esm-patient-common-lib', () => ({
       {headerTitle}: {displayText}
     </div>
   ),
-  useLaunchWorkspaceRequiringVisit: (workspace: any) => vi.fn(),
+  useLaunchWorkspaceRequiringVisit: (_workspace: any) => vi.fn(),
 }));
 
 describe('RequestProcedureTable', () => {

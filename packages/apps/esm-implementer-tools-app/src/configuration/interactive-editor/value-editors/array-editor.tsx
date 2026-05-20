@@ -10,7 +10,7 @@ import {
 import { AddIcon, TrashCanIcon, Type } from '@openmrs/esm-framework';
 import cloneDeep from 'lodash-es/cloneDeep';
 import uniqueId from 'lodash-es/uniqueId';
-import React, { useMemo } from 'react';
+import { useMemo } from 'react';
 
 import type { ConfigValueDescriptor } from '../editable-value.component';
 

@@ -1,6 +1,5 @@
 import { render, screen } from '@testing-library/react';
 import { Form, Formik } from 'formik';
-import React from 'react';
 
 import { type FieldDefinition } from '../../../config-schema';
 import { useConceptAnswers } from '../field.resource';

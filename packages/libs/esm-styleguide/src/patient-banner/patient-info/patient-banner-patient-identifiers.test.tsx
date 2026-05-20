@@ -1,4 +1,3 @@
-import React from 'react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import '@testing-library/jest-dom/vitest';
 import { useConfig, usePrimaryIdentifierCode } from '@openmrs/esm-react-utils';

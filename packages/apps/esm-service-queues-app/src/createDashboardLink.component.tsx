@@ -1,7 +1,7 @@
 import { WatsonHealthStackedScrolling_1 } from '@carbon/react/icons';
 import { ConfigurableLink } from '@openmrs/esm-framework';
 import classNames from 'classnames';
-import React, { useMemo } from 'react';
+import { useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { BrowserRouter, useLocation } from 'react-router-dom';
 

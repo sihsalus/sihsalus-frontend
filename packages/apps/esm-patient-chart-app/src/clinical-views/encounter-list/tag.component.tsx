@@ -1,5 +1,4 @@
 import { Tag, type TagProps } from '@carbon/react';
-import React from 'react';
 
 import { type ConfigConcepts, type Encounter } from '../types';
 import { findObs, getObsFromEncounter } from '../utils/helpers';

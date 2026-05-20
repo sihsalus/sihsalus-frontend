@@ -1,5 +1,4 @@
 import { fireEvent, render, screen, waitFor } from '@testing-library/react';
-import userEvent from '@testing-library/user-event';
 import { useEffect } from 'react';
 import { useFormContext } from 'react-hook-form';
 import GroupFormWorkflowContext from '../context/GroupFormWorkflowContext';

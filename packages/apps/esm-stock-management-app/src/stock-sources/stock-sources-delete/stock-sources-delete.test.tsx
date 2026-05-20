@@ -1,7 +1,6 @@
 import { type FetchResponse, showModal, showSnackbar } from '@openmrs/esm-framework';
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import React from 'react';
 import DeleteConfirmation from '../../stock-user-role-scopes/delete-stock-user-scope.modal';
 import { handleMutate } from '../../utils';
 import { deleteStockSource } from '../stock-sources.resource';
@@ -22,7 +21,7 @@ vi.mock('../../utils', () => ({
 
 describe('StockSourcesDeleteActionMenu', () => {
   const uuid = '1234-5678';
-  const uuids: string[] = ['1234-5678'];
+  const _uuids: string[] = ['1234-5678'];
 
   it('renders the delete button correctly', () => {
     render(<StockSourcesDeleteActionMenu uuid={uuid} />);
@@ -90,7 +89,7 @@ describe('StockSourcesDeleteActionMenu', () => {
     const user = userEvent.setup();
     mockDeleteStockSource.mockResolvedValueOnce({} as FetchResponse<any>);
 
-    const mockOnConfirmation = vi.fn();
+    const _mockOnConfirmation = vi.fn();
     const mockClose = vi.fn();
 
     render(
@@ -122,7 +121,7 @@ describe('StockSourcesDeleteActionMenu', () => {
         onConfirmation={async () => {
           try {
             await deleteStockSource([uuid]);
-          } catch (error) {
+          } catch (_error) {
             showSnackbar({
               title: 'stockSourceDeleteError',
               kind: 'error',
@@ -154,7 +153,7 @@ describe('StockSourcesDeleteActionMenu', () => {
         onConfirmation={async () => {
           try {
             await deleteStockSource([uuid]);
-          } catch (error) {
+          } catch (_error) {
             showSnackbar({
               title: 'stockSourceDeleteError',
               kind: 'error',

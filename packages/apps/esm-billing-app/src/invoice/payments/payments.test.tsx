@@ -7,7 +7,6 @@ import {
 } from '@openmrs/esm-framework';
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import React from 'react';
 import { useBillableServices } from '../../billable-services/billable-service.resource';
 import { type BillingConfig, configSchema } from '../../config-schema';
 import { type MappedBill } from '../../types';

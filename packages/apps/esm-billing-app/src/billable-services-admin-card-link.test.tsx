@@ -1,5 +1,4 @@
 import { render, screen } from '@testing-library/react';
-import React from 'react';
 import BillableServicesCardLink from './billable-services-admin-card-link.component';
 
 describe('BillableServicesCardLink', () => {

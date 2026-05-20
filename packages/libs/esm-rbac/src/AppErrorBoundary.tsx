@@ -1,7 +1,7 @@
-import { Button, InlineLoading, Tile } from '@carbon/react';
-import { Privilege, reportError, User } from '@openmrs/esm-framework';
+import { Button, Tile } from '@carbon/react';
+import { Privilege, reportError } from '@openmrs/esm-framework';
 import { auditLogger } from '@sihsalus/esm-audit-logger';
-import React, { Component, type ErrorInfo, type ReactNode } from 'react';
+import { Component, type ErrorInfo, type ReactNode } from 'react';
 import { checkRequirePrivilege } from './useRequirePrivilege';
 
 interface AppErrorBoundaryProps {

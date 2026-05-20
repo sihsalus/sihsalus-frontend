@@ -45,12 +45,20 @@ interface StockOperationsTableProps {
 
 type StockOperationHeader = {
   key: string;
-  header?: { content?: React.ReactNode } | React.ReactNode;
+  header: React.ReactNode | { content: React.ReactNode };
   isSortable?: boolean;
 };
 
-type StockOperationRow = {
-  id: string;
+const normalizeStockOperationHeader = (header: StockOperationHeader['header'] | null | undefined): React.ReactNode => {
+  if (!header) {
+    return '';
+  }
+
+  if (typeof header === 'object' && 'content' in header) {
+    return (header as { content: React.ReactNode }).content;
+  }
+
+  return header;
 };
 
 const StockOperations: React.FC<StockOperationsTableProps> = () => {
@@ -152,6 +160,15 @@ const StockOperations: React.FC<StockOperationsTableProps> = () => {
     [items, t],
   );
 
+  const dataTableHeaders = useMemo<Array<Omit<StockOperationHeader, 'header'> & { header: React.ReactNode }>>(
+    () =>
+      tableHeaders.map(({ header, ...rest }) => ({
+        ...rest,
+        header: normalizeStockOperationHeader(header),
+      })),
+    [tableHeaders],
+  );
+
   if (isLoading && !filterApplied) {
     return (
       <DataTableSkeleton className={styles.dataTableSkeleton} showHeader={false} rowCount={5} columnCount={5} zebra />
@@ -163,7 +180,7 @@ const StockOperations: React.FC<StockOperationsTableProps> = () => {
       <h2 className={styles.tableHeader}>
         {t('stockOperationsTableHeader', 'Stock operations to track movement of stock.')}
       </h2>
-      <DataTable headers={tableHeaders} isSortable rows={tableRows} useZebraStyles>
+      <DataTable headers={dataTableHeaders} isSortable rows={tableRows} useZebraStyles>
         {({ expandRow, getHeaderProps, getRowProps, getTableProps, headers, onInputChange, rows }) => (
           <TableContainer>
             <TableToolbar
@@ -217,7 +234,7 @@ const StockOperations: React.FC<StockOperationsTableProps> = () => {
               <TableHead>
                 <TableRow>
                   <TableExpandHeader />
-                  {headers.map((header: StockOperationHeader) => {
+                  {headers.map((header) => {
                     const { key, ...headerProps } = getHeaderProps({
                       header,
                       isSortable: header.isSortable,
@@ -230,7 +247,7 @@ const StockOperations: React.FC<StockOperationsTableProps> = () => {
                           className={isDesktop ? styles.desktopHeader : styles.tabletHeader}
                           key={key}
                         >
-                          {header.header?.content ?? header.header}
+                          {header.header}
                         </TableHeader>
                       )
                     );
@@ -239,7 +256,7 @@ const StockOperations: React.FC<StockOperationsTableProps> = () => {
                 </TableRow>
               </TableHead>
               <TableBody>
-                {rows?.map((row: StockOperationRow, index) => {
+                {rows?.map((row, index) => {
                   const { key, ...rowProps } = getRowProps({ row });
                   return (
                     <React.Fragment key={row.id}>

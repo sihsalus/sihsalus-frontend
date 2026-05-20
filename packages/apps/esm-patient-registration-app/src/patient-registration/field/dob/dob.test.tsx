@@ -1,7 +1,6 @@
 import { getDefaultsFromConfigSchema, useConfig } from '@openmrs/esm-framework';
 import { render, screen } from '@testing-library/react';
 import { Form, Formik } from 'formik';
-import React from 'react';
 
 import { esmPatientRegistrationSchema, type RegistrationConfig } from '../../../config-schema';
 import { initialFormValues } from '../../patient-registration.component';

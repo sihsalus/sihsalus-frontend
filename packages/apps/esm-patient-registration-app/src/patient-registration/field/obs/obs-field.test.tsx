@@ -4,6 +4,7 @@ import React from 'react';
 import { mockOpenmrsId, mockPatient } from 'test-utils';
 
 import { esmPatientRegistrationSchema, type FieldDefinition, type RegistrationConfig } from '../../../config-schema';
+import { type ConceptResponse } from '../../patient-registration.types';
 import { PatientRegistrationContext, type PatientRegistrationContextProps } from '../../patient-registration-context';
 import { useConcept, useConceptAnswers } from '../field.resource';
 
@@ -16,7 +17,7 @@ const mockUseConfig = vi.mocked(useConfig<RegistrationConfig>);
 vi.mock('../field.resource');
 
 const useConceptMockImpl = (uuid: string) => {
-  let data: unknown;
+  let data: ConceptResponse;
   if (uuid === 'weight-uuid') {
     data = {
       uuid: 'weight-uuid',

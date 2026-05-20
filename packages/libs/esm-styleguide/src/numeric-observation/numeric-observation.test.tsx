@@ -1,5 +1,4 @@
 import { render, screen } from '@testing-library/react';
-import React from 'react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import type { ObsReferenceRanges } from './interpretation-utils';
 import { NumericObservation } from './numeric-observation.component';
@@ -13,7 +12,7 @@ vi.mock('./use-concept-reference-range', () => ({
 
 vi.mock('react-i18next', () => ({
   useTranslation: () => ({
-    t: (key: string, defaultValue: string) => defaultValue,
+    t: (_key: string, defaultValue: string) => defaultValue,
   }),
 }));
 

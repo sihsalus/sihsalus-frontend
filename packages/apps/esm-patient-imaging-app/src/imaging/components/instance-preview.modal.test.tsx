@@ -1,5 +1,4 @@
-import { fireEvent, render, screen, waitFor, waitForElementToBeRemoved } from '@testing-library/react';
-import React from 'react';
+import { render, screen, waitFor } from '@testing-library/react';
 import InstancePreviewModal from './instance-preview.modal';
 import '@testing-library/jest-dom';
 import { showSnackbar } from '@openmrs/esm-framework';

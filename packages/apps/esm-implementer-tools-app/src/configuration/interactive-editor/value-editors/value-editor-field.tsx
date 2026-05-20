@@ -2,7 +2,7 @@
 import { Checkbox, NumberInput, TextInput } from '@carbon/react';
 import { Type } from '@openmrs/esm-framework';
 import uniqueId from 'lodash-es/uniqueId';
-import React, { useState } from 'react';
+import { useState } from 'react';
 
 import type { ConfigValueDescriptor } from '../editable-value.component';
 import type { ValueType } from '../value-editor';
@@ -57,7 +57,7 @@ export function ValueEditorField({ element, path, valueType, value, onChange, er
     <NumberInput
       id={id}
       value={value}
-      onChange={(_, { value }) => onChange(value ? (typeof value === 'string' ? parseInt(value) : value) : 0)}
+      onChange={(_, { value }) => onChange(value ? (typeof value === 'string' ? parseInt(value, 10) : value) : 0)}
       hideSteppers
       invalid={Boolean(error)}
       invalidText={error}

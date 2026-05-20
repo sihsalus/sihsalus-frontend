@@ -1,7 +1,6 @@
 import {
   Button,
   DataTable,
-  type DataTableHeader,
   DataTableSkeleton,
   Layer,
   Pagination,
@@ -27,7 +26,7 @@ import {
   parseDate,
   usePagination,
 } from '@openmrs/esm-framework';
-import React, { useMemo, useState } from 'react';
+import React, { useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import { getGender } from '../helpers/functions';
@@ -208,7 +207,7 @@ const QueuePatientBaseTable: React.FC<QueuePatientTableProps> = ({
                 </TableRow>
               </TableHead>
               <TableBody>
-                {rows.map((row, index) => {
+                {rows.map((row, _index) => {
                   return (
                     <React.Fragment key={row.id}>
                       {(() => {

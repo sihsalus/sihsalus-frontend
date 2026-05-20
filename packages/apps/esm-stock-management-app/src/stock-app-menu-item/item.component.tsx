@@ -1,6 +1,5 @@
 import { ClickableTile } from '@carbon/react';
 import { Report } from '@carbon/react/icons';
-import React from 'react';
 import { useTranslation } from 'react-i18next';
 import styles from './item.scss';
 

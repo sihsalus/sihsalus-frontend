@@ -1,5 +1,3 @@
-import React from 'react';
-
 import { DashboardGroupExtension } from './DashboardGroupExtension';
 
 export const createDashboardGroup = ({

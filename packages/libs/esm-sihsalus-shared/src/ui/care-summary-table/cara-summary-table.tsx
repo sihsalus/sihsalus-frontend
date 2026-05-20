@@ -11,7 +11,6 @@ import {
   TableRow,
 } from '@carbon/react';
 import { Add } from '@carbon/react/icons';
-import { launchWorkspace } from '@openmrs/esm-framework';
 import {
   CardHeader,
   EmptyState,

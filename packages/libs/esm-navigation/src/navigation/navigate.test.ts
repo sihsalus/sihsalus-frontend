@@ -31,9 +31,11 @@ describe('navigate', () => {
     expect(navigateToUrl).not.toHaveBeenCalled();
   });
 
-  it('uses location.assign() to navigate to non-SPA absolute path literal', () => {
-    navigate({ to: 'https://single-spa.js.org/' });
-    expect(window.location.assign).toHaveBeenCalledWith('https://single-spa.js.org/');
+  it('rejects external absolute URL navigation', () => {
+    expect(() => navigate({ to: 'https://single-spa.js.org/' })).toThrow(
+      'Refusing to navigate to an external URL: https://single-spa.js.org',
+    );
+    expect(window.location.assign).not.toHaveBeenCalled();
     expect(navigateToUrl).not.toHaveBeenCalled();
   });
 

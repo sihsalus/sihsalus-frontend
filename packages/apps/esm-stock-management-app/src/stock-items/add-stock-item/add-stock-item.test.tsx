@@ -1,6 +1,5 @@
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import React from 'react';
 import { type StockItemDTO } from '../../core/api/types/stockItem/StockItem';
 import AddEditStockItem from './add-stock-item.component';
 
@@ -138,7 +137,7 @@ describe('AddEditStockItem', () => {
       /transactions/i,
     ];
     disabledTabs.forEach((tabName) => {
-      const tab = screen.getByRole('button', { name: tabName });
+      const tab = screen.getByText(tabName).closest('li');
       expect(tab).toHaveAttribute('aria-disabled', 'true');
     });
   });
@@ -155,7 +154,7 @@ describe('AddEditStockItem', () => {
       /transactions/i,
     ];
     enabledTabs.forEach((tabName) => {
-      const tab = screen.getByRole('button', { name: tabName });
+      const tab = screen.getByText(tabName).closest('li');
       expect(tab).toHaveAttribute('aria-disabled', 'false');
     });
   });

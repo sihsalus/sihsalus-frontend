@@ -85,9 +85,7 @@ describe('ObsTypeQuestion', () => {
     await user.click(searchInput);
     await user.type(searchInput, 'Concept 1');
 
-    const conceptMenuItem = await screen.findByRole('menuitem', {
-      name: /concept 1/i,
-    });
+    const conceptMenuItem = await screen.findByText(/concept 1/i);
     expect(conceptMenuItem).toBeInTheDocument();
 
     await user.click(conceptMenuItem);
@@ -109,9 +107,7 @@ describe('ObsTypeQuestion', () => {
     await user.click(searchInput);
     await user.type(searchInput, 'Concept 2');
 
-    const conceptMenuItem = await screen.findByRole('menuitem', {
-      name: /concept 2/i,
-    });
+    const conceptMenuItem = await screen.findByText(/concept 2/i);
     await user.click(conceptMenuItem);
 
     // Gets all calls made to our mock function, the arguments from the first call and the first argument of the first call

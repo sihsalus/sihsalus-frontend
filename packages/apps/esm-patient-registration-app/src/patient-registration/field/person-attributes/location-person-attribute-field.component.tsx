@@ -1,7 +1,7 @@
 import { ComboBox, InlineLoading, Layer } from '@carbon/react';
 import classNames from 'classnames';
 import { Field, useField } from 'formik';
-import React, { useCallback, useMemo, useRef, useState } from 'react';
+import { useCallback, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { moduleName } from '../../../constants';
 import { type PersonAttributeTypeResponse } from '../../patient-registration.types';
@@ -25,7 +25,7 @@ export function LocationPersonAttributeField({
 }: LocationPersonAttributeFieldProps) {
   const { t } = useTranslation(moduleName);
   const fieldName = `attributes.${personAttributeType.uuid}`;
-  const [field, meta, { setValue }] = useField(`attributes.${personAttributeType.uuid}`);
+  const [_field, meta, { setValue }] = useField(`attributes.${personAttributeType.uuid}`);
   const [searchQuery, setSearchQuery] = useState('');
   const { locations, isLoading, loadingNewData } = useLocations(locationTag || null, searchQuery);
   const prevLocationOptions = useRef([]);

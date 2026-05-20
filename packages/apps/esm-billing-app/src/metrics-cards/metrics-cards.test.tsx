@@ -1,6 +1,5 @@
 import { getDefaultsFromConfigSchema, useConfig } from '@openmrs/esm-framework';
 import { render, screen } from '@testing-library/react';
-import React from 'react';
 import { billsSummary } from '../../test-utils/mocks/bills.mock';
 import { useBills } from '../billing.resource';
 import { type BillingConfig, configSchema } from '../config-schema';

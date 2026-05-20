@@ -1,7 +1,6 @@
 import { getDefaultsFromConfigSchema, showModal, useConfig } from '@openmrs/esm-framework';
 import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import React from 'react';
 import { vi } from 'vitest';
 import { type BillingConfig, configSchema } from '../config-schema';
 import { type MappedBill } from '../types';

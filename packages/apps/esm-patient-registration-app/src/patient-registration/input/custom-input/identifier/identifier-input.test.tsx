@@ -2,7 +2,6 @@ import { getDefaultsFromConfigSchema, useConfig } from '@openmrs/esm-framework';
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { Form, Formik } from 'formik';
-import React from 'react';
 
 import { esmPatientRegistrationSchema, type RegistrationConfig } from '../../../../config-schema';
 import { type Resources, ResourcesContext } from '../../../../offline.resources';

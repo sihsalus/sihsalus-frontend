@@ -15,8 +15,10 @@ const availableStoresKey = Symbol.for('openmrs.esm-state.availableStores');
 const globalScope = globalThis as typeof globalThis & {
   [availableStoresKey]?: Record<string, StoreEntity>;
 };
-let availableStores = globalScope[availableStoresKey];
-if (!availableStores) {
+let availableStores: Record<string, StoreEntity>;
+if (globalScope[availableStoresKey]) {
+  availableStores = globalScope[availableStoresKey];
+} else {
   availableStores = {};
   globalScope[availableStoresKey] = availableStores;
 }

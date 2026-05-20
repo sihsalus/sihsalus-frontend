@@ -7,20 +7,21 @@ import { moduleName } from '../constants';
 
 export default function AdmissionDashboardLink() {
   const { t } = useTranslation(moduleName);
-  const dashboardPath = '/admission';
-  const href = `${globalThis.getOpenmrsSpaBase().slice(0, -1)}${dashboardPath}`;
+  const dashboardPath = '/home/admission';
+  const href = `${globalThis.spaBase}${dashboardPath}`;
 
-  const isActive = globalThis.location.pathname.includes(dashboardPath);
+  const isActive =
+    globalThis.location.pathname.includes(dashboardPath) || globalThis.location.pathname.includes('/admission');
 
   return (
     <ConfigurableLink
-      aria-label={`${t('admission', 'Admisión')} ${t('admissionReportByUps', 'Reporte de admisiones por UPS')}`}
+      aria-label={t('admissions', 'Admisiones')}
       className={classNames('cds--side-nav__link', { 'active-left-nav-link': isActive })}
       to={href}
     >
       <span className="sihsalus-side-nav__item">
         <ReportData aria-hidden="true" className="sihsalus-side-nav__icon" size={20} />
-        <span className="sihsalus-side-nav__text">{t('admissionReportByUps', 'Reporte de admisiones por UPS')}</span>
+        <span className="sihsalus-side-nav__text">{t('admissions', 'Admisiones')}</span>
       </span>
     </ConfigurableLink>
   );

@@ -2,6 +2,7 @@
   "activeAdmissions": "Active",
   "address": "Address",
   "admission": "Admission",
+  "admissions": "Admissions",
   "admissionHistoryByUps": "Admission history by UPS",
   "admissionReportByUps": "Admissions by UPS report",
   "admissionReportError": "Could not load admissions report",

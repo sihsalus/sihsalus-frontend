@@ -66,6 +66,7 @@ if (requireBackendUrl && backendSource === 'default') {
 }
 
 function rewriteLocalDevSetCookie(setCookie) {
+  if (!setCookie) return setCookie;
   const rewrite = (cookie) => cookie.replace(/;\s*Secure/gi, '');
   return Array.isArray(setCookie) ? setCookie.map(rewrite) : rewrite(setCookie);
 }
@@ -193,7 +194,7 @@ async function startWithProxy(cliArgs) {
   const cliManagedPaths = new Set(['/importmap.json', '/routes.registry.json', '/routes.json']);
 
   const app = express();
-  const staticHandler = express.static(distSpa, { index: 'index.html' });
+  const staticHandler = express.static(distSpa);
   const spaIndexHtml = readFileSync(join(distSpa, 'index.html'), 'utf8');
   const spaIndexRateLimit = createInMemoryRateLimit({
     windowMs: Number(process.env.SIHSALUS_SPA_RATE_LIMIT_WINDOW_MS) || 60_000,

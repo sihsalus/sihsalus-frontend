@@ -35,6 +35,10 @@ const spaPath = '/openmrs/spa';
 const sessionPath = '/openmrs/ws/rest/v1/session';
 const sessionFallbackTimeoutMs = Number(process.env.SIHSALUS_SESSION_FALLBACK_TIMEOUT_MS) || 3000;
 
+function getBackendSessionUrl() {
+  return `${backend.replace(/\/+$/, '').replace(/\/openmrs$/, '')}${sessionPath}`;
+}
+
 function logStartupSummary({ mode, apps = [] }) {
   console.log();
   console.log(chalk.cyan.bold('SIH Salus local frontend'));
@@ -214,7 +218,7 @@ async function startWithProxy(cliArgs) {
     const timeout = setTimeout(() => controller.abort(), sessionFallbackTimeoutMs);
 
     try {
-      const backendResponse = await fetch(`${backend}${sessionPath}`, {
+      const backendResponse = await fetch(getBackendSessionUrl(), {
         headers: {
           accept: req.get('accept') || 'application/json',
           ...(authorization ? { authorization } : {}),
@@ -234,12 +238,19 @@ async function startWithProxy(cliArgs) {
         res.setHeader('set-cookie', rewriteLocalDevSetCookie(setCookie));
       }
       res.send(await backendResponse.text());
-    } catch {
+    } catch (error) {
       clearTimeout(timeout);
+      const isTimeout = error?.name === 'AbortError';
+      const status = isTimeout ? 504 : 502;
       logWarn(
-        `Backend login session did not respond within ${sessionFallbackTimeoutMs}ms; returning unauthenticated local session.`,
+        `Backend login session ${isTimeout ? `did not respond within ${sessionFallbackTimeoutMs}ms` : 'failed'}; returning ${status}.`,
       );
-      res.status(200).json({ authenticated: false, sessionId: '', backendUnavailable: true });
+      res.status(status).json({
+        error: 'backend_session_unavailable',
+        message: isTimeout
+          ? `Backend session endpoint did not respond within ${sessionFallbackTimeoutMs}ms.`
+          : 'Backend session endpoint failed.',
+      });
     }
   });
 

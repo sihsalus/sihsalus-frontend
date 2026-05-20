@@ -118,8 +118,10 @@ function evalNode(node: JsepNode, context: Record<string, unknown>): unknown {
         case '!==':
           return left !== right;
         case '==':
+          // biome-ignore lint/suspicious/noDoubleEquals: Implements expression-language loose equality for the == operator.
           return left == right;
         case '!=':
+          // biome-ignore lint/suspicious/noDoubleEquals: Implements expression-language loose inequality for the != operator.
           return left != right;
         case '>':
           return (left as number) > (right as number);

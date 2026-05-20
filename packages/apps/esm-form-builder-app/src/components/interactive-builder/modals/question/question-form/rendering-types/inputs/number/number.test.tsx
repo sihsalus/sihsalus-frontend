@@ -2,7 +2,7 @@ import type { FormField } from '@sihsalus/esm-form-engine-lib';
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { FormFieldProvider } from '../../../../form-field-context';
-import Number from './number.component';
+import NumberInput from './number.component';
 
 const mockSetFormField = vi.fn();
 const formField: FormField = {
@@ -79,7 +79,7 @@ describe('Number Component', () => {
 function renderNumberComponent() {
   render(
     <FormFieldProvider initialFormField={formField}>
-      <Number />
+      <NumberInput />
     </FormFieldProvider>,
   );
 }

@@ -13,14 +13,13 @@ import {
   type TagProps,
 } from '@carbon/react';
 import { Add } from '@carbon/react/icons';
-import { formatDate, launchWorkspace, useConfig } from '@openmrs/esm-framework';
+import { formatDate, useConfig } from '@openmrs/esm-framework';
+import { launchPatientWorkspace } from '@openmrs/esm-patient-common-lib';
 import React from 'react';
 import { useTranslation } from 'react-i18next';
-
 import type { ConfigObject } from '../config-schema';
 import { useInsuranceProvider } from '../hooks/useInsuranceProvider';
 import { patientFormEntryWorkspace } from '../utils/constants';
-
 import styles from './consulta-externa-dashboard.scss';
 
 interface FinanciadorProps {
@@ -59,8 +58,9 @@ const Financiador: React.FC<FinanciadorProps> = ({ patientUuid }) => {
   }));
 
   const handleLaunchForm = () => {
-    launchWorkspace(patientFormEntryWorkspace, {
+    launchPatientWorkspace(patientFormEntryWorkspace, {
       formInfo: {
+        patientUuid,
         formUuid: config.formsList?.consultaExternaForm,
       },
     });

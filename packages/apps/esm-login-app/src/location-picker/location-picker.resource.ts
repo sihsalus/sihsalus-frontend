@@ -26,7 +26,7 @@ export function useDefaultLocation(isUpdateFlow: boolean) {
     if (defaultLocation) {
       setSavePreference(true);
     }
-  }, [setSavePreference, defaultLocation]);
+  }, [defaultLocation]);
 
   const updateUserPropsWithDefaultLocation = useCallback(
     async (locationUuid: string, saveDefaultLocation: boolean) => {

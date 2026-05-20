@@ -3,11 +3,11 @@
  * Requires the `<` and `>` operators to return something reasonable for the provided values.
  */
 export function compare<T>(x?: T, y?: T) {
-  if (x == undefined && y == undefined) {
+  if (x == null && y == null) {
     return 0;
-  } else if (x == undefined) {
+  } else if (x == null) {
     return -1;
-  } else if (y == undefined) {
+  } else if (y == null) {
     return 1;
   } else if (x < y) {
     return -1;

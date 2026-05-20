@@ -18,7 +18,7 @@ describe('Admission Requests Button', () => {
   });
 
   it('should have one admission request', () => {
-    renderWithSwr(<AdmissionRequestsBar wardPendingPatients={[<div>Dummy Patient</div>]} />);
+    renderWithSwr(<AdmissionRequestsBar wardPendingPatients={[<div key="dummy-patient">Dummy Patient</div>]} />);
 
     expect(screen.getByText('1 admission request')).toBeInTheDocument();
   });

@@ -11,6 +11,7 @@ export default function ConfigEditButton({ configPath }: ConfigEditButtonProps) 
   const { t } = useTranslation();
   return (
     <button
+      type="button"
       onClick={() => {
         implementerToolsStore.setState({ configPathBeingEdited: configPath });
       }}

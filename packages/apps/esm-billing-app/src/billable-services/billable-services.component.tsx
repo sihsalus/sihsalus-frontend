@@ -121,7 +121,7 @@ const BillableServices = () => {
       goTo(1);
       setSearchString(e.target.value);
     },
-    [goTo, setSearchString],
+    [goTo],
   );
 
   const handleEditService = useCallback(

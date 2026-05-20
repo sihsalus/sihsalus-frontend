@@ -5,7 +5,7 @@ import { CategoryCodes, type ChartData, MeasurementTypeCodesLabel, TimeUnitCodes
 export function useAppropriateChartData(
   chartDataForGender: ChartData,
   defaultIndicator: string,
-  gender: string,
+  _gender: string,
   childAgeInWeeks: number,
   childAgeInMonths: number,
 ) {
@@ -63,7 +63,7 @@ export function useAppropriateChartData(
       const newDataset = Object.keys(chartDataForGender[newCategory].datasets)[0];
       setSelectedDataset(newDataset);
     }
-  }, [chartDataForGender, defaultIndicator, gender]);
+  }, [chartDataForGender, defaultIndicator]);
 
   return {
     selectedDataset,

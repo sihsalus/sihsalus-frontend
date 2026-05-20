@@ -146,12 +146,12 @@ const SimpleCronEditor: React.FC<SimpleCronEditorProps> = ({ initialCron, onChan
   const validationFailed = useCallback((): boolean => {
     setInvalid(true);
     return false;
-  }, [setInvalid]);
+  }, []);
 
   const validationSuccess = useCallback((): boolean => {
     setInvalid(false);
     return true;
-  }, [setInvalid]);
+  }, []);
 
   const validateEditor = useCallback((): boolean => {
     const selectedScheduleType = editorState.scheduleType;
@@ -235,7 +235,7 @@ const SimpleCronEditor: React.FC<SimpleCronEditorProps> = ({ initialCron, onChan
 
   useEffect(() => {
     buildCron();
-  }, [buildCron, editorState]);
+  }, [buildCron]);
 
   useEffect(() => {
     onChange(cron, !invalid);

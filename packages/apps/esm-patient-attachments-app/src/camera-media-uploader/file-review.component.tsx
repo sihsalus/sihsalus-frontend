@@ -40,7 +40,7 @@ const FileReviewContainer: React.FC<FileReviewContainerProps> = ({ title, onComp
     } else {
       onCompletion();
     }
-  }, [setCurrentFileIndex, currentFileIndex, filesToUpload, onCompletion]);
+  }, [currentFileIndex, filesToUpload, onCompletion]);
 
   const handleSave = useCallback(
     (updatedFile: UploadedFile) => {

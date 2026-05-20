@@ -61,8 +61,7 @@ Exports unscheduled appointments as an Excel spreadsheet.
 @param {string} fileName - The name of the file to download. Defaults to 'Unscheduled appointments {current date and time}'.
 */
 export function exportUnscheduledAppointmentsToSpreadsheet(
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  unscheduledAppointments: Array<Record<string, any>>,
+  unscheduledAppointments: Array<Record<string, unknown>>,
   fileName = `Unscheduled appointments ${formatDate(new Date(), { year: true, time: true })}`,
 ): void {
   const appointmentsJSON = unscheduledAppointments?.map((appointment) => ({
@@ -81,9 +80,8 @@ export function exportUnscheduledAppointmentsToSpreadsheet(
   });
 }
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-function createWorksheet(data: Array<Record<string, any>>) {
-  const max_width = data.reduce((w, r) => Math.max(w, r['Patient name'].length), 30);
+function createWorksheet(data: Array<Record<string, unknown>>) {
+  const max_width = data.reduce((w, r) => Math.max(w, String(r['Patient name'] ?? '').length), 30);
   const worksheet = utils.json_to_sheet(data);
   worksheet['!cols'] = [{ wch: max_width }];
   return worksheet;

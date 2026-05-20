@@ -82,13 +82,15 @@ const StockItemsTable: React.FC<Props> = ({ items }) => {
             <TableHead>
               <TableRow>
                 {headers.map((header) => (
-                  <TableHeader {...getHeaderProps({ header })}>{header.header}</TableHeader>
+                  <TableHeader key={header.key} {...getHeaderProps({ header })}>
+                    {header.header}
+                  </TableHeader>
                 ))}
               </TableRow>
             </TableHead>
             <TableBody>
               {rows.map((row) => (
-                <TableRow {...getRowProps({ row })}>
+                <TableRow key={row.id} {...getRowProps({ row })}>
                   {row.cells.map((cell) => (
                     <TableCell key={cell.id}>{cell.value}</TableCell>
                   ))}

@@ -2,7 +2,6 @@ import { ActionMenuButton } from '@openmrs/esm-framework';
 import { useLaunchWorkspaceRequiringVisit } from '@openmrs/esm-patient-common-lib';
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import React from 'react';
 import MaternalHealthFormsActionButton from './maternal-health-forms-action-button.component';
 
 const mockActionMenuButton = vi.mocked(ActionMenuButton);

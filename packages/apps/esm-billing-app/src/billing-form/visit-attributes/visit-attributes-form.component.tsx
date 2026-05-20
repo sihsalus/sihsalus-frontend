@@ -93,15 +93,7 @@ const VisitAttributesForm: React.FC<VisitAttributesFormProps> = ({ setAttributes
 
   useEffect(() => {
     setAttributes(createVisitAttributesPayload());
-  }, [
-    paymentDetails,
-    paymentMethods,
-    insuranceSchema,
-    policyNumber,
-    patientCategoryValue,
-    setAttributes,
-    createVisitAttributesPayload,
-  ]);
+  }, [setAttributes, createVisitAttributesPayload]);
 
   if (isLoadingPaymentModes) {
     return (

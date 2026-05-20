@@ -49,7 +49,7 @@ const NewbornFluidBalanceForm: React.FC<DefaultPatientWorkspaceProps> = ({ close
   const session = useSession();
   const { data: conceptUnits, conceptMetadata, conceptRanges, isLoading } = useVitalsConceptMetadata();
   const [showErrorNotification, setShowErrorNotification] = useState(false);
-  const [showErrorMessage, setShowErrorMessage] = useState(false);
+  const [_showErrorMessage, setShowErrorMessage] = useState(false);
 
   const {
     control,
@@ -60,7 +60,7 @@ const NewbornFluidBalanceForm: React.FC<DefaultPatientWorkspaceProps> = ({ close
     resolver: zodResolver(FluidBalanceSchema),
   });
 
-  const concepts = useMemo(
+  const _concepts = useMemo(
     () => ({
       stoolCountRange: conceptRanges.get(config.concepts.stoolCountUuid),
       stoolGramsRange: conceptRanges.get(config.concepts.stoolGramsUuid),

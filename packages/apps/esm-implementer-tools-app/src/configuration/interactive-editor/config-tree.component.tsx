@@ -27,7 +27,7 @@ export function ConfigTree({ config }: ConfigTreeProps) {
                 title={<h6>{moduleName}</h6>}
                 className={styles.fullWidthAccordion}
                 key={`accordion-${moduleName}`}
-                open={focusedModule == moduleName ? true : undefined}
+                open={focusedModule === moduleName ? true : undefined}
               >
                 <ConfigTreeForModule config={moduleConfig} moduleName={moduleName} key={`${moduleName}-config`} />
               </AccordionItem>

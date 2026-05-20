@@ -239,24 +239,12 @@
       "offline": true
     }
   ],
-  "workspaces": [
-    {
-      "name": "mark-patient-deceased-workspace-form",
-      "component": "markPatientDeceasedForm",
-      "title": "Mark patient deceased",
-      "type": "form",
-      "canHide": true,
-      "canMaximize": true,
-      "width": "wider"
-    },
+  "workspaces2": [
     {
       "name": "start-visit-workspace-form",
       "component": "startVisitWorkspace",
-      "title": "startVisitWorkspaceTitle",
-      "type": "start-visit"
-    }
-  ],
-  "workspaces2": [
+      "window": "start-visit-workspace-window"
+    },
     {
       "name": "mark-patient-deceased-workspace-form",
       "component": "markPatientDeceasedForm",
@@ -264,6 +252,11 @@
     }
   ],
   "workspaceWindows2": [
+    {
+      "name": "start-visit-workspace-window",
+      "group": "patient-chart",
+      "width": "wider"
+    },
     {
       "name": "mark-patient-deceased-workspace-window",
       "group": "patient-chart",

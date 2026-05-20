@@ -2,13 +2,15 @@ import { launchWorkspace2, useConfig } from '@openmrs/esm-framework';
 import { FormsSelectorWorkspace } from '@sihsalus/esm-sihsalus-shared';
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import React from 'react';
 import { formEntryWorkspace } from '../../types';
 import MaternalHealthFormsSelectorWorkspace from './maternal-health-forms-selector.workspace';
 
 const mockLaunchWorkspace2 = vi.mocked(launchWorkspace2);
 const mockUseConfig = useConfig as vi.Mock;
 const mockFormsSelectorWorkspace = vi.mocked(FormsSelectorWorkspace);
+const defaultWorkspaceProps = {
+  closeWorkspace: vi.fn<() => Promise<boolean>>().mockResolvedValue(true),
+};
 
 vi.mock('@sihsalus/esm-sihsalus-shared', async () => {
   const originalModule = await vi.importActual('@sihsalus/esm-sihsalus-shared');
@@ -43,7 +45,7 @@ describe('MaternalHealthFormsSelectorWorkspace', () => {
   });
 
   it('passes configured maternal forms to the shared forms selector', () => {
-    render(<MaternalHealthFormsSelectorWorkspace {...({} as any)} />);
+    render(<MaternalHealthFormsSelectorWorkspace {...defaultWorkspaceProps} />);
 
     expect(screen.getByRole('heading', { name: /formularios de salud materna/i })).toBeInTheDocument();
     expect(screen.getByText(/seleccione el formulario de salud materna/i)).toBeInTheDocument();
@@ -63,7 +65,7 @@ describe('MaternalHealthFormsSelectorWorkspace', () => {
   it('launches form entry with the selected form uuid and encounter', async () => {
     const user = userEvent.setup();
 
-    render(<MaternalHealthFormsSelectorWorkspace {...({} as any)} />);
+    render(<MaternalHealthFormsSelectorWorkspace {...defaultWorkspaceProps} />);
 
     await user.click(screen.getByRole('button', { name: /embarazo actual/i }));
 

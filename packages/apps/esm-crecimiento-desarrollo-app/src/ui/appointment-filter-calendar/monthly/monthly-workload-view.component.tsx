@@ -26,7 +26,7 @@ const MonthlyWorkloadView: React.FC<MonthlyWorkloadViewProps> = ({ dateTime, eve
     [dateTime, events],
   );
 
-  const handleAppoiment = (serviceUuid: string) => {};
+  const handleAppointment = (_serviceUuid: string) => undefined;
 
   return (
     <div
@@ -47,7 +47,14 @@ const MonthlyWorkloadView: React.FC<MonthlyWorkloadViewProps> = ({ dateTime, eve
                 tabIndex={0}
                 onClick={(e) => {
                   e.stopPropagation();
-                  handleAppoiment(currentData.appointmentId);
+                  handleAppointment(currentData.appointmentId);
+                }}
+                onKeyDown={(event) => {
+                  if (event.key === 'Enter' || event.key === ' ') {
+                    event.preventDefault();
+                    event.stopPropagation();
+                    handleAppointment(currentData.appointmentId);
+                  }
                 }}
                 className={styles.serviceArea}
               >

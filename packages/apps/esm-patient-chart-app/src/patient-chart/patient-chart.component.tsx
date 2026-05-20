@@ -118,7 +118,7 @@ const PatientChart: React.FC = () => {
         </div>
       </main>
       <ComponentContext.Provider value={{ moduleName, featureName: 'patient-chart' }}>
-        <WorkspaceContainer showSiderailAndBottomNav={false} contextKey={`patient/${patientUuid}`} />
+        <WorkspaceContainer showSiderailAndBottomNav={false} contextKey={patientUuid} />
       </ComponentContext.Provider>
     </>
   );

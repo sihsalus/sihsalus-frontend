@@ -198,6 +198,7 @@ const FamilyHistory: React.FC<FamilyHistoryProps> = ({ patientUuid }) => {
                 <TableRow>
                   {headers.map((header) => (
                     <TableHeader
+                      key={header.key}
                       {...getHeaderProps({
                         header,
                         isSortable: header.isSortable,

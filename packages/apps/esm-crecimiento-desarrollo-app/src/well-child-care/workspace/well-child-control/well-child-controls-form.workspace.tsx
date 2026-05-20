@@ -54,7 +54,6 @@ const CREDControlsWorkspace: React.FC<DefaultPatientWorkspaceProps> = ({
 
   const {
     control,
-    handleSubmit,
     watch,
     formState: { isSubmitting },
     register,

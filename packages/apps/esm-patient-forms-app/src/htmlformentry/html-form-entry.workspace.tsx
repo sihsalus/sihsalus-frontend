@@ -1,27 +1,43 @@
-import { usePatient } from '@openmrs/esm-framework';
-import { type DefaultPatientWorkspaceProps, useVisitOrOfflineVisit } from '@openmrs/esm-patient-common-lib';
+import { usePatient, Workspace2 } from '@openmrs/esm-framework';
+import {
+  type DefaultPatientWorkspaceProps,
+  type PatientWorkspace2DefinitionProps,
+  useVisitOrOfflineVisit,
+} from '@openmrs/esm-patient-common-lib';
 import React from 'react';
 
 import { type LegacyFormEntryInfo } from '../forms/legacy-form-entry';
 
 import HtmlFormEntryWrapper from './html-form-entry-wrapper.component';
 
-interface HtmlFormEntryComponentProps extends DefaultPatientWorkspaceProps {
+interface HtmlFormEntryWorkspaceProps {
   formInfo: LegacyFormEntryInfo;
 }
 
-const HtmlFormEntry: React.FC<HtmlFormEntryComponentProps> = ({
-  patientUuid,
-  closeWorkspaceWithSavedChanges,
-  promptBeforeClosing,
-  formInfo,
-}) => {
+type LegacyHtmlFormEntryProps = DefaultPatientWorkspaceProps & HtmlFormEntryWorkspaceProps;
+type Workspace2HtmlFormEntryProps = PatientWorkspace2DefinitionProps<HtmlFormEntryWorkspaceProps, object>;
+type HtmlFormEntryComponentProps = LegacyHtmlFormEntryProps | Workspace2HtmlFormEntryProps;
+
+function isWorkspace2Props(props: HtmlFormEntryComponentProps): props is Workspace2HtmlFormEntryProps {
+  return 'groupProps' in props && 'workspaceProps' in props;
+}
+
+const HtmlFormEntry: React.FC<HtmlFormEntryComponentProps> = (props) => {
+  const isWorkspace2 = isWorkspace2Props(props);
+  const patientUuid = isWorkspace2 ? props.groupProps.patientUuid : props.patientUuid;
+  const closeWorkspaceWithSavedChanges = isWorkspace2
+    ? () => {
+        void props.closeWorkspace({ discardUnsavedChanges: true });
+      }
+    : props.closeWorkspaceWithSavedChanges;
+  const promptBeforeClosing = isWorkspace2 ? null : props.promptBeforeClosing;
+  const formInfo = isWorkspace2 ? props.workspaceProps.formInfo : props.formInfo;
   const { patient } = usePatient(patientUuid);
   const { currentVisit } = useVisitOrOfflineVisit(patientUuid);
   const { encounterUuid, visitUuid, htmlForm } = formInfo || {};
 
   // we always want to prompt the user before closing/hiding the workspace because we can't guarantee maintaining the state of the form
-  promptBeforeClosing(() => true);
+  promptBeforeClosing?.(() => true);
 
   // urls for entering a new form and editing an existing form; note that we specify the returnUrl as post-message:close-workspace,
   // which tells HFE-UI to send a message to the parent window to close the workspace when the form is saved or cancelled
@@ -39,7 +55,7 @@ const HtmlFormEntry: React.FC<HtmlFormEntryComponentProps> = ({
   }&returnUrl=post-message:close-workspace`;
 
   const showFormAndLoadedData = formInfo && patientUuid && patient;
-  return (
+  const content = (
     <div>
       {showFormAndLoadedData && (
         <HtmlFormEntryWrapper
@@ -49,6 +65,16 @@ const HtmlFormEntry: React.FC<HtmlFormEntryComponentProps> = ({
       )}
     </div>
   );
+
+  if (isWorkspace2) {
+    return (
+      <Workspace2 title="Clinical form" hasUnsavedChanges>
+        {content}
+      </Workspace2>
+    );
+  }
+
+  return content;
 };
 
 export default HtmlFormEntry;

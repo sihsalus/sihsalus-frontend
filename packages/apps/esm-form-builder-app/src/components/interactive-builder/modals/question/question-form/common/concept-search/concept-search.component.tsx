@@ -133,12 +133,7 @@ const ConceptSearch: React.FC<ConceptSearchProps> = ({
             return (
               <ul className={styles.conceptList}>
                 {concepts?.map((concept, index) => (
-                  <li
-                    role="menuitem"
-                    className={styles.concept}
-                    key={index}
-                    onClick={() => handleConceptSelect(concept)}
-                  >
+                  <li className={styles.concept} key={index} onClick={() => handleConceptSelect(concept)}>
                     {concept.display}
                   </li>
                 ))}

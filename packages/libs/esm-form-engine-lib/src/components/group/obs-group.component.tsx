@@ -7,7 +7,7 @@ import { type FormFieldInputProps } from '../../types';
 import { ErrorFallback, FormFieldRenderer, isGroupField } from '../renderer/field/form-field-renderer.component';
 import styles from './obs-group.scss';
 
-export const ObsGroup: React.FC<FormFieldInputProps> = ({ field, ...restProps }) => {
+export const ObsGroup: React.FC<FormFieldInputProps> = ({ field, ...props }) => {
   const { t } = useTranslation();
   const { formFieldAdapters, formFields } = useFormProviderContext();
 
@@ -19,13 +19,13 @@ export const ObsGroup: React.FC<FormFieldInputProps> = ({ field, ...restProps })
         .map((child, index) => {
           const key = `${child.id}_${index}`;
           if (child.id === field.id) {
-            return <ErrorFallback error={new Error('ObsGroup child has same id as parent question')} />;
+            return <ErrorFallback key={key} error={new Error('ObsGroup child has same id as parent question')} />;
           }
 
           if (child.type === 'obsGroup' && isGroupField(child.questionOptions.rendering)) {
             return (
               <div key={key} className={styles.nestedGroupContainer}>
-                <ObsGroup field={child} {...restProps} />
+                <ObsGroup {...props} field={child} />
               </div>
             );
           } else if (formFieldAdapters[child.type]) {
@@ -40,7 +40,7 @@ export const ObsGroup: React.FC<FormFieldInputProps> = ({ field, ...restProps })
 
           return null;
         }),
-    [field, formFieldAdapters, formFields, restProps],
+    [field, formFieldAdapters, formFields],
   );
 
   return (

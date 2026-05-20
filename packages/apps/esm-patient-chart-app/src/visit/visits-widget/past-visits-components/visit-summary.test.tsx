@@ -72,9 +72,11 @@ describe('VisitSummary', () => {
     expect(screen.getByText(/^Definitivo$/)).toBeInTheDocument();
     expect(screen.getByText(/^Presuntivo$/)).toBeInTheDocument();
 
-    expect(malariaTag.closest('div')).toHaveClass('primaryDiagnosis');
-
-    expect(hivTag.closest('div')).toHaveClass('secondaryDiagnosis');
+    expect(malariaTag.closest('[title]')).toHaveAttribute('title', 'Malaria, confirmed (Definitivo)');
+    expect(hivTag.closest('[title]')).toHaveAttribute(
+      'title',
+      'HUMAN IMMUNODEFICIENCY VIRUS (HIV) DISEASE (Presuntivo)',
+    );
   });
 
   it('should display notes, tests and medication summary', async () => {

@@ -215,7 +215,7 @@ const OrderBasket: React.FC<OrderBasketProps> = (props) => {
           />
           {config?.orderTypes?.length > 0 &&
             config.orderTypes.map((orderType) => (
-              <div className={styles.orderPanel}>
+              <div className={styles.orderPanel} key={orderType.orderTypeUuid}>
                 <GeneralOrderType
                   key={orderType.orderTypeUuid}
                   orderTypeUuid={orderType.orderTypeUuid}
@@ -244,6 +244,7 @@ const OrderBasket: React.FC<OrderBasketProps> = (props) => {
           )}
           {ordersWithErrors.map((order) => (
             <InlineNotification
+              key={order.uuid}
               lowContrast
               kind="error"
               title={t('saveDrugOrderFailed', 'Error ordering {{orderName}}', { orderName: order.display })}

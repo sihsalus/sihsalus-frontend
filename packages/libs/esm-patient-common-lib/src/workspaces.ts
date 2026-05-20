@@ -1,13 +1,9 @@
 import { getGroupByWindowName, getWindowByWorkspaceName, workspace2Store } from '@openmrs/esm-extensions';
-import { getGlobalStore, navigate, showModal, useFeatureFlag, type Visit } from '@openmrs/esm-framework';
+import { navigate, showModal, useFeatureFlag, type Visit } from '@openmrs/esm-framework';
 import {
-  closeWorkspace,
-  closeWorkspaceGroup2,
   type DefaultWorkspaceProps,
   getRegisteredWorkspace2Names,
-  launchWorkspace,
   launchWorkspace2,
-  navigateAndLaunchWorkspace,
   type Workspace2DefinitionProps,
 } from '@openmrs/esm-styleguide';
 import { useCallback } from 'react';
@@ -36,40 +32,6 @@ export type PatientWorkspace2DefinitionProps<
   WorkspaceProps extends object,
   WindowProps extends object,
 > = Workspace2DefinitionProps<WorkspaceProps, WindowProps, PatientWorkspaceGroupProps>;
-
-const legacyFirstPatientChartWorkspaces = new Set<string>([
-  'start-visit-workspace-form',
-  'mark-patient-deceased-workspace-form',
-  'patient-vitals-biometrics-form-workspace',
-  'conditions-form-workspace',
-  'patient-allergy-form-workspace',
-  'visit-notes-form-workspace',
-  'clinical-forms-workspace',
-  'patient-form-entry-workspace',
-  'patient-html-form-entry-workspace',
-  'order-basket',
-  'patient-orders-form-workspace',
-  'test-results-form-workspace',
-  'orderable-concept-workspace',
-  'add-radiology-order',
-  'add-immunization-order',
-  'add-referral-order',
-  'appointments-form-workspace',
-]);
-
-const patientChartLegacyWorkspaceGroups = new Map<string, string>([
-  ['clinical-forms-workspace', 'clinical-forms'],
-  ['patient-form-entry-workspace', 'clinical-forms'],
-  ['patient-html-form-entry-workspace', 'clinical-forms'],
-  ['order-basket', 'orders'],
-  ['orderable-concept-workspace', 'orders'],
-  ['patient-orders-form-workspace', 'orders'],
-  ['test-results-form-workspace', 'orders'],
-  ['fua-encounter-workspace', 'fua'],
-  ['fua-viewer-workspace', 'fua'],
-]);
-
-const exclusivePatientChartLegacyWorkspaceGroups = new Set(['clinical-forms', 'orders', 'fua']);
 
 function isWorkspace2Registered(workspaceName: string): boolean {
   return getRegisteredWorkspace2Names().includes(workspaceName);
@@ -104,75 +66,59 @@ function isPatientChartWorkspace2(workspaceName: string): boolean {
   return getGroupByWindowName(windowDefinition.name)?.name === 'patient-chart';
 }
 
-interface LegacyWorkspaceStoreState {
-  openWorkspaces?: Array<{ name: string }>;
-}
+function getPatientUuidFromAdditionalProps(additionalProps?: object): string | null {
+  const props = additionalProps as
+    | {
+        patientUuid?: unknown;
+        formInfo?: {
+          patientUuid?: unknown;
+        };
+      }
+    | undefined;
 
-function closeOpenLegacyWorkspaces(): boolean {
-  const workspaceStore = getGlobalStore<LegacyWorkspaceStoreState>('workspace');
-  const openWorkspaces = workspaceStore.getState().openWorkspaces ?? [];
-
-  if (!openWorkspaces.length) {
-    return true;
+  if (typeof props?.patientUuid === 'string') {
+    return props.patientUuid;
   }
 
-  return openWorkspaces.every((workspace, index) =>
-    closeWorkspace(workspace.name, {
-      closeWorkspaceGroup: index === openWorkspaces.length - 1,
-    }),
-  );
-}
-
-function closeLegacyPatientChartWorkspaceGroup(workspaceName: string): boolean {
-  const targetGroup = patientChartLegacyWorkspaceGroups.get(workspaceName);
-
-  if (!targetGroup || !exclusivePatientChartLegacyWorkspaceGroups.has(targetGroup)) {
-    return true;
+  if (typeof props?.formInfo?.patientUuid === 'string') {
+    return props.formInfo.patientUuid;
   }
 
-  const workspaceStore = getGlobalStore<LegacyWorkspaceStoreState>('workspace');
-  const openWorkspaces = workspaceStore
-    .getState()
-    .openWorkspaces?.filter(
-      (workspace) =>
-        patientChartLegacyWorkspaceGroups.get(workspace.name) != null &&
-        patientChartLegacyWorkspaceGroups.get(workspace.name) !== targetGroup,
-    );
-
-  if (!openWorkspaces?.length) {
-    return true;
-  }
-
-  return openWorkspaces.every((workspace, index) =>
-    closeWorkspace(workspace.name, {
-      closeWorkspaceGroup: index === openWorkspaces.length - 1,
-    }),
-  );
+  return null;
 }
 
 export function launchPatientWorkspace(workspaceName: string, additionalProps?: object): void {
-  const patientUuid = getPatientUuidFromStore();
-  const shouldPreferLegacyWorkspace = legacyFirstPatientChartWorkspaces.has(workspaceName);
-  const workspace2Registered = !shouldPreferLegacyWorkspace && isWorkspace2Registered(workspaceName);
-  const patientChartWorkspace2 = workspace2Registered && isPatientChartWorkspace2(workspaceName);
+  const patientUuid = getPatientUuidFromStore() ?? getPatientUuidFromAdditionalProps(additionalProps);
+  const workspace2Registered = isWorkspace2Registered(workspaceName);
 
-  if (workspace2Registered && patientChartWorkspace2) {
-    if (closeOpenLegacyWorkspaces()) {
-      void launchWorkspace2(workspaceName, additionalProps ?? null, null, getPatientWorkspaceGroupProps());
-    }
-    return;
+  if (!workspace2Registered) {
+    throw new Error(`Workspace ${workspaceName} is not registered as a Workspace2 workspace.`);
   }
 
-  void closeWorkspaceGroup2().then((isClosed) => {
-    if (!isClosed || !closeLegacyPatientChartWorkspaceGroup(workspaceName)) {
-      return;
-    }
+  const patientChartWorkspace2 = isPatientChartWorkspace2(workspaceName);
+  const patientChartGroupProps =
+    getPatientWorkspaceGroupProps() ??
+    (patientUuid
+      ? {
+          patient: null,
+          patientUuid,
+          visitContext: null,
+          mutateVisitContext: null,
+        }
+      : null);
 
-    launchWorkspace(workspaceName, {
-      patientUuid,
-      ...additionalProps,
-    });
-  });
+  if (patientChartWorkspace2 && !patientChartGroupProps?.patientUuid) {
+    throw new Error(`Unable to launch patient chart workspace ${workspaceName}. Missing patientUuid.`);
+  }
+
+  const workspaceProps = patientChartWorkspace2
+    ? (additionalProps ?? null)
+    : {
+        ...(patientUuid ? { patientUuid } : {}),
+        ...(additionalProps ?? {}),
+      };
+
+  void launchWorkspace2(workspaceName, workspaceProps, null, patientChartWorkspace2 ? patientChartGroupProps : null);
 }
 
 export function launchPatientChartWithWorkspaceOpen({
@@ -186,13 +132,18 @@ export function launchPatientChartWithWorkspaceOpen({
   dashboardName?: string;
   additionalProps?: object;
 }): void {
-  // Keep legacy workspace launching for callers that still target the v9-style
-  // workspace contract while exposing Workspace2 helpers alongside it.
-  navigateAndLaunchWorkspace({
-    targetUrl: '${openmrsSpaBase}/patient/' + `${patientUuid}/chart` + (dashboardName ? `/${dashboardName}` : ''),
-    workspaceName,
-    contextKey: `patient/${patientUuid}`,
-    additionalProps,
+  navigate({ to: '${openmrsSpaBase}/patient/' + `${patientUuid}/chart` + (dashboardName ? `/${dashboardName}` : '') });
+
+  if (!isWorkspace2Registered(workspaceName)) {
+    console.error(`Workspace ${workspaceName} is not registered as a Workspace2 workspace.`);
+    return;
+  }
+
+  void launchWorkspace2(workspaceName, additionalProps ?? null, null, {
+    patient: null,
+    patientUuid,
+    visitContext: null,
+    mutateVisitContext: null,
   });
 }
 
@@ -265,10 +216,29 @@ export function useLaunchWorkspaceRequiringVisit<T extends object>(
   return useCallback(
     (workspaceProps?: T, windowProps?: object, groupProps?: object): void => {
       if (patientUuid) {
-        const patientChartGroupProps = groupProps ?? getPatientWorkspaceGroupProps();
+        const patientChartWorkspace2 = isPatientChartWorkspace2(workspaceName);
+        const patientChartGroupProps = groupProps ??
+          getPatientWorkspaceGroupProps() ?? {
+            patient: null,
+            patientUuid: activePatientUuid,
+            visitContext: currentVisit ?? null,
+            mutateVisitContext: null,
+          };
+        const resolvedWorkspaceProps = patientChartWorkspace2
+          ? (workspaceProps ?? null)
+          : ({
+              patientUuid: activePatientUuid,
+              ...(workspaceProps ?? {}),
+            } as T & { patientUuid: string });
+
         void startVisitIfNeeded().then((didStartVisit) => {
           if (didStartVisit) {
-            void launchWorkspace2(workspaceName, workspaceProps ?? null, windowProps ?? null, patientChartGroupProps);
+            void launchWorkspace2(
+              workspaceName,
+              resolvedWorkspaceProps,
+              windowProps ?? null,
+              patientChartWorkspace2 ? patientChartGroupProps : null,
+            );
           }
         });
         return;
@@ -280,7 +250,7 @@ export function useLaunchWorkspaceRequiringVisit<T extends object>(
         launchStartVisitPrompt();
       }
     },
-    [currentVisit, patientUuid, startVisitIfNeeded, systemVisitEnabled, workspaceName],
+    [activePatientUuid, currentVisit, patientUuid, startVisitIfNeeded, systemVisitEnabled, workspaceName],
   );
 }
 
@@ -295,6 +265,5 @@ export function launchPatientChartWithWorkspaceOpen2({
   dashboardName?: string;
   additionalProps?: object;
 }): void {
-  void launchWorkspace2(workspaceName, additionalProps);
-  navigate({ to: '${openmrsSpaBase}/patient/' + `${patientUuid}/chart` + (dashboardName ? `/${dashboardName}` : '') });
+  launchPatientChartWithWorkspaceOpen({ patientUuid, workspaceName, dashboardName, additionalProps });
 }

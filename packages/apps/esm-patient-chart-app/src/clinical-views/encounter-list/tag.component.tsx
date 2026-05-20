@@ -34,7 +34,7 @@ export const renderTag = (
   const columnStatus = getObsFromEncounter({ encounter: encounter, obsConcept: concept, config: config });
   const columnStatusObs = findObs(encounter, concept);
 
-  if (columnStatus == '--') {
+  if (columnStatus === '--') {
     return '--';
   }
 

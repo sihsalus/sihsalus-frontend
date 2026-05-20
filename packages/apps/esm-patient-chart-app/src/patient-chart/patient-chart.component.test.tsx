@@ -15,8 +15,6 @@ const mockCurrentVisit = {
 vi.mock('@openmrs/esm-framework', async () => ({
   ...(await vi.importActual('@openmrs/esm-framework')),
   ExtensionSlot: () => null,
-  WorkspaceContainer: () => null,
-  launchWorkspaceGroup2: (...args: Array<unknown>) => mockLaunchWorkspaceGroup2(...args),
   setCurrentVisit: (...args: Array<unknown>) => mockSetCurrentVisit(...args),
   setLeftNav: (...args: Array<unknown>) => mockSetLeftNav(...args),
   unsetLeftNav: (...args: Array<unknown>) => mockUnsetLeftNav(...args),
@@ -26,6 +24,11 @@ vi.mock('@openmrs/esm-framework', async () => ({
       id: 'patient-uuid',
     },
   }),
+}));
+
+vi.mock('@openmrs/esm-styleguide', () => ({
+  WorkspaceContainer: () => null,
+  launchWorkspaceGroup2: (...args: Array<unknown>) => mockLaunchWorkspaceGroup2(...args),
   useWorkspaces: () => ({
     workspaceWindowState: 'hidden',
     active: false,

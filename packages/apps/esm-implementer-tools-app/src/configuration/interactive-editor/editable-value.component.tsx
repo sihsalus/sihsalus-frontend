@@ -9,7 +9,7 @@ import {
   type Validator,
 } from '@openmrs/esm-framework/src/internal';
 import { cloneDeep, isEqual, unset } from 'lodash-es';
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import { type ImplementerToolsStore, implementerToolsStore } from '../../store';
@@ -46,12 +46,12 @@ export default function EditableValue({ path, element, customType }: EditableVal
     setError(null);
   };
 
-  const focusOnConfigPathBeingEdited = () => {
+  const focusOnConfigPathBeingEdited = useCallback(() => {
     if (activeConfigRef && activeConfigRef.current) {
       setEditing(true);
       activeConfigRef.current.focus();
     }
-  };
+  }, []);
 
   useEffect(() => {
     const update = (state: ImplementerToolsStore) => {
@@ -61,8 +61,7 @@ export default function EditableValue({ path, element, customType }: EditableVal
     };
     update(implementerToolsStore.getState());
     return implementerToolsStore.subscribe(update);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [focusOnConfigPathBeingEdited, path]);
 
   useEffect(() => {
     const state = implementerToolsStore.getState();
@@ -80,8 +79,7 @@ export default function EditableValue({ path, element, customType }: EditableVal
     if (!editing && isEqual(state.configPathBeingEdited, path)) {
       implementerToolsStore.setState({ configPathBeingEdited: null });
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [editing]);
+  }, [editing, element._description, element._source, path, valueString]);
 
   return (
     <>
@@ -120,7 +118,7 @@ export default function EditableValue({ path, element, customType }: EditableVal
               renderIcon={(props) => <EditIcon size={16} {...props} />}
               hasIconOnly
             />
-            {element._source == 'temporary config' ? (
+            {element._source === 'temporary config' ? (
               <Button
                 renderIcon={(props) => <ResetIcon size={16} {...props} />}
                 size="sm"

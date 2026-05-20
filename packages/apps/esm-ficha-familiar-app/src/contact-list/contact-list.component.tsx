@@ -238,6 +238,7 @@ const ContactList: React.FC<ContactListProps> = ({ patientUuid }) => {
                 <TableRow>
                   {headers.map((header) => (
                     <TableHeader
+                      key={header.key}
                       {...getHeaderProps({
                         header,
                         isSortable: header.isSortable,

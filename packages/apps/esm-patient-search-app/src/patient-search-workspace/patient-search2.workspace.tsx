@@ -38,7 +38,7 @@ const PatientSearchWorkspace2: React.FC<
   const debouncedSearchTerm = useDebounce(searchTerm);
   const showSearchResults = Boolean(debouncedSearchTerm?.trim());
 
-  const handleClearSearchTerm = useCallback(() => setSearchTerm(''), [setSearchTerm]);
+  const handleClearSearchTerm = useCallback(() => setSearchTerm(''), []);
 
   return (
     <Workspace2 title={workspaceTitle}>

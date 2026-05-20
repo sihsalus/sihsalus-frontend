@@ -19,13 +19,13 @@ import { extractOclErrorMessage, isAbortError } from '../utils';
 import { startImportWithFile, startImportWithSubscription, useSubscription } from './import.resource';
 import styles from './import.scss';
 
+const allowedMimeTypes = ['application/zip', 'application/x-zip-compressed'];
+
 const Import: React.FC = () => {
   const { t } = useTranslation();
   const [isSubscriptionAvailable, setIsSubscriptionAvailable] = useState(false);
   const [file, setFile] = useState<File>();
   const [isFileUploading, setIsFileUploading] = useState(false);
-
-  const allowedMimeTypes = ['application/zip', 'application/x-zip-compressed'];
 
   const { data: subscription, isLoading, error } = useSubscription();
 
@@ -36,7 +36,7 @@ const Import: React.FC = () => {
   }, [isLoading, error, subscription]);
 
   const onAddFiles = useCallback(
-    (evt: React.DragEvent<HTMLInputElement>, { addedFiles }: { addedFiles: File[] }) => {
+    (_evt: React.DragEvent<HTMLInputElement>, { addedFiles }: { addedFiles: File[] }) => {
       const fileToUpload: File = addedFiles[0];
       if (!allowedMimeTypes.includes(fileToUpload.type)) {
         showSnackbar({
@@ -48,7 +48,6 @@ const Import: React.FC = () => {
         setFile(fileToUpload);
       }
     },
-    // eslint-disable-next-line react-hooks/exhaustive-deps
     [t],
   );
 

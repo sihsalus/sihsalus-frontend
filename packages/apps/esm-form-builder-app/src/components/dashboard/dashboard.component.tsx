@@ -199,7 +199,7 @@ function ActionButtons({ form, mutate, responsiveSize, t }: ActionButtonsProps) 
 
   return (
     <>
-      {formResources.length == 0 || !form?.resources[0] ? (
+      {formResources.length === 0 || !form?.resources[0] ? (
         <ImportButton />
       ) : (
         <>
@@ -296,7 +296,7 @@ function FormsList({ forms, isValidating, mutate, t }: FormsListProps) {
       goTo(1);
       setSearchString(value ?? (event ? event.target.value : ''));
     },
-    [goTo, setSearchString],
+    [goTo],
   );
 
   return (
@@ -352,7 +352,9 @@ function FormsList({ forms, isValidating, mutate, t }: FormsListProps) {
                 <TableHead>
                   <TableRow>
                     {headers.map((header) => (
-                      <TableHeader {...getHeaderProps({ header })}>{header.header}</TableHeader>
+                      <TableHeader key={header.key} {...getHeaderProps({ header })}>
+                        {header.header}
+                      </TableHeader>
                     ))}
                   </TableRow>
                 </TableHead>

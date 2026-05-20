@@ -65,8 +65,7 @@ function ExtensionSlotConfigTree({ config, path }: ExtensionSlotConfigProps) {
     if (shouldFocus) {
       itemRef.current?.scrollIntoView();
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [uiSelectedPath]);
+  }, [uiSelectedPath, path]);
 
   function setActiveExtensionSlotOnMouseEnter(moduleName, slotName) {
     if (!implementerToolsStore.getState().configPathBeingEdited) {

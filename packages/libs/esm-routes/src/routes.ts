@@ -101,19 +101,19 @@ export function isOpenmrsAppRoutes(routes: OpenmrsAppRoutes | unknown): routes i
 
   // we cast maybeRoutes as OpenmrsAppRoutes mainly so we can refer to the properties it should
   // have without repeated casts
-  const hasOwnProperty = Object.prototype.hasOwnProperty;
+  const objectHasOwnProperty = Object.prototype.hasOwnProperty;
   const maybeRoutes = routes as OpenmrsAppRoutes;
 
-  if (hasOwnProperty.call(routes, 'pages') && !Array.isArray(maybeRoutes.pages)) {
+  if (objectHasOwnProperty.call(routes, 'pages') && !Array.isArray(maybeRoutes.pages)) {
     return false;
   }
-  if (hasOwnProperty.call(routes, 'extensions') && !Array.isArray(maybeRoutes.extensions)) {
+  if (objectHasOwnProperty.call(routes, 'extensions') && !Array.isArray(maybeRoutes.extensions)) {
     return false;
   }
-  if (hasOwnProperty.call(routes, 'workspaces') && !Array.isArray(maybeRoutes.workspaces)) {
+  if (objectHasOwnProperty.call(routes, 'workspaces') && !Array.isArray(maybeRoutes.workspaces)) {
     return false;
   }
-  if (hasOwnProperty.call(routes, 'modals') && !Array.isArray(maybeRoutes.modals)) {
+  if (objectHasOwnProperty.call(routes, 'modals') && !Array.isArray(maybeRoutes.modals)) {
     return false;
   }
 

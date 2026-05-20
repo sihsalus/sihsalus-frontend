@@ -13,7 +13,8 @@ export function evaluatePostSubmissionExpression(expression: string, encounters:
   let match: RegExpExecArray | null;
   const fieldIds = new Set<string>();
   try {
-    while ((match = regx.exec(expression))) {
+    match = regx.exec(expression);
+    while (match) {
       const value = match[0].replace(/\\'/g, "'"); // Replace escaped single quotes
 
       const isBoolean = /^(true|false)$/i.test(value);
@@ -29,6 +30,7 @@ export function evaluatePostSubmissionExpression(expression: string, encounters:
       ) {
         fieldIds.add(value);
       }
+      match = regx.exec(expression);
     }
 
     const fieldToValueMap = fieldIds.size ? getFieldValues(fieldIds, encounter) : {};

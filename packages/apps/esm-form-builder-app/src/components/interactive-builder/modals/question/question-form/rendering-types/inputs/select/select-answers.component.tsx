@@ -166,7 +166,7 @@ const SelectAnswers: React.FC = () => {
     if (concept?.answers?.length) {
       void validateAnswers();
     }
-  }, [answerItems, concept, validateAnswers]);
+  }, [concept, validateAnswers]);
 
   const convertAnswerItemsToString = useCallback((item: AnswerItem) => item.text, []);
 
@@ -199,23 +199,20 @@ const SelectAnswers: React.FC = () => {
   /**
    * Reordering additional answers by drag & drop
    */
-  const handleAdditionalDragEnd = useCallback(
-    (event: DragEndEvent) => {
-      const { active, over } = event;
-      if (!over) return;
+  const handleAdditionalDragEnd = useCallback((event: DragEndEvent) => {
+    const { active, over } = event;
+    if (!over) return;
 
-      if (active.id !== over.id) {
-        setAddedAnswers((prev) => {
-          const oldIndex = prev.findIndex((ans) => ans.id === active.id);
-          const newIndex = prev.findIndex((ans) => ans.id === over.id);
-          if (oldIndex === -1 || newIndex === -1) return prev;
-          const reordered = arrayMove(prev, oldIndex, newIndex);
-          return reordered;
-        });
-      }
-    },
-    [setAddedAnswers],
-  );
+    if (active.id !== over.id) {
+      setAddedAnswers((prev) => {
+        const oldIndex = prev.findIndex((ans) => ans.id === active.id);
+        const newIndex = prev.findIndex((ans) => ans.id === over.id);
+        if (oldIndex === -1 || newIndex === -1) return prev;
+        const reordered = arrayMove(prev, oldIndex, newIndex);
+        return reordered;
+      });
+    }
+  }, []);
 
   return (
     <Stack gap={5}>

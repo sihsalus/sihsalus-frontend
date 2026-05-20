@@ -73,7 +73,7 @@ export function ArrayEditor({ element, valueArray, setValue }: ArrayEditorProps)
                 hasIconOnly
                 onClick={() => {
                   const newValueArray = cloneDeep(currentValueArray);
-                  const newValue = (element._elements?._type ?? Type.Object) == Type.Object ? {} : null;
+                  const newValue = (element._elements?._type ?? Type.Object) === Type.Object ? {} : null;
                   newValueArray.push(newValue);
                   setValue(newValueArray);
                 }}

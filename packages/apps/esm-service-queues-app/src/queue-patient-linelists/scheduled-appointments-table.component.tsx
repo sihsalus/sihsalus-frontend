@@ -91,14 +91,14 @@ const AppointmentsTable: React.FC = () => {
   };
 
   useEffect(() => {
-    if (currentAppointmentStatus != t('all', 'All') && currentAppointmentStatus !== '') {
+    if (currentAppointmentStatus !== t('all', 'All') && currentAppointmentStatus !== '') {
       setFilteredRows(
         appointmentQueueEntries?.filter((appointment) => appointment.status === currentAppointmentStatus),
       );
     } else {
       setFilteredRows(appointmentQueueEntries);
     }
-  }, [t, currentAppointmentStatus, results, appointmentQueueEntries]);
+  }, [t, currentAppointmentStatus, appointmentQueueEntries]);
 
   const tableHeaders = useMemo(
     () => [

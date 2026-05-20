@@ -1,5 +1,5 @@
 import { Button } from '@carbon/react';
-import { Error } from '@carbon/react/icons';
+import { Error as ErrorIcon } from '@carbon/react/icons';
 import { showModal } from '@openmrs/esm-framework';
 import React, { useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -21,7 +21,7 @@ const StockOperationCancelButton: React.FC<StockOperationCancelButtonProps> = ({
   }, [operation]);
 
   return (
-    <Button onClick={launchCancelModal} kind="danger--ghost" renderIcon={(props) => <Error size={16} {...props} />}>
+    <Button onClick={launchCancelModal} kind="danger--ghost" renderIcon={(props) => <ErrorIcon size={16} {...props} />}>
       {t('cancel', 'Cancel ')}
     </Button>
   );

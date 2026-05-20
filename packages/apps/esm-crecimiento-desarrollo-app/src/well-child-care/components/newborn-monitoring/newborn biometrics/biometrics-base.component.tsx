@@ -77,7 +77,7 @@ const NewbornBiometricsBase: React.FC<BiometricsBaseProps> = ({ patientUuid, pag
     // Generar tableRows
     const rows =
       biometrics?.map((item, index) => {
-        const row: { id: string; [key: string]: any } = { id: `${index}` };
+        const row: { id: string; [key: string]: unknown } = { id: `${index}` };
         clinicalFields.forEach((field) => {
           row[field.key] = field.format ? field.format(item[field.key]) : (item[field.key] ?? '--');
         });
@@ -108,7 +108,7 @@ const NewbornBiometricsBase: React.FC<BiometricsBaseProps> = ({ patientUuid, pag
       patientUuid={patientUuid}
       pageSize={pageSize}
       headerTitle={t('newbornAntropometrics', 'Antropometría')}
-      data={biometrics as unknown as any[]}
+      data={biometrics as unknown as Array<Record<string, unknown>>}
       error={error}
       isLoading={isLoading}
       isValidating={isValidating}

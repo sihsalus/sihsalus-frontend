@@ -13,8 +13,7 @@ export const encounterRepresentation =
 export interface OpenmrsResource {
   uuid: string;
   display?: string;
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  [anythingElse: string]: any;
+  [anythingElse: string]: unknown;
 }
 
 export function useEncounterRows(

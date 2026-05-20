@@ -30,7 +30,7 @@ const HtmlFormEntryWrapper: React.FC<HtmlFormEntryWrapperProps> = ({ closeWorksp
 
   return (
     <div>
-      <iframe ref={iframeRef} src={src} className={styles.wrapper} onLoad={onLoad}></iframe>
+      <iframe ref={iframeRef} src={src} className={styles.wrapper} onLoad={onLoad} title="HTML form entry"></iframe>
     </div>
   );
 };

@@ -9,12 +9,10 @@ import type { amPm } from '@openmrs/esm-patient-common-lib';
  */
 export interface DefaultPatientWorkspaceProps {
   closeWorkspace(options?: { closeWindow?: boolean; discardUnsavedChanges?: boolean }): Promise<boolean>;
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  workspaceProps?: Record<string, any> | null;
+  workspaceProps?: Record<string, unknown> | null;
   workspaceName?: string;
   windowName?: string;
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  [key: string]: any;
+  [key: string]: unknown;
 }
 
 /**
@@ -139,12 +137,10 @@ export interface Observation {
       uuid: string;
       display: string;
     };
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    value: string | number | Record<string, any> | null;
+    value: string | number | Record<string, unknown> | null;
     display: string;
   }>;
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  value: string | number | Record<string, any> | null;
+  value: string | number | Record<string, unknown> | null;
   obsDatetime?: string;
 }
 
@@ -530,8 +526,7 @@ export interface DefinitionDataRow {
 }
 
 export type PatientAppointment = {
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  [key: string]: any;
+  [key: string]: unknown;
   serviceType: string;
   appointmentDate: string;
   appointmentId: string;

@@ -1,4 +1,4 @@
-import { Button, Tag, Tile } from '@carbon/react';
+import { Button, Tile } from '@carbon/react';
 import { Education, Growth } from '@carbon/react/icons';
 import { launchWorkspace2, useConfig } from '@openmrs/esm-framework';
 import React from 'react';

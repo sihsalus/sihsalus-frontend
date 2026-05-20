@@ -19,6 +19,15 @@ const MediaUploaderComponent = () => {
   const { allowedFileExtensions } = useAllowedFileExtensions();
   const [errorNotification, setErrorNotification] = useState<ErrorNotification>(null);
 
+  const isFileExtensionAllowed = useCallback((fileName: string, allowedFileExtensions: string[]): boolean => {
+    if (!allowedFileExtensions) {
+      return true;
+    }
+
+    const fileExtension = fileName.split('.').pop();
+    return allowedFileExtensions?.includes(fileExtension.toLowerCase());
+  }, []);
+
   const upload = useCallback(
     (files: Array<File>) => {
       files.forEach((file) => {
@@ -64,17 +73,8 @@ const MediaUploaderComponent = () => {
         }
       });
     },
-    [setFilesToUpload, maxFileSize, t, allowedFileExtensions],
+    [setFilesToUpload, maxFileSize, t, allowedFileExtensions, isFileExtensionAllowed],
   );
-
-  const isFileExtensionAllowed = (fileName: string, allowedFileExtensions: string[]): boolean => {
-    if (!allowedFileExtensions) {
-      return true;
-    }
-
-    const fileExtension = fileName.split('.').pop();
-    return allowedFileExtensions?.includes(fileExtension.toLowerCase());
-  };
 
   return (
     <div className="cds--file__container">

@@ -137,7 +137,7 @@ const ProgramsForm: React.FC<ProgramsWorkspaceProps> = (props) => {
         dateCompleted: completionDate ? dayjs(completionDate).format() : null,
         location: enrollmentLocation,
         states:
-          !!selectedProgramStatus && selectedProgramStatus != currentState?.state.uuid
+          !!selectedProgramStatus && selectedProgramStatus !== currentState?.state.uuid
             ? [{ state: { uuid: selectedProgramStatus } }]
             : [],
       };

@@ -13,7 +13,7 @@ export const queueTablePatientIdentifierColumn: QueueTableColumnFunction = (
 
   const getPatientIdentifier = (queueEntry: QueueEntry) => {
     const configuredIdentifier = queueEntry.patient.identifiers.find(
-      (i) => i.identifierType?.uuid == identifierTypeUuid,
+      (i) => i.identifierType?.uuid === identifierTypeUuid,
     );
     return getPreferredIdentifier(queueEntry.patient.identifiers)?.identifier ?? configuredIdentifier?.identifier;
   };

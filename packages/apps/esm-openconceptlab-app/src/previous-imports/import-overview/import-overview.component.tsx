@@ -63,7 +63,7 @@ const ImportOverview: React.FC<ImportOverviewProps> = ({ selectedImportObject })
         <br />
       </div>
       <br />
-      {selectedImportObject.errorItemsCount != 0 && <ImportItems importUuid={selectedImportObject.uuid} />}
+      {selectedImportObject.errorItemsCount !== 0 && <ImportItems importUuid={selectedImportObject.uuid} />}
     </div>
   );
 };

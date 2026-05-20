@@ -33,7 +33,12 @@ const AppMenuPanel: React.FC<AppMenuProps> = ({ expanded, hidePanel }) => {
           {config?.externalRefLinks?.length > 0 && (
             <div className={classNames(styles.menuLink, styles.externalLinks)}>
               {config?.externalRefLinks?.map((link) => (
-                <a target="_blank" rel="noopener noreferrer" href={link?.redirect}>
+                <a
+                  key={`${link?.title}-${link?.redirect}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  href={link?.redirect}
+                >
                   {t(link?.title)}
                   <Launch size={16} className={styles.launchIcon} />
                 </a>

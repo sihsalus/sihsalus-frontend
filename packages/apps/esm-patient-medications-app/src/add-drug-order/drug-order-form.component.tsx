@@ -789,7 +789,7 @@ const CustomNumberInput = ({ setValue, control, name, labelText, isTablet, ...in
   const handleChange = useCallback(
     (e: ChangeEvent<HTMLInputElement>) => {
       const number = parseFloat(String(e.target.value));
-      onChange(isNaN(number) ? null : number);
+      onChange(Number.isNaN(number) ? null : number);
     },
     [onChange],
   );
@@ -920,7 +920,7 @@ const ControlledFieldInput = ({
           onBlur={onBlur}
           onChange={(_, { value }) => {
             const number = parseFloat(String(value));
-            handleChange(isNaN(number) ? null : number);
+            handleChange(Number.isNaN(number) ? null : number);
           }}
           ref={ref}
           size={isTablet ? 'md' : 'sm'}

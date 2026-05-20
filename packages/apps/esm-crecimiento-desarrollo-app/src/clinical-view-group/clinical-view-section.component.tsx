@@ -19,7 +19,7 @@ export const ClinicalViewSection: React.FC<ClinicalViewSectionProps> = ({ basePa
     if (slotName) {
       registerNavGroup(slotName);
     }
-  }, [slotName]);
+  }, []);
 
   return (
     <>

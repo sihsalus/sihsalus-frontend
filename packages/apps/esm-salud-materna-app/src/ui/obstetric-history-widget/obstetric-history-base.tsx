@@ -24,7 +24,7 @@ const ObstetricHistoryBase: React.FC<ObstetricHistoryBaseProps> = ({ patientUuid
   const isTablet = useLayoutType() === 'tablet';
 
   const config = useConfig<ConfigObject>();
-  const { data: formattedObs, isLoading, error, mutate, isValidating } = usePrenatalAntecedents(patientUuid);
+  const { data: formattedObs, isLoading, error, isValidating } = usePrenatalAntecedents(patientUuid);
   const { data: conceptUnits } = usePrenatalConceptMetadata();
 
   const launchObstetricForm = useCallback(() => {

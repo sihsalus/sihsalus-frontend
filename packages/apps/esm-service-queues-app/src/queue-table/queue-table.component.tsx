@@ -78,7 +78,7 @@ function QueueTable({
 
   useEffect(() => {
     goTo(1);
-  }, [goTo, queueEntries]);
+  }, [goTo]);
 
   const rows: QueueTableRowData[] =
     paginatedQueueEntries?.map((queueEntry) => {
@@ -93,7 +93,7 @@ function QueueTable({
     return <DataTableSkeleton role="progressbar" />;
   }
 
-  if (columns.length == 0) {
+  if (columns.length === 0) {
     return <p>{t('noColumnsDefined', 'No table columns defined. Check Configuration')}</p>;
   }
 

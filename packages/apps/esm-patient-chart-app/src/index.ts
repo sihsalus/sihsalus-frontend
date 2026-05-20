@@ -1,4 +1,3 @@
-import { registerWorkspace } from '@openmrs/esm-extensions';
 import * as Framework from '@openmrs/esm-framework';
 import {
   defineConfigSchema,
@@ -9,7 +8,6 @@ import {
 } from '@openmrs/esm-framework';
 import * as PatientCommonLib from '@openmrs/esm-patient-common-lib';
 import { createDashboardLink } from '@openmrs/esm-patient-common-lib';
-import { type LifeCycles } from 'single-spa';
 
 import addPastVisitActionButtonComponent from './actions-buttons/add-past-visit.component';
 import cancelVisitActionButtonComponent from './actions-buttons/cancel-visit.component';
@@ -34,51 +32,6 @@ import pastVisitsOverviewComponent from './visit/visits-widget/visit-detail-over
 const startupKey = Symbol.for('sihsalus.esm-patient-chart-app.startup-complete');
 const patientChartNavGroupExtensionName = 'patient-chart-nav-group';
 const patientChartDashboardExtensionName = 'patient-chart-dashboard';
-type RemoteWorkspaceModule = Record<string, () => LifeCycles | Promise<LifeCycles>>;
-
-function loadRemoteWorkspace(moduleName: string, exportName: string): Promise<LifeCycles> {
-  return Framework.importDynamic<RemoteWorkspaceModule>(moduleName).then((remoteModule) => {
-    const lifecycleFactory = remoteModule[exportName];
-
-    if (typeof lifecycleFactory !== 'function') {
-      throw new Error(`Workspace export ${moduleName}#${exportName} is not available.`);
-    }
-
-    return lifecycleFactory();
-  });
-}
-
-function registerRemoteWorkspace({
-  name,
-  title,
-  type,
-  width,
-  remoteModuleName,
-  exportName,
-  canHide = true,
-  canMaximize = true,
-}: {
-  name: string;
-  title: string;
-  type: string;
-  width: 'narrow' | 'wider' | 'extra-wide';
-  remoteModuleName: string;
-  exportName: string;
-  canHide?: boolean;
-  canMaximize?: boolean;
-}) {
-  registerWorkspace({
-    name,
-    title,
-    type,
-    canHide,
-    canMaximize,
-    width,
-    component: `${remoteModuleName}#${exportName}`,
-    moduleName: remoteModuleName,
-    load: () => loadRemoteWorkspace(remoteModuleName, exportName),
-  });
-}
 
 // This allows @openmrs/esm-patient-common-lib to be accessed by modules that are not
 // using webpack. This is used for ngx-formentry.
@@ -106,143 +59,6 @@ export function startupApp() {
     'Retrospective Data Entry',
     "Features to enter data for past visits. Includes the 'Edit Past Visit' button in the start visit dialog, and the 'Add Past Visit' button in the patient header.",
   );
-
-  registerPatientChartWorkspaces();
-}
-
-function registerPatientChartWorkspaces() {
-  registerWorkspace({
-    name: 'start-visit-workspace-form',
-    title: 'startVisitWorkspaceTitle',
-    type: 'start-visit',
-    canHide: true,
-    canMaximize: true,
-    width: 'wider',
-    component: 'startVisitWorkspace',
-    moduleName,
-    load: startVisitWorkspace,
-  });
-
-  registerWorkspace({
-    name: 'mark-patient-deceased-workspace-form',
-    title: 'Mark patient deceased',
-    type: 'form',
-    canHide: true,
-    canMaximize: true,
-    width: 'wider',
-    component: 'markPatientDeceasedForm',
-    moduleName,
-    load: markPatientDeceasedForm,
-  });
-
-  registerRemoteWorkspace({
-    name: 'patient-vitals-biometrics-form-workspace',
-    title: 'recordVitalsAndBiometrics',
-    type: 'vitals-biometrics',
-    width: 'wider',
-    remoteModuleName: '@sihsalus/esm-patient-vitals-app',
-    exportName: 'vitalsBiometricsFormWorkspace',
-  });
-
-  registerRemoteWorkspace({
-    name: 'conditions-form-workspace',
-    title: 'Record a Condition',
-    type: 'condition',
-    width: 'wider',
-    remoteModuleName: '@sihsalus/esm-patient-conditions-app',
-    exportName: 'conditionsFormWorkspace',
-  });
-
-  registerRemoteWorkspace({
-    name: 'patient-allergy-form-workspace',
-    title: 'Allergy',
-    type: 'patient-allergy',
-    width: 'wider',
-    remoteModuleName: '@sihsalus/esm-patient-allergies-app',
-    exportName: 'allergyFormWorkspace',
-  });
-
-  registerRemoteWorkspace({
-    name: 'visit-notes-form-workspace',
-    title: 'visitNoteWorkspaceTitle',
-    type: 'visit-note',
-    width: 'wider',
-    remoteModuleName: '@sihsalus/esm-patient-notes-app',
-    exportName: 'visitNotesFormWorkspace',
-  });
-
-  registerRemoteWorkspace({
-    name: 'patient-form-entry-workspace',
-    title: 'Clinical form',
-    type: 'clinical-form',
-    canHide: false,
-    width: 'extra-wide',
-    remoteModuleName: '@sihsalus/esm-patient-forms-app',
-    exportName: 'patientFormEntryWorkspace',
-  });
-
-  registerRemoteWorkspace({
-    name: 'clinical-forms-workspace',
-    title: 'Clinical forms',
-    type: 'clinical-form',
-    width: 'extra-wide',
-    remoteModuleName: '@sihsalus/esm-patient-forms-app',
-    exportName: 'clinicalFormsWorkspace',
-  });
-
-  registerRemoteWorkspace({
-    name: 'order-basket',
-    title: 'orderBasketWorkspaceTitle',
-    type: 'orders',
-    width: 'wider',
-    remoteModuleName: '@sihsalus/esm-patient-orders-app',
-    exportName: 'orderBasketWorkspace',
-  });
-
-  registerRemoteWorkspace({
-    name: 'orderable-concept-workspace',
-    title: 'searchOrderables',
-    type: 'orders',
-    width: 'wider',
-    remoteModuleName: '@sihsalus/esm-patient-orders-app',
-    exportName: 'orderableConceptSearch',
-  });
-
-  registerRemoteWorkspace({
-    name: 'add-radiology-order',
-    title: 'searchOrderables',
-    type: 'orders',
-    width: 'wider',
-    remoteModuleName: '@sihsalus/esm-patient-orders-app',
-    exportName: 'orderableConceptSearch',
-  });
-
-  registerRemoteWorkspace({
-    name: 'add-immunization-order',
-    title: 'searchOrderables',
-    type: 'orders',
-    width: 'wider',
-    remoteModuleName: '@sihsalus/esm-patient-orders-app',
-    exportName: 'orderableConceptSearch',
-  });
-
-  registerRemoteWorkspace({
-    name: 'add-referral-order',
-    title: 'searchOrderables',
-    type: 'orders',
-    width: 'wider',
-    remoteModuleName: '@sihsalus/esm-patient-orders-app',
-    exportName: 'orderableConceptSearch',
-  });
-
-  registerRemoteWorkspace({
-    name: 'appointments-form-workspace',
-    title: 'createNewAppointment',
-    type: 'appointment',
-    width: 'wider',
-    remoteModuleName: '@sihsalus/esm-appointments-app',
-    exportName: 'appointmentsFormWorkspace',
-  });
 }
 
 export const root = getSyncLifecycle(patientChartPageComponent, { featureName: 'patient-chart', moduleName });
@@ -366,7 +182,7 @@ export const startVisitWorkspace = getAsyncLifecycle(() => import('./visit/visit
   moduleName,
 });
 
-// t('markPatientDeceased', 'Mark patient deceased')
+// t('markPatientDeceased', 'Marcar paciente como fallecido')
 export const markPatientDeceasedForm = getAsyncLifecycle(
   () => import('./mark-patient-deceased/mark-patient-deceased-form.workspace'),
   {

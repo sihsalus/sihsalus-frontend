@@ -3,7 +3,7 @@ import React from 'react';
 import { useTranslation } from 'react-i18next';
 import { useFormField } from '../../../../form-field-context';
 
-const Number: React.FC = () => {
+const NumberInput: React.FC = () => {
   const { t } = useTranslation();
   const { formField, setFormField } = useFormField();
 
@@ -49,4 +49,4 @@ const Number: React.FC = () => {
   );
 };
 
-export default Number;
+export default NumberInput;

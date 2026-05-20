@@ -43,11 +43,10 @@ export default function JsonEditor({ height }: JsonEditorProps) {
   }, [editorValue]);
 
   useEffect(() => {
-    if (editorValue != JSON.stringify(temporaryConfig.config, null, 2)) {
+    if (editorValue !== JSON.stringify(temporaryConfig.config, null, 2)) {
       setKey((k) => `${k}+`); // just keep appending plus signs
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [temporaryConfig.config]);
+  }, [temporaryConfig.config, editorValue]);
 
   return (
     <div>

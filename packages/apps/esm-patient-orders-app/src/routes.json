@@ -64,6 +64,31 @@
       "name": "orderable-concept-workspace",
       "component": "orderableConceptSearch",
       "window": "patient-chart-orders"
+    },
+    {
+      "name": "patient-orders-form-workspace",
+      "component": "patientOrdersFormWorkspace",
+      "window": "patient-chart-orders"
+    },
+    {
+      "name": "test-results-form-workspace",
+      "component": "testResultsFormWorkspace",
+      "window": "patient-chart-orders"
+    },
+    {
+      "name": "add-radiology-order",
+      "component": "orderableConceptSearch",
+      "window": "patient-chart-orders"
+    },
+    {
+      "name": "add-immunization-order",
+      "component": "orderableConceptSearch",
+      "window": "patient-chart-orders"
+    },
+    {
+      "name": "add-referral-order",
+      "component": "orderableConceptSearch",
+      "window": "patient-chart-orders"
     }
   ],
   "workspaceWindows2": [
@@ -72,35 +97,6 @@
       "group": "patient-chart",
       "icon": "orderBasketActionButton",
       "order": 3
-    }
-  ],
-  "workspaces": [
-    {
-      "name": "order-basket",
-      "title": "orderBasketWorkspaceTitle",
-      "component": "orderBasketWorkspace",
-      "type": "order",
-      "canHide": true
-    },
-    {
-      "name": "patient-orders-form-workspace",
-      "title": "orderCancellation",
-      "component": "patientOrdersFormWorkspace",
-      "type": "order",
-      "canHide": false
-    },
-    {
-      "name": "test-results-form-workspace",
-      "title": "enterTestResults",
-      "component": "testResultsFormWorkspace",
-      "type": "lab-results",
-      "canHide": false
-    },
-    {
-      "name": "orderable-concept-workspace",
-      "title": "searchOrderables",
-      "component": "orderableConceptSearch",
-      "type": "order"
     }
   ]
 }

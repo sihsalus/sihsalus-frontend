@@ -39,7 +39,7 @@ function ConditionsDetailedSummary({ patient }) {
   const { conditions, error, isLoading, isValidating } = useConditions(patient.id);
 
   const filteredConditions = useMemo(() => {
-    if (!filter || filter == 'All') {
+    if (!filter || filter === 'All') {
       return conditions;
     }
 
@@ -148,6 +148,7 @@ function ConditionsDetailedSummary({ patient }) {
                     <TableRow>
                       {headers.map((header) => (
                         <TableHeader
+                          key={header.key}
                           className={classNames(styles.productiveHeading01, styles.text02)}
                           {...getHeaderProps({
                             header,

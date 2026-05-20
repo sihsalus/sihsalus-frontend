@@ -75,7 +75,9 @@ vi.mock('@carbon/react', async () => {
 
 vi.mock('@openmrs/esm-patient-common-lib', async () => ({
   PatientChartPagination: ({ onPageNumberChange }: any) => (
-    <button onClick={() => onPageNumberChange({ page: 2 })}>Next</button>
+    <button type="button" onClick={() => onPageNumberChange({ page: 2 })}>
+      Next
+    </button>
   ),
 
   EmptyState: ({ displayText, headerTitle }: any) => (

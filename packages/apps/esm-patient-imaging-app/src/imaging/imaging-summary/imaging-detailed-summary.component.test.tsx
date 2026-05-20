@@ -36,7 +36,11 @@ vi.mock('@openmrs/esm-patient-common-lib', () => ({
   EmptyState: ({ displayText, headerTitle, launchForm }: any) => (
     <div data-testid="empty-state">
       {headerTitle}: {displayText}
-      {launchForm && <button onClick={launchForm}>Launch</button>}
+      {launchForm && (
+        <button type="button" onClick={launchForm}>
+          Launch
+        </button>
+      )}
     </div>
   ),
   ErrorState: ({ error, headerTitle }: any) => (

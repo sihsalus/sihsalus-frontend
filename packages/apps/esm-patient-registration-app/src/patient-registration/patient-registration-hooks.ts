@@ -130,7 +130,7 @@ export function useInitialFormValues(patientUuid: string): [FormValues, Dispatch
         nonCodedCauseOfDeath: deathInfo.causeOfDeathNonCoded,
       }));
     }
-  }, [isLoadingDeathInfo, deathInfo, setInitialFormValues, freeTextFieldConceptUuid]);
+  }, [isLoadingDeathInfo, deathInfo, freeTextFieldConceptUuid]);
 
   // Set initial patient relationships
   useEffect(() => {
@@ -140,7 +140,7 @@ export function useInitialFormValues(patientUuid: string): [FormValues, Dispatch
         relationships,
       }));
     }
-  }, [isLoadingRelationships, relationships, setInitialFormValues]);
+  }, [isLoadingRelationships, relationships]);
 
   // Set Initial patient identifiers
   useEffect(() => {
@@ -150,7 +150,7 @@ export function useInitialFormValues(patientUuid: string): [FormValues, Dispatch
         identifiers,
       }));
     }
-  }, [isLoadingIdentifiers, identifiers, setInitialFormValues]);
+  }, [isLoadingIdentifiers, identifiers]);
 
   // Set Initial person attributes
   useEffect(() => {
@@ -168,7 +168,7 @@ export function useInitialFormValues(patientUuid: string): [FormValues, Dispatch
         attributes: personAttributes,
       }));
     }
-  }, [attributes, setInitialFormValues, isLoadingAttributes]);
+  }, [attributes, isLoadingAttributes]);
 
   // Set Initial registration encounters
   useEffect(() => {

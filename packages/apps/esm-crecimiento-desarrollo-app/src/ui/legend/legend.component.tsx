@@ -18,7 +18,7 @@ interface LegendTileProps {
   conceptSetUUID: string;
 }
 
-const LegendTile: React.FC<LegendTileProps> = ({ conceptSetUUID }) => {
+const LegendTile: React.FC<LegendTileProps> = ({ conceptSetUUID: _conceptSetUUID }) => {
   const { t } = useTranslation();
   const config = useConfig<ConfigObject>();
   const { schemasConceptSet, isLoading, error } = useSchemasConceptSet(config.legend);

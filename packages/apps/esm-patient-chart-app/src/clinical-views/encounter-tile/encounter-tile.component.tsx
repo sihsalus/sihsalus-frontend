@@ -46,7 +46,7 @@ const EncounterData: React.FC<{
     return <CodeSnippetSkeleton className={styles.tileBox} type="multi" role="progressbar" />;
   }
 
-  if (error || lastEncounter == undefined) {
+  if (error || lastEncounter === undefined) {
     return (
       <div className={styles.tileBox}>
         {columns.map((column) => (

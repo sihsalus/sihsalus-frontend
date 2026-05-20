@@ -18,11 +18,7 @@ type DashboardGroupProps = {
 const DashboardGroup = memo(
   ({ title, slotName, isExpanded, isChild, basePath, showWhenExpression }: DashboardGroupProps) => {
     const { patient, isLoading: isLoadingPatient } = usePatient();
-    const {
-      patientEnrollments,
-      isLoading: isLoadingActiveEnrollment,
-      isValidating,
-    } = usePatientEnrollment(patient?.id);
+    const { patientEnrollments, isLoading: isLoadingActiveEnrollment } = usePatientEnrollment(patient?.id);
 
     const showGroup = useMemo(
       () => evaluateExpression(showWhenExpression, patient, patientEnrollments),

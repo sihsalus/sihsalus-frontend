@@ -95,6 +95,7 @@ const AllergiesOverview: React.FC<AllergiesOverviewProps> = ({ patient }) => {
                   <TableRow>
                     {headers.map((header) => (
                       <TableHeader
+                        key={header.key}
                         className={styles.tableHeader}
                         {...getHeaderProps({
                           header,

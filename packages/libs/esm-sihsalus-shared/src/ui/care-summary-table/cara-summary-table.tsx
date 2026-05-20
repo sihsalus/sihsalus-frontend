@@ -15,6 +15,7 @@ import { launchWorkspace } from '@openmrs/esm-framework';
 import {
   CardHeader,
   EmptyState,
+  launchPatientWorkspace,
   launchStartVisitPrompt,
   useVisitOrOfflineVisit,
 } from '@openmrs/esm-patient-common-lib';
@@ -144,7 +145,7 @@ const CareSummaryTable: React.FC<CareSummaryTableProps> = ({
         launchStartVisitPrompt();
       } else {
         if (formUuid) {
-          launchWorkspace('patient-form-entry-workspace', {
+          launchPatientWorkspace('patient-form-entry-workspace', {
             workspaceTitle: title,
             mutateForm: mutate,
             formInfo: { formUuid, patientUuid, additionalProps: {} },

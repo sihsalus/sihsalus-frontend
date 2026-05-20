@@ -82,7 +82,7 @@ const File: React.FC<FormFieldInputProps<Array<Attachment>>> = ({ field, value, 
           value
             .filter((file) => !file.voided)
             .map((file, index) => (
-              <div className={styles.thumbnailContainer}>
+              <div key={`${file.fileName}_${index}`} className={styles.thumbnailContainer}>
                 <FileThumbnail
                   title={file.fileName}
                   src={file.base64Content}

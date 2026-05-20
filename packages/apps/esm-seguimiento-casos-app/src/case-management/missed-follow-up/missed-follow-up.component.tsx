@@ -13,8 +13,8 @@ import {
   TableRow,
 } from '@carbon/react';
 import { Add } from '@carbon/react/icons';
-import { formatDate, launchWorkspace, parseDate, useConfig } from '@openmrs/esm-framework';
-import { CardHeader, EmptyState, ErrorState } from '@openmrs/esm-patient-common-lib';
+import { formatDate, parseDate, useConfig } from '@openmrs/esm-framework';
+import { CardHeader, EmptyState, ErrorState, launchPatientWorkspace } from '@openmrs/esm-patient-common-lib';
 import { getObsFromEncounter } from '@sihsalus/esm-sihsalus-shared';
 import React from 'react';
 import { useTranslation } from 'react-i18next';
@@ -43,7 +43,7 @@ const MissedFollowUp: React.FC<MissedFollowUpProps> = ({ patientUuid }) => {
   const { encounters, isLoading, error, mutate } = useMissedFollowUp(patientUuid);
 
   const openMissedFollowUpForm = (encounterUuid = '') => {
-    launchWorkspace(patientFormEntryWorkspace, {
+    launchPatientWorkspace(patientFormEntryWorkspace, {
       workspaceTitle: headerTitle,
       mutateForm: mutate,
       formInfo: {

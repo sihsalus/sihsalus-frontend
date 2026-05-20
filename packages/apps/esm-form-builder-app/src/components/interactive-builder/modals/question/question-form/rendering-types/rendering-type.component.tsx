@@ -2,16 +2,16 @@ import { renderingTypes, renderTypeOptions } from '@constants';
 import type { RenderType } from '@sihsalus/esm-form-engine-lib';
 import React from 'react';
 import { useFormField } from '../../form-field-context';
-import { Date, Markdown, Number, SelectAnswers, Text, TextArea, Toggle, UiSelectExtended } from './inputs';
+import { DateInput, Markdown, NumberInput, SelectAnswers, Text, TextArea, Toggle, UiSelectExtended } from './inputs';
 
 const componentMap: Partial<Record<RenderType, React.FC>> = {
-  number: Number,
+  number: NumberInput,
   text: Text,
   textarea: TextArea,
   toggle: Toggle,
   'ui-select-extended': UiSelectExtended,
-  date: Date,
-  datetime: Date,
+  date: DateInput,
+  datetime: DateInput,
   markdown: Markdown,
   select: SelectAnswers,
   radio: SelectAnswers,

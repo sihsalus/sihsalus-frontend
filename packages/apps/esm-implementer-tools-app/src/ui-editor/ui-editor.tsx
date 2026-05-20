@@ -163,6 +163,7 @@ export function SlotOverlay({ slotName, moduleName, extensionCount = 0, colorSch
     <>
       <div className={overlayClass}></div>
       <button
+        type="button"
         className={buttonClass}
         onClick={(event) => {
           event.preventDefault();

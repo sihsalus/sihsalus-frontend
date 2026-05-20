@@ -202,7 +202,7 @@ describe('MedicationEvent', () => {
   it('renders children when provided', () => {
     render(
       <MedicationEvent medicationEvent={baseMedicationRequest}>
-        <button>Action Button</button>
+        <button type="button">Action Button</button>
       </MedicationEvent>,
     );
 

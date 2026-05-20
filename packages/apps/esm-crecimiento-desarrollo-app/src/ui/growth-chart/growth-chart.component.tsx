@@ -123,7 +123,7 @@ const GrowthChart: React.FC<GrowthChartProps> = ({
         yValue = parseFloat(entry.dataValues[measurementCode]);
       }
 
-      if (!isNaN(Number(xValue)) && !isNaN(yValue)) {
+      if (!Number.isNaN(Number(xValue)) && !Number.isNaN(yValue)) {
         measurementDataValues.push({ x: xValue, y: yValue });
       }
     };

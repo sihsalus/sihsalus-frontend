@@ -19,7 +19,7 @@ export const useChartLines = (
   datasetValues: DatasetValues[],
   keysDataSet: string[],
   startIndex: number,
-  isPercentiles: boolean,
+  _isPercentiles: boolean,
 ): CarbonChartLine[] => {
   return useMemo(() => {
     const lines: CarbonChartLine[] = [];

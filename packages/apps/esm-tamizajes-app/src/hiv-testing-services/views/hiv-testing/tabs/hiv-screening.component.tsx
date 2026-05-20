@@ -102,7 +102,7 @@ const HivScreeningEncounters: React.FC<HivScreeningEncounterProps> = ({ patientU
         moduleName: 'HTS Clinical View',
       }}
       filter={(encounter) => {
-        return encounter.form.uuid == htsScreeningFormUUID;
+        return encounter.form.uuid === htsScreeningFormUUID;
       }}
       formConceptMap={hivScreeningConceptMap}
     />

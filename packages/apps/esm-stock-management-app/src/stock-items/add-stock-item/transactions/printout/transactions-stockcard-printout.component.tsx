@@ -144,7 +144,9 @@ const TransactionsStockcardPrintout: React.FC<Props> = ({ columns, items, title 
                     <TableHead>
                       <TableRow>
                         {headers.map((header) => (
-                          <TableHeader {...getHeaderProps({ header })}>{header.header}</TableHeader>
+                          <TableHeader key={header.key} {...getHeaderProps({ header })}>
+                            {header.header}
+                          </TableHeader>
                         ))}
                       </TableRow>
                     </TableHead>

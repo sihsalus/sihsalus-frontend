@@ -10,13 +10,12 @@ import {
   TableHeader,
   TableRow,
 } from '@carbon/react';
-import { AddIcon, launchWorkspace2, useConfig, useLayoutType } from '@openmrs/esm-framework';
+import { AddIcon, launchWorkspace2 } from '@openmrs/esm-framework';
 import { CardHeader, EmptyState, ErrorState } from '@openmrs/esm-patient-common-lib';
-import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import React, { useCallback, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 
-import type { ConfigObject } from '../../../../config-schema';
-import { usePrenatalAntecedents, usePrenatalConceptMetadata } from '../../../../hooks/usePrenatalAntecedents';
+import { usePrenatalAntecedents } from '../../../../hooks/usePrenatalAntecedents';
 
 import styles from './prenatal-history.scss';
 
@@ -28,11 +27,8 @@ const PrenatalAntecedents: React.FC<NeonatalSummaryProps> = ({ patientUuid }) =>
   const { t } = useTranslation();
   const displayText = t('biometrics_lower', 'biometrics');
   const headerTitle = t('prenatalAntecedents', 'Antecedentes Prenatales');
-  const isTablet = useLayoutType() === 'tablet';
 
-  const config = useConfig<ConfigObject>();
-  const { data: formattedObs, isLoading, error, mutate } = usePrenatalAntecedents(patientUuid);
-  const { data: conceptUnits } = usePrenatalConceptMetadata();
+  const { data: formattedObs, isLoading, error } = usePrenatalAntecedents(patientUuid);
 
   const launchPerinatalForm = useCallback(() => {
     launchWorkspace2('perinatal-register-form', { patientUuid });
@@ -97,7 +93,9 @@ const PrenatalAntecedents: React.FC<NeonatalSummaryProps> = ({ patientUuid }) =>
                 <TableHead>
                   <TableRow>
                     {headers.map((header) => (
-                      <TableHeader {...getHeaderProps({ header })}>{header.header}</TableHeader>
+                      <TableHeader key={header.key} {...getHeaderProps({ header })}>
+                        {header.header}
+                      </TableHeader>
                     ))}
                   </TableRow>
                 </TableHead>

@@ -1,6 +1,6 @@
 import { type SearchProps as CarbonSearchProps, Layer, Search } from '@carbon/react';
 import classNames from 'classnames';
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 
 import styles from './autosuggest.scss';
 
@@ -28,19 +28,19 @@ export const Autosuggest: React.FC<AutosuggestProps> = ({
   const wrapper = useRef<HTMLDivElement>(null);
   const { id: name, labelText } = searchProps;
 
+  const handleClickOutsideComponent = useCallback((event: MouseEvent) => {
+    if (wrapper.current && !wrapper.current.contains(event.target as Node)) {
+      setSuggestions([]);
+    }
+  }, []);
+
   useEffect(() => {
     document.addEventListener('mousedown', handleClickOutsideComponent);
 
     return () => {
       document.removeEventListener('mousedown', handleClickOutsideComponent);
     };
-  }, [wrapper]);
-
-  const handleClickOutsideComponent = (event: MouseEvent) => {
-    if (wrapper.current && !wrapper.current.contains(event.target as Node)) {
-      setSuggestions([]);
-    }
-  };
+  }, [handleClickOutsideComponent]);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const query = e.target.value;

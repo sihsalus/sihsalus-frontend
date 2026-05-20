@@ -143,7 +143,7 @@ const MedicationDispenseReview: React.FC<MedicationDispenseReviewProps> = ({
   const isSubstitution =
     medicationRequest?.medicationReference?.reference &&
     medicationDispense?.medicationReference?.reference &&
-    medicationRequest.medicationReference.reference != medicationDispense.medicationReference.reference;
+    medicationRequest.medicationReference.reference !== medicationDispense.medicationReference.reference;
 
   const { substitution } = medicationDispense;
   useEffect(() => {
@@ -154,7 +154,7 @@ const MedicationDispenseReview: React.FC<MedicationDispenseReviewProps> = ({
         updateMedicationDispense({ substitution: newSubstitution });
       }
     } else {
-      if (substitution != blankSubstitution) {
+      if (substitution !== blankSubstitution) {
         updateMedicationDispense({ substitution: blankSubstitution });
       }
     }

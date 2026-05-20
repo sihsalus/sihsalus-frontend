@@ -2,7 +2,6 @@ import { getDefaultsFromConfigSchema, useConfig } from '@openmrs/esm-framework';
 import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { Form, Formik, useFormikContext } from 'formik';
-import React from 'react';
 import { mockedAddressOptions, mockedAddressTemplate, mockedOrderedFields } from 'test-utils';
 
 import { esmPatientRegistrationSchema, type RegistrationConfig } from '../../../../config-schema';

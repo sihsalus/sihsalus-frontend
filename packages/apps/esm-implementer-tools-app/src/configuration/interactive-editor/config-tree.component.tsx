@@ -1,6 +1,5 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { Accordion, AccordionItem } from '@carbon/react';
-import React from 'react';
 import { useStore } from 'zustand';
 
 import { implementerToolsStore } from '../../store';

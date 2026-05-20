@@ -1,4 +1,4 @@
-import { ContentSwitcher, Switch, Tab, TabList, TabPanel, TabPanels, Tabs } from '@carbon/react';
+import { ContentSwitcher, Switch } from '@carbon/react';
 import { CardHeader } from '@openmrs/esm-patient-common-lib';
 import React, { useState } from 'react';
 import { useTranslation } from 'react-i18next';

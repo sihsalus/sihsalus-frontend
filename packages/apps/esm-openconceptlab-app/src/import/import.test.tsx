@@ -3,7 +3,6 @@ import { type FetchResponse, openmrsFetch, showSnackbar } from '@openmrs/esm-fra
 import { screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { renderWithSwr } from '@tools/test-helpers';
-import React from 'react';
 
 import Import from './import.component';
 import { startImportWithSubscription } from './import.resource';

@@ -79,6 +79,15 @@ const PackagingUnits: React.FC<PackagingUnitsProps> = ({ stockItemUuid, handleTa
     [t],
   );
 
+  const dataTableHeaders = useMemo<Array<Omit<CustomTableHeader, 'header'> & { header: React.ReactNode }>>(
+    () =>
+      tableHeaders.map(({ header, ...rest }) => ({
+        ...rest,
+        header: typeof header === 'string' ? header : header.content,
+      })),
+    [tableHeaders],
+  );
+
   const packageUnitForm = useForm<PackageUnitFormData>({
     defaultValues: {},
     mode: 'all',
@@ -196,7 +205,7 @@ const PackagingUnits: React.FC<PackagingUnitsProps> = ({ stockItemUuid, handleTa
             { id: 'new-row' },
           ] as CustomTableRow[]
         }
-        headers={tableHeaders as CustomTableHeader[]}
+        headers={dataTableHeaders}
         isSortable={false}
         useZebraStyles
       >

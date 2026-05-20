@@ -9,7 +9,7 @@ import {
   Type,
   useConfig,
 } from '@openmrs/esm-framework/src/internal';
-import React, { useContext, useMemo } from 'react';
+import { useContext, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { BrowserRouter } from 'react-router-dom';
 

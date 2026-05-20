@@ -1,6 +1,5 @@
 import { Type, useConfig } from '@openmrs/esm-framework';
 import { DashboardExtension } from '@openmrs/esm-patient-common-lib';
-import React from 'react';
 import { BrowserRouter } from 'react-router-dom';
 
 export const genericDashboardConfigSchema = {

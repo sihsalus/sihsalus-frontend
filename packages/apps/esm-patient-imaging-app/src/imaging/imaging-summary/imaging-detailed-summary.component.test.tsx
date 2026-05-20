@@ -1,6 +1,5 @@
 import { launchWorkspace } from '@openmrs/esm-framework';
 import { fireEvent, render, screen } from '@testing-library/react';
-import React from 'react';
 import * as api from '../../api';
 import ImagingDetailedSummary from './imaging-detailed-summary.component';
 
@@ -22,7 +21,7 @@ vi.mock('../components/requests-details-table.component', () => ({ default: () =
 vi.mock('../../api');
 vi.mock('react-i18next', () => ({
   useTranslation: () => ({
-    t: (key: string, defaultValue: string) => defaultValue,
+    t: (_key: string, defaultValue: string) => defaultValue,
   }),
 }));
 

@@ -1,6 +1,6 @@
 import { subscribeOpenmrsEvent } from '@openmrs/esm-emr-api';
 import classNames from 'classnames';
-import React, { useEffect } from 'react';
+import { useEffect } from 'react';
 import { createRoot } from 'react-dom/client';
 import { ActionMenu } from './action-menu2/action-menu2.component';
 import ActiveWorkspaceWindow from './active-workspace-window.component';

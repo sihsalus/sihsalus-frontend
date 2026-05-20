@@ -1,6 +1,5 @@
 import { useConfig } from '@openmrs/esm-framework';
 import { render, screen } from '@testing-library/react';
-import React from 'react';
 
 import { type ConfigSchema } from '../../config-schema';
 

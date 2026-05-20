@@ -1,7 +1,6 @@
 import { useConfig } from '@openmrs/esm-framework';
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import React from 'react';
 import { type BillingConfig } from '../config-schema';
 import BillingCheckInForm from './billing-checkin-form.component';
 import { useBillableItems, useCashPoint, usePaymentMethods } from './billing-form.resource';

@@ -1,11 +1,10 @@
 import { showModal, usePagination } from '@openmrs/esm-framework';
-import { act, fireEvent, render, screen } from '@testing-library/react';
-import React from 'react';
+import { fireEvent, render, screen } from '@testing-library/react';
 import StudiesDetailTable from './studies-details-table.component';
 
 vi.mock('react-i18next', () => ({
   useTranslation: () => ({
-    t: (key: string, defaultValue: string) => defaultValue,
+    t: (_key: string, defaultValue: string) => defaultValue,
   }),
 }));
 vi.mock('../../api');

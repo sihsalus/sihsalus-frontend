@@ -1,5 +1,4 @@
 import { getPreferredIdentifier } from '@sihsalus/esm-sihsalus-shared';
-import React from 'react';
 
 import { type PatientIdentifierColumnConfig } from '../../config-schema';
 import { type QueueEntry, type QueueTableCellComponentProps, type QueueTableColumnFunction } from '../../types';

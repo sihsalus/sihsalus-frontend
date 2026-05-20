@@ -1,5 +1,3 @@
-import React from 'react';
-
 import { type SectionDefinition } from '../../config-schema';
 
 import { DeathInfoSection } from './death-info/death-info-section.component';

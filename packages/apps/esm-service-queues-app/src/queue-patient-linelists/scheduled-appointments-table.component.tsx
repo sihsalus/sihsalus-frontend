@@ -1,7 +1,6 @@
 import {
   Button,
   DataTable,
-  type DataTableHeader,
   DataTableSkeleton,
   Dropdown,
   Layer,
@@ -270,7 +269,7 @@ const AppointmentsTable: React.FC = () => {
                 </TableRow>
               </TableHead>
               <TableBody>
-                {rows.map((row, index) => {
+                {rows.map((row, _index) => {
                   return (
                     <React.Fragment key={row.id}>
                       {(() => {

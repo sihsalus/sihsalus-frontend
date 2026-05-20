@@ -107,9 +107,7 @@ describe('Select answers component', () => {
         name: /search for a backing concept/i,
       }),
     ).toHaveDisplayValue(/concept 2/i);
-    const additionalAnswerOption1 = screen.getByRole('menuitem', {
-      name: /concept 2/i,
-    });
+    const additionalAnswerOption1 = screen.getByText(/concept 2/i);
     expect(
       screen.getByRole('button', {
         name: /clear search input/i,

@@ -1,7 +1,6 @@
 import { type FetchResponse, type Workspace2DefinitionProps } from '@openmrs/esm-framework';
 import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import React from 'react';
 import type { BillableService } from '../../types';
 import {
   createBillableService,
@@ -243,7 +242,7 @@ describe('BillableServiceFormWorkspace', () => {
       renderBillableServicesForm();
 
       await fillRequiredFields(user);
-      const saveButton = screen.getByRole('button', { name: /save/i });
+      const _saveButton = screen.getByRole('button', { name: /save/i });
 
       await submitForm();
 

@@ -1,5 +1,3 @@
-import { useTranslation } from 'react-i18next';
-
 /**
  *
  * @param date
@@ -16,7 +14,7 @@ export function toDICOMDateTime(date: Date): string {
   const minute = pad(date.getMinutes());
   const second = pad(date.getSeconds());
 
-  const timezoneOffset = -date.getTimezoneOffset(); // in minutes
+  const _timezoneOffset = -date.getTimezoneOffset(); // in minutes
   // const tzSign = timezoneOffset >= 0 ? '+' : '-';
   // const tzHours = pad(Math.floor(Math.abs(timezoneOffset) / 60));
   // const tzMinutes = pad(Math.abs(timezoneOffset) % 60);

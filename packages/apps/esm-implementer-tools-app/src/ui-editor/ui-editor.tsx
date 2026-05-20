@@ -7,7 +7,7 @@ import {
 } from '@openmrs/esm-framework/src/internal';
 import classNames from 'classnames';
 import { type TFunction } from 'i18next';
-import React, { useMemo, useState } from 'react';
+import { useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import { type ImplementerToolsStore, implementerToolsStore } from '../store';

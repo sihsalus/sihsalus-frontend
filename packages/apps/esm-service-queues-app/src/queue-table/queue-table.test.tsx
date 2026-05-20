@@ -1,6 +1,5 @@
 import { getDefaultsFromConfigSchema, useConfig, useSession } from '@openmrs/esm-framework';
 import { screen, within } from '@testing-library/react';
-import React from 'react';
 import { mockPriorityNonUrgent, mockPriorityUrgent, mockQueueEntries, mockSession, renderWithSwr } from 'test-utils';
 import type { MockInstance } from 'vitest';
 
@@ -68,12 +67,12 @@ const defaultProps = {
 };
 
 describe('QueueTable', () => {
-  let consoleSpy: MockInstance;
+  let _consoleSpy: MockInstance;
 
   beforeEach(() => {
     mockUseSession.mockReturnValue(mockSession.data);
     mockUseConfig.mockReturnValue(configDefaults);
-    consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+    _consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
   });
 
   it('renders an empty table with default columns when there are no queue entries', () => {
@@ -247,7 +246,7 @@ describe('QueueTable', () => {
 
     const rows = screen.queryAllByRole('row');
     const aliceRow = rows[2];
-    const cells = within(aliceRow).getAllByRole('cell');
+    const _cells = within(aliceRow).getAllByRole('cell');
     // TODO: Figure out why this expectation is failing
     // expect(cells[1].childNodes[0]).toHaveTextContent('42');
   });

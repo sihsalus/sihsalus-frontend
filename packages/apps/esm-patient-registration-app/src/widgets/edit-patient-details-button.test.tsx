@@ -1,7 +1,6 @@
 import { navigate } from '@openmrs/esm-framework';
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import React from 'react';
 import { mockPatient } from 'test-utils';
 
 import EditPatientDetailsButton from './edit-patient-details-button.component';

@@ -1,7 +1,6 @@
 import { formatDatetime, getConfig, parseDate, showModal, userHasAccess } from '@openmrs/esm-framework';
 import { screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import React from 'react';
 import { mockEncounters, mockPatient, renderWithSwr } from 'test-utils';
 
 import VisitsTable from './visits-table.component';

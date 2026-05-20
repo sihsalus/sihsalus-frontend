@@ -1,7 +1,7 @@
 import { InlineNotification, Layer, Select, SelectItem, TextInputSkeleton } from '@carbon/react';
 import classNames from 'classnames';
 import { Field } from 'formik';
-import React, { useContext, useEffect, useMemo } from 'react';
+import { useContext, useEffect, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import { type FieldDefinition } from '../../../config-schema';

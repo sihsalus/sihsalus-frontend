@@ -1,13 +1,12 @@
 import { showModal } from '@openmrs/esm-framework';
 import { act, fireEvent, render, screen } from '@testing-library/react';
-import React from 'react';
 import * as api from '../../api';
 import ProcedureStepTable, { type ProcedureStepTableProps } from './procedureStep-details-table.component';
 
 vi.mock('../../api');
 vi.mock('react-i18next', () => ({
   useTranslation: () => ({
-    t: (key: string, defaultValue: string) => defaultValue,
+    t: (_key: string, defaultValue: string) => defaultValue,
   }),
 }));
 

@@ -1,6 +1,5 @@
 import { formatDatetime, parseDate, useVisit } from '@openmrs/esm-framework';
 import { render, screen } from '@testing-library/react';
-import React from 'react';
 import { mockCurrentVisit, mockPatient } from 'test-utils';
 import VisitTag from './visit-tag.extension';
 

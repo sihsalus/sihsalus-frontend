@@ -8,8 +8,8 @@ import {
   temporaryConfigStore,
   type Validator,
 } from '@openmrs/esm-framework/src/internal';
-import { cloneDeep, isEqual, unset } from 'lodash-es';
-import React, { useCallback, useEffect, useRef, useState } from 'react';
+import { cloneDeep, unset } from 'lodash-es';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import { type ImplementerToolsStore, implementerToolsStore } from '../../store';
@@ -40,6 +40,12 @@ export default function EditableValue({ path, element, customType }: EditableVal
   const [error, setError] = useState<string | null>(null);
   const activeConfigRef = useRef<HTMLButtonElement>(null);
   const { t } = useTranslation();
+  const pathKey = path.join('\u0000');
+
+  const isCurrentPath = useCallback(
+    (currentPath: Array<string> | null | undefined) => currentPath?.join('\u0000') === pathKey,
+    [pathKey],
+  );
 
   const closeEditor = () => {
     setEditing(false);
@@ -55,17 +61,17 @@ export default function EditableValue({ path, element, customType }: EditableVal
 
   useEffect(() => {
     const update = (state: ImplementerToolsStore) => {
-      if (state.configPathBeingEdited && isEqual(state.configPathBeingEdited, path)) {
+      if (isCurrentPath(state.configPathBeingEdited)) {
         focusOnConfigPathBeingEdited();
       }
     };
     update(implementerToolsStore.getState());
     return implementerToolsStore.subscribe(update);
-  }, [focusOnConfigPathBeingEdited, path]);
+  }, [focusOnConfigPathBeingEdited, isCurrentPath]);
 
   useEffect(() => {
     const state = implementerToolsStore.getState();
-    if (editing && !isEqual(state.configPathBeingEdited, path)) {
+    if (editing && !isCurrentPath(state.configPathBeingEdited)) {
       implementerToolsStore.setState({
         configPathBeingEdited: path,
         activeItemDescription: {
@@ -76,10 +82,10 @@ export default function EditableValue({ path, element, customType }: EditableVal
         },
       });
     }
-    if (!editing && isEqual(state.configPathBeingEdited, path)) {
+    if (!editing && isCurrentPath(state.configPathBeingEdited)) {
       implementerToolsStore.setState({ configPathBeingEdited: null });
     }
-  }, [editing, element._description, element._source, path, valueString]);
+  }, [editing, element._description, element._source, isCurrentPath, path, valueString]);
 
   return (
     <>

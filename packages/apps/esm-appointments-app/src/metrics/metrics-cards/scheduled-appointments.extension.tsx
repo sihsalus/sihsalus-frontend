@@ -1,4 +1,3 @@
-import React from 'react';
 import { useTranslation } from 'react-i18next';
 import { useAppointmentList } from '../../hooks/useAppointmentList';
 import { useScheduledAppointments } from '../../hooks/useClinicalMetrics';

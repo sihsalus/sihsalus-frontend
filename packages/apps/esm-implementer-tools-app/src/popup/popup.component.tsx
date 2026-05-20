@@ -1,6 +1,6 @@
 import { ContentSwitcher, IconButton, Switch, Theme } from '@carbon/react';
 import { CloseIcon } from '@openmrs/esm-framework';
-import React, { useMemo, useState } from 'react';
+import { useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import { BackendDependencies } from '../backend-dependencies/backend-dependencies.component';

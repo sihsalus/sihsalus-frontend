@@ -1,5 +1,3 @@
-import { APIRequestContext, expect } from '@playwright/test';
-
 export interface Patient {
   uuid: string;
   identifiers: Identifier[];

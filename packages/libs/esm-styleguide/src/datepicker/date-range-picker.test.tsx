@@ -1,5 +1,4 @@
 import type { i18n } from 'i18next';
-import React from 'react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import '@testing-library/jest-dom/vitest';
 import { useConfig } from '@openmrs/esm-react-utils/mock';

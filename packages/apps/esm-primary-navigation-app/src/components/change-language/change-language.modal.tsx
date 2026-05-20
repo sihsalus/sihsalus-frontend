@@ -11,7 +11,7 @@ import {
 import { useAbortController, useSession } from '@openmrs/esm-framework';
 import classNames from 'classnames';
 import { capitalize } from 'lodash-es';
-import React, { useCallback, useMemo, useState } from 'react';
+import { useCallback, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import { updateSessionLocale, updateUserProperties } from './change-language.resource';

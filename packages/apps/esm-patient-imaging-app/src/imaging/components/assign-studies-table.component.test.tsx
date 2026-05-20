@@ -1,10 +1,9 @@
-import { act, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
-import React from 'react';
+import { act, fireEvent, render, screen, within } from '@testing-library/react';
 import AssignStudiesTable, { type AssignStudiesTableProps } from './assign-studies-table.component';
 
 vi.mock('react-i18next', () => ({
   useTranslation: () => ({
-    t: (key: string, defaultValue: string) => defaultValue,
+    t: (_key: string, defaultValue: string) => defaultValue,
   }),
 }));
 

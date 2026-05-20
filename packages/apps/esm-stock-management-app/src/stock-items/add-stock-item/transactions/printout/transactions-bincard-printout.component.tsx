@@ -8,8 +8,7 @@ import {
   TableHeader,
   TableRow,
 } from '@carbon/react';
-import React, { useMemo } from 'react';
-import { useStockItem } from '../../../stock-items.resource';
+import React from 'react';
 import PrintableBincardTransactionHeader from './printable-bincard-transaction-header.component';
 import styles from './printable-transaction.scss';
 import PrintableTransactionFooter from './printable-transaction-footer.component';

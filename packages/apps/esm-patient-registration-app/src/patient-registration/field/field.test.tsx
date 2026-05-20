@@ -4,7 +4,6 @@ import { render, screen } from '@testing-library/react';
 const mockReportError = vi.mocked(reportError);
 
 import { Form, Formik } from 'formik';
-import React from 'react';
 
 import { esmPatientRegistrationSchema, type RegistrationConfig } from '../../config-schema';
 import { type Resources, ResourcesContext } from '../../offline.resources';

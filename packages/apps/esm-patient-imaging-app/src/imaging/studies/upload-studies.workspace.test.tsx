@@ -1,12 +1,11 @@
 import * as framework from '@openmrs/esm-framework';
 import { fireEvent, render, screen, waitFor } from '@testing-library/react';
-import React from 'react';
 import * as api from '../../api';
 import { maxUploadImageDataSize } from '../constants';
 import UploadStudiesWorkspace from './upload-studies.workspace';
 
 vi.mock('react-i18next', async () => ({
-  useTranslation: () => ({ t: (key: string, fallback: string) => fallback }),
+  useTranslation: () => ({ t: (_key: string, fallback: string) => fallback }),
 }));
 
 vi.mock('../../api', async () => ({

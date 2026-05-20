@@ -18,13 +18,13 @@ const CREDFormsSelectorWorkspace: React.FC<CREDFormsSelectorWorkspaceProps> = (p
   const { t } = useTranslation();
   const workspaceProps = props.workspaceProps ?? {};
   const availableForms = (props.availableForms ?? workspaceProps.availableForms ?? []) as Array<CompletedFormInfo>;
-  const patientAge = (props.patientAge ?? workspaceProps.patientAge ?? '') as string;
-  const controlNumber = (props.controlNumber ?? workspaceProps.controlNumber ?? 0) as number;
+  const patientAge = props.patientAge ?? workspaceProps.patientAge ?? '';
+  const controlNumber = props.controlNumber ?? workspaceProps.controlNumber ?? 0;
   const title =
-    (props.title ?? workspaceProps.title) ||
-    t('credFormsSelection', 'Selección de Formularios Crecimiento y Desarrollo');
+    props.title ?? workspaceProps.title ?? t('credFormsSelection', 'Selección de Formularios Crecimiento y Desarrollo');
   const subtitle =
-    (props.subtitle ?? workspaceProps.subtitle) ||
+    props.subtitle ??
+    workspaceProps.subtitle ??
     t(
       'credFormsInstructions',
       'Seleccione los formularios que desea completar para este control Crecimiento y Desarrollo.',
@@ -32,8 +32,8 @@ const CREDFormsSelectorWorkspace: React.FC<CREDFormsSelectorWorkspaceProps> = (p
   const backWorkspace =
     props.backWorkspace !== undefined
       ? props.backWorkspace
-      : ((workspaceProps.backWorkspace ?? 'wellchild-control-form') as string);
-  const patientUuid = (props.patientUuid ?? workspaceProps.patientUuid ?? '') as string;
+      : (workspaceProps.backWorkspace ?? 'wellchild-control-form');
+  const patientUuid = props.patientUuid ?? workspaceProps.patientUuid ?? '';
   const closeWorkspace = (options?: { onWorkspaceClose?: () => void }) => {
     void props.closeWorkspace({ discardUnsavedChanges: true }).then(() => {
       options?.onWorkspaceClose?.();

@@ -1,6 +1,5 @@
 import { screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import React from 'react';
 import { mockMappedAppointmentsData, renderWithSwr } from 'test-utils';
 
 import QueuePatientBaseTable from './queue-linelist-base-table.component';

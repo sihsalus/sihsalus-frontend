@@ -28,14 +28,14 @@ describe('admission navigation links', () => {
   it('renders the app menu link to the admission app', () => {
     render(<AdmissionAppMenuLink />);
 
-    expect(screen.getByRole('link', { name: /admisión/i })).toHaveAttribute('href', '/openmrs/spa/admission');
+    expect(screen.getByRole('link', { name: /atenciones/i })).toHaveAttribute('href', '/openmrs/spa/admission');
     expect(mockNavigate).not.toHaveBeenCalled();
   });
 
   it('renders the dashboard tile link to the admission app', () => {
     render(<AdmissionDashboardLink />);
 
-    expect(screen.getByRole('link', { name: /admisiones/i })).toHaveAttribute('href', '/openmrs/spa/home/admission');
+    expect(screen.getByRole('link', { name: /atenciones/i })).toHaveAttribute('href', '/openmrs/spa/home/admission');
     expect(mockNavigate).not.toHaveBeenCalled();
   });
 

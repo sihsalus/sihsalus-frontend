@@ -6,5 +6,5 @@ import { basePath, moduleName } from '../constants';
 export default function AdmissionAppMenuLink() {
   const { t } = useTranslation(moduleName);
 
-  return <ConfigurableLink to={`${globalThis.spaBase}${basePath}`}>{t('admission', 'Admisión')}</ConfigurableLink>;
+  return <ConfigurableLink to={`${globalThis.spaBase}${basePath}`}>{t('admission', 'Atenciones')}</ConfigurableLink>;
 }

@@ -23,7 +23,7 @@ export function startupApp() {
       title: () =>
         Promise.resolve(
           globalThis.i18next.t('admission', {
-            defaultValue: 'Admission',
+            defaultValue: 'Care encounters',
             ns: moduleName,
           }),
         ),

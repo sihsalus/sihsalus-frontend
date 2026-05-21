@@ -103,7 +103,7 @@ export default function AdmissionHome() {
     const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
     link.href = url;
-    link.download = 'admisiones-ups.csv';
+    link.download = 'atenciones-upss.csv';
     link.click();
     URL.revokeObjectURL(url);
   };
@@ -112,10 +112,10 @@ export default function AdmissionHome() {
 
   return (
     <main className={styles.page}>
-      <h1 className={styles.visuallyHidden}>{t('admissionReportByUps', 'Reporte de admisiones por UPS')}</h1>
+      <h1 className={styles.visuallyHidden}>{t('admissionReportByUps', 'Reporte de atenciones por UPSS')}</h1>
       <PageHeader className={styles.header}>
         <PageHeaderContent
-          title={t('admissionReportByUps', 'Reporte de admisiones por UPS')}
+          title={t('admissionReportByUps', 'Reporte de atenciones por UPSS')}
           illustration={<RegistrationPictogram />}
         />
         <ConfigurableLink to={`${spaBasePath}/admission/merge`} className={styles.headerAction}>
@@ -128,14 +128,14 @@ export default function AdmissionHome() {
       <div className={styles.content}>
         <section
           className={styles.summary}
-          aria-label={t('admissionReportMetrics', 'Métricas del reporte de admisiones')}
+          aria-label={t('admissionReportMetrics', 'Métricas del reporte de atenciones')}
         >
           <div>
-            <span>{t('reportedAdmissions', 'Admisiones reportadas')}</span>
+            <span>{t('reportedAdmissions', 'Atenciones registradas')}</span>
             <strong>{reportSummary.total}</strong>
           </div>
           <div>
-            <span>{t('activeAdmissions', 'Activas')}</span>
+            <span>{t('activeAdmissions', 'En curso')}</span>
             <strong>{reportSummary.active}</strong>
           </div>
           <div>
@@ -143,19 +143,19 @@ export default function AdmissionHome() {
             <strong>{reportSummary.finished}</strong>
           </div>
           <div>
-            <span>{t('reportedUpsServices', 'UPS/servicios')}</span>
+            <span>{t('reportedUpsServices', 'UPSS/servicios')}</span>
             <strong>{reportSummary.services}</strong>
           </div>
         </section>
 
         <section
           className={styles.controls}
-          aria-label={t('admissionReportFilters', 'Filtros del reporte de admisiones')}
+          aria-label={t('admissionReportFilters', 'Filtros del reporte de atenciones')}
         >
           <TextInput
             id="admission-report-search"
-            labelText={t('searchAdmissions', 'Buscar por paciente, HC, UPS o ubicación')}
-            placeholder={t('searchAdmissionsPlaceholder', 'Paciente, HC, UPS, ubicación...')}
+            labelText={t('searchAdmissions', 'Buscar por paciente, HC, UPSS o ubicación')}
+            placeholder={t('searchAdmissionsPlaceholder', 'Paciente, HC, UPSS, ubicación...')}
             value={searchTerm}
             onChange={(event) => setSearchTerm(event.target.value)}
           />
@@ -180,12 +180,12 @@ export default function AdmissionHome() {
           </Button>
         </section>
 
-        {isLoading ? <InlineLoading description={t('loadingAdmissions', 'Cargando admisiones')} /> : null}
+        {isLoading ? <InlineLoading description={t('loadingAdmissions', 'Cargando atenciones')} /> : null}
         {error ? (
           <InlineNotification
             kind="error"
             lowContrast
-            title={t('admissionReportError', 'No se pudo cargar el reporte de admisiones')}
+            title={t('admissionReportError', 'No se pudo cargar el reporte de atenciones')}
           />
         ) : null}
 
@@ -198,7 +198,7 @@ export default function AdmissionHome() {
                   <th>{t('time', 'Hora')}</th>
                   <th>{t('patient', 'Paciente')}</th>
                   <th>{t('medicalRecord', 'HC')}</th>
-                  <th>{t('upsService', 'UPS/servicio')}</th>
+                  <th>{t('upsService', 'UPSS/servicio')}</th>
                   <th>{t('location', 'Ubicación')}</th>
                   <th>{t('status', 'Estado')}</th>
                 </tr>
@@ -229,7 +229,7 @@ export default function AdmissionHome() {
               </tbody>
             </table>
             {!isLoading && filteredAdmissions.length === 0 ? (
-              <p className={styles.empty}>{t('noAdmissionsFound', 'No se encontraron admisiones recientes.')}</p>
+              <p className={styles.empty}>{t('noAdmissionsFound', 'No se encontraron atenciones recientes.')}</p>
             ) : null}
           </div>
         </Layer>

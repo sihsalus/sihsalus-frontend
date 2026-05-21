@@ -1,4 +1,5 @@
 import { addColumnsToDisplay } from '../../cohort-builder.utils';
+import { getStoredSearchHistoryEntry } from '../../search-history-store';
 import type { Query } from '../../types';
 
 export const isCompositionValid = (search: string) => {
@@ -23,8 +24,11 @@ export const createCompositionQuery = (compositionQuery: string) => {
 
   searchTokens.forEach((eachToken) => {
     if (eachToken.match(/\d/)) {
-      const history = JSON.parse(window.sessionStorage.getItem('openmrsHistory'));
-      const operandQuery = history[parseInt(eachToken, 10) - 1];
+      const operandQuery = getStoredSearchHistoryEntry(parseInt(eachToken, 10) - 1);
+
+      if (!operandQuery) {
+        throw new Error(`Search history entry ${eachToken} was not found`);
+      }
 
       const jsonRequestObject = operandQuery.parameters;
       jsonRequestObject.customRowFilterCombination = formatFilterCombination(

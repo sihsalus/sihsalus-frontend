@@ -2,7 +2,6 @@ import { type FetchResponse, openmrsFetch, restBaseUrl, useConfig } from '@openm
 import {
   type DrugOrderBasketItem,
   type DrugOrderPost,
-  careSettingUuid as defaultCareSettingUuid,
   type Order,
   type OrderAction,
   type PatientOrderFetchResponse,
@@ -138,7 +137,7 @@ export const prepMedicationOrderPostData = (
   patientUuid: string,
   encounterUuid: string | null,
   orderingProviderUuid?: string,
-  careSettingUuid = defaultCareSettingUuid,
+  careSettingUuid?: string,
 ): DrugOrderPost => {
   const orderer = orderingProviderUuid ?? order.orderer;
 

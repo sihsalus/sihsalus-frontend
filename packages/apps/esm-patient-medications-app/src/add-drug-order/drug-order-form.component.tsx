@@ -48,6 +48,7 @@ import { useTranslation } from 'react-i18next';
 import { useActivePatientOrders, useRequireOutpatientQuantity } from '../api';
 import { useOrderConfig } from '../api/order-config';
 import { type ConfigObject } from '../config-schema';
+import { translateCarbonWithId } from './carbon-translation';
 import { durationToDays, type MedicationOrderFormData, useDrugOrderForm } from './drug-order-form.resource';
 import styles from './drug-order-form.scss';
 
@@ -926,6 +927,7 @@ const ControlledFieldInput = ({
           size={isTablet ? 'md' : 'sm'}
           value={typeof value === 'number' ? value : ''}
           {...numberInputProps}
+          translateWithId={translateCarbonWithId}
         />
       );
     }
@@ -961,6 +963,8 @@ const ControlledFieldInput = ({
 
     if (type === 'comboBox') {
       const comboBoxProps = restProps as ComponentProps<typeof ComboBox>;
+      const itemToString =
+        comboBoxProps.itemToString ?? ((item: CommonMedicationValueCoded | null) => item?.value ?? '');
       return (
         <ComboBox
           className={fieldErrorStyles}
@@ -971,6 +975,8 @@ const ControlledFieldInput = ({
           selectedItem={value}
           initialSelectedItem={value}
           {...comboBoxProps}
+          itemToString={itemToString}
+          translateWithId={translateCarbonWithId}
         />
       );
     }

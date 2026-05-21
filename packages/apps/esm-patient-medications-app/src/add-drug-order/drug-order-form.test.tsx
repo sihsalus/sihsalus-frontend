@@ -83,6 +83,31 @@ function createNewOrderBasketItem(overrides?: Partial<DrugOrderBasketItem>): Dru
 }
 
 describe('DrugOrderForm - auto-calculation of dispense quantity', () => {
+  it('renders and validates an incomplete order for a drug without dosage form', async () => {
+    const user = userEvent.setup();
+    const drugWithoutDosageForm = createNewOrderBasketItem({
+      drug: {
+        ...mockDrugSearchResultApiData[0],
+        uuid: '5219bdad-dfb2-4079-b6a2-1dcce2304058',
+        display: '04058 - INMUNOGLOBULINA ANTI D 300 µg 2 mL',
+        strength: '300 µg 2 mL',
+        dosageForm: null,
+      },
+      display: '04058 - INMUNOGLOBULINA ANTI D 300 µg 2 mL',
+      commonMedicationName: '04058 - INMUNOGLOBULINA ANTI D 300 µg 2 mL',
+      isOrderIncomplete: true,
+      unit: null,
+      quantityUnits: null,
+    });
+
+    renderDrugOrderForm(drugWithoutDosageForm);
+
+    expect(screen.getByText(/04058 - INMUNOGLOBULINA ANTI D 300 µg 2 mL/i)).toBeInTheDocument();
+    await user.click(screen.getByRole('button', { name: /save order/i }));
+
+    expect(await screen.findByText(/dosage is required/i)).toBeInTheDocument();
+  });
+
   it('auto-calculates quantity when dose, frequency, and duration are filled', async () => {
     const user = userEvent.setup();
     renderDrugOrderForm(createNewOrderBasketItem());

@@ -4,6 +4,7 @@ import { type DrugOrderBasketItem } from '@openmrs/esm-patient-common-lib';
 import { useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { type ConfigObject } from '../../config-schema';
+import { translateCarbonWithId } from '../carbon-translation';
 import { getTemplateOrderBasketItem, useDrugSearch, useDrugTemplates } from './drug-search.resource';
 
 interface DrugSearchComboBoxProps {
@@ -51,15 +52,14 @@ const DrugSearchComboBox: React.FC<DrugSearchComboBoxProps> = ({
       onInputChange={(inputText) => {
         setDrugSearchTerm(inputText);
       }}
-      itemToString={(item: DrugOrderBasketItem) =>
-        item.display +
-        ' — ' +
-        item.drug?.strength?.toLowerCase() +
-        ' — ' +
-        item.drug?.dosageForm?.display?.toLowerCase()
+      itemToString={(item?: DrugOrderBasketItem | null) =>
+        [item?.display, item?.drug?.strength?.toLowerCase(), item?.drug?.dosageForm?.display?.toLowerCase()]
+          .filter(Boolean)
+          .join(' — ')
       }
       placeholder={t('searchFieldPlaceholder', 'Search for a drug or orderset (e.g. "Aspirin")')}
       titleText={t('drugName', 'Drug name')}
+      translateWithId={translateCarbonWithId}
     />
   );
 };

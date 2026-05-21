@@ -65,17 +65,22 @@ const AddDrugOrder: React.FC<AddDrugOrderProps> = ({
 }) => {
   const { t } = useTranslation();
   const isTablet = useLayoutType() === 'tablet';
+  const { careSettingUuid, drugCategoryConceptSets } = useConfig<ConfigObject>();
+  const prepareMedicationOrderPostData = useCallback(
+    (order: DrugOrderBasketItem, patientUuid: string, encounterUuid: string | null) =>
+      prepMedicationOrderPostData(order, patientUuid, encounterUuid, undefined, careSettingUuid),
+    [careSettingUuid],
+  );
   const { orders, setOrders, clearOrders } = useOrderBasket<DrugOrderBasketItem>(
     patient,
     'medications',
-    prepMedicationOrderPostData as PostDataPrepFunction,
+    prepareMedicationOrderPostData as PostDataPrepFunction,
   );
   const [currentOrder, setCurrentOrder] = useState(initialOrder);
   const [searchTerm, setSearchTerm] = useState('');
   const isEditingExistingOrder = currentOrder?.action === 'REVISE' || initialOrder != null;
   const { mutate: mutateOrders } = useMutatePatientOrders(patientUuid);
 
-  const { drugCategoryConceptSets } = useConfig<ConfigObject>();
   const {
     conceptSets,
     isLoading: isLoadingConceptSets,
@@ -119,7 +124,13 @@ const AddDrugOrder: React.FC<AddDrugOrderProps> = ({
   const submitDrugOrderToServer = useCallback(
     async (finalizedOrder: DrugOrderBasketItem) => {
       postOrder(
-        prepMedicationOrderPostData(finalizedOrder, patientUuid, finalizedOrder?.encounterUuid, orderToEditOrdererUuid),
+        prepMedicationOrderPostData(
+          finalizedOrder,
+          patientUuid,
+          finalizedOrder?.encounterUuid,
+          orderToEditOrdererUuid,
+          careSettingUuid,
+        ),
       )
         .then(() => {
           clearOrders();
@@ -149,7 +160,7 @@ const AddDrugOrder: React.FC<AddDrugOrderProps> = ({
           });
         });
     },
-    [clearOrders, closeWorkspace, mutateOrders, patientUuid, t, orderToEditOrdererUuid],
+    [careSettingUuid, clearOrders, closeWorkspace, mutateOrders, patientUuid, t, orderToEditOrdererUuid],
   );
 
   const workspaceTitle =

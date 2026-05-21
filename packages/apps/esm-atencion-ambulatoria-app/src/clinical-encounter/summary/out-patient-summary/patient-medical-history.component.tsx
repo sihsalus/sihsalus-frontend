@@ -22,12 +22,7 @@ import type { KeyedMutator } from 'swr';
 import { mutate } from 'swr';
 import type { ConfigObject } from '../../../config-schema';
 import type { OpenmrsEncounter } from '../../../types';
-import {
-  ACCIDENT_TRAUMA_UUID,
-  BLOOD_TRANSFUSION_UUID,
-  patientFormEntryWorkspace,
-  SURGICAL_HISTORY_UUID,
-} from '../../../utils/constants';
+import { patientFormEntryWorkspace } from '../../../utils/constants';
 
 interface OutPatientMedicalHistoryProps {
   patientUuid: string;
@@ -45,6 +40,7 @@ const OutPatientMedicalHistory: React.FC<OutPatientMedicalHistoryProps> = ({
 }) => {
   const { t } = useTranslation();
   const {
+    concepts,
     formsList: { clinicalEncounterFormUuid },
   } = useConfig<ConfigObject>();
   const headerTitle = t('medicalHistory', 'Medical History');
@@ -93,9 +89,9 @@ const OutPatientMedicalHistory: React.FC<OutPatientMedicalHistoryProps> = ({
     ?.map((encounter) => {
       const allFieldsNull = () => {
         return (
-          getObsFromEncounter(encounter, SURGICAL_HISTORY_UUID) === '--' &&
-          getObsFromEncounter(encounter, BLOOD_TRANSFUSION_UUID) === '--' &&
-          getObsFromEncounter(encounter, ACCIDENT_TRAUMA_UUID) === '--' &&
+          getObsFromEncounter(encounter, concepts.surgicalHistoryUuid) === '--' &&
+          getObsFromEncounter(encounter, concepts.bloodTransfusionUuid) === '--' &&
+          getObsFromEncounter(encounter, concepts.accidentTraumaUuid) === '--' &&
           encounter.diagnoses.length === 0 &&
           encounter.encounterDatetime !== null
         );
@@ -106,9 +102,9 @@ const OutPatientMedicalHistory: React.FC<OutPatientMedicalHistoryProps> = ({
       return {
         id: `${encounter.uuid}`,
         encounterDate: formatDate(new Date(encounter.encounterDatetime)),
-        surgicalHistory: getObsFromEncounter(encounter, SURGICAL_HISTORY_UUID),
-        bloodTransfusion: getObsFromEncounter(encounter, BLOOD_TRANSFUSION_UUID),
-        accidentOrTrauma: getObsFromEncounter(encounter, ACCIDENT_TRAUMA_UUID),
+        surgicalHistory: getObsFromEncounter(encounter, concepts.surgicalHistoryUuid),
+        bloodTransfusion: getObsFromEncounter(encounter, concepts.bloodTransfusionUuid),
+        accidentOrTrauma: getObsFromEncounter(encounter, concepts.accidentTraumaUuid),
         finalDiagnosis: encounter.diagnoses.length > 0 ? encounter.diagnoses[0].diagnosis.coded.display : '--',
         actions: (
           <OverflowMenu aria-label={t('actions', 'Actions')} flipped={false}>

@@ -32,8 +32,9 @@ import { useImmunizations } from '../hooks/useImmunizations';
 import { useImmunizationsConceptSet } from '../hooks/useImmunizationsConceptSet';
 import { type ImmunizationFormData } from '../types';
 import { DoseInput } from './components/dose-input.component';
+import { fhirImmunizationConceptMappingLabels, getFhirImmunizationConceptMappings } from './fhir-immunization-config';
 import { mapToFHIRImmunizationResource } from './immunization-mapper';
-import { savePatientImmunization } from './immunizations.resource';
+import { getImmunizationSaveErrorDetails, savePatientImmunization } from './immunizations.resource';
 import styles from './immunizations-form.scss';
 import { immunizationFormSub } from './utils';
 
@@ -42,6 +43,7 @@ const ImmunizationsForm: React.FC<PatientWorkspace2DefinitionProps<Record<string
   groupProps: { patientUuid, patient, visitContext },
 }) => {
   const config = useConfig<ImmunizationConfigObject>();
+  const fhirConceptMappings = getFhirImmunizationConceptMappings(config?.fhirConceptMappings);
   const currentUser = useSession();
   const isTablet = useLayoutType() === 'tablet';
   const { t } = useTranslation();
@@ -307,11 +309,34 @@ const ImmunizationsForm: React.FC<PatientWorkspace2DefinitionProps<Record<string
           isLowContrast: true,
         });
       } catch (err) {
+        const errorDetails = getImmunizationSaveErrorDetails(err, fhirConceptMappings);
+        const configKeyLabel = errorDetails.configKey
+          ? fhirImmunizationConceptMappingLabels[errorDetails.configKey]
+          : undefined;
+        const subtitle =
+          errorDetails.type === 'missing-fhir-mapping'
+            ? t(
+                'fhirImmunizationMissingMapping',
+                'FHIR immunization setup is incomplete. No unique concept is mapped to {{mapping}}{{configKey}}. Update sihsalus-content and reload backend content.',
+                {
+                  mapping: errorDetails.mapping,
+                  configKey: configKeyLabel ? ` (${configKeyLabel})` : '',
+                },
+              )
+            : errorDetails.type === 'fhir-setup'
+              ? t(
+                  'fhirImmunizationSetupError',
+                  'FHIR immunization setup is incomplete. Update sihsalus-content and reload backend content.',
+                )
+              : errorDetails.type === 'validation'
+                ? (errorDetails.diagnostics ?? t('invalidVaccinationRequest', 'The vaccination request is invalid.'))
+                : (errorDetails.message ?? t('unknownVaccinationSaveError', 'Unknown error while saving vaccination.'));
+
         showSnackbar({
           title: t('errorSaving', 'Error saving vaccination'),
           kind: 'error',
           isLowContrast: false,
-          subtitle: err?.message,
+          subtitle,
         });
       }
     },
@@ -325,6 +350,7 @@ const ImmunizationsForm: React.FC<PatientWorkspace2DefinitionProps<Record<string
       closeWorkspace,
       t,
       mutate,
+      fhirConceptMappings,
     ],
   );
   return (

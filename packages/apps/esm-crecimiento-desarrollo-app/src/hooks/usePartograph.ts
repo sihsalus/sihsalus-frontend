@@ -1,14 +1,10 @@
 import type { OpenmrsResource } from '@openmrs/esm-framework';
-import { openmrsFetch } from '@openmrs/esm-framework';
+import { openmrsFetch, useConfig } from '@openmrs/esm-framework';
 import useSWR from 'swr';
 
+import type { ConfigObject } from '../config-schema';
 import type { OpenmrsEncounter } from '../types';
-import {
-  encounterRepresentation,
-  MchEncounterType_UUID,
-  PartographEncounterFormUuid,
-  Progress_UUID,
-} from '../utils/constants';
+import { encounterRepresentation } from '../utils/constants';
 
 export type PartogramProgram = {
   concept: OpenmrsResource;
@@ -19,7 +15,11 @@ export type PartogramProgram = {
   display: string;
 };
 export function usePartograph(patientUuid: string) {
-  const url = `/ws/rest/v1/encounter?encounterType=${MchEncounterType_UUID}&formUuid=${PartographEncounterFormUuid}&patient=${patientUuid}&v=${encounterRepresentation}`;
+  const { partography } = useConfig<ConfigObject>();
+  const url =
+    patientUuid && partography?.encounterTypeUuid && partography?.formUuid
+      ? `/ws/rest/v1/encounter?encounterType=${partography.encounterTypeUuid}&formUuid=${partography.formUuid}&patient=${patientUuid}&v=${encounterRepresentation}`
+      : null;
 
   const { data, error, isLoading, isValidating, mutate } = useSWR<{ data: { results: OpenmrsEncounter[] } }, Error>(
     url,
@@ -33,7 +33,7 @@ export function usePartograph(patientUuid: string) {
   });
   const flattedObs = sortedResults
     .flatMap((encounter) => encounter.obs)
-    .filter((obs) => obs?.concept?.uuid === Progress_UUID)
+    .filter((obs) => obs?.concept?.uuid === partography?.progressConceptUuid)
     .sort((a, b) => {
       const dateA = new Date(a.encounterDatetime).getTime();
       const dateB = new Date(b.encounterDatetime).getTime();

@@ -6,6 +6,11 @@ export const configSchema = {
     _description: 'The encounter type of the encounter encapsulating orders',
     _default: '39da3525-afe4-45ff-8977-c53b7b359158',
   },
+  careSettingUuid: {
+    _type: Type.UUID,
+    _description: 'Care setting UUID used when querying and submitting patient orders',
+    _default: '6f0c9a92-6f24-11e3-af88-005056821db0',
+  },
   showPrintButton: {
     _type: Type.Boolean,
     _description:
@@ -77,6 +82,7 @@ export interface OrderTypeDefinition {
 
 export interface ConfigObject {
   orderEncounterType: string;
+  careSettingUuid: string;
   showPrintButton: boolean;
   orderTypes: Array<OrderTypeDefinition>;
   showReferenceNumberField: boolean;

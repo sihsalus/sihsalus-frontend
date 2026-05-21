@@ -24,18 +24,12 @@ import type { ConfigObject } from '../config-schema';
 import { useMappedRelationshipTypes } from '../family-partner-history/relationships.resource';
 import PatientSearchCreate from '../relationships/forms/patient-search-create-form.component';
 import {
-  LIVING_WITH_PATIENT_CONCEPT_UUID,
-  PARTNER_HIV_STATUS_CONCEPT_UUID,
-  PNS_APROACH_CONCEPT_UUID,
-} from '../relationships/relationships-constants';
-import {
   BOOLEAN_NO,
   BOOLEAN_YES,
   ContactListFormSchema,
   contactipvOutcomeOptions,
   saveContact,
 } from './contact-list.resource';
-import { contactListConceptMap } from './contact-list-concept-map';
 import styles from './contact-list-form.scss';
 
 interface ContactListFormProps extends DefaultWorkspaceProps {
@@ -86,29 +80,35 @@ const ContactListForm: React.FC<ContactListFormProps> = ({
 
   const hivStatus = useMemo(
     () =>
-      Object.entries(contactListConceptMap[PARTNER_HIV_STATUS_CONCEPT_UUID].answers).map(([uuid, display]) => ({
-        label: display,
-        value: uuid,
-      })),
-    [],
+      Object.entries(config.contactListConceptMap[config.concepts.partnerHivStatusConceptUuid]?.answers ?? {}).map(
+        ([uuid, display]) => ({
+          label: display,
+          value: uuid,
+        }),
+      ),
+    [config.concepts.partnerHivStatusConceptUuid, config.contactListConceptMap],
   );
 
   const pnsAproach = useMemo(
     () =>
-      Object.entries(contactListConceptMap[PNS_APROACH_CONCEPT_UUID].answers).map(([uuid, display]) => ({
-        label: display,
-        value: uuid,
-      })),
-    [],
+      Object.entries(config.contactListConceptMap[config.concepts.pnsApproachConceptUuid]?.answers ?? {}).map(
+        ([uuid, display]) => ({
+          label: display,
+          value: uuid,
+        }),
+      ),
+    [config.concepts.pnsApproachConceptUuid, config.contactListConceptMap],
   );
 
   const contactLivingWithPatient = useMemo(
     () =>
-      Object.entries(contactListConceptMap[LIVING_WITH_PATIENT_CONCEPT_UUID].answers).map(([uuid, display]) => ({
-        label: display,
-        value: uuid,
-      })),
-    [],
+      Object.entries(config.contactListConceptMap[config.concepts.livingWithPatientConceptUuid]?.answers ?? {}).map(
+        ([uuid, display]) => ({
+          label: display,
+          value: uuid,
+        }),
+      ),
+    [config.concepts.livingWithPatientConceptUuid, config.contactListConceptMap],
   );
 
   const observableRelationship = form.watch('relationshipType');

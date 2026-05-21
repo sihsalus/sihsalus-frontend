@@ -22,12 +22,13 @@ export function usePatientOrders(
   orderType?: string,
   startDate?: string,
   endDate?: string,
+  configuredCareSettingUuid = careSettingUuid,
 ) {
   const { mutate } = useSWRConfig();
   const baseOrdersUrl =
     startDate && endDate
-      ? `${restBaseUrl}/order?patient=${patientUuid}&careSetting=${careSettingUuid}&v=full&activatedOnOrAfterDate=${startDate}&activatedOnOrBeforeDate=${endDate}`
-      : `${restBaseUrl}/order?patient=${patientUuid}&careSetting=${careSettingUuid}&v=full&status=${status}`;
+      ? `${restBaseUrl}/order?patient=${patientUuid}&careSetting=${configuredCareSettingUuid}&v=full&activatedOnOrAfterDate=${startDate}&activatedOnOrBeforeDate=${endDate}`
+      : `${restBaseUrl}/order?patient=${patientUuid}&careSetting=${configuredCareSettingUuid}&v=full&status=${status}`;
   const ordersUrl = orderType ? `${baseOrdersUrl}&orderType=${orderType}` : baseOrdersUrl;
 
   const { data, error, isLoading, isValidating } = useSWR<FetchResponse<PatientOrderFetchResponse>, Error>(

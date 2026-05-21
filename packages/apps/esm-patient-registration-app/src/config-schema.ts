@@ -52,6 +52,7 @@ export interface RegistrationConfig {
       defaultUnknownGivenName: string;
       defaultUnknownFamilyName: string;
       defaultUnknownFamilyName2: string;
+      unidentifiedPatientAttributeTypeUuid: string;
       displayCapturePhoto: boolean;
       displayReverseFieldOrder: boolean;
       requireFamilyName2: boolean;
@@ -277,6 +278,11 @@ export const esmPatientRegistrationSchema = {
         _default: 'DESCONOCIDO',
         _description: 'The family/last name 2 to record for unidentified patients.',
       },
+      unidentifiedPatientAttributeTypeUuid: {
+        _type: Type.UUID,
+        _default: '8b56eac7-5c76-4b9c-8c6f-1deab8d3fc47',
+        _description: 'Person attribute type UUID used to mark an unidentified patient.',
+      },
       displayCapturePhoto: {
         _type: Type.Boolean,
         _default: true,
@@ -406,6 +412,7 @@ export const esmPatientRegistrationSchema = {
   links: {
     submitButton: {
       _type: Type.String,
+      // biome-ignore lint/suspicious/noTemplateCurlyInString: OpenMRS resolves this runtime URL template.
       _default: '${openmrsSpaBase}/patient/${patientUuid}/chart',
       _validators: [validators.isUrlWithTemplateParameters(['patientUuid'])],
     },

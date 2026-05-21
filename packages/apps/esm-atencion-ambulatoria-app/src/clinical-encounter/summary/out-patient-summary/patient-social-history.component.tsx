@@ -22,14 +22,7 @@ import type { KeyedMutator } from 'swr';
 import { mutate } from 'swr';
 import type { ConfigObject } from '../../../config-schema';
 import type { OpenmrsEncounter } from '../../../types';
-import {
-  Alcohol_Use_Duration_UUID,
-  Alcohol_Use_UUID,
-  Other_Substance_Abuse_UUID,
-  patientFormEntryWorkspace,
-  Smoking_Duration_UUID,
-  Smoking_UUID,
-} from '../../../utils/constants';
+import { patientFormEntryWorkspace } from '../../../utils/constants';
 
 interface OutPatientSocialHistoryProps {
   patientUuid: string;
@@ -50,6 +43,7 @@ const OutPatientSocialHistory: React.FC<OutPatientSocialHistoryProps> = ({
   const { t } = useTranslation();
   const {
     clinicalEncounterUuid,
+    concepts,
     formsList: { clinicalEncounterFormUuid },
   } = useConfig<ConfigObject>();
 
@@ -103,11 +97,11 @@ const OutPatientSocialHistory: React.FC<OutPatientSocialHistoryProps> = ({
     ?.map((encounter) => {
       const allFieldsNull = () => {
         return (
-          getObsFromEncounter(encounter, Alcohol_Use_UUID) === '--' &&
-          getObsFromEncounter(encounter, Alcohol_Use_Duration_UUID) === '--' &&
-          getObsFromEncounter(encounter, Smoking_UUID) === '--' &&
-          getObsFromEncounter(encounter, Smoking_Duration_UUID) === '--' &&
-          getObsFromEncounter(encounter, Other_Substance_Abuse_UUID) === '--' &&
+          getObsFromEncounter(encounter, concepts.alcoholUseUuid) === '--' &&
+          getObsFromEncounter(encounter, concepts.alcoholUseDurationUuid) === '--' &&
+          getObsFromEncounter(encounter, concepts.smokingUuid) === '--' &&
+          getObsFromEncounter(encounter, concepts.smokingDurationUuid) === '--' &&
+          getObsFromEncounter(encounter, concepts.otherSubstanceAbuseUuid) === '--' &&
           encounter.encounterDatetime !== null
         );
       };
@@ -117,11 +111,11 @@ const OutPatientSocialHistory: React.FC<OutPatientSocialHistoryProps> = ({
       return {
         id: `${encounter.uuid}`,
         encounterDate: formatDate(new Date(encounter.encounterDatetime)),
-        alcoholUse: getObsFromEncounter(encounter, Alcohol_Use_UUID),
-        alcoholUseDuration: getObsFromEncounter(encounter, Alcohol_Use_Duration_UUID),
-        smoking: getObsFromEncounter(encounter, Smoking_UUID),
-        smokingDuration: getObsFromEncounter(encounter, Smoking_Duration_UUID),
-        otherSubstanceAbuse: getObsFromEncounter(encounter, Other_Substance_Abuse_UUID),
+        alcoholUse: getObsFromEncounter(encounter, concepts.alcoholUseUuid),
+        alcoholUseDuration: getObsFromEncounter(encounter, concepts.alcoholUseDurationUuid),
+        smoking: getObsFromEncounter(encounter, concepts.smokingUuid),
+        smokingDuration: getObsFromEncounter(encounter, concepts.smokingDurationUuid),
+        otherSubstanceAbuse: getObsFromEncounter(encounter, concepts.otherSubstanceAbuseUuid),
         actions: (
           <OverflowMenu aria-label={t('actions', 'Actions')} flipped={false}>
             <OverflowMenuItem

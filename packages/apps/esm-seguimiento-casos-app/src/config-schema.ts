@@ -306,6 +306,33 @@ export const configSchema = {
       _default: '5096AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA',
     },
 
+    // Patient tracing / missed follow-up
+    missedAppointmentDateUuid: {
+      _type: Type.ConceptUuid,
+      _description: 'Missed appointment date concept used in defaulter tracing forms',
+      _default: '164093AAAAAAAAAAAAAAAAAAAAAAAAAAAAAA',
+    },
+    tracingTypeUuid: {
+      _type: Type.ConceptUuid,
+      _description: 'Tracing type concept used in defaulter tracing forms',
+      _default: 'a55f9516-ddb6-47ec-b10d-cb99d1d0bd41',
+    },
+    tracingNumberUuid: {
+      _type: Type.ConceptUuid,
+      _description: 'Tracing attempt number concept used in defaulter tracing forms',
+      _default: '1639AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA',
+    },
+    contactedUuid: {
+      _type: Type.ConceptUuid,
+      _description: 'Contacted status concept used in defaulter tracing forms',
+      _default: '160721AAAAAAAAAAAAAAAAAAAAAAAAAAAAAA',
+    },
+    tracingOutcomeUuid: {
+      _type: Type.ConceptUuid,
+      _description: 'Tracing outcome concept used in defaulter tracing forms',
+      _default: '160433AAAAAAAAAAAAAAAAAAAAAAAAAAAAAA',
+    },
+
     // Ethnic Identity (CE-7)
     ethnicIdentityUuid: {
       _type: Type.ConceptUuid,

@@ -1,10 +1,6 @@
-import { openmrsFetch, restBaseUrl } from '@openmrs/esm-framework';
+import { openmrsFetch, restBaseUrl, useConfig } from '@openmrs/esm-framework';
 import useSWR from 'swr';
-
-// UUID del concepto "Tipo de diagnóstico" y sus respuestas (NTS-139)
-const DIAGNOSIS_TYPE_CONCEPT_UUID = '2d53d39f-c93f-4128-8f7c-1bb45b498497';
-const DEFINITIVO_UUID = '2c60a8f6-1787-41be-8434-30ebeb5656ff';
-const REPETITIVO_UUID = '6f653861-8469-4dfa-a0b5-2804f1cfc527';
+import type { ConfigObject } from '../config-schema';
 
 export interface DiagnosisEntry {
   uuid: string;
@@ -47,6 +43,7 @@ interface Encounter {
 }
 
 export function useDiagnosisHistory(patientUuid: string, encounterTypeUuid: string) {
+  const { concepts } = useConfig<ConfigObject>();
   const url =
     patientUuid && encounterTypeUuid
       ? `${restBaseUrl}/encounter?patient=${patientUuid}&encounterType=${encounterTypeUuid}` +
@@ -62,7 +59,7 @@ export function useDiagnosisHistory(patientUuid: string, encounterTypeUuid: stri
     const tipoMap: Record<string, string> = {};
     (encounter.obs ?? []).forEach((obs) => {
       if (
-        obs.concept?.uuid === DIAGNOSIS_TYPE_CONCEPT_UUID &&
+        obs.concept?.uuid === concepts.diagnosisTypeConceptUuid &&
         obs.formFieldNamespace === 'visit-notes' &&
         typeof obs.formFieldPath === 'string' &&
         obs.formFieldPath.startsWith('tipo-dx-')
@@ -81,7 +78,12 @@ export function useDiagnosisHistory(patientUuid: string, encounterTypeUuid: stri
       const codedUuid = dx.diagnosis?.coded?.uuid ?? '';
       const tipoUuid = tipoMap[codedUuid];
 
-      const tipoNts: 'P' | 'D' | 'R' = tipoUuid === DEFINITIVO_UUID ? 'D' : tipoUuid === REPETITIVO_UUID ? 'R' : 'P';
+      let tipoNts: 'P' | 'D' | 'R' = 'P';
+      if (tipoUuid === concepts.definitiveDiagnosisTypeUuid) {
+        tipoNts = 'D';
+      } else if (tipoUuid === concepts.repeatDiagnosisTypeUuid) {
+        tipoNts = 'R';
+      }
 
       return {
         uuid: dx.uuid,

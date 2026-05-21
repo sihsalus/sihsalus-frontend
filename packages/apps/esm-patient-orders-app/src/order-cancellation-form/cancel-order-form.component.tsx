@@ -12,7 +12,7 @@ import {
   TextArea,
 } from '@carbon/react';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { showSnackbar, useLayoutType, Workspace2 } from '@openmrs/esm-framework';
+import { showSnackbar, useConfig, useLayoutType, Workspace2 } from '@openmrs/esm-framework';
 import {
   type DefaultPatientWorkspaceProps,
   type Order,
@@ -24,6 +24,7 @@ import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { Controller, type FieldErrors, useForm } from 'react-hook-form';
 import { useTranslation } from 'react-i18next';
 import { z } from 'zod';
+import type { ConfigObject } from '../config-schema';
 import { cancelOrder } from './cancel-order.resource';
 import styles from './cancel-order-form.scss';
 
@@ -50,7 +51,8 @@ const OrderCancellationForm: React.FC<OrderCancellationFormProps> = (props) => {
   const isTablet = useLayoutType() === 'tablet';
   const [showErrorNotification, setShowErrorNotification] = useState(false);
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
-  const { mutate } = usePatientOrders(patientUuid);
+  const { careSettingUuid } = useConfig<ConfigObject>();
+  const { mutate } = usePatientOrders(patientUuid, undefined, undefined, undefined, undefined, careSettingUuid);
 
   const cancelOrderSchema = useMemo(() => {
     return z.object({

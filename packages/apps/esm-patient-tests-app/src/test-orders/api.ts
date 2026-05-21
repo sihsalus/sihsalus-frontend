@@ -24,11 +24,13 @@ export const careSettingUuid = '6f0c9a92-6f24-11e3-af88-005056821db0';
 export function usePatientLabOrders(patientUuid: string, status: 'ACTIVE' | 'any') {
   const { orders } = useConfig<{
     orders?: {
+      careSettingUuid?: string;
       labOrderTypeUuid?: string;
     };
   }>();
   const labOrderTypeUUID = orders?.labOrderTypeUuid ?? '';
-  const ordersUrl = `${restBaseUrl}/order?patient=${patientUuid}&careSetting=${careSettingUuid}&status=${status}&orderType=${labOrderTypeUUID}`;
+  const configuredCareSettingUuid = orders?.careSettingUuid ?? careSettingUuid;
+  const ordersUrl = `${restBaseUrl}/order?patient=${patientUuid}&careSetting=${configuredCareSettingUuid}&status=${status}&orderType=${labOrderTypeUUID}`;
 
   const { data, error, isLoading, isValidating } = useSWR<FetchResponse<PatientOrderFetchResponse>, Error>(
     patientUuid ? ordersUrl : null,
@@ -92,13 +94,14 @@ export function prepTestOrderPostData(
   order: TestOrderBasketItem,
   patientUuid: string,
   encounterUuid: string | null,
+  configuredCareSettingUuid = careSettingUuid,
 ): TestOrderPost {
   if (order.action === 'NEW' || order.action === 'RENEW') {
     return {
       action: 'NEW',
       type: 'testorder',
       patient: patientUuid,
-      careSetting: careSettingUuid,
+      careSetting: configuredCareSettingUuid,
       orderer: order.orderer,
       encounter: encounterUuid,
       concept: order.testType.conceptUuid,

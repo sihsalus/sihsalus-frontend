@@ -11,6 +11,8 @@ import {
   TableHead,
   TableHeader,
   TableRow,
+  TableSelectAll,
+  TableSelectRow,
   TableToolbar,
   TableToolbarContent,
   TableToolbarSearch,
@@ -21,7 +23,7 @@ import { showSnackbar, usePagination } from '@openmrs/esm-framework';
 import React, { useCallback, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
-import { generateFuaFromVisit, useVisits, type VisitSummary } from '../hooks/useVisit';
+import { generateFuaFromVisit, generateFuasFromVisits, useVisits, type VisitSummary } from '../hooks/useVisit';
 
 import styles from './fua-request-table.scss';
 
@@ -48,6 +50,9 @@ const VisitTable: React.FC = () => {
   const { visits, isLoading, isValidating, mutate } = useVisits();
   const [searchString, setSearchString] = useState('');
   const [generatingVisitUuid, setGeneratingVisitUuid] = useState<string | null>(null);
+  const [isBulkGenerating, setIsBulkGenerating] = useState(false);
+  const [isBulkSelectionMode, setIsBulkSelectionMode] = useState(false);
+  const [dataTableKey, setDataTableKey] = useState(0);
 
   const filteredData = useMemo(() => {
     if (!searchString) {
@@ -115,14 +120,69 @@ const VisitTable: React.FC = () => {
     [mutate, t],
   );
 
+  const handleBulkGenerateFuas = useCallback(
+    async (visitUuids: Array<string>) => {
+      const selectedVisitUuids = visitUuids.filter(Boolean);
+
+      if (selectedVisitUuids.length === 0) {
+        return;
+      }
+
+      setIsBulkGenerating(true);
+
+      try {
+        const { successful, failed } = await generateFuasFromVisits(selectedVisitUuids);
+
+        if (successful > 0) {
+          showSnackbar({
+            kind: 'success',
+            title: t('success', 'Exito'),
+            subtitle: t('fuasGeneratedSuccessfully', 'Se generaron {{count}} FUAs correctamente', {
+              count: successful,
+            }),
+          });
+        }
+
+        if (failed > 0) {
+          showSnackbar({
+            kind: 'error',
+            title: t('error', 'Error'),
+            subtitle: t('fuasGenerationFailed', 'No se pudieron generar {{count}} FUAs', {
+              count: failed,
+            }),
+          });
+        }
+
+        mutate();
+        setIsBulkSelectionMode(false);
+        setDataTableKey((key) => key + 1);
+      } catch (error) {
+        showSnackbar({
+          kind: 'error',
+          title: t('error', 'Error'),
+          subtitle:
+            error instanceof Error ? error.message : t('errorGeneratingFua', 'Ocurrio un error al generar el FUA'),
+        });
+      } finally {
+        setIsBulkGenerating(false);
+      }
+    },
+    [mutate, t],
+  );
+
+  const handleCancelBulkSelection = useCallback(() => {
+    setIsBulkSelectionMode(false);
+    setDataTableKey((key) => key + 1);
+  }, []);
+
   if (isLoading) {
     return <DataTableSkeleton role="progressbar" showHeader={false} showToolbar={false} />;
   }
 
   return (
     <div className={styles.tableContainer}>
-      <DataTable rows={rows} headers={headers} isSortable useZebraStyles size="sm">
-        {({ rows, headers, getHeaderProps, getTableProps, getRowProps }) => (
+      <DataTable key={dataTableKey} rows={rows} headers={headers} isSortable useZebraStyles size="sm">
+        {({ rows, headers, getHeaderProps, getTableProps, getRowProps, getSelectionProps, selectedRows }) => (
           <TableContainer className={styles.tableContainer}>
             <TableToolbar>
               <TableToolbarContent className={styles.toolbarContent}>
@@ -136,6 +196,34 @@ const VisitTable: React.FC = () => {
                     size="sm"
                   />
                 </Layer>
+                {isBulkSelectionMode ? (
+                  <>
+                    <Button
+                      kind="primary"
+                      size="sm"
+                      renderIcon={Add}
+                      disabled={selectedRows.length === 0 || isBulkGenerating}
+                      onClick={() => handleBulkGenerateFuas(selectedRows.map((row) => row.id))}
+                    >
+                      {isBulkGenerating
+                        ? t('generatingFuas', 'Generando FUAs...')
+                        : t('generateSelectedFuas', 'Generar FUAs seleccionados')}
+                    </Button>
+                    <Button kind="ghost" size="sm" onClick={handleCancelBulkSelection} disabled={isBulkGenerating}>
+                      {t('cancel', 'Cancelar')}
+                    </Button>
+                  </>
+                ) : (
+                  <Button
+                    kind="secondary"
+                    size="sm"
+                    renderIcon={Add}
+                    onClick={() => setIsBulkSelectionMode(true)}
+                    disabled={isBulkGenerating}
+                  >
+                    {t('generateFuasInBulk', 'Generar FUAs en masa')}
+                  </Button>
+                )}
                 <Button kind="ghost" size="sm" renderIcon={Renew} onClick={handleRefresh} disabled={isValidating}>
                   {isValidating ? t('refreshing', 'Actualizando...') : t('refresh', 'Actualizar')}
                 </Button>
@@ -144,6 +232,7 @@ const VisitTable: React.FC = () => {
             <Table {...getTableProps()} className={styles.table} aria-label={t('visits', 'Visitas')}>
               <TableHead>
                 <TableRow>
+                  {isBulkSelectionMode ? <TableSelectAll {...getSelectionProps()} disabled={isBulkGenerating} /> : null}
                   {headers.map((header) => (
                     <TableHeader key={header.key} {...getHeaderProps({ header })} className={styles.tableHeader}>
                       {header.header}
@@ -154,6 +243,9 @@ const VisitTable: React.FC = () => {
               <TableBody>
                 {rows.map((row) => (
                   <TableRow key={row.id} {...getRowProps({ row })}>
+                    {isBulkSelectionMode ? (
+                      <TableSelectRow {...getSelectionProps({ row })} disabled={isBulkGenerating} />
+                    ) : null}
                     {row.cells.map((cell) => (
                       <TableCell key={cell.id} className={styles.tableCell}>
                         {cell.info.header === 'actions' ? (
@@ -162,7 +254,7 @@ const VisitTable: React.FC = () => {
                             size="sm"
                             renderIcon={Add}
                             iconDescription={t('generateFua', 'Generar FUA')}
-                            disabled={!cell.value || generatingVisitUuid === cell.value}
+                            disabled={!cell.value || generatingVisitUuid === cell.value || isBulkGenerating}
                             onClick={() => handleGenerateFua(cell.value)}
                           >
                             {generatingVisitUuid === cell.value

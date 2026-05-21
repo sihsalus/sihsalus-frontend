@@ -3,11 +3,9 @@
   "version": "12.1.0",
   "license": "MPL-2.0",
   "description": "Library for common patient chart components",
-  "browser": "dist/openmrs-esm-patient-common-lib.js",
   "main": "src/index.ts",
   "source": true,
   "scripts": {
-    "build": "rspack --mode=production",
     "lint": "node ../../tooling/scripts/run-biome.js lint src",
     "test": "vitest run --passWithNoTests",
     "typescript": "tsc"
@@ -46,7 +44,6 @@
   "devDependencies": {
     "@openmrs/esm-extensions": "workspace:*",
     "@openmrs/esm-styleguide": "workspace:*",
-    "@rspack/cli": "1.7.11",
     "@sihsalus/esm-form-engine-lib": "workspace:*",
     "typescript": "6.0.3",
     "vitest": "^4.1.0"

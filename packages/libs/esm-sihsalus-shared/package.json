@@ -3,7 +3,6 @@
   "version": "1.0.0",
   "license": "MPL-2.0",
   "description": "Shared UI components and utilities for SIH Salus clinical modules",
-  "browser": "dist/sihsalus-esm-sihsalus-shared.js",
   "main": "src/index.ts",
   "source": true,
   "sideEffects": [

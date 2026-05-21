@@ -123,15 +123,24 @@ const OrderableConceptSearchWorkspace: React.FC<OrderableConceptSearchWorkspaceP
     [props],
   );
 
+  const configuredOrderTypeLabel = useMemo(
+    () => orderTypes.find((orderType) => orderType.orderTypeUuid === orderTypeUuid)?.label,
+    [orderTypeUuid, orderTypes],
+  );
+
   useEffect(() => {
-    if (orderType) {
+    const orderTypeDisplay = configuredOrderTypeLabel
+      ? t(configuredOrderTypeLabel, { defaultValue: configuredOrderTypeLabel })
+      : orderType?.display;
+
+    if (orderTypeDisplay) {
       handleSetTitle(
         t(`addOrderableForOrderType`, 'Add {{orderTypeDisplay}}', {
-          orderTypeDisplay: orderType.display.toLocaleLowerCase(),
+          orderTypeDisplay: orderTypeDisplay.toLocaleLowerCase(),
         }),
       );
     }
-  }, [handleSetTitle, orderType, t]);
+  }, [configuredOrderTypeLabel, handleSetTitle, orderType, t]);
 
   const orderableConceptSets = useMemo(
     () =>

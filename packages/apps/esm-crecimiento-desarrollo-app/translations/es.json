@@ -415,5 +415,15 @@
   "weightKg": "Peso (kg)",
   "yes": "Sí",
   "zScoreMode": "Z-Scores",
-  "zScoreView": "Z-Scores"
+  "zScoreView": "Z-Scores",
+  "availableMeasurementsCount_one": "{{count}} medición",
+  "availableMeasurementsCount_many": "{{count}} mediciones",
+  "availableMeasurementsCount_other": "{{count}} mediciones",
+  "growthChartUnavailable": "Gráfico de crecimiento no disponible",
+  "growthChartUnavailableSubtitle": "No hay una curva de referencia OMS disponible para el sexo del paciente o el indicador seleccionado.",
+  "latestMeasurementDate": "Última medición",
+  "noMeasurementsForSelectedChart": "Sin mediciones para este indicador",
+  "noMeasurementsForSelectedChartSubtitle": "Se muestran las curvas de referencia, pero el paciente no tiene mediciones utilizables para el gráfico seleccionado.",
+  "whoGrowthReference": "Patrones de crecimiento infantil de la OMS",
+  "months": "meses"
 }

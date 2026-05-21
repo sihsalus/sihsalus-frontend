@@ -196,7 +196,7 @@ export const configSchema = {
     },
     _default: {
       key: 'serviceQueues',
-      value: 'Service queues',
+      value: 'serviceQueues',
     },
   },
   defaultFacilityUrl: {

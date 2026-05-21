@@ -404,11 +404,20 @@
   "vomitCount": "Vomit Count",
   "vomitGramsML": "Vomit Volume (g/mL)",
   "wasExpectedOn": "Was expected on",
-  "weeks": "semanas",
+  "weeks": "weeks",
   "weight": "Weight",
   "weightForGestationalAge": "Peso para Edad Gestacional",
   "weightKg": "Weight (kg)",
   "yes": "Yes",
   "zScoreMode": "Z-Scores",
-  "zScoreView": "Z-Scores"
+  "zScoreView": "Z-Scores",
+  "availableMeasurementsCount_one": "{{count}} measurement",
+  "availableMeasurementsCount_other": "{{count}} measurements",
+  "growthChartUnavailable": "Growth chart unavailable",
+  "growthChartUnavailableSubtitle": "No WHO reference dataset is available for the patient sex or selected indicator.",
+  "latestMeasurementDate": "Latest measurement",
+  "noMeasurementsForSelectedChart": "No measurements for this indicator",
+  "noMeasurementsForSelectedChartSubtitle": "Reference curves are shown, but the patient has no usable measurements for the selected chart.",
+  "whoGrowthReference": "WHO Child Growth Standards",
+  "months": "months"
 }

@@ -6,7 +6,7 @@
   "pages": [
     {
       "component": "root",
-      "route": "home",
+      "routeRegex": "^home($|/.*)",
       "online": true,
       "offline": true
     }

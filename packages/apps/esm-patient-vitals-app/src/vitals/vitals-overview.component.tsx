@@ -144,7 +144,7 @@ const VitalsOverview: React.FC<VitalsOverviewProps> = ({ patientUuid, pageSize, 
       vitals?.map((vitalSigns, index) => {
         return {
           ...vitalSigns,
-          id: `${index}`,
+          id: vitalSigns.id || `${vitalSigns.date}-${index}`,
           dateRender: formatDate(parseDate(vitalSigns.date.toString()), { mode: 'wide', time: true }),
           bloodPressureRender: `${vitalSigns.systolic ?? '--'} / ${vitalSigns.diastolic ?? '--'}`,
           pulseRender: vitalSigns.pulse ?? '--',

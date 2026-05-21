@@ -303,9 +303,10 @@ function promptBeforeLaunchingWorkspace(
  * @deprecated migrate to workspace v2 and use launchWorkspace2 instead. See:
  * https://openmrs.atlassian.net/wiki/spaces/docs/pages/615677981/Workspace+v2+Migration+Guide
  */
-export function launchWorkspace<
-  T extends DefaultWorkspaceProps | object = DefaultWorkspaceProps & Record<string, unknown>,
->(name: string, additionalProps?: Omit<T, keyof DefaultWorkspaceProps> & { workspaceTitle?: string }) {
+export function launchWorkspace<T extends DefaultWorkspaceProps | object = DefaultWorkspaceProps & object>(
+  name: string,
+  additionalProps?: Omit<T, keyof DefaultWorkspaceProps> & { workspaceTitle?: string },
+) {
   const store = getWorkspaceStore();
   const workspace = getWorkspaceRegistration(name);
   const currentWorkspaceGroup = store.getState().workspaceGroup;

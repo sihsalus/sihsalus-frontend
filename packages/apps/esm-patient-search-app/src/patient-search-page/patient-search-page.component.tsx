@@ -4,6 +4,7 @@ import { useSearchParams } from 'react-router-dom';
 
 import { PatientSearchContext } from '../patient-search-context';
 import PatientSearchOverlay from '../patient-search-overlay/patient-search-overlay.component';
+import { getPatientSearchReturnUrl } from '../search-return-url';
 
 import AdvancedPatientSearchComponent from './advanced-patient-search.component';
 import styles from './patient-search-page.scss';
@@ -21,8 +22,9 @@ const PatientSearchPageComponent: React.FC<PatientSearchPageComponentProps> = ()
   // P.S. The user will never be directed to the patient search page (above URL) in a tablet view otherwise.
   const handleCloseOverlay = useCallback(() => {
     navigate({
-      to: window['getOpenmrsSpaBase'](),
+      to: getPatientSearchReturnUrl(),
     });
+    globalThis.sessionStorage.removeItem('searchReturnUrl');
   }, []);
 
   if (isTablet) {

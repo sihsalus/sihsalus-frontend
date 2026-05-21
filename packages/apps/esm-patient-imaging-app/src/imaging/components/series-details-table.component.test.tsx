@@ -21,6 +21,9 @@ type EmptyStateProps = {
   headerTitle: string;
 };
 
+const hasContent = (value: TableCellMockValue): value is { content?: ReactNode } =>
+  typeof value === 'object' && value !== null && 'content' in value;
+
 vi.mock('react-i18next', async () => ({
   useTranslation: () => ({
     t: (_key: string, defaultValue: string) => defaultValue,
@@ -79,9 +82,10 @@ vi.mock('@carbon/react', async () => {
         <tbody>
           {rows.map((r) => (
             <tr key={r.id}>
-              {headers.map((h) => (
-                <td key={h.key}>{r[h.key]?.content ?? r[h.key]}</td>
-              ))}
+              {headers.map((h) => {
+                const cellValue = r[h.key];
+                return <td key={h.key}>{hasContent(cellValue) ? cellValue.content : cellValue}</td>;
+              })}
             </tr>
           ))}
         </tbody>

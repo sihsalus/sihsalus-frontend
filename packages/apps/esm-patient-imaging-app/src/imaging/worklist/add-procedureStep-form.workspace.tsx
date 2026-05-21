@@ -116,11 +116,12 @@ const AddNewProcedureStepWorkspace: React.FC<AddNewProcedureStepWorkspaceProps> 
           title: t('procedureStepSaved', 'Procedure step is saved successfully'),
         });
         requestMutate();
-      } catch (err: any) {
+      } catch (err: unknown) {
+        const message = err instanceof Error ? err.message : String(err);
         showSnackbar({
           title: t('errorSavingProcedureStep', 'An error occurred while saving the procedure step'),
           kind: 'error',
-          subtitle: err?.message,
+          subtitle: message,
           isLowContrast: false,
         });
       }

@@ -5,6 +5,10 @@ import React from 'react';
 import * as api from '../../api';
 import AddNewRequestWorkspace from './add-request-form.workspace';
 
+type TextAreaMockProps = React.ComponentProps<'textarea'> & {
+  labelText: string;
+};
+
 vi.mock('../../api');
 vi.mock('@openmrs/esm-framework', async () => ({
   ...(await vi.importActual('@openmrs/esm-framework')),
@@ -18,7 +22,7 @@ vi.mock('@carbon/react', async () => {
   const original = await vi.importActual('@carbon/react');
   return {
     ...original,
-    TextArea: ({ labelText, ...props }: any) => (
+    TextArea: ({ labelText, ...props }: TextAreaMockProps) => (
       <label>
         {labelText}
         <textarea {...props} />

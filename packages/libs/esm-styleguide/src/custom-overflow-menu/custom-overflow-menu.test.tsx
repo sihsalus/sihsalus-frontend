@@ -13,7 +13,11 @@ describe('CustomOverflowMenu', () => {
   });
 
   it('should render', () => {
-    render(<CustomOverflowMenu menuTitle="Test Menu" children={<li>Option 1</li>} />);
+    render(
+      <CustomOverflowMenu menuTitle="Test Menu">
+        <li>Option 1</li>
+      </CustomOverflowMenu>,
+    );
     expect(screen.getByRole('button', { name: /test menu/i })).toBeInTheDocument();
   });
 
@@ -194,5 +198,6 @@ describe('useCustomOverflowMenu', () => {
 
     expect(() => render(<TestComponent />)).toThrow('useCustomOverflowMenu must be used within a CustomOverflowMenu');
     expect(consoleError).toHaveBeenCalled();
+    consoleError.mockRestore();
   });
 });

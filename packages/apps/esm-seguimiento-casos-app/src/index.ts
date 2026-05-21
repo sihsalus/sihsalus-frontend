@@ -17,6 +17,11 @@ const options = {
 
 export const importTranslation = require.context('../translations', false, /.json$/, 'lazy');
 
+// Keep dynamic translation keys used by route metadata and lifecycle configuration.
+// t('caseManagement', 'Case monitoring and follow-up');
+// t('caseMonitoring', 'Case monitoring and follow-up');
+// t('caseMonitoringEncounters', 'Case follow-up');
+
 export function startupApp(): void {
   defineConfigSchema(moduleName, configSchema);
 }

@@ -36,15 +36,13 @@ export default function UiEditor() {
   const getExtensionCount = (slotName: string, moduleName: string) => {
     if (!extensions || !moduleName) return 0;
 
-    const count = 0;
-
     const slot = slots?.[slotName];
 
     if (slot && Array.isArray(slot.attachedIds)) {
       return slot.attachedIds.length;
     }
 
-    return count;
+    return 0;
   };
 
   const slotElements = useMemo(() => {

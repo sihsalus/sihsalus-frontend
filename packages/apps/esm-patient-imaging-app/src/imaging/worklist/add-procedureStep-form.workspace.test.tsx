@@ -87,14 +87,14 @@ vi.mock('@carbon/react', async () => {
       titleText,
       label,
       invalid: _invalid,
-      invalidText: _invalidText,
+      invalidText,
       selectedItem: _selectedItem,
       itemToString: _itemToString,
       ...props
     }: ComboBoxMockProps) => (
       <label htmlFor={id}>
         {titleText ?? label}
-        <div id={id} data-testid={id} {...props}>
+        <div id={id} data-testid={id} {...(invalidText ? { invalidtext: invalidText } : {})} {...props}>
           {children}
         </div>
       </label>
@@ -187,12 +187,12 @@ describe('AddNewProcedureStepWorkspace', () => {
 
     await waitFor(() => {
       const scheduledReferringPhysician = screen.getByLabelText(/scheduledReferringPhysician/i);
-      expect(scheduledReferringPhysician).toHaveAttribute('invalidtext', 'Scheduled referring physician is required');
+      expect(scheduledReferringPhysician).toHaveAttribute('invalidtext', 'Referring physician is required');
     });
 
     await waitFor(() => {
       const description = screen.getByLabelText(/description/i);
-      expect(description).toHaveAttribute('invalidtext', 'Required');
+      expect(description).toHaveAttribute('invalidtext', 'Procedure description is required');
     });
 
     await waitFor(() => {
@@ -203,7 +203,7 @@ describe('AddNewProcedureStepWorkspace', () => {
     await waitFor(() => {
       const modality = screen.getByLabelText(/modality/i);
       expect(modality).toHaveAttribute('invalidtext', 'Modality is required');
-      expect(screen.getByLabelText(/AetTitle/i)).toHaveAttribute('invalidtext', 'Required');
+      expect(screen.getByLabelText(/AetTitle/i)).toHaveAttribute('invalidtext', 'AET title is required');
     });
   });
 

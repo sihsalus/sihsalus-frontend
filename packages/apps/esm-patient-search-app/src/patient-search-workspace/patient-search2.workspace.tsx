@@ -25,12 +25,9 @@ export interface PatientSearchWorkspaceWindowProps {
  */
 const PatientSearchWorkspace2: React.FC<
   Workspace2DefinitionProps<PatientSearchWorkspaceProps, PatientSearchWorkspaceWindowProps, {}>
-> = ({
-  workspaceProps: { initialQuery = '', onPatientSelected, workspaceTitle },
-  windowProps: { startVisitWorkspaceName },
-  launchChildWorkspace,
-  closeWorkspace,
-}) => {
+> = ({ workspaceProps, windowProps, launchChildWorkspace, closeWorkspace }) => {
+  const { initialQuery = '', onPatientSelected, workspaceTitle = 'Search patient' } = workspaceProps ?? {};
+  const { startVisitWorkspaceName } = windowProps ?? {};
   const {
     search: { disableTabletSearchOnKeyUp },
   } = useConfig<PatientSearchConfig>();

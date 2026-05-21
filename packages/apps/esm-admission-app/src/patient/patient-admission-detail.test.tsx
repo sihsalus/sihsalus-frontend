@@ -95,7 +95,7 @@ describe('PatientAdmissionDetail', () => {
   it('renders filiation data separated from visit/admission history and appointment scheduling', () => {
     renderPatientAdmissionDetail();
 
-    expect(screen.getByRole('link', { name: /volver a admisiones/i })).toHaveAttribute('href', '/');
+    expect(screen.getByRole('link', { name: /volver a atenciones/i })).toHaveAttribute('href', '/');
     expect(screen.getByRole('heading', { name: 'Ada Lovelace' })).toBeInTheDocument();
     expect(screen.getByTestId('filiation-section')).toBeInTheDocument();
     expect(screen.getByText(/person — separado de datos clínicos/i)).toBeInTheDocument();
@@ -112,7 +112,7 @@ describe('PatientAdmissionDetail', () => {
 
     expect(screen.getByTestId('admission-history-section')).toBeInTheDocument();
     expect(screen.getByText(/visit\/encounter — datos clínicos/i)).toBeInTheDocument();
-    expect(screen.getAllByRole('columnheader', { name: 'UPS/servicio' })).toHaveLength(2);
+    expect(screen.getAllByRole('columnheader', { name: 'UPSS/servicio' })).toHaveLength(2);
     expect(screen.getByRole('cell', { name: 'Consulta externa' })).toBeInTheDocument();
     expect(screen.getByRole('cell', { name: 'Admision Central' })).toBeInTheDocument();
     expect(screen.getByRole('cell', { name: 'Activa' })).toBeInTheDocument();

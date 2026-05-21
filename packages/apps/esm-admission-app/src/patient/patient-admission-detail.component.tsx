@@ -83,7 +83,7 @@ export default function PatientAdmissionDetail() {
     <main className={styles.page}>
       <Link to="/" className={styles.back}>
         <ArrowLeft size={16} />
-        {t('backToAdmissions', 'Volver a admisiones')}
+        {t('backToAdmissions', 'Volver a atenciones')}
       </Link>
 
       {loadingPatient ? <InlineLoading description={t('loadingPatient', 'Cargando paciente')} /> : null}
@@ -149,7 +149,7 @@ export default function PatientAdmissionDetail() {
           <section className={styles.section} aria-labelledby="history-heading" data-testid="admission-history-section">
             <div className={styles.sectionHeader}>
               <h2 id="history-heading" className={styles.sectionHeading}>
-                {t('admissionHistoryByUps', 'Historial de ingresos por UPS')}
+                {t('admissionHistoryByUps', 'Historial de atenciones por UPSS')}
               </h2>
               <Tag type="green" size="sm">
                 {t('clinicalTag', 'visit/encounter — datos clínicos')}
@@ -172,7 +172,7 @@ export default function PatientAdmissionDetail() {
                     <tr>
                       <th>{t('date', 'Fecha')}</th>
                       <th>{t('time', 'Hora')}</th>
-                      <th>{t('upsService', 'UPS/servicio')}</th>
+                      <th>{t('upsService', 'UPSS/servicio')}</th>
                       <th>{t('location', 'Ubicación')}</th>
                       <th>{t('status', 'Estado')}</th>
                     </tr>
@@ -232,7 +232,7 @@ export default function PatientAdmissionDetail() {
                     <tr>
                       <th>{t('date', 'Fecha')}</th>
                       <th>{t('time', 'Hora')}</th>
-                      <th>{t('upsService', 'UPS/servicio')}</th>
+                      <th>{t('upsService', 'UPSS/servicio')}</th>
                       <th>{t('provider', 'Prestador')}</th>
                       <th>{t('location', 'Ubicación')}</th>
                       <th>{t('status', 'Estado')}</th>

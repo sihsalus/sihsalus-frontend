@@ -37,7 +37,7 @@ describe('AdmissionHome', () => {
     mockUseConfig.mockReturnValue({ admissionReportPageSize: 75 });
   });
 
-  it('renders the admissions by UPS report with accreditation columns', () => {
+  it('renders the care encounters by UPSS report with accreditation columns', () => {
     mockUseAdmissions.mockReturnValue({
       admissions: [
         {
@@ -67,17 +67,17 @@ describe('AdmissionHome', () => {
 
     renderAdmissionHome();
 
-    expect(screen.getByRole('heading', { name: /reporte de admisiones por ups/i })).toBeInTheDocument();
-    for (const header of ['Fecha', 'Hora', 'Paciente', 'HC', 'UPS/servicio', 'Ubicación', 'Estado']) {
+    expect(screen.getByRole('heading', { name: /reporte de atenciones por upss/i })).toBeInTheDocument();
+    for (const header of ['Fecha', 'Hora', 'Paciente', 'HC', 'UPSS/servicio', 'Ubicación', 'Estado']) {
       expect(screen.getByRole('columnheader', { name: header })).toBeInTheDocument();
     }
     expect(screen.getByRole('cell', { name: 'Ada Lovelace' })).toBeInTheDocument();
     expect(screen.getByRole('cell', { name: 'HC-99' })).toBeInTheDocument();
     expect(screen.getByRole('cell', { name: 'Consulta externa' })).toBeInTheDocument();
-    expect(getMetricValue('Admisiones reportadas')).toHaveTextContent('2');
-    expect(getMetricValue('Activas')).toHaveTextContent('1');
+    expect(getMetricValue('Atenciones registradas')).toHaveTextContent('2');
+    expect(getMetricValue('En curso')).toHaveTextContent('1');
     expect(getMetricValue('Finalizadas')).toHaveTextContent('1');
-    expect(getMetricValue('UPS/servicios')).toHaveTextContent('2');
+    expect(getMetricValue('UPSS/servicios')).toHaveTextContent('2');
     expect(screen.getByRole('link', { name: /fusionar historias duplicadas/i })).toHaveAttribute(
       'href',
       '/openmrs/spa/admission/merge',
@@ -117,12 +117,12 @@ describe('AdmissionHome', () => {
 
     expect(screen.queryByRole('cell', { name: 'Ada Lovelace' })).not.toBeInTheDocument();
     expect(screen.getByRole('cell', { name: 'Grace Hopper' })).toBeInTheDocument();
-    expect(getMetricValue('Admisiones reportadas')).toHaveTextContent('1');
+    expect(getMetricValue('Atenciones registradas')).toHaveTextContent('1');
 
     fireEvent.change(screen.getByLabelText(/filtrar por estado/i), { target: { value: 'Activa' } });
 
     expect(screen.queryByRole('cell', { name: 'Grace Hopper' })).not.toBeInTheDocument();
-    expect(screen.getByText(/no se encontraron admisiones recientes/i)).toBeInTheDocument();
+    expect(screen.getByText(/no se encontraron atenciones recientes/i)).toBeInTheDocument();
   });
 
   it('uses the default report page size when config is empty', () => {
@@ -139,16 +139,16 @@ describe('AdmissionHome', () => {
 
     renderAdmissionHome();
 
-    expect(screen.getByText(/cargando admisiones/i)).toBeInTheDocument();
-    expect(screen.getByText(/no se pudo cargar el reporte de admisiones/i)).toBeInTheDocument();
-    expect(screen.queryByText(/no se encontraron admisiones recientes/i)).not.toBeInTheDocument();
+    expect(screen.getByText(/cargando atenciones/i)).toBeInTheDocument();
+    expect(screen.getByText(/no se pudo cargar el reporte de atenciones/i)).toBeInTheDocument();
+    expect(screen.queryByText(/no se encontraron atenciones recientes/i)).not.toBeInTheDocument();
   });
 
-  it('shows the empty state when no admissions are returned after loading', () => {
+  it('shows the empty state when no care encounters are returned after loading', () => {
     mockUseAdmissions.mockReturnValue({ admissions: [], error: undefined, isLoading: false });
 
     renderAdmissionHome();
 
-    expect(screen.getByText(/no se encontraron admisiones recientes/i)).toBeInTheDocument();
+    expect(screen.getByText(/no se encontraron atenciones recientes/i)).toBeInTheDocument();
   });
 });

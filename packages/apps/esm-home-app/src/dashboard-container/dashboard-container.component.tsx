@@ -1,4 +1,5 @@
 import {
+  Extension,
   ExtensionSlot,
   isDesktop,
   useAssignedExtensions,
@@ -7,6 +8,7 @@ import {
   WorkspaceContainer,
 } from '@openmrs/esm-framework';
 import classNames from 'classnames';
+import { useMemo } from 'react';
 import { useParams } from 'react-router-dom';
 
 import { type HomeConfig } from '../config-schema';
@@ -24,6 +26,10 @@ export default function DashboardContainer() {
   const dashboards = ungroupedDashboards as Array<DashboardConfig>;
   const activeDashboard = dashboards.find((dashboard) => dashboard.name === params?.dashboard) || dashboards[0];
   const workspaceContextKey = typeof params.dashboard === 'string' ? `home/${params.dashboard}` : null;
+  const dashboardState = useMemo(() => ({ dashboardTitle: activeDashboard?.name }), [activeDashboard?.name]);
+  const usesApplicationDashboardSurface = Boolean(
+    activeDashboard?.slot && activeDashboard.slot !== 'home-dashboard-slot',
+  );
 
   return (
     <div className={styles.homePageWrapper}>
@@ -34,11 +40,13 @@ export default function DashboardContainer() {
         ])}
       >
         {isDesktop(layout) && <ExtensionSlot name="home-sidebar-slot" key={layout} />}
-        <ExtensionSlot
-          className={styles.dashboardView}
-          name={activeDashboard?.slot}
-          state={{ dashboardTitle: activeDashboard?.name }}
-        />
+        {usesApplicationDashboardSurface ? (
+          <ExtensionSlot className={styles.dashboardView} name={activeDashboard?.slot}>
+            {() => <Extension className={styles.applicationDashboardExtension} state={dashboardState} />}
+          </ExtensionSlot>
+        ) : (
+          <ExtensionSlot className={styles.dashboardView} name={activeDashboard?.slot} state={dashboardState} />
+        )}
       </section>
       {workspaceContextKey ? <WorkspaceContainer overlay contextKey={workspaceContextKey} /> : null}
     </div>

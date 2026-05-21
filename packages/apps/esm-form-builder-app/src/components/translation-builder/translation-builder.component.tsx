@@ -250,11 +250,12 @@ const TranslationBuilder: React.FC<TranslationBuilderProps> = ({ formSchema, onU
           </div>
 
           <div className={styles.translationActions}>
-            <button className={styles.linkButton} onClick={handleDownloadTranslation}>
+            <button type="button" className={styles.linkButton} onClick={handleDownloadTranslation}>
               {t('downloadTranslation', 'Download translation')}
               <Download size={16} />
             </button>
             <button
+              type="button"
               className={styles.linkButton}
               onClick={() => {
                 void handleUploadTranslationFromSchema();

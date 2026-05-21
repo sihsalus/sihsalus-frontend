@@ -1,9 +1,10 @@
-import { type DashboardExtensionProps } from '@openmrs/esm-framework';
-
-export const dashboardMeta: Omit<DashboardExtensionProps, 'basePath'> & {
+export const dashboardMeta: {
   slot: string;
   columns: number;
+  title: string;
   hideDashboardTitle: boolean;
+  icon: string;
+  path: string;
 } = {
   slot: 'patient-chart-billing-dashboard-slot',
   columns: 1,

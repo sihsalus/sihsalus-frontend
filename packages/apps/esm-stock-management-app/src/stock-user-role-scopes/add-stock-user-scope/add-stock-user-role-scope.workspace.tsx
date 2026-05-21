@@ -431,7 +431,7 @@ const AddStockUserRoleScope: React.FC<AddStockUserRoleScopeProps> = ({ model, ed
           {stockOperations?.length > 0 &&
             stockOperations.map((type) => {
               return (
-                <div className={styles.flexRow}>
+                <div className={styles.flexRow} key={type.uuid}>
                   <Checkbox
                     checked={isOperationChecked(type)}
                     className={styles.checkbox}
@@ -460,7 +460,7 @@ const AddStockUserRoleScope: React.FC<AddStockUserRoleScopeProps> = ({ model, ed
               };
 
               return (
-                <div className={styles.flexRow}>
+                <div className={styles.flexRow} key={type.id}>
                   <Checkbox
                     checked={checkedLocation != null}
                     className={styles.checkbox}

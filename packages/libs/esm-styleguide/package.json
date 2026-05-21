@@ -36,11 +36,11 @@
     },
     "./mock": {
       "import": "./mock.tsx",
-      "require": "./mock-jest.tsx"
+      "require": "./mock-vitest.tsx"
     }
   },
   "scripts": {
-    "build": "rspack build -c rspack.config.cjs",
+    "build": "rspack build -c rspack.config.cjs && tsc -p tsconfig.build.json",
     "test": "cross-env TZ=UTC vitest run --passWithNoTests",
     "test:watch": "cross-env TZ=UTC vitest watch --passWithNoTests",
     "coverage": "cross-env TZ=UTC vitest run --coverage --passWithNoTests",
@@ -50,6 +50,8 @@
     "@carbon/charts": "^1.27.0",
     "@carbon/react": "^1.92.1",
     "@internationalized/date": "^3.8.0",
+    "@openmrs/esm-extensions": "workspace:*",
+    "@openmrs/esm-routes": "workspace:*",
     "@react-aria/datepicker": "^3.16.1",
     "@react-aria/utils": "^3.28.2",
     "@react-stately/datepicker": "^3.16.1",
@@ -63,11 +65,9 @@
     "@openmrs/esm-config": "workspace:*",
     "@openmrs/esm-emr-api": "workspace:*",
     "@openmrs/esm-error-handling": "workspace:*",
-    "@openmrs/esm-extensions": "workspace:*",
     "@openmrs/esm-globals": "workspace:*",
     "@openmrs/esm-navigation": "workspace:*",
     "@openmrs/esm-react-utils": "workspace:*",
-    "@openmrs/esm-routes": "workspace:*",
     "@openmrs/esm-state": "workspace:*",
     "@openmrs/esm-translations": "workspace:*",
     "@openmrs/esm-utils": "workspace:*",
@@ -78,7 +78,7 @@
     "sass-embedded": "1.89.0",
     "sass-loader": "16.0.5",
     "swc-loader": "0.2.7",
-    "typescript": "^6.0.0",
+    "typescript": "6.0.3",
     "webpack-bundle-analyzer": "4.10.2"
   },
   "peerDependencies": {

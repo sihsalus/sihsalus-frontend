@@ -125,7 +125,7 @@ const AssignStudiesTable: React.FC<AssignStudiesTableProps> = ({
               ))
             }
           >
-            <img className="stone-img" src={stoneview} style={{ width: 23, height: 14, marginTop: 4 }}></img>
+            <img alt="" className="stone-img" src={stoneview} style={{ width: 23, height: 14, marginTop: 4 }} />
           </IconButton>
           <IconButton
             kind="ghost"
@@ -138,7 +138,7 @@ const AssignStudiesTable: React.FC<AssignStudiesTableProps> = ({
               ]))
             }
           >
-            <img className="orthanc-img" src={ohifview} style={{ width: 26, height: 26, marginTop: 0 }}></img>
+            <img alt="" className="orthanc-img" src={ohifview} style={{ width: 26, height: 26, marginTop: 0 }} />
           </IconButton>
         </div>
       ),
@@ -168,9 +168,14 @@ const AssignStudiesTable: React.FC<AssignStudiesTableProps> = ({
               <Table aria-label="Studies summary" className={styles.table} {...getTableProps()}>
                 <TableHead>
                   <TableRow>
-                    {headers.map((header) => (
-                      <TableHeader {...getHeaderProps({ header })}>{header.header}</TableHeader>
-                    ))}
+                    {headers.map((header) => {
+                      const { key, ...headerProps } = getHeaderProps({ header });
+                      return (
+                        <TableHeader key={key} {...headerProps}>
+                          {header.header}
+                        </TableHeader>
+                      );
+                    })}
                     <TableHeader />
                   </TableRow>
                 </TableHead>

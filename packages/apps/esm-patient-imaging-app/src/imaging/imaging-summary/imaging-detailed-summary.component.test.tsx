@@ -1,31 +1,31 @@
 import { launchWorkspace } from '@openmrs/esm-framework';
 import { fireEvent, render, screen } from '@testing-library/react';
-import React from 'react';
 import * as api from '../../api';
 import ImagingDetailedSummary from './imaging-detailed-summary.component';
 
-jest.mock('@openmrs/esm-framework', () => ({
-  useLayoutType: jest.fn(() => 'desktop'),
-  launchWorkspace: jest.fn(),
-  usePagination: jest.fn((items, pageSize) => ({
+vi.mock('@openmrs/esm-framework', async () => ({
+  ...(await vi.importActual('@openmrs/esm-framework')),
+  useLayoutType: vi.fn(() => 'desktop'),
+  launchWorkspace: vi.fn(),
+  usePagination: vi.fn((items, pageSize) => ({
     results: items?.slice(0, pageSize) || [],
-    goTo: jest.fn(),
+    goTo: vi.fn(),
     currentPage: 1,
   })),
   AddIcon: () => <span>AddIcon</span>,
 }));
 
-jest.mock('../components/studies-details-table.component', () => () => <div>StudiesDetailTable</div>);
-jest.mock('../components/requests-details-table.component', () => () => <div>RequestProcedureTable</div>);
+vi.mock('../components/studies-details-table.component', () => ({ default: () => <div>StudiesDetailTable</div> }));
+vi.mock('../components/requests-details-table.component', () => ({ default: () => <div>RequestProcedureTable</div> }));
 
-jest.mock('../../api');
-jest.mock('react-i18next', () => ({
+vi.mock('../../api');
+vi.mock('react-i18next', () => ({
   useTranslation: () => ({
-    t: (key: string, defaultValue: string) => defaultValue,
+    t: (_key: string, defaultValue: string) => defaultValue,
   }),
 }));
 
-jest.mock('@openmrs/esm-patient-common-lib', () => ({
+vi.mock('@openmrs/esm-patient-common-lib', () => ({
   CardHeader: ({ children, title }: any) => (
     <div>
       <h1>{title}</h1>
@@ -35,7 +35,11 @@ jest.mock('@openmrs/esm-patient-common-lib', () => ({
   EmptyState: ({ displayText, headerTitle, launchForm }: any) => (
     <div data-testid="empty-state">
       {headerTitle}: {displayText}
-      {launchForm && <button onClick={launchForm}>Launch</button>}
+      {launchForm && (
+        <button type="button" onClick={launchForm}>
+          Launch
+        </button>
+      )}
     </div>
   ),
   ErrorState: ({ error, headerTitle }: any) => (
@@ -49,18 +53,18 @@ describe('<ImagingDetailedSummary />', () => {
   const patientUuid = 'patient-uuid-123';
 
   beforeEach(() => {
-    jest.clearAllMocks();
+    vi.clearAllMocks();
   });
 
   it('renders loading skeletons when data is loading', () => {
-    (api.useStudiesByPatient as jest.Mock).mockReturnValue({
+    (api.useStudiesByPatient as vi.Mock).mockReturnValue({
       data: [],
       isLoading: true,
       error: null,
       isValidating: false,
     });
 
-    (api.useRequestsByPatient as jest.Mock).mockReturnValue({
+    (api.useRequestsByPatient as vi.Mock).mockReturnValue({
       data: [],
       isLoading: true,
       error: null,
@@ -73,14 +77,14 @@ describe('<ImagingDetailedSummary />', () => {
   });
 
   it('renders empty state when no studies or requests exist', () => {
-    (api.useStudiesByPatient as jest.Mock).mockReturnValue({
+    (api.useStudiesByPatient as vi.Mock).mockReturnValue({
       data: [],
       isLoading: false,
       error: null,
       isValidating: false,
     });
 
-    (api.useRequestsByPatient as jest.Mock).mockReturnValue({
+    (api.useRequestsByPatient as vi.Mock).mockReturnValue({
       data: [],
       isLoading: false,
       error: null,
@@ -96,14 +100,14 @@ describe('<ImagingDetailedSummary />', () => {
   it('renders error states if API returns errors', () => {
     const error = new Error('Failed to fetch');
 
-    (api.useStudiesByPatient as jest.Mock).mockReturnValue({
+    (api.useStudiesByPatient as vi.Mock).mockReturnValue({
       data: [],
       isLoading: false,
       error,
       isValidating: false,
     });
 
-    (api.useRequestsByPatient as jest.Mock).mockReturnValue({
+    (api.useRequestsByPatient as vi.Mock).mockReturnValue({
       data: [],
       isLoading: false,
       error,
@@ -119,14 +123,14 @@ describe('<ImagingDetailedSummary />', () => {
   it('renders error states if studies error', () => {
     const error = new Error('Failed to fetch');
 
-    (api.useStudiesByPatient as jest.Mock).mockReturnValue({
+    (api.useStudiesByPatient as vi.Mock).mockReturnValue({
       data: [],
       isLoading: false,
       error,
       isValidating: false,
     });
 
-    (api.useRequestsByPatient as jest.Mock).mockReturnValue({
+    (api.useRequestsByPatient as vi.Mock).mockReturnValue({
       data: [],
       isLoading: false,
       error: null,
@@ -140,14 +144,14 @@ describe('<ImagingDetailedSummary />', () => {
   });
 
   it('renders RequestProcedureTable when requests exist', () => {
-    (api.useStudiesByPatient as jest.Mock).mockReturnValue({
+    (api.useStudiesByPatient as vi.Mock).mockReturnValue({
       data: [],
       isLoading: false,
       error: null,
       isValidating: false,
     });
 
-    (api.useRequestsByPatient as jest.Mock).mockReturnValue({
+    (api.useRequestsByPatient as vi.Mock).mockReturnValue({
       data: [
         {
           id: 1,
@@ -169,14 +173,14 @@ describe('<ImagingDetailedSummary />', () => {
   });
 
   it('triggers workspace launches when buttons clicked', () => {
-    (api.useStudiesByPatient as jest.Mock).mockReturnValue({
+    (api.useStudiesByPatient as vi.Mock).mockReturnValue({
       data: [],
       isLoading: false,
       error: null,
       isValidating: false,
     });
 
-    (api.useRequestsByPatient as jest.Mock).mockReturnValue({
+    (api.useRequestsByPatient as vi.Mock).mockReturnValue({
       data: [
         {
           id: 1,

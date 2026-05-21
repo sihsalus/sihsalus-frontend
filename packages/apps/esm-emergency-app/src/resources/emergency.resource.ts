@@ -1,6 +1,6 @@
 import { getLocale, openmrsFetch, restBaseUrl, useConfig } from '@openmrs/esm-framework';
 import dayjs from 'dayjs';
-import { useMemo } from 'react';
+import { useCallback, useMemo } from 'react';
 import useSWR from 'swr';
 import useSWRImmutable from 'swr/immutable';
 import { type Config } from '../config-schema';
@@ -88,6 +88,38 @@ export interface EmergencyMetrics {
   };
 }
 
+interface EmergencyQueue {
+  uuid: string;
+  display: string;
+  name?: string;
+}
+
+function useEmergencyQueues(locationUuid?: string) {
+  const queueUrl = useMemo(() => {
+    if (!locationUuid) {
+      return null;
+    }
+
+    const params = new URLSearchParams();
+    params.append('location', locationUuid);
+    params.append('v', 'custom:(uuid,display,name)');
+    params.append('limit', '100');
+
+    return `${restBaseUrl}/queue?${params.toString()}`;
+  }, [locationUuid]);
+
+  const { data, error, isLoading } = useSWR<{ data: { results: Array<EmergencyQueue> } }, Error>(
+    queueUrl,
+    openmrsFetch,
+  );
+
+  return {
+    queues: data?.data?.results ?? [],
+    error,
+    isLoading,
+  };
+}
+
 /**
  * Hook to fetch emergency queue entries from the database
  * Uses the same endpoint as Service Queues with full custom representation
@@ -116,12 +148,12 @@ export function useEmergencyQueueEntries(
 
   // Only use status from store if explicitly provided and not undefined/null/empty/'all'
   // Validate that statusUuid is a valid UUID format before using it
-  const isValidUuid = (uuid?: string): boolean => {
+  const isValidUuid = useCallback((uuid?: string): boolean => {
     if (!uuid || uuid === 'all' || uuid === '') return false;
     // Basic UUID format validation (8-4-4-4-12 hex digits)
     const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
     return uuidRegex.test(uuid);
-  };
+  }, []);
 
   const actualStatusUuid = useMemo(() => {
     // If statusUuid is explicitly provided, use it (but validate)
@@ -134,7 +166,18 @@ export function useEmergencyQueueEntries(
     // Emergency queries should NOT filter by status unless explicitly provided.
     // This avoids 500 errors when the concept doesn't exist in the backend.
     return undefined;
-  }, [statusUuid]);
+  }, [statusUuid, isValidUuid]);
+
+  const { queues: availableQueues, isLoading: isLoadingQueues } = useEmergencyQueues(actualLocationUuid);
+  const actualQueueUuid = useMemo(() => {
+    if (!queueUuid) {
+      return undefined;
+    }
+
+    return availableQueues.some((queue) => queue.uuid === queueUuid) ? queueUuid : undefined;
+  }, [availableQueues, queueUuid]);
+  const shouldWaitForQueueValidation = Boolean(queueUuid && actualLocationUuid && isLoadingQueues);
+  const shouldSkipMissingQueue = Boolean(queueUuid && actualLocationUuid && !isLoadingQueues && !actualQueueUuid);
 
   // Custom representation - same as Service Queues for full compatibility
   const customRepresentation =
@@ -145,7 +188,7 @@ export function useEmergencyQueueEntries(
     isEnded: false,
     status: actualStatusUuid,
     location: actualLocationUuid,
-    queue: queueUuid,
+    queue: actualQueueUuid,
   };
 
   const params = new URLSearchParams();
@@ -165,10 +208,14 @@ export function useEmergencyQueueEntries(
   // Include actualLocationUuid in SWR key to ensure cache updates when filters change
   // Note: actualStatusUuid is intentionally excluded to avoid cache issues when status is not used
   const swrKey = useMemo(() => {
+    if (shouldWaitForQueueValidation || shouldSkipMissingQueue) {
+      return null;
+    }
+
     let key = actualLocationUuid ? `${url}&_location=${actualLocationUuid}` : url;
-    if (queueUuid) key += `&_queue=${queueUuid}`;
+    if (actualQueueUuid) key += `&_queue=${actualQueueUuid}`;
     return key;
-  }, [url, actualLocationUuid, queueUuid]);
+  }, [url, actualLocationUuid, actualQueueUuid, shouldWaitForQueueValidation, shouldSkipMissingQueue]);
 
   const { data, error, isLoading, isValidating, mutate } = useSWR<
     { data: { results: Array<EmergencyQueueEntry>; totalCount: number } },
@@ -176,9 +223,9 @@ export function useEmergencyQueueEntries(
   >(swrKey, openmrsFetch);
 
   return {
-    queueEntries: data?.data?.results || [],
-    totalCount: data?.data?.totalCount || 0,
-    isLoading,
+    queueEntries: shouldSkipMissingQueue ? [] : data?.data?.results || [],
+    totalCount: shouldSkipMissingQueue ? 0 : data?.data?.totalCount || 0,
+    isLoading: isLoading || shouldWaitForQueueValidation,
     error,
     isValidating,
     mutate,

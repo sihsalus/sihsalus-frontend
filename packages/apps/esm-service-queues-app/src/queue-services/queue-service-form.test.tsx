@@ -1,32 +1,32 @@
 import { showSnackbar, useLayoutType } from '@openmrs/esm-framework';
-import { render, screen } from '@testing-library/react';
+import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import React from 'react';
+import { vi } from 'vitest';
 import { saveQueue } from './queue-service.resource';
 import QueueServiceForm from './queue-service-form.workspace';
 
 const defaultProps = {
-  closeWorkspace: jest.fn(),
-  closeWorkspaceWithSavedChanges: jest.fn(),
-  promptBeforeClosing: jest.fn(),
-  setTitle: jest.fn(),
+  closeWorkspace: vi.fn(),
+  closeWorkspaceWithSavedChanges: vi.fn(),
+  promptBeforeClosing: vi.fn(),
+  setTitle: vi.fn(),
 };
 
-const mockSaveQueue = jest.mocked(saveQueue);
-const mockShowSnackbar = jest.mocked(showSnackbar);
-const mockUseLayoutType = jest.mocked(useLayoutType);
+const mockSaveQueue = vi.mocked(saveQueue);
+const mockShowSnackbar = vi.mocked(showSnackbar);
+const mockUseLayoutType = vi.mocked(useLayoutType);
 
-jest.mock('./queue-service.resource', () => ({
+vi.mock('./queue-service.resource', () => ({
   useServiceConcepts: () => ({
     queueConcepts: [
       { uuid: '6f017eb0-b035-4acd-b284-da45f5067502', display: 'Concept 1' },
       { uuid: '5f017eb0-b035-4acd-b284-da45f5067502', display: 'Concept 2' },
     ],
   }),
-  saveQueue: jest.fn(() => Promise.resolve({ status: 201 })),
+  saveQueue: vi.fn(() => Promise.resolve({ status: 201 })),
 }));
 
-jest.mock('../create-queue-entry/hooks/useQueueLocations', () => ({
+vi.mock('../create-queue-entry/hooks/useQueueLocations', () => ({
   useQueueLocations: () => ({
     queueLocations: [
       { id: '34567eb0-b035-4acd-b284-da45f5067502', name: 'Location 1' },
@@ -37,6 +37,8 @@ jest.mock('../create-queue-entry/hooks/useQueueLocations', () => ({
 
 describe('QueueServiceForm', () => {
   beforeEach(() => {
+    vi.clearAllMocks();
+    mockSaveQueue.mockResolvedValue({ status: 201 } as any);
     mockUseLayoutType.mockReturnValue('tablet');
   });
 
@@ -45,8 +47,12 @@ describe('QueueServiceForm', () => {
     render(<QueueServiceForm {...defaultProps} />);
 
     const queueNameInput = screen.getByRole('textbox', { name: /queue name/i });
-    const serviceTypeSelect = screen.getByRole('combobox', { name: /select a service type/i });
-    const locationSelect = screen.getByRole('combobox', { name: /select a location/i });
+    const serviceTypeSelect = screen.getByRole('combobox', {
+      name: /select a service type/i,
+    });
+    const locationSelect = screen.getByRole('combobox', {
+      name: /select a location/i,
+    });
     const cancelButton = screen.getByRole('button', { name: /cancel/i });
     const saveButton = screen.getByRole('button', { name: /save/i });
     expect(cancelButton).toBeInTheDocument();
@@ -77,8 +83,12 @@ describe('QueueServiceForm', () => {
     render(<QueueServiceForm {...defaultProps} />);
 
     const queueNameInput = screen.getByRole('textbox', { name: /queue name/i });
-    const serviceTypeSelect = screen.getByRole('combobox', { name: /select a service type/i });
-    const locationSelect = screen.getByRole('combobox', { name: /select a location/i });
+    const serviceTypeSelect = screen.getByRole('combobox', {
+      name: /select a service type/i,
+    });
+    const locationSelect = screen.getByRole('combobox', {
+      name: /select a location/i,
+    });
     const saveButton = screen.getByRole('button', { name: /save/i });
 
     await user.type(queueNameInput, 'Test Queue');
@@ -107,8 +117,12 @@ describe('QueueServiceForm', () => {
     render(<QueueServiceForm {...defaultProps} />);
 
     const queueNameInput = screen.getByRole('textbox', { name: /queue name/i });
-    const serviceTypeSelect = screen.getByRole('combobox', { name: /select a service type/i });
-    const locationSelect = screen.getByRole('combobox', { name: /select a location/i });
+    const serviceTypeSelect = screen.getByRole('combobox', {
+      name: /select a service type/i,
+    });
+    const locationSelect = screen.getByRole('combobox', {
+      name: /select a location/i,
+    });
     const saveButton = screen.getByRole('button', { name: /save/i });
 
     await user.type(queueNameInput, 'Test Queue');
@@ -116,12 +130,14 @@ describe('QueueServiceForm', () => {
     await user.selectOptions(locationSelect, '34567eb0-b035-4acd-b284-da45f5067502');
     await user.click(saveButton);
 
-    expect(mockShowSnackbar).toHaveBeenCalledTimes(1);
-    expect(mockShowSnackbar).toHaveBeenCalledWith({
-      isLowContrast: false,
-      kind: 'error',
-      title: expect.stringMatching(/error creating queue service/i),
-      subtitle: expect.stringMatching(/internal server error/i),
-    });
+    await waitFor(() => expect(mockShowSnackbar).toHaveBeenCalledTimes(1));
+    await waitFor(() =>
+      expect(mockShowSnackbar).toHaveBeenCalledWith({
+        isLowContrast: false,
+        kind: 'error',
+        title: expect.stringMatching(/error creating queue service/i),
+        subtitle: expect.stringMatching(/internal server error/i),
+      }),
+    );
   });
 });

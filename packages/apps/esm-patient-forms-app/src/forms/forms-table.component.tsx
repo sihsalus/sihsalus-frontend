@@ -65,7 +65,9 @@ const FormsTable = ({ tableHeaders, tableRows, isTablet, handleSearch, handleFor
                 <TableHead>
                   <TableRow>
                     {headers.map((header) => (
-                      <TableHeader {...getHeaderProps({ header })}>{header.header}</TableHeader>
+                      <TableHeader key={header.key} {...getHeaderProps({ header })}>
+                        {header.header}
+                      </TableHeader>
                     ))}
                     <TableHeader />
                   </TableRow>
@@ -79,7 +81,7 @@ const FormsTable = ({ tableHeaders, tableRows, isTablet, handleSearch, handleFor
                     }
 
                     return (
-                      <TableRow {...getRowProps({ row })}>
+                      <TableRow key={row.id} {...getRowProps({ row })}>
                         <TableCell key={row.cells[0].id}>
                           <button
                             type="button"

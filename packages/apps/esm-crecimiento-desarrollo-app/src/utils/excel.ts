@@ -1,11 +1,8 @@
-import { fetchCurrentPatient, formatDate, getConfig } from '@openmrs/esm-framework';
+import { fetchCurrentPatient, formatDate } from '@openmrs/esm-framework';
 import type { WorkSheet } from 'xlsx';
 import { utils, writeFile } from 'xlsx';
 
-import type { ConfigObject } from '../config-schema';
 import type { Appointment } from '../types';
-
-import { moduleName } from './constants';
 
 type RowData = {
   id: string; // Corresponds to the UUIDof an appointment
@@ -23,8 +20,6 @@ export async function exportAppointmentsToSpreadsheet(
   rowData: Array<RowData>,
   fileName = 'Appointments',
 ): Promise<void> {
-  const config = await getConfig<ConfigObject>(moduleName);
-  // const includePhoneNumbers = config.includePhoneNumberInExcelSpreadsheet ?? false;
   const includePhoneNumbers = false;
 
   const appointmentsJSON = await Promise.all(
@@ -61,7 +56,7 @@ Exports unscheduled appointments as an Excel spreadsheet.
 @param {string} fileName - The name of the file to download. Defaults to 'Unscheduled appointments {current date and time}'.
 */
 export function exportUnscheduledAppointmentsToSpreadsheet(
-  unscheduledAppointments: Array<Record<string, any>>,
+  unscheduledAppointments: Array<Record<string, unknown>>,
   fileName = `Unscheduled appointments ${formatDate(new Date(), { year: true, time: true })}`,
 ): void {
   const appointmentsJSON = unscheduledAppointments?.map((appointment) => ({
@@ -80,8 +75,8 @@ export function exportUnscheduledAppointmentsToSpreadsheet(
   });
 }
 
-function createWorksheet(data: Array<Record<string, any>>) {
-  const max_width = data.reduce((w, r) => Math.max(w, r['Patient name'].length), 30);
+function createWorksheet(data: Array<Record<string, unknown>>) {
+  const max_width = data.reduce((w, r) => Math.max(w, String(r['Patient name'] ?? '').length), 30);
   const worksheet = utils.json_to_sheet(data);
   worksheet['!cols'] = [{ wch: max_width }];
   return worksheet;

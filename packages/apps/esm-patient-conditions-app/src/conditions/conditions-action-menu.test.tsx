@@ -5,14 +5,14 @@ import userEvent from '@testing-library/user-event';
 import { type Condition } from './conditions.resource';
 import { ConditionsActionMenu } from './conditions-action-menu.component';
 
-jest.mock('@openmrs/esm-patient-common-lib', () => ({
-  ...jest.requireActual('@openmrs/esm-patient-common-lib'),
-  launchPatientWorkspace: jest.fn(),
+vi.mock('@openmrs/esm-patient-common-lib', async () => ({
+  ...(await vi.importActual('@openmrs/esm-patient-common-lib')),
+  launchPatientWorkspace: vi.fn(),
 }));
 
-const mockLaunchPatientWorkspace = jest.mocked(launchPatientWorkspace);
-const mockShowModal = jest.mocked(showModal);
-const mockUseLayoutType = jest.mocked(useLayoutType);
+const mockLaunchPatientWorkspace = vi.mocked(launchPatientWorkspace);
+const mockShowModal = vi.mocked(showModal);
+const mockUseLayoutType = vi.mocked(useLayoutType);
 
 const mockCondition: Condition = {
   clinicalStatus: 'active',

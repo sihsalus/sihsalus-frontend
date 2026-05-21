@@ -1,0 +1,126 @@
+.complianceCard {
+  margin-bottom: 1rem;
+  border-left: 0.25rem solid #0f62fe;
+}
+
+.headerRow {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-bottom: 1rem;
+}
+
+.eyebrow {
+  margin: 0 0 0.25rem;
+  color: #525252;
+  font-size: 0.75rem;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.subtitle,
+.errorText {
+  margin: 0.25rem 0 0;
+  color: #525252;
+}
+
+.summaryGrid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 0.75rem;
+  margin-bottom: 1rem;
+}
+
+.summaryItem {
+  padding: 0.75rem;
+  background: #f4f4f4;
+}
+
+.summaryValue,
+.summaryLabel {
+  display: block;
+}
+
+.summaryValue {
+  color: #161616;
+  font-size: 1.5rem;
+  font-weight: 600;
+  line-height: 1.2;
+}
+
+.summaryLabel {
+  color: #525252;
+  font-size: 0.75rem;
+}
+
+.sectionsGrid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 1rem;
+}
+
+.section {
+  border-top: 1px solid #e0e0e0;
+  padding-top: 0.75rem;
+}
+
+.section h5 {
+  margin: 0 0 0.75rem;
+}
+
+.requirementsList {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.requirementItem {
+  padding-bottom: 0.75rem;
+  border-bottom: 1px solid #f4f4f4;
+}
+
+.requirementTitleRow {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 0.5rem;
+}
+
+.requirementTitle {
+  color: #161616;
+  font-weight: 600;
+}
+
+.requirementBody p {
+  margin: 0.25rem 0;
+  color: #525252;
+  font-size: 0.875rem;
+}
+
+.source,
+.completedDate,
+.unsupportedNote {
+  display: block;
+  color: #6f6f6f;
+  font-size: 0.75rem;
+}
+
+.unsupportedNote {
+  color: #8a3800;
+}
+
+@media (max-width: 671px) {
+  .headerRow {
+    flex-direction: column;
+  }
+
+  .summaryGrid,
+  .sectionsGrid {
+    grid-template-columns: 1fr;
+  }
+}

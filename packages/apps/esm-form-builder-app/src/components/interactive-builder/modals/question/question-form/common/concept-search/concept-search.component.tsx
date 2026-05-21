@@ -129,16 +129,11 @@ const ConceptSearch: React.FC<ConceptSearchProps> = ({
           if (!conceptToLookup) return null;
           if (isLoadingConcepts)
             return <InlineLoading className={styles.loader} description={t('searching', 'Searching') + '...'} />;
-          if (concepts?.length && !isLoadingConcepts) {
+          if (concepts?.length) {
             return (
               <ul className={styles.conceptList}>
                 {concepts?.map((concept, index) => (
-                  <li
-                    role="menuitem"
-                    className={styles.concept}
-                    key={index}
-                    onClick={() => handleConceptSelect(concept)}
-                  >
+                  <li className={styles.concept} key={index} onClick={() => handleConceptSelect(concept)}>
                     {concept.display}
                   </li>
                 ))}

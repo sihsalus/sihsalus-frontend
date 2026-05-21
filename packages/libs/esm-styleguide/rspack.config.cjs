@@ -5,6 +5,16 @@ const { resolve } = require('node:path');
 
 const { peerDependencies } = require('./package.json');
 
+const cssLoader = {
+  loader: 'css-loader',
+  options: {
+    modules: {
+      auto: true,
+      namedExport: false,
+    },
+  },
+};
+
 module.exports = (env, argv = {}) => ({
   entry: [resolve(__dirname, 'src/internal.ts'), resolve(__dirname, 'src/_all.scss')],
   output: {
@@ -18,13 +28,13 @@ module.exports = (env, argv = {}) => ({
     rules: [
       {
         test: /\.css$/i,
-        use: [{ loader: rspack.CssExtractRspackPlugin.loader }, 'css-loader', 'builtin:lightningcss-loader'],
+        use: [{ loader: rspack.CssExtractRspackPlugin.loader }, cssLoader, 'builtin:lightningcss-loader'],
       },
       {
         test: /\.s[ac]ss$/i,
         use: [
           { loader: rspack.CssExtractRspackPlugin.loader },
-          'css-loader',
+          cssLoader,
           'builtin:lightningcss-loader',
           {
             loader: require.resolve('sass-loader'),

@@ -180,7 +180,6 @@ export const OtherRelationships: React.FC<OtherRelationshipsProps> = ({ patientU
   return (
     <div className={styles.widgetContainer}>
       <CardHeader title={headerTitle}>
-        {isLoading && <DataTableSkeleton rowCount={5} />}{' '}
         <Button onClick={handleAddHistory} renderIcon={Add} kind="ghost">
           {t('add', 'Add')}
         </Button>
@@ -197,6 +196,7 @@ export const OtherRelationships: React.FC<OtherRelationshipsProps> = ({ patientU
                 <TableRow>
                   {headers.map((header) => (
                     <TableHeader
+                      key={header.key}
                       {...getHeaderProps({
                         header,
                         isSortable: header.isSortable,

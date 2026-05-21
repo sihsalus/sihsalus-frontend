@@ -51,6 +51,7 @@ interface PrenatalSwrKey {
   patientUuid: string;
   conceptUuids: string;
   page: number;
+  pageSize: number;
   prevPageData: FHIRSearchBundleResponse | null;
 }
 
@@ -235,10 +236,11 @@ export function usePrenatalAntecedents(patientUuid: string, options: PrenatalHoo
         patientUuid,
         conceptUuids,
         page,
+        pageSize,
         prevPageData,
       };
     },
-    [conceptUuids, patientUuid, isValidInput],
+    [conceptUuids, patientUuid, isValidInput, pageSize],
   );
 
   // Hook SWR con configuración mejorada
@@ -362,6 +364,7 @@ async function handleFetch({
   patientUuid,
   conceptUuids,
   page,
+  pageSize,
   prevPageData,
 }: PrenatalSwrKey): Promise<PrenatalFetchResponse | null> {
   try {
@@ -385,11 +388,11 @@ async function handleFetch({
       code: conceptUuids,
       _summary: 'data',
       _sort: '-date',
-      _count: DEFAULT_PAGE_SIZE.toString(),
+      _count: pageSize.toString(),
     });
 
     if (page > 0) {
-      urlSearchParams.append('_getpagesoffset', (page * DEFAULT_PAGE_SIZE).toString());
+      urlSearchParams.append('_getpagesoffset', (page * pageSize).toString());
     }
 
     return await openmrsFetch<PrenatalResponse>(`${url}?${urlSearchParams.toString()}`);

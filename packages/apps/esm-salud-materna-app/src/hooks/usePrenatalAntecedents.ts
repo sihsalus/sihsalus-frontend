@@ -51,6 +51,7 @@ interface PrenatalSwrKey {
   patientUuid: string;
   conceptUuids: string;
   page: number;
+  pageSize: number;
   prevPageData: FHIRSearchBundleResponse | null;
 }
 
@@ -235,10 +236,11 @@ export function usePrenatalAntecedents(patientUuid: string, options: PrenatalHoo
         patientUuid,
         conceptUuids,
         page,
+        pageSize,
         prevPageData,
       };
     },
-    [conceptUuids, patientUuid, isValidInput],
+    [conceptUuids, pageSize, patientUuid, isValidInput],
   );
 
   // Hook SWR con configuración mejorada

@@ -7,7 +7,8 @@ export const getSearchHistory = () => {
     searchHistory.push({
       ...historyItem,
       id: (index + 1).toString(),
-      results: historyItem.patients.length,
+      patients: [],
+      results: (historyItem.memberIds?.length ?? 0).toString(),
     }),
   );
   return searchHistory;

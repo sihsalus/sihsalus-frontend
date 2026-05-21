@@ -4,14 +4,14 @@ import { useProviders } from '../medication-dispense/medication-dispense.resourc
 import { type MedicationDispense, MedicationDispenseStatus } from '../types';
 import MedicationDispenseReview from './medication-dispense-review.component';
 
-jest.mock('../medication-dispense/medication-dispense.resource', () => ({
-  ...jest.requireActual('../medication-dispense/medication-dispense.resource'),
-  useProviders: jest.fn(),
+vi.mock('../medication-dispense/medication-dispense.resource', async () => ({
+  ...(await vi.importActual('../medication-dispense/medication-dispense.resource')),
+  useProviders: vi.fn(),
 }));
 
-const mockUseConfig = jest.mocked(useConfig);
-const mockUseProviders = jest.mocked(useProviders);
-const mockUseSession = jest.mocked(useSession);
+const mockUseConfig = vi.mocked(useConfig);
+const mockUseProviders = vi.mocked(useProviders);
+const mockUseSession = vi.mocked(useSession);
 
 beforeEach(() => {
   mockUseConfig.mockReturnValue({
@@ -140,7 +140,7 @@ describe('Medication Dispense Review Component tests', () => {
       },
     };
 
-    const mockUpdate = jest.fn();
+    const mockUpdate = vi.fn();
     render(
       <MedicationDispenseReview
         medicationDispense={medicationDispense}

@@ -13,7 +13,7 @@
  * When emergency location is selected, shows emergency table and hides standard table.
  * When not emergency, returns null to allow standard table to show.
  */
-import React, { useEffect } from 'react';
+import { useEffect } from 'react';
 import EmergencyQueueTable from '../../emergency-dashboard/emergency-queue-table/emergency-queue-table.component';
 import { useIsEmergencyLocation } from '../../utils/emergency-detection';
 

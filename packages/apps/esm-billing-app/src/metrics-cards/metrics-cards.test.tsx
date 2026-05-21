@@ -1,17 +1,16 @@
 import { getDefaultsFromConfigSchema, useConfig } from '@openmrs/esm-framework';
 import { render, screen } from '@testing-library/react';
-import React from 'react';
 import { billsSummary } from '../../test-utils/mocks/bills.mock';
 import { useBills } from '../billing.resource';
 import { type BillingConfig, configSchema } from '../config-schema';
 import { type MappedBill } from '../types';
 import MetricsCards from './metrics-cards.component';
 
-const mockUseBills = jest.mocked<typeof useBills>(useBills);
-const mockUseConfig = jest.mocked(useConfig<BillingConfig>);
+const mockUseBills = vi.mocked<typeof useBills>(useBills);
+const mockUseConfig = vi.mocked(useConfig<BillingConfig>);
 
-jest.mock('../billing.resource', () => ({
-  useBills: jest.fn(),
+vi.mock('../billing.resource', () => ({
+  useBills: vi.fn(),
 }));
 
 describe('MetricsCards', () => {
@@ -20,7 +19,7 @@ describe('MetricsCards', () => {
   });
 
   test('renders loading state', () => {
-    mockUseBills.mockReturnValue({ isLoading: true, bills: [], error: null, isValidating: false, mutate: jest.fn() });
+    mockUseBills.mockReturnValue({ isLoading: true, bills: [], error: null, isValidating: false, mutate: vi.fn() });
     renderMetricsCards();
     expect(screen.getByText(/Loading bill metrics.../i)).toBeInTheDocument();
   });
@@ -31,7 +30,7 @@ describe('MetricsCards', () => {
       bills: [],
       error: new Error('Internal server error'),
       isValidating: false,
-      mutate: jest.fn(),
+      mutate: vi.fn(),
     });
     renderMetricsCards();
     expect(screen.getByText(/error state/i)).toBeInTheDocument();
@@ -43,7 +42,7 @@ describe('MetricsCards', () => {
       bills: billsSummary as unknown as MappedBill[],
       error: null,
       isValidating: false,
-      mutate: jest.fn(),
+      mutate: vi.fn(),
     });
     renderMetricsCards();
     expect(screen.getByRole('heading', { name: /cumulative bills/i })).toBeInTheDocument();

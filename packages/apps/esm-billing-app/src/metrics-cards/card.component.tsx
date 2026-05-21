@@ -1,5 +1,4 @@
 import { useConfig } from '@openmrs/esm-framework';
-import React from 'react';
 import { convertToCurrency } from '../helpers';
 import styles from './card.scss';
 

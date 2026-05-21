@@ -1,5 +1,4 @@
-import { SideNavLink } from '@carbon/react';
-import { navigate, UserHasAccess } from '@openmrs/esm-framework';
+import { ConfigurableLink, UserHasAccess } from '@openmrs/esm-framework';
 import React, { useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { BrowserRouter, useLocation } from 'react-router-dom';
@@ -8,7 +7,7 @@ export interface BillableServicesLinkConfig {
   name: string;
   title: string;
   path: string;
-  icon?: React.ComponentType;
+  icon?: React.ComponentType<any>;
   privilege?: string;
 }
 
@@ -26,14 +25,16 @@ function BillableServicesLinkExtension({ config }: { config: BillableServicesLin
     return currentPath.startsWith(`/${path}`);
   }, [location.pathname, path, spaBasePath]);
 
-  const handleNavigation = () => {
-    navigate({ to: `${spaBasePath}/${path}` });
-  };
-
   const link = (
-    <SideNavLink onClick={handleNavigation} renderIcon={Icon} isActive={isActive}>
-      {t(title)}
-    </SideNavLink>
+    <ConfigurableLink
+      to={`${spaBasePath}/${path}`}
+      className={`cds--side-nav__link ${isActive ? 'active-left-nav-link' : ''}`}
+    >
+      <span className="sihsalus-side-nav__item">
+        {Icon ? <Icon aria-hidden="true" className="sihsalus-side-nav__icon" size={20} /> : null}
+        <span className="sihsalus-side-nav__text">{t(title)}</span>
+      </span>
+    </ConfigurableLink>
   );
 
   if (privilege) {

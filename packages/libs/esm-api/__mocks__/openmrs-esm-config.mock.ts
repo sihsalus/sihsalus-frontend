@@ -1,3 +1,5 @@
-export const defineConfigSchema = jest.fn();
+import { vi } from 'vitest';
 
-export const getConfig = jest.fn().mockResolvedValue({ redirectAuthFailure: { enabled: false } });
+export const defineConfigSchema = vi.fn();
+
+export const getConfig = vi.fn().mockResolvedValue({ redirectAuthFailure: { enabled: false } });

@@ -202,11 +202,17 @@ async function processHandler(
       }
 
       await db.syncQueue.delete(key);
-    } catch (e) {
+    } catch (e: unknown) {
+      const error =
+        e instanceof Error
+          ? e
+          : typeof e === 'object' && e && 'name' in e && 'message' in e
+            ? (e as { name?: string; message?: string })
+            : undefined;
       await db.syncQueue.update(key, {
         lastError: {
-          name: e?.name,
-          message: e?.message ?? e?.toString(),
+          name: error?.name,
+          message: error?.message ?? (typeof e === 'string' ? e : String(e)),
         },
       });
     } finally {
@@ -377,7 +383,7 @@ export function setupOfflineSync<T>(
   handlers[type] = {
     type,
     dependsOn,
-    process,
+    process: process as ProcessSyncItem<unknown>,
     options,
   };
 }

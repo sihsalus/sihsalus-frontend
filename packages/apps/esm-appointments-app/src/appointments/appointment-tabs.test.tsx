@@ -4,10 +4,10 @@ import { mockAppointmentsData, renderWithSwr, waitForLoadingToFinish } from 'tes
 
 import AppointmentTabs from './appointment-tabs.component';
 
-const mockOpenmrsFetch = jest.mocked(openmrsFetch);
+const mockOpenmrsFetch = vi.mocked(openmrsFetch);
 
 describe('AppointmentTabs', () => {
-  xit(`renders tabs showing different appointment lists`, async () => {
+  it.skip(`renders tabs showing different appointment lists`, async () => {
     mockOpenmrsFetch.mockResolvedValue({ ...mockAppointmentsData } as unknown as FetchResponse);
 
     renderWithSwr(<AppointmentTabs appointmentServiceTypes={['service-type-uuid']} />);

@@ -77,7 +77,19 @@ const SpaceBetweenTeeth: React.FC<SpaceBetweenTeethProps> = ({ leftToothId, righ
       style={{ cursor: readOnly ? 'default' : isSelected ? 'pointer' : 'default' }}
       className={isSelected && !readOnly ? 'interactive-svg' : ''}
     >
-      <rect width="20" height="60" fill={isSelected && !readOnly ? 'lightgray' : 'white'} opacity="0.45" />
+      {(() => {
+        const showHighlight = isSelected && !readOnly;
+        return (
+          <rect
+            width="20"
+            height="60"
+            fill={showHighlight ? 'lightgray' : 'white'}
+            opacity="0.45"
+            stroke={showHighlight ? '#a8a8a8' : 'none'}
+            strokeWidth={showHighlight ? 0.3 : 0}
+          />
+        );
+      })()}
 
       {/* Finding 7 - Edéntulo total */}
       {finding7?.color && finding7?.designNumber && <Finding7Design2 strokeColor={finding7.color.name} />}

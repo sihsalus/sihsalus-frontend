@@ -1,15 +1,7 @@
 // perinatal-register-form.tsx
 import { Button, ButtonSet, ButtonSkeleton, Column, Form, InlineNotification, Stack } from '@carbon/react';
 import { zodResolver } from '@hookform/resolvers/zod';
-import {
-  createErrorHandler,
-  showSnackbar,
-  useConfig,
-  useLayoutType,
-  usePatient,
-  useSession,
-  useVisit,
-} from '@openmrs/esm-framework';
+import { createErrorHandler, showSnackbar, useConfig, useLayoutType, useSession } from '@openmrs/esm-framework';
 import { GenericInput } from '@sihsalus/esm-sihsalus-shared';
 import React, { useCallback, useEffect, useState } from 'react';
 import { useForm } from 'react-hook-form';
@@ -103,10 +95,8 @@ const PerinatalRegisterForm: React.FC<DefaultPatientWorkspaceProps> = ({ closeWo
   const isTablet = useLayoutType() === 'tablet';
   const config = useConfig<ConfigObject>();
   const session = useSession();
-  const patient = usePatient(patientUuid);
-  const { currentVisit } = useVisit(patientUuid);
   const { data: formattedObs, isLoading: isLoadingFormattedObs, error } = usePrenatalAntecedents(patientUuid);
-  const { data: conceptUnits, conceptMetadata, conceptRanges, isLoading } = usePrenatalConceptMetadata();
+  const { isLoading } = usePrenatalConceptMetadata();
   const [showErrorNotification, setShowErrorNotification] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -175,7 +165,7 @@ const PerinatalRegisterForm: React.FC<DefaultPatientWorkspaceProps> = ({ closeWo
             });
           }
         })
-        .catch((error) => {
+        .catch((_error) => {
           createErrorHandler();
           showSnackbar({
             title: t('perinatalDataSaveError', 'Error saving perinatal data'),

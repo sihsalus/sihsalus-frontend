@@ -15,7 +15,7 @@ interface CervicalScreeningProps {
  * Widget de tamizaje de cáncer cervical según NTS 164-MINSA.
  * Muestra último PAP/VIA, resultado, y próximo tamizaje.
  */
-const CervicalScreening: React.FC<CervicalScreeningProps> = ({ patientUuid }) => {
+const CervicalScreening: React.FC<CervicalScreeningProps> = ({ patientUuid: _patientUuid }) => {
   const { t } = useTranslation();
   const config = useConfig<ConfigObject>();
 
@@ -30,8 +30,8 @@ const CervicalScreening: React.FC<CervicalScreeningProps> = ({ patientUuid }) =>
     <Tile className={styles.card}>
       <div className={styles.header}>
         <h5>{t('cervicalScreeningTitle', 'Tamizaje Cervical')}</h5>
-        <Tag type={papResult || viaResult ? 'green' : 'gray'} size="sm">
-          {papResult || viaResult ? t('completed', 'Completed') : t('pending', 'Pending')}
+        <Tag type="gray" size="sm">
+          {t('pending', 'Pending')}
         </Tag>
       </div>
       <div className={styles.content}>

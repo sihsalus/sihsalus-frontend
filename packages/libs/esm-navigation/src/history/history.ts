@@ -25,7 +25,8 @@ export function setupHistory() {
     addToHistory(document.referrer);
   }
 
-  window.addEventListener('single-spa:routing-event', (evt: CustomEvent) => {
+  const onRoutingEvent: EventListener = (event) => {
+    const evt = event as CustomEvent;
     const history = getHistory();
     if (evt.detail.originalEvent?.singleSpaTrigger === 'replaceState') {
       // handle redirect
@@ -38,7 +39,9 @@ export function setupHistory() {
       // handle normal navigation
       addToHistory(window.location.href);
     }
-  });
+  };
+
+  window.addEventListener('single-spa:routing-event', onRoutingEvent);
 }
 
 /**

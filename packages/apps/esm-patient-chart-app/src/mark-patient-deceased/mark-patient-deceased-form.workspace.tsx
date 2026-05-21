@@ -16,8 +16,19 @@ import {
 } from '@carbon/react';
 import { WarningFilled } from '@carbon/react/icons';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { ExtensionSlot, ResponsiveWrapper, showSnackbar, useConfig, useLayoutType } from '@openmrs/esm-framework';
-import { type DefaultPatientWorkspaceProps, EmptyState } from '@openmrs/esm-patient-common-lib';
+import {
+  ExtensionSlot,
+  ResponsiveWrapper,
+  showSnackbar,
+  useConfig,
+  useLayoutType,
+  Workspace2,
+} from '@openmrs/esm-framework';
+import {
+  type DefaultPatientWorkspaceProps,
+  EmptyState,
+  type PatientWorkspace2DefinitionProps,
+} from '@openmrs/esm-patient-common-lib';
 import classNames from 'classnames';
 import fuzzy from 'fuzzy';
 import React, { useCallback, useMemo, useState } from 'react';
@@ -30,8 +41,16 @@ import { markPatientDeceased, useCausesOfDeath } from '../data.resource';
 
 import styles from './mark-patient-deceased-form.scss';
 
-const MarkPatientDeceasedForm: React.FC<DefaultPatientWorkspaceProps> = ({ closeWorkspace, patientUuid }) => {
+type MarkPatientDeceasedWorkspace2Props = PatientWorkspace2DefinitionProps<object, object>;
+type MarkPatientDeceasedWorkspaceProps = DefaultPatientWorkspaceProps | MarkPatientDeceasedWorkspace2Props;
+
+function isWorkspace2Props(props: MarkPatientDeceasedWorkspaceProps): props is MarkPatientDeceasedWorkspace2Props {
+  return 'groupProps' in props && 'workspaceProps' in props;
+}
+
+const MarkPatientDeceasedForm: React.FC<MarkPatientDeceasedWorkspaceProps> = (props) => {
   const { t } = useTranslation();
+  const patientUuid = isWorkspace2Props(props) ? (props.groupProps?.patientUuid ?? '') : props.patientUuid;
   const isTablet = useLayoutType() === 'tablet';
   const memoizedPatientUuid = useMemo(() => ({ patientUuid }), [patientUuid]);
   const [searchTerm, setSearchTerm] = useState('');
@@ -42,14 +61,12 @@ const MarkPatientDeceasedForm: React.FC<DefaultPatientWorkspaceProps> = ({ close
     if (!searchTerm) {
       return causesOfDeath;
     }
-    return searchTerm
-      ? fuzzy
-          .filter(searchTerm, causesOfDeath, {
-            extract: (causeOfDeathConcept) => causeOfDeathConcept.display,
-          })
-          .sort((r1, r2) => r1.score - r2.score)
-          .map((result) => result.original)
-      : causesOfDeath;
+    return fuzzy
+      .filter(searchTerm, causesOfDeath, {
+        extract: (causeOfDeathConcept) => causeOfDeathConcept.display,
+      })
+      .sort((r1, r2) => r1.score - r2.score)
+      .map((result) => result.original);
   }, [searchTerm, causesOfDeath]);
 
   const handleSearchTermChange = (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -75,7 +92,7 @@ const MarkPatientDeceasedForm: React.FC<DefaultPatientWorkspaceProps> = ({ close
 
   const {
     control,
-    formState: { errors, isSubmitting },
+    formState: { errors, isDirty, isSubmitting },
     handleSubmit,
     watch,
   } = useForm<MarkPatientDeceasedFormSchema>({
@@ -90,13 +107,25 @@ const MarkPatientDeceasedForm: React.FC<DefaultPatientWorkspaceProps> = ({ close
 
   const causeOfDeathValue = watch('causeOfDeath');
 
+  const closeCurrentWorkspace = useCallback(
+    async (discardUnsavedChanges = false) => {
+      if (isWorkspace2Props(props)) {
+        await props.closeWorkspace({ discardUnsavedChanges });
+        return;
+      }
+
+      props.closeWorkspace(discardUnsavedChanges ? { ignoreChanges: true } : undefined);
+    },
+    [props],
+  );
+
   const onSubmit: SubmitHandler<MarkPatientDeceasedFormSchema> = useCallback(
     (data) => {
       const { causeOfDeath, deathDate, nonCodedCauseOfDeath } = data;
 
       markPatientDeceased(deathDate, patientUuid, causeOfDeath, nonCodedCauseOfDeath)
-        .then(() => {
-          closeWorkspace();
+        .then(async () => {
+          await closeCurrentWorkspace(true);
           globalThis.location.reload();
         })
         .catch((error) => {
@@ -108,13 +137,11 @@ const MarkPatientDeceasedForm: React.FC<DefaultPatientWorkspaceProps> = ({ close
           });
         });
     },
-    [closeWorkspace, patientUuid, t],
+    [closeCurrentWorkspace, patientUuid, t],
   );
 
-  const onError = (errors) => console.error(errors);
-
-  return (
-    <Form className={styles.form} onSubmit={handleSubmit(onSubmit, onError)}>
+  const content = (
+    <Form className={styles.form} onSubmit={handleSubmit(onSubmit)}>
       <div>
         {isTablet && (
           <Row className={styles.headerGridRow}>
@@ -253,7 +280,7 @@ const MarkPatientDeceasedForm: React.FC<DefaultPatientWorkspaceProps> = ({ close
         )}
       </div>
       <ButtonSet className={classNames({ [styles.tablet]: isTablet, [styles.desktop]: !isTablet })}>
-        <Button className={styles.button} kind="secondary" onClick={() => closeWorkspace()}>
+        <Button className={styles.button} kind="secondary" onClick={() => void closeCurrentWorkspace()}>
           {t('discard', 'Discard')}
         </Button>
         <Button className={styles.button} disabled={isSubmitting} kind="primary" type="submit">
@@ -266,6 +293,16 @@ const MarkPatientDeceasedForm: React.FC<DefaultPatientWorkspaceProps> = ({ close
       </ButtonSet>
     </Form>
   );
+
+  if (isWorkspace2Props(props)) {
+    return (
+      <Workspace2 title={t('markPatientDeceased', 'Marcar paciente como fallecido')} hasUnsavedChanges={isDirty}>
+        {content}
+      </Workspace2>
+    );
+  }
+
+  return content;
 };
 
 export default MarkPatientDeceasedForm;

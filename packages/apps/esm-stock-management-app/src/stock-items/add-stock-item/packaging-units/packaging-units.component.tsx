@@ -79,6 +79,15 @@ const PackagingUnits: React.FC<PackagingUnitsProps> = ({ stockItemUuid, handleTa
     [t],
   );
 
+  const dataTableHeaders = useMemo<Array<Omit<CustomTableHeader, 'header'> & { header: React.ReactNode }>>(
+    () =>
+      tableHeaders.map(({ header, ...rest }) => ({
+        ...rest,
+        header: typeof header === 'string' ? header : header.content,
+      })),
+    [tableHeaders],
+  );
+
   const packageUnitForm = useForm<PackageUnitFormData>({
     defaultValues: {},
     mode: 'all',
@@ -196,7 +205,7 @@ const PackagingUnits: React.FC<PackagingUnitsProps> = ({ stockItemUuid, handleTa
             { id: 'new-row' },
           ] as CustomTableRow[]
         }
-        headers={tableHeaders as any}
+        headers={dataTableHeaders}
         isSortable={false}
         useZebraStyles
       >
@@ -230,6 +239,7 @@ const PackagingUnits: React.FC<PackagingUnitsProps> = ({ stockItemUuid, handleTa
               <TableBody className={styles.packingTableBody}>
                 {items?.map((row: StockItemPackagingUOMDTO, index) => (
                   <PackagingUnitRow
+                    key={row?.uuid ?? `item-${index}`}
                     row={row}
                     id={`${index}-${row?.uuid}`}
                     onChange={(value) => onFactorFieldUpdate(row, value)}
@@ -297,7 +307,7 @@ const PackagingUnitRow: React.FC<{
               invalid={!!errors.packagingUomUuid}
             />
           ) : (
-            (!isEditing || !row.uuid.startsWith('new-item')) && row?.packagingUomName
+            row?.packagingUomName
           )}
         </TableCell>
         <TableCell>
@@ -310,7 +320,7 @@ const PackagingUnitRow: React.FC<{
             id={id}
             invalid={!!errors.factor}
             hideSteppers={true}
-            onChange={(e, state) => onChange(state.value)}
+            onChange={(_event, state) => onChange(state.value)}
           />
         </TableCell>
         <TableCell>

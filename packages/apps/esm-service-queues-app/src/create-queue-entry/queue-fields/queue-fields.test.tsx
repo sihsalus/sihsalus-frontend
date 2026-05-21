@@ -8,7 +8,6 @@ import {
 } from '@openmrs/esm-framework';
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import React from 'react';
 import { mockSession, mockVisitAlice } from 'test-utils';
 
 import { type ConfigObject, configSchema } from '../../config-schema';
@@ -16,19 +15,19 @@ import { type ConfigObject, configSchema } from '../../config-schema';
 import QueueFields from './queue-fields.component';
 import { postQueueEntry } from './queue-fields.resource';
 
-const mockUseConfig = jest.mocked(useConfig<ConfigObject>);
-const mockUseLayoutType = jest.mocked(useLayoutType);
-const mockUseSession = jest.mocked(useSession);
+const mockUseConfig = vi.mocked(useConfig<ConfigObject>);
+const mockUseLayoutType = vi.mocked(useLayoutType);
+const mockUseSession = vi.mocked(useSession);
 
-jest.mock('../hooks/useQueueLocations', () => ({
-  useQueueLocations: jest.fn(() => ({
+vi.mock('../hooks/useQueueLocations', () => ({
+  useQueueLocations: vi.fn(() => ({
     queueLocations: [{ id: '1', name: 'Location 1' }],
   })),
 }));
 
-jest.mock('../../hooks/useQueues', () => {
+vi.mock('../../hooks/useQueues', () => {
   return {
-    useQueues: jest.fn().mockReturnValue({
+    useQueues: vi.fn().mockReturnValue({
       queues: [
         {
           uuid: 'e2ec9cf0-ec38-4d2b-af6c-59c82fa30b90',
@@ -41,12 +40,12 @@ jest.mock('../../hooks/useQueues', () => {
   };
 });
 
-jest.mock('./queue-fields.resource', () => {
+vi.mock('./queue-fields.resource', () => {
   return {
-    postQueueEntry: jest.fn(),
+    postQueueEntry: vi.fn(),
   };
 });
-const mockPostQueueEntry = jest.mocked(postQueueEntry).mockResolvedValue({} as FetchResponse);
+const mockPostQueueEntry = vi.mocked(postQueueEntry).mockResolvedValue({} as FetchResponse);
 
 describe('QueueFields', () => {
   beforeEach(() => {

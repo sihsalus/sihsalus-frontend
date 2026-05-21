@@ -27,29 +27,29 @@ const temperatureValue = 37;
 
 const testProps = {
   closeWorkspace: () => {},
-  closeWorkspaceWithSavedChanges: jest.fn(),
+  closeWorkspaceWithSavedChanges: vi.fn(),
   patientUuid: mockPatient.id,
-  promptBeforeClosing: jest.fn(),
+  promptBeforeClosing: vi.fn(),
   formContext: 'creating' as 'creating' | 'editing',
-  setTitle: jest.fn(),
+  setTitle: vi.fn(),
 };
 
-const mockShowSnackbar = jest.mocked(showSnackbar);
-const mockSavePatientVitals = jest.mocked(saveVitalsAndBiometrics);
-const mockUseConfig = jest.mocked(useConfig<ConfigObject>);
-const mockUsePatient = jest.mocked(usePatient);
-const mockUseSession = jest.mocked(useSession);
-const mockUseVisit = jest.mocked(useVisit);
+const mockShowSnackbar = vi.mocked(showSnackbar);
+const mockSavePatientVitals = vi.mocked(saveVitalsAndBiometrics);
+const mockUseConfig = vi.mocked(useConfig<ConfigObject>);
+const mockUsePatient = vi.mocked(usePatient);
+const mockUseSession = vi.mocked(useSession);
+const mockUseVisit = vi.mocked(useVisit);
 
-jest.mock('../common', () => ({
-  assessValue: jest.fn(),
-  getReferenceRangesForConcept: jest.fn(),
-  generatePlaceholder: jest.fn(),
-  interpretBloodPressure: jest.fn(),
-  invalidateCachedVitalsAndBiometrics: jest.fn(),
-  saveVitalsAndBiometrics: jest.fn(),
-  useVitalsAndBiometrics: jest.fn(),
-  useVitalsConceptMetadata: jest.fn().mockImplementation(() => ({
+vi.mock('../common', () => ({
+  assessValue: vi.fn(),
+  getReferenceRangesForConcept: vi.fn(),
+  generatePlaceholder: vi.fn(),
+  interpretBloodPressure: vi.fn(),
+  invalidateCachedVitalsAndBiometrics: vi.fn(),
+  saveVitalsAndBiometrics: vi.fn(),
+  useVitalsAndBiometrics: vi.fn(),
+  useVitalsConceptMetadata: vi.fn().mockImplementation(() => ({
     data: mockConceptUnits,
     conceptMetadata: mockConceptMetadata,
     conceptRanges: mockConceptRanges,
@@ -79,7 +79,7 @@ mockUseVisit.mockReturnValue({
 
 describe('VitalsBiometricsForm', () => {
   beforeEach(() => {
-    jest.clearAllMocks();
+    vi.clearAllMocks();
   });
 
   it('renders the vitals and biometrics form', async () => {
@@ -137,7 +137,7 @@ describe('VitalsBiometricsForm', () => {
       data: [],
     };
 
-    mockSavePatientVitals.mockResolvedValue(response as ReturnType<typeof saveVitalsAndBiometrics>);
+    mockSavePatientVitals.mockResolvedValue(response as any);
 
     render(<VitalsAndBiometricsForm {...testProps} />);
 
@@ -146,9 +146,15 @@ describe('VitalsBiometricsForm', () => {
     const bmiInput = screen.getByRole('spinbutton', { name: /bmi/i });
     const systolic = screen.getByRole('spinbutton', { name: /systolic/i });
     const pulse = screen.getByRole('spinbutton', { name: /pulse/i });
-    const oxygenSaturation = screen.getByRole('spinbutton', { name: /oxygen saturation/i });
-    const respirationRate = screen.getByRole('spinbutton', { name: /respiration rate/i });
-    const temperature = screen.getByRole('spinbutton', { name: /temperature/i });
+    const oxygenSaturation = screen.getByRole('spinbutton', {
+      name: /oxygen saturation/i,
+    });
+    const respirationRate = screen.getByRole('spinbutton', {
+      name: /respiration rate/i,
+    });
+    const temperature = screen.getByRole('spinbutton', {
+      name: /temperature/i,
+    });
     const muac = screen.getByRole('spinbutton', { name: /muac/i });
     const saveButton = screen.getByRole('button', { name: /Save and close/i });
 
@@ -187,7 +193,7 @@ describe('VitalsBiometricsForm', () => {
         temperature: temperatureValue,
         weight: weightValue,
       }),
-      new AbortController(),
+      expect.any(AbortController),
       'test-session-location',
     );
 
@@ -221,9 +227,15 @@ describe('VitalsBiometricsForm', () => {
     const weightInput = screen.getByRole('spinbutton', { name: /weight/i });
     const systolic = screen.getByRole('spinbutton', { name: /systolic/i });
     const pulse = screen.getByRole('spinbutton', { name: /pulse/i });
-    const oxygenSaturation = screen.getByRole('spinbutton', { name: /oxygen saturation/i });
-    const respirationRate = screen.getByRole('spinbutton', { name: /respiration rate/i });
-    const temperature = screen.getByRole('spinbutton', { name: /temperature/i });
+    const oxygenSaturation = screen.getByRole('spinbutton', {
+      name: /oxygen saturation/i,
+    });
+    const respirationRate = screen.getByRole('spinbutton', {
+      name: /respiration rate/i,
+    });
+    const temperature = screen.getByRole('spinbutton', {
+      name: /temperature/i,
+    });
     const muac = screen.getByRole('spinbutton', { name: /muac/i });
 
     await user.type(heightInput, heightValue.toString());
@@ -255,8 +267,12 @@ describe('VitalsBiometricsForm', () => {
 
     const systolic = screen.getByRole('spinbutton', { name: /systolic/i });
     const pulse = screen.getByRole('spinbutton', { name: /pulse/i });
-    const oxygenSaturation = screen.getByRole('spinbutton', { name: /oxygen saturation/i });
-    const temperature = screen.getByRole('spinbutton', { name: /temperature/i });
+    const oxygenSaturation = screen.getByRole('spinbutton', {
+      name: /oxygen saturation/i,
+    });
+    const temperature = screen.getByRole('spinbutton', {
+      name: /temperature/i,
+    });
 
     await user.type(systolic, '1000');
     await user.type(pulse, pulseValue.toString());
@@ -281,12 +297,12 @@ describe('VitalsBiometricsForm', () => {
 
     render(<VitalsAndBiometricsForm {...testProps} />);
 
-    const initialGuard = jest.mocked(testProps.promptBeforeClosing).mock.calls.at(-1)?.[0];
+    const initialGuard = vi.mocked(testProps.promptBeforeClosing).mock.calls.at(-1)?.[0];
     expect(initialGuard?.()).toBe(false);
 
     await user.type(screen.getByRole('spinbutton', { name: /height/i }), '180');
 
-    const updatedGuard = jest.mocked(testProps.promptBeforeClosing).mock.calls.at(-1)?.[0];
+    const updatedGuard = vi.mocked(testProps.promptBeforeClosing).mock.calls.at(-1)?.[0];
     expect(updatedGuard?.()).toBe(true);
   });
 });

@@ -17,14 +17,14 @@ import {
   usePersonAttributeType,
 } from './person-attributes.resource';
 
-jest.mock('react-hook-form', () => ({
-  ...jest.requireActual('react-hook-form'),
-  useForm: jest.fn().mockReturnValue({
-    handleSubmit: jest.fn(),
+vi.mock('react-hook-form', async () => ({
+  ...(await vi.importActual('react-hook-form')),
+  useForm: vi.fn().mockReturnValue({
+    handleSubmit: vi.fn(),
     control: {
-      register: jest.fn(),
-      unregister: jest.fn(),
-      getFieldState: jest.fn(),
+      register: vi.fn(),
+      unregister: vi.fn(),
+      getFieldState: vi.fn(),
       _names: {
         array: new Set(['test']),
         mount: new Set(['test']),
@@ -34,27 +34,27 @@ jest.mock('react-hook-form', () => ({
         watchAll: false,
       },
       _subjects: {
-        watch: jest.fn(),
-        array: jest.fn(),
-        state: jest.fn(),
+        watch: vi.fn(),
+        array: vi.fn(),
+        state: vi.fn(),
       },
-      _getWatch: jest.fn(),
+      _getWatch: vi.fn(),
       _formValues: {},
       _defaultValues: {},
     },
-    getValues: jest.fn((str) => (str === 'recurringPatternDaysOfWeek' ? [] : null)),
-    setValue: jest.fn(),
+    getValues: vi.fn((str) => (str === 'recurringPatternDaysOfWeek' ? [] : null)),
+    setValue: vi.fn(),
     formState: { errors: {} },
-    watch: jest.fn(),
+    watch: vi.fn(),
   }),
   Controller: ({ render }) =>
     render({
       field: {
-        onChange: jest.fn(),
-        onBlur: jest.fn(),
+        onChange: vi.fn(),
+        onBlur: vi.fn(),
         value: '',
         name: 'test',
-        ref: jest.fn(),
+        ref: vi.fn(),
       },
       formState: {
         isSubmitted: false,
@@ -67,17 +67,17 @@ jest.mock('react-hook-form', () => ({
     }),
 }));
 
-jest.mock('./person-attributes.resource', () => ({
-  usePersonAttributeType: jest.fn(),
-  useAttributeConceptAnswers: jest.fn(),
-  useConfiguredAnswerConcepts: jest.fn(),
-  useLocations: jest.fn(),
+vi.mock('./person-attributes.resource', async () => ({
+  usePersonAttributeType: vi.fn(),
+  useAttributeConceptAnswers: vi.fn(),
+  useConfiguredAnswerConcepts: vi.fn(),
+  useLocations: vi.fn(),
 }));
 
-const mockUsePersonAttributeType = jest.mocked(usePersonAttributeType);
-const mockUseAttributeConceptAnswers = jest.mocked(useAttributeConceptAnswers);
-const mockUseConfiguredAnswerConcepts = jest.mocked(useConfiguredAnswerConcepts);
-const mockUseLocations = jest.mocked(useLocations);
+const mockUsePersonAttributeType = vi.mocked(usePersonAttributeType);
+const mockUseAttributeConceptAnswers = vi.mocked(useAttributeConceptAnswers);
+const mockUseConfiguredAnswerConcepts = vi.mocked(useConfiguredAnswerConcepts);
+const mockUseLocations = vi.mocked(useLocations);
 
 describe('PersonAttributeField', () => {
   const user = userEvent.setup();
@@ -95,7 +95,7 @@ describe('PersonAttributeField', () => {
   };
 
   beforeEach(() => {
-    jest.clearAllMocks();
+    vi.clearAllMocks();
   });
 
   describe('String Attribute Type', () => {

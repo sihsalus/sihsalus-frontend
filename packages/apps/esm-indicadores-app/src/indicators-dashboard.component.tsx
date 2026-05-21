@@ -41,7 +41,7 @@ const IndicatorsDashboard: React.FC = () => {
       const conceptIds = newConceptIds
         .split(',')
         .map((s) => parseInt(s.trim(), 10))
-        .filter((n) => !isNaN(n));
+        .filter((n) => !Number.isNaN(n));
 
       await create({
         name: newName,

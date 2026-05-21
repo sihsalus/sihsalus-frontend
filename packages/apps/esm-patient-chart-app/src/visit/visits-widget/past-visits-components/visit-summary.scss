@@ -12,9 +12,47 @@
 .diagnosesList {
   display: flex;
   flex-flow: row wrap;
+  gap: layout.$spacing-03;
   padding-bottom: layout.$spacing-03;
   margin: 0 layout.$spacing-05;
+  min-width: 0;
   border-bottom: 1px solid $ui-03;
+}
+
+.diagnosisPill {
+  @include type.type-style("body-compact-01");
+  align-items: flex-start;
+  background-color: colors.$gray-10;
+  border: 1px solid colors.$gray-20;
+  border-left-width: layout.$spacing-01;
+  border-radius: layout.$spacing-03;
+  display: flex;
+  flex: 1 1 18rem;
+  gap: layout.$spacing-03;
+  max-width: 100%;
+  min-width: 0;
+  padding: layout.$spacing-03;
+}
+
+.primaryDiagnosis {
+  border-left-color: colors.$red-50;
+}
+
+.secondaryDiagnosis {
+  border-left-color: colors.$blue-50;
+}
+
+.diagnosisText {
+  color: colors.$gray-100;
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow-wrap: anywhere;
+  white-space: normal;
+}
+
+.diagnosisTypeTag {
+  flex: 0 0 auto;
+  margin: 0;
 }
 
 .summaryContainer {

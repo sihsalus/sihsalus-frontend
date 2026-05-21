@@ -19,9 +19,7 @@ const Logo: React.FC = () => {
       ) : logo?.name ? (
         logo.name
       ) : (
-        <svg aria-label="OpenMRS Logo" role="img" width={110} height={40}>
-          <use href="#omrs-logo-white" />
-        </svg>
+        <span className={styles.logoText}>Sihsalus</span>
       )}
     </>
   );

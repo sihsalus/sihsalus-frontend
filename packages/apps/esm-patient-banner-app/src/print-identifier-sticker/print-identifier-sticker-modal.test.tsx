@@ -1,7 +1,6 @@
 import { age, getDefaultsFromConfigSchema, useConfig } from '@openmrs/esm-framework';
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import React from 'react';
 import Barcode from 'react-barcode';
 import { useReactToPrint } from 'react-to-print';
 import { getByTextWithMarkup, mockFhirPatient } from 'test-utils';
@@ -9,18 +8,22 @@ import { type ConfigObject, configSchema } from '../config-schema';
 
 import PrintIdentifierSticker from './print-identifier-sticker.modal';
 
-const mockedCloseModal = jest.fn();
-const mockedUseConfig = jest.mocked(useConfig<ConfigObject>);
-const mockedUseReactToPrint = jest.mocked(useReactToPrint);
+const mockedCloseModal = vi.fn();
+const mockedUseConfig = vi.mocked(useConfig<ConfigObject>);
+const mockedUseReactToPrint = vi.mocked(useReactToPrint);
 
 const defaultConfig: ConfigObject = getDefaultsFromConfigSchema(configSchema);
 
-jest.mock('react-to-print', () => ({
-  ...jest.requireActual('react-to-print'),
-  useReactToPrint: jest.fn(),
+vi.mock('react-to-print', () => ({
+  useReactToPrint: vi.fn(),
 }));
 
-jest.mock('react-barcode', () => jest.fn().mockReturnValue(<div data-testid="barcode" />), { virtual: true });
+vi.mock('react-barcode', () => ({
+  default: vi.fn(() => {
+    const React = require('react');
+    return React.createElement('div', { 'data-testid': 'barcode' });
+  }),
+}));
 
 describe('PrintIdentifierStickerModal', () => {
   beforeEach(() => {
@@ -29,7 +32,7 @@ describe('PrintIdentifierStickerModal', () => {
 
   it('renders the print modal', async () => {
     const user = userEvent.setup();
-    const mockHandlePrint = jest.fn();
+    const mockHandlePrint = vi.fn();
     mockedUseReactToPrint.mockReturnValue(mockHandlePrint);
 
     renderPrintIdentifierStickerModal();

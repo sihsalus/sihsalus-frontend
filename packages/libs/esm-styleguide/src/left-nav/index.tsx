@@ -46,16 +46,14 @@ export const LeftNavMenu = React.forwardRef<HTMLElement, LeftNavMenuProps>((prop
         {...props}
       >
         <ExtensionSlot name="global-nav-menu-slot" />
-        {slotName ? (
-          <RenderIfValueIsTruthy
-            value={componentContext}
-            fallback={<ExtensionSlot name={slotName} state={{ basePath, currentPath, ...state }} />}
-          >
-            <ComponentContext.Provider value={componentContext!}>
-              <ExtensionSlot name={slotName} state={{ basePath, currentPath, ...state }} />
-            </ComponentContext.Provider>
-          </RenderIfValueIsTruthy>
-        ) : null}
+        <RenderIfValueIsTruthy
+          value={componentContext}
+          fallback={<ExtensionSlot name={slotName} state={{ basePath, currentPath, ...state }} />}
+        >
+          <ComponentContext.Provider value={componentContext!}>
+            <ExtensionSlot name={slotName} state={{ basePath, currentPath, ...state }} />
+          </ComponentContext.Provider>
+        </RenderIfValueIsTruthy>
       </SideNav>
     );
   } else {

@@ -6,15 +6,15 @@ import { configSchema, type PatientSearchConfig } from '../config-schema';
 
 import PatientSearchLaunch from './patient-search-icon.component';
 
-const mockIsDesktop = jest.mocked(isDesktop);
-const mockUseConfig = jest.mocked(useConfig<PatientSearchConfig>);
-const mockUseSession = jest.mocked(useSession);
+const mockIsDesktop = vi.mocked(isDesktop);
+const mockUseConfig = vi.mocked(useConfig<PatientSearchConfig>);
+const mockUseSession = vi.mocked(useSession);
 
-jest.mock('react-router-dom', () => ({
-  ...jest.requireActual('react-router-dom'),
-  useSearchParams: jest.fn(() => [
+vi.mock('react-router-dom', async () => ({
+  ...(await vi.importActual('react-router-dom')),
+  useSearchParams: vi.fn(() => [
     {
-      get: jest.fn(() => 'John'),
+      get: vi.fn(() => 'John'),
     },
   ]),
 }));

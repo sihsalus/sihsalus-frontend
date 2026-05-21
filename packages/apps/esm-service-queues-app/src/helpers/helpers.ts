@@ -139,7 +139,7 @@ export const useSelectedService = () => {
   const [currentService, setCurrentService] = useState(getSelectedService()?.getState());
 
   useEffect(() => {
-    getSelectedService().subscribe((newSelectedService) => setCurrentService(newSelectedService));
+    return getSelectedService().subscribe((newSelectedService) => setCurrentService(newSelectedService));
   }, []);
   return currentService;
 };
@@ -148,7 +148,7 @@ export const useSelectedAppointmentStatus = () => {
   const [currentAppointmentStatus, setCurrentAppointmentStatus] = useState(intialAppointmentStatusNameState.status);
 
   useEffect(() => {
-    getSelectedAppointmentStatus().subscribe(({ status }) => setCurrentAppointmentStatus(status));
+    return getSelectedAppointmentStatus().subscribe(({ status }) => setCurrentAppointmentStatus(status));
   }, []);
   return currentAppointmentStatus;
 };
@@ -159,7 +159,9 @@ export const useSelectedQueueLocationName = () => {
   );
 
   useEffect(() => {
-    getSelectedQueueLocationName().subscribe(({ queueLocationName }) => setCurrentQueueLocationName(queueLocationName));
+    return getSelectedQueueLocationName().subscribe(({ queueLocationName }) =>
+      setCurrentQueueLocationName(queueLocationName),
+    );
   }, []);
   return currentQueueLocationName;
 };
@@ -170,7 +172,9 @@ export const useSelectedQueueLocationUuid = () => {
   );
 
   useEffect(() => {
-    getSelectedQueueLocationUuid().subscribe(({ queueLocationUuid }) => setCurrentQueueLocationUuid(queueLocationUuid));
+    return getSelectedQueueLocationUuid().subscribe(({ queueLocationUuid }) =>
+      setCurrentQueueLocationUuid(queueLocationUuid),
+    );
   }, []);
   return currentQueueLocationUuid;
 };
@@ -181,7 +185,7 @@ export const useSelectedProviderRoomTimestamp = () => {
   );
 
   useEffect(() => {
-    getSelectedQueueRoomTimestamp().subscribe(({ providerQueueRoomTimestamp }) =>
+    return getSelectedQueueRoomTimestamp().subscribe(({ providerQueueRoomTimestamp }) =>
       setCurrentProviderRoomTimestamp(providerQueueRoomTimestamp),
     );
   }, []);
@@ -194,7 +198,7 @@ export const useIsPermanentProviderQueueRoom = () => {
   );
 
   useEffect(() => {
-    getIsPermanentProviderQueueRoom().subscribe(({ isPermanentProviderQueueRoom }) =>
+    return getIsPermanentProviderQueueRoom().subscribe(({ isPermanentProviderQueueRoom }) =>
       setCurrentIsPermanentProviderQueueRoom(isPermanentProviderQueueRoom),
     );
   }, []);
@@ -205,7 +209,7 @@ export const useSelectedQueueStatus = () => {
   const [currentQueueStatus, setCurrentQueueStatus] = useState(getSelectedQueueStatus()?.getState());
 
   useEffect(() => {
-    getSelectedQueueStatus().subscribe((newStatus) => setCurrentQueueStatus(newStatus));
+    return getSelectedQueueStatus().subscribe((newStatus) => setCurrentQueueStatus(newStatus));
   }, []);
   return currentQueueStatus;
 };

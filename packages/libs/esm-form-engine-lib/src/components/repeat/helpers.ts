@@ -74,7 +74,7 @@ export function updateFieldIdInExpression(expression: string, index: number, que
 
 export function disableRepeatAddButton(limit: string | number, counter: number): boolean {
   const repeatLimit = Number(limit);
-  if (isEmpty(limit) || isNaN(repeatLimit)) {
+  if (isEmpty(limit) || Number.isNaN(repeatLimit)) {
     return false;
   }
   return counter >= repeatLimit;

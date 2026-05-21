@@ -2,6 +2,13 @@ name: SPA Image
 
 on:
   pull_request:
+    paths:
+      - 'packages/apps/**'
+      - 'packages/libs/**'
+      - 'Dockerfile'
+      - 'nginx.spa.conf'
+      - 'package.json'
+      - 'yarn.lock'
   workflow_dispatch:
 
 concurrency:

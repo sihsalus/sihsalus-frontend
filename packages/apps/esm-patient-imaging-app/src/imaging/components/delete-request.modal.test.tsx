@@ -1,36 +1,36 @@
 import { showSnackbar } from '@openmrs/esm-framework';
 import { act, fireEvent, render, screen, waitFor } from '@testing-library/react';
-import React from 'react';
 import * as api from '../../api';
 import DeleteRequestModal from './delete-request.modal';
 
-jest.mock('react-i18next', () => ({
+vi.mock('react-i18next', () => ({
   useTranslation: () => ({
-    t: (key: string, defaultValue: string) => defaultValue,
+    t: (_key: string, defaultValue: string) => defaultValue,
   }),
 }));
 
-jest.mock('../../api');
+vi.mock('../../api');
 
-jest.mock('@openmrs/esm-framework', () => ({
-  showSnackbar: jest.fn(),
+vi.mock('@openmrs/esm-framework', async () => ({
+  ...(await vi.importActual('@openmrs/esm-framework')),
+  showSnackbar: vi.fn(),
 }));
 
 describe('DeleteRequestModal', () => {
-  const closeDeleteModal = jest.fn();
-  const mutateMock = jest.fn();
+  const closeDeleteModal = vi.fn();
+  const mutateMock = vi.fn();
   const requestId = 1;
   const patientUuid = 'patient-uuid-123';
 
   const setup = () => {
-    (api.useRequestsByPatient as jest.Mock).mockReturnValue({
+    (api.useRequestsByPatient as vi.Mock).mockReturnValue({
       mutate: mutateMock,
     });
     render(<DeleteRequestModal closeDeleteModal={closeDeleteModal} requestId={requestId} patientUuid={patientUuid} />);
   };
 
   beforeEach(() => {
-    jest.clearAllMocks();
+    vi.clearAllMocks();
   });
 
   it('renders modal with confirmation text and buttons', () => {
@@ -50,7 +50,7 @@ describe('DeleteRequestModal', () => {
   });
 
   it('calls deleteRequest and shows success snackbar on success', async () => {
-    (api.deleteRequest as jest.Mock).mockResolvedValueOnce({ ok: true });
+    (api.deleteRequest as vi.Mock).mockResolvedValueOnce({ ok: true });
 
     setup();
 
@@ -73,7 +73,7 @@ describe('DeleteRequestModal', () => {
 
   it('shows error snackbar on delete failure', async () => {
     const errorMessage = 'An error occurred while deleting the requested procedure';
-    (api.deleteRequest as jest.Mock).mockRejectedValueOnce(new Error(errorMessage));
+    (api.deleteRequest as vi.Mock).mockRejectedValueOnce(new Error(errorMessage));
 
     setup();
 
@@ -98,7 +98,7 @@ describe('DeleteRequestModal', () => {
   it('shows loading state while deleting', async () => {
     let resolveDelete: ((val: any) => void) | undefined;
 
-    (api.deleteRequest as jest.Mock).mockImplementationOnce(
+    (api.deleteRequest as vi.Mock).mockImplementationOnce(
       () =>
         new Promise((resolve) => {
           resolveDelete = resolve; // capture resolver

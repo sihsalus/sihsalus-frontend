@@ -14,7 +14,10 @@ import MonthlyViewWorkload from './monthly/monthly-workload-view.component';
 
 dayjs.extend(isBetween);
 
-const MonthlyCalendarView: React.FC<AppointmentFilterCalendarProps> = ({ patientId, appointmentTypeFilter }) => {
+const MonthlyCalendarView: React.FC<AppointmentFilterCalendarProps> = ({
+  patientId,
+  appointmentTypeFilter: _appointmentTypeFilter,
+}) => {
   const [selectedDate, setSelectedDate] = useState(dayjs().startOf('day').format(omrsDateFormat));
   const { appointments } = useAppointmentsByPatient(patientId, { startDate: dayjs().startOf('day').toISOString() });
   //const { _selectedDate } = useContext(SelectedDateContext);

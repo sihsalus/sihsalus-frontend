@@ -4,15 +4,15 @@ import userEvent from '@testing-library/user-event';
 import { setFulfillerStatus, useInvalidateLabOrders } from '../../laboratory.resource';
 import PickupLabRequestModal from './pickup-lab-request-modal.component';
 
-jest.mock('../../laboratory.resource', () => ({
-  setFulfillerStatus: jest.fn(),
-  useInvalidateLabOrders: jest.fn(),
+vi.mock('../../laboratory.resource', () => ({
+  setFulfillerStatus: vi.fn(),
+  useInvalidateLabOrders: vi.fn(),
 }));
 
-const mockSetFulfillerStatus = jest.mocked(setFulfillerStatus);
-const mockUseInvalidateLabOrders = jest.mocked(useInvalidateLabOrders);
-const mockShowSnackbar = jest.mocked(showSnackbar);
-const mockShowNotification = jest.mocked(showNotification);
+const mockSetFulfillerStatus = vi.mocked(setFulfillerStatus);
+const mockUseInvalidateLabOrders = vi.mocked(useInvalidateLabOrders);
+const mockShowSnackbar = vi.mocked(showSnackbar);
+const mockShowNotification = vi.mocked(showNotification);
 
 const mockOrder: Partial<Order> = {
   uuid: 'order-uuid-1',
@@ -24,10 +24,11 @@ const mockOrder: Partial<Order> = {
 };
 
 describe('PickupLabRequestModal', () => {
-  const mockCloseModal = jest.fn();
-  const mockInvalidateLabOrders = jest.fn();
+  const mockCloseModal = vi.fn();
+  const mockInvalidateLabOrders = vi.fn();
 
   beforeEach(() => {
+    vi.clearAllMocks();
     mockUseInvalidateLabOrders.mockReturnValue(mockInvalidateLabOrders);
   });
 

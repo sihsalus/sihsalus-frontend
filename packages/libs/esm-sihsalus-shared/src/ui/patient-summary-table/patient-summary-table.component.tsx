@@ -41,7 +41,7 @@ function isDateLike(val: unknown): boolean {
   if (isOmrsDateStrict(strVal)) return true;
   try {
     const parsed = parseDate(strVal);
-    return !isNaN(parsed.getTime()) && parsed.getFullYear() > 1900;
+    return !Number.isNaN(parsed.getTime()) && parsed.getFullYear() > 1900;
   } catch {
     return false;
   }
@@ -188,7 +188,9 @@ const PatientSummaryTable = <T,>({
                 <TableHead>
                   <TableRow>
                     {headers.map((header) => (
-                      <TableHeader {...getHeaderProps({ header })}>{header.header}</TableHeader>
+                      <TableHeader key={header.key} {...getHeaderProps({ header })}>
+                        {header.header}
+                      </TableHeader>
                     ))}
                   </TableRow>
                 </TableHead>

@@ -1,5 +1,5 @@
 import { ComboBox, TextInputSkeleton } from '@carbon/react';
-import React, { type ReactNode, useMemo, useState } from 'react';
+import { type ReactNode, useMemo, useState } from 'react';
 import { type Control, Controller, type FieldValues } from 'react-hook-form';
 import { type Concept } from '../../../core/api/types/concept/Concept';
 import { useConcepts } from '../../../stock-lookups/stock-lookups.resource';

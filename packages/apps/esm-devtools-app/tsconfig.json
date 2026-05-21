@@ -2,7 +2,7 @@
   "extends": "../../tooling/tsconfig.app.json",
   "compilerOptions": {
     "target": "es2015",
-    "types": ["fhir", "jest", "node", "webpack-env", "@testing-library/jest-dom"]
+    "types": ["fhir", "node", "@testing-library/jest-dom", "vi-namespace"]
   },
   "include": ["src/**/*", "setup-tests.ts"]
 }

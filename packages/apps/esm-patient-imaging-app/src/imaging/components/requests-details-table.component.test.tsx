@@ -1,27 +1,28 @@
 import * as framework from '@openmrs/esm-framework';
 import { usePagination } from '@openmrs/esm-framework';
 import { fireEvent, render, screen, waitFor, within } from '@testing-library/react';
-import React, { act } from 'react';
+import { act } from 'react';
 import RequestProcedureTable from './requests-details-table.component';
 
-jest.mock('react-i18next', () => ({
+vi.mock('react-i18next', () => ({
   useTranslation: () => ({
-    t: (key: string, defaultValue: string) => defaultValue,
+    t: (_key: string, defaultValue: string) => defaultValue,
   }),
 }));
 
-jest.mock('@openmrs/esm-framework', () => ({
-  showModal: jest.fn(),
-  launchWorkspace: jest.fn(),
-  useLayoutType: jest.fn(() => 'desktop'),
-  createGlobalStore: jest.fn(() => ({
-    getState: jest.fn(),
-    subscribe: jest.fn(),
-    dispatch: jest.fn(),
+vi.mock('@openmrs/esm-framework', async () => ({
+  ...(await vi.importActual('@openmrs/esm-framework')),
+  showModal: vi.fn(),
+  launchWorkspace: vi.fn(),
+  useLayoutType: vi.fn(() => 'desktop'),
+  createGlobalStore: vi.fn(() => ({
+    getState: vi.fn(),
+    subscribe: vi.fn(),
+    dispatch: vi.fn(),
   })),
-  usePagination: jest.fn((items, pageSize) => ({
+  usePagination: vi.fn((items, pageSize) => ({
     results: items?.slice(0, pageSize) || [],
-    goto: jest.fn(),
+    goto: vi.fn(),
     currentPage: 1,
   })),
   AddIcon: (props: any) => <span {...props}>AddIcon</span>,
@@ -31,16 +32,16 @@ jest.mock('@openmrs/esm-framework', () => ({
 }));
 
 // Mock other OpenMRS libs
-jest.mock('@openmrs/esm-patient-common-lib', () => ({
+vi.mock('@openmrs/esm-patient-common-lib', () => ({
   CardHeader: ({ children }: any) => <div>{children}</div>,
-  compare: jest.fn((a, b) => (a > b ? 1 : -1)),
+  compare: vi.fn((a, b) => (a > b ? 1 : -1)),
   PatientChartPagination: ({ pageNumber }: any) => <div>Page {pageNumber}</div>,
   EmptyState: ({ displayText, headerTitle }: any) => (
     <div>
       {headerTitle}: {displayText}
     </div>
   ),
-  useLaunchWorkspaceRequiringVisit: (workspace: any) => jest.fn(),
+  useLaunchWorkspaceRequiringVisit: (_workspace: any) => vi.fn(),
 }));
 
 describe('RequestProcedureTable', () => {
@@ -61,16 +62,16 @@ describe('RequestProcedureTable', () => {
   ];
 
   beforeEach(() => {
-    jest.clearAllMocks();
-    (usePagination as jest.Mock).mockReturnValue({
+    vi.clearAllMocks();
+    (usePagination as vi.Mock).mockReturnValue({
       results: mockRequests,
       currentPage: 1,
-      goTo: jest.fn(),
+      goTo: vi.fn(),
     });
   });
 
   afterEach(() => {
-    jest.clearAllMocks();
+    vi.clearAllMocks();
   });
 
   it('renders Empty State when no requests are available', async () => {
@@ -91,8 +92,8 @@ describe('RequestProcedureTable', () => {
   });
 
   it('call showModal when delete icon is clicked', async () => {
-    const mockDispose = jest.fn();
-    (framework.showModal as jest.Mock).mockReturnValue(mockDispose);
+    const mockDispose = vi.fn();
+    (framework.showModal as vi.Mock).mockReturnValue(mockDispose);
 
     await act(async () => {
       render(<RequestProcedureTable requests={mockRequests} patientUuid={patientUuid} />);

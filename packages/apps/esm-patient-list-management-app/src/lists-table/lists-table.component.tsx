@@ -74,6 +74,12 @@ const ListsTable: React.FC<PatientListTableProps> = ({
   const layout = useLayoutType();
   const config: ConfigSchema = useConfig();
   const pageSize = config.patientListsToShow ?? 10;
+  const searchClassName = typeof styles.searchbox === 'string' ? styles.searchbox : undefined;
+  const linkClassName = typeof styles.link === 'string' ? styles.link : undefined;
+  const desktopHeaderClassName = typeof styles.desktopHeader === 'string' ? styles.desktopHeader : undefined;
+  const tabletHeaderClassName = typeof styles.tabletHeader === 'string' ? styles.tabletHeader : undefined;
+  const desktopRowClassName = typeof styles.desktopRow === 'string' ? styles.desktopRow : undefined;
+  const tabletRowClassName = typeof styles.tabletRow === 'string' ? styles.tabletRow : undefined;
   const [sortParams, setSortParams] = useState({ key: '', order: 'none' });
   const [searchTerm, setSearchTerm] = useState('');
   const responsiveSize = layout === 'tablet' ? 'lg' : 'sm';
@@ -144,7 +150,7 @@ const ListsTable: React.FC<PatientListTableProps> = ({
         <div>{isValidating && <InlineLoading />}</div>
         <Layer>
           <Search
-            className={styles.searchbox}
+            className={searchClassName}
             id={`${id}-search`}
             labelText=""
             onChange={(e: React.ChangeEvent<HTMLInputElement>) => setSearchTerm(e.target.value)}
@@ -166,32 +172,36 @@ const ListsTable: React.FC<PatientListTableProps> = ({
             >
               <TableHead>
                 <TableRow>
-                  {headers.map((header) => (
-                    <TableHeader
-                      className={isDesktop(layout) ? styles.desktopHeader : styles.tabletHeader}
-                      key={header.key}
-                      {...getHeaderProps({ header })}
-                      isSortable
-                    >
-                      {header.header}
-                    </TableHeader>
-                  ))}
+                  {headers.map((header) => {
+                    const { key, ...headerProps } = getHeaderProps({ header });
+                    return (
+                      <TableHeader
+                        className={isDesktop(layout) ? desktopHeaderClassName : tabletHeaderClassName}
+                        key={key}
+                        {...headerProps}
+                        isSortable
+                      >
+                        {header.header}
+                      </TableHeader>
+                    );
+                  })}
                 </TableRow>
               </TableHead>
               <TableBody className={styles.tableBody}>
                 {rows.map((row) => {
                   const currentList = patientLists?.find((list) => list?.id === row.id);
                   const listDetailsPageUrl = globalThis.spaBase + `/home/patient-lists/${currentList?.id}`;
+                  const { key, ...rowProps } = getRowProps({ row });
 
                   return (
                     <TableRow
-                      {...getRowProps({ row })}
-                      className={isDesktop(layout) ? styles.desktopRow : styles.tabletRow}
-                      key={row.id}
+                      {...rowProps}
+                      className={isDesktop(layout) ? desktopRowClassName : tabletRowClassName}
+                      key={key}
                     >
                       <TableCell>
                         <ConfigurableLink
-                          className={styles.link}
+                          className={linkClassName}
                           to={listDetailsPageUrl}
                           templateParams={{ listUuid: row.id }}
                         >

@@ -2,6 +2,7 @@
 
 .changeLocationButton {
   width: fit-content;
+  max-width: 14rem;
   background-color: transparent;
   color: white;
   font-size: 14px;
@@ -13,5 +14,20 @@
 }
 
 .currentLocationText {
+  overflow: hidden;
   padding-inline: layout.$spacing-04;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+@media (max-width: 48rem) {
+  .changeLocationButton {
+    width: layout.$spacing-09;
+    min-width: layout.$spacing-09;
+    padding-inline: layout.$spacing-04 !important;
+  }
+
+  .currentLocationText {
+    display: none;
+  }
 }

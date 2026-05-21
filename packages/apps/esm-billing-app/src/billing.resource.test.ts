@@ -5,10 +5,11 @@ type CashPoint = PatientInvoice['cashPoint'];
 type Provider = PatientInvoice['cashier'];
 type Patient = PatientInvoice['patient'];
 
-const mockFormatDate = jest.fn((date: Date, options?: Partial<{ mode: string }>) => `formatted-${date}`);
-const mockParseDate = jest.fn((dateString: string): Date => new Date(dateString));
+const mockFormatDate = vi.fn((date: Date, options?: Partial<{ mode: string }>) => `formatted-${date}`);
+const mockParseDate = vi.fn((dateString: string): Date => new Date(dateString));
 
-jest.mock('@openmrs/esm-framework', () => ({
+vi.mock('@openmrs/esm-framework', async () => ({
+  ...(await vi.importActual('@openmrs/esm-framework')),
   formatDate: (date: Date, options?: Partial<{ mode: string }>) => mockFormatDate(date, options),
   parseDate: (dateString: string) => mockParseDate(dateString),
 }));

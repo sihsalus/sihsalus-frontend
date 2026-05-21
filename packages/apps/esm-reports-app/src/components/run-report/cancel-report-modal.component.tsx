@@ -86,7 +86,7 @@ const CancelReportModal: React.FC<CancelReportModalProps> = ({ closeModal, repor
     [t],
   );
 
-  const handleCancel = useCallback(async () => {
+  async function handleCancel() {
     try {
       setIsCanceling(true);
       await cancelReportRequest(reportRequestUuid);
@@ -106,14 +106,7 @@ const CancelReportModal: React.FC<CancelReportModalProps> = ({ closeModal, repor
     } finally {
       setIsCanceling(false);
     }
-  }, [
-    closeModal,
-    getFailedToastMessageByType,
-    getModalTitleByType,
-    getSuccessToastMessageByType,
-    modalType,
-    reportRequestUuid,
-  ]);
+  }
 
   const callMutates = (modalType: ModalType) => {
     const baseUrl = '/ws/rest/v1/reportingrest/reportRequest?status=';

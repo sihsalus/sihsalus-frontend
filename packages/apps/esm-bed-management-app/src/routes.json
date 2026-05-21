@@ -14,22 +14,31 @@
     {
       "component": "adminCardLink",
       "name": "bed-management-admin-card-link",
-      "slot": "system-admin-page-card-link-slot"
+      "slot": "legacy-system-admin-page-card-link-slot"
+    },
+    {
+      "component": "bedManagementAppMenuItem",
+      "name": "bed-management-app-menu-item",
+      "slot": "app-menu-item-slot",
+      "order": 95
     },
     {
       "component": "adminLeftPanelLink",
       "name": "bed-administration-left-panel-link",
-      "slot": "bed-management-left-panel-slot"
+      "slot": "bed-management-left-panel-slot",
+      "order": 1
     },
     {
       "component": "bedTypeLeftPanelLink",
       "name": "bed-type-left-panel-link",
-      "slot": "bed-management-left-panel-slot"
+      "slot": "bed-management-left-panel-slot",
+      "order": 2
     },
     {
       "component": "bedTagLeftPanelLink",
       "name": "bed-tag-left-panel-link",
-      "slot": "bed-management-left-panel-slot"
+      "slot": "bed-management-left-panel-slot",
+      "order": 3
     },
     {
       "component": "summaryLeftPanelLink",

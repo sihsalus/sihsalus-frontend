@@ -1,28 +1,28 @@
-import { act, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
-import React from 'react';
+import { act, fireEvent, render, screen, within } from '@testing-library/react';
 import AssignStudiesTable, { type AssignStudiesTableProps } from './assign-studies-table.component';
 
-jest.mock('react-i18next', () => ({
+vi.mock('react-i18next', () => ({
   useTranslation: () => ({
-    t: (key: string, defaultValue: string) => defaultValue,
+    t: (_key: string, defaultValue: string) => defaultValue,
   }),
 }));
 
-jest.mock('../../api');
+vi.mock('../../api');
 
-jest.mock('../../types', () => ({}));
+vi.mock('../../types', () => ({}));
 
-jest.mock('@openmrs/esm-framework', () => ({
+vi.mock('@openmrs/esm-framework', async () => ({
+  ...(await vi.importActual('@openmrs/esm-framework')),
   useLayoutType: () => 'desktop',
   usePagination: (data: any[], pagesize: number) => ({
     results: data.slice(0, pagesize),
-    goto: jest.fn(),
+    goto: vi.fn(),
     currentPage: 1,
   }),
 }));
 
-jest.mock('@openmrs/esm-patient-common-lib', () => ({
-  compare: jest.fn((a, b) => (a > b ? 1 : a < b ? -1 : 0)),
+vi.mock('@openmrs/esm-patient-common-lib', () => ({
+  compare: vi.fn((a, b) => (a > b ? 1 : a < b ? -1 : 0)),
   PatientChartPagination: ({ pageNumber, totalItems }: any) => (
     <div data-testid="pagination">
       Page {pageNumber} of {totalItems}
@@ -31,11 +31,11 @@ jest.mock('@openmrs/esm-patient-common-lib', () => ({
   EmptyState: ({ displayText }: any) => <div data-testid="empty-state">{displayText}</div>,
 }));
 
-jest.mock('./series-details-table.component', () => () => <div>Series Details</div>);
+vi.mock('./series-details-table.component', () => ({ default: () => <div>Series Details</div> }));
 
 describe('AssignStudiesTable', () => {
   beforeEach(() => {
-    jest.clearAllMocks();
+    vi.clearAllMocks();
   });
 
   const mockConfig = {
@@ -46,7 +46,7 @@ describe('AssignStudiesTable', () => {
 
   const defaultProps: AssignStudiesTableProps = {
     patientUuid: '1234-5678-9012-3456',
-    assignStudyFunction: jest.fn(),
+    assignStudyFunction: vi.fn(),
     data: {
       studies: [
         {
@@ -103,7 +103,7 @@ describe('AssignStudiesTable', () => {
   });
 
   it('calls assignStudyFunction when checkbox is toggled', () => {
-    const assignMock = jest.fn();
+    const assignMock = vi.fn();
     render(<AssignStudiesTable {...defaultProps} assignStudyFunction={assignMock} />);
 
     const checkbox = screen.getAllByRole('checkbox')[0] as HTMLInputElement;

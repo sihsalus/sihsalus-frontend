@@ -28,8 +28,11 @@ export function fireOpenmrsEvent<T extends OpenmrsEvent>(event: T, payload?: Eve
  * @param event The name of the event to listen to
  * @param handler The callback to be called when the event fires
  */
-export function subscribeOpenmrsEvent(event: 'started', handler: (payload: undefined) => void);
-export function subscribeOpenmrsEvent(event: 'before-page-changed', handler: (payload: PageChanged) => void);
+export function subscribeOpenmrsEvent(event: 'started', handler: (payload: undefined) => void): () => void;
+export function subscribeOpenmrsEvent(
+  event: 'before-page-changed',
+  handler: (payload: PageChanged) => void,
+): () => void;
 export function subscribeOpenmrsEvent<T extends OpenmrsEvent>(
   event: T,
   handler: (payload?: EventTypes[T]) => void,

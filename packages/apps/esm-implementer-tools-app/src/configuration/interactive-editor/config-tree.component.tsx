@@ -1,6 +1,5 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { Accordion, AccordionItem } from '@carbon/react';
-import React from 'react';
 import { useStore } from 'zustand';
 
 import { implementerToolsStore } from '../../store';
@@ -27,7 +26,7 @@ export function ConfigTree({ config }: ConfigTreeProps) {
                 title={<h6>{moduleName}</h6>}
                 className={styles.fullWidthAccordion}
                 key={`accordion-${moduleName}`}
-                open={focusedModule == moduleName ? true : undefined}
+                open={focusedModule === moduleName ? true : undefined}
               >
                 <ConfigTreeForModule config={moduleConfig} moduleName={moduleName} key={`${moduleName}-config`} />
               </AccordionItem>

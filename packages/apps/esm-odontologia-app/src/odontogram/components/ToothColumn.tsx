@@ -20,13 +20,7 @@ const ToothColumn: React.FC<ToothColumnProps> = ({ toothId, children }) => {
   const { data, config, toothActions, readOnly } = useOdontogramContext();
 
   const tooth = data.teeth.find((t) => t.toothId === toothId);
-  const findingsCount = tooth?.findings?.length ?? 0;
   const toothConfig = [...config.teeth.upper, ...config.teeth.lower].find((t) => t.id === toothId);
-
-  const handleOpen = useCallback((e: React.MouseEvent) => {
-    e.stopPropagation();
-    setShowModal(true);
-  }, []);
 
   const handleClose = useCallback(() => {
     setShowModal(false);
@@ -52,38 +46,20 @@ const ToothColumn: React.FC<ToothColumnProps> = ({ toothId, children }) => {
     [toothActions],
   );
 
+  // NOTE: Info "i" button, finding-count badge and eye button intentionally
+  // removed from the canvas for now. Per-tooth detail entry will be re-added
+  // in a later iteration with a polished UX. The modal logic and state stay
+  // here so re-enabling is just a matter of restoring the trigger element.
+  //
+  // The wrapper div `tim-tooth-col` was also removed: it only existed to give
+  // the absolute-positioned info button a relative parent. Without it, the
+  // tooth SVG becomes a direct flex item of the visualizationRow — structurally
+  // identical to SpaceBetweenTeeth — so the flex parent computes both heights
+  // the same way and they line up at the same pixel.
+
   return (
-    <div className="tim-tooth-col">
-      {/* Info button — visible on hover */}
-      <button
-        type="button"
-        className="tim-info-btn"
-        onClick={handleOpen}
-        title={`Ver detalle del diente ${toothId}`}
-        aria-label={`Detalle diente ${toothId}`}
-      >
-        i
-      </button>
-
-      {/* Finding count badge */}
-      {findingsCount > 0 && <span className="tim-badge">{findingsCount}</span>}
-
+    <>
       {children}
-
-      {/* Touch-friendly eye button — rendered below the tooth, only visible on touch devices */}
-      <button
-        type="button"
-        className="tim-eye-btn"
-        onClick={handleOpen}
-        aria-label={`Detalle diente ${toothId}`}
-        tabIndex={-1}
-      >
-        <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5" aria-hidden="true">
-          <path d="M1 8C2 5.5 4.5 3 8 3C11.5 3 14 5.5 15 8C14 10.5 11.5 13 8 13C4.5 13 2 10.5 1 8Z" />
-          <circle cx="8" cy="8" r="2.2" />
-        </svg>
-        {findingsCount > 0 && <span className="tim-eye-count">{findingsCount}</span>}
-      </button>
       {showModal && tooth && toothConfig && (
         <ToothInfoModal
           toothId={toothId}
@@ -98,7 +74,7 @@ const ToothColumn: React.FC<ToothColumnProps> = ({ toothId, children }) => {
           onClose={handleClose}
         />
       )}
-    </div>
+    </>
   );
 };
 

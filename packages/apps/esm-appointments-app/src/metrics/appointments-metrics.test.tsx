@@ -3,11 +3,11 @@ import { render, screen } from '@testing-library/react';
 
 import AppointmentsMetrics from './appointments-metrics.component';
 
-const mockOpenmrsFetch = jest.mocked(openmrsFetch);
+const mockOpenmrsFetch = vi.mocked(openmrsFetch);
 
-jest.mock('../hooks/useClinicalMetrics', () => ({
-  ...jest.requireActual('../hooks/useClinicalMetrics'),
-  useClinicalMetrics: jest.fn().mockReturnValue({
+vi.mock('../hooks/useClinicalMetrics', async () => ({
+  ...(await vi.importActual('../hooks/useClinicalMetrics')),
+  useClinicalMetrics: vi.fn().mockReturnValue({
     highestServiceLoad: {
       serviceName: 'Outpatient',
       count: 4,
@@ -15,15 +15,15 @@ jest.mock('../hooks/useClinicalMetrics', () => ({
     isLoading: false,
     error: null,
   }),
-  useAllAppointmentsByDate: jest.fn().mockReturnValue({
+  useAllAppointmentsByDate: vi.fn().mockReturnValue({
     totalProviders: 4,
     isLoading: false,
     error: null,
   }),
-  useScheduledAppointments: jest.fn().mockReturnValue({
+  useScheduledAppointments: vi.fn().mockReturnValue({
     totalScheduledAppointments: 16,
   }),
-  useAppointmentDate: jest.fn().mockReturnValue({
+  useAppointmentDate: vi.fn().mockReturnValue({
     startDate: '2024-01-01',
   }),
 }));

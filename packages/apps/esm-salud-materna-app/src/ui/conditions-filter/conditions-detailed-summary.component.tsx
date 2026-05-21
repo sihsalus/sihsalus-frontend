@@ -39,15 +39,11 @@ function ConditionsDetailedSummary({ patient }) {
   const { conditions, error, isLoading, isValidating } = useConditions(patient.id);
 
   const filteredConditions = useMemo(() => {
-    if (!filter || filter === 'All') {
+    if (filter === 'All') {
       return conditions;
     }
 
-    if (filter) {
-      return conditions?.filter((condition) => condition.clinicalStatus === filter);
-    }
-
-    return conditions;
+    return conditions?.filter((condition) => condition.clinicalStatus === filter);
   }, [filter, conditions]);
 
   const headers: Array<ConditionTableHeader> = useMemo(
@@ -152,6 +148,7 @@ function ConditionsDetailedSummary({ patient }) {
                     <TableRow>
                       {headers.map((header) => (
                         <TableHeader
+                          key={header.key}
                           className={classNames(styles.productiveHeading01, styles.text02)}
                           {...getHeaderProps({
                             header,

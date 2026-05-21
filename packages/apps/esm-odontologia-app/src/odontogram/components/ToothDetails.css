@@ -1,20 +1,33 @@
-.tooth-details-container {
+/* biome-ignore-all lint/correctness/noUnknownPseudoClass: :global() keeps literal odontogram class names compatible with CSS Modules. */
+
+:global(.tooth-details-container) {
   display: flex;
   flex-direction: column;
   align-items: center;
 }
 
-.tooth-details-box {
+/* Lower-arch mirroring: the number (legend svg) lives at the top and the
+   annotation box drops below it, mirroring the upper-arch order. */
+:global(.tooth-details-container--lower) {
+  flex-direction: column-reverse;
+}
+
+/* Invisible spacer used by SpaceBetweenLegends to mirror the box height
+   of ToothDetails so the legend svgs share the same flex item height (90px). */
+:global(.tooth-details-spacer) {
+  width: 20px;
+  height: 60px;
+  flex-shrink: 0;
+}
+
+:global(.tooth-details-box) {
   width: 60px;
   height: 60px;
-  background-color: white;
-  border: 0.1px solid black;
+  background-color: #ffffff;
+  border: 1px solid var(--cds-text-primary, #161616);
   display: flex;
   justify-content: center;
-  align-items: flex-start;
-  font-size: 14px;
-  font-weight: bold;
-  text-align: center;
+  align-items: stretch;
   overflow-y: auto;
   overflow-x: hidden;
   box-sizing: border-box;
@@ -22,16 +35,16 @@
   scrollbar-color: #cbd5e1 transparent;
 }
 
-.tooth-details-box::-webkit-scrollbar {
+:global(.tooth-details-box::-webkit-scrollbar) {
   width: 3px;
 }
 
-.tooth-details-box::-webkit-scrollbar-thumb {
+:global(.tooth-details-box::-webkit-scrollbar-thumb) {
   background: #cbd5e1;
   border-radius: 2px;
 }
 
-.tooth-details-textarea {
+:global(.tooth-details-textarea) {
   width: 100%;
   height: 100%;
   font-size: 12px;
@@ -46,53 +59,65 @@
   line-height: 1.2;
 }
 
-.tooth-details-annotations {
+/* Annotation stack inside the white box. flex-column with vertical centering
+   that falls back to flex-start when content overflows (so the first item is
+   never cut). `safe center` is the standard CSS keyword for this behavior. */
+:global(.tooth-details-annotations) {
   width: 100%;
   min-height: 100%;
   display: flex;
   flex-direction: column;
-  align-items: center;
-  justify-content: flex-start;
-  gap: 0;
-  padding: 2px;
+  justify-content: safe center;
+  gap: 2px;
+  padding: 3px;
   box-sizing: border-box;
 }
 
-.tooth-annotation-group {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  justify-content: center;
-  gap: 0;
-  line-height: 1.15;
-}
-
-.tooth-annotation-sep {
-  color: #0f172a;
-  font-size: 10px;
-  font-weight: 700;
-  line-height: 1.15;
-}
-
-.tooth-annotation {
-  font-size: 10px;
-  font-weight: 700;
-  line-height: 1.15;
-  white-space: nowrap;
+/* Each finding's group of abbreviations on a single horizontal row.
+   Uses text-align + inline-block (instead of flex centering) because it's
+   the most reliable way to horizontally center inline elements within their
+   parent's actual width. font-size:0 here strips inter-inline whitespace. */
+:global(.tooth-annotation-group) {
+  width: 100%;
   text-align: center;
+  line-height: 1;
+  font-size: 0;
 }
 
-.tooth-details-legend {
+:global(.tooth-annotation-sep) {
+  display: inline-block;
+  vertical-align: middle;
+  color: var(--cds-text-secondary, #525252);
+  font-size: 10px;
+  font-weight: 700;
+  line-height: 1;
+  margin: 0 2px;
+}
+
+:global(.tooth-annotation) {
+  display: inline-block;
+  vertical-align: middle;
+  font-size: 11px;
+  font-weight: 700;
+  line-height: 1.1;
+  letter-spacing: 0.01em;
+  white-space: nowrap;
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+:global(.tooth-details-legend) {
   cursor: pointer;
   user-select: none;
 }
 
-.tooth-details-legend-text {
+:global(.tooth-details-legend-text) {
   user-select: none;
   pointer-events: none;
 }
 
-.tooth-details-cross {
+:global(.tooth-details-cross) {
   stroke: red;
   stroke-width: 1.2;
 }

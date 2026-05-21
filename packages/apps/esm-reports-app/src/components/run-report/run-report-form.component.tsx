@@ -41,7 +41,7 @@ const RunReportForm: React.FC<RunReportFormProps> = ({ closePanel }) => {
 
   useEffect(() => {
     mutateReportDesigns();
-  }, [mutateReportDesigns, reportUuid]);
+  }, [mutateReportDesigns]);
 
   useEffect(() => {
     const paramTypes = currentReport?.parameters.map((param) => param.type);

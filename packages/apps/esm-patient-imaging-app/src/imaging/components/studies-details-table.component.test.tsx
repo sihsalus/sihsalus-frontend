@@ -1,26 +1,26 @@
 import { showModal, usePagination } from '@openmrs/esm-framework';
-import { act, fireEvent, render, screen } from '@testing-library/react';
-import React from 'react';
+import { fireEvent, render, screen } from '@testing-library/react';
 import StudiesDetailTable from './studies-details-table.component';
 
-jest.mock('react-i18next', () => ({
+vi.mock('react-i18next', () => ({
   useTranslation: () => ({
-    t: (key: string, defaultValue: string) => defaultValue,
+    t: (_key: string, defaultValue: string) => defaultValue,
   }),
 }));
-jest.mock('../../api');
-jest.mock('@openmrs/esm-framework', () => ({
-  showModal: jest.fn(),
-  useLayoutType: jest.fn(() => 'desktop'),
-  usePagination: jest.fn((items, pageSize) => ({
+vi.mock('../../api');
+vi.mock('@openmrs/esm-framework', async () => ({
+  ...(await vi.importActual('@openmrs/esm-framework')),
+  showModal: vi.fn(),
+  useLayoutType: vi.fn(() => 'desktop'),
+  usePagination: vi.fn((items, pageSize) => ({
     results: items?.slice(0, pageSize) || [],
-    goTo: jest.fn(),
+    goTo: vi.fn(),
     currentPage: 1,
   })),
   TrashCanIcon: (props: any) => <span data-testid="trash-icon" {...props} />,
 }));
 
-jest.mock('@openmrs/esm-patient-common-lib', () => ({
+vi.mock('@openmrs/esm-patient-common-lib', () => ({
   PatientChartPagination: ({ pageNumber }: any) => <div data-testid="pagination">Page {pageNumber}</div>,
   EmptyState: ({ displayText, headerTitle }: any) => (
     <div>
@@ -28,12 +28,12 @@ jest.mock('@openmrs/esm-patient-common-lib', () => ({
     </div>
   ),
   CardHeader: ({ children }: any) => <div>{children}</div>,
-  compare: jest.fn((a, b) => (a > b ? 1 : a < b ? -1 : 0)),
+  compare: vi.fn((a, b) => (a > b ? 1 : a < b ? -1 : 0)),
 }));
 
-jest.mock('./series-details-table.component', () => (props: any) => {
-  return <div data-testid="series-details">Series for {props.studyId}</div>;
-});
+vi.mock('./series-details-table.component', () => ({
+  default: (props: any) => <div data-testid="series-details">Series for {props.studyId}</div>,
+}));
 
 describe('StudiesDetailsTable', () => {
   const mockStudies = [
@@ -50,23 +50,23 @@ describe('StudiesDetailsTable', () => {
   ];
 
   afterEach(() => {
-    jest.clearAllMocks();
+    vi.clearAllMocks();
   });
 
   beforeEach(() => {
-    jest.clearAllMocks();
-    (usePagination as jest.Mock).mockReturnValue({
+    vi.clearAllMocks();
+    (usePagination as vi.Mock).mockReturnValue({
       results: mockStudies,
       currentPage: 1,
-      goTo: jest.fn(),
+      goTo: vi.fn(),
     });
   });
 
   it('renders EmptyState when no studies are available', () => {
-    (usePagination as jest.Mock).mockReturnValue({
+    (usePagination as vi.Mock).mockReturnValue({
       results: [],
       currentPage: 1,
-      goTo: jest.fn(),
+      goTo: vi.fn(),
     });
 
     render(<StudiesDetailTable patientUuid="patientUuid-123" studies={[]} />);

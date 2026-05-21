@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { useCallback, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { reportError } from '../utils/error-utils';
 
@@ -11,8 +11,8 @@ interface SubmitEventDetail {
 interface UseExternalFormActionProps {
   patientUuid: string;
   formUuid: string;
-  setIsSubmitting: (boolean) => void;
-  setIsValidating: (boolean) => void;
+  setIsSubmitting: (isSubmitting: boolean) => void;
+  setIsValidating: (isValidating: boolean) => void;
 }
 
 /**
@@ -43,7 +43,7 @@ interface UseExternalFormActionProps {
  *   new CustomEvent('ampath-form-action', {
  *     detail: {
  *       formUuid: '289417aa-31d5-3a06-bae8-a22d870bcf1d',
- *       patientUuid: '9ee7a509-d639-4d91-979a-cd605b4d0ad1/chart',
+ *       patientUuid: '9ee7a509-d639-4d91-979a-cd605b4d0ad1',
  *       action: 'onSubmit',
  *     },
  *   })
@@ -58,10 +58,20 @@ export function useExternalFormAction({
 }: UseExternalFormActionProps): void {
   const { t } = useTranslation();
 
-  useEffect(() => {
-    const handleSubmit = (event: Event): void => {
+  const handleFormAction = useCallback(
+    (event: Event): void => {
       const customEvent = event as CustomEvent<SubmitEventDetail>;
-      const { formUuid: targetFormUuid, patientUuid: targetPatientUuid, action } = customEvent.detail;
+      const detail = customEvent.detail;
+
+      if (!detail) {
+        reportError(
+          new Error('The form action event is missing detail payload.'),
+          t('formActionFailed', 'Form action failed'),
+        );
+        return;
+      }
+
+      const { formUuid: targetFormUuid, patientUuid: targetPatientUuid, action } = detail;
 
       if (!action || !targetFormUuid || !targetPatientUuid) {
         reportError(
@@ -83,12 +93,18 @@ export function useExternalFormAction({
             reportError(new Error(`Unsupported form action: "${action}"`), t('formActionFailed', 'Form action failed'));
             break;
         }
+      } else {
+        // Intentionally ignore events that target a different form/patient instance.
+        // This hook listens globally, but only acts on events addressed to its current context.
       }
-    };
+    },
+    [formUuid, patientUuid, setIsSubmitting, setIsValidating, t],
+  );
 
-    window.addEventListener('ampath-form-action', handleSubmit);
+  useEffect(() => {
+    window.addEventListener('ampath-form-action', handleFormAction);
     return (): void => {
-      window.removeEventListener('ampath-form-action', handleSubmit);
+      window.removeEventListener('ampath-form-action', handleFormAction);
     };
-  }, [formUuid, patientUuid, setIsSubmitting, setIsValidating, t]);
+  }, [handleFormAction]);
 }

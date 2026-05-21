@@ -6,6 +6,12 @@ import { type ConfigSchema } from '../config-schema';
 
 import { performLogout } from './logout.resource';
 
+function redirectAfterLogout(config: ConfigSchema) {
+  navigate({
+    to: config.provider.type === 'oauth2' ? config.provider.logoutUrl : '${openmrsSpaBase}/login',
+  });
+}
+
 const RedirectLogout: React.FC = () => {
   const config = useConfig<ConfigSchema>();
   const isLoginEnabled = useConnectivity();
@@ -14,9 +20,7 @@ const RedirectLogout: React.FC = () => {
   useEffect(() => {
     clearHistory();
     if (!session.authenticated || !isLoginEnabled) {
-      if (config.provider.type !== 'oauth2') {
-        navigate({ to: '${openmrsSpaBase}/login' });
-      }
+      redirectAfterLogout(config);
     } else {
       performLogout()
         .then(() => {
@@ -28,9 +32,7 @@ const RedirectLogout: React.FC = () => {
             sessionId: '',
           });
 
-          if (config.provider.type !== 'oauth2') {
-            navigate({ to: '${openmrsSpaBase}/login' });
-          }
+          redirectAfterLogout(config);
         })
         .catch((error) => {
           console.error('Logout failed:', error);

@@ -9,7 +9,6 @@ import {
   TableHeader,
   TableRow,
 } from '@carbon/react';
-import React from 'react';
 import { useTranslation } from 'react-i18next';
 
 const ReceivingStockModal = ({ closeModal, receivingStock }) => {

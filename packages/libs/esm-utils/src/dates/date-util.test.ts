@@ -1,7 +1,7 @@
 import dayjs from 'dayjs';
 import type { i18n } from 'i18next';
 import timezoneMock from 'timezone-mock';
-import { afterAll, describe, expect, it } from 'vitest';
+import { afterAll, describe, expect, it, vi } from 'vitest';
 import {
   duration,
   formatDate,
@@ -324,6 +324,8 @@ describe('duration', () => {
     });
 
     it('returns null for invalid string', () => {
+      vi.spyOn(console, 'error').mockImplementation(() => {});
+
       expect(duration('not a date', now)).toBeNull();
     });
   });
@@ -466,6 +468,8 @@ describe('formatDurationBetween', () => {
   });
 
   it('returns null for invalid string', () => {
+    vi.spyOn(console, 'error').mockImplementation(() => {});
+
     expect(formatDurationBetween('not a date', now)).toBeNull();
   });
 

@@ -20,6 +20,7 @@
         "columns": 1,
         "title": "Atención odontológica",
         "path": "atencion-odontologica",
+        "icon": "omrs-icon-procedure-order",
         "layoutMode": "anchored"
       }
     },
@@ -40,7 +41,8 @@
       "title": "odontogramWorkspaceTitle",
       "width": "extra-wide",
       "canMaximize": true,
-      "canHide": true
+      "canHide": true,
+      "preferredWindowSize": "maximized"
     }
   ]
 }

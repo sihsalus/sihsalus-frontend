@@ -10,8 +10,12 @@
   flex-grow: 1;
   flex-direction: column;
   margin: 0;
-  margin-left: 16rem;
+  margin-inline-start: var(--sihsalus-left-nav-width, 16rem);
+  width: calc(100% - var(--sihsalus-left-nav-width, 16rem));
   background-color: colors.$gray-10;
+  transition:
+    margin-inline-start 300ms ease,
+    width 300ms ease;
 }
 
 .dashboardContainerTablet {
@@ -21,4 +25,33 @@
 .logoSection {
   display: flex;
   justify-content: center;
+}
+
+:global(.sihsalus-side-nav__item) {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  min-width: 0;
+}
+
+:global(.sihsalus-side-nav__icon) {
+  flex: 0 0 auto;
+  color: colors.$gray-70;
+}
+
+:global(.sihsalus-side-nav__text) {
+  min-width: 0;
+  max-width: 12rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  transition:
+    opacity 300ms ease,
+    max-width 300ms ease;
+}
+
+:global(.active-left-nav-link .sihsalus-side-nav__icon),
+:global(.cds--side-nav__link:hover .sihsalus-side-nav__icon),
+:global(.cds--side-nav__link:focus .sihsalus-side-nav__icon) {
+  color: var(--brand-01);
 }

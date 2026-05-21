@@ -1,6 +1,6 @@
 import { Button, Modal, Search } from '@carbon/react';
 import { Checkmark, ChevronDown, Close, Information } from '@carbon/react/icons';
-import React, { useCallback, useMemo, useState } from 'react';
+import { useCallback, useMemo, useState } from 'react';
 import { useOdontogramContext } from '../providers/OdontogramProvider';
 import type { FindingColor, FindingOptionConfig, FindingSuboption } from '../types/odontogram';
 import { COLOR_CSS, COLOR_LABEL } from './constants';

@@ -15,11 +15,11 @@ const defaultProps = {
   hasMore: false,
   isLoading: false,
   isValidating: false,
-  setPage: jest.fn(),
+  setPage: vi.fn(),
   totalResults: 0,
 };
 
-const mockUseConfig = jest.mocked(useConfig<PatientSearchConfig>);
+const mockUseConfig = vi.mocked(useConfig<PatientSearchConfig>);
 
 describe('RecentlySearchedPatients', () => {
   const birthdate = '1990-01-01T00:00:00.000+0000';

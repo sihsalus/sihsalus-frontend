@@ -4,6 +4,7 @@ import type { TabConfig } from '@sihsalus/esm-sihsalus-shared';
 
 import { TabbedDashboard } from '@sihsalus/esm-sihsalus-shared';
 import React, { useMemo } from 'react';
+import MaternalNtsCompliance from './components/maternal-nts-compliance.component';
 
 const translationNamespace = '@sihsalus/esm-salud-materna-app';
 
@@ -42,13 +43,16 @@ export const PrenatalCare: React.FC<PrenatalCareProps> = ({ patient: patientProp
   }
 
   return (
-    <TabbedDashboard
-      patient={patient}
-      patientUuid={patientUuid}
-      titleKey="prenatalCare"
-      tabs={tabs}
-      ariaLabelKey="prenatalCareTabs"
-      translationNamespace={translationNamespace}
-    />
+    <>
+      <MaternalNtsCompliance patientUuid={patientUuid} />
+      <TabbedDashboard
+        patient={patient}
+        patientUuid={patientUuid}
+        titleKey="prenatalCare"
+        tabs={tabs}
+        ariaLabelKey="prenatalCareTabs"
+        translationNamespace={translationNamespace}
+      />
+    </>
   );
 };

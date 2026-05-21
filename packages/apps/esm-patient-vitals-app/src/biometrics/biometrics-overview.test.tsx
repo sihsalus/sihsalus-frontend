@@ -24,20 +24,20 @@ const testProps = {
   patient: mockFhirPatient as fhir.Patient,
 };
 
-const mockUseConfig = jest.mocked(useConfig<ConfigObject>);
-const mockUseVitalsAndBiometrics = jest.mocked(useVitalsAndBiometrics);
+const mockUseConfig = vi.mocked(useConfig<ConfigObject>);
+const mockUseVitalsAndBiometrics = vi.mocked(useVitalsAndBiometrics);
 
-jest.mock('../common', () => {
-  const originalModule = jest.requireActual('../common');
+vi.mock('../common', async () => {
+  const originalModule = await vi.importActual('../common');
 
   return {
     ...originalModule,
-    useVitalsConceptMetadata: jest.fn().mockImplementation(() => ({
+    useVitalsConceptMetadata: vi.fn().mockImplementation(() => ({
       data: mockConceptUnits,
       conceptMetadata: mockConceptMetadata,
       isLoading: false,
     })),
-    useVitalsAndBiometrics: jest.fn(),
+    useVitalsAndBiometrics: vi.fn(),
   };
 });
 

@@ -101,7 +101,7 @@ const QueueFields: React.FC<QueueFieldsProps> = ({ setOnSubmit }) => {
     if (currentServiceQueueUuid) {
       setSelectedService(currentServiceQueueUuid);
     }
-  }, [currentServiceQueueUuid, queues]);
+  }, [currentServiceQueueUuid]);
 
   useEffect(() => {
     if (queueLocations.map((l) => l.id).includes(sessionLocation.uuid)) {

@@ -17,8 +17,8 @@ import {
   useSubstitutionTypeValueSet,
 } from './medication-dispense.resource';
 
-jest.mocked(openmrsFetch);
-jest.mock('swr');
+vi.mocked(openmrsFetch);
+vi.mock('swr');
 
 describe('Medication Dispense Resource tests', () => {
   test('saveMedicationDispense should call medication dispense FHIR endpoint with appropriate data and method POST', () => {

@@ -1,6 +1,6 @@
 import { Button } from '@carbon/react';
 import classNames from 'classnames';
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { type AppProps } from 'single-spa';
 import styles from './devtools.styles.scss';
 import DevToolsPopup from './devtools-popup.component';

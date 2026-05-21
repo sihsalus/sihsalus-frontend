@@ -5,11 +5,12 @@ import { setFuaEstado } from '../hooks/useFuaRequests';
 
 import ChangeFuaStatusModal, { FUA_ESTADOS } from './change-fua-status.modal';
 
-jest.mock('../hooks/useFuaRequests', () => ({
-  setFuaEstado: jest.fn(),
+vi.mock('../hooks/useFuaRequests', () => ({
+  setFuaEstado: vi.fn(),
 }));
-jest.mock('@openmrs/esm-framework', () => ({
-  showSnackbar: jest.fn(),
+vi.mock('@openmrs/esm-framework', async () => ({
+  ...(await vi.importActual('@openmrs/esm-framework')),
+  showSnackbar: vi.fn(),
 }));
 
 const mockFuaPendiente = {
@@ -50,10 +51,10 @@ describe('FUA_ESTADOS', () => {
 });
 
 describe('ChangeFuaStatusModal — transitions', () => {
-  const closeModal = jest.fn();
-  const onStatusChanged = jest.fn();
+  const closeModal = vi.fn();
+  const onStatusChanged = vi.fn();
 
-  beforeEach(() => jest.clearAllMocks());
+  beforeEach(() => vi.clearAllMocks());
 
   it('shows EN_PROCESO and CANCELADO as options from PENDIENTE', () => {
     render(
@@ -90,7 +91,7 @@ describe('ChangeFuaStatusModal — transitions', () => {
   });
 
   it('calls setFuaEstado with selected estado and calls onStatusChanged', async () => {
-    (setFuaEstado as jest.Mock).mockResolvedValueOnce({ data: {} });
+    (setFuaEstado as vi.Mock).mockResolvedValueOnce({ data: {} });
 
     render(
       <ChangeFuaStatusModal closeModal={closeModal} fuaRequest={mockFuaPendiente} onStatusChanged={onStatusChanged} />,
@@ -105,7 +106,7 @@ describe('ChangeFuaStatusModal — transitions', () => {
   });
 
   it('shows error snackbar when setFuaEstado fails', async () => {
-    (setFuaEstado as jest.Mock).mockRejectedValueOnce(new Error('Network error'));
+    (setFuaEstado as vi.Mock).mockRejectedValueOnce(new Error('Network error'));
 
     render(
       <ChangeFuaStatusModal closeModal={closeModal} fuaRequest={mockFuaPendiente} onStatusChanged={onStatusChanged} />,

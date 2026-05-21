@@ -1,7 +1,6 @@
-import { getConfig, showModal, userHasAccess } from '@openmrs/esm-framework';
+import { formatDatetime, getConfig, parseDate, showModal, userHasAccess } from '@openmrs/esm-framework';
 import { screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import React from 'react';
 import { mockEncounters, mockPatient, renderWithSwr } from 'test-utils';
 
 import VisitsTable from './visits-table.component';
@@ -12,9 +11,15 @@ const defaultProps = {
   visits: mockEncounters,
 };
 
-const mockShowModal = jest.mocked(showModal);
-const mockGetConfig = getConfig as jest.Mock;
-const mockUserHasAccess = userHasAccess as jest.Mock;
+const mockShowModal = vi.mocked(showModal);
+const mockGetConfig = getConfig as vi.Mock;
+const mockUserHasAccess = userHasAccess as vi.Mock;
+const getProviderName = (provider: unknown) =>
+  typeof provider === 'string'
+    ? provider
+    : provider && typeof provider === 'object' && 'name' in provider
+      ? String(provider.name ?? '--')
+      : '--';
 
 describe('EncounterList', () => {
   it('renders an empty state when no encounters are available', async () => {
@@ -36,11 +41,12 @@ describe('EncounterList', () => {
     const filterDropdown = screen.getByRole('combobox', { name: /filter by encounter type/i });
     const searchbox = screen.getByRole('searchbox', { name: /filter table/i });
     const expectedColumnHeaders = [/date & time/, /visit type/, /Form name/, /encounter type/, /provider/];
-    const expectedTableRows = [
-      /18-Jan-2022, 04:25 PM Facility Visit Admission POC Consent Form -- Options/,
-      /03-Aug-2021, 12:47 AM Facility Visit Visit Note -- User One Options/,
-      /05-Jul-2021, 10:07 AM Facility Visit Consultation Covid 19 Dennis The Doctor Options/,
-    ];
+    const expectedTableRows = mockEncounters.map(
+      ({ datetime, encounterType, form, provider, visitType }) =>
+        `${formatDatetime(parseDate(datetime))} ${visitType} ${encounterType} ${form?.display ?? '--'} ${getProviderName(
+          provider,
+        )} Options`,
+    );
 
     expectedColumnHeaders.forEach((header) => {
       expect(screen.getByRole('columnheader', { name: new RegExp(header, 'i') })).toBeInTheDocument();
@@ -86,8 +92,14 @@ describe('Delete Encounter', () => {
     await screen.findByRole('table');
     expect(screen.getByRole('table')).toBeInTheDocument();
 
+    const firstEncounter = mockEncounters[0];
     const row = screen.getByRole('row', {
-      name: /18-Jan-2022, 04:25 PM Facility Visit Admission POC Consent Form -- Options/i,
+      name: new RegExp(
+        `${formatDatetime(parseDate(firstEncounter.datetime))} ${firstEncounter.visitType} ${
+          firstEncounter.encounterType
+        } ${firstEncounter.form?.display ?? '--'} ${getProviderName(firstEncounter.provider)} Options`,
+        'i',
+      ),
     });
 
     await user.click(within(row).getByRole('button', { name: /expand current row/i }));

@@ -19,12 +19,12 @@ import { type PostDataPrepLabOrderFunction } from '../api';
 import AddLabOrderWorkspace from './add-test-order.workspace';
 import { createEmptyLabOrder } from './test-order';
 
-const mockCloseWorkspace = closeWorkspace as jest.Mock;
-const mockUseLayoutType = jest.mocked(useLayoutType);
-const mockUsePatient = jest.mocked(usePatient);
-const mockUseSession = jest.mocked(useSession);
-const mockUseConfig = jest.mocked(useConfig<ConfigObject>);
-const mockUseOrderType = jest.mocked(useOrderType);
+const mockCloseWorkspace = closeWorkspace as vi.Mock;
+const mockUseLayoutType = vi.mocked(useLayoutType);
+const mockUsePatient = vi.mocked(usePatient);
+const mockUseSession = vi.mocked(useSession);
+const mockUseConfig = vi.mocked(useConfig<ConfigObject>);
+const mockUseOrderType = vi.mocked(useOrderType);
 
 mockCloseWorkspace.mockImplementation(({ onWorkspaceClose }) => {
   onWorkspaceClose?.();
@@ -49,46 +49,46 @@ const mockTestTypes = [
   //   synonyms: ['HEMOGLOBIN', 'HGB'],
   // },
 ];
-const mockUseTestTypes = jest.fn().mockReturnValue({
+const mockUseTestTypes = vi.fn().mockReturnValue({
   testTypes: mockTestTypes,
   isLoading: false,
   error: null,
 });
 
-jest.mock('./useTestTypes', () => ({
+vi.mock('./useTestTypes', async () => ({
   useTestTypes: () => mockUseTestTypes(),
 }));
 
-const mockLaunchPatientWorkspace = jest.fn();
+const mockLaunchPatientWorkspace = vi.fn();
 
-jest.mock('@openmrs/esm-patient-common-lib', () => ({
-  ...jest.requireActual('@openmrs/esm-patient-common-lib'),
+vi.mock('@openmrs/esm-patient-common-lib', async () => ({
+  ...(await vi.importActual('@openmrs/esm-patient-common-lib')),
   launchPatientWorkspace: (...args) => mockLaunchPatientWorkspace(...args),
-  useOrderType: jest.fn(),
+  useOrderType: vi.fn(),
 }));
 
-jest.mock('@openmrs/esm-patient-common-lib/src/store/patient-chart-store', () => ({
-  getPatientUuidFromStore: jest.fn(() => ptUuid),
-  usePatientChartStore: jest.fn(() => ({
+vi.mock('@openmrs/esm-patient-common-lib/src/store/patient-chart-store', async () => ({
+  getPatientUuidFromStore: vi.fn(() => ptUuid),
+  usePatientChartStore: vi.fn(() => ({
     patientUuid: ptUuid,
   })),
 }));
 
 function renderAddLabOrderWorkspace(props: Partial<ComponentProps<typeof AddLabOrderWorkspace>> = {}) {
-  const mockCloseWorkspace = jest.fn().mockImplementation(({ onWorkspaceClose }) => {
+  const mockCloseWorkspace = vi.fn().mockImplementation(({ onWorkspaceClose }) => {
     onWorkspaceClose();
   });
-  const mockCloseWorkspaceWithSavedChanges = jest.fn().mockImplementation(({ onWorkspaceClose }) => {
+  const mockCloseWorkspaceWithSavedChanges = vi.fn().mockImplementation(({ onWorkspaceClose }) => {
     onWorkspaceClose();
   });
-  const mockPromptBeforeClosing = jest.fn();
+  const mockPromptBeforeClosing = vi.fn();
   const view = render(
     <AddLabOrderWorkspace
       closeWorkspace={mockCloseWorkspace}
       closeWorkspaceWithSavedChanges={mockCloseWorkspaceWithSavedChanges}
       promptBeforeClosing={mockPromptBeforeClosing}
       patientUuid={ptUuid}
-      setTitle={jest.fn()}
+      setTitle={vi.fn()}
       orderTypeUuid="test-lab-order-type-uuid"
       {...props}
     />,
@@ -230,7 +230,7 @@ describe('AddLabOrder', () => {
   });
 
   test('should display a patient header on tablet', () => {
-    jest.useFakeTimers().setSystemTime(new Date('2026-03-26T12:00:00Z'));
+    vi.useFakeTimers().setSystemTime(new Date('2026-03-26T12:00:00Z'));
 
     try {
       mockUseLayoutType.mockReturnValue('tablet');
@@ -240,7 +240,7 @@ describe('AddLabOrder', () => {
       expect(screen.getByText(/6 yrs, 6 mths/i)).toBeInTheDocument();
       expect(screen.getByText('25 — Sept — 2019')).toBeInTheDocument();
     } finally {
-      jest.useRealTimers();
+      vi.useRealTimers();
     }
   });
 

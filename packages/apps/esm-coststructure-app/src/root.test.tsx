@@ -2,7 +2,7 @@ import { render, screen } from '@testing-library/react';
 
 import Root from './root.component';
 
-jest.mock('./routes/router', () => ({
+vi.mock('./routes/router', () => ({
   Router: () => <div data-testid="cost-structure-router">Router</div>,
 }));
 

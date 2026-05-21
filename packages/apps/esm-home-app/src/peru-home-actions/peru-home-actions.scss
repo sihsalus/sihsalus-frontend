@@ -4,9 +4,11 @@
 
 .quickActions {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(14rem, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(min(12.5rem, 100%), 1fr));
   gap: layout.$spacing-04;
+  max-width: 100%;
   padding: layout.$spacing-05 layout.$spacing-05 0;
+  overflow-x: clip;
 }
 
 .actionLink {
@@ -15,15 +17,15 @@
   --action-illustration-muted: #dce7ff;
   --action-illustration-strong: var(--action-accent);
   --action-illustration-filter: none;
-  --action-illustration-scale: 1.55;
-  --action-illustration-x: 1rem;
-  --action-illustration-y: 0.875rem;
 
   position: relative;
+  box-sizing: border-box;
   display: grid;
-  grid-template-rows: auto minmax(8.75rem, 1fr);
-  gap: layout.$spacing-03;
-  min-height: 14rem;
+  grid-template-rows: 3.75rem minmax(0, 1fr);
+  gap: layout.$spacing-01;
+  aspect-ratio: 1 / 1;
+  min-height: 0;
+  min-width: 0;
   padding: layout.$spacing-05;
   color: colors.$gray-100;
   text-decoration: none;
@@ -61,14 +63,15 @@
   display: grid;
   grid-template-columns: auto minmax(0, 1fr);
   align-items: start;
-  gap: layout.$spacing-04;
+  gap: layout.$spacing-03;
+  min-height: 3.75rem;
   min-width: 0;
   z-index: 1;
+}
 
-  > svg {
-    flex-shrink: 0;
-    color: var(--action-accent);
-  }
+.actionIcon {
+  color: var(--action-accent);
+  flex-shrink: 0;
 }
 
 .actionText {
@@ -76,107 +79,139 @@
   flex-direction: column;
   gap: layout.$spacing-02;
   min-width: 0;
+  overflow: hidden;
 
   strong {
     @include type.type-style("heading-compact-01");
+
+    display: -webkit-box;
+    overflow: hidden;
+    overflow-wrap: anywhere;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 2;
   }
 
   span {
     @include type.type-style("body-compact-01");
     color: colors.$gray-70;
+    display: -webkit-box;
+    overflow: hidden;
+    overflow-wrap: anywhere;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 2;
   }
 }
 
 .illustrationArea {
   display: grid;
-  place-items: center;
-  min-height: 8.75rem;
+  place-items: start center;
+  min-height: 0;
+  padding-top: layout.$spacing-01;
   width: 100%;
   z-index: 0;
 }
 
 .actionIllustration {
+  display: block;
   position: relative;
+  width: clamp(6.5rem, 74%, 9.75rem);
+  height: clamp(6.5rem, 74%, 9.75rem);
+  max-width: 96%;
+  max-height: 96%;
+  object-fit: contain;
   opacity: 0.94;
   filter: var(--action-illustration-filter);
   overflow: visible;
   transition:
     filter 300ms ease,
     transform 300ms ease;
-
-  use {
-    transform: translate(
-        var(--action-illustration-x),
-        var(--action-illustration-y)
-      )
-      scale(var(--action-illustration-scale));
-    transform-box: fill-box;
-    transform-origin: center;
-  }
 }
 
-.patientSearchAction {
+.admissionAction {
   --action-accent: #27348b;
   --action-surface: #f7f8ff;
   --action-illustration-muted: #dce2ff;
   --action-illustration-strong: #27348b;
   --action-illustration-filter: hue-rotate(42deg) saturate(1.18);
-  --action-illustration-scale: 1.65;
-  --action-illustration-x: 1rem;
-  --action-illustration-y: 1rem;
-}
-
-.registrationAction {
-  --action-accent: #2c7d35;
-  --action-surface: #f7fbf6;
-  --action-illustration-muted: #dff0dc;
-  --action-illustration-strong: #2c7d35;
-  --action-illustration-filter: hue-rotate(-44deg) saturate(1.08);
-  --action-illustration-scale: 1.52;
-  --action-illustration-x: 1rem;
-  --action-illustration-y: 0.875rem;
-}
-
-.queuesAction {
-  --action-accent: #007d79;
-  --action-surface: #f6fbf8;
-  --action-illustration-muted: #d8efed;
-  --action-illustration-strong: #007d79;
-  --action-illustration-filter: hue-rotate(-32deg) saturate(1.05);
-  --action-illustration-scale: 1.52;
-  --action-illustration-x: 1rem;
-  --action-illustration-y: 0.875rem;
 }
 
 .appointmentsAction {
-  --action-accent: #4154b3;
-  --action-surface: #f8f7ff;
-  --action-illustration-muted: #e2dfff;
-  --action-illustration-strong: #4154b3;
-  --action-illustration-filter: hue-rotate(58deg) saturate(1.16);
-  --action-illustration-scale: 1.65;
-  --action-illustration-x: 1rem;
-  --action-illustration-y: 1rem;
+  --action-accent: #43aa35;
+  --action-surface: #f5fbf3;
+  --action-illustration-muted: #dff1d8;
+  --action-illustration-strong: #43aa35;
+  --action-illustration-filter: hue-rotate(-44deg) saturate(1.12);
 }
 
 .laboratoryAction {
-  --action-accent: #17205f;
-  --action-surface: #f6f8ff;
-  --action-illustration-muted: #d8e0ff;
-  --action-illustration-strong: #17205f;
-  --action-illustration-filter: hue-rotate(50deg) saturate(1.12);
-  --action-illustration-scale: 1.65;
-  --action-illustration-x: 1rem;
-  --action-illustration-y: 1rem;
+  --action-accent: #007d79;
+  --action-surface: #f3fbfa;
+  --action-illustration-muted: #d5eeec;
+  --action-illustration-strong: #007d79;
+  --action-illustration-filter: hue-rotate(-28deg) saturate(1.08);
 }
 
 .fuaAction {
-  --action-accent: #6a7d1f;
-  --action-surface: #fafbf2;
-  --action-illustration-muted: #edf1cc;
-  --action-illustration-strong: #6a7d1f;
-  --action-illustration-filter: none;
-  --action-illustration-scale: 1.55;
-  --action-illustration-x: 1rem;
-  --action-illustration-y: 0.875rem;
+  --action-accent: #a66f00;
+  --action-surface: #fff9ed;
+  --action-illustration-muted: #f4e2bf;
+  --action-illustration-strong: #a66f00;
+  --action-illustration-filter: hue-rotate(-138deg) saturate(1.08);
+
+  .illustrationArea {
+    place-items: start center;
+    padding-top: layout.$spacing-03;
+  }
+
+  .actionIllustration {
+    width: clamp(5.25rem, 58%, 7.25rem);
+    height: clamp(5.25rem, 58%, 7.25rem);
+  }
+}
+
+@media (max-width: 35rem) {
+  .quickActions {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: layout.$spacing-03;
+    padding-inline: layout.$spacing-03;
+    overflow-x: hidden;
+  }
+
+  .actionLink {
+    min-height: 0;
+    padding: layout.$spacing-04;
+    grid-template-rows: 3rem minmax(0, 1fr);
+  }
+
+  .actionHeader {
+    grid-template-columns: 1fr;
+    justify-items: center;
+    text-align: center;
+    gap: layout.$spacing-02;
+    min-height: 3rem;
+  }
+
+  .actionText {
+    align-items: center;
+
+    span {
+      display: none;
+    }
+  }
+
+  .illustrationArea {
+    min-height: 0;
+    padding-top: 0;
+  }
+
+  .actionIllustration {
+    width: clamp(5rem, 72%, 6.75rem);
+    height: clamp(5rem, 72%, 6.75rem);
+  }
+}
+
+@media (max-width: 22rem) {
+  .quickActions {
+    grid-template-columns: 1fr;
+  }
 }

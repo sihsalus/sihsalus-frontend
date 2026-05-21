@@ -1,7 +1,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { Search, StructuredListCell, StructuredListRow, StructuredListWrapper } from '@carbon/react';
 import uniqueId from 'lodash-es/uniqueId';
-import React, { useMemo, useState } from 'react';
+import { useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import type { PatientIdentifierType } from './patient-identifier-type.resource';

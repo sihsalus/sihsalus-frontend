@@ -84,30 +84,38 @@ const PreviousImports: React.FC = () => {
               <TableHead>
                 <TableRow>
                   <TableExpandHeader />
-                  {headers.map((header, i) => (
-                    <TableHeader key={i} {...getHeaderProps({ header })}>
-                      {header.header}
-                    </TableHeader>
-                  ))}
+                  {headers.map((header) => {
+                    const { key, ...headerProps } = getHeaderProps({ header });
+
+                    return (
+                      <TableHeader key={key} {...headerProps}>
+                        {header.header}
+                      </TableHeader>
+                    );
+                  })}
                 </TableRow>
               </TableHead>
               <TableBody>
-                {rows.map((row) => (
-                  <Fragment key={row.id}>
-                    <TableExpandRow {...getRowProps({ row })} className={styles.tableRow}>
-                      {row.cells.map((cell) => (
-                        <TableCell key={cell.id}>{cell.value}</TableCell>
-                      ))}
-                    </TableExpandRow>
-                    {row.isExpanded && (
-                      <TableExpandedRow colSpan={headers.length + 1} className={styles.tableExpandedRow}>
-                        <ImportOverview
-                          selectedImportObject={prevImports.find((importItem: Import) => importItem.uuid === row.id)}
-                        />
-                      </TableExpandedRow>
-                    )}
-                  </Fragment>
-                ))}
+                {rows.map((row) => {
+                  const { key, ...rowProps } = getRowProps({ row });
+
+                  return (
+                    <Fragment key={row.id}>
+                      <TableExpandRow key={key} {...rowProps} className={styles.tableRow}>
+                        {row.cells.map((cell) => (
+                          <TableCell key={cell.id}>{cell.value}</TableCell>
+                        ))}
+                      </TableExpandRow>
+                      {row.isExpanded && (
+                        <TableExpandedRow colSpan={headers.length + 1} className={styles.tableExpandedRow}>
+                          <ImportOverview
+                            selectedImportObject={prevImports.find((importItem: Import) => importItem.uuid === row.id)}
+                          />
+                        </TableExpandedRow>
+                      )}
+                    </Fragment>
+                  );
+                })}
               </TableBody>
             </Table>
           )}

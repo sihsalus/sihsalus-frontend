@@ -37,14 +37,11 @@
       "inputs": [
         "src/**",
         "__mocks__/**",
-        "$TURBO_ROOT$/packages/jest.config.js",
         "$TURBO_ROOT$/packages/tooling/configs/**",
         "$TURBO_ROOT$/packages/tooling/scripts/setup-tests.ts",
-        "jest.config.js",
-        "jest.config.json",
         "mock.ts",
-        "mock-jest.ts",
-        "mock-jest.tsx",
+        "mock-vitest.ts",
+        "mock-vitest.tsx",
         "setup-tests.ts",
         "src/setup-tests.ts",
         "vitest.config.ts",
@@ -64,7 +61,7 @@
       "inputs": ["src/**/*.{ts,tsx}", "$TURBO_ROOT$/biome.json"]
     },
     "typescript": {
-      "dependsOn": ["^typescript"],
+      "dependsOn": ["build", "^build", "^typescript"],
       "inputs": ["src/**", "tsconfig.json", "tsconfig.build.json"]
     },
     "extract-translations": {

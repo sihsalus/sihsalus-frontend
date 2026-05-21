@@ -20,6 +20,14 @@ import type { VitalsTableHeader, VitalsTableRow } from './types';
 
 type DataTableCellValue = React.ReactNode | { content?: React.ReactNode };
 type SortParams = { key: string; sortDirection: 'ASC' | 'DESC' | 'NONE' };
+type VitalsInterpretationKey = Extract<
+  keyof VitalsTableRow,
+  | 'bloodPressureRenderInterpretation'
+  | 'pulseRenderInterpretation'
+  | 'respiratoryRateRenderInterpretation'
+  | 'spo2RenderInterpretation'
+  | 'temperatureRenderInterpretation'
+>;
 
 interface PaginatedVitalsProps {
   isPrinting?: boolean;
@@ -40,6 +48,14 @@ const PaginatedVitals: React.FC<PaginatedVitalsProps> = ({
   urlLabel,
 }) => {
   const isTablet = useLayoutType() === 'tablet';
+  const interpretationKeyByHeaderKey: Partial<Record<VitalsTableHeader['key'], VitalsInterpretationKey>> = {
+    bloodPressureRender: 'bloodPressureRenderInterpretation',
+    pulseRender: 'pulseRenderInterpretation',
+    respiratoryRateRender: 'respiratoryRateRenderInterpretation',
+    spo2Render: 'spo2RenderInterpretation',
+    temperatureRender: 'temperatureRenderInterpretation',
+  };
+
   const renderHeader = (header: React.ReactNode | { content?: React.ReactNode }): React.ReactNode => {
     if (typeof header === 'object' && header !== null && 'content' in header) {
       return header.content ?? null;
@@ -48,7 +64,12 @@ const PaginatedVitals: React.FC<PaginatedVitalsProps> = ({
     return header as React.ReactNode;
   };
 
-  const StyledTableCell = ({ interpretation, children }: { interpretation: string; children: React.ReactNode }) => {
+  const getCellInterpretation = (row: VitalsTableRow | undefined, headerKey: VitalsTableHeader['key']) => {
+    const interpretationKey = interpretationKeyByHeaderKey[headerKey];
+    return interpretationKey ? row?.[interpretationKey] : undefined;
+  };
+
+  const StyledTableCell = ({ interpretation, children }: { interpretation?: string; children: React.ReactNode }) => {
     switch (interpretation) {
       case 'critically_high':
         return <TableCell className={styles.criticallyHigh}>{children}</TableCell>;
@@ -112,21 +133,22 @@ const PaginatedVitals: React.FC<PaginatedVitalsProps> = ({
 
   const { results: paginatedVitals, goTo, currentPage } = usePagination(sortedData, pageSize);
 
-  const rows = isPrinting ? sortedData : paginatedVitals;
+  const displayRows = isPrinting ? sortedData : paginatedVitals;
+  const displayRowsById = useMemo(() => new Map(displayRows.map((row) => [row.id, row])), [displayRows]);
 
   const hasAnyNotes = tableRows.some((row) => Boolean(row.note));
 
   return (
     <>
       <DataTable
-        rows={rows}
+        rows={displayRows}
         headers={tableHeaders}
         size={isTablet ? 'lg' : 'sm'}
         useZebraStyles
         sortRow={handleSorting}
         isSortable
       >
-        {({ rows, headers, getTableProps, getHeaderProps, getRowProps }) => (
+        {({ rows: dataTableRows, headers, getTableProps, getHeaderProps, getRowProps }) => (
           <TableContainer className={styles.tableContainer}>
             <Table className={styles.table} aria-label="vitals" {...getTableProps()}>
               <TableHead>
@@ -144,18 +166,18 @@ const PaginatedVitals: React.FC<PaginatedVitalsProps> = ({
                 </TableRow>
               </TableHead>
               <TableBody>
-                {rows.map((row) => {
-                  const vitalsObj = rows.find((obj) => obj.id === row.id);
-                  const note = (vitalsObj as unknown as VitalsTableRow)?.note;
+                {dataTableRows.map((row) => {
+                  const vitalsObj = displayRowsById.get(row.id);
+                  const note = vitalsObj?.note;
 
                   if (hasAnyNotes) {
                     const { key: rowKey, ...rowProps } = getRowProps({ row });
                     return (
                       <React.Fragment key={rowKey}>
                         <TableExpandRow {...rowProps}>
-                          {row.cells.map((cell) => {
-                            const vitalSignInterpretation =
-                              vitalsObj && vitalsObj[cell.id.substring(2) + 'Interpretation'];
+                          {row.cells.map((cell, cellIndex) => {
+                            const headerKey = headers[cellIndex]?.key as VitalsTableHeader['key'];
+                            const vitalSignInterpretation = getCellInterpretation(vitalsObj, headerKey);
 
                             return (
                               <StyledTableCell key={`styled-cell-${cell.id}`} interpretation={vitalSignInterpretation}>
@@ -171,8 +193,9 @@ const PaginatedVitals: React.FC<PaginatedVitalsProps> = ({
 
                   return (
                     <TableRow key={row.id}>
-                      {row.cells.map((cell) => {
-                        const vitalSignInterpretation = vitalsObj && vitalsObj[cell.id.substring(2) + 'Interpretation'];
+                      {row.cells.map((cell, cellIndex) => {
+                        const headerKey = headers[cellIndex]?.key as VitalsTableHeader['key'];
+                        const vitalSignInterpretation = getCellInterpretation(vitalsObj, headerKey);
 
                         return (
                           <StyledTableCell key={`styled-cell-${cell.id}`} interpretation={vitalSignInterpretation}>

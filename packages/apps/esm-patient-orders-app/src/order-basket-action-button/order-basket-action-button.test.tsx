@@ -11,11 +11,11 @@ import { mockPatient } from 'test-utils';
 
 import OrderBasketActionButton from './order-basket-action-button.extension';
 
-const mockUseLayoutType = jest.mocked(useLayoutType);
-const mockUsePatient = jest.mocked(usePatient);
-const mockUseWorkspaces = useWorkspaces as jest.Mock;
-const MockActionMenuButton = jest.mocked(ActionMenuButton);
-const mockUseLaunchWorkspaceRequiringVisit = useLaunchWorkspaceRequiringVisit as jest.Mock;
+const mockUseLayoutType = vi.mocked(useLayoutType);
+const mockUsePatient = vi.mocked(usePatient);
+const mockUseWorkspaces = useWorkspaces as vi.Mock;
+const MockActionMenuButton = vi.mocked(ActionMenuButton);
+const mockUseLaunchWorkspaceRequiringVisit = useLaunchWorkspaceRequiringVisit as vi.Mock;
 const mockFhirPatient = mockPatient as unknown as fhir.Patient;
 
 MockActionMenuButton.mockImplementation(({ handler, label, tagContent }) => (
@@ -30,12 +30,12 @@ mockUseWorkspaces.mockReturnValue({
 });
 
 // This pattern of mocking seems to be required: defining the mocked function here and
-// then assigning it with an arrow function wrapper in jest.mock. It is very particular.
+// then assigning it with an arrow function wrapper in vi.mock. It is very particular.
 // I think it is related to this: https://github.com/swc-project/jest/issues/14#issuecomment-1238621942
 
-const mockLaunchPatientWorkspace = jest.fn();
-const mockLaunchStartVisitPrompt = jest.fn();
-const mockUseVisitOrOfflineVisit = jest.fn(() => ({
+const mockLaunchPatientWorkspace = vi.fn();
+const mockLaunchStartVisitPrompt = vi.fn();
+const mockUseVisitOrOfflineVisit = vi.fn(() => ({
   activeVisit: {
     uuid: '8ef90c91-14be-42dd-a1c0-e67fbf904470',
   },
@@ -43,39 +43,39 @@ const mockUseVisitOrOfflineVisit = jest.fn(() => ({
     uuid: '8ef90c91-14be-42dd-a1c0-e67fbf904470',
   },
 }));
-const mockGetPatientUuidFromUrl = jest.fn(() => mockPatient.id);
-const mockUseSystemVisitSetting = jest.fn();
+const mockGetPatientUuidFromUrl = vi.fn(() => mockPatient.id);
+const mockUseSystemVisitSetting = vi.fn();
 
-jest.mock('@openmrs/esm-patient-common-lib', () => {
-  const originalModule = jest.requireActual('@openmrs/esm-patient-common-lib');
+vi.mock('@openmrs/esm-patient-common-lib', async () => {
+  const originalModule = await vi.importActual('@openmrs/esm-patient-common-lib');
 
   return {
     ...originalModule,
     getPatientUuidFromUrl: () => mockGetPatientUuidFromUrl(),
     getPatientUuidFromStore: () => mockGetPatientUuidFromUrl(),
-    useLaunchWorkspaceRequiringVisit: jest.fn(),
+    useLaunchWorkspaceRequiringVisit: vi.fn(),
     launchPatientWorkspace: (arg) => mockLaunchPatientWorkspace(arg),
   };
 });
 
-jest.mock('@openmrs/esm-patient-common-lib/src/useSystemVisitSetting', () => {
+vi.mock('@openmrs/esm-patient-common-lib/src/useSystemVisitSetting', async () => {
   return {
     useSystemVisitSetting: () => mockUseSystemVisitSetting(),
   };
 });
 
-jest.mock('@openmrs/esm-patient-common-lib/src/launchStartVisitPrompt', () => {
+vi.mock('@openmrs/esm-patient-common-lib/src/launchStartVisitPrompt', async () => {
   return { launchStartVisitPrompt: () => mockLaunchStartVisitPrompt() };
 });
 
-jest.mock('@openmrs/esm-patient-common-lib/src/store/patient-chart-store', () => {
+vi.mock('@openmrs/esm-patient-common-lib/src/store/patient-chart-store', async () => {
   return {
     getPatientUuidFromStore: () => mockGetPatientUuidFromUrl(),
     usePatientChartStore: () => ({ patientUuid: mockPatient.id }),
   };
 });
 
-jest.mock('@openmrs/esm-patient-common-lib/src/offline/visit', () => {
+vi.mock('@openmrs/esm-patient-common-lib/src/offline/visit', async () => {
   return { useVisitOrOfflineVisit: () => mockUseVisitOrOfflineVisit() };
 });
 
@@ -99,12 +99,12 @@ describe('<OrderBasketActionButton/>', () => {
   });
 
   beforeEach(() => {
-    mockUseLaunchWorkspaceRequiringVisit.mockReturnValue(jest.fn());
+    mockUseLaunchWorkspaceRequiringVisit.mockReturnValue(vi.fn());
   });
 
   it('should display tablet view action button', async () => {
     const user = userEvent.setup();
-    const mockLaunchOrderBasket = jest.fn();
+    const mockLaunchOrderBasket = vi.fn();
     mockUseLayoutType.mockReturnValue('tablet');
     mockUseLaunchWorkspaceRequiringVisit.mockReturnValue(mockLaunchOrderBasket);
     render(<OrderBasketActionButton />);
@@ -118,7 +118,7 @@ describe('<OrderBasketActionButton/>', () => {
 
   it('should display desktop view action button', async () => {
     const user = userEvent.setup();
-    const mockLaunchOrderBasket = jest.fn();
+    const mockLaunchOrderBasket = vi.fn();
     mockUseLayoutType.mockReturnValue('small-desktop');
     mockUseLaunchWorkspaceRequiringVisit.mockReturnValue(mockLaunchOrderBasket);
     render(<OrderBasketActionButton />);
@@ -132,7 +132,7 @@ describe('<OrderBasketActionButton/>', () => {
 
   it('should render the action button even if no currentVisit is found', async () => {
     const user = userEvent.setup();
-    const mockLaunchOrderBasket = jest.fn();
+    const mockLaunchOrderBasket = vi.fn();
     mockUseLayoutType.mockReturnValue('small-desktop');
     mockUseSystemVisitSetting.mockReturnValue({ systemVisitEnabled: true });
     mockUseVisitOrOfflineVisit.mockImplementation(() => ({

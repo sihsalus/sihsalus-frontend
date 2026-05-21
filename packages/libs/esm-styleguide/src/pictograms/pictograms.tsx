@@ -16,6 +16,7 @@ export const pictogramIds = [
   'omrs-pict-dentistry',
   'omrs-pict-emergency-department',
   'omrs-pict-facility',
+  'omrs-pict-fua',
   'omrs-pict-geriatrics',
   'omrs-pict-gynaecology',
   'omrs-pict-in-patient',
@@ -98,6 +99,12 @@ export const EmergencyDepartmentPictogram = memo(
 export const FacilityPictogram = memo(
   forwardRef<SVGSVGElement, PictogramProps>(function FacilityPictogram(props, ref) {
     return <Pictogram ref={ref} pictogram="omrs-pict-facility" pictogramProps={props} />;
+  }),
+);
+
+export const FuaPictogram = memo(
+  forwardRef<SVGSVGElement, PictogramProps>(function FuaPictogram(props, ref) {
+    return <Pictogram ref={ref} pictogram="omrs-pict-fua" pictogramProps={props} />;
   }),
 );
 

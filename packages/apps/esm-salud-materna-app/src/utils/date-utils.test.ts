@@ -1,6 +1,7 @@
-jest.mock('@openmrs/esm-framework', () => ({
-  isOmrsDateStrict: jest.fn((value: string) => value.includes('T')),
-  parseDate: jest.fn((value: string) => new Date(value)),
+vi.mock('@openmrs/esm-framework', async () => ({
+  ...(await vi.importActual('@openmrs/esm-framework')),
+  isOmrsDateStrict: vi.fn((value: string) => value.includes('T')),
+  parseDate: vi.fn((value: string) => new Date(value)),
 }));
 
 import { fromFormDateToOpenmrs, isValidOpenmrsDate, toOpenmrsIsoString } from './date-utils';

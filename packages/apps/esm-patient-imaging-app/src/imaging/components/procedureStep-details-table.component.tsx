@@ -153,9 +153,14 @@ const ProcedureStepTable: React.FC<ProcedureStepTableProps> = ({ requestProcedur
                 <Table aria-label="Procedure step summary" className={styles.table} {...getTableProps()} />
                 <TableHead>
                   <TableRow>
-                    {headers.map((header) => (
-                      <TableHeader {...getHeaderProps({ header })}>{header.header}</TableHeader>
-                    ))}
+                    {headers.map((header) => {
+                      const { key, ...headerProps } = getHeaderProps({ header });
+                      return (
+                        <TableHeader key={key} {...headerProps}>
+                          {header.header}
+                        </TableHeader>
+                      );
+                    })}
                     <TableHeader />
                   </TableRow>
                 </TableHead>

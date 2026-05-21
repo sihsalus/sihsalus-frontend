@@ -3,7 +3,7 @@ import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import SearchHistoryOptions from './search-history-options.component';
 
-const mockShowModal = jest.mocked(showModal);
+const mockShowModal = vi.mocked(showModal);
 
 const searchHistoryItem = {
   description: 'Patients with NO Chronic viral hepatitis',
@@ -75,7 +75,7 @@ const searchHistoryItem = {
 
 const testProps = {
   searchItem: searchHistoryItem,
-  updateSearchHistory: jest.fn(),
+  updateSearchHistory: vi.fn(),
 };
 
 describe('Test the search history options', () => {

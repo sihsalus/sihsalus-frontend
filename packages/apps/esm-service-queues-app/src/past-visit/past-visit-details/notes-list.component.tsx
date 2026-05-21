@@ -18,8 +18,8 @@ const Notes: React.FC<NotesProps> = ({ notes, diagnoses }) => {
   return (
     <div>
       {diagnoses.length > 0
-        ? diagnoses.map((d: DiagnosisItem, ind) => (
-            <Tag type="blue" size="md">
+        ? diagnoses.map((d: DiagnosisItem) => (
+            <Tag key={d.diagnosis} type="blue" size="md">
               {d.diagnosis}
             </Tag>
           ))

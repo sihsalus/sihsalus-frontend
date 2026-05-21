@@ -6,8 +6,8 @@ import { mockWardViewContext } from '../../mock';
 import { type WardViewContext } from '../types';
 import AdmissionRequestsBar from './admission-requests-bar.component';
 
-jest.mocked(useAppContext<WardViewContext>).mockReturnValue(mockWardViewContext);
-const mockLaunchWorkspace = jest.mocked(launchWorkspace2);
+vi.mocked(useAppContext<WardViewContext>).mockReturnValue(mockWardViewContext);
+const mockLaunchWorkspace = vi.mocked(launchWorkspace2);
 describe('Admission Requests Button', () => {
   it('should launch workspace when clicked on manage button', async () => {
     const user = userEvent.setup();
@@ -18,7 +18,7 @@ describe('Admission Requests Button', () => {
   });
 
   it('should have one admission request', () => {
-    renderWithSwr(<AdmissionRequestsBar wardPendingPatients={[<div>Dummy Patient</div>]} />);
+    renderWithSwr(<AdmissionRequestsBar wardPendingPatients={[<div key="dummy-patient">Dummy Patient</div>]} />);
 
     expect(screen.getByText('1 admission request')).toBeInTheDocument();
   });

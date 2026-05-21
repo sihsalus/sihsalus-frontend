@@ -1,10 +1,30 @@
-@use '@carbon/colors';
-@use '@carbon/layout';
+@use "@carbon/colors";
+@use "@carbon/layout";
+
+.navItem {
+  width: 100%;
+}
+
+.navTooltip {
+  width: 100%;
+
+  :global(.cds--tooltip-trigger__wrapper),
+  :global(.cds--side-nav__link) {
+    display: block;
+    width: 100%;
+  }
+
+  :global(.cds--popover),
+  :global(.cds--popover-container),
+  :global(.cds--tooltip-content) {
+    z-index: 9000;
+  }
+}
 
 .menu {
   display: flex;
   align-items: center;
-  justify-content: center;
+  width: 100%;
 }
 
 .icon {

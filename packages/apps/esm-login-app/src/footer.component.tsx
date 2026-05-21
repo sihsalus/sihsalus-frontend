@@ -1,5 +1,5 @@
 import { Link, Tile } from '@carbon/react';
-import { ArrowRightIcon, useConfig } from '@openmrs/esm-framework';
+import { ArrowRightIcon, interpolateUrl, useConfig } from '@openmrs/esm-framework';
 import React, { useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
 
@@ -25,15 +25,22 @@ const Footer: React.FC = () => {
       <Tile className={styles.poweredByTile}>
         <div className={styles.poweredByContainer}>
           <span className={styles.poweredByText}>{t('builtWith', 'Built with')}</span>
-          <svg aria-label={t('openmrsLogo', 'OpenMRS Logo')} className={styles.poweredByLogo} role="img">
-            <use href="#omrs-logo-full-color"></use>
-          </svg>
+          {config.logo.src ? (
+            <img
+              alt={config.logo.alt || t('sihsalusLogo', 'Sihsalus logo')}
+              className={styles.poweredByLogo}
+              onError={handleImageLoadError}
+              src={interpolateUrl(config.logo.src)}
+            />
+          ) : (
+            <span className={styles.poweredByText}>{t('sihsalusLogo', 'Sihsalus')}</span>
+          )}
           <span className={`${styles.poweredByText} ${styles.poweredBySubtext}`}>
-            {t('poweredBySubtext', 'An open-source medical record system and global community')}
+            {t('poweredBySubtext', 'Historia clínica digital para la red Sihsalus')}
           </span>
           <Link
             className={styles.learnMoreButton}
-            href="https://openmrs.org"
+            href="https://inform.pucp.edu.pe/santaclotilde/"
             rel="noopener noreferrer"
             renderIcon={() => <ArrowRightIcon size={16} aria-label="Arrow right icon" />}
             target="_blank"

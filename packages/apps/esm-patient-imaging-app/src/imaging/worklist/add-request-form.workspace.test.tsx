@@ -5,16 +5,17 @@ import React from 'react';
 import * as api from '../../api';
 import AddNewRequestWorkspace from './add-request-form.workspace';
 
-jest.mock('../../api');
-jest.mock('@openmrs/esm-framework', () => ({
-  showSnackbar: jest.fn(),
-  createErrorHandler: jest.fn(),
-  useLayoutType: jest.fn().mockReturnValue('desktop'),
+vi.mock('../../api');
+vi.mock('@openmrs/esm-framework', async () => ({
+  ...(await vi.importActual('@openmrs/esm-framework')),
+  showSnackbar: vi.fn(),
+  createErrorHandler: vi.fn(),
+  useLayoutType: vi.fn().mockReturnValue('desktop'),
   ResponsiveWrapper: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
 }));
 
-jest.mock('@carbon/react', () => {
-  const original = jest.requireActual('@carbon/react');
+vi.mock('@carbon/react', async () => {
+  const original = await vi.importActual('@carbon/react');
   return {
     ...original,
     TextArea: ({ labelText, ...props }: any) => (
@@ -28,8 +29,8 @@ jest.mock('@carbon/react', () => {
 
 describe('AddNewProcedureStepWorkspace', () => {
   const patientUuid = 'patient-123';
-  const mockClose = jest.fn();
-  const mockCloseWithChanges = jest.fn();
+  const mockClose = vi.fn();
+  const mockCloseWithChanges = vi.fn();
   const orthancConfigMock = [{ id: 1, orthancBaseUrl: 'http://orthanc.local', orthancProxyUrl: '' }];
 
   const fillForm = async (user: ReturnType<typeof userEvent.setup>) => {
@@ -46,18 +47,18 @@ describe('AddNewProcedureStepWorkspace', () => {
     patientUuid,
     closeWorkspace: mockClose,
     closeWorkspaceWithSavedChanges: mockCloseWithChanges,
-    promptBeforeClosing: jest.fn(),
-    setTitle: jest.fn(),
+    promptBeforeClosing: vi.fn(),
+    setTitle: vi.fn(),
   };
 
   beforeEach(() => {
-    jest.clearAllMocks();
-    jest.resetAllMocks();
-    (api.useOrthancConfigurations as jest.Mock).mockReturnValue({
+    vi.clearAllMocks();
+    vi.resetAllMocks();
+    (api.useOrthancConfigurations as vi.Mock).mockReturnValue({
       data: [{ id: 1, orthancBaseUrl: 'http://orthanc.local', orthancProxyUrl: '' }],
     });
-    (api.useRequestsByPatient as jest.Mock).mockReturnValue({ mutate: jest.fn() });
-    (api.saveRequestProcedure as jest.Mock).mockResolvedValue({});
+    (api.useRequestsByPatient as vi.Mock).mockReturnValue({ mutate: vi.fn() });
+    (api.saveRequestProcedure as vi.Mock).mockResolvedValue({});
   });
 
   it('renders form fields correctly', () => {
@@ -65,9 +66,9 @@ describe('AddNewProcedureStepWorkspace', () => {
       <AddNewRequestWorkspace
         patientUuid={patientUuid}
         closeWorkspace={mockClose}
-        promptBeforeClosing={jest.fn()}
-        closeWorkspaceWithSavedChanges={jest.fn()}
-        setTitle={jest.fn()}
+        promptBeforeClosing={vi.fn()}
+        closeWorkspaceWithSavedChanges={vi.fn()}
+        setTitle={vi.fn()}
       />,
     );
 
@@ -82,9 +83,9 @@ describe('AddNewProcedureStepWorkspace', () => {
       <AddNewRequestWorkspace
         patientUuid={patientUuid}
         closeWorkspace={mockClose}
-        promptBeforeClosing={jest.fn()}
-        closeWorkspaceWithSavedChanges={jest.fn()}
-        setTitle={jest.fn()}
+        promptBeforeClosing={vi.fn()}
+        closeWorkspaceWithSavedChanges={vi.fn()}
+        setTitle={vi.fn()}
       />,
     );
     fireEvent.click(screen.getByRole('button', { name: /Save and Close/i }));
@@ -96,9 +97,9 @@ describe('AddNewProcedureStepWorkspace', () => {
       <AddNewRequestWorkspace
         patientUuid={patientUuid}
         closeWorkspace={mockClose}
-        promptBeforeClosing={jest.fn()}
-        closeWorkspaceWithSavedChanges={jest.fn()}
-        setTitle={jest.fn()}
+        promptBeforeClosing={vi.fn()}
+        closeWorkspaceWithSavedChanges={vi.fn()}
+        setTitle={vi.fn()}
       />,
     );
 
@@ -153,7 +154,7 @@ describe('AddNewProcedureStepWorkspace', () => {
 
   it('shows error snackbar on save failure', async () => {
     const user = userEvent.setup();
-    (api.saveRequestProcedure as jest.Mock).mockRejectedValue(new Error('Save failed'));
+    (api.saveRequestProcedure as vi.Mock).mockRejectedValue(new Error('Save failed'));
 
     render(<AddNewRequestWorkspace {...defaultProps} />);
 
@@ -178,8 +179,8 @@ describe('AddNewProcedureStepWorkspace', () => {
         patientUuid={patientUuid}
         closeWorkspace={mockClose}
         closeWorkspaceWithSavedChanges={mockCloseWithChanges}
-        promptBeforeClosing={jest.fn()}
-        setTitle={jest.fn()}
+        promptBeforeClosing={vi.fn()}
+        setTitle={vi.fn()}
       />,
     );
     fireEvent.click(screen.getByRole('button', { name: /Discard/i }));

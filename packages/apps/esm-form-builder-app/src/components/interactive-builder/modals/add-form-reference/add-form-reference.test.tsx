@@ -11,9 +11,9 @@ type OpenmrsFetchResponse = Promise<
   }>
 >;
 
-const mockedOpenmrsFetch = jest.mocked(openmrsFetch);
-const mockedCloseModal = jest.fn();
-const mockedOnSchemaChange = jest.fn();
+const mockedOpenmrsFetch = vi.mocked(openmrsFetch);
+const mockedCloseModal = vi.fn();
+const mockedOnSchemaChange = vi.fn();
 
 const formsResponse = [
   {

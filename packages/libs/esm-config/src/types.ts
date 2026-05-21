@@ -22,7 +22,7 @@ export interface ConfigSchema {
 }
 
 export interface Config {
-  [moduleName: string]: { [key: string]: any };
+  [moduleName: string]: any;
 }
 
 export interface ConfigObject {

@@ -1,30 +1,30 @@
 import { showSnackbar } from '@openmrs/esm-framework';
 import { fireEvent, render, screen, waitFor } from '@testing-library/react';
-import React from 'react';
 import * as api from '../../api';
 import DeleteStudyModal from './delete-study.modal';
 
-jest.mock('react-i18next', () => ({
+vi.mock('react-i18next', () => ({
   useTranslation: () => ({
-    t: (key: string, defaultValue: string) => defaultValue,
+    t: (_key: string, defaultValue: string) => defaultValue,
   }),
 }));
 
-jest.mock('../../api');
+vi.mock('../../api');
 
-jest.mock('@openmrs/esm-framework', () => ({
-  showSnackbar: jest.fn(),
+vi.mock('@openmrs/esm-framework', async () => ({
+  ...(await vi.importActual('@openmrs/esm-framework')),
+  showSnackbar: vi.fn(),
 }));
 
 describe('DeleteStudyModal', () => {
-  const closeDeleteModal = jest.fn();
-  const mutateMock = jest.fn();
+  const closeDeleteModal = vi.fn();
+  const mutateMock = vi.fn();
   const patientUuid = 'patient-uuid-123';
   const studyId = 42;
 
   beforeEach(() => {
-    jest.clearAllMocks();
-    (api.useStudiesByPatient as jest.Mock).mockReturnValue({
+    vi.clearAllMocks();
+    (api.useStudiesByPatient as vi.Mock).mockReturnValue({
       mutate: mutateMock,
     });
   });
@@ -42,7 +42,7 @@ describe('DeleteStudyModal', () => {
   });
 
   it('Calls deleteStudy, mutate, close modal and shows success snackbar on delete', async () => {
-    (api.deleteStudy as jest.Mock).mockResolvedValue({ ok: true });
+    (api.deleteStudy as vi.Mock).mockResolvedValue({ ok: true });
 
     render(<DeleteStudyModal closeDeleteModal={closeDeleteModal} studyId={studyId} patientUuid={patientUuid} />);
     fireEvent.click(screen.getByRole('button', { name: /Delete/i }));
@@ -63,7 +63,7 @@ describe('DeleteStudyModal', () => {
 
   it('shows error snackbar on delete failure', async () => {
     const errorMessage = 'Something went wrong';
-    (api.deleteStudy as jest.Mock).mockRejectedValueOnce(new Error(errorMessage));
+    (api.deleteStudy as vi.Mock).mockRejectedValueOnce(new Error(errorMessage));
 
     render(<DeleteStudyModal closeDeleteModal={closeDeleteModal} studyId={studyId} patientUuid={patientUuid} />);
     fireEvent.click(screen.getByRole('button', { name: /Delete/i }));

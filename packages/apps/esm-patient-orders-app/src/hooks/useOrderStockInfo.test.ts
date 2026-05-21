@@ -7,15 +7,16 @@ import { type OrderStockData } from '../types/order';
 import { useAreBackendModuleInstalled } from './useAreBackendModuleInstalled';
 import { useOrderStockInfo } from './useOrderStockInfo';
 
-const mockedOpenmrsFetch = jest.mocked(openmrsFetch);
-const mockUseAreBackendModuleInstalled = jest.mocked(useAreBackendModuleInstalled);
+const mockedOpenmrsFetch = vi.mocked(openmrsFetch);
+const mockUseAreBackendModuleInstalled = vi.mocked(useAreBackendModuleInstalled);
 
-jest.mock('./useAreBackendModuleInstalled', () => ({
-  useAreBackendModuleInstalled: jest.fn(),
+vi.mock('./useAreBackendModuleInstalled', () => ({
+  useAreBackendModuleInstalled: vi.fn(),
 }));
 
 describe('useOrderStockInfo', () => {
   beforeEach(() => {
+    vi.clearAllMocks();
     mockUseAreBackendModuleInstalled.mockReturnValue({
       areModulesInstalled: true,
       isCheckingModules: false,

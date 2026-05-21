@@ -1,6 +1,5 @@
 import classNames from 'classnames';
 import { Field } from 'formik';
-import React from 'react';
 import { useTranslation } from 'react-i18next';
 import { moduleName } from '../../../constants';
 import { Input } from '../../input/basic-input/input/input.component';

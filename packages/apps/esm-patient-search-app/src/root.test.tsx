@@ -4,7 +4,7 @@ import { render, screen } from '@testing-library/react';
 import { configSchema, type PatientSearchConfig } from './config-schema';
 import PatientSearchRootComponent from './root.component';
 
-const mockUseConfig = jest.mocked(useConfig<PatientSearchConfig>);
+const mockUseConfig = vi.mocked(useConfig<PatientSearchConfig>);
 
 describe('PatientSearchRootComponent', () => {
   beforeEach(() => {

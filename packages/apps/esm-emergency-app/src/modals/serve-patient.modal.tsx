@@ -7,12 +7,11 @@
  */
 
 import { Button, ModalBody, ModalFooter, ModalHeader, Tag } from '@carbon/react';
-import { launchWorkspace, showSnackbar, useConfig } from '@openmrs/esm-framework';
+import { launchWorkspace, showSnackbar } from '@openmrs/esm-framework';
 import { getPreferredIdentifier } from '@sihsalus/esm-sihsalus-shared';
 import React, { useCallback, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useSWRConfig } from 'swr';
-import { type Config } from '../config-schema';
 import { useEmergencyConfig } from '../hooks/usePriorityConfig';
 import { type EmergencyQueueEntry, updateEmergencyQueueEntry } from '../resources/emergency.resource';
 import styles from './serve-patient.modal.scss';
@@ -24,7 +23,6 @@ interface ServePatientModalProps {
 
 const ServePatientModal: React.FC<ServePatientModalProps> = ({ queueEntry, closeModal }) => {
   const { t } = useTranslation();
-  const config = useConfig<Config>();
   const { queueStatuses, emergencyTriageQueueUuid } = useEmergencyConfig();
   const { mutate } = useSWRConfig();
   const [isSubmitting, setIsSubmitting] = useState(false);

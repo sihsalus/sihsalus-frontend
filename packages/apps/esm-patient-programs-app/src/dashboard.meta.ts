@@ -6,5 +6,4 @@ export const dashboardMeta: DashboardLinkConfig & { slot: string } = {
   path: 'Programs',
   title: 'Programs',
   icon: 'omrs-icon-programs',
-  tooltip: 'programsTooltip',
 };

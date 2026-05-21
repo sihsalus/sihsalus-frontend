@@ -299,7 +299,12 @@ export default function PatientAdmitOrTransferForm({
                     invalidText={error?.message}
                   >
                     {dispositionsWithTypeTransfer.map((disposition) => (
-                      <RadioButton id={disposition.uuid} labelText={disposition.name} value={disposition.uuid} />
+                      <RadioButton
+                        key={disposition.uuid}
+                        id={disposition.uuid}
+                        labelText={disposition.name}
+                        value={disposition.uuid}
+                      />
                     ))}
                   </RadioButtonGroup>
                 </ResponsiveWrapper>
@@ -326,8 +331,8 @@ export default function PatientAdmitOrTransferForm({
         </div>
         {showErrorNotifications && (
           <div className={styles.notifications}>
-            {Object.values(errors).map((error) => (
-              <InlineNotification lowContrast subtitle={error?.message} hideCloseButton />
+            {Object.entries(errors).map(([fieldName, error]) => (
+              <InlineNotification key={fieldName} lowContrast subtitle={error?.message} hideCloseButton />
             ))}
           </div>
         )}

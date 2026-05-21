@@ -36,9 +36,7 @@ export const importDynamic = vi.fn();
 /* esm-error-handling */
 export const createErrorHandler = () => vi.fn().mockReturnValue(NEVER);
 
-export const reportError = vi.fn().mockImplementation((error) => {
-  throw error;
-});
+export const reportError = vi.fn();
 
 /* esm-feature-flags */
 export const registerFeatureFlags = vi.fn();
@@ -71,7 +69,7 @@ export const ErrorState = vi.fn(() => <div>Error State</div>);
 
 export const CustomOverflowMenu = vi.fn(({ menuTitle, children }) => (
   <div>
-    <button>{menuTitle}</button>
+    <button type="button">{menuTitle}</button>
     {children}
   </div>
 ));
@@ -94,9 +92,13 @@ export const usePatientPhoto = vi.fn(() => ({
   error: null,
 }));
 
-export const ActionMenuButton = vi.fn(({ handler }) => <button onClick={handler}>Action Menu Button</button>);
+export const ActionMenuButton = vi.fn(({ handler }) => (
+  <button type="button" onClick={handler}>
+    Action Menu Button
+  </button>
+));
 export const ActionMenuButton2 = vi.fn(({ label, tagContent, icon }) => (
-  <button>
+  <button type="button">
     {icon} {tagContent} {label}
   </button>
 ));

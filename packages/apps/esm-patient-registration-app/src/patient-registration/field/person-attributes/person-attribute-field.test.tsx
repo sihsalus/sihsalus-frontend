@@ -1,6 +1,5 @@
 import { render, screen } from '@testing-library/react';
 import { Form, Formik } from 'formik';
-import React from 'react';
 
 import { type FieldDefinition } from '../../../config-schema';
 import { useConceptAnswers } from '../field.resource';
@@ -8,18 +7,18 @@ import { useConceptAnswers } from '../field.resource';
 import { PersonAttributeField } from './person-attribute-field.component';
 import { usePersonAttributeType } from './person-attributes.resource';
 
-jest.mock('./person-attributes.resource', () => ({
-  ...jest.requireActual('./person-attributes.resource'),
-  usePersonAttributeType: jest.fn(),
+vi.mock('./person-attributes.resource', async () => ({
+  ...(await vi.importActual('./person-attributes.resource')),
+  usePersonAttributeType: vi.fn(),
 }));
 
-jest.mock('../field.resource', () => ({
-  ...jest.requireActual('../field.resource'),
-  useConceptAnswers: jest.fn(),
+vi.mock('../field.resource', async () => ({
+  ...(await vi.importActual('../field.resource')),
+  useConceptAnswers: vi.fn(),
 }));
 
-const mockUsePersonAttributeType = jest.mocked(usePersonAttributeType);
-const mockUseConceptAnswers = jest.mocked(useConceptAnswers);
+const mockUsePersonAttributeType = vi.mocked(usePersonAttributeType);
+const mockUseConceptAnswers = vi.mocked(useConceptAnswers);
 
 const mockPersonAttributeType = {
   format: 'java.lang.String',

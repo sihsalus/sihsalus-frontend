@@ -17,3 +17,15 @@ declare module '*.svg' {
   export default content;
 }
 declare module '*.png';
+declare module 'geopattern' {
+  interface GeoPatternInstance {
+    toDataUrl: () => string;
+  }
+
+  interface GeoPatternStatic {
+    generate: (seed: string) => GeoPatternInstance;
+  }
+
+  const geopattern: GeoPatternStatic;
+  export = geopattern;
+}

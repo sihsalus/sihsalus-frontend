@@ -1,0 +1,51 @@
+{
+  "$schema": "https://json.openmrs.org/routes.schema.json",
+  "backendDependencies": {
+    "webservices.rest": ">=2.2.0"
+  },
+  "extensions": [
+    {
+      "name": "tamizajes-home-link",
+      "component": "tamizajesHomeLink",
+      "slot": "homepage-dashboard-slot",
+      "meta": {
+        "name": "tamizajes",
+        "title": "Tamizajes",
+        "slot": "tamizajes-home-slot",
+        "path": "/home/tamizajes"
+      },
+      "order": 45
+    },
+    {
+      "name": "tamizajes-home",
+      "component": "root",
+      "slot": "tamizajes-home-slot",
+      "order": 0,
+      "online": true,
+      "offline": false
+    },
+    {
+      "name": "tamizajes-dashboard-link",
+      "component": "tamizajesDashboardLink",
+      "slot": "patient-chart-dashboard-slot",
+      "order": 11,
+      "meta": {
+        "slot": "patient-chart-tamizajes-dashboard-slot",
+        "columns": 1,
+        "columnSpan": 1,
+        "title": "Tamizajes",
+        "path": "tamizajes",
+        "icon": "omrs-icon-lab-order",
+        "layoutMode": "anchored"
+      }
+    },
+    {
+      "name": "tamizajes-dashboard",
+      "component": "tamizajesDashboard",
+      "slot": "patient-chart-tamizajes-dashboard-slot",
+      "order": 0,
+      "online": true,
+      "offline": false
+    }
+  ]
+}

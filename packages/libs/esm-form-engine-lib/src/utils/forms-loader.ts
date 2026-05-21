@@ -76,7 +76,7 @@ export function getLatestFormVersion(forms: FormJsonFile[]): FormJsonFile {
   if (forms.length === 1) {
     return forms[0];
   }
-  const candidates = forms.map((f) => f.semanticVersion);
+  const candidates = forms.map((f) => f.semanticVersion).filter((v): v is string => Boolean(v));
   const latest = candidates.sort(formsVersionComparator)[candidates.length - 1];
   return forms.find((f) => f.semanticVersion === latest) ?? forms[0];
 }

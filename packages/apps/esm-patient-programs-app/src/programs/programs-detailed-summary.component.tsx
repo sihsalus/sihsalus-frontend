@@ -147,6 +147,7 @@ const ProgramsDetailedSummary: React.FC<ProgramsDetailedSummaryProps> = ({ patie
                   <TableRow>
                     {headers.map((header) => (
                       <TableHeader
+                        key={header.key}
                         className={classNames(styles.productiveHeading01, styles.text02)}
                         {...getHeaderProps({
                           header,

@@ -1,4 +1,3 @@
-import React from 'react';
 import { afterAll, afterEach, beforeAll, describe, expect, it, vi } from 'vitest';
 import '@testing-library/jest-dom/vitest';
 import { act, render, screen, waitFor } from '@testing-library/react';
@@ -8,7 +7,11 @@ const mockCloseSnackbar = vi.fn();
 
 describe('Snackbar component', () => {
   beforeAll(() => vi.useFakeTimers({ shouldAdvanceTime: true }));
-  afterEach(vi.runAllTimers);
+  afterEach(() => {
+    act(() => {
+      vi.runAllTimers();
+    });
+  });
   afterAll(vi.useRealTimers);
 
   it('renders a snackbar notification', () => {

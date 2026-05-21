@@ -151,7 +151,7 @@ const OfflineActionsTable: React.FC<OfflineActionsTableProps> = ({
               <TableRow>
                 <TableSelectAll {...getSelectionProps()} disabled={disableEditing} />
                 {headers.map((header) => (
-                  <TableHeader {...getHeaderProps({ header })} isSortable>
+                  <TableHeader key={header.key} {...getHeaderProps({ header })} isSortable>
                     {header.header}
                   </TableHeader>
                 ))}
@@ -159,7 +159,7 @@ const OfflineActionsTable: React.FC<OfflineActionsTableProps> = ({
             </TableHead>
             <TableBody>
               {rows.map((row) => (
-                <TableRow {...getRowProps({ row })}>
+                <TableRow key={row.id} {...getRowProps({ row })}>
                   <TableSelectRow {...getSelectionProps({ row })} disabled={disableEditing} />
                   {row.cells.map((cell) => (
                     <TableCell key={cell.id}>{cell.value?.value ?? cell.value}</TableCell>

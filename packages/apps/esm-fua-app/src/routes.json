@@ -141,20 +141,6 @@
       "order": 4
     }
   ],
-  "workspaces": [
-    {
-      "name": "fua-encounter-workspace",
-      "component": "fuaEncounterWorkspace",
-      "type": "fua-encounter",
-      "title": "createFuaWorkspaceTitle"
-    },
-    {
-      "name": "fua-viewer-workspace",
-      "component": "fuaViewerWorkspace",
-      "type": "form",
-      "title": "viewFua"
-    }
-  ],
   "modals": [
     {
       "name": "change-fua-status-modal",

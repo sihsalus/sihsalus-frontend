@@ -1,3 +1,4 @@
+import { Home } from '@carbon/react/icons';
 import { ExtensionSlot } from '@openmrs/esm-framework';
 import React from 'react';
 import { useTranslation } from 'react-i18next';
@@ -8,7 +9,7 @@ const OfflineToolsNavMenu: React.FC = () => {
   const { t } = useTranslation();
   return (
     <>
-      <OfflineToolsNavLink title={t('home', 'Home')} />
+      <OfflineToolsNavLink icon={Home} title={t('home', 'Home')} />
       <ExtensionSlot name="offline-tools-page-slot" />
     </>
   );

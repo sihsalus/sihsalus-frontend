@@ -1,15 +1,14 @@
 import { getDefaultsFromConfigSchema, useConfig } from '@openmrs/esm-framework';
 import { render, screen } from '@testing-library/react';
-import React from 'react';
 import { type BillingConfig, configSchema } from '../../../config-schema';
 import { type MappedBill } from '../../../types';
 import PaymentHistory from './payment-history.component';
 
-jest.mock('../../../helpers', () => ({
-  convertToCurrency: jest.fn((amount, currency) => `${currency} ${amount.toFixed(2)}`),
+vi.mock('../../../helpers', () => ({
+  convertToCurrency: vi.fn((amount, currency) => `${currency} ${amount.toFixed(2)}`),
 }));
 
-const mockUseConfig = jest.mocked(useConfig<BillingConfig>);
+const mockUseConfig = vi.mocked(useConfig<BillingConfig>);
 
 describe('PaymentHistory Component', () => {
   beforeEach(() => {

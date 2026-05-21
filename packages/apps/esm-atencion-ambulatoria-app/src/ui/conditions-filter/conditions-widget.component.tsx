@@ -232,9 +232,9 @@ const ConditionsWidget: React.FC<ConditionsWidgetProps> = ({
     freeText,
   ]);
 
-  const focusOnSearchInput = () => {
+  const focusOnSearchInput = useCallback(() => {
     searchInputRef?.current?.focus();
-  };
+  }, []);
 
   const handleSearchTermChange = (searchTerm: string) => {
     setSearchTerm(searchTerm);
@@ -252,7 +252,7 @@ const ConditionsWidget: React.FC<ConditionsWidgetProps> = ({
       }
       isEditing ? handleUpdate() : handleCreate();
     }
-  }, [handleUpdate, isEditing, handleCreate, isSubmittingForm, errors, setIsSubmittingForm]);
+  }, [handleUpdate, isEditing, handleCreate, isSubmittingForm, errors, setIsSubmittingForm, focusOnSearchInput]);
 
   return (
     <div className={styles.formContainer}>
@@ -417,17 +417,14 @@ function SearchResults({
     return <InlineLoading className={styles.loader} description={t('searching', 'Searching') + '...'} />;
   }
 
-  if (!isSearching && searchResults?.length > 0) {
+  if (searchResults?.length > 0) {
     return (
       <ul className={styles.conditionsList}>
         {searchResults?.map((searchResult) => (
-          <li
-            className={styles.condition}
-            key={searchResult?.uuid}
-            onClick={() => onConditionChange(searchResult)}
-            role="menuitem"
-          >
-            {searchResult.display}
+          <li key={searchResult?.uuid}>
+            <button className={styles.condition} onClick={() => onConditionChange(searchResult)} type="button">
+              {searchResult.display}
+            </button>
           </li>
         ))}
       </ul>

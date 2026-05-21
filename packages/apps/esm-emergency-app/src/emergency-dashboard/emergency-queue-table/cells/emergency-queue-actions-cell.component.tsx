@@ -68,7 +68,7 @@ export const EmergencyQueueActionsCell: React.FC<EmergencyQueueTableCellProps> =
 
   const handleGoToChart = useCallback(() => {
     navigate({
-      to: `\${openmrsSpaBase}/patient/${queueEntry.patient.uuid}/chart/Patient%20Summary`,
+      to: `${globalThis.spaBase}/patient/${queueEntry.patient.uuid}/chart/Patient%20Summary`,
     });
   }, [queueEntry.patient.uuid]);
 

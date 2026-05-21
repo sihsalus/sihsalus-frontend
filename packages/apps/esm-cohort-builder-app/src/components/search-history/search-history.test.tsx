@@ -1,9 +1,9 @@
 import { render, screen } from '@testing-library/react';
 import SearchHistory from './search-history.component';
 
-const _mockGetSearchHistory = jest.fn();
+const _mockGetSearchHistory = vi.fn();
 
-jest.mock('./search-history.utils.ts', () => ({
+vi.mock('./search-history.utils.ts', () => ({
   getSearchHistory: () => mockSearchHistory,
 }));
 
@@ -79,13 +79,13 @@ const mockSearchHistory = [
 
 describe('Test the search history component', () => {
   it("should render a message when there's no history to display", async () => {
-    render(<SearchHistory isHistoryUpdated={false} setIsHistoryUpdated={jest.fn()} />);
+    render(<SearchHistory isHistoryUpdated={false} setIsHistoryUpdated={vi.fn()} />);
 
     expect(screen.getByText('There are no data to display')).toBeInTheDocument();
   });
 
   it('should display the search history', async () => {
-    render(<SearchHistory isHistoryUpdated={true} setIsHistoryUpdated={jest.fn()} />);
+    render(<SearchHistory isHistoryUpdated={true} setIsHistoryUpdated={vi.fn()} />);
 
     expect(screen.getByText(/clear search history/i)).toBeInTheDocument();
     expect(screen.getByText('2')).toBeInTheDocument();

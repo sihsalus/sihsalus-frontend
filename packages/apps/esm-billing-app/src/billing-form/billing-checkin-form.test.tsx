@@ -1,15 +1,14 @@
 import { useConfig } from '@openmrs/esm-framework';
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import React from 'react';
 import { type BillingConfig } from '../config-schema';
 import BillingCheckInForm from './billing-checkin-form.component';
 import { useBillableItems, useCashPoint, usePaymentMethods } from './billing-form.resource';
 
-const mockUseConfig = jest.mocked(useConfig<BillingConfig>);
-const mockUseCashPoint = jest.mocked(useCashPoint);
-const mockUseBillableItems = jest.mocked(useBillableItems);
-const mockUsePaymentMethods = jest.mocked(usePaymentMethods);
+const mockUseConfig = vi.mocked(useConfig<BillingConfig>);
+const mockUseCashPoint = vi.mocked(useCashPoint);
+const mockUseBillableItems = vi.mocked(useBillableItems);
+const mockUsePaymentMethods = vi.mocked(usePaymentMethods);
 
 const mockCashPoints = [
   {
@@ -84,18 +83,18 @@ const mockPaymentMethods = [
   },
 ];
 
-jest.mock('./billing-form.resource', () => ({
-  useBillableItems: jest.fn(),
-  useCashPoint: jest.fn(),
-  createPatientBill: jest.fn(),
-  usePaymentMethods: jest.fn(),
+vi.mock('./billing-form.resource', () => ({
+  useBillableItems: vi.fn(),
+  useCashPoint: vi.fn(),
+  createPatientBill: vi.fn(),
+  usePaymentMethods: vi.fn(),
 }));
 
-const testProps = { patientUuid: 'some-patient-uuid', setExtraVisitInfo: jest.fn() };
+const testProps = { patientUuid: 'some-patient-uuid', setExtraVisitInfo: vi.fn() };
 
 describe('BillingCheckInForm', () => {
   beforeEach(() => {
-    jest.resetAllMocks();
+    vi.resetAllMocks();
     mockUseConfig.mockReturnValue({
       patientCategory: {
         paymentDetails: 'fbc0702d-b4c9-4968-be63-af8ad3ad6239',

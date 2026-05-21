@@ -7,17 +7,17 @@ import { mockSession } from 'test-utils';
 
 import ListsDashboard from './lists-dashboard.component';
 
-const mockOpenmrsFetch = jest.mocked(openmrsFetch);
-const mockUseLocation = jest.mocked(useLocation);
-const mockUseSession = jest.mocked(useSession);
+const mockOpenmrsFetch = vi.mocked(openmrsFetch);
+const mockUseLocation = vi.mocked(useLocation);
+const mockUseSession = vi.mocked(useSession);
 
-jest.mock('@sihsalus/esm-rbac', () => ({
+vi.mock('@sihsalus/esm-rbac', async () => ({
   AppErrorBoundary: ({ children }: { children: React.ReactNode }) => <>{children}</>,
 }));
 
-jest.mock('react-router-dom', () => ({
-  ...jest.requireActual('react-router-dom'),
-  useLocation: jest.fn(),
+vi.mock('react-router-dom', async () => ({
+  ...(await vi.importActual('react-router-dom')),
+  useLocation: vi.fn(),
 }));
 
 describe('ListsDashboard', () => {

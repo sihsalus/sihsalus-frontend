@@ -3,22 +3,21 @@ import { type FetchResponse, openmrsFetch, showSnackbar } from '@openmrs/esm-fra
 import { screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { renderWithSwr } from '@tools/test-helpers';
-import React from 'react';
 
 import Import from './import.component';
 import { startImportWithSubscription } from './import.resource';
 
-const mockOpenmrsFetch = openmrsFetch as jest.Mock;
-const mockShowSnackbar = jest.mocked(showSnackbar);
-const mockStartImportWithSubscription = jest.mocked(startImportWithSubscription);
+const mockOpenmrsFetch = openmrsFetch as vi.Mock;
+const mockShowSnackbar = vi.mocked(showSnackbar);
+const mockStartImportWithSubscription = vi.mocked(startImportWithSubscription);
 
-jest.mock('./import.resource', () => {
-  const originalModule = jest.requireActual<Record<string, unknown>>('./import.resource');
+vi.mock('./import.resource', async () => {
+  const originalModule = await vi.importActual<Record<string, unknown>>('./import.resource');
 
   return {
     ...originalModule,
-    startImportWithSubscription: jest.fn(),
-    startImportWithFile: jest.fn(),
+    startImportWithSubscription: vi.fn(),
+    startImportWithFile: vi.fn(),
   };
 });
 
@@ -64,7 +63,7 @@ describe('Import component', () => {
 
     await user.click(screen.getByText('Import from Subscription'));
 
-    expect(mockStartImportWithSubscription).toHaveBeenCalledWith(new AbortController());
+    expect(mockStartImportWithSubscription).toHaveBeenCalledWith(expect.any(AbortController));
     expect(mockStartImportWithSubscription).toHaveBeenCalledTimes(1);
 
     expect(mockShowSnackbar).toHaveBeenCalledWith(

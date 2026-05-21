@@ -12,50 +12,50 @@ import { type WardViewContext } from './src/types';
 import DefaultWardPatientCardHeader from './src/ward-view/default-ward/default-ward-patient-card-header.component';
 import { createAndGetWardPatientGrouping } from './src/ward-view/ward-view.resource';
 
-jest.mock('./src/hooks/useAdmissionLocation', () => ({
-  useAdmissionLocation: jest.fn(),
+vi.mock('./src/hooks/useAdmissionLocation', () => ({
+  useAdmissionLocation: vi.fn(),
 }));
-jest.mock('./src/hooks/useInpatientAdmission', () => ({
-  useInpatientAdmission: jest.fn(),
+vi.mock('./src/hooks/useInpatientAdmission', () => ({
+  useInpatientAdmission: vi.fn(),
 }));
-jest.mock('./src/hooks/useInpatientRequest', () => ({
-  useInpatientRequest: jest.fn(),
+vi.mock('./src/hooks/useInpatientRequest', () => ({
+  useInpatientRequest: vi.fn(),
 }));
-jest.mock('./src/hooks/useWardPatientGrouping', () => ({
-  useWardPatientGrouping: jest.fn(),
+vi.mock('./src/hooks/useWardPatientGrouping', () => ({
+  useWardPatientGrouping: vi.fn(),
 }));
-const mockAdmissionLocationResponse = jest.mocked(useAdmissionLocation).mockReturnValue({
+const mockAdmissionLocationResponse = vi.mocked(useAdmissionLocation).mockReturnValue({
   error: undefined,
-  mutate: jest.fn(),
+  mutate: vi.fn(),
   isValidating: false,
   isLoading: false,
   admissionLocation: mockAdmissionLocation,
 });
-const mockInpatientAdmissionResponse = jest.mocked(useInpatientAdmission).mockReturnValue({
+const mockInpatientAdmissionResponse = vi.mocked(useInpatientAdmission).mockReturnValue({
   data: mockInpatientAdmissions,
   hasMore: false,
-  loadMore: jest.fn(),
+  loadMore: vi.fn(),
   isValidating: false,
   isLoading: false,
   error: undefined,
-  mutate: jest.fn(),
+  mutate: vi.fn(),
   totalCount: mockInpatientAdmissions.length,
   nextUri: null,
 });
 
-const mockInpatientRequestResponse = jest.mocked(useInpatientRequest).mockReturnValue({
+const mockInpatientRequestResponse = vi.mocked(useInpatientRequest).mockReturnValue({
   inpatientRequests: mockInpatientRequests,
   hasMore: false,
-  loadMore: jest.fn(),
+  loadMore: vi.fn(),
   isValidating: false,
   isLoading: false,
   error: undefined,
-  mutate: jest.fn(),
+  mutate: vi.fn(),
   totalCount: mockInpatientRequests.length,
   nextUri: null,
 });
 
-export const mockWardPatientGroupDetails = jest.mocked(useWardPatientGrouping).mockReturnValue({
+export const mockWardPatientGroupDetails = vi.mocked(useWardPatientGrouping).mockReturnValue({
   admissionLocationResponse: mockAdmissionLocationResponse(),
   inpatientAdmissionResponse: mockInpatientAdmissionResponse(),
   inpatientRequestResponse: mockInpatientRequestResponse(),
@@ -67,7 +67,7 @@ export const mockWardPatientGroupDetails = jest.mocked(useWardPatientGrouping).m
     mockLocationInpatientWard,
   ),
   isLoading: false,
-  mutate: jest.fn(),
+  mutate: vi.fn(),
 });
 
 export const mockWardViewContext: WardViewContext = {

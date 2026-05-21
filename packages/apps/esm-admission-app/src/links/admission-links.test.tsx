@@ -6,12 +6,22 @@ import AdmissionAppMenuLink from './admission-app-menu-link.component';
 import AdmissionDashboardLink from './admission-dashboard-link.component';
 import AdmissionMergePatientsAction from './admission-merge-patients-action.component';
 
-const mockNavigate = jest.mocked(navigate);
+vi.mock('@openmrs/esm-framework', async () => {
+  const React = require('react');
+
+  return {
+    ...(await vi.importActual('@openmrs/esm-framework')),
+    ConfigurableLink: ({ children, to, ...props }) => React.createElement('a', { href: to, ...props }, children),
+    navigate: vi.fn(),
+  };
+});
+
+const mockNavigate = vi.mocked(navigate);
 
 describe('admission navigation links', () => {
   beforeEach(() => {
-    jest.clearAllMocks();
-    globalThis.getOpenmrsSpaBase = jest.fn(() => '/openmrs/spa/');
+    vi.clearAllMocks();
+    globalThis.getOpenmrsSpaBase = vi.fn(() => '/openmrs/spa/');
     globalThis.spaBase = '/openmrs/spa';
   });
 
@@ -25,10 +35,7 @@ describe('admission navigation links', () => {
   it('renders the dashboard tile link to the admission app', () => {
     render(<AdmissionDashboardLink />);
 
-    expect(screen.getByRole('link', { name: /admisión reporte de admisiones por ups/i })).toHaveAttribute(
-      'href',
-      '/openmrs/spa/admission',
-    );
+    expect(screen.getByRole('link', { name: /admisiones/i })).toHaveAttribute('href', '/openmrs/spa/home/admission');
     expect(mockNavigate).not.toHaveBeenCalled();
   });
 

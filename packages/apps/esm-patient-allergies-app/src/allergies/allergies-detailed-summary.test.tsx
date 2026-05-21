@@ -4,8 +4,8 @@ import React from 'react';
 import { mockFhirAllergyIntoleranceResponse, mockFhirPatient, renderWithSwr, waitForLoadingToFinish } from 'test-utils';
 import AllergiesDetailedSummary from './allergies-detailed-summary.component';
 
-const mockOpenmrsFetch = openmrsFetch as jest.Mock;
-mockOpenmrsFetch.mockImplementation(jest.fn());
+const mockOpenmrsFetch = openmrsFetch as vi.Mock;
+mockOpenmrsFetch.mockImplementation(vi.fn());
 void React;
 
 describe('AllergiesDetailedSummary', () => {

@@ -139,7 +139,7 @@ const BillsTable: React.FC = () => {
       goTo(1);
       setSearchString(e.target.value);
     },
-    [goTo, setSearchString],
+    [goTo],
   );
 
   const handleFilterChange = useCallback(
@@ -213,18 +213,16 @@ const BillsTable: React.FC = () => {
                     </TableRow>
                   </TableHead>
                   <TableBody>
-                    {rows.map((row) => (
-                      <TableRow
-                        key={row.id}
-                        {...getRowProps({
-                          row,
-                        })}
-                      >
-                        {row.cells.map((cell) => (
-                          <TableCell key={cell.id}>{cell.value}</TableCell>
-                        ))}
-                      </TableRow>
-                    ))}
+                    {rows.map((row) => {
+                      const { key, ...rowProps } = getRowProps({ row });
+                      return (
+                        <TableRow key={key} {...rowProps}>
+                          {row.cells.map((cell) => (
+                            <TableCell key={cell.id}>{cell.value}</TableCell>
+                          ))}
+                        </TableRow>
+                      );
+                    })}
                   </TableBody>
                 </Table>
               </TableContainer>

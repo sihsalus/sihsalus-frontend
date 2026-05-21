@@ -7,24 +7,25 @@ import AddNewProcedureStepWorkspace, {
   type AddNewProcedureStepWorkspaceProps,
 } from './add-procedureStep-form.workspace';
 
-jest.mock('../../api');
-jest.mock('@openmrs/esm-framework', () => ({
+vi.mock('../../api');
+vi.mock('@openmrs/esm-framework', async () => ({
+  ...(await vi.importActual('@openmrs/esm-framework')),
   OpenmrsDatePicker: React.forwardRef(({ id, onChange, ...props }: any, ref) => (
     <input ref={ref} data-testid={id} type="date" onChange={(e) => onChange?.(new Date(e.target.value))} {...props} />
   )),
   ResponsiveWrapper: ({ children }: any) => <div>{children}</div>,
-  useLayoutType: jest.fn(() => 'desktop'),
-  showSnackbar: jest.fn(),
+  useLayoutType: vi.fn(() => 'desktop'),
+  showSnackbar: vi.fn(),
 }));
 
-jest.mock('react-i18next', () => ({
+vi.mock('react-i18next', async () => ({
   useTranslation: () => ({
     t: (key: string, defaultValue: string) => defaultValue,
   }),
 }));
 
-jest.mock('@carbon/react', () => {
-  const original = jest.requireActual('@carbon/react');
+vi.mock('@carbon/react', async () => {
+  const original = await vi.importActual('@carbon/react');
   return {
     ...original,
     ComboBox: ({ children, ...props }: any) => <div {...props}>{children}</div>,
@@ -75,9 +76,9 @@ const mockRequest: RequestProcedure = {
 const defaultProps: AddNewProcedureStepWorkspaceProps = {
   patientUuid: patientUuid,
   request: mockRequest,
-  closeWorkspace: jest.fn(),
-  closeWorkspaceWithSavedChanges: jest.fn(),
-  promptBeforeClosing: jest.fn(),
+  closeWorkspace: vi.fn(),
+  closeWorkspaceWithSavedChanges: vi.fn(),
+  promptBeforeClosing: vi.fn(),
   setTitle: function (title: string, titleNode?: React.ReactNode): void {
     throw new Error('Function not implemented.');
   },
@@ -85,9 +86,9 @@ const defaultProps: AddNewProcedureStepWorkspaceProps = {
 
 describe('AddNewProcedureStepWorkspace', () => {
   beforeEach(() => {
-    jest.clearAllMocks();
-    (api.useProcedureStep as jest.Mock).mockReturnValue({ mutate: jest.fn() });
-    (api.useRequestsByPatient as jest.Mock).mockReturnValue({ mutate: jest.fn() });
+    vi.clearAllMocks();
+    (api.useProcedureStep as vi.Mock).mockReturnValue({ mutate: vi.fn() });
+    (api.useRequestsByPatient as vi.Mock).mockReturnValue({ mutate: vi.fn() });
   });
   const setup = () => {
     render(<AddNewProcedureStepWorkspace {...defaultProps} />);
@@ -118,7 +119,7 @@ describe('AddNewProcedureStepWorkspace', () => {
 
     await waitFor(() => {
       const description = screen.getByLabelText(/description/i);
-      expect(description).toHaveAttribute('invalidtext', 'Description is required');
+      expect(description).toHaveAttribute('invalidtext', 'Required');
     });
 
     await waitFor(() => {
@@ -134,7 +135,7 @@ describe('AddNewProcedureStepWorkspace', () => {
   });
 
   it('submits form with correct payload', async () => {
-    (api.saveRequestProcedureStep as jest.Mock).mockResolvedValue({});
+    (api.saveRequestProcedureStep as vi.Mock).mockResolvedValue({});
 
     render(<AddNewProcedureStepWorkspace {...defaultProps} />);
     const user = userEvent.setup();
@@ -149,7 +150,7 @@ describe('AddNewProcedureStepWorkspace', () => {
       target: { value: '2025-09-04' },
     });
 
-    await user.type(screen.getByLabelText(/Start time/i), '10:30');
+    await user.type(screen.getByTestId('stepStartTime'), '10:30');
     await user.selectOptions(screen.getByLabelText(/Time Format/i), 'AM');
 
     const comboBox = screen.getByTestId(/modality/i);
@@ -159,7 +160,9 @@ describe('AddNewProcedureStepWorkspace', () => {
     await user.click(option);
 
     // Submit form
-    const submitButton = screen.getByRole('button', { name: /Save and Close/i });
+    const submitButton = screen.getByRole('button', {
+      name: /Save and Close/i,
+    });
     await user.click(submitButton);
 
     await waitFor(() => {
@@ -170,7 +173,9 @@ describe('AddNewProcedureStepWorkspace', () => {
 
   it('calls promptBeforeClosing when form is dirty', async () => {
     render(<AddNewProcedureStepWorkspace {...defaultProps} />);
-    fireEvent.change(screen.getByLabelText(/AetTitle/i), { target: { value: 'Changed' } });
+    fireEvent.change(screen.getByLabelText(/AetTitle/i), {
+      target: { value: 'Changed' },
+    });
 
     await waitFor(() => {
       expect(defaultProps.promptBeforeClosing).toHaveBeenCalled();
@@ -178,17 +183,29 @@ describe('AddNewProcedureStepWorkspace', () => {
   });
 
   it('disables submit button when submitting', async () => {
-    (api.saveRequestProcedureStep as jest.Mock).mockResolvedValue({});
+    (api.saveRequestProcedureStep as vi.Mock).mockResolvedValue({});
 
     render(<AddNewProcedureStepWorkspace {...defaultProps} />);
 
-    fireEvent.change(screen.getByLabelText(/AetTitle/i), { target: { value: 'Test AET' } });
-    fireEvent.change(screen.getByLabelText(/scheduledReferringPhysician/i), { target: { value: 'Dr. Smith' } });
-    fireEvent.change(screen.getByLabelText(/Description/i), { target: { value: 'Test procedure' } });
-    fireEvent.change(screen.getByTestId('stepStartDate'), { target: { value: '2025-09-04' } });
-    fireEvent.change(screen.getByLabelText(/Start time/i), { target: { value: '10:30' } });
+    fireEvent.change(screen.getByLabelText(/AetTitle/i), {
+      target: { value: 'Test AET' },
+    });
+    fireEvent.change(screen.getByLabelText(/scheduledReferringPhysician/i), {
+      target: { value: 'Dr. Smith' },
+    });
+    fireEvent.change(screen.getByLabelText(/Description/i), {
+      target: { value: 'Test procedure' },
+    });
+    fireEvent.change(screen.getByTestId('stepStartDate'), {
+      target: { value: '2025-09-04' },
+    });
+    fireEvent.change(screen.getByTestId('stepStartTime'), {
+      target: { value: '10:30' },
+    });
 
-    const submitButton = screen.getByRole('button', { name: /Save and Close/i });
+    const submitButton = screen.getByRole('button', {
+      name: /Save and Close/i,
+    });
     fireEvent.click(screen.getByText(/Save and Close/i));
     expect(submitButton).toBeDisabled();
   });

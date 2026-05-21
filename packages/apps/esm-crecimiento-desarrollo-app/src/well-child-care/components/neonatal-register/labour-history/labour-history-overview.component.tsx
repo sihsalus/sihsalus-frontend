@@ -10,21 +10,20 @@ import type { LabourHistoryTableRow } from '../../../common/types';
 
 import LabourHistoryChart from './labour-history-chart.component';
 import styles from './labour-history-overview.scss';
-import PaginatedLabourHistory from './paginated-labour-history.component';
 
 interface LabourHistoryOverviewProps {
   patientUuid: string;
   pageSize?: number;
 }
 
-const LabourHistoryOverview: React.FC<LabourHistoryOverviewProps> = ({ patientUuid, pageSize = 10 }) => {
+const LabourHistoryOverview: React.FC<LabourHistoryOverviewProps> = ({ patientUuid, pageSize: _pageSize = 10 }) => {
   const { t } = useTranslation();
   const headerTitle = t('labourHistorySummary', 'Labour history summary');
   const [chartView, setChartView] = useState(false);
   const isTablet = useLayoutType() === 'tablet';
 
   const config = useConfig();
-  const { prenatalEncounter: data, error, isLoading, mutate } = useCurrentPregnancy(patientUuid);
+  const { prenatalEncounter: data, error, isLoading } = useCurrentPregnancy(patientUuid);
   const formPrenatalUuid = config.formsList.deliveryOrAbortion;
 
   const launchLabourForm = useCallback(() => {
@@ -34,33 +33,13 @@ const LabourHistoryOverview: React.FC<LabourHistoryOverviewProps> = ({ patientUu
     });
   }, [formPrenatalUuid]);
 
-  const tableHeaders = useMemo(
-    () => [
-      { key: 'admissionDate', header: t('admissionDate', 'Admission Date'), isSortable: true },
-      { key: 'terminationDate', header: t('terminationDate', 'Termination Date'), isSortable: true },
-      { key: 'maternalPulse', header: t('maternalPulse', 'Maternal Pulse (bpm)'), isSortable: true },
-      { key: 'systolicBP', header: t('systolicBP', 'Systolic BP (mmHg)'), isSortable: true },
-      { key: 'diastolicBP', header: t('diastolicBP', 'Diastolic BP (mmHg)'), isSortable: true },
-      { key: 'temperature', header: t('temperatureCelsius', 'Temperature (°C)'), isSortable: true },
-      { key: 'maternalWeight', header: t('maternalWeight', 'Maternal Weight (Kg)'), isSortable: true },
-      { key: 'gestationalAge', header: t('gestationalAge', 'Gestational Age (weeks)'), isSortable: true },
-      { key: 'fetalHeartRate', header: t('fetalHeartRateBpm', 'Fetal heart rate (bpm)'), isSortable: true },
-      { key: 'uterineHeight', header: t('uterineHeightCm', 'Uterine height (cm)'), isSortable: true },
-      { key: 'dilatation', header: t('dilatation', 'Dilatation (cm)'), isSortable: true },
-      { key: 'amnioticFluid', header: t('amnioticFluid', 'Amniotic Fluid'), isSortable: true },
-      { key: 'deliveryType', header: t('deliveryType', 'Delivery type'), isSortable: true },
-    ],
-    [t],
-  );
-
   const tableRows: LabourHistoryTableRow[] = useMemo(() => {
     if (!data?.obs) return [];
 
     const rows: LabourHistoryTableRow[] = [];
     let rowId = 0;
 
-    data.obs.forEach((obs) => {
-      const groupMembers = obs.groupMembers || [];
+    data.obs.forEach((_obs) => {
       const row: LabourHistoryTableRow = {
         id: `row-${rowId++}`,
         date: formatDate(parseDate(data.encounterDatetime), { mode: 'wide', time: true }),

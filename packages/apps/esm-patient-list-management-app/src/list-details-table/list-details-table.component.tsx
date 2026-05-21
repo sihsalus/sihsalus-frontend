@@ -80,6 +80,12 @@ const ListDetailsTable: React.FC<ListDetailsTableProps> = ({
   const layout = useLayoutType();
   const responsiveSize = isDesktop(layout) ? 'sm' : 'lg';
   const patientListsPath = globalThis.getOpenmrsSpaBase() + 'home/patient-lists';
+  const linkClassName = typeof styles.link === 'string' ? styles.link : undefined;
+  const searchClassName = typeof styles.searchOverrides === 'string' ? styles.searchOverrides : undefined;
+  const desktopHeaderClassName = typeof styles.desktopHeader === 'string' ? styles.desktopHeader : undefined;
+  const tabletHeaderClassName = typeof styles.tabletHeader === 'string' ? styles.tabletHeader : undefined;
+  const desktopRowClassName = typeof styles.desktopRow === 'string' ? styles.desktopRow : undefined;
+  const tabletRowClassName = typeof styles.tabletRow === 'string' ? styles.tabletRow : undefined;
 
   const [isDeleting, setIsDeleting] = useState(false);
   const [membershipUuid, setMembershipUuid] = useState('');
@@ -119,7 +125,7 @@ const ListDetailsTable: React.FC<ListDetailsTableProps> = ({
         membershipUuid: patient.membershipUuid,
         name: columns.find((column) => column.key === 'name')?.link ? (
           <ConfigurableLink
-            className={styles.link}
+            className={linkClassName}
             to={columns.find((column) => column.key === 'name')?.link?.getUrl(patient)}
           >
             {patient.name}
@@ -131,7 +137,7 @@ const ListDetailsTable: React.FC<ListDetailsTableProps> = ({
         startDate: patient.startDate,
         mobile: patient.mobile || '--',
       })) ?? [],
-    [columns, filteredPatients],
+    [columns, filteredPatients, linkClassName],
   );
 
   const handleRemovePatientFromList = useCallback(async () => {
@@ -200,7 +206,7 @@ const ListDetailsTable: React.FC<ListDetailsTableProps> = ({
             <div>
               <Layer>
                 <Search
-                  className={styles.searchOverrides}
+                  className={searchClassName}
                   id={`${id}-search`}
                   labelText=""
                   onChange={(e: React.ChangeEvent<HTMLInputElement>) => setSearchTerm(e.target.value)}
@@ -216,28 +222,33 @@ const ListDetailsTable: React.FC<ListDetailsTableProps> = ({
                 <Table className={styles.table} {...getTableProps()} data-testid="patientsTable">
                   <TableHead>
                     <TableRow>
-                      {headers.map((header) => (
-                        <TableHeader
-                          {...getHeaderProps({
-                            header,
-                            isSortable: header.isSortable,
-                          })}
-                          className={isDesktop(layout) ? styles.desktopHeader : styles.tabletHeader}
-                        >
-                          {header.header}
-                        </TableHeader>
-                      ))}
+                      {headers.map((header) => {
+                        const { key, ...headerProps } = getHeaderProps({
+                          header,
+                          isSortable: header.isSortable,
+                        });
+                        return (
+                          <TableHeader
+                            key={key}
+                            {...headerProps}
+                            className={isDesktop(layout) ? desktopHeaderClassName : tabletHeaderClassName}
+                          >
+                            {header.header}
+                          </TableHeader>
+                        );
+                      })}
                     </TableRow>
                   </TableHead>
                   <TableBody>
                     {rows.map((row) => {
                       const currentPatient = patients.find((patient) => patient.identifier === row.id);
+                      const { key, ...rowProps } = getRowProps({ row });
 
                       return (
                         <TableRow
-                          {...getRowProps({ row })}
-                          className={isDesktop(layout) ? styles.desktopRow : styles.tabletRow}
-                          key={row.id}
+                          {...rowProps}
+                          className={isDesktop(layout) ? desktopRowClassName : tabletRowClassName}
+                          key={key}
                         >
                           {row.cells.map((cell) => (
                             <TableCell key={cell.id}>{renderCellValue(cell.value)}</TableCell>

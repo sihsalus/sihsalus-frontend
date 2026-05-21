@@ -3,11 +3,11 @@ import userEvent from '@testing-library/user-event';
 import Trendline from './trendline.component';
 import { useObstreeData } from './trendline-resource';
 
-const mockUseObstreeData = jest.mocked(useObstreeData);
+const mockUseObstreeData = vi.mocked(useObstreeData);
 
-jest.mock('./trendline-resource', () => ({
-  ...jest.requireActual('./trendline-resource'),
-  useObstreeData: jest.fn(),
+vi.mock('./trendline-resource', async () => ({
+  ...(await vi.importActual('./trendline-resource')),
+  useObstreeData: vi.fn(),
 }));
 
 describe('Trendline', () => {

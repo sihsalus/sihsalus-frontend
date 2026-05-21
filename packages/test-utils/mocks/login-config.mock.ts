@@ -1,6 +1,11 @@
 import { type ConfigSchema } from '../../apps/esm-login-app/src/config-schema';
 
 export const mockConfig: ConfigSchema = {
+  announcements: [],
+  background: {
+    image: '',
+    color: '',
+  },
   provider: {
     type: 'basic',
     loginUrl: '',

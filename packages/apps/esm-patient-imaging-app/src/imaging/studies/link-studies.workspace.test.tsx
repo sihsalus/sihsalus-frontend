@@ -7,20 +7,21 @@ import LinkStudiesWorkspace from './link-studies.workspace';
 type NameOnlyProps = { name: string };
 type ChildrenOnlyProps = { children: React.ReactNode };
 
-jest.mock('../../api');
-jest.mock('@openmrs/esm-framework', () => ({
+vi.mock('../../api');
+vi.mock('@openmrs/esm-framework', async () => ({
+  ...(await vi.importActual('@openmrs/esm-framework')),
   __esModule: true,
-  launchWorkspace: jest.fn(),
-  showSnackbar: jest.fn(),
-  createErrorHandler: jest.fn(),
-  useLayoutType: jest.fn(() => 'desktop'),
+  launchWorkspace: vi.fn(),
+  showSnackbar: vi.fn(),
+  createErrorHandler: vi.fn(),
+  useLayoutType: vi.fn(() => 'desktop'),
   ExtensionSlot: ({ name }: NameOnlyProps) => <div data-testid={`extension-slot-${name}`} />,
   ResponsiveWrapper: ({ children }: ChildrenOnlyProps) => <div data-testid="responsive-wrapper">{children}</div>,
 }));
 
 describe('LinkStudiesWorkspace', () => {
   const patientUuid = 'patient-123';
-  const mockParam = jest.fn();
+  const mockParam = vi.fn();
 
   const orthancConfigMock = [{ id: 1, orthancBaseUrl: 'http://orthanc.local' }];
 
@@ -29,9 +30,9 @@ describe('LinkStudiesWorkspace', () => {
       <LinkStudiesWorkspace
         patientUuid={patientUuid}
         closeWorkspace={mockParam}
-        promptBeforeClosing={jest.fn()}
-        closeWorkspaceWithSavedChanges={jest.fn()}
-        setTitle={jest.fn()}
+        promptBeforeClosing={vi.fn()}
+        closeWorkspaceWithSavedChanges={vi.fn()}
+        setTitle={vi.fn()}
       />,
     );
   };
@@ -44,13 +45,13 @@ describe('LinkStudiesWorkspace', () => {
   };
 
   beforeEach(() => {
-    jest.clearAllMocks();
-    (api.useOrthancConfigurations as jest.Mock).mockReturnValue({ data: orthancConfigMock });
+    vi.clearAllMocks();
+    (api.useOrthancConfigurations as vi.Mock).mockReturnValue({ data: orthancConfigMock });
   });
 
   beforeAll(() => {
     // Fix Carbon ComboBox + jsdom issue
-    window.HTMLElement.prototype.scrollIntoView = jest.fn();
+    window.HTMLElement.prototype.scrollIntoView = vi.fn();
   });
 
   it('renders from elements', () => {
@@ -63,7 +64,7 @@ describe('LinkStudiesWorkspace', () => {
   });
 
   it('submits from successfully', async () => {
-    const getLinkStudiesMock = (api.getLinkStudies as jest.Mock).mockResolvedValue({});
+    const getLinkStudiesMock = (api.getLinkStudies as vi.Mock).mockResolvedValue({});
     setup();
 
     selectOrthancServer();
@@ -80,7 +81,7 @@ describe('LinkStudiesWorkspace', () => {
 
   it('shows error snackbar when getLinkStudies fails', async () => {
     const error = new Error('Server unreachable');
-    (api.getLinkStudies as jest.Mock).mockRejectedValue(error);
+    (api.getLinkStudies as vi.Mock).mockRejectedValue(error);
     setup();
 
     selectOrthancServer();

@@ -3,32 +3,32 @@ import React, { useEffect } from 'react';
 
 import { FormFactoryProvider, useFormFactory } from './form-factory-provider';
 
-jest.mock('react-i18next', () => ({
+vi.mock('react-i18next', () => ({
   useTranslation: (): { t: (_key: string, defaultValue: string) => string } => ({
     t: (_key: string, defaultValue: string): string => defaultValue,
   }),
 }));
 
-jest.mock('@openmrs/esm-framework', () => ({
-  showSnackbar: jest.fn(),
-  useLayoutType: jest.fn(() => 'desktop'),
+vi.mock('@openmrs/esm-framework', () => ({
+  showSnackbar: vi.fn(),
+  useLayoutType: vi.fn(() => 'desktop'),
 }));
 
-jest.mock('../hooks/useExternalFormAction', () => ({
-  useExternalFormAction: jest.fn(),
+vi.mock('../hooks/useExternalFormAction', () => ({
+  useExternalFormAction: vi.fn(),
 }));
 
-jest.mock('../hooks/usePostSubmissionActions', () => ({
-  usePostSubmissionActions: jest.fn(() => null),
+vi.mock('../hooks/usePostSubmissionActions', () => ({
+  usePostSubmissionActions: vi.fn(() => null),
 }));
 
-jest.mock('./form-factory-helper', () => ({
-  processPostSubmissionActions: jest.fn(),
-  validateForm: jest.fn(() => true),
+vi.mock('./form-factory-helper', () => ({
+  processPostSubmissionActions: vi.fn(),
+  validateForm: vi.fn(() => true),
 }));
 
 type RegisteredFormProps = {
-  processSubmission: jest.Mock;
+  processSubmission: vi.Mock;
 };
 
 const RegisteredForm = ({ processSubmission }: RegisteredFormProps): React.JSX.Element => {
@@ -56,25 +56,25 @@ const baseProps = {
   provider: { uuid: 'provider-uuid' } as never,
   visit: { uuid: 'visit-uuid' } as never,
   isFormExpanded: true,
-  hideFormCollapseToggle: jest.fn(),
-  setIsFormDirty: jest.fn(),
+  hideFormCollapseToggle: vi.fn(),
+  setIsFormDirty: vi.fn(),
 };
 
 describe('FormFactoryProvider', () => {
   beforeEach(() => {
-    jest.clearAllMocks();
+    vi.clearAllMocks();
   });
 
   it('does not abort or restart an active submission when rerendered', (): void => {
     const controllers: Array<AbortController> = [];
-    const processSubmission = jest.fn((_formContext: unknown, abortController: AbortController): Promise<never> => {
+    const processSubmission = vi.fn((_formContext: unknown, abortController: AbortController): Promise<never> => {
       controllers.push(abortController);
       return new Promise(() => {});
     });
 
-    const initialSubmitHandler = jest.fn();
-    const nextSubmitHandler = jest.fn();
-    const setIsSubmitting = jest.fn();
+    const initialSubmitHandler = vi.fn();
+    const nextSubmitHandler = vi.fn();
+    const setIsSubmitting = vi.fn();
 
     const { rerender, unmount } = render(
       <FormFactoryProvider
@@ -83,8 +83,8 @@ describe('FormFactoryProvider', () => {
           isSubmitting: true,
           setIsSubmitting,
           onSubmit: initialSubmitHandler,
-          onError: jest.fn(),
-          handleClose: jest.fn(),
+          onError: vi.fn(),
+          handleClose: vi.fn(),
         }}
       >
         <RegisteredForm processSubmission={processSubmission} />
@@ -102,8 +102,8 @@ describe('FormFactoryProvider', () => {
           isSubmitting: true,
           setIsSubmitting,
           onSubmit: nextSubmitHandler,
-          onError: jest.fn(),
-          handleClose: jest.fn(),
+          onError: vi.fn(),
+          handleClose: vi.fn(),
         }}
       >
         <RegisteredForm processSubmission={processSubmission} />

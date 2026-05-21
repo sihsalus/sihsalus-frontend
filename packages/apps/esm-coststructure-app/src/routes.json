@@ -1,25 +1,5 @@
 {
   "$schema": "https://json.openmrs.org/routes.schema.json",
-  "backendDependencies": {
-    "coststructure": ">=1.0.0"
-  },
-  "extensions": [
-    {
-      "component": "homeLeftPanelLink",
-      "name": "cost-structure-left-panel-link",
-      "slot": "cost-structure-left-panel-slot"
-    },
-    {
-      "component": "addLeftPanelLink",
-      "name": "add-cost-structure-left-panel-link",
-      "slot": "cost-structure-left-panel-slot"
-    },
-    {
-      "component": "reportLeftPanelLink",
-      "name": "report-cost-structure-left-panel-link",
-      "slot": "cost-structure-left-panel-slot"
-    }
-  ],
   "pages": [
     {
       "component": "root",

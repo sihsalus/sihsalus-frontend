@@ -92,7 +92,7 @@ const SchemaEditor: React.FC<SchemaEditorProps> = ({
     // Generate autocomplete suggestions when schema changes
     const suggestions = generateAutocompleteSuggestions();
     setAutocompleteSuggestions(suggestions.flat());
-  }, [schemaProperties, generateAutocompleteSuggestions]);
+  }, [generateAutocompleteSuggestions]);
 
   useEffect(() => {
     addCompleter({

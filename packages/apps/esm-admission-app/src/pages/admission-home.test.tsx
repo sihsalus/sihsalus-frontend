@@ -5,16 +5,21 @@ import { BrowserRouter } from 'react-router-dom';
 import { useAdmissions } from '../resources/admissions.resource';
 import AdmissionHome from './admission-home.component';
 
-jest.mock('../resources/admissions.resource', () => ({
-  useAdmissions: jest.fn(),
+vi.mock('@openmrs/esm-framework', async () => ({
+  ...(await vi.importActual('@openmrs/esm-framework')),
+  useConfig: vi.fn(),
 }));
 
-const mockUseAdmissions = jest.mocked(useAdmissions);
-const mockUseConfig = jest.mocked(useConfig);
+vi.mock('../resources/admissions.resource', () => ({
+  useAdmissions: vi.fn(),
+}));
+
+const mockUseAdmissions = vi.mocked(useAdmissions);
+const mockUseConfig = vi.mocked(useConfig);
 
 function renderAdmissionHome() {
   return render(
-    <BrowserRouter>
+    <BrowserRouter future={{ v7_relativeSplatPath: true, v7_startTransition: true }}>
       <AdmissionHome />
     </BrowserRouter>,
   );
@@ -26,8 +31,9 @@ function getMetricValue(label: string) {
 
 describe('AdmissionHome', () => {
   beforeEach(() => {
-    jest.clearAllMocks();
-    globalThis.getOpenmrsSpaBase = jest.fn(() => '/openmrs/spa/');
+    vi.clearAllMocks();
+    window.history.pushState({}, '', '/');
+    globalThis.getOpenmrsSpaBase = vi.fn(() => '/openmrs/spa/');
     mockUseConfig.mockReturnValue({ admissionReportPageSize: 75 });
   });
 

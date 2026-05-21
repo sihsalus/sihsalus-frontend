@@ -5,7 +5,6 @@ import {
   subscribePrecacheStaticDependencies,
   syncAllDynamicOfflineData,
 } from '@openmrs/esm-framework';
-import { registerWorkspace } from '@openmrs/esm-framework/src/internal';
 
 import clinicalFormActionMenuComponent from './clinical-form-action-menu.component';
 import { configSchema } from './config-schema';
@@ -33,32 +32,6 @@ export function startupApp() {
   globalScope[startupKey] = true;
 
   defineConfigSchema(moduleName, configSchema);
-
-  if (typeof registerWorkspace === 'function') {
-    registerWorkspace({
-      name: 'patient-form-entry-workspace',
-      title: 'Clinical form',
-      type: 'clinical-form',
-      canHide: false,
-      canMaximize: true,
-      width: 'extra-wide',
-      component: 'patientFormEntryWorkspace',
-      moduleName,
-      load: patientFormEntryWorkspace,
-    });
-
-    registerWorkspace({
-      name: 'clinical-forms-workspace',
-      title: 'Clinical forms',
-      type: 'clinical-form',
-      canHide: true,
-      canMaximize: true,
-      width: 'extra-wide',
-      component: 'clinicalFormsWorkspace',
-      moduleName,
-      load: clinicalFormsWorkspace,
-    });
-  }
 
   setupPatientFormSync();
   setupDynamicFormDataHandler();

@@ -4,7 +4,7 @@ import userEvent from '@testing-library/user-event';
 import { FormFieldProvider } from '../../../../form-field-context';
 import TextArea from './textarea.component';
 
-const mockSetFormField = jest.fn();
+const mockSetFormField = vi.fn();
 const formField: FormField = {
   datePickerFormat: 'both',
   type: 'obs',
@@ -12,8 +12,8 @@ const formField: FormField = {
   id: '1',
 };
 
-jest.mock('../../../../form-field-context', () => ({
-  ...jest.requireActual('../../../../form-field-context'),
+vi.mock('../../../../form-field-context', async () => ({
+  ...(await vi.importActual('../../../../form-field-context')),
   useFormField: () => ({ formField, setFormField: mockSetFormField }),
 }));
 

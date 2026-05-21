@@ -51,9 +51,9 @@ const appointment: Appointment = {
   extensions: {},
 };
 
-const mockUsePatient = jest.mocked(usePatient);
+const mockUsePatient = vi.mocked(usePatient);
 
-jest.mock('../../hooks/usePatientAppointmentHistory', () => ({
+vi.mock('../../hooks/usePatientAppointmentHistory', () => ({
   usePatientAppointmentHistory: () => ({
     appointmentsCount: {
       completedAppointments: 1,

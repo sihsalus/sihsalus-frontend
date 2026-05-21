@@ -65,7 +65,7 @@ export const configSchema = {
   stockTakeReasonUUID: {
     _type: Type.ConceptUuid,
     _description: 'UUID for the stock take reasons',
-    _default: "3ec42d39-8e50-4131-88a7-c5889af7abda",
+    _default: '3ec42d39-8e50-4131-88a7-c5889af7abda',
   },
   useItemCommonNameAsDisplay: {
     _type: Type.Boolean,

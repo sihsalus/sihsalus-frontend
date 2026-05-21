@@ -28,7 +28,7 @@ import React from 'react';
 import type { Config } from './config-schema';
 import Root from './root.component';
 
-jest.mock('react-router-dom', () => ({
+vi.mock('react-router-dom', () => ({
   BrowserRouter: ({ children }: { children: React.ReactNode }) => <>{children}</>,
   Routes: ({ children }: { children: React.ReactNode }) => <>{children}</>,
   Route: ({ element, children }: { element?: React.ReactNode; children?: React.ReactNode }) => element ?? children,
@@ -41,7 +41,7 @@ jest.mock('react-router-dom', () => ({
  * mock file. This line just tells TypeScript that the object is, in
  * fact, a mock, and so will have methods like `mockReturnValue`.
  */
-const mockUseConfig = jest.mocked(useConfig<Config>);
+const mockUseConfig = vi.mocked(useConfig<Config>);
 
 it('renders the emergency dashboard', () => {
   const config: Config = {

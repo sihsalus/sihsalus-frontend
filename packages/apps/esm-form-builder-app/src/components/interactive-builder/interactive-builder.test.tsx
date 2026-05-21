@@ -8,7 +8,7 @@ import InteractiveBuilder from './interactive-builder.component';
 
 void React;
 
-const mockShowModal = jest.mocked(showModal);
+const mockShowModal = vi.mocked(showModal);
 
 describe('InteractiveBuilder', () => {
   it('renders the interactive builder', async () => {
@@ -106,7 +106,7 @@ describe('InteractiveBuilder', () => {
 function renderInteractiveBuilder(props = {}) {
   const defaultProps = {
     isLoading: false,
-    onSchemaChange: jest.fn(),
+    onSchemaChange: vi.fn(),
     schema: {} as Schema,
     validationResponse: [],
   };

@@ -16,22 +16,22 @@ import FormView from './form-view.component';
 void React;
 
 const mockFhirPatient = mockPatient as unknown as fhir.Patient;
-const mockLaunchPatientWorkspace = launchPatientWorkspace as jest.Mock;
-const mockLaunchStartVisitPrompt = launchStartVisitPrompt as jest.Mock;
-const mockShowModal = jest.mocked(showModal);
-const mockUseConfig = jest.mocked(useConfig<ConfigObject>);
-const mockUseVisitOrOfflineVisit = useVisitOrOfflineVisit as jest.Mock;
+const mockLaunchPatientWorkspace = launchPatientWorkspace as vi.Mock;
+const mockLaunchStartVisitPrompt = launchStartVisitPrompt as vi.Mock;
+const mockShowModal = vi.mocked(showModal);
+const mockUseConfig = vi.mocked(useConfig<ConfigObject>);
+const mockUseVisitOrOfflineVisit = useVisitOrOfflineVisit as vi.Mock;
 
-jest.mock('@openmrs/esm-patient-common-lib', () => {
-  const originalModule = jest.requireActual('@openmrs/esm-patient-common-lib');
+vi.mock('@openmrs/esm-patient-common-lib', async () => {
+  const originalModule = await vi.importActual('@openmrs/esm-patient-common-lib');
 
   return {
     ...originalModule,
-    launchPatientWorkspace: jest.fn(),
-    launchStartVisitPrompt: jest.fn().mockImplementation(() => {
+    launchPatientWorkspace: vi.fn(),
+    launchStartVisitPrompt: vi.fn().mockImplementation(() => {
       showModal('start-visit-dialog');
     }),
-    useVisitOrOfflineVisit: jest.fn(),
+    useVisitOrOfflineVisit: vi.fn(),
   };
 });
 
@@ -111,6 +111,8 @@ describe('FormView', () => {
 
   test('should open edit mode without requiring a current visit from the last completed column', async () => {
     const user = userEvent.setup();
+
+    mockLaunchStartVisitPrompt.mockClear();
 
     mockUseVisitOrOfflineVisit.mockReturnValue({
       currentVisit: null,

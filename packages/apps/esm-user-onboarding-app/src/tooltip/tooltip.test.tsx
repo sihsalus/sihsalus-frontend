@@ -21,34 +21,34 @@ const baseProps = {
   backProps: {
     'aria-label': 'Back',
     'data-action': 'back' as const,
-    onClick: jest.fn(),
+    onClick: vi.fn(),
     role: 'button' as const,
     title: 'Back',
   },
   closeProps: {
     'aria-label': 'Close',
     'data-action': 'close' as const,
-    onClick: jest.fn(),
+    onClick: vi.fn(),
     role: 'button' as const,
     title: 'Close',
   },
   primaryProps: {
     'aria-label': 'Next',
     'data-action': 'primary' as const,
-    onClick: jest.fn(),
+    onClick: vi.fn(),
     role: 'button' as const,
     title: 'Next',
   },
   skipProps: {
     'aria-label': 'Skip',
     'data-action': 'skip' as const,
-    onClick: jest.fn(),
+    onClick: vi.fn(),
     role: 'button' as const,
     title: 'Skip',
   },
   tooltipProps: {
     'aria-modal': true as const,
-    ref: jest.fn(),
+    ref: vi.fn(),
     role: 'alertdialog' as const,
   },
 };
@@ -143,7 +143,7 @@ describe('CustomTooltip', () => {
 
   it('calls skipProps.onClick when the close button is clicked', async () => {
     const user = userEvent.setup();
-    const onClick = jest.fn();
+    const onClick = vi.fn();
     renderTooltip({}, { skipProps: { ...baseProps.skipProps, onClick } });
 
     await user.click(screen.getByLabelText('Skip'));
@@ -153,7 +153,7 @@ describe('CustomTooltip', () => {
 
   it('calls primaryProps.onClick when the next button is clicked', async () => {
     const user = userEvent.setup();
-    const onClick = jest.fn();
+    const onClick = vi.fn();
     renderTooltip({}, { primaryProps: { ...baseProps.primaryProps, onClick } });
 
     await user.click(screen.getByText('Next'));
@@ -163,7 +163,7 @@ describe('CustomTooltip', () => {
 
   it('calls backProps.onClick when the back button is clicked', async () => {
     const user = userEvent.setup();
-    const onClick = jest.fn();
+    const onClick = vi.fn();
     renderTooltip({}, { backProps: { ...baseProps.backProps, onClick } });
 
     await user.click(screen.getByText('Back'));

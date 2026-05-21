@@ -64,6 +64,15 @@ const StockReferences: React.FC<StockReferencesProps> = ({ stockItemUuid }) => {
     [t],
   );
 
+  const dataTableHeaders = useMemo<Array<Omit<CustomTableHeader, 'header'> & { header: React.ReactNode }>>(
+    () =>
+      tableHeaders.map(({ header, ...rest }) => ({
+        ...rest,
+        header: typeof header === 'string' ? header : header.content,
+      })),
+    [tableHeaders],
+  );
+
   const stockReferenceForm = useForm<StockItemReferenceData>({
     defaultValues: {},
     mode: 'all',
@@ -111,7 +120,7 @@ const StockReferences: React.FC<StockReferencesProps> = ({ stockItemUuid }) => {
     <FormProvider {...stockReferenceForm}>
       <DataTable
         rows={(items ?? []).map((item, idx) => ({ ...item, id: item.uuid || `ref-${idx}` })) as CustomTableRow[]}
-        headers={tableHeaders as any}
+        headers={dataTableHeaders}
         isSortable={false}
         useZebraStyles
       >
@@ -210,7 +219,7 @@ const StockReferencesRow: React.FC<{
             placeholder={t('filter', 'Filter...')}
           />
         ) : (
-          (!isEditing || !row.uuid.startsWith('new-item')) && row?.stockSourceName
+          row?.stockSourceName
         )}
       </TableCell>
       <TableCell>

@@ -460,7 +460,7 @@ export class CommonExpressionHelpers {
   formatDate = (value: ConstructorParameters<typeof Date>[0], format?: string): string => {
     if (!(value instanceof Date)) {
       value = new Date(value);
-      if (isNaN(value.getTime())) {
+      if (Number.isNaN(value.getTime())) {
         throw new Error('DateFormatException: value passed is not a valid date');
       }
     }

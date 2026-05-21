@@ -7,16 +7,16 @@ import type { OpenmrsCohort, OpenmrsCohortMember } from '../api/types';
 
 import ListDetails from './list-details.component';
 
-const mockUsePatientListDetails = jest.mocked(usePatientListDetails);
-const mockUsePatientListMembers = jest.mocked(usePatientListMembers);
-const mockDeletePatientList = jest.mocked(deletePatientList);
+const mockUsePatientListDetails = vi.mocked(usePatientListDetails);
+const mockUsePatientListMembers = vi.mocked(usePatientListMembers);
+const mockDeletePatientList = vi.mocked(deletePatientList);
 
-jest.mock('../api/hooks', () => ({
-  usePatientListDetails: jest.fn(),
-  usePatientListMembers: jest.fn(),
+vi.mock('../api/hooks', () => ({
+  usePatientListDetails: vi.fn(),
+  usePatientListMembers: vi.fn(),
 }));
 
-jest.mock('../api/api-remote');
+vi.mock('../api/api-remote');
 
 const mockPatientListDetails = {
   name: 'Test Patient List',
@@ -56,14 +56,14 @@ describe('ListDetails', () => {
       listDetails: mockPatientListDetails,
       error: null,
       isLoading: false,
-      mutateListDetails: jest.fn().mockResolvedValue({}),
+      mutateListDetails: vi.fn().mockResolvedValue({}),
     });
 
     mockUsePatientListMembers.mockReturnValue({
       listMembers: mockPatientListMembers,
       isLoadingListMembers: false,
       error: null,
-      mutateListMembers: jest.fn().mockResolvedValue({}),
+      mutateListMembers: vi.fn().mockResolvedValue({}),
     });
 
     mockDeletePatientList.mockResolvedValue({});
@@ -88,7 +88,7 @@ describe('ListDetails', () => {
       listMembers: [],
       isLoadingListMembers: false,
       error: null,
-      mutateListMembers: jest.fn().mockResolvedValue({}),
+      mutateListMembers: vi.fn().mockResolvedValue({}),
     });
 
     render(<ListDetails />);

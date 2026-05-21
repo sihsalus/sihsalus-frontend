@@ -43,7 +43,7 @@ const ComboInput: React.FC<ComboInputProps> = ({
   const handleFocus = useCallback(() => {
     setShowEntries(true);
     setHighlightedEntry(-1);
-  }, [setShowEntries, setHighlightedEntry]);
+  }, []);
 
   const filteredEntries = useMemo(() => {
     if (!entries) {
@@ -60,7 +60,7 @@ const ComboInput: React.FC<ComboInputProps> = ({
       handleSelection(newSelection);
       setShowEntries(false);
     },
-    [handleSelection, setShowEntries],
+    [handleSelection],
   );
 
   const handleKeyPress = useCallback(
@@ -83,7 +83,7 @@ const ComboInput: React.FC<ComboInputProps> = ({
         }
       }
     },
-    [highlightedEntry, handleOptionClick, filteredEntries, setHighlightedEntry, setShowEntries],
+    [highlightedEntry, handleOptionClick, filteredEntries],
   );
 
   useEffect(() => {

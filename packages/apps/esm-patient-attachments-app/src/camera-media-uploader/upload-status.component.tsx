@@ -23,7 +23,7 @@ const UploadStatusComponent: React.FC<UploadStatusComponentProps> = ({ title }) 
         })),
       );
     }
-  }, [filesToUpload, setFilesUploading]);
+  }, [filesToUpload]);
 
   useEffect(() => {
     Promise.all(
@@ -58,7 +58,7 @@ const UploadStatusComponent: React.FC<UploadStatusComponentProps> = ({ title }) 
     ).then(() => {
       onCompletion?.();
     });
-  }, [onCompletion, saveFile, filesToUpload, t, setFilesUploading]);
+  }, [onCompletion, saveFile, filesToUpload, t]);
 
   return (
     <div className={styles.cameraSection}>

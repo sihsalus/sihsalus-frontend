@@ -4,7 +4,7 @@ import { ExtensionSlot } from '@openmrs/esm-react-utils';
 import { getCoreTranslation } from '@openmrs/esm-translations';
 import { age, formatPartialDate, getPatientName } from '@openmrs/esm-utils';
 import classNames from 'classnames';
-import React, { useMemo } from 'react';
+import { useMemo } from 'react';
 import { GenderFemaleIcon, GenderMaleIcon, GenderOtherIcon, GenderUnknownIcon } from '../../icons';
 import PatientBannerPatientIdentifiers from './patient-banner-patient-identifiers.component';
 import styles from './patient-banner-patient-info.module.scss';
@@ -74,17 +74,19 @@ export function PatientBannerPatientInfo({ patient, renderedFrom }: PatientBanne
         <div className={styles.flexRow}>
           <span className={styles.patientName}>{name}</span>
 
-          {genderInfo && (
-            <div className={styles.gender}>
-              <GenderIcon gender={genderInfo.iconKey} />
-              <span>{genderInfo.displayText}</span>
-            </div>
-          )}
-
           <ExtensionSlot className={styles.tagsSlot} name="patient-banner-tags-slot" state={extensionState} />
         </div>
       </div>
       <div className={styles.demographics}>
+        {genderInfo && (
+          <>
+            <span className={styles.gender}>
+              <GenderIcon gender={genderInfo.iconKey} />
+              <span>{genderInfo.displayText}</span>
+            </span>
+            <span className={styles.separator}>&middot;</span>
+          </>
+        )}
         {patient.birthDate && (
           <>
             <span>{age(patient.birthDate)}</span>

@@ -2,7 +2,7 @@
 
 import { Button } from '@carbon/react';
 import { getCoreTranslation } from '@openmrs/esm-translations';
-import React, { type MouseEvent } from 'react';
+import { type MouseEvent } from 'react';
 import { ChevronDownIcon, ChevronUpIcon } from '../../public';
 
 export interface PatientBannerToggleContactDetailsButtonProps {

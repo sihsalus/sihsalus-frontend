@@ -15,8 +15,8 @@ const repoWideFiles = new Set([
   'package.json',
   'turbo.json',
   'yarn.lock',
-  'packages/jest.config.js',
   'packages/tsconfig.json',
+  'packages/vitest.config.js',
 ]);
 
 function main() {
@@ -40,19 +40,20 @@ function main() {
 
   const workspaceMap = resolveWorkspaces();
   const changedWorkspaces = findChangedWorkspaces(changedFiles, workspaceMap);
+  const affectedWorkspaces = includeWorkspaceDependents(changedWorkspaces, workspaceMap);
 
-  if (changedWorkspaces.length === 0) {
+  if (affectedWorkspaces.length === 0) {
     console.log('[verify:changed] No workspace changes detected. Nothing to verify.');
     return;
   }
 
   console.log('[verify:changed] Affected workspaces:');
-  changedWorkspaces.forEach((workspaceName) => {
+  affectedWorkspaces.forEach((workspaceName) => {
     console.log(`- ${workspaceName}`);
   });
 
   const turboArgs = ['turbo', 'run', 'lint', 'typescript', 'test'];
-  changedWorkspaces.forEach((workspaceName) => {
+  affectedWorkspaces.forEach((workspaceName) => {
     turboArgs.push('--filter', workspaceName);
   });
 
@@ -162,11 +163,23 @@ function resolveWorkspaces() {
       workspaces.push({
         name: packageJson.name,
         relativeDir: path.relative(repoRoot, workspaceDir).replace(/\\/g, '/'),
+        dependencies: getWorkspaceDependencyNames(packageJson),
       });
     });
   });
 
   return workspaces.sort((left, right) => left.relativeDir.localeCompare(right.relativeDir));
+}
+
+function getWorkspaceDependencyNames(packageJson) {
+  const dependencySections = [
+    packageJson.dependencies,
+    packageJson.devDependencies,
+    packageJson.peerDependencies,
+    packageJson.optionalDependencies,
+  ];
+
+  return new Set(dependencySections.filter(Boolean).flatMap((dependencies) => Object.keys(dependencies)));
 }
 
 function findChangedWorkspaces(changedFiles, workspaceMap) {
@@ -179,6 +192,28 @@ function findChangedWorkspaces(changedFiles, workspaceMap) {
       }
     });
   });
+
+  return [...affected].sort();
+}
+
+function includeWorkspaceDependents(changedWorkspaces, workspaceMap) {
+  const workspaceNames = new Set(workspaceMap.map((workspace) => workspace.name));
+  const affected = new Set(changedWorkspaces);
+  const queue = [...changedWorkspaces];
+
+  while (queue.length > 0) {
+    const changedWorkspace = queue.shift();
+    if (!workspaceNames.has(changedWorkspace)) {
+      continue;
+    }
+
+    workspaceMap.forEach((workspace) => {
+      if (!affected.has(workspace.name) && workspace.dependencies.has(changedWorkspace)) {
+        affected.add(workspace.name);
+        queue.push(workspace.name);
+      }
+    });
+  }
 
   return [...affected].sort();
 }

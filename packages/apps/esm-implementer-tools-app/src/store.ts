@@ -59,19 +59,19 @@ let lastValueOfIsUiEditorEnabled = getIsUIEditorEnabled();
 let lastValueOfIsJsonModeEnabled = getIsJsonModeEnabled();
 
 implementerToolsStore.subscribe((state) => {
-  if (state.isOpen != lastValueOfIsOpen) {
+  if (state.isOpen !== lastValueOfIsOpen) {
     setIsImplementerToolsOpen(state.isOpen);
     lastValueOfIsOpen = state.isOpen;
   }
-  if (state.isUIEditorEnabled != lastValueOfIsUiEditorEnabled) {
+  if (state.isUIEditorEnabled !== lastValueOfIsUiEditorEnabled) {
     setIsUIEditorEnabled(state.isUIEditorEnabled);
     lastValueOfIsUiEditorEnabled = state.isUIEditorEnabled;
   }
-  if (state.isConfigToolbarOpen != lastValueOfConfigToolbarOpen) {
+  if (state.isConfigToolbarOpen !== lastValueOfConfigToolbarOpen) {
     setIsConfigToolbarOpen(state.isConfigToolbarOpen);
     lastValueOfConfigToolbarOpen = state.isConfigToolbarOpen;
   }
-  if (state.isJsonModeEnabled != lastValueOfIsJsonModeEnabled) {
+  if (state.isJsonModeEnabled !== lastValueOfIsJsonModeEnabled) {
     setIsJsonModeEnabled(state.isJsonModeEnabled);
     lastValueOfIsJsonModeEnabled = state.isJsonModeEnabled;
   }

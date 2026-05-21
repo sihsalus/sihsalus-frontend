@@ -241,10 +241,10 @@ export function usePatientUpcomingAppointments(patientUuid?: string) {
       headers: {
         'Content-Type': 'application/json',
       },
-      body: {
+      body: JSON.stringify({
         patientUuid,
         startDate,
-      },
+      }),
     });
 
   const { data, error, isLoading } = useSWR<{ data: AppointmentSearchResult[] }, Error>(

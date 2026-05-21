@@ -45,7 +45,7 @@ const AttachmentsOverview: React.FC<AttachmentsOverviewProps> = ({ patientUuid }
   const [view, setView] = useState<ViewType>('grid');
 
   const attachments = useMemo(() => data.map((item) => createGalleryEntry(item)), [data]);
-  const closeImageOrPdfPreview = useCallback(() => setAttachmentToPreview(null), [setAttachmentToPreview]);
+  const closeImageOrPdfPreview = useCallback(() => setAttachmentToPreview(null), []);
 
   if (hasUploadError) {
     showSnackbar({
@@ -79,22 +79,19 @@ const AttachmentsOverview: React.FC<AttachmentsOverviewProps> = ({ patientUuid }
           });
         });
     },
-    [mutate, t, setAttachmentToPreview],
+    [mutate, t],
   );
 
-  const openAttachment = useCallback(
-    (attachment: Attachment) => {
-      if (attachment.bytesContentFamily === 'IMAGE' || attachment.bytesContentFamily === 'PDF') {
-        setAttachmentToPreview(attachment);
-      } else {
-        const anchor = document.createElement('a');
-        anchor.setAttribute('href', attachment.src);
-        anchor.setAttribute('download', attachment.filename);
-        anchor.click();
-      }
-    },
-    [setAttachmentToPreview],
-  );
+  const openAttachment = useCallback((attachment: Attachment) => {
+    if (attachment.bytesContentFamily === 'IMAGE' || attachment.bytesContentFamily === 'PDF') {
+      setAttachmentToPreview(attachment);
+    } else {
+      const anchor = document.createElement('a');
+      anchor.setAttribute('href', attachment.src);
+      anchor.setAttribute('download', attachment.filename);
+      anchor.click();
+    }
+  }, []);
 
   const showAddAttachmentModal = useCallback(() => {
     const close = showModal('capture-photo-modal', {

@@ -108,6 +108,14 @@ export const configSchema = {
       labourAndDelivery: '496c7cc3-0eea-4e84-a04c-2292949e2f7f',
 
       atencionPrenatal: 'OBST-003-ATENCIÓN PRENATAL',
+      prenatalSupplementationForm: 'OBST-011-SUPLEMENTACIÓN GESTANTE',
+      psychoprophylaxisForm: 'OBST-012-PSICOPROFILAXIS',
+      maternalDischargeForm: 'OBST-007-EGRESO MATERNO',
+      maternalReadmissionForm: 'OBST-008-REINGRESO MATERNO',
+      obstetricsServiceForm: 'OBST-010-SERVICIO DE OBSTETRICIA',
+      adolescentPregnancyCareForm: 'OBST-016-ATENCIÓN DIFERENCIADA GESTANTE ADOLESCENTE',
+      obstetricReferralForm: 'OBST-017-REFERENCIA CONTRARREFERENCIA OBSTÉTRICA',
+      culturalBirthPreferencesForm: 'OBST-018-PERTINENCIA CULTURAL Y PREFERENCIA DE PARTO',
 
       // CRED Forms
       atencionImmediataNewborn: '(Página 5) ATENCIÓN INMEDIATA DEL RECIÉN NACIDO',
@@ -1305,6 +1313,14 @@ export interface ConfigObject {
     postnatal: string;
     labourAndDelivery: string;
     atencionPrenatal: string;
+    prenatalSupplementationForm: string;
+    psychoprophylaxisForm: string;
+    maternalDischargeForm: string;
+    maternalReadmissionForm: string;
+    obstetricsServiceForm: string;
+    adolescentPregnancyCareForm: string;
+    obstetricReferralForm: string;
+    culturalBirthPreferencesForm: string;
     atencionImmediataNewborn: string;
     maternalHistory: string;
     deliveryOrAbortion: string;

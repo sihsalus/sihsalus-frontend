@@ -49,7 +49,18 @@ const InstancePreviewModal: React.FC<InstancePreviewModalProps> = ({
       />
       <ModalBody>
         <p style={{ marginBottom: '20px' }}>{'Instance position: ' + instancePosition}</p>
-        {isLoading ? 'Loading image' : imageData ? <img src={imageData} width="340" height="300" /> : 'Error'}
+        {isLoading ? (
+          'Loading image'
+        ) : imageData ? (
+          <img
+            alt={t('instancePreview', 'Preview the selected study instance')}
+            src={imageData}
+            width="340"
+            height="300"
+          />
+        ) : (
+          'Error'
+        )}
       </ModalBody>
 
       <ModalFooter>

@@ -1,10 +1,13 @@
-jest.mock('@carbon/react', () => {
-  const actual = jest.requireActual('@carbon/react');
-  const React = jest.requireActual('react');
+vi.mock('@carbon/react', async () => {
+  const actual = await vi.importActual('@carbon/react');
+  const React = await vi.importActual<typeof import('react')>('react');
 
   return {
     ...actual,
-    OverflowMenuItem: React.forwardRef(function MockOverflowMenuItem({ itemText, onClick, ...props }, ref) {
+    OverflowMenuItem: React.forwardRef<
+      HTMLButtonElement,
+      React.ComponentPropsWithoutRef<'button'> & { itemText?: React.ReactNode }
+    >(function MockOverflowMenuItem({ itemText, onClick, ...props }, ref) {
       return (
         <button {...props} onClick={onClick} ref={ref} role="menuitem" type="button">
           {itemText}
@@ -22,17 +25,25 @@ import { mockCurrentVisit } from 'test-utils';
 
 import CancelVisitOverflowMenuItem from './cancel-visit.component';
 
-const mockUseVisit = jest.mocked(useVisit);
+const mockUseVisit = vi.mocked(useVisit);
 
 describe('CancelVisitOverflowMenuItem', () => {
   it('should launch cancel visit dialog box', async () => {
     const user = userEvent.setup();
 
-    mockUseVisit.mockReturnValueOnce({ currentVisit: mockCurrentVisit } as ReturnType<typeof useVisit>);
+    mockUseVisit.mockReturnValueOnce({
+      currentVisit: mockCurrentVisit,
+    } as ReturnType<typeof useVisit>);
 
-    render(React.createElement(CancelVisitOverflowMenuItem, { patientUuid: 'some-uuid' }));
+    render(
+      React.createElement(CancelVisitOverflowMenuItem, {
+        patientUuid: 'some-uuid',
+      }),
+    );
 
-    const cancelVisitButton = screen.getByRole('menuitem', { name: /cancel visit/i });
+    const cancelVisitButton = screen.getByRole('menuitem', {
+      name: /cancel visit/i,
+    });
     expect(cancelVisitButton).toBeInTheDocument();
 
     await user.click(cancelVisitButton);

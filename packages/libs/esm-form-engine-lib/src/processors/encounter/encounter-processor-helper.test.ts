@@ -3,17 +3,17 @@ import type { PatientIdentifier } from '../../types';
 
 import { hasDuplicatePatientIdentifiers } from './encounter-processor-helper';
 
-jest.mock('../../api', () => ({
-  findPatientsByIdentifier: jest.fn(),
+vi.mock('../../api', () => ({
+  findPatientsByIdentifier: vi.fn(),
 }));
 
-const mockFindPatientsByIdentifier = jest.mocked(findPatientsByIdentifier);
+const mockFindPatientsByIdentifier = vi.mocked(findPatientsByIdentifier);
 
 describe('hasDuplicatePatientIdentifiers', () => {
   const patient = { id: 'current-patient-uuid' } as fhir.Patient;
 
   beforeEach(() => {
-    jest.clearAllMocks();
+    vi.clearAllMocks();
   });
 
   it('returns true when the submission contains the same identifier twice', async () => {
@@ -53,7 +53,7 @@ describe('hasDuplicatePatientIdentifiers', () => {
   });
 
   it('returns false when the duplicate lookup fails', async () => {
-    const consoleWarnSpy = jest.spyOn(console, 'warn').mockImplementation(() => {});
+    const consoleWarnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
     mockFindPatientsByIdentifier.mockRejectedValue(new Error('lookup failed'));
 
     await expect(

@@ -9,6 +9,9 @@ export const DNI_SYSTEM = 'urn:oid:2.16.840.1.113883.3.9143.2.1.5';
 export interface DyakuPatient {
   resourceType: 'Patient';
   id: string;
+  meta?: {
+    profile?: string[];
+  };
   active?: boolean;
   identifier?: Array<{
     system?: string;

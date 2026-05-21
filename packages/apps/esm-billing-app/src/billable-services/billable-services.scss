@@ -234,8 +234,11 @@
   // Full vertical height minus the primary navigation menu height
   height: calc(100vh - layout.$spacing-09);
   // Ensure the width is fixed and does not expand based on children
-  width: calc(100% - 16rem);
+  width: calc(100% - var(--sihsalus-left-nav-width, 16rem));
   background-color: colors.$gray-10;
+  transition:
+    margin-inline-start 300ms ease,
+    width 300ms ease;
 
   & a {
     width: 100%;
@@ -243,6 +246,104 @@
 
   &.hasLeftNav {
     // Make space for the left nav menu
-    margin-inline-start: 16rem;
+    margin-inline-start: var(--sihsalus-left-nav-width, 16rem);
   }
+}
+
+:global(.sihsalus-side-nav__item) {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  min-width: 0;
+}
+
+:global(.sihsalus-side-nav__icon) {
+  flex: 0 0 auto;
+  color: colors.$gray-70;
+}
+
+:global(.cds--side-nav__submenu > .cds--side-nav__icon:not(.cds--side-nav__submenu-chevron)) {
+  flex: 0 0 auto;
+  margin-inline-end: 0.75rem;
+  color: colors.$gray-70;
+}
+
+:global(.cds--side-nav__submenu > .cds--side-nav__icon:not(.cds--side-nav__submenu-chevron) > svg) {
+  width: 1.25rem;
+  height: 1.25rem;
+  fill: currentColor;
+}
+
+:global(.cds--side-nav__menu a.cds--side-nav__link) {
+  cursor: pointer;
+  gap: 0.5rem;
+  padding-inline-start: 0.125rem;
+  transition:
+    background-color 150ms ease,
+    color 150ms ease;
+}
+
+:global(.cds--side-nav--fixed .cds--side-nav__item:not(.cds--side-nav__item--icon) .cds--side-nav__menu a.cds--side-nav__link) {
+  padding-inline-start: 0.75rem;
+}
+
+:global(.cds--side-nav__menu a.cds--side-nav__link:hover),
+:global(.cds--side-nav__menu a.cds--side-nav__link:focus) {
+  background-color: rgba(39, 52, 139, 0.08);
+}
+
+:global(.cds--side-nav__menu a.cds--side-nav__link .sihsalus-side-nav__text) {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  transition: color 150ms ease;
+}
+
+:global(.cds--side-nav__menu a.cds--side-nav__link .sihsalus-side-nav__text::before) {
+  content: '';
+  flex: 0 0 auto;
+  width: 0.375rem;
+  height: 0.375rem;
+  border-radius: 50%;
+  background-color: colors.$gray-40;
+  transition: background-color 150ms ease;
+}
+
+:global(.cds--side-nav__menu a.cds--side-nav__link:hover .sihsalus-side-nav__text::before),
+:global(.cds--side-nav__menu a.cds--side-nav__link:focus .sihsalus-side-nav__text::before),
+:global(.cds--side-nav__menu-item--active a.cds--side-nav__link .sihsalus-side-nav__text::before) {
+  background-color: var(--brand-01);
+}
+
+:global(.cds--side-nav__menu a.cds--side-nav__link:hover .sihsalus-side-nav__text),
+:global(.cds--side-nav__menu a.cds--side-nav__link:focus .sihsalus-side-nav__text) {
+  color: $text-02;
+}
+
+:global(.cds--side-nav__menu-item--active a.cds--side-nav__link .sihsalus-side-nav__text) {
+  color: $text-02;
+  font-weight: 600;
+}
+
+:global(.sihsalus-side-nav__text) {
+  min-width: 0;
+  max-width: 12rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  transition:
+    opacity 300ms ease,
+    max-width 300ms ease;
+}
+
+:global(.active-left-nav-link .sihsalus-side-nav__icon),
+:global(.cds--side-nav__link:hover .sihsalus-side-nav__icon),
+:global(.cds--side-nav__link:focus .sihsalus-side-nav__icon),
+:global(.cds--side-nav__submenu:hover > .cds--side-nav__icon:not(.cds--side-nav__submenu-chevron)),
+:global(.cds--side-nav__submenu:focus > .cds--side-nav__icon:not(.cds--side-nav__submenu-chevron)),
+:global(.cds--side-nav__item--active .cds--side-nav__submenu > .cds--side-nav__icon:not(.cds--side-nav__submenu-chevron)),
+:global(.cds--side-nav__menu-item:hover .sihsalus-side-nav__icon),
+:global(.cds--side-nav__menu-item:focus .sihsalus-side-nav__icon),
+:global(.cds--side-nav__menu-item--active .sihsalus-side-nav__icon) {
+  color: var(--brand-01);
 }

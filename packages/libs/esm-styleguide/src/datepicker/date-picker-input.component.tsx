@@ -1,7 +1,7 @@
 import { createCalendar } from '@internationalized/date';
 import { useDateField } from '@react-aria/datepicker';
 import { useDateFieldState } from '@react-stately/datepicker';
-import React, { cloneElement, forwardRef, useCallback, useContext, useRef } from 'react';
+import { cloneElement, forwardRef, useCallback, useContext, useRef } from 'react';
 import {
   DateFieldContext,
   DateFieldStateContext,
@@ -42,7 +42,7 @@ export const DatePickerInput = /*#__PURE__*/ forwardRef<HTMLDivElement, DateInpu
       if (!state.isDisabled) {
         datePickerState.toggle();
       }
-    }, []);
+    }, [state.isDisabled, datePickerState.toggle]);
 
     return (
       <Provider

@@ -1,0 +1,71 @@
+{
+  "name": "@sihsalus/esm-seguimiento-casos-app",
+  "version": "1.0.0-alpha",
+  "description": "Módulo de monitoreo y seguimiento de casos N1 para VIH, TB, diabetes y otras condiciones priorizadas - OpenMRS O3",
+  "browser": "dist/sihsalus-esm-seguimiento-casos-app.js",
+  "main": "src/index.ts",
+  "source": true,
+  "license": "MPL-2.0",
+  "scripts": {
+    "start": "openmrs develop",
+    "serve": "rspack serve --mode=development",
+    "debug": "yarn serve",
+    "build": "rspack --mode=production",
+    "analyze": "rspack --mode=production --env analyze=true",
+    "lint": "node ../../tooling/scripts/run-biome.js lint .",
+    "test": "vitest run --passWithNoTests",
+    "test:watch": "vitest watch",
+    "coverage": "vitest run --coverage --passWithNoTests",
+    "typescript": "tsc",
+    "extract-translations": "i18next \"src/**/*.{ts,tsx}\" \"!src/**/*.test.{ts,tsx}\" --config ../../tooling/scripts/i18next-parser.config.js"
+  },
+  "browserslist": [
+    "extends browserslist-config-openmrs"
+  ],
+  "keywords": [
+    "openmrs",
+    "sihsalus",
+    "monitoreo",
+    "seguimiento",
+    "casos",
+    "tb",
+    "diabetes",
+    "vih",
+    "hiv"
+  ],
+  "publishConfig": {
+    "access": "public"
+  },
+  "homepage": "https://github.com/sihsalus/sihsalus-esm-modules#readme",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/sihsalus/sihsalus-esm-modules.git"
+  },
+  "bugs": {
+    "url": "https://github.com/sihsalus/sihsalus-esm-modules/issues"
+  },
+  "dependencies": {
+    "@sihsalus/esm-sihsalus-shared": "workspace:*",
+    "lodash-es": "^4.17.21"
+  },
+  "peerDependencies": {
+    "@carbon/react": "1.x",
+    "@carbon/styles": "1.x",
+    "@openmrs/esm-framework": "*",
+    "@openmrs/esm-patient-common-lib": "*",
+    "dayjs": "1.x",
+    "react": "18.x",
+    "react-i18next": "16.x",
+    "react-router-dom": "6.x",
+    "rxjs": "6.x",
+    "single-spa": "6.x",
+    "swr": "2.x"
+  },
+  "devDependencies": {
+    "@openmrs/esm-patient-common-lib": "workspace:*",
+    "@rspack/cli": "1.7.11",
+    "openmrs": "workspace:*",
+    "typescript": "6.0.3",
+    "vitest": "^4.1.0"
+  }
+}

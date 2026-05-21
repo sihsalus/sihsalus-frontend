@@ -47,6 +47,24 @@ interface StockOperationsTableProps {
   status?: string;
 }
 
+type StockOperationHeader = {
+  key: string;
+  header: React.ReactNode | { content: React.ReactNode };
+  isSortable?: boolean;
+};
+
+const normalizeStockOperationHeader = (header: StockOperationHeader['header'] | null | undefined): React.ReactNode => {
+  if (!header) {
+    return '';
+  }
+
+  if (typeof header === 'object' && 'content' in header) {
+    return (header as { content: React.ReactNode }).content;
+  }
+
+  return header;
+};
+
 const StockOperations: React.FC<StockOperationsTableProps> = () => {
   const { t } = useTranslation();
 
@@ -87,13 +105,13 @@ const StockOperations: React.FC<StockOperationsTableProps> = () => {
   const handleDateFilterChange = ([startDate, endDate]) => {
     if (startDate) {
       setSelectedFromDate(startDate);
-      if (selectedToDate && startDate && selectedToDate < startDate) {
+      if (selectedToDate && selectedToDate < startDate) {
         setSelectedToDate(startDate);
       }
     }
     if (endDate) {
       setSelectedToDate(endDate);
-      if (selectedFromDate && endDate && selectedFromDate > endDate) {
+      if (selectedFromDate && selectedFromDate > endDate) {
         setSelectedFromDate(endDate);
       }
     }
@@ -146,6 +164,15 @@ const StockOperations: React.FC<StockOperationsTableProps> = () => {
     [items, t],
   );
 
+  const dataTableHeaders = useMemo<Array<Omit<StockOperationHeader, 'header'> & { header: React.ReactNode }>>(
+    () =>
+      tableHeaders.map(({ header, ...rest }) => ({
+        ...rest,
+        header: normalizeStockOperationHeader(header),
+      })),
+    [tableHeaders],
+  );
+
   if (isLoading && !filterApplied) {
     return (
       <DataTableSkeleton className={styles.dataTableSkeleton} showHeader={false} rowCount={5} columnCount={5} zebra />
@@ -157,17 +184,8 @@ const StockOperations: React.FC<StockOperationsTableProps> = () => {
       <h2 className={styles.tableHeader}>
         {t('stockOperationsTableHeader', 'Stock operations to track movement of stock.')}
       </h2>
-      <DataTable headers={tableHeaders} isSortable rows={tableRows} useZebraStyles>
-        {({
-          expandRow,
-          getExpandedRowProps,
-          getHeaderProps,
-          getRowProps,
-          getTableProps,
-          headers,
-          onInputChange,
-          rows,
-        }) => (
+      <DataTable headers={dataTableHeaders} isSortable rows={tableRows} useZebraStyles>
+        {({ expandRow, getHeaderProps, getRowProps, getTableProps, headers, onInputChange, rows }) => (
           <TableContainer>
             <TableToolbar
               style={{
@@ -188,6 +206,7 @@ const StockOperations: React.FC<StockOperationsTableProps> = () => {
                     className={styles.datePicker}
                     datePickerType="range"
                     dateFormat={DATE_PICKER_CONTROL_FORMAT}
+                    locale="en"
                     onChange={([startDate, endDate]) => handleDateFilterChange([startDate, endDate])}
                     value={[selectedFromDate, selectedToDate]}
                   >
@@ -219,31 +238,37 @@ const StockOperations: React.FC<StockOperationsTableProps> = () => {
               <TableHead>
                 <TableRow>
                   <TableExpandHeader />
-                  {headers.map(
-                    (header: any) =>
+                  {headers.map((header) => {
+                    const { key, ...headerProps } = getHeaderProps({
+                      header,
+                      isSortable: header.isSortable,
+                    });
+
+                    return (
                       header.key !== 'details' && (
                         <TableHeader
-                          {...getHeaderProps({
-                            header,
-                            isSortable: header.isSortable,
-                          })}
+                          {...headerProps}
                           className={isDesktop ? styles.desktopHeader : styles.tabletHeader}
-                          key={`${header.key}`}
+                          key={key}
                         >
-                          {header.header?.content ?? header.header}
+                          {header.header}
                         </TableHeader>
-                      ),
-                  )}
+                      )
+                    );
+                  })}
                   <TableHeader></TableHeader>
                 </TableRow>
               </TableHead>
               <TableBody>
-                {rows?.map((row: any, index) => {
-                  const props = getRowProps({ row });
-                  const expandedRowProps = getExpandedRowProps({ row });
+                {rows?.map((row, index) => {
+                  const { key, ...rowProps } = getRowProps({ row });
                   return (
                     <React.Fragment key={row.id}>
-                      <TableExpandRow className={isDesktop ? styles.desktopRow : styles.tabletRow} {...props}>
+                      <TableExpandRow
+                        className={isDesktop ? styles.desktopRow : styles.tabletRow}
+                        key={key}
+                        {...rowProps}
+                      >
                         {row.cells.map((cell) => (
                           <TableCell key={cell.id}>
                             {cell?.info?.header === 'stockOperationItems' ? (

@@ -1,7 +1,11 @@
 import { Button, ButtonSkeleton, Row } from '@carbon/react';
 import { Microscope } from '@carbon/react/icons';
-import { launchWorkspace, useConfig } from '@openmrs/esm-framework';
-import { launchStartVisitPrompt, useVisitOrOfflineVisit } from '@openmrs/esm-patient-common-lib';
+import { useConfig } from '@openmrs/esm-framework';
+import {
+  launchPatientWorkspace,
+  launchStartVisitPrompt,
+  useVisitOrOfflineVisit,
+} from '@openmrs/esm-patient-common-lib';
 import React from 'react';
 import type { ConfigObject } from '../config-schema';
 import { patientFormEntryWorkspace } from '../constants';
@@ -41,7 +45,7 @@ const ContactActions: React.FC<ContactActionsProps> = ({ relativeUuid, baseLineH
       return;
     }
 
-    launchWorkspace(patientFormEntryWorkspace, {
+    launchPatientWorkspace(patientFormEntryWorkspace, {
       workspaceTitle: 'HTS Initial form',
       formInfo: {
         encounterUuid: '',

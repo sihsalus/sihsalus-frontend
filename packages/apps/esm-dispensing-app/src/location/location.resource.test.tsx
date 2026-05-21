@@ -4,8 +4,8 @@ import useSWR from 'swr';
 import { type PharmacyConfig } from '../config-schema';
 import { useLocations } from './location.resource';
 
-jest.mocked(openmrsFetch);
-jest.mock('swr');
+vi.mocked(openmrsFetch);
+vi.mock('swr');
 
 const pharmacyConfig: PharmacyConfig = {
   appName: '',

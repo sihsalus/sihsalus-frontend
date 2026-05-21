@@ -12,14 +12,14 @@ import { useActiveVisits, useObsConcepts } from './active-visits.resource';
 
 void React;
 
-const mockUseActiveVisits = jest.mocked(useActiveVisits);
-const mockUseObsConcepts = jest.mocked(useObsConcepts);
-const mockUseConfig = jest.mocked(useConfig<ActiveVisitsConfigSchema>);
+const mockUseActiveVisits = vi.mocked(useActiveVisits);
+const mockUseObsConcepts = vi.mocked(useObsConcepts);
+const mockUseConfig = vi.mocked(useConfig<ActiveVisitsConfigSchema>);
 
-jest.mock('./active-visits.resource', () => ({
-  ...jest.requireActual('./active-visits.resource'),
-  useActiveVisits: jest.fn(),
-  useObsConcepts: jest.fn(),
+vi.mock('./active-visits.resource', async () => ({
+  ...(await vi.importActual('./active-visits.resource')),
+  useActiveVisits: vi.fn(),
+  useObsConcepts: vi.fn(),
 }));
 
 const mockObsConcepts: Array<OpenmrsResource> = [
@@ -78,7 +78,7 @@ describe('ActiveVisitsTable', () => {
   });
 
   afterEach(() => {
-    jest.clearAllMocks();
+    vi.clearAllMocks();
   });
 
   it('renders data table with standard and observation columns', () => {

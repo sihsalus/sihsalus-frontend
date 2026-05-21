@@ -6,18 +6,18 @@ import { useOrderPrice } from '../hooks/useOrderPrice';
 
 import OrderPriceDetailsComponent from './order-price-details.component';
 
-const mockGetLocale = jest.mocked(getLocale);
-const mockUseOrderPrice = jest.mocked(useOrderPrice);
+const mockGetLocale = vi.mocked(getLocale);
+const mockUseOrderPrice = vi.mocked(useOrderPrice);
 
-jest.mock('../hooks/useOrderPrice', () => ({
-  useOrderPrice: jest.fn(),
+vi.mock('../hooks/useOrderPrice', () => ({
+  useOrderPrice: vi.fn(),
 }));
 
 describe('OrderPriceDetailsComponent', () => {
   const mockOrderItemUuid = 'test-uuid';
 
   beforeEach(() => {
-    jest.resetAllMocks();
+    vi.resetAllMocks();
     mockGetLocale.mockReturnValue('en-US');
   });
 
@@ -75,7 +75,7 @@ describe('OrderPriceDetailsComponent', () => {
   });
 
   it('handles invalid currency codes gracefully', () => {
-    const consoleSpy = jest.spyOn(console, 'error').mockImplementation();
+    const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
 
     mockUseOrderPrice.mockReturnValue({
       data: {

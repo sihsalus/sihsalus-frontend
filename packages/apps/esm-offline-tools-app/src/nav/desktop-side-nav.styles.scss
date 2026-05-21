@@ -1,3 +1,4 @@
+@use '@carbon/colors';
 @use '@carbon/layout';
 @use '@carbon/type';
 @use '@openmrs/esm-styleguide/src/vars' as *;
@@ -35,4 +36,33 @@
   height: layout.$spacing-07;
   color: $ui-04;
   padding: 0 0 0 layout.$spacing-05;
+}
+
+:global(.sihsalus-side-nav__item) {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  min-width: 0;
+}
+
+:global(.sihsalus-side-nav__icon) {
+  flex: 0 0 auto;
+  color: colors.$gray-70;
+}
+
+:global(.sihsalus-side-nav__text) {
+  min-width: 0;
+  max-width: 12rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  transition:
+    opacity 300ms ease,
+    max-width 300ms ease;
+}
+
+:global(.active-left-nav-link .sihsalus-side-nav__icon),
+:global(.cds--side-nav__link:hover .sihsalus-side-nav__icon),
+:global(.cds--side-nav__link:focus .sihsalus-side-nav__icon) {
+  color: var(--brand-01);
 }

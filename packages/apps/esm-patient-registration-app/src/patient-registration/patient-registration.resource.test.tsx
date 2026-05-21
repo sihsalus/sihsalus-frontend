@@ -2,10 +2,11 @@ import { openmrsFetch, restBaseUrl } from '@openmrs/esm-framework';
 
 import { savePatient } from './patient-registration.resource';
 
-const mockOpenmrsFetch = openmrsFetch as jest.Mock;
+const mockOpenmrsFetch = openmrsFetch as vi.Mock;
 
-jest.mock('@openmrs/esm-framework', () => ({
-  openmrsFetch: jest.fn(),
+vi.mock('@openmrs/esm-framework', async () => ({
+  ...(await vi.importActual('@openmrs/esm-framework')),
+  openmrsFetch: vi.fn(),
 }));
 
 describe('savePatient', () => {

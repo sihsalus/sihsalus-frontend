@@ -3,7 +3,7 @@ import { ChevronDownIcon, TranslateIcon } from '@openmrs/esm-framework';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
-import styles from './login.scss';
+import styles from './login.module.scss';
 
 const loginLocaleStorageKey = 'sihsalus.login.locale';
 
@@ -108,6 +108,7 @@ export function LanguageSwitcher({ locales }: LanguageSwitcherProps) {
           {availableLocales.map((option) => (
             <button
               aria-current={option.locale === activeLocale ? 'true' : undefined}
+              aria-checked={option.locale === activeLocale}
               className={styles.languageMenuItem}
               key={option.locale}
               onClick={() => changeLanguage(option.locale)}

@@ -4,11 +4,17 @@ import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 
 import { type ObsRecord } from '../../types';
-
+import { getClass } from './helper';
 import LabSetPanel from './panel.component';
 
-const mockUseLayoutType = jest.mocked(useLayoutType);
-const mockIsDesktop = jest.mocked(isDesktop);
+const expectHasClass = (element: HTMLElement, className: string) => {
+  if (className) {
+    expect(element).toHaveClass(className);
+  }
+};
+
+const mockUseLayoutType = vi.mocked(useLayoutType);
+const mockIsDesktop = vi.mocked(isDesktop);
 
 const conceptMeta = {
   display: 'Complete Blood Count',
@@ -19,7 +25,7 @@ const conceptMeta = {
   lowAbsolute: 0,
   lowCritical: 10,
   units: 'g/dL',
-  getInterpretation: jest.fn(),
+  getInterpretation: vi.fn(),
   range: '12-16',
 };
 
@@ -87,7 +93,7 @@ const mockObservationsWithInterpretations: Array<ObsRecord> = [
 
 describe('LabSetPanel', () => {
   const user = userEvent.setup();
-  const mockSetActivePanel = jest.fn();
+  const mockSetActivePanel = vi.fn();
 
   beforeEach(() => {
     mockUseLayoutType.mockReturnValue('large-desktop');
@@ -189,8 +195,8 @@ describe('LabSetPanel', () => {
     const lowTest = screen.getByRole('row', { name: /low test 2 g\/dL 12-16 g\/dL/i });
 
     expect(normalTest).toHaveClass('check');
-    expect(highTest).toHaveClass('high', 'check');
-    expect(lowTest).toHaveClass('low', 'check');
+    expectHasClass(highTest, getClass('HIGH'));
+    expectHasClass(lowTest, getClass('LOW'));
   });
 
   it('adjusts the table size based on the layout', () => {

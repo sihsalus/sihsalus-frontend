@@ -112,7 +112,7 @@ export interface WorkspaceStoreState {
 }
 
 export interface OpenWorkspace extends WorkspaceRegistration, DefaultWorkspaceProps {
-  additionalProps: object;
+  additionalProps: Record<string, unknown>;
   currentWorkspaceGroup?: string;
 }
 
@@ -421,7 +421,7 @@ export function navigateAndLaunchWorkspace({
   navigate({ to: targetUrl });
 }
 
-const promptBeforeClosingFcns = {};
+const promptBeforeClosingFcns: Record<string, () => boolean> = {};
 
 export function promptBeforeClosing(workspaceName: string, testFcn: () => boolean) {
   promptBeforeClosingFcns[workspaceName] = testFcn;
@@ -667,8 +667,12 @@ export function showWorkspacePrompts(
   store.setState((state) => ({ ...state, prompt }));
 }
 
-function getWorkspaceTitle(workspace: WorkspaceRegistration, additionalProps?: object) {
-  return additionalProps?.['workspaceTitle'] ?? workspace.title;
+function getWorkspaceTitle(workspace: WorkspaceRegistration, additionalProps?: Record<string, unknown>) {
+  const workspaceTitle = additionalProps?.['workspaceTitle'];
+  if (typeof workspaceTitle === 'string') {
+    return workspaceTitle;
+  }
+  return workspace.title;
 }
 
 export function resetWorkspaceStore() {

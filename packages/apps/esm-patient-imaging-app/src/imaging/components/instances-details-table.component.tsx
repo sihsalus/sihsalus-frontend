@@ -95,7 +95,7 @@ const InstancesDetailsTable: React.FC<InstancesDetailsTableProps> = ({
                   launchInstancePreviewDialog(instance.orthancInstanceUID, studyId, instance.imagePositionPatient);
                 }}
               >
-                <img className="stone-img" src={preview} style={{ width: 23, height: 23 }}></img>
+                <img alt="" className="stone-img" src={preview} style={{ width: 23, height: 23 }} />
               </IconButton>
               <IconButton
                 kind="ghost"
@@ -112,7 +112,7 @@ const InstancesDetailsTable: React.FC<InstancesDetailsTableProps> = ({
                   // `${orthancBaseUrl}instances/${instance.orthancInstanceUID}/preview`)
                 }
               >
-                <img className="orthanc-img" src={preview} style={{ width: 23, height: 23 }}></img>
+                <img alt="" className="orthanc-img" src={preview} style={{ width: 23, height: 23 }} />
               </IconButton>
             </>
           )}
@@ -125,7 +125,7 @@ const InstancesDetailsTable: React.FC<InstancesDetailsTableProps> = ({
               (globalThis.location.href = `${getBrowserUrl(orthancConfig)}/ui/app/#/filtered-studies?StudyInstanceUID=${encodeURIComponent(studyInstanceUID)}&expand=series`)
             }
           >
-            <img className="orthanc-img" src={orthancExplorer} style={{ width: 26, height: 26, marginTop: 0 }}></img>
+            <img alt="" className="orthanc-img" src={orthancExplorer} style={{ width: 26, height: 26, marginTop: 0 }} />
           </IconButton>
         </div>
       ),
@@ -162,11 +162,14 @@ const InstancesDetailsTable: React.FC<InstancesDetailsTableProps> = ({
             <Table aria-label="Instances summary" className={styles.table} {...getTableProps()} />
             <TableHead>
               <TableRow>
-                {headers.map((header, index) => (
-                  <TableHeader {...getHeaderProps({ header })} style={index === 4 ? { width: '180px' } : {}}>
-                    {header.header}
-                  </TableHeader>
-                ))}
+                {headers.map((header, index) => {
+                  const { key, ...headerProps } = getHeaderProps({ header });
+                  return (
+                    <TableHeader key={key} {...headerProps} style={index === 4 ? { width: '180px' } : {}}>
+                      {header.header}
+                    </TableHeader>
+                  );
+                })}
                 <TableHeader />
               </TableRow>
             </TableHead>

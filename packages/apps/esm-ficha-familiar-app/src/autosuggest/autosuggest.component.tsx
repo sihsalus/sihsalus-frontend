@@ -101,8 +101,6 @@ export const Autosuggest: React.FC<AutosuggestProps> = ({
                   handleClick(index);
                 }
               }}
-              role="button"
-              tabIndex={0}
               className={typeof renderSuggestionItem !== 'function' ? styles.displayText : undefined}
             >
               {typeof renderSuggestionItem === 'function'

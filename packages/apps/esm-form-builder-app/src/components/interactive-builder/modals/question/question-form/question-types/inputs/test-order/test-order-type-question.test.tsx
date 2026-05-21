@@ -6,21 +6,21 @@ import userEvent from '@testing-library/user-event';
 import { FormFieldProvider } from '../../../../form-field-context';
 import TestOrderTypeQuestion from './test-order-type-question.component';
 
-const mockUseConceptLookup = jest.mocked(useConceptLookup);
-jest.mock('@hooks/useConceptLookup', () => ({
-  ...jest.requireActual('@hooks/useConceptLookup'),
-  useConceptLookup: jest.fn(),
+const mockUseConceptLookup = vi.mocked(useConceptLookup);
+vi.mock('@hooks/useConceptLookup', async () => ({
+  ...(await vi.importActual('@hooks/useConceptLookup')),
+  useConceptLookup: vi.fn(),
 }));
 
-const mockUseConceptId = jest.mocked(useConceptId);
-jest.mock('@hooks/useConceptId', () => ({
-  ...jest.requireActual('@hooks/useConceptId'),
-  useConceptId: jest.fn(),
+const mockUseConceptId = vi.mocked(useConceptId);
+vi.mock('@hooks/useConceptId', async () => ({
+  ...(await vi.importActual('@hooks/useConceptId')),
+  useConceptId: vi.fn(),
 }));
 
-const mockSetFormField = jest.fn();
-const mockSetConcept = jest.fn();
-const mockSetIsConceptValid = jest.fn();
+const mockSetFormField = vi.fn();
+const mockSetConcept = vi.fn();
+const mockSetIsConceptValid = vi.fn();
 const formField: FormField = {
   id: 'test-order-1',
   type: 'testOrder',
@@ -31,8 +31,8 @@ const formField: FormField = {
   },
 };
 
-jest.mock('../../../../form-field-context', () => ({
-  ...jest.requireActual('../../../../form-field-context'),
+vi.mock('../../../../form-field-context', async () => ({
+  ...(await vi.importActual('../../../../form-field-context')),
   useFormField: () => ({
     formField,
     setFormField: mockSetFormField,
@@ -43,7 +43,7 @@ jest.mock('../../../../form-field-context', () => ({
 
 describe('TestOrderTypeQuestion', () => {
   beforeEach(() => {
-    jest.clearAllMocks();
+    vi.clearAllMocks();
     mockUseConceptLookup.mockReturnValue({ concepts: [], conceptLookupError: null, isLoadingConcepts: false });
     mockUseConceptId.mockReturnValue({
       concept: null,
@@ -100,7 +100,7 @@ describe('TestOrderTypeQuestion', () => {
     await user.type(conceptInput, 'test-concept');
 
     // Wait for the concept result to appear and click it
-    const conceptResult = await screen.findByRole('menuitem');
+    const conceptResult = await screen.findByText(/test concept/i);
     await user.click(conceptResult);
 
     // Verify that the form field was updated

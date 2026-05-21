@@ -58,6 +58,8 @@ const EncountersTable: React.FC<EncountersTableProps> = ({ showAllEncounters, en
   const { t } = useTranslation();
   const { results: paginatedEncounters, goTo, currentPage } = usePagination(encounters ?? [], encountersCount);
   const isTablet = useLayoutType() === 'tablet';
+  const searchClassName = typeof styles.search === 'string' ? styles.search : undefined;
+  const tableHeaderClassName = typeof styles.tableHeader === 'string' ? styles.tableHeader : undefined;
 
   const tableHeaders: DataTableHeader[] = [
     {
@@ -97,7 +99,7 @@ const EncountersTable: React.FC<EncountersTableProps> = ({ showAllEncounters, en
             <TableToolbar {...getToolbarProps()}>
               <TableToolbarContent>
                 <TableToolbarSearch
-                  className={styles.search}
+                  className={searchClassName}
                   expanded
                   onChange={onInputChange}
                   placeholder={t('searchThisList', 'Search this list')}
@@ -109,26 +111,30 @@ const EncountersTable: React.FC<EncountersTableProps> = ({ showAllEncounters, en
               <TableHead>
                 <TableRow>
                   <TableExpandHeader />
-                  {headers.map((header) => (
-                    <TableHeader
-                      className={styles.tableHeader}
-                      key={String(header.key ?? header.header)}
-                      {...getHeaderProps({ header })}
-                    >
-                      {header.header}
-                    </TableHeader>
-                  ))}
+                  {headers.map((header) => {
+                    const { key, ...headerProps } = getHeaderProps({ header });
+                    return (
+                      <TableHeader className={tableHeaderClassName} key={key} {...headerProps}>
+                        {header.header}
+                      </TableHeader>
+                    );
+                  })}
                   {showAllEncounters ? <TableExpandHeader /> : null}
                 </TableRow>
               </TableHead>
               <TableBody>
                 {rows.map((row, i) => (
                   <React.Fragment key={row.id}>
-                    <TableExpandRow {...getRowProps({ row })}>
-                      {row.cells.map((cell) => (
-                        <TableCell key={cell.id}>{cell.value}</TableCell>
-                      ))}
-                    </TableExpandRow>
+                    {(() => {
+                      const { key, ...rowProps } = getRowProps({ row });
+                      return (
+                        <TableExpandRow key={key} {...rowProps}>
+                          {row.cells.map((cell) => (
+                            <TableCell key={cell.id}>{cell.value}</TableCell>
+                          ))}
+                        </TableExpandRow>
+                      );
+                    })()}
                     {row.isExpanded ? (
                       <TableExpandedRow
                         className={styles.expandedRow}

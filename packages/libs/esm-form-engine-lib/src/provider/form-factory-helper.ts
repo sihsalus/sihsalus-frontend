@@ -1,4 +1,4 @@
-import { type OpenmrsResource, showSnackbar } from '@openmrs/esm-framework/src/internal';
+import { type OpenmrsResource, showSnackbar } from '@openmrs/esm-framework';
 import { type TFunction } from 'i18next';
 import { type PostSubmissionActionMeta } from '../hooks/usePostSubmissionActions';
 import { type OpenmrsEncounter, type SessionMode } from '../types';

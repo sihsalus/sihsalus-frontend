@@ -1,13 +1,12 @@
 import { Accordion, AccordionItem, Button, InlineLoading, Tag, Tile } from '@carbon/react';
 import { Add } from '@carbon/react/icons';
-import { formatDate, launchWorkspace, useConfig } from '@openmrs/esm-framework';
+import { formatDate, useConfig } from '@openmrs/esm-framework';
+import { launchPatientWorkspace } from '@openmrs/esm-patient-common-lib';
 import React from 'react';
 import { useTranslation } from 'react-i18next';
-
 import type { ConfigObject } from '../config-schema';
 import { type TriageVitals, useTriageVitals } from '../hooks/useTriageVitals';
 import { patientFormEntryWorkspace } from '../utils/constants';
-
 import styles from './consulta-externa-dashboard.scss';
 
 interface TriageSummaryProps {
@@ -87,8 +86,9 @@ const TriageSummary: React.FC<TriageSummaryProps> = ({ patientUuid }) => {
   );
 
   const handleLaunchForm = () => {
-    launchWorkspace(patientFormEntryWorkspace, {
+    launchPatientWorkspace(patientFormEntryWorkspace, {
       formInfo: {
+        patientUuid,
         formUuid: config.vitals?.formUuid,
       },
     });

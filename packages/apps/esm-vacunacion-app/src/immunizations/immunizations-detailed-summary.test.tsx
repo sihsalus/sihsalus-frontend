@@ -14,25 +14,25 @@ import { configSchema, type ImmunizationConfigObject } from '../config-schema';
 import { useImmunizations } from '../hooks/useImmunizations';
 import ImmunizationsDetailedSummary from './immunizations-detailed-summary.component';
 
-jest.mock('../hooks/useImmunizations', () => ({
-  useImmunizations: jest.fn(),
+vi.mock('../hooks/useImmunizations', async () => ({
+  useImmunizations: vi.fn(),
 }));
 
-jest.mock('@openmrs/esm-patient-common-lib', () => ({
-  ...jest.requireActual('@openmrs/esm-patient-common-lib'),
-  usePatientChartStore: jest.fn(),
-  useVisitOrOfflineVisit: jest.fn(),
+vi.mock('@openmrs/esm-patient-common-lib', async () => ({
+  ...(await vi.importActual('@openmrs/esm-patient-common-lib')),
+  usePatientChartStore: vi.fn(),
+  useVisitOrOfflineVisit: vi.fn(),
 }));
 
-const mockUseImmunizations = jest.mocked(useImmunizations);
-const mockLaunchWorkspace = launchWorkspace2 as jest.Mock;
-const mockUseConfig = jest.mocked(useConfig<ImmunizationConfigObject>);
-const mockUsePatientChartStore = jest.mocked(usePatientChartStore);
-const mockUseVisitOrOfflineVisit = jest.mocked(useVisitOrOfflineVisit);
+const mockUseImmunizations = vi.mocked(useImmunizations);
+const mockLaunchWorkspace = launchWorkspace2 as vi.Mock;
+const mockUseConfig = vi.mocked(useConfig<ImmunizationConfigObject>);
+const mockUsePatientChartStore = vi.mocked(usePatientChartStore);
+const mockUseVisitOrOfflineVisit = vi.mocked(useVisitOrOfflineVisit);
 
 mockUseConfig.mockReturnValue(getDefaultsFromConfigSchema(configSchema));
 
-mockLaunchWorkspace.mockImplementation(jest.fn());
+mockLaunchWorkspace.mockImplementation(vi.fn());
 
 mockUseConfig.mockReturnValue({
   immunizationConceptSet: 'CIEL:984',
@@ -74,6 +74,7 @@ const mockImmunizationData = [
 
 describe('ImmunizationsDetailedSummary', () => {
   beforeEach(() => {
+    vi.clearAllMocks();
     mockUseConfig.mockReturnValue({
       immunizationConceptSet: 'CIEL:984',
       fhirConceptMappings: {
@@ -96,9 +97,9 @@ describe('ImmunizationsDetailedSummary', () => {
       patientUuid: 'patient-123',
       patient: null,
       visitContext: null,
-      mutateVisitContext: jest.fn(),
-      setPatient: jest.fn(),
-      setVisitContext: jest.fn(),
+      mutateVisitContext: vi.fn(),
+      setPatient: vi.fn(),
+      setVisitContext: vi.fn(),
     });
   });
 
@@ -108,10 +109,10 @@ describe('ImmunizationsDetailedSummary', () => {
       isLoading: false,
       error: null,
       isValidating: false,
-      mutate: jest.fn(),
+      mutate: vi.fn(),
     });
 
-    renderWithSwr(<ImmunizationsDetailedSummary patientUuid={mockPatient.id} launchStartVisitPrompt={jest.fn()} />);
+    renderWithSwr(<ImmunizationsDetailedSummary patientUuid={mockPatient.id} launchStartVisitPrompt={vi.fn()} />);
 
     await waitForLoadingToFinish();
 
@@ -136,10 +137,10 @@ describe('ImmunizationsDetailedSummary', () => {
       error,
       isLoading: false,
       isValidating: false,
-      mutate: jest.fn(),
+      mutate: vi.fn(),
     });
 
-    renderWithSwr(<ImmunizationsDetailedSummary patientUuid={mockPatient.id} launchStartVisitPrompt={jest.fn()} />);
+    renderWithSwr(<ImmunizationsDetailedSummary patientUuid={mockPatient.id} launchStartVisitPrompt={vi.fn()} />);
 
     await waitForLoadingToFinish();
 
@@ -159,10 +160,10 @@ describe('ImmunizationsDetailedSummary', () => {
       isLoading: false,
       error: null,
       isValidating: false,
-      mutate: jest.fn(),
+      mutate: vi.fn(),
     });
 
-    renderWithSwr(<ImmunizationsDetailedSummary patientUuid={mockPatient.id} launchStartVisitPrompt={jest.fn()} />);
+    renderWithSwr(<ImmunizationsDetailedSummary patientUuid={mockPatient.id} launchStartVisitPrompt={vi.fn()} />);
 
     await waitForLoadingToFinish();
     const formattedDate = formatDate(parseDate('2018-11-20T00:00:00.000Z'), {
@@ -184,10 +185,10 @@ describe('ImmunizationsDetailedSummary', () => {
       isLoading: true,
       error: null,
       isValidating: false,
-      mutate: jest.fn(),
+      mutate: vi.fn(),
     });
 
-    renderWithSwr(<ImmunizationsDetailedSummary patientUuid={mockPatient.id} launchStartVisitPrompt={jest.fn()} />);
+    renderWithSwr(<ImmunizationsDetailedSummary patientUuid={mockPatient.id} launchStartVisitPrompt={vi.fn()} />);
 
     expect(screen.getByRole('progressbar')).toBeInTheDocument();
     expect(screen.queryByRole('table')).not.toBeInTheDocument();
@@ -199,20 +200,20 @@ describe('ImmunizationsDetailedSummary', () => {
       patientUuid: 'patient-123',
       patient: null,
       visitContext: mockCurrentVisit,
-      mutateVisitContext: jest.fn(),
-      setPatient: jest.fn(),
-      setVisitContext: jest.fn(),
+      mutateVisitContext: vi.fn(),
+      setPatient: vi.fn(),
+      setVisitContext: vi.fn(),
     });
 
     const user = userEvent.setup();
-    const mockLaunchStartVisitPrompt = jest.fn();
+    const mockLaunchStartVisitPrompt = vi.fn();
     mockUseVisitOrOfflineVisit.mockReturnValue({ currentVisit: { uuid: 'visit-uuid' } } as VisitReturnType);
     mockUseImmunizations.mockReturnValue({
       data: mockImmunizationData,
       isLoading: false,
       error: null,
       isValidating: false,
-      mutate: jest.fn(),
+      mutate: vi.fn(),
     });
 
     renderWithSwr(
@@ -230,21 +231,21 @@ describe('ImmunizationsDetailedSummary', () => {
 
   it('prompts to start visit when add button is clicked without an active visit', async () => {
     const user = userEvent.setup();
-    const mockLaunchStartVisitPrompt = jest.fn();
+    const mockLaunchStartVisitPrompt = vi.fn();
     mockUsePatientChartStore.mockReturnValue({
       patientUuid: mockPatient.id,
       patient: mockPatient as unknown as fhir.Patient,
       visitContext: null,
       mutateVisitContext: null,
-      setPatient: jest.fn(),
-      setVisitContext: jest.fn(),
+      setPatient: vi.fn(),
+      setVisitContext: vi.fn(),
     });
     mockUseImmunizations.mockReturnValueOnce({
       data: mockImmunizationData,
       isLoading: false,
       error: null,
       isValidating: false,
-      mutate: jest.fn(),
+      mutate: vi.fn(),
     });
 
     renderWithSwr(
@@ -303,10 +304,10 @@ describe('ImmunizationsDetailedSummary', () => {
       isLoading: false,
       error: null,
       isValidating: false,
-      mutate: jest.fn(),
+      mutate: vi.fn(),
     });
 
-    renderWithSwr(<ImmunizationsDetailedSummary patientUuid={mockPatient.id} launchStartVisitPrompt={jest.fn()} />);
+    renderWithSwr(<ImmunizationsDetailedSummary patientUuid={mockPatient.id} launchStartVisitPrompt={vi.fn()} />);
 
     await waitForLoadingToFinish();
 
@@ -339,10 +340,10 @@ describe('ImmunizationsDetailedSummary', () => {
       isLoading: false,
       error: null,
       isValidating: false,
-      mutate: jest.fn(),
+      mutate: vi.fn(),
     });
 
-    renderWithSwr(<ImmunizationsDetailedSummary patientUuid={mockPatient.id} launchStartVisitPrompt={jest.fn()} />);
+    renderWithSwr(<ImmunizationsDetailedSummary patientUuid={mockPatient.id} launchStartVisitPrompt={vi.fn()} />);
 
     await waitForLoadingToFinish();
 
@@ -378,10 +379,10 @@ describe('ImmunizationsDetailedSummary', () => {
       isLoading: false,
       error: null,
       isValidating: false,
-      mutate: jest.fn(),
+      mutate: vi.fn(),
     });
 
-    renderWithSwr(<ImmunizationsDetailedSummary patientUuid={mockPatient.id} launchStartVisitPrompt={jest.fn()} />);
+    renderWithSwr(<ImmunizationsDetailedSummary patientUuid={mockPatient.id} launchStartVisitPrompt={vi.fn()} />);
 
     await waitForLoadingToFinish();
 
@@ -415,10 +416,10 @@ describe('ImmunizationsDetailedSummary', () => {
       isLoading: false,
       error: null,
       isValidating: false,
-      mutate: jest.fn(),
+      mutate: vi.fn(),
     });
 
-    renderWithSwr(<ImmunizationsDetailedSummary patientUuid={mockPatient.id} launchStartVisitPrompt={jest.fn()} />);
+    renderWithSwr(<ImmunizationsDetailedSummary patientUuid={mockPatient.id} launchStartVisitPrompt={vi.fn()} />);
 
     await waitForLoadingToFinish();
 
@@ -444,10 +445,10 @@ describe('ImmunizationsDetailedSummary', () => {
       isLoading: false,
       error: null,
       isValidating: false,
-      mutate: jest.fn(),
+      mutate: vi.fn(),
     });
 
-    renderWithSwr(<ImmunizationsDetailedSummary patientUuid={mockPatient.id} launchStartVisitPrompt={jest.fn()} />);
+    renderWithSwr(<ImmunizationsDetailedSummary patientUuid={mockPatient.id} launchStartVisitPrompt={vi.fn()} />);
 
     await waitForLoadingToFinish();
 

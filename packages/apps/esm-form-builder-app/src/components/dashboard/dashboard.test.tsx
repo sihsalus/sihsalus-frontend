@@ -11,9 +11,9 @@ type OpenmrsFetchResponse = Promise<
   }>
 >;
 
-const mockedOpenmrsFetch = jest.mocked(openmrsFetch);
-const mockedDeleteForm = jest.mocked(deleteForm);
-const mockedShowModal = jest.mocked(showModal);
+const mockedOpenmrsFetch = vi.mocked(openmrsFetch);
+const mockedDeleteForm = vi.mocked(deleteForm);
+const mockedShowModal = vi.mocked(showModal);
 
 const formsResponse = [
   {
@@ -37,11 +37,11 @@ const formsResponse = [
   },
 ];
 
-jest.mock('@resources/forms.resource', () => ({
-  deleteForm: jest.fn(),
+vi.mock('@resources/forms.resource', () => ({
+  deleteForm: vi.fn(),
 }));
 
-global.window.URL.createObjectURL = jest.fn();
+global.window.URL.createObjectURL = vi.fn();
 
 describe('Dashboard', () => {
   it('renders an empty state view if no forms are available', async () => {

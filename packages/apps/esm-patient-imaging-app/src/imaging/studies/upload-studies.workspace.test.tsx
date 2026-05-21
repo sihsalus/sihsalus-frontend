@@ -1,29 +1,29 @@
 import * as framework from '@openmrs/esm-framework';
 import { fireEvent, render, screen, waitFor } from '@testing-library/react';
-import React from 'react';
 import * as api from '../../api';
 import { maxUploadImageDataSize } from '../constants';
 import UploadStudiesWorkspace from './upload-studies.workspace';
 
-jest.mock('react-i18next', () => ({
-  useTranslation: () => ({ t: (key: string, fallback: string) => fallback }),
+vi.mock('react-i18next', async () => ({
+  useTranslation: () => ({ t: (_key: string, fallback: string) => fallback }),
 }));
 
-jest.mock('../../api', () => ({
-  uploadStudies: jest.fn(),
-  useOrthancConfigurations: jest.fn(),
+vi.mock('../../api', async () => ({
+  uploadStudies: vi.fn(),
+  useOrthancConfigurations: vi.fn(),
 }));
 
-jest.mock('@openmrs/esm-framework', () => ({
-  showSnackbar: jest.fn(),
-  createErrorHandler: jest.fn(),
-  useLayoutType: jest.fn(),
+vi.mock('@openmrs/esm-framework', async () => ({
+  ...(await vi.importActual('@openmrs/esm-framework')),
+  showSnackbar: vi.fn(),
+  createErrorHandler: vi.fn(),
+  useLayoutType: vi.fn(),
   ExtensionSlot: () => <div>ExtensionSlot</div>,
   ResponsiveWrapper: ({ children }: any) => <div>{children}</div>,
 }));
 
-jest.mock('@carbon/react', () => {
-  const original = jest.requireActual('@carbon/react');
+vi.mock('@carbon/react', async () => {
+  const original = await vi.importActual('@carbon/react');
   return {
     ...original,
     ComboBox: ({ onChange, selectedItem }: any) => (
@@ -48,17 +48,17 @@ jest.mock('@carbon/react', () => {
 
 describe('UploadStudiesWorkspace', () => {
   const patientUuid = 'patient-123';
-  const closeWorkspace = jest.fn();
+  const closeWorkspace = vi.fn();
 
   beforeEach(() => {
-    (api.useOrthancConfigurations as jest.Mock).mockReturnValue({
+    (api.useOrthancConfigurations as vi.Mock).mockReturnValue({
       data: [
         { id: 1, orthancBaseUrl: 'url1', orthancProxyUrl: null },
         { id: 2, orthancBaseUrl: 'url2', orthancProxyUrl: null },
       ],
     });
-    (framework.useLayoutType as jest.Mock).mockReturnValue('desktop');
-    jest.clearAllMocks();
+    (framework.useLayoutType as vi.Mock).mockReturnValue('desktop');
+    vi.clearAllMocks();
   });
 
   const setup = () => {
@@ -66,9 +66,9 @@ describe('UploadStudiesWorkspace', () => {
       <UploadStudiesWorkspace
         patientUuid={patientUuid}
         closeWorkspace={closeWorkspace}
-        promptBeforeClosing={jest.fn()}
-        closeWorkspaceWithSavedChanges={jest.fn()}
-        setTitle={jest.fn()}
+        promptBeforeClosing={vi.fn()}
+        closeWorkspaceWithSavedChanges={vi.fn()}
+        setTitle={vi.fn()}
       />,
     );
   };
@@ -119,7 +119,7 @@ describe('UploadStudiesWorkspace', () => {
 
   it('calls uploadStudies and closes workspace on successful upload', async () => {
     const file = new File(['dummy content'], 'test.dcm', { type: 'application/dicom' });
-    (api.uploadStudies as jest.Mock).mockResolvedValue({});
+    (api.uploadStudies as vi.Mock).mockResolvedValue({});
 
     setup();
 
@@ -136,7 +136,7 @@ describe('UploadStudiesWorkspace', () => {
 
   it('shows snackbar on upload failure', async () => {
     const file = new File(['dummy content'], 'test.dcm', { type: 'application/dicom' });
-    (api.uploadStudies as jest.Mock).mockRejectedValue(new Error('Upload failed'));
+    (api.uploadStudies as vi.Mock).mockRejectedValue(new Error('Upload failed'));
 
     setup();
 

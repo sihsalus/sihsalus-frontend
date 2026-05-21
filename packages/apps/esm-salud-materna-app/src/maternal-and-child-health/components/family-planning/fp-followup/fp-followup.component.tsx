@@ -15,7 +15,7 @@ interface FpFollowupProps {
  * Widget de seguimiento de planificación familiar según NTS 124-MINSA.
  * Muestra adherencia, efectos secundarios y próxima cita.
  */
-const FpFollowup: React.FC<FpFollowupProps> = ({ patientUuid }) => {
+const FpFollowup: React.FC<FpFollowupProps> = ({ patientUuid: _patientUuid }) => {
   const { t } = useTranslation();
   const config = useConfig<ConfigObject>();
 

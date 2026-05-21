@@ -1,6 +1,6 @@
 import { getLocalTimeZone } from '@internationalized/date';
 import { formatDate } from '@openmrs/esm-utils';
-import React, { forwardRef, type HTMLAttributes, type PropsWithChildren, useCallback, useContext } from 'react';
+import { forwardRef, type HTMLAttributes, type PropsWithChildren, useCallback, useContext } from 'react';
 import {
   Button,
   CalendarStateContext,
@@ -22,6 +22,7 @@ function getYearAsNumber(date: Date, intlLocale: Intl.Locale) {
       noToday: true,
       numberingSystem: 'latn',
     }),
+    10,
   );
 }
 
@@ -55,9 +56,12 @@ export const MonthYear = /*#__PURE__*/ forwardRef<HTMLSpanElement, PropsWithChil
     const maxYear = state.maxValue ? getYearAsNumber(state.maxValue.toDate(tz), intlLocale) : undefined;
     const minYear = state.minValue ? getYearAsNumber(state.minValue.toDate(tz), intlLocale) : undefined;
 
-    const changeHandler = useCallback((value: number) => {
-      state.setFocusedDate(state.focusedDate.cycle('year', value - state.focusedDate.year));
-    }, []);
+    const changeHandler = useCallback(
+      (value: number) => {
+        state.setFocusedDate(state.focusedDate.cycle('year', value - state.focusedDate.year));
+      },
+      [state.setFocusedDate, state.focusedDate.year, state.focusedDate.cycle],
+    );
 
     return (
       state && (

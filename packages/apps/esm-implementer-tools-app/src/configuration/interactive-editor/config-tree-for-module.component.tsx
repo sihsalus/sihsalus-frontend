@@ -1,6 +1,5 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { pickBy } from 'lodash-es';
-import React from 'react';
 
 import { ConfigSubtree } from './config-subtree.component';
 import { ExtensionSlotsConfigTree } from './extension-slots-config-tree';
@@ -15,7 +14,7 @@ export function ConfigTreeForModule({ config, moduleName }: ConfigTreeForModuleP
   return (
     <TreeContainer>
       <ExtensionSlotsConfigTree extensionsConfig={config.extensionSlots} moduleName={moduleName} />
-      <ConfigSubtree config={pickBy(config, (v, key) => key !== 'extensionSlots')} path={[moduleName]} />
+      <ConfigSubtree config={pickBy(config, (_v, key) => key !== 'extensionSlots')} path={[moduleName]} />
     </TreeContainer>
   );
 }

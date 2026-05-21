@@ -66,7 +66,7 @@ describe('Clinic metrics', () => {
     expect(screen.getAllByText(/patient list/i));
     expect(screen.getByText(/Average wait time today/i)).toBeInTheDocument();
     expect(screen.getByText(/minutes/i)).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: /queue screen/i })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /call monitor/i })).toBeInTheDocument();
     expect(screen.getByText(/69/i)).toBeInTheDocument();
   });
 });

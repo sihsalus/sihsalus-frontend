@@ -11,7 +11,7 @@ import {
 import { useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
 
-import { spaBasePath } from '../constants';
+import { serviceQueuesBasePath } from '../constants';
 
 import styles from './metrics-header.scss';
 
@@ -21,7 +21,7 @@ const MetricsHeader = () => {
   const layout = useLayoutType();
 
   const metricsTitle = t('clinicMetrics', 'Clinic metrics');
-  const queueScreenText = t('queueScreen', 'Queue screen');
+  const queueScreenText = t('queueScreen', 'Call monitor');
   const providerUuid = currentUserSession?.currentProvider?.uuid;
 
   const launchAddProviderToRoomModal = useCallback(() => {
@@ -32,7 +32,7 @@ const MetricsHeader = () => {
   }, [providerUuid]);
 
   const navigateToQueueScreen = useCallback(() => {
-    navigate({ to: `${spaBasePath}/service-queues/screen` });
+    navigate({ to: `${serviceQueuesBasePath}/screen` });
   }, []);
 
   return (

@@ -12,17 +12,14 @@ interface QueueScreenProps {}
 const QueueScreen: React.FC<QueueScreenProps> = () => {
   const { t } = useTranslation();
   const { activeTickets, isLoading, error } = useActiveTickets();
+  const title = t('queueScreen', 'Call monitor');
 
   if (isLoading) {
     return <DataTableSkeleton rowCount={5} className={styles.queueScreen} role="progressbar" />;
   }
 
-  if (error) {
-    return <div>Error</div>;
-  }
-
   const rowData = activeTickets.map((ticket, index) => ({
-    id: `${index}}`,
+    id: `${ticket.room}-${ticket.ticketNumber}-${index}`,
     room: ticket.room,
     ticketNumber: ticket.ticketNumber,
     status: ticket.status,
@@ -30,7 +27,16 @@ const QueueScreen: React.FC<QueueScreenProps> = () => {
 
   return (
     <div>
-      <PatientQueueHeader title={t('queueScreen', 'Queue screen')} showLocationDropdown />
+      <PatientQueueHeader title={title} showLocationDropdown />
+      {error ? (
+        <div className={styles.feedback}>{t('errorLoadingQueueEntries', 'Error loading queue entries')}</div>
+      ) : null}
+      {!error && rowData.length === 0 ? (
+        <div className={styles.feedback}>
+          <h4>{t('noPatientsToDisplay', 'No patients to display')}</h4>
+          <p>{t('queueScreenEmptyDescription', 'Call patients from the service queue to display them here.')}</p>
+        </div>
+      ) : null}
       <div className={styles.gridFlow}>
         {rowData.map((row) => (
           <div className={styles.card} key={row.id}>

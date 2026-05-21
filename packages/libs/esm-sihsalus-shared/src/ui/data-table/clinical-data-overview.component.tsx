@@ -93,7 +93,7 @@ const ClinicalDataOverview: React.FC<ClinicalDataOverviewProps> = ({
       launchStartVisitPrompt();
       return;
     }
-    launchWorkspace(formWorkspace, { patientUuid });
+    launchWorkspace<{ patientUuid: string }>(formWorkspace, { patientUuid });
   }, [currentVisit, patientUuid, formWorkspace]);
 
   return (

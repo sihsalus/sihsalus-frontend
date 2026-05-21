@@ -14,7 +14,7 @@ export interface DashboardLinkConfig {
 
 function DashboardExtension({ dashboardLinkConfig }: { dashboardLinkConfig: DashboardLinkConfig }) {
   const { t } = useTranslation();
-  const { name } = dashboardLinkConfig;
+  const { name, title } = dashboardLinkConfig;
   const location = useLocation();
 
   const navLink = useMemo(() => {
@@ -32,7 +32,7 @@ function DashboardExtension({ dashboardLinkConfig }: { dashboardLinkConfig: Dash
     >
       <span className="sihsalus-side-nav__item">
         <WatsonHealthStackedScrolling_1 aria-hidden="true" className="sihsalus-side-nav__icon" size={20} />
-        <span className="sihsalus-side-nav__text">{t('serviceQueues', 'Service queues')}</span>
+        <span className="sihsalus-side-nav__text">{t(title, title)}</span>
       </span>
     </ConfigurableLink>
   );

@@ -18,6 +18,10 @@ const mockUseConfig = vi.mocked(useConfig);
 const mockUseConnectivity = vi.mocked(useConnectivity);
 const mockUseSWR = useSWR as vi.Mock;
 const mockUseSWRConfig = useSWRConfig as vi.Mock;
+type Workspace2MockProps = {
+  hasUnsavedChanges?: boolean;
+  title?: string;
+};
 const workspace2DefinitionProps = {
   launchChildWorkspace: vi.fn(),
   windowProps: {},
@@ -108,6 +112,7 @@ describe('FormEntryWorkspace', () => {
         }}
         workspaceProps={
           {
+            workspaceTitle: 'Legacy test form',
             formInfo: { formUuid: 'some-form-uuid' },
             mutateForm: vi.fn(),
           } as any
@@ -115,6 +120,16 @@ describe('FormEntryWorkspace', () => {
       />,
     );
 
+    await waitFor(() => expect(mockWorkspace2).toHaveBeenCalled());
+    const legacyWorkspaceProps = mockWorkspace2.mock.calls.find(
+      ([props]) => (props as Workspace2MockProps).title === 'Legacy test form',
+    )?.[0] as Workspace2MockProps | undefined;
+    expect(legacyWorkspaceProps).toEqual(
+      expect.objectContaining({
+        hasUnsavedChanges: false,
+        title: 'Legacy test form',
+      }),
+    );
     await waitFor(() =>
       expect(mockExtensionSlot).toHaveBeenCalledWith(
         expect.objectContaining({

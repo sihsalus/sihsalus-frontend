@@ -1,4 +1,4 @@
-import { type Encounter, ExtensionSlot, usePatient, type Visit } from '@openmrs/esm-framework';
+import { type Encounter, ExtensionSlot, usePatient, type Visit, Workspace2 } from '@openmrs/esm-framework';
 import {
   clinicalFormsWorkspace,
   type DefaultPatientWorkspaceProps,
@@ -6,7 +6,8 @@ import {
   type PatientWorkspace2DefinitionProps,
   useVisitOrOfflineVisit,
 } from '@openmrs/esm-patient-common-lib';
-import React, { useCallback, useEffect, useMemo, useRef } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 
 import { type Form } from '../types';
 import FormEntry from './form-entry.component';
@@ -23,6 +24,7 @@ interface FormEntryComponentProps extends LegacyWorkspaceAdapterProps {
   mutateForm?: () => void;
   formInfo?: LegacyFormEntryInfo;
   form?: Form;
+  workspaceTitle?: string;
   encounterUuid?: string;
   additionalProps?: Record<string, unknown>;
   clinicalFormsWorkspaceName?: string;
@@ -196,6 +198,35 @@ const NonWorkspace2FormEntryWorkspace: React.FC<LegacyWorkspaceProps> = (props) 
   );
 };
 
+const Workspace2LegacyFormEntryWorkspace: React.FC<Workspace2FormEntryProps> = ({
+  closeWorkspace,
+  groupProps,
+  workspaceProps,
+}) => {
+  const { t } = useTranslation();
+  const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
+  const title = workspaceProps?.workspaceTitle ?? t('clinicalForm', 'Clinical form');
+  const patientUuid = groupProps?.patientUuid ?? workspaceProps?.formInfo?.patientUuid ?? '';
+
+  return (
+    <Workspace2 title={title} hasUnsavedChanges={hasUnsavedChanges}>
+      <LegacyFormEntryWorkspace
+        {...workspaceProps}
+        patientUuid={patientUuid}
+        closeWorkspace={() => {
+          void closeWorkspace();
+        }}
+        closeWorkspaceWithSavedChanges={() => {
+          void closeWorkspace({ discardUnsavedChanges: true });
+        }}
+        promptBeforeClosing={(fn) => {
+          setHasUnsavedChanges(fn());
+        }}
+      />
+    </Workspace2>
+  );
+};
+
 const FormEntryWorkspace: React.FC<PatientFormEntryWorkspaceProps> = (props) => {
   if (isWorkspace2Props(props)) {
     const { closeWorkspace, groupProps, workspaceProps } = props;
@@ -211,21 +242,7 @@ const FormEntryWorkspace: React.FC<PatientFormEntryWorkspaceProps> = (props) => 
     } = workspaceProps;
 
     if (!form) {
-      return (
-        <LegacyFormEntryWorkspace
-          {...workspaceProps}
-          patientUuid={patientUuid}
-          closeWorkspace={() => {
-            void closeWorkspace();
-          }}
-          closeWorkspaceWithSavedChanges={() => {
-            void closeWorkspace({ discardUnsavedChanges: true });
-          }}
-          promptBeforeClosing={(fn) => {
-            void fn();
-          }}
-        />
-      );
+      return <Workspace2LegacyFormEntryWorkspace {...props} />;
     }
 
     return (

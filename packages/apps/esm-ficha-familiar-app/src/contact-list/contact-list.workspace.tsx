@@ -14,7 +14,7 @@ import {
 } from '@carbon/react';
 import { zodResolver } from '@hookform/resolvers/zod';
 import type { DefaultWorkspaceProps } from '@openmrs/esm-framework';
-import { useConfig, useSession } from '@openmrs/esm-framework';
+import { useConfig, useSession, Workspace2 } from '@openmrs/esm-framework';
 import React, { useEffect, useMemo } from 'react';
 import { Controller, FormProvider, useForm } from 'react-hook-form';
 import { useTranslation } from 'react-i18next';
@@ -23,6 +23,7 @@ import type { z } from 'zod';
 import type { ConfigObject } from '../config-schema';
 import { useMappedRelationshipTypes } from '../family-partner-history/relationships.resource';
 import PatientSearchCreate from '../relationships/forms/patient-search-create-form.component';
+import type { FichaFamiliarWorkspaceProps } from '../workspace-utils';
 import {
   BOOLEAN_NO,
   BOOLEAN_YES,
@@ -33,8 +34,10 @@ import {
 import styles from './contact-list-form.scss';
 
 interface ContactListFormProps extends DefaultWorkspaceProps {
-  patientUuid: string;
+  groupProps?: { patientUuid?: string } | null;
+  patientUuid?: string;
   props: Record<string, unknown>;
+  workspaceProps?: FichaFamiliarWorkspaceProps | null;
 }
 
 type ContactListFormType = z.infer<typeof ContactListFormSchema>;
@@ -42,13 +45,16 @@ type ContactListFormType = z.infer<typeof ContactListFormSchema>;
 const ContactListForm: React.FC<ContactListFormProps> = ({
   closeWorkspace,
   closeWorkspaceWithSavedChanges: _closeWorkspaceWithSavedChanges,
+  groupProps,
   promptBeforeClosing: _promptBeforeClosing,
   patientUuid,
+  workspaceProps,
 }) => {
+  const resolvedPatientUuid = workspaceProps?.patientUuid ?? groupProps?.patientUuid ?? patientUuid ?? '';
   const form = useForm<ContactListFormType>({
     mode: 'all',
     defaultValues: {
-      personA: patientUuid,
+      personA: resolvedPatientUuid,
       mode: 'search',
     },
     resolver: zodResolver(ContactListFormSchema),
@@ -132,7 +138,7 @@ const ContactListForm: React.FC<ContactListFormProps> = ({
     }
   }, [observablePhysicalAssault, observableThreatened, observableSexualAssault, form, showIPVRelatedFields]);
 
-  return (
+  const content = (
     <FormProvider {...form}>
       <Form onSubmit={form.handleSubmit(onSubmit)} className={styles.form}>
         <Stack gap={4} className={styles.grid}>
@@ -428,6 +434,14 @@ const ContactListForm: React.FC<ContactListFormProps> = ({
         </ButtonSet>
       </Form>
     </FormProvider>
+  );
+
+  return workspaceProps ? (
+    <Workspace2 title={workspaceProps.workspaceTitle ?? t('sexualContactForm', 'Formulario de contactos sexuales')}>
+      {content}
+    </Workspace2>
+  ) : (
+    content
   );
 };
 

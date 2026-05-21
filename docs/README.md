@@ -47,6 +47,7 @@ SIH Salus is a Hospital Information System built as a **Turborepo monorepo** wit
 - `esm-vacunacion-app` (MINSA vaccination schedule, replaces upstream `esm-patient-immunizations-app`)
 
 **SIH Salus custom** — modules with no upstream equivalent:
+- `esm-admission-app` — Registro de Atenciones (operational visit/UPS registry; not patient admission to hospitalization)
 - `esm-atencion-ambulatoria-app` — Outpatient consultation (consulta externa)
 - `esm-coststructure-app` — Cost structure management (MINSA tariff tables)
 - `esm-cred-app` (`packages/apps/esm-crecimiento-desarrollo-app`) — CRED (control de crecimiento y desarrollo del niño, neonatal care, immunization)

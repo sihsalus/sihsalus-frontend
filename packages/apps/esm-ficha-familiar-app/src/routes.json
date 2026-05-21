@@ -56,26 +56,57 @@
     {
       "name": "family-relationship-form",
       "component": "familyRelationshipForm",
-      "title": "Family Relationship Form",
+      "title": "Formulario de relación familiar",
       "type": "form"
     },
     {
       "name": "other-relationship-form",
       "component": "otherRelationshipsForm",
-      "title": "Other Relationships Form",
+      "title": "Formulario de relación no familiar",
       "type": "form"
     },
     {
       "name": "relationship-update-form",
       "component": "relationshipUpdateForm",
-      "title": "Relationship Update Form",
+      "title": "Editar relación",
       "type": "form"
     },
     {
       "name": "contact-list-form",
       "component": "contactListForm",
-      "title": "Contact List Form",
+      "title": "Formulario de contactos sexuales",
       "type": "form"
+    }
+  ],
+  "workspaces2": [
+    {
+      "name": "family-relationship-form",
+      "component": "familyRelationshipForm",
+      "window": "patient-chart-family-record-forms"
+    },
+    {
+      "name": "other-relationship-form",
+      "component": "otherRelationshipsForm",
+      "window": "patient-chart-family-record-forms"
+    },
+    {
+      "name": "relationship-update-form",
+      "component": "relationshipUpdateForm",
+      "window": "patient-chart-family-record-forms"
+    },
+    {
+      "name": "contact-list-form",
+      "component": "contactListForm",
+      "window": "patient-chart-family-record-forms"
+    }
+  ],
+  "workspaceWindows2": [
+    {
+      "name": "patient-chart-family-record-forms",
+      "group": "patient-chart",
+      "order": 11,
+      "width": "wider",
+      "canMaximize": true
     }
   ]
 }

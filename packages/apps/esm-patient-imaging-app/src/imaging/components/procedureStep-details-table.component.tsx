@@ -26,9 +26,7 @@ export interface ProcedureStepTableProps {
 const ProcedureStepTable: React.FC<ProcedureStepTableProps> = ({ requestProcedure }) => {
   const {
     data: stepList,
-    error: stepError,
     isLoading: isLoadingStep,
-    isValidating: isValidatingStep,
   } = useProcedureStep(requestProcedure.id);
 
   const { t } = useTranslation();
@@ -148,7 +146,7 @@ const ProcedureStepTable: React.FC<ProcedureStepTableProps> = ({ requestProcedur
             data-floating-menu-container
             size={isTablet ? 'lg' : 'sm'}
           >
-            {({ rows, headers, getHeaderProps, getTableProps, getRowProps }) => (
+            {({ rows, headers, getHeaderProps, getTableProps }) => (
               <TableContainer>
                 <Table aria-label="Procedure step summary" className={styles.table} {...getTableProps()} />
                 <TableHead>

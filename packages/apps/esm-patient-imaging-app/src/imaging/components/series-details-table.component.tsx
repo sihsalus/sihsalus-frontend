@@ -38,9 +38,6 @@ const SeriesDetailsTable: React.FC<SeriesDetailsTableProps> = ({
 }) => {
   const {
     data: seriesList,
-    error: seriesError,
-    isLoading: isLoadingSeries,
-    isValidating: isValidatingSeries,
   } = useStudySeries(studyId);
 
   const { t } = useTranslation();

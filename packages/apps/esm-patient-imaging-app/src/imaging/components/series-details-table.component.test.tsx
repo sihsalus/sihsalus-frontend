@@ -3,6 +3,15 @@ import { act, fireEvent, render, screen, within } from '@testing-library/react';
 import * as api from '../../api';
 import SeriesDetailsTable from './series-details-table.component';
 
+type IconProps = Record<string, unknown>;
+type PageChangeProps = {
+  onPageNumberChange: ({ page }: { page: number }) => void;
+};
+type EmptyStateProps = {
+  displayText: string;
+  headerTitle: string;
+};
+
 vi.mock('react-i18next', async () => ({
   useTranslation: () => ({
     t: (_key: string, defaultValue: string) => defaultValue,
@@ -42,14 +51,14 @@ vi.mock('@openmrs/esm-framework', async () => ({
     goTo: vi.fn(),
     currentPage: 1,
   })),
-  TrashCanIcon: (props: any) => <span data-testid="trash-icon" {...props} />,
+  TrashCanIcon: (props: IconProps) => <span data-testid="trash-icon" {...props} />,
 }));
 
 vi.mock('@carbon/react', async () => {
   const original = await vi.importActual('@carbon/react');
   return {
     ...original,
-    DataTable: ({ headers, rows }) => (
+    DataTable: ({ headers, rows }: { headers: Array<{ key: string; header: string }>; rows: Array<Record<string, unknown>> }) => (
       <table aria-label="Series summary">
         <thead>
           <tr>
@@ -73,13 +82,13 @@ vi.mock('@carbon/react', async () => {
 });
 
 vi.mock('@openmrs/esm-patient-common-lib', async () => ({
-  PatientChartPagination: ({ onPageNumberChange }: any) => (
+  PatientChartPagination: ({ onPageNumberChange }: PageChangeProps) => (
     <button type="button" onClick={() => onPageNumberChange({ page: 2 })}>
       Next
     </button>
   ),
 
-  EmptyState: ({ displayText, headerTitle }: any) => (
+  EmptyState: ({ displayText, headerTitle }: EmptyStateProps) => (
     <div>
       {headerTitle}: {displayText}
     </div>
@@ -196,7 +205,7 @@ describe('SeriesDetailsTable', () => {
           patientUuid={'patient-123'}
           orthancConfig={mockConfig}
         />,
-      ) as any;
+      );
     });
 
     expect(screen.getAllByText(/description/i).length).toBeGreaterThan(0);

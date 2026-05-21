@@ -86,7 +86,7 @@ describe('DeleteSeriesModal', () => {
   });
 
   it('disables delete button and shows loading while deleting', async () => {
-    let resolveFn: (val: any) => void;
+    let resolveFn: (val: { ok: boolean }) => void;
     (api.deleteSeries as vi.Mock).mockImplementationOnce(() => new Promise((resolve) => (resolveFn = resolve)));
 
     setup();

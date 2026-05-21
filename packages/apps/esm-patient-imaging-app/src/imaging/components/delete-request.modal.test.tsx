@@ -96,7 +96,7 @@ describe('DeleteRequestModal', () => {
   });
 
   it('shows loading state while deleting', async () => {
-    let resolveDelete: ((val: any) => void) | undefined;
+    let resolveDelete: ((val: { ok: boolean }) => void) | undefined;
 
     (api.deleteRequest as vi.Mock).mockImplementationOnce(
       () =>

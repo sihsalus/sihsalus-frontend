@@ -1,14 +1,26 @@
-# SIH Salus Admission App
+# SIH Salus Registro de Atenciones App
 
-Microfrontend de admision para concentrar flujos y evidencia funcional del perfil `N1.ADM` de la acreditacion SIHCE MINSA 373-2025.
+Microfrontend para el registro operativo de atenciones por UPSS/servicio. Conserva el package interno `esm-admission-app` y la ruta `/admission` por compatibilidad historica, pero el nombre visible del producto es `Registro de Atenciones`.
+
+Tambien concentra evidencia funcional del perfil `N1.ADM` de la acreditacion SIHCE MINSA 373-2025, donde "admision" aparece como perfil normativo amplio de identificacion, registro, programacion y documentacion inicial.
 
 ## Funcionalidad
 
-- Reporte de admisiones por UPS/servicio en `/admission`.
+- Registro/listado de atenciones por UPSS/servicio en `/admission`.
 - Fusion de historias clinicas duplicadas en `/admission/merge`, delegando al flujo legacy de OpenMRS `mergePatients.form`.
 - Programacion de turnos desde `/admission/patient/:uuid`, mostrando turnos proximos y abriendo el workspace real de Appointments para registrar citas con prestadores.
 - Resumen de identificacion minima del paciente para pantallas clinicas que consumen `patient-info-slot`.
 - Accesos desde menu de aplicaciones, dashboard de inicio y acciones superiores.
+
+## Terminologia
+
+- UI/menu: `Registro de Atenciones`.
+- Titulo de pantalla: `Registro de Atenciones`.
+- Tabla/historial: atenciones activas y finalizadas por UPSS/servicio.
+- Ruta tecnica: `/admission`.
+- Package tecnico: `@sihsalus/esm-admission-app`.
+
+Evitar `Admisiones` como label visible general: sugiere hospitalizacion o ingreso administrativo, mientras que esta pantalla lista atenciones/consultas por servicio.
 
 ## Evidencia MINSA
 

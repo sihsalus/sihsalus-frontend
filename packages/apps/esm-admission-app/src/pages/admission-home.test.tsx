@@ -67,7 +67,7 @@ describe('AdmissionHome', () => {
 
     renderAdmissionHome();
 
-    expect(screen.getByRole('heading', { name: /reporte de atenciones por upss/i })).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: /registro de atenciones/i })).toBeInTheDocument();
     for (const header of ['Fecha', 'Hora', 'Paciente', 'HC', 'UPSS/servicio', 'Ubicación', 'Estado']) {
       expect(screen.getByRole('columnheader', { name: header })).toBeInTheDocument();
     }
@@ -140,7 +140,7 @@ describe('AdmissionHome', () => {
     renderAdmissionHome();
 
     expect(screen.getByText(/cargando atenciones/i)).toBeInTheDocument();
-    expect(screen.getByText(/no se pudo cargar el reporte de atenciones/i)).toBeInTheDocument();
+    expect(screen.getByText(/no se pudo cargar el registro de atenciones/i)).toBeInTheDocument();
     expect(screen.queryByText(/no se encontraron atenciones recientes/i)).not.toBeInTheDocument();
   });
 

@@ -112,10 +112,10 @@ export default function AdmissionHome() {
 
   return (
     <main className={styles.page}>
-      <h1 className={styles.visuallyHidden}>{t('admissionReportByUps', 'Reporte de atenciones por UPSS')}</h1>
+      <h1 className={styles.visuallyHidden}>{t('admissionReportByUps', 'Registro de Atenciones')}</h1>
       <PageHeader className={styles.header}>
         <PageHeaderContent
-          title={t('admissionReportByUps', 'Reporte de atenciones por UPSS')}
+          title={t('admissionReportByUps', 'Registro de Atenciones')}
           illustration={<RegistrationPictogram />}
         />
         <ConfigurableLink to={`${spaBasePath}/admission/merge`} className={styles.headerAction}>
@@ -128,7 +128,7 @@ export default function AdmissionHome() {
       <div className={styles.content}>
         <section
           className={styles.summary}
-          aria-label={t('admissionReportMetrics', 'Métricas del reporte de atenciones')}
+          aria-label={t('admissionReportMetrics', 'Métricas del registro de atenciones')}
         >
           <div>
             <span>{t('reportedAdmissions', 'Atenciones registradas')}</span>
@@ -150,7 +150,7 @@ export default function AdmissionHome() {
 
         <section
           className={styles.controls}
-          aria-label={t('admissionReportFilters', 'Filtros del reporte de atenciones')}
+          aria-label={t('admissionReportFilters', 'Filtros del registro de atenciones')}
         >
           <TextInput
             id="admission-report-search"
@@ -185,7 +185,7 @@ export default function AdmissionHome() {
           <InlineNotification
             kind="error"
             lowContrast
-            title={t('admissionReportError', 'No se pudo cargar el reporte de atenciones')}
+            title={t('admissionReportError', 'No se pudo cargar el registro de atenciones')}
           />
         ) : null}
 

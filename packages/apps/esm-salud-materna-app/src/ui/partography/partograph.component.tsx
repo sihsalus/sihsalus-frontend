@@ -41,7 +41,7 @@ const Partograph: React.FC<PartographyProps> = ({ patientUuid }) => {
   const partographyConcepts = partography.concepts;
   const descentOfHeadAnswerLabels = partography.descentOfHeadAnswerLabels;
   const layout = useLayoutType();
-  const [chartView, setChartView] = React.useState<boolean>();
+  const [chartView, setChartView] = React.useState<boolean>(false);
   const { encounters = [], isLoading, isValidating, error } = usePartograph(patientUuid);
   const headerTitle = t('partograph', 'Partograph');
   const displayText = t('partographData', 'Vital Components');

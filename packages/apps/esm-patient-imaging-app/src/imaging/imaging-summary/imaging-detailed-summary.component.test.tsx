@@ -1,7 +1,7 @@
 import { launchWorkspace } from '@openmrs/esm-framework';
 import { fireEvent, render, screen } from '@testing-library/react';
 import type { ReactNode } from 'react';
-import * as api from '../../api';
+import * as imagingApi from '../../api/api';
 import ImagingDetailedSummary from './imaging-detailed-summary.component';
 
 type CardHeaderProps = {
@@ -33,14 +33,14 @@ vi.mock('@openmrs/esm-framework', async () => ({
 vi.mock('../components/studies-details-table.component', () => ({ default: () => <div>StudiesDetailTable</div> }));
 vi.mock('../components/requests-details-table.component', () => ({ default: () => <div>RequestProcedureTable</div> }));
 
-vi.mock('../../api');
 vi.mock('react-i18next', () => ({
   useTranslation: () => ({
     t: (_key: string, defaultValue: string) => defaultValue,
   }),
 }));
 
-vi.mock('@openmrs/esm-patient-common-lib', () => ({
+vi.mock('@openmrs/esm-patient-common-lib', async () => ({
+  ...(await vi.importActual('@openmrs/esm-patient-common-lib')),
   CardHeader: ({ children, title }: CardHeaderProps) => (
     <div>
       <h1>{title}</h1>
@@ -62,29 +62,49 @@ vi.mock('@openmrs/esm-patient-common-lib', () => ({
       {headerTitle}: {error?.message || 'Error'}
     </div>
   ),
+  PatientChartPagination: () => <div data-testid="patient-chart-pagination" />,
+  compare: (a: string, b: string) => a.localeCompare(b),
 }));
 
 describe('<ImagingDetailedSummary />', () => {
   const patientUuid = 'patient-uuid-123';
+  const mockUseStudiesByPatient = vi.spyOn(imagingApi, 'useStudiesByPatient');
+  const mockUseRequestsByPatient = vi.spyOn(imagingApi, 'useRequestsByPatient');
+  const buildStudiesHookResult = (
+    overrides: Partial<ReturnType<typeof imagingApi.useStudiesByPatient>> = {},
+  ): ReturnType<typeof imagingApi.useStudiesByPatient> =>
+    ({
+      data: [],
+      error: null,
+      isLoading: false,
+      isValidating: false,
+      mutate: vi.fn(),
+      ...overrides,
+    }) as ReturnType<typeof imagingApi.useStudiesByPatient>;
+  const buildRequestsHookResult = (
+    overrides: Partial<ReturnType<typeof imagingApi.useRequestsByPatient>> = {},
+  ): ReturnType<typeof imagingApi.useRequestsByPatient> =>
+    ({
+      data: [],
+      error: null,
+      isLoading: false,
+      isValidating: false,
+      mutate: vi.fn(),
+      ...overrides,
+    }) as ReturnType<typeof imagingApi.useRequestsByPatient>;
 
   beforeEach(() => {
     vi.clearAllMocks();
   });
 
   it('renders loading skeletons when data is loading', () => {
-    (api.useStudiesByPatient as vi.Mock).mockReturnValue({
-      data: [],
+    mockUseStudiesByPatient.mockReturnValue(buildStudiesHookResult({
       isLoading: true,
-      error: null,
-      isValidating: false,
-    });
+    }));
 
-    (api.useRequestsByPatient as vi.Mock).mockReturnValue({
-      data: [],
+    mockUseRequestsByPatient.mockReturnValue(buildRequestsHookResult({
       isLoading: true,
-      error: null,
-      isValidating: false,
-    });
+    }));
 
     render(<ImagingDetailedSummary patientUuid={patientUuid} />);
 
@@ -92,19 +112,9 @@ describe('<ImagingDetailedSummary />', () => {
   });
 
   it('renders empty state when no studies or requests exist', () => {
-    (api.useStudiesByPatient as vi.Mock).mockReturnValue({
-      data: [],
-      isLoading: false,
-      error: null,
-      isValidating: false,
-    });
+    mockUseStudiesByPatient.mockReturnValue(buildStudiesHookResult());
 
-    (api.useRequestsByPatient as vi.Mock).mockReturnValue({
-      data: [],
-      isLoading: false,
-      error: null,
-      isValidating: false,
-    });
+    mockUseRequestsByPatient.mockReturnValue(buildRequestsHookResult());
 
     render(<ImagingDetailedSummary patientUuid={patientUuid} />);
 
@@ -115,19 +125,13 @@ describe('<ImagingDetailedSummary />', () => {
   it('renders error states if API returns errors', () => {
     const error = new Error('Failed to fetch');
 
-    (api.useStudiesByPatient as vi.Mock).mockReturnValue({
-      data: [],
-      isLoading: false,
+    mockUseStudiesByPatient.mockReturnValue(buildStudiesHookResult({
       error,
-      isValidating: false,
-    });
+    }));
 
-    (api.useRequestsByPatient as vi.Mock).mockReturnValue({
-      data: [],
-      isLoading: false,
+    mockUseRequestsByPatient.mockReturnValue(buildRequestsHookResult({
       error,
-      isValidating: false,
-    });
+    }));
 
     render(<ImagingDetailedSummary patientUuid={patientUuid} />);
 
@@ -138,19 +142,11 @@ describe('<ImagingDetailedSummary />', () => {
   it('renders error states if studies error', () => {
     const error = new Error('Failed to fetch');
 
-    (api.useStudiesByPatient as vi.Mock).mockReturnValue({
-      data: [],
-      isLoading: false,
+    mockUseStudiesByPatient.mockReturnValue(buildStudiesHookResult({
       error,
-      isValidating: false,
-    });
+    }));
 
-    (api.useRequestsByPatient as vi.Mock).mockReturnValue({
-      data: [],
-      isLoading: false,
-      error: null,
-      isValidating: false,
-    });
+    mockUseRequestsByPatient.mockReturnValue(buildRequestsHookResult());
 
     render(<ImagingDetailedSummary patientUuid={patientUuid} />);
 
@@ -159,57 +155,48 @@ describe('<ImagingDetailedSummary />', () => {
   });
 
   it('renders RequestProcedureTable when requests exist', () => {
-    (api.useStudiesByPatient as vi.Mock).mockReturnValue({
-      data: [],
-      isLoading: false,
-      error: null,
-      isValidating: false,
-    });
+    mockUseStudiesByPatient.mockReturnValue(buildStudiesHookResult());
 
-    (api.useRequestsByPatient as vi.Mock).mockReturnValue({
+    mockUseRequestsByPatient.mockReturnValue(buildRequestsHookResult({
       data: [
         {
           id: 1,
+          patientUuid,
+          accessionNumber: 'ACC-001',
+          status: 'scheduled',
+          priority: 'high',
+          requestingPhysician: 'Dr. House',
           studyInstanceUID: 'STUDY-123',
           requestDescription: 'Request 1',
-          orthancConfiguration: { orthancBaseUrl: 'http://orthanc.local' },
-          patientName: 'John Doe',
-          studyDate: '2025-08-29',
+          orthancConfiguration: { id: 1, orthancBaseUrl: 'http://orthanc.local' },
         },
       ],
-      isLoading: false,
-      error: null,
-      isValidating: false,
-    });
+    }));
 
     render(<ImagingDetailedSummary patientUuid={patientUuid} />);
 
-    expect(screen.getByText('RequestProcedureTable')).toBeInTheDocument();
+    expect(screen.getByRole('table', { name: /Reqeusts summary/i })).toBeInTheDocument();
+    expect(screen.getByTestId('patient-chart-pagination')).toBeInTheDocument();
   });
 
   it('triggers workspace launches when buttons clicked', () => {
-    (api.useStudiesByPatient as vi.Mock).mockReturnValue({
-      data: [],
-      isLoading: false,
-      error: null,
-      isValidating: false,
-    });
+    mockUseStudiesByPatient.mockReturnValue(buildStudiesHookResult());
 
-    (api.useRequestsByPatient as vi.Mock).mockReturnValue({
+    mockUseRequestsByPatient.mockReturnValue(buildRequestsHookResult({
       data: [
         {
           id: 1,
+          patientUuid,
+          accessionNumber: 'ACC-001',
+          status: 'scheduled',
+          priority: 'high',
+          requestingPhysician: 'Dr. House',
           studyInstanceUID: 'STUDY-123',
           requestDescription: 'Request1',
-          orthancConfiguration: { orthancBaseUrl: 'http://orthanc.local' },
-          patientName: 'John Doe',
-          studyDate: '2025-08-29',
+          orthancConfiguration: { id: 1, orthancBaseUrl: 'http://orthanc.local' },
         },
       ],
-      isLoading: false,
-      error: null,
-      isValidating: false,
-    });
+    }));
 
     render(<ImagingDetailedSummary patientUuid={patientUuid} />);
 

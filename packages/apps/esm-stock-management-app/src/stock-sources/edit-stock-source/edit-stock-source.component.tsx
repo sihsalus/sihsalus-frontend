@@ -12,7 +12,7 @@ interface EditStockSourcesActionMenuProps {
 const EditStockSourceActionsMenu: React.FC<EditStockSourcesActionMenuProps> = ({ data }) => {
   const { t } = useTranslation();
   const handleLaunchWorkspace = useCallback(() => {
-    launchWorkspace('stock-sources-form-workspace', {
+    launchWorkspace<{ model?: StockSource }>('stock-sources-form-workspace', {
       workspaceTitle: t('editStockSource', 'Edit stock source'),
       model: data,
     });

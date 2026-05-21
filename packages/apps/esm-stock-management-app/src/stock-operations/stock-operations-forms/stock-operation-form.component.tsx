@@ -72,7 +72,7 @@ const StockOperationForm: React.FC<StockOperationFormProps> = ({
     user: { uuid: defaultLoggedUserUuid },
   } = useSession();
   const { autoPopulateResponsiblePerson } = useConfig<ConfigObject>();
-  const { error, items: _stockOperation, isLoading } = useStockOperationAndItems(stockRequisitionUuid);
+  const { error, items: _stockOperation } = useStockOperationAndItems(stockRequisitionUuid);
 
   const form = useForm<StockOperationItemDtoSchema>({
     defaultValues: {

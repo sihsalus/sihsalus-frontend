@@ -74,7 +74,6 @@ export const PatientRegistration: React.FC<PatientRegistrationProps> = ({ savePa
   );
   const { data: photo } = usePatientPhoto(patientToEdit?.id);
   const savePatientTransactionManager = useRef(new SavePatientTransactionManager());
-  const fieldDefinition = config?.fieldDefinitions?.filter((def) => def.type === 'address');
   const validationSchema = getValidationSchema(config);
 
   useEffect(() => {

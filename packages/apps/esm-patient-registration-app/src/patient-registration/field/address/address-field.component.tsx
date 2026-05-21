@@ -11,13 +11,8 @@ import { useOrderedAddressHierarchyLevels } from './address-hierarchy.resource';
 import AddressHierarchyLevels from './address-hierarchy-levels.component';
 import AddressSearchComponent from './address-search.component';
 
-function parseString(xmlDockAsString: string) {
-  const parser = new DOMParser();
-  return parser.parseFromString(xmlDockAsString, 'text/xml');
-}
-
 export const AddressComponent: React.FC = () => {
-  const [selected, setSelected] = useState('');
+  const [selected] = useState('');
   const { addressTemplate } = useContext(ResourcesContext);
   const addressLayout = useMemo(() => {
     if (!addressTemplate?.lines) {

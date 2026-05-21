@@ -186,7 +186,6 @@ export const Identifiers: React.FC = () => {
             required: true,
           };
 
-          const identifierType = identifierTypes?.find((type) => type.fieldName === fieldName);
           const canRemove =
             isIdentityDocumentIdentifier(values.identifiers, fieldName, identifierTypes) &&
             countIdentityDocumentIdentifiers(values.identifiers, identifierTypes) > 1;

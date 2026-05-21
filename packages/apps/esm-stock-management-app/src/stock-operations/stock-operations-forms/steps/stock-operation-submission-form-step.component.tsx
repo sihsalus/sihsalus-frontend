@@ -40,10 +40,6 @@ const StockOperationSubmissionFormStep: React.FC<StockOperationSubmissionFormSte
     () => OperationType.STOCK_ISSUE_OPERATION_TYPE === stockOperationType.operationType,
     [stockOperationType],
   );
-  const isReceiptOperation = useMemo(
-    () => OperationType.RECEIPT_OPERATION_TYPE === stockOperationType.operationType,
-    [stockOperationType],
-  );
   const handleRadioButtonChange = (selectedItem: boolean) => {
     setApprovalRequired(selectedItem);
   };

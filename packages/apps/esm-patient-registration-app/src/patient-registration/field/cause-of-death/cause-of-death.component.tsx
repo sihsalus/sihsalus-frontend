@@ -13,7 +13,7 @@ import styles from '../field.scss';
 export const CauseOfDeathField: React.FC = () => {
   const { t } = useTranslation(moduleName);
   const { fieldConfigurations, freeTextFieldConceptUuid } = useConfig<RegistrationConfig>();
-  const [deathCause, deathCauseMeta] = useField('deathCause');
+  const [deathCause] = useField('deathCause');
 
   const conceptUuid = fieldConfigurations?.causeOfDeath?.conceptUuid;
   const required = fieldConfigurations?.causeOfDeath?.required;

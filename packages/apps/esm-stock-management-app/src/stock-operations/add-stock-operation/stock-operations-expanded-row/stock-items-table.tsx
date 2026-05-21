@@ -30,7 +30,7 @@ const StockItemsTable: React.FC<Props> = ({ items }) => {
     return item.commonName.toLowerCase().includes(searchText);
   };
   const filtered = items.filter(handleSearch);
-  const { results, totalPages, currentPage, goTo } = usePagination(filtered, pageSize);
+  const { results, currentPage, goTo } = usePagination(filtered, pageSize);
 
   const headers = useMemo(
     () => [

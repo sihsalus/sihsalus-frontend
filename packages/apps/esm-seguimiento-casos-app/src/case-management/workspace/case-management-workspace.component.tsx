@@ -35,11 +35,7 @@ interface EndRelationshipWorkspaceProps {
 const EndRelationshipWorkspace: React.FC<EndRelationshipWorkspaceProps> = ({ closeWorkspace, relationshipUuid }) => {
   const { t } = useTranslation();
 
-  const {
-    handleSubmit,
-    control,
-    formState: { errors, isSubmitting },
-  } = useForm<FormData>({
+  const { handleSubmit, control } = useForm<FormData>({
     resolver: zodResolver(EndRelationshipSchema),
     defaultValues: { endDate: null },
   });

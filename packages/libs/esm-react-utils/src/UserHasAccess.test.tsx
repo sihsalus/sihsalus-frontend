@@ -248,7 +248,7 @@ describe('UserHasAccess', () => {
       // Initially user doesn't have access
       mockUserHasAccess.mockReturnValue(false);
 
-      const { rerender } = render(
+      render(
         <UserHasAccess privilege="Edit Patients" fallback={<div>No Access</div>}>
           <div>Protected Content</div>
         </UserHasAccess>,

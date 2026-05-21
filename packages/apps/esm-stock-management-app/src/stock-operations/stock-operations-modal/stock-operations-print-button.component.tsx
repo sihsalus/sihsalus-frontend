@@ -27,7 +27,7 @@ interface StockOperationCancelButtonProps {
 
 const StockOperationPrintButton: React.FC<StockOperationCancelButtonProps> = ({ operation: _operation }) => {
   const { t } = useTranslation();
-  const { isLoading, items: operation, error } = useStockOperationAndItems(_operation.uuid);
+  const { isLoading, items: operation } = useStockOperationAndItems(_operation.uuid);
   const [loading, setLoading] = useState(false);
   const onPrintStockOperation = async () => {
     setLoading(true);

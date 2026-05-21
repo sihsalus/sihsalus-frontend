@@ -1,4 +1,3 @@
-import { usePagination } from '@openmrs/esm-framework';
 import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { ResourceRepresentation } from '../core/api/api';
@@ -16,7 +15,7 @@ export function useStockItemsPages(v?: ResourceRepresentation) {
   const [isDrug, setDrug] = useState('');
 
   const [stockItemFilter, setStockItemFilter] = useState<StockItemFilter>({
-    startIndex: currentPage - 1,
+    startIndex: (currentPage - 1) * currentPageSize,
     v: v || ResourceRepresentation.Default,
     limit: currentPageSize,
     q: null,
@@ -24,23 +23,27 @@ export function useStockItemsPages(v?: ResourceRepresentation) {
   });
 
   const { items, isLoading, error } = useStockItems(stockItemFilter);
-  const pagination = usePagination(items.results, currentPageSize);
 
   useEffect(() => {
     setStockItemFilter({
-      startIndex: currentPage - 1,
-      v: ResourceRepresentation.Default,
+      startIndex: (currentPage - 1) * currentPageSize,
+      v: v || ResourceRepresentation.Default,
       limit: currentPageSize,
       q: searchString,
       totalCount: true,
       isDrug: isDrug,
     });
-  }, [searchString, currentPage, currentPageSize, isDrug]);
+  }, [searchString, currentPage, currentPageSize, isDrug, v]);
+
+  useEffect(() => {
+    if (!isLoading && currentPage > 1 && (items.results?.length ?? 0) === 0 && (items.totalCount ?? 0) > 0) {
+      setCurrentPage(1);
+    }
+  }, [currentPage, isLoading, items.results?.length, items.totalCount]);
 
   return {
-    items: pagination.results,
-    pagination,
-    totalCount: items.totalCount,
+    items: items.results ?? [],
+    totalCount: items.totalCount ?? 0,
     currentPageSize,
     currentPage,
     setCurrentPage,
@@ -53,6 +56,9 @@ export function useStockItemsPages(v?: ResourceRepresentation) {
       setCurrentPage(1);
       setDrug(drug);
     },
-    setSearchString,
+    setSearchString: (query: string | null) => {
+      setCurrentPage(1);
+      setSearchString(query);
+    },
   };
 }

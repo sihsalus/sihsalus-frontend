@@ -25,12 +25,14 @@ import { useTranslation } from 'react-i18next';
 import { ResourceRepresentation } from '../core/api/api';
 import { type CustomTableHeader } from '../core/components/table/types';
 import { useDebounce } from '../core/hooks/debounce-hook';
+import { type StockItemDTO } from '../core/api/types/stockItem/StockItem';
 import { handleMutate } from '../utils';
 import AddStockItemsBulktImportActionButton from './add-bulk-stock-item/add-stock-items-bulk-import-action-button.component';
 import AddStockItemActionButton from './add-stock-item/add-stock-action-button.component';
 import FilterStockItems from './components/filter-stock-items/filter-stock-items.component';
 import EditStockItemActionsMenu from './edit-stock-item/edit-stock-item-action-menu.component';
 import { launchAddOrEditStockItemWorkspace } from './stock-item.utils';
+import { stockItemCreatedEvent, type StockItemCreatedEventDetail } from './stock-items.events';
 import { useStockItemsPages } from './stock-items-table.resource';
 import styles from './stock-items-table.scss';
 
@@ -41,6 +43,7 @@ interface StockItemsTableProps {
 const StockItemsTableComponent: React.FC<StockItemsTableProps> = () => {
   const { t } = useTranslation();
   const [searchInput, setSearchInput] = useState('');
+  const [recentlyCreatedStockItem, setRecentlyCreatedStockItem] = useState<StockItemDTO | null>(null);
 
   const handleRefresh = () => {
     handleMutate(`${restBaseUrl}/stockmanagement/stockitem`);
@@ -71,6 +74,50 @@ const StockItemsTableComponent: React.FC<StockItemsTableProps> = () => {
   useEffect(() => {
     debouncedSearch(searchInput);
   }, [searchInput, debouncedSearch]);
+
+  useEffect(() => {
+    const handleStockItemCreated = (event: Event) => {
+      const { stockItem } = (event as CustomEvent<StockItemCreatedEventDetail>).detail ?? {};
+      if (!stockItem?.uuid) {
+        return;
+      }
+
+      setCurrentPage(1);
+      setRecentlyCreatedStockItem(stockItem);
+    };
+
+    globalThis.addEventListener(stockItemCreatedEvent, handleStockItemCreated);
+    return () => globalThis.removeEventListener(stockItemCreatedEvent, handleStockItemCreated);
+  }, [setCurrentPage]);
+
+  const displayedItems = useMemo(() => {
+    if (!recentlyCreatedStockItem || currentPage !== 1) {
+      return items ?? [];
+    }
+
+    const itemMatchesFilter =
+      isDrug === '' ||
+      (isDrug === 'true' && !!recentlyCreatedStockItem.drugUuid) ||
+      (isDrug === 'false' && !recentlyCreatedStockItem.drugUuid);
+    const normalizedSearch = searchInput.trim().toLowerCase();
+    const itemMatchesSearch =
+      !normalizedSearch ||
+      [
+        recentlyCreatedStockItem.commonName,
+        recentlyCreatedStockItem.drugName,
+        recentlyCreatedStockItem.conceptName,
+        recentlyCreatedStockItem.acronym,
+      ]
+        .filter(Boolean)
+        .some((value) => value.toLowerCase().includes(normalizedSearch));
+
+    if (!itemMatchesFilter || !itemMatchesSearch) {
+      return items ?? [];
+    }
+
+    const itemsWithoutDuplicate = (items ?? []).filter((item) => item.uuid !== recentlyCreatedStockItem.uuid);
+    return [recentlyCreatedStockItem, ...itemsWithoutDuplicate].slice(0, currentPageSize);
+  }, [currentPage, currentPageSize, isDrug, items, recentlyCreatedStockItem, searchInput]);
 
   const tableHeaders = useMemo(
     () => [
@@ -119,13 +166,13 @@ const StockItemsTableComponent: React.FC<StockItemsTableProps> = () => {
   );
 
   const tableRows = useMemo(() => {
-    return items?.map((stockItem, index) => ({
+    return displayedItems?.map((stockItem, index) => ({
       ...stockItem,
       id: stockItem?.uuid,
       key: `key-${stockItem?.uuid}`,
       uuid: `${stockItem?.uuid}`,
       type: stockItem?.drugUuid ? t('drug', 'Drug') : t('other', 'Other'),
-      genericName: <EditStockItemActionsMenu data={items[index]} />,
+      genericName: <EditStockItemActionsMenu data={displayedItems[index]} />,
       commonName: stockItem?.commonName,
       tradeName: stockItem?.drugUuid ? stockItem?.conceptName : '',
       preferredVendorName: stockItem?.preferredVendorName,
@@ -149,7 +196,7 @@ const StockItemsTableComponent: React.FC<StockItemsTableProps> = () => {
         </IconButton>
       ),
     }));
-  }, [items, t]);
+  }, [displayedItems, t]);
 
   if (isLoading) {
     return <DataTableSkeleton role="progressbar" />;
@@ -267,7 +314,7 @@ const StockItemsTableComponent: React.FC<StockItemsTableProps> = () => {
           `${t('of', 'de')} ${total} ${total === 1 ? t('page', 'pagina') : t('pages', 'paginas')}`
         }
         onChange={({ page, pageSize }) => {
-          setCurrentPage(page);
+          setCurrentPage(pageSize === currentPageSize ? page : 1);
           setPageSize(pageSize);
         }}
         page={currentPage}

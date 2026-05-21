@@ -130,13 +130,16 @@ export function deleteStockOperationItem(id: string) {
 export function createStockOperation(data: StockOperationItemDtoSchema) {
   const apiUrl = `${restBaseUrl}/stockmanagement/stockoperation`;
   const abortController = new AbortController();
+  const payload = { ...data } as Record<string, unknown>;
+  delete payload.atLocationUuid;
+  delete payload.atLocationName;
   return openmrsFetch<StockOperationDTO>(apiUrl, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
     },
     signal: abortController.signal,
-    body: data,
+    body: payload,
   });
 }
 
@@ -144,13 +147,16 @@ export function createStockOperation(data: StockOperationItemDtoSchema) {
 export function updateStockOperation(stockOperation: StockOperationDTO, data: StockOperationItemDtoSchema) {
   const apiUrl = `${restBaseUrl}/stockmanagement/stockoperation/${stockOperation.uuid}`;
   const abortController = new AbortController();
+  const payload = { ...data } as Record<string, unknown>;
+  delete payload.atLocationUuid;
+  delete payload.atLocationName;
   return openmrsFetch<StockOperationDTO>(apiUrl, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
     },
     signal: abortController.signal,
-    body: data,
+    body: payload,
   });
 }
 

@@ -4330,6 +4330,7 @@ __metadata:
     "@carbon/react": "npm:^1.83.0"
     "@openmrs/esm-extensions": "workspace:*"
     "@openmrs/esm-styleguide": "workspace:*"
+    "@sihsalus/esm-form-engine-lib": "workspace:*"
     jsep: "npm:^1.4.0"
     lodash-es: "npm:^4.17.23"
     typescript: "npm:6.0.3"
@@ -4339,6 +4340,7 @@ __metadata:
     "@openmrs/esm-extensions": "workspace:*"
     "@openmrs/esm-framework": "workspace:*"
     "@openmrs/esm-styleguide": "workspace:*"
+    "@sihsalus/esm-form-engine-lib": "workspace:*"
     react: 18.x
     single-spa: 6.x
   languageName: unknown

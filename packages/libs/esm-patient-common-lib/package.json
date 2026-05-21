@@ -38,12 +38,14 @@
     "@openmrs/esm-extensions": "workspace:*",
     "@openmrs/esm-framework": "workspace:*",
     "@openmrs/esm-styleguide": "workspace:*",
+    "@sihsalus/esm-form-engine-lib": "workspace:*",
     "react": "18.x",
     "single-spa": "6.x"
   },
   "devDependencies": {
     "@openmrs/esm-extensions": "workspace:*",
     "@openmrs/esm-styleguide": "workspace:*",
+    "@sihsalus/esm-form-engine-lib": "workspace:*",
     "typescript": "6.0.3",
     "vitest": "^4.1.0"
   }

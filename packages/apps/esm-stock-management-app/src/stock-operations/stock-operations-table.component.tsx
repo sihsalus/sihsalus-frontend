@@ -30,7 +30,11 @@ import { useTranslation } from 'react-i18next';
 import { DATE_PICKER_CONTROL_FORMAT, DATE_PICKER_FORMAT, StockFilters } from '../constants';
 import { ResourceRepresentation } from '../core/api/api';
 import { formatDisplayDate } from '../core/utils/datetimeUtils';
-import { translateStockLocation, translateStockOperationType } from '../core/utils/translationUtils';
+import {
+  translateStockLocation,
+  translateStockOperationStatus,
+  translateStockOperationType,
+} from '../core/utils/translationUtils';
 import { handleMutate } from '../utils';
 import StockOperationExpandedRow from './add-stock-operation/stock-operations-expanded-row/stock-operation-expanded-row.component';
 import EditStockOperationActionMenu from './edit-stock-operation/edit-stock-operation-action-menu.component';
@@ -136,7 +140,7 @@ const StockOperations: React.FC<StockOperationsTableProps> = () => {
             commonNames,
             more: itemCountGreaterThanThreshhold ? stockOperation?.stockOperationItems?.length - threshHold : 0,
           },
-          status: t(stockOperation?.status, stockOperation?.status),
+          status: translateStockOperationStatus(t, stockOperation?.status),
           source: translateStockLocation(t, stockOperation?.sourceName),
           destination: translateStockLocation(t, stockOperation?.destinationName),
           location: (

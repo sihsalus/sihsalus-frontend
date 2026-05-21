@@ -13,6 +13,7 @@ import ControlledTextInput from '../../../core/components/carbon/controlled-text
 import { handleMutate } from '../../../utils';
 import styles from '../../add-stock-item/add-stock-item.scss';
 import { launchAddOrEditStockItemWorkspace } from '../../stock-item.utils';
+import { stockItemCreatedEvent, type StockItemCreatedEventDetail } from '../../stock-items.events';
 import { createStockItem, updateStockItem } from '../../stock-items.resource';
 import { createStockItemDetailsSchema, type StockItemFormData } from '../../validationSchema';
 import ConceptsSelector from '../concepts-selector/concepts-selector.component';
@@ -59,6 +60,11 @@ const StockItemDetails = forwardRef<never, StockItemDetailsProps>(
             // launch edit stock item workspace
             const item = response.data;
             item.isDrug = !!item.drugUuid;
+            globalThis.dispatchEvent(
+              new CustomEvent<StockItemCreatedEventDetail>(stockItemCreatedEvent, {
+                detail: { stockItem: item },
+              }),
+            );
             launchAddOrEditStockItemWorkspace(t, item);
           }
         }

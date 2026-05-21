@@ -51,8 +51,10 @@ const RequestProcedureTable: React.FC<RequestProcedureTableProps> = ({ isValidat
   const shouldOnClickBeCalled = useRef(true);
   const layout = useLayoutType();
   const isTablet = layout === 'tablet';
-  const launchAddNewRequestWorkspace = useCallback(() => launchWorkspace(addNewRequestWorkspace), []);
-
+  const launchAddNewRequestWorkspace = useCallback(
+    () => launchWorkspace(addNewRequestWorkspace, { patientUuid }),
+    [patientUuid],
+  );
   const launchDeleteRequestDialog = (requestId: number) => {
     const dispose = showModal(requestDeleteConfirmationDialog, {
       closeDeleteModal: () => dispose(),

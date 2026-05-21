@@ -204,6 +204,9 @@ describe('<ImagingDetailedSummary />', () => {
     const uploadButton = screen.getByText(/Upload/i);
     fireEvent.click(uploadButton);
 
-    expect(launchWorkspace).toHaveBeenCalledTimes(2);
+    const mockedLaunchWorkspace = vi.mocked(launchWorkspace);
+    expect(mockedLaunchWorkspace).toHaveBeenCalledTimes(2);
+    expect(mockedLaunchWorkspace.mock.calls[0]?.[1]).toEqual({ patientUuid });
+    expect(mockedLaunchWorkspace.mock.calls[1]?.[1]).toEqual({ patientUuid });
   });
 });

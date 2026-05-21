@@ -90,7 +90,7 @@ const LinkStudiesWorkspace: React.FC<DefaultPatientWorkspaceProps> = ({ patientU
       try {
         await getLinkStudies(fetchOption, serverConfig, abortController);
         closeWorkspace();
-        launchWorkspace(assignStudiesFormWorkspace, { configuration: serverConfig });
+        launchWorkspace(assignStudiesFormWorkspace, { configuration: serverConfig, patientUuid });
       } catch (err) {
         createErrorHandler();
         showSnackbar({

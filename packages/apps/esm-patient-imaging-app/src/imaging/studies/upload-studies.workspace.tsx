@@ -8,7 +8,7 @@ import {
   useLayoutType,
 } from '@openmrs/esm-framework';
 import { type DefaultPatientWorkspaceProps } from '@openmrs/esm-patient-common-lib';
-import React, { useCallback, useMemo, useState } from 'react';
+import React, { type ChangeEvent, useCallback, useMemo, useState } from 'react';
 import { Controller, FormProvider, useForm } from 'react-hook-form';
 import { useTranslation } from 'react-i18next';
 import { z } from 'zod';
@@ -44,7 +44,7 @@ const UploadStudiesWorkspace: React.FC<DefaultPatientWorkspaceProps> = ({ patien
   const {
     control,
     handleSubmit,
-    formState: { errors, isDirty },
+    formState: { errors },
   } = formProps;
 
   const onSubmit = useCallback(
@@ -148,7 +148,7 @@ const UploadStudiesWorkspace: React.FC<DefaultPatientWorkspaceProps> = ({ patien
                 multiple
                 accept={['.dcm', '.zip']}
                 filenameStatus="complete"
-                onChange={(e: any) => {
+                onChange={(e: ChangeEvent<HTMLInputElement>) => {
                   const files = Array.from<File>(e.target.files ?? []);
                   setSelectedFiles(files);
                 }}

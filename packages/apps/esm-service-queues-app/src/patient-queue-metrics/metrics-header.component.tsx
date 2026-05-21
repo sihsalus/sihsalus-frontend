@@ -21,7 +21,7 @@ const MetricsHeader = () => {
   const layout = useLayoutType();
 
   const metricsTitle = t('clinicMetrics', 'Clinic metrics');
-  const queueScreenText = t('queueScreen', 'Call monitor');
+  const queueScreenText = t('queueScreen', 'Call display');
   const providerUuid = currentUserSession?.currentProvider?.uuid;
 
   const launchAddProviderToRoomModal = useCallback(() => {

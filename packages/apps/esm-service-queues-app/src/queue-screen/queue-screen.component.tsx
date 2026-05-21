@@ -12,7 +12,7 @@ interface QueueScreenProps {}
 const QueueScreen: React.FC<QueueScreenProps> = () => {
   const { t } = useTranslation();
   const { activeTickets, isLoading, error } = useActiveTickets();
-  const title = t('queueScreen', 'Call monitor');
+  const title = t('queueScreen', 'Call display');
 
   if (isLoading) {
     return <DataTableSkeleton rowCount={5} className={styles.queueScreen} role="progressbar" />;
@@ -33,8 +33,8 @@ const QueueScreen: React.FC<QueueScreenProps> = () => {
       ) : null}
       {!error && rowData.length === 0 ? (
         <div className={styles.feedback}>
-          <h4>{t('noPatientsToDisplay', 'No patients to display')}</h4>
-          <p>{t('queueScreenEmptyDescription', 'Call patients from the service queue to display them here.')}</p>
+          <h4>{t('queueScreenNoPatients', 'No called patients')}</h4>
+          <p>{t('queueScreenEmptyDescription', 'Patients called from the service queue will appear here.')}</p>
         </div>
       ) : null}
       <div className={styles.gridFlow}>
@@ -43,7 +43,7 @@ const QueueScreen: React.FC<QueueScreenProps> = () => {
             <p className={styles.subHeader}>{t('ticketNumber', 'Ticket number')}</p>
             <p className={row.status === 'calling' ? styles.headerBlinking : styles.header}>{row.ticketNumber}</p>
             <p className={styles.subHeader}>
-              {t('room', 'Room')} &nbsp; : &nbsp; {row.room}
+              {t('attentionRoom', 'Room')} &nbsp; : &nbsp; {row.room}
             </p>
           </div>
         ))}

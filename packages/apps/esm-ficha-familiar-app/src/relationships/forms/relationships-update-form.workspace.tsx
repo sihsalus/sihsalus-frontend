@@ -12,7 +12,7 @@ import {
 } from '@carbon/react';
 import { zodResolver } from '@hookform/resolvers/zod';
 import type { DefaultWorkspaceProps } from '@openmrs/esm-framework';
-import { showSnackbar } from '@openmrs/esm-framework';
+import { showSnackbar, Workspace2 } from '@openmrs/esm-framework';
 import React, { useEffect } from 'react';
 import { Controller, useForm } from 'react-hook-form';
 import { useTranslation } from 'react-i18next';
@@ -20,24 +20,31 @@ import { mutate } from 'swr';
 import type { z } from 'zod';
 import useRelationship from '../../hooks/useRelationship';
 import useRelationshipTypes from '../../hooks/useRelationshipTypes';
+import type { FichaFamiliarWorkspaceProps } from '../../workspace-utils';
 import PatientInfo from '../patient-info.component';
 import { relationshipUpdateFormSchema, updateRelationship } from '../relationship.resources';
 
 import styles from './form.scss';
 
 interface RelationshipUpdateFormProps extends DefaultWorkspaceProps {
-  relationShipUuid: string;
+  groupProps?: { patientUuid?: string } | null;
+  relationShipUuid?: string;
   patientUuid?: string;
+  workspaceProps?: FichaFamiliarWorkspaceProps | null;
 }
 
 type RelationshipUpdateFormType = z.infer<typeof relationshipUpdateFormSchema>;
 
 const RelationshipUpdateForm: React.FC<RelationshipUpdateFormProps> = ({
   closeWorkspace,
+  groupProps,
   relationShipUuid,
   patientUuid,
+  workspaceProps,
 }) => {
-  const { error, isLoading, relationship } = useRelationship(relationShipUuid);
+  const resolvedRelationShipUuid = workspaceProps?.relationShipUuid ?? relationShipUuid ?? '';
+  const resolvedPatientUuid = workspaceProps?.patientUuid ?? groupProps?.patientUuid ?? patientUuid;
+  const { error, isLoading, relationship } = useRelationship(resolvedRelationShipUuid);
   const { isLoading: typesLoading, error: typesError, relationshipTypes } = useRelationshipTypes();
   const { t } = useTranslation();
   const form = useForm<RelationshipUpdateFormType>({
@@ -65,7 +72,7 @@ const RelationshipUpdateForm: React.FC<RelationshipUpdateFormProps> = ({
 
   const onSubmit = async (values: RelationshipUpdateFormType) => {
     try {
-      await updateRelationship(relationShipUuid, values);
+      await updateRelationship(resolvedRelationShipUuid, values);
       closeWorkspace();
       showSnackbar({
         title: t('success', 'Success'),
@@ -109,9 +116,11 @@ const RelationshipUpdateForm: React.FC<RelationshipUpdateFormProps> = ({
   }
 
   const relativeUuid =
-    patientUuid && relationship.personA?.uuid === patientUuid ? relationship.personB?.uuid : relationship.personA?.uuid;
+    resolvedPatientUuid && relationship.personA?.uuid === resolvedPatientUuid
+      ? relationship.personB?.uuid
+      : relationship.personA?.uuid;
 
-  return (
+  const content = (
     <Form onSubmit={form.handleSubmit(onSubmit)}>
       <Stack gap={4} className={styles.grid}>
         <Column>
@@ -199,6 +208,14 @@ const RelationshipUpdateForm: React.FC<RelationshipUpdateFormProps> = ({
         </Button>
       </ButtonSet>
     </Form>
+  );
+
+  return workspaceProps ? (
+    <Workspace2 title={workspaceProps.workspaceTitle ?? t('relationshipUpdateFormTitle', 'Editar relación')}>
+      {content}
+    </Workspace2>
+  ) : (
+    content
   );
 };
 

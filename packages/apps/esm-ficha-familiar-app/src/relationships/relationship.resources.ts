@@ -7,6 +7,16 @@ import { z } from 'zod';
 import type { ConfigObject } from '../config-schema';
 import type { Patient } from '../types';
 
+const t = (key: string, defaultValue: string) => {
+  const i18next = (
+    globalThis as typeof globalThis & {
+      i18next?: { t?: (key: string, options: { defaultValue: string }) => string };
+    }
+  ).i18next;
+
+  return typeof i18next?.t === 'function' ? i18next.t(key, { defaultValue }) : defaultValue;
+};
+
 export const relationshipUpdateFormSchema = z
   .object({
     startDate: z.date({ coerce: true }).max(new Date(), 'Can not be a future date'),
@@ -48,9 +58,17 @@ export const deleteRelationship = async (relationshipUuid: string) => {
         });
         mutate((key) => typeof key === 'string' && key.startsWith(`${restBaseUrl}/relationship`));
         dispose();
-        showSnackbar({ title: 'Success', kind: 'success', subtitle: 'Relationship deleted successfully!' });
+        showSnackbar({
+          title: t('success', 'Éxito'),
+          kind: 'success',
+          subtitle: t('relationshipDeletedSuccessfully', 'Relación eliminada exitosamente'),
+        });
       } catch {
-        showSnackbar({ title: 'Failure', kind: 'error', subtitle: 'Error deleting relationship' });
+        showSnackbar({
+          title: t('error', 'Error'),
+          kind: 'error',
+          subtitle: t('failedDeletingRelationship', 'Error al eliminar la relación'),
+        });
       }
     },
   });
@@ -166,9 +184,17 @@ export const saveRelationship = async (
         }),
       });
       patient = response.data?.uuid;
-      showSnackbar({ title: 'Success', kind: 'success', subtitle: 'Patient created succesfully' });
+      showSnackbar({
+        title: t('success', 'Éxito'),
+        kind: 'success',
+        subtitle: t('patientCreatedSuccessfully', 'Paciente creado exitosamente'),
+      });
     } catch (error) {
-      showSnackbar({ title: 'Error creating patient', kind: 'error', subtitle: error?.message });
+      showSnackbar({
+        title: t('errorCreatingPatient', 'Error al crear el paciente'),
+        kind: 'error',
+        subtitle: error?.message,
+      });
       throw error; // Don't contunue if an erro ocuures
     }
   }
@@ -188,7 +214,11 @@ export const saveRelationship = async (
     );
     results.forEach((res) => {
       if (res.status === 'rejected') {
-        showSnackbar({ title: 'Failure', kind: 'error', subtitle: 'Error creating patient attribute' });
+        showSnackbar({
+          title: t('error', 'Error'),
+          kind: 'error',
+          subtitle: t('errorCreatingPatientAttribute', 'Error al crear el atributo del paciente'),
+        });
       }
     });
   }
@@ -215,9 +245,17 @@ export const saveRelationship = async (
           obs: [{ concept: config.maritalStatusUuid, value: data.personBInfo.maritalStatus }],
         }),
       });
-      showSnackbar({ title: 'Success', kind: 'success', subtitle: 'Patient Demographics saved succesfuly' });
+      showSnackbar({
+        title: t('success', 'Éxito'),
+        kind: 'success',
+        subtitle: t('patientDemographicsSavedSuccessfully', 'Datos demográficos guardados exitosamente'),
+      });
     } catch (error) {
-      showSnackbar({ title: 'Error saving patient demographics', kind: 'error', subtitle: error?.message });
+      showSnackbar({
+        title: t('errorSavingPatientDemographics', 'Error al guardar los datos demográficos'),
+        kind: 'error',
+        subtitle: error?.message,
+      });
     }
   }
 
@@ -242,10 +280,18 @@ export const saveRelationship = async (
       },
       body: JSON.stringify(relationshipPayload),
     });
-    showSnackbar({ title: 'Success', kind: 'success', subtitle: 'Relationship saved succesfully' });
+    showSnackbar({
+      title: t('success', 'Éxito'),
+      kind: 'success',
+      subtitle: t('relationshipSavedSuccessfully', 'La relación familiar se guardó exitosamente'),
+    });
     mutate((key) => typeof key === 'string' && key.startsWith('/ws/rest/v1/relationship'));
   } catch (error) {
-    showSnackbar({ title: 'Error saving relationship', kind: 'error', subtitle: error?.message });
+    showSnackbar({
+      title: t('errorSavingRelationship', 'Error al guardar la relación'),
+      kind: 'error',
+      subtitle: error?.message,
+    });
     throw error;
   }
 };

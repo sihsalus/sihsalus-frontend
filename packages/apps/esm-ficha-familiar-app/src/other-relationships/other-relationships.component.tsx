@@ -13,14 +13,7 @@ import {
   Tile,
 } from '@carbon/react';
 import { Add, Edit, TrashCan } from '@carbon/react/icons';
-import {
-  ConfigurableLink,
-  isDesktop,
-  launchWorkspace,
-  useConfig,
-  useLayoutType,
-  usePagination,
-} from '@openmrs/esm-framework';
+import { ConfigurableLink, isDesktop, useConfig, useLayoutType, usePagination } from '@openmrs/esm-framework';
 import { CardHeader, EmptyDataIllustration, ErrorState, usePaginationInfo } from '@openmrs/esm-patient-common-lib';
 import React, { useState } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -29,6 +22,7 @@ import type { ConfigObject } from '../config-schema';
 import ConceptObservations from '../family-partner-history/concept-obs.component';
 import { usePatientRelationships } from '../family-partner-history/relationships.resource';
 import { deleteRelationship } from '../relationships/relationship.resources';
+import { launchFichaFamiliarWorkspace } from '../workspace-utils';
 
 import styles from './other-relationships.scss';
 
@@ -57,7 +51,7 @@ export const OtherRelationships: React.FC<OtherRelationshipsProps> = ({ patientU
   const { pageSizes } = usePaginationInfo(pageSize, totalPages, currentPage, results.length);
 
   const handleEditRelationship = (relationShipUuid: string) => {
-    launchWorkspace('relationship-update-form', {
+    launchFichaFamiliarWorkspace('relationship-update-form', {
       relationShipUuid,
       patientUuid,
     });
@@ -92,7 +86,7 @@ export const OtherRelationships: React.FC<OtherRelationshipsProps> = ({ patientU
   ];
 
   const handleAddHistory = () => {
-    launchWorkspace('other-relationship-form', {
+    launchFichaFamiliarWorkspace('other-relationship-form', {
       workspaceTitle: 'Other Relationship Form',
       patientUuid,
     });

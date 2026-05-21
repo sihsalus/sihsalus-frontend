@@ -1,7 +1,7 @@
 export const FuaRequestDashboardMeta = {
   name: 'fua-request',
   slot: 'fua-request-dashboard-slot',
-  title: 'Imprimir FUAs',
+  title: 'Gestión FUA',
   path: 'fua-request',
   columns: 1,
   config: {},

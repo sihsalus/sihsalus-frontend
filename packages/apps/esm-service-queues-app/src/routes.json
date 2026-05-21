@@ -19,7 +19,7 @@
       "meta": {
         "name": "service-queues",
         "slot": "service-queues-dashboard-slot",
-        "title": "Service queues"
+        "title": "serviceQueues"
       },
       "online": true,
       "offline": true,
@@ -31,7 +31,7 @@
       "meta": {
         "name": "service-queues",
         "slot": "service-queues-dashboard-slot",
-        "title": "Service queues"
+        "title": "serviceQueues"
       },
       "online": true,
       "offline": true

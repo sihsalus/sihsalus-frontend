@@ -15,20 +15,14 @@ import {
   Tile,
 } from '@carbon/react';
 import { Add, Edit, TrashCan } from '@carbon/react/icons';
-import {
-  ConfigurableLink,
-  ErrorState,
-  isDesktop,
-  launchWorkspace,
-  useLayoutType,
-  usePagination,
-} from '@openmrs/esm-framework';
+import { ConfigurableLink, ErrorState, isDesktop, useLayoutType, usePagination } from '@openmrs/esm-framework';
 import { CardHeader, EmptyDataIllustration, usePaginationInfo } from '@openmrs/esm-patient-common-lib';
 import React, { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import useContacts from '../hooks/useContacts';
 import { deleteRelationship } from '../relationships/relationship.resources';
+import { launchFichaFamiliarWorkspace } from '../workspace-utils';
 
 import styles from './contact-list.scss';
 import HIVStatus from './hiv-status.component';
@@ -106,14 +100,14 @@ const ContactList: React.FC<ContactListProps> = ({ patientUuid }) => {
   ];
 
   const handleAddContact = () => {
-    launchWorkspace('contact-list-form', {
+    launchFichaFamiliarWorkspace('contact-list-form', {
       workspaceTitle,
       patientUuid,
     });
   };
 
   const handleEditRelationship = (relationShipUuid: string) => {
-    launchWorkspace('relationship-update-form', {
+    launchFichaFamiliarWorkspace('relationship-update-form', {
       relationShipUuid,
       patientUuid,
     });

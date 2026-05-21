@@ -248,7 +248,7 @@ export function launchWorkspaceGroup(groupName: string, args: LaunchWorkspaceGro
 
 function promptBeforeLaunchingWorkspace(
   workspace: OpenWorkspace,
-  newWorkspaceDetails: { name: string; additionalProps?: object },
+  newWorkspaceDetails: { name: string; additionalProps?: Record<string, unknown> },
 ) {
   const { name, additionalProps } = newWorkspaceDetails;
   getWorkspaceRegistration(name);
@@ -303,10 +303,9 @@ function promptBeforeLaunchingWorkspace(
  * @deprecated migrate to workspace v2 and use launchWorkspace2 instead. See:
  * https://openmrs.atlassian.net/wiki/spaces/docs/pages/615677981/Workspace+v2+Migration+Guide
  */
-export function launchWorkspace<T extends DefaultWorkspaceProps | object = DefaultWorkspaceProps & object>(
-  name: string,
-  additionalProps?: Omit<T, keyof DefaultWorkspaceProps> & { workspaceTitle?: string },
-) {
+export function launchWorkspace<
+  T extends DefaultWorkspaceProps | Record<string, unknown> = DefaultWorkspaceProps & Record<string, unknown>,
+>(name: string, additionalProps?: Omit<T, keyof DefaultWorkspaceProps> & { workspaceTitle?: string }) {
   const store = getWorkspaceStore();
   const workspace = getWorkspaceRegistration(name);
   const currentWorkspaceGroup = store.getState().workspaceGroup;
@@ -415,7 +414,7 @@ export function navigateAndLaunchWorkspace({
   targetUrl: string;
   contextKey: string;
   workspaceName: string;
-  additionalProps?: object;
+  additionalProps?: Record<string, unknown>;
 }) {
   changeWorkspaceContext(contextKey);
   launchWorkspace(workspaceName, additionalProps);

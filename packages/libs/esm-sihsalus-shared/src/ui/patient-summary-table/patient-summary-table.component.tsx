@@ -98,7 +98,7 @@ const PatientSummaryTable = <T,>({
         launchStartVisitPrompt();
       } else {
         if (formWorkspace) {
-          launchWorkspace(formWorkspace, { patientUuid });
+          launchWorkspace<{ patientUuid: string }>(formWorkspace, { patientUuid });
         } else if (onFormLaunch) {
           onFormLaunch(patientUuid);
         }

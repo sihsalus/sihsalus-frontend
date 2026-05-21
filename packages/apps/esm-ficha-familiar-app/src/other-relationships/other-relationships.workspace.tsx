@@ -1,6 +1,6 @@
 import { Button, ButtonSet, Column, ComboBox, DatePicker, DatePickerInput, Form, Stack } from '@carbon/react';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { useConfig, useSession } from '@openmrs/esm-framework';
+import { useConfig, useSession, Workspace2 } from '@openmrs/esm-framework';
 import React from 'react';
 import type { SubmitHandler } from 'react-hook-form';
 import { Controller, FormProvider, useForm } from 'react-hook-form';
@@ -12,6 +12,7 @@ import { useMappedRelationshipTypes } from '../family-partner-history/relationsh
 import PatientSearchCreate from '../relationships/forms/patient-search-create-form.component';
 import { relationshipFormSchema, saveRelationship } from '../relationships/relationship.resources';
 import { uppercaseText } from '../utils/expression-helper';
+import type { FichaFamiliarWorkspaceComponentProps } from '../workspace-utils';
 
 import styles from './other-relationships.scss';
 
@@ -30,12 +31,13 @@ const schema = relationshipFormSchema
   );
 type FormData = z.infer<typeof schema>;
 
-type OtherRelationshipsFormProps = {
-  closeWorkspace: () => void;
-  patientUuid: string;
-};
-
-export const OtherRelationshipsForm: React.FC<OtherRelationshipsFormProps> = ({ closeWorkspace, patientUuid }) => {
+export const OtherRelationshipsForm: React.FC<FichaFamiliarWorkspaceComponentProps> = ({
+  closeWorkspace,
+  groupProps,
+  patientUuid,
+  workspaceProps,
+}) => {
+  const resolvedPatientUuid = workspaceProps?.patientUuid ?? groupProps?.patientUuid ?? patientUuid ?? '';
   const { t } = useTranslation();
   const { data: mappedRelationshipTypes } = useMappedRelationshipTypes();
   const config = useConfig<ConfigObject>();
@@ -53,7 +55,7 @@ export const OtherRelationshipsForm: React.FC<OtherRelationshipsFormProps> = ({ 
   const form = useForm<FormData>({
     mode: 'all',
     defaultValues: {
-      personA: patientUuid,
+      personA: resolvedPatientUuid,
       mode: 'search',
     },
     resolver: zodResolver(schema),
@@ -70,7 +72,7 @@ export const OtherRelationshipsForm: React.FC<OtherRelationshipsFormProps> = ({ 
     }
   };
 
-  return (
+  const content = (
     <FormProvider {...form}>
       <Form className={styles.form} onSubmit={handleSubmit(onSubmit)}>
         <Stack gap={5} className={styles.grid}>
@@ -165,5 +167,15 @@ export const OtherRelationshipsForm: React.FC<OtherRelationshipsFormProps> = ({ 
         </ButtonSet>
       </Form>
     </FormProvider>
+  );
+
+  return workspaceProps ? (
+    <Workspace2
+      title={workspaceProps.workspaceTitle ?? t('otherRelationshipFormTitle', 'Formulario de relación no familiar')}
+    >
+      {content}
+    </Workspace2>
+  ) : (
+    content
   );
 };

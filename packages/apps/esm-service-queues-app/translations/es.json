@@ -156,7 +156,7 @@
   "queueRoomUpdated": "Sala de espera actualizada",
   "queueRoomUpdatedSuccessfully": "Sala de espera actualizada exitosamente",
   "queuesClearedSuccessfully": "Colas borradas exitosamente",
-  "queueScreen": "Pantalla de llamados",
+  "queueScreen": "Monitor de llamados",
   "queueScreenEmptyDescription": "Los pacientes llamados desde la cola de atención aparecerán en esta pantalla.",
   "queueScreenNoPatients": "No hay pacientes llamados",
   "queueService": "Servicio de cola",
@@ -228,5 +228,6 @@
   "vitalsForm": "Formulario de signos vitales",
   "vitalsNotRecordedForVisit": "No se han registrado los signos vitales para este paciente en esta consulta",
   "waitingFor": "Esperando por",
-  "weight": "Peso"
+  "weight": "Peso",
+  "transitionLatestQueueEntry": "Cambiar estado de cola del paciente"
 }

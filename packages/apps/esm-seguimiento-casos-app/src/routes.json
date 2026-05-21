@@ -54,7 +54,7 @@
       "slot": "homepage-dashboard-slot",
       "meta": {
         "name": "case-monitoring",
-        "title": "Monitoreo y seguimiento de casos",
+        "title": "caseMonitoring",
         "slot": "case-management-dashboard-slot",
         "path": "/seguimiento/casos"
       },

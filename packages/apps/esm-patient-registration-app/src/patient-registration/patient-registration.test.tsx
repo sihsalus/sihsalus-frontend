@@ -143,6 +143,7 @@ const mockOpenmrsConfig: RegistrationConfig = {
       defaultUnknownGivenName: 'UNKNOWN',
       defaultUnknownFamilyName: 'UNKNOWN',
       defaultUnknownFamilyName2: 'UNKNOWN',
+      unidentifiedPatientAttributeTypeUuid: 'unidentified-patient-attribute-type-uuid',
       displayReverseFieldOrder: false,
       displayCapturePhoto: true,
       requireFamilyName2: false,

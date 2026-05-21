@@ -28,11 +28,13 @@ export function useBiometrics(patientUuid: string | null) {
 
   const conceptUuids = useMemo(() => {
     if (!concepts) return '';
-    return Object.values(concepts).join(',');
+    return Object.values(concepts)
+      .filter((value): value is string => typeof value === 'string' && value.trim().length > 0)
+      .join(',');
   }, [concepts]);
 
   const { data, isLoading, error } = useSWR<{ data: { entry: Array<{ resource: BiometricsObservationResource }> } }>(
-    patientUuid
+    patientUuid && conceptUuids
       ? `${fhirBaseUrl}/Observation?subject:Patient=${patientUuid}&code=${conceptUuids}&_sort=-date&_count=100`
       : null,
     openmrsFetch,
@@ -49,7 +51,7 @@ export function useBiometrics(patientUuid: string | null) {
       const conceptUuid = resource?.code?.coding?.[0]?.code;
       const value = resource?.valueQuantity?.value;
 
-      if (!date || !conceptUuid || !value) return;
+      if (!date || !conceptUuid || value === undefined || value === null) return;
 
       const dateKey = new Date(date).toISOString(); // Use ISO string to avoid duplicate keys due to timezones
 

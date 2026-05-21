@@ -1,5 +1,5 @@
 import { Button, Tile } from '@carbon/react';
-import { AddIcon, ChevronDownIcon, ChevronUpIcon, MaybeIcon, useLayoutType } from '@openmrs/esm-framework';
+import { AddIcon, ChevronDownIcon, ChevronUpIcon, MaybeIcon } from '@openmrs/esm-framework';
 import { type OrderBasketItem, useOrderBasket, useOrderType } from '@openmrs/esm-patient-common-lib';
 import classNames from 'classnames';
 import React, { type ComponentProps, useCallback, useEffect, useMemo, useState } from 'react';
@@ -38,7 +38,6 @@ const GeneralOrderType: React.FC<GeneralOrderTypeProps> = ({
   onMissingActiveVisit,
 }) => {
   const { t } = useTranslation();
-  const isTablet = useLayoutType() === 'tablet';
   const { orderType, isLoadingOrderType } = useOrderType(orderTypeUuid);
 
   const { orders, setOrders } = useOrderBasket<OrderBasketItem>(orderTypeUuid, prepOrderPostData);
@@ -114,15 +113,13 @@ const GeneralOrderType: React.FC<GeneralOrderTypeProps> = ({
     return null;
   }
 
-  const orderTypeDisplay = label ? t(label, label) : (orderType?.display ?? t('order', 'Order'));
+  const orderTypeDisplay = label ? t(label, { defaultValue: label }) : (orderType?.display ?? t('order', 'Order'));
 
   return (
-    <Tile
-      className={classNames(isTablet ? styles.tabletTile : styles.desktopTile, { [styles.collapsedTile]: !isExpanded })}
-    >
+    <Tile className={classNames(styles.desktopTile, { [styles.collapsedTile]: !isExpanded })}>
       <div className={styles.container}>
         <div className={styles.iconAndLabel}>
-          <MaybeIcon icon={getOrderTypeIcon(icon)} size={isTablet ? 40 : 24} />
+          <MaybeIcon icon={getOrderTypeIcon(icon)} size={24} />
           <h4 className={styles.heading}>{`${orderTypeDisplay} (${orders.length})`}</h4>
         </div>
         <div className={styles.buttonContainer}>
@@ -133,7 +130,7 @@ const GeneralOrderType: React.FC<GeneralOrderTypeProps> = ({
             iconDescription={t('addOrder', 'Add order')}
             onClick={openConceptSearch}
             disabled={!canCreateOrders}
-            size={isTablet ? 'md' : 'sm'}
+            size="sm"
           >
             {t('add', 'Add')}
           </Button>

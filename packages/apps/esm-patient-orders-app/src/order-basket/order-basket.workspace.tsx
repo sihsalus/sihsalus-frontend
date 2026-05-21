@@ -1,13 +1,6 @@
 /* eslint-disable @typescript-eslint/no-misused-promises, @typescript-eslint/no-unsafe-argument, @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-member-access, @typescript-eslint/unbound-method */
 import { ActionableNotification, Button, ButtonSet, InlineLoading, InlineNotification } from '@carbon/react';
-import {
-  ExtensionSlot,
-  showModal,
-  useConfig,
-  useLayoutType,
-  useSession,
-  Workspace2,
-} from '@openmrs/esm-framework';
+import { ExtensionSlot, showModal, useConfig, useSession, Workspace2 } from '@openmrs/esm-framework';
 import {
   type DefaultPatientWorkspaceProps,
   getPatientUuidFromStore,
@@ -20,7 +13,6 @@ import {
   useOrderBasket,
   useVisitOrOfflineVisit,
 } from '@openmrs/esm-patient-common-lib';
-import classNames from 'classnames';
 import React, { useCallback, useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
@@ -58,7 +50,6 @@ const OrderBasket: React.FC<OrderBasketProps> = (props) => {
       getPatientUuidFromStore())
     : props.patientUuid;
   const { t } = useTranslation();
-  const isTablet = useLayoutType() === 'tablet';
   const config = useConfig<ConfigObject>();
   const session = useSession();
   const { activeVisit } = useVisitOrOfflineVisit(patientUuid);
@@ -234,9 +225,7 @@ const OrderBasket: React.FC<OrderBasketProps> = (props) => {
             />
           )}
           <ExtensionSlot
-            className={classNames(styles.orderBasketSlot, {
-              [styles.orderBasketSlotTablet]: isTablet,
-            })}
+            className={styles.orderBasketSlot}
             name="order-basket-slot"
             state={{
               canCreateOrders,

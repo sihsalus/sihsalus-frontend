@@ -34,8 +34,9 @@ export interface ActionMenuButtonProps2 {
   tagContent?: string | React.ReactNode;
   workspaceToLaunch: {
     workspaceName: string;
-    workspaceProps?: Record<string, any>;
-    windowProps?: Record<string, any>;
+    workspaceProps?: Record<string, unknown>;
+    windowProps?: Record<string, unknown>;
+    groupProps?: Record<string, unknown> | null;
   };
 
   /**
@@ -94,8 +95,8 @@ export const ActionMenuButton2: React.FC<ActionMenuButtonProps2> = ({
     } else {
       const shouldLaunch = await (onBeforeWorkspaceLaunch?.() ?? true);
       if (shouldLaunch) {
-        const { workspaceName, workspaceProps, windowProps } = workspaceToLaunch;
-        launchWorkspace2(workspaceName, workspaceProps, windowProps);
+        const { workspaceName, workspaceProps, windowProps, groupProps } = workspaceToLaunch;
+        launchWorkspace2(workspaceName, workspaceProps, windowProps, groupProps);
       }
     }
   };

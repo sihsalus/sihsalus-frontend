@@ -7,11 +7,11 @@ import {
   useConfig,
   useLayoutType,
   useSession,
-  useWorkspace2Context,
   Workspace2,
 } from '@openmrs/esm-framework';
 import {
   type DefaultPatientWorkspaceProps,
+  getPatientUuidFromStore,
   launchPatientWorkspace,
   type OrderBasketItem,
   type PatientWorkspace2DefinitionProps,
@@ -51,17 +51,11 @@ function isWorkspace2Props(props: OrderBasketProps): props is Workspace2OrderBas
 
 const OrderBasket: React.FC<OrderBasketProps> = (props) => {
   const patientUuid = isWorkspace2Props(props)
-    ? (props.groupProps?.patientUuid ?? props.windowProps?.patientUuid ?? props.workspaceProps?.patientUuid)
+    ? (props.groupProps?.patientUuid ??
+      props.windowProps?.patientUuid ??
+      props.workspaceProps?.patientUuid ??
+      getPatientUuidFromStore())
     : props.patientUuid;
-  const workspace2Context = useWorkspace2Context();
-  if (globalThis.location?.hostname === 'localhost') {
-    console.warn('[sihsalus-order-basket-debug]', {
-      isWorkspace2Props: isWorkspace2Props(props),
-      patientUuid,
-      workspace2Context,
-      props,
-    });
-  }
   const { t } = useTranslation();
   const isTablet = useLayoutType() === 'tablet';
   const config = useConfig<ConfigObject>();

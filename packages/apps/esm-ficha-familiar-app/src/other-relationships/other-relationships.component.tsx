@@ -223,6 +223,14 @@ export const OtherRelationships: React.FC<OtherRelationshipsProps> = ({ patientU
           goTo(page);
           setPageSize(pageSize);
         }}
+        backwardText={t('previousPage', 'Página anterior')}
+        forwardText={t('nextPage', 'Página siguiente')}
+        itemRangeText={(min, max, total) =>
+          t('itemRangeText', '{{min}}-{{max}} de {{total}} elementos', { min, max, total })
+        }
+        itemsPerPageText={t('itemsPerPage', 'Elementos por página:')}
+        pageNumberText={t('pageNumber', 'Página')}
+        pageRangeText={(_, total) => t('paginationPageText', 'de {{count}} páginas', { count: total })}
       />
     </div>
   );

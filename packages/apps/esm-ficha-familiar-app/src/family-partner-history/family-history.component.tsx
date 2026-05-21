@@ -225,9 +225,14 @@ const FamilyHistory: React.FC<FamilyHistoryProps> = ({ patientUuid }) => {
           goTo(page);
           setPageSize(pageSize);
         }}
-        itemsPerPageText={t('itemsPerPage', 'Items per page')}
-        pageNumberText={t('pageNumber', 'Page number')}
-        pageRangeText={(_, total) => t('paginationPageText', 'of {{count}} pages', { count: total })}
+        backwardText={t('previousPage', 'Página anterior')}
+        forwardText={t('nextPage', 'Página siguiente')}
+        itemRangeText={(min, max, total) =>
+          t('itemRangeText', '{{min}}-{{max}} de {{total}} elementos', { min, max, total })
+        }
+        itemsPerPageText={t('itemsPerPage', 'Elementos por página:')}
+        pageNumberText={t('pageNumber', 'Página')}
+        pageRangeText={(_, total) => t('paginationPageText', 'de {{count}} páginas', { count: total })}
       />
     </div>
   );

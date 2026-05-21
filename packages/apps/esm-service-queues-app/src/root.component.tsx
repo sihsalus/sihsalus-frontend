@@ -1,7 +1,7 @@
 import { AppErrorBoundary } from '@sihsalus/esm-rbac';
 import React from 'react';
 import { BrowserRouter, Route, Routes } from 'react-router-dom';
-
+import { serviceQueuesBasePath } from './constants';
 import Home from './home.component';
 import ServicesTable from './queue-patient-linelists/queue-services-table.component';
 import AppointmentsTable from './queue-patient-linelists/scheduled-appointments-table.component';
@@ -9,12 +9,10 @@ import QueueScreen from './queue-screen/queue-screen.component';
 import QueueTableByStatusView from './views/queue-table-by-status-view.component';
 
 const Root: React.FC = () => {
-  const serviceQueuesBasename = globalThis.getOpenmrsSpaBase() + 'home/service-queues';
-
   return (
     <AppErrorBoundary appName="esm-service-queues-app">
       <main>
-        <BrowserRouter basename={serviceQueuesBasename}>
+        <BrowserRouter basename={serviceQueuesBasePath}>
           <Routes>
             <Route path="/" element={<Home />} />
             <Route path="/queue-table-by-status/:queueUuid" element={<QueueTableByStatusView />} />

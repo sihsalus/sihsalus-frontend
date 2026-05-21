@@ -24,9 +24,11 @@ export function useWardPatientGrouping() {
     if (admissionLocation && inpatientAdmissions && inpatientRequests) {
       const _patientsNotInCurrentWard = new Set<string>();
 
-      for (const bedLayout of admissionLocation.bedLayouts) {
-        for (const bedPatient of bedLayout.patients) {
-          _patientsNotInCurrentWard.add(bedPatient.uuid);
+      for (const bedLayout of admissionLocation.bedLayouts ?? []) {
+        for (const bedPatient of bedLayout.patients ?? []) {
+          if (bedPatient?.uuid) {
+            _patientsNotInCurrentWard.add(bedPatient.uuid);
+          }
         }
       }
       for (const inpatientRequest of inpatientRequests) {

@@ -11,7 +11,7 @@ const MaternalWardBeds: React.FC<MotherChildRelationships> = (motherChildRelatio
   const { bedLayouts, wardAdmittedPatientsWithBed, inpatientAdmissionsByPatientUuid } = wardPatientGroupDetails ?? {};
 
   const wardBeds = bedLayouts?.map((bedLayout) => {
-    const { patients: patientsInCurrentBed } = bedLayout;
+    const patientsInCurrentBed = (bedLayout.patients ?? []).filter(Boolean);
     const bed = bedLayoutToBed(bedLayout);
     const childrenInSameBedByMotherUuid = new Map<string, WardPatient[]>();
 
@@ -22,7 +22,7 @@ const MaternalWardBeds: React.FC<MotherChildRelationships> = (motherChildRelatio
           const { patient, visit, currentInpatientRequest } = inpatientAdmission;
           return { patient, visit, bed, inpatientAdmission, inpatientRequest: currentInpatientRequest || null };
         } else {
-          const admissionElsewhere = inpatientAdmissionsByPatientUuid.get(patient.uuid);
+          const admissionElsewhere = inpatientAdmissionsByPatientUuid?.get(patient.uuid);
           // for some reason this patient is in a bed but not in the list of admitted patients,
           // so we need to use the patient data from the bed endpoint
           return {

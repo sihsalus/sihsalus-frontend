@@ -16,7 +16,7 @@ export interface PatientSearchContextProps {
   patientClickSideEffect?: ((patientUuid: string) => void) | (() => void);
 }
 
-export const PatientSearchContext = createContext<PatientSearchContextProps>(null);
+export const PatientSearchContext = createContext<PatientSearchContextProps>({});
 
 export interface PatientSearchContext2Props {
   onPatientSelected?(

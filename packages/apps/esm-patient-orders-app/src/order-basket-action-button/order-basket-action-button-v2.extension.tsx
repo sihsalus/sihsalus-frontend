@@ -32,7 +32,7 @@ const OrderBasketActionButton: React.FC<PatientChartWorkspaceActionButtonProps> 
         workspaceName: 'order-basket',
         workspaceProps: patientUuid ? { patientUuid } : undefined,
         windowProps: patientUuid ? { patientUuid } : undefined,
-        groupProps: patientChartGroupProps,
+        groupProps: patientChartGroupProps ? { ...patientChartGroupProps } : null,
       }}
     />
   );

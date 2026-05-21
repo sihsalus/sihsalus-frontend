@@ -1,6 +1,6 @@
 const trimTrailingSlash = (path: string) => path.replace(/\/+$/, '');
 
-const getSpaBase = () => trimTrailingSlash(globalThis.spaBase ?? globalThis.getOpenmrsSpaBase?.() ?? '/openmrs/spa');
+const getSpaBase = () => trimTrailingSlash(globalThis.getOpenmrsSpaBase?.() ?? globalThis.spaBase ?? '/openmrs/spa');
 
 export const getPatientSearchFallbackUrl = () => `${getSpaBase()}/home/home`;
 

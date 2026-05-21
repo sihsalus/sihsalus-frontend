@@ -40,7 +40,7 @@ export function filterBeds(admissionLocation: AdmissionLocationFetchResponse): B
   // admissionLocation.bedLayouts can contain row+column positions with no bed,
   // filter out layout positions with no real bed
   const collator = new Intl.Collator([], { numeric: true });
-  const bedLayouts = admissionLocation.bedLayouts
+  const bedLayouts = (admissionLocation?.bedLayouts ?? [])
     .filter((bl) => bl.bedId)
     .sort((bedA, bedB) => collator.compare(bedA.bedNumber, bedB.bedNumber));
 
@@ -94,15 +94,15 @@ export function createAndGetWardPatientGrouping(
 
   const wardAdmittedPatientsWithBed = new Map<string, InpatientAdmission>();
   const wardUnadmittedPatientsWithBed = new Map<string, Patient>();
-  const bedLayouts = admissionLocation && filterBeds(admissionLocation);
+  const bedLayouts = admissionLocation ? filterBeds(admissionLocation) : [];
   const allWardPatientUuids = new Set<string>();
   let wardPatientPendingCount = 0;
   bedLayouts?.forEach((bedLayout) => {
-    const { patients } = bedLayout;
-    patients.forEach((patient) => {
+    const patients = bedLayout.patients ?? [];
+    patients.filter(Boolean).forEach((patient) => {
       const admission = inpatientAdmissionsByPatientUuid.get(patient.uuid);
       allWardPatientUuids.add(patient.uuid);
-      if (admission?.currentInpatientLocation?.uuid === currentWardLocation.uuid) {
+      if (admission?.currentInpatientLocation?.uuid === currentWardLocation?.uuid) {
         wardAdmittedPatientsWithBed.set(patient.uuid, admission);
         //count the pending metric
         const dispositionType = admission.currentInpatientRequest?.dispositionType;

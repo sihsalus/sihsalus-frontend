@@ -1,10 +1,14 @@
-@use '@carbon/layout';
+@use "@carbon/layout";
 
 .gridFlow {
   display: flex;
   flex-direction: row;
   padding: layout.$spacing-07;
   flex-wrap: wrap;
+}
+
+.feedback {
+  padding: layout.$spacing-07;
 }
 
 .card {
@@ -36,6 +40,6 @@
   }
 }
 
-.subheader {
+.subHeader {
   font-size: medium;
 }

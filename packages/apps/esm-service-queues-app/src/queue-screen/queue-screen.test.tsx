@@ -33,7 +33,7 @@ describe('QueueScreen component', () => {
 
     render(<QueueScreen />);
 
-    expect(screen.getByText('Error')).toBeInTheDocument();
+    expect(screen.getByText('Error loading queue entries')).toBeInTheDocument();
   });
 
   test('renders table with active tickets when data is loaded', () => {

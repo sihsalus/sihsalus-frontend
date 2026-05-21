@@ -29,10 +29,10 @@ export const usePaymentModes = () => {
   };
 };
 
-export const updateBillVisitAttribute = async (visit: Visit) => {
+export const updateBillVisitAttribute = async (visit: Visit, formPayloadPendingAttributeTypeUuid: string) => {
   const { uuid, attributes } = visit;
   const pendingPaymentAtrributeUuid = attributes?.find(
-    (attribute) => attribute.attributeType.uuid === '919b51c9-8e2e-468f-8354-181bf3e55786',
+    (attribute) => attribute.attributeType.uuid === formPayloadPendingAttributeTypeUuid,
   )?.uuid;
   return openmrsFetch(`${restBaseUrl}/visit/${uuid}/attribute/${pendingPaymentAtrributeUuid}`, {
     body: { value: false },

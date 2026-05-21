@@ -1,6 +1,10 @@
 import { formatDate, parseDate } from '@openmrs/esm-framework';
 
-import { TRUE_CONCEPT_UUID } from '../../constants';
+import {
+  OPENMRS_LEGACY_BOOLEAN_FALSE_CONCEPT_UUID,
+  OPENMRS_LEGACY_BOOLEAN_TRUE_CONCEPT_UUID,
+  TRUE_CONCEPT_UUID,
+} from '../../constants';
 import type { Observation } from '../../types';
 
 type NamedConcept = {
@@ -112,9 +116,9 @@ export function mapObsValueToFormLabel(
   const conceptMapOverride = formConceptMap !== undefined && Object.keys(formConceptMap).length > 0;
   if (conceptMapOverride && answerConceptUuid !== undefined) {
     // check for boolean concepts
-    if (answerConceptUuid === '1AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA') {
+    if (answerConceptUuid === OPENMRS_LEGACY_BOOLEAN_FALSE_CONCEPT_UUID) {
       answerConceptUuid = '0';
-    } else if (answerConceptUuid === '2AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA') {
+    } else if (answerConceptUuid === OPENMRS_LEGACY_BOOLEAN_TRUE_CONCEPT_UUID) {
       answerConceptUuid = '1';
     }
     const theDisplay = formConceptMap[conceptUuid]?.answers[answerConceptUuid];

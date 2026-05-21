@@ -96,6 +96,11 @@ export const configSchema = {
     _description: 'The interval, in milliseconds, to query the backend for new/changed data',
     _default: 60000,
   },
+  serviceConceptSetUuid: {
+    _type: Type.UUID,
+    _description: 'Concept set UUID whose members represent services shown by dispensing dashboard tiles.',
+    _default: '330c0ec6-0ac7-4b86-9c70-29d76f0ae20a',
+  },
   valueSets: {
     reasonForPause: {
       uuid: {
@@ -176,6 +181,7 @@ export interface PharmacyConfig {
     };
   };
   refreshInterval: number;
+  serviceConceptSetUuid: string;
   dispenseBehavior: {
     allowModifyingPrescription: boolean;
     restrictTotalQuantityDispensed: boolean;

@@ -5,7 +5,6 @@ import useSWR, { useSWRConfig } from 'swr';
 import type { PatientOrderFetchResponse, PriorityOption } from './types';
 
 export type Status = 'ACTIVE' | 'any';
-export const careSettingUuid = '6f0c9a92-6f24-11e3-af88-005056821db0';
 const patientChartAppModuleName = '@sihsalus/esm-patient-chart-app';
 
 export const drugCustomRepresentation =
@@ -22,17 +21,19 @@ export function usePatientOrders(
   orderType?: string,
   startDate?: string,
   endDate?: string,
-  configuredCareSettingUuid = careSettingUuid,
+  configuredCareSettingUuid?: string,
 ) {
   const { mutate } = useSWRConfig();
   const baseOrdersUrl =
-    startDate && endDate
-      ? `${restBaseUrl}/order?patient=${patientUuid}&careSetting=${configuredCareSettingUuid}&v=full&activatedOnOrAfterDate=${startDate}&activatedOnOrBeforeDate=${endDate}`
-      : `${restBaseUrl}/order?patient=${patientUuid}&careSetting=${configuredCareSettingUuid}&v=full&status=${status}`;
-  const ordersUrl = orderType ? `${baseOrdersUrl}&orderType=${orderType}` : baseOrdersUrl;
+    !patientUuid || !configuredCareSettingUuid
+      ? null
+      : startDate && endDate
+        ? `${restBaseUrl}/order?patient=${patientUuid}&careSetting=${configuredCareSettingUuid}&v=full&activatedOnOrAfterDate=${startDate}&activatedOnOrBeforeDate=${endDate}`
+        : `${restBaseUrl}/order?patient=${patientUuid}&careSetting=${configuredCareSettingUuid}&v=full&status=${status}`;
+  const ordersUrl = baseOrdersUrl && orderType ? `${baseOrdersUrl}&orderType=${orderType}` : baseOrdersUrl;
 
   const { data, error, isLoading, isValidating } = useSWR<FetchResponse<PatientOrderFetchResponse>, Error>(
-    patientUuid ? ordersUrl : null,
+    ordersUrl,
     openmrsFetch,
   );
 

@@ -5,29 +5,6 @@ import { useTranslation } from 'react-i18next';
 import type { ConfigObject } from '../../../config-schema';
 import { useLatestValidEncounter } from '../../../hooks/useLatestEncounter'; // Ajusta la ruta
 import { formEntryWorkspace } from '../../../types';
-import {
-  APGAR_1_MIN_UUID,
-  APGAR_5_MIN_UUID,
-  APGAR_10_MIN_UUID,
-  BIRTH_QUESTIONNAIRE_UUID,
-  BODY_TEMPERATURE_UUID,
-  CHEST_CIRCUMFERENCE_UUID,
-  CORD_CLAMPING_UUID,
-  GASTRIC_LAVAGE_COUNT_UUID,
-  GASTRIC_LAVAGE_UUID,
-  HEAD_CIRCUMFERENCE_UUID,
-  HEART_RATE_UUID,
-  HEIGHT_UUID,
-  IMMEDIATE_ASSESSMENT_UUID,
-  NEWBORN_EVALUATION_UUID,
-  NURSING_DIAGNOSIS_UUID,
-  OXYGEN_SATURATION_UUID,
-  OXYGEN_SUPPORT_UUID,
-  RESPIRATORY_RATE_UUID,
-  SKIN_TO_SKIN_CONTACT_UUID,
-  VITAMIN_K_ADMIN_UUID,
-  WEIGHT_UUID,
-} from '../../concepts/neonatal-concepts';
 
 interface ImmediateNewbornAttentionProps {
   patientUuid: string;
@@ -36,6 +13,7 @@ interface ImmediateNewbornAttentionProps {
 const NeonatalAttention: React.FC<ImmediateNewbornAttentionProps> = ({ patientUuid }) => {
   const { t } = useTranslation();
   const config = useConfig() as ConfigObject;
+  const { neonatalConcepts } = config;
   const headerTitle = t('immediateNewbornAttention', 'Atención Inmediata del Recién Nacido');
   const displayText = t('immediateNewbornAttention', 'Atención Inmediata del Recién Nacido');
   const { encounter, isLoading, error, mutate } = useLatestValidEncounter(
@@ -82,83 +60,83 @@ const NeonatalAttention: React.FC<ImmediateNewbornAttentionProps> = ({ patientUu
     {
       id: 'immediateAssessment',
       label: t('immediateAssessment', 'Valoración Inmediata del Recién Nacido'),
-      dataKey: IMMEDIATE_ASSESSMENT_UUID,
+      dataKey: neonatalConcepts.immediateAssessmentUuid,
     },
     {
       id: 'birthQuestionnaire',
       label: t('birthQuestionnaire', 'Cuestionario Inmediato para Nacimiento'),
-      dataKey: BIRTH_QUESTIONNAIRE_UUID,
+      dataKey: neonatalConcepts.birthQuestionnaireUuid,
     },
     {
       id: 'newbornEvaluation',
       label: t('newbornEvaluation', 'Evaluación del Recién Nacido'),
-      dataKey: NEWBORN_EVALUATION_UUID,
+      dataKey: neonatalConcepts.newbornEvaluationUuid,
     },
-    { id: 'cordClamping', label: t('cordClamping', 'Clampado'), dataKey: CORD_CLAMPING_UUID },
+    { id: 'cordClamping', label: t('cordClamping', 'Clampado'), dataKey: neonatalConcepts.cordClampingUuid },
     {
       id: 'skinToSkinContact',
       label: t('skinToSkinContact', 'Contacto Piel a Piel'),
-      dataKey: SKIN_TO_SKIN_CONTACT_UUID,
+      dataKey: neonatalConcepts.skinToSkinContactUuid,
     },
     {
       id: 'oxygenSupport',
       label: t('oxygenSupport', 'Soporte de Oxígeno'),
-      dataKey: OXYGEN_SUPPORT_UUID,
+      dataKey: neonatalConcepts.oxygenSupportUuid,
     },
     {
       id: 'vitaminKAdmin',
       label: t('vitaminKAdmin', 'Administración de Vitamina K'),
-      dataKey: VITAMIN_K_ADMIN_UUID,
+      dataKey: neonatalConcepts.vitaminKAdminUuid,
     },
-    { id: 'heartRate', label: t('heartRate', 'Frecuencia Cardíaca'), dataKey: HEART_RATE_UUID },
+    { id: 'heartRate', label: t('heartRate', 'Frecuencia Cardíaca'), dataKey: neonatalConcepts.heartRateUuid },
     {
       id: 'respiratoryRate',
       label: t('respiratoryRate', 'Frecuencia Respiratoria'),
-      dataKey: RESPIRATORY_RATE_UUID,
+      dataKey: neonatalConcepts.respiratoryRateUuid,
     },
     {
       id: 'oxygenSaturation',
       label: t('oxygenSaturation', 'Saturación de Oxígeno'),
-      dataKey: OXYGEN_SATURATION_UUID,
+      dataKey: neonatalConcepts.oxygenSaturationUuid,
     },
     {
       id: 'bodyTemperature',
       label: t('bodyTemperature', 'Temperatura Corporal'),
-      dataKey: BODY_TEMPERATURE_UUID,
+      dataKey: neonatalConcepts.bodyTemperatureUuid,
     },
-    { id: 'apgar1Min', label: t('apgar1Min', 'Apgar 1 Minuto'), dataKey: APGAR_1_MIN_UUID },
-    { id: 'apgar5Min', label: t('apgar5Min', 'Apgar 5 Minutos'), dataKey: APGAR_5_MIN_UUID },
+    { id: 'apgar1Min', label: t('apgar1Min', 'Apgar 1 Minuto'), dataKey: neonatalConcepts.apgar1MinUuid },
+    { id: 'apgar5Min', label: t('apgar5Min', 'Apgar 5 Minutos'), dataKey: neonatalConcepts.apgar5MinUuid },
     {
       id: 'apgar10Min',
       label: t('apgar10Min', 'Apgar 10 Minutos'),
-      dataKey: APGAR_10_MIN_UUID,
+      dataKey: neonatalConcepts.apgar10MinUuid,
     },
-    { id: 'weight', label: t('weightKg', 'Weight (kg)'), dataKey: WEIGHT_UUID },
-    { id: 'height', label: t('heightCm', 'Height (cm)'), dataKey: HEIGHT_UUID },
+    { id: 'weight', label: t('weightKg', 'Weight (kg)'), dataKey: neonatalConcepts.weightUuid },
+    { id: 'height', label: t('heightCm', 'Height (cm)'), dataKey: neonatalConcepts.heightUuid },
     {
       id: 'headCircumference',
       label: t('headCircumferenceCm', 'Head circumference (cm)'),
-      dataKey: HEAD_CIRCUMFERENCE_UUID,
+      dataKey: neonatalConcepts.headCircumferenceUuid,
     },
     {
       id: 'chestCircumference',
       label: t('chestCircumferenceCm', 'Chest circumference (cm)'),
-      dataKey: CHEST_CIRCUMFERENCE_UUID,
+      dataKey: neonatalConcepts.chestCircumferenceUuid,
     },
     {
       id: 'gastricLavage',
       label: t('gastricLavage', 'Lavado Gástrico'),
-      dataKey: GASTRIC_LAVAGE_UUID,
+      dataKey: neonatalConcepts.gastricLavageUuid,
     },
     {
       id: 'gastricLavageCount',
       label: t('gastricLavageCount', 'Cantidad de Lavados Gástricos'),
-      dataKey: GASTRIC_LAVAGE_COUNT_UUID,
+      dataKey: neonatalConcepts.gastricLavageCountUuid,
     },
     {
       id: 'nursingDiagnosis',
       label: t('nursingDiagnosis', 'Diagnóstico de Enfermería'),
-      dataKey: NURSING_DIAGNOSIS_UUID,
+      dataKey: neonatalConcepts.nursingDiagnosisUuid,
     },
   ];
 

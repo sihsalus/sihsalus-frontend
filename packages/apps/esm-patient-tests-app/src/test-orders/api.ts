@@ -11,9 +11,8 @@ import { useCallback, useMemo } from 'react';
 import useSWR, { mutate } from 'swr';
 import useSWRImmutable from 'swr/immutable';
 
+import type { ConfigObject } from '../config-schema';
 import type { TestOrderBasketItem } from '../types';
-
-export const careSettingUuid = '6f0c9a92-6f24-11e3-af88-005056821db0';
 
 /**
  * SWR-based data fetcher for patient orders.
@@ -22,14 +21,9 @@ export const careSettingUuid = '6f0c9a92-6f24-11e3-af88-005056821db0';
  * @param status Allows fetching either all orders or only active orders.
  */
 export function usePatientLabOrders(patientUuid: string, status: 'ACTIVE' | 'any') {
-  const { orders } = useConfig<{
-    orders?: {
-      careSettingUuid?: string;
-      labOrderTypeUuid?: string;
-    };
-  }>();
-  const labOrderTypeUUID = orders?.labOrderTypeUuid ?? '';
-  const configuredCareSettingUuid = orders?.careSettingUuid ?? careSettingUuid;
+  const { orders } = useConfig<ConfigObject>();
+  const labOrderTypeUUID = orders.labOrderTypeUuid;
+  const configuredCareSettingUuid = orders.careSettingUuid;
   const ordersUrl = `${restBaseUrl}/order?patient=${patientUuid}&careSetting=${configuredCareSettingUuid}&status=${status}&orderType=${labOrderTypeUUID}`;
 
   const { data, error, isLoading, isValidating } = useSWR<FetchResponse<PatientOrderFetchResponse>, Error>(
@@ -94,7 +88,7 @@ export function prepTestOrderPostData(
   order: TestOrderBasketItem,
   patientUuid: string,
   encounterUuid: string | null,
-  configuredCareSettingUuid = careSettingUuid,
+  configuredCareSettingUuid: string,
 ): TestOrderPost {
   if (order.action === 'NEW' || order.action === 'RENEW') {
     return {

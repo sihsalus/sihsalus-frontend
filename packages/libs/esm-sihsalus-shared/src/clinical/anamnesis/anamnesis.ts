@@ -45,20 +45,6 @@ export interface AnamnesisEntry {
   };
 }
 
-export const ANAMNESIS_DEFAULT_CONCEPT_UUIDS = {
-  chiefComplaintUuid: '5219AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA',
-  anamnesisUuid: '6d99603e-ae9d-4838-8a09-ba75e27ff1e9',
-  illnessDurationUuid: '577876b1-0b6e-4c57-b4c3-7af969a1d501',
-  onsetTypeUuid: '34e03399-cb72-484b-85b8-616ef19919c1',
-  courseUuid: 'e7d98188-16ba-4ef3-aed9-e891680bacf9',
-  appetiteUuid: 'f0000182-0000-4000-8000-000000000182',
-  thirstUuid: 'f0000183-0000-4000-8000-000000000183',
-  sleepUuid: 'f0000184-0000-4000-8000-000000000184',
-  moodUuid: 'f0000185-0000-4000-8000-000000000185',
-  urineUuid: 'f0000186-0000-4000-8000-000000000186',
-  bowelMovementsUuid: 'f0000187-0000-4000-8000-000000000187',
-} as const;
-
 export const getAnamnesisObsValue = (obs: Array<AnamnesisObs> | undefined, conceptUuid?: string): string | null => {
   if (!obs?.length || !conceptUuid) {
     return null;

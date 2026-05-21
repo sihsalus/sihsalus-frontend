@@ -27,12 +27,13 @@ const InstancePreviewModal: React.FC<InstancePreviewModalProps> = ({
       .then(async (response) => {
         setImageData(URL.createObjectURL(await response.blob()));
       })
-      .catch((error: any) => {
+      .catch((error: unknown) => {
+        const message = error instanceof Error ? error.message : String(error);
         showSnackbar({
           isLowContrast: false,
           kind: 'error',
           title: t('errorPreviewInstance', 'An error occurred while retrieving the instance preview'),
-          subtitle: error?.message,
+          subtitle: message,
         });
         closeInstancePreviewModal();
       })

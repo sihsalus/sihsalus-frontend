@@ -75,6 +75,7 @@ describe('LinkStudiesWorkspace', () => {
       expect(mockParam).toHaveBeenCalled();
       expect(launchWorkspace).toHaveBeenCalledWith(expect.any(String), {
         configuration: orthancConfigMock[0],
+        patientUuid,
       });
     });
   });

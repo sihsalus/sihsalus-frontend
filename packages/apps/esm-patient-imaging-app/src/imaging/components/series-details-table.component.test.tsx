@@ -1,7 +1,28 @@
 import { showModal, usePagination } from '@openmrs/esm-framework';
 import { act, fireEvent, render, screen, within } from '@testing-library/react';
+import type { ReactNode } from 'react';
 import * as api from '../../api';
 import SeriesDetailsTable from './series-details-table.component';
+
+type IconProps = Record<string, unknown>;
+type TableHeaderMock = {
+  key: string;
+  header: string;
+};
+type TableCellMockValue = ReactNode | { content?: ReactNode };
+type TableRowMock = {
+  id: string | number;
+} & Record<string, TableCellMockValue>;
+type PageChangeProps = {
+  onPageNumberChange: ({ page }: { page: number }) => void;
+};
+type EmptyStateProps = {
+  displayText: string;
+  headerTitle: string;
+};
+
+const hasContent = (value: TableCellMockValue): value is { content?: ReactNode } =>
+  typeof value === 'object' && value !== null && 'content' in value;
 
 vi.mock('react-i18next', async () => ({
   useTranslation: () => ({
@@ -42,14 +63,14 @@ vi.mock('@openmrs/esm-framework', async () => ({
     goTo: vi.fn(),
     currentPage: 1,
   })),
-  TrashCanIcon: (props: any) => <span data-testid="trash-icon" {...props} />,
+  TrashCanIcon: (props: IconProps) => <span data-testid="trash-icon" {...props} />,
 }));
 
 vi.mock('@carbon/react', async () => {
   const original = await vi.importActual('@carbon/react');
   return {
     ...original,
-    DataTable: ({ headers, rows }) => (
+    DataTable: ({ headers, rows }: { headers: Array<TableHeaderMock>; rows: Array<TableRowMock> }) => (
       <table aria-label="Series summary">
         <thead>
           <tr>
@@ -61,9 +82,10 @@ vi.mock('@carbon/react', async () => {
         <tbody>
           {rows.map((r) => (
             <tr key={r.id}>
-              {headers.map((h) => (
-                <td key={h.key}>{r[h.key]?.content ?? r[h.key]}</td>
-              ))}
+              {headers.map((h) => {
+                const cellValue = r[h.key];
+                return <td key={h.key}>{hasContent(cellValue) ? cellValue.content : cellValue}</td>;
+              })}
             </tr>
           ))}
         </tbody>
@@ -73,13 +95,13 @@ vi.mock('@carbon/react', async () => {
 });
 
 vi.mock('@openmrs/esm-patient-common-lib', async () => ({
-  PatientChartPagination: ({ onPageNumberChange }: any) => (
+  PatientChartPagination: ({ onPageNumberChange }: PageChangeProps) => (
     <button type="button" onClick={() => onPageNumberChange({ page: 2 })}>
       Next
     </button>
   ),
 
-  EmptyState: ({ displayText, headerTitle }: any) => (
+  EmptyState: ({ displayText, headerTitle }: EmptyStateProps) => (
     <div>
       {headerTitle}: {displayText}
     </div>
@@ -196,7 +218,7 @@ describe('SeriesDetailsTable', () => {
           patientUuid={'patient-123'}
           orthancConfig={mockConfig}
         />,
-      ) as any;
+      );
     });
 
     expect(screen.getAllByText(/description/i).length).toBeGreaterThan(0);

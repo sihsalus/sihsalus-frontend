@@ -46,6 +46,13 @@ const AddNewRequestWorkspace: React.FC<DefaultPatientWorkspaceProps> = ({
   const formProps = useForm<NewRequestFormData>({
     mode: 'all',
     resolver: zodResolver(requestFormSchema),
+    defaultValues: {
+      accessionNumber: '',
+      orthancConfiguration: undefined,
+      priority: 'low',
+      requestDescription: '',
+      requestingPhysician: '',
+    },
   });
 
   const {
@@ -83,11 +90,12 @@ const AddNewRequestWorkspace: React.FC<DefaultPatientWorkspaceProps> = ({
           kind: 'success',
           title: t('requestSaved', 'Request saved successfully'),
         });
-      } catch (err: any) {
+      } catch (err: unknown) {
+        const message = err instanceof Error ? err.message : String(err);
         showSnackbar({
           title: t('errorSavingRequest', 'An error occurred while saving the request procedure'),
           kind: 'error',
-          subtitle: err?.message,
+          subtitle: message,
           isLowContrast: false,
         });
       }

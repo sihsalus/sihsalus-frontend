@@ -1,35 +1,26 @@
-# SIH Salus Admission / Atenciones App
+# SIH Salus Registro de Atenciones App
 
-Microfrontend para concentrar flujos de admision, atencion inicial y reporte operativo por UPS. Cubre evidencia funcional del perfil `N1.ADM` de la acreditacion SIHCE MINSA 373-2025, pero no debe confundirse con hospitalizacion ni con un modulo ERP de admisiones.
+Microfrontend para el registro operativo de atenciones por UPSS/servicio. Conserva el package interno `esm-admission-app` y la ruta `/admission` por compatibilidad historica, pero el nombre visible del producto es `Registro de Atenciones`.
 
-Terminologia recomendada en UI:
-
-- Usar `Atenciones por UPS`, `Historial de atenciones` o `Reporte de atenciones por UPS` cuando la pantalla liste visitas/consultas por servicio.
-- Reservar `Admision` para el proceso operativo de registro, validacion de identidad, apertura de atencion o ingreso.
-- Evitar `Admisiones` como nombre generico si la pantalla muestra consultas ambulatorias, sesiones o visitas finalizadas.
+Tambien concentra evidencia funcional del perfil `N1.ADM` de la acreditacion SIHCE MINSA 373-2025, donde "admision" aparece como perfil normativo amplio de identificacion, registro, programacion y documentacion inicial.
 
 ## Funcionalidad
 
-- Reporte de admisiones por UPS/servicio en `/admission`.
+- Registro/listado de atenciones por UPSS/servicio en `/admission`.
 - Fusion de historias clinicas duplicadas en `/admission/merge`, delegando al flujo legacy de OpenMRS `mergePatients.form`.
 - Programacion de turnos desde `/admission/patient/:uuid`, mostrando turnos proximos y abriendo el workspace real de Appointments para registrar citas con prestadores.
 - Resumen de identificacion minima del paciente para pantallas clinicas que consumen `patient-info-slot`.
 - Accesos desde menu de aplicaciones, dashboard de inicio y acciones superiores.
 
-## Limites funcionales
+## Terminologia
 
-- No administra camas ni hospitalizacion; eso pertenece a `esm-ward-app` / bed management.
-- No reemplaza citas; solo puede abrir el workspace real de Appointments cuando se agenda un turno.
-- No debe guardar datos clinicos fuera de una visita/consulta formal.
-- No debe asumir que todos los establecimientos usan las mismas UPS, ubicaciones o tipos de visita.
+- UI/menu: `Registro de Atenciones`.
+- Titulo de pantalla: `Registro de Atenciones`.
+- Tabla/historial: atenciones activas y finalizadas por UPSS/servicio.
+- Ruta tecnica: `/admission`.
+- Package tecnico: `@sihsalus/esm-admission-app`.
 
-## Dependencias backend/content
-
-- OpenMRS REST para pacientes, visitas, encounters, identificadores y merge legacy.
-- Tipos de visita y encounter configurados para consulta/atencion.
-- Ubicaciones/UPS correctamente modeladas en el backend.
-- `personattributetypes` y conceptos adicionales cuando se validen campos de admision del content package.
-- Appointments instalado/configurado si se habilita programacion de turnos.
+Evitar `Admisiones` como label visible general: sugiere hospitalizacion o ingreso administrativo, mientras que esta pantalla lista atenciones/consultas por servicio.
 
 ## Evidencia MINSA
 

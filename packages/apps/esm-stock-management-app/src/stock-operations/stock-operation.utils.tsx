@@ -11,7 +11,11 @@ export const launchStockoperationAddOrEditWorkSpace = (
   stockOperation?: StockOperationDTO,
   stockRequisitionUuid?: string, // Only supplied on stock issue (when workspace is launched for stock issue)
 ) => {
-  launchWorkspace('stock-operation-form-workspace', {
+  launchWorkspace<{
+    stockOperationType: StockOperationType;
+    stockOperation?: StockOperationDTO;
+    stockRequisitionUuid?: string;
+  }>('stock-operation-form-workspace', {
     workspaceTitle: stockOperation
       ? t('editOperationTitle', 'Edit {{operationType}}', {
           operationType: translateStockOperationType(t, stockOperation?.operationTypeName),

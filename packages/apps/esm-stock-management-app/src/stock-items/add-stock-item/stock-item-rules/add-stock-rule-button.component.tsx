@@ -11,7 +11,7 @@ const AddStockRuleActionButton: React.FC<AddStockRuleActionButtonProps> = ({ sto
   const { t } = useTranslation();
 
   const handleClick = useCallback(() => {
-    launchWorkspace('stock-item-rules-form-workspace', {
+    launchWorkspace<{ stockItemUuid: string }>('stock-item-rules-form-workspace', {
       workspaceTitle: t('addStockRule', 'Add stock rule'),
       stockItemUuid,
     });

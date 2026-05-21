@@ -235,11 +235,13 @@ const RequestProcedureTable: React.FC<RequestProcedureTableProps> = ({ isValidat
                 <TableBody>
                   {rows.map((row, rowIndex) => {
                     const isExpanded = expandedRows[rowIndex];
+                    const { key, ...rowProps } = getRowProps({ row });
                     return (
                       <React.Fragment key={rowIndex}>
                         <TableRow
+                          key={key}
                           className={styles.row}
-                          {...getRowProps({ row })}
+                          {...rowProps}
                           onDoubleClick={() =>
                             setExpandedRows((prev) => ({
                               ...prev,

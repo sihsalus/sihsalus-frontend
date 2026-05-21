@@ -14,10 +14,19 @@ type WrapperProps = {
 type DatePickerMockProps = React.InputHTMLAttributes<HTMLInputElement> & {
   id: string;
   onChange?: (value: Date) => void;
+  labelText?: string;
+  maxDate?: Date;
 };
 
 type ComboBoxMockProps = React.HTMLAttributes<HTMLDivElement> & {
   children?: ReactNode;
+  id?: string;
+  titleText?: string;
+  label?: string;
+  invalid?: boolean;
+  invalidText?: string;
+  selectedItem?: unknown;
+  itemToString?: (item: unknown) => string;
 };
 
 type TimePickerMockProps = React.InputHTMLAttributes<HTMLInputElement> & {
@@ -34,14 +43,29 @@ type ButtonMockProps = React.ButtonHTMLAttributes<HTMLButtonElement> & { childre
 type FormMockProps = React.FormHTMLAttributes<HTMLFormElement> & { children?: ReactNode };
 type InlineLoadingProps = { description?: string };
 type TextInputMockProps = React.InputHTMLAttributes<HTMLInputElement> & { labelText?: string };
-type TextAreaMockProps = React.TextareaHTMLAttributes<HTMLTextAreaElement> & { labelText?: string };
+type TextAreaMockProps = React.TextareaHTMLAttributes<HTMLTextAreaElement> & {
+  labelText?: string;
+  invalid?: boolean;
+  invalidText?: string;
+};
 
 vi.mock('../../api');
 vi.mock('@openmrs/esm-framework', async () => ({
   ...(await vi.importActual('@openmrs/esm-framework')),
-  OpenmrsDatePicker: React.forwardRef<HTMLInputElement, DatePickerMockProps>(({ id, onChange, ...props }, ref) => (
-    <input ref={ref} data-testid={id} type="date" onChange={(e) => onChange?.(new Date(e.target.value))} {...props} />
-  )),
+  OpenmrsDatePicker: React.forwardRef<HTMLInputElement, DatePickerMockProps>(
+    ({ id, onChange, labelText, maxDate: _maxDate, ...props }, ref) => (
+      <label>
+        {labelText}
+        <input
+          ref={ref}
+          data-testid={id}
+          type="date"
+          onChange={(e) => onChange?.(new Date(e.target.value))}
+          {...props}
+        />
+      </label>
+    ),
+  ),
   ResponsiveWrapper: ({ children }: WrapperProps) => <div>{children}</div>,
   useLayoutType: vi.fn(() => 'desktop'),
   showSnackbar: vi.fn(),
@@ -57,7 +81,24 @@ vi.mock('@carbon/react', async () => {
   const original = await vi.importActual('@carbon/react');
   return {
     ...original,
-    ComboBox: ({ children, ...props }: ComboBoxMockProps) => <div {...props}>{children}</div>,
+    ComboBox: ({
+      children,
+      id,
+      titleText,
+      label,
+      invalid: _invalid,
+      invalidText: _invalidText,
+      selectedItem: _selectedItem,
+      itemToString: _itemToString,
+      ...props
+    }: ComboBoxMockProps) => (
+      <label htmlFor={id}>
+        {titleText ?? label}
+        <div id={id} data-testid={id} {...props}>
+          {children}
+        </div>
+      </label>
+    ),
     TimePicker: ({ labelText, children, ...props }: TimePickerMockProps) => (
       <label>
         {labelText}
@@ -73,16 +114,16 @@ vi.mock('@carbon/react', async () => {
     FormGroup: ({ children }: WrapperProps) => <div>{children}</div>,
     Stack: ({ children }: WrapperProps) => <div>{children}</div>,
     InlineLoading: (props: InlineLoadingProps) => <span>{props.description}</span>,
-    TextInput: ({ labelText, ...props }: TextInputMockProps) => (
+    TextInput: ({ labelText, value, ...props }: TextInputMockProps) => (
       <label>
         {labelText}
-        <input {...props} />
+        <input value={value ?? ''} {...props} />
       </label>
     ),
-    TextArea: ({ labelText, ...props }: TextAreaMockProps) => (
+    TextArea: ({ labelText, value, invalid: _invalid, invalidText: _invalidText, ...props }: TextAreaMockProps) => (
       <label>
         {labelText}
-        <textarea {...props} />
+        <textarea value={value ?? ''} {...props} />
       </label>
     ),
   };

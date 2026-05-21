@@ -1,9 +1,18 @@
 import { showModal, usePagination } from '@openmrs/esm-framework';
 import { act, fireEvent, render, screen, within } from '@testing-library/react';
+import type { ReactNode } from 'react';
 import * as api from '../../api';
 import SeriesDetailsTable from './series-details-table.component';
 
 type IconProps = Record<string, unknown>;
+type TableHeaderMock = {
+  key: string;
+  header: string;
+};
+type TableCellMockValue = ReactNode | { content?: ReactNode };
+type TableRowMock = {
+  id: string | number;
+} & Record<string, TableCellMockValue>;
 type PageChangeProps = {
   onPageNumberChange: ({ page }: { page: number }) => void;
 };
@@ -58,7 +67,7 @@ vi.mock('@carbon/react', async () => {
   const original = await vi.importActual('@carbon/react');
   return {
     ...original,
-    DataTable: ({ headers, rows }: { headers: Array<{ key: string; header: string }>; rows: Array<Record<string, unknown>> }) => (
+    DataTable: ({ headers, rows }: { headers: Array<TableHeaderMock>; rows: Array<TableRowMock> }) => (
       <table aria-label="Series summary">
         <thead>
           <tr>

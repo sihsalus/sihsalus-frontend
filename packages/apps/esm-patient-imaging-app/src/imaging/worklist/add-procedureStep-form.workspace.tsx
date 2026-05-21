@@ -63,27 +63,29 @@ const AddNewProcedureStepWorkspace: React.FC<AddNewProcedureStepWorkspaceProps> 
   const formProps = useForm<NewProcedureStepFormData>({
     mode: 'all',
     resolver: zodResolver(procedureStepFormSchema),
+    defaultValues: {
+      aetTitle: '',
+      modality: modalityOptions[0].code,
+      procedureStepLocation: '',
+      requestedProcedureDescription: '',
+      scheduledReferringPhysician: '',
+      stationName: '',
+      stepStartDate: undefined,
+      stepStartTime: '',
+      timeFormat: 'AM',
+    },
   });
 
   const {
     control,
     handleSubmit,
     getValues,
-    setValue,
     formState: { errors, isDirty, isSubmitting },
   } = formProps;
 
   useEffect(() => {
     promptBeforeClosing(() => isDirty);
   }, [isDirty, promptBeforeClosing]);
-
-  useEffect(() => {
-    setValue('timeFormat', 'AM');
-  }, [setValue]);
-
-  useEffect(() => {
-    setValue('modality', modalityOptions[0].code);
-  }, [setValue]);
 
   const onSubmit = useCallback(
     async (data: NewProcedureStepFormData) => {

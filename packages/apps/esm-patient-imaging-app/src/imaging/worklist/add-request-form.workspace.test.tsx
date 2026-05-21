@@ -7,6 +7,8 @@ import AddNewRequestWorkspace from './add-request-form.workspace';
 
 type TextAreaMockProps = React.ComponentProps<'textarea'> & {
   labelText: string;
+  invalid?: boolean;
+  invalidText?: string;
 };
 
 vi.mock('../../api');
@@ -22,10 +24,10 @@ vi.mock('@carbon/react', async () => {
   const original = await vi.importActual('@carbon/react');
   return {
     ...original,
-    TextArea: ({ labelText, ...props }: TextAreaMockProps) => (
+    TextArea: ({ labelText, value, invalid: _invalid, invalidText: _invalidText, ...props }: TextAreaMockProps) => (
       <label>
         {labelText}
-        <textarea {...props} />
+        <textarea value={value ?? ''} {...props} />
       </label>
     ),
   };

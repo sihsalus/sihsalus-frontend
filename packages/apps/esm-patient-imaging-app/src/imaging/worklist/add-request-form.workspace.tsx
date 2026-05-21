@@ -46,6 +46,13 @@ const AddNewRequestWorkspace: React.FC<DefaultPatientWorkspaceProps> = ({
   const formProps = useForm<NewRequestFormData>({
     mode: 'all',
     resolver: zodResolver(requestFormSchema),
+    defaultValues: {
+      accessionNumber: '',
+      orthancConfiguration: undefined,
+      priority: 'low',
+      requestDescription: '',
+      requestingPhysician: '',
+    },
   });
 
   const {

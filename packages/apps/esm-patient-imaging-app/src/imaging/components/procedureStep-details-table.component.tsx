@@ -144,42 +144,43 @@ const ProcedureStepTable: React.FC<ProcedureStepTableProps> = ({ requestProcedur
             isSortable
             useZebraStyles
             data-floating-menu-container
-            size={isTablet ? 'lg' : 'sm'}
-          >
-            {({ rows, headers, getHeaderProps, getTableProps }) => (
-              <TableContainer>
-                <Table aria-label="Procedure step summary" className={styles.table} {...getTableProps()} />
-                <TableHead>
-                  <TableRow>
-                    {headers.map((header) => {
-                      const { key, ...headerProps } = getHeaderProps({ header });
-                      return (
-                        <TableHeader key={key} {...headerProps}>
-                          {header.header}
-                        </TableHeader>
-                      );
-                    })}
-                    <TableHeader />
-                  </TableRow>
-                </TableHead>
-                <TableBody>
-                  {rows.map((row, rowIndex) => {
+        size={isTablet ? 'lg' : 'sm'}
+      >
+        {({ rows, headers, getHeaderProps, getTableProps }) => (
+          <TableContainer>
+            <Table aria-label="Procedure step summary" className={styles.table} {...getTableProps()}>
+              <TableHead>
+                <TableRow>
+                  {headers.map((header) => {
+                    const { key, ...headerProps } = getHeaderProps({ header });
                     return (
-                      <React.Fragment key={rowIndex}>
-                        <TableRow>
-                          {row.cells.map((cell, cellIndex) => (
-                            <TableCell className={styles.tableCell} key={cellIndex}>
-                              {cell.value?.content ?? cell.value}
-                            </TableCell>
-                          ))}
-                        </TableRow>
-                      </React.Fragment>
+                      <TableHeader key={key} {...headerProps}>
+                        {header.header}
+                      </TableHeader>
                     );
                   })}
-                </TableBody>
-              </TableContainer>
-            )}
-          </DataTable>
+                  <TableHeader />
+                </TableRow>
+              </TableHead>
+              <TableBody>
+                {rows.map((row, rowIndex) => {
+                  return (
+                    <React.Fragment key={rowIndex}>
+                      <TableRow>
+                        {row.cells.map((cell, cellIndex) => (
+                          <TableCell className={styles.tableCell} key={cellIndex}>
+                            {cell.value?.content ?? cell.value}
+                          </TableCell>
+                        ))}
+                      </TableRow>
+                    </React.Fragment>
+                  );
+                })}
+              </TableBody>
+            </Table>
+          </TableContainer>
+        )}
+      </DataTable>
           <PatientChartPagination
             pageNumber={currentPage}
             totalItems={stepList.length}

@@ -1,8 +1,28 @@
 import * as framework from '@openmrs/esm-framework';
 import { usePagination } from '@openmrs/esm-framework';
 import { fireEvent, render, screen, waitFor, within } from '@testing-library/react';
+import type { ReactNode } from 'react';
 import { act } from 'react';
 import RequestProcedureTable from './requests-details-table.component';
+
+type IconProps = Record<string, unknown>;
+type SelectProps = {
+  children?: ReactNode;
+} & Record<string, unknown>;
+type SelectItemProps = {
+  text: string;
+  value: string;
+};
+type CardHeaderProps = {
+  children?: ReactNode;
+};
+type PaginationProps = {
+  pageNumber: number;
+};
+type EmptyStateProps = {
+  displayText: string;
+  headerTitle: string;
+};
 
 vi.mock('react-i18next', () => ({
   useTranslation: () => ({
@@ -25,23 +45,23 @@ vi.mock('@openmrs/esm-framework', async () => ({
     goto: vi.fn(),
     currentPage: 1,
   })),
-  AddIcon: (props: any) => <span {...props}>AddIcon</span>,
-  TrashCanIcon: (props: any) => <span {...props}>TrashCanIcon</span>,
-  select: ({ children, ...props }: any) => <select {...props}>{children}</select>,
-  SelectItem: ({ text, value }: any) => <option value={value}>{text}</option>,
+  AddIcon: (props: IconProps) => <span {...props}>AddIcon</span>,
+  TrashCanIcon: (props: IconProps) => <span {...props}>TrashCanIcon</span>,
+  select: ({ children, ...props }: SelectProps) => <select {...props}>{children}</select>,
+  SelectItem: ({ text, value }: SelectItemProps) => <option value={value}>{text}</option>,
 }));
 
 // Mock other OpenMRS libs
 vi.mock('@openmrs/esm-patient-common-lib', () => ({
-  CardHeader: ({ children }: any) => <div>{children}</div>,
+  CardHeader: ({ children }: CardHeaderProps) => <div>{children}</div>,
   compare: vi.fn((a, b) => (a > b ? 1 : -1)),
-  PatientChartPagination: ({ pageNumber }: any) => <div>Page {pageNumber}</div>,
-  EmptyState: ({ displayText, headerTitle }: any) => (
+  PatientChartPagination: ({ pageNumber }: PaginationProps) => <div>Page {pageNumber}</div>,
+  EmptyState: ({ displayText, headerTitle }: EmptyStateProps) => (
     <div>
       {headerTitle}: {displayText}
     </div>
   ),
-  useLaunchWorkspaceRequiringVisit: (_workspace: any) => vi.fn(),
+  useLaunchWorkspaceRequiringVisit: (_workspace: unknown) => vi.fn(),
 }));
 
 describe('RequestProcedureTable', () => {

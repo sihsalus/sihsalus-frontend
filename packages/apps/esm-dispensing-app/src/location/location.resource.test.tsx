@@ -34,6 +34,7 @@ const pharmacyConfig: PharmacyConfig = {
     },
   },
   refreshInterval: 10000,
+  serviceConceptSetUuid: '330c0ec6-0ac7-4b86-9c70-29d76f0ae20a',
   medicationRequestExpirationPeriodInDays: 0,
   valueSets: {
     reasonForPause: { uuid: '' },

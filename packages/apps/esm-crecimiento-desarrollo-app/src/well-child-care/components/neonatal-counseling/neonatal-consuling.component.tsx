@@ -5,17 +5,6 @@ import { useTranslation } from 'react-i18next';
 import type { ConfigObject } from '../../../config-schema';
 import { useLatestValidEncounter } from '../../../hooks/useLatestEncounter'; // Ajusta la ruta
 import { formEntryWorkspace } from '../../../types';
-import {
-  AFFECTIVE_BOND_UUID,
-  ANATOMY_UUID,
-  BODY_POSITION_UUID,
-  EXAM_DATE_UUID,
-  FEEDING_TIME_UUID,
-  OBSERVATION_UUID,
-  RESPONSES_UUID,
-  SUCTION_COUNSEL_UUID,
-  TIME_UUID,
-} from '../../concepts/neonatal-concepts';
 
 interface NeonatalCounselingProps {
   patientUuid: string;
@@ -24,6 +13,7 @@ interface NeonatalCounselingProps {
 const NeonatalCounseling: React.FC<NeonatalCounselingProps> = ({ patientUuid }) => {
   const { t } = useTranslation();
   const config = useConfig() as ConfigObject;
+  const { neonatalConcepts } = config;
   const headerTitle = t('neonatalCounseling', 'Consejeria Lactancia Materna');
   const { encounter, isLoading, error, mutate } = useLatestValidEncounter(
     patientUuid,
@@ -69,28 +59,28 @@ const NeonatalCounseling: React.FC<NeonatalCounselingProps> = ({ patientUuid }) 
     {
       id: 'examDate',
       label: t('examDate', 'Fecha y Hora de Inicio del Examen'),
-      dataKey: EXAM_DATE_UUID,
+      dataKey: neonatalConcepts.examDateUuid,
     },
     {
       id: 'bodyPosition',
       label: t('bodyPosition', 'Posición del Cuerpo'),
-      dataKey: BODY_POSITION_UUID,
+      dataKey: neonatalConcepts.bodyPositionUuid,
     },
-    { id: 'responses', label: t('responses', 'Respuestas'), dataKey: RESPONSES_UUID },
+    { id: 'responses', label: t('responses', 'Respuestas'), dataKey: neonatalConcepts.responsesUuid },
     {
       id: 'affectiveBond',
       label: t('affectiveBond', 'Vínculo Afectivo'),
-      dataKey: AFFECTIVE_BOND_UUID,
+      dataKey: neonatalConcepts.affectiveBondUuid,
     },
-    { id: 'anatomy', label: t('anatomy', 'Anatomía'), dataKey: ANATOMY_UUID },
-    { id: 'suction', label: t('suction', 'Succión'), dataKey: SUCTION_COUNSEL_UUID },
-    { id: 'time', label: t('time', 'Tiempo'), dataKey: TIME_UUID },
+    { id: 'anatomy', label: t('anatomy', 'Anatomía'), dataKey: neonatalConcepts.anatomyUuid },
+    { id: 'suction', label: t('suction', 'Succión'), dataKey: neonatalConcepts.suctionCounselUuid },
+    { id: 'time', label: t('time', 'Tiempo'), dataKey: neonatalConcepts.timeUuid },
     {
       id: 'feedingTime',
       label: t('feedingTime', 'Tiempo que el Bebé Mamó (min)'),
-      dataKey: FEEDING_TIME_UUID,
+      dataKey: neonatalConcepts.feedingTimeUuid,
     },
-    { id: 'notes', label: t('notes', 'Notas'), dataKey: OBSERVATION_UUID },
+    { id: 'notes', label: t('notes', 'Notas'), dataKey: neonatalConcepts.observationUuid },
   ];
 
   return (

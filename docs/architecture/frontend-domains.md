@@ -9,6 +9,10 @@ This repository separates frontend modules by clinical responsibility, not only 
 - Use specialized apps for care domains that are clinical services by themselves, such as psychology, dentistry, vaccination, or physical therapy.
 - Create disease-specific apps only when the disease has a complete normative workflow that is larger than screening or generic follow-up.
 - Use epidemiology/vigilance terminology only for notification, outbreak, investigation, and surveillance workflows, not for ordinary clinical follow-up screens.
+- Clinical vocabulary and backend identifiers must be configurable. Do not introduce new clinical concept, form, encounter type, order type, location, provider, or attribute UUIDs directly in components, hooks, resources, or shared libraries.
+- Put deployment defaults in the owning app's `config-schema.ts`, or resolve them from content/backend metadata. Components and hooks should receive those values through config or typed arguments.
+- Shared libraries may define types, mappers, and protocol-level constants, but they must not own deployment-specific clinical UUID defaults.
+- Delete unused clinical maps instead of keeping future hardcoded placeholders.
 
 ## Current apps
 

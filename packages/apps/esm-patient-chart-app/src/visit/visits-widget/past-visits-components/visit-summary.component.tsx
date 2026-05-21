@@ -15,6 +15,7 @@ import classNames from 'classnames';
 import React, { useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 
+import type { ChartConfig } from '../../../config-schema';
 import {
   type Diagnosis,
   type Encounter,
@@ -48,12 +49,7 @@ const visitSummaryPanelSlot = 'visit-summary-panels';
 const diagnosisTypeFieldPathPrefix = 'tipo-dx-';
 
 type DiagnosisType = 'presuntivo' | 'definitivo' | 'repetitivo';
-
-const diagnosisTypeByUuid: Record<string, DiagnosisType> = {
-  '4f59cf03-f888-4d34-a5dc-f24269b1945d': 'presuntivo',
-  '2c60a8f6-1787-41be-8434-30ebeb5656ff': 'definitivo',
-  '6f653861-8469-4dfa-a0b5-2804f1cfc527': 'repetitivo',
-};
+type DiagnosisTypeConceptMap = Record<string, DiagnosisType>;
 
 const diagnosisTypeTranslation: Record<DiagnosisType, { key: string; defaultValue: string }> = {
   presuntivo: { key: 'diagnosisTypePresuntivo', defaultValue: 'Presuntivo' },
@@ -92,10 +88,13 @@ function getDiagnosisTypeValueDisplay(value: unknown) {
   return null;
 }
 
-function getDiagnosisTypeFromValue(value: unknown): DiagnosisType | undefined {
+function getDiagnosisTypeFromValue(
+  value: unknown,
+  diagnosisTypeConceptMap: DiagnosisTypeConceptMap,
+): DiagnosisType | undefined {
   const valueUuid = getDiagnosisTypeValueUuid(value);
-  if (valueUuid && diagnosisTypeByUuid[valueUuid]) {
-    return diagnosisTypeByUuid[valueUuid];
+  if (valueUuid && diagnosisTypeConceptMap[valueUuid]) {
+    return diagnosisTypeConceptMap[valueUuid];
   }
 
   const display = getDiagnosisTypeValueDisplay(value)?.toLocaleLowerCase();
@@ -112,7 +111,11 @@ function getDiagnosisTypeFromValue(value: unknown): DiagnosisType | undefined {
   return undefined;
 }
 
-function getDiagnosisTypeFromEncounterObs(encounter: Encounter, diagnosis: Diagnosis) {
+function getDiagnosisTypeFromEncounterObs(
+  encounter: Encounter,
+  diagnosis: Diagnosis,
+  diagnosisTypeConceptMap: DiagnosisTypeConceptMap,
+) {
   const diagnosisConceptUuid = diagnosis.diagnosis?.coded?.uuid;
   if (!diagnosisConceptUuid || !Array.isArray(encounter.obs)) {
     return undefined;
@@ -122,7 +125,7 @@ function getDiagnosisTypeFromEncounterObs(encounter: Encounter, diagnosis: Diagn
     (obs) => obs.formFieldPath === `${diagnosisTypeFieldPathPrefix}${diagnosisConceptUuid}`,
   );
 
-  return getDiagnosisTypeFromValue(diagnosisTypeObs?.value);
+  return getDiagnosisTypeFromValue(diagnosisTypeObs?.value, diagnosisTypeConceptMap);
 }
 
 function getDiagnosisTypeFromCertainty(certainty?: string): DiagnosisType | undefined {
@@ -137,7 +140,7 @@ function getDiagnosisTypeFromCertainty(certainty?: string): DiagnosisType | unde
 }
 
 const VisitSummary: React.FC<VisitSummaryProps> = ({ visit, patientUuid }) => {
-  const config = useConfig();
+  const config = useConfig<ChartConfig>();
   const { t } = useTranslation();
   const extensions = useAssignedExtensions(visitSummaryPanelSlot);
   const layout = useLayoutType();
@@ -172,7 +175,8 @@ const VisitSummary: React.FC<VisitSummaryProps> = ({ visit, patientUuid }) => {
             .map((diagnosis: Diagnosis) => ({
               diagnosis: diagnosis.display,
               diagnosisType:
-                getDiagnosisTypeFromEncounterObs(enc, diagnosis) ?? getDiagnosisTypeFromCertainty(diagnosis.certainty),
+                getDiagnosisTypeFromEncounterObs(enc, diagnosis, config.diagnosisTypeConceptMap) ??
+                getDiagnosisTypeFromCertainty(diagnosis.certainty),
               type: diagnosis.rank === 1 ? ('red' as const) : ('blue' as const),
               rank: diagnosis.rank,
               voided: diagnosis.voided,
@@ -204,7 +208,7 @@ const VisitSummary: React.FC<VisitSummaryProps> = ({ visit, patientUuid }) => {
     diagnoses.sort((a, b) => a.rank - b.rank);
 
     return [diagnoses, notes, medications];
-  }, [config.notesConceptUuids, encounters]);
+  }, [config.diagnosisTypeConceptMap, config.notesConceptUuids, encounters]);
 
   const testsFilter = useMemo<ExternalOverviewProps['filter']>(() => {
     const encounterIds = encounters.map((e) => `Encounter/${e.uuid}`);

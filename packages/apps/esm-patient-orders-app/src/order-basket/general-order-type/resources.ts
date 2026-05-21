@@ -15,13 +15,11 @@ export function ordersEqual(order1: OrderBasketItem, order2: OrderBasketItem) {
   return order1.action === order2.action && order1.concept.uuid === order2.concept.uuid;
 }
 
-const defaultCareSettingUuid = '6f0c9a92-6f24-11e3-af88-005056821db0';
-
 export function prepOrderPostData(
   order: OrderBasketItem,
   patientUuid: string,
   encounterUuid: string | null,
-  careSettingUuid = defaultCareSettingUuid,
+  careSettingUuid: string,
 ): OrderPost {
   if (order.action === 'NEW' || order.action === 'RENEW') {
     return {

@@ -290,25 +290,23 @@ export class CommonExpressionHelpers {
   /**
    * Determines viral load suppression status based on the viral load count.
    *
-   * WARNING: This function returns hardcoded concept UUIDs that are specific to certain
-   * OpenMRS implementations. These UUIDs may not exist or may differ in your system.
-   * Consider using form-level configuration or concept mappings instead.
-   *
    * @param viralLoadCount - The viral load count (copies/mL)
+   * @param suppressedConceptUuid - Concept UUID returned when the value is suppressed
+   * @param unsuppressedConceptUuid - Concept UUID returned when the value is not suppressed
+   * @param suppressionThreshold - Viral load threshold in copies/mL. Defaults to 50.
    * @returns Concept UUID based on suppression threshold (>50 copies/mL), or null if no count
-   * @deprecated Consider implementing viral load status logic in form expressions with
-   *             configurable concept UUIDs instead of using this hardcoded helper.
    */
-  calcViralLoadStatus = (viralLoadCount: number): string | null => {
-    let resultViralLoadStatus: string | null = null;
-    if (viralLoadCount) {
-      if (viralLoadCount > 50) {
-        resultViralLoadStatus = 'a6768be6-c08e-464d-8f53-5f4229508e54';
-      } else {
-        resultViralLoadStatus = '5d5e42cc-acc4-4069-b3a8-7163e0db5d96';
-      }
+  calcViralLoadStatus = (
+    viralLoadCount: number,
+    suppressedConceptUuid?: string,
+    unsuppressedConceptUuid?: string,
+    suppressionThreshold = 50,
+  ): string | null => {
+    if (!viralLoadCount || !suppressedConceptUuid || !unsuppressedConceptUuid) {
+      return null;
     }
-    return resultViralLoadStatus ?? null;
+
+    return viralLoadCount > suppressionThreshold ? unsuppressedConceptUuid : suppressedConceptUuid;
   };
 
   /**
@@ -328,19 +326,24 @@ export class CommonExpressionHelpers {
    * Calculates the treatment end date for patients on ART.
    * Adds a 30-day grace period plus the ARV dispensing duration.
    *
-   * WARNING: This function checks against a hardcoded concept UUID (160429AAAAAAAAAAAAAAAAAAAAAAAAAAAAAA)
-   * for 'Currently in Treatment' status. This UUID may not exist or may differ in your system.
-   * Consider implementing this logic in form expressions with configurable concept references instead.
-   *
    * @param followupDate - The current follow-up/encounter date
    * @param arvDispensedInDays - Number of days of ARV medication dispensed
-   * @param patientStatus - The patient's treatment status UUID (must match hardcoded UUID)
+   * @param patientStatus - The patient's treatment status UUID
+   * @param currentlyInTreatmentConceptUuid - Concept UUID that represents "currently in treatment"
    * @returns Treatment end date (followupDate + 30 + arvDispensedInDays), or null if conditions not met
-   * @deprecated Consider implementing treatment end date logic in form expressions with
-   *             configurable concept UUIDs instead of using this hardcoded helper.
    */
-  calcTreatmentEndDate = (followupDate: Date, arvDispensedInDays: number, patientStatus: string): Date | null => {
-    if (!followupDate || !arvDispensedInDays || patientStatus !== '160429AAAAAAAAAAAAAAAAAAAAAAAAAAAAAA') {
+  calcTreatmentEndDate = (
+    followupDate: Date,
+    arvDispensedInDays: number,
+    patientStatus: string,
+    currentlyInTreatmentConceptUuid?: string,
+  ): Date | null => {
+    if (
+      !followupDate ||
+      !arvDispensedInDays ||
+      !currentlyInTreatmentConceptUuid ||
+      patientStatus !== currentlyInTreatmentConceptUuid
+    ) {
       return null;
     }
     const extraDaysAdded = 30 + arvDispensedInDays;

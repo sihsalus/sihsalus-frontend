@@ -1,5 +1,17 @@
 import { Type } from '@openmrs/esm-framework';
-import { ANAMNESIS_DEFAULT_CONCEPT_UUIDS } from '@sihsalus/esm-sihsalus-shared';
+
+const anamnesisConceptDefaults = {
+  anamnesisUuid: '6d99603e-ae9d-4838-8a09-ba75e27ff1e9',
+  illnessDurationUuid: '577876b1-0b6e-4c57-b4c3-7af969a1d501',
+  onsetTypeUuid: '34e03399-cb72-484b-85b8-616ef19919c1',
+  courseUuid: 'e7d98188-16ba-4ef3-aed9-e891680bacf9',
+  appetiteUuid: 'f0000182-0000-4000-8000-000000000182',
+  thirstUuid: 'f0000183-0000-4000-8000-000000000183',
+  sleepUuid: 'f0000184-0000-4000-8000-000000000184',
+  moodUuid: 'f0000185-0000-4000-8000-000000000185',
+  urineUuid: 'f0000186-0000-4000-8000-000000000186',
+  bowelMovementsUuid: 'f0000187-0000-4000-8000-000000000187',
+} as const;
 
 // ===============================
 // MAIN CONFIGURATION SCHEMA
@@ -270,52 +282,52 @@ export const configSchema = {
     anamnesisUuid: {
       _type: Type.ConceptUuid,
       _description: 'Anamnesis / current illness narrative',
-      _default: ANAMNESIS_DEFAULT_CONCEPT_UUIDS.anamnesisUuid,
+      _default: anamnesisConceptDefaults.anamnesisUuid,
     },
     illnessDurationUuid: {
       _type: Type.ConceptUuid,
       _description: 'Tiempo de enfermedad',
-      _default: ANAMNESIS_DEFAULT_CONCEPT_UUIDS.illnessDurationUuid,
+      _default: anamnesisConceptDefaults.illnessDurationUuid,
     },
     onsetTypeUuid: {
       _type: Type.ConceptUuid,
       _description: 'Forma de inicio',
-      _default: ANAMNESIS_DEFAULT_CONCEPT_UUIDS.onsetTypeUuid,
+      _default: anamnesisConceptDefaults.onsetTypeUuid,
     },
     courseUuid: {
       _type: Type.ConceptUuid,
       _description: 'Curso de la enfermedad actual',
-      _default: ANAMNESIS_DEFAULT_CONCEPT_UUIDS.courseUuid,
+      _default: anamnesisConceptDefaults.courseUuid,
     },
     appetiteUuid: {
       _type: Type.ConceptUuid,
       _description: 'Función biológica: apetito',
-      _default: ANAMNESIS_DEFAULT_CONCEPT_UUIDS.appetiteUuid,
+      _default: anamnesisConceptDefaults.appetiteUuid,
     },
     thirstUuid: {
       _type: Type.ConceptUuid,
       _description: 'Función biológica: sed',
-      _default: ANAMNESIS_DEFAULT_CONCEPT_UUIDS.thirstUuid,
+      _default: anamnesisConceptDefaults.thirstUuid,
     },
     sleepUuid: {
       _type: Type.ConceptUuid,
       _description: 'Función biológica: sueño',
-      _default: ANAMNESIS_DEFAULT_CONCEPT_UUIDS.sleepUuid,
+      _default: anamnesisConceptDefaults.sleepUuid,
     },
     moodUuid: {
       _type: Type.ConceptUuid,
       _description: 'Función biológica: estado de ánimo',
-      _default: ANAMNESIS_DEFAULT_CONCEPT_UUIDS.moodUuid,
+      _default: anamnesisConceptDefaults.moodUuid,
     },
     urineUuid: {
       _type: Type.ConceptUuid,
       _description: 'Función biológica: orina',
-      _default: ANAMNESIS_DEFAULT_CONCEPT_UUIDS.urineUuid,
+      _default: anamnesisConceptDefaults.urineUuid,
     },
     bowelMovementsUuid: {
       _type: Type.ConceptUuid,
       _description: 'Función biológica: deposiciones',
-      _default: ANAMNESIS_DEFAULT_CONCEPT_UUIDS.bowelMovementsUuid,
+      _default: anamnesisConceptDefaults.bowelMovementsUuid,
     },
 
     // SOAP Notes (CE-5)

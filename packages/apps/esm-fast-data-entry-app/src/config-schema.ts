@@ -118,6 +118,11 @@ export const configSchema = {
     _description: 'If true, prevents adding patients from a different location than the current session.',
     _default: false,
   },
+  hsuIdentifierTypeUuid: {
+    _type: Type.UUID,
+    _description: 'Patient identifier type UUID used to display the HSU identifier in fast data entry flows.',
+    _default: '05a29f94-c0ed-11e2-94be-8c13b969e334',
+  },
 };
 
 export type Form = {
@@ -136,4 +141,5 @@ export type Config = {
   formCategoriesToShow: Array<string>;
   patientLocationMismatchCheck: Type.Boolean;
   enforcePatientListLocationMatch: Type.Boolean;
+  hsuIdentifierTypeUuid: string;
 };

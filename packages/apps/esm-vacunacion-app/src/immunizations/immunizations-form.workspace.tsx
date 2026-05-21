@@ -93,7 +93,7 @@ const ImmunizationsForm: React.FC<PatientWorkspace2DefinitionProps<Record<string
           ctx.addIssue({
             code: z.ZodIssueCode.custom,
             path: ['statusReason'],
-            message: t('statusReasonRequired', 'Debe registrar el motivo de no aplicación o diferimiento'),
+            message: t('statusReasonRequired', 'Please provide the reason for non-administration or deferral'),
           });
         }
       });

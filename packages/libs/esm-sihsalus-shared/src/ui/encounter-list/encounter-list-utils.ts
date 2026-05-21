@@ -128,12 +128,10 @@ export function mapObsValueToFormLabel(
     } else {
       return extractDefaultValueBasedOnType(defaultValue);
     }
-  } else if (!conceptMapOverride || answerConceptUuid !== undefined) {
+  } else {
     if (typeof defaultValue === 'object' && defaultValue !== null) {
       return defaultValue.name?.name ?? '--';
     }
-    return extractDefaultValueBasedOnType(defaultValue);
-  } else {
     return extractDefaultValueBasedOnType(defaultValue);
   }
 }
@@ -150,7 +148,7 @@ function extractDefaultValueBasedOnType(defaultValue: string | number | NamedCon
   if (typeOfVal === 'string') {
     const strValue = defaultValue as string;
     const stringParts = strValue.split(':');
-    if (stringParts.length === 0 || stringParts.length === 1) {
+    if (stringParts.length === 1) {
       return strValue;
     } else if (stringParts.length === 2) {
       return stringParts[1];

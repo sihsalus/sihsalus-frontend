@@ -3,6 +3,7 @@ import {
   type PatientChartWorkspaceActionButtonProps,
   useOrderBasket,
   usePatientChartStore,
+  useStartVisitIfNeeded,
 } from '@openmrs/esm-patient-common-lib';
 import React, { type ComponentProps } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -22,6 +23,7 @@ const OrderBasketActionButton: React.FC<PatientChartWorkspaceActionButtonProps> 
           mutateVisitContext: patientChartContext.mutateVisitContext,
         }
       : null);
+  const startVisitIfNeeded = useStartVisitIfNeeded(patientUuid ?? undefined);
 
   return (
     <ActionMenuButton2
@@ -34,6 +36,7 @@ const OrderBasketActionButton: React.FC<PatientChartWorkspaceActionButtonProps> 
         windowProps: patientUuid ? { patientUuid } : undefined,
         groupProps: patientChartGroupProps ? { ...patientChartGroupProps } : null,
       }}
+      onBeforeWorkspaceLaunch={startVisitIfNeeded}
     />
   );
 };

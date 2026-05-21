@@ -7,6 +7,7 @@
   "main": "src/index.ts",
   "source": true,
   "scripts": {
+    "build": "rspack --mode=production",
     "lint": "node ../../tooling/scripts/run-biome.js lint src",
     "test": "vitest run --passWithNoTests",
     "typescript": "tsc"
@@ -35,16 +36,17 @@
     "uuid": "^8.3.2"
   },
   "peerDependencies": {
-    "@openmrs/esm-extensions": "workspace:*",
-    "@openmrs/esm-framework": "workspace:*",
-    "@openmrs/esm-styleguide": "workspace:*",
-    "@sihsalus/esm-form-engine-lib": "workspace:*",
+    "@openmrs/esm-extensions": "*",
+    "@openmrs/esm-framework": "*",
+    "@openmrs/esm-styleguide": "*",
+    "@sihsalus/esm-form-engine-lib": "*",
     "react": "18.x",
     "single-spa": "6.x"
   },
   "devDependencies": {
     "@openmrs/esm-extensions": "workspace:*",
     "@openmrs/esm-styleguide": "workspace:*",
+    "@rspack/cli": "1.7.11",
     "@sihsalus/esm-form-engine-lib": "workspace:*",
     "typescript": "6.0.3",
     "vitest": "^4.1.0"

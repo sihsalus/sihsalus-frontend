@@ -1,6 +1,6 @@
 import { Button, DataTableSkeleton } from '@carbon/react';
-import { ErrorState, launchWorkspace, showModal, showSnackbar, useConfig } from '@openmrs/esm-framework';
-import { CardHeader, EmptyState } from '@openmrs/esm-patient-common-lib';
+import { ErrorState, showModal, showSnackbar, useConfig } from '@openmrs/esm-framework';
+import { CardHeader, EmptyState, launchPatientWorkspace } from '@openmrs/esm-patient-common-lib';
 import React from 'react';
 import { useTranslation } from 'react-i18next';
 
@@ -20,10 +20,11 @@ const PhysicalTherapyDashboard: React.FC<PhysicalTherapyDashboardProps> = ({ pat
   const clinicalFormTitle = t('terapiaFisica', 'Terapia Física');
 
   const launchPhysicalTherapyForm = (encounterUuid = '') => {
-    launchWorkspace(patientFormEntryWorkspace, {
+    launchPatientWorkspace(patientFormEntryWorkspace, {
       workspaceTitle: clinicalFormTitle,
       mutateForm: mutate,
       formInfo: {
+        patientUuid,
         encounterUuid,
         formUuid,
         additionalProps: {},

@@ -24,7 +24,7 @@ const AttachmentPreview: React.FC<AttachmentPreviewProps> = ({
 
   useEffect(() => {
     const closePreviewOnEscape = (event) => {
-      if (event.key == 'Escape') {
+      if (event.key === 'Escape') {
         onClosePreview();
       }
     };

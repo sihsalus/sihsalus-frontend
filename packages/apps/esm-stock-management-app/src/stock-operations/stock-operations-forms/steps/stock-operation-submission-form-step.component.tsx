@@ -40,6 +40,10 @@ const StockOperationSubmissionFormStep: React.FC<StockOperationSubmissionFormSte
     () => OperationType.STOCK_ISSUE_OPERATION_TYPE === stockOperationType.operationType,
     [stockOperationType],
   );
+  const isReceiptOperation = useMemo(
+    () => OperationType.RECEIPT_OPERATION_TYPE === stockOperationType.operationType,
+    [stockOperationType],
+  );
   const handleRadioButtonChange = (selectedItem: boolean) => {
     setApprovalRequired(selectedItem);
   };
@@ -48,6 +52,9 @@ const StockOperationSubmissionFormStep: React.FC<StockOperationSubmissionFormSte
     let result: StockOperationDTO; // To store the result for returning
     await form.handleSubmit(async (formData) => {
       try {
+        const payloadData = { ...formData } as StockOperationItemDtoSchema;
+        delete payloadData.atLocationUuid;
+        delete payloadData.atLocationName;
         // Get deleted items (items in stock operation bt not i form data)
         const itemsToDelete =
           stockOperation?.stockOperationItems?.reduce<Array<StockOperationItemDTO>>((prev, curr) => {
@@ -80,13 +87,13 @@ const StockOperationSubmissionFormStep: React.FC<StockOperationSubmissionFormSte
         });
         // construct update payload
         const payload = {
-          ...formData,
+          ...payloadData,
           // Remove other uuid if responsible person is set to other
           responsiblePersonUuid:
-            formData.responsiblePersonUuid === otherUser.uuid ? undefined : formData.responsiblePersonUuid,
+            payloadData.responsiblePersonUuid === otherUser.uuid ? undefined : payloadData.responsiblePersonUuid,
           approvalRequired: approvalRequired ? true : false,
           stockOperationItems: [
-            ...formData.stockOperationItems.map((item) => ({
+            ...payloadData.stockOperationItems.map((item) => ({
               ...item,
               uuid:
                 item.uuid.startsWith('new-item-') || (!stockOperation && isStockIssueOperation) ? undefined : item.uuid, // Remove uuid for newly inserted items and stock issue items derived from requisition to avoid foreign key constraint lookup error

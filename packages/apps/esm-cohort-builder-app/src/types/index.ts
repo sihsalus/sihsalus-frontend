@@ -66,6 +66,7 @@ export interface SearchHistoryItem {
   results: string;
   description: string;
   patients: Patient[];
+  memberIds?: number[];
 }
 
 export interface PaginationData {

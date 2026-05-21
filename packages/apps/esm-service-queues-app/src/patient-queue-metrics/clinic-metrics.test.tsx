@@ -7,7 +7,6 @@ import {
   useSession,
 } from '@openmrs/esm-framework';
 import { render, screen } from '@testing-library/react';
-import React from 'react';
 import { mockLocations, mockMetrics, mockServiceTypes, mockSession } from 'test-utils';
 
 import { type ConfigObject, configSchema } from '../config-schema';
@@ -67,7 +66,7 @@ describe('Clinic metrics', () => {
     expect(screen.getAllByText(/patient list/i));
     expect(screen.getByText(/Average wait time today/i)).toBeInTheDocument();
     expect(screen.getByText(/minutes/i)).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: /queue screen/i })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /call display/i })).toBeInTheDocument();
     expect(screen.getByText(/69/i)).toBeInTheDocument();
   });
 });

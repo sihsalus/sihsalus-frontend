@@ -1,7 +1,6 @@
 import { type FetchResponse, showSnackbar } from '@openmrs/esm-framework';
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import React from 'react';
 import ImportBulkStockItemsModal from './stock-items-bulk-import.modal';
 import { uploadStockItems } from './stock-items-bulk-import.resource';
 

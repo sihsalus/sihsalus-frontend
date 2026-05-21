@@ -1,7 +1,6 @@
 import { Layer, Tile } from '@carbon/react';
 import { isDesktop, useConfig, useLayoutType } from '@openmrs/esm-framework';
 import classNames from 'classnames';
-import React from 'react';
 import { useTranslation } from 'react-i18next';
 
 import { type HomeConfig } from '../config-schema';
@@ -19,7 +18,7 @@ export const DashboardNotFound = () => {
       <section
         className={classNames([
           isDesktop(layout) ? styles.dashboardContainer : styles.dashboardContainerTablet,
-          leftNavMode == 'normal' ? styles.hasLeftNav : '',
+          leftNavMode === 'normal' ? styles.hasLeftNav : '',
         ])}
       >
         <Layer>

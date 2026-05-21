@@ -1,6 +1,5 @@
 import { Header, HeaderGlobalAction, HeaderGlobalBar, HeaderName } from '@carbon/react';
 import { DownToBottom, Maximize, Minimize } from '@carbon/react/icons';
-import { getOpenedWindowIndexByWorkspace } from '@openmrs/esm-extensions';
 import { isDesktop, useLayoutType } from '@openmrs/esm-react-utils';
 import { getCoreTranslation } from '@openmrs/esm-translations';
 import classNames from 'classnames';
@@ -83,13 +82,15 @@ export const Workspace2: React.FC<Workspace2Props> = ({ title, children, hasUnsa
   } = useWorkspace2Store();
   const { workspaceName, isRootWorkspace, closeWorkspace, showActionMenu } = useWorkspace2Context();
 
-  const openedWindowIndex = getOpenedWindowIndexByWorkspace(workspaceName);
+  const openedWindowIndex = openedWindows.findIndex((window) =>
+    window.openedWorkspaces.some((workspace) => workspace.workspaceName === workspaceName),
+  );
 
   const openedWindow = openedWindows[openedWindowIndex];
   const openedWorkspace = openedWindow?.openedWorkspaces.find((workspace) => workspace.workspaceName === workspaceName);
 
   useEffect(() => {
-    if (openedWorkspace?.hasUnsavedChanges != hasUnsavedChanges) {
+    if (openedWorkspace?.hasUnsavedChanges !== hasUnsavedChanges) {
       setHasUnsavedChanges(workspaceName, hasUnsavedChanges ?? false);
     }
   }, [openedWorkspace?.hasUnsavedChanges, hasUnsavedChanges, workspaceName, setHasUnsavedChanges]);

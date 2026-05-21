@@ -38,7 +38,7 @@ const PatientBanner: React.FC<PatientBannerProps> = ({ patient, patientUuid, hid
     return () => {
       resizeObserver.unobserve(currentRef);
     };
-  }, [patientBannerRef, setIsTabletViewport]);
+  }, []);
 
   const patientName = patient ? getPatientName(patient) : '';
 
@@ -56,12 +56,10 @@ const PatientBanner: React.FC<PatientBannerProps> = ({ patient, patientUuid, hid
 
   return (
     <header
-      aria-label="patient banner"
       className={classNames(
         styles.container,
         isDeceased ? styles.deceasedPatientContainer : styles.activePatientContainer,
       )}
-      role="banner"
       ref={patientBannerRef}
     >
       <div className={styles.patientBanner}>

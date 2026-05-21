@@ -7,7 +7,6 @@ import {
 } from '@openmrs/esm-framework';
 import { render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import React from 'react';
 import { BrowserRouter as Router, useParams } from 'react-router-dom';
 import { mockedAddressTemplate, mockPatient } from 'test-utils';
 
@@ -31,7 +30,7 @@ const mockUseInitialFormValues = vi.mocked(useInitialFormValues);
 vi.mock('./field/field.resource', async () => ({
   useConcept: vi.fn().mockImplementation((uuid: string) => {
     let data;
-    if (uuid == 'weight-uuid') {
+    if (uuid === 'weight-uuid') {
       data = {
         uuid: 'weight-uuid',
         display: 'Weight (kg)',
@@ -39,7 +38,7 @@ vi.mock('./field/field.resource', async () => ({
         answers: [],
         setMembers: [],
       };
-    } else if (uuid == 'chief-complaint-uuid') {
+    } else if (uuid === 'chief-complaint-uuid') {
       data = {
         uuid: 'chief-complaint-uuid',
         display: 'Chief Complaint',
@@ -47,7 +46,7 @@ vi.mock('./field/field.resource', async () => ({
         answers: [],
         setMembers: [],
       };
-    } else if (uuid == 'nationality-uuid') {
+    } else if (uuid === 'nationality-uuid') {
       data = {
         uuid: 'nationality-uuid',
         display: 'Nationality',
@@ -65,7 +64,7 @@ vi.mock('./field/field.resource', async () => ({
     };
   }),
   useConceptAnswers: vi.fn().mockImplementation((uuid: string) => {
-    if (uuid == 'nationality-uuid') {
+    if (uuid === 'nationality-uuid') {
       return {
         data: [
           { display: 'USA', uuid: 'usa' },
@@ -73,7 +72,7 @@ vi.mock('./field/field.resource', async () => ({
         ],
         isLoading: false,
       };
-    } else if (uuid == 'other-countries-uuid') {
+    } else if (uuid === 'other-countries-uuid') {
       return {
         data: [
           { display: 'Kenya', uuid: 'ke' },

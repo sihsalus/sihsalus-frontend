@@ -13,7 +13,6 @@ const terapiaFisicaDashboardMeta = {
   title: 'Terapia Física',
   path: 'terapia-fisica',
   icon: 'omrs-icon-movement',
-  tooltip: 'terapiaFisicaTooltip',
   isLink: true,
 };
 

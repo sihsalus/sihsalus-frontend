@@ -6,7 +6,7 @@ import {
   UserFollow,
   WatsonHealthStackedScrolling_1,
 } from '@carbon/react/icons';
-import { ConfigurableLink } from '@openmrs/esm-framework';
+import { ConfigurableLink, MaybePictogram } from '@openmrs/esm-framework';
 import React from 'react';
 import { useTranslation } from 'react-i18next';
 
@@ -86,17 +86,16 @@ const actions = [
   },
 ] satisfies Array<Action>;
 
-const ActionIllustration: React.FC<{ illustrationId?: string }> = ({ illustrationId }) => {
-  return (
-    <svg
-      className={styles.actionIllustration}
-      viewBox="0 0 80 80"
-      preserveAspectRatio="xMidYMid meet"
-      focusable="false"
-      aria-hidden="true"
-    >
-      <use href={`#${illustrationId}`} />
-    </svg>
+const ActionIllustration: React.FC<{ fallbackIcon: ActionIcon; illustrationId?: string }> = ({
+  fallbackIcon: FallbackIcon,
+  illustrationId,
+}) => {
+  const fallback = <FallbackIcon className={styles.actionIllustration} size={96} />;
+
+  return illustrationId ? (
+    <MaybePictogram pictogram={illustrationId} className={styles.actionIllustration} fallback={fallback} />
+  ) : (
+    fallback
   );
 };
 
@@ -106,17 +105,16 @@ const PeruHomeActions: React.FC = () => {
 
   return (
     <section className={styles.quickActions} aria-label={t('peruHomeActions', 'Accesos de admisión')}>
-      {actions.map(({ key, descriptionKey, href, icon: Icon, illustrationId, toneClass }) => (
+      {actions.map(({ key, descriptionKey, href, icon, illustrationId, toneClass }) => (
         <ConfigurableLink key={key} className={`${styles.actionLink} ${styles[toneClass]}`} to={`${spaBase}${href}`}>
           <span className={styles.actionHeader}>
-            {/*<Icon className={styles.actionIcon} size={24} />*/}
             <span className={styles.actionText}>
               <strong>{t(key)}</strong>
               <span>{t(descriptionKey)}</span>
             </span>
           </span>
           <span className={styles.illustrationArea} aria-hidden="true">
-            <ActionIllustration illustrationId={illustrationId} />
+            <ActionIllustration fallbackIcon={icon} illustrationId={illustrationId} />
           </span>
         </ConfigurableLink>
       ))}

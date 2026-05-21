@@ -1,7 +1,6 @@
 import { getDefaultsFromConfigSchema, useConfig, usePatient } from '@openmrs/esm-framework';
 import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import React from 'react';
 import { useReactToPrint } from 'react-to-print';
 import { waitForLoadingToFinish } from 'test-utils';
 import { mockBill, mockPatient } from '../../test-utils/mocks/bills.mock';

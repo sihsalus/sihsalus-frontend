@@ -2,7 +2,7 @@
 import { Search, StructuredListCell, StructuredListRow, StructuredListWrapper } from '@carbon/react';
 import debounce from 'lodash-es/debounce';
 import uniqueId from 'lodash-es/uniqueId';
-import React, { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import { performPersonAttributeTypeSearch } from './person-attribute-search.resource';

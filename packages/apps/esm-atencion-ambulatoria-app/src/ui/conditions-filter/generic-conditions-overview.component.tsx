@@ -93,15 +93,11 @@ const GenericConditionsOverview: React.FC<GenericConditionsOverviewProps> = ({
   );
 
   const filteredConditions = useMemo(() => {
-    if (!filter || filter == 'All') {
+    if (!filter || filter === 'All') {
       return conditions;
     }
 
-    if (filter) {
-      return conditions?.filter((condition) => condition.clinicalStatus === filter);
-    }
-
-    return conditions;
+    return conditions?.filter((condition) => condition.clinicalStatus === filter);
   }, [filter, conditions]);
 
   const headers: Array<ConditionTableHeader> = useMemo(
@@ -205,6 +201,7 @@ const GenericConditionsOverview: React.FC<GenericConditionsOverviewProps> = ({
                     <TableRow>
                       {headers.map((header) => (
                         <TableHeader
+                          key={header.key}
                           className={classNames(styles.productiveHeading01, styles.text02)}
                           {...getHeaderProps({
                             header,

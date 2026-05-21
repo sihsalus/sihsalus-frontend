@@ -4,7 +4,7 @@ import { Button, ComposedModal, ModalBody, ModalFooter, ModalHeader } from '@car
 import { navigate } from '@openmrs/esm-navigation';
 import { getCoreTranslation } from '@openmrs/esm-translations';
 import { escapeRegExp } from 'lodash-es';
-import React, { useEffect } from 'react';
+import { useEffect } from 'react';
 import { type SingleSpaCustomEventDetail } from 'single-spa';
 import {
   canCloseWorkspaceWithoutPrompting,
@@ -34,7 +34,7 @@ export function WorkspaceNotification({ contextKey }: WorkspaceNotificationProps
         `WorkspaceContainer has provided an invalid context key: "${contextKey}". The context key must be part of the URL path, with no initial or trailing slash.`,
       );
     }
-  }, []);
+  }, [contextKey]);
 
   useEffect(() => {
     changeWorkspaceContext(contextKey);
@@ -80,7 +80,7 @@ export function WorkspaceNotification({ contextKey }: WorkspaceNotificationProps
     return () => {
       window.removeEventListener('single-spa:before-routing-event', handleRouting as EventListener);
     };
-  }, []);
+  }, [contextKey]);
 
   return prompt != null ? (
     <ComposedModal open={true} onClose={cancelPrompt}>

@@ -1,5 +1,4 @@
 import { render, screen } from '@testing-library/react';
-import React from 'react';
 
 import QueueScreen from './queue-screen.component';
 import { useActiveTickets } from './useActiveTickets';
@@ -34,7 +33,7 @@ describe('QueueScreen component', () => {
 
     render(<QueueScreen />);
 
-    expect(screen.getByText('Error')).toBeInTheDocument();
+    expect(screen.getByText('Error loading queue entries')).toBeInTheDocument();
   });
 
   test('renders table with active tickets when data is loaded', () => {

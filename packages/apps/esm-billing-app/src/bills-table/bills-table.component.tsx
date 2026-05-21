@@ -139,7 +139,7 @@ const BillsTable: React.FC = () => {
       goTo(1);
       setSearchString(e.target.value);
     },
-    [goTo, setSearchString],
+    [goTo],
   );
 
   const handleFilterChange = useCallback(

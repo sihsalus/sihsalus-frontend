@@ -78,7 +78,7 @@ const NewbornVitalsInput: React.FC<NewbornVitalsInputProps> = ({
 
   function checkValidity(value, onChange) {
     const parsedValue = value === '' ? undefined : Number(value);
-    setInvalid(parsedValue === undefined || isNaN(parsedValue));
+    setInvalid(parsedValue === undefined || Number.isNaN(parsedValue));
     if (!invalid) {
       onChange(parsedValue);
     }

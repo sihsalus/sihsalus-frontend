@@ -13,7 +13,7 @@ import useSWRInfinite from 'swr/infinite';
 import { type ChartConfig } from '../../config-schema';
 
 const customRepresentation =
-  'custom:(uuid,location,encounters:(uuid,diagnoses:(uuid,display,rank,diagnosis,voided),form:(uuid,display),encounterDatetime,orders:full,obs:(uuid,concept:(uuid,display,conceptClass:(uuid,display)),display,groupMembers:(uuid,concept:(uuid,display),value:(uuid,display),display),value,obsDatetime),encounterType:(uuid,display,viewPrivilege,editPrivilege),encounterProviders:(uuid,display,encounterRole:(uuid,display),provider:(uuid,person:(uuid,display)))),visitType:(uuid,name,display),startDatetime,stopDatetime,patient,attributes:(attributeType:ref,display,uuid,value)';
+  'custom:(uuid,location,encounters:(uuid,diagnoses:(uuid,display,certainty,rank,diagnosis:(coded:(uuid,display)),voided),form:(uuid,display),encounterDatetime,orders:full,obs:(uuid,concept:(uuid,display,conceptClass:(uuid,display)),display,formFieldNamespace,formFieldPath,groupMembers:(uuid,concept:(uuid,display),value:(uuid,display),display),value,obsDatetime),encounterType:(uuid,display,viewPrivilege,editPrivilege),encounterProviders:(uuid,display,encounterRole:(uuid,display),provider:(uuid,person:(uuid,display)))),visitType:(uuid,name,display),startDatetime,stopDatetime,patient,attributes:(attributeType:ref,display,uuid,value)';
 
 export function useInfiniteVisits2(patientUuid: string) {
   const { numberOfVisitsToLoad } = useConfig<ChartConfig>();
@@ -27,7 +27,7 @@ export function useInfiniteVisits2(patientUuid: string) {
 export function useInfiniteVisits(patientUuid: string) {
   const config = useConfig<ChartConfig>();
   const customRepresentation =
-    'custom:(uuid,location,encounters:(uuid,diagnoses:(uuid,display,rank,diagnosis,voided),form:(uuid,display),encounterDatetime,orders:full,obs:(uuid,concept:(uuid,display,conceptClass:(uuid,display)),display,groupMembers:(uuid,concept:(uuid,display),value:(uuid,display),display),value,obsDatetime),encounterType:(uuid,display,viewPrivilege,editPrivilege),encounterProviders:(uuid,display,encounterRole:(uuid,display),provider:(uuid,person:(uuid,display)))),visitType:(uuid,name,display),startDatetime,stopDatetime,patient,attributes:(attributeType:ref,display,uuid,value)';
+    'custom:(uuid,location,encounters:(uuid,diagnoses:(uuid,display,certainty,rank,diagnosis:(coded:(uuid,display)),voided),form:(uuid,display),encounterDatetime,orders:full,obs:(uuid,concept:(uuid,display,conceptClass:(uuid,display)),display,formFieldNamespace,formFieldPath,groupMembers:(uuid,concept:(uuid,display),value:(uuid,display),display),value,obsDatetime),encounterType:(uuid,display,viewPrivilege,editPrivilege),encounterProviders:(uuid,display,encounterRole:(uuid,display),provider:(uuid,person:(uuid,display)))),visitType:(uuid,name,display),startDatetime,stopDatetime,patient,attributes:(attributeType:ref,display,uuid,value)';
 
   const getKey = (pageIndex, previousPageData) => {
     const pageSize = config.numberOfVisitsToLoad;
@@ -69,7 +69,7 @@ export function useInfiniteVisits(patientUuid: string) {
 
 export function useVisits(patientUuid: string) {
   const customRepresentation =
-    'custom:(uuid,encounters:(uuid,diagnoses:(uuid,display,rank,diagnosis),form:(uuid,display),encounterDatetime,orders:full,obs:(uuid,concept:(uuid,display,conceptClass:(uuid,display)),display,groupMembers:(uuid,concept:(uuid,display),value:(uuid,display),display),value,obsDatetime),encounterType:(uuid,display,viewPrivilege,editPrivilege),encounterProviders:(uuid,display,encounterRole:(uuid,display),provider:(uuid,person:(uuid,display)))),visitType:(uuid,name,display),startDatetime,stopDatetime,patient,attributes:(attributeType:ref,display,uuid,value)';
+    'custom:(uuid,encounters:(uuid,diagnoses:(uuid,display,certainty,rank,diagnosis:(coded:(uuid,display)),voided),form:(uuid,display),encounterDatetime,orders:full,obs:(uuid,concept:(uuid,display,conceptClass:(uuid,display)),display,formFieldNamespace,formFieldPath,groupMembers:(uuid,concept:(uuid,display),value:(uuid,display),display),value,obsDatetime),encounterType:(uuid,display,viewPrivilege,editPrivilege),encounterProviders:(uuid,display,encounterRole:(uuid,display),provider:(uuid,person:(uuid,display)))),visitType:(uuid,name,display),startDatetime,stopDatetime,patient,attributes:(attributeType:ref,display,uuid,value)';
 
   const {
     data,
@@ -241,6 +241,8 @@ export interface Observation {
     };
   };
   display?: string;
+  formFieldNamespace?: string;
+  formFieldPath?: string;
   groupMembers: null | Array<{
     uuid: string;
     concept: {
@@ -325,7 +327,7 @@ export interface OrderItem {
 }
 
 export interface Diagnosis {
-  certainty: string;
+  certainty?: string;
   display: string;
   encounter: OpenmrsResource;
   links: Array<unknown>;
@@ -334,10 +336,11 @@ export interface Diagnosis {
   resourceVersion: string;
   uuid: string;
   voided: boolean;
-  diagnosis: {
-    coded: {
-      display: string;
-      links: Array<unknown>;
+  diagnosis?: {
+    coded?: {
+      uuid?: string;
+      display?: string;
+      links?: Array<unknown>;
     };
   };
 }

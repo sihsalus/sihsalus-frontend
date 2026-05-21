@@ -10,7 +10,7 @@ import {
 import { AddIcon, TrashCanIcon, Type } from '@openmrs/esm-framework';
 import cloneDeep from 'lodash-es/cloneDeep';
 import uniqueId from 'lodash-es/uniqueId';
-import React, { useMemo } from 'react';
+import { useMemo } from 'react';
 
 import type { ConfigValueDescriptor } from '../editable-value.component';
 
@@ -73,7 +73,7 @@ export function ArrayEditor({ element, valueArray, setValue }: ArrayEditorProps)
                 hasIconOnly
                 onClick={() => {
                   const newValueArray = cloneDeep(currentValueArray);
-                  const newValue = (element._elements?._type ?? Type.Object) == Type.Object ? {} : null;
+                  const newValue = (element._elements?._type ?? Type.Object) === Type.Object ? {} : null;
                   newValueArray.push(newValue);
                   setValue(newValueArray);
                 }}

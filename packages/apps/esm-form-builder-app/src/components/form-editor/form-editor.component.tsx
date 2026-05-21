@@ -141,7 +141,7 @@ const FormEditorContent: React.FC<TranslationFnProps> = ({ t }) => {
         localStorage.setItem('formJSON', JSON.stringify(clobdata));
       }
     }
-  }, [clobdata, form, formUuid, isLoadingClobdata, isLoadingFormOrSchema, launchRestoreDraftSchemaModal, status]);
+  }, [clobdata, form, formUuid, isLoadingClobdata, launchRestoreDraftSchemaModal, status]);
 
   useEffect(() => {
     setStringifiedSchema(JSON.stringify(schema, null, 2));

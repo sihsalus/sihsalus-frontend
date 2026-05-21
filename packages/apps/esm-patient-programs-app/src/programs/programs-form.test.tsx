@@ -8,7 +8,6 @@ import {
 import { type PatientWorkspace2DefinitionProps } from '@openmrs/esm-patient-common-lib';
 import { fireEvent, render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import React from 'react';
 import { mockCareProgramsResponse, mockEnrolledProgramsResponse, mockLocationsResponse, mockPatient } from 'test-utils';
 import { type ConfigObject, configSchema } from '../config-schema';
 import {

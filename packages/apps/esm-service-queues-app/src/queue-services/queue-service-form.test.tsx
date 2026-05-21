@@ -1,7 +1,6 @@
 import { showSnackbar, useLayoutType } from '@openmrs/esm-framework';
 import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import React from 'react';
 import { vi } from 'vitest';
 import { saveQueue } from './queue-service.resource';
 import QueueServiceForm from './queue-service-form.workspace';

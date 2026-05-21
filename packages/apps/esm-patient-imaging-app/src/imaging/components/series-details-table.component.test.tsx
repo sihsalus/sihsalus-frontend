@@ -1,12 +1,11 @@
 import { showModal, usePagination } from '@openmrs/esm-framework';
-import { act, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
-import React from 'react';
+import { act, fireEvent, render, screen, within } from '@testing-library/react';
 import * as api from '../../api';
 import SeriesDetailsTable from './series-details-table.component';
 
 vi.mock('react-i18next', async () => ({
   useTranslation: () => ({
-    t: (key: string, defaultValue: string) => defaultValue,
+    t: (_key: string, defaultValue: string) => defaultValue,
   }),
 }));
 
@@ -75,7 +74,9 @@ vi.mock('@carbon/react', async () => {
 
 vi.mock('@openmrs/esm-patient-common-lib', async () => ({
   PatientChartPagination: ({ onPageNumberChange }: any) => (
-    <button onClick={() => onPageNumberChange({ page: 2 })}>Next</button>
+    <button type="button" onClick={() => onPageNumberChange({ page: 2 })}>
+      Next
+    </button>
   ),
 
   EmptyState: ({ displayText, headerTitle }: any) => (

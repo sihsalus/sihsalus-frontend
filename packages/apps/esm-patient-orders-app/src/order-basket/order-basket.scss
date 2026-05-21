@@ -1,5 +1,5 @@
-@use '@carbon/layout';
-@use '@openmrs/esm-styleguide/src/vars' as *;
+@use "@carbon/layout";
+@use "@openmrs/esm-styleguide/src/vars" as *;
 
 .container {
   display: flex;
@@ -55,6 +55,17 @@
 
 /* Tablet */
 :global(.omrs-breakpoint-lt-desktop) {
+  .workspaceOuterContainer,
+  .workspaceMiddleContainer,
+  .workspaceInnerContainer {
+    width: 100vw;
+  }
+
+  .workspaceMiddleContainer {
+    inset-inline-end: 0;
+    height: calc(100% - layout.$spacing-10);
+  }
+
   .container {
     height: 100%;
   }

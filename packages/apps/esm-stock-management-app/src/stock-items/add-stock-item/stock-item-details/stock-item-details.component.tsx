@@ -3,7 +3,7 @@ import { Save } from '@carbon/react/icons';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { getCoreTranslation, restBaseUrl, showSnackbar, useLayoutType } from '@openmrs/esm-framework';
 import classNames from 'classnames';
-import React, { forwardRef, useMemo } from 'react';
+import { forwardRef, useMemo } from 'react';
 import { type SubmitHandler, useForm } from 'react-hook-form';
 import { useTranslation } from 'react-i18next';
 import { type StockItemDTO } from '../../../core/api/types/stockItem/StockItem';
@@ -13,13 +13,13 @@ import ControlledTextInput from '../../../core/components/carbon/controlled-text
 import { handleMutate } from '../../../utils';
 import styles from '../../add-stock-item/add-stock-item.scss';
 import { launchAddOrEditStockItemWorkspace } from '../../stock-item.utils';
+import { type StockItemCreatedEventDetail, stockItemCreatedEvent } from '../../stock-items.events';
 import { createStockItem, updateStockItem } from '../../stock-items.resource';
 import { createStockItemDetailsSchema, type StockItemFormData } from '../../validationSchema';
 import ConceptsSelector from '../concepts-selector/concepts-selector.component';
 import DispensingUnitSelector from '../dispensing-unit-selector/dispensing-unit-selector.component';
 import DrugSelector from '../drug-selector/drug-selector.component';
 import PreferredVendorSelector from '../preferred-vendor-selector/preferred-vendor-selector.component';
-import StockItemCategorySelector from '../stock-item-category-selector/stock-item-category-selector.component';
 import StockItemUnitsEdit from '../stock-item-units-edit/stock-item-units-edit.component';
 import { expirationOptions, StockItemType } from './stock-item-details.resource';
 
@@ -60,6 +60,11 @@ const StockItemDetails = forwardRef<never, StockItemDetailsProps>(
             // launch edit stock item workspace
             const item = response.data;
             item.isDrug = !!item.drugUuid;
+            globalThis.dispatchEvent(
+              new CustomEvent<StockItemCreatedEventDetail>(stockItemCreatedEvent, {
+                detail: { stockItem: item },
+              }),
+            );
             launchAddOrEditStockItemWorkspace(t, item);
           }
         }

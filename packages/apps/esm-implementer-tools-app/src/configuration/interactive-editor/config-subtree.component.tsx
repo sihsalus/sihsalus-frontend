@@ -1,6 +1,5 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { isEqual } from 'lodash-es';
-import React from 'react';
 
 import { implementerToolsStore } from '../../store';
 

@@ -1,4 +1,3 @@
-import React from 'react';
 import BillableServices from '../billable-services.component';
 import styles from './dashboard.scss';
 

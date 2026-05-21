@@ -1,6 +1,6 @@
-import { chromium, request } from '@playwright/test';
 import fs from 'node:fs';
 import path from 'node:path';
+import { chromium, request } from '@playwright/test';
 
 const spaBase = (process.env.E2E_BASE_URL ?? 'http://localhost:8090/openmrs/spa').replace(/\/$/, '');
 const username = process.env.E2E_USERNAME ?? 'admin';

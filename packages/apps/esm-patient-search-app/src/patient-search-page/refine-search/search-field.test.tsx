@@ -6,7 +6,6 @@ import { type AdvancedPatientSearchState, type SearchFieldConfig } from '../../t
 
 import { usePersonAttributeType } from './person-attributes.resource';
 import { SearchField } from './search-field.component';
-import styles from './search-field.scss';
 
 vi.mock('./person-attributes.resource', async () => ({
   usePersonAttributeType: vi.fn(),
@@ -188,30 +187,31 @@ describe('SearchField', () => {
     it('applies tablet styles when in tablet mode', () => {
       const { unmount } = render(<SearchField field={ageField} {...defaultProps} />);
       const defaultInput = screen.getByLabelText('Age');
-      const defaultContainer = defaultInput.closest('div');
-      const defaultClassName = defaultContainer?.getAttribute('class') ?? '';
+      const defaultNumberInput = defaultInput.closest('.cds--number');
+      const defaultClassName = defaultNumberInput?.getAttribute('class') ?? '';
       unmount();
 
       render(<SearchField field={ageField} {...defaultProps} isTablet={true} />);
       const tabletInput = screen.getByLabelText('Age');
-      const tabletContainer = tabletInput.closest('div');
-      const tabletClassName = tabletContainer?.getAttribute('class') ?? '';
+      const tabletNumberInput = tabletInput.closest('.cds--number');
+      const tabletClassName = tabletNumberInput?.getAttribute('class') ?? '';
 
       expect(tabletInput).toBeInTheDocument();
       expect(tabletClassName).not.toEqual(defaultClassName);
     });
 
     it('applies overlay styles when in overlay mode', () => {
-      const { unmount } = render(<SearchField field={ageField} {...defaultProps} />);
-      const defaultInput = screen.getByLabelText('Age');
-      const defaultContainer = defaultInput.closest('div');
-      const defaultClassName = defaultContainer?.getAttribute('class') ?? '';
+      const { container: defaultContainer, unmount } = render(<SearchField field={ageField} {...defaultProps} />);
+      const defaultRoot = defaultContainer.firstElementChild;
+      const defaultClassName = defaultRoot?.getAttribute('class') ?? '';
       unmount();
 
-      render(<SearchField field={ageField} {...defaultProps} inTabletOrOverlay={true} />);
+      const { container: overlayContainer } = render(
+        <SearchField field={ageField} {...defaultProps} inTabletOrOverlay={true} />,
+      );
       const overlayInput = screen.getByLabelText('Age');
-      const overlayContainer = overlayInput.closest('div');
-      const overlayClassName = overlayContainer?.getAttribute('class') ?? '';
+      const overlayRoot = overlayContainer.firstElementChild;
+      const overlayClassName = overlayRoot?.getAttribute('class') ?? '';
 
       expect(overlayInput).toBeInTheDocument();
       expect(overlayClassName).not.toEqual(defaultClassName);

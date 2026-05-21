@@ -1,6 +1,6 @@
-import { type CalendarDate, type DateValue } from '@internationalized/date';
+import { type DateValue } from '@internationalized/date';
 import classNames from 'classnames';
-import React, { forwardRef, useId, useMemo } from 'react';
+import { forwardRef, useId, useMemo } from 'react';
 import {
   Button,
   DateInput,

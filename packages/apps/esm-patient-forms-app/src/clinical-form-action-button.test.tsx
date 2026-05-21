@@ -10,7 +10,9 @@ void React;
 const mockActionMenuButton2 = vi.mocked(ActionMenuButton2);
 const mockUseStartVisitIfNeeded = useStartVisitIfNeeded as vi.Mock;
 
-mockActionMenuButton2.mockImplementation(({ label }: { label?: React.ReactNode }) => <button>{label}</button>);
+mockActionMenuButton2.mockImplementation(({ label }: { label?: React.ReactNode }) => (
+  <button type="button">{label}</button>
+));
 
 vi.mock('@openmrs/esm-patient-common-lib', async () => {
   const originalModule = await vi.importActual('@openmrs/esm-patient-common-lib');

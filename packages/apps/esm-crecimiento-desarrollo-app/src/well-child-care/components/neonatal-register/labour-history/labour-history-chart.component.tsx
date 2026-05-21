@@ -39,7 +39,7 @@ const LabourHistoryChart: React.FC<LabourHistoryChartProps> = ({ patientHistory 
 
   const chartData = useMemo(() => {
     return patientHistory
-      .filter((entry) => entry[selectedMetric.value] && !isNaN(Number(entry[selectedMetric.value])))
+      .filter((entry) => entry[selectedMetric.value] && !Number.isNaN(Number(entry[selectedMetric.value])))
       .slice(0, 10)
       .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime())
       .map((entry) => ({

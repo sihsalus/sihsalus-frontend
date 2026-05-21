@@ -25,7 +25,12 @@
       "order": 23,
       "meta": {
         "slot": "patient-chart-imaging-dashboard-slot",
+        "columns": 1,
+        "columnSpan": 1,
         "path": "Imaging",
+        "title": "Medical Imaging",
+        "icon": "omrs-icon-user-xray",
+        "layoutMode": "anchored",
         "fullWidth": false
       }
     },

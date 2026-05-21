@@ -1,9 +1,10 @@
-import { render, screen, waitFor } from '@testing-library/react';
+import { act, render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import React from 'react';
 import { type StockItemDTO } from '../core/api/types/stockItem/StockItem';
 import { handleMutate } from '../utils';
 import { launchAddOrEditStockItemWorkspace } from './stock-item.utils';
+import { stockItemCreatedEvent } from './stock-items.events';
 import StockItemsTableComponent from './stock-items-table.component';
 import { useStockItemsPages } from './stock-items-table.resource';
 
@@ -37,17 +38,6 @@ describe('StockItemsTableComponent', () => {
           reorderLevel: index * 10,
           reorderLevelUoMName: 'Units',
         })) as StockItemDTO[],
-      pagination: {
-        results: [],
-        totalPages: 3,
-        currentPage: 1,
-        paginated: true,
-        showNextButton: true,
-        showPreviousButton: false,
-        goTo: vi.fn(),
-        goToNext: vi.fn(),
-        goToPrevious: vi.fn(),
-      },
       error: null,
       totalCount: 25,
       currentPageSize: 10,
@@ -89,7 +79,6 @@ describe('StockItemsTableComponent', () => {
       ...mockUseStockItemsPages,
       isLoading: true,
       items: [],
-      pagination: undefined,
       totalCount: 0,
       currentPageSize: 0,
       currentPage: 0,
@@ -134,6 +123,59 @@ describe('StockItemsTableComponent', () => {
       },
       { timeout: 2000 },
     );
+  });
+
+  it('shows newly created stock item without applying a search filter', async () => {
+    const setCurrentPage = vi.fn();
+    const setSearchString = vi.fn();
+
+    mockUseStockItemsPages.mockReturnValue({
+      isLoading: false,
+      items: Array(10)
+        .fill(null)
+        .map((_, index) => ({
+          uuid: `item-${index}`,
+          commonName: `Test Item ${index}`,
+          drugUuid: index % 2 === 0 ? `drug-${index}` : null,
+          conceptName: `Concept ${index}`,
+          dispensingUnitName: `Unit ${index}`,
+          defaultStockOperationsUoMName: `UoM ${index}`,
+          reorderLevel: index * 10,
+          reorderLevelUoMName: 'Units',
+        })) as StockItemDTO[],
+      error: null,
+      totalCount: 10,
+      currentPageSize: 10,
+      setPageSize: vi.fn(),
+      pageSizes: [10, 20, 30],
+      currentPage: 1,
+      setCurrentPage,
+      isDrug: '',
+      setDrug: vi.fn(),
+      setSearchString,
+    });
+
+    render(<StockItemsTableComponent />);
+
+    act(() => {
+      globalThis.dispatchEvent(
+        new CustomEvent(stockItemCreatedEvent, {
+          detail: {
+            stockItem: {
+              uuid: 'new-item',
+              commonName: 'Paracetamol',
+              drugUuid: 'drug-new-item',
+              conceptName: 'Paracetamol 500 mg',
+            },
+          },
+        }),
+      );
+    });
+
+    expect(await screen.findByText('Paracetamol')).toBeInTheDocument();
+    expect(screen.getByRole('searchbox')).toHaveValue('');
+    expect(setSearchString).not.toHaveBeenCalledWith('Paracetamol');
+    expect(setCurrentPage).toHaveBeenCalledWith(1);
   });
 
   it('updates pagination when page or page size changes', async () => {

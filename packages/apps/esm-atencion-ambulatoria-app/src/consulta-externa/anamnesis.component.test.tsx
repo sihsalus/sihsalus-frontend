@@ -1,4 +1,5 @@
-import { launchWorkspace, useConfig } from '@openmrs/esm-framework';
+import { useConfig } from '@openmrs/esm-framework';
+import { launchPatientWorkspace } from '@openmrs/esm-patient-common-lib';
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { useAnamnesis } from '../hooks/useAnamnesis';
@@ -9,8 +10,17 @@ vi.mock('../hooks/useAnamnesis', () => ({
   useAnamnesis: vi.fn(),
 }));
 
+vi.mock('@openmrs/esm-patient-common-lib', async () => {
+  const actual = await vi.importActual('@openmrs/esm-patient-common-lib');
+
+  return {
+    ...actual,
+    launchPatientWorkspace: vi.fn(),
+  };
+});
+
 const mockUseAnamnesis = vi.mocked(useAnamnesis);
-const mockLaunchWorkspace = vi.mocked(launchWorkspace);
+const mockLaunchPatientWorkspace = vi.mocked(launchPatientWorkspace);
 const mockUseConfig = vi.mocked(useConfig);
 
 describe('Anamnesis', () => {
@@ -81,8 +91,9 @@ describe('Anamnesis', () => {
 
     await user.click(screen.getByRole('button', { name: 'Registrar Anamnesis' }));
 
-    expect(mockLaunchWorkspace).toHaveBeenCalledWith(patientFormEntryWorkspace, {
+    expect(mockLaunchPatientWorkspace).toHaveBeenCalledWith(patientFormEntryWorkspace, {
       formInfo: {
+        patientUuid: 'patient-uuid',
         formUuid: 'CE-ANAM-001-ANAMNESIS',
       },
     });

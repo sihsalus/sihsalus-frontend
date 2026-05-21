@@ -1271,19 +1271,16 @@ function DiagnosesDisplay({
     return <Loader />;
   }
 
-  if (!isSearching && searchResults?.length > 0) {
+  if (searchResults?.length > 0) {
     return (
       <ul className={styles.diagnosisList}>
         {searchResults.map((diagnosis, index) => {
           if (isDiagnosisNotSelected(diagnosis)) {
             return (
-              <li
-                className={styles.diagnosis}
-                key={index}
-                onClick={() => onAddDiagnosis(diagnosis, fieldName)}
-                role="menuitem"
-              >
-                {diagnosis.display}
+              <li className={styles.diagnosis} key={index}>
+                <button type="button" className={styles.diagnosis} onClick={() => onAddDiagnosis(diagnosis, fieldName)}>
+                  {diagnosis.display}
+                </button>
               </li>
             );
           }

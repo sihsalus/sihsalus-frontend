@@ -4,9 +4,9 @@ import { Controller, type UseFormReturn, useFieldArray } from 'react-hook-form';
 import { useTranslation } from 'react-i18next';
 
 import useGetSupply from '../../../hooks/use-get-supply';
-import { calculateStandarCostSupply, calculateUnitCostSupply } from '../../../utils/supply';
+import { calculateStandardCostSupply, calculateUnitCostSupply } from '../../../utils/supply';
 import NoContent from '../../ui/NoContent/NoContent';
-import { type CostStructureFormValues } from '../schema/costructure-schema';
+import { type CostStructureFormValues } from '../schema/coststructure-schema';
 
 import styles from './tabs.styles.scss';
 
@@ -34,14 +34,14 @@ export default function SupplyTab({ form }: Props) {
       setValue(`supplyCost.${index}.equivalence`, selectedSupply.equivalence);
       setValue(`supplyCost.${index}.name`, selectedSupply.name);
       setValue(`supplyCost.${index}.type`, selectedSupply.supplyType);
-      const adquisitionPrice = watch(`supplyCost.${index}.adquisitionPrice`);
-      setValue(`supplyCost.${index}.unitCost`, calculateUnitCostSupply(adquisitionPrice, selectedSupply.equivalence));
+      const acquisitionPrice = watch(`supplyCost.${index}.acquisitionPrice`);
+      setValue(`supplyCost.${index}.unitCost`, calculateUnitCostSupply(acquisitionPrice, selectedSupply.equivalence));
     }
   };
 
   const handleCreateRow = () => {
     append({
-      adquisitionPrice: 0,
+      acquisitionPrice: 0,
       equivalence: 0,
       quantityUsed: 0,
       supplyId: 0,
@@ -93,7 +93,7 @@ export default function SupplyTab({ form }: Props) {
                           control={control}
                           render={({ field }) => (
                             <Select
-                              id=""
+                              id={`supplyId-${index}`}
                               key={row.id}
                               {...field}
                               labelText=""
@@ -157,12 +157,12 @@ export default function SupplyTab({ form }: Props) {
                       </td>
                       <td>
                         <Controller
-                          name={`supplyCost.${index}.adquisitionPrice`}
+                          name={`supplyCost.${index}.acquisitionPrice`}
                           control={control}
                           render={({ field }) => (
                             <NumberInput
                               hideSteppers
-                              id={`adquisitionPrice-${index}`}
+                              id={`acquisitionPrice-${index}`}
                               value={field.value}
                               {...field}
                               onChange={(e) => {
@@ -250,7 +250,7 @@ export default function SupplyTab({ form }: Props) {
                         />
                       </td>
                       <td>{sup.unitCost}</td>
-                      <td>{calculateStandarCostSupply(sup.unitCost, sup.quantityUsed, sup.timeMinutes).toFixed(2)}</td>
+                      <td>{calculateStandardCostSupply(sup.unitCost, sup.quantityUsed, sup.timeMinutes).toFixed(2)}</td>
                     </tr>
                   );
                 })

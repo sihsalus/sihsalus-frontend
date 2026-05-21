@@ -137,7 +137,7 @@ const ListDetailsTable: React.FC<ListDetailsTableProps> = ({
         startDate: patient.startDate,
         mobile: patient.mobile || '--',
       })) ?? [],
-    [columns, filteredPatients],
+    [columns, filteredPatients, linkClassName],
   );
 
   const handleRemovePatientFromList = useCallback(async () => {

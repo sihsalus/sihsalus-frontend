@@ -1,25 +1,37 @@
-import {
-  ExtensionSlot,
-  launchWorkspaceGroup2,
-  setCurrentVisit,
-  setLeftNav,
-  unsetLeftNav,
-  usePatient,
-  useWorkspaces,
-  WorkspaceContainer,
-} from '@openmrs/esm-framework';
+import { ExtensionSlot, setCurrentVisit, setLeftNav, unsetLeftNav, usePatient } from '@openmrs/esm-framework';
 import { getPatientChartStore, useVisitOrOfflineVisit } from '@openmrs/esm-patient-common-lib';
+import { ComponentContext } from '@openmrs/esm-react-utils';
+import { launchWorkspaceGroup2, useWorkspaces, WorkspaceContainer } from '@openmrs/esm-styleguide';
 import classNames from 'classnames';
 import React, { useEffect, useMemo, useState } from 'react';
 import { useParams } from 'react-router-dom';
 
-import { spaBasePath } from '../constants';
+import { moduleName, spaBasePath } from '../constants';
 import Loader from '../loader/loader.component';
 import ChartReview from '../patient-chart/chart-review/chart-review.component';
 import SideMenuPanel from '../side-nav/side-menu.component';
 
 import { type LayoutMode } from './chart-review/dashboard-view.component';
 import styles from './patient-chart.scss';
+
+type WorkspaceGroupLauncher = typeof launchWorkspaceGroup2;
+
+function launchPatientChartWorkspaceGroup(
+  groupName: Parameters<WorkspaceGroupLauncher>[0],
+  groupProps: Parameters<WorkspaceGroupLauncher>[1],
+) {
+  const shellLauncher = (
+    globalThis as typeof globalThis & {
+      _openmrs_esm_framework?: {
+        launchWorkspaceGroup2?: WorkspaceGroupLauncher;
+      };
+    }
+  )._openmrs_esm_framework?.launchWorkspaceGroup2;
+
+  return typeof shellLauncher === 'function'
+    ? shellLauncher(groupName, groupProps)
+    : launchWorkspaceGroup2(groupName, groupProps);
+}
 
 const PatientChart: React.FC = () => {
   const { patientUuid, view: encodedView } = useParams();
@@ -36,7 +48,7 @@ const PatientChart: React.FC = () => {
         ? {
             patient: patient ?? null,
             patientUuid,
-            visitContext: currentVisit,
+            visitContext: currentVisit ?? null,
             mutateVisitContext,
           }
         : null,
@@ -56,7 +68,7 @@ const PatientChart: React.FC = () => {
     return () => {
       setCurrentVisit(null, null);
     };
-  }, [patientUuid]);
+  }, []);
 
   useEffect(() => {
     getPatientChartStore().setState({
@@ -89,7 +101,7 @@ const PatientChart: React.FC = () => {
       return;
     }
 
-    void launchWorkspaceGroup2('patient-chart', patientChartGroupProps);
+    void launchPatientChartWorkspaceGroup('patient-chart', patientChartGroupProps);
   }, [hasVisibleLegacyWorkspace, patientChartGroupProps, patientUuid]);
 
   return (
@@ -124,7 +136,9 @@ const PatientChart: React.FC = () => {
           )}
         </div>
       </main>
-      <WorkspaceContainer showSiderailAndBottomNav={false} contextKey={`patient/${patientUuid}`} />
+      <ComponentContext.Provider value={{ moduleName, featureName: 'patient-chart' }}>
+        <WorkspaceContainer showSiderailAndBottomNav={false} contextKey={patientUuid} />
+      </ComponentContext.Provider>
     </>
   );
 };

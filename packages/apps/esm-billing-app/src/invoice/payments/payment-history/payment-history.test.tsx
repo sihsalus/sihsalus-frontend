@@ -1,6 +1,5 @@
 import { getDefaultsFromConfigSchema, useConfig } from '@openmrs/esm-framework';
 import { render, screen } from '@testing-library/react';
-import React from 'react';
 import { type BillingConfig, configSchema } from '../../../config-schema';
 import { type MappedBill } from '../../../types';
 import PaymentHistory from './payment-history.component';

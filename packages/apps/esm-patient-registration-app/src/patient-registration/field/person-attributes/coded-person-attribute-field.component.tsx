@@ -2,7 +2,7 @@ import { Layer, Select, SelectItem } from '@carbon/react';
 import { reportError } from '@openmrs/esm-framework';
 import classNames from 'classnames';
 import { Field } from 'formik';
-import React, { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { moduleName } from '../../../constants';
 import { type PersonAttributeTypeResponse } from '../../patient-registration.types';
@@ -61,7 +61,7 @@ export function CodedPersonAttributeField({
         );
         setError(true);
       }
-      if (conceptAnswers?.length == 0) {
+      if (conceptAnswers?.length === 0) {
         reportError(
           t(
             'codedPersonAttributeAnswerSetEmpty',

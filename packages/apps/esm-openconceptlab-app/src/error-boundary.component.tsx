@@ -1,5 +1,5 @@
 import { ErrorState } from '@openmrs/esm-framework';
-import React, { Component, type ReactNode } from 'react';
+import { Component, type ReactNode } from 'react';
 
 interface Props {
   children: ReactNode;

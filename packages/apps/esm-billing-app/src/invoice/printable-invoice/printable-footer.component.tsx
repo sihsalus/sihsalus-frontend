@@ -1,4 +1,3 @@
-import React from 'react';
 import { useDefaultFacility } from '../../billing.resource';
 import styles from './printable-footer.scss';
 

@@ -41,15 +41,14 @@ const renderHeaderLabel = (header: React.ReactNode): React.ReactNode =>
 
 interface PartographyProps {
   patientUuid: string;
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  filter?: (encounter: Record<string, any>) => boolean;
+  filter?: (encounter: Record<string, unknown>) => boolean;
 }
 
 const Partograph: React.FC<PartographyProps> = ({ patientUuid }) => {
   const { t } = useTranslation();
   const layout = useLayoutType();
   const [chartView, setChartView] = React.useState<boolean>();
-  const { encounters = [], isLoading, isValidating, error, mutate } = usePartograph(patientUuid);
+  const { encounters = [], isLoading, isValidating, error } = usePartograph(patientUuid);
   const headerTitle = t('partograph', 'Partograph');
   const displayText = t('partographData', 'Vital Components');
   const headers = [
@@ -208,6 +207,7 @@ const Partograph: React.FC<PartographyProps> = ({ patientUuid }) => {
                             <TableRow>
                               {headers.map((header) => (
                                 <TableHeader
+                                  key={header.key}
                                   {...getHeaderProps({
                                     header,
                                     isSortable: header.isSortable,

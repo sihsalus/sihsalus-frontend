@@ -12,7 +12,7 @@ interface CancerFollowupProps {
  * Widget de seguimiento de prevención del cáncer según guía MINSA.
  * Muestra referencias pendientes, citas de seguimiento y hallazgos.
  */
-const CancerFollowup: React.FC<CancerFollowupProps> = ({ patientUuid }) => {
+const CancerFollowup: React.FC<CancerFollowupProps> = ({ patientUuid: _patientUuid }) => {
   const { t } = useTranslation();
 
   // TODO: Connect to SWR hook when concept UUIDs are configured

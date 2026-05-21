@@ -6,7 +6,7 @@ export function usePaginationInfo(pageSize: number, totalItems: number, pageNumb
 
   const pageSizes = useMemo(() => {
     let numberOfPages = Math.ceil(totalItems / pageSize);
-    if (isNaN(numberOfPages)) {
+    if (Number.isNaN(numberOfPages)) {
       numberOfPages = 0;
     }
 

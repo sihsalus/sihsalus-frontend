@@ -1,6 +1,5 @@
 import { getConfig, useVisit } from '@openmrs/esm-framework';
 import { render, screen } from '@testing-library/react';
-import React from 'react';
 import { waitForLoadingToFinish } from 'test-utils';
 
 import CurrentVisitSummary from './current-visit-summary.component';

@@ -8,7 +8,6 @@ import {
   getOrthancConfigurations,
   getProcedureSteps,
   getRequestsByPatient,
-  previewInstance,
 } from '../commands/imaging-operations';
 import type { CreateRequestProcedure, CreateRequestProcedureStep, RequestProcedure } from '../commands/types';
 import { test } from '../core';

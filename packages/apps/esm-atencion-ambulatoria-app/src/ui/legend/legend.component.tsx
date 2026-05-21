@@ -1,6 +1,6 @@
 import { InlineLoading, Tag, type TagProps, Tile } from '@carbon/react';
 import { ErrorState, useConfig } from '@openmrs/esm-framework';
-import React, { useMemo } from 'react';
+import React, { useCallback, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import { type ConfigObject } from '../../config-schema';
@@ -22,7 +22,7 @@ const LegendTile: React.FC<LegendTileProps> = ({ conceptSetUUID: _conceptSetUUID
   const { t } = useTranslation();
   const config = useConfig<ConfigObject>();
   const { schemasConceptSet, isLoading, error } = useSchemasConceptSet(config.legend);
-  const resolveTagType = (value?: string): NonNullable<TagProps<'div'>['type']> => {
+  const resolveTagType = useCallback((value?: string): NonNullable<TagProps<'div'>['type']> => {
     switch (value) {
       case 'blue':
       case 'cyan':
@@ -40,7 +40,7 @@ const LegendTile: React.FC<LegendTileProps> = ({ conceptSetUUID: _conceptSetUUID
       default:
         return 'gray';
     }
-  };
+  }, []);
 
   const legendItems: LegendItem[] = useMemo(() => {
     if (!schemasConceptSet) {
@@ -56,7 +56,7 @@ const LegendTile: React.FC<LegendTileProps> = ({ conceptSetUUID: _conceptSetUUID
         label: t(status, concept.display || 'Unknown'),
       },
     ];
-  }, [schemasConceptSet, t]);
+  }, [resolveTagType, schemasConceptSet, t]);
 
   if (error) {
     return (

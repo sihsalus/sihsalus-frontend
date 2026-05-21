@@ -3,6 +3,10 @@ declare module '*.scss' {
   export default styles;
 }
 
+declare module '*.svg' {
+  const src: string;
+  export default src;
+}
 
 declare namespace NodeJS {
   interface Require {

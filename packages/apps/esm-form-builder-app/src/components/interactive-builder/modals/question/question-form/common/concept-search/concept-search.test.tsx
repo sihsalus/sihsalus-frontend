@@ -83,9 +83,7 @@ describe('Concept search component', () => {
     await user.click(searchInput);
     await user.type(searchInput, 'Concept 1');
 
-    const conceptMenuItem = await screen.findByRole('menuitem', {
-      name: /concept 1/i,
-    });
+    const conceptMenuItem = await screen.findByText(/concept 1/i);
     expect(conceptMenuItem).toBeInTheDocument();
     expect(searchInput).toHaveDisplayValue(/concept 1/i);
   });

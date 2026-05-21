@@ -11,7 +11,17 @@ interface StoreEntity {
   active: boolean;
 }
 
-const availableStores: Record<string, StoreEntity> = {};
+const availableStoresKey = Symbol.for('openmrs.esm-state.availableStores');
+const globalScope = globalThis as typeof globalThis & {
+  [availableStoresKey]?: Record<string, StoreEntity>;
+};
+let availableStores: Record<string, StoreEntity>;
+if (globalScope[availableStoresKey]) {
+  availableStores = globalScope[availableStoresKey];
+} else {
+  availableStores = {};
+  globalScope[availableStoresKey] = availableStores;
+}
 
 // spaEnv isn't available immediately. Wait a bit before making stores available
 // on window in development mode.

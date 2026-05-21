@@ -1,6 +1,5 @@
 import { getPatientName } from '@openmrs/esm-framework';
 import { render } from '@testing-library/react';
-import React from 'react';
 
 import PatientBanner from './patient-banner.component';
 

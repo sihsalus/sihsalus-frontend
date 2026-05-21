@@ -10,7 +10,7 @@ void React;
 const mockActionMenuButton = vi.mocked(ActionMenuButton);
 const mockUseLaunchWorkspaceRequiringVisit = useLaunchWorkspaceRequiringVisit as vi.Mock;
 
-mockActionMenuButton.mockImplementation(({ label }) => <button>{label}</button>);
+mockActionMenuButton.mockImplementation(({ label }) => <button type="button">{label}</button>);
 
 vi.mock('@openmrs/esm-patient-common-lib', async () => {
   const originalModule = await vi.importActual('@openmrs/esm-patient-common-lib');

@@ -8,7 +8,6 @@ import {
   useSession,
 } from '@openmrs/esm-framework';
 import { uniqBy } from 'lodash-es';
-import { useMemo } from 'react';
 import useSWR from 'swr';
 import { type ResourceFilterCriteria, type ResourceRepresentation, toQueryParams } from '../core/api/api';
 import { type Concept } from '../core/api/types/concept/Concept';

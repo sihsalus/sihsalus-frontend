@@ -89,12 +89,7 @@ export const SearchConcept: React.FC<SearchConceptProps> = ({ concept, searchTex
             ) : (
               <ul className={styles.conceptList}>
                 {searchResults?.map((concept, index) => (
-                  <li
-                    role="menuitem"
-                    className={styles.concept}
-                    key={index}
-                    onClick={() => handleConceptClick(concept)}
-                  >
+                  <li className={styles.concept} key={index} onClick={() => handleConceptClick(concept)}>
                     {concept.name}
                   </li>
                 ))}

@@ -1,5 +1,4 @@
 import { Tag, type TagProps } from '@carbon/react';
-import React from 'react';
 
 import { type ConfigConcepts, type Encounter } from '../types';
 import { findObs, getObsFromEncounter } from '../utils/helpers';
@@ -34,7 +33,7 @@ export const renderTag = (
   const columnStatus = getObsFromEncounter({ encounter: encounter, obsConcept: concept, config: config });
   const columnStatusObs = findObs(encounter, concept);
 
-  if (columnStatus == '--') {
+  if (columnStatus === '--') {
     return '--';
   }
 

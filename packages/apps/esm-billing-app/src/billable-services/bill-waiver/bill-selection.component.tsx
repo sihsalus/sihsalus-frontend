@@ -49,7 +49,7 @@ const PatientBillsSelections: React.FC<{ bills: MappedBill; setPatientUuid: (pat
         </StructuredListHead>
         <StructuredListBody>
           {bills?.lineItems.map((lineItem) => (
-            <StructuredListRow>
+            <StructuredListRow key={lineItem.uuid}>
               <StructuredListCell>{lineItem.item === '' ? lineItem.billableService : lineItem.item}</StructuredListCell>
               <StructuredListCell>{lineItem.quantity}</StructuredListCell>
               <StructuredListCell>{convertToCurrency(lineItem.price, defaultCurrency)}</StructuredListCell>

@@ -1,6 +1,6 @@
 import { InlineLoading } from '@carbon/react';
 import { ErrorState, getCoreTranslation } from '@openmrs/esm-framework';
-import React, { useMemo } from 'react';
+import { useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useBills } from '../billing.resource';
 import Card from './card.component';

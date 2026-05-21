@@ -22,7 +22,6 @@ import {
 } from '@openmrs/esm-patient-common-lib';
 import classNames from 'classnames';
 import debounce from 'lodash-es/debounce';
-import first from 'lodash-es/first';
 import React, { useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
@@ -174,6 +173,7 @@ const FormView: React.FC<FormViewProps> = ({
                     <TableRow>
                       {headers.map((header) => (
                         <TableHeader
+                          key={header.key}
                           className={classNames(styles.heading, styles.text02)}
                           {...getHeaderProps({
                             header,
@@ -187,7 +187,7 @@ const FormView: React.FC<FormViewProps> = ({
                     </TableRow>
                   </TableHead>
                   <TableBody>
-                    {rows.map((row, index) => {
+                    {rows.map((row, _index) => {
                       const formInfo = results.find(
                         (result) =>
                           result.form.display === row.cells[0].value || result.form.name === row.cells[0].value,

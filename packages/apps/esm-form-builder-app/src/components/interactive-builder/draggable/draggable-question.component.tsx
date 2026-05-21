@@ -38,11 +38,11 @@ const DraggableQuestion: React.FC<DraggableQuestionProps> = ({
   const { t } = useTranslation();
   const defaultEnterDelayInMs = 300;
   const [isCollapsed, setIsCollapsed] = useState(true);
-  const toggleCollapse = () => {
+  const toggleCollapse = useCallback(() => {
     if (question.questions) {
-      setIsCollapsed(!isCollapsed);
+      setIsCollapsed((collapsed) => !collapsed);
     }
-  };
+  }, [question.questions]);
 
   const launchEditQuestionModal = useCallback(() => {
     const dispose = showModal('question-modal', {

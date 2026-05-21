@@ -16,13 +16,14 @@ import React, { useCallback, useContext, useMemo, useState } from 'react';
 import { v4 as uuidv4 } from 'uuid';
 
 import { type PatientSearchConfig } from '../../../config-schema';
-import { PatientSearchContext } from '../../../patient-search-context';
+import { PatientSearchContext, usePatientSearchContext2 } from '../../../patient-search-context';
 import { type FHIRPatientType, type SearchedPatient } from '../../../types';
 
 import styles from './patient-banner.scss';
 
 interface ClickablePatientContainerProps {
   children: React.ReactNode;
+  patient: fhir.Patient;
   patientUuid: string;
 }
 
@@ -52,6 +53,7 @@ const PatientBanner: React.FC<PatientBannerProps> = ({ patient, patientUuid, hid
   const isTablet = layout === 'tablet';
   const { currentVisit } = useVisit(patientUuid);
   const { nonNavigationSelectPatientAction } = useContext(PatientSearchContext);
+  const patientSearchContext2 = usePatientSearchContext2();
   const patientName = patient.person.personName.display;
   const isDeceased = !!patient.person.deathDate;
 
@@ -110,6 +112,25 @@ const PatientBanner: React.FC<PatientBannerProps> = ({ patient, patientUuid, hid
     };
   }, [patient]);
 
+  const handleSelectPatient = useCallback(
+    (selectedPatientUuid: string) => {
+      if (patientSearchContext2?.onPatientSelected) {
+        patientSearchContext2.onPatientSelected(
+          selectedPatientUuid,
+          fhirMappedPatient,
+          patientSearchContext2.launchChildWorkspace,
+          patientSearchContext2.closeWorkspace,
+        );
+        return;
+      }
+
+      nonNavigationSelectPatientAction?.(selectedPatientUuid);
+    },
+    [fhirMappedPatient, nonNavigationSelectPatientAction, patientSearchContext2],
+  );
+  const selectPatientAction =
+    nonNavigationSelectPatientAction || patientSearchContext2?.onPatientSelected ? handleSelectPatient : undefined;
+
   return (
     <>
       <div
@@ -119,7 +140,7 @@ const PatientBanner: React.FC<PatientBannerProps> = ({ patient, patientUuid, hid
         })}
         role="banner"
       >
-        <ClickablePatientContainer patientUuid={patientUuid}>
+        <ClickablePatientContainer patient={fhirMappedPatient} patientUuid={patientUuid}>
           <div className={styles.patientAvatar} role="img">
             <PatientPhoto patientUuid={patientUuid} patientName={patientName} />
           </div>
@@ -136,7 +157,7 @@ const PatientBanner: React.FC<PatientBannerProps> = ({ patient, patientUuid, hid
               <PatientBannerActionsMenu
                 actionsSlotName="patient-search-actions-slot"
                 additionalActionsSlotState={{
-                  selectPatientAction: nonNavigationSelectPatientAction,
+                  selectPatientAction,
                   launchPatientChart: true,
                 }}
                 patient={fhirMappedPatient}
@@ -170,20 +191,30 @@ const PatientBanner: React.FC<PatientBannerProps> = ({ patient, patientUuid, hid
   );
 };
 
-const ClickablePatientContainer = ({ patientUuid, children }: ClickablePatientContainerProps) => {
+const ClickablePatientContainer = ({ patient, patientUuid, children }: ClickablePatientContainerProps) => {
   const { nonNavigationSelectPatientAction, patientClickSideEffect } = useContext(PatientSearchContext);
+  const patientSearchContext2 = usePatientSearchContext2();
   const config = useConfig<PatientSearchConfig>();
 
   const handleClick = useCallback(() => {
-    nonNavigationSelectPatientAction(patientUuid);
+    if (patientSearchContext2?.onPatientSelected) {
+      patientSearchContext2.onPatientSelected(
+        patientUuid,
+        patient,
+        patientSearchContext2.launchChildWorkspace,
+        patientSearchContext2.closeWorkspace,
+      );
+    } else {
+      nonNavigationSelectPatientAction?.(patientUuid);
+    }
     patientClickSideEffect?.(patientUuid);
-  }, [nonNavigationSelectPatientAction, patientClickSideEffect, patientUuid]);
+  }, [nonNavigationSelectPatientAction, patient, patientClickSideEffect, patientSearchContext2, patientUuid]);
 
   const handleBeforeNavigate = useCallback(() => {
     patientClickSideEffect?.(patientUuid);
   }, [patientClickSideEffect, patientUuid]);
 
-  if (nonNavigationSelectPatientAction) {
+  if (nonNavigationSelectPatientAction || patientSearchContext2?.onPatientSelected) {
     return (
       <button
         type="button"

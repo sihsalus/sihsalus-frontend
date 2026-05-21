@@ -15,7 +15,7 @@ interface FpCounselingProps {
  * Widget de consejería en planificación familiar según NTS 124-MINSA.
  * Muestra sesiones de consejería, temas cubiertos y próxima sesión.
  */
-const FpCounseling: React.FC<FpCounselingProps> = ({ patientUuid }) => {
+const FpCounseling: React.FC<FpCounselingProps> = ({ patientUuid: _patientUuid }) => {
   const { t } = useTranslation();
   const config = useConfig<ConfigObject>();
 

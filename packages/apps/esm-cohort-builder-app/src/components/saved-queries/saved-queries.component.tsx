@@ -1,6 +1,6 @@
 import { DataTable, Pagination, Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@carbon/react';
 import { showSnackbar } from '@openmrs/esm-framework';
-import React, { useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import mainStyles from '../../cohort-builder.scss';
 import type { DefinitionDataRow, PaginationData } from '../../types';
@@ -19,10 +19,10 @@ const SavedQueries: React.FC<SavedQueriesProps> = ({ onViewQuery }) => {
   const [pageSize, setPageSize] = useState(10);
   const [queries, setQueries] = useState<DefinitionDataRow[]>([]);
 
-  const getTableData = async () => {
+  const getTableData = useCallback(async () => {
     const queries = await getQueries();
     setQueries(queries);
-  };
+  }, []);
 
   const deleteQuery = async (queryId: string) => {
     try {
@@ -75,7 +75,9 @@ const SavedQueries: React.FC<SavedQueriesProps> = ({ onViewQuery }) => {
             <TableHead>
               <TableRow>
                 {headers.map((header) => (
-                  <TableHeader {...getHeaderProps({ header })}>{header.header}</TableHeader>
+                  <TableHeader key={header.key} {...getHeaderProps({ header })}>
+                    {header.header}
+                  </TableHeader>
                 ))}
                 <TableHeader className={mainStyles.optionHeader}></TableHeader>
               </TableRow>

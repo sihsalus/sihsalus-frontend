@@ -47,7 +47,7 @@ const PatientSearchComponent: React.FC<PatientSearchComponentProps> = ({
       return <ErrorState />;
     }
 
-    if (!isLoading && (!results || results.length === 0)) {
+    if (!results || results.length === 0) {
       return <EmptyState />;
     }
 

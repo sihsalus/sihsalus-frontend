@@ -7,6 +7,7 @@ import { useParams, useSearchParams } from 'react-router-dom';
 
 import CompactPatientSearchComponent from '../compact-patient-search/compact-patient-search.component';
 import PatientSearchOverlay from '../patient-search-overlay/patient-search-overlay.component';
+import { getPatientSearchReturnUrl } from '../search-return-url';
 
 import styles from './patient-search-icon.scss';
 
@@ -36,7 +37,7 @@ const PatientSearchLaunch: React.FC<PatientSearchLaunchProps> = () => {
   const closePatientSearch = useCallback(() => {
     if (isSearchPage) {
       navigate({
-        to: globalThis.sessionStorage.getItem('searchReturnUrl') ?? `${globalThis.getOpenmrsSpaBase()}/`,
+        to: getPatientSearchReturnUrl(),
       });
       globalThis.sessionStorage.removeItem('searchReturnUrl');
     }

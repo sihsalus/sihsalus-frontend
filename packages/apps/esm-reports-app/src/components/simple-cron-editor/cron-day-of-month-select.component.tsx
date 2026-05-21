@@ -39,7 +39,7 @@ const CronDayOfMonthSelect: React.FC<CronDayOfMonthSelectProps> = ({ value, onCh
 
   useEffect(() => {
     validate();
-  }, [validate, valueInternal]);
+  }, [validate]);
 
   const translatedOptions = useMemo(
     () =>

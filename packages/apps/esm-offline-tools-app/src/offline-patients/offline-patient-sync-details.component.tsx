@@ -28,7 +28,7 @@ const OfflinePatientSyncDetails: React.FC = () => {
               {t('offlinePatientSyncDetailsDownloadedHeader', 'Downloaded to this device')}
             </h2>
             {succeededHandlers.map((id) => (
-              <Layer>
+              <Layer key={id}>
                 <Tile className={styles.syncedTile}>
                   <span className={styles.bodyShort01}>
                     {handlers.find((handler) => handler.id === id)?.displayName}
@@ -45,7 +45,7 @@ const OfflinePatientSyncDetails: React.FC = () => {
               {t('offlinePatientSyncDetailsFailedHeader', 'There was an error downloading the following items')}
             </h2>
             {erroredHandlers.map((id) => (
-              <Layer>
+              <Layer key={id}>
                 <Tile className={styles.failedTile}>
                   <span className={styles.bodyShort01}>
                     {handlers.find((handler) => handler.id === id)?.displayName}

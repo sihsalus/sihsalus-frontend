@@ -66,7 +66,6 @@ function PopupHandler() {
     backendError,
     missingDependencies.length,
     versionMismatches.length,
-    dependencyExamples,
     dependencyExamplesDescription,
   ]);
 

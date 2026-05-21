@@ -49,6 +49,7 @@ export const OTable: React.FC<TableProps> = ({
                 <TableExpandHeader enableToggle={false} />
                 {headers.map((header) => (
                   <TableHeader
+                    key={header.key}
                     className={`${styles.productiveHeading01} ${styles.text02}`}
                     {...getHeaderProps({
                       header,

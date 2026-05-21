@@ -4,7 +4,6 @@ import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import dayjs from 'dayjs';
 import utc from 'dayjs/plugin/utc';
-import React from 'react';
 import { getByTextWithMarkup, mockFhirConditionsResponse, mockPatient, searchedCondition } from 'test-utils';
 import { createCondition, useConditionsSearch } from './conditions.resource';
 import ConditionsForm, { type ConditionFormProps } from './conditions-form.workspace';
@@ -155,7 +154,7 @@ describe('Conditions form', () => {
     expect(cancelButton).toBeEnabled();
 
     await user.type(conditionSearchInput, 'Headache');
-    await user.click(screen.getByRole('menuitem', { name: /headache/i }));
+    await user.click(screen.getByRole('button', { name: /headache/i }));
     await user.click(activeStatusInput);
     await user.click(onsetDateInput);
     await user.paste('2020-05-05');
@@ -199,7 +198,7 @@ describe('Conditions form', () => {
 
     mockCreateCondition.mockRejectedValue(error);
     await user.type(conditionSearchInput, 'Headache');
-    await user.click(screen.getByRole('menuitem', { name: /Headache/i }));
+    await user.click(screen.getByRole('button', { name: /Headache/i }));
     await user.click(onsetDateInput);
     await user.paste('2020-05-05');
     await user.click(activeStatusInput);
@@ -230,7 +229,7 @@ describe('Conditions form', () => {
     expect(screen.getByText(/a clinical status is required/i)).toBeInTheDocument();
 
     await user.type(conditionSearchInput, 'Headache');
-    await user.click(screen.getByRole('menuitem', { name: /headache/i }));
+    await user.click(screen.getByRole('button', { name: /headache/i }));
     fireEvent.submit(form);
 
     await waitFor(() => expect(screen.getByText(/a clinical status is required/i)).toBeInTheDocument());

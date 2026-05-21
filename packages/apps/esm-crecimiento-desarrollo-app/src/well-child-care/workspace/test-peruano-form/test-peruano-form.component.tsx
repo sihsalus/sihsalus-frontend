@@ -379,7 +379,7 @@ const TestPeruanoForm: React.FC<DefaultPatientWorkspaceProps> = ({ closeWorkspac
   const [showErrorNotification, setShowErrorNotification] = useState(false);
   const [selectedItems, setSelectedItems] = useState<Record<string, boolean>>({});
 
-  const { control, handleSubmit, watch, setValue } = useForm<TestPeruanoFormType>({
+  const { handleSubmit, watch, setValue } = useForm<TestPeruanoFormType>({
     mode: 'all',
     resolver: zodResolver(TestPeruanoSchema),
     defaultValues: {
@@ -449,16 +449,17 @@ const TestPeruanoForm: React.FC<DefaultPatientWorkspaceProps> = ({ closeWorkspac
     [primaryLanguage, culturalContext],
   );
 
-  const getClassification = (
-    percentile: number,
-  ): 'superior' | 'normal_alto' | 'normal' | 'normal_bajo' | 'limite' | 'retraso' => {
-    if (percentile >= 95) return 'superior';
-    if (percentile >= 85) return 'normal_alto';
-    if (percentile >= 75) return 'normal';
-    if (percentile >= 25) return 'normal_bajo';
-    if (percentile >= 15) return 'limite';
-    return 'retraso';
-  };
+  const getClassification = useCallback(
+    (percentile: number): 'superior' | 'normal_alto' | 'normal' | 'normal_bajo' | 'limite' | 'retraso' => {
+      if (percentile >= 95) return 'superior';
+      if (percentile >= 85) return 'normal_alto';
+      if (percentile >= 75) return 'normal';
+      if (percentile >= 25) return 'normal_bajo';
+      if (percentile >= 15) return 'limite';
+      return 'retraso';
+    },
+    [],
+  );
 
   // Calcular resultados con ajustes culturales
   const results: TestPeruanoResults = useMemo(() => {
@@ -524,7 +525,7 @@ const TestPeruanoForm: React.FC<DefaultPatientWorkspaceProps> = ({ closeWorkspac
         recommendationDefault,
       },
     };
-  }, [appropriateItems, selectedItems, calculatePercentile]);
+  }, [appropriateItems, selectedItems, calculatePercentile, getClassification]);
 
   const handleItemChange = (itemId: string, checked: boolean) => {
     setSelectedItems((prev) => ({

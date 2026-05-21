@@ -15,7 +15,7 @@ import {
 import { zodResolver } from '@hookform/resolvers/zod';
 import { OpenmrsDatePicker, ResponsiveWrapper, showSnackbar, useLayoutType } from '@openmrs/esm-framework';
 import { type amPm, type DefaultPatientWorkspaceProps } from '@openmrs/esm-patient-common-lib';
-import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useMemo } from 'react';
 import { Controller, FormProvider, useForm } from 'react-hook-form';
 import { useTranslation } from 'react-i18next';
 import { z } from 'zod';

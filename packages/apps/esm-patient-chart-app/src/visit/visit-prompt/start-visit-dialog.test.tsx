@@ -1,9 +1,10 @@
 import { launchPatientWorkspace } from '@openmrs/esm-patient-common-lib';
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import React from 'react';
 
 import StartVisitDialog from './start-visit-dialog.component';
+
+const mockNavigate = vi.hoisted(() => vi.fn());
 
 const defaultProps = {
   patientUuid: 'some-uuid',
@@ -17,6 +18,15 @@ vi.mock('@openmrs/esm-patient-common-lib', async () => {
   return {
     ...originalModule,
     launchPatientWorkspace: vi.fn(),
+  };
+});
+
+vi.mock('@openmrs/esm-framework', async () => {
+  const originalModule = await vi.importActual('@openmrs/esm-framework');
+
+  return {
+    ...originalModule,
+    navigate: mockNavigate,
   };
 });
 
@@ -56,7 +66,7 @@ describe('StartVisit', () => {
 
     await user.click(editPastVisitButton);
 
-    expect(launchPatientWorkspace).toHaveBeenCalledWith('past-visits-overview');
+    expect(mockNavigate).toHaveBeenCalledWith({ to: '${openmrsSpaBase}/patient/some-uuid/chart/Visits' });
   });
 });
 

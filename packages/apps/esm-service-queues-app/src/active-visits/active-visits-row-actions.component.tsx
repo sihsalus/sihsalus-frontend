@@ -1,9 +1,8 @@
 import { useConfig } from '@openmrs/esm-framework';
-import React from 'react';
 
 import { type ConfigObject } from '../config-schema';
 import TransitionMenu from '../queue-entry-table-components/transition-entry.component';
-import { type QueueEntry, type QueueTableCellComponentProps } from '../types';
+import { type QueueTableCellComponentProps } from '../types';
 
 import styles from './active-visits-row-actions.scss';
 import { mapVisitQueueEntryProperties } from './active-visits-table.resource';

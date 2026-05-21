@@ -1,5 +1,4 @@
 import { type Diagnosis } from '@openmrs/esm-emr-api';
-import React from 'react';
 import { vi } from 'vitest';
 
 /* Please keep these stubs in alphabetical order for readability */
@@ -156,7 +155,11 @@ export const EmptyCard = ({
     <h4>{headerTitle}</h4>
     <EmptyCardIllustration />
     <p>There are no {displayText} to display</p>
-    {launchForm && <button onClick={launchForm}>Record {displayText}</button>}
+    {launchForm && (
+      <button type="button" onClick={launchForm}>
+        Record {displayText}
+      </button>
+    )}
   </div>
 );
 

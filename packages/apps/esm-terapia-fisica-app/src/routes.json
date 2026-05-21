@@ -16,7 +16,6 @@
         "title": "Terapia Física",
         "path": "terapia-fisica",
         "icon": "omrs-icon-movement",
-        "tooltip": "terapiaFisicaTooltip",
         "layoutMode": "anchored"
       }
     },

@@ -29,6 +29,7 @@ import { useTranslation } from 'react-i18next';
 import {
   DATE_PICKER_CONTROL_FORMAT,
   DATE_PICKER_FORMAT,
+  extractErrorMessagesFromResponse,
   formatForDatePicker,
   INVENTORY_ADMINISTRATOR_ROLE_UUID,
   INVENTORY_CLERK_ROLE_UUID,
@@ -63,10 +64,34 @@ type AddStockUserRoleScopeProps = DefaultWorkspaceProps & {
   editMode?: boolean;
 };
 
+const asBoolean = (value: unknown, fallback: boolean): boolean => {
+  return value === true || value === false ? value : fallback;
+};
+
+const getRoleValue = (role: Role): string => {
+  const roleWithFallbacks = role as Role & { name?: string };
+  return (
+    roleWithFallbacks?.role ?? roleWithFallbacks?.display ?? roleWithFallbacks?.name ?? roleWithFallbacks?.uuid ?? ''
+  );
+};
+
+const getRoleLabel = (role: Role): string => {
+  const roleWithFallbacks = role as Role & { name?: string };
+  return (
+    roleWithFallbacks?.display ?? roleWithFallbacks?.role ?? roleWithFallbacks?.name ?? roleWithFallbacks?.uuid ?? ''
+  );
+};
+
 const AddStockUserRoleScope: React.FC<AddStockUserRoleScopeProps> = ({ model, editMode, closeWorkspace }) => {
   const { t } = useTranslation();
   const currentUser = useSession();
-  const [formModel, setFormModel] = useState<UserRoleScope>({ ...model });
+  const [formModel, setFormModel] = useState<UserRoleScope>({
+    ...model,
+    enabled: model?.enabled ?? true,
+    permanent: model?.permanent ?? true,
+    locations: model?.locations ?? [],
+    operationTypes: model?.operationTypes ?? [],
+  });
   const isTablet = useLayoutType() === 'tablet';
 
   const [roles, setRoles] = useState<Role[]>([]);
@@ -110,20 +135,22 @@ const AddStockUserRoleScope: React.FC<AddStockUserRoleScopeProps> = ({ model, ed
     });
   };
 
-  const [filteredItems, setFilteredItems] = useState<unknown[]>([]);
+  const [filteredItems, setFilteredItems] = useState<User[]>([]);
 
   const usersResults = users?.results ?? [];
+  const userSelectionItems = usersResults.filter((item) => item.uuid !== loggedInUserUuid);
 
   const filterItems = (query: string) => {
     if (query && query.trim() !== '') {
-      const filtered = usersResults
-        .filter((item: any) => item.uuid !== loggedInUserUuid)
-        .filter((item: any) => {
-          const displayName = item?.person?.display ?? item?.display ?? '';
-          return displayName?.toLowerCase().includes(query?.toLowerCase());
-        });
+      const filtered = userSelectionItems.filter((item: any) => {
+        const displayName = item?.person?.display ?? item?.display ?? '';
+        return displayName?.toLowerCase().includes(query?.toLowerCase());
+      });
       setFilteredItems(filtered);
+      return;
     }
+
+    setFilteredItems([]);
   };
 
   useEffect(() => {
@@ -193,9 +220,7 @@ const AddStockUserRoleScope: React.FC<AddStockUserRoleScopeProps> = ({ model, ed
       INVENTORY_ADMINISTRATOR_ROLE_UUID,
     ];
 
-    const filteredStockRoles = data.selectedItem?.roles
-      .filter((role) => stockRolesUUIDs.includes(role.uuid))
-      .filter((role) => role.uuid !== loggedInUserUuid);
+    const filteredStockRoles = data.selectedItem?.roles.filter((role) => stockRolesUUIDs.includes(role.uuid));
     setFormModel({ ...formModel, userUuid: data.selectedItem?.uuid });
     setRoles(filteredStockRoles ?? []);
     setSelectedUserUuid(data?.selectedItem?.uuid);
@@ -242,7 +267,28 @@ const AddStockUserRoleScope: React.FC<AddStockUserRoleScopeProps> = ({ model, ed
       return;
     }
 
-    createOrUpdateUserRoleScope(formModel).then(
+    if (formModel?.userUuid === loggedInUserUuid) {
+      showSnackbar({
+        title: t('errorSavingUserRoleScope', 'Error Saving user role scope'),
+        kind: 'error',
+        isLowContrast: true,
+        subtitle: t(
+          'userRoleScopeSelfUpdate',
+          'User role scopes cannot be assigned to the logged in user from this screen.',
+        ),
+      });
+      return;
+    }
+
+    const payload: UserRoleScope = {
+      ...formModel,
+      enabled: asBoolean(formModel?.enabled, true),
+      permanent: asBoolean(formModel?.permanent, true),
+      locations: formModel?.locations ?? [],
+      operationTypes: formModel?.operationTypes ?? [],
+    };
+
+    createOrUpdateUserRoleScope(payload).then(
       () => {
         handleMutate(`${restBaseUrl}/stockmanagement/userrolescope`);
         showSnackbar({
@@ -254,11 +300,29 @@ const AddStockUserRoleScope: React.FC<AddStockUserRoleScopeProps> = ({ model, ed
         closeWorkspace();
       },
       (err) => {
+        const errorMessages = extractErrorMessagesFromResponse(err);
+        const hasSelfUpdateError = errorMessages.some((message) =>
+          message.includes('userrolescopes.userUuid.selfupdate'),
+        );
+        const formattedError = errorMessages.map((message) => {
+          if (message.includes('userrolescopes.userUuid.selfupdate')) {
+            return t(
+              'userRoleScopeSelfUpdate',
+              'User role scopes cannot be assigned to the logged in user from this screen.',
+            );
+          }
+          return message;
+        });
         showSnackbar({
           title: t('errorSavingUserRoleScope', 'Error Saving user role scope'),
           kind: 'error',
           isLowContrast: true,
-          subtitle: err?.message ?? err?.cause ?? t('unknownError', 'An unknown error occurred'),
+          subtitle: hasSelfUpdateError
+            ? t(
+                'userRoleScopeSelfUpdate',
+                'User role scopes cannot be assigned to the logged in user from this screen.',
+              )
+            : formattedError.join(', '),
         });
       },
     );
@@ -274,6 +338,9 @@ const AddStockUserRoleScope: React.FC<AddStockUserRoleScopeProps> = ({ model, ed
     );
   }
 
+  const roleOptions = user?.roles ?? roles;
+  const hasSelectedRoleOption = roleOptions?.some((role) => getRoleValue(role) === formModel?.role);
+
   return (
     <Form className={styles.container} onSubmit={addStockUserRole}>
       <Stack className={styles.form} gap={5}>
@@ -283,7 +350,7 @@ const AddStockUserRoleScope: React.FC<AddStockUserRoleScopeProps> = ({ model, ed
               <ComboBox
                 id="userName"
                 initialSelectedItem={usersResults.find((user) => user.uuid === model?.userUuid) ?? null}
-                items={filteredItems.length ? filteredItems : usersResults}
+                items={filteredItems.length ? filteredItems : userSelectionItems}
                 itemToString={(item) => {
                   if (!item || typeof item !== 'object') return '';
                   const itemWithPerson = item as { person?: { display?: string }; display?: string };
@@ -310,9 +377,18 @@ const AddStockUserRoleScope: React.FC<AddStockUserRoleScopeProps> = ({ model, ed
           {editMode ? (
             <SelectItem key={formModel?.role} value={formModel?.role} text={formModel?.role} />
           ) : (
-            (user?.roles ?? roles)?.map((role) => {
-              return <SelectItem key={role.display} value={role.display} text={role.display} />;
-            })
+            <>
+              {formModel?.role && !hasSelectedRoleOption && (
+                <SelectItem key={formModel.role} value={formModel.role} text={formModel.role} />
+              )}
+              {roleOptions?.map((role) => {
+                const roleValue = getRoleValue(role);
+                if (!roleValue) {
+                  return null;
+                }
+                return <SelectItem key={role.uuid ?? roleValue} value={roleValue} text={getRoleLabel(role)} />;
+              })}
+            </>
           )}
         </Select>
         <CheckboxGroup className={styles.checkboxGrid} legendText="">
@@ -363,7 +439,7 @@ const AddStockUserRoleScope: React.FC<AddStockUserRoleScopeProps> = ({ model, ed
           {stockOperations?.length > 0 &&
             stockOperations.map((type) => {
               return (
-                <div className={styles.flexRow}>
+                <div className={styles.flexRow} key={type.uuid}>
                   <Checkbox
                     checked={isOperationChecked(type)}
                     className={styles.checkbox}
@@ -392,7 +468,7 @@ const AddStockUserRoleScope: React.FC<AddStockUserRoleScopeProps> = ({ model, ed
               };
 
               return (
-                <div className={styles.flexRow}>
+                <div className={styles.flexRow} key={type.id}>
                   <Checkbox
                     checked={checkedLocation != null}
                     className={styles.checkbox}

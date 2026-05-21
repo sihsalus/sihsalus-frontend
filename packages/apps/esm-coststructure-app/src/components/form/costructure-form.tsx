@@ -56,9 +56,9 @@ function toCostStructureDto(data: CostStructureFormValues) {
         productionProyected: data.publicServices[index]?.productionProyected ?? 0,
       };
     }),
-    supplyCosts: data.supplyCost.map(({ supplyId, adquisitionPrice, unitCost, quantityUsed, timeMinutes }) => ({
+    supplyCosts: data.supplyCost.map(({ supplyId, acquisitionPrice, unitCost, quantityUsed, timeMinutes }) => ({
       supplyId,
-      acquisitionPrice: adquisitionPrice,
+      acquisitionPrice,
       unitCost,
       quantityUsed,
       timeMinutes,

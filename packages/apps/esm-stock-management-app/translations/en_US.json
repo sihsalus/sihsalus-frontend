@@ -374,6 +374,7 @@
   "updatePackingUnitTitle": "Package Unit",
   "uploadStockItems": "Upload stock items",
   "user": "User",
+  "userRoleScopeSelfUpdate": "User role scopes cannot be assigned to the logged in user from this screen.",
   "viewAll": "View All",
   "whoIsThePreferredVendor": "Who is the preferred vendor?",
   "yes": "Yes"

@@ -1,7 +1,6 @@
 import { type FetchResponse, getDefaultsFromConfigSchema, showSnackbar, useConfig } from '@openmrs/esm-framework';
 import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import React from 'react';
 import { updateBillItems } from '../billing.resource';
 import { type BillingConfig, configSchema } from '../config-schema';
 import { type MappedBill } from '../types';
@@ -90,7 +89,7 @@ const mockItem = {
 
 describe('EditBillItem', () => {
   beforeAll(() => {
-    vi.spyOn(globalThis, 'fetch').mockImplementation(async (...args: Parameters<typeof fetch>) => {
+    vi.spyOn(globalThis, 'fetch').mockImplementation(async (..._args: Parameters<typeof fetch>) => {
       return new Response(JSON.stringify({}), {
         status: 200,
         headers: { 'Content-Type': 'application/json' },

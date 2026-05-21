@@ -77,6 +77,8 @@ export interface ReportModel {
   limit?: number | null;
   mostLeastMoving?: string;
   mostLeastMovingName?: string;
+  fulfillment?: string[];
+  /** @deprecated Use `fulfillment` instead. */
   fullFillment?: string[];
 }
 
@@ -142,7 +144,9 @@ const CreateReport: React.FC<CreateReportProps> = ({ model, closeWorkspace }) =>
         setDisplayPatient(reportType.parameters?.some((p) => p === ReportParameter.Patient));
         setDisplayLimit(reportType.parameters?.some((p) => p === ReportParameter.Limit));
         setDisplayMostLeastMoving(reportType.parameters?.some((p) => p === ReportParameter.MostLeastMoving));
-        setDisplayFulfillment(reportType.parameters?.some((p) => p === ReportParameter.Fullfillment));
+        setDisplayFulfillment(
+          reportType.parameters?.some((p) => p === ReportParameter.Fulfillment || p === ReportParameter.Fullfillment),
+        );
         hasResetParameters = true;
       }
     }
@@ -178,7 +182,7 @@ const CreateReport: React.FC<CreateReportProps> = ({ model, closeWorkspace }) =>
   const {
     handleSubmit,
     control,
-    formState: { errors, defaultValues, isDirty },
+    formState: { errors },
     setValue,
   } = useForm<StockReportSchema>({
     mode: 'all',
@@ -200,9 +204,9 @@ const CreateReport: React.FC<CreateReportProps> = ({ model, closeWorkspace }) =>
     const entries = [
       {
         display: displayFulfillment,
-        type: ReportParameter.Fullfillment,
-        value: (report.fullFillment ?? ['All']).join(','),
-        desc: (report.fullFillment ?? [t('all', 'All')]).join(', '),
+        type: ReportParameter.Fulfillment,
+        value: (report.fulfillment ?? ['All']).join(','),
+        desc: (report.fulfillment ?? [t('all', 'All')]).join(', '),
         label: t('fulfillment', 'Fulfillment'),
       },
       {
@@ -319,50 +323,42 @@ const CreateReport: React.FC<CreateReportProps> = ({ model, closeWorkspace }) =>
       ? reportTypes.find((reportType) => reportType.name === report.reportName)?.systemName
       : undefined;
 
-    let hideSplash = true;
-    try {
-      const newItem = {
-        batchJobType: BatchJobTypeReport,
-        description: report.reportName,
-        parameters: buildReportParameters(report, reportSystemName),
-      };
-      await createBatchJob(newItem)
-        .then((response) => {
-          if (response.status === 201) {
-            showSnackbar({
-              title: t('batchJob', 'Batch Job'),
-              subtitle: t('batchJobSuccess', 'Batch job created successfully'),
-              kind: 'success',
-            });
-            handleMutate(`${restBaseUrl}/stockmanagement/batchjob?batchJobType=Report&v=default`);
-            closeWorkspace();
-          } else {
-            showSnackbar({
-              title: t('batchJobErrorTitle', 'Batch job'),
-              subtitle: t('batchJobErrorMessage', 'Error creating batch job'),
-              kind: 'error',
-            });
-            closeWorkspace();
-          }
-        })
-        .catch(() => {
+    const newItem = {
+      batchJobType: BatchJobTypeReport,
+      description: report.reportName,
+      parameters: buildReportParameters(report, reportSystemName),
+    };
+    await createBatchJob(newItem)
+      .then((response) => {
+        if (response.status === 201) {
+          showSnackbar({
+            title: t('batchJob', 'Batch Job'),
+            subtitle: t('batchJobSuccess', 'Batch job created successfully'),
+            kind: 'success',
+          });
+          handleMutate(`${restBaseUrl}/stockmanagement/batchjob?batchJobType=Report&v=default`);
+          closeWorkspace();
+        } else {
           showSnackbar({
             title: t('batchJobErrorTitle', 'Batch job'),
             subtitle: t('batchJobErrorMessage', 'Error creating batch job'),
             kind: 'error',
           });
           closeWorkspace();
+        }
+      })
+      .catch(() => {
+        showSnackbar({
+          title: t('batchJobErrorTitle', 'Batch job'),
+          subtitle: t('batchJobErrorMessage', 'Error creating batch job'),
+          kind: 'error',
         });
-      hideSplash = false;
-    } finally {
-      if (hideSplash) {
-        // setShowSplash(false);
-      }
-    }
+        closeWorkspace();
+      });
   };
 
   return (
-    <Form className={styles.container}>
+    <Form className={styles.container} onSubmit={handleSubmit(handleSave)}>
       <Stack className={styles.form} gap={5}>
         <>
           <FormGroup legendText={t('reportName', 'Report name')}>
@@ -377,8 +373,9 @@ const CreateReport: React.FC<CreateReportProps> = ({ model, closeWorkspace }) =>
                   itemToString={(item) => item?.name ?? ''}
                   placeholder={t('filter', 'Filter...')}
                   onChange={({ selectedItem }) => {
-                    onChange(selectedItem.name);
-                    handleReportNameChange(selectedItem.name);
+                    const selectedName = selectedItem?.name ?? '';
+                    onChange(selectedName);
+                    handleReportNameChange(selectedName);
                   }}
                 />
               )}
@@ -399,7 +396,7 @@ const CreateReport: React.FC<CreateReportProps> = ({ model, closeWorkspace }) =>
                     titleText={t('stockItemCategory', 'Stock Item Category')}
                     items={stockItemCategories}
                     onChange={({ selectedItem }) => {
-                      onChange(selectedItem.uuid);
+                      onChange(selectedItem?.uuid ?? '');
                     }}
                     itemToString={(item) => (item && item?.display ? `${item?.display}` : '')}
                     placeholder={t('filter', 'Filter...')}
@@ -544,7 +541,7 @@ const CreateReport: React.FC<CreateReportProps> = ({ model, closeWorkspace }) =>
           <div className={styles.flexRow}>
             <Controller
               control={control}
-              name="fullFillment"
+              name="fulfillment"
               render={({ field: { onChange, value } }) => (
                 <>
                   <Checkbox

@@ -1,5 +1,3 @@
-import { useTranslation } from 'react-i18next';
-
 /**
  *
  * @param date
@@ -16,7 +14,7 @@ export function toDICOMDateTime(date: Date): string {
   const minute = pad(date.getMinutes());
   const second = pad(date.getSeconds());
 
-  const timezoneOffset = -date.getTimezoneOffset(); // in minutes
+  const _timezoneOffset = -date.getTimezoneOffset(); // in minutes
   // const tzSign = timezoneOffset >= 0 ? '+' : '-';
   // const tzHours = pad(Math.floor(Math.abs(timezoneOffset) / 60));
   // const tzMinutes = pad(Math.abs(timezoneOffset) % 60);
@@ -39,7 +37,7 @@ export function generateAccessionNumber(): string {
     String(date.getMinutes()).padStart(2, '0') +
     String(date.getSeconds()).padStart(2, '0');
 
-  const randomPart: string = Math.floor(10000 + Math.random() * 90000).toString();
+  const randomPart = crypto.getRandomValues(new Uint32Array(1))[0].toString().padStart(10, '0').slice(0, 5);
 
   const accessionNumber: string = formattedDate + randomPart;
 

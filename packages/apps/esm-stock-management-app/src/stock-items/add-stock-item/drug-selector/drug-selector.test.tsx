@@ -1,6 +1,5 @@
 import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import React from 'react';
 import { type FieldValues, useForm } from 'react-hook-form';
 import { type Drug } from '../../../core/api/types/concept/Drug';
 import { fetchStockItem } from '../../stock-items.resource';
@@ -109,7 +108,7 @@ describe('DrugSelector', () => {
   });
 
   it('does not call fetchStockItem in read-only mode when a drug is selected', async () => {
-    const user = userEvent.setup();
+    const _user = userEvent.setup();
     mockUseDrugsHook.mockReturnValue({ drugList: mockDrugs as Drug[], isLoading: false });
 
     const { rerender } = render(<DrugSelectorWrapper defaultDrugUuid="drug-1" initialDrugName="Aspirin" readOnly />);

@@ -79,15 +79,11 @@ const ConditionsOverview: React.FC<ConditionsOverviewProps> = ({ patientUuid }) 
   );
 
   const filteredConditions = useMemo(() => {
-    if (!filter || filter == 'All') {
+    if (!filter || filter === 'All') {
       return conditions;
     }
 
-    if (filter) {
-      return conditions?.filter((condition) => condition.clinicalStatus === filter);
-    }
-
-    return conditions;
+    return conditions?.filter((condition) => condition.clinicalStatus === filter);
   }, [filter, conditions]);
 
   const headers: Array<ConditionTableHeader> = useMemo(

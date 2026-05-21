@@ -1,6 +1,5 @@
 import { launchWorkspace } from '@openmrs/esm-framework';
 import { fireEvent, render, screen } from '@testing-library/react';
-import React from 'react';
 import * as api from '../../api';
 import ImagingDetailedSummary from './imaging-detailed-summary.component';
 
@@ -22,7 +21,7 @@ vi.mock('../components/requests-details-table.component', () => ({ default: () =
 vi.mock('../../api');
 vi.mock('react-i18next', () => ({
   useTranslation: () => ({
-    t: (key: string, defaultValue: string) => defaultValue,
+    t: (_key: string, defaultValue: string) => defaultValue,
   }),
 }));
 
@@ -36,7 +35,11 @@ vi.mock('@openmrs/esm-patient-common-lib', () => ({
   EmptyState: ({ displayText, headerTitle, launchForm }: any) => (
     <div data-testid="empty-state">
       {headerTitle}: {displayText}
-      {launchForm && <button onClick={launchForm}>Launch</button>}
+      {launchForm && (
+        <button type="button" onClick={launchForm}>
+          Launch
+        </button>
+      )}
     </div>
   ),
   ErrorState: ({ error, headerTitle }: any) => (

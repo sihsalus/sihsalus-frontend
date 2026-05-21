@@ -1,6 +1,5 @@
 import {
   DataTable,
-  InlineLoading,
   SkeletonText,
   Table,
   TableBody,
@@ -11,7 +10,7 @@ import {
   TableRow,
 } from '@carbon/react';
 import { launchWorkspace2, useConfig } from '@openmrs/esm-framework';
-import { CardHeader, EmptyState, ErrorState } from '@openmrs/esm-patient-common-lib';
+import { EmptyState, ErrorState } from '@openmrs/esm-patient-common-lib';
 import React, { useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useCurrentPregnancy } from '../../../../hooks/useCurrentPregnancy';
@@ -36,7 +35,7 @@ const LabourHistorySummary: React.FC<LabourHistorySummaryProps> = ({ patientUuid
 
   const headerTitle = t('labourHistorySummary', 'Labour history summary');
   const config = useConfig();
-  const { prenatalEncounter: data, error, isLoading, mutate } = useCurrentPregnancy(patientUuid);
+  const { prenatalEncounter: data, error, isLoading } = useCurrentPregnancy(patientUuid);
 
   // Configuration for form launch
   const formPrenatalUuid = config.formsList.deliveryOrAbortion;
@@ -153,7 +152,7 @@ const LabourHistorySummary: React.FC<LabourHistorySummaryProps> = ({ patientUuid
         <SkeletonLoader />
       ) : summaryRows.length > 0 ? (
         <DataTable rows={summaryRows} headers={headers} size="sm" useZebraStyles>
-          {({ rows, headers, getHeaderProps, getTableProps }) => (
+          {({ headers, getHeaderProps, getTableProps }) => (
             <TableContainer>
               <Table {...getTableProps()} aria-label="Detalles del Embarazo y Parto">
                 <TableHead>

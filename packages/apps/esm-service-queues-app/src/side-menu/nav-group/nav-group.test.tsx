@@ -1,5 +1,4 @@
 import { render, screen } from '@testing-library/react';
-import React from 'react';
 
 import { registerNavGroup } from './nav-group';
 import NavGroupExtension from './nav-group.component';

@@ -51,6 +51,11 @@
       "name": "patient-form-entry-workspace-v2",
       "component": "patientFormEntryWorkspace",
       "window": "patient-chart-clinical-forms"
+    },
+    {
+      "name": "patient-html-form-entry-workspace",
+      "component": "patientHtmlFormEntryWorkspace",
+      "window": "patient-chart-clinical-forms"
     }
   ],
   "workspaceWindows2": [
@@ -65,24 +70,6 @@
   ],
   "workspaces": [
     {
-      "name": "patient-form-entry-workspace",
-      "title": "clinicalForm",
-      "component": "patientFormEntryWorkspace",
-      "type": "clinical-form",
-      "canMaximize": true,
-      "canHide": false,
-      "width": "extra-wide"
-    },
-    {
-      "name": "clinical-forms-workspace",
-      "title": "clinicalForms",
-      "component": "clinicalFormsWorkspace",
-      "type": "clinical-form",
-      "canMaximize": true,
-      "canHide": true,
-      "width": "extra-wide"
-    },
-    {
       "name": "ward-patient-form-entry-workspace",
       "title": "clinicalForm",
       "component": "patientFormEntryWorkspace",
@@ -90,15 +77,6 @@
       "canMaximize": true,
       "canHide": false,
       "width": "wider"
-    },
-    {
-      "name": "patient-html-form-entry-workspace",
-      "title": "clinicalForm",
-      "component": "patientHtmlFormEntryWorkspace",
-      "type": "clinical-form",
-      "canMaximize": true,
-      "canHide": false,
-      "width": "extra-wide"
     },
     {
       "name": "ward-patient-html-form-entry-workspace",

@@ -4,7 +4,7 @@ import React, { useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useFormField } from '../../../../form-field-context';
 
-const Date: React.FC = () => {
+const DateInput: React.FC = () => {
   const { t } = useTranslation();
   const { formField, setFormField } = useFormField();
 
@@ -42,4 +42,4 @@ const Date: React.FC = () => {
   );
 };
 
-export default Date;
+export default DateInput;

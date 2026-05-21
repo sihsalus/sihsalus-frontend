@@ -3,7 +3,6 @@ import { type FetchResponse, openmrsFetch, showNotification } from '@openmrs/esm
 import { screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { renderWithSwr } from '@tools/test-helpers';
-import React from 'react';
 
 import Subscription from './subscription.component';
 import { deleteSubscription, updateSubscription } from './subscription.resource';

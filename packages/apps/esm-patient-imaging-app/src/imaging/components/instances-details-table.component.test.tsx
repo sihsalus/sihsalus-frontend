@@ -1,6 +1,5 @@
-import { showModal } from '@openmrs/esm-framework';
 import { fireEvent, render, screen, within } from '@testing-library/react';
-import React, { act } from 'react';
+import { act } from 'react';
 import * as api from '../../api';
 import InstancesDetailsTable, { type InstancesDetailsTableProps } from './instances-details-table.component';
 
@@ -28,7 +27,7 @@ vi.mock('@openmrs/esm-patient-common-lib', () => ({
 
 vi.mock('react-i18next', () => ({
   useTranslation: () => ({
-    t: (key: string, defaultValue: string) => defaultValue,
+    t: (_key: string, defaultValue: string) => defaultValue,
   }),
 }));
 

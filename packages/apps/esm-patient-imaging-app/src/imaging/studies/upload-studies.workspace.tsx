@@ -13,7 +13,7 @@ import { Controller, FormProvider, useForm } from 'react-hook-form';
 import { useTranslation } from 'react-i18next';
 import { z } from 'zod';
 import { uploadStudies, useOrthancConfigurations } from '../../api';
-import { getBrowserUrl, type OrthancConfiguration } from '../../types';
+import { type OrthancConfiguration } from '../../types';
 import { maxUploadImageDataSize } from '../constants';
 import styles from './studies.scss';
 

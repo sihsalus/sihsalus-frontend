@@ -2,7 +2,6 @@ import { formatDatetime, getDefaultsFromConfigSchema, useConfig } from '@openmrs
 import { launchPatientWorkspace } from '@openmrs/esm-patient-common-lib';
 import { screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import React from 'react';
 import {
   mockCareProgramsResponse,
   mockEnrolledInAllProgramsResponse,

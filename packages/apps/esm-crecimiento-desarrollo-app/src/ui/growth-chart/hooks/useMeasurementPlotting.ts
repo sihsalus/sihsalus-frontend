@@ -29,7 +29,7 @@ export function useMeasurementPlotting(
         ? parseFloat(entry.dataValues.height)
         : calculateDecimalDate(entry.eventDate, dataset, dateOfBirth);
 
-      if (x === null || isNaN(Number(x)) || isNaN(y)) return null;
+      if (x === null || Number.isNaN(Number(x)) || Number.isNaN(y)) return null;
 
       // Filtrar por rango si corresponde
       if (typeof x === 'number' && dataset !== DataSetLabels.y_2_5 && x < startIndex) {
@@ -62,7 +62,7 @@ function calculateDecimalDate(date: Date | string, dataset: string, dob: Date): 
   const d = typeof date === 'string' ? new Date(date) : date;
   const msDiff = d.getTime() - dob.getTime();
 
-  if (isNaN(msDiff)) return null;
+  if (Number.isNaN(msDiff)) return null;
 
   const days = msDiff / (1000 * 60 * 60 * 24);
   const weeks = days / 7;

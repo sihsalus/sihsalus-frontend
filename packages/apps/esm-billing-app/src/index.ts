@@ -1,5 +1,6 @@
 import { Settings, Wallet } from '@carbon/react/icons';
-import { createDashboard, defineConfigSchema, getAsyncLifecycle, getSyncLifecycle } from '@openmrs/esm-framework';
+import { defineConfigSchema, getAsyncLifecycle, getSyncLifecycle } from '@openmrs/esm-framework';
+import { createDashboardLink } from '@openmrs/esm-patient-common-lib';
 import BillHistory from './bill-history/bill-history.component';
 import EditBillLineItemModal from './bill-item-actions/edit-bill-item.modal';
 import BillableServiceHome from './billable-services/billable-services-home.component';
@@ -41,7 +42,10 @@ export function startupApp() {
 }
 
 // t('billingHistory', 'Billing History')
-export const billingSummaryDashboardLink = getSyncLifecycle(createDashboard(dashboardMeta), options);
+export const billingSummaryDashboardLink = getSyncLifecycle(
+  createDashboardLink({ ...dashboardMeta, moduleName }),
+  options,
+);
 
 // t('billableServices', 'Billable services')
 export const billableServicesAppMenuItem = getSyncLifecycle(appMenu, options);

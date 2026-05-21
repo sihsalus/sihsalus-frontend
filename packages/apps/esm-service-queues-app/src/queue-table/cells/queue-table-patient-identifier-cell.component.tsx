@@ -1,5 +1,4 @@
 import { getPreferredIdentifier } from '@sihsalus/esm-sihsalus-shared';
-import React from 'react';
 
 import { type PatientIdentifierColumnConfig } from '../../config-schema';
 import { type QueueEntry, type QueueTableCellComponentProps, type QueueTableColumnFunction } from '../../types';
@@ -13,7 +12,7 @@ export const queueTablePatientIdentifierColumn: QueueTableColumnFunction = (
 
   const getPatientIdentifier = (queueEntry: QueueEntry) => {
     const configuredIdentifier = queueEntry.patient.identifiers.find(
-      (i) => i.identifierType?.uuid == identifierTypeUuid,
+      (i) => i.identifierType?.uuid === identifierTypeUuid,
     );
     return getPreferredIdentifier(queueEntry.patient.identifiers)?.identifier ?? configuredIdentifier?.identifier;
   };

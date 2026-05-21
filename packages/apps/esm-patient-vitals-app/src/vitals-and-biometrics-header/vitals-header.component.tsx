@@ -75,10 +75,8 @@ const VitalsHeader: React.FC<VitalsHeaderProps> = ({
     );
   }
 
-  if (latestVitals && Object.keys(latestVitals)?.length && conceptMetadata?.length) {
-    const isActiveVisit = visitContext
-      ? Boolean(visitContext && !visitContext.stopDatetime)
-      : Boolean(currentVisit?.uuid);
+  if (latestVitals && Object.keys(latestVitals).length && conceptMetadata?.length) {
+    const isActiveVisit = visitContext ? !visitContext.stopDatetime : Boolean(currentVisit?.uuid);
 
     const vitalsOverdueThresholdHours = config.vitals.vitalsOverdueThresholdHours ?? 12;
     const vitalsTakenTimeAgo = dayjs.duration(dayjs().diff(latestVitals?.date));
@@ -93,8 +91,7 @@ const VitalsHeader: React.FC<VitalsHeaderProps> = ({
       overdueVitalsTagContent = (
         <Trans i18nKey="hoursOldVitals" count={hoursSinceVitalsTaken}>
           <span>
-            {/* @ts-expect-error Workaround for i18next types issue */}
-            These vitals are <strong>{{ count: hoursSinceVitalsTaken }} hour old</strong>
+            These vitals are <strong>{hoursSinceVitalsTaken} hour old</strong>
           </span>
         </Trans>
       );
@@ -102,8 +99,7 @@ const VitalsHeader: React.FC<VitalsHeaderProps> = ({
       overdueVitalsTagContent = (
         <Trans i18nKey="daysOldVitals" count={vitalsOverdueDayCount}>
           <span>
-            {/* @ts-expect-error Workaround for i18next types issue (see https://github.com/i18next/react-i18next/issues/1543 and https://github.com/i18next/react-i18next/issues/465). Additionally, I can't find a way to get the proper plural suffix to be used in the translation file without amending the translation file by hand. */}
-            These vitals are <strong>{{ count: vitalsOverdueDayCount }} day old</strong>
+            These vitals are <strong>{vitalsOverdueDayCount} day old</strong>
           </span>
         </Trans>
       );
@@ -127,7 +123,18 @@ const VitalsHeader: React.FC<VitalsHeaderProps> = ({
 
     return (
       <div className={styles.container}>
-        <div className={styles.vitalsHeader} role="button" tabIndex={0} onClick={toggleDetailsPanel}>
+        <div
+          className={styles.vitalsHeader}
+          onClick={toggleDetailsPanel}
+          onKeyDown={(event) => {
+            if (event.key === 'Enter' || event.key === ' ') {
+              event.preventDefault();
+              toggleDetailsPanel();
+            }
+          }}
+          role="button"
+          tabIndex={0}
+        >
           <div className={styles.headerItems}>
             <span className={styles.heading}>{t('vitalsAndBiometrics', 'Vitals and biometrics')}</span>
             <span className={styles.bodyText}>
@@ -149,7 +156,9 @@ const VitalsHeader: React.FC<VitalsHeaderProps> = ({
           </div>
           {isValidating ? (
             <div className={styles.backgroundDataFetchingIndicator}>
-              <span>{isValidating ? <InlineLoading /> : null}</span>
+              <span>
+                <InlineLoading />
+              </span>
             </div>
           ) : null}
           {!hideLinks && (

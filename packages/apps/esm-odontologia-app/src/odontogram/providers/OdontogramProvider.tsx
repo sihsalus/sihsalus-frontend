@@ -88,7 +88,7 @@ export function useOdontogramContext(): OdontogramContextValue {
 // =============================================================================
 
 function generateId(): string {
-  return `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+  return crypto.randomUUID();
 }
 
 /** Devuelve la posición de un diente dado su ID y la config */

@@ -1,13 +1,11 @@
 import { showSnackbar } from '@openmrs/esm-framework';
 import { act, fireEvent, render, screen, waitFor } from '@testing-library/react';
-import { use } from 'i18next';
-import React from 'react';
 import * as api from '../../api';
 import DeleteProcedureStepModal from './delete-procedureStep.modal';
 
 vi.mock('react-i18next', () => ({
   useTranslation: () => ({
-    t: (key: string, defaultValue: string) => defaultValue,
+    t: (_key: string, defaultValue: string) => defaultValue,
   }),
 }));
 

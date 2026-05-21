@@ -98,11 +98,8 @@ const StockOperationPrintButton: React.FC<StockOperationCancelButtonProps> = ({ 
         } else {
           await PrintRequisitionStockOperation(data);
         }
-      } else {
-        console.info(data);
       }
     } catch (e: any) {
-      console.info(e);
       showSnackbar({
         kind: 'error',
         title: t('errorPrintingStockOperation', 'Error printing stock operation'),

@@ -211,10 +211,8 @@ describe('VitalsOverview', () => {
     const expandButtons = screen.queryAllByRole('button', {
       name: /expand current row/i,
     });
-    if (expandButtons.length > 0) {
-      await user.click(expandButtons[0]);
-      const noteText = screen.queryByText(/Pt reports severe L chest pain/i);
-      if (noteText) expect(noteText).toBeInTheDocument();
-    }
+    expect(expandButtons.length).toBeGreaterThan(0);
+    await user.click(expandButtons[0]);
+    expect(screen.getByText(/Pt reports severe L chest pain/i)).toBeInTheDocument();
   });
 });

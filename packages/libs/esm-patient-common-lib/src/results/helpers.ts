@@ -35,7 +35,7 @@ export function formatReferenceRange(ranges: ReferenceRanges | null, units?: str
  * @returns The interpretation category
  */
 export function assessValue(value: number, ranges: ReferenceRanges): OBSERVATION_INTERPRETATION {
-  if (isNaN(value)) {
+  if (Number.isNaN(value)) {
     return 'NORMAL';
   }
   // Critical and absolute thresholds use inclusive (>=, <=) comparisons

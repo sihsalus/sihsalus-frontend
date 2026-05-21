@@ -13,8 +13,8 @@ import {
   TableRow,
 } from '@carbon/react';
 import { Add } from '@carbon/react/icons';
-import { formatDate, launchWorkspace, useConfig } from '@openmrs/esm-framework';
-import { CardHeader, EmptyState, ErrorState } from '@openmrs/esm-patient-common-lib';
+import { formatDate, useConfig } from '@openmrs/esm-framework';
+import { CardHeader, EmptyState, ErrorState, launchPatientWorkspace } from '@openmrs/esm-patient-common-lib';
 import { getObsFromEncounter } from '@sihsalus/esm-sihsalus-shared';
 import React from 'react';
 import { useTranslation } from 'react-i18next';
@@ -49,7 +49,7 @@ const OutPatientMedicalHistory: React.FC<OutPatientMedicalHistoryProps> = ({
   } = useConfig<ConfigObject>();
   const headerTitle = t('medicalHistory', 'Medical History');
   const handleOpenOrEditClinicalEncounterForm = (encounterUUID = '') => {
-    launchWorkspace(patientFormEntryWorkspace, {
+    launchPatientWorkspace(patientFormEntryWorkspace, {
       workspaceTitle: t('medicalHistory', 'Medical History'),
       mutateForm: mutate(
         (key) => typeof key === 'string' && key.startsWith('/openmrs/ws/rest/v1/kenyaemr/flags'),

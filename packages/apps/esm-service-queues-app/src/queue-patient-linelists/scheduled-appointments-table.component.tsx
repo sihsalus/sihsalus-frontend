@@ -1,7 +1,6 @@
 import {
   Button,
   DataTable,
-  type DataTableHeader,
   DataTableSkeleton,
   Dropdown,
   Layer,
@@ -91,14 +90,14 @@ const AppointmentsTable: React.FC = () => {
   };
 
   useEffect(() => {
-    if (currentAppointmentStatus != t('all', 'All') && currentAppointmentStatus !== '') {
+    if (currentAppointmentStatus !== t('all', 'All') && currentAppointmentStatus !== '') {
       setFilteredRows(
         appointmentQueueEntries?.filter((appointment) => appointment.status === currentAppointmentStatus),
       );
     } else {
       setFilteredRows(appointmentQueueEntries);
     }
-  }, [t, currentAppointmentStatus, results, appointmentQueueEntries]);
+  }, [t, currentAppointmentStatus, appointmentQueueEntries]);
 
   const tableHeaders = useMemo(
     () => [
@@ -270,7 +269,7 @@ const AppointmentsTable: React.FC = () => {
                 </TableRow>
               </TableHead>
               <TableBody>
-                {rows.map((row, index) => {
+                {rows.map((row, _index) => {
                   return (
                     <React.Fragment key={row.id}>
                       {(() => {

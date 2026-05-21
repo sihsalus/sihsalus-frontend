@@ -142,10 +142,7 @@ export const Identifiers: React.FC = () => {
     initialFormValues.identifiers,
   ]);
 
-  const closeIdentifierSelectionOverlay = useCallback(
-    () => setShowIdentifierOverlay(false),
-    [setShowIdentifierOverlay],
-  );
+  const closeIdentifierSelectionOverlay = useCallback(() => setShowIdentifierOverlay(false), []);
 
   const removeIdentifier = useCallback(
     (identifierFieldName: string) => {

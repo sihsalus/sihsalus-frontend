@@ -1,5 +1,4 @@
 import { reportError, useConfig } from '@openmrs/esm-framework';
-import React from 'react';
 
 import { builtInFields, type RegistrationConfig } from '../../config-schema';
 import { getEffectiveRegistrationConfig } from '../peru-registration-config';
@@ -22,7 +21,7 @@ export function Field({ name }: FieldProps) {
   const config = getEffectiveRegistrationConfig(useConfig() as RegistrationConfig);
   if (
     !(builtInFields as ReadonlyArray<string>).includes(name) &&
-    !config.fieldDefinitions.some((def) => def.id == name)
+    !config.fieldDefinitions.some((def) => def.id === name)
   ) {
     reportError(
       `Invalid field name '${name}'. Valid options are '${config.fieldDefinitions

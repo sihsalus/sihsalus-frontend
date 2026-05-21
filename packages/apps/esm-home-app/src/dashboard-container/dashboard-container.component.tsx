@@ -23,6 +23,7 @@ export default function DashboardContainer() {
   const ungroupedDashboards = assignedExtensions.map((e) => e.meta).filter((e) => Object.keys(e).length) || [];
   const dashboards = ungroupedDashboards as Array<DashboardConfig>;
   const activeDashboard = dashboards.find((dashboard) => dashboard.name === params?.dashboard) || dashboards[0];
+  const workspaceContextKey = typeof params.dashboard === 'string' ? `home/${params.dashboard}` : null;
 
   return (
     <div className={styles.homePageWrapper}>
@@ -39,7 +40,7 @@ export default function DashboardContainer() {
           state={{ dashboardTitle: activeDashboard?.name }}
         />
       </section>
-      {/\/home(\/|$)/.test(window.location.pathname) ? <WorkspaceContainer overlay contextKey="home" /> : null}
+      {workspaceContextKey ? <WorkspaceContainer overlay contextKey={workspaceContextKey} /> : null}
     </div>
   );
 }

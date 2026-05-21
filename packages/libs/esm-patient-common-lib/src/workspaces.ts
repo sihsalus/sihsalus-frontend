@@ -1,4 +1,9 @@
-import { getGroupByWindowName, getWindowByWorkspaceName, workspace2Store } from '@openmrs/esm-extensions';
+import {
+  getGroupByWindowName,
+  getModalRegistration,
+  getWindowByWorkspaceName,
+  workspace2Store,
+} from '@openmrs/esm-extensions';
 import { navigate, showModal, useFeatureFlag, type Visit } from '@openmrs/esm-framework';
 import {
   type DefaultWorkspaceProps,
@@ -25,7 +30,7 @@ export interface PatientWorkspaceGroupProps {
 }
 
 export interface PatientChartWorkspaceActionButtonProps {
-  groupProps: PatientWorkspaceGroupProps;
+  groupProps: PatientWorkspaceGroupProps | null;
 }
 
 export type PatientWorkspace2DefinitionProps<
@@ -33,8 +38,45 @@ export type PatientWorkspace2DefinitionProps<
   WindowProps extends object,
 > = Workspace2DefinitionProps<WorkspaceProps, WindowProps, PatientWorkspaceGroupProps>;
 
+type WorkspaceFrameworkApi = {
+  getRegisteredWorkspace2Names?: typeof getRegisteredWorkspace2Names;
+  launchWorkspace2?: typeof launchWorkspace2;
+};
+
+function getWorkspaceFrameworkApi(): WorkspaceFrameworkApi {
+  return (
+    (
+      globalThis as typeof globalThis & {
+        _openmrs_esm_framework?: WorkspaceFrameworkApi;
+      }
+    )._openmrs_esm_framework ?? {}
+  );
+}
+
 function isWorkspace2Registered(workspaceName: string): boolean {
-  return getRegisteredWorkspace2Names().includes(workspaceName);
+  const shellGetRegisteredWorkspace2Names = getWorkspaceFrameworkApi().getRegisteredWorkspace2Names;
+  const registeredWorkspace2Names =
+    typeof shellGetRegisteredWorkspace2Names === 'function'
+      ? shellGetRegisteredWorkspace2Names()
+      : getRegisteredWorkspace2Names();
+
+  return registeredWorkspace2Names.includes(workspaceName);
+}
+
+function launchWorkspace2FromAppShell<
+  WorkspaceProps extends object,
+  WindowProps extends object,
+  GroupProps extends object,
+>(
+  workspaceName: string,
+  workspaceProps: WorkspaceProps | null = null,
+  windowProps: WindowProps | null = null,
+  groupProps: GroupProps | null = null,
+): Promise<boolean> {
+  const shellLaunchWorkspace2 = getWorkspaceFrameworkApi().launchWorkspace2;
+  const launcher = typeof shellLaunchWorkspace2 === 'function' ? shellLaunchWorkspace2 : launchWorkspace2;
+
+  return launcher(workspaceName, workspaceProps, windowProps, groupProps);
 }
 
 function getPatientWorkspaceGroupProps(): PatientWorkspaceGroupProps | null {
@@ -58,12 +100,17 @@ function getPatientWorkspaceGroupProps(): PatientWorkspaceGroupProps | null {
 }
 
 function isPatientChartWorkspace2(workspaceName: string): boolean {
-  const windowDefinition = getWindowByWorkspaceName(workspaceName);
-  if (!windowDefinition) {
-    return false;
-  }
+  try {
+    const windowDefinition = getWindowByWorkspaceName(workspaceName);
+    if (!windowDefinition) {
+      return false;
+    }
 
-  return getGroupByWindowName(windowDefinition.name)?.name === 'patient-chart';
+    return getGroupByWindowName(windowDefinition.name)?.name === 'patient-chart';
+  } catch (error) {
+    void error;
+    return isWorkspace2Registered(workspaceName);
+  }
 }
 
 function getPatientUuidFromAdditionalProps(additionalProps?: object): string | null {
@@ -88,7 +135,7 @@ function getPatientUuidFromAdditionalProps(additionalProps?: object): string | n
 }
 
 export function launchPatientWorkspace(workspaceName: string, additionalProps?: object): void {
-  const patientUuid = getPatientUuidFromStore() ?? getPatientUuidFromAdditionalProps(additionalProps);
+  const patientUuid = getPatientUuidFromStore() || getPatientUuidFromAdditionalProps(additionalProps);
   const workspace2Registered = isWorkspace2Registered(workspaceName);
 
   if (!workspace2Registered) {
@@ -118,7 +165,12 @@ export function launchPatientWorkspace(workspaceName: string, additionalProps?: 
         ...(additionalProps ?? {}),
       };
 
-  void launchWorkspace2(workspaceName, workspaceProps, null, patientChartWorkspace2 ? patientChartGroupProps : null);
+  void launchWorkspace2FromAppShell(
+    workspaceName,
+    workspaceProps,
+    null,
+    patientChartWorkspace2 ? patientChartGroupProps : null,
+  );
 }
 
 export function launchPatientChartWithWorkspaceOpen({
@@ -139,7 +191,7 @@ export function launchPatientChartWithWorkspaceOpen({
     return;
   }
 
-  void launchWorkspace2(workspaceName, additionalProps ?? null, null, {
+  void launchWorkspace2FromAppShell(workspaceName, additionalProps ?? null, null, {
     patient: null,
     patientUuid,
     visitContext: null,
@@ -163,7 +215,7 @@ export function useStartVisitIfNeeded(patientUuid?: string): () => Promise<boole
     }
 
     return new Promise<boolean>((resolve) => {
-      if (isRdeEnabled) {
+      if (isRdeEnabled && getModalRegistration('visit-context-switcher')) {
         const dispose = showModal('visit-context-switcher', {
           patientUuid,
           closeModal: () => {
@@ -233,7 +285,7 @@ export function useLaunchWorkspaceRequiringVisit<T extends object>(
 
         void startVisitIfNeeded().then((didStartVisit) => {
           if (didStartVisit) {
-            void launchWorkspace2(
+            void launchWorkspace2FromAppShell(
               workspaceName,
               resolvedWorkspaceProps,
               windowProps ?? null,

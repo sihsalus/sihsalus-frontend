@@ -2,6 +2,7 @@
   "activeAdmissions": "Activas",
   "address": "Dirección",
   "admission": "Admisión",
+  "admissions": "Admisiones",
   "admissionHistoryByUps": "Historial de ingresos por UPS",
   "admissionReportByUps": "Reporte de admisiones por UPS",
   "admissionReportError": "No se pudo cargar el reporte de admisiones",

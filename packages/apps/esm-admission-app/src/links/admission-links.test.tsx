@@ -35,10 +35,7 @@ describe('admission navigation links', () => {
   it('renders the dashboard tile link to the admission app', () => {
     render(<AdmissionDashboardLink />);
 
-    expect(screen.getByRole('link', { name: /admisión reporte de admisiones por ups/i })).toHaveAttribute(
-      'href',
-      '/openmrs/spa/admission',
-    );
+    expect(screen.getByRole('link', { name: /admisiones/i })).toHaveAttribute('href', '/openmrs/spa/home/admission');
     expect(mockNavigate).not.toHaveBeenCalled();
   });
 

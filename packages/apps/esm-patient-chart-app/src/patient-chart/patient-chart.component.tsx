@@ -14,6 +14,25 @@ import SideMenuPanel from '../side-nav/side-menu.component';
 import { type LayoutMode } from './chart-review/dashboard-view.component';
 import styles from './patient-chart.scss';
 
+type WorkspaceGroupLauncher = typeof launchWorkspaceGroup2;
+
+function launchPatientChartWorkspaceGroup(
+  groupName: Parameters<WorkspaceGroupLauncher>[0],
+  groupProps: Parameters<WorkspaceGroupLauncher>[1],
+) {
+  const shellLauncher = (
+    globalThis as typeof globalThis & {
+      _openmrs_esm_framework?: {
+        launchWorkspaceGroup2?: WorkspaceGroupLauncher;
+      };
+    }
+  )._openmrs_esm_framework?.launchWorkspaceGroup2;
+
+  return typeof shellLauncher === 'function'
+    ? shellLauncher(groupName, groupProps)
+    : launchWorkspaceGroup2(groupName, groupProps);
+}
+
 const PatientChart: React.FC = () => {
   const { patientUuid, view: encodedView } = useParams();
   const view = encodedView ? decodeURIComponent(encodedView) : undefined;
@@ -29,7 +48,7 @@ const PatientChart: React.FC = () => {
         ? {
             patient: patient ?? null,
             patientUuid,
-            visitContext: currentVisit,
+            visitContext: currentVisit ?? null,
             mutateVisitContext,
           }
         : null,
@@ -82,7 +101,7 @@ const PatientChart: React.FC = () => {
       return;
     }
 
-    void launchWorkspaceGroup2('patient-chart', patientChartGroupProps);
+    void launchPatientChartWorkspaceGroup('patient-chart', patientChartGroupProps);
   }, [hasVisibleLegacyWorkspace, patientChartGroupProps, patientUuid]);
 
   return (

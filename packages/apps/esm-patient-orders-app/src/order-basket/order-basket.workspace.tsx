@@ -11,6 +11,7 @@ import {
 } from '@openmrs/esm-framework';
 import {
   type DefaultPatientWorkspaceProps,
+  getPatientUuidFromStore,
   launchPatientWorkspace,
   type OrderBasketItem,
   type PatientWorkspace2DefinitionProps,
@@ -30,13 +31,18 @@ import { type ConfigObject } from '../config-schema';
 import GeneralOrderType from './general-order-type/general-order-type.component';
 import styles from './order-basket.scss';
 
+interface OrderBasketWorkspaceProps {
+  patientUuid?: string;
+}
+
 interface OrderBasketWindowProps {
+  patientUuid?: string;
   drugOrderWorkspaceName?: string;
   labOrderWorkspaceName?: string;
   generalOrderWorkspaceName?: string;
 }
 
-type Workspace2OrderBasketProps = PatientWorkspace2DefinitionProps<object, OrderBasketWindowProps>;
+type Workspace2OrderBasketProps = PatientWorkspace2DefinitionProps<OrderBasketWorkspaceProps, OrderBasketWindowProps>;
 type OrderBasketProps = DefaultPatientWorkspaceProps | Workspace2OrderBasketProps;
 
 function isWorkspace2Props(props: OrderBasketProps): props is Workspace2OrderBasketProps {
@@ -44,7 +50,12 @@ function isWorkspace2Props(props: OrderBasketProps): props is Workspace2OrderBas
 }
 
 const OrderBasket: React.FC<OrderBasketProps> = (props) => {
-  const patientUuid = isWorkspace2Props(props) ? props.groupProps.patientUuid : props.patientUuid;
+  const patientUuid = isWorkspace2Props(props)
+    ? (props.groupProps?.patientUuid ??
+      props.windowProps?.patientUuid ??
+      props.workspaceProps?.patientUuid ??
+      getPatientUuidFromStore())
+    : props.patientUuid;
   const { t } = useTranslation();
   const isTablet = useLayoutType() === 'tablet';
   const config = useConfig<ConfigObject>();

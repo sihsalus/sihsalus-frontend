@@ -8,6 +8,56 @@
   color: $interactive-01;
 }
 
+.overflowMenuContainer {
+  :global(.cds--overflow-menu-options) {
+    width: 24rem;
+    max-width: calc(100vw - #{layout.$spacing-07});
+  }
+
+  :global(.cds--overflow-menu-options__content),
+  :global(.cds--overflow-menu-options__option),
+  :global(.cds--overflow-menu-options__btn) {
+    width: 100%;
+    max-width: none;
+  }
+
+  :global(.cds--overflow-menu-options__option-content) {
+    max-width: none;
+    overflow: visible;
+    text-overflow: clip;
+    white-space: nowrap;
+  }
+
+  :global(.cds--btn--icon-only) {
+    width: 100%;
+    max-width: none;
+    height: layout.$spacing-10;
+    min-height: layout.$spacing-10;
+    justify-content: flex-start;
+    border-radius: 0;
+    padding: 0 layout.$spacing-05;
+    color: $text-02;
+  }
+
+  :global(.cds--btn--icon-only:hover) {
+    background-color: colors.$gray-10-hover;
+  }
+
+  :global(.cds--btn--icon-only > div) {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+  }
+
+  :global(.cds--btn--icon-only)::after {
+    content: attr(aria-label);
+    margin-left: layout.$spacing-04;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+}
+
 // Overriding styles for RTL support
 html[dir='rtl'] {
   .overflowMenuContainer {

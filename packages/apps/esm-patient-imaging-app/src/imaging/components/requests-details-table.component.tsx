@@ -98,7 +98,7 @@ const RequestProcedureTable: React.FC<RequestProcedureTableProps> = ({ isValidat
     };
   }, [t]);
 
-  const tableRows = results?.map((request, id) => ({
+  const tableRows = results?.map((request, _id) => ({
     id: String(request.id),
     status: {
       sortKey: statusText[request.status],

@@ -1,8 +1,8 @@
-import { Button, ButtonSet, DataTableSkeleton, Form, InlineLoading, Row, Stack } from '@carbon/react';
+import { Button, ButtonSet, DataTableSkeleton, Form, Row, Stack } from '@carbon/react';
 import { ErrorState, ExtensionSlot, ResponsiveWrapper, showSnackbar, useLayoutType } from '@openmrs/esm-framework';
 import { type DefaultPatientWorkspaceProps, EmptyState } from '@openmrs/esm-patient-common-lib';
 import classNames from 'classnames';
-import React, { useMemo, useState } from 'react';
+import React, { useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { assignStudy as assignStudy, useStudiesByConfig, useStudiesByPatient } from '../../api';
 import { type DicomStudy, type OrthancConfiguration } from '../../types';
@@ -19,10 +19,7 @@ const AssignStudiesWorkspace: React.FC<AssignStudiesWorkspaceProps> = ({
   closeWorkspace,
 }) => {
   const { t } = useTranslation();
-  const layout = useLayoutType();
   const isTablet = useLayoutType() === 'tablet';
-  const isDesktop = layout === 'small-desktop' || layout === 'large-desktop';
-  const [isLoading, setIsLoading] = useState(false);
   const patientState = useMemo(() => ({ patientUuid }), [patientUuid]);
   const { mutate } = useStudiesByPatient(patientUuid);
 
@@ -30,7 +27,6 @@ const AssignStudiesWorkspace: React.FC<AssignStudiesWorkspaceProps> = ({
     data: studiesData,
     error: assignStudyError,
     isLoading: isLoadingStudies,
-    isValidating: isValidatingStudies,
   } = useStudiesByConfig(configuration, patientUuid);
 
   async function assignStudyFunction(study: DicomStudy, isAssign: boolean) {
@@ -44,13 +40,14 @@ const AssignStudiesWorkspace: React.FC<AssignStudiesWorkspaceProps> = ({
           ? t('studyAssigned', 'The study has been successfully assigned')
           : t('removeAssign', 'Assignment of the study is removed'),
       });
-    } catch (err: any) {
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : String(err);
       showSnackbar({
         title: isAssign
           ? t('errorAssignStudy', 'An error occurred while assign the study to the patient')
           : t('errorRemoveAssignStudy', 'An error occurred while removing the assigned study from the patient'),
         kind: 'error',
-        subtitle: err?.message,
+        subtitle: message,
         isLowContrast: false,
       });
     }
@@ -58,8 +55,6 @@ const AssignStudiesWorkspace: React.FC<AssignStudiesWorkspaceProps> = ({
 
   return (
     <>
-      {isLoading && <InlineLoading description={t('FetchingStudies', 'Fetching studies...')} />}
-
       <Form className={styles.formContainer} id="assignStudies">
         {isTablet ? (
           <Row className={styles.header}>

@@ -104,7 +104,7 @@ const LinkStudiesWorkspace: React.FC<DefaultPatientWorkspaceProps> = ({ patientU
         setIsLoading(false);
       }
     },
-    [closeWorkspace, t],
+    [closeWorkspace, t, patientUuid],
   );
 
   return (

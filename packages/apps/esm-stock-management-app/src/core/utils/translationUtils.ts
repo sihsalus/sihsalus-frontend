@@ -1,7 +1,10 @@
 import { type TFunction } from 'i18next';
 
 function normalizeTranslationKey(value: string) {
-  return value.trim().toLowerCase().replace(/[\s_-]+/g, '');
+  return value
+    .trim()
+    .toLowerCase()
+    .replace(/[\s_-]+/g, '');
 }
 
 export function translateStockOperationType(t: TFunction, operationTypeName?: string) {
@@ -19,14 +22,7 @@ export function translateStockOperationType(t: TFunction, operationTypeName?: st
 
 export function translateStockOperationStatus(t: TFunction, status?: string) {
   return status
-    ? t(
-        [
-          `stockOperationStatus.${normalizeTranslationKey(status)}`,
-          status,
-          normalizeTranslationKey(status),
-        ],
-        status,
-      )
+    ? t([`stockOperationStatus.${normalizeTranslationKey(status)}`, status, normalizeTranslationKey(status)], status)
     : '';
 }
 

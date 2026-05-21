@@ -13,7 +13,7 @@ import ControlledTextInput from '../../../core/components/carbon/controlled-text
 import { handleMutate } from '../../../utils';
 import styles from '../../add-stock-item/add-stock-item.scss';
 import { launchAddOrEditStockItemWorkspace } from '../../stock-item.utils';
-import { stockItemCreatedEvent, type StockItemCreatedEventDetail } from '../../stock-items.events';
+import { type StockItemCreatedEventDetail, stockItemCreatedEvent } from '../../stock-items.events';
 import { createStockItem, updateStockItem } from '../../stock-items.resource';
 import { createStockItemDetailsSchema, type StockItemFormData } from '../../validationSchema';
 import ConceptsSelector from '../concepts-selector/concepts-selector.component';

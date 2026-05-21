@@ -23,16 +23,16 @@ import { isDesktop, restBaseUrl } from '@openmrs/esm-framework';
 import React, { useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { ResourceRepresentation } from '../core/api/api';
+import { type StockItemDTO } from '../core/api/types/stockItem/StockItem';
 import { type CustomTableHeader } from '../core/components/table/types';
 import { useDebounce } from '../core/hooks/debounce-hook';
-import { type StockItemDTO } from '../core/api/types/stockItem/StockItem';
 import { handleMutate } from '../utils';
 import AddStockItemsBulktImportActionButton from './add-bulk-stock-item/add-stock-items-bulk-import-action-button.component';
 import AddStockItemActionButton from './add-stock-item/add-stock-action-button.component';
 import FilterStockItems from './components/filter-stock-items/filter-stock-items.component';
 import EditStockItemActionsMenu from './edit-stock-item/edit-stock-item-action-menu.component';
 import { launchAddOrEditStockItemWorkspace } from './stock-item.utils';
-import { stockItemCreatedEvent, type StockItemCreatedEventDetail } from './stock-items.events';
+import { type StockItemCreatedEventDetail, stockItemCreatedEvent } from './stock-items.events';
 import { useStockItemsPages } from './stock-items-table.resource';
 import styles from './stock-items-table.scss';
 

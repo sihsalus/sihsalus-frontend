@@ -114,7 +114,7 @@ const OfflineForms: React.FC<OfflineFormsProps> = () => {
                 <TableHead>
                   <TableRow>
                     {headers.map((header) => (
-                      <TableHeader {...getHeaderProps({ header })} isSortable>
+                      <TableHeader key={header.key} {...getHeaderProps({ header })} isSortable>
                         {header.header}
                       </TableHeader>
                     ))}
@@ -122,7 +122,7 @@ const OfflineForms: React.FC<OfflineFormsProps> = () => {
                 </TableHead>
                 <TableBody>
                   {rows.map((row) => (
-                    <TableRow {...getRowProps({ row })}>
+                    <TableRow key={row.id} {...getRowProps({ row })}>
                       {row.cells.map((cell) => (
                         <TableCell key={cell.id}>{cell.value?.value ?? cell.value}</TableCell>
                       ))}

@@ -23,7 +23,7 @@ const MarkPatientDeceasedOverflowMenuItem: React.FC<MarkPatientDeceasedOverflowM
     !isDead && (
       <OverflowMenuItem
         className={styles.menuitem}
-        itemText={t('markPatientDeceased', 'Mark patient deceased')}
+        itemText={t('markPatientDeceased', 'Marcar paciente como fallecido')}
         onClick={handleLaunchModal}
       />
     )

@@ -1,5 +1,3 @@
-/** @module @category UI */
-import React from 'react';
 import { createRoot } from 'react-dom/client';
 import { Subject } from 'rxjs';
 import ActiveSnackbars from './active-snackbar.component';

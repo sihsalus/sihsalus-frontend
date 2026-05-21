@@ -1,5 +1,6 @@
 @use '@openmrs/esm-styleguide/src/vars' as *;
 
 :global(.omrs-breakpoint-gt-tablet) .mainContentContainer {
-  margin-left: var(--omrs-sidenav-width);
+  margin-inline-start: var(--sihsalus-left-nav-width, var(--omrs-sidenav-width));
+  transition: margin-inline-start 300ms ease;
 }

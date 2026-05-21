@@ -139,8 +139,10 @@ function sanitizeQuestion(question: FormField): void {
 }
 
 function parseBooleanTokenIfPresent<T extends object, K extends keyof T>(node: T | undefined, token: K): T | undefined {
-  if (node && typeof node[token] === 'string') {
-    const trimmed = node[token].trim().toLowerCase();
+  const value = node ? node[token] : undefined;
+
+  if (typeof value === 'string') {
+    const trimmed = value.trim().toLowerCase();
     if (trimmed === 'true' || trimmed === 'false') {
       node[token] = (trimmed === 'true') as T[K];
     }

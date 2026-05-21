@@ -5,7 +5,7 @@ import {
   showSnackbar,
   useLayoutType,
   type Visit,
-} from '@openmrs/esm-framework/src/internal';
+} from '@openmrs/esm-framework';
 import React, { createContext, useCallback, useContext, useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useExternalFormAction } from '../hooks/useExternalFormAction';

@@ -1,0 +1,40 @@
+@use "@carbon/layout";
+
+.bannerFlags {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+}
+
+.flagsCountTag {
+  margin: 0;
+  padding: 0 layout.$spacing-03;
+  border: none;
+  cursor: pointer;
+
+  span {
+    display: inline-flex;
+    align-items: center;
+  }
+}
+
+.flagIcon {
+  margin-right: layout.$spacing-02;
+}
+
+.flagsPopover {
+  position: absolute;
+  top: calc(100% + #{layout.$spacing-03});
+  left: 0;
+  z-index: 9000;
+  min-width: 20rem;
+  max-width: min(32rem, 80vw);
+  padding: layout.$spacing-04;
+  background: #ffffff;
+  border: 1px solid #e0e0e0;
+  box-shadow: 0 layout.$spacing-02 layout.$spacing-06 rgb(0 0 0 / 20%);
+}
+
+.loader {
+  min-height: layout.$spacing-05;
+}

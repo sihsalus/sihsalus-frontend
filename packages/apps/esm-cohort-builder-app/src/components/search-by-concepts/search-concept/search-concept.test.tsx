@@ -4,10 +4,10 @@ import { type Concept } from '../../../types';
 import { SearchConcept } from './search-concept.component';
 import { getConcepts } from './search-concept.resource';
 
-const mockGetConcepts = jest.mocked(getConcepts);
+const mockGetConcepts = vi.mocked(getConcepts);
 
-jest.mock('./search-concept.resource.ts', () => {
-  const mockGetConcepts = jest.fn().mockImplementation((searchTerm) => {
+vi.mock('./search-concept.resource.ts', () => {
+  const mockGetConcepts = vi.fn().mockImplementation((searchTerm) => {
     if (searchTerm === 'blood sugar') {
       return Promise.resolve(concepts);
     }
@@ -55,10 +55,8 @@ describe('Test the concept search component', () => {
     mockGetConcepts.mockResolvedValue(concepts);
 
     let searchText = '';
-    const setSearchText = jest.fn().mockImplementation((search: string) => (searchText = search));
-    render(
-      <SearchConcept concept={null} setConcept={jest.fn()} searchText={searchText} setSearchText={setSearchText} />,
-    );
+    const setSearchText = vi.fn().mockImplementation((search: string) => (searchText = search));
+    render(<SearchConcept concept={null} setConcept={vi.fn()} searchText={searchText} setSearchText={setSearchText} />);
     const searchInput = screen.getByPlaceholderText('Search Concepts');
     await waitFor(() => user.click(searchInput));
     await waitFor(() => user.type(searchInput, 'blood s'));
@@ -71,7 +69,7 @@ describe('Test the concept search component', () => {
   it('should be able to clear the current search value', async () => {
     const user = userEvent.setup();
 
-    render(<SearchConcept concept={null} setConcept={jest.fn()} searchText={''} setSearchText={jest.fn()} />);
+    render(<SearchConcept concept={null} setConcept={vi.fn()} searchText={''} setSearchText={vi.fn()} />);
 
     const searchInput = screen.getByPlaceholderText('Search Concepts');
     await user.click(searchInput);

@@ -3,11 +3,11 @@ import { render, screen } from '@testing-library/react';
 import { useActiveVisitSummary } from '../resources/admissions.resource';
 import ClinicalIdentitySummary from './clinical-identity-summary.component';
 
-jest.mock('../resources/admissions.resource', () => ({
-  useActiveVisitSummary: jest.fn(),
+vi.mock('../resources/admissions.resource', () => ({
+  useActiveVisitSummary: vi.fn(),
 }));
 
-const mockUseActiveVisitSummary = jest.mocked(useActiveVisitSummary);
+const mockUseActiveVisitSummary = vi.mocked(useActiveVisitSummary);
 
 const patient = {
   id: 'patient-uuid',
@@ -22,7 +22,7 @@ const patient = {
 
 describe('ClinicalIdentitySummary', () => {
   beforeEach(() => {
-    jest.clearAllMocks();
+    vi.clearAllMocks();
   });
 
   it('renders the minimum patient identification set with active service and location', () => {

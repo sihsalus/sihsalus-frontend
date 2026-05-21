@@ -1,5 +1,5 @@
-import { Tooltip } from '@carbon/react';
-import { ConfigurableLink, MaybeIcon } from '@openmrs/esm-framework';
+import { ConfigurableLink } from '@openmrs/esm-framework';
+import { MaybeIcon } from '@openmrs/esm-styleguide';
 import classNames from 'classnames';
 import { last } from 'lodash-es';
 import { useMemo } from 'react';
@@ -33,8 +33,8 @@ export const DashboardExtension = ({
   const link = (
     <ConfigurableLink
       className={classNames('cds--side-nav__link', { 'active-left-nav-link': path === navLink })}
-      to={`${basePath}/${encodeURIComponent(path)}`}
       title={translatedTooltip}
+      to={`${basePath}/${encodeURIComponent(path)}`}
     >
       <span className={styles.menu}>
         <MaybeIcon icon={icon} className={styles.icon} size={16} />
@@ -44,14 +44,8 @@ export const DashboardExtension = ({
   );
 
   return (
-    <div key={path}>
-      {translatedTooltip ? (
-        <Tooltip align="right" label={translatedTooltip} enterDelayMs={400} leaveDelayMs={100}>
-          {link}
-        </Tooltip>
-      ) : (
-        link
-      )}
+    <div key={path} className={styles.navItem}>
+      {link}
     </div>
   );
 };

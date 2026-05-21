@@ -1,9 +1,11 @@
+import { InventoryManagement } from '@carbon/react/icons';
 import { ConfigurableLink } from '@openmrs/esm-framework';
 import React, { useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { BrowserRouter, useLocation } from 'react-router-dom';
 
 export interface DashboardLinkConfig {
+  icon?: React.ComponentType<any>;
   name: string;
   title: string;
 }
@@ -20,7 +22,7 @@ const translationKeys: Record<string, string> = {
 };
 
 function DashboardExtension({ dashboardLinkConfig }: { dashboardLinkConfig: DashboardLinkConfig }) {
-  const { name, title } = dashboardLinkConfig;
+  const { icon: Icon = InventoryManagement, name, title } = dashboardLinkConfig;
   const { t } = useTranslation();
   const location = useLocation();
   const spaBasePath = `${window.spaBase}/stock-management`;
@@ -38,7 +40,10 @@ function DashboardExtension({ dashboardLinkConfig }: { dashboardLinkConfig: Dash
       to={`${spaBasePath}/${name}`}
       className={`cds--side-nav__link ${navLink.match(name) && 'active-left-nav-link'}`}
     >
-      {translatedTitle}
+      <span className="sihsalus-side-nav__item">
+        <Icon aria-hidden="true" className="sihsalus-side-nav__icon" size={20} />
+        <span className="sihsalus-side-nav__text">{translatedTitle}</span>
+      </span>
     </ConfigurableLink>
   );
 }

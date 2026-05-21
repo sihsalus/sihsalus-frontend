@@ -7,7 +7,15 @@ import EncounterObservations from './encounter-observation.component';
 
 void React;
 
-const mockUseConfig = jest.mocked(useConfig);
+vi.mock('@openmrs/esm-framework', async () => {
+  const actual = await vi.importActual<typeof import('@openmrs/esm-framework')>('@openmrs/esm-framework');
+  return {
+    ...actual,
+    useConfig: vi.fn(),
+  };
+});
+
+const mockUseConfig = vi.mocked(useConfig);
 const observations: Array<Observation> = [
   {
     uuid: 'obs-uuid',

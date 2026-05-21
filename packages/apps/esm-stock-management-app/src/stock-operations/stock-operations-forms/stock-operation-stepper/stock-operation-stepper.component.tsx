@@ -32,7 +32,6 @@ const StockOperationStepper: React.FC<StockOperationStepperProps> = ({
           const active = selectedIndex >= index;
           return (
             <li
-              role="button"
               className={`${styles.stepperItem} ${active ? styles.stepperItemActive : ''}`}
               key={index}
               onClick={!disabled ? () => onChange?.(index) : undefined}

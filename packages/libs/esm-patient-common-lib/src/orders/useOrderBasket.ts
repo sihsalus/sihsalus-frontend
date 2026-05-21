@@ -13,6 +13,10 @@ const orderBasketStoreActions = {
     value: Array<OrderBasketItem> | (() => Array<OrderBasketItem>),
   ) {
     const patientUuid = getPatientUuidFromStore();
+    if (!patientUuid) {
+      return state;
+    }
+
     if (!Object.keys(state.postDataPrepFunctions).includes(grouping)) {
       console.warn(`Programming error: You must register a postDataPrepFunction for grouping ${grouping} `);
     }
@@ -114,7 +118,7 @@ export function useOrderBasket<T extends OrderBasketItem>(
   const orders = getOrderItems(items, grouping);
 
   useEffect(() => {
-    if (postDataPrepFunction && !postDataPrepFunctions[grouping]) {
+    if (postDataPrepFunction && grouping && !postDataPrepFunctions[grouping]) {
       setPostDataPrepFunctionForGrouping(grouping, postDataPrepFunction);
     }
   }, [postDataPrepFunction, grouping, postDataPrepFunctions, setPostDataPrepFunctionForGrouping]);

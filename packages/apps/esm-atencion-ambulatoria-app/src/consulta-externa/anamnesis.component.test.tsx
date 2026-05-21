@@ -1,21 +1,31 @@
-import { launchWorkspace, useConfig } from '@openmrs/esm-framework';
+import { useConfig } from '@openmrs/esm-framework';
+import { launchPatientWorkspace } from '@openmrs/esm-patient-common-lib';
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { useAnamnesis } from '../hooks/useAnamnesis';
 import { patientFormEntryWorkspace } from '../utils/constants';
 import Anamnesis from './anamnesis.component';
 
-jest.mock('../hooks/useAnamnesis', () => ({
-  useAnamnesis: jest.fn(),
+vi.mock('../hooks/useAnamnesis', () => ({
+  useAnamnesis: vi.fn(),
 }));
 
-const mockUseAnamnesis = jest.mocked(useAnamnesis);
-const mockLaunchWorkspace = jest.mocked(launchWorkspace);
-const mockUseConfig = jest.mocked(useConfig);
+vi.mock('@openmrs/esm-patient-common-lib', async () => {
+  const actual = await vi.importActual('@openmrs/esm-patient-common-lib');
+
+  return {
+    ...actual,
+    launchPatientWorkspace: vi.fn(),
+  };
+});
+
+const mockUseAnamnesis = vi.mocked(useAnamnesis);
+const mockLaunchPatientWorkspace = vi.mocked(launchPatientWorkspace);
+const mockUseConfig = vi.mocked(useConfig);
 
 describe('Anamnesis', () => {
   beforeEach(() => {
-    jest.clearAllMocks();
+    vi.clearAllMocks();
     mockUseConfig.mockReturnValue({
       encounterTypes: {
         externalConsultation: 'external-consultation',
@@ -36,7 +46,7 @@ describe('Anamnesis', () => {
       anamnesisEntries: [],
       isLoading: false,
       error: undefined,
-      mutate: jest.fn(),
+      mutate: vi.fn(),
     });
 
     render(<Anamnesis patientUuid="patient-uuid" />);
@@ -70,7 +80,7 @@ describe('Anamnesis', () => {
       ],
       isLoading: false,
       error: undefined,
-      mutate: jest.fn(),
+      mutate: vi.fn(),
     });
 
     render(<Anamnesis patientUuid="patient-uuid" />);
@@ -81,8 +91,9 @@ describe('Anamnesis', () => {
 
     await user.click(screen.getByRole('button', { name: 'Registrar Anamnesis' }));
 
-    expect(mockLaunchWorkspace).toHaveBeenCalledWith(patientFormEntryWorkspace, {
+    expect(mockLaunchPatientWorkspace).toHaveBeenCalledWith(patientFormEntryWorkspace, {
       formInfo: {
+        patientUuid: 'patient-uuid',
         formUuid: 'CE-ANAM-001-ANAMNESIS',
       },
     });

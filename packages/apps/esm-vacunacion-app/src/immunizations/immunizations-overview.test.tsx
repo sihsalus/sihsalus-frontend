@@ -15,7 +15,7 @@ const testProps = {
   patientUuid: mockPatient.id,
 };
 
-const mockUseFhirFetchAll = useFhirFetchAll as jest.Mock;
+const mockUseFhirFetchAll = useFhirFetchAll as vi.Mock;
 
 describe('ImmunizationOverview', () => {
   it('renders an empty state view of immunizations data is unavailable', async () => {
@@ -46,7 +46,7 @@ describe('ImmunizationOverview', () => {
       error,
       isLoading: false,
       isValidating: false,
-      mutate: jest.fn(),
+      mutate: vi.fn(),
     });
 
     renderWithSwr(<ImmunizationsOverview {...testProps} />);

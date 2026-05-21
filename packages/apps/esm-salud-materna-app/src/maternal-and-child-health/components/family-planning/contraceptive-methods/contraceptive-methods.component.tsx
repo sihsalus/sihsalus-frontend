@@ -15,7 +15,7 @@ interface ContraceptiveMethodsProps {
  * Widget de métodos anticonceptivos según NTS 124-MINSA.
  * Muestra método actual, fecha de inicio, categoría y próximo control.
  */
-const ContraceptiveMethods: React.FC<ContraceptiveMethodsProps> = ({ patientUuid }) => {
+const ContraceptiveMethods: React.FC<ContraceptiveMethodsProps> = ({ patientUuid: _patientUuid }) => {
   const { t } = useTranslation();
   const config = useConfig<ConfigObject>();
 

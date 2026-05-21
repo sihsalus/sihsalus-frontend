@@ -11,8 +11,8 @@ import {
   TableHeader,
   TableRow,
 } from '@carbon/react';
-import { AddIcon, formatDate, launchWorkspace2, parseDate, useLayoutType } from '@openmrs/esm-framework';
-import { CardHeader, EmptyState, ErrorState } from '@openmrs/esm-patient-common-lib';
+import { AddIcon, formatDate, parseDate, useLayoutType } from '@openmrs/esm-framework';
+import { CardHeader, EmptyState, ErrorState, launchPatientWorkspace } from '@openmrs/esm-patient-common-lib';
 import React, { useCallback, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { patientAllergiesFormWorkspace } from '../constants';
@@ -33,7 +33,7 @@ const AllergiesDetailedSummary: React.FC<AllergiesDetailedSummaryProps> = ({ pat
   const displayText = t('allergyIntolerances', 'allergy intolerances');
   const headerTitle = t('allergies', 'Allergies');
 
-  const launchAllergiesForm = useCallback(() => launchWorkspace2(patientAllergiesFormWorkspace), []);
+  const launchAllergiesForm = useCallback(() => launchPatientWorkspace(patientAllergiesFormWorkspace), []);
 
   const tableHeaders = [
     { key: 'display', header: t('allergen', 'Allergen') },
@@ -90,6 +90,7 @@ const AllergiesDetailedSummary: React.FC<AllergiesDetailedSummaryProps> = ({ pat
                   <TableRow>
                     {headers.map((header) => (
                       <TableHeader
+                        key={header.key}
                         className={styles.tableHeader}
                         {...getHeaderProps({
                           header,
@@ -110,7 +111,7 @@ const AllergiesDetailedSummary: React.FC<AllergiesDetailedSummaryProps> = ({ pat
                       <TableCell className="cds--table-column-menu">
                         <AllergiesActionMenu
                           patientUuid={patient.id}
-                          allergy={allergies.find((allergy) => allergy.id == row.id)}
+                          allergy={allergies.find((allergy) => allergy.id === row.id)}
                         />
                       </TableCell>
                     </TableRow>

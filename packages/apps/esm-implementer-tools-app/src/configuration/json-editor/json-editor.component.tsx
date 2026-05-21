@@ -4,7 +4,7 @@ import ace from 'ace-builds/src-noconflict/ace';
 import 'ace-builds/src-noconflict/mode-json';
 import 'ace-builds/src-noconflict/theme-dracula';
 import classNames from 'classnames';
-import React, { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import AceEditor from 'react-ace';
 import { useTranslation } from 'react-i18next';
 
@@ -43,11 +43,10 @@ export default function JsonEditor({ height }: JsonEditorProps) {
   }, [editorValue]);
 
   useEffect(() => {
-    if (editorValue != JSON.stringify(temporaryConfig.config, null, 2)) {
+    if (editorValue !== JSON.stringify(temporaryConfig.config, null, 2)) {
       setKey((k) => `${k}+`); // just keep appending plus signs
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [temporaryConfig.config]);
+  }, [temporaryConfig.config, editorValue]);
 
   return (
     <div>

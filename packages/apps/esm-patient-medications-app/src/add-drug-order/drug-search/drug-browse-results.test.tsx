@@ -2,10 +2,10 @@ import { render, screen } from '@testing-library/react';
 import { mockDrugSearchResultApiData, mockFhirPatient } from 'test-utils';
 import DrugBrowseResults from './drug-browse-results.component';
 
-const mockCloseWorkspace = jest.fn();
-const mockOpenOrderForm = jest.fn();
+const mockCloseWorkspace = vi.fn();
+const mockOpenOrderForm = vi.fn();
 
-jest.mock('./order-basket-search-results.component', () => ({
+vi.mock('./order-basket-search-results.component', () => ({
   DrugSearchResultItem: ({ drug }) => <div data-testid={`drug-item-${drug.uuid}`}>{drug.display}</div>,
 }));
 

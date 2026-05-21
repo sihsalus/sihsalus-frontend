@@ -1,7 +1,8 @@
-import { Modal, OverflowMenuItem } from '@carbon/react';
+import { Modal } from '@carbon/react';
 import { OverflowMenuVertical } from '@carbon/react/icons';
 import {
   CustomOverflowMenu,
+  CustomOverflowMenuItem,
   formatDate,
   launchWorkspace2,
   navigate,
@@ -151,12 +152,12 @@ const ListDetails = () => {
               </>
             }
           >
-            <OverflowMenuItem
+            <CustomOverflowMenuItem
               className={styles.menuItem}
               itemText={t('editNameDescription', 'Edit name or description')}
               onClick={handleEdit}
             />
-            <OverflowMenuItem
+            <CustomOverflowMenuItem
               className={styles.menuItem}
               itemText={t('deletePatientList', 'Delete patient list')}
               onClick={handleDelete}

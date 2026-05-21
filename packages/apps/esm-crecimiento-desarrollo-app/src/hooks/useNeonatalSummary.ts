@@ -1,13 +1,12 @@
-import { openmrsFetch, useConfig } from '@openmrs/esm-framework';
+import { openmrsFetch } from '@openmrs/esm-framework';
 import useSWR from 'swr';
 
-import type { ConfigObject } from '../config-schema';
 import type { OpenmrsEncounter } from '../types';
 import { DeliveryForm_UUID, encounterRepresentation, MchEncounterType_UUID } from '../utils/constants';
 
 export function useNeonatalSummary(patientUuid: string, encounterType: string) {
-  const config = useConfig() as ConfigObject;
-  const url = `/ws/rest/v1/encounter?encounterType=${MchEncounterType_UUID}&patient=${patientUuid}&v=${encounterRepresentation}`;
+  const resolvedEncounterType = encounterType || MchEncounterType_UUID;
+  const url = `/ws/rest/v1/encounter?encounterType=${resolvedEncounterType}&patient=${patientUuid}&v=${encounterRepresentation}`;
 
   const { data, error, isLoading, isValidating, mutate } = useSWR<{ data: { results: OpenmrsEncounter[] } }, Error>(
     url,

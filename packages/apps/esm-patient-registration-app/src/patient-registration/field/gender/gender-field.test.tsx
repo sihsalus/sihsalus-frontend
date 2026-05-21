@@ -2,25 +2,24 @@ import { getDefaultsFromConfigSchema, useConfig } from '@openmrs/esm-framework';
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { Form, Formik } from 'formik';
-import React from 'react';
 
 import { esmPatientRegistrationSchema, type RegistrationConfig } from '../../../config-schema';
 
 import { GenderField } from './gender-field.component';
 
-const mockUseConfig = jest.mocked(useConfig<RegistrationConfig>);
+const mockUseConfig = vi.mocked(useConfig<RegistrationConfig>);
 
-jest.mock('react', () => ({
-  ...(jest.requireActual('react') as any),
-  useContext: jest.fn(() => ({
-    setFieldValue: jest.fn(),
-    setFieldTouched: jest.fn(),
+vi.mock('react', async () => ({
+  ...((await vi.importActual('react')) as any),
+  useContext: vi.fn(() => ({
+    setFieldValue: vi.fn(),
+    setFieldTouched: vi.fn(),
   })),
 }));
 
-jest.mock('formik', () => ({
-  ...(jest.requireActual('formik') as any),
-  useField: jest.fn(() => [{}, {}]),
+vi.mock('formik', async () => ({
+  ...((await vi.importActual('formik')) as any),
+  useField: vi.fn(() => [{}, {}]),
 }));
 
 describe('GenderField', () => {

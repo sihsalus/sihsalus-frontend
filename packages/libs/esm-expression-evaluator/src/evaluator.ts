@@ -362,7 +362,7 @@ function numberTypePredicate(result: unknown): result is number {
 
 // This is the core of the implementation; it takes an expression, the variables and the current object
 // each expression is dispatched to an appropriate handler.
-function visitExpression(expression: jsep.Expression, context: EvaluationContext) {
+function visitExpression(expression: jsep.Expression, context: EvaluationContext): unknown {
   switch (expression.type) {
     case 'UnaryExpression':
       return visitUnaryExpression(expression as jsep.UnaryExpression, context);
@@ -395,7 +395,10 @@ function visitExpression(expression: jsep.Expression, context: EvaluationContext
   }
 }
 
-function visitExpressionName(expression: jsep.Expression, context: EvaluationContext) {
+function visitExpressionName(
+  expression: jsep.Expression,
+  context: EvaluationContext,
+): string | number | boolean | object | null | undefined {
   switch (expression.type) {
     case 'Literal':
       return (expression as jsep.Literal).value as string;
@@ -408,40 +411,45 @@ function visitExpressionName(expression: jsep.Expression, context: EvaluationCon
   }
 }
 
-function visitUnaryExpression(expression: jsep.UnaryExpression, context: EvaluationContext) {
+function visitUnaryExpression(expression: jsep.UnaryExpression, context: EvaluationContext): unknown {
   const value = visitExpression(expression.argument, context);
 
   switch (expression.operator) {
     case '+':
-      return +value;
+      return +(value as number);
     case '-':
-      return -value;
+      return -(value as number);
     case '~':
-      return ~value;
+      return ~(value as number);
     case '!':
-      return !value;
+      return !(value as boolean);
     default:
       throw `Expression evaluator does not support operator '${expression.operator}''`;
   }
 }
 
-function visitBinaryExpression(expression: jsep.BinaryExpression, context: EvaluationContext) {
+function visitBinaryExpression(expression: jsep.BinaryExpression, context: EvaluationContext): unknown {
   const left = visitExpression(expression.left, context);
   const right = visitExpression(expression.right, context);
+  const leftAsNumber = left as number;
+  const rightAsNumber = right as number;
 
   switch (expression.operator) {
     case '+':
-      return left + right;
+      if (typeof left === 'string' || typeof right === 'string') {
+        return `${left}${right}`;
+      }
+      return (left as number) + (right as number);
     case '-':
-      return left - right;
+      return leftAsNumber - rightAsNumber;
     case '*':
-      return left * right;
+      return leftAsNumber * rightAsNumber;
     case '/':
-      return left / right;
+      return leftAsNumber / rightAsNumber;
     case '%':
-      return left % right;
+      return leftAsNumber % rightAsNumber;
     case '**':
-      return left ** right;
+      return leftAsNumber ** rightAsNumber;
     case '==':
       return left === right;
     case '===':
@@ -451,19 +459,19 @@ function visitBinaryExpression(expression: jsep.BinaryExpression, context: Evalu
     case '!==':
       return left !== right;
     case '>':
-      return left > right;
+      return (left as number | string | Date) > (right as number | string | Date);
     case '>=':
-      return left >= right;
+      return (left as number | string | Date) >= (right as number | string | Date);
     case '<':
-      return left < right;
+      return (left as number | string | Date) < (right as number | string | Date);
     case '<=':
-      return left <= right;
+      return (left as number | string | Date) <= (right as number | string | Date);
     case 'in':
-      return left in right;
+      return (left as PropertyKey) in ((right as object | null) ?? {});
     case '&&':
-      return left && right;
+      return (left as boolean) && right;
     case '||':
-      return left || right;
+      return (left as boolean) || right;
     case '??':
       return left ?? right;
     default:
@@ -471,12 +479,12 @@ function visitBinaryExpression(expression: jsep.BinaryExpression, context: Evalu
   }
 }
 
-function visitConditionalExpression(expression: jsep.ConditionalExpression, context: EvaluationContext) {
+function visitConditionalExpression(expression: jsep.ConditionalExpression, context: EvaluationContext): unknown {
   const test = visitExpression(expression.test, context);
   return test ? visitExpression(expression.consequent, context) : visitExpression(expression.alternate, context);
 }
 
-function visitCallExpression(expression: jsep.CallExpression, context: EvaluationContext) {
+function visitCallExpression(expression: jsep.CallExpression, context: EvaluationContext): unknown {
   const args = expression.arguments?.map(handleNullableExpression(context));
   const callee = visitExpression(expression.callee, context);
 
@@ -489,7 +497,10 @@ function visitCallExpression(expression: jsep.CallExpression, context: Evaluatio
   return callee(...args);
 }
 
-function visitArrowFunctionExpression(expression: ArrowExpression, context: EvaluationContext) {
+function visitArrowFunctionExpression(
+  expression: ArrowExpression,
+  context: EvaluationContext,
+): (...rest: unknown[]) => unknown {
   const params =
     expression.params?.map((p) => {
       switch (p.type) {
@@ -519,7 +530,7 @@ function visitArrowFunctionExpression(expression: ArrowExpression, context: Eval
   }.bind(context.thisObj ?? null);
 }
 
-function visitMemberExpression(expression: jsep.MemberExpression, context: EvaluationContext) {
+function visitMemberExpression(expression: jsep.MemberExpression, context: EvaluationContext): unknown {
   const obj = visitExpression(expression.object, context);
 
   if (obj === undefined) {
@@ -537,13 +548,15 @@ function visitMemberExpression(expression: jsep.MemberExpression, context: Evalu
     }
   }
 
-  let newObj = obj;
+  let newObj = obj as Record<string, unknown> | ((...args: unknown[]) => unknown);
   if (typeof obj === 'string') {
-    newObj = String.prototype;
+    newObj = String.prototype as unknown as Record<string, unknown>;
   } else if (typeof obj === 'number') {
-    newObj = Number.prototype;
+    newObj = Number.prototype as unknown as Record<string, unknown>;
   } else if (typeof obj === 'function') {
-    // no-op
+    newObj = obj as (...args: unknown[]) => unknown;
+  } else if (obj === null) {
+    throw `VisitMemberExpression does not support member access on type ${typeof obj}`;
   } else if (typeof obj !== 'object') {
     throw `VisitMemberExpression does not support member access on type ${typeof obj}`;
   }
@@ -562,7 +575,11 @@ function visitMemberExpression(expression: jsep.MemberExpression, context: Evalu
         throw { type: 'Illegal property access', message: 'No property was supplied to the property access' };
       }
       validatePropertyName(property);
-      result = obj[property];
+      if (typeof property !== 'string' && typeof property !== 'number' && typeof property !== 'symbol') {
+        throw { type: 'Illegal property access', message: `Invalid property access ${String(property)}` };
+      }
+
+      result = (obj as Record<PropertyKey, unknown>)[property];
     }
   }
 
@@ -573,16 +590,19 @@ function visitMemberExpression(expression: jsep.MemberExpression, context: Evalu
   return result;
 }
 
-function visitArrayExpression(expression: jsep.ArrayExpression, context: EvaluationContext) {
+function visitArrayExpression(
+  expression: jsep.ArrayExpression,
+  context: EvaluationContext,
+): Array<unknown> | undefined {
   return expression.elements?.map(handleNullableExpression(context));
 }
 
-function visitSequenceExpression(expression: jsep.SequenceExpression, context: EvaluationContext) {
+function visitSequenceExpression(expression: jsep.SequenceExpression, context: EvaluationContext): unknown {
   const result = expression.expressions.map(handleNullableExpression(context));
   return result[result.length - 1];
 }
 
-function visitNewExpression(expression: NewExpression, context: EvaluationContext) {
+function visitNewExpression(expression: NewExpression, context: EvaluationContext): unknown {
   if (expression.callee && expression.callee.type === 'Identifier') {
     const args = expression.arguments?.map(handleNullableExpression(context)) as Array<any>;
     switch (expression.callee.name) {
@@ -605,28 +625,32 @@ function visitNewExpression(expression: NewExpression, context: EvaluationContex
   }
 }
 
-function visitTemplateLiteral(expression: TemplateLiteral, context: EvaluationContext) {
-  const expressions: Array<unknown> = expression.expressions?.map(handleNullableExpression(context)) ?? [];
-  const quasis: Array<{ tail: boolean; value: unknown }> =
-    expression.quasis?.map(handleNullableExpression(context)) ?? [];
-  return (
-    quasis
-      .filter((q) => !q.tail)
-      .map((q) => q.value)
-      .join('') +
-    expressions.join('') +
-    quasis
-      .filter((q) => q.tail)
-      .map((q) => q.value)
-      .join('')
-  );
+function visitTemplateLiteral(expression: TemplateLiteral, context: EvaluationContext): string {
+  const expressions = expression.expressions?.map((expression) => visitExpression(expression, context)) ?? [];
+  const quasis = expression.quasis?.map((quasi) => visitTemplateElement(quasi, context)) ?? [];
+  let result = '';
+
+  for (let i = 0; i < quasis.length; i++) {
+    result += quasis[i]?.value ?? '';
+    if (i < expressions.length) {
+      result += String(expressions[i] ?? '');
+    }
+  }
+
+  return result;
 }
 
-function visitTemplateElement(expression: TemplateElement, _context: EvaluationContext) {
-  return { value: expression.cooked, tail: expression.tail };
+function visitTemplateElement(
+  expression: TemplateElement,
+  _context: EvaluationContext,
+): { value: string | undefined; tail: boolean } {
+  return {
+    value: expression.value?.cooked ?? expression.value?.raw ?? '',
+    tail: expression.tail,
+  };
 }
 
-function visitIdentifier(expression: jsep.Identifier, context: EvaluationContext) {
+function visitIdentifier(expression: jsep.Identifier, context: EvaluationContext): unknown {
   validatePropertyName(expression.name);
 
   // we support both `object` and `function` in the same way as technically property access on functions
@@ -634,7 +658,7 @@ function visitIdentifier(expression: jsep.Identifier, context: EvaluationContext
   // is technically reading a property on a function
   const thisObj = context.thisObj;
   if (thisObj && (typeof thisObj === 'object' || typeof thisObj === 'function') && expression.name in thisObj) {
-    const result = thisObj[expression.name];
+    const result = (thisObj as Record<string, unknown>)[expression.name];
     validatePropertyName(result);
     return result;
   } else if (context.variables && expression.name in context.variables) {
@@ -648,7 +672,7 @@ function visitIdentifier(expression: jsep.Identifier, context: EvaluationContext
   }
 }
 
-function visitLiteral(expression: jsep.Literal, _context: EvaluationContext) {
+function visitLiteral(expression: jsep.Literal, _context: EvaluationContext): unknown {
   validatePropertyName(expression.value);
   return expression.value;
 }
@@ -656,9 +680,9 @@ function visitLiteral(expression: jsep.Literal, _context: EvaluationContext) {
 // Internal helpers and utilities
 
 interface EvaluationContext {
-  thisObj: object | undefined;
+  thisObj: Record<string, unknown> | ((...args: unknown[]) => unknown) | undefined;
   variables: VariablesMap;
-  globals: typeof globals | typeof globalsAsync;
+  globals: typeof globals;
   addVariables(vars: VariablesMap): EvaluationContext;
 }
 
@@ -670,7 +694,7 @@ function createAsynchronousContext(variables: VariablesMap): EvaluationContext {
   return createContextInternal(variables, globalsAsync);
 }
 
-function createContextInternal(variables: VariablesMap, globals_: typeof globals | typeof globalsAsync) {
+function createContextInternal(variables: VariablesMap, globals_: typeof globals): EvaluationContext {
   const context = {
     thisObj: undefined,
     variables: { ...variables },
@@ -689,7 +713,7 @@ function createContextInternal(variables: VariablesMap, globals_: typeof globals
 // helper useful for handling arrays of expressions, since `null` expressions should not be
 // dispatched to `visitExpression()`
 function handleNullableExpression(context: EvaluationContext) {
-  return function handleNullableExpressionInner(expression: jsep.Expression | null) {
+  return function handleNullableExpressionInner(expression: jsep.Expression | null): unknown | null {
     if (expression === null) {
       return null;
     }
@@ -718,7 +742,7 @@ function isValidVariableType(val: unknown): val is VariablesMap['a'] {
 
   if (typeof val === 'object') {
     for (const key of Object.keys(val)) {
-      if (!isValidVariableType(val[key])) {
+      if (!isValidVariableType((val as Record<string, unknown>)[key])) {
         return false;
       }
     }
@@ -737,13 +761,17 @@ function isValidVariableType(val: unknown): val is VariablesMap['a'] {
   return false;
 }
 
-function getCallTargetName(expression: Expression) {
+function getCallTargetName(expression: Expression): string | null {
   if (!expression) {
     return null;
   }
   if (expression.type === 'MemberExpression') {
-    return (expression.property as MemberExpression)?.name;
+    const property = (expression.property as MemberExpression)?.name;
+    return typeof property === 'string' ? property : null;
   }
   // identifier expression
-  return expression.name;
+  if (expression.type === 'Identifier') {
+    return typeof expression.name === 'string' ? expression.name : null;
+  }
+  return null;
 }

@@ -67,7 +67,7 @@ const OnPrescriptionFilledModal: React.FC<OnPrescriptionFilledModalProps> = ({ p
 
         await saveMedicationDispense(medicationDispensePayload, MedicationDispenseStatus.completed)
           .then((response) => {
-            const hasNoRefills = medicationRequestBundle.request.dispenseRequest.numberOfRepeatsAllowed == 0;
+            const hasNoRefills = medicationRequestBundle.request.dispenseRequest.numberOfRepeatsAllowed === 0;
             if (response.ok && hasNoRefills) {
               return updateMedicationRequestFulfillerStatus(
                 getUuidFromReference(

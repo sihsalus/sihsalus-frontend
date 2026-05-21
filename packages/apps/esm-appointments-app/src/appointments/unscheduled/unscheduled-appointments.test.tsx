@@ -9,21 +9,21 @@ import { useUnscheduledAppointments } from '../../hooks/useUnscheduledAppointmen
 
 import UnscheduledAppointments from './unscheduled-appointments.component';
 
-const mockExportUnscheduledAppointmentsToSpreadsheet = jest.mocked(exportUnscheduledAppointmentsToSpreadsheet);
-const mockUseUnscheduledAppointments = jest.mocked(useUnscheduledAppointments);
-const mockUseConfig = jest.mocked(useConfig<ConfigObject>);
+const mockExportUnscheduledAppointmentsToSpreadsheet = vi.mocked(exportUnscheduledAppointmentsToSpreadsheet);
+const mockUseUnscheduledAppointments = vi.mocked(useUnscheduledAppointments);
+const mockUseConfig = vi.mocked(useConfig<ConfigObject>);
 
-jest.mock('../../helpers/excel', () => {
+vi.mock('../../helpers/excel', async () => {
   return {
-    ...jest.requireActual('../../helpers/excel'),
-    exportUnscheduledAppointmentsToSpreadsheet: jest.fn(),
+    ...(await vi.importActual('../../helpers/excel')),
+    exportUnscheduledAppointmentsToSpreadsheet: vi.fn(),
   };
 });
 
-jest.mock('../../hooks/useUnscheduledAppointments', () => {
+vi.mock('../../hooks/useUnscheduledAppointments', async () => {
   return {
-    ...jest.requireActual('../../hooks/useUnscheduledAppointments'),
-    useUnscheduledAppointments: jest.fn(),
+    ...(await vi.importActual('../../hooks/useUnscheduledAppointments')),
+    useUnscheduledAppointments: vi.fn(),
   };
 });
 

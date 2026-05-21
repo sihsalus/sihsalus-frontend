@@ -5,9 +5,12 @@
     "declaration": true,
     "declarationDir": "dist",
     "emitDeclarationOnly": true,
+    "allowArbitraryExtensions": true,
+    "noEmit": false,
     "rootDir": "src",
     "skipLibCheck": true
   },
-  "include": ["src/**/*"],
+  "files": ["declarations.d.ts"],
+  "include": ["src/**/*.ts", "src/**/*.tsx"],
   "exclude": ["**/*.test.*", "**/setup-tests.ts", "**/__mocks__/*"]
 }

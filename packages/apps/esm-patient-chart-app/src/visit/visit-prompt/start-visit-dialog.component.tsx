@@ -1,5 +1,5 @@
 import { Button, ModalBody, ModalFooter, ModalHeader } from '@carbon/react';
-import { useFeatureFlag } from '@openmrs/esm-framework';
+import { navigate, useFeatureFlag } from '@openmrs/esm-framework';
 import { launchPatientChartWithWorkspaceOpen, launchPatientWorkspace } from '@openmrs/esm-patient-common-lib';
 import React, { useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -23,16 +23,9 @@ const StartVisitDialog: React.FC<StartVisitDialogProps> = ({
   const rdeFeatureEnabled = useFeatureFlag('rde');
 
   const handleEditPastVisit = useCallback(() => {
-    if (launchPatientChart) {
-      launchPatientChartWithWorkspaceOpen({
-        patientUuid,
-        workspaceName: 'past-visits-overview',
-      });
-    } else {
-      launchPatientWorkspace('past-visits-overview');
-    }
+    navigate({ to: '${openmrsSpaBase}/patient/' + `${patientUuid}/chart/Visits` });
     closeModal();
-  }, [closeModal, patientUuid, launchPatientChart]);
+  }, [closeModal, patientUuid]);
 
   const handleStartNewVisit = useCallback(() => {
     if (launchPatientChart) {

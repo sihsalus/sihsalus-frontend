@@ -6,7 +6,7 @@ import GroupSearchHeader from './GroupSearchHeader';
 
 let selectedGroup;
 
-jest.mock('../group-search/CompactGroupSearch', () => ({
+vi.mock('../group-search/CompactGroupSearch', () => ({
   __esModule: true,
   default: ({ selectGroupAction }) => (
     <button type="button" data-testid="compact-group-search" onClick={() => selectGroupAction(selectedGroup)}>
@@ -15,14 +15,14 @@ jest.mock('../group-search/CompactGroupSearch', () => ({
   ),
 }));
 
-jest.mock('../../add-group-modal/AddGroupModal', () => ({
+vi.mock('../../add-group-modal/AddGroupModal', () => ({
   __esModule: true,
   default: ({ isOpen }) => (isOpen ? <div data-testid="add-group-modal" /> : null),
 }));
 
-const mockShowSnackbar = jest.mocked(showSnackbar);
-const mockUseConfig = jest.mocked(useConfig);
-const mockUseSession = jest.mocked(useSession);
+const mockShowSnackbar = vi.mocked(showSnackbar);
+const mockUseConfig = vi.mocked(useConfig);
+const mockUseSession = vi.mocked(useSession);
 
 const renderGroupSearchHeader = (contextOverrides = {}) =>
   render(
@@ -30,8 +30,8 @@ const renderGroupSearchHeader = (contextOverrides = {}) =>
       value={
         {
           activeGroupUuid: null,
-          setGroup: jest.fn(),
-          destroySession: jest.fn(),
+          setGroup: vi.fn(),
+          destroySession: vi.fn(),
           ...contextOverrides,
         } as never
       }
@@ -55,7 +55,7 @@ describe('GroupSearchHeader', () => {
 
   it('blocks group selection when location enforcement is enabled and locations mismatch', async () => {
     const user = userEvent.setup();
-    const setGroup = jest.fn();
+    const setGroup = vi.fn();
     selectedGroup = {
       uuid: 'group-1',
       location: {
@@ -80,7 +80,7 @@ describe('GroupSearchHeader', () => {
 
   it('sorts cohort members by display name before storing the selected group', async () => {
     const user = userEvent.setup();
-    const setGroup = jest.fn();
+    const setGroup = vi.fn();
     selectedGroup = {
       uuid: 'group-1',
       location: {
@@ -108,7 +108,7 @@ describe('GroupSearchHeader', () => {
 
   it('opens the add-group modal and lets the user cancel the session', async () => {
     const user = userEvent.setup();
-    const destroySession = jest.fn();
+    const destroySession = vi.fn();
     renderGroupSearchHeader({ destroySession });
 
     await user.click(screen.getByRole('button', { name: 'Create New Group' }));

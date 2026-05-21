@@ -6,8 +6,8 @@ async function isSafariPrivateBrowsing() {
   try {
     storage.setItem('someKeyHere', 'test');
     storage.removeItem('someKeyHere');
-  } catch (e) {
-    if (e.code === DOMException.QUOTA_EXCEEDED_ERR && storage.length === 0) {
+  } catch (e: unknown) {
+    if (e instanceof DOMException && e.name === 'QuotaExceededError' && storage.length === 0) {
       return true;
     }
   }

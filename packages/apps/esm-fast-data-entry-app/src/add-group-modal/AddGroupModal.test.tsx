@@ -1,13 +1,13 @@
 import { type ConfigSchema, type Session, showSnackbar, useConfig, useSession } from '@openmrs/esm-framework';
 import { useHsuIdIdentifier } from '../hooks/location-tag.resource';
 
-jest.mock('@openmrs/esm-framework');
-jest.mock('../hooks/location-tag.resource');
+vi.mock('@openmrs/esm-framework');
+vi.mock('../hooks/location-tag.resource');
 
-const mockShowSnackbar = showSnackbar as jest.MockedFunction<typeof showSnackbar>;
-const mockUseConfig = useConfig as jest.MockedFunction<typeof useConfig>;
-const mockUseSession = useSession as jest.MockedFunction<typeof useSession>;
-const mockUseHsuIdIdentifier = useHsuIdIdentifier as jest.MockedFunction<typeof useHsuIdIdentifier>;
+const mockShowSnackbar = showSnackbar as vi.MockedFunction<typeof showSnackbar>;
+const mockUseConfig = useConfig as vi.MockedFunction<typeof useConfig>;
+const mockUseSession = useSession as vi.MockedFunction<typeof useSession>;
+const mockUseHsuIdIdentifier = useHsuIdIdentifier as vi.MockedFunction<typeof useHsuIdIdentifier>;
 
 describe('AddGroupModal - enforcePatientListLocationMatch', () => {
   const mockSessionLocation = {
@@ -21,7 +21,7 @@ describe('AddGroupModal - enforcePatientListLocationMatch', () => {
   };
 
   beforeEach(() => {
-    jest.clearAllMocks();
+    vi.clearAllMocks();
   });
 
   it('should show error snackbar when enforcePatientListLocationMatch is enabled and location mismatch occurs', () => {

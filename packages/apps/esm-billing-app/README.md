@@ -165,7 +165,7 @@ The following defaults are **not seeded** by the demo content and must be create
 
 ## Troubleshooting
 
-If you notice that your local version of the application is not working or that there's a mismatch between what you see locally versus what's in [dev3](https://dev3.openmrs.org/openmrs/spa), you likely have outdated versions of core libraries. To update core libraries, run the following commands:
+If you notice that your local version of the application is not working or that there's a mismatch between what you see in the configured SIH Salus backend, you likely have outdated versions of core libraries. To update core libraries, run the following commands:
 
 ```bash
 # Upgrade core libraries

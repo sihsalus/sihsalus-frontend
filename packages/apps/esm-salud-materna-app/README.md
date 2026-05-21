@@ -4,6 +4,28 @@
 
 Colección de módulos microfrontend para SIH SALUS, una distribución especializada de OpenMRS 3.x adaptada al ecosistema de salud peruano y las directrices del MINSA.
 
+## Cobertura normativa de madre gestante
+
+Base normativa revisada:
+
+- NTS N° 105-MINSA/DGSP.V.01, Norma Técnica de Salud para la Atención Integral de Salud Materna, aprobada por RM N° 827-2013/MINSA y precisada por RM N° 159-2014/MINSA.
+- NTS N° 130-MINSA/2017/DGIESP, Norma Técnica de Salud para la Atención Integral y Diferenciada de la Gestante Adolescente durante el Embarazo, Parto y Puerperio.
+- Normativa materno-neonatal complementaria publicada en gob.pe, incluyendo parto vertical, pertinencia cultural y guías de emergencias obstétricas según capacidad resolutiva.
+
+Cobertura frontend actual:
+
+- Atención prenatal reenfocada: antecedentes obstétricos, embarazo actual, atención prenatal, tamizaje prenatal, suplementación gestante, plan de parto, psicoprofilaxis y clasificación de riesgo obstétrico mediante conceptos configurables.
+- Parto institucional y calificado: parto/aborto, partograma y resumen de parto-postparto.
+- Puerperio: puerperio inmediato, control de puerperio, egreso materno y reingreso materno cuando el content package provee esos formularios.
+- Atención integral diferenciada: salud mental perinatal, tamizaje de violencia en gestante, planificación familiar post evento obstétrico y prevención de cáncer cervical/mama.
+- Gestante adolescente: el módulo deja el punto de extensión `formsList.adolescentPregnancyCareForm`; permanece vacío por defecto porque el content package aún no contiene un formulario específico NTS 130.
+
+Vacíos conocidos:
+
+- Falta convertir el placeholder de gestante adolescente en formulario real cuando content incorpore la ficha diferenciada.
+- Falta checklist operativo para referencia/contrarreferencia y pertinencia cultural; hoy dependen de workflows generales del HIS.
+- Falta auditoría de cumplimiento normativo por control prenatal; los datos existen como formularios/obs, pero no hay panel de brechas por estándar.
+
 ## TODO content/backend
 
 - Validar los UUIDs de controles CRED copiados en `config-schema.ts`; `consultationTime`, `controlNumber` y `attendedAge` no deben compartir el mismo concepto.

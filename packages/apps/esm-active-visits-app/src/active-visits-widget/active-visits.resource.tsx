@@ -227,7 +227,7 @@ export function useActiveVisitsSorting(tableRows: Array<SortableVisitRow>) {
       return typeof value === 'string' || typeof value === 'number' ? new Date(value).getTime() : null;
     }
 
-    if (key === 'age' && (typeof value === 'string' || typeof value === 'number') && !isNaN(Number(value))) {
+    if (key === 'age' && (typeof value === 'string' || typeof value === 'number') && !Number.isNaN(Number(value))) {
       return Number(value);
     }
 

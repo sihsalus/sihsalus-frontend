@@ -121,7 +121,7 @@
       "component": "offlineToolsPatientChartActionsDashboardLink",
       "meta": {
         "columns": 1,
-        "title": "Acciones sin internet",
+        "title": "offlineActions",
         "path": "Offline Actions",
         "slot": "patient-chart-offline-actions-dashboard-slot",
         "icon": "omrs-icon-renew"

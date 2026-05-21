@@ -1,7 +1,6 @@
 import { Button, InlineLoading, Tab, TabList, TabPanel, TabPanels, Tabs } from '@carbon/react';
 import { ExtensionSlot, formatDatetime, parseDate, useConfig } from '@openmrs/esm-framework';
 import { EmptyState, ErrorState } from '@openmrs/esm-patient-common-lib';
-import React from 'react';
 import { useTranslation } from 'react-i18next';
 
 import type { ChartConfig } from '../../config-schema';

@@ -57,18 +57,18 @@ export function usePrescriptionsTable(
     const entries = data?.data.entry;
     if (entries) {
       const encounters = entries
-        .filter((entry) => entry?.resource?.resourceType == 'Encounter')
+        .filter((entry) => entry?.resource?.resourceType === 'Encounter')
         .map((entry) => entry.resource as Encounter);
       const medicationRequests = entries
-        .filter((entry) => entry?.resource?.resourceType == 'MedicationRequest')
+        .filter((entry) => entry?.resource?.resourceType === 'MedicationRequest')
         .map((entry) => entry.resource as MedicationRequest);
       const medicationDispenses = entries
-        .filter((entry) => entry?.resource?.resourceType == 'MedicationDispense')
+        .filter((entry) => entry?.resource?.resourceType === 'MedicationDispense')
         .map((entry) => entry.resource as MedicationDispense)
         .sort(sortMedicationDispensesByWhenHandedOver);
       prescriptionsTableRows = encounters.map((encounter) => {
         const medicationRequestsForEncounter = medicationRequests.filter(
-          (medicationRequest) => medicationRequest.encounter.reference == 'Encounter/' + encounter.id,
+          (medicationRequest) => medicationRequest.encounter.reference === 'Encounter/' + encounter.id,
         );
 
         const medicationRequestReferences = medicationRequestsForEncounter.map(
@@ -170,7 +170,7 @@ function medicationRequestResponseToPrescriptionDetails(
   let prescriptionDate: Date;
 
   const encounter = results
-    ?.filter((entry) => entry?.resource?.resourceType == 'Encounter')
+    ?.filter((entry) => entry?.resource?.resourceType === 'Encounter')
     .map((entry) => entry.resource as Encounter);
 
   if (encounter) {
@@ -178,11 +178,11 @@ function medicationRequestResponseToPrescriptionDetails(
     prescriptionDate = parseDate(encounter[0]?.period.start);
 
     const medicationRequests = results
-      ?.filter((entry) => entry?.resource?.resourceType == 'MedicationRequest')
+      ?.filter((entry) => entry?.resource?.resourceType === 'MedicationRequest')
       .map((entry) => entry.resource as MedicationRequest);
 
     const medicationDispenses = results
-      ?.filter((entry) => entry?.resource?.resourceType == 'MedicationDispense')
+      ?.filter((entry) => entry?.resource?.resourceType === 'MedicationDispense')
       .map((entry) => entry.resource as MedicationDispense)
       .sort(sortMedicationDispensesByWhenHandedOver);
 

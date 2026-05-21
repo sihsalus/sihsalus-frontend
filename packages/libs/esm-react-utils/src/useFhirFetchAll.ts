@@ -17,7 +17,7 @@ import { type UseServerInfiniteReturnObject } from './useOpenmrsInfinite';
  * @returns a UseFhirInfiniteReturnObject object
  */
 export function useFhirFetchAll<T extends fhir.ResourceBase>(
-  url,
+  url: string | URL,
   options: UseServerFetchAllOptions<fhir.Bundle> = {},
 ): UseServerInfiniteReturnObject<T, fhir.Bundle> {
   return useServerFetchAll<T, fhir.Bundle>(url, getFhirServerPaginationHandlers(), options);

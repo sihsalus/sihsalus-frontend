@@ -1,6 +1,6 @@
 {
   "name": "@sihsalus/esm-patient-orders-app",
-  "version": "12.1.0",
+  "version": "1.0.0-alpha",
   "license": "MPL-2.0",
   "description": "Microfrontend for the OpenMRS SPA providing the order basket for the patient chart",
   "browser": "dist/openmrs-esm-patient-orders-app.js",
@@ -9,13 +9,13 @@
   "scripts": {
     "start": "openmrs develop",
     "serve": "rspack serve --mode=development",
-    "debug": "npm run serve",
+    "debug": "yarn serve",
     "build": "rspack --mode=production",
     "analyze": "rspack --mode=production --env analyze=true",
     "lint": "node ../../tooling/scripts/run-biome.js lint .",
-    "test": "jest --config jest.config.js --verbose false --passWithNoTests --color",
-    "test:watch": "cross-env TZ=UTC jest --watch --config jest.config.js --color",
-    "coverage": "yarn test --coverage",
+    "test": "vitest run --passWithNoTests",
+    "test:watch": "vitest watch",
+    "coverage": "vitest run --coverage --passWithNoTests",
     "typescript": "tsc --noEmit",
     "extract-translations": "i18next 'src/**/*.component.tsx' 'src/**/*.modal.tsx' 'src/**/*.extension.tsx' 'src/**/*.workspace.tsx' 'src/**/*.hook.tsx' 'src/index.ts' --config ../../tooling/scripts/i18next-parser.config.js"
   },
@@ -54,8 +54,8 @@
   "devDependencies": {
     "@openmrs/esm-patient-common-lib": "workspace:*",
     "@rspack/cli": "1.7.11",
-    "jest": "^29.7.0",
     "openmrs": "workspace:*",
-    "typescript": "^6.0.0"
+    "typescript": "6.0.3",
+    "vitest": "^4.1.0"
   }
 }

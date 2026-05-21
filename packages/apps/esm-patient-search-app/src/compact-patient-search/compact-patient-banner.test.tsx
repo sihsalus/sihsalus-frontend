@@ -8,7 +8,7 @@ import { type SearchedPatient } from '../types';
 
 import CompactPatientBanner from './compact-patient-banner.component';
 
-const mockUseConfig = jest.mocked(useConfig<PatientSearchConfig>);
+const mockUseConfig = vi.mocked(useConfig<PatientSearchConfig>);
 
 const birthdate = '1990-01-01T00:00:00.000+0000';
 const age = dayjs().diff(birthdate, 'years');

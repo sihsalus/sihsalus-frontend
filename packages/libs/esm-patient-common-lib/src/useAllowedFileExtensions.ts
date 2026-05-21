@@ -16,9 +16,8 @@ export function useAllowedFileExtensions() {
   const { data, error, isLoading } = useSWRImmutable<{ data: { results: Array<GlobalProperty> } }>(url, openmrsFetch);
 
   const allowedFileExtensions = useMemo(() => {
-    return data?.data?.results?.length > 0
-      ? data?.data?.results[0].value?.toLowerCase().split(',') || undefined
-      : undefined;
+    const firstResult = data?.data?.results?.[0];
+    return firstResult?.value?.toLowerCase().split(',') ?? undefined;
   }, [data]);
 
   return {

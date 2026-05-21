@@ -1,12 +1,32 @@
 import { showModal, usePagination } from '@openmrs/esm-framework';
-import { act, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
-import React from 'react';
+import { act, fireEvent, render, screen, within } from '@testing-library/react';
+import type { ReactNode } from 'react';
 import * as api from '../../api';
 import SeriesDetailsTable from './series-details-table.component';
 
-jest.mock('react-i18next', () => ({
+type IconProps = Record<string, unknown>;
+type TableHeaderMock = {
+  key: string;
+  header: string;
+};
+type TableCellMockValue = ReactNode | { content?: ReactNode };
+type TableRowMock = {
+  id: string | number;
+} & Record<string, TableCellMockValue>;
+type PageChangeProps = {
+  onPageNumberChange: ({ page }: { page: number }) => void;
+};
+type EmptyStateProps = {
+  displayText: string;
+  headerTitle: string;
+};
+
+const hasContent = (value: TableCellMockValue): value is { content?: ReactNode } =>
+  typeof value === 'object' && value !== null && 'content' in value;
+
+vi.mock('react-i18next', async () => ({
   useTranslation: () => ({
-    t: (key: string, defaultValue: string) => defaultValue,
+    t: (_key: string, defaultValue: string) => defaultValue,
   }),
 }));
 
@@ -33,23 +53,24 @@ const mockConfig = {
   orthancProxyUrl: '',
 };
 
-jest.mock('../../api');
-jest.mock('@openmrs/esm-framework', () => ({
-  useLayoutType: jest.fn(() => 'desktop'),
-  showModal: jest.fn(),
-  usePagination: jest.fn(() => ({
+vi.mock('../../api');
+vi.mock('@openmrs/esm-framework', async () => ({
+  ...(await vi.importActual('@openmrs/esm-framework')),
+  useLayoutType: vi.fn(() => 'desktop'),
+  showModal: vi.fn(),
+  usePagination: vi.fn(() => ({
     results: mockSeries,
-    goTo: jest.fn(),
+    goTo: vi.fn(),
     currentPage: 1,
   })),
-  TrashCanIcon: (props: any) => <span data-testid="trash-icon" {...props} />,
+  TrashCanIcon: (props: IconProps) => <span data-testid="trash-icon" {...props} />,
 }));
 
-jest.mock('@carbon/react', () => {
-  const original = jest.requireActual('@carbon/react');
+vi.mock('@carbon/react', async () => {
+  const original = await vi.importActual('@carbon/react');
   return {
     ...original,
-    DataTable: ({ headers, rows }) => (
+    DataTable: ({ headers, rows }: { headers: Array<TableHeaderMock>; rows: Array<TableRowMock> }) => (
       <table aria-label="Series summary">
         <thead>
           <tr>
@@ -61,9 +82,10 @@ jest.mock('@carbon/react', () => {
         <tbody>
           {rows.map((r) => (
             <tr key={r.id}>
-              {headers.map((h) => (
-                <td key={h.key}>{r[h.key]?.content ?? r[h.key]}</td>
-              ))}
+              {headers.map((h) => {
+                const cellValue = r[h.key];
+                return <td key={h.key}>{hasContent(cellValue) ? cellValue.content : cellValue}</td>;
+              })}
             </tr>
           ))}
         </tbody>
@@ -72,26 +94,28 @@ jest.mock('@carbon/react', () => {
   };
 });
 
-jest.mock('@openmrs/esm-patient-common-lib', () => ({
-  PatientChartPagination: ({ onPageNumberChange }: any) => (
-    <button onClick={() => onPageNumberChange({ page: 2 })}>Next</button>
+vi.mock('@openmrs/esm-patient-common-lib', async () => ({
+  PatientChartPagination: ({ onPageNumberChange }: PageChangeProps) => (
+    <button type="button" onClick={() => onPageNumberChange({ page: 2 })}>
+      Next
+    </button>
   ),
 
-  EmptyState: ({ displayText, headerTitle }: any) => (
+  EmptyState: ({ displayText, headerTitle }: EmptyStateProps) => (
     <div>
       {headerTitle}: {displayText}
     </div>
   ),
-  compare: jest.fn((a, b) => (a > b ? 1 : a < b ? -1 : 0)),
+  compare: vi.fn((a, b) => (a > b ? 1 : a < b ? -1 : 0)),
 }));
 
 describe('SeriesDetailsTable', () => {
   afterEach(() => {
-    jest.clearAllMocks();
+    vi.clearAllMocks();
   });
 
   it('renders EmptyState when no series are available', async () => {
-    (api.useStudySeries as jest.Mock).mockReturnValue({
+    (api.useStudySeries as vi.Mock).mockReturnValue({
       results: [],
       error: null,
       isLoading: false,
@@ -113,7 +137,7 @@ describe('SeriesDetailsTable', () => {
   });
 
   it('renders rows and triggers row actions', async () => {
-    (api.useStudySeries as jest.Mock).mockReturnValue({
+    (api.useStudySeries as vi.Mock).mockReturnValue({
       data: mockSeries,
       error: null,
       isLoading: false,
@@ -154,8 +178,8 @@ describe('SeriesDetailsTable', () => {
   });
 
   it('triggers pagination goto function', async () => {
-    const goToMock = jest.fn();
-    (usePagination as jest.Mock).mockReturnValue({
+    const goToMock = vi.fn();
+    (usePagination as vi.Mock).mockReturnValue({
       results: mockSeries,
       currentPage: 1,
       goTo: goToMock,
@@ -179,7 +203,7 @@ describe('SeriesDetailsTable', () => {
   });
 
   it('renders series rows when data is returned', async () => {
-    (api.useStudySeries as jest.Mock).mockReturnValue({
+    (api.useStudySeries as vi.Mock).mockReturnValue({
       data: mockSeries,
       error: null,
       isLoading: true,
@@ -194,7 +218,7 @@ describe('SeriesDetailsTable', () => {
           patientUuid={'patient-123'}
           orthancConfig={mockConfig}
         />,
-      ) as any;
+      );
     });
 
     expect(screen.getAllByText(/description/i).length).toBeGreaterThan(0);
@@ -218,7 +242,7 @@ describe('SeriesDetailsTable', () => {
         orthancSeriesUID: 'UID125',
       },
     ];
-    (api.useStudySeries as jest.Mock).mockReturnValue({
+    (api.useStudySeries as vi.Mock).mockReturnValue({
       data: mockSeriesWithEmptyFields,
       error: null,
       isLoading: false,
@@ -230,7 +254,7 @@ describe('SeriesDetailsTable', () => {
   });
 
   it('triggers action buttons', async () => {
-    (api.useStudySeries as jest.Mock).mockReturnValue({
+    (api.useStudySeries as vi.Mock).mockReturnValue({
       data: mockSeries,
       error: null,
       isLoading: false,
@@ -260,7 +284,7 @@ describe('SeriesDetailsTable', () => {
   });
 
   it('sorts table when clicking headers', async () => {
-    (api.useStudySeries as jest.Mock).mockReturnValue({
+    (api.useStudySeries as vi.Mock).mockReturnValue({
       data: mockSeries,
       error: null,
       isLoading: false,
@@ -296,7 +320,7 @@ describe('SeriesDetailsTable', () => {
       },
     ];
 
-    (api.useStudySeries as jest.Mock).mockReturnValue({
+    (api.useStudySeries as vi.Mock).mockReturnValue({
       data: mockSeriesRT,
       error: null,
       isLoading: false,

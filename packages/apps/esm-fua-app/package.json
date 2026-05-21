@@ -1,6 +1,6 @@
 {
   "name": "@sihsalus/esm-fua-app",
-  "version": "1.8.0",
+  "version": "1.0.0-alpha",
   "description": "Main openmrs O3 peruhce microfrontend",
   "browser": "dist/sihsalus-esm-fua-app.js",
   "main": "src/index.ts",
@@ -9,13 +9,13 @@
   "scripts": {
     "start": "openmrs develop",
     "serve": "rspack serve --mode=development",
-    "debug": "npm run serve",
+    "debug": "yarn serve",
     "build": "rspack --mode=production",
     "analyze": "rspack --mode=production --env analyze=true",
     "lint": "node ../../tooling/scripts/run-biome.js lint .",
-    "test": "jest --config jest.config.js --verbose false --passWithNoTests --color",
-    "test:watch": "cross-env TZ=UTC jest --watch --config jest.config.js --color",
-    "coverage": "yarn test --coverage",
+    "test": "vitest run --passWithNoTests",
+    "test:watch": "vitest watch",
+    "coverage": "vitest run --coverage --passWithNoTests",
     "typescript": "tsc --noEmit",
     "extract-translations": "i18next \"src/**/*.{ts,tsx}\" \"!src/**/*.test.{ts,tsx}\" --config ../../tooling/scripts/i18next-parser.config.js"
   },
@@ -38,16 +38,10 @@
     "url": "https://github.com/sihsalus/sihsalus-esm-modules/issues"
   },
   "dependencies": {
-    "@carbon/charts": "^1.23.7",
-    "@carbon/charts-react": "^1.23.7",
-    "@hookform/resolvers": "^3.3.1",
     "@sihsalus/esm-rbac": "workspace:*",
     "@sihsalus/esm-sihsalus-shared": "workspace:*",
-    "classnames": "^2.5.1",
     "lodash-es": "^4.17.21",
-    "react-hook-form": "^7.56.1",
-    "xlsx": "^0.18.5",
-    "zod": "^3.24.1"
+    "xlsx": "^0.18.5"
   },
   "peerDependencies": {
     "@carbon/react": "1.x",
@@ -64,9 +58,8 @@
   "devDependencies": {
     "@openmrs/esm-patient-common-lib": "workspace:*",
     "@rspack/cli": "1.7.11",
-    "@types/webpack-env": "^1.18.0",
-    "jest": "^29.7.0",
     "openmrs": "workspace:*",
-    "typescript": "^6.0.0"
+    "typescript": "6.0.3",
+    "vitest": "^4.1.0"
   }
 }

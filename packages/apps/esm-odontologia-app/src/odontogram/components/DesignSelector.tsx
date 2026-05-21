@@ -1,4 +1,4 @@
-import { Modal } from '@carbon/react';
+import { Modal, Tag } from '@carbon/react';
 import { CheckmarkFilled } from '@carbon/react/icons';
 import React from 'react';
 import {
@@ -52,8 +52,13 @@ import {
   Finding37Design4,
   Finding37Design5,
 } from '../designs/figuras';
-import type { FindingColor, FindingDesign, ToothFinding } from '../types/odontogram';
+import type { FindingColor, FindingDesign, ToothFinding, ToothRootDesign } from '../types/odontogram';
+import { COLOR_CSS } from './constants';
+import styles from './DesignSelector.module.scss';
 import Tooth from './Tooth';
+import ToothDesigns from './ToothDesigns';
+
+const TOOTH_SVG_HEIGHT = 120;
 
 // Mapeo de nombres de componentes a componentes reales
 const designComponentMap = {
@@ -158,6 +163,10 @@ interface DesignSelectorProps {
   keepOpen?: boolean;
   /** Suboptions config to show Tipo label on applied designs */
   suboptions?: { id: number; nombre: string }[];
+  /** Tooth root design variant — drives the upper part of the preview svg */
+  rootDesign?: ToothRootDesign;
+  /** Tooth arch position — lower teeth render the preview vertically flipped */
+  position?: 'upper' | 'lower';
 }
 
 const DesignSelector: React.FC<DesignSelectorProps> = ({
@@ -172,7 +181,10 @@ const DesignSelector: React.FC<DesignSelectorProps> = ({
   existingFindings = [],
   keepOpen = false,
   suboptions,
+  rootDesign = 'default',
+  position = 'upper',
 }) => {
+  const toothTransform = position === 'lower' ? `scale(1,-1) translate(0,-${TOOTH_SVG_HEIGHT})` : undefined;
   const handleDesignClick = (design: FindingDesign) => {
     onDesignSelect(design);
     if (!keepOpen) {
@@ -180,169 +192,121 @@ const DesignSelector: React.FC<DesignSelectorProps> = ({
     }
   };
 
+  const colorLabel = selectedColor?.name === 'red' ? 'Rojo' : selectedColor?.name === 'blue' ? 'Azul' : 'Negro';
+  const colorTagType: 'red' | 'blue' | 'gray' =
+    selectedColor?.name === 'red' ? 'red' : selectedColor?.name === 'blue' ? 'blue' : 'gray';
+
   return (
     <Modal
       open={isOpen}
+      passiveModal
       onRequestClose={onClose}
-      onRequestSubmit={onClose}
       modalHeading={`Seleccionar diseño para ${findingName}`}
-      primaryButtonText="Cerrar"
       size="lg"
+      selectorPrimaryFocus="#design-selector-header"
+      className={styles.modal}
     >
-      <div style={{ padding: '20px' }}>
-        <div style={{ marginBottom: '20px', fontSize: '14px', color: '#525252' }}>
-          <strong>Diente:</strong> {toothId} | <strong>Color:</strong> {selectedColor?.name || 'Negro'}
+      <div
+        className={styles.header}
+        id="design-selector-header"
+        tabIndex={-1}
+        style={
+          selectedColor
+            ? ({ '--accent-color': COLOR_CSS[selectedColor.name] ?? selectedColor.name } as React.CSSProperties)
+            : undefined
+        }
+      >
+        <div className={styles.previewTooth} role="img" aria-label="Vista previa del hallazgo en el diente">
+          <svg width="60" height={TOOTH_SVG_HEIGHT}>
+            <g transform={toothTransform}>
+              <ToothDesigns design={rootDesign} />
+              <Tooth zones={toothZones} />
+              {existingFindings.map((finding) => {
+                if (!finding.designNumber) return null;
+                const designConfig = designs.find((d) => d.number === finding.designNumber);
+                if (!designConfig) return null;
+                const Component = designComponentMap[designConfig.componente as keyof typeof designComponentMap];
+                if (!Component) return null;
+                return (
+                  <g key={finding.id}>
+                    <Component strokeColor={finding.color?.name || 'black'} />
+                  </g>
+                );
+              })}
+              <Tooth zones={toothZones} strokesOnly />
+            </g>
+          </svg>
         </div>
-
-        <div style={{ marginBottom: '20px', fontSize: '14px', color: '#0066cc' }}>
-          {keepOpen
-            ? '💡 Selecciona los diseños que desees aplicar. Haz click en uno aplicado para quitarlo.'
-            : '💡 Selecciona un diseño para aplicar o eliminar el hallazgo'}
+        <div className={styles.headerInfo}>
+          <span className={styles.headerInfoLabel}>Vista previa</span>
+          <div className={styles.headerInfoTags}>
+            <Tag type="gray" size="md">{`Diente ${toothId}`}</Tag>
+            <Tag type={colorTagType} size="md">{`Color: ${colorLabel}`}</Tag>
+          </div>
         </div>
+      </div>
 
-        <div
-          style={{
-            display: 'flex',
-            flexWrap: 'wrap',
-            gap: '15px',
-            justifyContent: 'center',
-            maxHeight: '400px',
-            overflowY: 'auto',
-            padding: '10px',
-          }}
-        >
-          {designs.map((design) => {
-            // Obtener el componente de diseño según su nombre
-            const DesignComponent = designComponentMap[design.componente as keyof typeof designComponentMap];
+      <p className={styles.hint}>
+        {keepOpen
+          ? 'Selecciona los diseños que desees aplicar. Haz click en uno aplicado para quitarlo.'
+          : 'Selecciona un diseño para aplicar o eliminar el hallazgo.'}
+      </p>
 
-            if (!DesignComponent) {
-              return (
-                <div key={design.number} style={{ color: 'red', padding: '10px' }}>
-                  Componente no encontrado: {design.componente}
-                </div>
-              );
-            }
+      <div className={styles.designsGrid}>
+        {designs.map((design) => {
+          const DesignComponent = designComponentMap[design.componente as keyof typeof designComponentMap];
 
-            // Verificar si este diseño ya está aplicado en el diente
-            const appliedFinding = existingFindings.find((finding) => finding.designNumber === design.number);
-            const isApplied = !!appliedFinding;
-
-            // Look up the suboption name for applied designs
-            const appliedTipo =
-              isApplied && suboptions && appliedFinding?.subOptionId != null
-                ? suboptions.find((s) => s.id === appliedFinding.subOptionId)?.nombre
-                : undefined;
-
-            // Color para mostrar en la vista previa
-            const previewColor = selectedColor?.name || 'black';
-
+          if (!DesignComponent) {
             return (
-              <div
-                key={design.number}
-                role="button"
-                tabIndex={0}
-                onClick={() => handleDesignClick(design)}
-                onKeyDown={(event) => {
-                  if (event.key === 'Enter' || event.key === ' ') {
-                    event.preventDefault();
-                    handleDesignClick(design);
-                  }
-                }}
-                style={{
-                  cursor: 'pointer',
-                  padding: '15px',
-                  border: isApplied ? `3px solid #24a148` : '2px solid #e0e0e0',
-                  borderRadius: '12px',
-                  backgroundColor: isApplied ? '#f0f8f0' : '#ffffff',
-                  display: 'flex',
-                  flexDirection: 'column',
-                  alignItems: 'center',
-                  width: '120px',
-                  position: 'relative',
-                  transition: 'all 0.2s ease',
-                  boxShadow: isApplied ? '0 4px 8px rgba(36, 161, 72, 0.2)' : '0 2px 4px rgba(0,0,0,0.1)',
-                }}
-                onMouseEnter={(e) => {
-                  if (!isApplied) {
-                    e.currentTarget.style.borderColor = '#0066cc';
-                    e.currentTarget.style.backgroundColor = '#f0f8ff';
-                  }
-                }}
-                onMouseLeave={(e) => {
-                  if (!isApplied) {
-                    e.currentTarget.style.borderColor = '#e0e0e0';
-                    e.currentTarget.style.backgroundColor = '#ffffff';
-                  }
-                }}
-              >
-                <div style={{ height: '120px', width: '60px', marginBottom: '10px' }}>
-                  <svg width="60" height="120">
-                    <Tooth zones={toothZones} />
-                    <DesignComponent strokeColor={previewColor} />
-                  </svg>
-                </div>
-
-                <div style={{ fontSize: '12px', fontWeight: '500', color: '#262626', textAlign: 'center' }}>
-                  Diseño {design.number}
-                </div>
-
-                {isApplied && (
-                  <>
-                    <CheckmarkFilled
-                      size={20}
-                      style={{
-                        position: 'absolute',
-                        top: '8px',
-                        right: '8px',
-                        color: '#24a148',
-                        backgroundColor: 'white',
-                        borderRadius: '50%',
-                      }}
-                    />
-                    <div
-                      style={{
-                        fontSize: '10px',
-                        color: '#24a148',
-                        fontWeight: '600',
-                        marginTop: '5px',
-                      }}
-                    >
-                      APLICADO
-                    </div>
-                    {appliedTipo && (
-                      <div
-                        style={{
-                          fontSize: '10px',
-                          color: '#525252',
-                          fontWeight: '600',
-                          marginTop: '2px',
-                          backgroundColor: '#e8e8e8',
-                          padding: '2px 6px',
-                          borderRadius: '4px',
-                        }}
-                      >
-                        Tipo: {appliedTipo}
-                      </div>
-                    )}
-                  </>
-                )}
-
-                {!isApplied && (
-                  <div
-                    style={{
-                      fontSize: '10px',
-                      color: '#0066cc',
-                      fontWeight: '500',
-                      marginTop: '5px',
-                    }}
-                  >
-                    Click para aplicar
-                  </div>
-                )}
+              <div key={design.number} className={styles.designMissing}>
+                Componente no encontrado: {design.componente}
               </div>
             );
-          })}
-        </div>
+          }
+
+          const appliedFinding = existingFindings.find((finding) => finding.designNumber === design.number);
+          const isApplied = !!appliedFinding;
+          const appliedTipo =
+            isApplied && suboptions && appliedFinding?.subOptionId != null
+              ? suboptions.find((s) => s.id === appliedFinding.subOptionId)?.nombre
+              : undefined;
+          const previewColor = selectedColor?.name || 'black';
+
+          return (
+            <button
+              key={design.number}
+              type="button"
+              className={`${styles.designTile} ${isApplied ? styles.designTileApplied : ''}`}
+              onClick={() => handleDesignClick(design)}
+              aria-pressed={isApplied}
+            >
+              <div className={styles.designSvgWrap}>
+                <svg width="60" height={TOOTH_SVG_HEIGHT}>
+                  <g transform={toothTransform}>
+                    <ToothDesigns design={rootDesign} />
+                    <Tooth zones={toothZones} />
+                    <DesignComponent strokeColor={previewColor} />
+                    <Tooth zones={toothZones} strokesOnly />
+                  </g>
+                </svg>
+              </div>
+
+              <div className={styles.designLabel}>{`Diseño ${design.number}`}</div>
+
+              {isApplied && (
+                <>
+                  <CheckmarkFilled size={20} className={styles.designAppliedIcon} />
+                  <div className={styles.designTags}>
+                    <Tag type="green" size="sm">
+                      Aplicado
+                    </Tag>
+                    {appliedTipo && <Tag type="gray" size="sm">{`Tipo: ${appliedTipo}`}</Tag>}
+                  </div>
+                </>
+              )}
+            </button>
+          );
+        })}
       </div>
     </Modal>
   );

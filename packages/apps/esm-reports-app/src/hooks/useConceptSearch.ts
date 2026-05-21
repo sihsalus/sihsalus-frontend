@@ -1,5 +1,4 @@
 import { type Concept, type FetchResponse, openmrsFetch, restBaseUrl } from '@openmrs/esm-framework';
-import { useMemo } from 'react';
 import useSWRImmutable from 'swr/immutable';
 
 export function useConceptSearch(query: string) {
@@ -8,13 +7,8 @@ export function useConceptSearch(query: string) {
     openmrsFetch,
   );
 
-  const results = useMemo(
-    () => ({
-      concepts: data?.data?.results,
-      ...rest,
-    }),
-    [data, rest],
-  );
-
-  return results;
+  return {
+    concepts: data?.data?.results,
+    ...rest,
+  };
 }

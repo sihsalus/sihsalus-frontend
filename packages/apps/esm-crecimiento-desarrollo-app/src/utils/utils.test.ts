@@ -2,11 +2,12 @@ import { getPatientName } from '@openmrs/esm-framework';
 
 import { getSafePatientName } from './utils';
 
-jest.mock('@openmrs/esm-framework', () => ({
-  getPatientName: jest.fn(),
+vi.mock('@openmrs/esm-framework', async () => ({
+  ...(await vi.importActual('@openmrs/esm-framework')),
+  getPatientName: vi.fn(),
 }));
 
-const mockGetPatientName = jest.mocked(getPatientName);
+const mockGetPatientName = vi.mocked(getPatientName);
 
 describe('getSafePatientName', () => {
   beforeEach(() => {

@@ -12,23 +12,22 @@ import {
   useSession,
 } from '@openmrs/esm-framework';
 import { render, waitFor } from '@testing-library/react';
-import React from 'react';
 import { mutate } from 'swr';
 
 import RedirectLogout from './redirect-logout.component';
 
-jest.mock('swr', () => ({
-  mutate: jest.fn(),
+vi.mock('swr', () => ({
+  mutate: vi.fn(),
 }));
 
-const mockClearCurrentUser = jest.mocked(clearCurrentUser);
-const mockNavigate = jest.mocked(navigate);
-const mockOpenmrsFetch = jest.mocked(openmrsFetch);
-const mockRefetchCurrentUser = jest.mocked(refetchCurrentUser);
-const mockSetUserLanguage = jest.mocked(setUserLanguage);
-const mockUseConfig = jest.mocked(useConfig);
-const mockUseConnectivity = jest.mocked(useConnectivity);
-const mockUseSession = jest.mocked(useSession);
+const mockClearCurrentUser = vi.mocked(clearCurrentUser);
+const mockNavigate = vi.mocked(navigate);
+const mockOpenmrsFetch = vi.mocked(openmrsFetch);
+const mockRefetchCurrentUser = vi.mocked(refetchCurrentUser);
+const mockSetUserLanguage = vi.mocked(setUserLanguage);
+const mockUseConfig = vi.mocked(useConfig);
+const mockUseConnectivity = vi.mocked(useConnectivity);
+const mockUseSession = vi.mocked(useSession);
 
 describe('RedirectLogout', () => {
   beforeEach(() => {
@@ -43,6 +42,7 @@ describe('RedirectLogout', () => {
     mockUseConfig.mockReturnValue({
       provider: {
         type: '',
+        logoutUrl: '${openmrsSpaBase}/logout',
       },
     });
 
@@ -68,10 +68,11 @@ describe('RedirectLogout', () => {
     expect(mockNavigate).toHaveBeenCalledWith({ to: '${openmrsSpaBase}/login' });
   });
 
-  it('should not redirect if the configured provider is `oauth2`', async () => {
+  it('should redirect to the configured logout URL if the provider is `oauth2`', async () => {
     mockUseConfig.mockReturnValue({
       provider: {
         type: 'oauth2',
+        logoutUrl: '/openmrs/oauth2logout',
       },
     });
 
@@ -90,7 +91,7 @@ describe('RedirectLogout', () => {
       authenticated: false,
       sessionId: '',
     });
-    expect(mockNavigate).toHaveBeenCalledTimes(0);
+    expect(mockNavigate).toHaveBeenCalledWith({ to: '/openmrs/oauth2logout' });
   });
 
   it('should redirect to login if the session is already unauthenticated', async () => {
@@ -112,7 +113,7 @@ describe('RedirectLogout', () => {
   });
 
   it('should handle logout failure gracefully', async () => {
-    const consoleError = jest.spyOn(console, 'error').mockImplementation(() => {});
+    const consoleError = vi.spyOn(console, 'error').mockImplementation(() => {});
     mockOpenmrsFetch.mockRejectedValue(new Error('Logout failed'));
 
     render(<RedirectLogout />);
@@ -154,18 +155,19 @@ describe('RedirectLogout', () => {
     });
   });
 
-  it('should not redirect to login if user is not authenticated and the provider is oauth2', async () => {
+  it('should redirect to the configured logout URL if user is not authenticated and the provider is oauth2', async () => {
     mockUseSession.mockReturnValue({
       authenticated: false,
     } as Session);
     mockUseConfig.mockReturnValue({
       provider: {
         type: 'oauth2',
+        logoutUrl: '/openmrs/oauth2logout',
       },
     });
 
     render(<RedirectLogout />);
 
-    expect(mockNavigate).toHaveBeenCalledTimes(0);
+    expect(mockNavigate).toHaveBeenCalledWith({ to: '/openmrs/oauth2logout' });
   });
 });

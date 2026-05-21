@@ -11,7 +11,7 @@ interface ActiveSnackbarProps {
 const ActiveSnackbars: React.FC<ActiveSnackbarProps> = ({ subject }) => {
   const [snackbars, setSnackbars] = useState<Array<SnackbarMeta>>([]);
 
-  const closeSnackbar = useCallback((snackbar) => {
+  const closeSnackbar = useCallback((snackbar: SnackbarMeta) => {
     setSnackbars((snackbars) => snackbars.filter((t) => t !== snackbar));
   }, []);
 

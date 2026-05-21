@@ -46,19 +46,6 @@ type DyakuPatientsTableRow = {
   actions: DyakuPatient;
 };
 
-type DyakuPatientsTableCell = {
-  id: string;
-  info: {
-    header: string;
-  };
-  value: string | DyakuPatient;
-};
-
-type DyakuPatientsTableRenderRow = {
-  id: string;
-  cells: Array<DyakuPatientsTableCell>;
-};
-
 const PAGE_SIZES = [10, 20, 30];
 
 const DyakuPatientsTable: React.FC<DyakuPatientsTableProps> = ({ pageSize: initialPageSize = 10, searchDni }) => {

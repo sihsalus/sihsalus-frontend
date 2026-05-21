@@ -8,3 +8,13 @@ declare module '*.svg' {
   export default content;
 }
 declare module '*.png';
+
+declare module 'geopattern' {
+  const geopattern: {
+    generate: (value: string) => {
+      toDataUrl: () => string;
+    };
+  };
+
+  export = geopattern;
+}

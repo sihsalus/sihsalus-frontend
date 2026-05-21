@@ -4,18 +4,19 @@ import type { ConfigObject } from '../config-schema';
 
 import { saveRelationship } from './relationship.resources';
 
-jest.mock('@openmrs/esm-framework', () => ({
-  openmrsFetch: jest.fn(),
+vi.mock('@openmrs/esm-framework', async () => ({
+  ...(await vi.importActual('@openmrs/esm-framework')),
+  openmrsFetch: vi.fn(),
   restBaseUrl: '/ws/rest/v1',
-  showModal: jest.fn(),
-  showSnackbar: jest.fn(),
+  showModal: vi.fn(),
+  showSnackbar: vi.fn(),
 }));
 
-jest.mock('swr', () => ({
-  mutate: jest.fn(),
+vi.mock('swr', () => ({
+  mutate: vi.fn(),
 }));
 
-const mockOpenmrsFetch = jest.mocked(openmrsFetch);
+const mockOpenmrsFetch = vi.mocked(openmrsFetch);
 
 const patientUuid = '11111111-1111-4111-8111-111111111111';
 const relativeUuid = '22222222-2222-4222-8222-222222222222';

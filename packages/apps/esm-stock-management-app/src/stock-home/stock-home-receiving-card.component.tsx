@@ -1,7 +1,6 @@
 import { Button } from '@carbon/react';
 import { Delivery } from '@carbon/react/icons';
 import { showModal } from '@openmrs/esm-framework';
-import React from 'react';
 import { useTranslation } from 'react-i18next';
 import { ResourceRepresentation } from '../core/api/api';
 import styles from './stock-home-detail-card.scss';

@@ -1,7 +1,7 @@
 import { ButtonSkeleton, OverflowMenu, OverflowMenuItem } from '@carbon/react';
 import { OverflowMenuVertical } from '@carbon/react/icons';
 import { showSnackbar } from '@openmrs/esm-framework';
-import React, { useCallback, useEffect } from 'react';
+import { useCallback, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { OperationType, type StockOperationType } from '../../core/api/types/stockOperation/StockOperationType';
 import { translateStockOperationType } from '../../core/utils/translationUtils';

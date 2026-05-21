@@ -1,28 +1,27 @@
 import { type FetchResponse, showModal, showSnackbar } from '@openmrs/esm-framework';
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import React from 'react';
 import DeleteConfirmation from '../../stock-user-role-scopes/delete-stock-user-scope.modal';
 import { handleMutate } from '../../utils';
 import { deleteStockSource } from '../stock-sources.resource';
 import StockSourcesDeleteActionMenu from './stock-sources-delete.component';
 
-const mockDeleteStockSource = jest.mocked(deleteStockSource);
-const mockHandleMutate = jest.mocked(handleMutate);
-const mockShowModal = jest.mocked(showModal);
-const mockShowSnackbar = jest.mocked(showSnackbar);
+const mockDeleteStockSource = vi.mocked(deleteStockSource);
+const mockHandleMutate = vi.mocked(handleMutate);
+const mockShowModal = vi.mocked(showModal);
+const mockShowSnackbar = vi.mocked(showSnackbar);
 
-jest.mock('../stock-sources.resource', () => ({
-  deleteStockSource: jest.fn(),
+vi.mock('../stock-sources.resource', () => ({
+  deleteStockSource: vi.fn(),
 }));
 
-jest.mock('../../utils', () => ({
-  handleMutate: jest.fn(),
+vi.mock('../../utils', () => ({
+  handleMutate: vi.fn(),
 }));
 
 describe('StockSourcesDeleteActionMenu', () => {
   const uuid = '1234-5678';
-  const uuids: string[] = ['1234-5678'];
+  const _uuids: string[] = ['1234-5678'];
 
   it('renders the delete button correctly', () => {
     render(<StockSourcesDeleteActionMenu uuid={uuid} />);
@@ -50,8 +49,8 @@ describe('StockSourcesDeleteActionMenu', () => {
 
   it('calls onConfirmation when delete is clicked', async () => {
     const user = userEvent.setup();
-    const mockOnConfirmation = jest.fn();
-    const mockClose = jest.fn();
+    const mockOnConfirmation = vi.fn();
+    const mockClose = vi.fn();
 
     render(<DeleteConfirmation close={mockClose} onConfirmation={mockOnConfirmation} />);
 
@@ -66,8 +65,8 @@ describe('StockSourcesDeleteActionMenu', () => {
 
   it('calls deleteStockSource with the correct UUID on confirmation', async () => {
     const user = userEvent.setup();
-    const mockOnConfirmation = jest.fn();
-    const mockClose = jest.fn();
+    const mockOnConfirmation = vi.fn();
+    const mockClose = vi.fn();
 
     render(
       <DeleteConfirmation
@@ -90,8 +89,8 @@ describe('StockSourcesDeleteActionMenu', () => {
     const user = userEvent.setup();
     mockDeleteStockSource.mockResolvedValueOnce({} as FetchResponse<any>);
 
-    const mockOnConfirmation = jest.fn();
-    const mockClose = jest.fn();
+    const _mockOnConfirmation = vi.fn();
+    const mockClose = vi.fn();
 
     render(
       <DeleteConfirmation
@@ -114,7 +113,7 @@ describe('StockSourcesDeleteActionMenu', () => {
     const user = userEvent.setup();
     mockDeleteStockSource.mockRejectedValueOnce(new Error('Deletion failed'));
 
-    const mockClose = jest.fn();
+    const mockClose = vi.fn();
 
     render(
       <DeleteConfirmation
@@ -122,7 +121,7 @@ describe('StockSourcesDeleteActionMenu', () => {
         onConfirmation={async () => {
           try {
             await deleteStockSource([uuid]);
-          } catch (error) {
+          } catch (_error) {
             showSnackbar({
               title: 'stockSourceDeleteError',
               kind: 'error',
@@ -146,7 +145,7 @@ describe('StockSourcesDeleteActionMenu', () => {
     const user = userEvent.setup();
     mockDeleteStockSource.mockRejectedValueOnce(new Error('Deletion failed'));
 
-    const mockClose = jest.fn();
+    const mockClose = vi.fn();
 
     render(
       <DeleteConfirmation
@@ -154,7 +153,7 @@ describe('StockSourcesDeleteActionMenu', () => {
         onConfirmation={async () => {
           try {
             await deleteStockSource([uuid]);
-          } catch (error) {
+          } catch (_error) {
             showSnackbar({
               title: 'stockSourceDeleteError',
               kind: 'error',

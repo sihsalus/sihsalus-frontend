@@ -1,6 +1,6 @@
 import { type CalendarDate, type DateValue } from '@internationalized/date';
 import classNames from 'classnames';
-import React, { forwardRef } from 'react';
+import { forwardRef } from 'react';
 import { Button, Calendar, CalendarCell, CalendarGrid, Popover, RangeCalendar } from 'react-aria-components';
 import { ChevronLeftIcon, ChevronRightIcon } from '../icons';
 import { AutoCloseDialog } from './auto-close-dialog.component';

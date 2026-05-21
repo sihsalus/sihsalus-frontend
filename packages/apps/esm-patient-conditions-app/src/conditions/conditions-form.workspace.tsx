@@ -58,7 +58,7 @@ const ConditionsForm: React.FC<ConditionsWorkspaceProps> = (props) => {
   const closeWorkspace = props.closeWorkspace;
   const patientUuid = isWorkspace2Props(props) ? props.groupProps.patientUuid : props.patientUuid;
   const condition = isWorkspace2Props(props) ? props.workspaceProps.condition : props.condition;
-  const formContext = isWorkspace2Props(props) ? props.workspaceProps.formContext : props.formContext;
+  const formContext = (isWorkspace2Props(props) ? props.workspaceProps.formContext : props.formContext) ?? 'creating';
   const { t } = useTranslation();
   const isTablet = useLayoutType() === 'tablet';
   const { conditions } = useConditions(patientUuid);
@@ -99,8 +99,8 @@ const ConditionsForm: React.FC<ConditionsWorkspaceProps> = (props) => {
     closeWorkspace({ discardUnsavedChanges: true });
   }, [closeWorkspace]);
 
-  return (
-    <Workspace2 title={t('recordCondition', 'Record condition')} hasUnsavedChanges={isDirty}>
+  const form = (
+    <>
       <FormProvider {...methods}>
         <Form className={styles.form} onSubmit={methods.handleSubmit(onSubmit, onError)}>
           <ConditionsWidget
@@ -153,8 +153,18 @@ const ConditionsForm: React.FC<ConditionsWorkspaceProps> = (props) => {
           </div>
         </Form>
       </FormProvider>
-    </Workspace2>
+    </>
   );
+
+  if (isWorkspace2Props(props)) {
+    return (
+      <Workspace2 title={t('recordCondition', 'Record condition')} hasUnsavedChanges={isDirty}>
+        {form}
+      </Workspace2>
+    );
+  }
+
+  return form;
 };
 
 export default ConditionsForm;

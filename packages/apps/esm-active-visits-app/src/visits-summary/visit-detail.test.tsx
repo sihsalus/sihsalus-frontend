@@ -6,15 +6,15 @@ import VisitDetailComponent from './visit-detail.component';
 
 void React;
 
-const mockUseVisit = jest.mocked(useVisit);
+const mockUseVisit = vi.mocked(useVisit);
 const defaultProps = {
   patientUuid: '691eed12-c0f1-11e2-94be-8c13b969e334',
   visitUuid: '497b8b17-54ec-4726-87ec-3c4da8cdcaeb',
 };
 
-jest.mock('./visit.resource', () => ({
-  ...jest.requireActual('./visit.resource'),
-  useVisit: jest.fn(),
+vi.mock('./visit.resource', async () => ({
+  ...(await vi.importActual('./visit.resource')),
+  useVisit: vi.fn(),
 }));
 
 describe('VisitDetail', () => {

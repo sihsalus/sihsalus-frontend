@@ -1,5 +1,4 @@
 import { useAssignedExtensions, useConfig, useSession } from '@openmrs/esm-framework';
-import React from 'react';
 import { Navigate } from 'react-router-dom';
 
 import { type HomeConfig } from './config-schema';

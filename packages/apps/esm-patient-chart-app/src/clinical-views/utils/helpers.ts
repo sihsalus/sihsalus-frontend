@@ -76,7 +76,7 @@ export function obsArrayDateComparator(left: Observation, right: Observation) {
 
 export function findObs(encounter: Encounter, obsConcept: string): Observation {
   const allObs = encounter?.obs?.filter((observation) => observation.concept.uuid === obsConcept) || [];
-  return allObs?.length == 1 ? allObs[0] : allObs.sort(obsArrayDateComparator)[0];
+  return allObs?.length === 1 ? allObs[0] : allObs.sort(obsArrayDateComparator)[0];
 }
 
 export function getObsFromEncounters(encounters: Encounter, obsConcept: string, config: ConfigConcepts) {

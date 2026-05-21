@@ -229,57 +229,51 @@ const OverviewComponent: React.FC = () => {
     [webPreviewViewReportUrl, t],
   );
 
-  const handleDownloadReport = useCallback(
-    async (reportRequestUuid: string) => {
-      try {
-        const response = await downloadReport(reportRequestUuid);
-        if (isDownloadableFile(response)) {
-          processAndDownloadFile(response);
-        }
-        clearReportCheckboxes();
-        showSnackbar({
-          kind: 'success',
-          title: t('reportDownloaded', 'Report downloaded'),
-          subtitle: t('reportDownloadedSuccessfully', 'Report downloaded successfully'),
-        });
-      } catch (error) {
-        showSnackbar({
-          kind: 'error',
-          title: t('errorDownloadingReport', 'Error downloading report'),
-          subtitle: error?.message,
+  async function handleDownloadReport(reportRequestUuid: string) {
+    try {
+      const response = await downloadReport(reportRequestUuid);
+      if (isDownloadableFile(response)) {
+        processAndDownloadFile(response);
+      }
+      clearReportCheckboxes();
+      showSnackbar({
+        kind: 'success',
+        title: t('reportDownloaded', 'Report downloaded'),
+        subtitle: t('reportDownloadedSuccessfully', 'Report downloaded successfully'),
+      });
+    } catch (error) {
+      showSnackbar({
+        kind: 'error',
+        title: t('errorDownloadingReport', 'Error downloading report'),
+        subtitle: error?.message,
+      });
+    }
+  }
+
+  async function handleDownloadMultipleReports(reportRequestUuids: string[]) {
+    try {
+      const response = await downloadMultipleReports(reportRequestUuids);
+      if (Array.isArray(response)) {
+        response.forEach((file) => {
+          processAndDownloadFile(file);
         });
       }
-    },
-    [t],
-  );
+      clearReportCheckboxes();
+      showSnackbar({
+        kind: 'success',
+        title: t('reportsDownloaded', 'Reports downloaded'),
+        subtitle: t('reportsDownloadedSuccessfully', 'Reports downloaded successfully'),
+      });
+    } catch (error) {
+      showSnackbar({
+        kind: 'error',
+        title: t('errorDownloadingReports', 'Error downloading reports'),
+        subtitle: error?.message,
+      });
+    }
+  }
 
-  const handleDownloadMultipleReports = useCallback(
-    async (reportRequestUuids: string[]) => {
-      try {
-        const response = await downloadMultipleReports(reportRequestUuids);
-        if (Array.isArray(response)) {
-          response.forEach((file) => {
-            processAndDownloadFile(file);
-          });
-        }
-        clearReportCheckboxes();
-        showSnackbar({
-          kind: 'success',
-          title: t('reportsDownloaded', 'Reports downloaded'),
-          subtitle: t('reportsDownloadedSuccessfully', 'Reports downloaded successfully'),
-        });
-      } catch (error) {
-        showSnackbar({
-          kind: 'error',
-          title: t('errorDownloadingReports', 'Error downloading reports'),
-          subtitle: error?.message,
-        });
-      }
-    },
-    [t],
-  );
-
-  const processAndDownloadFile = (file: { fileContent: string; fileName: string; mimeType: string }) => {
+  function processAndDownloadFile(file: { fileContent: string; fileName: string; mimeType: string }) {
     const decodedData = globalThis.atob(file.fileContent);
     const byteArray = new Uint8Array(decodedData.length);
     for (let i = 0; i < decodedData.length; i++) {
@@ -292,7 +286,7 @@ const OverviewComponent: React.FC = () => {
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
-  };
+  }
 
   const clearReportCheckboxes = () => {
     setCheckedReportUuidsArray([]);
@@ -342,7 +336,7 @@ const OverviewComponent: React.FC = () => {
             className={styles.mainActionButton}
             iconDescription="Report schedule"
             kind="ghost"
-            onClick={() => navigate({ to: `\${openmrsSpaBase}/reports/scheduled-overview` })}
+            onClick={() => navigate({ to: `${globalThis.spaBase}/reports/scheduled-overview` })}
             renderIcon={() => <Calendar size={16} className={styles.actionButtonIcon} />}
           >
             {t('reportSchedule', 'Report schedule')}
@@ -351,7 +345,7 @@ const OverviewComponent: React.FC = () => {
             className={styles.mainActionButton}
             iconDescription="Report schedule"
             kind="ghost"
-            onClick={() => navigate({ to: `\${openmrsSpaBase}/reports/reports-data-overview` })}
+            onClick={() => navigate({ to: `${globalThis.spaBase}/reports/reports-data-overview` })}
             renderIcon={() => <Calendar size={16} className={styles.actionButtonIcon} />}
           >
             {t('viewReports', 'Reports Webview')}

@@ -8,23 +8,23 @@ import { usePatientFlags } from './hooks/usePatientFlags';
 
 type FlagWithPriority = ReturnType<typeof usePatientFlags>['flags'][0];
 
-const mockUsePatientFlags = jest.mocked(usePatientFlags);
-const mockLaunchWorkspace = jest.mocked(launchWorkspace2);
-const mockNavigate = jest.mocked(navigate);
-const mockUseConfig = jest.mocked(useConfig<ConfigObject>);
+const mockUsePatientFlags = vi.mocked(usePatientFlags);
+const mockLaunchWorkspace = vi.mocked(launchWorkspace2);
+const mockNavigate = vi.mocked(navigate);
+const mockUseConfig = vi.mocked(useConfig<ConfigObject>);
 
-jest.mock('./hooks/usePatientFlags', () => {
-  const originalModule = jest.requireActual('./hooks/usePatientFlags');
+vi.mock('./hooks/usePatientFlags', async () => {
+  const originalModule = await vi.importActual('./hooks/usePatientFlags');
 
   return {
     ...originalModule,
-    usePatientFlags: jest.fn(),
+    usePatientFlags: vi.fn(),
   };
 });
 
 describe('flags list', () => {
   beforeEach(() => {
-    jest.clearAllMocks();
+    vi.clearAllMocks();
   });
 
   it('flags list displays flags and edit button', async () => {
@@ -36,7 +36,7 @@ describe('flags list', () => {
       flags: mockPatientFlags as FlagWithPriority[],
       isLoading: false,
       isValidating: false,
-      mutate: jest.fn(),
+      mutate: vi.fn(),
     });
 
     render(<FlagsList patientUuid={mockPatient.id} />);
@@ -65,7 +65,7 @@ describe('flags list', () => {
       flags: mockPatientFlags as FlagWithPriority[],
       isLoading: false,
       isValidating: false,
-      mutate: jest.fn(),
+      mutate: vi.fn(),
     });
 
     render(<FlagsList patientUuid={mockPatient.id} />);
@@ -83,7 +83,7 @@ describe('flags list', () => {
       flags: mockPatientFlags as FlagWithPriority[],
       isLoading: false,
       isValidating: false,
-      mutate: jest.fn(),
+      mutate: vi.fn(),
     });
 
     // Filter to only show flags with 'flag type - Clinical' tag
@@ -109,7 +109,7 @@ describe('flags list', () => {
       flags: mockPatientFlags as FlagWithPriority[],
       isLoading: false,
       isValidating: false,
-      mutate: jest.fn(),
+      mutate: vi.fn(),
     });
 
     render(<FlagsList patientUuid={mockPatient.id} />);
@@ -136,7 +136,7 @@ describe('flags list', () => {
       flags: mockPatientFlags as FlagWithPriority[],
       isLoading: false,
       isValidating: false,
-      mutate: jest.fn(),
+      mutate: vi.fn(),
     });
 
     render(<FlagsList patientUuid={mockPatient.id} />);
@@ -162,7 +162,7 @@ describe('flags list', () => {
       flags: mockPatientFlags as FlagWithPriority[],
       isLoading: false,
       isValidating: false,
-      mutate: jest.fn(),
+      mutate: vi.fn(),
     });
 
     render(<FlagsList patientUuid={mockPatient.id} />);
@@ -187,7 +187,7 @@ describe('flags list', () => {
       flags: mockPatientFlags as FlagWithPriority[],
       isLoading: false,
       isValidating: false,
-      mutate: jest.fn(),
+      mutate: vi.fn(),
     });
 
     render(<FlagsList patientUuid={mockPatient.id} />);
@@ -214,7 +214,7 @@ describe('flags list', () => {
       flags: mockPatientFlags as FlagWithPriority[],
       isLoading: false,
       isValidating: false,
-      mutate: jest.fn(),
+      mutate: vi.fn(),
     });
 
     render(<FlagsList patientUuid={mockPatient.id} />);
@@ -235,7 +235,7 @@ describe('flags list', () => {
       flags: mockPatientFlags as FlagWithPriority[],
       isLoading: false,
       isValidating: false,
-      mutate: jest.fn(),
+      mutate: vi.fn(),
     });
 
     render(<FlagsList patientUuid={mockPatient.id} />);
@@ -254,7 +254,7 @@ describe('flags list', () => {
       flags: mockPatientFlags as FlagWithPriority[],
       isLoading: false,
       isValidating: false,
-      mutate: jest.fn(),
+      mutate: vi.fn(),
     });
 
     render(<FlagsList patientUuid={mockPatient.id} />);

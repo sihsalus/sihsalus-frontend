@@ -4,7 +4,7 @@ import { render, screen } from '@testing-library/react';
 import React from 'react';
 import PatientListDetailsWorkspace, { type PatientListDetailsWorkspaceProps } from './patient-list-details.workspace';
 
-const mockOpenmrsFetch = openmrsFetch as jest.Mock;
+const mockOpenmrsFetch = openmrsFetch as vi.Mock;
 
 void React;
 
@@ -15,7 +15,7 @@ const defaultProps: PatientWorkspace2DefinitionProps<PatientListDetailsWorkspace
     visitContext: null,
     mutateVisitContext: null,
   },
-  closeWorkspace: jest.fn(),
+  closeWorkspace: vi.fn(),
   workspaceProps: {
     list: {
       attributes: [],
@@ -29,7 +29,7 @@ const defaultProps: PatientWorkspace2DefinitionProps<PatientListDetailsWorkspace
     },
   },
   workspaceName: '',
-  launchChildWorkspace: jest.fn(),
+  launchChildWorkspace: vi.fn(),
   windowProps: {},
   windowName: '',
   isRootWorkspace: false,

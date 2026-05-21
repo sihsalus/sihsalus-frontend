@@ -6,13 +6,13 @@ import { type Config, configSchema } from '../config-schema';
 import { type TutorialContext } from '../types';
 import TutorialModal from './modal.component';
 
-const mockNavigate = jest.mocked(navigate);
-const mockUseAppContext = jest.mocked(useAppContext<TutorialContext>);
-const mockUseConfig = jest.mocked(useConfig<Config>);
+const mockNavigate = vi.mocked(navigate);
+const mockUseAppContext = vi.mocked(useAppContext<TutorialContext>);
+const mockUseConfig = vi.mocked(useConfig<Config>);
 void React;
 
-const setShowTutorial = jest.fn();
-const setSteps = jest.fn();
+const setShowTutorial = vi.fn();
+const setSteps = vi.fn();
 
 const mockTutorialData = [
   {
@@ -45,6 +45,8 @@ const mockTutorialData = [
 
 describe('TutorialModal', () => {
   beforeEach(() => {
+    vi.clearAllMocks();
+
     mockUseConfig.mockReturnValue({
       ...getDefaultsFromConfigSchema(configSchema),
       tutorialData: mockTutorialData,
@@ -57,7 +59,7 @@ describe('TutorialModal', () => {
       setSteps,
     });
 
-    (window as any).getOpenmrsSpaBase = jest.fn(() => '/spa-base/');
+    (window as any).getOpenmrsSpaBase = vi.fn(() => '/spa-base/');
   });
 
   afterEach(() => {
@@ -66,7 +68,7 @@ describe('TutorialModal', () => {
   });
 
   it('renders tutorial titles, descriptions, and walkthrough links', () => {
-    render(<TutorialModal onClose={jest.fn()} />);
+    render(<TutorialModal onClose={vi.fn()} />);
 
     mockTutorialData.forEach((tutorial) => {
       expect(screen.getByText(tutorial.title)).toBeInTheDocument();
@@ -78,7 +80,7 @@ describe('TutorialModal', () => {
 
   it('navigates to home and starts the tutorial when not already on the home page', async () => {
     const user = userEvent.setup();
-    const onClose = jest.fn();
+    const onClose = vi.fn();
 
     Object.defineProperty(window, 'location', {
       value: { pathname: '/patient-registration' },
@@ -106,7 +108,7 @@ describe('TutorialModal', () => {
 
   it('starts the tutorial directly without navigating when already on the home page', async () => {
     const user = userEvent.setup();
-    const onClose = jest.fn();
+    const onClose = vi.fn();
 
     Object.defineProperty(window, 'location', {
       value: { pathname: '/spa-base/home/service-queues' },
@@ -130,7 +132,7 @@ describe('TutorialModal', () => {
       value: { pathname: '/spa-base/home/service-queues' },
     });
 
-    render(<TutorialModal onClose={jest.fn()} />);
+    render(<TutorialModal onClose={vi.fn()} />);
 
     const walkthroughButtons = screen.getAllByText('Walkthrough');
     await user.click(walkthroughButtons[1]);

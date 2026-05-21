@@ -1,12 +1,9 @@
 import { act, renderHook } from '@testing-library/react';
 
+import { getPatientChartStore } from '../store/patient-chart-store';
 import { _resetOrderBasketStore } from './store';
 import { type OrderBasketItem, type PostDataPrepFunction } from './types';
 import { useOrderBasket } from './useOrderBasket';
-
-jest.mock('../get-patient-uuid-from-url', () => ({
-  getPatientUuidFromUrl: jest.fn(() => 'test-patient-uuid'),
-}));
 
 const mockDrugOrderBasketItem = {
   action: 'NEW',
@@ -21,6 +18,12 @@ const mockLabOrderBasketItem = {
 describe('useOrderBasket', () => {
   beforeEach(() => {
     _resetOrderBasketStore();
+    getPatientChartStore().setState({
+      patient: null,
+      patientUuid: 'test-patient-uuid',
+      visitContext: null,
+      mutateVisitContext: null,
+    });
   });
 
   it('returns the correct list of orders given a grouping', () => {

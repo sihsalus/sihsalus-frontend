@@ -44,11 +44,13 @@ export function getValidationSchema(config: RegistrationConfig) {
       : Yup.string().notRequired(),
     additionalGivenName: Yup.string().when('addNameInLocalLanguage', {
       is: true,
+      // biome-ignore lint/suspicious/noThenProperty: Yup's conditional schema API requires the `then` property.
       then: Yup.string().required(t('givenNameRequired', 'Given name is required')),
       otherwise: Yup.string().notRequired(),
     }),
     additionalFamilyName: Yup.string().when('addNameInLocalLanguage', {
       is: true,
+      // biome-ignore lint/suspicious/noThenProperty: Yup's conditional schema API requires the `then` property.
       then: Yup.string().required(t('familyNameRequired', 'Family name is required')),
       otherwise: Yup.string().notRequired(),
     }),
@@ -60,6 +62,7 @@ export function getValidationSchema(config: RegistrationConfig) {
       .required(t('genderRequired', 'Gender is required')),
     birthdate: Yup.date().when('birthdateEstimated', {
       is: false,
+      // biome-ignore lint/suspicious/noThenProperty: Yup's conditional schema API requires the `then` property.
       then: Yup.date()
         .required(t('birthdayRequired', 'Birthday is required'))
         .max(Date(), t('birthdayNotInTheFuture', 'Birthday cannot be in future'))
@@ -72,6 +75,7 @@ export function getValidationSchema(config: RegistrationConfig) {
     }),
     yearsEstimated: Yup.number().when('birthdateEstimated', {
       is: true,
+      // biome-ignore lint/suspicious/noThenProperty: Yup's conditional schema API requires the `then` property.
       then: Yup.number()
         .required(t('yearsEstimateRequired', 'Estimated years required'))
         .min(0, t('negativeYears', 'Estimated years cannot be negative'))
@@ -83,6 +87,7 @@ export function getValidationSchema(config: RegistrationConfig) {
     deathDate: Yup.date()
       .when('isDead', {
         is: true,
+        // biome-ignore lint/suspicious/noThenProperty: Yup's conditional schema API requires the `then` property.
         then: Yup.date().required(t('deathDateRequired', 'Death date is required')),
         otherwise: Yup.date().nullable(),
       })
@@ -108,6 +113,7 @@ export function getValidationSchema(config: RegistrationConfig) {
     deathTime: Yup.string()
       .when('isDead', {
         is: true,
+        // biome-ignore lint/suspicious/noThenProperty: Yup's conditional schema API requires the `then` property.
         then: Yup.string().required(t('deathTimeRequired', 'Death time is required')),
         otherwise: Yup.string().nullable(),
       })
@@ -116,6 +122,7 @@ export function getValidationSchema(config: RegistrationConfig) {
     deathTimeFormat: Yup.string()
       .when('isDead', {
         is: true,
+        // biome-ignore lint/suspicious/noThenProperty: Yup's conditional schema API requires the `then` property.
         then: Yup.string().required(t('deathTimeFormatRequired', 'Time format is required')),
         otherwise: Yup.string().nullable(),
       })
@@ -123,11 +130,13 @@ export function getValidationSchema(config: RegistrationConfig) {
 
     deathCause: Yup.string().when('isDead', {
       is: true,
+      // biome-ignore lint/suspicious/noThenProperty: Yup's conditional schema API requires the `then` property.
       then: Yup.string().required(t('deathCauseRequired', 'Cause of death is required')),
       otherwise: Yup.string().nullable(),
     }),
     nonCodedCauseOfDeath: Yup.string().when(['isDead', 'deathCause'], {
       is: (isDead, deathCause) => isDead && deathCause === config.freeTextFieldConceptUuid,
+      // biome-ignore lint/suspicious/noThenProperty: Yup's conditional schema API requires the `then` property.
       then: Yup.string().required(t('nonCodedCauseOfDeathRequired', 'Cause of death is required')),
       otherwise: Yup.string().nullable(),
     }),
@@ -139,6 +148,7 @@ export function getValidationSchema(config: RegistrationConfig) {
             required: Yup.bool(),
             identifierValue: Yup.string().when('required', {
               is: true,
+              // biome-ignore lint/suspicious/noThenProperty: Yup's conditional schema API requires the `then` property.
               then: Yup.string().required(t('identifierValueRequired', 'Identifier value is required')),
               otherwise: Yup.string().notRequired(),
             }),

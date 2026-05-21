@@ -8,7 +8,7 @@
   "source": true,
   "scripts": {
     "lint": "node ../../tooling/scripts/run-biome.js lint src",
-    "test": "TZ=UTC yarn exec jest --config jest.config.js --verbose false --passWithNoTests",
+    "test": "vitest run --passWithNoTests",
     "typescript": "tsc"
   },
   "browserslist": [
@@ -35,12 +35,18 @@
     "uuid": "^8.3.2"
   },
   "peerDependencies": {
+    "@openmrs/esm-extensions": "workspace:*",
     "@openmrs/esm-framework": "workspace:*",
+    "@openmrs/esm-styleguide": "workspace:*",
+    "@sihsalus/esm-form-engine-lib": "workspace:*",
     "react": "18.x",
     "single-spa": "6.x"
   },
   "devDependencies": {
-    "jest": "^29.7.0",
-    "typescript": "^6.0.0"
+    "@openmrs/esm-extensions": "workspace:*",
+    "@openmrs/esm-styleguide": "workspace:*",
+    "@sihsalus/esm-form-engine-lib": "workspace:*",
+    "typescript": "6.0.3",
+    "vitest": "^4.1.0"
   }
 }

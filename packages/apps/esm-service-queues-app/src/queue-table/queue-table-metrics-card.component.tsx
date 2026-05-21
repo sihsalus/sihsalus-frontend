@@ -43,7 +43,7 @@ const QueueTableMetricsCard: React.FC<QueueTableMetricsCardProps> = ({
           </div>
         </div>
         <div>
-          <label className={styles.valueLabel}>{!isNaN(value) ? value : count}</label>
+          <label className={styles.valueLabel}>{!Number.isNaN(value) ? value : count}</label>
         </div>
       </Tile>
     </Layer>

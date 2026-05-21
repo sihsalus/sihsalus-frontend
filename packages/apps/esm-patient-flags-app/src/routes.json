@@ -5,6 +5,13 @@
   },
   "extensions": [
     {
+      "name": "patient-flags-banner-tag",
+      "slot": "patient-banner-tags-slot",
+      "component": "flagsBannerTagExtension",
+      "order": 10,
+      "featureFlag": "patient-flags"
+    },
+    {
       "name": "patient-flags-risk-count",
       "slot": "patient-info-slot",
       "component": "flagsRiskCountExtension",

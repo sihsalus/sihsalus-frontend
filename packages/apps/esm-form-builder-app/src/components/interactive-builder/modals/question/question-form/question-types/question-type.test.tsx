@@ -3,15 +3,15 @@ import { render, screen } from '@testing-library/react';
 import { FormFieldProvider } from '../../form-field-context';
 import QuestionTypeComponent from './question-type.component';
 
-const mockSetFormField = jest.fn();
+const mockSetFormField = vi.fn();
 const formField: FormField = {
   type: 'obs',
   questionOptions: { rendering: 'text' },
   id: '1',
 };
 
-jest.mock('../../form-field-context', () => ({
-  ...jest.requireActual('../../form-field-context'),
+vi.mock('../../form-field-context', async () => ({
+  ...(await vi.importActual('../../form-field-context')),
   useFormField: () => ({ formField, setFormField: mockSetFormField }),
 }));
 
@@ -52,7 +52,7 @@ describe('RenderingType Component', () => {
   });
 
   it('prints error to console if component cannot be found for type', () => {
-    const consoleErrorSpy = jest.spyOn(console, 'error').mockImplementation();
+    const consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
     formField.type = 'control';
     renderQuestionTypeComponent();
 

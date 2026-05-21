@@ -125,6 +125,8 @@ describe('OpenMRS Expression Evaluator', () => {
     expect(evaluate('undefined')).toBeUndefined();
     expect(evaluate('isNaN(NaN)')).toBe(true);
     expect(evaluate('Number.isInteger(42)')).toBe(true);
+    expect(evaluate('Object.fromEntries(entries).a', { entries: [['a', 1]] })).toBe(1);
+    expect(evaluate('Object.hasOwn(a, "a")', { a: { a: 1 } })).toBe(true);
   });
 
   it('should not support creating arbitrary objects', () => {

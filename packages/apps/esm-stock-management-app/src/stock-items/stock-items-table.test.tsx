@@ -8,18 +8,18 @@ import { stockItemCreatedEvent } from './stock-items.events';
 import StockItemsTableComponent from './stock-items-table.component';
 import { useStockItemsPages } from './stock-items-table.resource';
 
-const mockUseStockItemsPages = jest.mocked(useStockItemsPages);
+const mockUseStockItemsPages = vi.mocked(useStockItemsPages);
 
-jest.mock('./stock-items-table.resource', () => ({
-  useStockItemsPages: jest.fn(),
+vi.mock('./stock-items-table.resource', () => ({
+  useStockItemsPages: vi.fn(),
 }));
 
-jest.mock('../utils', () => ({
-  handleMutate: jest.fn(),
+vi.mock('../utils', () => ({
+  handleMutate: vi.fn(),
 }));
 
-jest.mock('./stock-item.utils', () => ({
-  launchAddOrEditStockItemWorkspace: jest.fn(),
+vi.mock('./stock-item.utils', () => ({
+  launchAddOrEditStockItemWorkspace: vi.fn(),
 }));
 
 describe('StockItemsTableComponent', () => {
@@ -41,13 +41,13 @@ describe('StockItemsTableComponent', () => {
       error: null,
       totalCount: 25,
       currentPageSize: 10,
-      setPageSize: jest.fn(),
+      setPageSize: vi.fn(),
       pageSizes: [10, 20, 30],
       currentPage: 1,
-      setCurrentPage: jest.fn(),
+      setCurrentPage: vi.fn(),
       isDrug: '',
-      setDrug: jest.fn(),
-      setSearchString: jest.fn(),
+      setDrug: vi.fn(),
+      setSearchString: vi.fn(),
     });
   });
 
@@ -126,8 +126,8 @@ describe('StockItemsTableComponent', () => {
   });
 
   it('shows newly created stock item without applying a search filter', async () => {
-    const setCurrentPage = jest.fn();
-    const setSearchString = jest.fn();
+    const setCurrentPage = vi.fn();
+    const setSearchString = vi.fn();
 
     mockUseStockItemsPages.mockReturnValue({
       isLoading: false,
@@ -146,12 +146,12 @@ describe('StockItemsTableComponent', () => {
       error: null,
       totalCount: 10,
       currentPageSize: 10,
-      setPageSize: jest.fn(),
+      setPageSize: vi.fn(),
       pageSizes: [10, 20, 30],
       currentPage: 1,
       setCurrentPage,
       isDrug: '',
-      setDrug: jest.fn(),
+      setDrug: vi.fn(),
       setSearchString,
     });
 

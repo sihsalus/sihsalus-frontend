@@ -1,6 +1,6 @@
 import { InlineLoading, OverflowMenu, OverflowMenuItem } from '@carbon/react';
-import { formatDate, launchWorkspace, parseDate, useConfig } from '@openmrs/esm-framework';
-import { EmptyState, ErrorState } from '@openmrs/esm-patient-common-lib';
+import { formatDate, parseDate, useConfig } from '@openmrs/esm-framework';
+import { EmptyState, ErrorState, launchPatientWorkspace } from '@openmrs/esm-patient-common-lib';
 import { getObsFromEncounter } from '@sihsalus/esm-sihsalus-shared';
 import capitalize from 'lodash-es/capitalize';
 import React from 'react';
@@ -40,7 +40,7 @@ const ClinicalEncounter: React.FC<ClinicalEncounterProps> = ({
     formsList: { clinicalEncounterFormUuid },
   } = useConfig<ConfigObject>();
   const handleOpenOrEditClinicalEncounterForm = (encounterUUID = '') => {
-    launchWorkspace(patientFormEntryWorkspace, {
+    launchPatientWorkspace(patientFormEntryWorkspace, {
       workspaceTitle: t('clinicalEncounter', 'Clinical Encounter'),
       mutateForm: mutate,
       formInfo: {

@@ -1,27 +1,30 @@
 import { type FetchResponse, showSnackbar } from '@openmrs/esm-framework';
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import React from 'react';
 import { mockPatient } from 'test-utils';
 import { deleteCondition } from './conditions.resource';
 import DeleteConditionModal from './delete-condition.modal';
 
-const mockDeleteCondition = jest.mocked(deleteCondition);
-const mockShowSnackbar = jest.mocked(showSnackbar);
+const mockDeleteCondition = vi.mocked(deleteCondition);
+const mockShowSnackbar = vi.mocked(showSnackbar);
 
-jest.mock('./conditions.resource', () => ({
-  ...jest.requireActual('./conditions.resource'),
-  deleteCondition: jest.fn(),
-  useConditions: jest.fn().mockReturnValue({ mutate: jest.fn() }),
+vi.mock('./conditions.resource', async () => ({
+  ...(await vi.importActual('./conditions.resource')),
+  deleteCondition: vi.fn(),
+  useConditions: vi.fn().mockReturnValue({ mutate: vi.fn() }),
 }));
 
 const defaultProps = {
-  closeDeleteModal: jest.fn(),
+  closeDeleteModal: vi.fn(),
   conditionId: '123e4567-e89b-12d3-a456-426614174000',
   patientUuid: mockPatient.id,
 };
 
 describe('<DeleteConditionModal />', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
   it('renders a modal with the correct elements', () => {
     render(<DeleteConditionModal {...defaultProps} />);
 
@@ -62,7 +65,7 @@ describe('<DeleteConditionModal />', () => {
   });
 
   it('renders an error message if the delete operation fails', async () => {
-    const consoleSpy = jest.spyOn(console, 'error').mockImplementation(() => {});
+    const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
     const user = userEvent.setup();
 
     mockDeleteCondition.mockRejectedValue({ message: 'Internal server error', status: 500 });

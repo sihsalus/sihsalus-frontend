@@ -1,7 +1,5 @@
 import {
-  formatDate,
   openmrsFetch,
-  parseDate,
   type SessionLocation,
   useConfig,
   useOpenmrsFetchAll,

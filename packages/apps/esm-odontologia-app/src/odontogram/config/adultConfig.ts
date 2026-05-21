@@ -124,9 +124,6 @@ const RENDER_CATEGORIES: Record<number, FindingOptionConfig['renderCategory']> =
 /** Hallazgos que se aplican a toda la fila */
 const ROW_FINDINGS = new Set([7, 31]);
 
-/** Hallazgos con variantes invertidas para dientes inferiores */
-const INVERTED_LOWER_FINDINGS = new Set([13, 30, 39]);
-
 /**
  * Construye el catálogo de FindingOptionConfig a partir de optionsData.json.
  */
@@ -151,7 +148,6 @@ function buildFindingOptions(): FindingOptionConfig[] {
     abreviaturaSource: opt.abreviaturaSource || 'none',
     renderCategory: RENDER_CATEGORIES[opt.id] || 'text-only',
     appliesToRow: ROW_FINDINGS.has(opt.id),
-    hasInvertedLower: INVERTED_LOWER_FINDINGS.has(opt.id),
   }));
 }
 

@@ -7,14 +7,16 @@
 import React from 'react';
 import { EllipseDesignCenter, EllipseDesignLeftCenter, EllipseDesignRightCenter } from '../../designs/figuras';
 import { useOdontogramContext } from '../../providers/OdontogramProvider';
+import '../ToothDetails.css';
 import './SpaceBetweenStyles.css';
 
 interface SpaceBetweenLegendsProps {
   leftToothId: number;
   rightToothId: number;
+  position?: 'upper' | 'lower';
 }
 
-const SpaceBetweenLegends: React.FC<SpaceBetweenLegendsProps> = ({ leftToothId, rightToothId }) => {
+const SpaceBetweenLegends: React.FC<SpaceBetweenLegendsProps> = ({ leftToothId, rightToothId, position = 'upper' }) => {
   const { data, formSelection, legendActions, readOnly } = useOdontogramContext();
 
   const { selectedFindingId, selectedColor, isComplete } = formSelection;
@@ -60,17 +62,34 @@ const SpaceBetweenLegends: React.FC<SpaceBetweenLegendsProps> = ({ leftToothId, 
     }
   };
 
+  // Wrapper mirrors ToothDetails structure (60px spacer + 30px svg = 90px total)
+  // so both flex items in the detailsRow have identical height calculation
+  // and the legend svgs line up at the exact same pixel.
   return (
-    <svg
-      width="20"
-      height="30"
-      onClick={handleClick}
-      style={{ cursor: readOnly || isDisabled ? 'default' : 'pointer' }}
-      className={isSelected && !isDisabled && !readOnly ? 'interactive-svg' : ''}
-    >
-      <rect width="20" height="30" fill={isDisabled || readOnly ? 'white' : isSelected ? 'lightgray' : 'white'} />
-      {renderDesign()}
-    </svg>
+    <div className={`tooth-details-container ${position === 'lower' ? 'tooth-details-container--lower' : ''}`}>
+      <div className="tooth-details-spacer" aria-hidden="true" />
+      <svg
+        width="20"
+        height="30"
+        onClick={handleClick}
+        style={{ cursor: readOnly || isDisabled ? 'default' : 'pointer' }}
+        className={isSelected && !isDisabled && !readOnly ? 'interactive-svg' : ''}
+      >
+        {(() => {
+          const showHighlight = !isDisabled && !readOnly && isSelected;
+          return (
+            <rect
+              width="20"
+              height="30"
+              fill={showHighlight ? 'lightgray' : 'white'}
+              stroke={showHighlight ? '#a8a8a8' : 'none'}
+              strokeWidth={showHighlight ? 0.3 : 0}
+            />
+          );
+        })()}
+        {renderDesign()}
+      </svg>
+    </div>
   );
 };
 

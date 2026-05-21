@@ -30,7 +30,7 @@ export const DoseInput: React.FC<{
     (_event, { value }) => {
       const parsedValue =
         value === '' || value === null || (typeof value === 'string' && !value.trim()) ? undefined : Number(value);
-      field.onChange(isNaN(parsedValue) ? undefined : parsedValue);
+      field.onChange(Number.isNaN(parsedValue) ? undefined : parsedValue);
     },
     [field],
   );

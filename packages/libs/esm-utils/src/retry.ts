@@ -9,7 +9,7 @@ export interface RetryOptions {
    * with an error on the current attempt.
    * @param attempt The current (zero-based) retry attempt. `0` indicates the initial attempt.
    */
-  shouldRetry?(attempt: number);
+  shouldRetry?(attempt: number): boolean;
   /**
    * Calculates the next delay (in milliseconds) before a retry attempt.
    * Returning a value for the inital attempt (`0`) delays the initial function invocation.
@@ -37,10 +37,10 @@ export interface RetryOptions {
  * @returns The result of successfully executing `fn`.
  * @throws Rethrows the final error of running `fn` when the function stops retrying.
  */
-export async function retry<T>(fn: () => Promise<T>, options: RetryOptions = {}) {
+export async function retry<T>(fn: () => Promise<T>, options: RetryOptions = {}): Promise<T> {
   let { shouldRetry, getDelay, onError } = options;
-  shouldRetry = shouldRetry ?? ((attempt) => limitAttempts(attempt, 5));
-  getDelay = getDelay ?? ((attempt) => getExponentialDelay(attempt, 1000));
+  shouldRetry = shouldRetry ?? ((attempt: number) => limitAttempts(attempt, 5));
+  getDelay = getDelay ?? ((attempt: number) => getExponentialDelay(attempt, 1000));
 
   let attempt = 0;
   let lastError: any;

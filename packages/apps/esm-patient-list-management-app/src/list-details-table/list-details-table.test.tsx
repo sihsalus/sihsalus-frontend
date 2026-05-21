@@ -43,7 +43,7 @@ describe('ListDetailsTable', () => {
     },
   ];
 
-  const mockOnChange = jest.fn();
+  const mockOnChange = vi.fn();
 
   const pagination = {
     usePagination: true,
@@ -63,8 +63,8 @@ describe('ListDetailsTable', () => {
         isLoading={false}
         autoFocus={false}
         isFetching={true}
-        mutateListDetails={jest.fn()}
-        mutateListMembers={jest.fn()}
+        mutateListDetails={vi.fn()}
+        mutateListMembers={vi.fn()}
       />,
     );
     expect(screen.getByTestId('patientsTable')).toBeInTheDocument();
@@ -79,8 +79,8 @@ describe('ListDetailsTable', () => {
         isLoading={true}
         autoFocus={false}
         isFetching={false}
-        mutateListDetails={jest.fn()}
-        mutateListMembers={jest.fn()}
+        mutateListDetails={vi.fn()}
+        mutateListMembers={vi.fn()}
       />,
     );
 

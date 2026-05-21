@@ -20,10 +20,10 @@ const Medications: React.FC<MedicationProps> = ({ medications }) => {
     <div>
       {medications.length > 0 ? (
         medications.map(
-          (medication: OrderItem, ind) =>
+          (medication: OrderItem) =>
             medication.order?.dose &&
             medication.order?.orderType?.display === 'Drug Order' && (
-              <div className={styles.medicationContainer}>
+              <div key={medication.order.uuid} className={styles.medicationContainer}>
                 <Tile className={styles.medicationTile}>
                   <p className={styles.medicationRecord}>
                     <strong>{capitalize(medication.order.drug?.name)}</strong> &mdash;{' '}

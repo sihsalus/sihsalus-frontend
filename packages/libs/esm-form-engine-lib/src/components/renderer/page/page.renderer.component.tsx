@@ -1,5 +1,5 @@
 import { Accordion, AccordionItem } from '@carbon/react';
-import { ChevronDownIcon, ChevronUpIcon } from '@openmrs/esm-framework/src/internal';
+import { ChevronDownIcon, ChevronUpIcon } from '@openmrs/esm-styleguide';
 import classNames from 'classnames';
 import React, { useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';

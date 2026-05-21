@@ -1,3 +1,4 @@
+import { Box, Home, Location, OperationsRecord, Report, Settings, Store, UserSettings } from '@carbon/react/icons';
 import { defineConfigSchema, getAsyncLifecycle, getSyncLifecycle } from '@openmrs/esm-framework';
 import { configSchema } from './config-schema';
 import { createDashboardLink } from './createDashboardLink';
@@ -94,48 +95,57 @@ export const stockNavMenu = getSyncLifecycle(SideMenu, options);
 // t("overview","Overview")
 export const stockOverview = getSyncLifecycle(StockHomeLandingPage, options);
 export const stockOverviewLink = getSyncLifecycle(
-  createDashboardLink({ title: 'Overview', name: 'stock-management' }),
+  createDashboardLink({ icon: Home, title: 'Overview', name: 'stock-management' }),
   options,
 );
 
 // t("operations","Operations")
 export const stockOperations = getSyncLifecycle(StockOperationsComponent, options);
 export const stockOperationsLink = getSyncLifecycle(
-  createDashboardLink({ title: 'Operations', name: 'operations' }),
+  createDashboardLink({ icon: OperationsRecord, title: 'Operations', name: 'operations' }),
   options,
 );
 
 // t("items","Items")
 export const stockItems = getSyncLifecycle(StockItems, options);
 
-export const stockItemsLink = getSyncLifecycle(createDashboardLink({ title: 'Items', name: 'items' }), options);
+export const stockItemsLink = getSyncLifecycle(
+  createDashboardLink({ icon: Box, title: 'Items', name: 'items' }),
+  options,
+);
 
 // t("useScopes","User role scopes")
 export const stockUserScopes = getSyncLifecycle(StockUserScopes, options);
 export const stockUserScopesLink = getSyncLifecycle(
-  createDashboardLink({ title: 'User role scopes', name: 'user-scopes' }),
+  createDashboardLink({ icon: UserSettings, title: 'User role scopes', name: 'user-scopes' }),
   options,
 );
 
 // t("sources","Sources")
 export const stockSources = getSyncLifecycle(StockSources, options);
-export const stockSourcesLink = getSyncLifecycle(createDashboardLink({ title: 'Sources', name: 'sources' }), options);
+export const stockSourcesLink = getSyncLifecycle(
+  createDashboardLink({ icon: Store, title: 'Sources', name: 'sources' }),
+  options,
+);
 
 // t("locations","Locations")
 export const stockLocations = getSyncLifecycle(StockLocations, options);
 export const stockLocationsLink = getSyncLifecycle(
-  createDashboardLink({ title: 'Locations', name: 'locations' }),
+  createDashboardLink({ icon: Location, title: 'Locations', name: 'locations' }),
   options,
 );
 
 // t("reports","Reports")
 export const stockReports = getSyncLifecycle(StockReports, options);
-export const stockReportsLink = getSyncLifecycle(createDashboardLink({ title: 'Reports', name: 'reports' }), options);
+export const stockReportsLink = getSyncLifecycle(
+  createDashboardLink({ icon: Report, title: 'Reports', name: 'reports' }),
+  options,
+);
 
 // t("settings","Settings")
 export const stockSettings = getSyncLifecycle(StockSettings, options);
 export const stockSettingsLink = getSyncLifecycle(
-  createDashboardLink({ title: 'Settings', name: 'settings' }),
+  createDashboardLink({ icon: Settings, title: 'Settings', name: 'settings' }),
   options,
 );
 

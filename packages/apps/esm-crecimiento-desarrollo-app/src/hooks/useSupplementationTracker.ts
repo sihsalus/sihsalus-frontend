@@ -40,7 +40,7 @@ export function useSupplementationTracker(patientUuid: string): SupplementationR
     const observations = data?.results ?? [];
     const delivered = observations.reduce((sum: number, obs: { value?: number | string }) => {
       const val = typeof obs.value === 'number' ? obs.value : parseFloat(obs.value);
-      return sum + (isNaN(val) ? 0 : val);
+      return sum + (Number.isNaN(val) ? 0 : val);
     }, 0);
 
     const percentage = totalTarget > 0 ? Math.min((delivered / totalTarget) * 100, 100) : 0;

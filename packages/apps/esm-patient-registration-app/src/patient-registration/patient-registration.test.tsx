@@ -7,7 +7,6 @@ import {
 } from '@openmrs/esm-framework';
 import { render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import React from 'react';
 import { BrowserRouter as Router, useParams } from 'react-router-dom';
 import { mockedAddressTemplate, mockPatient } from 'test-utils';
 
@@ -20,18 +19,18 @@ import { saveEncounter, savePatient } from './patient-registration.resource';
 import type { AddressTemplate, Encounter, FormValues } from './patient-registration.types';
 import { useInitialFormValues } from './patient-registration-hooks';
 
-const mockSaveEncounter = jest.mocked(saveEncounter);
-const mockSavePatient = savePatient as jest.Mock;
-const mockShowSnackbar = jest.mocked(showSnackbar);
-const mockUseConfig = jest.mocked(useConfig<RegistrationConfig>);
-const mockUsePatient = jest.mocked(usePatient);
-const mockUseParams = useParams as jest.Mock;
-const mockUseInitialFormValues = jest.mocked(useInitialFormValues);
+const mockSaveEncounter = vi.mocked(saveEncounter);
+const mockSavePatient = savePatient as vi.Mock;
+const mockShowSnackbar = vi.mocked(showSnackbar);
+const mockUseConfig = vi.mocked(useConfig<RegistrationConfig>);
+const mockUsePatient = vi.mocked(usePatient);
+const mockUseParams = useParams as vi.Mock;
+const mockUseInitialFormValues = vi.mocked(useInitialFormValues);
 
-jest.mock('./field/field.resource', () => ({
-  useConcept: jest.fn().mockImplementation((uuid: string) => {
+vi.mock('./field/field.resource', async () => ({
+  useConcept: vi.fn().mockImplementation((uuid: string) => {
     let data;
-    if (uuid == 'weight-uuid') {
+    if (uuid === 'weight-uuid') {
       data = {
         uuid: 'weight-uuid',
         display: 'Weight (kg)',
@@ -39,7 +38,7 @@ jest.mock('./field/field.resource', () => ({
         answers: [],
         setMembers: [],
       };
-    } else if (uuid == 'chief-complaint-uuid') {
+    } else if (uuid === 'chief-complaint-uuid') {
       data = {
         uuid: 'chief-complaint-uuid',
         display: 'Chief Complaint',
@@ -47,7 +46,7 @@ jest.mock('./field/field.resource', () => ({
         answers: [],
         setMembers: [],
       };
-    } else if (uuid == 'nationality-uuid') {
+    } else if (uuid === 'nationality-uuid') {
       data = {
         uuid: 'nationality-uuid',
         display: 'Nationality',
@@ -64,8 +63,8 @@ jest.mock('./field/field.resource', () => ({
       isLoading: !data,
     };
   }),
-  useConceptAnswers: jest.fn().mockImplementation((uuid: string) => {
-    if (uuid == 'nationality-uuid') {
+  useConceptAnswers: vi.fn().mockImplementation((uuid: string) => {
+    if (uuid === 'nationality-uuid') {
       return {
         data: [
           { display: 'USA', uuid: 'usa' },
@@ -73,7 +72,7 @@ jest.mock('./field/field.resource', () => ({
         ],
         isLoading: false,
       };
-    } else if (uuid == 'other-countries-uuid') {
+    } else if (uuid === 'other-countries-uuid') {
       return {
         data: [
           { display: 'Kenya', uuid: 'ke' },
@@ -85,26 +84,26 @@ jest.mock('./field/field.resource', () => ({
   }),
 }));
 
-jest.mock('react-router-dom', () => ({
-  ...jest.requireActual('react-router-dom'),
+vi.mock('react-router-dom', async () => ({
+  ...(await vi.importActual('react-router-dom')),
   useLocation: () => ({
     pathname: 'openmrs/spa/patient-registration',
   }),
   useHistory: () => [],
-  useParams: jest.fn().mockReturnValue({ patientUuid: undefined }),
+  useParams: vi.fn().mockReturnValue({ patientUuid: undefined }),
 }));
 
-jest.mock('./patient-registration.resource', () => ({
-  ...jest.requireActual('./patient-registration.resource'),
-  saveEncounter: jest.fn(),
-  savePatient: jest.fn(),
+vi.mock('./patient-registration.resource', async () => ({
+  ...(await vi.importActual('./patient-registration.resource')),
+  saveEncounter: vi.fn(),
+  savePatient: vi.fn(),
 }));
 
-jest.mock('./patient-registration-hooks', () => ({
-  ...jest.requireActual('./patient-registration-hooks'),
-  useInitialFormValues: jest.fn().mockReturnValue([{}, jest.fn()]),
-  useInitialAddressFieldValues: jest.fn().mockReturnValue([{}, jest.fn()]),
-  usePatientUuidMap: jest.fn().mockReturnValue([{}, jest.fn()]),
+vi.mock('./patient-registration-hooks', async () => ({
+  ...(await vi.importActual('./patient-registration-hooks')),
+  useInitialFormValues: vi.fn().mockReturnValue([{}, vi.fn()]),
+  useInitialAddressFieldValues: vi.fn().mockReturnValue([{}, vi.fn()]),
+  usePatientUuidMap: vi.fn().mockReturnValue([{}, vi.fn()]),
 }));
 
 const mockResourcesContextValue = {
@@ -253,7 +252,7 @@ describe('Registering a new patient', () => {
   });
 
   it('should render all the required fields and sections', async () => {
-    render(<PatientRegistration isOffline={false} savePatientForm={jest.fn()} />, { wrapper: Wrapper });
+    render(<PatientRegistration isOffline={false} savePatientForm={vi.fn()} />, { wrapper: Wrapper });
 
     await screen.findByRole('heading', { name: /create new patient/i });
 
@@ -317,7 +316,7 @@ describe('Registering a new patient', () => {
 
   it('should not save the patient if validation fails', async () => {
     const user = userEvent.setup();
-    const mockSavePatientForm = jest.fn();
+    const mockSavePatientForm = vi.fn();
 
     render(<PatientRegistration isOffline={false} savePatientForm={mockSavePatientForm} />, { wrapper: Wrapper });
 
@@ -419,7 +418,7 @@ describe('Updating an existing patient record', () => {
 
   it('edits patient demographics', async () => {
     const user = userEvent.setup();
-    const mockSavePatientForm = jest.fn();
+    const mockSavePatientForm = vi.fn();
 
     mockUseInitialFormValues.mockReturnValue([
       {
@@ -472,7 +471,7 @@ describe('Updating an existing patient record', () => {
         telephoneNumber: '',
         yearsEstimated: 0,
       } as FormValues,
-      jest.fn(),
+      vi.fn(),
     ]);
 
     render(<PatientRegistration isOffline={false} savePatientForm={mockSavePatientForm} />, { wrapper: Wrapper });

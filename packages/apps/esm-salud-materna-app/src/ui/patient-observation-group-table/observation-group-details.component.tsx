@@ -8,7 +8,7 @@ import {
   TableHeader,
   TableRow,
 } from '@carbon/react';
-import { isDesktop, useLayoutType, useSession, useVisitContextStore } from '@openmrs/esm-framework';
+import { isDesktop, useLayoutType } from '@openmrs/esm-framework';
 import React from 'react';
 import { useTranslation } from 'react-i18next';
 
@@ -36,8 +36,6 @@ interface ObservationGroupDetailsProps {
 const ObservationGroupDetails: React.FC<ObservationGroupDetailsProps> = ({ group }) => {
   const { t } = useTranslation();
   const desktopLayout = isDesktop(useLayoutType());
-  const _session = useSession();
-  const { mutateVisit } = useVisitContextStore();
   const responsiveSize = desktopLayout ? 'sm' : 'lg';
 
   const tableHeaders = [
@@ -54,7 +52,7 @@ const ObservationGroupDetails: React.FC<ObservationGroupDetailsProps> = ({ group
         size={responsiveSize}
         useZebraStyles
       >
-        {({ rows, headers, getTableProps, getHeaderProps, getRowProps, getExpandHeaderProps, getToolbarProps }) => (
+        {({ rows, headers, getTableProps, getHeaderProps }) => (
           <TableContainer>
             <Table {...getTableProps()} className={styles.detailsTable}>
               <TableHead>

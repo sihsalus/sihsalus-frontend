@@ -48,7 +48,12 @@
 }
 
 .topNavInfoSlot {
+  display: flex;
+  align-items: center;
+  flex: 1 1 auto;
   gap: layout.$spacing-03;
+  min-width: 0;
+  overflow: hidden;
 }
 
 .panelWrapper {
@@ -59,5 +64,16 @@
   .logoWrapper,
   .divider {
     display: none;
+  }
+}
+
+@media (max-width: 48rem) {
+  .topNavInfoSlot {
+    flex: 0 0 auto;
+    gap: 0;
+  }
+
+  .headerGlobalBar {
+    margin-inline-start: auto;
   }
 }

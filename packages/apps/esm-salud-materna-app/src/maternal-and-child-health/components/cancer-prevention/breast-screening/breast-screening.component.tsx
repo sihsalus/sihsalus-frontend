@@ -15,7 +15,7 @@ interface BreastScreeningProps {
  * Widget de detección de cáncer de mama según guía MINSA.
  * Muestra último examen clínico, autoexamen y mamografía.
  */
-const BreastScreening: React.FC<BreastScreeningProps> = ({ patientUuid }) => {
+const BreastScreening: React.FC<BreastScreeningProps> = ({ patientUuid: _patientUuid }) => {
   const { t } = useTranslation();
   const config = useConfig<ConfigObject>();
 

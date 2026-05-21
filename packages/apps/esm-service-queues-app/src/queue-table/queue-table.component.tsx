@@ -78,7 +78,7 @@ function QueueTable({
 
   useEffect(() => {
     goTo(1);
-  }, [goTo, queueEntries]);
+  }, [goTo]);
 
   const rows: QueueTableRowData[] =
     paginatedQueueEntries?.map((queueEntry) => {
@@ -93,7 +93,7 @@ function QueueTable({
     return <DataTableSkeleton role="progressbar" />;
   }
 
-  if (columns.length == 0) {
+  if (columns.length === 0) {
     return <p>{t('noColumnsDefined', 'No table columns defined. Check Configuration')}</p>;
   }
 
@@ -126,11 +126,14 @@ function QueueTable({
               <TableHead>
                 <TableRow>
                   {ExpandedRow && <TableExpandHeader enableToggle {...getExpandHeaderProps()} />}
-                  {headers.map((header) => (
-                    <TableHeader key={header.key} {...getHeaderProps({ header })}>
-                      {header.header}
-                    </TableHeader>
-                  ))}
+                  {headers.map((header) => {
+                    const { key, ...headerProps } = getHeaderProps({ header });
+                    return (
+                      <TableHeader key={key} {...headerProps}>
+                        {header.header}
+                      </TableHeader>
+                    );
+                  })}
                 </TableRow>
               </TableHead>
               <TableBody>
@@ -139,18 +142,23 @@ function QueueTable({
 
                   return (
                     <React.Fragment key={row.id}>
-                      <Row {...getRowProps({ row })}>
-                        {row.cells.map((cell, i) => (
-                          <TableCell
-                            key={cell.id}
-                            className={classNames({
-                              'cds--table-column-menu': columns[i].key.includes('actions'),
-                            })}
-                          >
-                            {cell.value}
-                          </TableCell>
-                        ))}
-                      </Row>
+                      {(() => {
+                        const { key, ...rowProps } = getRowProps({ row });
+                        return (
+                          <Row key={key} {...rowProps}>
+                            {row.cells.map((cell, i) => (
+                              <TableCell
+                                key={cell.id}
+                                className={classNames({
+                                  'cds--table-column-menu': columns[i].key.includes('actions'),
+                                })}
+                              >
+                                {cell.value}
+                              </TableCell>
+                            ))}
+                          </Row>
+                        );
+                      })()}
                       {ExpandedRow && row.isExpanded ? (
                         <TableExpandedRow
                           className={styles.expandedActiveVisitRow}

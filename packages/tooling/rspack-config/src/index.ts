@@ -94,17 +94,9 @@ type VersionedPackageJson = {
 
 const alwaysHostSharedDependencies = new Set([
   '@carbon/react',
-  '@openmrs/esm-config',
-  '@openmrs/esm-extensions',
   '@openmrs/esm-framework',
   '@openmrs/esm-framework/src/internal',
-  '@openmrs/esm-navigation',
-  '@openmrs/esm-offline',
-  '@openmrs/esm-react-utils',
-  '@openmrs/esm-state',
   'single-spa',
-  'single-spa-react',
-  'single-spa-react/parcel',
 ]);
 
 const production = 'production';

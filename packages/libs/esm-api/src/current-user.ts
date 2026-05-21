@@ -204,7 +204,7 @@ function isSuperUser(user: { roles: Array<Role> }) {
  */
 export function refetchCurrentUser(username?: string, password?: string) {
   lastFetchTimeMillis = Date.now();
-  const headers = {};
+  const headers: Record<string, string> = {};
   if (username && password) {
     headers['Authorization'] = `Basic ${window.btoa(`${username}:${password}`)}`;
   }

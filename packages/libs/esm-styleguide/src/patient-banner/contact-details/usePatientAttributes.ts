@@ -47,12 +47,36 @@ export const usePatientContactAttributes = (patientUuid: string) => {
 
   const { attributes, error, isLoading } = usePatientAttributes(patientUuid);
   const contactAttributes = useMemo(
-    () => attributes.filter(({ attributeType }) => contactAttributeTypes?.some((uuid) => attributeType.uuid === uuid)),
+    () =>
+      attributes.filter(({ attributeType }) =>
+        contactAttributeTypes?.some((uuid: string) => attributeType.uuid === uuid),
+      ),
     [attributes, contactAttributeTypes],
   );
 
   return {
     contactAttributes,
+    isLoading,
+    error,
+  };
+};
+
+export const usePatientAdditionalAttributes = (patientUuid: string) => {
+  const { additionalAttributeTypes = [] } = useConfig({
+    externalModuleName: '@openmrs/esm-patient-banner-app',
+  });
+
+  const { attributes, error, isLoading } = usePatientAttributes(patientUuid);
+  const additionalAttributes = useMemo(
+    () =>
+      attributes.filter(({ attributeType }) =>
+        additionalAttributeTypes?.some((uuid: string) => attributeType.uuid === uuid),
+      ),
+    [attributes, additionalAttributeTypes],
+  );
+
+  return {
+    additionalAttributes,
     isLoading,
     error,
   };

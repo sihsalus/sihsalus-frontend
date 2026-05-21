@@ -67,7 +67,7 @@ export interface OrderBasketItem {
   concept?: Concept;
   instructions?: string;
   urgency?: OrderUrgency;
-  previousOrder?: string;
+  previousOrder?: string | null;
   orderType?: string;
   orderNumber?: string;
   scheduledDate?: Date;

@@ -88,8 +88,8 @@ export const PatientRegistration: React.FC<PatientRegistrationProps> = ({ savePa
     return config.sections
       .map(
         (sectionName) =>
-          config.sectionDefinitions.filter((s) => s.id == sectionName)[0] ??
-          builtInSections.filter((s) => s.id == sectionName)[0],
+          config.sectionDefinitions.filter((s) => s.id === sectionName)[0] ??
+          builtInSections.filter((s) => s.id === sectionName)[0],
       )
       .filter((s) => s);
   }, [config.sections, config.sectionDefinitions]);

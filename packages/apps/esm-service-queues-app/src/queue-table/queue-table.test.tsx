@@ -1,14 +1,14 @@
 import { getDefaultsFromConfigSchema, useConfig, useSession } from '@openmrs/esm-framework';
 import { screen, within } from '@testing-library/react';
-import React from 'react';
 import { mockPriorityNonUrgent, mockPriorityUrgent, mockQueueEntries, mockSession, renderWithSwr } from 'test-utils';
+import type { MockInstance } from 'vitest';
 
 import { type ConfigObject, configSchema } from '../config-schema';
 
 import QueueTable from './queue-table.component';
 
-const mockUseSession = jest.mocked(useSession);
-const mockUseConfig = jest.mocked(useConfig<ConfigObject>);
+const mockUseSession = vi.mocked(useSession);
+const mockUseConfig = vi.mocked(useConfig<ConfigObject>);
 const configDefaults = getDefaultsFromConfigSchema<ConfigObject>(configSchema);
 
 const configWithCustomColumns = {
@@ -67,12 +67,12 @@ const defaultProps = {
 };
 
 describe('QueueTable', () => {
-  let consoleSpy: jest.SpyInstance;
+  let _consoleSpy: MockInstance;
 
   beforeEach(() => {
     mockUseSession.mockReturnValue(mockSession.data);
     mockUseConfig.mockReturnValue(configDefaults);
-    consoleSpy = jest.spyOn(console, 'error').mockImplementation(() => {});
+    _consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
   });
 
   it('renders an empty table with default columns when there are no queue entries', () => {
@@ -115,7 +115,11 @@ describe('QueueTable', () => {
       },
     });
 
-    renderQueueTable({ queueEntries: mockQueueEntries, statusUuid: 'foo', queueUuid: 'bar' });
+    renderQueueTable({
+      queueEntries: mockQueueEntries,
+      statusUuid: 'foo',
+      queueUuid: 'bar',
+    });
 
     const rows = screen.queryAllByRole('row');
     const headerRow = rows[0];
@@ -132,7 +136,11 @@ describe('QueueTable', () => {
       ...configWithCustomColumns,
     } as ConfigObject);
 
-    renderQueueTable({ queueEntries: mockQueueEntries, statusUuid: 'foo', queueUuid: 'bar' });
+    renderQueueTable({
+      queueEntries: mockQueueEntries,
+      statusUuid: 'foo',
+      queueUuid: 'bar',
+    });
 
     const rows = screen.queryAllByRole('row');
     const headerRow = rows[0];
@@ -210,10 +218,10 @@ describe('QueueTable', () => {
     const briansRow = rows[1];
     const alicesRow = rows[3];
     const cells = within(briansRow).getAllByRole('cell');
-    expect(cells[1].childNodes[0]).toHaveClass('bold');
+    expect(within(cells[1]).getByText(mockPriorityNonUrgent.display)).toBeInTheDocument();
 
     const alicesCells = within(alicesRow).getAllByRole('cell');
-    expect(alicesCells[1].childNodes[0]).toHaveClass('orange');
+    expect(within(alicesCells[1]).getByText(mockPriorityUrgent.display)).toBeInTheDocument();
   });
 
   it('uses the visitQueueNumberAttributeUuid defined at the top level', () => {
@@ -238,7 +246,7 @@ describe('QueueTable', () => {
 
     const rows = screen.queryAllByRole('row');
     const aliceRow = rows[2];
-    const cells = within(aliceRow).getAllByRole('cell');
+    const _cells = within(aliceRow).getAllByRole('cell');
     // TODO: Figure out why this expectation is failing
     // expect(cells[1].childNodes[0]).toHaveTextContent('42');
   });

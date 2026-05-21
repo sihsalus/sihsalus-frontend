@@ -13,7 +13,8 @@
  * vive dentro del Provider y NO se persiste.
  */
 
-import React, { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
+import { showSnackbar } from '@openmrs/esm-framework';
+import React, { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react';
 import {
   calculateLegendDesign,
   getFixedDesignNumber,
@@ -87,7 +88,7 @@ export function useOdontogramContext(): OdontogramContextValue {
 // =============================================================================
 
 function generateId(): string {
-  return `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+  return crypto.randomUUID();
 }
 
 /** Devuelve la posición de un diente dado su ID y la config */
@@ -124,21 +125,17 @@ export function OdontogramProvider({
   const [formSelection, setFormSelection] = useState<FormSelectionState>(EMPTY_FORM_SELECTION);
 
   // ---------------------------------------------------------------------------
-  // Toast state
+  // Toast: delegate to the project-wide Carbon snackbar provided by
+  // @openmrs/esm-framework so it follows the same design language as the rest
+  // of the workspace (replaces an in-house overlay div previously rendered
+  // inside this provider).
   // ---------------------------------------------------------------------------
-  const [toastMsg, setToastMsg] = useState<string | null>(null);
-  const toastTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
-
   const showToast = useCallback((message: string) => {
-    if (toastTimer.current) clearTimeout(toastTimer.current);
-    setToastMsg(message);
-    toastTimer.current = setTimeout(() => setToastMsg(null), 3000);
-  }, []);
-
-  useEffect(() => {
-    return () => {
-      if (toastTimer.current) clearTimeout(toastTimer.current);
-    };
+    showSnackbar({
+      title: message,
+      kind: 'warning',
+      isLowContrast: true,
+    });
   }, []);
 
   // When switching to readOnly, clear form selection so grey overlays disappear
@@ -710,22 +707,5 @@ export function OdontogramProvider({
     ],
   );
 
-  return (
-    <OdontogramContext.Provider value={contextValue}>
-      {children}
-      {/* Toast */}
-      {toastMsg && (
-        <div className="odon-toast" role="alert">
-          <svg className="odon-toast-icon" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
-            <path
-              fillRule="evenodd"
-              d="M8.485 2.495c.673-1.167 2.357-1.167 3.03 0l6.28 10.875c.673 1.167-.168 2.625-1.516 2.625H3.72c-1.347 0-2.189-1.458-1.515-2.625L8.485 2.495zM10 5a.75.75 0 01.75.75v3.5a.75.75 0 01-1.5 0v-3.5A.75.75 0 0110 5zm0 8a1 1 0 100-2 1 1 0 000 2z"
-              clipRule="evenodd"
-            />
-          </svg>
-          <span>{toastMsg}</span>
-        </div>
-      )}
-    </OdontogramContext.Provider>
-  );
+  return <OdontogramContext.Provider value={contextValue}>{children}</OdontogramContext.Provider>;
 }

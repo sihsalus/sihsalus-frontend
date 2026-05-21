@@ -7,7 +7,7 @@ import {
   useSession,
 } from '@openmrs/esm-framework';
 import { type PatientWorkspace2DefinitionProps } from '@openmrs/esm-patient-common-lib';
-import { render, screen } from '@testing-library/react';
+import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import dayjs from 'dayjs';
 import { mockCurrentVisit, mockPatient, mockSessionDataResponse } from 'test-utils';
@@ -17,15 +17,16 @@ import { savePatientImmunization } from './immunizations.resource';
 import ImmunizationsForm from './immunizations-form.workspace';
 import { immunizationFormSub } from './utils';
 
-const mockCloseWorkspace = jest.fn();
-const mockSavePatientImmunization = savePatientImmunization as jest.Mock;
-const mockUseConfig = jest.mocked<() => ImmunizationConfigObject>(useConfig);
-const mockUseSession = jest.mocked(useSession);
-const mockToOmrsIsoString = jest.mocked(toOmrsIsoString);
-const mockToDateObjectStrict = jest.mocked(toDateObjectStrict);
+const mockCloseWorkspace = vi.fn();
+const mockSavePatientImmunization = savePatientImmunization as vi.Mock;
+const mockMutate = vi.fn();
+const mockUseConfig = vi.mocked<() => ImmunizationConfigObject>(useConfig);
+const mockUseSession = vi.mocked(useSession);
+const mockToOmrsIsoString = vi.mocked(toOmrsIsoString);
+const mockToDateObjectStrict = vi.mocked(toDateObjectStrict);
 
-jest.mock('../hooks/useImmunizationsConceptSet', () => ({
-  useImmunizationsConceptSet: jest.fn(() => ({
+vi.mock('../hooks/useImmunizationsConceptSet', () => ({
+  useImmunizationsConceptSet: vi.fn(() => ({
     immunizationsConceptSet: {
       uuid: '984AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA',
       display: 'Immunizations',
@@ -56,8 +57,16 @@ jest.mock('../hooks/useImmunizationsConceptSet', () => ({
   })),
 }));
 
-jest.mock('./immunizations.resource', () => ({
-  savePatientImmunization: jest.fn(),
+vi.mock('../hooks/useImmunizations', () => ({
+  useImmunizations: vi.fn(() => ({
+    data: [],
+    isLoading: false,
+    mutate: mockMutate,
+  })),
+}));
+
+vi.mock('./immunizations.resource', () => ({
+  savePatientImmunization: vi.fn(),
 }));
 
 const testProps: PatientWorkspace2DefinitionProps<Record<string, never>, Record<string, never>> = {
@@ -69,7 +78,7 @@ const testProps: PatientWorkspace2DefinitionProps<Record<string, never>, Record<
     mutateVisitContext: null,
   },
   workspaceName: '',
-  launchChildWorkspace: jest.fn(),
+  launchChildWorkspace: vi.fn(),
   workspaceProps: {},
   windowProps: {},
   windowName: '',
@@ -104,6 +113,7 @@ describe('Immunizations Form', () => {
   const toDisplayedDate = (calendarDate: string) => dayjs(calendarDate).format('DD/MM/YYYY');
 
   beforeEach(() => {
+    vi.clearAllMocks();
     mockToOmrsIsoString.mockReturnValue(mockVaccinationDate.toISOString());
     mockToDateObjectStrict.mockImplementation((dateString) => dayjs(dateString, isoFormat).toDate());
   });
@@ -188,34 +198,38 @@ describe('Immunizations Form', () => {
     const saveButton = screen.getByRole('button', { name: /Save/i });
     await user.click(saveButton);
 
-    expect(mockSavePatientImmunization).toHaveBeenCalledTimes(1);
-    expect(mockSavePatientImmunization).toHaveBeenCalledWith(
-      expect.objectContaining({
-        encounter: { reference: 'Encounter/17f512b4-d264-4113-a6fe-160cb38cb46e', type: 'Encounter' },
-        expirationDate: undefined,
-        extension: [],
-        note: [{ text: formValues.note }],
-        id: undefined,
-        location: { reference: 'Location/b1a8b05e-3542-4037-bbd3-998ee9c40574', type: 'Location' },
-        manufacturer: { display: 'Pfizer' },
-        occurrenceDateTime: dayjs(new Date()).startOf('day').toDate().toISOString(),
-        patient: { reference: 'Patient/8673ee4f-e2ab-4077-ba55-4980f408773e', type: 'Patient' },
-        performer: [
-          { actor: { reference: 'Practitioner/b1a8b05e-3542-4037-bbd3-998ee9c4057z', type: 'Practitioner' } },
-        ],
-        protocolApplied: [{ doseNumberPositiveInt: 1 }],
-        resourceType: 'Immunization',
-        status: 'completed',
-        vaccineCode: { coding: [{ code: '782AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA', display: 'Hepatitis B vaccination' }] },
-      }),
-      undefined,
-      expect.anything(),
-    );
-    expect(showSnackbar).toHaveBeenCalledTimes(1);
-    expect(showSnackbar).toHaveBeenCalledWith({
-      isLowContrast: true,
-      kind: 'success',
-      title: 'Vaccination saved successfully',
+    await waitFor(() => {
+      expect(mockSavePatientImmunization).toHaveBeenCalledTimes(1);
+      expect(mockSavePatientImmunization).toHaveBeenCalledWith(
+        expect.objectContaining({
+          encounter: { reference: 'Encounter/17f512b4-d264-4113-a6fe-160cb38cb46e', type: 'Encounter' },
+          expirationDate: undefined,
+          extension: [],
+          note: [{ text: formValues.note }],
+          id: undefined,
+          location: { reference: 'Location/b1a8b05e-3542-4037-bbd3-998ee9c40574', type: 'Location' },
+          manufacturer: { display: 'Pfizer' },
+          occurrenceDateTime: dayjs(new Date()).startOf('day').toDate().toISOString(),
+          patient: { reference: 'Patient/8673ee4f-e2ab-4077-ba55-4980f408773e', type: 'Patient' },
+          performer: [
+            { actor: { reference: 'Practitioner/b1a8b05e-3542-4037-bbd3-998ee9c4057z', type: 'Practitioner' } },
+          ],
+          protocolApplied: [{ doseNumberPositiveInt: 1 }],
+          resourceType: 'Immunization',
+          status: 'completed',
+          vaccineCode: {
+            coding: [{ code: '782AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA', display: 'Hepatitis B vaccination' }],
+          },
+        }),
+        undefined,
+        expect.anything(),
+      );
+      expect(showSnackbar).toHaveBeenCalledTimes(1);
+      expect(showSnackbar).toHaveBeenCalledWith({
+        isLowContrast: true,
+        kind: 'success',
+        title: 'Vaccination saved successfully',
+      });
     });
   });
 
@@ -272,42 +286,44 @@ describe('Immunizations Form', () => {
     await user.type(doseField, '2');
     await user.click(saveButton);
 
-    expect(mockSavePatientImmunization).toHaveBeenCalledTimes(1);
-    expect(mockSavePatientImmunization).toHaveBeenCalledWith(
-      expect.objectContaining({
-        encounter: { reference: 'Encounter/ce589c9c-2f30-42ec-b289-a153f812ea5e', type: 'Encounter' },
-        id: '0a6ca2bb-a317-49d8-bd6b-dabb658840d2',
-        expirationDate: '2024-05-19',
-        extension: [
-          {
-            url: FHIR_NEXT_DOSE_DATE_EXTENSION_URL,
-            valueDateTime: toStoredDateTime('2024-01-03'),
+    await waitFor(() => {
+      expect(mockSavePatientImmunization).toHaveBeenCalledTimes(1);
+      expect(mockSavePatientImmunization).toHaveBeenCalledWith(
+        expect.objectContaining({
+          encounter: { reference: 'Encounter/ce589c9c-2f30-42ec-b289-a153f812ea5e', type: 'Encounter' },
+          id: '0a6ca2bb-a317-49d8-bd6b-dabb658840d2',
+          expirationDate: '2024-05-19',
+          extension: [
+            {
+              url: FHIR_NEXT_DOSE_DATE_EXTENSION_URL,
+              valueDateTime: toStoredDateTime('2024-01-03'),
+            },
+          ],
+          note: [{ text: immunizationToEdit.note }],
+          location: { reference: 'Location/b1a8b05e-3542-4037-bbd3-998ee9c40574', type: 'Location' },
+          lotNumber: 'A123456',
+          manufacturer: { display: 'Merck & Co., Inc.' },
+          occurrenceDateTime: toStoredDateTime('2024-01-03'),
+          patient: { reference: 'Patient/8673ee4f-e2ab-4077-ba55-4980f408773e', type: 'Patient' },
+          performer: [
+            { actor: { reference: 'Practitioner/b1a8b05e-3542-4037-bbd3-998ee9c4057z', type: 'Practitioner' } },
+          ],
+          protocolApplied: [{ doseNumberPositiveInt: 2 }],
+          resourceType: 'Immunization',
+          status: 'completed',
+          vaccineCode: {
+            coding: [{ code: '886AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA', display: 'Bacillus Calmette–Guérin vaccine' }],
           },
-        ],
-        note: [{ text: immunizationToEdit.note }],
-        location: { reference: 'Location/b1a8b05e-3542-4037-bbd3-998ee9c40574', type: 'Location' },
-        lotNumber: 'A123456',
-        manufacturer: { display: 'Merck & Co., Inc.' },
-        occurrenceDateTime: toStoredDateTime('2024-01-03'),
-        patient: { reference: 'Patient/8673ee4f-e2ab-4077-ba55-4980f408773e', type: 'Patient' },
-        performer: [
-          { actor: { reference: 'Practitioner/b1a8b05e-3542-4037-bbd3-998ee9c4057z', type: 'Practitioner' } },
-        ],
-        protocolApplied: [{ doseNumberPositiveInt: 2 }],
-        resourceType: 'Immunization',
-        status: 'completed',
-        vaccineCode: {
-          coding: [{ code: '886AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA', display: 'Bacillus Calmette–Guérin vaccine' }],
-        },
-      }),
-      '0a6ca2bb-a317-49d8-bd6b-dabb658840d2',
-      expect.anything(),
-    );
-    expect(showSnackbar).toHaveBeenCalledTimes(1);
-    expect(showSnackbar).toHaveBeenCalledWith({
-      isLowContrast: true,
-      kind: 'success',
-      title: 'Vaccination saved successfully',
+        }),
+        '0a6ca2bb-a317-49d8-bd6b-dabb658840d2',
+        expect.anything(),
+      );
+      expect(showSnackbar).toHaveBeenCalledTimes(1);
+      expect(showSnackbar).toHaveBeenCalledWith({
+        isLowContrast: true,
+        kind: 'success',
+        title: 'Vaccination saved successfully',
+      });
     });
   });
 
@@ -347,15 +363,17 @@ describe('Immunizations Form', () => {
     await user.click(saveButton);
 
     // Verify that expirationDate is formatted as YYYY-MM-DD without timezone
-    expect(mockSavePatientImmunization).toHaveBeenCalledWith(
-      expect.objectContaining({
-        expirationDate: '2025-12-31', // Date-only format, not ISO string with time/timezone
-        lotNumber: 'LOT123',
-        manufacturer: { display: 'Pfizer' },
-      }),
-      undefined,
-      expect.anything(),
-    );
+    await waitFor(() => {
+      expect(mockSavePatientImmunization).toHaveBeenCalledWith(
+        expect.objectContaining({
+          expirationDate: '2025-12-31', // Date-only format, not ISO string with time/timezone
+          lotNumber: 'LOT123',
+          manufacturer: { display: 'Pfizer' },
+        }),
+        undefined,
+        expect.anything(),
+      );
+    });
   });
 
   it('should format expiration date as date-only string without timezone', async () => {
@@ -399,13 +417,15 @@ describe('Immunizations Form', () => {
     await user.click(saveButton);
 
     // Verify that expirationDate is formatted as YYYY-MM-DD without timezone (not ISO string)
-    expect(mockSavePatientImmunization).toHaveBeenCalledWith(
-      expect.objectContaining({
-        expirationDate: '2025-12-31', // Date-only format, not ISO string with time/timezone
-      }),
-      immunizationWithExpiration.immunizationId,
-      expect.anything(),
-    );
+    await waitFor(() => {
+      expect(mockSavePatientImmunization).toHaveBeenCalledWith(
+        expect.objectContaining({
+          expirationDate: '2025-12-31', // Date-only format, not ISO string with time/timezone
+        }),
+        immunizationWithExpiration.immunizationId,
+        expect.anything(),
+      );
+    });
   });
 
   it('should preserve date format when submitting immunization with different expiration date', async () => {
@@ -445,13 +465,15 @@ describe('Immunizations Form', () => {
     await user.click(saveButton);
 
     // Verify the date is sent in correct format (YYYY-MM-DD, not ISO string)
-    expect(mockSavePatientImmunization).toHaveBeenCalledWith(
-      expect.objectContaining({
-        expirationDate: '2026-06-15', // Date-only format, not ISO string with time/timezone
-      }),
-      immunizationToEdit.immunizationId,
-      expect.anything(),
-    );
+    await waitFor(() => {
+      expect(mockSavePatientImmunization).toHaveBeenCalledWith(
+        expect.objectContaining({
+          expirationDate: '2026-06-15', // Date-only format, not ISO string with time/timezone
+        }),
+        immunizationToEdit.immunizationId,
+        expect.anything(),
+      );
+    });
   });
 });
 

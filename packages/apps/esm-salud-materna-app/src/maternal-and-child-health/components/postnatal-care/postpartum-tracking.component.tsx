@@ -19,7 +19,7 @@ interface PostpartumTrackingProps {
  */
 const PostpartumTracking: React.FC<PostpartumTrackingProps> = ({ patientUuid }) => {
   const { t } = useTranslation();
-  const { prenatalEncounters, isValidating } = usePostpartumControlTable(patientUuid);
+  const { prenatalEncounters } = usePostpartumControlTable(patientUuid);
 
   const trackingStatus = useMemo(() => {
     const totalControls = prenatalEncounters?.length ?? 0;

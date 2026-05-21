@@ -62,24 +62,30 @@ export interface OpenmrsReactComponentProps {
 }
 
 export interface OpenmrsReactComponentState {
-  caughtError: any;
-  caughtErrorInfo: ErrorInfo | null;
+  caughtError: unknown;
   config: ComponentConfig;
 }
 
 export function openmrsComponentDecorator<T>(userOpts: ComponentDecoratorOptions) {
-  if (
-    typeof userOpts !== 'object' ||
-    typeof userOpts.featureName !== 'string' ||
-    typeof userOpts.moduleName !== 'string'
-  ) {
-    throw new Error('Invalid options');
+  if (typeof userOpts !== 'object' || userOpts === null) {
+    throw new Error('Invalid options: expected an options object');
+  }
+
+  const invalidFields: Array<string> = [];
+  if (typeof userOpts.featureName !== 'string' || userOpts.featureName.trim() === '') {
+    invalidFields.push('featureName must be a non-empty string');
+  }
+  if (typeof userOpts.moduleName !== 'string' || userOpts.moduleName.trim() === '') {
+    invalidFields.push('moduleName must be a non-empty string');
+  }
+  if (invalidFields.length > 0) {
+    throw new Error(`Invalid options: ${invalidFields.join('; ')}`);
   }
 
   const opts = Object.assign({}, defaultOpts, userOpts);
   const swrConfig = { ...defaultSwrConfig, ...opts.swrConfig };
 
-  return function decorateComponent(Comp: ComponentType<T>): ComponentType<T> {
+  return function decorateComponent(Comp: ComponentType<T>): ComponentType<T & OpenmrsReactComponentProps> {
     return class OpenmrsReactComponent extends React.Component<
       OpenmrsReactComponentProps & T,
       OpenmrsReactComponentState
@@ -90,7 +96,6 @@ export function openmrsComponentDecorator<T>(userOpts: ComponentDecoratorOptions
         super(props);
         this.state = {
           caughtError: null,
-          caughtErrorInfo: null,
           config: {
             moduleName: opts.moduleName,
             featureName: opts.featureName,
@@ -99,7 +104,7 @@ export function openmrsComponentDecorator<T>(userOpts: ComponentDecoratorOptions
         };
       }
 
-      componentDidCatch(err: any, info: ErrorInfo) {
+      componentDidCatch(err: Error & { extra?: Record<string, unknown> }, info: ErrorInfo) {
         if (info && info.componentStack) {
           err.extra = Object.assign(err.extra || {}, {
             componentStack: info.componentStack,
@@ -114,14 +119,17 @@ export function openmrsComponentDecorator<T>(userOpts: ComponentDecoratorOptions
 
         this.setState({
           caughtError: err,
-          caughtErrorInfo: info,
         });
       }
 
       render() {
         if (this.state.caughtError) {
           // TO-DO have a UX designed for when a catastrophic error occurs
-          return <div>An error has occurred. Please try reloading the page.</div>;
+          return (
+            <div role="alert" aria-live="assertive" aria-atomic="true">
+              An error has occurred. Please try reloading the page.
+            </div>
+          );
         } else {
           const content = (
             <Suspense fallback={null}>

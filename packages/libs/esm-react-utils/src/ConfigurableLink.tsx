@@ -52,23 +52,27 @@ export function ConfigurableLink({
   children,
   ...otherProps
 }: PropsWithChildren<ConfigurableLinkProps>) {
+  const { className, ...anchorProps } = otherProps;
+  const linkClassName = typeof className === 'string' ? className : undefined;
+
   useEffect(() => {
-    if (otherProps.href) {
+    if (anchorProps.href) {
       console.warn(
-        `ConfigurableLink does not support the href prop. Use the 'to' prop instead. The provided href value is '${otherProps.href}'`,
+        `ConfigurableLink does not support the href prop. Use the 'to' prop instead. The provided href value is '${anchorProps.href}'`,
       );
     }
-    if (otherProps.onClick) {
+    if (anchorProps.onClick) {
       console.warn(
         `ConfigurableLink does not support the onClick prop. Use the 'onBeforeNavigate' prop instead. The 'to' prop of the offending link is ${to}`,
       );
     }
-  }, [to, otherProps.onClick, otherProps.href]);
+  }, [to, anchorProps.onClick, anchorProps.href]);
   return (
     <a
       onClick={(event) => handleClick(event, to, templateParams, onBeforeNavigate)}
       href={interpolateUrl(to, templateParams)}
-      {...otherProps}
+      className={linkClassName}
+      {...anchorProps}
     >
       {children}
     </a>

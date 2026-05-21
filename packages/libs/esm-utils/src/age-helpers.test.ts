@@ -1,6 +1,6 @@
 import dayjs from 'dayjs';
 import type { i18n } from 'i18next';
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import { age, ageAsDuration } from '.';
 
 window.i18next = { language: 'en' } as i18n;
@@ -175,6 +175,8 @@ describe('ageAsDuration', () => {
   });
 
   it('returns null for an invalid string', () => {
+    vi.spyOn(console, 'error').mockImplementation(() => {});
+
     expect(ageAsDuration('not a date', now)).toBeNull();
   });
 });

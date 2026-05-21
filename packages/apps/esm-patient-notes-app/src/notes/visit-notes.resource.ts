@@ -9,6 +9,7 @@ import type {
   RESTPatientNote,
   VisitNotePayload,
 } from '../types';
+import { defaultVisitNoteClinicalConceptUuids } from './visit-note-config-schema';
 
 interface UseVisitNotes {
   visitNotes: Array<PatientNote> | null;
@@ -16,6 +17,74 @@ interface UseVisitNotes {
   isLoading: boolean;
   isValidating?: boolean;
   mutateVisitNotes: () => void;
+}
+
+export interface VisitNoteClinicalContext {
+  chiefComplaint?: string;
+  illnessDuration?: string;
+  biologicalFunctions?: string;
+  subjective?: string;
+  objective?: string;
+  assessment?: string;
+  plan?: string;
+  auxiliaryExams?: string;
+  procedures?: string;
+  prescriptions?: string;
+  referral?: string;
+  nextAppointment?: string;
+}
+
+export interface ProviderSignatureDetails {
+  uuid?: string;
+  name?: string;
+  identifier?: string;
+  professionalRegistration?: string;
+}
+
+interface RestObsValue {
+  uuid?: string;
+  display?: string;
+}
+
+interface RestClinicalContextObs {
+  uuid?: string;
+  obsDatetime?: string;
+  display?: string;
+  concept?: {
+    uuid?: string;
+    display?: string;
+  };
+  value?: string | number | boolean | RestObsValue;
+  formFieldNamespace?: string;
+  formFieldPath?: string;
+}
+
+interface RestClinicalContextEncounter {
+  uuid?: string;
+  display?: string;
+  encounterDatetime?: string;
+  obs?: Array<RestClinicalContextObs>;
+}
+
+interface RestProviderAttribute {
+  uuid?: string;
+  display?: string;
+  value?: string | number | boolean;
+  attributeType?: {
+    uuid?: string;
+    display?: string;
+  };
+}
+
+interface RestProvider {
+  uuid?: string;
+  display?: string;
+  identifier?: string;
+  person?: {
+    uuid?: string;
+    display?: string;
+    attributes?: Array<RestProviderAttribute>;
+  };
 }
 
 export function useVisitNotes(patientUuid: string): UseVisitNotes {
@@ -80,6 +149,158 @@ export function saveVisitNote(abortController: AbortController, payload: VisitNo
     body: payload,
     signal: abortController.signal,
   });
+}
+
+function getObsTextValue(obs: { value?: unknown; display?: string }) {
+  if (obs.value == null) {
+    return '';
+  }
+
+  if (typeof obs.value === 'string' || typeof obs.value === 'number' || typeof obs.value === 'boolean') {
+    return String(obs.value);
+  }
+
+  if (typeof obs.value === 'object' && 'display' in obs.value && obs.value.display) {
+    return String(obs.value.display);
+  }
+
+  return obs.display ?? '';
+}
+
+function getLatestObsValue(
+  encounters: Array<RestClinicalContextEncounter>,
+  conceptUuid: string,
+  formFieldPath?: string,
+): string | undefined {
+  if (!conceptUuid) {
+    return undefined;
+  }
+
+  for (const encounter of encounters) {
+    const obs = encounter?.obs?.find(
+      (observation) =>
+        observation?.concept?.uuid === conceptUuid && (!formFieldPath || observation?.formFieldPath === formFieldPath),
+    );
+    const value = obs ? getObsTextValue(obs).trim() : '';
+    if (value) {
+      return value;
+    }
+  }
+
+  return undefined;
+}
+
+function buildBiologicalFunctionsSummary(
+  encounters: Array<RestClinicalContextEncounter>,
+  visitNoteConfig: ConfigObject['visitNoteConfig'],
+) {
+  const values = [
+    ['Apetito', getLatestObsValue(encounters, visitNoteConfig.appetiteConceptUuid)],
+    ['Sed', getLatestObsValue(encounters, visitNoteConfig.thirstConceptUuid)],
+    ['Sueno', getLatestObsValue(encounters, visitNoteConfig.sleepConceptUuid)],
+    ['Animo', getLatestObsValue(encounters, visitNoteConfig.moodConceptUuid)],
+    ['Orina', getLatestObsValue(encounters, visitNoteConfig.urineConceptUuid)],
+    ['Deposiciones', getLatestObsValue(encounters, visitNoteConfig.bowelMovementsConceptUuid)],
+  ].filter(([, value]) => value);
+
+  return values.length ? values.map(([label, value]) => `${label}: ${value}`).join('\n') : undefined;
+}
+
+export function useVisitNoteClinicalContext(patientUuid: string, visitUuid?: string) {
+  const config = useConfig<ConfigObject>();
+  const visitNoteConfig = {
+    ...defaultVisitNoteClinicalConceptUuids,
+    ...config.visitNoteConfig,
+  };
+  const customRepresentation =
+    'custom:(uuid,display,encounterDatetime,obs:(uuid,obsDatetime,display,concept:(uuid,display),value:(uuid,display),' +
+    'formFieldNamespace,formFieldPath))';
+  const visitQuery = visitUuid ? `&visit=${visitUuid}` : '';
+  const encountersApiUrl = patientUuid
+    ? `${restBaseUrl}/encounter?patient=${patientUuid}${visitQuery}&v=${customRepresentation}&limit=25`
+    : null;
+
+  const { data, error, isLoading, isValidating } = useSWR<
+    { data: { results: Array<RestClinicalContextEncounter> } },
+    Error
+  >(encountersApiUrl, openmrsFetch);
+
+  const encounters = [...(data?.data?.results ?? [])].sort(
+    (encounterA, encounterB) =>
+      new Date(encounterB.encounterDatetime ?? 0).getTime() - new Date(encounterA.encounterDatetime ?? 0).getTime(),
+  );
+  const getLatest = (conceptUuid: string, formFieldPath?: string) =>
+    getLatestObsValue(encounters, conceptUuid, formFieldPath);
+  const getLatestStructuredText = (conceptUuid: string, formFieldPath: string) =>
+    getLatest(conceptUuid, formFieldPath) ??
+    (conceptUuid !== visitNoteConfig.encounterNoteTextConceptUuid ? getLatest(conceptUuid) : undefined);
+
+  const clinicalContext: VisitNoteClinicalContext = {
+    chiefComplaint: getLatest(visitNoteConfig.chiefComplaintConceptUuid),
+    illnessDuration: getLatest(visitNoteConfig.illnessDurationConceptUuid),
+    biologicalFunctions:
+      getLatest(visitNoteConfig.biologicalFunctionsConceptUuid, 'biological-functions') ??
+      buildBiologicalFunctionsSummary(encounters, visitNoteConfig),
+    subjective: getLatest(visitNoteConfig.soapSubjectiveConceptUuid) ?? getLatest(visitNoteConfig.anamnesisConceptUuid),
+    objective: getLatest(visitNoteConfig.soapObjectiveConceptUuid),
+    assessment: getLatest(visitNoteConfig.soapAssessmentConceptUuid),
+    plan: getLatestStructuredText(visitNoteConfig.soapPlanConceptUuid, 'soap-plan'),
+    auxiliaryExams: getLatest(visitNoteConfig.labOrdersConceptUuid),
+    procedures: getLatestStructuredText(visitNoteConfig.proceduresConceptUuid, 'procedures'),
+    prescriptions: getLatest(visitNoteConfig.prescriptionsConceptUuid),
+    referral: getLatest(visitNoteConfig.referralConceptUuid),
+    nextAppointment: getLatest(visitNoteConfig.nextAppointmentConceptUuid),
+  };
+
+  return {
+    clinicalContext,
+    error,
+    isLoading,
+    isValidating,
+  };
+}
+
+function getProviderAttributeValue(provider: RestProvider | undefined, patterns: Array<RegExp>) {
+  const attributes = provider?.person?.attributes ?? [];
+  const matchingAttribute = attributes.find((attribute) => {
+    const label = `${attribute?.attributeType?.display ?? ''} ${attribute?.display ?? ''}`;
+    return patterns.some((pattern) => pattern.test(label));
+  });
+
+  return matchingAttribute?.value ? String(matchingAttribute.value) : undefined;
+}
+
+export function useProviderSignatureDetails(providerUuid?: string): {
+  providerSignatureDetails: ProviderSignatureDetails;
+  error: Error;
+  isLoading: boolean;
+} {
+  const customRepresentation =
+    'custom:(uuid,display,identifier,person:(uuid,display,attributes:(uuid,display,value,attributeType:(uuid,display))))';
+  const providerUrl = providerUuid ? `${restBaseUrl}/provider/${providerUuid}?v=${customRepresentation}` : null;
+  const { data, error, isLoading } = useSWR<{ data: RestProvider }, Error>(providerUrl, openmrsFetch);
+  const provider = data?.data;
+  const professionalRegistration =
+    provider?.identifier ??
+    getProviderAttributeValue(provider, [
+      /colegiatura/i,
+      /\bcmp\b/i,
+      /\brne\b/i,
+      /registro/i,
+      /colegio/i,
+      /licen[cs]/i,
+    ]);
+
+  return {
+    providerSignatureDetails: {
+      uuid: provider?.uuid ?? providerUuid,
+      name: provider?.person?.display ?? provider?.display,
+      identifier: provider?.identifier,
+      professionalRegistration,
+    },
+    error,
+    isLoading,
+  };
 }
 
 export function updateVisitNote(abortController: AbortController, encounterUuid: string, payload: VisitNotePayload) {

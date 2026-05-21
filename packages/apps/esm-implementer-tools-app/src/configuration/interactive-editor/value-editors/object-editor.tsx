@@ -2,7 +2,6 @@
 import { StructuredListBody, StructuredListCell, StructuredListRow, StructuredListWrapper, Tile } from '@carbon/react';
 import { Type } from '@openmrs/esm-framework';
 import cloneDeep from 'lodash-es/cloneDeep';
-import React from 'react';
 
 import type { ConfigValueDescriptor } from '../editable-value.component';
 

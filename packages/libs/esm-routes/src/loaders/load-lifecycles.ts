@@ -57,7 +57,7 @@ export async function loadLifeCycles(routesAppName: string, fullComponentName: s
   return emptyLifecycle;
 }
 
-const emptyLifecycle: LifeCycles<never> = {
+const emptyLifecycle: LifeCycles = {
   bootstrap() {
     return Promise.resolve();
   },
@@ -84,10 +84,10 @@ const emptyLifecycle: LifeCycles<never> = {
  * @returns a Promise which completes once the app has been loaded and initialized
  */
 async function initializeApp(appName: string, module?: Module) {
-  if (!(appName in initializedApps)) {
+  if (!initializedApps.has(appName)) {
     const _module: Module = module ?? (await importDynamic<Module>(appName));
 
-    await (initializedApps[appName] = new Promise((resolve, reject) => {
+    const appInitialization = new Promise<null>((resolve, reject) => {
       if (Object.hasOwn(_module, 'startupApp')) {
         const startup = _module['startupApp'];
         if (typeof startup === 'function') {
@@ -102,8 +102,11 @@ async function initializeApp(appName: string, module?: Module) {
 
       registerModuleLoad(appName);
       resolve(null);
-    }));
+    });
+
+    initializedApps.set(appName, appInitialization);
+    await appInitialization;
   } else {
-    await initializedApps[appName];
+    await initializedApps.get(appName);
   }
 }

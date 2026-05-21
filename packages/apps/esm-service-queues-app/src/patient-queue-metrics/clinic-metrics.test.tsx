@@ -7,40 +7,39 @@ import {
   useSession,
 } from '@openmrs/esm-framework';
 import { render, screen } from '@testing-library/react';
-import React from 'react';
 import { mockLocations, mockMetrics, mockServiceTypes, mockSession } from 'test-utils';
 
 import { type ConfigObject, configSchema } from '../config-schema';
 
 import ClinicMetrics from './clinic-metrics.component';
 
-const mockOpenmrsFetch = jest.mocked(openmrsFetch);
-const mockUseConfig = jest.mocked(useConfig<ConfigObject>);
-const mockUseLocations = jest.mocked(useLocations);
-const mockUseSession = jest.mocked(useSession);
+const mockOpenmrsFetch = vi.mocked(openmrsFetch);
+const mockUseConfig = vi.mocked(useConfig<ConfigObject>);
+const mockUseLocations = vi.mocked(useLocations);
+const mockUseSession = vi.mocked(useSession);
 
-jest.mock('./queue-metrics.resource', () => ({
-  ...jest.requireActual('./queue-metrics.resource'),
-  useServiceMetricsCount: jest.fn().mockReturnValue(5),
+vi.mock('./queue-metrics.resource', async () => ({
+  ...(await vi.importActual('./queue-metrics.resource')),
+  useServiceMetricsCount: vi.fn().mockReturnValue(5),
 }));
 
-jest.mock('../hooks/useQueues', () => {
+vi.mock('../hooks/useQueues', async () => {
   return {
-    useQueues: jest.fn().mockReturnValue({ queues: mockServiceTypes.data }),
+    useQueues: vi.fn().mockReturnValue({ queues: mockServiceTypes.data }),
   };
 });
 
-jest.mock('./clinic-metrics.resource', () => ({
-  ...jest.requireActual('./clinic-metrics.resource'),
-  useActiveVisits: jest.fn().mockReturnValue({
+vi.mock('./clinic-metrics.resource', async () => ({
+  ...(await vi.importActual('./clinic-metrics.resource')),
+  useActiveVisits: vi.fn().mockReturnValue({
     activeVisitsCount: mockMetrics.activeVisitsCount,
   }),
-  useAverageWaitTime: jest.fn().mockReturnValue({ waitTime: mockMetrics.waitTime }),
+  useAverageWaitTime: vi.fn().mockReturnValue({ waitTime: mockMetrics.waitTime }),
 }));
 
-jest.mock('../helpers/helpers', () => ({
-  ...jest.requireActual('../helpers/helpers'),
-  useSelectedServiceName: jest.fn().mockReturnValue('All'),
+vi.mock('../helpers/helpers', async () => ({
+  ...(await vi.importActual('../helpers/helpers')),
+  useSelectedServiceName: vi.fn().mockReturnValue('All'),
 }));
 
 describe('Clinic metrics', () => {
@@ -67,7 +66,7 @@ describe('Clinic metrics', () => {
     expect(screen.getAllByText(/patient list/i));
     expect(screen.getByText(/Average wait time today/i)).toBeInTheDocument();
     expect(screen.getByText(/minutes/i)).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: /queue screen/i })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /call display/i })).toBeInTheDocument();
     expect(screen.getByText(/69/i)).toBeInTheDocument();
   });
 });

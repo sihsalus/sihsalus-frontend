@@ -4,7 +4,7 @@ import userEvent from '@testing-library/user-event';
 import { type DefinitionDataRow } from '../../../types';
 import SavedQueriesOptions from './saved-queries-options.component';
 
-const mockShowModal = jest.mocked(showModal);
+const mockShowModal = vi.mocked(showModal);
 
 const query: DefinitionDataRow = {
   id: '1',
@@ -14,8 +14,8 @@ const query: DefinitionDataRow = {
 
 const testProps = {
   query: query,
-  onViewQuery: jest.fn(),
-  deleteQuery: jest.fn(),
+  onViewQuery: vi.fn(),
+  deleteQuery: vi.fn(),
 };
 
 const renderSavedQueriesOptions = (props = testProps) => {

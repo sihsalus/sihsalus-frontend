@@ -56,3 +56,5 @@ dev-server*.err.log
 
 # Codex
 .codex
+packages/tooling/configs/vitest-config.js.map
+packages/tooling/configs/vitest-config.d.ts.map

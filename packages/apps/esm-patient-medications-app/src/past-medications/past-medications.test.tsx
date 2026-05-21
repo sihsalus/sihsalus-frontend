@@ -10,17 +10,17 @@ import {
 } from 'test-utils';
 import PastMedications from './past-medications.component';
 
-const mockUseSession = jest.mocked(useSession);
-const mockOpenmrsFetch = openmrsFetch as jest.Mock;
+const mockUseSession = vi.mocked(useSession);
+const mockOpenmrsFetch = openmrsFetch as vi.Mock;
 
 mockUseSession.mockReturnValue(mockSessionDataResponse.data);
 
-jest.mock('@openmrs/esm-patient-common-lib', () => {
-  const originalModule = jest.requireActual('@openmrs/esm-patient-common-lib');
+vi.mock('@openmrs/esm-patient-common-lib', async () => {
+  const originalModule = await vi.importActual('@openmrs/esm-patient-common-lib');
 
   return {
     ...originalModule,
-    ErrorState: jest.fn(() => null),
+    ErrorState: vi.fn(() => null),
   };
 });
 

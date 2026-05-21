@@ -518,10 +518,10 @@ export function getPrescriptionTableEndpoint(
 }
 
 export function getQuantity(resource: MedicationRequest | MedicationDispense): Quantity {
-  if (resource.resourceType == 'MedicationRequest') {
+  if (resource.resourceType === 'MedicationRequest') {
     return (resource as MedicationRequest).dispenseRequest?.quantity;
   }
-  if (resource.resourceType == 'MedicationDispense') {
+  if (resource.resourceType === 'MedicationDispense') {
     return (resource as MedicationDispense).quantity;
   }
 }
@@ -544,7 +544,7 @@ export function getQuantityUnitsMatch(resources: Array<MedicationRequest | Medic
 }
 
 export function getRefillsAllowed(resource: MedicationRequest | MedicationDispense): number {
-  if (resource.resourceType == 'MedicationRequest') {
+  if (resource.resourceType === 'MedicationRequest') {
     return (resource as MedicationRequest).dispenseRequest?.numberOfRepeatsAllowed;
   } else {
     return null; // dispense doesn't have a "refills allowed" component

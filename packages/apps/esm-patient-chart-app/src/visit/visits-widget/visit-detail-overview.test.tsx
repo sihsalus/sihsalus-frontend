@@ -1,16 +1,15 @@
 import { getConfig, getDefaultsFromConfigSchema, openmrsFetch, useConfig } from '@openmrs/esm-framework';
 import { screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import React from 'react';
 import { mockPatient, renderWithSwr, visitOverviewDetailMockData, waitForLoadingToFinish } from 'test-utils';
 
 import { type ChartConfig, esmPatientChartSchema } from '../../config-schema';
 
 import VisitDetailOverview from './visit-detail-overview.component';
 
-const mockGetConfig = getConfig as jest.Mock;
-const mockOpenmrsFetch = openmrsFetch as jest.Mock;
-const mockUseConfig = jest.mocked(useConfig<ChartConfig>);
+const mockGetConfig = getConfig as vi.Mock;
+const mockOpenmrsFetch = openmrsFetch as vi.Mock;
+const mockUseConfig = vi.mocked(useConfig<ChartConfig>);
 
 mockUseConfig.mockReturnValue({
   ...getDefaultsFromConfigSchema(esmPatientChartSchema),

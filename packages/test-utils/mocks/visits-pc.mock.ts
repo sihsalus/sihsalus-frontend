@@ -252,16 +252,45 @@ export const visitOverviewDetailMockDataNotEmpty: { data: { results: Array<Visit
             diagnoses: [
               {
                 display: 'Malaria, confirmed',
+                certainty: 'CONFIRMED',
+                diagnosis: {
+                  coded: {
+                    uuid: 'malaria-concept-uuid',
+                    display: 'Malaria, confirmed',
+                  },
+                },
                 rank: 1,
                 uuid: 'ec5bd62a-38c6-4d03-b51c-4554468f3169',
+                voided: false,
               },
               {
                 display: 'HUMAN IMMUNODEFICIENCY VIRUS (HIV) DISEASE',
+                certainty: 'PROVISIONAL',
+                diagnosis: {
+                  coded: {
+                    uuid: 'hiv-concept-uuid',
+                    display: 'HUMAN IMMUNODEFICIENCY VIRUS (HIV) DISEASE',
+                  },
+                },
                 rank: 2,
                 uuid: 'f1381ba6-f876-4ca8-96c8-309127372b95',
+                voided: false,
               },
             ],
             obs: [
+              {
+                uuid: '85986f25-2a67-4c79-986a-b5f75e24e5e1',
+                concept: {
+                  uuid: '2d53d39f-c93f-4128-8f7c-1bb45b498497',
+                  display: 'Tipo de diagnóstico',
+                  conceptClass: { uuid: '8d491e50-c2cc-11de-8d13-0010c6dffd0f', display: 'Question' },
+                },
+                display: 'Tipo de diagnóstico: Definitivo',
+                formFieldNamespace: 'visit-notes',
+                formFieldPath: 'tipo-dx-malaria-concept-uuid',
+                groupMembers: null,
+                value: { uuid: '2c60a8f6-1787-41be-8434-30ebeb5656ff', display: 'Definitivo' },
+              },
               {
                 uuid: '70fb26b6-78bf-4bb7-bea1-9d371a918759',
                 concept: {

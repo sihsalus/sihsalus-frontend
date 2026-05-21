@@ -96,6 +96,7 @@ const FormsTable = ({ rows, error, isLoading, activeForms, activeGroupForms }) =
                 <TableRow>
                   {headers.map((header: DataTableHeader & FormsTableHeader) => (
                     <TableHeader
+                      key={header.key}
                       {...getHeaderProps({
                         header,
                         isSortable: header.isSortable,
@@ -108,7 +109,7 @@ const FormsTable = ({ rows, error, isLoading, activeForms, activeGroupForms }) =
               </TableHead>
               <TableBody>
                 {rows?.map((row) => (
-                  <TableRow {...getRowProps({ row })}>
+                  <TableRow key={row.id} {...getRowProps({ row })}>
                     {row.cells.map((cell) => (
                       <TableCell key={cell.id}>{cell.value}</TableCell>
                     ))}

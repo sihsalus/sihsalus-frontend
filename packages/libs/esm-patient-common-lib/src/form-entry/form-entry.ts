@@ -1,9 +1,5 @@
-import {
-  type DefaultWorkspaceProps,
-  type Encounter,
-  type Visit,
-  type Workspace2DefinitionProps,
-} from '@openmrs/esm-framework';
+import { type Encounter, type Visit } from '@openmrs/esm-framework';
+import { type DefaultWorkspaceProps, type Workspace2DefinitionProps } from '@openmrs/esm-styleguide';
 
 import { type OpenmrsEncounter } from '@sihsalus/esm-form-engine-lib';
 

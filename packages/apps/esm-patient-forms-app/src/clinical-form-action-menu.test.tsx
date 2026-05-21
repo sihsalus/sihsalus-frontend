@@ -7,22 +7,22 @@ import ClinicalFormActionMenu from './clinical-form-action-menu.component';
 
 void React;
 
-const mockActionMenuButton = jest.mocked(ActionMenuButton);
-const mockUseLaunchWorkspaceRequiringVisit = useLaunchWorkspaceRequiringVisit as jest.Mock;
+const mockActionMenuButton = vi.mocked(ActionMenuButton);
+const mockUseLaunchWorkspaceRequiringVisit = useLaunchWorkspaceRequiringVisit as vi.Mock;
 
-mockActionMenuButton.mockImplementation(({ label }) => <button>{label}</button>);
+mockActionMenuButton.mockImplementation(({ label }) => <button type="button">{label}</button>);
 
-jest.mock('@openmrs/esm-patient-common-lib', () => {
-  const originalModule = jest.requireActual('@openmrs/esm-patient-common-lib');
+vi.mock('@openmrs/esm-patient-common-lib', async () => {
+  const originalModule = await vi.importActual('@openmrs/esm-patient-common-lib');
 
   return {
     ...originalModule,
-    useLaunchWorkspaceRequiringVisit: jest.fn(),
+    useLaunchWorkspaceRequiringVisit: vi.fn(),
   };
 });
 
 beforeEach(() => {
-  mockUseLaunchWorkspaceRequiringVisit.mockReturnValue(jest.fn());
+  mockUseLaunchWorkspaceRequiringVisit.mockReturnValue(vi.fn());
 });
 
 test('should display clinical form action menu button', () => {

@@ -30,7 +30,7 @@ export const useUrlQueryParams = () => {
 };
 
 export function getStockOperationUniqueId() {
-  return `${new Date().getTime()}-${Math.random().toString(36).substring(2, 16)}`;
+  return crypto.randomUUID();
 }
 
 export const launchStockOperationsModal = (title: string, requireReason: boolean, operation: StockOperationDTO) => {

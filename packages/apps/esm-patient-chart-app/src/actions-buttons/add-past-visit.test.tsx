@@ -1,10 +1,13 @@
-jest.mock('@carbon/react', () => {
-  const actual = jest.requireActual('@carbon/react');
-  const React = jest.requireActual('react');
+vi.mock('@carbon/react', async () => {
+  const actual = await vi.importActual('@carbon/react');
+  const React = await vi.importActual<typeof import('react')>('react');
 
   return {
     ...actual,
-    OverflowMenuItem: React.forwardRef(function MockOverflowMenuItem({ itemText, onClick, ...props }, ref) {
+    OverflowMenuItem: React.forwardRef<
+      HTMLButtonElement,
+      React.ComponentPropsWithoutRef<'button'> & { itemText?: React.ReactNode }
+    >(function MockOverflowMenuItem({ itemText, onClick, ...props }, ref) {
       return (
         <button {...props} onClick={onClick} ref={ref} role="menuitem" type="button">
           {itemText}
@@ -21,7 +24,7 @@ import React from 'react';
 
 import AddPastVisitOverflowMenuItem from './add-past-visit.component';
 
-const mockShowModal = jest.mocked(showModal);
+const mockShowModal = vi.mocked(showModal);
 
 describe('AddPastVisitOverflowMenuItem', () => {
   it('should launch the start past visit modal', async () => {
@@ -29,7 +32,9 @@ describe('AddPastVisitOverflowMenuItem', () => {
 
     render(React.createElement(AddPastVisitOverflowMenuItem));
 
-    const addPastVisitButton = screen.getByRole('menuitem', { name: /Add past visit/ });
+    const addPastVisitButton = screen.getByRole('menuitem', {
+      name: /Add past visit/,
+    });
     expect(addPastVisitButton).toBeInTheDocument();
 
     await user.click(addPastVisitButton);

@@ -12,21 +12,22 @@ import { mockPatient } from 'test-utils';
 
 import ChartReview from './chart-review.component';
 
-const mockUseExtensionStore = jest.mocked(useExtensionStore);
-const mockUseExtensionSlotMeta = jest.mocked(useExtensionSlotMeta);
-const mockExtensionSlot = jest.mocked(ExtensionSlot);
+const mockUseExtensionStore = vi.mocked(useExtensionStore);
+const mockUseExtensionSlotMeta = vi.mocked(useExtensionSlotMeta);
+const mockExtensionSlot = vi.mocked(ExtensionSlot);
 const mockFhirPatient = mockPatient as unknown as fhir.Patient;
 
-jest.mock('@openmrs/esm-patient-common-lib', () => {
+vi.mock('@openmrs/esm-patient-common-lib', async () => {
   return {
-    useNavGroups: jest.fn().mockReturnValue({ navGroups: [] }),
+    ...(await vi.importActual('@openmrs/esm-patient-common-lib')),
+    useNavGroups: vi.fn().mockReturnValue({ navGroups: [] }),
   };
 });
 
-jest.mock('react-router-dom', () => ({
-  ...jest.requireActual('react-router-dom'),
-  Redirect: jest.fn(),
-  useMatch: jest.fn().mockReturnValue({
+vi.mock('react-router-dom', async () => ({
+  ...(await vi.importActual('react-router-dom')),
+  Redirect: vi.fn(),
+  useMatch: vi.fn().mockReturnValue({
     params: {
       url: '/patient/8673ee4f-e2ab-4077-ba55-4980f408773e/chart',
       view: 'Patient Summary',

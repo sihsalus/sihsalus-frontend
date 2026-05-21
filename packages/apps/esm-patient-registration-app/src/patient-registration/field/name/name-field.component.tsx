@@ -1,7 +1,7 @@
 import { ContentSwitcher, Switch } from '@carbon/react';
 import { ExtensionSlot, useConfig } from '@openmrs/esm-framework';
 import { useField } from 'formik';
-import React, { useCallback, useContext } from 'react';
+import { useCallback, useContext } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import { type RegistrationConfig } from '../../../config-schema';

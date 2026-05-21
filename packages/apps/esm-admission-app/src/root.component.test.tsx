@@ -2,28 +2,33 @@ import { render, screen } from '@testing-library/react';
 
 import Root from './root.component';
 
-jest.mock('@sihsalus/esm-rbac', () => ({
+vi.mock('@openmrs/esm-framework', async () => ({
+  ...(await vi.importActual('@openmrs/esm-framework')),
+  useLeftNav: vi.fn(),
+}));
+
+vi.mock('@sihsalus/esm-rbac', () => ({
   AppErrorBoundary: ({ children }: { children: React.ReactNode }) => <>{children}</>,
 }));
 
-jest.mock('./pages/admission-home.component', () => ({
+vi.mock('./pages/admission-home.component', () => ({
   __esModule: true,
   default: () => <div>Admission home route</div>,
 }));
 
-jest.mock('./pages/patient-merge.component', () => ({
+vi.mock('./pages/patient-merge.component', () => ({
   __esModule: true,
   default: () => <div>Patient merge route</div>,
 }));
 
-jest.mock('./patient/patient-admission-detail.component', () => ({
+vi.mock('./patient/patient-admission-detail.component', () => ({
   __esModule: true,
   default: () => <div>Patient admission detail route</div>,
 }));
 
 describe('Root', () => {
   beforeEach(() => {
-    globalThis.getOpenmrsSpaBase = jest.fn(() => '/openmrs/spa/');
+    globalThis.getOpenmrsSpaBase = vi.fn(() => '/openmrs/spa/');
   });
 
   it('renders the admission home route', () => {

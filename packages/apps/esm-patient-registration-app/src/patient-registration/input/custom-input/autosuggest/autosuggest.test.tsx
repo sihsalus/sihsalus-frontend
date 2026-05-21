@@ -1,6 +1,5 @@
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import React from 'react';
 
 import { Autosuggest } from './autosuggest.component';
 
@@ -29,7 +28,7 @@ const mockGetSearchResults = async (query: string) => {
   });
 };
 
-const mockHandleSuggestionSelected = jest.fn((field, value) => [field, value]);
+const mockHandleSuggestionSelected = vi.fn((field, value) => [field, value]);
 
 describe('Autosuggest', () => {
   it('renders a search box', () => {

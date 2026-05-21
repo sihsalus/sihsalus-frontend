@@ -14,18 +14,18 @@ import {
 } from './lab-results.resource';
 import LabResultsForm from './lab-results-form.component';
 
-const mockUseOrderConceptByUuid = jest.mocked(useOrderConceptByUuid);
-const mockUseLabEncounter = jest.mocked(useLabEncounter);
-const mockUseObservation = jest.mocked(useObservation);
-const mockUseCompletedLabResults = jest.mocked(useCompletedLabResults);
+const mockUseOrderConceptByUuid = vi.mocked(useOrderConceptByUuid);
+const mockUseLabEncounter = vi.mocked(useLabEncounter);
+const mockUseObservation = vi.mocked(useObservation);
+const mockUseCompletedLabResults = vi.mocked(useCompletedLabResults);
 
-jest.mock('./lab-results.resource', () => ({
-  ...jest.requireActual('./lab-results.resource'),
-  useOrderConceptByUuid: jest.fn(),
-  useLabEncounter: jest.fn(),
-  useObservation: jest.fn(),
-  updateOrderResult: jest.fn().mockResolvedValue({}),
-  useCompletedLabResults: jest.fn(),
+vi.mock('./lab-results.resource', async () => ({
+  ...(await vi.importActual('./lab-results.resource')),
+  useOrderConceptByUuid: vi.fn(),
+  useLabEncounter: vi.fn(),
+  useObservation: vi.fn(),
+  updateOrderResult: vi.fn().mockResolvedValue({}),
+  useCompletedLabResults: vi.fn(),
   isCoded: (concept) => concept?.datatype?.display === 'Coded',
   isText: (concept) => concept?.datatype?.display === 'Text',
   isNumeric: (concept) => concept?.datatype?.display === 'Numeric',
@@ -43,16 +43,17 @@ const mockOrder = {
 };
 
 const testProps = {
-  closeWorkspace: jest.fn(),
-  closeWorkspaceWithSavedChanges: jest.fn(),
+  closeWorkspace: vi.fn(),
+  closeWorkspaceWithSavedChanges: vi.fn(),
   order: mockOrder as Order,
-  promptBeforeClosing: jest.fn(),
-  setTitle: jest.fn(),
+  promptBeforeClosing: vi.fn(),
+  setTitle: vi.fn(),
   patientUuid: 'patient-uuid',
 };
 
 describe('LabResultsForm', () => {
   beforeEach(() => {
+    vi.clearAllMocks();
     mockUseOrderConceptByUuid.mockReturnValue({
       concept: {
         uuid: 'concept-uuid',
@@ -71,27 +72,27 @@ describe('LabResultsForm', () => {
       isLoading: false,
       error: null,
       isValidating: false,
-      mutate: jest.fn(),
+      mutate: vi.fn(),
     });
     mockUseLabEncounter.mockReturnValue({
       encounter: { obs: [] } as Encounter,
       isLoading: false,
       error: null,
       isValidating: false,
-      mutate: jest.fn(),
+      mutate: vi.fn(),
     });
     mockUseObservation.mockReturnValue({
       data: null,
       isLoading: false,
       error: null,
       isValidating: false,
-      mutate: jest.fn(),
+      mutate: vi.fn(),
     });
     mockUseCompletedLabResults.mockReturnValue({
       completeLabResult: null,
       isLoading: false,
       error: null,
-      mutate: jest.fn(),
+      mutate: vi.fn(),
     });
   });
 
@@ -131,7 +132,7 @@ describe('LabResultsForm', () => {
       isLoading: false,
       error: null,
       isValidating: false,
-      mutate: jest.fn(),
+      mutate: vi.fn(),
     });
     render(<LabResultsForm {...testProps} />);
 
@@ -210,7 +211,7 @@ describe('LabResultsForm', () => {
       isLoading: false,
       error: null,
       isValidating: false,
-      mutate: jest.fn(),
+      mutate: vi.fn(),
     });
     render(<LabResultsForm {...testProps} />);
 
@@ -246,7 +247,7 @@ describe('LabResultsForm', () => {
       isLoading: false,
       error: null,
       isValidating: false,
-      mutate: jest.fn(),
+      mutate: vi.fn(),
     });
     render(<LabResultsForm {...testProps} />);
 
@@ -265,8 +266,8 @@ describe('LabResultsForm', () => {
 
   test('submits form with valid data', async () => {
     const user = userEvent.setup();
-    const mockCloseWorkspace = jest.fn();
-    const mockCloseWorkspaceWithSavedChanges = jest.fn();
+    const mockCloseWorkspace = vi.fn();
+    const mockCloseWorkspaceWithSavedChanges = vi.fn();
 
     render(
       <LabResultsForm
@@ -333,7 +334,7 @@ describe('LabResultsForm', () => {
       isLoading: false,
       error: null,
       isValidating: false,
-      mutate: jest.fn(),
+      mutate: vi.fn(),
     });
     render(<LabResultsForm {...testProps} />);
 
@@ -386,7 +387,7 @@ describe('LabResultsForm', () => {
       isLoading: false,
       error: null,
       isValidating: false,
-      mutate: jest.fn(),
+      mutate: vi.fn(),
     });
 
     render(<LabResultsForm {...testProps} />);
@@ -462,7 +463,7 @@ describe('LabResultsForm', () => {
       isLoading: false,
       error: null,
       isValidating: false,
-      mutate: jest.fn(),
+      mutate: vi.fn(),
     });
 
     render(<LabResultsForm {...testProps} />);
@@ -566,7 +567,7 @@ describe('LabResultsForm', () => {
       isLoading: false,
       error: null,
       isValidating: false,
-      mutate: jest.fn(),
+      mutate: vi.fn(),
     });
 
     render(<LabResultsForm {...testProps} />);

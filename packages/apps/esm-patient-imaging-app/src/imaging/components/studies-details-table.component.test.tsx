@@ -1,39 +1,55 @@
 import { showModal, usePagination } from '@openmrs/esm-framework';
-import { act, fireEvent, render, screen } from '@testing-library/react';
-import React from 'react';
+import { fireEvent, render, screen } from '@testing-library/react';
+import type { ReactNode } from 'react';
 import StudiesDetailTable from './studies-details-table.component';
 
-jest.mock('react-i18next', () => ({
+type IconProps = Record<string, unknown>;
+type PaginationProps = {
+  pageNumber: number;
+};
+type EmptyStateProps = {
+  displayText: string;
+  headerTitle: string;
+};
+type CardHeaderProps = {
+  children?: ReactNode;
+};
+type SeriesDetailsProps = {
+  studyId: number;
+};
+
+vi.mock('react-i18next', () => ({
   useTranslation: () => ({
-    t: (key: string, defaultValue: string) => defaultValue,
+    t: (_key: string, defaultValue: string) => defaultValue,
   }),
 }));
-jest.mock('../../api');
-jest.mock('@openmrs/esm-framework', () => ({
-  showModal: jest.fn(),
-  useLayoutType: jest.fn(() => 'desktop'),
-  usePagination: jest.fn((items, pageSize) => ({
+vi.mock('../../api');
+vi.mock('@openmrs/esm-framework', async () => ({
+  ...(await vi.importActual('@openmrs/esm-framework')),
+  showModal: vi.fn(),
+  useLayoutType: vi.fn(() => 'desktop'),
+  usePagination: vi.fn((items, pageSize) => ({
     results: items?.slice(0, pageSize) || [],
-    goTo: jest.fn(),
+    goTo: vi.fn(),
     currentPage: 1,
   })),
-  TrashCanIcon: (props: any) => <span data-testid="trash-icon" {...props} />,
+  TrashCanIcon: (props: IconProps) => <span data-testid="trash-icon" {...props} />,
 }));
 
-jest.mock('@openmrs/esm-patient-common-lib', () => ({
-  PatientChartPagination: ({ pageNumber }: any) => <div data-testid="pagination">Page {pageNumber}</div>,
-  EmptyState: ({ displayText, headerTitle }: any) => (
+vi.mock('@openmrs/esm-patient-common-lib', () => ({
+  PatientChartPagination: ({ pageNumber }: PaginationProps) => <div data-testid="pagination">Page {pageNumber}</div>,
+  EmptyState: ({ displayText, headerTitle }: EmptyStateProps) => (
     <div>
       {headerTitle}: {displayText}
     </div>
   ),
-  CardHeader: ({ children }: any) => <div>{children}</div>,
-  compare: jest.fn((a, b) => (a > b ? 1 : a < b ? -1 : 0)),
+  CardHeader: ({ children }: CardHeaderProps) => <div>{children}</div>,
+  compare: vi.fn((a, b) => (a > b ? 1 : a < b ? -1 : 0)),
 }));
 
-jest.mock('./series-details-table.component', () => (props: any) => {
-  return <div data-testid="series-details">Series for {props.studyId}</div>;
-});
+vi.mock('./series-details-table.component', () => ({
+  default: ({ studyId }: SeriesDetailsProps) => <div data-testid="series-details">Series for {studyId}</div>,
+}));
 
 describe('StudiesDetailsTable', () => {
   const mockStudies = [
@@ -50,23 +66,23 @@ describe('StudiesDetailsTable', () => {
   ];
 
   afterEach(() => {
-    jest.clearAllMocks();
+    vi.clearAllMocks();
   });
 
   beforeEach(() => {
-    jest.clearAllMocks();
-    (usePagination as jest.Mock).mockReturnValue({
+    vi.clearAllMocks();
+    (usePagination as vi.Mock).mockReturnValue({
       results: mockStudies,
       currentPage: 1,
-      goTo: jest.fn(),
+      goTo: vi.fn(),
     });
   });
 
   it('renders EmptyState when no studies are available', () => {
-    (usePagination as jest.Mock).mockReturnValue({
+    (usePagination as vi.Mock).mockReturnValue({
       results: [],
       currentPage: 1,
-      goTo: jest.fn(),
+      goTo: vi.fn(),
     });
 
     render(<StudiesDetailTable patientUuid="patientUuid-123" studies={[]} />);
@@ -103,8 +119,10 @@ describe('StudiesDetailsTable', () => {
   });
 
   it('navigates when viewer button clicked', () => {
-    delete (window as any).location;
-    (window as any).location = { href: '' };
+    Object.defineProperty(window, 'location', {
+      configurable: true,
+      value: { href: '' } as unknown as Location,
+    });
 
     render(<StudiesDetailTable patientUuid="patientUuid-123" studies={mockStudies} />);
 

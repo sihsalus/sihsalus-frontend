@@ -5,25 +5,25 @@ import { mockPatient } from 'test-utils';
 import { useConditions } from './conditions.resource';
 import ConditionsDetailedSummary from './conditions-detailed-summary.component';
 
-jest.mock('./conditions.resource', () => {
-  const actual = jest.requireActual('./conditions.resource');
+vi.mock('./conditions.resource', async () => {
+  const actual = await vi.importActual('./conditions.resource');
 
   return {
     ...actual,
-    useConditions: jest.fn(),
+    useConditions: vi.fn(),
   };
 });
 
-jest.mock('@openmrs/esm-patient-common-lib', () => ({
-  ...jest.requireActual('@openmrs/esm-patient-common-lib'),
-  launchPatientWorkspace: jest.fn(),
+vi.mock('@openmrs/esm-patient-common-lib', async () => ({
+  ...(await vi.importActual('@openmrs/esm-patient-common-lib')),
+  launchPatientWorkspace: vi.fn(),
 }));
 
-const mockLaunchPatientWorkspace = jest.mocked(launchPatientWorkspace);
-const mockUseConditions = jest.mocked(useConditions);
+const mockLaunchPatientWorkspace = vi.mocked(launchPatientWorkspace);
+const mockUseConditions = vi.mocked(useConditions);
 
 beforeEach(() => {
-  jest.clearAllMocks();
+  vi.clearAllMocks();
 });
 
 it('renders an empty state view if conditions data is unavailable', async () => {
@@ -32,7 +32,7 @@ it('renders an empty state view if conditions data is unavailable', async () => 
     error: null,
     isLoading: false,
     isValidating: false,
-    mutate: jest.fn(),
+    mutate: vi.fn(),
   });
 
   render(<ConditionsDetailedSummary patient={mockPatient} />);
@@ -59,7 +59,7 @@ it('renders an error state view if there is a problem fetching conditions data',
     error,
     isLoading: false,
     isValidating: false,
-    mutate: jest.fn(),
+    mutate: vi.fn(),
   });
 
   render(<ConditionsDetailedSummary patient={mockPatient as unknown as fhir.Patient} />);
@@ -136,7 +136,7 @@ it("renders a detailed summary of the patient's conditions when present", async 
     error: null,
     isLoading: false,
     isValidating: false,
-    mutate: jest.fn(),
+    mutate: vi.fn(),
   });
 
   render(<ConditionsDetailedSummary patient={mockPatient as unknown as fhir.Patient} />);
@@ -164,7 +164,7 @@ it('clicking the Add button or Record Conditions link launches the conditions fo
     error: null,
     isLoading: false,
     isValidating: false,
-    mutate: jest.fn(),
+    mutate: vi.fn(),
   });
 
   render(<ConditionsDetailedSummary patient={mockPatient as unknown as fhir.Patient} />);

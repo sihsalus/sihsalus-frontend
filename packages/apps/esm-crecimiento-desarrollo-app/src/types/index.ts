@@ -1,18 +1,40 @@
 import type { FetchResponse, FHIRResource, OpenmrsResource } from '@openmrs/esm-framework';
 import type { amPm } from '@openmrs/esm-patient-common-lib';
+import type { ReactNode } from 'react';
+
+export interface WorkspaceProps {
+  availableForms?: unknown;
+  backWorkspace?: string | null;
+  controlNumber?: number;
+  patientAge?: string;
+  patientUuid?: string;
+  subtitle?: string;
+  title?: string;
+  [key: string]: unknown;
+}
+
+export interface CloseWorkspaceOptions {
+  closeWindow?: boolean;
+  discardUnsavedChanges?: boolean;
+  onWorkspaceClose?: () => void;
+}
 
 /**
  * Workspace2-compatible props for workspace components.
  * In workspace2, patientUuid lives inside workspaceProps.
  * closeWorkspace returns Promise<boolean> and accepts { discardUnsavedChanges }.
- * promptBeforeClosing is NOT available — unsaved changes are tracked via <Workspace2> component.
+ * promptBeforeClosing and closeWorkspaceWithSavedChanges are injected for backwards-compatible shared workspace shells.
  */
 export interface DefaultPatientWorkspaceProps {
-  closeWorkspace(options?: { closeWindow?: boolean; discardUnsavedChanges?: boolean }): Promise<boolean>;
-  workspaceProps?: Record<string, any> | null;
+  closeWorkspace(options?: CloseWorkspaceOptions): Promise<boolean>;
+  closeWorkspaceWithSavedChanges?: (options?: Pick<CloseWorkspaceOptions, 'onWorkspaceClose'>) => void;
+  patientUuid?: string;
+  promptBeforeClosing?: (testFcn: () => boolean) => void;
+  setTitle?: (title: string, titleNode?: ReactNode) => void;
+  workspaceProps?: WorkspaceProps | null;
   workspaceName?: string;
   windowName?: string;
-  [key: string]: any;
+  [key: string]: unknown;
 }
 
 /**
@@ -137,10 +159,10 @@ export interface Observation {
       uuid: string;
       display: string;
     };
-    value: string | number | Record<string, any> | null;
+    value: string | number | Record<string, unknown> | null;
     display: string;
   }>;
-  value: string | number | Record<string, any> | null;
+  value: string | number | Record<string, unknown> | null;
   obsDatetime?: string;
 }
 
@@ -526,7 +548,7 @@ export interface DefinitionDataRow {
 }
 
 export type PatientAppointment = {
-  [key: string]: any;
+  [key: string]: unknown;
   serviceType: string;
   appointmentDate: string;
   appointmentId: string;
@@ -640,7 +662,7 @@ export interface Appointment {
   appointmentKind: AppointmentKind;
   appointmentNumber: string;
   comments: string;
-  endDateTime: Date | number | any;
+  endDateTime: Date | number | string | null;
   location: AppointmentLocation;
   patient: {
     identifier: string;
@@ -654,8 +676,8 @@ export interface Appointment {
   providers: Array<OpenmrsResource>;
   recurring: boolean;
   service: AppointmentService;
-  startDateTime: string | any;
-  dateAppointmentScheduled: string | any;
+  startDateTime: string | Date;
+  dateAppointmentScheduled: string | Date;
   status: AppointmentStatus;
   uuid: string;
   additionalInfo?: string | null;

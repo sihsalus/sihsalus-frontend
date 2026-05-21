@@ -7,7 +7,6 @@ import {
 } from '@openmrs/esm-framework';
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import React from 'react';
 import { FormProvider, useForm } from 'react-hook-form';
 import { mockLocationsResponse, mockSessionDataResponse } from 'test-utils';
 
@@ -16,10 +15,10 @@ import { type ChartConfig, esmPatientChartSchema } from '../../config-schema';
 import LocationSelector from './location-selector.component';
 import { type VisitFormData } from './visit-form.resource';
 
-const mockSession = jest.mocked(useSession);
-const mockUseFeatureFlag = jest.mocked(useFeatureFlag);
-const mockUseLocations = jest.mocked(useLocations);
-const mockUseConfig = jest.mocked(useConfig<ChartConfig>);
+const mockSession = vi.mocked(useSession);
+const mockUseFeatureFlag = vi.mocked(useFeatureFlag);
+const mockUseLocations = vi.mocked(useLocations);
+const mockUseConfig = vi.mocked(useConfig<ChartConfig>);
 
 mockSession.mockReturnValue(mockSessionDataResponse.data);
 

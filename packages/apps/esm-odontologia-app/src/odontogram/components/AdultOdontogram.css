@@ -1,56 +1,76 @@
+/* biome-ignore-all lint/correctness/noUnknownPseudoClass: :global() is required because the app processes CSS imports as CSS Modules. */
 /* =========================================================================
    Odontogram Widget — core styles
+
+   The project's rspack config processes ALL .css files as CSS Modules
+   (hashing class names). Components in this app use literal className
+   strings, so every selector below is wrapped in :global() to keep the
+   names un-hashed and have the rules actually apply.
    ========================================================================= */
 
-.adult-odontogram-container {
+:global(.adult-odontogram-container) {
   width: 100%;
   background: #ffffff;
 }
 
-.adult-odontogram-container .odontogram-header {
+/* SVGs default to inline-block, which leaves a baseline gap that creates
+   subpixel misalignment between adjacent cells (teeth + spacing svgs). Force
+   block-level rendering so siblings line up exactly within their flex rows. */
+:global(.adult-odontogram-container svg) {
+  display: block;
+  vertical-align: top;
+}
+
+:global(.adult-odontogram-container .odontogram-header) {
   text-align: center;
   margin-bottom: 12px;
   padding-bottom: 8px;
   border-bottom: 1px solid #e2e8f0;
 }
 
-.adult-odontogram-container .odontogram-header h2 {
+:global(.adult-odontogram-container .odontogram-header h2) {
   color: #0f172a;
   font-size: 1.25rem;
   font-weight: 700;
   margin: 0 0 4px 0;
 }
 
-.adult-odontogram-container .odontogram-header p {
+:global(.adult-odontogram-container .odontogram-header p) {
   color: #64748b;
   font-size: 0.875rem;
   margin: 0;
 }
 
-.adult-odontogram-container .odontogram-content {
+:global(.adult-odontogram-container .odontogram-content) {
   display: flex;
   flex-direction: column;
   gap: 10px;
 }
 
 /* Secciones del odontograma */
-.adult-odontogram-container .form-section {
+:global(.adult-odontogram-container .form-section) {
   padding: 0;
 }
 
-.adult-odontogram-container .teeth-visualization {
+/* Horizontal padding aligns the leftmost tooth column with the form's left
+   inset (FormDentalClinicalFindings has 1rem horizontal padding).
+   `overflow-x: auto` lets the natural 1260px width of the teeth row scroll
+   horizontally on narrow containers (replaces the old transform-scale
+   wrapper that introduced a layout-box vs visual-box mismatch). */
+:global(.adult-odontogram-container .teeth-visualization) {
   background: #ffffff;
-  padding: 0;
-  overflow: hidden;
+  padding: 0 1rem;
+  overflow-x: auto;
+  overflow-y: hidden;
 }
 
-.adult-odontogram-container .upper-teeth-section,
-.adult-odontogram-container .lower-teeth-section {
+:global(.adult-odontogram-container .upper-teeth-section),
+:global(.adult-odontogram-container .lower-teeth-section) {
   margin-bottom: 4px;
 }
 
-.adult-odontogram-container .upper-teeth-section h3,
-.adult-odontogram-container .lower-teeth-section h3 {
+:global(.adult-odontogram-container .upper-teeth-section h3),
+:global(.adult-odontogram-container .lower-teeth-section h3) {
   color: #333;
   margin: 0 0 6px 0;
   font-size: 1rem;
@@ -61,11 +81,11 @@
   border: 1px solid #e2e8f0;
 }
 
-.adult-odontogram-container .additional-form-section {
+:global(.adult-odontogram-container .additional-form-section) {
   padding: 10px;
 }
 
-.adult-odontogram-container .actions-section {
+:global(.adult-odontogram-container .actions-section) {
   padding: 10px;
   display: flex;
   justify-content: center;
@@ -73,19 +93,14 @@
 }
 
 @media (max-width: 480px) {
-  .adult-odontogram-container .odontogram-header h2 {
+  :global(.adult-odontogram-container .odontogram-header h2) {
     font-size: 1.1rem;
-  }
-
-  .adult-odontogram-container .odontogram-textarea {
-    min-height: 56px;
-    font-size: 0.82rem;
   }
 }
 
 /* ── Designs banner ── */
 
-.odon-designs-banner {
+:global(.odon-designs-banner) {
   font-size: 11px;
   color: #6366f1;
   background: #eef2ff;
@@ -99,7 +114,7 @@
 
 /* ── Status strip ── */
 
-.odon-status-strip {
+:global(.odon-status-strip) {
   display: flex;
   align-items: center;
   gap: 7px;
@@ -111,13 +126,13 @@
   border: 1px dashed #e2e8f0;
 }
 
-.odon-status-strip--ok {
+:global(.odon-status-strip--ok) {
   color: #16a34a;
   background: #f0fdf4;
   border-color: #bbf7d0;
 }
 
-.odon-status-dot {
+:global(.odon-status-dot) {
   width: 8px;
   height: 8px;
   border-radius: 50%;
@@ -125,13 +140,13 @@
   flex-shrink: 0;
 }
 
-.odon-status-dot--ok {
+:global(.odon-status-dot--ok) {
   background: #22c55e;
 }
 
 /* ── Action bar (save / terminar buttons) ── */
 
-.odon-action-bar {
+:global(.odon-action-bar) {
   display: flex;
   gap: 10px;
   padding: 12px 16px;
@@ -140,7 +155,7 @@
   border-radius: 0 0 10px 10px;
 }
 
-.odon-action-btn {
+:global(.odon-action-btn) {
   flex: 1;
   padding: 9px 16px;
   font-size: 13px;
@@ -153,131 +168,36 @@
     opacity 0.15s;
 }
 
-.odon-action-btn:disabled {
+:global(.odon-action-btn:disabled) {
   opacity: 0.45;
   cursor: not-allowed;
 }
 
-.odon-action-btn--save {
+:global(.odon-action-btn--save) {
   background: #6366f1;
   color: #ffffff;
 }
 
-.odon-action-btn--save:hover:not(:disabled) {
+:global(.odon-action-btn--save:hover:not(:disabled)) {
   background: #4f46e5;
 }
 
-.odon-action-btn--flash {
+:global(.odon-action-btn--flash) {
   background: #16a34a;
   color: #ffffff;
 }
 
-.odon-action-btn--end {
+:global(.odon-action-btn--end) {
   background: #f1f5f9;
   color: #334155;
   border: 1.5px solid #e2e8f0;
 }
 
-.odon-action-btn--end:hover {
+:global(.odon-action-btn--end:hover) {
   background: #e2e8f0;
 }
 
-/* ============================================================
-   Campos de texto: Especificaciones / Observaciones
-   ============================================================ */
-
-.adult-odontogram-container .odontogram-text-fields {
-  display: flex;
-  flex-direction: column;
-  gap: 16px;
-  margin-top: 16px;
-  padding: 0 4px;
-}
-
-.adult-odontogram-container .odontogram-text-field {
-  display: flex;
-  flex-direction: column;
-  flex: 1;
-  gap: 6px;
-}
-
-.adult-odontogram-container .odontogram-text-label {
-  font-size: 0.8rem;
-  font-weight: 600;
-  color: #475569;
-  letter-spacing: 0.03em;
-  text-transform: uppercase;
-}
-
-.adult-odontogram-container .odontogram-textarea {
-  resize: vertical;
-  border: 1.5px solid #cbd5e1;
-  border-radius: 6px;
-  padding: 8px 10px;
-  font-size: 0.85rem;
-  color: #1e293b;
-  background: #fff;
-  line-height: 1.5;
-  font-family: inherit;
-  transition:
-    border-color 0.15s ease,
-    box-shadow 0.15s ease;
-  min-height: 72px;
-}
-
-.adult-odontogram-container .odontogram-textarea:focus {
-  outline: none;
-  border-color: #6366f1;
-  box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.12);
-  background: #ffffff;
-}
-
-.adult-odontogram-container .odontogram-textarea:disabled {
-  background: #f1f5f9;
-  color: #64748b;
-  cursor: default;
-  border-color: #e2e8f0;
-}
-
-/* ─────────────────────────────────────────────
-   Toast notification
-   ───────────────────────────────────────────── */
-
-.odon-toast {
-  position: fixed;
-  bottom: 24px;
-  left: 50%;
-  transform: translateX(-50%);
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  padding: 10px 18px;
-  background: #1e293b;
-  color: #f8fafc;
-  font-size: 13px;
-  font-weight: 500;
-  border-radius: 10px;
-  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.18);
-  z-index: 99999;
-  animation: odon-toast-in 0.25s ease-out;
-  max-width: min(90vw, 440px);
-  line-height: 1.4;
-}
-
-.odon-toast-icon {
-  width: 18px;
-  height: 18px;
-  flex-shrink: 0;
-  color: #fbbf24;
-}
-
-@keyframes odon-toast-in {
-  from {
-    opacity: 0;
-    transform: translateX(-50%) translateY(12px);
-  }
-  to {
-    opacity: 1;
-    transform: translateX(-50%) translateY(0);
-  }
-}
+/* Los campos Especificaciones / Observaciones ahora viven en
+   OdontogramTextFields.tsx + OdontogramTextFields.module.scss, usando
+   Carbon TextArea. Sus estilos legacy (.odontogram-text-fields, etc.)
+   fueron retirados. */

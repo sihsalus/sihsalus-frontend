@@ -1,0 +1,17 @@
+.tile {
+  min-height: 7rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  justify-content: space-between;
+}
+
+.icon {
+  color: var(--brand-03, #2c7d35);
+}
+
+.label {
+  font-size: 0.875rem;
+  line-height: 1.25rem;
+  color: var(--cds-text-primary);
+}

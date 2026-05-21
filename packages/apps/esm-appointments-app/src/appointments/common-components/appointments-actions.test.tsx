@@ -58,17 +58,17 @@ const defaultProps = {
   mutate: () => {},
 };
 
-const mockUseConfig = jest.mocked(useConfig<ConfigObject>);
-const mockUseTodaysVisits = jest.mocked(useTodaysVisits);
+const mockUseConfig = vi.mocked(useConfig<ConfigObject>);
+const mockUseTodaysVisits = vi.mocked(useTodaysVisits);
 
-jest.mock('../../hooks/useTodaysVisits', () => ({
-  ...jest.requireActual('../../hooks/useTodaysVisits'),
-  useTodaysVisits: jest.fn(),
+vi.mock('../../hooks/useTodaysVisits', async () => ({
+  ...(await vi.importActual('../../hooks/useTodaysVisits')),
+  useTodaysVisits: vi.fn(),
 }));
 
 describe('AppointmentActions', () => {
   afterAll(() => {
-    jest.useRealTimers();
+    vi.useRealTimers();
   });
 
   it('renders the check in button when appointment is today and the patient has not checked in and check in button enabled', () => {
@@ -84,7 +84,7 @@ describe('AppointmentActions', () => {
       visits: [],
       error: null,
       isLoading: false,
-      mutateVisit: jest.fn(),
+      mutateVisit: vi.fn(),
     });
 
     const props = { ...defaultProps };
@@ -106,7 +106,7 @@ describe('AppointmentActions', () => {
       visits: [],
       error: null,
       isLoading: false,
-      mutateVisit: jest.fn(),
+      mutateVisit: vi.fn(),
     });
 
     const props = { ...defaultProps };
@@ -140,7 +140,7 @@ describe('AppointmentActions', () => {
       ],
       error: null,
       isLoading: false,
-      mutateVisit: jest.fn(),
+      mutateVisit: vi.fn(),
     });
 
     const props = { ...defaultProps };
@@ -174,7 +174,7 @@ describe('AppointmentActions', () => {
       ],
       error: null,
       isLoading: false,
-      mutateVisit: jest.fn(),
+      mutateVisit: vi.fn(),
     });
 
     const props = { ...defaultProps, scheduleType: 'Scheduled' };
@@ -208,7 +208,7 @@ describe('AppointmentActions', () => {
       ],
       error: null,
       isLoading: false,
-      mutateVisit: jest.fn(),
+      mutateVisit: vi.fn(),
     });
 
     const props = { ...defaultProps, scheduleType: 'Scheduled' };

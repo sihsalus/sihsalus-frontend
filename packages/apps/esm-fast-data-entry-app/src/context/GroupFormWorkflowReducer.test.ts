@@ -2,11 +2,11 @@ import { navigate } from '@openmrs/esm-framework';
 import { initialWorkflowState } from './GroupFormWorkflowContext';
 import reducer, { fdeGroupWorkflowStorageName, fdeGroupWorkflowStorageVersion } from './GroupFormWorkflowReducer';
 
-jest.mock('uuid', () => ({
-  v4: jest.fn(() => 'generated-session-uuid'),
+vi.mock('uuid', () => ({
+  v4: vi.fn(() => 'generated-session-uuid'),
 }));
 
-const mockNavigate = jest.mocked(navigate);
+const mockNavigate = vi.mocked(navigate);
 
 const buildState = (formStateOverrides = {}, rootStateOverrides = {}) => ({
   ...initialWorkflowState,
@@ -34,6 +34,10 @@ const buildState = (formStateOverrides = {}, rootStateOverrides = {}) => ({
 describe('GroupFormWorkflowReducer', () => {
   beforeEach(() => {
     localStorage.clear();
+  });
+
+  afterEach(() => {
+    vi.restoreAllMocks();
   });
 
   it('initializes a fresh group workflow state when there is no saved session', () => {
@@ -185,7 +189,7 @@ describe('GroupFormWorkflowReducer', () => {
   });
 
   it('dispatches validate events and stores the visit UUID for the active patient', () => {
-    const dispatchEventSpy = jest.spyOn(window, 'dispatchEvent');
+    const dispatchEventSpy = vi.spyOn(window, 'dispatchEvent');
     const state = buildState({
       workflowState: 'EDIT_FORM',
       activePatientUuid: 'patient-a',
@@ -217,7 +221,7 @@ describe('GroupFormWorkflowReducer', () => {
   });
 
   it('submits for next and advances to the requested patient after saving', () => {
-    const dispatchEventSpy = jest.spyOn(window, 'dispatchEvent');
+    const dispatchEventSpy = vi.spyOn(window, 'dispatchEvent');
     const state = buildState(
       {
         workflowState: 'EDIT_FORM',

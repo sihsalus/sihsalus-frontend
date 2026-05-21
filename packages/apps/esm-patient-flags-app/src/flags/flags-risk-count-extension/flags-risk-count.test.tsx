@@ -7,18 +7,18 @@ import { useCurrentPath, usePatientFlags } from '../hooks/usePatientFlags';
 import { type FlagsRiskCountExtensionConfig, riskCountExtensionConfigSchema } from './extension-config-schema';
 import FlagsRiskCountExtension from './flags-risk-count.extension';
 
-const mockUsePatientFlags = jest.mocked(usePatientFlags);
-const mockUseCurrentPath = jest.mocked(useCurrentPath);
-const mockLaunchWorkspace = jest.mocked(launchWorkspace2);
-const mockUseConfig = jest.mocked(useConfig);
+const mockUsePatientFlags = vi.mocked(usePatientFlags);
+const mockUseCurrentPath = vi.mocked(useCurrentPath);
+const mockLaunchWorkspace = vi.mocked(launchWorkspace2);
+const mockUseConfig = vi.mocked(useConfig);
 
-jest.mock('../hooks/usePatientFlags', () => {
-  const originalModule = jest.requireActual('../hooks/usePatientFlags');
+vi.mock('../hooks/usePatientFlags', async () => {
+  const originalModule = await vi.importActual('../hooks/usePatientFlags');
 
   return {
     ...originalModule,
-    usePatientFlags: jest.fn(),
-    useCurrentPath: jest.fn(),
+    usePatientFlags: vi.fn(),
+    useCurrentPath: vi.fn(),
   };
 });
 
@@ -39,7 +39,7 @@ describe('flags risk count', () => {
       error: null,
       isLoading: false,
       isValidating: false,
-      mutate: jest.fn(),
+      mutate: vi.fn(),
     } as unknown as ReturnType<typeof usePatientFlags>);
 
     render(<FlagsRiskCountExtension patientUuid={mockPatient.id} />);
@@ -84,7 +84,7 @@ describe('flags risk count', () => {
       error: null,
       isLoading: false,
       isValidating: false,
-      mutate: jest.fn(),
+      mutate: vi.fn(),
     } as unknown as ReturnType<typeof usePatientFlags>);
 
     render(<FlagsRiskCountExtension patientUuid={mockPatient.id} />);
@@ -109,7 +109,7 @@ describe('flags risk count', () => {
       error: null,
       isLoading: false,
       isValidating: false,
-      mutate: jest.fn(),
+      mutate: vi.fn(),
     } as unknown as ReturnType<typeof usePatientFlags>);
 
     render(<FlagsRiskCountExtension patientUuid={mockPatient.id} />);
@@ -134,7 +134,7 @@ describe('flags risk count', () => {
       error: null,
       isLoading: false,
       isValidating: false,
-      mutate: jest.fn(),
+      mutate: vi.fn(),
     } as unknown as ReturnType<typeof usePatientFlags>);
 
     render(<FlagsRiskCountExtension patientUuid={mockPatient.id} />);
@@ -159,7 +159,7 @@ describe('flags risk count', () => {
       error: null,
       isLoading: false,
       isValidating: false,
-      mutate: jest.fn(),
+      mutate: vi.fn(),
     } as unknown as ReturnType<typeof usePatientFlags>);
 
     render(<FlagsRiskCountExtension patientUuid={mockPatient.id} />);

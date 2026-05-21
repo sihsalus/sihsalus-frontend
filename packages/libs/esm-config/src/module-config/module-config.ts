@@ -144,7 +144,7 @@ function computeExtensionConfigs(
   extensionState: ConfigExtensionStore,
   tempConfigState: TemporaryConfigStore,
 ) {
-  const configs = {};
+  const configs: Record<string, Record<string, ConfigStore>> = {};
   // We assume that the module schema has already been defined, since the extension
   // it contains is mounted.
   for (const extension of extensionState.mountedExtensions) {
@@ -160,7 +160,7 @@ function computeExtensionConfigs(
     if (!configs[extension.slotName]) {
       configs[extension.slotName] = {};
     }
-    configs[extension.slotName][extension.extensionId] = { config, loaded: true };
+    configs[extension.slotName][extension.extensionId] = { config, loaded: true, translationOverridesLoaded: true };
   }
   const extensionsConfigStore = getExtensionsConfigStore();
   const oldState = extensionsConfigStore.getState();
@@ -447,7 +447,7 @@ function getImplementerToolsConfig(
   configState: ConfigInternalStore,
   tempConfigState: TemporaryConfigStore,
 ): Record<string, Config> {
-  let result = getSchemaWithValuesAndSources(cloneDeep(configState.schemas));
+  let result = getSchemaWithValuesAndSources(cloneDeep(configState.schemas) as Config);
   const configsAndSources = [
     ...configState.providedConfigs.map((c) => [c.config, c.source]),
     [tempConfigState.config, 'temporary config'],
@@ -458,11 +458,11 @@ function getImplementerToolsConfig(
   return result;
 }
 
-function getSchemaWithValuesAndSources(schema) {
+function getSchemaWithValuesAndSources(schema: Config): Config {
   if (Object.hasOwn(schema, '_default')) {
     return { ...schema, _value: schema._default, _source: 'default' };
   } else if (isOrdinaryObject(schema)) {
-    return Object.keys(schema).reduce((obj, key) => {
+    return Object.keys(schema).reduce<Config>((obj, key) => {
       obj[key] = getSchemaWithValuesAndSources(schema[key]);
       return obj;
     }, {});
@@ -474,7 +474,7 @@ function getSchemaWithValuesAndSources(schema) {
 
 function createValuesAndSourcesTree(config: ConfigObject, source: string) {
   if (isOrdinaryObject(config)) {
-    return Object.keys(config).reduce((obj, key) => {
+    return Object.keys(config).reduce<Config>((obj, key) => {
       obj[key] = createValuesAndSourcesTree(config[key], source);
       return obj;
     }, {});
@@ -489,7 +489,7 @@ function getExtensionSlotConfigs(
 ): Record<string, ExtensionSlotConfig> {
   const allConfigs = mergeConfigs(getProvidedConfigs(configState, tempConfigState));
   const slotConfigPerModule: Record<string, Record<string, ExtensionSlotConfig>> = Object.keys(allConfigs).reduce(
-    (obj, key) => {
+    (obj: Record<string, Record<string, ExtensionSlotConfig>>, key) => {
       if (allConfigs[key]?.extensionSlots) {
         obj[key] = allConfigs[key]?.extensionSlots;
       }
@@ -498,7 +498,7 @@ function getExtensionSlotConfigs(
     {},
   );
   validateAllExtensionSlotConfigs(slotConfigPerModule);
-  const slotConfigs = Object.keys(slotConfigPerModule).reduce((obj, key) => {
+  const slotConfigs = Object.keys(slotConfigPerModule).reduce<Record<string, ExtensionSlotConfig>>((obj, key) => {
     obj = { ...obj, ...slotConfigPerModule[key] };
     return obj;
   }, {});
@@ -606,10 +606,10 @@ function validateConfigSchema(moduleName: string, schema: ConfigSchema, keyPath 
     }
 
     if (schemaPart._validators) {
-      validateSchemaPartValidators(moduleName, thisKeyPath, schemaPart._validators, updateMessage);
+      validateSchemaPartValidators(moduleName, thisKeyPath, schemaPart._validators as Array<unknown>, updateMessage);
     }
 
-    const valueType = schemaPart._type;
+    const valueType = schemaPart._type as Type | undefined;
     if (valueType && !Object.values(Type).includes(valueType)) {
       console.error(
         `${moduleName} has invalid type for key '${thisKeyPath}' ${updateMessage}.` +
@@ -847,7 +847,7 @@ function applyElementDefaults(config: Config, key: string, configPart: Config, s
 }
 
 // Recursively fill in the config with values from the schema.
-const setDefaults = (schema: ConfigSchema, inputConfig: Config) => {
+const setDefaults = (schema: ConfigSchema, inputConfig: Config): Config => {
   const config = structuredClone(inputConfig);
 
   if (!schema) {
@@ -893,7 +893,7 @@ function hasObjectSchema(elementsSchema: unknown): elementsSchema is ConfigSchem
   );
 }
 
-function isOrdinaryObject(value) {
+function isOrdinaryObject(value: unknown): value is Config {
   return typeof value === 'object' && !Array.isArray(value) && value !== null;
 }
 /** Keep track of which validation errors we have displayed. Each one should only be displayed once. */

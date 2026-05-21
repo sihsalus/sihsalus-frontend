@@ -69,7 +69,13 @@ const ResponsiveOdontogramWrapper: React.FC<ResponsiveOdontogramWrapperProps> = 
     <div
       ref={containerRef}
       className="responsive-odontogram-viewport"
-      style={{ minHeight: scaledHeight > 0 ? scaledHeight : undefined }}
+      // The inner content uses CSS `transform: scale()` which DOES NOT shrink
+      // its layout box height — only its visual rendering. If we set only
+      // min-height, the viewport grows to the unscaled content height and a
+      // big vertical gap appears below the scaled visual. Fixing `height` to
+      // the visual `scaledHeight` (combined with `overflow: hidden` from CSS)
+      // clips the layout overflow and removes the gap.
+      style={{ height: scaledHeight > 0 ? scaledHeight : undefined }}
     >
       {isZoomed && (
         <div className="responsive-odontogram-zoom-badge">

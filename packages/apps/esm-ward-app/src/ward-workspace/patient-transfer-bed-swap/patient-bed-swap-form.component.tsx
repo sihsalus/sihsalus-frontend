@@ -225,8 +225,8 @@ export default function PatientBedSwapForm({
         </div>
         {showErrorNotifications && (
           <div className={styles.notifications}>
-            {Object.values(errors).map((error) => (
-              <InlineNotification lowContrast subtitle={error.message} />
+            {Object.entries(errors).map(([fieldName, error]) => (
+              <InlineNotification key={fieldName} lowContrast subtitle={error.message} />
             ))}
           </div>
         )}

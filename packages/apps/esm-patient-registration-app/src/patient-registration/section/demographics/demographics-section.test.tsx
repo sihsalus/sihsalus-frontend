@@ -1,7 +1,6 @@
 import { getDefaultsFromConfigSchema, useConfig } from '@openmrs/esm-framework';
 import { render, screen } from '@testing-library/react';
 import { Form, Formik } from 'formik';
-import React from 'react';
 
 import { esmPatientRegistrationSchema, type RegistrationConfig } from '../../../config-schema';
 import { initialFormValues } from '../../patient-registration.component';
@@ -9,9 +8,9 @@ import { PatientRegistrationContext } from '../../patient-registration-context';
 
 import { DemographicsSection } from './demographics-section.component';
 
-const mockUseConfig = jest.mocked(useConfig<RegistrationConfig>);
+const mockUseConfig = vi.mocked(useConfig<RegistrationConfig>);
 
-jest.mock('../../field/name/name-field.component', () => {
+vi.mock('../../field/name/name-field.component', () => {
   return {
     NameField: () => (
       <div>
@@ -21,7 +20,7 @@ jest.mock('../../field/name/name-field.component', () => {
   };
 });
 
-jest.mock('../../field/gender/gender-field.component', () => {
+vi.mock('../../field/gender/gender-field.component', () => {
   return {
     GenderField: () => (
       <div>
@@ -31,7 +30,7 @@ jest.mock('../../field/gender/gender-field.component', () => {
   };
 });
 
-jest.mock('../../field/id/id-field.component', () => {
+vi.mock('../../field/id/id-field.component', () => {
   return {
     IdField: () => (
       <div>
@@ -68,7 +67,7 @@ describe('Demographics section', () => {
               setFieldValue: () => {},
               currentPhoto: 'TEST',
               isOffline: true,
-              setCapturePhotoProps: (value) => {},
+              setCapturePhotoProps: (_value) => {},
               setFieldTouched: () => {},
             }}
           >

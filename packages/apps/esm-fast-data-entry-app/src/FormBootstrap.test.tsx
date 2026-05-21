@@ -4,11 +4,11 @@ import GroupFormWorkflowContext from './context/GroupFormWorkflowContext';
 import FormBootstrap from './FormBootstrap';
 import useGetPatient from './hooks/useGetPatient';
 
-jest.mock('./hooks/useGetPatient', () => jest.fn());
+vi.mock('./hooks/useGetPatient', () => ({ default: vi.fn() }));
 
-const mockDetach = jest.mocked(detach);
-const mockExtensionSlot = jest.mocked(ExtensionSlot);
-const mockUseGetPatient = useGetPatient as jest.MockedFunction<typeof useGetPatient>;
+const mockDetach = vi.mocked(detach);
+const mockExtensionSlot = vi.mocked(ExtensionSlot);
+const mockUseGetPatient = useGetPatient as vi.MockedFunction<typeof useGetPatient>;
 
 const renderFormBootstrap = (props = {}) =>
   render(
@@ -30,9 +30,9 @@ const renderFormBootstrap = (props = {}) =>
         visitUuid="visit-1"
         visitTypeUuid="visit-type-1"
         encounterUuid="encounter-1"
-        handlePostResponse={jest.fn()}
-        handleEncounterCreate={jest.fn()}
-        handleOnValidate={jest.fn()}
+        handlePostResponse={vi.fn()}
+        handleEncounterCreate={vi.fn()}
+        handleOnValidate={vi.fn()}
         hidePatientBanner={true}
         {...props}
       />
@@ -41,6 +41,7 @@ const renderFormBootstrap = (props = {}) =>
 
 describe('FormBootstrap', () => {
   beforeEach(() => {
+    vi.clearAllMocks();
     mockExtensionSlot.mockImplementation(() => <div data-testid="form-widget-slot" />);
     mockUseGetPatient.mockReturnValue({
       id: 'patient-1',
@@ -49,7 +50,7 @@ describe('FormBootstrap', () => {
   });
 
   afterEach(() => {
-    jest.useRealTimers();
+    vi.useRealTimers();
   });
 
   it('passes the expected widget state once the patient is available', () => {
@@ -83,8 +84,8 @@ describe('FormBootstrap', () => {
   });
 
   it('refreshes the widget after submit and detaches it on unmount', () => {
-    jest.useFakeTimers();
-    const handlePostResponse = jest.fn();
+    vi.useFakeTimers();
+    const handlePostResponse = vi.fn();
     const { unmount } = renderFormBootstrap({ handlePostResponse });
 
     const [{ state }] = mockExtensionSlot.mock.calls[0];
@@ -98,7 +99,7 @@ describe('FormBootstrap', () => {
     expect(screen.queryByTestId('form-widget-slot')).not.toBeInTheDocument();
 
     act(() => {
-      jest.advanceTimersByTime(1);
+      vi.advanceTimersByTime(1);
     });
 
     expect(screen.getByTestId('form-widget-slot')).toBeInTheDocument();

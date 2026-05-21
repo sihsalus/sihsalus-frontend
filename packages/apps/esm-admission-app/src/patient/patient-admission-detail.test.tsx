@@ -10,24 +10,25 @@ import {
 } from '../resources/admissions.resource';
 import PatientAdmissionDetail from './patient-admission-detail.component';
 
-jest.mock('@openmrs/esm-framework', () => ({
-  launchWorkspace2: jest.fn(),
+vi.mock('@openmrs/esm-framework', async () => ({
+  ...(await vi.importActual('@openmrs/esm-framework')),
+  launchWorkspace2: vi.fn(),
 }));
 
-jest.mock('../resources/admissions.resource', () => ({
-  usePatientDetail: jest.fn(),
-  usePatientUpcomingAppointments: jest.fn(),
-  usePatientVisitHistory: jest.fn(),
+vi.mock('../resources/admissions.resource', () => ({
+  usePatientDetail: vi.fn(),
+  usePatientUpcomingAppointments: vi.fn(),
+  usePatientVisitHistory: vi.fn(),
 }));
 
-const mockLaunchWorkspace2 = jest.mocked(launchWorkspace2);
-const mockUsePatientDetail = jest.mocked(usePatientDetail);
-const mockUsePatientUpcomingAppointments = jest.mocked(usePatientUpcomingAppointments);
-const mockUsePatientVisitHistory = jest.mocked(usePatientVisitHistory);
+const mockLaunchWorkspace2 = vi.mocked(launchWorkspace2);
+const mockUsePatientDetail = vi.mocked(usePatientDetail);
+const mockUsePatientUpcomingAppointments = vi.mocked(usePatientUpcomingAppointments);
+const mockUsePatientVisitHistory = vi.mocked(usePatientVisitHistory);
 
 function renderPatientAdmissionDetail(route = '/patient/patient-uuid') {
   return render(
-    <MemoryRouter initialEntries={[route]}>
+    <MemoryRouter initialEntries={[route]} future={{ v7_relativeSplatPath: true, v7_startTransition: true }}>
       <Routes>
         <Route path="/patient/:patientUuid" element={<PatientAdmissionDetail />} />
       </Routes>
@@ -37,7 +38,7 @@ function renderPatientAdmissionDetail(route = '/patient/patient-uuid') {
 
 describe('PatientAdmissionDetail', () => {
   beforeEach(() => {
-    jest.clearAllMocks();
+    vi.clearAllMocks();
     mockUsePatientDetail.mockReturnValue({
       patient: {
         person: {
@@ -160,7 +161,10 @@ describe('PatientAdmissionDetail', () => {
 
     mockUsePatientVisitHistory.mockReturnValueOnce({ visits: [], error: new Error('boom'), isLoading: false });
     rerender(
-      <MemoryRouter initialEntries={['/patient/patient-uuid']}>
+      <MemoryRouter
+        initialEntries={['/patient/patient-uuid']}
+        future={{ v7_relativeSplatPath: true, v7_startTransition: true }}
+      >
         <Routes>
           <Route path="/patient/:patientUuid" element={<PatientAdmissionDetail />} />
         </Routes>
@@ -170,7 +174,10 @@ describe('PatientAdmissionDetail', () => {
 
     mockUsePatientVisitHistory.mockReturnValueOnce({ visits: [], error: undefined, isLoading: false });
     rerender(
-      <MemoryRouter initialEntries={['/patient/patient-uuid']}>
+      <MemoryRouter
+        initialEntries={['/patient/patient-uuid']}
+        future={{ v7_relativeSplatPath: true, v7_startTransition: true }}
+      >
         <Routes>
           <Route path="/patient/:patientUuid" element={<PatientAdmissionDetail />} />
         </Routes>
@@ -194,7 +201,10 @@ describe('PatientAdmissionDetail', () => {
       isLoading: false,
     });
     rerender(
-      <MemoryRouter initialEntries={['/patient/patient-uuid']}>
+      <MemoryRouter
+        initialEntries={['/patient/patient-uuid']}
+        future={{ v7_relativeSplatPath: true, v7_startTransition: true }}
+      >
         <Routes>
           <Route path="/patient/:patientUuid" element={<PatientAdmissionDetail />} />
         </Routes>
@@ -208,7 +218,10 @@ describe('PatientAdmissionDetail', () => {
       isLoading: false,
     });
     rerender(
-      <MemoryRouter initialEntries={['/patient/patient-uuid']}>
+      <MemoryRouter
+        initialEntries={['/patient/patient-uuid']}
+        future={{ v7_relativeSplatPath: true, v7_startTransition: true }}
+      >
         <Routes>
           <Route path="/patient/:patientUuid" element={<PatientAdmissionDetail />} />
         </Routes>

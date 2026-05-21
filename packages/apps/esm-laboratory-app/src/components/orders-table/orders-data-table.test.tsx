@@ -5,12 +5,12 @@ import { type Config, configSchema } from '../../config-schema';
 import { useLabOrders } from '../../laboratory.resource';
 import OrdersDataTable from './orders-data-table.component';
 
-jest.mock('../../laboratory.resource', () => ({
-  useLabOrders: jest.fn(),
+vi.mock('../../laboratory.resource', () => ({
+  useLabOrders: vi.fn(),
 }));
 
-const mockUseConfig = jest.mocked(useConfig<Config>);
-const mockUseLabOrders = jest.mocked(useLabOrders);
+const mockUseConfig = vi.mocked(useConfig<Config>);
+const mockUseLabOrders = vi.mocked(useLabOrders);
 
 function mockUseLabOrdersImplementation(props: Parameters<typeof useLabOrders>[0]) {
   const mockPatient1: Partial<Patient> = {
@@ -130,7 +130,7 @@ function mockUseLabOrdersImplementation(props: Parameters<typeof useLabOrders>[0
     labOrders,
     isLoading: false,
     isError: false,
-    mutate: jest.fn(),
+    mutate: vi.fn(),
     isValidating: false,
   };
 }
@@ -150,7 +150,7 @@ describe('OrdersDataTable', () => {
     expect(table).toBeInTheDocument();
     const rows = screen.getAllByRole('row');
     expect(rows).toHaveLength(5);
-    const dataRows = rows.slice(1).filter((row) => !row.classList.contains('hiddenRow'));
+    const dataRows = rows.slice(1).filter((row) => within(row).queryByLabelText('Expand current row'));
     expect(dataRows).toHaveLength(2);
     const headerRow = rows[0];
     expect(headerRow).toHaveTextContent('Patient');
@@ -198,7 +198,7 @@ describe('OrdersDataTable', () => {
     render(<OrdersDataTable />);
     const rows = screen.getAllByRole('row');
     expect(rows).toHaveLength(5);
-    const dataRows = rows.slice(1).filter((row) => !row.classList.contains('hiddenRow'));
+    const dataRows = rows.slice(1).filter((row) => within(row).queryByLabelText('Expand current row'));
     expect(dataRows).toHaveLength(2);
     const row1 = dataRows[0];
     expect(row1).toHaveTextContent('PAT-001');

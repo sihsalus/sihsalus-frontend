@@ -47,6 +47,8 @@ export const root = getSyncLifecycle(Root, options);
 
 export const admissionAppMenuLink = getSyncLifecycle(AdmissionAppMenuLink, options);
 
+export const admissionHomeDashboard = getAsyncLifecycle(() => import('./pages/admission-home.component'), options);
+
 export const admissionHomeDashboardLink = getSyncLifecycle(AdmissionDashboardLink, options);
 
 export const admissionMergePatientsAction = getSyncLifecycle(AdmissionMergePatientsAction, options);

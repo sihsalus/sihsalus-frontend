@@ -6,8 +6,8 @@ import { mockResults } from 'test-utils';
 import { type ConfigObject, configSchema } from '../../config-schema';
 import TreeViewWrapper from '../tree-view/tree-view-wrapper.component';
 
-const mockUseConfig = jest.mocked(useConfig<ConfigObject>);
-const mockUseGetManyObstreeData = jest.fn();
+const mockUseConfig = vi.mocked(useConfig<ConfigObject>);
+const mockUseGetManyObstreeData = vi.fn();
 
 mockUseConfig.mockReturnValue({
   ...getDefaultsFromConfigSchema(configSchema),
@@ -25,8 +25,8 @@ mockUseConfig.mockReturnValue({
   labTestsWithOrderReasons: [],
 });
 
-jest.mock('../grouped-timeline', () => ({
-  ...jest.requireActual('../grouped-timeline'),
+vi.mock('../grouped-timeline', async () => ({
+  ...(await vi.importActual('../grouped-timeline')),
   useGetManyObstreeData: () => mockUseGetManyObstreeData(),
 }));
 
@@ -42,10 +42,10 @@ mockUseConfig.mockReturnValue({
   ...getDefaultsFromConfigSchema(configSchema),
 });
 
-global.IntersectionObserver = jest.fn(function (callback, options) {
-  this.observe = jest.fn();
-  this.unobserve = jest.fn();
-  this.disconnect = jest.fn();
+global.IntersectionObserver = vi.fn(function (callback, options) {
+  this.observe = vi.fn();
+  this.unobserve = vi.fn();
+  this.disconnect = vi.fn();
   this.trigger = (entries) => callback(entries, this);
   this.options = options;
 }) as unknown as typeof IntersectionObserver;

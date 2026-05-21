@@ -1,5 +1,4 @@
 import { ExtensionSlot, isDesktop, useExtensionStore, useLayoutType, WorkspaceContainer } from '@openmrs/esm-framework';
-import React from 'react';
 import { useParams } from 'react-router-dom';
 import { type DashboardConfig } from '../types';
 import DashboardView from './dashboard-view.component';

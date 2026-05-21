@@ -20,12 +20,12 @@ function openmrsFetchMultipleConcepts(urls: Array<string>) {
   return Promise.all(urls.map((url) => openmrsFetch<{ results: Array<Concept> }>(url)));
 }
 
-function useOrderableConceptSWR(searchTerm: string, orderableConceptSets?: Array<string>) {
+function useOrderableConceptSWR(searchTerm: string, orderableConceptSets?: Array<string> | null) {
   const { data, isLoading, error } = useSWRImmutable<Array<ConceptResult> | Array<ConceptResults>, Error>(
     orderableConceptSets?.length
       ? orderableConceptSets.map(
-          (c) =>
-            `${restBaseUrl}/concept/${c}?v=custom:(display,names:(display),uuid,setMembers:(display,uuid,names:(display),setMembers:(display,uuid,names:(display))))`,
+          (conceptUuid) =>
+            `${restBaseUrl}/concept/${conceptUuid}?v=custom:(display,names:(display),uuid,setMembers:(display,uuid,names:(display),setMembers:(display,uuid,names:(display))))`,
         )
       : null,
     openmrsFetchMultipleConcepts,
@@ -41,13 +41,15 @@ function useOrderableConceptSWR(searchTerm: string, orderableConceptSets?: Array
     if (isLoading || error) return null;
 
     if (orderableConceptSets) {
-      const concepts = (data as Array<ConceptResult>)?.flatMap((d) => d.data.setMembers);
+      const concepts = (data as Array<ConceptResult>)?.flatMap((d) => d.data.setMembers ?? []);
       if (searchTerm) {
-        return concepts?.filter((concept) =>
-          concept.names.some((name) => name.display.toLocaleLowerCase().includes(searchTerm.toLocaleLowerCase())),
+        const normalizedSearchTerm = searchTerm.toLocaleLowerCase();
+        return concepts?.filter(
+          (concept) =>
+            concept.names?.some((name) => name.display.toLocaleLowerCase().includes(normalizedSearchTerm)) ?? false,
         );
       }
-      return concepts;
+      return concepts ?? [];
     } else {
       return (data as Array<ConceptResults>)?.flatMap((d) => d.data.results) ?? ([] as Concept[]);
     }
@@ -77,8 +79,9 @@ export function useOrderableConceptSets(searchTerm: string, orderableConcepts: A
   const concepts: Array<OrderableConcept> = useMemo(
     () =>
       data
-        ?.sort((testConcept1, testConcept2) => testConcept1.display.localeCompare(testConcept2.display))
-        ?.filter((item, pos, array) => !pos || array[pos - 1].uuid !== item.uuid),
+        ?.slice()
+        .sort((testConcept1, testConcept2) => (testConcept1.display ?? '').localeCompare(testConcept2.display ?? ''))
+        ?.filter((item, pos, array) => pos === 0 || array[pos - 1].uuid !== item.uuid) ?? [],
     [data],
   );
 

@@ -51,8 +51,8 @@ interface ErrorType {
 
 const createSchema = (t: TFunction) => {
   const numberInString = z.string().transform((val, ctx) => {
-    const parsed = parseInt(val);
-    if (isNaN(parsed) || parsed < 1) {
+    const parsed = parseInt(val, 10);
+    if (Number.isNaN(parsed) || parsed < 1) {
       ctx.addIssue({
         code: z.ZodIssueCode.custom,
         message: t('invalidNumber', 'Please enter a valid number'),
@@ -71,13 +71,13 @@ const createSchema = (t: TFunction) => {
       }),
     bedRow: numberInString,
     bedColumn: numberInString,
-    location: z.object({ display: z.string(), uuid: z.string() }).refine((value) => value.display != '', {
+    location: z.object({ display: z.string(), uuid: z.string() }).refine((value) => value.display !== '', {
       message: t('invalidLocation', 'Please select a valid location'),
     }),
-    occupancyStatus: z.string().refine((value) => value != '', {
+    occupancyStatus: z.string().refine((value) => value !== '', {
       message: t('invalidOccupancyStatus', 'Please select a valid occupied status'),
     }),
-    bedType: z.string().refine((value) => value != '', {
+    bedType: z.string().refine((value) => value !== '', {
       message: t('invalidBedType', 'Please select a valid bed type'),
     }),
   });

@@ -57,7 +57,40 @@ export function initializeIdentifier(identifierType: PatientIdentifierType, iden
   };
 }
 
-export function deleteIdentifierType(identifiers: FormValues['identifiers'], identifierFieldName) {
+export function isIdentityDocumentIdentifier(
+  identifiers: FormValues['identifiers'],
+  identifierFieldName: string,
+  identifierTypes: Array<PatientIdentifierType> = [],
+) {
+  const identifier = identifiers?.[identifierFieldName];
+  const identifierType = identifierTypes.find(
+    (type) => type.fieldName === identifierFieldName || type.uuid === identifier?.identifierTypeUuid,
+  );
+
+  return identifierType ? !identifierType.isPrimary && !identifierType.required : !identifier?.required;
+}
+
+export function countIdentityDocumentIdentifiers(
+  identifiers: FormValues['identifiers'],
+  identifierTypes: Array<PatientIdentifierType> = [],
+) {
+  return Object.keys(identifiers ?? {}).filter((fieldName) =>
+    isIdentityDocumentIdentifier(identifiers, fieldName, identifierTypes),
+  ).length;
+}
+
+export function deleteIdentifierType(
+  identifiers: FormValues['identifiers'],
+  identifierFieldName,
+  identifierTypes: Array<PatientIdentifierType> = [],
+) {
+  if (
+    isIdentityDocumentIdentifier(identifiers, identifierFieldName, identifierTypes) &&
+    countIdentityDocumentIdentifiers(identifiers, identifierTypes) <= 1
+  ) {
+    return identifiers;
+  }
+
   return Object.fromEntries(Object.entries(identifiers).filter(([fieldName]) => fieldName !== identifierFieldName));
 }
 
@@ -73,6 +106,7 @@ export const Identifiers: React.FC = () => {
 
   useEffect(() => {
     if (identifierTypes) {
+      const hasSelectedIdentifiers = Object.keys(values.identifiers).length > 0;
       const identifiers = {};
 
       identifierTypes
@@ -80,15 +114,16 @@ export const Identifiers: React.FC = () => {
           (type) =>
             type.isPrimary ||
             type.required ||
-            !!defaultPatientIdentifierTypes?.find(
-              (defaultIdentifierTypeUuid) => defaultIdentifierTypeUuid === type.uuid,
-            ),
+            (!hasSelectedIdentifiers &&
+              !!defaultPatientIdentifierTypes?.find(
+                (defaultIdentifierTypeUuid) => defaultIdentifierTypeUuid === type.uuid,
+              )),
         )
         .filter((type) => !values.identifiers[type.fieldName])
         .forEach((type) => {
           identifiers[type.fieldName] = initializeIdentifier(
             type,
-            values.identifiers[type.uuid] ?? initialFormValues.identifiers[type.uuid] ?? {},
+            values.identifiers[type.fieldName] ?? initialFormValues.identifiers[type.fieldName] ?? {},
           );
         });
 
@@ -107,16 +142,13 @@ export const Identifiers: React.FC = () => {
     initialFormValues.identifiers,
   ]);
 
-  const closeIdentifierSelectionOverlay = useCallback(
-    () => setShowIdentifierOverlay(false),
-    [setShowIdentifierOverlay],
-  );
+  const closeIdentifierSelectionOverlay = useCallback(() => setShowIdentifierOverlay(false), []);
 
   const removeIdentifier = useCallback(
     (identifierFieldName: string) => {
-      setFieldValue('identifiers', deleteIdentifierType(values.identifiers, identifierFieldName));
+      setFieldValue('identifiers', deleteIdentifierType(values.identifiers, identifierFieldName, identifierTypes));
     },
-    [setFieldValue, values.identifiers],
+    [identifierTypes, setFieldValue, values.identifiers],
   );
 
   if (isLoading && !isOffline) {
@@ -155,7 +187,9 @@ export const Identifiers: React.FC = () => {
           };
 
           const identifierType = identifierTypes?.find((type) => type.fieldName === fieldName);
-          const canRemove = !identifierType?.isPrimary && !identifierType?.required;
+          const canRemove =
+            isIdentityDocumentIdentifier(values.identifiers, fieldName, identifierTypes) &&
+            countIdentityDocumentIdentifiers(values.identifiers, identifierTypes) > 1;
 
           return (
             <div key={fieldName} style={{ display: 'flex', alignItems: 'center', justifyContent: 'initial' }}>

@@ -10,3 +10,13 @@
   object-fit: cover;
   object-position: left;
 }
+
+.logoText {
+  display: inline-flex;
+  align-items: center;
+  height: 40px;
+  color: #ffffff;
+  font-size: 1.125rem;
+  font-weight: 600;
+  line-height: 1;
+}

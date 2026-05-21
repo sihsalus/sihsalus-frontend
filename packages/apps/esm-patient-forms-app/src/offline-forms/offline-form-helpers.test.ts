@@ -2,8 +2,9 @@ import 'fake-indexeddb/auto';
 
 import { getOfflineDb } from '@openmrs/esm-offline';
 
-jest.mock('@openmrs/esm-framework', () => ({
-  getOfflineDb: jest.requireActual('@openmrs/esm-offline').getOfflineDb,
+vi.mock('@openmrs/esm-framework', async () => ({
+  ...(await vi.importActual('@openmrs/esm-framework')),
+  getOfflineDb: (await vi.importActual('@openmrs/esm-offline')).getOfflineDb,
 }));
 
 import {

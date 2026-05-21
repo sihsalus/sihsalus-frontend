@@ -178,6 +178,15 @@
   box-shadow: layout.$spacing-03 0 20px 0 rgba(0, 0, 0, 0.15);
 }
 
+.panelHeader {
+  position: sticky;
+  top: 0;
+}
+
+.panelHeaderOverlay {
+  top: 0;
+}
+
 .trendlineLink {
   @include type.type-style('body-compact-01');
   color: $interactive-01;

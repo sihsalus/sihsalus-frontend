@@ -113,7 +113,7 @@ export function useQueueEntries(searchCriteria?: QueueEntrySearchCriteria, rep: 
       }
       refetchAllData(rep, searchCriteria);
     }
-  }, [currentRep, currentSearchCriteria, refetchAllData, rep, searchCriteria, setCurrentSearchCriteria]);
+  }, [currentRep, currentSearchCriteria, refetchAllData, rep, searchCriteria]);
 
   const { data: pageData, isValidating, error: pageError } = useSWR<QueueEntryResponse, Error>(pageUrl, openmrsFetch);
 

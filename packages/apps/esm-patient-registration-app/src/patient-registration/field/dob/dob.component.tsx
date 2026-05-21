@@ -58,7 +58,7 @@ export const DobField: React.FC = () => {
     (ev: ChangeEvent<HTMLInputElement>) => {
       const years = +ev.target.value;
 
-      if (!isNaN(years) && years < 140 && years >= 0) {
+      if (!Number.isNaN(years) && years < 140 && years >= 0) {
         setFieldValue('yearsEstimated', years);
         setFieldValue('birthdate', calcBirthdate(years, monthsEstimateMeta.value, dateOfBirth));
       }
@@ -70,7 +70,7 @@ export const DobField: React.FC = () => {
     (ev: ChangeEvent<HTMLInputElement>) => {
       const months = +ev.target.value;
 
-      if (!isNaN(months)) {
+      if (!Number.isNaN(months)) {
         setFieldValue('monthsEstimated', months);
         setFieldValue('birthdate', calcBirthdate(yearsEstimateMeta.value, months, dateOfBirth));
       }

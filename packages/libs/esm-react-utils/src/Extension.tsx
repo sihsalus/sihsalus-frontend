@@ -37,12 +37,15 @@ export const Extension: React.FC<ExtensionProps> = ({ state, children, ...divPro
           extension.extensionId,
           undefined,
           state,
-        ).then((newParcel: Parcel) => {
+        ).then((newParcel: Parcel | null) => {
+          if (!newParcel) {
+            return;
+          }
           parcel.current = newParcel;
         });
       }
     },
-    [extension.extensionSlotModuleName, state, extension?.extensionSlotName, extension.extensionId],
+    [extension?.extensionSlotModuleName, state, extension?.extensionSlotName, extension?.extensionId],
   );
 
   useEffect(() => {

@@ -88,7 +88,7 @@ export function useNutritionFollowup(patientUuid: string): NutritionFollowupResu
     return {
       mmnStatus,
       ironStatus,
-      counselingCount: counselingCount != null && !isNaN(counselingCount) ? counselingCount : null,
+      counselingCount: counselingCount != null && !Number.isNaN(counselingCount) ? counselingCount : null,
       lastFollowupDate,
     };
   }, [mmnData, ironData, counselingData]);

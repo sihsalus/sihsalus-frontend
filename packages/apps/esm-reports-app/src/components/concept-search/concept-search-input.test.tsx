@@ -7,18 +7,19 @@ import ConceptSearchInput from './concept-search-input.component';
 void React;
 
 // Mock the dependencies
-jest.mock('react-i18next', () => ({
+vi.mock('react-i18next', () => ({
   useTranslation: () => ({
     t: (_key: string, defaultValue: string) => defaultValue,
   }),
 }));
 
-jest.mock('@openmrs/esm-framework', () => ({
-  useDebounce: jest.fn((value) => value),
+vi.mock('@openmrs/esm-framework', async () => ({
+  ...(await vi.importActual('@openmrs/esm-framework')),
+  useDebounce: vi.fn((value) => value),
 }));
 
-jest.mock('./concept-search-results', () => {
-  return function MockConceptSearchResults({
+vi.mock('./concept-search-results', () => ({
+  default: function MockConceptSearchResults({
     searchTerm,
     onConceptSelect,
   }: {
@@ -38,18 +39,18 @@ jest.mock('./concept-search-results', () => {
         </button>
       </div>
     );
-  };
-});
+  },
+}));
 
 describe('ConceptSearchInput', () => {
-  const mockOnConceptSelect = jest.fn();
+  const mockOnConceptSelect = vi.fn();
   const defaultProps = {
     parameterName: 'testParameter',
     onConceptSelect: mockOnConceptSelect,
   };
 
   beforeEach(() => {
-    jest.clearAllMocks();
+    vi.clearAllMocks();
   });
 
   it('should render search input with default placeholder', () => {

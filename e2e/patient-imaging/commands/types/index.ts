@@ -1,5 +1,3 @@
-import { APIRequestContext, expect } from '@playwright/test';
-
 export interface Patient {
   uuid: string;
   identifiers: Identifier[];
@@ -146,14 +144,14 @@ export const modalityOptions = [
   { code: 'MR', label: 'MR (Magnetic Resonance Imaging)' },
   { code: 'US', label: 'US (Ultrasound)' },
   { code: 'XA', label: 'XA (X-ray Angiography)' },
-  { code: 'DX', lable: 'DX (Digital Radiography)' },
+  { code: 'DX', label: 'DX (Digital Radiography)' },
   { code: 'MG', label: 'MG (Mammography)' },
   { code: 'PT', label: 'NM (Nuclear Medicine)' },
   { code: 'PT', label: 'PT (Positron Emission Tomography)' },
   { code: 'RF', label: 'RF (Radio Fluoroscopy)' },
   { code: 'SC', label: 'SC (Secondary Capture)' },
   { code: 'XC', label: 'XC (External-camera Photography)' },
-  { code: 'OP', lable: 'OP (Ophthalmic Photography)' },
+  { code: 'OP', label: 'OP (Ophthalmic Photography)' },
   { code: 'PR', label: 'PR (Presentation State)' },
   { code: 'SR', label: 'SR (Structured Report)' },
   { code: 'RT', label: 'RT (Radiotherapy)' },

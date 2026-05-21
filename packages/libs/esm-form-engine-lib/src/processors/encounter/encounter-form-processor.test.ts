@@ -2,32 +2,32 @@ import { FormSubmissionError } from '../../utils/error-utils';
 
 import { EncounterFormProcessor } from './encounter-form-processor';
 
-const mockGetMutableSessionProps = jest.fn();
-const mockPreparePatientIdentifiers = jest.fn();
-const mockHasDuplicatePatientIdentifiers = jest.fn();
-const mockPrepareEncounter = jest.fn();
+const mockGetMutableSessionProps = vi.fn();
+const mockPreparePatientIdentifiers = vi.fn();
+const mockHasDuplicatePatientIdentifiers = vi.fn();
+const mockPrepareEncounter = vi.fn();
 
-jest.mock('@openmrs/esm-framework', () => ({
-  showSnackbar: jest.fn(),
+vi.mock('@openmrs/esm-framework', () => ({
+  showSnackbar: vi.fn(),
   translateFrom: (_appName: string, _key: string, defaultValue: string): string => defaultValue,
 }));
 
-jest.mock('./encounter-processor-helper', () => ({
+vi.mock('./encounter-processor-helper', () => ({
   getMutableSessionProps: (...args: Array<unknown>): unknown => mockGetMutableSessionProps(...args),
   hasDuplicatePatientIdentifiers: (...args: Array<unknown>): unknown => mockHasDuplicatePatientIdentifiers(...args),
-  hydrateRepeatField: jest.fn(),
-  inferInitialValueFromDefaultFieldValue: jest.fn(),
+  hydrateRepeatField: vi.fn(),
+  inferInitialValueFromDefaultFieldValue: vi.fn(),
   prepareEncounter: (...args: Array<unknown>): unknown => mockPrepareEncounter(...args),
   preparePatientIdentifiers: (...args: Array<unknown>): unknown => mockPreparePatientIdentifiers(...args),
-  preparePatientPrograms: jest.fn(() => []),
-  saveAttachments: jest.fn(() => []),
-  savePatientIdentifiers: jest.fn(() => []),
-  savePatientPrograms: jest.fn(() => []),
+  preparePatientPrograms: vi.fn(() => []),
+  saveAttachments: vi.fn(() => []),
+  savePatientIdentifiers: vi.fn(() => []),
+  savePatientPrograms: vi.fn(() => []),
 }));
 
 describe('EncounterFormProcessor', () => {
   beforeEach(() => {
-    jest.clearAllMocks();
+    vi.clearAllMocks();
     mockGetMutableSessionProps.mockReturnValue({
       encounterRole: 'encounter-role-uuid',
       encounterProvider: 'provider-uuid',

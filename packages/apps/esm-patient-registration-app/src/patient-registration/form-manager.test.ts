@@ -2,12 +2,12 @@ import { FormManager } from './form-manager';
 import { generateIdentifier } from './patient-registration.resource';
 import { type FormValues } from './patient-registration.types';
 
-jest.mock('./patient-registration.resource', () => ({
-  ...jest.requireActual('./patient-registration.resource'),
-  generateIdentifier: jest.fn(),
+vi.mock('./patient-registration.resource', async () => ({
+  ...(await vi.importActual('./patient-registration.resource')),
+  generateIdentifier: vi.fn(),
 }));
 
-const mockGenerateIdentifier = generateIdentifier as jest.Mock;
+const mockGenerateIdentifier = generateIdentifier as vi.Mock;
 
 const formValues: FormValues = {
   patientUuid: '',

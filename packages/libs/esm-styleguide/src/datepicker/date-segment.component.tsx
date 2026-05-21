@@ -1,12 +1,6 @@
 import { useDateSegment } from '@react-aria/datepicker';
 import { filterDOMProps } from '@react-aria/utils';
-import React, {
-  type ForwardedRef,
-  forwardRef,
-  type MouseEvent as ReactMouseEvent,
-  useCallback,
-  useContext,
-} from 'react';
+import { type ForwardedRef, forwardRef, type MouseEvent as ReactMouseEvent, useCallback, useContext } from 'react';
 import { mergeProps, useFocusRing, useHover, useObjectRef } from 'react-aria';
 import { DateFieldStateContext, type DateSegmentProps } from 'react-aria-components';
 import { useRenderProps } from './hooks';

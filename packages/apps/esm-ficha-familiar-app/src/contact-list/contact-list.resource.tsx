@@ -149,11 +149,10 @@ export const getHivStatusBasedOnEnrollmentAndHTSEncounters = (
   if (enrollment) {
     return 'Positive';
   }
-  if (!enrollment && !encounters.length) {
+  if (!encounters.length) {
     return 'Unknown';
   }
   if (
-    !enrollment &&
     encounters.length &&
     encounters.findIndex((en) =>
       en.obs.some(

@@ -1,8 +1,7 @@
 import { Button, ButtonSet, Checkbox, RadioButton, RadioButtonGroup, Search } from '@carbon/react';
-import { isDesktop, useConfig, useLayoutType } from '@openmrs/esm-framework';
+import { isDesktop, useLayoutType } from '@openmrs/esm-framework';
 import React, { useCallback, useContext, useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { type RegistrationConfig } from '../../../config-schema';
 import { moduleName } from '../../../constants';
 import { ResourcesContext } from '../../../offline.resources';
 import {
@@ -11,14 +10,47 @@ import {
 } from '../../input/custom-input/identifier/utils';
 import { type FormValues, type PatientIdentifierType, PatientIdentifierValue } from '../../patient-registration.types';
 import { PatientRegistrationContext } from '../../patient-registration-context';
-import { getEffectiveRegistrationConfig } from '../../peru-registration-config';
+import {
+  peruCarnetExtranjeriaPatientIdentifierTypeUuid,
+  peruDiePatientIdentifierTypeUuid,
+  peruDniPatientIdentifierTypeUuid,
+} from '../../peru-registration-config';
 import Overlay from '../../ui-components/overlay/overlay.component';
-import { initializeIdentifier, setIdentifierSource } from './id-field.component';
+import {
+  countIdentityDocumentIdentifiers,
+  initializeIdentifier,
+  isIdentityDocumentIdentifier,
+  setIdentifierSource,
+} from './id-field.component';
 import styles from './identifier-selection.scss';
 
 interface PatientIdentifierOverlayProps {
-  setFieldValue: (string, PatientIdentifierValue) => void;
+  setFieldValue: (fieldName: string, value: FormValues['identifiers'] | PatientIdentifierValue) => void;
   closeOverlay: () => void;
+}
+
+const exclusiveIdentifierTypeUuids = {
+  [peruDniPatientIdentifierTypeUuid]: [
+    peruCarnetExtranjeriaPatientIdentifierTypeUuid,
+    peruDiePatientIdentifierTypeUuid,
+  ],
+  [peruCarnetExtranjeriaPatientIdentifierTypeUuid]: peruDniPatientIdentifierTypeUuid,
+  [peruDiePatientIdentifierTypeUuid]: peruDniPatientIdentifierTypeUuid,
+};
+
+function removeIdentifiersByTypeUuid(
+  identifiers: FormValues['identifiers'],
+  identifierTypeUuids: string | Array<string>,
+) {
+  const excludedIdentifierTypeUuids = new Set(
+    Array.isArray(identifierTypeUuids) ? identifierTypeUuids : [identifierTypeUuids],
+  );
+
+  return Object.fromEntries(
+    Object.entries(identifiers).filter(
+      ([, identifier]) => !excludedIdentifierTypeUuids.has(identifier.identifierTypeUuid),
+    ),
+  );
 }
 
 const PatientIdentifierOverlay: React.FC<PatientIdentifierOverlayProps> = ({ closeOverlay, setFieldValue }) => {
@@ -28,14 +60,6 @@ const PatientIdentifierOverlay: React.FC<PatientIdentifierOverlayProps> = ({ clo
   const [unsavedIdentifierTypes, setUnsavedIdentifierTypes] = useState<FormValues['identifiers']>(values.identifiers);
   const [searchString, setSearchString] = useState('');
   const { t } = useTranslation(moduleName);
-  const { defaultPatientIdentifierTypes } = getEffectiveRegistrationConfig(useConfig() as RegistrationConfig);
-  const defaultPatientIdentifierTypesMap = useMemo(() => {
-    const map = {};
-    defaultPatientIdentifierTypes?.forEach((typeUuid) => {
-      map[typeUuid] = true;
-    });
-    return map;
-  }, [defaultPatientIdentifierTypes]);
 
   useEffect(() => {
     setUnsavedIdentifierTypes(values.identifiers);
@@ -52,8 +76,13 @@ const PatientIdentifierOverlay: React.FC<PatientIdentifierOverlayProps> = ({ clo
     (identifierType: PatientIdentifierType, checked: boolean) =>
       setUnsavedIdentifierTypes((unsavedIdentifierTypes) => {
         if (checked) {
+          const exclusiveIdentifierTypeUuid = exclusiveIdentifierTypeUuids[identifierType.uuid];
+          const identifiersWithoutExclusiveType = exclusiveIdentifierTypeUuid
+            ? removeIdentifiersByTypeUuid(unsavedIdentifierTypes, exclusiveIdentifierTypeUuid)
+            : unsavedIdentifierTypes;
+
           return {
-            ...unsavedIdentifierTypes,
+            ...identifiersWithoutExclusiveType,
             [identifierType.fieldName]: initializeIdentifier(
               identifierType,
               values.identifiers[identifierType.fieldName] ??
@@ -63,39 +92,49 @@ const PatientIdentifierOverlay: React.FC<PatientIdentifierOverlayProps> = ({ clo
           };
         }
         if (unsavedIdentifierTypes[identifierType.fieldName]) {
+          if (
+            isIdentityDocumentIdentifier(unsavedIdentifierTypes, identifierType.fieldName, identifierTypes) &&
+            countIdentityDocumentIdentifiers(unsavedIdentifierTypes, identifierTypes) <= 1
+          ) {
+            return unsavedIdentifierTypes;
+          }
+
           return Object.fromEntries(
             Object.entries(unsavedIdentifierTypes).filter(([fieldName]) => fieldName !== identifierType.fieldName),
           );
         }
         return unsavedIdentifierTypes;
       }),
-    [initialFormValues.identifiers, values.identifiers],
+    [initialFormValues.identifiers, values.identifiers, identifierTypes],
   );
 
-  const handleSelectingIdentifierSource = (identifierType: PatientIdentifierType, sourceUuid) =>
-    setUnsavedIdentifierTypes((unsavedIdentifierTypes) => ({
-      ...unsavedIdentifierTypes,
-      [identifierType.fieldName]: {
-        ...unsavedIdentifierTypes[identifierType.fieldName],
-        ...setIdentifierSource(
-          identifierType.identifierSources.find((source) => source.uuid === sourceUuid),
-          unsavedIdentifierTypes[identifierType.fieldName].identifierValue,
-          unsavedIdentifierTypes[identifierType.fieldName].initialValue,
-        ),
-      },
-    }));
+  const handleSelectingIdentifierSource = useCallback(
+    (identifierType: PatientIdentifierType, sourceUuid) =>
+      setUnsavedIdentifierTypes((unsavedIdentifierTypes) => ({
+        ...unsavedIdentifierTypes,
+        [identifierType.fieldName]: {
+          ...unsavedIdentifierTypes[identifierType.fieldName],
+          ...setIdentifierSource(
+            identifierType.identifierSources.find((source) => source.uuid === sourceUuid),
+            unsavedIdentifierTypes[identifierType.fieldName].identifierValue,
+            unsavedIdentifierTypes[identifierType.fieldName].initialValue,
+          ),
+        },
+      })),
+    [],
+  );
 
   const identifierTypeFields = useMemo(
     () =>
       filteredIdentifiers.map((identifierType) => {
         const patientIdentifier = unsavedIdentifierTypes[identifierType.fieldName];
+        const selectedIdentityDocumentCount = countIdentityDocumentIdentifiers(unsavedIdentifierTypes, identifierTypes);
         const isDisabled =
           identifierType.isPrimary ||
           identifierType.required ||
-          defaultPatientIdentifierTypesMap[identifierType.uuid] ||
-          // De-selecting shouldn't be allowed if the identifier was selected earlier and is present in the form.
-          // If the user wants to de-select an identifier-type already present in the form, they'll need to delete the particular identifier from the form itself.
-          values.identifiers[identifierType.fieldName];
+          (!!patientIdentifier &&
+            isIdentityDocumentIdentifier(unsavedIdentifierTypes, identifierType.fieldName, identifierTypes) &&
+            selectedIdentityDocumentCount <= 1);
         const isDisabledOffline = isOffline && shouldBlockPatientIdentifierInOfflineMode(identifierType);
 
         return (
@@ -151,19 +190,23 @@ const PatientIdentifierOverlay: React.FC<PatientIdentifierOverlayProps> = ({ clo
       }),
     [
       filteredIdentifiers,
+      identifierTypes,
       unsavedIdentifierTypes,
-      defaultPatientIdentifierTypesMap,
-      values.identifiers,
       isOffline,
       handleCheckingIdentifier,
       t,
+      handleSelectingIdentifierSource,
     ],
   );
 
   const handleConfiguringIdentifiers = useCallback(() => {
+    if (countIdentityDocumentIdentifiers(unsavedIdentifierTypes, identifierTypes) === 0) {
+      return;
+    }
+
     setFieldValue('identifiers', unsavedIdentifierTypes);
     closeOverlay();
-  }, [unsavedIdentifierTypes, setFieldValue, closeOverlay]);
+  }, [identifierTypes, unsavedIdentifierTypes, setFieldValue, closeOverlay]);
 
   return (
     <Overlay

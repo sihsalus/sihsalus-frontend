@@ -74,7 +74,7 @@ export function isViewMode(sessionMode: string): boolean {
 
 export function parseToLocalDateTime(dateString: string): Date {
   const dateObj = dayjs(dateString).toDate();
-  if (isNaN(dateObj.getTime())) {
+  if (Number.isNaN(dateObj.getTime())) {
     return new Date(NaN);
   }
 

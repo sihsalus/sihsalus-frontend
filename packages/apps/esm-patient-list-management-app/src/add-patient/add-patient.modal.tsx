@@ -32,6 +32,7 @@ const AddPatient: React.FC<AddPatientProps> = ({ closeModal, patientUuid }) => {
   const [searchValue, setSearchValue] = useState('');
   const [selected, setSelected] = useState<Array<string>>([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const searchClassName = typeof styles.search === 'string' ? styles.search : undefined;
 
   const handleCreateNewList = useCallback(() => {
     navigate({
@@ -124,7 +125,7 @@ const AddPatient: React.FC<AddPatientProps> = ({ closeModal, patientUuid }) => {
       </ModalHeader>
       <ModalBody>
         <Search
-          className={styles.search}
+          className={searchClassName}
           labelText={t('searchForList', 'Search for a list')}
           placeholder={t('searchForList', 'Search for a list')}
           onChange={({ target }) => setSearchValue(target.value)}

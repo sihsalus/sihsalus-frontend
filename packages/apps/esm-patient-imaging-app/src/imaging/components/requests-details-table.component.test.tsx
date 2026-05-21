@@ -1,46 +1,67 @@
 import * as framework from '@openmrs/esm-framework';
 import { usePagination } from '@openmrs/esm-framework';
 import { fireEvent, render, screen, waitFor, within } from '@testing-library/react';
-import React, { act } from 'react';
+import type { ReactNode } from 'react';
+import { act } from 'react';
 import RequestProcedureTable from './requests-details-table.component';
 
-jest.mock('react-i18next', () => ({
+type IconProps = Record<string, unknown>;
+type SelectProps = {
+  children?: ReactNode;
+} & Record<string, unknown>;
+type SelectItemProps = {
+  text: string;
+  value: string;
+};
+type CardHeaderProps = {
+  children?: ReactNode;
+};
+type PaginationProps = {
+  pageNumber: number;
+};
+type EmptyStateProps = {
+  displayText: string;
+  headerTitle: string;
+};
+
+vi.mock('react-i18next', () => ({
   useTranslation: () => ({
-    t: (key: string, defaultValue: string) => defaultValue,
+    t: (_key: string, defaultValue: string) => defaultValue,
   }),
 }));
 
-jest.mock('@openmrs/esm-framework', () => ({
-  showModal: jest.fn(),
-  launchWorkspace: jest.fn(),
-  useLayoutType: jest.fn(() => 'desktop'),
-  createGlobalStore: jest.fn(() => ({
-    getState: jest.fn(),
-    subscribe: jest.fn(),
-    dispatch: jest.fn(),
+vi.mock('@openmrs/esm-framework', async () => ({
+  ...(await vi.importActual('@openmrs/esm-framework')),
+  showModal: vi.fn(),
+  launchWorkspace: vi.fn(),
+  useLayoutType: vi.fn(() => 'desktop'),
+  createGlobalStore: vi.fn(() => ({
+    getState: vi.fn(),
+    subscribe: vi.fn(),
+    dispatch: vi.fn(),
   })),
-  usePagination: jest.fn((items, pageSize) => ({
+  usePagination: vi.fn((items, pageSize) => ({
     results: items?.slice(0, pageSize) || [],
-    goto: jest.fn(),
+    goto: vi.fn(),
     currentPage: 1,
   })),
-  AddIcon: (props: any) => <span {...props}>AddIcon</span>,
-  TrashCanIcon: (props: any) => <span {...props}>TrashCanIcon</span>,
-  select: ({ children, ...props }: any) => <select {...props}>{children}</select>,
-  SelectItem: ({ text, value }: any) => <option value={value}>{text}</option>,
+  AddIcon: (props: IconProps) => <span {...props}>AddIcon</span>,
+  TrashCanIcon: (props: IconProps) => <span {...props}>TrashCanIcon</span>,
+  select: ({ children, ...props }: SelectProps) => <select {...props}>{children}</select>,
+  SelectItem: ({ text, value }: SelectItemProps) => <option value={value}>{text}</option>,
 }));
 
 // Mock other OpenMRS libs
-jest.mock('@openmrs/esm-patient-common-lib', () => ({
-  CardHeader: ({ children }: any) => <div>{children}</div>,
-  compare: jest.fn((a, b) => (a > b ? 1 : -1)),
-  PatientChartPagination: ({ pageNumber }: any) => <div>Page {pageNumber}</div>,
-  EmptyState: ({ displayText, headerTitle }: any) => (
+vi.mock('@openmrs/esm-patient-common-lib', () => ({
+  CardHeader: ({ children }: CardHeaderProps) => <div>{children}</div>,
+  compare: vi.fn((a, b) => (a > b ? 1 : -1)),
+  PatientChartPagination: ({ pageNumber }: PaginationProps) => <div>Page {pageNumber}</div>,
+  EmptyState: ({ displayText, headerTitle }: EmptyStateProps) => (
     <div>
       {headerTitle}: {displayText}
     </div>
   ),
-  useLaunchWorkspaceRequiringVisit: (workspace: any) => jest.fn(),
+  useLaunchWorkspaceRequiringVisit: (_workspace: unknown) => vi.fn(),
 }));
 
 describe('RequestProcedureTable', () => {
@@ -61,16 +82,16 @@ describe('RequestProcedureTable', () => {
   ];
 
   beforeEach(() => {
-    jest.clearAllMocks();
-    (usePagination as jest.Mock).mockReturnValue({
+    vi.clearAllMocks();
+    (usePagination as vi.Mock).mockReturnValue({
       results: mockRequests,
       currentPage: 1,
-      goTo: jest.fn(),
+      goTo: vi.fn(),
     });
   });
 
   afterEach(() => {
-    jest.clearAllMocks();
+    vi.clearAllMocks();
   });
 
   it('renders Empty State when no requests are available', async () => {
@@ -91,8 +112,8 @@ describe('RequestProcedureTable', () => {
   });
 
   it('call showModal when delete icon is clicked', async () => {
-    const mockDispose = jest.fn();
-    (framework.showModal as jest.Mock).mockReturnValue(mockDispose);
+    const mockDispose = vi.fn();
+    (framework.showModal as vi.Mock).mockReturnValue(mockDispose);
 
     await act(async () => {
       render(<RequestProcedureTable requests={mockRequests} patientUuid={patientUuid} />);

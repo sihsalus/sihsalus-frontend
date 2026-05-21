@@ -1,6 +1,6 @@
 import { LineChart } from '@carbon/charts-react';
 import { Tab, TabList, Tabs } from '@carbon/react';
-import React, { useMemo } from 'react';
+import React, { useCallback, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import type { PartograpyComponents } from '../../config-schema';
@@ -59,7 +59,7 @@ const PartographChart: React.FC<PartographChartProps> = ({ partograpyComponents 
       value: 'contractionDuration',
     },
   ];
-  function parseTodayTime(dateString: string): string | null {
+  const parseTodayTime = useCallback((dateString: string): string | null => {
     const dateTimeRegex = /(\d{2}:\d{2} [APMapm]{2})/;
     const match = dateString.match(dateTimeRegex);
     if (match) {
@@ -67,7 +67,7 @@ const PartographChart: React.FC<PartographChartProps> = ({ partograpyComponents 
     } else {
       return null;
     }
-  }
+  }, []);
   const chartData = useMemo(() => {
     if (!partograpyComponents || partograpyComponents.length === 0) {
       return [];

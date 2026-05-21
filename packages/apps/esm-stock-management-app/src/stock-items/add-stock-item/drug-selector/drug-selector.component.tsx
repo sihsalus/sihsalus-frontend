@@ -1,5 +1,5 @@
 import { ComboBox, InlineLoading } from '@carbon/react';
-import React, { type ReactNode, useCallback, useEffect, useRef, useState } from 'react';
+import { type ReactNode, useCallback, useEffect, useRef, useState } from 'react';
 import { type Control, Controller, type FieldValues } from 'react-hook-form';
 import { useTranslation } from 'react-i18next';
 import { type Drug } from '../../../core/api/types/concept/Drug';

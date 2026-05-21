@@ -5,7 +5,7 @@ export function renderLoadingSpinner(target: HTMLElement) {
 
   if (template) {
     const frag = template.content.cloneNode(true);
-    const refs = Array.prototype.map.call(frag.childNodes, (m: HTMLElement) => m);
+    const refs = Array.from(frag.childNodes);
     target.appendChild(frag);
     return () => {
       refs.forEach((child: ChildNode) => {

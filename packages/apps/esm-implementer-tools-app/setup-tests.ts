@@ -20,10 +20,10 @@ if (typeof localStorage.clear !== 'function') {
   });
 }
 
-window.URL.createObjectURL = jest.fn();
+window.URL.createObjectURL = vi.fn();
 
 afterEach(cleanup);
 
-jest.mock('workbox-window', () => ({
-  Workbox: jest.fn(),
+vi.mock('workbox-window', () => ({
+  Workbox: vi.fn(),
 }));

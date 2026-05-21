@@ -5,17 +5,18 @@ import { useParams } from 'react-router-dom';
 import useLocation from './useLocation';
 import useWardLocation from './useWardLocation';
 
-jest.mock('@openmrs/esm-framework', () => ({
-  useSession: jest.fn(),
+vi.mock('@openmrs/esm-framework', async () => ({
+  ...(await vi.importActual('@openmrs/esm-framework')),
+  useSession: vi.fn(),
 }));
-jest.mock('react-router-dom', () => ({
-  useParams: jest.fn(),
+vi.mock('react-router-dom', () => ({
+  useParams: vi.fn(),
 }));
-jest.mock('./useLocation', () => jest.fn());
+vi.mock('./useLocation', () => ({ default: vi.fn() }));
 
-const mockUseParams = jest.mocked(useParams);
-const mockUseSession = jest.mocked(useSession);
-const mockUseLocation = useLocation as jest.Mock;
+const mockUseParams = vi.mocked(useParams);
+const mockUseSession = vi.mocked(useSession);
+const mockUseLocation = useLocation as vi.Mock;
 
 describe('useWardLocation', () => {
   beforeEach(() => {
@@ -29,7 +30,7 @@ describe('useWardLocation', () => {
       error: null,
       isLoading: null,
       isValidating: null,
-      mutate: jest.fn(),
+      mutate: vi.fn(),
     });
 
     const { result } = renderHook(() => useWardLocation());
@@ -49,7 +50,7 @@ describe('useWardLocation', () => {
       error: null,
       isLoading: false,
       isValidating: null,
-      mutate: jest.fn(),
+      mutate: vi.fn(),
     });
 
     const { result } = renderHook(() => useWardLocation());
@@ -69,7 +70,7 @@ describe('useWardLocation', () => {
       error: null,
       isLoading: true,
       isValidating: false,
-      mutate: jest.fn(),
+      mutate: vi.fn(),
     });
 
     const { result } = renderHook(() => useWardLocation());
@@ -84,7 +85,7 @@ describe('useWardLocation', () => {
       error,
       isLoading: false,
       isValidating: false,
-      mutate: jest.fn(),
+      mutate: vi.fn(),
     });
 
     const { result } = renderHook(() => useWardLocation());
@@ -99,7 +100,7 @@ describe('useWardLocation', () => {
       error,
       isLoading: false,
       isValidating: false,
-      mutate: jest.fn(),
+      mutate: vi.fn(),
     });
 
     const { result } = renderHook(() => useWardLocation());

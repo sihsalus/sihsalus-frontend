@@ -1,5 +1,5 @@
 /**
- * Jest mock for @openmrs/esm-framework.
+ * Framework test mock for @openmrs/esm-framework.
  *
  * Re-exports the upstream framework mock and supplements symbols that are
  * referenced by newer @openmrs/esm-patient-common-lib APIs but missing from
@@ -8,7 +8,7 @@
 // eslint-disable-next-line @typescript-eslint/no-var-requires
 const path = require('path');
 const upstreamMockPath = require.resolve(
-  path.join(path.dirname(require.resolve('@openmrs/esm-framework/package.json')), 'mock-jest.tsx'),
+  path.join(path.dirname(require.resolve('@openmrs/esm-framework/package.json')), 'mock-vitest.tsx'),
 );
 // eslint-disable-next-line @typescript-eslint/no-var-requires
 const frameworkMock = require(upstreamMockPath);
@@ -19,6 +19,6 @@ const alwaysRegistered: Array<string> = [] as Array<string>;
 (alwaysRegistered as unknown as { includes: (name: string) => boolean }).includes = () => true;
 
 module.exports = {
-  getRegisteredWorkspace2Names: jest.fn(() => alwaysRegistered),
   ...frameworkMock,
+  getRegisteredWorkspace2Names: vi?.fn ? vi.fn(() => alwaysRegistered) : () => alwaysRegistered,
 };

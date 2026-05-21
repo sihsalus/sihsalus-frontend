@@ -33,7 +33,10 @@ export async function postOrdersOnNewEncounter(
   }
 
   const { items, postDataPrepFunctions }: OrderBasketStore = orderBasketStore.getState();
-  const patientItems = items[patientUuid];
+  const patientItems = items?.[patientUuid];
+  if (!patientItems) {
+    return [];
+  }
 
   const orders: Array<DrugOrderPost | TestOrderPost> = [];
 
@@ -65,8 +68,14 @@ export async function postOrdersOnNewEncounter(
 
 export async function postOrders(encounterUuid: string, abortController: AbortController) {
   const patientUuid = getPatientUuidFromStore();
+  if (!patientUuid) {
+    return [];
+  }
   const { items, postDataPrepFunctions }: OrderBasketStore = orderBasketStore.getState();
-  const patientItems = items[patientUuid];
+  const patientItems = items?.[patientUuid];
+  if (!patientItems) {
+    return [];
+  }
 
   const erroredItems: Array<OrderBasketItem> = [];
   for (const grouping in patientItems) {
@@ -103,15 +112,15 @@ export function postOrder(body: OrderPost, abortController?: AbortController) {
 
 function extractErrorDetails(errorObject: OrderErrorObject): ExtractedOrderErrorObject {
   const errorDetails = {
-    message: errorObject.responseBody?.error?.message,
+    message: errorObject.responseBody?.error?.message ?? '',
     fieldErrors: [],
-    globalErrors: errorObject.responseBody?.error?.globalErrors,
+    globalErrors: errorObject.responseBody?.error?.globalErrors ?? [],
   };
 
   if (errorObject.responseBody?.error?.fieldErrors) {
     const fieldErrors = errorObject.responseBody?.error?.fieldErrors;
     for (const fieldName in fieldErrors) {
-      fieldErrors[fieldName].forEach((error) => {
+      fieldErrors[fieldName as keyof typeof fieldErrors]?.forEach((error) => {
         errorDetails.fieldErrors.push(error.message);
       });
     }

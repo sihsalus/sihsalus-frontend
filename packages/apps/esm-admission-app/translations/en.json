@@ -7,7 +7,7 @@
   "admissionReportError": "Could not load admissions report",
   "admissionReportFilters": "Admissions report filters",
   "admissionReportMetrics": "Admissions report metrics",
-  "admissionReportSummary": "Recent admissions by service/UPS, location, and status.",
+  "admissions": "Admissions",
   "age": "Age",
   "ageBirthSex": "Age/birth/sex",
   "allStatuses": "All statuses",

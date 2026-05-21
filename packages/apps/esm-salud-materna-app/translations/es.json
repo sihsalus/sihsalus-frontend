@@ -121,6 +121,8 @@
   "loading": "Cargando...",
   "loadingData": "Cargando datos...",
   "maternaHistory": "Antecedente de Historia Materna",
+  "maternalHealthForms": "Formularios de salud materna",
+  "maternalHealthFormsInstructions": "Seleccione el formulario de salud materna que desea completar para esta paciente.",
   "metricDisplayed": "Métrica mostrada",
   "movimientoFetal": "Movimiento fetal",
   "neverPerformed": "Nunca se ha hecho",

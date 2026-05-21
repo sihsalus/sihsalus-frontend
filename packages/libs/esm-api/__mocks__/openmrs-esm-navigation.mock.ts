@@ -1,5 +1,7 @@
 export { interpolateString, interpolateUrl } from '@openmrs/esm-navigation';
 
-export const navigate = jest.fn();
+import { vi } from 'vitest';
 
-export const clearHistory = jest.fn();
+export const navigate = vi.fn();
+
+export const clearHistory = vi.fn();

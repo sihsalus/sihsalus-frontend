@@ -8,8 +8,8 @@ import { type ConfigSchema, configSchema } from '../config-schema';
 
 import ListsTable from './lists-table.component';
 
-const mockUseSession = jest.mocked(useSession);
-const mockUseConfig = jest.mocked(useConfig<ConfigSchema>);
+const mockUseSession = vi.mocked(useSession);
+const mockUseConfig = vi.mocked(useConfig<ConfigSchema>);
 
 const tableHeaders = [
   { header: 'List name', key: '1' },
@@ -100,7 +100,7 @@ describe('ListsTable', () => {
         isLoading={false}
         listType={''}
         patientLists={[]}
-        refetch={jest.fn()}
+        refetch={vi.fn()}
       />,
     );
 

@@ -82,7 +82,6 @@ export function useInitialFormValues(patientUuid: string): [FormValues, Dispatch
     (async () => {
       if (patientToEdit) {
         const birthdateEstimated = !/^\d{4}-\d{2}-\d{2}$/.test(patientToEdit.birthDate);
-        const [years = 0, months = 0] = patientToEdit.birthDate.split('-').map((val) => parseInt(val));
         // Please refer: https://github.com/openmrs/openmrs-esm-patient-management/pull/697#issuecomment-1562706118
         const estimatedMonthsAvailable = patientToEdit.birthDate.split('-').length > 1;
         const yearsEstimated = birthdateEstimated ? Math.floor(dayjs().diff(patientToEdit.birthDate, 'month') / 12) : 0;
@@ -245,7 +244,7 @@ export function useInitialPatientIdentifiers(patientUuid: string): {
 } {
   const shouldFetch = !!patientUuid;
 
-  const { data, error, isLoading } = useSWR<FetchResponse<{ results: Array<PatientIdentifierResponse> }>, Error>(
+  const { data, isLoading } = useSWR<FetchResponse<{ results: Array<PatientIdentifierResponse> }>, Error>(
     shouldFetch
       ? `${restBaseUrl}/patient/${patientUuid}/identifier?v=custom:(uuid,identifier,identifierType:(uuid,required,name),preferred)`
       : null,
@@ -300,7 +299,7 @@ function useInitialEncounters(patientUuid: string, patientToEdit: fhir.Patient) 
 
 function useInitialPersonAttributes(personUuid: string) {
   const shouldFetch = !!personUuid;
-  const { data, error, isLoading } = useSWR<FetchResponse<{ results: Array<PersonAttributeResponse> }>, Error>(
+  const { data, isLoading } = useSWR<FetchResponse<{ results: Array<PersonAttributeResponse> }>, Error>(
     shouldFetch
       ? `${restBaseUrl}/person/${personUuid}/attribute?v=custom:(uuid,display,attributeType:(uuid,display,format),value)`
       : null,
@@ -316,7 +315,7 @@ function useInitialPersonAttributes(personUuid: string) {
 }
 
 function useInitialPersonDeathInfo(personUuid: string) {
-  const { data, error, isLoading } = useSWR<FetchResponse<DeathInfoResults>, Error>(
+  const { data, isLoading } = useSWR<FetchResponse<DeathInfoResults>, Error>(
     personUuid
       ? `${restBaseUrl}/person/${personUuid}?v=custom:(uuid,display,causeOfDeath,dead,deathDate,causeOfDeathNonCoded)`
       : null,

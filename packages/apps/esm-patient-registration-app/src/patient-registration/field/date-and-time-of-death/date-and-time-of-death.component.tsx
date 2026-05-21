@@ -58,7 +58,7 @@ function DeathDateField() {
 function DeathTimeField() {
   const { t } = useTranslation(moduleName);
   const [deathTimeField, deathTimeMeta] = useField<keyof FormValues>('deathTime');
-  const [deathTimeFormatField, deathTimeFormatMeta] = useField<keyof FormValues>('deathTimeFormat');
+  const [deathTimeFormatField] = useField<keyof FormValues>('deathTimeFormat');
 
   return (
     <Layer>

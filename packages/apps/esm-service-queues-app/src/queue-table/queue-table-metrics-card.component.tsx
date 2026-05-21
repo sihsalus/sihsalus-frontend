@@ -1,7 +1,6 @@
 import { Layer, Tile } from '@carbon/react';
 import classNames from 'classnames';
 import React from 'react';
-import { useTranslation } from 'react-i18next';
 
 import { useQueueEntriesMetrics } from '../hooks/useQueueEntries';
 
@@ -22,7 +21,6 @@ const QueueTableMetricsCard: React.FC<QueueTableMetricsCardProps> = ({
   headerLabel,
   children,
 }) => {
-  const { t } = useTranslation();
   const { count } = useQueueEntriesMetrics({
     queue: queueUuid,
     status: status,

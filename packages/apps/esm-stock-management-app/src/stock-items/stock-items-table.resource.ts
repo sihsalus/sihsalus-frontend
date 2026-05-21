@@ -1,11 +1,8 @@
 import { useEffect, useState } from 'react';
-import { useTranslation } from 'react-i18next';
 import { ResourceRepresentation } from '../core/api/api';
 import { type StockItemFilter, useStockItems } from './stock-items.resource';
 
 export function useStockItemsPages(v?: ResourceRepresentation) {
-  const { t } = useTranslation();
-
   const pageSizes = [10, 20, 30, 40, 50];
   const [currentPage, setCurrentPage] = useState(1);
   const [currentPageSize, setPageSize] = useState(10);

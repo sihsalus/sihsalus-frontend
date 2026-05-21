@@ -24,7 +24,7 @@ const TransactionsPrintAction: React.FC<Props> = ({ columns, data, itemUuid, fil
 
   const { enablePrintButton } = useConfig<ConfigObject>();
 
-  const [stockCardItemFilter, setStockCardItemFilter] = useState<StockItemInventoryFilter>({
+  const [stockCardItemFilter] = useState<StockItemInventoryFilter>({
     startIndex: 0,
     totalCount: true,
     v: ResourceRepresentation.Full,
@@ -40,7 +40,7 @@ const TransactionsPrintAction: React.FC<Props> = ({ columns, data, itemUuid, fil
   });
 
   const { item: stockItem, isLoading: isStockItemLoading } = useStockItem(itemUuid);
-  const { items: stockCardData, isLoading: isStockCardLoading, error } = useStockItemTransactions(stockCardItemFilter);
+  const { items: stockCardData, isLoading: isStockCardLoading } = useStockItemTransactions(stockCardItemFilter);
   const { items: inventoryBalance } = useStockItemInventory(stockItemFilter);
 
   const [balances, setBalances] = useState<Record<string, { quantity: number; itemName: string }>>({});

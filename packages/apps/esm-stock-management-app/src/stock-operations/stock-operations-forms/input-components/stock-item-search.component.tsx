@@ -13,7 +13,7 @@ type StockItemSearchProps = {
 
 const StockItemSearch: React.FC<StockItemSearchProps> = ({ onSelectedItem }) => {
   const { t } = useTranslation();
-  const { isLoading, stockItemsList, setSearchString } = useFilterableStockItems({});
+  const { stockItemsList, setSearchString } = useFilterableStockItems({});
   const [searchTerm, setSearchTerm] = useState('');
   const debouncedSearchTerm = useDebounce(searchTerm);
   const { useItemCommonNameAsDisplay } = useConfig<ConfigObject>();

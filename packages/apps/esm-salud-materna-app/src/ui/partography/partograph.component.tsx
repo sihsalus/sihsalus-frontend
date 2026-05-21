@@ -78,7 +78,7 @@ const Partograph: React.FC<PartographyProps> = ({ patientUuid }) => {
   const tableRows =
     encounters.map((encounter) => {
       const groupMembers = encounter.groupMembers;
-      const groupmembersObj = groupMembers.reduce<Record<string, string | number | undefined>>((acc, curr) => {
+      const groupmembersObj = groupMembers.reduce((acc: Record<string, string | number | undefined>, curr) => {
         const value = curr.value;
         acc[curr.concept.uuid] = typeof value === 'string' || typeof value === 'number' ? value : value?.uuid;
         return acc;
@@ -99,7 +99,7 @@ const Partograph: React.FC<PartographyProps> = ({ patientUuid }) => {
   const chartData =
     encounters.map((encounter) => {
       const groupMembers = encounter.groupMembers;
-      const groupmembersObj = groupMembers.reduce<Record<string, string | number | undefined>>((acc, curr) => {
+      const groupmembersObj = groupMembers.reduce((acc: Record<string, string | number | undefined>, curr) => {
         const value = curr.value;
         acc[curr.concept.uuid] = typeof value === 'string' || typeof value === 'number' ? value : value?.uuid;
         return acc;

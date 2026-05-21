@@ -113,7 +113,7 @@ const OrderDetailsTable: React.FC<OrderDetailsProps> = ({ patientUuid, showAddBu
   const contentToPrintRef = useRef<HTMLDivElement>(null);
   const patient = usePatient(patientUuid);
   const { careSettingUuid, excludePatientIdentifierCodeTypes } = useConfig<
-    ConfigObject & { excludePatientIdentifierCodeTypes?: Array<string> }
+    ConfigObject & { excludePatientIdentifierCodeTypes?: { uuids: Array<string> } }
   >();
   const [isPrinting, setIsPrinting] = useState(false);
   const { data: orderTypes } = useOrderTypes();

@@ -1,5 +1,7 @@
 import { Type, validator } from '@openmrs/esm-framework';
 
+const ObjectType = (Type as typeof Type & { Object: unknown }).Object;
+
 export const defaultLegacyConceptCompatibilityMap: Record<string, string> = {
   '5219AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA': '71b58cff-879b-4358-98d5-2165434d4324',
   '160531AAAAAAAAAAAAAAAAAAAAAAAAAAAAAA': '162169AAAAAAAAAAAAAAAAAAAAAAAAAAAAAA',
@@ -58,7 +60,7 @@ export const configSchema = {
       'Whether to default the encounterDate to visitStartDatetime if the visitStartDatetime is before current Date.',
   },
   legacyConceptCompatibilityMap: {
-    _type: Type.Object,
+    _type: ObjectType,
     _default: defaultLegacyConceptCompatibilityMap,
     _description:
       'Maps legacy form concept UUIDs to concept UUIDs available in the active backend dictionary before rendering/submitting forms.',

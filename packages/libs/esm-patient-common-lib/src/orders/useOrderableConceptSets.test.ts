@@ -20,6 +20,7 @@ const mockUseConfig = vi.mocked(useConfig<ConfigObject>);
 mockUseConfig.mockReturnValue({
   ...getDefaultsFromConfigSchema(configSchema),
   orders: {
+    careSettingUuid: 'care-setting-uuid',
     labOrderableConcepts: [],
     labOrderTypeUuid: 'lab-order-type-uuid',
   },

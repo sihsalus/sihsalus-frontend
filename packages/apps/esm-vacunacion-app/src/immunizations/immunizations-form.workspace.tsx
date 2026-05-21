@@ -310,9 +310,10 @@ const ImmunizationsForm: React.FC<PatientWorkspace2DefinitionProps<Record<string
         });
       } catch (err) {
         const errorDetails = getImmunizationSaveErrorDetails(err, fhirConceptMappings);
-        const configKeyLabel = errorDetails.configKey
-          ? fhirImmunizationConceptMappingLabels[errorDetails.configKey]
-          : undefined;
+        const configKeyLabel =
+          errorDetails.type === 'missing-fhir-mapping' && errorDetails.configKey
+            ? fhirImmunizationConceptMappingLabels[errorDetails.configKey]
+            : undefined;
         const subtitle =
           errorDetails.type === 'missing-fhir-mapping'
             ? t(

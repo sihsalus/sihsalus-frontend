@@ -1,8 +1,30 @@
 import * as framework from '@openmrs/esm-framework';
 import { fireEvent, render, screen, waitFor } from '@testing-library/react';
+import type { ReactNode } from 'react';
 import * as api from '../../api';
 import { maxUploadImageDataSize } from '../constants';
 import UploadStudiesWorkspace from './upload-studies.workspace';
+
+type WrapperProps = {
+  children?: ReactNode;
+};
+
+type ComboBoxMockProps = {
+  onChange: ({ selectedItem }: { selectedItem: { id: number; orthancBaseUrl: string } }) => void;
+  selectedItem?: { id?: number };
+};
+
+type FileUploaderMockProps = {
+  onChange: (event: React.ChangeEvent<HTMLInputElement>) => void;
+};
+
+type ButtonLikeProps = React.ButtonHTMLAttributes<HTMLButtonElement> & {
+  children?: ReactNode;
+};
+
+type FormLikeProps = React.FormHTMLAttributes<HTMLFormElement> & {
+  children?: ReactNode;
+};
 
 vi.mock('react-i18next', async () => ({
   useTranslation: () => ({ t: (_key: string, fallback: string) => fallback }),
@@ -19,14 +41,14 @@ vi.mock('@openmrs/esm-framework', async () => ({
   createErrorHandler: vi.fn(),
   useLayoutType: vi.fn(),
   ExtensionSlot: () => <div>ExtensionSlot</div>,
-  ResponsiveWrapper: ({ children }: any) => <div>{children}</div>,
+  ResponsiveWrapper: ({ children }: WrapperProps) => <div>{children}</div>,
 }));
 
 vi.mock('@carbon/react', async () => {
   const original = await vi.importActual('@carbon/react');
   return {
     ...original,
-    ComboBox: ({ onChange, selectedItem }: any) => (
+    ComboBox: ({ onChange, selectedItem }: ComboBoxMockProps) => (
       <select
         data-testid="combobox"
         value={selectedItem?.id || ''}
@@ -37,12 +59,14 @@ vi.mock('@carbon/react', async () => {
         <option value="2">Server 2</option>
       </select>
     ),
-    FileUploader: ({ onChange }: any) => <input type="file" data-testid="file-uploader" onChange={onChange} multiple />,
-    Button: ({ children, ...props }: any) => <button {...props}>{children}</button>,
-    Form: ({ children, ...props }: any) => <form {...props}>{children}</form>,
-    Stack: ({ children }: any) => <div>{children}</div>,
-    Row: ({ children }: any) => <div>{children}</div>,
-    FormGroup: ({ children }: any) => <div>{children}</div>,
+    FileUploader: ({ onChange }: FileUploaderMockProps) => (
+      <input type="file" data-testid="file-uploader" onChange={onChange} multiple />
+    ),
+    Button: ({ children, ...props }: ButtonLikeProps) => <button {...props}>{children}</button>,
+    Form: ({ children, ...props }: FormLikeProps) => <form {...props}>{children}</form>,
+    Stack: ({ children }: WrapperProps) => <div>{children}</div>,
+    Row: ({ children }: WrapperProps) => <div>{children}</div>,
+    FormGroup: ({ children }: WrapperProps) => <div>{children}</div>,
   };
 });
 

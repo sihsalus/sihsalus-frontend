@@ -1,6 +1,7 @@
-import { openmrsFetch, restBaseUrl } from '@openmrs/esm-framework';
+import { openmrsFetch, restBaseUrl, useConfig } from '@openmrs/esm-framework';
 import { type FormSchema } from '@sihsalus/esm-form-engine-lib';
 import useSWR from 'swr';
+import { type ConfigObject, defaultLegacyConceptCompatibilityMap } from '../config-schema';
 
 interface FormSchemaResponse {
   data: FormSchema;
@@ -25,36 +26,27 @@ type FormPage = {
   } & Record<string, unknown>;
 } & Record<string, unknown>;
 
-// Some local/dev form definitions still reference concept UUIDs that do not
-// exist in the current backend dictionary. Normalizing them here keeps the
-// workspace2 runtime aligned with esm-form-engine-app and avoids encounter POST
-// failures for otherwise valid forms.
-const legacyConceptCompatibilityMap: Record<string, string> = {
-  '5219AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA': '71b58cff-879b-4358-98d5-2165434d4324',
-  '160531AAAAAAAAAAAAAAAAAAAAAAAAAAAAAA': '162169AAAAAAAAAAAAAAAAAAAAAAAAAAAAAA',
-  '159615AAAAAAAAAAAAAAAAAAAAAAAAAAAAAA': 'c4010006-0000-4000-8000-000000000006',
-  '1271AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA': '162169AAAAAAAAAAAAAAAAAAAAAAAAAAAAAA',
-  '1651AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA': '162169AAAAAAAAAAAAAAAAAAAAAAAAAAAAAA',
-  '1282AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA': '162169AAAAAAAAAAAAAAAAAAAAAAAAAAAAAA',
-  '1272AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA': '162169AAAAAAAAAAAAAAAAAAAAAAAAAAAAAA',
-};
-
 /**
  * Fetches a compiled form schema by form UUID from the O3 forms endpoint.
  */
 const useFormSchema = (formUuid: string) => {
+  const config = useConfig<ConfigObject>();
+  const legacyConceptCompatibilityMap = config?.legacyConceptCompatibilityMap ?? defaultLegacyConceptCompatibilityMap;
   const url = formUuid ? `${restBaseUrl}/o3/forms/${formUuid}` : null;
 
   const { data, error, isLoading } = useSWR<FormSchemaResponse, Error>(url, openmrsFetch);
   const schemaError = error instanceof Error ? error : undefined;
-  const schema = normalizeSchema(data);
+  const schema = normalizeSchema(data, legacyConceptCompatibilityMap);
 
   return { schema, error: schemaError, isLoading };
 };
 
 export default useFormSchema;
 
-function normalizeSchema(response: FormSchemaResponse | undefined): FormSchema | undefined {
+function normalizeSchema(
+  response: FormSchemaResponse | undefined,
+  legacyConceptCompatibilityMap: Record<string, string> = defaultLegacyConceptCompatibilityMap,
+): FormSchema | undefined {
   if (!response?.data) {
     return undefined;
   }
@@ -66,7 +58,7 @@ function normalizeSchema(response: FormSchemaResponse | undefined): FormSchema |
         const sections = Array.isArray(typedPage.sections)
           ? typedPage.sections.map((section) => ({
               ...section,
-              questions: section.questions.map(normalizeField),
+              questions: section.questions.map((question) => normalizeField(question, legacyConceptCompatibilityMap)),
             }))
           : typedPage.sections;
 
@@ -76,7 +68,9 @@ function normalizeSchema(response: FormSchemaResponse | undefined): FormSchema |
           subform: typedPage.subform
             ? {
                 ...typedPage.subform,
-                form: normalizeSchema({ data: typedPage.subform.form }) ?? typedPage.subform.form,
+                form:
+                  normalizeSchema({ data: typedPage.subform.form }, legacyConceptCompatibilityMap) ??
+                  typedPage.subform.form,
               }
             : typedPage.subform,
         };
@@ -103,7 +97,7 @@ function normalizeEncounterType(encounterType: unknown): FormSchema['encounterTy
   return encounterType as FormSchema['encounterType'];
 }
 
-function normalizeField(field: FormField): FormField {
+function normalizeField(field: FormField, legacyConceptCompatibilityMap: Record<string, string>): FormField {
   const nextField = { ...field, questionOptions: { ...field.questionOptions } };
   const concept = nextField.questionOptions.concept;
 
@@ -119,7 +113,9 @@ function normalizeField(field: FormField): FormField {
   }
 
   if (nextField.questions?.length) {
-    nextField.questions = nextField.questions.map(normalizeField);
+    nextField.questions = nextField.questions.map((question) =>
+      normalizeField(question, legacyConceptCompatibilityMap),
+    );
   }
 
   return nextField;

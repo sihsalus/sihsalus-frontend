@@ -1,5 +1,17 @@
 import { Type, validator } from '@openmrs/esm-framework';
 
+const ObjectType = (Type as typeof Type & { Object: unknown }).Object;
+
+export const defaultLegacyConceptCompatibilityMap: Record<string, string> = {
+  '5219AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA': '71b58cff-879b-4358-98d5-2165434d4324',
+  '160531AAAAAAAAAAAAAAAAAAAAAAAAAAAAAA': '162169AAAAAAAAAAAAAAAAAAAAAAAAAAAAAA',
+  '159615AAAAAAAAAAAAAAAAAAAAAAAAAAAAAA': 'c4010006-0000-4000-8000-000000000006',
+  '1271AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA': '162169AAAAAAAAAAAAAAAAAAAAAAAAAAAAAA',
+  '1651AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA': '162169AAAAAAAAAAAAAAAAAAAAAAAAAAAAAA',
+  '1282AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA': '162169AAAAAAAAAAAAAAAAAAAAAAAAAAAAAA',
+  '1272AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA': '162169AAAAAAAAAAAAAAAAAAAAAAAAAAAAAA',
+};
+
 export const configSchema = {
   /** @deprecated use customDataSources instead */
   dataSources: {
@@ -47,4 +59,14 @@ export const configSchema = {
     _description:
       'Whether to default the encounterDate to visitStartDatetime if the visitStartDatetime is before current Date.',
   },
+  legacyConceptCompatibilityMap: {
+    _type: ObjectType,
+    _default: defaultLegacyConceptCompatibilityMap,
+    _description:
+      'Maps legacy form concept UUIDs to concept UUIDs available in the active backend dictionary before rendering/submitting forms.',
+  },
 };
+
+export interface ConfigObject {
+  legacyConceptCompatibilityMap: Record<string, string>;
+}

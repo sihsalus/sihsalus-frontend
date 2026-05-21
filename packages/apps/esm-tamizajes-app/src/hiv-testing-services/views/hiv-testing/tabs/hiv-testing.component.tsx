@@ -4,14 +4,6 @@ import { EncounterList, getObsFromEncounter } from '@sihsalus/esm-sihsalus-share
 import React, { useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import type { ConfigObject } from '../../../../config-schema';
-import {
-  entryPointConcept,
-  finalResultConcept,
-  tbScreeeningConcept,
-  testApproachConcept,
-  testStrategyConcept,
-} from '../../../constants';
-import { hivTestingConceptMap } from '../hiv-testing-constants';
 
 interface HivTestingEncountersListProps {
   patientUuid: string;
@@ -24,6 +16,14 @@ const HivTestingEncounters: React.FC<HivTestingEncountersListProps> = ({ patient
   const {
     encounterTypes: { hivTestingServices },
     formsList: { htsInitialTest, htsRetest },
+    hivTestingConcepts: {
+      entryPointConcept,
+      finalResultConcept,
+      tbScreeningConcept,
+      testApproachConcept,
+      testStrategyConcept,
+    },
+    hivTestingConceptMap,
   } = useConfig<ConfigObject>();
 
   const htsEncounterTypeUUID = hivTestingServices;
@@ -77,7 +77,7 @@ const HivTestingEncounters: React.FC<HivTestingEncountersListProps> = ({ patient
         key: 'tbScreening',
         header: t('tbScreening', 'TB screening outcome'),
         getValue: (encounter) => {
-          return getObsFromEncounter(encounter, tbScreeeningConcept);
+          return getObsFromEncounter(encounter, tbScreeningConcept);
         },
       },
       {
@@ -94,7 +94,7 @@ const HivTestingEncounters: React.FC<HivTestingEncountersListProps> = ({ patient
         ],
       },
     ],
-    [t],
+    [entryPointConcept, finalResultConcept, t, tbScreeningConcept, testApproachConcept, testStrategyConcept],
   );
 
   return (

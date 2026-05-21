@@ -28,7 +28,6 @@ import {
   updateSelectedQueueLocationUuid,
   updateSelectedService,
   useIsPermanentProviderQueueRoom,
-  useSelectedQueueLocationName,
   useSelectedQueueLocationUuid,
   useSelectedService,
 } from '../helpers/helpers';
@@ -71,7 +70,6 @@ const AddProviderQueueRoomModal: React.FC<AddProviderQueueRoomModalProps> = ({ c
   const { t } = useTranslation();
   const { providerRoom, mutate } = useProvidersQueueRoom(providerUuid);
   const isPermanentProviderQueueRoom = useIsPermanentProviderQueueRoom() ?? false;
-  const currentLocationName = useSelectedQueueLocationName();
   const currentLocationUuid = useSelectedQueueLocationUuid();
   const currentService = useSelectedService();
 

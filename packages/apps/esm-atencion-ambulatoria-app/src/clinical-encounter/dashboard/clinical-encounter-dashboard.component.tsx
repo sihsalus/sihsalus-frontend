@@ -6,19 +6,6 @@ import { useTranslation } from 'react-i18next';
 
 import type { ConfigObject } from '../../config-schema';
 import { useClinicalEncounter } from '../../hooks/useClinicalEncounter';
-import {
-  ACCIDENT_TRAUMA_UUID,
-  AdmissionDate_UUID,
-  AdmissionWard_UUID,
-  Alcohol_Use_Duration_UUID,
-  Alcohol_Use_UUID,
-  BLOOD_TRANSFUSION_UUID,
-  Other_Substance_Abuse_UUID,
-  PriorityOfAdmission_UUID,
-  Smoking_Duration_UUID,
-  Smoking_UUID,
-  SURGICAL_HISTORY_UUID,
-} from '../../utils/constants';
 import ClinicalEncounter from '../clinical-enc.component';
 import InPatientSummary from '../summary/in-patient-medical-summary/in-patient-medical-summary.component';
 import OutPatientMedicalHistory from '../summary/out-patient-summary/patient-medical-history.component';
@@ -39,6 +26,7 @@ const ClinicalEncounterDashboard: React.FC<ClinicalEncounterDashboardProps> = ({
   const isInPatient = currentVisit?.visitType?.display?.toLocaleLowerCase() === 'inpatient';
   const {
     clinicalEncounterUuid,
+    concepts,
     formsList: { clinicalEncounterFormUuid },
   } = useConfig<ConfigObject>();
   const { encounters, isLoading, error, mutate, isValidating } = useClinicalEncounter(
@@ -46,19 +34,19 @@ const ClinicalEncounterDashboard: React.FC<ClinicalEncounterDashboardProps> = ({
     clinicalEncounterFormUuid,
     patientUuid,
     [
-      AdmissionDate_UUID,
-      PriorityOfAdmission_UUID,
-      ACCIDENT_TRAUMA_UUID,
-      BLOOD_TRANSFUSION_UUID,
-      SURGICAL_HISTORY_UUID,
-      ACCIDENT_TRAUMA_UUID,
-      BLOOD_TRANSFUSION_UUID,
-      Alcohol_Use_UUID,
-      Alcohol_Use_Duration_UUID,
-      Smoking_UUID,
-      Smoking_Duration_UUID,
-      Other_Substance_Abuse_UUID,
-      AdmissionWard_UUID,
+      concepts.admissionDateUuid,
+      concepts.priorityOfAdmissionUuid,
+      concepts.accidentTraumaUuid,
+      concepts.bloodTransfusionUuid,
+      concepts.surgicalHistoryUuid,
+      concepts.accidentTraumaUuid,
+      concepts.bloodTransfusionUuid,
+      concepts.alcoholUseUuid,
+      concepts.alcoholUseDurationUuid,
+      concepts.smokingUuid,
+      concepts.smokingDurationUuid,
+      concepts.otherSubstanceAbuseUuid,
+      concepts.admissionWardUuid,
     ],
   );
   return (

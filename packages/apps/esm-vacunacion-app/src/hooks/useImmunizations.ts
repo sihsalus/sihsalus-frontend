@@ -1,5 +1,8 @@
-import { fhirBaseUrl, openmrsFetch, useFhirFetchAll } from '@openmrs/esm-framework';
+import { fhirBaseUrl, openmrsFetch, useConfig, useFhirFetchAll } from '@openmrs/esm-framework';
+import { type ImmunizationConfigObject } from '../config-schema';
+import { getFhirImmunizationConceptMappings } from '../immunizations/fhir-immunization-config';
 import { mapFromFHIRImmunizationBundle } from '../immunizations/immunization-mapper';
+import { getImmunizationSaveErrorDetails } from '../immunizations/immunizations.resource';
 import { type FHIRImmunizationResource } from '../types/fhir-immunization-domain';
 
 function isUnsupportedFhirImmunizationError(error: unknown): boolean {
@@ -17,11 +20,15 @@ function isUnsupportedFhirImmunizationError(error: unknown): boolean {
 }
 
 export function useImmunizations(patientUuid: string) {
+  const config = useConfig<ImmunizationConfigObject>();
+  const fhirConceptMappings = getFhirImmunizationConceptMappings(config?.fhirConceptMappings);
   const immunizationsUrl = `${fhirBaseUrl}/Immunization?patient=${patientUuid}`;
 
   const { data, error, isLoading, isValidating, mutate } = useFhirFetchAll<FHIRImmunizationResource>(immunizationsUrl);
 
-  const isUnsupported = isUnsupportedFhirImmunizationError(error);
+  const errorDetails = getImmunizationSaveErrorDetails(error, fhirConceptMappings);
+  const isSetupError = errorDetails.type === 'missing-fhir-mapping' || errorDetails.type === 'fhir-setup';
+  const isUnsupported = isUnsupportedFhirImmunizationError(error) && !isSetupError;
   const existingImmunizations = data && !isUnsupported ? mapFromFHIRImmunizationBundle(data) : [];
 
   return {

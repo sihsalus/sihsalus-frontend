@@ -1,6 +1,22 @@
 import { showModal, usePagination } from '@openmrs/esm-framework';
 import { fireEvent, render, screen } from '@testing-library/react';
+import type { ReactNode } from 'react';
 import StudiesDetailTable from './studies-details-table.component';
+
+type IconProps = Record<string, unknown>;
+type PaginationProps = {
+  pageNumber: number;
+};
+type EmptyStateProps = {
+  displayText: string;
+  headerTitle: string;
+};
+type CardHeaderProps = {
+  children?: ReactNode;
+};
+type SeriesDetailsProps = {
+  studyId: number;
+};
 
 vi.mock('react-i18next', () => ({
   useTranslation: () => ({
@@ -17,22 +33,22 @@ vi.mock('@openmrs/esm-framework', async () => ({
     goTo: vi.fn(),
     currentPage: 1,
   })),
-  TrashCanIcon: (props: any) => <span data-testid="trash-icon" {...props} />,
+  TrashCanIcon: (props: IconProps) => <span data-testid="trash-icon" {...props} />,
 }));
 
 vi.mock('@openmrs/esm-patient-common-lib', () => ({
-  PatientChartPagination: ({ pageNumber }: any) => <div data-testid="pagination">Page {pageNumber}</div>,
-  EmptyState: ({ displayText, headerTitle }: any) => (
+  PatientChartPagination: ({ pageNumber }: PaginationProps) => <div data-testid="pagination">Page {pageNumber}</div>,
+  EmptyState: ({ displayText, headerTitle }: EmptyStateProps) => (
     <div>
       {headerTitle}: {displayText}
     </div>
   ),
-  CardHeader: ({ children }: any) => <div>{children}</div>,
+  CardHeader: ({ children }: CardHeaderProps) => <div>{children}</div>,
   compare: vi.fn((a, b) => (a > b ? 1 : a < b ? -1 : 0)),
 }));
 
 vi.mock('./series-details-table.component', () => ({
-  default: (props: any) => <div data-testid="series-details">Series for {props.studyId}</div>,
+  default: ({ studyId }: SeriesDetailsProps) => <div data-testid="series-details">Series for {studyId}</div>,
 }));
 
 describe('StudiesDetailsTable', () => {
@@ -103,8 +119,10 @@ describe('StudiesDetailsTable', () => {
   });
 
   it('navigates when viewer button clicked', () => {
-    delete (window as any).location;
-    (window as any).location = { href: '' };
+    Object.defineProperty(window, 'location', {
+      configurable: true,
+      value: { href: '' } as unknown as Location,
+    });
 
     render(<StudiesDetailTable patientUuid="patientUuid-123" studies={mockStudies} />);
 

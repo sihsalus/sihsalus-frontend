@@ -39,6 +39,20 @@ export interface FHIRImmunizationResource {
   protocolApplied?: Array<{ doseNumberPositiveInt: number; series?: string }>;
 }
 
+export type FhirImmunizationConceptMappings = {
+  immunizationResourceConcept: string;
+  vaccineConcept: string;
+  vaccinationDateConcept: string;
+  doseNumberConcept: string;
+  manufacturerConcept: string;
+  lotNumberConcept: string;
+  expirationDateConcept: string;
+  commentConcept: string;
+  nextDoseDateConcept: string;
+};
+
+export type FhirImmunizationConceptMappingKey = keyof FhirImmunizationConceptMappings;
+
 export type FHIRImmunizationBundleEntry = {
   fullUrl: string;
   resource: FHIRImmunizationResource;
@@ -74,9 +88,7 @@ export type ImmunizationWidgetConfigObject = {
     notes?: string;
   };
   immunizationConceptSet: string;
-  fhirConceptMappings: {
-    immunizationResourceConcept: string;
-  };
+  fhirConceptMappings: Partial<FhirImmunizationConceptMappings>;
   supplementalVaccines?: Array<{
     uuid: string;
     display: string;

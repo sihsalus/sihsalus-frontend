@@ -14,18 +14,19 @@ vi.mock('@openmrs/esm-framework', async () => {
   };
 });
 
-const mockOpenrsFetch = vi.mocked(openmrsFetch);
+const mockOpenmrsFetch = vi.mocked(openmrsFetch);
 const mockUseConfig = vi.mocked(useConfig<ConfigObject>);
 
 mockUseConfig.mockReturnValue({
   ...getDefaultsFromConfigSchema(configSchema),
   orders: {
+    careSettingUuid: 'care-setting-uuid',
     labOrderableConcepts: [],
     labOrderTypeUuid: 'lab-order-type-uuid',
   },
 });
 
-mockOpenrsFetch.mockImplementation(((url: string) => {
+mockOpenmrsFetch.mockImplementation(((url: string) => {
   if (url.includes('concept?class=concept-class-uuid')) {
     return Promise.resolve({ data: { results: [{ display: 'Test concept' }] } });
   } else if (/.*concept\/[0-9a-f]+.*/.test(url)) {

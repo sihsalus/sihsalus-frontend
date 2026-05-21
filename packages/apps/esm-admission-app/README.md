@@ -47,3 +47,9 @@ CI=1 E2E_BASE_URL=http://localhost:8080/openmrs/spa E2E_API_BASE_URL=http://loca
 ```
 
 La prueba completa de campos de admision requiere que el content package este desplegado, porque varios campos dependen de `personattributetypes` y conceptos nuevos.
+
+## Riesgos conocidos
+
+- El nombre del modulo puede inducir a error si se usa para reportes de atenciones por UPS.
+- El flujo depende de configuracion real de ubicaciones/UPS; datos demo incompletos producen reportes pobres o confusos.
+- Las integraciones con citas deben delegar al workspace de Appointments; duplicar esa logica genera divergencia.

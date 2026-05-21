@@ -1,26 +1,79 @@
 import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import React from 'react';
+import React, { type ReactNode } from 'react';
 import * as api from '../../api';
 import { type RequestProcedure } from '../../types';
 import AddNewProcedureStepWorkspace, {
   type AddNewProcedureStepWorkspaceProps,
 } from './add-procedureStep-form.workspace';
 
+type WrapperProps = {
+  children?: ReactNode;
+};
+
+type DatePickerMockProps = React.InputHTMLAttributes<HTMLInputElement> & {
+  id: string;
+  onChange?: (value: Date) => void;
+  labelText?: string;
+  maxDate?: Date;
+};
+
+type ComboBoxMockProps = React.HTMLAttributes<HTMLDivElement> & {
+  children?: ReactNode;
+  id?: string;
+  titleText?: string;
+  label?: string;
+  invalid?: boolean;
+  invalidText?: string;
+  selectedItem?: unknown;
+  itemToString?: (item: unknown) => string;
+};
+
+type TimePickerMockProps = React.InputHTMLAttributes<HTMLInputElement> & {
+  labelText?: string;
+  children?: ReactNode;
+};
+
+type SelectMockProps = React.SelectHTMLAttributes<HTMLSelectElement> & {
+  children?: ReactNode;
+};
+
+type OptionMockProps = React.OptionHTMLAttributes<HTMLOptionElement>;
+type ButtonMockProps = React.ButtonHTMLAttributes<HTMLButtonElement> & { children?: ReactNode };
+type FormMockProps = React.FormHTMLAttributes<HTMLFormElement> & { children?: ReactNode };
+type InlineLoadingProps = { description?: string };
+type TextInputMockProps = React.InputHTMLAttributes<HTMLInputElement> & { labelText?: string };
+type TextAreaMockProps = React.TextareaHTMLAttributes<HTMLTextAreaElement> & {
+  labelText?: string;
+  invalid?: boolean;
+  invalidText?: string;
+};
+
 vi.mock('../../api');
 vi.mock('@openmrs/esm-framework', async () => ({
   ...(await vi.importActual('@openmrs/esm-framework')),
-  OpenmrsDatePicker: React.forwardRef(({ id, onChange, ...props }: any, ref) => (
-    <input ref={ref} data-testid={id} type="date" onChange={(e) => onChange?.(new Date(e.target.value))} {...props} />
-  )),
-  ResponsiveWrapper: ({ children }: any) => <div>{children}</div>,
+  OpenmrsDatePicker: React.forwardRef<HTMLInputElement, DatePickerMockProps>(
+    ({ id, onChange, labelText, maxDate: _maxDate, ...props }, ref) => (
+      <label>
+        {labelText}
+        <input
+          ref={ref}
+          data-testid={id}
+          type="date"
+          onChange={(e) => onChange?.(new Date(e.target.value))}
+          {...props}
+        />
+      </label>
+    ),
+  ),
+  ResponsiveWrapper: ({ children }: WrapperProps) => <div>{children}</div>,
   useLayoutType: vi.fn(() => 'desktop'),
   showSnackbar: vi.fn(),
 }));
 
 vi.mock('react-i18next', async () => ({
   useTranslation: () => ({
-    t: (key: string, defaultValue: string) => defaultValue,
+    t: (_key: string, defaultValue: string) => defaultValue,
   }),
 }));
 
@@ -28,34 +81,54 @@ vi.mock('@carbon/react', async () => {
   const original = await vi.importActual('@carbon/react');
   return {
     ...original,
-    ComboBox: ({ children, ...props }: any) => <div {...props}>{children}</div>,
-    TimePicker: ({ labelText, children, ...props }: any) => (
+    ComboBox: ({
+      children,
+      id,
+      titleText,
+      label,
+      invalid: _invalid,
+      invalidText,
+      selectedItem: _selectedItem,
+      itemToString: _itemToString,
+      ...props
+    }: ComboBoxMockProps) => (
+      <label htmlFor={id}>
+        {titleText ?? label}
+        <div id={id} data-testid={id} {...(invalidText ? { invalidtext: invalidText } : {})} {...props}>
+          {children}
+        </div>
+      </label>
+    ),
+    TimePicker: ({ labelText, children, ...props }: TimePickerMockProps) => (
       <label>
         {labelText}
         <input data-testid="timePickerInput" {...props} />
         {children}
       </label>
     ),
-    TimePickerSelect: ({ children, ...props }: any) => <select {...props}>{children}</select>,
-    SelectItem: (props: any) => <option {...props} />,
-    Button: (props: any) => <button {...props}>{props.children}</button>,
-    ButtonSet: ({ children }: any) => <div>{children}</div>,
-    Form: ({ children, ...props }: any) => <form {...props}>{children}</form>,
-    FormGroup: ({ children }: any) => <div>{children}</div>,
-    Stack: ({ children }: any) => <div>{children}</div>,
-    InlineLoading: (props: any) => <span>{props.description}</span>,
-    TextInput: ({ labelText, ...props }: any) => (
+    TimePickerSelect: ({ children, ...props }: SelectMockProps) => <select {...props}>{children}</select>,
+    SelectItem: (props: OptionMockProps) => <option {...props} />,
+    Button: (props: ButtonMockProps) => <button {...props}>{props.children}</button>,
+    ButtonSet: ({ children }: WrapperProps) => <div>{children}</div>,
+    Form: ({ children, ...props }: FormMockProps) => <form {...props}>{children}</form>,
+    FormGroup: ({ children }: WrapperProps) => <div>{children}</div>,
+    Stack: ({ children }: WrapperProps) => <div>{children}</div>,
+    InlineLoading: (props: InlineLoadingProps) => <span>{props.description}</span>,
+    TextInput: ({ labelText, value, ...props }: TextInputMockProps) => (
       <label>
         {labelText}
-        <input {...props} />
+        <input value={value ?? ''} {...props} />
       </label>
     ),
-    TextArea: ({ labelText, ...props }: any) => (
-      <label>
-        {labelText}
-        <textarea {...props} />
-      </label>
-    ),
+    TextArea: ({ labelText, value, invalid: _invalid, invalidText, ...props }: TextAreaMockProps) => {
+      const testAttributes: Record<string, string> = invalidText ? { invalidtext: invalidText } : {};
+      return (
+        <label>
+          {labelText}
+          <textarea value={value ?? ''} {...testAttributes} {...props} />
+        </label>
+      );
+    },
   };
 });
 
@@ -79,7 +152,7 @@ const defaultProps: AddNewProcedureStepWorkspaceProps = {
   closeWorkspace: vi.fn(),
   closeWorkspaceWithSavedChanges: vi.fn(),
   promptBeforeClosing: vi.fn(),
-  setTitle: function (title: string, titleNode?: React.ReactNode): void {
+  setTitle: function (_title: string, _titleNode?: React.ReactNode): void {
     throw new Error('Function not implemented.');
   },
 };
@@ -114,12 +187,12 @@ describe('AddNewProcedureStepWorkspace', () => {
 
     await waitFor(() => {
       const scheduledReferringPhysician = screen.getByLabelText(/scheduledReferringPhysician/i);
-      expect(scheduledReferringPhysician).toHaveAttribute('invalidtext', 'Scheduled referring physician is required');
+      expect(scheduledReferringPhysician).toHaveAttribute('invalidtext', 'Referring physician is required');
     });
 
     await waitFor(() => {
       const description = screen.getByLabelText(/description/i);
-      expect(description).toHaveAttribute('invalidtext', 'Required');
+      expect(description).toHaveAttribute('invalidtext', 'Procedure description is required');
     });
 
     await waitFor(() => {
@@ -130,7 +203,7 @@ describe('AddNewProcedureStepWorkspace', () => {
     await waitFor(() => {
       const modality = screen.getByLabelText(/modality/i);
       expect(modality).toHaveAttribute('invalidtext', 'Modality is required');
-      expect(screen.getByLabelText(/AetTitle/i)).toHaveAttribute('invalidtext', 'Required');
+      expect(screen.getByLabelText(/AetTitle/i)).toHaveAttribute('invalidtext', 'AET title is required');
     });
   });
 

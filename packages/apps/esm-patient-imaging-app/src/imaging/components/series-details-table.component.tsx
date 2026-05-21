@@ -38,9 +38,6 @@ const SeriesDetailsTable: React.FC<SeriesDetailsTableProps> = ({
 }) => {
   const {
     data: seriesList,
-    error: seriesError,
-    isLoading: isLoadingSeries,
-    isValidating: isValidatingSeries,
   } = useStudySeries(studyId);
 
   const { t } = useTranslation();
@@ -145,69 +142,70 @@ const SeriesDetailsTable: React.FC<SeriesDetailsTableProps> = ({
           isSortable
           useZebraStyles
           data-floating-menu-container
-          size={isTablet ? 'lg' : 'sm'}
-        >
+        size={isTablet ? 'lg' : 'sm'}
+      >
           {({ rows, headers, getHeaderProps, getTableProps, getRowProps }) => (
             <TableContainer>
-              <Table aria-label="Series summary" className={styles.table} {...getTableProps()} />
-              <TableHead>
-                <TableRow>
-                  {headers.map((header) => {
-                    const { key, ...headerProps } = getHeaderProps({ header });
+              <Table aria-label="Series summary" className={styles.table} {...getTableProps()}>
+                <TableHead>
+                  <TableRow>
+                    {headers.map((header) => {
+                      const { key, ...headerProps } = getHeaderProps({ header });
+                      return (
+                        <TableHeader key={key} {...headerProps}>
+                          {header.header}
+                        </TableHeader>
+                      );
+                    })}
+                    <TableHeader />
+                  </TableRow>
+                </TableHead>
+                <TableBody>
+                  {rows.map((row) => {
+                    const seriesData = seriesMap.current.get(row.id);
+                    const isExpanded = expandedRows[row.id];
                     return (
-                      <TableHeader key={key} {...headerProps}>
-                        {header.header}
-                      </TableHeader>
+                      <React.Fragment key={row.id}>
+                        <TableRow
+                          className={styles.row}
+                          {...getRowProps({ row })}
+                          onDoubleClick={() =>
+                            setExpandedRows((prev) => ({
+                              ...prev,
+                              [row.id]: !prev[row.id],
+                            }))
+                          }
+                        >
+                          {row.cells.map((cell) => (
+                            <TableCell
+                              className={styles.tableCell}
+                              key={cell.id}
+                              style={cell.id === 'action' ? { width: '15%' } : { width: '22%' }}
+                            >
+                              {cell.value?.content ?? cell.value}
+                            </TableCell>
+                          ))}
+                        </TableRow>
+                        {isExpanded && seriesData && (
+                          <TableRow className={styles.expandedRow}>
+                            <TableCell colSpan={headers.length}>
+                              <div className={styles.instanceTableDiv}>
+                                <InstancesDetailsTable
+                                  studyId={studyId}
+                                  studyInstanceUID={studyInstanceUID}
+                                  seriesInstanceUID={seriesData.seriesInstanceUID}
+                                  orthancConfig={orthancConfig}
+                                  seriesModality={seriesData.modality}
+                                />
+                              </div>
+                            </TableCell>
+                          </TableRow>
+                        )}
+                      </React.Fragment>
                     );
                   })}
-                  <TableHeader />
-                </TableRow>
-              </TableHead>
-              <TableBody>
-                {rows.map((row) => {
-                  const seriesData = seriesMap.current.get(row.id);
-                  const isExpanded = expandedRows[row.id];
-                  return (
-                    <React.Fragment key={row.id}>
-                      <TableRow
-                        className={styles.row}
-                        {...getRowProps({ row })}
-                        onDoubleClick={() =>
-                          setExpandedRows((prev) => ({
-                            ...prev,
-                            [row.id]: !prev[row.id],
-                          }))
-                        }
-                      >
-                        {row.cells.map((cell) => (
-                          <TableCell
-                            className={styles.tableCell}
-                            key={cell.id}
-                            style={cell.id === 'action' ? { width: '15%' } : { width: '22%' }}
-                          >
-                            {cell.value?.content ?? cell.value}
-                          </TableCell>
-                        ))}
-                      </TableRow>
-                      {isExpanded && seriesData && (
-                        <TableRow className={styles.expandedRow}>
-                          <TableCell colSpan={headers.length}>
-                            <div className={styles.instanceTableDiv}>
-                              <InstancesDetailsTable
-                                studyId={studyId}
-                                studyInstanceUID={studyInstanceUID}
-                                seriesInstanceUID={seriesData.seriesInstanceUID}
-                                orthancConfig={orthancConfig}
-                                seriesModality={seriesData.modality}
-                              />
-                            </div>
-                          </TableCell>
-                        </TableRow>
-                      )}
-                    </React.Fragment>
-                  );
-                })}
-              </TableBody>
+                </TableBody>
+              </Table>
             </TableContainer>
           )}
         </DataTable>

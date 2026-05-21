@@ -143,6 +143,7 @@ const mockOpenmrsConfig: RegistrationConfig = {
       defaultUnknownGivenName: 'UNKNOWN',
       defaultUnknownFamilyName: 'UNKNOWN',
       defaultUnknownFamilyName2: 'UNKNOWN',
+      unidentifiedPatientAttributeTypeUuid: 'unidentified-patient-attribute-type-uuid',
       displayReverseFieldOrder: false,
       displayCapturePhoto: true,
       requireFamilyName2: false,
@@ -387,8 +388,8 @@ describe('Registering a new patient', () => {
     expect(mockSavePatient).toHaveBeenCalledTimes(1);
     expect(mockSaveEncounter).toHaveBeenCalledTimes(1);
 
-    expect(mockShowSnackbar).toHaveBeenCalledWith(expect.objectContaining({ subtitle: 'an error message' })),
-      mockSaveEncounter.mockResolvedValue({} as FetchResponse);
+    expect(mockShowSnackbar).toHaveBeenCalledWith(expect.objectContaining({ subtitle: 'an error message' }));
+    mockSaveEncounter.mockResolvedValue({} as FetchResponse);
 
     await user.click(registerPatientButton);
     expect(mockSavePatient).toHaveBeenCalledTimes(2);

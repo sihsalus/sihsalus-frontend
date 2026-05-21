@@ -111,7 +111,7 @@ describe('DrugSelector', () => {
     const _user = userEvent.setup();
     mockUseDrugsHook.mockReturnValue({ drugList: mockDrugs as Drug[], isLoading: false });
 
-    const { rerender } = render(<DrugSelectorWrapper defaultDrugUuid="drug-1" initialDrugName="Aspirin" readOnly />);
+    render(<DrugSelectorWrapper defaultDrugUuid="drug-1" initialDrugName="Aspirin" readOnly />);
 
     expect(mockFetchStockItem).not.toHaveBeenCalled();
   });

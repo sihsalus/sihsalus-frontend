@@ -59,6 +59,7 @@ import React, { type ReactNode, useCallback, useEffect, useMemo, useRef, useStat
 import { useTranslation } from 'react-i18next';
 import { useReactToPrint } from 'react-to-print';
 
+import type { ConfigObject } from '../config-schema';
 import PrintComponent from '../print/print.component';
 import { buildGeneralOrder, buildLabOrder, buildMedicationOrder } from '../utils';
 
@@ -111,7 +112,9 @@ const OrderDetailsTable: React.FC<OrderDetailsProps> = ({ patientUuid, showAddBu
   const launchModifyGeneralOrder = useLaunchWorkspaceRequiringVisit('orderable-concept-workspace');
   const contentToPrintRef = useRef<HTMLDivElement>(null);
   const patient = usePatient(patientUuid);
-  const { excludePatientIdentifierCodeTypes } = useConfig();
+  const { careSettingUuid, excludePatientIdentifierCodeTypes } = useConfig<
+    ConfigObject & { excludePatientIdentifierCodeTypes?: { uuids: Array<string> } }
+  >();
   const [isPrinting, setIsPrinting] = useState(false);
   const { data: orderTypes } = useOrderTypes();
   const [selectedOrderTypeUuid, setSelectedOrderTypeUuid] = useState<string | null>(null);
@@ -123,7 +126,7 @@ const OrderDetailsTable: React.FC<OrderDetailsProps> = ({ patientUuid, showAddBu
     error: error,
     isLoading,
     isValidating,
-  } = usePatientOrders(patientUuid, 'ACTIVE', selectedOrderTypeUuid, selectedFromDate, selectedToDate);
+  } = usePatientOrders(patientUuid, 'ACTIVE', selectedOrderTypeUuid, selectedFromDate, selectedToDate, careSettingUuid);
 
   // launch respective order basket based on order type
   const openOrderForm = useCallback(

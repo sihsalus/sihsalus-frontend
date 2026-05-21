@@ -1,7 +1,22 @@
 import { launchWorkspace } from '@openmrs/esm-framework';
 import { fireEvent, render, screen } from '@testing-library/react';
+import type { ReactNode } from 'react';
 import * as api from '../../api';
 import ImagingDetailedSummary from './imaging-detailed-summary.component';
+
+type CardHeaderProps = {
+  children?: ReactNode;
+  title: string;
+};
+type EmptyStateProps = {
+  displayText: string;
+  headerTitle: string;
+  launchForm?: () => void;
+};
+type ErrorStateProps = {
+  error?: Error | null;
+  headerTitle: string;
+};
 
 vi.mock('@openmrs/esm-framework', async () => ({
   ...(await vi.importActual('@openmrs/esm-framework')),
@@ -26,13 +41,13 @@ vi.mock('react-i18next', () => ({
 }));
 
 vi.mock('@openmrs/esm-patient-common-lib', () => ({
-  CardHeader: ({ children, title }: any) => (
+  CardHeader: ({ children, title }: CardHeaderProps) => (
     <div>
       <h1>{title}</h1>
       {children}
     </div>
   ),
-  EmptyState: ({ displayText, headerTitle, launchForm }: any) => (
+  EmptyState: ({ displayText, headerTitle, launchForm }: EmptyStateProps) => (
     <div data-testid="empty-state">
       {headerTitle}: {displayText}
       {launchForm && (
@@ -42,7 +57,7 @@ vi.mock('@openmrs/esm-patient-common-lib', () => ({
       )}
     </div>
   ),
-  ErrorState: ({ error, headerTitle }: any) => (
+  ErrorState: ({ error, headerTitle }: ErrorStateProps) => (
     <div data-testid="error-state">
       {headerTitle}: {error?.message || 'Error'}
     </div>
@@ -204,6 +219,9 @@ describe('<ImagingDetailedSummary />', () => {
     const uploadButton = screen.getByText(/Upload/i);
     fireEvent.click(uploadButton);
 
-    expect(launchWorkspace).toHaveBeenCalledTimes(2);
+    const mockedLaunchWorkspace = vi.mocked(launchWorkspace);
+    expect(mockedLaunchWorkspace).toHaveBeenCalledTimes(2);
+    expect(mockedLaunchWorkspace.mock.calls[0]?.[1]).toEqual({ patientUuid });
+    expect(mockedLaunchWorkspace.mock.calls[1]?.[1]).toEqual({ patientUuid });
   });
 });

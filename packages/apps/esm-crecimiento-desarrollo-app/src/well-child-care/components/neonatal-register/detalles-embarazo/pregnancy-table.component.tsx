@@ -5,14 +5,6 @@ import { useTranslation } from 'react-i18next';
 import type { ConfigObject } from '../../../../config-schema'; // Ajusta la ruta
 import { useLatestValidEncounter } from '../../../../hooks/useLatestEncounter'; // Ajusta la ruta
 import { formEntryWorkspace } from '../../../../types';
-import {
-  DELIVERY_ATTENDANT_UUID,
-  DELIVERY_CONDITION_UUID,
-  DELIVERY_LOCATION_UUID,
-  PREGNANCY_NUMBER_UUID,
-  PRENATAL_CARE_LOCATION_UUID,
-  PRENATAL_CARE_NUMBER_UUID,
-} from '../../../concepts/neonatal-concepts';
 
 interface PregnancyBirthProps {
   patientUuid: string;
@@ -21,6 +13,7 @@ interface PregnancyBirthProps {
 const PregnancyBirthTable: React.FC<PregnancyBirthProps> = ({ patientUuid }) => {
   const { t } = useTranslation();
   const config = useConfig() as ConfigObject;
+  const { neonatalConcepts } = config;
   const headerTitle = t('pregnancyBirth', 'Pregnancy and birth');
   const { encounter, isLoading, error, mutate } = useLatestValidEncounter(
     patientUuid,
@@ -56,36 +49,36 @@ const PregnancyBirthTable: React.FC<PregnancyBirthProps> = ({ patientUuid }) => 
     {
       id: 'pregnancyNumber',
       label: t('pregnancyNumber', 'Nº de Embarazo (Gravida)'),
-      dataKey: PREGNANCY_NUMBER_UUID,
+      dataKey: neonatalConcepts.pregnancyNumberUuid,
       sectionTitle: t('pregnancy', 'EMBARAZO'),
     },
     {
       id: 'prenatalCareNumber',
       label: t('prenatalCareNumber', 'Nº de Atenciones Prenatales'),
-      dataKey: PRENATAL_CARE_NUMBER_UUID,
+      dataKey: neonatalConcepts.prenatalCareNumberUuid,
     },
     {
       id: 'prenatalCareLocation',
       label: t('prenatalCareLocation', 'Lugar de Atenciones Prenatales'),
-      dataKey: PRENATAL_CARE_LOCATION_UUID,
+      dataKey: neonatalConcepts.prenatalCareLocationUuid,
     },
 
     // SECCIÓN PARTO
     {
       id: 'deliveryType',
       label: t('birthCondition', 'Birth condition'),
-      dataKey: DELIVERY_CONDITION_UUID,
+      dataKey: neonatalConcepts.deliveryConditionUuid,
       sectionTitle: t('delivery', 'PARTO'),
     },
     {
       id: 'deliveryLocation',
       label: t('deliveryLocation', 'Lugar del Parto'),
-      dataKey: DELIVERY_LOCATION_UUID,
+      dataKey: neonatalConcepts.deliveryLocationUuid,
     },
     {
       id: 'deliveryAttendant',
       label: t('deliveryAttendant', 'Atendido Por'),
-      dataKey: DELIVERY_ATTENDANT_UUID,
+      dataKey: neonatalConcepts.deliveryAttendantUuid,
     },
   ];
 

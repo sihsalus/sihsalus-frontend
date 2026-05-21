@@ -1,5 +1,5 @@
 import { Button, DataTableSkeleton } from '@carbon/react';
-import { AddIcon, launchWorkspace, useLayoutType } from '@openmrs/esm-framework';
+import { AddIcon, launchWorkspace } from '@openmrs/esm-framework';
 import { CardHeader, EmptyState, ErrorState } from '@openmrs/esm-patient-common-lib';
 import { useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -14,11 +14,18 @@ interface ImagingDetailedSummaryProps {
 
 export default function ImagingDetailedSummary({ patientUuid }: ImagingDetailedSummaryProps) {
   const { t } = useTranslation();
-  const layout = useLayoutType();
-  const _isDesktop = layout === 'small-desktop' || layout === 'large-desktop';
-  const launchUploadStudiesWorkspace = useCallback(() => launchWorkspace(uploadStudiesFormWorkspace), []);
-  const launchLinkStudiesWorkspace = useCallback(() => launchWorkspace(linkStudiesFormWorkspace), []);
-  const launchAddRequestWorkspace = useCallback(() => launchWorkspace(addNewRequestWorkspace), []);
+  const launchUploadStudiesWorkspace = useCallback(
+    () => launchWorkspace(uploadStudiesFormWorkspace, { patientUuid }),
+    [patientUuid],
+  );
+  const launchLinkStudiesWorkspace = useCallback(
+    () => launchWorkspace(linkStudiesFormWorkspace, { patientUuid }),
+    [patientUuid],
+  );
+  const launchAddRequestWorkspace = useCallback(
+    () => launchWorkspace(addNewRequestWorkspace, { patientUuid }),
+    [patientUuid],
+  );
   const headerTitle = t('managerStudies', 'Manager studies');
 
   const {

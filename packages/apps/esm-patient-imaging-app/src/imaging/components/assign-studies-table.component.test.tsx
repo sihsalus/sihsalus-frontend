@@ -1,6 +1,15 @@
 import { act, fireEvent, render, screen, within } from '@testing-library/react';
 import AssignStudiesTable, { type AssignStudiesTableProps } from './assign-studies-table.component';
 
+type PaginationProps = {
+  pageNumber: number;
+  totalItems: number;
+};
+
+type EmptyStateProps = {
+  displayText: string;
+};
+
 vi.mock('react-i18next', () => ({
   useTranslation: () => ({
     t: (_key: string, defaultValue: string) => defaultValue,
@@ -14,7 +23,7 @@ vi.mock('../../types', () => ({}));
 vi.mock('@openmrs/esm-framework', async () => ({
   ...(await vi.importActual('@openmrs/esm-framework')),
   useLayoutType: () => 'desktop',
-  usePagination: (data: any[], pagesize: number) => ({
+  usePagination: (data: unknown[], pagesize: number) => ({
     results: data.slice(0, pagesize),
     goto: vi.fn(),
     currentPage: 1,
@@ -23,12 +32,12 @@ vi.mock('@openmrs/esm-framework', async () => ({
 
 vi.mock('@openmrs/esm-patient-common-lib', () => ({
   compare: vi.fn((a, b) => (a > b ? 1 : a < b ? -1 : 0)),
-  PatientChartPagination: ({ pageNumber, totalItems }: any) => (
+  PatientChartPagination: ({ pageNumber, totalItems }: PaginationProps) => (
     <div data-testid="pagination">
       Page {pageNumber} of {totalItems}
     </div>
   ),
-  EmptyState: ({ displayText }: any) => <div data-testid="empty-state">{displayText}</div>,
+  EmptyState: ({ displayText }: EmptyStateProps) => <div data-testid="empty-state">{displayText}</div>,
 }));
 
 vi.mock('./series-details-table.component', () => ({ default: () => <div>Series Details</div> }));

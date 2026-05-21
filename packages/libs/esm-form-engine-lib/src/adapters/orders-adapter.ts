@@ -12,7 +12,6 @@ import {
 
 export const assignedOrderIds: string[] = [];
 const defaultOrderType = 'testorder';
-const defaultCareSetting = '6f0c9a92-6f24-11e3-af88-005056821db0';
 
 export const OrdersAdapter: FormFieldValueAdapter = {
   transformFieldValue: function (field: FormField, value: unknown, context: FormContextProps): Order | null {
@@ -68,14 +67,15 @@ export const OrdersAdapter: FormFieldValueAdapter = {
 };
 
 function constructNewOrder(value: unknown, field: FormField, orderer: string): Order | null {
-  if (!isStringValue(value) || !value) {
+  const careSetting = field?.questionOptions?.orderSettingUuid;
+  if (!isStringValue(value) || !value || !careSetting) {
     return null;
   }
   return {
     action: 'NEW',
     concept: value,
     type: field?.questionOptions?.orderType || defaultOrderType,
-    careSetting: field?.questionOptions?.orderSettingUuid || defaultCareSetting,
+    careSetting,
     orderer: orderer,
   };
 }

@@ -33,10 +33,7 @@ export function useLocations(locationTag: string | null, searchQuery: string = '
     return url + urlSearchParameters.toString();
   }, [locationTag, debouncedSearchQuery]);
 
-  const { data, error, isLoading, isValidating } = useSWR<FetchResponse<LocationResponse>, Error>(
-    constructUrl,
-    openmrsFetch,
-  );
+  const { data, isLoading, isValidating } = useSWR<FetchResponse<LocationResponse>, Error>(constructUrl, openmrsFetch);
 
   return useMemo(
     () => ({

@@ -12,7 +12,7 @@ import React, { type ChangeEvent, useCallback, useMemo, useState } from 'react';
 import { Controller, FormProvider, useForm } from 'react-hook-form';
 import { useTranslation } from 'react-i18next';
 import { z } from 'zod';
-import { uploadStudies, useOrthancConfigurations } from '../../api';
+import { uploadStudies, useOrthancConfigurations, useStudiesByPatient } from '../../api';
 import { type OrthancConfiguration } from '../../types';
 import { maxUploadImageDataSize } from '../constants';
 import styles from './studies.scss';
@@ -22,6 +22,7 @@ const UploadStudiesWorkspace: React.FC<DefaultPatientWorkspaceProps> = ({ patien
   const isTablet = useLayoutType() === 'tablet';
   const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
   const orthancConfigurations = useOrthancConfigurations();
+  const { mutate } = useStudiesByPatient(patientUuid);
   const patientState = useMemo(() => ({ patientUuid }), [patientUuid]);
 
   const uploadStudiesFormSchema = useMemo(() => {
@@ -48,7 +49,7 @@ const UploadStudiesWorkspace: React.FC<DefaultPatientWorkspaceProps> = ({ patien
   } = formProps;
 
   const onSubmit = useCallback(
-    (data: UploadStudiesFormData) => {
+    async (data: UploadStudiesFormData) => {
       const { orthancConfiguration } = data;
       const abortController = new AbortController();
 
@@ -82,22 +83,23 @@ const UploadStudiesWorkspace: React.FC<DefaultPatientWorkspaceProps> = ({ patien
         return;
       }
 
-      uploadStudies(selectedFiles, serverConfig, abortController)
-        .then(() => {
-          closeWorkspace();
-          return () => abortController.abort();
-        })
-        .catch((err) => {
-          createErrorHandler();
-          showSnackbar({
-            title: t('uploadStudiesError', 'Upload studies error'),
-            kind: 'error',
-            isLowContrast: false,
-            subtitle: t('checkForUpload', 'Check for upload') + ': ' + err?.message,
-          });
+      try {
+        await uploadStudies(selectedFiles, serverConfig, patientUuid, abortController);
+        await mutate();
+        closeWorkspace();
+      } catch (err) {
+        createErrorHandler();
+        showSnackbar({
+          title: t('uploadStudiesError', 'Upload studies error'),
+          kind: 'error',
+          isLowContrast: false,
+          subtitle: t('checkForUpload', 'Check for upload') + ': ' + err?.message,
         });
+      } finally {
+        abortController.abort();
+      }
     },
-    [selectedFiles, t, closeWorkspace],
+    [selectedFiles, t, closeWorkspace, patientUuid, mutate],
   );
 
   return (

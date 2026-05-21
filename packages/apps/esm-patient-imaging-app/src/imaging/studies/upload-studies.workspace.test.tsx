@@ -33,6 +33,7 @@ vi.mock('react-i18next', async () => ({
 vi.mock('../../api', async () => ({
   uploadStudies: vi.fn(),
   useOrthancConfigurations: vi.fn(),
+  useStudiesByPatient: vi.fn(),
 }));
 
 vi.mock('@openmrs/esm-framework', async () => ({
@@ -80,6 +81,9 @@ describe('UploadStudiesWorkspace', () => {
         { id: 1, orthancBaseUrl: 'url1', orthancProxyUrl: null },
         { id: 2, orthancBaseUrl: 'url2', orthancProxyUrl: null },
       ],
+    });
+    (api.useStudiesByPatient as vi.Mock).mockReturnValue({
+      mutate: vi.fn().mockResolvedValue(undefined),
     });
     (framework.useLayoutType as vi.Mock).mockReturnValue('desktop');
     vi.clearAllMocks();
@@ -144,6 +148,8 @@ describe('UploadStudiesWorkspace', () => {
   it('calls uploadStudies and closes workspace on successful upload', async () => {
     const file = new File(['dummy content'], 'test.dcm', { type: 'application/dicom' });
     (api.uploadStudies as vi.Mock).mockResolvedValue({});
+    const mutate = vi.fn().mockResolvedValue(undefined);
+    (api.useStudiesByPatient as vi.Mock).mockReturnValue({ mutate });
 
     setup();
 
@@ -153,7 +159,13 @@ describe('UploadStudiesWorkspace', () => {
     fireEvent.click(screen.getByText('Upload'));
 
     await waitFor(() => {
-      expect(api.uploadStudies).toHaveBeenCalled();
+      expect(api.uploadStudies).toHaveBeenCalledWith(
+        [file],
+        { id: 1, orthancBaseUrl: '1', orthancProxyUrl: undefined },
+        patientUuid,
+        expect.any(AbortController),
+      );
+      expect(mutate).toHaveBeenCalled();
       expect(closeWorkspace).toHaveBeenCalled();
     });
   });

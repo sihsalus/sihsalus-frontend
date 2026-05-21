@@ -4,14 +4,6 @@ import { EncounterList, getObsFromEncounter } from '@sihsalus/esm-sihsalus-share
 import React, { useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import type { ConfigObject } from '../../../../config-schema';
-import {
-  departmentConcept,
-  disabilityListConcept,
-  eligibilityConcept,
-  populationTypeConcept,
-  testingRecommended,
-} from '../../../constants';
-import { hivScreeningConceptMap } from '../hiv-screening-constants';
 
 interface HivScreeningEncounterProps {
   patientUuid: string;
@@ -23,6 +15,14 @@ const HivScreeningEncounters: React.FC<HivScreeningEncounterProps> = ({ patientU
   const {
     encounterTypes: { hivTestingServices },
     formsList: { htsScreening },
+    hivScreeningConcepts: {
+      departmentConcept,
+      disabilityListConcept,
+      eligibilityConcept,
+      populationTypeConcept,
+      testingRecommendedConcept,
+    },
+    hivScreeningConceptMap,
   } = useConfig<ConfigObject>();
 
   const htsEncounterTypeUUID = hivTestingServices;
@@ -69,7 +69,7 @@ const HivScreeningEncounters: React.FC<HivScreeningEncounterProps> = ({ patientU
         key: 'testingRecommended',
         header: t('testingRecommended', 'Testing recommended'),
         getValue: (encounter) => {
-          return getObsFromEncounter(encounter, testingRecommended);
+          return getObsFromEncounter(encounter, testingRecommendedConcept);
         },
       },
       {
@@ -86,7 +86,7 @@ const HivScreeningEncounters: React.FC<HivScreeningEncounterProps> = ({ patientU
         ],
       },
     ],
-    [t],
+    [departmentConcept, disabilityListConcept, eligibilityConcept, populationTypeConcept, t, testingRecommendedConcept],
   );
 
   return (

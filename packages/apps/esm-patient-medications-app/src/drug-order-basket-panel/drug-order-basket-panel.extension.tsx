@@ -34,10 +34,15 @@ function DrugOrderBasketPanelExtension({
   const isTablet = useLayoutType() === 'tablet';
 
   const responsiveSize = isTablet ? 'md' : 'sm';
+  const prepareMedicationOrderPostData = useCallback(
+    (order: DrugOrderBasketItem, patientUuid: string, encounterUuid: string | null) =>
+      prepMedicationOrderPostData(order, patientUuid, encounterUuid, undefined, config.careSettingUuid),
+    [config.careSettingUuid],
+  );
   const { orders, setOrders } = useOrderBasket<DrugOrderBasketItem>(
     patient,
     'medications',
-    prepMedicationOrderPostData as PostDataPrepFunction,
+    prepareMedicationOrderPostData as PostDataPrepFunction,
   );
   const [isExpanded, setIsExpanded] = useState(orders.length > 0);
   const {

@@ -20,14 +20,7 @@ import React from 'react';
 import { useTranslation } from 'react-i18next';
 
 import type { ConfigObject } from '../../config-schema';
-import {
-  Contacted_UUID,
-  MissedAppointmentDate_UUID,
-  patientFormEntryWorkspace,
-  TracingNumber_UUID,
-  TracingOutcome_UUID,
-  TracingType_UUID,
-} from '../../utils/constants';
+import { patientFormEntryWorkspace } from '../../utils/constants';
 import { useMissedFollowUp } from './missed-follow-up.resource';
 
 import styles from './missed-follow-up.scss';
@@ -38,7 +31,7 @@ interface MissedFollowUpProps {
 
 const MissedFollowUp: React.FC<MissedFollowUpProps> = ({ patientUuid }) => {
   const { t } = useTranslation();
-  const { formsList } = useConfig<ConfigObject>();
+  const { concepts, formsList } = useConfig<ConfigObject>();
   const headerTitle = t('missedFollowUp', 'Pérdida en el seguimiento');
   const { encounters, isLoading, error, mutate } = useMissedFollowUp(patientUuid);
 
@@ -84,7 +77,7 @@ const MissedFollowUp: React.FC<MissedFollowUpProps> = ({ patientUuid }) => {
   ];
 
   const tableRows = encounters.map((encounter) => {
-    const missedAppointmentDate = getObsFromEncounter(encounter, MissedAppointmentDate_UUID);
+    const missedAppointmentDate = getObsFromEncounter(encounter, concepts.missedAppointmentDateUuid);
 
     return {
       id: encounter.uuid,
@@ -93,10 +86,10 @@ const MissedFollowUp: React.FC<MissedFollowUpProps> = ({ patientUuid }) => {
           ? formatDate(parseDate(encounter.encounterDatetime))
           : formatDate(parseDate(String(missedAppointmentDate))),
       visitDate: formatDate(new Date(encounter.encounterDatetime)),
-      tracingType: getObsFromEncounter(encounter, TracingType_UUID),
-      tracingNumber: getObsFromEncounter(encounter, TracingNumber_UUID),
-      contacted: getObsFromEncounter(encounter, Contacted_UUID),
-      finalOutcome: getObsFromEncounter(encounter, TracingOutcome_UUID),
+      tracingType: getObsFromEncounter(encounter, concepts.tracingTypeUuid),
+      tracingNumber: getObsFromEncounter(encounter, concepts.tracingNumberUuid),
+      contacted: getObsFromEncounter(encounter, concepts.contactedUuid),
+      finalOutcome: getObsFromEncounter(encounter, concepts.tracingOutcomeUuid),
     };
   });
 

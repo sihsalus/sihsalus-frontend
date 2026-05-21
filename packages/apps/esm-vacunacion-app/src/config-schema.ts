@@ -1,4 +1,6 @@
 import { Type } from '@openmrs/esm-framework';
+import { defaultFhirImmunizationConceptMappings } from './immunizations/fhir-immunization-config';
+import { type FhirImmunizationConceptMappings } from './types/fhir-immunization-domain';
 
 /**
  * Esquema Nacional de Vacunación — NTS N.° 196-MINSA/DGIESP-2022
@@ -35,9 +37,7 @@ export const configSchema = {
     _type: Type.Object,
     _description:
       'Concept mappings expected by the OpenMRS FHIR2 Immunization resource. These values must exist uniquely in the content package for FHIR reads/writes to work.',
-    _default: {
-      immunizationResourceConcept: 'CIEL:1421',
-    },
+    _default: defaultFhirImmunizationConceptMappings,
   },
   supplementalVaccines: {
     _type: Type.Array,
@@ -370,9 +370,7 @@ export interface ImmunizationConfigObject {
     notes?: string;
   };
   immunizationConceptSet: string;
-  fhirConceptMappings: {
-    immunizationResourceConcept: string;
-  };
+  fhirConceptMappings: Partial<FhirImmunizationConceptMappings>;
   supplementalVaccines?: Array<{
     uuid: string;
     display: string;

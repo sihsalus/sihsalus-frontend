@@ -4,6 +4,7 @@ import {
   ArrowRightIcon,
   ResponsiveWrapper,
   ShoppingCartArrowDownIcon,
+  useConfig,
   useDebounce,
   useLayoutType,
   useSession,
@@ -12,7 +13,7 @@ import { useOrderBasket } from '@openmrs/esm-patient-common-lib';
 import classNames from 'classnames';
 import React, { type ComponentProps, useCallback, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-
+import type { ConfigObject } from '../../config-schema';
 import type { TestOrderBasketItem } from '../../types';
 import { prepTestOrderPostData } from '../api';
 
@@ -170,7 +171,18 @@ function TestTypeSearchResults({
         </h4>
         <p className={styles.bodyShort01}>
           <span>{t('tryTo', 'Try to')}</span>{' '}
-          <span className={styles.link} role="link" tabIndex={0} onClick={focusAndClearSearchInput}>
+          <span
+            className={styles.link}
+            role="link"
+            tabIndex={0}
+            onClick={focusAndClearSearchInput}
+            onKeyDown={(event) => {
+              if (event.key === 'Enter' || event.key === ' ') {
+                event.preventDefault();
+                focusAndClearSearchInput();
+              }
+            }}
+          >
             {t('searchAgain', 'search again')}
           </span>{' '}
           <span>{t('usingADifferentTerm', 'using a different term')}</span>
@@ -189,7 +201,13 @@ const TestTypeSearchResultItem: React.FC<TestTypeSearchResultItemProps> = ({
   const { t } = useTranslation();
   const isTablet = useLayoutType() === 'tablet';
   const session = useSession();
-  const { orders, setOrders } = useOrderBasket<TestOrderBasketItem>(orderTypeUuid, prepTestOrderPostData);
+  const { orders: orderConfig } = useConfig<ConfigObject>();
+  const prepareTestOrderPostData = useCallback(
+    (order: TestOrderBasketItem, patientUuid: string, encounterUuid: string | null) =>
+      prepTestOrderPostData(order, patientUuid, encounterUuid, orderConfig.careSettingUuid),
+    [orderConfig.careSettingUuid],
+  );
+  const { orders, setOrders } = useOrderBasket<TestOrderBasketItem>(orderTypeUuid, prepareTestOrderPostData);
 
   const testTypeAlreadyInBasket = useMemo(
     () => orders?.some((order) => order.testType.conceptUuid === testType.conceptUuid),

@@ -1,8 +1,8 @@
 import { type FetchResponse, openmrsFetch, restBaseUrl, useConfig } from '@openmrs/esm-framework';
 import {
-  careSettingUuid,
   type DrugOrderBasketItem,
   type DrugOrderPost,
+  careSettingUuid as defaultCareSettingUuid,
   type Order,
   type OrderAction,
   type PatientOrderFetchResponse,
@@ -38,7 +38,7 @@ function sortOrdersByDateActivated(orders: Order[]) {
  * @param patientUuid The UUID of the patient whose orders should be fetched.
  */
 export function usePatientOrders(patientUuid: string) {
-  const { drugOrderTypeUUID } = useConfig<ConfigObject>();
+  const { careSettingUuid, drugOrderTypeUUID } = useConfig<ConfigObject>();
   const { mutate } = useSWRConfig();
 
   const ordersUrl = `${restBaseUrl}/order?patient=${patientUuid}&careSetting=${careSettingUuid}&orderTypes=${drugOrderTypeUUID}&v=${customRepresentation}&excludeDiscontinueOrders=true`;
@@ -75,7 +75,7 @@ export function usePatientOrders(patientUuid: string) {
  * @param patientUuid The UUID of the patient whose active orders should be fetched.
  */
 export function useActivePatientOrders(patientUuid: string) {
-  const { drugOrderTypeUUID } = useConfig<ConfigObject>();
+  const { careSettingUuid, drugOrderTypeUUID } = useConfig<ConfigObject>();
   const { mutate } = useSWRConfig();
 
   const ordersUrl = useMemo(
@@ -83,7 +83,7 @@ export function useActivePatientOrders(patientUuid: string) {
       patientUuid
         ? `${restBaseUrl}/order?patient=${patientUuid}&careSetting=${careSettingUuid}&orderTypes=${drugOrderTypeUUID}&excludeCanceledAndExpired=true&v=${customRepresentation}`
         : null,
-    [patientUuid, drugOrderTypeUUID],
+    [patientUuid, careSettingUuid, drugOrderTypeUUID],
   );
   const { data, error, isLoading, isValidating } = useSWR<FetchResponse<PatientOrderFetchResponse>, Error>(
     ordersUrl,
@@ -138,6 +138,7 @@ export const prepMedicationOrderPostData = (
   patientUuid: string,
   encounterUuid: string | null,
   orderingProviderUuid?: string,
+  careSettingUuid = defaultCareSettingUuid,
 ): DrugOrderPost => {
   const orderer = orderingProviderUuid ?? order.orderer;
 

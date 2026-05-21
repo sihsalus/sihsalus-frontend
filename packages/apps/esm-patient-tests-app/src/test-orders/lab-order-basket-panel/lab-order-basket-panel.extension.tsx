@@ -55,8 +55,14 @@ function LabOrderBasketPanel({ orderTypeUuid, label, icon, launchAddLabOrder }: 
   const { t } = useTranslation();
   const isTablet = useLayoutType() === 'tablet';
   const { orderType, isLoadingOrderType } = useOrderType(orderTypeUuid);
+  const { orders: orderConfig } = useConfig<ConfigObject>();
+  const prepareTestOrderPostData = useCallback(
+    (order: TestOrderBasketItem, patientUuid: string, encounterUuid: string | null) =>
+      prepTestOrderPostData(order, patientUuid, encounterUuid, orderConfig.careSettingUuid),
+    [orderConfig.careSettingUuid],
+  );
 
-  const { orders, setOrders } = useOrderBasket<TestOrderBasketItem>(orderTypeUuid, prepTestOrderPostData);
+  const { orders, setOrders } = useOrderBasket<TestOrderBasketItem>(orderTypeUuid, prepareTestOrderPostData);
   const [isExpanded, setIsExpanded] = useState(orders.length > 0);
   const {
     incompleteOrderBasketItems,

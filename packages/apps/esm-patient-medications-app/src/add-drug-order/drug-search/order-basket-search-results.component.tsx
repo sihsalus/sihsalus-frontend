@@ -90,7 +90,18 @@ export default function OrderBasketSearchResults({
           </h4>
           <p className={styles.bodyShort01}>
             <span>{t('tryTo', 'Try to')}</span>{' '}
-            <span className={styles.link} role="link" tabIndex={0} onClick={focusAndClearSearchInput}>
+            <span
+              className={styles.link}
+              role="link"
+              tabIndex={0}
+              onClick={focusAndClearSearchInput}
+              onKeyDown={(event) => {
+                if (event.key === 'Enter' || event.key === ' ') {
+                  event.preventDefault();
+                  focusAndClearSearchInput();
+                }
+              }}
+            >
               {t('searchAgain', 'search again')}
             </span>{' '}
             <span>{t('usingADifferentTerm', 'using a different term')}</span>
@@ -137,10 +148,16 @@ export const DrugSearchResultItem: React.FC<DrugSearchResultItemProps> = ({
   closeWorkspace,
 }) => {
   const isTablet = useLayoutType() === 'tablet';
+  const config = useConfig<ConfigObject>();
+  const prepareMedicationOrderPostData = useCallback(
+    (order: DrugOrderBasketItem, patientUuid: string, encounterUuid: string | null) =>
+      prepMedicationOrderPostData(order, patientUuid, encounterUuid, undefined, config.careSettingUuid),
+    [config.careSettingUuid],
+  );
   const { orders, setOrders } = useOrderBasket<DrugOrderBasketItem>(
     patient,
     'medications',
-    prepMedicationOrderPostData as PostDataPrepFunction,
+    prepareMedicationOrderPostData as PostDataPrepFunction,
   );
   const patientUuid = patient.id;
   const { data: activeOrders, isLoading: isLoadingActiveOrders } = useActivePatientOrders(patientUuid);
@@ -157,7 +174,6 @@ export const DrugSearchResultItem: React.FC<DrugSearchResultItemProps> = ({
 
   const { templates, error: fetchingDrugOrderTemplatesError } = useDrugTemplate(drug?.uuid);
   const { t } = useTranslation();
-  const config = useConfig<ConfigObject>();
   const drugItemTemplateOptions: Array<DrugOrderBasketItem> = useMemo(
     () =>
       templates?.length

@@ -353,6 +353,21 @@ export const configSchema = {
       _description: 'Diagnosis occurrence: New vs Repeat',
       _default: '159946AAAAAAAAAAAAAAAAAAAAAAAAAAAAAA',
     },
+    diagnosisTypeConceptUuid: {
+      _type: Type.ConceptUuid,
+      _description: 'Tipo de diagnóstico según NTS-139: presuntivo, definitivo o repetitivo',
+      _default: '2d53d39f-c93f-4128-8f7c-1bb45b498497',
+    },
+    definitiveDiagnosisTypeUuid: {
+      _type: Type.ConceptUuid,
+      _description: 'Respuesta de tipo de diagnóstico definitivo según NTS-139',
+      _default: '2c60a8f6-1787-41be-8434-30ebeb5656ff',
+    },
+    repeatDiagnosisTypeUuid: {
+      _type: Type.ConceptUuid,
+      _description: 'Respuesta de tipo de diagnóstico repetitivo según NTS-139',
+      _default: '6f653861-8469-4dfa-a0b5-2804f1cfc527',
+    },
 
     // Treatment Plan (CE-4)
     labOrdersUuid: {
@@ -384,6 +399,77 @@ export const configSchema = {
       _type: Type.ConceptUuid,
       _description: 'Next appointment date concept',
       _default: '5096AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA',
+    },
+
+    // Admission / hospitalization details
+    admissionDateUuid: {
+      _type: Type.ConceptUuid,
+      _description: 'Admission date concept',
+      _default: '1640AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA',
+    },
+    priorityOfAdmissionUuid: {
+      _type: Type.ConceptUuid,
+      _description: 'Priority of admission concept',
+      _default: '1655AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA',
+    },
+    admissionWardUuid: {
+      _type: Type.ConceptUuid,
+      _description: 'Admission ward concept',
+      _default: '5fc29316-0869-4b3b-ae2f-cc37c6014eb7',
+    },
+
+    // Social history
+    alcoholUseUuid: {
+      _type: Type.ConceptUuid,
+      _description: 'Alcohol use concept',
+      _default: '159449AAAAAAAAAAAAAAAAAAAAAAAAAAAAAA',
+    },
+    alcoholUseDurationUuid: {
+      _type: Type.ConceptUuid,
+      _description: 'Alcohol use duration concept',
+      _default: '1546AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA',
+    },
+    smokingUuid: {
+      _type: Type.ConceptUuid,
+      _description: 'Smoking concept',
+      _default: '163201AAAAAAAAAAAAAAAAAAAAAAAAAAAAAA',
+    },
+    smokingDurationUuid: {
+      _type: Type.ConceptUuid,
+      _description: 'Smoking duration concept',
+      _default: '159931AAAAAAAAAAAAAAAAAAAAAAAAAAAAAA',
+    },
+    otherSubstanceAbuseUuid: {
+      _type: Type.ConceptUuid,
+      _description: 'Other substance abuse concept',
+      _default: '163731AAAAAAAAAAAAAAAAAAAAAAAAAAAAAA',
+    },
+
+    // Medical history
+    surgicalHistoryUuid: {
+      _type: Type.ConceptUuid,
+      _description: 'Surgical history concept',
+      _default: '30fe6669-75f3-4a1d-89c3-753a060d559a',
+    },
+    accidentTraumaUuid: {
+      _type: Type.ConceptUuid,
+      _description: 'Accident or trauma history concept',
+      _default: '159520AAAAAAAAAAAAAAAAAAAAAAAAAAAAAA',
+    },
+    bloodTransfusionUuid: {
+      _type: Type.ConceptUuid,
+      _description: 'Blood transfusion history concept',
+      _default: '161927AAAAAAAAAAAAAAAAAAAAAAAAAAAAAA',
+    },
+    chronicDiseaseUuid: {
+      _type: Type.ConceptUuid,
+      _description: 'Chronic disease history concept',
+      _default: '1284AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA',
+    },
+    trueConceptUuid: {
+      _type: Type.ConceptUuid,
+      _description: 'Boolean true concept',
+      _default: 'cf82933b-3f3f-45e7-a5ab-5d31aaee3da3',
     },
 
     // Ethnic Identity (CE-7)

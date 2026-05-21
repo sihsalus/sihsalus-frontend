@@ -1081,6 +1081,71 @@ export const configSchema = {
     },
   },
 
+  // 16. PARTOGRAPHY CONFIGURATION
+  partography: {
+    _type: Type.Object,
+    _description:
+      'Configuración de partograma: encounter, formulario y conceptos usados para mostrar evolución del parto',
+    _default: {
+      encounterTypeUuid: 'b212032f-9903-4696-ab31-173d432d1d3d',
+      formUuid: 'd4c4dcfa-5c7b-4727-a7a6-f79a3b2c2735',
+      progressConceptUuid: '160116AAAAAAAAAAAAAAAAAAAAAAAAAAAAAA',
+      concepts: {
+        timeRecordedUuid: '163286AAAAAAAAAAAAAAAAAAAAAAAAAAAAAA',
+        fetalHeartRateUuid: '1440AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA',
+        cervicalDilationUuid: '162261AAAAAAAAAAAAAAAAAAAAAAAAAAAAAA',
+        descentOfHeadUuid: '1810AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA',
+        contractionFrequencyUuid: '163749AAAAAAAAAAAAAAAAAAAAAAAAAAAAAA',
+        contractionDurationUuid: '163750AAAAAAAAAAAAAAAAAAAAAAAAAAAAAA',
+      },
+      descentOfHeadAnswerLabels: {
+        '162135AAAAAAAAAAAAAAAAAAAAAAAAAAAAAA': '1/5',
+        '166065AAAAAAAAAAAAAAAAAAAAAAAAAAAAAA': '2/5',
+        '166066AAAAAAAAAAAAAAAAAAAAAAAAAAAAAA': '3/5',
+        '166067AAAAAAAAAAAAAAAAAAAAAAAAAAAAAA': '4/5',
+        '163734AAAAAAAAAAAAAAAAAAAAAAAAAAAAAA': '5/5',
+      },
+    },
+    encounterTypeUuid: {
+      _type: Type.UUID,
+      _description: 'Encounter type UUID de atención en sala de partos usado para recuperar datos del partograma',
+      _default: 'b212032f-9903-4696-ab31-173d432d1d3d',
+    },
+    formUuid: {
+      _type: Type.UUID,
+      _description: 'Form UUID del partograma usado al abrir el formulario de registro',
+      _default: 'd4c4dcfa-5c7b-4727-a7a6-f79a3b2c2735',
+    },
+    progressConceptUuid: {
+      _type: Type.ConceptUuid,
+      _description: 'Concept UUID del grupo de observaciones de progreso del partograma',
+      _default: '160116AAAAAAAAAAAAAAAAAAAAAAAAAAAAAA',
+    },
+    concepts: {
+      _type: Type.Object,
+      _description: 'Conceptos clínicos que componen una fila del partograma',
+      _default: {
+        timeRecordedUuid: '163286AAAAAAAAAAAAAAAAAAAAAAAAAAAAAA',
+        fetalHeartRateUuid: '1440AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA',
+        cervicalDilationUuid: '162261AAAAAAAAAAAAAAAAAAAAAAAAAAAAAA',
+        descentOfHeadUuid: '1810AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA',
+        contractionFrequencyUuid: '163749AAAAAAAAAAAAAAAAAAAAAAAAAAAAAA',
+        contractionDurationUuid: '163750AAAAAAAAAAAAAAAAAAAAAAAAAAAAAA',
+      },
+    },
+    descentOfHeadAnswerLabels: {
+      _type: Type.Object,
+      _description: 'Mapa configurable de respuestas de descenso de cabeza a etiquetas clínicas',
+      _default: {
+        '162135AAAAAAAAAAAAAAAAAAAAAAAAAAAAAA': '1/5',
+        '166065AAAAAAAAAAAAAAAAAAAAAAAAAAAAAA': '2/5',
+        '166066AAAAAAAAAAAAAAAAAAAAAAAAAAAAAA': '3/5',
+        '166067AAAAAAAAAAAAAAAAAAAAAAAAAAAAAA': '4/5',
+        '163734AAAAAAAAAAAAAAAAAAAAAAAAAAAAAA': '5/5',
+      },
+    },
+  },
+
   // 17. CRED FORMS BY AGE GROUP CONFIGURATION
   CREDFormsByAgeGroup: {
     _type: Type.Array,
@@ -1216,13 +1281,22 @@ export interface LegendConfigObject {
 }
 
 export interface PartographyConfigObject {
+  encounterTypeUuid: string;
+  formUuid: string;
+  progressConceptUuid: string;
   concepts: {
-    obsDateUiid: string;
+    obsDateUiid?: string;
+    obsDateUuid?: string;
     timeRecordedUuid: string;
     fetalHeartRateUuid: string;
-    cervicalDilationUiid: string;
-    descentOfHead: string;
+    cervicalDilationUiid?: string;
+    cervicalDilationUuid: string;
+    descentOfHead?: string;
+    descentOfHeadUuid: string;
+    contractionFrequencyUuid: string;
+    contractionDurationUuid: string;
   };
+  descentOfHeadAnswerLabels: Record<string, string>;
 }
 
 export interface PartograpyComponents {

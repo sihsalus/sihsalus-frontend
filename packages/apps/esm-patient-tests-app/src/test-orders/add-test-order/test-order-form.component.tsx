@@ -59,9 +59,14 @@ export function LabOrderForm({
   const { t } = useTranslation();
   const isTablet = useLayoutType() === 'tablet';
   const session = useSession();
-  const { orders, setOrders } = useOrderBasket<TestOrderBasketItem>(orderTypeUuid, prepTestOrderPostData);
-  const [showErrorNotification, setShowErrorNotification] = useState(false);
   const config = useConfig<ConfigObject>();
+  const prepareTestOrderPostData = useCallback(
+    (order: TestOrderBasketItem, patientUuid: string, encounterUuid: string | null) =>
+      prepTestOrderPostData(order, patientUuid, encounterUuid, config.orders.careSettingUuid),
+    [config.orders.careSettingUuid],
+  );
+  const { orders, setOrders } = useOrderBasket<TestOrderBasketItem>(orderTypeUuid, prepareTestOrderPostData);
+  const [showErrorNotification, setShowErrorNotification] = useState(false);
   const { orderType } = useOrderType(orderTypeUuid);
   const orderReasonRequired = (
     config.labTestsWithOrderReasons?.find((c) => c.labTestUuid === initialOrder?.testType?.conceptUuid) || {}

@@ -13,23 +13,14 @@ import {
   Tile,
 } from '@carbon/react';
 import { Add, ChartLineSmooth } from '@carbon/react/icons';
-import { formatDate, isDesktop, launchWorkspace2, parseDate, useLayoutType } from '@openmrs/esm-framework';
+import { formatDate, isDesktop, launchWorkspace2, parseDate, useConfig, useLayoutType } from '@openmrs/esm-framework';
 import { CardHeader, EmptyDataIllustration, EmptyState, ErrorState } from '@openmrs/esm-patient-common-lib';
 import dayjs from 'dayjs';
 import React from 'react';
 import { useTranslation } from 'react-i18next';
+import type { ConfigObject } from '../../config-schema';
 import { usePartograph } from '../../hooks/usePartograph';
 import { formEntryWorkspace } from '../../types';
-import {
-  CervicalDilation,
-  ContractionDuration,
-  ContractionFrequency,
-  DeviceRecorded,
-  descentOfHeadObj,
-  FetalHeartRate,
-  PartographEncounterFormUuid,
-  SurgicalProcedure,
-} from '../../utils';
 
 import styles from './labour-delivery.scss';
 import PartographChart from './partograph-chart';
@@ -46,6 +37,9 @@ interface PartographyProps {
 
 const Partograph: React.FC<PartographyProps> = ({ patientUuid }) => {
   const { t } = useTranslation();
+  const { partography } = useConfig<ConfigObject>();
+  const partographyConcepts = partography.concepts;
+  const descentOfHeadAnswerLabels = partography.descentOfHeadAnswerLabels;
   const layout = useLayoutType();
   const [chartView, setChartView] = React.useState<boolean>();
   const { encounters = [], isLoading, isValidating, error } = usePartograph(patientUuid);
@@ -84,43 +78,46 @@ const Partograph: React.FC<PartographyProps> = ({ patientUuid }) => {
   const tableRows =
     encounters.map((encounter) => {
       const groupMembers = encounter.groupMembers;
-      const groupmembersObj = groupMembers.reduce((acc, curr) => {
-        acc[curr.concept.uuid] =
-          typeof curr.value === 'string' || typeof curr.value === 'number' ? curr.value : curr.value.uuid;
+      const groupmembersObj = groupMembers.reduce<Record<string, string | number | undefined>>((acc, curr) => {
+        const value = curr.value;
+        acc[curr.concept.uuid] = typeof value === 'string' || typeof value === 'number' ? value : value?.uuid;
         return acc;
-      });
+      }, {});
+      const timeRecorded = groupmembersObj[partographyConcepts.timeRecordedUuid];
+      const descentOfHeadValue = groupmembersObj[partographyConcepts.descentOfHeadUuid]?.toString();
       return {
         id: `${encounter.uuid}`,
         date: formatDate(parseDate(encounter.obsDatetime.toString()), { mode: 'wide', time: true }),
-        timeRecorded: dayjs(new Date(groupmembersObj[DeviceRecorded])).format('HH:mm'),
-        fetalHeartRate: groupmembersObj[FetalHeartRate],
-        cervicalDilation: groupmembersObj[CervicalDilation],
-        descentOfHead: descentOfHeadObj[groupmembersObj[SurgicalProcedure]],
-        contractionFrequency: groupmembersObj[ContractionFrequency] ?? '--',
-        contractionDuration: groupmembersObj[ContractionDuration] ?? '--',
+        timeRecorded: timeRecorded ? dayjs(new Date(timeRecorded)).format('HH:mm') : '--',
+        fetalHeartRate: groupmembersObj[partographyConcepts.fetalHeartRateUuid],
+        cervicalDilation: groupmembersObj[partographyConcepts.cervicalDilationUuid],
+        descentOfHead: descentOfHeadValue ? descentOfHeadAnswerLabels[descentOfHeadValue] : '--',
+        contractionFrequency: groupmembersObj[partographyConcepts.contractionFrequencyUuid] ?? '--',
+        contractionDuration: groupmembersObj[partographyConcepts.contractionDurationUuid] ?? '--',
       };
     }) ?? [];
   const chartData =
     encounters.map((encounter) => {
       const groupMembers = encounter.groupMembers;
-      const groupmembersObj = groupMembers.reduce((acc, curr) => {
-        acc[curr.concept.uuid] =
-          typeof curr.value === 'string' || typeof curr.value === 'number' ? curr.value : curr.value.uuid;
+      const groupmembersObj = groupMembers.reduce<Record<string, string | number | undefined>>((acc, curr) => {
+        const value = curr.value;
+        acc[curr.concept.uuid] = typeof value === 'string' || typeof value === 'number' ? value : value?.uuid;
         return acc;
-      });
+      }, {});
+      const descentOfHeadValue = groupmembersObj[partographyConcepts.descentOfHeadUuid]?.toString();
       return {
         id: `${encounter.uuid}`,
         date: formatDate(parseDate(encounter.obsDatetime.toString()), { mode: 'wide', time: true }),
-        fetalHeartRate: groupmembersObj[FetalHeartRate],
-        cervicalDilation: groupmembersObj[CervicalDilation],
-        descentOfHead: descentOfHeadObj[groupmembersObj[SurgicalProcedure]],
-        contractionFrequency: groupmembersObj[ContractionFrequency],
-        contractionDuration: groupmembersObj[ContractionDuration],
+        fetalHeartRate: groupmembersObj[partographyConcepts.fetalHeartRateUuid],
+        cervicalDilation: groupmembersObj[partographyConcepts.cervicalDilationUuid],
+        descentOfHead: descentOfHeadValue ? descentOfHeadAnswerLabels[descentOfHeadValue] : undefined,
+        contractionFrequency: groupmembersObj[partographyConcepts.contractionFrequencyUuid],
+        contractionDuration: groupmembersObj[partographyConcepts.contractionDurationUuid],
       };
     }) ?? [];
   const handleAddHistory = () => {
     launchWorkspace2(formEntryWorkspace, {
-      form: { uuid: PartographEncounterFormUuid },
+      form: { uuid: partography.formUuid },
       encounterUuid: '',
     });
   };

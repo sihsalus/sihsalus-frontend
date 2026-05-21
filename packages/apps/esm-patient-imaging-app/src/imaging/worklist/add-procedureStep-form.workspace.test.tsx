@@ -120,10 +120,10 @@ vi.mock('@carbon/react', async () => {
         <input value={value ?? ''} {...props} />
       </label>
     ),
-    TextArea: ({ labelText, value, invalid: _invalid, invalidText: _invalidText, ...props }: TextAreaMockProps) => (
+    TextArea: ({ labelText, value, invalid: _invalid, invalidText, ...props }: TextAreaMockProps) => (
       <label>
         {labelText}
-        <textarea value={value ?? ''} {...props} />
+        <textarea value={value ?? ''} invalidtext={invalidText} {...props} />
       </label>
     ),
   };

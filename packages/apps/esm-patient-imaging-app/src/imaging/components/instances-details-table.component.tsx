@@ -39,7 +39,6 @@ const InstancesDetailsTable: React.FC<InstancesDetailsTableProps> = ({
 }) => {
   const {
     data: instances,
-    error: seriesError,
     isLoading: isLoadingSeries,
     isValidating: isValidatingSeries,
   } = useStudyInstances(studyId, seriesInstanceUID);

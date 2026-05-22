@@ -25,7 +25,10 @@ export default function DashboardContainer() {
   const ungroupedDashboards = assignedExtensions.map((e) => e.meta).filter((e) => Object.keys(e).length) || [];
   const dashboards = ungroupedDashboards as Array<DashboardConfig>;
   const activeDashboard = dashboards.find((dashboard) => dashboard.name === params?.dashboard) || dashboards[0];
-  const workspaceContextKey = typeof params.dashboard === 'string' ? `home/${params.dashboard}` : null;
+  const workspaceContextKey =
+    typeof params.dashboard === 'string' && activeDashboard?.name === params.dashboard
+      ? `home/${params.dashboard}`
+      : null;
   const dashboardState = useMemo(() => ({ dashboardTitle: activeDashboard?.name }), [activeDashboard?.name]);
   const usesApplicationDashboardSurface = Boolean(
     activeDashboard?.slot && activeDashboard.slot !== 'home-dashboard-slot',

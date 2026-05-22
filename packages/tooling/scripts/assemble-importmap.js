@@ -40,7 +40,21 @@ function assertInsideDir(resolvedPath, baseDir, label) {
 }
 
 // Clean and recreate output directory
-fs.mkdirSync(outDir, { recursive: true });
+function cleanOutputDirectory() {
+  const resolvedOutDir = path.resolve(outDir);
+  const rootDir = path.parse(resolvedOutDir).root;
+  const cwd = path.resolve(process.cwd());
+
+  if (resolvedOutDir === rootDir || resolvedOutDir === cwd) {
+    logFail(`Refusing to clean unsafe SPA output directory: ${resolvedOutDir}`);
+    process.exit(1);
+  }
+
+  fs.rmSync(resolvedOutDir, { recursive: true, force: true });
+  fs.mkdirSync(resolvedOutDir, { recursive: true });
+}
+
+cleanOutputDirectory();
 
 // ── Phase 1: Copy locally-built app bundles (@sihsalus/* and @openmrs/* overrides) ──
 logInfo('Phase 1: Local modules');

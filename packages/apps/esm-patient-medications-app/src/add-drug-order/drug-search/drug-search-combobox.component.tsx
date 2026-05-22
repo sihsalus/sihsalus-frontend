@@ -1,9 +1,8 @@
 import { ComboBox } from '@carbon/react';
-import { useConfig, useDebounce, type Visit } from '@openmrs/esm-framework';
+import { useDebounce, type Visit } from '@openmrs/esm-framework';
 import { type DrugOrderBasketItem } from '@openmrs/esm-patient-common-lib';
 import { useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { type ConfigObject } from '../../config-schema';
 import { translateCarbonWithId } from '../carbon-translation';
 import { getTemplateOrderBasketItem, useDrugSearch, useDrugTemplates } from './drug-search.resource';
 
@@ -24,7 +23,6 @@ const DrugSearchComboBox: React.FC<DrugSearchComboBoxProps> = ({
   setSelectedDrugItem,
   visit,
 }) => {
-  const { daysDurationUnit } = useConfig<ConfigObject>();
   const { t } = useTranslation();
   const [drugSearchTerm, setDrugSearchTerm] = useState('');
   const debouncedDrugSearchTerm = useDebounce(drugSearchTerm);
@@ -34,12 +32,12 @@ const DrugSearchComboBox: React.FC<DrugSearchComboBoxProps> = ({
     return drugs?.flatMap((drug) => {
       const templates = templateByDrugUuid.get(drug.uuid);
       if (templates?.length > 0) {
-        return templates.map((template) => getTemplateOrderBasketItem(drug, visit, daysDurationUnit, template));
+        return templates.map((template) => getTemplateOrderBasketItem(drug, visit, template));
       } else {
-        return [getTemplateOrderBasketItem(drug, visit, daysDurationUnit)];
+        return [getTemplateOrderBasketItem(drug, visit)];
       }
     });
-  }, [drugs, templateByDrugUuid, daysDurationUnit, visit]);
+  }, [drugs, templateByDrugUuid, visit]);
 
   return (
     <ComboBox

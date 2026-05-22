@@ -38,6 +38,29 @@ interface OrderBasketWindowProps {
 type Workspace2OrderBasketProps = PatientWorkspace2DefinitionProps<OrderBasketWorkspaceProps, OrderBasketWindowProps>;
 type OrderBasketProps = DefaultPatientWorkspaceProps | Workspace2OrderBasketProps;
 
+type OpenmrsSubmissionError = {
+  message?: string;
+  responseBody?: {
+    error?: {
+      message?: string;
+      globalErrors?: Array<string>;
+      fieldErrors?: Record<string, Array<{ message?: string }>>;
+    };
+  };
+};
+
+function getOpenmrsErrorMessage(error: OpenmrsSubmissionError, fallback: string) {
+  const responseError = error?.responseBody?.error;
+  const fieldErrors = responseError?.fieldErrors
+    ? Object.entries(responseError.fieldErrors).flatMap(([fieldName, errors]) =>
+        errors.map((fieldError) => [fieldName, fieldError?.message].filter(Boolean).join(': ')),
+      )
+    : [];
+  const messages = [responseError?.message, ...(responseError?.globalErrors ?? []), ...fieldErrors].filter(Boolean);
+
+  return messages.join(', ') || error?.message || fallback;
+}
+
 function isWorkspace2Props(props: OrderBasketProps): props is Workspace2OrderBasketProps {
   return 'groupProps' in props && 'workspaceProps' in props;
 }
@@ -172,8 +195,7 @@ const OrderBasket: React.FC<OrderBasketProps> = (props) => {
       } catch (e) {
         console.error(e);
         setCreatingEncounterError(
-          e.responseBody?.error?.message ||
-            t('tryReopeningTheWorkspaceAgain', 'Please try launching the workspace again'),
+          getOpenmrsErrorMessage(e, t('tryReopeningTheWorkspaceAgain', 'Please try launching the workspace again')),
         );
       }
     } else {
@@ -231,6 +253,8 @@ const OrderBasket: React.FC<OrderBasketProps> = (props) => {
               canCreateOrders,
               onMissingActiveVisit: openStartVisitDialog,
               launchAddDrugOrder: (order?: OrderBasketItem) =>
+                openOrderWorkspace(orderWorkspaceNames.drug, order ? { order } : {}),
+              launchDrugOrderForm: (order?: OrderBasketItem) =>
                 openOrderWorkspace(orderWorkspaceNames.drug, order ? { order } : {}),
               launchAddLabOrder: (orderTypeUuid: string, order?: OrderBasketItem) =>
                 openOrderWorkspace(orderWorkspaceNames.lab, {

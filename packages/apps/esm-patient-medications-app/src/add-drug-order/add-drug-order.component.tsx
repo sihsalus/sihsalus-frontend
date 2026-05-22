@@ -6,6 +6,7 @@ import {
   showSnackbar,
   useConfig,
   useLayoutType,
+  useSession,
   type Visit,
   Workspace2,
   type Workspace2DefinitionProps,
@@ -66,10 +67,12 @@ const AddDrugOrder: React.FC<AddDrugOrderProps> = ({
   const { t } = useTranslation();
   const isTablet = useLayoutType() === 'tablet';
   const { careSettingUuid, drugCategoryConceptSets } = useConfig<ConfigObject>();
+  const session = useSession();
+  const orderingProviderUuid = session?.currentProvider?.uuid;
   const prepareMedicationOrderPostData = useCallback(
     (order: DrugOrderBasketItem, patientUuid: string, encounterUuid: string | null) =>
-      prepMedicationOrderPostData(order, patientUuid, encounterUuid, undefined, careSettingUuid),
-    [careSettingUuid],
+      prepMedicationOrderPostData(order, patientUuid, encounterUuid, orderingProviderUuid, careSettingUuid),
+    [careSettingUuid, orderingProviderUuid],
   );
   const { orders, setOrders, clearOrders } = useOrderBasket<DrugOrderBasketItem>(
     patient,
@@ -102,6 +105,7 @@ const AddDrugOrder: React.FC<AddDrugOrderProps> = ({
   const saveDrugOrderToBasket = useCallback(
     async (finalizedOrder: DrugOrderBasketItem) => {
       finalizedOrder.action ??= 'NEW';
+      finalizedOrder.orderer ??= orderingProviderUuid;
       const newOrders = [...orders];
       const existingOrder = orders.find((order) => ordersEqual(order, finalizedOrder));
       if (existingOrder) {
@@ -116,7 +120,7 @@ const AddDrugOrder: React.FC<AddDrugOrderProps> = ({
       setOrders(newOrders);
       closeWorkspace({ discardUnsavedChanges: true });
     },
-    [orders, setOrders, closeWorkspace],
+    [orders, setOrders, closeWorkspace, orderingProviderUuid],
   );
 
   // If editing an existing order, on save, we directly submit the modified order to the server
@@ -128,7 +132,7 @@ const AddDrugOrder: React.FC<AddDrugOrderProps> = ({
           finalizedOrder,
           patientUuid,
           finalizedOrder?.encounterUuid,
-          orderToEditOrdererUuid,
+          orderToEditOrdererUuid ?? orderingProviderUuid,
           careSettingUuid,
         ),
       )
@@ -160,7 +164,16 @@ const AddDrugOrder: React.FC<AddDrugOrderProps> = ({
           });
         });
     },
-    [careSettingUuid, clearOrders, closeWorkspace, mutateOrders, patientUuid, t, orderToEditOrdererUuid],
+    [
+      careSettingUuid,
+      clearOrders,
+      closeWorkspace,
+      mutateOrders,
+      orderingProviderUuid,
+      patientUuid,
+      t,
+      orderToEditOrdererUuid,
+    ],
   );
 
   const workspaceTitle =

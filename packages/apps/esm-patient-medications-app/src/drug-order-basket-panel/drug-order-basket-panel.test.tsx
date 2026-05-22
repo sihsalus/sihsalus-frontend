@@ -30,6 +30,17 @@ describe('OrderBasketPanel', () => {
     expect(screen.getByRole('button', { name: /Add/i })).toBeInTheDocument();
   });
 
+  test('launches the drug order form from the order basket state callback', async () => {
+    const user = userEvent.setup();
+    const launchAddDrugOrder = vi.fn();
+    mockUseOrderBasket.mockReturnValue({ orders: [] });
+    render(<DrugOrderBasketPanel patient={mockFhirPatient} launchAddDrugOrder={launchAddDrugOrder} />);
+
+    await user.click(screen.getByRole('button', { name: /Add/i }));
+
+    expect(launchAddDrugOrder).toHaveBeenCalledWith(undefined);
+  });
+
   test('renders a tile-based layout of orders, including new, renewing, modifying, and discontinuing', async () => {
     const user = userEvent.setup();
     const medications = [

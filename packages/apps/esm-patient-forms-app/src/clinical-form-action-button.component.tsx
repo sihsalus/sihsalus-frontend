@@ -7,6 +7,9 @@ import {
 import React, { type ComponentProps } from 'react';
 import { useTranslation } from 'react-i18next';
 
+const renderDocumentIcon = (props: ComponentProps<typeof DocumentIcon>) =>
+  DocumentIcon ? <DocumentIcon {...props} /> : null;
+
 const ClinicalFormActionButton: React.FC<PatientChartWorkspaceActionButtonProps> = ({ groupProps }) => {
   const { t } = useTranslation();
   const patientChartContext = usePatientChartStore();
@@ -25,7 +28,7 @@ const ClinicalFormActionButton: React.FC<PatientChartWorkspaceActionButtonProps>
 
   return (
     <ActionMenuButton2
-      icon={(props: ComponentProps<typeof DocumentIcon>) => <DocumentIcon {...props} />}
+      icon={renderDocumentIcon}
       label={t('clinicalForms', 'Clinical forms')}
       workspaceToLaunch={{
         workspaceName: 'clinical-forms-workspace',

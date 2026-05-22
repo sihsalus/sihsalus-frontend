@@ -3,13 +3,16 @@ import { clinicalFormsWorkspace, useLaunchWorkspaceRequiringVisit } from '@openm
 import React, { type ComponentProps } from 'react';
 import { useTranslation } from 'react-i18next';
 
+const renderDocumentIcon = (props: ComponentProps<typeof DocumentIcon>) =>
+  DocumentIcon ? <DocumentIcon {...props} /> : null;
+
 const ClinicalFormActionMenu: React.FC = () => {
   const { t } = useTranslation();
   const launchFormsWorkspace = useLaunchWorkspaceRequiringVisit(clinicalFormsWorkspace);
 
   return (
     <ActionMenuButton
-      getIcon={(props: ComponentProps<typeof DocumentIcon>) => <DocumentIcon {...props} />}
+      getIcon={renderDocumentIcon}
       label={t('clinicalForms', 'Clinical forms')}
       iconDescription={t('clinicalForms', 'Clinical forms')}
       handler={() => launchFormsWorkspace()}

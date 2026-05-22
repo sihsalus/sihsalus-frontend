@@ -22,7 +22,7 @@ import {
 } from '@openmrs/esm-patient-common-lib';
 import classNames from 'classnames';
 import debounce from 'lodash-es/debounce';
-import React, { useMemo, useState } from 'react';
+import React, { type ComponentProps, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import { type ConfigObject } from '../config-schema';
@@ -30,6 +30,8 @@ import { launchFormEntryOrHtmlForms } from '../form-entry-interop';
 import { type CompletedFormInfo } from '../types';
 
 import styles from './form-view.scss';
+
+const renderEditIcon = (props: ComponentProps<typeof EditIcon>) => (EditIcon ? <EditIcon {...props} /> : null);
 
 type FormsCategory = 'All' | 'Completed' | 'Recommended';
 
@@ -225,7 +227,7 @@ const FormView: React.FC<FormViewProps> = ({
                             {row.cells[0].value && (
                               <Button
                                 hasIconOnly
-                                renderIcon={EditIcon}
+                                renderIcon={renderEditIcon}
                                 aria-label={t('editForm', 'Edit form')}
                                 iconDescription={t('editForm', 'Edit form')}
                                 onClick={() =>

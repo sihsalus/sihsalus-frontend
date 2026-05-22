@@ -13,12 +13,14 @@ import {
   TableToolbarSearch,
 } from '@carbon/react';
 import { EditIcon } from '@openmrs/esm-framework';
-import React from 'react';
+import React, { type ComponentProps } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import type { Form } from '../types';
 
 import styles from './forms-table.scss';
+
+const renderEditIcon = (props: ComponentProps<typeof EditIcon>) => (EditIcon ? <EditIcon {...props} /> : null);
 
 interface FormsTableProps {
   tableHeaders: Array<{
@@ -108,7 +110,7 @@ const FormsTable = ({ tableHeaders, tableRows, isTablet, handleSearch, handleFor
                           {tableRow.encounterUuid ? (
                             <Button
                               hasIconOnly
-                              renderIcon={EditIcon}
+                              renderIcon={renderEditIcon}
                               aria-label={t('editForm', 'Edit form')}
                               iconDescription={t('editForm', 'Edit form')}
                               onClick={() => handleFormOpen(tableRow.form, tableRow.encounterUuid)}

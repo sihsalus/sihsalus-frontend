@@ -1,6 +1,6 @@
 import { Settings, Wallet } from '@carbon/react/icons';
 import { defineConfigSchema, getAsyncLifecycle, getSyncLifecycle } from '@openmrs/esm-framework';
-import { createDashboardLink } from '@openmrs/esm-patient-common-lib';
+import { createDashboardLink } from '@openmrs/esm-patient-common-lib/src/dashboards/createDashboardLink';
 import BillHistory from './bill-history/bill-history.component';
 import EditBillLineItemModal from './bill-item-actions/edit-bill-item.modal';
 import BillableServiceHome from './billable-services/billable-services-home.component';

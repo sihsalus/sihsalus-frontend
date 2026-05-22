@@ -6,7 +6,7 @@ import {
   messageOmrsServiceWorker,
   restBaseUrl,
 } from '@openmrs/esm-framework';
-import { createDashboardLink } from '@openmrs/esm-patient-common-lib';
+import { createDashboardLink } from '@openmrs/esm-patient-common-lib/src/dashboards/createDashboardLink';
 import allergiesDetailedSummaryComponent from './allergies/allergies-detailed-summary.component';
 import allergiesListExtension from './allergies/allergies-list.extension';
 import allergiesTileExtension from './allergies/allergies-tile.extension';

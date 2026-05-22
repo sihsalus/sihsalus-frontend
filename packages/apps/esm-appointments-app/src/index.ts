@@ -80,8 +80,8 @@ export const searchPatient = getAsyncLifecycle(() => import('./patient-search/pa
 
 // t('Appointments', 'Appointments')
 export const patientAppointmentsSummaryDashboardLink = getAsyncLifecycle(async () => {
-  const commonLib = await import('@openmrs/esm-patient-common-lib');
-  return { default: commonLib.createDashboardLink({ ...patientChartDashboardMeta, moduleName }) };
+  const { createDashboardLink } = await import('@openmrs/esm-patient-common-lib/src/dashboards/createDashboardLink');
+  return { default: createDashboardLink({ ...patientChartDashboardMeta, moduleName }) };
 }, options);
 
 export const patientAppointmentsDetailedSummary = getAsyncLifecycle(

@@ -1,5 +1,5 @@
 import { defineConfigSchema, getAsyncLifecycle, getSyncLifecycle } from '@openmrs/esm-framework';
-import { createDashboardLink } from '@openmrs/esm-patient-common-lib';
+import { createDashboardLink } from '@openmrs/esm-patient-common-lib/src/dashboards/createDashboardLink';
 import activeMedicationsComponent from './active-medications/active-medications.component';
 import { configSchema } from './config-schema';
 import { dashboardMeta, moduleName } from './dashboard.meta';

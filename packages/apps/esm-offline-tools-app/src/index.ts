@@ -1,6 +1,6 @@
 import { Renew, UserMultiple } from '@carbon/react/icons';
 import { defineConfigSchema, getSyncLifecycle, registerBreadcrumbs } from '@openmrs/esm-framework';
-import { createDashboardLink } from '@openmrs/esm-patient-common-lib';
+import { createDashboardLink } from '@openmrs/esm-patient-common-lib/src/dashboards/createDashboardLink';
 
 import offlineToolsConfirmationModalComponent from './components/confirmation.modal';
 import { routes } from './constants';

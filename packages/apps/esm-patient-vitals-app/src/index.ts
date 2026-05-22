@@ -6,7 +6,7 @@ import {
   messageOmrsServiceWorker,
   restBaseUrl,
 } from '@openmrs/esm-framework';
-import { createDashboardLink } from '@openmrs/esm-patient-common-lib';
+import { createDashboardLink } from '@openmrs/esm-patient-common-lib/src/dashboards/createDashboardLink';
 
 import biometricsDetailedSummaryComponent from './biometrics/biometrics-main.component';
 import biometricsOverviewComponent from './biometrics/biometrics-overview.component';

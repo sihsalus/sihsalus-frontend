@@ -13,6 +13,7 @@ import { showModal } from '@openmrs/esm-framework';
 import React, { type Dispatch, type SetStateAction, useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import mainStyles from '../../cohort-builder.scss';
+import { clearStoredSearchHistory, replaceStoredSearchHistory } from '../../search-history-store';
 import { type PaginationData, type SearchHistoryItem } from '../../types';
 import EmptyData from '../empty-data/empty-data.component';
 import styles from './search-history.style.scss';
@@ -58,7 +59,7 @@ const SearchHistory: React.FC<SearchHistoryProps> = ({ isHistoryUpdated, setIsHi
   ];
 
   const clearHistory = () => {
-    window.sessionStorage.removeItem('openmrsHistory');
+    clearStoredSearchHistory();
     setSearchResults([]);
   };
 
@@ -67,15 +68,12 @@ const SearchHistory: React.FC<SearchHistoryProps> = ({ isHistoryUpdated, setIsHi
       (_searchResult, index) => index !== searchResults.indexOf(selectedSearchItem),
     );
     setSearchResults(updatedSearchResults);
-    window.sessionStorage.setItem(
-      'openmrsHistory',
-      JSON.stringify(
-        updatedSearchResults.map((searchResult) => ({
-          description: searchResult.description,
-          memberIds: searchResult.memberIds,
-          parameters: searchResult.parameters,
-        })),
-      ),
+    replaceStoredSearchHistory(
+      updatedSearchResults.map((searchResult) => ({
+        description: searchResult.description,
+        memberIds: searchResult.memberIds,
+        parameters: searchResult.parameters,
+      })),
     );
   };
 

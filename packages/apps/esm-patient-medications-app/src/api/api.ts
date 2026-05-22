@@ -1,4 +1,4 @@
-import { type FetchResponse, openmrsFetch, restBaseUrl, useConfig } from '@openmrs/esm-framework';
+import { type FetchResponse, openmrsFetch, restBaseUrl, toOmrsIsoString, useConfig } from '@openmrs/esm-framework';
 import {
   type DrugOrderBasketItem,
   type DrugOrderPost,
@@ -140,6 +140,7 @@ export const prepMedicationOrderPostData = (
   careSettingUuid?: string,
 ): DrugOrderPost => {
   const orderer = orderingProviderUuid ?? order.orderer;
+  const dateActivated = order.startDate ? toOmrsIsoString(order.startDate) : undefined;
 
   if (order.action === 'NEW') {
     return {
@@ -149,6 +150,7 @@ export const prepMedicationOrderPostData = (
       careSetting: careSettingUuid,
       orderer,
       encounter: encounterUuid,
+      dateActivated,
       drug: order.drug.uuid,
       dose: order.dosage,
       doseUnits: order.unit?.valueCoded,
@@ -177,6 +179,7 @@ export const prepMedicationOrderPostData = (
       careSetting: careSettingUuid,
       orderer,
       encounter: encounterUuid,
+      dateActivated,
       drug: order.drug.uuid,
       dose: order.dosage,
       doseUnits: order.unit?.valueCoded,
@@ -205,6 +208,7 @@ export const prepMedicationOrderPostData = (
       careSetting: careSettingUuid,
       orderer,
       encounter: encounterUuid,
+      dateActivated,
       drug: order.drug.uuid,
       dose: order.dosage,
       doseUnits: order.unit?.valueCoded,

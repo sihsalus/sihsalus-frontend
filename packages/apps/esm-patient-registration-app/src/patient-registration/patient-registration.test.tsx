@@ -277,7 +277,7 @@ describe('Registering a new patient', () => {
     expect(screen.getByRole('button', { name: /cancel/i })).toBeInTheDocument();
   });
 
-  // FIXME the register patient button is missing
+  // TODO: Re-enable once the save-flow test stubs cover the current registration form.
   it.skip('saves the patient without extra info', async () => {
     const user = userEvent.setup();
 
@@ -289,7 +289,7 @@ describe('Registering a new patient', () => {
     await user.click(await screen.findByText(/Register Patient/i));
     expect(mockSavePatient).toHaveBeenCalledWith(
       expect.objectContaining({
-        identifiers: [], // TODO (P1.1): assert identifier payload once the Register Patient button rendering is fixed.
+        identifiers: [], // TODO (P1.1): assert identifier payload once the save-flow test is re-enabled.
         person: {
           addresses: expect.arrayContaining([expect.any(Object)]),
           attributes: [],
@@ -327,7 +327,7 @@ describe('Registering a new patient', () => {
     expect(mockSavePatientForm).not.toHaveBeenCalled();
   });
 
-  // FIXME: the register patient button is missing
+  // TODO: Re-enable once the save-flow test stubs cover the current registration form.
   it.skip('renders and saves registration obs', async () => {
     const user = userEvent.setup();
 
@@ -364,7 +364,7 @@ describe('Registering a new patient', () => {
     );
   });
 
-  // FIXME register patient button is missing
+  // TODO: Re-enable once the save-flow test stubs cover the current registration form.
   it.skip('retries saving registration obs after a failed attempt', async () => {
     const user = userEvent.setup();
 

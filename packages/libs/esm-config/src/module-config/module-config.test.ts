@@ -1147,8 +1147,6 @@ describe('extension slot config', () => {
   afterEach(resetAll);
 
   it('returns an object with add, remove, and order keys. No schema needs to be defined', async () => {
-    // TODO: Here's the problem: right now extension slot configs are computed only for
-    // modules that define schemas.
     Config.provide({
       'foo-module': {
         extensionSlots: {

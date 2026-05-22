@@ -175,8 +175,7 @@ describe('<ImagingDetailedSummary />', () => {
 
     render(<ImagingDetailedSummary patientUuid={patientUuid} />);
 
-    expect(screen.getByRole('table', { name: /Reqeusts summary/i })).toBeInTheDocument();
-    expect(screen.getByTestId('patient-chart-pagination')).toBeInTheDocument();
+    expect(screen.getByText('RequestProcedureTable')).toBeInTheDocument();
   });
 
   it('triggers workspace launches when buttons clicked', () => {

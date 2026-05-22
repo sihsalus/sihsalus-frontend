@@ -98,6 +98,7 @@ describe('InstancesDetailsTable', () => {
     Object.defineProperty(window, 'location', {
       writable: true,
       value: {
+        origin: 'http://openmrs.sihsalus.gidistest',
         set href(url: string) {
           this._href = url;
         },
@@ -151,7 +152,7 @@ describe('InstancesDetailsTable', () => {
       fireEvent.click(orthancBtn);
     });
 
-    expect(window.location.href).toContain('instances/inst-1/preview');
+    expect(window.location.href).toBe('http://openmrs.sihsalus.gidistest/orthanc/instances/inst-1/preview');
   });
 
   it('shows loading state when data is being fetched', async () => {

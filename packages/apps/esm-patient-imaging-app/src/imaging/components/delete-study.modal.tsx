@@ -31,26 +31,27 @@ const DeleteStudyModal: React.FC<DeleteStudyModalProps> = ({ closeDeleteModal, s
 
   const handleDelete = useCallback(async () => {
     setIsDeleting(true);
-    deleteStudy(studyId, selectedOption, new AbortController())
-      .then((response) => {
-        if (response.ok) {
-          mutate();
-          closeDeleteModal();
-          showSnackbar({
-            isLowContrast: true,
-            kind: 'success',
-            title: t('studyDeleted', 'Study is deleted'),
-          });
-        }
-      })
-      .catch((error) => {
+    try {
+      const response = await deleteStudy(studyId, selectedOption, new AbortController());
+      if (response.ok) {
+        mutate();
+        closeDeleteModal();
         showSnackbar({
-          isLowContrast: false,
-          kind: 'error',
-          title: t('errorDeletingStudy', 'An error occurred while deleting the study'),
-          subtitle: error?.message,
+          isLowContrast: true,
+          kind: 'success',
+          title: t('studyDeleted', 'Study is deleted'),
         });
+      }
+    } catch (error) {
+      showSnackbar({
+        isLowContrast: false,
+        kind: 'error',
+        title: t('errorDeletingStudy', 'An error occurred while deleting the study'),
+        subtitle: error instanceof Error ? error.message : undefined,
       });
+    } finally {
+      setIsDeleting(false);
+    }
   }, [closeDeleteModal, studyId, mutate, t, selectedOption]);
 
   return (
@@ -64,8 +65,12 @@ const DeleteStudyModal: React.FC<DeleteStudyModalProps> = ({ closeDeleteModal, s
           onChange={(value) => handleOptionChange(value)}
           valueSelected={selectedOption}
         >
-          <RadioButton value="openmrs" id="openmrs" labelText={t('deleteFromOpenMRS', 'From OpenMRS')} />
-          <RadioButton value="both" id="both" labelText={t('deleteFromOrthancOpenMRS', 'From Orthanc & OpenMRS')} />
+          <RadioButton value="openmrs" id="openmrs" labelText={t('deleteFromOpenMRS', 'From SIHSALUS')} />
+          <RadioButton
+            value="openmrsOrthanc"
+            id="openmrsOrthanc"
+            labelText={t('deleteFromOrthancOpenMRS', 'From Orthanc & SIHSALUS')}
+          />
         </RadioButtonGroup>
       </ModalBody>
       <ModalFooter>

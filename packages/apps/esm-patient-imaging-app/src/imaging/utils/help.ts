@@ -1,3 +1,5 @@
+import type { OrthancConfiguration } from '../../types';
+
 /**
  *
  * @param date
@@ -85,9 +87,103 @@ export function buildURL(
   specialUrl: string,
   params: Array<{ code: string; value: string }>,
 ): string {
-  const basicUrl = new URL(specialUrl, configurationUrl);
+  if (!configurationUrl) {
+    return '';
+  }
+
+  const normalizedBaseUrl = `${trimTrailingSlash(configurationUrl)}/`;
+  const normalizedSpecialUrl = specialUrl.replace(/^\/+/, '');
+  const basicUrl = new URL(normalizedSpecialUrl, normalizedBaseUrl);
   for (const { code, value } of params) {
     basicUrl.searchParams.set(code, value);
   }
   return basicUrl.toString();
+}
+
+function getSafeHttpUrl(url: string | undefined | null): URL | null {
+  if (!url) {
+    return null;
+  }
+
+  try {
+    const parsedUrl = new URL(url);
+    if (parsedUrl.protocol !== 'https:' && parsedUrl.protocol !== 'http:') {
+      return null;
+    }
+    return parsedUrl;
+  } catch {
+    return null;
+  }
+}
+
+function trimTrailingSlash(url: string): string {
+  return url.replace(/\/+$/, '');
+}
+
+function getBrowserOrigin(): URL | null {
+  const origin = globalThis.location?.origin;
+  return getSafeHttpUrl(origin);
+}
+
+function shouldUseConfiguredOrthancRoot(candidate: URL, browserOrigin: URL | null): boolean {
+  const normalizedPath = trimTrailingSlash(candidate.pathname.toLowerCase());
+  const isLocalhostCandidate = ['localhost', '127.0.0.1'].includes(candidate.hostname);
+  const isLocalhostBrowser =
+    browserOrigin && ['localhost', '127.0.0.1'].includes(browserOrigin.hostname);
+
+  return (
+    normalizedPath.endsWith('/orthanc') ||
+    !browserOrigin ||
+    (isLocalhostCandidate && isLocalhostBrowser)
+  );
+}
+
+export function getOrthancPublicRoot(configuration: OrthancConfiguration): string {
+  const browserOrigin = getBrowserOrigin();
+  const configuredRoot =
+    getSafeHttpUrl(configuration.orthancProxyUrl) ?? getSafeHttpUrl(configuration.orthancBaseUrl);
+
+  if (configuredRoot && shouldUseConfiguredOrthancRoot(configuredRoot, browserOrigin)) {
+    return trimTrailingSlash(configuredRoot.toString());
+  }
+
+  if (browserOrigin) {
+    return `${trimTrailingSlash(browserOrigin.toString())}/orthanc`;
+  }
+
+  return configuredRoot ? trimTrailingSlash(configuredRoot.toString()) : '';
+}
+
+export function getOhifPublicRoot(): string {
+  const browserOrigin = getBrowserOrigin();
+  return browserOrigin ? `${trimTrailingSlash(browserOrigin.toString())}/imaging` : '';
+}
+
+export function buildOrthancExplorerUrl(
+  configuration: OrthancConfiguration,
+  params: Array<{ code: string; value: string }>,
+): string {
+  const orthancRoot = getOrthancPublicRoot(configuration);
+  if (!orthancRoot) {
+    return '';
+  }
+
+  const searchParams = new URLSearchParams();
+  for (const { code, value } of params) {
+    searchParams.set(code, value);
+  }
+
+  const queryString = searchParams.toString();
+  return `${orthancRoot}/ui/app/#/filtered-studies${queryString ? `?${queryString}` : ''}`;
+}
+
+export function buildOrthancInstancePreviewUrl(
+  configuration: OrthancConfiguration,
+  orthancInstanceUID: string,
+): string {
+  return buildURL(getOrthancPublicRoot(configuration), `/instances/${orthancInstanceUID}/preview`, []);
+}
+
+export function buildOhifViewerUrl(params: Array<{ code: string; value: string }>): string {
+  return buildURL(getOhifPublicRoot(), '/viewer', params);
 }

@@ -17,9 +17,9 @@ import { useTranslation } from 'react-i18next';
 import { useStudyInstances } from '../../api';
 import orthancExplorer from '../../assets/orthanc.png';
 import preview from '../../assets/preview.png';
-import { getBrowserUrl, type OrthancConfiguration } from '../../types';
+import { type OrthancConfiguration } from '../../types';
 import { instancePreviewDialog, instancesCount } from '../constants';
-import { buildURL } from '../utils/help';
+import { buildOrthancExplorerUrl, buildOrthancInstancePreviewUrl } from '../utils/help';
 import styles from './details-table.scss';
 
 export interface InstancesDetailsTableProps {
@@ -103,12 +103,10 @@ const InstancesDetailsTable: React.FC<InstancesDetailsTableProps> = ({
                 label={t('instanceViewInOrthanc', 'Instance view in Orthanc')}
                 onClick={
                   () =>
-                    (globalThis.location.href = buildURL(
-                      getBrowserUrl(orthancConfig),
-                      `instances/${instance.orthancInstanceUID}/preview`,
-                      [],
+                    (globalThis.location.href = buildOrthancInstancePreviewUrl(
+                      orthancConfig,
+                      instance.orthancInstanceUID,
                     ))
-                  // `${orthancBaseUrl}instances/${instance.orthancInstanceUID}/preview`)
                 }
               >
                 <img alt="" className="orthanc-img" src={preview} style={{ width: 23, height: 23 }} />
@@ -119,9 +117,12 @@ const InstancesDetailsTable: React.FC<InstancesDetailsTableProps> = ({
             kind="ghost"
             align="left"
             size={isTablet ? 'lg' : 'sm'}
-            label={t('orthancExplorer2', 'Show data in orthanc explorere')}
+            label={t('orthancExplorer2', 'Open in Orthanc')}
             onClick={() =>
-              (globalThis.location.href = `${getBrowserUrl(orthancConfig)}/ui/app/#/filtered-studies?StudyInstanceUID=${encodeURIComponent(studyInstanceUID)}&expand=series`)
+              (globalThis.location.href = buildOrthancExplorerUrl(orthancConfig, [
+                { code: 'StudyInstanceUID', value: studyInstanceUID },
+                { code: 'expand', value: 'series' },
+              ]))
             }
           >
             <img alt="" className="orthanc-img" src={orthancExplorer} style={{ width: 26, height: 26, marginTop: 0 }} />

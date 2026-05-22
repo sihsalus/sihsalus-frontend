@@ -121,18 +121,27 @@ describe('StudiesDetailsTable', () => {
   it('navigates when viewer button clicked', () => {
     Object.defineProperty(window, 'location', {
       configurable: true,
-      value: { href: '' } as unknown as Location,
+      value: {
+        origin: 'http://openmrs.sihsalus.gidistest',
+        href: '',
+      } as unknown as Location,
     });
 
     render(<StudiesDetailTable patientUuid="patientUuid-123" studies={mockStudies} />);
 
-    fireEvent.click(screen.getByLabelText(/Stone viewer of Orthanc/i));
-    expect(window.location.href).toContain('stone-webviewer');
+    fireEvent.click(screen.getByLabelText(/^Show image$/i));
+    expect(window.location.href).toBe(
+      'http://openmrs.sihsalus.gidistest/imaging/viewer?StudyInstanceUIDs=STUDY-123',
+    );
 
-    fireEvent.click(screen.getByLabelText(/Ohif viewer/i));
-    expect(window.location.href).toContain('http://localhost:8042/ohif/viewer?StudyInstanceUIDs=STUDY-123');
+    fireEvent.click(screen.getByLabelText(/^Show image data$/i));
+    expect(window.location.href).toBe(
+      'http://openmrs.sihsalus.gidistest/orthanc/ui/app/#/filtered-studies?StudyInstanceUID=STUDY-123&expand=series',
+    );
 
-    fireEvent.click(screen.getByLabelText(/Show data in orthanc explorer/i));
-    expect(window.location.href).toContain('filtered-studies');
+    fireEvent.click(screen.getByLabelText(/Open in Orthanc/i));
+    expect(window.location.href).toBe(
+      'http://openmrs.sihsalus.gidistest/orthanc/ui/app/#/filtered-studies?StudyInstanceUID=STUDY-123&expand=series',
+    );
   });
 });

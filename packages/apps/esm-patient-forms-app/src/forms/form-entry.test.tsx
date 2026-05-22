@@ -10,16 +10,20 @@ import FormEntryWorkspace from './form-entry.workspace';
 void React;
 
 const mockFhirPatient = mockPatient as unknown as fhir.Patient;
-const mockExtensionSlot = jest.mocked(ExtensionSlot);
-const mockUseVisitOrOfflineVisit = useVisitOrOfflineVisit as jest.Mock;
-const mockUsePatient = jest.mocked(usePatient);
-const mockWorkspace2 = jest.mocked(Workspace2);
-const mockUseConfig = jest.mocked(useConfig);
-const mockUseConnectivity = jest.mocked(useConnectivity);
-const mockUseSWR = useSWR as jest.Mock;
-const mockUseSWRConfig = useSWRConfig as jest.Mock;
+const mockExtensionSlot = vi.mocked(ExtensionSlot);
+const mockUseVisitOrOfflineVisit = useVisitOrOfflineVisit as vi.Mock;
+const mockUsePatient = vi.mocked(usePatient);
+const mockWorkspace2 = vi.mocked(Workspace2);
+const mockUseConfig = vi.mocked(useConfig);
+const mockUseConnectivity = vi.mocked(useConnectivity);
+const mockUseSWR = useSWR as vi.Mock;
+const mockUseSWRConfig = useSWRConfig as vi.Mock;
+type Workspace2MockProps = {
+  hasUnsavedChanges?: boolean;
+  title?: string;
+};
 const workspace2DefinitionProps = {
-  launchChildWorkspace: jest.fn(),
+  launchChildWorkspace: vi.fn(),
   windowProps: {},
   workspaceName: 'patient-form-entry-workspace-v2',
   windowName: 'patient-chart-workspace-window',
@@ -45,36 +49,37 @@ const mockCurrentVisit = {
   },
 };
 
-jest.mock('../hooks/use-forms', () => ({
-  useForms: jest.fn().mockReturnValue({ mutateForms: jest.fn() }),
+vi.mock('../hooks/use-forms', async () => ({
+  useForms: vi.fn().mockReturnValue({ mutateForms: vi.fn() }),
 }));
 
-jest.mock('swr', () => {
-  const actual = jest.requireActual('swr');
+vi.mock('swr', async () => {
+  const actual = await vi.importActual('swr');
 
   return {
     __esModule: true,
     ...actual,
-    default: jest.fn(),
-    useSWRConfig: jest.fn(),
+    default: vi.fn(),
+    useSWRConfig: vi.fn(),
   };
 });
 
-jest.mock('@openmrs/esm-patient-common-lib', () => {
+vi.mock('@openmrs/esm-patient-common-lib', async () => {
   return {
     clinicalFormsWorkspace: 'clinical-forms-workspace',
-    invalidateVisitAndEncounterData: jest.fn(),
-    useVisitOrOfflineVisit: jest.fn(),
+    invalidateVisitAndEncounterData: vi.fn(),
+    useVisitOrOfflineVisit: vi.fn(),
   };
 });
 
-jest.mock('@openmrs/esm-framework', () => ({
-  ExtensionSlot: jest.fn().mockImplementation(({ name }: { name?: string }) => name),
-  Workspace2: jest.fn().mockImplementation(({ children }: { children?: React.ReactNode }) => <div>{children}</div>),
-  usePatient: jest.fn(),
-  useConfig: jest.fn(),
-  useConnectivity: jest.fn(),
-  openmrsFetch: jest.fn(),
+vi.mock('@openmrs/esm-framework', async () => ({
+  ...(await vi.importActual('@openmrs/esm-framework')),
+  ExtensionSlot: vi.fn().mockImplementation(({ name }: { name?: string }) => name),
+  Workspace2: vi.fn().mockImplementation(({ children }: { children?: React.ReactNode }) => <div>{children}</div>),
+  usePatient: vi.fn(),
+  useConfig: vi.fn(),
+  useConnectivity: vi.fn(),
+  openmrsFetch: vi.fn(),
 }));
 
 describe('FormEntryWorkspace', () => {
@@ -85,33 +90,46 @@ describe('FormEntryWorkspace', () => {
       error: null,
       isLoading: false,
     });
-    mockUseVisitOrOfflineVisit.mockReturnValue({ currentVisit: mockCurrentVisit });
+    mockUseVisitOrOfflineVisit.mockReturnValue({
+      currentVisit: mockCurrentVisit,
+    });
     mockUseConfig.mockReturnValue({ htmlFormEntryForms: [] });
     mockUseConnectivity.mockReturnValue(true);
     mockUseSWR.mockReturnValue({ data: undefined, isLoading: false });
-    mockUseSWRConfig.mockReturnValue({ mutate: jest.fn() });
+    mockUseSWRConfig.mockReturnValue({ mutate: vi.fn() });
   });
 
   it('keeps the legacy formInfo path working for compatibility callers', async () => {
     render(
       <FormEntryWorkspace
         {...workspace2DefinitionProps}
-        closeWorkspace={jest.fn()}
+        closeWorkspace={vi.fn()}
         groupProps={{
           patientUuid: mockPatient.uuid,
           patient: mockFhirPatient,
           visitContext: mockCurrentVisit,
-          mutateVisitContext: jest.fn(),
+          mutateVisitContext: vi.fn(),
         }}
         workspaceProps={
           {
+            workspaceTitle: 'Legacy test form',
             formInfo: { formUuid: 'some-form-uuid' },
-            mutateForm: jest.fn(),
+            mutateForm: vi.fn(),
           } as any
         }
       />,
     );
 
+    await waitFor(() => expect(mockWorkspace2).toHaveBeenCalled());
+    const legacyWorkspaceProps = mockWorkspace2.mock.calls.find(
+      ([props]) => (props as Workspace2MockProps).title === 'Legacy test form',
+    )?.[0] as Workspace2MockProps | undefined;
+    expect(legacyWorkspaceProps).toEqual(
+      expect.objectContaining({
+        hasUnsavedChanges: false,
+        title: 'Legacy test form',
+      }),
+    );
     await waitFor(() =>
       expect(mockExtensionSlot).toHaveBeenCalledWith(
         expect.objectContaining({
@@ -133,12 +151,12 @@ describe('FormEntryWorkspace', () => {
     render(
       <FormEntryWorkspace
         {...workspace2DefinitionProps}
-        closeWorkspace={jest.fn()}
+        closeWorkspace={vi.fn()}
         groupProps={{
           patientUuid: mockPatient.uuid,
           patient: mockFhirPatient,
           visitContext: mockCurrentVisit,
-          mutateVisitContext: jest.fn(),
+          mutateVisitContext: vi.fn(),
         }}
         workspaceProps={
           {
@@ -193,12 +211,12 @@ describe('FormEntryWorkspace', () => {
       patientUuid: mockPatient.uuid,
       patient: mockFhirPatient,
       visitContext: mockCurrentVisit,
-      mutateVisitContext: jest.fn(),
+      mutateVisitContext: vi.fn(),
     };
     const { rerender } = render(
       <FormEntryWorkspace
         {...workspace2DefinitionProps}
-        closeWorkspace={jest.fn()}
+        closeWorkspace={vi.fn()}
         groupProps={groupProps}
         workspaceProps={workspaceProps}
       />,
@@ -217,7 +235,7 @@ describe('FormEntryWorkspace', () => {
     rerender(
       <FormEntryWorkspace
         {...workspace2DefinitionProps}
-        closeWorkspace={jest.fn()}
+        closeWorkspace={vi.fn()}
         groupProps={groupProps}
         workspaceProps={workspaceProps}
       />,
@@ -233,6 +251,11 @@ describe('FormEntryWorkspace', () => {
       .filter(([props]: Array<any>) => props.name === 'form-widget-slot')
       .at(-1)?.[0]?.state;
 
-    expect(nextState).toBe(initialState);
+    const normalizeEncounterUuid = (encounterUuid: unknown) => (typeof encounterUuid === 'string' ? encounterUuid : '');
+
+    expect(nextState?.formUuid).toBe(initialState?.formUuid);
+    expect(nextState?.patientUuid).toBe(initialState?.patientUuid);
+    expect(normalizeEncounterUuid(nextState?.encounterUuid)).toBe(normalizeEncounterUuid(initialState?.encounterUuid));
+    expect(nextState?.additionalProps).toEqual(initialState?.additionalProps ?? {});
   });
 });

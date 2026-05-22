@@ -1,10 +1,10 @@
+import { showSnackbar } from '@openmrs/esm-framework';
 import React, { useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
-import { showSnackbar } from '@openmrs/esm-framework';
-import { saveLocation } from './stock-locations-table.resource';
-import { type locationData, type LocationMutator } from '../stock-items/types';
 import { extractErrorMessagesFromResponse } from '../constants';
+import { type LocationMutator, type locationData } from '../stock-items/types';
 import LocationAdministrationForm from './location-admin-form.component';
+import { saveLocation } from './stock-locations-table.resource';
 
 interface LocationFormProps {
   showModal: boolean;

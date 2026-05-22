@@ -21,21 +21,22 @@ const NumberField: React.FC<FormFieldInputProps<number | string | null | undefin
   const { layoutType, sessionMode, workspaceLayout } = useFormProviderContext();
 
   const numberValue = useMemo(() => {
-    if (typeof value === 'number' && isNaN(value)) {
+    if (typeof value === 'number' && Number.isNaN(value)) {
       return '';
     }
     return value ?? '';
   }, [value]);
 
   const getNumericValue = useCallback(
-    (value: string | number) => (typeof value === 'undefined' || isNaN(Number(value)) ? undefined : Number(value)),
+    (value: string | number) =>
+      typeof value === 'undefined' || Number.isNaN(Number(value)) ? undefined : Number(value),
     [],
   );
 
   const handleChange = useCallback(
     (_event: unknown, { value }: { value: string | number }) => {
       const parsedValue = getNumericValue(value);
-      setFieldValue(typeof parsedValue === 'number' && !isNaN(parsedValue) ? parsedValue : undefined);
+      setFieldValue(typeof parsedValue === 'number' && !Number.isNaN(parsedValue) ? parsedValue : undefined);
     },
     [setFieldValue, getNumericValue],
   );

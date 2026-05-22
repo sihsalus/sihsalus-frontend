@@ -1,7 +1,6 @@
 import { type LoggedInUser, type Session, useSession } from '@openmrs/esm-framework';
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import React from 'react';
 
 import ChangeLanguageModal from './change-language.modal';
 
@@ -12,24 +11,28 @@ const mockUser = {
   },
 };
 
-const mockUpdateUserProperties = jest.fn((..._args) => Promise.resolve());
-const mockUpdateSessionLocale = jest.fn((..._args) => Promise.resolve());
+const mockUpdateUserProperties = vi.fn((..._args) => Promise.resolve());
+const mockUpdateSessionLocale = vi.fn((..._args) => Promise.resolve());
 
-jest.mock('@openmrs/esm-framework', () => ({
+vi.mock('@openmrs/esm-framework', async () => ({
+  ...(await vi.importActual('@openmrs/esm-framework')),
   __esModule: true,
-  useSession: jest.fn(),
-  useAbortController: jest.fn(() => new AbortController()),
+  useSession: vi.fn(),
+  useAbortController: vi.fn(() => new AbortController()),
 }));
 
-jest.mock('./change-language.resource', () => ({
+vi.mock('./change-language.resource', () => ({
   updateUserProperties: (...args) => mockUpdateUserProperties(...args),
   updateSessionLocale: (...args) => mockUpdateSessionLocale(...args),
 }));
 
-const mockUseSession = jest.mocked(useSession);
+const mockUseSession = vi.mocked(useSession);
 
 describe(`Change Language Modal`, () => {
   beforeEach(() => {
+    vi.clearAllMocks();
+    mockUpdateUserProperties.mockResolvedValue(undefined);
+    mockUpdateSessionLocale.mockResolvedValue(undefined);
     mockUseSession.mockReturnValue({
       authenticated: true,
       user: mockUser as unknown as LoggedInUser,
@@ -39,7 +42,7 @@ describe(`Change Language Modal`, () => {
   });
 
   it('should correctly displays all allowed locales', () => {
-    render(<ChangeLanguageModal close={jest.fn()} />);
+    render(<ChangeLanguageModal close={vi.fn()} />);
 
     expect(screen.getByRole('radio', { name: /english/i })).toBeInTheDocument();
     expect(screen.getByRole('radio', { name: /français/i })).toBeInTheDocument();
@@ -49,7 +52,7 @@ describe(`Change Language Modal`, () => {
 
   it('should close the modal when the cancel button is clicked', async () => {
     const user = userEvent.setup();
-    const mockClose = jest.fn();
+    const mockClose = vi.fn();
 
     render(<ChangeLanguageModal close={mockClose} />);
 
@@ -60,7 +63,7 @@ describe(`Change Language Modal`, () => {
   it('should change user locale when the submit button is clicked', async () => {
     const user = userEvent.setup();
 
-    render(<ChangeLanguageModal close={jest.fn()} />);
+    render(<ChangeLanguageModal close={vi.fn()} />);
 
     expect(screen.getByRole('radio', { name: /français/i })).toBeChecked();
 
@@ -74,7 +77,7 @@ describe(`Change Language Modal`, () => {
     const user = userEvent.setup();
     mockUpdateUserProperties.mockImplementation(() => new Promise(() => {}));
 
-    render(<ChangeLanguageModal close={jest.fn()} />);
+    render(<ChangeLanguageModal close={vi.fn()} />);
 
     await user.click(screen.getByRole('radio', { name: /english/i }));
     await user.click(screen.getByRole('button', { name: /change/i }));
@@ -83,19 +86,23 @@ describe(`Change Language Modal`, () => {
   });
 
   it('should display the "Save as my default language" checkbox checked by default', () => {
-    render(<ChangeLanguageModal close={jest.fn()} />);
+    render(<ChangeLanguageModal close={vi.fn()} />);
 
-    const checkbox = screen.getByRole('checkbox', { name: /Save as my default language/i });
+    const checkbox = screen.getByRole('checkbox', {
+      name: /Save as my default language/i,
+    });
     expect(checkbox).toBeChecked();
   });
 
   it('should call updateSessionLocale when checkbox is unchecked and user changes locale', async () => {
     const user = userEvent.setup();
 
-    render(<ChangeLanguageModal close={jest.fn()} />);
+    render(<ChangeLanguageModal close={vi.fn()} />);
 
     // Uncheck the checkbox to only update session locale
-    const checkbox = screen.getByRole('checkbox', { name: /Save as my default language/i });
+    const checkbox = screen.getByRole('checkbox', {
+      name: /Save as my default language/i,
+    });
     await user.click(checkbox);
 
     // Change locale
@@ -107,7 +114,7 @@ describe(`Change Language Modal`, () => {
   });
 
   it('should disable submit button when selected locale is same as current locale', () => {
-    render(<ChangeLanguageModal close={jest.fn()} />);
+    render(<ChangeLanguageModal close={vi.fn()} />);
 
     const submitButton = screen.getByRole('button', { name: /change/i });
     expect(submitButton).toBeDisabled();

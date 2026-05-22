@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 
 import { Portal } from './portal';
 import styles from './styles.scss';
@@ -34,7 +34,7 @@ export function ExtensionOverlay({ extensionName, slotModuleName, slotName, domE
 
 function Content({ extensionId }: ContentProps) {
   return (
-    <button className={styles.extensionOverlay}>
+    <button className={styles.extensionOverlay} type="button">
       <span className={styles.extensionTooltip}>{extensionId}</span>
     </button>
   );

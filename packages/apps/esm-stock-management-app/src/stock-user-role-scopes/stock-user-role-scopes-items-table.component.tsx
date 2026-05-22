@@ -1,5 +1,3 @@
-import React, { useMemo } from 'react';
-import { useTranslation } from 'react-i18next';
 import {
   DataTable,
   DataTableSkeleton,
@@ -21,16 +19,18 @@ import {
 } from '@carbon/react';
 import { ArrowDownLeft, ArrowLeft } from '@carbon/react/icons';
 import { isDesktop, restBaseUrl, useSession } from '@openmrs/esm-framework';
+import React, { useMemo } from 'react';
+import { useTranslation } from 'react-i18next';
+import { URL_USER_ROLE_SCOPE } from '../constants';
+import { ResourceRepresentation } from '../core/api/api';
 import { formatDisplayDate } from '../core/utils/datetimeUtils';
 import { translateStockLocation, translateStockOperationType } from '../core/utils/translationUtils';
 import { handleMutate } from '../utils';
-import { ResourceRepresentation } from '../core/api/api';
-import { URL_USER_ROLE_SCOPE } from '../constants';
 import AddStockUserRoleScopeActionButton from './add-stock-user-role-scope-button.component';
-import EditStockUserRoleActionsMenu from './edit-stock-user-scope/edit-stock-user-scope-action-menu.component';
 import StockUserScopeDeleteActionMenu from './delete-stock-user-scope/delete-stock-user-scope.component';
-import useStockUserRoleScopesPage from './stock-user-role-scopes-items-table.resource';
+import EditStockUserRoleActionsMenu from './edit-stock-user-scope/edit-stock-user-scope-action-menu.component';
 import styles from './stock-user-role-scopes.scss';
+import useStockUserRoleScopesPage from './stock-user-role-scopes-items-table.resource';
 
 function StockUserRoleScopesItems() {
   const { t } = useTranslation();
@@ -176,7 +176,12 @@ function StockUserRoleScopesItems() {
               }}
             >
               <TableToolbarContent className={styles.toolbarContent}>
-                <TableToolbarSearch persistent onChange={onInputChange} />
+                <TableToolbarSearch
+                  persistent
+                  labelText={t('filterTable', 'Filter table')}
+                  placeholder={t('filterTable', 'Filter table')}
+                  onChange={onInputChange}
+                />
                 <TableToolbarMenu>
                   <TableToolbarAction className={styles.toolbarAction} onClick={handleRefresh}>
                     {t('refresh', 'Refresh')}
@@ -240,6 +245,9 @@ function StockUserRoleScopesItems() {
         page={currentPage}
         pageSize={currentPageSize}
         pageSizes={pageSizes}
+        itemsPerPageText={t('itemsPerPage', 'Items per page:')}
+        pageNumberText={t('pageNumber', 'Page number')}
+        pageRangeText={(_, total) => t('pageRangeText', 'of {{total}} pages', { total })}
         totalItems={totalItems}
         onChange={({ pageSize, page }) => {
           if (pageSize !== currentPageSize) {

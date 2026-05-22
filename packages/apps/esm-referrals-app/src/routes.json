@@ -1,0 +1,35 @@
+{
+  "$schema": "https://json.openmrs.org/routes.schema.json",
+  "backendDependencies": {
+    "webservices.rest": ">=2.2.0"
+  },
+  "pages": [
+    {
+      "component": "referralsRoot",
+      "route": "referrals"
+    }
+  ],
+  "extensions": [
+    {
+      "name": "referrals-app-menu-item",
+      "component": "referralsAppMenuItem",
+      "slot": "app-menu-item-slot",
+      "order": 15
+    }
+  ],
+  "modals": [
+    {
+      "name": "referral-reasons-dialog",
+      "component": "referralReasonsDialogPopup"
+    }
+  ],
+  "workspaces": [
+    {
+      "name": "facility-referral-form",
+      "component": "facilityReferralForm",
+      "title": "referralForm",
+      "type": "form",
+      "width": "wider"
+    }
+  ]
+}

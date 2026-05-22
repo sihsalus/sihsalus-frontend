@@ -8,7 +8,7 @@ import {
   useSession,
 } from '@openmrs/esm-framework';
 import classNames from 'classnames';
-import isEmpty from 'lodash/isEmpty';
+import isEmpty from 'lodash-es/isEmpty';
 import React, { useEffect, useState } from 'react';
 import { type Control, Controller, useFormContext } from 'react-hook-form';
 import { useTranslation } from 'react-i18next';

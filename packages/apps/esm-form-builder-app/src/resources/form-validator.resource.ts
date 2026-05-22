@@ -1,5 +1,5 @@
 import { type FetchResponse, openmrsFetch, restBaseUrl } from '@openmrs/esm-framework';
-import type { FormField } from '@sihsalus/esm-form-engine-lib';
+import { ConceptFalse, ConceptTrue, type FormField } from '@sihsalus/esm-form-engine-lib';
 import type { Schema } from '@types';
 import type { ConfigObject } from '../config-schema';
 
@@ -153,10 +153,7 @@ const handleQuestionValidation = async (
         const [resObject] = results;
         if (resObject.datatype.name === 'Boolean') {
           conceptObject.questionOptions.answers?.forEach((answer) => {
-            if (
-              answer.concept !== 'cf82933b-3f3f-45e7-a5ab-5d31aaee3da3' &&
-              answer.concept !== '488b58ff-64f5-4f8a-8979-fa79940b1594'
-            ) {
+            if (answer.concept !== ConceptTrue && answer.concept !== ConceptFalse) {
               errorsArray.push({
                 errorMessage: `❌ concept "${conceptObject.questionOptions.concept}" of type "boolean" has a non-boolean answer "${answer.label}"`,
                 field: conceptObject,

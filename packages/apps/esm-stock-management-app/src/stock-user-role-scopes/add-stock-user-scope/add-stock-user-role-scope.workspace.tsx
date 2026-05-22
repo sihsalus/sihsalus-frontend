@@ -1,5 +1,3 @@
-import React, { type ChangeEvent, useEffect, useState } from 'react';
-import classNames from 'classnames';
 import {
   Button,
   ButtonSet,
@@ -17,7 +15,6 @@ import {
   Toggle,
 } from '@carbon/react';
 import { Save } from '@carbon/react/icons';
-import { useTranslation } from 'react-i18next';
 import {
   type DefaultWorkspaceProps,
   getCoreTranslation,
@@ -26,21 +23,13 @@ import {
   useLayoutType,
   useSession,
 } from '@openmrs/esm-framework';
-import {
-  useRoles,
-  useStockOperationTypes,
-  useStockTagLocations,
-  useUser,
-  useUsers,
-} from '../../stock-lookups/stock-lookups.resource';
-import { ResourceRepresentation } from '../../core/api/api';
-import { type UserRoleScope } from '../../core/api/types/identity/UserRoleScope';
-import { createOrUpdateUserRoleScope } from '../stock-user-role-scopes.resource';
-import { type UserRoleScopeOperationType } from '../../core/api/types/identity/UserRoleScopeOperationType';
-import { type UserRoleScopeLocation } from '../../core/api/types/identity/UserRoleScopeLocation';
+import classNames from 'classnames';
+import React, { type ChangeEvent, useEffect, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import {
   DATE_PICKER_CONTROL_FORMAT,
   DATE_PICKER_FORMAT,
+  extractErrorMessagesFromResponse,
   formatForDatePicker,
   INVENTORY_ADMINISTRATOR_ROLE_UUID,
   INVENTORY_CLERK_ROLE_UUID,
@@ -49,11 +38,23 @@ import {
   INVENTORY_REPORTING_ROLE_UUID,
   today,
 } from '../../constants';
+import { ResourceRepresentation } from '../../core/api/api';
 import { type Role } from '../../core/api/types/identity/Role';
-import { type StockOperationType } from '../../core/api/types/stockOperation/StockOperationType';
 import { type User } from '../../core/api/types/identity/User';
+import { type UserRoleScope } from '../../core/api/types/identity/UserRoleScope';
+import { type UserRoleScopeLocation } from '../../core/api/types/identity/UserRoleScopeLocation';
+import { type UserRoleScopeOperationType } from '../../core/api/types/identity/UserRoleScopeOperationType';
+import { type StockOperationType } from '../../core/api/types/stockOperation/StockOperationType';
 import { translateStockLocation, translateStockOperationType } from '../../core/utils/translationUtils';
+import {
+  useRoles,
+  useStockOperationTypes,
+  useStockTagLocations,
+  useUser,
+  useUsers,
+} from '../../stock-lookups/stock-lookups.resource';
 import { handleMutate } from '../../utils';
+import { createOrUpdateUserRoleScope } from '../stock-user-role-scopes.resource';
 import styles from './add-stock-user-role-scope.scss';
 
 const MinDate: Date = today();
@@ -63,10 +64,34 @@ type AddStockUserRoleScopeProps = DefaultWorkspaceProps & {
   editMode?: boolean;
 };
 
+const asBoolean = (value: unknown, fallback: boolean): boolean => {
+  return value === true || value === false ? value : fallback;
+};
+
+const getRoleValue = (role: Role): string => {
+  const roleWithFallbacks = role as Role & { name?: string };
+  return (
+    roleWithFallbacks?.role ?? roleWithFallbacks?.display ?? roleWithFallbacks?.name ?? roleWithFallbacks?.uuid ?? ''
+  );
+};
+
+const getRoleLabel = (role: Role): string => {
+  const roleWithFallbacks = role as Role & { name?: string };
+  return (
+    roleWithFallbacks?.display ?? roleWithFallbacks?.role ?? roleWithFallbacks?.name ?? roleWithFallbacks?.uuid ?? ''
+  );
+};
+
 const AddStockUserRoleScope: React.FC<AddStockUserRoleScopeProps> = ({ model, editMode, closeWorkspace }) => {
   const { t } = useTranslation();
   const currentUser = useSession();
-  const [formModel, setFormModel] = useState<UserRoleScope>({ ...model });
+  const [formModel, setFormModel] = useState<UserRoleScope>({
+    ...model,
+    enabled: model?.enabled ?? true,
+    permanent: model?.permanent ?? true,
+    locations: model?.locations ?? [],
+    operationTypes: model?.operationTypes ?? [],
+  });
   const isTablet = useLayoutType() === 'tablet';
 
   const [roles, setRoles] = useState<Role[]>([]);
@@ -110,20 +135,22 @@ const AddStockUserRoleScope: React.FC<AddStockUserRoleScopeProps> = ({ model, ed
     });
   };
 
-  const [filteredItems, setFilteredItems] = useState<unknown[]>([]);
+  const [filteredItems, setFilteredItems] = useState<User[]>([]);
 
   const usersResults = users?.results ?? [];
+  const userSelectionItems = usersResults.filter((item) => item.uuid !== loggedInUserUuid);
 
   const filterItems = (query: string) => {
     if (query && query.trim() !== '') {
-      const filtered = usersResults
-        .filter((item: any) => item.uuid !== loggedInUserUuid)
-        .filter((item: any) => {
-          const displayName = item?.person?.display ?? item?.display ?? '';
-          return displayName?.toLowerCase().includes(query?.toLowerCase());
-        });
+      const filtered = userSelectionItems.filter((item: any) => {
+        const displayName = item?.person?.display ?? item?.display ?? '';
+        return displayName?.toLowerCase().includes(query?.toLowerCase());
+      });
       setFilteredItems(filtered);
+      return;
     }
+
+    setFilteredItems([]);
   };
 
   useEffect(() => {
@@ -193,9 +220,7 @@ const AddStockUserRoleScope: React.FC<AddStockUserRoleScopeProps> = ({ model, ed
       INVENTORY_ADMINISTRATOR_ROLE_UUID,
     ];
 
-    const filteredStockRoles = data.selectedItem?.roles
-      .filter((role) => stockRolesUUIDs.includes(role.uuid))
-      .filter((role) => role.uuid !== loggedInUserUuid);
+    const filteredStockRoles = data.selectedItem?.roles.filter((role) => stockRolesUUIDs.includes(role.uuid));
     setFormModel({ ...formModel, userUuid: data.selectedItem?.uuid });
     setRoles(filteredStockRoles ?? []);
     setSelectedUserUuid(data?.selectedItem?.uuid);
@@ -222,7 +247,48 @@ const AddStockUserRoleScope: React.FC<AddStockUserRoleScopeProps> = ({ model, ed
   const addStockUserRole = async (e) => {
     e.preventDefault();
 
-    createOrUpdateUserRoleScope(formModel).then(
+    if (!formModel?.userUuid) {
+      showSnackbar({
+        title: t('errorSavingUserRoleScope', 'Error Saving user role scope'),
+        kind: 'error',
+        isLowContrast: true,
+        subtitle: t('userRequired', 'User is required'),
+      });
+      return;
+    }
+
+    if (!formModel?.role) {
+      showSnackbar({
+        title: t('errorSavingUserRoleScope', 'Error Saving user role scope'),
+        kind: 'error',
+        isLowContrast: true,
+        subtitle: t('roleRequired', 'Role is required'),
+      });
+      return;
+    }
+
+    if (formModel?.userUuid === loggedInUserUuid) {
+      showSnackbar({
+        title: t('errorSavingUserRoleScope', 'Error Saving user role scope'),
+        kind: 'error',
+        isLowContrast: true,
+        subtitle: t(
+          'userRoleScopeSelfUpdate',
+          'User role scopes cannot be assigned to the logged in user from this screen.',
+        ),
+      });
+      return;
+    }
+
+    const payload: UserRoleScope = {
+      ...formModel,
+      enabled: asBoolean(formModel?.enabled, true),
+      permanent: asBoolean(formModel?.permanent, true),
+      locations: formModel?.locations ?? [],
+      operationTypes: formModel?.operationTypes ?? [],
+    };
+
+    createOrUpdateUserRoleScope(payload).then(
       () => {
         handleMutate(`${restBaseUrl}/stockmanagement/userrolescope`);
         showSnackbar({
@@ -234,23 +300,46 @@ const AddStockUserRoleScope: React.FC<AddStockUserRoleScopeProps> = ({ model, ed
         closeWorkspace();
       },
       (err) => {
+        const errorMessages = extractErrorMessagesFromResponse(err);
+        const hasSelfUpdateError = errorMessages.some((message) =>
+          message.includes('userrolescopes.userUuid.selfupdate'),
+        );
+        const formattedError = errorMessages.map((message) => {
+          if (message.includes('userrolescopes.userUuid.selfupdate')) {
+            return t(
+              'userRoleScopeSelfUpdate',
+              'User role scopes cannot be assigned to the logged in user from this screen.',
+            );
+          }
+          return message;
+        });
         showSnackbar({
           title: t('errorSavingUserRoleScope', 'Error Saving user role scope'),
           kind: 'error',
           isLowContrast: true,
-          subtitle: err?.message,
+          subtitle: hasSelfUpdateError
+            ? t(
+                'userRoleScopeSelfUpdate',
+                'User role scopes cannot be assigned to the logged in user from this screen.',
+              )
+            : formattedError.join(', '),
         });
-
-        closeWorkspace();
       },
     );
   };
 
   if (isLoading || loadingRoles || loadingUsers || isLoadingStockLocations) {
     return (
-      <InlineLoading status="active" iconDescription="Loading" description={t('loadingData', 'Loading data...')} />
+      <InlineLoading
+        status="active"
+        iconDescription={t('loading', 'Loading')}
+        description={t('loadingData', 'Loading data...')}
+      />
     );
   }
+
+  const roleOptions = user?.roles ?? roles;
+  const hasSelectedRoleOption = roleOptions?.some((role) => getRoleValue(role) === formModel?.role);
 
   return (
     <Form className={styles.container} onSubmit={addStockUserRole}>
@@ -261,7 +350,7 @@ const AddStockUserRoleScope: React.FC<AddStockUserRoleScopeProps> = ({ model, ed
               <ComboBox
                 id="userName"
                 initialSelectedItem={usersResults.find((user) => user.uuid === model?.userUuid) ?? null}
-                items={filteredItems.length ? filteredItems : usersResults}
+                items={filteredItems.length ? filteredItems : userSelectionItems}
                 itemToString={(item) => {
                   if (!item || typeof item !== 'object') return '';
                   const itemWithPerson = item as { person?: { display?: string }; display?: string };
@@ -288,9 +377,18 @@ const AddStockUserRoleScope: React.FC<AddStockUserRoleScopeProps> = ({ model, ed
           {editMode ? (
             <SelectItem key={formModel?.role} value={formModel?.role} text={formModel?.role} />
           ) : (
-            (user?.roles ?? roles)?.map((role) => {
-              return <SelectItem key={role.display} value={role.display} text={role.display} />;
-            })
+            <>
+              {formModel?.role && !hasSelectedRoleOption && (
+                <SelectItem key={formModel.role} value={formModel.role} text={formModel.role} />
+              )}
+              {roleOptions?.map((role) => {
+                const roleValue = getRoleValue(role);
+                if (!roleValue) {
+                  return null;
+                }
+                return <SelectItem key={role.uuid ?? roleValue} value={roleValue} text={getRoleLabel(role)} />;
+              })}
+            </>
           )}
         </Select>
         <CheckboxGroup className={styles.checkboxGrid} legendText="">
@@ -341,7 +439,7 @@ const AddStockUserRoleScope: React.FC<AddStockUserRoleScopeProps> = ({ model, ed
           {stockOperations?.length > 0 &&
             stockOperations.map((type) => {
               return (
-                <div className={styles.flexRow}>
+                <div className={styles.flexRow} key={type.uuid}>
                   <Checkbox
                     checked={isOperationChecked(type)}
                     className={styles.checkbox}
@@ -370,7 +468,7 @@ const AddStockUserRoleScope: React.FC<AddStockUserRoleScopeProps> = ({ model, ed
               };
 
               return (
-                <div className={styles.flexRow}>
+                <div className={styles.flexRow} key={type.id}>
                   <Checkbox
                     checked={checkedLocation != null}
                     className={styles.checkbox}

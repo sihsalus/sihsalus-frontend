@@ -1,13 +1,12 @@
 import { showModal } from '@openmrs/esm-framework';
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import React from 'react';
 import { mockPatient } from 'test-utils';
 
 import AddPatientToPatientListMenuItem from './add-patient-to-patient-list-menu-item.component';
 
 const patientUuid = mockPatient.uuid;
-const mockShowModal = jest.mocked(showModal);
+const mockShowModal = vi.mocked(showModal);
 
 describe('AddPatientToPatientListMenuItem', () => {
   it('renders the button with the correct title', () => {

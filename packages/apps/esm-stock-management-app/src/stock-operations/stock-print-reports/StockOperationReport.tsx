@@ -1,8 +1,8 @@
+import { HEALTH_CENTER_NAME } from '../../constants';
 import { type StockItemInventory } from '../../core/api/types/stockItem/StockItemInventory';
 import { type StockOperationDTO } from '../../core/api/types/stockOperation/StockOperationDTO';
 import { type StockOperationItemCost } from '../../core/api/types/stockOperation/StockOperationItemCost';
 import { type StockOperationItemDTO } from '../../core/api/types/stockOperation/StockOperationItemDTO';
-import { HEALTH_CENTER_NAME } from '../../constants';
 import { OperationType } from '../../core/api/types/stockOperation/StockOperationType';
 
 export interface StockOperationPrintData {
@@ -53,8 +53,8 @@ export const BuildStockOperationData = async (
     data.authorizedBy = currentOperation?.dispatchedDate
       ? `${currentOperation.dispatchedByFamilyName ?? ''} ${currentOperation.dispatchedByGivenName ?? ''}`
       : currentOperation?.completedDate
-      ? `${currentOperation.completedByFamilyName ?? ''} ${currentOperation.completedByGivenName ?? ''}`
-      : '';
+        ? `${currentOperation.completedByFamilyName ?? ''} ${currentOperation.completedByGivenName ?? ''}`
+        : '';
   }
   data.remarks = currentOperation.remarks;
   data.operationNumber = currentOperation?.operationNumber;

@@ -1,6 +1,6 @@
 import { InlineNotification, SkeletonText } from '@carbon/react';
 import { useConfig, useConnectivity } from '@openmrs/esm-framework';
-import React, { useContext, useEffect, useMemo, useState } from 'react';
+import React, { useContext, useEffect, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { moduleName } from '../../../constants';
 import { ResourcesContext } from '../../../offline.resources';
@@ -11,13 +11,8 @@ import { useOrderedAddressHierarchyLevels } from './address-hierarchy.resource';
 import AddressHierarchyLevels from './address-hierarchy-levels.component';
 import AddressSearchComponent from './address-search.component';
 
-function parseString(xmlDockAsString: string) {
-  const parser = new DOMParser();
-  return parser.parseFromString(xmlDockAsString, 'text/xml');
-}
-
 export const AddressComponent: React.FC = () => {
-  const [selected, setSelected] = useState('');
+  const selected = '';
   const { addressTemplate } = useContext(ResourcesContext);
   const addressLayout = useMemo(() => {
     if (!addressTemplate?.lines) {

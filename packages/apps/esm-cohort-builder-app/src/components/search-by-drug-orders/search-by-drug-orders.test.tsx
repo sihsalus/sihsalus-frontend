@@ -84,18 +84,18 @@ const expectedQuery = {
   },
 };
 
-jest.mock('./search-by-drug-orders.resources', () => {
-  const original = jest.requireActual('./search-by-drug-orders.resources');
+vi.mock('./search-by-drug-orders.resources', async () => {
+  const original = await vi.importActual('./search-by-drug-orders.resources');
   return {
     ...original,
-    useCareSettings: jest.fn(),
-    useDrugs: jest.fn(),
+    useCareSettings: vi.fn(),
+    useDrugs: vi.fn(),
   };
 });
 
-const mockOpenmrsFetch = openmrsFetch as jest.Mock;
-const mockUseCareSettings = jest.mocked(useCareSettings);
-const mockUseDrugs = jest.mocked(useDrugs);
+const mockOpenmrsFetch = openmrsFetch as vi.Mock;
+const mockUseCareSettings = vi.mocked(useCareSettings);
+const mockUseDrugs = vi.mocked(useDrugs);
 
 describe('Test the search by drug orders component', () => {
   it('should be able to select input values', async () => {
@@ -121,7 +121,7 @@ describe('Test the search by drug orders component', () => {
       data: { results: mockCareSettings },
     });
 
-    const mockSubmit = jest.fn();
+    const mockSubmit = vi.fn();
 
     render(<SearchByDrugOrder onSubmit={mockSubmit} />);
 

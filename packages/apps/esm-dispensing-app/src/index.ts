@@ -6,7 +6,6 @@ import { configSchema } from './config-schema';
 import DispensingDashboardComponent from './dashboard/dispensing-dashboard.component';
 import DispensingLinkHomepageComponent from './dashboard/dispensing-dashboard-link.component';
 import DispensingComponent from './dispensing.component';
-import DispensingLinkComponent from './dispensing-link.component';
 
 export const importTranslation = require.context('../translations', false, /.json$/, 'lazy');
 
@@ -22,8 +21,6 @@ export function startupApp() {
 }
 
 export const dispensing = getSyncLifecycle(DispensingComponent, options);
-
-export const dispensingLink = getSyncLifecycle(DispensingLinkComponent, options);
 
 export const dispensingDashboard = getSyncLifecycle(DispensingDashboardComponent, options);
 

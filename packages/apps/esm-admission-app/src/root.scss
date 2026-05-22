@@ -1,0 +1,16 @@
+.root {
+  min-height: calc(100vh - 3rem);
+  width: calc(100% - var(--sihsalus-left-nav-width, 16rem));
+  margin-inline-start: var(--sihsalus-left-nav-width, 16rem);
+  background: #f4f4f4;
+  transition:
+    margin-inline-start 300ms ease,
+    width 300ms ease;
+}
+
+@media (max-width: 65.98rem) {
+  .root {
+    width: 100%;
+    margin-inline-start: 0;
+  }
+}

@@ -1,6 +1,6 @@
-import { type CalendarDate } from '@internationalized/date';
+import { type DateValue } from '@internationalized/date';
 import classNames from 'classnames';
-import React, { forwardRef, useId, useMemo } from 'react';
+import { forwardRef, useId, useMemo } from 'react';
 import {
   Button,
   DateInput,
@@ -24,7 +24,7 @@ import { dateToInternationalizedDate, internationalizedDateToDate } from './util
 
 /** Properties for the OpenmrsDateRangePicker */
 export interface OpenmrsDateRangePickerProps
-  extends Omit<DateRangePickerProps<CalendarDate>, 'className' | 'onChange' | 'defaultValue' | 'value'>,
+  extends Omit<DateRangePickerProps<DateValue>, 'className' | 'onChange' | 'defaultValue' | 'value'>,
     DatePickerBaseProps {
   /** The default value (uncontrolled) */
   defaultValue?: [DateInputValue, DateInputValue];
@@ -113,8 +113,14 @@ export const OpenmrsDateRangePicker = /*#__PURE__*/ forwardRef<HTMLDivElement, O
 
       return (
         onChangeRaw ??
-        ((range: DateRange) =>
-          onChange?.([internationalizedDateToDate(range.start), internationalizedDateToDate(range.end)]))
+        ((range: DateValue | null) => {
+          if (range) {
+            const typedRange = range as unknown as DateRange;
+            onChange?.([internationalizedDateToDate(typedRange.start), internationalizedDateToDate(typedRange.end)]);
+          } else {
+            onChange?.([null, null]);
+          }
+        })
       );
     }, [onChangeRaw, onChange]);
 
@@ -137,7 +143,7 @@ export const OpenmrsDateRangePicker = /*#__PURE__*/ forwardRef<HTMLDivElement, O
               ref={ref}
               isDisabled={isDisabled}
               {...dateRangePickerProps}
-              onChange={innerOnChange}
+              onChange={innerOnChange as DateRangePickerProps<DateValue>['onChange']}
             >
               <div className="cds--date-picker-container">
                 {hasVisibleLabel && (

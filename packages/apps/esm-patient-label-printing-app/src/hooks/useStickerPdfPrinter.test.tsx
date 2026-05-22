@@ -10,9 +10,9 @@ describe('useStickerPdfPrinter', () => {
 
     // Create a mock contentWindow with all required methods
     mockContentWindow = {
-      print: jest.fn(),
-      focus: jest.fn(),
-      addEventListener: jest.fn((event: string, handler: () => void) => {
+      print: vi.fn(),
+      focus: vi.fn(),
+      addEventListener: vi.fn((event: string, handler: () => void) => {
         if (event === 'afterprint') {
           afterPrintHandler = handler;
         }
@@ -44,12 +44,12 @@ describe('useStickerPdfPrinter', () => {
     });
 
     // Mock document.hasFocus to support the polling mechanism
-    document.hasFocus = jest.fn().mockReturnValue(false);
+    document.hasFocus = vi.fn().mockReturnValue(false);
   });
 
   afterEach(() => {
-    jest.restoreAllMocks();
-    jest.useRealTimers();
+    vi.restoreAllMocks();
+    vi.useRealTimers();
     afterPrintHandler = null;
   });
 
@@ -188,7 +188,7 @@ describe('useStickerPdfPrinter', () => {
   });
 
   it('should reset isPrinting after timeout when print cannot be detected as complete', async () => {
-    jest.useFakeTimers();
+    vi.useFakeTimers();
     const { result } = renderHook(() => useStickerPdfPrinter());
 
     act(() => {
@@ -200,7 +200,7 @@ describe('useStickerPdfPrinter', () => {
     // Fast-forward time to trigger iframe load, then advance past timeout
     // The iframe onload will be triggered via Promise.resolve() which needs runAllTimers
     await act(async () => {
-      await jest.runAllTimersAsync();
+      await vi.runAllTimersAsync();
     });
 
     // Verify timeout mechanism resets isPrinting (afterprint never fired)
@@ -236,14 +236,14 @@ describe('useStickerPdfPrinter', () => {
   });
 
   it('should complete printing using polling fallback when afterprint listener fails', async () => {
-    jest.useFakeTimers();
+    vi.useFakeTimers();
 
     mockContentWindow.addEventListener.mockImplementationOnce(() => {
       throw new Error('cross-origin access denied');
     });
 
-    const hasFocusMock = jest
-      .fn<boolean, []>()
+    const hasFocusMock = vi
+      .fn<() => boolean>()
       .mockReturnValueOnce(false)
       .mockReturnValueOnce(true)
       .mockReturnValue(true);
@@ -256,11 +256,11 @@ describe('useStickerPdfPrinter', () => {
     });
 
     await act(async () => {
-      await jest.runOnlyPendingTimersAsync();
+      await vi.runOnlyPendingTimersAsync();
     });
 
     await act(async () => {
-      await jest.advanceTimersByTimeAsync(600);
+      await vi.advanceTimersByTimeAsync(600);
     });
 
     expect(result.current.isPrinting).toBe(false);

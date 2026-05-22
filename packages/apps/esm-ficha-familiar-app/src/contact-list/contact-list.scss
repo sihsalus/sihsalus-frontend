@@ -1,7 +1,20 @@
-@use '@carbon/colors';
-@use '@carbon/layout';
-@use '@carbon/type';
-@use '@openmrs/esm-styleguide/src/vars' as *;
+@use "@carbon/colors";
+@use "@carbon/layout";
+@use "@carbon/type";
+@use "@openmrs/esm-styleguide/src/vars" as *;
+
+:global(.cds--visually-hidden),
+:global(.bx--visually-hidden) {
+  position: absolute !important;
+  width: 1px !important;
+  height: 1px !important;
+  padding: 0 !important;
+  margin: -1px !important;
+  overflow: hidden !important;
+  clip: rect(0, 0, 0, 0) !important;
+  white-space: nowrap !important;
+  border: 0 !important;
+}
 
 .widgetCard {
   border: 1px solid $ui-03;
@@ -24,7 +37,7 @@
 }
 
 .content {
-  @include type.type-style('heading-compact-01');
+  @include type.type-style("heading-compact-01");
   color: colors.$gray-70;
   margin-top: layout.$layout-05;
   margin-bottom: layout.$spacing-03;
@@ -36,11 +49,11 @@
   text-transform: capitalize;
 
   h4 {
-    @include type.type-style('heading-compact-02');
+    @include type.type-style("heading-compact-02");
     color: colors.$gray-70;
 
     &:after {
-      content: '';
+      content: "";
       display: block;
       width: 2rem;
       padding-top: 3px;

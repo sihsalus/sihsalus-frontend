@@ -1,0 +1,50 @@
+/** @module @category API */
+
+import { type FetchResponse, openmrsFetch } from '@openmrs/esm-api';
+import { type AttachmentResponse, attachmentUrl } from '@openmrs/esm-emr-api';
+import { useMemo } from 'react';
+import useSWR from 'swr';
+
+/**
+ * A React hook that fetches attachments for a patient using SWR for caching
+ * and automatic revalidation.
+ *
+ * @param patientUuid The UUID of the patient whose attachments should be fetched.
+ * @param includeEncounterless Whether to include attachments that are not
+ *   associated with any encounter.
+ * @returns An object containing:
+ *   - `data`: Array of attachment objects (empty array while loading)
+ *   - `isLoading`: Whether the initial fetch is in progress
+ *   - `isValidating`: Whether any request (initial or revalidation) is in progress
+ *   - `error`: Any error that occurred during fetching
+ *   - `mutate`: Function to trigger a revalidation of the data
+ *
+ * @example
+ * ```tsx
+ * import { useAttachments } from '@openmrs/esm-framework';
+ * function PatientAttachments({ patientUuid }) {
+ *   const { data, isLoading, error } = useAttachments(patientUuid, true);
+ *   if (isLoading) return <span>Loading...</span>;
+ *   if (error) return <span>Error loading attachments</span>;
+ *   return <AttachmentList attachments={data} />;
+ * }
+ * ```
+ */
+export function useAttachments(patientUuid: string, includeEncounterless: boolean) {
+  const { data, error, mutate, isLoading, isValidating } = useSWR<
+    FetchResponse<{ results: Array<AttachmentResponse> }>
+  >(`${attachmentUrl}?patient=${patientUuid}&includeEncounterless=${includeEncounterless}`, openmrsFetch);
+
+  const results = useMemo(
+    () => ({
+      isLoading,
+      data: data?.data.results ?? [],
+      error,
+      mutate,
+      isValidating,
+    }),
+    [data, error, isLoading, isValidating, mutate],
+  );
+
+  return results;
+}

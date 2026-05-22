@@ -6,11 +6,11 @@ import { usePaymentModes } from '../payment.resource';
 import type { PaymentFormValue } from '../payments.component';
 import PaymentForm from './payment-form.component';
 
-jest.mock('../payment.resource', () => ({
-  usePaymentModes: jest.fn(),
+vi.mock('../payment.resource', () => ({
+  usePaymentModes: vi.fn(),
 }));
 
-const mockUsePaymentModes = jest.mocked(usePaymentModes);
+const mockUsePaymentModes = vi.mocked(usePaymentModes);
 
 type WrapperProps = {
   children: React.ReactNode;
@@ -31,7 +31,7 @@ describe('PaymentForm Component', () => {
       paymentModes: [],
       isLoading: true,
       error: null,
-      mutate: jest.fn(),
+      mutate: vi.fn(),
     });
 
     render(
@@ -50,7 +50,7 @@ describe('PaymentForm Component', () => {
       paymentModes: [],
       isLoading: false,
       error: new Error('Failed to load payment modes'),
-      mutate: jest.fn(),
+      mutate: vi.fn(),
     });
 
     render(
@@ -67,7 +67,7 @@ describe('PaymentForm Component', () => {
       paymentModes: [{ uuid: '1', name: 'Credit Card', description: 'Credit Card', retired: false }],
       isLoading: false,
       error: null,
-      mutate: jest.fn(),
+      mutate: vi.fn(),
     });
 
     render(
@@ -86,7 +86,7 @@ describe('PaymentForm Component', () => {
       paymentModes: [{ uuid: '1', name: 'Credit Card', description: 'Credit Card', retired: false }],
       isLoading: false,
       error: null,
-      mutate: jest.fn(),
+      mutate: vi.fn(),
     });
 
     render(
@@ -104,7 +104,7 @@ describe('PaymentForm Component', () => {
       paymentModes: [{ uuid: '1', name: 'Credit Card', description: 'Credit Card', retired: false }],
       isLoading: false,
       error: null,
-      mutate: jest.fn(),
+      mutate: vi.fn(),
     });
 
     render(
@@ -123,7 +123,7 @@ describe('PaymentForm Component', () => {
       paymentModes: [{ uuid: '1', name: 'Credit Card', description: 'Credit Card', retired: false }],
       isLoading: false,
       error: null,
-      mutate: jest.fn(),
+      mutate: vi.fn(),
     });
 
     render(
@@ -147,7 +147,7 @@ describe('PaymentForm Component', () => {
       paymentModes: [{ uuid: '1', name: 'Credit Card', description: 'Credit Card', retired: false }],
       isLoading: false,
       error: null,
-      mutate: jest.fn(),
+      mutate: vi.fn(),
     });
 
     render(
@@ -167,7 +167,7 @@ describe('PaymentForm Component', () => {
       paymentModes: [{ uuid: '1', name: 'Credit Card', description: 'Credit Card', retired: false }],
       isLoading: false,
       error: null,
-      mutate: jest.fn(),
+      mutate: vi.fn(),
     });
 
     render(

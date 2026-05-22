@@ -42,6 +42,11 @@ export const configSchema = {
     ],
   },
   orders: {
+    careSettingUuid: {
+      _type: Type.UUID,
+      _description: 'Care setting UUID used when querying and submitting lab/test orders',
+      _default: '6f0c9a92-6f24-11e3-af88-005056821db0',
+    },
     labOrderTypeUuid: {
       _type: Type.UUID,
       _description: "UUID for the 'Lab' order type",
@@ -136,6 +141,7 @@ export interface OrderReason {
 export interface ConfigObject {
   labTestsWithOrderReasons: Array<OrderReason>;
   orders: {
+    careSettingUuid: string;
     labOrderTypeUuid: string;
     labOrderableConcepts: Array<string>;
   };

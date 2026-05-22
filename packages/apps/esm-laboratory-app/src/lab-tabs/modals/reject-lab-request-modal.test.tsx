@@ -1,19 +1,18 @@
 import { type FetchResponse, type Order, showNotification, showSnackbar } from '@openmrs/esm-framework';
 import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import React from 'react';
 import { rejectLabOrder, useInvalidateLabOrders } from '../../laboratory.resource';
 import RejectLabRequestModal from './reject-lab-request-modal.component';
 
-jest.mock('../../laboratory.resource', () => ({
-  rejectLabOrder: jest.fn(),
-  useInvalidateLabOrders: jest.fn(),
+vi.mock('../../laboratory.resource', () => ({
+  rejectLabOrder: vi.fn(),
+  useInvalidateLabOrders: vi.fn(),
 }));
 
-const mockRejectLabOrder = jest.mocked(rejectLabOrder);
-const mockUseInvalidateLabOrders = jest.mocked(useInvalidateLabOrders);
-const mockShowSnackbar = jest.mocked(showSnackbar);
-const mockShowNotification = jest.mocked(showNotification);
+const mockRejectLabOrder = vi.mocked(rejectLabOrder);
+const mockUseInvalidateLabOrders = vi.mocked(useInvalidateLabOrders);
+const mockShowSnackbar = vi.mocked(showSnackbar);
+const mockShowNotification = vi.mocked(showNotification);
 
 const mockOrder: Partial<Order> = {
   uuid: 'order-uuid-1',
@@ -29,10 +28,11 @@ const mockOrder: Partial<Order> = {
 };
 
 describe('RejectLabRequestModal', () => {
-  const mockCloseModal = jest.fn();
-  const mockInvalidateLabOrders = jest.fn();
+  const mockCloseModal = vi.fn();
+  const mockInvalidateLabOrders = vi.fn();
 
   beforeEach(() => {
+    vi.clearAllMocks();
     mockUseInvalidateLabOrders.mockReturnValue(mockInvalidateLabOrders);
   });
 

@@ -1,5 +1,5 @@
 import { Button, Form, ModalBody, ModalFooter, ModalHeader, Stack, TextInput } from '@carbon/react';
-import { addRoutesOverride, removeRoutesOverride } from '@openmrs/esm-framework/src/internal';
+import { addRouteMapOverride, removeRouteMapOverride } from '@openmrs/esm-framework/src/internal';
 import React, { type FormEvent, useCallback, useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
@@ -53,13 +53,13 @@ const ImportMapModal: React.FC<ImportMapModalProps> = ({ module, isNew, close })
 
           importMapOverrides.addOverride(moduleName, newUrl);
           const baseUrl = newUrl.substring(0, newUrl.lastIndexOf('/'));
-          addRoutesOverride(moduleName, new URL('routes.json', baseUrl));
+          addRouteMapOverride(moduleName, new URL('routes.json', baseUrl));
         }
       } else {
         let newUrl = inputRef.current?.value ?? '';
         if (!newUrl) {
           importMapOverrides.removeOverride(moduleName);
-          removeRoutesOverride(moduleName);
+          removeRouteMapOverride(moduleName);
         } else {
           if (isPortRegex.test(newUrl)) {
             newUrl = await getUrlFromPort(moduleName, newUrl);
@@ -67,7 +67,7 @@ const ImportMapModal: React.FC<ImportMapModalProps> = ({ module, isNew, close })
 
           importMapOverrides.addOverride(moduleName, newUrl);
           const baseUrl = newUrl.substring(0, newUrl.lastIndexOf('/'));
-          addRoutesOverride(moduleName, new URL('routes.json', baseUrl));
+          addRouteMapOverride(moduleName, new URL('routes.json', baseUrl));
         }
       }
 
@@ -76,12 +76,7 @@ const ImportMapModal: React.FC<ImportMapModalProps> = ({ module, isNew, close })
     [moduleName, isNew, close],
   );
 
-  useEffect(
-    () => (isNew ? moduleNameRef.current?.focus() : inputRef.current?.focus()),
-    // Only fired on initial mount
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    [],
-  );
+  useEffect(() => (isNew ? moduleNameRef.current?.focus() : inputRef.current?.focus()), [isNew]);
 
   const onSubmit = (evt: FormEvent<HTMLElement>) => {
     void handleSubmit(evt);

@@ -22,6 +22,9 @@ export interface FieldDefinition {
   locationTag?: string;
   answerConceptSetUuid?: string;
   customConceptAnswers?: Array<CustomConceptAnswer>;
+  showIf?: {
+    foreignIdentifierPresent?: boolean;
+  };
 }
 
 export interface CustomConceptAnswer {
@@ -49,6 +52,7 @@ export interface RegistrationConfig {
       defaultUnknownGivenName: string;
       defaultUnknownFamilyName: string;
       defaultUnknownFamilyName2: string;
+      unidentifiedPatientAttributeTypeUuid: string;
       displayCapturePhoto: boolean;
       displayReverseFieldOrder: boolean;
       requireFamilyName2: boolean;
@@ -229,6 +233,14 @@ export const esmPatientRegistrationSchema = {
         _description:
           'For coded questions only (obs or person attrbute). A list of custom concept answers. Overrides answers that come from the obs concept or from `answerSetConceptUuid`.',
       },
+      showIf: {
+        foreignIdentifierPresent: {
+          _type: Type.Boolean,
+          _default: false,
+          _description:
+            'Only show this field when the patient has a foreign identifier selected, such as Carné de Extranjería, passport, or foreign identity document.',
+        },
+      },
     },
     // Do not add fields here. If you want to add a field in code, add it to built-in fields above.
     _default: [],
@@ -265,6 +277,11 @@ export const esmPatientRegistrationSchema = {
         _type: Type.String,
         _default: 'DESCONOCIDO',
         _description: 'The family/last name 2 to record for unidentified patients.',
+      },
+      unidentifiedPatientAttributeTypeUuid: {
+        _type: Type.UUID,
+        _default: '8b56eac7-5c76-4b9c-8c6f-1deab8d3fc47',
+        _description: 'Person attribute type UUID used to mark an unidentified patient.',
       },
       displayCapturePhoto: {
         _type: Type.Boolean,
@@ -395,6 +412,7 @@ export const esmPatientRegistrationSchema = {
   links: {
     submitButton: {
       _type: Type.String,
+      // biome-ignore lint/suspicious/noTemplateCurlyInString: OpenMRS resolves this runtime URL template.
       _default: '${openmrsSpaBase}/patient/${patientUuid}/chart',
       _validators: [validators.isUrlWithTemplateParameters(['patientUuid'])],
     },

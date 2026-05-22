@@ -7,12 +7,11 @@ import {
 } from '@openmrs/esm-framework';
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import React from 'react';
 import { type Config, configSchema } from '../../config-schema';
 import AddLabRequestResultsAction from './add-lab-request-results-action.component';
 
-const mockLaunchWorkspace2 = jest.mocked(launchWorkspace2);
-const mockUseConfig = jest.mocked(useConfig<Config>);
+const mockLaunchWorkspace2 = vi.mocked(launchWorkspace2);
+const mockUseConfig = vi.mocked(useConfig<Config>);
 
 const mockOrder = {
   patient: {

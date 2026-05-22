@@ -1,16 +1,16 @@
-import { expect } from '@playwright/test';
 import { type Order, type Visit } from '@openmrs/esm-framework';
+import { expect } from '@playwright/test';
 import {
-  generateRandomTestOrder,
-  deleteTestOrder,
   createEncounter,
   deleteEncounter,
+  deleteTestOrder,
+  endVisit,
+  generateRandomTestOrder,
   getProvider,
   startVisit,
-  endVisit,
 } from '../commands';
-import { test } from '../core';
 import { type Encounter, type Provider } from '../commands/types';
+import { test } from '../core';
 import { LaboratoryPage } from '../pages';
 
 let testOrder: Order;

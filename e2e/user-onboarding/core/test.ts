@@ -1,4 +1,4 @@
-import { type APIRequestContext, type Page, test as base } from '@playwright/test';
+import { type APIRequestContext, test as base, type Page } from '@playwright/test';
 import { api } from '../fixtures';
 
 // This file sets up our custom test harness using the custom fixtures.

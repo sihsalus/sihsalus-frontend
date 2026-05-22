@@ -8,7 +8,7 @@ export const configSchema = {
   dispensingUnitsUUID: {
     _type: Type.ConceptUuid,
     _description: 'UUID for the stock dispensing units',
-    _default: '162402AAAAAAAAAAAAAAAAAAAAAAAAAAAAAA',
+    _default: '62985ffa-b5c9-4e14-ad31-bbfa657dd87a',
   },
   enablePrintButton: {
     _type: Type.Boolean,
@@ -35,7 +35,7 @@ export const configSchema = {
   packingUnitsUUID: {
     _type: Type.ConceptUuid,
     _description: 'UUID for the packaging unit',
-    _default: '162402AAAAAAAAAAAAAAAAAAAAAAAAAAAAAA',
+    _default: '62985ffa-b5c9-4e14-ad31-bbfa657dd87a',
   },
   printBalanceOnHand: {
     _type: Type.Boolean,
@@ -60,12 +60,12 @@ export const configSchema = {
   stockSourceTypeUUID: {
     _type: Type.ConceptUuid,
     _description: 'UUID for the stock source types',
-    _default: '0e1dc36f-2a4b-45f9-9385-c1eda87d13be',
+    _default: '3ec42d39-8e50-4131-88a7-c5889af7abda',
   },
   stockTakeReasonUUID: {
     _type: Type.ConceptUuid,
     _description: 'UUID for the stock take reasons',
-    _default: 'a8658733-4f9e-4c23-89b5-106d9315114d',
+    _default: '3ec42d39-8e50-4131-88a7-c5889af7abda',
   },
   useItemCommonNameAsDisplay: {
     _type: Type.Boolean,

@@ -1,11 +1,11 @@
-import React from 'react';
 import { render, screen } from '@testing-library/react';
 
 import NotificationsMenuPanel from './notifications-menu-panel.component';
 
-jest.mock('@openmrs/esm-framework', () => ({
+vi.mock('@openmrs/esm-framework', async () => ({
+  ...(await vi.importActual('@openmrs/esm-framework')),
   __esModule: true,
-  ExtensionSlot: jest.fn(({ children }) => <>{children}</>),
+  ExtensionSlot: vi.fn(({ children }) => <>{children}</>),
 }));
 
 test('renders the notifications menu panel scaffold', () => {

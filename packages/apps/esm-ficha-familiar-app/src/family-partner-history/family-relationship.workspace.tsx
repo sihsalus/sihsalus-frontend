@@ -1,6 +1,6 @@
 import { Button, ButtonSet, Column, ComboBox, Form, Stack } from '@carbon/react';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { showSnackbar, useConfig, useSession } from '@openmrs/esm-framework';
+import { showSnackbar, useConfig, useSession, Workspace2 } from '@openmrs/esm-framework';
 import React from 'react';
 import type { SubmitHandler } from 'react-hook-form';
 import { Controller, FormProvider, useForm } from 'react-hook-form';
@@ -11,16 +11,18 @@ import type { ConfigObject } from '../config-schema';
 import PatientSearchCreate from '../relationships/forms/patient-search-create-form.component';
 import { relationshipFormSchema, saveRelationship } from '../relationships/relationship.resources';
 import { uppercaseText } from '../utils/expression-helper';
+import type { FichaFamiliarWorkspaceComponentProps } from '../workspace-utils';
 
 import styles from './family-relationship.scss';
 import { useMappedRelationshipTypes } from './relationships.resource';
 
-type RelationshipFormProps = {
-  closeWorkspace: () => void;
-  patientUuid: string;
-};
-
-const FamilyRelationshipForm: React.FC<RelationshipFormProps> = ({ closeWorkspace, patientUuid }) => {
+const FamilyRelationshipForm: React.FC<FichaFamiliarWorkspaceComponentProps> = ({
+  closeWorkspace,
+  groupProps,
+  patientUuid,
+  workspaceProps,
+}) => {
+  const resolvedPatientUuid = workspaceProps?.patientUuid ?? groupProps?.patientUuid ?? patientUuid ?? '';
   const { t } = useTranslation();
   const { data: mappedRelationshipTypes } = useMappedRelationshipTypes();
   const config = useConfig<ConfigObject>();
@@ -29,7 +31,9 @@ const FamilyRelationshipForm: React.FC<RelationshipFormProps> = ({ closeWorkspac
   const familyRelationshipTypes = mappedRelationshipTypes.filter((type) => familyRelationshipTypesUUIDs.has(type.uuid));
   const session = useSession();
   const relationshipTypes = familyRelationshipTypes.map((relationship) => ({
-    id: relationship.uuid,
+    id: `${relationship.uuid}:${relationship.direction}`,
+    direction: relationship.direction,
+    uuid: relationship.uuid,
     text: relationship.display,
   }));
 
@@ -76,7 +80,7 @@ const FamilyRelationshipForm: React.FC<RelationshipFormProps> = ({ closeWorkspac
   const form = useForm<FormData>({
     mode: 'all',
     defaultValues: {
-      personA: patientUuid,
+      personA: resolvedPatientUuid,
       mode: 'search',
     },
     resolver: zodResolver(schema),
@@ -108,7 +112,7 @@ const FamilyRelationshipForm: React.FC<RelationshipFormProps> = ({ closeWorkspac
     }
   };
 
-  return (
+  const content = (
     <FormProvider {...form}>
       <Form
         className={styles.form}
@@ -141,10 +145,17 @@ const FamilyRelationshipForm: React.FC<RelationshipFormProps> = ({ closeWorkspac
                   placeholder={t('selectRelationshipPlaceholder', 'Seleccione el tipo de relación con el paciente')}
                   items={relationshipTypes}
                   itemToString={(item) => (item ? uppercaseText(item.text) : '')}
-                  onChange={(e) => field.onChange(e.selectedItem?.id)}
+                  onChange={(e) => {
+                    field.onChange(e.selectedItem?.uuid);
+                    form.setValue('relationshipDirection', e.selectedItem?.direction);
+                  }}
                   invalid={!!fieldState.error}
                   invalidText={fieldState.error?.message}
-                  selectedItem={relationshipTypes.find((item) => item.id === field.value)}
+                  selectedItem={relationshipTypes.find(
+                    (item) =>
+                      item.uuid === field.value &&
+                      item.direction === form.watch('relationshipDirection', item.direction),
+                  )}
                 />
               )}
             />
@@ -170,6 +181,16 @@ const FamilyRelationshipForm: React.FC<RelationshipFormProps> = ({ closeWorkspac
         </ButtonSet>
       </Form>
     </FormProvider>
+  );
+
+  return workspaceProps ? (
+    <Workspace2
+      title={workspaceProps.workspaceTitle ?? t('familyRelationshipFormTitle', 'Formulario de relación familiar')}
+    >
+      {content}
+    </Workspace2>
+  ) : (
+    content
   );
 };
 

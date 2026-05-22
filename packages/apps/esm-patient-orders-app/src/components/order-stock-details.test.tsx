@@ -6,23 +6,23 @@ import { useOrderStockInfo } from '../hooks/useOrderStockInfo';
 
 import OrderStockDetailsComponent from './order-stock-details.component';
 
-const mockUseOrderStockInfo = jest.mocked(useOrderStockInfo);
+const mockUseOrderStockInfo = vi.mocked(useOrderStockInfo);
 
-jest.mock('../hooks/useOrderStockInfo', () => ({
-  useOrderStockInfo: jest.fn(),
+vi.mock('../hooks/useOrderStockInfo', () => ({
+  useOrderStockInfo: vi.fn(),
 }));
 
-jest.mock('react-i18next', () => ({
-  useTranslation: jest.fn(),
+vi.mock('react-i18next', () => ({
+  useTranslation: vi.fn(),
 }));
 
-const mockUseTranslation = useTranslation as jest.Mock;
+const mockUseTranslation = useTranslation as vi.Mock;
 
 describe('OrderStockDetailsComponent', () => {
   const mockOrderItemUuid = 'test-uuid';
 
   beforeEach(() => {
-    jest.resetAllMocks();
+    vi.resetAllMocks();
     mockUseTranslation.mockImplementation(() => ({
       t: (_key: string, fallback: string) => fallback,
     }));

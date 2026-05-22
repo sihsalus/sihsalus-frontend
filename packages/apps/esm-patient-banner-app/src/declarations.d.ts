@@ -26,3 +26,9 @@ declare module 'react-barcode' {
   const Barcode: ComponentType<BarcodeProps>;
   export default Barcode;
 }
+
+declare namespace NodeJS {
+  interface Require {
+    context(directory: string, useSubdirectories?: boolean, regExp?: RegExp, mode?: string): any;
+  }
+}

@@ -1,0 +1,35 @@
+/** @module @category Breadcrumb */
+
+import { createGlobalStore } from '@openmrs/esm-state';
+import { pathToRegexp } from 'path-to-regexp';
+import type { BreadcrumbRegistration, BreadcrumbSettings } from '../types';
+
+const store = createGlobalStore<Array<BreadcrumbRegistration>>('breadcrumbs', []);
+
+function getMatcher(settings: BreadcrumbSettings) {
+  if (settings.matcher instanceof RegExp) {
+    return settings.matcher;
+  } else if (typeof settings.matcher === 'string') {
+    return pathToRegexp(settings.matcher).regexp;
+  } else {
+    return pathToRegexp(settings.path).regexp;
+  }
+}
+
+export function registerBreadcrumb(breadcrumb: BreadcrumbSettings) {
+  return registerBreadcrumbs([breadcrumb]);
+}
+
+export function registerBreadcrumbs(breadcrumbs: Array<BreadcrumbSettings>) {
+  const prevBreadcrumbs = getBreadcrumbs();
+  const newBreadcrumbs = breadcrumbs.map((settings) => ({
+    matcher: getMatcher(settings),
+    settings,
+  }));
+  const nextBreadcrumbs = [...prevBreadcrumbs, ...newBreadcrumbs];
+  store.setState(nextBreadcrumbs, true);
+}
+
+export function getBreadcrumbs() {
+  return store.getState();
+}

@@ -1,7 +1,7 @@
+import { usePagination } from '@openmrs/esm-framework';
 import { useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { type StockRuleFilter, useStockRules } from '../../stock-items.resource';
-import { usePagination } from '@openmrs/esm-framework';
 
 export function useStockItemRules(filter: StockRuleFilter) {
   const { t } = useTranslation();

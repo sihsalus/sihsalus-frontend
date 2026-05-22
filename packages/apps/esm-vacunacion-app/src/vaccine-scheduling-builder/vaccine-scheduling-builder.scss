@@ -1,0 +1,140 @@
+@use "@carbon/styles/scss/theme";
+@use "@carbon/layout";
+@use "@carbon/type";
+
+.container {
+  background-color: theme.$background;
+  min-height: calc(100vh - 3rem);
+  width: 100%;
+}
+
+.notification {
+  margin: layout.$spacing-05 layout.$spacing-05 0;
+}
+
+.scheduleInfo {
+  display: flex;
+  align-items: center;
+  gap: layout.$spacing-03;
+  padding: layout.$spacing-03 layout.$spacing-05;
+  background-color: theme.$layer-01;
+  border-bottom: 1px solid theme.$border-subtle-00;
+}
+
+.scheduleName {
+  @include type.type-style("body-compact-01");
+  color: theme.$text-primary;
+  font-weight: 600;
+}
+
+.scheduleVersion {
+  @include type.type-style("label-01");
+  color: theme.$text-secondary;
+}
+
+.controls {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: layout.$spacing-05;
+  padding: layout.$spacing-05;
+  background-color: theme.$layer-01;
+  border-bottom: 1px solid theme.$border-subtle-00;
+}
+
+.controls > * {
+  flex: 1;
+}
+
+.search-container {
+  flex-grow: 2;
+  min-width: 15rem;
+}
+
+.tableContainer {
+  padding: layout.$spacing-05;
+  overflow-x: auto;
+}
+
+.periodCell {
+  text-align: center;
+  padding: layout.$spacing-02 !important;
+}
+
+.periodButton {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  min-width: layout.$spacing-07;
+  height: layout.$spacing-07;
+  background: none;
+  border: none;
+  cursor: pointer;
+  border-radius: 4px;
+
+  &:hover {
+    background-color: theme.$layer-hover-01;
+  }
+
+  &:focus {
+    outline: 2px solid theme.$focus;
+    outline-offset: -2px;
+  }
+}
+
+.headerVacuna {
+  width: 40%;
+}
+
+.ageRange {
+  @include type.type-style("label-01");
+  color: theme.$text-secondary;
+  margin-top: layout.$spacing-02;
+  white-space: nowrap;
+}
+
+@mixin dot-base {
+  width: layout.$spacing-05;
+  height: layout.$spacing-05;
+  border-radius: 50%;
+  margin: 0 auto;
+}
+
+.requiredDot {
+  @include dot-base;
+  background-color: #da1e28;
+}
+
+.optionalDot {
+  @include dot-base;
+  background-color: #0f62fe;
+}
+
+.conditionalDot {
+  @include dot-base;
+  background-color: #8a3ffc;
+}
+
+.emptyDot {
+  @include dot-base;
+  background-color: #c6c6c6;
+}
+
+.legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: layout.$spacing-05;
+  padding: layout.$spacing-05;
+  background-color: theme.$layer-01;
+  margin-top: layout.$spacing-05;
+}
+
+.legendItem {
+  display: flex;
+  align-items: center;
+  gap: layout.$spacing-03;
+
+  @include type.type-style("label-01");
+  color: theme.$text-secondary;
+}

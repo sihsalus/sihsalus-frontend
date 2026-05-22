@@ -3,26 +3,27 @@ import useSWR from 'swr';
 import { useAppointments } from '../form/appointments-form.resource';
 import { usePatientAppointments } from './patient-appointments.resource';
 
-jest.mock('@openmrs/esm-framework', () => ({
-  openmrsFetch: jest.fn(),
+vi.mock('@openmrs/esm-framework', async () => ({
+  ...(await vi.importActual('@openmrs/esm-framework')),
+  openmrsFetch: vi.fn(),
   restBaseUrl: '/ws/rest/v1',
 }));
 
-jest.mock('swr', () => {
-  const actual = jest.requireActual('swr');
+vi.mock('swr', async () => {
+  const actual = await vi.importActual('swr');
   return {
     ...actual,
     __esModule: true,
-    default: jest.fn(),
-    useSWRConfig: jest.fn(() => ({ mutate: jest.fn() })),
+    default: vi.fn(),
+    useSWRConfig: vi.fn(() => ({ mutate: vi.fn() })),
   };
 });
 
-const mockUseSWR = jest.mocked(useSWR);
+const mockUseSWR = vi.mocked(useSWR);
 
 describe('appointment resources', () => {
   beforeEach(() => {
-    jest.clearAllMocks();
+    vi.clearAllMocks();
   });
 
   it('returns empty appointment buckets when the patient appointments response has no data array', () => {
@@ -31,7 +32,7 @@ describe('appointment resources', () => {
       error: undefined,
       isLoading: false,
       isValidating: false,
-      mutate: jest.fn(),
+      mutate: vi.fn(),
     } as never);
 
     const { result } = renderHook(() => usePatientAppointments('patient-uuid', '2026-04-17', new AbortController()));
@@ -49,7 +50,7 @@ describe('appointment resources', () => {
       error: undefined,
       isLoading: false,
       isValidating: false,
-      mutate: jest.fn(),
+      mutate: vi.fn(),
     } as never);
 
     const { result } = renderHook(() => useAppointments('patient-uuid', '2026-04-17', new AbortController()));

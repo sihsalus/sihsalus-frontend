@@ -1,5 +1,3 @@
-import React, { useMemo, useEffect } from 'react';
-import { useTranslation } from 'react-i18next';
 import {
   Button,
   DataTable,
@@ -12,21 +10,23 @@ import {
   TableHeader,
   TableRow,
 } from '@carbon/react';
-import { TrashCan, Save } from '@carbon/react/icons';
-import { FormProvider, useForm, useFormContext } from 'react-hook-form';
-import { useStockItemReferencesHook } from './stock-item-references.resource';
+import { Save, TrashCan } from '@carbon/react/icons';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { type StockItemReferenceData } from './validation-schema';
-import { createStockItemDetailsSchema } from '../../validationSchema';
-import { type StockItemReferenceDTO } from '../../../core/api/types/stockItem/StockItemReference';
-import { createStockItemReference, deleteStockItemReference } from '../../stock-items.resource';
 import { restBaseUrl, showSnackbar } from '@openmrs/esm-framework';
+import React, { useEffect, useMemo } from 'react';
+import { FormProvider, useForm, useFormContext } from 'react-hook-form';
+import { useTranslation } from 'react-i18next';
 import { extractErrorMessagesFromResponse } from '../../../constants';
-import { handleMutate } from '../../../utils';
+import { type StockItemReferenceDTO } from '../../../core/api/types/stockItem/StockItemReference';
 import ControlledTextInput from '../../../core/components/carbon/controlled-text-input.component';
-import StockSourceSelector from './stock-references-selector.component';
 import { type CustomTableHeader, type CustomTableRow } from '../../../core/components/table/types';
+import { handleMutate } from '../../../utils';
+import { createStockItemReference, deleteStockItemReference } from '../../stock-items.resource';
+import { createStockItemDetailsSchema } from '../../validationSchema';
+import { useStockItemReferencesHook } from './stock-item-references.resource';
 import styles from './stock-item-references.scss';
+import StockSourceSelector from './stock-references-selector.component';
+import { type StockItemReferenceData } from './validation-schema';
 
 interface StockReferencesProps {
   isEditing?: boolean;
@@ -64,6 +64,15 @@ const StockReferences: React.FC<StockReferencesProps> = ({ stockItemUuid }) => {
     [t],
   );
 
+  const dataTableHeaders = useMemo<Array<Omit<CustomTableHeader, 'header'> & { header: React.ReactNode }>>(
+    () =>
+      tableHeaders.map(({ header, ...rest }) => ({
+        ...rest,
+        header: typeof header === 'string' ? header : header.content,
+      })),
+    [tableHeaders],
+  );
+
   const stockReferenceForm = useForm<StockItemReferenceData>({
     defaultValues: {},
     mode: 'all',
@@ -96,7 +105,9 @@ const StockReferences: React.FC<StockReferencesProps> = ({ stockItemUuid }) => {
         const err = extractErrorMessagesFromResponse(error);
         showSnackbar({
           title: t('saveStockItemReferenceErrorTitle', 'Stock Item Reference'),
-          subtitle: t('saveStockItemReferenceErrorMessage', 'Error saving stock item reference' + err.join(',')),
+          subtitle: t('saveStockItemReferenceErrorMessage', 'Error saving stock item reference: {{error}}', {
+            error: err.join(','),
+          }),
           kind: 'error',
         });
       },
@@ -109,7 +120,7 @@ const StockReferences: React.FC<StockReferencesProps> = ({ stockItemUuid }) => {
     <FormProvider {...stockReferenceForm}>
       <DataTable
         rows={(items ?? []).map((item, idx) => ({ ...item, id: item.uuid || `ref-${idx}` })) as CustomTableRow[]}
-        headers={tableHeaders as any}
+        headers={dataTableHeaders}
         isSortable={false}
         useZebraStyles
       >
@@ -208,7 +219,7 @@ const StockReferencesRow: React.FC<{
             placeholder={t('filter', 'Filter...')}
           />
         ) : (
-          (!isEditing || !row.uuid.startsWith('new-item')) && row?.stockSourceName
+          row?.stockSourceName
         )}
       </TableCell>
       <TableCell>

@@ -1,5 +1,6 @@
 import { expect } from '@playwright/test';
 import { test } from '../core';
+
 let patientUuid: string;
 
 test.beforeEach(async ({ api, patient, request }) => {

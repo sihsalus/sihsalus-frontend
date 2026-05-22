@@ -38,7 +38,7 @@ const VisitAttributesForm: React.FC<VisitAttributesFormProps> = ({ setAttributes
     resolver: zodResolver(visitAttributesFormSchema),
   });
 
-  const [paymentDetails, paymentMethods, insuranceSchema, policyNumber, patientCategoryValue] = watch([
+  const [paymentDetails, paymentMethods, _insuranceSchema, _policyNumber, _patientCategoryValue] = watch([
     'paymentDetails',
     'paymentMethods',
     'insuranceScheme',
@@ -77,7 +77,7 @@ const VisitAttributesForm: React.FC<VisitAttributesFormProps> = ({ setAttributes
     const visitAttributesPayload = formPayload.filter(
       (item) => item.value !== undefined && item.value !== null && item.value !== '',
     );
-    return Object.entries(visitAttributesPayload).map(([key, value]) => ({
+    return Object.entries(visitAttributesPayload).map(([_key, value]) => ({
       attributeType: value.uuid,
       value: value.value,
     }));
@@ -93,15 +93,13 @@ const VisitAttributesForm: React.FC<VisitAttributesFormProps> = ({ setAttributes
 
   useEffect(() => {
     setAttributes(createVisitAttributesPayload());
-  }, [
-    paymentDetails,
-    paymentMethods,
-    insuranceSchema,
-    policyNumber,
-    patientCategoryValue,
-    setAttributes,
-    createVisitAttributesPayload,
-  ]);
+
+    const subscription = watch(() => {
+      setAttributes(createVisitAttributesPayload());
+    });
+
+    return () => subscription.unsubscribe();
+  }, [createVisitAttributesPayload, setAttributes, watch]);
 
   if (isLoadingPaymentModes) {
     return (

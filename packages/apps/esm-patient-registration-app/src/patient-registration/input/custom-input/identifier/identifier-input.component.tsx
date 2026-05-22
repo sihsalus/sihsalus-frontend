@@ -7,7 +7,12 @@ import { useTranslation } from 'react-i18next';
 import { type RegistrationConfig } from '../../../../config-schema';
 import { moduleName } from '../../../../constants';
 import { ResourcesContext } from '../../../../offline.resources';
-import { deleteIdentifierType, setIdentifierSource } from '../../../field/id/id-field.component';
+import {
+  countIdentityDocumentIdentifiers,
+  deleteIdentifierType,
+  isIdentityDocumentIdentifier,
+  setIdentifierSource,
+} from '../../../field/id/id-field.component';
 import { type PatientIdentifierValue } from '../../../patient-registration.types';
 import { PatientRegistrationContext } from '../../../patient-registration-context';
 import { getEffectiveRegistrationConfig } from '../../../peru-registration-config';
@@ -53,7 +58,7 @@ const IdentifierInput: React.FC<IdentifierInputProps> = ({ patientIdentifier, fi
       selectedSource,
       autoGeneration,
     } as PatientIdentifierValue);
-  }, [initialValue, setHideInputField]);
+  }, [fieldName, initialValue, patientIdentifier, selectedSource, autoGeneration, setFieldValue]);
 
   const handleEdit = () => {
     setHideInputField(false);
@@ -75,7 +80,7 @@ const IdentifierInput: React.FC<IdentifierInputProps> = ({ patientIdentifier, fi
       const confirmDeleteIdentifierModal = showModal('delete-identifier-confirmation-modal', {
         deleteIdentifier: (deleteIdentifier) => {
           if (deleteIdentifier) {
-            setFieldValue('identifiers', deleteIdentifierType(values.identifiers, fieldName));
+            setFieldValue('identifiers', deleteIdentifierType(values.identifiers, fieldName, identifierTypes));
           }
           confirmDeleteIdentifierModal();
         },
@@ -83,7 +88,7 @@ const IdentifierInput: React.FC<IdentifierInputProps> = ({ patientIdentifier, fi
         initialValue,
       });
     } else {
-      setFieldValue('identifiers', deleteIdentifierType(values.identifiers, fieldName));
+      setFieldValue('identifiers', deleteIdentifierType(values.identifiers, fieldName, identifierTypes));
     }
   };
 
@@ -149,20 +154,23 @@ const IdentifierInput: React.FC<IdentifierInputProps> = ({ patientIdentifier, fi
             </Button>
           </UserHasAccess>
         )}
-        {!patientIdentifier.required && !defaultPatientIdentifierTypesMap[patientIdentifier.identifierTypeUuid] && (
-          <UserHasAccess privilege="Delete Patient Identifiers">
-            <Button
-              size="md"
-              kind="ghost"
-              onClick={handleDelete}
-              iconDescription={t('deleteIdentifierTooltip', 'Delete')}
-              disabled={disabled}
-              hasIconOnly
-            >
-              <TrashCan size={16} />
-            </Button>
-          </UserHasAccess>
-        )}
+        {!patientIdentifier.required &&
+          !defaultPatientIdentifierTypesMap[patientIdentifier.identifierTypeUuid] &&
+          (!isIdentityDocumentIdentifier(values.identifiers, fieldName, identifierTypes) ||
+            countIdentityDocumentIdentifiers(values.identifiers, identifierTypes) > 1) && (
+            <UserHasAccess privilege="Delete Patient Identifiers">
+              <Button
+                size="md"
+                kind="ghost"
+                onClick={handleDelete}
+                iconDescription={t('deleteIdentifierTooltip', 'Delete')}
+                disabled={disabled}
+                hasIconOnly
+              >
+                <TrashCan size={16} />
+              </Button>
+            </UserHasAccess>
+          )}
       </div>
     </div>
   );

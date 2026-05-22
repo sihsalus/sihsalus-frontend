@@ -11,7 +11,7 @@ import {
   TextInput,
 } from '@carbon/react';
 import { Calculator } from '@carbon/react/icons';
-import { type Patient, showModal } from '@openmrs/esm-framework';
+import { type Patient, showModal, useConfig } from '@openmrs/esm-framework';
 import React, { useMemo } from 'react';
 import { Controller, useFormContext } from 'react-hook-form';
 import { useTranslation } from 'react-i18next';
@@ -20,10 +20,9 @@ import type { z } from 'zod';
 import { Autosuggest } from '../../autosuggest/autosuggest.component';
 import PatientSearchInfo from '../../autosuggest/patient-search-info.component';
 import SearchEmptyState from '../../autosuggest/search-empty-state.component';
-import { contactListConceptMap } from '../../contact-list/contact-list-concept-map';
+import type { ConfigObject } from '../../config-schema';
 import type { relationshipFormSchema } from '../relationship.resources';
 import { fetchPerson } from '../relationship.resources';
-import { MARITAL_STATUS_CONCEPT_UUID } from '../relationships-constants';
 
 import styles from './form.scss';
 
@@ -32,6 +31,7 @@ type PatientSearchCreateProps = {};
 const PatientSearchCreate: React.FC<PatientSearchCreateProps> = () => {
   const form = useFormContext<z.infer<typeof relationshipFormSchema>>();
   const { t } = useTranslation(); // Usar el hook t para las traducciones
+  const config = useConfig<ConfigObject>();
 
   const searchPatient = async (query: string) => {
     const abortController = new AbortController();
@@ -41,11 +41,13 @@ const PatientSearchCreate: React.FC<PatientSearchCreateProps> = () => {
   const handleAdd = () => form.setValue('mode', 'create');
   const maritalStatus = useMemo(
     () =>
-      Object.entries(contactListConceptMap[MARITAL_STATUS_CONCEPT_UUID].answers).map(([uuid, display]) => ({
-        label: display,
-        value: uuid,
-      })),
-    [],
+      Object.entries(config.contactListConceptMap[config.concepts.maritalStatusConceptUuid]?.answers ?? {}).map(
+        ([uuid, display]) => ({
+          label: display,
+          value: uuid,
+        }),
+      ),
+    [config.concepts.maritalStatusConceptUuid, config.contactListConceptMap],
   );
 
   const handleCalculateBirthDate = () => {
@@ -65,7 +67,7 @@ const PatientSearchCreate: React.FC<PatientSearchCreateProps> = () => {
           name="mode"
           render={({ field }) => (
             <ContentSwitcher
-              selectedIndex={field.value == 'search' ? 0 : 1}
+              selectedIndex={field.value === 'search' ? 0 : 1}
               onChange={(value) => {
                 const { name } = value;
                 field.onChange(name);

@@ -3,6 +3,7 @@ import { type TFunction } from 'i18next';
 import { useLocation } from 'react-router-dom';
 import { type StockOperationDTO } from '../core/api/types/stockOperation/StockOperationDTO';
 import { type StockOperationType } from '../core/api/types/stockOperation/StockOperationType';
+import { translateStockOperationType } from '../core/utils/translationUtils';
 
 export const launchStockoperationAddOrEditWorkSpace = (
   t: TFunction,
@@ -10,13 +11,17 @@ export const launchStockoperationAddOrEditWorkSpace = (
   stockOperation?: StockOperationDTO,
   stockRequisitionUuid?: string, // Only supplied on stock issue (when workspace is launched for stock issue)
 ) => {
-  launchWorkspace('stock-operation-form-workspace', {
+  launchWorkspace<{
+    stockOperationType: StockOperationType;
+    stockOperation?: StockOperationDTO;
+    stockRequisitionUuid?: string;
+  }>('stock-operation-form-workspace', {
     workspaceTitle: stockOperation
       ? t('editOperationTitle', 'Edit {{operationType}}', {
-          operationType: stockOperation?.operationTypeName,
+          operationType: translateStockOperationType(t, stockOperation?.operationTypeName),
         })
       : t('newOperationTitle', 'New: {{operationName}}', {
-          operationName: operationType?.name,
+          operationName: translateStockOperationType(t, operationType?.name),
         }),
     stockOperationType: operationType,
     stockOperation: stockOperation,
@@ -29,7 +34,7 @@ export const useUrlQueryParams = () => {
 };
 
 export function getStockOperationUniqueId() {
-  return `${new Date().getTime()}-${Math.random().toString(36).substring(2, 16)}`;
+  return crypto.randomUUID();
 }
 
 export const launchStockOperationsModal = (title: string, requireReason: boolean, operation: StockOperationDTO) => {

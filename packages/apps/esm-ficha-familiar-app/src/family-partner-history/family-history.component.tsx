@@ -13,20 +13,14 @@ import {
   Tile,
 } from '@carbon/react';
 import { Add, Edit, TrashCan } from '@carbon/react/icons';
-import {
-  ConfigurableLink,
-  isDesktop,
-  launchWorkspace,
-  useConfig,
-  useLayoutType,
-  usePagination,
-} from '@openmrs/esm-framework';
+import { ConfigurableLink, isDesktop, useConfig, useLayoutType, usePagination } from '@openmrs/esm-framework';
 import { CardHeader, EmptyDataIllustration, ErrorState, usePaginationInfo } from '@openmrs/esm-patient-common-lib';
 import React, { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import type { ConfigObject } from '../config-schema';
 import { deleteRelationship } from '../relationships/relationship.resources';
+import { launchFichaFamiliarWorkspace } from '../workspace-utils';
 
 import ConceptObservations from './concept-obs.component';
 import styles from './family-history.scss';
@@ -85,15 +79,16 @@ const FamilyHistory: React.FC<FamilyHistoryProps> = ({ patientUuid }) => {
   ];
 
   const handleAddHistory = () => {
-    launchWorkspace('family-relationship-form', {
+    launchFichaFamiliarWorkspace('family-relationship-form', {
       workspaceTitle: t('familyRelationshipFormTitle', 'Family Relationship Form'),
       patientUuid,
     });
   };
 
   const handleEditRelationship = (relationShipUuid: string) => {
-    launchWorkspace('relationship-update-form', {
+    launchFichaFamiliarWorkspace('relationship-update-form', {
       relationShipUuid,
+      patientUuid,
     });
   };
 
@@ -181,7 +176,6 @@ const FamilyHistory: React.FC<FamilyHistoryProps> = ({ patientUuid }) => {
   return (
     <div className={styles.widgetCard}>
       <CardHeader title={headerTitle}>
-        {isLoading && <DataTableSkeleton rowCount={5} />}
         <Button onClick={handleAddHistory} renderIcon={Add} kind="ghost">
           {t('add', 'Add')}
         </Button>
@@ -198,6 +192,7 @@ const FamilyHistory: React.FC<FamilyHistoryProps> = ({ patientUuid }) => {
                 <TableRow>
                   {headers.map((header) => (
                     <TableHeader
+                      key={header.key}
                       {...getHeaderProps({
                         header,
                         isSortable: header.isSortable,
@@ -225,14 +220,19 @@ const FamilyHistory: React.FC<FamilyHistoryProps> = ({ patientUuid }) => {
         page={currentPage}
         pageSize={pageSize}
         pageSizes={pageSizes}
-        totalItems={relationships.length}
+        totalItems={familyRelationships.length}
         onChange={({ page, pageSize }) => {
           goTo(page);
           setPageSize(pageSize);
         }}
-        itemsPerPageText={t('itemsPerPage', 'Items per page')}
-        pageNumberText={t('pageNumber', 'Page number')}
-        pageRangeText={(_, total) => t('paginationPageText', 'of {{count}} pages', { count: total })}
+        backwardText={t('previousPage', 'Página anterior')}
+        forwardText={t('nextPage', 'Página siguiente')}
+        itemRangeText={(min, max, total) =>
+          t('itemRangeText', '{{min}}-{{max}} de {{total}} elementos', { min, max, total })
+        }
+        itemsPerPageText={t('itemsPerPage', 'Elementos por página:')}
+        pageNumberText={t('pageNumber', 'Página')}
+        pageRangeText={(_, total) => t('paginationPageText', 'de {{count}} páginas', { count: total })}
       />
     </div>
   );

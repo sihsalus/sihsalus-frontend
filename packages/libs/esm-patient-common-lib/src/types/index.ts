@@ -7,6 +7,7 @@ export interface DashboardLinkConfig {
   title: string;
   icon: string;
   moduleName: string;
+  tooltip?: string;
 }
 
 export interface DashboardConfig extends DashboardLinkConfig {

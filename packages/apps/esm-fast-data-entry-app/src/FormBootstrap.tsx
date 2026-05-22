@@ -112,9 +112,9 @@ interface FormParams {
   encounterUuid?: string;
   preFilledQuestions?: PreFilledQuestions;
   showDiscardSubmitButtons?: boolean;
-  handlePostResponse?: (Encounter) => void;
-  handleEncounterCreate?: (Object) => void;
-  handleOnValidate?: (boolean) => void;
+  handlePostResponse?: (encounter: Encounter) => void;
+  handleEncounterCreate?: (encounter: Object) => void;
+  handleOnValidate?: (isValid: boolean) => void;
   hidePatientBanner?: boolean;
 }
 

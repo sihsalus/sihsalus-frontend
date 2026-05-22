@@ -1,6 +1,3 @@
-import React, { type ChangeEvent, useCallback, useEffect, useState } from 'react';
-import classNames from 'classnames';
-import { useTranslation } from 'react-i18next';
 import {
   Button,
   ButtonSet,
@@ -13,13 +10,16 @@ import {
   TextInput,
 } from '@carbon/react';
 import { type DefaultWorkspaceProps, getCoreTranslation, showSnackbar, useLayoutType } from '@openmrs/esm-framework';
-import { createOrUpdateStockRule } from './stock-rules.resource';
+import classNames from 'classnames';
+import React, { type ChangeEvent, useCallback, useEffect, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { ResourceRepresentation } from '../../../core/api/api';
-import { type StockItemInventoryFilter, useStockItemPackagingUOMs } from '../../stock-items.resource';
 import { type StockRule } from '../../../core/api/types/stockItem/StockRule';
 import { translateStockLocation } from '../../../core/utils/translationUtils';
 import { useRoles, useStockTagLocations } from '../../../stock-lookups/stock-lookups.resource';
+import { type StockItemInventoryFilter, useStockItemPackagingUOMs } from '../../stock-items.resource';
 import styles from './add-stock-rules.scss';
+import { createOrUpdateStockRule } from './stock-rules.resource';
 
 interface AddStockRuleProps extends Partial<DefaultWorkspaceProps> {
   model?: StockRule;
@@ -58,7 +58,7 @@ const StockRulesAddOrUpdate: React.FC<AddStockRuleProps> = ({ model, stockItemUu
   });
 
   useEffect(() => {
-    if (model != null && Object.keys(model).length != 0) {
+    if (model != null && Object.keys(model).length !== 0) {
       // To prevent editing properties like date created
       const { ...rest } = model;
       const tmpFormModel = { ...rest };
@@ -196,7 +196,7 @@ const StockRulesAddOrUpdate: React.FC<AddStockRuleProps> = ({ model, stockItemUu
                 size="md"
                 onChange={onNameChanged}
                 value={model?.name}
-                placeholder="e.g Panado Alert"
+                placeholder={t('ruleNamePlaceholder', 'e.g. Paracetamol alert')}
               />
             </section>
 
@@ -230,7 +230,7 @@ const StockRulesAddOrUpdate: React.FC<AddStockRuleProps> = ({ model, stockItemUu
                 size="md"
                 onChange={onQuantityChanged}
                 value={model?.quantity}
-                placeholder="e.g 30 Boxes"
+                placeholder={t('quantityThresholdPlaceholder', 'e.g. 30 boxes')}
               />
             </section>
           </section>
@@ -275,7 +275,7 @@ const StockRulesAddOrUpdate: React.FC<AddStockRuleProps> = ({ model, stockItemUu
               size="md"
               onChange={onEvaluationFrequencyChanged}
               value={model?.evaluationFrequency}
-              placeholder="e.g 30 Minutes"
+              placeholder={t('evaluationFrequencyPlaceholder', 'e.g. 30 minutes')}
             />
             <TextInput
               id="actionFrequency"
@@ -284,7 +284,7 @@ const StockRulesAddOrUpdate: React.FC<AddStockRuleProps> = ({ model, stockItemUu
               size="md"
               onChange={onActionFrequencyChanged}
               value={model?.actionFrequency}
-              placeholder="e.g 3600 Minutes"
+              placeholder={t('actionFrequencyPlaceholder', 'e.g. 3600 minutes')}
             />
           </section>
         </FormGroup>
@@ -301,7 +301,7 @@ const StockRulesAddOrUpdate: React.FC<AddStockRuleProps> = ({ model, stockItemUu
               <Checkbox
                 onChange={onEnabledChanged}
                 checked={formModel?.enabled}
-                labelText={`Enabled ?`}
+                labelText={t('enabledQuestion', 'Enabled?')}
                 value={model?.enabled ? 'true' : 'false'}
                 id="chk-ruleEnabled"
               />
@@ -314,7 +314,7 @@ const StockRulesAddOrUpdate: React.FC<AddStockRuleProps> = ({ model, stockItemUu
                 name="appliesToChildren"
                 checked={formModel?.enableDescendants}
                 value={model?.enableDescendants ? 'true' : 'false'}
-                labelText={`Applies to child locations?`}
+                labelText={t('appliesToChildLocations', 'Applies to child locations?')}
                 id="chk-ruleAppliesToChildren"
               />
             </CheckboxGroup>
@@ -322,9 +322,10 @@ const StockRulesAddOrUpdate: React.FC<AddStockRuleProps> = ({ model, stockItemUu
         </div>
 
         <div>
-          This stock rule will be evaluated by checking if the stock quantities have lowered to the threshold or below
-          and a notification will be sent to the personnel with the specified role in the given location. The
-          notification will only be sent once per specified notification frequency.
+          {t(
+            'stockRuleDescription',
+            'This stock rule will be evaluated by checking if stock quantities have reached the threshold or lower. A notification will be sent to personnel with the specified role in the selected location, once per configured notification frequency.',
+          )}
         </div>
       </div>
       <ButtonSet

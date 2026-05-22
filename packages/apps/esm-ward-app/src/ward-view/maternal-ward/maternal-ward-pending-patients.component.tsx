@@ -16,6 +16,9 @@ function MaternalWardPendingPatients() {
 
   const inpatientRequestsOfWardByPatientUuid = inpatientRequests?.reduce(
     (map, inpatientRequest) => {
+      if (!inpatientRequest?.patient) {
+        return map;
+      }
       const patientUuid = inpatientRequest.patient.uuid;
       map[patientUuid] = inpatientRequest;
       return map;
@@ -29,23 +32,25 @@ function MaternalWardPendingPatients() {
     <ErrorState headerTitle={t('admissionRequests', 'Admission requests')} error={errorFetchingInpatientRequests} />
   ) : (
     <>
-      {inpatientRequests?.map((request: InpatientRequest, i) => {
-        const wardPatient = {
-          patient: request.patient,
-          visit: request.visit,
-          bed: null,
-          inpatientRequest: request,
-          inpatientAdmission: null,
-        };
+      {inpatientRequests
+        ?.filter((request) => request?.patient)
+        .map((request: InpatientRequest, i) => {
+          const wardPatient = {
+            patient: request.patient,
+            visit: request.visit,
+            bed: null,
+            inpatientRequest: request,
+            inpatientAdmission: null,
+          };
 
-        return (
-          <MaternalAdmissionRequestCard
-            key={`admission-request-card-${i}`}
-            wardPatient={wardPatient}
-            inpatientRequestsOfWardByPatientUuid={inpatientRequestsOfWardByPatientUuid}
-          ></MaternalAdmissionRequestCard>
-        );
-      })}
+          return (
+            <MaternalAdmissionRequestCard
+              key={`admission-request-card-${i}`}
+              wardPatient={wardPatient}
+              inpatientRequestsOfWardByPatientUuid={inpatientRequestsOfWardByPatientUuid}
+            ></MaternalAdmissionRequestCard>
+          );
+        })}
     </>
   );
 }

@@ -11,20 +11,20 @@ import {
 } from 'test-utils';
 import ActiveMedications from './active-medications.component';
 
-const mockUseSession = jest.mocked(useSession);
-const mockOpenmrsFetch = openmrsFetch as jest.Mock;
-const mockLaunchWorkspace2 = launchWorkspace2 as jest.Mock;
-const mockUseLaunchWorkspaceRequiringVisit = jest.fn().mockImplementation((_, name) => {
+const mockUseSession = vi.mocked(useSession);
+const mockOpenmrsFetch = openmrsFetch as vi.Mock;
+const mockLaunchWorkspace2 = launchWorkspace2 as vi.Mock;
+const mockUseLaunchWorkspaceRequiringVisit = vi.fn().mockImplementation((_, name) => {
   return () => mockLaunchWorkspace2(name);
 });
 mockUseSession.mockReturnValue(mockSessionDataResponse.data);
 
-jest.mock('@openmrs/esm-patient-common-lib', () => {
-  const originalModule = jest.requireActual('@openmrs/esm-patient-common-lib');
+vi.mock('@openmrs/esm-patient-common-lib', async () => {
+  const originalModule = await vi.importActual('@openmrs/esm-patient-common-lib');
 
   return {
     ...originalModule,
-    ErrorState: jest.fn(() => null),
+    ErrorState: vi.fn(() => null),
     useLaunchWorkspaceRequiringVisit: (...args) => mockUseLaunchWorkspaceRequiringVisit(...args),
   };
 });

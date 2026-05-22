@@ -19,7 +19,8 @@
         "name": "billing",
         "title": "billing",
         "slot": "billing-dashboard-slot"
-      }
+      },
+      "order": 90
     },
     {
       "component": "root",
@@ -39,7 +40,7 @@
       "name": "billing-summary-dashboard-link",
       "component": "billingSummaryDashboardLink",
       "slot": "patient-chart-dashboard-slot",
-      "order": 11,
+      "order": 22,
       "meta": {
         "columns": 1,
         "columnSpan": 1,
@@ -61,7 +62,7 @@
       "component": "billingCheckInForm"
     },
     {
-      "slot": "system-admin-page-card-link-slot",
+      "slot": "legacy-system-admin-page-card-link-slot",
       "component": "billableServicesCardLink",
       "name": "billable-services-admin-card-link"
     },

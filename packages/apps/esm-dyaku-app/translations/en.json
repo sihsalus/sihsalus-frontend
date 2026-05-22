@@ -41,6 +41,7 @@
   "syncingPatients": "Syncing patients...",
   "syncInitializing": "Initializing synchronization...",
   "syncPatient": "Sync patient",
+  "syncProgressLabel": "Progreso de sincronización",
   "syncProgressOf": "{{processed}} / {{total}} patients processed",
   "syncSuccess": "Synchronization completed",
   "syncSuccessMessage_one": "Successfully synchronized {{count}} patient.",

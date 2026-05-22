@@ -17,7 +17,7 @@ const TransitionLatestQueueEntry: React.FC<TransitionLatestQueueEntryProps> = ({
   modalTitle,
 }) => {
   const { t } = useTranslation();
-  const { data: queueEntry, error, isLoading } = useLatestQueueEntry(patientUuid);
+  const { data: queueEntry, error } = useLatestQueueEntry(patientUuid);
 
   if (error || !queueEntry) {
     return null;
@@ -27,7 +27,7 @@ const TransitionLatestQueueEntry: React.FC<TransitionLatestQueueEntryProps> = ({
     <TransitionQueueEntryModal
       queueEntry={queueEntry}
       closeModal={closeModal}
-      modalTitle={t('TransitionLatestQueueEntry', "Transition patient's latest queue")}
+      modalTitle={modalTitle ?? t('transitionLatestQueueEntry', "Transition patient's latest queue")}
     />
   );
 };

@@ -1,9 +1,9 @@
 #!/usr/bin/env node
 
 const { spawn, spawnSync } = require('child_process');
-const { existsSync, statSync } = require('fs');
+const { existsSync, readFileSync, statSync } = require('fs');
 const net = require('net');
-const { resolve } = require('path');
+const { extname, join, resolve } = require('path');
 
 const envPath = resolve(process.cwd(), '.env');
 const hadBackendBeforeDotenv = Boolean(process.env.SIHSALUS_BACKEND_URL);
@@ -14,12 +14,14 @@ const logInfo = (msg) => console.log(`${chalk.green.bold('[start-dev]')} ${msg}`
 const logWarn = (msg) => console.warn(`${chalk.yellow.bold('[start-dev]')} ${chalk.yellow(msg)}`);
 const logFail = (msg) => console.error(`${chalk.red.bold('[start-dev]')} ${chalk.red(msg)}`);
 
-const defaultBackend = 'http://hii1sc-dev.inf.pucp.edu.pe';
+const defaultBackend = 'http://gidis-hsc-dev.inf.pucp.edu.pe';
 const backend = process.env.SIHSALUS_BACKEND_URL || defaultBackend;
 const backendSource = hadBackendBeforeDotenv ? 'shell' : dotenvResult.parsed?.SIHSALUS_BACKEND_URL ? '.env' : 'default';
+const requireBackendUrl = process.env.SIHSALUS_REQUIRE_BACKEND_URL === 'true';
 const authMode = process.env.SIHSALUS_AUTH_MODE || 'openmrs';
 const fhirBase = process.env.SIHSALUS_FHIR_BASE || `${backend}/openmrs/ws/fhir2/R4`;
 const proxyPort = Number(process.env.SIHSALUS_PORT) || 8080;
+const allowSelfSignedTls = process.env.SIHSALUS_ALLOW_SELF_SIGNED_TLS === 'true';
 
 // SIHSALUS_DEV_APPS=esm-login-app,esm-home-app  → hot-reload those apps
 // Unset → serve pre-assembled importmap (no recompilation, just shell + proxy)
@@ -30,6 +32,12 @@ const assembledRoutes = resolve(__dirname, '..', '..', '..', 'dist', 'spa', 'rou
 const distSpa = resolve(__dirname, '..', '..', '..', 'dist', 'spa');
 const frontendConfig = resolve(__dirname, '..', '..', '..', 'config', 'frontend.json');
 const spaPath = '/openmrs/spa';
+const sessionPath = '/openmrs/ws/rest/v1/session';
+const sessionFallbackTimeoutMs = Number(process.env.SIHSALUS_SESSION_FALLBACK_TIMEOUT_MS) || 3000;
+
+function getBackendSessionUrl() {
+  return `${backend.replace(/\/+$/, '').replace(/\/openmrs$/, '')}${sessionPath}`;
+}
 
 function logStartupSummary({ mode, apps = [] }) {
   console.log();
@@ -49,7 +57,22 @@ function logStartupSummary({ mode, apps = [] }) {
   if (backendSource === 'default') {
     logWarn(`SIHSALUS_BACKEND_URL not set, using default: ${backend}`);
   }
+  if (allowSelfSignedTls) {
+    logWarn('SIHSALUS_ALLOW_SELF_SIGNED_TLS=true; backend TLS certificate verification is disabled for local dev.');
+  }
   console.log();
+}
+
+if (requireBackendUrl && backendSource === 'default') {
+  logFail('SIHSALUS_BACKEND_URL is required because SIHSALUS_REQUIRE_BACKEND_URL=true.');
+  logFail('  Set SIHSALUS_BACKEND_URL in the shell or in .env.');
+  process.exit(1);
+}
+
+function rewriteLocalDevSetCookie(setCookie) {
+  if (!setCookie) return setCookie;
+  const rewrite = (cookie) => cookie.replace(/;\s*Secure/gi, '');
+  return Array.isArray(setCookie) ? setCookie.map(rewrite) : rewrite(setCookie);
 }
 
 function findFreePort() {
@@ -131,6 +154,29 @@ function runWorkspaceBuild(workspaceName, workspaceRoot) {
   }
 }
 
+function createInMemoryRateLimit({ windowMs, max }) {
+  const requestsByIp = new Map();
+
+  return (req, res, next) => {
+    const now = Date.now();
+    const key = req.ip || req.socket.remoteAddress || 'unknown';
+    const current = requestsByIp.get(key);
+
+    if (!current || current.resetAt <= now) {
+      requestsByIp.set(key, { count: 1, resetAt: now + windowMs });
+      return next();
+    }
+
+    current.count += 1;
+    if (current.count > max) {
+      res.setHeader('retry-after', Math.ceil((current.resetAt - now) / 1000));
+      return res.status(429).send('Too many requests');
+    }
+
+    return next();
+  };
+}
+
 /**
  * Start a reverse proxy on port 8080 that:
  * 1. Serves pre-built bundles and chunks from dist/spa/ for /openmrs/spa/ paths
@@ -152,7 +198,61 @@ async function startWithProxy(cliArgs) {
   const cliManagedPaths = new Set(['/importmap.json', '/routes.registry.json', '/routes.json']);
 
   const app = express();
-  const staticHandler = express.static(distSpa, { index: false });
+  const staticHandler = express.static(distSpa);
+  const spaIndexHtml = readFileSync(join(distSpa, 'index.html'), 'utf8');
+  const spaIndexRateLimit = createInMemoryRateLimit({
+    windowMs: Number(process.env.SIHSALUS_SPA_RATE_LIMIT_WINDOW_MS) || 60_000,
+    max: Number(process.env.SIHSALUS_SPA_RATE_LIMIT_MAX) || 300,
+  });
+
+  app.get(sessionPath, async (req, res) => {
+    const authorization = req.get('authorization');
+    const cookie = req.get('cookie') || '';
+
+    if (!authorization && !cookie) {
+      res.status(200).json({ authenticated: false, sessionId: '' });
+      return;
+    }
+
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), sessionFallbackTimeoutMs);
+
+    try {
+      const backendResponse = await fetch(getBackendSessionUrl(), {
+        headers: {
+          accept: req.get('accept') || 'application/json',
+          ...(authorization ? { authorization } : {}),
+          cookie,
+        },
+        signal: controller.signal,
+      });
+      clearTimeout(timeout);
+
+      res.status(backendResponse.status);
+      const contentType = backendResponse.headers.get('content-type');
+      if (contentType) {
+        res.type(contentType);
+      }
+      const setCookie = backendResponse.headers.get('set-cookie');
+      if (setCookie) {
+        res.setHeader('set-cookie', rewriteLocalDevSetCookie(setCookie));
+      }
+      res.send(await backendResponse.text());
+    } catch (error) {
+      clearTimeout(timeout);
+      const isTimeout = error?.name === 'AbortError';
+      const status = isTimeout ? 504 : 502;
+      logWarn(
+        `Backend login session ${isTimeout ? `did not respond within ${sessionFallbackTimeoutMs}ms` : 'failed'}; returning ${status}.`,
+      );
+      res.status(status).json({
+        error: 'backend_session_unavailable',
+        message: isTimeout
+          ? `Backend session endpoint did not respond within ${sessionFallbackTimeoutMs}ms.`
+          : 'Backend session endpoint failed.',
+      });
+    }
+  });
 
   // Serve pre-built assets from dist/spa/, skip CLI-managed files
   app.use(spaPath, (req, res, next) => {
@@ -160,6 +260,13 @@ async function startWithProxy(cliArgs) {
       return next();
     }
     staticHandler(req, res, next);
+  });
+
+  app.get(`${spaPath}/*`, spaIndexRateLimit, (req, res, next) => {
+    if (cliManagedPaths.has(req.path) || extname(req.path)) {
+      return next();
+    }
+    res.type('html').send(spaIndexHtml);
   });
 
   // Proxy everything else to the openmrs CLI (importmap, index.html, API, etc.)
@@ -248,10 +355,10 @@ if (devAppsEnv) {
   }
   logStartupSummary({ mode: 'pre-assembled SPA' });
   logInfo('Serving pre-assembled SPA (no hot-reload). Set SIHSALUS_DEV_APPS for development.');
-  // The OpenMRS CLI still requires at least one --sources workspace even when
-  // the proxy serves a fully assembled importmap. Use a neutral tooling
-  // workspace so we don't inject app-specific dev-server clients into the SPA.
-  const cliShimSource = resolve(__dirname, '..', 'openmrs');
+  // Avoid the CLI defaulting to "." as a dev source. In pre-assembled mode the
+  // proxy serves all application bundles from dist/spa, so no dynamic dev-server
+  // import should be added to the import map.
+  const noDevSourcesPattern = '__sihsalus_no_dev_sources__';
 
   startWithProxy(
     withSharedDependencies([
@@ -262,7 +369,7 @@ if (devAppsEnv) {
       '--config-file',
       frontendConfig,
       '--sources',
-      cliShimSource,
+      noDevSourcesPattern,
     ]),
   );
 }

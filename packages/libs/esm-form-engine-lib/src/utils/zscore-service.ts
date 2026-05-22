@@ -1,5 +1,5 @@
 import dayjs from 'dayjs';
-import filter from 'lodash/filter';
+import filter from 'lodash-es/filter';
 import bfaMale5Above from '../zscore/bfa_boys_5_above.json';
 import bfaFemale5Above from '../zscore/bfa_girls_5_above.json';
 import hfaMale5Above from '../zscore/hfa_boys_5_above.json';

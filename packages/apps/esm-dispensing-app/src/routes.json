@@ -14,13 +14,6 @@
   ],
   "extensions": [
     {
-      "name": "dispensing-link",
-      "slot": "app-menu-slot",
-      "component": "dispensingLink",
-      "online": true,
-      "offline": true
-    },
-    {
       "name": "patient-diagnoses",
       "component": "patientDiagnoses",
       "slot": "dispensing-condition-and-diagnoses",
@@ -43,12 +36,14 @@
     },
     {
       "name": "dispensing-dashboard-link",
+      "slot": "homepage-dashboard-slot",
       "component": "dispensingDashboardLink",
       "meta": {
         "name": "dispensing",
         "slot": "dispensing-dashboard-slot",
-        "title": "Dispensing"
-      }
+        "title": "dispensing"
+      },
+      "order": 40
     },
     {
       "name": "dispense-action-button",

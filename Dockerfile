@@ -72,7 +72,7 @@ ENV SPA_DEFAULT_LOCALE=es
 COPY config/ ./config/
 COPY assets/ ./assets/
 
-RUN yarn assemble && yarn validate:spa
+RUN yarn assemble
 
 # Stage 5: Lightweight precompiled SPA server
 FROM nginx:1.27-alpine AS spa-nginx

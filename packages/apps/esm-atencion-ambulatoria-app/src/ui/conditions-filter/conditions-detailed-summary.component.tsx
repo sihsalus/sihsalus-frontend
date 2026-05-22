@@ -39,15 +39,11 @@ function ConditionsDetailedSummary({ patient }) {
   const { conditions, error, isLoading, isValidating } = useConditions(patient.id);
 
   const filteredConditions = useMemo(() => {
-    if (!filter || filter == 'All') {
+    if (filter === 'All') {
       return conditions;
     }
 
-    if (filter) {
-      return conditions?.filter((condition) => condition.clinicalStatus === filter);
-    }
-
-    return conditions;
+    return conditions?.filter((condition) => condition.clinicalStatus === filter);
   }, [filter, conditions]);
 
   const headers: Array<ConditionTableHeader> = useMemo(
@@ -128,7 +124,7 @@ function ConditionsDetailedSummary({ patient }) {
             <Button
               kind="ghost"
               renderIcon={(props: ComponentProps<typeof AddIcon>) => <AddIcon size={16} {...props} />}
-              iconDescription="Add conditions"
+              iconDescription={t('addConditions', 'Add conditions')}
               onClick={launchConditionsForm}
             >
               {t('add', 'Add')}
@@ -147,11 +143,16 @@ function ConditionsDetailedSummary({ patient }) {
           {({ rows, headers, getHeaderProps, getTableProps, getRowProps }) => (
             <>
               <TableContainer>
-                <Table {...getTableProps()} aria-label="conditions summary" className={styles.table}>
+                <Table
+                  {...getTableProps()}
+                  aria-label={t('conditionsSummary', 'Conditions summary')}
+                  className={styles.table}
+                >
                   <TableHead>
                     <TableRow>
                       {headers.map((header) => (
                         <TableHeader
+                          key={header.key}
                           className={classNames(styles.productiveHeading01, styles.text02)}
                           {...getHeaderProps({
                             header,

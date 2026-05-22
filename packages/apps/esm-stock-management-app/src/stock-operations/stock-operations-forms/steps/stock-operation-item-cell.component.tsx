@@ -36,7 +36,7 @@ const StockOperationItemCell: React.FC<StockOperationItemCellProps> = ({ stockIt
     }
   }, [error, t]);
 
-  if (isLoading) return <InlineLoading status="active" iconDescription="Loading" />;
+  if (isLoading) return <InlineLoading status="active" iconDescription={t('loading', 'Loading')} />;
   if (error) return <>--</>;
 
   return (

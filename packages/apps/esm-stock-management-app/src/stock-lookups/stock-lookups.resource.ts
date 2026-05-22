@@ -1,26 +1,25 @@
-import { useMemo } from 'react';
-import { uniqBy } from 'lodash-es';
-import useSWR from 'swr';
 import {
   type FetchResponse,
-  type OpenmrsResource,
   fhirBaseUrl,
+  type OpenmrsResource,
   openmrsFetch,
-  useSession,
   restBaseUrl,
   useFhirFetchAll,
+  useSession,
 } from '@openmrs/esm-framework';
+import { uniqBy } from 'lodash-es';
+import useSWR from 'swr';
+import { type ResourceFilterCriteria, type ResourceRepresentation, toQueryParams } from '../core/api/api';
 import { type Concept } from '../core/api/types/concept/Concept';
 import { type Drug } from '../core/api/types/concept/Drug';
+import { type Patient } from '../core/api/types/identity/Patient';
+import { type Role } from '../core/api/types/identity/Role';
+import { type User } from '../core/api/types/identity/User';
+import { type UserRoleScope } from '../core/api/types/identity/UserRoleScope';
 import { type OpenMRSLocation, type OpenMRSLocationTag } from '../core/api/types/Location';
 import { type PageableResult } from '../core/api/types/PageableResult';
 import { type Party } from '../core/api/types/Party';
-import { type Patient } from '../core/api/types/identity/Patient';
-import { type ResourceFilterCriteria, type ResourceRepresentation, toQueryParams } from '../core/api/api';
-import { type Role } from '../core/api/types/identity/Role';
 import { type StockOperationType } from '../core/api/types/stockOperation/StockOperationType';
-import { type User } from '../core/api/types/identity/User';
-import { type UserRoleScope } from '../core/api/types/identity/UserRoleScope';
 
 export type ConceptFilterCriteria = ResourceFilterCriteria;
 export type DrugFilterCriteria = ResourceFilterCriteria;

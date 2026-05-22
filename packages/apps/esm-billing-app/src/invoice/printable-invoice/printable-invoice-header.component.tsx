@@ -1,5 +1,5 @@
 import { formatDate, interpolateUrl, parseDate, type SessionLocation, useConfig } from '@openmrs/esm-framework';
-import isEmpty from 'lodash/isEmpty';
+import isEmpty from 'lodash-es/isEmpty';
 import React from 'react';
 import { useTranslation } from 'react-i18next';
 import type { BillingConfig } from '../../config-schema';

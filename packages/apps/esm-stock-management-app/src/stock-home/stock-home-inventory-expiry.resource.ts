@@ -1,5 +1,5 @@
-import { ResourceRepresentation } from '../core/api/api';
 import { useEffect, useState } from 'react';
+import { ResourceRepresentation } from '../core/api/api';
 import { type StockBatchFilter, useStockBatches } from '../stock-items/stock-items.resource';
 
 export function useStockInventory() {

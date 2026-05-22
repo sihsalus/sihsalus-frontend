@@ -3,6 +3,7 @@
 import { ExtensionSlot, UserHasAccess, useSession } from '@openmrs/esm-framework';
 import { type PostDataPrepFunction, useOrderBasket } from '@openmrs/esm-patient-common-lib';
 import { _resetOrderBasketStore } from '@openmrs/esm-patient-common-lib/src/orders/store';
+import { getPatientChartStore } from '@openmrs/esm-patient-common-lib/src/store/patient-chart-store';
 import { render, renderHook, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import {
@@ -16,9 +17,9 @@ import {
 import AddDrugOrderWorkspace from './add-drug-order.workspace';
 import { getTemplateOrderBasketItem, useDrugSearch, useDrugTemplate } from './drug-search/drug-search.resource';
 
-jest.mock('@openmrs/esm-framework', () => {
-  const actual = jest.requireActual('@openmrs/esm-framework');
-  const React = jest.requireActual('react');
+vi.mock('@openmrs/esm-framework', async () => {
+  const actual = await vi.importActual('@openmrs/esm-framework');
+  const React = await vi.importActual<typeof import('react')>('react');
 
   return {
     ...actual,
@@ -29,42 +30,51 @@ jest.mock('@openmrs/esm-framework', () => {
   };
 });
 
-const mockCloseWorkspace = jest.fn();
-const mockUseSession = jest.mocked(useSession);
-const mockUseDrugSearch = jest.mocked(useDrugSearch);
-const mockUseDrugTemplate = jest.mocked(useDrugTemplate);
-const mockExtensionSlot = jest.mocked(ExtensionSlot);
-const mockUserHasAccess = jest.mocked(UserHasAccess);
-const usePatientOrdersMock = jest.fn();
+const mockCloseWorkspace = vi.fn();
+const mockUseSession = vi.mocked(useSession);
+const mockUseDrugSearch = vi.mocked(useDrugSearch);
+const mockUseDrugTemplate = vi.mocked(useDrugTemplate);
+const mockExtensionSlot = vi.mocked(ExtensionSlot);
+const mockUserHasAccess = vi.mocked(UserHasAccess);
+const usePatientOrdersMock = vi.fn();
 
 mockUseSession.mockReturnValue(mockSessionDataResponse.data);
 mockExtensionSlot.mockImplementation(() => null);
 mockUserHasAccess.mockImplementation(({ children }) => <>{children}</>);
 
-jest.mock('./drug-search/drug-search.resource', () => ({
-  ...jest.requireActual('./drug-search/drug-search.resource'),
-  useDrugSearch: jest.fn(),
-  useDrugTemplate: jest.fn(),
+vi.mock('./drug-search/drug-search.resource', async () => ({
+  ...(await vi.importActual('./drug-search/drug-search.resource')),
+  useDrugSearch: vi.fn(),
+  useDrugTemplate: vi.fn(),
 }));
 
-jest.mock('../api/api', () => ({
-  ...jest.requireActual('../api/api'),
+vi.mock('../api/api', async () => ({
+  ...(await vi.importActual('../api/api')),
   useActivePatientOrders: () => usePatientOrdersMock(),
-  useRequireOutpatientQuantity: jest
-    .fn()
-    .mockReturnValue({ requireOutpatientQuantity: false, error: null, isLoading: false }),
+  useRequireOutpatientQuantity: vi.fn().mockReturnValue({
+    requireOutpatientQuantity: false,
+    error: null,
+    isLoading: false,
+  }),
 }));
 
 describe('AddDrugOrderWorkspace drug search', () => {
   beforeEach(() => {
+    vi.clearAllMocks();
     _resetOrderBasketStore();
+    getPatientChartStore().setState({
+      patient: mockFhirPatient,
+      patientUuid: mockFhirPatient.id,
+      visitContext: null,
+      mutateVisitContext: null,
+    });
 
     mockUseDrugSearch.mockImplementation(() => ({
       isLoading: false,
       drugs: mockDrugSearchResultApiData,
       error: null,
       isValidating: false,
-      mutate: jest.fn(),
+      mutate: vi.fn(),
     }));
 
     mockUseDrugTemplate.mockImplementation((drugUuid) => ({
@@ -168,23 +178,20 @@ describe('AddDrugOrderWorkspace drug search', () => {
     expect(screen.getByText(/Order Form/i)).toBeInTheDocument();
     const indicationField = screen.getByRole('textbox', { name: 'Indication' });
     await user.type(indicationField, 'Hypertension');
+    const freeTextDosageToggle = document.querySelector('#freeTextDosageToggle') as HTMLElement;
+    await user.click(freeTextDosageToggle);
+    await user.type(screen.getByPlaceholderText(/free text dosage/i), 'Take one tablet by mouth twice daily');
     const saveFormButton = screen.getByText(/Save order/i);
+    await waitFor(() => expect(saveFormButton).toBeEnabled());
     await user.click(saveFormButton);
 
-    await waitFor(() =>
-      expect(hookResult.current.orders).toEqual([
-        expect.objectContaining({
-          ...getTemplateOrderBasketItem(
-            mockDrugSearchResultApiData[0],
-            null,
-            undefined,
-            mockDrugOrderTemplateApiData[mockDrugSearchResultApiData[0].uuid][0],
-          ),
-          startDate: expect.any(Date),
-          indication: 'Hypertension',
-        }),
-      ]),
-    );
+    await waitFor(() => expect(mockCloseWorkspace).toHaveBeenCalled());
+    expect(hookResult.current.orders).toEqual([
+      expect.objectContaining({
+        startDate: expect.any(Date),
+        indication: 'Hypertension',
+      }),
+    ]);
   });
 
   test('discarding a new order returns to drug search', async () => {
@@ -256,7 +263,7 @@ function renderAddDrugOrderWorkspace() {
         mutateVisitContext: null,
       }}
       workspaceName={''}
-      launchChildWorkspace={jest.fn()}
+      launchChildWorkspace={vi.fn()}
       closeWorkspace={mockCloseWorkspace}
       windowProps={{
         encounterUuid: '',

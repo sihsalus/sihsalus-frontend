@@ -21,5 +21,6 @@
   "offlinePatientsTableSearchPlaceholder": "Search this list",
   "offlineToggle": "Offline toggle",
   "searchForAForm": "Search for a form",
-  "searchThisList": "Search this list"
+  "searchThisList": "Search this list",
+  "unknown": "Unknown"
 }

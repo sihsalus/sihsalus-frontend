@@ -1,9 +1,9 @@
-import React from 'react';
+import { Tile } from '@carbon/react';
 import dayjs from 'dayjs';
 import isSameOrBefore from 'dayjs/plugin/isSameOrBefore';
-import { useTranslation } from 'react-i18next';
 import { isEmpty } from 'lodash-es';
-import { Tile } from '@carbon/react';
+import React from 'react';
+import { useTranslation } from 'react-i18next';
 import styles from './metrics-card.scss';
 
 dayjs.extend(isSameOrBefore);

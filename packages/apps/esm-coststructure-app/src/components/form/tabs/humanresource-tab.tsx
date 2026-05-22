@@ -78,7 +78,13 @@ export default function HumanResourceTab({ form }: Props) {
                           name={`humanResourceCost.${index}.humanResourceId`}
                           control={control}
                           render={({ field }) => (
-                            <Select id="" key={row.id} {...field} labelText="">
+                            <Select
+                              id={`human-resource-select-${index}`}
+                              key={row.id}
+                              {...field}
+                              onChange={(event) => field.onChange(Number(event.target.value))}
+                              labelText=""
+                            >
                               <SelectItem text={t('selectHumanResource', 'Seleccione Recurso Humano')} value="" />
                               {humanresource.map((rrh) => (
                                 <SelectItem key={rrh.id} text={rrh.speciality} value={rrh.id.toString()} />

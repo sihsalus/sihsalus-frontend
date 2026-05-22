@@ -1,5 +1,9 @@
 import { Type } from '@openmrs/esm-framework';
 
+export const DYAKU_FHIR_BASE_URL = 'https://dyaku.minsa.gob.pe/fhir';
+export const DYAKU_PERU_FHIR_GUIDES_BASE_URL = 'https://dyaku.minsa.gob.pe/guides/';
+export const DYAKU_PATIENT_PROFILE_URL = 'https://www.gob.pe/minsa/RENHICE/fhir/StructureDefinition/PacientePe';
+
 // ===============================
 // MAIN CONFIGURATION SCHEMA
 // ===============================
@@ -9,7 +13,9 @@ export const configSchema = {
     _type: Type.Object,
     _description: 'Configuración para conectar con el sistema FHIR Dyaku del MINSA',
     _default: {
-      fhirBaseUrl: 'https://dyaku.minsa.gob.pe/fhir',
+      fhirBaseUrl: DYAKU_FHIR_BASE_URL,
+      fhirImplementationGuideBaseUrl: DYAKU_PERU_FHIR_GUIDES_BASE_URL,
+      patientProfileUrl: DYAKU_PATIENT_PROFILE_URL,
       syncEnabled: true,
       syncBatchSize: 50,
       syncIntervalMinutes: 30,
@@ -23,7 +29,17 @@ export const configSchema = {
     fhirBaseUrl: {
       _type: Type.String,
       _description: 'URL base del servidor FHIR de Dyaku',
-      _default: 'https://dyaku.minsa.gob.pe/fhir',
+      _default: DYAKU_FHIR_BASE_URL,
+    },
+    fhirImplementationGuideBaseUrl: {
+      _type: Type.String,
+      _description: 'URL base de la guía de implementación FHIR Perú usada por Dyaku',
+      _default: DYAKU_PERU_FHIR_GUIDES_BASE_URL,
+    },
+    patientProfileUrl: {
+      _type: Type.String,
+      _description: 'URL canónica del perfil FHIR Paciente Perú de RENHICE/MINSA',
+      _default: DYAKU_PATIENT_PROFILE_URL,
     },
     syncEnabled: {
       _type: Type.Boolean,
@@ -76,6 +92,8 @@ export const configSchema = {
 export interface ConfigObject {
   dyaku: {
     fhirBaseUrl: string;
+    fhirImplementationGuideBaseUrl: string;
+    patientProfileUrl: string;
     syncEnabled: boolean;
     syncBatchSize: number;
     syncIntervalMinutes: number;

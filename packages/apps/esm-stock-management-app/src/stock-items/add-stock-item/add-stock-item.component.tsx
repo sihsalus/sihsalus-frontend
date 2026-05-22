@@ -1,15 +1,15 @@
+import { type DefaultWorkspaceProps } from '@openmrs/esm-framework';
 import React, { useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { type DefaultWorkspaceProps } from '@openmrs/esm-framework';
 import { type StockItemDTO } from '../../core/api/types/stockItem/StockItem';
 import { type TabItem } from '../../core/components/tabs/types';
+import StockOperationStepper from '../../stock-operations/stock-operations-forms/stock-operation-stepper/stock-operation-stepper.component';
 import BatchInformation from './batch-information/batch-information.component';
 import PackagingUnits from './packaging-units/packaging-units.component';
-import StockItemDetails from './stock-item-details/stock-item-details.component';
-import StockItemRules from './stock-item-rules/stock-item-rules.component';
-import StockOperationStepper from '../../stock-operations/stock-operations-forms/stock-operation-stepper/stock-operation-stepper.component';
 import StockQuantities from './quantities/quantities.component';
+import StockItemDetails from './stock-item-details/stock-item-details.component';
 import StockReferences from './stock-item-references/stock-item-references.component';
+import StockItemRules from './stock-item-rules/stock-item-rules.component';
 import Transactions from './transactions/transactions.component';
 
 interface AddStockItemProps extends Partial<DefaultWorkspaceProps> {
@@ -29,7 +29,12 @@ const AddEditStockItem: React.FC<AddStockItemProps> = ({ stockItem, closeWorkspa
     {
       name: t('stockItemDetails', 'Stock Item Details'),
       component: (
-        <StockItemDetails handleTabChange={handleTabChange} stockItem={stockItem} onCloseWorkspace={closeWorkspace} />
+        <StockItemDetails
+          key={stockItem?.uuid}
+          handleTabChange={handleTabChange}
+          stockItem={stockItem}
+          onCloseWorkspace={closeWorkspace}
+        />
       ),
     },
     {

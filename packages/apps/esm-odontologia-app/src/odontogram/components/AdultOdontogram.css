@@ -1,56 +1,76 @@
+/* biome-ignore-all lint/correctness/noUnknownPseudoClass: :global() is required because the app processes CSS imports as CSS Modules. */
 /* =========================================================================
    Odontogram Widget — core styles
+
+   The project's rspack config processes ALL .css files as CSS Modules
+   (hashing class names). Components in this app use literal className
+   strings, so every selector below is wrapped in :global() to keep the
+   names un-hashed and have the rules actually apply.
    ========================================================================= */
 
-.adult-odontogram-container {
+:global(.adult-odontogram-container) {
   width: 100%;
   background: #ffffff;
 }
 
-.adult-odontogram-container .odontogram-header {
+/* SVGs default to inline-block, which leaves a baseline gap that creates
+   subpixel misalignment between adjacent cells (teeth + spacing svgs). Force
+   block-level rendering so siblings line up exactly within their flex rows. */
+:global(.adult-odontogram-container svg) {
+  display: block;
+  vertical-align: top;
+}
+
+:global(.adult-odontogram-container .odontogram-header) {
   text-align: center;
   margin-bottom: 12px;
   padding-bottom: 8px;
   border-bottom: 1px solid #e2e8f0;
 }
 
-.adult-odontogram-container .odontogram-header h2 {
+:global(.adult-odontogram-container .odontogram-header h2) {
   color: #0f172a;
   font-size: 1.25rem;
   font-weight: 700;
   margin: 0 0 4px 0;
 }
 
-.adult-odontogram-container .odontogram-header p {
+:global(.adult-odontogram-container .odontogram-header p) {
   color: #64748b;
   font-size: 0.875rem;
   margin: 0;
 }
 
-.adult-odontogram-container .odontogram-content {
+:global(.adult-odontogram-container .odontogram-content) {
   display: flex;
   flex-direction: column;
   gap: 10px;
 }
 
 /* Secciones del odontograma */
-.adult-odontogram-container .form-section {
+:global(.adult-odontogram-container .form-section) {
   padding: 0;
 }
 
-.adult-odontogram-container .teeth-visualization {
+/* Horizontal padding aligns the leftmost tooth column with the form's left
+   inset (FormDentalClinicalFindings has 1rem horizontal padding).
+   `overflow-x: auto` lets the natural 1260px width of the teeth row scroll
+   horizontally on narrow containers (replaces the old transform-scale
+   wrapper that introduced a layout-box vs visual-box mismatch). */
+:global(.adult-odontogram-container .teeth-visualization) {
   background: #ffffff;
-  padding: 0;
-  overflow: hidden;
+  padding: 0 1rem;
+  overflow-x: auto;
+  overflow-y: hidden;
 }
 
-.adult-odontogram-container .upper-teeth-section,
-.adult-odontogram-container .lower-teeth-section {
+:global(.adult-odontogram-container .upper-teeth-section),
+:global(.adult-odontogram-container .lower-teeth-section) {
   margin-bottom: 4px;
 }
 
-.adult-odontogram-container .upper-teeth-section h3,
-.adult-odontogram-container .lower-teeth-section h3 {
+:global(.adult-odontogram-container .upper-teeth-section h3),
+:global(.adult-odontogram-container .lower-teeth-section h3) {
   color: #333;
   margin: 0 0 6px 0;
   font-size: 1rem;
@@ -61,484 +81,26 @@
   border: 1px solid #e2e8f0;
 }
 
-.adult-odontogram-container .additional-form-section {
+:global(.adult-odontogram-container .additional-form-section) {
   padding: 10px;
 }
 
-.adult-odontogram-container .actions-section {
+:global(.adult-odontogram-container .actions-section) {
   padding: 10px;
   display: flex;
   justify-content: center;
   gap: 10px;
 }
 
-/* Responsive — Form stacking on narrow screens */
-@media (max-width: 768px) {
-  .odon-form-body {
-    flex-direction: column;
-    gap: 0;
-  }
-
-  .odon-form-section {
-    border-right: none;
-    margin-right: 0;
-    padding: 6px 0;
-    border-bottom: 1px solid #f1f5f9;
-  }
-
-  .odon-form-section:last-child {
-    border-bottom: none;
-  }
-
-  .odon-form-section--finding {
-    min-width: unset;
-    flex: unset;
-  }
-
-  .odon-form-section--info {
-    margin-left: 0;
-    align-items: flex-start;
-    justify-content: flex-start;
-  }
-
-  .odon-info-btn {
-    margin-left: 0;
-  }
-
-  .odon-popover-grid {
-    grid-template-columns: 1fr;
-  }
-}
-
 @media (max-width: 480px) {
-  .adult-odontogram-container .odontogram-header h2 {
+  :global(.adult-odontogram-container .odontogram-header h2) {
     font-size: 1.1rem;
   }
-
-  .odon-form {
-    padding: 6px 8px 8px;
-    border-radius: 8px;
-  }
-
-  .odon-trigger {
-    font-size: 12px;
-    padding: 6px 8px;
-  }
-
-  .odon-color-swatch {
-    padding: 6px 8px;
-    font-size: 12px;
-  }
-
-  .odon-subchoice {
-    padding: 6px 10px;
-    font-size: 12px;
-  }
-
-  .adult-odontogram-container .odontogram-textarea {
-    min-height: 56px;
-    font-size: 0.82rem;
-  }
-}
-
-/* ─────────────────────────────────────────────
-   odon-form — hallazgos clínicos
-   ───────────────────────────────────────────── */
-
-.odon-form {
-  display: flex;
-  flex-direction: column;
-  gap: 0;
-  padding: 10px 14px 12px;
-  background: #ffffff;
-  border: 1px solid #e2e8f0;
-  border-radius: 10px;
-}
-
-.odon-form-body {
-  display: flex;
-  flex-direction: row;
-  flex-wrap: wrap;
-  align-items: flex-start;
-  gap: 0;
-}
-
-.odon-form-title {
-  font-size: 11px;
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.08em;
-  color: #64748b;
-}
-
-/* ── Dropdown trigger ── */
-
-.odon-dropdown-wrap {
-  position: relative;
-  width: 100%;
-}
-
-.odon-trigger {
-  width: 100%;
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  padding: 7px 10px;
-  background: #f8fafc;
-  border: 1.5px solid #cbd5e1;
-  border-radius: 7px;
-  cursor: pointer;
-  font-size: 13px;
-  text-align: left;
-  color: #1e293b;
-  transition:
-    border-color 0.15s,
-    box-shadow 0.15s;
-  min-height: 34px;
-}
-
-.odon-trigger:hover {
-  border-color: #94a3b8;
-}
-
-.odon-trigger--open {
-  border-color: #6366f1;
-  box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.15);
-  background: #ffffff;
-}
-
-.odon-trigger--filled {
-  background: #ffffff;
-  border-color: #6366f1;
-}
-
-.odon-trigger-num {
-  flex-shrink: 0;
-  font-family: monospace;
-  font-size: 11px;
-  font-weight: 700;
-  color: #6366f1;
-  background: #eef2ff;
-  padding: 2px 6px;
-  border-radius: 4px;
-}
-
-.odon-trigger-text {
-  flex: 1;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  font-weight: 500;
-}
-
-.odon-trigger-placeholder {
-  flex: 1;
-  color: #94a3b8;
-  font-style: italic;
-}
-
-.odon-trigger-clear {
-  flex-shrink: 0;
-  width: 18px;
-  height: 18px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  border-radius: 50%;
-  color: #94a3b8;
-  font-size: 14px;
-  cursor: pointer;
-  line-height: 1;
-}
-
-.odon-trigger-clear:hover {
-  background: #fee2e2;
-  color: #dc2626;
-}
-
-.odon-trigger-chevron {
-  flex-shrink: 0;
-  font-size: 9px;
-  color: #94a3b8;
-}
-
-/* ── Floating popover ── */
-
-.odon-popover {
-  position: absolute;
-  top: calc(100% + 4px);
-  left: 0;
-  width: 100%;
-  z-index: 500;
-  background: #ffffff;
-  border: 1.5px solid #e2e8f0;
-  border-radius: 9px;
-  box-shadow: 0 6px 24px rgba(0, 0, 0, 0.11);
-  overflow: hidden;
-}
-
-.odon-popover-search-wrap {
-  position: relative;
-  padding: 8px 8px 4px;
-  border-bottom: 1px solid #f1f5f9;
-}
-
-.odon-popover-search {
-  width: 100%;
-  box-sizing: border-box;
-  padding: 6px 28px 6px 10px;
-  border: 1.5px solid #e2e8f0;
-  border-radius: 6px;
-  font-size: 12px;
-  color: #1e293b;
-  background: #f8fafc;
-  outline: none;
-}
-
-.odon-popover-search:focus {
-  border-color: #6366f1;
-  background: #ffffff;
-}
-
-.odon-popover-clear-btn {
-  position: absolute;
-  right: 14px;
-  top: 50%;
-  transform: translateY(-50%);
-  background: none;
-  border: none;
-  cursor: pointer;
-  color: #94a3b8;
-  font-size: 14px;
-  line-height: 1;
-  padding: 0 2px;
-}
-
-.odon-popover-clear-btn:hover {
-  color: #dc2626;
-}
-
-.odon-popover-grid {
-  display: grid;
-  grid-template-columns: repeat(2, 1fr);
-  gap: 4px;
-  padding: 6px 8px 8px;
-  max-height: 280px;
-  overflow-y: auto;
-}
-
-.odon-popover-grid::-webkit-scrollbar {
-  width: 5px;
-}
-
-.odon-popover-grid::-webkit-scrollbar-track {
-  background: #f8fafc;
-}
-
-.odon-popover-grid::-webkit-scrollbar-thumb {
-  background: #cbd5e1;
-  border-radius: 4px;
-}
-
-/* ── Pill buttons inside popover ── */
-
-.odon-pill {
-  display: flex;
-  align-items: center;
-  padding: 6px 8px;
-  background: #f8fafc;
-  border: 1.5px solid transparent;
-  border-radius: 6px;
-  cursor: pointer;
-  text-align: left;
-  transition:
-    background 0.1s,
-    border-color 0.1s;
-  min-width: 0;
-  width: 100%;
-}
-
-.odon-pill:hover {
-  background: #eef2ff;
-  border-color: #c7d2fe;
-}
-
-.odon-pill--selected {
-  background: #eef2ff;
-  border-color: #6366f1;
-}
-
-.odon-pill-num {
-  flex-shrink: 0;
-  font-family: monospace;
-  font-size: 10px;
-  font-weight: 700;
-  color: #6366f1;
-  background: #e0e7ff;
-  padding: 1px 5px;
-  border-radius: 3px;
-}
-
-.odon-pill--selected .odon-pill-num {
-  background: #6366f1;
-  color: #ffffff;
-}
-
-.odon-pill-name {
-  font-size: 13px;
-  color: #334155;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  font-weight: 500;
-}
-
-.odon-pill-empty {
-  grid-column: 1 / -1;
-  text-align: center;
-  font-size: 12px;
-  color: #94a3b8;
-  padding: 12px 0;
-  margin: 0;
-}
-
-/* ── Sections (color, tipo) ── */
-
-.odon-form-section {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-  padding: 10px 14px 10px 0;
-  border-right: 1px solid #f1f5f9;
-  margin-right: 14px;
-}
-
-.odon-form-section:last-child {
-  border-right: none;
-  margin-right: 0;
-}
-
-.odon-form-section--finding {
-  flex: 2;
-  min-width: 220px;
-}
-
-.odon-form-label {
-  display: flex;
-  align-items: center;
-  gap: 5px;
-  font-size: 10px;
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.08em;
-  color: #94a3b8;
-  white-space: nowrap;
-}
-
-.odon-check {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 14px;
-  height: 14px;
-  border-radius: 50%;
-  background: #22c55e;
-  color: #ffffff;
-  font-size: 9px;
-  font-weight: 700;
-  line-height: 1;
-  flex-shrink: 0;
-}
-
-/* ── Color swatches ── */
-
-.odon-color-row {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 5px;
-}
-
-.odon-color-swatch {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  padding: 7px 10px;
-  background: #f8fafc;
-  border: 1.5px solid #cbd5e1;
-  border-radius: 7px;
-  cursor: pointer;
-  font-size: 13px;
-  color: #1e293b;
-  min-height: 34px;
-  transition:
-    border-color 0.15s,
-    box-shadow 0.15s;
-}
-
-.odon-color-swatch:hover {
-  border-color: #94a3b8;
-}
-
-.odon-color-swatch--active {
-  background: #ffffff;
-  border-color: #6366f1;
-  box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.15);
-}
-
-.odon-color-dot {
-  width: 11px;
-  height: 11px;
-  border-radius: 50%;
-  background: var(--swatch-color, #888);
-  border: 1px solid rgba(0, 0, 0, 0.12);
-  flex-shrink: 0;
-}
-
-.odon-color-label {
-  font-size: 13px;
-  font-weight: 500;
-  color: #1e293b;
-}
-
-/* ── Sub-choice chips ── */
-
-.odon-subchoice-row {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 5px;
-}
-
-.odon-subchoice {
-  display: flex;
-  align-items: center;
-  padding: 7px 12px;
-  font-size: 13px;
-  font-weight: 500;
-  color: #1e293b;
-  background: #f8fafc;
-  border: 1.5px solid #cbd5e1;
-  border-radius: 7px;
-  cursor: pointer;
-  min-height: 34px;
-  transition:
-    border-color 0.15s,
-    box-shadow 0.15s;
-}
-
-.odon-subchoice:hover {
-  border-color: #94a3b8;
-}
-
-.odon-subchoice--active {
-  background: #ffffff;
-  border-color: #6366f1;
-  box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.15);
-  color: #1e293b;
 }
 
 /* ── Designs banner ── */
 
-.odon-designs-banner {
+:global(.odon-designs-banner) {
   font-size: 11px;
   color: #6366f1;
   background: #eef2ff;
@@ -552,7 +114,7 @@
 
 /* ── Status strip ── */
 
-.odon-status-strip {
+:global(.odon-status-strip) {
   display: flex;
   align-items: center;
   gap: 7px;
@@ -564,13 +126,13 @@
   border: 1px dashed #e2e8f0;
 }
 
-.odon-status-strip--ok {
+:global(.odon-status-strip--ok) {
   color: #16a34a;
   background: #f0fdf4;
   border-color: #bbf7d0;
 }
 
-.odon-status-dot {
+:global(.odon-status-dot) {
   width: 8px;
   height: 8px;
   border-radius: 50%;
@@ -578,13 +140,13 @@
   flex-shrink: 0;
 }
 
-.odon-status-dot--ok {
+:global(.odon-status-dot--ok) {
   background: #22c55e;
 }
 
 /* ── Action bar (save / terminar buttons) ── */
 
-.odon-action-bar {
+:global(.odon-action-bar) {
   display: flex;
   gap: 10px;
   padding: 12px 16px;
@@ -593,7 +155,7 @@
   border-radius: 0 0 10px 10px;
 }
 
-.odon-action-btn {
+:global(.odon-action-btn) {
   flex: 1;
   padding: 9px 16px;
   font-size: 13px;
@@ -606,295 +168,36 @@
     opacity 0.15s;
 }
 
-.odon-action-btn:disabled {
+:global(.odon-action-btn:disabled) {
   opacity: 0.45;
   cursor: not-allowed;
 }
 
-.odon-action-btn--save {
+:global(.odon-action-btn--save) {
   background: #6366f1;
   color: #ffffff;
 }
 
-.odon-action-btn--save:hover:not(:disabled) {
+:global(.odon-action-btn--save:hover:not(:disabled)) {
   background: #4f46e5;
 }
 
-.odon-action-btn--flash {
+:global(.odon-action-btn--flash) {
   background: #16a34a;
   color: #ffffff;
 }
 
-.odon-action-btn--end {
+:global(.odon-action-btn--end) {
   background: #f1f5f9;
   color: #334155;
   border: 1.5px solid #e2e8f0;
 }
 
-.odon-action-btn--end:hover {
+:global(.odon-action-btn--end:hover) {
   background: #e2e8f0;
 }
 
-/* ============================================================
-   Campos de texto: Especificaciones / Observaciones
-   ============================================================ */
-
-.adult-odontogram-container .odontogram-text-fields {
-  display: flex;
-  flex-direction: column;
-  gap: 16px;
-  margin-top: 16px;
-  padding: 0 4px;
-}
-
-.adult-odontogram-container .odontogram-text-field {
-  display: flex;
-  flex-direction: column;
-  flex: 1;
-  gap: 6px;
-}
-
-.adult-odontogram-container .odontogram-text-label {
-  font-size: 0.8rem;
-  font-weight: 600;
-  color: #475569;
-  letter-spacing: 0.03em;
-  text-transform: uppercase;
-}
-
-.adult-odontogram-container .odontogram-textarea {
-  resize: vertical;
-  border: 1.5px solid #cbd5e1;
-  border-radius: 6px;
-  padding: 8px 10px;
-  font-size: 0.85rem;
-  color: #1e293b;
-  background: #fff;
-  line-height: 1.5;
-  font-family: inherit;
-  transition:
-    border-color 0.15s ease,
-    box-shadow 0.15s ease;
-  min-height: 72px;
-}
-
-.adult-odontogram-container .odontogram-textarea:focus {
-  outline: none;
-  border-color: #6366f1;
-  box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.12);
-  background: #ffffff;
-}
-
-.adult-odontogram-container .odontogram-textarea:disabled {
-  background: #f1f5f9;
-  color: #64748b;
-  cursor: default;
-  border-color: #e2e8f0;
-}
-
-/* ─────────────────────────────────────────────
-   Toast notification
-   ───────────────────────────────────────────── */
-
-.odon-toast {
-  position: fixed;
-  bottom: 24px;
-  left: 50%;
-  transform: translateX(-50%);
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  padding: 10px 18px;
-  background: #1e293b;
-  color: #f8fafc;
-  font-size: 13px;
-  font-weight: 500;
-  border-radius: 10px;
-  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.18);
-  z-index: 99999;
-  animation: odon-toast-in 0.25s ease-out;
-  max-width: min(90vw, 440px);
-  line-height: 1.4;
-}
-
-.odon-toast-icon {
-  width: 18px;
-  height: 18px;
-  flex-shrink: 0;
-  color: #fbbf24;
-}
-
-@keyframes odon-toast-in {
-  from {
-    opacity: 0;
-    transform: translateX(-50%) translateY(12px);
-  }
-  to {
-    opacity: 1;
-    transform: translateX(-50%) translateY(0);
-  }
-}
-
-/* ─────────────────────────────────────────────
-   Info / Documentación button
-   ───────────────────────────────────────────── */
-
-.odon-form-section--info {
-  display: flex;
-  align-items: flex-end;
-  justify-content: flex-end;
-  border-right: none;
-  margin-right: 0;
-  padding-right: 0;
-  margin-left: auto;
-}
-
-.odon-info-btn {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  padding: 7px 12px;
-  font-size: 13px;
-  font-weight: 500;
-  color: #6366f1;
-  background: #f8fafc;
-  border: 1.5px solid #c7d2fe;
-  border-radius: 7px;
-  cursor: pointer;
-  transition:
-    background 0.15s,
-    border-color 0.15s;
-  white-space: nowrap;
-  min-height: 34px;
-  margin-left: 20px;
-}
-
-.odon-info-btn:hover {
-  background: #eef2ff;
-  border-color: #a5b4fc;
-}
-
-.odon-info-btn svg {
-  color: #6366f1;
-  flex-shrink: 0;
-}
-
-/* ─────────────────────────────────────────────
-   Documentación modal (contextual, compact)
-   ───────────────────────────────────────────── */
-
-.odon-siglas-overlay {
-  position: fixed;
-  inset: 0;
-  background: rgba(15, 23, 42, 0.35);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  z-index: 99998;
-  animation: odon-siglas-fade-in 0.12s ease-out;
-}
-
-@keyframes odon-siglas-fade-in {
-  from {
-    opacity: 0;
-  }
-  to {
-    opacity: 1;
-  }
-}
-
-.odon-siglas-modal {
-  background: #ffffff;
-  border-radius: 10px;
-  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.16);
-  width: min(90vw, 400px);
-  max-height: 70vh;
-  display: flex;
-  flex-direction: column;
-  animation: odon-siglas-slide-up 0.18s ease-out;
-}
-
-@keyframes odon-siglas-slide-up {
-  from {
-    opacity: 0;
-    transform: translateY(10px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
-}
-
-.odon-siglas-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 14px 18px;
-  border-bottom: 1px solid #e2e8f0;
-  flex-shrink: 0;
-}
-
-.odon-siglas-title {
-  margin: 0;
-  font-size: 14px;
-  font-weight: 700;
-  color: #1e293b;
-}
-
-.odon-siglas-close {
-  width: 28px;
-  height: 28px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background: none;
-  border: none;
-  font-size: 18px;
-  color: #94a3b8;
-  cursor: pointer;
-  border-radius: 6px;
-  transition:
-    background 0.12s,
-    color 0.12s;
-}
-
-.odon-siglas-close:hover {
-  background: #f1f5f9;
-  color: #475569;
-}
-
-.odon-siglas-body {
-  overflow-y: auto;
-  padding: 14px 18px 18px;
-}
-
-.odon-siglas-nota {
-  margin: 0 0 10px;
-  font-size: 12.5px;
-  color: #64748b;
-  font-style: italic;
-  line-height: 1.45;
-}
-
-.odon-siglas-table {
-  border-collapse: collapse;
-  width: 100%;
-}
-
-.odon-siglas-table td {
-  padding: 5px 0;
-  font-size: 13px;
-  vertical-align: top;
-}
-
-.odon-siglas-code {
-  font-weight: 700;
-  color: #6366f1;
-  width: 48px;
-  white-space: nowrap;
-  padding-right: 12px;
-}
-
-.odon-siglas-desc {
-  color: #475569;
-}
+/* Los campos Especificaciones / Observaciones ahora viven en
+   OdontogramTextFields.tsx + OdontogramTextFields.module.scss, usando
+   Carbon TextArea. Sus estilos legacy (.odontogram-text-fields, etc.)
+   fueron retirados. */

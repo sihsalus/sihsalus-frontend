@@ -15,8 +15,8 @@ import { useTranslation } from 'react-i18next';
 import { formatDisplayDate } from '../../../../core/utils/datetimeUtils';
 import { translateStockLocation, translateStockOperationType } from '../../../../core/utils/translationUtils';
 import PrintableStockcardTransactionHeader from './printable-stockcard-transaction-header.component';
-import PrintableTransactionFooter from './printable-transaction-footer.component';
 import styles from './printable-transaction.scss';
+import PrintableTransactionFooter from './printable-transaction-footer.component';
 
 type Props = {
   title: string;
@@ -144,7 +144,9 @@ const TransactionsStockcardPrintout: React.FC<Props> = ({ columns, items, title 
                     <TableHead>
                       <TableRow>
                         {headers.map((header) => (
-                          <TableHeader {...getHeaderProps({ header })}>{header.header}</TableHeader>
+                          <TableHeader key={header.key} {...getHeaderProps({ header })}>
+                            {header.header}
+                          </TableHeader>
                         ))}
                       </TableRow>
                     </TableHead>

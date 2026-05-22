@@ -14,11 +14,9 @@ import { chromium } from '@playwright/test';
 import * as fs from 'fs';
 import * as path from 'path';
 
-const BASE_URL = 'http://hii1sc-dev.inf.pucp.edu.pe/openmrs/spa';
+const BASE_URL = 'http://gidis-hsc-dev.inf.pucp.edu.pe/openmrs/spa';
 const USERNAME = 'admin';
 const PASSWORD = 'Admin123';
-const LOCATION_UUID = '44c3efb0-2583-4c80-a79e-1f756a03c0a1';
-
 // Pacientes de prueba obtenidos via API
 const FEMALE_PATIENT_UUID = '19af6b94-7114-47ef-831d-cc63c8601d67'; // María Paola REYES ORTIZ
 const CHILD_PATIENT_UUID = 'e222fb7f-9dad-4c2c-8b2b-98b79699e33c'; // María Beatriz RAMOS CHOQUE

@@ -1,7 +1,7 @@
-import React from 'react';
-import { startCase } from 'lodash-es';
-import { useTranslation } from 'react-i18next';
 import { useConfig } from '@openmrs/esm-framework';
+import { startCase } from 'lodash-es';
+import React from 'react';
+import { useTranslation } from 'react-i18next';
 import styles from './printable-transaction-header.scss';
 
 interface PrintableTransactionHeaderProps {

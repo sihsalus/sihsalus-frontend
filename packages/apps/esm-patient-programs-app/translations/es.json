@@ -36,6 +36,7 @@
   "programRequired": "El programa es obligatorio",
   "Programs": "Programas",
   "programStatus": "Estado del programa",
+  "programsTooltip": "Gestiona inscripción, seguimiento y egreso de programas o estrategias sanitarias del paciente.",
   "saveAndClose": "Guardar y cerrar",
   "saving": "Guardando",
   "seeAll": "Ver todo",

@@ -1,17 +1,39 @@
-import { syncDyakuPatientsToOpenMRS, validateAndFixPeruvianDNI } from './dyaku-patients.resource';
+let validateAndFixPeruvianDNI: (dni: string) => string | null;
+const mockOpenmrsFetch = vi.fn();
 
-type MockedOpenmrsFramework = {
-  openmrsFetch: jest.Mock;
-};
+import type { ConfigObject } from '../config-schema';
 
-jest.mock('@openmrs/esm-framework', () => ({
-  openmrsFetch: jest.fn(),
-  useConfig: jest.fn(),
+let syncDyakuPatientsToOpenMRS: (
+  fhirBaseUrl: string,
+  batchSize: number,
+  config: ConfigObject,
+  onProgress?: (processed: number, total: number) => void,
+) => Promise<{
+  success: boolean;
+  synchronized: number;
+  failed: number;
+  errors: string[];
+}>;
+
+vi.mock('@openmrs/esm-framework', () => ({
+  openmrsFetch: mockOpenmrsFetch,
+  useConfig: vi.fn(),
+  useConfigObject: vi.fn(),
+  useSystemSession: vi.fn(),
+  configSchema: {},
+  Type: {
+    Boolean: 'boolean',
+    Number: 'number',
+    Object: 'object',
+    String: 'string',
+  },
 }));
 
-// ---------------------------------------------------------------------------
-// validateAndFixPeruvianDNI
-// ---------------------------------------------------------------------------
+beforeAll(async () => {
+  const dyakuResource = await import('./dyaku-patients.resource');
+  ({ validateAndFixPeruvianDNI, syncDyakuPatientsToOpenMRS } = dyakuResource);
+});
+
 describe('validateAndFixPeruvianDNI', () => {
   it('returns 8-digit DNI unchanged', () => {
     expect(validateAndFixPeruvianDNI('12345678')).toBe('12345678');
@@ -42,14 +64,13 @@ describe('validateAndFixPeruvianDNI', () => {
   });
 });
 
-// ---------------------------------------------------------------------------
-// syncDyakuPatientsToOpenMRS — chunked Promise.all + real progress
-// ---------------------------------------------------------------------------
 describe('syncDyakuPatientsToOpenMRS', () => {
-  const mockFetch = jest.fn();
+  const mockFetch = vi.fn();
 
   beforeEach(() => {
-    jest.clearAllMocks();
+    vi.clearAllMocks();
+    mockFetch.mockReset();
+    mockOpenmrsFetch.mockReset();
     global.fetch = mockFetch;
   });
 
@@ -62,9 +83,11 @@ describe('syncDyakuPatientsToOpenMRS', () => {
     birthDate: '1990-01-01',
   });
 
-  const mockConfig = {
+  const mockConfig: ConfigObject = {
     dyaku: {
       fhirBaseUrl: 'https://fhir.test',
+      fhirImplementationGuideBaseUrl: 'https://fhir.test/guides/',
+      patientProfileUrl: 'https://fhir.test/StructureDefinition/PacientePe',
       identifierSourceUuid: 'src-uuid',
       dniIdentifierTypeUuid: 'dni-uuid',
       hscIdentifierTypeUuid: 'hsc-uuid',
@@ -75,7 +98,7 @@ describe('syncDyakuPatientsToOpenMRS', () => {
       syncBatchSize: 50,
       syncIntervalMinutes: 60,
     },
-  } as any;
+  };
 
   it('calls onProgress for each patient', async () => {
     const patients = Array.from({ length: 3 }, (_, i) => makePatient(String(i + 1)));
@@ -91,14 +114,11 @@ describe('syncDyakuPatientsToOpenMRS', () => {
       }),
     });
 
-    const { openmrsFetch } = require('@openmrs/esm-framework') as MockedOpenmrsFramework;
-    // findPatientByIdentifier → not found
-    openmrsFetch.mockResolvedValue({ data: { results: [] } });
-    // createPatientInOpenMRS POST → success
-    openmrsFetch.mockResolvedValueOnce({ data: { results: [] } }); // find p1
-    openmrsFetch.mockResolvedValueOnce({ data: {} }); // idgen p1
-    openmrsFetch.mockResolvedValueOnce({ data: {} }); // create p1
-    openmrsFetch.mockResolvedValue({ data: { results: [] } });
+    mockOpenmrsFetch.mockResolvedValue({ data: { results: [] } });
+    mockOpenmrsFetch.mockResolvedValueOnce({ data: { results: [] } });
+    mockOpenmrsFetch.mockResolvedValueOnce({ data: {} });
+    mockOpenmrsFetch.mockResolvedValueOnce({ data: {} });
+    mockOpenmrsFetch.mockResolvedValue({ data: { results: [] } });
 
     const progressCalls: Array<[number, number]> = [];
     const onProgress = (processed: number, total: number) => progressCalls.push([processed, total]);
@@ -124,9 +144,7 @@ describe('syncDyakuPatientsToOpenMRS', () => {
       }),
     });
 
-    const { openmrsFetch } = require('@openmrs/esm-framework') as MockedOpenmrsFramework;
-    // All openmrsFetch calls throw
-    openmrsFetch.mockRejectedValue(new Error('Network error'));
+    mockOpenmrsFetch.mockRejectedValue(new Error('Network error'));
 
     const result = await syncDyakuPatientsToOpenMRS('https://fhir.test', 2, mockConfig);
 
@@ -138,7 +156,12 @@ describe('syncDyakuPatientsToOpenMRS', () => {
   it('returns empty result when FHIR bundle has no entries', async () => {
     mockFetch.mockResolvedValueOnce({
       ok: true,
-      json: async () => ({ resourceType: 'Bundle', id: 'b1', type: 'searchset', total: 0 }),
+      json: async () => ({
+        resourceType: 'Bundle',
+        id: 'b1',
+        type: 'searchset',
+        total: 0,
+      }),
     });
 
     const result = await syncDyakuPatientsToOpenMRS('https://fhir.test', 50, mockConfig);

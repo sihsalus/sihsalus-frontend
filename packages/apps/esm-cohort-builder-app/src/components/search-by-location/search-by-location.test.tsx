@@ -66,17 +66,17 @@ const expectedQuery = {
   },
 };
 
-const mockOpenmrsFetch = openmrsFetch as jest.Mock;
+const mockOpenmrsFetch = openmrsFetch as vi.Mock;
 
-jest.mock('../../cohort-builder.resources', () => {
-  const original = jest.requireActual('../../cohort-builder.resources');
+vi.mock('../../cohort-builder.resources', async () => {
+  const original = await vi.importActual('../../cohort-builder.resources');
   return {
     ...original,
-    useLocations: jest.fn(),
+    useLocations: vi.fn(),
   };
 });
 
-const mockUseLocations = jest.mocked(useLocations);
+const mockUseLocations = vi.mocked(useLocations);
 
 describe('Test the search by location component', () => {
   it('should be able to select input values', async () => {
@@ -89,7 +89,7 @@ describe('Test the search by location component', () => {
     }));
     mockOpenmrsFetch.mockReturnValueOnce({ data: { results: mockLocations } });
 
-    const mockSubmit = jest.fn();
+    const mockSubmit = vi.fn();
     render(<SearchByLocation onSubmit={mockSubmit} />);
 
     await user.click(screen.getByText(/select locations/i));

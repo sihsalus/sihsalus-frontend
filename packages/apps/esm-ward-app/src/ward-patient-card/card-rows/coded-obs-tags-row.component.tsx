@@ -65,7 +65,10 @@ const CodedObsTagsRow: React.FC<WardPatientCodedObsTagsRowProps> = ({ id, patien
         const color = conceptToTagColorMap?.get(uuid);
         if (color) {
           return (
-            <WardPatientResponsiveTooltip tooltipContent={getObsEncounterString(o, t)}>
+            <WardPatientResponsiveTooltip
+              key={`ward-coded-obs-tooltip-${o.uuid}`}
+              tooltipContent={getObsEncounterString(o, t)}
+            >
               <Tag type={color as CarbonTagType} key={`ward-coded-obs-tag-${o.uuid}`}>
                 {display}
               </Tag>

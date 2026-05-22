@@ -2,23 +2,24 @@ import { launchWorkspace2, setupOfflineSync } from '@openmrs/esm-framework';
 
 import { setupPatientFormSync } from './offline';
 
-const mockLaunchWorkspace2 = jest.mocked(launchWorkspace2);
-const mockSetupOfflineSync = jest.mocked(setupOfflineSync);
+const mockLaunchWorkspace2 = vi.mocked(launchWorkspace2);
+const mockSetupOfflineSync = vi.mocked(setupOfflineSync);
 
-jest.mock('@openmrs/esm-framework', () => ({
-  launchWorkspace2: jest.fn(),
-  makeUrl: jest.fn(),
-  messageOmrsServiceWorker: jest.fn(),
+vi.mock('@openmrs/esm-framework', async () => ({
+  ...(await vi.importActual('@openmrs/esm-framework')),
+  launchWorkspace2: vi.fn(),
+  makeUrl: vi.fn(),
+  messageOmrsServiceWorker: vi.fn(),
   omrsOfflineCachingStrategyHttpHeaderName: 'x-offline-strategy',
-  openmrsFetch: jest.fn(),
+  openmrsFetch: vi.fn(),
   restBaseUrl: '/ws/rest/v1',
-  setupDynamicOfflineDataHandler: jest.fn(),
-  setupOfflineSync: jest.fn(),
+  setupDynamicOfflineDataHandler: vi.fn(),
+  setupOfflineSync: vi.fn(),
 }));
 
 describe('setupPatientFormSync', () => {
   beforeEach(() => {
-    jest.clearAllMocks();
+    vi.clearAllMocks();
   });
 
   it('launches canonical queued forms through the workspace2 contract', async () => {

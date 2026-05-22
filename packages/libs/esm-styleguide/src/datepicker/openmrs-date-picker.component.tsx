@@ -17,7 +17,7 @@ import { dateToInternationalizedDate, internationalizedDateToDate } from './util
  * Properties for the OpenmrsDatePicker
  */
 export interface OpenmrsDatePickerProps
-  extends Omit<DatePickerProps<CalendarDate>, 'className' | 'onChange' | 'defaultValue' | 'value'>,
+  extends Omit<DatePickerProps<DateValue>, 'className' | 'onChange' | 'defaultValue' | 'value'>,
     DatePickerBaseProps {
   /** The default value (uncontrolled) */
   defaultValue?: DateInputValue;
@@ -95,7 +95,16 @@ export const OpenmrsDatePicker = /*#__PURE__*/ forwardRef<HTMLDivElement, Openmr
           'An OpenmrsDatePicker component was created with both onChange and onChangeRaw handlers defined. Only onChangeRaw will be used.',
         );
       }
-      return onChangeRaw ?? ((value: DateValue) => rawOnChange?.(internationalizedDateToDate(value)));
+      return (
+        onChangeRaw ??
+        ((value: DateValue | null) => {
+          if (value) {
+            rawOnChange?.(internationalizedDateToDate(value as CalendarDate));
+          } else {
+            rawOnChange?.(null);
+          }
+        })
+      );
     }, [onChangeRaw, rawOnChange]);
 
     return (
@@ -115,7 +124,7 @@ export const OpenmrsDatePicker = /*#__PURE__*/ forwardRef<HTMLDivElement, Openmr
               value={value}
               shouldForceLeadingZeros={intlLocale.language === 'en' ? true : undefined}
               {...datePickerProps}
-              onChange={onChange}
+              onChange={onChange as DatePickerProps<DateValue>['onChange']}
             >
               <div className="cds--date-picker-container">
                 {hasVisibleLabel && (

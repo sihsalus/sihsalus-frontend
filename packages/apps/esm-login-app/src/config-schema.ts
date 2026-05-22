@@ -6,9 +6,9 @@ export const configSchema = {
       _type: Type.String,
       _default: 'basic',
       _description:
-        "Selects the login mechanism to use. Choices are 'basic' and 'oauth2'. " +
-        "For 'oauth2' you'll also need to set the 'loginUrl'",
-      _validators: [validators.oneOf(['basic', 'oauth2'])],
+        "Selects the login mechanism to use. Choices are 'basic', 'oauth2' and 'custom'. " +
+        "For 'custom' and 'oauth2', you'll also need to set the 'loginUrl'",
+      _validators: [validators.oneOf(['basic', 'custom', 'oauth2'])],
     },
     loginUrl: {
       _type: Type.String,
@@ -58,12 +58,37 @@ export const configSchema = {
       _validators: [validators.isUrl],
     },
   },
+  languageSwitcher: {
+    locales: {
+      _type: Type.Array,
+      _elements: {
+        _type: Type.Object,
+        locale: {
+          _type: Type.String,
+          _required: true,
+          _description: 'The locale code to pass to i18next.',
+        },
+        label: {
+          _type: Type.String,
+          _required: true,
+          _description: 'The display label for the locale in the login language menu.',
+        },
+      },
+      _default: [
+        { locale: 'es', label: 'Español' },
+        { locale: 'en', label: 'English' },
+        { locale: 'pt', label: 'Português' },
+        { locale: 'fr', label: 'Français' },
+      ],
+      _description: 'Language options displayed on the login page before authentication.',
+    },
+  },
   logo: {
     src: {
       _type: Type.String,
       _default: '${openmrsSpaBase}/sihsalus-vertical.svg',
       _description:
-        'The path or URL to the logo image. If set to an empty string, the default OpenMRS SVG sprite will be used.',
+        'The path or URL to the Sihsalus logo image. If set to an empty string, the Sihsalus wordmark text is used.',
       _validators: [validators.isUrl],
     },
     alt: {
@@ -90,7 +115,7 @@ export const configSchema = {
         },
       },
       _default: [],
-      _description: 'An array of logos to be displayed in the footer next to the OpenMRS logo.',
+      _description: 'An array of partner logos to be displayed in the login footer.',
     },
   },
   showPasswordOnSeparateScreen: {
@@ -99,9 +124,60 @@ export const configSchema = {
     _description:
       'Whether to show the password field on a separate screen. If false, the password field will be shown on the same screen.',
   },
+  background: {
+    _type: Type.Object,
+    _description:
+      'Customizes the login page background. Either a background image URL or a CSS color may be set. If both are set, the image is used.',
+    image: {
+      _type: Type.String,
+      _default: '',
+      _description:
+        'URL to a background image. Relative paths are interpolated via ${openmrsBase} / ${openmrsSpaBase}.',
+      _validators: [validators.isUrl],
+    },
+    color: {
+      _type: Type.String,
+      _default: '',
+      _description: 'CSS color value (e.g. "#0066cc" or "rgb(0,102,204)"). Used when no image is set.',
+    },
+  },
+  announcements: {
+    _type: Type.Array,
+    _description:
+      'Message banners displayed above the login form. Each entry renders as a Carbon InlineNotification. `title` and `text` may be either literal strings or translation keys.',
+    _elements: {
+      _type: Type.Object,
+      title: {
+        _type: Type.String,
+        _default: '',
+        _description: 'Optional title shown at the top of the banner. May be a translation key.',
+      },
+      text: {
+        _type: Type.String,
+        _required: true,
+        _description: 'Banner body text. May be a translation key.',
+      },
+      kind: {
+        _type: Type.String,
+        _default: 'info',
+        _description: 'The visual style of the banner. One of: info, warning, error, success.',
+        _validators: [validators.oneOf(['info', 'warning', 'error', 'success'])],
+      },
+    },
+    _default: [],
+  },
 };
 
 export interface ConfigSchema {
+  announcements: Array<{
+    title: string;
+    text: string;
+    kind: 'info' | 'warning' | 'error' | 'success';
+  }>;
+  background: {
+    image: string;
+    color: string;
+  };
   chooseLocation: {
     enabled: boolean;
     locationsPerRequest: number;
@@ -117,6 +193,12 @@ export interface ConfigSchema {
   links: {
     loginSuccess: string;
   };
+  languageSwitcher: {
+    locales: Array<{
+      label: string;
+      locale: string;
+    }>;
+  };
   logo: {
     alt: string;
     src: string;
@@ -124,7 +206,7 @@ export interface ConfigSchema {
   provider: {
     loginUrl: string;
     logoutUrl: string;
-    type: 'basic' | 'oauth2';
+    type: 'basic' | 'custom' | 'oauth2';
   };
   showPasswordOnSeparateScreen: boolean;
 }

@@ -37,6 +37,7 @@ const InvoiceTable: React.FC<InvoiceTableProps> = ({ bill, isLoadingBill, onMuta
   const responsiveSize = isDesktop(layout) ? 'sm' : 'lg';
   const [searchTerm, setSearchTerm] = useState('');
   const debouncedSearchTerm = useDebounce(searchTerm);
+  const searchClassName = typeof styles.searchbox === 'string' ? styles.searchbox : undefined;
 
   const filteredLineItems = useMemo(() => {
     if (!debouncedSearchTerm) {
@@ -107,7 +108,7 @@ const InvoiceTable: React.FC<InvoiceTableProps> = ({ bill, isLoadingBill, onMuta
             title={t('lineItems', 'Line items')}
           >
             <TableToolbarSearch
-              className={styles.searchbox}
+              className={searchClassName}
               expanded
               onChange={(e: React.ChangeEvent<HTMLInputElement>) => setSearchTerm(e.target.value)}
               placeholder={t('searchThisTable', 'Search this table')}
@@ -129,8 +130,9 @@ const InvoiceTable: React.FC<InvoiceTableProps> = ({ bill, isLoadingBill, onMuta
               <TableBody>
                 {rows.map((row) => {
                   const item = lineItemsByUuid.get(row.id);
+                  const { key, ...rowProps } = getRowProps({ row });
                   return (
-                    <TableRow key={row.id} {...getRowProps({ row })}>
+                    <TableRow key={key} {...rowProps}>
                       {row.cells.map((cell) => (
                         <TableCell key={cell.id}>{cell.value}</TableCell>
                       ))}

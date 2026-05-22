@@ -3,6 +3,7 @@ import { defineConfigSchema, getAsyncLifecycle, getSyncLifecycle } from '@openmr
 import { configSchema } from './config-schema';
 import { createDashboardLink } from './createDashboardLink.component';
 import { dashboardMeta } from './dashboard.meta';
+import homeAppMenuItemComponent from './home-app-menu-item.component';
 import homeWidgetDashboardComponent from './home-page-widgets/home-page-widgets.component';
 import rootComponent from './root.component';
 import homeNavMenuComponent from './side-menu/side-menu.component';
@@ -24,6 +25,10 @@ export const homeNavMenu = getSyncLifecycle(homeNavMenuComponent, options);
 export const homeWidgetDbLink = getSyncLifecycle(createDashboardLink(dashboardMeta), options);
 
 export const homeWidgetDashboard = getSyncLifecycle(homeWidgetDashboardComponent, options);
+
+export const homeAppMenuItem = getSyncLifecycle(homeAppMenuItemComponent, options);
+
+export const globalHomeNavLink = getAsyncLifecycle(() => import('./global-home-nav-link.component'), options);
 
 export const peruHomeActions = getAsyncLifecycle(
   () => import('./peru-home-actions/peru-home-actions.component'),

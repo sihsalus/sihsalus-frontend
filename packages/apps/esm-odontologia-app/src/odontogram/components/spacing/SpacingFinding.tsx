@@ -7,7 +7,7 @@
  */
 
 import React from 'react';
-import { getSpacingDesignComponentByPosition } from '../../config/designMapping';
+import { getSpacingDesignComponentByPosition, isOrientationAgnosticFinding } from '../../config/designMapping';
 import { isRowFinding } from '../../logic/findingDesignLogic';
 import { useOdontogramContext } from '../../providers/OdontogramProvider';
 import './SpaceBetweenStyles.css';
@@ -96,10 +96,18 @@ const SpacingFinding: React.FC<SpacingFindingProps> = ({
   const renderDesign = () => {
     if (!storedColor || !dynamicDesign) return null;
 
-    const DesignComponent = getSpacingDesignComponentByPosition(findingId, dynamicDesign, isLower);
+    const DesignComponent = getSpacingDesignComponentByPosition(findingId, dynamicDesign);
     if (!DesignComponent) return null;
 
-    return <DesignComponent strokeColor={storedColor.name} />;
+    const designNode = <DesignComponent strokeColor={storedColor.name} />;
+    // Lower-arch spacings are derived from the upper canon by mirroring
+    // vertically (single source of truth for design assets). Orientation-
+    // agnostic findings (e.g. 26 with the "S" glyph) skip the mirror so the
+    // letter stays right-side-up.
+    if (isLower && !isOrientationAgnosticFinding(findingId)) {
+      return <g transform={`scale(1,-1) translate(0,-${height})`}>{designNode}</g>;
+    }
+    return designNode;
   };
 
   return (
@@ -110,11 +118,18 @@ const SpacingFinding: React.FC<SpacingFindingProps> = ({
       style={{ cursor: readOnly ? 'default' : 'pointer' }}
       className={isSelected && !readOnly ? 'interactive-svg' : ''}
     >
-      <rect
-        width={width}
-        height={height}
-        fill={isSelected && !readOnly && !NO_HIGHLIGHT_SPACING.has(findingId) ? 'lightgray' : 'white'}
-      />
+      {(() => {
+        const showHighlight = isSelected && !readOnly && !NO_HIGHLIGHT_SPACING.has(findingId);
+        return (
+          <rect
+            width={width}
+            height={height}
+            fill={showHighlight ? 'lightgray' : 'white'}
+            stroke={showHighlight ? '#a8a8a8' : 'none'}
+            strokeWidth={showHighlight ? 0.3 : 0}
+          />
+        );
+      })()}
       {renderDesign()}
     </svg>
   );

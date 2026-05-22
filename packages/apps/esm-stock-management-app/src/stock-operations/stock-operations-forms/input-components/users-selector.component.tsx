@@ -1,5 +1,5 @@
+import { Column, ComboBox, InlineNotification, SelectSkeleton, TextInput } from '@carbon/react';
 import React, { useEffect } from 'react';
-import { ComboBox, InlineNotification, SelectSkeleton, Column, TextInput } from '@carbon/react';
 import { Controller, useFormContext } from 'react-hook-form';
 import { useTranslation } from 'react-i18next';
 import { type User } from '../../../core/api/types/identity/User';
@@ -9,7 +9,7 @@ import { useUser } from '../../../stock-lookups/stock-lookups.resource';
 import useSearchUser from '../hooks/useSearchUser';
 
 const UsersSelector = () => {
-  const { isLoading, userList, setSearchString } = useSearchUser();
+  const { userList, setSearchString } = useSearchUser();
   const { t } = useTranslation();
   const debouncedSearch = useDebounce((query: string) => {
     setSearchString(query);
@@ -65,8 +65,8 @@ const UsersSelector = () => {
                     ? otherUser
                     : data
                   : observableresponsiblePersonOther && !observableresponsiblePersonUuid
-                  ? otherUser
-                  : ''
+                    ? otherUser
+                    : ''
               }
               itemToString={(item) => (typeof item === 'string' ? item : item?.person?.display || '')}
               onInputChange={debouncedSearch}

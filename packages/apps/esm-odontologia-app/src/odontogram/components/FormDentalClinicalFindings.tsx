@@ -1,7 +1,10 @@
-import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { Button, Modal, Search } from '@carbon/react';
+import { Checkmark, ChevronDown, Close, Information } from '@carbon/react/icons';
+import { useCallback, useMemo, useState } from 'react';
 import { useOdontogramContext } from '../providers/OdontogramProvider';
-import type { FindingColor, FindingSuboption } from '../types/odontogram';
+import type { FindingColor, FindingOptionConfig, FindingSuboption } from '../types/odontogram';
 import { COLOR_CSS, COLOR_LABEL } from './constants';
+import styles from './FormDentalClinicalFindings.module.scss';
 
 // ─── Datos de referencia de siglas clínicas por hallazgo ─────────────────────
 interface SiglaEntry {
@@ -171,63 +174,34 @@ const FormDentalClinicalFindings = () => {
   const selectedOption = formSelection.selectedFindingId;
   const selectedColor = formSelection.selectedColor;
   const selectedSuboption = formSelection.selectedSuboption;
-  const selectedItem = opciones.find((op) => op.id === selectedOption) ?? null;
-
-  const [open, setOpen] = useState(false);
-  const [query, setQuery] = useState('');
-  const [showInfo, setShowInfo] = useState(false);
-  const wrapperRef = useRef<HTMLDivElement>(null);
-  const searchRef = useRef<HTMLInputElement>(null);
-
-  useEffect(() => {
-    const handler = (e: MouseEvent) => {
-      if (wrapperRef.current && !wrapperRef.current.contains(e.target as Node)) setOpen(false);
-    };
-    document.addEventListener('mousedown', handler);
-    return () => document.removeEventListener('mousedown', handler);
-  }, []);
-
-  useEffect(() => {
-    if (open) setTimeout(() => searchRef.current?.focus(), 30);
-  }, [open]);
-
-  // Close docs modal when finding selection changes
-  useEffect(() => {
-    setShowInfo(false);
-  }, []);
-
-  const norm = useCallback(
-    (s: string) =>
-      s
-        .toLowerCase()
-        .normalize('NFD')
-        .replace(/[\u0300-\u036f]/g, ''),
-    [],
+  const selectedItem = useMemo<FindingOptionConfig | null>(
+    () => opciones.find((op) => op.id === selectedOption) ?? null,
+    [opciones, selectedOption],
   );
 
-  const filtered = useMemo(() => {
-    const q = norm(query.trim());
+  const [showInfo, setShowInfo] = useState(false);
+  const [pickerOpen, setPickerOpen] = useState(false);
+  const [pickerQuery, setPickerQuery] = useState('');
+
+  const norm = useCallback((s: string) => s.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, ''), []);
+
+  const filteredOpciones = useMemo(() => {
+    const q = norm(pickerQuery.trim());
     if (!q) return opciones;
-    return opciones.filter((op) => norm(op.nombre).includes(q) || String(op.id).includes(q));
-  }, [opciones, query, norm]);
+    return opciones.filter((op) => norm(op.nombre).includes(q));
+  }, [opciones, pickerQuery, norm]);
+
+  const closePicker = useCallback(() => {
+    setPickerOpen(false);
+    setPickerQuery('');
+  }, []);
 
   const handleSelectFinding = useCallback(
-    (id: number) => {
-      formActions.selectFinding(selectedOption === id ? null : id);
-      setOpen(false);
-      setQuery('');
+    (item: FindingOptionConfig | null) => {
+      formActions.selectFinding(item?.id ?? null);
+      closePicker();
     },
-    [formActions, selectedOption],
-  );
-
-  const handleClear = useCallback(
-    (e: React.MouseEvent) => {
-      e.stopPropagation();
-      formActions.selectFinding(null);
-      setQuery('');
-      setOpen(false);
-    },
-    [formActions],
+    [formActions, closePicker],
   );
 
   const handleSelectColor = useCallback((c: FindingColor) => formActions.selectColor(c), [formActions]);
@@ -237,229 +211,173 @@ const FormDentalClinicalFindings = () => {
     [formActions, selectedSuboption],
   );
 
-  return (
-    <div className="odon-form">
-      <div className="odon-form-body">
-        {/* Hallazgo */}
-        <div className="odon-form-section odon-form-section--finding">
-          <span className="odon-form-label">
-            Hallazgo
-            {selectedOption && <span className="odon-check">✓</span>}
-          </span>
-          <div className="odon-dropdown-wrap" ref={wrapperRef}>
-            <button
-              type="button"
-              className={[
-                'odon-trigger',
-                open ? 'odon-trigger--open' : '',
-                selectedItem ? 'odon-trigger--filled' : '',
-              ].join(' ')}
-              onClick={() => setOpen((v) => !v)}
-              aria-haspopup="listbox"
-              aria-expanded={open}
-            >
-              {selectedItem ? (
-                <>
-                  <span className="odon-trigger-text">{selectedItem.nombre}</span>
-                  <span className="odon-trigger-clear" onClick={handleClear} role="button" aria-label="Limpiar">
-                    ×
-                  </span>
-                </>
-              ) : (
-                <span className="odon-trigger-placeholder">Seleccionar hallazgo…</span>
-              )}
-              <span className="odon-trigger-chevron">{open ? '▲' : '▼'}</span>
-            </button>
+  const docsGroup = selectedOption != null ? SIGLAS_MAP[selectedOption] : null;
 
-            {open && (
-              <div className="odon-popover" role="listbox">
-                <div className="odon-popover-search-wrap">
-                  <input
-                    ref={searchRef}
-                    className="odon-popover-search"
-                    type="text"
-                    placeholder="Buscar hallazgo…"
-                    value={query}
-                    onChange={(e) => setQuery(e.target.value)}
-                    onKeyDown={(e) => e.key === 'Escape' && setOpen(false)}
-                  />
-                  {query && (
-                    <button className="odon-popover-clear-btn" type="button" onClick={() => setQuery('')}>
-                      ×
-                    </button>
-                  )}
-                </div>
-                <div className="odon-popover-grid">
-                  {filtered.map((op) => (
-                    <button
-                      key={op.id}
-                      type="button"
-                      role="option"
-                      aria-selected={op.id === selectedOption}
-                      className={['odon-pill', op.id === selectedOption ? 'odon-pill--selected' : ''].join(' ')}
-                      onClick={() => handleSelectFinding(op.id)}
-                      title={op.nombre}
-                    >
-                      <span className="odon-pill-name">{op.nombre}</span>
-                    </button>
-                  ))}
-                  {filtered.length === 0 && <p className="odon-pill-empty">Sin coincidencias</p>}
-                </div>
-              </div>
+  return (
+    <div className={styles.formContainer}>
+      <div className={styles.formGrid}>
+        {/* Hallazgo */}
+        <div className={`${styles.field} ${styles.fieldFinding}`}>
+          <span className={styles.fieldLabel}>Hallazgo</span>
+          <button
+            type="button"
+            className={`${styles.findingTrigger} ${selectedItem ? styles.findingTriggerFilled : ''}`}
+            onClick={() => setPickerOpen(true)}
+            aria-haspopup="dialog"
+            aria-expanded={pickerOpen}
+          >
+            <span className={styles.findingTriggerText}>
+              {selectedItem ? selectedItem.nombre : 'Seleccionar hallazgo…'}
+            </span>
+            {selectedItem && (
+              <span
+                className={styles.findingTriggerClear}
+                role="button"
+                tabIndex={0}
+                aria-label="Limpiar hallazgo"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  handleSelectFinding(null);
+                }}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' || e.key === ' ') {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    handleSelectFinding(null);
+                  }
+                }}
+              >
+                <Close size={16} />
+              </span>
             )}
-          </div>
+            <ChevronDown size={16} className={styles.findingTriggerChevron} />
+          </button>
         </div>
 
         {/* Tipo */}
         {selectedItem && (selectedItem.subopciones?.length ?? 0) > 0 && (
-          <div className="odon-form-section">
-            <span className="odon-form-label">
-              Tipo
-              {selectedSuboption && <span className="odon-check">✓</span>}
-            </span>
-            <div className="odon-subchoice-row">
-              {selectedItem.subopciones!.map((sub: FindingSuboption) => (
-                <button
-                  key={sub.id}
-                  type="button"
-                  className={['odon-subchoice', selectedSuboption?.id === sub.id ? 'odon-subchoice--active' : ''].join(
-                    ' ',
-                  )}
-                  onClick={() => handleSelectSuboption(sub)}
-                  title={sub.descripcion}
-                >
-                  {sub.nombre}
-                </button>
-              ))}
-            </div>
-          </div>
-        )}
-        {/* Color */}
-        {selectedItem && (selectedItem.colores?.length ?? 0) > 0 && (
-          <div className="odon-form-section">
-            <span className="odon-form-label">
-              Color
-              {selectedColor && <span className="odon-check">✓</span>}
-            </span>
-            <div className="odon-color-row">
-              {selectedItem.colores.map((color: FindingColor) => (
-                <button
-                  key={color.id}
-                  type="button"
-                  className={[
-                    'odon-color-swatch',
-                    selectedColor?.name === color.name ? 'odon-color-swatch--active' : '',
-                  ].join(' ')}
-                  style={{ '--swatch-color': COLOR_CSS[color.name] ?? '#888' } as React.CSSProperties}
-                  onClick={() => handleSelectColor(color)}
-                  title={COLOR_LABEL[color.name] ?? color.name}
-                  aria-label={COLOR_LABEL[color.name] ?? color.name}
-                >
-                  <span className="odon-color-dot" />
-                  <span className="odon-color-label">{COLOR_LABEL[color.name] ?? color.name}</span>
-                </button>
-              ))}
-              {/* Documentación button — inline with color swatches */}
-              {selectedOption && SIGLAS_MAP[selectedOption] && (
-                <button
-                  type="button"
-                  className="odon-info-btn"
-                  onClick={() => setShowInfo(true)}
-                  title="Documentación del hallazgo"
-                  aria-label="Documentación"
-                >
-                  <svg viewBox="0 0 20 20" fill="currentColor" width="14" height="14" aria-hidden="true">
-                    <path
-                      fillRule="evenodd"
-                      d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a.75.75 0 000 1.5h.253a.25.25 0 01.244.304l-.459 2.066A1.75 1.75 0 0010.747 15H11a.75.75 0 000-1.5h-.253a.25.25 0 01-.244-.304l.459-2.066A1.75 1.75 0 009.253 9H9z"
-                      clipRule="evenodd"
-                    />
-                  </svg>
-                  <span>Documentación</span>
-                </button>
-              )}
+          <div className={styles.field}>
+            <span className={styles.fieldLabel}>Tipo</span>
+            <div className={styles.subOptionRow} role="group" aria-label="Tipo">
+              {selectedItem.subopciones!.map((sub: FindingSuboption) => {
+                const isActive = selectedSuboption?.id === sub.id;
+                return (
+                  <button
+                    key={sub.id}
+                    type="button"
+                    className={`${styles.subOptionChip} ${isActive ? styles.subOptionChipActive : ''}`}
+                    onClick={() => handleSelectSuboption(sub)}
+                    aria-pressed={isActive}
+                    title={sub.descripcion ?? sub.nombre}
+                  >
+                    {sub.nombre}
+                  </button>
+                );
+              })}
             </div>
           </div>
         )}
 
-        {/* Documentación button when there is no color section */}
-        {selectedItem && (selectedItem.colores?.length ?? 0) === 0 && selectedOption && SIGLAS_MAP[selectedOption] && (
-          <div className="odon-form-section odon-form-section--info">
-            <span className="odon-form-label">&nbsp;</span>
-            <button
-              type="button"
-              className="odon-info-btn"
-              onClick={() => setShowInfo(true)}
-              title="Documentación del hallazgo"
-              aria-label="Documentación"
-            >
-              <svg viewBox="0 0 20 20" fill="currentColor" width="14" height="14" aria-hidden="true">
-                <path
-                  fillRule="evenodd"
-                  d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a.75.75 0 000 1.5h.253a.25.25 0 01.244.304l-.459 2.066A1.75 1.75 0 0010.747 15H11a.75.75 0 000-1.5h-.253a.25.25 0 01-.244-.304l.459-2.066A1.75 1.75 0 009.253 9H9z"
-                  clipRule="evenodd"
-                />
-              </svg>
-              <span>Documentación</span>
-            </button>
+        {/* Color */}
+        {selectedItem && (selectedItem.colores?.length ?? 0) > 0 && (
+          <div className={styles.field}>
+            <span className={styles.fieldLabel}>Color</span>
+            <div className={styles.colorRow}>
+              {selectedItem.colores.map((color: FindingColor) => {
+                const isActive = selectedColor?.name === color.name;
+                const label = COLOR_LABEL[color.name] ?? color.name;
+                return (
+                  <button
+                    key={color.id}
+                    type="button"
+                    className={`${styles.colorSwatch} ${isActive ? styles.colorSwatchActive : ''}`}
+                    onClick={() => handleSelectColor(color)}
+                    aria-label={label}
+                    aria-pressed={isActive}
+                    title={label}
+                  >
+                    <span
+                      className={styles.colorDot}
+                      style={{ backgroundColor: COLOR_CSS[color.name] ?? '#888' }}
+                      aria-hidden
+                    />
+                    <span>{label}</span>
+                    {isActive && <Checkmark size={16} className={styles.colorCheck} />}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+        )}
+
+        {/* Documentación */}
+        {docsGroup && (
+          <div className={styles.fieldDocs}>
+            <Button kind="ghost" size="md" renderIcon={Information} onClick={() => setShowInfo(true)}>
+              Documentación
+            </Button>
           </div>
         )}
       </div>
 
-      {/* ── Documentación modal — contextual to selected finding ── */}
-      {showInfo &&
-        selectedOption &&
-        SIGLAS_MAP[selectedOption] &&
-        (() => {
-          const group = SIGLAS_MAP[selectedOption];
-          return (
-            <div
-              className="odon-siglas-overlay"
-              role="button"
-              tabIndex={0}
-              onClick={(event) => {
-                if (event.target === event.currentTarget) {
-                  setShowInfo(false);
-                }
-              }}
-              onKeyDown={(event) => {
-                if (event.key === 'Enter' || event.key === ' ') {
-                  event.preventDefault();
-                  setShowInfo(false);
-                }
-              }}
-            >
-              <div className="odon-siglas-modal">
-                <div className="odon-siglas-header">
-                  <h3 className="odon-siglas-title">{group.hallazgo}</h3>
-                  <button
-                    type="button"
-                    className="odon-siglas-close"
-                    onClick={() => setShowInfo(false)}
-                    aria-label="Cerrar"
-                  >
-                    ×
-                  </button>
-                </div>
-                <div className="odon-siglas-body">
-                  {group.nota && <p className="odon-siglas-nota">{group.nota}</p>}
-                  {group.siglas.length > 0 && (
-                    <table className="odon-siglas-table">
-                      <tbody>
-                        {group.siglas.map((s) => (
-                          <tr key={s.sigla}>
-                            <td className="odon-siglas-code">{s.sigla}</td>
-                            <td className="odon-siglas-desc">{s.significado}</td>
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
-                  )}
-                </div>
-              </div>
-            </div>
-          );
-        })()}
+      <Modal
+        open={pickerOpen}
+        passiveModal
+        modalHeading="Seleccionar hallazgo"
+        onRequestClose={closePicker}
+        size="lg"
+        selectorPrimaryFocus="#finding-picker-search"
+      >
+        <div className={styles.pickerSearchWrap}>
+          <Search
+            id="finding-picker-search"
+            labelText="Buscar hallazgo"
+            placeholder="Buscar hallazgo por nombre…"
+            size="lg"
+            value={pickerQuery}
+            onChange={(e) => setPickerQuery(e.target.value)}
+            onClear={() => setPickerQuery('')}
+          />
+        </div>
+        <div className={styles.pickerGrid}>
+          {filteredOpciones.map((op) => {
+            const isSelected = op.id === selectedOption;
+            return (
+              <button
+                key={op.id}
+                type="button"
+                className={`${styles.pickerTile} ${isSelected ? styles.pickerTileSelected : ''}`}
+                onClick={() => handleSelectFinding(op)}
+                aria-pressed={isSelected}
+              >
+                <span className={styles.pickerTileName}>{op.nombre}</span>
+                {isSelected && <Checkmark size={16} className={styles.pickerTileCheck} />}
+              </button>
+            );
+          })}
+          {filteredOpciones.length === 0 && (
+            <p className={styles.pickerEmpty}>Sin coincidencias para «{pickerQuery}»</p>
+          )}
+        </div>
+      </Modal>
+
+      {showInfo && docsGroup && (
+        <Modal open passiveModal modalHeading={docsGroup.hallazgo} onRequestClose={() => setShowInfo(false)} size="sm">
+          {docsGroup.nota && <p className={styles.docsNote}>{docsGroup.nota}</p>}
+          {docsGroup.siglas.length > 0 && (
+            <table className={styles.docsTable}>
+              <tbody>
+                {docsGroup.siglas.map((s) => (
+                  <tr key={s.sigla}>
+                    <td className={styles.docsCode}>{s.sigla}</td>
+                    <td className={styles.docsDesc}>{s.significado}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          )}
+        </Modal>
+      )}
     </div>
   );
 };

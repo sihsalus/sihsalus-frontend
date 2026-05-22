@@ -1,16 +1,15 @@
 import { ExtensionSlot, getConfig, getDefaultsFromConfigSchema, useConfig } from '@openmrs/esm-framework';
 import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import React from 'react';
 import { mockPatient, visitOverviewDetailMockData, visitOverviewDetailMockDataNotEmpty } from 'test-utils';
 
 import { type ChartConfig, esmPatientChartSchema } from '../../../config-schema';
 
 import VisitSummary from './visit-summary.component';
 
-const mockExtensionSlot = ExtensionSlot as jest.Mock;
-const mockGetConfig = jest.mocked(getConfig);
-const mockUseConfig = jest.mocked(useConfig<ChartConfig>);
+const mockExtensionSlot = ExtensionSlot as vi.Mock;
+const mockGetConfig = vi.mocked(getConfig);
+const mockUseConfig = vi.mocked(useConfig<ChartConfig>);
 const mockVisit = visitOverviewDetailMockData.data.results[0];
 
 describe('VisitSummary', () => {
@@ -70,10 +69,14 @@ describe('VisitSummary', () => {
     expect(screen.getByText(/^diagnoses$/i)).toBeInTheDocument();
     expect(malariaTag).toBeInTheDocument();
     expect(hivTag).toBeInTheDocument();
+    expect(screen.getByText(/^Definitivo$/)).toBeInTheDocument();
+    expect(screen.getByText(/^Presuntivo$/)).toBeInTheDocument();
 
-    expect(malariaTag.closest('div')).toHaveClass('cds--tag--red');
-
-    expect(hivTag.closest('div')).toHaveClass('cds--tag--blue');
+    expect(malariaTag.closest('[title]')).toHaveAttribute('title', 'Malaria, confirmed (Definitivo)');
+    expect(hivTag.closest('[title]')).toHaveAttribute(
+      'title',
+      'HUMAN IMMUNODEFICIENCY VIRUS (HIV) DISEASE (Presuntivo)',
+    );
   });
 
   it('should display notes, tests and medication summary', async () => {
@@ -86,6 +89,7 @@ describe('VisitSummary', () => {
 
     expect(screen.getByText(/^Diagnoses$/i)).toBeInTheDocument();
     expect(screen.getByText(/^Malaria, confirmed$/)).toBeInTheDocument();
+    expect(screen.getByText(/^Definitivo$/)).toBeInTheDocument();
     expect(screen.getByText(/HUMAN IMMUNODEFICIENCY VIRUS/i)).toBeInTheDocument();
     expect(screen.getByRole('tab', { name: /Medication/i })).toBeInTheDocument();
     expect(screen.getByRole('tab', { name: /Tests/i })).toBeInTheDocument();

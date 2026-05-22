@@ -8,7 +8,7 @@ export const configSchema = {
   },
   fuaGeneratorEndpoint: {
     _type: Type.String,
-    _default: 'http://hii1sc-dev.inf.pucp.edu.pe/services/fua-generator/demo',
+    _default: 'http://gidis-hsc-dev.inf.pucp.edu.pe/services/fua-generator/demo',
     _description: 'URL del endpoint del generador de FUA (fallback cuando backend no disponible)',
   },
   encounterTypeUuid: {

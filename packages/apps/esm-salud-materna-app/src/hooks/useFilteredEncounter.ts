@@ -60,7 +60,11 @@ export function useFilteredEncounter(
       if (!data?.results?.length) return null;
 
       const validEncounters = data.results.filter(
-        (enc) => enc?.uuid && enc.encounterDatetime && enc.form?.display === formUuid && Array.isArray(enc.obs),
+        (enc) =>
+          enc?.uuid &&
+          enc.encounterDatetime &&
+          (enc.form?.uuid === formUuid || enc.form?.display === formUuid) &&
+          Array.isArray(enc.obs),
       );
 
       return (

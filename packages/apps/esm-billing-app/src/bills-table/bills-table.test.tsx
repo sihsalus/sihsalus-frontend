@@ -1,20 +1,19 @@
 import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import React from 'react';
 import { usePaginatedBills } from '../billing.resource';
 import BillsTable from './bills-table.component';
 
-jest.mock('../billing.resource', () => ({
-  usePaginatedBills: jest.fn(() => ({
+vi.mock('../billing.resource', () => ({
+  usePaginatedBills: vi.fn(() => ({
     bills: mockBillsData,
     isLoading: false,
     isValidating: false,
     error: null,
-    mutate: jest.fn(),
+    mutate: vi.fn(),
   })),
 }));
 
-const mockBills = jest.mocked(usePaginatedBills);
+const mockBills = vi.mocked(usePaginatedBills);
 
 const mockBillsData = [
   {
@@ -98,10 +97,10 @@ describe('BillsTable', () => {
       isLoading: false,
       isValidating: false,
       error: null,
-      mutate: jest.fn(),
+      mutate: vi.fn(),
       currentPage: 1,
       totalCount: 10,
-      goTo: jest.fn(),
+      goTo: vi.fn(),
     }));
   });
 
@@ -121,15 +120,15 @@ describe('BillsTable', () => {
       isLoading: false,
       isValidating: false,
       error: null,
-      mutate: jest.fn(),
+      mutate: vi.fn(),
       currentPage: 1,
       totalCount: 0,
-      goTo: jest.fn(),
+      goTo: vi.fn(),
     }));
 
     render(<BillsTable />);
 
-    // With default "Pending bills" filter, shows "No matching bills" not empty state
+    // With default "Pending confirmation" filter, shows "No matching bills" not empty state
     expect(screen.getByText(/no matching bills to display/i)).toBeInTheDocument();
     expect(screen.getByText(/check the filters above/i)).toBeInTheDocument();
     expect(screen.getByRole('searchbox')).toBeInTheDocument();
@@ -141,17 +140,17 @@ describe('BillsTable', () => {
       isLoading: true,
       isValidating: false,
       error: null,
-      mutate: jest.fn(),
+      mutate: vi.fn(),
       currentPage: 1,
       totalCount: 0,
-      goTo: jest.fn(),
+      goTo: vi.fn(),
     }));
 
     render(<BillsTable />);
 
     expect(screen.getByRole('progressbar')).toBeInTheDocument();
     expect(screen.getByText(/filter by/i)).toBeInTheDocument();
-    expect(screen.getByText(/pending bills/i)).toBeInTheDocument();
+    expect(screen.getByText(/pending confirmation/i)).toBeInTheDocument();
   });
 
   test('should display an error state if there is a problem loading bill data', () => {
@@ -160,10 +159,10 @@ describe('BillsTable', () => {
       isLoading: false,
       isValidating: false,
       error: new Error('Error in fetching data'),
-      mutate: jest.fn(),
+      mutate: vi.fn(),
       currentPage: 1,
       totalCount: 0,
-      goTo: jest.fn(),
+      goTo: vi.fn(),
     }));
 
     render(<BillsTable />);
@@ -171,19 +170,19 @@ describe('BillsTable', () => {
     expect(screen.getByText(/error state/i)).toBeInTheDocument();
     expect(screen.queryByRole('table')).not.toBeInTheDocument();
     expect(screen.getByText(/filter by/i)).toBeInTheDocument();
-    expect(screen.getByText(/pending bills/i)).toBeInTheDocument();
+    expect(screen.getByText(/pending confirmation/i)).toBeInTheDocument();
   });
 
   test('should pass search term to backend API', async () => {
     const user = userEvent.setup();
-    const mockGoTo = jest.fn();
+    const mockGoTo = vi.fn();
 
     mockBills.mockImplementation((_pageSize, _status, patientName) => ({
       bills: patientName === 'John' ? [mockBillsData[0]] : mockBillsData,
       isLoading: false,
       isValidating: false,
       error: null,
-      mutate: jest.fn(),
+      mutate: vi.fn(),
       currentPage: 1,
       totalCount: patientName === 'John' ? 1 : 2,
       goTo: mockGoTo,
@@ -200,7 +199,7 @@ describe('BillsTable', () => {
     await user.type(searchInput, 'John');
 
     await waitFor(() => {
-      expect(mockBills).toHaveBeenCalledWith(10, 'PENDING,POSTED', 'John');
+      expect(mockBills).toHaveBeenCalledWith(10, 'PENDING', 'John');
     });
 
     expect(mockGoTo).toHaveBeenCalledWith(1);
@@ -224,10 +223,10 @@ describe('BillsTable', () => {
       isLoading: false,
       isValidating: false,
       error: null,
-      mutate: jest.fn(),
+      mutate: vi.fn(),
       currentPage: 1,
       totalCount: 2,
-      goTo: jest.fn(),
+      goTo: vi.fn(),
     }));
 
     // Second call: after filter changes to PAID, return empty bills
@@ -236,15 +235,15 @@ describe('BillsTable', () => {
       isLoading: false,
       isValidating: false,
       error: null,
-      mutate: jest.fn(),
+      mutate: vi.fn(),
       currentPage: 1,
       totalCount: 0,
-      goTo: jest.fn(),
+      goTo: vi.fn(),
     }));
 
     render(<BillsTable />);
 
-    const filterDropdown = screen.getByText('Pending bills');
+    const filterDropdown = screen.getByText('Pending confirmation');
     await user.click(filterDropdown);
 
     const paidBillsOption = screen.getAllByText('Paid bills')[0];
@@ -263,10 +262,10 @@ describe('BillsTable', () => {
       isLoading: false,
       isValidating: true,
       error: null,
-      mutate: jest.fn(),
+      mutate: vi.fn(),
       currentPage: 1,
       totalCount: 0,
-      goTo: jest.fn(),
+      goTo: vi.fn(),
     }));
 
     render(<BillsTable />);
@@ -281,10 +280,10 @@ describe('BillsTable', () => {
       isLoading: false,
       isValidating: false,
       error: null,
-      mutate: jest.fn(),
+      mutate: vi.fn(),
       currentPage: 1,
       totalCount: 0,
-      goTo: jest.fn(),
+      goTo: vi.fn(),
     }));
 
     render(<BillsTable />);
@@ -298,14 +297,14 @@ describe('BillsTable', () => {
 
   test('should reset to page 1 when page size changes', async () => {
     const user = userEvent.setup();
-    const mockGoTo = jest.fn();
+    const mockGoTo = vi.fn();
 
     mockBills.mockImplementation(() => ({
       bills: mockBillsData,
       isLoading: false,
       isValidating: false,
       error: null,
-      mutate: jest.fn(),
+      mutate: vi.fn(),
       currentPage: 3,
       totalCount: 100,
       goTo: mockGoTo,
@@ -331,10 +330,10 @@ describe('BillsTable', () => {
       isLoading: true,
       isValidating: true,
       error: null,
-      mutate: jest.fn(),
+      mutate: vi.fn(),
       currentPage: 2,
       totalCount: 50,
-      goTo: jest.fn(),
+      goTo: vi.fn(),
     }));
 
     render(<BillsTable />);

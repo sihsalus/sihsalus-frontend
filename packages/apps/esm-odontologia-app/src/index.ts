@@ -12,7 +12,7 @@ const odontologiaDashboardMeta = {
   columns: 1,
   title: 'Atención odontológica',
   path: 'atencion-odontologica',
-  icon: 'omrs-icon-clipboard',
+  icon: 'omrs-icon-procedure-order',
   isLink: true,
 };
 

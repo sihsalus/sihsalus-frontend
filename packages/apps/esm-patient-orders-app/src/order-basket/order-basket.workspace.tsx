@@ -1,26 +1,18 @@
 /* eslint-disable @typescript-eslint/no-misused-promises, @typescript-eslint/no-unsafe-argument, @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-member-access, @typescript-eslint/unbound-method */
 import { ActionableNotification, Button, ButtonSet, InlineLoading, InlineNotification } from '@carbon/react';
-import {
-  ExtensionSlot,
-  showModal,
-  showSnackbar,
-  useConfig,
-  useLayoutType,
-  useSession,
-  Workspace2,
-} from '@openmrs/esm-framework';
+import { ExtensionSlot, showModal, useConfig, useSession, Workspace2 } from '@openmrs/esm-framework';
 import {
   type DefaultPatientWorkspaceProps,
+  getPatientUuidFromStore,
   launchPatientWorkspace,
   type OrderBasketItem,
   type PatientWorkspace2DefinitionProps,
   postOrders,
   postOrdersOnNewEncounter,
+  showOrderSuccessToast,
   useOrderBasket,
   useVisitOrOfflineVisit,
 } from '@openmrs/esm-patient-common-lib';
-import classNames from 'classnames';
-import type { TFunction } from 'i18next';
 import React, { useCallback, useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
@@ -30,13 +22,20 @@ import { type ConfigObject } from '../config-schema';
 import GeneralOrderType from './general-order-type/general-order-type.component';
 import styles from './order-basket.scss';
 
+const moduleName = '@sihsalus/esm-patient-orders-app';
+
+interface OrderBasketWorkspaceProps {
+  patientUuid?: string;
+}
+
 interface OrderBasketWindowProps {
+  patientUuid?: string;
   drugOrderWorkspaceName?: string;
   labOrderWorkspaceName?: string;
   generalOrderWorkspaceName?: string;
 }
 
-type Workspace2OrderBasketProps = PatientWorkspace2DefinitionProps<object, OrderBasketWindowProps>;
+type Workspace2OrderBasketProps = PatientWorkspace2DefinitionProps<OrderBasketWorkspaceProps, OrderBasketWindowProps>;
 type OrderBasketProps = DefaultPatientWorkspaceProps | Workspace2OrderBasketProps;
 
 function isWorkspace2Props(props: OrderBasketProps): props is Workspace2OrderBasketProps {
@@ -44,16 +43,20 @@ function isWorkspace2Props(props: OrderBasketProps): props is Workspace2OrderBas
 }
 
 const OrderBasket: React.FC<OrderBasketProps> = (props) => {
-  const patientUuid = isWorkspace2Props(props) ? props.groupProps.patientUuid : props.patientUuid;
+  const patientUuid = isWorkspace2Props(props)
+    ? (props.groupProps?.patientUuid ??
+      props.windowProps?.patientUuid ??
+      props.workspaceProps?.patientUuid ??
+      getPatientUuidFromStore())
+    : props.patientUuid;
   const { t } = useTranslation();
-  const isTablet = useLayoutType() === 'tablet';
   const config = useConfig<ConfigObject>();
   const session = useSession();
   const { activeVisit } = useVisitOrOfflineVisit(patientUuid);
+  const canCreateOrders = Boolean(activeVisit);
   const { orders, clearOrders } = useOrderBasket();
   const [ordersWithErrors, setOrdersWithErrors] = useState<OrderBasketItem[]>([]);
   const {
-    activeVisitRequired,
     isLoading: isLoadingEncounterUuid,
     encounterUuid,
     error: errorFetchingEncounterUuid,
@@ -102,8 +105,20 @@ const OrderBasket: React.FC<OrderBasketProps> = (props) => {
     return true;
   }, [props]);
 
+  const openStartVisitDialog = useCallback(() => {
+    const dispose = showModal('start-visit-dialog', {
+      patientUuid,
+      closeModal: () => dispose(),
+    });
+  }, [patientUuid]);
+
   const openOrderWorkspace = useCallback(
     async (workspaceName: string, workspaceProps?: object) => {
+      if (!canCreateOrders) {
+        openStartVisitDialog();
+        return;
+      }
+
       if (isWorkspace2Props(props)) {
         await props.launchChildWorkspace(workspaceName, workspaceProps);
         return;
@@ -115,7 +130,7 @@ const OrderBasket: React.FC<OrderBasketProps> = (props) => {
         closeWorkspaceGroup: false,
       });
     },
-    [props],
+    [canCreateOrders, openStartVisitDialog, props],
   );
 
   useEffect(() => {
@@ -128,14 +143,13 @@ const OrderBasket: React.FC<OrderBasketProps> = (props) => {
     }
   }, [orders.length, props]);
 
-  const openStartVisitDialog = useCallback(() => {
-    const dispose = showModal('start-visit-dialog', {
-      patientUuid,
-      closeModal: () => dispose(),
-    });
-  }, [patientUuid]);
-
   const handleSave = useCallback(async () => {
+    if (!activeVisit) {
+      setCreatingEncounterError(t('activeVisitRequired', 'An active visit is required to make orders'));
+      openStartVisitDialog();
+      return;
+    }
+
     const abortController = new AbortController();
     setCreatingEncounterError('');
     const orderEncounterUuid = encounterUuid;
@@ -146,7 +160,7 @@ const OrderBasket: React.FC<OrderBasketProps> = (props) => {
         await postOrdersOnNewEncounter(
           patientUuid,
           config?.orderEncounterType,
-          activeVisitRequired ? activeVisit : null,
+          activeVisit,
           session?.sessionLocation?.uuid,
           abortController,
         );
@@ -154,7 +168,7 @@ const OrderBasket: React.FC<OrderBasketProps> = (props) => {
         clearOrders();
         await mutateOrders();
         await closeWorkspaceWithSavedChanges();
-        showOrderSuccessToast(t, orders);
+        showOrderSuccessToast(moduleName, orders);
       } catch (e) {
         console.error(e);
         setCreatingEncounterError(
@@ -168,7 +182,7 @@ const OrderBasket: React.FC<OrderBasketProps> = (props) => {
       await mutateOrders();
       if (erroredItems.length === 0) {
         await closeWorkspaceWithSavedChanges();
-        showOrderSuccessToast(t, orders);
+        showOrderSuccessToast(moduleName, orders);
       } else {
         setOrdersWithErrors(erroredItems);
       }
@@ -177,13 +191,13 @@ const OrderBasket: React.FC<OrderBasketProps> = (props) => {
     return () => abortController.abort();
   }, [
     activeVisit,
-    activeVisitRequired,
     clearOrders,
     closeWorkspaceWithSavedChanges,
     config,
     encounterUuid,
     mutateEncounterUuid,
     mutateOrders,
+    openStartVisitDialog,
     orders,
     patientUuid,
     session,
@@ -198,12 +212,24 @@ const OrderBasket: React.FC<OrderBasketProps> = (props) => {
     <>
       <div className={styles.container}>
         <div className={styles.orderBasketContainer}>
+          {!canCreateOrders && (
+            <ActionableNotification
+              kind="error"
+              actionButtonLabel={t('startVisit', 'Start visit')}
+              onActionButtonClick={openStartVisitDialog}
+              title={t('startAVisitToRecordOrders', 'Start a visit to order')}
+              subtitle={t('activeVisitRequired', 'An active visit is required to make orders')}
+              lowContrast={true}
+              inline
+              className={styles.actionNotification}
+            />
+          )}
           <ExtensionSlot
-            className={classNames(styles.orderBasketSlot, {
-              [styles.orderBasketSlotTablet]: isTablet,
-            })}
+            className={styles.orderBasketSlot}
             name="order-basket-slot"
             state={{
+              canCreateOrders,
+              onMissingActiveVisit: openStartVisitDialog,
               launchAddDrugOrder: (order?: OrderBasketItem) =>
                 openOrderWorkspace(orderWorkspaceNames.drug, order ? { order } : {}),
               launchAddLabOrder: (orderTypeUuid: string, order?: OrderBasketItem) =>
@@ -215,12 +241,14 @@ const OrderBasket: React.FC<OrderBasketProps> = (props) => {
           />
           {config?.orderTypes?.length > 0 &&
             config.orderTypes.map((orderType) => (
-              <div className={styles.orderPanel}>
+              <div className={styles.orderPanel} key={orderType.orderTypeUuid}>
                 <GeneralOrderType
                   key={orderType.orderTypeUuid}
                   orderTypeUuid={orderType.orderTypeUuid}
                   label={orderType.label}
                   orderableConceptSets={orderType.orderableConceptSets}
+                  canCreateOrders={canCreateOrders}
+                  onMissingActiveVisit={openStartVisitDialog}
                   launchOrderableConceptWorkspace={(orderTypeUuid, order) =>
                     void openOrderWorkspace(orderWorkspaceNames.general, {
                       orderTypeUuid,
@@ -244,6 +272,7 @@ const OrderBasket: React.FC<OrderBasketProps> = (props) => {
           )}
           {ordersWithErrors.map((order) => (
             <InlineNotification
+              key={order.uuid}
               lowContrast
               kind="error"
               title={t('saveDrugOrderFailed', 'Error ordering {{orderName}}', { orderName: order.display })}
@@ -263,7 +292,7 @@ const OrderBasket: React.FC<OrderBasketProps> = (props) => {
                 isSavingOrders ||
                 !orders?.length ||
                 isLoadingEncounterUuid ||
-                (activeVisitRequired && !activeVisit) ||
+                !canCreateOrders ||
                 orders?.some(({ isOrderIncomplete }) => isOrderIncomplete)
               }
             >
@@ -276,19 +305,6 @@ const OrderBasket: React.FC<OrderBasketProps> = (props) => {
           </ButtonSet>
         </div>
       </div>
-      {activeVisitRequired && !activeVisit && (
-        <ActionableNotification
-          kind="error"
-          actionButtonLabel={t('startVisit', 'Start visit')}
-          onActionButtonClick={openStartVisitDialog}
-          title={t('startAVisitToRecordOrders', 'Start a visit to order')}
-          subtitle={t('activeVisitRequired', 'An active visit is required to make orders')}
-          lowContrast={true}
-          inline
-          className={styles.actionNotification}
-          hasFocus
-        />
-      )}
     </>
   );
 
@@ -302,30 +318,5 @@ const OrderBasket: React.FC<OrderBasketProps> = (props) => {
 
   return content;
 };
-
-function showOrderSuccessToast(t: TFunction, patientOrderItems: OrderBasketItem[]) {
-  const orderedString = patientOrderItems
-    .filter((item) => ['NEW', 'RENEW'].includes(item.action))
-    .map((item) => item.display)
-    .join(', ');
-  const updatedString = patientOrderItems
-    .filter((item) => item.action === 'REVISE')
-    .map((item) => item.display)
-    .join(', ');
-  const discontinuedString = patientOrderItems
-    .filter((item) => item.action === 'DISCONTINUE')
-    .map((item) => item.display)
-    .join(', ');
-
-  showSnackbar({
-    isLowContrast: true,
-    kind: 'success',
-    title: t('orderCompleted', 'Placed orders'),
-    subtitle:
-      (orderedString && `${t('ordered', 'Placed order for')} ${orderedString}. `) +
-      (updatedString && `${t('updated', 'Updated')} ${updatedString}. `) +
-      (discontinuedString && `${t('discontinued', 'Discontinued')} ${discontinuedString}.`),
-  });
-}
 
 export default OrderBasket;

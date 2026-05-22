@@ -1,18 +1,9 @@
-import {
-  type FetchResponse,
-  getLocale,
-  OpenmrsResource,
-  openmrsFetch,
-  restBaseUrl,
-  useOpenmrsSWR,
-} from '@openmrs/esm-framework';
+import { getLocale } from '@openmrs/esm-framework';
 import { useMemo } from 'react';
-import useSWRImmutable from 'swr/immutable';
 
 import type { Concept } from '../types';
 
 import { useQueues } from './useQueues';
-import { useSystemSetting } from './useSystemSetting';
 
 function useQueueStatuses() {
   const { queues, isLoading } = useQueues();

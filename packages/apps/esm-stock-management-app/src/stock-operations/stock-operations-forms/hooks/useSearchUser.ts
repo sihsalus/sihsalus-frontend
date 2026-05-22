@@ -1,10 +1,10 @@
-import React, { useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
+import { ResourceRepresentation } from '../../../core/api/api';
 import {
   type ConceptFilterCriteria,
   type UserFilterCriteria,
   useUsers,
 } from '../../../stock-lookups/stock-lookups.resource';
-import { ResourceRepresentation } from '../../../core/api/api';
 
 const useSearchUser = (filter?: ConceptFilterCriteria) => {
   const [conceptFilter, setConceptFilter] = useState<UserFilterCriteria>(

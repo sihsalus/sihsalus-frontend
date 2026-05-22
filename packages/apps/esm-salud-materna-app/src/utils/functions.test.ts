@@ -1,11 +1,11 @@
 import {
   assessValue,
+  type ConceptMetadata,
   calculateBodyMassIndex,
   formatAMPM,
   getGender,
   getReferenceRangesForConcept,
   interpretBloodPressure,
-  type ConceptMetadata,
 } from './functions';
 
 describe('maternal utils/functions', () => {

@@ -34,17 +34,17 @@ const StockAvailability: React.FC<{ stockItemUuid: string; partyUuid?: string }>
     }
   }, [error, t]);
 
-  if (isLoading) return <InlineLoading status="active" iconDescription="Loading" />;
+  if (isLoading) return <InlineLoading status="active" iconDescription={t('loading', 'Loading')} />;
   if (error) return <>--</>;
 
   return (
     <div className={styles.availability}>
       {totalQuantity > 0 ? (
         <span>
-          Available: {totalQuantity.toLocaleString()} {commonUOM}
+          {t('available', 'Available')}: {totalQuantity.toLocaleString()} {commonUOM}
         </span>
       ) : (
-        <span className={styles.outOfStock}>Out of Stock</span>
+        <span className={styles.outOfStock}>{t('outOfStock', 'Out of stock')}</span>
       )}
     </div>
   );

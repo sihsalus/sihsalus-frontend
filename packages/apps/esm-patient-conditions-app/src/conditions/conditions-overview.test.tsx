@@ -7,23 +7,23 @@ import { type ConfigObject, configSchema } from '../config-schema';
 import { useConditions } from './conditions.resource';
 import ConditionsOverview from './conditions-overview.component';
 
-jest.mock('./conditions.resource', () => {
-  const actual = jest.requireActual('./conditions.resource');
+vi.mock('./conditions.resource', async () => {
+  const actual = await vi.importActual('./conditions.resource');
 
   return {
     ...actual,
-    useConditions: jest.fn(),
+    useConditions: vi.fn(),
   };
 });
 
-jest.mock('@openmrs/esm-patient-common-lib', () => ({
-  ...jest.requireActual('@openmrs/esm-patient-common-lib'),
-  launchPatientWorkspace: jest.fn(),
+vi.mock('@openmrs/esm-patient-common-lib', async () => ({
+  ...(await vi.importActual('@openmrs/esm-patient-common-lib')),
+  launchPatientWorkspace: vi.fn(),
 }));
 
-const mockUseConfig = jest.mocked(useConfig<ConfigObject>);
-const mockLaunchPatientWorkspace = jest.mocked(launchPatientWorkspace);
-const mockUseConditions = jest.mocked(useConditions);
+const mockUseConfig = vi.mocked(useConfig<ConfigObject>);
+const mockLaunchPatientWorkspace = vi.mocked(launchPatientWorkspace);
+const mockUseConditions = vi.mocked(useConditions);
 
 mockUseConfig.mockReturnValue({
   ...getDefaultsFromConfigSchema(configSchema),
@@ -32,7 +32,7 @@ mockUseConfig.mockReturnValue({
 
 describe('ConditionsOverview', () => {
   beforeEach(() => {
-    jest.clearAllMocks();
+    vi.clearAllMocks();
   });
 
   it('renders an empty state view if conditions data is unavailable', async () => {
@@ -41,7 +41,7 @@ describe('ConditionsOverview', () => {
       error: null,
       isLoading: false,
       isValidating: false,
-      mutate: jest.fn(),
+      mutate: vi.fn(),
     });
 
     render(<ConditionsOverview patientUuid={mockPatient.id} />);
@@ -68,7 +68,7 @@ describe('ConditionsOverview', () => {
       error,
       isLoading: false,
       isValidating: false,
-      mutate: jest.fn(),
+      mutate: vi.fn(),
     });
 
     render(<ConditionsOverview patientUuid={mockPatient.id} />);
@@ -143,7 +143,7 @@ describe('ConditionsOverview', () => {
       error: null,
       isLoading: false,
       isValidating: false,
-      mutate: jest.fn(),
+      mutate: vi.fn(),
     });
 
     render(<ConditionsOverview patientUuid={mockPatient.id} />);
@@ -179,7 +179,7 @@ describe('ConditionsOverview', () => {
       error: null,
       isLoading: false,
       isValidating: false,
-      mutate: jest.fn(),
+      mutate: vi.fn(),
     });
 
     render(<ConditionsOverview patientUuid={mockPatient.id} />);

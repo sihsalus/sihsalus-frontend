@@ -13,9 +13,10 @@
   ],
   "extensions": [
     {
-      "name": "offline-tools-link",
-      "slot": "app-menu-slot",
-      "component": "offlineToolsLink",
+      "name": "offline-tools-app-menu-item",
+      "slot": "app-menu-item-slot",
+      "component": "offlineToolsAppMenuItem",
+      "order": 80,
       "online": true,
       "offline": true
     },
@@ -120,9 +121,12 @@
       "component": "offlineToolsPatientChartActionsDashboardLink",
       "meta": {
         "columns": 1,
-        "title": "Acciones sin internet"
+        "title": "offlineActions",
+        "path": "Offline Actions",
+        "slot": "patient-chart-offline-actions-dashboard-slot",
+        "icon": "omrs-icon-renew"
       },
-      "order": 12,
+      "order": 24,
       "online": true,
       "offline": true
     },

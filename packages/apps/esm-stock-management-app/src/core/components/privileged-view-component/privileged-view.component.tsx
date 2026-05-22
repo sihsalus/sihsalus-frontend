@@ -1,7 +1,7 @@
-import React from 'react';
-import { useTranslation } from 'react-i18next';
 import { Tile } from '@carbon/react';
 import { DocumentProtected } from '@carbon/react/icons';
+import React from 'react';
+import { useTranslation } from 'react-i18next';
 import styles from './privileged-view.scss';
 
 interface PrivilegedViewComponentProps {

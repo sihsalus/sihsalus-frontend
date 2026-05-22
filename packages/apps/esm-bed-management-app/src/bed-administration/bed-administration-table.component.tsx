@@ -37,6 +37,24 @@ const renderCellValue = (value: React.ReactNode) => {
   return value;
 };
 
+function CustomTag({ condition }: { condition: boolean }) {
+  const { t } = useTranslation();
+
+  if (condition) {
+    return (
+      <Tag type="green" size="md">
+        {t('yes', 'Yes')}
+      </Tag>
+    );
+  }
+
+  return (
+    <Tag type="red" size="md">
+      {t('no', 'No')}
+    </Tag>
+  );
+}
+
 const BedAdministrationTable: React.FC = () => {
   const { t } = useTranslation();
   const headerTitle = t('wardAllocation', 'Ward allocation');
@@ -56,24 +74,6 @@ const BedAdministrationTable: React.FC = () => {
   const [showEditBedModal, setShowEditBedModal] = useState(false);
   const [editData, setEditData] = useState<BedWithLocation>();
   const [filterOption, setFilterOption] = useState('ALL');
-
-  function CustomTag({ condition }: { condition: boolean }) {
-    const { t } = useTranslation();
-
-    if (condition) {
-      return (
-        <Tag type="green" size="md">
-          {t('yes', 'Yes')}
-        </Tag>
-      );
-    }
-
-    return (
-      <Tag type="red" size="md">
-        {t('no', 'No')}
-      </Tag>
-    );
-  }
 
   const handleBedStatusChange = ({ selectedItem }: { selectedItem: string }) =>
     setFilterOption(selectedItem.trim().toUpperCase());

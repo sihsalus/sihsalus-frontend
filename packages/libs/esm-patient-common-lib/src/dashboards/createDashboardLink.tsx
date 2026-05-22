@@ -1,4 +1,3 @@
-import React from 'react';
 import { BrowserRouter } from 'react-router-dom';
 
 import { type DashboardLinkConfig } from '../types';
@@ -15,6 +14,7 @@ export const createDashboardLink = (db: DashboardLinkConfig) => {
           path={db.path}
           moduleName={db.moduleName}
           icon={db.icon}
+          tooltip={db.tooltip}
         />
       </BrowserRouter>
     );

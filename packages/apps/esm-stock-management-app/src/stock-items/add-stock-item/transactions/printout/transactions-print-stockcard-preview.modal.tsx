@@ -1,8 +1,8 @@
+import { Button, ModalBody, ModalFooter, ModalHeader } from '@carbon/react';
+import { getCoreTranslation } from '@openmrs/esm-framework';
 import React, { useRef } from 'react';
-import { ModalBody, ModalHeader, ModalFooter, Button } from '@carbon/react';
 import { useTranslation } from 'react-i18next';
 import { useReactToPrint } from 'react-to-print';
-import { getCoreTranslation } from '@openmrs/esm-framework';
 import TransactionsStockcardPrintout from './transactions-stockcard-printout.component';
 
 type TransactionsStockcardPrintPreviewModalProps = {

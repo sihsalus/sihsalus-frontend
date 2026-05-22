@@ -1,8 +1,8 @@
-import { test } from '../core';
 import { expect } from '@playwright/test';
-import { FormBuilderPage } from '../pages';
-import { createForm, createValueReference, addFormResources, deleteForm } from '../commands/form-operations';
 import type { Form } from '@types';
+import { addFormResources, createForm, createValueReference, deleteForm } from '../commands/form-operations';
+import { test } from '../core';
+import { FormBuilderPage } from '../pages';
 
 let form: Form = null;
 

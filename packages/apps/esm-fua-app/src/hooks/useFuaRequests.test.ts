@@ -4,15 +4,16 @@ import useSWR from 'swr';
 
 import { cancelFuaRequest, setFuaEstado, useFuaRequests, useFuasByPatient } from './useFuaRequests';
 
-jest.mock('swr');
-jest.mock('@openmrs/esm-framework', () => ({
-  openmrsFetch: jest.fn(),
-  useAppContext: jest.fn(),
+vi.mock('swr');
+vi.mock('@openmrs/esm-framework', async () => ({
+  ...(await vi.importActual('@openmrs/esm-framework')),
+  openmrsFetch: vi.fn(),
+  useAppContext: vi.fn(),
 }));
 
-const mockUseSWR = useSWR as jest.MockedFunction<typeof useSWR>;
-const mockUseAppContext = useAppContext as jest.MockedFunction<typeof useAppContext>;
-const mockOpenmrsFetch = openmrsFetch as jest.MockedFunction<typeof openmrsFetch>;
+const mockUseSWR = useSWR as vi.MockedFunction<typeof useSWR>;
+const mockUseAppContext = useAppContext as vi.MockedFunction<typeof useAppContext>;
+const mockOpenmrsFetch = openmrsFetch as vi.MockedFunction<typeof openmrsFetch>;
 
 // Use local-date constructor to avoid UTC-midnight timezone shifts
 const mockDateRange: [Date, Date] = [new Date(2024, 0, 1), new Date(2024, 0, 31)];
@@ -41,6 +42,7 @@ const mockFuaOrders = [
 ];
 
 beforeEach(() => {
+  vi.clearAllMocks();
   mockUseAppContext.mockReturnValue({ dateRange: mockDateRange });
 });
 
@@ -50,7 +52,7 @@ describe('useFuaRequests', () => {
       data: { data: mockFuaOrders },
       error: null,
       isLoading: false,
-      mutate: jest.fn(),
+      mutate: vi.fn(),
       isValidating: false,
     } as any);
 
@@ -65,13 +67,13 @@ describe('useFuaRequests', () => {
       data: { data: mockFuaOrders },
       error: null,
       isLoading: false,
-      mutate: jest.fn(),
+      mutate: vi.fn(),
       isValidating: false,
     } as any);
 
     renderHook(() => useFuaRequests({ status: 'IN_PROGRESS' }));
 
-    const calledUrl = (mockUseSWR as jest.Mock).mock.calls[0][0] as string;
+    const calledUrl = (mockUseSWR as vi.Mock).mock.calls[0][0] as string;
     expect(calledUrl).toContain('/ws/module/fua/solicitudes');
     expect(calledUrl).toContain('status=En%20Proceso');
     expect(calledUrl).toContain('fechaInicio=2024-01-01');
@@ -83,13 +85,13 @@ describe('useFuaRequests', () => {
       data: { data: [] },
       error: null,
       isLoading: false,
-      mutate: jest.fn(),
+      mutate: vi.fn(),
       isValidating: false,
     } as any);
 
     renderHook(() => useFuaRequests({ status: 'COMPLETED' }));
 
-    const calledUrl = (mockUseSWR as jest.Mock).mock.calls[0][0] as string;
+    const calledUrl = (mockUseSWR as vi.Mock).mock.calls[0][0] as string;
     expect(calledUrl).toContain('status=Completado');
   });
 
@@ -98,13 +100,13 @@ describe('useFuaRequests', () => {
       data: { data: [] },
       error: null,
       isLoading: false,
-      mutate: jest.fn(),
+      mutate: vi.fn(),
       isValidating: false,
     } as any);
 
     renderHook(() => useFuaRequests({ status: 'DECLINED' }));
 
-    const calledUrl = (mockUseSWR as jest.Mock).mock.calls[0][0] as string;
+    const calledUrl = (mockUseSWR as vi.Mock).mock.calls[0][0] as string;
     expect(calledUrl).toContain('status=Rechazado');
   });
 
@@ -113,7 +115,7 @@ describe('useFuaRequests', () => {
       data: { data: mockFuaOrders },
       error: null,
       isLoading: false,
-      mutate: jest.fn(),
+      mutate: vi.fn(),
       isValidating: false,
     } as any);
 
@@ -128,7 +130,7 @@ describe('useFuaRequests', () => {
       data: undefined,
       error: null,
       isLoading: true,
-      mutate: jest.fn(),
+      mutate: vi.fn(),
       isValidating: false,
     } as any);
 
@@ -144,7 +146,7 @@ describe('useFuaRequests', () => {
       data: undefined,
       error: mockError,
       isLoading: false,
-      mutate: jest.fn(),
+      mutate: vi.fn(),
       isValidating: false,
     } as any);
 
@@ -191,7 +193,7 @@ describe('useFuasByPatient', () => {
       data: { data: mockFuaOrders },
       error: null,
       isLoading: false,
-      mutate: jest.fn(),
+      mutate: vi.fn(),
       isValidating: false,
     } as any);
 
@@ -205,7 +207,7 @@ describe('useFuasByPatient', () => {
       data: undefined,
       error: null,
       isLoading: false,
-      mutate: jest.fn(),
+      mutate: vi.fn(),
       isValidating: false,
     } as any);
 

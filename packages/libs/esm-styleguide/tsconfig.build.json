@@ -3,6 +3,8 @@
   "compilerOptions": {
     "declarationDir": "dist",
     "emitDeclarationOnly": true,
+    "incremental": false,
+    "noEmit": false,
     "rootDir": "src",
     "skipLibCheck": true
   },

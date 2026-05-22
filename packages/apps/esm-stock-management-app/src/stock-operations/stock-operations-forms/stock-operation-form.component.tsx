@@ -8,13 +8,14 @@ import { type ConfigObject } from '../../config-schema';
 import { today } from '../../constants';
 import { type StockOperationDTO } from '../../core/api/types/stockOperation/StockOperationDTO';
 import {
-  operationFromString,
   OperationType,
+  operationFromString,
   type StockOperationType,
   StockOperationTypeIsStockIssue,
 } from '../../core/api/types/stockOperation/StockOperationType';
 import { type TabItem } from '../../core/components/tabs/types';
 import { otherUser, pick } from '../../core/utils/utils';
+import { useStockOperationAndItems } from '../stock-operations.resource';
 import {
   type BaseStockOperationItemFormData,
   getStockOperationFormSchema,
@@ -28,7 +29,6 @@ import StockOperationItemsFormStep from './steps/stock-operation-items-form-step
 import StockOperationSubmissionFormStep from './steps/stock-operation-submission-form-step.component';
 import StockItemForm, { type StockItemFormProps } from './stock-item-form/stock-item-form.workspace';
 import StockOperationStepper from './stock-operation-stepper/stock-operation-stepper.component';
-import { useStockOperationAndItems } from '../stock-operations.resource';
 
 /**
  * Props interface for the StockOperationForm component
@@ -72,7 +72,7 @@ const StockOperationForm: React.FC<StockOperationFormProps> = ({
     user: { uuid: defaultLoggedUserUuid },
   } = useSession();
   const { autoPopulateResponsiblePerson } = useConfig<ConfigObject>();
-  const { error, items: _stockOperation, isLoading } = useStockOperationAndItems(stockRequisitionUuid);
+  const { error, items: _stockOperation } = useStockOperationAndItems(stockRequisitionUuid);
 
   const form = useForm<StockOperationItemDtoSchema>({
     defaultValues: {
@@ -95,6 +95,8 @@ const StockOperationForm: React.FC<StockOperationFormProps> = ({
         ) ?? [],
       sourceUuid: stockOperation?.sourceUuid ?? '',
       destinationUuid: stockOperation?.destinationUuid ?? '',
+      atLocationUuid: stockOperation?.atLocationUuid ?? '',
+      atLocationName: stockOperation?.atLocationName ?? '',
     },
     mode: 'all',
     values: stockRequisitionUuid
@@ -149,7 +151,7 @@ const StockOperationForm: React.FC<StockOperationFormProps> = ({
       });
       setRenderItemForm(true);
     },
-    [stockOperationType, form, setItemFormProps, setRenderItemForm],
+    [stockOperationType, form],
   );
   const steps: TabItem[] = useMemo(() => {
     return [

@@ -1,6 +1,6 @@
 import { Button } from '@carbon/react';
 import { Add } from '@carbon/react/icons';
-import { showModal, type UploadedFile, useLayoutType } from '@openmrs/esm-framework/src/internal';
+import { showModal, type UploadedFile, useLayoutType } from '@openmrs/esm-framework';
 import classNames from 'classnames';
 import React, { useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -82,7 +82,7 @@ const File: React.FC<FormFieldInputProps<Array<Attachment>>> = ({ field, value, 
           value
             .filter((file) => !file.voided)
             .map((file, index) => (
-              <div className={styles.thumbnailContainer}>
+              <div key={`${file.fileName}_${index}`} className={styles.thumbnailContainer}>
                 <FileThumbnail
                   title={file.fileName}
                   src={file.base64Content}

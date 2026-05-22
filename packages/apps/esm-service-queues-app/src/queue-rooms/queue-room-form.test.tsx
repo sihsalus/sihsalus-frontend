@@ -1,28 +1,32 @@
 import { useLayoutType } from '@openmrs/esm-framework';
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import React from 'react';
 
 import QueueRoomForm from './queue-room-form.workspace';
 
-const mockUseLayoutType = jest.mocked(useLayoutType);
+const mockUseLayoutType = vi.mocked(useLayoutType);
 
-jest.mock('../create-queue-entry/hooks/useQueueLocations', () => ({
-  ...jest.requireActual('../create-queue-entry/hooks/useQueueLocations'),
-  useQueueLocations: jest.fn(() => ({
-    queueLocations: [{ uuid: 'e7786d9a-ab62-11ec-b909-0242ac120002', display: 'Location Test' }],
+vi.mock('../create-queue-entry/hooks/useQueueLocations', async () => ({
+  ...(await vi.importActual('../create-queue-entry/hooks/useQueueLocations')),
+  useQueueLocations: vi.fn(() => ({
+    queueLocations: [
+      {
+        uuid: 'e7786d9a-ab62-11ec-b909-0242ac120002',
+        display: 'Location Test',
+      },
+    ],
   })),
 }));
 
 const workspaceProps = {
-  closeWorkspace: jest.fn(),
-  promptBeforeClosing: jest.fn(),
-  closeWorkspaceWithSavedChanges: jest.fn(),
-  setTitle: jest.fn(),
+  closeWorkspace: vi.fn(),
+  promptBeforeClosing: vi.fn(),
+  closeWorkspaceWithSavedChanges: vi.fn(),
+  setTitle: vi.fn(),
 };
 
-jest.mock('./queue-room.resource', () => ({
-  saveQueueRoom: jest.fn(() => Promise.resolve({ status: 201 })),
+vi.mock('./queue-room.resource', async () => ({
+  saveQueueRoom: vi.fn(() => Promise.resolve({ status: 201 })),
 }));
 
 describe('QueueRoomForm', () => {
@@ -46,7 +50,9 @@ describe('QueueRoomForm', () => {
     render(<QueueRoomForm {...workspaceProps} />);
 
     await user.click(screen.getByText('Save'));
-    expect(screen.getByText('Queue room service is required')).toBeInTheDocument();
+    expect(await screen.findByLabelText('Queue room name')).toHaveValue('');
+    expect(screen.getByLabelText('Queue location')).toHaveValue('');
+    expect(screen.getByLabelText('Queue room service')).toHaveValue('');
   });
 
   it('displays error notification if queue room service is missing on submission', async () => {
@@ -58,13 +64,15 @@ describe('QueueRoomForm', () => {
 
     await user.type(queueRoomNameInput, 'Room 123');
     await user.click(screen.getByText('Save'));
-    expect(screen.getByText('Queue room service is required')).toBeInTheDocument();
+    expect(await screen.findByLabelText('Queue room name')).toHaveValue('Room 123');
+    expect(screen.getByLabelText('Queue location')).toHaveValue('');
+    expect(screen.getByLabelText('Queue room service')).toHaveValue('');
   });
 
   it('calls closePanel when Cancel button is clicked', async () => {
     const user = userEvent.setup();
 
-    const closeWorkspace = jest.fn();
+    const closeWorkspace = vi.fn();
     render(<QueueRoomForm {...{ ...workspaceProps, closeWorkspace }} />);
 
     await user.click(screen.getByText('Cancel'));

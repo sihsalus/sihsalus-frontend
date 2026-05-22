@@ -1,5 +1,5 @@
-import React from 'react';
 import { Layer } from '@carbon/react';
+import React from 'react';
 import styles from './stepper.scss';
 
 export type Step = {
@@ -32,7 +32,6 @@ const StockOperationStepper: React.FC<StockOperationStepperProps> = ({
           const active = selectedIndex >= index;
           return (
             <li
-              role="button"
               className={`${styles.stepperItem} ${active ? styles.stepperItemActive : ''}`}
               key={index}
               onClick={!disabled ? () => onChange?.(index) : undefined}

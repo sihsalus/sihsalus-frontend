@@ -1,4 +1,3 @@
-import React from 'react';
 import { useTranslation } from 'react-i18next';
 import LabSummaryTile from '../components/summary-tile/lab-summary-tile.component';
 import { useLabOrders } from '../laboratory.resource';

@@ -1,6 +1,6 @@
+import { RadioButton, RadioButtonGroup } from '@carbon/react';
 import React from 'react';
 import { useTranslation } from 'react-i18next';
-import { RadioButton, RadioButtonGroup } from '@carbon/react';
 import styles from './filter-stock-items.scss';
 
 interface FilterStockItemsProps {

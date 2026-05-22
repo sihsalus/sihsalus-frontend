@@ -1,6 +1,5 @@
-import React from 'react';
-import { type Control, Controller, type FieldValues } from 'react-hook-form';
 import { ComboBox, type ComboBoxProps } from '@carbon/react';
+import { type Control, Controller, type FieldValues } from 'react-hook-form';
 
 interface ControlledComboBoxProps<T, ItemType>
   extends Omit<ComboBoxProps<ItemType>, 'onChange' | 'id' | 'ref' | 'value'> {

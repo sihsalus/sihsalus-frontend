@@ -1,7 +1,6 @@
 import { showSnackbar } from '@openmrs/esm-framework';
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import React from 'react';
 
 import { useQueueLocations } from '../create-queue-entry/hooks/useQueueLocations';
 import useQueueServices from '../hooks/useQueueService';
@@ -11,32 +10,32 @@ import { type Queue } from '../types';
 import AddProviderQueueRoom from './add-provider-queue-room.modal';
 import { useProvidersQueueRoom, useQueueRooms } from './add-provider-queue-room.resource';
 
-const mockCloseModal = jest.fn();
-const mockShowSnackbar = jest.mocked(showSnackbar);
-const mockUseQueueLocations = jest.mocked(useQueueLocations);
-const mockUseQueueRooms = jest.mocked(useQueueRooms);
-const mockUseProvidersQueueRoom = jest.mocked(useProvidersQueueRoom);
-const mockUseQueues = jest.mocked(useQueues);
-const mockUseQueueServices = jest.mocked(useQueueServices);
+const mockCloseModal = vi.fn();
+const mockShowSnackbar = vi.mocked(showSnackbar);
+const mockUseQueueLocations = vi.mocked(useQueueLocations);
+const mockUseQueueRooms = vi.mocked(useQueueRooms);
+const mockUseProvidersQueueRoom = vi.mocked(useProvidersQueueRoom);
+const mockUseQueues = vi.mocked(useQueues);
+const mockUseQueueServices = vi.mocked(useQueueServices);
 
-jest.mock('./add-provider-queue-room.resource', () => ({
-  addProviderToQueueRoom: jest.fn(),
-  updateProviderToQueueRoom: jest.fn().mockResolvedValue({ status: 200 }),
-  useProvidersQueueRoom: jest.fn(),
-  useQueueRooms: jest.fn(),
+vi.mock('./add-provider-queue-room.resource', () => ({
+  addProviderToQueueRoom: vi.fn(),
+  updateProviderToQueueRoom: vi.fn().mockResolvedValue({ status: 200 }),
+  useProvidersQueueRoom: vi.fn(),
+  useQueueRooms: vi.fn(),
 }));
 
-jest.mock('../hooks/useQueues', () => ({
-  useQueues: jest.fn(),
+vi.mock('../hooks/useQueues', () => ({
+  useQueues: vi.fn(),
 }));
 
-jest.mock('../hooks/useQueueService', () => ({
+vi.mock('../hooks/useQueueService', () => ({
   __esModule: true,
-  default: jest.fn(),
+  default: vi.fn(),
 }));
 
-jest.mock('../create-queue-entry/hooks/useQueueLocations', () => ({
-  useQueueLocations: jest.fn(),
+vi.mock('../create-queue-entry/hooks/useQueueLocations', () => ({
+  useQueueLocations: vi.fn(),
 }));
 
 const providerUuid = 'cc75ad73-c24b-499c-8db9-a7ef4fc0b36d';
@@ -55,7 +54,7 @@ describe('AddProviderQueueRoom', () => {
       isLoading: false,
       isValidating: false,
       error: undefined,
-      mutate: jest.fn(),
+      mutate: vi.fn(),
     });
 
     mockUseQueueLocations.mockReturnValue({
@@ -95,7 +94,7 @@ describe('AddProviderQueueRoom', () => {
         },
       ],
       isLoading: false,
-      mutate: jest.fn(),
+      mutate: vi.fn(),
       error: undefined,
     });
 

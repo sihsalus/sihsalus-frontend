@@ -1,11 +1,19 @@
+import { Category, Dashboard, HospitalBed, Tag } from '@carbon/react/icons';
 import { ConfigurableLink } from '@openmrs/esm-framework';
 import last from 'lodash-es/last';
 import React, { useMemo } from 'react';
+import { useTranslation } from 'react-i18next';
 import { BrowserRouter, useLocation } from 'react-router-dom';
+
+type SideNavIcon = React.ComponentType<{
+  className?: string;
+  size?: number | string;
+}>;
 
 export interface LinkConfig {
   name: string;
   title: string;
+  icon: SideNavIcon;
 }
 
 function getOpenmrsSpaBase(): string {
@@ -14,6 +22,7 @@ function getOpenmrsSpaBase(): string {
 }
 
 function LinkExtension({ config }: { config: LinkConfig }) {
+  const { t } = useTranslation();
   const { name, title } = config;
   const location = useLocation();
 
@@ -28,15 +37,20 @@ function LinkExtension({ config }: { config: LinkConfig }) {
   };
 
   if (isUUID(urlSegment)) {
-    urlSegment = 'summary';
+    urlSegment = 'bed-management';
   }
+
+  const Icon = config.icon;
 
   return (
     <ConfigurableLink
       to={`${getOpenmrsSpaBase()}bed-management${name && name !== 'bed-management' ? `/${name}` : ''}`}
       className={`cds--side-nav__link ${name === urlSegment && 'active-left-nav-link'}`}
     >
-      {title}
+      <span className="sihsalus-side-nav__item">
+        <Icon aria-hidden="true" className="sihsalus-side-nav__icon" size={20} />
+        <span className="sihsalus-side-nav__text">{t(title, title)}</span>
+      </span>
     </ConfigurableLink>
   );
 }
@@ -46,3 +60,10 @@ export const createLeftPanelLink = (config: LinkConfig) => () => (
     <LinkExtension config={config} />
   </BrowserRouter>
 );
+
+export const bedManagementSidebarIcons = {
+  summary: Dashboard,
+  wardAllocation: HospitalBed,
+  bedTypes: Category,
+  bedTags: Tag,
+} as const;

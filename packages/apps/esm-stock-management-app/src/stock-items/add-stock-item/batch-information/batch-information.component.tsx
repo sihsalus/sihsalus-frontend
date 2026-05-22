@@ -1,13 +1,13 @@
-import React, { useMemo, useState } from 'react';
-import { useTranslation } from 'react-i18next';
-import { useForm } from 'react-hook-form';
-import { formatDisplayDate } from '../../../core/utils/datetimeUtils';
 import { DataTableSkeleton } from '@carbon/react';
+import React, { useMemo, useState } from 'react';
+import { useForm } from 'react-hook-form';
+import { useTranslation } from 'react-i18next';
+import DataList from '../../../core/components/table/table.component';
+import { formatDisplayDate } from '../../../core/utils/datetimeUtils';
+import { translateStockLocation } from '../../../core/utils/translationUtils';
 import { type StockItemInventoryFilter } from '../../stock-items.resource';
 import { useStockItemBatchInformationHook } from './batch-information.resource';
 import BatchInformationLocationsFilter from './batch-information-locations/batch-information-locations-filter.component';
-import DataList from '../../../core/components/table/table.component';
-import { translateStockLocation } from '../../../core/utils/translationUtils';
 
 interface BatchInformationProps {
   onSubmit?: () => void;

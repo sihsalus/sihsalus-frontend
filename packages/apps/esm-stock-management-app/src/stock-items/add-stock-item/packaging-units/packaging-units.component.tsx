@@ -1,4 +1,3 @@
-import React, { useEffect, useMemo, useState } from 'react';
 import {
   Button,
   DataTable,
@@ -13,19 +12,20 @@ import {
 } from '@carbon/react';
 import { Save } from '@carbon/react/icons';
 import { zodResolver } from '@hookform/resolvers/zod';
+import { getCoreTranslation, restBaseUrl, showSnackbar } from '@openmrs/esm-framework';
+import React, { useEffect, useMemo, useState } from 'react';
 import { FormProvider, useForm, useFormContext } from 'react-hook-form';
 import { useTranslation } from 'react-i18next';
-import { getCoreTranslation, restBaseUrl, showSnackbar } from '@openmrs/esm-framework';
-import { createStockItemPackagingUnit, updateStockItemPackagingUnit } from '../../stock-items.resource';
-import { handleMutate } from '../../../utils';
-import { type PackageUnitFormData, packageUnitSchema } from './validationSchema';
 import { type StockItemPackagingUOMDTO } from '../../../core/api/types/stockItem/StockItemPackagingUOM';
-import { useStockItemPackageUnitsHook } from './packaging-units.resource';
 import ControlledNumberInput from '../../../core/components/carbon/controlled-number-input.component';
-import DeletePackagingUnitActionButton from './delete-packaging-unit-action-button.component';
-import PackagingUnitsConceptSelector from '../packaging-units-concept-selector/packaging-units-concept-selector.component';
 import { type CustomTableHeader, type CustomTableRow } from '../../../core/components/table/types';
+import { handleMutate } from '../../../utils';
+import { createStockItemPackagingUnit, updateStockItemPackagingUnit } from '../../stock-items.resource';
+import PackagingUnitsConceptSelector from '../packaging-units-concept-selector/packaging-units-concept-selector.component';
+import DeletePackagingUnitActionButton from './delete-packaging-unit-action-button.component';
+import { useStockItemPackageUnitsHook } from './packaging-units.resource';
 import styles from './packaging-units.scss';
+import { type PackageUnitFormData, packageUnitSchema } from './validationSchema';
 
 interface PackagingUnitsProps {
   isEditing?: boolean;
@@ -77,6 +77,15 @@ const PackagingUnits: React.FC<PackagingUnitsProps> = ({ stockItemUuid, handleTa
       },
     ],
     [t],
+  );
+
+  const dataTableHeaders = useMemo<Array<Omit<CustomTableHeader, 'header'> & { header: React.ReactNode }>>(
+    () =>
+      tableHeaders.map(({ header, ...rest }) => ({
+        ...rest,
+        header: typeof header === 'string' ? header : header.content,
+      })),
+    [tableHeaders],
   );
 
   const packageUnitForm = useForm<PackageUnitFormData>({
@@ -196,7 +205,7 @@ const PackagingUnits: React.FC<PackagingUnitsProps> = ({ stockItemUuid, handleTa
             { id: 'new-row' },
           ] as CustomTableRow[]
         }
-        headers={tableHeaders as any}
+        headers={dataTableHeaders}
         isSortable={false}
         useZebraStyles
       >
@@ -230,6 +239,7 @@ const PackagingUnits: React.FC<PackagingUnitsProps> = ({ stockItemUuid, handleTa
               <TableBody className={styles.packingTableBody}>
                 {items?.map((row: StockItemPackagingUOMDTO, index) => (
                   <PackagingUnitRow
+                    key={row?.uuid ?? `item-${index}`}
                     row={row}
                     id={`${index}-${row?.uuid}`}
                     onChange={(value) => onFactorFieldUpdate(row, value)}
@@ -297,7 +307,7 @@ const PackagingUnitRow: React.FC<{
               invalid={!!errors.packagingUomUuid}
             />
           ) : (
-            (!isEditing || !row.uuid.startsWith('new-item')) && row?.packagingUomName
+            row?.packagingUomName
           )}
         </TableCell>
         <TableCell>
@@ -310,7 +320,7 @@ const PackagingUnitRow: React.FC<{
             id={id}
             invalid={!!errors.factor}
             hideSteppers={true}
-            onChange={(e, state) => onChange(state.value)}
+            onChange={(_event, state) => onChange(state.value)}
           />
         </TableCell>
         <TableCell>

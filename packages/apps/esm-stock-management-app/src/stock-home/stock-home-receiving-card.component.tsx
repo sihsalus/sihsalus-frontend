@@ -1,11 +1,10 @@
-import React from 'react';
-import { useTranslation } from 'react-i18next';
 import { Button } from '@carbon/react';
 import { Delivery } from '@carbon/react/icons';
 import { showModal } from '@openmrs/esm-framework';
+import { useTranslation } from 'react-i18next';
 import { ResourceRepresentation } from '../core/api/api';
-import { useStockReceiving } from './stock-home-receiving.resource';
 import styles from './stock-home-detail-card.scss';
+import { useStockReceiving } from './stock-home-receiving.resource';
 
 const StockHomeReceivingCard = () => {
   const { t } = useTranslation();

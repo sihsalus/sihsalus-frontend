@@ -5,7 +5,7 @@ import { type RegistrationConfig } from '../../config-schema';
 
 import { getValidationSchema } from './patient-registration-validation';
 
-const mockGetConfig = jest.mocked(getConfig);
+const mockGetConfig = vi.mocked(getConfig);
 
 describe('Patient registration validation', () => {
   beforeEach(() => {

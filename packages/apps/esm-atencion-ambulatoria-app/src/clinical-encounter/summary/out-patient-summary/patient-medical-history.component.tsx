@@ -13,8 +13,8 @@ import {
   TableRow,
 } from '@carbon/react';
 import { Add } from '@carbon/react/icons';
-import { formatDate, launchWorkspace, useConfig } from '@openmrs/esm-framework';
-import { CardHeader, EmptyState, ErrorState } from '@openmrs/esm-patient-common-lib';
+import { formatDate, useConfig } from '@openmrs/esm-framework';
+import { CardHeader, EmptyState, ErrorState, launchPatientWorkspace } from '@openmrs/esm-patient-common-lib';
 import { getObsFromEncounter } from '@sihsalus/esm-sihsalus-shared';
 import React from 'react';
 import { useTranslation } from 'react-i18next';
@@ -22,12 +22,7 @@ import type { KeyedMutator } from 'swr';
 import { mutate } from 'swr';
 import type { ConfigObject } from '../../../config-schema';
 import type { OpenmrsEncounter } from '../../../types';
-import {
-  ACCIDENT_TRAUMA_UUID,
-  BLOOD_TRANSFUSION_UUID,
-  patientFormEntryWorkspace,
-  SURGICAL_HISTORY_UUID,
-} from '../../../utils/constants';
+import { patientFormEntryWorkspace } from '../../../utils/constants';
 
 interface OutPatientMedicalHistoryProps {
   patientUuid: string;
@@ -45,12 +40,13 @@ const OutPatientMedicalHistory: React.FC<OutPatientMedicalHistoryProps> = ({
 }) => {
   const { t } = useTranslation();
   const {
+    concepts,
     formsList: { clinicalEncounterFormUuid },
   } = useConfig<ConfigObject>();
   const headerTitle = t('medicalHistory', 'Medical History');
   const handleOpenOrEditClinicalEncounterForm = (encounterUUID = '') => {
-    launchWorkspace(patientFormEntryWorkspace, {
-      workspaceTitle: 'Medical History',
+    launchPatientWorkspace(patientFormEntryWorkspace, {
+      workspaceTitle: t('medicalHistory', 'Medical History'),
       mutateForm: mutate(
         (key) => typeof key === 'string' && key.startsWith('/openmrs/ws/rest/v1/kenyaemr/flags'),
         undefined,
@@ -93,9 +89,9 @@ const OutPatientMedicalHistory: React.FC<OutPatientMedicalHistoryProps> = ({
     ?.map((encounter) => {
       const allFieldsNull = () => {
         return (
-          getObsFromEncounter(encounter, SURGICAL_HISTORY_UUID) === '--' &&
-          getObsFromEncounter(encounter, BLOOD_TRANSFUSION_UUID) === '--' &&
-          getObsFromEncounter(encounter, ACCIDENT_TRAUMA_UUID) === '--' &&
+          getObsFromEncounter(encounter, concepts.surgicalHistoryUuid) === '--' &&
+          getObsFromEncounter(encounter, concepts.bloodTransfusionUuid) === '--' &&
+          getObsFromEncounter(encounter, concepts.accidentTraumaUuid) === '--' &&
           encounter.diagnoses.length === 0 &&
           encounter.encounterDatetime !== null
         );
@@ -106,12 +102,12 @@ const OutPatientMedicalHistory: React.FC<OutPatientMedicalHistoryProps> = ({
       return {
         id: `${encounter.uuid}`,
         encounterDate: formatDate(new Date(encounter.encounterDatetime)),
-        surgicalHistory: getObsFromEncounter(encounter, SURGICAL_HISTORY_UUID),
-        bloodTransfusion: getObsFromEncounter(encounter, BLOOD_TRANSFUSION_UUID),
-        accidentOrTrauma: getObsFromEncounter(encounter, ACCIDENT_TRAUMA_UUID),
+        surgicalHistory: getObsFromEncounter(encounter, concepts.surgicalHistoryUuid),
+        bloodTransfusion: getObsFromEncounter(encounter, concepts.bloodTransfusionUuid),
+        accidentOrTrauma: getObsFromEncounter(encounter, concepts.accidentTraumaUuid),
         finalDiagnosis: encounter.diagnoses.length > 0 ? encounter.diagnoses[0].diagnosis.coded.display : '--',
         actions: (
-          <OverflowMenu aria-label="overflow-menu" flipped={false}>
+          <OverflowMenu aria-label={t('actions', 'Actions')} flipped={false}>
             <OverflowMenuItem
               onClick={() => handleOpenOrEditClinicalEncounterForm(encounter.uuid)}
               itemText={t('edit', 'Edit')}
@@ -151,7 +147,7 @@ const OutPatientMedicalHistory: React.FC<OutPatientMedicalHistoryProps> = ({
           kind="ghost"
           onClick={() => handleOpenOrEditClinicalEncounterForm()}
           renderIcon={(props) => <Add size={24} {...props} />}
-          iconDescription="Add"
+          iconDescription={t('add', 'Add')}
         >
           {t('add', 'Add')}
         </Button>
@@ -162,7 +158,7 @@ const OutPatientMedicalHistory: React.FC<OutPatientMedicalHistoryProps> = ({
         headers={tableHeader}
         render={({ rows, headers, getHeaderProps, getRowProps, getTableProps, getTableContainerProps }) => (
           <TableContainer {...getTableContainerProps()}>
-            <Table size="sm" {...getTableProps()} aria-label="sample table">
+            <Table size="sm" {...getTableProps()} aria-label={t('medicalHistory', 'Medical History')}>
               <TableHead>
                 <TableRow>
                   {headers.map((header, i) => (

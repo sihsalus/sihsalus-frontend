@@ -1,13 +1,13 @@
-@use '@carbon/layout';
-@use '@carbon/type';
-@use '@openmrs/esm-styleguide/src/vars' as *;
+@use "@carbon/layout";
+@use "@carbon/type";
+@use "@openmrs/esm-styleguide/src/vars" as *;
 
 .label01 {
-  @include type.type-style('label-01');
+  @include type.type-style("label-01");
 }
 
 .bodyShort01 {
-  @include type.type-style('body-compact-01');
+  @include type.type-style("body-compact-01");
 }
 
 .growthChartContainer {
@@ -36,8 +36,30 @@
 
 .growthLabel {
   @extend .label01;
+  align-items: center;
+  display: flex;
+  flex-wrap: wrap;
+  gap: layout.$spacing-03;
+  margin-bottom: layout.$spacing-03;
+}
+
+.chartSummary {
+  border: 1px solid $ui-03;
+  border-radius: layout.$spacing-02;
   margin-bottom: layout.$spacing-05;
-  display: inline-block;
+  padding: layout.$spacing-04;
+}
+
+.summaryText {
+  @extend .bodyShort01;
+  color: $text-02;
+  display: flex;
+  flex-wrap: wrap;
+  gap: layout.$spacing-05;
+}
+
+.emptyMeasurementNotice {
+  margin-bottom: layout.$spacing-05;
 }
 
 .tab {
@@ -51,14 +73,14 @@
     outline: layout.$spacing-01 solid var(--brand-03) !important;
   }
 
-  &[aria-selected='true'] {
+  &[aria-selected="true"] {
     box-shadow: inset 4px 0 0 0 var(--brand-03) !important;
     border-bottom: none;
     font-weight: 600;
     margin-left: 0 !important;
   }
 
-  &[aria-selected='false'] {
+  &[aria-selected="false"] {
     border-bottom: none;
     border-left: layout.$spacing-01 solid $ui-03;
     margin-left: 0 !important;

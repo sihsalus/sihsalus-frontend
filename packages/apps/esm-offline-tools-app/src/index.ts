@@ -1,8 +1,9 @@
+import { Renew, UserMultiple } from '@carbon/react/icons';
 import { defineConfigSchema, getSyncLifecycle, registerBreadcrumbs } from '@openmrs/esm-framework';
+import { createDashboardLink } from '@openmrs/esm-patient-common-lib';
 
 import offlineToolsConfirmationModalComponent from './components/confirmation.modal';
 import { routes } from './constants';
-import { createDashboardLink } from './createDashboardLink';
 import { dashboardMeta } from './dashboard.meta';
 import OfflineToolsNavLink from './nav/offline-tools-nav-link.component';
 import offlineToolsNavItemsComponent from './nav/offline-tools-nav-menu.component';
@@ -15,6 +16,7 @@ import offlineToolsPatientChartComponent from './offline-actions/offline-actions
 import { setupSynchronizingOfflineActionsNotifications } from './offline-actions/synchronizing-notification';
 import offlineToolsPatientsComponent from './offline-patients/offline-patients.component';
 import offlineToolsPatientsCardComponent from './offline-patients/patients-overview-card.component';
+import offlineToolsAppMenuItemComponent from './offline-tools-app-menu-item.component';
 import offlineToolsLinkComponent from './offline-tools-app-menu-link.component';
 import offlineToolsComponent from './root.component';
 
@@ -32,6 +34,8 @@ export const offlineTools = getSyncLifecycle(offlineToolsComponent, options);
 
 export const offlineToolsLink = getSyncLifecycle(offlineToolsLinkComponent, options);
 
+export const offlineToolsAppMenuItem = getSyncLifecycle(offlineToolsAppMenuItemComponent, options);
+
 export const offlineToolsNavItems = getSyncLifecycle(offlineToolsNavItemsComponent, {
   featureName: 'nav-items',
   moduleName,
@@ -46,6 +50,7 @@ export const offlineToolsActionsCard = getSyncLifecycle(offlineToolsActionsCardC
 export const offlineToolsPatientsLink = getSyncLifecycle(
   () =>
     OfflineToolsNavLink({
+      icon: UserMultiple,
       page: 'patients',
       title: 'offlinePatients',
     }),
@@ -55,6 +60,7 @@ export const offlineToolsPatientsLink = getSyncLifecycle(
 export const offlineToolsActionsLink = getSyncLifecycle(
   () =>
     OfflineToolsNavLink({
+      icon: Renew,
       page: 'actions',
       title: 'offlineActions',
     }),
@@ -70,17 +76,7 @@ export const offlineToolsPageActions = getSyncLifecycle(offlineToolsPageActionsC
 export const offlineToolsPatientChartActions = getSyncLifecycle(offlineToolsPatientChartComponent, options);
 
 export const offlineToolsPatientChartActionsDashboardLink = getSyncLifecycle(
-  createDashboardLink({
-    ...dashboardMeta,
-    // t('offline_actions_link', 'Acciones sin internet')
-    title: () =>
-      Promise.resolve(
-        globalThis.i18next?.t('offline_actions_link', {
-          defaultValue: 'Acciones sin internet',
-          ns: moduleName,
-        }) ?? 'Acciones sin internet',
-      ),
-  }),
+  createDashboardLink({ ...dashboardMeta, moduleName }),
   options,
 );
 

@@ -1,7 +1,7 @@
+import { Button, ModalBody, ModalFooter, ModalHeader } from '@carbon/react';
+import { getCoreTranslation } from '@openmrs/esm-framework';
 import React from 'react';
 import { useTranslation } from 'react-i18next';
-import { Button, ModalHeader, ModalBody, ModalFooter } from '@carbon/react';
-import { getCoreTranslation } from '@openmrs/esm-framework';
 import styles from './delete-stock-user-scope-modal.scss';
 
 interface DeleteStockUserScopeModalProps {

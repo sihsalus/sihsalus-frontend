@@ -21,24 +21,30 @@ import styles from './navbar.scss';
 const HeaderItems: React.FC = () => {
   const config = useConfig();
   const [activeHeaderPanel, setActiveHeaderPanel] = useState<string>(null);
-  const [isLeftNavCollapsed, setIsLeftNavCollapsed] = useState(() => {
-    return globalThis.localStorage?.getItem('sihsalus-left-nav-collapsed') === 'true';
-  });
+  const [isSideMenuExpanded, setIsSideMenuExpanded] = useState(true);
   const layout = useLayoutType();
   const { slotName, mode } = useLeftNavStore();
   const navMenuItems = useAssignedExtensions(slotName);
-  const isActivePanel = useCallback((panelName: string) => activeHeaderPanel === panelName, [activeHeaderPanel]);
-  const showDesktopRailToggle = isDesktop(layout) && mode === 'normal' && navMenuItems.length > 0;
+  const isDesktopLayout = isDesktop(layout);
+  const isFixedSideNav = isDesktopLayout && mode === 'normal';
+  const isActivePanel = useCallback(
+    (panelName: string) =>
+      panelName === 'sideMenu' && isFixedSideNav ? isSideMenuExpanded : activeHeaderPanel === panelName,
+    [activeHeaderPanel, isFixedSideNav, isSideMenuExpanded],
+  );
 
-  useEffect(() => {
-    globalThis.document.documentElement.classList.toggle('sihsalus-left-nav-collapsed', isLeftNavCollapsed);
-    globalThis.document.body.classList.toggle('sihsalus-left-nav-collapsed', isLeftNavCollapsed);
-    globalThis.localStorage?.setItem('sihsalus-left-nav-collapsed', String(isLeftNavCollapsed));
-  }, [isLeftNavCollapsed]);
+  const togglePanel = useCallback(
+    (panelName: string) => {
+      if (panelName === 'sideMenu' && isFixedSideNav) {
+        setIsSideMenuExpanded((expanded) => !expanded);
+        setActiveHeaderPanel(null);
+        return;
+      }
 
-  const togglePanel = useCallback((panelName: string) => {
-    setActiveHeaderPanel((activeHeaderPanel) => (activeHeaderPanel === panelName ? null : panelName));
-  }, []);
+      setActiveHeaderPanel((activeHeaderPanel) => (activeHeaderPanel === panelName ? null : panelName));
+    },
+    [isFixedSideNav],
+  );
 
   const hidePanel = useCallback(
     (panelName: string) => () => {
@@ -47,37 +53,47 @@ const HeaderItems: React.FC = () => {
     [],
   );
 
-  const showHamburger = useMemo(
-    () =>
-      mode !== 'hidden' && navMenuItems.length > 0 && (showDesktopRailToggle || !isDesktop(layout) || mode === 'collapsed'),
-    [navMenuItems.length, layout, mode, showDesktopRailToggle],
-  );
+  const showHamburger = useMemo(() => mode !== 'hidden' && navMenuItems.length > 0, [navMenuItems.length, mode]);
+
+  useEffect(() => {
+    if (!isFixedSideNav) {
+      globalThis.document.documentElement.style.removeProperty('--sihsalus-left-nav-width');
+      return;
+    }
+
+    globalThis.document.documentElement.style.setProperty(
+      '--sihsalus-left-nav-width',
+      isSideMenuExpanded ? '16rem' : '0rem',
+    );
+
+    return () => {
+      globalThis.document.documentElement.style.removeProperty('--sihsalus-left-nav-width');
+    };
+  }, [isFixedSideNav, isSideMenuExpanded]);
 
   return (
     <>
-      <Header aria-label="OpenMRS" className={styles.topNavHeader}>
+      <Header aria-label="Sihsalus" className={styles.topNavHeader}>
         {showHamburger && (
           <HeaderMenuButton
-            aria-label={showDesktopRailToggle ? 'Alternar menú' : 'Open menu'}
+            aria-label="Open menu"
             isCollapsible
             className={styles.headerMenuButton}
             onClick={() => {
-              if (showDesktopRailToggle) {
-                setIsLeftNavCollapsed((value) => !value);
-              } else {
-                togglePanel('sideMenu');
-              }
+              togglePanel('sideMenu');
             }}
             onMouseDown={(e) => e.stopPropagation()}
             onTouchStart={(e) => e.stopPropagation()}
-            isActive={!showDesktopRailToggle && isActivePanel('sideMenu')}
+            isActive={isFixedSideNav ? false : isActivePanel('sideMenu')}
           />
         )}
-        <ConfigurableLink to={config.logo.link}>
-          <div className={showHamburger ? '' : styles.spacedLogo}>
-            <Logo />
-          </div>
-        </ConfigurableLink>
+        <div className={styles.logoWrapper}>
+          <ConfigurableLink to={config.logo.link}>
+            <div className={showHamburger ? '' : styles.spacedLogo}>
+              <Logo />
+            </div>
+          </ConfigurableLink>
+        </div>
         <div className={styles.divider} />
         <ExtensionSlot name="top-nav-info-slot" className={styles.topNavInfoSlot} />
         <HeaderGlobalBar className={styles.headerGlobalBar}>

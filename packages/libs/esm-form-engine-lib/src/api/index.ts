@@ -147,6 +147,26 @@ export async function getLatestObs(
   return data.entry?.[0]?.resource ?? null;
 }
 
+export async function getLatestObsForConceptSet(
+  patientUuid: string,
+  conceptUuid: string,
+  encounterTypeUuid?: string,
+): Promise<FHIRObsResource[]> {
+  const latestObs = await getLatestObs(patientUuid, conceptUuid, encounterTypeUuid);
+  if (!latestObs) {
+    return [];
+  }
+
+  const encounterId = latestObs.encounter?.reference?.split('/').pop();
+  if (!encounterId) {
+    return [latestObs];
+  }
+
+  const params = `patient=${patientUuid}&code=${conceptUuid}&encounter=${encounterId}`;
+  const { data } = await openmrsFetch<FhirObservationBundle>(`${fhirBaseUrl}/Observation?${params}`);
+  return data.entry?.map((entry) => entry.resource).filter((resource): resource is FHIRObsResource => !!resource) ?? [];
+}
+
 /**
  * Fetches an OpenMRS form using either its name or UUID.
  * @param {string} nameOrUUID - The form's name or UUID.

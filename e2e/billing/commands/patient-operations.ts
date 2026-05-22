@@ -1,5 +1,5 @@
-import { deleteAllBillsForPatient } from './billing-operations';
 import { type APIRequestContext, expect } from '@playwright/test';
+import { deleteAllBillsForPatient } from './billing-operations';
 import { type Patient } from './types';
 
 /**

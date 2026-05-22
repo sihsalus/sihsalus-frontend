@@ -82,7 +82,7 @@ const EditBillLineItemModal: React.FC<EditBillLineItemModalProps> = ({ bill, clo
     const quantityNum = typeof quantity === 'number' ? quantity : parseFloat(quantity) || 0;
     const priceNum = typeof price === 'number' ? price : parseFloat(price) || 0;
     const newTotal = quantityNum * priceNum;
-    setTotal(isNaN(newTotal) ? 0 : newTotal);
+    setTotal(Number.isNaN(newTotal) ? 0 : newTotal);
   }, [quantity, price]);
 
   const onSubmit = async (data: BillLineItemForm) => {

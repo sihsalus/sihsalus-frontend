@@ -2,7 +2,6 @@ import { getDefaultsFromConfigSchema, useConfig } from '@openmrs/esm-framework';
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { Form, Formik } from 'formik';
-import React from 'react';
 
 import { esmPatientRegistrationSchema, type RegistrationConfig } from '../../../../config-schema';
 import { type Resources, ResourcesContext } from '../../../../offline.resources';
@@ -58,15 +57,15 @@ const mockContextValues: PatientRegistrationContextProps = {
   identifierTypes: [],
   initialFormValues: {} as FormValues,
   isOffline: false,
-  setCapturePhotoProps: jest.fn(),
-  setFieldValue: jest.fn(),
-  setInitialFormValues: jest.fn(),
-  setFieldTouched: jest.fn(),
+  setCapturePhotoProps: vi.fn(),
+  setFieldValue: vi.fn(),
+  setInitialFormValues: vi.fn(),
+  setFieldTouched: vi.fn(),
   validationSchema: null,
   values: {} as FormValues,
 };
 
-const mockUseConfig = jest.mocked(useConfig<RegistrationConfig>);
+const mockUseConfig = vi.mocked(useConfig<RegistrationConfig>);
 
 describe('identifier input', () => {
   mockUseConfig.mockReturnValue({
@@ -94,7 +93,7 @@ describe('identifier input', () => {
   const setupIdentifierInput = (patientIdentifier: PatientIdentifierValue, initialValues = {}) => {
     render(
       <ResourcesContext.Provider value={mockResourcesContextValue}>
-        <Formik initialValues={initialValues} onSubmit={jest.fn()}>
+        <Formik initialValues={initialValues} onSubmit={vi.fn()}>
           <Form>
             <PatientRegistrationContext.Provider value={mockContextValues}>
               <IdentifierInput patientIdentifier={patientIdentifier} fieldName={fieldName} />

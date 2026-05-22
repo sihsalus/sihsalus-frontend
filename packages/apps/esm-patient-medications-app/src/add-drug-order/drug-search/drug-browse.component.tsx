@@ -4,6 +4,7 @@ import { showSnackbar, useLayoutType, type Visit, type Workspace2DefinitionProps
 import { type DrugOrderBasketItem } from '@openmrs/esm-patient-common-lib';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
+import { translateCarbonWithId } from '../carbon-translation';
 import DrugBrowseResults from './drug-browse-results.component';
 import { type ConceptSet, type ConceptTreeNode, useConceptTree, useDrugsByConcepts } from './drug-search.resource';
 import styles from './order-basket-search.scss';
@@ -101,6 +102,7 @@ export default function DrugBrowse({
           titleText={t('browseDrugsByCategory', 'Browse drugs by category')}
           onChange={onRootChange}
           disabled={isLoadingConceptSets}
+          translateWithId={translateCarbonWithId}
         />
       </div>
 

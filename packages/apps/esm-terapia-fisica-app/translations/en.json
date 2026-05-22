@@ -1,0 +1,13 @@
+{
+  "add": "Add",
+  "delete": "Delete",
+  "edit": "Edit",
+  "encounterDeleted": "Encounter deleted",
+  "encounterDeleteFailed": "Encounter couldn't be deleted",
+  "encounterSuccessfullyDeleted": "Encounter successfully deleted",
+  "error": "Error",
+  "expandRow": "Expand row",
+  "noObservationsFound": "No observations found",
+  "physicalTherapyEncounters": "Physical therapy encounters",
+  "terapiaFisica": "Physical Therapy"
+}

@@ -1,9 +1,8 @@
-import React, { useCallback } from 'react';
-
 import { Button } from '@carbon/react';
-import { showModal } from '@openmrs/esm-framework';
-import { useTranslation } from 'react-i18next';
 import { Arrival } from '@carbon/react/icons';
+import { showModal } from '@openmrs/esm-framework';
+import React, { useCallback } from 'react';
+import { useTranslation } from 'react-i18next';
 import { type StockOperationDTO } from '../../core/api/types/stockOperation/StockOperationDTO';
 
 interface StockOperationCompleteDispatchButtonProps {

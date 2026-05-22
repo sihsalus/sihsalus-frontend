@@ -1,6 +1,6 @@
 import { InlineLoading, OverflowMenu, OverflowMenuItem } from '@carbon/react';
-import { launchWorkspace, useConfig } from '@openmrs/esm-framework';
-import { EmptyState, ErrorState } from '@openmrs/esm-patient-common-lib';
+import { useConfig } from '@openmrs/esm-framework';
+import { EmptyState, ErrorState, launchPatientWorkspace } from '@openmrs/esm-patient-common-lib';
 import React from 'react';
 import { useTranslation } from 'react-i18next';
 import type { KeyedMutator } from 'swr';
@@ -26,8 +26,8 @@ const InPatientSummary: React.FC<InPatientSummaryProps> = ({ patientUuid, encoun
     formsList: { clinicalEncounterFormUuid },
   } = useConfig<ConfigObject>();
   const handleOpenOrEditMaternalForm = (encounterUUID = '') => {
-    launchWorkspace(patientFormEntryWorkspace, {
-      workspaceTitle: 'Clinical Encounter',
+    launchPatientWorkspace(patientFormEntryWorkspace, {
+      workspaceTitle: t('clinicalEncounter', 'Clinical Encounter'),
       mutateForm: mutate,
       formInfo: {
         encounterUuid: encounterUUID,
@@ -45,7 +45,7 @@ const InPatientSummary: React.FC<InPatientSummaryProps> = ({ patientUuid, encoun
       foetalPresentation: '',
       maternalCondition: '',
       actions: (
-        <OverflowMenu aria-label="overflow-menu" flipped={false}>
+        <OverflowMenu aria-label={t('actions', 'Actions')} flipped={false}>
           <OverflowMenuItem onClick={() => handleOpenOrEditMaternalForm(encounter.uuid)} itemText={t('edit', 'Edit')} />
           <OverflowMenuItem itemText={t('delete', 'Delete')} isDelete />
         </OverflowMenu>

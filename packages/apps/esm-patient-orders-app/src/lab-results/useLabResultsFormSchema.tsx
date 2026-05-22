@@ -110,13 +110,13 @@ const createNumericSchema = (
   const processNumber = (val: unknown) => {
     if (val === '' || val === null || val === undefined) return undefined;
     const parsed = Number(val);
-    if (isNaN(parsed)) return undefined;
+    if (Number.isNaN(parsed)) return undefined;
     return parsed;
   };
 
   const baseSchema = z
     .preprocess(processNumber, z.number().optional())
-    .refine((val) => val === undefined || !isNaN(val), {
+    .refine((val) => val === undefined || !Number.isNaN(val), {
       message: `${display} must be a valid number`,
     })
     .refine(

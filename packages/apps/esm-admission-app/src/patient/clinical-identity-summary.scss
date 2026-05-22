@@ -1,0 +1,32 @@
+.summary {
+  margin: 1rem 0;
+  padding: 1rem;
+  border-top: 1px solid #e0e0e0;
+  border-bottom: 1px solid #e0e0e0;
+  background: #ffffff;
+}
+
+.summary dl {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.75rem 1rem;
+  margin: 0;
+}
+
+.summary dt {
+  color: #525252;
+  font-size: 0.75rem;
+  font-weight: 600;
+}
+
+.summary dd {
+  margin: 0.125rem 0 0;
+  color: #161616;
+  font-size: 0.875rem;
+}
+
+@media (max-width: 42rem) {
+  .summary dl {
+    grid-template-columns: 1fr;
+  }
+}

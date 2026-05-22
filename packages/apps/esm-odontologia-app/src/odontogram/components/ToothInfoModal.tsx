@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useState } from 'react';
-import type { FindingOptionConfig, ToothAnnotation, ToothFinding } from '../types/odontogram';
+import type { FindingOptionConfig, ToothAnnotation, ToothFinding, ToothRootDesign } from '../types/odontogram';
 import { COLOR_CSS, COLOR_LABEL, TOOTH_DESIGN_COMPONENT_MAP } from './constants';
 import Tooth from './Tooth';
 import ToothDesigns from './ToothDesigns';
@@ -11,7 +11,7 @@ interface ToothInfoModalProps {
   annotations: ToothAnnotation[];
   findingOptions: FindingOptionConfig[];
   zones: number;
-  rootDesign: string;
+  rootDesign: ToothRootDesign;
   readOnly: boolean;
   onRemoveFinding: (params: { toothId: number; findingId: number; instanceId?: string }) => void;
   onRegisterFinding: (params: {
@@ -99,7 +99,7 @@ const ToothInfoModal: React.FC<ToothInfoModalProps> = ({
     if (!Comp) return null;
     return (
       <svg width="40" height="80" viewBox="0 0 60 120" className="tim-design-preview">
-        <ToothDesigns design={rootDesign as 'default' | 'design2' | 'design3' | 'design4'} />
+        <ToothDesigns design={rootDesign} />
         <Tooth zones={zones} />
         <Comp strokeColor={finding.color?.name || 'black'} />
       </svg>
@@ -161,7 +161,7 @@ const ToothInfoModal: React.FC<ToothInfoModalProps> = ({
           <div className="tim-overview">
             <div className="tim-tooth-preview">
               <svg width="60" height="120" viewBox="0 0 60 120">
-                <ToothDesigns design={rootDesign as 'default' | 'design2' | 'design3' | 'design4'} />
+                <ToothDesigns design={rootDesign} />
                 <Tooth zones={zones} />
                 {findings.map((f, i) => {
                   const comps = TOOTH_DESIGN_COMPONENT_MAP[String(f.findingId)];

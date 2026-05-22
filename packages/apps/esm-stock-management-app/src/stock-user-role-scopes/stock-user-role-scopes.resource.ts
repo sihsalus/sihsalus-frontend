@@ -1,8 +1,8 @@
+import { openmrsFetch, restBaseUrl } from '@openmrs/esm-framework';
 import useSWR from 'swr';
 import { type ResourceFilterCriteria, toQueryParams } from '../core/api/api';
-import { type PageableResult } from '../core/api/types/PageableResult';
 import { type UserRoleScope } from '../core/api/types/identity/UserRoleScope';
-import { openmrsFetch, restBaseUrl } from '@openmrs/esm-framework';
+import { type PageableResult } from '../core/api/types/PageableResult';
 
 export type UserRoleScopeFilter = ResourceFilterCriteria;
 
@@ -50,17 +50,31 @@ export function deleteUserRoleScopes(ids: string[]) {
   });
 }
 
+function normalizeUserRoleScopePayload(item: UserRoleScope): UserRoleScope {
+  return {
+    ...item,
+    enabled: item?.enabled ?? true,
+    permanent: item?.permanent ?? true,
+    locations: (item?.locations ?? []).map((location) => ({
+      ...location,
+      enableDescendants: location?.enableDescendants ?? false,
+    })),
+    operationTypes: item?.operationTypes ?? [],
+  };
+}
+
 // createOrUpdateUserRoleScope
 export function createOrUpdateUserRoleScope(item: UserRoleScope) {
+  const payload = normalizeUserRoleScopePayload(item);
   const abortController = new AbortController();
-  const isUpdate = item.uuid != null;
-  const apiUrl = `${restBaseUrl}/stockmanagement/userrolescope${isUpdate ? '/' + item.uuid : ''}`;
+  const hasUuid = payload.uuid != null;
+  const apiUrl = `${restBaseUrl}/stockmanagement/userrolescope${hasUuid ? '/' + payload.uuid : ''}`;
   return openmrsFetch(apiUrl, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
     },
     signal: abortController.signal,
-    body: item,
+    body: payload,
   });
 }

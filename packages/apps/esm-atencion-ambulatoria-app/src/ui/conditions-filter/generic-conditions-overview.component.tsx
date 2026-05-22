@@ -74,7 +74,7 @@ const GenericConditionsOverview: React.FC<GenericConditionsOverviewProps> = ({
   const displayText = title;
   const headerTitle = title;
   const urlLabel = t('seeAll', 'See all');
-  const pageUrl = `\${openmrsSpaBase}/patient/${patientUuid}/chart/${urlPath}`;
+  const pageUrl = `${globalThis.spaBase}/patient/${patientUuid}/chart/${urlPath}`;
   const layout = useLayoutType();
   const isDesktop = isDesktopLayout(layout);
   const isTablet = !isDesktop;
@@ -93,15 +93,11 @@ const GenericConditionsOverview: React.FC<GenericConditionsOverviewProps> = ({
   );
 
   const filteredConditions = useMemo(() => {
-    if (!filter || filter == 'All') {
+    if (!filter || filter === 'All') {
       return conditions;
     }
 
-    if (filter) {
-      return conditions?.filter((condition) => condition.clinicalStatus === filter);
-    }
-
-    return conditions;
+    return conditions?.filter((condition) => condition.clinicalStatus === filter);
   }, [filter, conditions]);
 
   const headers: Array<ConditionTableHeader> = useMemo(
@@ -178,7 +174,7 @@ const GenericConditionsOverview: React.FC<GenericConditionsOverviewProps> = ({
                 <Button
                   kind="ghost"
                   renderIcon={(props: ComponentProps<typeof AddIcon>) => <AddIcon size={16} {...props} />}
-                  iconDescription="Add conditions"
+                  iconDescription={t('addConditions', 'Add conditions')}
                   onClick={launchConditionsForm}
                 >
                   {t('add', 'Add')}
@@ -188,7 +184,7 @@ const GenericConditionsOverview: React.FC<GenericConditionsOverviewProps> = ({
           </div>
         </CardHeader>
         <DataTable
-          aria-label="conditions overview"
+          aria-label={t('conditionsOverview', 'Conditions overview')}
           rows={paginatedConditions}
           headers={headers}
           isSortable
@@ -205,6 +201,7 @@ const GenericConditionsOverview: React.FC<GenericConditionsOverviewProps> = ({
                     <TableRow>
                       {headers.map((header) => (
                         <TableHeader
+                          key={header.key}
                           className={classNames(styles.productiveHeading01, styles.text02)}
                           {...getHeaderProps({
                             header,

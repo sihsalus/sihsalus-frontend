@@ -1,8 +1,8 @@
-import React, { useCallback } from 'react';
-import { useTranslation } from 'react-i18next';
 import { Button } from '@carbon/react';
 import { TrashCan } from '@carbon/react/icons';
 import { showModal } from '@openmrs/esm-framework';
+import React, { useCallback } from 'react';
+import { useTranslation } from 'react-i18next';
 import { type StockItemPackagingUOMDTO } from '../../../core/api/types/stockItem/StockItemPackagingUOM';
 
 interface DeletePackagingUnitActionButtonProps {

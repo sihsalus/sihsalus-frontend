@@ -1,7 +1,8 @@
 import { CLOSE_PRINT_AFTER_PRINT } from '../../constants';
-import { formatDisplayDate } from '../../core/utils/datetimeUtils';
 import { GetHeaderSection, GetPrintTemplate } from '../../core/print/PrintTemplate';
 import { printDocument } from '../../core/print/printUtils';
+import { formatDisplayDate } from '../../core/utils/datetimeUtils';
+import { translateFromGlobal as t } from '../../core/utils/translationUtils';
 import { type StockOperationPrintData } from './StockOperationReport';
 
 export const FormatGoodsReceivedDocument = async (data: StockOperationPrintData): Promise<string> => {
@@ -11,21 +12,21 @@ export const FormatGoodsReceivedDocument = async (data: StockOperationPrintData)
     <div>
         ${headerSection}
         <div class="heading text center" style="text-transform: uppercase;font-size: 20pt;">
-            <b>Goods Received Note</b>
+            <b>${t('goodsReceivedNote', 'Goods received note')}</b>
         </div>
         <div class="heading-row text">
-            <span>Name of Health Unit: </span>
+            <span>${t('healthUnitName', 'Name of health unit')}: </span>
             <b><span>${data?.organizationName ?? ''}</span></b>
         </div>
         <div class="heading-row text">
             <table style="width:99%" border="0" cellspacing="0" cellpadding="0">
                 <tr>
                     <td style="text-align: left;">
-                        <span>Delivered To: </span>
+                        <span>${t('deliveredTo', 'Delivered to')}: </span>
                         <b><span>${data?.location ?? ''}</span></b>
                     </td>
                     <td style="text-align: right;">
-                        <span>GRN#: </span>
+                        <span>${t('goodsReceivedNoteNumber', 'GRN #')}: </span>
                         <b><span>${data?.operationNumber}</span></b>
                     </td>
                 </tr>
@@ -35,11 +36,11 @@ export const FormatGoodsReceivedDocument = async (data: StockOperationPrintData)
             <table style="width:99%" border="0" cellspacing="0" cellpadding="0">
                 <tr>
                     <td style="text-align: left;">
-                        <span>Received From: </span>
+                        <span>${t('receivedFrom', 'Received from')}: </span>
                         <b><span>${data?.source ?? ''}</span></b>
                     </td>
                     <td style="text-align: right;">                    
-                        <span>Date: </span>
+                        <span>${t('date', 'Date')}: </span>
                         <b><span>${formatDisplayDate(data?.operationDate)}</span></b>
                     </td>
                 </tr>
@@ -47,12 +48,12 @@ export const FormatGoodsReceivedDocument = async (data: StockOperationPrintData)
         </div>
         <table class="table-data" border="0" cellspacing="0" cellpadding="0">                     
             <tr>
-                <th valign="middle" class="left" style="border-top:solid black 1.0pt;"><b>Item Code No.</b></th>
-                <th valign="middle" class="left" style="border-top:solid black 1.0pt;"><b>Item Description (name, formulation, strength)</b></th>
-                <th valign="middle" style="border-top:solid black 1.0pt;"><b>Batch No.</b></th>
-                <th valign="middle" style="border-top:solid black 1.0pt;"><b>Expiry</b></th>
-                <th valign="middle" style="border-top:solid black 1.0pt;"><b>Quantity</b></th>                
-                <th valign="middle" style="border-top:solid black 1.0pt;"><b>Purchase Price</b></th>
+                <th valign="middle" class="left" style="border-top:solid black 1.0pt;"><b>${t('itemCodeNumber', 'Item code No.')}</b></th>
+                <th valign="middle" class="left" style="border-top:solid black 1.0pt;"><b>${t('itemDescription', 'Item description')}</b></th>
+                <th valign="middle" style="border-top:solid black 1.0pt;"><b>${t('batchNo', 'Batch number')}</b></th>
+                <th valign="middle" style="border-top:solid black 1.0pt;"><b>${t('expiry', 'Expiry')}</b></th>
+                <th valign="middle" style="border-top:solid black 1.0pt;"><b>${t('quantity', 'Quantity')}</b></th>                
+                <th valign="middle" style="border-top:solid black 1.0pt;"><b>${t('purchasePrice', 'Purchase price')}</b></th>
             </tr>            
             ${
               data?.items
@@ -65,8 +66,8 @@ export const FormatGoodsReceivedDocument = async (data: StockOperationPrintData)
                     <td valign="middle" class="center">${p.batchNumber ?? ''}</td>                    
                     <td valign="middle" class="center">${formatDisplayDate(p.expiryDate)}</td>                    
                     <td valign="middle" class="center">${p.quantityRequired?.toLocaleString() ?? ''} ${
-                        p.quantityRequiredUoM ?? ''
-                      }</td>
+                      p.quantityRequiredUoM ?? ''
+                    }</td>
                     <td valign="middle" class="center">${p.purchasePrice?.toLocaleString() ?? ''}</td>
                 </tr> 
                 `;
@@ -94,23 +95,23 @@ export const FormatGoodsReceivedDocument = async (data: StockOperationPrintData)
             }    
             <tr class="footer-field">
                 <td valign="middle" colspan="6" style="border:0;padding-top: 15pt;">
-                    Remarks:<br/>
+                    ${t('remarks', 'Remarks')}:<br/>
                     ${data?.remarks ?? ''}
                 </td>                
             </tr>   
             <tr class="footer-field">
                 <td valign="middle" colspan="3" style="border:0;padding-top: 15pt;">
-                    Received By:<br/>
+                    ${t('receivedBy', 'Received by')}:<br/>
                     <b>${data?.responsiblePerson ?? ''}</b>
                 </td>
                 <td valign="middle" colspan="3" style="border:0;padding-top: 15pt;">
-                    Checked By:<br/>
+                    ${t('checkedBy', 'Checked by')}:<br/>
                     &nbsp;
                 </td>
             </tr>
             <tr class="footer-field">
-                <td valign="middle" colspan="3" style="border:0;"><br/><br/>Signature</td>
-                <td valign="middle" colspan="3" style="border:0;"><br/><br/>Signature</td>
+                <td valign="middle" colspan="3" style="border:0;"><br/><br/>${t('signature', 'Signature')}</td>
+                <td valign="middle" colspan="3" style="border:0;"><br/><br/>${t('signature', 'Signature')}</td>
             </tr>        
         </table>        
     </div>

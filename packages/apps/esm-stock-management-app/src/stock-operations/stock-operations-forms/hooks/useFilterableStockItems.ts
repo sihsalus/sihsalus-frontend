@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
+import { ResourceRepresentation } from '../../../core/api/api';
 import { type StockItemFilter, useStockItems as useStockItemsData } from '../../../stock-items/stock-items.resource';
 import { type UserFilterCriteria } from '../../../stock-lookups/stock-lookups.resource';
-import { ResourceRepresentation } from '../../../core/api/api';
 
 export function useFilterableStockItems(filter?: StockItemFilter) {
   const [conceptFilter, setConceptFilter] = useState<UserFilterCriteria>(

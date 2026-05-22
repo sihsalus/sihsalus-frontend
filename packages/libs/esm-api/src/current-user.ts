@@ -1,0 +1,446 @@
+/** @module @category API */
+import { reportError } from '@openmrs/esm-error-handling';
+import { createGlobalStore } from '@openmrs/esm-state';
+import { isUndefined } from 'lodash-es';
+import { Observable } from 'rxjs';
+import { openmrsFetch, restBaseUrl, sessionEndpoint } from './openmrs-fetch';
+import type { FetchResponse, LoggedInUser, Privilege, Role, Session, SessionLocation } from './types';
+
+export type SessionStore = LoadedSessionStore | UnloadedSessionStore;
+
+export type LoadedSessionStore = {
+  loaded: true;
+  session: Session;
+};
+
+export type UnloadedSessionStore = {
+  loaded: false;
+  session: null;
+  error?: unknown;
+};
+
+/** @internal */
+export const sessionStore = createGlobalStore<SessionStore>('session', {
+  loaded: false,
+  session: null,
+});
+let lastFetchTimeMillis = 0;
+
+/**
+ * The getCurrentUser function returns an observable that produces
+ * **zero or more values, over time**. It will produce zero values
+ * by default if the user is not logged in. And it will provide a
+ * first value when the logged in user is fetched from the server.
+ * Subsequent values will be produced whenever the user object is
+ * updated.
+ *
+ * The function accepts an optional `opts` object with an `includeAuthStatus`
+ * boolean property that defaults to `true`. When `includeAuthStatus` is `true`,
+ * the entire {@link Session} object from the API will be provided. When
+ * `includeAuthStatus` is `false`, only the {@link LoggedInUser} property of the
+ * response object will be provided.
+ *
+ * @returns An Observable that produces zero or more values (as described above).
+ *   The values produced will be a {@link LoggedInUser} object (if `includeAuthStatus`
+ *   is set to `false`) or a {@link Session} object with authentication status
+ *   (if `includeAuthStatus` is set to `true` or not provided).
+ *
+ * @example
+ *
+ * ```js
+ * import { getCurrentUser } from '@openmrs/esm-api'
+ * const subscription = getCurrentUser().subscribe(
+ *   user => console.log(user)
+ * )
+ * subscription.unsubscribe()
+ * getCurrentUser({includeAuthStatus: true}).subscribe(
+ *   data => console.log(data.authenticated)
+ * )
+ * ```
+ *
+ * #### Be sure to unsubscribe when your component unmounts
+ *
+ * Otherwise your code will continue getting updates to the user object
+ * even after the UI component is gone from the screen. This is a memory
+ * leak and source of bugs.
+ */
+function getCurrentUser(): Observable<Session>;
+/**
+ * @param opts Options for controlling the response format.
+ * @param opts.includeAuthStatus When `true`, returns the full {@link Session} object
+ *   including authentication status.
+ * @returns An Observable that produces {@link Session} objects.
+ */
+function getCurrentUser(opts: { includeAuthStatus: true }): Observable<Session>;
+/**
+ * @param opts Options for controlling the response format.
+ * @param opts.includeAuthStatus When `false`, returns only the {@link LoggedInUser} object
+ *   without the surrounding session information.
+ * @returns An Observable that produces {@link LoggedInUser} objects.
+ */
+function getCurrentUser(opts: { includeAuthStatus: false }): Observable<LoggedInUser>;
+function getCurrentUser(opts = { includeAuthStatus: true }): Observable<Session | LoggedInUser> {
+  if (lastFetchTimeMillis < Date.now() - 1000 * 60 || !sessionStore.getState().loaded) {
+    refetchCurrentUser();
+  }
+
+  return new Observable((subscriber) => {
+    const handler = (state: SessionStore) => {
+      if (state.loaded) {
+        if (opts.includeAuthStatus) {
+          subscriber.next(state.session);
+        } else {
+          subscriber.next(state.session?.user);
+        }
+      }
+    };
+    handler(sessionStore.getState());
+    // The observable subscribe function should return an unsubscribe function,
+    // which happens to be exactly what `subscribe` returns.
+    return sessionStore.subscribe(handler);
+  });
+}
+
+export { getCurrentUser };
+
+/**
+ * Returns the global session store containing the current user's session information.
+ * If the session data is stale (older than 1 minute) or not yet loaded, this function
+ * will trigger a refetch of the current user's session.
+ *
+ * @returns The global session store that can be subscribed to for session updates.
+ *
+ * @example
+ * ```ts
+ * import { getSessionStore } from '@openmrs/esm-api';
+ * const store = getSessionStore();
+ * const unsubscribe = store.subscribe((state) => {
+ *   if (state.loaded) {
+ *     console.log('Session:', state.session);
+ *   }
+ * });
+ * ```
+ */
+export function getSessionStore() {
+  if (lastFetchTimeMillis < Date.now() - 1000 * 60 || !sessionStore.getState().loaded) {
+    refetchCurrentUser();
+  }
+
+  return sessionStore;
+}
+
+// NB locale is string only if this returns true
+function isValidLocale(locale: unknown): locale is string {
+  if (locale === undefined || typeof locale !== 'string') {
+    return false;
+  }
+
+  try {
+    new Intl.Locale(locale);
+  } catch (_e) {
+    return false;
+  }
+
+  return true;
+}
+
+/**
+ * Sets the document's language attribute based on the user's locale preference
+ * from the session data. This affects the HTML `lang` attribute which is used
+ * for accessibility and internationalization.
+ *
+ * The locale is determined from either the session's locale or the user's
+ * default locale property. Underscores in the locale are converted to hyphens
+ * to match BCP 47 language tag format.
+ *
+ * @param data The session object containing locale information.
+ */
+export function setUserLanguage(data: Session) {
+  let locale = data.locale ?? data.user?.userProperties?.defaultLocale;
+
+  if (locale && locale.includes('_')) {
+    locale = locale.replaceAll('_', '-');
+  }
+
+  if (isValidLocale(locale) && locale !== document.documentElement.getAttribute('lang')) {
+    document.documentElement.setAttribute('lang', locale);
+  }
+}
+
+sessionStore.subscribe((state: SessionStore) => {
+  if (state.loaded && state.session) {
+    setUserLanguage(state.session);
+  }
+});
+
+function userHasPrivilege(requiredPrivilege: string | string[] | undefined, user: { privileges: Array<Privilege> }) {
+  if (typeof requiredPrivilege === 'string') {
+    return !isUndefined(user.privileges.find((p) => requiredPrivilege === p.display));
+  } else if (Array.isArray(requiredPrivilege)) {
+    return requiredPrivilege.every((rp) => !isUndefined(user.privileges.find((p) => rp === p.display)));
+  } else if (!isUndefined(requiredPrivilege)) {
+    console.error(`Could not understand privileges "${requiredPrivilege}"`);
+  }
+
+  return true;
+}
+
+function isSuperUser(user: { roles: Array<Role> }) {
+  return !isUndefined(user.roles.find((role) => role.display === 'System Developer'));
+}
+
+/**
+ * The `refetchCurrentUser` function causes a network request to redownload
+ * the user. All subscribers to the current user will be notified of the
+ * new users once the new version of the user object is downloaded.
+ *
+ * @returns The same observable as returned by {@link getCurrentUser}.
+ *
+ * @example
+ * ```js
+ * import { refetchCurrentUser } from '@openmrs/esm-api'
+ * refetchCurrentUser()
+ * ```
+ */
+export function refetchCurrentUser(username?: string, password?: string) {
+  lastFetchTimeMillis = Date.now();
+  const headers: Record<string, string> = {};
+  if (username && password) {
+    headers['Authorization'] = `Basic ${window.btoa(`${username}:${password}`)}`;
+  }
+
+  return handleSessionResponse(
+    openmrsFetch(sessionEndpoint, {
+      headers,
+    }),
+  );
+}
+
+/**
+ * Clears the current user session from the session store, setting the session
+ * to an unauthenticated state. This is typically called during logout to reset
+ * the application's authentication state.
+ *
+ * @example
+ * ```ts
+ * import { clearCurrentUser } from '@openmrs/esm-api';
+ * // During logout
+ * clearCurrentUser();
+ * ```
+ */
+export function clearCurrentUser() {
+  sessionStore.setState({
+    loaded: true,
+    session: { authenticated: false, sessionId: '' },
+  });
+}
+
+/**
+ * Checks whether the given user has access based on the required privilege(s).
+ * A user has access if they have the required privilege(s) or if they are a
+ * "System Developer" (super user). If no privilege is required, access is granted.
+ *
+ * @param requiredPrivilege A single privilege string or an array of privilege strings
+ *   that the user must have. If an array is provided, the user must have ALL privileges.
+ * @param user The user object containing their privileges and roles.
+ * @returns `true` if the user has access, `false` otherwise. Returns `true` if no
+ *   privilege is required, and `false` if the user is undefined but a privilege is required.
+ *
+ * @example
+ * ```ts
+ * import { userHasAccess } from '@openmrs/esm-api';
+ * const hasAccess = userHasAccess('View Patients', currentUser);
+ * const hasMultipleAccess = userHasAccess(['View Patients', 'Edit Patients'], currentUser);
+ * ```
+ */
+export function userHasAccess(
+  requiredPrivilege: string | Array<string>,
+  user: { privileges: Array<Privilege>; roles: Array<Role> },
+) {
+  if (user === undefined) {
+    // if the user hasn't been loaded, then return false iff there is a required privilege
+    return !requiredPrivilege;
+  }
+
+  if (!requiredPrivilege) {
+    // if user exists but no requiredPrivilege is defined
+    return true;
+  }
+
+  return userHasPrivilege(requiredPrivilege, user) || isSuperUser(user);
+}
+
+/**
+ * Returns a Promise that resolves with the currently logged-in user object.
+ * If the user is already loaded in the session store, the Promise resolves immediately.
+ * Otherwise, it subscribes to the session store and resolves when a logged-in user
+ * becomes available.
+ *
+ * @returns A Promise that resolves with the LoggedInUser object once available.
+ *
+ * @example
+ * ```ts
+ * import { getLoggedInUser } from '@openmrs/esm-api';
+ * const user = await getLoggedInUser();
+ * console.log('Logged in as:', user.display);
+ * ```
+ */
+export function getLoggedInUser() {
+  let user: LoggedInUser;
+  let unsubscribe: () => void;
+  return new Promise<LoggedInUser>((res) => {
+    const handler = (state: SessionStore) => {
+      if (state.loaded && state.session.user) {
+        user = state.session.user;
+        res(state.session.user);
+
+        if (unsubscribe) {
+          unsubscribe();
+        }
+      }
+    };
+    handler(sessionStore.getState());
+    if (!user) {
+      unsubscribe = sessionStore.subscribe(handler);
+    }
+  });
+}
+
+/**
+ * Returns a Promise that resolves with the current session location, if one is set.
+ * The session location represents the physical location where the user is currently
+ * working (e.g., a clinic or ward).
+ *
+ * @returns A Promise that resolves with the SessionLocation object, or `undefined`
+ *   if no session location is set.
+ *
+ * @example
+ * ```ts
+ * import { getSessionLocation } from '@openmrs/esm-api';
+ * const location = await getSessionLocation();
+ * if (location) {
+ *   console.log('Current location:', location.display);
+ * }
+ * ```
+ */
+export function getSessionLocation() {
+  return new Promise<SessionLocation | undefined>((res, rej) => {
+    const sub = getCurrentUser().subscribe((session) => {
+      res(session.sessionLocation);
+    }, rej);
+    sub.unsubscribe();
+  });
+}
+
+/**
+ * Sets the session location for the current user. The session location represents
+ * the physical location where the user is working (e.g., a clinic or ward).
+ * This triggers a server request to update the session and refreshes the local
+ * session store.
+ *
+ * @param locationUuid The UUID of the location to set as the session location.
+ * @param abortController An AbortController to allow cancellation of the request.
+ * @returns A Promise that resolves with the updated SessionStore.
+ *
+ * @example
+ * ```ts
+ * import { setSessionLocation } from '@openmrs/esm-api';
+ * const abortController = new AbortController();
+ * await setSessionLocation('location-uuid-here', abortController);
+ * ```
+ */
+export async function setSessionLocation(locationUuid: string, abortController: AbortController): Promise<any> {
+  return handleSessionResponse(
+    openmrsFetch(sessionEndpoint, {
+      method: 'POST',
+      body: { sessionLocation: locationUuid },
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      signal: abortController.signal,
+    }),
+  );
+}
+
+/**
+ * Updates the user properties for a specific user. User properties are key-value
+ * pairs that store user-specific settings and preferences. After updating the
+ * properties on the server, the current user session is refetched to reflect
+ * the changes.
+ *
+ * @param userUuid The UUID of the user whose properties should be updated.
+ * @param userProperties An object containing the properties to set or update.
+ * @param abortController Optional AbortController to allow cancellation of the request.
+ *   If not provided, a new AbortController is created.
+ * @returns A Promise that resolves with the updated SessionStore after refetching
+ *   the current user.
+ *
+ * @example
+ * ```ts
+ * import { getLoggedInUser, setUserProperties } from '@openmrs/esm-api';
+ * const user = await getLoggedInUser();
+ * await setUserProperties(user.uuid, {
+ *   defaultLocale: 'en_GB',
+ *   customSetting: 'value'
+ * });
+ * ```
+ */
+export async function setUserProperties(
+  userUuid: string,
+  userProperties: {
+    [x: string]: string;
+  },
+  abortController?: AbortController,
+): Promise<SessionStore> {
+  if (!abortController) {
+    abortController = new AbortController();
+  }
+  await openmrsFetch(`${restBaseUrl}/user/${userUuid}`, {
+    method: 'POST',
+    body: { userProperties },
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    signal: abortController.signal,
+  });
+
+  return refetchCurrentUser();
+}
+
+function handleSessionResponse(result: Promise<FetchResponse<Session>>) {
+  return new Promise<SessionStore>((resolve, reject) => {
+    result
+      .then((res) => {
+        let nextState: SessionStore;
+        if (typeof res?.data === 'object') {
+          nextState = { loaded: true, session: res.data };
+          sessionStore.setState(nextState);
+          resolve(nextState);
+        } else {
+          nextState = { loaded: false, session: null };
+          sessionStore.setState(nextState);
+          reject(nextState);
+        }
+      })
+      .catch((err) => {
+        reportError(getSessionFetchErrorMessage(err));
+        const nextState: SessionStore = { loaded: false, session: null, error: err };
+        sessionStore.setState(nextState);
+        reject(nextState);
+      });
+  });
+}
+
+function getSessionFetchErrorMessage(err: unknown) {
+  const status = (err as { response?: { status?: number } })?.response?.status;
+
+  if (status === 404) {
+    return 'Unable to reach the OpenMRS session endpoint. Check that the backend is published at /openmrs.';
+  }
+
+  if (status === 502 || status === 503 || status === 504) {
+    return 'The OpenMRS backend is temporarily unavailable. Please try again later.';
+  }
+
+  return `Unable to refresh the OpenMRS session: ${err}`;
+}

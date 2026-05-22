@@ -182,6 +182,7 @@
   "paymentProcessedSuccessfully": "Payment processed successfully",
   "payments": "Payments",
   "pendingBills": "Pending bills",
+  "pendingConfirmationBills": "Pending confirmation",
   "policyNumber": "Policy number",
   "postWaiver": "Post waiver",
   "previousPage": "Previous page",

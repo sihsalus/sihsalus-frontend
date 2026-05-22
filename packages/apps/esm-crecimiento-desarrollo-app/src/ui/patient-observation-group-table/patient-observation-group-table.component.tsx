@@ -21,10 +21,7 @@ import { useTranslation } from 'react-i18next';
 import { useFilteredEncounter } from '../../hooks/useFilteredEncounter';
 import { formEntryWorkspace } from '../../types';
 
-import ObservationGroupDetails, {
-  type ObservationGroup,
-  type ObservationRow,
-} from './observation-group-details.component';
+import ObservationGroupDetails, { type ObservationGroup } from './observation-group-details.component';
 import styles from './patient-observation-group-table.scss';
 
 // Importar tipos desde el componente separado
@@ -59,7 +56,7 @@ const GroupTitleCell: React.FC<{ group: ObservationGroup }> = ({ group }) => (
 const GroupDateCell: React.FC<{ group: ObservationGroup }> = ({ group }) => <div>{group.date}</div>;
 
 // Componente para acciones (si necesitas agregar alguna)
-const GroupActionsCell: React.FC<{ group: ObservationGroup }> = ({ group }) => (
+const GroupActionsCell: React.FC<{ group: ObservationGroup }> = () => (
   <div>{/* Aquí puedes agregar acciones específicas por grupo si es necesario */}</div>
 );
 
@@ -101,13 +98,13 @@ const PatientObservationGroupTable: React.FC<PatientObservationGroupTableProps> 
     }
   }, [formWorkspace, mutate]);
 
-  const parseDisplay = (display: string) => {
+  const parseDisplay = useCallback((display: string) => {
     const [category, ...rest] = display.split(': ');
     return {
       category,
       value: rest.join(': ') || '',
     };
-  };
+  }, []);
 
   // Transformar datos para la tabla expandible
   const observationGroups = useMemo((): ObservationGroup[] => {
@@ -135,7 +132,7 @@ const PatientObservationGroupTable: React.FC<PatientObservationGroupTableProps> 
           encounterUuid: data.uuid,
         };
       });
-  }, [data]);
+  }, [data, parseDisplay]);
 
   // Configuración de columnas para la tabla principal
   const columns = [

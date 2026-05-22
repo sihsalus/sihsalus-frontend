@@ -1,12 +1,16 @@
 import { Button } from '@carbon/react';
 import classNames from 'classnames';
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { type AppProps } from 'single-spa';
 import styles from './devtools.styles.scss';
 import DevToolsPopup from './devtools-popup.component';
 import { importMapOverridden } from './import-map.component';
 
-const showDevTools = () => window.spaEnv === 'development' || Boolean(localStorage.getItem('openmrs:devtools'));
+const LOCAL_DEV_HOSTS = new Set(['localhost', '127.0.0.1', '::1']);
+
+const showDevTools = () =>
+  window.spaEnv === 'development' ||
+  (LOCAL_DEV_HOSTS.has(window.location.hostname) && localStorage.getItem('openmrs:devtools') === 'true');
 
 export default function Root(props: AppProps) {
   return showDevTools() ? <DevTools {...props} /> : null;

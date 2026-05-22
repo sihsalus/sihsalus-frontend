@@ -1,11 +1,12 @@
-import { formatDisplayDate } from '../../core/utils/datetimeUtils';
-import { GetHeaderSection, GetPrintTemplate } from '../../core/print/PrintTemplate';
 import {
   CLOSE_PRINT_AFTER_PRINT,
   STOCK_OPERATION_PRINT_DISABLE_BALANCE_ON_HAND,
   STOCK_OPERATION_PRINT_DISABLE_COSTS,
 } from '../../constants';
+import { GetHeaderSection, GetPrintTemplate } from '../../core/print/PrintTemplate';
 import { printDocument } from '../../core/print/printUtils';
+import { formatDisplayDate } from '../../core/utils/datetimeUtils';
+import { translateFromGlobal as t } from '../../core/utils/translationUtils';
 import { type StockOperationPrintData } from './StockOperationReport';
 
 export const FormatRequisitionDocument = async (data: StockOperationPrintData): Promise<string> => {
@@ -15,21 +16,21 @@ export const FormatRequisitionDocument = async (data: StockOperationPrintData): 
     <div>
         ${headerSection}
         <div class="heading text">
-            <b>HMIS FORM 017: REQUISITION AND ISSUE VOUCHER</b>
+            <b>${t('requisitionAndIssueVoucher', 'Requisition and issue voucher')}</b>
         </div>
         <div class="heading-row text">
-            <span>Name of Health Unit: </span>
+            <span>${t('healthUnitName', 'Name of health unit')}: </span>
             <b><span>${data?.organizationName ?? ''}</span></b>
         </div>
         <div class="heading-row text">
             <table style="width:99%" border="0" cellspacing="0" cellpadding="0">
                 <tr>
                     <td style="text-align: left;">
-                        <span>Dept/section/ward/dispensary: </span>
+                        <span>${t('departmentSectionService', 'Department/section/service')}: </span>
                         <b><span>${data?.location ?? ''}</span></b>
                     </td>
                     <td style="text-align: right;">                    
-                        <span>Date: </span>
+                        <span>${t('date', 'Date')}: </span>
                         <b><span>${formatDisplayDate(data?.operationDate)}</span></b>
                     </td>
                 </tr>
@@ -38,22 +39,22 @@ export const FormatRequisitionDocument = async (data: StockOperationPrintData): 
         <table class="table-data" border="0" cellspacing="0" cellpadding="0">
             <tr>
                 <td colspan="4" valign="top" style='border:solid black 1.0pt;height:40pt'>
-                    <div class='text'><b>Ordered by (Name and signature):</b></div>
+                    <div class='text'><b>${t('orderedByNameAndSignature', 'Ordered by (name and signature)')}:</b></div>
                     <p class='text' style='margin-top: 1pt;'>${data.orderedBy ?? '&nbsp;'}</p>
                 </td>
                 <td colspan="4" valign="top" style='border:solid black 1.0pt;border-left:none;height:40pt'>
-                    <div class='text'><b>Authorized by (Name and Signature):</b></div>
+                    <div class='text'><b>${t('authorizedByNameAndSignature', 'Authorized by (name and signature)')}:</b></div>
                     <p class='text' style='margin-top: 1pt;'>${data.authorizedBy ?? '&nbsp;'}</p>
                 </td>
             </tr>            
             <tr>
-                <th valign="middle" class="left"><b>Item Code No.</b></th>
-                <th valign="middle" class="left"><b>Item Description (name, formulation, strength)</b></th>
-                <th valign="middle"><b>Balance on Hand</b></th>
-                <th valign="middle"><b>Quantity Required</b></th>
-                <th valign="middle"><b>Quantity Issued</b></th>
-                <th valign="middle"><b>Unit Cost</b></th>
-                <th valign="middle"><b>Total Cost</b></th>
+                <th valign="middle" class="left"><b>${t('itemCodeNumber', 'Item code No.')}</b></th>
+                <th valign="middle" class="left"><b>${t('itemDescription', 'Item description')}</b></th>
+                <th valign="middle"><b>${t('balanceOnHand', 'Balance on hand')}</b></th>
+                <th valign="middle"><b>${t('quantityRequired', 'Quantity required')}</b></th>
+                <th valign="middle"><b>${t('quantityIssued', 'Quantity issued')}</b></th>
+                <th valign="middle"><b>${t('unitCost', 'Unit cost')}</b></th>
+                <th valign="middle"><b>${t('totalCost', 'Total cost')}</b></th>
             </tr>            
             ${
               data?.items
@@ -69,11 +70,11 @@ export const FormatRequisitionDocument = async (data: StockOperationPrintData): 
                         : `${p.balanceOnHand?.toLocaleString()}  ${p.balanceOnHandUoM ?? ''}`
                     }</td>
                     <td valign="middle" class="center">${p.quantityRequired?.toLocaleString() ?? ''} ${
-                        p.quantityRequiredUoM ?? ''
-                      }</td>
+                      p.quantityRequiredUoM ?? ''
+                    }</td>
                     <td valign="middle" class="center">${p.quantityIssued?.toLocaleString() ?? ''} ${
-                        p.quantityIssuedUoM ?? ''
-                      }</td>
+                      p.quantityIssuedUoM ?? ''
+                    }</td>
                     <td valign="middle" class="center">${
                       STOCK_OPERATION_PRINT_DISABLE_COSTS
                         ? ''
@@ -108,12 +109,12 @@ export const FormatRequisitionDocument = async (data: StockOperationPrintData): 
                 : ''
             }
             <tr class="footer-field">
-                <td valign="middle" colspan="3">Issue date:</td>
-                <td valign="middle" colspan="4">Receipt date:</td>
+                <td valign="middle" colspan="3">${t('issueDate', 'Issue date')}:</td>
+                <td valign="middle" colspan="4">${t('receiptDate', 'Receipt date')}:</td>
             </tr>
             <tr class="footer-field">
-                <td valign="middle" colspan="3">Name &amp; Signature receiver:</td>
-                <td valign="middle" colspan="4">Name &amp; Signature issuer:</td>
+                <td valign="middle" colspan="3">${t('receiverNameAndSignature', 'Receiver name and signature')}:</td>
+                <td valign="middle" colspan="4">${t('issuerNameAndSignature', 'Issuer name and signature')}:</td>
             </tr>
         </table>
     </div>

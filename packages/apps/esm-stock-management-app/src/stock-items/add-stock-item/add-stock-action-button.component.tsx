@@ -1,6 +1,6 @@
+import { Button } from '@carbon/react';
 import React, { useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Button } from '@carbon/react';
 import { launchAddOrEditStockItemWorkspace } from '../stock-item.utils';
 
 const AddStockItemActionButton: React.FC = () => {

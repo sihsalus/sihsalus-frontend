@@ -1,21 +1,21 @@
-@forward '@carbon/styles' hide $field-01;
+@forward "@carbon/styles" hide $field-01;
 
-@forward './vars';
+@forward "./vars";
 
-@forward './components/general';
-@forward './components/clinical-typography';
-@forward './components/canvas';
-@forward './components/colors';
-@forward './components/breadcrumbs';
-@forward './components/main-content';
-@forward './logo/logo';
-@forward './spinner/spinner';
-@forward './notifications/notifications';
-@forward './notifications/actionable-notifications';
-@forward './toasts/toasts';
-@forward './snackbars/snackbars';
-@forward './modals/modals';
+@forward "./components/general";
+@forward "./components/clinical-typography";
+@forward "./components/canvas";
+@forward "./components/colors";
+@forward "./components/breadcrumbs";
+@forward "./components/main-content";
+@forward "./logo/logo";
+@forward "./spinner/spinner";
+@forward "./notifications/notifications";
+@forward "./notifications/actionable-notifications";
+@forward "./toasts/toasts";
+@forward "./snackbars/snackbars";
+@forward "./modals/modals";
 
-@forward './overrides';
+@forward "./overrides";
 
-@import '@carbon/charts/styles.css';
+@import "@carbon/charts/styles.css";

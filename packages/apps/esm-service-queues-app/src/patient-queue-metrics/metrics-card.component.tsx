@@ -42,14 +42,14 @@ const MetricsCard: React.FC<MetricsCardProps> = ({
             <label className={styles.headerLabel}>{headerLabel}</label>
             {children}
           </div>
-          {service == 'scheduled' ? (
+          {service === 'scheduled' ? (
             <div className={styles.link}>
-              <ConfigurableLink className={styles.link} to={`\${openmrsSpaBase}/home`}>
+              <ConfigurableLink className={styles.link} to={`${globalThis.spaBase}/home`}>
                 {t('patientList', 'Patient list')}
               </ConfigurableLink>
               <ArrowRight size={16} />
             </div>
-          ) : service == 'waitTime' ? null : (
+          ) : service === 'waitTime' ? null : (
             <div className={styles.link}>
               <ConfigurableLink className={styles.link} to={queueListPath}>
                 {t('patientList', 'Patient list')}

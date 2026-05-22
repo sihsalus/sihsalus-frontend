@@ -20,15 +20,15 @@ const TriageNote: React.FC<TriageNoteProps> = ({ notes, patientUuid, diagnoses }
   return (
     <div>
       {diagnoses.length > 0
-        ? diagnoses.map((d: DiagnosisItem, ind) => (
-            <Tag type="blue" size="md">
+        ? diagnoses.map((d: DiagnosisItem) => (
+            <Tag key={d.diagnosis} type="blue" size="md">
               {d.diagnosis}
             </Tag>
           ))
         : null}
       {notes.length ? (
-        notes.map((note: Note, i) => (
-          <div>
+        notes.map((note: Note) => (
+          <div key={`${note.time}-${note.note}`}>
             <p>{note.note}</p>
             <p className={styles.subHeading}>
               {note.provider.name ? <span> {note.provider.name} </span> : null} · {note.time}
@@ -42,7 +42,7 @@ const TriageNote: React.FC<TriageNoteProps> = ({ notes, patientUuid, diagnoses }
             size="sm"
             kind="ghost"
             renderIcon={(props) => <ArrowRight size={16} {...props} />}
-            onClick={() => navigate({ to: `\${openmrsSpaBase}/patient/${patientUuid}/chart` })}
+            onClick={() => navigate({ to: `${globalThis.spaBase}/patient/${patientUuid}/chart` })}
             iconDescription={t('triageForm', 'Triage form')}
           >
             {t('triageForm', 'Triage form')}

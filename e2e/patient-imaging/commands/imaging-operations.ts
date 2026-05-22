@@ -1,5 +1,7 @@
 // tests/helpers/imaging-operations.ts
 import { type APIRequestContext, expect } from '@playwright/test';
+import fs from 'fs';
+import path from 'path';
 import type {
   CreateRequestProcedure,
   CreateRequestProcedureStep,
@@ -10,8 +12,6 @@ import type {
   RequestProcedureStep,
   Series,
 } from '../../src/types';
-import path from 'path';
-import fs from 'fs';
 
 const imagingUrl = '/openmrs/ws/rest/v1/imaging';
 const worklistUrl = '/openmrs/ws/rest/v1/worklist';

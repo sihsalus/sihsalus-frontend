@@ -59,7 +59,7 @@ type FHIRResourceResponse = {
 interface RelationshipType {
   uuid: string;
   display: string;
-  direction: string;
+  direction: 'aIsToB' | 'bIsToA';
 }
 
 export const useCodedConceptObservations = (patientUuid: string, conceptUuid: string) => {
@@ -109,12 +109,12 @@ export const useMappedRelationshipTypes = () => {
     const aIsToB = {
       display: type.displayAIsToB ? type.displayAIsToB : type.displayBIsToA,
       uuid: type.uuid,
-      direction: 'aIsToB',
+      direction: 'aIsToB' as const,
     };
     const bIsToA = {
       display: type.displayBIsToA ? type.displayBIsToA : type.displayAIsToB,
       uuid: type.uuid,
-      direction: 'bIsToA',
+      direction: 'bIsToA' as const,
     };
     if (aIsToB.display === bIsToA.display) {
       relations.push(aIsToB);
@@ -122,7 +122,7 @@ export const useMappedRelationshipTypes = () => {
       relations.push(aIsToB, {
         display: `Paciente (${aIsToB.display})`,
         uuid: type.uuid,
-        direction: 'bIsToA',
+        direction: 'bIsToA' as const,
       });
     } else {
       relations.push(aIsToB, bIsToA);

@@ -1,5 +1,3 @@
-import React, { useCallback, useMemo } from 'react';
-import { useTranslation } from 'react-i18next';
 import {
   Button,
   DataTable,
@@ -33,13 +31,13 @@ import {
   WarningAltFilled,
 } from '@carbon/react/icons';
 import { isDesktop, restBaseUrl, useSession } from '@openmrs/esm-framework';
-import { useGetReports } from '../stock-reports.resource';
+import React, { useCallback, useMemo } from 'react';
+import { useTranslation } from 'react-i18next';
 import {
-  URL_BATCH_JOB_ARTIFACT,
   APP_STOCKMANAGEMENT_REPORTS_VIEW,
   TASK_STOCKMANAGEMENT_REPORTS_MUTATE,
+  URL_BATCH_JOB_ARTIFACT,
 } from '../../constants';
-import { formatDisplayDateTime } from '../../core/utils/datetimeUtils';
 import {
   BatchJobStatusCancelled,
   BatchJobStatusCompleted,
@@ -47,11 +45,13 @@ import {
   BatchJobStatusFailed,
   BatchJobStatusPending,
 } from '../../core/api/types/BatchJob';
-import { handleMutate } from '../../utils';
 import { PrivilegedView } from '../../core/components/privileged-view-component/privileged-view.component';
+import { formatDisplayDateTime } from '../../core/utils/datetimeUtils';
+import { handleMutate } from '../../utils';
+import { useGetReports } from '../stock-reports.resource';
 import NewReportActionButton from './new-report-button.component';
-import StockReportStatus from './stock-report-status.component';
 import StockReportParameters from './stock-report-parameters.component';
+import StockReportStatus from './stock-report-status.component';
 import styles from './stock-reports.scss';
 
 const StockReports: React.FC = () => {
@@ -138,8 +138,10 @@ const StockReports: React.FC = () => {
           {batchJob.status === BatchJobStatusPending ? (
             <InlineLoading
               status={batchJob.status === BatchJobStatusPending ? 'active' : 'inactive'}
-              iconDescription="Loading"
-              description={batchJob.status === BatchJobStatusPending ? 'Generating report...' : ''}
+              iconDescription={t('loading', 'Loading')}
+              description={
+                batchJob.status === BatchJobStatusPending ? t('generatingReport', 'Generating report...') : ''
+              }
             />
           ) : null}
           {batchJob.status === BatchJobStatusFailed && (
@@ -214,7 +216,12 @@ const StockReports: React.FC = () => {
               }}
             >
               <TableToolbarContent className={styles.toolbarContent}>
-                <TableToolbarSearch persistent onChange={onInputChange} />
+                <TableToolbarSearch
+                  persistent
+                  labelText={t('filterTable', 'Filter table')}
+                  placeholder={t('filterTable', 'Filter table')}
+                  onChange={onInputChange}
+                />
                 <TableToolbarMenu>
                   <TableToolbarAction className={styles.toolbarMenuAction} onClick={handleRefresh}>
                     {t('refresh', 'Refresh')}
@@ -269,8 +276,8 @@ const StockReports: React.FC = () => {
             </Table>
             {!canViewReports ? (
               <PrivilegedView
-                title="Can not view stock reports"
-                description="You have no permissions to view reports"
+                title={t('cannotViewStockReports', 'Cannot view stock reports')}
+                description={t('noPermissionsToViewReports', 'You do not have permission to view reports')}
               />
             ) : rows.length === 0 ? (
               <div className={styles.tileContainer}>
@@ -289,6 +296,9 @@ const StockReports: React.FC = () => {
         page={currentPage}
         pageSize={currentPageSize}
         pageSizes={pageSizes}
+        itemsPerPageText={t('itemsPerPage', 'Items per page:')}
+        pageNumberText={t('pageNumber', 'Page number')}
+        pageRangeText={(_, total) => t('pageRangeText', 'of {{total}} pages', { total })}
         totalItems={totalItems}
         onChange={({ pageSize, page }) => {
           if (pageSize !== currentPageSize) {

@@ -2,10 +2,10 @@ import { cleanup } from '@testing-library/react';
 
 window.openmrsBase = '/openmrs';
 window.spaBase = '/spa';
-window.getOpenmrsSpaBase = jest.fn(() => '/openmrs/spa/');
+window.getOpenmrsSpaBase = vi.fn(() => '/openmrs/spa/');
 
 afterEach(cleanup);
 
-jest.mock('workbox-window', () => ({
-  Workbox: jest.fn(),
+vi.mock('workbox-window', () => ({
+  Workbox: vi.fn(),
 }));

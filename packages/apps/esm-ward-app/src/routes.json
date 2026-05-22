@@ -22,8 +22,9 @@
       "meta": {
         "name": "ward",
         "slot": "ward-dashboard-slot",
-        "title": "Wards"
-      }
+        "title": "Hospitalization"
+      },
+      "order": 60
     },
     {
       "component": "root",

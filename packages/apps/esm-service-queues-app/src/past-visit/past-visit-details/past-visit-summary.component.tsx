@@ -67,7 +67,7 @@ const PastVisitSummary: React.FC<PastVisitSummaryProps> = ({ encounters, patient
 
     // Iterating through every Encounter
     encounters?.forEach((encounter) => {
-      if (encounter.orders != undefined) {
+      if (encounter.orders !== undefined) {
         medications.push(
           ...encounter.orders.map((order: Order) => ({
             order,

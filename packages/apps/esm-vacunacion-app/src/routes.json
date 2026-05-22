@@ -6,9 +6,10 @@
   },
   "extensions": [
     {
-      "name": "system-administration-vaccination-scheduling-card-link",
-      "slot": "system-admin-page-card-link-slot",
-      "component": "schedulingAdminPageCardLink",
+      "name": "vaccination-schedule-app-menu-item",
+      "slot": "app-menu-item-slot",
+      "component": "vaccinationScheduleAppMenuItem",
+      "order": 35,
       "online": true,
       "offline": true
     },
@@ -44,7 +45,15 @@
       "order": 9
     }
   ],
-  "pages": [],
+  "pages": [
+    {
+      "name": "vaccine-scheduling-builder-page",
+      "component": "vaccineSchedulingBuilderPage",
+      "route": "vaccine-scheduling-builder",
+      "online": true,
+      "offline": false
+    }
+  ],
   "modals": [
     {
       "name": "vacunacion-delete-confirmation-modal",

@@ -1,0 +1,31 @@
+{
+  "$schema": "https://json.openmrs.org/routes.schema.json",
+  "backendDependencies": {
+    "webservices.rest": ">=2.2.0"
+  },
+  "extensions": [
+    {
+      "name": "terapia-fisica-dashboard-link",
+      "component": "terapiaFisicaDashboardLink",
+      "slot": "patient-chart-dashboard-slot",
+      "order": 13,
+      "meta": {
+        "slot": "patient-chart-terapia-fisica-dashboard-slot",
+        "columns": 1,
+        "columnSpan": 1,
+        "title": "Terapia Física",
+        "path": "terapia-fisica",
+        "icon": "omrs-icon-movement",
+        "layoutMode": "anchored"
+      }
+    },
+    {
+      "name": "terapia-fisica-dashboard",
+      "component": "terapiaFisicaDashboard",
+      "slot": "patient-chart-terapia-fisica-dashboard-slot",
+      "order": 0,
+      "online": true,
+      "offline": false
+    }
+  ]
+}

@@ -1,33 +1,42 @@
-import { showModal } from '@openmrs/esm-framework';
 import { fireEvent, render, screen, within } from '@testing-library/react';
-import React, { act } from 'react';
+import { act } from 'react';
 import * as api from '../../api';
 import InstancesDetailsTable, { type InstancesDetailsTableProps } from './instances-details-table.component';
 
-jest.mock('../../api');
-jest.mock('@openmrs/esm-framework', () => ({
+type PaginationProps = {
+  pageNumber: number;
+  totalItems: number;
+};
+
+type EmptyStateProps = {
+  displayText: string;
+};
+
+vi.mock('../../api');
+vi.mock('@openmrs/esm-framework', async () => ({
+  ...(await vi.importActual('@openmrs/esm-framework')),
   useLayoutType: () => 'desktop',
-  usePagination: (data: any[], pagesize: number) => ({
+  usePagination: (data: unknown[], pagesize: number) => ({
     results: data.slice(0, pagesize),
-    goto: jest.fn(),
+    goto: vi.fn(),
     currentPage: 1,
   }),
-  showModal: jest.fn(() => jest.fn()),
+  showModal: vi.fn(() => vi.fn()),
 }));
 
-jest.mock('@openmrs/esm-patient-common-lib', () => ({
-  compare: jest.fn((a, b) => (a > b ? 1 : a < b ? -1 : 0)),
-  PatientChartPagination: ({ pageNumber, totalItems }: any) => (
+vi.mock('@openmrs/esm-patient-common-lib', () => ({
+  compare: vi.fn((a, b) => (a > b ? 1 : a < b ? -1 : 0)),
+  PatientChartPagination: ({ pageNumber, totalItems }: PaginationProps) => (
     <div data-testid="pagination">
       Page {pageNumber} of {totalItems}
     </div>
   ),
-  EmptyState: ({ displayText }: any) => <div data-testid="empty-state">{displayText}</div>,
+  EmptyState: ({ displayText }: EmptyStateProps) => <div data-testid="empty-state">{displayText}</div>,
 }));
 
-jest.mock('react-i18next', () => ({
+vi.mock('react-i18next', () => ({
   useTranslation: () => ({
-    t: (key: string, defaultValue: string) => defaultValue,
+    t: (_key: string, defaultValue: string) => defaultValue,
   }),
 }));
 
@@ -49,7 +58,7 @@ describe('InstancesDetailsTable', () => {
   };
 
   beforeAll(() => {
-    jest.spyOn(console, 'error').mockImplementation((msg, ...args) => {
+    vi.spyOn(console, 'error').mockImplementation((msg, ...args) => {
       if (msg.includes('warning') || msg.includes('ResizeObserver')) {
         return;
       }
@@ -62,9 +71,9 @@ describe('InstancesDetailsTable', () => {
   });
 
   beforeEach(() => {
-    jest.clearAllMocks();
+    vi.clearAllMocks();
 
-    (api.useStudyInstances as jest.Mock).mockReturnValue({
+    (api.useStudyInstances as vi.Mock).mockReturnValue({
       data: [
         {
           sopInstanceUID: '1.2.3',
@@ -146,7 +155,7 @@ describe('InstancesDetailsTable', () => {
   });
 
   it('shows loading state when data is being fetched', async () => {
-    (api.useStudyInstances as jest.Mock).mockReturnValue({
+    (api.useStudyInstances as vi.Mock).mockReturnValue({
       data: [],
       error: null,
       isLoading: true,

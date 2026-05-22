@@ -5,6 +5,11 @@
   },
   "extensions": [
     {
+      "name": "maternal-health-forms-action-button",
+      "slot": "patient-actions-slot",
+      "component": "maternalHealthFormsActionButton"
+    },
+    {
       "name": "labour-and-delivery-dashboard",
       "slot": "patient-chart-labour-and-delivery-dashboard-slot",
       "component": "labourAndDelivery"
@@ -308,9 +313,20 @@
       "component": "conditionsFilterWorkspace",
       "title": "Agregar Condición",
       "type": "form"
+    },
+    {
+      "name": "maternal-health-forms-selector-workspace",
+      "component": "maternalHealthFormsSelectorWorkspace",
+      "title": "Formularios de Salud Materna",
+      "type": "form"
     }
   ],
   "workspaces2": [
+    {
+      "name": "maternal-health-forms-selector-workspace",
+      "component": "maternalHealthFormsSelectorWorkspace",
+      "window": "patient-chart-maternal-health-forms"
+    },
     {
       "name": "maternal-health-conditions-filter-form-workspace",
       "component": "conditionsFilterWorkspace",

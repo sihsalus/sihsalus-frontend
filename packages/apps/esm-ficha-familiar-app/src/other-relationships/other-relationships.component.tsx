@@ -13,14 +13,7 @@ import {
   Tile,
 } from '@carbon/react';
 import { Add, Edit, TrashCan } from '@carbon/react/icons';
-import {
-  ConfigurableLink,
-  isDesktop,
-  launchWorkspace,
-  useConfig,
-  useLayoutType,
-  usePagination,
-} from '@openmrs/esm-framework';
+import { ConfigurableLink, isDesktop, useConfig, useLayoutType, usePagination } from '@openmrs/esm-framework';
 import { CardHeader, EmptyDataIllustration, ErrorState, usePaginationInfo } from '@openmrs/esm-patient-common-lib';
 import React, { useState } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -29,6 +22,7 @@ import type { ConfigObject } from '../config-schema';
 import ConceptObservations from '../family-partner-history/concept-obs.component';
 import { usePatientRelationships } from '../family-partner-history/relationships.resource';
 import { deleteRelationship } from '../relationships/relationship.resources';
+import { launchFichaFamiliarWorkspace } from '../workspace-utils';
 
 import styles from './other-relationships.scss';
 
@@ -57,8 +51,9 @@ export const OtherRelationships: React.FC<OtherRelationshipsProps> = ({ patientU
   const { pageSizes } = usePaginationInfo(pageSize, totalPages, currentPage, results.length);
 
   const handleEditRelationship = (relationShipUuid: string) => {
-    launchWorkspace('relationship-update-form', {
+    launchFichaFamiliarWorkspace('relationship-update-form', {
       relationShipUuid,
+      patientUuid,
     });
   };
 
@@ -91,7 +86,7 @@ export const OtherRelationships: React.FC<OtherRelationshipsProps> = ({ patientU
   ];
 
   const handleAddHistory = () => {
-    launchWorkspace('other-relationship-form', {
+    launchFichaFamiliarWorkspace('other-relationship-form', {
       workspaceTitle: 'Other Relationship Form',
       patientUuid,
     });
@@ -179,7 +174,6 @@ export const OtherRelationships: React.FC<OtherRelationshipsProps> = ({ patientU
   return (
     <div className={styles.widgetContainer}>
       <CardHeader title={headerTitle}>
-        {isLoading && <DataTableSkeleton rowCount={5} />}{' '}
         <Button onClick={handleAddHistory} renderIcon={Add} kind="ghost">
           {t('add', 'Add')}
         </Button>
@@ -196,6 +190,7 @@ export const OtherRelationships: React.FC<OtherRelationshipsProps> = ({ patientU
                 <TableRow>
                   {headers.map((header) => (
                     <TableHeader
+                      key={header.key}
                       {...getHeaderProps({
                         header,
                         isSortable: header.isSortable,
@@ -223,11 +218,19 @@ export const OtherRelationships: React.FC<OtherRelationshipsProps> = ({ patientU
         page={currentPage}
         pageSize={pageSize}
         pageSizes={pageSizes}
-        totalItems={relationships.length}
+        totalItems={nonFamilyRelationships.length}
         onChange={({ page, pageSize }) => {
           goTo(page);
           setPageSize(pageSize);
         }}
+        backwardText={t('previousPage', 'Página anterior')}
+        forwardText={t('nextPage', 'Página siguiente')}
+        itemRangeText={(min, max, total) =>
+          t('itemRangeText', '{{min}}-{{max}} de {{total}} elementos', { min, max, total })
+        }
+        itemsPerPageText={t('itemsPerPage', 'Elementos por página:')}
+        pageNumberText={t('pageNumber', 'Página')}
+        pageRangeText={(_, total) => t('paginationPageText', 'de {{count}} páginas', { count: total })}
       />
     </div>
   );

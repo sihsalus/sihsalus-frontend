@@ -1,8 +1,8 @@
-import React from 'react';
-import styles from './stock-reports.scss';
 import { formatDate, parseDate } from '@openmrs/esm-framework';
-import { BatchJobStatusCancelled, parseParametersToMap } from '../../core/api/types/BatchJob';
+import React from 'react';
 import { useTranslation } from 'react-i18next';
+import { BatchJobStatusCancelled, parseParametersToMap } from '../../core/api/types/BatchJob';
+import styles from './stock-reports.scss';
 
 interface StockReportStatusProps {
   model: any;

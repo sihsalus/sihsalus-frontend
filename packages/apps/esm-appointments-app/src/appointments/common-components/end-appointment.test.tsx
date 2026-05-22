@@ -12,16 +12,16 @@ import { changeAppointmentStatus } from '../../patient-appointments/patient-appo
 
 import EndAppointmentModal from './end-appointment.modal';
 
-const closeModal = jest.fn();
-const mockUseVisit = jest.mocked(useVisit);
-const mockUpdateVisit = jest.mocked(updateVisit);
+const closeModal = vi.fn();
+const mockUseVisit = vi.mocked(useVisit);
+const mockUpdateVisit = vi.mocked(updateVisit);
 
-jest.mock('../../patient-appointments/patient-appointments.resource', () => ({
-  changeAppointmentStatus: jest.fn().mockResolvedValue({}),
+vi.mock('../../patient-appointments/patient-appointments.resource', () => ({
+  changeAppointmentStatus: vi.fn().mockResolvedValue({}),
 }));
 
-jest.mock('../../form/appointments-form.resource', () => ({
-  useMutateAppointments: jest.fn().mockReturnValue({ mutateAppointments: jest.fn() }),
+vi.mock('../../form/appointments-form.resource', () => ({
+  useMutateAppointments: vi.fn().mockReturnValue({ mutateAppointments: vi.fn() }),
 }));
 
 describe('EndAppointmentModal', () => {
@@ -65,7 +65,7 @@ describe('EndAppointmentModal', () => {
 
     mockUseVisit.mockReturnValue({
       activeVisit: { location: { uuid: 'def' }, visitType: { uuid: 'ghi' }, startDatetime: new Date() },
-      mutate: jest.fn(),
+      mutate: vi.fn(),
     } as unknown as VisitReturnType);
 
     render(<EndAppointmentModal appointmentUuid={'abc'} patientUuid={'123'} closeModal={closeModal} />);

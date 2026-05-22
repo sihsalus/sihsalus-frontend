@@ -1,5 +1,5 @@
 import { openmrsFetch } from '@openmrs/esm-framework';
-import sortBy from 'lodash/sortBy';
+import sortBy from 'lodash-es/sortBy';
 import useSWR from 'swr';
 
 import type { OpenmrsEncounter } from '../types';

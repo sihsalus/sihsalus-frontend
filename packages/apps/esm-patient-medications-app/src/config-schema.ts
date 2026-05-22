@@ -24,6 +24,11 @@ export const configSchema = {
       "UUID identifying this extension's order type for order basket panel filtering. Must match drugOrderTypeUUID if that value is overridden.",
     _default: '131168f4-15f5-102d-96e4-000c29c2a5d7',
   },
+  careSettingUuid: {
+    _type: Type.UUID,
+    _description: 'Care setting UUID used when querying and submitting medication orders',
+    _default: '6f0c9a92-6f24-11e3-af88-005056821db0',
+  },
   showPrintButton: {
     _type: Type.Boolean,
     _default: false,
@@ -71,6 +76,7 @@ export interface ConfigObject {
   };
   drugOrderTypeUUID: string;
   orderTypeUuid: string;
+  careSettingUuid: string;
   showPrintButton: boolean;
   debounceDelayInMs: number;
   requireIndication: boolean;

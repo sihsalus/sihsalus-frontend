@@ -1,3 +1,4 @@
+export { type FuaFormat, type FuaFormatResponse, useFuaFormats } from './useFuaFormats';
 export {
   cancelFuaRequest,
   type DateFilterContext,
@@ -8,5 +9,3 @@ export {
   type UseFuaRequestsParams,
   useFuaRequests,
 } from './useFuaRequests';
-
-export { type FuaFormat, type FuaFormatResponse, useFuaFormats } from './useFuaFormats';

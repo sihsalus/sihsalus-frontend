@@ -26,21 +26,10 @@
         "slot": "patient-chart-programs-dashboard-slot",
         "path": "Programs"
       },
-      "order": 10
+      "order": 20
     }
   ],
   "pages": [],
-  "workspaces": [
-    {
-      "name": "programs-form-workspace",
-      "title": "Record program enrollment",
-      "component": "programsFormWorkspace",
-      "type": "program-enrollment",
-      "canHide": true,
-      "canMaximize": true,
-      "width": "wider"
-    }
-  ],
   "workspaces2": [
     {
       "name": "programs-form-workspace",

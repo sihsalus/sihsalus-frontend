@@ -10,12 +10,7 @@ const logFail = (msg) => console.error(`${chalk.red.bold('[validate-spa]')} ${ch
 
 const outDir = process.env.SPA_OUTPUT_DIR || 'dist/spa';
 const assembleConfigPath = process.env.SPA_ASSEMBLE_CONFIG || 'config/spa-assemble-config.json';
-const requiredFiles = [
-  'index.html',
-  'importmap.json',
-  'routes.registry.json',
-  'frontend.json',
-];
+const requiredFiles = ['index.html', 'importmap.json', 'routes.registry.json', 'frontend.json'];
 
 let failed = false;
 

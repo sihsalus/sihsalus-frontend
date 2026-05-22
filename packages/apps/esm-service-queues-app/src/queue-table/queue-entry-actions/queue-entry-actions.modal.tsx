@@ -93,18 +93,18 @@ export const QueueEntryActionModal: React.FC<QueueEntryActionModalProps> = ({
   const { queues } = useQueues();
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const selectedQueue = queues.find((q) => q.uuid == formState.selectedQueue);
+  const selectedQueue = queues.find((q) => q.uuid === formState.selectedQueue);
 
   const statuses = selectedQueue?.allowedStatuses;
-  const hasNoStatusesConfigured = selectedQueue && statuses.length == 0;
+  const hasNoStatusesConfigured = selectedQueue && statuses.length === 0;
   const priorities = selectedQueue?.allowedPriorities;
-  const hasNoPrioritiesConfigured = selectedQueue && priorities.length == 0;
+  const hasNoPrioritiesConfigured = selectedQueue && priorities.length === 0;
 
   const setSelectedQueueUuid = (selectedQueueUuid: string) => {
-    const newSelectedQueue = queues.find((q) => q.uuid == selectedQueueUuid);
+    const newSelectedQueue = queues.find((q) => q.uuid === selectedQueueUuid);
     const { allowedStatuses, allowedPriorities } = newSelectedQueue;
-    const newQueueHasCurrentStatus = allowedStatuses.find((s) => s.uuid == formState.selectedStatus);
-    const newQueueHasCurrentPriority = allowedPriorities.find((s) => s.uuid == formState.selectedPriority);
+    const newQueueHasCurrentStatus = allowedStatuses.find((s) => s.uuid === formState.selectedStatus);
+    const newQueueHasCurrentPriority = allowedPriorities.find((s) => s.uuid === formState.selectedPriority);
     setFormState({
       ...formState,
       selectedQueue: selectedQueueUuid,
@@ -206,7 +206,7 @@ export const QueueEntryActionModal: React.FC<QueueEntryActionModalProps> = ({
     t,
   ]);
 
-  const selectedPriorityIndex = priorities?.findIndex((p) => p.uuid == formState.selectedPriority);
+  const selectedPriorityIndex = priorities?.findIndex((p) => p.uuid === formState.selectedPriority);
 
   return (
     <>
@@ -229,7 +229,7 @@ export const QueueEntryActionModal: React.FC<QueueEntryActionModalProps> = ({
                   <SelectItem
                     key={uuid}
                     text={
-                      uuid == queueEntry.queue.uuid
+                      uuid === queueEntry.queue.uuid
                         ? t('currentValueFormatted', '{{value}} (Current)', {
                             value: `${display} - ${location?.display}`,
                             interpolation: { escapeValue: false },
@@ -264,7 +264,7 @@ export const QueueEntryActionModal: React.FC<QueueEntryActionModalProps> = ({
                       key={uuid}
                       name={display}
                       labelText={
-                        uuid == queueEntry.status.uuid
+                        uuid === queueEntry.status.uuid
                           ? t('currentValueFormatted', '{{value}} (Current)', {
                               value: display,
                               interpolation: { escapeValue: false },
@@ -299,9 +299,10 @@ export const QueueEntryActionModal: React.FC<QueueEntryActionModalProps> = ({
                   {priorities?.map(({ uuid, display }) => (
                     <Switch
                       role="radio"
+                      aria-checked={uuid === formState.selectedPriority}
                       name={uuid}
                       text={
-                        uuid == queueEntry.priority.uuid
+                        uuid === queueEntry.priority.uuid
                           ? t('currentValueFormatted', '{{value}} (Current)', {
                               value: display,
                               interpolation: { escapeValue: false },

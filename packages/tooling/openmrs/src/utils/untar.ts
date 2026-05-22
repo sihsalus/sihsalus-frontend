@@ -2,7 +2,7 @@ import type { EventEmitter } from 'events';
 import * as tar from 'tar';
 import { createGunzip } from 'zlib';
 
-const TarParser = tar.Parse as unknown as new () => NodeJS.ReadWriteStream;
+const TarParser = tar.Parser as unknown as new () => NodeJS.ReadWriteStream;
 
 interface ReadEntry extends EventEmitter {
   path: string;

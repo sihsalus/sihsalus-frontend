@@ -1,6 +1,6 @@
 import type { FetchResponse } from '@openmrs/esm-framework';
 import { openmrsFetch, restBaseUrl } from '@openmrs/esm-framework';
-import pickBy from 'lodash/pickBy';
+import pickBy from 'lodash-es/pickBy';
 import useSWR from 'swr';
 
 import type { Encounter } from '../types';

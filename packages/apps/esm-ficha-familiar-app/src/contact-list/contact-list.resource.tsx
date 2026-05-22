@@ -1,5 +1,5 @@
 import type { Session } from '@openmrs/esm-framework';
-import omit from 'lodash/omit';
+import omit from 'lodash-es/omit';
 import { useTranslation } from 'react-i18next';
 import { z } from 'zod';
 
@@ -149,11 +149,10 @@ export const getHivStatusBasedOnEnrollmentAndHTSEncounters = (
   if (enrollment) {
     return 'Positive';
   }
-  if (!enrollment && !encounters.length) {
+  if (!encounters.length) {
     return 'Unknown';
   }
   if (
-    !enrollment &&
     encounters.length &&
     encounters.findIndex((en) =>
       en.obs.some(

@@ -1,17 +1,17 @@
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import React from 'react';
 import { type AppProps } from 'single-spa';
 
 import Root from './devtools.component';
 
-jest.mock('./import-map.component', () => ({
+vi.mock('./import-map.component', () => ({
   __esModule: true,
   default: () => <div role="dialog">Mock Import Map</div>,
   importMapOverridden: false,
 }));
 
-jest.mock('@openmrs/esm-framework', () => ({
+vi.mock('@openmrs/esm-framework', async () => ({
+  ...(await vi.importActual('@openmrs/esm-framework')),
   __esModule: true,
   getCoreTranslation: (key: string) => key,
   CloseIcon: () => null,
@@ -20,14 +20,14 @@ jest.mock('@openmrs/esm-framework', () => ({
 const defaultProps: AppProps = {
   name: '@openmrs/esm-devtools-app-page-0',
   singleSpa: {},
-  mountParcel: jest.fn(),
+  mountParcel: vi.fn(),
 };
 
 describe('DevTools', () => {
   beforeEach(() => {
     localStorage.clear();
     delete (window as Partial<Window>).spaEnv;
-    jest.resetModules();
+    vi.resetModules();
   });
 
   describe('Root component', () => {

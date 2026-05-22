@@ -34,7 +34,7 @@ export const DefaultValueValidator: FormFieldValidator = {
       }
     }
     if (!isEmpty(value) && field.questionOptions.rendering === 'number') {
-      if (typeof value !== 'number' || isNaN(value)) {
+      if (typeof value !== 'number' || Number.isNaN(value)) {
         return [
           {
             resultType: 'error',

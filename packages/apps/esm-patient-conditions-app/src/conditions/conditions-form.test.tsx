@@ -1,10 +1,9 @@
 import { type FetchResponse, openmrsFetch, showSnackbar } from '@openmrs/esm-framework';
 import { type PatientWorkspace2DefinitionProps } from '@openmrs/esm-patient-common-lib';
-import { render, screen, waitFor } from '@testing-library/react';
+import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import dayjs from 'dayjs';
 import utc from 'dayjs/plugin/utc';
-import React from 'react';
 import { getByTextWithMarkup, mockFhirConditionsResponse, mockPatient, searchedCondition } from 'test-utils';
 import { createCondition, useConditionsSearch } from './conditions.resource';
 import ConditionsForm, { type ConditionFormProps } from './conditions-form.workspace';
@@ -12,7 +11,7 @@ import ConditionsForm, { type ConditionFormProps } from './conditions-form.works
 dayjs.extend(utc);
 
 const defaultProps: PatientWorkspace2DefinitionProps<ConditionFormProps, object> = {
-  closeWorkspace: jest.fn(),
+  closeWorkspace: vi.fn(),
   groupProps: {
     patientUuid: mockPatient.id,
     patient: mockPatient as unknown as fhir.Patient,
@@ -20,7 +19,7 @@ const defaultProps: PatientWorkspace2DefinitionProps<ConditionFormProps, object>
     mutateVisitContext: null,
   },
   workspaceName: '',
-  launchChildWorkspace: jest.fn(),
+  launchChildWorkspace: vi.fn(),
   workspaceProps: {
     condition: null,
     formContext: 'creating' as 'creating' | 'editing',
@@ -42,16 +41,16 @@ function renderConditionsForm(workspaceProps?: ConditionFormProps) {
   render(<ConditionsForm {...props} />);
 }
 
-const mockCreateCondition = jest.mocked(createCondition);
-const mockUseConditionsSearch = jest.mocked(useConditionsSearch);
-const mockShowSnackbar = jest.mocked(showSnackbar);
-const mockOpenmrsFetch = jest.mocked(openmrsFetch);
+const mockCreateCondition = vi.mocked(createCondition);
+const mockUseConditionsSearch = vi.mocked(useConditionsSearch);
+const mockShowSnackbar = vi.mocked(showSnackbar);
+const mockOpenmrsFetch = vi.mocked(openmrsFetch);
 
-jest.mock('./conditions.resource', () => ({
-  ...jest.requireActual('./conditions.resource'),
-  createCondition: jest.fn(),
-  editCondition: jest.fn(),
-  useConditionsSearch: jest.fn(),
+vi.mock('./conditions.resource', async () => ({
+  ...(await vi.importActual('./conditions.resource')),
+  createCondition: vi.fn(),
+  editCondition: vi.fn(),
+  useConditionsSearch: vi.fn(),
 }));
 
 mockOpenmrsFetch.mockResolvedValue({ data: [] } as FetchResponse);
@@ -155,13 +154,13 @@ describe('Conditions form', () => {
     expect(cancelButton).toBeEnabled();
 
     await user.type(conditionSearchInput, 'Headache');
-    await user.click(screen.getByRole('menuitem', { name: /headache/i }));
+    await user.click(screen.getByRole('button', { name: /headache/i }));
     await user.click(activeStatusInput);
     await user.click(onsetDateInput);
     await user.paste('2020-05-05');
     expect(onsetDateInput).toHaveDisplayValue(/05\/05\/2020/i);
     expect(submitButton).toBeEnabled();
-    await user.click(submitButton);
+    fireEvent.submit(submitButton.closest('form')!);
 
     await waitFor(() => {
       expect(mockShowSnackbar).toHaveBeenCalled();
@@ -199,7 +198,7 @@ describe('Conditions form', () => {
 
     mockCreateCondition.mockRejectedValue(error);
     await user.type(conditionSearchInput, 'Headache');
-    await user.click(screen.getByRole('menuitem', { name: /Headache/i }));
+    await user.click(screen.getByRole('button', { name: /Headache/i }));
     await user.click(onsetDateInput);
     await user.paste('2020-05-05');
     await user.click(activeStatusInput);
@@ -223,21 +222,22 @@ describe('Conditions form', () => {
 
     const conditionSearchInput = screen.getByRole('searchbox', { name: /enter condition/i });
     const submitButton = screen.getByRole('button', { name: /save & close/i });
-    await user.click(submitButton);
+    const form = submitButton.closest('form')!;
+    fireEvent.submit(form);
 
-    expect(screen.getByText(/a condition is required/i)).toBeInTheDocument();
+    await waitFor(() => expect(screen.getByText(/a condition is required/i)).toBeInTheDocument());
     expect(screen.getByText(/a clinical status is required/i)).toBeInTheDocument();
 
     await user.type(conditionSearchInput, 'Headache');
-    await user.click(screen.getByRole('menuitem', { name: /headache/i }));
-    await user.click(submitButton);
+    await user.click(screen.getByRole('button', { name: /headache/i }));
+    fireEvent.submit(form);
 
-    expect(screen.getByText(/a clinical status is required/i)).toBeInTheDocument();
+    await waitFor(() => expect(screen.getByText(/a clinical status is required/i)).toBeInTheDocument());
 
     await user.click(screen.getByLabelText(/^active/i));
-    await user.click(submitButton);
+    fireEvent.submit(form);
 
-    expect(screen.queryByText(/a condition is required/i)).not.toBeInTheDocument();
+    await waitFor(() => expect(screen.queryByText(/a condition is required/i)).not.toBeInTheDocument());
     expect(screen.queryByText(/a clinical status is required/i)).not.toBeInTheDocument();
 
     await waitFor(() => {

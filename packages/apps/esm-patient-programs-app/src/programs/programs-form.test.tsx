@@ -8,7 +8,6 @@ import {
 import { type PatientWorkspace2DefinitionProps } from '@openmrs/esm-patient-common-lib';
 import { fireEvent, render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import React from 'react';
 import { mockCareProgramsResponse, mockEnrolledProgramsResponse, mockLocationsResponse, mockPatient } from 'test-utils';
 import { type ConfigObject, configSchema } from '../config-schema';
 import {
@@ -19,14 +18,14 @@ import {
 } from './programs.resource';
 import ProgramsForm, { type ProgramsFormProps } from './programs-form.workspace';
 
-const mockUseAvailablePrograms = jest.mocked(useAvailablePrograms);
-const mockUseEnrollments = jest.mocked(useEnrollments);
-const mockCreateProgramEnrollment = jest.mocked(createProgramEnrollment);
-const mockUpdateProgramEnrollment = jest.mocked(updateProgramEnrollment);
-const mockShowSnackbar = jest.mocked(showSnackbar);
-const mockUseLocations = jest.mocked(useLocations);
-const mockCloseWorkspace = jest.fn();
-const mockUseConfig = jest.mocked(useConfig<ConfigObject>);
+const mockUseAvailablePrograms = vi.mocked(useAvailablePrograms);
+const mockUseEnrollments = vi.mocked(useEnrollments);
+const mockCreateProgramEnrollment = vi.mocked(createProgramEnrollment);
+const mockUpdateProgramEnrollment = vi.mocked(updateProgramEnrollment);
+const mockShowSnackbar = vi.mocked(showSnackbar);
+const mockUseLocations = vi.mocked(useLocations);
+const mockCloseWorkspace = vi.fn();
+const mockUseConfig = vi.mocked(useConfig<ConfigObject>);
 
 const testProps: PatientWorkspace2DefinitionProps<ProgramsFormProps, {}> = {
   closeWorkspace: mockCloseWorkspace,
@@ -37,7 +36,7 @@ const testProps: PatientWorkspace2DefinitionProps<ProgramsFormProps, {}> = {
     mutateVisitContext: null,
   },
   workspaceName: '',
-  launchChildWorkspace: jest.fn(),
+  launchChildWorkspace: vi.fn(),
   workspaceProps: {},
   windowProps: {},
   windowName: '',
@@ -45,12 +44,16 @@ const testProps: PatientWorkspace2DefinitionProps<ProgramsFormProps, {}> = {
   showActionMenu: true,
 };
 
-jest.mock('./programs.resource', () => ({
-  createProgramEnrollment: jest.fn(),
-  updateProgramEnrollment: jest.fn(),
-  useAvailablePrograms: jest.fn(),
-  useEnrollments: jest.fn(),
-  findLastState: jest.fn(),
+beforeEach(() => {
+  vi.clearAllMocks();
+});
+
+vi.mock('./programs.resource', () => ({
+  createProgramEnrollment: vi.fn(),
+  updateProgramEnrollment: vi.fn(),
+  useAvailablePrograms: vi.fn(),
+  useEnrollments: vi.fn(),
+  findLastState: vi.fn(),
 }));
 
 mockUseLocations.mockReturnValue(mockLocationsResponse);
@@ -68,7 +71,7 @@ mockUseEnrollments.mockReturnValue({
   isLoading: false,
   isValidating: false,
   activeEnrollments: [],
-  mutateEnrollments: jest.fn(),
+  mutateEnrollments: vi.fn(),
 });
 
 mockCreateProgramEnrollment.mockResolvedValue({
@@ -110,9 +113,14 @@ describe('ProgramsForm', () => {
         location: mockLocation.uuid,
         patient: mockPatient.id,
         program: oncologyScreeningProgramUuid,
-        dateEnrolled: expect.stringMatching(/^2020-05-05/),
+        states: [],
       }),
-      new AbortController(),
+      expect.any(AbortController),
+    );
+    expect(mockCreateProgramEnrollment.mock.calls[0][0]).toEqual(
+      expect.objectContaining({
+        dateEnrolled: expect.stringMatching(/^2020-05-05T/),
+      }),
     );
 
     expect(mockCloseWorkspace).toHaveBeenCalledTimes(1);
@@ -147,14 +155,18 @@ describe('ProgramsForm', () => {
     expect(mockUpdateProgramEnrollment).toHaveBeenCalledWith(
       mockEnrolledProgramsResponse[0].uuid,
       expect.objectContaining({
-        dateCompleted: expect.stringMatching(/^2020-05-05/),
-        dateEnrolled: expect.stringMatching(/^2020-01-15T19:00:00-05:00|^2020-01-16/),
         location: mockEnrolledProgramsResponse[0].location.uuid,
         patient: mockPatient.id,
         program: mockEnrolledProgramsResponse[0].program.uuid,
-        states: expect.any(Array),
+        states: [],
       }),
-      new AbortController(),
+      expect.any(AbortController),
+    );
+    expect(mockUpdateProgramEnrollment.mock.calls[0][1]).toEqual(
+      expect.objectContaining({
+        dateCompleted: expect.stringMatching(/^2020-05-05T/),
+        dateEnrolled: expect.stringMatching(/^2020-01-1[5-6]T/),
+      }),
     );
 
     expect(mockShowSnackbar).toHaveBeenCalledWith(

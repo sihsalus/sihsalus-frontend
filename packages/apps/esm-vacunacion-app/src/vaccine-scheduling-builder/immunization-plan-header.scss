@@ -1,0 +1,68 @@
+@use "@carbon/styles/scss/theme";
+@use "@carbon/layout";
+@use "@carbon/type";
+
+.header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background-color: theme.$layer-01;
+  border-top: 4px solid var(--brand-03, theme.$interactive);
+  padding: layout.$spacing-05 layout.$spacing-06;
+  min-height: 5rem;
+}
+
+.leftJustifiedItems {
+  display: flex;
+  align-items: center;
+  gap: layout.$spacing-05;
+}
+
+.pageLabels {
+  p {
+    @include type.type-style("label-01");
+    color: theme.$text-secondary;
+    margin: 0;
+  }
+}
+
+.pageName {
+  @include type.type-style("heading-03");
+  color: theme.$text-primary !important;
+}
+
+.rightJustifiedItems {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: layout.$spacing-03;
+}
+
+.userContainer {
+  display: flex;
+  align-items: center;
+  gap: layout.$spacing-03;
+
+  p {
+    @include type.type-style("label-01");
+    color: theme.$text-secondary;
+    margin: 0;
+  }
+}
+
+.userIcon {
+  color: theme.$icon-secondary;
+}
+
+.dateAndLocation {
+  display: flex;
+  align-items: center;
+  gap: layout.$spacing-03;
+
+  @include type.type-style("label-01");
+  color: theme.$text-secondary;
+}
+
+.value {
+  color: theme.$text-primary;
+}

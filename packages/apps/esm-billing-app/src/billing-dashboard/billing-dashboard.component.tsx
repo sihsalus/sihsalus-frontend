@@ -1,5 +1,6 @@
+import { AppErrorBoundary } from '@sihsalus/esm-rbac';
 import dayjs from 'dayjs';
-import React, { useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useParams } from 'react-router-dom';
 import BillingHeader from '../billing-header/billing-header.component';
@@ -7,7 +8,6 @@ import BillsTable from '../bills-table/bills-table.component';
 import { omrsDateFormat } from '../constants';
 import SelectedDateContext from '../hooks/selectedDateContext';
 import styles from './billing-dashboard.scss';
-import { AppErrorBoundary } from '@sihsalus/esm-rbac';
 
 export function BillingDashboard() {
   const { t } = useTranslation();
@@ -22,7 +22,7 @@ export function BillingDashboard() {
   }, [params.date]);
 
   return (
-    <AppErrorBoundary appName="testing billing" privilegesRequired={["Get Queue Entries"]}>
+    <AppErrorBoundary appName="testing billing" privilegesRequired={['Get Queue Entries']}>
       <SelectedDateContext.Provider value={{ selectedDate, setSelectedDate }}>
         <BillingHeader title={t('billing', 'Billing')} />
         {/**

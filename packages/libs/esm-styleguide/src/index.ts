@@ -1,6 +1,7 @@
 import { defineConfigSchema } from '@openmrs/esm-config';
 import { registerModal } from '@openmrs/esm-extensions';
 import { getSyncLifecycle } from '@openmrs/esm-react-utils';
+import { type LifeCycles } from 'single-spa';
 import { setupBranding } from './brand';
 import { esmStyleGuideSchema } from './config-schema';
 import { setupEmptyCard } from './empty-card/empty-card-registration';
@@ -24,5 +25,5 @@ registerModal({
   load: getSyncLifecycle(Workspace2ClosePromptModal, {
     featureName: 'workspace2-close-prompt',
     moduleName: '@openmrs/esm-styleguide',
-  }),
+  }) as unknown as () => Promise<LifeCycles>,
 });

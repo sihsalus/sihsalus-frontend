@@ -111,7 +111,7 @@ First, install dependencies:
 yarn
 ```
 
-Start the microfrontend by running `yarn start`. By default, this will proxy requests to the demo O3 server at `https://dev3.openmrs.org`.
+Start the microfrontend by running `yarn start`. By default, this proxies requests to the backend configured through `SIHSALUS_BACKEND_URL`.
 
 If you want to run against a different OpenMRS server, you can specify the backend URL and port using the optional `--backend` and `--port` CLI arguments:
 

@@ -1,8 +1,7 @@
+import { Button, ModalBody, ModalFooter, ModalHeader } from '@carbon/react';
+import { getCoreTranslation } from '@openmrs/esm-framework';
 import React from 'react';
 import { useTranslation } from 'react-i18next';
-import { Button, ModalHeader, ModalBody, ModalFooter } from '@carbon/react';
-import { getCoreTranslation } from '@openmrs/esm-framework';
-import styles from '../../../root.scss';
 
 interface DeleteStockRuleModalProps {
   uuid?: string;
@@ -17,11 +16,9 @@ const DeleteStockRuleModal: React.FC<DeleteStockRuleModalProps> = ({ close, onCo
 
   return (
     <>
-      <ModalHeader closeModal={close} className={styles.productiveHeading03}>
-        {t('deleteStockRule', 'Delete Stock Rule')}?
-      </ModalHeader>
+      <ModalHeader closeModal={close}>{t('deleteStockRule', 'Delete Stock Rule')}?</ModalHeader>
       <ModalBody>
-        <p className={styles.bodyLong01}>
+        <p>
           {t(
             'deleteRuleConfirmationText',
             `Are you sure you want to delete this stock rule? This action can't be undone.`,

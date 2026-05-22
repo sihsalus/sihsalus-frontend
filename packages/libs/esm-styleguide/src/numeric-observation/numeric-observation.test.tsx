@@ -1,5 +1,4 @@
 import { render, screen } from '@testing-library/react';
-import React from 'react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import type { ObsReferenceRanges } from './interpretation-utils';
 import { NumericObservation } from './numeric-observation.component';
@@ -13,7 +12,7 @@ vi.mock('./use-concept-reference-range', () => ({
 
 vi.mock('react-i18next', () => ({
   useTranslation: () => ({
-    t: (key: string, defaultValue: string) => defaultValue,
+    t: (_key: string, defaultValue: string) => defaultValue,
   }),
 }));
 
@@ -105,7 +104,7 @@ describe('NumericObservation', () => {
       expect(screen.getByText('BP')).toBeInTheDocument();
       const abnormalElement = screen.getByTitle('Abnormal value');
       expect(abnormalElement).toBeInTheDocument();
-      expect(abnormalElement).toHaveClass('_low_77e78c');
+      expect(abnormalElement).toHaveClass('low');
     });
 
     it('displays correct arrow indicator for critically-low interpretation', () => {
@@ -127,7 +126,7 @@ describe('NumericObservation', () => {
       expect(screen.getByText('BP')).toBeInTheDocument();
       const abnormalElement = screen.getByTitle('Abnormal value');
       expect(abnormalElement).toBeInTheDocument();
-      expect(abnormalElement).toHaveClass('_critically-low_77e78c');
+      expect(abnormalElement).toHaveClass('critically-low');
     });
 
     it('displays correct arrow indicator for high interpretation', () => {
@@ -149,7 +148,7 @@ describe('NumericObservation', () => {
       expect(screen.getByText('BP')).toBeInTheDocument();
       const abnormalElement = screen.getByTitle('Abnormal value');
       expect(abnormalElement).toBeInTheDocument();
-      expect(abnormalElement).toHaveClass('_high_77e78c');
+      expect(abnormalElement).toHaveClass('high');
     });
 
     it('displays correct arrow indicator for critically-high interpretation', () => {
@@ -171,7 +170,7 @@ describe('NumericObservation', () => {
       expect(screen.getByText('BP')).toBeInTheDocument();
       const abnormalElement = screen.getByTitle('Abnormal value');
       expect(abnormalElement).toBeInTheDocument();
-      expect(abnormalElement).toHaveClass('_critically-high_77e78c');
+      expect(abnormalElement).toHaveClass('critically-high');
     });
 
     it('displays correct arrow indicator for off-scale-low interpretation', () => {
@@ -193,7 +192,7 @@ describe('NumericObservation', () => {
       expect(screen.getByText('BP')).toBeInTheDocument();
       const abnormalElement = screen.getByTitle('Abnormal value');
       expect(abnormalElement).toBeInTheDocument();
-      expect(abnormalElement).toHaveClass('_off-scale_low_77e78c');
+      expect(abnormalElement).toHaveClass('off-scale_low');
     });
 
     it('displays correct arrow indicator for off-scale-high interpretation', () => {
@@ -215,7 +214,7 @@ describe('NumericObservation', () => {
       expect(screen.getByText('BP')).toBeInTheDocument();
       const abnormalElement = screen.getByTitle('Abnormal value');
       expect(abnormalElement).toBeInTheDocument();
-      expect(abnormalElement).toHaveClass('_off-scale_high_77e78c');
+      expect(abnormalElement).toHaveClass('off-scale_high');
     });
 
     it('does not display arrow indicator for normal interpretation', () => {

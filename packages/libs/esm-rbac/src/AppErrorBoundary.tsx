@@ -1,9 +1,8 @@
-import { Button, InlineLoading, Tile } from '@carbon/react';
-import { Privilege, reportError, User } from '@openmrs/esm-framework';
+import { Button, Tile } from '@carbon/react';
+import { Privilege, reportError } from '@openmrs/esm-framework';
 import { auditLogger } from '@sihsalus/esm-audit-logger';
-import React, { Component, type ErrorInfo, type ReactNode } from 'react';
+import { Component, type ErrorInfo, type ReactNode } from 'react';
 import { checkRequirePrivilege } from './useRequirePrivilege';
-
 
 interface AppErrorBoundaryProps {
   readonly appName: string;
@@ -42,18 +41,15 @@ export class AppErrorBoundary extends Component<AppErrorBoundaryProps, AppErrorB
   }
 
   render(): ReactNode {
-    
     if (this.props.checkAccess === true) {
-
-      let authStatus = checkRequirePrivilege(
-        this.props.user.user?.privileges ?? new Array<Privilege>(),
-        this.props.privilegesRequired ?? new Array<string>(),
-        true
-      );    
+      const authStatus = checkRequirePrivilege(
+        this.props.user.user?.privileges ?? ([] as Privilege[]),
+        this.props.privilegesRequired ?? ([] as string[]),
+        true,
+      );
       //console.log("Answer: ",authStatus.status);
-      
-      if(authStatus.status == "unauthorized"){
-        
+
+      if (authStatus.status === 'unauthorized') {
         return (
           <Tile>
             <p>
@@ -64,13 +60,8 @@ export class AppErrorBoundary extends Component<AppErrorBoundaryProps, AppErrorB
             </p>
           </Tile>
         );
-        
-      }       
-      
-      
-      
+      }
     }
-    
 
     if (this.state.error) {
       return (
@@ -89,4 +80,3 @@ export class AppErrorBoundary extends Component<AppErrorBoundaryProps, AppErrorB
     return this.props.children;
   }
 }
-

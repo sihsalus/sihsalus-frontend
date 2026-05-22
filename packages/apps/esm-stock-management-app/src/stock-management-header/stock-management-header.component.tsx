@@ -1,6 +1,4 @@
-import React from 'react';
 import { Calendar, Location } from '@carbon/react/icons';
-import { useTranslation } from 'react-i18next';
 import {
   formatDate,
   PageHeader,
@@ -8,6 +6,8 @@ import {
   StockManagementPictogram,
   useSession,
 } from '@openmrs/esm-framework';
+import React from 'react';
+import { useTranslation } from 'react-i18next';
 import styles from './stock-management-header.scss';
 
 export const StockManagementHeader: React.FC = () => {

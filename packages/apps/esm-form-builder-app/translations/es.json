@@ -193,7 +193,7 @@
   "questionDeleted": "Pregunta eliminada",
   "questionDeletedMessage": "La pregunta etiquetada como \"{{- questionLabel}}\" ha sido eliminada.",
   "questionDuplicated": "Pregunta duplicada. Por favor cambie el ID de la pregunta duplicada a uno único, con valor en formato camelCase",
-  "questionId": "ID de pregunta (prefiera usar formato camelCase para IDs). Cada cada debería tener un ID único.",
+  "questionId": "ID de pregunta (prefiera usar formato camelCase para IDs). Cada pregunta debería tener un ID único.",
   "questionIdExists": "Este ID de pregunta ya existe en su esquema",
   "questionIdPlaceholder": "Ingresar un ID único. Por ejemplo, \"tipoAnestesia\" para una pregunta sobre el tipo de anestesia.",
   "questionInfo": "Información adicional de la pregunta",

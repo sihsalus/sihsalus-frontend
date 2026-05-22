@@ -1,7 +1,7 @@
 import { FileUploaderDropContainer, InlineNotification } from '@carbon/react';
 import { useConfig } from '@openmrs/esm-framework';
 import { useAllowedFileExtensions } from '@openmrs/esm-patient-common-lib';
-import React, { useCallback, useContext, useState } from 'react';
+import { useCallback, useContext, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { readFileAsString } from '../utils';
 import CameraMediaUploaderContext from './camera-media-uploader-context.resources';
@@ -18,6 +18,15 @@ const MediaUploaderComponent = () => {
   const { setFilesToUpload, multipleFiles } = useContext(CameraMediaUploaderContext);
   const { allowedFileExtensions } = useAllowedFileExtensions();
   const [errorNotification, setErrorNotification] = useState<ErrorNotification>(null);
+
+  const isFileExtensionAllowed = useCallback((fileName: string, allowedFileExtensions: string[]): boolean => {
+    if (!allowedFileExtensions) {
+      return true;
+    }
+
+    const fileExtension = fileName.split('.').pop();
+    return allowedFileExtensions?.includes(fileExtension.toLowerCase());
+  }, []);
 
   const upload = useCallback(
     (files: Array<File>) => {
@@ -64,17 +73,8 @@ const MediaUploaderComponent = () => {
         }
       });
     },
-    [setFilesToUpload, maxFileSize, t, allowedFileExtensions],
+    [setFilesToUpload, maxFileSize, t, allowedFileExtensions, isFileExtensionAllowed],
   );
-
-  const isFileExtensionAllowed = (fileName: string, allowedFileExtensions: string[]): boolean => {
-    if (!allowedFileExtensions) {
-      return true;
-    }
-
-    const fileExtension = fileName.split('.').pop();
-    return allowedFileExtensions?.includes(fileExtension.toLowerCase());
-  };
 
   return (
     <div className="cds--file__container">
@@ -105,7 +105,7 @@ const MediaUploaderComponent = () => {
           labelText={t('fileSizeInstructions', 'Drag and drop files here or click to upload')}
           tabIndex={0}
           multiple={multipleFiles}
-          onAddFiles={(evt, { addedFiles }) => {
+          onAddFiles={(_evt, { addedFiles }) => {
             upload(addedFiles);
           }}
         />

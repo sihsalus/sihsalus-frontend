@@ -25,6 +25,12 @@ import { formatDate, openmrsFetch, showModal, showSnackbar, usePagination } from
 import React, { useCallback, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
+const loadHtmlInWindow = (targetWindow: Window, html: string) => {
+  const url = URL.createObjectURL(new Blob([html], { type: 'text/html' }));
+  targetWindow.addEventListener('load', () => URL.revokeObjectURL(url), { once: true });
+  targetWindow.location.href = url;
+};
+
 import { ModuleFuaRestURL } from '../constant';
 import useFuaRequests, { type FuaRequest, revalidateFuaRequestCaches, setFuaEstado } from '../hooks/useFuaRequests';
 import { useVisit } from '../hooks/useVisit';
@@ -177,7 +183,7 @@ const FuaRequestTable: React.FC<FuaRequestTableProps> = ({ statusFilter = 'all' 
         return;
       }
 
-      fuaWindow.document.write(`<p>${t('loadingFuaDocument', 'Cargando documento FUA...')}</p>`);
+      fuaWindow.document.body.textContent = t('loadingFuaDocument', 'Cargando documento FUA...');
 
       try {
         const response = await openmrsFetch(
@@ -191,14 +197,10 @@ const FuaRequestTable: React.FC<FuaRequestTableProps> = ({ statusFilter = 'all' 
         );
 
         const html = await response.text();
-        fuaWindow.document.open();
-        fuaWindow.document.write(html);
-        fuaWindow.document.close();
+        loadHtmlInWindow(fuaWindow, html);
       } catch (error) {
         const errorMessage = error instanceof Error ? error.message : t('unknownError', 'Error desconocido');
-        fuaWindow.document.open();
-        fuaWindow.document.write(`<p>${errorMessage}</p>`);
-        fuaWindow.document.close();
+        fuaWindow.document.body.textContent = errorMessage;
         showSnackbar({
           kind: 'error',
           title: t('errorLoadingFua', 'Error al cargar FUA'),
@@ -395,7 +397,17 @@ const FuaRequestTable: React.FC<FuaRequestTableProps> = ({ statusFilter = 'all' 
       </DataTable>
       {filteredData.length > 0 && (
         <Pagination
+          backwardText={t('previousPage', 'Página anterior')}
+          forwardText={t('nextPage', 'Página siguiente')}
+          itemRangeText={(min, max, total) =>
+            t('paginationItemRange', '{{min}}–{{max}} de {{total}} elementos', { min, max, total })
+          }
+          itemText={(min, max) => t('paginationItems', '{{min}}–{{max}} elementos', { min, max })}
+          itemsPerPageText={t('itemsPerPage', 'Elementos por página:')}
           page={currentPage}
+          pageRangeText={(_current, total) => t('paginationPageRange', 'de {{total}} páginas', { total })}
+          pageSelectLabelText={(total) => t('paginationPageSelect', 'Página de {{total}} páginas', { total })}
+          pageText={(page) => t('paginationPage', 'página {{page}}', { page })}
           pageSize={currentPageSize}
           pageSizes={pageSizes}
           totalItems={filteredData.length}

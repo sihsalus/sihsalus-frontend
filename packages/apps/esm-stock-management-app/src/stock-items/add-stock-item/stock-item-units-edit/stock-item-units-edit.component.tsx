@@ -1,10 +1,10 @@
-import React from 'react';
-import { useTranslation } from 'react-i18next';
 import { NumberInputSkeleton } from '@carbon/react';
-import { useStockItem } from '../../stock-items.resource';
+import React from 'react';
 import { type Control, type FormState } from 'react-hook-form';
-import { type StockItemFormData } from '../../validationSchema';
+import { useTranslation } from 'react-i18next';
 import ControlledNumberInput from '../../../core/components/carbon/controlled-number-input.component';
+import { useStockItem } from '../../stock-items.resource';
+import { type StockItemFormData } from '../../validationSchema';
 import DispensingPackageMeasurement from '../dispensing-package-measurement/dispensing-package-measurement.component';
 
 interface StockItemUnitsEditProps {

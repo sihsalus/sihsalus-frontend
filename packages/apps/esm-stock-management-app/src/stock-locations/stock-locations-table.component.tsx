@@ -1,4 +1,3 @@
-import React, { useState } from 'react';
 import {
   Button,
   DataTableSkeleton,
@@ -8,15 +7,16 @@ import {
   Tile,
 } from '@carbon/react';
 import { Add } from '@carbon/react/icons';
+import { restBaseUrl } from '@openmrs/esm-framework';
+import React, { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useSWRConfig } from 'swr';
-import { restBaseUrl } from '@openmrs/esm-framework';
-import { handleMutate } from '../utils';
 import { ResourceRepresentation } from '../core/api/api';
-import { useStockLocationPages } from './stock-locations-table.resource';
 import DataList from '../core/components/table/table.component';
-import NewLocationForm from './add-locations-form.workspace';
 import styles from '../stock-items/stock-items-table.scss';
+import { handleMutate } from '../utils';
+import NewLocationForm from './add-locations-form.workspace';
+import { useStockLocationPages } from './stock-locations-table.resource';
 
 interface StockLocationsTableProps {
   status?: string;

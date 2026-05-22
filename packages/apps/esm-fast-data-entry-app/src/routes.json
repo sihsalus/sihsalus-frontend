@@ -14,9 +14,10 @@
   ],
   "extensions": [
     {
-      "name": "forms-app-link",
-      "slot": "app-menu-slot",
-      "component": "formsAppMenuLink",
+      "name": "forms-app-menu-item",
+      "slot": "app-menu-item-slot",
+      "component": "formsAppMenuItem",
+      "order": 70,
       "online": true,
       "offline": true
     }

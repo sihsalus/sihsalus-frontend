@@ -1,12 +1,12 @@
 import {
   assessValue,
+  type ConceptMetadata,
   calculateBodyMassIndex,
   formatAMPM,
   generatePlaceholder,
   getGender,
   getReferenceRangesForConcept,
   interpretBloodPressure,
-  type ConceptMetadata,
 } from './functions';
 
 describe('consulta ambulatoria utils/functions', () => {

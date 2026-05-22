@@ -1,8 +1,8 @@
-import React from 'react';
 import { Dropdown, DropdownSkeleton } from '@carbon/react';
+import React from 'react';
 import { useTranslation } from 'react-i18next';
-import { useStockRules } from './stock-rules.resource';
 import { ResourceRepresentation } from '../../../core/api/api';
+import { useStockRules } from './stock-rules.resource';
 import styles from './stock-rules-filter.scss';
 
 interface StockRulesFilterProps {

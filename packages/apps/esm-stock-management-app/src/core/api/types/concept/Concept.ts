@@ -1,5 +1,5 @@
-import { type BaseOpenmrsObject } from '../BaseOpenmrsObject';
 import { type Auditable } from '../Auditable';
+import { type BaseOpenmrsObject } from '../BaseOpenmrsObject';
 import { type Retireable } from '../Retireable';
 import { type ConceptName } from './ConceptName';
 

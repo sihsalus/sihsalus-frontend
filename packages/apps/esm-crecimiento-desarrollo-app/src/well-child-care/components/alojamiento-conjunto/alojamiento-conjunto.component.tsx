@@ -5,21 +5,6 @@ import { useTranslation } from 'react-i18next';
 import type { ConfigObject } from '../../../config-schema';
 import { useLatestValidEncounter } from '../../../hooks/useLatestEncounter';
 import { formEntryWorkspace } from '../../../types';
-import {
-  ADMISSION_DATE_TIME_UUID,
-  DELIVERY_TYPE_AC_UUID,
-  GESTATIONAL_AGE_UUID,
-  HEMATOCRIT_UUID,
-  LATCH_UUID,
-  MILK_PRODUCTION_UUID,
-  MOTHER_AGE_UUID,
-  NIPPLES_AC_UUID,
-  NUMBER_OF_CHILDREN_UUID,
-  NURSING_DIAGNOSIS_AC_UUID,
-  NURSING_INTERVENTION_UUID,
-  SUCTION_AC_UUID,
-  SWALLOWING_UUID,
-} from '../../concepts/neonatal-concepts';
 
 interface AlojamientoConjuntoProps {
   patientUuid: string;
@@ -28,6 +13,7 @@ interface AlojamientoConjuntoProps {
 const AlojamientoConjunto: React.FC<AlojamientoConjuntoProps> = ({ patientUuid }) => {
   const { t } = useTranslation();
   const config = useConfig() as ConfigObject;
+  const { neonatalConcepts } = config;
   const headerTitle = t('alojamientoConjunto', 'Alojamiento Conjunto');
   const { encounter, isLoading, error, mutate } = useLatestValidEncounter(
     patientUuid,
@@ -78,71 +64,71 @@ const AlojamientoConjunto: React.FC<AlojamientoConjuntoProps> = ({ patientUuid }
     {
       id: 'fechaYHoraDeIngreso',
       label: t('fechaYHoraDeIngreso', 'Fecha y hora de ingreso'),
-      dataKey: ADMISSION_DATE_TIME_UUID,
+      dataKey: neonatalConcepts.admissionDateTimeUuid,
     },
     {
       id: 'edadGestacional',
       label: t('edadGestacional', 'Edad Gestacional (semanas)'),
-      dataKey: GESTATIONAL_AGE_UUID,
+      dataKey: neonatalConcepts.gestationalAgeUuid,
     },
     {
       id: 'hematocrito',
       label: t('hematocrito', 'Hematocrito (%)'),
-      dataKey: HEMATOCRIT_UUID,
+      dataKey: neonatalConcepts.hematocritUuid,
     },
 
     // Valoración de enfermería al ingreso - En la madre
     {
       id: 'edadDeLaMadre',
       label: t('edadDeLaMadre', 'Edad de la madre'),
-      dataKey: MOTHER_AGE_UUID,
+      dataKey: neonatalConcepts.motherAgeUuid,
     },
     {
       id: 'numeroDeHijos',
       label: t('numeroDeHijos', 'Número de hijos'),
-      dataKey: NUMBER_OF_CHILDREN_UUID,
+      dataKey: neonatalConcepts.numberOfChildrenUuid,
     },
     {
       id: 'tipoDeParto',
       label: t('tipoDeParto', 'Tipo de parto'),
-      dataKey: DELIVERY_TYPE_AC_UUID,
+      dataKey: neonatalConcepts.deliveryTypeAcUuid,
     },
     {
       id: 'pezones',
       label: t('pezones', 'Pezones'),
-      dataKey: NIPPLES_AC_UUID,
+      dataKey: neonatalConcepts.nipplesAcUuid,
     },
     {
       id: 'produccionLactea',
       label: t('produccionLactea', 'Producción Láctea'),
-      dataKey: MILK_PRODUCTION_UUID,
+      dataKey: neonatalConcepts.milkProductionUuid,
     },
 
     // Valoración de enfermería al ingreso - En el recién nacido
     {
       id: 'agarre',
       label: t('agarre', 'Agarre'),
-      dataKey: LATCH_UUID,
+      dataKey: neonatalConcepts.latchUuid,
     },
     {
       id: 'succion',
       label: t('succion', 'Succión'),
-      dataKey: SUCTION_AC_UUID,
+      dataKey: neonatalConcepts.suctionAcUuid,
     },
     {
       id: 'deglucion',
       label: t('deglucion', 'Deglución'),
-      dataKey: SWALLOWING_UUID,
+      dataKey: neonatalConcepts.swallowingUuid,
     },
     {
       id: 'diagnosticoDeEnfermeria',
       label: t('diagnosticoDeEnfermeria', 'Diagnóstico de Enfermería'),
-      dataKey: NURSING_DIAGNOSIS_AC_UUID,
+      dataKey: neonatalConcepts.nursingDiagnosisAcUuid,
     },
     {
       id: 'intervencionDeEnfermeria',
       label: t('intervencionDeEnfermeria', 'Intervención de enfermería'),
-      dataKey: NURSING_INTERVENTION_UUID,
+      dataKey: neonatalConcepts.nursingInterventionUuid,
     },
   ];
 

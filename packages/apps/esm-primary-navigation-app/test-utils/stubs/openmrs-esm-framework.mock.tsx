@@ -1,7 +1,8 @@
 import React from 'react';
 import { of } from 'rxjs';
+import { vi } from 'vitest';
 
-export const useLayoutType = jest.fn(() => 'tablet');
+export const useLayoutType = vi.fn(() => 'tablet');
 
 export function openmrsFetch() {
   return new Promise(() => {});
@@ -21,9 +22,9 @@ export function refetchCurrentUser() {
 
 export const ComponentContext = React.createContext(null);
 
-export const openmrsComponentDecorator = jest.fn().mockImplementation(() => (component) => component);
+export const openmrsComponentDecorator = vi.fn().mockImplementation(() => (component: any) => component);
 
-export const Extension = jest.fn().mockImplementation((_props: any) => {
+export const Extension = vi.fn().mockImplementation((_props: any) => {
   return <slot />;
 });
 

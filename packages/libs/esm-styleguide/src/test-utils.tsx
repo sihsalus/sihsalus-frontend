@@ -2,7 +2,7 @@ import { type RenderOptions, render } from '@testing-library/react';
 import React, { type ReactElement } from 'react';
 import { SWRConfig } from 'swr';
 
-export const swrWrapper = ({ children }) => {
+export const swrWrapper = ({ children }: { children: React.ReactNode }) => {
   return (
     <SWRConfig
       value={{

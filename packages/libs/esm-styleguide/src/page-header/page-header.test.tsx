@@ -1,7 +1,6 @@
 import { getConfig } from '@openmrs/esm-config';
 import { getCoreTranslation } from '@openmrs/esm-translations';
 import { render, screen } from '@testing-library/react';
-import React from 'react';
 import { describe, expect, it, vi } from 'vitest';
 import { PageHeaderContent } from './page-header.component';
 

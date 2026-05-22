@@ -1,5 +1,3 @@
-import React from 'react';
-
 import { type VisitAttributeQueueNumberColumnConfig } from '../../config-schema';
 import { type QueueEntry, type QueueTableColumnFunction } from '../../types';
 

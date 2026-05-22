@@ -1,11 +1,11 @@
+import { DataTableSkeleton } from '@carbon/react';
 import React, { useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { ResourceRepresentation } from '../../../core/api/api';
+import DataList from '../../../core/components/table/table.component';
 import { formatDisplayDate } from '../../../core/utils/datetimeUtils';
 import { translateStockLocation } from '../../../core/utils/translationUtils';
-import { DataTableSkeleton } from '@carbon/react';
 import { useStockItemQuantitiesHook } from './quantities.resource';
-import DataList from '../../../core/components/table/table.component';
 
 interface StockQuantitiesProps {
   onSubmit?: () => void;

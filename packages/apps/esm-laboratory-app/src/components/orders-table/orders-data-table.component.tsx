@@ -22,7 +22,7 @@ import {
   Tile,
 } from '@carbon/react';
 import { ExtensionSlot, formatDate, parseDate, showModal, useConfig, usePagination } from '@openmrs/esm-framework';
-import React, { useMemo, useState } from 'react';
+import React, { useCallback, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { type Config } from '../../config-schema';
 import { useLabOrders } from '../../laboratory.resource';
@@ -199,15 +199,15 @@ const OrdersDataTable: React.FC<OrdersDataTableProps> = (props) => {
   const handleOrderStatusChange = ({ selectedItem }: { selectedItem: { value: FulfillerStatus; display: string } }) =>
     setFilter(selectedItem.value);
 
-  const handlePrintModal = (orders: Array<Order>) => {
+  const handlePrintModal = useCallback((orders: Array<Order>) => {
     const completedOrders = orders.filter((order) => order.fulfillerStatus === 'COMPLETED');
     const dispose = showModal('print-lab-results-modal', {
       closeModal: () => dispose(),
       orders: completedOrders,
     });
-  };
+  }, []);
 
-  const handleLaunchModal = (orders: Array<Order>) => {
+  const handleLaunchModal = useCallback((orders: Array<Order>) => {
     const completedOrders = orders.filter((order) => order.fulfillerStatus === 'COMPLETED');
     const dispose = showModal('edit-lab-results-modal', {
       orders: completedOrders,
@@ -215,7 +215,7 @@ const OrdersDataTable: React.FC<OrdersDataTableProps> = (props) => {
       patient: completedOrders[0]?.patient,
       workspaceName: 'lab-app-test-results-form-workspace',
     });
-  };
+  }, []);
 
   const tableRows = useMemo(() => {
     return paginatedLabOrders.map((groupedOrder) => ({
@@ -245,7 +245,7 @@ const OrdersDataTable: React.FC<OrdersDataTableProps> = (props) => {
         </div>
       ) : null,
     }));
-  }, [paginatedLabOrders, t]);
+  }, [handleLaunchModal, handlePrintModal, paginatedLabOrders, t]);
 
   if (isLoading) {
     return <DataTableSkeleton role="progressbar" showHeader={false} showToolbar={false} />;
@@ -288,19 +288,29 @@ const OrdersDataTable: React.FC<OrdersDataTableProps> = (props) => {
             <TableHead>
               <TableRow>
                 <TableExpandHeader enableToggle {...getExpandHeaderProps()} />
-                {headers.map((header) => (
-                  <TableHeader {...getHeaderProps({ header })}>{header.header}</TableHeader>
-                ))}
+                {headers.map((header) => {
+                  const { key, ...headerProps } = getHeaderProps({ header });
+                  return (
+                    <TableHeader key={key} {...headerProps}>
+                      {header.header}
+                    </TableHeader>
+                  );
+                })}
               </TableRow>
             </TableHead>
             <TableBody>
               {rows.map((row) => (
                 <React.Fragment key={row.id}>
-                  <TableExpandRow {...getRowProps({ row })} key={row.id}>
-                    {row.cells.map((cell) => (
-                      <TableCell key={cell.id}>{cell.value?.content ?? cell.value}</TableCell>
-                    ))}
-                  </TableExpandRow>
+                  {(() => {
+                    const { key, ...rowProps } = getRowProps({ row });
+                    return (
+                      <TableExpandRow key={key} {...rowProps}>
+                        {row.cells.map((cell) => (
+                          <TableCell key={cell.id}>{cell.value?.content ?? cell.value}</TableCell>
+                        ))}
+                      </TableExpandRow>
+                    );
+                  })()}
                   {row.isExpanded ? (
                     <TableExpandedRow colSpan={headers.length + 2}>
                       <ListOrderDetails

@@ -1,5 +1,6 @@
 import { ConfigurableLink } from '@openmrs/esm-framework';
 import React from 'react';
+import { useTranslation } from 'react-i18next';
 
 interface OfflineToolsNavLinkProps {
   page?: string;
@@ -9,6 +10,7 @@ interface OfflineToolsNavLinkProps {
 void React;
 
 export default function OfflineToolsNavLink({ page, title }: OfflineToolsNavLinkProps) {
+  const { t } = useTranslation();
   const openmrsSpaBasePlaceholder = ['${', 'openmrsSpaBase', '}'].join('');
 
   return (
@@ -17,7 +19,7 @@ export default function OfflineToolsNavLink({ page, title }: OfflineToolsNavLink
         to={`${openmrsSpaBasePlaceholder}/offline-tools${page ? `/${page}` : ''}`}
         className="cds--side-nav__link"
       >
-        {title}
+        {t(title, title)}
       </ConfigurableLink>
     </div>
   );

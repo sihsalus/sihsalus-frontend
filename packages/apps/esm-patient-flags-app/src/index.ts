@@ -21,6 +21,14 @@ export const flagsRiskCountExtension = getAsyncLifecycle(
   },
 );
 
+export const flagsBannerTagExtension = getAsyncLifecycle(
+  () => import('./flags/flags-banner-tag-extension/flags-banner-tag.extension'),
+  {
+    featureName: 'patient-flags-banner-tag',
+    moduleName,
+  },
+);
+
 export const flagsListExtension = getAsyncLifecycle(() => import('./flags/flags-list-extension/flags-list.extension'), {
   featureName: 'patient-flags-overview',
   moduleName,

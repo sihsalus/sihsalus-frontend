@@ -1,11 +1,10 @@
-import React from 'react';
-import { useTranslation } from 'react-i18next';
 import { Button } from '@carbon/react';
 import { WarningHex } from '@carbon/react/icons';
 import { showModal } from '@openmrs/esm-framework';
+import { useTranslation } from 'react-i18next';
+import styles from './stock-home-detail-card.scss';
 import { useStockInventory } from './stock-home-inventory-expiry.resource';
 import { useStockInventoryItems } from './stock-home-inventory-items.resource';
-import styles from './stock-home-detail-card.scss';
 
 const StockHomeInventoryCard = () => {
   const { t } = useTranslation();

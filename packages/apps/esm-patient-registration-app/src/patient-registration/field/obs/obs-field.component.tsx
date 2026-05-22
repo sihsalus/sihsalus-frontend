@@ -2,7 +2,7 @@ import { InlineNotification, Layer, Select, SelectItem } from '@carbon/react';
 import { OpenmrsDatePicker, useConfig } from '@openmrs/esm-framework';
 import classNames from 'classnames';
 import { Field } from 'formik';
-import React, { useContext, useMemo } from 'react';
+import { useContext, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import { type FieldDefinition, type RegistrationConfig } from '../../../config-schema';

@@ -1,5 +1,5 @@
 import { Button, Tile } from '@carbon/react';
-import { AddIcon, ChevronDownIcon, ChevronUpIcon, MaybeIcon, useLayoutType } from '@openmrs/esm-framework';
+import { AddIcon, ChevronDownIcon, ChevronUpIcon, MaybeIcon } from '@openmrs/esm-framework';
 import { type OrderBasketItem, useOrderBasket, useOrderType } from '@openmrs/esm-patient-common-lib';
 import classNames from 'classnames';
 import React, { type ComponentProps, useCallback, useEffect, useMemo, useState } from 'react';
@@ -13,6 +13,20 @@ import { prepOrderPostData } from './resources';
 
 interface GeneralOrderTypeProps extends OrderTypeDefinition {
   launchOrderableConceptWorkspace: (orderTypeUuid: string, order?: OrderBasketItem) => void;
+  canCreateOrders: boolean;
+  onMissingActiveVisit: () => void;
+}
+
+const iconAliases: Record<string, string> = {
+  Syringe: 'omrs-icon-syringe',
+  'User--follow': 'omrs-icon-user-follow',
+  UserFollow: 'omrs-icon-user-follow',
+  ImageMedical: 'omrs-icon-image-medical',
+  Report: 'omrs-icon-report',
+};
+
+function getOrderTypeIcon(icon?: string) {
+  return icon ? (iconAliases[icon] ?? icon) : 'omrs-icon-generic-order-type';
 }
 
 const GeneralOrderType: React.FC<GeneralOrderTypeProps> = ({
@@ -20,9 +34,10 @@ const GeneralOrderType: React.FC<GeneralOrderTypeProps> = ({
   label,
   icon,
   launchOrderableConceptWorkspace,
+  canCreateOrders,
+  onMissingActiveVisit,
 }) => {
   const { t } = useTranslation();
-  const isTablet = useLayoutType() === 'tablet';
   const { orderType, isLoadingOrderType } = useOrderType(orderTypeUuid);
 
   const { orders, setOrders } = useOrderBasket<OrderBasketItem>(orderTypeUuid, prepOrderPostData);
@@ -64,10 +79,20 @@ const GeneralOrderType: React.FC<GeneralOrderTypeProps> = ({
   }, [orders]);
 
   const openConceptSearch = () => {
+    if (!canCreateOrders) {
+      onMissingActiveVisit();
+      return;
+    }
+
     launchOrderableConceptWorkspace(orderTypeUuid);
   };
 
   const openOrderForm = (order: OrderBasketItem) => {
+    if (!canCreateOrders) {
+      onMissingActiveVisit();
+      return;
+    }
+
     launchOrderableConceptWorkspace(orderTypeUuid, order);
   };
 
@@ -88,23 +113,24 @@ const GeneralOrderType: React.FC<GeneralOrderTypeProps> = ({
     return null;
   }
 
+  const orderTypeDisplay = label ? t(label, { defaultValue: label }) : (orderType?.display ?? t('order', 'Order'));
+
   return (
-    <Tile
-      className={classNames(isTablet ? styles.tabletTile : styles.desktopTile, { [styles.collapsedTile]: !isExpanded })}
-    >
+    <Tile className={classNames(styles.desktopTile, { [styles.collapsedTile]: !isExpanded })}>
       <div className={styles.container}>
         <div className={styles.iconAndLabel}>
-          <MaybeIcon icon={icon ? icon : 'omrs-icon-generic-order-type'} size={isTablet ? 40 : 24} />
-          <h4 className={styles.heading}>{`${label ? t(label) : orderType?.display} (${orders.length})`}</h4>
+          <MaybeIcon icon={getOrderTypeIcon(icon)} size={24} />
+          <h4 className={styles.heading}>{`${orderTypeDisplay} (${orders.length})`}</h4>
         </div>
         <div className={styles.buttonContainer}>
           <Button
             className={styles.addButton}
             kind="ghost"
             renderIcon={(props: ComponentProps<typeof AddIcon>) => <AddIcon size={16} {...props} />}
-            iconDescription="Add medication"
+            iconDescription={t('addOrder', 'Add order')}
             onClick={openConceptSearch}
-            size={isTablet ? 'md' : 'sm'}
+            disabled={!canCreateOrders}
+            size="sm"
           >
             {t('add', 'Add')}
           </Button>

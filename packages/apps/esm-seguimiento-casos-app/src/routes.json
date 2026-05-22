@@ -1,0 +1,87 @@
+{
+  "$schema": "https://json.openmrs.org/routes.schema.json",
+  "backendDependencies": {
+    "webservices.rest": ">=2.2.0"
+  },
+  "extensions": [
+    {
+      "name": "case-monitoring-encounter-link",
+      "component": "caseEncounterDashboardLink",
+      "slot": "patient-chart-dashboard-slot",
+      "order": 14,
+      "meta": {
+        "columns": 1,
+        "columnSpan": 1,
+        "slot": "patient-chart-case-encounter-slot",
+        "title": "caseMonitoringEncounters",
+        "path": "seguimiento-casos",
+        "layoutMode": "anchored"
+      }
+    },
+    {
+      "name": "case-monitoring-encounter-table",
+      "slot": "patient-chart-case-encounter-slot",
+      "component": "caseEncounterTable",
+      "order": 0,
+      "online": true,
+      "offline": false
+    },
+    {
+      "name": "missed-follow-up-dashboard-link",
+      "component": "missedFollowUpDashboardLink",
+      "slot": "patient-chart-dashboard-slot",
+      "order": 15,
+      "meta": {
+        "columns": 1,
+        "columnSpan": 1,
+        "slot": "patient-chart-missed-follow-up-slot",
+        "title": "missedFollowUp",
+        "path": "perdida-seguimiento",
+        "layoutMode": "anchored"
+      }
+    },
+    {
+      "name": "missed-follow-up-dashboard",
+      "slot": "patient-chart-missed-follow-up-slot",
+      "component": "missedFollowUpDashboard",
+      "order": 0,
+      "online": true,
+      "offline": false
+    },
+    {
+      "name": "case-monitoring-dashboard-link",
+      "component": "caseManagementDashboardLink",
+      "slot": "homepage-dashboard-slot",
+      "meta": {
+        "name": "case-monitoring",
+        "title": "caseMonitoring",
+        "slot": "case-management-dashboard-slot",
+        "path": "/seguimiento/casos"
+      },
+      "order": 70
+    },
+    {
+      "name": "case-monitoring-wrap-component-view",
+      "slot": "case-management-dashboard-slot",
+      "component": "wrapComponent",
+      "order": 2,
+      "online": true,
+      "offline": false
+    }
+  ],
+  "modals": [],
+  "workspaces": [
+    {
+      "name": "case-management-form",
+      "component": "caseManagementForm",
+      "title": "Formulario de seguimiento de casos",
+      "type": "form"
+    },
+    {
+      "name": "end-relationship-form",
+      "component": "endRelationshipWorkspace",
+      "title": "Finalizar seguimiento",
+      "type": "form"
+    }
+  ]
+}

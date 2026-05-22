@@ -8,7 +8,6 @@ export type {
 } from './clinical/anamnesis/anamnesis';
 // Clinical domains
 export {
-  ANAMNESIS_DEFAULT_CONCEPT_UUIDS,
   getAnamnesisObsValue,
   hasAnamnesisData,
   mapEncounterToAnamnesisEntry,

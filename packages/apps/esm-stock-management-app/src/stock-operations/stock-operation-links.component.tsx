@@ -4,8 +4,8 @@ import { type StockOperationDTO } from '../core/api/types/stockOperation/StockOp
 import { OperationType, type StockOperationType } from '../core/api/types/stockOperation/StockOperationType';
 import { translateStockOperationType } from '../core/utils/translationUtils';
 import useStockOperationLinks from './stock-operations-forms/hooks/useStockOperationLinks';
-import styles from './stock-operations-table.scss';
 import StockOperationRelatedLink from './stock-operations-forms/stock-operation-related-link.component';
+import styles from './stock-operations-table.scss';
 
 type Props = {
   stockOperation: StockOperationDTO;

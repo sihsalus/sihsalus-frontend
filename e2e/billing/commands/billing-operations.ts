@@ -1,5 +1,5 @@
 import { type APIRequestContext } from '@playwright/test';
-import type { BillableService, Bill } from './types';
+import type { Bill, BillableService } from './types';
 
 interface PaymentMode {
   uuid: string;

@@ -21,5 +21,6 @@
   "offlinePatientsTableSearchPlaceholder": "Buscar en esta lista",
   "offlineToggle": "Interruptor sin internet",
   "searchForAForm": "Buscar un formulario",
-  "searchThisList": "Buscar en esta lista"
+  "searchThisList": "Buscar en esta lista",
+  "unknown": "Unknown"
 }

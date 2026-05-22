@@ -1,5 +1,5 @@
-import React from 'react';
 import { Button } from '@carbon/react';
+import React from 'react';
 import { useTranslation } from 'react-i18next';
 import { type StockItemDTO } from '../../core/api/types/stockItem/StockItem';
 import { launchAddOrEditStockItemWorkspace } from '../stock-item.utils';

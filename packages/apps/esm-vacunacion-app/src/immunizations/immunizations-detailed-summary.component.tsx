@@ -30,11 +30,11 @@ import {
   PatientChartPagination,
   useVisitOrOfflineVisit,
 } from '@openmrs/esm-patient-common-lib';
-import { orderBy } from 'lodash-es';
 import React, { type ComponentProps, useCallback, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import type { ImmunizationConfigObject } from '../config-schema';
 import { useImmunizations } from '../hooks/useImmunizations';
+import type { ImmunizationGrouped } from '../types';
 import SequenceTable from './components/immunizations-sequence-table.component';
 import styles from './immunizations-detailed-summary.scss';
 import { immunizationFormSub, latestFirst, linkConfiguredSequences } from './utils';
@@ -71,21 +71,16 @@ const ImmunizationsDetailedSummary: React.FC<ImmunizationsDetailedSummaryProps> 
   }, [visitContext, launchStartVisitPrompt]);
 
   const sortedImmunizations = useMemo(() => {
-    return orderBy(
-      consolidatedImmunizations,
-      [
-        (immunization) => {
-          const latest = immunization.existingDoses?.length
-            ? immunization.existingDoses.reduce((latest, current) => {
-                return new Date(current.occurrenceDateTime) > new Date(latest.occurrenceDateTime) ? current : latest;
-              }, immunization.existingDoses[0])
-            : null;
-
-          return latest ? new Date(latest.occurrenceDateTime).getTime() : 0;
-        },
-      ],
-      ['desc'],
-    );
+    return consolidatedImmunizations.slice().sort((a, b) => {
+      const latestTime = (imm: ImmunizationGrouped) => {
+        if (!imm.existingDoses?.length) return 0;
+        const latest = imm.existingDoses.reduce((prev, cur) =>
+          new Date(cur.occurrenceDateTime) > new Date(prev.occurrenceDateTime) ? cur : prev,
+        );
+        return new Date(latest.occurrenceDateTime).getTime();
+      };
+      return latestTime(b) - latestTime(a);
+    });
   }, [consolidatedImmunizations]);
 
   const tableHeader = useMemo(

@@ -1,7 +1,7 @@
+import { Button, FileUploader, Form, ModalBody, ModalFooter, ModalHeader } from '@carbon/react';
+import { getCoreTranslation, showSnackbar } from '@openmrs/esm-framework';
 import React, { useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Button, Form, ModalBody, ModalFooter, ModalHeader, FileUploader } from '@carbon/react';
-import { getCoreTranslation, showSnackbar } from '@openmrs/esm-framework';
 import { uploadStockItems } from './stock-items-bulk-import.resource';
 
 export interface ImportBulkStockItemsModalProps {
@@ -10,7 +10,7 @@ export interface ImportBulkStockItemsModalProps {
 
 const ImportBulkStockItemsModal: React.FC<ImportBulkStockItemsModalProps> = ({ closeModal }) => {
   const { t } = useTranslation();
-  const [selectedFile, setSelectedFile] = useState<any>();
+  const [selectedFile, setSelectedFile] = useState<File | undefined>();
 
   const onConfirmUpload = () => {
     if (!selectedFile) {
@@ -18,11 +18,8 @@ const ImportBulkStockItemsModal: React.FC<ImportBulkStockItemsModalProps> = ({ c
     }
 
     const formData = new FormData();
-
-    if (selectedFile) {
-      formData.append('file', selectedFile, 'Import_Stock_Items.csv');
-      formData.append('hasHeader', 'true');
-    }
+    formData.append('file', selectedFile, 'Import_Stock_Items.csv');
+    formData.append('hasHeader', 'true');
 
     uploadStockItems(formData).then(
       () => {
@@ -47,8 +44,6 @@ const ImportBulkStockItemsModal: React.FC<ImportBulkStockItemsModalProps> = ({ c
     const file = event?.target?.files?.[0];
     if (file) {
       setSelectedFile(file);
-    } else {
-      event.preventDefault();
     }
   };
 

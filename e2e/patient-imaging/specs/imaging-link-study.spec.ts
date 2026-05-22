@@ -1,16 +1,16 @@
-import { expect, request } from '@playwright/test';
+import { expect } from '@playwright/test';
 import {
-  getStudiesByPatient,
-  getStudiesByConfig,
   assignStudy,
-  getOrthancConfigurations,
-  uploadStudies,
+  cleanOrthanc,
   deleteStudy,
+  getOrthancConfigurations,
+  getStudiesByConfig,
+  getStudiesByPatient,
+  getStudyInstances,
+  getStudySeries,
   linkStudies,
   previewInstance,
-  cleanOrthanc,
-  getStudySeries,
-  getStudyInstances,
+  uploadStudies,
 } from '../commands/imaging-operations';
 import { test } from '../core';
 
@@ -102,7 +102,7 @@ test.describe('ImagingDetailedSummary - Link Study workflow', () => {
 
     await linkStudies(request, orthancConfiguration, 'all');
     const allStudies = await getStudiesByConfig(api, orthancConfiguration, patientUuid);
-    if (allStudies.length == 0) {
+    if (allStudies.length === 0) {
       await expect(page.getByText(/No studies found/i).first()).toBeVisible();
     }
     // Fetch all available studies for this patient config
@@ -235,7 +235,7 @@ test.describe('ImagingDetailedSummary - Link Study workflow', () => {
     // pick instance from the series
     let foundValidModality = false;
     for (const s of series) {
-      if (s.modality != 'RTSTRUCT' && s.modality != 'RTDOSE') {
+      if (s.modality !== 'RTSTRUCT' && s.modality !== 'RTDOSE') {
         instances = await getStudyInstances(api, studyToAssign.id, s.seriesInstanceUID);
         foundValidModality = true;
         break;

@@ -53,6 +53,10 @@ export const scheduledOverview = getAsyncLifecycle(() => import('./components/sc
 
 export const runReport = getAsyncLifecycle(() => import('./components/run-report/run-report-form.component'), options);
 
+export const reportsAppMenuLink = getAsyncLifecycle(() => import('./reports-app-menu-link.component'), options);
+
+export const reportsAppMenuItem = getAsyncLifecycle(() => import('./reports-app-menu-item.component'), options);
+
 export const cancelReportModal = getAsyncLifecycle(
   () => import('./components/run-report/cancel-report-modal.component'),
   options,

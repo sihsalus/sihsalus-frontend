@@ -121,7 +121,7 @@ const BillableServices = () => {
       goTo(1);
       setSearchString(e.target.value);
     },
-    [goTo, setSearchString],
+    [goTo],
   );
 
   const handleEditService = useCallback(
@@ -180,41 +180,37 @@ const BillableServices = () => {
             <Table {...getTableProps()} aria-label={t('serviceList', 'Service list')}>
               <TableHead>
                 <TableRow>
-                  {headers.map((header) => (
-                    <TableHeader
-                      {...getHeaderProps({
-                        header,
-                      })}
-                      key={header.key}
-                    >
-                      {header.header}
-                    </TableHeader>
-                  ))}
+                  {headers.map((header) => {
+                    const { key, ...headerProps } = getHeaderProps({ header });
+                    return (
+                      <TableHeader key={key} {...headerProps}>
+                        {header.header}
+                      </TableHeader>
+                    );
+                  })}
                   <TableHeader aria-label={getCoreTranslation('actions')} />
                 </TableRow>
               </TableHead>
               <TableBody>
-                {rows.map((row) => (
-                  <TableRow
-                    key={row.id}
-                    {...getRowProps({
-                      row,
-                    })}
-                  >
-                    {row.cells.map((cell) => (
-                      <TableCell key={cell.id}>{cell.value}</TableCell>
-                    ))}
-                    <TableCell className="cds--table-column-menu">
-                      <OverflowMenu size="lg" flipped>
-                        <OverflowMenuItem
-                          className={styles.menuItem}
-                          itemText={t('editBillableService', 'Edit billable service')}
-                          onClick={() => handleEditService(results.find((service) => service.uuid === row.id))}
-                        />
-                      </OverflowMenu>
-                    </TableCell>
-                  </TableRow>
-                ))}
+                {rows.map((row) => {
+                  const { key, ...rowProps } = getRowProps({ row });
+                  return (
+                    <TableRow key={key} {...rowProps}>
+                      {row.cells.map((cell) => (
+                        <TableCell key={cell.id}>{cell.value}</TableCell>
+                      ))}
+                      <TableCell className="cds--table-column-menu">
+                        <OverflowMenu size="lg" flipped>
+                          <OverflowMenuItem
+                            className={styles.menuItem}
+                            itemText={t('editBillableService', 'Edit billable service')}
+                            onClick={() => handleEditService(results.find((service) => service.uuid === row.id))}
+                          />
+                        </OverflowMenu>
+                      </TableCell>
+                    </TableRow>
+                  );
+                })}
               </TableBody>
             </Table>
           </TableContainer>

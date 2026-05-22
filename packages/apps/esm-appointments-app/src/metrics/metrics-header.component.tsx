@@ -1,6 +1,6 @@
 import { Button } from '@carbon/react';
 import { Calendar, Hospital } from '@carbon/react/icons';
-import { ExtensionSlot, isDesktop, launchWorkspace, navigate, useLayoutType } from '@openmrs/esm-framework';
+import { ExtensionSlot, isDesktop, launchWorkspace2, navigate, useLayoutType } from '@openmrs/esm-framework';
 import dayjs from 'dayjs';
 import isToday from 'dayjs/plugin/isToday';
 import React, { useContext } from 'react';
@@ -26,7 +26,7 @@ const MetricsHeader: React.FC = () => {
       mutate: () => {}, // TODO get this to mutate properly
     };
 
-    launchWorkspace('appointments-form-workspace', { ...props });
+    launchWorkspace2('appointments-form-workspace', { ...props });
   };
 
   return (

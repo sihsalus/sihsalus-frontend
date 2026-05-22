@@ -1,7 +1,7 @@
-import { type APIRequestContext, expect } from '@playwright/test';
-import { type Encounter } from './types';
 import { type Visit } from '@openmrs/esm-framework';
+import { type APIRequestContext, expect } from '@playwright/test';
 import dayjs from 'dayjs';
+import { type Encounter } from './types';
 
 export interface Observation {
   uuid: string;

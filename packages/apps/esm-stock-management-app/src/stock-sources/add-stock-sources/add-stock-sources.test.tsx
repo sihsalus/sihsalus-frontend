@@ -1,20 +1,19 @@
-import React from 'react';
-import userEvent from '@testing-library/user-event';
-import { render, screen } from '@testing-library/react';
 import { type FetchResponse, useConfig } from '@openmrs/esm-framework';
+import { render, screen } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
 import { type StockSource } from '../../core/api/types/stockOperation/StockSource';
 import { createOrUpdateStockSource } from '../stock-sources.resource';
 import StockSourcesAddOrUpdate from './add-stock-sources.workspace';
 
-const mockCreateOrUpdateStockSource = jest.mocked(createOrUpdateStockSource);
-const mockUseConfig = jest.mocked(useConfig);
+const mockCreateOrUpdateStockSource = vi.mocked(createOrUpdateStockSource);
+const mockUseConfig = vi.mocked(useConfig);
 
-jest.mock('../stock-sources.resource', () => ({
-  createOrUpdateStockSource: jest.fn(),
+vi.mock('../stock-sources.resource', () => ({
+  createOrUpdateStockSource: vi.fn(),
 }));
 
-jest.mock('../../stock-lookups/stock-lookups.resource', () => ({
-  useConcept: jest.fn(() => ({
+vi.mock('../../stock-lookups/stock-lookups.resource', () => ({
+  useConcept: vi.fn(() => ({
     items: {
       answers: [
         { uuid: 'type1', display: 'Type 1' },
@@ -32,10 +31,10 @@ describe('StockSourcesAddOrUpdate', () => {
   it('renders correctly without model prop', () => {
     render(
       <StockSourcesAddOrUpdate
-        closeWorkspace={jest.fn()}
-        setTitle={jest.fn()}
-        closeWorkspaceWithSavedChanges={jest.fn()}
-        promptBeforeClosing={jest.fn()}
+        closeWorkspace={vi.fn()}
+        setTitle={vi.fn()}
+        closeWorkspaceWithSavedChanges={vi.fn()}
+        promptBeforeClosing={vi.fn()}
       />,
     );
     expect(screen.getByLabelText(/full name/i)).toBeInTheDocument();
@@ -96,10 +95,10 @@ describe('StockSourcesAddOrUpdate', () => {
     render(
       <StockSourcesAddOrUpdate
         model={model}
-        closeWorkspace={jest.fn()}
-        setTitle={jest.fn()}
-        closeWorkspaceWithSavedChanges={jest.fn()}
-        promptBeforeClosing={jest.fn()}
+        closeWorkspace={vi.fn()}
+        setTitle={vi.fn()}
+        closeWorkspaceWithSavedChanges={vi.fn()}
+        promptBeforeClosing={vi.fn()}
       />,
     );
     expect(screen.getByLabelText(/full name/i)).toHaveValue('Test Source');
@@ -111,10 +110,10 @@ describe('StockSourcesAddOrUpdate', () => {
     const user = userEvent.setup();
     render(
       <StockSourcesAddOrUpdate
-        closeWorkspace={jest.fn()}
-        setTitle={jest.fn()}
-        closeWorkspaceWithSavedChanges={jest.fn()}
-        promptBeforeClosing={jest.fn()}
+        closeWorkspace={vi.fn()}
+        setTitle={vi.fn()}
+        closeWorkspaceWithSavedChanges={vi.fn()}
+        promptBeforeClosing={vi.fn()}
       />,
     );
 
@@ -136,10 +135,10 @@ describe('StockSourcesAddOrUpdate', () => {
 
     render(
       <StockSourcesAddOrUpdate
-        closeWorkspace={jest.fn()}
-        setTitle={jest.fn()}
-        closeWorkspaceWithSavedChanges={jest.fn()}
-        promptBeforeClosing={jest.fn()}
+        closeWorkspace={vi.fn()}
+        setTitle={vi.fn()}
+        closeWorkspaceWithSavedChanges={vi.fn()}
+        promptBeforeClosing={vi.fn()}
       />,
     );
 
@@ -160,10 +159,10 @@ describe('StockSourcesAddOrUpdate', () => {
 
     render(
       <StockSourcesAddOrUpdate
-        closeWorkspace={jest.fn()}
-        setTitle={jest.fn()}
-        closeWorkspaceWithSavedChanges={jest.fn()}
-        promptBeforeClosing={jest.fn()}
+        closeWorkspace={vi.fn()}
+        setTitle={vi.fn()}
+        closeWorkspaceWithSavedChanges={vi.fn()}
+        promptBeforeClosing={vi.fn()}
       />,
     );
 
@@ -176,10 +175,10 @@ describe('StockSourcesAddOrUpdate', () => {
 
     render(
       <StockSourcesAddOrUpdate
-        closeWorkspace={jest.fn()}
-        setTitle={jest.fn()}
-        closeWorkspaceWithSavedChanges={jest.fn()}
-        promptBeforeClosing={jest.fn()}
+        closeWorkspace={vi.fn()}
+        setTitle={vi.fn()}
+        closeWorkspaceWithSavedChanges={vi.fn()}
+        promptBeforeClosing={vi.fn()}
       />,
     );
 
@@ -190,10 +189,10 @@ describe('StockSourcesAddOrUpdate', () => {
     const user = userEvent.setup();
     render(
       <StockSourcesAddOrUpdate
-        closeWorkspace={jest.fn()}
-        setTitle={jest.fn()}
-        closeWorkspaceWithSavedChanges={jest.fn()}
-        promptBeforeClosing={jest.fn()}
+        closeWorkspace={vi.fn()}
+        setTitle={vi.fn()}
+        closeWorkspaceWithSavedChanges={vi.fn()}
+        promptBeforeClosing={vi.fn()}
       />,
     );
 

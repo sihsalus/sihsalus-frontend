@@ -15,20 +15,14 @@ import {
   Tile,
 } from '@carbon/react';
 import { Add, Edit, TrashCan } from '@carbon/react/icons';
-import {
-  ConfigurableLink,
-  ErrorState,
-  isDesktop,
-  launchWorkspace,
-  useLayoutType,
-  usePagination,
-} from '@openmrs/esm-framework';
+import { ConfigurableLink, ErrorState, isDesktop, useLayoutType, usePagination } from '@openmrs/esm-framework';
 import { CardHeader, EmptyDataIllustration, usePaginationInfo } from '@openmrs/esm-patient-common-lib';
 import React, { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import useContacts from '../hooks/useContacts';
 import { deleteRelationship } from '../relationships/relationship.resources';
+import { launchFichaFamiliarWorkspace } from '../workspace-utils';
 
 import styles from './contact-list.scss';
 import HIVStatus from './hiv-status.component';
@@ -105,16 +99,57 @@ const ContactList: React.FC<ContactListProps> = ({ patientUuid }) => {
     { header: t('actions', 'Actions'), key: 'actions' },
   ];
 
+  const translateGender = (gender?: string | null) => {
+    switch (gender?.toUpperCase()) {
+      case 'M':
+      case 'MALE':
+        return t('male', 'Masculino');
+      case 'F':
+      case 'FEMALE':
+        return t('female', 'Femenino');
+      default:
+        return gender ?? '--';
+    }
+  };
+
+  const translateContactValue = (value?: string | null) => {
+    switch (value?.toLowerCase()) {
+      case 'unknown':
+        return t('hivStatusUnknown', 'Desconocido');
+      case 'positive':
+        return t('hivStatusPositive', 'Positivo');
+      case 'negative':
+        return t('hivStatusNegative', 'Negativo');
+      case 'yes':
+        return t('yes', 'Sí');
+      case 'no':
+        return t('no', 'No');
+      case 'dual referral':
+        return t('pnsDualNotification', 'Notificación dual');
+      case 'provider referral':
+        return t('pnsProviderNotification', 'Notificación por el proveedor');
+      case 'contract referral':
+        return t('pnsContractReferral', 'Referencia por contrato');
+      case 'passive referral':
+        return t('pnsPatientNotification', 'Notificación por el paciente');
+      case 'declined to answer':
+        return t('declinedToAnswer', 'Prefiere no responder');
+      default:
+        return value ?? '--';
+    }
+  };
+
   const handleAddContact = () => {
-    launchWorkspace('contact-list-form', {
+    launchFichaFamiliarWorkspace('contact-list-form', {
       workspaceTitle,
       patientUuid,
     });
   };
 
   const handleEditRelationship = (relationShipUuid: string) => {
-    launchWorkspace('relationship-update-form', {
+    launchFichaFamiliarWorkspace('relationship-update-form', {
       relationShipUuid,
+      patientUuid,
     });
   };
 
@@ -131,10 +166,10 @@ const ContactList: React.FC<ContactListProps> = ({ patientUuid }) => {
             {relation.name}
           </ConfigurableLink>
         ),
-        contactCreated: relation.personContactCreated ?? 'No',
+        contactCreated: translateContactValue(relation.personContactCreated ?? 'No'),
         relation: relation?.relationshipType,
         age: relation?.relativeAge ?? '--',
-        sex: relation.gender,
+        sex: translateGender(relation.gender),
         alive: relation?.dead ? t('dead', 'Dead') : t('alive', 'Alive'),
         contact: relation.contact ?? '--',
         hivStatus: (
@@ -143,13 +178,17 @@ const ContactList: React.FC<ContactListProps> = ({ patientUuid }) => {
           </SensitiveDataReveal>
         ),
         baseLineivStatus: relation.baselineHIVStatus ? (
-          <SensitiveDataReveal>{relation.baselineHIVStatus}</SensitiveDataReveal>
+          <SensitiveDataReveal>{translateContactValue(relation.baselineHIVStatus)}</SensitiveDataReveal>
         ) : (
           '--'
         ),
-        livingWithClient: relation.livingWithClient ?? '--',
-        pnsAproach: relation.pnsAproach ?? '--',
-        ipvOutcome: relation.ipvOutcome ? <SensitiveDataReveal>{relation.ipvOutcome}</SensitiveDataReveal> : '--',
+        livingWithClient: translateContactValue(relation.livingWithClient),
+        pnsAproach: translateContactValue(relation.pnsAproach),
+        ipvOutcome: relation.ipvOutcome ? (
+          <SensitiveDataReveal>{translateContactValue(relation.ipvOutcome)}</SensitiveDataReveal>
+        ) : (
+          '--'
+        ),
         dataConsent:
           relation.dataConsent === null ? (
             <Tag type="gray" size="sm">
@@ -237,6 +276,7 @@ const ContactList: React.FC<ContactListProps> = ({ patientUuid }) => {
                 <TableRow>
                   {headers.map((header) => (
                     <TableHeader
+                      key={header.key}
                       {...getHeaderProps({
                         header,
                         isSortable: header.isSortable,
@@ -269,6 +309,14 @@ const ContactList: React.FC<ContactListProps> = ({ patientUuid }) => {
           goTo(page);
           setPageSize(pageSize);
         }}
+        backwardText={t('previousPage', 'Página anterior')}
+        forwardText={t('nextPage', 'Página siguiente')}
+        itemRangeText={(min, max, total) =>
+          t('itemRangeText', '{{min}}-{{max}} de {{total}} elementos', { min, max, total })
+        }
+        itemsPerPageText={t('itemsPerPage', 'Elementos por página:')}
+        pageNumberText={t('pageNumber', 'Página')}
+        pageRangeText={(_, total) => t('paginationPageText', 'de {{count}} páginas', { count: total })}
       />
     </div>
   );

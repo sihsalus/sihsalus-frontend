@@ -16,9 +16,10 @@
   ],
   "extensions": [
     {
-      "name": "system-administration-cohort-builder-card-link",
-      "slot": "system-admin-page-card-link-slot",
-      "component": "cohortBuilderAdminPageCardLink",
+      "name": "cohort-builder-app-menu-item",
+      "slot": "app-menu-item-slot",
+      "component": "cohortBuilderAppMenuItem",
+      "order": 40,
       "online": true,
       "offline": true
     }

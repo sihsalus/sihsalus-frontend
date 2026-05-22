@@ -1,5 +1,5 @@
-import { type APIRequestContext, expect } from '@playwright/test';
 import { type Visit } from '@openmrs/esm-framework';
+import { type APIRequestContext, expect } from '@playwright/test';
 import { type Encounter } from './types';
 
 export interface Observation {

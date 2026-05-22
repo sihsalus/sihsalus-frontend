@@ -25,6 +25,8 @@
   "missing": "Em falta",
   "moduleName": "Nome do módulo",
   "modulesWithMissingDependenciesWarning": "Alguns módulos têm dependências de back-end não resolvidas",
+  "missingBackendDependenciesMessage": "{{missingCount}} módulo(s) backend estão em falta e {{versionMismatchCount}} têm versões incompatíveis. Consulte a aba Módulos backend nas Ferramentas do implementador para mais detalhes.",
+  "none": "Nenhum",
   "noConceptsFoundText": "No matching concepts found",
   "noPersonAttributeFoundText": "No matching person attribute types found",
   "numberValidationMessage": "Value must be a number",
@@ -42,5 +44,6 @@
   "updateConfig": "Atualizar configurações",
   "uuidValidationMessage": "Value must be a valid UUID string",
   "value": "Valor",
-  "viewModules": "Visualizar módulos"
+  "viewModules": "Visualizar módulos",
+  "examples": "Exemplos"
 }

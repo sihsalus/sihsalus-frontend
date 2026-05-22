@@ -2,39 +2,39 @@ import { useAppContext } from '@openmrs/esm-framework';
 import { screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { mockInpatientRequestAlice, mockLocationInpatientWard, mockPatientAlice } from '__mocks__';
-import { renderWithSwr } from 'tools';
+import { renderWithSwr } from 'test-utils';
 import { mockWardViewContext } from '../../../mock';
 import useWardLocation from '../../hooks/useWardLocation';
 import type { WardPatient, WardViewContext } from '../../types';
 import { useCreateEncounter } from '../../ward.resource';
 import CancelAdmissionRequestWorkspace from './cancel-admission-request.workspace';
 
-jest.mock('../../hooks/useWardLocation', () => jest.fn());
+vi.mock('../../hooks/useWardLocation', () => ({ default: vi.fn() }));
 
-jest.mock('../../hooks/useInpatientRequest', () => ({
-  useInpatientRequest: jest.fn(),
+vi.mock('../../hooks/useInpatientRequest', () => ({
+  useInpatientRequest: vi.fn(),
 }));
 
-jest.mock('../../hooks/useWardPatientGrouping', () => ({
-  useWardPatientGrouping: jest.fn(),
+vi.mock('../../hooks/useWardPatientGrouping', () => ({
+  useWardPatientGrouping: vi.fn(),
 }));
 
-jest.mock('../../hooks/useInpatientAdmission', () => ({
-  useInpatientAdmission: jest.fn(),
+vi.mock('../../hooks/useInpatientAdmission', () => ({
+  useInpatientAdmission: vi.fn(),
 }));
 
-jest.mock('../../ward.resource', () => ({
-  useCreateEncounter: jest.fn(),
+vi.mock('../../ward.resource', () => ({
+  useCreateEncounter: vi.fn(),
 }));
 
-const mockedUseWardLocation = jest.mocked(useWardLocation);
-const mockedCreateEncounter = jest.fn().mockResolvedValue({
+const mockedUseWardLocation = vi.mocked(useWardLocation);
+const mockedCreateEncounter = vi.fn().mockResolvedValue({
   ok: true,
   data: {
     uuid: 'encounter-uuid',
   },
 });
-const mockedUseCreateEncounter = jest.mocked(useCreateEncounter);
+const mockedUseCreateEncounter = vi.mocked(useCreateEncounter);
 mockedUseCreateEncounter.mockReturnValue({
   createEncounter: mockedCreateEncounter,
   isLoadingEmrConfiguration: false,
@@ -57,13 +57,13 @@ const mockWardPatientAlice: WardPatient = {
   inpatientRequest: mockInpatientRequestAlice,
 };
 
-jest.mocked(useAppContext<WardViewContext>).mockReturnValue(mockWardViewContext);
+vi.mocked(useAppContext<WardViewContext>).mockReturnValue(mockWardViewContext);
 
 function renderCancelAdmissionRequestWorkspace() {
   renderWithSwr(
     <CancelAdmissionRequestWorkspace
-      launchChildWorkspace={jest.fn()}
-      closeWorkspace={jest.fn()}
+      launchChildWorkspace={vi.fn()}
+      closeWorkspace={vi.fn()}
       workspaceProps={{
         wardPatient: mockWardPatientAlice,
       }}

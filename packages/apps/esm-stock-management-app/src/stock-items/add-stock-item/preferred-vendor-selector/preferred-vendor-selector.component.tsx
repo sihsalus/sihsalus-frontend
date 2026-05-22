@@ -1,9 +1,9 @@
-import React, { type ReactNode } from 'react';
-import { type Control, Controller, type FieldValues } from 'react-hook-form';
 import { ComboBox, TextInputSkeleton } from '@carbon/react';
-import { useStockSources } from '../../../stock-sources/stock-sources.resource';
+import { type ReactNode } from 'react';
+import { type Control, Controller, type FieldValues } from 'react-hook-form';
 import { ResourceRepresentation } from '../../../core/api/api';
 import { type StockSource } from '../../../core/api/types/stockOperation/StockSource';
+import { useStockSources } from '../../../stock-sources/stock-sources.resource';
 
 interface PreferredVendorSelectorProps<T> {
   onPreferredVendorChange?: (unit: StockSource | null | undefined) => void;

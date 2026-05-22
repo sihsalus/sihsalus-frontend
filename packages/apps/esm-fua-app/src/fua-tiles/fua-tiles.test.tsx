@@ -8,11 +8,11 @@ import CompletedFuaRequestsTile from './completed-fua-requests-tile.component';
 import EnviadoFuaRequestsTile from './enviado-fua-requests-tile.component';
 import InProgressFuaRequestsTile from './in-progress-fua-requests-tile.component';
 
-jest.mock('../hooks/useFuaRequests');
-jest.mock('../hooks/useVisit');
+vi.mock('../hooks/useFuaRequests');
+vi.mock('../hooks/useVisit');
 
-const mockUseFuaRequests = useFuaRequests as jest.MockedFunction<typeof useFuaRequests>;
-const mockUseVisits = useVisits as jest.MockedFunction<typeof useVisits>;
+const mockUseFuaRequests = useFuaRequests as vi.MockedFunction<typeof useFuaRequests>;
+const mockUseVisits = useVisits as vi.MockedFunction<typeof useVisits>;
 
 const makeMockOrders = (n: number) =>
   Array.from({ length: n }, (_, i) => ({
@@ -32,7 +32,7 @@ describe('AllFuaRequestsTile', () => {
       fuaOrders: makeMockOrders(7),
       isLoading: false,
       isError: null,
-      mutate: jest.fn(),
+      mutate: vi.fn(),
       isValidating: false,
     });
     render(<AllFuaRequestsTile />);
@@ -51,7 +51,7 @@ describe('InProgressFuaRequestsTile', () => {
       })),
       isLoading: false,
       isError: null,
-      mutate: jest.fn(),
+      mutate: vi.fn(),
       isValidating: false,
     });
     render(<InProgressFuaRequestsTile />);
@@ -64,7 +64,7 @@ describe('InProgressFuaRequestsTile', () => {
       visits: [],
       isLoading: false,
       isError: null,
-      mutate: jest.fn(),
+      mutate: vi.fn(),
       isValidating: false,
     });
     render(<InProgressFuaRequestsTile />);
@@ -78,7 +78,7 @@ describe('CompletedFuaRequestsTile', () => {
       fuaOrders: makeMockOrders(12),
       isLoading: false,
       isError: null,
-      mutate: jest.fn(),
+      mutate: vi.fn(),
       isValidating: false,
     });
     render(<CompletedFuaRequestsTile />);
@@ -92,7 +92,7 @@ describe('EnviadoFuaRequestsTile', () => {
       fuaOrders: makeMockOrders(5),
       isLoading: false,
       isError: null,
-      mutate: jest.fn(),
+      mutate: vi.fn(),
       isValidating: false,
     });
     render(<EnviadoFuaRequestsTile />);
@@ -105,7 +105,7 @@ describe('EnviadoFuaRequestsTile', () => {
       fuaOrders: [],
       isLoading: false,
       isError: null,
-      mutate: jest.fn(),
+      mutate: vi.fn(),
       isValidating: false,
     });
     render(<EnviadoFuaRequestsTile />);

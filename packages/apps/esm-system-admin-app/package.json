@@ -1,6 +1,6 @@
 {
   "name": "@sihsalus/esm-system-admin-app",
-  "version": "4.3.0",
+  "version": "1.0.0-alpha",
   "license": "MPL-2.0",
   "description": "System admin frontend module for O3",
   "browser": "dist/openmrs-esm-system-admin-app.js",
@@ -13,8 +13,8 @@
     "analyze": "rspack --mode=production --env analyze=true",
     "lint": "node ../../tooling/scripts/run-biome.js lint .",
     "typescript": "tsc",
-    "test": "jest --config jest.config.js --verbose false --passWithNoTests --color",
-    "test:watch": "cross-env TZ=UTC jest --watch --config jest.config.js --color",
+    "test": "vitest run --passWithNoTests",
+    "test:watch": "vitest watch",
     "extract-translations": "i18next 'src/**/*.component.tsx' --config ../../tooling/scripts/i18next-parser.config.js"
   },
   "browserslist": [
@@ -42,7 +42,7 @@
     "swr": "^2.2.5"
   },
   "peerDependencies": {
-    "@openmrs/esm-framework": "9.x",
+    "@openmrs/esm-framework": "*",
     "dayjs": "1.x",
     "react": "18.x",
     "react-dom": "18.x",
@@ -52,8 +52,8 @@
     "swr": "2.x"
   },
   "devDependencies": {
-    "jest": "^29.7.0",
     "openmrs": "*",
-    "typescript": "^6.0.0"
+    "typescript": "6.0.3",
+    "vitest": "^4.1.0"
   }
 }

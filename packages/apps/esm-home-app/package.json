@@ -1,7 +1,7 @@
 {
   "name": "@sihsalus/esm-home-app",
-  "version": "10.0.2",
-  "description": "Homepage microfrontend for the OpenMRS SPA",
+  "version": "1.0.0-alpha",
+  "description": "Homepage microfrontend for the Sihsalus SPA",
   "browser": "dist/openmrs-esm-home-app.js",
   "main": "src/index.ts",
   "license": "MPL-2.0",
@@ -9,15 +9,15 @@
   "scripts": {
     "start": "openmrs develop",
     "serve": "rspack serve --mode=development",
-    "debug": "npm run serve",
+    "debug": "yarn serve",
     "build": "rspack --mode production",
     "analyze": "rspack --mode=production --env.analyze=true",
     "lint": "node ../../tooling/scripts/run-biome.js lint .",
     "typescript": "tsc",
     "verify": "turbo lint typescript test --color",
-    "extract-translations": "i18next 'src/**/*.{component.tsx,tsx}' 'src/index.ts' --config ../../tooling/scripts/i18next-parser.config.js",
-    "test": "jest --config jest.config.js --verbose false --passWithNoTests",
-    "coverage": "yarn test --coverage"
+    "extract-translations": "i18next 'src/**/*.{ts,tsx}' '!src/**/*.test.{ts,tsx}' --config ../../tooling/scripts/i18next-parser.config.js",
+    "test": "vitest run --passWithNoTests",
+    "coverage": "vitest run --coverage --passWithNoTests"
   },
   "browserslist": [
     "extends browserslist-config-openmrs"
@@ -36,15 +36,15 @@
     "url": "https://github.com/openmrs/openmrs-esm-home/issues"
   },
   "peerDependencies": {
-    "@openmrs/esm-framework": "9.x",
+    "@openmrs/esm-framework": "*",
     "react": "18.x",
     "react-i18next": "16.x",
     "react-router-dom": "6.x",
     "swr": "2.x"
   },
   "devDependencies": {
-    "jest": "^29.7.0",
     "openmrs": "*",
-    "typescript": "^6.0.0"
+    "typescript": "6.0.3",
+    "vitest": "^4.1.0"
   }
 }

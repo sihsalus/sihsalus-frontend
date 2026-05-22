@@ -1,21 +1,21 @@
-import React, { type ChangeEvent, useCallback, useState } from 'react';
-import classNames from 'classnames';
-import { Button, Form, Select, TextInput, SelectItem, ButtonSet, FormGroup, Stack } from '@carbon/react';
-import { useTranslation } from 'react-i18next';
+import { Button, ButtonSet, Form, FormGroup, Select, SelectItem, Stack, TextInput } from '@carbon/react';
 import { Save } from '@carbon/react/icons';
 import {
+  type DefaultWorkspaceProps,
   getCoreTranslation,
   restBaseUrl,
   showSnackbar,
   useConfig,
   useLayoutType,
-  type DefaultWorkspaceProps,
 } from '@openmrs/esm-framework';
-import { useConcept } from '../../stock-lookups/stock-lookups.resource';
-import { type StockSource } from '../../core/api/types/stockOperation/StockSource';
-import { createOrUpdateStockSource } from '../stock-sources.resource';
+import classNames from 'classnames';
+import React, { type ChangeEvent, useCallback, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { type ConfigObject } from '../../config-schema';
+import { type StockSource } from '../../core/api/types/stockOperation/StockSource';
+import { useConcept } from '../../stock-lookups/stock-lookups.resource';
 import { handleMutate } from '../../utils';
+import { createOrUpdateStockSource } from '../stock-sources.resource';
 import styles from './add-stock-sources.scss';
 
 type AddStockSourceProps = DefaultWorkspaceProps & {
@@ -96,7 +96,7 @@ const StockSourcesAddOrUpdate: React.FC<AddStockSourceProps> = ({ model, closeWo
             id="fullname"
             labelText={t('fullName', 'Full name')}
             onChange={onNameChanged}
-            placeholder="e.g National Medical Stores"
+            placeholder={t('sourceNamePlaceholder', 'e.g. CENARES')}
             size="md"
             type="text"
             value={model?.name}
@@ -107,7 +107,7 @@ const StockSourcesAddOrUpdate: React.FC<AddStockSourceProps> = ({ model, closeWo
             id="acronym"
             labelText={t('acronymOrCode', 'Acronym/Code')}
             onChange={onAcronymChanged}
-            placeholder="e.g NMS"
+            placeholder={t('sourceAcronymPlaceholder', 'e.g. DIGEMID')}
             size="md"
             type="text"
             value={model?.acronym}

@@ -2,8 +2,9 @@ import { fetchCurrentPatient } from '@openmrs/esm-framework';
 import { act, render, screen } from '@testing-library/react';
 import useGetPatient from './useGetPatient';
 
-jest.mock('@openmrs/esm-framework', () => ({
-  fetchCurrentPatient: jest.fn(),
+vi.mock('@openmrs/esm-framework', async () => ({
+  ...(await vi.importActual('@openmrs/esm-framework')),
+  fetchCurrentPatient: vi.fn(),
 }));
 
 type Deferred<T> = {
@@ -23,7 +24,7 @@ const createDeferred = <T,>(): Deferred<T> => {
   };
 };
 
-const mockFetchCurrentPatient = fetchCurrentPatient as jest.MockedFunction<typeof fetchCurrentPatient>;
+const mockFetchCurrentPatient = fetchCurrentPatient as vi.MockedFunction<typeof fetchCurrentPatient>;
 
 const TestHarness = ({ patientUuid }: { patientUuid?: string }) => {
   const patient = useGetPatient(patientUuid);
@@ -34,7 +35,7 @@ const TestHarness = ({ patientUuid }: { patientUuid?: string }) => {
 
 describe('useGetPatient', () => {
   beforeEach(() => {
-    jest.clearAllMocks();
+    vi.clearAllMocks();
   });
 
   it('ignores stale responses after patientUuid changes', async () => {

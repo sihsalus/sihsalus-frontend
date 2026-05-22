@@ -1,26 +1,25 @@
-import React from 'react';
-import userEvent from '@testing-library/user-event';
 import { render, screen } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
+import { formatForDatePicker } from '../../../constants';
 import { type StockBatchDTO } from '../../../core/api/types/stockItem/StockBatchDTO';
 import { type StockItemInventory } from '../../../core/api/types/stockItem/StockItemInventory';
-import { formatForDatePicker } from '../../../constants';
 import { useStockItemBatchInformationHook } from '../../../stock-items/add-stock-item/batch-information/batch-information.resource';
 import { useStockItemBatchNumbers } from '../hooks/useStockItemBatchNumbers';
 import BatchNoSelector from './batch-no-selector.component';
 
-jest.mock('../hooks/useStockItemBatchNumbers', () => ({
-  useStockItemBatchNumbers: jest.fn(),
+vi.mock('../hooks/useStockItemBatchNumbers', () => ({
+  useStockItemBatchNumbers: vi.fn(),
 }));
 
-jest.mock('../../../stock-items/add-stock-item/batch-information/batch-information.resource', () => ({
-  useStockItemBatchInformationHook: jest.fn(),
+vi.mock('../../../stock-items/add-stock-item/batch-information/batch-information.resource', () => ({
+  useStockItemBatchInformationHook: vi.fn(),
 }));
 
-const mockUseStockItemBatchNumbers = jest.mocked(useStockItemBatchNumbers);
-const mockUseStockItemBatchInformationHook = jest.mocked(useStockItemBatchInformationHook);
+const mockUseStockItemBatchNumbers = vi.mocked(useStockItemBatchNumbers);
+const mockUseStockItemBatchInformationHook = vi.mocked(useStockItemBatchInformationHook);
 
 describe('BatchNoSelector', () => {
-  const mockOnValueChange = jest.fn();
+  const mockOnValueChange = vi.fn();
   const mockStockItemUuid = 'test-uuid';
   const mockExpiration = new Date();
 
@@ -45,9 +44,9 @@ describe('BatchNoSelector', () => {
           voided: false,
         },
       ],
-      setLimit: jest.fn(),
-      setRepresentation: jest.fn(),
-      setSearchString: jest.fn(),
+      setLimit: vi.fn(),
+      setRepresentation: vi.fn(),
+      setSearchString: vi.fn(),
     });
 
     mockUseStockItemBatchInformationHook.mockReturnValue({
@@ -58,16 +57,16 @@ describe('BatchNoSelector', () => {
       totalCount: 2,
       currentPage: 1,
       currentPageSize: 10,
-      setCurrentPage: jest.fn(),
-      setStockBatchUuid: jest.fn(),
-      setStockItemUuid: jest.fn(),
-      setPageSize: jest.fn(),
+      setCurrentPage: vi.fn(),
+      setStockBatchUuid: vi.fn(),
+      setStockItemUuid: vi.fn(),
+      setPageSize: vi.fn(),
       pageSizes: [10, 20, 50],
       isLoading: false,
       error: null,
-      setLocationUuid: jest.fn(),
-      setPartyUuid: jest.fn(),
-      setSearchString: jest.fn(),
+      setLocationUuid: vi.fn(),
+      setPartyUuid: vi.fn(),
+      setSearchString: vi.fn(),
     });
   });
 
@@ -75,26 +74,26 @@ describe('BatchNoSelector', () => {
     mockUseStockItemBatchNumbers.mockReturnValue({
       isLoading: true,
       stockItemBatchNos: [] as StockBatchDTO[],
-      setLimit: jest.fn(),
-      setRepresentation: jest.fn(),
-      setSearchString: jest.fn(),
+      setLimit: vi.fn(),
+      setRepresentation: vi.fn(),
+      setSearchString: vi.fn(),
     });
 
     mockUseStockItemBatchInformationHook.mockReturnValue({
       isLoading: true,
       items: [],
-      setStockItemUuid: jest.fn(),
+      setStockItemUuid: vi.fn(),
       totalCount: 0,
       currentPage: 1,
       currentPageSize: 10,
-      setCurrentPage: jest.fn(),
-      setStockBatchUuid: jest.fn(),
-      setPageSize: jest.fn(),
+      setCurrentPage: vi.fn(),
+      setStockBatchUuid: vi.fn(),
+      setPageSize: vi.fn(),
       pageSizes: [10, 20, 50],
       error: null,
-      setLocationUuid: jest.fn(),
-      setPartyUuid: jest.fn(),
-      setSearchString: jest.fn(),
+      setLocationUuid: vi.fn(),
+      setPartyUuid: vi.fn(),
+      setSearchString: vi.fn(),
     });
 
     render(<BatchNoSelector stockItemUuid={mockStockItemUuid} onValueChange={mockOnValueChange} />);
@@ -164,9 +163,9 @@ describe('BatchNoSelector', () => {
           voided: false,
         },
       ],
-      setLimit: jest.fn(),
-      setRepresentation: jest.fn(),
-      setSearchString: jest.fn(),
+      setLimit: vi.fn(),
+      setRepresentation: vi.fn(),
+      setSearchString: vi.fn(),
     });
 
     render(<BatchNoSelector stockItemUuid={mockStockItemUuid} onValueChange={mockOnValueChange} />);

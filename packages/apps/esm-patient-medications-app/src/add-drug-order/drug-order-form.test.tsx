@@ -8,9 +8,9 @@ import { type ConfigObject, configSchema } from '../config-schema';
 import DrugOrderForm from './drug-order-form.component';
 import { getTemplateOrderBasketItem } from './drug-search/drug-search.resource';
 
-jest.mock('@openmrs/esm-framework', () => {
-  const actual = jest.requireActual('@openmrs/esm-framework');
-  const React = jest.requireActual('react');
+vi.mock('@openmrs/esm-framework', async () => {
+  const actual = await vi.importActual('@openmrs/esm-framework');
+  const React = await vi.importActual<typeof import('react')>('react');
 
   return {
     ...actual,
@@ -21,14 +21,14 @@ jest.mock('@openmrs/esm-framework', () => {
   };
 });
 
-const mockUseConfig = jest.mocked(useConfig<ConfigObject>);
-const mockUseSession = jest.mocked(useSession);
+const mockUseConfig = vi.mocked(useConfig<ConfigObject>);
+const mockUseSession = vi.mocked(useSession);
 
 mockUseConfig.mockReturnValue(getDefaultsFromConfigSchema(configSchema) as ConfigObject);
 mockUseSession.mockReturnValue(mockSessionDataResponse.data);
 
-jest.mock('../api/order-config', () => ({
-  useOrderConfig: jest.fn().mockReturnValue({
+vi.mock('../api/order-config', async () => ({
+  useOrderConfig: vi.fn().mockReturnValue({
     orderConfigObject: {
       drugRoutes: [{ valueCoded: '160240AAAAAAAAAAAAAAAAAAAAAAAAAAAAAA', value: 'Oral' }],
       drugDosingUnits: [{ valueCoded: '1513AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA', value: 'Tablet' }],
@@ -50,10 +50,10 @@ jest.mock('../api/order-config', () => ({
   }),
 }));
 
-jest.mock('../api/api', () => ({
-  ...jest.requireActual('../api/api'),
-  useActivePatientOrders: jest.fn().mockReturnValue({ isLoading: false, data: [] }),
-  useRequireOutpatientQuantity: jest
+vi.mock('../api/api', async () => ({
+  ...(await vi.importActual('../api/api')),
+  useActivePatientOrders: vi.fn().mockReturnValue({ isLoading: false, data: [] }),
+  useRequireOutpatientQuantity: vi
     .fn()
     .mockReturnValue({ requireOutpatientQuantity: true, error: null, isLoading: false }),
 }));
@@ -64,9 +64,9 @@ function renderDrugOrderForm(initialOrderBasketItem: DrugOrderBasketItem) {
       initialOrderBasketItem={initialOrderBasketItem}
       patient={mockFhirPatient}
       visitContext={null}
-      onSave={jest.fn()}
+      onSave={vi.fn()}
       saveButtonText="Save order"
-      onCancel={jest.fn()}
+      onCancel={vi.fn()}
       workspaceTitle="Add drug order"
     />,
   );
@@ -83,6 +83,31 @@ function createNewOrderBasketItem(overrides?: Partial<DrugOrderBasketItem>): Dru
 }
 
 describe('DrugOrderForm - auto-calculation of dispense quantity', () => {
+  it('renders and validates an incomplete order for a drug without dosage form', async () => {
+    const user = userEvent.setup();
+    const drugWithoutDosageForm = createNewOrderBasketItem({
+      drug: {
+        ...mockDrugSearchResultApiData[0],
+        uuid: '5219bdad-dfb2-4079-b6a2-1dcce2304058',
+        display: '04058 - INMUNOGLOBULINA ANTI D 300 µg 2 mL',
+        strength: '300 µg 2 mL',
+        dosageForm: null,
+      },
+      display: '04058 - INMUNOGLOBULINA ANTI D 300 µg 2 mL',
+      commonMedicationName: '04058 - INMUNOGLOBULINA ANTI D 300 µg 2 mL',
+      isOrderIncomplete: true,
+      unit: null,
+      quantityUnits: null,
+    });
+
+    renderDrugOrderForm(drugWithoutDosageForm);
+
+    expect(screen.getByText(/04058 - INMUNOGLOBULINA ANTI D 300 µg 2 mL/i)).toBeInTheDocument();
+    await user.click(screen.getByRole('button', { name: /save order/i }));
+
+    expect(await screen.findByText(/dosage is required/i)).toBeInTheDocument();
+  });
+
   it('auto-calculates quantity when dose, frequency, and duration are filled', async () => {
     const user = userEvent.setup();
     renderDrugOrderForm(createNewOrderBasketItem());
@@ -531,7 +556,7 @@ describe('DrugOrderForm - auto-calculation of dispense quantity', () => {
 
   it('does not auto-calculate when requireOutpatientQuantity is false', async () => {
     const user = userEvent.setup();
-    (useRequireOutpatientQuantity as jest.Mock).mockReturnValue({
+    (useRequireOutpatientQuantity as vi.Mock).mockReturnValue({
       requireOutpatientQuantity: false,
       error: null,
       isLoading: false,
@@ -562,7 +587,7 @@ describe('DrugOrderForm - auto-calculation of dispense quantity', () => {
     expect(screen.queryByText(/auto-calculated/i)).not.toBeInTheDocument();
 
     // Restore default mock
-    (useRequireOutpatientQuantity as jest.Mock).mockReturnValue({
+    (useRequireOutpatientQuantity as vi.Mock).mockReturnValue({
       requireOutpatientQuantity: true,
       error: null,
       isLoading: false,

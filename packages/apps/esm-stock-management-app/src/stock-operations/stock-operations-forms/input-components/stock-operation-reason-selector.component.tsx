@@ -1,12 +1,12 @@
-import React from 'react';
 import { ComboBox, InlineNotification, SelectSkeleton } from '@carbon/react';
+import { useConfig } from '@openmrs/esm-framework';
+import React from 'react';
 import { Controller, useFormContext } from 'react-hook-form';
 import { useTranslation } from 'react-i18next';
-import { useConfig } from '@openmrs/esm-framework';
 import { type ConfigObject } from '../../../config-schema';
 import { type Concept } from '../../../core/api/types/concept/Concept';
-import { useConcept } from '../../../stock-lookups/stock-lookups.resource';
 import { OperationType } from '../../../core/api/types/stockOperation/StockOperationType';
+import { useConcept } from '../../../stock-lookups/stock-lookups.resource';
 
 type StockOperationReasonSelectorProps = {
   stockOperationType: string;

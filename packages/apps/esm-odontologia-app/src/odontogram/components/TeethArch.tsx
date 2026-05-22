@@ -97,9 +97,13 @@ const TeethArch: React.FC<TeethArchProps> = ({ position }) => {
     <div style={ROW_STYLE}>
       {teeth.map((tooth, index) => (
         <React.Fragment key={tooth.id}>
-          <ToothDetails idTooth={tooth.id} initialText="" legend={String(tooth.id)} />
+          <ToothDetails idTooth={tooth.id} initialText="" legend={String(tooth.id)} position={position} />
           {index < pairs.length && (
-            <SpaceBetweenLegends leftToothId={pairs[index].leftId} rightToothId={pairs[index].rightId} />
+            <SpaceBetweenLegends
+              leftToothId={pairs[index].leftId}
+              rightToothId={pairs[index].rightId}
+              position={position}
+            />
           )}
         </React.Fragment>
       ))}

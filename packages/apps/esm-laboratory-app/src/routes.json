@@ -23,7 +23,8 @@
         "name": "laboratory",
         "slot": "laboratory-dashboard-slot",
         "title": "Laboratory"
-      }
+      },
+      "order": 30
     },
     {
       "name": "pickup-lab-request-modal",

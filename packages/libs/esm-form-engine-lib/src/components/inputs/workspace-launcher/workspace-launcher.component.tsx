@@ -1,5 +1,5 @@
 import { Button, InlineNotification } from '@carbon/react';
-import { launchWorkspace2, showSnackbar } from '@openmrs/esm-framework/src/internal';
+import { launchWorkspace2, showSnackbar } from '@openmrs/esm-framework';
 import React from 'react';
 import { useTranslation } from 'react-i18next';
 import { useFormProviderContext } from '../../../provider/form-provider';

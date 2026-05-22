@@ -1,5 +1,7 @@
-declare module '*.scss' {
-  const styles: { [className: string]: string };
-  export default styles;
-}
+declare module '@carbon/charts-react/styles.css';
 
+declare namespace NodeJS {
+  interface Require {
+    context(directory: string, useSubdirectories?: boolean, regExp?: RegExp, mode?: string): any;
+  }
+}

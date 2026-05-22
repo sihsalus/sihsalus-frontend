@@ -1,5 +1,6 @@
 import React from 'react';
 import { parseParametersToMap } from '../../core/api/types/BatchJob';
+
 interface StockReportParametersProps {
   model: any;
 }

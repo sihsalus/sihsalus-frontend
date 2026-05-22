@@ -30,7 +30,9 @@ function createMockStore<T>(initialState: T) {
           : typeof update === 'object' && update !== null
             ? ({ ...state, ...update } as T)
             : state;
-      subscribers.forEach((subscriber) => subscriber(state));
+      subscribers.forEach((subscriber) => {
+        subscriber(state);
+      });
     }),
     subscribe: vi.fn((subscriber: (state: T) => void) => {
       subscribers.add(subscriber);

@@ -7,11 +7,11 @@ import FormsList, { type FormsListProps } from './forms-list.component';
 
 void React;
 
-jest.mock('lodash-es/debounce', () => jest.fn((fn: (...args: Array<unknown>) => unknown) => fn));
+vi.mock('lodash-es/debounce', () => ({ default: vi.fn((fn: (...args: Array<unknown>) => unknown) => fn) }));
 
 const defaultProps: FormsListProps & { reset: () => void } = {
   forms: [],
-  handleFormOpen: jest.fn(),
+  handleFormOpen: vi.fn(),
   reset() {
     this.forms = [];
   },
@@ -59,7 +59,7 @@ it('renders a list of forms fetched from the server', async () => {
 
 it('opens the filtered form without relying on the pre-filter row index', async () => {
   const user = userEvent.setup();
-  const handleFormOpen = jest.fn();
+  const handleFormOpen = vi.fn();
 
   renderFormsList({
     forms: forms.map((form, index) => ({

@@ -1,6 +1,6 @@
-import { test } from '../core';
 import { expect } from '@playwright/test';
 import { deleteForm } from '../commands/form-operations';
+import { test } from '../core';
 import { FormBuilderPage } from '../pages';
 import customSchema from '../support/custom-schema.json';
 

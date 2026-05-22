@@ -1,0 +1,120 @@
+.page {
+  padding: 1.5rem;
+  background: var(--cds-background);
+  min-height: 100%;
+}
+
+.header {
+  display: flex;
+  justify-content: space-between;
+  gap: 1.5rem;
+  align-items: flex-start;
+  margin-bottom: 1.5rem;
+}
+
+.header h1 {
+  font-size: 1.75rem;
+  line-height: 2.25rem;
+  font-weight: 600;
+  margin: 0;
+}
+
+.eyebrow {
+  margin: 0 0 0.25rem;
+  color: var(--cds-text-secondary);
+  font-size: 0.875rem;
+}
+
+.metrics {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(8rem, 1fr));
+  gap: 0.75rem;
+  min-width: 28rem;
+}
+
+.metrics > div {
+  border: 1px solid var(--cds-border-subtle);
+  background: var(--cds-layer);
+  padding: 0.875rem;
+}
+
+.metrics span {
+  display: block;
+  font-size: 1.5rem;
+  font-weight: 600;
+}
+
+.metrics p {
+  margin: 0.25rem 0 0;
+  color: var(--cds-text-secondary);
+  font-size: 0.75rem;
+}
+
+.notification {
+  margin-bottom: 1rem;
+}
+
+.sectionGrid {
+  display: grid;
+  grid-template-columns: minmax(20rem, 28rem) minmax(0, 1fr);
+  gap: 1rem;
+  align-items: start;
+  margin-top: 1rem;
+}
+
+.formPanel,
+.slotsPanel {
+  background: var(--cds-layer);
+  border: 1px solid var(--cds-border-subtle);
+  padding: 1rem;
+}
+
+.formPanel h2 {
+  margin: 0 0 1rem;
+  font-size: 1rem;
+  line-height: 1.375rem;
+}
+
+.inlineFields {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.75rem;
+}
+
+.days {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.5rem;
+}
+
+.table {
+  width: 100%;
+  background: var(--cds-layer);
+}
+
+.actions {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+}
+
+.slotSummary {
+  display: flex;
+  gap: 0.5rem;
+  margin-bottom: 1rem;
+}
+
+@media (max-width: 66rem) {
+  .header {
+    display: block;
+  }
+
+  .metrics {
+    min-width: 0;
+    margin-top: 1rem;
+  }
+
+  .sectionGrid {
+    grid-template-columns: 1fr;
+  }
+}

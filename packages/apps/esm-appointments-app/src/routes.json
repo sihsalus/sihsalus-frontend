@@ -18,7 +18,8 @@
         "name": "appointments",
         "slot": "clinical-appointments-dashboard-slot",
         "title": "Appointments"
-      }
+      },
+      "order": 20
     },
     {
       "component": "root",
@@ -68,7 +69,7 @@
       "name": "patient-appointments-summary-dashboard",
       "component": "patientAppointmentsSummaryDashboardLink",
       "slot": "patient-chart-dashboard-slot",
-      "order": 11,
+      "order": 21,
       "meta": {
         "columns": 1,
         "columnSpan": 1,
@@ -111,12 +112,33 @@
       "component": "cancelAppointmentModal"
     }
   ],
-  "workspaces": [
+  "workspaceGroups2": [
+    {
+      "name": "appointments-group",
+      "scopePattern": "/home/appointments"
+    }
+  ],
+  "workspaceWindows2": [
+    {
+      "name": "appointments-window",
+      "group": "appointments-group"
+    }
+  ],
+  "workspaces2": [
     {
       "name": "appointments-form-workspace",
       "component": "appointmentsFormWorkspace",
-      "title": "createNewAppointment",
-      "type": "form"
+      "window": "appointments-window"
+    },
+    {
+      "name": "appointments-patient-search-workspace",
+      "component": "searchPatient",
+      "window": "appointments-window"
+    },
+    {
+      "name": "appointments-start-visit-workspace",
+      "component": "@sihsalus/esm-patient-chart-app#startVisitWorkspace",
+      "window": "appointments-window"
     }
   ]
 }

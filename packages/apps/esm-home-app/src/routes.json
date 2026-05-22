@@ -6,16 +6,32 @@
   "pages": [
     {
       "component": "root",
-      "route": "home",
+      "routeRegex": "^home($|/.*)",
       "online": true,
       "offline": true
     }
   ],
   "extensions": [
     {
+      "name": "home-app-menu-item",
+      "slot": "app-menu-item-slot",
+      "component": "homeAppMenuItem",
+      "order": 0,
+      "online": true,
+      "offline": true
+    },
+    {
       "name": "home-nav-menu",
       "slot": "home-sidebar-slot",
       "component": "homeNavMenu",
+      "online": true,
+      "offline": true
+    },
+    {
+      "name": "global-home-nav-link",
+      "slot": "global-nav-menu-slot",
+      "component": "globalHomeNavLink",
+      "order": -100,
       "online": true,
       "offline": true
     },

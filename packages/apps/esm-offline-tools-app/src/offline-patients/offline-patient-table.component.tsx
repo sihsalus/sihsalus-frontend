@@ -155,7 +155,7 @@ const OfflinePatientTable: React.FC<OfflinePatientTableProps> = ({ isInteractive
                 <TableRow>
                   {isInteractive && <TableSelectAll {...getSelectionProps()} />}
                   {headers.map((header) => (
-                    <TableHeader {...getHeaderProps({ header })} isSortable>
+                    <TableHeader key={header.key} {...getHeaderProps({ header })} isSortable>
                       {header.header}
                     </TableHeader>
                   ))}
@@ -163,7 +163,7 @@ const OfflinePatientTable: React.FC<OfflinePatientTableProps> = ({ isInteractive
               </TableHead>
               <TableBody>
                 {rows.map((row) => (
-                  <TableRow {...getRowProps({ row })}>
+                  <TableRow key={row.id} {...getRowProps({ row })}>
                     {isInteractive && <TableSelectRow {...getSelectionProps({ row })} />}
                     {row.cells.map((cell) => (
                       <TableCell key={cell.id}>{cell.value?.value ?? cell.value}</TableCell>

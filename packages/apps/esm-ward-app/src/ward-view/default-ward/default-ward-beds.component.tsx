@@ -9,15 +9,15 @@ function DefaultWardBeds() {
   const { bedLayouts, wardAdmittedPatientsWithBed, inpatientAdmissionsByPatientUuid } = wardPatientGroupDetails ?? {};
 
   const wardBeds = bedLayouts?.map((bedLayout) => {
-    const { patients } = bedLayout;
+    const patients = bedLayout.patients ?? [];
     const bed = bedLayoutToBed(bedLayout);
-    const wardPatients: WardPatient[] = patients.map((patient): WardPatient => {
+    const wardPatients: WardPatient[] = patients.filter(Boolean).map((patient): WardPatient => {
       const inpatientAdmission = wardAdmittedPatientsWithBed?.get(patient.uuid);
       if (inpatientAdmission) {
         const { patient, visit, currentInpatientRequest } = inpatientAdmission;
         return { patient, visit, bed, inpatientAdmission, inpatientRequest: currentInpatientRequest || null };
       } else {
-        const admissionElsewhere = inpatientAdmissionsByPatientUuid.get(patient.uuid);
+        const admissionElsewhere = inpatientAdmissionsByPatientUuid?.get(patient.uuid);
         // for some reason this patient is in a bed but not in the list of admitted patients, so we need to use the patient data from the bed endpoint
         return {
           patient: patient,

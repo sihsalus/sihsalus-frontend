@@ -11,7 +11,7 @@ import {
 } from '@carbon/react';
 import { useStore } from '@openmrs/esm-framework';
 import { featureFlagsStore, setFeatureFlag } from '@openmrs/esm-framework/src/internal';
-import React, { Fragment, useMemo } from 'react';
+import { Fragment, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import styles from './feature-flags.scss';
@@ -59,9 +59,14 @@ export function FeatureFlags() {
             <Table {...getTableProps()}>
               <TableHead>
                 <TableRow>
-                  {headers.map((header) => (
-                    <TableHeader {...getHeaderProps({ header })}>{header.header}</TableHeader>
-                  ))}
+                  {headers.map((header) => {
+                    const { key, ...headerProps } = getHeaderProps({ header });
+                    return (
+                      <TableHeader key={key} {...headerProps}>
+                        {header.header}
+                      </TableHeader>
+                    );
+                  })}
                 </TableRow>
               </TableHead>
               <TableBody>

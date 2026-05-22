@@ -1,11 +1,11 @@
-import React, { type ReactNode, useEffect, useRef } from 'react';
-import { useTranslation } from 'react-i18next';
-import { type Control, type FieldValues, useController } from 'react-hook-form';
-import { type Concept } from '../../../core/api/types/concept/Concept';
 import { ComboBox, TextInputSkeleton } from '@carbon/react';
 import { useConfig } from '@openmrs/esm-framework';
-import { useConcept } from '../../../stock-lookups/stock-lookups.resource';
+import { type ReactNode, useEffect, useRef } from 'react';
+import { type Control, type FieldValues, useController } from 'react-hook-form';
+import { useTranslation } from 'react-i18next';
 import { type ConfigObject } from '../../../config-schema';
+import { type Concept } from '../../../core/api/types/concept/Concept';
+import { useConcept } from '../../../stock-lookups/stock-lookups.resource';
 
 interface StockItemCategorySelectorProps<T> {
   onCategoryUuidChange?: (unit: Concept | null | undefined) => void;

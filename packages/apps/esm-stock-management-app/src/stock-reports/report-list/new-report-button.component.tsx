@@ -1,7 +1,7 @@
 import { Button } from '@carbon/react';
+import { launchWorkspace } from '@openmrs/esm-framework';
 import React, { useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
-import { launchWorkspace } from '@openmrs/esm-framework';
 
 const NewReportActionButton: React.FC = () => {
   const { t } = useTranslation();

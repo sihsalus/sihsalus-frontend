@@ -1,0 +1,13 @@
+{
+  "add": "Agregar",
+  "delete": "Eliminar",
+  "edit": "Editar",
+  "encounterDeleted": "Atención eliminada",
+  "encounterDeleteFailed": "No se pudo eliminar la atención",
+  "encounterSuccessfullyDeleted": "La atención fue eliminada correctamente",
+  "error": "Error",
+  "expandRow": "Expandir fila",
+  "noObservationsFound": "No se encontraron observaciones",
+  "physicalTherapyEncounters": "Atenciones de terapia física",
+  "terapiaFisica": "Terapia Física"
+}

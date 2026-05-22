@@ -1,0 +1,81 @@
+@use "@carbon/layout";
+@use "@carbon/colors";
+
+.page {
+  min-height: 100%;
+  background-color: colors.$gray-10;
+}
+
+.header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.headerActions {
+  display: flex;
+  gap: layout.$spacing-03;
+  padding-right: layout.$spacing-05;
+}
+
+.content {
+  padding: layout.$spacing-05;
+}
+
+.serviceContainer {
+  background-color: colors.$white;
+}
+
+.tableToolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: layout.$spacing-03 layout.$spacing-05;
+}
+
+.tabPanel {
+  padding: layout.$spacing-05 0 0;
+}
+
+.emptyState {
+  display: flex;
+  align-items: center;
+  min-height: 8rem;
+}
+
+.linkButton {
+  margin: 0;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: colors.$blue-60;
+  cursor: pointer;
+  font: inherit;
+  text-align: left;
+  text-decoration: underline;
+}
+
+.workspaceForm {
+  padding: layout.$spacing-05;
+}
+
+.buttonSet {
+  margin-top: layout.$spacing-06;
+}
+
+:global(.referrals-action-set) {
+  display: inline-flex;
+  gap: layout.$spacing-03;
+}
+
+@media (max-width: 671px) {
+  .header {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .headerActions {
+    flex-wrap: wrap;
+    padding: 0 layout.$spacing-05 layout.$spacing-05;
+  }
+}

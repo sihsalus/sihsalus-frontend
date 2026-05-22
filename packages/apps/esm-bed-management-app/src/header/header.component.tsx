@@ -8,6 +8,7 @@ import {
   useSession,
 } from '@openmrs/esm-framework';
 import React from 'react';
+import { useTranslation } from 'react-i18next';
 
 import styles from './header.scss';
 
@@ -21,6 +22,7 @@ type HeaderProps = {
 };
 
 const Header: React.FC<HeaderProps> = ({ title }) => {
+  const { t } = useTranslation();
   const userSession = useSession();
   const userLocation = userSession?.sessionLocation?.display;
 
@@ -32,7 +34,7 @@ const Header: React.FC<HeaderProps> = ({ title }) => {
             <InPatientPictogram className={styles.inPatientPictogram} />
           </ConfigurableLink>
         }
-        title={title}
+        title={t(title, title)}
         className={styles.leftJustifiedItems}
       />
       <div className={styles.rightJustifiedItems}>

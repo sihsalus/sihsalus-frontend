@@ -25,7 +25,7 @@ import {
   formatDate,
   formatDatetime,
   isDesktop,
-  launchWorkspace,
+  launchWorkspace2,
   useConfig,
   useLayoutType,
   usePagination,
@@ -72,6 +72,19 @@ const AppointmentsTable: React.FC<AppointmentsTableProps> = ({
   const { visits } = useTodaysVisits();
   const layout = useLayoutType();
   const responsiveSize = isDesktop(layout) ? 'sm' : 'lg';
+  const translatedTableHeading = t(tableHeading);
+  const isTodayAppointmentsTable =
+    tableHeading === 'today' ||
+    tableHeading === 'todaysAppointments' ||
+    tableHeading === 'todayAppointments' ||
+    /today/i.test(tableHeading) ||
+    /hoy/i.test(translatedTableHeading);
+  const appointmentSectionTitle = isTodayAppointmentsTable
+    ? t('todaysAppointments', 'Today appointments')
+    : `${translatedTableHeading} ${t('appointments', 'Appointments')}`;
+  const emptyDisplayText = isTodayAppointmentsTable
+    ? t('appointmentsScheduledForToday', 'appointments scheduled for today')
+    : appointmentSectionTitle.toLocaleLowerCase();
   const headerData = [
     {
       header: t('patientName', 'Patient name'),
@@ -139,13 +152,9 @@ const AppointmentsTable: React.FC<AppointmentsTableProps> = ({
   if (!appointments?.length) {
     return (
       <EmptyState
-        headerTitle={`${t(tableHeading)} ${t('appointments_lower', 'appointments')}`}
-        displayText={`${
-          tableHeading?.match(/today/i)
-            ? t('appointmentsScheduledForToday', 'appointments scheduled for today')
-            : `${t(tableHeading)} ${t('appointments_lower', 'appointments')}`
-        }`}
-        launchForm={() => launchWorkspace('search-patient')}
+        headerTitle={appointmentSectionTitle}
+        displayText={emptyDisplayText}
+        launchForm={() => launchWorkspace2('appointments-patient-search-workspace')}
       />
     );
   }
@@ -154,7 +163,7 @@ const AppointmentsTable: React.FC<AppointmentsTableProps> = ({
     <Layer className={styles.container}>
       <Tile className={styles.headerContainer}>
         <div className={isDesktop(layout) ? styles.desktopHeading : styles.tabletHeading}>
-          <h4>{`${t(tableHeading)} ${t('appointments', 'Appointments')}`}</h4>
+          <h4>{appointmentSectionTitle}</h4>
         </div>
       </Tile>
       <div className={styles.toolbar}>
@@ -251,7 +260,7 @@ const AppointmentsTable: React.FC<AppointmentsTableProps> = ({
                                       className={styles.menuItem}
                                       itemText={t('editAppointment', 'Edit appointment')}
                                       onClick={() =>
-                                        launchWorkspace('appointments-form-workspace', {
+                                        launchWorkspace2('appointments-form-workspace', {
                                           patientUuid: matchingAppointment.patient.uuid,
                                           appointment: matchingAppointment,
                                           context: 'editing',

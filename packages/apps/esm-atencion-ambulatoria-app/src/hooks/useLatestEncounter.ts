@@ -1,5 +1,5 @@
 import { type FetchResponse, openmrsFetch, restBaseUrl } from '@openmrs/esm-framework';
-import pickBy from 'lodash/pickBy';
+import pickBy from 'lodash-es/pickBy';
 import useSWR, { type KeyedMutator } from 'swr';
 
 import type { OpenmrsEncounter } from '../types';

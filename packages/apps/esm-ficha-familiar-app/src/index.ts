@@ -58,6 +58,7 @@ export const birthDateCalculator = getSyncLifecycle(BirthDateCalculator, options
 export const relationshipDeleteConfirmDialog = getSyncLifecycle(DeleteRelationshipConfirmDialog, options);
 export const relationships = getSyncLifecycle(Relationships, options);
 export const relationshipUpdateForm = getSyncLifecycle(RelationshipUpdateForm, options);
+// t('familyRecordTooltip', 'Ficha Familiar')
 export const relationshipsLink = getSyncLifecycle(
   createDashboardLink({ ...relationshipsDashboardMeta, moduleName }),
   options,

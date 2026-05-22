@@ -182,7 +182,7 @@ export const startVisitWorkspace = getAsyncLifecycle(() => import('./visit/visit
   moduleName,
 });
 
-// t('markPatientDeceased', 'Mark patient deceased')
+// t('markPatientDeceased', 'Marcar paciente como fallecido')
 export const markPatientDeceasedForm = getAsyncLifecycle(
   () => import('./mark-patient-deceased/mark-patient-deceased-form.workspace'),
   {

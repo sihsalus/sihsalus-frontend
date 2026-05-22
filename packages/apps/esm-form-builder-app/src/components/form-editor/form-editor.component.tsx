@@ -141,7 +141,7 @@ const FormEditorContent: React.FC<TranslationFnProps> = ({ t }) => {
         localStorage.setItem('formJSON', JSON.stringify(clobdata));
       }
     }
-  }, [clobdata, form, formUuid, isLoadingClobdata, isLoadingFormOrSchema, launchRestoreDraftSchemaModal, status]);
+  }, [clobdata, form, formUuid, isLoadingClobdata, launchRestoreDraftSchemaModal, status]);
 
   useEffect(() => {
     setStringifiedSchema(JSON.stringify(schema, null, 2));
@@ -274,8 +274,17 @@ const FormEditorContent: React.FC<TranslationFnProps> = ({ t }) => {
     }
   }, [blockRenderingWithErrors, errors.length, renderSchemaChanges, selectedLanguageCode]);
 
-  const handleSchemaImport = (event: React.ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files[0];
+  const handleSchemaImport = (
+    event: React.SyntheticEvent<HTMLElement>,
+    data?: { addedFiles: Array<{ file: File }> },
+  ) => {
+    const file =
+      data?.addedFiles[0]?.file ?? (event.target instanceof HTMLInputElement ? event.target.files?.item(0) : undefined);
+
+    if (!file) {
+      return;
+    }
+
     const reader = new FileReader();
 
     reader.onload = (e) => {

@@ -1,4 +1,3 @@
-import React, { useMemo } from 'react';
 import {
   Button,
   ButtonSet,
@@ -10,11 +9,12 @@ import {
   Stack,
   TextInput,
 } from '@carbon/react';
-import classNames from 'classnames';
-import { Controller, useForm } from 'react-hook-form';
-import { useTranslation } from 'react-i18next';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useConfig, useLayoutType } from '@openmrs/esm-framework';
+import classNames from 'classnames';
+import React, { useMemo } from 'react';
+import { Controller, useForm } from 'react-hook-form';
+import { useTranslation } from 'react-i18next';
 import { type z } from 'zod';
 import { type ConfigObject } from '../../../config-schema';
 import { DATE_PICKER_CONTROL_FORMAT, DATE_PICKER_FORMAT, formatForDatePicker, today } from '../../../constants';
@@ -131,7 +131,7 @@ const StockItemForm: React.FC<StockItemFormProps> = ({
                 control={form.control}
                 name={'expiration' as keyof FormData}
                 render={({ field, fieldState: { error } }) => {
-                  const { value, onChange, onBlur, name, ref } = field;
+                  const { value, onChange } = field;
                   return (
                     <DatePicker
                       datePickerType="single"

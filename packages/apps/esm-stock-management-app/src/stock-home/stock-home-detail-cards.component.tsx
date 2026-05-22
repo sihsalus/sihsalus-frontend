@@ -1,11 +1,11 @@
-import React from 'react';
-import { useTranslation } from 'react-i18next';
 import { Layer, Tile } from '@carbon/react';
 import { useLayoutType } from '@openmrs/esm-framework';
+import React from 'react';
+import { useTranslation } from 'react-i18next';
+import styles from './stock-home-detail-card.scss';
 import StockHomeInventoryCard from './stock-home-inventory-card.component';
 import StockHomeIssuingCard from './stock-home-issuing-card.component';
 import StockHomeReceivingCard from './stock-home-receiving-card.component';
-import styles from './stock-home-detail-card.scss';
 
 interface DetailCardProps {
   title: string;

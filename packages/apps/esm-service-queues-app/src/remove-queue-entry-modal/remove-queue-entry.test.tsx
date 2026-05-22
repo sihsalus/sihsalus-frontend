@@ -1,14 +1,13 @@
 import { getDefaultsFromConfigSchema, useConfig } from '@openmrs/esm-framework';
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import React from 'react';
 
 import { type ConfigObject, configSchema } from '../config-schema';
 import { type MappedQueueEntry } from '../types';
 
 import RemoveQueueEntryModal from './remove-queue-entry.modal';
 
-const mockUseConfig = jest.mocked(useConfig<ConfigObject>);
+const mockUseConfig = vi.mocked(useConfig<ConfigObject>);
 
 describe('RemoveQueueEntryModal', () => {
   const queueEntry = {
@@ -26,7 +25,7 @@ describe('RemoveQueueEntryModal', () => {
   });
 
   it('renders the remove queue entry modal content', () => {
-    const closeModal = jest.fn();
+    const closeModal = vi.fn();
     render(<RemoveQueueEntryModal queueEntry={queueEntry} closeModal={closeModal} />);
 
     expect(screen.getByText('Service queue')).toBeInTheDocument();
@@ -38,7 +37,7 @@ describe('RemoveQueueEntryModal', () => {
 
   it('calls closeModal when Cancel button is clicked', async () => {
     const user = userEvent.setup();
-    const closeModal = jest.fn();
+    const closeModal = vi.fn();
 
     render(<RemoveQueueEntryModal queueEntry={queueEntry} closeModal={closeModal} />);
 

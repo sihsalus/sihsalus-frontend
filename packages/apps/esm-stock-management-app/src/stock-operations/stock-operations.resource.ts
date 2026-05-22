@@ -3,11 +3,11 @@ import useSWR from 'swr';
 import { type ResourceFilterCriteria, toQueryParams } from '../core/api/api';
 import { type PageableResult } from '../core/api/types/PageableResult';
 import { type InventoryGroupBy } from '../core/api/types/stockItem/StockItem';
+import { type StockItemInventory } from '../core/api/types/stockItem/StockItemInventory';
 import { type StopOperationAction } from '../core/api/types/stockOperation/StockOperationAction';
 import { type StockOperationDTO } from '../core/api/types/stockOperation/StockOperationDTO';
-import { type StockOperationItemDtoSchema } from './validation-schema';
 import { type StockOperationItemCost } from '../core/api/types/stockOperation/StockOperationItemCost';
-import { type StockItemInventory } from '../core/api/types/stockItem/StockItemInventory';
+import { type StockOperationItemDtoSchema } from './validation-schema';
 
 export interface StockOperationFilter extends ResourceFilterCriteria {
   status?: string | null | undefined;
@@ -130,13 +130,16 @@ export function deleteStockOperationItem(id: string) {
 export function createStockOperation(data: StockOperationItemDtoSchema) {
   const apiUrl = `${restBaseUrl}/stockmanagement/stockoperation`;
   const abortController = new AbortController();
+  const payload = { ...data } as Record<string, unknown>;
+  delete payload.atLocationUuid;
+  delete payload.atLocationName;
   return openmrsFetch<StockOperationDTO>(apiUrl, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
     },
     signal: abortController.signal,
-    body: data,
+    body: payload,
   });
 }
 
@@ -144,13 +147,16 @@ export function createStockOperation(data: StockOperationItemDtoSchema) {
 export function updateStockOperation(stockOperation: StockOperationDTO, data: StockOperationItemDtoSchema) {
   const apiUrl = `${restBaseUrl}/stockmanagement/stockoperation/${stockOperation.uuid}`;
   const abortController = new AbortController();
+  const payload = { ...data } as Record<string, unknown>;
+  delete payload.atLocationUuid;
+  delete payload.atLocationName;
   return openmrsFetch<StockOperationDTO>(apiUrl, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
     },
     signal: abortController.signal,
-    body: data,
+    body: payload,
   });
 }
 

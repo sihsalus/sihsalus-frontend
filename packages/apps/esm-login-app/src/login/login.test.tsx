@@ -15,11 +15,11 @@ import renderWithRouter from '../test-helpers/render-with-router';
 
 import Login from './login.component';
 
-const mockGetSessionStore = jest.mocked(getSessionStore);
-const mockLogin = jest.mocked(refetchCurrentUser);
-const mockUseConfig = jest.mocked(useConfig);
-const mockUseConnectivity = jest.mocked(useConnectivity);
-const mockUseSession = jest.mocked(useSession);
+const mockGetSessionStore = vi.mocked(getSessionStore);
+const mockLogin = vi.mocked(refetchCurrentUser);
+const mockUseConfig = vi.mocked(useConfig);
+const mockUseConnectivity = vi.mocked(useConnectivity);
+const mockUseSession = vi.mocked(useSession);
 
 describe('Login', () => {
   beforeEach(() => {
@@ -27,16 +27,16 @@ describe('Login', () => {
     mockLogin.mockResolvedValue({} as SessionStore);
     mockGetSessionStore.mockImplementation(() => {
       return {
-        getState: jest.fn().mockReturnValue({
+        getState: vi.fn().mockReturnValue({
           loaded: true,
           session: {
             authenticated: true,
           },
         }),
-        setState: jest.fn(),
-        getInitialState: jest.fn(),
-        subscribe: jest.fn(),
-        destroy: jest.fn(),
+        setState: vi.fn(),
+        getInitialState: vi.fn(),
+        subscribe: vi.fn(),
+        destroy: vi.fn(),
       };
     });
     mockUseSession.mockReturnValue({ authenticated: false, sessionId: '123' });
@@ -52,7 +52,8 @@ describe('Login', () => {
       },
     );
 
-    expect(screen.getAllByRole('img', { name: /OpenMRS logo/i })).toHaveLength(2);
+    expect(screen.getAllByRole('img', { name: /Sihsalus logo/i })).toHaveLength(1);
+    expect(screen.getByText(/Sihsalus/i)).toBeInTheDocument();
     expect(screen.queryByAltText(/^logo$/i)).not.toBeInTheDocument();
     screen.getByRole('textbox', { name: /Username/i });
     screen.getByRole('button', { name: /Continue/i });
@@ -72,7 +73,7 @@ describe('Login', () => {
 
     const logo = screen.getByAltText(customLogoConfig.alt);
 
-    expect(screen.queryByTitle(/openmrs logo/i)).not.toBeInTheDocument();
+    expect(screen.queryByText(/^Sihsalus$/i)).not.toBeInTheDocument();
     expect(logo).toHaveAttribute('src', customLogoConfig.src);
     expect(logo).toHaveAttribute('alt', customLogoConfig.alt);
   });
@@ -120,6 +121,35 @@ describe('Login', () => {
     await user.type(screen.getByLabelText(/^password$/i), 'no-tax-fraud');
     await user.click(loginButton);
     await waitFor(() => expect(refetchCurrentUser).toHaveBeenCalledWith('yoshi', 'no-tax-fraud'));
+  });
+
+  it('shows a backend configuration error when the session endpoint is missing', async () => {
+    mockLogin.mockRejectedValue({
+      loaded: false,
+      session: null,
+      error: {
+        response: {
+          status: 404,
+        },
+      },
+    });
+
+    renderWithRouter(
+      Login,
+      {},
+      {
+        route: '/login',
+      },
+    );
+    const user = userEvent.setup();
+
+    await user.type(screen.getByRole('textbox', { name: /Username/i }), 'yoshi');
+    await user.click(screen.getByRole('button', { name: /Continue/i }));
+    await screen.findByLabelText(/^password$/i);
+    await user.type(screen.getByLabelText(/^password$/i), 'no-tax-fraud');
+    await user.click(screen.getByRole('button', { name: /log in/i }));
+
+    expect(await screen.findByText(/The login service is not available at this backend address/i)).toBeInTheDocument();
   });
 
   // TODO: Complete the test
@@ -291,5 +321,81 @@ describe('Login', () => {
     const usernameInput = screen.getByRole('textbox', { name: /username/i });
 
     expect(usernameInput).toHaveFocus();
+  });
+
+  it('does not render announcement banners by default', () => {
+    renderWithRouter(
+      Login,
+      {},
+      {
+        route: '/login',
+      },
+    );
+
+    expect(screen.queryByText(/Planned downtime/i)).not.toBeInTheDocument();
+  });
+
+  it('renders configured announcement banners above the login card', () => {
+    mockUseConfig.mockReturnValue({
+      ...mockConfig,
+      announcements: [
+        { title: '', text: 'Planned downtime tonight at 10pm', kind: 'warning' },
+        { title: 'Heads up', text: 'New release shipping Friday', kind: 'info' },
+      ],
+    });
+
+    renderWithRouter(
+      Login,
+      {},
+      {
+        route: '/login',
+      },
+    );
+
+    expect(screen.getByText('Planned downtime tonight at 10pm')).toBeInTheDocument();
+    expect(screen.getByText('New release shipping Friday')).toBeInTheDocument();
+    expect(screen.getByText('Heads up')).toBeInTheDocument();
+  });
+
+  it('interpolates relative background image paths into CSS custom properties', () => {
+    mockUseConfig.mockReturnValue({
+      ...mockConfig,
+      background: { image: '${openmrsSpaBase}/assets/bg.jpg', color: '' },
+    });
+
+    renderWithRouter(
+      Login,
+      {},
+      {
+        route: '/login',
+      },
+    );
+    const root = screen.getByTestId('login-container');
+
+    const bgImage = root.style.getPropertyValue('--login-bg-image');
+    expect(bgImage).toContain('/openmrs/spa/assets/bg.jpg');
+    expect(bgImage).not.toContain('${openmrsSpaBase}');
+    expect(root.className).toMatch(/containerWithImage/);
+  });
+
+  it('applies a configured background color when no background image is configured', () => {
+    mockUseConfig.mockReturnValue({
+      ...mockConfig,
+      background: { image: '', color: '#0066cc' },
+    });
+
+    renderWithRouter(
+      Login,
+      {},
+      {
+        route: '/login',
+      },
+    );
+    const root = screen.getByTestId('login-container');
+
+    expect(root.style.getPropertyValue('--login-bg-color')).toBe('#0066cc');
+    expect(root.style.getPropertyValue('--login-bg-image')).toBe('');
+    expect(root.className).toMatch(/containerWithColor/);
+    expect(root.className).not.toMatch(/containerWithImage/);
   });
 });

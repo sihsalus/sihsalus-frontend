@@ -20,8 +20,8 @@ const testProps: WardPatientWorkspaceDefinition = {
   groupProps: {
     wardPatient: mockWardPatientAlice,
   },
-  closeWorkspace: jest.fn(),
-  launchChildWorkspace: jest.fn(),
+  closeWorkspace: vi.fn(),
+  launchChildWorkspace: vi.fn(),
   workspaceProps: undefined,
   windowProps: undefined,
   workspaceName: '',
@@ -30,23 +30,23 @@ const testProps: WardPatientWorkspaceDefinition = {
   showActionMenu: false,
 };
 
-const mockCreatePatientNote = createPatientNote as jest.Mock;
-const mockedShowSnackbar = jest.mocked(showSnackbar);
+const mockCreatePatientNote = createPatientNote as vi.Mock;
+const mockedShowSnackbar = vi.mocked(showSnackbar);
 
-jest.mock('./notes.resource', () => ({
-  createPatientNote: jest.fn(),
-  usePatientNotes: jest.fn(),
+vi.mock('./notes.resource', () => ({
+  createPatientNote: vi.fn(),
+  usePatientNotes: vi.fn(),
 }));
 
-jest.mock('../../hooks/useEmrConfiguration', () => jest.fn());
+vi.mock('../../hooks/useEmrConfiguration', () => ({ default: vi.fn() }));
 
-const mockedUseEmrConfiguration = jest.mocked(useEmrConfiguration);
-const mockedUsePatientNotes = jest.mocked(usePatientNotes);
-const mockUseConfig = jest.mocked(useConfig<WardConfigObject>);
+const mockedUseEmrConfiguration = vi.mocked(useEmrConfiguration);
+const mockedUsePatientNotes = vi.mocked(usePatientNotes);
+const mockUseConfig = vi.mocked(useConfig<WardConfigObject>);
 
 mockedUseEmrConfiguration.mockReturnValue({
   emrConfiguration: emrConfigurationMock,
-  mutateEmrConfiguration: jest.fn(),
+  mutateEmrConfiguration: vi.fn(),
   isLoadingEmrConfiguration: false,
   errorFetchingEmrConfiguration: null,
 });
@@ -57,7 +57,7 @@ describe('<WardPatientNotesWorkspace>', () => {
     patientNotes: [],
     errorFetchingPatientNotes: undefined,
     isLoadingPatientNotes: false,
-    mutatePatientNotes: jest.fn(),
+    mutatePatientNotes: vi.fn(),
   });
 
   test('renders the visit notes form with all the relevant fields and values', () => {
@@ -80,14 +80,20 @@ describe('<WardPatientNotesWorkspace>', () => {
       location: undefined,
       obs: expect.arrayContaining([
         {
-          concept: { display: '', uuid: '162169AAAAAAAAAAAAAAAAAAAAAAAAAAAAAA' },
+          concept: {
+            display: '',
+            uuid: '162169AAAAAAAAAAAAAAAAAAAAAAAAAAAAAA',
+          },
           value: 'Sample clinical note',
         },
       ]),
       patient: mockPatientAlice.uuid,
     };
 
-    mockCreatePatientNote.mockResolvedValue({ status: 201, body: 'Condition created' });
+    mockCreatePatientNote.mockResolvedValue({
+      status: 201,
+      body: 'Condition created',
+    });
 
     renderWardPatientNotesForm();
 
@@ -100,7 +106,10 @@ describe('<WardPatientNotesWorkspace>', () => {
     await user.click(submitButton);
 
     expect(mockCreatePatientNote).toHaveBeenCalledTimes(1);
-    expect(mockCreatePatientNote).toHaveBeenCalledWith(expect.objectContaining(successPayload), new AbortController());
+    expect(mockCreatePatientNote).toHaveBeenCalledWith(
+      expect.objectContaining(successPayload),
+      expect.any(AbortController),
+    );
   });
 
   test('renders an error snackbar if there was a problem recording a visit note', async () => {

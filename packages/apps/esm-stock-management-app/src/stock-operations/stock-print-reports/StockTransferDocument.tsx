@@ -2,6 +2,7 @@ import { CLOSE_PRINT_AFTER_PRINT, STOCK_OPERATION_PRINT_DISABLE_COSTS } from '..
 import { GetHeaderSection, GetPrintTemplate } from '../../core/print/PrintTemplate';
 import { printDocument } from '../../core/print/printUtils';
 import { formatDisplayDate } from '../../core/utils/datetimeUtils';
+import { translateFromGlobal as t } from '../../core/utils/translationUtils';
 import { type StockOperationPrintData } from './StockOperationReport';
 
 export const FormatTransferDocument = async (data: StockOperationPrintData): Promise<string> => {
@@ -11,21 +12,21 @@ export const FormatTransferDocument = async (data: StockOperationPrintData): Pro
     <div>
         ${headerSection}
         <div class="heading text center" style="text-transform: uppercase;font-size: 20pt;">
-            <b>Inventory Transfer</b>
+            <b>${t('inventoryTransfer', 'Inventory transfer')}</b>
         </div>
         <div class="heading-row text">
-            <span>Name of Health Unit: </span>
+            <span>${t('healthUnitName', 'Name of health unit')}: </span>
             <b><span>${data?.organizationName ?? ''}</span></b>
         </div>
         <div class="heading-row text">
             <table style="width:99%" border="0" cellspacing="0" cellpadding="0">
                 <tr>
                     <td style="text-align: left;">
-                        <span>Transfer From: </span>
+                        <span>${t('transferFrom', 'Transfer from')}: </span>
                         <b><span>${data?.location ?? ''}</span></b>
                     </td>
                     <td style="text-align: right;">
-                        <span>Transfer#: </span>
+                        <span>${t('transferNumber', 'Transfer #')}: </span>
                         <b><span>${data?.operationNumber}</span></b>
                     </td>
                 </tr>
@@ -35,11 +36,11 @@ export const FormatTransferDocument = async (data: StockOperationPrintData): Pro
             <table style="width:99%" border="0" cellspacing="0" cellpadding="0">
                 <tr>
                     <td style="text-align: left;">
-                        <span>Transfer To: </span>
+                        <span>${t('transferTo', 'Transfer to')}: </span>
                         <b><span>${data?.destination ?? ''}</span></b>
                     </td>
                     <td style="text-align: right;">                    
-                        <span>Date: </span>
+                        <span>${t('date', 'Date')}: </span>
                         <b><span>${formatDisplayDate(data?.operationDate)}</span></b>
                     </td>
                 </tr>
@@ -47,13 +48,13 @@ export const FormatTransferDocument = async (data: StockOperationPrintData): Pro
         </div>
         <table class="table-data" border="0" cellspacing="0" cellpadding="0">                     
             <tr>
-                <th valign="middle" class="left" style="border-top:solid black 1.0pt;"><b>Item Code No.</b></th>
-                <th valign="middle" class="left" style="border-top:solid black 1.0pt;"><b>Item Description (name, formulation, strength)</b></th>
-                <th valign="middle" style="border-top:solid black 1.0pt;"><b>Batch No.</b></th>
-                <th valign="middle" style="border-top:solid black 1.0pt;"><b>Expiry</b></th>
-                <th valign="middle" style="border-top:solid black 1.0pt;"><b>Quantity</b></th>
-                <th valign="middle" style="border-top:solid black 1.0pt;"><b>Unit Cost</b></th>
-                <th valign="middle" style="border-top:solid black 1.0pt;"><b>Total Cost</b></th>
+                <th valign="middle" class="left" style="border-top:solid black 1.0pt;"><b>${t('itemCodeNumber', 'Item code No.')}</b></th>
+                <th valign="middle" class="left" style="border-top:solid black 1.0pt;"><b>${t('itemDescription', 'Item description')}</b></th>
+                <th valign="middle" style="border-top:solid black 1.0pt;"><b>${t('batchNo', 'Batch number')}</b></th>
+                <th valign="middle" style="border-top:solid black 1.0pt;"><b>${t('expiry', 'Expiry')}</b></th>
+                <th valign="middle" style="border-top:solid black 1.0pt;"><b>${t('quantity', 'Quantity')}</b></th>
+                <th valign="middle" style="border-top:solid black 1.0pt;"><b>${t('unitCost', 'Unit cost')}</b></th>
+                <th valign="middle" style="border-top:solid black 1.0pt;"><b>${t('totalCost', 'Total cost')}</b></th>
             </tr>            
             ${
               data?.items
@@ -66,8 +67,8 @@ export const FormatTransferDocument = async (data: StockOperationPrintData): Pro
                     <td valign="middle" class="center">${p.batchNumber ?? ''}</td>                    
                     <td valign="middle" class="center">${formatDisplayDate(p.expiryDate)}</td>                    
                     <td valign="middle" class="center">${p.quantityRequired?.toLocaleString() ?? ''} ${
-                        p.quantityRequiredUoM ?? ''
-                      }</td>
+                      p.quantityRequiredUoM ?? ''
+                    }</td>
                     <td valign="middle" class="center">${
                       STOCK_OPERATION_PRINT_DISABLE_COSTS
                         ? ''
@@ -103,23 +104,23 @@ export const FormatTransferDocument = async (data: StockOperationPrintData): Pro
             }    
             <tr class="footer-field">
                 <td valign="middle" colspan="7" style="border:0;padding-top: 15pt;">
-                    Remarks:<br/>
+                    ${t('remarks', 'Remarks')}:<br/>
                     ${data?.remarks ?? ''}
                 </td>                
             </tr>   
             <tr class="footer-field">
                 <td valign="middle" colspan="4" style="border:0;padding-top: 15pt;">
-                    Prepared By:<br/>
+                    ${t('preparedBy', 'Prepared by')}:<br/>
                     <b>${data?.responsiblePerson ?? ''}</b>
                 </td>
                 <td valign="middle" colspan="3" style="border:0;padding-top: 15pt;">
-                   Authorized By:<br/>
+                   ${t('authorizedBy', 'Authorized by')}:<br/>
                     &nbsp;
                 </td>
             </tr>
             <tr class="footer-field">
-                <td valign="middle" colspan="4" style="border:0;"><br/><br/>Signature</td>
-                <td valign="middle" colspan="3" style="border:0;"><br/><br/>Signature</td>
+                <td valign="middle" colspan="4" style="border:0;"><br/><br/>${t('signature', 'Signature')}</td>
+                <td valign="middle" colspan="3" style="border:0;"><br/><br/>${t('signature', 'Signature')}</td>
             </tr>        
         </table>        
     </div>

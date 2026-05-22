@@ -1,6 +1,6 @@
-import { ResourceRepresentation } from '../../../core/api/api';
 import { useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
+import { ResourceRepresentation } from '../../../core/api/api';
 import {
   type StockItemInventoryFilter,
   useStockItemInventory,

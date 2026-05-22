@@ -182,6 +182,8 @@ export const stockOperationItemDtoSchema = z.object({
   destinationUuid: z.string({ required_error: 'Location Required' }).min(1, {
     message: 'Location Required',
   }),
+  atLocationUuid: z.string().nullish(),
+  atLocationName: z.string().nullish(),
   reasonUuid: z.string({ required_error: 'Reason Required' }).min(1, {
     message: 'Reason Required',
   }),

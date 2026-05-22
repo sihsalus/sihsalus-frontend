@@ -1,5 +1,3 @@
-/* eslint-disable @typescript-eslint/no-unused-vars */
-import { find, groupBy, isUndefined, orderBy } from 'lodash-es';
 import { type ExistingDoses, type ImmunizationFormData, type ImmunizationGrouped } from '../types';
 import {
   type Code,
@@ -57,11 +55,7 @@ const findCodeWithoutSystem = function (immunizationResource: FHIRImmunizationRe
   if (!immunizationResource?.vaccineCode?.coding) {
     return null;
   }
-  return (
-    find(immunizationResource.vaccineCode.coding, function (code: Code) {
-      return isUndefined(code.system);
-    }) || null
-  );
+  return immunizationResource.vaccineCode.coding.find((code: Code) => code.system === undefined) ?? null;
 };
 
 export const mapFromFHIRImmunizationBundle = (
@@ -87,9 +81,12 @@ export const mapFromFHIRImmunizationBundle = (
     return [];
   }
 
-  const groupByImmunization = groupBy(immunizations, (immunizationResource) => {
-    return findCodeWithoutSystem(immunizationResource)?.code;
-  });
+  const groupByImmunization = immunizations.reduce<Record<string, FHIRImmunizationResource[]>>((acc, item) => {
+    const key = findCodeWithoutSystem(item)?.code ?? '';
+    if (!acc[key]) acc[key] = [];
+    acc[key].push(item);
+    return acc;
+  }, {});
 
   const validGroups = Object.entries(groupByImmunization).filter(([key]) => key);
 
@@ -103,12 +100,17 @@ export const mapFromFHIRImmunizationBundle = (
     return {
       vaccineName: codeWithoutSystem?.display,
       vaccineUuid: codeWithoutSystem?.code,
-      existingDoses: orderBy(existingDoses, [(dose) => dose.occurrenceDateTime], ['desc']),
+      existingDoses: existingDoses
+        .slice()
+        .sort((a, b) => (b.occurrenceDateTime ?? '').localeCompare(a.occurrenceDateTime ?? '')),
     };
   });
 
-  // Sort vaccine groups by most recent dose date (descending)
-  return orderBy(groups, [(g) => g.existingDoses?.[0]?.occurrenceDateTime ?? ''], ['desc']);
+  return groups
+    .slice()
+    .sort((a, b) =>
+      (b.existingDoses?.[0]?.occurrenceDateTime ?? '').localeCompare(a.existingDoses?.[0]?.occurrenceDateTime ?? ''),
+    );
 };
 
 function toReferenceOfType(type: string, referenceValue: string): Reference | null {

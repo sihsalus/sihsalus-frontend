@@ -14,11 +14,12 @@ import {
   TableHeader,
   TableRow,
 } from '@carbon/react';
-import { AddIcon, formatDate, isDesktop, launchWorkspace, useLayoutType } from '@openmrs/esm-framework';
+import { AddIcon, formatDate, isDesktop, useLayoutType } from '@openmrs/esm-framework';
 import {
   CardHeader,
   EmptyState,
   ErrorState,
+  launchPatientWorkspace,
   launchStartVisitPrompt,
   useVisitOrOfflineVisit,
 } from '@openmrs/esm-patient-common-lib';
@@ -96,7 +97,7 @@ const PatientObservationGroupTable: React.FC<PatientObservationGroupTableProps> 
         launchStartVisitPrompt();
       } else {
         if (formWorkspace) {
-          launchWorkspace(patientFormEntryWorkspace, {
+          launchPatientWorkspace(patientFormEntryWorkspace, {
             workspaceTitle: headerTitle,
             mutateForm: mutate,
             formInfo: { formUuid: formWorkspace, patientUuid, additionalProps: {} },
@@ -111,13 +112,13 @@ const PatientObservationGroupTable: React.FC<PatientObservationGroupTableProps> 
     }
   }, [patientUuid, currentVisit, formWorkspace, headerTitle, mutate]);
 
-  const parseDisplay = (display: string) => {
+  const parseDisplay = useCallback((display: string) => {
     const [category, ...rest] = display.split(': ');
     return {
       category,
       value: rest.join(': ') || '',
     };
-  };
+  }, []);
 
   // Transformar datos para la tabla expandible
   const observationGroups = useMemo((): ObservationGroup[] => {
@@ -145,7 +146,7 @@ const PatientObservationGroupTable: React.FC<PatientObservationGroupTableProps> 
           encounterUuid: data.uuid,
         };
       });
-  }, [data]);
+  }, [data, parseDisplay]);
 
   // Configuración de columnas para la tabla principal
   const columns = [

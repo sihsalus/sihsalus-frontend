@@ -119,7 +119,9 @@ function main() {
   const workspaceDirs = resolveWorkspaceDirectories();
 
   cleanRoot(removedPaths);
-  workspaceDirs.forEach((workspaceDir) => cleanWorkspace(workspaceDir, removedPaths));
+  workspaceDirs.forEach((workspaceDir) => {
+    cleanWorkspace(workspaceDir, removedPaths);
+  });
 
   const verb = dryRun ? 'Would remove' : 'Removed';
   if (removedPaths.length === 0) {
@@ -128,7 +130,9 @@ function main() {
   }
 
   console.log(`${verb} ${removedPaths.length} generated artifact${removedPaths.length === 1 ? '' : 's'}:`);
-  removedPaths.forEach((removedPath) => console.log(`- ${removedPath}`));
+  removedPaths.forEach((removedPath) => {
+    console.log(`- ${removedPath}`);
+  });
 }
 
 main();

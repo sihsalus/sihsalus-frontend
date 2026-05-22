@@ -1,7 +1,8 @@
 import React from 'react';
+import type { ToothRootDesign } from '../types/odontogram';
 
 type ToothDesignProps = {
-  design: 'default' | 'design2' | 'design3' | 'design4';
+  design: ToothRootDesign;
 };
 
 const ToothDesigns: React.FC<ToothDesignProps> = ({ design }) => {

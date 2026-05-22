@@ -31,6 +31,11 @@ export const systemAdminAppMenuLink = getAsyncLifecycle(
   options,
 );
 
+export const systemAdminAppMenuItem = getAsyncLifecycle(
+  () => import('./system-admin-app-menu-item.component'),
+  options,
+);
+
 export const legacySystemAdminPageCardLink = getAsyncLifecycle(
   () => import('./dashboard/legacy-admin-page-link.component'),
   options,

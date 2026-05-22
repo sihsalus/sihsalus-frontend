@@ -55,11 +55,11 @@ const CameraMediaUploaderModal: React.FC<CameraMediaUploaderModalProps> = ({
     setFilesToUpload([]);
     setUploadFilesToServer(false);
     setError(undefined);
-  }, [setFilesToUpload, setUploadFilesToServer]);
+  }, []);
 
   const startUploadingToServer = useCallback(() => {
     setUploadFilesToServer(true);
-  }, [setUploadFilesToServer]);
+  }, []);
 
   const returnComponent = useMemo(() => {
     // If the files are all set to upload, then filesUploader is visible on the screen.

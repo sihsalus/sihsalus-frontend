@@ -1,3 +1,4 @@
+import path from 'node:path';
 import { request } from '@playwright/test';
 import * as dotenv from 'dotenv';
 
@@ -25,7 +26,7 @@ async function globalSetup() {
       Authorization: `Basic ${token}`,
     },
   });
-  await requestContext.storageState({ path: 'e2e/storageState.json' });
+  await requestContext.storageState({ path: path.resolve(__dirname, '../storageState.json') });
   await requestContext.dispose();
 }
 

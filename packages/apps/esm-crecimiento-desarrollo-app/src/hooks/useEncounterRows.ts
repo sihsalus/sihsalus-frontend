@@ -13,7 +13,7 @@ export const encounterRepresentation =
 export interface OpenmrsResource {
   uuid: string;
   display?: string;
-  [anythingElse: string]: any;
+  [anythingElse: string]: unknown;
 }
 
 export function useEncounterRows(

@@ -70,7 +70,7 @@ const GenericInput = <T extends FormData>({
       const isOutOfRange =
         parsedValue !== undefined &&
         ((field.min !== null && parsedValue < field.min) || (field.max !== null && parsedValue > field.max));
-      const isInvalid = parsedValue === undefined || isNaN(parsedValue) || isOutOfRange;
+      const isInvalid = parsedValue === undefined || Number.isNaN(parsedValue) || isOutOfRange;
       setInvalid(isInvalid);
       onChange(parsedValue);
     } else {

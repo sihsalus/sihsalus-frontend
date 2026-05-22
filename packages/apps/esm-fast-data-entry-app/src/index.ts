@@ -14,6 +14,8 @@ export const root = getAsyncLifecycle(() => import('./Root'), options);
 
 export const formsAppMenuLink = getAsyncLifecycle(() => import('./forms-app-menu-link'), options);
 
+export const formsAppMenuItem = getAsyncLifecycle(() => import('./forms-app-menu-item.component'), options);
+
 export function startupApp() {
   defineConfigSchema(moduleName, configSchema);
 

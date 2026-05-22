@@ -74,20 +74,23 @@ export const pick = <T extends object>(obj: T, fields: string[]): Partial<T> => 
     return path.split('.').reduce((acc, key) => (acc && acc[key] !== undefined ? acc[key] : undefined), obj);
   };
 
-  return fields.reduce((result, field) => {
-    const value = getNestedValue(obj, field);
-    if (value !== undefined) {
-      const keys = field.split('.');
-      const lastKey = keys.pop()!;
+  return fields.reduce(
+    (result, field) => {
+      const value = getNestedValue(obj, field);
+      if (value !== undefined) {
+        const keys = field.split('.');
+        const lastKey = keys.pop()!;
 
-      // Create nested structure in result
-      keys.reduce((nested, key) => {
-        if (!nested[key]) nested[key] = {};
-        return nested[key];
-      }, result as any)[lastKey] = value;
-    }
-    return result;
-  }, {} as Partial<T>);
+        // Create nested structure in result
+        keys.reduce((nested, key) => {
+          if (!nested[key]) nested[key] = {};
+          return nested[key];
+        }, result as any)[lastKey] = value;
+      }
+      return result;
+    },
+    {} as Partial<T>,
+  );
 };
 
 export const otherUser: User = {

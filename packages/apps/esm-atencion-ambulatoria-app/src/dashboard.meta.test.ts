@@ -7,7 +7,7 @@ describe('consulta ambulatoria dashboard meta', () => {
         icon: 'omrs-icon-document',
         slot: 'patient-chart-consulta-externa-slot',
         columns: 1,
-        title: 'Consulta Externa',
+        title: 'consultaExterna',
         path: 'consulta-externa',
       }),
     );
@@ -17,7 +17,7 @@ describe('consulta ambulatoria dashboard meta', () => {
         icon: 'omrs-icon-sticky-note-add',
         slot: 'patient-chart-social-history-dashboard-slot',
         columns: 1,
-        title: 'Historia Social',
+        title: 'socialHistory',
         path: 'social-history-dashboard',
       }),
     );

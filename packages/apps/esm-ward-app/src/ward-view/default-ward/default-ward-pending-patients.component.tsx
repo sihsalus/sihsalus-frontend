@@ -21,30 +21,32 @@ function DefaultWardPendingPatients() {
     <ErrorState headerTitle={t('admissionRequests', 'Admission requests')} error={errorFetchingInpatientRequests} />
   ) : (
     <>
-      {inpatientRequests?.map((request: InpatientRequest, i) => {
-        const wardPatient = {
-          patient: request.patient,
-          visit: request.visit,
-          bed: null,
-          inpatientRequest: request,
-          inpatientAdmission: null,
-        };
+      {inpatientRequests
+        ?.filter((request) => request?.patient)
+        .map((request: InpatientRequest, i) => {
+          const wardPatient = {
+            patient: request.patient,
+            visit: request.visit,
+            bed: null,
+            inpatientRequest: request,
+            inpatientAdmission: null,
+          };
 
-        return (
-          <AdmissionRequestCard
-            key={`admission-request-card-${i}`}
-            wardPatient={{
-              patient: request.patient,
-              visit: request.visit,
-              bed: null,
-              inpatientRequest: request,
-              inpatientAdmission: null,
-            }}
-          >
-            <AdmissionRequestNoteRow id={'admission-request-note'} wardPatient={wardPatient} />
-          </AdmissionRequestCard>
-        );
-      })}
+          return (
+            <AdmissionRequestCard
+              key={`admission-request-card-${i}`}
+              wardPatient={{
+                patient: request.patient,
+                visit: request.visit,
+                bed: null,
+                inpatientRequest: request,
+                inpatientAdmission: null,
+              }}
+            >
+              <AdmissionRequestNoteRow id={'admission-request-note'} wardPatient={wardPatient} />
+            </AdmissionRequestCard>
+          );
+        })}
     </>
   );
 }

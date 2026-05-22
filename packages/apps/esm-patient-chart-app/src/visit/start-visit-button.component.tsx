@@ -1,7 +1,7 @@
 import { Button } from '@carbon/react';
 import { showSnackbar } from '@openmrs/esm-framework';
 import { launchPatientWorkspace } from '@openmrs/esm-patient-common-lib';
-import React, { useCallback } from 'react';
+import { useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
 
 interface StartVisitButtonProps {

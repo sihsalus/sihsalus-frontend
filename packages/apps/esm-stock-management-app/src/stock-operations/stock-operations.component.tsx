@@ -1,4 +1,3 @@
-import React from 'react';
 import StockOperations from './stock-operations-table.component';
 
 function StockOperationsComponent() {

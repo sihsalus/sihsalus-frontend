@@ -1,23 +1,22 @@
-import React from 'react';
+import { act, render, renderHook, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { renderHook, act, render, screen, waitFor } from '@testing-library/react';
-import { type StockSource } from '../core/api/types/stockOperation/StockSource';
 import { type Concept } from '../core/api/types/concept/Concept';
+import { type StockSource } from '../core/api/types/stockOperation/StockSource';
 import { useConcept } from '../stock-lookups/stock-lookups.resource';
-import useStockSourcesPage from './stock-sources-items-table.resource';
 import StockSourcesItems from './stock-sources-items-table.component';
+import useStockSourcesPage from './stock-sources-items-table.resource';
 
-const mockUseStockSourcesPage = jest.mocked(useStockSourcesPage);
-const mockUseConcept = jest.mocked(useConcept);
+const mockUseStockSourcesPage = vi.mocked(useStockSourcesPage);
+const mockUseConcept = vi.mocked(useConcept);
 
-jest.mock('./stock-sources-items-table.resource', () => ({
+vi.mock('./stock-sources-items-table.resource', () => ({
   __esModule: true,
-  default: jest.fn(),
-  useStockSourcesPage: jest.fn(),
+  default: vi.fn(),
+  useStockSourcesPage: vi.fn(),
 }));
 
-jest.mock('../stock-lookups/stock-lookups.resource', () => ({
-  useConcept: jest.fn(),
+vi.mock('../stock-lookups/stock-lookups.resource', () => ({
+  useConcept: vi.fn(),
 }));
 
 describe('StockSourcesItems', () => {
@@ -71,9 +70,9 @@ describe('StockSourcesItems', () => {
       totalItems: mockItems.totalCount,
       currentPage: 1,
       pageSizes: [10, 20, 50],
-      goTo: jest.fn(),
+      goTo: vi.fn(),
       currentPageSize: 10,
-      setPageSize: jest.fn(),
+      setPageSize: vi.fn(),
       error: null,
       paginatedItems: mockItems.results as unknown as StockSource[],
       tableHeaders: [],
@@ -97,9 +96,9 @@ describe('StockSourcesItems', () => {
       totalItems: mockItems.totalCount,
       currentPage: 1,
       pageSizes: [10, 20, 50],
-      goTo: jest.fn(),
+      goTo: vi.fn(),
       currentPageSize,
-      setPageSize: jest.fn((size: number) => {
+      setPageSize: vi.fn((size: number) => {
         currentPageSize = size;
       }),
       error: null,
@@ -125,8 +124,8 @@ describe('StockSourcesItems', () => {
       currentPage: 1,
       currentPageSize: 10,
       pageSizes: [10, 20, 50],
-      goTo: jest.fn(),
-      setPageSize: jest.fn(),
+      goTo: vi.fn(),
+      setPageSize: vi.fn(),
       paginatedItems: [] as unknown as StockSource[],
       tableHeaders: [],
     });
@@ -146,9 +145,9 @@ describe('StockSourcesItems', () => {
       tableHeaders: [],
       currentPage: 1,
       pageSizes: [10, 20, 50],
-      goTo: jest.fn(),
+      goTo: vi.fn(),
       currentPageSize: 10,
-      setPageSize: jest.fn(),
+      setPageSize: vi.fn(),
       paginatedItems: [],
       error: null,
     });
@@ -178,9 +177,9 @@ describe('StockSourcesItems', () => {
       ],
       currentPage: 1,
       pageSizes: [10, 20, 50],
-      goTo: jest.fn(),
+      goTo: vi.fn(),
       currentPageSize: 10,
-      setPageSize: jest.fn(),
+      setPageSize: vi.fn(),
       paginatedItems: mockItems as unknown as StockSource[],
       error: null,
     });
@@ -219,9 +218,9 @@ describe('StockSourcesItems', () => {
       ],
       currentPage: 1,
       pageSizes: [10, 20, 50],
-      goTo: jest.fn(),
+      goTo: vi.fn(),
       currentPageSize: 10,
-      setPageSize: jest.fn(),
+      setPageSize: vi.fn(),
       paginatedItems: mockItems as unknown as StockSource[],
       error: null,
     });
@@ -272,9 +271,9 @@ describe('StockSourcesItems', () => {
       tableHeaders: [],
       currentPage: 1,
       pageSizes: [10, 20, 50],
-      goTo: jest.fn(),
+      goTo: vi.fn(),
       currentPageSize: 10,
-      setPageSize: jest.fn(),
+      setPageSize: vi.fn(),
       paginatedItems: [],
       error: null,
     });
@@ -288,8 +287,8 @@ describe('StockSourcesItems', () => {
   test('pagination works as expected', async () => {
     const user = userEvent.setup();
 
-    const mockGoTo = jest.fn();
-    const mockSetPageSize = jest.fn();
+    const mockGoTo = vi.fn();
+    const mockSetPageSize = vi.fn();
 
     mockUseStockSourcesPage.mockReturnValue({
       items: [],

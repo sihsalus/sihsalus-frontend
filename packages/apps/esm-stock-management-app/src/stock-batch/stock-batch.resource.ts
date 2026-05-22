@@ -1,8 +1,8 @@
+import { openmrsFetch, restBaseUrl } from '@openmrs/esm-framework';
 import useSWR from 'swr';
 import { type ResourceFilterCriteria, toQueryParams } from '../core/api/api';
 import { type BatchJob, type BatchJobType } from '../core/api/types/BatchJob';
 import { type PageableResult } from '../core/api/types/PageableResult';
-import { openmrsFetch, restBaseUrl } from '@openmrs/esm-framework';
 import { type ReportType } from '../stock-reports/ReportType';
 
 export interface BatchJobFilter extends ResourceFilterCriteria {

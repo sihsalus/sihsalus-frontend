@@ -26,8 +26,9 @@
       "meta": {
         "name": "fua-request",
         "slot": "fua-dashboard-slot",
-        "title": "Formato Único de Atención"
-      }
+        "title": "fua"
+      },
+      "order": 50
     },
     {
       "name": "all-fua-requests-tile",
@@ -36,7 +37,7 @@
       "order": 2,
       "meta": {
         "name": "allFuasRequestsTileSlot",
-        "title": "FUAs solicitados"
+        "title": "fuasRequested"
       }
     },
     {
@@ -46,7 +47,7 @@
       "order": 0,
       "meta": {
         "name": "inProgressTileSlot",
-        "title": "Visitas"
+        "title": "activeFuas"
       }
     },
     {
@@ -56,7 +57,7 @@
       "order": 1,
       "meta": {
         "name": "completedTileSlot",
-        "title": "Lista de Formatos FUA"
+        "title": "completed"
       }
     },
     {
@@ -66,7 +67,7 @@
       "order": 3,
       "meta": {
         "name": "enviadoTileSlot",
-        "title": "Enviados a SETI-SIS"
+        "title": "sentFuas"
       }
     },
     {
@@ -75,7 +76,7 @@
       "slot": "patient-chart-summary-dashboard-slot",
       "meta": {
         "columnSpan": 2,
-        "title": "Formato Único de Atención"
+        "title": "fua"
       }
     },
     {
@@ -85,7 +86,7 @@
       "order": 2,
       "meta": {
         "name": "allFuasPanel",
-        "title": "FUAs solicitados"
+        "title": "fuasRequested"
       }
     },
     {
@@ -95,7 +96,7 @@
       "order": 0,
       "meta": {
         "name": "inProgressPanel",
-        "title": "Visitas"
+        "title": "activeFuas"
       }
     },
     {
@@ -105,7 +106,7 @@
       "order": 1,
       "meta": {
         "name": "completedPanel",
-        "title": "Lista de Formatos FUA"
+        "title": "completed"
       }
     },
     {
@@ -115,7 +116,7 @@
       "order": 3,
       "meta": {
         "name": "envioFuasPanel",
-        "title": "Envio FUAs"
+        "title": "sentFuas"
       }
     }
   ],
@@ -138,20 +139,6 @@
       "icon": "fuaEncounterActionButton",
       "width": "extra-wide",
       "order": 4
-    }
-  ],
-  "workspaces": [
-    {
-      "name": "fua-encounter-workspace",
-      "component": "fuaEncounterWorkspace",
-      "type": "fua-encounter",
-      "title": "createFuaWorkspaceTitle"
-    },
-    {
-      "name": "fua-viewer-workspace",
-      "component": "fuaViewerWorkspace",
-      "type": "form",
-      "title": "Ver FUA"
     }
   ],
   "modals": [

@@ -1,4 +1,4 @@
-import { Privilege } from "@openmrs/esm-framework";
+import { Privilege } from '@openmrs/esm-framework';
 
 export type UseRequirePrivilegeResult =
   | { status: 'authorized' }

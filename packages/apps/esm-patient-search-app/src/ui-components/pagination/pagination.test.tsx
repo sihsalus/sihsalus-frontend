@@ -29,7 +29,7 @@ describe('Pagination', () => {
 
   it('should increment the page when next button is clicked', async () => {
     const user = userEvent.setup();
-    const setCurrentPageMock = jest.fn();
+    const setCurrentPageMock = vi.fn();
 
     render(<Pagination totalPages={5} currentPage={1} setCurrentPage={setCurrentPageMock} hasMore={true} />);
 
@@ -41,7 +41,7 @@ describe('Pagination', () => {
 
   it('should decrement the page when previous button is clicked', async () => {
     const user = userEvent.setup();
-    const setCurrentPageMock = jest.fn();
+    const setCurrentPageMock = vi.fn();
 
     render(<Pagination totalPages={5} currentPage={3} setCurrentPage={setCurrentPageMock} hasMore={true} />);
 
@@ -53,7 +53,7 @@ describe('Pagination', () => {
 
   it('should call setCurrentPage when page button is clicked', async () => {
     const user = userEvent.setup();
-    const setCurrentPageMock = jest.fn();
+    const setCurrentPageMock = vi.fn();
 
     render(<Pagination totalPages={5} currentPage={3} setCurrentPage={setCurrentPageMock} hasMore={true} />);
 

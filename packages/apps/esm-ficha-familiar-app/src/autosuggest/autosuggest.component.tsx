@@ -1,7 +1,7 @@
 import { Layer, Search } from '@carbon/react';
 import classNames from 'classnames';
 import type { ReactNode } from 'react';
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 
 import styles from './autosuggest.scss';
 
@@ -29,9 +29,16 @@ export const Autosuggest: React.FC<AutosuggestProps> = ({
 }) => {
   const [suggestions, setSuggestions] = useState<Array<unknown>>([]);
   const [showEmptyState, setShowEmptyState] = useState(false);
-  const searchBox = useRef(null);
-  const wrapper = useRef(null);
+  const searchBox = useRef<HTMLInputElement>(null);
+  const wrapper = useRef<HTMLDivElement>(null);
   const { id: name, labelText } = searchProps;
+
+  const handleClickOutsideComponent = useCallback((e: MouseEvent) => {
+    if (wrapper.current && !wrapper.current.contains(e.target as Node)) {
+      setSuggestions([]);
+      setShowEmptyState(false);
+    }
+  }, []);
 
   useEffect(() => {
     document.addEventListener('mousedown', handleClickOutsideComponent);
@@ -39,14 +46,7 @@ export const Autosuggest: React.FC<AutosuggestProps> = ({
     return () => {
       document.removeEventListener('mousedown', handleClickOutsideComponent);
     };
-  }, [wrapper]);
-
-  const handleClickOutsideComponent = (e) => {
-    if (wrapper.current && !wrapper.current.contains(e.target)) {
-      setSuggestions([]);
-      setShowEmptyState(false);
-    }
-  };
+  }, [handleClickOutsideComponent]);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const query = e.target.value;
@@ -69,7 +69,9 @@ export const Autosuggest: React.FC<AutosuggestProps> = ({
   const handleClick = (index: number) => {
     const display = getDisplayValue(suggestions[index]);
     const value = getFieldValue(suggestions[index]);
-    searchBox.current.value = display;
+    if (searchBox.current) {
+      searchBox.current.value = display;
+    }
     onSuggestionSelected(name, value);
     setSuggestions([]);
   };
@@ -99,8 +101,6 @@ export const Autosuggest: React.FC<AutosuggestProps> = ({
                   handleClick(index);
                 }
               }}
-              role="button"
-              tabIndex={0}
               className={typeof renderSuggestionItem !== 'function' ? styles.displayText : undefined}
             >
               {typeof renderSuggestionItem === 'function'

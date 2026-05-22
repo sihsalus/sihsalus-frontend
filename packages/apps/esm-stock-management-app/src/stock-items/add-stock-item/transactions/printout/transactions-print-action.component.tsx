@@ -1,12 +1,16 @@
-import React, { useEffect, useMemo, useState } from 'react';
 import { ComboButton, MenuItem } from '@carbon/react';
 import { Printer } from '@carbon/react/icons';
-import { useTranslation } from 'react-i18next';
-import { useStockItem, useStockItemInventory } from '../../../stock-items.resource';
 import { showModal, useConfig } from '@openmrs/esm-framework';
-import { type StockItemInventoryFilter, useStockItemTransactions } from '../../../stock-items.resource';
-import { ResourceRepresentation } from '../../../../core/api/api';
+import React, { useEffect, useMemo, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { type ConfigObject } from '../../../../config-schema';
+import { ResourceRepresentation } from '../../../../core/api/api';
+import {
+  type StockItemInventoryFilter,
+  useStockItem,
+  useStockItemInventory,
+  useStockItemTransactions,
+} from '../../../stock-items.resource';
 
 type Props = {
   itemUuid: string;
@@ -20,7 +24,7 @@ const TransactionsPrintAction: React.FC<Props> = ({ columns, data, itemUuid, fil
 
   const { enablePrintButton } = useConfig<ConfigObject>();
 
-  const [stockCardItemFilter, setStockCardItemFilter] = useState<StockItemInventoryFilter>({
+  const [stockCardItemFilter] = useState<StockItemInventoryFilter>({
     startIndex: 0,
     totalCount: true,
     v: ResourceRepresentation.Full,
@@ -36,7 +40,7 @@ const TransactionsPrintAction: React.FC<Props> = ({ columns, data, itemUuid, fil
   });
 
   const { item: stockItem, isLoading: isStockItemLoading } = useStockItem(itemUuid);
-  const { items: stockCardData, isLoading: isStockCardLoading, error } = useStockItemTransactions(stockCardItemFilter);
+  const { items: stockCardData, isLoading: isStockCardLoading } = useStockItemTransactions(stockCardItemFilter);
   const { items: inventoryBalance } = useStockItemInventory(stockItemFilter);
 
   const [balances, setBalances] = useState<Record<string, { quantity: number; itemName: string }>>({});

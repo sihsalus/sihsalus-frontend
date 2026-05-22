@@ -1,8 +1,9 @@
-import React from 'react';
-import { type SideNavItem } from './types';
 import { SideNav, SideNavItems, SideNavLink } from '@carbon/react';
-import styles from './side-nav.scss';
 import { navigate } from '@openmrs/esm-framework';
+import React from 'react';
+import { useTranslation } from 'react-i18next';
+import styles from './side-nav.scss';
+import { type SideNavItem } from './types';
 
 interface SideNavProps {
   tabs: SideNavItem[];
@@ -11,6 +12,8 @@ interface SideNavProps {
 }
 
 const SideNavItemsList: React.FC<SideNavProps> = ({ tabs, selectedIndex, onSelectTab }) => {
+  const { t } = useTranslation();
+
   return (
     <div
       className={`
@@ -18,7 +21,7 @@ const SideNavItemsList: React.FC<SideNavProps> = ({ tabs, selectedIndex, onSelec
       `}
     >
       <div className={styles.tab}>
-        <SideNav isFixedNav expanded={true} isChildOfHeader={true} aria-label="Side navigation">
+        <SideNav isFixedNav expanded={true} isChildOfHeader={true} aria-label={t('sideNavigation', 'Side navigation')}>
           <SideNavItems>
             {tabs.map((tab: SideNavItem, index: number) => (
               <SideNavLink

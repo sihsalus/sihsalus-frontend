@@ -28,11 +28,7 @@ const createCohortFromSearchItem = async (
   searchItem: SearchHistoryItem,
   t: TFunction,
 ) => {
-  const cohortMembers: number[] = [];
-  const { patients } = searchItem;
-  patients.forEach((patient: Patient) => {
-    cohortMembers.push(parseInt(patient.id, 10));
-  });
+  const cohortMembers = searchItem.memberIds ?? searchItem.patients.map((patient: Patient) => parseInt(patient.id, 10));
 
   const cohort: Cohort = {
     display: name,

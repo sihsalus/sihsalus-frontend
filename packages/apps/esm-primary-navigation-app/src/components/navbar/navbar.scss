@@ -1,5 +1,5 @@
-@use '@carbon/layout';
-@use '@openmrs/esm-styleguide/src/vars' as *;
+@use "@carbon/layout";
+@use "@openmrs/esm-styleguide/src/vars" as *;
 
 .topNavActionsSlot {
   display: flex;
@@ -35,6 +35,11 @@
   margin-inline-start: layout.$spacing-05;
 }
 
+.logoWrapper {
+  flex: 0 1 auto;
+  min-width: 0;
+}
+
 .divider {
   width: 1px;
   height: layout.$spacing-06;
@@ -43,9 +48,32 @@
 }
 
 .topNavInfoSlot {
+  display: flex;
+  align-items: center;
+  flex: 1 1 auto;
   gap: layout.$spacing-03;
+  min-width: 0;
+  overflow: hidden;
 }
 
 .panelWrapper {
   display: contents;
+}
+
+@media (max-width: 30rem) {
+  .logoWrapper,
+  .divider {
+    display: none;
+  }
+}
+
+@media (max-width: 48rem) {
+  .topNavInfoSlot {
+    flex: 0 0 auto;
+    gap: 0;
+  }
+
+  .headerGlobalBar {
+    margin-inline-start: auto;
+  }
 }

@@ -1,7 +1,5 @@
 import { Type } from '@openmrs/esm-framework';
 
-const alternativeLogoPath = ['${openmrsSpaBase}', '/logo-horizontal.svg'].join('');
-
 export const esmPatientChartSchema = {
   defaultFacilityUrl: {
     _type: Type.String,
@@ -39,23 +37,32 @@ export const esmPatientChartSchema = {
   logo: {
     alt: {
       _type: Type.String,
-      _default: '',
+      _default: 'Logo',
       _description: 'Alt text, shown on hover',
     },
     name: {
       _type: Type.String,
-      _default: null,
+      _default: '',
       _description: 'The organization name displayed when image is absent',
     },
     src: {
       _type: Type.String,
-      _default: alternativeLogoPath,
+      _default: '',
       _description: 'A path or URL to an image. Defaults to the OpenMRS SVG sprite.',
     },
   },
   notesConceptUuids: {
     _type: Type.Array,
     _default: ['162169AAAAAAAAAAAAAAAAAAAAAAAAAAAAAA'],
+  },
+  diagnosisTypeConceptMap: {
+    _type: Type.Object,
+    _description: 'Concept UUID to diagnosis type mapping used when rendering visit diagnosis summaries.',
+    _default: {
+      '4f59cf03-f888-4d34-a5dc-f24269b1945d': 'presuntivo',
+      '2c60a8f6-1787-41be-8434-30ebeb5656ff': 'definitivo',
+      '6f653861-8469-4dfa-a0b5-2804f1cfc527': 'repetitivo',
+    },
   },
   numberOfVisitsToLoad: {
     _type: Type.Number,
@@ -247,6 +254,7 @@ export interface ChartConfig {
     src: string;
   };
   notesConceptUuids: string[];
+  diagnosisTypeConceptMap: Record<string, 'presuntivo' | 'definitivo' | 'repetitivo'>;
   numberOfVisitsToLoad: number;
   offlineVisitTypeUuid: string;
   FUATemplateUuid: string;

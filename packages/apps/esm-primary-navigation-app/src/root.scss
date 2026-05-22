@@ -1,47 +1,5 @@
-@use '@openmrs/esm-styleguide/src/vars' as *;
+@use "@openmrs/esm-styleguide/src/vars" as *;
 
 .primaryNavContainer {
   height: var(--omrs-topnav-height);
-}
-
-:global(:root) {
-  --sihsalus-left-nav-expanded-width: 16rem;
-  --sihsalus-left-nav-collapsed-width: 4rem;
-  --sihsalus-left-nav-width: var(--sihsalus-left-nav-expanded-width);
-}
-
-:global(.omrs-breakpoint-gt-tablet.sihsalus-left-nav-collapsed) {
-  --sihsalus-left-nav-width: var(--sihsalus-left-nav-collapsed-width);
-  --omrs-sidenav-width: var(--sihsalus-left-nav-collapsed-width);
-}
-
-:global(.omrs-breakpoint-gt-tablet #omrs-left-nav-container .cds--side-nav) {
-  width: var(--sihsalus-left-nav-width);
-  min-width: var(--sihsalus-left-nav-width);
-  max-width: var(--sihsalus-left-nav-width);
-  overflow-x: hidden;
-  transition:
-    width 300ms ease,
-    min-width 300ms ease,
-    max-width 300ms ease;
-}
-
-:global(.omrs-breakpoint-gt-tablet.sihsalus-left-nav-collapsed .sihsalus-side-nav__item) {
-  justify-content: center;
-  gap: 0;
-}
-
-:global(.omrs-breakpoint-gt-tablet.sihsalus-left-nav-collapsed .sihsalus-side-nav__text) {
-  max-width: 0;
-  opacity: 0;
-  overflow: hidden;
-}
-
-:global(.omrs-breakpoint-gt-tablet.sihsalus-left-nav-collapsed .cds--side-nav__link) {
-  justify-content: center;
-  padding-inline: 0;
-}
-
-:global(.omrs-breakpoint-gt-tablet.sihsalus-left-nav-collapsed .cds--side-nav__link.active-left-nav-link) {
-  padding-inline: 0;
 }

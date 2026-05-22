@@ -51,8 +51,10 @@ const RequestProcedureTable: React.FC<RequestProcedureTableProps> = ({ isValidat
   const shouldOnClickBeCalled = useRef(true);
   const layout = useLayoutType();
   const isTablet = layout === 'tablet';
-  const launchAddNewRequestWorkspace = useCallback(() => launchWorkspace(addNewRequestWorkspace), []);
-
+  const launchAddNewRequestWorkspace = useCallback(
+    () => launchWorkspace(addNewRequestWorkspace, { patientUuid }),
+    [patientUuid],
+  );
   const launchDeleteRequestDialog = (requestId: number) => {
     const dispose = showModal(requestDeleteConfirmationDialog, {
       closeDeleteModal: () => dispose(),
@@ -96,7 +98,7 @@ const RequestProcedureTable: React.FC<RequestProcedureTableProps> = ({ isValidat
     };
   }, [t]);
 
-  const tableRows = results?.map((request, id) => ({
+  const tableRows = results?.map((request, _id) => ({
     id: String(request.id),
     status: {
       sortKey: statusText[request.status],
@@ -219,20 +221,27 @@ const RequestProcedureTable: React.FC<RequestProcedureTableProps> = ({ isValidat
               <Table aria-label="Reqeusts summary" className={styles.table} {...getTableProps()}>
                 <TableHead>
                   <TableRow>
-                    {headers.map((header, index) => (
-                      <TableHeader {...getHeaderProps({ header })}>{header.header}</TableHeader>
-                    ))}
+                    {headers.map((header) => {
+                      const { key, ...headerProps } = getHeaderProps({ header });
+                      return (
+                        <TableHeader key={key} {...headerProps}>
+                          {header.header}
+                        </TableHeader>
+                      );
+                    })}
                     <TableHeader />
                   </TableRow>
                 </TableHead>
                 <TableBody>
                   {rows.map((row, rowIndex) => {
                     const isExpanded = expandedRows[rowIndex];
+                    const { key, ...rowProps } = getRowProps({ row });
                     return (
                       <React.Fragment key={rowIndex}>
                         <TableRow
+                          key={key}
                           className={styles.row}
-                          {...getRowProps({ row })}
+                          {...rowProps}
                           onDoubleClick={() =>
                             setExpandedRows((prev) => ({
                               ...prev,

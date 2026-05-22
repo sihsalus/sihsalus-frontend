@@ -1,6 +1,6 @@
+import { useEffect, useState } from 'react';
 import { ResourceRepresentation } from '../../../core/api/api';
 import { type StockItemReferenceFilter, useStockItemReferences } from '../../stock-items.resource';
-import { useEffect, useState } from 'react';
 
 export function useStockItemReferencesHook(v?: ResourceRepresentation) {
   const [stockItemReferenceFilter, setStockItemReferenceFilter] = useState<StockItemReferenceFilter>({

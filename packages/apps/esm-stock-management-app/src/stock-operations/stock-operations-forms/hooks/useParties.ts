@@ -1,10 +1,10 @@
 import { type FetchResponse, openmrsFetch, restBaseUrl } from '@openmrs/esm-framework';
-import React, { useCallback, useMemo } from 'react';
+import { useCallback, useMemo } from 'react';
 import useSWR from 'swr';
+import { MAIN_STORE_LOCATION_TAG } from '../../../constants';
 import { type Party } from '../../../core/api/types/Party';
 import { LocationTypeLocation, LocationTypeOther } from '../../../core/api/types/stockOperation/LocationType';
 import { OperationType, type StockOperationType } from '../../../core/api/types/stockOperation/StockOperationType';
-import { MAIN_STORE_LOCATION_TAG } from '../../../constants';
 
 const useParties = (stockOperationType: StockOperationType) => {
   const apiUrl = `${restBaseUrl}/stockmanagement/party?v=default`;

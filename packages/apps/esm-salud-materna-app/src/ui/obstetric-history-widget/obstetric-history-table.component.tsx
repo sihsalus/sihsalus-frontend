@@ -18,7 +18,7 @@ interface ObstetricHistoryTableProps {
   isLoading?: boolean;
 }
 
-const ObstetricHistoryTable: React.FC<ObstetricHistoryTableProps> = ({ tableRows, isLoading = false }) => {
+const ObstetricHistoryTable: React.FC<ObstetricHistoryTableProps> = ({ tableRows, isLoading: _isLoading = false }) => {
   const { t } = useTranslation();
   const normalizedRows = tableRows.map((row, index) => ({
     id: row.id ?? `obstetric-row-${index}`,

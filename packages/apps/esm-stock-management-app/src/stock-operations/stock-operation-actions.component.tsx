@@ -1,11 +1,12 @@
 import React, { useMemo } from 'react';
 import { type StockOperationDTO } from '../core/api/types/stockOperation/StockOperationDTO';
 import {
-  operationFromString,
   OperationType,
+  operationFromString,
   type StockOperationType,
   StockOperationTypeHasPrint,
 } from '../core/api/types/stockOperation/StockOperationType';
+import useOperationTypePermisions from './stock-operations-forms/hooks/useOperationTypePermisions';
 import StockOperationApprovalButton from './stock-operations-modal/stock-operations-approve-button.component';
 import StockOperationApproveDispatchButton from './stock-operations-modal/stock-operations-approve-dispatch-button.component';
 import StockOperationCancelButton from './stock-operations-modal/stock-operations-cancel-button.component';
@@ -14,7 +15,6 @@ import StockOperationIssueStockButton from './stock-operations-modal/stock-opera
 import StockOperationPrintButton from './stock-operations-modal/stock-operations-print-button.component';
 import StockOperationRejectButton from './stock-operations-modal/stock-operations-reject-button.component';
 import StockOperationReturnButton from './stock-operations-modal/stock-operations-return-button.component';
-import useOperationTypePermisions from './stock-operations-forms/hooks/useOperationTypePermisions';
 import styles from './stock-operations-table.scss';
 
 type Props = {

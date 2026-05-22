@@ -1,4 +1,4 @@
-import { test, expect } from '@playwright/test';
+import { expect, test } from '@playwright/test';
 import { CohortBuilderPage } from '../pages';
 
 test('search by encounters', async ({ page }) => {

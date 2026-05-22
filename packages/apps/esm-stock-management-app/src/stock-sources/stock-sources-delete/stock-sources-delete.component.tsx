@@ -1,10 +1,10 @@
-import React, { useState } from 'react';
 import { Button, InlineLoading } from '@carbon/react';
-import { useTranslation } from 'react-i18next';
 import { TrashCan } from '@carbon/react/icons';
-import { deleteStockSource } from '../stock-sources.resource';
 import { restBaseUrl, showModal, showSnackbar } from '@openmrs/esm-framework';
+import React, { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { handleMutate } from '../../utils';
+import { deleteStockSource } from '../stock-sources.resource';
 
 interface StockSourcesDeleteActionMenuProps {
   uuid: string;

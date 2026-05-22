@@ -5,15 +5,6 @@
   },
   "extensions": [
     {
-      "name": "clinical-view-section",
-      "component": "clinicalViewPatientDashboard",
-      "slot": "patient-chart-dashboard-slot",
-      "meta": {
-        "slot": "clinical-view-section",
-        "isFolder": true
-      }
-    },
-    {
       "name": "clinical-encounter",
       "slot": "patient-chart-clinical-encounter-slot",
       "component": "inPatientClinicalEncounter",
@@ -25,12 +16,14 @@
       "name": "consulta-externa-dashboard-link",
       "component": "consultaExternaDashboardLink",
       "slot": "patient-chart-dashboard-slot",
-      "order": 10,
+      "order": 9,
       "meta": {
         "columns": 1,
         "columnSpan": 1,
         "slot": "patient-chart-consulta-externa-slot",
+        "title": "consultaExterna",
         "path": "consulta-externa",
+        "icon": "omrs-icon-document",
         "layoutMode": "anchored"
       }
     },
@@ -54,12 +47,14 @@
       "name": "social-history-dashboard-link",
       "component": "socialHistoryDashboardLink",
       "slot": "patient-chart-dashboard-slot",
-      "order": 16,
+      "order": 10,
       "meta": {
         "columns": 1,
         "columnSpan": 1,
         "slot": "patient-chart-social-history-dashboard-slot",
+        "title": "socialHistory",
         "path": "social-history-dashboard",
+        "icon": "omrs-icon-sticky-note-add",
         "layoutMode": "anchored"
       }
     }

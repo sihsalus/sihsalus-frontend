@@ -1,6 +1,6 @@
 import { Button, ContentSwitcher, DataTableSkeleton, InlineLoading, Layer, Switch, Tile } from '@carbon/react';
 import { Add } from '@carbon/react/icons';
-import { launchWorkspace, useLayoutType } from '@openmrs/esm-framework';
+import { launchWorkspace2, useLayoutType } from '@openmrs/esm-framework';
 import { CardHeader, EmptyDataIllustration, ErrorState } from '@openmrs/esm-patient-common-lib';
 import dayjs from 'dayjs';
 import React, { useContext, useState } from 'react';
@@ -39,11 +39,12 @@ const PatientAppointmentsBase: React.FC<PatientAppointmentsBaseProps> = ({ patie
 
   const launchAppointmentsForm = () => {
     if (patientAppointmentContext === PatientAppointmentContextTypes.PATIENT_CHART) {
-      launchWorkspace('appointments-form-workspace');
+      launchWorkspace2('appointments-form-workspace');
     } else {
-      launchWorkspace('add-appointment', {
+      launchWorkspace2('appointments-form-workspace', {
         context: 'creating',
         patientUuid,
+        workspaceTitle: t('createNewAppointment', 'Create new appointment'),
       });
     }
   };
@@ -77,7 +78,7 @@ const PatientAppointmentsBase: React.FC<PatientAppointmentsBaseProps> = ({ patie
             <Button
               kind="ghost"
               renderIcon={(props) => <Add size={16} {...props} />}
-              iconDescription="Add Appointments"
+              iconDescription={t('addAppointments', 'Add Appointments')}
               onClick={launchAppointmentsForm}
             >
               {t('add', 'Add')}

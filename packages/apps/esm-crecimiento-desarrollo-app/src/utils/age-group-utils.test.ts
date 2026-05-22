@@ -1,10 +1,10 @@
 import {
+  type AgeGroup,
   calculateAgeInDays,
   calculateAgeInMonths,
   getAgeGroup,
   getAgeGroupFromBirthDate,
   getAgeGroupInDays,
-  type AgeGroup,
 } from './age-group-utils';
 
 describe('age-group-utils', () => {
@@ -15,11 +15,11 @@ describe('age-group-utils', () => {
   ];
 
   beforeEach(() => {
-    jest.useFakeTimers().setSystemTime(new Date('2025-01-15T00:00:00.000Z'));
+    vi.useFakeTimers().setSystemTime(new Date('2025-01-15T00:00:00.000Z'));
   });
 
   afterEach(() => {
-    jest.useRealTimers();
+    vi.useRealTimers();
   });
 
   it('calculates age in days and months from the current system date', () => {

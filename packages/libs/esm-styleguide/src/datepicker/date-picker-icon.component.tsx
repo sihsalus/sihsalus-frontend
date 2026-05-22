@@ -1,4 +1,4 @@
-import React, { forwardRef, useContext } from 'react';
+import { forwardRef, useContext } from 'react';
 import { DatePickerStateContext, DateRangePickerStateContext } from 'react-aria-components';
 import { CalendarIcon, WarningIcon } from '../icons';
 

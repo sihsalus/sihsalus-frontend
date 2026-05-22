@@ -13,7 +13,10 @@ interface LegacyFuaViewerWorkspaceProps extends DefaultPatientWorkspaceProps {
   visitUuid?: string;
 }
 
-type Workspace2FuaViewerWorkspaceProps = PatientWorkspace2DefinitionProps<{ fuaId?: string; visitUuid?: string }, object>;
+type Workspace2FuaViewerWorkspaceProps = PatientWorkspace2DefinitionProps<
+  { fuaId?: string; visitUuid?: string },
+  object
+>;
 type FuaViewerWorkspaceProps = LegacyFuaViewerWorkspaceProps | Workspace2FuaViewerWorkspaceProps;
 
 function isWorkspace2Props(props: FuaViewerWorkspaceProps): props is Workspace2FuaViewerWorkspaceProps {

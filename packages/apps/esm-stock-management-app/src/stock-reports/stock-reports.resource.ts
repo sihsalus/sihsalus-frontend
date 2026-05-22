@@ -1,7 +1,7 @@
 import { openmrsFetch, restBaseUrl, usePagination } from '@openmrs/esm-framework';
+import { useState } from 'react';
 import useSWR from 'swr';
 import { type ReportType } from './ReportType';
-import { useState } from 'react';
 
 export function useReportTypes() {
   const apiUrl = `${restBaseUrl}/stockmanagement/report?v=default`;

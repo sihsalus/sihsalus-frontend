@@ -3,8 +3,19 @@ import dayjs from 'dayjs';
 
 import type { AppointmentSummary, ObservationInterpretation, ObsReferenceRanges } from '../types';
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-export const getHighestAppointmentServiceLoad = (appointmentSummary: Array<Record<string, any>> = []) => {
+interface AppointmentServiceLoad {
+  serviceName: string;
+  countMap: Array<{ allAppointmentsCount: number }>;
+}
+
+interface RawAppointmentSummary {
+  appointmentService: {
+    name: string;
+  };
+  appointmentCountMap: Record<string, Array<Record<string, number>>>;
+}
+
+export const getHighestAppointmentServiceLoad = (appointmentSummary: Array<AppointmentServiceLoad> = []) => {
   const groupedAppointments = appointmentSummary?.map(({ countMap, serviceName }) => ({
     serviceName: serviceName,
     count: countMap.reduce((cummulator, currentValue) => cummulator + currentValue.allAppointmentsCount, 0),
@@ -12,12 +23,10 @@ export const getHighestAppointmentServiceLoad = (appointmentSummary: Array<Recor
   return groupedAppointments.find((summary) => summary.count === Math.max(...groupedAppointments.map((x) => x.count)));
 };
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-export const flattenAppointmentSummary = (appointmentToTransfrom: Array<Record<string, any>>) =>
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  appointmentToTransfrom.flatMap((el: Record<string, any>) => ({
+export const flattenAppointmentSummary = (appointmentToTransfrom: Array<RawAppointmentSummary>) =>
+  appointmentToTransfrom.flatMap((el) => ({
     serviceName: el.appointmentService.name,
-    countMap: Object.entries(el.appointmentCountMap).flatMap((el) => el[1]),
+    countMap: Object.values(el.appointmentCountMap).flat(),
   }));
 
 export const getServiceCountByAppointmentType = (

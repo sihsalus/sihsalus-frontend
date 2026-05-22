@@ -14,11 +14,13 @@
       "name": "odontologia-dashboard-link",
       "component": "odontologiaDashboardLink",
       "slot": "patient-chart-dashboard-slot",
+      "order": 12,
       "meta": {
         "slot": "patient-chart-odontologia-slot",
         "columns": 1,
         "title": "Atención odontológica",
         "path": "atencion-odontologica",
+        "icon": "omrs-icon-procedure-order",
         "layoutMode": "anchored"
       }
     },
@@ -35,9 +37,12 @@
     {
       "name": "odontologia-odontogram-form-workspace",
       "component": "odontologiaOdontogramWorkspace",
-      "type": "form",
+      "type": "clinical-form",
       "title": "odontogramWorkspaceTitle",
-      "canHide": true
+      "width": "extra-wide",
+      "canMaximize": true,
+      "canHide": true,
+      "preferredWindowSize": "maximized"
     }
   ]
 }

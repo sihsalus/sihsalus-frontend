@@ -5,18 +5,18 @@ import { configSchema, type PatientSearchConfig } from '../config-schema';
 
 import PatientSearchPageComponent from './patient-search-page.component';
 
-const mockUseConfig = jest.mocked(useConfig<PatientSearchConfig>);
-const mockUseLayoutType = jest.mocked(useLayoutType);
+const mockUseConfig = vi.mocked(useConfig<PatientSearchConfig>);
+const mockUseLayoutType = vi.mocked(useLayoutType);
 
-jest.mock('react-router-dom', () => ({
-  ...jest.requireActual('react-router-dom'),
-  useParams: jest.fn(() => ({
+vi.mock('react-router-dom', async () => ({
+  ...(await vi.importActual('react-router-dom')),
+  useParams: vi.fn(() => ({
     page: 1,
   })),
-  useLocation: jest.fn(),
-  useSearchParams: jest.fn(() => [
+  useLocation: vi.fn(),
+  useSearchParams: vi.fn(() => [
     {
-      get: jest.fn(() => 'John'),
+      get: vi.fn(() => 'John'),
     },
   ]),
 }));

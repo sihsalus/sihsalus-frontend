@@ -91,7 +91,7 @@ const NewbornBalanceOverview: React.FC<BalanceOverviewProps> = ({ patientUuid, p
     // Generar tableRows
     const rows =
       balanceData?.map((item, index) => {
-        const row = { id: `${index}` };
+        const row: { id: string; [key: string]: string | number | React.ReactNode } = { id: `${index}` };
         clinicalFields.forEach((field) => {
           row[field.key] = field.format ? field.format(item[field.key] || item.date) : (item[field.key] ?? '--');
         });
@@ -117,12 +117,14 @@ const NewbornBalanceOverview: React.FC<BalanceOverviewProps> = ({ patientUuid, p
     };
   }, [clinicalFields, balanceData, conceptUnits, config.concepts, t]);
 
+  const clinicalData = (balanceData ?? []) as unknown as Array<{ date: string; [key: string]: string | number | null }>;
+
   return (
     <ClinicalDataOverview
       patientUuid={patientUuid}
       pageSize={pageSize}
       headerTitle={t('balanceOverview', 'Fluid balance overview')}
-      data={balanceData as unknown as any[]}
+      data={clinicalData}
       error={error}
       isLoading={isLoading}
       isValidating={isValidating}

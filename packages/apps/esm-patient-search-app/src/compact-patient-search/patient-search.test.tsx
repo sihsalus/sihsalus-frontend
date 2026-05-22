@@ -15,12 +15,12 @@ const defaultProps = {
   hasMore: false,
   isLoading: false,
   isValidating: false,
-  setPage: jest.fn(),
+  setPage: vi.fn(),
   totalResults: 1,
   query: 'John',
 };
 
-const mockUseConfig = jest.mocked(useConfig);
+const mockUseConfig = vi.mocked(useConfig);
 
 describe('PatientSearch', () => {
   beforeEach(() => mockUseConfig.mockReturnValue(getDefaultsFromConfigSchema(configSchema)));

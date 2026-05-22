@@ -1,5 +1,3 @@
-import React, { useCallback, useId, useMemo } from 'react';
-import { ArrowLeft, ArrowRight, Edit, TrashCan } from '@carbon/react/icons';
 import {
   Button,
   DataTable,
@@ -11,11 +9,14 @@ import {
   TableHeader,
   TableRow,
 } from '@carbon/react';
+import { ArrowLeft, ArrowRight, Edit, TrashCan } from '@carbon/react/icons';
+import { showSnackbar } from '@openmrs/esm-framework';
+import React, { useCallback, useId, useMemo } from 'react';
 import { useFormContext } from 'react-hook-form';
 import { useTranslation } from 'react-i18next';
-import { showSnackbar } from '@openmrs/esm-framework';
 import { type StockOperationDTO } from '../../../core/api/types/stockOperation/StockOperationDTO';
 import { type StockOperationType } from '../../../core/api/types/stockOperation/StockOperationType';
+import { type CustomTableHeader } from '../../../core/components/table/types';
 import { getStockOperationUniqueId } from '../../stock-operation.utils';
 import { type BaseStockOperationItemFormData, type StockOperationItemDtoSchema } from '../../validation-schema';
 import useOperationTypePermisions from '../hooks/useOperationTypePermisions';
@@ -25,7 +26,6 @@ import StockAvailability from './stock-availability-cell.component';
 import StockOperationItemBatchNoCell from './stock-operation-item-batch-no-cell.component';
 import StockOperationItemCell from './stock-operation-item-cell.component';
 import StockoperationItemExpiryCell from './stock-operation-item-expiry-cell.component';
-import { type CustomTableHeader } from '../../../core/components/table/types';
 import styles from './stock-operation-items-form-step.scc.scss';
 
 type StockOperationItemsFormStepProps = {

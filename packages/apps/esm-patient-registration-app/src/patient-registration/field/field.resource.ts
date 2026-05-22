@@ -28,7 +28,9 @@ export function useConceptAnswers(conceptUuid: string): {
 } {
   const shouldFetch = typeof conceptUuid === 'string' && conceptUuid !== '';
   const { data, error, isLoading } = useSWRImmutable<FetchResponse<ConceptResponse>, Error>(
-    shouldFetch ? `${restBaseUrl}/concept/${conceptUuid}` : null,
+    shouldFetch
+      ? `${restBaseUrl}/concept/${conceptUuid}?v=custom:(uuid,display,answers:(uuid,display),setMembers:(uuid,display))`
+      : null,
     openmrsFetch,
   );
   if (error) {
@@ -38,6 +40,13 @@ export function useConceptAnswers(conceptUuid: string): {
       kind: 'error',
     });
   }
-  const results = useMemo(() => ({ data: data?.data?.answers, isLoading, error }), [isLoading, error, data]);
+  const results = useMemo(
+    () => ({
+      data: data?.data ? (data.data.answers?.length ? data.data.answers : (data.data.setMembers ?? [])) : undefined,
+      isLoading,
+      error,
+    }),
+    [isLoading, error, data],
+  );
   return results;
 }

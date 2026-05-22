@@ -1,0 +1,117 @@
+/** Please keep these alphabetized */
+
+const addressFields = {
+  address1: 'Address line 1',
+  address2: 'Address line 2',
+  address3: 'Address line 3',
+  address4: 'Address line 4',
+  address5: 'Address line 5',
+  address6: 'Address line 6',
+  city: 'City',
+  cityVillage: 'City',
+  country: 'Country',
+  countyDistrict: 'District',
+  district: 'District',
+  postalCode: 'Postal code',
+  state: 'State',
+  stateProvince: 'State',
+};
+
+const workspaceTranslations = {
+  closeAllOpenedWorkspaces: 'Discard changes in {{count}} workspaces',
+  closingAllWorkspacesPromptBody:
+    'There may be unsaved changes in the following workspaces. Do you want to discard changes in the following workspaces? {{workspaceNames}}',
+  closingAllWorkspacesPromptTitle: 'You have unsaved changes',
+  discard: 'Discard',
+  hide: 'Hide',
+  maximize: 'Maximize',
+  minimize: 'Minimize',
+  openAnyway: 'Open anyway',
+  unsavedChangesInOpenedWorkspace:
+    'You may have unsaved changes in the opened workspace. Do you want to discard these changes?',
+  unsavedChangesInWorkspace:
+    'There may be unsaved changes in "{{workspaceName}}". Please save them before opening another workspace.',
+  unsavedChangesTitleText: 'Unsaved changes',
+  workspaceHeader: 'Workspace header',
+};
+
+const workspace2Translations = {
+  closeWorkspaces2PromptTitle: 'Close workspace(s)',
+  closeWorkspaces2PromptBody: 'You are about to close the following workspace(s), which might have unsaved changes:',
+};
+
+export const coreTranslations = {
+  ...addressFields,
+  ...workspaceTranslations,
+  ...workspace2Translations,
+  abnormalValue: 'Abnormal value',
+  actions: 'Actions',
+  actionableNotification: 'Actionable notification',
+  address: 'Address',
+  additionalDetails: 'Additional details',
+  age: 'Age',
+  batchActionItemSelected: '{{totalSelected}} item selected',
+  batchActionsItemsSelected: '{{totalSelected}} items selected',
+  cancel: 'Cancel',
+  change: 'Change',
+  // Default value for the implementationName config property
+  Clinic: 'Clinic',
+  close: 'Close',
+  closesActionableNotification: 'Close actionable notification',
+  closeSnackbar: 'Close snackbar',
+  confirm: 'Confirm',
+  contactAdministratorIfIssuePersists: 'Contact your system administrator if the problem persists.',
+  contactDetails: 'Contact details',
+  delete: 'Delete',
+  discardChanges: 'Discard changes',
+  edit: 'Edit',
+  emptyStateText: 'There are no {{displayText}} to display',
+  error: 'Error',
+  errorCopy:
+    'Sorry, there was a problem displaying this information. You can try to reload this page, or contact the site administrator and quote the error code above.',
+  errorLoadingLoginLocations:
+    'Unable to load login locations. Please try again or contact support if the problem persists.',
+  female: 'Female',
+  leftNavigation: 'Left navigation',
+  loading: 'Loading',
+  male: 'Male',
+  noResultsToDisplay: 'No results to display',
+  notAvailable: 'Not available',
+  offlineSetupErrorTitle: 'Offline setup unavailable',
+  offlineSetupGenericError:
+    'Offline mode could not be enabled. You can still sign in and work online. If this continues, contact support and share the technical detail: {{message}}',
+  offlineSetupMissingBrowserCapabilities:
+    'Offline setup unavailable. Offline mode could not be enabled because this browser or browsing context does not allow Service Workers. You can still sign in and work online. To use offline mode, open SIH Salus over HTTPS or localhost, use a compatible browser, and avoid private browsing or browser policies that block Service Workers.',
+  other: 'Other',
+  paginationItemsCount: '{{pageItemsCount}} / {{totalItems}} items',
+  paginationOfPages: 'of {{count}} pages',
+  patientAvatarAlt: 'Avatar for {{patientName}}',
+  patientIdentifierSticker: 'Patient identifier sticker',
+  patientLists: 'Patient lists',
+  patientPhotoAlt: 'Profile photo of {{patientName}}',
+  patientPhotoPlaceholder: 'Photo placeholder for {{patientName}}',
+  print: 'Print',
+  printError: 'Print error',
+  printErrorExplainer: 'An error occurred in {{errorLocation}}',
+  printIdentifierSticker: 'Print identifier sticker',
+  printing: 'Printing',
+  recordNewEntry: 'Record {{displayText}}',
+  relationships: 'Relationships',
+  resetOverrides: 'Reset overrides',
+  save: 'Save',
+  scriptLoadingFailed: 'Error: Script failed to load',
+  scriptLoadingError:
+    'Failed to load overridden script from {{url}}. Please check that the bundled script is available at the expected URL. Click the button below to reset all import map overrides.',
+  searchForLocation: 'Search for a location',
+  seeAll: 'See all',
+  seeMoreLists: 'See {{count}} more lists',
+  selectAll: 'Select all',
+  sex: 'Sex',
+  showLess: 'Show less',
+  showMore: 'Show more',
+  snackbarNotification: 'Snackbar notification',
+  toggleDevTools: 'Toggle dev tools',
+  unknown: 'Unknown',
+  yearAbbreviation: 'yr',
+  yearsAbbreviation: 'yrs',
+};

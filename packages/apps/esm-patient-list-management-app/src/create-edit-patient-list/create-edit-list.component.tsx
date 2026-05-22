@@ -1,5 +1,12 @@
 import { Button, ButtonSet, Layer, TextArea, TextInput } from '@carbon/react';
-import { showSnackbar, useConfig, useLayoutType, useSession } from '@openmrs/esm-framework';
+import {
+  showSnackbar,
+  useConfig,
+  useLayoutType,
+  useSession,
+  Workspace2,
+  type Workspace2DefinitionProps,
+} from '@openmrs/esm-framework';
 import React, { type SyntheticEvent, useCallback, useEffect, useId, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
@@ -11,37 +18,41 @@ import Overlay from '../overlay.component';
 import styles from './create-edit-patient-list.scss';
 
 interface CreateEditPatientListProps {
-  close: () => void;
+  close?: () => void;
   isEditing?: boolean;
   patientListDetails?: OpenmrsCohort;
   onSuccess?: () => void;
 }
 
-const CreateEditPatientList: React.FC<CreateEditPatientListProps> = ({
-  close,
-  isEditing = false,
-  patientListDetails = null,
-  onSuccess = () => {},
-}) => {
+const CreateEditPatientList: React.FC<
+  CreateEditPatientListProps & Partial<Workspace2DefinitionProps<CreateEditPatientListProps, object>>
+> = (props) => {
+  const workspaceProps = (props.workspaceProps ?? {}) as Partial<CreateEditPatientListProps>;
+  const isEditing = props.isEditing ?? workspaceProps.isEditing ?? false;
+  const patientListDetails = props.patientListDetails ?? workspaceProps.patientListDetails ?? null;
+  const onSuccess = props.onSuccess ?? workspaceProps.onSuccess ?? (() => {});
+  const close = props.close ?? (() => props.closeWorkspace?.({ discardUnsavedChanges: true }));
   const { t } = useTranslation();
   const id = useId();
   const config = useConfig() as ConfigSchema;
   const isTablet = useLayoutType() === 'tablet';
   const responsiveLevel = isTablet ? 1 : 0;
   const session = useSession();
-  const { user } = session;
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [cohortDetails, setCohortDetails] = useState<NewCohortData>({
     name: '',
     description: '',
   });
+  const hasUnsavedChanges =
+    cohortDetails.name !== (patientListDetails?.name || '') ||
+    cohortDetails.description !== (patientListDetails?.description || '');
 
   useEffect(() => {
     setCohortDetails({
       name: patientListDetails?.name || '',
       description: patientListDetails?.description || '',
     });
-  }, [user, patientListDetails]);
+  }, [patientListDetails]);
 
   const handleSubmit = useCallback(() => {
     setIsSubmitting(true);
@@ -58,7 +69,7 @@ const CreateEditPatientList: React.FC<CreateEditPatientListProps> = ({
 
           onSuccess();
           setIsSubmitting(false);
-          close();
+          props.closeWorkspace ? props.closeWorkspace({ discardUnsavedChanges: true }) : close();
         })
         .catch((error) => {
           console.error('Failed to update patient list', error);
@@ -86,7 +97,7 @@ const CreateEditPatientList: React.FC<CreateEditPatientListProps> = ({
           });
           onSuccess();
           setIsSubmitting(false);
-          close();
+          props.closeWorkspace ? props.closeWorkspace({ discardUnsavedChanges: true }) : close();
         })
         .catch((error) => {
           console.error('Failed to create patient list', error);
@@ -107,39 +118,37 @@ const CreateEditPatientList: React.FC<CreateEditPatientListProps> = ({
     onSuccess,
     session.sessionLocation?.uuid,
     t,
+    props.closeWorkspace,
   ]);
 
-  const handleChange = useCallback(
-    ({ currentTarget }: SyntheticEvent<HTMLInputElement | HTMLTextAreaElement>) => {
-      setCohortDetails((cohortDetails) => ({
-        ...cohortDetails,
-        [currentTarget?.name]: currentTarget?.value,
-      }));
-    },
-    [setCohortDetails],
+  const handleChange = useCallback(({ currentTarget }: SyntheticEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+    setCohortDetails((cohortDetails) => ({
+      ...cohortDetails,
+      [currentTarget?.name]: currentTarget?.value,
+    }));
+  }, []);
+
+  const buttonsGroup = (
+    <ButtonSet className={styles.buttonsGroup}>
+      <Button className={styles.button} onClick={close} kind="secondary" size="xl">
+        {t('cancel', 'Cancel')}
+      </Button>
+      <Button onClick={handleSubmit} size="xl" disabled={isSubmitting}>
+        {isSubmitting
+          ? t('submitting', 'Submitting')
+          : isEditing
+            ? t('editList', 'Edit list')
+            : t('createList', 'Create list')}
+      </Button>
+    </ButtonSet>
   );
 
-  return (
-    <Overlay
-      buttonsGroup={
-        <ButtonSet className={styles.buttonsGroup}>
-          <Button className={styles.button} onClick={close} kind="secondary" size="xl">
-            {t('cancel', 'Cancel')}
-          </Button>
-          <Button onClick={handleSubmit} size="xl" disabled={isSubmitting}>
-            {isSubmitting
-              ? t('submitting', 'Submitting')
-              : isEditing
-                ? t('editList', 'Edit list')
-                : t('createList', 'Create list')}
-          </Button>
-        </ButtonSet>
-      }
-      close={close}
-      header={
-        isEditing ? t('editPatientListHeader', 'Edit patient list') : t('newPatientListHeader', 'New patient list')
-      }
-    >
+  const title = isEditing
+    ? t('editPatientListHeader', 'Edit patient list')
+    : t('newPatientListHeader', 'New patient list');
+
+  const content = (
+    <>
       <h4 className={styles.header}>{t('configureList', 'Configure your patient list using the fields below')}</h4>
       <div>
         <Layer level={responsiveLevel}>
@@ -168,6 +177,21 @@ const CreateEditPatientList: React.FC<CreateEditPatientListProps> = ({
           />
         </Layer>
       </div>
+    </>
+  );
+
+  if (props.closeWorkspace) {
+    return (
+      <Workspace2 title={title} hasUnsavedChanges={hasUnsavedChanges}>
+        {content}
+        {buttonsGroup}
+      </Workspace2>
+    );
+  }
+
+  return (
+    <Overlay buttonsGroup={buttonsGroup} close={close} header={title}>
+      {content}
     </Overlay>
   );
 };

@@ -1,20 +1,20 @@
-import React from 'react';
-import { useTranslation } from 'react-i18next';
-import { type StockOperationDTO } from '../../../core/api/types/stockOperation/StockOperationDTO';
 import {
+  Button,
   DataTable,
+  DataTableSkeleton,
   Table,
   TableBody,
+  TableCell,
   TableContainer,
   TableHead,
   TableHeader,
   TableRow,
-  TableCell,
-  DataTableSkeleton,
-  Button,
 } from '@carbon/react';
-import styles from './stock-operation-items-form-step.scc.scss';
 import { ArrowLeft } from '@carbon/react/icons';
+import React from 'react';
+import { useTranslation } from 'react-i18next';
+import { type StockOperationDTO } from '../../../core/api/types/stockOperation/StockOperationDTO';
+import styles from './stock-operation-items-form-step.scc.scss';
 
 const formatDate = (date: Date | string | null) => {
   if (!date) return ' ';

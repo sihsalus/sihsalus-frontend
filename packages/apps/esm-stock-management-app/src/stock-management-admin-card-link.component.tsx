@@ -1,7 +1,7 @@
+import { ClickableTile, Layer } from '@carbon/react';
+import { ArrowRight } from '@carbon/react/icons';
 import React from 'react';
 import { useTranslation } from 'react-i18next';
-import { Layer, ClickableTile } from '@carbon/react';
-import { ArrowRight } from '@carbon/react/icons';
 
 const StockManagementCardLink: React.FC = () => {
   const { t } = useTranslation();

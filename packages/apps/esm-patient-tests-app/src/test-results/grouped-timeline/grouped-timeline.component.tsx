@@ -94,8 +94,9 @@ const interpretationToCSS = {
 };
 
 const TimelineCell: React.FC<TimelineCellProps> = ({ text, interpretation = 'NORMAL', zebra }) => {
-  const additionalClassname: string = interpretationToCSS[interpretation]
-    ? styles[interpretationToCSS[interpretation]]
+  const interpretationClass = interpretationToCSS[interpretation];
+  const additionalClassname: string = interpretationClass
+    ? classNames(styles[interpretationClass], interpretationClass)
     : '';
 
   return (

@@ -76,32 +76,34 @@ const CommonDataTable: React.FC<CommonDataTableProps> = ({ title, data, descript
             </colgroup>
             <TableHead>
               <TableRow>
-                {headers.map((header) => (
-                  <TableHeader key={header.key} {...getHeaderProps({ header })} isSortable>
-                    {header.header}
-                  </TableHeader>
-                ))}
+                {headers.map((header) => {
+                  const { key, ...headerProps } = getHeaderProps({ header });
+                  return (
+                    <TableHeader key={key} {...headerProps} isSortable>
+                      {header.header}
+                    </TableHeader>
+                  );
+                })}
               </TableRow>
             </TableHead>
             <TableBody>
-              {rows.map((row, i) => (
-                <TypedTableRow
-                  key={row.id}
-                  interpretation={getInterpretation(data[i]?.value)}
-                  {...getRowProps({ row })}
-                >
-                  {row.cells.map((cell) => {
-                    const interpretation = getInterpretation(cell.value);
-                    return interpretation ? (
-                      <TableCell className={styles[interpretationToCSS[interpretation]]} key={cell.id}>
-                        <span>{getDisplayValue(cell.value)}</span>
-                      </TableCell>
-                    ) : (
-                      <TableCell key={cell.id}>{cell?.value}</TableCell>
-                    );
-                  })}
-                </TypedTableRow>
-              ))}
+              {rows.map((row, i) => {
+                const { key, ...rowProps } = getRowProps({ row });
+                return (
+                  <TypedTableRow key={key} interpretation={getInterpretation(data[i]?.value)} {...rowProps}>
+                    {row.cells.map((cell) => {
+                      const interpretation = getInterpretation(cell.value);
+                      return interpretation ? (
+                        <TableCell className={styles[interpretationToCSS[interpretation]]} key={cell.id}>
+                          <span>{getDisplayValue(cell.value)}</span>
+                        </TableCell>
+                      ) : (
+                        <TableCell key={cell.id}>{cell?.value}</TableCell>
+                      );
+                    })}
+                  </TypedTableRow>
+                );
+              })}
             </TableBody>
           </Table>
         </TableContainer>

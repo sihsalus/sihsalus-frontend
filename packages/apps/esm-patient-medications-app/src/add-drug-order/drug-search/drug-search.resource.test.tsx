@@ -4,7 +4,7 @@ import { SWRConfig } from 'swr';
 import { mockDrugSearchResultApiData } from 'test-utils';
 import { useConceptSets, useConceptTree, useDrugsByConcepts } from './drug-search.resource';
 
-const mockOpenmrsFetch = openmrsFetch as jest.Mock;
+const mockOpenmrsFetch = openmrsFetch as vi.Mock;
 
 const wrapper = ({ children }: { children: React.ReactNode }) => (
   <SWRConfig value={{ dedupingInterval: 0, provider: () => new Map() }}>{children}</SWRConfig>
@@ -128,7 +128,7 @@ describe('useDrugsByConcepts', () => {
   });
 
   test('collects errors from failed batches while returning successful results', async () => {
-    const consoleErrorSpy = jest.spyOn(console, 'error').mockImplementation(() => {});
+    const consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
     // Generate 21 concept UUIDs to trigger two batches (max 20 per batch)
     const concepts = Array.from({ length: 21 }, (_, i) => `concept-${i}`);
 

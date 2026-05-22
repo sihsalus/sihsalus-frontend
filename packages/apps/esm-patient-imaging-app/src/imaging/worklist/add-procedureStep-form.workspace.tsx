@@ -15,7 +15,7 @@ import {
 import { zodResolver } from '@hookform/resolvers/zod';
 import { OpenmrsDatePicker, ResponsiveWrapper, showSnackbar, useLayoutType } from '@openmrs/esm-framework';
 import { type amPm, type DefaultPatientWorkspaceProps } from '@openmrs/esm-patient-common-lib';
-import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useMemo } from 'react';
 import { Controller, FormProvider, useForm } from 'react-hook-form';
 import { useTranslation } from 'react-i18next';
 import { z } from 'zod';
@@ -63,27 +63,29 @@ const AddNewProcedureStepWorkspace: React.FC<AddNewProcedureStepWorkspaceProps> 
   const formProps = useForm<NewProcedureStepFormData>({
     mode: 'all',
     resolver: zodResolver(procedureStepFormSchema),
+    defaultValues: {
+      aetTitle: '',
+      modality: modalityOptions[0].code,
+      procedureStepLocation: '',
+      requestedProcedureDescription: '',
+      scheduledReferringPhysician: '',
+      stationName: '',
+      stepStartDate: undefined,
+      stepStartTime: '',
+      timeFormat: 'AM',
+    },
   });
 
   const {
     control,
     handleSubmit,
     getValues,
-    setValue,
     formState: { errors, isDirty, isSubmitting },
   } = formProps;
 
   useEffect(() => {
     promptBeforeClosing(() => isDirty);
   }, [isDirty, promptBeforeClosing]);
-
-  useEffect(() => {
-    setValue('timeFormat', 'AM');
-  }, [setValue]);
-
-  useEffect(() => {
-    setValue('modality', modalityOptions[0].code);
-  }, [setValue]);
 
   const onSubmit = useCallback(
     async (data: NewProcedureStepFormData) => {
@@ -116,11 +118,12 @@ const AddNewProcedureStepWorkspace: React.FC<AddNewProcedureStepWorkspaceProps> 
           title: t('procedureStepSaved', 'Procedure step is saved successfully'),
         });
         requestMutate();
-      } catch (err: any) {
+      } catch (err: unknown) {
+        const message = err instanceof Error ? err.message : String(err);
         showSnackbar({
           title: t('errorSavingProcedureStep', 'An error occurred while saving the procedure step'),
           kind: 'error',
-          subtitle: err?.message,
+          subtitle: message,
           isLowContrast: false,
         });
       }

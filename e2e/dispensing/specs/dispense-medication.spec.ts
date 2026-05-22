@@ -1,13 +1,13 @@
-import { expect } from '@playwright/test';
 import { type Order, type Visit } from '@openmrs/esm-framework';
+import { expect } from '@playwright/test';
 import {
-  generateRandomDrugOrder,
-  deleteDrugOrder,
   createEncounter,
+  deleteDrugOrder,
   deleteEncounter,
+  endVisit,
+  generateRandomDrugOrder,
   getProvider,
   startVisit,
-  endVisit,
 } from '../commands';
 import { type Encounter, type Provider } from '../commands/types';
 import { test } from '../core';

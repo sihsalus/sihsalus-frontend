@@ -1,5 +1,5 @@
+import { useEffect, useState } from 'react';
 import { ResourceRepresentation } from '../../../core/api/api';
-import { useEffect, useMemo, useState } from 'react';
 import { LocationStockItemBatchNo } from '../../../core/api/types/stockItem/StockItem';
 import { type StockItemInventoryFilter, useStockItemInventory } from '../../stock-items.resource';
 

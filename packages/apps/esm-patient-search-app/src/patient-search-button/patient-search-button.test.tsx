@@ -6,8 +6,8 @@ import { configSchema, type PatientSearchConfig } from '../config-schema';
 
 import PatientSearchButton from './patient-search-button.component';
 
-const mockUseConfig = jest.mocked(useConfig<PatientSearchConfig>);
-const mockedLaunchWorkspace = jest.mocked(launchWorkspace);
+const mockUseConfig = vi.mocked(useConfig<PatientSearchConfig>);
+const mockedLaunchWorkspace = vi.mocked(launchWorkspace);
 
 describe('PatientSearchButton', () => {
   beforeEach(() => {

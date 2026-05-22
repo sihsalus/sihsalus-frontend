@@ -13,8 +13,8 @@ import {
   TableRow,
 } from '@carbon/react';
 import { Add } from '@carbon/react/icons';
-import { formatDate, launchWorkspace, useConfig } from '@openmrs/esm-framework';
-import { CardHeader, EmptyState, ErrorState } from '@openmrs/esm-patient-common-lib';
+import { formatDate, useConfig } from '@openmrs/esm-framework';
+import { CardHeader, EmptyState, ErrorState, launchPatientWorkspace } from '@openmrs/esm-patient-common-lib';
 import { getObsFromEncounter } from '@sihsalus/esm-sihsalus-shared';
 import React from 'react';
 import { useTranslation } from 'react-i18next';
@@ -22,14 +22,7 @@ import type { KeyedMutator } from 'swr';
 import { mutate } from 'swr';
 import type { ConfigObject } from '../../../config-schema';
 import type { OpenmrsEncounter } from '../../../types';
-import {
-  Alcohol_Use_Duration_UUID,
-  Alcohol_Use_UUID,
-  Other_Substance_Abuse_UUID,
-  patientFormEntryWorkspace,
-  Smoking_Duration_UUID,
-  Smoking_UUID,
-} from '../../../utils/constants';
+import { patientFormEntryWorkspace } from '../../../utils/constants';
 
 interface OutPatientSocialHistoryProps {
   patientUuid: string;
@@ -50,13 +43,14 @@ const OutPatientSocialHistory: React.FC<OutPatientSocialHistoryProps> = ({
   const { t } = useTranslation();
   const {
     clinicalEncounterUuid,
+    concepts,
     formsList: { clinicalEncounterFormUuid },
   } = useConfig<ConfigObject>();
 
   const headerTitle = t('socialHistory', 'Social History');
   const handleOpenOrEditClinicalEncounterForm = (encounterUUID = clinicalEncounterUuid) => {
-    launchWorkspace(patientFormEntryWorkspace, {
-      workspaceTitle: 'Historia Social',
+    launchPatientWorkspace(patientFormEntryWorkspace, {
+      workspaceTitle: t('socialHistory', 'Social History'),
       mutateForm: mutate(
         (key) => typeof key === 'string' && key.startsWith('/openmrs/ws/rest/v1/kenyaemr/flags'),
         undefined,
@@ -103,11 +97,11 @@ const OutPatientSocialHistory: React.FC<OutPatientSocialHistoryProps> = ({
     ?.map((encounter) => {
       const allFieldsNull = () => {
         return (
-          getObsFromEncounter(encounter, Alcohol_Use_UUID) === '--' &&
-          getObsFromEncounter(encounter, Alcohol_Use_Duration_UUID) === '--' &&
-          getObsFromEncounter(encounter, Smoking_UUID) === '--' &&
-          getObsFromEncounter(encounter, Smoking_Duration_UUID) === '--' &&
-          getObsFromEncounter(encounter, Other_Substance_Abuse_UUID) === '--' &&
+          getObsFromEncounter(encounter, concepts.alcoholUseUuid) === '--' &&
+          getObsFromEncounter(encounter, concepts.alcoholUseDurationUuid) === '--' &&
+          getObsFromEncounter(encounter, concepts.smokingUuid) === '--' &&
+          getObsFromEncounter(encounter, concepts.smokingDurationUuid) === '--' &&
+          getObsFromEncounter(encounter, concepts.otherSubstanceAbuseUuid) === '--' &&
           encounter.encounterDatetime !== null
         );
       };
@@ -117,13 +111,13 @@ const OutPatientSocialHistory: React.FC<OutPatientSocialHistoryProps> = ({
       return {
         id: `${encounter.uuid}`,
         encounterDate: formatDate(new Date(encounter.encounterDatetime)),
-        alcoholUse: getObsFromEncounter(encounter, Alcohol_Use_UUID),
-        alcoholUseDuration: getObsFromEncounter(encounter, Alcohol_Use_Duration_UUID),
-        smoking: getObsFromEncounter(encounter, Smoking_UUID),
-        smokingDuration: getObsFromEncounter(encounter, Smoking_Duration_UUID),
-        otherSubstanceAbuse: getObsFromEncounter(encounter, Other_Substance_Abuse_UUID),
+        alcoholUse: getObsFromEncounter(encounter, concepts.alcoholUseUuid),
+        alcoholUseDuration: getObsFromEncounter(encounter, concepts.alcoholUseDurationUuid),
+        smoking: getObsFromEncounter(encounter, concepts.smokingUuid),
+        smokingDuration: getObsFromEncounter(encounter, concepts.smokingDurationUuid),
+        otherSubstanceAbuse: getObsFromEncounter(encounter, concepts.otherSubstanceAbuseUuid),
         actions: (
-          <OverflowMenu aria-label="overflow-menu" flipped={false}>
+          <OverflowMenu aria-label={t('actions', 'Actions')} flipped={false}>
             <OverflowMenuItem
               onClick={() => handleOpenOrEditClinicalEncounterForm(encounter.uuid)}
               itemText={t('edit', 'Edit')}
@@ -163,7 +157,7 @@ const OutPatientSocialHistory: React.FC<OutPatientSocialHistoryProps> = ({
           kind="ghost"
           onClick={() => handleOpenOrEditClinicalEncounterForm()}
           renderIcon={(props) => <Add size={24} {...props} />}
-          iconDescription="Add"
+          iconDescription={t('add', 'Add')}
         >
           {t('add', 'Add')}
         </Button>
@@ -174,7 +168,7 @@ const OutPatientSocialHistory: React.FC<OutPatientSocialHistoryProps> = ({
         headers={tableHeader}
         render={({ rows, headers, getHeaderProps, getRowProps, getTableProps, getTableContainerProps }) => (
           <TableContainer {...getTableContainerProps()}>
-            <Table size="sm" {...getTableProps()} aria-label="sample table">
+            <Table size="sm" {...getTableProps()} aria-label={t('socialHistory', 'Social History')}>
               <TableHead>
                 <TableRow>
                   {headers.map((header, i) => (

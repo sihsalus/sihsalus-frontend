@@ -2,7 +2,7 @@ import { Grid, Row } from '@carbon/react';
 import { ExtensionSlot, useConnectivity, useSession } from '@openmrs/esm-framework';
 import { AppErrorBoundary } from '@sihsalus/esm-rbac';
 import classNames from 'classnames';
-import React, { useMemo } from 'react';
+import { useMemo } from 'react';
 import { BrowserRouter, Route, Routes } from 'react-router-dom';
 import useSWRImmutable from 'swr/immutable';
 

@@ -1,13 +1,12 @@
 import { isDesktop, useLayoutType } from '@openmrs/esm-framework';
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import React from 'react';
 
 import Overlay from './overlay.component';
 
-const mockUseLayoutType = jest.mocked(useLayoutType);
-const mockIsDesktop = jest.mocked(isDesktop);
-const mockClose = jest.fn();
+const mockUseLayoutType = vi.mocked(useLayoutType);
+const mockIsDesktop = vi.mocked(isDesktop);
+const mockClose = vi.fn();
 
 describe('Overlay', () => {
   it('renders the desktop version of the overlay', () => {

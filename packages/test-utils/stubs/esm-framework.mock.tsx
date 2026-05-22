@@ -61,7 +61,9 @@ export const createGlobalStore = vi.fn(<T,>(_name: string, initialState: T) => {
     getState: () => state,
     setState: (update: Partial<T> | ((prev: T) => T)) => {
       state = typeof update === 'function' ? update(state) : ({ ...state, ...update } as T);
-      listeners.forEach((listener) => listener(state));
+      listeners.forEach((listener) => {
+        listener(state);
+      });
     },
     subscribe: (listener: (state: T) => void) => {
       listeners.add(listener);

@@ -9,10 +9,10 @@ import {
   TableHeader,
   TableRow,
 } from '@carbon/react';
-import { type ImportMap, resetAllRoutesOverrides, showModal, useDebounce } from '@openmrs/esm-framework/src/internal';
+import { type ImportMap, resetRouteMapOverrides, showModal, useDebounce } from '@openmrs/esm-framework/src/internal';
 import classNames from 'classnames';
 import fuzzy from 'fuzzy';
-import React, { type Dispatch, forwardRef, useEffect, useReducer, useRef, useState } from 'react';
+import { type Dispatch, forwardRef, useEffect, useReducer, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import styles from './list.scss';
@@ -108,12 +108,12 @@ function reducer(state: ImportMapListState, action: ImportMapDispatchAction): Im
       };
     case 'reset_all_overrides':
       importMapOverrides.resetOverrides();
-      resetAllRoutesOverrides();
+      resetRouteMapOverrides();
       return state;
   }
 }
 
-const ImportMapList = forwardRef<HTMLDivElement>((props, ref) => {
+const ImportMapList = forwardRef<HTMLDivElement>((_props, ref) => {
   const { t } = useTranslation();
   const [state, dispatch] = useReducer(reducer, initialImportMapState);
 

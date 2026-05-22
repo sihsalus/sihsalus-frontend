@@ -1,7 +1,7 @@
-import React from 'react';
-import { useTranslation } from 'react-i18next';
 import { Dropdown, DropdownSkeleton } from '@carbon/react';
 import { showSnackbar, useConfig } from '@openmrs/esm-framework';
+import React from 'react';
+import { useTranslation } from 'react-i18next';
 import { type ConfigObject } from '../../config-schema';
 import { useConcept } from '../../stock-lookups/stock-lookups.resource';
 import styles from './stock-sources-filter.scss';

@@ -1,29 +1,29 @@
 import { showSnackbar } from '@openmrs/esm-framework';
 import { fireEvent, render, screen, waitFor } from '@testing-library/react';
-import React from 'react';
 import * as api from '../../api';
 import DeleteSeriesModal from './delete-series.modal';
 
-jest.mock('react-i18next', () => ({
+vi.mock('react-i18next', () => ({
   useTranslation: () => ({
-    t: (key: string, defaultValue: string) => defaultValue,
+    t: (_key: string, defaultValue: string) => defaultValue,
   }),
 }));
 
-jest.mock('../../api');
+vi.mock('../../api');
 
-jest.mock('@openmrs/esm-framework', () => ({
-  showSnackbar: jest.fn(),
+vi.mock('@openmrs/esm-framework', async () => ({
+  ...(await vi.importActual('@openmrs/esm-framework')),
+  showSnackbar: vi.fn(),
 }));
 
 describe('DeleteSeriesModal', () => {
-  const closeDeleteModal = jest.fn();
-  const mutateMock = jest.fn();
+  const closeDeleteModal = vi.fn();
+  const mutateMock = vi.fn();
   const studyId = 1;
   const patientUuid = 'patient-uuid-123';
 
   const setup = () => {
-    (api.useStudySeries as jest.Mock).mockReturnValue({
+    (api.useStudySeries as vi.Mock).mockReturnValue({
       mutate: mutateMock,
     });
     render(
@@ -37,7 +37,7 @@ describe('DeleteSeriesModal', () => {
   };
 
   beforeEach(() => {
-    jest.clearAllMocks();
+    vi.clearAllMocks();
   });
 
   it('renders modal with confirmation text and buttons', () => {
@@ -55,8 +55,8 @@ describe('DeleteSeriesModal', () => {
   });
 
   it('calls deleteSeries and shows success snackbar on success', async () => {
-    (api.deleteSeries as jest.Mock).mockResolvedValueOnce({ ok: true });
-    (api.useStudySeries as jest.Mock).mockReturnValue({ mutate: mutateMock });
+    (api.deleteSeries as vi.Mock).mockResolvedValueOnce({ ok: true });
+    (api.useStudySeries as vi.Mock).mockReturnValue({ mutate: mutateMock });
 
     setup();
     fireEvent.click(screen.getByText('Delete'));
@@ -70,9 +70,7 @@ describe('DeleteSeriesModal', () => {
   });
 
   it('shows error snackbar when delete fails', async () => {
-    (api.deleteSeries as jest.Mock).mockRejectedValueOnce(
-      new Error('An error occurred while deleting the study series'),
-    );
+    (api.deleteSeries as vi.Mock).mockRejectedValueOnce(new Error('An error occurred while deleting the study series'));
 
     setup();
     fireEvent.click(screen.getByText('Delete'));
@@ -88,8 +86,8 @@ describe('DeleteSeriesModal', () => {
   });
 
   it('disables delete button and shows loading while deleting', async () => {
-    let resolveFn: (val: any) => void;
-    (api.deleteSeries as jest.Mock).mockImplementationOnce(() => new Promise((resolve) => (resolveFn = resolve)));
+    let resolveFn: (val: { ok: boolean }) => void;
+    (api.deleteSeries as vi.Mock).mockImplementationOnce(() => new Promise((resolve) => (resolveFn = resolve)));
 
     setup();
     fireEvent.click(screen.getByText('Delete'));

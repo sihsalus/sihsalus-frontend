@@ -1,5 +1,6 @@
 import { useConfig } from '@openmrs/esm-framework';
 import React, { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 
 import type { ConfigObject } from '../../config-schema';
 
@@ -9,6 +10,7 @@ import { useConditionsSearchFromConceptSet } from './conditions.resource';
  * Componente de prueba final con el UUID correcto del ConceptSet
  */
 const FinalTest: React.FC = () => {
+  const { t } = useTranslation();
   const config = useConfig<ConfigObject>();
   const [searchTerm, setSearchTerm] = useState('');
   const conceptSetUuid = config?.conditionConceptSets?.antecedentesPatologicos?.uuid;
@@ -34,14 +36,16 @@ const FinalTest: React.FC = () => {
         fontSize: '14px',
       }}
     >
-      <h3 style={{ margin: '0 0 15px 0', color: '#28a745' }}>Test Final - ConceptSet Correcto</h3>
+      <h3 style={{ margin: '0 0 15px 0', color: '#28a745' }}>
+        {t('finalTestCorrectConceptSet', 'Test Final - ConceptSet Correcto')}
+      </h3>
 
       <div style={{ marginBottom: '15px' }}>
         <input
           type="text"
           value={searchTerm}
           onChange={(e) => setSearchTerm(e.target.value)}
-          placeholder="Escribe 'Anemia' para probar..."
+          placeholder={t('typeAnemiaToTest', "Escribe 'Anemia' para probar...")}
           style={{
             width: '100%',
             padding: '10px',
@@ -62,20 +66,21 @@ const FinalTest: React.FC = () => {
         }}
       >
         <div>
-          <strong>ConceptSet UUID:</strong> {conceptSetUuid}
+          <strong>{t('conceptSetUuid', 'ConceptSet UUID')}:</strong> {conceptSetUuid}
         </div>
         <div>
-          <strong>Estado:</strong> {isSearching ? 'Cargando...' : 'Listo'}
+          <strong>{t('status', 'Estado')}:</strong> {isSearching ? t('loading', 'Cargando...') : t('ready', 'Listo')}
         </div>
         <div>
-          <strong>Error:</strong> {error ? `Error: ${error.message}` : 'Sin errores'}
+          <strong>{t('error', 'Error')}:</strong>{' '}
+          {error ? `${t('error', 'Error')}: ${error.message}` : t('noErrors', 'Sin errores')}
         </div>
         <div>
-          <strong>ConceptSet cargado:</strong> {conceptSet ? 'Sí' : 'No'}
+          <strong>{t('conceptSetLoaded', 'ConceptSet cargado')}:</strong> {conceptSet ? t('yes', 'Sí') : t('no', 'No')}
         </div>
         {conceptSet?.setMembers && (
           <div>
-            <strong>Miembros encontrados:</strong> {conceptSet.setMembers.length}
+            <strong>{t('membersFound', 'Miembros encontrados')}:</strong> {conceptSet.setMembers.length}
           </div>
         )}
       </div>
@@ -83,7 +88,7 @@ const FinalTest: React.FC = () => {
       {conceptSet?.setMembers && conceptSet.setMembers.length > 0 && (
         <div style={{ marginBottom: '15px', backgroundColor: '#d4edda', padding: '10px', borderRadius: '5px' }}>
           <h4 style={{ margin: '0 0 10px 0', color: '#155724' }}>
-            Miembros del ConceptSet ({conceptSet.setMembers.length}):
+            {t('conceptSetMembers', 'Miembros del ConceptSet')} ({conceptSet.setMembers.length}):
           </h4>
           <ul style={{ margin: '0', paddingLeft: '20px', fontSize: '12px' }}>
             {conceptSet.setMembers.map((member) => (
@@ -103,7 +108,9 @@ const FinalTest: React.FC = () => {
           borderRadius: '5px',
         }}
       >
-        <h4 style={{ margin: '0 0 10px 0' }}>Resultados de búsqueda ({searchResults.length}):</h4>
+        <h4 style={{ margin: '0 0 10px 0' }}>
+          {t('searchResults', 'Resultados de búsqueda')} ({searchResults.length}):
+        </h4>
         {searchResults.length > 0 ? (
           <ul style={{ margin: '0', paddingLeft: '20px' }}>
             {searchResults.map((result) => (
@@ -114,10 +121,12 @@ const FinalTest: React.FC = () => {
             ))}
           </ul>
         ) : searchTerm ? (
-          <div style={{ color: '#721c24', fontSize: '13px' }}>No se encontraron resultados para "{searchTerm}"</div>
+          <div style={{ color: '#721c24', fontSize: '13px' }}>
+            {t('noResultsForSearchTerm', 'No se encontraron resultados para "{{searchTerm}}"', { searchTerm })}
+          </div>
         ) : (
           <div style={{ color: '#856404', fontSize: '13px' }}>
-            Escribe "Anemia", "Labio", "Bebé" o "Falta" para buscar...
+            {t('typeSampleTermsToSearch', 'Escribe "Anemia", "Labio", "Bebé" o "Falta" para buscar...')}
           </div>
         )}
       </div>
@@ -131,7 +140,7 @@ const FinalTest: React.FC = () => {
           paddingTop: '10px',
         }}
       >
-        <strong>URL de prueba:</strong>
+        <strong>{t('testUrl', 'URL de prueba')}:</strong>
         <br />
         /openmrs/ws/rest/v1/concept/{conceptSetUuid}?v=custom:(setMembers:(uuid,name))
       </div>

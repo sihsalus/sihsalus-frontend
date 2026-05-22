@@ -19,10 +19,11 @@
       "meta": {
         "name": "service-queues",
         "slot": "service-queues-dashboard-slot",
-        "title": "Service queues"
+        "title": "serviceQueues"
       },
       "online": true,
-      "offline": true
+      "offline": true,
+      "order": 10
     },
     {
       "name": "queue-table-by-status-menu-dashboard-link",
@@ -30,7 +31,7 @@
       "meta": {
         "name": "service-queues",
         "slot": "service-queues-dashboard-slot",
-        "title": "Service queues"
+        "title": "serviceQueues"
       },
       "online": true,
       "offline": true
@@ -53,7 +54,6 @@
       "component": "pastVisitSummary",
       "slot": "previous-visit-summary-slot"
     },
-
     {
       "name": "active-visits-row-actions",
       "component": "activeVisitsRowActions",

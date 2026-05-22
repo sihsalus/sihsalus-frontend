@@ -11,7 +11,7 @@ interface ActiveToastsProps {
 const ActiveToasts: React.FC<ActiveToastsProps> = ({ subject }) => {
   const [toasts, setToasts] = useState<Array<ToastNotificationMeta>>([]);
 
-  const closeToast = useCallback((toast) => {
+  const closeToast = useCallback((toast: ToastNotificationMeta) => {
     setToasts((toasts) => toasts.filter((t) => t !== toast));
   }, []);
 

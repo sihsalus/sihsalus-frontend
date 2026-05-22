@@ -1,8 +1,13 @@
-import { expect, test } from '@playwright/test';
+import { expect, type Page, test } from '@playwright/test';
+
+async function gotoLogin(page: Page) {
+  await page.goto('./login');
+  await page.getByRole('textbox', { name: /username|nombre de usuario/i }).waitFor();
+}
 
 test.describe('Accessibility checks @accessibility', () => {
   test('Login page has basic semantic structure @accessibility', async ({ page }) => {
-    await page.goto('/login');
+    await gotoLogin(page);
 
     await expect(page.locator('main, [role="main"]').first()).toBeVisible();
 
@@ -14,22 +19,23 @@ test.describe('Accessibility checks @accessibility', () => {
   });
 
   test('Keyboard navigation reaches primary controls @accessibility', async ({ page }) => {
-    await page.goto('/login');
+    await gotoLogin(page);
 
     await page.keyboard.press('Tab');
     const firstFocusedTag = await page.evaluate(() => (document.activeElement as HTMLElement | null)?.tagName ?? '');
     expect(firstFocusedTag.length).toBeGreaterThan(0);
 
+    const focusedTags = [firstFocusedTag];
     for (let i = 0; i < 6; i++) {
       await page.keyboard.press('Tab');
+      focusedTags.push(await page.evaluate(() => (document.activeElement as HTMLElement | null)?.tagName ?? ''));
     }
 
-    const focusedTag = await page.evaluate(() => (document.activeElement as HTMLElement | null)?.tagName ?? '');
-    expect(['INPUT', 'BUTTON', 'A', 'SELECT', 'TEXTAREA']).toContain(focusedTag);
+    expect(focusedTags.some((tag) => ['INPUT', 'BUTTON', 'A', 'SELECT', 'TEXTAREA'].includes(tag))).toBe(true);
   });
 
   test('Form fields have accessible names @accessibility', async ({ page }) => {
-    await page.goto('/login');
+    await gotoLogin(page);
 
     const controls = page.locator('input, select, textarea');
     const total = await controls.count();
@@ -51,7 +57,7 @@ test.describe('Accessibility checks @accessibility', () => {
   });
 
   test('Images must have alt text when present @accessibility', async ({ page }) => {
-    await page.goto('/login');
+    await gotoLogin(page);
 
     const images = page.locator('img');
     const total = await images.count();

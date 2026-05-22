@@ -1,6 +1,6 @@
-@use '@carbon/colors';
-@use '@carbon/layout';
-@use '@carbon/type';
+@use "@carbon/colors";
+@use "@carbon/layout";
+@use "@carbon/type";
 
 .patientChartWrapper {
   display: flex;
@@ -24,21 +24,6 @@
   z-index: 1;
 }
 
-// On small-desktop the primary navigation already portals a LeftNavMenu into
-// #omrs-left-nav-container. Hide it by default and reveal when the hamburger
-// toggle adds the expanded class. Target small-desktop only (gt-tablet but not
-// gt-small-desktop, which is large-desktop where the sidebar is always visible).
-:global(.omrs-breakpoint-gt-tablet):not(:global(.omrs-breakpoint-gt-small-desktop)) {
-  :global(#omrs-left-nav-container) :global(.cds--side-nav) {
-    transform: translateX(-100%);
-    transition: transform 0.11s cubic-bezier(0.2, 0, 1, 0.9);
-  }
-
-  :global(#omrs-left-nav-container.omrs-patient-chart-left-nav-expanded) :global(.cds--side-nav) {
-    transform: translateX(0);
-  }
-}
-
 // Tablet side nav scrolling
 :global(.omrs-breakpoint-lt-desktop) {
   .patientChartWrapper {
@@ -49,7 +34,7 @@
 }
 
 // Overriding styles for RTL support
-html[dir='rtl'] {
+html[dir="rtl"] {
   :global(.cds--date-picker-input__wrapper) {
     svg {
       left: layout.$spacing-05;

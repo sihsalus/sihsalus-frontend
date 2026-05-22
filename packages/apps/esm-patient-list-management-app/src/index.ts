@@ -40,3 +40,8 @@ export const listDetailsTable = getAsyncLifecycle(() => import('./list-details-t
   featureName: 'patient-table',
   moduleName,
 });
+
+export const patientListFormWorkspace = getAsyncLifecycle(
+  () => import('./create-edit-patient-list/create-edit-list.component'),
+  options,
+);

@@ -1,7 +1,7 @@
 import type { APIRequestContext } from '@playwright/test';
 import { expect } from '@playwright/test';
-import customSchema from '../support/custom-schema.json';
 import type { Form } from '@types';
+import customSchema from '../support/custom-schema.json';
 
 export interface FormData {
   name: string;

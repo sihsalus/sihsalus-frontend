@@ -1,11 +1,11 @@
 import { useAppContext } from '@openmrs/esm-framework';
 import { screen } from '@testing-library/react';
-import { renderWithSwr } from 'tools';
+import { renderWithSwr } from 'test-utils';
 import { mockWardViewContext } from '../../mock';
 import { WardMetricType, type WardViewContext } from '../types';
 import WardMetrics from './ward-metrics.component';
 
-jest.mocked(useAppContext<WardViewContext>).mockReturnValue(mockWardViewContext);
+vi.mocked(useAppContext<WardViewContext>).mockReturnValue(mockWardViewContext);
 
 describe('Ward Metrics', () => {
   it('Should display standard metrics by default', () => {

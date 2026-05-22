@@ -65,10 +65,29 @@ export default function AddLabOrderWorkspace(props: AddLabOrderWorkspaceComponen
   const { additionalTestOrderTypes, orders } = useConfig<ConfigObject>();
   const { orderType } = useOrderType(orderTypeUuid);
 
+  const allOrderTypes = useMemo(
+    () => [
+      {
+        label: t('labOrders', 'Lab orders'),
+        orderTypeUuid: orders.labOrderTypeUuid,
+        orderableConceptSets: orders.labOrderableConcepts,
+      },
+      ...additionalTestOrderTypes,
+    ],
+    [additionalTestOrderTypes, orders.labOrderTypeUuid, orders.labOrderableConcepts, t],
+  );
+
+  const configuredOrderType = useMemo(
+    () => allOrderTypes.find((orderType) => orderType.orderTypeUuid === orderTypeUuid),
+    [allOrderTypes, orderTypeUuid],
+  );
+
   useEffect(() => {
-    if (orderType) {
+    const orderTypeDisplay = configuredOrderType?.label ?? orderType?.display;
+
+    if (orderTypeDisplay) {
       const title = t(`addOrderableForOrderType`, 'Add {{orderTypeDisplay}}', {
-        orderTypeDisplay: orderType.display.toLocaleLowerCase(),
+        orderTypeDisplay: orderTypeDisplay.toLocaleLowerCase(),
       });
 
       if (isWorkspace2Props(props)) {
@@ -77,19 +96,11 @@ export default function AddLabOrderWorkspace(props: AddLabOrderWorkspaceComponen
         props.setTitle(title);
       }
     }
-  }, [orderType, props, t]);
+  }, [configuredOrderType?.label, orderType, props, t]);
 
   const orderableConceptSets = useMemo(() => {
-    const allOrderTypes: ConfigObject['additionalTestOrderTypes'] = [
-      {
-        label: t('labOrders', 'Lab orders'),
-        orderTypeUuid: orders.labOrderTypeUuid,
-        orderableConceptSets: orders.labOrderableConcepts,
-      },
-      ...additionalTestOrderTypes,
-    ];
-    return allOrderTypes.find((orderType) => orderType.orderTypeUuid === orderTypeUuid).orderableConceptSets;
-  }, [additionalTestOrderTypes, orderTypeUuid, orders.labOrderTypeUuid, orders.labOrderableConcepts, t]);
+    return configuredOrderType?.orderableConceptSets ?? [];
+  }, [configuredOrderType?.orderableConceptSets]);
 
   const patientName = patient ? getPatientName(patient) : '';
 

@@ -16,8 +16,8 @@ interface GrowthChartProps {
 
 const GrowthChartOverview: React.FC<GrowthChartProps> = ({ patient, patientUuid }) => {
   const { t } = useTranslation();
-  const headerTitle = t('growthChart', 'Growth Chart');
-  const displayText = t('relatedData', 'related data');
+  const headerTitle = t('growthChart', 'Evaluación del Crecimiento y Desarrollo');
+  const displayText = t('relatedData', 'datos de crecimiento y desarrollo');
   const formWorkspace = 'newborn-anthropometric-form';
 
   // Estado para controlar el modo de visualización (percentiles vs z-scores)
@@ -89,13 +89,7 @@ const GrowthChartOverview: React.FC<GrowthChartProps> = ({ patient, patientUuid 
     );
   }
 
-  return (
-    <EmptyState
-      displayText={displayText}
-      headerTitle={headerTitle}
-      launchForm={formWorkspace || launchForm ? launchForm : undefined}
-    />
-  );
+  return <EmptyState displayText={displayText} headerTitle={headerTitle} launchForm={launchForm} />;
 };
 
 export default GrowthChartOverview;

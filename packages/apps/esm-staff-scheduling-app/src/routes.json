@@ -1,0 +1,25 @@
+{
+  "$schema": "https://json.openmrs.org/routes.schema.json",
+  "backendDependencies": {
+    "webservices.rest": ">=2.2.0"
+  },
+  "extensions": [
+    {
+      "name": "staff-scheduling-app-menu-item",
+      "slot": "app-menu-item-slot",
+      "component": "staffSchedulingAppMenuItem",
+      "order": 28,
+      "online": true,
+      "offline": false
+    }
+  ],
+  "pages": [
+    {
+      "name": "staff-scheduling-page",
+      "component": "staffSchedulingPage",
+      "route": "staff-scheduling",
+      "online": true,
+      "offline": false
+    }
+  ]
+}

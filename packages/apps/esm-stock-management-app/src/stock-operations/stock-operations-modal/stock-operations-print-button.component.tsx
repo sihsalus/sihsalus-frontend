@@ -1,15 +1,13 @@
-import React, { useState } from 'react';
-
 import { Button, InlineLoading } from '@carbon/react';
 import { Printer } from '@carbon/react/icons';
+import { showSnackbar } from '@openmrs/esm-framework';
+import React, { useState } from 'react';
 import { useTranslation } from 'react-i18next';
+import { extractErrorMessagesFromResponse } from '../../constants';
+import { ResourceRepresentation } from '../../core/api/api';
 import { type StockItemInventory } from '../../core/api/types/stockItem/StockItemInventory';
 import { type StockOperationDTO } from '../../core/api/types/stockOperation/StockOperationDTO';
 import { type StockOperationItemCost } from '../../core/api/types/stockOperation/StockOperationItemCost';
-
-import { showSnackbar } from '@openmrs/esm-framework';
-import { extractErrorMessagesFromResponse } from '../../constants';
-import { ResourceRepresentation } from '../../core/api/api';
 import { OperationType } from '../../core/api/types/stockOperation/StockOperationType';
 import { type StockItemInventoryFilter } from '../../stock-items/stock-items.resource';
 import {
@@ -29,7 +27,7 @@ interface StockOperationCancelButtonProps {
 
 const StockOperationPrintButton: React.FC<StockOperationCancelButtonProps> = ({ operation: _operation }) => {
   const { t } = useTranslation();
-  const { isLoading, items: operation, error } = useStockOperationAndItems(_operation.uuid);
+  const { isLoading, items: operation } = useStockOperationAndItems(_operation.uuid);
   const [loading, setLoading] = useState(false);
   const onPrintStockOperation = async () => {
     setLoading(true);
@@ -79,8 +77,8 @@ const StockOperationPrintButton: React.FC<StockOperationCancelButtonProps> = ({ 
         inventoryFilter.date = parentOperation?.dateCreated
           ? new Date(parentOperation.dateCreated).toISOString()
           : operation?.dateCreated
-          ? new Date(operation.dateCreated).toISOString()
-          : null;
+            ? new Date(operation.dateCreated).toISOString()
+            : null;
         // get stock item inventory
         const res = await getStockItemInventory(inventoryFilter);
         itemInventory = res.data?.results;
@@ -100,11 +98,8 @@ const StockOperationPrintButton: React.FC<StockOperationCancelButtonProps> = ({ 
         } else {
           await PrintRequisitionStockOperation(data);
         }
-      } else {
-        console.info(data);
       }
     } catch (e: any) {
-      console.info(e);
       showSnackbar({
         kind: 'error',
         title: t('errorPrintingStockOperation', 'Error printing stock operation'),

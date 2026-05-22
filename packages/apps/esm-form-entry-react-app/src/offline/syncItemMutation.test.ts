@@ -17,8 +17,8 @@ type PartialEncounterWithObs = Partial<Encounter> & {
   }>;
 };
 
-jest.mock('uuid', () => ({
-  validate: jest.fn((val: string) => {
+vi.mock('uuid', () => ({
+  validate: vi.fn((val: string) => {
     // Simple UUID v4 validation
     return /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(val);
   }),

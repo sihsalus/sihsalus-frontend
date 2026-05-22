@@ -6,9 +6,9 @@
   },
   "extensions": [
     {
-      "name": "system-administration-app-menu-link",
-      "slot": "app-menu-slot",
-      "component": "systemAdminAppMenuLink"
+      "name": "system-administration-app-menu-item",
+      "slot": "app-menu-item-slot",
+      "component": "systemAdminAppMenuItem"
     },
     {
       "name": "system-admin-page-link",

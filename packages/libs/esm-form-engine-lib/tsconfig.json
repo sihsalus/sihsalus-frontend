@@ -1,4 +1,4 @@
 {
   "extends": "../../tsconfig.json",
-  "include": ["src/**/*", "../../tooling/scripts/setup-tests.ts"]
+  "include": ["declarations.d.ts", "src/**/*", "../../tooling/scripts/setup-tests.ts"]
 }

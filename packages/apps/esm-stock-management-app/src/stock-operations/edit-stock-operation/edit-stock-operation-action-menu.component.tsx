@@ -1,7 +1,7 @@
-import React, { useCallback, useEffect, useMemo } from 'react';
 import { Button, InlineLoading } from '@carbon/react';
 import { Edit } from '@carbon/react/icons';
 import { showSnackbar } from '@openmrs/esm-framework';
+import React, { useCallback, useEffect, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { type StockOperationDTO } from '../../core/api/types/stockOperation/StockOperationDTO';
 import { launchStockoperationAddOrEditWorkSpace } from '../stock-operation.utils';
@@ -58,7 +58,7 @@ const EditStockOperationActionMenu: React.FC<EditStockOperationActionMenuProps> 
   }, [operationTypesError, stockOperationError, t]);
 
   if (isOperationTypesLoading || isStockOperationLoading) {
-    return <InlineLoading status="active" iconDescription="Loading" />;
+    return <InlineLoading status="active" iconDescription={t('loading', 'Loading')} />;
   }
 
   if (operationTypesError || stockOperationError) {

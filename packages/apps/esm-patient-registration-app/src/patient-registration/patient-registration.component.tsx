@@ -68,10 +68,12 @@ export const PatientRegistration: React.FC<PatientRegistrationProps> = ({ savePa
   const [patientUuidMap] = usePatientUuidMap(patientUuidToEdit);
   const location = currentSession?.sessionLocation?.uuid;
   const inEditMode = !isLoadingPatientToEdit && !!(uuidOfPatientToEdit && patientToEdit);
-  const showDummyData = useMemo(() => localStorage.getItem('openmrs:devtools') === 'true' && !inEditMode, [inEditMode]);
+  const showDummyData = useMemo(
+    () => window.spaEnv === 'development' && localStorage.getItem('openmrs:devtools') === 'true' && !inEditMode,
+    [inEditMode],
+  );
   const { data: photo } = usePatientPhoto(patientToEdit?.id);
   const savePatientTransactionManager = useRef(new SavePatientTransactionManager());
-  const fieldDefinition = config?.fieldDefinitions?.filter((def) => def.type === 'address');
   const validationSchema = getValidationSchema(config);
 
   useEffect(() => {
@@ -85,8 +87,8 @@ export const PatientRegistration: React.FC<PatientRegistrationProps> = ({ savePa
     return config.sections
       .map(
         (sectionName) =>
-          config.sectionDefinitions.filter((s) => s.id == sectionName)[0] ??
-          builtInSections.filter((s) => s.id == sectionName)[0],
+          config.sectionDefinitions.filter((s) => s.id === sectionName)[0] ??
+          builtInSections.filter((s) => s.id === sectionName)[0],
       )
       .filter((s) => s);
   }, [config.sections, config.sectionDefinitions]);

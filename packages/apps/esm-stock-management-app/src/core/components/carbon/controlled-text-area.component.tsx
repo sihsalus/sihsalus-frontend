@@ -1,7 +1,7 @@
-import React, { type ChangeEvent } from 'react';
-import { type Control, Controller, type FieldValues } from 'react-hook-form';
-import { type TextAreaProps } from '@carbon/react/lib/components/TextArea/TextArea';
 import { TextArea } from '@carbon/react';
+import { type TextAreaProps } from '@carbon/react/lib/components/TextArea/TextArea';
+import { type ChangeEvent } from 'react';
+import { type Control, Controller, type FieldValues } from 'react-hook-form';
 
 interface ControlledTextAreaProps<T> extends TextAreaProps {
   controllerName: string;

@@ -1,6 +1,6 @@
 import { expect } from '@playwright/test';
+import { deleteBill, ensureServiceHasPrices, extractNumericValue, waitForSuccessNotification } from '../commands';
 import { test } from '../core/test';
-import { deleteBill, extractNumericValue, ensureServiceHasPrices, waitForSuccessNotification } from '../commands';
 import { BillingFormPage, InvoicePage, PaymentPage } from '../pages';
 
 test.describe('Billing: Patient Chart workflow', () => {

@@ -24,6 +24,7 @@ export const programsDetailedSummary = getSyncLifecycle(programsDetailedSummaryC
 
 export const programsDashboardLink =
   // t('Programs', 'Programs')
+  // t('programsTooltip', 'Programs')
   getSyncLifecycle(
     createDashboardLink({
       ...dashboardMeta,

@@ -16,7 +16,7 @@ interface AnemiaScreeningResult {
 }
 
 /**
- * Hook para tamizaje de anemia según NTS 137 (mod. RM 643-2018/MINSA):
+ * Hook para tamizaje de anemia según NTS 238:
  * - Primer dosaje de Hb a los 6 meses
  * - Frecuencia semestral hasta los 2 años
  * - Frecuencia anual a partir de los 2 años
@@ -47,12 +47,12 @@ export function useAnemiaScreening(patientUuid: string): AnemiaScreeningResult {
 
     const hbValue = typeof obs.value === 'number' ? obs.value : parseFloat(obs.value);
     const obsDate = obs.obsDatetime ? dayjs(obs.obsDatetime).format('DD/MM/YYYY') : null;
-    const isAnemic = !isNaN(hbValue) && hbValue < threshold;
+    const isAnemic = !Number.isNaN(hbValue) && hbValue < threshold;
 
     // Calcular próximo tamizaje: 6 meses después del último
     const nextDueDate = obs.obsDatetime ? dayjs(obs.obsDatetime).add(6, 'months').format('DD/MM/YYYY') : null;
 
-    return { lastHb: isNaN(hbValue) ? null : hbValue, lastDate: obsDate, isAnemic, nextDueDate };
+    return { lastHb: Number.isNaN(hbValue) ? null : hbValue, lastDate: obsDate, isAnemic, nextDueDate };
   }, [data, threshold]);
 
   return {

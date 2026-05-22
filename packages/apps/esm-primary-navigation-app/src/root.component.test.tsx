@@ -1,6 +1,3 @@
-import { render, screen, waitFor } from '@testing-library/react';
-import React from 'react';
-import { of } from 'rxjs';
 import {
   type AssignedExtension,
   type Session,
@@ -9,6 +6,8 @@ import {
   useLeftNavStore,
   useSession,
 } from '@openmrs/esm-framework';
+import { render, screen, waitFor } from '@testing-library/react';
+import { of } from 'rxjs';
 
 import { mockSession } from '../test-utils/mocks/mock-session';
 import { mockUser } from '../test-utils/mocks/mock-user';
@@ -19,25 +18,25 @@ import { isDesktop } from './utils';
 const mockUserObservable = of(mockUser);
 const mockSessionObservable = of({ data: mockSession });
 
-jest.mock('@openmrs/esm-framework', () => ({
-  ...jest.requireActual('@openmrs/esm-framework'),
-  useConfig: jest.fn(),
-  useAssignedExtensions: jest.fn(),
-  useSession: jest.fn(),
-  useLeftNavStore: jest.fn(),
-  interpolateUrl: jest.fn(),
+vi.mock('@openmrs/esm-framework', async () => ({
+  ...(await vi.importActual('@openmrs/esm-framework')),
+  useConfig: vi.fn(),
+  useAssignedExtensions: vi.fn(),
+  useSession: vi.fn(),
+  useLeftNavStore: vi.fn(),
+  interpolateUrl: vi.fn(),
 }));
 
-jest.mock('./root.resource', () => ({
-  getSynchronizedCurrentUser: jest.fn(() => mockUserObservable),
-  getCurrentSession: jest.fn(() => mockSessionObservable),
+vi.mock('./root.resource', async () => ({
+  getSynchronizedCurrentUser: vi.fn(() => mockUserObservable),
+  getCurrentSession: vi.fn(() => mockSessionObservable),
 }));
 
-jest.mock('./utils', () => ({
-  isDesktop: jest.fn(() => true),
+vi.mock('./utils', async () => ({
+  isDesktop: vi.fn(() => true),
 }));
 
-jest.mock('react-router-dom', () => ({
+vi.mock('react-router-dom', async () => ({
   BrowserRouter: ({ children }: any) => <>{children}</>,
   Route: ({ children, element, path }: any) => {
     if (path === 'login/*' || path === 'logout/*') {
@@ -48,16 +47,16 @@ jest.mock('react-router-dom', () => ({
   Routes: ({ children }: any) => <>{children}</>,
 }));
 
-jest.mock('./components/navbar/navbar.component', () => ({
+vi.mock('./components/navbar/navbar.component', async () => ({
   __esModule: true,
   default: () => <div data-testid="navbar">Mock EMR</div>,
 }));
 
-const mockUseConfig = jest.mocked(useConfig);
-const mockUseAssignedExtensions = jest.mocked(useAssignedExtensions);
-const mockUseSession = jest.mocked(useSession);
-const mockUseLeftNavStore = jest.mocked(useLeftNavStore);
-const mockIsDesktop = jest.mocked(isDesktop);
+const mockUseConfig = vi.mocked(useConfig);
+const mockUseAssignedExtensions = vi.mocked(useAssignedExtensions);
+const mockUseSession = vi.mocked(useSession);
+const mockUseLeftNavStore = vi.mocked(useLeftNavStore);
+const mockIsDesktop = vi.mocked(isDesktop);
 
 mockUseConfig.mockReturnValue({
   logo: { src: null, alt: null, name: 'Mock EMR', link: 'Mock EMR' },

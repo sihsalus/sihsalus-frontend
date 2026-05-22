@@ -16,7 +16,7 @@ export interface DrugSearchResult {
   dosageForm: {
     display: string;
     uuid: string;
-  };
+  } | null;
   concept: {
     display: string;
     uuid: string;

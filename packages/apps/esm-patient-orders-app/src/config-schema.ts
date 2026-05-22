@@ -6,6 +6,11 @@ export const configSchema = {
     _description: 'The encounter type of the encounter encapsulating orders',
     _default: '39da3525-afe4-45ff-8977-c53b7b359158',
   },
+  careSettingUuid: {
+    _type: Type.UUID,
+    _description: 'Care setting UUID used when querying and submitting patient orders',
+    _default: '6f0c9a92-6f24-11e3-af88-005056821db0',
+  },
   showPrintButton: {
     _type: Type.Boolean,
     _description:
@@ -17,20 +22,20 @@ export const configSchema = {
     _default: [
       {
         orderTypeUuid: 'f9c5d0b8-8b5a-11e5-8e9b-12345678a01a',
-        label: 'Orden de Radiología',
-        icon: 'omrs-icon-report',
+        label: 'Órdenes de radiología',
+        icon: 'omrs-icon-image-medical',
         orderableConceptSets: [],
       },
       {
         orderTypeUuid: 'e1f95924-697a-11e3-bd76-0800271c1b75',
-        label: 'Orden de Inmunización',
-        icon: 'Syringe',
+        label: 'Órdenes de inmunización',
+        icon: 'omrs-icon-syringe',
         orderableConceptSets: [],
       },
       {
         orderTypeUuid: 'f3c2e4b6-8b5a-11e5-8e9b-12345678901b',
-        label: 'Orden de Interconsulta',
-        icon: 'User--follow',
+        label: 'Órdenes de interconsulta',
+        icon: 'omrs-icon-referral-order',
         orderableConceptSets: [],
       },
     ],
@@ -77,6 +82,7 @@ export interface OrderTypeDefinition {
 
 export interface ConfigObject {
   orderEncounterType: string;
+  careSettingUuid: string;
   showPrintButton: boolean;
   orderTypes: Array<OrderTypeDefinition>;
   showReferenceNumberField: boolean;

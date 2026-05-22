@@ -1,7 +1,7 @@
 import { ContentSwitcher, Switch } from '@carbon/react';
 import { ExtensionSlot, useConfig } from '@openmrs/esm-framework';
 import { useField } from 'formik';
-import React, { useCallback, useContext } from 'react';
+import { useCallback, useContext } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import { type RegistrationConfig } from '../../../config-schema';
@@ -11,7 +11,6 @@ import { PatientRegistrationContext } from '../../patient-registration-context';
 import { getEffectiveRegistrationConfig } from '../../peru-registration-config';
 import styles from '../field.scss';
 
-export const unidentifiedPatientAttributeTypeUuid = '8b56eac7-5c76-4b9c-8c6f-1deab8d3fc47';
 const containsNoNumbers = /^([^0-9]*)$/;
 
 function checkNumber(value: string) {
@@ -33,6 +32,7 @@ export const NameField = () => {
         defaultUnknownGivenName,
         defaultUnknownFamilyName,
         defaultUnknownFamilyName2,
+        unidentifiedPatientAttributeTypeUuid,
         displayMiddleName,
         displayReverseFieldOrder,
         requireFamilyName2,

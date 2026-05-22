@@ -9,7 +9,7 @@ import PatientIdentifierTypeQuestion from './patient-identifier-type-question.co
 
 void React;
 
-const mockSetFormField = jest.fn();
+const mockSetFormField = vi.fn();
 const formField: FormField = {
   id: '1',
   type: 'patientIdentifier',
@@ -18,15 +18,15 @@ const formField: FormField = {
   },
 };
 
-jest.mock('../../../../form-field-context', () => ({
-  ...jest.requireActual('../../../../form-field-context'),
+vi.mock('../../../../form-field-context', async () => ({
+  ...(await vi.importActual('../../../../form-field-context')),
   useFormField: () => ({ formField, setFormField: mockSetFormField }),
 }));
 
-const mockUsePatientIdentifierTypes = jest.mocked(usePatientIdentifierTypes);
-jest.mock('@hooks/usePatientIdentifierTypes', () => ({
-  ...jest.requireActual('@hooks/usePatientIdentifierTypes'),
-  usePatientIdentifierTypes: jest.fn((value: string) => value),
+const mockUsePatientIdentifierTypes = vi.mocked(usePatientIdentifierTypes);
+vi.mock('@hooks/usePatientIdentifierTypes', async () => ({
+  ...(await vi.importActual('@hooks/usePatientIdentifierTypes')),
+  usePatientIdentifierTypes: vi.fn((value: string) => value),
 }));
 
 const patientIdentifierTypes: Array<PatientIdentifierType> = [

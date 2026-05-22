@@ -1,5 +1,3 @@
-import React, { useMemo } from 'react';
-import { useTranslation } from 'react-i18next';
 import {
   DataTable,
   DataTableSkeleton,
@@ -19,17 +17,19 @@ import {
   Tile,
 } from '@carbon/react';
 import { isDesktop, restBaseUrl } from '@openmrs/esm-framework';
+import React, { useMemo } from 'react';
+import { useTranslation } from 'react-i18next';
+import { ResourceRepresentation } from '../../../core/api/api';
+import { type StockRule } from '../../../core/api/types/stockItem/StockRule';
 import { formatDisplayDate } from '../../../core/utils/datetimeUtils';
 import { translateStockLocation } from '../../../core/utils/translationUtils';
-import { ResourceRepresentation } from '../../../core/api/api';
 import { handleMutate } from '../../../utils';
-import { type StockRule } from '../../../core/api/types/stockItem/StockRule';
-import { useStockItemRules } from './stock-item-rules.resource';
+import styles from '../../stock-items-table.scss';
 import AddStockRuleActionButton from './add-stock-rule-button.component';
 import EditStockRuleActionsMenu from './edit-stock-rule.component';
+import { useStockItemRules } from './stock-item-rules.resource';
 import StockRulesDeleteActionMenu from './stock-rules-delete.component';
 import StockRulesFilter from './stock-rules-filter.component';
-import styles from '../../stock-items-table.scss';
 
 interface StockItemRulesProps {
   onSubmit?: () => void;

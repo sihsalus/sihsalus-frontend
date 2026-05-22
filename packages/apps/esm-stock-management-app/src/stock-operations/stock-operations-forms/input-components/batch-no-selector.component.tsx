@@ -1,8 +1,8 @@
+import { ComboBox, SelectSkeleton } from '@carbon/react';
 import React, { useCallback, useEffect, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
-import { ComboBox, SelectSkeleton } from '@carbon/react';
-import { type StockBatchWithUoM } from '../../../core/api/types/stockItem/StockBatchDTO';
 import { formatForDatePicker } from '../../../constants';
+import { type StockBatchWithUoM } from '../../../core/api/types/stockItem/StockBatchDTO';
 import { useStockItemBatchInformationHook } from '../../../stock-items/add-stock-item/batch-information/batch-information.resource';
 import { useStockItemBatchNumbers } from '../hooks/useStockItemBatchNumbers';
 
@@ -57,7 +57,7 @@ const BatchNoSelector: React.FC<BatchNoSelectorProps> = ({
     return stockItemBatchesInfo.filter((batch) => {
       const quantity = typeof batch.quantity === 'string' ? parseFloat(batch.quantity) : batch.quantity;
 
-      return !isNaN(quantity) && quantity > 0;
+      return !Number.isNaN(quantity) && quantity > 0;
     });
   }, [stockItemBatchesInfo]);
 
@@ -72,7 +72,7 @@ const BatchNoSelector: React.FC<BatchNoSelectorProps> = ({
 
       const quantity = typeof batch.quantity === 'string' ? parseFloat(batch.quantity) : batch.quantity;
 
-      if (isNaN(quantity)) return t('unknown', 'Unknown');
+      if (Number.isNaN(quantity)) return t('unknown', 'Unknown');
 
       const baseQuantity = quantity.toString();
 
@@ -83,7 +83,7 @@ const BatchNoSelector: React.FC<BatchNoSelectorProps> = ({
       if (!batch.quantityFactor) return withUnit;
 
       const factor = parseFloat(batch.quantityFactor);
-      return !isNaN(factor) && factor > 1 ? `${withUnit} (${factor} units each)` : withUnit;
+      return !Number.isNaN(factor) && factor > 1 ? `${withUnit} (${factor} units each)` : withUnit;
     },
     [t],
   );

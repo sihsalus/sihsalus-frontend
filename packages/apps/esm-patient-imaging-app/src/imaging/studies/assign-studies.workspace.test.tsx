@@ -14,13 +14,14 @@ type AssignStudiesTableMockProps = {
   assignStudyFunction: (study: DicomStudy, isAssign: boolean) => Promise<void>;
 };
 
-jest.mock('@openmrs/esm-framework', () => ({
-  useLayoutType: jest.fn(() => 'desktop'),
-  launchWorkspace: jest.fn(),
-  showSnackbar: jest.fn(),
-  usePagination: jest.fn((items, pageSize) => ({
+vi.mock('@openmrs/esm-framework', async () => ({
+  ...(await vi.importActual('@openmrs/esm-framework')),
+  useLayoutType: vi.fn(() => 'desktop'),
+  launchWorkspace: vi.fn(),
+  showSnackbar: vi.fn(),
+  usePagination: vi.fn((items, pageSize) => ({
     results: items?.slice(0, pageSize) || [],
-    goTo: jest.fn(),
+    goTo: vi.fn(),
     currentPage: 1,
   })),
   ErrorState: ({ error, headerTitle }: ErrorStateProps) => (
@@ -33,15 +34,18 @@ jest.mock('@openmrs/esm-framework', () => ({
   AddIcon: () => <span>AddIcon</span>,
 }));
 
-jest.mock('../../api');
-jest.mock('../components/assign-studies-table.component', () => ({
-  __esModule: true,
-  default: ({ data }: StudiesTableDataProps) => (
-    <div data-testid="assign-studies-table">Studies: {data?.studies?.length}</div>
-  ),
+vi.mock('../../api');
+
+let capturedAssignStudyFunction: ((study: DicomStudy, isAssign: boolean) => Promise<void>) | undefined;
+
+vi.mock('../components/assign-studies-table.component', () => ({
+  default: (props: AssignStudiesTableMockProps & StudiesTableDataProps) => {
+    capturedAssignStudyFunction = props.assignStudyFunction;
+    return <div data-testid="assign-studies-table">Studies: {props.data?.studies?.length}</div>;
+  },
 }));
 
-jest.mock('@openmrs/esm-patient-common-lib', () => ({
+vi.mock('@openmrs/esm-patient-common-lib', () => ({
   EmptyState: ({ displayText, headerTitle }: EmptyStateProps) => (
     <div>
       {headerTitle}: {displayText}
@@ -49,14 +53,7 @@ jest.mock('@openmrs/esm-patient-common-lib', () => ({
   ),
 }));
 
-let capturedAssignStudyFunction: ((study: DicomStudy, isAssign: boolean) => Promise<void>) | undefined;
-
-jest.mock('../components/assign-studies-table.component', () => (props: AssignStudiesTableMockProps) => {
-  capturedAssignStudyFunction = props.assignStudyFunction;
-  return <div data-testid="assign-studies-table" />;
-});
-
-jest.mock('react-i18next', () => ({
+vi.mock('react-i18next', () => ({
   useTranslation: () => ({
     t: (_key: string, defaultValue: string) => defaultValue,
   }),
@@ -82,13 +79,13 @@ describe('AssignStudiesWorkspace', () => {
   };
 
   beforeEach(() => {
-    jest.clearAllMocks();
-    (useLayoutType as jest.Mock).mockReturnValue('small-desktop');
-    (api.useStudiesByPatient as jest.Mock).mockReturnValue({
-      mutate: jest.fn(),
+    vi.clearAllMocks();
+    (useLayoutType as vi.Mock).mockReturnValue('small-desktop');
+    (api.useStudiesByPatient as vi.Mock).mockReturnValue({
+      mutate: vi.fn(),
     });
 
-    (api.useStudiesByConfig as jest.Mock).mockReturnValue({
+    (api.useStudiesByConfig as vi.Mock).mockReturnValue({
       data: { studies: [mockStudyData] },
       error: null,
       isLoading: false,
@@ -97,7 +94,7 @@ describe('AssignStudiesWorkspace', () => {
   });
 
   it('renders loading state when studies are loading', () => {
-    (api.useStudiesByConfig as jest.Mock).mockReturnValue({
+    (api.useStudiesByConfig as vi.Mock).mockReturnValue({
       data: null,
       error: null,
       isLoading: true,
@@ -108,7 +105,7 @@ describe('AssignStudiesWorkspace', () => {
       <AssignStudiesWorkspace
         patientUuid={patientUuid}
         configuration={configuration}
-        closeWorkspace={jest.fn()}
+        closeWorkspace={vi.fn()}
         promptBeforeClosing={function (_testFcn: () => boolean): void {
           throw new Error('Function not implemented.');
         }}
@@ -125,7 +122,7 @@ describe('AssignStudiesWorkspace', () => {
   });
 
   it('renders error state when API returns error', () => {
-    (api.useStudiesByConfig as jest.Mock).mockReturnValue({
+    (api.useStudiesByConfig as vi.Mock).mockReturnValue({
       data: null,
       error: new Error('API error'),
       isLoading: false,
@@ -136,7 +133,7 @@ describe('AssignStudiesWorkspace', () => {
       <AssignStudiesWorkspace
         patientUuid={patientUuid}
         configuration={configuration}
-        closeWorkspace={jest.fn()}
+        closeWorkspace={vi.fn()}
         promptBeforeClosing={function (_testFcn: () => boolean): void {
           throw new Error('Function not implemented.');
         }}
@@ -156,7 +153,7 @@ describe('AssignStudiesWorkspace', () => {
       <AssignStudiesWorkspace
         patientUuid={patientUuid}
         configuration={configuration}
-        closeWorkspace={jest.fn()}
+        closeWorkspace={vi.fn()}
         promptBeforeClosing={() => true}
         closeWorkspaceWithSavedChanges={() => {}}
         setTitle={() => {}}
@@ -167,7 +164,7 @@ describe('AssignStudiesWorkspace', () => {
   });
 
   it('calls closeworkspace when close button is clicked', () => {
-    const closeMock = jest.fn();
+    const closeMock = vi.fn();
 
     render(
       <AssignStudiesWorkspace
@@ -185,9 +182,9 @@ describe('AssignStudiesWorkspace', () => {
   });
 
   it('calls showSnackbar when assignStudyFunction succeeds', async () => {
-    const mockMutate = jest.fn();
-    (api.useStudiesByPatient as jest.Mock).mockReturnValue({ mutate: mockMutate });
-    (api.assignStudy as jest.Mock).mockResolvedValue({});
+    const mockMutate = vi.fn();
+    (api.useStudiesByPatient as vi.Mock).mockReturnValue({ mutate: mockMutate });
+    (api.assignStudy as vi.Mock).mockResolvedValue({});
 
     render(
       <AssignStudiesWorkspace
@@ -196,7 +193,7 @@ describe('AssignStudiesWorkspace', () => {
         promptBeforeClosing={() => true}
         closeWorkspaceWithSavedChanges={() => {}}
         setTitle={() => {}}
-        closeWorkspace={jest.fn()}
+        closeWorkspace={vi.fn()}
       />,
     );
 

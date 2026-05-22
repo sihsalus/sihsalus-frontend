@@ -1,6 +1,7 @@
-import React from 'react';
 import { Dropdown, DropdownSkeleton } from '@carbon/react';
+import React from 'react';
 import { useTranslation } from 'react-i18next';
+import { translateStockOperationType } from '../../core/utils/translationUtils';
 import { useStockOperationTypes } from '../../stock-lookups/stock-lookups.resource';
 import styles from './stock-operation-operations-filter.scss';
 
@@ -17,7 +18,7 @@ const StockOperationOperationsFilter: React.FC = () => {
         <Dropdown
           id="stockOperationOperationsFiter"
           items={types.results}
-          itemToString={(item) => (item ? item.name : t('notSet', 'Not Set'))}
+          itemToString={(item) => (item ? translateStockOperationType(t, item.name) : t('notSet', 'Not Set'))}
           type="inline"
           size="sm"
           label={t('filterByOperationType', 'Filter by operation type')}

@@ -23,6 +23,14 @@ Configuracion de conceptos:
 - `immunizationConceptSet`: default `CIEL:984`. Debe resolver a un set/concepto con las vacunas seleccionables como respuestas.
 - `fhirConceptMappings.immunizationResourceConcept`: default `CIEL:1421`. Debe existir como mapping unico en el content package para que el recurso FHIR2 `Immunization` pueda leer y guardar.
 
+Contratos de frontend:
+
+- Los conceptos y mappings de vacunacion deben venir de `config-schema`; no agregar UUIDs clinicos hardcodeados.
+- Un `501 Not Implemented` de FHIR2 Immunization debe mostrarse como error operativo claro para QA/backend o degradar a estado vacio si el flujo es solo lectura.
+- El usuario final no debe ver detalles tecnicos del endpoint, salvo que sea una pantalla de diagnostico.
+- Las advertencias MINSA por edad/dosis no deben bloquear guardado sin una regla clinica explicita.
+- Si una vacuna de la NTS no existe en content/backend, debe estar deshabilitada o documentada como pendiente, no simulada silenciosamente.
+
 TODO content/backend:
 
 - Corregir en backend QLTY el `501 Not Implemented` de `GET /openmrs/ws/fhir2/R4/Immunization?patient=<uuid>`. El frontend ya degrada a estado vacio para no romper la UI, pero la solucion real es habilitar/actualizar FHIR2 Immunization y sus mappings de contenido.

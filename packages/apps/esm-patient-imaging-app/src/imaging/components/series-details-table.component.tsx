@@ -19,7 +19,7 @@ import orthancExplorer from '../../assets/orthanc.png';
 import stoneview from '../../assets/stoneViewer.png';
 import { type OrthancConfiguration, type Series } from '../../types';
 import { seriesCount, seriesDeleteConfirmationDialog } from '../constants';
-import { buildOhifViewerUrl, buildOrthancExplorerUrl } from '../utils/help';
+import { buildOhifViewerUrl, buildOrthancExplorerUrl, openInNewWindow } from '../utils/help';
 import styles from './details-table.scss';
 import InstancesDetailsTable from './instances-details-table.component';
 
@@ -102,7 +102,7 @@ const SeriesDetailsTable: React.FC<SeriesDetailsTableProps> = ({
             size={isTablet ? 'lg' : 'sm'}
             label={t('stoneviewer', 'Show image')}
             onClick={() =>
-              (globalThis.location.href = buildOhifViewerUrl([
+              openInNewWindow(buildOhifViewerUrl([
                 { code: 'StudyInstanceUIDs', value: studyInstanceUID },
                 { code: 'SeriesInstanceUIDs', value: series.seriesInstanceUID },
               ]))
@@ -116,7 +116,7 @@ const SeriesDetailsTable: React.FC<SeriesDetailsTableProps> = ({
             size={isTablet ? 'lg' : 'sm'}
             label={t('orthancExplorer2', 'Open in Orthanc')}
             onClick={() =>
-              (globalThis.location.href = buildOrthancExplorerUrl(orthancConfig, [
+              openInNewWindow(buildOrthancExplorerUrl(orthancConfig, [
                 { code: 'StudyInstanceUID', value: studyInstanceUID },
                 { code: 'expand', value: 'series' },
               ]))

@@ -123,25 +123,34 @@ describe('StudiesDetailsTable', () => {
       configurable: true,
       value: {
         origin: 'http://openmrs.sihsalus.gidistest',
-        href: '',
       } as unknown as Location,
     });
+    window.open = vi.fn();
 
     render(<StudiesDetailTable patientUuid="patientUuid-123" studies={mockStudies} />);
 
     fireEvent.click(screen.getByLabelText(/^Show image$/i));
-    expect(window.location.href).toBe(
+    expect(window.open).toHaveBeenNthCalledWith(
+      1,
       'http://openmrs.sihsalus.gidistest/imaging/viewer?StudyInstanceUIDs=STUDY-123',
+      '_blank',
+      'noopener,noreferrer',
     );
 
     fireEvent.click(screen.getByLabelText(/^Show image data$/i));
-    expect(window.location.href).toBe(
+    expect(window.open).toHaveBeenNthCalledWith(
+      2,
       'http://openmrs.sihsalus.gidistest/orthanc/ui/app/#/filtered-studies?StudyInstanceUID=STUDY-123&expand=series',
+      '_blank',
+      'noopener,noreferrer',
     );
 
     fireEvent.click(screen.getByLabelText(/Open in Orthanc/i));
-    expect(window.location.href).toBe(
+    expect(window.open).toHaveBeenNthCalledWith(
+      3,
       'http://openmrs.sihsalus.gidistest/orthanc/ui/app/#/filtered-studies?StudyInstanceUID=STUDY-123&expand=series',
+      '_blank',
+      'noopener,noreferrer',
     );
   });
 });

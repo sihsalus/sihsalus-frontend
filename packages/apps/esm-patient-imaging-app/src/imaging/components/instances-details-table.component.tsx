@@ -19,7 +19,7 @@ import orthancExplorer from '../../assets/orthanc.png';
 import preview from '../../assets/preview.png';
 import { type OrthancConfiguration } from '../../types';
 import { instancePreviewDialog, instancesCount } from '../constants';
-import { buildOrthancExplorerUrl, buildOrthancInstancePreviewUrl } from '../utils/help';
+import { buildOrthancExplorerUrl, buildOrthancInstancePreviewUrl, openInNewWindow } from '../utils/help';
 import styles from './details-table.scss';
 
 export interface InstancesDetailsTableProps {
@@ -103,7 +103,7 @@ const InstancesDetailsTable: React.FC<InstancesDetailsTableProps> = ({
                 label={t('instanceViewInOrthanc', 'Instance view in Orthanc')}
                 onClick={
                   () =>
-                    (globalThis.location.href = buildOrthancInstancePreviewUrl(
+                    openInNewWindow(buildOrthancInstancePreviewUrl(
                       orthancConfig,
                       instance.orthancInstanceUID,
                     ))
@@ -119,7 +119,7 @@ const InstancesDetailsTable: React.FC<InstancesDetailsTableProps> = ({
             size={isTablet ? 'lg' : 'sm'}
             label={t('orthancExplorer2', 'Open in Orthanc')}
             onClick={() =>
-              (globalThis.location.href = buildOrthancExplorerUrl(orthancConfig, [
+              openInNewWindow(buildOrthancExplorerUrl(orthancConfig, [
                 { code: 'StudyInstanceUID', value: studyInstanceUID },
                 { code: 'expand', value: 'series' },
               ]))

@@ -18,7 +18,7 @@ import ohifview from '../../assets/ohifViewer.png';
 import stoneview from '../../assets/stoneViewer.png';
 import { type DicomStudy, type StudiesWithScores } from '../../types';
 import { studiesCount } from '../constants';
-import { buildOhifViewerUrl, buildOrthancExplorerUrl } from '../utils/help';
+import { buildOhifViewerUrl, buildOrthancExplorerUrl, openInNewWindow } from '../utils/help';
 import styles from './details-table.scss';
 import SeriesDetailsTable from './series-details-table.component';
 
@@ -118,7 +118,7 @@ const AssignStudiesTable: React.FC<AssignStudiesTableProps> = ({
             size={isTablet ? 'lg' : 'sm'}
             label={t('stoneviewer', 'Show image')}
             onClick={() =>
-              (globalThis.location.href = buildOhifViewerUrl([
+              openInNewWindow(buildOhifViewerUrl([
                 { code: 'StudyInstanceUIDs', value: study.studyInstanceUID },
               ]))
             }
@@ -131,7 +131,7 @@ const AssignStudiesTable: React.FC<AssignStudiesTableProps> = ({
             size={isTablet ? 'lg' : 'sm'}
             label={t('ohifviewer', 'Show image data')}
             onClick={() =>
-              (globalThis.location.href = buildOrthancExplorerUrl(study.orthancConfiguration, [
+              openInNewWindow(buildOrthancExplorerUrl(study.orthancConfiguration, [
                 { code: 'StudyInstanceUID', value: study.studyInstanceUID },
                 { code: 'expand', value: 'series' },
               ]))

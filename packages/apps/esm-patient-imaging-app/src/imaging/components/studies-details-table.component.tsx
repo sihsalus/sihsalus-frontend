@@ -20,7 +20,7 @@ import orthancExplorer from '../../assets/orthanc.png';
 import stoneview from '../../assets/stoneViewer.png';
 import { type DicomStudy } from '../../types';
 import { studiesCount, studyDeleteConfirmationDialog } from '../constants';
-import { buildOhifViewerUrl, buildOrthancExplorerUrl } from '../utils/help';
+import { buildOhifViewerUrl, buildOrthancExplorerUrl, openInNewWindow } from '../utils/help';
 import styles from './details-table.scss';
 import SeriesDetailsTable from './series-details-table.component';
 
@@ -129,7 +129,7 @@ const StudiesDetailTable: React.FC<StudyDetailsTableProps> = ({
             size={isTablet ? 'lg' : 'sm'}
             label={t('stoneviewer', 'Show image')}
             onClick={() =>
-              (globalThis.location.href = buildOhifViewerUrl([
+              openInNewWindow(buildOhifViewerUrl([
                 { code: 'StudyInstanceUIDs', value: study.studyInstanceUID },
               ]))
             }
@@ -142,7 +142,7 @@ const StudiesDetailTable: React.FC<StudyDetailsTableProps> = ({
             size={isTablet ? 'lg' : 'sm'}
             label={t('ohifviewer', 'Show image data')}
             onClick={() =>
-              (globalThis.location.href = buildOrthancExplorerUrl(study.orthancConfiguration, [
+              openInNewWindow(buildOrthancExplorerUrl(study.orthancConfiguration, [
                 { code: 'StudyInstanceUID', value: study.studyInstanceUID },
                 { code: 'expand', value: 'series' },
               ]))
@@ -157,7 +157,7 @@ const StudiesDetailTable: React.FC<StudyDetailsTableProps> = ({
             label={t('orthancExplorer2', 'Open in Orthanc')}
             onClick={
               () =>
-                (globalThis.location.href = buildOrthancExplorerUrl(study.orthancConfiguration, [
+                openInNewWindow(buildOrthancExplorerUrl(study.orthancConfiguration, [
                   { code: 'StudyInstanceUID', value: study.studyInstanceUID },
                   { code: 'expand', value: 'series' },
                 ]))

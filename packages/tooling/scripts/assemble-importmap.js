@@ -293,6 +293,25 @@ function copyAppShell() {
   if (fs.existsSync(shellDist)) {
     fs.cpSync(shellDist, outDir, { recursive: true, force: false });
     logInfo('OK app-shell dist copied');
+    stripRootCssSourceMapComments();
+  }
+}
+
+function stripRootCssSourceMapComments() {
+  const rootCssFiles = fs
+    .readdirSync(outDir, { withFileTypes: true })
+    .filter((entry) => entry.isFile() && entry.name.endsWith('.css'))
+    .map((entry) => entry.name);
+
+  for (const cssFile of rootCssFiles) {
+    const cssPath = path.join(outDir, cssFile);
+    const css = fs.readFileSync(cssPath, 'utf8');
+    const withoutSourceMapComment = css.replace(/\/\*# sourceMappingURL=[^*]+\.map\*\//g, '');
+
+    if (withoutSourceMapComment !== css) {
+      fs.writeFileSync(cssPath, withoutSourceMapComment);
+      logInfo(`OK stripped CSS source map comment from ${cssFile}`);
+    }
   }
 }
 

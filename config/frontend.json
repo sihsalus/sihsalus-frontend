@@ -3,9 +3,16 @@
     "Brand color #1": "#27348b",
     "Brand color #2": "#17205f",
     "Brand color #3": "#2c7d35",
-    "implementationName": "SIHSALUS"
+    "implementationName": "Clinic"
   },
-  "@sihsalus/esm-home-app": {
-    "leftNavMode": "normal"
+  "core": {
+    "Translation overrides": {
+      "en": {
+        "Clinic": "SIHSALUS"
+      },
+      "es": {
+        "Clinic": "SIHSALUS"
+      }
+    }
   }
 }

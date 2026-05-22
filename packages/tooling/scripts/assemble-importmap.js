@@ -308,6 +308,7 @@ function copyAppShell() {
     fs.cpSync(shellDist, outDir, { recursive: true, force: false });
     logInfo('OK app-shell dist copied');
     stripRootCssSourceMapComments();
+    patchAppShellRuntime();
   }
 }
 
@@ -325,6 +326,64 @@ function stripRootCssSourceMapComments() {
     if (withoutSourceMapComment !== css) {
       fs.writeFileSync(cssPath, withoutSourceMapComment);
       logInfo(`OK stripped CSS source map comment from ${cssFile}`);
+    }
+  }
+}
+
+function patchAppShellRuntime() {
+  const minifiedTemplateVariable = (name) => '$' + `{${name}}`;
+  const jsFiles = fs
+    .readdirSync(outDir, { withFileTypes: true })
+    .filter((entry) => entry.isFile() && entry.name.endsWith('.js'))
+    .map((entry) => path.join(outDir, entry.name));
+
+  const extensionParcelName = `${minifiedTemplateVariable('t')}/${minifiedTemplateVariable(
+    'd',
+  )}-${minifiedTemplateVariable('f')}`;
+  const extensionParcelProps =
+    '{...l,_meta:o,_extensionContext:{extensionId:c,extensionSlotName:t,extensionSlotModuleName:n,extensionModuleName:m},domElement:e}';
+  const extensionParcelTimeouts =
+    'timeouts:{bootstrap:{millis:1e4,dieOnTimeout:!1,warningMillis:1e4},mount:{millis:1e4,dieOnTimeout:!1,warningMillis:1e4},update:{millis:1e4,dieOnTimeout:!1,warningMillis:1e4},unmount:{millis:1e4,dieOnTimeout:!1,warningMillis:1e4}}';
+  const extensionParcelMount = `p=(0,r.mountRootParcel)(u({...s,name:\`${extensionParcelName}\`}),${extensionParcelProps})`;
+  const extensionParcelMountWithTimeouts = `p=(0,r.mountRootParcel)(u({...s,name:\`${extensionParcelName}\`,${extensionParcelTimeouts}}),${extensionParcelProps})`;
+
+  const duplicateSlotWarning = `if(o&&o!=e)return console.warn(\`An extension slot with the name '${minifiedTemplateVariable(
+    't',
+  )}' already exists. Refusing to register the same slot name twice (in "registerExtensionSlot"). The existing one is from module ${minifiedTemplateVariable(
+    'o',
+  )}.\`),r;`;
+  const duplicateSlotNoop = 'if(o&&o!=e)return r;';
+
+  const patches = [
+    {
+      name: 'extension parcel lifecycle timeout',
+      search: extensionParcelMount,
+      replacement: extensionParcelMountWithTimeouts,
+    },
+    {
+      name: 'duplicate extension slot warning',
+      search: duplicateSlotWarning,
+      replacement: duplicateSlotNoop,
+    },
+  ];
+
+  for (const patch of patches) {
+    let applied = 0;
+
+    for (const jsFile of jsFiles) {
+      const source = fs.readFileSync(jsFile, 'utf8');
+      if (!source.includes(patch.search)) {
+        continue;
+      }
+
+      fs.writeFileSync(jsFile, source.split(patch.search).join(patch.replacement));
+      applied++;
+    }
+
+    if (applied > 0) {
+      logInfo(`OK patched app-shell ${patch.name} (${applied} file${applied === 1 ? '' : 's'})`);
+    } else {
+      logWarn(`app-shell ${patch.name} patch not applied; expected runtime pattern was not found`);
     }
   }
 }
@@ -528,6 +587,13 @@ function patchIndexHtml() {
     html = html.replace(/(['"])https?:\/\/[^'"]*\/importmap\.json\1/g, `$1${resolvedImportmapUrl}$1`);
     html = html.replace(/(['"])(?:\$\{SPA_PATH\}|\$SPA_PATH)\/importmap\.json\1/g, `$1${resolvedImportmapUrl}$1`);
   }
+
+  // The app shell loads these JSON files via typed script tags. Keeping separate
+  // preload links makes browsers warn that the preloaded fetch was not used.
+  html = html.replace(
+    /<link\b(?=[^>]*\brel=["']preload["'])(?=[^>]*\bhref=["'][^"']*\/(?:importmap|routes\.registry)\.json["'])[^>]*>\s*/g,
+    '',
+  );
 
   // 2. SPA_CONFIG_URLS — convert comma-separated list to JS array elements
   //    e.g. "/spa/a.json,/spa/b.json" → "/spa/a.json","/spa/b.json"

@@ -12,6 +12,10 @@ import type {
   TestOrderPost,
 } from './types';
 
+function isValidDate(date: Date | null): date is Date {
+  return Boolean(date) && !Number.isNaN(date.getTime());
+}
+
 export async function postOrdersOnNewEncounter(
   patientUuid: string,
   orderEncounterType: string,
@@ -20,16 +24,18 @@ export async function postOrdersOnNewEncounter(
   abortController?: AbortController,
 ) {
   const now = new Date();
-  const visitStartDate = parseDate(activeVisit?.startDatetime);
-  const visitEndDate = parseDate(activeVisit?.stopDatetime);
+  const visitStartDate = activeVisit?.startDatetime ? parseDate(activeVisit.startDatetime) : null;
+  const visitEndDate = activeVisit?.stopDatetime ? parseDate(activeVisit.stopDatetime) : null;
   let encounterDate: Date;
-  if (!activeVisit || (visitStartDate < now && (!visitEndDate || visitEndDate > now))) {
+  const visitIsCurrentlyActive =
+    isValidDate(visitStartDate) && visitStartDate < now && (!isValidDate(visitEndDate) || visitEndDate > now);
+  if (!activeVisit || visitIsCurrentlyActive) {
     encounterDate = now;
   } else {
     console.warn(
       'postOrdersOnNewEncounter received an active visit that is not currently active. This is a programming error. Attempting to place the order using the visit start date.',
     );
-    encounterDate = visitStartDate;
+    encounterDate = isValidDate(visitStartDate) ? visitStartDate : now;
   }
 
   const { items, postDataPrepFunctions }: OrderBasketStore = orderBasketStore.getState();

@@ -160,15 +160,6 @@ export function DrugOrderForm({
     [setValue],
   );
 
-  const handleUnitAfterChange = useCallback(
-    (newValue: MedicationOrderFormData['unit'], prevValue: MedicationOrderFormData['unit']) => {
-      if (prevValue?.valueCoded === getValues('quantityUnits')?.valueCoded) {
-        setValue('quantityUnits', newValue, { shouldValidate: true });
-      }
-    },
-    [setValue, getValues],
-  );
-
   const drug = watch('drug') as Drug;
   const routeValue = watch('route')?.value;
   const watchedUnit = watch('unit');
@@ -229,21 +220,10 @@ export function DrugOrderForm({
 
     if (calculatedQuantity != null) {
       setValue('pillsDispensed', calculatedQuantity, { shouldValidate: true });
-      if (!watchedQuantityUnits && watchedUnit) {
-        setValue('quantityUnits', watchedUnit, { shouldValidate: true });
-      }
     } else if (getValues('pillsDispensed') != null) {
       setValue('pillsDispensed', null);
     }
-  }, [
-    requireOutpatientQuantity,
-    isManualOverride,
-    calculatedQuantity,
-    watchedUnit,
-    watchedQuantityUnits,
-    getValues,
-    setValue,
-  ]);
+  }, [requireOutpatientQuantity, isManualOverride, calculatedQuantity, getValues, setValue]);
 
   const handleQuantityAfterChange = useCallback(() => {
     setIsManualOverride(true);
@@ -251,11 +231,8 @@ export function DrugOrderForm({
 
   const handleRecalculate = useCallback(() => {
     setValue('pillsDispensed', calculatedQuantity, { shouldValidate: true });
-    if (!watchedQuantityUnits && watchedUnit) {
-      setValue('quantityUnits', watchedUnit, { shouldValidate: true });
-    }
     setIsManualOverride(false);
-  }, [calculatedQuantity, setValue, watchedQuantityUnits, watchedUnit]);
+  }, [calculatedQuantity, setValue]);
 
   const handleFormSubmission = async (data: MedicationOrderFormData) => {
     const newBasketItem = {
@@ -337,10 +314,13 @@ export function DrugOrderForm({
   }, []);
 
   const filterItemsBySynonymNames = useCallback((menu) => {
+    const inputValue = menu?.inputValue?.toLowerCase();
+    const itemValue = menu?.item?.value?.toLowerCase();
+    const names = menu?.item?.names ?? [];
     if (menu?.inputValue?.length) {
-      return menu.item?.names?.some((abbr: string) => abbr.toLowerCase().includes(menu.inputValue.toLowerCase()));
+      return itemValue?.includes(inputValue) || names.some((name: string) => name.toLowerCase().includes(inputValue));
     }
-    return menu?.item?.names ?? [];
+    return true;
   }, []);
 
   const [showStickyMedicationHeader, setShowMedicationHeader] = useState(false);
@@ -490,7 +470,6 @@ export function DrugOrderForm({
                           titleText={t('editDosageUnitsTitle', 'Dose unit')}
                           items={drugDosingUnits}
                           itemToString={(item: CommonMedicationValueCoded) => item?.value}
-                          handleAfterChange={handleUnitAfterChange}
                         />
                       </InputWrapper>
                     </Column>

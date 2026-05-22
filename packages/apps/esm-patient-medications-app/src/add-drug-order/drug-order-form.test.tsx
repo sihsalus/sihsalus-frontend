@@ -594,7 +594,7 @@ describe('DrugOrderForm - auto-calculation of dispense quantity', () => {
     });
   });
 
-  it('auto-sets quantity unit to match dose unit when quantity unit is empty', async () => {
+  it('does not auto-set quantity unit when quantity is auto-calculated', async () => {
     const user = userEvent.setup();
     renderDrugOrderForm(createNewOrderBasketItem());
 
@@ -614,10 +614,9 @@ describe('DrugOrderForm - auto-calculation of dispense quantity', () => {
     await user.click(durationUnitCombobox);
     await user.click(screen.getByText('Days'));
 
-    // The quantity unit should auto-fill to match the dose unit (Tablet)
     await waitFor(() => {
       const quantityUnitCombobox = screen.getByRole('combobox', { name: /quantity unit/i });
-      expect(quantityUnitCombobox).toHaveValue('Tablet');
+      expect(quantityUnitCombobox).toHaveValue('');
     });
   });
 });

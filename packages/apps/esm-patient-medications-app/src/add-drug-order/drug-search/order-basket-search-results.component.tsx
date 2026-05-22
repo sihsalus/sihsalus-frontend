@@ -7,6 +7,7 @@ import {
   UserHasAccess,
   useConfig,
   useLayoutType,
+  useSession,
   type Visit,
   type Workspace2DefinitionProps,
 } from '@openmrs/esm-framework';
@@ -149,10 +150,12 @@ export const DrugSearchResultItem: React.FC<DrugSearchResultItemProps> = ({
 }) => {
   const isTablet = useLayoutType() === 'tablet';
   const config = useConfig<ConfigObject>();
+  const session = useSession();
+  const orderingProviderUuid = session?.currentProvider?.uuid;
   const prepareMedicationOrderPostData = useCallback(
     (order: DrugOrderBasketItem, patientUuid: string, encounterUuid: string | null) =>
-      prepMedicationOrderPostData(order, patientUuid, encounterUuid, undefined, config.careSettingUuid),
-    [config.careSettingUuid],
+      prepMedicationOrderPostData(order, patientUuid, encounterUuid, orderingProviderUuid, config.careSettingUuid),
+    [config.careSettingUuid, orderingProviderUuid],
   );
   const { orders, setOrders } = useOrderBasket<DrugOrderBasketItem>(
     patient,
@@ -177,19 +180,20 @@ export const DrugSearchResultItem: React.FC<DrugSearchResultItemProps> = ({
   const drugItemTemplateOptions: Array<DrugOrderBasketItem> = useMemo(
     () =>
       templates?.length
-        ? templates.map((template) => getTemplateOrderBasketItem(drug, visit, config?.daysDurationUnit, template))
-        : [getTemplateOrderBasketItem(drug, visit, config?.daysDurationUnit)],
-    [templates, drug, config?.daysDurationUnit, visit],
+        ? templates.map((template) => getTemplateOrderBasketItem(drug, visit, template))
+        : [getTemplateOrderBasketItem(drug, visit)],
+    [templates, drug, visit],
   );
 
   const addToBasket = useCallback(
     (searchResult: DrugOrderBasketItem) => {
       // Directly adding the order to basket should be marked as incomplete
       searchResult.isOrderIncomplete = true;
+      searchResult.orderer ??= orderingProviderUuid;
       setOrders([...orders, searchResult]);
       closeWorkspace({ discardUnsavedChanges: true });
     },
-    [orders, setOrders, closeWorkspace],
+    [orders, orderingProviderUuid, setOrders, closeWorkspace],
   );
 
   const removeFromBasket = useCallback(

@@ -73,7 +73,7 @@ export interface OrderBasketItem {
   scheduledDate?: Date;
 }
 
-export type OrderUrgency = 'ROUTINE' | 'STAT' | 'ON_SCHEDULED_DATE';
+export type OrderUrgency = string;
 
 export type PriorityOption = {
   label: string;

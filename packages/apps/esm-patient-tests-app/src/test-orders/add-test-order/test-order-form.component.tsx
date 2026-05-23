@@ -18,8 +18,6 @@ import { ExtensionSlot, OpenmrsDatePicker, useConfig, useLayoutType, useSession 
 import {
   type DefaultPatientWorkspaceProps,
   launchPatientWorkspace,
-  type OrderUrgency,
-  priorityOptions,
   useOrderBasket,
   useOrderType,
 } from '@openmrs/esm-patient-common-lib';
@@ -60,6 +58,7 @@ export function LabOrderForm({
   const isTablet = useLayoutType() === 'tablet';
   const session = useSession();
   const config = useConfig<ConfigObject>();
+  const { priorityConfigs } = config;
   const prepareTestOrderPostData = useCallback(
     (order: TestOrderBasketItem, patientUuid: string, encounterUuid: string | null) =>
       prepTestOrderPostData(order, patientUuid, encounterUuid, config.orders.careSettingUuid),
@@ -97,11 +96,17 @@ export function LabOrderForm({
             : z.string().optional(),
           scheduledDate: z.date({}).nullish(),
         })
-        .refine((data) => data.urgency !== 'ON_SCHEDULED_DATE' || Boolean(data.scheduledDate), {
-          message: t('scheduledDateRequired', 'Scheduled date is required'),
-          path: ['scheduledDate'],
-        }),
-    [orderReasonRequired, t],
+        .refine(
+          (data) => {
+            const priority = priorityConfigs?.find((p) => p.conceptUuid === data.urgency);
+            return !priority?.requiresScheduledDate || Boolean(data.scheduledDate);
+          },
+          {
+            message: t('scheduledDateRequired', 'Scheduled date is required'),
+            path: ['scheduledDate'],
+          },
+        ),
+    [orderReasonRequired, t, priorityConfigs],
   );
 
   const {
@@ -119,7 +124,9 @@ export function LabOrderForm({
     },
   });
 
-  const isScheduledDateRequired = watch('urgency') === 'ON_SCHEDULED_DATE';
+  const selectedUrgency = watch('urgency');
+  const selectedPriority = priorityConfigs?.find((p) => p.conceptUuid === selectedUrgency);
+  const isScheduledDateRequired = selectedPriority?.requiresScheduledDate ?? false;
 
   const orderReasonUuids =
     (config.labTestsWithOrderReasons?.find((c) => c.labTestUuid === defaultValues?.testType?.conceptUuid) || {})
@@ -193,8 +200,9 @@ export function LabOrderForm({
 
   const handleUpdateUrgency = (fieldOnChange: ControllerRenderProps['onChange']) => {
     return (e: ChangeEvent<HTMLSelectElement>) => {
-      const value = e.target.value as OrderUrgency;
-      if (value !== 'ON_SCHEDULED_DATE') {
+      const value = e.target.value;
+      const priority = priorityConfigs?.find((p) => p.conceptUuid === value);
+      if (!priority?.requiresScheduledDate) {
         setValue('scheduledDate', null);
       }
       fieldOnChange(e);
@@ -261,8 +269,8 @@ export function LabOrderForm({
                     invalidText={fieldState?.error?.message}
                     labelText={t('priority', 'Priority')}
                   >
-                    {priorityOptions.map((option) => (
-                      <SelectItem key={option.value} value={option.value} text={option.label} />
+                    {priorityConfigs?.map((option) => (
+                      <SelectItem key={option.conceptUuid} value={option.conceptUuid} text={option.label} />
                     ))}
                   </Select>
                 )}

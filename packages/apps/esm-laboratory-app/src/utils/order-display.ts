@@ -20,5 +20,10 @@ export function getOrderUrgencyDisplay(urgency: string | undefined, t: TFunction
     return '';
   }
 
+  // If urgency is a concept UUID, show as-is (no humanization needed for UUIDs)
+  if (/^[0-9a-f]{8}-[0-9a-f]{4}-/.test(urgency)) {
+    return urgency;
+  }
+
   return t(`orderUrgency_${urgency}`, humanizeCode(urgency));
 }

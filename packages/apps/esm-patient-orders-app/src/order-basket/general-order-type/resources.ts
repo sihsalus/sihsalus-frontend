@@ -4,7 +4,7 @@ import { type OrderableConcept, type OrderBasketItem, type OrderPost } from '@op
 export function createEmptyOrder(concept: OrderableConcept, orderer: string): OrderBasketItem {
   return {
     action: 'NEW',
-    urgency: 'ROUTINE',
+    urgency: '',
     display: concept.display ?? '',
     concept,
     orderer,

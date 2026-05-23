@@ -1,5 +1,3 @@
-import { priorityOptions } from '@openmrs/esm-patient-common-lib';
-
 import type { TestOrderBasketItem } from '../../types';
 
 import { type TestType } from './useTestTypes';
@@ -9,7 +7,7 @@ type LabOrderRequest = Pick<TestOrderBasketItem, 'action' | 'testType'>;
 export function createEmptyLabOrder(testType: TestType, orderer: string): TestOrderBasketItem {
   return {
     action: 'NEW',
-    urgency: priorityOptions[0].value,
+    urgency: '',
     display: testType.label,
     testType,
     orderer,

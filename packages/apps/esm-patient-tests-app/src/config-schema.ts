@@ -120,6 +120,48 @@ export const configSchema = {
     _default: [],
     _description: 'Whether to allow for provision of coded order reason',
   },
+  priorityConfigs: {
+    _type: Type.Array,
+    _description:
+      'Priority options for test orders, mapped to concept UUIDs. Replaces the hardcoded ROUTINE/STAT/ON_SCHEDULED_DATE values.',
+    _default: [
+      {
+        conceptUuid: 'bf3a08c6-cbe6-4f00-8e06-5f5437790b85',
+        label: 'Rutina',
+        requiresScheduledDate: false,
+      },
+      {
+        conceptUuid: '933e6d55-d64a-498d-b1b2-b3d5242e4199',
+        label: 'Emergencia',
+        requiresScheduledDate: false,
+      },
+      {
+        conceptUuid: '1606e719-d480-40c9-b586-835458ad0a96',
+        label: 'Urgente',
+        requiresScheduledDate: false,
+      },
+      {
+        conceptUuid: 'f98c88d0-8b5a-11e5-8e9b-123456789abc',
+        label: 'Programado',
+        requiresScheduledDate: true,
+      },
+    ],
+    _elements: {
+      conceptUuid: {
+        _type: Type.ConceptUuid,
+        _description: 'UUID del concepto de prioridad en OpenMRS',
+      },
+      label: {
+        _type: Type.String,
+        _description: 'Etiqueta visible para la prioridad',
+      },
+      requiresScheduledDate: {
+        _type: Type.Boolean,
+        _description: 'Si es true, se muestra el campo de fecha programada al seleccionar esta prioridad',
+        _default: false,
+      },
+    },
+  },
 };
 
 export interface ObsTreeEntry {
@@ -138,6 +180,12 @@ export interface OrderReason {
   required: boolean;
 }
 
+export interface PriorityConfig {
+  conceptUuid: string;
+  label: string;
+  requiresScheduledDate?: boolean;
+}
+
 export interface ConfigObject {
   labTestsWithOrderReasons: Array<OrderReason>;
   orders: {
@@ -153,4 +201,5 @@ export interface ConfigObject {
     icon?: string;
   }>;
   resultsViewerConcepts: Array<ObsTreeEntry>;
+  priorityConfigs: Array<PriorityConfig>;
 }

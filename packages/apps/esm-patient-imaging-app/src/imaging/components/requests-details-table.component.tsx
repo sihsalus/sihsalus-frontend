@@ -20,7 +20,13 @@ import {
   useLayoutType,
   usePagination,
 } from '@openmrs/esm-framework';
-import { CardHeader, compare, EmptyState, PatientChartPagination } from '@openmrs/esm-patient-common-lib';
+import {
+  CardHeader,
+  compare,
+  type DefaultPatientWorkspaceProps,
+  EmptyState,
+  PatientChartPagination,
+} from '@openmrs/esm-patient-common-lib';
 import React, { useCallback, useMemo, useRef, useState } from 'react';
 
 import { useTranslation } from 'react-i18next';
@@ -31,6 +37,7 @@ import {
   requestCount,
   requestDeleteConfirmationDialog,
 } from '../constants';
+import { type AddNewProcedureStepWorkspaceProps } from '../worklist/add-procedureStep-form.workspace';
 import styles from './details-table.scss';
 import ProcedureStepTable from './procedureStep-details-table.component';
 
@@ -52,7 +59,7 @@ const RequestProcedureTable: React.FC<RequestProcedureTableProps> = ({ isValidat
   const layout = useLayoutType();
   const isTablet = layout === 'tablet';
   const launchAddNewRequestWorkspace = useCallback(
-    () => launchWorkspace(addNewRequestWorkspace, { patientUuid }),
+    () => launchWorkspace<DefaultPatientWorkspaceProps>(addNewRequestWorkspace, { patientUuid }),
     [patientUuid],
   );
   const launchDeleteRequestDialog = (requestId: number) => {
@@ -149,7 +156,10 @@ const RequestProcedureTable: React.FC<RequestProcedureTableProps> = ({ isValidat
             label={t('addProcedureStep', 'Add procedure step')}
             onClick={() => {
               shouldOnClickBeCalled.current = false;
-              launchWorkspace(addNewProcedureStepWorkspace, { request: request });
+              launchWorkspace<AddNewProcedureStepWorkspaceProps>(addNewProcedureStepWorkspace, {
+                patientUuid,
+                request,
+              });
             }}
           >
             <AddIcon className={styles.addButton} />

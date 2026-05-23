@@ -102,7 +102,7 @@ export function prepTestOrderPostData(
       instructions: order.instructions,
       orderReason: order.orderReason,
       accessionNumber: order.accessionNumber,
-      urgency: order.urgency,
+      urgency: order.urgencyCode ?? order.urgency,
       scheduledDate: order.scheduledDate ? toOmrsIsoString(order.scheduledDate) : null,
     };
   } else if (order.action === 'REVISE') {
@@ -118,7 +118,7 @@ export function prepTestOrderPostData(
       orderReason: order.orderReason,
       previousOrder: order.previousOrder,
       accessionNumber: order.accessionNumber,
-      urgency: order.urgency,
+      urgency: order.urgencyCode ?? order.urgency,
       scheduledDate: order.scheduledDate ? toOmrsIsoString(order.scheduledDate) : null,
     };
   } else if (order.action === 'DISCONTINUE') {
@@ -133,7 +133,7 @@ export function prepTestOrderPostData(
       orderReason: order.orderReason,
       previousOrder: order.previousOrder,
       accessionNumber: order.accessionNumber,
-      urgency: order.urgency,
+      urgency: order.urgencyCode ?? order.urgency,
       scheduledDate: order.scheduledDate ? toOmrsIsoString(order.scheduledDate) : null,
     };
   } else {

@@ -158,6 +158,18 @@ const GrowthChart: React.FC<GrowthChartProps> = ({
   }, [measurementData]);
 
   const data = useMemo(() => [...chartLineData, ...measurementPlotData], [chartLineData, measurementPlotData]);
+  const colorScale = useMemo(() => {
+    const dataGroups = new Set(data.map((entry) => entry.group));
+    const visibleReferenceLineColors = Object.fromEntries(
+      Object.entries(REFERENCE_LINE_COLORS).filter(([group]) => dataGroups.has(group)),
+    );
+
+    return {
+      ...visibleReferenceLineColors,
+      ...(hasPatientMeasurements ? { [patientName]: '#2b6693' } : {}),
+    };
+  }, [data, hasPatientMeasurements, patientName]);
+
   const yValues = useMemo(
     () => [
       ...dataSetValues.flatMap((entry) =>
@@ -200,13 +212,10 @@ const GrowthChart: React.FC<GrowthChartProps> = ({
       height: '400px',
       points: { enabled: true, radius: 2 },
       color: {
-        scale: {
-          ...REFERENCE_LINE_COLORS,
-          ...(hasPatientMeasurements ? { [patientName]: '#2b6693' } : {}),
-        },
+        scale: colorScale,
       },
     }),
-    [datasetMetadata, yDomain, patientName, hasPatientMeasurements],
+    [colorScale, datasetMetadata, yDomain],
   );
 
   if (!selectedCategoryValue || !dataSetEntry) {

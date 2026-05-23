@@ -98,14 +98,10 @@ describe('InstancesDetailsTable', () => {
     Object.defineProperty(window, 'location', {
       writable: true,
       value: {
-        set href(url: string) {
-          this._href = url;
-        },
-        get href() {
-          return this._href;
-        },
+        origin: 'http://openmrs.sihsalus.gidistest',
       },
     });
+    window.open = vi.fn();
   });
 
   it('renders table with instances and pagination', async () => {
@@ -151,7 +147,11 @@ describe('InstancesDetailsTable', () => {
       fireEvent.click(orthancBtn);
     });
 
-    expect(window.location.href).toContain('instances/inst-1/preview');
+    expect(window.open).toHaveBeenCalledWith(
+      'http://openmrs.sihsalus.gidistest/orthanc/instances/inst-1/preview',
+      '_blank',
+      'noopener,noreferrer',
+    );
   });
 
   it('shows loading state when data is being fetched', async () => {

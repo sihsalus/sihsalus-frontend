@@ -1,4 +1,20 @@
-import { Type } from '@openmrs/esm-framework';
+import { Type, validators } from '@openmrs/esm-framework';
+
+const priorityTagColors = [
+  'red',
+  'magenta',
+  'purple',
+  'blue',
+  'cyan',
+  'teal',
+  'gray',
+  'orange',
+  'green',
+  'warm-gray',
+  'cool-gray',
+  'high-contrast',
+  'outline',
+] as const;
 
 export const configSchema = {
   orderEncounterType: {
@@ -71,6 +87,57 @@ export const configSchema = {
     _description:
       'Whether to display the Reference number field in the Order form. This field maps to the accesion_number property in the Order data model',
   },
+  priorityConfigs: {
+    _type: Type.Array,
+    _description:
+      'Priority options for orders, mapped to concept UUIDs. Replaces the hardcoded ROUTINE/STAT/ON_SCHEDULED_DATE values.',
+    _default: [
+      {
+        conceptUuid: 'bf3a08c6-cbe6-4f00-8e06-5f5437790b85', // No Urgente
+        label: 'Rutina',
+        urgency: 'ROUTINE',
+        requiresScheduledDate: false,
+      },
+      {
+        conceptUuid: 'b96959db-2106-4ce7-b39b-6fcb2ca88cda', // Urgente
+        label: 'Urgente',
+        urgency: 'STAT',
+        requiresScheduledDate: false,
+      },
+      {
+        conceptUuid: 'e724bdb6-2c75-4b6f-a00c-d43f2c372974', // Emergencia
+        label: 'Emergencia',
+        urgency: 'STAT',
+        requiresScheduledDate: false,
+      },
+      {
+        conceptUuid: '65cf194e-05a7-4832-ba6d-9b7c9940a7c2', // Programado
+        label: 'Programado',
+        urgency: 'ON_SCHEDULED_DATE',
+        requiresScheduledDate: true,
+      },
+    ],
+    _elements: {
+      conceptUuid: {
+        _type: Type.ConceptUuid,
+        _description: 'UUID del concepto de prioridad en OpenMRS (para etiqueta y reporte MINSA)',
+      },
+      label: {
+        _type: Type.String,
+        _description: 'Etiqueta visible para la prioridad',
+      },
+      urgency: {
+        _type: Type.String,
+        _description:
+          'Urgencia core de OpenMRS a la que mapea esta prioridad al postear la orden: ROUTINE, STAT u ON_SCHEDULED_DATE',
+      },
+      requiresScheduledDate: {
+        _type: Type.Boolean,
+        _description: 'Si es true, se muestra el campo de fecha programada al seleccionar esta prioridad',
+        _default: false,
+      },
+    },
+  },
 };
 
 export interface OrderTypeDefinition {
@@ -80,10 +147,19 @@ export interface OrderTypeDefinition {
   icon?: string;
 }
 
+export interface PriorityConfig {
+  conceptUuid: string;
+  label: string;
+  /** Core OpenMRS urgency this priority maps to when posting the order. */
+  urgency: 'ROUTINE' | 'STAT' | 'ON_SCHEDULED_DATE';
+  requiresScheduledDate?: boolean;
+}
+
 export interface ConfigObject {
   orderEncounterType: string;
   careSettingUuid: string;
   showPrintButton: boolean;
   orderTypes: Array<OrderTypeDefinition>;
   showReferenceNumberField: boolean;
+  priorityConfigs: Array<PriorityConfig>;
 }

@@ -34,8 +34,8 @@ describe('DeleteStudyModal', () => {
 
     expect(screen.getByText(/Delete the image study/i)).toBeInTheDocument();
     expect(screen.getByText(/Are you sure you want to delete this study?/i)).toBeInTheDocument();
-    const openmrsRadio = screen.getByLabelText(/From OpenMRS/i) as HTMLInputElement;
-    const bothRadio = screen.getByLabelText(/From Orthanc & OpenMRS/i) as HTMLInputElement;
+    const openmrsRadio = screen.getByLabelText(/From SIHSALUS/i) as HTMLInputElement;
+    const bothRadio = screen.getByLabelText(/From Orthanc & SIHSALUS/i) as HTMLInputElement;
 
     expect(openmrsRadio.checked).toBe(true);
     expect(bothRadio.checked).toBe(false);
@@ -82,9 +82,15 @@ describe('DeleteStudyModal', () => {
   });
 
   it('updates selectedOption when radio button is changed', async () => {
+    (api.deleteStudy as vi.Mock).mockResolvedValue({ ok: true });
     render(<DeleteStudyModal closeDeleteModal={closeDeleteModal} studyId={studyId} patientUuid={patientUuid} />);
-    const bothRadio = screen.getByLabelText(/From Orthanc & OpenMRS/i) as HTMLInputElement;
+    const bothRadio = screen.getByLabelText(/From Orthanc & SIHSALUS/i) as HTMLInputElement;
     fireEvent.click(bothRadio);
     expect(bothRadio.checked).toBe(true);
+    fireEvent.click(screen.getByRole('button', { name: /Delete/i }));
+
+    await waitFor(() => {
+      expect(api.deleteStudy).toHaveBeenCalledWith(studyId, 'openmrsOrthanc', expect.any(AbortController));
+    });
   });
 });

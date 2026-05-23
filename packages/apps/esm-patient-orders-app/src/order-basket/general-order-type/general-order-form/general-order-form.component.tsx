@@ -14,13 +14,7 @@ import {
 } from '@carbon/react';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { ExtensionSlot, OpenmrsDatePicker, useConfig, useLayoutType, useSession } from '@openmrs/esm-framework';
-import {
-  type OrderBasketItem,
-  type OrderUrgency,
-  priorityOptions,
-  useOrderBasket,
-  useOrderType,
-} from '@openmrs/esm-patient-common-lib';
+import { type OrderBasketItem, useOrderBasket, useOrderType } from '@openmrs/esm-patient-common-lib';
 import classNames from 'classnames';
 import { type ChangeEvent, useCallback, useEffect, useMemo, useState } from 'react';
 import { Controller, type ControllerRenderProps, type FieldErrors, useForm } from 'react-hook-form';
@@ -51,6 +45,7 @@ export function OrderForm({ initialOrder, promptBeforeClosing, orderTypeUuid, re
   const [showErrorNotification, setShowErrorNotification] = useState(false);
   const { orderType } = useOrderType(orderTypeUuid);
   const config = useConfig<ConfigObject>();
+  const { priorityConfigs } = config;
 
   const OrderFormSchema = useMemo(
     () =>
@@ -70,11 +65,17 @@ export function OrderForm({ initialOrder, promptBeforeClosing, orderTypeUuid, re
           ),
           scheduledDate: z.date().nullish(),
         })
-        .refine((data) => data.urgency !== 'ON_SCHEDULED_DATE' || data.scheduledDate, {
-          message: t('scheduledDateRequired', 'Scheduled date is required'),
-          path: ['scheduledDate'],
-        }),
-    [t],
+        .refine(
+          (data) => {
+            const priority = priorityConfigs?.find((p) => p.conceptUuid === data.urgency);
+            return !priority?.requiresScheduledDate || Boolean(data.scheduledDate);
+          },
+          {
+            message: t('scheduledDateRequired', 'Scheduled date is required'),
+            path: ['scheduledDate'],
+          },
+        ),
+    [t, priorityConfigs],
   );
 
   const {
@@ -91,7 +92,9 @@ export function OrderForm({ initialOrder, promptBeforeClosing, orderTypeUuid, re
     },
   });
 
-  const isScheduledDateRequired = watch('urgency') === 'ON_SCHEDULED_DATE';
+  const selectedUrgency = watch('urgency');
+  const selectedPriority = priorityConfigs?.find((p) => p.conceptUuid === selectedUrgency);
+  const isScheduledDateRequired = selectedPriority?.requiresScheduledDate ?? false;
 
   const handleFormSubmission = useCallback(
     (data: OrderBasketItem) => {
@@ -100,6 +103,10 @@ export function OrderForm({ initialOrder, promptBeforeClosing, orderTypeUuid, re
         ...data,
       };
       finalizedOrder.orderer = session.currentProvider.uuid;
+      // `data.urgency` holds the selected priority conceptUuid; resolve the core OpenMRS
+      // urgency enum the order POST requires (Order.urgency rejects concept UUIDs).
+      const selectedPriority = priorityConfigs?.find((priority) => priority.conceptUuid === data.urgency);
+      finalizedOrder.urgencyCode = selectedPriority?.urgency ?? data.urgency;
 
       const newOrders = [...orders];
       const existingOrder = orders.find((order) => ordersEqual(order, finalizedOrder));
@@ -118,7 +125,7 @@ export function OrderForm({ initialOrder, promptBeforeClosing, orderTypeUuid, re
 
       returnToOrderBasket(true);
     },
-    [orders, setOrders, session?.currentProvider?.uuid, initialOrder, returnToOrderBasket],
+    [orders, setOrders, session?.currentProvider?.uuid, initialOrder, returnToOrderBasket, priorityConfigs],
   );
 
   const cancelOrder = useCallback(() => {
@@ -134,8 +141,9 @@ export function OrderForm({ initialOrder, promptBeforeClosing, orderTypeUuid, re
 
   const handleUpdateUrgency = (fieldOnChange: ControllerRenderProps['onChange']) => {
     return (e: ChangeEvent<HTMLSelectElement>) => {
-      const value = e.target.value as OrderUrgency;
-      if (value !== 'ON_SCHEDULED_DATE') {
+      const value = e.target.value;
+      const priority = priorityConfigs?.find((p) => p.conceptUuid === value);
+      if (!priority?.requiresScheduledDate) {
         setValue('scheduledDate', null);
       }
       fieldOnChange(e);
@@ -203,8 +211,8 @@ export function OrderForm({ initialOrder, promptBeforeClosing, orderTypeUuid, re
                       invalidText={fieldState?.error?.message}
                       labelText={t('priority', 'Priority')}
                     >
-                      {priorityOptions.map((option) => (
-                        <SelectItem key={option.value} text={option.label} value={option.value} />
+                      {priorityConfigs?.map((option) => (
+                        <SelectItem key={option.conceptUuid} text={option.label} value={option.conceptUuid} />
                       ))}
                     </Select>
                   )}

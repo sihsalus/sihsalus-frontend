@@ -115,9 +115,9 @@ describe('SeriesDetailsTable', () => {
       configurable: true,
       value: {
         origin: 'http://openmrs.sihsalus.gidistest',
-        href: '',
       } as unknown as Location,
     });
+    window.open = vi.fn();
   });
 
   afterEach(() => {
@@ -288,14 +288,20 @@ describe('SeriesDetailsTable', () => {
 
     const stoneViewerButton = screen.getAllByLabelText(/Show image/i)[0];
     fireEvent.click(stoneViewerButton);
-    expect(window.location.href).toBe(
+    expect(window.open).toHaveBeenNthCalledWith(
+      1,
       'http://openmrs.sihsalus.gidistest/imaging/viewer?StudyInstanceUIDs=1.2.3&SeriesInstanceUIDs=SERIES1',
+      '_blank',
+      'noopener,noreferrer',
     );
 
     const orthancExplorerButton = screen.getAllByLabelText(/Open in Orthanc/i)[0];
     fireEvent.click(orthancExplorerButton);
-    expect(window.location.href).toBe(
+    expect(window.open).toHaveBeenNthCalledWith(
+      2,
       'http://openmrs.sihsalus.gidistest/orthanc/ui/app/#/filtered-studies?StudyInstanceUID=1.2.3&expand=series',
+      '_blank',
+      'noopener,noreferrer',
     );
   });
 

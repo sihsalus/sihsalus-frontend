@@ -187,3 +187,11 @@ export function buildOrthancInstancePreviewUrl(
 export function buildOhifViewerUrl(params: Array<{ code: string; value: string }>): string {
   return buildURL(getOhifPublicRoot(), '/viewer', params);
 }
+
+export function openInNewWindow(url: string): void {
+  if (!url) {
+    return;
+  }
+
+  globalThis.open(url, '_blank', 'noopener,noreferrer');
+}

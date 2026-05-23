@@ -103,6 +103,10 @@ export function OrderForm({ initialOrder, promptBeforeClosing, orderTypeUuid, re
         ...data,
       };
       finalizedOrder.orderer = session.currentProvider.uuid;
+      // `data.urgency` holds the selected priority conceptUuid; resolve the core OpenMRS
+      // urgency enum the order POST requires (Order.urgency rejects concept UUIDs).
+      const selectedPriority = priorityConfigs?.find((priority) => priority.conceptUuid === data.urgency);
+      finalizedOrder.urgencyCode = selectedPriority?.urgency ?? data.urgency;
 
       const newOrders = [...orders];
       const existingOrder = orders.find((order) => ordersEqual(order, finalizedOrder));
@@ -121,7 +125,7 @@ export function OrderForm({ initialOrder, promptBeforeClosing, orderTypeUuid, re
 
       returnToOrderBasket(true);
     },
-    [orders, setOrders, session?.currentProvider?.uuid, initialOrder, returnToOrderBasket],
+    [orders, setOrders, session?.currentProvider?.uuid, initialOrder, returnToOrderBasket, priorityConfigs],
   );
 
   const cancelOrder = useCallback(() => {

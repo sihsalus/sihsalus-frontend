@@ -118,7 +118,7 @@ describe('postOrdersOnNewEncounter', () => {
     });
   });
 
-  it('warns and uses the visit start time when the provided visit is not active', async () => {
+  it('warns and uses the visit start date when the provided visit is not active', async () => {
     const inactiveVisit = {
       uuid: 'visit-uuid',
       startDatetime: '2026-05-21T10:00:00.000Z',

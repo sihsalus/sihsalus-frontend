@@ -16,6 +16,54 @@ function isSameOriginUrl(rawUrl: string): boolean {
   }
 }
 
+/**
+ * Returns true if the host portion of the URL is a loopback address
+ * (`localhost`, `127.0.0.0/8`, or `[::1]`). Used to permit the common dev
+ * workflow of pointing route overrides at another local dev server port
+ * without forcing them to be strictly same-origin.
+ */
+function isLoopbackHost(hostname: string): boolean {
+  return (
+    hostname === 'localhost' ||
+    hostname === '[::1]' ||
+    hostname === '::1' ||
+    /^127(?:\.\d{1,3}){3}$/.test(hostname)
+  );
+}
+
+/**
+ * Override URLs are allowed when they resolve to the same origin as the page
+ * OR, in development mode, to a loopback host on any port. This keeps the
+ * production guarantee that overrides cannot point at untrusted origins while
+ * preserving the standard dev workflow where each microfrontend is served by
+ * its own `localhost:PORT` dev server.
+ */
+function isAllowedOverrideUrl(rawUrl: string): boolean {
+  if (isSameOriginUrl(rawUrl)) {
+    return true;
+  }
+  if (!devMode) {
+    return false;
+  }
+  try {
+    const resolved = new URL(rawUrl, window.location.href);
+    return isLoopbackHost(resolved.hostname);
+  } catch {
+    return false;
+  }
+}
+
+/**
+ * Heuristically distinguishes a URL string from a JSON document string for
+ * route override values. JSON documents for {@link OpenmrsAppRoutes} are
+ * always objects and therefore begin with `{` after trimming. Anything else
+ * (absolute URLs like `http://...`, relative URLs like `/routes.json` or
+ * `./routes.json`) is treated as a URL override.
+ */
+function looksLikeJsonObject(value: string): boolean {
+  return value.trimStart().startsWith('{');
+}
+
 // Snapshot of overrides at setup time (mirrors the import-map-overrides pattern:
 // getCurrentRouteMap returns the overrides as they were when the page loaded).
 let initialOverrideSnapshot: OpenmrsRoutes | null = null;
@@ -34,10 +82,9 @@ async function readBaseMap(): Promise<OpenmrsRoutes> {
     try {
       let parsed: unknown;
       if (script.src) {
-        if (!isSameOriginUrl(script.src)) {
-          console.warn(`[route-maps] Skipping remote routes from untrusted URL at index ${i}: ${script.src}`);
-          continue;
-        }
+        // Base routes script tags are placed in the page HTML by the application
+        // owner, so they're already trusted. Cross-origin URLs (e.g. a CDN, or a
+        // dev server on a different port) must remain fetchable.
         const response = await fetch(script.src);
         parsed = await response.json();
       } else if (script.textContent) {
@@ -178,8 +225,10 @@ async function readOverrideMap(): Promise<OpenmrsRoutes> {
         }
 
         if (typeof parsed === 'string') {
-          if (!isSameOriginUrl(parsed)) {
-            throw new Error(`Override for ${moduleName} is neither a valid routes object nor a same-origin URL`);
+          if (!isAllowedOverrideUrl(parsed)) {
+            throw new Error(
+              `Override for ${moduleName} is neither a valid routes object nor a trusted same-origin or loopback URL`,
+            );
           }
           const response = await fetch(parsed);
           const fetched: unknown = await response.json();
@@ -283,13 +332,10 @@ export function addRouteMapOverride(moduleName: string, routes: OpenmrsAppRoutes
 
   try {
     if (typeof routes === 'string') {
-      if (routes.startsWith('http')) {
-        if (!isSameOriginUrl(routes)) {
-          console.error(`The supplied routes URL for ${moduleName} is not a safe same-origin value`, routes);
-          return;
-        }
-        localStorage.setItem(OVERRIDE_PREFIX + moduleName, JSON.stringify(routes));
-      } else {
+      // A serialized OpenmrsAppRoutes object always begins with `{`; anything
+      // else (absolute URLs, root-relative `/routes.json`, dot-relative
+      // `./routes.json`) is treated as a URL override.
+      if (looksLikeJsonObject(routes)) {
         const maybeRoutes = JSON.parse(routes);
         if (isOpenmrsAppRoutes(maybeRoutes)) {
           localStorage.setItem(OVERRIDE_PREFIX + moduleName, JSON.stringify(maybeRoutes));
@@ -297,10 +343,22 @@ export function addRouteMapOverride(moduleName: string, routes: OpenmrsAppRoutes
           console.error(`The supplied routes for ${moduleName} is not a valid OpenmrsAppRoutes object`, routes);
           return;
         }
+      } else {
+        if (!isAllowedOverrideUrl(routes)) {
+          console.error(
+            `The supplied routes URL for ${moduleName} is not a trusted same-origin or loopback value`,
+            routes,
+          );
+          return;
+        }
+        localStorage.setItem(OVERRIDE_PREFIX + moduleName, JSON.stringify(routes));
       }
     } else if (routes instanceof URL) {
-      if (!isSameOriginUrl(routes.toString())) {
-        console.error(`The supplied routes URL for ${moduleName} is not a safe same-origin value`, routes.toString());
+      if (!isAllowedOverrideUrl(routes.toString())) {
+        console.error(
+          `The supplied routes URL for ${moduleName} is not a trusted same-origin or loopback value`,
+          routes.toString(),
+        );
         return;
       }
       localStorage.setItem(OVERRIDE_PREFIX + moduleName, JSON.stringify(routes.toString()));

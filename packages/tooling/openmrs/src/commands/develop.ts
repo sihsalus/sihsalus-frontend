@@ -113,7 +113,7 @@ export async function runDevelop(args: DevelopArgs) {
 
   // Route for custom `importmap.json` goes above static assets
   if (importmap.type === 'inline') {
-    app.get(`${spaPath}/importmap.json`, (_, res) => {
+    app.get(`${spaPath}/importmap.json`, indexRateLimit, (_, res) => {
       res.contentType('application/json').send(importmap.value);
     });
   }
@@ -144,14 +144,14 @@ export async function runDevelop(args: DevelopArgs) {
       });
     }
 
-    app.get(`${spaPath}/routes.registry.json`, (_, res) => {
+    app.get(`${spaPath}/routes.registry.json`, indexRateLimit, (_, res) => {
       res.contentType('application/json').send(stringifiedRoutes);
     });
   }
 
   // Route for custom `service-worker.js` before most things
   if (supportOffline) {
-    app.get(`${spaPath}/service-worker.js`, (_, res) => {
+    app.get(`${spaPath}/service-worker.js`, indexRateLimit, (_, res) => {
       res.contentType('js').send(swContent);
     });
   }

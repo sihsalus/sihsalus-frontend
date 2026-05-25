@@ -16,39 +16,62 @@ interface PatientBannerProps {
   hideActionsOverflow?: boolean;
 }
 
+const tabletViewportMaxWidthInPx = 1023;
+const maxDesktopWorkspaceWidthInPx = 520;
+
 const PatientBanner: React.FC<PatientBannerProps> = ({ patient, patientUuid, hideActionsOverflow }) => {
   const patientBannerRef = useRef<HTMLElement>(null);
   const [isTabletViewport, setIsTabletViewport] = useState(false);
+  const [showDetailsButtonBelowHeader, setShowDetailsButtonBelowHeader] = useState(false);
   const [showContactDetails, setShowContactDetails] = useState(false);
 
   useEffect(() => {
     const currentRef = patientBannerRef.current;
+    // eslint-disable-next-line no-console -- TODO debug temporal, quitar
+    console.debug('[PatientBanner] effect run', { hasPatient: Boolean(patient), hasRef: Boolean(currentRef) });
     if (!currentRef) {
       return;
     }
 
+    const applyWidth = (width: number, source: string) => {
+      // eslint-disable-next-line no-console -- TODO debug temporal, quitar
+      console.debug('[PatientBanner] width', {
+        width,
+        source,
+        tablet: width < tabletViewportMaxWidthInPx,
+        belowHeader: width <= maxDesktopWorkspaceWidthInPx,
+      });
+      setIsTabletViewport(width < tabletViewportMaxWidthInPx);
+      setShowDetailsButtonBelowHeader(width <= maxDesktopWorkspaceWidthInPx);
+    };
+
+    // Medición inicial síncrona: el observer no siempre dispara al conectar.
+    applyWidth(currentRef.getBoundingClientRect().width, 'initial');
+
     const resizeObserver = new ResizeObserver((entries) => {
       for (const entry of entries) {
-        setIsTabletViewport(entry.contentRect.width < 1023);
+        applyWidth(entry.contentRect.width, 'observer');
       }
     });
-    if (patientBannerRef.current) {
-      resizeObserver.observe(patientBannerRef.current);
-    }
+    resizeObserver.observe(currentRef);
     return () => {
-      resizeObserver.unobserve(currentRef);
+      resizeObserver.disconnect();
     };
-  }, []);
+    // Depende de `patient`: cuando pasa de null → cargado, el header recién se monta
+    // y el effect debe re-correr para enganchar el observer al ref ya existente.
+  }, [patient]);
 
   const patientName = patient ? getPatientName(patient) : '';
 
   const toggleContactDetails = useCallback(() => {
-    setShowContactDetails((value) => !value);
+    setShowContactDetails((value) => {
+      // eslint-disable-next-line no-console -- TODO debug temporal, quitar
+      console.debug('[PatientBanner] toggleContactDetails', { from: value, to: !value });
+      return !value;
+    });
   }, []);
 
   const isDeceased = Boolean(patient?.deceasedDateTime);
-  const maxDesktopWorkspaceWidthInPx = 520;
-  const showDetailsButtonBelowHeader = patientBannerRef.current?.scrollWidth <= maxDesktopWorkspaceWidthInPx;
 
   if (!patient) {
     return null;
@@ -100,7 +123,7 @@ const PatientBanner: React.FC<PatientBannerProps> = ({ patient, patientUuid, hid
             [styles.tabletContactDetails]: isTabletViewport,
           })}
         >
-          <PatientBannerContactDetails deceased={isDeceased} patientId={patient?.id} />
+          <PatientBannerContactDetails deceased={isDeceased} patientId={patientUuid} />
         </div>
       )}
     </header>

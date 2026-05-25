@@ -9,17 +9,22 @@ import {
   TableHeader,
   TableRow,
 } from '@carbon/react';
-import { showModal, useLayoutType, usePagination } from '@openmrs/esm-framework';
+import { useLayoutType, usePagination } from '@openmrs/esm-framework';
 
 import { compare, EmptyState, PatientChartPagination } from '@openmrs/esm-patient-common-lib';
-import React, { useRef } from 'react';
+import React from 'react';
 import { useTranslation } from 'react-i18next';
 import { useStudyInstances } from '../../api';
 import orthancExplorer from '../../assets/orthanc.png';
 import preview from '../../assets/preview.png';
 import { type OrthancConfiguration } from '../../types';
-import { instancePreviewDialog, instancesCount } from '../constants';
-import { buildOrthancExplorerUrl, buildOrthancInstancePreviewUrl, openInNewWindow } from '../utils/help';
+import { instancesCount } from '../constants';
+import {
+  buildLocalInstancePreviewUrl,
+  buildOrthancExplorerUrl,
+  buildOrthancInstancePreviewUrl,
+  openInNewWindow,
+} from '../utils/help';
 import styles from './details-table.scss';
 
 export interface InstancesDetailsTableProps {
@@ -43,21 +48,11 @@ const InstancesDetailsTable: React.FC<InstancesDetailsTableProps> = ({
     isValidating: isValidatingSeries,
   } = useStudyInstances(studyId, seriesInstanceUID);
 
-  const launchInstancePreviewDialog = (orthancInstanceUID: string, studyId: number, instancePosition: string) => {
-    const dispose = showModal(instancePreviewDialog, {
-      closeInstancePreviewModal: () => dispose(),
-      orthancInstanceUID,
-      studyId,
-      instancePosition,
-    });
-  };
-
   const { t } = useTranslation();
   const displayText = t('instances', 'Instances');
   const headerTitle = t('instances', 'Instances');
   const { results, goTo, currentPage } = usePagination(instances, instancesCount);
   const layout = useLayoutType();
-  const shouldOnClickBeCalled = useRef(true);
   const isTablet = layout === 'tablet';
 
   const tableHeaders = [
@@ -89,10 +84,7 @@ const InstancesDetailsTable: React.FC<InstancesDetailsTableProps> = ({
                 align="left"
                 size={isTablet ? 'lg' : 'sm'}
                 label={t('instanceViewLocal', 'Instance preview local')}
-                onClick={() => {
-                  shouldOnClickBeCalled.current = false;
-                  launchInstancePreviewDialog(instance.orthancInstanceUID, studyId, instance.imagePositionPatient);
-                }}
+                onClick={() => openInNewWindow(buildLocalInstancePreviewUrl(studyId, instance.orthancInstanceUID))}
               >
                 <img alt="" className="stone-img" src={preview} style={{ width: 23, height: 23 }} />
               </IconButton>

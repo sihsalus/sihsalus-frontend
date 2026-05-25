@@ -184,6 +184,13 @@ export function buildOrthancInstancePreviewUrl(
   return buildURL(getOrthancPublicRoot(configuration), `/instances/${orthancInstanceUID}/preview`, []);
 }
 
+export function buildLocalInstancePreviewUrl(studyId: number, orthancInstanceUID: string): string {
+  return buildURL(getOhifPublicRoot(), '/previewinstance', [
+    { code: 'orthancInstanceUID', value: orthancInstanceUID },
+    { code: 'studyId', value: String(studyId) },
+  ]);
+}
+
 export function buildOhifViewerUrl(params: Array<{ code: string; value: string }>): string {
   return buildURL(getOhifPublicRoot(), '/viewer', params);
 }

@@ -9,5 +9,12 @@
       "route": "indicators"
     }
   ],
-  "extensions": []
+  "extensions": [
+    {
+      "name": "indicadores-app-menu-item",
+      "slot": "app-menu-item-slot",
+      "component": "indicadoresAppMenuItem",
+      "order": 60
+    }
+  ]
 }

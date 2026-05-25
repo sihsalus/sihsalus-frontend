@@ -17,6 +17,43 @@ function isSameOriginUrl(rawUrl: string): boolean {
   }
 }
 
+/**
+ * Returns true if the host portion of the URL is a loopback address
+ * (`localhost`, `127.0.0.0/8`, or `[::1]`). Used to permit the common dev
+ * workflow of pointing import-map overrides at another local dev server
+ * port without forcing them to be strictly same-origin.
+ */
+function isLoopbackHost(hostname: string): boolean {
+  return (
+    hostname === 'localhost' ||
+    hostname === '[::1]' ||
+    hostname === '::1' ||
+    /^127(?:\.\d{1,3}){3}$/.test(hostname)
+  );
+}
+
+/**
+ * Override URLs are allowed when they resolve to the same origin as the page
+ * OR, in development mode, to a loopback host on any port. This keeps the
+ * production guarantee that overrides cannot point at untrusted origins while
+ * preserving the standard dev workflow where each microfrontend is served by
+ * its own `localhost:PORT` dev server.
+ */
+function isAllowedOverrideUrl(rawUrl: string): boolean {
+  if (isSameOriginUrl(rawUrl)) {
+    return true;
+  }
+  if (!devMode) {
+    return false;
+  }
+  try {
+    const resolved = new URL(rawUrl, window.location.href);
+    return isLoopbackHost(resolved.hostname);
+  } catch {
+    return false;
+  }
+}
+
 // Snapshot of overrides at setup time (matches import-map-overrides library behavior:
 // getCurrentPageMap returns the overrides as they were when the page loaded).
 let initialOverrideSnapshot: ImportMap | null = null;
@@ -34,10 +71,9 @@ async function readBaseMap(): Promise<ImportMap> {
     const script = scripts[i];
     try {
       if (script.src) {
-        if (!isSameOriginUrl(script.src)) {
-          console.warn(`[import-maps] Skipping import map from untrusted URL at index ${i}: ${script.src}`);
-          continue;
-        }
+        // Base import-map script tags are placed in the page HTML by the application
+        // owner, so they're already trusted. Cross-origin URLs (e.g. a CDN-hosted
+        // import map, or a dev server on a different port) must remain fetchable.
         const response = await fetch(script.src);
         maps.push(await response.json());
       } else if (script.textContent) {
@@ -74,7 +110,7 @@ function readOverrideMap(): ImportMap {
         const moduleName = key.slice(OVERRIDE_PREFIX.length);
         if (!disabled.includes(moduleName)) {
           const url = localStorage.getItem(key);
-          if (url && isSameOriginUrl(url)) {
+          if (url && isAllowedOverrideUrl(url)) {
             imports[moduleName] = url;
           } else if (url) {
             console.warn(`[import-maps] Skipping import-map override for ${moduleName} from untrusted URL: ${url}`);
@@ -190,8 +226,11 @@ export function addImportMapOverride(name: string, url: string): void {
     return;
   }
   try {
-    if (!isSameOriginUrl(url)) {
-      console.error(`The supplied import map override URL for ${name} is not a safe same-origin value`, url);
+    if (!isAllowedOverrideUrl(url)) {
+      console.error(
+        `The supplied import map override URL for ${name} is not a trusted same-origin or loopback value`,
+        url,
+      );
       return;
     }
     localStorage.setItem(OVERRIDE_PREFIX + name, url);

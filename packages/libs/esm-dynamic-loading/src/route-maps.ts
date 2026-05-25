@@ -7,6 +7,15 @@ const CHANGE_EVENT = 'openmrs-routes:change';
 // Set by setupRouteMapOverrides(); controls whether override functionality is active.
 let devMode = false;
 
+function isSameOriginUrl(rawUrl: string): boolean {
+  try {
+    const resolved = new URL(rawUrl, window.location.href);
+    return resolved.origin === window.location.origin;
+  } catch {
+    return false;
+  }
+}
+
 // Snapshot of overrides at setup time (mirrors the import-map-overrides pattern:
 // getCurrentRouteMap returns the overrides as they were when the page loaded).
 let initialOverrideSnapshot: OpenmrsRoutes | null = null;
@@ -25,6 +34,10 @@ async function readBaseMap(): Promise<OpenmrsRoutes> {
     try {
       let parsed: unknown;
       if (script.src) {
+        if (!isSameOriginUrl(script.src)) {
+          console.warn(`[route-maps] Skipping remote routes from untrusted URL at index ${i}: ${script.src}`);
+          continue;
+        }
         const response = await fetch(script.src);
         parsed = await response.json();
       } else if (script.textContent) {
@@ -164,7 +177,10 @@ async function readOverrideMap(): Promise<OpenmrsRoutes> {
           return { moduleName, routes: parsed };
         }
 
-        if (typeof parsed === 'string' && (parsed.startsWith('http') || parsed.startsWith('/'))) {
+        if (typeof parsed === 'string') {
+          if (!isSameOriginUrl(parsed)) {
+            throw new Error(`Override for ${moduleName} is neither a valid routes object nor a same-origin URL`);
+          }
           const response = await fetch(parsed);
           const fetched: unknown = await response.json();
           if (isOpenmrsAppRoutes(fetched)) {
@@ -267,7 +283,11 @@ export function addRouteMapOverride(moduleName: string, routes: OpenmrsAppRoutes
 
   try {
     if (typeof routes === 'string') {
-      if (routes.startsWith('http') || routes.startsWith('/')) {
+      if (routes.startsWith('http')) {
+        if (!isSameOriginUrl(routes)) {
+          console.error(`The supplied routes URL for ${moduleName} is not a safe same-origin value`, routes);
+          return;
+        }
         localStorage.setItem(OVERRIDE_PREFIX + moduleName, JSON.stringify(routes));
       } else {
         const maybeRoutes = JSON.parse(routes);
@@ -279,6 +299,10 @@ export function addRouteMapOverride(moduleName: string, routes: OpenmrsAppRoutes
         }
       }
     } else if (routes instanceof URL) {
+      if (!isSameOriginUrl(routes.toString())) {
+        console.error(`The supplied routes URL for ${moduleName} is not a safe same-origin value`, routes.toString());
+        return;
+      }
       localStorage.setItem(OVERRIDE_PREFIX + moduleName, JSON.stringify(routes.toString()));
     } else if (isOpenmrsAppRoutes(routes)) {
       localStorage.setItem(OVERRIDE_PREFIX + moduleName, JSON.stringify(routes));

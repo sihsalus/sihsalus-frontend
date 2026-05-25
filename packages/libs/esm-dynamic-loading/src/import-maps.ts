@@ -8,6 +8,15 @@ const CHANGE_EVENT = 'import-map-overrides:change';
 // Set by setupImportMapOverrides(); controls whether override functionality is active.
 let devMode = false;
 
+function isSameOriginUrl(rawUrl: string): boolean {
+  try {
+    const resolved = new URL(rawUrl, window.location.href);
+    return resolved.origin === window.location.origin;
+  } catch {
+    return false;
+  }
+}
+
 // Snapshot of overrides at setup time (matches import-map-overrides library behavior:
 // getCurrentPageMap returns the overrides as they were when the page loaded).
 let initialOverrideSnapshot: ImportMap | null = null;
@@ -25,6 +34,10 @@ async function readBaseMap(): Promise<ImportMap> {
     const script = scripts[i];
     try {
       if (script.src) {
+        if (!isSameOriginUrl(script.src)) {
+          console.warn(`[import-maps] Skipping import map from untrusted URL at index ${i}: ${script.src}`);
+          continue;
+        }
         const response = await fetch(script.src);
         maps.push(await response.json());
       } else if (script.textContent) {
@@ -61,8 +74,10 @@ function readOverrideMap(): ImportMap {
         const moduleName = key.slice(OVERRIDE_PREFIX.length);
         if (!disabled.includes(moduleName)) {
           const url = localStorage.getItem(key);
-          if (url) {
+          if (url && isSameOriginUrl(url)) {
             imports[moduleName] = url;
+          } else if (url) {
+            console.warn(`[import-maps] Skipping import-map override for ${moduleName} from untrusted URL: ${url}`);
           }
         }
       }
@@ -175,6 +190,10 @@ export function addImportMapOverride(name: string, url: string): void {
     return;
   }
   try {
+    if (!isSameOriginUrl(url)) {
+      console.error(`The supplied import map override URL for ${name} is not a safe same-origin value`, url);
+      return;
+    }
     localStorage.setItem(OVERRIDE_PREFIX + name, url);
     window.dispatchEvent(new CustomEvent(CHANGE_EVENT));
   } catch (e) {

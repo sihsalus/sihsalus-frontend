@@ -218,7 +218,7 @@ const RequestProcedureTable: React.FC<RequestProcedureTableProps> = ({ isValidat
         >
           {({ rows, headers, getHeaderProps, getTableProps, getRowProps }) => (
             <TableContainer>
-              <Table aria-label="Reqeusts summary" className={styles.table} {...getTableProps()}>
+              <Table aria-label="Requests summary" className={styles.table} {...getTableProps()}>
                 <TableHead>
                   <TableRow>
                     {headers.map((header) => {

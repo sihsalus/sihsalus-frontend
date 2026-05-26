@@ -1,4 +1,4 @@
-import { defineConfigSchema, getSyncLifecycle } from '@openmrs/esm-framework';
+import { defineConfigSchema, getAsyncLifecycle, getSyncLifecycle } from '@openmrs/esm-framework';
 
 import { configSchema } from './config-schema';
 import RootComponent from './root.component';
@@ -13,3 +13,5 @@ export function startupApp() {
 }
 
 export const root = getSyncLifecycle(RootComponent, options);
+
+export const indicadoresAppMenuItem = getAsyncLifecycle(() => import('./indicadores-app-menu-item.component'), options);

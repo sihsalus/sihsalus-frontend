@@ -136,7 +136,7 @@ describe('RequestProcedureTable', () => {
     fireEvent.doubleClick(row!);
 
     await waitFor(() => {
-      expect(screen.getByLabelText(/procedureStep/i)).toBeInTheDocument();
+      expect(screen.getByLabelText(/procedure step/i)).toBeInTheDocument();
     });
   });
 
@@ -146,8 +146,8 @@ describe('RequestProcedureTable', () => {
     });
 
     // Get the select elements
-    const statusSelect = screen.getByLabelText(/status-filter/i);
-    const prioritySelect = screen.getByLabelText(/priority-filter/i);
+    const statusSelect = screen.getByLabelText(/status filter/i);
+    const prioritySelect = screen.getByLabelText(/priority filter/i);
 
     // Check default value
     expect(statusSelect).toHaveValue('all');

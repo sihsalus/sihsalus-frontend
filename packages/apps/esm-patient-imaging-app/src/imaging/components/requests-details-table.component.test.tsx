@@ -136,7 +136,7 @@ describe('RequestProcedureTable', () => {
     fireEvent.doubleClick(row!);
 
     await waitFor(() => {
-      expect(screen.getByLabelText(/procedure step/i)).toBeInTheDocument();
+      expect(screen.getByRole('region', { name: /procedure step/i })).toBeInTheDocument();
     });
   });
 

@@ -31,6 +31,18 @@
   padding-top: 1rem;
 }
 
+.filters {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem;
+  align-items: flex-end;
+  margin-bottom: 1rem;
+}
+
+.tabs {
+  margin-top: 0.5rem;
+}
+
 .evaluation {
   margin-top: 1rem;
   padding: 1rem;

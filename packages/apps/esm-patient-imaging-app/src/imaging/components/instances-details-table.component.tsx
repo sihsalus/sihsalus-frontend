@@ -1,6 +1,7 @@
 import {
   DataTable,
   IconButton,
+  InlineLoading,
   Table,
   TableBody,
   TableCell,
@@ -93,12 +94,8 @@ const InstancesDetailsTable: React.FC<InstancesDetailsTableProps> = ({
                 align="left"
                 size={isTablet ? 'lg' : 'sm'}
                 label={t('instanceViewInOrthanc', 'Instance view in Orthanc')}
-                onClick={
-                  () =>
-                    openInNewWindow(buildOrthancInstancePreviewUrl(
-                      orthancConfig,
-                      instance.orthancInstanceUID,
-                    ))
+                onClick={() =>
+                  openInNewWindow(buildOrthancInstancePreviewUrl(orthancConfig, instance.orthancInstanceUID))
                 }
               >
                 <img alt="" className="orthanc-img" src={preview} style={{ width: 23, height: 23 }} />
@@ -111,10 +108,12 @@ const InstancesDetailsTable: React.FC<InstancesDetailsTableProps> = ({
             size={isTablet ? 'lg' : 'sm'}
             label={t('orthancExplorer2', 'Open in Orthanc')}
             onClick={() =>
-              openInNewWindow(buildOrthancExplorerUrl(orthancConfig, [
-                { code: 'StudyInstanceUID', value: studyInstanceUID },
-                { code: 'expand', value: 'series' },
-              ]))
+              openInNewWindow(
+                buildOrthancExplorerUrl(orthancConfig, [
+                  { code: 'StudyInstanceUID', value: studyInstanceUID },
+                  { code: 'expand', value: 'series' },
+                ]),
+              )
             }
           >
             <img alt="" className="orthanc-img" src={orthancExplorer} style={{ width: 26, height: 26, marginTop: 0 }} />
@@ -131,7 +130,7 @@ const InstancesDetailsTable: React.FC<InstancesDetailsTableProps> = ({
   };
 
   if (isLoadingSeries || isValidatingSeries) {
-    return <div>Loading ...</div>;
+    return <InlineLoading description={t('loadingInstances', 'Loading instances...')} />;
   }
 
   if (!instances?.length) {
@@ -151,7 +150,11 @@ const InstancesDetailsTable: React.FC<InstancesDetailsTableProps> = ({
       >
         {({ rows, headers, getHeaderProps, getTableProps }) => (
           <TableContainer>
-            <Table aria-label="Instances summary" className={styles.table} {...getTableProps()}>
+            <Table
+              aria-label={t('instancesSummary', 'Instances summary')}
+              className={styles.table}
+              {...getTableProps()}
+            >
               <TableHead>
                 <TableRow>
                   {headers.map((header, index) => {

@@ -253,10 +253,11 @@ Crea un archivo `.env` en la raíz del repo (ver [.env.example](.env.example)):
 
 | Variable                         | Default                                | Descripción                                                            |
 | -------------------------------- | -------------------------------------- | ---------------------------------------------------------------------- |
-| `SIHSALUS_BACKEND_URL`           | `http://gidis-hsc-dev.inf.pucp.edu.pe` | Backend OpenMRS al que se hace proxy en dev y se descarga el importmap |
+| `SIHSALUS_BACKEND_URL`           | `https://gidis-hsc-dev.inf.pucp.edu.pe` | Backend OpenMRS al que se hace proxy en dev y se descarga el importmap |
 | `SIHSALUS_REQUIRE_BACKEND_URL`   | `false`                                | Si es `true`, `yarn start` falla cuando falta `SIHSALUS_BACKEND_URL`   |
 | `SIHSALUS_BACKEND_FETCH_TIMEOUT_MS` | `5000`                              | Timeout para descargar importmap/rutas del backend en `openmrs start`  |
 | `SIHSALUS_AUTH_MODE`             | `openmrs`                              | Modo de auth: `openmrs` (básico) o `keycloak` (OIDC)                   |
+| `SIHSALUS_ALLOW_SELF_SIGNED_TLS` | `false`                                | Activa TLS "insecure" para backends con certificados auto-firmados en desarrollo |
 | `SIHSALUS_FHIR_BASE`             | *(derivado del backend)*               | URL base de FHIR R4                                                    |
 | `SPA_PATH`                       | `/openmrs/spa`                         | Base path para los assets del SPA                                      |
 | `API_URL`                        | `/openmrs`                             | Base path de la API de OpenMRS                                         |

@@ -23,6 +23,10 @@ const fhirBase = process.env.SIHSALUS_FHIR_BASE || `${backend}/openmrs/ws/fhir2/
 const proxyPort = Number(process.env.SIHSALUS_PORT) || 8080;
 const allowSelfSignedTls = process.env.SIHSALUS_ALLOW_SELF_SIGNED_TLS === 'true';
 
+if (allowSelfSignedTls) {
+  process.env.NODE_TLS_REJECT_UNAUTHORIZED = '0';
+}
+
 // SIHSALUS_DEV_APPS=esm-login-app,esm-home-app  → hot-reload those apps
 // Unset → serve pre-assembled importmap (no recompilation, just shell + proxy)
 const devAppsEnv = process.env.SIHSALUS_DEV_APPS;

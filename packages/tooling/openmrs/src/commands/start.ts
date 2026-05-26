@@ -58,7 +58,10 @@ function loadModuleRoutes(
 ): Record<string, unknown> | null {
   const routesPath = resolve(appsDir, entry.name, 'src', 'routes.json');
   if (!existsSync(routesPath)) return null;
-  return { ...JSON.parse(readFileSync(routesPath, 'utf8')), version: (pkg.version as string) || '0.0.0' };
+  return {
+    ...JSON.parse(readFileSync(routesPath, 'utf8')),
+    version: (pkg.version as string) || '0.0.0',
+  };
 }
 
 /**
@@ -177,6 +180,10 @@ export async function runStart(args: StartArgs) {
   const backendUrl = removeTrailingSlash(backend);
   const pageUrl = `http://${host}:${port}${spaPath}`;
   const allowSelfSignedTls = process.env.SIHSALUS_ALLOW_SELF_SIGNED_TLS === 'true';
+
+  if (allowSelfSignedTls) {
+    process.env.NODE_TLS_REJECT_UNAUTHORIZED = '0';
+  }
 
   // Rewrite index.html to use local importmap and routes instead of the upstream demo shell URLs.
   // Also disable offline/service-worker to prevent stale caches during local dev.

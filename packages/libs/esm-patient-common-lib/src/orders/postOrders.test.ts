@@ -133,7 +133,7 @@ describe('postOrdersOnNewEncounter', () => {
       new AbortController(),
     );
 
-    expect(console.warn).toHaveBeenCalled();
+    expect(console.warn).toHaveBeenCalledWith(expect.stringContaining('not currently active'));
     expect(mockOpenmrsFetch).toHaveBeenCalledWith(`${restBaseUrl}/encounter`, {
       headers: {
         'Content-Type': 'application/json',

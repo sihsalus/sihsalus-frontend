@@ -66,6 +66,26 @@ interface PatientTableColumn {
   };
 }
 
+function getPatientRowId(patient: PatientRow, index: number) {
+  return patient.membershipUuid ?? patient.uuid ?? patient.identifier ?? `patient-row-${index}`;
+}
+
+function getColumnValue(patient: PatientRow, column: PatientTableColumn) {
+  if (column.getValue) {
+    return column.getValue(patient);
+  }
+
+  return (patient as Record<string, unknown>)[column.key];
+}
+
+function renderCellValue(value: React.ReactNode) {
+  if (value && typeof value === 'object' && 'content' in value) {
+    return value.content as React.ReactNode;
+  }
+
+  return value;
+}
+
 const ListDetailsTable: React.FC<ListDetailsTableProps> = ({
   columns,
   isFetching,
@@ -102,42 +122,42 @@ const ListDetailsTable: React.FC<ListDetailsTableProps> = ({
     return debouncedSearchTerm
       ? fuzzy
           .filter(debouncedSearchTerm, patients, {
-            extract: (patient: PatientRow) => `${patient.name} ${patient.identifier} ${patient.sex}`,
+            extract: (patient: PatientRow) =>
+              columns
+                .map((column) => getColumnValue(patient, column))
+                .concat(patient.name, patient.identifier, patient.sex, patient.mobile)
+                .filter((value) => value != null)
+                .join(' '),
           })
-          .sort((r1, r2) => r1.score - r2.score)
+          .sort((r1, r2) => r2.score - r1.score)
           .map((result) => result.original)
       : patients;
-  }, [debouncedSearchTerm, patients]);
-
-  const renderCellValue = (value: React.ReactNode) => {
-    if (value && typeof value === 'object' && 'content' in value) {
-      return value.content as React.ReactNode;
-    }
-
-    return value;
-  };
+  }, [columns, debouncedSearchTerm, patients]);
 
   const tableRows = useMemo(
     () =>
-      filteredPatients?.map((patient) => ({
-        id: patient.identifier,
-        identifier: patient.identifier,
-        membershipUuid: patient.membershipUuid,
-        name: columns.find((column) => column.key === 'name')?.link ? (
-          <ConfigurableLink
-            className={linkClassName}
-            to={columns.find((column) => column.key === 'name')?.link?.getUrl(patient)}
-          >
-            {patient.name}
-          </ConfigurableLink>
-        ) : (
-          patient.name
-        ),
-        sex: patient.sex,
-        startDate: patient.startDate,
-        mobile: patient.mobile || '--',
-      })) ?? [],
+      filteredPatients?.map((patient, index) => {
+        const row: Record<string, React.ReactNode> & { id: string } = { id: getPatientRowId(patient, index) };
+
+        columns.forEach((column) => {
+          const value = getColumnValue(patient, column) ?? '--';
+          row[column.key] = column.link ? (
+            <ConfigurableLink className={linkClassName} to={column.link.getUrl(patient)}>
+              {renderCellValue(value as React.ReactNode)}
+            </ConfigurableLink>
+          ) : (
+            renderCellValue(value as React.ReactNode)
+          );
+        });
+
+        return row;
+      }) ?? [],
     [columns, filteredPatients, linkClassName],
+  );
+
+  const patientsByRowId = useMemo(
+    () => new Map(filteredPatients.map((patient, index) => [getPatientRowId(patient, index), patient])),
+    [filteredPatients],
   );
 
   const handleRemovePatientFromList = useCallback(async () => {
@@ -241,7 +261,7 @@ const ListDetailsTable: React.FC<ListDetailsTableProps> = ({
                   </TableHead>
                   <TableBody>
                     {rows.map((row) => {
-                      const currentPatient = patients.find((patient) => patient.identifier === row.id);
+                      const currentPatient = patientsByRowId.get(row.id);
                       const { key, ...rowProps } = getRowProps({ row });
 
                       return (
@@ -262,10 +282,11 @@ const ListDetailsTable: React.FC<ListDetailsTableProps> = ({
                               size={responsiveSize}
                               tooltipPosition="left"
                               onClick={() => {
-                                setMembershipUuid(currentPatient.membershipUuid);
-                                setPatientName(currentPatient.name);
+                                setMembershipUuid(currentPatient?.membershipUuid ?? '');
+                                setPatientName(currentPatient?.name ?? '');
                                 setShowConfirmationModal(true);
                               }}
+                              disabled={!currentPatient?.membershipUuid}
                             />
                           </TableCell>
                         </TableRow>
@@ -290,9 +311,9 @@ const ListDetailsTable: React.FC<ListDetailsTableProps> = ({
           )}
           {pagination.usePagination && (
             <Pagination
-              backwardText={t('nextPage', 'Next page')}
+              backwardText={t('previousPage', 'Previous page')}
               className={styles.paginationOverride}
-              forwardText={t('previousPage', 'Previous page')}
+              forwardText={t('nextPage', 'Next page')}
               isLastPage={pagination.lastPage}
               onChange={pagination.onChange}
               page={pagination.currentPage}

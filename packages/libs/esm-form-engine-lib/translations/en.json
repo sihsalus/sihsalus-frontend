@@ -25,6 +25,7 @@
   "errorLoadingFormSchema": "Error loading form schema",
   "errorLoadingInitialValues": "Error loading initial values",
   "errorMarkingAsDeceased": "Error marking patient as deceased",
+  "errorProcessingFormSubmission": "Error processing form submission",
   "errorRenderingField": "Error rendering field",
   "errorSavingAttachments": "Error saving attachment(s)",
   "errorSavingEncounter": "Error saving encounter",
@@ -56,9 +57,13 @@
   "save": "Save",
   "search": "Search",
   "searching": "Searching",
+  "submittedForm": "Form submitted",
+  "submittedFormDescription": "Form submitted successfully",
   "submitting": "Submitting",
   "successfullyMarkedAsDeceased": "The patient has successfully been marked as deceased",
   "time": "Time",
   "unspecified": "Unspecified",
+  "updatedRecord": "Record updated",
+  "updatedRecordDescription": "The patient encounter was updated",
   "valuesOutOfBound": "Some of the values are out of bounds"
 }

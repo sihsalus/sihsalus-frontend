@@ -1,4 +1,5 @@
 import { type UseFormReturn } from 'react-hook-form';
+import { useTranslation } from 'react-i18next';
 
 import { calculateCostEquipment, calculateDepreciationMinutes } from '../../../utils/equipments';
 import { calculateCostPerMinuteHumanResource, calculateUnitCostHumanResource } from '../../../utils/humanresource';
@@ -22,6 +23,7 @@ interface Props {
 }
 
 export default function SummaryTab({ form }: Props) {
+  const { t } = useTranslation();
   const { watch } = form;
 
   // Datos observados
@@ -160,7 +162,7 @@ export default function SummaryTab({ form }: Props) {
   return (
     <section className={styles['tab-container']}>
       <div>
-        <h4 className="cds--heading-04">Resumen de estructura de costos</h4>
+        <h4 className="cds--heading-04">{t('costStructureSummary', 'Resumen de estructura de costos')}</h4>
       </div>
 
       <div className="cds--row">
@@ -168,14 +170,14 @@ export default function SummaryTab({ form }: Props) {
           <table className="cds--data-table cds--data-table--compact cds--data-table--zebra">
             <thead>
               <tr>
-                <th>Recursos Humanos (S/.)</th>
-                <th>Insumos (S/.)</th>
-                <th>Servicios Básicos (S/.)</th>
-                <th>Equipamiento (S/.)</th>
-                <th>Infraestructura (S/.)</th>
-                <th>Servicios Administrativos (S/.)</th>
-                <th>Servicios Generales (S/.)</th>
-                <th>Costo Total del procedimiento (S/.)</th>
+                <th>{t('humanResourcesCostSoles', 'Recursos Humanos (S/.)')}</th>
+                <th>{t('suppliesCostSoles', 'Insumos (S/.)')}</th>
+                <th>{t('basicServicesCostSoles', 'Servicios Básicos (S/.)')}</th>
+                <th>{t('equipmentCostSoles', 'Equipamiento (S/.)')}</th>
+                <th>{t('infrastructureCostSoles', 'Infraestructura (S/.)')}</th>
+                <th>{t('administrativeServicesCostSoles', 'Servicios Administrativos (S/.)')}</th>
+                <th>{t('generalServicesCostSoles', 'Servicios Generales (S/.)')}</th>
+                <th>{t('procedureTotalCostSoles', 'Costo Total del procedimiento (S/.)')}</th>
               </tr>
             </thead>
             <tbody>

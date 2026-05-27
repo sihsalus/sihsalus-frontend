@@ -18,7 +18,7 @@
     "coverage": "vitest run --coverage --passWithNoTests",
     "typescript": "tsc",
     "test:watch": "vitest watch",
-    "extract-translations": "i18next 'src/**/*.component.tsx' 'src/**/*.extension.tsx' 'src/**/*modal.tsx' 'src/**/*.workspace.tsx' 'src/index.ts' 'src/patient-registration/validation/patient-registration-validation.ts' --config ../../tooling/scripts/i18next-parser.config.js"
+    "extract-translations": "i18next 'src/**/*.{ts,tsx}' '!src/**/*.test.{ts,tsx}' '!src/**/*.spec.{ts,tsx}' --config ../../tooling/scripts/i18next-parser.config.js"
   },
   "browserslist": [
     "extends browserslist-config-openmrs"
@@ -42,7 +42,7 @@
     "classnames": "^2.3.2",
     "formik": "^2.1.5",
     "lodash-es": "^4.17.15",
-    "uuid": "^9.0.1",
+    "uuid": "^14.0.0",
     "yup": "^0.29.1"
   },
   "peerDependencies": {

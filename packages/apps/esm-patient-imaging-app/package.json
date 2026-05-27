@@ -19,7 +19,7 @@
     "test-e2e": "yarn --cwd ../../.. playwright test --config e2e/patient-imaging/playwright.config.ts",
     "verify": "turbo lint typescript coverage",
     "coverage": "vitest run --coverage --passWithNoTests",
-    "extract-translations": "i18next 'src/**/*.{ts,tsx}' '!src/**/*.test.{ts,tsx}' --config ../../tooling/scripts/i18next-parser.config.js"
+    "extract-translations": "i18next 'src/**/*.{ts,tsx}' '!src/**/*.test.{ts,tsx}' '!src/**/*.spec.{ts,tsx}' --config ../../tooling/scripts/i18next-parser.config.js"
   },
   "browserslist": [
     "extends browserslist-config-openmrs"

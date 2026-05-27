@@ -11,7 +11,7 @@ export interface EmergencyQueueTableColumn {
   key: string;
   header: string;
   CellComponent: React.FC<{ queueEntry: EmergencyQueueEntry }>;
-  getFilterableValue: (queueEntry: EmergencyQueueEntry) => string | null;
+  getFilterableValue?: (queueEntry: EmergencyQueueEntry) => string | null;
 }
 
 export function useEmergencyQueueColumns(): EmergencyQueueTableColumn[] {
@@ -46,13 +46,11 @@ export function useEmergencyQueueColumns(): EmergencyQueueTableColumn[] {
       key: 'waitTime',
       header: t('waitTime', 'Wait time'),
       CellComponent: EmergencyQueueWaitTimeCell,
-      getFilterableValue: null,
     },
     {
       key: 'actions',
       header: t('actions', 'Actions'),
       CellComponent: EmergencyQueueActionsCell,
-      getFilterableValue: null,
     },
   ];
 }

@@ -1,6 +1,7 @@
 import { Button, Modal, Search } from '@carbon/react';
 import { Checkmark, ChevronDown, Close, Information } from '@carbon/react/icons';
 import { useCallback, useMemo, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useOdontogramContext } from '../providers/OdontogramProvider';
 import type { FindingColor, FindingOptionConfig, FindingSuboption } from '../types/odontogram';
 import { COLOR_CSS, COLOR_LABEL } from './constants';
@@ -168,6 +169,7 @@ const SIGLAS_MAP: Record<number, SiglaGroup> = {
 };
 
 const FormDentalClinicalFindings = () => {
+  const { t } = useTranslation();
   const { config, formSelection, formActions } = useOdontogramContext();
 
   const opciones = config.findingOptions;
@@ -218,7 +220,7 @@ const FormDentalClinicalFindings = () => {
       <div className={styles.formGrid}>
         {/* Hallazgo */}
         <div className={`${styles.field} ${styles.fieldFinding}`}>
-          <span className={styles.fieldLabel}>Hallazgo</span>
+          <span className={styles.fieldLabel}>{t('finding', 'Hallazgo')}</span>
           <button
             type="button"
             className={`${styles.findingTrigger} ${selectedItem ? styles.findingTriggerFilled : ''}`}
@@ -227,14 +229,14 @@ const FormDentalClinicalFindings = () => {
             aria-expanded={pickerOpen}
           >
             <span className={styles.findingTriggerText}>
-              {selectedItem ? selectedItem.nombre : 'Seleccionar hallazgo…'}
+              {selectedItem ? selectedItem.nombre : t('selectFindingEllipsis', 'Seleccionar hallazgo...')}
             </span>
             {selectedItem && (
               <span
                 className={styles.findingTriggerClear}
                 role="button"
                 tabIndex={0}
-                aria-label="Limpiar hallazgo"
+                aria-label={t('clearFinding', 'Limpiar hallazgo')}
                 onClick={(e) => {
                   e.stopPropagation();
                   handleSelectFinding(null);
@@ -257,8 +259,8 @@ const FormDentalClinicalFindings = () => {
         {/* Tipo */}
         {selectedItem && (selectedItem.subopciones?.length ?? 0) > 0 && (
           <div className={styles.field}>
-            <span className={styles.fieldLabel}>Tipo</span>
-            <div className={styles.subOptionRow} role="group" aria-label="Tipo">
+            <span className={styles.fieldLabel}>{t('type', 'Tipo')}</span>
+            <div className={styles.subOptionRow} role="group" aria-label={t('type', 'Tipo')}>
               {selectedItem.subopciones!.map((sub: FindingSuboption) => {
                 const isActive = selectedSuboption?.id === sub.id;
                 return (
@@ -281,7 +283,7 @@ const FormDentalClinicalFindings = () => {
         {/* Color */}
         {selectedItem && (selectedItem.colores?.length ?? 0) > 0 && (
           <div className={styles.field}>
-            <span className={styles.fieldLabel}>Color</span>
+            <span className={styles.fieldLabel}>{t('color', 'Color')}</span>
             <div className={styles.colorRow}>
               {selectedItem.colores.map((color: FindingColor) => {
                 const isActive = selectedColor?.name === color.name;
@@ -314,7 +316,7 @@ const FormDentalClinicalFindings = () => {
         {docsGroup && (
           <div className={styles.fieldDocs}>
             <Button kind="ghost" size="md" renderIcon={Information} onClick={() => setShowInfo(true)}>
-              Documentación
+              {t('documentation', 'Documentación')}
             </Button>
           </div>
         )}
@@ -323,7 +325,7 @@ const FormDentalClinicalFindings = () => {
       <Modal
         open={pickerOpen}
         passiveModal
-        modalHeading="Seleccionar hallazgo"
+        modalHeading={t('selectFinding', 'Seleccionar hallazgo')}
         onRequestClose={closePicker}
         size="lg"
         selectorPrimaryFocus="#finding-picker-search"
@@ -331,8 +333,8 @@ const FormDentalClinicalFindings = () => {
         <div className={styles.pickerSearchWrap}>
           <Search
             id="finding-picker-search"
-            labelText="Buscar hallazgo"
-            placeholder="Buscar hallazgo por nombre…"
+            labelText={t('searchFinding', 'Buscar hallazgo')}
+            placeholder={t('searchFindingByNameEllipsis', 'Buscar hallazgo por nombre...')}
             size="lg"
             value={pickerQuery}
             onChange={(e) => setPickerQuery(e.target.value)}
@@ -356,7 +358,9 @@ const FormDentalClinicalFindings = () => {
             );
           })}
           {filteredOpciones.length === 0 && (
-            <p className={styles.pickerEmpty}>Sin coincidencias para «{pickerQuery}»</p>
+            <p className={styles.pickerEmpty}>
+              {t('noMatchesForQuery', 'Sin coincidencias para "{{query}}"', { query: pickerQuery })}
+            </p>
           )}
         </div>
       </Modal>

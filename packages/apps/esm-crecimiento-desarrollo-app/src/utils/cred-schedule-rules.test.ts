@@ -45,4 +45,30 @@ describe('cred-schedule-rules', () => {
       }),
     );
   });
+
+  it('keeps control numbers and target dates increasing through each phase', () => {
+    const schedule = generateCREDSchedule('2024-01-01T00:00:00.000Z');
+
+    expect(schedule.map((control) => control.controlNumber)).toEqual(
+      Array.from({ length: 27 }, (_, index) => index + 1),
+    );
+    expect(schedule.every((control, index) => index === 0 || control.targetDate > schedule[index - 1].targetDate)).toBe(
+      true,
+    );
+    expect(
+      schedule.reduce(
+        (counts, control) => ({
+          ...counts,
+          [control.phase]: (counts[control.phase] ?? 0) + 1,
+        }),
+        {},
+      ),
+    ).toEqual({
+      neonatal: 3,
+      infant: 7,
+      toddler: 5,
+      preschool: 5,
+      school: 7,
+    });
+  });
 });

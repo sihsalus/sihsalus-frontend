@@ -51,8 +51,8 @@ describe('route-maps', () => {
       expect(map['@openmrs/esm-bar']).toEqual({ extensions: [] });
     });
 
-    it('getRouteMapNextPageMap returns base map only', async () => {
-      const { setupRouteMapOverrides, getRouteMapNextPageMap } = await import('./route-maps');
+    it('getNextPageRouteMap returns base map only', async () => {
+      const { setupRouteMapOverrides, getNextPageRouteMap } = await import('./route-maps');
       await setupRouteMapOverrides();
 
       setDomRouteMaps([{ '@openmrs/esm-foo': { pages: [] } }]);
@@ -61,7 +61,7 @@ describe('route-maps', () => {
         JSON.stringify({ pages: [{ component: 'evil', route: '/' }] }),
       );
 
-      const map = await getRouteMapNextPageMap();
+      const map = await getNextPageRouteMap();
       expect(map['@openmrs/esm-foo']).toEqual({ pages: [] });
     });
 
@@ -163,7 +163,7 @@ describe('route-maps', () => {
 
     it('getCurrentRouteMap merges base map with URL-fetched overrides', async () => {
       setDomRouteMaps([{ '@openmrs/esm-foo': { pages: [] } }]);
-      localStorage.setItem('openmrs-routes:@openmrs/esm-foo', JSON.stringify('http://localhost:8080/routes.json'));
+      localStorage.setItem('openmrs-routes:@openmrs/esm-foo', JSON.stringify('/routes.json'));
       fetchMock.mockResponseOnce(JSON.stringify({ pages: [{ component: 'root', route: '/fetched' }] }));
 
       const { setupRouteMapOverrides, getCurrentRouteMap } = await import('./route-maps');
@@ -173,17 +173,17 @@ describe('route-maps', () => {
       expect(map['@openmrs/esm-foo']).toEqual({ pages: [{ component: 'root', route: '/fetched' }] });
     });
 
-    it('getRouteMapDefaultMap returns only the base map', async () => {
+    it('getBaseRouteMap returns only the base map', async () => {
       setDomRouteMaps([{ '@openmrs/esm-foo': { pages: [] } }]);
       localStorage.setItem(
         'openmrs-routes:@openmrs/esm-foo',
         JSON.stringify({ pages: [{ component: 'x', route: '/' }] }),
       );
 
-      const { setupRouteMapOverrides, getRouteMapDefaultMap } = await import('./route-maps');
+      const { setupRouteMapOverrides, getBaseRouteMap } = await import('./route-maps');
       await setupRouteMapOverrides();
 
-      const map = await getRouteMapDefaultMap();
+      const map = await getBaseRouteMap();
       expect(map['@openmrs/esm-foo']).toEqual({ pages: [] });
     });
 
@@ -207,20 +207,20 @@ describe('route-maps', () => {
       );
     });
 
-    it('addRouteMapOverride stores an HTTP URL string in localStorage', async () => {
+    it('addRouteMapOverride stores a URL string in localStorage', async () => {
       const { setupRouteMapOverrides, addRouteMapOverride } = await import('./route-maps');
       await setupRouteMapOverrides();
 
-      addRouteMapOverride('@openmrs/esm-foo', 'http://localhost/my-route-override.json');
-      expect(localStorage.getItem('openmrs-routes:@openmrs/esm-foo')).toBe('"http://localhost/my-route-override.json"');
+      addRouteMapOverride('@openmrs/esm-foo', '/my-route-override.json');
+      expect(localStorage.getItem('openmrs-routes:@openmrs/esm-foo')).toBe('"/my-route-override.json"');
     });
 
     it('addRouteMapOverride stores a URL object in localStorage', async () => {
       const { setupRouteMapOverrides, addRouteMapOverride } = await import('./route-maps');
       await setupRouteMapOverrides();
 
-      addRouteMapOverride('@openmrs/esm-foo', new URL('http://localhost/my-route-override.json'));
-      expect(localStorage.getItem('openmrs-routes:@openmrs/esm-foo')).toBe('"http://localhost/my-route-override.json"');
+      addRouteMapOverride('@openmrs/esm-foo', new URL('/my-route-override.json', window.location.origin));
+      expect(localStorage.getItem('openmrs-routes:@openmrs/esm-foo')).toContain('/my-route-override.json');
     });
 
     it('removeRouteMapOverride removes from localStorage', async () => {
@@ -262,7 +262,7 @@ describe('route-maps', () => {
 
     it('getRouteMapOverrideMap returns raw localStorage entries in dev mode', async () => {
       localStorage.setItem('openmrs-routes:@openmrs/esm-foo', JSON.stringify({ pages: [] }));
-      localStorage.setItem('openmrs-routes:@openmrs/esm-bar', JSON.stringify('http://localhost/bar-routes.json'));
+      localStorage.setItem('openmrs-routes:@openmrs/esm-bar', JSON.stringify('/bar-routes.json'));
       localStorage.setItem('unrelated-key', 'value');
 
       const { setupRouteMapOverrides, getRouteMapOverrideMap } = await import('./route-maps');
@@ -271,7 +271,7 @@ describe('route-maps', () => {
       const overrides = getRouteMapOverrideMap();
       expect(Object.keys(overrides)).toHaveLength(2);
       expect(overrides['@openmrs/esm-foo']).toBe(JSON.stringify({ pages: [] }));
-      expect(overrides['@openmrs/esm-bar']).toBe(JSON.stringify('http://localhost/bar-routes.json'));
+      expect(overrides['@openmrs/esm-bar']).toBe(JSON.stringify('/bar-routes.json'));
     });
 
     it('addRouteMapOverride rejects an invalid JSON string', async () => {
@@ -284,10 +284,10 @@ describe('route-maps', () => {
       expect(errorSpy).toHaveBeenCalledWith(expect.stringContaining('not a valid OpenmrsAppRoutes'), expect.anything());
     });
 
-    it('getRouteMapNextPageMap reflects overrides added after setup', async () => {
+    it('getNextPageRouteMap reflects overrides added after setup', async () => {
       setDomRouteMaps([{ '@openmrs/esm-foo': { pages: [] } }]);
 
-      const { setupRouteMapOverrides, addRouteMapOverride, getCurrentRouteMap, getRouteMapNextPageMap } = await import(
+      const { setupRouteMapOverrides, addRouteMapOverride, getCurrentRouteMap, getNextPageRouteMap } = await import(
         './route-maps'
       );
       await setupRouteMapOverrides();
@@ -298,8 +298,8 @@ describe('route-maps', () => {
       const currentMap = await getCurrentRouteMap();
       expect(currentMap['@openmrs/esm-foo']).toEqual({ pages: [] });
 
-      // getRouteMapNextPageMap reads live overrides
-      const nextMap = await getRouteMapNextPageMap();
+      // getNextPageRouteMap reads live overrides
+      const nextMap = await getNextPageRouteMap();
       expect(nextMap['@openmrs/esm-foo']).toEqual({ pages: [{ component: 'new', route: '/new' }] });
     });
   });
@@ -329,7 +329,7 @@ describe('route-maps', () => {
 
       const script = document.createElement('script');
       script.type = 'openmrs-routes';
-      Object.defineProperty(script, 'src', { value: 'http://localhost/routes.json', writable: false });
+      Object.defineProperty(script, 'src', { value: '/routes.json', writable: false });
       document.head.appendChild(script);
 
       fetchMock.mockResponseOnce(
@@ -341,7 +341,7 @@ describe('route-maps', () => {
 
       const map = await getCurrentRouteMap();
       expect(map['@openmrs/esm-remote']).toEqual({ pages: [{ component: 'root', route: '/remote' }] });
-      expect(fetchMock).toHaveBeenCalledWith('http://localhost/routes.json');
+      expect(fetchMock).toHaveBeenCalledWith('/routes.json');
     });
 
     it('merges remote and inline route maps', async () => {
@@ -355,7 +355,7 @@ describe('route-maps', () => {
 
       const remote = document.createElement('script');
       remote.type = 'openmrs-routes';
-      Object.defineProperty(remote, 'src', { value: 'http://localhost/routes.json', writable: false });
+      Object.defineProperty(remote, 'src', { value: '/routes.json', writable: false });
       document.head.appendChild(remote);
 
       fetchMock.mockResponseOnce(JSON.stringify({ '@openmrs/esm-remote': { pages: [] } }));
@@ -381,7 +381,7 @@ describe('route-maps', () => {
 
       const bad = document.createElement('script');
       bad.type = 'openmrs-routes';
-      Object.defineProperty(bad, 'src', { value: 'http://localhost/broken.json', writable: false });
+      Object.defineProperty(bad, 'src', { value: '/broken.json', writable: false });
       document.head.appendChild(bad);
 
       fetchMock.mockRejectOnce(new Error('Network error'));
@@ -403,7 +403,7 @@ describe('route-maps', () => {
 
       const script = document.createElement('script');
       script.type = 'openmrs-routes';
-      Object.defineProperty(script, 'src', { value: 'http://localhost/bad.json', writable: false });
+      Object.defineProperty(script, 'src', { value: '/bad.json', writable: false });
       document.head.appendChild(script);
 
       fetchMock.mockResponseOnce('not json', { status: 200 });
@@ -422,7 +422,7 @@ describe('route-maps', () => {
 
       const script = document.createElement('script');
       script.type = 'openmrs-routes';
-      Object.defineProperty(script, 'src', { value: 'http://localhost/notroutes.json', writable: false });
+      Object.defineProperty(script, 'src', { value: '/notroutes.json', writable: false });
       document.head.appendChild(script);
 
       fetchMock.mockResponseOnce(JSON.stringify({ something: 'unexpected' }));
@@ -463,7 +463,7 @@ describe('route-maps', () => {
       vi.resetModules();
 
       const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
-      localStorage.setItem('openmrs-routes:@openmrs/esm-foo', JSON.stringify('http://localhost:9999/bad.json'));
+      localStorage.setItem('openmrs-routes:@openmrs/esm-foo', JSON.stringify('/bad.json'));
       fetchMock.mockRejectOnce(new Error('Network error'));
 
       const { setupRouteMapOverrides, getCurrentRouteMap } = await import('./route-maps');
@@ -479,7 +479,7 @@ describe('route-maps', () => {
       vi.resetModules();
 
       const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
-      localStorage.setItem('openmrs-routes:@openmrs/esm-foo', JSON.stringify('http://localhost/bad-routes.json'));
+      localStorage.setItem('openmrs-routes:@openmrs/esm-foo', JSON.stringify('/bad-routes.json'));
       fetchMock.mockResponseOnce(JSON.stringify({ pages: 'not an array' }));
 
       const { setupRouteMapOverrides, getCurrentRouteMap } = await import('./route-maps');

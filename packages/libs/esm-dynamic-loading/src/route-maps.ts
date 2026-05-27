@@ -164,7 +164,7 @@ async function readOverrideMap(): Promise<OpenmrsRoutes> {
           return { moduleName, routes: parsed };
         }
 
-        if (typeof parsed === 'string' && parsed.startsWith('http')) {
+        if (typeof parsed === 'string' && (parsed.startsWith('http') || parsed.startsWith('/'))) {
           const response = await fetch(parsed);
           const fetched: unknown = await response.json();
           if (isOpenmrsAppRoutes(fetched)) {
@@ -207,7 +207,7 @@ export async function getCurrentRouteMap(): Promise<OpenmrsRoutes> {
 /**
  * Returns the base route map from the DOM without any overrides applied.
  */
-export async function getRouteMapDefaultMap(): Promise<OpenmrsRoutes> {
+export async function getBaseRouteMap(): Promise<OpenmrsRoutes> {
   return readBaseMap();
 }
 
@@ -216,7 +216,7 @@ export async function getRouteMapDefaultMap(): Promise<OpenmrsRoutes> {
  * any overrides that have been added/removed since the page loaded.
  * In production, this is the same as the base map.
  */
-export async function getRouteMapNextPageMap(): Promise<OpenmrsRoutes> {
+export async function getNextPageRouteMap(): Promise<OpenmrsRoutes> {
   if (!devMode) {
     return readBaseMap();
   }
@@ -267,7 +267,7 @@ export function addRouteMapOverride(moduleName: string, routes: OpenmrsAppRoutes
 
   try {
     if (typeof routes === 'string') {
-      if (routes.startsWith('http')) {
+      if (routes.startsWith('http') || routes.startsWith('/')) {
         localStorage.setItem(OVERRIDE_PREFIX + moduleName, JSON.stringify(routes));
       } else {
         const maybeRoutes = JSON.parse(routes);

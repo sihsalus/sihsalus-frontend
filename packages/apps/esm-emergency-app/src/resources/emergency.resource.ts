@@ -428,7 +428,7 @@ export async function createEmergencyQueueEntry(
         queue: { uuid: queueUuid },
         patient: { uuid: patientUuid },
         startedAt: dayjs().format(omrsDateFormat),
-        sortWeight: sortWeight || 4,
+        sortWeight: sortWeight ?? 4,
       },
     },
   });

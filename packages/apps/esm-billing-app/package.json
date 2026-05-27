@@ -13,7 +13,7 @@
     "build": "rspack --mode=production",
     "coverage": "vitest run --coverage --passWithNoTests",
     "debug": "yarn serve",
-    "extract-translations": "i18next 'src/**/*.component.tsx' 'src/**/*.workspace.tsx' 'src/**/*.modal.tsx' 'src/index.ts' --config ../../tooling/scripts/i18next-parser.config.js",
+    "extract-translations": "i18next 'src/**/*.{ts,tsx}' '!src/**/*.test.{ts,tsx}' '!src/**/*.spec.{ts,tsx}' --config ../../tooling/scripts/i18next-parser.config.js",
     "lint": "node ../../tooling/scripts/run-biome.js lint .",
     "prettier": "node ../../tooling/scripts/run-biome.js format --write src e2e",
     "serve": "rspack serve --mode=development",

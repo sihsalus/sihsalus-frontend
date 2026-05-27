@@ -42,6 +42,8 @@
   "indicators": "Indicators",
   "indicatorsAppMenuLink": "Indicators",
   "indicatorsCalculated": "{{count}} indicators calculated",
+  "indicatorsCalculated_one": "{{count}} indicadores calculados",
+  "indicatorsCalculated_other": "{{count}} indicadores calculados",
   "indicatorsTabs": "Indicator sections",
   "indicatorsTitle": "Clinical Indicators",
   "indicatorUpdated": "Indicator updated",

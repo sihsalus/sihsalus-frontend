@@ -29,10 +29,9 @@ export const usePatientAttributes = (patientUuid: string) => {
  * React hook that takes patientUuid and returns contact details
  * derived from patient attributes using configured attributeTypes.
  *
- * Note: This hook loads configuration from '@openmrs/esm-patient-banner-app'
- * because the contact attribute types are defined in the patient banner's
- * configuration schema. While this hook lives in esm-styleguide, it serves
- * the patient banner's contact details display.
+ * Note: Although this hook lives in esm-styleguide, it runs inside the
+ * patient banner extension and therefore reads the banner module's config
+ * from the current ComponentContext.
  *
  * @param patientUuid - Unique patient identifier
  * @returns {Object} Object containing filtered contact attributes, loading status, and error
@@ -41,9 +40,7 @@ export const usePatientAttributes = (patientUuid: string) => {
  * @property {Error|null} error - Error object if request fails
  */
 export const usePatientContactAttributes = (patientUuid: string) => {
-  const { contactAttributeTypes = [] } = useConfig({
-    externalModuleName: '@openmrs/esm-patient-banner-app',
-  });
+  const { contactAttributeTypes = [] } = useConfig();
 
   const { attributes, error, isLoading } = usePatientAttributes(patientUuid);
   const contactAttributes = useMemo(
@@ -62,9 +59,7 @@ export const usePatientContactAttributes = (patientUuid: string) => {
 };
 
 export const usePatientAdditionalAttributes = (patientUuid: string) => {
-  const { additionalAttributeTypes = [] } = useConfig({
-    externalModuleName: '@openmrs/esm-patient-banner-app',
-  });
+  const { additionalAttributeTypes = [] } = useConfig();
 
   const { attributes, error, isLoading } = usePatientAttributes(patientUuid);
   const additionalAttributes = useMemo(

@@ -1,15 +1,17 @@
-/** @module @category UI */
-
 import { InlineLoading } from '@carbon/react';
-import { ConfigurableLink, usePatient } from '@openmrs/esm-react-utils';
-import { type CoreTranslationKey, getCoreTranslation } from '@openmrs/esm-translations';
-import { parseDate } from '@openmrs/esm-utils';
+import {
+  ConfigurableLink,
+  getCoreTranslation,
+  parseDate,
+  usePatient,
+  type CoreTranslationKey,
+} from '@openmrs/esm-framework';
 import classNames from 'classnames';
 import React, { useMemo } from 'react';
+import { usePatientContactAttributes } from '../hooks/usePatientAttributes';
+import { usePatientListsForPatient } from '../hooks/usePatientListsForPatient';
+import { useRelationships } from '../hooks/useRelationships';
 import styles from './patient-banner-contact-details.module.scss';
-import { usePatientContactAttributes } from './usePatientAttributes';
-import { usePatientListsForPatient } from './usePatientListsForPatient';
-import { useRelationships } from './useRelationships';
 
 interface ContactDetailsProps {
   patientId: string;
@@ -36,7 +38,7 @@ const PatientLists: React.FC<{ patientUuid: string }> = ({ patientUuid }) => {
               const slicedLists = sortedLists.slice(0, 3);
               return slicedLists?.map((cohort) => (
                 <li key={cohort.uuid}>
-                  <ConfigurableLink to={`${window.spaBase}/home/patient-lists/${cohort.uuid}`} key={cohort.uuid}>
+                  <ConfigurableLink to={`${window.spaBase}/home/patient-lists/${cohort.uuid}`}>
                     {cohort.name}
                   </ConfigurableLink>
                 </li>
@@ -45,7 +47,7 @@ const PatientLists: React.FC<{ patientUuid: string }> = ({ patientUuid }) => {
             return <li>--</li>;
           })()}
           {cohorts.length > 3 && (
-            <li className={styles.link}>
+            <li>
               <ConfigurableLink to={`${window.spaBase}/home/patient-lists`}>
                 {getCoreTranslation('seeMoreLists', 'See {{count}} more lists', {
                   count: cohorts?.length - 3,
@@ -61,7 +63,7 @@ const PatientLists: React.FC<{ patientUuid: string }> = ({ patientUuid }) => {
 
 const Address: React.FC<{ patientId: string }> = ({ patientId }) => {
   const { patient, isLoading } = usePatient(patientId);
-  const address = patient?.address?.find((a) => a.use === 'home');
+  const address = patient?.address?.find((entry) => entry.use === 'home');
   const getAddressKey = (url: string) => url.split('#')[1];
 
   if (isLoading) {
@@ -77,13 +79,13 @@ const Address: React.FC<{ patientId: string }> = ({ patientId }) => {
             .filter(([key]) => key !== 'id' && key !== 'use')
             .map(([key, value]) =>
               key === 'extension' ? (
-                address.extension?.[0]?.extension?.map((add, i) => (
-                  <li key={`address-${key}-${i}`}>
+                address.extension?.[0]?.extension?.map((addressExtension, index) => (
+                  <li key={`address-${key}-${index}`}>
                     {getCoreTranslation(
-                      getAddressKey(add.url) as CoreTranslationKey,
-                      getAddressKey(add.url) as CoreTranslationKey,
+                      getAddressKey(addressExtension.url) as CoreTranslationKey,
+                      getAddressKey(addressExtension.url) as CoreTranslationKey,
                     )}
-                    : {add.valueString}
+                    : {addressExtension.valueString}
                   </li>
                 ))
               ) : (
@@ -100,24 +102,21 @@ const Address: React.FC<{ patientId: string }> = ({ patientId }) => {
   );
 };
 
-const Contact: React.FC<{ patientUuid: string; deceased?: boolean }> = ({ patientUuid }) => {
+const Contact: React.FC<{ patientUuid: string }> = ({ patientUuid }) => {
   const { isLoading: isLoadingAttributes, contactAttributes } = usePatientContactAttributes(patientUuid);
 
   const contacts = useMemo(
     () =>
       contactAttributes
-        ? [
-            ...contactAttributes.map((contact) => [
-              contact.attributeType.display
-                ? getCoreTranslation(
-                    /** TODO: We should probably add translation strings for some of these */
-                    contact.attributeType.display as CoreTranslationKey,
-                    contact.attributeType.display,
-                  )
-                : '',
-              contact.value,
-            ]),
-          ]
+        ? contactAttributes.map((contact) => [
+            contact.attributeType.display
+              ? getCoreTranslation(
+                  contact.attributeType.display as CoreTranslationKey,
+                  contact.attributeType.display,
+                )
+              : '',
+            contact.value,
+          ])
         : [],
     [contactAttributes],
   );
@@ -155,27 +154,25 @@ const Relationships: React.FC<{ patientId: string }> = ({ patientId }) => {
       ) : (
         <ul>
           {relationships && relationships.length > 0 ? (
-            <>
-              {relationships.map((r) => (
-                <li key={r.uuid} className={styles.relationship}>
-                  <div>
-                    <ConfigurableLink to={`${window.spaBase}/patient/${r.relativeUuid}/chart`}>
-                      {r.display}
-                    </ConfigurableLink>
-                  </div>
-                  <div>{r.relationshipType}</div>
-                  <div>
-                    {`${r.relativeAge ? r.relativeAge : '--'} ${
-                      r.relativeAge
-                        ? r.relativeAge === 1
-                          ? getCoreTranslation('yearAbbreviation', 'yr')
-                          : getCoreTranslation('yearsAbbreviation', 'yrs')
-                        : ''
-                    }`}
-                  </div>
-                </li>
-              ))}
-            </>
+            relationships.map((relationship) => (
+              <li key={relationship.uuid} className={styles.relationship}>
+                <div>
+                  <ConfigurableLink to={`${window.spaBase}/patient/${relationship.relativeUuid}/chart`}>
+                    {relationship.display}
+                  </ConfigurableLink>
+                </div>
+                <div>{relationship.relationshipType}</div>
+                <div>
+                  {`${relationship.relativeAge ? relationship.relativeAge : '--'} ${
+                    relationship.relativeAge
+                      ? relationship.relativeAge === 1
+                        ? getCoreTranslation('yearAbbreviation', 'yr')
+                        : getCoreTranslation('yearsAbbreviation', 'yrs')
+                      : ''
+                  }`}
+                </div>
+              </li>
+            ))
           ) : (
             <li>--</li>
           )}

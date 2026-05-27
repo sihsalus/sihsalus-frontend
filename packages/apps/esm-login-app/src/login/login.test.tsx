@@ -8,7 +8,7 @@ import {
 } from '@openmrs/esm-framework';
 import { screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { useState } from 'react';
+import { Route, Routes } from 'react-router-dom';
 
 import { mockConfig } from '../../../../test-utils/mocks/login-config.mock';
 import renderWithRouter from '../test-helpers/render-with-router';
@@ -20,6 +20,13 @@ const mockLogin = vi.mocked(refetchCurrentUser);
 const mockUseConfig = vi.mocked(useConfig);
 const mockUseConnectivity = vi.mocked(useConnectivity);
 const mockUseSession = vi.mocked(useSession);
+
+const LoginRoutes = () => (
+  <Routes>
+    <Route path="/login" element={<Login />} />
+    <Route path="/login/location" element={<div>Location select page</div>} />
+  </Routes>
+);
 
 describe('Login', () => {
   beforeEach(() => {
@@ -152,23 +159,15 @@ describe('Login', () => {
     expect(await screen.findByText(/The login service is not available at this backend address/i)).toBeInTheDocument();
   });
 
-  // TODO: Complete the test
   it('sends the user to the location select page on login if there is more than one location', async () => {
-    let refreshUser = (_user: unknown) => {};
-    mockLogin.mockImplementation(() => {
-      refreshUser({
-        display: 'my name',
-      });
-      return Promise.resolve({ data: { authenticated: true } } as unknown as SessionStore);
-    });
-    mockUseSession.mockImplementation(() => {
-      const [user, setUser] = useState();
-      refreshUser = setUser;
-      return { user, authenticated: !!user, sessionId: '123' };
-    });
+    mockLogin.mockResolvedValue({
+      session: {
+        authenticated: true,
+      },
+    } as SessionStore);
 
     renderWithRouter(
-      Login,
+      LoginRoutes,
       {},
       {
         route: '/login',
@@ -182,6 +181,8 @@ describe('Login', () => {
     await screen.findByLabelText(/^password$/i);
     await user.type(screen.getByLabelText(/^password$/i), 'no-tax-fraud');
     await user.click(screen.getByRole('button', { name: /log in/i }));
+
+    expect(await screen.findByText('Location select page')).toBeInTheDocument();
   });
 
   it('should render the both the username and password fields when the showPasswordOnSeparateScreen config is false', async () => {

@@ -96,8 +96,7 @@ describe('Conditions form', () => {
     const user = userEvent.setup();
     renderConditionsForm();
 
-    // TODO: use better selector
-    await user.click(screen.getByLabelText(/^active/i));
+    await user.click(screen.getByRole('radio', { name: 'Active' }));
     expect(screen.queryByLabelText('End date')).not.toBeInTheDocument();
 
     await user.click(screen.getByLabelText(/inactive/i));

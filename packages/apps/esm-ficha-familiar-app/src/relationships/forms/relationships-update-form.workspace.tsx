@@ -108,7 +108,7 @@ const RelationshipUpdateForm: React.FC<RelationshipUpdateFormProps> = ({
     return (
       <div className={styles.error}>
         <Tile id="error">
-          <strong>Error:</strong>
+          <strong>{t('errorWithColon', 'Error:')}</strong>
           <p>{error?.message ?? typesError?.message}</p>
         </Tile>
       </div>

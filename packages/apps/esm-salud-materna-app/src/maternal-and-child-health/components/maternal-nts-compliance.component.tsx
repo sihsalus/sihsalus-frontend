@@ -2,6 +2,7 @@ import { Button, InlineLoading, Tag, Tile } from '@carbon/react';
 import { Launch } from '@carbon/react/icons';
 import { launchWorkspace2, openmrsFetch, restBaseUrl, useConfig } from '@openmrs/esm-framework';
 import React, { useMemo } from 'react';
+import { useTranslation } from 'react-i18next';
 import useSWR from 'swr';
 import type { ConfigObject } from '../../config-schema';
 import styles from './maternal-nts-compliance.scss';
@@ -203,10 +204,10 @@ const requirements: Array<Requirement> = [
   },
 ];
 
-const statusMeta: Record<RequirementStatus, { label: string; tagType: 'green' | 'red' | 'gray' }> = {
-  completed: { label: 'Completo', tagType: 'green' },
-  pending: { label: 'Pendiente', tagType: 'red' },
-  notConfigured: { label: 'Sin soporte', tagType: 'gray' },
+const statusMeta: Record<RequirementStatus, { labelKey: string; label: string; tagType: 'green' | 'red' | 'gray' }> = {
+  completed: { labelKey: 'completed', label: 'Completo', tagType: 'green' },
+  pending: { labelKey: 'pending', label: 'Pendiente', tagType: 'red' },
+  notConfigured: { labelKey: 'notConfigured', label: 'Sin soporte', tagType: 'gray' },
 };
 
 const normalize = (value?: string | null) => value?.trim().toLowerCase() ?? '';
@@ -230,8 +231,21 @@ function useMaternalEncounters(patientUuid: string) {
 }
 
 const MaternalNtsCompliance: React.FC<{ patientUuid: string }> = ({ patientUuid }) => {
+  const { t } = useTranslation();
   const config = useConfig<ConfigObject>();
   const { data, error, isLoading } = useMaternalEncounters(patientUuid);
+
+  const translatedRequirements = useMemo<Array<Requirement>>(
+    () =>
+      requirements.map((requirement) => ({
+        ...requirement,
+        section: t(`${requirement.id}Section`, requirement.section),
+        label: t(`${requirement.id}Label`, requirement.label),
+        description: t(`${requirement.id}Description`, requirement.description),
+        source: t(`${requirement.id}Source`, requirement.source),
+      })),
+    [t],
+  );
 
   const completedForms = useMemo(() => {
     const forms = new Map<string, string>();
@@ -250,7 +264,7 @@ const MaternalNtsCompliance: React.FC<{ patientUuid: string }> = ({ patientUuid 
   }, [data?.results]);
 
   const requirementViewModels = useMemo<Array<RequirementViewModel>>(() => {
-    return requirements.map((requirement) => {
+    return translatedRequirements.map((requirement) => {
       if (!requirement.formKey) {
         return { ...requirement, status: 'notConfigured' };
       }
@@ -268,7 +282,7 @@ const MaternalNtsCompliance: React.FC<{ patientUuid: string }> = ({ patientUuid 
         completedDate,
       };
     });
-  }, [completedForms, config.formsList]);
+  }, [completedForms, config.formsList, translatedRequirements]);
 
   const groupedRequirements = useMemo(() => {
     return requirementViewModels.reduce<Record<string, Array<RequirementViewModel>>>((groups, requirement) => {
@@ -294,12 +308,14 @@ const MaternalNtsCompliance: React.FC<{ patientUuid: string }> = ({ patientUuid 
       <Tile className={styles.complianceCard}>
         <div className={styles.headerRow}>
           <div>
-            <p className={styles.eyebrow}>NTS madre gestante</p>
-            <h4>Brechas de atención materna</h4>
+            <p className={styles.eyebrow}>{t('pregnantMotherNts', 'NTS madre gestante')}</p>
+            <h4>{t('maternalCareGaps', 'Brechas de atención materna')}</h4>
           </div>
-          <Tag type="red">Error</Tag>
+          <Tag type="red">{t('error', 'Error')}</Tag>
         </div>
-        <p className={styles.errorText}>No se pudo cargar el estado de cumplimiento NTS.</p>
+        <p className={styles.errorText}>
+          {t('maternalNtsComplianceLoadError', 'No se pudo cargar el estado de cumplimiento NTS.')}
+        </p>
       </Tile>
     );
   }
@@ -309,37 +325,39 @@ const MaternalNtsCompliance: React.FC<{ patientUuid: string }> = ({ patientUuid 
       <div className={styles.headerRow}>
         <div>
           <p className={styles.eyebrow}>NTS 105 / NTS 130</p>
-          <h4>Brechas de atención materna</h4>
+          <h4>{t('maternalCareGaps', 'Brechas de atención materna')}</h4>
           <p className={styles.subtitle}>
-            Seguimiento operativo de atención prenatal reenfocada, parto institucional, puerperio y atención
-            diferenciada.
+            {t(
+              'maternalCareGapsSubtitle',
+              'Seguimiento operativo de atención prenatal reenfocada, parto institucional, puerperio y atención diferenciada.',
+            )}
           </p>
         </div>
         <Button kind="tertiary" size="sm" renderIcon={Launch} onClick={openFormsWorkspace}>
-          Abrir formularios
+          {t('openForms', 'Abrir formularios')}
         </Button>
       </div>
 
       {isLoading ? (
-        <InlineLoading description="Cargando brechas NTS..." />
+        <InlineLoading description={t('loadingMaternalNtsGaps', 'Cargando brechas NTS...')} />
       ) : (
         <>
           <div className={styles.summaryGrid}>
             <div className={styles.summaryItem}>
               <span className={styles.summaryValue}>{completionPercent}%</span>
-              <span className={styles.summaryLabel}>avance trazable</span>
+              <span className={styles.summaryLabel}>{t('trackableProgress', 'avance trazable')}</span>
             </div>
             <div className={styles.summaryItem}>
               <span className={styles.summaryValue}>{completedCount}</span>
-              <span className={styles.summaryLabel}>completos</span>
+              <span className={styles.summaryLabel}>{t('completedPlural', 'completos')}</span>
             </div>
             <div className={styles.summaryItem}>
               <span className={styles.summaryValue}>{pendingCount}</span>
-              <span className={styles.summaryLabel}>pendientes</span>
+              <span className={styles.summaryLabel}>{t('pendingPlural', 'pendientes')}</span>
             </div>
             <div className={styles.summaryItem}>
               <span className={styles.summaryValue}>{unsupportedCount}</span>
-              <span className={styles.summaryLabel}>sin soporte</span>
+              <span className={styles.summaryLabel}>{t('withoutSupport', 'sin soporte')}</span>
             </div>
           </div>
 
@@ -357,16 +375,21 @@ const MaternalNtsCompliance: React.FC<{ patientUuid: string }> = ({ patientUuid 
                         <div className={styles.requirementBody}>
                           <div className={styles.requirementTitleRow}>
                             <span className={styles.requirementTitle}>{requirement.label}</span>
-                            <Tag type={meta.tagType}>{meta.label}</Tag>
+                            <Tag type={meta.tagType}>{t(meta.labelKey, meta.label)}</Tag>
                           </div>
                           <p>{requirement.description}</p>
                           <span className={styles.source}>{requirement.source}</span>
                           {completedDate && (
-                            <span className={styles.completedDate}>Último registro: {completedDate}</span>
+                            <span className={styles.completedDate}>
+                              {t('lastRecordDate', 'Último registro: {{completedDate}}', { completedDate })}
+                            </span>
                           )}
                           {requirement.status === 'notConfigured' && (
                             <span className={styles.unsupportedNote}>
-                              Requiere formulario, workflow o integración backend específica.
+                              {t(
+                                'requiresSpecificFormWorkflowOrBackendIntegration',
+                                'Requiere formulario, workflow o integración backend específica.',
+                              )}
                             </span>
                           )}
                         </div>

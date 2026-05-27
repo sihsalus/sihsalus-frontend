@@ -128,7 +128,7 @@
   "queueEntryEditingFailed": "Error al editar la entrada de la cola",
   "queueEntryError": "Error al agregar paciente a la cola",
   "queueEntryRemoved": "Entrada de la cola quitada",
-  "queueEntryRemovedSuccessfully": "",
+  "queueEntryRemovedSuccessfully": "Paciente retirado de la cola correctamente",
   "queueEntryStatusUpdateFailed": "Error al actualizar el estado de la entrada de la cola",
   "queueEntryTransitioned": "La entrada en la cola ha cambiado de estado",
   "queueEntryTransitionedSuccessfully": "La entrada de la cola ha trasladado exitosamente",
@@ -173,7 +173,6 @@
   "required": "Obligatorio",
   "retainLocation": "Mantener ubicación",
   "returnDate": "Fecha de retorno",
-  "room": "Sala",
   "rRate": "Frecuencia respiratoria",
   "save": "Guardar",
   "saving": "Guardando",
@@ -212,7 +211,7 @@
   "today": "Hoy",
   "totalPatients": "Total de Pacientes",
   "transition": "Trasladar",
-  "TransitionLatestQueueEntry": "Trasladar al paciente a la última cola",
+  "transitionLatestQueueEntry": "Cambiar estado de cola del paciente",
   "transitionPatient": "Trasladar paciente",
   "transitionPatientStatusOrQueue": "Seleccione un nuevo estado o cola para el paciente a trasladar",
   "triageForm": "Formulario de triaje",
@@ -228,7 +227,5 @@
   "vitalsForm": "Formulario de signos vitales",
   "vitalsNotRecordedForVisit": "No se han registrado los signos vitales para este paciente en esta consulta",
   "waitingFor": "En espera para",
-  "weight": "Peso",
-  "transitionLatestQueueEntry": "Cambiar estado de cola del paciente",
-  "activeVisits": "Atenciones en curso"
+  "weight": "Peso"
 }

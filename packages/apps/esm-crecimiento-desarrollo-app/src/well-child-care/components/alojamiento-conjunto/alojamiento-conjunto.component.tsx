@@ -56,7 +56,7 @@ const AlojamientoConjunto: React.FC<AlojamientoConjuntoProps> = ({ patientUuid }
   }, [encounter, obsData, isLoading, error, mutate]);
 
   if (!patientUuid || typeof patientUuid !== 'string') {
-    return <div>Error: UUID de paciente inválido</div>;
+    return <div>{t('invalidPatientUuidError', 'Error: UUID de paciente inválido')}</div>;
   }
 
   const rowConfig = [

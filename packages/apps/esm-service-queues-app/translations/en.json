@@ -173,7 +173,6 @@
   "required": "Required",
   "retainLocation": "Retain location",
   "returnDate": "Return date",
-  "room": "Room",
   "rRate": "R. Rate",
   "save": "Save",
   "saving": "Saving",
@@ -212,7 +211,7 @@
   "today": "Today",
   "totalPatients": "Total Patients",
   "transition": "Transition",
-  "TransitionLatestQueueEntry": "Transition patient to latest queue",
+  "transitionLatestQueueEntry": "Transition patient's latest queue",
   "transitionPatient": "Transition patient",
   "transitionPatientStatusOrQueue": "Select a new status or queue for patient to transition to.",
   "triageForm": "Triage form",
@@ -228,7 +227,5 @@
   "vitalsForm": "Vitals form",
   "vitalsNotRecordedForVisit": "Vitals has not been recorded for this patient for this visit",
   "waitingFor": "Waiting for",
-  "weight": "Weight",
-  "transitionLatestQueueEntry": "Transition patient's latest queue",
-  "activeVisits": "Care in progress"
+  "weight": "Weight"
 }

@@ -145,6 +145,7 @@
   "recurringAppointment": "Cita Recurrente",
   "recurringAppointmentShouldHaveEndDate": "Una cita recurrente debe tener una fecha de finalización",
   "repeatEvery": "Repetir cada",
+  "required": "Requerido",
   "save": "Guardar",
   "saveAndClose": "Guardar y cerrar",
   "saving": "Guardando",

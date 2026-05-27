@@ -144,6 +144,7 @@
   "recurringAppointment": "Recurring Appointment",
   "recurringAppointmentShouldHaveEndDate": "A recurring appointment should have an end date",
   "repeatEvery": "Repeat every",
+  "required": "Required",
   "save": "Save",
   "saveAndClose": "Save and close",
   "saving": "Saving",

@@ -25,8 +25,8 @@ interface NeonatalSummaryProps {
 
 const PrenatalAntecedents: React.FC<NeonatalSummaryProps> = ({ patientUuid }) => {
   const { t } = useTranslation();
-  const displayText = t('biometrics_lower', 'biometrics');
   const headerTitle = t('prenatalAntecedents', 'Antecedentes Prenatales');
+  const displayText = headerTitle;
 
   const { data: formattedObs, isLoading, error } = usePrenatalAntecedents(patientUuid);
 

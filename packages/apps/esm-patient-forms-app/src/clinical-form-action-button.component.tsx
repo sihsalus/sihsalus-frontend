@@ -1,9 +1,5 @@
 import { ActionMenuButton2, DocumentIcon } from '@openmrs/esm-framework';
-import {
-  type PatientChartWorkspaceActionButtonProps,
-  usePatientChartStore,
-  useStartVisitIfNeeded,
-} from '@openmrs/esm-patient-common-lib';
+import { type PatientChartWorkspaceActionButtonProps, usePatientChartStore } from '@openmrs/esm-patient-common-lib';
 import React, { type ComponentProps } from 'react';
 import { useTranslation } from 'react-i18next';
 
@@ -24,8 +20,6 @@ const ClinicalFormActionButton: React.FC<PatientChartWorkspaceActionButtonProps>
           mutateVisitContext: patientChartContext.mutateVisitContext,
         }
       : null);
-  const startVisitIfNeeded = useStartVisitIfNeeded(patientUuid ?? undefined);
-
   return (
     <ActionMenuButton2
       icon={renderDocumentIcon}
@@ -35,7 +29,6 @@ const ClinicalFormActionButton: React.FC<PatientChartWorkspaceActionButtonProps>
         workspaceProps: {},
         groupProps: patientChartGroupProps,
       }}
-      onBeforeWorkspaceLaunch={startVisitIfNeeded}
     />
   );
 };

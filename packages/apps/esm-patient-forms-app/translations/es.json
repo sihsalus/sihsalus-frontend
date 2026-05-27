@@ -2,6 +2,8 @@
   "clinicalForm": "Formulario Clínico",
   "clinicalForms": "Formularios clínicos",
   "editForm": "Editar formulario",
+  "allUnits": "Todas las unidades",
+  "filterByUnit": "Filtrar por unidad",
   "formName": "Nombre de Formulario (A-Z)",
   "forms": "Formularios",
   "formSearchHint": "Intente buscar el formulario utilizando un nombre alternativo o palabra clave",

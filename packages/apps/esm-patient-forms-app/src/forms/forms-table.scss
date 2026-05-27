@@ -16,19 +16,29 @@
   justify-content: space-between;
 }
 
-.toolbarWrapper {
-  position: relative;
+.filtersBar {
   display: flex;
-  height: layout.$spacing-09;
-  justify-content: flex-end;
+  align-items: center;
+  gap: layout.$spacing-03;
+  min-height: layout.$spacing-09;
+  padding: layout.$spacing-03 layout.$spacing-05;
+  background-color: $ui-01;
+  border: 1px solid $ui-03;
+  border-bottom: none;
 }
 
-.tableToolbar {
-  width: 20%;
-  min-width: 12.5rem;
+.unitFilter {
+  flex: 0 0 12rem;
+
+  :global(.cds--select-input) {
+    height: layout.$spacing-07;
+  }
 }
 
 .search {
+  flex: 1 1 auto;
+  max-width: none;
+
   input {
     padding: 0 layout.$spacing-10 !important;
   }
@@ -75,14 +85,6 @@
     border: 1px solid $ui-03;
     border-bottom: none;
     overflow: visible;
-  }
-
-  :global(.cds--table-toolbar) {
-    position: relative;
-    height: layout.$spacing-07;
-    min-height: 0;
-    overflow: visible;
-    top: 0;
   }
 
   &:global(.cds--data-table-container) {

@@ -25,6 +25,7 @@ export type FormsListProps = {
 const FormsList: React.FC<FormsListProps> = ({ forms, error, sectionName, handleFormOpen }) => {
   const { t } = useTranslation();
   const [searchTerm, setSearchTerm] = useState('');
+  const [selectedUnit, setSelectedUnit] = useState('');
   const isTablet = useLayoutType() === 'tablet';
   const [, setLocale] = useState(globalThis.i18next?.language ?? navigator.language);
 
@@ -38,16 +39,50 @@ const FormsList: React.FC<FormsListProps> = ({ forms, error, sectionName, handle
 
   const handleSearch = useMemo(() => debounce((searchTerm) => setSearchTerm(searchTerm), 300), []);
 
+  const getFormUnit = (form: Form) => {
+    const formName = form.display ?? form.name;
+    const parenthesizedPrefix = formName.match(/^\(([^)]+)\)/)?.[1]?.trim();
+
+    if (parenthesizedPrefix) {
+      return parenthesizedPrefix.replace(/\s+\d+.*/, '').trim();
+    }
+
+    const hyphenPrefix = formName.match(/^([A-ZÁÉÍÓÚÑ]{2,})(?:-\d+|\s+-)/)?.[1]?.trim();
+
+    if (hyphenPrefix) {
+      return hyphenPrefix;
+    }
+
+    return '';
+  };
+
+  const unitOptions = useMemo(() => {
+    const units = new Set<string>();
+    forms?.forEach((formInfo) => {
+      const unit = getFormUnit(formInfo.form);
+
+      if (unit) {
+        units.add(unit);
+      }
+    });
+
+    return Array.from(units).sort((a, b) => a.localeCompare(b));
+  }, [forms]);
+
   const filteredForms = useMemo(() => {
+    const unitFilteredForms = selectedUnit
+      ? forms?.filter((formInfo) => getFormUnit(formInfo.form) === selectedUnit)
+      : forms;
+
     if (!searchTerm) {
-      return forms;
+      return unitFilteredForms;
     }
 
     return fuzzy
-      .filter(searchTerm, forms, { extract: (formInfo) => formInfo.form.display ?? formInfo.form.name })
+      .filter(searchTerm, unitFilteredForms, { extract: (formInfo) => formInfo.form.display ?? formInfo.form.name })
       .sort((r1, r2) => r1.score - r2.score)
       .map((result) => result.original);
-  }, [forms, searchTerm]);
+  }, [forms, searchTerm, selectedUnit]);
 
   const tableHeaders = useMemo(() => {
     return [
@@ -95,8 +130,11 @@ const FormsList: React.FC<FormsListProps> = ({ forms, error, sectionName, handle
       <FormsTable
         tableHeaders={tableHeaders}
         tableRows={tableRows}
+        unitOptions={unitOptions}
+        selectedUnit={selectedUnit}
         isTablet={isTablet}
         handleSearch={handleSearch}
+        handleUnitChange={setSelectedUnit}
         handleFormOpen={handleFormOpen}
       />
     </ResponsiveWrapper>

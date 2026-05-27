@@ -7,7 +7,7 @@ import { parseDate } from '@openmrs/esm-utils';
 import classNames from 'classnames';
 import React, { useMemo } from 'react';
 import styles from './patient-banner-contact-details.module.scss';
-import { usePatientAdditionalAttributes, usePatientContactAttributes } from './usePatientAttributes';
+import { usePatientContactAttributes } from './usePatientAttributes';
 import { usePatientListsForPatient } from './usePatientListsForPatient';
 import { useRelationships } from './useRelationships';
 
@@ -74,7 +74,7 @@ const Address: React.FC<{ patientId: string }> = ({ patientId }) => {
       <ul>
         {address ? (
           Object.entries(address)
-            .filter(([key]) => key !== 'id' && key !== 'use' && key !== 'postalCode')
+            .filter(([key]) => key !== 'id' && key !== 'use')
             .map(([key, value]) =>
               key === 'extension' ? (
                 address.extension?.[0]?.extension?.map((add, i) => (
@@ -131,49 +131,6 @@ const Contact: React.FC<{ patientUuid: string; deceased?: boolean }> = ({ patien
         <ul>
           {contacts.length ? (
             contacts.map(([label, value], index) => (
-              <li key={`${label}-${value}-${index}`}>
-                {label}: {value}
-              </li>
-            ))
-          ) : (
-            <li>--</li>
-          )}
-        </ul>
-      )}
-    </>
-  );
-};
-
-const AdditionalDetails: React.FC<{ patientUuid: string }> = ({ patientUuid }) => {
-  const { isLoading: isLoadingAttributes, additionalAttributes } = usePatientAdditionalAttributes(patientUuid);
-
-  const details = useMemo(
-    () =>
-      additionalAttributes
-        ? [
-            ...additionalAttributes.map((attribute) => [
-              attribute.attributeType.display
-                ? getCoreTranslation(
-                    attribute.attributeType.display as CoreTranslationKey,
-                    attribute.attributeType.display,
-                  )
-                : '',
-              attribute.value,
-            ]),
-          ]
-        : [],
-    [additionalAttributes],
-  );
-
-  return (
-    <>
-      <p className={styles.heading}>{getCoreTranslation('additionalDetails', 'Additional details')}</p>
-      {isLoadingAttributes ? (
-        <InlineLoading description={`${getCoreTranslation('loading', 'Loading')} ...`} role="progressbar" />
-      ) : (
-        <ul>
-          {details.length ? (
-            details.map(([label, value], index) => (
               <li key={`${label}-${value}-${index}`}>
                 {label}: {value}
               </li>
@@ -247,11 +204,6 @@ export function PatientBannerContactDetails({ patientId, deceased }: ContactDeta
         <div className={styles.col}>
           <Relationships patientId={patientId} />
         </div>
-        <div className={styles.col}>
-          <AdditionalDetails patientUuid={patientId} />
-        </div>
-      </div>
-      <div className={styles.row}>
         <div className={styles.col}>
           <PatientLists patientUuid={patientId} />
         </div>

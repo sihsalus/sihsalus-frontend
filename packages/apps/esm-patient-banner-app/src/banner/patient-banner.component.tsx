@@ -6,7 +6,7 @@ import {
   PatientPhoto,
 } from '@openmrs/esm-framework';
 import classNames from 'classnames';
-import React, { Suspense, useCallback, useEffect, useRef, useState } from 'react';
+import React, { Suspense, useCallback, useEffect, useState } from 'react';
 import { PatientBannerContactDetails } from './patient-banner-contact-details.component';
 import styles from './patient-banner.scss';
 

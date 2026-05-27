@@ -53,7 +53,7 @@ export const ParseDate = (value: string | null | undefined) => {
     else if (value.includes('nov')) value = value.replace('nov', '11');
     else if (value.includes('dec')) value = value.replace('dec', '12');
     value = value.replace(/-/g, '/');
-    let strMonth;
+    let strMonth: string;
     if (value!.substring(3, 5).indexOf('0') === 0) strMonth = value!.substring(4, 5);
     else strMonth = value!.substring(3, 5);
     const month = parseInt(strMonth, 10) - 1;

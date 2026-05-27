@@ -9,6 +9,24 @@ interface Identifier {
   };
 }
 
+interface VisitPersonAttribute {
+  attributeType?: {
+    display?: string;
+  };
+  value?:
+    | string
+    | {
+        display?: string;
+      };
+}
+
+interface VisitPersonAddress {
+  preferred?: boolean;
+  address1?: string;
+  cityVillage?: string;
+  stateProvince?: string;
+}
+
 interface Visit {
   uuid: string;
   startDatetime?: string;
@@ -17,6 +35,13 @@ interface Visit {
     uuid?: string;
     display?: string;
     identifiers?: Identifier[];
+    person?: {
+      display?: string;
+      birthdate?: string;
+      gender?: string;
+      addresses?: VisitPersonAddress[];
+      attributes?: VisitPersonAttribute[];
+    };
   };
   visitType?: {
     display?: string;
@@ -36,6 +61,11 @@ export interface AdmissionRow {
   startDatetime?: string;
   patientName: string;
   medicalRecordNumber: string;
+  documentNumber: string;
+  birthDate: string;
+  hasSis: string;
+  address: string;
+  gender: string;
   service: string;
   location: string;
   status: string;
@@ -49,13 +79,52 @@ function getMedicalRecordNumber(identifiers: Identifier[] = []) {
   return preferred?.identifier ?? '';
 }
 
+function getDocumentNumber(identifiers: Identifier[] = []) {
+  const preferred =
+    identifiers.find((identifier) =>
+      /dni|ce|pasaporte|pass|documento/i.test(identifier.identifierType?.display ?? ''),
+    ) ?? identifiers[0];
+
+  return preferred?.identifier ?? '';
+}
+
+function getAddress(addresses: VisitPersonAddress[] = []) {
+  const preferred = addresses.find((address) => address.preferred) ?? addresses[0];
+
+  return preferred
+    ? [preferred.address1, preferred.cityVillage, preferred.stateProvince].filter(Boolean).join(', ')
+    : '';
+}
+
+function hasSis(identifiers: Identifier[] = [], attributes: VisitPersonAttribute[] = []) {
+  const identifiersText = identifiers
+    .map((identifier) => [identifier.identifierType?.display, identifier.identifier].filter(Boolean).join(' '))
+    .join(' ');
+  const attributesText = attributes
+    .map((attribute) => {
+      const value = typeof attribute.value === 'string' ? attribute.value : attribute.value?.display;
+      return [attribute.attributeType?.display, value].filter(Boolean).join(' ');
+    })
+    .join(' ');
+
+  return /sis|seguro integral/i.test(`${identifiersText} ${attributesText}`);
+}
+
 function mapVisitToAdmission(visit: Visit): AdmissionRow {
+  const identifiers = visit.patient?.identifiers ?? [];
+  const person = visit.patient?.person;
+
   return {
     uuid: visit.uuid,
     patientUuid: visit.patient?.uuid ?? '',
     startDatetime: visit.startDatetime,
-    patientName: visit.patient?.display ?? '',
-    medicalRecordNumber: getMedicalRecordNumber(visit.patient?.identifiers),
+    patientName: person?.display ?? visit.patient?.display ?? '',
+    medicalRecordNumber: getMedicalRecordNumber(identifiers),
+    documentNumber: getDocumentNumber(identifiers),
+    birthDate: person?.birthdate ?? '',
+    hasSis: hasSis(identifiers, person?.attributes) ? 'Sí' : 'No',
+    address: getAddress(person?.addresses),
+    gender: person?.gender ?? '',
     service: visit.visitType?.display ?? '',
     location: visit.location?.display ?? '',
     status: visit.stopDatetime ? 'Finalizada' : 'Activa',
@@ -63,7 +132,7 @@ function mapVisitToAdmission(visit: Visit): AdmissionRow {
 }
 
 const visitRepresentation =
-  'custom:(uuid,startDatetime,stopDatetime,patient:(uuid,display,identifiers:(identifier,identifierType:(display))),visitType:(display),location:(display))';
+  'custom:(uuid,startDatetime,stopDatetime,patient:(uuid,display,identifiers:(identifier,identifierType:(display)),person:(display,birthdate,gender,addresses:(preferred,address1,cityVillage,stateProvince),attributes:(attributeType:(display),value))),visitType:(display),location:(display))';
 
 export function useAdmissions(limit: number) {
   const url = `${restBaseUrl}/visit?includeInactive=true&v=${visitRepresentation}&limit=${limit}`;

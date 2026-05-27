@@ -34,14 +34,10 @@ describe('routes.json', () => {
     );
   });
 
-  it('registers clinical identity summary in the patient info slot', () => {
-    expect(routes.extensions).toContainEqual(
+  it('does not register patient banner identity extensions from admission', () => {
+    expect(routes.extensions).not.toContainEqual(
       expect.objectContaining({
-        component: 'clinicalIdentitySummary',
-        name: 'admission-clinical-identity-summary',
         slot: 'patient-info-slot',
-        online: true,
-        offline: true,
       }),
     );
   });

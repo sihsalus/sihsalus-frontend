@@ -18,10 +18,8 @@
 
 .filtersBar {
   display: flex;
-  align-items: center;
-  gap: layout.$spacing-03;
+  align-items: stretch;
   min-height: layout.$spacing-09;
-  padding: layout.$spacing-03 layout.$spacing-05;
   background-color: $ui-01;
   border: 1px solid $ui-03;
   border-bottom: none;
@@ -29,17 +27,39 @@
 
 .unitFilter {
   flex: 0 0 12rem;
+  margin: 0;
+  border-right: 1px solid $ui-03;
+
+  :global(.cds--select) {
+    height: 100%;
+  }
+
+  :global(.cds--select-input__wrapper) {
+    height: 100%;
+  }
 
   :global(.cds--select-input) {
-    height: layout.$spacing-07;
+    height: layout.$spacing-09;
+    min-height: layout.$spacing-09;
+    border: none;
+    background-color: $ui-01;
   }
 }
 
 .search {
   flex: 1 1 auto;
+  height: layout.$spacing-09;
   max-width: none;
+  border-bottom: none;
+
+  :global(.cds--search-magnifier),
+  :global(.cds--search-close) {
+    height: layout.$spacing-09;
+  }
 
   input {
+    height: layout.$spacing-09;
+    border-bottom: none;
     padding: 0 layout.$spacing-10 !important;
   }
 

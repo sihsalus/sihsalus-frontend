@@ -66,14 +66,24 @@ export interface OrderBasketItem {
   accessionNumber?: string;
   concept?: Concept;
   instructions?: string;
+  /**
+   * UI-facing priority value. May hold a configured priority conceptUuid (see `priorityConfigs`)
+   * used for display and the priority dropdown state.
+   */
   urgency?: OrderUrgency;
+  /**
+   * Core OpenMRS urgency enum (ROUTINE | STAT | ON_SCHEDULED_DATE) resolved from the selected
+   * priority at form submit. This is what gets sent in the order POST, since `Order.urgency`
+   * is an enum and rejects concept UUIDs.
+   */
+  urgencyCode?: OrderUrgency;
   previousOrder?: string | null;
   orderType?: string;
   orderNumber?: string;
   scheduledDate?: Date;
 }
 
-export type OrderUrgency = 'ROUTINE' | 'STAT' | 'ON_SCHEDULED_DATE';
+export type OrderUrgency = string;
 
 export type PriorityOption = {
   label: string;

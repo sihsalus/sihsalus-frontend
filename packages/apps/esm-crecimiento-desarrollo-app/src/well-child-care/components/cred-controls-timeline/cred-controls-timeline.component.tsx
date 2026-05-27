@@ -7,6 +7,10 @@ import { useTranslation } from 'react-i18next';
 
 import type { ConfigObject } from '../../../config-schema';
 import { useCREDSchedule } from '../../../hooks/useCREDSchedule';
+import {
+  translateCredAgeGroupLabel,
+  translateCredAgeGroupSublabel,
+} from '../../../utils/cred-label-translations';
 
 import styles from './cred-schedule.scss';
 
@@ -67,7 +71,7 @@ const CredAgeGroups: React.FC<CredAgeGroupsProps> = ({ patientUuid }) => {
   const handleAgeGroupClick = (group) => {
     setSelectedAgeGroup(group);
     launchWorkspace2('wellchild-control-form', {
-      workspaceTitle: `${t('ageGroupDetails', 'Control Crecimiento y Desarrollo - Grupo Etario')} - ${group.label}`,
+      workspaceTitle: `${t('ageGroupDetails', 'Control Crecimiento y Desarrollo - Grupo Etario')} - ${translateCredAgeGroupLabel(t, group.label)}`,
       patientUuid,
       ageGroup: group,
       type: 'ageGroup',
@@ -103,8 +107,8 @@ const CredAgeGroups: React.FC<CredAgeGroupsProps> = ({ patientUuid }) => {
               })}
               onClick={() => handleAgeGroupClick(group)}
             >
-              <strong>{group.label}</strong>
-              {group.sublabel && <div>{group.sublabel}</div>}
+              <strong>{translateCredAgeGroupLabel(t, group.label)}</strong>
+              {group.sublabel && <div>{translateCredAgeGroupSublabel(t, group.sublabel)}</div>}
               {summary && summary.total > 0 && (
                 <div className={styles.groupStatus}>
                   {summary.completed}/{summary.total}

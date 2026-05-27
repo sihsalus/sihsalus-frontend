@@ -39,6 +39,14 @@ export function makeUrl(path: string) {
   return window.openmrsBase + path;
 }
 
+function hasRequestHeader(headers: FetchHeaders | undefined, headerName: string) {
+  const normalizedHeaderName = headerName.toLowerCase();
+
+  return Object.entries(headers ?? {}).some(
+    ([name, value]) => name.toLowerCase() === normalizedHeaderName && value !== null && value !== '',
+  );
+}
+
 /**
  * The openmrsFetch function is a wrapper around the
  * [browser's built-in fetch function](https://developer.mozilla.org/en-US/docs/Web/API/Fetch_API/Using_Fetch),
@@ -195,9 +203,16 @@ export function openmrsFetch<T = any>(path: string, fetchInit: FetchConfig = {})
      * Our goal is to come up with best possible stacktrace and error message
      * to help developers understand the problem and debug
      */
+    const isExplicitSessionLoginAttempt =
+      url === makeUrl(sessionEndpoint) &&
+      response.status === 401 &&
+      hasRequestHeader(fetchInit.headers, 'Authorization');
+
     if (
       (url === makeUrl(sessionEndpoint) && response.status === 403) ||
-      (redirectAuthFailure.enabled && redirectAuthFailure.errors.includes(response.status))
+      (!isExplicitSessionLoginAttempt &&
+        redirectAuthFailure.enabled &&
+        redirectAuthFailure.errors.includes(response.status))
     ) {
       clearHistory();
       // by default, redirect to the url specified in the config.

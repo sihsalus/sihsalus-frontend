@@ -58,7 +58,10 @@ function loadModuleRoutes(
 ): Record<string, unknown> | null {
   const routesPath = resolve(appsDir, entry.name, 'src', 'routes.json');
   if (!existsSync(routesPath)) return null;
-  return { ...JSON.parse(readFileSync(routesPath, 'utf8')), version: (pkg.version as string) || '0.0.0' };
+  return {
+    ...JSON.parse(readFileSync(routesPath, 'utf8')),
+    version: (pkg.version as string) || '0.0.0',
+  };
 }
 
 /**

@@ -272,6 +272,48 @@ describe('openmrsFetch', () => {
     });
   });
 
+  it('rejects 401 responses from explicit session login attempts instead of redirecting', async () => {
+    mockNavigate.mockClear();
+    mockGetConfig.mockResolvedValueOnce({
+      redirectAuthFailure: {
+        enabled: true,
+        url: '/openmrs/spa/login',
+        errors: [401],
+        resolvePromise: false,
+      },
+    });
+
+    // @ts-expect-error
+    window.fetch.mockReturnValue(
+      Promise.resolve({
+        ok: false,
+        status: 401,
+        statusText: 'Unauthorized',
+        headers: {
+          has: (_name: string) => false,
+          get: (_name: string) => null,
+        },
+        clone: () => ({
+          text: () => Promise.resolve('Invalid username or password'),
+        }),
+      }),
+    );
+
+    await expect(
+      openmrsFetch('/ws/rest/v1/session', {
+        headers: {
+          Authorization: 'Basic invalid',
+        },
+      }),
+    ).rejects.toMatchObject({
+      response: expect.objectContaining({
+        status: 401,
+      }),
+    });
+
+    expect(mockNavigate).not.toHaveBeenCalled();
+  });
+
   it('navigates to spa login page when the server responds with a 401', async () => {
     mockGetConfig.mockResolvedValueOnce({
       redirectAuthFailure: {

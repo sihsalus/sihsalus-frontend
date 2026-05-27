@@ -75,7 +75,10 @@
   "sessionSpecificDetails": "3. Specific details",
   "sessionSpecificDetailsDescription": "They will be mapped to form responses for all patients as pre-filled data.",
   "startGroupSession": "Start Group Session",
+  "startVisitError": "Error starting visit",
   "trySearchWithPatientUniqueID": "Try searching with the cohort's description",
   "unknown": "Unknown",
-  "unknownPostError": "An unknown error occurred while saving data"
+  "unknownPostError": "An unknown error occurred while saving data",
+  "visitStarted": "Visit started",
+  "visitStartedSuccessfully": ""
 }

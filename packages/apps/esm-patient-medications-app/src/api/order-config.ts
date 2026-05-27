@@ -77,7 +77,7 @@ export function useOrderConfig(): {
           valueCoded: uuid,
           value: display,
           frequencyPerDay: frequencyPerDay ?? null,
-          names: concept.names.map((name) => name.display),
+          names: [display, ...(concept?.names?.map((name) => name.display) ?? [])].filter(Boolean),
         })),
       },
       isLoading: isLoading || frequencyLoading,

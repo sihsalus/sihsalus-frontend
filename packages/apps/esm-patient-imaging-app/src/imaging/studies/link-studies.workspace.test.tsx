@@ -1,13 +1,12 @@
 import { launchWorkspace, showSnackbar } from '@openmrs/esm-framework';
 import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import React from 'react';
-import * as api from '../../api';
+import * as imagingApi from '../../api/api';
 import LinkStudiesWorkspace from './link-studies.workspace';
 
 type NameOnlyProps = { name: string };
 type ChildrenOnlyProps = { children: React.ReactNode };
 
-vi.mock('../../api');
 vi.mock('@openmrs/esm-framework', async () => ({
   ...(await vi.importActual('@openmrs/esm-framework')),
   __esModule: true,
@@ -22,6 +21,8 @@ vi.mock('@openmrs/esm-framework', async () => ({
 describe('LinkStudiesWorkspace', () => {
   const patientUuid = 'patient-123';
   const mockParam = vi.fn();
+  const mockUseOrthancConfigurations = vi.spyOn(imagingApi, 'useOrthancConfigurations');
+  const mockGetLinkStudies = vi.spyOn(imagingApi, 'getLinkStudies');
 
   const orthancConfigMock = [{ id: 1, orthancBaseUrl: 'http://orthanc.local' }];
 
@@ -46,7 +47,9 @@ describe('LinkStudiesWorkspace', () => {
 
   beforeEach(() => {
     vi.clearAllMocks();
-    (api.useOrthancConfigurations as vi.Mock).mockReturnValue({ data: orthancConfigMock });
+    mockUseOrthancConfigurations.mockReturnValue({ data: orthancConfigMock } as ReturnType<
+      typeof imagingApi.useOrthancConfigurations
+    >);
   });
 
   beforeAll(() => {
@@ -64,7 +67,7 @@ describe('LinkStudiesWorkspace', () => {
   });
 
   it('submits from successfully', async () => {
-    const getLinkStudiesMock = (api.getLinkStudies as vi.Mock).mockResolvedValue({});
+    const getLinkStudiesMock = mockGetLinkStudies.mockResolvedValue(undefined);
     setup();
 
     selectOrthancServer();
@@ -82,7 +85,7 @@ describe('LinkStudiesWorkspace', () => {
 
   it('shows error snackbar when getLinkStudies fails', async () => {
     const error = new Error('Server unreachable');
-    (api.getLinkStudies as vi.Mock).mockRejectedValue(error);
+    mockGetLinkStudies.mockRejectedValue(error);
     setup();
 
     selectOrthancServer();

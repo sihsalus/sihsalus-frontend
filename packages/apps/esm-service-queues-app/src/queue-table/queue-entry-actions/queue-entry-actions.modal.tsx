@@ -157,7 +157,7 @@ export const QueueEntryActionModal: React.FC<QueueEntryActionModalProps> = ({
           mutateQueueEntries();
           closeModal();
         } else {
-          throw { message: t('unexpectedServerResponse', 'Unexpected Server Response') };
+          throw new Error(t('unexpectedServerResponse', 'Unexpected Server Response'));
         }
       })
       .catch((error) => {
@@ -221,7 +221,7 @@ export const QueueEntryActionModal: React.FC<QueueEntryActionModalProps> = ({
               <Select
                 labelText={t('selectQueue', 'Select a queue')}
                 id="queue"
-                invalidText="Required"
+                invalidText={t('required', 'Required')}
                 value={formState.selectedQueue}
                 onChange={(event) => setSelectedQueueUuid(event.target.value)}
               >

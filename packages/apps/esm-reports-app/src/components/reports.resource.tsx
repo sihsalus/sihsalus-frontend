@@ -22,7 +22,7 @@ interface ReportModel {
   schedule: string;
 }
 
-interface ScheduledReportModel {
+export interface ScheduledReportModel {
   reportDefinitionUuid: string;
   reportRequestUuid: string;
   name: string;

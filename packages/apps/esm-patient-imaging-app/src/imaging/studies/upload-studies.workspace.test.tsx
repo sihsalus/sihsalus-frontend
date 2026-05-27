@@ -1,7 +1,7 @@
 import * as framework from '@openmrs/esm-framework';
 import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import type { ReactNode } from 'react';
-import * as api from '../../api';
+import * as imagingApi from '../../api/api';
 import { maxUploadImageDataSize } from '../constants';
 import UploadStudiesWorkspace from './upload-studies.workspace';
 
@@ -9,31 +9,8 @@ type WrapperProps = {
   children?: ReactNode;
 };
 
-type ComboBoxMockProps = {
-  onChange: ({ selectedItem }: { selectedItem: { id: number; orthancBaseUrl: string } }) => void;
-  selectedItem?: { id?: number };
-};
-
-type FileUploaderMockProps = {
-  onChange: (event: React.ChangeEvent<HTMLInputElement>) => void;
-};
-
-type ButtonLikeProps = React.ButtonHTMLAttributes<HTMLButtonElement> & {
-  children?: ReactNode;
-};
-
-type FormLikeProps = React.FormHTMLAttributes<HTMLFormElement> & {
-  children?: ReactNode;
-};
-
 vi.mock('react-i18next', async () => ({
   useTranslation: () => ({ t: (_key: string, fallback: string) => fallback }),
-}));
-
-vi.mock('../../api', async () => ({
-  uploadStudies: vi.fn(),
-  useOrthancConfigurations: vi.fn(),
-  useStudiesByPatient: vi.fn(),
 }));
 
 vi.mock('@openmrs/esm-framework', async () => ({
@@ -45,48 +22,52 @@ vi.mock('@openmrs/esm-framework', async () => ({
   ResponsiveWrapper: ({ children }: WrapperProps) => <div>{children}</div>,
 }));
 
-vi.mock('@carbon/react', async () => {
-  const original = await vi.importActual('@carbon/react');
-  return {
-    ...original,
-    ComboBox: ({ onChange, selectedItem }: ComboBoxMockProps) => (
-      <select
-        data-testid="combobox"
-        value={selectedItem?.id || ''}
-        onChange={(e) => onChange({ selectedItem: { id: Number(e.target.value), orthancBaseUrl: e.target.value } })}
-      >
-        <option value="">Select</option>
-        <option value="1">Server 1</option>
-        <option value="2">Server 2</option>
-      </select>
-    ),
-    FileUploader: ({ onChange }: FileUploaderMockProps) => (
-      <input type="file" data-testid="file-uploader" onChange={onChange} multiple />
-    ),
-    Button: ({ children, ...props }: ButtonLikeProps) => <button {...props}>{children}</button>,
-    Form: ({ children, ...props }: FormLikeProps) => <form {...props}>{children}</form>,
-    Stack: ({ children }: WrapperProps) => <div>{children}</div>,
-    Row: ({ children }: WrapperProps) => <div>{children}</div>,
-    FormGroup: ({ children }: WrapperProps) => <div>{children}</div>,
-  };
-});
-
 describe('UploadStudiesWorkspace', () => {
   const patientUuid = 'patient-123';
   const closeWorkspace = vi.fn();
+  const mockUseOrthancConfigurations = vi.spyOn(imagingApi, 'useOrthancConfigurations');
+  const mockUseStudiesByPatient = vi.spyOn(imagingApi, 'useStudiesByPatient');
+  const mockUploadStudies = vi.spyOn(imagingApi, 'uploadStudies');
+  const buildStudiesHookResult = (
+    overrides: Partial<ReturnType<typeof imagingApi.useStudiesByPatient>> = {},
+  ): ReturnType<typeof imagingApi.useStudiesByPatient> =>
+    ({
+      data: [],
+      error: null,
+      isLoading: false,
+      isValidating: false,
+      mutate: vi.fn().mockResolvedValue(undefined),
+      ...overrides,
+    }) as ReturnType<typeof imagingApi.useStudiesByPatient>;
+
+  const selectOrthancServer = () => {
+    const comboBox = screen.getByTestId('orthanc-server-combobox');
+    fireEvent.change(comboBox, { target: { value: 'url1' } });
+    fireEvent.keyDown(comboBox, { key: 'ArrowDown' });
+    fireEvent.keyDown(comboBox, { key: 'Enter' });
+  };
+
+  const selectFiles = (files: File[]) => {
+    const input = screen
+      .getByTestId('upload-studies-fileuploader')
+      .querySelector('input[type="file"]') as HTMLInputElement;
+    fireEvent.change(input, { target: { files } });
+  };
 
   beforeEach(() => {
-    (api.useOrthancConfigurations as vi.Mock).mockReturnValue({
+    vi.clearAllMocks();
+    mockUseOrthancConfigurations.mockReturnValue({
       data: [
         { id: 1, orthancBaseUrl: 'url1', orthancProxyUrl: null },
         { id: 2, orthancBaseUrl: 'url2', orthancProxyUrl: null },
       ],
-    });
-    (api.useStudiesByPatient as vi.Mock).mockReturnValue({
-      mutate: vi.fn().mockResolvedValue(undefined),
-    });
+    } as ReturnType<typeof imagingApi.useOrthancConfigurations>);
+    mockUseStudiesByPatient.mockReturnValue(buildStudiesHookResult());
     (framework.useLayoutType as vi.Mock).mockReturnValue('desktop');
-    vi.clearAllMocks();
+  });
+
+  beforeAll(() => {
+    window.HTMLElement.prototype.scrollIntoView = vi.fn();
   });
 
   const setup = () => {
@@ -104,8 +85,8 @@ describe('UploadStudiesWorkspace', () => {
   it('renders form elements correctly', () => {
     setup();
 
-    expect(screen.getByTestId('combobox')).toBeInTheDocument();
-    expect(screen.getByTestId('file-uploader')).toBeInTheDocument();
+    expect(screen.getByTestId('orthanc-server-combobox')).toBeInTheDocument();
+    expect(screen.getByTestId('upload-studies-fileuploader')).toBeInTheDocument();
     expect(screen.getByText('Upload')).toBeInTheDocument();
     expect(screen.getByText('Cancel')).toBeInTheDocument();
   });
@@ -113,8 +94,7 @@ describe('UploadStudiesWorkspace', () => {
   it('shows error snackbar if no files are selected', async () => {
     setup();
 
-    // Select a valid Orthanc server to pass form validation
-    fireEvent.change(screen.getByTestId('combobox'), { target: { value: '1' } });
+    selectOrthancServer();
 
     fireEvent.click(screen.getByText('Upload'));
 
@@ -132,8 +112,8 @@ describe('UploadStudiesWorkspace', () => {
       type: 'application/dicom',
     });
 
-    fireEvent.change(screen.getByTestId('file-uploader'), { target: { files: [file] } });
-    fireEvent.change(screen.getByTestId('combobox'), { target: { value: '1' } });
+    selectFiles([file]);
+    selectOrthancServer();
     fireEvent.click(screen.getByText('Upload'));
 
     await waitFor(() =>
@@ -147,21 +127,24 @@ describe('UploadStudiesWorkspace', () => {
 
   it('calls uploadStudies and closes workspace on successful upload', async () => {
     const file = new File(['dummy content'], 'test.dcm', { type: 'application/dicom' });
-    (api.uploadStudies as vi.Mock).mockResolvedValue({});
+    mockUploadStudies.mockResolvedValue(undefined);
     const mutate = vi.fn().mockResolvedValue(undefined);
-    (api.useStudiesByPatient as vi.Mock).mockReturnValue({ mutate });
+    mockUseStudiesByPatient.mockReturnValue(buildStudiesHookResult({ mutate }));
 
     setup();
 
-    fireEvent.change(screen.getByTestId('file-uploader'), { target: { files: [file] } });
-    fireEvent.change(screen.getByTestId('combobox'), { target: { value: '1' } });
+    selectFiles([file]);
+    selectOrthancServer();
 
     fireEvent.click(screen.getByText('Upload'));
 
     await waitFor(() => {
-      expect(api.uploadStudies).toHaveBeenCalledWith(
+      expect(mockUploadStudies).toHaveBeenCalledWith(
         [file],
-        { id: 1, orthancBaseUrl: '1', orthancProxyUrl: undefined },
+        expect.objectContaining({
+          id: expect.any(Number),
+          orthancBaseUrl: expect.any(String),
+        }),
         patientUuid,
         expect.any(AbortController),
       );
@@ -170,14 +153,45 @@ describe('UploadStudiesWorkspace', () => {
     });
   });
 
-  it('shows snackbar on upload failure', async () => {
+  it('shows an inline loading state while uploading files', async () => {
     const file = new File(['dummy content'], 'test.dcm', { type: 'application/dicom' });
-    (api.uploadStudies as vi.Mock).mockRejectedValue(new Error('Upload failed'));
+    let resolveUpload: () => void;
+    mockUploadStudies.mockImplementation(
+      () =>
+        new Promise<void>((resolve) => {
+          resolveUpload = resolve;
+        }),
+    );
 
     setup();
 
-    fireEvent.change(screen.getByTestId('file-uploader'), { target: { files: [file] } });
-    fireEvent.change(screen.getByTestId('combobox'), { target: { value: '1' } });
+    selectFiles([file]);
+    selectOrthancServer();
+
+    fireEvent.click(screen.getByText('Upload'));
+
+    await waitFor(() => {
+      expect(screen.getByTestId('upload-studies-loading')).toBeInTheDocument();
+      expect(screen.getByText('Uploading studies...')).toBeInTheDocument();
+      expect(screen.getByTestId('upload-studies-submit')).toBeDisabled();
+      expect(screen.getByTestId('upload-studies-cancel')).toBeDisabled();
+    });
+
+    resolveUpload?.();
+
+    await waitFor(() => {
+      expect(closeWorkspace).toHaveBeenCalled();
+    });
+  });
+
+  it('shows snackbar on upload failure', async () => {
+    const file = new File(['dummy content'], 'test.dcm', { type: 'application/dicom' });
+    mockUploadStudies.mockRejectedValue(new Error('Upload failed'));
+
+    setup();
+
+    selectFiles([file]);
+    selectOrthancServer();
 
     fireEvent.click(screen.getByText('Upload'));
 

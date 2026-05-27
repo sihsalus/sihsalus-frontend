@@ -20,7 +20,13 @@ import {
   useLayoutType,
   usePagination,
 } from '@openmrs/esm-framework';
-import { CardHeader, compare, EmptyState, PatientChartPagination } from '@openmrs/esm-patient-common-lib';
+import {
+  CardHeader,
+  compare,
+  type DefaultPatientWorkspaceProps,
+  EmptyState,
+  PatientChartPagination,
+} from '@openmrs/esm-patient-common-lib';
 import React, { useCallback, useMemo, useRef, useState } from 'react';
 
 import { useTranslation } from 'react-i18next';
@@ -31,6 +37,7 @@ import {
   requestCount,
   requestDeleteConfirmationDialog,
 } from '../constants';
+import { type AddNewProcedureStepWorkspaceProps } from '../worklist/add-procedureStep-form.workspace';
 import styles from './details-table.scss';
 import ProcedureStepTable from './procedureStep-details-table.component';
 
@@ -52,7 +59,7 @@ const RequestProcedureTable: React.FC<RequestProcedureTableProps> = ({ isValidat
   const layout = useLayoutType();
   const isTablet = layout === 'tablet';
   const launchAddNewRequestWorkspace = useCallback(
-    () => launchWorkspace(addNewRequestWorkspace, { patientUuid }),
+    () => launchWorkspace<DefaultPatientWorkspaceProps>(addNewRequestWorkspace, { patientUuid }),
     [patientUuid],
   );
   const launchDeleteRequestDialog = (requestId: number) => {
@@ -149,7 +156,10 @@ const RequestProcedureTable: React.FC<RequestProcedureTableProps> = ({ isValidat
             label={t('addProcedureStep', 'Add procedure step')}
             onClick={() => {
               shouldOnClickBeCalled.current = false;
-              launchWorkspace(addNewProcedureStepWorkspace, { request: request });
+              launchWorkspace<AddNewProcedureStepWorkspaceProps>(addNewProcedureStepWorkspace, {
+                patientUuid,
+                request,
+              });
             }}
           >
             <AddIcon className={styles.addButton} />
@@ -182,7 +192,7 @@ const RequestProcedureTable: React.FC<RequestProcedureTableProps> = ({ isValidat
           <div className={styles.filterContainer}>
             <select
               id="status-filter"
-              aria-label="status-filter"
+              aria-label={t('statusFilter', 'Status filter')}
               style={{ marginRight: '20px' }}
               value={statusFilter}
               onChange={(e) => setStatusFilter(e.target.value)}
@@ -195,7 +205,7 @@ const RequestProcedureTable: React.FC<RequestProcedureTableProps> = ({ isValidat
             </select>
             <select
               id="priority-filter"
-              aria-label="priority-filter"
+              aria-label={t('priorityFilter', 'Priority filter')}
               value={priorityFilter}
               onChange={(e) => setPriorityFilter(e.target.value)}
               className={styles.filterInput}
@@ -218,7 +228,11 @@ const RequestProcedureTable: React.FC<RequestProcedureTableProps> = ({ isValidat
         >
           {({ rows, headers, getHeaderProps, getTableProps, getRowProps }) => (
             <TableContainer>
-              <Table aria-label="Reqeusts summary" className={styles.table} {...getTableProps()}>
+              <Table
+                aria-label={t('requestsSummary', 'Requests summary')}
+                className={styles.table}
+                {...getTableProps()}
+              >
                 <TableHead>
                   <TableRow>
                     {headers.map((header) => {
@@ -258,7 +272,11 @@ const RequestProcedureTable: React.FC<RequestProcedureTableProps> = ({ isValidat
                         {isExpanded && (
                           <TableRow className={styles.expandedRow}>
                             <TableCell colSpan={headers.length}>
-                              <div className={styles.procedureStepTableDiv} role="region" aria-label="procedureStep">
+                              <div
+                                className={styles.procedureStepTableDiv}
+                                role="region"
+                                aria-label={t('procedureStepRegion', 'Procedure step')}
+                              >
                                 <ProcedureStepTable requestProcedure={results[rowIndex]} />
                               </div>
                             </TableCell>

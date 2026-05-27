@@ -62,10 +62,10 @@ const ScreeningIndicators: React.FC<ScreeningIndicatorsProps> = ({ patientUuid }
         ) : (
           <Time size={16} className={styles.iconPending} />
         ),
-        name: screening.name,
+        name: t(screening.translationKey, screening.name),
         date: screening.date ?? '--',
       })),
-    [screenings],
+    [screenings, t],
   );
 
   if (isLoading) {

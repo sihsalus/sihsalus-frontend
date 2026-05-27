@@ -1,5 +1,5 @@
 import { Button, Tile } from '@carbon/react';
-import { AddIcon, ChevronDownIcon, ChevronUpIcon, useConfig, useLayoutType } from '@openmrs/esm-framework';
+import { AddIcon, ChevronDownIcon, ChevronUpIcon, useConfig, useLayoutType, useSession } from '@openmrs/esm-framework';
 import { type DrugOrderBasketItem, type PostDataPrepFunction, useOrderBasket } from '@openmrs/esm-patient-common-lib';
 import classNames from 'classnames';
 import { type ComponentProps, useCallback, useEffect, useMemo, useState } from 'react';
@@ -18,7 +18,8 @@ import RxIcon from './rx-icon.component';
  */
 export interface DrugOrderBasketPanelExtensionProps {
   patient: fhir.Patient;
-  launchDrugOrderForm: (order?: DrugOrderBasketItem) => void;
+  launchDrugOrderForm?: (order?: DrugOrderBasketItem) => void;
+  launchAddDrugOrder?: (order?: DrugOrderBasketItem) => void;
   canCreateOrders?: boolean;
   onMissingActiveVisit?: () => void;
 }
@@ -26,18 +27,21 @@ export interface DrugOrderBasketPanelExtensionProps {
 function DrugOrderBasketPanelExtension({
   patient,
   launchDrugOrderForm,
+  launchAddDrugOrder,
   canCreateOrders = true,
   onMissingActiveVisit,
 }: DrugOrderBasketPanelExtensionProps) {
   const { t } = useTranslation();
   const config = useConfig<ConfigObject>();
+  const session = useSession();
+  const orderingProviderUuid = session?.currentProvider?.uuid;
   const isTablet = useLayoutType() === 'tablet';
 
   const responsiveSize = isTablet ? 'md' : 'sm';
   const prepareMedicationOrderPostData = useCallback(
     (order: DrugOrderBasketItem, patientUuid: string, encounterUuid: string | null) =>
-      prepMedicationOrderPostData(order, patientUuid, encounterUuid, undefined, config.careSettingUuid),
-    [config.careSettingUuid],
+      prepMedicationOrderPostData(order, patientUuid, encounterUuid, orderingProviderUuid, config.careSettingUuid),
+    [config.careSettingUuid, orderingProviderUuid],
   );
   const { orders, setOrders } = useOrderBasket<DrugOrderBasketItem>(
     patient,
@@ -107,9 +111,10 @@ function DrugOrderBasketPanelExtension({
         return;
       }
 
-      launchDrugOrderForm(order);
+      const launchOrderForm = launchDrugOrderForm ?? launchAddDrugOrder;
+      launchOrderForm?.(order);
     },
-    [canCreateOrders, launchDrugOrderForm, onMissingActiveVisit],
+    [canCreateOrders, launchAddDrugOrder, launchDrugOrderForm, onMissingActiveVisit],
   );
 
   return (

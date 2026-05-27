@@ -8,9 +8,13 @@ const mockSetLeftNav = vi.fn();
 const mockUnsetLeftNav = vi.fn();
 const mockStoreSetState = vi.fn();
 const mockMutateVisitContext = vi.fn();
-const mockCurrentVisit = {
+let mockIsLoadingPatient = false;
+let mockPatient = {
+  id: 'patient-uuid',
+};
+let mockCurrentVisit = {
   uuid: 'active-visit-uuid',
-} as const;
+};
 
 vi.mock('@openmrs/esm-framework', async () => ({
   ...(await vi.importActual('@openmrs/esm-framework')),
@@ -19,10 +23,8 @@ vi.mock('@openmrs/esm-framework', async () => ({
   setLeftNav: (...args: Array<unknown>) => mockSetLeftNav(...args),
   unsetLeftNav: (...args: Array<unknown>) => mockUnsetLeftNav(...args),
   usePatient: () => ({
-    isLoading: false,
-    patient: {
-      id: 'patient-uuid',
-    },
+    isLoading: mockIsLoadingPatient,
+    patient: mockPatient,
   }),
 }));
 
@@ -60,6 +62,13 @@ vi.mock('../side-nav/side-menu.component', () => ({ default: () => <div>Side men
 describe('PatientChart', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    mockIsLoadingPatient = false;
+    mockPatient = {
+      id: 'patient-uuid',
+    };
+    mockCurrentVisit = {
+      uuid: 'active-visit-uuid',
+    };
   });
 
   it('launches the patient-chart workspace group with the active visit context', async () => {
@@ -83,5 +92,29 @@ describe('PatientChart', () => {
         mutateVisitContext: mockMutateVisitContext,
       }),
     );
+  });
+
+  it('does not relaunch the patient-chart workspace group when visit context finishes loading', async () => {
+    const { rerender } = render(<PatientChart />);
+
+    await waitFor(() => {
+      expect(mockLaunchWorkspaceGroup2).toHaveBeenCalledTimes(1);
+    });
+
+    mockCurrentVisit = {
+      uuid: 'updated-visit-uuid',
+    };
+
+    rerender(<PatientChart />);
+
+    await waitFor(() => {
+      expect(mockStoreSetState).toHaveBeenCalledWith(
+        expect.objectContaining({
+          visitContext: mockCurrentVisit,
+        }),
+      );
+    });
+
+    expect(mockLaunchWorkspaceGroup2).toHaveBeenCalledTimes(1);
   });
 });

@@ -17,7 +17,7 @@
     "test:watch": "vitest watch",
     "coverage": "vitest run --coverage --passWithNoTests",
     "typescript": "tsc --noEmit",
-    "extract-translations": "i18next 'src/**/*.component.tsx' 'src/**/*.modal.tsx' 'src/**/*.extension.tsx' 'src/**/*.workspace.tsx' 'src/**/*.hook.tsx' 'src/index.ts' --config ../../tooling/scripts/i18next-parser.config.js"
+    "extract-translations": "i18next 'src/**/*.{ts,tsx}' '!src/**/*.test.{ts,tsx}' '!src/**/*.spec.{ts,tsx}' --config ../../tooling/scripts/i18next-parser.config.js"
   },
   "browserslist": [
     "extends browserslist-config-openmrs"
@@ -25,7 +25,7 @@
   "keywords": [
     "openmrs",
     "microfrontends",
-    "peruHCE"
+    "SIHSALUS"
   ],
   "homepage": "https://github.com/PROYECTO-SANTACLOTILDE/openmrs-esm-patient-chart#readme",
   "publishConfig": {
@@ -41,7 +41,7 @@
   "dependencies": {
     "@sihsalus/esm-rbac": "workspace:*",
     "lodash-es": "^4.17.21",
-    "uuid": "^8.3.2"
+    "uuid": "^14.0.0"
   },
   "peerDependencies": {
     "@carbon/react": "1.x",

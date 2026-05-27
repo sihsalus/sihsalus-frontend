@@ -151,10 +151,16 @@ describe('AddLabOrder', () => {
     expect(testTypeLabel).toBeInTheDocument();
     expect(testTypeValue).toBeInTheDocument();
 
+    // Priorities are now configured concepts that map to a core OpenMRS urgency enum.
+    // Pick the one that maps to STAT and select it by its conceptUuid (the option value).
+    const statPriority = configSchema.priorityConfigs._default.find((priority) => priority.urgency === 'STAT');
+    if (!statPriority) {
+      throw new Error('Expected a priority mapped to STAT in the config defaults');
+    }
     const priority = screen.getByRole('combobox', { name: 'Priority' });
     expect(priority).toBeInTheDocument();
     await user.click(priority);
-    await user.selectOptions(priority, 'STAT');
+    await user.selectOptions(priority, statPriority.conceptUuid);
 
     const additionalInstructions = screen.getByRole('textbox', { name: 'Additional instructions' });
     expect(additionalInstructions).toBeInTheDocument();
@@ -169,7 +175,8 @@ describe('AddLabOrder', () => {
         expect.objectContaining({
           action: 'NEW',
           display: 'CD4 COUNT',
-          urgency: 'STAT',
+          urgency: statPriority.conceptUuid,
+          urgencyCode: 'STAT',
           instructions: 'plz do it thx',
           testType: { label: 'CD4 COUNT', conceptUuid: 'test-lab-uuid-2' },
           orderer: mockSessionDataResponse.data.currentProvider.uuid,

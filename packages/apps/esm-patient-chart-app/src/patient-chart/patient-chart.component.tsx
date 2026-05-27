@@ -3,7 +3,7 @@ import { getPatientChartStore, useVisitOrOfflineVisit } from '@openmrs/esm-patie
 import { ComponentContext } from '@openmrs/esm-react-utils';
 import { launchWorkspaceGroup2, useWorkspaces, WorkspaceContainer } from '@openmrs/esm-styleguide';
 import classNames from 'classnames';
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { useParams } from 'react-router-dom';
 
 import { moduleName, spaBasePath } from '../constants';
@@ -41,6 +41,7 @@ const PatientChart: React.FC = () => {
   const state = useMemo(() => ({ patient, patientUuid }), [patient, patientUuid]);
   const { workspaceWindowState, active } = useWorkspaces();
   const [layoutMode, setLayoutMode] = useState<LayoutMode>();
+  const launchedWorkspaceGroupPatientUuid = useRef<string | null>(null);
   const hasVisibleLegacyWorkspace = workspaceWindowState === 'normal' && active;
   const patientChartGroupProps = useMemo(
     () =>
@@ -97,12 +98,17 @@ const PatientChart: React.FC = () => {
   }, [leftNavBasePath]);
 
   useEffect(() => {
-    if (!patientUuid || hasVisibleLegacyWorkspace) {
+    if (!patientUuid || isLoadingPatient || hasVisibleLegacyWorkspace) {
       return;
     }
 
+    if (launchedWorkspaceGroupPatientUuid.current === patientUuid) {
+      return;
+    }
+
+    launchedWorkspaceGroupPatientUuid.current = patientUuid;
     void launchPatientChartWorkspaceGroup('patient-chart', patientChartGroupProps);
-  }, [hasVisibleLegacyWorkspace, patientChartGroupProps, patientUuid]);
+  }, [hasVisibleLegacyWorkspace, isLoadingPatient, patientChartGroupProps, patientUuid]);
 
   return (
     <>

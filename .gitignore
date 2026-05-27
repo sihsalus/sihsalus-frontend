@@ -9,6 +9,12 @@ coverage/
 *.tsbuildinfo
 .eslintcache
 .DS_Store
+
+# Editor workspace files
+.vscode/*
+!.vscode/settings.json
+!.vscode/extensions.json
+
 .env
 .env.local
 .env.*.local

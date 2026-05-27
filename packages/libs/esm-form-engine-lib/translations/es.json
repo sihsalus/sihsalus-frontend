@@ -25,6 +25,7 @@
   "errorLoadingFormSchema": "Error al cargar el esquema del formulario",
   "errorLoadingInitialValues": "Error al cargar los valores iniciales",
   "errorMarkingAsDeceased": "Error al marcar al paciente como fallecido",
+  "errorProcessingFormSubmission": "Error al procesar el envío del formulario",
   "errorRenderingField": "Error al renderizar el campo",
   "errorSavingAttachments": "Error al guardar el/los adjunto(s)",
   "errorSavingEncounter": "Error al guardar la atención",
@@ -56,9 +57,13 @@
   "save": "Guardar",
   "search": "Buscar",
   "searching": "Buscando",
+  "submittedForm": "Formulario enviado",
+  "submittedFormDescription": "El formulario se envió correctamente",
   "submitting": "Enviando",
   "successfullyMarkedAsDeceased": "El paciente ha sido marcado como fallecido con éxito",
   "time": "Hora",
   "unspecified": "No especificado",
+  "updatedRecord": "Registro actualizado",
+  "updatedRecordDescription": "La atención del paciente se actualizó",
   "valuesOutOfBound": "Algunos de los valores están fuera de límites"
 }

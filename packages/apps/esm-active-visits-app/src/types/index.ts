@@ -171,6 +171,7 @@ export interface ActiveVisit {
   location: string;
   name: string;
   patientUuid: string;
+  visitStartDatetime?: string;
   visitStartTime: string;
   visitType: string;
   visitUuid: string;

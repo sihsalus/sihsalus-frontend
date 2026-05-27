@@ -143,6 +143,7 @@ describe('AddDrugOrderWorkspace drug search', () => {
       expect.objectContaining({
         ...getTemplateOrderBasketItem(mockDrugSearchResultApiData[2], null),
         isOrderIncomplete: true,
+        orderer: mockSessionDataResponse.data.currentProvider.uuid,
         startDate: expect.any(Date),
       }),
     ]);
@@ -190,6 +191,7 @@ describe('AddDrugOrderWorkspace drug search', () => {
       expect.objectContaining({
         startDate: expect.any(Date),
         indication: 'Hypertension',
+        orderer: mockSessionDataResponse.data.currentProvider.uuid,
       }),
     ]);
   });

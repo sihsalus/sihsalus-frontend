@@ -8,6 +8,7 @@ import { useTranslation } from 'react-i18next';
 import type { ConfigObject } from '../../../config-schema';
 import { useCREDSchedule } from '../../../hooks/useCREDSchedule';
 import { useMutateAppointments } from '../../../ui/form/appointments-form.resource';
+import { translateCredControlLabel } from '../../../utils/cred-label-translations';
 import { createCREDAppointments } from '../../common/cred-appointments.resource';
 
 import styles from './cred-schedule.scss';
@@ -140,7 +141,7 @@ const CredCheckups: React.FC<CredCheckupsProps> = ({ patientUuid }) => {
             <div className={styles.nextDueCard}>
               <div className={styles.nextDueInfo}>
                 <span className={styles.nextDueLabel}>
-                  #{nextDueControl.controlNumber} - {nextDueControl.label}
+                  #{nextDueControl.controlNumber} - {translateCredControlLabel(t, nextDueControl.label)}
                 </span>
                 <span className={styles.nextDueDate}>
                   {t('expectedDate', 'Fecha esperada')}: {dayjs(nextDueControl.targetDate).format('DD/MM/YYYY')}
@@ -164,7 +165,7 @@ const CredCheckups: React.FC<CredCheckupsProps> = ({ patientUuid }) => {
                 <div key={control.controlNumber} className={styles.overdueItem}>
                   <div>
                     <span className={styles.overdueItemLabel}>
-                      #{control.controlNumber} - {control.label}
+                      #{control.controlNumber} - {translateCredControlLabel(t, control.label)}
                     </span>
                     <div className={styles.overdueItemDate}>
                       {t('wasExpectedOn', 'Se esperaba el')} {dayjs(control.targetDate).format('DD/MM/YYYY')}
@@ -186,7 +187,7 @@ const CredCheckups: React.FC<CredCheckupsProps> = ({ patientUuid }) => {
             {scheduledControls.map((control) => (
               <div key={control.controlNumber} className={styles.checkupItem}>
                 <span>
-                  #{control.controlNumber} - {control.label}
+                  #{control.controlNumber} - {translateCredControlLabel(t, control.label)}
                 </span>
                 <span className={styles.dueDate}>
                   {control.appointmentDate ? dayjs(control.appointmentDate).format('DD/MM/YYYY') : ''}

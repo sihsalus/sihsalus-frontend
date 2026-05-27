@@ -1,6 +1,7 @@
 import {
   DataTable,
   IconButton,
+  InlineLoading,
   Table,
   TableBody,
   TableCell,
@@ -24,10 +25,7 @@ export interface ProcedureStepTableProps {
 }
 
 const ProcedureStepTable: React.FC<ProcedureStepTableProps> = ({ requestProcedure }) => {
-  const {
-    data: stepList,
-    isLoading: isLoadingStep,
-  } = useProcedureStep(requestProcedure.id);
+  const { data: stepList, isLoading: isLoadingStep } = useProcedureStep(requestProcedure.id);
 
   const { t } = useTranslation();
   const displayText = t('procedureStep', 'Procedure step');
@@ -126,7 +124,7 @@ const ProcedureStepTable: React.FC<ProcedureStepTableProps> = ({ requestProcedur
   };
 
   if (isLoadingStep) {
-    return <div>Loading ...</div>;
+    return <InlineLoading description={t('loadingProcedureSteps', 'Loading procedure steps...')} />;
   }
 
   if (!stepList?.length) {
@@ -144,43 +142,47 @@ const ProcedureStepTable: React.FC<ProcedureStepTableProps> = ({ requestProcedur
             isSortable
             useZebraStyles
             data-floating-menu-container
-        size={isTablet ? 'lg' : 'sm'}
-      >
-        {({ rows, headers, getHeaderProps, getTableProps }) => (
-          <TableContainer>
-            <Table aria-label="Procedure step summary" className={styles.table} {...getTableProps()}>
-              <TableHead>
-                <TableRow>
-                  {headers.map((header) => {
-                    const { key, ...headerProps } = getHeaderProps({ header });
-                    return (
-                      <TableHeader key={key} {...headerProps}>
-                        {header.header}
-                      </TableHeader>
-                    );
-                  })}
-                  <TableHeader />
-                </TableRow>
-              </TableHead>
-              <TableBody>
-                {rows.map((row, rowIndex) => {
-                  return (
-                    <React.Fragment key={rowIndex}>
-                      <TableRow>
-                        {row.cells.map((cell, cellIndex) => (
-                          <TableCell className={styles.tableCell} key={cellIndex}>
-                            {cell.value?.content ?? cell.value}
-                          </TableCell>
-                        ))}
-                      </TableRow>
-                    </React.Fragment>
-                  );
-                })}
-              </TableBody>
-            </Table>
-          </TableContainer>
-        )}
-      </DataTable>
+            size={isTablet ? 'lg' : 'sm'}
+          >
+            {({ rows, headers, getHeaderProps, getTableProps }) => (
+              <TableContainer>
+                <Table
+                  aria-label={t('procedureStepSummary', 'Procedure step summary')}
+                  className={styles.table}
+                  {...getTableProps()}
+                >
+                  <TableHead>
+                    <TableRow>
+                      {headers.map((header) => {
+                        const { key, ...headerProps } = getHeaderProps({ header });
+                        return (
+                          <TableHeader key={key} {...headerProps}>
+                            {header.header}
+                          </TableHeader>
+                        );
+                      })}
+                      <TableHeader />
+                    </TableRow>
+                  </TableHead>
+                  <TableBody>
+                    {rows.map((row, rowIndex) => {
+                      return (
+                        <React.Fragment key={rowIndex}>
+                          <TableRow>
+                            {row.cells.map((cell, cellIndex) => (
+                              <TableCell className={styles.tableCell} key={cellIndex}>
+                                {cell.value?.content ?? cell.value}
+                              </TableCell>
+                            ))}
+                          </TableRow>
+                        </React.Fragment>
+                      );
+                    })}
+                  </TableBody>
+                </Table>
+              </TableContainer>
+            )}
+          </DataTable>
           <PatientChartPagination
             pageNumber={currentPage}
             totalItems={stepList.length}

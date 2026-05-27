@@ -135,6 +135,7 @@
   "isQuestionInfoProvided": "Would you like to provide additional details about the question?",
   "isQuestionRequiredOrOptional": "Is this question a required or optional field? Required fields must be answered before the form can be submitted.",
   "isUiSelectSearchable": "Is the ui-select-extended rendering searchable",
+  "items": " items",
   "label": "Label",
   "labelFalse": "Label false",
   "labelPlaceholder": "e.g. Type of Anaesthesia",

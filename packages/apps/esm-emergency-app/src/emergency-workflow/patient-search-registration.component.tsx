@@ -56,6 +56,7 @@ const quickRegistrationSchema = z.object({
   birthdate: z.string().optional(),
   identifierType: z.string().optional(),
   identifier: z.string().optional(),
+  nationality: z.string().optional(),
   isUnknown: z.boolean().optional(),
   // Ubicación
   district: z.string().optional(),
@@ -79,6 +80,20 @@ type QuickRegistrationFormData = z.infer<typeof quickRegistrationSchema>;
 interface PatientSearchRegistrationProps {
   onPatientQueued: (patientUuid: string, patientData: SearchedPatient, priorityLevel: InitialPriority) => void;
 }
+
+const defaultNationalityCountryCode = 'PE';
+const nationalityOptions = [
+  { code: 'PE', label: 'Perú' },
+  { code: 'CO', label: 'Colombia' },
+  { code: 'EC', label: 'Ecuador' },
+  { code: 'BR', label: 'Brasil' },
+  { code: 'BO', label: 'Bolivia' },
+  { code: 'CL', label: 'Chile' },
+  { code: 'VE', label: 'Venezuela' },
+  { code: 'AR', label: 'Argentina' },
+  { code: 'US', label: 'Estados Unidos' },
+  { code: 'OTHER', label: 'Otro país' },
+];
 
 // ============================================================================
 // MAIN COMPONENT
@@ -143,6 +158,7 @@ const PatientSearchRegistration: React.FC<PatientSearchRegistrationProps> = ({ o
     defaultValues: {
       isUnknown: false,
       identifierType: config.patientRegistration.defaultIdentifierTypeUuid,
+      nationality: defaultNationalityCountryCode,
       district: 'NAPO',
       village: 'SANTA CLOTILDE',
       address: '',
@@ -303,6 +319,12 @@ const PatientSearchRegistration: React.FC<PatientSearchRegistrationProps> = ({ o
           attributes.push({
             attributeType: config.patientRegistration.insuranceTypeAttributeTypeUuid,
             value: data.insuranceType,
+          });
+        }
+        if (data.nationality) {
+          attributes.push({
+            attributeType: config.patientRegistration.nationalityAttributeTypeUuid,
+            value: data.nationality,
           });
         }
         if (data.insuranceCode) {
@@ -678,7 +700,17 @@ const PatientSearchRegistration: React.FC<PatientSearchRegistrationProps> = ({ o
                                     labelText={t('identityDocumentType', 'Tipo de documento')}
                                     disabled={isRegistering}
                                     value={field.value || config.patientRegistration.defaultIdentifierTypeUuid}
-                                    onChange={(event) => field.onChange(event.target.value)}
+                                    onChange={(event) => {
+                                      const nextIdentifierType = event.target.value;
+                                      field.onChange(nextIdentifierType);
+                                      if (
+                                        nextIdentifierType === config.patientRegistration.defaultIdentifierTypeUuid ||
+                                        nextIdentifierType ===
+                                          config.patientRegistration.liveBirthCertificateIdentifierTypeUuid
+                                      ) {
+                                        setValue('nationality', defaultNationalityCountryCode);
+                                      }
+                                    }}
                                   >
                                     {identityDocumentTypes.map((type) => (
                                       <SelectItem key={type.value} value={type.value} text={type.label} />
@@ -696,6 +728,23 @@ const PatientSearchRegistration: React.FC<PatientSearchRegistrationProps> = ({ o
                                 {...register('identifier')}
                               />
                             </div>
+                            <Controller
+                              name="nationality"
+                              control={control}
+                              render={({ field }) => (
+                                <Select
+                                  id="nationality"
+                                  labelText={t('nationality', 'Nacionalidad / país del documento')}
+                                  disabled={isRegistering}
+                                  value={field.value || defaultNationalityCountryCode}
+                                  onChange={(event) => field.onChange(event.target.value)}
+                                >
+                                  {nationalityOptions.map((country) => (
+                                    <SelectItem key={country.code} value={country.code} text={country.label} />
+                                  ))}
+                                </Select>
+                              )}
+                            />
                           </fieldset>
                         )}
 

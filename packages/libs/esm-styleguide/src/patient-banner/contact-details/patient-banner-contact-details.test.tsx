@@ -4,16 +4,11 @@ import { usePatient } from '@openmrs/esm-react-utils';
 import { screen } from '@testing-library/react';
 import { renderWithSwr } from '../../test-utils';
 import { PatientBannerContactDetails } from './patient-banner-contact-details.component';
-import {
-  usePatientAdditionalAttributes,
-  usePatientAttributes,
-  usePatientContactAttributes,
-} from './usePatientAttributes';
+import { usePatientAttributes, usePatientContactAttributes } from './usePatientAttributes';
 import { usePatientListsForPatient } from './usePatientListsForPatient';
 import { useRelationships } from './useRelationships';
 
 const mockUsePatient = vi.mocked(usePatient);
-const mockUsePatientAdditionalAttributes = vi.mocked(usePatientAdditionalAttributes);
 const mockUsePatientAttributes = vi.mocked(usePatientAttributes);
 const mockUsePatientContactAttributes = vi.mocked(usePatientContactAttributes);
 const mockUsePatientListsForPatient = vi.mocked(usePatientListsForPatient);
@@ -51,18 +46,6 @@ const mockPersonAttributes = [
   },
 ];
 
-const mockAdditionalAttributes = [
-  {
-    display: 'Nacionalidad = Peruana',
-    uuid: 'additional-attribute-uuid',
-    value: 'Peruana',
-    attributeType: {
-      uuid: 'nationality-attribute-type-uuid',
-      display: 'Nacionalidad',
-    },
-  },
-];
-
 const mockCohorts = [
   {
     uuid: 'fdc95682-e206-421b-9534-e2a4010cc05d',
@@ -91,7 +74,6 @@ const mockCohorts = [
 ];
 
 vi.mock('./usePatientAttributes', () => ({
-  usePatientAdditionalAttributes: vi.fn(),
   usePatientAttributes: vi.fn(),
   usePatientContactAttributes: vi.fn(),
 }));
@@ -131,12 +113,6 @@ describe('ContactDetails', () => {
       error: null,
     });
 
-    mockUsePatientAdditionalAttributes.mockReturnValue({
-      isLoading: false,
-      additionalAttributes: mockAdditionalAttributes,
-      error: null,
-    });
-
     mockUsePatientListsForPatient.mockReturnValue({
       isLoading: false,
       cohorts: mockCohorts,
@@ -150,12 +126,11 @@ describe('ContactDetails', () => {
     });
   });
 
-  it("renders the patient's address, contact details, additional details, patient lists, and relationships when available", async () => {
+  it("renders the patient's address, contact details, patient lists, and relationships when available", async () => {
     renderWithSwr(<PatientBannerContactDetails patientId={'some-uuid'} deceased={false} />);
 
     expect(screen.getByText(/address/i)).toBeInTheDocument();
     expect(screen.getByText(/contact details/i)).toBeInTheDocument();
-    expect(screen.getByText(/additional details/i)).toBeInTheDocument();
     expect(screen.getByText(/relationships/i)).toBeInTheDocument();
     expect(screen.getByText(/Amanda Robinson/)).toBeInTheDocument();
     expect(screen.getByText(/Sibling/i)).toBeInTheDocument();
@@ -163,13 +138,11 @@ describe('ContactDetails', () => {
     expect(screen.getByText(/\+0123456789/i)).toBeInTheDocument();
     expect(screen.getByText(/Next of Kin Contact Phone Number/i)).toBeInTheDocument();
     expect(screen.getByText(/0700-000-000/)).toBeInTheDocument();
-    expect(screen.getByText(/Nacionalidad/i)).toBeInTheDocument();
-    expect(screen.getByText(/Peruana/i)).toBeInTheDocument();
     expect(screen.getByText(/patient lists/i)).toBeInTheDocument();
     expect(screen.getByText(/Test patient List-47/)).toBeInTheDocument();
     expect(screen.getByText(/List three/)).toBeInTheDocument();
-    expect(screen.queryByText(/postal code/i)).not.toBeInTheDocument();
-    expect(screen.queryByText(/00100/)).not.toBeInTheDocument();
+    expect(screen.getByText(/postal code/i)).toBeInTheDocument();
+    expect(screen.getByText(/00100/)).toBeInTheDocument();
   });
 
   it('patient related name should be a link', async () => {
@@ -199,12 +172,6 @@ describe('ContactDetails', () => {
       error: null,
     });
 
-    mockUsePatientAdditionalAttributes.mockReturnValue({
-      isLoading: false,
-      additionalAttributes: [],
-      error: null,
-    });
-
     mockUsePatientListsForPatient.mockReturnValue({
       isLoading: false,
       cohorts: [],
@@ -222,8 +189,7 @@ describe('ContactDetails', () => {
     expect(screen.getByText(/address/i)).toBeInTheDocument();
     expect(screen.getByText(/relationships/i)).toBeInTheDocument();
     expect(screen.getByText(/contact details/i)).toBeInTheDocument();
-    expect(screen.getByText(/additional details/i)).toBeInTheDocument();
     expect(screen.getByText(/patient lists/i)).toBeInTheDocument();
-    expect(screen.getAllByText('--').length).toBe(5);
+    expect(screen.getAllByText('--').length).toBe(4);
   });
 });

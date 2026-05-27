@@ -17,7 +17,7 @@
     "test": "vitest run --passWithNoTests",
     "verify": "turbo lint typescript coverage",
     "coverage": "vitest run --coverage --passWithNoTests",
-    "extract-translations": "i18next 'src/**/*.component.tsx' --config ../../tooling/scripts/i18next-parser.config.js",
+    "extract-translations": "i18next 'src/**/*.{ts,tsx}' '!src/**/*.test.{ts,tsx}' '!src/**/*.spec.{ts,tsx}' --config ../../tooling/scripts/i18next-parser.config.js",
     "test-e2e": "yarn --cwd ../../.. playwright test --config e2e/user-onboarding/playwright.config.ts"
   },
   "browserslist": [
@@ -72,7 +72,7 @@
     "react-router-dom": "^6.14.1",
     "rxjs": "^6.6.7",
     "swc-loader": "^0.2.3",
-    "turbo": "^2.9.1",
+    "turbo": "^2.9.14",
     "typescript": "6.0.3",
     "vitest": "^4.1.0"
   },

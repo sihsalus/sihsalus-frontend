@@ -20,12 +20,44 @@ interface AdmissionConfig {
 
 function formatDate(value?: string) {
   if (!value) return '';
-  return new Intl.DateTimeFormat('es-PE', { dateStyle: 'short' }).format(new Date(value));
+  const parsedDate = parseDate(value);
+  return parsedDate ? new Intl.DateTimeFormat('es-PE', { dateStyle: 'short' }).format(parsedDate) : '';
 }
 
-function formatTime(value?: string) {
-  if (!value) return '';
-  return new Intl.DateTimeFormat('es-PE', { timeStyle: 'short' }).format(new Date(value));
+function parseDate(value?: string) {
+  if (!value) return null;
+  const dateOnlyMatch = /^(\d{4})-(\d{2})-(\d{2})$/.exec(value);
+  const parsedDate = dateOnlyMatch
+    ? new Date(Number(dateOnlyMatch[1]), Number(dateOnlyMatch[2]) - 1, Number(dateOnlyMatch[3]))
+    : new Date(value);
+
+  return Number.isNaN(parsedDate.getTime()) ? null : parsedDate;
+}
+
+function calculateAge(birthDate?: string, referenceDate?: string) {
+  const birth = parseDate(birthDate);
+  if (!birth) return '';
+
+  const reference = parseDate(referenceDate) ?? new Date();
+  let age = reference.getFullYear() - birth.getFullYear();
+  const monthDiff = reference.getMonth() - birth.getMonth();
+  if (monthDiff < 0 || (monthDiff === 0 && reference.getDate() < birth.getDate())) {
+    age -= 1;
+  }
+
+  return age >= 0 ? `${age}` : '';
+}
+
+function matchesGender(gender: string, expected: 'male' | 'female') {
+  const normalizedGender = gender.trim().toLocaleLowerCase();
+
+  return expected === 'male'
+    ? ['m', 'male', 'masculino'].includes(normalizedGender)
+    : ['f', 'female', 'femenino'].includes(normalizedGender);
+}
+
+function getAgeForGender(gender: string, expected: 'male' | 'female', birthDate?: string, referenceDate?: string) {
+  return matchesGender(gender, expected) ? calculateAge(birthDate, referenceDate) : '';
 }
 
 function escapeCsvValue(value: string) {
@@ -53,11 +85,14 @@ export default function AdmissionHome() {
         [
           admission.patientName,
           admission.medicalRecordNumber,
+          admission.documentNumber,
+          admission.birthDate,
+          admission.hasSis,
+          admission.address,
           admission.service,
           admission.location,
           admission.status,
           formatDate(admission.startDatetime),
-          formatTime(admission.startDatetime),
         ]
           .join(' ')
           .toLocaleLowerCase()
@@ -82,21 +117,27 @@ export default function AdmissionHome() {
   const exportFilteredAdmissions = () => {
     const headers = [
       t('date', 'Fecha'),
-      t('time', 'Hora'),
-      t('patient', 'Paciente'),
-      t('medicalRecord', 'HC'),
-      t('upsService', 'UPS/servicio'),
-      t('location', 'Ubicación'),
-      t('status', 'Estado'),
+      t('documentNumber', 'DNI'),
+      t('birthDateShort', 'F. Nac.'),
+      t('hasSis', 'Tiene SIS'),
+      t('fullName', 'Nombres y apellidos'),
+      t('address', 'Dirección'),
+      t('maleAge', 'Edad M'),
+      t('femaleAge', 'Edad F'),
+      t('service', 'Servicio'),
+      t('orderNumber', 'Número de orden'),
     ];
-    const rows = filteredAdmissions.map((admission) => [
+    const rows = filteredAdmissions.map((admission, index) => [
       formatDate(admission.startDatetime),
-      formatTime(admission.startDatetime),
+      admission.documentNumber,
+      formatDate(admission.birthDate),
+      admission.hasSis,
       admission.patientName,
-      admission.medicalRecordNumber,
+      admission.address,
+      getAgeForGender(admission.gender, 'male', admission.birthDate, admission.startDatetime),
+      getAgeForGender(admission.gender, 'female', admission.birthDate, admission.startDatetime),
       admission.service,
-      admission.location,
-      admission.status,
+      String(index + 1),
     ]);
     const csv = [headers, ...rows].map((row) => row.map(escapeCsvValue).join(',')).join('\n');
     const blob = new Blob([csv], { type: 'text/csv;charset=utf-8' });
@@ -154,8 +195,8 @@ export default function AdmissionHome() {
         >
           <TextInput
             id="admission-report-search"
-            labelText={t('searchAdmissions', 'Buscar por paciente, HC, UPSS o ubicación')}
-            placeholder={t('searchAdmissionsPlaceholder', 'Paciente, HC, UPSS, ubicación...')}
+            labelText={t('searchAdmissions', 'Buscar por paciente, DNI, servicio o dirección')}
+            placeholder={t('searchAdmissionsPlaceholder', 'Paciente, DNI, servicio, dirección...')}
             value={searchTerm}
             onChange={(event) => setSearchTerm(event.target.value)}
           />
@@ -194,20 +235,28 @@ export default function AdmissionHome() {
             <table className={styles.table}>
               <thead>
                 <tr>
-                  <th>{t('date', 'Fecha')}</th>
-                  <th>{t('time', 'Hora')}</th>
-                  <th>{t('patient', 'Paciente')}</th>
-                  <th>{t('medicalRecord', 'HC')}</th>
-                  <th>{t('upsService', 'UPSS/servicio')}</th>
-                  <th>{t('location', 'Ubicación')}</th>
-                  <th>{t('status', 'Estado')}</th>
+                  <th rowSpan={2}>{t('date', 'Fecha')}</th>
+                  <th rowSpan={2}>{t('documentNumber', 'DNI')}</th>
+                  <th rowSpan={2}>{t('birthDateShort', 'F. Nac.')}</th>
+                  <th rowSpan={2}>{t('hasSis', 'Tiene SIS')}</th>
+                  <th rowSpan={2}>{t('fullName', 'Nombres y apellidos')}</th>
+                  <th rowSpan={2}>{t('address', 'Dirección')}</th>
+                  <th colSpan={2}>{t('age', 'Edad')}</th>
+                  <th rowSpan={2}>{t('service', 'Servicio')}</th>
+                  <th rowSpan={2}>{t('orderNumber', 'Número de orden')}</th>
+                </tr>
+                <tr>
+                  <th>{t('maleInitial', 'M')}</th>
+                  <th>{t('femaleInitial', 'F')}</th>
                 </tr>
               </thead>
               <tbody>
-                {filteredAdmissions.map((admission) => (
+                {filteredAdmissions.map((admission, index) => (
                   <tr key={admission.uuid}>
                     <td>{formatDate(admission.startDatetime)}</td>
-                    <td>{formatTime(admission.startDatetime)}</td>
+                    <td>{admission.documentNumber}</td>
+                    <td>{formatDate(admission.birthDate)}</td>
+                    <td>{admission.hasSis}</td>
                     <td>
                       {admission.patientUuid ? (
                         <ConfigurableLink
@@ -220,10 +269,11 @@ export default function AdmissionHome() {
                         admission.patientName
                       )}
                     </td>
-                    <td>{admission.medicalRecordNumber}</td>
+                    <td>{admission.address}</td>
+                    <td>{getAgeForGender(admission.gender, 'male', admission.birthDate, admission.startDatetime)}</td>
+                    <td>{getAgeForGender(admission.gender, 'female', admission.birthDate, admission.startDatetime)}</td>
                     <td>{admission.service}</td>
-                    <td>{admission.location}</td>
-                    <td>{admission.status}</td>
+                    <td>{index + 1}</td>
                   </tr>
                 ))}
               </tbody>

@@ -16,9 +16,9 @@ import React, { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import ohifview from '../../assets/ohifViewer.png';
 import stoneview from '../../assets/stoneViewer.png';
-import { type DicomStudy, getBrowserUrl, type StudiesWithScores } from '../../types';
+import { type DicomStudy, type StudiesWithScores } from '../../types';
 import { studiesCount } from '../constants';
-import { buildURL } from '../utils/help';
+import { buildOhifViewerUrl, buildOrthancExplorerUrl, openInNewWindow } from '../utils/help';
 import styles from './details-table.scss';
 import SeriesDetailsTable from './series-details-table.component';
 
@@ -116,13 +116,9 @@ const AssignStudiesTable: React.FC<AssignStudiesTableProps> = ({
             kind="ghost"
             align="left"
             size={isTablet ? 'lg' : 'sm'}
-            label={t('stoneviewer', 'Stone viewer of Orthanc')}
+            label={t('stoneviewer', 'Show image')}
             onClick={() =>
-              (globalThis.location.href = buildURL(
-                getBrowserUrl(study.orthancConfiguration),
-                '/stone-webviewer/index.html',
-                [{ code: 'study', value: study.studyInstanceUID }],
-              ))
+              openInNewWindow(buildOhifViewerUrl([{ code: 'StudyInstanceUIDs', value: study.studyInstanceUID }]))
             }
           >
             <img alt="" className="stone-img" src={stoneview} style={{ width: 23, height: 14, marginTop: 4 }} />
@@ -131,11 +127,14 @@ const AssignStudiesTable: React.FC<AssignStudiesTableProps> = ({
             kind="ghost"
             align="left"
             size={isTablet ? 'lg' : 'sm'}
-            label={t('ohifviewer', 'Ohif viewer')}
+            label={t('ohifviewer', 'Show image data')}
             onClick={() =>
-              (globalThis.location.href = buildURL(getBrowserUrl(study.orthancConfiguration), '/ohif/viewer', [
-                { code: 'StudyInstanceUIDs', value: study.studyInstanceUID },
-              ]))
+              openInNewWindow(
+                buildOrthancExplorerUrl(study.orthancConfiguration, [
+                  { code: 'StudyInstanceUID', value: study.studyInstanceUID },
+                  { code: 'expand', value: 'series' },
+                ]),
+              )
             }
           >
             <img alt="" className="orthanc-img" src={ohifview} style={{ width: 26, height: 26, marginTop: 0 }} />
@@ -165,7 +164,7 @@ const AssignStudiesTable: React.FC<AssignStudiesTableProps> = ({
         >
           {({ rows, headers, getHeaderProps, getTableProps, getRowProps }) => (
             <TableContainer>
-              <Table aria-label="Studies summary" className={styles.table} {...getTableProps()}>
+              <Table aria-label={t('studiesSummary', 'Studies summary')} className={styles.table} {...getTableProps()}>
                 <TableHead>
                   <TableRow>
                     {headers.map((header) => {

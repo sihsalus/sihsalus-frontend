@@ -2,7 +2,7 @@ import { useConfig } from '@openmrs/esm-framework';
 import { fireEvent, render, screen } from '@testing-library/react';
 import { BrowserRouter } from 'react-router-dom';
 
-import { useAdmissions } from '../resources/admissions.resource';
+import { type AdmissionRow, useAdmissions } from '../resources/admissions.resource';
 import AdmissionHome from './admission-home.component';
 
 vi.mock('@openmrs/esm-framework', async () => ({
@@ -29,6 +29,25 @@ function getMetricValue(label: string) {
   return screen.getByText(label).parentElement?.querySelector('strong');
 }
 
+function createAdmission(overrides: Partial<AdmissionRow>): AdmissionRow {
+  return {
+    uuid: 'visit',
+    patientUuid: 'patient',
+    startDatetime: '2026-05-09T08:30:00.000-0500',
+    patientName: 'Ada Lovelace',
+    medicalRecordNumber: 'HC-99',
+    documentNumber: '12345678',
+    birthDate: '1990-01-01',
+    hasSis: 'Sí',
+    address: 'Av. Peru 123, Lima, Lima',
+    gender: 'F',
+    service: 'Consulta externa',
+    location: 'Admision Central',
+    status: 'Activa',
+    ...overrides,
+  };
+}
+
 describe('AdmissionHome', () => {
   beforeEach(() => {
     vi.clearAllMocks();
@@ -40,26 +59,34 @@ describe('AdmissionHome', () => {
   it('renders the care encounters by UPSS report with accreditation columns', () => {
     mockUseAdmissions.mockReturnValue({
       admissions: [
-        {
+        createAdmission({
           uuid: 'visit-1',
           patientUuid: 'patient-1',
-          startDatetime: '2026-05-09T08:30:00.000-0500',
           patientName: 'Ada Lovelace',
           medicalRecordNumber: 'HC-99',
+          documentNumber: '12345678',
+          birthDate: '1990-01-01',
+          hasSis: 'Sí',
+          address: 'Av. Peru 123, Lima, Lima',
+          gender: 'F',
           service: 'Consulta externa',
-          location: 'Admision Central',
           status: 'Activa',
-        },
-        {
+        }),
+        createAdmission({
           uuid: 'visit-2',
           patientUuid: 'patient-2',
           startDatetime: '2026-05-09T10:00:00.000-0500',
           patientName: 'Grace Hopper',
           medicalRecordNumber: 'HC-100',
+          documentNumber: '87654321',
+          birthDate: '1985-03-02',
+          hasSis: 'No',
+          address: 'Jr. Amazonas 45, Iquitos, Loreto',
+          gender: 'M',
           service: 'Emergencia',
           location: 'Topico',
           status: 'Finalizada',
-        },
+        }),
       ],
       error: undefined,
       isLoading: false,
@@ -68,12 +95,27 @@ describe('AdmissionHome', () => {
     renderAdmissionHome();
 
     expect(screen.getByRole('heading', { name: /registro de atenciones/i })).toBeInTheDocument();
-    for (const header of ['Fecha', 'Hora', 'Paciente', 'HC', 'UPSS/servicio', 'Ubicación', 'Estado']) {
+    for (const header of [
+      'Fecha',
+      'DNI',
+      'F. Nac.',
+      'Tiene SIS',
+      'Nombres y apellidos',
+      'Dirección',
+      'Edad',
+      'M',
+      'F',
+      'Servicio',
+      'Número de orden',
+    ]) {
       expect(screen.getByRole('columnheader', { name: header })).toBeInTheDocument();
     }
     expect(screen.getByRole('cell', { name: 'Ada Lovelace' })).toBeInTheDocument();
-    expect(screen.getByRole('cell', { name: 'HC-99' })).toBeInTheDocument();
+    expect(screen.getByRole('cell', { name: '12345678' })).toBeInTheDocument();
+    expect(screen.getByRole('cell', { name: 'Sí' })).toBeInTheDocument();
+    expect(screen.getByRole('cell', { name: 'Av. Peru 123, Lima, Lima' })).toBeInTheDocument();
     expect(screen.getByRole('cell', { name: 'Consulta externa' })).toBeInTheDocument();
+    expect(screen.getByRole('cell', { name: '1' })).toBeInTheDocument();
     expect(getMetricValue('Atenciones registradas')).toHaveTextContent('2');
     expect(getMetricValue('En curso')).toHaveTextContent('1');
     expect(getMetricValue('Finalizadas')).toHaveTextContent('1');
@@ -88,24 +130,23 @@ describe('AdmissionHome', () => {
   it('filters the report by search text and status', () => {
     mockUseAdmissions.mockReturnValue({
       admissions: [
-        {
+        createAdmission({
           uuid: 'visit-1',
           patientUuid: 'patient-1',
           patientName: 'Ada Lovelace',
-          medicalRecordNumber: 'HC-99',
+          documentNumber: '12345678',
           service: 'Consulta externa',
-          location: 'Admision Central',
           status: 'Activa',
-        },
-        {
+        }),
+        createAdmission({
           uuid: 'visit-2',
           patientUuid: 'patient-2',
           patientName: 'Grace Hopper',
-          medicalRecordNumber: 'HC-100',
+          documentNumber: '87654321',
           service: 'Emergencia',
           location: 'Topico',
           status: 'Finalizada',
-        },
+        }),
       ],
       error: undefined,
       isLoading: false,
@@ -113,7 +154,7 @@ describe('AdmissionHome', () => {
 
     renderAdmissionHome();
 
-    fireEvent.change(screen.getByRole('textbox', { name: /buscar por paciente/i }), { target: { value: 'Grace' } });
+    fireEvent.change(screen.getByRole('textbox', { name: /buscar por paciente/i }), { target: { value: '87654321' } });
 
     expect(screen.queryByRole('cell', { name: 'Ada Lovelace' })).not.toBeInTheDocument();
     expect(screen.getByRole('cell', { name: 'Grace Hopper' })).toBeInTheDocument();

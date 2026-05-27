@@ -17,9 +17,9 @@ import { useTranslation } from 'react-i18next';
 import { useStudySeries } from '../../api';
 import orthancExplorer from '../../assets/orthanc.png';
 import stoneview from '../../assets/stoneViewer.png';
-import { getBrowserUrl, type OrthancConfiguration, type Series } from '../../types';
+import { type OrthancConfiguration, type Series } from '../../types';
 import { seriesCount, seriesDeleteConfirmationDialog } from '../constants';
-import { buildURL } from '../utils/help';
+import { buildOhifViewerUrl, buildOrthancExplorerUrl, openInNewWindow } from '../utils/help';
 import styles from './details-table.scss';
 import InstancesDetailsTable from './instances-details-table.component';
 
@@ -36,9 +36,7 @@ const SeriesDetailsTable: React.FC<SeriesDetailsTableProps> = ({
   patientUuid,
   orthancConfig,
 }) => {
-  const {
-    data: seriesList,
-  } = useStudySeries(studyId);
+  const { data: seriesList } = useStudySeries(studyId);
 
   const { t } = useTranslation();
   const displayText = t('NoSeriesAvailable', 'No series available');
@@ -100,12 +98,14 @@ const SeriesDetailsTable: React.FC<SeriesDetailsTableProps> = ({
             kind="ghost"
             align="left"
             size={isTablet ? 'lg' : 'sm'}
-            label={t('stoneviewer', 'Stone viewer of Orthanc')}
+            label={t('stoneviewer', 'Show image')}
             onClick={() =>
-              (globalThis.location.href = buildURL(getBrowserUrl(orthancConfig), 'stone-webviewer/index.html', [
-                { code: 'study', value: studyInstanceUID },
-                { code: 'series', value: series.seriesInstanceUID },
-              ]))
+              openInNewWindow(
+                buildOhifViewerUrl([
+                  { code: 'StudyInstanceUIDs', value: studyInstanceUID },
+                  { code: 'SeriesInstanceUIDs', value: series.seriesInstanceUID },
+                ]),
+              )
             }
           >
             <img alt="" className="stone-img" src={stoneview} style={{ width: 23, height: 14, marginTop: 4 }} />
@@ -114,9 +114,14 @@ const SeriesDetailsTable: React.FC<SeriesDetailsTableProps> = ({
             kind="ghost"
             align="left"
             size={isTablet ? 'lg' : 'sm'}
-            label={t('orthancExplorer2', 'Show data in orthanc explorere')}
+            label={t('orthancExplorer2', 'Open in Orthanc')}
             onClick={() =>
-              (globalThis.location.href = `${getBrowserUrl(orthancConfig)}/ui/app/#/filtered-studies?StudyInstanceUID=${encodeURIComponent(studyInstanceUID)}&expand=series`)
+              openInNewWindow(
+                buildOrthancExplorerUrl(orthancConfig, [
+                  { code: 'StudyInstanceUID', value: studyInstanceUID },
+                  { code: 'expand', value: 'series' },
+                ]),
+              )
             }
           >
             <img alt="" className="orthanc-img" src={orthancExplorer} style={{ width: 26, height: 26, marginTop: 0 }} />
@@ -142,11 +147,11 @@ const SeriesDetailsTable: React.FC<SeriesDetailsTableProps> = ({
           isSortable
           useZebraStyles
           data-floating-menu-container
-        size={isTablet ? 'lg' : 'sm'}
-      >
+          size={isTablet ? 'lg' : 'sm'}
+        >
           {({ rows, headers, getHeaderProps, getTableProps, getRowProps }) => (
             <TableContainer>
-              <Table aria-label="Series summary" className={styles.table} {...getTableProps()}>
+              <Table aria-label={t('seriesSummary', 'Series summary')} className={styles.table} {...getTableProps()}>
                 <TableHead>
                   <TableRow>
                     {headers.map((header) => {

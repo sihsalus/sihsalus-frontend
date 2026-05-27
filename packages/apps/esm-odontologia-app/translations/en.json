@@ -23,6 +23,8 @@
   "dentalAttentionEmptyDescription": "No hay registros de atención odontológica para mostrar para este paciente.",
   "dentalAttentionSectionDescription": "Registra y consulta las atenciones odontológicas del paciente en esta misma vista.",
   "dentalConfigMissing": "Falta configurar odontología.",
+  "designSelector.keepOpenHint": "Select the designs you want to apply. Click an applied one to remove it.",
+  "designSelector.singleSelectHint": "Select a design to apply or remove the finding.",
   "designWithNumber": "Diseño {{designNumber}}",
   "documentation": "Documentación",
   "edit": "Edit",

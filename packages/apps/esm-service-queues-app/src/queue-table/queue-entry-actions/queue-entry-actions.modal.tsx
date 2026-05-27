@@ -157,7 +157,7 @@ export const QueueEntryActionModal: React.FC<QueueEntryActionModalProps> = ({
           mutateQueueEntries();
           closeModal();
         } else {
-          throw { message: t('unexpectedServerResponse', 'Unexpected Server Response') };
+          throw new Error(t('unexpectedServerResponse', 'Unexpected Server Response'));
         }
       })
       .catch((error) => {

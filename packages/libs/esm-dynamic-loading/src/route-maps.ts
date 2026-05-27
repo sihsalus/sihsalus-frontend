@@ -207,7 +207,7 @@ export async function getCurrentRouteMap(): Promise<OpenmrsRoutes> {
 /**
  * Returns the base route map from the DOM without any overrides applied.
  */
-export async function getRouteMapDefaultMap(): Promise<OpenmrsRoutes> {
+export async function getBaseRouteMap(): Promise<OpenmrsRoutes> {
   return readBaseMap();
 }
 
@@ -216,7 +216,7 @@ export async function getRouteMapDefaultMap(): Promise<OpenmrsRoutes> {
  * any overrides that have been added/removed since the page loaded.
  * In production, this is the same as the base map.
  */
-export async function getRouteMapNextPageMap(): Promise<OpenmrsRoutes> {
+export async function getNextPageRouteMap(): Promise<OpenmrsRoutes> {
   if (!devMode) {
     return readBaseMap();
   }

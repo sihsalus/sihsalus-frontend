@@ -51,8 +51,8 @@ describe('route-maps', () => {
       expect(map['@openmrs/esm-bar']).toEqual({ extensions: [] });
     });
 
-    it('getRouteMapNextPageMap returns base map only', async () => {
-      const { setupRouteMapOverrides, getRouteMapNextPageMap } = await import('./route-maps');
+    it('getNextPageRouteMap returns base map only', async () => {
+      const { setupRouteMapOverrides, getNextPageRouteMap } = await import('./route-maps');
       await setupRouteMapOverrides();
 
       setDomRouteMaps([{ '@openmrs/esm-foo': { pages: [] } }]);
@@ -61,7 +61,7 @@ describe('route-maps', () => {
         JSON.stringify({ pages: [{ component: 'evil', route: '/' }] }),
       );
 
-      const map = await getRouteMapNextPageMap();
+      const map = await getNextPageRouteMap();
       expect(map['@openmrs/esm-foo']).toEqual({ pages: [] });
     });
 
@@ -173,17 +173,17 @@ describe('route-maps', () => {
       expect(map['@openmrs/esm-foo']).toEqual({ pages: [{ component: 'root', route: '/fetched' }] });
     });
 
-    it('getRouteMapDefaultMap returns only the base map', async () => {
+    it('getBaseRouteMap returns only the base map', async () => {
       setDomRouteMaps([{ '@openmrs/esm-foo': { pages: [] } }]);
       localStorage.setItem(
         'openmrs-routes:@openmrs/esm-foo',
         JSON.stringify({ pages: [{ component: 'x', route: '/' }] }),
       );
 
-      const { setupRouteMapOverrides, getRouteMapDefaultMap } = await import('./route-maps');
+      const { setupRouteMapOverrides, getBaseRouteMap } = await import('./route-maps');
       await setupRouteMapOverrides();
 
-      const map = await getRouteMapDefaultMap();
+      const map = await getBaseRouteMap();
       expect(map['@openmrs/esm-foo']).toEqual({ pages: [] });
     });
 
@@ -284,10 +284,10 @@ describe('route-maps', () => {
       expect(errorSpy).toHaveBeenCalledWith(expect.stringContaining('not a valid OpenmrsAppRoutes'), expect.anything());
     });
 
-    it('getRouteMapNextPageMap reflects overrides added after setup', async () => {
+    it('getNextPageRouteMap reflects overrides added after setup', async () => {
       setDomRouteMaps([{ '@openmrs/esm-foo': { pages: [] } }]);
 
-      const { setupRouteMapOverrides, addRouteMapOverride, getCurrentRouteMap, getRouteMapNextPageMap } = await import(
+      const { setupRouteMapOverrides, addRouteMapOverride, getCurrentRouteMap, getNextPageRouteMap } = await import(
         './route-maps'
       );
       await setupRouteMapOverrides();
@@ -298,8 +298,8 @@ describe('route-maps', () => {
       const currentMap = await getCurrentRouteMap();
       expect(currentMap['@openmrs/esm-foo']).toEqual({ pages: [] });
 
-      // getRouteMapNextPageMap reads live overrides
-      const nextMap = await getRouteMapNextPageMap();
+      // getNextPageRouteMap reads live overrides
+      const nextMap = await getNextPageRouteMap();
       expect(nextMap['@openmrs/esm-foo']).toEqual({ pages: [{ component: 'new', route: '/new' }] });
     });
   });

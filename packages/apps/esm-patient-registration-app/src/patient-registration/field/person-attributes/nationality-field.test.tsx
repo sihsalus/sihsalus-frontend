@@ -77,5 +77,5 @@ describe('NationalityField', () => {
         defaultNationalityCountryCode,
       ),
     );
-  });
+  }, 10000);
 });

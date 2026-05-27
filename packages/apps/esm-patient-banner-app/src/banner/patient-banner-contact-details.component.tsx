@@ -3,11 +3,15 @@ import {
   ConfigurableLink,
   getCoreTranslation,
   parseDate,
+  useConfig,
   usePatient,
   type CoreTranslationKey,
 } from '@openmrs/esm-framework';
 import classNames from 'classnames';
 import React, { useMemo } from 'react';
+import { useTranslation } from 'react-i18next';
+import { type ConfigObject } from '../config-schema';
+import { useEthnicIdentity } from '../hooks/useEthnicIdentity';
 import { usePatientContactAttributes } from '../hooks/usePatientAttributes';
 import { usePatientListsForPatient } from '../hooks/usePatientListsForPatient';
 import { useRelationships } from '../hooks/useRelationships';
@@ -103,7 +107,13 @@ const Address: React.FC<{ patientId: string }> = ({ patientId }) => {
 };
 
 const Contact: React.FC<{ patientUuid: string }> = ({ patientUuid }) => {
+  const { t } = useTranslation();
+  const { ethnicIdentityConceptUuid } = useConfig<ConfigObject>();
   const { isLoading: isLoadingAttributes, contactAttributes } = usePatientContactAttributes(patientUuid);
+  const { currentValue: ethnicIdentity, isLoading: isLoadingEthnicIdentity } = useEthnicIdentity(
+    patientUuid,
+    ethnicIdentityConceptUuid,
+  );
 
   const contacts = useMemo(
     () =>
@@ -124,19 +134,18 @@ const Contact: React.FC<{ patientUuid: string }> = ({ patientUuid }) => {
   return (
     <>
       <p className={styles.heading}>{getCoreTranslation('contactDetails', 'Contact Details')}</p>
-      {isLoadingAttributes ? (
+      {isLoadingAttributes || isLoadingEthnicIdentity ? (
         <InlineLoading description={`${getCoreTranslation('loading', 'Loading')} ...`} role="progressbar" />
       ) : (
         <ul>
-          {contacts.length ? (
-            contacts.map(([label, value], index) => (
-              <li key={`${label}-${value}-${index}`}>
-                {label}: {value}
-              </li>
-            ))
-          ) : (
-            <li>--</li>
-          )}
+          {contacts.map(([label, value], index) => (
+            <li key={`${label}-${value}-${index}`}>
+              {label}: {value}
+            </li>
+          ))}
+          <li>
+            {t('ethnicity', 'Ethnicity')}: {ethnicIdentity || '--'}
+          </li>
         </ul>
       )}
     </>

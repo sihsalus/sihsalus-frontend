@@ -329,7 +329,7 @@ describe('route-maps', () => {
 
       const script = document.createElement('script');
       script.type = 'openmrs-routes';
-      Object.defineProperty(script, 'src', { value: 'http://localhost/routes.json', writable: false });
+      Object.defineProperty(script, 'src', { value: '/routes.json', writable: false });
       document.head.appendChild(script);
 
       fetchMock.mockResponseOnce(
@@ -341,7 +341,7 @@ describe('route-maps', () => {
 
       const map = await getCurrentRouteMap();
       expect(map['@openmrs/esm-remote']).toEqual({ pages: [{ component: 'root', route: '/remote' }] });
-      expect(fetchMock).toHaveBeenCalledWith('http://localhost/routes.json');
+      expect(fetchMock).toHaveBeenCalledWith('/routes.json');
     });
 
     it('merges remote and inline route maps', async () => {
@@ -355,7 +355,7 @@ describe('route-maps', () => {
 
       const remote = document.createElement('script');
       remote.type = 'openmrs-routes';
-      Object.defineProperty(remote, 'src', { value: 'http://localhost/routes.json', writable: false });
+      Object.defineProperty(remote, 'src', { value: '/routes.json', writable: false });
       document.head.appendChild(remote);
 
       fetchMock.mockResponseOnce(JSON.stringify({ '@openmrs/esm-remote': { pages: [] } }));
@@ -381,7 +381,7 @@ describe('route-maps', () => {
 
       const bad = document.createElement('script');
       bad.type = 'openmrs-routes';
-      Object.defineProperty(bad, 'src', { value: 'http://localhost/broken.json', writable: false });
+      Object.defineProperty(bad, 'src', { value: '/broken.json', writable: false });
       document.head.appendChild(bad);
 
       fetchMock.mockRejectOnce(new Error('Network error'));
@@ -403,7 +403,7 @@ describe('route-maps', () => {
 
       const script = document.createElement('script');
       script.type = 'openmrs-routes';
-      Object.defineProperty(script, 'src', { value: 'http://localhost/bad.json', writable: false });
+      Object.defineProperty(script, 'src', { value: '/bad.json', writable: false });
       document.head.appendChild(script);
 
       fetchMock.mockResponseOnce('not json', { status: 200 });
@@ -422,7 +422,7 @@ describe('route-maps', () => {
 
       const script = document.createElement('script');
       script.type = 'openmrs-routes';
-      Object.defineProperty(script, 'src', { value: 'http://localhost/notroutes.json', writable: false });
+      Object.defineProperty(script, 'src', { value: '/notroutes.json', writable: false });
       document.head.appendChild(script);
 
       fetchMock.mockResponseOnce(JSON.stringify({ something: 'unexpected' }));

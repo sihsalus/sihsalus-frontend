@@ -18,7 +18,7 @@
     "test-e2e": "yarn --cwd ../../.. playwright test --config e2e/form-builder/playwright.config.ts",
     "verify": "turbo run lint typescript coverage --color",
     "coverage": "vitest run --coverage --passWithNoTests",
-    "extract-translations": "i18next 'src/**/*.component.tsx' 'src/**/*.modal.tsx' --config ../../tooling/scripts/i18next-parser.config.js"
+    "extract-translations": "i18next 'src/**/*.{ts,tsx}' '!src/**/*.test.{ts,tsx}' '!src/**/*.spec.{ts,tsx}' --config ../../tooling/scripts/i18next-parser.config.js"
   },
   "files": [
     "dist",

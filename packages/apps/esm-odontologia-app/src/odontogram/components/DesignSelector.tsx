@@ -1,6 +1,7 @@
 import { Modal, Tag } from '@carbon/react';
 import { CheckmarkFilled } from '@carbon/react/icons';
 import React from 'react';
+import { useTranslation } from 'react-i18next';
 import {
   Finding5Design1,
   Finding5Design2,
@@ -184,6 +185,7 @@ const DesignSelector: React.FC<DesignSelectorProps> = ({
   rootDesign = 'default',
   position = 'upper',
 }) => {
+  const { t } = useTranslation();
   const toothTransform = position === 'lower' ? `scale(1,-1) translate(0,-${TOOTH_SVG_HEIGHT})` : undefined;
   const handleDesignClick = (design: FindingDesign) => {
     onDesignSelect(design);
@@ -192,7 +194,12 @@ const DesignSelector: React.FC<DesignSelectorProps> = ({
     }
   };
 
-  const colorLabel = selectedColor?.name === 'red' ? 'Rojo' : selectedColor?.name === 'blue' ? 'Azul' : 'Negro';
+  const colorLabel =
+    selectedColor?.name === 'red'
+      ? t('red', 'Rojo')
+      : selectedColor?.name === 'blue'
+        ? t('blue', 'Azul')
+        : t('black', 'Negro');
   const colorTagType: 'red' | 'blue' | 'gray' =
     selectedColor?.name === 'red' ? 'red' : selectedColor?.name === 'blue' ? 'blue' : 'gray';
 
@@ -201,7 +208,7 @@ const DesignSelector: React.FC<DesignSelectorProps> = ({
       open={isOpen}
       passiveModal
       onRequestClose={onClose}
-      modalHeading={`Seleccionar diseño para ${findingName}`}
+      modalHeading={t('selectDesignForFinding', 'Seleccionar diseño para {{findingName}}', { findingName })}
       size="lg"
       selectorPrimaryFocus="#design-selector-header"
       className={styles.modal}
@@ -216,7 +223,11 @@ const DesignSelector: React.FC<DesignSelectorProps> = ({
             : undefined
         }
       >
-        <div className={styles.previewTooth} role="img" aria-label="Vista previa del hallazgo en el diente">
+        <div
+          className={styles.previewTooth}
+          role="img"
+          aria-label={t('findingPreviewOnTooth', 'Vista previa del hallazgo en el diente')}
+        >
           <svg width="60" height={TOOTH_SVG_HEIGHT}>
             <g transform={toothTransform}>
               <ToothDesigns design={rootDesign} />

@@ -865,7 +865,7 @@ const AppointmentsForm: React.FC<
                 render={({ field: { onChange, value, onBlur, ref } }) => (
                   <Select
                     id="provider"
-                    invalidText="Required"
+                    invalidText={t('required', 'Required')}
                     labelText={t('selectProvider', 'Select a provider')}
                     onChange={onChange}
                     onBlur={onBlur}

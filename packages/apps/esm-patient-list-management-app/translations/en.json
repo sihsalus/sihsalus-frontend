@@ -51,6 +51,7 @@
   "noMatchingPatients": "No matching patients to display",
   "noOfPatients": "No. of patients",
   "noPatientsInList": "There are no patients in this list",
+  "offlinePatients": "Offline patients",
   "openPatientList": "Add to list",
   "patientListMemberCount_one": "This list has {{count}} patient",
   "patientListMemberCount_other": "This list has {{count}} patients",

@@ -4,7 +4,7 @@ module.exports = {
   defaultNamespace: 'translations',
   defaultValue: '',
   indentation: 2,
-  keepRemoved: false,
+  keepRemoved: true,
   keySeparator: '.',
   lexers: {
     hbs: ['HandlebarsLexer'],

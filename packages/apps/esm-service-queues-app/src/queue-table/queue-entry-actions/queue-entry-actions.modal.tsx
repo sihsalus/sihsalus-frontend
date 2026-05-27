@@ -221,7 +221,7 @@ export const QueueEntryActionModal: React.FC<QueueEntryActionModalProps> = ({
               <Select
                 labelText={t('selectQueue', 'Select a queue')}
                 id="queue"
-                invalidText="Required"
+                invalidText={t('required', 'Required')}
                 value={formState.selectedQueue}
                 onChange={(event) => setSelectedQueueUuid(event.target.value)}
               >

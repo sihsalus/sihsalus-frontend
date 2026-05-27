@@ -96,6 +96,9 @@ const StockOperationSubmissionFormStep: React.FC<StockOperationSubmissionFormSte
             })),
           ],
         };
+        if (isReceiptOperation) {
+          console.log('Receipt operation payload:', payload);
+        }
         const resp = await (stockOperation
           ? updateStockOperation(stockOperation, payload as any)
           : createStockOperation(payload as any));
@@ -123,7 +126,7 @@ const StockOperationSubmissionFormStep: React.FC<StockOperationSubmissionFormSte
       }
     })(); // Call handleSubmit to trigger validation and submission
     return result; // Return the result after handleSubmit completes
-  }, [form, stockOperation, t, approvalRequired, isStockIssueOperation, dismissWorkspace]);
+  }, [form, stockOperation, t, approvalRequired, isStockIssueOperation, isReceiptOperation, dismissWorkspace]);
 
   const handleComplete = useCallback(() => {
     handleSave().then((operation) => {

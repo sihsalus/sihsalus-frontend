@@ -16,7 +16,7 @@
     "typescript": "tsc --noEmit",
     "test": "vitest run --passWithNoTests",
     "coverage": "vitest run --coverage --passWithNoTests",
-    "extract-translations": "i18next \"src/**/*.component.tsx\" \"src/index.ts\" --config ../../tooling/scripts/i18next-parser.config.js"
+    "extract-translations": "i18next 'src/**/*.{ts,tsx}' '!src/**/*.test.{ts,tsx}' '!src/**/*.spec.{ts,tsx}' --config ../../tooling/scripts/i18next-parser.config.js"
   },
   "files": [
     "dist",

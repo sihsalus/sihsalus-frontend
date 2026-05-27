@@ -259,8 +259,11 @@ const DesignSelector: React.FC<DesignSelectorProps> = ({
 
       <p className={styles.hint}>
         {keepOpen
-          ? 'Selecciona los diseños que desees aplicar. Haz click en uno aplicado para quitarlo.'
-          : 'Selecciona un diseño para aplicar o eliminar el hallazgo.'}
+          ? t(
+              'designSelector.keepOpenHint',
+              'Selecciona los diseños que desees aplicar. Haz click en uno aplicado para quitarlo.',
+            )
+          : t('designSelector.singleSelectHint', 'Selecciona un diseño para aplicar o eliminar el hallazgo.')}
       </p>
 
       <div className={styles.designsGrid}>

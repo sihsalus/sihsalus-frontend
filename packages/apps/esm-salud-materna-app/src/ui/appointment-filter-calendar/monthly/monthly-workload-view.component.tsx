@@ -28,12 +28,12 @@ const MonthlyWorkloadView: React.FC<MonthlyWorkloadViewProps> = ({ dateTime, eve
     [dateTime, events],
   );
 
-  const handleAppoiment = (_serviceUuid: string) => {};
+  const handleAppointment = (_serviceUuid: string) => {};
 
   return (
     <button
       type="button"
-      onClick={() => handleAppoiment('')}
+      onClick={() => handleAppointment('')}
       className={classNames(
         styles[isSameMonth(dateTime, dayjs(selectedDate)) ? 'monthly-cell' : 'monthly-cell-disabled'],
         styles.largeDesktop,
@@ -51,13 +51,13 @@ const MonthlyWorkloadView: React.FC<MonthlyWorkloadViewProps> = ({ dateTime, eve
                 tabIndex={0}
                 onClick={(e) => {
                   e.stopPropagation();
-                  handleAppoiment(currentData.appointmentId);
+                  handleAppointment(currentData.appointmentId);
                 }}
                 onKeyDown={(e) => {
                   if (e.key === 'Enter' || e.key === ' ') {
                     e.preventDefault();
                     e.stopPropagation();
-                    handleAppoiment(currentData.appointmentId);
+                    handleAppointment(currentData.appointmentId);
                   }
                 }}
                 className={styles.serviceArea}

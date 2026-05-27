@@ -419,5 +419,16 @@
   "noMeasurementsForSelectedChart": "No measurements for this indicator",
   "noMeasurementsForSelectedChartSubtitle": "Reference curves are shown, but the patient has no usable measurements for the selected chart.",
   "whoGrowthReference": "WHO Child Growth Standards",
-  "months": "months"
+  "months": "months",
+  "ageMonths": "{{count}} months",
+  "appointmentsCreatedDetail": "{{count}} Crecimiento y Desarrollo appointments were created successfully.",
+  "appointmentsFailedDetail": "{{count}} appointments could not be created.",
+  "availableMeasurementsCount": "{{count}} measurements",
+  "other": "Other",
+  "overdueCount": "{{count}} overdue",
+  "overdueShort": "{{count}} overdue",
+  "statusCompleted": "Completed",
+  "statusFuture": "Future",
+  "statusPending": "Pending",
+  "unknown": "Unknown"
 }

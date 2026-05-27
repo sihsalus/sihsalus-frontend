@@ -425,5 +425,16 @@
   "noMeasurementsForSelectedChart": "Sin mediciones para este indicador",
   "noMeasurementsForSelectedChartSubtitle": "Se muestran las curvas de referencia, pero el paciente no tiene mediciones utilizables para el gráfico seleccionado.",
   "whoGrowthReference": "Patrones de crecimiento infantil de la OMS",
-  "months": "meses"
+  "months": "meses",
+  "ageMonths": "{{count}} meses",
+  "appointmentsCreatedDetail": "Se crearon {{count}} citas Crecimiento y Desarrollo exitosamente.",
+  "appointmentsFailedDetail": "{{count}} citas no pudieron crearse.",
+  "availableMeasurementsCount": "{{count}} mediciones",
+  "other": "Otro",
+  "overdueCount": "{{count}} vencidos",
+  "overdueShort": "{{count}} venc.",
+  "statusCompleted": "Realizado",
+  "statusFuture": "Futuro",
+  "statusPending": "Pendiente",
+  "unknown": "Desconocido"
 }

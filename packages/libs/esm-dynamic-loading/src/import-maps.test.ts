@@ -288,7 +288,7 @@ describe('import-maps', () => {
     it('handles remote import maps via fetch', async () => {
       const script = document.createElement('script');
       script.type = 'systemjs-importmap';
-      Object.defineProperty(script, 'src', { value: 'http://localhost/importmap.json', writable: false });
+      Object.defineProperty(script, 'src', { value: '/importmap.json', writable: false });
       document.head.appendChild(script);
 
       fetchMock.mockResponseOnce(JSON.stringify({ imports: { '@openmrs/esm-remote': '/remote.js' } }));

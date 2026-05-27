@@ -41,7 +41,7 @@
   "dependencies": {
     "@sihsalus/esm-rbac": "workspace:*",
     "lodash-es": "^4.17.21",
-    "uuid": "^9.0.1"
+    "uuid": "^14.0.0"
   },
   "peerDependencies": {
     "@carbon/react": "1.x",

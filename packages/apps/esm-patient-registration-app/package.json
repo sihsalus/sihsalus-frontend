@@ -42,7 +42,7 @@
     "classnames": "^2.3.2",
     "formik": "^2.1.5",
     "lodash-es": "^4.17.15",
-    "uuid": "^9.0.1",
+    "uuid": "^14.0.0",
     "yup": "^0.29.1"
   },
   "peerDependencies": {

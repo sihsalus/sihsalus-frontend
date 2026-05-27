@@ -129,9 +129,7 @@ const StudiesDetailTable: React.FC<StudyDetailsTableProps> = ({
             size={isTablet ? 'lg' : 'sm'}
             label={t('stoneviewer', 'Show image')}
             onClick={() =>
-              openInNewWindow(buildOhifViewerUrl([
-                { code: 'StudyInstanceUIDs', value: study.studyInstanceUID },
-              ]))
+              openInNewWindow(buildOhifViewerUrl([{ code: 'StudyInstanceUIDs', value: study.studyInstanceUID }]))
             }
           >
             <img alt="" className="stone-img" src={stoneview} style={{ width: 23, height: 14, marginTop: 4 }} />
@@ -142,10 +140,12 @@ const StudiesDetailTable: React.FC<StudyDetailsTableProps> = ({
             size={isTablet ? 'lg' : 'sm'}
             label={t('ohifviewer', 'Show image data')}
             onClick={() =>
-              openInNewWindow(buildOrthancExplorerUrl(study.orthancConfiguration, [
-                { code: 'StudyInstanceUID', value: study.studyInstanceUID },
-                { code: 'expand', value: 'series' },
-              ]))
+              openInNewWindow(
+                buildOrthancExplorerUrl(study.orthancConfiguration, [
+                  { code: 'StudyInstanceUID', value: study.studyInstanceUID },
+                  { code: 'expand', value: 'series' },
+                ]),
+              )
             }
           >
             <img alt="" className="ohif-img" src={ohifview} style={{ width: 26, height: 26, marginTop: 0 }} />
@@ -155,12 +155,13 @@ const StudiesDetailTable: React.FC<StudyDetailsTableProps> = ({
             align="left"
             size={isTablet ? 'lg' : 'sm'}
             label={t('orthancExplorer2', 'Open in Orthanc')}
-            onClick={
-              () =>
-                openInNewWindow(buildOrthancExplorerUrl(study.orthancConfiguration, [
+            onClick={() =>
+              openInNewWindow(
+                buildOrthancExplorerUrl(study.orthancConfiguration, [
                   { code: 'StudyInstanceUID', value: study.studyInstanceUID },
                   { code: 'expand', value: 'series' },
-                ]))
+                ]),
+              )
             }
           >
             <img alt="" className="orthanc-img" src={orthancExplorer} style={{ width: 26, height: 26, marginTop: 0 }} />
@@ -210,7 +211,7 @@ const StudiesDetailTable: React.FC<StudyDetailsTableProps> = ({
         >
           {({ rows, headers, getHeaderProps, getTableProps, getRowProps }) => (
             <TableContainer>
-              <Table aria-label="Studies summary" className={styles.table} {...getTableProps()}>
+              <Table aria-label={t('studiesSummary', 'Studies summary')} className={styles.table} {...getTableProps()}>
                 <TableHead>
                   <TableRow>
                     {headers.map((header) => {

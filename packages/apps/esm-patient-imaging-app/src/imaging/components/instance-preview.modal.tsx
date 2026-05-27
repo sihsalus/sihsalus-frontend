@@ -49,9 +49,9 @@ const InstancePreviewModal: React.FC<InstancePreviewModalProps> = ({
         title={t('instancePreview', 'Preview the selected study instance')}
       />
       <ModalBody>
-        <p style={{ marginBottom: '20px' }}>{'Instance position: ' + instancePosition}</p>
+        <p style={{ marginBottom: '20px' }}>{t('instancePosition', 'Instance position') + ': ' + instancePosition}</p>
         {isLoading ? (
-          'Loading image'
+          t('loadingImage', 'Loading image')
         ) : imageData ? (
           <img
             alt={t('instancePreview', 'Preview the selected study instance')}
@@ -60,7 +60,7 @@ const InstancePreviewModal: React.FC<InstancePreviewModalProps> = ({
             height="300"
           />
         ) : (
-          'Error'
+          t('previewUnavailable', 'Preview unavailable')
         )}
       </ModalBody>
 

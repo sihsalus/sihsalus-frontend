@@ -153,6 +153,37 @@ describe('UploadStudiesWorkspace', () => {
     });
   });
 
+  it('shows an inline loading state while uploading files', async () => {
+    const file = new File(['dummy content'], 'test.dcm', { type: 'application/dicom' });
+    let resolveUpload: () => void;
+    mockUploadStudies.mockImplementation(
+      () =>
+        new Promise<void>((resolve) => {
+          resolveUpload = resolve;
+        }),
+    );
+
+    setup();
+
+    selectFiles([file]);
+    selectOrthancServer();
+
+    fireEvent.click(screen.getByText('Upload'));
+
+    await waitFor(() => {
+      expect(screen.getByTestId('upload-studies-loading')).toBeInTheDocument();
+      expect(screen.getByText('Uploading studies...')).toBeInTheDocument();
+      expect(screen.getByTestId('upload-studies-submit')).toBeDisabled();
+      expect(screen.getByTestId('upload-studies-cancel')).toBeDisabled();
+    });
+
+    resolveUpload?.();
+
+    await waitFor(() => {
+      expect(closeWorkspace).toHaveBeenCalled();
+    });
+  });
+
   it('shows snackbar on upload failure', async () => {
     const file = new File(['dummy content'], 'test.dcm', { type: 'application/dicom' });
     mockUploadStudies.mockRejectedValue(new Error('Upload failed'));

@@ -36,9 +36,7 @@ const SeriesDetailsTable: React.FC<SeriesDetailsTableProps> = ({
   patientUuid,
   orthancConfig,
 }) => {
-  const {
-    data: seriesList,
-  } = useStudySeries(studyId);
+  const { data: seriesList } = useStudySeries(studyId);
 
   const { t } = useTranslation();
   const displayText = t('NoSeriesAvailable', 'No series available');
@@ -102,10 +100,12 @@ const SeriesDetailsTable: React.FC<SeriesDetailsTableProps> = ({
             size={isTablet ? 'lg' : 'sm'}
             label={t('stoneviewer', 'Show image')}
             onClick={() =>
-              openInNewWindow(buildOhifViewerUrl([
-                { code: 'StudyInstanceUIDs', value: studyInstanceUID },
-                { code: 'SeriesInstanceUIDs', value: series.seriesInstanceUID },
-              ]))
+              openInNewWindow(
+                buildOhifViewerUrl([
+                  { code: 'StudyInstanceUIDs', value: studyInstanceUID },
+                  { code: 'SeriesInstanceUIDs', value: series.seriesInstanceUID },
+                ]),
+              )
             }
           >
             <img alt="" className="stone-img" src={stoneview} style={{ width: 23, height: 14, marginTop: 4 }} />
@@ -116,10 +116,12 @@ const SeriesDetailsTable: React.FC<SeriesDetailsTableProps> = ({
             size={isTablet ? 'lg' : 'sm'}
             label={t('orthancExplorer2', 'Open in Orthanc')}
             onClick={() =>
-              openInNewWindow(buildOrthancExplorerUrl(orthancConfig, [
-                { code: 'StudyInstanceUID', value: studyInstanceUID },
-                { code: 'expand', value: 'series' },
-              ]))
+              openInNewWindow(
+                buildOrthancExplorerUrl(orthancConfig, [
+                  { code: 'StudyInstanceUID', value: studyInstanceUID },
+                  { code: 'expand', value: 'series' },
+                ]),
+              )
             }
           >
             <img alt="" className="orthanc-img" src={orthancExplorer} style={{ width: 26, height: 26, marginTop: 0 }} />
@@ -145,11 +147,11 @@ const SeriesDetailsTable: React.FC<SeriesDetailsTableProps> = ({
           isSortable
           useZebraStyles
           data-floating-menu-container
-        size={isTablet ? 'lg' : 'sm'}
-      >
+          size={isTablet ? 'lg' : 'sm'}
+        >
           {({ rows, headers, getHeaderProps, getTableProps, getRowProps }) => (
             <TableContainer>
-              <Table aria-label="Series summary" className={styles.table} {...getTableProps()}>
+              <Table aria-label={t('seriesSummary', 'Series summary')} className={styles.table} {...getTableProps()}>
                 <TableHead>
                   <TableRow>
                     {headers.map((header) => {

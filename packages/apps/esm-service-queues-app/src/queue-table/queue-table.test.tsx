@@ -227,7 +227,7 @@ describe('QueueTable', () => {
   it('uses the visitQueueNumberAttributeUuid defined at the top level', () => {
     mockUseConfig.mockReturnValue({
       ...configDefaults,
-      visitQueueNumberAttributeUuid: 'queue-number-visit-attr-uuid',
+      visitQueueNumberAttributeUuid: 'queue-number-visit-attr-type-uuid',
       queueTables: {
         ...configDefaults.queueTables,
         tableDefinitions: [
@@ -244,11 +244,9 @@ describe('QueueTable', () => {
       statusUuid: null,
     });
 
-    const rows = screen.queryAllByRole('row');
-    const aliceRow = rows[2];
-    const _cells = within(aliceRow).getAllByRole('cell');
-    // TODO: Figure out why this expectation is failing
-    // expect(cells[1].childNodes[0]).toHaveTextContent('42');
+    const aliceRow = screen.getByText(mockQueueEntries[1].patient.person.display).closest('tr');
+    expect(aliceRow).not.toBeNull();
+    expect(within(aliceRow).getByText('42')).toBeInTheDocument();
   });
 });
 

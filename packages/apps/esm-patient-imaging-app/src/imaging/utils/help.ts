@@ -128,20 +128,14 @@ function getBrowserOrigin(): URL | null {
 function shouldUseConfiguredOrthancRoot(candidate: URL, browserOrigin: URL | null): boolean {
   const normalizedPath = trimTrailingSlash(candidate.pathname.toLowerCase());
   const isLocalhostCandidate = ['localhost', '127.0.0.1'].includes(candidate.hostname);
-  const isLocalhostBrowser =
-    browserOrigin && ['localhost', '127.0.0.1'].includes(browserOrigin.hostname);
+  const isLocalhostBrowser = browserOrigin && ['localhost', '127.0.0.1'].includes(browserOrigin.hostname);
 
-  return (
-    normalizedPath.endsWith('/orthanc') ||
-    !browserOrigin ||
-    (isLocalhostCandidate && isLocalhostBrowser)
-  );
+  return normalizedPath.endsWith('/orthanc') || !browserOrigin || (isLocalhostCandidate && isLocalhostBrowser);
 }
 
 export function getOrthancPublicRoot(configuration: OrthancConfiguration): string {
   const browserOrigin = getBrowserOrigin();
-  const configuredRoot =
-    getSafeHttpUrl(configuration.orthancProxyUrl) ?? getSafeHttpUrl(configuration.orthancBaseUrl);
+  const configuredRoot = getSafeHttpUrl(configuration.orthancProxyUrl) ?? getSafeHttpUrl(configuration.orthancBaseUrl);
 
   if (configuredRoot && shouldUseConfiguredOrthancRoot(configuredRoot, browserOrigin)) {
     return trimTrailingSlash(configuredRoot.toString());

@@ -451,6 +451,11 @@ export const configSchema = {
       _default: '8b56eac7-5c76-4b9c-8c6f-1deab8d3fc47',
       _description: 'UUID del person attribute type para marcar pacientes desconocidos (booleano)',
     },
+    nationalityAttributeTypeUuid: {
+      _type: Type.UUID,
+      _default: '9b3df0a1-0c58-4f55-9868-9c38f1db1007',
+      _description: 'UUID del person attribute type Nacionalidad / país del documento',
+    },
     insuranceTypeAttributeTypeUuid: {
       _type: Type.UUID,
       _default: '56188294-b42c-481d-a987-4b495116c580',
@@ -584,6 +589,7 @@ export interface Config {
     identifierSourceUuid: string;
     openMrsIdIdentifierTypeUuid: string;
     unknownPatientAttributeTypeUuid: string;
+    nationalityAttributeTypeUuid: string;
     insuranceTypeAttributeTypeUuid: string;
     insuranceCodeAttributeTypeUuid: string;
     companionNameAttributeTypeUuid: string;

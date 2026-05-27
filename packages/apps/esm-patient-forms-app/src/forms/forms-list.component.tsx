@@ -2,7 +2,7 @@ import { DataTableSkeleton } from '@carbon/react';
 import { formatDatetime, ResponsiveWrapper, useLayoutType } from '@openmrs/esm-framework';
 import fuzzy from 'fuzzy';
 import { debounce } from 'lodash-es';
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import type { CompletedFormInfo, Form } from '../types';
@@ -39,7 +39,7 @@ const FormsList: React.FC<FormsListProps> = ({ forms, error, sectionName, handle
 
   const handleSearch = useMemo(() => debounce((searchTerm) => setSearchTerm(searchTerm), 300), []);
 
-  const getFormUnit = (form: Form) => {
+  const getFormUnit = useCallback((form: Form) => {
     const formName = form.display ?? form.name;
     const parenthesizedPrefix = formName.match(/^\(([^)]+)\)/)?.[1]?.trim();
 
@@ -54,7 +54,7 @@ const FormsList: React.FC<FormsListProps> = ({ forms, error, sectionName, handle
     }
 
     return '';
-  };
+  }, []);
 
   const unitOptions = useMemo(() => {
     const units = new Set<string>();
@@ -67,7 +67,7 @@ const FormsList: React.FC<FormsListProps> = ({ forms, error, sectionName, handle
     });
 
     return Array.from(units).sort((a, b) => a.localeCompare(b));
-  }, [forms]);
+  }, [forms, getFormUnit]);
 
   const filteredForms = useMemo(() => {
     const unitFilteredForms = selectedUnit
@@ -82,7 +82,7 @@ const FormsList: React.FC<FormsListProps> = ({ forms, error, sectionName, handle
       .filter(searchTerm, unitFilteredForms, { extract: (formInfo) => formInfo.form.display ?? formInfo.form.name })
       .sort((r1, r2) => r1.score - r2.score)
       .map((result) => result.original);
-  }, [forms, searchTerm, selectedUnit]);
+  }, [forms, searchTerm, selectedUnit, getFormUnit]);
 
   const tableHeaders = useMemo(() => {
     return [

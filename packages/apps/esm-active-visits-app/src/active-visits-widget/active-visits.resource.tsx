@@ -81,6 +81,7 @@ export function useActiveVisits() {
       location: visit?.location?.uuid,
       name: visit?.patient?.person?.display,
       patientUuid: visit?.patient?.uuid,
+      visitStartDatetime: visit?.startDatetime,
       visitStartTime: formatDatetime(parseDate(visit?.startDatetime)),
       visitType: visit?.visitType?.display,
       visitUuid: visit.uuid,
@@ -224,7 +225,12 @@ export function useActiveVisitsSorting(tableRows: Array<SortableVisitRow>) {
     if (value == null) return null;
 
     if (key === 'visitStartTime') {
-      return typeof value === 'string' || typeof value === 'number' ? new Date(value).getTime() : null;
+      const visitStartDatetime = item.visitStartDatetime ?? value;
+      const timestamp =
+        typeof visitStartDatetime === 'string' || typeof visitStartDatetime === 'number'
+          ? new Date(visitStartDatetime).getTime()
+          : Number.NaN;
+      return Number.isNaN(timestamp) ? null : timestamp;
     }
 
     if (key === 'age' && (typeof value === 'string' || typeof value === 'number') && !Number.isNaN(Number(value))) {

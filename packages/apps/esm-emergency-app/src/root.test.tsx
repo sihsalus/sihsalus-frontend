@@ -106,6 +106,7 @@ it('renders the emergency dashboard', () => {
       identifierSourceUuid: '8549f706-7e85-4c1d-9424-217d50a2988b',
       openMrsIdIdentifierTypeUuid: '05a29f94-c0ed-11e2-94be-8c13b969e334',
       unknownPatientAttributeTypeUuid: '8b56eac7-5c76-4b9c-8c6f-1deab8d3fc47',
+      nationalityAttributeTypeUuid: '9b3df0a1-0c58-4f55-9868-9c38f1db1007',
       insuranceTypeAttributeTypeUuid: '56188294-b42c-481d-a987-4b495116c580',
       insuranceCodeAttributeTypeUuid: '374b130f-7457-476f-87b1-f182aa77c434',
       companionNameAttributeTypeUuid: '4697d0e6-5b24-416b-aee6-708cd9a3a1db',

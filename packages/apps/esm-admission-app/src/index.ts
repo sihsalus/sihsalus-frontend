@@ -4,7 +4,6 @@ import { basePath, moduleName } from './constants';
 import AdmissionAppMenuLink from './links/admission-app-menu-link.component';
 import AdmissionDashboardLink from './links/admission-dashboard-link.component';
 import AdmissionMergePatientsAction from './links/admission-merge-patients-action.component';
-import ClinicalIdentitySummary from './patient/clinical-identity-summary.component';
 import Root from './root.component';
 
 const options = {
@@ -52,7 +51,5 @@ export const admissionHomeDashboard = getAsyncLifecycle(() => import('./pages/ad
 export const admissionHomeDashboardLink = getSyncLifecycle(AdmissionDashboardLink, options);
 
 export const admissionMergePatientsAction = getSyncLifecycle(AdmissionMergePatientsAction, options);
-
-export const clinicalIdentitySummary = getSyncLifecycle(ClinicalIdentitySummary, options);
 
 export const patientMerge = getAsyncLifecycle(() => import('./pages/patient-merge.component'), options);

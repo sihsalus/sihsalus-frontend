@@ -33,13 +33,6 @@
       "slot": "top-nav-actions-slot",
       "online": true,
       "offline": false
-    },
-    {
-      "component": "clinicalIdentitySummary",
-      "name": "admission-clinical-identity-summary",
-      "slot": "patient-info-slot",
-      "online": true,
-      "offline": true
     }
   ],
   "pages": [

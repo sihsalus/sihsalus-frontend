@@ -75,7 +75,10 @@
   "sessionSpecificDetails": "3. Detalles específicos",
   "sessionSpecificDetailsDescription": "Se asignarán a las respuestas de los formularios de todos los pacientes como datos precumplimentados.",
   "startGroupSession": "Iniciar Sesión de Grupo",
+  "startVisitError": "Error al iniciar la consulta",
   "trySearchWithPatientUniqueID": "Intente buscar con la descripción del grupo",
   "unknown": "Desconocido",
-  "unknownPostError": "Ocurrió un error desconocido al guardar los datos"
+  "unknownPostError": "Ocurrió un error desconocido al guardar los datos",
+  "visitStarted": "Consulta iniciada",
+  "visitStartedSuccessfully": "La consulta se inició correctamente"
 }

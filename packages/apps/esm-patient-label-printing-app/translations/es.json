@@ -1,3 +1,4 @@
 {
-  "patientIdNotFound": "ID de paciente no encontrado"
+  "patientIdNotFound": "ID de paciente no encontrado",
+  "printInProgress": "La impresión ya está en curso"
 }

@@ -98,13 +98,17 @@ describe('<ImagingDetailedSummary />', () => {
   });
 
   it('renders loading skeletons when data is loading', () => {
-    mockUseStudiesByPatient.mockReturnValue(buildStudiesHookResult({
-      isLoading: true,
-    }));
+    mockUseStudiesByPatient.mockReturnValue(
+      buildStudiesHookResult({
+        isLoading: true,
+      }),
+    );
 
-    mockUseRequestsByPatient.mockReturnValue(buildRequestsHookResult({
-      isLoading: true,
-    }));
+    mockUseRequestsByPatient.mockReturnValue(
+      buildRequestsHookResult({
+        isLoading: true,
+      }),
+    );
 
     render(<ImagingDetailedSummary patientUuid={patientUuid} />);
 
@@ -125,13 +129,17 @@ describe('<ImagingDetailedSummary />', () => {
   it('renders error states if API returns errors', () => {
     const error = new Error('Failed to fetch');
 
-    mockUseStudiesByPatient.mockReturnValue(buildStudiesHookResult({
-      error,
-    }));
+    mockUseStudiesByPatient.mockReturnValue(
+      buildStudiesHookResult({
+        error,
+      }),
+    );
 
-    mockUseRequestsByPatient.mockReturnValue(buildRequestsHookResult({
-      error,
-    }));
+    mockUseRequestsByPatient.mockReturnValue(
+      buildRequestsHookResult({
+        error,
+      }),
+    );
 
     render(<ImagingDetailedSummary patientUuid={patientUuid} />);
 
@@ -142,9 +150,11 @@ describe('<ImagingDetailedSummary />', () => {
   it('renders error states if studies error', () => {
     const error = new Error('Failed to fetch');
 
-    mockUseStudiesByPatient.mockReturnValue(buildStudiesHookResult({
-      error,
-    }));
+    mockUseStudiesByPatient.mockReturnValue(
+      buildStudiesHookResult({
+        error,
+      }),
+    );
 
     mockUseRequestsByPatient.mockReturnValue(buildRequestsHookResult());
 
@@ -157,21 +167,23 @@ describe('<ImagingDetailedSummary />', () => {
   it('renders RequestProcedureTable when requests exist', () => {
     mockUseStudiesByPatient.mockReturnValue(buildStudiesHookResult());
 
-    mockUseRequestsByPatient.mockReturnValue(buildRequestsHookResult({
-      data: [
-        {
-          id: 1,
-          patientUuid,
-          accessionNumber: 'ACC-001',
-          status: 'scheduled',
-          priority: 'high',
-          requestingPhysician: 'Dr. House',
-          studyInstanceUID: 'STUDY-123',
-          requestDescription: 'Request 1',
-          orthancConfiguration: { id: 1, orthancBaseUrl: 'http://orthanc.local' },
-        },
-      ],
-    }));
+    mockUseRequestsByPatient.mockReturnValue(
+      buildRequestsHookResult({
+        data: [
+          {
+            id: 1,
+            patientUuid,
+            accessionNumber: 'ACC-001',
+            status: 'scheduled',
+            priority: 'high',
+            requestingPhysician: 'Dr. House',
+            studyInstanceUID: 'STUDY-123',
+            requestDescription: 'Request 1',
+            orthancConfiguration: { id: 1, orthancBaseUrl: 'http://orthanc.local' },
+          },
+        ],
+      }),
+    );
 
     render(<ImagingDetailedSummary patientUuid={patientUuid} />);
 
@@ -181,21 +193,23 @@ describe('<ImagingDetailedSummary />', () => {
   it('triggers workspace launches when buttons clicked', () => {
     mockUseStudiesByPatient.mockReturnValue(buildStudiesHookResult());
 
-    mockUseRequestsByPatient.mockReturnValue(buildRequestsHookResult({
-      data: [
-        {
-          id: 1,
-          patientUuid,
-          accessionNumber: 'ACC-001',
-          status: 'scheduled',
-          priority: 'high',
-          requestingPhysician: 'Dr. House',
-          studyInstanceUID: 'STUDY-123',
-          requestDescription: 'Request1',
-          orthancConfiguration: { id: 1, orthancBaseUrl: 'http://orthanc.local' },
-        },
-      ],
-    }));
+    mockUseRequestsByPatient.mockReturnValue(
+      buildRequestsHookResult({
+        data: [
+          {
+            id: 1,
+            patientUuid,
+            accessionNumber: 'ACC-001',
+            status: 'scheduled',
+            priority: 'high',
+            requestingPhysician: 'Dr. House',
+            studyInstanceUID: 'STUDY-123',
+            requestDescription: 'Request1',
+            orthancConfiguration: { id: 1, orthancBaseUrl: 'http://orthanc.local' },
+          },
+        ],
+      }),
+    );
 
     render(<ImagingDetailedSummary patientUuid={patientUuid} />);
 

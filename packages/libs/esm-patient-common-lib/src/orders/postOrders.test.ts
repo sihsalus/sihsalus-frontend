@@ -86,13 +86,7 @@ describe('postOrdersOnNewEncounter', () => {
   });
 
   it('uses the current time when there is no active visit', async () => {
-    await postOrdersOnNewEncounter(
-      'patient-uuid',
-      'encounter-type-uuid',
-      null,
-      'location-uuid',
-      new AbortController(),
-    );
+    await postOrdersOnNewEncounter('patient-uuid', 'encounter-type-uuid', null, 'location-uuid', new AbortController());
 
     expect(console.warn).not.toHaveBeenCalled();
     expect(mockOpenmrsFetch).toHaveBeenCalledWith(`${restBaseUrl}/encounter`, {

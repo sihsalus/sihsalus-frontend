@@ -7,7 +7,7 @@ import {
   PatientPhoto,
 } from '@openmrs/esm-framework';
 import classNames from 'classnames';
-import React, { useCallback, useEffect, useRef, useState } from 'react';
+import React, { Suspense, useCallback, useEffect, useRef, useState } from 'react';
 import styles from './patient-banner.scss';
 
 interface PatientBannerProps {
@@ -94,14 +94,16 @@ const PatientBanner: React.FC<PatientBannerProps> = ({ patient, patientUuid, hid
         />
       ) : null}
       {showContactDetails && (
-        <div
-          className={classNames(styles.contactDetails, {
-            [styles.deceasedContactDetails]: patient.deceasedBoolean,
-            [styles.tabletContactDetails]: isTabletViewport,
-          })}
-        >
-          <PatientBannerContactDetails deceased={isDeceased} patientId={patient?.id} />
-        </div>
+        <Suspense fallback={null}>
+          <div
+            className={classNames(styles.contactDetails, {
+              [styles.deceasedContactDetails]: patient.deceasedBoolean,
+              [styles.tabletContactDetails]: isTabletViewport,
+            })}
+          >
+            <PatientBannerContactDetails deceased={isDeceased} patientId={patient?.id} />
+          </div>
+        </Suspense>
       )}
     </header>
   );

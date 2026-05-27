@@ -9,7 +9,23 @@ const logFail = (msg) => console.error(`${chalk.red.bold('[assemble]')} ${chalk.
 const importmap = { imports: {} };
 const routesRegistry = {};
 const outDir = process.env.SPA_OUTPUT_DIR || 'dist/spa';
-const hostSharedWorkspacePackages = [];
+const hostSharedWorkspacePackages = [
+  '@openmrs/esm-framework',
+  '@openmrs/esm-styleguide',
+  '@openmrs/esm-config',
+  '@openmrs/esm-extensions',
+  '@openmrs/esm-navigation',
+  '@openmrs/esm-offline',
+  '@openmrs/esm-react-utils',
+  '@openmrs/esm-state',
+  '@openmrs/esm-translations',
+  '@openmrs/esm-utils',
+  '@openmrs/esm-api',
+  '@openmrs/esm-emr-api',
+  '@openmrs/esm-error-handling',
+  '@openmrs/esm-expression-evaluator',
+  '@openmrs/esm-routes',
+];
 
 function copyFileReplacingIfNeeded(src, dest) {
   try {

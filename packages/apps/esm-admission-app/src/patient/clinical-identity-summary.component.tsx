@@ -46,34 +46,6 @@ export default function ClinicalIdentitySummary({ patient, patientUuid }: Clinic
   }
 
   return (
-    <section
-      className={styles.summary}
-      aria-label={t('minimumPatientIdentification', 'Identificación mínima del paciente')}
-    >
-      <dl>
-        <div>
-          <dt>{t('patient', 'Paciente')}</dt>
-          <dd>{getPatientName(patient)}</dd>
-        </div>
-        <div>
-          <dt>{t('medicalRecordOrDocument', 'HC/documento')}</dt>
-          <dd>{getIdentifier(patient) || '-'}</dd>
-        </div>
-        <div>
-          <dt>{t('ageBirthSex', 'Edad/nacimiento/sexo')}</dt>
-          <dd>{[getAge(patient.birthDate), patient.birthDate, patient.gender].filter(Boolean).join(' / ') || '-'}</dd>
-        </div>
-        <div>
-          <dt>{t('serviceLocation', 'Servicio/ubicación')}</dt>
-          <dd>
-            {isLoading ? (
-              <InlineLoading description={t('loadingVisit', 'Cargando visita')} />
-            ) : (
-              [visit?.service, visit?.location].filter(Boolean).join(' / ') || '-'
-            )}
-          </dd>
-        </div>
-      </dl>
-    </section>
+    null
   );
 }

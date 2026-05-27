@@ -164,7 +164,7 @@ async function readOverrideMap(): Promise<OpenmrsRoutes> {
           return { moduleName, routes: parsed };
         }
 
-        if (typeof parsed === 'string' && parsed.startsWith('http')) {
+        if (typeof parsed === 'string' && (parsed.startsWith('http') || parsed.startsWith('/'))) {
           const response = await fetch(parsed);
           const fetched: unknown = await response.json();
           if (isOpenmrsAppRoutes(fetched)) {
@@ -267,7 +267,7 @@ export function addRouteMapOverride(moduleName: string, routes: OpenmrsAppRoutes
 
   try {
     if (typeof routes === 'string') {
-      if (routes.startsWith('http')) {
+      if (routes.startsWith('http') || routes.startsWith('/')) {
         localStorage.setItem(OVERRIDE_PREFIX + moduleName, JSON.stringify(routes));
       } else {
         const maybeRoutes = JSON.parse(routes);

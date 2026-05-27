@@ -1,21 +1,5 @@
 import { Type, validators } from '@openmrs/esm-framework';
 
-const priorityTagColors = [
-  'red',
-  'magenta',
-  'purple',
-  'blue',
-  'cyan',
-  'teal',
-  'gray',
-  'orange',
-  'green',
-  'warm-gray',
-  'cool-gray',
-  'high-contrast',
-  'outline',
-] as const;
-
 export const configSchema = {
   orderEncounterType: {
     _type: Type.UUID,

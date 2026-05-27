@@ -8,7 +8,6 @@ vi.mock('@openmrs/esm-framework', async () => ({
   ...(await vi.importActual('@openmrs/esm-framework')),
   getPatientName: vi.fn(),
   PatientBannerActionsMenu: () => <div>actions</div>,
-  PatientBannerContactDetails: () => <div>contact-details</div>,
   PatientBannerPatientInfo: () => <div>patient-info</div>,
   PatientBannerToggleContactDetailsButton: ({ showContactDetails, toggleContactDetails }) => (
     <button type="button" onClick={toggleContactDetails}>
@@ -16,6 +15,10 @@ vi.mock('@openmrs/esm-framework', async () => ({
     </button>
   ),
   PatientPhoto: () => <div>patient-photo</div>,
+}));
+
+vi.mock('./patient-banner-contact-details.component', () => ({
+  PatientBannerContactDetails: () => <div>contact-details</div>,
 }));
 
 const mockPatient = {

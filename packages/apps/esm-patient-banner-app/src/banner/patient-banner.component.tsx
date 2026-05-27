@@ -1,13 +1,13 @@
 import {
   getPatientName,
   PatientBannerActionsMenu,
-  PatientBannerContactDetails,
   PatientBannerPatientInfo,
   PatientBannerToggleContactDetailsButton,
   PatientPhoto,
 } from '@openmrs/esm-framework';
 import classNames from 'classnames';
 import React, { Suspense, useCallback, useEffect, useRef, useState } from 'react';
+import { PatientBannerContactDetails } from './patient-banner-contact-details.component';
 import styles from './patient-banner.scss';
 
 interface PatientBannerProps {

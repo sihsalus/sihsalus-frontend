@@ -22,13 +22,7 @@ const authMode = process.env.SIHSALUS_AUTH_MODE || 'openmrs';
 const fhirBase = process.env.SIHSALUS_FHIR_BASE || `${backend}/openmrs/ws/fhir2/R4`;
 const proxyPort = Number(process.env.SIHSALUS_PORT) || 8080;
 const allowSelfSignedTls = process.env.SIHSALUS_ALLOW_SELF_SIGNED_TLS === 'true';
-
-if (allowSelfSignedTls) {
-  // Local dev against PUCP QA/dev backends may use certificates that are not
-  // trusted by the host OS. The OpenMRS CLI proxy handles this via `secure:false`,
-  // but the session shortcut below uses Node fetch directly.
-  process.env.NODE_TLS_REJECT_UNAUTHORIZED = '0';
-}
+let selfSignedBackendDispatcher;
 
 // SIHSALUS_DEV_APPS=esm-login-app,esm-home-app  → hot-reload those apps
 // Unset → serve pre-assembled importmap (no recompilation, just shell + proxy)
@@ -65,7 +59,9 @@ function logStartupSummary({ mode, apps = [] }) {
     logWarn(`SIHSALUS_BACKEND_URL not set, using default: ${backend}`);
   }
   if (allowSelfSignedTls) {
-    logWarn('SIHSALUS_ALLOW_SELF_SIGNED_TLS=true; backend TLS certificate verification is disabled for local dev.');
+    logWarn(
+      'SIHSALUS_ALLOW_SELF_SIGNED_TLS=true; backend TLS certificate verification is disabled only for backend-bound local dev requests.',
+    );
   }
   console.log();
 }
@@ -80,6 +76,19 @@ function rewriteLocalDevSetCookie(setCookie) {
   if (!setCookie) return setCookie;
   const rewrite = (cookie) => cookie.replace(/;\s*Secure/gi, '');
   return Array.isArray(setCookie) ? setCookie.map(rewrite) : rewrite(setCookie);
+}
+
+function getBackendFetchDispatcher() {
+  if (!allowSelfSignedTls) {
+    return undefined;
+  }
+
+  if (!selfSignedBackendDispatcher) {
+    const { Agent } = require('undici');
+    selfSignedBackendDispatcher = new Agent({ connect: { rejectUnauthorized: false } });
+  }
+
+  return selfSignedBackendDispatcher;
 }
 
 function findFreePort() {
@@ -129,7 +138,7 @@ function ensureOpenmrsCli() {
   const openmrsBin = resolve(workspaceRoot, 'node_modules', 'openmrs', 'dist', 'cli.js');
 
   if (!existsSync(rspackConfigEntry)) {
-    logWarn('@openmrs/rspack-config no encontrado en dist. Compilando workspace "@openmrs/rspack-config"...');
+    logWarn('@openmrs/rspack-config not found in dist. Building workspace "@openmrs/rspack-config"...');
     runWorkspaceBuild('@openmrs/rspack-config', workspaceRoot);
   }
 
@@ -137,11 +146,11 @@ function ensureOpenmrsCli() {
     return openmrsBin;
   }
 
-  logWarn('openmrs CLI no encontrado en node_modules/openmrs/dist/cli.js. Compilando workspace "openmrs"...');
+  logWarn('openmrs CLI not found at node_modules/openmrs/dist/cli.js. Building workspace "openmrs"...');
   runWorkspaceBuild('openmrs', workspaceRoot);
 
   if (!existsSync(openmrsBin)) {
-    logFail('La compilación terminó, pero sigue faltando node_modules/openmrs/dist/cli.js.');
+    logFail('Build finished, but node_modules/openmrs/dist/cli.js is still missing.');
     process.exit(1);
   }
 
@@ -156,13 +165,27 @@ function runWorkspaceBuild(workspaceName, workspaceRoot) {
   });
 
   if (build.error || build.status !== 0) {
-    logFail(`No se pudo compilar el workspace "${workspaceName}".`);
+    logFail(`Failed to build workspace "${workspaceName}".`);
     process.exit(build.status || 1);
   }
 }
 
 function createInMemoryRateLimit({ windowMs, max }) {
   const requestsByIp = new Map();
+  const cleanupIntervalMs = Math.max(1000, Math.min(windowMs, 60_000));
+  const cleanupTimer = setInterval(() => {
+    const now = Date.now();
+
+    for (const [ip, entry] of requestsByIp.entries()) {
+      if (entry.resetAt <= now) {
+        requestsByIp.delete(ip);
+      }
+    }
+  }, cleanupIntervalMs);
+
+  if (typeof cleanupTimer.unref === 'function') {
+    cleanupTimer.unref();
+  }
 
   return (req, res, next) => {
     const now = Date.now();
@@ -225,7 +248,9 @@ async function startWithProxy(cliArgs) {
     const timeout = setTimeout(() => controller.abort(), sessionFallbackTimeoutMs);
 
     try {
+      const backendFetchDispatcher = getBackendFetchDispatcher();
       const backendResponse = await fetch(getBackendSessionUrl(), {
+        ...(backendFetchDispatcher ? { dispatcher: backendFetchDispatcher } : {}),
         headers: {
           accept: req.get('accept') || 'application/json',
           ...(authorization ? { authorization } : {}),

@@ -179,7 +179,7 @@ const NewbornFluidBalanceForm: React.FC<DefaultPatientWorkspaceProps> = ({ close
   }
 
   return (
-    <Form className={styles.form}>
+    <Form className={styles.form} onSubmit={handleSubmit(saveFluidBalance, onError)}>
       <div className={styles.grid}>
         <Stack gap={4}>
           <Column>
@@ -239,16 +239,10 @@ const NewbornFluidBalanceForm: React.FC<DefaultPatientWorkspaceProps> = ({ close
         </Column>
       )}
       <ButtonSet className={isTablet ? styles.tablet : styles.desktop}>
-        <Button className={styles.button} kind="secondary" onClick={() => closeWorkspace()}>
+        <Button className={styles.button} kind="secondary" onClick={() => closeWorkspace()} type="button">
           {t('discard', 'Discard')}
         </Button>
-        <Button
-          className={styles.button}
-          kind="primary"
-          onClick={handleSubmit(saveFluidBalance, onError)}
-          disabled={isSubmitting}
-          type="submit"
-        >
+        <Button className={styles.button} kind="primary" disabled={isSubmitting} type="submit">
           {t('submit', 'Save and close')}
         </Button>
       </ButtonSet>

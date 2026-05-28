@@ -92,9 +92,9 @@ const mockUseConfig = vi.mocked(useConfig<RegistrationConfig>);
 const mockResourcesContextValue = {
   addressTemplate: null as unknown as AddressTemplate,
   currentSession: mockSession.data,
-  identifierTypes: [],
+  identifierTypes: undefined,
   relationshipTypes: [],
-} as Resources;
+} as unknown as Resources;
 
 const mockInitialFormValues = {
   additionalFamilyName: '',
@@ -181,6 +181,7 @@ function renderIdentifiersWithState(initialIdentifiers = {}) {
 
 describe('Identifiers', () => {
   beforeEach(() => {
+    mockResourcesContextValue.identifierTypes = undefined as unknown as Resources['identifierTypes'];
     mockUseConfig.mockReturnValue({
       ...getDefaultsFromConfigSchema(esmPatientRegistrationSchema),
       defaultPatientIdentifierTypes: ['OpenMRS ID'],

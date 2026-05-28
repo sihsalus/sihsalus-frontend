@@ -215,7 +215,7 @@ export const PatientRegistration: React.FC<PatientRegistrationProps> = ({ savePa
                   // Current session and identifiers are required for patient registration.
                   // If currentSession or identifierTypes are not available, then the
                   // user should be blocked to register the patient.
-                  disabled={!currentSession || !identifierTypes || props.isSubmitting}
+                  disabled={!currentSession || !identifierTypes?.length || props.isSubmitting}
                 >
                   {props.isSubmitting ? (
                     <InlineLoading

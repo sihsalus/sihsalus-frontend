@@ -165,6 +165,7 @@ const RelationshipView: React.FC<RelationshipViewProps> = ({
 
 export const RelationshipsSection = () => {
   const { relationshipTypes } = useContext(ResourcesContext);
+  const relationshipTypeResults = Array.isArray(relationshipTypes) ? [] : relationshipTypes?.results;
   const registrationContext = useContext(PatientRegistrationContext);
   const values = registrationContext?.values ?? ({} as FormValues);
   const configuredConfig = useConfig() as RegistrationConfig;
@@ -175,9 +176,9 @@ export const RelationshipsSection = () => {
   const minorResponsibleRelationshipTypes = config?.relationshipOptions?.minorResponsibleRelationshipTypes ?? [];
 
   useEffect(() => {
-    if (relationshipTypes) {
+    if (relationshipTypeResults) {
       const tmp: RelationshipType[] = [];
-      relationshipTypes.results.forEach((type) => {
+      relationshipTypeResults.forEach((type) => {
         const aIsToB = {
           display: type.displayAIsToB ? type.displayAIsToB : type.displayBIsToA,
           uuid: type.uuid,
@@ -196,7 +197,7 @@ export const RelationshipsSection = () => {
       });
       setDisplayRelationshipTypes(tmp);
     }
-  }, [relationshipTypes]);
+  }, [relationshipTypeResults]);
 
   if (!relationshipTypes) {
     return (

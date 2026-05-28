@@ -10,6 +10,7 @@ import {
   fetchAddressTemplate,
   fetchAllRelationshipTypes,
   fetchPatientIdentifierTypesWithSources,
+  type RelationshipTypesResponse,
   ResourcesContext,
 } from './offline.resources';
 import { FormManager } from './patient-registration/form-manager';
@@ -20,7 +21,7 @@ export default function Root() {
   const isOnline = useConnectivity();
   const currentSession = useSession();
   const { data: addressTemplate } = useSWRImmutable('patientRegistrationAddressTemplate', fetchAddressTemplate);
-  const { data: relationshipTypes } = useSWRImmutable(
+  const { data: relationshipTypes } = useSWRImmutable<RelationshipTypesResponse>(
     'patientRegistrationRelationshipTypes',
     fetchAllRelationshipTypes,
   );

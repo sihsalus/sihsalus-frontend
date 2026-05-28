@@ -28,8 +28,8 @@ describe('<DeleteConditionModal />', () => {
   it('renders a modal with the correct elements', () => {
     render(<DeleteConditionModal {...defaultProps} />);
 
-    expect(screen.getByRole('heading', { name: /delete condition/i })).toBeInTheDocument();
-    expect(screen.getByText(/are you sure you want to delete this condition/i)).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: /delete antecedent/i })).toBeInTheDocument();
+    expect(screen.getByText(/are you sure you want to delete this antecedent/i)).toBeInTheDocument();
     expect(screen.getByRole('button', { name: /close/i })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: /cancel/i })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: /delete/i })).toBeInTheDocument();
@@ -60,7 +60,7 @@ describe('<DeleteConditionModal />', () => {
     expect(mockShowSnackbar).toHaveBeenCalledWith({
       isLowContrast: true,
       kind: 'success',
-      title: 'Condition deleted',
+      title: 'Antecedent deleted',
     });
   });
 
@@ -81,7 +81,7 @@ describe('<DeleteConditionModal />', () => {
     expect(mockShowSnackbar).toHaveBeenCalledWith({
       isLowContrast: false,
       kind: 'error',
-      title: 'Error deleting condition',
+      title: 'Error deleting antecedent',
       subtitle: 'Internal server error',
     });
     expect(deleteButton).toBeDisabled();

@@ -1,6 +1,6 @@
-@use '@carbon/layout';
-@use '@carbon/type';
-@use '@openmrs/esm-styleguide/src/vars' as *;
+@use "@carbon/layout";
+@use "@carbon/type";
+@use "@openmrs/esm-styleguide/src/vars" as *;
 
 .contactDetails,
 .deceased {
@@ -10,29 +10,24 @@
 }
 
 .heading {
-  @include type.type-style('heading-compact-01');
+  @include type.type-style("heading-compact-01");
   color: $text-02;
 }
 
-.row {
-  @include type.type-style('body-compact-01');
-  display: flex;
-
-  &:first-child {
-    border-bottom: 1px solid $ui-03;
-  }
+.tiles {
+  @include type.type-style("body-compact-01");
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(16rem, 1fr));
 }
 
-.row > .col {
-  flex: 1;
+.tiles > .col {
+  min-width: 0;
   padding: layout.$spacing-05;
-
-  &:nth-of-type(2n + 1) {
-    border-right: 1px solid $ui-03;
-  }
+  border-right: 1px solid $ui-03;
+  border-bottom: 1px solid $ui-03;
 }
 
-.row li {
+.tiles li {
   margin: layout.$spacing-03 0;
 }
 

@@ -26,7 +26,7 @@ beforeEach(() => {
   vi.clearAllMocks();
 });
 
-it('renders an empty state view if conditions data is unavailable', async () => {
+it('renders an empty state view if antecedents data is unavailable', async () => {
   mockUseConditions.mockReturnValue({
     conditions: [],
     error: null,
@@ -38,13 +38,13 @@ it('renders an empty state view if conditions data is unavailable', async () => 
   render(<ConditionsDetailedSummary patient={mockPatient} />);
 
   expect(screen.queryByRole('progressbar')).not.toBeInTheDocument();
-  expect(screen.getByRole('heading', { name: /conditions/i })).toBeInTheDocument();
+  expect(screen.getByRole('heading', { name: /antecedents/i })).toBeInTheDocument();
   expect(screen.getByTitle(/Empty data illustration/i)).toBeInTheDocument();
-  expect(screen.getByText(/There are no conditions to display for this patient/i)).toBeInTheDocument();
-  expect(screen.getByText(/Record conditions/i)).toBeInTheDocument();
+  expect(screen.getByText(/There are no antecedents to display for this patient/i)).toBeInTheDocument();
+  expect(screen.getByText(/Record antecedents/i)).toBeInTheDocument();
 });
 
-it('renders an error state view if there is a problem fetching conditions data', async () => {
+it('renders an error state view if there is a problem fetching antecedents data', async () => {
   const error = {
     name: 'UnauthorizedError',
     message: 'You are not logged in',
@@ -73,11 +73,12 @@ it('renders an error state view if there is a problem fetching conditions data',
   ).toBeInTheDocument();
 });
 
-it("renders a detailed summary of the patient's conditions when present", async () => {
+it("renders a detailed summary of the patient's antecedents when present", async () => {
   mockUseConditions.mockReturnValue({
     conditions: [
       {
         clinicalStatus: 'Active',
+        antecedentType: 'pathological',
         conceptId: '138571AAAAAAAAAAAAAAAAAAAAAAAAAAAAAA',
         display: 'HIV Positive',
         id: 'cbffbb42-41b4-4c38-bc14-842ef675df85',
@@ -141,22 +142,22 @@ it("renders a detailed summary of the patient's conditions when present", async 
 
   render(<ConditionsDetailedSummary patient={mockPatient as unknown as fhir.Patient} />);
 
-  expect(screen.getByRole('heading', { name: /conditions/i })).toBeInTheDocument();
+  expect(screen.getByRole('heading', { name: /antecedents/i })).toBeInTheDocument();
   expect(screen.getByRole('button', { name: /add/i })).toBeInTheDocument();
 
-  const expectedColumnHeaders = [/condition/, /date of onset/, /status/];
-  expectedColumnHeaders.forEach((header) => {
-    expect(screen.getByRole('columnheader', { name: new RegExp(header, 'i') })).toBeInTheDocument();
-  });
+  expect(screen.getByRole('button', { name: /^antecedent$/i })).toBeInTheDocument();
+  expect(screen.getByRole('button', { name: /antecedent type/i })).toBeInTheDocument();
+  expect(screen.getByRole('button', { name: /date of onset/i })).toBeInTheDocument();
+  expect(screen.getByRole('button', { name: /status/i })).toBeInTheDocument();
 
-  const expectedTableRows = [/hiv positive/, /malaria, confirmed/, /Malaria sevère/, /anaemia/];
+  const expectedTableRows = [/hiv positive/, /patol|patholog/, /malaria, confirmed/, /Malaria sevère/, /anaemia/];
   expectedTableRows.forEach((row) => {
     expect(screen.getByRole('row', { name: new RegExp(row, 'i') })).toBeInTheDocument();
   });
   expect(screen.getAllByRole('row').length).toEqual(8);
 });
 
-it('clicking the Add button or Record Conditions link launches the conditions form', async () => {
+it('clicking the Add button or Record Antecedents link launches the antecedents form', async () => {
   const user = userEvent.setup();
 
   mockUseConditions.mockReturnValue({
@@ -169,7 +170,7 @@ it('clicking the Add button or Record Conditions link launches the conditions fo
 
   render(<ConditionsDetailedSummary patient={mockPatient as unknown as fhir.Patient} />);
 
-  const recordConditionsLink = screen.getByText(/record conditions/i);
+  const recordConditionsLink = screen.getByText(/record antecedents/i);
 
   await user.click(recordConditionsLink);
 

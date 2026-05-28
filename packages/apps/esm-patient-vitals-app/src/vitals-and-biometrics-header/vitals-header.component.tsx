@@ -272,6 +272,17 @@ const VitalsHeader: React.FC<VitalsHeaderProps> = ({
                 value={latestVitals?.muac ?? '--'}
               />
             )}
+            {latestVitals?.abdominalCircumference && (
+              <VitalsHeaderItem
+                interpretation={latestVitals.abdominalCircumferenceRenderInterpretation}
+                unitName={t('abdominalCircumference', 'Abdominal circumference')}
+                unitSymbol={
+                  conceptUnits.get(config.concepts.abdominalCircumferenceUuid) ??
+                  config.biometrics.abdominalCircumferenceUnit
+                }
+                value={latestVitals.abdominalCircumference}
+              />
+            )}
           </div>
         </div>
       </div>

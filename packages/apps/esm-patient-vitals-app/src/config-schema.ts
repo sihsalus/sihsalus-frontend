@@ -42,6 +42,10 @@ export const configSchema = {
       _type: Type.ConceptUuid,
       _default: '1343AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA',
     },
+    abdominalCircumferenceUuid: {
+      _type: Type.ConceptUuid,
+      _default: '18fcbd1f-5b4f-44ed-a664-8637a83cc7eb',
+    },
     bodyMassIndexUuid: {
       _type: Type.ConceptUuid,
       _default: '1342AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA',
@@ -114,6 +118,10 @@ export const configSchema = {
       _type: Type.String,
       _default: 'kg / m²',
     },
+    abdominalCircumferenceUnit: {
+      _type: Type.String,
+      _default: 'cm',
+    },
     bmiMinimumAge: {
       _type: Type.Number,
       _default: 0,
@@ -123,6 +131,7 @@ export const configSchema = {
 };
 
 export interface BiometricsConfigObject {
+  abdominalCircumferenceUnit: string;
   bmiUnit: string;
   heightUnit: string;
   weightUnit: string;
@@ -141,6 +150,7 @@ export interface ConfigObject {
     respiratoryRateUuid: string;
     generalPatientNoteUuid: string;
     midUpperArmCircumferenceUuid: string;
+    abdominalCircumferenceUuid: string;
     bodyMassIndexUuid: string;
     vitalSignsConceptSetUuid: string;
   };

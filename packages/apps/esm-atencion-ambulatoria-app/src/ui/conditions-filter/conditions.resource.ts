@@ -1,5 +1,12 @@
 import { type DataTableSortState } from '@carbon/react';
 import { fhirBaseUrl, openmrsFetch, restBaseUrl, useConfig } from '@openmrs/esm-framework';
+import {
+  type AntecedentTypeCode,
+  buildAntecedentTypeCategory,
+  type FhirConditionCategory,
+  getAntecedentTypeFromCategory,
+  getConditionCategoryDisplay,
+} from '@sihsalus/esm-sihsalus-shared';
 import { useMemo, useState } from 'react';
 import useSWR from 'swr';
 
@@ -13,6 +20,7 @@ export type Condition = {
   recordedDate: string;
   id: string;
   abatementDateTime?: string;
+  antecedentType?: AntecedentTypeCode;
   categoryText?: string;
   noteText?: string;
 };
@@ -60,7 +68,7 @@ type CreatePayload = {
     reference: string;
   };
   abatementDateTime?: string;
-  category?: Array<{ text?: string }>;
+  category?: Array<FhirConditionCategory>;
   note?: Array<{ text?: string }>;
 };
 
@@ -76,6 +84,7 @@ export type FormFields = {
   onsetDateTime: string;
   patientId: string;
   userId: string;
+  antecedentType?: AntecedentTypeCode | string;
   category?: string;
   note?: string;
 };
@@ -230,7 +239,8 @@ export function useConditionsSearch(conditionToLookup: string) {
 
 function mapConditionProperties(condition: FHIRCondition): Condition {
   const status = condition?.clinicalStatus?.coding[0]?.code;
-  const categoryText = condition?.category?.[0]?.text ?? undefined;
+  const antecedentType = getAntecedentTypeFromCategory(condition?.category);
+  const categoryText = getConditionCategoryDisplay(condition?.category);
   const noteText = condition?.note?.[0]?.text ?? undefined;
   return {
     clinicalStatus: status ? status.charAt(0).toUpperCase() + status.slice(1).toLowerCase() : '',
@@ -240,6 +250,7 @@ function mapConditionProperties(condition: FHIRCondition): Condition {
     onsetDateTime: condition?.onsetDateTime,
     recordedDate: condition?.recordedDate,
     id: condition?.id,
+    antecedentType,
     categoryText,
     noteText,
   };
@@ -276,7 +287,7 @@ export async function createCondition(payload: FormFields) {
     subject: {
       reference: `Patient/${payload.patientId}`,
     },
-    category: payload.category ? [{ text: payload.category }] : undefined,
+    category: buildAntecedentTypeCategory(payload.antecedentType ?? payload.category),
     note: payload.note ? [{ text: payload.note }] : undefined,
   };
 
@@ -324,7 +335,7 @@ export async function updateCondition(conditionId, payload: FormFields) {
     subject: {
       reference: `Patient/${payload.patientId}`,
     },
-    category: payload.category ? [{ text: payload.category }] : undefined,
+    category: buildAntecedentTypeCategory(payload.antecedentType ?? payload.category),
     note: payload.note ? [{ text: payload.note }] : undefined,
   };
 
@@ -356,11 +367,12 @@ export interface ConditionTableRow extends Condition {
   id: string;
   condition: string;
   abatementDateTime: string;
+  antecedentTypeRender: string;
   onsetDateTimeRender: string;
 }
 
 export interface ConditionTableHeader {
-  key: 'display' | 'onsetDateTimeRender' | 'status';
+  key: 'display' | 'antecedentTypeRender' | 'onsetDateTimeRender' | 'status';
   header: string;
   isSortable: true;
   sortFunc: (valueA: ConditionTableRow, valueB: ConditionTableRow) => number;

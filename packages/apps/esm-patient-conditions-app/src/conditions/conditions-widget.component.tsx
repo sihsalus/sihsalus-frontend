@@ -17,6 +17,7 @@ import {
 } from '@carbon/react';
 import { WarningFilled } from '@carbon/react/icons';
 import { OpenmrsDatePicker, ResponsiveWrapper, showSnackbar, useDebounce, useSession } from '@openmrs/esm-framework';
+import { type AntecedentTypeCode, antecedentTypeOptions, getAntecedentTypeLabel } from '@sihsalus/esm-sihsalus-shared';
 import { Controller, useFormContext } from 'react-hook-form';
 import {
   type CodedCondition,
@@ -104,6 +105,7 @@ const ConditionsWidget: React.FC<ConditionsWidgetProps> = ({
       onsetDateTime: getValues('onsetDateTime') ? dayjs(getValues('onsetDateTime')).format() : null,
       patientId: patientUuid,
       userId: session?.user?.uuid,
+      antecedentType: getValues('antecedentType') as AntecedentTypeCode,
     };
 
     try {
@@ -112,8 +114,8 @@ const ConditionsWidget: React.FC<ConditionsWidgetProps> = ({
 
       showSnackbar({
         kind: 'success',
-        subtitle: t('conditionNowVisible', 'It is now visible on the Conditions page'),
-        title: t('conditionSaved', 'Condition saved'),
+        subtitle: t('antecedentNowVisible', 'It is now visible on the Antecedents page'),
+        title: t('antecedentSaved', 'Antecedent saved'),
       });
 
       closeWorkspaceWithSavedChanges();
@@ -146,6 +148,7 @@ const ConditionsWidget: React.FC<ConditionsWidgetProps> = ({
       onsetDateTime: getValues('onsetDateTime') ? dayjs(getValues('onsetDateTime')).format() : null,
       patientId: patientUuid,
       userId: session?.user?.uuid,
+      antecedentType: getValues('antecedentType') as AntecedentTypeCode,
     };
 
     try {
@@ -154,8 +157,8 @@ const ConditionsWidget: React.FC<ConditionsWidgetProps> = ({
 
       showSnackbar({
         kind: 'success',
-        subtitle: t('conditionNowVisible', 'It is now visible on the Conditions page'),
-        title: t('conditionUpdated', 'Condition updated'),
+        subtitle: t('antecedentNowVisible', 'It is now visible on the Antecedents page'),
+        title: t('antecedentUpdated', 'Antecedent updated'),
       });
 
       closeWorkspaceWithSavedChanges();
@@ -209,7 +212,39 @@ const ConditionsWidget: React.FC<ConditionsWidgetProps> = ({
   return (
     <div className={styles.formContainer}>
       <Stack gap={7}>
-        <FormGroup legendText={<RequiredFieldLabel label={t('condition', 'Condition')} t={t} />}>
+        <FormGroup legendText={<RequiredFieldLabel label={t('antecedentType', 'Antecedent type')} t={t} />}>
+          <Controller
+            name="antecedentType"
+            control={control}
+            render={({ field: { onChange, value, onBlur } }) => (
+              <RadioButtonGroup
+                className={styles.radioGroup}
+                invalid={Boolean(errors?.antecedentType)}
+                name="antecedentType"
+                onBlur={onBlur}
+                onChange={onChange}
+                orientation="vertical"
+                valueSelected={value ?? ''}
+                aria-labelledby={errors?.antecedentType ? 'antecedentTypeError' : undefined}
+              >
+                {antecedentTypeOptions.map((option) => (
+                  <RadioButton
+                    key={option.code}
+                    id={`antecedent-type-${option.code}`}
+                    labelText={getAntecedentTypeLabel(option.code, t)}
+                    value={option.code}
+                  />
+                ))}
+              </RadioButtonGroup>
+            )}
+          />
+          {errors?.antecedentType && (
+            <p id="antecedentTypeError" className={styles.errorMessage}>
+              {errors.antecedentType.message}
+            </p>
+          )}
+        </FormGroup>
+        <FormGroup legendText={<RequiredFieldLabel label={t('antecedent', 'Antecedent')} t={t} />}>
           {isEditing ? (
             <FormLabel className={styles.conditionLabel}>{displayName}</FormLabel>
           ) : (
@@ -227,7 +262,7 @@ const ConditionsWidget: React.FC<ConditionsWidgetProps> = ({
                       disabled={isEditing}
                       id="conditionsSearch"
                       aria-labelledby={errors?.conditionName ? 'conditionsSearchError' : undefined}
-                      labelText={t('enterCondition', 'Enter condition')}
+                      labelText={t('enterAntecedent', 'Enter antecedent')}
                       onChange={(event) => {
                         const val = event.target.value;
                         onChange(val);
@@ -237,7 +272,7 @@ const ConditionsWidget: React.FC<ConditionsWidgetProps> = ({
                         setSearchTerm('');
                         setSelectedCondition(null);
                       }}
-                      placeholder={t('searchConditions', 'Search conditions')}
+                      placeholder={t('searchAntecedents', 'Search antecedents')}
                       ref={searchInputRef}
                       renderIcon={errors?.conditionName && ((props) => <WarningFilled fill="red" {...props} />)}
                       value={(() => {

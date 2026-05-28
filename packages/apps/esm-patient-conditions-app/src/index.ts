@@ -25,7 +25,7 @@ export const conditionsDetailedSummary = getSyncLifecycle(conditionsDetailedSumm
 export const conditionsWidget = getAsyncLifecycle(() => import('./conditions/conditions-widget.component'), options);
 
 export const conditionsDashboardLink =
-  // t('Conditions', 'Conditions')
+  // t('Antecedentes', 'Antecedentes')
   getSyncLifecycle(
     createDashboardLink({
       ...dashboardMeta,
@@ -39,7 +39,7 @@ export const conditionDeleteConfirmationDialog = getAsyncLifecycle(
   options,
 );
 
-// t('recordCondition', 'Record a Condition')
+// t('recordAntecedent', 'Record antecedent')
 export const conditionsFormWorkspace = getAsyncLifecycle(
   () => import('./conditions/conditions-form.workspace'),
   options,

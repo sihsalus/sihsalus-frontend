@@ -6,7 +6,7 @@ import {
   restBaseUrl,
   useConfig,
 } from '@openmrs/esm-framework';
-import { type ObsRecord } from '@openmrs/esm-patient-common-lib';
+import { type ObsRecord, useReferenceRanges } from '@openmrs/esm-patient-common-lib';
 import { useCallback, useEffect, useMemo } from 'react';
 import useSWRImmutable from 'swr/immutable';
 import useSWRInfinite, { type SWRInfiniteKeyedMutator } from 'swr/infinite';
@@ -14,7 +14,13 @@ import { type ConfigObject } from '../config-schema';
 import { type VitalsBiometricsFormData } from '../vitals-biometrics-form/vitals-biometrics-form.workspace';
 
 import { assessValue, calculateBodyMassIndex, getReferenceRangesForConcept, interpretBloodPressure } from './helpers';
-import type { FHIRSearchBundleResponse, MappedVitals, PatientVitalsAndBiometrics, VitalsResponse } from './types';
+import type {
+  FHIRSearchBundleResponse,
+  MappedVitals,
+  ObsReferenceRanges,
+  PatientVitalsAndBiometrics,
+  VitalsResponse,
+} from './types';
 
 const pageSize = 100;
 
@@ -139,22 +145,77 @@ export function useVitalsAndBiometrics(patientUuid: string, mode: VitalsAndBiome
   const { conceptMetadata } = useVitalsConceptMetadata();
   const { concepts } = useConfig<ConfigObject>();
   const biometricsConcepts = useMemo(
-    () => [concepts.heightUuid, concepts.midUpperArmCircumferenceUuid, concepts.weightUuid],
-    [concepts.heightUuid, concepts.midUpperArmCircumferenceUuid, concepts.weightUuid],
+    () => [
+      concepts.heightUuid,
+      concepts.midUpperArmCircumferenceUuid,
+      concepts.abdominalCircumferenceUuid,
+      concepts.weightUuid,
+    ],
+    [
+      concepts.abdominalCircumferenceUuid,
+      concepts.heightUuid,
+      concepts.midUpperArmCircumferenceUuid,
+      concepts.weightUuid,
+    ],
+  );
+  const observationConcepts = useMemo(
+    () => [
+      concepts.systolicBloodPressureUuid,
+      concepts.diastolicBloodPressureUuid,
+      concepts.pulseUuid,
+      concepts.temperatureUuid,
+      concepts.oxygenSaturationUuid,
+      concepts.heightUuid,
+      concepts.weightUuid,
+      concepts.respiratoryRateUuid,
+      concepts.midUpperArmCircumferenceUuid,
+      concepts.abdominalCircumferenceUuid,
+      concepts.generalPatientNoteUuid,
+    ],
+    [
+      concepts.abdominalCircumferenceUuid,
+      concepts.diastolicBloodPressureUuid,
+      concepts.generalPatientNoteUuid,
+      concepts.heightUuid,
+      concepts.midUpperArmCircumferenceUuid,
+      concepts.oxygenSaturationUuid,
+      concepts.pulseUuid,
+      concepts.respiratoryRateUuid,
+      concepts.systolicBloodPressureUuid,
+      concepts.temperatureUuid,
+      concepts.weightUuid,
+    ],
+  );
+  const referenceRangeConcepts = useMemo(
+    () => observationConcepts.filter((uuid) => uuid !== concepts.generalPatientNoteUuid),
+    [concepts.generalPatientNoteUuid, observationConcepts],
   );
 
   const conceptUuids = useMemo(
     () =>
       (mode === 'both'
-        ? Object.values(concepts)
-        : Object.values(concepts).filter(
+        ? observationConcepts
+        : observationConcepts.filter(
             (uuid) =>
               (mode === 'vitals' && !biometricsConcepts.includes(uuid)) ||
               (mode === 'biometrics' && biometricsConcepts.includes(uuid)),
           )
       ).join(','),
-    [concepts, biometricsConcepts, mode],
+    [observationConcepts, biometricsConcepts, mode],
   );
+  const conceptUuidList = useMemo(
+    () =>
+      (mode === 'both'
+        ? referenceRangeConcepts
+        : referenceRangeConcepts.filter(
+            (uuid) =>
+              (mode === 'vitals' && !biometricsConcepts.includes(uuid)) ||
+              (mode === 'biometrics' && biometricsConcepts.includes(uuid)),
+          )
+      ).filter(Boolean),
+    [referenceRangeConcepts, biometricsConcepts, mode],
+  );
+  const { ranges: patientReferenceRanges } = useReferenceRanges(patientUuid, conceptUuidList);
 
   const getPage = useCallback(
     (page: number, prevPageData: FHIRSearchBundleResponse): VitalsAndBiometricsSwrKey => ({
@@ -203,11 +264,14 @@ export function useVitalsAndBiometrics(patientUuid: string, mode: VitalsAndBiome
           return 'weight';
         case concepts.midUpperArmCircumferenceUuid:
           return 'muac';
+        case concepts.abdominalCircumferenceUuid:
+          return 'abdominalCircumference';
         default:
           return ''; // or throw an error for unknown conceptUuid
       }
     },
     [
+      concepts.abdominalCircumferenceUuid,
       concepts.heightUuid,
       concepts.midUpperArmCircumferenceUuid,
       concepts.systolicBloodPressureUuid,
@@ -224,7 +288,7 @@ export function useVitalsAndBiometrics(patientUuid: string, mode: VitalsAndBiome
     const vitalsHashTable = data?.[0]?.data?.entry
       ?.map((entry) => entry.resource)
       .filter(Boolean)
-      .map(vitalsProperties(conceptMetadata))
+      .map(vitalsProperties(conceptMetadata, patientReferenceRanges))
       ?.reduce((vitalsHashTable, vitalSign) => {
         const recordedDate = new Date(vitalSign.recordedDate).toISOString();
 
@@ -268,7 +332,7 @@ export function useVitalsAndBiometrics(patientUuid: string, mode: VitalsAndBiome
 
       return result;
     });
-  }, [data, conceptMetadata, getVitalsMapKey, concepts, mode]);
+  }, [data, conceptMetadata, patientReferenceRanges, getVitalsMapKey, concepts, mode]);
 
   return {
     data: data ? formattedObs : undefined,
@@ -314,17 +378,36 @@ function handleFetch({ patientUuid, conceptUuids, page, prevPageData }: VitalsAn
  * Mapper that converts a FHIR Observation resource into a MappedVitals object.
  * @internal
  */
-function vitalsProperties(conceptMetadata: Array<ConceptMetadata> | undefined) {
-  return (resource: FHIRResource['resource']): MappedVitals => ({
-    code: resource?.code?.coding?.[0]?.code,
-    encounterId: resource?.encounter?.reference?.split('/')?.pop() ?? '',
-    interpretation: assessValue(
-      resource?.valueQuantity?.value,
-      getReferenceRangesForConcept(resource?.code?.coding?.[0]?.code, conceptMetadata),
-    ),
-    recordedDate: resource?.effectiveDateTime,
-    value: resource?.valueQuantity?.value,
-  });
+function getPatientReferenceRange(
+  conceptUuid: string | undefined | null,
+  conceptMetadata: Array<ConceptMetadata> | undefined,
+  patientReferenceRanges: Map<string, ObsReferenceRanges>,
+): ObsReferenceRanges | undefined {
+  if (!conceptUuid) {
+    return undefined;
+  }
+
+  return patientReferenceRanges.get(conceptUuid) ?? getReferenceRangesForConcept(conceptUuid, conceptMetadata);
+}
+
+function vitalsProperties(
+  conceptMetadata: Array<ConceptMetadata> | undefined,
+  patientReferenceRanges: Map<string, ObsReferenceRanges>,
+) {
+  return (resource: FHIRResource['resource']): MappedVitals => {
+    const conceptUuid = resource?.code?.coding?.[0]?.code;
+
+    return {
+      code: conceptUuid,
+      encounterId: resource?.encounter?.reference?.split('/')?.pop() ?? '',
+      interpretation: assessValue(
+        resource?.valueQuantity?.value,
+        getPatientReferenceRange(conceptUuid, conceptMetadata, patientReferenceRanges),
+      ),
+      recordedDate: resource?.effectiveDateTime,
+      value: resource?.valueQuantity?.value,
+    };
+  };
 }
 
 export function saveVitalsAndBiometrics(

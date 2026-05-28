@@ -114,14 +114,17 @@ describe('BiometricsOverview', () => {
 
     const initialRowElements = getDataRowText();
 
-    const expectedColumnHeaders = [/date/, /weight/, /height/, /bmi/, /muac/];
+    const expectedColumnHeaders = [/date/, /weight/, /height/, /bmi/, /muac/, /abdominal circumference/];
     expectedColumnHeaders.map((header) =>
       expect(screen.getByRole('columnheader', { name: new RegExp(header, 'i') })).toBeInTheDocument(),
     );
 
     const tableRows = getDataRowText().map((row) => row ?? '');
     expect(
-      tableRows.some((row) => row.includes('90') && row.includes('186') && row.includes('26.0') && row.includes('17')),
+      tableRows.some(
+        (row) =>
+          row.includes('90') && row.includes('186') && row.includes('26.0') && row.includes('17') && row.includes('95'),
+      ),
     ).toBe(true);
 
     const sortRowsButton = screen.getByRole('button', { name: /date and time/i });
@@ -165,6 +168,7 @@ describe('BiometricsOverview', () => {
     expect(screen.getByRole('tab', { name: /weight/i })).toBeInTheDocument();
     expect(screen.getByRole('tab', { name: /height/i })).toBeInTheDocument();
     expect(screen.getByRole('tab', { name: /bmi/i })).toBeInTheDocument();
+    expect(screen.getByRole('tab', { name: /abdominal circumference/i })).toBeInTheDocument();
   });
 
   it('hides BMI column when bmiMinimumAge is set and patient is under the minimum age', async () => {

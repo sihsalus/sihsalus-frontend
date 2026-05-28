@@ -45,7 +45,7 @@ const ActiveVisitActions: React.FC<ActiveVisitActionsInterface> = ({ visit: _vis
               renderIcon={AddIcon}
             />
             <MenuItem
-              label={t('addCondition', 'Add condition')}
+              label={t('addAntecedent', 'Add antecedent')}
               onClick={launchConditionsFormWorkspace}
               renderIcon={AddIcon}
             />
@@ -94,7 +94,7 @@ const ActiveVisitActions: React.FC<ActiveVisitActionsInterface> = ({ visit: _vis
               renderIcon={AddIcon}
             />
             <MenuItem
-              label={t('addCondition', 'Add condition')}
+              label={t('addAntecedent', 'Add antecedent')}
               onClick={launchConditionsFormWorkspace}
               renderIcon={AddIcon}
             />

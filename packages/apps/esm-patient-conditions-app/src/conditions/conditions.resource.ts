@@ -1,5 +1,12 @@
 import { type DataTableSortState } from '@carbon/react';
 import { fhirBaseUrl, openmrsFetch, restBaseUrl, useConfig } from '@openmrs/esm-framework';
+import {
+  type AntecedentTypeCode,
+  buildAntecedentTypeCategory,
+  type FhirConditionCategory,
+  getAntecedentTypeFromCategory,
+  getConditionCategoryDisplay,
+} from '@sihsalus/esm-sihsalus-shared';
 import { useMemo, useState } from 'react';
 import useSWR from 'swr';
 
@@ -43,6 +50,12 @@ export interface FHIRCondition {
     status: string;
   };
   abatementDateTime?: string;
+  category?: Array<FhirConditionCategory>;
+  note?: Array<{
+    authorString?: string;
+    text?: string;
+    time?: string;
+  }>;
 }
 
 interface CodingData {
@@ -65,6 +78,9 @@ export type Condition = {
   recordedDate: string;
   id: string;
   abatementDateTime?: string;
+  antecedentType?: AntecedentTypeCode;
+  categoryText?: string;
+  noteText?: string;
 };
 
 export interface ConditionDataTableRow {
@@ -110,6 +126,8 @@ type CreatePayload = {
     reference: string;
   };
   abatementDateTime?: string;
+  category?: Array<FhirConditionCategory>;
+  note?: Array<{ text?: string }>;
 };
 
 type EditPayload = CreatePayload & {
@@ -124,6 +142,8 @@ export type FormFields = {
   onsetDateTime: string;
   patientId: string;
   userId: string;
+  antecedentType?: AntecedentTypeCode | string;
+  note?: string;
 };
 
 export function useConditions(patientUuid: string) {
@@ -170,6 +190,8 @@ export function useConditionsSearch(conditionToLookup: string) {
 
 function mapConditionProperties(condition: FHIRCondition): Condition {
   const status = condition?.clinicalStatus?.coding[0]?.code;
+  const categoryText = getConditionCategoryDisplay(condition?.category);
+  const antecedentType = getAntecedentTypeFromCategory(condition?.category);
   return {
     clinicalStatus: status ? status.charAt(0).toUpperCase() + status.slice(1).toLowerCase() : '',
     conceptId: condition?.code?.coding[0]?.code,
@@ -178,6 +200,9 @@ function mapConditionProperties(condition: FHIRCondition): Condition {
     onsetDateTime: condition?.onsetDateTime,
     recordedDate: condition?.recordedDate,
     id: condition?.id,
+    antecedentType,
+    categoryText,
+    noteText: condition?.note?.[0]?.text,
   };
 }
 
@@ -212,6 +237,8 @@ export async function createCondition(payload: FormFields) {
     subject: {
       reference: `Patient/${payload.patientId}`,
     },
+    category: buildAntecedentTypeCategory(payload.antecedentType),
+    note: payload.note ? [{ text: payload.note }] : undefined,
   };
 
   const res = await openmrsFetch(url, {
@@ -258,6 +285,8 @@ export async function updateCondition(conditionId, payload: FormFields) {
     subject: {
       reference: `Patient/${payload.patientId}`,
     },
+    category: buildAntecedentTypeCategory(payload.antecedentType),
+    note: payload.note ? [{ text: payload.note }] : undefined,
   };
 
   const res = await openmrsFetch(url, {
@@ -288,11 +317,12 @@ export interface ConditionTableRow extends Condition {
   id: string;
   condition: string;
   abatementDateTime: string;
+  antecedentTypeRender: string;
   onsetDateTimeRender: string;
 }
 
 export interface ConditionTableHeader {
-  key: 'display' | 'onsetDateTimeRender' | 'status';
+  key: 'display' | 'antecedentTypeRender' | 'onsetDateTimeRender' | 'status';
   header: string;
   isSortable: true;
   sortFunc: (valueA: ConditionTableRow, valueB: ConditionTableRow) => number;
@@ -304,7 +334,7 @@ export function useConditionsSorting(tableHeaders: Array<ConditionTableHeader>, 
     sortDirection: DataTableSortState;
   }>({ key: '', sortDirection: 'NONE' });
 
-  const sortRow = (cellA, cellB, { key, sortDirection }) => {
+  const sortRow = (_cellA, _cellB, { key, sortDirection }) => {
     setSortParams({ key, sortDirection });
     return 0;
   };

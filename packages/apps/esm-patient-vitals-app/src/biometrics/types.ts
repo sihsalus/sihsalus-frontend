@@ -7,10 +7,11 @@ export interface BiometricsTableRow extends PatientVitalsAndBiometrics {
   heightRender: string | number;
   bmiRender: string | number;
   muacRender: string | number;
+  abdominalCircumferenceRender: string | number;
 }
 
 export interface BiometricsTableHeader {
-  key: 'dateRender' | 'weightRender' | 'heightRender' | 'bmiRender' | 'muacRender';
+  key: 'dateRender' | 'weightRender' | 'heightRender' | 'bmiRender' | 'muacRender' | 'abdominalCircumferenceRender';
   header: string;
   isSortable?: boolean;
   sortFunc: (valueA: BiometricsTableRow, valueB: BiometricsTableRow) => number;

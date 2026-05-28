@@ -7,6 +7,7 @@ import {
   useSession,
   useVisit,
 } from '@openmrs/esm-framework';
+import { useReferenceRanges } from '@openmrs/esm-patient-common-lib';
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { mockConceptMetadata, mockConceptRanges, mockConceptUnits, mockPatient, mockVitalsConfig } from 'test-utils';
@@ -18,6 +19,7 @@ import VitalsAndBiometricsForm from './vitals-biometrics-form.workspace';
 
 const heightValue = 180;
 const muacValue = 23;
+const abdominalCircumferenceValue = 95;
 const oxygenSaturationValue = 100;
 const pulseValue = 80;
 const respiratoryRateValue = 16;
@@ -38,6 +40,7 @@ const mockShowSnackbar = vi.mocked(showSnackbar);
 const mockSavePatientVitals = vi.mocked(saveVitalsAndBiometrics);
 const mockUseConfig = vi.mocked(useConfig<ConfigObject>);
 const mockUsePatient = vi.mocked(usePatient);
+const mockUseReferenceRanges = vi.mocked(useReferenceRanges);
 const mockUseSession = vi.mocked(useSession);
 const mockUseVisit = vi.mocked(useVisit);
 
@@ -55,6 +58,20 @@ vi.mock('../common', () => ({
     conceptRanges: mockConceptRanges,
   })),
 }));
+
+vi.mock('@openmrs/esm-patient-common-lib', async () => {
+  const originalModule = await vi.importActual('@openmrs/esm-patient-common-lib');
+
+  return {
+    ...originalModule,
+    useReferenceRanges: vi.fn().mockReturnValue({
+      ranges: new Map(),
+      isLoading: false,
+      error: undefined,
+      mutate: vi.fn(),
+    }),
+  };
+});
 
 mockUseConfig.mockReturnValue({
   ...getDefaultsFromConfigSchema(configSchema),
@@ -108,9 +125,21 @@ describe('VitalsBiometricsForm', () => {
     expect(screen.getByRole('spinbutton', { name: /height/i })).toBeInTheDocument();
     expect(screen.getByText(/bmi \(calc.\)/i)).toBeInTheDocument();
     expect(screen.getByText(/kg \/ m²/i)).toBeInTheDocument();
+    const abdominalCircumferenceInput = screen.getByRole('spinbutton', { name: /abdominal circumference/i });
+    expect(abdominalCircumferenceInput).toBeInTheDocument();
+    expect(abdominalCircumferenceInput.closest('section')).toHaveTextContent(/^cm$/i);
     expect(screen.getByRole('spinbutton', { name: /muac/i })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: /discard/i })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: /save and close/i })).toBeInTheDocument();
+  });
+
+  it('loads patient reference ranges for abdominal circumference', async () => {
+    render(<VitalsAndBiometricsForm {...testProps} />);
+
+    expect(mockUseReferenceRanges).toHaveBeenCalledWith(
+      mockPatient.id,
+      expect.arrayContaining([mockVitalsConfig.concepts.abdominalCircumferenceUuid]),
+    );
   });
 
   it("computes a patient's BMI from the given height and weight values", async () => {
@@ -131,13 +160,13 @@ describe('VitalsBiometricsForm', () => {
   it('renders a success snackbar upon clicking the save button', async () => {
     const user = userEvent.setup();
 
-    const response: Partial<FetchResponse> = {
+    const response = {
       statusText: 'created',
       status: 201,
       data: [],
-    };
+    } as FetchResponse<unknown>;
 
-    mockSavePatientVitals.mockResolvedValue(response as any);
+    mockSavePatientVitals.mockResolvedValue(response);
 
     render(<VitalsAndBiometricsForm {...testProps} />);
 
@@ -155,6 +184,7 @@ describe('VitalsBiometricsForm', () => {
     const temperature = screen.getByRole('spinbutton', {
       name: /temperature/i,
     });
+    const abdominalCircumference = screen.getByRole('spinbutton', { name: /abdominal circumference/i });
     const muac = screen.getByRole('spinbutton', { name: /muac/i });
     const saveButton = screen.getByRole('button', { name: /Save and close/i });
 
@@ -165,6 +195,7 @@ describe('VitalsBiometricsForm', () => {
     await user.type(oxygenSaturation, oxygenSaturationValue.toString());
     await user.type(respirationRate, respiratoryRateValue.toString());
     await user.type(temperature, temperatureValue.toString());
+    await user.type(abdominalCircumference, abdominalCircumferenceValue.toString());
     await user.type(muac, muacValue.toString());
 
     expect(bmiInput).toHaveValue(19.1);
@@ -173,6 +204,7 @@ describe('VitalsBiometricsForm', () => {
     expect(oxygenSaturation).toHaveValue(100);
     expect(respirationRate).toHaveValue(16);
     expect(temperature).toHaveValue(37);
+    expect(abdominalCircumference).toHaveValue(95);
     expect(muac).toHaveValue(23);
 
     await user.click(saveButton);
@@ -185,6 +217,7 @@ describe('VitalsBiometricsForm', () => {
       mockPatient.id,
       expect.objectContaining({
         height: heightValue,
+        abdominalCircumference: abdominalCircumferenceValue,
         midUpperArmCircumference: muacValue,
         oxygenSaturation: oxygenSaturationValue,
         pulse: pulseValue,

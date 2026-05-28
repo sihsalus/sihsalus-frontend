@@ -12,6 +12,21 @@ export {
   hasAnamnesisData,
   mapEncounterToAnamnesisEntry,
 } from './clinical/anamnesis/anamnesis';
+export type {
+  AntecedentTypeCode,
+  AntecedentTypeOption,
+  FhirConditionCategory,
+} from './clinical/antecedents/antecedent-types';
+export {
+  ANTECEDENT_TYPE_SYSTEM,
+  antecedentTypeOptions,
+  buildAntecedentTypeCategory,
+  getAntecedentTypeFromCategory,
+  getAntecedentTypeLabel,
+  getAntecedentTypeOption,
+  getConditionCategoryDisplay,
+  normalizeAntecedentTypeCode,
+} from './clinical/antecedents/antecedent-types';
 
 // Constants
 export { TRUE_CONCEPT_UUID } from './constants';

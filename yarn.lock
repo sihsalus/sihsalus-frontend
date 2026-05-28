@@ -8659,6 +8659,7 @@ __metadata:
     "@carbon/react": "npm:^1.83.0"
     "@openmrs/esm-patient-common-lib": "workspace:*"
     "@rspack/cli": "npm:1.7.11"
+    "@sihsalus/esm-sihsalus-shared": "workspace:*"
     lodash-es: "npm:^4.17.23"
     openmrs: "workspace:*"
     typescript: "npm:6.0.3"

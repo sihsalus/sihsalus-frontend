@@ -15,13 +15,13 @@ export default function AdmissionDashboardLink() {
 
   return (
     <ConfigurableLink
-      aria-label={t('admissions', 'Registro de Atenciones')}
+      aria-label={t('admissions', 'Libro de Atenciones')}
       className={classNames('cds--side-nav__link', { 'active-left-nav-link': isActive })}
       to={href}
     >
       <span className="sihsalus-side-nav__item">
         <ReportData aria-hidden="true" className="sihsalus-side-nav__icon" size={20} />
-        <span className="sihsalus-side-nav__text">{t('admissions', 'Registro de Atenciones')}</span>
+        <span className="sihsalus-side-nav__text">{t('admissions', 'Libro de Atenciones')}</span>
       </span>
     </ConfigurableLink>
   );

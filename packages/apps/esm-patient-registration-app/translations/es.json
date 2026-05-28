@@ -68,7 +68,7 @@
   "identifierValueRequired": "El número es obligatorio",
   "idFieldLabelText": "Datos de identificación",
   "IDInstructions": "Seleccione los datos de identificación que desea agregar para este paciente:",
-  "invalidEmail": "Email inválido",
+  "invalidEmail": "Correo electrónico inválido",
   "invalidInput": "Entrada inválida",
   "isDeadInputLabel": "Fallecido",
   "jumpTo": "Saltar a",

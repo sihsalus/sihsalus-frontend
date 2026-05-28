@@ -43,9 +43,15 @@ interface AutoGenerationOptionResponse {
 
 export interface Resources {
   addressTemplate: AddressTemplate;
+  addressTemplateError?: Error;
+  isLoadingAddressTemplate?: boolean;
   currentSession: Session;
   relationshipTypes: RelationshipTypesResponse | Array<unknown> | undefined;
+  relationshipTypesError?: Error;
+  isLoadingRelationshipTypes?: boolean;
   identifierTypes: Array<PatientIdentifierType>;
+  identifierTypesError?: Error;
+  isLoadingIdentifierTypes?: boolean;
 }
 
 export interface RelationshipTypesResponse {

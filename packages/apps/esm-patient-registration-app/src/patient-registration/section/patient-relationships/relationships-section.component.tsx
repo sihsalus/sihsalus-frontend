@@ -164,7 +164,7 @@ const RelationshipView: React.FC<RelationshipViewProps> = ({
 };
 
 export const RelationshipsSection = () => {
-  const { relationshipTypes } = useContext(ResourcesContext);
+  const { relationshipTypes, relationshipTypesError, isLoadingRelationshipTypes } = useContext(ResourcesContext);
   const relationshipTypeResults = Array.isArray(relationshipTypes) ? [] : relationshipTypes?.results;
   const registrationContext = useContext(PatientRegistrationContext);
   const values = registrationContext?.values ?? ({} as FormValues);
@@ -174,9 +174,10 @@ export const RelationshipsSection = () => {
   const { t } = useTranslation(moduleName);
   const requiresResponsibleRelationship = isMinorPatient(values);
   const minorResponsibleRelationshipTypes = config?.relationshipOptions?.minorResponsibleRelationshipTypes ?? [];
+  const hasRelationshipTypes = !!relationshipTypeResults?.length;
 
   useEffect(() => {
-    if (relationshipTypeResults) {
+    if (hasRelationshipTypes) {
       const tmp: RelationshipType[] = [];
       relationshipTypeResults.forEach((type) => {
         const aIsToB = {
@@ -197,14 +198,30 @@ export const RelationshipsSection = () => {
       });
       setDisplayRelationshipTypes(tmp);
     }
-  }, [relationshipTypeResults]);
+  }, [hasRelationshipTypes, relationshipTypeResults]);
 
-  if (!relationshipTypes) {
+  if (isLoadingRelationshipTypes && !hasRelationshipTypes) {
     return (
       <section aria-label="Loading relationships section">
         <div role="progressbar">
           <SkeletonText />
         </div>
+      </section>
+    );
+  }
+
+  if (!hasRelationshipTypes) {
+    return (
+      <section aria-label="Relationships section">
+        <InlineNotification
+          kind={relationshipTypesError ? 'error' : 'warning'}
+          lowContrast
+          title={t('relationshipTypesUnavailableTitle', 'Relationship types unavailable')}
+          subtitle={t(
+            'relationshipTypesUnavailableSubtitle',
+            'Refresh the page. If the problem continues, check that relationship types are configured and that your session is active.',
+          )}
+        />
       </section>
     );
   }

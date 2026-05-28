@@ -516,6 +516,9 @@ function patchIndexHtml() {
     var message = getErrorMessage(error);
     return (
       message.indexOf('died in status LOADING_SOURCE_CODE') >= 0 ||
+      message.indexOf('ChunkLoadError') >= 0 ||
+      message.indexOf('Loading chunk') >= 0 ||
+      message.indexOf('CSS_CHUNK_LOAD_FAILED') >= 0 ||
       message.indexOf("doesn't exist in shared scope") >= 0 ||
       message.indexOf('Shared module') >= 0
     );

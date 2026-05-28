@@ -13,7 +13,7 @@ import AddressSearchComponent from './address-search.component';
 
 export const AddressComponent: React.FC = () => {
   const selected = '';
-  const { addressTemplate } = useContext(ResourcesContext);
+  const { addressTemplate, addressTemplateError, isLoadingAddressTemplate } = useContext(ResourcesContext);
   const addressLayout = useMemo(() => {
     if (!addressTemplate?.lines) {
       return [];
@@ -45,6 +45,10 @@ export const AddressComponent: React.FC = () => {
 
   const { setFieldValue } = useContext(PatientRegistrationContext);
   const { orderedFields, isLoadingFieldOrder, errorFetchingFieldOrder } = useOrderedAddressHierarchyLevels();
+  const hasAddressTemplate = !!addressTemplate?.lines?.length;
+  const isAddressTemplateLoading =
+    isLoadingAddressTemplate ||
+    (isLoadingAddressTemplate === undefined && !addressTemplateError && !hasAddressTemplate);
 
   useEffect(() => {
     if (addressTemplate?.elementDefaults) {
@@ -59,19 +63,42 @@ export const AddressComponent: React.FC = () => {
       return [];
     }
 
+    if (!orderedFields?.length) {
+      return addressLayout;
+    }
+
     const orderMap = Object.fromEntries(orderedFields.map((field, indx) => [field, indx]));
 
     return [...addressLayout].sort(
-      (existingField1, existingField2) => orderMap[existingField1.name] - orderMap[existingField2.name],
+      (existingField1, existingField2) =>
+        (orderMap[existingField1.name] ?? Number.MAX_SAFE_INTEGER) -
+        (orderMap[existingField2.name] ?? Number.MAX_SAFE_INTEGER),
     );
   }, [isLoadingFieldOrder, errorFetchingFieldOrder, orderedFields, addressLayout]);
 
-  if (addressTemplate && !Object.keys(addressTemplate)?.length) {
+  if (isAddressTemplateLoading) {
     return (
       <AddressComponentContainer>
         <div role="progressbar">
           <SkeletonText />
         </div>
+      </AddressComponentContainer>
+    );
+  }
+
+  if (!hasAddressTemplate) {
+    return (
+      <AddressComponentContainer>
+        <InlineNotification
+          style={{ margin: '0', minWidth: '100%' }}
+          kind={addressTemplateError ? 'error' : 'warning'}
+          lowContrast={true}
+          title={t('addressFieldsUnavailableTitle', 'Address fields unavailable')}
+          subtitle={t(
+            'addressFieldsUnavailableSubtitle',
+            'Refresh the page. If the problem continues, check that the address template is configured and that your session is active.',
+          )}
+        />
       </AddressComponentContainer>
     );
   }

@@ -50,7 +50,8 @@ export interface PatientRegistrationProps {
 }
 
 export const PatientRegistration: React.FC<PatientRegistrationProps> = ({ savePatientForm, isOffline }) => {
-  const { currentSession, identifierTypes } = useContext(ResourcesContext);
+  const { currentSession, identifierTypes, identifierTypesError, isLoadingIdentifierTypes } =
+    useContext(ResourcesContext);
   const { search } = useLocation();
   const configuredRegistrationConfig = useConfig() as RegistrationConfig;
   const config = useMemo(
@@ -75,6 +76,10 @@ export const PatientRegistration: React.FC<PatientRegistrationProps> = ({ savePa
   const { data: photo } = usePatientPhoto(patientToEdit?.id);
   const savePatientTransactionManager = useRef(new SavePatientTransactionManager());
   const validationSchema = getValidationSchema(config);
+  const areIdentifiersUnavailableForSubmit = (hasFormIdentifiers: boolean) =>
+    !isOffline &&
+    !(inEditMode && hasFormIdentifiers) &&
+    (isLoadingIdentifierTypes || !!identifierTypesError || !identifierTypes?.length);
 
   useEffect(() => {
     Object.keys(initialFormValues).forEach((key) => {
@@ -215,7 +220,11 @@ export const PatientRegistration: React.FC<PatientRegistrationProps> = ({ savePa
                   // Current session and identifiers are required for patient registration.
                   // If currentSession or identifierTypes are not available, then the
                   // user should be blocked to register the patient.
-                  disabled={!currentSession || !identifierTypes?.length || props.isSubmitting}
+                  disabled={
+                    !currentSession ||
+                    areIdentifiersUnavailableForSubmit(!!Object.keys(props.values.identifiers ?? {}).length) ||
+                    props.isSubmitting
+                  }
                 >
                   {props.isSubmitting ? (
                     <InlineLoading

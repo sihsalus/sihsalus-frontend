@@ -8,10 +8,10 @@ import {
 import { render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { BrowserRouter as Router, useParams } from 'react-router-dom';
-import { mockedAddressTemplate, mockPatient } from 'test-utils';
+import { mockedAddressTemplate, mockIdentifierTypes, mockOpenmrsId, mockPatient } from 'test-utils';
 
 import { esmPatientRegistrationSchema, type RegistrationConfig } from '../config-schema';
-import { ResourcesContext } from '../offline.resources';
+import { type Resources, ResourcesContext } from '../offline.resources';
 
 import { FormManager } from './form-manager';
 import { PatientRegistration } from './patient-registration.component';
@@ -106,7 +106,7 @@ vi.mock('./patient-registration-hooks', async () => ({
   usePatientUuidMap: vi.fn().mockReturnValue([{}, vi.fn()]),
 }));
 
-const mockResourcesContextValue = {
+const mockResourcesContextValue: Resources = {
   addressTemplate: mockedAddressTemplate as AddressTemplate,
   currentSession: {
     authenticated: true,
@@ -114,7 +114,7 @@ const mockResourcesContextValue = {
     currentProvider: { uuid: 'provider-uuid', identifier: 'PRO-123' },
   },
   relationshipTypes: [],
-  identifierTypes: [],
+  identifierTypes: mockIdentifierTypes,
 };
 
 const mockOpenmrsConfig: RegistrationConfig = {
@@ -242,6 +242,18 @@ const Wrapper = ({ children }) => (
     <Router>{children}</Router>
   </ResourcesContext.Provider>
 );
+
+beforeEach(() => {
+  mockResourcesContextValue.addressTemplate = mockedAddressTemplate as AddressTemplate;
+  mockResourcesContextValue.addressTemplateError = undefined;
+  mockResourcesContextValue.isLoadingAddressTemplate = false;
+  mockResourcesContextValue.identifierTypes = mockIdentifierTypes;
+  mockResourcesContextValue.identifierTypesError = undefined;
+  mockResourcesContextValue.isLoadingIdentifierTypes = false;
+  mockResourcesContextValue.relationshipTypes = [];
+  mockResourcesContextValue.relationshipTypesError = undefined;
+  mockResourcesContextValue.isLoadingRelationshipTypes = false;
+});
 
 describe('Registering a new patient', () => {
   beforeEach(() => {
@@ -553,6 +565,65 @@ describe('Updating an existing patient record', () => {
         relationships: [],
         telephoneNumber: '',
         yearsEstimated: 0,
+      }),
+      expect.anything(),
+      expect.anything(),
+      null,
+      '',
+      expect.anything(),
+      expect.anything(),
+      expect.anything(),
+      { patientSaved: false },
+      expect.anything(),
+    );
+  });
+
+  it('allows updating an existing patient while identifier types are temporarily unavailable', async () => {
+    const user = userEvent.setup();
+    const mockSavePatientForm = vi.fn();
+    const editFormValues = {
+      additionalFamilyName: '',
+      additionalFamilyName2: '',
+      additionalGivenName: '',
+      additionalMiddleName: '',
+      addNameInLocalLanguage: false,
+      address: {},
+      birthdate: new Date(1972, 3, 4),
+      birthdateEstimated: false,
+      deathCause: '',
+      deathDate: undefined,
+      deathTime: undefined,
+      deathTimeFormat: 'AM',
+      familyName: 'Wilson',
+      familyName2: 'Materno',
+      gender: 'male',
+      givenName: 'John',
+      identifiers: mockOpenmrsId,
+      isDead: false,
+      middleName: '',
+      monthsEstimated: 0,
+      nonCodedCauseOfDeath: '',
+      patientUuid: mockPatient.uuid,
+      relationships: [],
+      telephoneNumber: '',
+      yearsEstimated: 0,
+    } as FormValues;
+
+    mockResourcesContextValue.identifierTypes = [];
+    mockResourcesContextValue.identifierTypesError = new Error('identifier types unavailable');
+    mockUseInitialFormValues.mockReturnValue([editFormValues, vi.fn()]);
+
+    render(<PatientRegistration isOffline={false} savePatientForm={mockSavePatientForm} />, { wrapper: Wrapper });
+
+    const updateButton = await screen.findByRole('button', { name: /update patient/i });
+    expect(updateButton).toBeEnabled();
+
+    await user.click(updateButton);
+
+    expect(mockSavePatientForm).toHaveBeenCalledWith(
+      false,
+      expect.objectContaining({
+        identifiers: mockOpenmrsId,
       }),
       expect.anything(),
       expect.anything(),

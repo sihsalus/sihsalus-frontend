@@ -180,8 +180,10 @@ function renderIdentifiersWithState(initialIdentifiers = {}) {
 }
 
 describe('Identifiers', () => {
-  beforeEach(() => {
-    mockResourcesContextValue.identifierTypes = undefined as unknown as Resources['identifierTypes'];
+    beforeEach(() => {
+    mockResourcesContextValue.identifierTypes = [];
+    mockResourcesContextValue.identifierTypesError = undefined;
+    mockResourcesContextValue.isLoadingIdentifierTypes = false;
     mockUseConfig.mockReturnValue({
       ...getDefaultsFromConfigSchema(esmPatientRegistrationSchema),
       defaultPatientIdentifierTypes: ['OpenMRS ID'],
@@ -190,7 +192,7 @@ describe('Identifiers', () => {
 
   it('should render loading skeleton when identifier types are loading', () => {
     render(
-      <ResourcesContext.Provider value={mockResourcesContextValue}>
+      <ResourcesContext.Provider value={{ ...mockResourcesContextValue, isLoadingIdentifierTypes: true }}>
         <Formik initialValues={{}} onSubmit={null}>
           <Form>
             <PatientRegistrationContext.Provider value={mockContextValues}>
@@ -202,6 +204,58 @@ describe('Identifiers', () => {
     );
 
     expect(screen.getByRole('progressbar')).toBeInTheDocument();
+  });
+
+  it('should render a non-loading message when identifier types are unavailable', () => {
+    const contextValues = {
+      ...mockContextValues,
+      initialFormValues: { ...mockInitialFormValues, identifiers: {} },
+      values: { ...mockInitialFormValues, identifiers: {} },
+    };
+
+    render(
+      <ResourcesContext.Provider value={mockResourcesContextValue}>
+        <Formik initialValues={{}} onSubmit={null}>
+          <Form>
+            <PatientRegistrationContext.Provider value={contextValues}>
+              <Identifiers />
+            </PatientRegistrationContext.Provider>
+          </Form>
+        </Formik>
+      </ResourcesContext.Provider>,
+    );
+
+    expect(screen.queryByRole('progressbar')).not.toBeInTheDocument();
+    expect(screen.getByText('Identification data unavailable')).toBeInTheDocument();
+  });
+
+  it('shows existing identifiers in edit mode when identifier types are unavailable', () => {
+    render(
+      <ResourcesContext.Provider
+        value={{ ...mockResourcesContextValue, identifierTypesError: new Error('identifier types unavailable') }}
+      >
+        <Formik initialValues={{}} onSubmit={null}>
+          <Form>
+            <PatientRegistrationContext.Provider
+              value={{
+                ...mockContextValues,
+                inEditMode: true,
+                initialFormValues: { ...mockInitialFormValues, identifiers: mockOpenmrsId },
+                values: { ...mockInitialFormValues, identifiers: mockOpenmrsId },
+              }}
+            >
+              <Identifiers />
+            </PatientRegistrationContext.Provider>
+          </Form>
+        </Formik>
+      </ResourcesContext.Provider>,
+    );
+
+    expect(screen.queryByRole('progressbar')).not.toBeInTheDocument();
+    expect(screen.getByText('Identification data unavailable')).toBeInTheDocument();
+    expect(screen.getByText('OpenMRS ID')).toBeInTheDocument();
+    expect(screen.getByText('Auto-generated')).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Configure' })).not.toBeInTheDocument();
   });
 
   it('should render identifier inputs when identifier types are loaded', () => {

@@ -174,7 +174,7 @@ export const RelationshipsSection = () => {
   const { t } = useTranslation(moduleName);
   const requiresResponsibleRelationship = isMinorPatient(values);
   const minorResponsibleRelationshipTypes = config?.relationshipOptions?.minorResponsibleRelationshipTypes ?? [];
-  const hasRelationshipTypes = !!relationshipTypes?.results?.length;
+  const hasRelationshipTypes = !!relationshipTypeResults?.length;
 
   useEffect(() => {
     if (hasRelationshipTypes) {

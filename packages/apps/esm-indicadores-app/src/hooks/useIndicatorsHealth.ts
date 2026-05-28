@@ -36,7 +36,7 @@ export function useIndicatorsHealth(): IndicatorsHealthState {
 
     const checkHealth = async () => {
       try {
-        await openmrsFetch(`${config.indicatorsApiPath}/indicators`, {
+        await openmrsFetch(`${config.indicatorsApiPath.replace(/\/+$/, '')}/health`, {
           signal: controller.signal,
         });
 

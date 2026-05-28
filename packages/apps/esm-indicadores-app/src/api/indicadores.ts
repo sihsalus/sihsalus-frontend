@@ -1,4 +1,17 @@
-import { restBaseUrl } from '@openmrs/esm-framework';
+import type {
+  DiagnosticoOption,
+  Indicador,
+  IndicadorCreatePayload,
+  IndicadorDetail,
+  IndicadorSQLPreview,
+  IndicadorUpdatePayload,
+  IndicadorVersion,
+  LocationOption,
+  OrdenOption,
+  PaginatedResponse,
+  DefinicionIndicadorForm,
+} from './types';
+import { getConceptosResourcePath, getIndicadoresResourcePath } from './config';
 import {
   createIndicadorMock,
   createVersionMock,
@@ -14,36 +27,11 @@ import {
   updateIndicadorMock,
 } from '../mocks/indicators-data';
 import { fetchJson, toJsonBody, withMockFallback } from './client';
-import { getIndicatorsApiPath } from './config';
 import { getMockModeState } from './mock-mode';
-import type {
-  DefinicionIndicadorForm,
-  DiagnosticoOption,
-  Indicador,
-  IndicadorCreatePayload,
-  IndicadorDetail,
-  IndicadorSQLPreview,
-  IndicadorUpdatePayload,
-  IndicadorVersion,
-  LocationOption,
-  OrdenOption,
-  PaginatedResponse,
-} from './types';
-
-interface OpenmrsLocation {
-  uuid: string;
-  display: string;
-  name?: string;
-}
 
 interface OpenmrsConcept {
   uuid: string;
   display: string;
-  mappings?: Array<{ display?: string }>;
-}
-
-interface OpenmrsResultsResponse<T> {
-  results: Array<T>;
 }
 
 function queryParams(params: Record<string, string | number | undefined>) {
@@ -61,32 +49,6 @@ function ensureQuery(url: string, params: Record<string, string | number | undef
   return query ? `${url}?${query}` : url;
 }
 
-function locationRepresentation() {
-  return 'custom:(uuid,display,name)';
-}
-
-function conceptRepresentation() {
-  return 'custom:(uuid,display,mappings:(display))';
-}
-
-function mapLocation(location: OpenmrsLocation): LocationOption {
-  return {
-    uuid: location.uuid,
-    display: location.name || location.display,
-  };
-}
-
-function mapConceptToDiagnostico(concept: OpenmrsConcept): DiagnosticoOption {
-  const mappingDisplay = concept.mappings?.find((mapping) => mapping.display)?.display;
-  const codigo = mappingDisplay?.split(':').pop()?.trim();
-
-  return {
-    uuid: concept.uuid,
-    codigo: codigo || undefined,
-    nombre: concept.display,
-  };
-}
-
 function mapConceptToOrden(concept: OpenmrsConcept): OrdenOption {
   return {
     uuid: concept.uuid,
@@ -95,43 +57,37 @@ function mapConceptToOrden(concept: OpenmrsConcept): OrdenOption {
 }
 
 export async function getIndicadores(page: number, size: number): Promise<PaginatedResponse<Indicador>> {
-  const apiPath = await getIndicatorsApiPath();
-  const url = ensureQuery(`${apiPath}/indicators`, { page, size });
-  return withMockFallback(
-    () => fetchJson<PaginatedResponse<Indicador>>(url),
-    () => listIndicadores(page, size),
-  );
+  const indicadoresPath = await getIndicadoresResourcePath();
+  const url = ensureQuery(`${indicadoresPath}/`, { page, size });
+  return withMockFallback(() => fetchJson<PaginatedResponse<Indicador>>(url), () => listIndicadores(page, size));
 }
 
 export async function getIndicador(id: string): Promise<IndicadorDetail> {
-  const apiPath = await getIndicatorsApiPath();
-  return withMockFallback(
-    () => fetchJson<IndicadorDetail>(`${apiPath}/indicators/${id}`),
-    () => getIndicadorById(id),
-  );
+  const indicadoresPath = await getIndicadoresResourcePath();
+  return withMockFallback(() => fetchJson<IndicadorDetail>(`${indicadoresPath}/${id}`), () => getIndicadorById(id));
 }
 
 export async function createIndicador(payload: IndicadorCreatePayload): Promise<Indicador> {
-  const apiPath = await getIndicatorsApiPath();
+  const indicadoresPath = await getIndicadoresResourcePath();
   return withMockFallback(
-    () => fetchJson<Indicador>(`${apiPath}/indicators`, { method: 'POST', ...toJsonBody(payload) }),
+    () => fetchJson<Indicador>(`${indicadoresPath}/`, { method: 'POST', ...toJsonBody(payload) }),
     () => createIndicadorMock(payload),
   );
 }
 
 export async function updateIndicador(id: string, payload: IndicadorUpdatePayload): Promise<Indicador> {
-  const apiPath = await getIndicatorsApiPath();
+  const indicadoresPath = await getIndicadoresResourcePath();
   return withMockFallback(
-    () => fetchJson<Indicador>(`${apiPath}/indicators/${id}`, { method: 'PUT', ...toJsonBody(payload) }),
+    () => fetchJson<Indicador>(`${indicadoresPath}/${id}`, { method: 'PUT', ...toJsonBody(payload) }),
     () => updateIndicadorMock(id, payload),
   );
 }
 
 export async function deleteIndicador(id: string): Promise<void> {
-  const apiPath = await getIndicatorsApiPath();
+  const indicadoresPath = await getIndicadoresResourcePath();
   return withMockFallback(
     async () => {
-      await fetchJson(`${apiPath}/indicators/${id}`, { method: 'DELETE' });
+      await fetchJson(`${indicadoresPath}/${id}`, { method: 'DELETE' });
     },
     async () => {
       deleteIndicadorMock(id);
@@ -140,21 +96,21 @@ export async function deleteIndicador(id: string): Promise<void> {
 }
 
 export async function createVersion(id: string, definicion: DefinicionIndicadorForm): Promise<IndicadorVersion> {
-  const apiPath = await getIndicatorsApiPath();
+  const indicadoresPath = await getIndicadoresResourcePath();
   return withMockFallback(
     () =>
-      fetchJson<IndicadorVersion>(`${apiPath}/indicators/${id}/versions`, {
+      fetchJson<IndicadorVersion>(`${indicadoresPath}/${id}/versiones`, {
         method: 'POST',
-        ...toJsonBody(definicion),
+        ...toJsonBody({ definicion }),
       }),
     () => createVersionMock(id, definicion),
   );
 }
 
 export async function previewSql(id: string, versionId?: string): Promise<IndicadorSQLPreview> {
-  const apiPath = await getIndicatorsApiPath();
+  const indicadoresPath = await getIndicadoresResourcePath();
   return withMockFallback(
-    () => fetchJson<IndicadorSQLPreview>(ensureQuery(`${apiPath}/indicators/${id}/preview-sql`, { versionId })),
+    () => fetchJson<IndicadorSQLPreview>(ensureQuery(`${indicadoresPath}/${id}/preview-sql`, { versionId })),
     () => getSqlPreviewMock(id, versionId),
   );
 }
@@ -162,10 +118,8 @@ export async function previewSql(id: string, versionId?: string): Promise<Indica
 export async function searchLocations(query: string): Promise<Array<LocationOption>> {
   return withMockFallback(
     async () => {
-      const response = await fetchJson<OpenmrsResultsResponse<OpenmrsLocation>>(
-        ensureQuery(`${restBaseUrl}/location`, { q: query, v: locationRepresentation() }),
-      );
-      return response.results.map(mapLocation);
+      const conceptosPath = await getConceptosResourcePath();
+      return fetchJson<Array<LocationOption>>(ensureQuery(`${conceptosPath}/locations`, { q: query }));
     },
     () => searchLocationsMock(query),
   );
@@ -174,10 +128,8 @@ export async function searchLocations(query: string): Promise<Array<LocationOpti
 export async function searchDiagnosticos(query: string): Promise<Array<DiagnosticoOption>> {
   return withMockFallback(
     async () => {
-      const response = await fetchJson<OpenmrsResultsResponse<OpenmrsConcept>>(
-        ensureQuery(`${restBaseUrl}/concept`, { q: query, v: conceptRepresentation() }),
-      );
-      return response.results.map(mapConceptToDiagnostico);
+      const conceptosPath = await getConceptosResourcePath();
+      return fetchJson<Array<DiagnosticoOption>>(ensureQuery(`${conceptosPath}/diagnosticos/buscar`, { q: query }));
     },
     () => searchDiagnosticosMock(query),
   );
@@ -186,10 +138,9 @@ export async function searchDiagnosticos(query: string): Promise<Array<Diagnosti
 export async function searchOrdenes(query: string): Promise<Array<OrdenOption>> {
   return withMockFallback(
     async () => {
-      const response = await fetchJson<OpenmrsResultsResponse<OpenmrsConcept>>(
-        ensureQuery(`${restBaseUrl}/concept`, { q: query, v: conceptRepresentation() }),
-      );
-      return response.results.map(mapConceptToOrden);
+      const conceptosPath = await getConceptosResourcePath();
+      const response = await fetchJson<Array<OpenmrsConcept>>(ensureQuery(`${conceptosPath}/buscar`, { q: query, clase: 'Test' }));
+      return response.map(mapConceptToOrden);
     },
     () => searchOrdenesMock(query),
   );
@@ -202,12 +153,8 @@ export async function resolveLocations(uuids: Array<string>): Promise<Array<Loca
 
   return withMockFallback(
     async () => {
-      const resolved = await Promise.all(
-        uuids.map((uuid) =>
-          fetchJson<OpenmrsLocation>(`${restBaseUrl}/location/${uuid}?v=${locationRepresentation()}`),
-        ),
-      );
-      return resolved.map(mapLocation);
+      const conceptosPath = await getConceptosResourcePath();
+      return fetchJson<Array<LocationOption>>(`${conceptosPath}/locations/resolve?uuids=${uuids.join(',')}`);
     },
     () => resolveLocationsMock(uuids),
   );
@@ -220,10 +167,8 @@ export async function resolveDiagnosticos(uuids: Array<string>): Promise<Array<D
 
   return withMockFallback(
     async () => {
-      const response = await fetchJson<OpenmrsResultsResponse<OpenmrsConcept>>(
-        `${restBaseUrl}/concept?references=${uuids.join(',')}&v=${conceptRepresentation()}`,
-      );
-      return response.results.map(mapConceptToDiagnostico);
+      const conceptosPath = await getConceptosResourcePath();
+      return fetchJson<Array<DiagnosticoOption>>(`${conceptosPath}/diagnosticos/resolve?uuids=${uuids.join(',')}`);
     },
     () => resolveDiagnosticosMock(uuids),
   );

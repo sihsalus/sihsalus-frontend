@@ -16,16 +16,24 @@ export type {
   AntecedentTypeCode,
   AntecedentTypeOption,
   FhirConditionCategory,
+  FhirConditionNote,
 } from './clinical/antecedents/antecedent-types';
 export {
   ANTECEDENT_TYPE_SYSTEM,
   antecedentTypeOptions,
   buildAntecedentTypeCategory,
+  buildAntecedentTypeNote,
   getAntecedentTypeFromCategory,
+  getAntecedentTypeFromCondition,
+  getAntecedentTypeFromNote,
   getAntecedentTypeLabel,
   getAntecedentTypeOption,
   getConditionCategoryDisplay,
+  getConditionNoteText,
   normalizeAntecedentTypeCode,
+  OPENMRS_ANTECEDENT_CATEGORY_CODE,
+  OPENMRS_ANTECEDENT_CATEGORY_DISPLAY,
+  OPENMRS_CONDITION_CATEGORY_SYSTEM,
 } from './clinical/antecedents/antecedent-types';
 
 // Constants

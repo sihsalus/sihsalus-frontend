@@ -19,6 +19,7 @@ import {
   useSession,
 } from '@openmrs/esm-framework';
 import { type DefaultPatientWorkspaceProps } from '@openmrs/esm-patient-common-lib';
+import { type AntecedentTypeCode } from '@sihsalus/esm-sihsalus-shared';
 import classNames from 'classnames';
 import dayjs from 'dayjs';
 import 'dayjs/plugin/utc';
@@ -124,10 +125,10 @@ const ConditionsWidget: React.FC<ConditionsWidgetProps> = ({
   }, []);
 
   const handleCreate = useCallback(async () => {
-    // If category is 'otros', build a pseudo condition from freeText
+    // If category is free text, build a pseudo condition from freeText.
     const selected =
       selectedCondition ||
-      (personalCategory === 'otros' && freeText
+      (personalCategory === 'other' && freeText
         ? { uuid: config?.conditionFreeTextFallbackConceptUuid, display: freeText }
         : null);
 
@@ -145,8 +146,8 @@ const ConditionsWidget: React.FC<ConditionsWidgetProps> = ({
       onsetDateTime: getValues('onsetDateTime') ? dayjs(getValues('onsetDateTime')).format() : null,
       patientId: patientUuid,
       userId: session?.user?.uuid,
-      category: personalCategory,
-      note: personalCategory === 'otros' ? freeText : undefined,
+      antecedentType: personalCategory as AntecedentTypeCode,
+      note: personalCategory === 'other' ? freeText : undefined,
     };
 
     try {
@@ -155,8 +156,8 @@ const ConditionsWidget: React.FC<ConditionsWidgetProps> = ({
 
       showSnackbar({
         kind: 'success',
-        subtitle: t('conditionNowVisible', 'It is now visible on the Conditions page'),
-        title: t('conditionSaved', 'Condition saved'),
+        subtitle: t('antecedentNowVisible', 'It is now visible on the Antecedents page'),
+        title: t('antecedentSaved', 'Antecedent saved'),
       });
 
       closeWorkspaceWithSavedChanges();
@@ -194,8 +195,8 @@ const ConditionsWidget: React.FC<ConditionsWidgetProps> = ({
       onsetDateTime: getValues('onsetDateTime') ? dayjs(getValues('onsetDateTime')).format() : null,
       patientId: patientUuid,
       userId: session?.user?.uuid,
-      category: personalCategory,
-      note: personalCategory === 'otros' ? freeText : undefined,
+      antecedentType: personalCategory as AntecedentTypeCode,
+      note: personalCategory === 'other' ? freeText : undefined,
     };
 
     try {
@@ -204,8 +205,8 @@ const ConditionsWidget: React.FC<ConditionsWidgetProps> = ({
 
       showSnackbar({
         kind: 'success',
-        subtitle: t('conditionNowVisible', 'It is now visible on the Conditions page'),
-        title: t('conditionUpdated', 'Condition updated'),
+        subtitle: t('antecedentNowVisible', 'It is now visible on the Antecedents page'),
+        title: t('antecedentUpdated', 'Antecedent updated'),
       });
 
       closeWorkspaceWithSavedChanges();
@@ -257,7 +258,7 @@ const ConditionsWidget: React.FC<ConditionsWidgetProps> = ({
   return (
     <div className={styles.formContainer}>
       <Stack gap={7}>
-        <FormGroup legendText={<RequiredFieldLabel label={t('condition', 'Condition')} t={t} />}>
+        <FormGroup legendText={<RequiredFieldLabel label={t('antecedent', 'Antecedent')} t={t} />}>
           {isEditing ? (
             <FormLabel className={styles.conditionLabel}>{displayName}</FormLabel>
           ) : (
@@ -275,7 +276,7 @@ const ConditionsWidget: React.FC<ConditionsWidgetProps> = ({
                       disabled={isEditing}
                       id="conditionsSearch"
                       aria-labelledby={errors?.conditionName ? 'conditionsSearchError' : undefined}
-                      labelText={t('enterCondition', 'Enter condition')}
+                      labelText={t('enterAntecedent', 'Enter antecedent')}
                       onChange={(event) => {
                         const val = event.target.value;
                         onChange(val);
@@ -285,7 +286,7 @@ const ConditionsWidget: React.FC<ConditionsWidgetProps> = ({
                         setSearchTerm('');
                         setSelectedCondition(null);
                       }}
-                      placeholder={t('searchConditions', 'Search conditions')}
+                      placeholder={t('searchAntecedents', 'Search antecedents')}
                       ref={searchInputRef}
                       renderIcon={errors?.conditionName && ((props) => <WarningFilled fill="red" {...props} />)}
                       value={(() => {

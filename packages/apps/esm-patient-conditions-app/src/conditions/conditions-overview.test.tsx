@@ -35,7 +35,7 @@ describe('ConditionsOverview', () => {
     vi.clearAllMocks();
   });
 
-  it('renders an empty state view if conditions data is unavailable', async () => {
+  it('renders an empty state view if antecedents data is unavailable', async () => {
     mockUseConditions.mockReturnValue({
       conditions: [],
       error: null,
@@ -47,13 +47,13 @@ describe('ConditionsOverview', () => {
     render(<ConditionsOverview patientUuid={mockPatient.id} />);
 
     expect(screen.queryByRole('progressbar')).not.toBeInTheDocument();
-    expect(screen.getByRole('heading', { name: /conditions/i })).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: /antecedents/i })).toBeInTheDocument();
     expect(screen.getByTitle(/Empty data illustration/i)).toBeInTheDocument();
-    expect(screen.getByText(/There are no conditions to display for this patient/i)).toBeInTheDocument();
-    expect(screen.getByText(/record conditions/i)).toBeInTheDocument();
+    expect(screen.getByText(/There are no antecedents to display for this patient/i)).toBeInTheDocument();
+    expect(screen.getByText(/record antecedents/i)).toBeInTheDocument();
   });
 
-  it('renders an error state view if there is a problem fetching conditions', async () => {
+  it('renders an error state view if there is a problem fetching antecedents', async () => {
     const error = {
       name: 'UnauthorizedError',
       message: 'You are not logged in',
@@ -78,13 +78,14 @@ describe('ConditionsOverview', () => {
     expect(screen.getByText(/Sorry, there was a problem displaying this information./i)).toBeInTheDocument();
   });
 
-  it("renders an overview of the patient's conditions when present", async () => {
+  it("renders an overview of the patient's antecedents when present", async () => {
     const user = userEvent.setup();
 
     mockUseConditions.mockReturnValue({
       conditions: [
         {
           clinicalStatus: 'Active',
+          antecedentType: 'pathological',
           conceptId: '138571AAAAAAAAAAAAAAAAAAAAAAAAAAAAAA',
           display: 'HIV Positive',
           id: 'cbffbb42-41b4-4c38-bc14-842ef675df85',
@@ -148,15 +149,22 @@ describe('ConditionsOverview', () => {
 
     render(<ConditionsOverview patientUuid={mockPatient.id} />);
 
-    expect(screen.getByRole('heading', { name: /conditions/i })).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: /antecedents/i })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: /add/i })).toBeInTheDocument();
 
-    const expectedColumnHeaders = [/condition/, /date of onset/, /status/];
-    expectedColumnHeaders.forEach((header) => {
-      expect(screen.getByRole('columnheader', { name: new RegExp(header, 'i') })).toBeInTheDocument();
-    });
+    expect(screen.getByRole('button', { name: /^antecedent$/i })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /antecedent type/i })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /date of onset/i })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /status/i })).toBeInTheDocument();
 
-    const expectedTableRows = [/hiv positive/, /malaria, confirmed/, /malaria sevère/, /anaemia/, /hypertension/];
+    const expectedTableRows = [
+      /hiv positive/,
+      /patol|patholog/,
+      /malaria, confirmed/,
+      /malaria sevère/,
+      /anaemia/,
+      /hypertension/,
+    ];
     expectedTableRows.forEach((row) => {
       expect(screen.getByRole('row', { name: new RegExp(row, 'i') })).toBeInTheDocument();
     });
@@ -171,7 +179,7 @@ describe('ConditionsOverview', () => {
     expect(screen.getAllByRole('row').length).toEqual(3);
   });
 
-  it('clicking the Add button or Record Conditions link launches the conditions form', async () => {
+  it('clicking the Add button or Record Antecedents link launches the antecedents form', async () => {
     const user = userEvent.setup();
 
     mockUseConditions.mockReturnValue({
@@ -184,7 +192,7 @@ describe('ConditionsOverview', () => {
 
     render(<ConditionsOverview patientUuid={mockPatient.id} />);
 
-    const recordConditionsLink = screen.getByRole('button', { name: /record conditions/i });
+    const recordConditionsLink = screen.getByRole('button', { name: /record antecedents/i });
 
     await user.click(recordConditionsLink);
 

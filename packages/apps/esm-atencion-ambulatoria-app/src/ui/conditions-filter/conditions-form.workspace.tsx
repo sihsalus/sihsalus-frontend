@@ -12,6 +12,12 @@ import {
 import { zodResolver } from '@hookform/resolvers/zod';
 import { launchWorkspace, useConfig, useLayoutType } from '@openmrs/esm-framework';
 import { type DefaultPatientWorkspaceProps, launchPatientWorkspace } from '@openmrs/esm-patient-common-lib';
+import {
+  type AntecedentTypeCode,
+  antecedentTypeOptions,
+  getAntecedentTypeLabel,
+  normalizeAntecedentTypeCode,
+} from '@sihsalus/esm-sihsalus-shared';
 import classNames from 'classnames';
 import type { TFunction } from 'i18next';
 import React, { useEffect, useState } from 'react';
@@ -43,9 +49,7 @@ const createSchema = (formContext: 'creating' | 'editing', t: TFunction) => {
 
   const antecedentScopeValidation = z.enum(['personal', 'family', 'social']);
 
-  const personalCategoryValidation = z
-    .enum(['patologicos', 'diagnosticos', 'quirurgicos', 'hospitalizaciones', 'otros'])
-    .optional();
+  const personalCategoryValidation = z.string().optional();
 
   const conditionNameValidation = z.string().optional();
 
@@ -65,13 +69,13 @@ const createSchema = (formContext: 'creating' | 'editing', t: TFunction) => {
       freeText: z.string().optional(),
     })
     .superRefine((data, ctx) => {
-      // Require condition name when creating a personal antecedent that is not 'otros'
-      if (isCreating && data.antecedentScope === 'personal' && data.personalCategory !== 'otros') {
+      // Require condition name when creating a personal antecedent that is not free text.
+      if (isCreating && data.antecedentScope === 'personal' && data.personalCategory !== 'other') {
         if (!data.conditionName) {
           ctx.addIssue({
             path: ['conditionName'],
             code: z.ZodIssueCode.custom,
-            message: t('conditionRequired', 'A condition is required'),
+            message: t('antecedentRequired', 'An antecedent is required'),
           });
         }
       }
@@ -79,8 +83,8 @@ const createSchema = (formContext: 'creating' | 'editing', t: TFunction) => {
       if (data.antecedentScope === 'personal' && !data.personalCategory) {
         ctx.addIssue({ path: ['personalCategory'], code: z.ZodIssueCode.custom, message: t('required', 'Required') });
       }
-      // Require freeText if category is otros
-      if (data.antecedentScope === 'personal' && data.personalCategory === 'otros') {
+      // Require freeText if category is other
+      if (data.antecedentScope === 'personal' && data.personalCategory === 'other') {
         if (!data.freeText || data.freeText.trim().length === 0) {
           ctx.addIssue({ path: ['freeText'], code: z.ZodIssueCode.custom, message: t('required', 'Required') });
         }
@@ -112,25 +116,12 @@ const ConditionsForm: React.FC<ConditionFormProps> = ({
 
   const schema = createSchema(formContext, t);
 
-  const editedCategory = (():
-    | 'patologicos'
-    | 'diagnosticos'
-    | 'quirurgicos'
-    | 'hospitalizaciones'
-    | 'otros'
-    | undefined => {
-    const value = matchingCondition?.categoryText?.toLowerCase();
-    if (!value) return undefined;
-    if (
-      value === 'patologicos' ||
-      value === 'diagnosticos' ||
-      value === 'quirurgicos' ||
-      value === 'hospitalizaciones' ||
-      value === 'otros'
-    )
-      return value;
-    return undefined;
-  })();
+  const editedCategory = normalizeAntecedentTypeCode(
+    matchingCondition?.antecedentType ?? matchingCondition?.categoryText,
+  );
+  const personalAntecedentTypes = antecedentTypeOptions.filter(
+    (option) => !(['family', 'social'] as Array<AntecedentTypeCode>).includes(option.code),
+  );
 
   const defaultValues: Partial<ConditionsFormSchema> = {
     abatementDateTime:
@@ -140,7 +131,7 @@ const ConditionsForm: React.FC<ConditionFormProps> = ({
     onsetDateTime: isEditing && matchingCondition?.onsetDateTime ? new Date(matchingCondition?.onsetDateTime) : null,
     antecedentScope: 'personal',
     personalCategory: isEditing ? editedCategory : undefined,
-    freeText: isEditing && editedCategory === 'otros' ? (matchingCondition?.noteText ?? '') : '',
+    freeText: isEditing && editedCategory === 'other' ? (matchingCondition?.noteText ?? '') : '',
   };
 
   const methods = useForm<ConditionsFormSchema>({
@@ -200,7 +191,7 @@ const ConditionsForm: React.FC<ConditionFormProps> = ({
   return (
     <FormProvider {...methods}>
       <Form className={styles.form} onSubmit={methods.handleSubmit(onSubmit, onError)}>
-        <FormGroup legendText={t('antecedentScope', 'Tipo de antecedente')}>
+        <FormGroup legendText={t('antecedentScope', 'Ámbito del antecedente')}>
           <Controller
             name="antecedentScope"
             control={methods.control}
@@ -221,7 +212,7 @@ const ConditionsForm: React.FC<ConditionFormProps> = ({
         </FormGroup>
 
         {antecedentScope === 'personal' && (
-          <FormGroup legendText={t('personalCategory', 'Categoría')}>
+          <FormGroup legendText={t('antecedentType', 'Tipo de antecedente')}>
             <Controller
               name="personalCategory"
               control={methods.control}
@@ -233,26 +224,21 @@ const ConditionsForm: React.FC<ConditionFormProps> = ({
                   onChange={onChange}
                   valueSelected={value}
                 >
-                  <RadioButton id="cat-patologicos" labelText={t('pathological', 'Patológicos')} value="patologicos" />
-                  <RadioButton
-                    id="cat-diagnosticos"
-                    labelText={t('definitiveDiagnoses', 'Diagnósticos definitivos')}
-                    value="diagnosticos"
-                  />
-                  <RadioButton id="cat-quirurgicos" labelText={t('surgical', 'Quirúrgicos')} value="quirurgicos" />
-                  <RadioButton
-                    id="cat-hospitalizaciones"
-                    labelText={t('previousHospitalizations', 'Hospitalizaciones previas')}
-                    value="hospitalizaciones"
-                  />
-                  <RadioButton id="cat-otros" labelText={t('othersSpecify', 'Otros (especificar)')} value="otros" />
+                  {personalAntecedentTypes.map((option) => (
+                    <RadioButton
+                      key={option.code}
+                      id={`cat-${option.code}`}
+                      labelText={getAntecedentTypeLabel(option.code, t)}
+                      value={option.code}
+                    />
+                  ))}
                 </RadioButtonGroup>
               )}
             />
           </FormGroup>
         )}
 
-        {antecedentScope === 'personal' && personalCategory === 'otros' && (
+        {antecedentScope === 'personal' && personalCategory === 'other' && (
           <FormGroup legendText={t('freeTextDescription', 'Descripción')}>
             <Controller
               name="freeText"
@@ -291,7 +277,7 @@ const ConditionsForm: React.FC<ConditionFormProps> = ({
                 role="alert"
                 kind="error"
                 lowContrast
-                title={t('errorCreatingCondition', 'Error creating condition')}
+                title={t('errorCreatingAntecedent', 'Error creating antecedent')}
                 subtitle={errorCreating?.message}
               />
             </div>
@@ -303,7 +289,7 @@ const ConditionsForm: React.FC<ConditionFormProps> = ({
                 role="alert"
                 kind="error"
                 lowContrast
-                title={t('errorUpdatingCondition', 'Error updating condition')}
+                title={t('errorUpdatingAntecedent', 'Error updating antecedent')}
                 subtitle={errorUpdating?.message}
               />
             </div>

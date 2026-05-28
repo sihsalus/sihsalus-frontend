@@ -24,6 +24,7 @@ import {
   usePagination,
 } from '@openmrs/esm-framework';
 import { CardHeader, EmptyState, ErrorState, PatientChartPagination } from '@openmrs/esm-patient-common-lib';
+import { getAntecedentTypeLabel } from '@sihsalus/esm-sihsalus-shared';
 import classNames from 'classnames';
 import React, { type ComponentProps, useCallback, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -37,11 +38,12 @@ interface ConditionTableRow extends Condition {
   id: string;
   condition: string;
   abatementDateTime: string;
+  antecedentTypeRender: string;
   onsetDateTimeRender: string;
 }
 
 interface ConditionTableHeader {
-  key: 'display' | 'onsetDateTimeRender' | 'status';
+  key: 'display' | 'antecedentTypeRender' | 'onsetDateTimeRender' | 'status';
   header: string;
   isSortable: true;
   sortFunc: (valueA: ConditionTableRow, valueB: ConditionTableRow) => number;
@@ -67,7 +69,7 @@ const GenericConditionsOverview: React.FC<GenericConditionsOverviewProps> = ({
   title,
   workspaceFormId = 'conditions-filter-form-workspace',
   enableAdd = true,
-  urlPath = 'Conditions',
+  urlPath = 'Antecedentes',
 }) => {
   const { conditionPageSize } = useConfig<ConfigObject>();
   const { t } = useTranslation();
@@ -104,9 +106,15 @@ const GenericConditionsOverview: React.FC<GenericConditionsOverviewProps> = ({
     () => [
       {
         key: 'display',
-        header: t('condition', 'Condition'),
+        header: t('antecedent', 'Antecedent'),
         isSortable: true,
         sortFunc: (valueA, valueB) => valueA.display?.localeCompare(valueB.display),
+      },
+      {
+        key: 'antecedentTypeRender',
+        header: t('antecedentType', 'Antecedent type'),
+        isSortable: true,
+        sortFunc: (valueA, valueB) => valueA.antecedentTypeRender?.localeCompare(valueB.antecedentTypeRender),
       },
       {
         key: 'onsetDateTimeRender',
@@ -134,13 +142,16 @@ const GenericConditionsOverview: React.FC<GenericConditionsOverviewProps> = ({
         id: condition.id,
         condition: condition.display,
         abatementDateTime: condition.abatementDateTime,
+        antecedentTypeRender: condition.antecedentType
+          ? getAntecedentTypeLabel(condition.antecedentType, t)
+          : (condition.categoryText ?? '--'),
         onsetDateTimeRender: condition.onsetDateTime
           ? formatDate(parseDate(condition.onsetDateTime), { mode: 'wide', time: 'for today' })
           : '--',
         status: condition.clinicalStatus,
       };
     });
-  }, [filteredConditions]);
+  }, [filteredConditions, t]);
 
   const { sortedRows, sortRow } = useConditionsSorting(headers, tableRows);
 
@@ -174,7 +185,7 @@ const GenericConditionsOverview: React.FC<GenericConditionsOverviewProps> = ({
                 <Button
                   kind="ghost"
                   renderIcon={(props: ComponentProps<typeof AddIcon>) => <AddIcon size={16} {...props} />}
-                  iconDescription={t('addConditions', 'Add conditions')}
+                  iconDescription={t('addAntecedent', 'Add antecedent')}
                   onClick={launchConditionsForm}
                 >
                   {t('add', 'Add')}
@@ -184,7 +195,7 @@ const GenericConditionsOverview: React.FC<GenericConditionsOverviewProps> = ({
           </div>
         </CardHeader>
         <DataTable
-          aria-label={t('conditionsOverview', 'Conditions overview')}
+          aria-label={t('antecedentsOverview', 'Antecedents overview')}
           rows={paginatedConditions}
           headers={headers}
           isSortable
@@ -233,7 +244,7 @@ const GenericConditionsOverview: React.FC<GenericConditionsOverviewProps> = ({
                 <div className={styles.tileContainer}>
                   <Tile className={styles.tile}>
                     <div className={styles.tileContent}>
-                      <p className={styles.content}>{t('noConditionsToDisplay', 'No conditions to display')}</p>
+                      <p className={styles.content}>{t('noAntecedentsToDisplay', 'No antecedents to display')}</p>
                       <p className={styles.helper}>{t('checkFilters', 'Check the filters above')}</p>
                     </div>
                   </Tile>

@@ -27,7 +27,7 @@ const DeleteConditionModal: React.FC<DeleteConditionModalProps> = ({ closeDelete
       showSnackbar({
         isLowContrast: true,
         kind: 'success',
-        title: t('conditionDeleted', 'Condition deleted'),
+        title: t('antecedentDeleted', 'Antecedent deleted'),
       });
     } catch (error) {
       console.error('Error deleting condition: ', error);
@@ -35,7 +35,7 @@ const DeleteConditionModal: React.FC<DeleteConditionModalProps> = ({ closeDelete
       showSnackbar({
         isLowContrast: false,
         kind: 'error',
-        title: t('errorDeletingCondition', 'Error deleting condition'),
+        title: t('errorDeletingAntecedent', 'Error deleting antecedent'),
         subtitle: error?.message,
       });
     }
@@ -43,9 +43,9 @@ const DeleteConditionModal: React.FC<DeleteConditionModalProps> = ({ closeDelete
 
   return (
     <div>
-      <ModalHeader closeModal={closeDeleteModal} title={t('deleteCondition', 'Delete condition')} />
+      <ModalHeader closeModal={closeDeleteModal} title={t('deleteAntecedent', 'Delete antecedent')} />
       <ModalBody>
-        <p>{t('deleteModalConfirmationText', 'Are you sure you want to delete this condition?')}</p>
+        <p>{t('deleteAntecedentModalConfirmationText', 'Are you sure you want to delete this antecedent?')}</p>
       </ModalBody>
       <ModalFooter>
         <Button kind="secondary" onClick={closeDeleteModal}>

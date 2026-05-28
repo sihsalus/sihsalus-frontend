@@ -15,6 +15,7 @@ import {
 } from '@carbon/react';
 import { AddIcon, formatDate, parseDate, useLayoutType } from '@openmrs/esm-framework';
 import { CardHeader, EmptyState, ErrorState, launchPatientWorkspace } from '@openmrs/esm-patient-common-lib';
+import { getAntecedentTypeLabel } from '@sihsalus/esm-sihsalus-shared';
 import classNames from 'classnames';
 import { type ComponentProps, useCallback, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -24,8 +25,8 @@ import styles from './conditions-detailed-summary.scss';
 
 function ConditionsDetailedSummary({ patient }) {
   const { t } = useTranslation();
-  const displayText = t('conditions_lower', 'conditions');
-  const headerTitle = t('conditions', 'Conditions');
+  const displayText = t('antecedents_lower', 'antecedents');
+  const headerTitle = t('antecedents', 'Antecedents');
   const [filter, setFilter] = useState<'All' | 'Active' | 'Inactive'>('Active');
   const layout = useLayoutType();
   const isTablet = layout === 'tablet';
@@ -45,9 +46,15 @@ function ConditionsDetailedSummary({ patient }) {
     () => [
       {
         key: 'display',
-        header: t('condition', 'Condition'),
+        header: t('antecedent', 'Antecedent'),
         isSortable: true,
         sortFunc: (valueA, valueB) => valueA.display?.localeCompare(valueB.display),
+      },
+      {
+        key: 'antecedentTypeRender',
+        header: t('antecedentType', 'Antecedent type'),
+        isSortable: true,
+        sortFunc: (valueA, valueB) => valueA.antecedentTypeRender?.localeCompare(valueB.antecedentTypeRender),
       },
       {
         key: 'onsetDateTimeRender',
@@ -75,13 +82,16 @@ function ConditionsDetailedSummary({ patient }) {
         id: condition.id,
         condition: condition.display,
         abatementDateTime: condition.abatementDateTime,
+        antecedentTypeRender: condition.antecedentType
+          ? getAntecedentTypeLabel(condition.antecedentType, t)
+          : (condition.categoryText ?? '--'),
         onsetDateTimeRender: condition.onsetDateTime
           ? formatDate(parseDate(condition.onsetDateTime), { mode: 'wide', time: 'for today' })
           : '--',
         status: condition.clinicalStatus,
       };
     });
-  }, [filteredConditions]);
+  }, [filteredConditions, t]);
 
   const { sortedRows, sortRow } = useConditionsSorting(headers, tableRows);
 
@@ -130,7 +140,7 @@ function ConditionsDetailedSummary({ patient }) {
             <Button
               kind="ghost"
               renderIcon={(props: ComponentProps<typeof AddIcon>) => <AddIcon size={16} {...props} />}
-              iconDescription="Add conditions"
+              iconDescription={t('addAntecedent', 'Add antecedent')}
               onClick={launchConditionsForm}
             >
               {t('add', 'Add')}
@@ -149,7 +159,11 @@ function ConditionsDetailedSummary({ patient }) {
           {({ rows, headers, getHeaderProps, getTableProps, getRowProps }) => (
             <>
               <TableContainer>
-                <Table {...getTableProps()} aria-label="conditions summary" className={styles.table}>
+                <Table
+                  {...getTableProps()}
+                  aria-label={t('antecedentsSummary', 'Antecedents summary')}
+                  className={styles.table}
+                >
                   <TableHead>
                     <TableRow>
                       {headers.map((header) => {
@@ -197,7 +211,7 @@ function ConditionsDetailedSummary({ patient }) {
                 <div className={styles.tileContainer}>
                   <Tile className={styles.tile}>
                     <div className={styles.tileContent}>
-                      <p className={styles.content}>{t('noConditionsToDisplay', 'No conditions to display')}</p>
+                      <p className={styles.content}>{t('noAntecedentsToDisplay', 'No antecedents to display')}</p>
                       <p className={styles.helper}>{t('checkFilters', 'Check the filters above')}</p>
                     </div>
                   </Tile>

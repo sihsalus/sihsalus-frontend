@@ -28,11 +28,16 @@ const createSchema = (formContext: 'creating' | 'editing', t: TFunction) => {
   });
 
   const conditionNameValidation = z.string().refine((conditionName) => !isCreating || !!conditionName, {
-    message: t('conditionRequired', 'A condition is required'),
+    message: t('antecedentRequired', 'An antecedent is required'),
+  });
+
+  const antecedentTypeValidation = z.string().refine((antecedentType) => !!antecedentType, {
+    message: t('antecedentTypeRequired', 'An antecedent type is required'),
   });
 
   return z.object({
     abatementDateTime: z.date().optional().nullable(),
+    antecedentType: antecedentTypeValidation,
     clinicalStatus: clinicalStatusValidation,
     conditionName: conditionNameValidation,
     onsetDateTime: z
@@ -74,6 +79,7 @@ const ConditionsForm: React.FC<ConditionsWorkspaceProps> = (props) => {
   const defaultValues = {
     abatementDateTime:
       isEditing && matchingCondition?.abatementDateTime ? new Date(matchingCondition?.abatementDateTime) : null,
+    antecedentType: isEditing ? (matchingCondition?.antecedentType ?? '') : '',
     conditionName: '',
     clinicalStatus: isEditing ? (matchingCondition?.clinicalStatus?.toLowerCase() ?? '') : '',
     onsetDateTime: isEditing && matchingCondition?.onsetDateTime ? new Date(matchingCondition?.onsetDateTime) : null,
@@ -121,7 +127,7 @@ const ConditionsForm: React.FC<ConditionsWorkspaceProps> = (props) => {
                   role="alert"
                   kind="error"
                   lowContrast
-                  title={t('errorCreatingCondition', 'Error creating condition')}
+                  title={t('errorCreatingAntecedent', 'Error creating antecedent')}
                   subtitle={errorCreating?.message}
                 />
               </div>
@@ -133,7 +139,7 @@ const ConditionsForm: React.FC<ConditionsWorkspaceProps> = (props) => {
                   role="alert"
                   kind="error"
                   lowContrast
-                  title={t('errorUpdatingCondition', 'Error updating condition')}
+                  title={t('errorUpdatingAntecedent', 'Error updating antecedent')}
                   subtitle={errorUpdating?.message}
                 />
               </div>
@@ -158,7 +164,7 @@ const ConditionsForm: React.FC<ConditionsWorkspaceProps> = (props) => {
 
   if (isWorkspace2Props(props)) {
     return (
-      <Workspace2 title={t('recordCondition', 'Record condition')} hasUnsavedChanges={isDirty}>
+      <Workspace2 title={t('recordAntecedent', 'Record antecedent')} hasUnsavedChanges={isDirty}>
         {form}
       </Workspace2>
     );

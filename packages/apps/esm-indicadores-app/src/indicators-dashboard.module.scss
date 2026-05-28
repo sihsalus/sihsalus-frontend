@@ -205,6 +205,70 @@
   gap: 0.5rem;
 }
 
+.searchSelector {
+  display: grid;
+  gap: 0.5rem;
+}
+
+.fieldHelp {
+  margin: 0;
+  color: #6f6f6f;
+  font-size: 0.875rem;
+}
+
+.selectedItemsList {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.selectedItemPill {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.35rem 0.6rem;
+  background: #edf5ff;
+  border: 1px solid #a6c8ff;
+  color: #002d9c;
+  font-size: 0.875rem;
+}
+
+.pillRemoveButton {
+  border: 0;
+  background: transparent;
+  color: inherit;
+  cursor: pointer;
+  font-size: 1rem;
+  line-height: 1;
+  padding: 0;
+}
+
+.searchResultsPanel {
+  border: 1px solid #e0e0e0;
+  background: #ffffff;
+}
+
+.searchResultsList {
+  display: grid;
+  gap: 0.5rem;
+  padding: 0.5rem;
+}
+
+.searchResultItem {
+  padding: 0.75rem;
+}
+
+.searchResultContent {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 1rem;
+}
+
+.searchEmptyState {
+  padding: 0.75rem;
+}
+
 .formFooter {
   display: flex;
   justify-content: flex-end;

@@ -2,6 +2,9 @@ import { Button, Select, SelectItem, TextArea, TextInput, Tile } from '@carbon/r
 import React, { useMemo, useState } from 'react';
 
 import type { DefinicionIndicadorForm, IndicadorFormValues, IndicadorUpdatePayload, Sexo, TipoDiagnostico } from '../api/types';
+import DiagnosticoSearchSelector from './DiagnosticoSearchSelector';
+import LocationSearchSelector from './LocationSearchSelector';
+import OrdenSearchSelector from './OrdenSearchSelector';
 import styles from '../indicators-dashboard.module.scss';
 
 type FormMode = 'create' | 'edit' | 'version';
@@ -20,12 +23,12 @@ const defaultValues: IndicadorFormValues = {
   descripcion: '',
   tipo: 'conteo_atenciones',
   periodo: 'mes_actual',
-  locationUuids: '',
+  selectedLocations: [],
   minimoOcurrencias: '1',
   filtroClinico: 'ninguno',
-  diagnosticoUuids: '',
+  selectedDiagnosticos: [],
   diagnosticoTipo: '',
-  ordenUuids: '',
+  selectedOrdenes: [],
   sexo: '',
   minAnios: '',
   minMeses: '',
@@ -44,17 +47,10 @@ function parseNumber(value: string) {
   return Number.isFinite(parsed) ? parsed : undefined;
 }
 
-function parseCsv(value: string) {
-  return value
-    .split(',')
-    .map((item) => item.trim())
-    .filter(Boolean);
-}
-
 function buildDefinicion(values: IndicadorFormValues): DefinicionIndicadorForm {
-  const locationUuids = parseCsv(values.locationUuids);
-  const diagnosticoUuids = parseCsv(values.diagnosticoUuids);
-  const ordenUuids = parseCsv(values.ordenUuids);
+  const locationUuids = values.selectedLocations.map((item) => item.uuid);
+  const diagnosticoUuids = values.selectedDiagnosticos.map((item) => item.uuid);
+  const ordenUuids = values.selectedOrdenes.map((item) => item.uuid);
 
   const evento =
     locationUuids.length || diagnosticoUuids.length || ordenUuids.length || values.minimoOcurrencias
@@ -106,7 +102,7 @@ const IndicadorForm: React.FC<IndicadorFormProps> = ({ mode, defaultValues: init
       return 'En edición solo se modifica nombre y descripción. Para cambiar la definición, crea una nueva versión.';
     }
 
-    return 'Usá IDs o UUIDs separados por coma para locations, diagnósticos y órdenes.';
+    return 'Usá los buscadores para agregar servicios, diagnósticos y órdenes sin escribir UUIDs manualmente.';
   }, [isEditMode]);
 
   const updateField = <K extends keyof IndicadorFormValues>(field: K, nextValue: IndicadorFormValues[K]) => {
@@ -122,12 +118,12 @@ const IndicadorForm: React.FC<IndicadorFormProps> = ({ mode, defaultValues: init
       return;
     }
 
-    if (values.filtroClinico === 'diagnosticos' && !parseCsv(values.diagnosticoUuids).length) {
+    if (values.filtroClinico === 'diagnosticos' && !values.selectedDiagnosticos.length) {
       setValidationError('Ingresá al menos un diagnóstico para ese filtro clínico.');
       return;
     }
 
-    if (values.filtroClinico === 'ordenes' && !parseCsv(values.ordenUuids).length) {
+    if (values.filtroClinico === 'ordenes' && !values.selectedOrdenes.length) {
       setValidationError('Ingresá al menos una orden para ese filtro clínico.');
       return;
     }
@@ -189,7 +185,7 @@ const IndicadorForm: React.FC<IndicadorFormProps> = ({ mode, defaultValues: init
               <p className={styles.sectionHint}>Acotá el origen clínico del cálculo: servicios, frecuencia mínima y filtro clínico.</p>
             </div>
             <div className={styles.formGrid}>
-              <TextInput id="locations" labelText="Locations / servicios" value={values.locationUuids} onChange={(event) => updateField('locationUuids', event.target.value)} helperText="Ejemplo: loc-consulta, loc-materno" />
+              <LocationSearchSelector selectedItems={values.selectedLocations} onChange={(items) => updateField('selectedLocations', items)} />
               <TextInput id="minimo-ocurrencias" labelText="Mínimo de ocurrencias" type="number" value={values.minimoOcurrencias} onChange={(event) => updateField('minimoOcurrencias', event.target.value)} />
             </div>
             <div className={styles.filterSwitches}>
@@ -205,7 +201,7 @@ const IndicadorForm: React.FC<IndicadorFormProps> = ({ mode, defaultValues: init
             </div>
             {values.filtroClinico === 'diagnosticos' ? (
               <div className={styles.formColumns}>
-                <TextInput id="diagnosticos" labelText="Diagnósticos" value={values.diagnosticoUuids} onChange={(event) => updateField('diagnosticoUuids', event.target.value)} helperText="Separá por coma los UUIDs o códigos internos." />
+                <DiagnosticoSearchSelector selectedItems={values.selectedDiagnosticos} onChange={(items) => updateField('selectedDiagnosticos', items)} />
                 <Select id="tipo-diagnostico" labelText="Tipo de diagnóstico" value={values.diagnosticoTipo} onChange={(event) => updateField('diagnosticoTipo', event.target.value as IndicadorFormValues['diagnosticoTipo'])}>
                   <SelectItem value="" text="Sin especificar" />
                   <SelectItem value="definitivo" text="Definitivo" />
@@ -214,7 +210,7 @@ const IndicadorForm: React.FC<IndicadorFormProps> = ({ mode, defaultValues: init
               </div>
             ) : null}
             {values.filtroClinico === 'ordenes' ? (
-              <TextInput id="ordenes" labelText="Órdenes" value={values.ordenUuids} onChange={(event) => updateField('ordenUuids', event.target.value)} helperText="Separá por coma las órdenes o conceptos esperados." />
+              <OrdenSearchSelector selectedItems={values.selectedOrdenes} onChange={(items) => updateField('selectedOrdenes', items)} />
             ) : null}
           </section>
 

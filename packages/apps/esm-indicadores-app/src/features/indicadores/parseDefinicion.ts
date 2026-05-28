@@ -1,9 +1,5 @@
 import type { DefinicionIndicadorForm, IndicadorFormValues } from '../../api/types';
 
-function toCsv(values?: Array<string>) {
-  return values?.join(', ') ?? '';
-}
-
 function toStringValue(value?: number) {
   return value === undefined ? '' : String(value);
 }
@@ -19,12 +15,12 @@ export function parseDefinicion(definicion?: DefinicionIndicadorForm): Partial<I
   return {
     tipo: definicion.tipo,
     periodo: definicion.periodo,
-    locationUuids: toCsv(definicion.evento?.location_uuids),
+    selectedLocations: (definicion.evento?.location_uuids ?? []).map((uuid) => ({ uuid, display: uuid })),
     minimoOcurrencias: toStringValue(definicion.evento?.minimo_ocurrencias),
     filtroClinico: diagnosticos?.concepto_uuids?.length ? 'diagnosticos' : ordenes?.concepto_uuids?.length ? 'ordenes' : 'ninguno',
-    diagnosticoUuids: toCsv(diagnosticos?.concepto_uuids),
+    selectedDiagnosticos: (diagnosticos?.concepto_uuids ?? []).map((uuid) => ({ uuid, nombre: uuid })),
     diagnosticoTipo: diagnosticos?.tipo_diagnostico ?? '',
-    ordenUuids: toCsv(ordenes?.concepto_uuids),
+    selectedOrdenes: (ordenes?.concepto_uuids ?? []).map((uuid) => ({ uuid, display: uuid })),
     sexo: definicion.poblacion?.sexo ?? '',
     minAnios: toStringValue(definicion.poblacion?.min_anios),
     minMeses: toStringValue(definicion.poblacion?.min_meses),

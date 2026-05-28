@@ -41,6 +41,7 @@ interface ConditionsWidgetProps {
   setErrorUpdating?: (error: Error) => void;
   setHasSubmissibleValue?: (value: boolean) => void;
   setIsSubmittingForm: Dispatch<boolean>;
+  lockedAntecedentType?: boolean;
 }
 
 interface RequiredFieldLabelProps {
@@ -66,6 +67,7 @@ const ConditionsWidget: React.FC<ConditionsWidgetProps> = ({
   setErrorCreating,
   setErrorUpdating,
   setIsSubmittingForm,
+  lockedAntecedentType,
 }) => {
   const { t } = useTranslation();
   const { conditions, mutate } = useConditions(patientUuid);
@@ -233,6 +235,7 @@ const ConditionsWidget: React.FC<ConditionsWidgetProps> = ({
                     id={`antecedent-type-${option.code}`}
                     labelText={getAntecedentTypeLabel(option.code, t)}
                     value={option.code}
+                    disabled={lockedAntecedentType}
                   />
                 ))}
               </RadioButtonGroup>

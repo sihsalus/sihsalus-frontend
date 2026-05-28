@@ -7,8 +7,6 @@ export default function AdmissionAppMenuLink() {
   const { t } = useTranslation(moduleName);
 
   return (
-    <ConfigurableLink to={`${globalThis.spaBase}${basePath}`}>
-      {t('admission', 'Registro de Atenciones')}
-    </ConfigurableLink>
+    <ConfigurableLink to={`${globalThis.spaBase}${basePath}`}>{t('admission', 'Libro de Atenciones')}</ConfigurableLink>
   );
 }

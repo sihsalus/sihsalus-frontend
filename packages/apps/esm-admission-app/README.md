@@ -1,6 +1,6 @@
-# SIH Salus Registro de Atenciones App
+# SIH Salus Libro de Atenciones App
 
-Microfrontend para el registro operativo de atenciones por UPSS/servicio. Conserva el package interno `esm-admission-app` y la ruta `/admission` por compatibilidad historica, pero el nombre visible del producto es `Registro de Atenciones`.
+Microfrontend para el libro operativo de atenciones por UPSS/servicio. Conserva el package interno `esm-admission-app` y la ruta `/admission` por compatibilidad historica, pero el nombre visible del producto es `Libro de Atenciones`.
 
 Tambien concentra evidencia funcional del perfil `N1.ADM` de la acreditacion SIHCE MINSA 373-2025, donde "admision" aparece como perfil normativo amplio de identificacion, registro, programacion y documentacion inicial.
 
@@ -14,8 +14,8 @@ Tambien concentra evidencia funcional del perfil `N1.ADM` de la acreditacion SIH
 
 ## Terminologia
 
-- UI/menu: `Registro de Atenciones`.
-- Titulo de pantalla: `Registro de Atenciones`.
+- UI/menu: `Libro de Atenciones`.
+- Titulo de pantalla: `Libro de Atenciones`.
 - Tabla/historial: atenciones activas y finalizadas por UPSS/servicio.
 - Ruta tecnica: `/admission`.
 - Package tecnico: `@sihsalus/esm-admission-app`.

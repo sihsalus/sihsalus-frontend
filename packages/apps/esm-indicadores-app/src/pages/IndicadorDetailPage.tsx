@@ -40,7 +40,7 @@ const IndicadorDetailPage: React.FC = () => {
 
   return (
     <div className={styles.container}>
-      <Link to="/" className={styles.inlineLink}>Volver al listado</Link>
+      <Link to="/" className={styles.backLink}>Volver a indicadores</Link>
 
       {isLoading ? <p>Cargando indicador...</p> : null}
       {error ? <div className={styles.errorBanner}>{error.message}</div> : null}

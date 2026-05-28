@@ -1,6 +1,5 @@
 import { Button, InlineLoading, Select, SelectItem, Table, TableBody, TableCell, TableHead, TableHeader, TableRow, Tile } from '@carbon/react';
 import React, { useState } from 'react';
-import { Link } from 'react-router-dom';
 
 import PaginationBar from '../components/PaginationBar';
 import { useIndicadores, notifyError, notifySuccess } from '../features/indicadores/hooks';
@@ -35,7 +34,6 @@ const ResultadosPage: React.FC = () => {
     <div className={styles.container}>
       <div className={styles.header}>
         <div>
-          <Link to="/" className={styles.inlineLink}>Volver al listado</Link>
           <h2>Resultados</h2>
           <p className={styles.subtitle}>Consulta resultados calculados y ejecutá el cálculo manual del lote.</p>
         </div>
@@ -65,7 +63,8 @@ const ResultadosPage: React.FC = () => {
       {!isLoading && !error ? (
         data?.items.length ? (
           <>
-            <Table aria-label="Resultados de indicadores">
+            <div className={styles.tableSurface}>
+              <Table aria-label="Resultados de indicadores">
               <TableHead>
                 <TableRow>
                   <TableHeader>Indicador</TableHeader>
@@ -86,7 +85,8 @@ const ResultadosPage: React.FC = () => {
                   </TableRow>
                 ))}
               </TableBody>
-            </Table>
+              </Table>
+            </div>
             <PaginationBar entityLabel="resultados" page={data.page} pageSize={data.size} total={data.total} totalPages={data.pages} onPageChange={setPage} />
           </>
         ) : (

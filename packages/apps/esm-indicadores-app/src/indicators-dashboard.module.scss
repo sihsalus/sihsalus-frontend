@@ -12,7 +12,9 @@
 }
 
 .moduleHeader {
-  margin-bottom: 1rem;
+  padding-bottom: 1rem;
+  border-bottom: 1px solid #e0e0e0;
+  margin-bottom: 1.5rem;
 }
 
 .pageTitle,
@@ -21,9 +23,19 @@
   margin: 0;
 }
 
+.pageTitle {
+  font-size: 2rem;
+  line-height: 1.15;
+}
+
 .subtitle,
 .mutedText {
   color: #525252;
+}
+
+.subtitle {
+  margin-top: 0.375rem;
+  max-width: 60rem;
 }
 
 .navTabs {
@@ -40,6 +52,15 @@
   text-decoration: none;
 }
 
+.backLink {
+  display: inline-flex;
+  margin-bottom: 0.5rem;
+  color: #0f62fe;
+  text-decoration: none;
+  font-size: 0.875rem;
+}
+
+.backLink:hover,
 .inlineLink:hover,
 .navTab:hover {
   text-decoration: underline;
@@ -59,6 +80,8 @@
 .navTabActive {
   background: #edf5ff;
   border-color: #0f62fe;
+  color: #002d9c;
+  font-weight: 600;
 }
 
 .headerActions,
@@ -169,6 +192,12 @@
   border: 1px solid #da1e28;
   color: #a2191f;
   padding: 0.75rem 1rem;
+}
+
+.tableSurface {
+  overflow: hidden;
+  border: 1px solid #e0e0e0;
+  background: #ffffff;
 }
 
 .definitionList {

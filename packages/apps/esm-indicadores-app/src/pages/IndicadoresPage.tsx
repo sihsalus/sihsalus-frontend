@@ -31,7 +31,6 @@ const IndicadoresPage: React.FC = () => {
         </div>
         <div className={styles.headerActions}>
           <Button onClick={() => navigate('/new')}>Nuevo indicador</Button>
-          <Link to="/results" className={styles.inlineLink}>Ver resultados</Link>
         </div>
       </div>
 
@@ -41,7 +40,8 @@ const IndicadoresPage: React.FC = () => {
       {!isLoading && !error ? (
         data?.items.length ? (
           <>
-            <Table aria-label="Listado de indicadores">
+            <div className={styles.tableSurface}>
+              <Table aria-label="Listado de indicadores">
               <TableHead>
                 <TableRow>
                   <TableHeader>Nombre</TableHeader>
@@ -72,7 +72,8 @@ const IndicadoresPage: React.FC = () => {
                   </TableRow>
                 ))}
               </TableBody>
-            </Table>
+              </Table>
+            </div>
             <PaginationBar entityLabel="indicadores" page={data.page} pageSize={data.size} total={data.total} totalPages={data.pages} onPageChange={setPage} />
           </>
         ) : (

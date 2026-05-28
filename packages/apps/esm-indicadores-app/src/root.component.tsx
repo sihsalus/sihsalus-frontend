@@ -24,7 +24,7 @@ const RootComponent: React.FC = () => {
           <div className={styles.moduleHeader}>
             <div>
               <h1 className={styles.pageTitle}>Indicadores Clínicos</h1>
-              <p className={styles.subtitle}>Módulo adaptado al ecosistema OpenMRS con fallback demo cuando falle la API.</p>
+              <p className={styles.subtitle}>Configuración, versionado y resultados de indicadores clínicos en un solo módulo.</p>
             </div>
             <nav className={styles.navTabs} aria-label="Navegación de indicadores">
               <NavLink to="/" end className={({ isActive }) => (isActive ? styles.navTabActive : styles.navTab)}>

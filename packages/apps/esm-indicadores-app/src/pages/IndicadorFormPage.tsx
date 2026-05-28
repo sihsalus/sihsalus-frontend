@@ -58,7 +58,7 @@ const IndicadorFormPage: React.FC<IndicadorFormPageProps> = ({ mode }) => {
     <div className={styles.container}>
       <div className={styles.header}>
         <div>
-          <Link to="/" className={styles.inlineLink}>Volver al listado</Link>
+          <Link to="/" className={styles.backLink}>Volver a indicadores</Link>
           <h2>{mode === 'create' ? 'Nuevo indicador' : 'Editar indicador'}</h2>
         </div>
       </div>
@@ -68,13 +68,22 @@ const IndicadorFormPage: React.FC<IndicadorFormPageProps> = ({ mode }) => {
       {mode === 'edit' && !indicador && !isLoading && !error ? <div className={styles.errorBanner}>No se encontró el indicador.</div> : null}
 
       {mode === 'create' || indicador ? (
-        <IndicadorForm
-          mode={mode}
-          defaultValues={defaultValues}
-          initialMetadata={indicador ? { nombre: indicador.nombre, descripcion: indicador.descripcion } : undefined}
-          serverError={serverError}
-          onSubmit={handleSubmit}
-        />
+        <div className={styles.formPageShell}>
+          <div className={styles.formPageIntro}>
+            <p className={styles.subtitle}>
+              {mode === 'create'
+                ? 'Definí la metadata y la lógica base del indicador. Más adelante podemos reemplazar estos campos por selectores clínicos más ricos.'
+                : 'Actualizá el nombre y la descripción. La definición de cálculo se versiona desde el detalle del indicador.'}
+            </p>
+          </div>
+          <IndicadorForm
+            mode={mode}
+            defaultValues={defaultValues}
+            initialMetadata={indicador ? { nombre: indicador.nombre, descripcion: indicador.descripcion } : undefined}
+            serverError={serverError}
+            onSubmit={handleSubmit}
+          />
+        </div>
       ) : null}
     </div>
   );

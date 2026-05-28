@@ -4337,10 +4337,10 @@ __metadata:
     uuid: "npm:^14.0.0"
     vitest: "npm:^4.1.0"
   peerDependencies:
-    "@openmrs/esm-extensions": "workspace:*"
-    "@openmrs/esm-framework": "workspace:*"
-    "@openmrs/esm-styleguide": "workspace:*"
-    "@sihsalus/esm-form-engine-lib": "workspace:*"
+    "@openmrs/esm-extensions": "*"
+    "@openmrs/esm-framework": "*"
+    "@openmrs/esm-styleguide": "*"
+    "@sihsalus/esm-form-engine-lib": "*"
     react: 18.x
     single-spa: 6.x
   languageName: unknown

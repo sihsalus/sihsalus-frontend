@@ -4,6 +4,13 @@ import { useMemo } from 'react';
 import useSWRImmutable from 'swr/immutable';
 import { type Patient } from './types';
 
+const patientBannerModuleName = '@sihsalus/esm-patient-banner-app';
+
+type PatientBannerConfig = {
+  contactAttributeTypes?: Array<string>;
+  additionalAttributeTypes?: Array<string>;
+};
+
 const customRepresentation =
   'custom:(uuid,display,identifiers:(identifier,uuid,preferred,location:(uuid,name),identifierType:(uuid,name,format,formatDescription,validator)),person:(uuid,display,gender,birthdate,dead,age,deathDate,birthdateEstimated,causeOfDeath,preferredName:(uuid,preferred,givenName,middleName,familyName),attributes,preferredAddress:(uuid,preferred,address1,address2,cityVillage,longitude,stateProvince,latitude,country,postalCode,countyDistrict,address3,address4,address5,address6,address7)))';
 
@@ -29,9 +36,10 @@ export const usePatientAttributes = (patientUuid: string) => {
  * React hook that takes patientUuid and returns contact details
  * derived from patient attributes using configured attributeTypes.
  *
- * Note: Although this hook lives in esm-styleguide, it runs inside the
- * patient banner extension and therefore reads the banner module's config
- * from the current ComponentContext.
+ * Note: This hook loads configuration from '@sihsalus/esm-patient-banner-app'
+ * because the contact attribute types are defined in the patient banner's
+ * configuration schema. While this hook lives in esm-styleguide, it serves
+ * the patient banner's contact details display.
  *
  * @param patientUuid - Unique patient identifier
  * @returns {Object} Object containing filtered contact attributes, loading status, and error
@@ -40,7 +48,9 @@ export const usePatientAttributes = (patientUuid: string) => {
  * @property {Error|null} error - Error object if request fails
  */
 export const usePatientContactAttributes = (patientUuid: string) => {
-  const { contactAttributeTypes = [] } = useConfig();
+  const { contactAttributeTypes = [] } = useConfig<PatientBannerConfig>({
+    externalModuleName: patientBannerModuleName,
+  });
 
   const { attributes, error, isLoading } = usePatientAttributes(patientUuid);
   const contactAttributes = useMemo(
@@ -59,7 +69,9 @@ export const usePatientContactAttributes = (patientUuid: string) => {
 };
 
 export const usePatientAdditionalAttributes = (patientUuid: string) => {
-  const { additionalAttributeTypes = [] } = useConfig();
+  const { additionalAttributeTypes = [] } = useConfig<PatientBannerConfig>({
+    externalModuleName: patientBannerModuleName,
+  });
 
   const { attributes, error, isLoading } = usePatientAttributes(patientUuid);
   const additionalAttributes = useMemo(

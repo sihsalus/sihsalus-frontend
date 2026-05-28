@@ -3,7 +3,6 @@
   "version": "12.1.0",
   "license": "MPL-2.0",
   "description": "Library for common patient chart components",
-  "browser": "dist/openmrs-esm-patient-common-lib.js",
   "main": "src/index.ts",
   "source": true,
   "scripts": {
@@ -35,10 +34,10 @@
     "uuid": "^14.0.0"
   },
   "peerDependencies": {
-    "@openmrs/esm-extensions": "workspace:*",
-    "@openmrs/esm-framework": "workspace:*",
-    "@openmrs/esm-styleguide": "workspace:*",
-    "@sihsalus/esm-form-engine-lib": "workspace:*",
+    "@openmrs/esm-extensions": "*",
+    "@openmrs/esm-framework": "*",
+    "@openmrs/esm-styleguide": "*",
+    "@sihsalus/esm-form-engine-lib": "*",
     "react": "18.x",
     "single-spa": "6.x"
   },

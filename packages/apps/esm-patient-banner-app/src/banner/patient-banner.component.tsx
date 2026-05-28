@@ -6,7 +6,7 @@ import {
   PatientPhoto,
 } from '@openmrs/esm-framework';
 import classNames from 'classnames';
-import React, { Suspense, useCallback, useEffect, useRef, useState } from 'react';
+import React, { Suspense, useCallback, useEffect, useState } from 'react';
 import { PatientBannerContactDetails } from './patient-banner-contact-details.component';
 import styles from './patient-banner.scss';
 
@@ -17,28 +17,26 @@ interface PatientBannerProps {
 }
 
 const PatientBanner: React.FC<PatientBannerProps> = ({ patient, patientUuid, hideActionsOverflow }) => {
-  const patientBannerRef = useRef<HTMLElement>(null);
-  const [isTabletViewport, setIsTabletViewport] = useState(false);
+  const [patientBannerElement, setPatientBannerElement] = useState<HTMLElement | null>(null);
+  const [patientBannerWidth, setPatientBannerWidth] = useState<number>();
   const [showContactDetails, setShowContactDetails] = useState(false);
 
   useEffect(() => {
-    const currentRef = patientBannerRef.current;
-    if (!currentRef) {
+    if (!patientBannerElement) {
       return;
     }
 
     const resizeObserver = new ResizeObserver((entries) => {
       for (const entry of entries) {
-        setIsTabletViewport(entry.contentRect.width < 1023);
+        setPatientBannerWidth(Math.round(entry.contentRect.width));
       }
     });
-    if (patientBannerRef.current) {
-      resizeObserver.observe(patientBannerRef.current);
-    }
+    resizeObserver.observe(patientBannerElement);
+
     return () => {
-      resizeObserver.unobserve(currentRef);
+      resizeObserver.unobserve(patientBannerElement);
     };
-  }, []);
+  }, [patientBannerElement]);
 
   const patientName = patient ? getPatientName(patient) : '';
 
@@ -47,8 +45,10 @@ const PatientBanner: React.FC<PatientBannerProps> = ({ patient, patientUuid, hid
   }, []);
 
   const isDeceased = Boolean(patient?.deceasedDateTime);
+  const isTabletViewport = typeof patientBannerWidth === 'number' && patientBannerWidth < 1023;
   const maxDesktopWorkspaceWidthInPx = 520;
-  const showDetailsButtonBelowHeader = patientBannerRef.current?.scrollWidth <= maxDesktopWorkspaceWidthInPx;
+  const showDetailsButtonBelowHeader =
+    typeof patientBannerWidth === 'number' && patientBannerWidth <= maxDesktopWorkspaceWidthInPx;
 
   if (!patient) {
     return null;
@@ -60,7 +60,7 @@ const PatientBanner: React.FC<PatientBannerProps> = ({ patient, patientUuid, hid
         styles.container,
         isDeceased ? styles.deceasedPatientContainer : styles.activePatientContainer,
       )}
-      ref={patientBannerRef}
+      ref={setPatientBannerElement}
     >
       <div className={styles.patientBanner}>
         <div className={styles.patientAvatar}>

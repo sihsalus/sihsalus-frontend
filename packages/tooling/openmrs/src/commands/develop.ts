@@ -151,7 +151,7 @@ export async function runDevelop(args: DevelopArgs) {
 
   // Route for custom `service-worker.js` before most things
   if (supportOffline) {
-    app.get(`${spaPath}/service-worker.js`, (_, res) => {
+    app.get(`${spaPath}/service-worker.js`, indexRateLimit, (_, res) => {
       res.contentType('js').send(swContent);
     });
   }

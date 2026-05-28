@@ -85,6 +85,12 @@ async function renderAddressHierarchy(contextValues: PatientRegistrationContextP
 }
 
 describe('Address hierarchy', () => {
+  beforeEach(() => {
+    mockResourcesContextValue.addressTemplate = {} as AddressTemplate;
+    mockResourcesContextValue.addressTemplateError = undefined;
+    mockResourcesContextValue.isLoadingAddressTemplate = undefined;
+  });
+
   it('renders a loading skeleton when the address template is loading', () => {
     mockUseConfig.mockReturnValue({
       ...getDefaultsFromConfigSchema(esmPatientRegistrationSchema),
@@ -250,6 +256,66 @@ describe('Address hierarchy', () => {
 
     const searchbox = screen.getByRole('searchbox', { name: /search address/i });
     expect(searchbox).toBeInTheDocument();
+  });
+
+  it('does not render the quick search without the address template fields', () => {
+    mockUseConfig.mockReturnValue({
+      ...getDefaultsFromConfigSchema(esmPatientRegistrationSchema),
+      fieldConfigurations: {
+        address: {
+          useAddressHierarchy: {
+            enabled: true,
+            useQuickSearch: true,
+            searchAddressByLevel: true,
+          },
+        },
+      } as RegistrationConfig['fieldConfigurations'],
+    });
+
+    mockUseOrderedAddressHierarchyLevels.mockReturnValue({
+      orderedFields: mockedOrderedFields,
+      isLoadingFieldOrder: false,
+      errorFetchingFieldOrder: undefined,
+    });
+
+    mockResourcesContextValue.addressTemplate = undefined as unknown as AddressTemplate;
+    mockResourcesContextValue.isLoadingAddressTemplate = true;
+
+    renderAddressHierarchy(initialContextValues);
+
+    expect(screen.getByRole('progressbar')).toBeInTheDocument();
+    expect(screen.queryByRole('searchbox', { name: /search address/i })).not.toBeInTheDocument();
+  });
+
+  it('renders quick search and address hierarchy fields together when both features are enabled', () => {
+    mockUseConfig.mockReturnValue({
+      ...getDefaultsFromConfigSchema(esmPatientRegistrationSchema),
+      fieldConfigurations: {
+        address: {
+          useAddressHierarchy: {
+            enabled: true,
+            useQuickSearch: true,
+            searchAddressByLevel: true,
+          },
+        },
+      } as RegistrationConfig['fieldConfigurations'],
+    });
+
+    mockUseOrderedAddressHierarchyLevels.mockReturnValue({
+      orderedFields: mockedOrderedFields,
+      isLoadingFieldOrder: false,
+      errorFetchingFieldOrder: undefined,
+    });
+
+    mockResourcesContextValue.addressTemplate = mockedAddressTemplate;
+
+    renderAddressHierarchy(initialContextValues);
+
+    expect(screen.getByRole('searchbox', { name: /search address/i })).toBeInTheDocument();
+    const allFields = mockedAddressTemplate.lines.flat().filter(({ isToken }) => isToken === 'IS_ADDR_TOKEN');
+    allFields.forEach((field) => {
+      expect(screen.getByLabelText(`${field.displayText} (optional)`)).toBeInTheDocument();
+    });
   });
 
   it('renders combobox fields when address hierarchy is enabled and searchAddressByLevel is set to true', () => {

@@ -16,6 +16,7 @@ Tambien concentra evidencia funcional del perfil `N1.ADM` de la acreditacion SIH
 
 - UI/menu: `Libro de Atenciones`.
 - Titulo de pantalla: `Libro de Atenciones`.
+- Nombre anterior: `Registro de Atenciones`; no usar en copy nuevo salvo notas historicas.
 - Tabla/historial: atenciones activas y finalizadas por UPSS/servicio.
 - Ruta tecnica: `/admission`.
 - Package tecnico: `@sihsalus/esm-admission-app`.
@@ -50,6 +51,6 @@ La prueba completa de campos de admision requiere que el content package este de
 
 ## Riesgos conocidos
 
-- El nombre del modulo puede inducir a error si se usa para reportes de atenciones por UPS.
+- El nombre tecnico del modulo (`admission`) puede inducir a error si se expone como `Admisiones`; en UI debe mantenerse `Libro de Atenciones`.
 - El flujo depende de configuracion real de ubicaciones/UPS; datos demo incompletos producen reportes pobres o confusos.
 - Las integraciones con citas deben delegar al workspace de Appointments; duplicar esa logica genera divergencia.

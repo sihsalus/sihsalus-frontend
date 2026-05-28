@@ -15,9 +15,9 @@ Fuente de requisitos: [`requerimientos_admision_SIHCE_MINSA_373-2025.csv`](reque
 - Se agrego acreditacion manual de seguro: `Estado de acreditacion de seguro` y `Fecha/hora de acreditacion`.
 - Se agregaron como identificadores visibles por defecto: DNI, CE, pasaporte y documento de identidad extranjero.
 - Se agrego `Nacionalidad` como dato de filiacion condicionado a identificadores extranjeros con valor (CE, pasaporte o documento extranjero), para reforzar continuidad manual ante no disponibilidad de consulta a Migraciones.
-- Se agrego app separada `@sihsalus/esm-admission-app` para concentrar evidencia funcional de admision.
+- Se agrego app separada `@sihsalus/esm-admission-app` para concentrar evidencia funcional de admision; su nombre visible de producto es `Libro de Atenciones`.
 - Se movio la entrada SPA de fusion de historias duplicadas a `/admission/merge`, usando el flujo legacy de OpenMRS `mergePatients.form`.
-- Se agrego vista/reporte `/admission` de admisiones por UPS/servicio con fecha, hora, paciente, HC, ubicacion y estado.
+- Se agrego vista/reporte `/admission` (`Libro de Atenciones`) de atenciones por UPS/servicio con fecha, hora, paciente, HC, ubicacion y estado.
 - En `/admission/patient/:uuid` se agrego seccion `Programacion de turnos`: lista turnos proximos del paciente y abre el workspace real `appointments-form-workspace` para consultar disponibilidad, seleccionar cupo y registrar citas con prestadores.
 - Se agrego extension de identificacion minima del paciente para pantallas clinicas que exponen `patient-info-slot`: nombre, HC/documento, edad/nacimiento/sexo y servicio/ubicacion activa.
 - En el content package se agregaron los `personattributetypes` y conceptos requeridos para los nuevos campos.
@@ -73,7 +73,7 @@ Fuente de requisitos: [`requerimientos_admision_SIHCE_MINSA_373-2025.csv`](reque
 | N1.ADM.03.06 | Cumple proyectado | Se agrego extension `clinicalIdentitySummary` en `patient-info-slot` con nombre, HC/documento, edad/nacimiento/sexo y servicio/ubicacion activa. Falta evidencia visual final en cada pantalla clinica objetivo si alguna no consume ese slot. |
 | N1.ADM.03.07 | Cumple | Edad se calcula desde fecha de nacimiento; el formulario tambien calcula fecha a partir de edad estimada. |
 | N1.ADM.03.08 | Cumple proyectado | Se separo la captura en `Grupo sanguineo` y `Factor Rh`, respaldados por atributos y conceptos discretos en el content package. |
-| N1.ADM.04.01 | Cumple proyectado | Se agrego vista `/admission` de admisiones por UPS/servicio basada en visitas, con fecha, hora, paciente, HC, servicio/UPS, ubicacion y estado. |
+| N1.ADM.04.01 | Cumple proyectado | Se agrego vista `/admission` (`Libro de Atenciones`) de atenciones por UPS/servicio basada en visitas, con fecha, hora, paciente, HC, servicio/UPS, ubicacion y estado. |
 | N1.ADM.04.02 | Cumple proyectado | Se agrego atributo de persona `Tipo de archivo de historia clinica` con valores comun y especial. |
 | N1.ADM.05.01 | Cumple | La cola/admisión operativa captura ubicacion y servicio/UPS mediante `queueLocation` y `service`. |
 | N1.ADM.05.02 | Cumple | Citas, visitas y entradas de cola manejan fecha/hora en campos discretos (`startDateTime`, `startedAt`, `endedAt`). |

@@ -44,9 +44,18 @@ const initialContextValues = {
 };
 
 describe('RelationshipsSection', () => {
+  beforeEach(() => {
+    mockResourcesContextValue = {
+      ...mockResourcesContextValue,
+      relationshipTypes: null,
+      relationshipTypesError: undefined,
+      isLoadingRelationshipTypes: false,
+    };
+  });
+
   it('renders a loader when relationshipTypes are not available', () => {
     render(
-      <ResourcesContext.Provider value={mockResourcesContextValue}>
+      <ResourcesContext.Provider value={{ ...mockResourcesContextValue, isLoadingRelationshipTypes: true }}>
         <Formik initialValues={{}} onSubmit={null}>
           <Form>
             <RelationshipsSection />
@@ -58,6 +67,73 @@ describe('RelationshipsSection', () => {
     expect(screen.getByLabelText(/loading relationships section/i)).toBeInTheDocument();
     expect(screen.getByRole('progressbar')).toBeInTheDocument();
     expect(screen.queryByText(/add relationship/i)).not.toBeInTheDocument();
+  });
+
+  it('renders a non-loading message when relationshipTypes are unavailable', () => {
+    render(
+      <ResourcesContext.Provider value={mockResourcesContextValue}>
+        <Formik initialValues={{}} onSubmit={null}>
+          <Form>
+            <RelationshipsSection />
+          </Form>
+        </Formik>
+      </ResourcesContext.Provider>,
+    );
+
+    expect(screen.queryByRole('progressbar')).not.toBeInTheDocument();
+    expect(screen.getByText('Relationship types unavailable')).toBeInTheDocument();
+    expect(screen.queryByText(/add relationship/i)).not.toBeInTheDocument();
+  });
+
+  it('does not show relationship controls in edit mode until relationshipTypes are available', () => {
+    render(
+      <ResourcesContext.Provider
+        value={{ ...mockResourcesContextValue, relationshipTypesError: new Error('relationship types unavailable') }}
+      >
+        <Formik
+          initialValues={{
+            relationships: [
+              {
+                action: undefined,
+                relatedPersonName: 'Jane Doe',
+                relatedPersonUuid: '11524ae7-3ef6-4ab6-aff6-804ffc58704a',
+                relationshipType: '42ae5ce0-d64b-11ea-9064-5adc43bbdd34/aIsToB',
+                uuid: 'relationship-uuid',
+              },
+            ],
+          }}
+          onSubmit={null}
+        >
+          <Form>
+            <PatientRegistrationContext.Provider
+              value={{
+                ...initialContextValues,
+                inEditMode: true,
+                values: {
+                  ...initialContextValues.values,
+                  relationships: [
+                    {
+                      action: undefined,
+                      relatedPersonName: 'Jane Doe',
+                      relatedPersonUuid: '11524ae7-3ef6-4ab6-aff6-804ffc58704a',
+                      relationshipType: '42ae5ce0-d64b-11ea-9064-5adc43bbdd34/aIsToB',
+                      uuid: 'relationship-uuid',
+                    },
+                  ],
+                },
+              }}
+            >
+              <RelationshipsSection />
+            </PatientRegistrationContext.Provider>
+          </Form>
+        </Formik>
+      </ResourcesContext.Provider>,
+    );
+
+    expect(screen.queryByRole('progressbar')).not.toBeInTheDocument();
+    expect(screen.getByText('Relationship types unavailable')).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /add relationship/i })).not.toBeInTheDocument();
+    expect(screen.queryByRole('combobox', { name: /relationship/i })).not.toBeInTheDocument();
   });
 
   it('renders relationships when relationshipTypes are available', () => {

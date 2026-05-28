@@ -1,18 +1,19 @@
 import { InlineLoading } from '@carbon/react';
 import {
   ConfigurableLink,
+  type CoreTranslationKey,
+  formatDate,
   getCoreTranslation,
   parseDate,
   useConfig,
   usePatient,
-  type CoreTranslationKey,
 } from '@openmrs/esm-framework';
 import classNames from 'classnames';
 import React, { useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { type ConfigObject } from '../config-schema';
 import { useEthnicIdentity } from '../hooks/useEthnicIdentity';
-import { usePatientContactAttributes } from '../hooks/usePatientAttributes';
+import { usePatientAdditionalAttributes, usePatientContactAttributes } from '../hooks/usePatientAttributes';
 import { usePatientListsForPatient } from '../hooks/usePatientListsForPatient';
 import { useRelationships } from '../hooks/useRelationships';
 import styles from './patient-banner-contact-details.module.scss';
@@ -120,10 +121,7 @@ const Contact: React.FC<{ patientUuid: string }> = ({ patientUuid }) => {
       contactAttributes
         ? contactAttributes.map((contact) => [
             contact.attributeType.display
-              ? getCoreTranslation(
-                  contact.attributeType.display as CoreTranslationKey,
-                  contact.attributeType.display,
-                )
+              ? getCoreTranslation(contact.attributeType.display as CoreTranslationKey, contact.attributeType.display)
               : '',
             contact.value,
           ])
@@ -148,6 +146,105 @@ const Contact: React.FC<{ patientUuid: string }> = ({ patientUuid }) => {
           </li>
         </ul>
       )}
+    </>
+  );
+};
+
+const getDisplayValue = (value: unknown): string => {
+  if (value === null || value === undefined || value === '') {
+    return '--';
+  }
+
+  if (typeof value === 'object') {
+    const displayableValue = value as { display?: string; name?: string; value?: string | number };
+    return String(displayableValue.display ?? displayableValue.name ?? displayableValue.value ?? '--');
+  }
+
+  return String(value);
+};
+
+const PatientAdministrativeDetails: React.FC<{ patientUuid: string }> = ({ patientUuid }) => {
+  const { t } = useTranslation();
+  const { additionalAttributes, identifiers, isLoading, person } = usePatientAdditionalAttributes(patientUuid);
+  const gender = person?.gender
+    ? getCoreTranslation(person.gender === 'M' ? 'male' : person.gender === 'F' ? 'female' : 'unknown', person.gender)
+    : '--';
+
+  return (
+    <>
+      <div className={styles.col}>
+        <p className={styles.heading}>{t('demographics', 'Demographics')}</p>
+        {isLoading ? (
+          <InlineLoading description={`${getCoreTranslation('loading', 'Loading')} ...`} role="progressbar" />
+        ) : (
+          <ul>
+            <li>
+              {t('age', 'Age')}: {person?.age ?? '--'}
+            </li>
+            <li>
+              {t('dateOfBirth', 'Date of birth')}:{' '}
+              {person?.birthdate ? formatDate(parseDate(person.birthdate), { mode: 'wide', time: false }) : '--'}
+            </li>
+            <li>
+              {t('gender', 'Gender')}: {gender}
+            </li>
+            <li>
+              {t('status', 'Status')}: {person?.dead ? t('deceased', 'Deceased') : t('active', 'Active')}
+            </li>
+            {person?.dead && (
+              <li>
+                {t('deathDate', 'Death date')}:{' '}
+                {person?.deathDate
+                  ? formatDate(parseDate(String(person.deathDate)), { mode: 'wide', time: false })
+                  : '--'}
+              </li>
+            )}
+          </ul>
+        )}
+      </div>
+      <div className={styles.col}>
+        <p className={styles.heading}>{t('identifiers', 'Identifiers')}</p>
+        {isLoading ? (
+          <InlineLoading description={`${getCoreTranslation('loading', 'Loading')} ...`} role="progressbar" />
+        ) : (
+          <ul>
+            {identifiers?.length > 0 ? (
+              identifiers.map((identifier) => (
+                <li key={identifier.uuid}>
+                  {identifier.identifierType?.name ?? t('identifier', 'Identifier')}: {identifier.identifier}
+                  {identifier.preferred ? ` (${t('preferred', 'Preferred')})` : ''}
+                </li>
+              ))
+            ) : (
+              <li>--</li>
+            )}
+          </ul>
+        )}
+      </div>
+      <div className={styles.col}>
+        <p className={styles.heading}>{t('additionalDetails', 'Additional details')}</p>
+        {isLoading ? (
+          <InlineLoading description={`${getCoreTranslation('loading', 'Loading')} ...`} role="progressbar" />
+        ) : (
+          <ul>
+            {additionalAttributes?.length > 0 ? (
+              additionalAttributes.map((attribute) => (
+                <li key={attribute.uuid}>
+                  {attribute.attributeType.display
+                    ? getCoreTranslation(
+                        attribute.attributeType.display as CoreTranslationKey,
+                        attribute.attributeType.display,
+                      )
+                    : t('attribute', 'Attribute')}
+                  : {getDisplayValue(attribute.value)}
+                </li>
+              ))
+            ) : (
+              <li>--</li>
+            )}
+          </ul>
+        )}
+      </div>
     </>
   );
 };
@@ -198,21 +295,20 @@ export function PatientBannerContactDetails({ patientId, deceased }: ContactDeta
         [styles.deceased]: deceased,
       })}
     >
-      <div className={styles.row}>
+      <div className={styles.tiles}>
         <div className={styles.col}>
           <Address patientId={patientId} />
         </div>
         <div className={styles.col}>
           <Contact patientUuid={patientId} />
         </div>
-      </div>
-      <div className={styles.row}>
         <div className={styles.col}>
           <Relationships patientId={patientId} />
         </div>
         <div className={styles.col}>
           <PatientLists patientUuid={patientId} />
         </div>
+        <PatientAdministrativeDetails patientUuid={patientId} />
       </div>
     </div>
   );

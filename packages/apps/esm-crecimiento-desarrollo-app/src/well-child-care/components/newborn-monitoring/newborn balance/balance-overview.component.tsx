@@ -123,7 +123,7 @@ const NewbornBalanceOverview: React.FC<BalanceOverviewProps> = ({ patientUuid, p
     <ClinicalDataOverview
       patientUuid={patientUuid}
       pageSize={pageSize}
-      headerTitle={t('balanceOverview', 'Fluid balance overview')}
+      headerTitle={t('balanceOverview', 'Balance de líquidos del recién nacido')}
       data={clinicalData}
       error={error}
       isLoading={isLoading}
@@ -131,7 +131,7 @@ const NewbornBalanceOverview: React.FC<BalanceOverviewProps> = ({ patientUuid, p
       tableHeaders={tableHeaders}
       tableRows={tableRows}
       formWorkspace="newborn-fluidBalance-form"
-      emptyStateDisplayText={t('balanceOverview', 'Fluid balance overview')}
+      emptyStateDisplayText={t('balanceOverview', 'Balance de líquidos del recién nacido')}
       conceptUnits={conceptUnits}
       config={config}
       chartConfig={chartConfig}

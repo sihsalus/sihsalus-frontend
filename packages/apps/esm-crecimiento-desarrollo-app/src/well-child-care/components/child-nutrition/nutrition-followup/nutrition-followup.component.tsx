@@ -27,7 +27,7 @@ const NutritionFollowup: React.FC<NutritionFollowupProps> = ({ patientUuid }) =>
   const config = useConfig<ConfigObject>();
   const { mmnStatus, ironStatus, counselingCount, lastFollowupDate, isLoading, error } =
     useNutritionFollowup(patientUuid);
-  const headerTitle = t('cnFollowUpTitle', 'Seguimiento Nutricional');
+  const headerTitle = t('cnFollowUpTitle', 'Seguimiento nutricional');
 
   const handleAdd = useCallback(() => {
     const formUuid = config.formsList.nutritionFollowupForm;

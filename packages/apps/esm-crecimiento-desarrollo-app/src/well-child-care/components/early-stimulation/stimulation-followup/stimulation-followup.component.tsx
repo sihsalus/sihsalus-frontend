@@ -27,7 +27,7 @@ const StimulationFollowup: React.FC<StimulationFollowupProps> = ({ patientUuid }
   const config = useConfig<ConfigObject>();
   const { lastEvaluationResult, lastEvaluationDate, hasStimulationLack, isLoading, error } =
     useStimulationFollowup(patientUuid);
-  const headerTitle = t('esFollowUpTitle', 'Seguimiento del Desarrollo');
+  const headerTitle = t('esFollowUpTitle', 'Seguimiento del desarrollo');
 
   const handleAdd = useCallback(() => {
     const formUuid = config.formsList.stimulationFollowupForm;

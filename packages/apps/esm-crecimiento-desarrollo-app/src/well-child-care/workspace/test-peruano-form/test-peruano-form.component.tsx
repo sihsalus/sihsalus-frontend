@@ -693,7 +693,7 @@ const TestPeruanoForm: React.FC<DefaultPatientWorkspaceProps> = ({ closeWorkspac
                     {patient.patient ? getPatientName(patient.patient) : t('loading', 'Loading...')}
                   </p>
                   <p>
-                    <strong>{t('age', 'Age')}:</strong> {t('ageMonths', '{{count}} months', { count: childAgeMonths })}
+                    <strong>{t('age', 'Age')}:</strong> {t('ageMonths', '{{count}} meses', { count: childAgeMonths })}
                   </p>
                 </div>
                 <div>

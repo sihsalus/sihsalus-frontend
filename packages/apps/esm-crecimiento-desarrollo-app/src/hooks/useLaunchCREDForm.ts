@@ -127,10 +127,10 @@ function getFormDisplayName(formKey: string): string {
     epicrisis: 'Epicrisis',
 
     // Newborn Forms
-    atencionImmediataNewborn: 'Atención Inmediata del Recién Nacido',
+    atencionImmediataNewborn: 'Atención inmediata del recién nacido',
     breastfeedingObservation: 'Observación del Amamantamiento',
     newbornNeuroEval: 'Evaluación Céfalo-Caudal y Neurológico',
-    roomingIn: 'Alojamiento Conjunto',
+    roomingIn: 'Alojamiento conjunto',
     birthDetails: 'Detalles de Nacimiento',
     pregnancyDetails: 'Embarazo y Parto',
 

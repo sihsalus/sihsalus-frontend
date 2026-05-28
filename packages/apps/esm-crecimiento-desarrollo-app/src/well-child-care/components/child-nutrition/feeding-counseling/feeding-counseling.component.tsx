@@ -26,7 +26,7 @@ const FeedingCounseling: React.FC<FeedingCounselingProps> = ({ patientUuid }) =>
   const { t } = useTranslation();
   const config = useConfig<ConfigObject>();
   const { feedingType, lastAssessmentDate, isBreastfeeding, isLoading, error } = useFeedingAssessment(patientUuid);
-  const headerTitle = t('cnCounselingTitle', 'Consejería Alimentaria');
+  const headerTitle = t('cnCounselingTitle', 'Consejería alimentaria');
 
   const handleAdd = useCallback(() => {
     const formUuid = config.formsList.feedingCounselingForm;

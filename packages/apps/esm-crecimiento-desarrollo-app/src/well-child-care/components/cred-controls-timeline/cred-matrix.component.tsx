@@ -24,7 +24,7 @@ const CredControlsMatrix: React.FC<CredControlsMatrixProps> = ({ patientUuid }) 
   const { controls, completedCount, totalCount, overdueControls, isLoading, error } = useCREDSchedule(patientUuid);
   const { t } = useTranslation();
 
-  const headerTitle = t('controlsAndAtentions', 'Atenciones y Controles');
+  const headerTitle = t('controlsAndAtentions', 'Atenciones y controles');
 
   const groupedControls = useMemo(() => {
     const grouped: Record<string, CREDControlWithStatus[]> = {};

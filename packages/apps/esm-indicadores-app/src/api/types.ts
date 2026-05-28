@@ -144,12 +144,12 @@ export interface IndicadorFormValues {
   descripcion: string;
   tipo: TipoIndicador;
   periodo: PeriodoIndicador;
-  selectedLocations: Array<LocationOption>;
+  locationUuids: string;
   minimoOcurrencias: string;
   filtroClinico: 'ninguno' | 'diagnosticos' | 'ordenes';
-  selectedDiagnosticos: Array<DiagnosticoOption>;
+  diagnosticoUuids: string;
   diagnosticoTipo: TipoDiagnostico | '';
-  selectedOrdenes: Array<OrdenOption>;
+  ordenUuids: string;
   sexo: '' | Sexo;
   minAnios: string;
   minMeses: string;

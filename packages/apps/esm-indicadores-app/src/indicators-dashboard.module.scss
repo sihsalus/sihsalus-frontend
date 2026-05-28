@@ -2,67 +2,260 @@
   padding: 1rem;
 }
 
+.moduleHeader,
 .header {
   display: flex;
   justify-content: space-between;
-  align-items: center;
+  align-items: flex-start;
+  gap: 1rem;
   margin-bottom: 1rem;
-
-  h2 {
-    margin: 0;
-  }
 }
 
-.headerActions {
+.moduleHeader {
+  margin-bottom: 1rem;
+}
+
+.pageTitle,
+.header h2,
+.sectionTitle {
+  margin: 0;
+}
+
+.subtitle,
+.mutedText {
+  color: #525252;
+}
+
+.navTabs {
   display: flex;
   gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.navTab,
+.navTabActive,
+.inlineLink,
+.buttonLink {
+  color: #0f62fe;
+  text-decoration: none;
+}
+
+.inlineLink:hover,
+.navTab:hover {
+  text-decoration: underline;
+}
+
+.buttonLink {
+  color: inherit;
+}
+
+.navTab,
+.navTabActive {
+  padding: 0.5rem 0.75rem;
+  border-radius: 999px;
+  border: 1px solid #c6c6c6;
+}
+
+.navTabActive {
+  background: #edf5ff;
+  border-color: #0f62fe;
+}
+
+.headerActions,
+.tableActions,
+.filterSwitches,
+.paginationActions {
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
 }
 
 .empty {
   text-align: center;
   padding: 2rem;
   color: #525252;
+  border: 1px dashed #c6c6c6;
 }
 
-.form {
+.formStack {
   display: flex;
   flex-direction: column;
-  gap: 1rem;
-  padding-top: 1rem;
+  gap: 1.25rem;
 }
 
-.filters {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 1rem;
-  align-items: flex-end;
+.formPageShell {
+  max-width: 72rem;
+}
+
+.formPageIntro {
   margin-bottom: 1rem;
 }
 
-.tabs {
-  margin-top: 0.5rem;
+.section,
+.detailCard,
+.infoTile,
+.sqlTile {
+  margin-top: 1rem;
 }
 
-.evaluation {
-  margin-top: 1rem;
+.formSectionCard {
+  border: 1px solid #e0e0e0;
+  background: #ffffff;
+  padding: 1.25rem;
+}
+
+.sectionHeader {
+  margin-bottom: 1rem;
+}
+
+.sectionHint {
+  margin: 0.25rem 0 0;
+  color: #6f6f6f;
+  font-size: 0.875rem;
+  max-width: 52rem;
+}
+
+.sectionMiniTitle {
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: #161616;
+}
+
+.formGrid,
+.formColumns,
+.filtersPanel {
+  display: grid;
+  gap: 1rem;
+}
+
+.formGrid,
+.filtersPanel {
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+}
+
+.formColumns {
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+}
+
+.populationLayout {
+  display: grid;
+  gap: 1rem;
+  grid-template-columns: minmax(220px, 280px) minmax(0, 1fr);
+  align-items: start;
+}
+
+.ageBlock {
+  border: 1px solid #e0e0e0;
   padding: 1rem;
-  border-left: 4px solid #0f62fe;
+  background: #f8f8f8;
+}
+
+.ageBlockHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 1rem;
+  margin-bottom: 0.75rem;
+}
+
+.ageGrid {
+  display: grid;
+  gap: 0.75rem;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.errorBanner {
+  background: #fff1f1;
+  border: 1px solid #da1e28;
+  color: #a2191f;
+  padding: 0.75rem 1rem;
+}
+
+.definitionList {
+  display: grid;
+  gap: 0.5rem;
+}
+
+.formFooter {
+  display: flex;
+  justify-content: flex-end;
+  padding-top: 0.25rem;
+}
+
+.sqlHeader,
+.paginationBar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 1rem;
+}
+
+.sqlBody {
+  margin-top: 1rem;
+  display: grid;
+  gap: 0.75rem;
+}
+
+.codeBlock {
+  background: #161616;
+  color: #f4f4f4;
+  padding: 1rem;
+  overflow-x: auto;
+  white-space: pre-wrap;
+}
+
+.detailLayout {
+  display: grid;
+  gap: 1rem;
+}
+
+.fieldGroup {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  font-size: 0.875rem;
+  color: #161616;
+}
+
+.nativeInput {
+  min-height: 2.5rem;
+  border: 1px solid #8d8d8d;
+  padding: 0.5rem 0.75rem;
+}
+
+.paginationBar {
+  margin-top: 1rem;
+  padding-top: 0.5rem;
+}
+
+.paginationSummary {
+  color: #525252;
+  font-size: 0.875rem;
 }
 
 @media (max-width: 672px) {
-  .header {
-    flex-direction: column;
-    align-items: flex-start;
-    gap: 0.5rem;
-  }
-
-  .headerActions {
-    width: 100%;
-    flex-wrap: wrap;
-    gap: 0.25rem;
-  }
-
   .container {
     padding: 0.5rem;
+  }
+
+  .moduleHeader,
+  .header,
+  .sqlHeader,
+  .paginationBar {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .ageGrid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .populationLayout {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .ageBlockHeader {
+    flex-direction: column;
+    align-items: flex-start;
   }
 }

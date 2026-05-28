@@ -12,6 +12,7 @@ import { type VitalsBiometricsFormData } from './vitals-biometrics-form.workspac
 import styles from './vitals-biometrics-input.scss';
 
 type fieldId =
+  | 'abdominalCircumference'
   | 'computedBodyMassIndex'
   | 'diastolicBloodPressure'
   | 'generalPatientNote'

@@ -25,6 +25,7 @@ import {
 import {
   type DefaultPatientWorkspaceProps,
   type PatientWorkspace2DefinitionProps,
+  useReferenceRanges,
 } from '@openmrs/esm-patient-common-lib';
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { useForm } from 'react-hook-form';
@@ -62,6 +63,7 @@ const VitalsAndBiometricFormSchema = z
     weight: z.number(),
     height: z.number(),
     midUpperArmCircumference: z.number(),
+    abdominalCircumference: z.number(),
     computedBodyMassIndex: z.number(),
   })
   .partial()
@@ -96,6 +98,24 @@ const VitalsAndBiometricsForm: React.FC<VitalsBiometricsWorkspaceProps> = (props
   const patient = usePatient(patientUuid);
   const { currentVisit } = useVisit(patientUuid);
   const { data: conceptUnits, conceptMetadata, conceptRanges, isLoading } = useVitalsConceptMetadata();
+  const biometricsConceptUuids = useMemo(
+    () => [
+      config.concepts.weightUuid,
+      config.concepts.heightUuid,
+      config.concepts.midUpperArmCircumferenceUuid,
+      config.concepts.abdominalCircumferenceUuid,
+    ],
+    [
+      config.concepts.abdominalCircumferenceUuid,
+      config.concepts.heightUuid,
+      config.concepts.midUpperArmCircumferenceUuid,
+      config.concepts.weightUuid,
+    ],
+  );
+  const { ranges: patientReferenceRanges, isLoading: isLoadingReferenceRanges } = useReferenceRanges(
+    patientUuid,
+    biometricsConceptUuids,
+  );
   const [hasInvalidVitals, setHasInvalidVitals] = useState(false);
   const [muacColorCode, setMuacColorCode] = useState('');
   const [showErrorNotification, setShowErrorNotification] = useState(false);
@@ -167,6 +187,7 @@ const VitalsAndBiometricsForm: React.FC<VitalsBiometricsWorkspaceProps> = (props
   const pulse = watch('pulse');
   const weight = watch('weight');
   const height = watch('height');
+  const abdominalCircumference = watch('abdominalCircumference');
 
   useEffect(() => {
     const patientBirthDate = patient?.patient?.birthDate;
@@ -192,6 +213,9 @@ const VitalsAndBiometricsForm: React.FC<VitalsBiometricsWorkspaceProps> = (props
   const concepts = useMemo(
     () => ({
       midUpperArmCircumferenceRange: conceptRanges.get(config.concepts.midUpperArmCircumferenceUuid),
+      abdominalCircumferenceRange:
+        patientReferenceRanges.get(config.concepts.abdominalCircumferenceUuid) ??
+        getReferenceRangesForConcept(config.concepts.abdominalCircumferenceUuid, conceptMetadata),
       diastolicBloodPressureRange: conceptRanges.get(config.concepts.diastolicBloodPressureUuid),
       systolicBloodPressureRange: conceptRanges.get(config.concepts.systolicBloodPressureUuid),
       oxygenSaturationRange: conceptRanges.get(config.concepts.oxygenSaturationUuid),
@@ -203,6 +227,9 @@ const VitalsAndBiometricsForm: React.FC<VitalsBiometricsWorkspaceProps> = (props
     }),
     [
       conceptRanges,
+      conceptMetadata,
+      patientReferenceRanges,
+      config.concepts.abdominalCircumferenceUuid,
       config.concepts.diastolicBloodPressureUuid,
       config.concepts.heightUuid,
       config.concepts.midUpperArmCircumferenceUuid,
@@ -215,6 +242,12 @@ const VitalsAndBiometricsForm: React.FC<VitalsBiometricsWorkspaceProps> = (props
     ],
   );
 
+  const getPatientReferenceRange = useCallback(
+    (conceptUuid: string) =>
+      patientReferenceRanges.get(conceptUuid) ?? getReferenceRangesForConcept(conceptUuid, conceptMetadata),
+    [conceptMetadata, patientReferenceRanges],
+  );
+
   const savePatientVitalsAndBiometrics = useCallback(
     (data: VitalsBiometricsFormData) => {
       const { computedBodyMassIndex: _bmi, ...formData } = data;
@@ -223,7 +256,18 @@ const VitalsAndBiometricsForm: React.FC<VitalsBiometricsWorkspaceProps> = (props
 
       const allFieldsAreValid = Object.entries(formData)
         .filter(([, value]) => value != null && value !== '')
-        .every(([key, value]) => isValueWithinReferenceRange(conceptMetadata, config.concepts[`${key}Uuid`], value));
+        .every(([key, value]) => {
+          const conceptUuid = config.concepts[`${key}Uuid`];
+          if (!conceptUuid) {
+            return true;
+          }
+          return isValueWithinReferenceRange(
+            conceptMetadata,
+            conceptUuid,
+            value,
+            getPatientReferenceRange(conceptUuid),
+          );
+        });
 
       if (allFieldsAreValid) {
         setShowErrorMessage(false);
@@ -284,6 +328,7 @@ const VitalsAndBiometricsForm: React.FC<VitalsBiometricsWorkspaceProps> = (props
       config.concepts,
       config.vitals.encounterTypeUuid,
       config.vitals.formUuid,
+      getPatientReferenceRange,
       patientUuid,
       session?.sessionLocation?.uuid,
       t,
@@ -308,7 +353,7 @@ const VitalsAndBiometricsForm: React.FC<VitalsBiometricsWorkspaceProps> = (props
     );
   }
 
-  if (isLoading) {
+  if (isLoading || isLoadingReferenceRanges) {
     return renderWorkspace(
       <Form className={styles.form}>
         <div className={styles.grid}>
@@ -548,11 +593,17 @@ const VitalsAndBiometricsForm: React.FC<VitalsBiometricsWorkspaceProps> = (props
                   },
                 ]}
                 interpretation={
-                  weight != null &&
-                  assessValue(weight, getReferenceRangesForConcept(config.concepts.weightUuid, conceptMetadata))
+                  weight != null && assessValue(weight, getPatientReferenceRange(config.concepts.weightUuid))
                 }
                 isValueWithinReferenceRange={
-                  weight ? isValueWithinReferenceRange(conceptMetadata, config.concepts['weightUuid'], weight) : true
+                  weight
+                    ? isValueWithinReferenceRange(
+                        conceptMetadata,
+                        config.concepts['weightUuid'],
+                        weight,
+                        getPatientReferenceRange(config.concepts.weightUuid),
+                      )
+                    : true
                 }
                 showErrorMessage={showErrorMessage}
                 label={t('weight', 'Weight')}
@@ -572,11 +623,17 @@ const VitalsAndBiometricsForm: React.FC<VitalsBiometricsWorkspaceProps> = (props
                   },
                 ]}
                 interpretation={
-                  height != null &&
-                  assessValue(height, getReferenceRangesForConcept(config.concepts.heightUuid, conceptMetadata))
+                  height != null && assessValue(height, getPatientReferenceRange(config.concepts.heightUuid))
                 }
                 isValueWithinReferenceRange={
-                  height ? isValueWithinReferenceRange(conceptMetadata, config.concepts['heightUuid'], height) : true
+                  height
+                    ? isValueWithinReferenceRange(
+                        conceptMetadata,
+                        config.concepts['heightUuid'],
+                        height,
+                        getPatientReferenceRange(config.concepts.heightUuid),
+                      )
+                    : true
                 }
                 showErrorMessage={showErrorMessage}
                 label={t('height', 'Height')}
@@ -596,6 +653,44 @@ const VitalsAndBiometricsForm: React.FC<VitalsBiometricsWorkspaceProps> = (props
                 readOnly
                 label={t('calculatedBmi', 'BMI (calc.)')}
                 unitSymbol={biometricsUnitsSymbols['bmiUnit']}
+              />
+            </Column>
+            <Column>
+              <VitalsAndBiometricsInput
+                control={control}
+                fieldProperties={[
+                  {
+                    name: t('abdominalCircumference', 'Abdominal circumference'),
+                    type: 'number',
+                    min: concepts.abdominalCircumferenceRange?.lowAbsolute,
+                    max: concepts.abdominalCircumferenceRange?.hiAbsolute,
+                    id: 'abdominalCircumference',
+                  },
+                ]}
+                interpretation={
+                  abdominalCircumference != null &&
+                  assessValue(
+                    abdominalCircumference,
+                    getPatientReferenceRange(config.concepts.abdominalCircumferenceUuid),
+                  )
+                }
+                isValueWithinReferenceRange={
+                  abdominalCircumference
+                    ? isValueWithinReferenceRange(
+                        conceptMetadata,
+                        config.concepts['abdominalCircumferenceUuid'],
+                        abdominalCircumference,
+                        getPatientReferenceRange(config.concepts.abdominalCircumferenceUuid),
+                      )
+                    : true
+                }
+                showErrorMessage={showErrorMessage}
+                label={t('abdominalCircumference', 'Abdominal circumference')}
+                unitSymbol={
+                  conceptUnits.get(config.concepts.abdominalCircumferenceUuid) ??
+                  concepts.abdominalCircumferenceRange?.units ??
+                  config.biometrics.abdominalCircumferenceUnit
+                }
               />
             </Column>
             <Column>

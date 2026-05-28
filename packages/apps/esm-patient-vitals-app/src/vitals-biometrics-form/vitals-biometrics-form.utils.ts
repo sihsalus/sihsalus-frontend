@@ -1,6 +1,7 @@
 import isNumber from 'lodash-es/isNumber';
 
 import { type ConceptMetadata } from '../common';
+import type { ObsReferenceRanges } from '../common/types';
 
 export function calculateBodyMassIndex(weight: number, height: number): number {
   if (!weight || !height) return;
@@ -11,11 +12,12 @@ export function calculateBodyMassIndex(weight: number, height: number): number {
 }
 
 export function isValueWithinReferenceRange(
-  conceptMetadata: Array<ConceptMetadata>,
+  conceptMetadata: Array<ConceptMetadata> | undefined,
   conceptUuid: string,
   value: string | number,
+  referenceRange?: ObsReferenceRanges,
 ) {
-  const concept = conceptMetadata?.find((c) => c.uuid === conceptUuid);
+  const concept = referenceRange ?? conceptMetadata?.find((c) => c.uuid === conceptUuid);
 
   if (value === undefined || value === '' || concept === undefined) {
     return true;

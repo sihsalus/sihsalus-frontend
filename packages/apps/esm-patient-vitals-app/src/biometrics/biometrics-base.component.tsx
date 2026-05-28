@@ -30,7 +30,7 @@ const BiometricsBase: React.FC<BiometricsBaseProps> = ({ patientUuid, pageSize, 
   const isTablet = useLayoutType() === 'tablet';
 
   const config = useConfig<ConfigObject>();
-  const { bmiUnit } = config.biometrics;
+  const { abdominalCircumferenceUnit, bmiUnit } = config.biometrics;
   const { data: biometrics, isLoading, error, isValidating } = useVitalsAndBiometrics(patientUuid, 'biometrics');
   const { data: conceptUnits, error: conceptsError } = useVitalsConceptMetadata();
   const { currentVisit } = useVisitOrOfflineVisit(patientUuid);
@@ -78,6 +78,18 @@ const BiometricsBase: React.FC<BiometricsBaseProps> = ({ patientUuid, pageSize, 
       isSortable: true,
       sortFunc: (valueA, valueB) => (valueA.muac && valueB.muac ? valueA.muac - valueB.muac : 0),
     },
+    {
+      key: 'abdominalCircumferenceRender',
+      header: withUnit(
+        t('abdominalCircumference', 'Abdominal circumference'),
+        conceptUnits.get(config.concepts.abdominalCircumferenceUuid) ?? abdominalCircumferenceUnit,
+      ),
+      isSortable: true,
+      sortFunc: (valueA, valueB) =>
+        valueA.abdominalCircumference && valueB.abdominalCircumference
+          ? valueA.abdominalCircumference - valueB.abdominalCircumference
+          : 0,
+    },
   ];
 
   const tableRows: Array<BiometricsTableRow> = useMemo(
@@ -91,6 +103,7 @@ const BiometricsBase: React.FC<BiometricsBaseProps> = ({ patientUuid, pageSize, 
           heightRender: biometricsData.height ?? '--',
           bmiRender: biometricsData.bmi ?? '--',
           muacRender: biometricsData.muac ?? '--',
+          abdominalCircumferenceRender: biometricsData.abdominalCircumference ?? '--',
         };
       }),
     [biometrics],

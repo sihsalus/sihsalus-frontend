@@ -27,11 +27,11 @@ interface BiometricChartData {
   groupName: 'Weight' | 'Height' | 'Body mass index' | string;
 }
 
-const chartColors = { weight: '#6929c4', height: '#6929c4', bmi: '#6929c4' };
+const chartColors = { weight: '#6929c4', height: '#6929c4', bmi: '#6929c4', abdominalCircumference: '#6929c4' };
 
 const BiometricsChart: React.FC<BiometricsChartProps> = ({ patientBiometrics, conceptUnits, config }) => {
   const { t } = useTranslation();
-  const { bmiUnit } = config.biometrics;
+  const { abdominalCircumferenceUnit, bmiUnit } = config.biometrics;
   const [selectedBiometrics, setSelectedBiometrics] = useState<BiometricChartData>({
     title: `${t('weight', 'Weight')} (${conceptUnits.get(config.concepts.weightUuid) ?? ''})`,
     value: 'weight',
@@ -140,6 +140,12 @@ const BiometricsChart: React.FC<BiometricsChartProps> = ({ patientBiometrics, co
                 label: `${t('height', 'Height')} (${conceptUnits.get(config.concepts.heightUuid) ?? ''})`,
               },
               { id: 'bmi', label: `${t('bmi', 'BMI')} (${bmiUnit})` },
+              {
+                id: 'abdominalCircumference',
+                label: `${t('abdominalCircumference', 'Abdominal circumference')} (${
+                  conceptUnits.get(config.concepts.abdominalCircumferenceUuid) ?? abdominalCircumferenceUnit
+                })`,
+              },
             ].map(({ id, label }) => (
               <Tab
                 className={classNames(styles.tab, styles.bodyLong01, {

@@ -120,6 +120,24 @@ describe('VitalsHeader', () => {
     expect(getByTextWithMarkup(/these vitals are out of date/i)).toBeInTheDocument();
   });
 
+  it('renders abdominal circumference in the vitals header when it is recorded', async () => {
+    mockUseVitalsAndBiometrics.mockReturnValue({
+      data: [
+        {
+          ...formattedVitals[0],
+          abdominalCircumference: 95,
+          abdominalCircumferenceRenderInterpretation: 'normal',
+        },
+      ],
+    } as ReturnType<typeof useVitalsAndBiometrics>);
+
+    renderWithSwr(<VitalsHeader {...testProps} />);
+
+    await waitForLoadingToFinish();
+
+    expect(getByTextWithMarkup(/Abdominal circumference\s*95\s*cm/i)).toBeInTheDocument();
+  });
+
   it('launches the vitals form when the `record vitals` button is clicked', async () => {
     const user = userEvent.setup();
 

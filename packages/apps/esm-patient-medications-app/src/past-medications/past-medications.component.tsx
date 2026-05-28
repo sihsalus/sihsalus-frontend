@@ -1,5 +1,5 @@
 import { DataTableSkeleton } from '@carbon/react';
-import { EmptyState, ErrorState } from '@openmrs/esm-patient-common-lib';
+import { EmptyState, ErrorState, useLaunchWorkspaceRequiringVisit } from '@openmrs/esm-patient-common-lib';
 import { useTranslation } from 'react-i18next';
 import { usePastPatientOrders } from '../api/api';
 import MedicationsDetailsTable from '../components/medications-details-table.component';
@@ -14,6 +14,7 @@ const PastMedications: React.FC<PastMedicationsProps> = ({ patient }) => {
   const displayText = t('pastMedicationsDisplayText', 'past medications');
 
   const { data: pastPatientOrders, error, isLoading, isValidating } = usePastPatientOrders(patient?.id);
+  const launchOrderBasket = useLaunchWorkspaceRequiringVisit(patient.id, 'order-basket');
 
   if (isLoading) {
     return <DataTableSkeleton role="progressbar" />;
@@ -37,7 +38,13 @@ const PastMedications: React.FC<PastMedicationsProps> = ({ patient }) => {
     );
   }
 
-  return <EmptyState displayText={displayText} headerTitle={headerTitle} />;
+  return (
+    <EmptyState
+      displayText={displayText}
+      headerTitle={headerTitle}
+      launchForm={() => launchOrderBasket({}, { encounterUuid: '' })}
+    />
+  );
 };
 
 export default PastMedications;

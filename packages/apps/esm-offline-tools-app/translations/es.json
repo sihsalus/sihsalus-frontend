@@ -43,7 +43,7 @@
   "offlinePatientsTableHeaderLastUpdated": "Última actualización",
   "offlinePatientsTableHeaderName": "Nombre",
   "offlinePatientsTableLastUpdatedDownloading": "Descargando...",
-  "offlinePatientsTableLastUpdatedError": "error",
+  "offlinePatientsTableLastUpdatedError": "Error",
   "offlinePatientsTableLastUpdatedErrors": "errores",
   "offlinePatientsTableLastUpdatedNotYetSynchronized": "No sincronizado",
   "offlinePatientsTableLastUpdatedOutdatedData": "Datos desactualizados",

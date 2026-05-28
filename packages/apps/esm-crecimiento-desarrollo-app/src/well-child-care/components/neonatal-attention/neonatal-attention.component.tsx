@@ -14,8 +14,8 @@ const NeonatalAttention: React.FC<ImmediateNewbornAttentionProps> = ({ patientUu
   const { t } = useTranslation();
   const config = useConfig() as ConfigObject;
   const { neonatalConcepts } = config;
-  const headerTitle = t('immediateNewbornAttention', 'Atención Inmediata del Recién Nacido');
-  const displayText = t('immediateNewbornAttention', 'Atención Inmediata del Recién Nacido');
+  const headerTitle = t('immediateNewbornAttention', 'Atención inmediata del recién nacido');
+  const displayText = t('immediateNewbornAttention', 'Atención inmediata del recién nacido');
   const { encounter, isLoading, error, mutate } = useLatestValidEncounter(
     patientUuid,
     config.encounterTypes.atencionInmediata,

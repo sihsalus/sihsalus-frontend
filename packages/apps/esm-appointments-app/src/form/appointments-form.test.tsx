@@ -7,7 +7,7 @@ import {
   useLocations,
   useSession,
 } from '@openmrs/esm-framework';
-import { screen } from '@testing-library/react';
+import { screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import {
   mockLocations,
@@ -41,6 +41,26 @@ const mockUseConfig = vi.mocked(useConfig<ConfigObject>);
 const mockUseLocations = vi.mocked(useLocations);
 const mockUseProviders = vi.mocked(useProviders);
 const mockUseSession = vi.mocked(useSession);
+
+async function fillRequiredAppointmentFields(user: ReturnType<typeof userEvent.setup>, allDay = false) {
+  await user.selectOptions(screen.getByRole('combobox', { name: /select a location/i }), ['Inpatient Ward']);
+  await user.selectOptions(screen.getByRole('combobox', { name: /select a service/i }), ['Outpatient']);
+  await user.selectOptions(screen.getByRole('combobox', { name: /select the type of appointment/i }), ['Scheduled']);
+  await user.selectOptions(screen.getByRole('combobox', { name: /select a provider/i }), ['doctor - James Cook']);
+
+  if (allDay) {
+    await user.click(screen.getByLabelText(/all day/i));
+    return;
+  }
+
+  const durationInput = screen.getByRole('spinbutton', { name: /duration/i });
+  await user.clear(durationInput);
+  await user.type(durationInput, '15');
+
+  await user.type(screen.getByRole('textbox', { name: /time/i }), '09:30');
+  await user.tab();
+  await user.selectOptions(screen.getByRole('combobox', { name: /time/i }), 'AM');
+}
 
 vi.mock('./appointments-form.resource', async () => ({
   ...(await vi.importActual('./appointments-form.resource')),
@@ -133,43 +153,17 @@ describe('AppointmentForm', () => {
       data: mockUseAppointmentServiceData,
     } as unknown as FetchResponse);
     mockSaveAppointment.mockResolvedValue({
-      status: 200,
-      statusText: 'Ok',
+      status: 201,
+      statusText: 'Created',
     } as FetchResponse);
 
     renderWithSwr(<AppointmentForm {...defaultProps} />);
 
     await waitForLoadingToFinish();
 
-    const locationSelect = screen.getByRole('combobox', {
-      name: /select a location/i,
-    });
-    const serviceSelect = screen.getByRole('combobox', {
-      name: /select a service/i,
-    });
-    const appointmentTypeSelect = screen.getByRole('combobox', {
-      name: /select the type of appointment/i,
-    });
-    const providerSelect = screen.getByRole('combobox', {
-      name: /select a provider/i,
-    });
-    const durationInput = screen.getByRole('spinbutton', { name: /duration/i });
-    const timeInput = screen.getByRole('textbox', { name: /time/i });
-    const timeFormat = screen.getByRole('combobox', { name: /time/i });
     const saveButton = screen.getByRole('button', { name: /save and close/i });
 
-    await user.selectOptions(locationSelect, ['Inpatient Ward']);
-    await user.selectOptions(serviceSelect, ['Outpatient']);
-    await user.selectOptions(appointmentTypeSelect, ['Scheduled']);
-    await user.selectOptions(providerSelect, ['doctor - James Cook']);
-    await user.clear(durationInput);
-    await user.type(durationInput, '15');
-
-    const time = '09:30';
-
-    await user.type(timeInput, time);
-    await user.tab();
-    await user.selectOptions(timeFormat, 'AM');
+    await fillRequiredAppointmentFields(user);
     await user.click(saveButton);
 
     expect(mockSaveAppointment).toHaveBeenCalledTimes(1);
@@ -197,6 +191,59 @@ describe('AppointmentForm', () => {
       subtitle: 'It is now visible on the Appointments page',
       title: 'Appointment scheduled',
     });
+    await waitFor(() => {
+      expect(defaultProps.closeWorkspace).toHaveBeenCalledWith({ discardUnsavedChanges: true });
+    });
+  });
+
+  it('schedules an all-day appointment using the full selected day', async () => {
+    const user = userEvent.setup();
+
+    mockOpenmrsFetch.mockResolvedValue({
+      data: mockUseAppointmentServiceData,
+    } as unknown as FetchResponse);
+    mockSaveAppointment.mockResolvedValue({
+      status: 201,
+      statusText: 'Created',
+    } as FetchResponse);
+
+    renderWithSwr(<AppointmentForm {...defaultProps} />);
+
+    await waitForLoadingToFinish();
+    await fillRequiredAppointmentFields(user, true);
+    await user.click(screen.getByRole('button', { name: /save and close/i }));
+
+    await waitFor(() => expect(mockSaveAppointment).toHaveBeenCalledTimes(1));
+    const payload = mockSaveAppointment.mock.calls[0][0];
+    expect(payload.startDateTime).toMatch(/T00:00:00/);
+    expect(payload.endDateTime).toMatch(/T23:59:59/);
+  });
+
+  it('shows an error and does not save if conflict validation fails', async () => {
+    const user = userEvent.setup();
+
+    mockOpenmrsFetch.mockResolvedValue({
+      data: mockUseAppointmentServiceData,
+    } as unknown as FetchResponse);
+
+    renderWithSwr(<AppointmentForm {...defaultProps} />);
+
+    await waitForLoadingToFinish();
+    await fillRequiredAppointmentFields(user);
+
+    const conflictError = new Error('Conflict validation unavailable');
+    mockOpenmrsFetch.mockRejectedValueOnce(conflictError);
+    await user.click(screen.getByRole('button', { name: /save and close/i }));
+
+    await waitFor(() => {
+      expect(mockShowSnackbar).toHaveBeenCalledWith({
+        isLowContrast: false,
+        kind: 'error',
+        subtitle: 'Conflict validation unavailable',
+        title: 'Error scheduling appointment',
+      });
+    });
+    expect(mockSaveAppointment).not.toHaveBeenCalled();
   });
 
   it('renders an error snackbar if there was a problem scheduling an appointment', async () => {
@@ -219,35 +266,9 @@ describe('AppointmentForm', () => {
 
     await waitForLoadingToFinish();
 
-    const locationSelect = screen.getByRole('combobox', {
-      name: /select a location/i,
-    });
-    const serviceSelect = screen.getByRole('combobox', {
-      name: /select a service/i,
-    });
-    const appointmentTypeSelect = screen.getByRole('combobox', {
-      name: /select the type of appointment/i,
-    });
-    const providerSelect = screen.getByRole('combobox', {
-      name: /select a provider/i,
-    });
-    const durationInput = screen.getByRole('spinbutton', { name: /duration/i });
-    const timeInput = screen.getByRole('textbox', { name: /time/i });
-    const timeFormat = screen.getByRole('combobox', { name: /time/i });
     const saveButton = screen.getByRole('button', { name: /save and close/i });
 
-    await user.selectOptions(locationSelect, ['Inpatient Ward']);
-    await user.selectOptions(serviceSelect, ['Outpatient']);
-    await user.selectOptions(appointmentTypeSelect, ['Scheduled']);
-    await user.selectOptions(providerSelect, ['doctor - James Cook']);
-    await user.clear(durationInput);
-    await user.type(durationInput, '15');
-
-    const time = '09:30';
-
-    await user.type(timeInput, time);
-    await user.tab();
-    await user.selectOptions(timeFormat, 'AM');
+    await fillRequiredAppointmentFields(user);
     await user.click(saveButton);
 
     expect(mockSaveAppointment).toHaveBeenCalledTimes(1);

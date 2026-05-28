@@ -173,7 +173,7 @@ function AllergyFormWorkspace(props: AllergyWorkspaceProps) {
   );
 
   const getDefaultSeverityUuid = useCallback(
-    (severity: Severity) => {
+    (severity?: Severity) => {
       switch (severity) {
         case 'mild':
           return mildReactionUuid;

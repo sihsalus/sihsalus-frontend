@@ -109,8 +109,8 @@ const NewbornFluidBalanceForm: React.FC<DefaultPatientWorkspaceProps> = ({ close
               showSnackbar({
                 isLowContrast: true,
                 kind: 'success',
-                title: t('fluidBalanceRecorded', 'Balance de Líquidos registrado'),
-                subtitle: t('fluidBalanceNowAvailable', 'Ahora visible en la página de Balance de Líquidos'),
+                title: t('fluidBalanceRecorded', 'Balance de líquidos registrado'),
+                subtitle: t('fluidBalanceNowAvailable', 'Ahora visible en la página de balance de líquidos'),
               });
             }
           })
@@ -152,7 +152,7 @@ const NewbornFluidBalanceForm: React.FC<DefaultPatientWorkspaceProps> = ({ close
         <div className={styles.grid}>
           <Stack>
             <Column>
-              <p className={styles.title}>{t('recordFluidBalance', 'Registrar Balance de Líquidos')}</p>
+              <p className={styles.title}>{t('recordFluidBalance', 'Registrar balance de líquidos')}</p>
             </Column>
             <Row className={styles.row}>
               <Column>
@@ -183,7 +183,7 @@ const NewbornFluidBalanceForm: React.FC<DefaultPatientWorkspaceProps> = ({ close
       <div className={styles.grid}>
         <Stack gap={4}>
           <Column>
-            <p className={styles.title}>{t('fluidBalance', 'Balance de Líquidos')}</p>
+            <p className={styles.title}>{t('fluidBalance', 'Balance de líquidos')}</p>
           </Column>
           <Row className={styles.row}>
             <NewbornVitalsInput

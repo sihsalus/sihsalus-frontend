@@ -172,6 +172,54 @@ describe('Conditions form', () => {
       subtitle: 'It is now visible on the Antecedents page',
       title: 'Antecedent saved',
     });
+    expect(mockCreateCondition).toHaveBeenCalledWith(
+      expect.objectContaining({
+        antecedentType: 'pathological',
+        clinicalStatus: 'active',
+      }),
+    );
+  });
+
+  it('preconfigures procedure and surgery workspaces before posting to the backend resource', async () => {
+    const user = userEvent.setup();
+
+    mockUseConditionsSearch.mockReturnValue({
+      searchResults: searchedCondition,
+      error: null,
+      isSearching: false,
+    });
+    mockOpenmrsFetch.mockResolvedValue({
+      data: mockFhirConditionsResponse,
+      mutate: Promise.resolve(undefined),
+    } as unknown as FetchResponse);
+    mockCreateCondition.mockResolvedValue({ status: 201, body: 'Condition created' } as unknown as FetchResponse);
+
+    renderConditionsForm({
+      defaultAntecedentType: 'surgical',
+      defaultClinicalStatus: 'inactive',
+      formContext: 'creating',
+      lockedAntecedentType: true,
+      workspaceTitle: 'Record procedure or surgery',
+    });
+
+    expect(screen.getByRole('radio', { name: /surgical|quirúrgico/i })).toBeChecked();
+    expect(screen.getByRole('radio', { name: /surgical|quirúrgico/i })).toBeDisabled();
+    expect(screen.getByLabelText(/inactive/i)).toBeChecked();
+
+    await user.type(screen.getByRole('searchbox', { name: /enter antecedent/i }), 'Headache');
+    await user.click(screen.getByRole('button', { name: /headache/i }));
+    await user.click(screen.getByRole('textbox', { name: /onset date/i }));
+    await user.paste('2020-05-05');
+    await user.click(screen.getByRole('button', { name: /save & close/i }));
+
+    await waitFor(() =>
+      expect(mockCreateCondition).toHaveBeenCalledWith(
+        expect.objectContaining({
+          antecedentType: 'surgical',
+          clinicalStatus: 'inactive',
+        }),
+      ),
+    );
   });
 
   it('renders an error notification if there was a problem recording a condition', async () => {

@@ -79,7 +79,7 @@ export default function MedicationsSummary({ patient }: MedicationsSummaryProps)
             patient={patient}
           />
         ) : (
-          <EmptyState displayText={pastDisplayText} headerTitle={pastHeaderTitle} />
+          <EmptyState displayText={pastDisplayText} headerTitle={pastHeaderTitle} launchForm={launchAddDrugWorkspace} />
         )}
       </section>
     </div>

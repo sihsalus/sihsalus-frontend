@@ -5,6 +5,7 @@ import {
   type DefaultPatientWorkspaceProps,
   type PatientWorkspace2DefinitionProps,
 } from '@openmrs/esm-patient-common-lib';
+import type { AntecedentTypeCode } from '@sihsalus/esm-sihsalus-shared';
 import classNames from 'classnames';
 import type { TFunction } from 'i18next';
 import React, { useCallback, useState } from 'react';
@@ -17,7 +18,11 @@ import ConditionsWidget from './conditions-widget.component';
 
 export interface ConditionFormProps {
   condition?: Condition;
+  defaultAntecedentType?: AntecedentTypeCode;
+  defaultClinicalStatus?: 'active' | 'inactive';
   formContext: 'creating' | 'editing';
+  lockedAntecedentType?: boolean;
+  workspaceTitle?: string;
 }
 
 const createSchema = (formContext: 'creating' | 'editing', t: TFunction) => {
@@ -64,6 +69,16 @@ const ConditionsForm: React.FC<ConditionsWorkspaceProps> = (props) => {
   const patientUuid = isWorkspace2Props(props) ? props.groupProps.patientUuid : props.patientUuid;
   const condition = isWorkspace2Props(props) ? props.workspaceProps.condition : props.condition;
   const formContext = (isWorkspace2Props(props) ? props.workspaceProps.formContext : props.formContext) ?? 'creating';
+  const defaultAntecedentType = isWorkspace2Props(props)
+    ? props.workspaceProps.defaultAntecedentType
+    : props.defaultAntecedentType;
+  const defaultClinicalStatus = isWorkspace2Props(props)
+    ? props.workspaceProps.defaultClinicalStatus
+    : props.defaultClinicalStatus;
+  const lockedAntecedentType = isWorkspace2Props(props)
+    ? props.workspaceProps.lockedAntecedentType
+    : props.lockedAntecedentType;
+  const workspaceTitle = isWorkspace2Props(props) ? props.workspaceProps.workspaceTitle : props.workspaceTitle;
   const { t } = useTranslation();
   const isTablet = useLayoutType() === 'tablet';
   const { conditions } = useConditions(patientUuid);
@@ -79,9 +94,11 @@ const ConditionsForm: React.FC<ConditionsWorkspaceProps> = (props) => {
   const defaultValues = {
     abatementDateTime:
       isEditing && matchingCondition?.abatementDateTime ? new Date(matchingCondition?.abatementDateTime) : null,
-    antecedentType: isEditing ? (matchingCondition?.antecedentType ?? '') : '',
+    antecedentType: isEditing ? (matchingCondition?.antecedentType ?? '') : (defaultAntecedentType ?? ''),
     conditionName: '',
-    clinicalStatus: isEditing ? (matchingCondition?.clinicalStatus?.toLowerCase() ?? '') : '',
+    clinicalStatus: isEditing
+      ? (matchingCondition?.clinicalStatus?.toLowerCase() ?? '')
+      : (defaultClinicalStatus ?? ''),
     onsetDateTime: isEditing && matchingCondition?.onsetDateTime ? new Date(matchingCondition?.onsetDateTime) : null,
   };
 
@@ -118,6 +135,7 @@ const ConditionsForm: React.FC<ConditionsWorkspaceProps> = (props) => {
             setErrorCreating={setErrorCreating}
             setErrorUpdating={setErrorUpdating}
             setIsSubmittingForm={setIsSubmittingForm}
+            lockedAntecedentType={lockedAntecedentType}
           />
           <div>
             {errorCreating ? (
@@ -164,7 +182,7 @@ const ConditionsForm: React.FC<ConditionsWorkspaceProps> = (props) => {
 
   if (isWorkspace2Props(props)) {
     return (
-      <Workspace2 title={t('recordAntecedent', 'Record antecedent')} hasUnsavedChanges={isDirty}>
+      <Workspace2 title={workspaceTitle ?? t('recordAntecedent', 'Record antecedent')} hasUnsavedChanges={isDirty}>
         {form}
       </Workspace2>
     );

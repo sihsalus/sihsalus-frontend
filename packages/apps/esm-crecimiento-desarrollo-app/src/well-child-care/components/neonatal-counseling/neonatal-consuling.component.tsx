@@ -14,7 +14,7 @@ const NeonatalCounseling: React.FC<NeonatalCounselingProps> = ({ patientUuid }) 
   const { t } = useTranslation();
   const config = useConfig() as ConfigObject;
   const { neonatalConcepts } = config;
-  const headerTitle = t('neonatalCounseling', 'Consejeria Lactancia Materna');
+  const headerTitle = t('neonatalCounseling', 'Consejería sobre lactancia materna');
   const { encounter, isLoading, error, mutate } = useLatestValidEncounter(
     patientUuid,
     config.encounterTypes.consejeriaMaterna,
@@ -87,7 +87,7 @@ const NeonatalCounseling: React.FC<NeonatalCounselingProps> = ({ patientUuid }) 
     <PatientSummaryTable
       patientUuid={patientUuid}
       headerTitle={headerTitle}
-      displayText={t('neonatalCounseling', 'Consejeria Lactancia Materna')}
+      displayText={t('neonatalCounseling', 'Consejería sobre lactancia materna')}
       dataHook={dataHook}
       rowConfig={rowConfig}
       onFormLaunch={handleLaunchForm}

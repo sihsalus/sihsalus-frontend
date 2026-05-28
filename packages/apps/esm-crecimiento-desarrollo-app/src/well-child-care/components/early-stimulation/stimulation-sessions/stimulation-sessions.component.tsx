@@ -26,7 +26,7 @@ const StimulationSessions: React.FC<StimulationSessionsProps> = ({ patientUuid }
   const { t } = useTranslation();
   const config = useConfig<ConfigObject>();
   const { totalSessions, lastSessionDate, developmentAreas, isLoading, error } = useStimulationSessions(patientUuid);
-  const headerTitle = t('esSessionsTitle', 'Sesiones de Estimulación');
+  const headerTitle = t('esSessionsTitle', 'Sesiones de estimulación');
 
   const handleAdd = useCallback(() => {
     const formUuid = config.formsList.stimulationSessionForm;

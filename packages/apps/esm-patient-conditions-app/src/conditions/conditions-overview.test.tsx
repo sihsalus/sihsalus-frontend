@@ -47,10 +47,10 @@ describe('ConditionsOverview', () => {
     render(<ConditionsOverview patientUuid={mockPatient.id} />);
 
     expect(screen.queryByRole('progressbar')).not.toBeInTheDocument();
-    expect(screen.getByRole('heading', { name: /antecedents/i })).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: /antecedents and problems/i })).toBeInTheDocument();
     expect(screen.getByTitle(/Empty data illustration/i)).toBeInTheDocument();
-    expect(screen.getByText(/There are no antecedents to display for this patient/i)).toBeInTheDocument();
-    expect(screen.getByText(/record antecedents/i)).toBeInTheDocument();
+    expect(screen.getByText(/There are no antecedents and problems to display for this patient/i)).toBeInTheDocument();
+    expect(screen.getByText(/record antecedents and problems/i)).toBeInTheDocument();
   });
 
   it('renders an error state view if there is a problem fetching antecedents', async () => {
@@ -149,7 +149,7 @@ describe('ConditionsOverview', () => {
 
     render(<ConditionsOverview patientUuid={mockPatient.id} />);
 
-    expect(screen.getByRole('heading', { name: /antecedents/i })).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: /antecedents and problems/i })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: /add/i })).toBeInTheDocument();
 
     expect(screen.getByRole('button', { name: /^antecedent$/i })).toBeInTheDocument();
@@ -192,11 +192,14 @@ describe('ConditionsOverview', () => {
 
     render(<ConditionsOverview patientUuid={mockPatient.id} />);
 
-    const recordConditionsLink = screen.getByRole('button', { name: /record antecedents/i });
+    const recordConditionsLink = screen.getByRole('button', { name: /record antecedents and problems/i });
 
     await user.click(recordConditionsLink);
 
     expect(mockLaunchPatientWorkspace).toHaveBeenCalledTimes(1);
-    expect(mockLaunchPatientWorkspace).toHaveBeenCalledWith('conditions-form-workspace', { formContext: 'creating' });
+    expect(mockLaunchPatientWorkspace).toHaveBeenCalledWith('conditions-form-workspace', {
+      formContext: 'creating',
+      workspaceTitle: 'Record antecedent',
+    });
   });
 });

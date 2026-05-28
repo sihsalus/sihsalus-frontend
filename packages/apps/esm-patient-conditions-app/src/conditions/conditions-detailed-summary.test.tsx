@@ -21,6 +21,7 @@ vi.mock('@openmrs/esm-patient-common-lib', async () => ({
 
 const mockLaunchPatientWorkspace = vi.mocked(launchPatientWorkspace);
 const mockUseConditions = vi.mocked(useConditions);
+const fhirMockPatient = mockPatient as unknown as fhir.Patient;
 
 beforeEach(() => {
   vi.clearAllMocks();
@@ -35,7 +36,7 @@ it('renders an empty state view if antecedents data is unavailable', async () =>
     mutate: vi.fn(),
   });
 
-  render(<ConditionsDetailedSummary patient={mockPatient} />);
+  render(<ConditionsDetailedSummary patient={fhirMockPatient} />);
 
   expect(screen.queryByRole('progressbar')).not.toBeInTheDocument();
   expect(screen.getByRole('heading', { name: /active problems/i })).toBeInTheDocument();
@@ -68,7 +69,7 @@ it('renders an error state view if there is a problem fetching antecedents data'
     mutate: vi.fn(),
   });
 
-  render(<ConditionsDetailedSummary patient={mockPatient as unknown as fhir.Patient} />);
+  render(<ConditionsDetailedSummary patient={fhirMockPatient} />);
 
   expect(screen.queryByRole('table')).not.toBeInTheDocument();
   expect(screen.getAllByText(/Error 401: Unauthorized/i).length).toBeGreaterThan(0);

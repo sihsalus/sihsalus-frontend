@@ -3,12 +3,14 @@ import isNumber from 'lodash-es/isNumber';
 import { type ConceptMetadata } from '../common';
 import type { ObsReferenceRanges } from '../common/types';
 
-export function calculateBodyMassIndex(weight: number, height: number): number {
-  if (!weight || !height) return;
+export function calculateBodyMassIndex(weight: number, height: number): number | undefined {
+  if (!weight || !height) return undefined;
 
   if (weight > 0 && height > 0) {
     return Number((weight / (height / 100) ** 2).toFixed(1));
   }
+
+  return undefined;
 }
 
 export function isValueWithinReferenceRange(
@@ -74,7 +76,7 @@ export function getMuacColorCode(age: number, muac: number, setColorCode: (color
     case age > 18 && muac <= 19.5 && muac > 0:
       setColorCode('red');
       break;
-    case age > 18 && muac > 19.0 && muac < 22.0:
+    case age > 18 && muac > 19.5 && muac < 22.0:
       setColorCode('yellow');
       break;
     case age > 18 && muac > 22.0:

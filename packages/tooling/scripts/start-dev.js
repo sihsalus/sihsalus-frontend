@@ -85,6 +85,8 @@ function readRequestBody(req) {
     req.on('end', () => resolve(Buffer.concat(chunks)));
     req.on('error', reject);
   });
+}
+
 function getBackendFetchDispatcher() {
   if (!allowSelfSignedTls) {
     return undefined;
@@ -256,10 +258,9 @@ async function startWithProxy(cliArgs) {
 
     try {
       const body = req.method === 'GET' || req.method === 'HEAD' ? undefined : await readRequestBody(req);
-      const backendResponse = await fetch(getBackendSessionUrl(), {
-        method: req.method,
       const backendFetchDispatcher = getBackendFetchDispatcher();
       const backendResponse = await fetch(getBackendSessionUrl(), {
+        method: req.method,
         ...(backendFetchDispatcher ? { dispatcher: backendFetchDispatcher } : {}),
         headers: {
           accept: req.get('accept') || 'application/json',

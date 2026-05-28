@@ -1,4 +1,4 @@
-import { Button, SkeletonText } from '@carbon/react';
+import { Button, InlineNotification, SkeletonText } from '@carbon/react';
 import { ArrowRight, TrashCan } from '@carbon/react/icons';
 import { isDesktop, UserHasAccess, useConfig, useLayoutType } from '@openmrs/esm-framework';
 import React, { useCallback, useContext, useEffect, useState } from 'react';
@@ -96,7 +96,7 @@ export function deleteIdentifierType(
 
 export const Identifiers: React.FC = () => {
   const { identifierTypes } = useContext(ResourcesContext);
-  const isLoading = !identifierTypes?.length;
+  const isLoading = !identifierTypes;
   const { values, setFieldValue, initialFormValues, isOffline } = useContext(PatientRegistrationContext);
   const { t } = useTranslation(moduleName);
   const layout = useLayoutType();
@@ -166,6 +166,17 @@ export const Identifiers: React.FC = () => {
 
   return (
     <div className={styles.halfWidthInDesktopView}>
+      {identifierTypes.length === 0 ? (
+        <InlineNotification
+          kind="error"
+          lowContrast
+          title={t('identifierTypesUnavailableTitle', 'Identifier types unavailable')}
+          subtitle={t(
+            'identifierTypesUnavailableSubtitle',
+            'Patient identifier metadata could not be loaded. Please refresh or try again when the backend is available.',
+          )}
+        />
+      ) : null}
       <UserHasAccess privilege={['Get Identifier Types', 'Add patient identifiers']}>
         <div className={styles.identifierLabelText}>
           <h4 className={styles.productiveHeading02Light}>{t('idFieldLabelText', 'Identifiers')}</h4>
@@ -180,7 +191,7 @@ export const Identifiers: React.FC = () => {
         </div>
       </UserHasAccess>
       <div>
-        {Object.entries(values.identifiers).map(([fieldName, identifier]) => {
+        {Object.entries(values.identifiers).map(([fieldName]) => {
           const patientIdentifierWithRequired = {
             ...values.identifiers[fieldName],
             required: true,

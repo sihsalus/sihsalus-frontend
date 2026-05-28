@@ -78,6 +78,13 @@ function rewriteLocalDevSetCookie(setCookie) {
   return Array.isArray(setCookie) ? setCookie.map(rewrite) : rewrite(setCookie);
 }
 
+function readRequestBody(req) {
+  return new Promise((resolve, reject) => {
+    const chunks = [];
+    req.on('data', (chunk) => chunks.push(chunk));
+    req.on('end', () => resolve(Buffer.concat(chunks)));
+    req.on('error', reject);
+  });
 function getBackendFetchDispatcher() {
   if (!allowSelfSignedTls) {
     return undefined;
@@ -235,11 +242,11 @@ async function startWithProxy(cliArgs) {
     max: Number(process.env.SIHSALUS_SPA_RATE_LIMIT_MAX) || 300,
   });
 
-  app.get(sessionPath, async (req, res) => {
+  app.all(sessionPath, async (req, res) => {
     const authorization = req.get('authorization');
     const cookie = req.get('cookie') || '';
 
-    if (!authorization && !cookie) {
+    if (req.method === 'GET' && !authorization && !cookie) {
       res.status(200).json({ authenticated: false, sessionId: '' });
       return;
     }
@@ -248,14 +255,19 @@ async function startWithProxy(cliArgs) {
     const timeout = setTimeout(() => controller.abort(), sessionFallbackTimeoutMs);
 
     try {
+      const body = req.method === 'GET' || req.method === 'HEAD' ? undefined : await readRequestBody(req);
+      const backendResponse = await fetch(getBackendSessionUrl(), {
+        method: req.method,
       const backendFetchDispatcher = getBackendFetchDispatcher();
       const backendResponse = await fetch(getBackendSessionUrl(), {
         ...(backendFetchDispatcher ? { dispatcher: backendFetchDispatcher } : {}),
         headers: {
           accept: req.get('accept') || 'application/json',
+          ...(req.get('content-type') ? { 'content-type': req.get('content-type') } : {}),
           ...(authorization ? { authorization } : {}),
           cookie,
         },
+        ...(body && body.length > 0 ? { body, duplex: 'half' } : {}),
         signal: controller.signal,
       });
       clearTimeout(timeout);

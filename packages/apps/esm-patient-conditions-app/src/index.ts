@@ -13,6 +13,9 @@ const options = {
   moduleName,
 };
 
+type ConditionsOverviewLifecycleProps = React.ComponentProps<typeof conditionsOverviewComponent>;
+type ConditionsDetailedSummaryLifecycleProps = React.ComponentProps<typeof conditionsDetailedSummaryComponent>;
+
 export const importTranslation = require.context('../translations', false, /.json$/, 'lazy');
 
 export function startupApp() {
@@ -22,24 +25,28 @@ export function startupApp() {
 export const conditionsOverview = getSyncLifecycle(conditionsOverviewComponent, options);
 
 export const activeProblemsOverview = getSyncLifecycle(
-  (props) => React.createElement(conditionsOverviewComponent, { ...props, section: 'active-problems' }),
+  (props: ConditionsOverviewLifecycleProps) =>
+    React.createElement(conditionsOverviewComponent, { ...props, section: 'active-problems' }),
   options,
 );
 
 export const pastDiagnosesOverview = getSyncLifecycle(
-  (props) => React.createElement(conditionsOverviewComponent, { ...props, section: 'past-diagnoses' }),
+  (props: ConditionsOverviewLifecycleProps) =>
+    React.createElement(conditionsOverviewComponent, { ...props, section: 'past-diagnoses' }),
   options,
 );
 
 export const proceduresOverview = getSyncLifecycle(
-  (props) => React.createElement(conditionsOverviewComponent, { ...props, section: 'procedures' }),
+  (props: ConditionsOverviewLifecycleProps) =>
+    React.createElement(conditionsOverviewComponent, { ...props, section: 'procedures' }),
   options,
 );
 
 export const conditionsDetailedSummary = getSyncLifecycle(conditionsDetailedSummaryComponent, options);
 
 export const proceduresDetailedSummary = getSyncLifecycle(
-  (props) => React.createElement(conditionsDetailedSummaryComponent, { ...props, section: 'procedures' }),
+  (props: ConditionsDetailedSummaryLifecycleProps) =>
+    React.createElement(conditionsDetailedSummaryComponent, { ...props, section: 'procedures' }),
   options,
 );
 

@@ -9,3 +9,18 @@ export async function getIndicatorsApiPath() {
   const config = (await getConfig(moduleName)) as Config | undefined;
   return config?.indicatorsApiPath?.replace(/\/+$/, '') || defaultApiPath;
 }
+
+export async function getIndicadoresResourcePath() {
+  const apiPath = await getIndicatorsApiPath();
+  return `${apiPath}/indicadores`;
+}
+
+export async function getResultadosResourcePath() {
+  const apiPath = await getIndicatorsApiPath();
+  return `${apiPath}/resultados`;
+}
+
+export async function getConceptosResourcePath() {
+  const apiPath = await getIndicatorsApiPath();
+  return `${apiPath}/conceptos`;
+}

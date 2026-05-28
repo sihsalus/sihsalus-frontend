@@ -91,6 +91,8 @@ const time12HourFormatRegexPattern = '^(1[0-2]|0?[1-9]):[0-5][0-9]$';
 
 const isValidTime = (timeStr: string) => timeStr.match(new RegExp(time12HourFormatRegexPattern));
 
+const isSuccessfulAppointmentResponse = (status?: number) => status >= 200 && status < 300 && status !== 204;
+
 interface AppointmentFormDefaults {
   defaultTimeFormat: 'AM' | 'PM';
   defaultStartDate: Date;
@@ -403,7 +405,7 @@ const AppointmentsForm: React.FC<
       : saveAppointment(appointmentPayload, abortController)
     ).then(
       ({ status }) => {
-        if (status === 200) {
+        if (isSuccessfulAppointmentResponse(status)) {
           setIsSubmitting(false);
           setIsSuccessful(true);
           mutateAppointments();

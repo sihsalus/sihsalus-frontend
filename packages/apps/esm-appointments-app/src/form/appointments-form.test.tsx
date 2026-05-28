@@ -7,7 +7,7 @@ import {
   useLocations,
   useSession,
 } from '@openmrs/esm-framework';
-import { screen } from '@testing-library/react';
+import { screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import {
   mockLocations,
@@ -133,8 +133,8 @@ describe('AppointmentForm', () => {
       data: mockUseAppointmentServiceData,
     } as unknown as FetchResponse);
     mockSaveAppointment.mockResolvedValue({
-      status: 200,
-      statusText: 'Ok',
+      status: 201,
+      statusText: 'Created',
     } as FetchResponse);
 
     renderWithSwr(<AppointmentForm {...defaultProps} />);
@@ -196,6 +196,9 @@ describe('AppointmentForm', () => {
       isLowContrast: true,
       subtitle: 'It is now visible on the Appointments page',
       title: 'Appointment scheduled',
+    });
+    await waitFor(() => {
+      expect(defaultProps.closeWorkspace).toHaveBeenCalledWith({ discardUnsavedChanges: true });
     });
   });
 

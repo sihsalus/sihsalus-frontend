@@ -6,6 +6,7 @@ import { useTranslation } from 'react-i18next';
 import CameraComponent from './camera.component';
 import styles from './camera-media-uploader.scss';
 import CameraMediaUploaderContext from './camera-media-uploader-context.resources';
+import { type CameraMediaUploadView } from './camera-media-uploader-types';
 import FileReviewContainer from './file-review.component';
 import MediaUploaderComponent from './media-uploader.component';
 import UploadStatusComponent from './upload-status.component';
@@ -18,6 +19,7 @@ interface CameraMediaUploaderModalProps {
   onCompletion?: () => void;
   saveFile: (file: UploadedFile) => Promise<FetchResponse<any>>;
   title?: string;
+  initialView?: CameraMediaUploadView;
 }
 
 interface CameraMediaUploadTabsProps {
@@ -32,6 +34,7 @@ const CameraMediaUploaderModal: React.FC<CameraMediaUploaderModalProps> = ({
   onCompletion,
   saveFile,
   title,
+  initialView,
 }) => {
   const { allowedFileExtensions } = useAllowedFileExtensions();
   const [error, setError] = useState<Error>(null);
@@ -85,6 +88,7 @@ const CameraMediaUploaderModal: React.FC<CameraMediaUploaderModalProps> = ({
         error,
         filesToUpload,
         handleTakePhoto,
+        initialView,
         multipleFiles,
         onCompletion,
         saveFile,
@@ -101,9 +105,9 @@ const CameraMediaUploaderModal: React.FC<CameraMediaUploaderModalProps> = ({
 
 const CameraMediaUploadTabs: React.FC<CameraMediaUploadTabsProps> = ({ title }) => {
   const { t } = useTranslation();
-  const { cameraOnly, closeModal, error } = useContext(CameraMediaUploaderContext);
+  const { cameraOnly, closeModal, error, initialView } = useContext(CameraMediaUploaderContext);
   const mediaStream = useRef<MediaStream | undefined>();
-  const [view, setView] = useState('upload');
+  const [view, setView] = useState<CameraMediaUploadView>(initialView ?? 'upload');
 
   const stopCameraStream = useCallback(() => {
     mediaStream.current?.getTracks().forEach((t) => {
@@ -126,7 +130,7 @@ const CameraMediaUploadTabs: React.FC<CameraMediaUploadTabsProps> = ({ title }) 
       <ModalHeader closeModal={closeModal} title={title || t('addAttachment_title', 'Add Attachment')} />
       <ModalBody className={styles.modalBody}>
         <div className={styles.tabs}>
-          <Tabs defaultSelectedIndex={1}>
+          <Tabs defaultSelectedIndex={view === 'camera' ? 0 : 1}>
             <TabList aria-label="Attachments-upload-section" className={styles.tabList}>
               <Tab onClick={() => setView('camera')}>{t('webcam', 'Webcam')}</Tab>
               <Tab onClick={() => setView('upload')}>{t('uploadFiles', 'Upload files')}</Tab>

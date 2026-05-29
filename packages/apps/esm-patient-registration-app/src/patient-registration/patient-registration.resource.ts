@@ -1,4 +1,4 @@
-import { openmrsFetch, restBaseUrl } from '@openmrs/esm-framework';
+import { createAttachment, openmrsFetch, restBaseUrl, type UploadedFile } from '@openmrs/esm-framework';
 import dayjs from 'dayjs';
 
 import { type Encounter, type Patient, type PatientIdentifier, type Relationship } from './patient-registration.types';
@@ -130,6 +130,19 @@ export async function savePatientPhoto(
     signal: abortController.signal,
     body: formData,
   });
+}
+
+export function savePatientPhotoAsAttachment(patientUuid: string, content: string) {
+  const patientPhoto = dataURItoFile(content);
+  const uploadedFile: UploadedFile = {
+    base64Content: content,
+    file: patientPhoto,
+    fileDescription: 'Patient photo',
+    fileName: patientPhoto.name,
+    fileType: 'image',
+  };
+
+  return createAttachment(patientUuid, uploadedFile);
 }
 
 export async function fetchPerson(query: string, abortController: AbortController) {

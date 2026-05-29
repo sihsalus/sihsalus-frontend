@@ -1,5 +1,5 @@
-@use '@carbon/colors';
-@use '@carbon/layout';
+@use "@carbon/colors";
+@use "@carbon/layout";
 
 .imageContainer {
   display: flex;
@@ -8,8 +8,8 @@
   text-align: center;
   font-size: layout.$spacing-04;
   color: colors.$cool-gray-70;
-  width: 7.5rem;
-  height: 7.5rem;
+  width: 10rem;
+  height: 10rem;
   border: 1px solid colors.$cool-gray-80;
 }
 
@@ -30,21 +30,17 @@
   padding: layout.$spacing-07;
 }
 
-.editButtonContainer {
+.buttonContainer {
   display: flex;
+  flex-direction: column;
   align-items: center;
-  justify-content: space-between;
-  width: 7.5rem;
-  background-color: colors.$cool-gray-80;
+  gap: layout.$spacing-02;
+  width: 10rem;
+  margin-top: layout.$spacing-03;
 }
 
-.editButton {
-  color: colors.$white-0;
+.actionButton {
   display: flex;
   justify-content: space-between;
   width: 100%;
-
-  &:hover {
-    color: colors.$white-0;
-  }
 }

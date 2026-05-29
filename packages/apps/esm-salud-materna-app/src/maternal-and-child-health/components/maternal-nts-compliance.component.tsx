@@ -139,6 +139,14 @@ const requirements: Array<Requirement> = [
     formKey: 'SummaryOfLaborAndPostpartum',
   },
   {
+    id: 'obstetric-monitor',
+    section: 'Parto institucional y calificado',
+    label: 'Monitorización obstétrica / partograma',
+    description: 'Registro seriado de bienestar materno-fetal y evolución del trabajo de parto.',
+    source: 'NTS 105 / OMS',
+    formKey: 'obstetricMonitor',
+  },
+  {
     id: 'obstetrics-service',
     section: 'Parto institucional y calificado',
     label: 'Servicio de obstetricia',

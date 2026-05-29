@@ -1,10 +1,13 @@
 import type { OpenmrsResource } from '@openmrs/esm-framework';
-import { openmrsFetch, useConfig } from '@openmrs/esm-framework';
+import { openmrsFetch, restBaseUrl, useConfig } from '@openmrs/esm-framework';
 import useSWR from 'swr';
 
 import type { ConfigObject } from '../config-schema';
 import type { OpenmrsEncounter } from '../types';
-import { encounterRepresentation } from '../utils/constants';
+
+const partographEncounterRepresentation =
+  'custom:(uuid,encounterDatetime,form:(uuid,name,display),obs:(uuid,obsDatetime,voided,' +
+  'concept:(uuid,name:(uuid,name)),groupMembers:(uuid,obsDatetime,display,concept:(uuid,name:(uuid,name)),value)))';
 
 export type PartogramProgram = {
   concept: OpenmrsResource;
@@ -17,8 +20,8 @@ export type PartogramProgram = {
 export function usePartograph(patientUuid: string) {
   const { partography } = useConfig<ConfigObject>();
   const url =
-    patientUuid && partography?.encounterTypeUuid && partography?.formUuid
-      ? `/ws/rest/v1/encounter?encounterType=${partography.encounterTypeUuid}&formUuid=${partography.formUuid}&patient=${patientUuid}&v=${encounterRepresentation}`
+    patientUuid && partography?.encounterTypeUuid
+      ? `${restBaseUrl}/encounter?encounterType=${partography.encounterTypeUuid}&patient=${patientUuid}&v=${partographEncounterRepresentation}`
       : null;
 
   const { data, error, isLoading, isValidating, mutate } = useSWR<{ data: { results: OpenmrsEncounter[] } }, Error>(
@@ -26,11 +29,14 @@ export function usePartograph(patientUuid: string) {
     openmrsFetch,
   );
   const results = data?.data ? data?.data?.results : [];
-  const sortedResults = results.slice().sort((a, b) => {
-    const dateA = new Date(a.encounterDatetime).getTime();
-    const dateB = new Date(b.encounterDatetime).getTime();
-    return dateB - dateA;
-  });
+  const sortedResults = results
+    .filter((encounter) => formMatches(encounter.form, partography?.formUuid))
+    .slice()
+    .sort((a, b) => {
+      const dateA = new Date(a.encounterDatetime).getTime();
+      const dateB = new Date(b.encounterDatetime).getTime();
+      return dateB - dateA;
+    });
   const flattedObs = sortedResults
     .flatMap((encounter) => encounter.obs)
     .filter(
@@ -48,4 +54,12 @@ export function usePartograph(patientUuid: string) {
     error,
     mutate,
   };
+}
+
+function formMatches(form: (OpenmrsEncounter['form'] & { display?: string }) | undefined, configuredForm?: string) {
+  if (!configuredForm) {
+    return true;
+  }
+
+  return form?.uuid === configuredForm || form?.name === configuredForm || form?.display === configuredForm;
 }

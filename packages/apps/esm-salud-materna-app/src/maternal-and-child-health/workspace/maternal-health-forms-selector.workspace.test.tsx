@@ -39,6 +39,7 @@ describe('MaternalHealthFormsSelectorWorkspace', () => {
       formsList: {
         maternalHistory: 'maternal-history-form-uuid',
         currentPregnancy: 'current-pregnancy-form-uuid',
+        obstetricMonitor: 'obstetric-monitor-form-uuid',
         birthPlanForm: '',
       },
     });
@@ -49,9 +50,10 @@ describe('MaternalHealthFormsSelectorWorkspace', () => {
 
     expect(screen.getByRole('heading', { name: /formularios de salud materna/i })).toBeInTheDocument();
     expect(screen.getByText(/seleccione el formulario de salud materna/i)).toBeInTheDocument();
-    expect(screen.getByText('forms:2')).toBeInTheDocument();
+    expect(screen.getByText('forms:3')).toBeInTheDocument();
     expect(screen.getByRole('button', { name: /antecedentes obstétricos/i })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: /embarazo actual/i })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /monitorización obstétrica/i })).toBeInTheDocument();
     expect(screen.getByText('backWorkspace:null')).toBeInTheDocument();
     expect(mockFormsSelectorWorkspace.mock.calls[0][0]).toEqual(
       expect.objectContaining({

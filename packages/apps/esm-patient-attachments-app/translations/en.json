@@ -12,6 +12,7 @@
   "cameraAccessErrorMessage": "Please enable camera access in your browser settings and try again.",
   "cameraError": "Camera Error",
   "chooseAnAllowedFileType": "The file \"{{fileName}}\" cannot be uploaded. Please upload a file with one of the following extensions: {{supportedExtensions}}, or {{ lastExtension }}.",
+  "clearSelectedImage": "Clear",
   "closeModal": "Close",
   "closePreview": "Close preview",
   "dateUploaded": "Date uploaded",
@@ -46,6 +47,7 @@
   "successfullyDeleted": "successfully deleted",
   "supportedFiletypes": "Supported files are {{supportedFiles}}",
   "tableView": "Table view",
+  "takePhoto": "Take photo",
   "type": "Type",
   "unsavedAttachment": "Unsaved attachment",
   "unsavedAttachmentMessage": "You have an unsaved attachment. Are you sure you want to discard it?",
@@ -54,6 +56,7 @@
   "uploadedSuccessfully": "uploaded successfully",
   "uploadError": "Error uploading file",
   "uploadFiles": "Upload files",
+  "uploadImage": "Upload image",
   "uploading": "Uploading",
   "uploadWillContinueInTheBackground": "Files will be uploaded in the background. You can close this modal.",
   "webcam": "Webcam"

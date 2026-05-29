@@ -60,6 +60,26 @@ const Partograph: React.FC<PartographyProps> = ({ patientUuid }) => {
       key: 'fetalHeartRate',
     },
     {
+      header: t('bloodPressure', 'Blood pressure'),
+      key: 'bloodPressure',
+    },
+    {
+      header: t('maternalPulse', 'Maternal pulse'),
+      key: 'maternalPulse',
+    },
+    {
+      header: t('temperature', 'Temperature'),
+      key: 'maternalTemperature',
+    },
+    {
+      header: t('respiratoryRate', 'Respiratory rate'),
+      key: 'maternalRespiratoryRate',
+    },
+    {
+      header: t('urineOutput', 'Urine output'),
+      key: 'urineOutput',
+    },
+    {
       header: t('cervicalDilation', 'Cervical Dilation cm'),
       key: 'cervicalDilation',
     },
@@ -72,8 +92,20 @@ const Partograph: React.FC<PartographyProps> = ({ patientUuid }) => {
       key: 'contractionFrequency',
     },
     {
+      header: t('contractionIntensity', 'Intensity'),
+      key: 'contractionIntensity',
+    },
+    {
       header: t('contractionDuration', 'Duration (s)'),
       key: 'contractionDuration',
+    },
+    {
+      header: t('fetalDeath', 'Fetal death'),
+      key: 'fetalDeath',
+    },
+    {
+      header: t('observations', 'Observations'),
+      key: 'observations',
     },
   ];
   const partographRecords = useMemo(
@@ -93,10 +125,21 @@ const Partograph: React.FC<PartographyProps> = ({ patientUuid }) => {
         date: formatDate(parseDate(record.date), { mode: 'wide', time: true }),
         timeRecorded: record.timeRecorded ? dayjs(new Date(record.timeRecorded)).format('HH:mm') : '--',
         fetalHeartRate: record.fetalHeartRate ?? '--',
+        bloodPressure:
+          record.maternalSystolicBloodPressure !== undefined || record.maternalDiastolicBloodPressure !== undefined
+            ? `${record.maternalSystolicBloodPressure ?? '--'}/${record.maternalDiastolicBloodPressure ?? '--'}`
+            : '--',
+        maternalPulse: record.maternalPulse ?? '--',
+        maternalTemperature: record.maternalTemperature ?? '--',
+        maternalRespiratoryRate: record.maternalRespiratoryRate ?? '--',
+        urineOutput: record.urineOutput ?? '--',
         cervicalDilation: record.cervicalDilation ?? '--',
         descentOfHead: record.descentOfHead ?? '--',
         contractionFrequency: record.contractionFrequency ?? '--',
+        contractionIntensity: record.contractionIntensity ?? '--',
         contractionDuration: record.contractionDuration ?? '--',
+        fetalDeath: record.fetalDeath ?? '--',
+        observations: record.observations ?? '--',
       })),
     [partographRecords],
   );

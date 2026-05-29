@@ -4,14 +4,23 @@ export interface PartographConcepts {
   cervicalDilationUuid: string;
   descentOfHeadUuid: string;
   contractionFrequencyUuid: string;
+  contractionIntensityUuid?: string;
   contractionDurationUuid: string;
+  maternalSystolicBloodPressureUuid?: string;
+  maternalDiastolicBloodPressureUuid?: string;
+  maternalPulseUuid?: string;
+  maternalTemperatureUuid?: string;
+  maternalRespiratoryRateUuid?: string;
+  urineOutputUuid?: string;
+  fetalDeathUuid?: string;
+  observationsUuid?: string;
 }
 
 export interface PartographGroupMember {
   concept?: {
     uuid?: string;
   };
-  value?: string | number | { uuid?: string; display?: string } | null;
+  value?: string | number | { uuid?: string; display?: string; name?: string } | null;
 }
 
 export interface PartographProgressObservation {
@@ -29,7 +38,16 @@ export interface PartographRecord {
   descentOfHead?: string;
   descentOfHeadValue?: number;
   contractionFrequency?: number;
+  contractionIntensity?: string;
   contractionDuration?: number;
+  maternalSystolicBloodPressure?: number;
+  maternalDiastolicBloodPressure?: number;
+  maternalPulse?: number;
+  maternalTemperature?: number;
+  maternalRespiratoryRate?: number;
+  urineOutput?: string;
+  fetalDeath?: string;
+  observations?: string;
 }
 
 export type PartographMetricKey =
@@ -124,13 +142,13 @@ function buildPartographRecord(
     return acc;
   }, {});
 
-  const timeRecorded = getStringValue(valuesByConcept[concepts.timeRecordedUuid]);
+  const timeRecorded = getStringValue(getConceptValue(valuesByConcept, concepts.timeRecordedUuid));
   const recordDate = getValidDateString(timeRecorded) ?? getValidDateString(observation.obsDatetime);
   if (!recordDate) {
     return null;
   }
 
-  const descentOfHeadAnswer = getStringValue(valuesByConcept[concepts.descentOfHeadUuid]);
+  const descentOfHeadAnswer = getStringValue(getConceptValue(valuesByConcept, concepts.descentOfHeadUuid));
   const descentOfHead = descentOfHeadAnswer
     ? (descentOfHeadAnswerLabels[descentOfHeadAnswer] ?? descentOfHeadAnswer)
     : undefined;
@@ -139,13 +157,32 @@ function buildPartographRecord(
     id: observation.uuid,
     date: recordDate,
     timeRecorded: getValidDateString(timeRecorded),
-    fetalHeartRate: toFiniteNumber(valuesByConcept[concepts.fetalHeartRateUuid]) ?? undefined,
-    cervicalDilation: toFiniteNumber(valuesByConcept[concepts.cervicalDilationUuid]) ?? undefined,
+    fetalHeartRate: toFiniteNumber(getConceptValue(valuesByConcept, concepts.fetalHeartRateUuid)) ?? undefined,
+    cervicalDilation: toFiniteNumber(getConceptValue(valuesByConcept, concepts.cervicalDilationUuid)) ?? undefined,
     descentOfHead,
     descentOfHeadValue: normalizeDescentOfHead(descentOfHead),
-    contractionFrequency: toFiniteNumber(valuesByConcept[concepts.contractionFrequencyUuid]) ?? undefined,
-    contractionDuration: toFiniteNumber(valuesByConcept[concepts.contractionDurationUuid]) ?? undefined,
+    contractionFrequency:
+      toFiniteNumber(getConceptValue(valuesByConcept, concepts.contractionFrequencyUuid)) ?? undefined,
+    contractionIntensity: getStringValue(getConceptValue(valuesByConcept, concepts.contractionIntensityUuid)),
+    contractionDuration:
+      toFiniteNumber(getConceptValue(valuesByConcept, concepts.contractionDurationUuid)) ?? undefined,
+    maternalSystolicBloodPressure:
+      toFiniteNumber(getConceptValue(valuesByConcept, concepts.maternalSystolicBloodPressureUuid)) ?? undefined,
+    maternalDiastolicBloodPressure:
+      toFiniteNumber(getConceptValue(valuesByConcept, concepts.maternalDiastolicBloodPressureUuid)) ?? undefined,
+    maternalPulse: toFiniteNumber(getConceptValue(valuesByConcept, concepts.maternalPulseUuid)) ?? undefined,
+    maternalTemperature:
+      toFiniteNumber(getConceptValue(valuesByConcept, concepts.maternalTemperatureUuid)) ?? undefined,
+    maternalRespiratoryRate:
+      toFiniteNumber(getConceptValue(valuesByConcept, concepts.maternalRespiratoryRateUuid)) ?? undefined,
+    urineOutput: getStringValue(getConceptValue(valuesByConcept, concepts.urineOutputUuid)),
+    fetalDeath: getStringValue(getConceptValue(valuesByConcept, concepts.fetalDeathUuid)),
+    observations: getStringValue(getConceptValue(valuesByConcept, concepts.observationsUuid)),
   };
+}
+
+function getConceptValue(valuesByConcept: Record<string, string | number | undefined>, conceptUuid?: string) {
+  return conceptUuid ? valuesByConcept[conceptUuid] : undefined;
 }
 
 function getObservationValue(value: PartographGroupMember['value']) {
@@ -154,7 +191,7 @@ function getObservationValue(value: PartographGroupMember['value']) {
   }
 
   if (value && typeof value === 'object') {
-    return value.uuid ?? value.display;
+    return value.display ?? value.name ?? value.uuid;
   }
 
   return undefined;

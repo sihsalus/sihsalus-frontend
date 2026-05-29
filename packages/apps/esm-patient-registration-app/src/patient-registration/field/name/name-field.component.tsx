@@ -62,6 +62,11 @@ export const NameField = () => {
     [setCapturePhotoProps, setFieldTouched],
   );
 
+  const onClearPhoto = useCallback(() => {
+    setCapturePhotoProps?.(null);
+    setFieldTouched('photo', true, false);
+  }, [setCapturePhotoProps, setFieldTouched]);
+
   const toggleNameKnown = (e) => {
     if (e.name === 'known') {
       setFieldValue('givenName', '');
@@ -127,7 +132,7 @@ export const NameField = () => {
           <ExtensionSlot
             className={styles.photoExtension}
             name="capture-patient-photo-slot"
-            state={{ onCapturePhoto, initialState: currentPhoto }}
+            state={{ onCapturePhoto, onClearPhoto, initialState: currentPhoto }}
           />
         )}
 

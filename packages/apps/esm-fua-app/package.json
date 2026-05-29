@@ -40,8 +40,8 @@
   "dependencies": {
     "@sihsalus/esm-rbac": "workspace:*",
     "@sihsalus/esm-sihsalus-shared": "workspace:*",
-    "lodash-es": "^4.17.21",
-    "xlsx": "^0.18.5"
+    "exceljs": "^4.4.0",
+    "lodash-es": "^4.17.21"
   },
   "peerDependencies": {
     "@carbon/react": "1.x",

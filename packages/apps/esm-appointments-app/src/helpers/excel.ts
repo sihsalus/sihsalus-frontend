@@ -1,5 +1,5 @@
 import { fetchCurrentPatient, formatDate, getConfig } from '@openmrs/esm-framework';
-import { utils, type WorkSheet, writeFile } from 'xlsx';
+import type { CellValue, Workbook } from 'exceljs';
 
 import { type ConfigObject } from '../config-schema';
 import { moduleName } from '../constants';
@@ -63,9 +63,7 @@ export async function exportAppointmentsToSpreadsheet(
     }),
   );
 
-  const worksheet = createWorksheet(appointmentsJSON);
-  const workbook = createWorkbook(worksheet, 'Appointment list');
-  writeFile(workbook, `${fileName}.xlsx`, { compression: true });
+  await writeSpreadsheet(appointmentsJSON, 'Appointment list', `${fileName}.xlsx`);
 }
 
 /**
@@ -76,7 +74,7 @@ Exports unscheduled appointments as an Excel spreadsheet.
 export function exportUnscheduledAppointmentsToSpreadsheet(
   unscheduledAppointments: Array<UnscheduledAppointment>,
   fileName: string = `Unscheduled appointments ${formatDate(new Date(), { year: true, time: true })}`,
-) {
+): Promise<void> {
   const appointmentsJSON = unscheduledAppointments?.map(
     (appointment): SpreadsheetRow => ({
       'Patient name': appointment.name,
@@ -87,23 +85,72 @@ export function exportUnscheduledAppointmentsToSpreadsheet(
     }),
   );
 
-  const worksheet = createWorksheet(appointmentsJSON);
-  const workbook = createWorkbook(worksheet, 'Appointment list');
+  return writeSpreadsheet(appointmentsJSON, 'Appointment list', `${fileName}.xlsx`);
+}
 
-  writeFile(workbook, `${fileName}.xlsx`, {
-    compression: true,
+function getFirstColumnWidth(data: Array<Record<string, unknown>>) {
+  const max_width = data.reduce((w, r) => Math.max(w, String(r['Patient name'] ?? '').length), 30);
+  return max_width;
+}
+
+function toSpreadsheetCell(value: unknown): CellValue {
+  if (value == null) {
+    return '';
+  }
+
+  if (typeof value === 'string' || typeof value === 'number' || typeof value === 'boolean' || value instanceof Date) {
+    return value;
+  }
+
+  return String(value);
+}
+
+function getColumnNames(data: Array<Record<string, unknown>>) {
+  return Object.keys(data[0] ?? {});
+}
+
+async function writeSpreadsheet(
+  data: Array<Record<string, unknown>>,
+  sheetName: string,
+  fileName: string,
+): Promise<void> {
+  const { Workbook } = await import('exceljs');
+  const workbook = new Workbook();
+  const worksheet = workbook.addWorksheet(sheetName);
+  const columnNames = getColumnNames(data);
+
+  worksheet.columns = columnNames.map((columnName, index) => ({
+    header: columnName,
+    key: columnName,
+    ...(index === 0 ? { width: getFirstColumnWidth(data) } : {}),
+  }));
+  worksheet.getRow(1).font = { bold: true };
+
+  for (const row of data) {
+    worksheet.addRow(
+      Object.fromEntries(columnNames.map((columnName) => [columnName, toSpreadsheetCell(row[columnName])])),
+    );
+  }
+
+  await downloadWorkbook(workbook, fileName);
+}
+
+async function downloadWorkbook(workbook: Workbook, fileName: string): Promise<void> {
+  const buffer = await workbook.xlsx.writeBuffer();
+  const blob = new Blob([buffer as BlobPart], {
+    type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
   });
-}
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement('a');
 
-function createWorksheet(data: Array<SpreadsheetRow>) {
-  const max_width = data.reduce((w, r) => Math.max(w, r['Patient name'].length), 30);
-  const worksheet = utils.json_to_sheet(data);
-  worksheet['!cols'] = [{ wch: max_width }];
-  return worksheet;
-}
-
-function createWorkbook(worksheet: WorkSheet, sheetName: string) {
-  const workbook = utils.book_new();
-  utils.book_append_sheet(workbook, worksheet, sheetName);
-  return workbook;
+  try {
+    link.href = url;
+    link.download = fileName;
+    link.style.display = 'none';
+    document.body.appendChild(link);
+    link.click();
+  } finally {
+    link.remove();
+    URL.revokeObjectURL(url);
+  }
 }

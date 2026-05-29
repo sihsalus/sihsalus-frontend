@@ -1,5 +1,5 @@
 import { Layer, StructuredListBody, StructuredListCell, StructuredListRow, StructuredListWrapper } from '@carbon/react';
-import { formatDate, parseDate, useSession } from '@openmrs/esm-framework';
+import { formatDate, parseDate, usePatient, useSession } from '@openmrs/esm-framework';
 import classNames from 'classnames';
 import React, { useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -16,16 +16,34 @@ import styles from './print-prescription.scss';
 type PrescriptionsPrintoutProps = {
   excludedPrescription: Array<string>;
   medicationRequests: Array<MedicationRequestBundle>;
+  patientUuid: string;
 };
 
-const PrescriptionsPrintout: React.FC<PrescriptionsPrintoutProps> = ({ excludedPrescription, medicationRequests }) => {
+const PrescriptionsPrintout: React.FC<PrescriptionsPrintoutProps> = ({
+  excludedPrescription,
+  medicationRequests,
+  patientUuid,
+}) => {
   const { t } = useTranslation();
   const {
     sessionLocation: { display: facilityName },
   } = useSession();
-  const patient = medicationRequests[0]?.request?.subject;
+  const { patient } = usePatient(patientUuid);
 
   const extractPatientName = (display: string) => (display.includes('(') ? display.split('(')[0] : display);
+  const patientName = extractPatientName(medicationRequests[0]?.request?.subject?.display ?? '');
+  const patientDni = patient?.identifier?.find((identifier) => {
+    const identifierLabel = [
+      identifier?.type?.text,
+      identifier?.type?.coding?.map((coding) => `${coding?.code ?? ''} ${coding?.display ?? ''}`).join(' '),
+      identifier?.system,
+    ]
+      .filter(Boolean)
+      .join(' ')
+      .toLowerCase();
+
+    return identifierLabel.includes('dni');
+  })?.value;
 
   const requesters = useMemo(() => {
     const uniqueRequesters = new Set<string>();
@@ -52,9 +70,10 @@ const PrescriptionsPrintout: React.FC<PrescriptionsPrintoutProps> = ({ excludedP
               <br />
               <br />
               <p className={styles.printoutTitle}>{t('prescriptionInstructions', 'Prescription instructions')}</p>
-              {patient && (
-                <p className={classNames(styles.patientName, styles.faintText)}>
-                  {extractPatientName(patient.display)}
+              {patientName && <p className={classNames(styles.patientName, styles.faintText)}>{patientName}</p>}
+              {patientDni && (
+                <p className={classNames(styles.patientIdentifier, styles.faintText)}>
+                  {t('dni', 'DNI')}: {patientDni}
                 </p>
               )}
               <br />

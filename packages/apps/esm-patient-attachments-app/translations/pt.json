@@ -60,5 +60,6 @@
   "uploadImage": "Carregar imagem",
   "uploading": "Carregando",
   "uploadWillContinueInTheBackground": "Os arquivos serão carregados em segundo plano. Você pode fechar este modal.",
-  "webcam": "Webcam"
+  "webcam": "Webcam",
+  "webcamPreview": "Pré-visualização da webcam"
 }

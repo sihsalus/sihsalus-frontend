@@ -3,7 +3,8 @@
     "Brand color #1": "#27348b",
     "Brand color #2": "#17205f",
     "Brand color #3": "#2c7d35",
-    "implementationName": "Clinic"
+    "implementationName": "Clinic",
+    "patientPhotoConceptUuid": "7cac8397-53cd-4f00-a6fe-028e8d743f8e"
   },
   "core": {
     "Translation overrides": {

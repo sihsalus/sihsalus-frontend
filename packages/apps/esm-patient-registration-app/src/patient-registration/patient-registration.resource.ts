@@ -14,7 +14,7 @@ function dataURItoFile(dataURI: string) {
   }
 
   const blob = new Blob([buffer], { type: mimeString });
-  return new File([blob], 'patient-photo.png');
+  return new File([blob], 'patient-photo.png', { type: mimeString });
 }
 
 export function savePatient(patient: Patient | null, updatePatientUuid?: string) {
@@ -111,10 +111,14 @@ export async function savePatientPhoto(
   conceptUuid: string,
 ) {
   const abortController = new AbortController();
+  const patientPhoto = dataURItoFile(content);
 
   const formData = new FormData();
   formData.append('patient', patientUuid);
-  formData.append('file', dataURItoFile(content));
+  formData.append('person', patientUuid);
+  formData.append('concept', conceptUuid);
+  formData.append('obsDatetime', date);
+  formData.append('file', patientPhoto, patientPhoto.name);
   formData.append(
     'json',
     JSON.stringify({

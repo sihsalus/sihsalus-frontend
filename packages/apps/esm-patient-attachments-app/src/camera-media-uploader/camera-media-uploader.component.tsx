@@ -18,7 +18,7 @@ interface CameraMediaUploaderModalProps {
   collectDescription?: boolean;
   multipleFiles?: boolean;
   onCompletion?: () => void;
-  saveFile: (file: UploadedFile) => Promise<FetchResponse<any>>;
+  saveFile: (file: UploadedFile) => Promise<FetchResponse<unknown>>;
   title?: string;
   initialView?: CameraMediaUploadView;
 }
@@ -114,6 +114,7 @@ const CameraMediaUploadTabs: React.FC<CameraMediaUploadTabsProps> = ({ title }) 
     mediaStream.current?.getTracks().forEach((t) => {
       t.stop();
     });
+    mediaStream.current = undefined;
   }, []);
 
   useEffect(() => {

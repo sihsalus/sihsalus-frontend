@@ -60,5 +60,6 @@
   "uploadImage": "Ajouter une image",
   "uploading": "En cours d'ajout",
   "uploadWillContinueInTheBackground": "Les fichiers seront ajoutés en arrière-plan. Vous pouvez fermer cette fenêtre.",
-  "webcam": "Caméra Web"
+  "webcam": "Caméra Web",
+  "webcamPreview": "Aperçu de la caméra Web"
 }

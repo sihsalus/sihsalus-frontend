@@ -5,7 +5,7 @@ export type CameraMediaUploadView = 'camera' | 'upload';
 export interface CameraMediaUploaderContextType {
   multipleFiles?: boolean;
   collectDescription?: boolean;
-  saveFile?: (file: UploadedFile) => Promise<FetchResponse<any>>;
+  saveFile?: (file: UploadedFile) => Promise<FetchResponse<unknown>>;
   closeModal?: () => void;
   onCompletion?: () => void;
   filesToUpload?: Array<UploadedFile>;

@@ -17,7 +17,6 @@ export interface FileReviewContainerProps {
 }
 
 interface FilePreviewProps {
-  clearData?(): void;
   collectDescription?: boolean;
   moveToNextFile: () => void;
   onSaveFile: (dataUri: UploadedFile) => void;
@@ -88,7 +87,6 @@ const FileReviewContainer: React.FC<FileReviewContainerProps> = ({ title, onComp
             {filesToUpload.length > 1 && `(${currentFileIndex + 1} of ${filesToUpload.length})`}
           </ModalHeader>
           <FilePreview
-            clearData={clearData}
             closeModal={handleClose}
             collectDescription={filesToUpload[currentFileIndex].fileType === 'image' && collectDescription}
             key={`${filesToUpload[currentFileIndex]?.fileName}-${currentFileIndex}`}
@@ -108,7 +106,6 @@ const FilePreview: React.FC<FilePreviewProps> = ({
   uploadedFile,
   collectDescription,
   onSaveFile,
-  clearData,
   closeModal,
 }) => {
   const { t } = useTranslation(moduleName);

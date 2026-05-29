@@ -322,7 +322,7 @@ const AppointmentsForm: React.FC<
       recurringPatternPeriod: defaultRecurringPatternPeriod,
       recurringPatternDaysOfWeek: defaultRecurringPatternDaysOfWeek,
       startTime: defaultAppointmentStartTime,
-      duration: defaultDuration,
+      duration: defaultDuration ?? null,
       timeFormat: defaultTimeFormat,
       appointmentDateTime: {
         startDate: defaultStartDate,
@@ -1039,7 +1039,7 @@ function TimeAndDuration({ t, watch: _watch, control, services: _services, error
               }
               ref={ref}
               size="md"
-              value={value}
+              value={value ?? ''}
             />
           )}
         />

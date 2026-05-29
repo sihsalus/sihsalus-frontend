@@ -1,5 +1,5 @@
 import { getDefaultsFromConfigSchema, restBaseUrl, useConfig } from '@openmrs/esm-framework';
-import { render, screen } from '@testing-library/react';
+import { render, screen, within } from '@testing-library/react';
 import dayjs from 'dayjs';
 
 import { configSchema } from '../config-schema';
@@ -118,15 +118,11 @@ describe('PatientSearch', () => {
       totalResults: 1,
     });
 
-    // TODO: Restore these tests once we improve the patient banner test stubs
-    // expect(
-    //   screen.getByRole('link', { name: new RegExp(`Smith, John Doe Male · ${age} yrs · OpenMRS ID 1000NLY`, 'i') }),
-    // ).toBeInTheDocument();
-    // expect(screen.getByRole('link')).toHaveAttribute(
-    //   'href',
-    //   `/openmrs/spa/patient/${mockSearchResults[0].uuid}/chart/`,
-    // );
-    // expect(screen.getByRole('heading', { name: /Smith, John Doe/ })).toBeInTheDocument();
+    const patientLink = screen.getByRole('link', {
+      name: new RegExp(`Smith, John Doe Male · ${age} yrs · OpenMRS ID 1000NLY`, 'i'),
+    });
+    expect(patientLink).toHaveAttribute('href', `/openmrs/spa/patient/${mockSearchResults[0].uuid}/chart/`);
+    expect(within(patientLink).getByText(/Smith, John Doe/)).toBeInTheDocument();
     expect(screen.getByRole('img')).toBeInTheDocument();
   });
 });

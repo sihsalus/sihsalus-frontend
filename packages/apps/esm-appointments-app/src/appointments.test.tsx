@@ -1,7 +1,6 @@
 import { render, screen } from '@testing-library/react';
 import Appointments from './appointments.component';
 
-// TODO: Tweak the ExtensionSlot stub in the framework to not return a function. Functions are not valid React children.
 describe('Appointments', () => {
   it('renders the appointments dashboard', async () => {
     render(<Appointments />);

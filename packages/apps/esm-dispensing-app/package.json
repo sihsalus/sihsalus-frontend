@@ -45,7 +45,6 @@
   "dependencies": {
     "@carbon/react": "^1.83.0",
     "classnames": "^2.5.1",
-    "lodash-es": "^4.17.21",
     "react-to-print": "^2.14.13"
   },
   "peerDependencies": {

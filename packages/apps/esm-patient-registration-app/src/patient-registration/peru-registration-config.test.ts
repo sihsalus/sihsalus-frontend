@@ -15,7 +15,8 @@ describe('getEffectiveRegistrationConfig', () => {
     const filiation = config.sectionDefinitions.find((section) => section.id === 'filiation');
     const nationality = config.fieldDefinitions.find((field) => field.id === 'nationality');
 
-    expect(demographics?.fields).toEqual(['name', 'id', 'dob', 'gender', 'nationality']);
+    expect(demographics?.fields).toEqual(['name', 'id', 'dob', 'gender']);
+    expect(demographics?.fields).not.toContain('nationality');
     expect(filiation?.fields).not.toContain('nationality');
     expect(nationality).toMatchObject({
       id: 'nationality',

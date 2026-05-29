@@ -12,6 +12,10 @@ import { PatientRegistrationContext, type PatientRegistrationContextProps } from
 
 import { Identifiers, setIdentifierSource } from './id-field.component';
 
+vi.mock('../person-attributes/nationality-field.component', () => ({
+  NationalityField: ({ fieldDefinition }) => <div data-testid="nationality-field">{fieldDefinition.label}</div>,
+}));
+
 const dniIdentifierType = {
   name: 'DNI',
   fieldName: 'dni',
@@ -180,7 +184,7 @@ function renderIdentifiersWithState(initialIdentifiers = {}) {
 }
 
 describe('Identifiers', () => {
-    beforeEach(() => {
+  beforeEach(() => {
     mockResourcesContextValue.identifierTypes = [];
     mockResourcesContextValue.identifierTypesError = undefined;
     mockResourcesContextValue.isLoadingIdentifierTypes = false;
@@ -277,6 +281,7 @@ describe('Identifiers', () => {
     const configureButton = screen.getByRole('button', { name: 'Configure' });
     expect(configureButton).toBeInTheDocument();
     expect(configureButton).toBeEnabled();
+    expect(screen.getByTestId('nationality-field')).toHaveTextContent('Nacionalidad');
   });
 
   it('should open identifier selection overlay when "Configure" button is clicked', async () => {

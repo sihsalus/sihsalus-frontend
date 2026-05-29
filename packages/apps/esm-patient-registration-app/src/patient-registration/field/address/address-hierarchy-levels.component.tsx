@@ -27,7 +27,7 @@ const AddressComboBox: React.FC<AddressComboBoxProps> = ({ attribute }) => {
     fetchEntriesForField,
     searchString,
   );
-  const label = t(attribute.label) + (attribute?.required ? '' : ` (${t('optional', 'optional')})`);
+  const label = attribute?.required ? t(attribute.label) : t(attribute.label) + ` (${t('optional', 'optional')})`;
 
   const handleInputChange = useCallback(
     (newValue) => {

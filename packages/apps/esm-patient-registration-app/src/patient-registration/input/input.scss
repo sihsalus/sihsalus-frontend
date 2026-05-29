@@ -27,6 +27,11 @@
   color: $danger;
 }
 
+.requiredInlineLabel::after {
+  content: ' *';
+  color: $danger;
+}
+
 .input {
   margin-right: 0.3125rem;
 }

@@ -111,7 +111,7 @@ const IdentifierInput: React.FC<IdentifierInputProps> = ({ patientIdentifier, fi
         />
       ) : (
         <div className={styles.textID}>
-          <p data-testid="identifier-label" className={styles.label}>
+          <p data-testid="identifier-label" className={`${styles.label} ${required ? styles.requiredInlineLabel : ''}`}>
             {required ? identifierName : `${t('optionalIdentifierLabel', { identifierName })}`}
           </p>
           <p data-testid="identifier-placeholder" className={styles.bodyShort02}>

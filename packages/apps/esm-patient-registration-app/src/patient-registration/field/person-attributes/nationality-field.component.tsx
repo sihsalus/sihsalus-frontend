@@ -21,6 +21,9 @@ export function NationalityField({ fieldDefinition }: NationalityFieldProps) {
   const { i18n, t } = useTranslation(moduleName);
   const countryOptions = useMemo(() => getCountryOptions(i18n.language), [i18n.language]);
   const fieldName = personAttributeType ? `attributes.${personAttributeType.uuid}` : null;
+  const required = fieldDefinition.validation?.required ?? false;
+  const displayLabel = fieldDefinition.label ?? personAttributeType?.display;
+  const labelText = displayLabel;
 
   useEffect(() => {
     if (!fieldName || inEditMode || values.attributes?.[personAttributeType.uuid]) {
@@ -56,9 +59,9 @@ export function NationalityField({ fieldDefinition }: NationalityFieldProps) {
             <Select
               id={fieldDefinition.id}
               name={`person-attribute-${personAttributeType.uuid}`}
-              labelText={fieldDefinition.label ?? personAttributeType.display}
+              labelText={labelText}
               invalid={errors[fieldName] && touched[fieldName]}
-              required={fieldDefinition.validation?.required ?? false}
+              required={required}
               {...field}
               value={field.value || defaultNationalityCountryCode}
             >

@@ -1,5 +1,5 @@
 import { getDefaultsFromConfigSchema, useConfig } from '@openmrs/esm-framework';
-import { render, screen } from '@testing-library/react';
+import { render, screen, waitFor } from '@testing-library/react';
 import { Form, Formik } from 'formik';
 import { mockedAddressTemplate, mockedOrderedFields, mockOpenmrsId, mockPatient, mockSession } from 'test-utils';
 
@@ -192,6 +192,85 @@ describe('Address hierarchy', () => {
       const textFieldInput = screen.getByLabelText(`${field.displayText} (optional)`);
       expect(textFieldInput).toBeInTheDocument();
     });
+  });
+
+  it('defaults country to Peru when the address template has no country default', async () => {
+    const setFieldValue = vi.fn();
+
+    mockUseConfig.mockReturnValue({
+      ...getDefaultsFromConfigSchema(esmPatientRegistrationSchema),
+      fieldConfigurations: {
+        address: {
+          useAddressHierarchy: {
+            enabled: false,
+            useQuickSearch: false,
+            searchAddressByLevel: false,
+          },
+        },
+      } as RegistrationConfig['fieldConfigurations'],
+    });
+
+    mockUseOrderedAddressHierarchyLevels.mockReturnValue({
+      orderedFields: [],
+      isLoadingFieldOrder: false,
+      errorFetchingFieldOrder: undefined,
+    });
+
+    mockResourcesContextValue.addressTemplate = {
+      ...mockedAddressTemplate,
+      elementDefaults: {},
+    };
+
+    renderAddressHierarchy({
+      ...initialContextValues,
+      setFieldValue,
+      values: {
+        ...mockInitialFormValues,
+        address: {},
+      },
+    });
+
+    await waitFor(() => expect(setFieldValue).toHaveBeenCalledWith('address.country', 'Perú'));
+  });
+
+  it('does not apply the Peru country fallback while editing an existing patient', async () => {
+    const setFieldValue = vi.fn();
+
+    mockUseConfig.mockReturnValue({
+      ...getDefaultsFromConfigSchema(esmPatientRegistrationSchema),
+      fieldConfigurations: {
+        address: {
+          useAddressHierarchy: {
+            enabled: false,
+            useQuickSearch: false,
+            searchAddressByLevel: false,
+          },
+        },
+      } as RegistrationConfig['fieldConfigurations'],
+    });
+
+    mockUseOrderedAddressHierarchyLevels.mockReturnValue({
+      orderedFields: [],
+      isLoadingFieldOrder: false,
+      errorFetchingFieldOrder: undefined,
+    });
+
+    mockResourcesContextValue.addressTemplate = {
+      ...mockedAddressTemplate,
+      elementDefaults: {},
+    };
+
+    renderAddressHierarchy({
+      ...initialContextValues,
+      inEditMode: true,
+      setFieldValue,
+      values: {
+        ...mockInitialFormValues,
+        address: {},
+      },
+    });
+
+    expect(setFieldValue).not.toHaveBeenCalledWith('address.country', 'Perú');
   });
 
   it('renders the address hierarchy fields in order if the address hierarchy feature is enabled', () => {

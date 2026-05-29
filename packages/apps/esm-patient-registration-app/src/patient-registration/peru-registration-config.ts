@@ -164,6 +164,7 @@ const peruFieldDefinitions: Array<FieldDefinition> = [
       { uuid: '9b3df0a1-0c58-4f55-9868-9c38f1db2032', label: 'Pasiva' },
       { uuid: '9b3df0a1-0c58-4f55-9868-9c38f1db2033', label: 'Eliminada' },
     ],
+    defaultValue: '9b3df0a1-0c58-4f55-9868-9c38f1db2031',
   },
   {
     id: 'medicalRecordArchiveType',
@@ -176,6 +177,7 @@ const peruFieldDefinitions: Array<FieldDefinition> = [
       { uuid: '9b3df0a1-0c58-4f55-9868-9c38f1db2041', label: 'Archivo común' },
       { uuid: '9b3df0a1-0c58-4f55-9868-9c38f1db2042', label: 'Archivo especial' },
     ],
+    defaultValue: '9b3df0a1-0c58-4f55-9868-9c38f1db2041',
   },
   {
     id: 'insuranceAccreditationStatus',
@@ -190,6 +192,7 @@ const peruFieldDefinitions: Array<FieldDefinition> = [
       { uuid: '9b3df0a1-0c58-4f55-9868-9c38f1db2053', label: 'Pendiente' },
       { uuid: '9b3df0a1-0c58-4f55-9868-9c38f1db2054', label: 'No consultada' },
     ],
+    defaultValue: '9b3df0a1-0c58-4f55-9868-9c38f1db2054',
   },
   {
     id: 'insuranceAccreditationCheckedAt',

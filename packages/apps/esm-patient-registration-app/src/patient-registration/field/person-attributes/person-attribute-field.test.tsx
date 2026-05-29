@@ -1,7 +1,8 @@
-import { render, screen } from '@testing-library/react';
+import { render, screen, waitFor } from '@testing-library/react';
 import { Form, Formik } from 'formik';
 
 import { type FieldDefinition } from '../../../config-schema';
+import { PatientRegistrationContext, type PatientRegistrationContextProps } from '../../patient-registration-context';
 import { useConceptAnswers } from '../field.resource';
 
 import { PersonAttributeField } from './person-attribute-field.component';
@@ -117,6 +118,32 @@ describe('PersonAttributeField', () => {
     expect(input.type).toBe('select-one');
     expect(screen.getByText('Option 1')).toBeInTheDocument();
     expect(screen.getByText('Option 2')).toBeInTheDocument();
+  });
+
+  it('applies a configured default value for new registrations', async () => {
+    const setFieldValue = vi.fn();
+
+    render(
+      <Formik initialValues={{ attributes: {} }} onSubmit={() => {}}>
+        <Form>
+          <PatientRegistrationContext.Provider
+            value={
+              {
+                inEditMode: false,
+                setFieldValue,
+                values: { attributes: {} },
+              } as unknown as PatientRegistrationContextProps
+            }
+          >
+            <PersonAttributeField fieldDefinition={{ ...fieldDefinition, defaultValue: 'default-value' }} />
+          </PatientRegistrationContext.Provider>
+        </Form>
+      </Formik>,
+    );
+
+    await waitFor(() =>
+      expect(setFieldValue).toHaveBeenCalledWith(`attributes.${mockPersonAttributeType.uuid}`, 'default-value', false),
+    );
   });
 
   it('renders an error notification if attribute type has unknown format', () => {

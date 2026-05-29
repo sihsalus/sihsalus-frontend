@@ -350,6 +350,24 @@ describe('Identifiers', () => {
     expect(screen.getByText('Documento de Identidad Extranjero')).toBeInTheDocument();
   });
 
+  it('keeps DNI and Pasaporte mutually exclusive in the identifier configuration panel', async () => {
+    const user = userEvent.setup();
+    renderIdentifiersWithState({
+      dni: buildIdentifier(dniIdentifierType),
+    });
+
+    await user.click(screen.getByRole('button', { name: 'Configure' }));
+    await user.click(screen.getByRole('checkbox', { name: 'Pasaporte' }));
+
+    expect(screen.getByRole('checkbox', { name: 'DNI' })).not.toBeChecked();
+    expect(screen.getByRole('checkbox', { name: 'Pasaporte' })).toBeChecked();
+
+    await user.click(screen.getByRole('button', { name: 'Configure identifiers' }));
+
+    expect(screen.queryByText('DNI')).not.toBeInTheDocument();
+    expect(screen.getByText('Pasaporte')).toBeInTheDocument();
+  });
+
   it('deletes identifier inputs while keeping the configuration panel in sync', async () => {
     const user = userEvent.setup();
     renderIdentifiersWithState({

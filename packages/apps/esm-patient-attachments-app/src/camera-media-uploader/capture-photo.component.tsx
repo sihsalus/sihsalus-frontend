@@ -86,7 +86,7 @@ const CapturePhoto: React.FC<CapturePhotoProps> = ({ initialState, onCapturePhot
         {dataUri ? (
           <Button
             className={styles.actionButton}
-            kind="ghost"
+            kind="danger--ghost"
             onClick={handleClearPhoto}
             renderIcon={(props: ComponentProps<typeof TrashCan>) => <TrashCan {...props} />}
             size={responsiveSize}

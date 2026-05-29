@@ -15,6 +15,7 @@ export const peruForeignPatientIdentifierTypeUuids = [
 ];
 
 const peruSections = ['filiation', 'medicalRecord', 'insurance', 'responsiblePerson'];
+const peruDemographicsFieldOrder = ['name', 'id', 'dob', 'gender', 'nationality'];
 const minorResponsibleRelationshipTypes = [
   '8d91a210-c2cc-11de-8d13-0010c6dffdff/aIsToB',
   '8d91a210-c2cc-11de-8d13-0010c6dffd0f/aIsToB',
@@ -270,7 +271,7 @@ function addNationalityToDemographics(sectionDefinitions: Array<SectionDefinitio
       {
         id: 'demographics',
         name: 'Basic Info',
-        fields: ['name', 'gender', 'dob', 'id', 'nationality'],
+        fields: peruDemographicsFieldOrder,
       },
     ];
   }
@@ -279,10 +280,17 @@ function addNationalityToDemographics(sectionDefinitions: Array<SectionDefinitio
     section.id === 'demographics'
       ? {
           ...section,
-          fields: insertAfter(section.fields, 'id', 'nationality'),
+          fields: orderPeruDemographicsFields(insertAfter(section.fields, 'id', 'nationality')),
         }
       : section,
   );
+}
+
+function orderPeruDemographicsFields(fields: Array<string>) {
+  return [
+    ...peruDemographicsFieldOrder.filter((field) => fields.includes(field)),
+    ...fields.filter((field) => !peruDemographicsFieldOrder.includes(field)),
+  ];
 }
 
 export function getEffectiveRegistrationConfig(config: RegistrationConfig): RegistrationConfig {

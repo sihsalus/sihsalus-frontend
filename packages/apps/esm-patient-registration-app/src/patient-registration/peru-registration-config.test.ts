@@ -8,14 +8,14 @@ import {
 } from './peru-registration-config';
 
 describe('getEffectiveRegistrationConfig', () => {
-  it('adds nationality immediately after identifiers in demographics', () => {
+  it('orders Peru basic info fields for registration', () => {
     const config = getEffectiveRegistrationConfig(getDefaultsFromConfigSchema(esmPatientRegistrationSchema));
 
     const demographics = config.sectionDefinitions.find((section) => section.id === 'demographics');
     const filiation = config.sectionDefinitions.find((section) => section.id === 'filiation');
     const nationality = config.fieldDefinitions.find((field) => field.id === 'nationality');
 
-    expect(demographics?.fields).toEqual(['name', 'gender', 'dob', 'id', 'nationality']);
+    expect(demographics?.fields).toEqual(['name', 'id', 'dob', 'gender', 'nationality']);
     expect(filiation?.fields).not.toContain('nationality');
     expect(nationality).toMatchObject({
       id: 'nationality',

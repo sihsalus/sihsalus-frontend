@@ -125,20 +125,12 @@ export const NameField = () => {
   );
 
   return (
-    <div>
+    <div className={styles.fullWidthInDesktopView}>
       <h4 className={styles.productiveHeading02Light}>{t('fullNameLabelText', 'Full Name')}</h4>
-      <div className={styles.grid}>
-        {displayCapturePhoto && (
-          <ExtensionSlot
-            className={styles.photoExtension}
-            name="capture-patient-photo-slot"
-            state={{ onCapturePhoto, onClearPhoto, initialState: currentPhoto }}
-          />
-        )}
-
-        <div className={styles.nameField}>
+      <div className={styles.basicInfoNameLayout}>
+        <div className={styles.nameInputsPanel}>
           {(allowUnidentifiedPatients || isPatientUnknown) && (
-            <>
+            <div className={styles.nameKnownToggle}>
               <div className={styles.dobContentSwitcherLabel}>
                 <span className={styles.label01}>{t('patientNameKnown', "Patient's Name is Known?")}</span>
               </div>
@@ -150,25 +142,35 @@ export const NameField = () => {
                 <Switch name="known" text={t('yes', 'Yes')} />
                 <Switch name="unknown" text={t('no', 'No')} />
               </ContentSwitcher>
-            </>
+            </div>
           )}
-          {!isPatientUnknown &&
-            (!displayReverseFieldOrder ? (
-              <>
-                {firstNameField}
-                {middleNameField}
-                {familyNameField}
-                {familyName2Field}
-              </>
-            ) : (
-              <>
-                {familyNameField}
-                {familyName2Field}
-                {middleNameField}
-                {firstNameField}
-              </>
-            ))}
+          {!isPatientUnknown && (
+            <div className={styles.nameFieldsGrid}>
+              {!displayReverseFieldOrder ? (
+                <>
+                  {firstNameField}
+                  {middleNameField}
+                  {familyNameField}
+                  {familyName2Field}
+                </>
+              ) : (
+                <>
+                  {familyNameField}
+                  {familyName2Field}
+                  {middleNameField}
+                  {firstNameField}
+                </>
+              )}
+            </div>
+          )}
         </div>
+        {displayCapturePhoto && (
+          <ExtensionSlot
+            className={styles.photoExtension}
+            name="capture-patient-photo-slot"
+            state={{ onCapturePhoto, onClearPhoto, initialState: currentPhoto }}
+          />
+        )}
       </div>
     </div>
   );

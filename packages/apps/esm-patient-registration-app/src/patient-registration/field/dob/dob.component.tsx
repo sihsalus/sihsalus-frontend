@@ -91,7 +91,9 @@ export const DobField: React.FC = () => {
 
   return (
     <div className={styles.halfWidthInDesktopView}>
-      <h4 className={styles.productiveHeading02Light}>{t('birthFieldLabelText', 'Birth')}</h4>
+      <h4 className={`${styles.productiveHeading02Light} ${styles.requiredHeading}`}>
+        {t('birthFieldLabelText', 'Birth')}
+      </h4>
       {(allowEstimatedBirthDate || dobUnknown) && (
         <div className={styles.dobField}>
           <div className={styles.dobContentSwitcherLabel}>
@@ -113,6 +115,7 @@ export const DobField: React.FC = () => {
               onChange={onDateChange}
               onBlur={() => setFieldTouched('birthdate', true, false)}
               maxDate={today}
+              isRequired
               labelText={t('dateOfBirthLabelText', 'Date of birth')}
               isInvalid={!!(birthdateMeta.touched && birthdateMeta.error)}
               invalidText={t(birthdateMeta.error)}

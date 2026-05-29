@@ -179,15 +179,9 @@ export const AddressComponent: React.FC = () => {
 const AddressComponentContainer: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const { t } = useTranslation(moduleName);
   return (
-    <div>
+    <div className={styles.fullWidthInDesktopView}>
       <h4 className={styles.productiveHeading02Light}>{t('addressHeader', 'Address')}</h4>
-      <div
-        style={{
-          paddingBottom: '5%',
-        }}
-      >
-        {children}
-      </div>
+      <div className={styles.addressFieldGrid}>{children}</div>
     </div>
   );
 };

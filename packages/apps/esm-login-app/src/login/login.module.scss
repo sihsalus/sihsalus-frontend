@@ -1,21 +1,21 @@
-@use '@carbon/layout';
-@use '@carbon/type';
-@use '@openmrs/esm-styleguide/src/vars' as *;
+@use "@carbon/layout";
+@use "@carbon/type";
+@use "@openmrs/esm-styleguide/src/vars" as *;
 
 .bodyShort01 {
-  @include type.type-style('body-compact-01');
+  @include type.type-style("body-compact-01");
 }
 
 .productiveHeading03 {
-  @include type.type-style('heading-03');
+  @include type.type-style("heading-03");
 }
 
 .label01 {
-  @include type.type-style('label-01');
+  @include type.type-style("label-01");
 }
 
 .caption01 {
-  @include type.type-style('legal-01');
+  @include type.type-style("legal-01");
 }
 
 .backButton {
@@ -162,10 +162,16 @@
   min-height: 36rem;
   overflow: hidden;
   background: var(--brand-02);
+
+  picture {
+    display: block;
+    width: 100%;
+    height: 100%;
+  }
 }
 
 .imagePanel::after {
-  content: '';
+  content: "";
   position: absolute;
   inset: 0;
   background:
@@ -384,7 +390,7 @@
     outline: none;
   }
 
-  &[aria-current='true'] {
+  &[aria-current="true"] {
     border-left: 0.25rem solid var(--brand-01);
     padding-left: calc(#{layout.$spacing-05} - 0.25rem);
     font-weight: 600;

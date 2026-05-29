@@ -2,11 +2,10 @@ import { defineConfigSchema, getAsyncLifecycle, getSyncLifecycle } from '@openmr
 import { createDashboardLink } from '@openmrs/esm-patient-common-lib';
 import attachmentsOverviewComponent from './attachments/attachments-overview.component';
 import { attachmentsConfigSchema } from './attachments-config-schema';
+import { moduleName } from './constants';
 import { dashboardMeta } from './dashboard.meta';
 
 export const importTranslation = require.context('../translations', false, /.json$/, 'lazy');
-
-const moduleName = '@sihsalus/esm-patient-attachments-app';
 
 export function startupApp() {
   defineConfigSchema(moduleName, attachmentsConfigSchema);

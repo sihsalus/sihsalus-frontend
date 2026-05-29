@@ -7,6 +7,7 @@ import React, { type SyntheticEvent, useCallback, useContext, useState } from 'r
 import { Controller, type SubmitHandler, useForm } from 'react-hook-form';
 import { useTranslation } from 'react-i18next';
 import { z } from 'zod';
+import { moduleName } from '../constants';
 import CameraMediaUploaderContext from './camera-media-uploader-context.resources';
 import styles from './file-review.scss';
 
@@ -27,7 +28,7 @@ interface FilePreviewProps {
 }
 
 const FileReviewContainer: React.FC<FileReviewContainerProps> = ({ title, onCompletion }) => {
-  const { t } = useTranslation();
+  const { t } = useTranslation(moduleName);
   const [currentFileIndex, setCurrentFileIndex] = useState(0);
   const [showWarningDialog, setShowWarningDialog] = useState(false);
 
@@ -110,7 +111,7 @@ const FilePreview: React.FC<FilePreviewProps> = ({
   clearData,
   closeModal,
 }) => {
-  const { t } = useTranslation();
+  const { t } = useTranslation(moduleName);
   const { allowedFileExtensions } = useAllowedFileExtensions();
   const fileNameWithoutExtension = uploadedFile.fileName.trim().replace(/\.[^\\/.]+$/, '');
 
@@ -192,10 +193,9 @@ const FilePreview: React.FC<FilePreviewProps> = ({
                     id="caption"
                     invalid={!!errors.fileName}
                     invalidText={errors.fileName?.message}
-                    labelText={`${uploadedFile.fileType === 'image' ? t('image', 'Image') : t('file', 'File')} ${t(
-                      'name',
-                      'name',
-                    )}`}
+                    labelText={
+                      uploadedFile.fileType === 'image' ? t('imageName', 'Image name') : t('fileName', 'File name')
+                    }
                     onChange={onChange}
                     placeholder={t('enterAttachmentName', 'Enter attachment name')}
                     value={value}

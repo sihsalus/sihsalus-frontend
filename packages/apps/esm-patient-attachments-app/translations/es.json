@@ -36,6 +36,7 @@
   "gridView": "Vista de cuadrícula",
   "image": "Imagen",
   "imageDescription": "Descripción de la imagen",
+  "imageName": "Nombre de imagen",
   "imagePlaceholder": "Marcador de posición de la imagen",
   "imagePreview": "Vista previa de la imagen",
   "keepAttachment": "Mantener archivo adjunto",

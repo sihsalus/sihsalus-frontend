@@ -36,6 +36,7 @@
   "gridView": "Galerie",
   "image": "Image",
   "imageDescription": "Description de l'image",
+  "imageName": "Nom de l'image",
   "imagePlaceholder": "Espace réservé aux images",
   "imagePreview": "Aperçu de l'image",
   "keepAttachment": "Conserver la pièce jointe",

@@ -36,6 +36,7 @@
   "gridView": "Grid view",
   "image": "Image",
   "imageDescription": "Image description",
+  "imageName": "Image name",
   "imagePlaceholder": "Image placeholder",
   "imagePreview": "Image preview",
   "keepAttachment": "Keep attachment",

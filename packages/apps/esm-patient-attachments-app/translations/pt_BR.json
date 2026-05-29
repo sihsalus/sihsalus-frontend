@@ -36,6 +36,7 @@
   "gridView": "Visualização da grade",
   "image": "Imagem",
   "imageDescription": "Descrição da imagem",
+  "imageName": "Nome da imagem",
   "imagePlaceholder": "Espaço reservado para imagem",
   "imagePreview": "Visualização da imagem",
   "keepAttachment": "Keep attachment",

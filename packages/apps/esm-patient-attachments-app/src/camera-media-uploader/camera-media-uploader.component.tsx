@@ -3,6 +3,7 @@ import { type FetchResponse, type UploadedFile } from '@openmrs/esm-framework';
 import { useAllowedFileExtensions } from '@openmrs/esm-patient-common-lib';
 import React, { useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
+import { moduleName } from '../constants';
 import CameraComponent from './camera.component';
 import styles from './camera-media-uploader.scss';
 import CameraMediaUploaderContext from './camera-media-uploader-context.resources';
@@ -104,7 +105,7 @@ const CameraMediaUploaderModal: React.FC<CameraMediaUploaderModalProps> = ({
 };
 
 const CameraMediaUploadTabs: React.FC<CameraMediaUploadTabsProps> = ({ title }) => {
-  const { t } = useTranslation();
+  const { t } = useTranslation(moduleName);
   const { cameraOnly, closeModal, error, initialView } = useContext(CameraMediaUploaderContext);
   const mediaStream = useRef<MediaStream | undefined>();
   const [view, setView] = useState<CameraMediaUploadView>(initialView ?? 'upload');

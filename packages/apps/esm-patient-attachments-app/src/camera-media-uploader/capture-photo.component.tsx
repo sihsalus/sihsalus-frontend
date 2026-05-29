@@ -4,6 +4,7 @@ import { showModal, toOmrsIsoString, type UploadedFile, useLayoutType } from '@o
 import classNames from 'classnames';
 import React, { type ComponentProps, useCallback, useState } from 'react';
 import { useTranslation } from 'react-i18next';
+import { moduleName } from '../constants';
 import { type CameraMediaUploadView } from './camera-media-uploader-types';
 import styles from './capture-photo.scss';
 
@@ -14,7 +15,7 @@ export interface CapturePhotoProps {
 }
 
 const CapturePhoto: React.FC<CapturePhotoProps> = ({ initialState, onCapturePhoto, onClearPhoto }) => {
-  const { t } = useTranslation();
+  const { t } = useTranslation(moduleName);
   const isTablet = useLayoutType() === 'tablet';
   const responsiveSize = isTablet ? 'lg' : 'sm';
   const [dataUri, setDataUri] = useState<string | null>(null);

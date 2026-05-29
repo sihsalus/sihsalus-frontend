@@ -22,6 +22,7 @@ import {
 import { compare, EmptyDataIllustration } from '@openmrs/esm-patient-common-lib';
 import React, { useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
+import { moduleName } from '../constants';
 import { type AttachmentTableData } from '../utils';
 import styles from './attachments-table-overview.scss';
 
@@ -38,7 +39,7 @@ const AttachmentsTableOverview: React.FC<AttachmentsTableOverviewProps> = ({
   onDeleteAttachment,
   onOpenAttachment,
 }) => {
-  const { t } = useTranslation();
+  const { t } = useTranslation(moduleName);
   const layout = useLayoutType();
   const isTablet = layout === 'tablet';
   const isDesktop = layout === 'small-desktop' || layout === 'large-desktop';

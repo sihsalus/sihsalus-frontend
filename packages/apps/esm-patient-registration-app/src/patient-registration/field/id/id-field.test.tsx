@@ -12,6 +12,10 @@ import { PatientRegistrationContext, type PatientRegistrationContextProps } from
 
 import { Identifiers, setIdentifierSource } from './id-field.component';
 
+vi.mock('../person-attributes/nationality-field.component', () => ({
+  NationalityField: ({ fieldDefinition }) => <div data-testid="nationality-field">{fieldDefinition.label}</div>,
+}));
+
 const dniIdentifierType = {
   name: 'DNI',
   fieldName: 'dni',
@@ -180,7 +184,7 @@ function renderIdentifiersWithState(initialIdentifiers = {}) {
 }
 
 describe('Identifiers', () => {
-    beforeEach(() => {
+  beforeEach(() => {
     mockResourcesContextValue.identifierTypes = [];
     mockResourcesContextValue.identifierTypesError = undefined;
     mockResourcesContextValue.isLoadingIdentifierTypes = false;
@@ -277,6 +281,7 @@ describe('Identifiers', () => {
     const configureButton = screen.getByRole('button', { name: 'Configure' });
     expect(configureButton).toBeInTheDocument();
     expect(configureButton).toBeEnabled();
+    expect(screen.getByTestId('nationality-field')).toHaveTextContent('Nacionalidad');
   });
 
   it('should open identifier selection overlay when "Configure" button is clicked', async () => {
@@ -343,6 +348,24 @@ describe('Identifiers', () => {
 
     expect(screen.queryByText('DNI')).not.toBeInTheDocument();
     expect(screen.getByText('Documento de Identidad Extranjero')).toBeInTheDocument();
+  });
+
+  it('keeps DNI and Pasaporte mutually exclusive in the identifier configuration panel', async () => {
+    const user = userEvent.setup();
+    renderIdentifiersWithState({
+      dni: buildIdentifier(dniIdentifierType),
+    });
+
+    await user.click(screen.getByRole('button', { name: 'Configure' }));
+    await user.click(screen.getByRole('checkbox', { name: 'Pasaporte' }));
+
+    expect(screen.getByRole('checkbox', { name: 'DNI' })).not.toBeChecked();
+    expect(screen.getByRole('checkbox', { name: 'Pasaporte' })).toBeChecked();
+
+    await user.click(screen.getByRole('button', { name: 'Configure identifiers' }));
+
+    expect(screen.queryByText('DNI')).not.toBeInTheDocument();
+    expect(screen.getByText('Pasaporte')).toBeInTheDocument();
   });
 
   it('deletes identifier inputs while keeping the configuration panel in sync', async () => {

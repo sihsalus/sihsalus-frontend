@@ -42,12 +42,16 @@ const carnetExtranjeriaIdentifier = {
   selectedSource: undefined,
 } as FormValues['identifiers'][string];
 
-function renderNationalityField(values: Partial<FormValues> = {}) {
-  const setFieldValue = vi.fn();
+interface NationalityFieldTestHarnessProps {
+  setFieldValue: PatientRegistrationContextProps['setFieldValue'];
+  values: Partial<FormValues>;
+}
+
+function NationalityFieldTestHarness({ setFieldValue, values }: NationalityFieldTestHarnessProps) {
   const attributes = values.attributes ?? {};
   const identifiers = values.identifiers ?? {};
 
-  render(
+  return (
     <Formik initialValues={{ attributes }} onSubmit={null}>
       <Form>
         <PatientRegistrationContext.Provider
@@ -65,10 +69,20 @@ function renderNationalityField(values: Partial<FormValues> = {}) {
           <NationalityField fieldDefinition={nationalityFieldDefinition} />
         </PatientRegistrationContext.Provider>
       </Form>
-    </Formik>,
+    </Formik>
   );
+}
 
-  return { setFieldValue };
+function renderNationalityField(values: Partial<FormValues> = {}) {
+  const setFieldValue = vi.fn();
+  const renderResult = render(<NationalityFieldTestHarness setFieldValue={setFieldValue} values={values} />);
+
+  return {
+    ...renderResult,
+    setFieldValue,
+    rerenderWithValues: (values: Partial<FormValues>) =>
+      renderResult.rerender(<NationalityFieldTestHarness setFieldValue={setFieldValue} values={values} />),
+  };
 }
 
 describe('NationalityField', () => {
@@ -160,5 +174,42 @@ describe('NationalityField', () => {
     });
 
     expect(setFieldValue).not.toHaveBeenCalled();
+  });
+
+  it('updates nationality rules when the identity document changes after render', async () => {
+    const { rerenderWithValues, setFieldValue } = renderNationalityField({
+      identifiers: {
+        ce: carnetExtranjeriaIdentifier,
+      },
+    });
+
+    expect(screen.getByLabelText('Nacionalidad')).toHaveValue('');
+    expect(screen.getByLabelText('Nacionalidad')).not.toBeDisabled();
+    setFieldValue.mockClear();
+
+    rerenderWithValues({
+      identifiers: {
+        dni: dniIdentifier,
+      },
+    });
+
+    await waitFor(() =>
+      expect(setFieldValue).toHaveBeenCalledWith(
+        'attributes.nationality-attribute-type-uuid',
+        defaultNationalityCountryCode,
+      ),
+    );
+    setFieldValue.mockClear();
+
+    rerenderWithValues({
+      attributes: {
+        'nationality-attribute-type-uuid': defaultNationalityCountryCode,
+      },
+      identifiers: {
+        ce: carnetExtranjeriaIdentifier,
+      },
+    });
+
+    await waitFor(() => expect(setFieldValue).toHaveBeenCalledWith('attributes.nationality-attribute-type-uuid', ''));
   });
 });

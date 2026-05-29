@@ -32,18 +32,22 @@ const PrescriptionsPrintout: React.FC<PrescriptionsPrintoutProps> = ({
 
   const extractPatientName = (display: string) => (display.includes('(') ? display.split('(')[0] : display);
   const patientName = extractPatientName(medicationRequests[0]?.request?.subject?.display ?? '');
-  const patientDni = patient?.identifier?.find((identifier) => {
-    const identifierLabel = [
-      identifier?.type?.text,
-      identifier?.type?.coding?.map((coding) => `${coding?.code ?? ''} ${coding?.display ?? ''}`).join(' '),
-      identifier?.system,
-    ]
-      .filter(Boolean)
-      .join(' ')
-      .toLowerCase();
+  const getPatientIdentifier = (matchers: Array<string>) =>
+    patient?.identifier?.find((identifier) => {
+      const identifierLabel = [
+        identifier?.type?.text,
+        identifier?.type?.coding?.map((coding) => `${coding?.code ?? ''} ${coding?.display ?? ''}`).join(' '),
+        identifier?.system,
+      ]
+        .filter(Boolean)
+        .join(' ')
+        .toLowerCase();
 
-    return identifierLabel.includes('dni');
-  })?.value;
+      return matchers.some((matcher) => identifierLabel.includes(matcher));
+    })?.value;
+
+  const patientDni = getPatientIdentifier(['dni']);
+  const patientMedicalRecordId = getPatientIdentifier(['historia clínica', 'historia clinica', 'n° historia clínica', 'n° historia clinica']);
 
   const requesters = useMemo(() => {
     const uniqueRequesters = new Set<string>();
@@ -74,6 +78,11 @@ const PrescriptionsPrintout: React.FC<PrescriptionsPrintoutProps> = ({
               {patientDni && (
                 <p className={classNames(styles.patientIdentifier, styles.faintText)}>
                   {t('dni', 'DNI')}: {patientDni}
+                </p>
+              )}
+              {patientMedicalRecordId && (
+                <p className={classNames(styles.patientIdentifier, styles.faintText)}>
+                  {t('medicalRecordId', 'Historia Clínica')}: {patientMedicalRecordId}
                 </p>
               )}
               <br />

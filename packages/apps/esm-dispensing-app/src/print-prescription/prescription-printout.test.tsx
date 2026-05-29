@@ -88,6 +88,7 @@ describe('PrescriptionsPrintout', () => {
 
     expect(screen.getByText('Perez, Maria')).toBeInTheDocument();
     expect(screen.getByText('DNI: 12345678')).toBeInTheDocument();
+    expect(screen.getByText('Historia Clínica: HCE-0012345')).toBeInTheDocument();
     expect(screen.queryByText('DNI: HCE-0012345')).not.toBeInTheDocument();
   });
 });

@@ -3,8 +3,10 @@ import { XAxis } from '@carbon/react/icons';
 import {
   createErrorHandler,
   interpolateUrl,
+  isDesktop,
   showSnackbar,
   useConfig,
+  useLayoutType,
   usePatient,
   usePatientPhoto,
 } from '@openmrs/esm-framework';
@@ -68,6 +70,8 @@ export const PatientRegistration: React.FC<PatientRegistrationProps> = ({ savePa
   const [initialAddressFieldValues] = useInitialAddressFieldValues(patientUuidToEdit);
   const [patientUuidMap] = usePatientUuidMap(patientUuidToEdit);
   const location = currentSession?.sessionLocation?.uuid;
+  const layout = useLayoutType();
+  const isDesktopLayout = isDesktop(layout);
   const inEditMode = !isLoadingPatientToEdit && !!(uuidOfPatientToEdit && patientToEdit);
   const showDummyData = useMemo(
     () => window.spaEnv === 'development' && localStorage.getItem('openmrs:devtools') === 'true' && !inEditMode,
@@ -239,7 +243,7 @@ export const PatientRegistration: React.FC<PatientRegistrationProps> = ({ savePa
                       : t('createNewPatient', 'Create new patient')}
                   </h4>
                   {showDummyData && <DummyDataInput setValues={props.setValues} />}
-                  <div className={styles.actionPanel}>{renderActionButtons()}</div>
+                  {isDesktopLayout && <div className={styles.actionPanel}>{renderActionButtons()}</div>}
                   <div className={styles.sectionNav}>
                     <p className={styles.label01}>{t('jumpTo', 'Jump to')}</p>
                     {sections.map((section) => (
@@ -276,7 +280,7 @@ export const PatientRegistration: React.FC<PatientRegistrationProps> = ({ savePa
                     />
                   ))}
                 </PatientRegistrationContext.Provider>
-                <div className={styles.bottomActionPanel}>{renderActionButtons()}</div>
+                {!isDesktopLayout && <div className={styles.bottomActionPanel}>{renderActionButtons()}</div>}
               </div>
             </div>
           </Form>

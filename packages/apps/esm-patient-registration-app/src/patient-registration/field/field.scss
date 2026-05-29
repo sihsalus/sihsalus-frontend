@@ -24,8 +24,22 @@
   column-gap: layout.$spacing-05;
 }
 
+.addressFieldGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 18rem), 1fr));
+  column-gap: layout.$spacing-05;
+  padding-bottom: layout.$spacing-05;
+}
+
 .halfWidthInDesktopView {
-  width: calc(50% - layout.$spacing-05);
+  width: 100%;
+  min-width: 0;
+}
+
+.fullWidthInDesktopView {
+  width: 100%;
+  grid-column: 1 / -1;
+  min-width: 0;
 }
 
 .patientPhoto {
@@ -154,6 +168,11 @@
   }
 
   .halfWidthInDesktopView {
+    width: 100%;
+    min-width: 0;
+  }
+
+  .fullWidthInDesktopView {
     width: 100%;
   }
 }

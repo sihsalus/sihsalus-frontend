@@ -12,10 +12,36 @@
 
 .productiveHeading02 {
   @include type.type-style('heading-compact-02');
-  color: $ui-04;
+  color: colors.$gray-100;
   cursor: pointer;
+}
+
+.sectionAnchor {
+  scroll-margin-top: layout.$spacing-10;
+}
+
+.sectionCard {
+  margin: layout.$spacing-05 0 layout.$spacing-06;
+}
+
+.sectionTile {
+  padding: layout.$spacing-06;
+}
+
+.formSection {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 19rem), 1fr));
+  column-gap: layout.$spacing-05;
+  row-gap: layout.$spacing-03;
+  align-items: flex-start;
 }
 
 .isDeadFieldContainer {
   margin-bottom: layout.$spacing-05;
+}
+
+:global(.omrs-breakpoint-lt-desktop) {
+  .sectionTile {
+    padding: layout.$spacing-05;
+  }
 }

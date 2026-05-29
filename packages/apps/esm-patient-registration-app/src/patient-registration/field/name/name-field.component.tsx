@@ -125,7 +125,7 @@ export const NameField = () => {
   );
 
   return (
-    <div>
+    <div className={styles.fullWidthInDesktopView}>
       <h4 className={styles.productiveHeading02Light}>{t('fullNameLabelText', 'Full Name')}</h4>
       <div className={styles.grid}>
         {displayCapturePhoto && (

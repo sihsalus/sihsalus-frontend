@@ -1,4 +1,5 @@
 import { Button, Tile } from '@carbon/react';
+import { ImageMedical, Medication, UserFollow } from '@carbon/react/icons';
 import { AddIcon, ChevronDownIcon, ChevronUpIcon, MaybeIcon } from '@openmrs/esm-framework';
 import { type OrderBasketItem, useOrderBasket, useOrderType } from '@openmrs/esm-patient-common-lib';
 import classNames from 'classnames';
@@ -23,10 +24,66 @@ const iconAliases: Record<string, string> = {
   UserFollow: 'omrs-icon-user-follow',
   ImageMedical: 'omrs-icon-image-medical',
   Report: 'omrs-icon-report',
+  UserXray: 'omrs-icon-user-xray',
+  ReferralOrder: 'omrs-icon-referral-order',
 };
 
-function getOrderTypeIcon(icon?: string) {
-  return icon ? (iconAliases[icon] ?? icon) : 'omrs-icon-generic-order-type';
+function normalizeOrderTypeLabel(label?: string) {
+  return (label ?? '')
+    .normalize('NFD')
+    .replace(/\p{Diacritic}/gu, '')
+    .toLocaleLowerCase();
+}
+
+function getOrderTypeIcon(icon?: string, label?: string, orderTypeUuid?: string) {
+  const normalizedLabel = normalizeOrderTypeLabel(label);
+
+  if (
+    orderTypeUuid === 'f9c5d0b8-8b5a-11e5-8e9b-12345678a01a' ||
+    normalizedLabel.includes('radiolog') ||
+    normalizedLabel.includes('imagen')
+  ) {
+    return 'omrs-icon-image-medical';
+  }
+
+  if (
+    orderTypeUuid === 'e1f95924-697a-11e3-bd76-0800271c1b75' ||
+    normalizedLabel.includes('inmuniz') ||
+    normalizedLabel.includes('immuniz') ||
+    normalizedLabel.includes('vacun')
+  ) {
+    return 'omrs-icon-syringe';
+  }
+
+  if (
+    orderTypeUuid === 'f3c2e4b6-8b5a-11e5-8e9b-12345678901b' ||
+    normalizedLabel.includes('interconsulta') ||
+    normalizedLabel.includes('referral') ||
+    normalizedLabel.includes('refer')
+  ) {
+    return 'omrs-icon-referral-order';
+  }
+
+  const configuredIcon = icon ? (iconAliases[icon] ?? icon) : '';
+
+  if (configuredIcon && configuredIcon !== 'omrs-icon-generic-order-type') {
+    return configuredIcon;
+  }
+
+  return 'omrs-icon-generic-order-type';
+}
+
+function getOrderTypeIconComponent(icon: string) {
+  switch (icon) {
+    case 'omrs-icon-image-medical':
+      return ImageMedical;
+    case 'omrs-icon-syringe':
+      return Medication;
+    case 'omrs-icon-referral-order':
+      return UserFollow;
+    default:
+      return null;
+  }
 }
 
 const GeneralOrderType: React.FC<GeneralOrderTypeProps> = ({
@@ -114,12 +171,22 @@ const GeneralOrderType: React.FC<GeneralOrderTypeProps> = ({
   }
 
   const orderTypeDisplay = label ? t(label, { defaultValue: label }) : (orderType?.display ?? t('order', 'Order'));
+  const orderTypeIcon = getOrderTypeIcon(
+    icon,
+    `${label ?? ''} ${orderTypeDisplay} ${orderType?.display ?? ''}`,
+    orderTypeUuid,
+  );
+  const CarbonOrderTypeIcon = getOrderTypeIconComponent(orderTypeIcon);
 
   return (
     <Tile className={classNames(styles.desktopTile, { [styles.collapsedTile]: !isExpanded })}>
       <div className={styles.container}>
         <div className={styles.iconAndLabel}>
-          <MaybeIcon icon={getOrderTypeIcon(icon)} size={24} />
+          {CarbonOrderTypeIcon ? (
+            <CarbonOrderTypeIcon aria-hidden="true" className={styles.orderTypeIcon} size={24} />
+          ) : (
+            <MaybeIcon icon={orderTypeIcon} size={24} />
+          )}
           <h4 className={styles.heading}>{`${orderTypeDisplay} (${orders.length})`}</h4>
         </div>
         <div className={styles.buttonContainer}>

@@ -257,7 +257,7 @@ const FuaRequestTable: React.FC<FuaRequestTableProps> = ({ statusFilter = 'all' 
   );
 
   const handleExport = useCallback(() => {
-    exportFuasToExcel(filteredData);
+    void exportFuasToExcel(filteredData);
   }, [filteredData]);
 
   const handleRefresh = useCallback(() => {

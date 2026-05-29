@@ -36,6 +36,7 @@ const mapToImmunizationDoseFromResource = (immunizationResource: FHIRImmunizatio
   const expirationDate = immunizationResource?.expirationDate?.toString();
   const note = immunizationResource?.note?.length > 0 && immunizationResource?.note[0]?.text;
   return {
+    persistenceSource: 'fhir',
     immunizationObsUuid,
     manufacturer,
     lotNumber,

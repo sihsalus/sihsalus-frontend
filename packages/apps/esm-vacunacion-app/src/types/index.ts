@@ -23,6 +23,7 @@ export interface ImmunizationGrouped {
 }
 
 export interface ImmunizationFormState {
+  persistenceSource?: 'fhir' | 'ampath-form';
   vaccineUuid: string;
   immunizationId?: string;
   vaccinationDate: string;
@@ -51,6 +52,7 @@ export interface Sequence {
 }
 
 export interface ExistingDoses {
+  persistenceSource?: 'fhir' | 'ampath-form';
   expirationDate: string;
   immunizationObsUuid: string;
   note: Array<{

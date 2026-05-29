@@ -2,15 +2,17 @@ import { openmrsFetch, useConfig } from '@openmrs/esm-framework';
 import useSWR from 'swr';
 
 import type { OdontogramConfig } from '../config-schema';
+import { getAmpathOdontogramFormUuid } from '../odontogram/ampath-form-odontogram-config';
+import {
+  getOdontogramDataFromEncounter,
+  getParentBaseEncounterUuidFromEncounter,
+  type OdontogramEncounter,
+} from '../odontogram/ampath-form-odontogram-mapper';
 import { getEncountersByTypeUrl } from '../odontogram.resource';
 import type { OdontogramBaseGroup, OdontogramRecord } from '../types/odontogram-record';
 
 interface EncounterResponse {
-  results: Array<{
-    uuid: string;
-    encounterDatetime: string;
-    encounterType: { uuid: string };
-  }>;
+  results: Array<OdontogramEncounter>;
 }
 
 function formatBaseLabel(isoDate: string, index: number, total: number): string {
@@ -33,8 +35,18 @@ function formatAttentionLabel(isoDate: string): string {
 function groupByBase(bases: OdontogramRecord[], attentions: OdontogramRecord[]): OdontogramBaseGroup[] {
   // bases are already sorted oldest→newest
   const groups: OdontogramBaseGroup[] = bases.map((base) => ({ base, attentions: [] }));
+  const groupIndexByBaseUuid = new Map(bases.map((base, index) => [base.encounterUuid, index]));
 
   for (const attention of attentions) {
+    const explicitParentIndex = attention.parentBaseEncounterUuid
+      ? groupIndexByBaseUuid.get(attention.parentBaseEncounterUuid)
+      : undefined;
+
+    if (explicitParentIndex != null) {
+      groups[explicitParentIndex].attentions.push(attention);
+      continue;
+    }
+
     // Find the latest base whose date is <= the attention date
     let targetGroupIndex = 0; // fallback: oldest base
     for (let i = 0; i < bases.length; i++) {
@@ -55,11 +67,15 @@ function groupByBase(bases: OdontogramRecord[], attentions: OdontogramRecord[]):
 export function useOdontogramHistory(patientUuid: string | null) {
   const config = useConfig<OdontogramConfig>();
   const { baseEncounterTypeUuid, attentionEncounterTypeUuid } = config;
+  const baseFormUuid = getAmpathOdontogramFormUuid(config, 'base');
+  const attentionFormUuid = getAmpathOdontogramFormUuid(config, 'attention');
 
   const canFetch = Boolean(patientUuid && baseEncounterTypeUuid && attentionEncounterTypeUuid);
 
-  const baseUrl = canFetch ? getEncountersByTypeUrl(patientUuid, baseEncounterTypeUuid, 50) : null;
-  const attentionUrl = canFetch ? getEncountersByTypeUrl(patientUuid, attentionEncounterTypeUuid, 100) : null;
+  const baseUrl = canFetch ? getEncountersByTypeUrl(patientUuid, baseEncounterTypeUuid, 50, baseFormUuid) : null;
+  const attentionUrl = canFetch
+    ? getEncountersByTypeUrl(patientUuid, attentionEncounterTypeUuid, 100, attentionFormUuid)
+    : null;
 
   const swrOptions = {
     revalidateOnFocus: false,
@@ -90,6 +106,7 @@ export function useOdontogramHistory(patientUuid: string | null) {
     type: 'base',
     date: enc.encounterDatetime,
     label: formatBaseLabel(enc.encounterDatetime, idx, sortedBases.length),
+    data: getOdontogramDataFromEncounter(enc, config),
   }));
 
   const attentionRecords: OdontogramRecord[] = (attentionData?.data?.results ?? [])
@@ -99,6 +116,8 @@ export function useOdontogramHistory(patientUuid: string | null) {
       type: 'attention',
       date: enc.encounterDatetime,
       label: formatAttentionLabel(enc.encounterDatetime),
+      data: getOdontogramDataFromEncounter(enc, config),
+      parentBaseEncounterUuid: getParentBaseEncounterUuidFromEncounter(enc, config),
     }));
 
   const groups: OdontogramBaseGroup[] = baseRecords.length > 0 ? groupByBase(baseRecords, attentionRecords) : [];

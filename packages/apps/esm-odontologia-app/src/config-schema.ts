@@ -1,4 +1,5 @@
 import { Type } from '@openmrs/esm-framework';
+import { defaultAmpathOdontogramFormPersistence } from './odontogram/ampath-form-odontogram-config';
 
 export const configSchema = {
   dentalEncounterTypeUuid: {
@@ -14,12 +15,12 @@ export const configSchema = {
   baseEncounterTypeUuid: {
     _type: Type.UUID,
     _description: 'UUID of the encounter type for base odontograms (hallazgos)',
-    _default: '',
+    _default: '6d6a8f9f-6e0a-4e41-bb8f-11f65d6b4bb0',
   },
   attentionEncounterTypeUuid: {
     _type: Type.UUID,
     _description: 'UUID of the encounter type for attention odontograms (soluciones)',
-    _default: '',
+    _default: 'bfc5b59b-9a8b-4d95-a8f1-2c9b1fb6f9bb',
   },
   findingConceptUuid: {
     _type: Type.UUID,
@@ -31,6 +32,11 @@ export const configSchema = {
     _description: 'Optional map of findingId -> concept UUID to store specific obs concept per odontogram finding',
     _default: {},
   },
+  ampathFormPersistence: {
+    _type: Type.Object,
+    _description: 'AMPATH form/encounter contract used by the custom odontogram UI to persist the full diagram state.',
+    _default: defaultAmpathOdontogramFormPersistence,
+  },
 };
 
 export interface OdontogramConfig {
@@ -40,4 +46,14 @@ export interface OdontogramConfig {
   attentionEncounterTypeUuid: string;
   findingConceptUuid?: string;
   findingConceptUuids?: Record<string, string>;
+  ampathFormPersistence?: {
+    formUuid: string;
+    baseFormUuid?: string;
+    attentionFormUuid?: string;
+    concepts: {
+      snapshot: string;
+      recordType: string;
+      parentBaseEncounterUuid: string;
+    };
+  };
 }

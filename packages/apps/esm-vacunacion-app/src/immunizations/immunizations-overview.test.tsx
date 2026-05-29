@@ -1,4 +1,4 @@
-import { useFhirFetchAll } from '@openmrs/esm-framework';
+import { useFhirFetchAll, useOpenmrsFetchAll } from '@openmrs/esm-framework';
 import { screen } from '@testing-library/react';
 import {
   mockImmunizationData,
@@ -16,10 +16,21 @@ const testProps = {
 };
 
 const mockUseFhirFetchAll = useFhirFetchAll as vi.Mock;
+const mockUseOpenmrsFetchAll = useOpenmrsFetchAll as vi.Mock;
 
 describe('ImmunizationOverview', () => {
+  beforeEach(() => {
+    mockUseOpenmrsFetchAll.mockReturnValue({
+      data: [],
+      error: null,
+      isLoading: false,
+      isValidating: false,
+      mutate: vi.fn(),
+    });
+  });
+
   it('renders an empty state view of immunizations data is unavailable', async () => {
-    mockUseFhirFetchAll.mockReturnValueOnce({ data: [] });
+    mockUseFhirFetchAll.mockReturnValue({ data: [] });
 
     renderWithSwr(<ImmunizationsOverview {...testProps} />);
 
@@ -64,7 +75,7 @@ describe('ImmunizationOverview', () => {
   });
 
   it('renders a tabular overview of recently administered immunizations if available', async () => {
-    mockUseFhirFetchAll.mockReturnValueOnce({ data: mockImmunizationData });
+    mockUseFhirFetchAll.mockReturnValue({ data: mockImmunizationData });
 
     renderWithSwr(<ImmunizationsOverview {...testProps} />);
 

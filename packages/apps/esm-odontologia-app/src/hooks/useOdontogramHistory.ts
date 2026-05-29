@@ -122,10 +122,7 @@ export function useOdontogramHistory(patientUuid: string | null) {
 
   const groups: OdontogramBaseGroup[] = baseRecords.length > 0 ? groupByBase(baseRecords, attentionRecords) : [];
 
-  const mutate = () => {
-    mutateBase();
-    mutateAttentions();
-  };
+  const mutate = () => Promise.all([mutateBase(), mutateAttentions()]);
 
   return {
     groups,

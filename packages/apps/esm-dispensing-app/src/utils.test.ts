@@ -2559,6 +2559,17 @@ describe('Util Tests', () => {
         '/ws/fhir2/R4/Encounter?_query=someCustomEndpoint&_getpagesoffset=1&_count=10&date=ge2020-01-01&status=ACTIVE&patientSearchTerm=bob&location=123abc,456def',
       );
     });
+
+    test('should not evaluate JavaScript expressions in custom endpoints', () => {
+      const templateOpen = '${';
+      const templateClose = '}';
+      const unsafeExpression = `${templateOpen}constructor.constructor("return 1")()${templateClose}`;
+      const customEndpoint = `${templateOpen}fhirBaseUrl${templateClose}/Encounter?status=${templateOpen}status${templateClose}&expression=${unsafeExpression}`;
+
+      expect(getPrescriptionTableEndpoint(customEndpoint, 'ACTIVE', 1, 10, '2020-01-01', 'bob', '123abc')).toBe(
+        `/ws/fhir2/R4/Encounter?status=ACTIVE&expression=${unsafeExpression}`,
+      );
+    });
   });
 
   describe('test getPrescriptionDetailsEndpoint', () => {

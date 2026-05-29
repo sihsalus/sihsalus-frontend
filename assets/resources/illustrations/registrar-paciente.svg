@@ -4,11 +4,11 @@
   <defs>
     <style>
       .st0 {
-        fill: #7bbcb9;
+        fill: var(--action-illustration-strong, #7bbcb9);
       }
 
       .st1 {
-        fill: #cee6e5;
+        fill: var(--action-illustration-muted, #cee6e5);
       }
     </style>
   </defs>

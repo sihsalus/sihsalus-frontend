@@ -233,10 +233,13 @@ const defaultOptions: FormatDateOptions = {
  *
  * @param dateString The date string to parse and format.
  * @param options Optional formatting options.
- * @returns The formatted date string, or `null` if the input cannot be parsed.
+ * @returns The formatted date string, or `null` if the input is nullish or cannot be parsed.
  */
-// TODO: Shouldn't throw on null input
 export function formatPartialDate(dateString: string, options: Partial<FormatDateOptions> = {}) {
+  if (dateString == null) {
+    return null;
+  }
+
   const locale = getLocale();
   let parsed: ReturnType<typeof attempt> & { date?: number } = attempt(dateString, locale);
 
@@ -298,10 +301,13 @@ export function formatPartialDate(dateString: string, options: Partial<FormatDat
  *
  * @param date The date to format.
  * @param options Optional formatting options.
- * @returns The formatted date string.
+ * @returns The formatted date string, or an empty string if the input is nullish.
  */
-// TODO: Shouldn't throw on null input
 export function formatDate(date: Date, options?: Partial<FormatDateOptions>) {
+  if (date == null) {
+    return '';
+  }
+
   let locale = options?.locale ?? getLocale();
   const _locale = new Intl.Locale(locale);
 

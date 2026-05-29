@@ -152,8 +152,13 @@ const createSchema = (_t: TFunction) => {
   });
 };
 
+export type EditableVisitNoteEncounter = Encounter & {
+  id: string;
+  rawDatetime: string;
+};
+
 export interface VisitNotesFormProps {
-  encounter?: Encounter;
+  encounter?: EditableVisitNoteEncounter;
   formContext: 'creating' | 'editing';
 }
 

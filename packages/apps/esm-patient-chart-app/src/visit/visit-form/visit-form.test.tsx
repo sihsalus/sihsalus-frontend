@@ -35,6 +35,11 @@ vi.mock('@carbon/react', async () => {
   const actual = await vi.importActual('@carbon/react');
   const React = await vi.importActual<typeof import('react')>('react');
   const { default: dayjs } = await vi.importActual<{ default: typeof import('dayjs') }>('dayjs');
+  const { default: customParseFormat } = await vi.importActual<{
+    default: typeof import('dayjs/plugin/customParseFormat');
+  }>('dayjs/plugin/customParseFormat');
+
+  dayjs.extend(customParseFormat);
 
   const MockDatePickerInput = React.forwardRef<
     HTMLInputElement,
@@ -106,10 +111,10 @@ vi.mock('@carbon/react', async () => {
     }) => {
       const child = React.Children.only(children) as React.ReactElement<
         React.ComponentPropsWithoutRef<'input'> & {
-          onChange?: (...args: any[]) => void;
+          onChange?: (...args: unknown[]) => void;
         }
       >;
-      const formattedValue = value ? dayjs(value).format('DD/MM/YYYY') : '';
+      const formattedValue = typeof value === 'string' ? value : value ? dayjs(value).format('DD/MM/YYYY') : '';
 
       return React.cloneElement(child, {
         onChange: (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -398,8 +403,7 @@ describe('Visit form', () => {
     await user.click(screen.getByLabelText(/Outpatient visit/i));
   });
 
-  // TODO: Figure out why this test is failing
-  it.skip('displays an error message when the visit start time is in the future', async () => {
+  it('displays an error message when the visit start time is in the future', async () => {
     const user = userEvent.setup();
 
     renderVisitForm();
@@ -407,16 +411,19 @@ describe('Visit form', () => {
     const dateInput = screen.getByRole('textbox', { name: /date/i });
     const timeInput = screen.getByRole('textbox', { name: /time/i });
     const amPmSelect = screen.getByRole('combobox', { name: /time format/i });
+    const locationPicker = screen.getByRole('combobox', {
+      name: /select a location/i,
+    });
     const futureTime = dayjs().add(1, 'hour');
 
-    await user.clear(dateInput);
-    await user.type(dateInput, futureTime.format('DD/MM/YYYY'));
-    await user.clear(timeInput);
-    await user.type(timeInput, futureTime.format('hh:mm'));
+    fireEvent.change(dateInput, { target: { value: futureTime.format('DD/MM/YYYY') } });
+    fireEvent.change(timeInput, { target: { value: futureTime.format('hh:mm') } });
     await user.selectOptions(amPmSelect, futureTime.format('A'));
-    await user.tab();
+    await user.selectOptions(locationPicker, 'Inpatient Ward');
+    await user.click(screen.getByLabelText(/Outpatient visit/i));
+    await user.click(screen.getByRole('button', { name: /start visit/i }));
 
-    expect(screen.getByText(/start time cannot be in the future/i)).toBeInTheDocument();
+    expect(await screen.findByText(/start time cannot be in the future/i)).toBeInTheDocument();
   });
 
   it('starts a new visit upon successful submission of the form', async () => {

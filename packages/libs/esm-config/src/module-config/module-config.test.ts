@@ -308,10 +308,7 @@ describe('getConfig', () => {
     });
   });
 
-  // DISABLED: Presently getConfig *does not resolve* when looking up a module
-  //   with no schema. The behavior described in this test would be preferable,
-  //   but would require some deeper changes.
-  it.skip('throws if looking up module with no schema', async () => {
+  it('throws if looking up module with no schema', async () => {
     await expect(Config.getConfig('fake-module')).rejects.toThrow(/No config schema has been defined.*fake-module/);
   });
 

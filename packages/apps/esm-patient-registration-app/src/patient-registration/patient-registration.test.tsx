@@ -5,7 +5,7 @@ import {
   useConfig,
   usePatient,
 } from '@openmrs/esm-framework';
-import { render, screen, within } from '@testing-library/react';
+import { fireEvent, render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { BrowserRouter as Router, useParams } from 'react-router-dom';
 import { mockedAddressTemplate, mockIdentifierTypes, mockOpenmrsId, mockPatient } from 'test-utils';
@@ -204,7 +204,9 @@ configWithObs.fieldDefinitions = [
     customConceptAnswers: [],
   },
   {
-    id: 'nationality',
+    // NB: must not be 'nationality' — that field id is special-cased in
+    // custom-field.component.tsx to render the Peru person-attribute field.
+    id: 'nationalityObs',
     type: 'obs',
     label: null,
     uuid: 'nationality-uuid',
@@ -217,7 +219,7 @@ configWithObs.fieldDefinitions = [
 configWithObs.sectionDefinitions?.push({
   id: 'custom',
   name: 'Custom',
-  fields: ['weight', 'chief complaint', 'nationality'],
+  fields: ['weight', 'chief complaint', 'nationalityObs'],
 });
 configWithObs.sections.push('custom');
 configWithObs.registrationObs.encounterTypeUuid = 'reg-enc-uuid';
@@ -226,14 +228,15 @@ const fillRequiredFields = async () => {
   const user = userEvent.setup();
 
   const demographicsSection = await screen.findByLabelText('Demographics Section');
-  const givenNameInput = within(demographicsSection).getByLabelText(/first/i) as HTMLInputElement;
-  const familyNameInput = within(demographicsSection).getByLabelText(/family/i) as HTMLInputElement;
+  const givenNameInput = within(demographicsSection).getByLabelText(/first name/i) as HTMLInputElement;
+  const familyNameInput = within(demographicsSection).getByLabelText(/^family name$/i) as HTMLInputElement;
+  const familyName2Input = within(demographicsSection).getByLabelText(/second family name/i) as HTMLInputElement;
   const dateInput = within(demographicsSection).getByRole('textbox', { name: /date of birth/i }) as HTMLInputElement;
-  const genderInput = within(demographicsSection).getByLabelText(/Male/) as HTMLSelectElement;
+  const genderInput = within(demographicsSection).getByRole('radio', { name: /^male$/i }) as HTMLInputElement;
   await user.type(givenNameInput, 'Paul');
   await user.type(familyNameInput, 'Gaihre');
-  await user.clear(dateInput);
-  await user.type(dateInput, '1993-08-02');
+  await user.type(familyName2Input, 'Materno');
+  fireEvent.change(dateInput, { target: { value: '1993-08-02' } });
   await user.click(genderInput);
 };
 
@@ -261,6 +264,36 @@ describe('Registering a new patient', () => {
       ...getDefaultsFromConfigSchema(esmPatientRegistrationSchema),
       ...mockOpenmrsConfig,
     });
+    mockUseInitialFormValues.mockReturnValue([
+      {
+        patientUuid: 'new-patient-uuid',
+        givenName: '',
+        middleName: '',
+        familyName: '',
+        familyName2: '',
+        additionalGivenName: '',
+        additionalMiddleName: '',
+        additionalFamilyName: '',
+        additionalFamilyName2: '',
+        addNameInLocalLanguage: false,
+        gender: '',
+        birthdate: null,
+        yearsEstimated: 0,
+        monthsEstimated: 0,
+        birthdateEstimated: false,
+        telephoneNumber: '',
+        isDead: false,
+        deathDate: undefined,
+        deathTime: undefined,
+        deathTimeFormat: 'AM',
+        deathCause: '',
+        nonCodedCauseOfDeath: '',
+        relationships: [],
+        identifiers: {},
+        address: {},
+      } as unknown as FormValues,
+      vi.fn(),
+    ]);
     mockSavePatient.mockReturnValue({ data: { uuid: 'new-pt-uuid' }, ok: true });
   });
 
@@ -289,8 +322,7 @@ describe('Registering a new patient', () => {
     expect(screen.getByRole('button', { name: /cancel/i })).toBeInTheDocument();
   });
 
-  // TODO: Re-enable once the save-flow test stubs cover the current registration form.
-  it.skip('saves the patient without extra info', async () => {
+  it('saves the patient without extra info', async () => {
     const user = userEvent.setup();
 
     render(<PatientRegistration isOffline={false} savePatientForm={FormManager.savePatientFormOnline} />, {
@@ -301,11 +333,11 @@ describe('Registering a new patient', () => {
     await user.click(await screen.findByText(/Register Patient/i));
     expect(mockSavePatient).toHaveBeenCalledWith(
       expect.objectContaining({
-        identifiers: [], // TODO (P1.1): assert identifier payload once the save-flow test is re-enabled.
+        identifiers: [],
         person: {
           addresses: expect.arrayContaining([expect.any(Object)]),
           attributes: [],
-          birthdate: '1993-8-2',
+          birthdate: '1993-08-02',
           birthdateEstimated: false,
           gender: expect.stringMatching(/^M$/),
           names: [
@@ -313,7 +345,7 @@ describe('Registering a new patient', () => {
               givenName: 'Paul',
               middleName: '',
               familyName: 'Gaihre',
-              familyName2: '',
+              familyName2: 'Materno',
               preferred: true,
               uuid: undefined,
             },
@@ -339,8 +371,7 @@ describe('Registering a new patient', () => {
     expect(mockSavePatientForm).not.toHaveBeenCalled();
   });
 
-  // TODO: Re-enable once the save-flow test stubs cover the current registration form.
-  it.skip('renders and saves registration obs', async () => {
+  it('renders and saves registration obs', async () => {
     const user = userEvent.setup();
 
     mockSaveEncounter.mockResolvedValue({} as unknown as FetchResponse);
@@ -376,8 +407,7 @@ describe('Registering a new patient', () => {
     );
   });
 
-  // TODO: Re-enable once the save-flow test stubs cover the current registration form.
-  it.skip('retries saving registration obs after a failed attempt', async () => {
+  it('retries saving registration obs after a failed attempt', async () => {
     const user = userEvent.setup();
 
     mockUseConfig.mockReturnValue(configWithObs);

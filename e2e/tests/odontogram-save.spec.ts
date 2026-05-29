@@ -28,9 +28,7 @@ test.describe('Odontograma - guardado básico en patient chart', () => {
     await openOdontogramSection(page);
 
     const registerBtn = page.getByTestId('odontogram-register-findings-btn');
-    if (!(await registerBtn.isVisible().catch(() => false))) {
-      test.skip(true, 'No se encontró el módulo de odontograma en este entorno');
-    }
+    await expect(registerBtn).toBeVisible({ timeout: 10_000 });
 
     await registerBtn.click();
 

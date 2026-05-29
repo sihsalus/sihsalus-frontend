@@ -308,6 +308,11 @@ export function provide(config: Config, sourceName = 'provided') {
  * @param moduleName The name of the module for which to look up the config
  */
 export function getConfig<T = Record<string, any>>(moduleName: string): Promise<T> {
+  const state = configInternalStore.getState();
+  if (!state.schemas[moduleName]) {
+    return Promise.reject(new Error(`No config schema has been defined for ${moduleName}`));
+  }
+
   return new Promise<T>((resolve) => {
     const store = getConfigStore(moduleName);
     function update(state: ConfigStore) {

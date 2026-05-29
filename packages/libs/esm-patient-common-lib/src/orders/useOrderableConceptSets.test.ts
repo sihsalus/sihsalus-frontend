@@ -1,5 +1,7 @@
 import { getDefaultsFromConfigSchema, openmrsFetch, restBaseUrl, useConfig } from '@openmrs/esm-framework';
 import { renderHook, waitFor } from '@testing-library/react';
+import { createElement, type PropsWithChildren } from 'react';
+import { SWRConfig } from 'swr';
 
 import { type ConfigObject, configSchema } from '../../../../apps/esm-patient-tests-app/src/config-schema';
 
@@ -16,6 +18,9 @@ vi.mock('@openmrs/esm-framework', async () => {
 
 const mockOpenmrsFetch = vi.mocked(openmrsFetch);
 const mockUseConfig = vi.mocked(useConfig<ConfigObject>);
+
+const swrWrapper = ({ children }: PropsWithChildren) =>
+  createElement(SWRConfig, { value: { provider: () => new Map() } }, children);
 
 mockUseConfig.mockReturnValue({
   ...getDefaultsFromConfigSchema(configSchema),
@@ -50,7 +55,7 @@ mockOpenmrsFetch.mockImplementation(((url: string) => {
 
 describe('useOrderableConceptSets is configurable', () => {
   it('should fetch orderable concept sets if passed', async () => {
-    const { result } = renderHook(() => useOrderableConceptSets('', ['concept-set-uuid']));
+    const { result } = renderHook(() => useOrderableConceptSets('', ['concept-set-uuid']), { wrapper: swrWrapper });
     expect(openmrsFetch).toHaveBeenCalledWith(
       `${restBaseUrl}/concept/concept-set-uuid?v=custom:(display,names:(display),uuid,setMembers:(display,uuid,names:(display),setMembers:(display,uuid,names:(display))))`,
     );
@@ -62,8 +67,10 @@ describe('useOrderableConceptSets is configurable', () => {
     expect(result.current.error).toBeFalsy();
   });
 
-  it.skip('should filter through fetched concepts sets based on the search term', async () => {
-    const { result } = renderHook(() => useOrderableConceptSets('another', ['concept-set-uuid']));
+  it('should filter through fetched concepts sets based on the search term', async () => {
+    const { result } = renderHook(() => useOrderableConceptSets('another', ['concept-set-uuid']), {
+      wrapper: swrWrapper,
+    });
     expect(openmrsFetch).toHaveBeenCalledWith(
       `${restBaseUrl}/concept/concept-set-uuid?v=custom:(display,names:(display),uuid,setMembers:(display,uuid,names:(display),setMembers:(display,uuid,names:(display))))`,
     );

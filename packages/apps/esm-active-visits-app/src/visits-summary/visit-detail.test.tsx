@@ -64,7 +64,7 @@ describe('VisitDetail', () => {
         encounters: [
           {
             uuid: 'encounter-1',
-            encounterDateTime: '2023-07-30T12:34:56Z',
+            encounterDatetime: '2023-07-30T12:34:56Z',
             encounterType: { display: 'Encounter Type', uuid: 'encounter-type-uuid' },
             encounterProviders: [],
             obs: [],
@@ -98,7 +98,7 @@ describe('VisitDetail', () => {
         encounters: [
           {
             uuid: 'encounter-1',
-            encounterDateTime: '2023-07-30T12:34:56Z',
+            encounterDatetime: '2023-07-30T12:34:56Z',
             encounterType: { display: 'Encounter Type 1', uuid: 'encounter-type-1-uuid' },
             encounterProviders: [],
             obs: [],
@@ -106,7 +106,7 @@ describe('VisitDetail', () => {
           },
           {
             uuid: 'encounter-2',
-            encounterDateTime: '2023-07-30T13:45:00Z',
+            encounterDatetime: '2023-07-30T13:45:00Z',
             encounterType: { display: 'Encounter Type 2', uuid: 'encounter-type-2-uuid' },
             encounterProviders: [],
             obs: [],

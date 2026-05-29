@@ -54,7 +54,7 @@
   "devDependencies": {
     "@openmrs/esm-framework": "workspace:*",
     "@playwright/test": "^1.52.0",
-    "@swc/cli": "^0.1.62",
+    "@swc/cli": "0.8.1",
     "@swc/core": "1.15.21",
     "@types/react": "^18.3.21",
     "@types/react-dom": "^18.3.0",

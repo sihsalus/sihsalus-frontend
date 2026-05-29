@@ -33,10 +33,12 @@ export function usePartograph(patientUuid: string) {
   });
   const flattedObs = sortedResults
     .flatMap((encounter) => encounter.obs)
-    .filter((obs) => obs?.concept?.uuid === partography?.progressConceptUuid)
+    .filter(
+      (obs) => !obs?.voided && obs?.concept?.uuid === partography?.progressConceptUuid && obs?.groupMembers?.length,
+    )
     .sort((a, b) => {
-      const dateA = new Date(a.encounterDatetime).getTime();
-      const dateB = new Date(b.encounterDatetime).getTime();
+      const dateA = new Date(a.obsDatetime ?? '').getTime();
+      const dateB = new Date(b.obsDatetime ?? '').getTime();
       return dateB - dateA;
     });
   return {

@@ -10,16 +10,22 @@
   @include type.type-style("body-compact-01");
 }
 
+.bodyLong01 {
+  @include type.type-style("body-01");
+}
+
 .growthChartContainer {
   display: flex;
   margin: 0 layout.$spacing-05;
   flex-direction: row;
   justify-content: space-between;
+  min-width: 0;
 }
 
 .growthArea {
   flex-grow: 1;
   margin: layout.$spacing-03 0;
+  min-width: 0;
   padding-right: layout.$spacing-05;
 
   // This is a hack to override the max-width of the overflow menu button
@@ -31,6 +37,11 @@
       .cds--overflow-menu-options__btn
   ) {
     max-width: none !important;
+  }
+
+  :global(.cds--chart-holder),
+  :global(.cds--cc--chart-wrapper) {
+    min-width: 0;
   }
 }
 
@@ -84,5 +95,23 @@
     border-bottom: none;
     border-left: layout.$spacing-01 solid $ui-03;
     margin-left: 0 !important;
+  }
+}
+
+@media (max-width: 42rem) {
+  .growthChartContainer {
+    margin: 0 layout.$spacing-03;
+  }
+
+  .growthArea {
+    padding-right: 0;
+  }
+
+  .chartSummary {
+    margin-bottom: layout.$spacing-04;
+  }
+
+  .summaryText {
+    gap: layout.$spacing-03;
   }
 }

@@ -3,12 +3,27 @@ import { InlineNotification, Tab, TabListVertical, TabPanel, TabPanels, TabsVert
 import { age } from '@openmrs/esm-framework';
 import classNames from 'classnames';
 import { differenceInMonths, differenceInWeeks } from 'date-fns';
-import React, { useEffect, useMemo, useState } from 'react';
+import type { TFunction } from 'i18next';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
-import { type CategoryCodes, DataSetLabels, GenderCodes, MeasurementTypeCodes } from './data-sets';
+import {
+  type CategoryCodes,
+  DataSetLabels,
+  GenderCodes,
+  MeasurementTypeCodes,
+  MeasurementTypeCodesLabel,
+  TimeUnitCodes,
+} from './data-sets';
 import { chartData as rawChartData } from './data-sets/WhoStandardDataSets/ChartData';
 import styles from './growth-chart.scss';
+import {
+  type GrowthChartPoint,
+  getMeasurementXValue,
+  isMeasurementUsableForDataset,
+  isWeightForLengthHeightCategory,
+  toFiniteNumber,
+} from './growth-chart-utils';
 import { useAppropriateChartData } from './hooks/useAppropriateChartData';
 import { useChartDataForGender } from './hooks/useChartDataForGender';
 import { useChartLines } from './hooks/useChartLines';
@@ -19,9 +34,6 @@ const DEFAULT_METADATA = {
   xAxisLabel: '',
   range: { start: 0, end: 0 },
 };
-
-const MS_PER_DAY = 1000 * 60 * 60 * 24;
-const DAYS_PER_MONTH = 30.44;
 
 const REFERENCE_LINE_COLORS = {
   P3: '#da1e28',
@@ -93,6 +105,24 @@ const GrowthChart: React.FC<GrowthChartProps> = ({
 
   const selectedCategoryValue = selectedCategory?.value ?? categories[0]?.value;
   const selectedCategoryKey = selectedCategoryValue ?? ('wfa_b' as keyof typeof CategoryCodes);
+  const selectedCategoryIndex = useMemo(
+    () =>
+      Math.max(
+        categories.findIndex((category) => category.value === selectedCategoryValue),
+        0,
+      ),
+    [categories, selectedCategoryValue],
+  );
+
+  const handleCategoryChange = useCallback(
+    ({ selectedIndex }: { selectedIndex: number }) => {
+      const nextCategory = categories[selectedIndex];
+      if (nextCategory) {
+        setSelectedCategory(nextCategory);
+      }
+    },
+    [categories],
+  );
 
   const childAgeInWeeks = useMemo(() => differenceInWeeks(new Date(), dateOfBirth), [dateOfBirth]);
   const childAgeInMonths = useMemo(() => differenceInMonths(new Date(), dateOfBirth), [dateOfBirth]);
@@ -124,9 +154,9 @@ const GrowthChart: React.FC<GrowthChartProps> = ({
     [selectedCategoryKey, selectedDataset, datasetMetadata.range.start],
   );
 
-  const chartLineData = useChartLines(dataSetValues, keysDataSet, startIndex, isPercentiles);
+  const chartLineData = useChartLines(dataSetValues, keysDataSet, startIndex);
 
-  const measurementPlotData = useMemo(() => {
+  const measurementPlotData = useMemo<GrowthChartPoint[]>(() => {
     const measurementDataValues: { x: number; y: number; eventDate: Date }[] = [];
 
     if (!measurementData) return [];
@@ -138,7 +168,18 @@ const GrowthChart: React.FC<GrowthChartProps> = ({
           ? toFiniteNumber(entry.dataValues.weight)
           : toFiniteNumber(entry.dataValues[measurementCode]);
 
-      if (xValue !== null && yValue !== null) {
+      if (
+        xValue !== null &&
+        yValue !== null &&
+        isMeasurementUsableForDataset(
+          entry,
+          selectedCategoryKey,
+          selectedDataset,
+          dateOfBirth,
+          xValue,
+          datasetMetadata.range,
+        )
+      ) {
         measurementDataValues.push({ x: xValue, y: yValue, eventDate: new Date(entry.eventDate) });
       }
     };
@@ -146,16 +187,29 @@ const GrowthChart: React.FC<GrowthChartProps> = ({
     measurementData.forEach(processEntry);
     return measurementDataValues
       .sort((left, right) => left.eventDate.getTime() - right.eventDate.getTime())
-      .map((point) => ({ group: patientName, date: point.x, value: point.y }));
-  }, [measurementData, measurementCode, selectedCategoryKey, selectedDataset, patientName, dateOfBirth]);
+      .map((point) => ({
+        group: patientName,
+        date: point.x,
+        value: point.y,
+        eventDate: point.eventDate,
+        isPatientMeasurement: true,
+      }));
+  }, [
+    measurementData,
+    measurementCode,
+    selectedCategoryKey,
+    selectedDataset,
+    patientName,
+    dateOfBirth,
+    datasetMetadata.range,
+  ]);
 
   const hasPatientMeasurements = measurementPlotData.length > 0;
   const latestMeasurement = useMemo(() => {
-    return measurementData
-      ?.map((entry) => ({ ...entry, eventDate: new Date(entry.eventDate) }))
-      .filter((entry) => !Number.isNaN(entry.eventDate.getTime()))
-      .sort((left, right) => right.eventDate.getTime() - left.eventDate.getTime())[0];
-  }, [measurementData]);
+    return measurementPlotData
+      .filter((entry) => entry.eventDate && !Number.isNaN(entry.eventDate.getTime()))
+      .sort((left, right) => (right.eventDate?.getTime() ?? 0) - (left.eventDate?.getTime() ?? 0))[0];
+  }, [measurementPlotData]);
 
   const data = useMemo(() => [...chartLineData, ...measurementPlotData], [chartLineData, measurementPlotData]);
   const colorScale = useMemo(() => {
@@ -191,31 +245,69 @@ const GrowthChart: React.FC<GrowthChartProps> = ({
     return [Math.max(0, Math.floor(lowerBound - padding)), Math.ceil(upperBound + padding)];
   }, [yValues]);
 
+  const chartTitle = selectedCategory?.title ?? datasetMetadata.chartLabel;
+  const translatedXAxisLabel = useMemo(
+    () => translateAxisLabel(datasetMetadata.xAxisLabel, t),
+    [datasetMetadata.xAxisLabel, t],
+  );
+  const translatedYAxisLabel = useMemo(
+    () => translateAxisLabel(datasetMetadata.yAxisLabel, t),
+    [datasetMetadata.yAxisLabel, t],
+  );
+  const rangeUnitLabel = useMemo(
+    () => getRangeUnitLabel(datasetMetadata.xAxisLabel, t),
+    [datasetMetadata.xAxisLabel, t],
+  );
+
   const options = useMemo(
     () => ({
-      title: datasetMetadata.chartLabel,
+      title: chartTitle,
       axes: {
         bottom: {
-          title: datasetMetadata.xAxisLabel,
+          title: translatedXAxisLabel,
           mapsTo: 'date',
           scaleType: ScaleTypes.LINEAR,
         },
         left: {
-          title: datasetMetadata.yAxisLabel,
+          title: translatedYAxisLabel,
           mapsTo: 'value',
           scaleType: ScaleTypes.LINEAR,
           domain: yDomain,
         },
       },
       legend: { enabled: true },
-      tooltip: { enabled: true },
+      tooltip: {
+        customHTML: (tooltipData: GrowthChartPoint[]) =>
+          buildTooltipHtml(tooltipData[0], {
+            patientName,
+            xAxisLabel: translatedXAxisLabel,
+            yAxisLabel: translatedYAxisLabel,
+          }),
+      },
+      toolbar: {
+        enabled: true,
+        numberOfIcons: 4,
+        controls: [
+          { type: 'Zoom in' },
+          { type: 'Zoom out' },
+          { type: 'Reset zoom' },
+          { type: 'Export as CSV' },
+          { type: 'Export as PNG' },
+          { type: 'Make fullscreen' },
+        ],
+      },
+      zoomBar: {
+        top: {
+          enabled: true,
+        },
+      },
       height: '400px',
       points: { enabled: true, radius: 2 },
       color: {
         scale: colorScale,
       },
     }),
-    [colorScale, datasetMetadata, yDomain],
+    [chartTitle, colorScale, patientName, translatedXAxisLabel, translatedYAxisLabel, yDomain],
   );
 
   if (!selectedCategoryValue || !dataSetEntry) {
@@ -249,26 +341,25 @@ const GrowthChart: React.FC<GrowthChartProps> = ({
               {age(dateOfBirth, new Date())}
             </Tag>
             <Tag type="teal" className={styles.datasetTag}>
-              {datasetMetadata.range.start}-{datasetMetadata.range.end}{' '}
-              {datasetMetadata.xAxisLabel === 'Weeks' ? t('weeks', 'weeks') : t('months', 'months')}
+              {datasetMetadata.range.start}-{datasetMetadata.range.end} {rangeUnitLabel}
             </Tag>
           </div>
           <div className={styles.summaryText}>
-            <span>{t('whoGrowthReference', 'WHO Child Growth Standards')}</span>
+            <span>{t('whoGrowthReference', 'Estándares OMS de crecimiento infantil')}</span>
             <span>
-              {t('availableMeasurementsCount', '{{count}} measurements', {
+              {t('availableMeasurementsCount', '{{count}} mediciones útiles', {
                 count: measurementPlotData.length,
               })}
             </span>
             {latestMeasurement ? (
               <span>
-                {t('latestMeasurementDate', 'Latest measurement')}: {latestMeasurement.eventDate.toLocaleDateString()}
+                {t('latestMeasurementDate', 'Última medición')}: {latestMeasurement.eventDate?.toLocaleDateString()}
               </span>
             ) : null}
           </div>
         </div>
-        <TabsVertical>
-          <TabListVertical aria-label="Growth Chart vertical tabs">
+        <TabsVertical selectedIndex={selectedCategoryIndex} onChange={handleCategoryChange}>
+          <TabListVertical aria-label={t('growthChartTabs', 'Indicadores de crecimiento')}>
             {categories.map(({ id, title, value }) => (
               <Tab
                 className={classNames(styles.tab, styles.bodyLong01, {
@@ -283,21 +374,29 @@ const GrowthChart: React.FC<GrowthChartProps> = ({
             ))}
           </TabListVertical>
           <TabPanels>
-            {categories.map(({ id }) => (
+            {categories.map(({ id, value }) => (
               <TabPanel key={id}>
-                {hasPatientMeasurements ? null : (
-                  <InlineNotification
-                    className={styles.emptyMeasurementNotice}
-                    kind="info"
-                    lowContrast
-                    title={t('noMeasurementsForSelectedChart', 'No measurements for this indicator')}
-                    subtitle={t(
-                      'noMeasurementsForSelectedChartSubtitle',
-                      'Reference curves are shown, but the patient has no usable measurements for the selected chart.',
+                {value === selectedCategoryValue ? (
+                  <>
+                    {hasPatientMeasurements ? null : (
+                      <InlineNotification
+                        className={styles.emptyMeasurementNotice}
+                        kind="info"
+                        lowContrast
+                        title={t('noMeasurementsForSelectedChart', 'Sin mediciones para este indicador')}
+                        subtitle={t(
+                          'noMeasurementsForSelectedChartSubtitle',
+                          'Se muestran las curvas de referencia, pero no hay mediciones utilizables del paciente para este gráfico.',
+                        )}
+                      />
                     )}
-                  />
-                )}
-                <LineChart data={data} options={options} key={`${id}-${isPercentiles ? 'percentile' : 'zscore'}`} />
+                    <LineChart
+                      data={data}
+                      options={options}
+                      key={`${id}-${selectedDataset}-${isPercentiles ? 'percentile' : 'zscore'}`}
+                    />
+                  </>
+                ) : null}
               </TabPanel>
             ))}
           </TabPanels>
@@ -313,39 +412,84 @@ function determineStartIndex(
   metadataRangeStart: number,
 ) {
   const adjustIndex = dataset === DataSetLabels.y_2_5 ? 24 : 0;
-  const isWFLH = category === 'wflh_b' || category === 'wflh_g';
-  return isWFLH ? metadataRangeStart : adjustIndex;
+  return isWeightForLengthHeightCategory(category) ? metadataRangeStart : adjustIndex;
 }
 
-function getMeasurementXValue(
-  entry: { eventDate: Date; dataValues: Record<string, string> },
-  category: keyof typeof CategoryCodes,
-  dataset: string | undefined,
-  dateOfBirth: Date,
+function translateAxisLabel(label: string, t: TFunction) {
+  switch (label) {
+    case TimeUnitCodes.weeks:
+      return t('weeksAxisLabel', 'Semanas');
+    case TimeUnitCodes.months:
+      return t('monthsAxisLabel', 'Meses');
+    case MeasurementTypeCodesLabel.weight:
+      return t('weightKgAxisLabel', 'Peso (kg)');
+    case MeasurementTypeCodesLabel.length:
+      return t('lengthCmAxisLabel', 'Longitud (cm)');
+    case MeasurementTypeCodesLabel.height:
+      return t('heightCmAxisLabel', 'Talla (cm)');
+    case MeasurementTypeCodesLabel.headCircumference:
+      return t('headCircumferenceCmAxisLabel', 'Perímetro cefálico (cm)');
+    default:
+      return label;
+  }
+}
+
+function getRangeUnitLabel(label: string, t: TFunction) {
+  switch (label) {
+    case TimeUnitCodes.weeks:
+      return t('weeks', 'semanas');
+    case TimeUnitCodes.months:
+      return t('months', 'meses');
+    case MeasurementTypeCodesLabel.length:
+    case MeasurementTypeCodesLabel.height:
+    case MeasurementTypeCodesLabel.headCircumference:
+      return t('centimetersAbbreviation', 'cm');
+    default:
+      return '';
+  }
+}
+
+function buildTooltipHtml(
+  datum: GrowthChartPoint | undefined,
+  labels: { patientName: string; xAxisLabel: string; yAxisLabel: string },
 ) {
-  if (category === 'wflh_b' || category === 'wflh_g') {
-    return toFiniteNumber(entry.dataValues.height);
+  if (!datum) {
+    return '';
   }
 
-  const obsDate = new Date(entry.eventDate);
-  const diff = obsDate.getTime() - dateOfBirth.getTime();
+  const isPatientMeasurement = datum.isPatientMeasurement || datum.group === labels.patientName;
+  const group = escapeHtml(String(datum.group));
+  const xValue = escapeHtml(formatChartNumber(datum.date));
+  const yValue = escapeHtml(formatChartNumber(datum.value));
 
-  if (Number.isNaN(diff) || diff < 0) {
-    return null;
+  if (isPatientMeasurement) {
+    const measurementDate = datum.eventDate ? new Date(datum.eventDate).toLocaleDateString() : '';
+    return `<div class="cds--tooltip cds--tooltip--shown" style="min-width:max-content;font-weight:600">
+      ${group}
+      <div style="color:#c6c6c6;font-size:1rem;font-weight:400">${escapeHtml(measurementDate)}</div>
+      <div style="font-size:0.875rem;font-weight:400">${escapeHtml(labels.xAxisLabel)}: ${xValue}</div>
+      <div style="font-size:0.875rem;font-weight:400">${escapeHtml(labels.yAxisLabel)}: ${yValue}</div>
+    </div>`;
   }
 
-  const days = diff / MS_PER_DAY;
-
-  if (dataset === DataSetLabels.w_0_13) {
-    return Number((days / 7).toFixed(2));
-  }
-
-  return Number((days / DAYS_PER_MONTH).toFixed(2));
+  return `<div class="cds--tooltip cds--tooltip--shown" style="min-width:max-content;font-weight:600">
+    ${group}
+    <div style="font-size:0.875rem;font-weight:400">${escapeHtml(labels.xAxisLabel)}: ${xValue}</div>
+    <div style="font-size:0.875rem;font-weight:400">${escapeHtml(labels.yAxisLabel)}: ${yValue}</div>
+  </div>`;
 }
 
-function toFiniteNumber(value: string | number | undefined) {
-  const numberValue = typeof value === 'number' ? value : Number.parseFloat(value ?? '');
-  return Number.isFinite(numberValue) ? numberValue : null;
+function formatChartNumber(value: number) {
+  return Number.isInteger(value) ? value.toString() : value.toFixed(2);
+}
+
+function escapeHtml(value: string) {
+  return value
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
 }
 
 export default GrowthChart;

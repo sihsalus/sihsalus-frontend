@@ -41,7 +41,8 @@ const MediaUploaderComponent = () => {
             )} ${maxFileSize} MB.`,
           });
         } else if (!isFileExtensionAllowed(file.name, allowedFileExtensions)) {
-          const lastExtension = allowedFileExtensions.pop();
+          const lastExtension = allowedFileExtensions[allowedFileExtensions.length - 1];
+          const supportedExtensions = allowedFileExtensions.slice(0, -1);
 
           setErrorNotification({
             title: t('unsupportedFileType', 'Unsupported file type'),
@@ -51,7 +52,7 @@ const MediaUploaderComponent = () => {
               {
                 fileName: file.name,
                 lastExtension: lastExtension,
-                supportedExtensions: allowedFileExtensions.join(', '),
+                supportedExtensions: supportedExtensions.join(', '),
               },
             ),
           });

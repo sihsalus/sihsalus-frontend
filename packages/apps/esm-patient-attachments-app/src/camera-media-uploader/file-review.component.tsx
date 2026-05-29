@@ -133,6 +133,13 @@ const FilePreview: React.FC<FilePreviewProps> = ({
     },
   });
 
+  const getFileExtension = useCallback((filename: string): string => {
+    const validExtension = filename.match(/\.[0-9a-z]+$/i);
+    return validExtension ? validExtension[0].toLowerCase() : '';
+  }, []);
+
+  const fileExtension = getFileExtension(uploadedFile.fileName);
+
   const onSubmit: SubmitHandler<z.infer<typeof schema>> = (data) => {
     const { fileName, fileDescription } = data;
 
@@ -148,13 +155,6 @@ const FilePreview: React.FC<FilePreviewProps> = ({
       fileDescription: fileDescription ?? '',
     });
   };
-
-  const getFileExtension = useCallback((filename: string): string => {
-    const validExtension = filename.match(/\.[0-9a-z]+$/i);
-    return validExtension ? validExtension[0].toLowerCase() : '';
-  }, []);
-
-  const fileExtension = getFileExtension(uploadedFile.fileName);
 
   const handleCancelUpload = useCallback(
     (event: SyntheticEvent) => {

@@ -13,7 +13,7 @@
   },
   "scripts": {
     "start": "node ./dist/cli.js",
-    "test": "cross-env TZ=UTC vitest run --passWithNoTests",
+    "test": "cross-env TZ=UTC vitest run src --passWithNoTests",
     "build": "tsc",
     "lint": "node ../scripts/run-biome.js lint ."
   },

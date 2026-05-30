@@ -32,6 +32,7 @@ export * from './patient.mock';
 export * from './patient-appointments.mock';
 export * from './patient-flags.mock';
 export * from './patient-registration.mock';
+export * from './procedures.mock';
 export * from './programs.mock';
 export * from './queue-entry.mock';
 export * from './queue-rooms.mock';

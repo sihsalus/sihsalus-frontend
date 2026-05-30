@@ -1,6 +1,6 @@
-@use '@carbon/layout';
-@use '@carbon/type';
-@use '@openmrs/esm-styleguide/src/vars' as *;
+@use "@carbon/layout";
+@use "@carbon/type";
+@use "@openmrs/esm-styleguide/src/vars" as *;
 
 .submit {
   width: 15.625rem;
@@ -34,7 +34,7 @@
 }
 
 .label01 {
-  @include type.type-style('label-01');
+  @include type.type-style("label-01");
   margin-top: layout.$spacing-05;
   margin-bottom: layout.$spacing-05;
   color: $ui-04;
@@ -110,12 +110,12 @@
   width: max-content;
 
   :global(.cds--inline-loading__text) {
-    @include type.type-style('body-01');
+    @include type.type-style("body-01");
   }
 }
 
 // Overriding styles for RTL support
-html[dir='rtl'] {
+html[dir="rtl"] {
   .linkName {
     & > svg {
       transform: scale(-1, 1);
@@ -131,6 +131,9 @@ html[dir='rtl'] {
 :global(.omrs-breakpoint-lt-desktop) {
   .formContainer {
     display: block;
+    // Breathing room from the frame on tablet/mobile. The sticky bottom action
+    // bar bleeds back to the edge via its negative margin below.
+    padding: 0 layout.$spacing-05;
   }
 
   .stickyColumn {

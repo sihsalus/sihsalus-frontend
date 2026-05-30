@@ -49,6 +49,12 @@ describe('admissions resources', () => {
                     stateProvince: 'Lima',
                   },
                 ],
+                attributes: [
+                  { attributeType: { display: 'Estado de identificación' }, value: 'confirmed' },
+                  { attributeType: { display: 'Nombre del Acompañante' }, value: 'Charles Babbage' },
+                  { attributeType: { display: 'Parentesco del Acompañante' }, value: 'Familiar' },
+                  { attributeType: { display: 'Condición de comunicación' }, value: 'communicates' },
+                ],
               },
             },
             visitType: { display: 'Consulta externa' },
@@ -78,6 +84,10 @@ describe('admissions resources', () => {
       patientName: 'Ada Lovelace',
       medicalRecordNumber: 'HC-99',
       documentNumber: 'DNI-123',
+      identificationStatus: 'Confirmado',
+      communicationCondition: 'Puede comunicarse',
+      responsibleName: 'Charles Babbage',
+      responsibleRelationship: 'Familiar',
       birthDate: '1990-01-01',
       hasSis: 'Sí',
       address: 'Av. Peru 123, Lima, Lima',
@@ -89,8 +99,9 @@ describe('admissions resources', () => {
     expect(result.current.admissions[1]).toMatchObject({
       uuid: 'visit-2',
       patientUuid: 'patient-2',
-      medicalRecordNumber: 'DOC-7',
+      medicalRecordNumber: '',
       documentNumber: 'DOC-7',
+      identificationStatus: 'Confirmado',
       hasSis: 'No',
       service: '',
       location: '',
@@ -105,6 +116,40 @@ describe('admissions resources', () => {
 
     await waitFor(() => expect(result.current.isLoading).toBe(false));
     expect(result.current.admissions).toEqual([]);
+  });
+
+  it('keeps DNI empty and marks unknown patients as pending in the admission report', async () => {
+    mockOpenmrsFetch.mockResolvedValueOnce({
+      data: {
+        results: [
+          {
+            uuid: 'visit-unknown',
+            patient: {
+              uuid: 'patient-unknown',
+              identifiers: [{ identifier: '100045V', identifierType: { display: 'N° Historia Clínica' } }],
+              person: {
+                display: 'DESCONOCIDO (100045V)',
+                gender: 'U',
+                attributes: [
+                  { attributeType: { display: 'Paciente No Identificado' }, value: 'true' },
+                  { attributeType: { display: 'Nombre del Acompañante' }, value: 'SAMU Loreto' },
+                ],
+              },
+            },
+          },
+        ],
+      },
+    } as Awaited<ReturnType<typeof openmrsFetch>>);
+
+    const { result } = renderHook(() => useAdmissions(10), { wrapper });
+
+    await waitFor(() => expect(result.current.admissions).toHaveLength(1));
+    expect(result.current.admissions[0]).toMatchObject({
+      medicalRecordNumber: '100045V',
+      documentNumber: '',
+      identificationStatus: 'Pendiente',
+      responsibleName: 'SAMU Loreto',
+    });
   });
 
   it('does not request active visit summary without a patient uuid', () => {

@@ -1,8 +1,8 @@
-import { useConfig, useLayoutType } from '@openmrs/esm-framework';
+import { getDefaultsFromConfigSchema, useConfig, useLayoutType } from '@openmrs/esm-framework';
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 
-import { type PatientSearchConfig } from '../../config-schema';
+import { configSchema, type PatientSearchConfig } from '../../config-schema';
 
 import { usePersonAttributeType } from './person-attributes.resource';
 import RefineSearch from './refine-search.component';
@@ -19,43 +19,33 @@ describe('RefineSearch', () => {
   const user = userEvent.setup();
 
   const mockSetFilters = vi.fn();
-  const mockConfig = {
-    search: {
-      searchFilterFields: {
-        gender: {
-          enabled: true,
-        },
-        dateOfBirth: {
-          enabled: true,
-        },
-        age: {
-          enabled: true,
-          min: 0,
-        },
-        postcode: {
-          enabled: true,
-        },
-        personAttributes: [
-          {
-            attributeTypeUuid: '14d4f066-15f5-102d-96e4-000c29c2a5d7',
-          },
-        ],
-      },
+  const mockConfig = getDefaultsFromConfigSchema(configSchema) as PatientSearchConfig;
+  const personAttributeTypes: Record<string, { format: string; uuid: string; display: string }> = {
+    '8b56eac7-5c76-4b9c-8c6f-1deab8d3fc47': {
+      format: 'java.lang.String',
+      uuid: '8b56eac7-5c76-4b9c-8c6f-1deab8d3fc47',
+      display: 'Paciente No Identificado',
     },
-  } as PatientSearchConfig;
+    '4697d0e6-5b24-416b-aee6-708cd9a3a1db': {
+      format: 'java.lang.String',
+      uuid: '4697d0e6-5b24-416b-aee6-708cd9a3a1db',
+      display: 'Nombre del Acompañante',
+    },
+    'a180fa5f-c44e-4490-a981-d7196b70c6ac': {
+      format: 'java.lang.String',
+      uuid: 'a180fa5f-c44e-4490-a981-d7196b70c6ac',
+      display: 'Parentesco del Acompañante',
+    },
+  };
 
   beforeEach(() => {
     mockUseConfig.mockReturnValue(mockConfig);
     mockUseLayoutType.mockReturnValue('tablet');
-    mockUsePersonAttributeType.mockReturnValue({
+    mockUsePersonAttributeType.mockImplementation((attributeTypeUuid: string) => ({
       isLoading: false,
       error: null,
-      data: {
-        format: 'java.lang.String',
-        uuid: '14d4f066-15f5-102d-96e4-000c29c2a5d7',
-        display: 'Telephone Number',
-      },
-    });
+      data: personAttributeTypes[attributeTypeUuid],
+    }));
   });
 
   const renderComponent = (props = {}) => {
@@ -70,7 +60,10 @@ describe('RefineSearch', () => {
     expect(screen.getByText('Month of Birth')).toBeInTheDocument();
     expect(screen.getByText('Year of Birth')).toBeInTheDocument();
     expect(screen.getByLabelText('Age')).toBeInTheDocument();
-    expect(screen.getByLabelText('Postcode')).toBeInTheDocument();
+    expect(screen.queryByLabelText('Postcode')).not.toBeInTheDocument();
+    expect(screen.getByText('Paciente No Identificado')).toBeInTheDocument();
+    expect(screen.getByLabelText('Nombre del Acompañante')).toBeInTheDocument();
+    expect(screen.getByLabelText('Parentesco del Acompañante')).toBeInTheDocument();
   });
 
   it('shows number of filters applied in Apply button when filters are active', () => {
@@ -111,7 +104,9 @@ describe('RefineSearch', () => {
         yearOfBirth: 0,
         postcode: '',
         attributes: {
-          '14d4f066-15f5-102d-96e4-000c29c2a5d7': '',
+          '8b56eac7-5c76-4b9c-8c6f-1deab8d3fc47': '',
+          '4697d0e6-5b24-416b-aee6-708cd9a3a1db': '',
+          'a180fa5f-c44e-4490-a981-d7196b70c6ac': '',
         },
         age: 30,
       }),

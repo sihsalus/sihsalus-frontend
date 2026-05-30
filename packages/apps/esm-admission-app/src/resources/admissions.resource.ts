@@ -62,6 +62,10 @@ export interface AdmissionRow {
   patientName: string;
   medicalRecordNumber: string;
   documentNumber: string;
+  identificationStatus: string;
+  communicationCondition: string;
+  responsibleName: string;
+  responsibleRelationship: string;
   birthDate: string;
   hasSis: string;
   address: string;
@@ -72,20 +76,65 @@ export interface AdmissionRow {
 }
 
 function getMedicalRecordNumber(identifiers: Identifier[] = []) {
-  const preferred =
-    identifiers.find((identifier) => /historia|clinical|openmrs|hc/i.test(identifier.identifierType?.display ?? '')) ??
-    identifiers[0];
+  const preferred = identifiers.find((identifier) =>
+    /historia|clinical|openmrs|hc/i.test(identifier.identifierType?.display ?? ''),
+  );
 
   return preferred?.identifier ?? '';
 }
 
 function getDocumentNumber(identifiers: Identifier[] = []) {
-  const preferred =
-    identifiers.find((identifier) =>
-      /dni|ce|pasaporte|pass|documento/i.test(identifier.identifierType?.display ?? ''),
-    ) ?? identifiers[0];
+  const preferred = identifiers.find((identifier) =>
+    /dni|\bce\b|carn[eé].*extranjer|pasaporte|pass|documento|certificado de nacido vivo|cnv|\bdie\b/i.test(
+      identifier.identifierType?.display ?? '',
+    ),
+  );
 
   return preferred?.identifier ?? '';
+}
+
+function getAttributeValue(attributes: VisitPersonAttribute[] = [], pattern: RegExp) {
+  const attribute = attributes.find((attribute) => pattern.test(attribute.attributeType?.display ?? ''));
+  const value = attribute?.value;
+
+  return typeof value === 'string' ? value : (value?.display ?? '');
+}
+
+function getIdentificationStatus(attributes: VisitPersonAttribute[] = []) {
+  const configuredStatus = getAttributeValue(attributes, /estado.*identificaci[oó]n|identification status/i);
+  if (configuredStatus) {
+    return mapIdentificationStatus(configuredStatus);
+  }
+
+  const unknownPatient = getAttributeValue(attributes, /paciente no identificado|unidentified patient/i);
+  return /^true$/i.test(unknownPatient) ? 'Pendiente' : 'Confirmado';
+}
+
+function mapIdentificationStatus(status: string) {
+  const normalizedStatus = status.trim().toLocaleLowerCase();
+  const statusLabels: Record<string, string> = {
+    pending: 'Pendiente',
+    partial: 'Parcial',
+    confirmed: 'Confirmado',
+    merged: 'Fusionado',
+  };
+
+  return statusLabels[normalizedStatus] ?? status;
+}
+
+function getCommunicationCondition(attributes: VisitPersonAttribute[] = []) {
+  const condition = getAttributeValue(attributes, /condici[oó]n.*comunicaci[oó]n|communication condition/i);
+  const conditionLabels: Record<string, string> = {
+    communicates: 'Puede comunicarse',
+    unconscious: 'Inconsciente',
+    comatose: 'Comatoso',
+    disoriented: 'Desorientado',
+    non_verbal: 'No verbal',
+    minor_without_data: 'Menor sin datos',
+    other: 'Otro',
+  };
+
+  return conditionLabels[condition] ?? condition;
 }
 
 function getAddress(addresses: VisitPersonAddress[] = []) {
@@ -113,6 +162,7 @@ function hasSis(identifiers: Identifier[] = [], attributes: VisitPersonAttribute
 function mapVisitToAdmission(visit: Visit): AdmissionRow {
   const identifiers = visit.patient?.identifiers ?? [];
   const person = visit.patient?.person;
+  const attributes = person?.attributes ?? [];
 
   return {
     uuid: visit.uuid,
@@ -121,6 +171,10 @@ function mapVisitToAdmission(visit: Visit): AdmissionRow {
     patientName: person?.display ?? visit.patient?.display ?? '',
     medicalRecordNumber: getMedicalRecordNumber(identifiers),
     documentNumber: getDocumentNumber(identifiers),
+    identificationStatus: getIdentificationStatus(attributes),
+    communicationCondition: getCommunicationCondition(attributes),
+    responsibleName: getAttributeValue(attributes, /nombre del acompa[nñ]ante|responsable|companion name/i),
+    responsibleRelationship: getAttributeValue(attributes, /parentesco del acompa[nñ]ante|relationship/i),
     birthDate: person?.birthdate ?? '',
     hasSis: hasSis(identifiers, person?.attributes) ? 'Sí' : 'No',
     address: getAddress(person?.addresses),

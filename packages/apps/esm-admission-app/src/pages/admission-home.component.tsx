@@ -86,6 +86,10 @@ export default function AdmissionHome() {
           admission.patientName,
           admission.medicalRecordNumber,
           admission.documentNumber,
+          admission.identificationStatus,
+          admission.communicationCondition,
+          admission.responsibleName,
+          admission.responsibleRelationship,
           admission.birthDate,
           admission.hasSis,
           admission.address,
@@ -117,7 +121,11 @@ export default function AdmissionHome() {
   const exportFilteredAdmissions = () => {
     const headers = [
       t('date', 'Fecha'),
-      t('documentNumber', 'DNI'),
+      t('medicalRecordNumber', 'HCE / código temporal'),
+      t('documentNumber', 'Documento'),
+      t('identificationStatus', 'Estado identificación'),
+      t('communicationCondition', 'Condición comunicación'),
+      t('responsiblePerson', 'Responsable'),
       t('birthDateShort', 'F. Nac.'),
       t('hasSis', 'Tiene SIS'),
       t('fullName', 'Nombres y apellidos'),
@@ -129,7 +137,11 @@ export default function AdmissionHome() {
     ];
     const rows = filteredAdmissions.map((admission, index) => [
       formatDate(admission.startDatetime),
-      admission.documentNumber,
+      admission.medicalRecordNumber,
+      admission.documentNumber || t('pending', 'Pendiente'),
+      admission.identificationStatus,
+      admission.communicationCondition,
+      [admission.responsibleName, admission.responsibleRelationship].filter(Boolean).join(' - '),
       formatDate(admission.birthDate),
       admission.hasSis,
       admission.patientName,
@@ -195,8 +207,8 @@ export default function AdmissionHome() {
         >
           <TextInput
             id="admission-report-search"
-            labelText={t('searchAdmissions', 'Buscar por paciente, DNI, servicio o dirección')}
-            placeholder={t('searchAdmissionsPlaceholder', 'Paciente, DNI, servicio, dirección...')}
+            labelText={t('searchAdmissions', 'Buscar por paciente, HCE, documento, responsable, servicio o ubicación')}
+            placeholder={t('searchAdmissionsPlaceholder', 'Paciente, HCE, documento, responsable, servicio...')}
             value={searchTerm}
             onChange={(event) => setSearchTerm(event.target.value)}
           />
@@ -236,7 +248,11 @@ export default function AdmissionHome() {
               <thead>
                 <tr>
                   <th rowSpan={2}>{t('date', 'Fecha')}</th>
-                  <th rowSpan={2}>{t('documentNumber', 'DNI')}</th>
+                  <th rowSpan={2}>{t('medicalRecordNumber', 'HCE / código temporal')}</th>
+                  <th rowSpan={2}>{t('documentNumber', 'Documento')}</th>
+                  <th rowSpan={2}>{t('identificationStatus', 'Estado identificación')}</th>
+                  <th rowSpan={2}>{t('communicationCondition', 'Condición comunicación')}</th>
+                  <th rowSpan={2}>{t('responsiblePerson', 'Responsable')}</th>
                   <th rowSpan={2}>{t('birthDateShort', 'F. Nac.')}</th>
                   <th rowSpan={2}>{t('hasSis', 'Tiene SIS')}</th>
                   <th rowSpan={2}>{t('fullName', 'Nombres y apellidos')}</th>
@@ -254,7 +270,13 @@ export default function AdmissionHome() {
                 {filteredAdmissions.map((admission, index) => (
                   <tr key={admission.uuid}>
                     <td>{formatDate(admission.startDatetime)}</td>
-                    <td>{admission.documentNumber}</td>
+                    <td>{admission.medicalRecordNumber}</td>
+                    <td>{admission.documentNumber || t('pending', 'Pendiente')}</td>
+                    <td>{admission.identificationStatus}</td>
+                    <td>{admission.communicationCondition}</td>
+                    <td>
+                      {[admission.responsibleName, admission.responsibleRelationship].filter(Boolean).join(' - ')}
+                    </td>
                     <td>{formatDate(admission.birthDate)}</td>
                     <td>{admission.hasSis}</td>
                     <td>

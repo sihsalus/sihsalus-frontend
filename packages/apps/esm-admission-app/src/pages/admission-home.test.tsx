@@ -37,6 +37,10 @@ function createAdmission(overrides: Partial<AdmissionRow>): AdmissionRow {
     patientName: 'Ada Lovelace',
     medicalRecordNumber: 'HC-99',
     documentNumber: '12345678',
+    identificationStatus: 'Confirmado',
+    communicationCondition: 'Puede comunicarse',
+    responsibleName: 'Charles Babbage',
+    responsibleRelationship: 'Familiar',
     birthDate: '1990-01-01',
     hasSis: 'Sí',
     address: 'Av. Peru 123, Lima, Lima',
@@ -97,7 +101,11 @@ describe('AdmissionHome', () => {
     expect(screen.getByRole('heading', { name: /libro de atenciones/i })).toBeInTheDocument();
     for (const header of [
       'Fecha',
-      'DNI',
+      'HCE / código temporal',
+      'Documento',
+      'Estado identificación',
+      'Condición comunicación',
+      'Responsable',
       'F. Nac.',
       'Tiene SIS',
       'Nombres y apellidos',
@@ -111,7 +119,10 @@ describe('AdmissionHome', () => {
       expect(screen.getByRole('columnheader', { name: header })).toBeInTheDocument();
     }
     expect(screen.getByRole('cell', { name: 'Ada Lovelace' })).toBeInTheDocument();
+    expect(screen.getByRole('cell', { name: 'HC-99' })).toBeInTheDocument();
     expect(screen.getByRole('cell', { name: '12345678' })).toBeInTheDocument();
+    expect(screen.getAllByRole('cell', { name: 'Confirmado' })[0]).toBeInTheDocument();
+    expect(screen.getAllByRole('cell', { name: 'Charles Babbage - Familiar' })[0]).toBeInTheDocument();
     expect(screen.getByRole('cell', { name: 'Sí' })).toBeInTheDocument();
     expect(screen.getByRole('cell', { name: 'Av. Peru 123, Lima, Lima' })).toBeInTheDocument();
     expect(screen.getByRole('cell', { name: 'Consulta externa' })).toBeInTheDocument();

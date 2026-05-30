@@ -23,6 +23,16 @@ export interface EmergencyQueueEntry {
       gender: string;
       age: number;
       birthdate: string;
+      attributes?: Array<{
+        attributeType?: {
+          display?: string;
+        };
+        value?:
+          | string
+          | {
+              display?: string;
+            };
+      }>;
     };
     identifiers?: Array<{
       uuid: string;
@@ -181,7 +191,7 @@ export function useEmergencyQueueEntries(
 
   // Custom representation - same as Service Queues for full compatibility
   const customRepresentation =
-    'custom:(uuid,display,queue,status,patient:(uuid,display,person,identifiers:(uuid,display,identifier,identifierType)),visit:(uuid,display,startDatetime,encounters:(uuid,display,diagnoses,encounterDatetime,encounterType,obs,encounterProviders,voided),attributes:(uuid,display,value,attributeType)),priority,priorityComment,sortWeight,startedAt,endedAt,locationWaitingFor,queueComingFrom,providerWaitingFor,previousQueueEntry)';
+    'custom:(uuid,display,queue,status,patient:(uuid,display,person:(uuid,display,gender,age,birthdate,attributes:(attributeType:(display),value)),identifiers:(uuid,display,identifier,identifierType)),visit:(uuid,display,startDatetime,encounters:(uuid,display,diagnoses,encounterDatetime,encounterType,obs,encounterProviders,voided),attributes:(uuid,display,value,attributeType)),priority,priorityComment,sortWeight,startedAt,endedAt,locationWaitingFor,queueComingFrom,providerWaitingFor,previousQueueEntry)';
 
   const searchCriteria = {
     service: serviceUuid,

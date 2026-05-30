@@ -114,8 +114,14 @@ const AdvancedPatientSearchComponent: React.FC<AdvancedPatientSearchProps> = ({
             const isValueObj = typeof matchingAttribute.value === 'object';
             const patientAttributeValue = isValueObj
               ? (matchingAttribute.value as OpenmrsResource).uuid
-              : matchingAttribute.value;
-            if ((patientAttributeValue as string).toLowerCase() !== value.toLowerCase()) {
+              : String(matchingAttribute.value ?? '');
+            const normalizedPatientAttributeValue = patientAttributeValue.toLowerCase();
+            const normalizedFilterValue = value.toLowerCase();
+            const matchesAttributeValue = isValueObj
+              ? normalizedPatientAttributeValue === normalizedFilterValue
+              : normalizedPatientAttributeValue.includes(normalizedFilterValue);
+
+            if (!matchesAttributeValue) {
               return false;
             }
           }

@@ -69,7 +69,11 @@ const EmergencyWorkflowWorkspace: React.FC<EmergencyWorkflowWorkspaceProps> = ({
       }
 
       // 2. Create or get emergency visit
-      const visitUuid = await getOrCreateEmergencyVisit(patientUuid);
+      const visitUuid = await getOrCreateEmergencyVisit(
+        patientUuid,
+        patientData.emergencyRegistrationContext?.arrivalDateTime,
+        patientData.emergencyRegistrationContext?.administrativeNotes,
+      );
       if (!visitUuid) {
         showSnackbar({
           title: t('errorCreatingVisit', 'Error al crear visita'),

@@ -7600,39 +7600,6 @@ __metadata:
   languageName: unknown
   linkType: soft
 
-"@sihsalus/esm-admission-app@workspace:packages/apps/esm-admission-app":
-  version: 0.0.0-use.local
-  resolution: "@sihsalus/esm-admission-app@workspace:packages/apps/esm-admission-app"
-  dependencies:
-    "@openmrs/esm-framework": "workspace:*"
-    "@openmrs/esm-styleguide": "workspace:*"
-    "@rspack/cli": "npm:1.7.11"
-    "@sihsalus/esm-rbac": "workspace:*"
-    "@swc/cli": "npm:0.8.1"
-    "@swc/core": "npm:1.15.21"
-    "@types/react": "npm:^18.3.21"
-    "@types/react-dom": "npm:^18.3.0"
-    dayjs: "npm:^1.11.13"
-    openmrs: "npm:*"
-    react: "npm:^18.3.1"
-    react-dom: "npm:^18.3.1"
-    react-i18next: "npm:^16.0.0"
-    react-router-dom: "npm:^6.14.1"
-    rxjs: "npm:^6.6.7"
-    swr: "npm:^2.3.6"
-    typescript: "npm:6.0.3"
-    vitest: "npm:^4.1.0"
-  peerDependencies:
-    "@carbon/react": 1.x
-    "@openmrs/esm-framework": "*"
-    dayjs: 1.x
-    react: 18.x
-    react-i18next: 16.x
-    react-router-dom: 6.x
-    rxjs: 6.x
-  languageName: unknown
-  linkType: soft
-
 "@sihsalus/esm-appointments-app@workspace:packages/apps/esm-appointments-app":
   version: 0.0.0-use.local
   resolution: "@sihsalus/esm-appointments-app@workspace:packages/apps/esm-appointments-app"
@@ -7802,6 +7769,39 @@ __metadata:
     react-i18next: 16.x
     rxjs: 6.x
     swr: 2.x
+  languageName: unknown
+  linkType: soft
+
+"@sihsalus/esm-care-logbook-app@workspace:packages/apps/esm-care-logbook-app":
+  version: 0.0.0-use.local
+  resolution: "@sihsalus/esm-care-logbook-app@workspace:packages/apps/esm-care-logbook-app"
+  dependencies:
+    "@openmrs/esm-framework": "workspace:*"
+    "@openmrs/esm-styleguide": "workspace:*"
+    "@rspack/cli": "npm:1.7.11"
+    "@sihsalus/esm-rbac": "workspace:*"
+    "@swc/cli": "npm:0.8.1"
+    "@swc/core": "npm:1.15.21"
+    "@types/react": "npm:^18.3.21"
+    "@types/react-dom": "npm:^18.3.0"
+    dayjs: "npm:^1.11.13"
+    openmrs: "npm:*"
+    react: "npm:^18.3.1"
+    react-dom: "npm:^18.3.1"
+    react-i18next: "npm:^16.0.0"
+    react-router-dom: "npm:^6.14.1"
+    rxjs: "npm:^6.6.7"
+    swr: "npm:^2.3.6"
+    typescript: "npm:6.0.3"
+    vitest: "npm:^4.1.0"
+  peerDependencies:
+    "@carbon/react": 1.x
+    "@openmrs/esm-framework": "*"
+    dayjs: 1.x
+    react: 18.x
+    react-i18next: 16.x
+    react-router-dom: 6.x
+    rxjs: 6.x
   languageName: unknown
   linkType: soft
 

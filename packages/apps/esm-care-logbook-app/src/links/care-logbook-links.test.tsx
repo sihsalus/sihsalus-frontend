@@ -2,9 +2,9 @@ import { navigate } from '@openmrs/esm-framework';
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 
-import AdmissionAppMenuLink from './admission-app-menu-link.component';
-import AdmissionDashboardLink from './admission-dashboard-link.component';
-import AdmissionMergePatientsAction from './admission-merge-patients-action.component';
+import CareLogbookAppMenuLink from './care-logbook-app-menu-link.component';
+import CareLogbookDashboardLink from './care-logbook-dashboard-link.component';
+import CareLogbookMergePatientsAction from './care-logbook-merge-patients-action.component';
 
 vi.mock('@openmrs/esm-framework', async () => {
   const React = require('react');
@@ -18,22 +18,22 @@ vi.mock('@openmrs/esm-framework', async () => {
 
 const mockNavigate = vi.mocked(navigate);
 
-describe('admission navigation links', () => {
+describe('care logbook navigation links', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     globalThis.getOpenmrsSpaBase = vi.fn(() => '/openmrs/spa/');
     globalThis.spaBase = '/openmrs/spa';
   });
 
-  it('renders the app menu link to the admission app', () => {
-    render(<AdmissionAppMenuLink />);
+  it('renders the app menu link to the care logbook', () => {
+    render(<CareLogbookAppMenuLink />);
 
     expect(screen.getByRole('link', { name: /atenciones/i })).toHaveAttribute('href', '/openmrs/spa/admission');
     expect(mockNavigate).not.toHaveBeenCalled();
   });
 
-  it('renders the dashboard tile link to the admission app', () => {
-    render(<AdmissionDashboardLink />);
+  it('renders the dashboard tile link to the care logbook', () => {
+    render(<CareLogbookDashboardLink />);
 
     expect(screen.getByRole('link', { name: /atenciones/i })).toHaveAttribute('href', '/openmrs/spa/home/admission');
     expect(mockNavigate).not.toHaveBeenCalled();
@@ -41,7 +41,7 @@ describe('admission navigation links', () => {
 
   it('navigates directly to the merge route from the top nav action', async () => {
     const user = userEvent.setup();
-    render(<AdmissionMergePatientsAction />);
+    render(<CareLogbookMergePatientsAction />);
 
     await user.click(screen.getByRole('button', { name: /fusionar historias/i }));
 

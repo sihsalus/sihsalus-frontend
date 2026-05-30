@@ -5,7 +5,7 @@ import { useTranslation } from 'react-i18next';
 
 import { moduleName } from '../constants';
 
-export default function AdmissionDashboardLink() {
+export default function CareLogbookDashboardLink() {
   const { t } = useTranslation(moduleName);
   const dashboardPath = '/home/admission';
   const href = `${globalThis.spaBase}${dashboardPath}`;

@@ -5,13 +5,13 @@
   },
   "extensions": [
     {
-      "component": "admissionAppMenuLink",
-      "name": "admission-app-menu-item",
+      "component": "careLogbookAppMenuLink",
+      "name": "care-logbook-app-menu-item",
       "slot": "app-menu-slot"
     },
     {
-      "component": "admissionHomeDashboardLink",
-      "name": "admission-home-dashboard-link",
+      "component": "careLogbookHomeDashboardLink",
+      "name": "care-logbook-home-dashboard-link",
       "slot": "homepage-dashboard-slot",
       "meta": {
         "name": "admission",
@@ -21,15 +21,15 @@
       "order": 20
     },
     {
-      "component": "admissionHomeDashboard",
-      "name": "admission-home-dashboard",
+      "component": "careLogbookHomeDashboard",
+      "name": "care-logbook-home-dashboard",
       "slot": "admission-dashboard-slot",
       "online": true,
       "offline": false
     },
     {
-      "component": "admissionMergePatientsAction",
-      "name": "admission-merge-patients-action",
+      "component": "careLogbookMergePatientsAction",
+      "name": "care-logbook-merge-patients-action",
       "slot": "top-nav-actions-slot",
       "online": true,
       "offline": false

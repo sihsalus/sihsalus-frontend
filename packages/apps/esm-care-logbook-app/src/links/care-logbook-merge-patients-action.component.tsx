@@ -7,7 +7,7 @@ import { useTranslation } from 'react-i18next';
 import { basePath, moduleName } from '../constants';
 import styles from './links.scss';
 
-export default function AdmissionMergePatientsAction() {
+export default function CareLogbookMergePatientsAction() {
   const { t } = useTranslation(moduleName);
   const openMergePatients = useCallback(
     () => navigate({ to: `${globalThis.getOpenmrsSpaBase().slice(0, -1)}${basePath}/merge` }),

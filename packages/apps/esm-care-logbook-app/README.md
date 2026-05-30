@@ -1,6 +1,6 @@
 # SIH Salus Libro de Atenciones App
 
-Microfrontend para el libro operativo de atenciones por UPSS/servicio. Conserva el package interno `esm-admission-app` y la ruta `/admission` por compatibilidad historica, pero el nombre visible del producto es `Libro de Atenciones`.
+Microfrontend para el libro operativo de atenciones por UPSS/servicio. El package interno es `esm-care-logbook-app`; la ruta `/admission` se conserva por compatibilidad historica.
 
 Tambien concentra evidencia funcional del perfil `N1.ADM` de la acreditacion SIHCE MINSA 373-2025, donde "admision" aparece como perfil normativo amplio de identificacion, registro, programacion y documentacion inicial.
 
@@ -19,7 +19,7 @@ Tambien concentra evidencia funcional del perfil `N1.ADM` de la acreditacion SIH
 - Nombre anterior: `Registro de Atenciones`; no usar en copy nuevo salvo notas historicas.
 - Tabla/historial: atenciones activas y finalizadas por UPSS/servicio.
 - Ruta tecnica: `/admission`.
-- Package tecnico: `@sihsalus/esm-admission-app`.
+- Package tecnico: `@sihsalus/esm-care-logbook-app`.
 
 Evitar `Admisiones` como label visible general: sugiere hospitalizacion o ingreso administrativo, mientras que esta pantalla lista atenciones/consultas por servicio.
 
@@ -36,14 +36,14 @@ Puntaje proyectado actual: `18/24` al desplegar la app y el content package asoc
 ## Desarrollo
 
 ```sh
-SIHSALUS_DEV_APPS=esm-admission-app,esm-patient-registration-app yarn start
+SIHSALUS_DEV_APPS=esm-care-logbook-app,esm-patient-registration-app yarn start
 ```
 
 ## Validacion
 
 ```sh
-yarn turbo run typescript --filter=@sihsalus/esm-admission-app --concurrency=1
-yarn turbo run build --filter=@sihsalus/esm-admission-app --concurrency=1
+yarn turbo run typescript --filter=@sihsalus/esm-care-logbook-app --concurrency=1
+yarn turbo run build --filter=@sihsalus/esm-care-logbook-app --concurrency=1
 CI=1 E2E_BASE_URL=http://localhost:8080/openmrs/spa E2E_API_BASE_URL=http://localhost:8080/openmrs yarn playwright test e2e/tests/admission-validation.spec.ts --project=desktop -g "duplicate patient merge|admission report"
 ```
 
@@ -51,6 +51,6 @@ La prueba completa de campos de admision requiere que el content package este de
 
 ## Riesgos conocidos
 
-- El nombre tecnico del modulo (`admission`) puede inducir a error si se expone como `Admisiones`; en UI debe mantenerse `Libro de Atenciones`.
+- La ruta tecnica heredada (`/admission`) puede inducir a error si se expone como `Admisiones`; en UI debe mantenerse `Libro de Atenciones`.
 - El flujo depende de configuracion real de ubicaciones/UPS; datos demo incompletos producen reportes pobres o confusos.
 - Las integraciones con citas deben delegar al workspace de Appointments; duplicar esa logica genera divergencia.

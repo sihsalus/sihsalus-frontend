@@ -16,7 +16,7 @@ export default function Root() {
   });
 
   return (
-    <AppErrorBoundary appName="esm-admission-app">
+    <AppErrorBoundary appName="esm-care-logbook-app">
       <div className={styles.root}>
         <BrowserRouter
           basename={`${globalThis.getOpenmrsSpaBase().slice(0, -1)}${basePath}`}

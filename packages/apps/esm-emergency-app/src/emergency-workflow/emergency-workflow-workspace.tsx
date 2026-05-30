@@ -72,6 +72,7 @@ const EmergencyWorkflowWorkspace: React.FC<EmergencyWorkflowWorkspaceProps> = ({
       const visitUuid = await getOrCreateEmergencyVisit(
         patientUuid,
         patientData.emergencyRegistrationContext?.arrivalDateTime,
+        patientData.emergencyRegistrationContext?.administrativeNotes,
       );
       if (!visitUuid) {
         showSnackbar({

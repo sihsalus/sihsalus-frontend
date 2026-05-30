@@ -401,11 +401,6 @@ const PatientSearchRegistration: React.FC<PatientSearchRegistrationProps> = ({ o
           config.patientRegistration.responsibleTypeAttributeTypeUuid,
           data.responsibleType,
         );
-        addOptionalAttribute(
-          attributes,
-          config.patientRegistration.administrativeNotesAttributeTypeUuid,
-          data.administrativeNotes,
-        );
 
         // 6. Build address
         const addressObj: Record<string, string> = {

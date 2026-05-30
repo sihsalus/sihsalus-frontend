@@ -66,7 +66,7 @@ export function useEmergencyVisit() {
    * Crea una nueva visita de emergencia
    */
   const createEmergencyVisit = useCallback(
-    async (patientUuid: string, startDatetime?: string): Promise<string | null> => {
+    async (patientUuid: string, startDatetime?: string, administrativeNotes?: string): Promise<string | null> => {
       setIsCreatingVisit(true);
 
       try {
@@ -84,6 +84,31 @@ export function useEmergencyVisit() {
         });
 
         const visitUuid = response.data.uuid;
+        const trimmedAdministrativeNotes = administrativeNotes?.trim();
+        const administrativeNotesAttributeTypeUuid =
+          config.patientRegistration?.administrativeNotesVisitAttributeTypeUuid;
+
+        if (trimmedAdministrativeNotes && administrativeNotesAttributeTypeUuid) {
+          try {
+            await openmrsFetch(`/ws/rest/v1/visit/${visitUuid}/attribute`, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: {
+                attributeType: administrativeNotesAttributeTypeUuid,
+                value: trimmedAdministrativeNotes,
+              },
+            });
+          } catch {
+            showSnackbar({
+              title: t('visitCreatedAdministrativeNotesPending', 'Visita creada, observación pendiente'),
+              subtitle: t(
+                'couldNotSaveAdministrativeNotes',
+                'No se pudo guardar la observación administrativa de emergencia',
+              ),
+              kind: 'warning',
+            });
+          }
+        }
 
         showSnackbar({
           title: t('visitCreated', 'Visita creada'),
@@ -114,7 +139,7 @@ export function useEmergencyVisit() {
    * (Lógica principal para el flujo automático)
    */
   const getOrCreateEmergencyVisit = useCallback(
-    async (patientUuid: string, startDatetime?: string): Promise<string | null> => {
+    async (patientUuid: string, startDatetime?: string, administrativeNotes?: string): Promise<string | null> => {
       // 1. Verificar si ya existe una visita activa
       const existingVisit = await checkActiveEmergencyVisit(patientUuid);
 
@@ -129,7 +154,7 @@ export function useEmergencyVisit() {
       }
 
       // 2. Si no existe, crear nueva visita
-      return await createEmergencyVisit(patientUuid, startDatetime);
+      return await createEmergencyVisit(patientUuid, startDatetime, administrativeNotes);
     },
     [checkActiveEmergencyVisit, createEmergencyVisit, t],
   );

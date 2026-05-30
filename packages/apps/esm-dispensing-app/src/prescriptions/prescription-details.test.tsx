@@ -17,6 +17,16 @@ const mockUseStaleEncounterUuids = vi.mocked(useStaleEncounterUuids);
 
 const mockEncounterUuid = 'test-encounter-uuid';
 const mockPatientUuid = 'test-patient-uuid';
+const asAllergy = (allergy: {
+  id: string;
+  code: {
+    text?: string;
+    coding: Array<{
+      code: string;
+      display?: string;
+    }>;
+  };
+}) => allergy as ReturnType<typeof usePatientAllergies>['allergies'][number];
 
 describe('PrescriptionDetails', () => {
   beforeEach(() => {
@@ -102,21 +112,21 @@ describe('PrescriptionDetails', () => {
     it('displays allergy count and names', () => {
       mockUsePatientAllergies.mockReturnValue({
         allergies: [
-          {
+          asAllergy({
             id: 'allergy-1',
             code: {
               text: 'Penicillin',
               coding: [{ code: '123', display: 'Penicillin' }],
             },
-          },
-          {
+          }),
+          asAllergy({
             id: 'allergy-2',
             code: {
               text: 'Aspirin',
               coding: [{ code: '456', display: 'Aspirin' }],
             },
-          },
-        ] as any,
+          }),
+        ],
         totalAllergies: 2,
         error: undefined,
         isLoading: false,
@@ -143,14 +153,14 @@ describe('PrescriptionDetails', () => {
       // display shows "Other" but code.text contains the actual allergen name
       mockUsePatientAllergies.mockReturnValue({
         allergies: [
-          {
+          asAllergy({
             id: 'allergy-1',
             code: {
               text: 'Corn', // Should prefer this
               coding: [{ code: '5622', display: 'Other' }], // Over this
             },
-          },
-        ] as any,
+          }),
+        ],
         totalAllergies: 1,
         error: undefined,
         isLoading: false,
@@ -173,13 +183,13 @@ describe('PrescriptionDetails', () => {
     it('falls back to coding.display when code.text is not available', () => {
       mockUsePatientAllergies.mockReturnValue({
         allergies: [
-          {
+          asAllergy({
             id: 'allergy-1',
             code: {
               coding: [{ code: '123', display: 'Sulfonamides' }],
             },
-          },
-        ] as any,
+          }),
+        ],
         totalAllergies: 1,
         error: undefined,
         isLoading: false,

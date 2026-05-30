@@ -1,4 +1,4 @@
-# SIH Salus ESM
+# SIH Salus Frontend
 
 Turborepo-powered monorepo for the **SIH Salus Hospital Information System** — an offline-oriented, FHIR-aware and compliance-oriented frontend serving ~30,000 inhabitants across 112 native Amazonian communities along 500+ km of the Napo River (Peru).
 
@@ -6,7 +6,7 @@ Built on [OpenMRS 3.x](https://openmrs.org/) with the single-spa microfrontend a
 
 This repository was developed by the **Pontificia Universidad Catolica del Peru (PUCP)** through the **Grupo de Investigacion y Desarrollo de Ingenieria de Software (GIDIS)**.
 
-Contact: `gonzalo.galvezc@pucp.edu.pe`
+Contact: `sihsalus@pucp.edu.pe`
 
 ## Prerequisites
 
@@ -18,8 +18,8 @@ Contact: `gonzalo.galvezc@pucp.edu.pe`
 
 ```bash
 # 1. Clonar e instalar
-git clone git@github.com:sihsalus/sihsalus-esm.git
-cd sihsalus-esm
+git clone https://github.com/sihsalus/sihsalus-frontend.git
+cd sihsalus-frontend
 corepack enable          # activa la versión de Yarn incluida en .yarn/releases/
 nvm use                  # usa la versión definida en .nvmrc
 yarn install
@@ -161,10 +161,23 @@ yarn turbo run test --filter=@openmrs/esm-login-app   # Single package
 ### Docker
 
 ```bash
-docker build -t sihsalus/sihsalus-esm .
+docker build -t ghcr.io/sihsalus/sihsalus-frontend:dev .
 ```
 
 Nginx / reverse proxy configuration is managed in the infra repo (`sihsalus-distro-referenceapplication`).
+
+Para levantar la imagen publicada (branch `main`) en un servidor:
+
+```bash
+# 1) Traer la etiqueta latest y resolver el digest exacto
+docker pull ghcr.io/sihsalus/sihsalus-frontend:latest
+DIGEST=$(docker inspect --format '{{ index .RepoDigests 0 }}' ghcr.io/sihsalus/sihsalus-frontend:latest)
+echo "$DIGEST"
+
+# 2) Redeploy con ese digest (recomendado para reproducibilidad)
+docker rm -f sihsalus-frontend || true
+docker run -d --name sihsalus-frontend -p 8080:8080 "$DIGEST"
+```
 
 ## Architecture
 

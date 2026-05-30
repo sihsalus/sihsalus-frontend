@@ -1,4 +1,4 @@
-import { ComboBox, InlineLoading, RadioButton, RadioButtonGroup, Stack, TextInput } from '@carbon/react';
+import { ComboBox, InlineLoading, RadioButton, RadioButtonGroup, Stack } from '@carbon/react';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useConfig } from '@openmrs/esm-framework';
 import React, { useCallback, useEffect, useMemo } from 'react';
@@ -16,16 +16,12 @@ type VisitAttributesFormProps = {
 type VisitAttributesFormValue = {
   paymentDetails: string;
   paymentMethods: string;
-  insuranceScheme: string;
-  policyNumber: string;
   patientCategory: string;
 };
 
 const visitAttributesFormSchema = z.object({
   paymentDetails: z.string(),
   paymentMethods: z.string(),
-  insuranceSchema: z.string(),
-  policyNumber: z.string(),
   patientCategory: z.string(),
 });
 
@@ -38,13 +34,7 @@ const VisitAttributesForm: React.FC<VisitAttributesFormProps> = ({ setAttributes
     resolver: zodResolver(visitAttributesFormSchema),
   });
 
-  const [paymentDetails, paymentMethods, _insuranceSchema, _policyNumber, _patientCategoryValue] = watch([
-    'paymentDetails',
-    'paymentMethods',
-    'insuranceScheme',
-    'policyNumber',
-    'patientCategory',
-  ]);
+  const [paymentDetails] = watch(['paymentDetails']);
 
   const { paymentModes, isLoading: isLoadingPaymentModes } = usePaymentMethods();
   const patientCategoryOptions = useMemo(() => {
@@ -57,20 +47,12 @@ const VisitAttributesForm: React.FC<VisitAttributesFormProps> = ({ setAttributes
   }, [nonPayingPatientCategories, t]);
 
   const createVisitAttributesPayload = useCallback(() => {
-    const {
-      paymentDetails,
-      paymentMethods,
-      insuranceScheme,
-      policyNumber,
-      patientCategory: patientCategoryValue,
-    } = getValues();
+    const { paymentDetails, paymentMethods, patientCategory: patientCategoryValue } = getValues();
     setPaymentMethod?.(paymentMethods);
 
     const formPayload = [
       { uuid: patientCategory.paymentDetails, value: paymentDetails },
       { uuid: patientCategory.paymentMethods, value: paymentMethods },
-      { uuid: patientCategory.insuranceScheme, value: insuranceScheme },
-      { uuid: patientCategory.policyNumber, value: policyNumber },
       { uuid: patientCategory.patientCategory, value: patientCategoryValue },
     ];
 
@@ -83,11 +65,9 @@ const VisitAttributesForm: React.FC<VisitAttributesFormProps> = ({ setAttributes
     }));
   }, [
     getValues,
-    patientCategory.insuranceScheme,
     patientCategory.patientCategory,
     patientCategory.paymentDetails,
     patientCategory.paymentMethods,
-    patientCategory.policyNumber,
     setPaymentMethod,
   ]);
 
@@ -148,35 +128,6 @@ const VisitAttributesForm: React.FC<VisitAttributesFormProps> = ({ setAttributes
             />
           )}
         />
-      )}
-      {paymentMethods === categoryConcepts.insuranceDetails && paymentDetails === categoryConcepts.payingDetails && (
-        <>
-          <Controller
-            control={control}
-            name="insuranceScheme"
-            render={({ field }) => (
-              <TextInput
-                id="insurance-scheme"
-                labelText={t('insuranceScheme', 'Insurance scheme')}
-                onChange={(e) => field.onChange(e.target.value)}
-                type="text"
-              />
-            )}
-          />
-          <Controller
-            control={control}
-            name="policyNumber"
-            render={({ field }) => (
-              <TextInput
-                {...field}
-                id="policy-number"
-                labelText={t('policyNumber', 'Policy number')}
-                onChange={(e) => field.onChange(e.target.value)}
-                type="text"
-              />
-            )}
-          />
-        </>
       )}
       {paymentDetails === categoryConcepts.nonPayingDetails && (
         <Controller

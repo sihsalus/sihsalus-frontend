@@ -1,8 +1,7 @@
-import { Layer, RadioButton, RadioButtonGroup, Search, StructuredListSkeleton, Tile } from '@carbon/react';
-import { useDebounce, useLayoutType, usePagination, type VisitType } from '@openmrs/esm-framework';
-import { PatientChartPagination } from '@openmrs/esm-patient-common-lib';
+import { Dropdown, StructuredListSkeleton } from '@carbon/react';
+import { useLayoutType, type VisitType } from '@openmrs/esm-framework';
 import classNames from 'classnames';
-import React, { useCallback, useMemo, useState } from 'react';
+import React, { useMemo, useState } from 'react';
 import { Controller, useFormContext } from 'react-hook-form';
 import { useTranslation } from 'react-i18next';
 
@@ -13,90 +12,122 @@ interface BaseVisitTypeProps {
   visitTypes: Array<VisitType>;
 }
 
+type VisitTypeOption = VisitType & {
+  label: string;
+};
+
+type VisitTypeGroup = {
+  label: string;
+  options: Array<VisitTypeOption>;
+};
+
 const BaseVisitType: React.FC<BaseVisitTypeProps> = ({ visitTypes }) => {
   const { t } = useTranslation();
   const { control } = useFormContext<VisitFormData>();
   const isTablet = useLayoutType() === 'tablet';
-  const [searchTerm, setSearchTerm] = useState<string>('');
-  const debouncedSearchTerm = useDebounce(searchTerm, 300);
+  const [selectedCategoryLabel, setSelectedCategoryLabel] = useState('');
 
-  const searchResults = useMemo(() => {
-    if (!debouncedSearchTerm.trim()) {
-      return visitTypes;
+  const visitTypeGroups = useMemo<Array<VisitTypeGroup>>(() => {
+    const groups = new Map<string, VisitTypeGroup>();
+
+    visitTypes.forEach((visitType) => {
+      const [category, detail] = visitType.display.split(' - ');
+      const groupLabel = category.trim();
+
+      if (!groups.has(groupLabel)) {
+        groups.set(groupLabel, {
+          label: groupLabel,
+          options: [],
+        });
+      }
+
+      const group = groups.get(groupLabel);
+      const isGeneralOption = !detail;
+      group.options.push({
+        ...visitType,
+        label: isGeneralOption ? t('withoutSpecialty', 'Sin especialidad') : detail.trim(),
+      });
+    });
+
+    return Array.from(groups.values()).map((group) => ({
+      ...group,
+      options: group.options.sort((first, second) => {
+        if (first.display === group.label) {
+          return -1;
+        }
+
+        if (second.display === group.label) {
+          return 1;
+        }
+
+        return first.label.localeCompare(second.label);
+      }),
+    }));
+  }, [t, visitTypes]);
+
+  const findSelectedGroup = (visitTypeUuid?: string) => {
+    if (!visitTypeUuid) {
+      return null;
     }
-    const lowercasedTerm = debouncedSearchTerm.toLowerCase();
-    return visitTypes.filter((visitType) => visitType.display.toLowerCase().includes(lowercasedTerm));
-  }, [debouncedSearchTerm, visitTypes]);
 
-  const { results, currentPage, goTo } = usePagination(searchResults, 5);
-  const hasNoMatchingSearchResults = debouncedSearchTerm.trim() !== '' && searchResults.length === 0;
+    return visitTypeGroups.find((group) => group.options.some((option) => option.uuid === visitTypeUuid)) ?? null;
+  };
 
-  const handleSearchTermChange = useCallback((event: React.ChangeEvent<HTMLInputElement>) => {
-    setSearchTerm(event.target.value);
-  }, []);
+  const getDefaultOptionForGroup = (group: VisitTypeGroup) => {
+    return group.options.find((option) => option.display === group.label) ?? group.options[0];
+  };
 
   return (
     <div className={classNames(styles.visitTypeOverviewWrapper, isTablet ? styles.tablet : styles.desktop)}>
       {visitTypes.length ? (
-        <>
-          {isTablet ? (
-            <Layer>
-              <Search
-                labelText=""
-                onChange={handleSearchTermChange}
-                placeholder={t('searchForAVisitType', 'Search for a visit type')}
-              />
-            </Layer>
-          ) : (
-            <Search
-              labelText=""
-              onChange={handleSearchTermChange}
-              placeholder={t('searchForAVisitType', 'Search for a visit type')}
-            />
-          )}
+        <Controller
+          name="visitType"
+          control={control}
+          defaultValue={visitTypes.length === 1 ? visitTypes[0].uuid : ''}
+          render={({ field: { onChange, value } }) => {
+            const selectedGroup =
+              findSelectedGroup(value) ?? visitTypeGroups.find((group) => group.label === selectedCategoryLabel) ?? null;
+            const selectedOption = selectedGroup?.options.find((option) => option.uuid === value) ?? null;
+            const showDetailSelector = selectedGroup && selectedGroup.options.length > 1;
 
-          {hasNoMatchingSearchResults ? (
-            <div className={styles.tileContainer}>
-              <Tile className={styles.tile}>
-                <div className={styles.tileContent}>
-                  <p className={styles.content}>{t('noVisitTypesToDisplay', 'No visit types to display')}</p>
-                  <p className={styles.helper}>{t('checkFilters', 'Check the filters above')}</p>
-                </div>
-              </Tile>
-            </div>
-          ) : (
-            <Controller
-              name="visitType"
-              control={control}
-              defaultValue={results?.length === 1 ? results[0].uuid : ''}
-              render={({ field: { onChange, value } }) => (
-                <RadioButtonGroup
-                  className={styles.radioButtonGroup}
-                  name="visit-types"
-                  onChange={onChange}
-                  orientation="vertical"
-                  valueSelected={value}
-                >
-                  {results.map(({ uuid, display, name }) => (
-                    <RadioButton key={uuid} className={styles.radioButton} id={name} labelText={display} value={uuid} />
-                  ))}
-                </RadioButtonGroup>
-              )}
-            />
-          )}
+            return (
+              <div className={styles.dropdownGrid}>
+                <Dropdown
+                  id="visit-type-category"
+                  items={visitTypeGroups}
+                  itemToString={(item) => item?.label ?? ''}
+                  label={t('selectVisitTypeCategory', 'Seleccione una categoría')}
+                  onChange={({ selectedItem }) => {
+                    if (!selectedItem) {
+                      setSelectedCategoryLabel('');
+                      onChange('');
+                      return;
+                    }
 
-          {!hasNoMatchingSearchResults && (
-            <div className={styles.paginationContainer}>
-              <PatientChartPagination
-                currentItems={results.length}
-                onPageNumberChange={({ page }) => goTo(page)}
-                pageNumber={currentPage}
-                pageSize={5}
-                totalItems={visitTypes?.length}
-              />
-            </div>
-          )}
-        </>
+                    setSelectedCategoryLabel(selectedItem.label);
+                    onChange(getDefaultOptionForGroup(selectedItem)?.uuid ?? '');
+                  }}
+                  selectedItem={selectedGroup}
+                  titleText={t('visitTypeCategory', 'Categoría de consulta')}
+                />
+                {showDetailSelector ? (
+                  <Dropdown
+                    id="visit-type-detail"
+                    items={selectedGroup.options}
+                    itemToString={(item) => item?.label ?? ''}
+                    label={t('selectVisitTypeDetail', 'Seleccione un tipo')}
+                    onChange={({ selectedItem }) => {
+                      setSelectedCategoryLabel(selectedGroup.label);
+                      onChange(selectedItem?.uuid ?? '');
+                    }}
+                    selectedItem={selectedOption}
+                    titleText={t('visitTypeDetail', 'Tipo específico')}
+                  />
+                ) : null}
+              </div>
+            );
+          }}
+        />
       ) : (
         <StructuredListSkeleton className={styles.skeleton} />
       )}

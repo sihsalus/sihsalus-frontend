@@ -170,8 +170,7 @@ describe('VitalsHeader', () => {
 
     await waitForLoadingToFinish();
 
-    // TODO: Fix pluralization so that the string reads "5 days old"
-    expect(getByTextWithMarkup(/These vitals are 5 day old/i)).toBeInTheDocument();
+    expect(getByTextWithMarkup(/These vitals are 5 days old/i)).toBeInTheDocument();
   });
 
   it('displays one-week-old vitals as over one week old', async () => {

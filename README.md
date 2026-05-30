@@ -6,7 +6,7 @@ Built on [OpenMRS 3.x](https://openmrs.org/) with the single-spa microfrontend a
 
 This repository was developed by the **Pontificia Universidad Catolica del Peru (PUCP)** through the **Grupo de Investigacion y Desarrollo de Ingenieria de Software (GIDIS)**.
 
-Contact: `gonzalo.galvezc@pucp.edu.pe`
+Contact: `sihsalus@pucp.edu.pe`
 
 ## Prerequisites
 

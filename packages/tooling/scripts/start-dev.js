@@ -21,7 +21,8 @@ const requireBackendUrl = process.env.SIHSALUS_REQUIRE_BACKEND_URL === 'true';
 const authMode = process.env.SIHSALUS_AUTH_MODE || 'openmrs';
 const fhirBase = process.env.SIHSALUS_FHIR_BASE || `${backend}/openmrs/ws/fhir2/R4`;
 const proxyPort = Number(process.env.SIHSALUS_PORT) || 8080;
-const allowSelfSignedTls = process.env.SIHSALUS_ALLOW_SELF_SIGNED_TLS === 'true';
+const selfSignedTlsDefaultHosts = new Set(['gidis-hsc-dev.inf.pucp.edu.pe', 'gidis-hsc-qlty.inf.pucp.edu.pe']);
+const allowSelfSignedTls = shouldAllowSelfSignedTls(backend);
 let selfSignedBackendDispatcher;
 
 // SIHSALUS_DEV_APPS=esm-login-app,esm-home-app  → hot-reload those apps
@@ -35,6 +36,23 @@ const frontendConfig = resolve(__dirname, '..', '..', '..', 'config', 'frontend.
 const spaPath = '/openmrs/spa';
 const sessionPath = '/openmrs/ws/rest/v1/session';
 const sessionFallbackTimeoutMs = Number(process.env.SIHSALUS_SESSION_FALLBACK_TIMEOUT_MS) || 3000;
+
+function shouldAllowSelfSignedTls(backendUrl) {
+  const configuredValue = process.env.SIHSALUS_ALLOW_SELF_SIGNED_TLS;
+  if (configuredValue === 'true') {
+    return true;
+  }
+  if (configuredValue === 'false') {
+    return false;
+  }
+
+  try {
+    const parsedBackendUrl = new URL(backendUrl);
+    return parsedBackendUrl.protocol === 'https:' && selfSignedTlsDefaultHosts.has(parsedBackendUrl.hostname);
+  } catch {
+    return false;
+  }
+}
 
 function getBackendSessionUrl() {
   return `${backend.replace(/\/+$/, '').replace(/\/openmrs$/, '')}${sessionPath}`;

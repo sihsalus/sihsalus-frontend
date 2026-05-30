@@ -13,6 +13,7 @@ describe('Patient registration validation', () => {
       fieldConfigurations: {
         name: {
           requireFamilyName2: false,
+          unidentifiedPatientAttributeTypeUuid: 'unknown-patient-attribute',
         },
         gender: [
           {
@@ -40,6 +41,14 @@ describe('Patient registration validation', () => {
           '057de23f-3d9c-4314-9391-4452970739c6/aIsToB',
         ],
       },
+      fieldDefinitions: [
+        {
+          id: 'companionName',
+          type: 'person attribute',
+          uuid: 'companion-name-attribute',
+          showHeading: false,
+        },
+      ],
     });
   });
 
@@ -68,6 +77,7 @@ describe('Patient registration validation', () => {
       },
     },
     relationships: [],
+    attributes: {},
   };
 
   const validateFormValues = async (formValues) => {
@@ -209,6 +219,35 @@ describe('Patient registration validation', () => {
     };
     const validationError = await validateFormValues(invalidFormValues);
     expect(validationError.errors).toContain('responsibleRelationshipRequiredForMinor');
+  });
+
+  it('should require a responsible party when the patient is unidentified', async () => {
+    const invalidFormValues = {
+      ...validFormValues,
+      attributes: {
+        'unknown-patient-attribute': 'true',
+      },
+      relationships: [],
+    };
+
+    const validationError = await validateFormValues(invalidFormValues);
+
+    expect(validationError.errors).toContain('responsibleRequiredForUnidentifiedPatient');
+  });
+
+  it('should allow an unidentified patient with a responsible person attribute', async () => {
+    const unidentifiedWithResponsibleAttribute = {
+      ...validFormValues,
+      attributes: {
+        'unknown-patient-attribute': 'true',
+        'companion-name-attribute': 'PNP Comisaría Napo',
+      },
+      relationships: [],
+    };
+
+    const validationError = await validateFormValues(unidentifiedWithResponsibleAttribute);
+
+    expect(validationError).toBeFalsy();
   });
 
   it('should allow a minor patient with a responsible relationship', async () => {

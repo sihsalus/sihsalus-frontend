@@ -66,7 +66,7 @@ export function useEmergencyVisit() {
    * Crea una nueva visita de emergencia
    */
   const createEmergencyVisit = useCallback(
-    async (patientUuid: string): Promise<string | null> => {
+    async (patientUuid: string, startDatetime?: string): Promise<string | null> => {
       setIsCreatingVisit(true);
 
       try {
@@ -74,7 +74,7 @@ export function useEmergencyVisit() {
           patient: patientUuid,
           visitType: config.emergencyVisitTypeUuid,
           location: session?.sessionLocation?.uuid || config.patientRegistration?.defaultLocationUuid,
-          startDatetime: new Date().toISOString(),
+          startDatetime: startDatetime ? new Date(startDatetime).toISOString() : new Date().toISOString(),
         };
 
         const response = await openmrsFetch('/ws/rest/v1/visit', {
@@ -114,7 +114,7 @@ export function useEmergencyVisit() {
    * (Lógica principal para el flujo automático)
    */
   const getOrCreateEmergencyVisit = useCallback(
-    async (patientUuid: string): Promise<string | null> => {
+    async (patientUuid: string, startDatetime?: string): Promise<string | null> => {
       // 1. Verificar si ya existe una visita activa
       const existingVisit = await checkActiveEmergencyVisit(patientUuid);
 
@@ -129,7 +129,7 @@ export function useEmergencyVisit() {
       }
 
       // 2. Si no existe, crear nueva visita
-      return await createEmergencyVisit(patientUuid);
+      return await createEmergencyVisit(patientUuid, startDatetime);
     },
     [checkActiveEmergencyVisit, createEmergencyVisit, t],
   );

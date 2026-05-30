@@ -1,7 +1,7 @@
-@use '@carbon/styles/scss/spacing';
-@use '@carbon/styles/scss/type';
-@use '@carbon/styles/scss/theme';
-@use '@carbon/styles/scss/colors';
+@use "@carbon/styles/scss/spacing";
+@use "@carbon/styles/scss/type";
+@use "@carbon/styles/scss/theme";
+@use "@carbon/styles/scss/colors";
 
 .container {
   padding: spacing.$spacing-05;
@@ -9,12 +9,12 @@
 
 .header {
   h4 {
-    @include type.type-style('heading-04');
+    @include type.type-style("heading-04");
     margin-bottom: spacing.$spacing-03;
   }
 
   .subtitle {
-    @include type.type-style('body-01');
+    @include type.type-style("body-01");
     color: theme.$text-secondary;
   }
 }
@@ -25,13 +25,20 @@
   border-radius: 4px;
 }
 
+.quickActions {
+  display: flex;
+  gap: spacing.$spacing-03;
+  flex-wrap: wrap;
+  margin-top: spacing.$spacing-04;
+}
+
 // Search Results
 .resultsSection {
   margin-top: spacing.$spacing-05;
 }
 
 .resultsCount {
-  @include type.type-style('label-01');
+  @include type.type-style("label-01");
   color: theme.$text-secondary;
   margin-bottom: spacing.$spacing-04;
 }
@@ -65,12 +72,12 @@
 }
 
 .patientResultName {
-  @include type.type-style('heading-compact-01');
+  @include type.type-style("heading-compact-01");
   margin: 0 0 spacing.$spacing-02 0;
 }
 
 .patientResultMeta {
-  @include type.type-style('body-compact-01');
+  @include type.type-style("body-compact-01");
   color: theme.$text-secondary;
   display: flex;
   align-items: center;
@@ -131,7 +138,7 @@
   margin-bottom: spacing.$spacing-04;
 
   h5 {
-    @include type.type-style('heading-03');
+    @include type.type-style("heading-03");
     margin: 0;
   }
 
@@ -157,7 +164,7 @@
 }
 
 .label01 {
-  @include type.type-style('label-01');
+  @include type.type-style("label-01");
   color: theme.$text-secondary;
 }
 
@@ -173,7 +180,7 @@
 }
 
 .sectionTitle {
-  @include type.type-style('label-02');
+  @include type.type-style("label-02");
   color: theme.$text-primary;
   font-weight: 600;
   padding: 0 spacing.$spacing-02;
@@ -237,6 +244,20 @@
   }
 
   .formActions {
+    flex-direction: column;
+
+    button {
+      width: 100%;
+    }
+  }
+
+  .fieldRow,
+  .fieldRow3,
+  .fieldRowDateGender {
+    grid-template-columns: 1fr;
+  }
+
+  .quickActions {
     flex-direction: column;
 
     button {

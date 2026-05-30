@@ -481,6 +481,30 @@ export const configSchema = {
       _default: 'a180fa5f-c44e-4490-a981-d7196b70c6ac',
       _description: 'UUID del person attribute type Parentesco del Acompañante (Text)',
     },
+    responsibleTypeAttributeTypeUuid: {
+      _type: Type.UUID,
+      _default: null,
+      _description:
+        'UUID opcional del person attribute type para tipo de responsable (familia, policía, paramédico, institución, etc.).',
+    },
+    communicationConditionAttributeTypeUuid: {
+      _type: Type.UUID,
+      _default: null,
+      _description:
+        'UUID opcional del person attribute type para condición de comunicación del paciente al ingreso de emergencia.',
+    },
+    identificationStatusAttributeTypeUuid: {
+      _type: Type.UUID,
+      _default: null,
+      _description:
+        'UUID opcional del person attribute type para estado de identificación: pending, partial, confirmed, merged.',
+    },
+    administrativeNotesAttributeTypeUuid: {
+      _type: Type.UUID,
+      _default: null,
+      _description:
+        'UUID opcional del person attribute type para observaciones administrativas de registro de emergencia.',
+    },
     insuranceTypeConcepts: {
       sisGratuitoUuid: {
         _type: Type.ConceptUuid,
@@ -595,6 +619,10 @@ export interface Config {
     companionNameAttributeTypeUuid: string;
     companionAgeAttributeTypeUuid: string;
     companionRelationshipAttributeTypeUuid: string;
+    responsibleTypeAttributeTypeUuid: string | null;
+    communicationConditionAttributeTypeUuid: string | null;
+    identificationStatusAttributeTypeUuid: string | null;
+    administrativeNotesAttributeTypeUuid: string | null;
     insuranceTypeConcepts: {
       sisGratuitoUuid: string;
       sisEmprendedorUuid: string;

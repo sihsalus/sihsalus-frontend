@@ -247,6 +247,11 @@ vi.mock('../hooks/useVisitAttributeType', async () => ({
       },
     ],
   })),
+  useConceptDisplay: vi.fn(() => ({
+    isLoading: false,
+    error: null,
+    display: undefined,
+  })),
 }));
 
 vi.mock('../hooks/useEmrConfiguration', async () => ({
@@ -321,6 +326,7 @@ describe('Visit form', () => {
           displayInThePatientBanner: true,
         },
       ],
+      defaultVisitAttributesFromPersonAttributes: [],
     });
     mockUsePatient.mockReturnValue({
       error: null,
@@ -346,13 +352,18 @@ describe('Visit form', () => {
   });
 
   it('renders the Start Visit form with all the relevant fields and values', async () => {
+    const user = userEvent.setup();
+
     renderVisitForm();
 
     expect(screen.getByRole('textbox', { name: /Date/i })).toBeInTheDocument();
     expect(screen.getByRole('textbox', { name: /Time/i })).toBeInTheDocument();
     expect(screen.getByRole('combobox', { name: /Time/i })).toBeInTheDocument();
     expect(screen.getByRole('combobox', { name: /Select a location/i })).toBeInTheDocument();
-    expect(screen.getByRole('radio', { name: /HIV Return Visit/ })).toBeInTheDocument();
+    const visitTypeCategory = screen.getByRole('combobox', { name: /categoría de consulta/i });
+    expect(visitTypeCategory).toBeInTheDocument();
+    await user.click(visitTypeCategory);
+    expect(await screen.findByText(/HIV Return Visit/i)).toBeInTheDocument();
     expect(screen.getByRole('option', { name: /AM/i })).toBeInTheDocument();
     expect(screen.getByRole('option', { name: /PM/i })).toBeInTheDocument();
     expect(screen.getByText(/Punctuality/i)).toBeInTheDocument();
@@ -382,7 +393,7 @@ describe('Visit form', () => {
       mutateEmrConfiguration: null,
     });
     renderVisitForm();
-    expect(screen.queryByRole('radio', { name: /HIV Return Visit/ })).not.toBeInTheDocument();
+    expect(screen.queryByRole('combobox', { name: /categoría de consulta/i })).not.toBeInTheDocument();
   });
 
   it('renders a validation error when required fields are not filled', async () => {
@@ -400,7 +411,7 @@ describe('Visit form', () => {
     expect(screen.getByText(/missing visit type/i)).toBeInTheDocument();
     expect(screen.getByText(/please select a visit type/i)).toBeInTheDocument();
 
-    await user.click(screen.getByLabelText(/Outpatient visit/i));
+    await selectVisitType(user);
   });
 
   it('displays an error message when the visit start time is in the future', async () => {
@@ -420,7 +431,7 @@ describe('Visit form', () => {
     fireEvent.change(timeInput, { target: { value: futureTime.format('hh:mm') } });
     await user.selectOptions(amPmSelect, futureTime.format('A'));
     await user.selectOptions(locationPicker, 'Inpatient Ward');
-    await user.click(screen.getByLabelText(/Outpatient visit/i));
+    await selectVisitType(user);
     await user.click(screen.getByRole('button', { name: /start visit/i }));
 
     expect(await screen.findByText(/start time cannot be in the future/i)).toBeInTheDocument();
@@ -434,7 +445,7 @@ describe('Visit form', () => {
     const saveButton = screen.getByRole('button', { name: /Start visit/i });
 
     // Set visit type
-    await user.click(screen.getByLabelText(/Outpatient visit/i));
+    await selectVisitType(user);
 
     // Set location
     const locationPicker = screen.getByRole('combobox', {
@@ -471,7 +482,7 @@ describe('Visit form', () => {
     const saveButton = screen.getByRole('button', { name: /Start visit/i });
 
     // Set visit type
-    await user.click(screen.getByLabelText(/Outpatient visit/i));
+    await selectVisitType(user);
 
     // Set location
     const locationPicker = screen.getByRole('combobox', {
@@ -533,6 +544,8 @@ describe('Visit form', () => {
   });
 
   it('prefills visit attributes from matching patient person attributes', async () => {
+    const user = userEvent.setup();
+
     mockUseConfig.mockReturnValue({
       ...getDefaultsFromConfigSchema(esmPatientChartSchema),
       visitAttributeTypes: [
@@ -572,11 +585,12 @@ describe('Visit form', () => {
     renderVisitForm();
 
     const insuranceNumberInput = screen.getByRole('textbox', {
-      name: 'Insurance Policy Number (optional)',
+      name: 'Insurance Policy Number',
     });
     await waitFor(() => expect(insuranceNumberInput).toHaveValue('SIS-183299'));
+    expect(insuranceNumberInput).toHaveAttribute('readonly');
 
-    fireEvent.click(screen.getByLabelText(/Outpatient visit/i));
+    await selectVisitType(user);
 
     const locationPicker = screen.getByRole('combobox', {
       name: /Select a location/i,
@@ -602,7 +616,7 @@ describe('Visit form', () => {
     const saveButton = screen.getByRole('button', { name: /Update visit/i });
 
     // Set visit type
-    await user.click(screen.getByLabelText(/Outpatient visit/i));
+    await selectVisitType(user);
 
     // Set location
     const locationPicker = screen.getByRole('combobox', {
@@ -667,7 +681,7 @@ describe('Visit form', () => {
     const saveButton = screen.getByRole('button', { name: /Update visit/i });
 
     // Set visit type
-    await user.click(screen.getByLabelText(/Outpatient visit/i));
+    await selectVisitType(user);
 
     // Set location
     const locationPicker = screen.getByRole('combobox', {
@@ -730,7 +744,7 @@ describe('Visit form', () => {
 
     renderVisitForm();
 
-    await user.click(screen.getByLabelText(/Outpatient visit/i));
+    await selectVisitType(user);
 
     const saveButton = screen.getByRole('button', { name: /Start Visit/i });
     const locationPicker = screen.getByRole('combobox', {
@@ -762,7 +776,7 @@ describe('Visit form', () => {
 
     renderVisitForm();
 
-    await user.click(screen.getByLabelText(/Outpatient visit/i));
+    await selectVisitType(user);
 
     const saveButton = screen.getByRole('button', { name: /Start Visit/i });
     const locationPicker = screen.getByRole('combobox', {
@@ -812,7 +826,7 @@ describe('Visit form', () => {
 
     renderVisitForm();
 
-    await user.click(screen.getByLabelText(/Outpatient visit/i));
+    await selectVisitType(user);
 
     const closeButton = screen.getByRole('button', { name: /Discard/i });
 
@@ -854,7 +868,7 @@ describe('Visit form', () => {
     const saveButton = screen.getByRole('button', { name: /Start visit/i });
 
     // Set visit type
-    await user.click(screen.getByLabelText(/Outpatient visit/i));
+    await selectVisitType(user);
 
     // Set location
     const locationPicker = screen.getByRole('combobox', {
@@ -891,6 +905,11 @@ describe('Visit form', () => {
     expect(screen.getByRole('button', { name: /Start visit/i })).toBeDisabled();
   });
 });
+
+async function selectVisitType(user: ReturnType<typeof userEvent.setup>, visitType = 'Outpatient Visit') {
+  await user.click(screen.getByRole('combobox', { name: /categoría de consulta/i }));
+  await user.click(await screen.findByText(visitType));
+}
 
 function renderVisitForm(visitToEdit?: Visit) {
   render(React.createElement(StartVisitForm, { ...testProps, visitToEdit }));

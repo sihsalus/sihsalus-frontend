@@ -1,11 +1,10 @@
 import { Accordion, AccordionItem, Button, Tag, Tile } from '@carbon/react';
 import React, { useMemo, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
-
+import type { DefinicionIndicadorForm } from '../api/types';
 import DefinicionView from '../components/DefinicionView';
 import IndicadorForm from '../components/IndicadorForm';
 import SQLPreviewSection from '../components/SQLPreviewSection';
-import type { DefinicionIndicadorForm } from '../api/types';
 import { notifyError, notifySuccess, useCreateVersion, useIndicador } from '../features/indicadores/hooks';
 import { parseDefinicion } from '../features/indicadores/parseDefinicion';
 import styles from '../indicators-dashboard.module.scss';
@@ -18,9 +17,17 @@ const IndicadorDetailPage: React.FC = () => {
   const { data, isLoading, error } = useIndicador(id);
   const { createVersion } = useCreateVersion(id);
 
-  const latestVersion = useMemo(() => data?.versiones.reduce((max, version) => (version.version > max.version ? version : max), data.versiones[0]), [data]);
+  const latestVersion = useMemo(
+    () => data?.versiones.reduce((max, version) => (version.version > max.version ? version : max), data.versiones[0]),
+    [data],
+  );
 
-  const handleCreateVersion = async ({ definicion }: { metadata: { nombre: string; descripcion: string | null }; definicion?: DefinicionIndicadorForm }) => {
+  const handleCreateVersion = async ({
+    definicion,
+  }: {
+    metadata: { nombre: string; descripcion: string | null };
+    definicion?: DefinicionIndicadorForm;
+  }) => {
     if (!definicion) {
       return;
     }
@@ -40,7 +47,9 @@ const IndicadorDetailPage: React.FC = () => {
 
   return (
     <div className={styles.container}>
-      <Link to="/" className={styles.backLink}>Volver a indicadores</Link>
+      <Link to="/" className={styles.backLink}>
+        Volver a indicadores
+      </Link>
 
       {isLoading ? <p>Cargando indicador...</p> : null}
       {error ? <div className={styles.errorBanner}>{error.message}</div> : null}
@@ -56,7 +65,9 @@ const IndicadorDetailPage: React.FC = () => {
               <Tag type={data.activo ? 'green' : 'gray'}>{data.activo ? 'Activo' : 'Inactivo'}</Tag>
             </div>
             <div className={styles.headerActions}>
-              <Button size="sm" onClick={() => navigate(`/${data.id}/edit`)}>Editar metadata</Button>
+              <Button size="sm" onClick={() => navigate(`/${data.id}/edit`)}>
+                Editar metadata
+              </Button>
               <Button size="sm" kind="secondary" onClick={() => setShowVersionForm((value) => !value)}>
                 {showVersionForm ? 'Cancelar nueva versión' : 'Nueva versión'}
               </Button>
@@ -80,7 +91,11 @@ const IndicadorDetailPage: React.FC = () => {
             <Tile className={styles.section}>
               <h3 className={styles.sectionTitle}>Definición actual</h3>
               <DefinicionView definicion={latestVersion.definicion} />
-              <SQLPreviewSection indicadorId={data.id} versionId={latestVersion.id} versionNum={latestVersion.version} />
+              <SQLPreviewSection
+                indicadorId={data.id}
+                versionId={latestVersion.id}
+                versionNum={latestVersion.version}
+              />
             </Tile>
           ) : null}
 
@@ -88,7 +103,10 @@ const IndicadorDetailPage: React.FC = () => {
             <h3 className={styles.sectionTitle}>Historial de versiones</h3>
             <Accordion>
               {data.versiones.map((version) => (
-                <AccordionItem key={version.id} title={`Versión #${version.version} - ${new Date(version.creado_en).toLocaleString('es-PE')}`}>
+                <AccordionItem
+                  key={version.id}
+                  title={`Versión #${version.version} - ${new Date(version.creado_en).toLocaleString('es-PE')}`}
+                >
                   <DefinicionView definicion={version.definicion} />
                   <SQLPreviewSection indicadorId={data.id} versionId={version.id} versionNum={version.version} />
                 </AccordionItem>

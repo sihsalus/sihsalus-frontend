@@ -86,7 +86,9 @@ const BaseVisitType: React.FC<BaseVisitTypeProps> = ({ visitTypes }) => {
           defaultValue={visitTypes.length === 1 ? visitTypes[0].uuid : ''}
           render={({ field: { onChange, value } }) => {
             const selectedGroup =
-              findSelectedGroup(value) ?? visitTypeGroups.find((group) => group.label === selectedCategoryLabel) ?? null;
+              findSelectedGroup(value) ??
+              visitTypeGroups.find((group) => group.label === selectedCategoryLabel) ??
+              null;
             const selectedOption = selectedGroup?.options.find((option) => option.uuid === value) ?? null;
             const showDetailSelector = selectedGroup && selectedGroup.options.length > 1;
 

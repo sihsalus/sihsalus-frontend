@@ -7,10 +7,7 @@ import { useTranslation } from 'react-i18next';
 
 import type { ConfigObject } from '../../../config-schema';
 import { useCREDSchedule } from '../../../hooks/useCREDSchedule';
-import {
-  translateCredAgeGroupLabel,
-  translateCredAgeGroupSublabel,
-} from '../../../utils/cred-label-translations';
+import { translateCredAgeGroupLabel, translateCredAgeGroupSublabel } from '../../../utils/cred-label-translations';
 
 import styles from './cred-schedule.scss';
 

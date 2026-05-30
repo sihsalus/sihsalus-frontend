@@ -17,7 +17,11 @@ export function parseDefinicion(definicion?: DefinicionIndicadorForm): Partial<I
     periodo: definicion.periodo,
     selectedLocations: (definicion.evento?.location_uuids ?? []).map((uuid) => ({ uuid, display: uuid })),
     minimoOcurrencias: toStringValue(definicion.evento?.minimo_ocurrencias),
-    filtroClinico: diagnosticos?.concepto_uuids?.length ? 'diagnosticos' : ordenes?.concepto_uuids?.length ? 'ordenes' : 'ninguno',
+    filtroClinico: diagnosticos?.concepto_uuids?.length
+      ? 'diagnosticos'
+      : ordenes?.concepto_uuids?.length
+        ? 'ordenes'
+        : 'ninguno',
     selectedDiagnosticos: (diagnosticos?.concepto_uuids ?? []).map((uuid) => ({ uuid, nombre: uuid })),
     diagnosticoTipo: diagnosticos?.tipo_diagnostico ?? '',
     selectedOrdenes: (ordenes?.concepto_uuids ?? []).map((uuid) => ({ uuid, display: uuid })),

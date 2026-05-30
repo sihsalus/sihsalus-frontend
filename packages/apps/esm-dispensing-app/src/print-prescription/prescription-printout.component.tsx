@@ -47,7 +47,12 @@ const PrescriptionsPrintout: React.FC<PrescriptionsPrintoutProps> = ({
     })?.value;
 
   const patientDni = getPatientIdentifier(['dni']);
-  const patientMedicalRecordId = getPatientIdentifier(['historia clínica', 'historia clinica', 'n° historia clínica', 'n° historia clinica']);
+  const patientMedicalRecordId = getPatientIdentifier([
+    'historia clínica',
+    'historia clinica',
+    'n° historia clínica',
+    'n° historia clinica',
+  ]);
 
   const requesters = useMemo(() => {
     const uniqueRequesters = new Set<string>();

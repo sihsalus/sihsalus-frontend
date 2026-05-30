@@ -1,13 +1,13 @@
 import { defineConfigSchema, getAsyncLifecycle, getSyncLifecycle, registerBreadcrumbs } from '@openmrs/esm-framework';
 import { configSchema } from './config-schema';
 import { basePath, moduleName } from './constants';
-import AdmissionAppMenuLink from './links/admission-app-menu-link.component';
-import AdmissionDashboardLink from './links/admission-dashboard-link.component';
-import AdmissionMergePatientsAction from './links/admission-merge-patients-action.component';
+import CareLogbookAppMenuLink from './links/care-logbook-app-menu-link.component';
+import CareLogbookDashboardLink from './links/care-logbook-dashboard-link.component';
+import CareLogbookMergePatientsAction from './links/care-logbook-merge-patients-action.component';
 import Root from './root.component';
 
 const options = {
-  featureName: 'admission',
+  featureName: 'care-logbook',
   moduleName,
 };
 
@@ -44,12 +44,12 @@ export function startupApp() {
 
 export const root = getSyncLifecycle(Root, options);
 
-export const admissionAppMenuLink = getSyncLifecycle(AdmissionAppMenuLink, options);
+export const careLogbookAppMenuLink = getSyncLifecycle(CareLogbookAppMenuLink, options);
 
-export const admissionHomeDashboard = getAsyncLifecycle(() => import('./pages/admission-home.component'), options);
+export const careLogbookHomeDashboard = getAsyncLifecycle(() => import('./pages/admission-home.component'), options);
 
-export const admissionHomeDashboardLink = getSyncLifecycle(AdmissionDashboardLink, options);
+export const careLogbookHomeDashboardLink = getSyncLifecycle(CareLogbookDashboardLink, options);
 
-export const admissionMergePatientsAction = getSyncLifecycle(AdmissionMergePatientsAction, options);
+export const careLogbookMergePatientsAction = getSyncLifecycle(CareLogbookMergePatientsAction, options);
 
 export const patientMerge = getAsyncLifecycle(() => import('./pages/patient-merge.component'), options);

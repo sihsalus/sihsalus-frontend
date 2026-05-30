@@ -1,9 +1,9 @@
 {
-  "name": "@sihsalus/esm-admission-app",
+  "name": "@sihsalus/esm-care-logbook-app",
   "version": "1.0.0-alpha",
   "license": "MPL-2.0",
-  "description": "OpenMRS ESM Admission workflows and accreditation evidence for SIHSALUS",
-  "browser": "dist/sihsalus-esm-admission-app.js",
+  "description": "OpenMRS ESM care logbook workflows and accreditation evidence for SIHSALUS",
+  "browser": "dist/sihsalus-esm-care-logbook-app.js",
   "main": "src/index.ts",
   "source": true,
   "scripts": {
@@ -29,7 +29,8 @@
   "keywords": [
     "openmrs",
     "sihsalus",
-    "admission"
+    "care-logbook",
+    "atenciones"
   ],
   "repository": {
     "type": "git",

@@ -15,7 +15,7 @@ Fuente de requisitos: [`requerimientos_admision_SIHCE_MINSA_373-2025.csv`](reque
 - Se agrego acreditacion manual de seguro: `Estado de acreditacion de seguro` y `Fecha/hora de acreditacion`.
 - Se agregaron como identificadores visibles por defecto: DNI, CE, pasaporte y documento de identidad extranjero.
 - Se agrego `Nacionalidad` como dato de filiacion condicionado a identificadores extranjeros con valor (CE, pasaporte o documento extranjero), para reforzar continuidad manual ante no disponibilidad de consulta a Migraciones.
-- Se agrego app separada `@sihsalus/esm-admission-app` para concentrar evidencia funcional de admision; su nombre visible de producto es `Libro de Atenciones`.
+- Se agrego modulo separado `@sihsalus/esm-care-logbook-app` para concentrar evidencia funcional del perfil de admision normativa; su nombre visible de producto es `Libro de Atenciones`.
 - Se movio la entrada SPA de fusion de historias duplicadas a `/admission/merge`, usando el flujo legacy de OpenMRS `mergePatients.form`.
 - Se agrego vista/reporte `/admission` (`Libro de Atenciones`) de atenciones por UPS/servicio con fecha, hora, paciente, HC, ubicacion y estado.
 - En `/admission/patient/:uuid` se agrego seccion `Programacion de turnos`: lista turnos proximos del paciente y abre el workspace real `appointments-form-workspace` para consultar disponibilidad, seleccionar cupo y registrar citas con prestadores.
@@ -24,7 +24,7 @@ Fuente de requisitos: [`requerimientos_admision_SIHCE_MINSA_373-2025.csv`](reque
 
 ## Puntaje estimado tras estos cambios
 
-- Cumple proyectado al desplegar metadata y la app de admision: 18/24.
+- Cumple proyectado al desplegar metadata y el modulo de Libro de Atenciones: 18/24.
 - Parcial proyectado: 2/24.
 - No encontrado proyectado: 5/24.
 - Aun no alcanza 20. Para llegar a 20 faltan al menos 2 criterios adicionales, principalmente integraciones externas RENIEC/IAFAS-SIS/RENHICE o evidencia funcional adicional de referencias/codigo estandar MINSA.
@@ -36,9 +36,9 @@ Fuente de requisitos: [`requerimientos_admision_SIHCE_MINSA_373-2025.csv`](reque
 - Resultado inicial: 1/1 test paso contra `E2E_BASE_URL` y `E2E_API_BASE_URL` del `.env`.
 - Alcance probado: login, apertura autenticada de registro de paciente, campos visibles de filiacion, seguro, responsable, identificadores, nacimiento, paciente no identificado, boton de guardado, API de tipos de identificador y ubicacion de sesion.
 - Observacion: `E2E_LOGIN_DEFAULT_LOCATION_UUID=44c3efb0-2583-4c80-a79e-1f756a03c0a1` devuelve 404 en QLTY. La prueba uso fallback a una ubicacion activa (`Casita Azul`, UUID `35d2234e-129a-4c40-abb2-1ae0b72c1603`) para poder validar el flujo.
-- Validacion tecnica posterior: `yarn turbo run typescript --filter=@sihsalus/esm-admission-app --filter=@sihsalus/esm-patient-registration-app --concurrency=1` paso 22/22 tareas.
-- Build posterior: `yarn turbo run build --filter=@sihsalus/esm-admission-app --concurrency=1` paso 23/23 tareas; el paquete `sihsalus-esm-admission-app.js` compilo correctamente.
-- Prueba E2E posterior: `CI=1 E2E_BASE_URL=http://localhost:8080/openmrs/spa E2E_API_BASE_URL=http://localhost:8080/openmrs yarn playwright test e2e/tests/admission-validation.spec.ts --project=desktop -g "duplicate patient merge|admission report"` paso 2/2 con `SIHSALUS_DEV_APPS=esm-admission-app,esm-patient-registration-app`.
+- Validacion tecnica posterior: `yarn turbo run typescript --filter=@sihsalus/esm-care-logbook-app --filter=@sihsalus/esm-patient-registration-app --concurrency=1` paso 22/22 tareas.
+- Build posterior: `yarn turbo run build --filter=@sihsalus/esm-care-logbook-app --concurrency=1` paso 23/23 tareas; el paquete `sihsalus-esm-care-logbook-app.js` compilo correctamente.
+- Prueba E2E posterior: `CI=1 E2E_BASE_URL=http://localhost:8080/openmrs/spa E2E_API_BASE_URL=http://localhost:8080/openmrs yarn playwright test e2e/tests/admission-validation.spec.ts --project=desktop -g "duplicate patient merge|admission report"` paso 2/2 con `SIHSALUS_DEV_APPS=esm-care-logbook-app,esm-patient-registration-app`.
 - La prueba completa con campos nuevos requiere desplegar primero el content package, porque QLTY aun no tiene los nuevos `personattributetypes`.
 
 ## Puntaje estimado
@@ -62,7 +62,7 @@ Fuente de requisitos: [`requerimientos_admision_SIHCE_MINSA_373-2025.csv`](reque
 | N1.ADM.02.03 | Cumple | Permite multiples identificadores configurables y seleccionables por tipo. |
 | N1.ADM.02.04 | Parcial | Hay autogeneracion de identificadores por IdGen. Falta confirmar que el identificador generado sea el codigo estandar MINSA/RENHICE de usuario de salud. |
 | N1.ADM.02.05 | Cumple | Identificadores se guardan junto con el paciente y cada visita/cola referencia `patientUuid`; el backend conserva el vinculo con atenciones. |
-| N1.ADM.02.06 | Cumple proyectado | Se movio la fusion de historias duplicadas a la app de admision (`/admission/merge`) usando el flujo legacy de OpenMRS (`/admin/patients/mergePatients.form`). OpenMRS core soporta `PatientService.mergePatients`. |
+| N1.ADM.02.06 | Cumple proyectado | Se movio la fusion de historias duplicadas al modulo de Libro de Atenciones (`/admission/merge`) usando el flujo legacy de OpenMRS (`/admin/patients/mergePatients.form`). OpenMRS core soporta `PatientService.mergePatients`. |
 | N1.ADM.02.07 | Cumple | Busqueda y pantallas de cola usan identificadores/UUID de paciente para recuperar partes del registro. |
 | N1.ADM.02.08 | Cumple proyectado | Se agrego atributo de persona `Estado de historia clinica` con valores activa, pasiva y eliminada. |
 | N1.ADM.03.01 | Parcial | Datos demograficos/personales se guardan en `patient.person`; la separacion fisica respecto a datos clinicos depende del modelo OpenMRS/backend, no esta demostrada en frontend. |

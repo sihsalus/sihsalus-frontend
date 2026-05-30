@@ -1,7 +1,7 @@
 import routes from './routes.json';
 
 describe('routes.json', () => {
-  it('registers the admission root page', () => {
+  it('registers the care logbook root page on the legacy admission route', () => {
     expect(routes.pages).toContainEqual(
       expect.objectContaining({
         component: 'root',
@@ -12,29 +12,29 @@ describe('routes.json', () => {
     );
   });
 
-  it('registers navigation entry points for admission workflows', () => {
+  it('registers navigation entry points for care logbook workflows', () => {
     expect(routes.extensions).toEqual(
       expect.arrayContaining([
         expect.objectContaining({
-          component: 'admissionAppMenuLink',
-          name: 'admission-app-menu-item',
+          component: 'careLogbookAppMenuLink',
+          name: 'care-logbook-app-menu-item',
           slot: 'app-menu-slot',
         }),
         expect.objectContaining({
-          component: 'admissionHomeDashboardLink',
-          name: 'admission-home-dashboard-link',
+          component: 'careLogbookHomeDashboardLink',
+          name: 'care-logbook-home-dashboard-link',
           slot: 'homepage-dashboard-slot',
         }),
         expect.objectContaining({
-          component: 'admissionMergePatientsAction',
-          name: 'admission-merge-patients-action',
+          component: 'careLogbookMergePatientsAction',
+          name: 'care-logbook-merge-patients-action',
           slot: 'top-nav-actions-slot',
         }),
       ]),
     );
   });
 
-  it('does not register patient banner identity extensions from admission', () => {
+  it('does not register patient banner identity extensions from the care logbook', () => {
     expect(routes.extensions).not.toContainEqual(
       expect.objectContaining({
         slot: 'patient-info-slot',

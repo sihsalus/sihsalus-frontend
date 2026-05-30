@@ -5,7 +5,14 @@ import type { RequestHandler } from 'express';
 import express from 'express';
 import { createProxyMiddleware } from 'http-proxy-middleware';
 
-import { type ImportmapDeclaration, logInfo, logWarn, type RoutesDeclaration, removeTrailingSlash } from '../utils';
+import {
+  type ImportmapDeclaration,
+  logInfo,
+  logWarn,
+  type RoutesDeclaration,
+  removeTrailingSlash,
+  shouldAllowSelfSignedTls,
+} from '../utils';
 
 export interface DevelopArgs {
   port: number;
@@ -67,7 +74,7 @@ export async function runDevelop(args: DevelopArgs) {
   } = args;
   const apiUrl = removeTrailingSlash(args.apiUrl);
   const spaPath = removeTrailingSlash(args.spaPath);
-  const allowSelfSignedTls = process.env.SIHSALUS_ALLOW_SELF_SIGNED_TLS === 'true';
+  const allowSelfSignedTls = shouldAllowSelfSignedTls(backend);
   const app = express();
   const indexRateLimit = createInMemoryRateLimit({
     windowMs: Number(process.env.SIHSALUS_DEV_RATE_LIMIT_WINDOW_MS) || 60_000,

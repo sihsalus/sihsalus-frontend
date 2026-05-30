@@ -19,7 +19,7 @@ emergency-workflow/
 
 ## Flujo de Trabajo
 
-1. **Búsqueda/Registro de Paciente**: Si el paciente no existe, se registra. Si existe, se busca.
+1. **Búsqueda/Registro de Paciente**: Si el paciente no existe, se registra. Si existe, se busca. Si el paciente no puede comunicarse, se usa el modo `Registrar paciente no identificado / incapaz`.
 2. **Crear Visita de Emergencia**: Se crea una visita obligatoria antes de continuar.
 3. **Triaje Completo**: 
    - Captura de signos vitales (obligatorio)
@@ -35,6 +35,22 @@ emergency-workflow/
 - No se puede avanzar al siguiente paso sin completar el anterior
 - El triaje debe estar completo antes de asignar a cola
 - La visita es obligatoria antes del triaje
+- En modo paciente no identificado/incapaz, la condición de comunicación es obligatoria
+- En modo paciente no identificado/incapaz, el responsable, institución o autoridad es obligatorio
 
+## Paciente no identificado / incapaz
+
+Este modo se usa cuando el paciente está inconsciente, comatoso, desorientado, no verbal, es menor sin datos o no puede dar datos confiables.
+
+Campos esperados:
+
+- estado de identificación: pendiente, parcial, confirmado o fusionado,
+- condición de comunicación,
+- responsable o acompañante,
+- tipo de responsable,
+- parentesco/vínculo cuando se conoce,
+- observaciones administrativas cuando apliquen.
+
+El flujo no debe exigir DNI, teléfono, dirección ni edad exacta para iniciar atención. Esos datos se actualizan después en registro de pacientes cuando el paciente se identifique o aparezca documentación confiable.
 
 

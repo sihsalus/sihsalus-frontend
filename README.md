@@ -63,7 +63,6 @@ packages/tooling/
   start-dev.js                          # Local dev server entrypoint
   i18next-parser.config.js               # i18n extraction config
 e2e/                                    # Playwright E2E tests
-docs/                                   # Architecture docs and ADRs
 ```
 
 > **Note:** The OpenMRS framework (`@openmrs/esm-framework`) and app shell (`@openmrs/esm-app-shell`) are consumed as npm dependencies, not vendored in this repo.
@@ -115,10 +114,7 @@ yarn verify                                 # lint + typecheck + test
 yarn verify:changed --base origin/main      # Verify changed workspaces plus workspace dependents
 ```
 
-Repository discipline and workspace ownership expectations live in:
-
-- [docs/operations/monorepo-discipline-rfc.md](docs/operations/monorepo-discipline-rfc.md)
-- [docs/operations/workspace-quality-registry.md](docs/operations/workspace-quality-registry.md)
+Repository discipline and workspace ownership expectations should stay close to the touched package README and the relevant quality commands.
 
 ### TODO RBAC, auditoria y permisos
 
@@ -206,6 +202,17 @@ Terminologia practica usada en este repositorio:
 - `workspace`: panel lateral/modal de OpenMRS 3 usado para crear o editar datos.
 - `extension slot`: punto de extension del shell donde otro microfrontend inyecta UI.
 
+### Contrato de identidad del paciente
+
+El flujo de identidad no debe depender solo del DNI. En registro, emergencia, busqueda y Libro de Atenciones, un paciente debe poder ubicarse por identificadores, codigo temporal, nombre, fecha/hora de atencion, visita/cola, responsable, servicio, ubicacion y estado de identificacion.
+
+Reglas transversales:
+
+- `@sihsalus/esm-care-logbook-app` se presenta como `Libro de Atenciones`; la ruta historica `/admission` se conserva por compatibilidad.
+- Pacientes no identificados o incapaces de comunicarse pueden registrarse sin DNI, telefono, direccion o fecha exacta de nacimiento.
+- Cuando el paciente no puede aportar datos o consentimiento, se debe capturar responsable, institucion o autoridad responsable.
+- `zipcode/postcode` y telefono no son filtros avanzados por defecto en Patient Search. Pueden existir como datos demograficos/contacto, pero no como pivotes principales de busqueda.
+
 ### Contratos que no deben romperse
 
 - No agregar UUIDs clinicos hardcodeados si pueden vivir en `config-schema`. Conceptos, encounter types, visit types, forms, order types, identifiers y care settings deben ser configurables.
@@ -247,7 +254,7 @@ Si una app falla con `501`, `workspace not registered`, `modal not registered`, 
 | `esm-billing-app`                | `@openmrs/esm-billing-app`               |
 | `esm-vacunacion-app`             | `@openmrs/esm-patient-immunizations-app` |
 
-Custom modules with no upstream equivalent: `esm-atencion-ambulatoria-app`, `esm-coststructure-app`, `esm-cred-app` (`packages/apps/esm-crecimiento-desarrollo-app`), `esm-dyaku-app`, `esm-emergency-app`, `esm-ficha-familiar-app`, `esm-fua-app`, `esm-indicadores-app`, `esm-odontologia-app` (`packages/apps/esm-odontologia-app`), `esm-reports-app`, `esm-salud-materna-app`, `esm-seguimiento-casos-app`.
+Custom modules with no upstream equivalent: `esm-atencion-ambulatoria-app`, `esm-care-logbook-app`, `esm-coststructure-app`, `esm-cred-app` (`packages/apps/esm-crecimiento-desarrollo-app`), `esm-dyaku-app`, `esm-emergency-app`, `esm-ficha-familiar-app`, `esm-fua-app`, `esm-indicadores-app`, `esm-odontologia-app` (`packages/apps/esm-odontologia-app`), `esm-reports-app`, `esm-salud-materna-app`, `esm-seguimiento-casos-app`.
 
 ## Calidad esperada antes de agregar features
 

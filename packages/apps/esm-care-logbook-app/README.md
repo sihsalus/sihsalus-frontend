@@ -11,6 +11,7 @@ Tambien concentra evidencia funcional del perfil `N1.ADM` de la acreditacion SIH
 - Programacion de turnos desde `/admission/patient/:uuid`, mostrando turnos proximos y abriendo el workspace real de Appointments para registrar citas con prestadores.
 - Resumen de identificacion minima del paciente para pantallas clinicas que consumen `patient-info-slot`.
 - Accesos desde menu de aplicaciones, dashboard de inicio y acciones superiores.
+- Ubicacion de pacientes sin DNI mediante fecha/hora, HCE o codigo temporal, estado de identificacion, responsable, servicio, ubicacion y estado de visita.
 
 ## Terminologia
 
@@ -22,6 +23,28 @@ Tambien concentra evidencia funcional del perfil `N1.ADM` de la acreditacion SIH
 - Package tecnico: `@sihsalus/esm-care-logbook-app`.
 
 Evitar `Admisiones` como label visible general: sugiere hospitalizacion o ingreso administrativo, mientras que esta pantalla lista atenciones/consultas por servicio.
+
+## Identidad y pacientes sin documento
+
+El Libro de Atenciones no debe depender del DNI como identificador principal. Cada fila debe seguir siendo util cuando el paciente esta no identificado o con datos incompletos.
+
+Columnas/criterios operativos esperados:
+
+- fecha y hora de atencion,
+- HCE o codigo temporal,
+- documento cuando existe,
+- estado de identificacion,
+- condicion de comunicacion,
+- responsable o acompanante,
+- fecha de nacimiento cuando existe,
+- paciente,
+- direccion cuando existe,
+- sexo/edad,
+- servicio/UPSS,
+- ubicacion,
+- estado de visita.
+
+La busqueda interna debe cubrir paciente, HCE/codigo temporal, documento, responsable, servicio y ubicacion. `DNI` es solo un dato mas, no el pivote obligatorio.
 
 ## Evidencia MINSA
 

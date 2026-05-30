@@ -15,7 +15,7 @@ Fuente de requisitos: [`requerimientos_admision_SIHCE_MINSA_373-2025.csv`](reque
 - Se agrego acreditacion manual de seguro: `Estado de acreditacion de seguro` y `Fecha/hora de acreditacion`.
 - Se agregaron como identificadores visibles por defecto: DNI, CE, pasaporte y documento de identidad extranjero.
 - Se agrego `Nacionalidad` como dato de filiacion condicionado a identificadores extranjeros con valor (CE, pasaporte o documento extranjero), para reforzar continuidad manual ante no disponibilidad de consulta a Migraciones.
-- Se agrego app separada `@sihsalus/esm-care-logbook-app` para concentrar evidencia funcional de admision; su nombre visible de producto es `Libro de Atenciones`.
+- Se agrego modulo separado `@sihsalus/esm-care-logbook-app` para concentrar evidencia funcional del perfil de admision normativa; su nombre visible de producto es `Libro de Atenciones`.
 - Se movio la entrada SPA de fusion de historias duplicadas a `/admission/merge`, usando el flujo legacy de OpenMRS `mergePatients.form`.
 - Se agrego vista/reporte `/admission` (`Libro de Atenciones`) de atenciones por UPS/servicio con fecha, hora, paciente, HC, ubicacion y estado.
 - En `/admission/patient/:uuid` se agrego seccion `Programacion de turnos`: lista turnos proximos del paciente y abre el workspace real `appointments-form-workspace` para consultar disponibilidad, seleccionar cupo y registrar citas con prestadores.

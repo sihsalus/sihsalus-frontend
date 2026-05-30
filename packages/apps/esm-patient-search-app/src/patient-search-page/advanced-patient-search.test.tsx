@@ -53,6 +53,24 @@ const mockSearchResults: PatientSearchResponse = {
   fetchError: null as unknown as Error,
 };
 
+const personAttributeTypes: Record<string, { format: string; uuid: string; display: string }> = {
+  '8b56eac7-5c76-4b9c-8c6f-1deab8d3fc47': {
+    format: 'java.lang.String',
+    uuid: '8b56eac7-5c76-4b9c-8c6f-1deab8d3fc47',
+    display: 'Paciente No Identificado',
+  },
+  '4697d0e6-5b24-416b-aee6-708cd9a3a1db': {
+    format: 'java.lang.String',
+    uuid: '4697d0e6-5b24-416b-aee6-708cd9a3a1db',
+    display: 'Nombre del Acompañante',
+  },
+  'a180fa5f-c44e-4490-a981-d7196b70c6ac': {
+    format: 'java.lang.String',
+    uuid: 'a180fa5f-c44e-4490-a981-d7196b70c6ac',
+    display: 'Parentesco del Acompañante',
+  },
+};
+
 const Wrapper: React.FC<{ children: React.ReactNode }> = ({ children }) => (
   <PatientSearchContext.Provider value={mockPatientActionContextValue}>{children}</PatientSearchContext.Provider>
 );
@@ -62,42 +80,12 @@ describe('AdvancedPatientSearchComponent', () => {
 
   beforeEach(() => {
     mockUseInfinitePatientSearch.mockReturnValue(mockSearchResults);
-    mockUseConfig.mockReturnValue({
-      ...getDefaultsFromConfigSchema(configSchema),
-      search: {
-        disableTabletSearchOnKeyUp: false,
-        showRecentlySearchedPatients: false,
-        searchFilterFields: {
-          gender: {
-            enabled: true,
-          },
-          dateOfBirth: {
-            enabled: true,
-          },
-          age: {
-            enabled: true,
-            min: 0,
-          },
-          postcode: {
-            enabled: true,
-          },
-          personAttributes: [
-            {
-              attributeTypeUuid: '14d4f066-15f5-102d-96e4-000c29c2a5d7',
-            },
-          ],
-        },
-      } as PatientSearchConfig['search'],
-    });
-    mockUsePersonAttributeType.mockReturnValue({
+    mockUseConfig.mockReturnValue(getDefaultsFromConfigSchema(configSchema) as PatientSearchConfig);
+    mockUsePersonAttributeType.mockImplementation((attributeTypeUuid: string) => ({
       isLoading: false,
       error: undefined,
-      data: {
-        format: 'java.lang.String',
-        uuid: '14d4f066-15f5-102d-96e4-000c29c2a5d7',
-        display: 'Telephone Number',
-      },
-    });
+      data: personAttributeTypes[attributeTypeUuid],
+    }));
   });
 
   const renderComponent = (props = {}) => {
@@ -116,6 +104,14 @@ describe('AdvancedPatientSearchComponent', () => {
   it('displays search results correctly', () => {
     renderComponent();
     expect(screen.getByText(/2 search result/)).toBeInTheDocument();
+  });
+
+  it('does not show postcode or telephone filters by default', () => {
+    renderComponent();
+
+    expect(screen.queryByLabelText(/postcode/i)).not.toBeInTheDocument();
+    expect(screen.queryByText(/telephone|tel[eé]fono|phone/i)).not.toBeInTheDocument();
+    expect(screen.getByLabelText(/nombre del acompa/i)).toBeInTheDocument();
   });
 
   describe('Filtering', () => {
@@ -141,25 +137,11 @@ describe('AdvancedPatientSearchComponent', () => {
       expect(within(patientBanners[0]).getByText(/Joseph Davis/i)).toBeInTheDocument();
     });
 
-    it('filters by postcode correctly', async () => {
-      renderComponent();
-
-      // Set postcode filter
-      const postcodeInput = screen.getByRole('textbox', { name: /postcode/i });
-      await user.type(postcodeInput, '46548');
-      await user.click(screen.getByRole('button', { name: /apply/i }));
-
-      const patientBanners = screen.getAllByRole('banner');
-      expect(patientBanners).toHaveLength(1);
-      expect(within(patientBanners[0]).getByText(/Joseph Davis/i)).toBeInTheDocument();
-    });
-
     it('filters by person attribute correctly', async () => {
       renderComponent();
 
-      // Set phone number attribute filter
-      const phoneInput = screen.getByLabelText(/phone number/i);
-      await user.type(phoneInput, '0785434125');
+      const responsibleInput = screen.getByLabelText(/nombre del acompa/i);
+      await user.type(responsibleInput, 'SAMU');
       await user.click(screen.getByRole('button', { name: /apply/i }));
 
       const patientBanners = screen.getAllByRole('banner');

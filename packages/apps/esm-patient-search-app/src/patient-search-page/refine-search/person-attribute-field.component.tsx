@@ -32,6 +32,17 @@ export function PersonAttributeField({ field, control, isTablet }: PersonAttribu
 
     switch (personAttributeType.format) {
       case 'java.lang.String':
+        if (field.stringAnswerOptions?.length) {
+          return (
+            <StringAttributeOptionsField
+              field={field}
+              control={control}
+              isTablet={isTablet}
+              attributeDisplay={personAttributeType.display}
+            />
+          );
+        }
+
         return (
           <Controller
             name={`attributes.${field.name}`}
@@ -93,6 +104,43 @@ export function PersonAttributeField({ field, control, isTablet }: PersonAttribu
 
   return formatField;
 }
+
+interface StringAttributeOptionsFieldProps {
+  field: SearchFieldConfig;
+  control: Control<AdvancedPatientSearchState>;
+  isTablet: boolean;
+  attributeDisplay: string;
+}
+
+const StringAttributeOptionsField: React.FC<StringAttributeOptionsFieldProps> = ({
+  field,
+  control,
+  isTablet,
+  attributeDisplay,
+}) => {
+  const { t } = useTranslation();
+  const items = field.stringAnswerOptions ?? [];
+
+  return (
+    <Controller
+      name={`attributes.${field.name}`}
+      control={control}
+      defaultValue=""
+      render={({ field: { onChange, value } }) => (
+        <ComboBox
+          id={field.name}
+          titleText={t(attributeDisplay)}
+          items={items}
+          itemToString={(item) => item?.label ?? ''}
+          selectedItem={items.find((item) => item.value === value)}
+          onChange={({ selectedItem }) => onChange(selectedItem?.value ?? '')}
+          placeholder={field.placeholder ?? t('selectOption', 'Select an option')}
+          size={isTablet ? 'lg' : 'md'}
+        />
+      )}
+    />
+  );
+};
 
 interface ConceptAttributeFieldProps {
   field: SearchFieldConfig;

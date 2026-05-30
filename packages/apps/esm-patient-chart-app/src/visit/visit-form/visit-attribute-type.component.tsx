@@ -164,6 +164,7 @@ const AttributeTypeField: React.FC<AttributeTypeFieldProps> = ({
 
           return (
             <TextInput
+              className={styles.readOnlyField}
               id={`readonly-${uuid}`}
               labelText={labelText}
               readOnly
@@ -204,6 +205,7 @@ const AttributeTypeField: React.FC<AttributeTypeFieldProps> = ({
         return (
           <TextInput
             {...fieldProps}
+            className={readOnly ? styles.readOnlyField : undefined}
             id={uuid}
             labelText={labelText}
             placeholder={labelText}
@@ -257,6 +259,7 @@ const AttributeTypeField: React.FC<AttributeTypeFieldProps> = ({
         return (
           <TextInput
             {...fieldProps}
+            className={readOnly ? styles.readOnlyField : undefined}
             id={`text-input-${id}`}
             labelText={labelText}
             invalid={!!errors.visitAttributes?.[uuid]}

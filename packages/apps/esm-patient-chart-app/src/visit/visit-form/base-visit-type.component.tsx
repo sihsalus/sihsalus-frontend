@@ -91,7 +91,7 @@ const BaseVisitType: React.FC<BaseVisitTypeProps> = ({ visitTypes }) => {
             const showDetailSelector = selectedGroup && selectedGroup.options.length > 1;
 
             return (
-              <div className={styles.dropdownGrid}>
+              <div className={classNames(styles.dropdownGrid, { [styles.singleColumn]: !showDetailSelector })}>
                 <Dropdown
                   id="visit-type-category"
                   items={visitTypeGroups}

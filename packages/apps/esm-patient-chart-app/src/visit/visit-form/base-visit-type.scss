@@ -22,6 +22,10 @@
   gap: layout.$spacing-05;
 }
 
+.singleColumn {
+  grid-template-columns: 1fr;
+}
+
 .tileContainer {
   background-color: $ui-02;
   padding: layout.$spacing-09 0;

@@ -1,4 +1,4 @@
-# SIH Salus ESM
+# SIH Salus Frontend
 
 Turborepo-powered monorepo for the **SIH Salus Hospital Information System** — an offline-oriented, FHIR-aware and compliance-oriented frontend serving ~30,000 inhabitants across 112 native Amazonian communities along 500+ km of the Napo River (Peru).
 

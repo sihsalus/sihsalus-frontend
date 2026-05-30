@@ -155,7 +155,10 @@ function toPaginatedResponse<T>(items: Array<T>, page: number, size: number): Pa
 }
 
 function latestVersion(indicador: IndicadorDetail) {
-  return indicador.versiones.reduce((max, current) => (current.version > max.version ? current : max), indicador.versiones[0]);
+  return indicador.versiones.reduce(
+    (max, current) => (current.version > max.version ? current : max),
+    indicador.versiones[0],
+  );
 }
 
 function definitionToSql(definicion: DefinicionIndicadorForm) {
@@ -218,14 +221,26 @@ export function createIndicadorMock(payload: IndicadorCreatePayload): Indicador 
     ],
   };
   indicadores = [detail, ...indicadores];
-  return { id, nombre: detail.nombre, descripcion: detail.descripcion, activo: detail.activo, creado_en: detail.creado_en };
+  return {
+    id,
+    nombre: detail.nombre,
+    descripcion: detail.descripcion,
+    activo: detail.activo,
+    creado_en: detail.creado_en,
+  };
 }
 
 export function updateIndicadorMock(id: string, payload: IndicadorUpdatePayload): Indicador {
   const indicador = getIndicadorById(id);
   indicador.nombre = payload.nombre;
   indicador.descripcion = payload.descripcion;
-  return { id: indicador.id, nombre: indicador.nombre, descripcion: indicador.descripcion, activo: indicador.activo, creado_en: indicador.creado_en };
+  return {
+    id: indicador.id,
+    nombre: indicador.nombre,
+    descripcion: indicador.descripcion,
+    activo: indicador.activo,
+    creado_en: indicador.creado_en,
+  };
 }
 
 export function deleteIndicadorMock(id: string) {
@@ -249,9 +264,7 @@ export function createVersionMock(id: string, definicion: DefinicionIndicadorFor
 
 export function getSqlPreviewMock(id: string, versionId?: string): IndicadorSQLPreview {
   const indicador = getIndicadorById(id);
-  const version = versionId
-    ? indicador.versiones.find((item) => item.id === versionId)
-    : latestVersion(indicador);
+  const version = versionId ? indicador.versiones.find((item) => item.id === versionId) : latestVersion(indicador);
 
   if (!version) {
     throw new Error('Versión no encontrada');

@@ -41,9 +41,7 @@ const VisitAttributeTypeFields: React.FC<VisitAttributeTypeFieldsProps> = ({ set
   const readonlyVisitAttributeUuids = useMemo(
     () =>
       new Set(
-        (defaultVisitAttributesFromPersonAttributes ?? []).map(
-          ({ visitAttributeTypeUuid }) => visitAttributeTypeUuid,
-        ),
+        (defaultVisitAttributesFromPersonAttributes ?? []).map(({ visitAttributeTypeUuid }) => visitAttributeTypeUuid),
       ),
     [defaultVisitAttributesFromPersonAttributes],
   );

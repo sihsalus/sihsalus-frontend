@@ -1,19 +1,4 @@
 import { restBaseUrl } from '@openmrs/esm-framework';
-
-import type {
-  DiagnosticoOption,
-  Indicador,
-  IndicadorCreatePayload,
-  IndicadorDetail,
-  IndicadorSQLPreview,
-  IndicadorUpdatePayload,
-  IndicadorVersion,
-  LocationOption,
-  OrdenOption,
-  PaginatedResponse,
-  DefinicionIndicadorForm,
-} from './types';
-import { getIndicatorsApiPath } from './config';
 import {
   createIndicadorMock,
   createVersionMock,
@@ -29,7 +14,21 @@ import {
   updateIndicadorMock,
 } from '../mocks/indicators-data';
 import { fetchJson, toJsonBody, withMockFallback } from './client';
+import { getIndicatorsApiPath } from './config';
 import { getMockModeState } from './mock-mode';
+import type {
+  DefinicionIndicadorForm,
+  DiagnosticoOption,
+  Indicador,
+  IndicadorCreatePayload,
+  IndicadorDetail,
+  IndicadorSQLPreview,
+  IndicadorUpdatePayload,
+  IndicadorVersion,
+  LocationOption,
+  OrdenOption,
+  PaginatedResponse,
+} from './types';
 
 interface OpenmrsLocation {
   uuid: string;
@@ -98,12 +97,18 @@ function mapConceptToOrden(concept: OpenmrsConcept): OrdenOption {
 export async function getIndicadores(page: number, size: number): Promise<PaginatedResponse<Indicador>> {
   const apiPath = await getIndicatorsApiPath();
   const url = ensureQuery(`${apiPath}/indicators`, { page, size });
-  return withMockFallback(() => fetchJson<PaginatedResponse<Indicador>>(url), () => listIndicadores(page, size));
+  return withMockFallback(
+    () => fetchJson<PaginatedResponse<Indicador>>(url),
+    () => listIndicadores(page, size),
+  );
 }
 
 export async function getIndicador(id: string): Promise<IndicadorDetail> {
   const apiPath = await getIndicatorsApiPath();
-  return withMockFallback(() => fetchJson<IndicadorDetail>(`${apiPath}/indicators/${id}`), () => getIndicadorById(id));
+  return withMockFallback(
+    () => fetchJson<IndicadorDetail>(`${apiPath}/indicators/${id}`),
+    () => getIndicadorById(id),
+  );
 }
 
 export async function createIndicador(payload: IndicadorCreatePayload): Promise<Indicador> {
@@ -137,7 +142,11 @@ export async function deleteIndicador(id: string): Promise<void> {
 export async function createVersion(id: string, definicion: DefinicionIndicadorForm): Promise<IndicadorVersion> {
   const apiPath = await getIndicatorsApiPath();
   return withMockFallback(
-    () => fetchJson<IndicadorVersion>(`${apiPath}/indicators/${id}/versions`, { method: 'POST', ...toJsonBody(definicion) }),
+    () =>
+      fetchJson<IndicadorVersion>(`${apiPath}/indicators/${id}/versions`, {
+        method: 'POST',
+        ...toJsonBody(definicion),
+      }),
     () => createVersionMock(id, definicion),
   );
 }
@@ -194,7 +203,9 @@ export async function resolveLocations(uuids: Array<string>): Promise<Array<Loca
   return withMockFallback(
     async () => {
       const resolved = await Promise.all(
-        uuids.map((uuid) => fetchJson<OpenmrsLocation>(`${restBaseUrl}/location/${uuid}?v=${locationRepresentation()}`)),
+        uuids.map((uuid) =>
+          fetchJson<OpenmrsLocation>(`${restBaseUrl}/location/${uuid}?v=${locationRepresentation()}`),
+        ),
       );
       return resolved.map(mapLocation);
     },

@@ -37,7 +37,7 @@ test.describe('ImagingDetailedSummary - Link Study workflow', () => {
     expect(orthancConfigurations.length).toBeGreaterThan(0);
     const orthancConfiguration = orthancConfigurations[0];
 
-    await page.goto(`${process.env.E2E_BASE_URL}/spa/patient/${patientUuid}/chart/Imaging#`);
+    await page.goto(`patient/${patientUuid}/chart/Imaging#`);
 
     await uploadStudies(request, ['testDicomStudy.zip'], orthancConfiguration);
     await linkStudies(request, orthancConfiguration, 'all');
@@ -50,7 +50,7 @@ test.describe('ImagingDetailedSummary - Link Study workflow', () => {
     expect(orthancConfigurations.length).toBeGreaterThan(0);
     const orthancConfiguration = orthancConfigurations[0];
 
-    await page.goto(`${process.env.E2E_BASE_URL}/spa/patient/${patientUuid}/chart/Imaging#`);
+    await page.goto(`patient/${patientUuid}/chart/Imaging#`);
 
     // First sync existing studies (should be 0 because we cleaned the server)
     await linkStudies(request, orthancConfiguration, 'all');
@@ -98,7 +98,7 @@ test.describe('ImagingDetailedSummary - Link Study workflow', () => {
     expect(orthancConfigurations.length).toBeGreaterThan(0);
     const orthancConfiguration = orthancConfigurations[0];
 
-    await page.goto(`${process.env.E2E_BASE_URL}/spa/patient/${patientUuid}/chart/Imaging#`);
+    await page.goto(`patient/${patientUuid}/chart/Imaging#`);
 
     await linkStudies(request, orthancConfiguration, 'all');
     const allStudies = await getStudiesByConfig(api, orthancConfiguration, patientUuid);
@@ -133,7 +133,7 @@ test.describe('ImagingDetailedSummary - Link Study workflow', () => {
     await expect(page.getByText(lastStudy.studyDate, { exact: false })).toBeVisible();
   });
 
-  test('Unassign the study removed from the table', async ({ page, api, request }) => {
+  test('Unassign the study removed from the table', async ({ api, request }) => {
     const orthancConfigurations = await getOrthancConfigurations(api);
     expect(orthancConfigurations.length).toBeGreaterThan(0);
     const orthancConfiguration = orthancConfigurations[0];
@@ -167,7 +167,7 @@ test.describe('ImagingDetailedSummary - Link Study workflow', () => {
 
     await linkStudies(request, orthancConfiguration, 'all');
     const allStudies = await getStudiesByConfig(api, orthancConfiguration, patientUuid);
-    await page.goto(`${process.env.E2E_BASE_URL}/spa/patient/${patientUuid}/chart/Imaging#`);
+    await page.goto(`patient/${patientUuid}/chart/Imaging#`);
 
     // Fetch all available studies for this patient config
     await uploadStudies(request, ['testDicomStudy.zip'], orthancConfiguration);
@@ -213,7 +213,7 @@ test.describe('ImagingDetailedSummary - Link Study workflow', () => {
     expect(orthancConfigurations.length).toBeGreaterThan(0);
     const orthancConfiguration = orthancConfigurations[0];
 
-    await page.goto(`${process.env.E2E_BASE_URL}/spa/patient/${patientUuid}/chart/Imaging#`);
+    await page.goto(`patient/${patientUuid}/chart/Imaging#`);
 
     // Upload new study and link it to openmrs
     await uploadStudies(request, ['testDicomStudy.zip'], orthancConfiguration);
@@ -231,7 +231,7 @@ test.describe('ImagingDetailedSummary - Link Study workflow', () => {
     const series = await getStudySeries(api, studyToAssign.id);
     expect(series.length).toBeGreaterThan(0);
 
-    let instances;
+    let instances: Awaited<ReturnType<typeof getStudyInstances>> = [];
     // pick instance from the series
     let foundValidModality = false;
     for (const s of series) {

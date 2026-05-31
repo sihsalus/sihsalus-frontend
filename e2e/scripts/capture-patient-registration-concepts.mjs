@@ -1,11 +1,12 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { chromium, request } from '@playwright/test';
+import { getOpenmrsBaseUrl, getSpaBaseUrl } from './e2e-urls.mjs';
 
-const spaBase = (process.env.E2E_BASE_URL ?? 'http://localhost:8090/openmrs/spa').replace(/\/$/, '');
+const spaBase = getSpaBaseUrl('http://localhost:8090/openmrs/spa');
 const username = process.env.E2E_USERNAME ?? 'admin';
 const password = process.env.E2E_PASSWORD ?? 'Admin123';
-const openmrsBase = spaBase.replace(/\/spa$/, '');
+const openmrsBase = getOpenmrsBaseUrl('http://localhost:8090/openmrs/spa');
 const outputDir = path.resolve('e2e/screenshots');
 const screenshotPath = path.join(outputDir, 'patient-registration-concepts-after-import.png');
 

@@ -6,7 +6,7 @@ Punto de entrada a la documentación del monorepo. El [`README.md`](../README.md
 
 | Documento | Descripción |
 |---|---|
-| [`e2e-testing.md`](./e2e-testing.md) | Cómo correr las suites Playwright (raíz vs modulares) + issue conocido de `E2E_BASE_URL` |
+| [`e2e-testing.md`](./e2e-testing.md) | Cómo correr las suites Playwright (raíz vs modulares) y cómo se normalizan las URLs E2E |
 | [`fhir-validation-todo.md`](./fhir-validation-todo.md) | TODO de validación de recursos FHIR R4 generados desde formularios CRED |
 | [`../SECURITY.md`](../SECURITY.md) | Política de seguridad y reporte de vulnerabilidades |
 

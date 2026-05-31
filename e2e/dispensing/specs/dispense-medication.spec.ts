@@ -1,5 +1,6 @@
 import { type Order, type Visit } from '@openmrs/esm-framework';
 import { expect } from '@playwright/test';
+import { getSpaUrl } from '../../utils/e2e-urls';
 import {
   createEncounter,
   deleteDrugOrder,
@@ -31,12 +32,12 @@ test.afterEach(async ({ api }) => {
   await endVisit(api, visit);
 });
 
-test('Dispense prescription', async ({ page, patient }) => {
+test('Dispense prescription', async ({ page }) => {
   const dispensingPage = new DispensingPage(page);
 
   await test.step('When I navigate to the dispensing app', async () => {
     await dispensingPage.goTo();
-    await expect(page).toHaveURL(process.env.E2E_BASE_URL + `/spa/dispensing`);
+    await expect(page).toHaveURL(getSpaUrl('dispensing'));
   });
 
   await test.step('And I click on the Active prescriptions tab', async () => {

@@ -1,4 +1,5 @@
 import { type APIRequestContext, type PlaywrightWorkerArgs, type WorkerFixture } from '@playwright/test';
+import { getOpenmrsFhirBaseUrl, shouldIgnoreHTTPSErrors } from '../../utils/e2e-urls';
 
 /**
  * A fixture which initializes an [`APIRequestContext`](https://playwright.dev/docs/api/class-apirequestcontext)
@@ -16,7 +17,8 @@ import { type APIRequestContext, type PlaywrightWorkerArgs, type WorkerFixture }
 
 export const fhirApi: WorkerFixture<APIRequestContext, PlaywrightWorkerArgs> = async ({ playwright }, use) => {
   const fhirctx = await playwright.request.newContext({
-    baseURL: `${process.env.E2E_BASE_URL}/ws/fhir2/R4/`,
+    baseURL: getOpenmrsFhirBaseUrl(),
+    ignoreHTTPSErrors: shouldIgnoreHTTPSErrors(),
     httpCredentials: {
       username: process.env.E2E_USER_ADMIN_USERNAME,
       password: process.env.E2E_USER_ADMIN_PASSWORD,

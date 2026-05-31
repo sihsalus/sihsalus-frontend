@@ -14,8 +14,8 @@ import type {
   Series,
 } from '../../src/types';
 
-const imagingUrl = '/openmrs/ws/rest/v1/imaging';
-const worklistUrl = '/openmrs/ws/rest/v1/worklist';
+const imagingUrl = 'imaging';
+const worklistUrl = 'worklist';
 
 /**
  * Delete a study

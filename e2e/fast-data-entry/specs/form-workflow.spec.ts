@@ -1,4 +1,5 @@
 import { type APIRequestContext, expect } from '@playwright/test';
+import { getOpenmrsFhirUrl } from '../../utils/e2e-urls';
 import { test } from '../core';
 
 type OpenmrsSessionResponse = {
@@ -66,7 +67,7 @@ async function getTestFormUuid(api: APIRequestContext) {
 }
 
 async function getTwoPatients(api: APIRequestContext) {
-  const response = await api.get(`${process.env.E2E_BASE_URL}/ws/fhir2/R4/Patient?_count=20`);
+  const response = await api.get(getOpenmrsFhirUrl('Patient?_count=20'));
   expect(response.ok()).toBeTruthy();
 
   const bundle = (await response.json()) as FhirBundle<FhirPatient>;

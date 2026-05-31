@@ -3,7 +3,7 @@ import { test } from '../core';
 
 let patientUuid: string;
 
-test.beforeEach(async ({ api, patient, request }) => {
+test.beforeEach(async ({ patient }) => {
   patientUuid = patient.uuid;
 });
 
@@ -20,7 +20,7 @@ test.describe
         await route.fulfill({ status: 200, contentType: 'application/json', body: '[]' });
       });
 
-      await page.goto(`${process.env.E2E_BASE_URL}/spa/patient/${patientUuid}/chart/Imaging#`);
+      await page.goto(`patient/${patientUuid}/chart/Imaging#`);
 
       // Imaging buttons should exist
       await expect(page.getByText(/Upload/i)).toBeVisible();
@@ -46,7 +46,7 @@ test.describe
         });
       });
 
-      await page.goto(`${process.env.E2E_BASE_URL}/spa/patient/${patientUuid}/chart/Imaging#`);
+      await page.goto(`patient/${patientUuid}/chart/Imaging#`);
 
       const linkButton = page.getByRole('button', { name: /Link studies/i });
       const uploadButton = page.getByRole('button', { name: /Upload/i });
@@ -63,7 +63,7 @@ test.describe
 
     test('should open Upload Studies workspace and display form controls', async ({ page }) => {
       // Navigate to Imaging dashboard
-      await page.goto(`${process.env.E2E_BASE_URL}/spa/patient/${patientUuid}/chart/Imaging#`);
+      await page.goto(`patient/${patientUuid}/chart/Imaging#`);
 
       // Click the "Upload" button in ImagingDetailedSummary
       const uploadButton = page.getByRole('button', { name: /upload/i });
@@ -117,7 +117,7 @@ test.describe
         }),
       );
 
-      await page.goto(`${process.env.E2E_BASE_URL}/spa/patient/${patientUuid}/chart/Imaging#`);
+      await page.goto(`patient/${patientUuid}/chart/Imaging#`);
 
       await expect(page.getByText(/No worklist found/i).first()).toBeVisible();
 
@@ -128,7 +128,7 @@ test.describe
     });
 
     test('should open Add Request workspace and validate form', async ({ page }) => {
-      await page.goto(`${process.env.E2E_BASE_URL}/spa/patient/${patientUuid}/chart/Imaging#`);
+      await page.goto(`patient/${patientUuid}/chart/Imaging#`);
 
       const worklistBtn = page.getByRole('button', { name: /Record No worklist found/i });
       await worklistBtn.click();
@@ -140,7 +140,7 @@ test.describe
     });
 
     test('show validation messages when saving empty request', async ({ page }) => {
-      await page.goto(`${process.env.E2E_BASE_URL}/spa/patient/${patientUuid}/chart/Imaging#`);
+      await page.goto(`patient/${patientUuid}/chart/Imaging#`);
 
       // Open the "Add Request" workspace
       const worklistBtn = page.getByRole('button', { name: /Record No worklist found/i });

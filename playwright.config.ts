@@ -1,12 +1,21 @@
 import { defineConfig, devices } from '@playwright/test';
 import dotenv from 'dotenv';
+import { getSpaBaseUrl, getSpaUrl } from './e2e/utils/e2e-urls';
 
 dotenv.config();
 
-const configuredBaseUrl = process.env.E2E_BASE_URL ?? 'http://localhost:8080/openmrs/spa';
-const BASE_URL = configuredBaseUrl.endsWith('/') ? configuredBaseUrl : `${configuredBaseUrl}/`;
+const BASE_URL = getSpaBaseUrl();
 const storageState = process.env.E2E_SKIP_AUTH === 'true' ? undefined : 'e2e/storage-state.json';
 const webServerCommand = process.env.E2E_WEB_SERVER_COMMAND ?? 'yarn start';
+const webServer =
+  process.env.E2E_DISABLE_WEB_SERVER === 'true'
+    ? undefined
+    : {
+        command: webServerCommand,
+        url: getSpaUrl('login'),
+        timeout: 120_000,
+        reuseExistingServer: !!process.env.CI,
+      };
 
 export default defineConfig({
   testDir: './e2e/tests',
@@ -25,10 +34,5 @@ export default defineConfig({
     { name: 'tablet', use: { viewport: { width: 1024, height: 768 } } },
     { name: 'mobile', use: { viewport: { width: 375, height: 812 } } },
   ],
-  webServer: {
-    command: webServerCommand,
-    url: `${BASE_URL}login`,
-    timeout: 120_000,
-    reuseExistingServer: !!process.env.CI,
-  },
+  webServer,
 });

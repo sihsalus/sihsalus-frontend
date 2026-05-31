@@ -4,7 +4,7 @@ export class LaboratoryPage {
   constructor(readonly page: Page) {}
 
   async goTo() {
-    await this.page.goto('/openmrs/spa/home/laboratory');
+    await this.page.goto('home/laboratory');
   }
 
   async navigateToTab(tabName: string) {

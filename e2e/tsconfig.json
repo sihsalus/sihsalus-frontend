@@ -8,6 +8,6 @@
     "noEmit": true,
     "types": ["node", "@playwright/test"]
   },
-  "include": ["global-setup.ts", "tests/**/*.ts"],
+  "include": ["global-setup.ts", "tests/**/*.ts", "patient-imaging/**/*.ts"],
   "exclude": ["node_modules"]
 }

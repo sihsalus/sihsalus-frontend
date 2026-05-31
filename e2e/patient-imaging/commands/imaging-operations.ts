@@ -248,6 +248,29 @@ export const getOrthancConfigurations = async (api: APIRequestContext): Promise<
   return await res.json();
 };
 
+/**
+ * Fetch the first available Orthanc configuration, asserting one exists.
+ * Returns a non-optional value so specs don't have to narrow it repeatedly.
+ */
+export const getFirstOrthancConfiguration = async (api: APIRequestContext): Promise<OrthancConfiguration> => {
+  const orthancConfigurations = await getOrthancConfigurations(api);
+  expect(orthancConfigurations.length).toBeGreaterThan(0);
+  const [orthancConfiguration] = orthancConfigurations;
+  if (!orthancConfiguration) {
+    throw new Error('Expected at least one Orthanc configuration to be available');
+  }
+  return orthancConfiguration;
+};
+
+/** Return the first element of an array, throwing a clear error if it is empty. */
+export function requireFirst<T>(items: readonly T[], message: string): T {
+  const [first] = items;
+  if (first === undefined) {
+    throw new Error(message);
+  }
+  return first;
+}
+
 // Delete all studies in openmrs database and all orthanc servers, so there are
 // no old studies that don't exist anymore in orthanc
 export async function cleanOrthanc(request: APIRequestContext, api: APIRequestContext, patientUuid?: string) {

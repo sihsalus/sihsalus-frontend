@@ -47,7 +47,8 @@
         "vitest.config.ts",
         "vitest.config.js"
       ],
-      "env": ["TZ"]
+      "env": ["TZ"],
+      "outputLogs": "errors-only"
     },
     "test:watch": {
       "cache": false,

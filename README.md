@@ -25,7 +25,7 @@ nvm use                  # usa la versión definida en .nvmrc
 yarn install
 
 # 2. Configurar entorno (recomendado)
-cp .env.example .env     # editar si se necesita apuntar a otro backend
+cp .env.template .env    # editar si se necesita apuntar a otro backend
 
 # 3. Levantar el dev server
 yarn clean && yarn build && yarn assemble
@@ -37,7 +37,7 @@ SIHSALUS_PORT=3000 SIHSALUS_DEV_APPS=esm-login-app,esm-home-app yarn start
 # → http://localhost:3000/openmrs/spa/
 ```
 
-El dev server hace proxy de las peticiones de API al backend definido en `SIHSALUS_BACKEND_URL` (ver [.env.example](.env.example)). Si no se define, usa el backend dev por defecto y lo advierte al arrancar.
+El dev server hace proxy de las peticiones de API al backend definido en `SIHSALUS_BACKEND_URL` (ver [.env.template](.env.template)). Si no se define, usa el backend dev por defecto y lo advierte al arrancar.
 
 ## Repository Structure
 
@@ -269,7 +269,7 @@ Antes de sumar funcionalidad clinica nueva, revisar:
 
 ## Environment Variables
 
-Crea un archivo `.env` en la raíz del repo (ver [.env.example](.env.example)):
+Crea un archivo `.env` en la raíz del repo (ver [.env.template](.env.template)):
 
 | Variable                         | Default                                | Descripción                                                            |
 | -------------------------------- | -------------------------------------- | ---------------------------------------------------------------------- |

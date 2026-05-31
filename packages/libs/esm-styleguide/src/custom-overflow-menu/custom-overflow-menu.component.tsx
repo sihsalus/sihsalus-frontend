@@ -118,6 +118,7 @@ export function CustomOverflowMenu({ menuTitle, children }: CustomOverflowMenuPr
   return (
     <div data-overflow-menu className={classNames('cds--overflow-menu', styles.container)} ref={ref}>
       <button
+        type="button"
         className={classNames(
           'cds--btn',
           'cds--btn--ghost',

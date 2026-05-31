@@ -67,6 +67,11 @@
     "extract-translations": {
       "cache": false
     },
+    "document": {
+      "dependsOn": ["^build"],
+      "inputs": ["src/**", "typedoc.json", "tsconfig.typedoc.json"],
+      "outputs": ["docs/**"]
+    },
     "e2e": {
       "dependsOn": ["build"],
       "outputs": ["e2e/results/**"],

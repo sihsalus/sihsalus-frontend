@@ -71,6 +71,17 @@ jobs:
         if: github.event_name == 'push'
         run: yarn verify
 
+      # Regression guard: every workspace must define a `lint` script, else
+      # `turbo run lint` silently skips it (how esm-styleguide hid 14 errors).
+      - name: Validate Lint Coverage
+        run: yarn validate:lint-coverage
+
+      # Safety net: lints the whole repo (incl. non-workspace files like
+      # packages/tooling/scripts and root configs) that per-package turbo
+      # lint does not reach. Fails on lint errors only, not warnings.
+      - name: Lint Full Repo
+        run: yarn lint:all
+
   build:
     runs-on: ubuntu-latest
     timeout-minutes: 45

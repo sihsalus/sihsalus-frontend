@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 
+import { fork } from 'node:child_process';
 import { resolve } from 'node:path';
-import { fork } from 'child_process';
 
 import yargs from 'yargs';
 

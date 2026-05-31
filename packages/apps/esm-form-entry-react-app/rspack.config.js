@@ -1,4 +1,4 @@
-const path = require('path');
+const path = require('node:path');
 const defaultConfig = require('openmrs/default-rspack-config');
 
 defaultConfig.additionalConfig.resolve = {

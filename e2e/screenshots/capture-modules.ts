@@ -10,9 +10,9 @@
  *   npx ts-node e2e/screenshots/capture-modules.ts
  */
 
+import * as fs from 'node:fs';
+import * as path from 'node:path';
 import { chromium } from '@playwright/test';
-import * as fs from 'fs';
-import * as path from 'path';
 
 const BASE_URL = 'http://gidis-hsc-dev.inf.pucp.edu.pe/openmrs/spa';
 const USERNAME = 'admin';

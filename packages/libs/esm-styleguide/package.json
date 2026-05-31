@@ -44,7 +44,8 @@
     "test": "cross-env TZ=UTC vitest run --passWithNoTests",
     "test:watch": "cross-env TZ=UTC vitest watch --passWithNoTests",
     "coverage": "cross-env TZ=UTC vitest run --coverage --passWithNoTests",
-    "typescript": "tsc --noEmit && tsc -p tsconfig.build.json"
+    "typescript": "tsc --noEmit && tsc -p tsconfig.build.json",
+    "lint": "node ../../tooling/scripts/run-biome.js lint ."
   },
   "dependencies": {
     "@carbon/charts": "^1.27.0",

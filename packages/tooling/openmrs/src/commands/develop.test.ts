@@ -1,3 +1,4 @@
+import { readFileSync } from 'node:fs';
 import { describe, expect, it, vi } from 'vitest';
 
 import { createInMemoryRateLimit, readRateLimitEnv } from './develop-rate-limit';
@@ -82,5 +83,14 @@ describe('readRateLimitEnv', () => {
         process.env.SIHSALUS_TEST_RATE_LIMIT_MAX = previousValue;
       }
     }
+  });
+});
+
+describe('start-dev rate limit defaults', () => {
+  it('keeps the local SPA proxy rate limiter disabled by default', () => {
+    const startDevScript = readFileSync(new URL('../../../scripts/start-dev.js', import.meta.url), 'utf8');
+
+    expect(startDevScript).toContain("max: readRateLimitEnv('SIHSALUS_SPA_RATE_LIMIT_MAX', 0)");
+    expect(startDevScript).toContain('if (windowMs <= 0 || max <= 0)');
   });
 });

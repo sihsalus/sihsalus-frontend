@@ -344,10 +344,11 @@ function findLiteralCalls(source, functionName) {
 
 function findMatches(source, expression) {
   const matches = [];
-  let match;
   expression.lastIndex = 0;
-  while ((match = expression.exec(source)) !== null) {
+  let match = expression.exec(source);
+  while (match !== null) {
     matches.push({ index: match.index, match });
+    match = expression.exec(source);
   }
   return matches;
 }

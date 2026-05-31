@@ -1,10 +1,8 @@
 import { readFileSync } from 'node:fs';
 import { readFile } from 'node:fs/promises';
 import { basename, resolve } from 'node:path';
-import type { RequestHandler } from 'express';
 import express from 'express';
 import { createProxyMiddleware } from 'http-proxy-middleware';
-
 import {
   type ImportmapDeclaration,
   logInfo,
@@ -13,6 +11,7 @@ import {
   removeTrailingSlash,
   shouldAllowSelfSignedTls,
 } from '../utils';
+import { createInMemoryRateLimit } from './develop-rate-limit';
 
 export interface DevelopArgs {
   port: number;
@@ -33,29 +32,6 @@ export interface DevelopArgs {
 function rewriteLocalDevSetCookie(setCookie: Array<string>): Array<string> {
   const rewrite = (cookie: string) => cookie.replace(/;\s*Secure/gi, '');
   return setCookie.map(rewrite);
-}
-
-function createInMemoryRateLimit({ windowMs, max }: { windowMs: number; max: number }): RequestHandler {
-  const requestsByIp = new Map<string, { count: number; resetAt: number }>();
-
-  return (req, res, next) => {
-    const now = Date.now();
-    const key = req.ip || req.socket.remoteAddress || 'unknown';
-    const current = requestsByIp.get(key);
-
-    if (!current || current.resetAt <= now) {
-      requestsByIp.set(key, { count: 1, resetAt: now + windowMs });
-      return next();
-    }
-
-    current.count += 1;
-    if (current.count > max) {
-      res.setHeader('retry-after', Math.ceil((current.resetAt - now) / 1000));
-      return res.status(429).send('Too many requests');
-    }
-
-    return next();
-  };
 }
 
 export async function runDevelop(args: DevelopArgs) {
@@ -79,6 +55,10 @@ export async function runDevelop(args: DevelopArgs) {
   const indexRateLimit = createInMemoryRateLimit({
     windowMs: Number(process.env.SIHSALUS_DEV_RATE_LIMIT_WINDOW_MS) || 60_000,
     max: Number(process.env.SIHSALUS_DEV_RATE_LIMIT_MAX) || 300,
+  });
+  const apiRateLimit = createInMemoryRateLimit({
+    windowMs: Number(process.env.SIHSALUS_DEV_API_RATE_LIMIT_WINDOW_MS) || 60_000,
+    max: Number(process.env.SIHSALUS_DEV_API_RATE_LIMIT_MAX) || 1200,
   });
 
   const localConfigUrlPrefix = '__local_config__';
@@ -186,6 +166,7 @@ export async function runDevelop(args: DevelopArgs) {
   // JS bundles located at the same domain as `apiUrl`.
   app.use(
     apiUrl,
+    apiRateLimit,
     createProxyMiddleware(
       (path) => {
         return new RegExp(`${apiUrl}/.*`).test(path) && !indexHtmlPathMatcher.test(path);

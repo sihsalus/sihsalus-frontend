@@ -104,7 +104,7 @@
     "typedoc-plugin-markdown": "^4.6.3",
     "typedoc-plugin-no-inherit": "^1.6.1",
     "typescript": "6.0.3",
-    "vitest": "^4.1.2"
+    "vitest": "^4.1.7"
   },
   "stableVersion": "9.0.2"
 }

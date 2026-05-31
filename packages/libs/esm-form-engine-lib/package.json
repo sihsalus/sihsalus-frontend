@@ -64,7 +64,7 @@
     "@types/lodash-es": "^4.17.12",
     "@types/react": "^18.3.2",
     "dayjs": "^1.11.11",
-    "husky": "^8.0.3",
+    "husky": "^9.1.7",
     "i18next": "^25.0.0",
     "i18next-parser": "^9.3.0",
     "lint-staged": "^15.2.2",

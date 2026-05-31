@@ -239,6 +239,7 @@ describe('ProceduresForm', () => {
 
     await user.click(screen.getByRole('button', { name: /cancel/i }));
     expect(defaultProps.closeWorkspace).toHaveBeenCalledTimes(1);
+    expect(defaultProps.closeWorkspace).toHaveBeenCalledWith();
   });
 
   it('shows a validation error when submitting without a procedure', async () => {

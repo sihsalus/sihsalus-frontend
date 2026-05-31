@@ -35,12 +35,14 @@ import type { ProceduresFormSchema } from './procedures-form.workspace';
 
 type ProceduresFormComponentProps = {
   closeWorkspace: () => void;
+  closeWorkspaceAfterSave: () => void;
   procedure?: Procedure;
   patientUuid: string;
 };
 
 const ProceduresFormComponent: React.FC<ProceduresFormComponentProps> = ({
   closeWorkspace,
+  closeWorkspaceAfterSave,
   patientUuid,
   procedure,
 }) => {
@@ -180,12 +182,12 @@ const ProceduresFormComponent: React.FC<ProceduresFormComponentProps> = ({
           ? t('procedureUpdatesNowVisible', 'Changes to the procedure are now visible on the Procedures page')
           : t('procedureNowVisible', 'It is now visible on the Procedures page'),
       });
-      closeWorkspace();
+      closeWorkspaceAfterSave();
     } catch (error) {
       setIsSubmittingForm(false);
       setErrorSaving(error);
     }
-  }, [closeWorkspace, getValues, mutate, patientUuid, procedure?.uuid, t]);
+  }, [closeWorkspaceAfterSave, getValues, mutate, patientUuid, procedure?.uuid, t]);
 
   const onError = () => setIsSubmittingForm(false);
 

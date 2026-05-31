@@ -1,8 +1,6 @@
 import path from 'node:path';
-import { request } from '@playwright/test';
 import * as dotenv from 'dotenv';
-import { writeStorageStateForSpa } from '../../utils/e2e-storage-state';
-import { getOpenmrsRestUrl, shouldIgnoreHTTPSErrors } from '../../utils/e2e-urls';
+import { loginToOpenmrsAndWriteStorageState } from '../../utils/e2e-api';
 
 dotenv.config();
 
@@ -14,22 +12,10 @@ dotenv.config();
  */
 
 async function globalSetup() {
-  const requestContext = await request.newContext({ ignoreHTTPSErrors: shouldIgnoreHTTPSErrors() });
-  const token = Buffer.from(`${process.env.E2E_USER_ADMIN_USERNAME}:${process.env.E2E_USER_ADMIN_PASSWORD}`).toString(
-    'base64',
-  );
-  await requestContext.post(getOpenmrsRestUrl('session'), {
-    data: {
-      sessionLocation: process.env.E2E_LOGIN_DEFAULT_LOCATION_UUID,
-      locale: 'en',
-    },
-    headers: {
-      Accept: 'application/json',
-      Authorization: `Basic ${token}`,
-    },
+  await loginToOpenmrsAndWriteStorageState({
+    locale: 'en',
+    storageStatePath: path.resolve(__dirname, '../storageState.json'),
   });
-  await writeStorageStateForSpa(requestContext, path.resolve(__dirname, '../storageState.json'));
-  await requestContext.dispose();
 }
 
 export default globalSetup;

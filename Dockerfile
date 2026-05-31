@@ -1,7 +1,7 @@
 # Dockerfile
 
 # Stage 1: Build local @sihsalus/* modules — deterministic, no network required
-FROM node:24-alpine AS builder
+FROM node:26-alpine AS builder
 WORKDIR /app
 RUN corepack enable && corepack prepare yarn@4.13.0 --activate
 
@@ -27,7 +27,7 @@ RUN --mount=type=cache,target=/app/node_modules/.cache \
 # patches index.html with env vars (SPA_PATH, API_URL, SPA_CONFIG_URLS, SPA_DEFAULT_LOCALE),
 # and copies config files. The infra repo mounts a shared volume at SPA_OUTPUT_DIR;
 # a stock nginx serves from it — no runtime substitution needed.
-FROM node:24-alpine AS init
+FROM node:26-alpine AS init
 WORKDIR /app
 
 RUN rm -rf /usr/local/lib/node_modules/npm /usr/local/bin/npm /usr/local/bin/npx
@@ -46,7 +46,7 @@ CMD ["node", "packages/tooling/scripts/assemble-importmap.js"]
 # Stage 3: Hardened init container image
 # Same runtime behavior as `init`, but runs as a non-root user and keeps the
 # published image target explicit for secure container workflows.
-FROM node:24-alpine AS secure-init
+FROM node:26-alpine AS secure-init
 WORKDIR /app
 
 RUN rm -rf /usr/local/lib/node_modules/npm /usr/local/bin/npm /usr/local/bin/npx

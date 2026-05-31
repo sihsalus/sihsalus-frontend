@@ -47,11 +47,11 @@ const VisitAttributeTypeFields: React.FC<VisitAttributeTypeFieldsProps> = ({ set
   );
 
   if (visitAttributeTypes?.length) {
+    const { visitAttributes } = getValues();
+
     return (
       <>
         {visitAttributeTypes.map((attributeType) => {
-          const { visitAttributes } = getValues();
-
           const showAttributeType = attributeType?.showWhenExpression
             ? safeEvaluateExpression(attributeType.showWhenExpression, {
                 visitAttributes,
@@ -135,13 +135,6 @@ const AttributeTypeField: React.FC<AttributeTypeFieldProps> = ({
 
   const fieldToRender = useMemo(() => {
     const { onChange } = fieldProps;
-    if (isLoading) {
-      return <></>;
-    }
-
-    if (errorFetchingVisitAttributeType) {
-      return null;
-    }
 
     switch (data?.datatypeClassname) {
       case 'org.openmrs.customdatatype.datatype.ConceptDatatype':
@@ -243,7 +236,7 @@ const AttributeTypeField: React.FC<AttributeTypeFieldProps> = ({
             onChange={([date]) => onChange(dayjs(date).format('YYYY-MM-DD'))}
           >
             <DatePickerInput
-              id="date-picker-default-id"
+              id={`date-picker-${id}`}
               placeholder="dd/mm/yyyy"
               labelText={labelText}
               type="text"
@@ -271,11 +264,9 @@ const AttributeTypeField: React.FC<AttributeTypeFieldProps> = ({
     uuid,
     answers,
     data,
-    isLoading,
     isLoadingAnswers,
     labelText,
     t,
-    errorFetchingVisitAttributeType,
     errorFetchingVisitAttributeAnswers,
     fieldProps,
     errors.visitAttributes,

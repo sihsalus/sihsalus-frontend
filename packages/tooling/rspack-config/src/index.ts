@@ -37,6 +37,8 @@
  * from `/d/e/`, then it *might* in *some cases* try to import `/d/e/c`.
  */
 
+import { existsSync, statSync } from 'node:fs';
+import { basename, dirname, resolve } from 'node:path';
 import rspack, {
   CopyRspackPlugin,
   container,
@@ -47,9 +49,7 @@ import rspack, {
   type RuleSetRule,
 } from '@rspack/core';
 import { CleanWebpackPlugin } from 'clean-webpack-plugin';
-import { existsSync, statSync } from 'fs';
 import { merge, mergeWith } from 'lodash';
-import { basename, dirname, resolve } from 'path';
 import { inc } from 'semver';
 import { TsCheckerRspackPlugin } from 'ts-checker-rspack-plugin';
 import { BundleAnalyzerPlugin } from 'webpack-bundle-analyzer';

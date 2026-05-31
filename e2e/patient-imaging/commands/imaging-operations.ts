@@ -1,7 +1,8 @@
 // tests/helpers/imaging-operations.ts
+
+import fs from 'node:fs';
+import path from 'node:path';
 import { type APIRequestContext, expect } from '@playwright/test';
-import fs from 'fs';
-import path from 'path';
 import type {
   CreateRequestProcedure,
   CreateRequestProcedureStep,

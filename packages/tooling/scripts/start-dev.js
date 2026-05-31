@@ -1,9 +1,9 @@
 #!/usr/bin/env node
 
-const { spawn, spawnSync } = require('child_process');
-const { existsSync, readFileSync, statSync } = require('fs');
-const net = require('net');
-const { extname, join, resolve } = require('path');
+const { spawn, spawnSync } = require('node:child_process');
+const { existsSync, readFileSync, statSync } = require('node:fs');
+const net = require('node:net');
+const { extname, join, resolve } = require('node:path');
 
 const envPath = resolve(process.cwd(), '.env');
 const hadBackendBeforeDotenv = Boolean(process.env.SIHSALUS_BACKEND_URL);

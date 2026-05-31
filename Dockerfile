@@ -12,6 +12,9 @@ COPY .yarn/ ./.yarn/
 # Copy workspaces (required so Yarn can resolve workspace:* deps)
 COPY packages/ ./packages/
 
+# Some apps import shared illustrations and other static assets at build time.
+COPY assets/ ./assets/
+
 ENV CI=true
 RUN --mount=type=cache,target=/root/.yarn/berry/cache \
     yarn install --immutable

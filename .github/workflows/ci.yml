@@ -82,6 +82,13 @@ jobs:
       - name: Lint Full Repo
         run: yarn lint:all
 
+      # e2e is not a workspace, so `turbo run typescript` never typechecks it.
+      # Enforce the root suite (e2e/tests), which is type-clean. The modular
+      # suites (e2e/<module>) carry ~196 pre-existing type errors and are not
+      # yet in scope — see docs/e2e-testing.md.
+      - name: Typecheck E2E (root suite)
+        run: yarn typecheck:e2e
+
   build:
     runs-on: ubuntu-latest
     timeout-minutes: 45

@@ -91,6 +91,11 @@ modular de OpenMRS. Es un check HTTP/FHIR externo contra Dyaku y no usa
 
 ## CI
 
-Los E2E no estan conectados a ningun workflow de GitHub Actions de este repo.
-Hoy se ejecutan manualmente porque requieren un backend OpenMRS alcanzable y con
-datos/configuracion compatible.
+Los tests E2E no se ejecutan en ningun workflow: requieren un backend OpenMRS
+alcanzable y con datos/configuracion compatible, asi que se corren manualmente.
+
+Lo que si corre en CI es el typecheck de la suite raiz (`yarn typecheck:e2e`
+sobre `e2e/tsconfig.json`), que hoy esta limpio. Las suites modulares
+(`e2e/<modulo>`) cargan ~196 errores de tipo preexistentes y todavia no estan
+en el typecheck; corregirlas por modulo es deuda pendiente (peor caso:
+`patient-imaging`).

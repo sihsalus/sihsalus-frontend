@@ -30,6 +30,7 @@
     "lint:all": "biome lint .",
     "validate:lint-coverage": "node packages/tooling/scripts/validate-lint-coverage.js",
     "typecheck": "turbo run typescript",
+    "typecheck:e2e": "tsc -p e2e/tsconfig.json",
     "verify": "cross-env TZ=UTC turbo run lint typescript test",
     "verify:changed": "node packages/tooling/scripts/verify-changed.js",
     "extract-translations": "turbo run extract-translations",

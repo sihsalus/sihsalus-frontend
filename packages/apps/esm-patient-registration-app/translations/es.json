@@ -113,6 +113,7 @@
   "resetIdentifierTooltip": "Restablecer",
   "responsibleRelationshipRequiredForMinor": "Para pacientes menores de edad, registre una relación con familiar responsable, apoderado o tutor.",
   "responsibleRelationshipRequiredTitle": "Relación responsable requerida",
+  "responsibleRequiredForUnidentifiedPatient": "A responsible person or institution is required for unidentified patients",
   "restoreRelationshipActionButton": "Deshacer",
   "searchAddress": "Buscar dirección",
   "searchIdentifierPlaceholder": "Buscar tipo de identificación",

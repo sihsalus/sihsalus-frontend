@@ -51,8 +51,8 @@ export class AppErrorBoundary extends Component<AppErrorBoundaryProps, AppErrorB
       //console.log("Answer: ",authStatus.status);
 
       if (authStatus.status === 'unauthorized') {
-        if(this.props.disappear === true){
-          return (<></>);
+        if (this.props.disappear === true) {
+          return <></>;
         }
         return (
           <Tile>

@@ -1,5 +1,5 @@
 import type { APIRequestContext, PlaywrightWorkerArgs, WorkerFixture } from '@playwright/test';
-import { getOpenmrsRestBaseUrl } from '../../utils/e2e-urls';
+import { getOpenmrsRestBaseUrl, shouldIgnoreHTTPSErrors } from '../../utils/e2e-urls';
 
 /**
  * A fixture which initializes an [`APIRequestContext`](https://playwright.dev/docs/api/class-apirequestcontext)
@@ -17,6 +17,7 @@ import { getOpenmrsRestBaseUrl } from '../../utils/e2e-urls';
 export const api: WorkerFixture<APIRequestContext, PlaywrightWorkerArgs> = async ({ playwright }, use) => {
   const ctx = await playwright.request.newContext({
     baseURL: getOpenmrsRestBaseUrl(),
+    ignoreHTTPSErrors: shouldIgnoreHTTPSErrors(),
     httpCredentials: {
       username: process.env.E2E_USER_ADMIN_USERNAME,
       password: process.env.E2E_USER_ADMIN_PASSWORD,

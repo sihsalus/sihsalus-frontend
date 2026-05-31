@@ -50,3 +50,7 @@ export function getOpenmrsFhirBaseUrl() {
 export function getOpenmrsFhirUrl(path = '') {
   return joinUrl(getOpenmrsFhirBaseUrl(), path);
 }
+
+export function shouldIgnoreHTTPSErrors() {
+  return process.env.SIHSALUS_ALLOW_SELF_SIGNED_TLS === 'true' || process.env.E2E_IGNORE_HTTPS_ERRORS === 'true';
+}

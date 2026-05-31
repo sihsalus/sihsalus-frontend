@@ -68,6 +68,10 @@ const existing = fs.existsSync(outPath) ? JSON.parse(fs.readFileSync(outPath, 'u
 const localBaseNames = new Set(Object.keys(frontendModules).map((n) => n.replace(/^@[^/]+\//, '')));
 
 const externalEntries = Object.entries(existing.frontendModules || {}).filter(([name]) => {
+  if (name.startsWith('@sihsalus/')) {
+    return false;
+  }
+
   const baseName = name.replace(/^@[^/]+\//, '');
   return !localBaseNames.has(baseName);
 });

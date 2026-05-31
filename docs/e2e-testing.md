@@ -49,6 +49,13 @@ Para specs publicos o pre-login se puede omitir el setup autenticado:
 E2E_SKIP_AUTH=true yarn test:e2e
 ```
 
+Si el server local ya esta levantado manualmente, desactiva el `webServer` de
+Playwright para evitar un segundo `yarn start`:
+
+```bash
+E2E_DISABLE_WEB_SERVER=true yarn playwright test e2e/tests/smoke.spec.ts --project=desktop
+```
+
 ## Suites modulares
 
 Las suites modulares viven bajo `e2e/<modulo>/` y prueban apps concretas:

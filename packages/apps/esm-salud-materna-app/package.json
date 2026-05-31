@@ -46,7 +46,7 @@
     "exceljs": "^4.4.0",
     "lodash-es": "^4.17.21",
     "react-hook-form": "^7.56.1",
-    "zod": "^3.24.1"
+    "zod": "^4.4.3"
   },
   "peerDependencies": {
     "@carbon/colors": "11.x",

@@ -44,7 +44,7 @@
     "@sihsalus/esm-rbac": "workspace:*",
     "lodash-es": "^4.17.21",
     "react-hook-form": "^7.52.2",
-    "zod": "^3.23.8"
+    "zod": "^4.4.3"
   },
   "peerDependencies": {
     "@carbon/react": "1.x",

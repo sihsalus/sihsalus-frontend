@@ -54,11 +54,11 @@ export async function runDevelop(args: DevelopArgs) {
   const app = express();
   const indexRateLimit = createInMemoryRateLimit({
     windowMs: readRateLimitEnv('SIHSALUS_DEV_RATE_LIMIT_WINDOW_MS', 60_000),
-    max: readRateLimitEnv('SIHSALUS_DEV_RATE_LIMIT_MAX', 3000),
+    max: readRateLimitEnv('SIHSALUS_DEV_RATE_LIMIT_MAX', 0),
   });
   const apiRateLimit = createInMemoryRateLimit({
     windowMs: readRateLimitEnv('SIHSALUS_DEV_API_RATE_LIMIT_WINDOW_MS', 60_000),
-    max: readRateLimitEnv('SIHSALUS_DEV_API_RATE_LIMIT_MAX', 12_000),
+    max: readRateLimitEnv('SIHSALUS_DEV_API_RATE_LIMIT_MAX', 0),
   });
 
   const localConfigUrlPrefix = '__local_config__';

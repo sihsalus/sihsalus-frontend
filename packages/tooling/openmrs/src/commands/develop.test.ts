@@ -54,6 +54,20 @@ describe('createInMemoryRateLimit', () => {
 });
 
 describe('readRateLimitEnv', () => {
+  it('can default to disabled when no environment value is configured', () => {
+    const previousValue = process.env.SIHSALUS_TEST_RATE_LIMIT_MAX;
+
+    try {
+      delete process.env.SIHSALUS_TEST_RATE_LIMIT_MAX;
+
+      expect(readRateLimitEnv('SIHSALUS_TEST_RATE_LIMIT_MAX', 0)).toBe(0);
+    } finally {
+      if (previousValue !== undefined) {
+        process.env.SIHSALUS_TEST_RATE_LIMIT_MAX = previousValue;
+      }
+    }
+  });
+
   it('honors zero so developers can disable a local limiter explicitly', () => {
     const previousValue = process.env.SIHSALUS_TEST_RATE_LIMIT_MAX;
 

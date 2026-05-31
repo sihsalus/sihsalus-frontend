@@ -12,7 +12,7 @@ import type {
   RequestProcedure,
   RequestProcedureStep,
   Series,
-} from '../../src/types';
+} from './types';
 
 const imagingUrl = 'imaging';
 const worklistUrl = 'worklist';
@@ -250,7 +250,7 @@ export const getOrthancConfigurations = async (api: APIRequestContext): Promise<
 
 // Delete all studies in openmrs database and all orthanc servers, so there are
 // no old studies that don't exist anymore in orthanc
-export async function cleanOrthanc(request, api, patientUuid) {
+export async function cleanOrthanc(request: APIRequestContext, api: APIRequestContext, patientUuid?: string) {
   const orthancConfigurations = await getOrthancConfigurations(api);
   expect(orthancConfigurations.length).toBeGreaterThan(0);
 

@@ -62,7 +62,10 @@ async function getTestFormUuid(api: APIRequestContext) {
   const payload = (await response.json()) as OpenmrsFormResponse;
   const form = payload.results?.find((candidate) => candidate.published && !/component/i.test(candidate.name ?? ''));
 
-  expect(form?.uuid, 'Expected at least one published non-component form').toBeTruthy();
+  if (!form?.uuid) {
+    throw new Error('Expected at least one published non-component form');
+  }
+
   return form.uuid;
 }
 

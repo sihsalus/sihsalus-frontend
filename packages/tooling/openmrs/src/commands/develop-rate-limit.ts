@@ -1,6 +1,24 @@
 import type { RequestHandler } from 'express';
 
+export function readRateLimitEnv(name: string, fallback: number): number {
+  const value = process.env[name];
+  if (!value) {
+    return fallback;
+  }
+
+  const parsedValue = Number(value);
+  if (!Number.isFinite(parsedValue)) {
+    return fallback;
+  }
+
+  return Math.floor(parsedValue);
+}
+
 export function createInMemoryRateLimit({ windowMs, max }: { windowMs: number; max: number }): RequestHandler {
+  if (windowMs <= 0 || max <= 0) {
+    return (_req, _res, next) => next();
+  }
+
   const requestsByIp = new Map<string, { count: number; resetAt: number }>();
 
   return (req, res, next) => {

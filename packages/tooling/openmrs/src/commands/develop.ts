@@ -11,7 +11,7 @@ import {
   removeTrailingSlash,
   shouldAllowSelfSignedTls,
 } from '../utils';
-import { createInMemoryRateLimit } from './develop-rate-limit';
+import { createInMemoryRateLimit, readRateLimitEnv } from './develop-rate-limit';
 
 export interface DevelopArgs {
   port: number;
@@ -53,12 +53,12 @@ export async function runDevelop(args: DevelopArgs) {
   const allowSelfSignedTls = shouldAllowSelfSignedTls(backend);
   const app = express();
   const indexRateLimit = createInMemoryRateLimit({
-    windowMs: Number(process.env.SIHSALUS_DEV_RATE_LIMIT_WINDOW_MS) || 60_000,
-    max: Number(process.env.SIHSALUS_DEV_RATE_LIMIT_MAX) || 300,
+    windowMs: readRateLimitEnv('SIHSALUS_DEV_RATE_LIMIT_WINDOW_MS', 60_000),
+    max: readRateLimitEnv('SIHSALUS_DEV_RATE_LIMIT_MAX', 3000),
   });
   const apiRateLimit = createInMemoryRateLimit({
-    windowMs: Number(process.env.SIHSALUS_DEV_API_RATE_LIMIT_WINDOW_MS) || 60_000,
-    max: Number(process.env.SIHSALUS_DEV_API_RATE_LIMIT_MAX) || 1200,
+    windowMs: readRateLimitEnv('SIHSALUS_DEV_API_RATE_LIMIT_WINDOW_MS', 60_000),
+    max: readRateLimitEnv('SIHSALUS_DEV_API_RATE_LIMIT_MAX', 12_000),
   });
 
   const localConfigUrlPrefix = '__local_config__';

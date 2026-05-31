@@ -82,7 +82,7 @@ COPY assets/ ./assets/
 RUN yarn assemble
 
 # Stage 5: Lightweight precompiled SPA server
-FROM nginx:1.27-alpine AS spa-nginx
+FROM nginx:1.31-alpine AS spa-nginx
 
 COPY nginx.spa.conf /etc/nginx/conf.d/default.conf
 COPY --from=spa-artifact /app/dist/spa/ /usr/share/nginx/html/

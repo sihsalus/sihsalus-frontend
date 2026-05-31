@@ -1,5 +1,6 @@
 import { expect, test } from '@playwright/test';
 import dotenv from 'dotenv';
+import { getSpaUrl } from '../../utils/e2e-urls';
 import { HomePage } from '../pages';
 
 dotenv.config();
@@ -14,7 +15,7 @@ test.describe('Overview Page Test', () => {
     });
 
     await test.step('Then I should be at the home page', async () => {
-      await expect(page).toHaveURL(`${process.env.E2E_BASE_URL}spa/login`);
+      await expect(page).toHaveURL(getSpaUrl('login'));
     });
   });
 });

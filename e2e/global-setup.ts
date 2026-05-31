@@ -1,10 +1,10 @@
 import { request } from '@playwright/test';
 import * as dotenv from 'dotenv';
+import { getOpenmrsBaseUrl } from './utils/e2e-urls';
 
 dotenv.config();
 
-const SPA_BASE_URL = process.env.E2E_BASE_URL ?? 'http://localhost:8080/openmrs/spa';
-const API_BASE_URL = process.env.E2E_API_BASE_URL ?? SPA_BASE_URL.replace(/\/spa\/?$/, '').replace(/\/$/, '');
+const API_BASE_URL = getOpenmrsBaseUrl();
 
 interface LocationResponse {
   uuid?: string;

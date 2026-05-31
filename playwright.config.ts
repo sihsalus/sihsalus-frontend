@@ -1,10 +1,10 @@
 import { defineConfig, devices } from '@playwright/test';
 import dotenv from 'dotenv';
+import { getSpaBaseUrl, getSpaUrl } from './e2e/utils/e2e-urls';
 
 dotenv.config();
 
-const configuredBaseUrl = process.env.E2E_BASE_URL ?? 'http://localhost:8080/openmrs/spa';
-const BASE_URL = configuredBaseUrl.endsWith('/') ? configuredBaseUrl : `${configuredBaseUrl}/`;
+const BASE_URL = getSpaBaseUrl();
 const storageState = process.env.E2E_SKIP_AUTH === 'true' ? undefined : 'e2e/storage-state.json';
 const webServerCommand = process.env.E2E_WEB_SERVER_COMMAND ?? 'yarn start';
 
@@ -27,7 +27,7 @@ export default defineConfig({
   ],
   webServer: {
     command: webServerCommand,
-    url: `${BASE_URL}login`,
+    url: getSpaUrl('login'),
     timeout: 120_000,
     reuseExistingServer: !!process.env.CI,
   },

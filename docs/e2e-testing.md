@@ -1,61 +1,89 @@
 # E2E Testing (Playwright)
 
-The repo has **two** independent Playwright setups. Know which one you are running.
+El repo tiene dos flujos Playwright contra OpenMRS: una suite raiz y suites
+modulares por app. Ambos usan la misma normalizacion de URLs, asi que
+`E2E_BASE_URL` puede apuntar al contexto OpenMRS o directamente al SPA:
 
-## System A — root smoke suite
+```bash
+E2E_BASE_URL=http://localhost:8080/openmrs
+E2E_BASE_URL=http://localhost:8080/openmrs/spa
+```
 
-- Config: `playwright.config.ts` (repo root)
-- Specs: `e2e/tests/` (smoke, accessibility, critical-paths, …)
-- Auth: `e2e/global-setup.ts` logs in via REST and writes `e2e/storage-state.json`
-- Web server: auto-started via `webServer.command` (defaults to `yarn start`,
-  override with `E2E_WEB_SERVER_COMMAND`)
-- Run:
+Internamente se derivan:
 
-  ```bash
+- SPA: `http://localhost:8080/openmrs/spa`
+- API REST: `http://localhost:8080/openmrs/ws/rest/v1`
+- FHIR R4: `http://localhost:8080/openmrs/ws/fhir2/R4`
+
+Si `E2E_API_BASE_URL` esta definido, se usa como base de API y tiene prioridad
+sobre la derivacion desde `E2E_BASE_URL`.
+
+## Suite raiz
+
+La suite raiz cubre smoke tests, accesibilidad y flujos criticos transversales.
+
+- Config: `playwright.config.ts`
+- Specs: `e2e/tests/`
+- Setup de sesion: `e2e/global-setup.ts`
+- Estado de sesion: `e2e/storage-state.json`
+- Servidor: Playwright ejecuta `webServer.command`; por defecto es `yarn start`
+  y se puede cambiar con `E2E_WEB_SERVER_COMMAND`
+
+Comando:
+
+```bash
+yarn test:e2e
+```
+
+Con URLs explicitas:
+
+```bash
+E2E_BASE_URL=http://localhost:8080/openmrs/spa \
+E2E_API_BASE_URL=http://localhost:8080/openmrs \
   yarn test:e2e
-  ```
+```
 
-- `E2E_BASE_URL` **includes** `/spa` (e.g. `http://localhost:8080/openmrs/spa`).
-  The setup derives the API base by stripping `/spa`.
+Para specs publicos o pre-login se puede omitir el setup autenticado:
 
-## System B — per-module suites
+```bash
+E2E_SKIP_AUTH=true yarn test:e2e
+```
 
-- Configs: `e2e/<module>/playwright.config.ts` (laboratory, billing, dispensing,
-  cohort-builder, form-builder, patient-imaging, stock-management, dyaku,
-  fast-data-entry, user-onboarding) built from the shared factory
-  `packages/tooling/configs/playwright-suite.ts`
-- Each suite is self-contained: own `specs/`, `core/global-setup`, `fixtures/`,
-  `pages/`, and own `storageState.json`
-- These assume a server is **already running** (no `webServer` block)
-- There is no aggregate runner; invoke each config explicitly:
+## Suites modulares
 
-  ```bash
-  E2E_BASE_URL=http://localhost:8080/openmrs \
-    yarn playwright test --config e2e/laboratory/playwright.config.ts
-  ```
+Las suites modulares viven bajo `e2e/<modulo>/` y prueban apps concretas:
+`billing`, `cohort-builder`, `dispensing`, `fast-data-entry`, `form-builder`,
+`laboratory`, `patient-imaging`, `stock-management` y `user-onboarding`.
 
-## ⚠️ Known issue — conflicting `E2E_BASE_URL` `/spa` convention
+Usan `packages/tooling/configs/playwright-suite.ts` como factory compartida y
+cada una mantiene sus propios `specs/`, `core/global-setup.ts`, `fixtures/`,
+`pages/` y `storageState.json`.
 
-System A and System B disagree on whether `E2E_BASE_URL` includes `/spa`, while
-sharing the same env var:
+No tienen `webServer`; levanta frontend y backend antes de ejecutarlas.
 
-| | Expects `E2E_BASE_URL` | Reason |
-|---|---|---|
-| System A (root) | **with** `/spa` | `.env.template` default; setup strips `/spa` for the API |
-| System B (modular) | **without** `/spa` | configs append `/spa/` to `baseURL`; global-setups hit `${E2E_BASE_URL}/ws/rest/v1` |
+Desde la raiz del repo:
 
-With the documented `.env.template` value (`…/openmrs/spa`), the modular suites
-break:
+```bash
+E2E_BASE_URL=http://localhost:8080/openmrs/spa \
+  yarn playwright test --config e2e/laboratory/playwright.config.ts
+```
 
-- `baseURL` becomes `…/openmrs/spa/spa/` (double `/spa`)
-- modular auth hits `…/openmrs/spa/ws/rest/v1/session` (wrong API path)
+Desde el paquete de la app, usa `test-e2e` cuando exista:
 
-Running a modular suite today therefore requires overriding
-`E2E_BASE_URL=http://localhost:8080/openmrs` (no `/spa`) on the command line.
+```bash
+cd packages/apps/esm-laboratory-app
+E2E_BASE_URL=http://localhost:8080/openmrs yarn test-e2e
+```
 
-**Not yet fixed** — pending a decision on which convention to standardize.
+No hay un runner agregado para todas las suites modulares; se invoca cada config
+por separado.
+
+Nota: `e2e/dyaku` tambien tiene un `playwright.config.ts`, pero no es una suite
+modular de OpenMRS. Es un check HTTP/FHIR externo contra Dyaku y no usa
+`E2E_BASE_URL`.
 
 ## CI
 
-E2E is **not** wired into any GitHub Actions workflow; it runs manually only
-(it needs a reachable OpenMRS backend).
+Los E2E no estan conectados a ningun workflow de GitHub Actions de este repo.
+Hoy se ejecutan manualmente porque requieren un backend OpenMRS alcanzable y con
+datos/configuracion compatible.

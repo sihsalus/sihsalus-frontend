@@ -103,6 +103,18 @@
       }
     }
   },
+  "overrides": [
+    {
+      "includes": ["packages/libs/esm-styleguide/**"],
+      "linter": {
+        "rules": {
+          "correctness": {
+            "useExhaustiveDependencies": "warn"
+          }
+        }
+      }
+    }
+  ],
   "javascript": {
     "globals": [
       "CustomEvent",

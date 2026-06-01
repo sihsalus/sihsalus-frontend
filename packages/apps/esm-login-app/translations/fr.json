@@ -9,6 +9,7 @@
   "continue": "Continuer",
   "errorChangingPassword": "Erreur lors de la modification du mot de passe",
   "footerlogo": "Logo du pied de page",
+  "frontendVersion": "Frontend v{{version}}",
   "invalidCredentials": "Nom d'utilisateur ou mot de passe invalide",
   "language": "Langue",
   "learnMore": "En savoir plus",

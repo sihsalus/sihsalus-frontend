@@ -11,6 +11,7 @@
   "continueToPassword": "Continuar a la contraseña",
   "errorChangingPassword": "Error al cambiar la contraseña",
   "footerlogo": "Logo del pie de página",
+  "frontendVersion": "Frontend v{{version}}",
   "forgotPassword": "¿Olvidaste tu contraseña?",
   "invalidCredentials": "Nombre de usuario o contraseña inválidos",
   "learnMore": "Más información",

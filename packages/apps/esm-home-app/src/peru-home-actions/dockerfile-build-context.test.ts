@@ -13,4 +13,11 @@ describe('Dockerfile build context', () => {
     expect(appBuildIndex).toBeGreaterThanOrEqual(0);
     expect(assetsCopyIndex).toBeLessThan(appBuildIndex);
   });
+
+  it('removes npm from runtime stages before publishing the init image', () => {
+    const dockerfile = readFileSync(path.resolve(process.cwd(), '../../..', 'Dockerfile'), 'utf8');
+    const npmRemovalCount = dockerfile.match(/rm -rf \/usr\/local\/lib\/node_modules\/npm/g)?.length ?? 0;
+
+    expect(npmRemovalCount).toBeGreaterThanOrEqual(2);
+  });
 });

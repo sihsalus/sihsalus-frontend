@@ -1,4 +1,5 @@
 import { expect, test } from '@playwright/test';
+import { getSpaUrl } from '../utils/e2e-urls';
 
 test.describe('SPA Smoke Tests', () => {
   test('shell loads and renders the login page when unauthenticated', async ({ browser }) => {
@@ -6,7 +7,7 @@ test.describe('SPA Smoke Tests', () => {
     const ctx = await browser.newContext();
     const page = await ctx.newPage();
 
-    await page.goto('login');
+    await page.goto(getSpaUrl('login'));
     await expect(page.locator('input[name="username"], input[type="text"]').first()).toBeVisible({ timeout: 30_000 });
     await ctx.close();
   });
@@ -22,7 +23,7 @@ test.describe('SPA Smoke Tests', () => {
   });
 
   test('importmap is served and contains expected modules', async ({ page }) => {
-    const res = await page.request.get('/openmrs/spa/importmap.json');
+    const res = await page.request.get(getSpaUrl('importmap.json'));
     expect(res.ok()).toBeTruthy();
 
     const importmap = await res.json();
@@ -31,7 +32,7 @@ test.describe('SPA Smoke Tests', () => {
   });
 
   test('routes registry is served', async ({ page }) => {
-    const res = await page.request.get('/openmrs/spa/routes.registry.json');
+    const res = await page.request.get(getSpaUrl('routes.registry.json'));
     expect(res.ok()).toBeTruthy();
 
     const routes = await res.json();

@@ -1,6 +1,6 @@
 import { spawn } from 'node:child_process';
+import { copyFileSync, existsSync, readdirSync, readFileSync, statSync } from 'node:fs';
 import { basename, join, parse, resolve } from 'node:path';
-import { copyFileSync, existsSync, readdirSync, readFileSync, statSync } from 'fs';
 
 import { checkImportmapJson, checkRoutesJson, getImportMap, getRoutes, logInfo, rspackBin, shellDir } from '../utils';
 import { setShellEnvVars } from '../utils/config';

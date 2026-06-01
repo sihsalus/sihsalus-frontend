@@ -1,5 +1,5 @@
 import '@testing-library/jest-dom';
-import { TextDecoder, TextEncoder } from 'util';
+import { TextDecoder, TextEncoder } from 'node:util';
 
 // Use the global `vi` (provided by test runner) instead of importing from 'vitest'
 // so TypeScript doesn't need to resolve the module during `tsc` checks.

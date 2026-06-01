@@ -4,6 +4,6 @@ export class DispensingPage {
   constructor(readonly page: Page) {}
 
   async goTo() {
-    await this.page.goto('/openmrs/spa/dispensing');
+    await this.page.goto('dispensing');
   }
 }

@@ -1,5 +1,6 @@
 import { type Order, type Visit } from '@openmrs/esm-framework';
 import { expect } from '@playwright/test';
+import { getSpaUrl } from '../../utils/e2e-urls';
 import {
   createEncounter,
   deleteEncounter,
@@ -12,8 +13,6 @@ import {
 import { type Encounter, type Provider } from '../commands/types';
 import { test } from '../core';
 import { LaboratoryPage } from '../pages';
-
-const url = process.env.E2E_BASE_URL;
 
 let testOrder: Order;
 let encounter: Encounter;
@@ -34,7 +33,7 @@ test('View test orders', async ({ page }) => {
 
   await test.step('Given I navigate to the laboratory page', async () => {
     await laboratoryPage.goTo();
-    await expect(page).toHaveURL(url + `/spa/home/laboratory`);
+    await expect(page).toHaveURL(getSpaUrl('home/laboratory'));
   });
 
   await test.step('Then I should see the Tests ordered tab', async () => {

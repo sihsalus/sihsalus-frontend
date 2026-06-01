@@ -1,9 +1,9 @@
 #!/usr/bin/env node
 
-const { spawn, spawnSync } = require('child_process');
-const { existsSync, readFileSync, statSync } = require('fs');
-const net = require('net');
-const { extname, join, resolve } = require('path');
+const { spawn, spawnSync } = require('node:child_process');
+const { existsSync, readFileSync, statSync } = require('node:fs');
+const net = require('node:net');
+const { extname, join, resolve } = require('node:path');
 
 const envPath = resolve(process.cwd(), '.env');
 const hadBackendBeforeDotenv = Boolean(process.env.SIHSALUS_BACKEND_URL);
@@ -197,7 +197,25 @@ function runWorkspaceBuild(workspaceName, workspaceRoot) {
   }
 }
 
+function readRateLimitEnv(name, fallback) {
+  const value = process.env[name];
+  if (!value) {
+    return fallback;
+  }
+
+  const parsedValue = Number(value);
+  if (!Number.isFinite(parsedValue)) {
+    return fallback;
+  }
+
+  return Math.floor(parsedValue);
+}
+
 function createInMemoryRateLimit({ windowMs, max }) {
+  if (windowMs <= 0 || max <= 0) {
+    return (_req, _res, next) => next();
+  }
+
   const requestsByIp = new Map();
   const cleanupIntervalMs = Math.max(1000, Math.min(windowMs, 60_000));
   const cleanupTimer = setInterval(() => {
@@ -258,8 +276,8 @@ async function startWithProxy(cliArgs) {
   const staticHandler = express.static(distSpa);
   const spaIndexHtml = readFileSync(join(distSpa, 'index.html'), 'utf8');
   const spaIndexRateLimit = createInMemoryRateLimit({
-    windowMs: Number(process.env.SIHSALUS_SPA_RATE_LIMIT_WINDOW_MS) || 60_000,
-    max: Number(process.env.SIHSALUS_SPA_RATE_LIMIT_MAX) || 300,
+    windowMs: readRateLimitEnv('SIHSALUS_SPA_RATE_LIMIT_WINDOW_MS', 60_000),
+    max: readRateLimitEnv('SIHSALUS_SPA_RATE_LIMIT_MAX', 0),
   });
 
   app.all(sessionPath, async (req, res) => {

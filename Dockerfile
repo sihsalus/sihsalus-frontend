@@ -30,6 +30,8 @@ RUN --mount=type=cache,target=/app/node_modules/.cache \
 FROM node:24-alpine AS init
 WORKDIR /app
 
+RUN rm -rf /usr/local/lib/node_modules/npm /usr/local/bin/npm /usr/local/bin/npx
+
 ENV NODE_ENV=production
 ENV SPA_OUTPUT_DIR=/spa
 
@@ -46,6 +48,8 @@ CMD ["node", "packages/tooling/scripts/assemble-importmap.js"]
 # published image target explicit for secure container workflows.
 FROM node:24-alpine AS secure-init
 WORKDIR /app
+
+RUN rm -rf /usr/local/lib/node_modules/npm /usr/local/bin/npm /usr/local/bin/npx
 
 ENV NODE_ENV=production
 ENV SPA_OUTPUT_DIR=/spa
@@ -78,7 +82,7 @@ COPY assets/ ./assets/
 RUN yarn assemble
 
 # Stage 5: Lightweight precompiled SPA server
-FROM nginx:1.27-alpine AS spa-nginx
+FROM nginx:1.31-alpine AS spa-nginx
 
 COPY nginx.spa.conf /etc/nginx/conf.d/default.conf
 COPY --from=spa-artifact /app/dist/spa/ /usr/share/nginx/html/

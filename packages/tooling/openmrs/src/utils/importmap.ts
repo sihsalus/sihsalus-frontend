@@ -1,7 +1,7 @@
+import { exec } from 'node:child_process';
 import { existsSync, readFileSync } from 'node:fs';
 import { basename, resolve } from 'node:path';
 import { URL } from 'node:url';
-import { exec } from 'child_process';
 import glob from 'glob';
 
 import { getAppRoutes, getMainBundle, type PackageManifest } from './dependencies';

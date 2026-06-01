@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 
-const fs = require('fs');
-const path = require('path');
+const fs = require('node:fs');
+const path = require('node:path');
 const chalk = require('chalk');
 
 const logInfo = (msg) => console.log(`${chalk.green.bold('[validate-spa]')} ${msg}`);

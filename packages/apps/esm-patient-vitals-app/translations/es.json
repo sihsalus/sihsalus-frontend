@@ -1,4 +1,10 @@
 {
+  "<0>These vitals are <2>{hoursSinceVitalsTaken} {hoursLabel}</2></0>_one": "<0>These vitals are <2>{hoursSinceVitalsTaken} {hoursLabel}</2></0>",
+  "<0>These vitals are <2>{hoursSinceVitalsTaken} {hoursLabel}</2></0>_many": "<0>These vitals are <2>{hoursSinceVitalsTaken} {hoursLabel}</2></0>",
+  "<0>These vitals are <2>{hoursSinceVitalsTaken} {hoursLabel}</2></0>_other": "<0>These vitals are <2>{hoursSinceVitalsTaken} {hoursLabel}</2></0>",
+  "<0>These vitals are <2>{vitalsOverdueDayCount} {daysLabel}</2></0>_one": "<0>These vitals are <2>{vitalsOverdueDayCount} {daysLabel}</2></0>",
+  "<0>These vitals are <2>{vitalsOverdueDayCount} {daysLabel}</2></0>_many": "<0>These vitals are <2>{vitalsOverdueDayCount} {daysLabel}</2></0>",
+  "<0>These vitals are <2>{vitalsOverdueDayCount} {daysLabel}</2></0>_other": "<0>These vitals are <2>{vitalsOverdueDayCount} {daysLabel}</2></0>",
   "abdominalCircumference": "Perímetro abdominal",
   "abnormalValue": "Valor anormal",
   "add": "Agregar",

@@ -12,7 +12,7 @@ import { describe, expect, it, vi } from 'vitest';
 import { type ConfigObject, configSchema } from '../../config-schema';
 import ProceduresDetailedSummary from './procedures-detailed-summary.component';
 
-vi.mock('./procedures-action-menu.component', () => ({
+vi.mock('../action-menu/procedures-action-menu.component', () => ({
   ProceduresActionMenu: vi.fn().mockReturnValue(null),
 }));
 

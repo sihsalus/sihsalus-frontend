@@ -6,6 +6,6 @@ export class ChartPage {
   readonly formsTable = () => this.page.getByRole('table', { name: /forms/i });
 
   async goTo(patientUuid: string) {
-    await this.page.goto('/openmrs/spa/patient/' + patientUuid + '/chart');
+    await this.page.goto(`patient/${patientUuid}/chart`);
   }
 }

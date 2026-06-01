@@ -1,8 +1,7 @@
 import { expect, type Page, test } from '@playwright/test';
+import { getOpenmrsBaseUrl } from '../utils/e2e-urls';
 
-const API_BASE_URL =
-  process.env.E2E_API_BASE_URL ??
-  (process.env.E2E_BASE_URL ?? 'http://localhost:8080/openmrs/spa').replace(/\/spa\/?$/, '').replace(/\/$/, '');
+const API_BASE_URL = getOpenmrsBaseUrl();
 
 async function isVisibleByText(page: Page, pattern: RegExp, timeout = 12_000) {
   return await page

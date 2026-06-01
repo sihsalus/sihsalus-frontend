@@ -113,6 +113,7 @@
   "resetIdentifierTooltip": "Reset",
   "responsibleRelationshipRequiredForMinor": "For minors, record a relationship with a responsible family member, guardian, or legal representative.",
   "responsibleRelationshipRequiredTitle": "Responsible relationship required",
+  "responsibleRequiredForUnidentifiedPatient": "A responsible person or institution is required for unidentified patients",
   "restoreRelationshipActionButton": "Undo",
   "searchAddress": "Search address",
   "searchIdentifierPlaceholder": "Search identifier",

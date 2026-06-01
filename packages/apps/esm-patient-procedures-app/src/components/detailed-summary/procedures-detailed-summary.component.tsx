@@ -170,11 +170,7 @@ const ProceduresDetailedSummary = ({ patient }: ProceduresDetailedSummaryProps) 
                               <ProceduresActionMenu procedure={matchingProcedure} patientUuid={patient.id} />
                             </TableCell>
                           </TableExpandRow>
-                          <TableExpandedRow
-                            colSpan={headers.length + 2}
-                            className="demo-expanded-td"
-                            {...getExpandedRowProps({ row })}
-                          >
+                          <TableExpandedRow colSpan={headers.length + 2} {...getExpandedRowProps({ row })}>
                             <p>
                               <strong>{t('duration', 'Duration')}: </strong>
                               {matchingProcedure?.duration

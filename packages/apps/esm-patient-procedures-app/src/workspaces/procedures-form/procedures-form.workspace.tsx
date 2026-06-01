@@ -89,8 +89,12 @@ const ProceduresFormWorkspace: React.FC<PatientWorkspace2DefinitionProps<Procedu
     },
   });
 
-  const closeWorkspaceHandler = useCallback(() => {
+  const closeWorkspaceAfterSaveHandler = useCallback(() => {
     closeWorkspace({ discardUnsavedChanges: true });
+  }, [closeWorkspace]);
+
+  const closeWorkspaceHandler = useCallback(() => {
+    closeWorkspace();
   }, [closeWorkspace]);
 
   return (
@@ -101,7 +105,12 @@ const ProceduresFormWorkspace: React.FC<PatientWorkspace2DefinitionProps<Procedu
       hasUnsavedChanges={methods.formState.isDirty}
     >
       <FormProvider {...methods}>
-        <ProceduresForm closeWorkspace={closeWorkspaceHandler} patientUuid={patientUuid} procedure={procedure} />
+        <ProceduresForm
+          closeWorkspace={closeWorkspaceHandler}
+          closeWorkspaceAfterSave={closeWorkspaceAfterSaveHandler}
+          patientUuid={patientUuid}
+          procedure={procedure}
+        />
       </FormProvider>
     </Workspace2>
   );

@@ -9,7 +9,7 @@
   "dyakuPatientsSearchTitle": "Resultados de búsqueda - Pacientes FHIR Dyaku MINSA",
   "dyakuPatientsSubtitle": "Lista de pacientes registrados en el sistema FHIR del MINSA",
   "dyakuPatientsTitle": "Pacientes FHIR - Dyaku MINSA",
-  "email": "Email",
+  "email": "Correo electrónico",
   "errorLoadingPatients": "Error al cargar los pacientes: {{error}}",
   "failed": "Fallidos",
   "female": "Femenino",

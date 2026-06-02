@@ -81,7 +81,8 @@ const FuaEncounterAction: React.FC<PatientChartWorkspaceActionButtonProps> = ({
       showSnackbar({
         kind: 'error',
         title: t('errorGeneratingFua', 'Ocurrió un error al generar el FUA'),
-        subtitle: error instanceof Error ? error.message : t('errorGeneratingFua', 'Ocurrió un error al generar el FUA'),
+        subtitle:
+          error instanceof Error ? error.message : t('errorGeneratingFua', 'Ocurrió un error al generar el FUA'),
       });
     } finally {
       setIsGenerating(false);

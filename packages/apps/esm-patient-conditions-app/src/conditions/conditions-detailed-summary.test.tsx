@@ -21,6 +21,7 @@ vi.mock('@openmrs/esm-patient-common-lib', async () => ({
 
 const mockLaunchPatientWorkspace = vi.mocked(launchPatientWorkspace);
 const mockUseConditions = vi.mocked(useConditions);
+const fhirMockPatient = mockPatient as unknown as fhir.Patient;
 
 beforeEach(() => {
   vi.clearAllMocks();
@@ -35,12 +36,18 @@ it('renders an empty state view if antecedents data is unavailable', async () =>
     mutate: vi.fn(),
   });
 
-  render(<ConditionsDetailedSummary patient={mockPatient} />);
+  render(<ConditionsDetailedSummary patient={fhirMockPatient} />);
 
   expect(screen.queryByRole('progressbar')).not.toBeInTheDocument();
+  expect(screen.getByRole('heading', { name: /active problems/i })).toBeInTheDocument();
+  expect(screen.getByRole('heading', { name: /past diagnoses/i })).toBeInTheDocument();
   expect(screen.getByRole('heading', { name: /antecedents/i })).toBeInTheDocument();
-  expect(screen.getByTitle(/Empty data illustration/i)).toBeInTheDocument();
+  expect(screen.getAllByTitle(/Empty data illustration/i)).toHaveLength(3);
+  expect(screen.getByText(/There are no active problems to display for this patient/i)).toBeInTheDocument();
+  expect(screen.getByText(/There are no past diagnoses to display for this patient/i)).toBeInTheDocument();
   expect(screen.getByText(/There are no antecedents to display for this patient/i)).toBeInTheDocument();
+  expect(screen.getByText(/Record active problems/i)).toBeInTheDocument();
+  expect(screen.getByText(/Record past diagnoses/i)).toBeInTheDocument();
   expect(screen.getByText(/Record antecedents/i)).toBeInTheDocument();
 });
 
@@ -62,15 +69,15 @@ it('renders an error state view if there is a problem fetching antecedents data'
     mutate: vi.fn(),
   });
 
-  render(<ConditionsDetailedSummary patient={mockPatient as unknown as fhir.Patient} />);
+  render(<ConditionsDetailedSummary patient={fhirMockPatient} />);
 
   expect(screen.queryByRole('table')).not.toBeInTheDocument();
-  expect(screen.getByText(/Error 401: Unauthorized/i)).toBeInTheDocument();
+  expect(screen.getAllByText(/Error 401: Unauthorized/i).length).toBeGreaterThan(0);
   expect(
-    screen.getByText(
+    screen.getAllByText(
       /Sorry, there was a problem displaying this information. You can try to reload this page, or contact the site administrator and quote the error code above/i,
-    ),
-  ).toBeInTheDocument();
+    ).length,
+  ).toBeGreaterThan(0);
 });
 
 it("renders a detailed summary of the patient's antecedents when present", async () => {
@@ -142,19 +149,19 @@ it("renders a detailed summary of the patient's antecedents when present", async
 
   render(<ConditionsDetailedSummary patient={mockPatient as unknown as fhir.Patient} />);
 
-  expect(screen.getByRole('heading', { name: /antecedents/i })).toBeInTheDocument();
-  expect(screen.getByRole('button', { name: /add/i })).toBeInTheDocument();
+  expect(screen.getByRole('heading', { name: /active problems/i })).toBeInTheDocument();
+  expect(screen.getAllByRole('button', { name: /add/i }).length).toBeGreaterThan(0);
 
-  expect(screen.getByRole('button', { name: /^antecedent$/i })).toBeInTheDocument();
-  expect(screen.getByRole('button', { name: /antecedent type/i })).toBeInTheDocument();
-  expect(screen.getByRole('button', { name: /date of onset/i })).toBeInTheDocument();
-  expect(screen.getByRole('button', { name: /status/i })).toBeInTheDocument();
+  expect(screen.getAllByRole('button', { name: /^antecedent$/i }).length).toBeGreaterThan(0);
+  expect(screen.getAllByRole('button', { name: /antecedent type/i }).length).toBeGreaterThan(0);
+  expect(screen.getAllByRole('button', { name: /date of onset/i }).length).toBeGreaterThan(0);
+  expect(screen.getAllByRole('button', { name: /status/i }).length).toBeGreaterThan(0);
 
   const expectedTableRows = [/hiv positive/, /patol|patholog/, /malaria, confirmed/, /Malaria sevère/, /anaemia/];
   expectedTableRows.forEach((row) => {
     expect(screen.getByRole('row', { name: new RegExp(row, 'i') })).toBeInTheDocument();
   });
-  expect(screen.getAllByRole('row').length).toEqual(8);
+  expect(screen.getAllByRole('row').length).toEqual(10);
 });
 
 it('clicking the Add button or Record Antecedents link launches the antecedents form', async () => {
@@ -175,5 +182,8 @@ it('clicking the Add button or Record Antecedents link launches the antecedents 
   await user.click(recordConditionsLink);
 
   expect(mockLaunchPatientWorkspace).toHaveBeenCalledTimes(1);
-  expect(mockLaunchPatientWorkspace).toHaveBeenCalledWith('conditions-form-workspace', { formContext: 'creating' });
+  expect(mockLaunchPatientWorkspace).toHaveBeenCalledWith('conditions-form-workspace', {
+    formContext: 'creating',
+    workspaceTitle: 'Record antecedent',
+  });
 });

@@ -11,6 +11,8 @@ import styles from './appointment-services.scss';
 import { useAppointmentServices } from './appointment-services-hook';
 import { validationSchema } from './appointment-services-validation';
 
+const isSuccessfulCreateResponse = (status?: number) => status >= 200 && status < 300 && status !== 204;
+
 const AppointmentServices: React.FC = () => {
   const { t } = useTranslation();
   const { appointmentServiceInitialValue, addNewAppointmentService } = useAppointmentServices();
@@ -27,7 +29,7 @@ const AppointmentServices: React.FC = () => {
     };
     addNewAppointmentService(payload).then(
       ({ status }) => {
-        if (status === 200) {
+        if (isSuccessfulCreateResponse(status)) {
           showSnackbar({
             isLowContrast: true,
             kind: 'success',

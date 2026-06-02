@@ -1,7 +1,6 @@
-import { type OpenmrsResource } from './openmrs-resource';
+import { type OpenmrsResource, type OpenmrsResourceStrict } from './openmrs-resource';
 
-// TODO: make this extends OpenmrsResourceStrict
-export interface Concept extends OpenmrsResource {
+export interface Concept extends OpenmrsResourceStrict {
   name?: ConceptName;
   datatype?: ConceptDatatype;
   conceptClass?: ConceptClass;

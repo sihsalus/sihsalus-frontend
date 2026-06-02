@@ -31,10 +31,16 @@ import { type ImmunizationConfigObject } from '../config-schema';
 import { useImmunizations } from '../hooks/useImmunizations';
 import { useImmunizationsConceptSet } from '../hooks/useImmunizationsConceptSet';
 import { type ImmunizationFormData } from '../types';
+import { getAmpathImmunizationFormPersistence } from './ampath-form-immunization-config';
+import { mapToAmpathImmunizationEncounterPayload } from './ampath-form-immunization-mapper';
 import { DoseInput } from './components/dose-input.component';
 import { fhirImmunizationConceptMappingLabels, getFhirImmunizationConceptMappings } from './fhir-immunization-config';
 import { mapToFHIRImmunizationResource } from './immunization-mapper';
-import { getImmunizationSaveErrorDetails, savePatientImmunization } from './immunizations.resource';
+import {
+  getImmunizationSaveErrorDetails,
+  savePatientImmunization,
+  savePatientImmunizationViaAmpathForm,
+} from './immunizations.resource';
 import styles from './immunizations-form.scss';
 import { immunizationFormSub } from './utils';
 
@@ -43,6 +49,7 @@ const ImmunizationsForm: React.FC<PatientWorkspace2DefinitionProps<Record<string
   groupProps: { patientUuid, patient, visitContext },
 }) => {
   const config = useConfig<ImmunizationConfigObject>();
+  const ampathPersistence = getAmpathImmunizationFormPersistence(config);
   const fhirConceptMappings = getFhirImmunizationConceptMappings(config?.fhirConceptMappings);
   const currentUser = useSession();
   const isTablet = useLayoutType() === 'tablet';
@@ -52,6 +59,7 @@ const ImmunizationsForm: React.FC<PatientWorkspace2DefinitionProps<Record<string
 
   const [immunizationToEditMeta, setImmunizationToEditMeta] = useState<{
     immunizationObsUuid: string;
+    persistenceSource?: 'fhir' | 'ampath-form';
     visitUuid?: string;
   }>();
 
@@ -218,6 +226,7 @@ const ImmunizationsForm: React.FC<PatientWorkspace2DefinitionProps<Record<string
         });
         setImmunizationToEditMeta({
           immunizationObsUuid: props.immunizationId,
+          persistenceSource: props.persistenceSource,
           visitUuid: props.visitId,
         });
       }
@@ -291,16 +300,33 @@ const ImmunizationsForm: React.FC<PatientWorkspace2DefinitionProps<Record<string
           manufacturer,
         };
 
-        await savePatientImmunization(
-          mapToFHIRImmunizationResource(
-            immunization,
-            immunizationToEditMeta?.visitUuid || visitContext?.uuid,
-            currentUser?.sessionLocation?.uuid,
-            currentUser?.currentProvider?.uuid,
-          ),
-          immunizationToEditMeta?.immunizationObsUuid,
-          abortController,
-        );
+        const persistenceSource =
+          immunizationToEditMeta?.persistenceSource ??
+          (immunizationToEditMeta?.immunizationObsUuid ? 'fhir' : ampathPersistence.enabled ? 'ampath-form' : 'fhir');
+
+        if (persistenceSource === 'ampath-form') {
+          await savePatientImmunizationViaAmpathForm(
+            mapToAmpathImmunizationEncounterPayload(
+              immunization,
+              config,
+              immunizationToEditMeta?.visitUuid || visitContext?.uuid,
+              currentUser?.sessionLocation?.uuid,
+            ),
+            immunizationToEditMeta?.immunizationObsUuid,
+            abortController,
+          );
+        } else {
+          await savePatientImmunization(
+            mapToFHIRImmunizationResource(
+              immunization,
+              immunizationToEditMeta?.visitUuid || visitContext?.uuid,
+              currentUser?.sessionLocation?.uuid,
+              currentUser?.currentProvider?.uuid,
+            ),
+            immunizationToEditMeta?.immunizationObsUuid,
+            abortController,
+          );
+        }
         closeWorkspace({ discardUnsavedChanges: true });
         mutate();
         showSnackbar({
@@ -352,6 +378,8 @@ const ImmunizationsForm: React.FC<PatientWorkspace2DefinitionProps<Record<string
       t,
       mutate,
       fhirConceptMappings,
+      ampathPersistence.enabled,
+      config,
     ],
   );
   return (

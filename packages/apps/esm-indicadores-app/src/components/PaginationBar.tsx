@@ -12,7 +12,14 @@ interface PaginationBarProps {
   onPageChange: (page: number) => void;
 }
 
-const PaginationBar: React.FC<PaginationBarProps> = ({ entityLabel, page, pageSize, total, totalPages, onPageChange }) => {
+const PaginationBar: React.FC<PaginationBarProps> = ({
+  entityLabel,
+  page,
+  pageSize,
+  total,
+  totalPages,
+  onPageChange,
+}) => {
   const start = total === 0 ? 0 : (page - 1) * pageSize + 1;
   const end = Math.min(page * pageSize, total);
 
@@ -25,7 +32,9 @@ const PaginationBar: React.FC<PaginationBarProps> = ({ entityLabel, page, pageSi
         <Button kind="ghost" size="sm" disabled={page <= 1} onClick={() => onPageChange(page - 1)}>
           Anterior
         </Button>
-        <span className={styles.paginationSummary}>Página {page} de {Math.max(1, totalPages)}</span>
+        <span className={styles.paginationSummary}>
+          Página {page} de {Math.max(1, totalPages)}
+        </span>
         <Button kind="ghost" size="sm" disabled={page >= totalPages} onClick={() => onPageChange(page + 1)}>
           Siguiente
         </Button>

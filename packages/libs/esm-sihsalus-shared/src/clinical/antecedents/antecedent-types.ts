@@ -1,4 +1,9 @@
 export const ANTECEDENT_TYPE_SYSTEM = 'http://sihsalus.org/fhir/CodeSystem/antecedent-type';
+export const OPENMRS_CONDITION_CATEGORY_SYSTEM = 'http://terminology.hl7.org/CodeSystem/condition-category';
+export const OPENMRS_ANTECEDENT_CATEGORY_CODE = 'problem-list-item';
+export const OPENMRS_ANTECEDENT_CATEGORY_DISPLAY = 'Problem List Item';
+
+const ANTECEDENT_TYPE_NOTE_PREFIX = '__sihsalus_antecedent_type:';
 
 export type AntecedentTypeCode =
   | 'pathological'
@@ -25,6 +30,12 @@ export interface FhirCoding {
 export interface FhirConditionCategory {
   coding?: Array<FhirCoding>;
   text?: string;
+}
+
+export interface FhirConditionNote {
+  authorString?: string;
+  text?: string;
+  time?: string;
 }
 
 type Translate = (key: string, defaultValue: string) => string;
@@ -116,14 +127,26 @@ export function buildAntecedentTypeCategory(code?: string | null): Array<FhirCon
     {
       coding: [
         {
-          system: ANTECEDENT_TYPE_SYSTEM,
-          code: option.code,
-          display: option.defaultLabel,
+          system: OPENMRS_CONDITION_CATEGORY_SYSTEM,
+          code: OPENMRS_ANTECEDENT_CATEGORY_CODE,
+          display: OPENMRS_ANTECEDENT_CATEGORY_DISPLAY,
         },
       ],
-      text: option.defaultLabel,
     },
   ];
+}
+
+export function buildAntecedentTypeNote(
+  code?: string | null,
+  noteText?: string | null,
+): Array<FhirConditionNote> | undefined {
+  const option = getAntecedentTypeOption(code);
+  const cleanNoteText = stripAntecedentTypeFromNoteText(noteText);
+  const noteParts = [option ? `${ANTECEDENT_TYPE_NOTE_PREFIX}${option.code}` : undefined, cleanNoteText].filter(
+    (part): part is string => Boolean(part),
+  );
+
+  return noteParts.length ? [{ text: noteParts.join('\n') }] : undefined;
 }
 
 export function getAntecedentTypeFromCategory(
@@ -152,6 +175,23 @@ export function getAntecedentTypeFromCategory(
   return categories.map((category) => normalizeAntecedentTypeCode(category.text)).find(Boolean);
 }
 
+export function getAntecedentTypeFromNote(notes?: Array<FhirConditionNote>): AntecedentTypeCode | undefined {
+  const noteText = getFirstNoteText(notes);
+  const markerLine = noteText
+    ?.split(/\r?\n/)
+    .find((line) => line.trim().toLowerCase().startsWith(ANTECEDENT_TYPE_NOTE_PREFIX));
+  const [, rawCode] = markerLine?.trim().split(':') ?? [];
+
+  return normalizeAntecedentTypeCode(rawCode);
+}
+
+export function getAntecedentTypeFromCondition(
+  categories?: Array<FhirConditionCategory>,
+  notes?: Array<FhirConditionNote>,
+): AntecedentTypeCode | undefined {
+  return getAntecedentTypeFromNote(notes) ?? getAntecedentTypeFromCategory(categories);
+}
+
 export function getConditionCategoryDisplay(categories?: Array<FhirConditionCategory>): string {
   if (!categories?.length) {
     return '--';
@@ -165,4 +205,22 @@ export function getConditionCategoryDisplay(categories?: Array<FhirConditionCate
   const category = categories[0];
   const coding = category?.coding?.[0];
   return category?.text ?? coding?.display ?? coding?.code ?? '--';
+}
+
+export function getConditionNoteText(notes?: Array<FhirConditionNote>): string | undefined {
+  return stripAntecedentTypeFromNoteText(getFirstNoteText(notes));
+}
+
+function stripAntecedentTypeFromNoteText(noteText?: string | null): string | undefined {
+  const visibleText = noteText
+    ?.split(/\r?\n/)
+    .filter((line) => !line.trim().toLowerCase().startsWith(ANTECEDENT_TYPE_NOTE_PREFIX))
+    .join('\n')
+    .trim();
+
+  return visibleText || undefined;
+}
+
+function getFirstNoteText(notes?: Array<FhirConditionNote>): string | undefined {
+  return notes?.map((note) => note?.text).find((text): text is string => Boolean(text?.trim()));
 }

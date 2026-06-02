@@ -15,6 +15,33 @@
       }
     },
     {
+      "name": "active-problems-overview-widget",
+      "slot": "patient-chart-summary-dashboard-slot",
+      "component": "activeProblemsOverview",
+      "order": 4,
+      "meta": {
+        "fullWidth": false
+      }
+    },
+    {
+      "name": "past-diagnoses-overview-widget",
+      "slot": "patient-chart-summary-dashboard-slot",
+      "component": "pastDiagnosesOverview",
+      "order": 5,
+      "meta": {
+        "fullWidth": false
+      }
+    },
+    {
+      "name": "procedures-overview-widget",
+      "slot": "patient-chart-summary-dashboard-slot",
+      "component": "proceduresOverview",
+      "order": 6,
+      "meta": {
+        "fullWidth": false
+      }
+    },
+    {
       "name": "conditions-details-widget",
       "slot": "patient-chart-conditions-dashboard-slot",
       "component": "conditionsDetailedSummary",
@@ -33,6 +60,24 @@
       }
     },
     {
+      "name": "procedures-details-widget",
+      "slot": "patient-chart-procedures-dashboard-slot",
+      "component": "proceduresDetailedSummary",
+      "meta": {
+        "fullWidth": false
+      }
+    },
+    {
+      "name": "procedures-summary-dashboard",
+      "component": "proceduresDashboardLink",
+      "slot": "patient-chart-dashboard-slot",
+      "order": 8,
+      "meta": {
+        "slot": "patient-chart-procedures-dashboard-slot",
+        "path": "Procedimientos-y-cirugias"
+      }
+    },
+    {
       "name": "conditions-widget",
       "component": "conditionsWidget"
     },
@@ -44,6 +89,21 @@
   "workspaces2": [
     {
       "name": "conditions-form-workspace",
+      "component": "conditionsFormWorkspace",
+      "window": "conditions-form-window"
+    },
+    {
+      "name": "active-problem-form-workspace",
+      "component": "conditionsFormWorkspace",
+      "window": "conditions-form-window"
+    },
+    {
+      "name": "past-diagnosis-form-workspace",
+      "component": "conditionsFormWorkspace",
+      "window": "conditions-form-window"
+    },
+    {
+      "name": "procedure-surgery-form-workspace",
       "component": "conditionsFormWorkspace",
       "window": "conditions-form-window"
     }

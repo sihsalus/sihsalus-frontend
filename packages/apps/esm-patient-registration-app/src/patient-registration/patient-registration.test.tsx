@@ -5,13 +5,13 @@ import {
   useConfig,
   usePatient,
 } from '@openmrs/esm-framework';
-import { render, screen, within } from '@testing-library/react';
+import { fireEvent, render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { BrowserRouter as Router, useParams } from 'react-router-dom';
-import { mockedAddressTemplate, mockPatient } from 'test-utils';
+import { mockedAddressTemplate, mockIdentifierTypes, mockOpenmrsId, mockPatient } from 'test-utils';
 
 import { esmPatientRegistrationSchema, type RegistrationConfig } from '../config-schema';
-import { ResourcesContext } from '../offline.resources';
+import { type Resources, ResourcesContext } from '../offline.resources';
 
 import { FormManager } from './form-manager';
 import { PatientRegistration } from './patient-registration.component';
@@ -106,7 +106,7 @@ vi.mock('./patient-registration-hooks', async () => ({
   usePatientUuidMap: vi.fn().mockReturnValue([{}, vi.fn()]),
 }));
 
-const mockResourcesContextValue = {
+const mockResourcesContextValue: Resources = {
   addressTemplate: mockedAddressTemplate as AddressTemplate,
   currentSession: {
     authenticated: true,
@@ -114,7 +114,7 @@ const mockResourcesContextValue = {
     currentProvider: { uuid: 'provider-uuid', identifier: 'PRO-123' },
   },
   relationshipTypes: [],
-  identifierTypes: [],
+  identifierTypes: mockIdentifierTypes,
 };
 
 const mockOpenmrsConfig: RegistrationConfig = {
@@ -204,7 +204,9 @@ configWithObs.fieldDefinitions = [
     customConceptAnswers: [],
   },
   {
-    id: 'nationality',
+    // NB: must not be 'nationality' — that field id is special-cased in
+    // custom-field.component.tsx to render the Peru person-attribute field.
+    id: 'nationalityObs',
     type: 'obs',
     label: null,
     uuid: 'nationality-uuid',
@@ -217,7 +219,7 @@ configWithObs.fieldDefinitions = [
 configWithObs.sectionDefinitions?.push({
   id: 'custom',
   name: 'Custom',
-  fields: ['weight', 'chief complaint', 'nationality'],
+  fields: ['weight', 'chief complaint', 'nationalityObs'],
 });
 configWithObs.sections.push('custom');
 configWithObs.registrationObs.encounterTypeUuid = 'reg-enc-uuid';
@@ -226,14 +228,15 @@ const fillRequiredFields = async () => {
   const user = userEvent.setup();
 
   const demographicsSection = await screen.findByLabelText('Demographics Section');
-  const givenNameInput = within(demographicsSection).getByLabelText(/first/i) as HTMLInputElement;
-  const familyNameInput = within(demographicsSection).getByLabelText(/family/i) as HTMLInputElement;
+  const givenNameInput = within(demographicsSection).getByLabelText(/first name/i) as HTMLInputElement;
+  const familyNameInput = within(demographicsSection).getByLabelText(/^family name$/i) as HTMLInputElement;
+  const familyName2Input = within(demographicsSection).getByLabelText(/second family name/i) as HTMLInputElement;
   const dateInput = within(demographicsSection).getByRole('textbox', { name: /date of birth/i }) as HTMLInputElement;
-  const genderInput = within(demographicsSection).getByLabelText(/Male/) as HTMLSelectElement;
+  const genderInput = within(demographicsSection).getByRole('radio', { name: /^male$/i }) as HTMLInputElement;
   await user.type(givenNameInput, 'Paul');
   await user.type(familyNameInput, 'Gaihre');
-  await user.clear(dateInput);
-  await user.type(dateInput, '1993-08-02');
+  await user.type(familyName2Input, 'Materno');
+  fireEvent.change(dateInput, { target: { value: '1993-08-02' } });
   await user.click(genderInput);
 };
 
@@ -243,12 +246,54 @@ const Wrapper = ({ children }) => (
   </ResourcesContext.Provider>
 );
 
+beforeEach(() => {
+  mockResourcesContextValue.addressTemplate = mockedAddressTemplate as AddressTemplate;
+  mockResourcesContextValue.addressTemplateError = undefined;
+  mockResourcesContextValue.isLoadingAddressTemplate = false;
+  mockResourcesContextValue.identifierTypes = mockIdentifierTypes;
+  mockResourcesContextValue.identifierTypesError = undefined;
+  mockResourcesContextValue.isLoadingIdentifierTypes = false;
+  mockResourcesContextValue.relationshipTypes = [];
+  mockResourcesContextValue.relationshipTypesError = undefined;
+  mockResourcesContextValue.isLoadingRelationshipTypes = false;
+});
+
 describe('Registering a new patient', () => {
   beforeEach(() => {
     mockUseConfig.mockReturnValue({
       ...getDefaultsFromConfigSchema(esmPatientRegistrationSchema),
       ...mockOpenmrsConfig,
     });
+    mockUseInitialFormValues.mockReturnValue([
+      {
+        patientUuid: 'new-patient-uuid',
+        givenName: '',
+        middleName: '',
+        familyName: '',
+        familyName2: '',
+        additionalGivenName: '',
+        additionalMiddleName: '',
+        additionalFamilyName: '',
+        additionalFamilyName2: '',
+        addNameInLocalLanguage: false,
+        gender: '',
+        birthdate: null,
+        yearsEstimated: 0,
+        monthsEstimated: 0,
+        birthdateEstimated: false,
+        telephoneNumber: '',
+        isDead: false,
+        deathDate: undefined,
+        deathTime: undefined,
+        deathTimeFormat: 'AM',
+        deathCause: '',
+        nonCodedCauseOfDeath: '',
+        relationships: [],
+        identifiers: {},
+        address: {},
+      } as unknown as FormValues,
+      vi.fn(),
+    ]);
     mockSavePatient.mockReturnValue({ data: { uuid: 'new-pt-uuid' }, ok: true });
   });
 
@@ -277,8 +322,7 @@ describe('Registering a new patient', () => {
     expect(screen.getByRole('button', { name: /cancel/i })).toBeInTheDocument();
   });
 
-  // TODO: Re-enable once the save-flow test stubs cover the current registration form.
-  it.skip('saves the patient without extra info', async () => {
+  it('saves the patient without extra info', async () => {
     const user = userEvent.setup();
 
     render(<PatientRegistration isOffline={false} savePatientForm={FormManager.savePatientFormOnline} />, {
@@ -289,11 +333,11 @@ describe('Registering a new patient', () => {
     await user.click(await screen.findByText(/Register Patient/i));
     expect(mockSavePatient).toHaveBeenCalledWith(
       expect.objectContaining({
-        identifiers: [], // TODO (P1.1): assert identifier payload once the save-flow test is re-enabled.
+        identifiers: [],
         person: {
           addresses: expect.arrayContaining([expect.any(Object)]),
           attributes: [],
-          birthdate: '1993-8-2',
+          birthdate: '1993-08-02',
           birthdateEstimated: false,
           gender: expect.stringMatching(/^M$/),
           names: [
@@ -301,7 +345,7 @@ describe('Registering a new patient', () => {
               givenName: 'Paul',
               middleName: '',
               familyName: 'Gaihre',
-              familyName2: '',
+              familyName2: 'Materno',
               preferred: true,
               uuid: undefined,
             },
@@ -327,8 +371,7 @@ describe('Registering a new patient', () => {
     expect(mockSavePatientForm).not.toHaveBeenCalled();
   });
 
-  // TODO: Re-enable once the save-flow test stubs cover the current registration form.
-  it.skip('renders and saves registration obs', async () => {
+  it('renders and saves registration obs', async () => {
     const user = userEvent.setup();
 
     mockSaveEncounter.mockResolvedValue({} as unknown as FetchResponse);
@@ -364,8 +407,7 @@ describe('Registering a new patient', () => {
     );
   });
 
-  // TODO: Re-enable once the save-flow test stubs cover the current registration form.
-  it.skip('retries saving registration obs after a failed attempt', async () => {
+  it('retries saving registration obs after a failed attempt', async () => {
     const user = userEvent.setup();
 
     mockUseConfig.mockReturnValue(configWithObs);
@@ -553,6 +595,65 @@ describe('Updating an existing patient record', () => {
         relationships: [],
         telephoneNumber: '',
         yearsEstimated: 0,
+      }),
+      expect.anything(),
+      expect.anything(),
+      null,
+      '',
+      expect.anything(),
+      expect.anything(),
+      expect.anything(),
+      { patientSaved: false },
+      expect.anything(),
+    );
+  });
+
+  it('allows updating an existing patient while identifier types are temporarily unavailable', async () => {
+    const user = userEvent.setup();
+    const mockSavePatientForm = vi.fn();
+    const editFormValues = {
+      additionalFamilyName: '',
+      additionalFamilyName2: '',
+      additionalGivenName: '',
+      additionalMiddleName: '',
+      addNameInLocalLanguage: false,
+      address: {},
+      birthdate: new Date(1972, 3, 4),
+      birthdateEstimated: false,
+      deathCause: '',
+      deathDate: undefined,
+      deathTime: undefined,
+      deathTimeFormat: 'AM',
+      familyName: 'Wilson',
+      familyName2: 'Materno',
+      gender: 'male',
+      givenName: 'John',
+      identifiers: mockOpenmrsId,
+      isDead: false,
+      middleName: '',
+      monthsEstimated: 0,
+      nonCodedCauseOfDeath: '',
+      patientUuid: mockPatient.uuid,
+      relationships: [],
+      telephoneNumber: '',
+      yearsEstimated: 0,
+    } as FormValues;
+
+    mockResourcesContextValue.identifierTypes = [];
+    mockResourcesContextValue.identifierTypesError = new Error('identifier types unavailable');
+    mockUseInitialFormValues.mockReturnValue([editFormValues, vi.fn()]);
+
+    render(<PatientRegistration isOffline={false} savePatientForm={mockSavePatientForm} />, { wrapper: Wrapper });
+
+    const updateButton = await screen.findByRole('button', { name: /update patient/i });
+    expect(updateButton).toBeEnabled();
+
+    await user.click(updateButton);
+
+    expect(mockSavePatientForm).toHaveBeenCalledWith(
+      false,
+      expect.objectContaining({
+        identifiers: mockOpenmrsId,
       }),
       expect.anything(),
       expect.anything(),

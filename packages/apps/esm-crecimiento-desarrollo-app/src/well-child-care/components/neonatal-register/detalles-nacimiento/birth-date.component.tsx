@@ -109,7 +109,7 @@ const BirthDataTable: React.FC<BirthDataProps> = ({ patientUuid }) => {
     },
     {
       id: 'roomingIn',
-      label: t('roomingIn', 'Alojamiento Conjunto'),
+      label: t('roomingIn', 'Alojamiento conjunto'),
       dataKey: neonatalConcepts.roomingInUuid,
     },
     {

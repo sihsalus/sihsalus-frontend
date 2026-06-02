@@ -59,6 +59,11 @@
   text-align: center;
 }
 
+.patientIdentifier {
+  text-align: center;
+  margin-top: layout.$spacing-01;
+}
+
 .printPreviewContainer {
   background-color: colors.$white;
 }

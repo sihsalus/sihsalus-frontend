@@ -56,7 +56,7 @@
         "useFlatMap": "off",
         "useLiteralKeys": "off",
         "useOptionalChain": "off",
-        "noCommaOperator": "off"
+        "noCommaOperator": "warn"
       },
       "correctness": {
         "noChildrenProp": "off",
@@ -64,7 +64,7 @@
         "useJsxKeyInIterable": "error"
       },
       "performance": {
-        "noAccumulatingSpread": "off",
+        "noAccumulatingSpread": "warn",
         "noDelete": "off"
       },
       "security": {
@@ -72,7 +72,7 @@
       },
       "style": {
         "noInferrableTypes": "off",
-        "noNonNullAssertion": "off",
+        "noNonNullAssertion": "warn",
         "noParameterAssign": "off",
         "useSingleVarDeclarator": "off",
         "noUnusedTemplateLiteral": "off",
@@ -81,17 +81,17 @@
         "useEnumInitializers": "off",
         "useExportType": "off",
         "useImportType": "off",
-        "useNodejsImportProtocol": "off",
+        "useNodejsImportProtocol": "error",
         "useNumberNamespace": "off",
         "useShorthandFunctionType": "off",
         "useSelfClosingElements": "off",
         "useTemplate": "off"
       },
       "suspicious": {
-        "noArrayIndexKey": "off",
+        "noArrayIndexKey": "warn",
         "noAssignInExpressions": "error",
-        "noConfusingVoidType": "off",
-        "noEmptyInterface": "off",
+        "noConfusingVoidType": "warn",
+        "noEmptyInterface": "warn",
         "noExplicitAny": "warn",
         "noGlobalIsNan": "error",
         "noImplicitAnyLet": "warn",
@@ -103,6 +103,18 @@
       }
     }
   },
+  "overrides": [
+    {
+      "includes": ["packages/libs/esm-styleguide/**"],
+      "linter": {
+        "rules": {
+          "correctness": {
+            "useExhaustiveDependencies": "warn"
+          }
+        }
+      }
+    }
+  ],
   "javascript": {
     "globals": [
       "CustomEvent",

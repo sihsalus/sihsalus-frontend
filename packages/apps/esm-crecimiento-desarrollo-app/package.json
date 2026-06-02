@@ -44,9 +44,9 @@
     "@hookform/resolvers": "^3.3.1",
     "@sihsalus/esm-sihsalus-shared": "workspace:*",
     "classnames": "^2.5.1",
+    "exceljs": "^4.4.0",
     "lodash-es": "^4.17.21",
     "react-hook-form": "^7.56.1",
-    "xlsx": "^0.18.5",
     "zod": "^3.24.1"
   },
   "peerDependencies": {
@@ -87,6 +87,6 @@
     "single-spa": "^6.0.3",
     "swr": "^2.4.1",
     "typescript": "6.0.3",
-    "vitest": "^4.1.0"
+    "vitest": "^4.1.7"
   }
 }

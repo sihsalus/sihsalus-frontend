@@ -8,14 +8,15 @@ import {
 } from './peru-registration-config';
 
 describe('getEffectiveRegistrationConfig', () => {
-  it('adds nationality immediately after identifiers in demographics', () => {
+  it('orders Peru basic info fields for registration', () => {
     const config = getEffectiveRegistrationConfig(getDefaultsFromConfigSchema(esmPatientRegistrationSchema));
 
     const demographics = config.sectionDefinitions.find((section) => section.id === 'demographics');
     const filiation = config.sectionDefinitions.find((section) => section.id === 'filiation');
     const nationality = config.fieldDefinitions.find((field) => field.id === 'nationality');
 
-    expect(demographics?.fields).toEqual(['name', 'gender', 'dob', 'id', 'nationality']);
+    expect(demographics?.fields).toEqual(['name', 'id', 'dob', 'gender']);
+    expect(demographics?.fields).not.toContain('nationality');
     expect(filiation?.fields).not.toContain('nationality');
     expect(nationality).toMatchObject({
       id: 'nationality',
@@ -37,5 +38,17 @@ describe('getEffectiveRegistrationConfig', () => {
     const config = getEffectiveRegistrationConfig(getDefaultsFromConfigSchema(esmPatientRegistrationSchema));
 
     expect(config.defaultPatientIdentifierTypes).toEqual([peruDniPatientIdentifierTypeUuid]);
+  });
+
+  it('preconfigures safe administrative defaults for new Peru registrations', () => {
+    const config = getEffectiveRegistrationConfig(getDefaultsFromConfigSchema(esmPatientRegistrationSchema));
+    const fieldsById = Object.fromEntries(config.fieldDefinitions.map((field) => [field.id, field]));
+
+    expect(fieldsById.medicalRecordStatus.defaultValue).toBe('9b3df0a1-0c58-4f55-9868-9c38f1db2031');
+    expect(fieldsById.medicalRecordArchiveType.defaultValue).toBe('9b3df0a1-0c58-4f55-9868-9c38f1db2041');
+    expect(fieldsById.insuranceAccreditationStatus.defaultValue).toBe('9b3df0a1-0c58-4f55-9868-9c38f1db2054');
+    expect(fieldsById.gender?.defaultValue).toBeUndefined();
+    expect(fieldsById.bloodGroup.defaultValue).toBeUndefined();
+    expect(fieldsById.rhFactor.defaultValue).toBeUndefined();
   });
 });

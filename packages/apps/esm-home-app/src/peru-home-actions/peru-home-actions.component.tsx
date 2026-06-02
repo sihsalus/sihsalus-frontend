@@ -1,25 +1,20 @@
-import {
-  Calendar,
-  Document,
-  Microscope,
-  Search,
-  UserFollow,
-  WatsonHealthStackedScrolling_1,
-} from '@carbon/react/icons';
-import { ConfigurableLink, MaybePictogram } from '@openmrs/esm-framework';
+import { ConfigurableLink } from '@openmrs/esm-framework';
 import React from 'react';
 import { useTranslation } from 'react-i18next';
 
+import appointmentsIllustration from '../../../../../assets/resources/illustrations/citas.svg';
+import careQueuesIllustration from '../../../../../assets/resources/illustrations/colas-de-atencion.svg';
+import fuaIllustration from '../../../../../assets/resources/illustrations/fua-seguro-sis.svg';
+import laboratoryIllustration from '../../../../../assets/resources/illustrations/laboratorio.svg';
+import patientRegistrationIllustration from '../../../../../assets/resources/illustrations/registrar-paciente.svg';
+import patientSearchIllustration from '../../../../../assets/resources/illustrations/buscar-paciente.svg';
 import styles from './peru-home-actions.scss';
-
-type ActionIcon = React.ComponentType<{ className?: string; size?: number | string }>;
 
 type Action = {
   key: string;
   descriptionKey: string;
   href: string;
-  icon: ActionIcon;
-  illustrationId?: string;
+  illustrationSrc: string;
   toneClass: string;
 };
 
@@ -40,64 +35,49 @@ const actions = [
     key: 'searchPatient',
     descriptionKey: 'searchPatientDescription',
     href: '/search',
-    icon: Search,
-    illustrationId: 'omrs-pict-patient-search',
+    illustrationSrc: patientSearchIllustration,
     toneClass: 'admissionAction',
   },
   {
     key: 'registerPatient',
     descriptionKey: 'registerPatientDescription',
     href: '/patient-registration',
-    icon: UserFollow,
-    illustrationId: 'omrs-pict-registration',
+    illustrationSrc: patientRegistrationIllustration,
     toneClass: 'admissionAction',
   },
   {
     key: 'careQueues',
     descriptionKey: 'careQueuesDescription',
     href: '/home/service-queues',
-    icon: WatsonHealthStackedScrolling_1,
-    illustrationId: 'omrs-pict-service-queues',
+    illustrationSrc: careQueuesIllustration,
     toneClass: 'admissionAction',
   },
   {
     key: 'appointments',
     descriptionKey: 'appointmentsDescription',
     href: '/home/appointments',
-    icon: Calendar,
-    illustrationId: 'omrs-pict-appointments',
+    illustrationSrc: appointmentsIllustration,
     toneClass: 'appointmentsAction',
   },
   {
     key: 'laboratory',
     descriptionKey: 'laboratoryDescription',
     href: '/home/laboratory',
-    icon: Microscope,
-    illustrationId: 'omrs-pict-laboratory',
+    illustrationSrc: laboratoryIllustration,
     toneClass: 'laboratoryAction',
   },
   {
     key: 'fua',
     descriptionKey: 'fuaDescription',
     href: '/home/fua-request',
-    icon: Document,
-    illustrationId: 'omrs-pict-fua',
+    illustrationSrc: fuaIllustration,
     toneClass: 'fuaAction',
   },
 ] satisfies Array<Action>;
 
-const ActionIllustration: React.FC<{ fallbackIcon: ActionIcon; illustrationId?: string }> = ({
-  fallbackIcon: FallbackIcon,
-  illustrationId,
-}) => {
-  const fallback = <FallbackIcon className={styles.actionIllustration} size={96} />;
-
-  return illustrationId ? (
-    <MaybePictogram pictogram={illustrationId} className={styles.actionIllustration} fallback={fallback} />
-  ) : (
-    fallback
-  );
-};
+const ActionIllustration: React.FC<{ illustrationSrc: string }> = ({ illustrationSrc }) => (
+  <img className={styles.actionIllustration} src={illustrationSrc} alt="" loading="lazy" />
+);
 
 const PeruHomeActions: React.FC = () => {
   const { t } = useTranslation();
@@ -105,7 +85,7 @@ const PeruHomeActions: React.FC = () => {
 
   return (
     <section className={styles.quickActions} aria-label={t('peruHomeActions', 'Accesos de admisión')}>
-      {actions.map(({ key, descriptionKey, href, icon, illustrationId, toneClass }) => (
+      {actions.map(({ key, descriptionKey, href, illustrationSrc, toneClass }) => (
         <ConfigurableLink key={key} className={`${styles.actionLink} ${styles[toneClass]}`} to={`${spaBase}${href}`}>
           <span className={styles.actionHeader}>
             <span className={styles.actionText}>
@@ -114,7 +94,7 @@ const PeruHomeActions: React.FC = () => {
             </span>
           </span>
           <span className={styles.illustrationArea} aria-hidden="true">
-            <ActionIllustration fallbackIcon={icon} illustrationId={illustrationId} />
+            <ActionIllustration illustrationSrc={illustrationSrc} />
           </span>
         </ConfigurableLink>
       ))}

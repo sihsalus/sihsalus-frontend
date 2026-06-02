@@ -1,4 +1,5 @@
 import { DocumentPdf, DocumentUnknown } from '@carbon/react/icons';
+import { type CSSProperties, type KeyboardEvent } from 'react';
 import styles from './attachment-thumbnail.scss';
 
 type AttachmentThumbnailProps = {
@@ -9,7 +10,7 @@ type AttachmentThumbnailProps = {
 type ImageProps = {
   src: string;
   title: string;
-  style: object;
+  style: CSSProperties;
   onClick?: () => void;
 };
 
@@ -30,7 +31,13 @@ export default function AttachmentThumbnail(props: AttachmentThumbnailProps) {
 
 function ImageThumbnail(props: ImageProps) {
   return (
-    <div className={styles.imageThumbnail} role="button" tabIndex={0} onClick={props?.onClick}>
+    <div
+      className={styles.imageThumbnail}
+      role="button"
+      tabIndex={0}
+      onClick={props.onClick}
+      onKeyDown={(event) => handleThumbnailKeyDown(event, props.onClick)}
+    >
       <img src={props.src} alt={props.title} style={props.style} />
     </div>
   );
@@ -38,7 +45,13 @@ function ImageThumbnail(props: ImageProps) {
 
 function PdfThumbnail(props: ImageProps) {
   return (
-    <div className={styles.pdfThumbnail} onClick={props.onClick} role="button" tabIndex={0}>
+    <div
+      className={styles.pdfThumbnail}
+      onClick={props.onClick}
+      onKeyDown={(event) => handleThumbnailKeyDown(event, props.onClick)}
+      role="button"
+      tabIndex={0}
+    >
       <DocumentPdf size={24} />
     </div>
   );
@@ -46,10 +59,25 @@ function PdfThumbnail(props: ImageProps) {
 
 function OtherThumbnail(props: ImageProps) {
   return (
-    <div className={styles.pdfThumbnail} onClick={props.onClick} role="button" tabIndex={0}>
+    <div
+      className={styles.pdfThumbnail}
+      onClick={props.onClick}
+      onKeyDown={(event) => handleThumbnailKeyDown(event, props.onClick)}
+      role="button"
+      tabIndex={0}
+    >
       <DocumentUnknown size={24} />
     </div>
   );
+}
+
+function handleThumbnailKeyDown(event: KeyboardEvent<HTMLDivElement>, onClick?: () => void) {
+  if (!onClick || (event.key !== 'Enter' && event.key !== ' ')) {
+    return;
+  }
+
+  event.preventDefault();
+  onClick();
 }
 
 function Thumbnail(props: AttachmentThumbnailProps) {

@@ -1,6 +1,8 @@
 {
   "$schema": "https://typedoc.org/schema.json",
   "name": "O3 Framework",
+  "tsconfig": "./tsconfig.typedoc.json",
+  "skipErrorChecking": true,
   "entryPoints": ["./src/index.ts"],
   "outputs": [
     {

@@ -58,10 +58,10 @@ const AllergiesOverview: React.FC<AllergiesOverviewProps> = ({ patient }) => {
     return paginatedAllergies?.map((allergy) => ({
       ...allergy,
       reactions: `${allergy.reactionManifestations?.sort((a, b) => a.localeCompare(b))?.join(', ') || ''} ${
-        allergy.reactionSeverity ? `(${allergy.reactionSeverity})` : ''
+        allergy.reactionSeverity ? `(${t(allergy.reactionSeverity, allergy.reactionSeverity)})` : ''
       }`,
     }));
-  }, [paginatedAllergies]);
+  }, [paginatedAllergies, t]);
 
   const launchAllergiesForm = useCallback(() => launchPatientWorkspace(patientAllergiesFormWorkspace), []);
 

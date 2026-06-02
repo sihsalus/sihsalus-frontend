@@ -15,6 +15,7 @@ import {
 import { CardHeader, EmptyState, useAllowedFileExtensions } from '@openmrs/esm-patient-common-lib';
 import React, { useCallback, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
+import { moduleName } from '../constants';
 import { createGalleryEntry } from '../utils';
 import AttachmentPreview from './attachment-preview.component';
 import AttachmentsGridOverview from './attachments-grid-overview.component';
@@ -36,7 +37,7 @@ type ViewType = 'grid' | 'table';
 
 const AttachmentsOverview: React.FC<AttachmentsOverviewProps> = ({ patientUuid }) => {
   const isTablet = useLayoutType() === 'tablet';
-  const { t } = useTranslation();
+  const { t } = useTranslation(moduleName);
   const { data, mutate, isValidating, isLoading } = useAttachments(patientUuid, true);
   const { allowedFileExtensions } = useAllowedFileExtensions();
 

@@ -96,6 +96,14 @@ describe('Openmrs Dates', () => {
     expect(formatPartialDate('2021-12')).toEqual('Dec 2021');
   });
 
+  it('does not throw on nullish input', () => {
+    window.i18next.language = 'en';
+    expect(formatDate(null as unknown as Date)).toEqual('');
+    expect(formatDate(undefined as unknown as Date)).toEqual('');
+    expect(formatPartialDate(null as unknown as string)).toBeNull();
+    expect(formatPartialDate(undefined as unknown as string)).toBeNull();
+  });
+
   it('formats dates with respect to the active calendar', () => {
     registerDefaultCalendar('am', 'ethiopic');
 

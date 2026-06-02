@@ -1,8 +1,7 @@
 import { expect, type Page, test } from '@playwright/test';
+import { getOpenmrsBaseUrl } from '../utils/e2e-urls';
 
-const API_BASE_URL =
-  process.env.E2E_API_BASE_URL ??
-  (process.env.E2E_BASE_URL ?? 'http://localhost:8080/openmrs/spa').replace(/\/spa\/?$/, '').replace(/\/$/, '');
+const API_BASE_URL = getOpenmrsBaseUrl();
 
 async function isVisibleByText(page: Page, pattern: RegExp, timeout = 12_000) {
   return await page
@@ -114,18 +113,16 @@ test.describe('MINSA admission accreditation checks', () => {
     await page.goto('admission', { waitUntil: 'domcontentloaded' });
 
     await expect(page).not.toHaveURL(/\/login/);
-    await expect(
-      page.getByRole('heading', { name: /Reporte de admisiones por UPS|Admissions report by UPS/i }),
-    ).toBeVisible();
+    await expect(page.getByRole('heading', { name: /Libro de Atenciones|Admissions report by UPS/i })).toBeVisible();
 
     for (const column of [
       /Fecha|Date/i,
-      /Hora|Time/i,
-      /Paciente|Patient/i,
-      /^HC$|MRN/i,
-      /UPS\/servicio|UPS\/service/i,
-      /Ubicación|Location/i,
-      /Estado|Status/i,
+      /HCE|MRN|código temporal/i,
+      /Documento|Document/i,
+      /Estado identificación|Identification status/i,
+      /Responsable|Responsible/i,
+      /Paciente|Patient|Nombres y apellidos/i,
+      /Servicio|Service/i,
     ]) {
       await expect(page.getByRole('columnheader', { name: column })).toBeVisible();
     }

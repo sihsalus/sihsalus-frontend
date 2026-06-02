@@ -11,6 +11,7 @@ interface DeleteConfirmModelProps {
   close: () => void;
   doseNumber: number;
   immunizationId: string;
+  persistenceSource?: 'fhir' | 'ampath-form';
   patientUuid: string;
   vaccineUuid: string;
 }
@@ -19,6 +20,7 @@ const DeleteImmunization: React.FC<DeleteConfirmModelProps> = ({
   close,
   doseNumber,
   immunizationId,
+  persistenceSource,
   patientUuid,
   vaccineUuid,
 }) => {
@@ -38,7 +40,7 @@ const DeleteImmunization: React.FC<DeleteConfirmModelProps> = ({
   const handleDeleteDose = async (immunizationId: string) => {
     setIsDeleting(true);
     try {
-      await deletePatientImmunization(immunizationId);
+      await deletePatientImmunization(immunizationId, persistenceSource);
 
       showSnackbar({
         title: t('immunizationDeleted', 'Immunization dose deleted'),

@@ -1,0 +1,74 @@
+{
+  "name": "@sihsalus/esm-care-logbook-app",
+  "version": "1.0.0-alpha",
+  "license": "MPL-2.0",
+  "description": "OpenMRS ESM care logbook workflows and accreditation evidence for SIHSALUS",
+  "browser": "dist/sihsalus-esm-care-logbook-app.js",
+  "main": "src/index.ts",
+  "source": true,
+  "scripts": {
+    "start": "openmrs develop",
+    "serve": "rspack serve --mode=development",
+    "build": "rspack --mode=production",
+    "analyze": "rspack --mode=production --env analyze=true",
+    "lint": "node ../../tooling/scripts/run-biome.js lint .",
+    "prettier": "node ../../tooling/scripts/run-biome.js format --write src",
+    "typescript": "tsc --noEmit",
+    "test": "vitest run --passWithNoTests",
+    "coverage": "vitest run --coverage --passWithNoTests",
+    "extract-translations": "i18next 'src/**/*.{ts,tsx}' '!src/**/*.test.{ts,tsx}' '!src/**/*.spec.{ts,tsx}' --config ../../tooling/scripts/i18next-parser.config.js"
+  },
+  "files": [
+    "dist",
+    "src",
+    "translations"
+  ],
+  "browserslist": [
+    "extends browserslist-config-openmrs"
+  ],
+  "keywords": [
+    "openmrs",
+    "sihsalus",
+    "care-logbook",
+    "atenciones"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/sihsalus/sihsalus-esm-modules.git"
+  },
+  "homepage": "https://github.com/sihsalus/sihsalus-esm-modules#readme",
+  "publishConfig": {
+    "access": "public"
+  },
+  "dependencies": {
+    "@sihsalus/esm-rbac": "workspace:*",
+    "swr": "^2.3.6"
+  },
+  "peerDependencies": {
+    "@carbon/react": "1.x",
+    "@openmrs/esm-framework": "*",
+    "dayjs": "1.x",
+    "react": "18.x",
+    "react-i18next": "16.x",
+    "react-router-dom": "6.x",
+    "rxjs": "6.x"
+  },
+  "devDependencies": {
+    "@openmrs/esm-framework": "workspace:*",
+    "@openmrs/esm-styleguide": "workspace:*",
+    "@rspack/cli": "1.7.11",
+    "@swc/cli": "0.8.1",
+    "@swc/core": "1.15.21",
+    "@types/react": "^18.3.21",
+    "@types/react-dom": "^18.3.0",
+    "dayjs": "^1.11.13",
+    "openmrs": "*",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
+    "react-i18next": "^16.0.0",
+    "react-router-dom": "^6.14.1",
+    "rxjs": "^6.6.7",
+    "typescript": "6.0.3",
+    "vitest": "^4.1.7"
+  }
+}

@@ -1,14 +1,10 @@
 // Updated useChartLines.ts
 import { useMemo } from 'react';
 
+import { type GrowthChartPoint, getReferenceLineXValue } from '../growth-chart-utils';
+
 interface DatasetValues {
   [key: string]: number;
-}
-
-interface CarbonChartLine {
-  group: string;
-  date: number;
-  value: number;
 }
 
 /**
@@ -19,16 +15,15 @@ export const useChartLines = (
   datasetValues: DatasetValues[],
   keysDataSet: string[],
   startIndex: number,
-  _isPercentiles: boolean,
-): CarbonChartLine[] => {
+): GrowthChartPoint[] => {
   return useMemo(() => {
-    const lines: CarbonChartLine[] = [];
+    const lines: GrowthChartPoint[] = [];
 
     keysDataSet.forEach((key) => {
       datasetValues.forEach((entry, index) => {
         lines.push({
           group: key,
-          date: startIndex + index,
+          date: getReferenceLineXValue(index, startIndex),
           value: entry[key],
         });
       });

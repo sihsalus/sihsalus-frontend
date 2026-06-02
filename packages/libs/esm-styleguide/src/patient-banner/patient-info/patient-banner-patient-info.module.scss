@@ -84,6 +84,7 @@
 .identifier {
   display: flex;
   align-items: center;
+  flex: 0 0 auto;
 }
 
 .primaryIdentifier,
@@ -96,13 +97,23 @@
 
 .primaryIdentifier {
   color: colors.$gray-100;
+  flex: 0 0 auto;
 
   .value {
     font-weight: bold;
   }
 
   .tag {
+    inline-size: auto;
     max-inline-size: none;
+    flex: 0 0 auto;
+  }
+
+  .tag :global(.cds--tag__label) {
+    max-inline-size: none;
+    overflow: visible;
+    text-overflow: clip;
+    white-space: nowrap;
   }
 
   span {

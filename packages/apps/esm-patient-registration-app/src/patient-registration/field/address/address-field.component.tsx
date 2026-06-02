@@ -11,9 +11,13 @@ import { useOrderedAddressHierarchyLevels } from './address-hierarchy.resource';
 import AddressHierarchyLevels from './address-hierarchy-levels.component';
 import AddressSearchComponent from './address-search.component';
 
+const peruAddressDefaults = {
+  country: 'Perú',
+};
+
 export const AddressComponent: React.FC = () => {
   const selected = '';
-  const { addressTemplate } = useContext(ResourcesContext);
+  const { addressTemplate, addressTemplateError, isLoadingAddressTemplate } = useContext(ResourcesContext);
   const addressLayout = useMemo(() => {
     if (!addressTemplate?.lines) {
       return [];
@@ -43,35 +47,72 @@ export const AddressComponent: React.FC = () => {
     },
   } = config;
 
-  const { setFieldValue } = useContext(PatientRegistrationContext);
+  const { inEditMode, setFieldValue, values } = useContext(PatientRegistrationContext);
   const { orderedFields, isLoadingFieldOrder, errorFetchingFieldOrder } = useOrderedAddressHierarchyLevels();
+  const hasAddressTemplate = !!addressTemplate?.lines?.length;
+  const isAddressTemplateLoading =
+    isLoadingAddressTemplate ||
+    (isLoadingAddressTemplate === undefined && !addressTemplateError && !hasAddressTemplate);
 
   useEffect(() => {
-    if (addressTemplate?.elementDefaults) {
-      Object.entries(addressTemplate.elementDefaults).forEach(([name, defaultValue]) => {
-        setFieldValue(`address.${name}`, defaultValue);
-      });
+    if (!addressLayout.length) {
+      return;
     }
-  }, [addressTemplate, setFieldValue]);
+
+    const availableAddressFields = new Set<string>(addressLayout.map((field) => field.name));
+    const defaults = {
+      ...(inEditMode ? {} : peruAddressDefaults),
+      ...(addressTemplate?.elementDefaults ?? {}),
+    };
+
+    Object.entries(defaults).forEach(([name, defaultValue]) => {
+      if (availableAddressFields.has(name) && defaultValue && !Object.hasOwn(values.address ?? {}, name)) {
+        setFieldValue(`address.${name}`, defaultValue);
+      }
+    });
+  }, [addressLayout, addressTemplate?.elementDefaults, inEditMode, setFieldValue, values.address]);
 
   const orderedAddressFields = useMemo(() => {
     if (isLoadingFieldOrder || errorFetchingFieldOrder) {
       return [];
     }
 
+    if (!orderedFields?.length) {
+      return addressLayout;
+    }
+
     const orderMap = Object.fromEntries(orderedFields.map((field, indx) => [field, indx]));
 
     return [...addressLayout].sort(
-      (existingField1, existingField2) => orderMap[existingField1.name] - orderMap[existingField2.name],
+      (existingField1, existingField2) =>
+        (orderMap[existingField1.name] ?? Number.MAX_SAFE_INTEGER) -
+        (orderMap[existingField2.name] ?? Number.MAX_SAFE_INTEGER),
     );
   }, [isLoadingFieldOrder, errorFetchingFieldOrder, orderedFields, addressLayout]);
 
-  if (addressTemplate && !Object.keys(addressTemplate)?.length) {
+  if (isAddressTemplateLoading) {
     return (
       <AddressComponentContainer>
         <div role="progressbar">
           <SkeletonText />
         </div>
+      </AddressComponentContainer>
+    );
+  }
+
+  if (!hasAddressTemplate) {
+    return (
+      <AddressComponentContainer>
+        <InlineNotification
+          style={{ margin: '0', minWidth: '100%' }}
+          kind={addressTemplateError ? 'error' : 'warning'}
+          lowContrast={true}
+          title={t('addressFieldsUnavailableTitle', 'Address fields unavailable')}
+          subtitle={t(
+            'addressFieldsUnavailableSubtitle',
+            'Refresh the page. If the problem continues, check that the address template is configured and that your session is active.',
+          )}
+        />
       </AddressComponentContainer>
     );
   }
@@ -138,15 +179,9 @@ export const AddressComponent: React.FC = () => {
 const AddressComponentContainer: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const { t } = useTranslation(moduleName);
   return (
-    <div>
+    <div className={styles.fullWidthInDesktopView}>
       <h4 className={styles.productiveHeading02Light}>{t('addressHeader', 'Address')}</h4>
-      <div
-        style={{
-          paddingBottom: '5%',
-        }}
-      >
-        {children}
-      </div>
+      <div className={styles.addressFieldGrid}>{children}</div>
     </div>
   );
 };

@@ -62,21 +62,21 @@
     "@openmrs/esm-framework": "workspace:*",
     "@openmrs/esm-styleguide": "workspace:*",
     "@playwright/test": "^1.52.0",
-    "@swc/cli": "^0.1.61",
+    "@swc/cli": "0.8.1",
     "@swc/core": "1.15.21",
     "@types/react": "^18.3.21",
     "@types/react-dom": "^18.3.0",
     "dayjs": "^1.11.7",
     "i18next": "^25.0.0",
     "i18next-parser": "^9.0.2",
-    "lodash": "^4.17.21",
+    "lodash": "^4.18.1",
     "openmrs": "*",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
     "react-i18next": "^16.0.0",
     "turbo": "^2.9.14",
     "typescript": "6.0.3",
-    "vitest": "^4.1.0"
+    "vitest": "^4.1.7"
   },
   "packageManager": "yarn@4.10.3"
 }

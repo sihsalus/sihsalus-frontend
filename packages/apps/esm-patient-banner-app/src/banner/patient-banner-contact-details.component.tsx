@@ -9,7 +9,7 @@ import {
   usePatient,
 } from '@openmrs/esm-framework';
 import classNames from 'classnames';
-import React, { useMemo } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { type ConfigObject } from '../config-schema';
 import { useEthnicIdentity } from '../hooks/useEthnicIdentity';
@@ -18,20 +18,40 @@ import { usePatientListsForPatient } from '../hooks/usePatientListsForPatient';
 import { useRelationships } from '../hooks/useRelationships';
 import styles from './patient-banner-contact-details.module.scss';
 
+const contactDetailsLoadingTimeoutMs = 10000;
+
 interface ContactDetailsProps {
   patientId: string;
   deceased: boolean;
 }
 
+function useBoundedLoading(isLoading: boolean) {
+  const [hasTimedOut, setHasTimedOut] = useState(false);
+
+  useEffect(() => {
+    if (!isLoading) {
+      setHasTimedOut(false);
+      return;
+    }
+
+    setHasTimedOut(false);
+    const timeoutId = globalThis.setTimeout(() => setHasTimedOut(true), contactDetailsLoadingTimeoutMs);
+    return () => globalThis.clearTimeout(timeoutId);
+  }, [isLoading]);
+
+  return isLoading && !hasTimedOut;
+}
+
 const PatientLists: React.FC<{ patientUuid: string }> = ({ patientUuid }) => {
   const { cohorts = [], isLoading } = usePatientListsForPatient(patientUuid);
+  const showLoading = useBoundedLoading(isLoading);
 
   return (
     <>
       <p className={styles.heading}>
         {getCoreTranslation('patientLists', 'Patient Lists')} ({cohorts?.length ?? 0})
       </p>
-      {isLoading ? (
+      {showLoading ? (
         <InlineLoading description={`${getCoreTranslation('loading', 'Loading')} ...`} role="progressbar" />
       ) : (
         <ul>
@@ -70,8 +90,9 @@ const Address: React.FC<{ patientId: string }> = ({ patientId }) => {
   const { patient, isLoading } = usePatient(patientId);
   const address = patient?.address?.find((entry) => entry.use === 'home');
   const getAddressKey = (url: string) => url.split('#')[1];
+  const showLoading = useBoundedLoading(isLoading);
 
-  if (isLoading) {
+  if (showLoading) {
     return <InlineLoading description={`${getCoreTranslation('loading', 'Loading')} ...`} role="progressbar" />;
   }
 
@@ -115,6 +136,7 @@ const Contact: React.FC<{ patientUuid: string }> = ({ patientUuid }) => {
     patientUuid,
     ethnicIdentityConceptUuid,
   );
+  const showLoading = useBoundedLoading(isLoadingAttributes || isLoadingEthnicIdentity);
 
   const contacts = useMemo(
     () =>
@@ -132,7 +154,7 @@ const Contact: React.FC<{ patientUuid: string }> = ({ patientUuid }) => {
   return (
     <>
       <p className={styles.heading}>{getCoreTranslation('contactDetails', 'Contact Details')}</p>
-      {isLoadingAttributes || isLoadingEthnicIdentity ? (
+      {showLoading ? (
         <InlineLoading description={`${getCoreTranslation('loading', 'Loading')} ...`} role="progressbar" />
       ) : (
         <ul>
@@ -166,15 +188,17 @@ const getDisplayValue = (value: unknown): string => {
 const PatientAdministrativeDetails: React.FC<{ patientUuid: string }> = ({ patientUuid }) => {
   const { t } = useTranslation();
   const { additionalAttributes, identifiers, isLoading, person } = usePatientAdditionalAttributes(patientUuid);
+  const showLoading = useBoundedLoading(isLoading);
   const gender = person?.gender
     ? getCoreTranslation(person.gender === 'M' ? 'male' : person.gender === 'F' ? 'female' : 'unknown', person.gender)
     : '--';
+  const status = person ? (person.dead ? t('deceased', 'Deceased') : t('active', 'Active')) : '--';
 
   return (
     <>
       <div className={styles.col}>
         <p className={styles.heading}>{t('demographics', 'Demographics')}</p>
-        {isLoading ? (
+        {showLoading ? (
           <InlineLoading description={`${getCoreTranslation('loading', 'Loading')} ...`} role="progressbar" />
         ) : (
           <ul>
@@ -189,7 +213,7 @@ const PatientAdministrativeDetails: React.FC<{ patientUuid: string }> = ({ patie
               {t('gender', 'Gender')}: {gender}
             </li>
             <li>
-              {t('status', 'Status')}: {person?.dead ? t('deceased', 'Deceased') : t('active', 'Active')}
+              {t('status', 'Status')}: {status}
             </li>
             {person?.dead && (
               <li>
@@ -204,7 +228,7 @@ const PatientAdministrativeDetails: React.FC<{ patientUuid: string }> = ({ patie
       </div>
       <div className={styles.col}>
         <p className={styles.heading}>{t('identifiers', 'Identifiers')}</p>
-        {isLoading ? (
+        {showLoading ? (
           <InlineLoading description={`${getCoreTranslation('loading', 'Loading')} ...`} role="progressbar" />
         ) : (
           <ul>
@@ -223,7 +247,7 @@ const PatientAdministrativeDetails: React.FC<{ patientUuid: string }> = ({ patie
       </div>
       <div className={styles.col}>
         <p className={styles.heading}>{t('additionalDetails', 'Additional details')}</p>
-        {isLoading ? (
+        {showLoading ? (
           <InlineLoading description={`${getCoreTranslation('loading', 'Loading')} ...`} role="progressbar" />
         ) : (
           <ul>
@@ -251,11 +275,12 @@ const PatientAdministrativeDetails: React.FC<{ patientUuid: string }> = ({ patie
 
 const Relationships: React.FC<{ patientId: string }> = ({ patientId }) => {
   const { data: relationships, isLoading } = useRelationships(patientId);
+  const showLoading = useBoundedLoading(isLoading);
 
   return (
     <>
       <p className={styles.heading}>{getCoreTranslation('relationships', 'Relationships')}</p>
-      {isLoading ? (
+      {showLoading ? (
         <InlineLoading description={`${getCoreTranslation('loading', 'Loading')} ...`} role="progressbar" />
       ) : (
         <ul>

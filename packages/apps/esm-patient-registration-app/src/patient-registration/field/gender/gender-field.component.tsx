@@ -30,7 +30,9 @@ export const GenderField: React.FC = () => {
 
   return (
     <div className={styles.halfWidthInDesktopView}>
-      <h4 className={styles.productiveHeading02Light}>{t('sexFieldLabelText', 'Sex')}</h4>
+      <h4 className={`${styles.productiveHeading02Light} ${styles.requiredHeading}`}>
+        {t('sexFieldLabelText', 'Sex')}
+      </h4>
       <div className={styles.sexField}>
         <RadioButtonGroup
           name="gender"

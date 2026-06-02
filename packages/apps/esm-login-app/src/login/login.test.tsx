@@ -9,8 +9,8 @@ import {
 import { screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { Route, Routes } from 'react-router-dom';
-
 import { mockConfig } from '../../../../test-utils/mocks/login-config.mock';
+import loginPackageJson from '../../package.json';
 import renderWithRouter from '../test-helpers/render-with-router';
 
 import Login from './login.component';
@@ -62,8 +62,27 @@ describe('Login', () => {
     expect(screen.getAllByRole('img', { name: /Sihsalus logo/i })).toHaveLength(1);
     expect(screen.getByText(/Sihsalus/i)).toBeInTheDocument();
     expect(screen.queryByAltText(/^logo$/i)).not.toBeInTheDocument();
+    expect(screen.getByText(`Frontend v${loginPackageJson.version}`)).toBeInTheDocument();
     screen.getByRole('textbox', { name: /Username/i });
     screen.getByRole('button', { name: /Continue/i });
+  });
+
+  it('loads the optimized AVIF login image before falling back to PNG', () => {
+    const { container } = renderWithRouter(
+      Login,
+      {},
+      {
+        route: '/login',
+      },
+    );
+
+    const optimizedSource = container.querySelector('picture source[type="image/avif"]');
+    const fallbackImage = container.querySelector('picture img');
+
+    expect(optimizedSource).toHaveAttribute('srcset', '/openmrs/spa/login.avif');
+    expect(fallbackImage).toHaveAttribute('src', '/openmrs/spa/login.png');
+    expect(fallbackImage).toHaveAttribute('width', '1672');
+    expect(fallbackImage).toHaveAttribute('height', '941');
   });
 
   it('renders a configurable logo', () => {

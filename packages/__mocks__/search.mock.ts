@@ -77,10 +77,17 @@ export const mockAdvancedSearchResults = [
     },
     attributes: [
       {
-        value: '0785434125',
+        value: 'true',
         attributeType: {
-          uuid: '14d4f066-15f5-102d-96e4-000c29c2a5d7',
-          display: 'Telephone Number',
+          uuid: '8b56eac7-5c76-4b9c-8c6f-1deab8d3fc47',
+          display: 'Paciente No Identificado',
+        },
+      },
+      {
+        value: 'SAMU Loreto',
+        attributeType: {
+          uuid: '4697d0e6-5b24-416b-aee6-708cd9a3a1db',
+          display: 'Nombre del Acompañante',
         },
       },
     ],
@@ -126,6 +133,13 @@ export const mockAdvancedSearchResults = [
       deathDate: null,
     },
     attributes: [
+      {
+        value: 'Familiar',
+        attributeType: {
+          uuid: 'a180fa5f-c44e-4490-a981-d7196b70c6ac',
+          display: 'Parentesco del Acompañante',
+        },
+      },
       {
         value: {
           uuid: '1ce1b7d4-c865-4178-82b0-5932e51503d6',

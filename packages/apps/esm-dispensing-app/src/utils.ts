@@ -1,6 +1,5 @@
 import { createGlobalStore, fhirBaseUrl, parseDate, useStore } from '@openmrs/esm-framework';
 import dayjs from 'dayjs';
-import template from 'lodash-es/template';
 import { mutate } from 'swr';
 import {
   OPENMRS_FHIR_EXT_DISPENSE_RECORDED,
@@ -482,6 +481,19 @@ export function getPrescriptionDetailsEndpoint(encounterUuid: string): string {
   return `${fhirBaseUrl}/${PRESCRIPTION_DETAILS_ENDPOINT}?encounter=${encounterUuid}&_revinclude=MedicationDispense:prescription&_include=MedicationRequest:encounter`;
 }
 
+function interpolatePrescriptionEndpoint(
+  endpointTemplate: string,
+  values: Record<string, number | string | null>,
+): string {
+  return endpointTemplate.replace(/\$\{\s*([A-Za-z_][A-Za-z0-9_]*)\s*\}/g, (placeholder, key) => {
+    if (!Object.hasOwn(values, key)) {
+      return placeholder;
+    }
+
+    return values[key] == null ? '' : String(values[key]);
+  });
+}
+
 export function getPrescriptionTableEndpoint(
   customPrescriptionsTableEndpoint: string,
   status: string,
@@ -492,7 +504,7 @@ export function getPrescriptionTableEndpoint(
   location: string,
 ): string {
   if (customPrescriptionsTableEndpoint) {
-    return template(customPrescriptionsTableEndpoint)({
+    return interpolatePrescriptionEndpoint(customPrescriptionsTableEndpoint, {
       fhirBaseUrl,
       PRESCRIPTIONS_TABLE_ENDPOINT,
       status,

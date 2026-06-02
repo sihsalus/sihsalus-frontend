@@ -1,10 +1,4 @@
-import {
-  type Encounter,
-  getDefaultsFromConfigSchema,
-  showSnackbar,
-  useConfig,
-  useSession,
-} from '@openmrs/esm-framework';
+import { getDefaultsFromConfigSchema, showSnackbar, useConfig, useSession } from '@openmrs/esm-framework';
 import { type PatientWorkspace2DefinitionProps } from '@openmrs/esm-patient-common-lib';
 import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
@@ -28,7 +22,10 @@ import {
   useProviderSignatureDetails,
   useVisitNoteClinicalContext,
 } from './visit-notes.resource';
-import VisitNotesForm, { type VisitNotesFormProps } from './visit-notes-form.workspace';
+import VisitNotesForm, {
+  type EditableVisitNoteEncounter,
+  type VisitNotesFormProps,
+} from './visit-notes-form.workspace';
 
 const defaultProps: PatientWorkspace2DefinitionProps<VisitNotesFormProps, {}> = {
   closeWorkspace: vi.fn(),
@@ -356,7 +353,7 @@ test('initializes form with existing encounter data when in edit mode', () => {
 
   renderVisitNotesForm({
     formContext: 'editing',
-    encounter: mockEncounter as unknown as Encounter,
+    encounter: mockEncounter as unknown as EditableVisitNoteEncounter,
   });
 
   // Verify date is pre-filled
@@ -436,7 +433,7 @@ test('updates existing visit note when in edit mode', async () => {
 
   renderVisitNotesForm({
     formContext: 'editing',
-    encounter: mockEncounter as unknown as Encounter,
+    encounter: mockEncounter as unknown as EditableVisitNoteEncounter,
   });
 
   // Update clinical note
@@ -480,7 +477,7 @@ test('handles existing diagnoses correctly when in edit mode', async () => {
 
   renderVisitNotesForm({
     formContext: 'editing',
-    encounter: mockEncounter,
+    encounter: mockEncounter as unknown as EditableVisitNoteEncounter,
   });
 
   // Verify existing diagnosis is displayed

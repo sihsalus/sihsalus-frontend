@@ -32,7 +32,7 @@
     "lint": "node ../../tooling/scripts/run-biome.js lint src",
     "test": "vitest run --passWithNoTests",
     "typescript": "tsc",
-    "build": "rimraf dist && swc --copy-files --ignore '**/*.test.*' --ignore '**/setup-tests.*' --ignore '**/test-utils.*' src -d dist && tsc --project tsconfig.build.json",
+    "build": "rimraf dist && swc --strip-leading-paths --copy-files --ignore '**/*.test.*' --ignore '**/setup-tests.*' --ignore '**/test-utils.*' src -d dist && tsc --project tsconfig.build.json",
     "extract-translations": "i18next 'src/**/*.{ts,tsx}' '!src/**/*.test.{ts,tsx}' '!src/**/*.spec.{ts,tsx}' --config ../../tooling/scripts/i18next-parser.config.js"
   },
   "dependencies": {
@@ -58,7 +58,7 @@
   "devDependencies": {
     "@openmrs/esm-framework": "workspace:*",
     "@openmrs/esm-styleguide": "workspace:*",
-    "@swc/cli": "^0.1.65",
+    "@swc/cli": "0.8.1",
     "@swc/core": "^1.5.7",
     "@types/lodash": "^4.17.4",
     "@types/lodash-es": "^4.17.12",
@@ -78,7 +78,7 @@
     "swr": "^2.2.5",
     "turbo": "^2.9.14",
     "typescript": "6.0.3",
-    "vitest": "^4.1.0"
+    "vitest": "^4.1.7"
   },
   "packageManager": "yarn@4.10.3"
 }

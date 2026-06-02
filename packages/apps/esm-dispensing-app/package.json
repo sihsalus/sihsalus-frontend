@@ -45,7 +45,6 @@
   "dependencies": {
     "@carbon/react": "^1.83.0",
     "classnames": "^2.5.1",
-    "lodash-es": "^4.17.21",
     "react-to-print": "^2.14.13"
   },
   "peerDependencies": {
@@ -76,7 +75,7 @@
     "swr": "^2.2.5",
     "turbo": "^2.9.14",
     "typescript": "6.0.3",
-    "vitest": "^4.1.0"
+    "vitest": "^4.1.7"
   },
   "packageManager": "yarn@4.10.3"
 }

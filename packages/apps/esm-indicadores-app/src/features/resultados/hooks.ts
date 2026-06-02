@@ -5,7 +5,10 @@ import { calcularAhora, getResultados } from '../../api/resultados';
 import type { GetResultadosParams, IndicadorResultado, PaginatedResponse } from '../../api/types';
 
 export function useResultados(params: GetResultadosParams) {
-  const { data, error, isLoading, mutate } = useSWR<PaginatedResponse<IndicadorResultado>, Error>(['resultados', params], () => getResultados(params));
+  const { data, error, isLoading, mutate } = useSWR<PaginatedResponse<IndicadorResultado>, Error>(
+    ['resultados', params],
+    () => getResultados(params),
+  );
 
   return {
     data,

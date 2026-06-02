@@ -17,7 +17,7 @@ export interface FuaRequest {
   visitUuid: string;
   name: string;
   payload: string;
-  fuaEstado: FuaEstado;
+  fuaEstado?: FuaEstado | null;
   fechaCreacion: number;
   fechaActualizacion: number;
   /** Número correlativo oficial del FUA (ej: "FUA-2024-001234") */

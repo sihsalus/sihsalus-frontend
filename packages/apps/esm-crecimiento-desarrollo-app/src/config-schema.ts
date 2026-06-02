@@ -1042,14 +1042,27 @@ export const configSchema = {
     _description: 'Configuración del Test Peruano de Desarrollo Infantil',
     _default: {
       encounterTypeUuid: 'a990eabc-3405-419f-bfb1-96ca2d8279b8', // Control de Niño Sano — NTS 102
-      scoreCognitivoUuid: '', // TODO: concept UUID for cognitive score
-      scoreMotorUuid: '', // TODO: concept UUID for motor score
-      scoreSocialUuid: '', // TODO: concept UUID for social-emotional score
-      scoreLenguajeUuid: '', // TODO: concept UUID for language score
-      clasificacionTotalUuid: '', // TODO: concept UUID for overall classification (Coded)
-      observacionesUuid: '', // TODO: concept UUID for observations text
-      contextoCulturalUuid: '', // TODO: concept UUID for cultural context
-      idiomaUuid: '', // TODO: concept UUID for primary language
+      formUuid: '6de41002-6b38-4fdc-9551-c78642256040',
+      concepts: {
+        ageMonthsUuid: '1410AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA',
+        instrumentUuid: 'c4010001-0000-4000-8000-000000000001',
+        instrumentTestPeruanoAnswerUuid: 'c4010013-0000-4000-8000-000000000013',
+        classificationUuid: 'c4010002-0000-4000-8000-000000000002',
+        classificationAnswers: {
+          normal: '1115AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA',
+          riesgo: 'c4010021-0000-4000-8000-000000000021',
+          retraso: 'c4010022-0000-4000-8000-000000000022',
+        },
+        totalScoreUuid: 'c4010003-0000-4000-8000-000000000003',
+        snapshotUuid: 'c4010004-0000-4000-8000-000000000004',
+        referralUuid: 'c4010005-0000-4000-8000-000000000005',
+        referralAnswers: {
+          yes: '1065AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA',
+          no: '1066AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA',
+        },
+        planUuid: 'c4010006-0000-4000-8000-000000000006',
+        observationsUuid: '161011AAAAAAAAAAAAAAAAAAAAAAAAAAAAAA',
+      },
     },
     encounterTypeUuid: {
       _type: Type.UUID,
@@ -1057,46 +1070,15 @@ export const configSchema = {
         'Encounter type UUID para el Test Peruano de Desarrollo. Por defecto usa Control de Niño Sano (NTS 102).',
       _default: 'a990eabc-3405-419f-bfb1-96ca2d8279b8',
     },
-    scoreCognitivoUuid: {
-      _type: Type.ConceptUuid,
-      _description: 'Concept UUID del puntaje de desarrollo cognitivo — pendiente configurar en OCL',
-      _default: '',
+    formUuid: {
+      _type: Type.UUID,
+      _description: 'Form UUID de CRED-004 Seguimiento del Desarrollo usado para persistir el perfil gráfico.',
+      _default: '6de41002-6b38-4fdc-9551-c78642256040',
     },
-    scoreMotorUuid: {
-      _type: Type.ConceptUuid,
-      _description: 'Concept UUID del puntaje de desarrollo motor — pendiente configurar en OCL',
-      _default: '',
-    },
-    scoreSocialUuid: {
-      _type: Type.ConceptUuid,
-      _description: 'Concept UUID del puntaje de desarrollo social-emocional — pendiente configurar en OCL',
-      _default: '',
-    },
-    scoreLenguajeUuid: {
-      _type: Type.ConceptUuid,
-      _description: 'Concept UUID del puntaje de desarrollo del lenguaje — pendiente configurar en OCL',
-      _default: '',
-    },
-    clasificacionTotalUuid: {
-      _type: Type.ConceptUuid,
-      _description:
-        'Concept UUID de la clasificación total del test (Coded: superior/normal/limite/retraso) — pendiente configurar en OCL',
-      _default: '',
-    },
-    observacionesUuid: {
-      _type: Type.ConceptUuid,
-      _description: 'Concept UUID para observaciones generales del evaluador — pendiente configurar en OCL',
-      _default: '',
-    },
-    contextoCulturalUuid: {
-      _type: Type.ConceptUuid,
-      _description: 'Concept UUID del contexto cultural (urbano/rural/urbano_marginal) — pendiente configurar en OCL',
-      _default: '',
-    },
-    idiomaUuid: {
-      _type: Type.ConceptUuid,
-      _description: 'Concept UUID del idioma primario del niño — pendiente configurar en OCL',
-      _default: '',
+    concepts: {
+      _type: Type.Object,
+      _description: 'Conceptos usados para persistir el perfil gráfico del Test Peruano en CRED-004.',
+      _default: {},
     },
   },
 
@@ -1931,13 +1913,26 @@ export interface ConfigObject {
   };
   testPeruano: {
     encounterTypeUuid: string;
-    scoreCognitivoUuid: string;
-    scoreMotorUuid: string;
-    scoreSocialUuid: string;
-    scoreLenguajeUuid: string;
-    clasificacionTotalUuid: string;
-    observacionesUuid: string;
-    contextoCulturalUuid: string;
-    idiomaUuid: string;
+    formUuid: string;
+    concepts: {
+      ageMonthsUuid: string;
+      instrumentUuid: string;
+      instrumentTestPeruanoAnswerUuid: string;
+      classificationUuid: string;
+      classificationAnswers: {
+        normal: string;
+        riesgo: string;
+        retraso: string;
+      };
+      totalScoreUuid: string;
+      snapshotUuid: string;
+      referralUuid: string;
+      referralAnswers: {
+        yes: string;
+        no: string;
+      };
+      planUuid: string;
+      observationsUuid: string;
+    };
   };
 }

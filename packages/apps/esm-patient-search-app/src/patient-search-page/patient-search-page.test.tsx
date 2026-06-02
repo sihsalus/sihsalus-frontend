@@ -23,33 +23,7 @@ vi.mock('react-router-dom', async () => ({
 
 describe('PatientSearchPageComponent', () => {
   beforeEach(() => {
-    mockUseConfig.mockReturnValue({
-      ...getDefaultsFromConfigSchema(configSchema),
-      search: {
-        disableTabletSearchOnKeyUp: false,
-        showRecentlySearchedPatients: false,
-        searchFilterFields: {
-          gender: {
-            enabled: true,
-          },
-          dateOfBirth: {
-            enabled: true,
-          },
-          age: {
-            enabled: true,
-            min: 0,
-          },
-          postcode: {
-            enabled: true,
-          },
-          personAttributes: [
-            {
-              attributeTypeUuid: '14d4f066-15f5-102d-96e4-000c29c2a5d7',
-            },
-          ],
-        },
-      } as PatientSearchConfig['search'],
-    });
+    mockUseConfig.mockReturnValue(getDefaultsFromConfigSchema(configSchema) as PatientSearchConfig);
   });
 
   it('should render advanced search component on desktop layout', () => {

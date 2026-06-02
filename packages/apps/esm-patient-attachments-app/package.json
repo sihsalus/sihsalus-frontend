@@ -42,8 +42,7 @@
     "linkify-react": "^4.3.2",
     "linkifyjs": "^4.3.2",
     "lodash-es": "^4.17.23",
-    "react-grid-gallery": "^0.5.6",
-    "react-html5-camera-photo": "^1.5.11"
+    "react-grid-gallery": "^0.5.6"
   },
   "peerDependencies": {
     "@openmrs/esm-framework": "*",
@@ -60,6 +59,6 @@
     "@rspack/cli": "1.7.11",
     "openmrs": "workspace:*",
     "typescript": "6.0.3",
-    "vitest": "^4.1.0"
+    "vitest": "^4.1.7"
   }
 }

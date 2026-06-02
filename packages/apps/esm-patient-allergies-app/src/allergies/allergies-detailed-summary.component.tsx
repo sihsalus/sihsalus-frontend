@@ -55,7 +55,7 @@ const AllergiesDetailedSummary: React.FC<AllergiesDetailedSummaryProps> = ({ pat
         lastUpdated: allergy.lastUpdated ? formatDate(parseDate(allergy.lastUpdated), { time: false }) : '--',
         note: allergy?.note ?? '--',
         reaction: allergy.reactionManifestations?.sort((a, b) => a.localeCompare(b))?.join(', ') ?? '--',
-        reactionSeverity: t(allergy.reactionSeverity) ?? '--',
+        reactionSeverity: allergy.reactionSeverity ? t(allergy.reactionSeverity, allergy.reactionSeverity) : '--',
       })),
     [allergies, t],
   );

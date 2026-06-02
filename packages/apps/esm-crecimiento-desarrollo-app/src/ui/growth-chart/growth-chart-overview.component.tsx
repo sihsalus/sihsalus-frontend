@@ -1,5 +1,5 @@
 import { Button, ContentSwitcher, DataTableSkeleton, IconSwitch } from '@carbon/react';
-import { Add, Analytics, Table } from '@carbon/react/icons';
+import { Add, Analytics, ChartLineData } from '@carbon/react/icons';
 import { isDesktop as isDesktopLayout, launchWorkspace2, useLayoutType } from '@openmrs/esm-framework';
 import { CardHeader, EmptyState, ErrorState } from '@openmrs/esm-patient-common-lib';
 import React, { useCallback, useMemo, useState } from 'react';
@@ -61,19 +61,19 @@ const GrowthChartOverview: React.FC<GrowthChartProps> = ({ patient, patientUuid 
             <ContentSwitcher
               onChange={handleViewChange}
               size={isTablet ? 'md' : 'sm'}
-              aria-label={t('chartTypeSelector', 'Select chart type')}
+              aria-label={t('chartTypeSelector', 'Seleccionar tipo de gráfico')}
               selectedIndex={isPercentiles ? 0 : 1}
             >
               <IconSwitch name="percentileView" text={t('percentileView', 'Percentiles')}>
                 <Analytics size={16} />
               </IconSwitch>
               <IconSwitch name="zScoreView" text={t('zScoreView', 'Z-Scores')}>
-                <Table size={16} />
+                <ChartLineData size={16} />
               </IconSwitch>
             </ContentSwitcher>
             <span className={styles.divider}>|</span>
-            <Button kind="ghost" renderIcon={Add} iconDescription={t('addData', 'Add data')} onClick={launchForm}>
-              {t('add', 'Add')}
+            <Button kind="ghost" renderIcon={Add} iconDescription={t('addData', 'Agregar datos')} onClick={launchForm}>
+              {t('add', 'Agregar')}
             </Button>
           </div>
         </CardHeader>

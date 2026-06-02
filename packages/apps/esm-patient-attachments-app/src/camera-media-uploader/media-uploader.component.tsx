@@ -3,6 +3,7 @@ import { useConfig } from '@openmrs/esm-framework';
 import { useAllowedFileExtensions } from '@openmrs/esm-patient-common-lib';
 import { useCallback, useContext, useState } from 'react';
 import { useTranslation } from 'react-i18next';
+import { moduleName } from '../constants';
 import { readFileAsString } from '../utils';
 import CameraMediaUploaderContext from './camera-media-uploader-context.resources';
 import styles from './media-uploader.scss';
@@ -13,7 +14,7 @@ interface ErrorNotification {
 }
 
 const MediaUploaderComponent = () => {
-  const { t } = useTranslation();
+  const { t } = useTranslation(moduleName);
   const { maxFileSize } = useConfig();
   const { setFilesToUpload, multipleFiles } = useContext(CameraMediaUploaderContext);
   const { allowedFileExtensions } = useAllowedFileExtensions();
@@ -40,7 +41,8 @@ const MediaUploaderComponent = () => {
             )} ${maxFileSize} MB.`,
           });
         } else if (!isFileExtensionAllowed(file.name, allowedFileExtensions)) {
-          const lastExtension = allowedFileExtensions.pop();
+          const lastExtension = allowedFileExtensions[allowedFileExtensions.length - 1];
+          const supportedExtensions = allowedFileExtensions.slice(0, -1);
 
           setErrorNotification({
             title: t('unsupportedFileType', 'Unsupported file type'),
@@ -50,7 +52,7 @@ const MediaUploaderComponent = () => {
               {
                 fileName: file.name,
                 lastExtension: lastExtension,
-                supportedExtensions: allowedFileExtensions.join(', '),
+                supportedExtensions: supportedExtensions.join(', '),
               },
             ),
           });

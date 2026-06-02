@@ -3,9 +3,12 @@ import { fhirBaseUrl, openmrsFetch, restBaseUrl, useConfig } from '@openmrs/esm-
 import {
   type AntecedentTypeCode,
   buildAntecedentTypeCategory,
+  buildAntecedentTypeNote,
   type FhirConditionCategory,
-  getAntecedentTypeFromCategory,
+  type FhirConditionNote,
+  getAntecedentTypeFromCondition,
   getConditionCategoryDisplay,
+  getConditionNoteText,
 } from '@sihsalus/esm-sihsalus-shared';
 import { useMemo, useState } from 'react';
 import useSWR from 'swr';
@@ -51,11 +54,7 @@ export interface FHIRCondition {
   };
   abatementDateTime?: string;
   category?: Array<FhirConditionCategory>;
-  note?: Array<{
-    authorString?: string;
-    text?: string;
-    time?: string;
-  }>;
+  note?: Array<FhirConditionNote>;
 }
 
 interface CodingData {
@@ -127,7 +126,7 @@ type CreatePayload = {
   };
   abatementDateTime?: string;
   category?: Array<FhirConditionCategory>;
-  note?: Array<{ text?: string }>;
+  note?: Array<FhirConditionNote>;
 };
 
 type EditPayload = CreatePayload & {
@@ -191,7 +190,7 @@ export function useConditionsSearch(conditionToLookup: string) {
 function mapConditionProperties(condition: FHIRCondition): Condition {
   const status = condition?.clinicalStatus?.coding[0]?.code;
   const categoryText = getConditionCategoryDisplay(condition?.category);
-  const antecedentType = getAntecedentTypeFromCategory(condition?.category);
+  const antecedentType = getAntecedentTypeFromCondition(condition?.category, condition?.note);
   return {
     clinicalStatus: status ? status.charAt(0).toUpperCase() + status.slice(1).toLowerCase() : '',
     conceptId: condition?.code?.coding[0]?.code,
@@ -202,7 +201,7 @@ function mapConditionProperties(condition: FHIRCondition): Condition {
     id: condition?.id,
     antecedentType,
     categoryText,
-    noteText: condition?.note?.[0]?.text,
+    noteText: getConditionNoteText(condition?.note),
   };
 }
 
@@ -238,7 +237,7 @@ export async function createCondition(payload: FormFields) {
       reference: `Patient/${payload.patientId}`,
     },
     category: buildAntecedentTypeCategory(payload.antecedentType),
-    note: payload.note ? [{ text: payload.note }] : undefined,
+    note: buildAntecedentTypeNote(payload.antecedentType, payload.note),
   };
 
   const res = await openmrsFetch(url, {
@@ -286,7 +285,7 @@ export async function updateCondition(conditionId, payload: FormFields) {
       reference: `Patient/${payload.patientId}`,
     },
     category: buildAntecedentTypeCategory(payload.antecedentType),
-    note: payload.note ? [{ text: payload.note }] : undefined,
+    note: buildAntecedentTypeNote(payload.antecedentType, payload.note),
   };
 
   const res = await openmrsFetch(url, {

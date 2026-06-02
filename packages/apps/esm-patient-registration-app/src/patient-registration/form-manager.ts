@@ -22,6 +22,7 @@ import {
   saveEncounter,
   savePatient,
   savePatientPhoto,
+  savePatientPhotoAsAttachment,
   saveRelationship,
   updatePatientIdentifier,
   updateRelationship,
@@ -141,14 +142,31 @@ export class FormManager {
 
       const { patientPhotoConceptUuid } = await getConfig<StyleguideConfigObject>('@openmrs/esm-styleguide');
 
-      if (patientPhotoConceptUuid && capturePhotoProps?.imageData) {
-        await savePatientPhoto(
-          savePatientResponse.data.uuid,
-          capturePhotoProps.imageData,
-          `${restBaseUrl}/obs`,
-          capturePhotoProps.dateTime || new Date().toISOString(),
-          patientPhotoConceptUuid,
-        );
+      if (capturePhotoProps?.imageData) {
+        const savePhotoAsAttachment = async () => {
+          try {
+            await savePatientPhotoAsAttachment(savePatientResponse.data.uuid, capturePhotoProps.imageData);
+          } catch (attachmentError) {
+            console.warn('Patient photo could not be saved as an attachment.', attachmentError);
+          }
+        };
+
+        if (patientPhotoConceptUuid) {
+          try {
+            await savePatientPhoto(
+              savePatientResponse.data.uuid,
+              capturePhotoProps.imageData,
+              `${restBaseUrl}/obs`,
+              capturePhotoProps.dateTime || new Date().toISOString(),
+              patientPhotoConceptUuid,
+            );
+          } catch (error) {
+            console.warn('Patient photo could not be saved. Continuing after patient registration succeeded.', error);
+            await savePhotoAsAttachment();
+          }
+        } else {
+          await savePhotoAsAttachment();
+        }
       }
     }
 

@@ -4,7 +4,7 @@ import { describe, expect, it, vi } from 'vitest';
 import { ComponentContext } from './ComponentContext';
 import { openmrsComponentDecorator } from './openmrsComponentDecorator';
 
-describe.skip('openmrs-component-decorator', () => {
+describe('openmrs-component-decorator', () => {
   const opts = {
     featureName: 'Test',
     throwErrorsToConsole: false,
@@ -23,12 +23,8 @@ describe.skip('openmrs-component-decorator', () => {
     const DecoratedComp = openmrsComponentDecorator(opts)(CompThatThrows);
     render(<DecoratedComp />);
     expect(screen.getByRole('alert')).toHaveTextContent('An error has occurred. Please try reloading the page.');
-    // TO-DO assert the UX for broken react app is showing
-    expect(consoleError).toHaveBeenNthCalledWith(
-      1,
-      expect.objectContaining({
-        message: expect.stringContaining('ahahaa'),
-      }),
+    expect(consoleError).toHaveBeenCalledWith(
+      expect.stringContaining('The above error occurred in the <CompThatThrows> component'),
     );
     consoleError.mockRestore();
   });

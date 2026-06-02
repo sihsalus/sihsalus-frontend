@@ -34,6 +34,7 @@ interface SequenceTableProps {
 interface DeleteImmunizationParams {
   doseNumber: number;
   immunizationId: string;
+  persistenceSource?: 'fhir' | 'ampath-form';
   vaccineUuid: string;
 }
 
@@ -69,10 +70,16 @@ const SequenceTable: React.FC<SequenceTableProps> = ({
     [t, sequences.length],
   );
 
-  const handleDeleteImmunization = ({ doseNumber, immunizationId, vaccineUuid }: DeleteImmunizationParams) => {
+  const handleDeleteImmunization = ({
+    doseNumber,
+    immunizationId,
+    persistenceSource,
+    vaccineUuid,
+  }: DeleteImmunizationParams) => {
     const dispose = showModal('vacunacion-delete-confirmation-modal', {
       doseNumber,
       immunizationId,
+      persistenceSource,
       patientUuid,
       vaccineUuid,
       close: () => dispose?.(),
@@ -120,6 +127,7 @@ const SequenceTable: React.FC<SequenceTableProps> = ({
             immunizationFormSub.next({
               vaccineUuid: vaccineUuid,
               immunizationId: dose.immunizationObsUuid,
+              persistenceSource: dose.persistenceSource,
               vaccinationDate: dose.occurrenceDateTime,
               doseNumber: dose.doseNumber,
               status: dose.status,
@@ -145,6 +153,7 @@ const SequenceTable: React.FC<SequenceTableProps> = ({
             handleDeleteImmunization({
               doseNumber: dose.doseNumber,
               immunizationId: dose.immunizationObsUuid,
+              persistenceSource: dose.persistenceSource,
               vaccineUuid,
             })
           }

@@ -88,22 +88,36 @@ const VitalsHeader: React.FC<VitalsHeaderProps> = ({
 
     let overdueVitalsTagContent: React.ReactNode;
     if (vitalsOverdueDayCount < 1) {
+      const hoursLabel = hoursSinceVitalsTaken === 1 ? 'hour old' : 'hours old';
       overdueVitalsTagContent = (
-        <Trans i18nKey="hoursOldVitals" count={hoursSinceVitalsTaken}>
+        <Trans
+          i18nKey={hoursSinceVitalsTaken === 1 ? 'hoursOldVitals_one' : 'hoursOldVitals_other'}
+          count={hoursSinceVitalsTaken}
+        >
           <span>
-            These vitals are <strong>{hoursSinceVitalsTaken} hour old</strong>
+            These vitals are{' '}
+            <strong>
+              {hoursSinceVitalsTaken} {hoursLabel}
+            </strong>
           </span>
         </Trans>
       );
     } else if (vitalsOverdueDayCount >= 1 && vitalsOverdueDayCount < 7) {
+      const daysLabel = vitalsOverdueDayCount === 1 ? 'day old' : 'days old';
       overdueVitalsTagContent = (
-        <Trans i18nKey="daysOldVitals" count={vitalsOverdueDayCount}>
+        <Trans
+          i18nKey={vitalsOverdueDayCount === 1 ? 'daysOldVitals_one' : 'daysOldVitals_other'}
+          count={vitalsOverdueDayCount}
+        >
           <span>
-            These vitals are <strong>{vitalsOverdueDayCount} day old</strong>
+            These vitals are{' '}
+            <strong>
+              {vitalsOverdueDayCount} {daysLabel}
+            </strong>
           </span>
         </Trans>
       );
-    } else if (vitalsOverdueDayCount >= 8 && vitalsOverdueDayCount <= 14) {
+    } else if (vitalsOverdueDayCount >= 7 && vitalsOverdueDayCount <= 14) {
       overdueVitalsTagContent = (
         <Trans i18nKey="overOneWeekOldVitals">
           <span>

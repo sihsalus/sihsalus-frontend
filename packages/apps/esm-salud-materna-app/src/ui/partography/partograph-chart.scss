@@ -1,13 +1,17 @@
-@use '@carbon/styles/scss/spacing';
-@use '@carbon/styles/scss/type';
-@use '@openmrs/esm-styleguide/src/vars' as *;
+@use "@carbon/styles/scss/spacing";
+@use "@carbon/styles/scss/type";
+@use "@openmrs/esm-styleguide/src/vars" as *;
 
 .label01 {
-  @include type.type-style('label-01');
+  @include type.type-style("label-01");
 }
 
 .bodyShort01 {
-  @include type.type-style('body-compact-01');
+  @include type.type-style("body-compact-01");
+}
+
+.bodyLong01 {
+  @include type.type-style("body-01");
 }
 
 .vitalsChartContainer {
@@ -15,16 +19,19 @@
   margin: 0rem spacing.$spacing-05;
   flex-direction: row;
   justify-content: space-between;
+  min-width: 0;
 }
 
-.vitalSignsArea {
+.partographSignsArea {
   flex-grow: 1;
   margin: spacing.$spacing-03 0;
+  min-width: 13rem;
   padding-right: spacing.$spacing-05;
 }
 
 .vitalsChartArea {
   flex-grow: 4;
+  min-width: 0;
   padding: 0 spacing.$spacing-05 spacing.$spacing-09;
 
   :global(.cds--cc--layout-row) {
@@ -50,7 +57,11 @@
     flex-direction: column !important;
   }
 
-  :global(.cds--tabs--scrollable .cds--tabs--scrollable__nav-item + .cds--tabs--scrollable__nav-item) {
+  :global(
+    .cds--tabs--scrollable
+      .cds--tabs--scrollable__nav-item
+      + .cds--tabs--scrollable__nav-item
+  ) {
     margin-left: 0rem;
   }
 
@@ -63,20 +74,21 @@
 .tab {
   outline: 0;
   outline-offset: 0;
+  min-height: spacing.$spacing-09 !important;
 
   &:active,
   &:focus {
     outline: 2px solid var(--brand-03) !important;
   }
 
-  &[aria-selected='true'] {
+  &[aria-selected="true"] {
     border-left: 3px solid var(--brand-03);
     border-bottom: none;
     font-weight: 600;
     margin-left: 0rem !important;
   }
 
-  &[aria-selected='false'] {
+  &[aria-selected="false"] {
     border-bottom: none;
     border-left: 2px solid $ui-03;
     margin-left: 0rem !important;
@@ -92,5 +104,32 @@
 
   > button :global(.cds--tabs .cds--tabs__nav-link) {
     border-bottom: none;
+  }
+}
+
+.latestValue {
+  @extend .bodyShort01;
+  color: $text-02;
+  display: block;
+  margin-top: spacing.$spacing-02;
+}
+
+.emptyMetricNotice {
+  margin-top: spacing.$spacing-05;
+}
+
+@media (max-width: 42rem) {
+  .vitalsChartContainer {
+    flex-direction: column;
+    margin: 0 spacing.$spacing-03;
+  }
+
+  .partographSignsArea {
+    min-width: 0;
+    padding-right: 0;
+  }
+
+  .vitalsChartArea {
+    padding: 0 0 spacing.$spacing-07;
   }
 }

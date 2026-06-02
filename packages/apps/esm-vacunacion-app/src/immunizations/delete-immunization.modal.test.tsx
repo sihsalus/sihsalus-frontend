@@ -74,7 +74,7 @@ describe('DeleteImmunizationModal', () => {
     const deleteButton = screen.getByRole('button', { name: /delete/i });
     await user.click(deleteButton);
 
-    expect(mockDeleteImmunization).toHaveBeenCalledWith(defaultProps.immunizationId);
+    expect(mockDeleteImmunization).toHaveBeenCalledWith(defaultProps.immunizationId, undefined);
     expect(mockDeleteImmunization).toHaveBeenCalledTimes(1);
     expect(mockShowSnackbar).toHaveBeenCalledWith({
       subtitle: 'Immunization dose deleted successfully',
@@ -91,7 +91,7 @@ describe('DeleteImmunizationModal', () => {
     const deleteButton = screen.getByRole('button', { name: /delete/i });
     await user.click(deleteButton);
 
-    expect(mockDeleteImmunization).toHaveBeenCalledWith(defaultProps.immunizationId);
+    expect(mockDeleteImmunization).toHaveBeenCalledWith(defaultProps.immunizationId, undefined);
     expect(mockShowSnackbar).toHaveBeenCalledWith({
       title: 'Error',
       subtitle: 'Failed to delete immunization: Server error',

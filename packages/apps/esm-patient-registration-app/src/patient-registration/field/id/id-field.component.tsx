@@ -1,4 +1,4 @@
-import { Button, SkeletonText } from '@carbon/react';
+import { Button, InlineNotification, SkeletonText } from '@carbon/react';
 import { ArrowRight, TrashCan } from '@carbon/react/icons';
 import { isDesktop, UserHasAccess, useConfig, useLayoutType } from '@openmrs/esm-framework';
 import React, { useCallback, useContext, useEffect, useState } from 'react';
@@ -16,6 +16,7 @@ import type {
 import { PatientRegistrationContext } from '../../patient-registration-context';
 import { getEffectiveRegistrationConfig } from '../../peru-registration-config';
 import styles from '../field.scss';
+import { NationalityField } from '../person-attributes/nationality-field.component';
 import IdentifierSelectionOverlay from './identifier-selection-overlay.component';
 
 export function setIdentifierSource(
@@ -95,18 +96,22 @@ export function deleteIdentifierType(
 }
 
 export const Identifiers: React.FC = () => {
-  const { identifierTypes } = useContext(ResourcesContext);
-  const isLoading = !identifierTypes?.length;
+  const { identifierTypes = [], identifierTypesError, isLoadingIdentifierTypes } = useContext(ResourcesContext);
+  const isLoading = isLoadingIdentifierTypes && !identifierTypes.length;
   const { values, setFieldValue, initialFormValues, isOffline } = useContext(PatientRegistrationContext);
+  const hasSelectedIdentifiers = Object.keys(values.identifiers ?? {}).length > 0;
+  const hasUnavailableIdentifierTypes = !isLoading && !identifierTypes.length;
   const { t } = useTranslation(moduleName);
   const layout = useLayoutType();
   const [showIdentifierOverlay, setShowIdentifierOverlay] = useState(false);
   const config = getEffectiveRegistrationConfig(useConfig() as RegistrationConfig);
   const { defaultPatientIdentifierTypes } = config;
+  const nationalityFieldDefinition = config.fieldDefinitions.find(
+    (fieldDefinition) => fieldDefinition.id === 'nationality',
+  );
 
   useEffect(() => {
     if (identifierTypes) {
-      const hasSelectedIdentifiers = Object.keys(values.identifiers).length > 0;
       const identifiers = {};
 
       identifierTypes
@@ -140,6 +145,7 @@ export const Identifiers: React.FC = () => {
     defaultPatientIdentifierTypes,
     values.identifiers,
     initialFormValues.identifiers,
+    hasSelectedIdentifiers,
   ]);
 
   const closeIdentifierSelectionOverlay = useCallback(() => setShowIdentifierOverlay(false), []);
@@ -164,23 +170,57 @@ export const Identifiers: React.FC = () => {
     );
   }
 
+  if (hasUnavailableIdentifierTypes && !isOffline && !hasSelectedIdentifiers) {
+    return (
+      <div className={styles.halfWidthInDesktopView}>
+        <div className={styles.identifierLabelText}>
+          <h4 className={styles.productiveHeading02Light}>{t('idFieldLabelText', 'Identifiers')}</h4>
+        </div>
+        <InlineNotification
+          style={{ margin: '0', minWidth: '100%' }}
+          kind={identifierTypesError ? 'error' : 'warning'}
+          lowContrast={true}
+          title={t('identifierTypesUnavailableTitle', 'Identification data unavailable')}
+          subtitle={t(
+            'identifierTypesUnavailableSubtitle',
+            'Refresh the page. If the problem continues, check that patient identifier types are configured and that your session is active.',
+          )}
+        />
+      </div>
+    );
+  }
+
   return (
     <div className={styles.halfWidthInDesktopView}>
+      {hasUnavailableIdentifierTypes && !isOffline ? (
+        <InlineNotification
+          style={{ margin: '0 0 1rem', minWidth: '100%' }}
+          kind={identifierTypesError ? 'error' : 'warning'}
+          lowContrast={true}
+          title={t('identifierTypesUnavailableTitle', 'Identification data unavailable')}
+          subtitle={t(
+            'identifierTypesEditModeUnavailableSubtitle',
+            'Existing identification data is shown, but identifier types are unavailable. Refresh the page before adding or changing identifiers.',
+          )}
+        />
+      ) : null}
       <UserHasAccess privilege={['Get Identifier Types', 'Add patient identifiers']}>
         <div className={styles.identifierLabelText}>
           <h4 className={styles.productiveHeading02Light}>{t('idFieldLabelText', 'Identifiers')}</h4>
-          <Button
-            kind="ghost"
-            className={styles.configureIdentifiersButton}
-            onClick={() => setShowIdentifierOverlay(true)}
-            size={isDesktop(layout) ? 'sm' : 'md'}
-          >
-            {t('configure', 'Configure')} <ArrowRight className={styles.arrowRightIcon} size={16} />
-          </Button>
+          {identifierTypes.length ? (
+            <Button
+              kind="ghost"
+              className={styles.configureIdentifiersButton}
+              onClick={() => setShowIdentifierOverlay(true)}
+              size={isDesktop(layout) ? 'sm' : 'md'}
+            >
+              {t('configure', 'Configure')} <ArrowRight className={styles.arrowRightIcon} size={16} />
+            </Button>
+          ) : null}
         </div>
       </UserHasAccess>
       <div>
-        {Object.entries(values.identifiers).map(([fieldName, identifier]) => {
+        {Object.keys(values.identifiers).map((fieldName) => {
           const patientIdentifierWithRequired = {
             ...values.identifiers[fieldName],
             required: true,
@@ -209,10 +249,11 @@ export const Identifiers: React.FC = () => {
           );
         })}
 
-        {showIdentifierOverlay && (
+        {showIdentifierOverlay && identifierTypes.length ? (
           <IdentifierSelectionOverlay setFieldValue={setFieldValue} closeOverlay={closeIdentifierSelectionOverlay} />
-        )}
+        ) : null}
       </div>
+      {nationalityFieldDefinition ? <NationalityField fieldDefinition={nationalityFieldDefinition} /> : null}
     </div>
   );
 };

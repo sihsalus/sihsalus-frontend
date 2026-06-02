@@ -13,12 +13,13 @@ import dayjs from 'dayjs';
 import { mockCurrentVisit, mockPatient, mockSessionDataResponse } from 'test-utils';
 import { configSchema, type ImmunizationConfigObject } from '../config-schema';
 import { FHIR_NEXT_DOSE_DATE_EXTENSION_URL } from './immunization-mapper';
-import { savePatientImmunization } from './immunizations.resource';
+import { savePatientImmunization, savePatientImmunizationViaAmpathForm } from './immunizations.resource';
 import ImmunizationsForm from './immunizations-form.workspace';
 import { immunizationFormSub } from './utils';
 
 const mockCloseWorkspace = vi.fn();
 const mockSavePatientImmunization = savePatientImmunization as vi.Mock;
+const mockSavePatientImmunizationViaAmpathForm = savePatientImmunizationViaAmpathForm as vi.Mock;
 const mockMutate = vi.fn();
 const mockUseConfig = vi.mocked<() => ImmunizationConfigObject>(useConfig);
 const mockUseSession = vi.mocked(useSession);
@@ -66,7 +67,9 @@ vi.mock('../hooks/useImmunizations', () => ({
 }));
 
 vi.mock('./immunizations.resource', () => ({
+  getImmunizationSaveErrorDetails: vi.fn(() => ({ type: 'unknown' })),
   savePatientImmunization: vi.fn(),
+  savePatientImmunizationViaAmpathForm: vi.fn(),
 }));
 
 const testProps: PatientWorkspace2DefinitionProps<Record<string, never>, Record<string, never>> = {
@@ -88,6 +91,10 @@ const testProps: PatientWorkspace2DefinitionProps<Record<string, never>, Record<
 
 mockUseConfig.mockReturnValue({
   ...getDefaultsFromConfigSchema(configSchema),
+  ampathFormPersistence: {
+    ...getDefaultsFromConfigSchema(configSchema).ampathFormPersistence,
+    enabled: false,
+  },
   immunizationConceptSet: '984AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA',
   sequenceDefinitions: [
     {
@@ -114,6 +121,7 @@ describe('Immunizations Form', () => {
 
   beforeEach(() => {
     vi.clearAllMocks();
+    mockSavePatientImmunizationViaAmpathForm.mockResolvedValue({});
     mockToOmrsIsoString.mockReturnValue(mockVaccinationDate.toISOString());
     mockToDateObjectStrict.mockImplementation((dateString) => dayjs(dateString, isoFormat).toDate());
   });

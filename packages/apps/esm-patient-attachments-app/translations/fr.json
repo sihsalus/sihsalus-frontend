@@ -12,6 +12,7 @@
   "cameraAccessErrorMessage": "Veuillez authoriser l'accès à la caméra dans les paramètres de votre navigateur web et réessayer.",
   "cameraError": "Erreur avec la caméra",
   "chooseAnAllowedFileType": "Le fichier « {{fileName}} » ne peut pas être téléchargé. Veuillez télécharger un fichier avec l'une des extensions suivantes : {{supportedExtensions}} ou {{ lastExtension }}.",
+  "clearSelectedImage": "Effacer",
   "closeModal": "Fermer",
   "closePreview": "Fermer l'aperçu",
   "dateUploaded": "Date d'ajout",
@@ -35,6 +36,7 @@
   "gridView": "Galerie",
   "image": "Image",
   "imageDescription": "Description de l'image",
+  "imageName": "Nom de l'image",
   "imagePlaceholder": "Espace réservé aux images",
   "imagePreview": "Aperçu de l'image",
   "keepAttachment": "Conserver la pièce jointe",
@@ -46,6 +48,7 @@
   "successfullyDeleted": "Supprimé",
   "supportedFiletypes": "Les fichiers compatibles sont {{supportedFiles}}",
   "tableView": "Table",
+  "takePhoto": "Prendre une photo",
   "type": "Type",
   "unsavedAttachment": "Pièce jointe non enregistrée",
   "unsavedAttachmentMessage": "Vous avez une pièce jointe non enregistrée. Êtes-vous sûr de vouloir la supprimer ?",
@@ -54,7 +57,9 @@
   "uploadedSuccessfully": "Ajouté",
   "uploadError": "Erreur lors de l'ajout de l'image",
   "uploadFiles": "Ajouter des fichiers",
+  "uploadImage": "Ajouter une image",
   "uploading": "En cours d'ajout",
   "uploadWillContinueInTheBackground": "Les fichiers seront ajoutés en arrière-plan. Vous pouvez fermer cette fenêtre.",
-  "webcam": "Caméra Web"
+  "webcam": "Caméra Web",
+  "webcamPreview": "Aperçu de la caméra Web"
 }

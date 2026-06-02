@@ -12,6 +12,7 @@
   "cameraAccessErrorMessage": "Por favor, habilite el acceso a la cámara en la configuración de su navegador e intente nuevamente.",
   "cameraError": "Error de Cámara",
   "chooseAnAllowedFileType": "El archivo \"{{fileName}}\" no se puede subir. Por favor, suba un archivo con una de las siguientes extensiones: {{supportedExtensions}}, o {{ lastExtension }}.",
+  "clearSelectedImage": "Quitar",
   "closeModal": "Cerrar",
   "closePreview": "Cerrar vista previa",
   "dateUploaded": "Fecha de subida",
@@ -35,6 +36,7 @@
   "gridView": "Vista de cuadrícula",
   "image": "Imagen",
   "imageDescription": "Descripción de la imagen",
+  "imageName": "Nombre de imagen",
   "imagePlaceholder": "Marcador de posición de la imagen",
   "imagePreview": "Vista previa de la imagen",
   "keepAttachment": "Mantener archivo adjunto",
@@ -46,6 +48,7 @@
   "successfullyDeleted": "eliminado exitosamente",
   "supportedFiletypes": "Los archivos compatibles son {{supportedFiles}}",
   "tableView": "Vista de tabla",
+  "takePhoto": "Tomar foto",
   "type": "Tipo",
   "unsavedAttachment": "Archivo adjunto sin guardar",
   "unsavedAttachmentMessage": "Tiene un archivo adjunto sin guardar. ¿Está seguro que desea descartarlo?",
@@ -54,7 +57,9 @@
   "uploadedSuccessfully": "subido exitosamente",
   "uploadError": "Error al subir el archivo",
   "uploadFiles": "Subir archivos",
+  "uploadImage": "Subir imagen",
   "uploading": "Subiendo",
   "uploadWillContinueInTheBackground": "Los archivos se subirán en segundo plano. Puede cerrar esta ventana.",
-  "webcam": "Cámara web"
+  "webcam": "Cámara web",
+  "webcamPreview": "Vista previa de cámara web"
 }

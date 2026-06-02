@@ -1,9 +1,10 @@
 import { InlineNotification, TextInputSkeleton } from '@carbon/react';
-import { useMemo } from 'react';
+import { useContext, useEffect, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import { type FieldDefinition } from '../../../config-schema';
 import { moduleName } from '../../../constants';
+import { PatientRegistrationContext } from '../../patient-registration-context';
 import styles from '../field.scss';
 import { CodedPersonAttributeField } from './coded-person-attribute-field.component';
 import { LocationPersonAttributeField } from './location-person-attribute-field.component';
@@ -16,7 +17,27 @@ export interface PersonAttributeFieldProps {
 
 export function PersonAttributeField({ fieldDefinition }: PersonAttributeFieldProps) {
   const { data: personAttributeType, isLoading, error } = usePersonAttributeType(fieldDefinition.uuid);
+  const registrationContext = useContext(PatientRegistrationContext);
   const { t } = useTranslation(moduleName);
+
+  useEffect(() => {
+    if (!personAttributeType || !fieldDefinition.defaultValue || registrationContext?.inEditMode) {
+      return;
+    }
+
+    const attributes = registrationContext?.values?.attributes ?? {};
+    if (Object.hasOwn(attributes, personAttributeType.uuid)) {
+      return;
+    }
+
+    registrationContext?.setFieldValue(`attributes.${personAttributeType.uuid}`, fieldDefinition.defaultValue, false);
+  }, [
+    fieldDefinition.defaultValue,
+    personAttributeType,
+    registrationContext?.inEditMode,
+    registrationContext?.setFieldValue,
+    registrationContext?.values?.attributes,
+  ]);
 
   const personAttributeField = useMemo(() => {
     if (!personAttributeType) {

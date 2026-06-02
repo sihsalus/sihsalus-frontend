@@ -1,5 +1,5 @@
-const fs = require('fs');
-const path = require('path');
+const fs = require('node:fs');
+const path = require('node:path');
 const chalk = require('chalk');
 
 const logInfo = (msg) => console.log(`${chalk.green.bold('[assemble]')} ${msg}`);
@@ -248,7 +248,7 @@ async function downloadNpmModules() {
 
   logInfo(`Phase 2: downloading ${externalEntries.length} external module(s) from npm`);
 
-  const os = require('os');
+  const os = require('node:os');
   const tmpBase = fs.mkdtempSync(path.join(os.tmpdir(), 'sihsalus-assemble-'));
 
   for (const [name, version] of externalEntries) {
@@ -516,6 +516,9 @@ function patchIndexHtml() {
     var message = getErrorMessage(error);
     return (
       message.indexOf('died in status LOADING_SOURCE_CODE') >= 0 ||
+      message.indexOf('ChunkLoadError') >= 0 ||
+      message.indexOf('Loading chunk') >= 0 ||
+      message.indexOf('CSS_CHUNK_LOAD_FAILED') >= 0 ||
       message.indexOf("doesn't exist in shared scope") >= 0 ||
       message.indexOf('Shared module') >= 0
     );

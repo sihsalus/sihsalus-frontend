@@ -1,4 +1,5 @@
 import { Type } from '@openmrs/esm-framework';
+import { defaultAmpathImmunizationFormPersistence } from './immunizations/ampath-form-immunization-config';
 import { defaultFhirImmunizationConceptMappings } from './immunizations/fhir-immunization-config';
 import { type FhirImmunizationConceptMappings } from './types/fhir-immunization-domain';
 
@@ -38,6 +39,12 @@ export const configSchema = {
     _description:
       'Concept mappings expected by the OpenMRS FHIR2 Immunization resource. These values must exist uniquely in the content package for FHIR reads/writes to work.',
     _default: defaultFhirImmunizationConceptMappings,
+  },
+  ampathFormPersistence: {
+    _type: Type.Object,
+    _description:
+      'AMPATH form/encounter contract used by the custom vaccination UI to persist vaccine events as OpenMRS obs.',
+    _default: defaultAmpathImmunizationFormPersistence,
   },
   supplementalVaccines: {
     _type: Type.Array,
@@ -371,6 +378,24 @@ export interface ImmunizationConfigObject {
   };
   immunizationConceptSet: string;
   fhirConceptMappings: Partial<FhirImmunizationConceptMappings>;
+  ampathFormPersistence?: {
+    enabled: boolean;
+    encounterTypeUuid: string;
+    formUuid: string;
+    concepts: {
+      vaccineUuid: string;
+      vaccinationDate: string;
+      doseNumber: string;
+      manufacturer: string;
+      lotNumber: string;
+      expirationDate: string;
+      note: string;
+      nextDoseDate: string;
+      status: string;
+      statusReason: string;
+      programContext: string;
+    };
+  };
   supplementalVaccines?: Array<{
     uuid: string;
     display: string;

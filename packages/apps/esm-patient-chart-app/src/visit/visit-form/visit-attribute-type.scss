@@ -1,5 +1,12 @@
 @use '@carbon/layout';
+@use '@openmrs/esm-styleguide/src/vars' as *;
 
 .visitAttributeField {
   margin-bottom: layout.$spacing-05;
+}
+
+.readOnlyField {
+  :global(.cds--label) {
+    color: $text-02;
+  }
 }

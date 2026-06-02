@@ -14,7 +14,7 @@ const AlojamientoConjunto: React.FC<AlojamientoConjuntoProps> = ({ patientUuid }
   const { t } = useTranslation();
   const config = useConfig() as ConfigObject;
   const { neonatalConcepts } = config;
-  const headerTitle = t('alojamientoConjunto', 'Alojamiento Conjunto');
+  const headerTitle = t('alojamientoConjunto', 'Alojamiento conjunto');
   const { encounter, isLoading, error, mutate } = useLatestValidEncounter(
     patientUuid,
     config.encounterTypes.alojamientoConjunto,
@@ -136,7 +136,7 @@ const AlojamientoConjunto: React.FC<AlojamientoConjuntoProps> = ({ patientUuid }
     <PatientSummaryTable
       patientUuid={patientUuid}
       headerTitle={headerTitle}
-      displayText={t('alojamientoConjunto', 'Alojamiento Conjunto')}
+      displayText={t('alojamientoConjunto', 'Alojamiento conjunto')}
       dataHook={dataHook}
       rowConfig={rowConfig}
       onFormLaunch={handleLaunchForm}

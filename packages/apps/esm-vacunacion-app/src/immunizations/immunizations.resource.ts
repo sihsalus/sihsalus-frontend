@@ -1,9 +1,10 @@
-import { fhirBaseUrl, openmrsFetch } from '@openmrs/esm-framework';
+import { fhirBaseUrl, openmrsFetch, restBaseUrl } from '@openmrs/esm-framework';
 import {
   type FHIRImmunizationResource,
   type FhirImmunizationConceptMappingKey,
   type FhirImmunizationConceptMappings,
 } from '../types/fhir-immunization-domain';
+import type { AmpathImmunizationEncounterPayload } from './ampath-form-immunization-mapper';
 
 type FhirConceptMappings = Partial<FhirImmunizationConceptMappings> | undefined;
 
@@ -130,6 +131,23 @@ export function savePatientImmunization(
       'Content-Type': 'application/json',
     },
     method: immunizationObsUuid ? 'PUT' : 'POST',
+    body: patientImmunization,
+    signal: abortController.signal,
+  });
+}
+
+export function savePatientImmunizationViaAmpathForm(
+  patientImmunization: AmpathImmunizationEncounterPayload,
+  encounterUuid: string,
+  abortController: AbortController,
+) {
+  const endpoint = encounterUuid ? `${restBaseUrl}/encounter/${encounterUuid}` : `${restBaseUrl}/encounter`;
+
+  return openmrsFetch(endpoint, {
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    method: 'POST',
     body: patientImmunization,
     signal: abortController.signal,
   });

@@ -12,6 +12,7 @@ export interface FieldDefinition {
   label?: string;
   uuid: string;
   placeholder?: string;
+  defaultValue?: string;
   allowFutureDates?: boolean;
   allowPastDates?: boolean;
   showHeading: boolean;
@@ -185,6 +186,12 @@ export const esmPatientRegistrationSchema = {
         _type: Type.String,
         _default: '',
         _description: 'Placeholder that will appear in the input.',
+      },
+      defaultValue: {
+        _type: Type.String,
+        _default: null,
+        _description:
+          'Default value to apply for new registrations when this field has no existing value. For coded fields, use the answer concept UUID.',
       },
       allowFutureDates: {
         _type: Type.Boolean,

@@ -10,6 +10,7 @@ import {
   fetchAddressTemplate,
   fetchAllRelationshipTypes,
   fetchPatientIdentifierTypesWithSources,
+  type RelationshipTypesResponse,
   ResourcesContext,
 } from './offline.resources';
 import { FormManager } from './patient-registration/form-manager';
@@ -19,15 +20,21 @@ import styles from './root.scss';
 export default function Root() {
   const isOnline = useConnectivity();
   const currentSession = useSession();
-  const { data: addressTemplate } = useSWRImmutable('patientRegistrationAddressTemplate', fetchAddressTemplate);
-  const { data: relationshipTypes } = useSWRImmutable(
-    'patientRegistrationRelationshipTypes',
-    fetchAllRelationshipTypes,
-  );
-  const { data: identifierTypes } = useSWRImmutable(
-    'patientRegistrationPatientIdentifiers',
-    fetchPatientIdentifierTypesWithSources,
-  );
+  const {
+    data: addressTemplate,
+    error: addressTemplateError,
+    isLoading: isLoadingAddressTemplate,
+  } = useSWRImmutable('patientRegistrationAddressTemplate', fetchAddressTemplate);
+  const {
+    data: relationshipTypes,
+    error: relationshipTypesError,
+    isLoading: isLoadingRelationshipTypes,
+  } = useSWRImmutable<RelationshipTypesResponse>('patientRegistrationRelationshipTypes', fetchAllRelationshipTypes);
+  const {
+    data: identifierTypes,
+    error: identifierTypesError,
+    isLoading: isLoadingIdentifierTypes,
+  } = useSWRImmutable('patientRegistrationPatientIdentifiers', fetchPatientIdentifierTypesWithSources);
   const savePatientForm = useMemo(
     () => (isOnline ? FormManager.savePatientFormOnline : FormManager.savePatientFormOffline),
     [isOnline],
@@ -43,8 +50,14 @@ export default function Root() {
           <ResourcesContext.Provider
             value={{
               addressTemplate,
+              addressTemplateError,
+              isLoadingAddressTemplate,
               relationshipTypes,
-              identifierTypes,
+              relationshipTypesError,
+              isLoadingRelationshipTypes,
+              identifierTypes: identifierTypes ?? [],
+              identifierTypesError,
+              isLoadingIdentifierTypes,
               currentSession,
             }}
           >

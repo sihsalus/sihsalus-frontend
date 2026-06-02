@@ -27,7 +27,7 @@ const NutritionalAssessment: React.FC<NutritionalAssessmentProps> = ({ patientUu
   const config = useConfig<ConfigObject>();
   const { weightForAge, heightForAge, weightForHeight, lastMeasurementDate, isLoading, error } =
     useNutritionalAssessment(patientUuid);
-  const headerTitle = t('cnAssessmentTitle', 'Estado Nutricional');
+  const headerTitle = t('cnAssessmentTitle', 'Estado nutricional');
 
   const hasData = weightForAge || heightForAge || weightForHeight;
 

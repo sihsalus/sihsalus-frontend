@@ -27,7 +27,7 @@ const StimulationCounseling: React.FC<StimulationCounselingProps> = ({ patientUu
   const config = useConfig<ConfigObject>();
   const { totalSessions, lastCounselingDate, lastCounselingResult, isLoading, error } =
     useStimulationCounseling(patientUuid);
-  const headerTitle = t('esCounselingTitle', 'Consejería a Padres');
+  const headerTitle = t('esCounselingTitle', 'Consejería a padres');
 
   const handleAdd = useCallback(() => {
     const formUuid = config.formsList.stimulationCounselingForm;

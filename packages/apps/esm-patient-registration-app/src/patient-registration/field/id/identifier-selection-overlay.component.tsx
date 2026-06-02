@@ -11,9 +11,8 @@ import {
 import { type FormValues, type PatientIdentifierType, PatientIdentifierValue } from '../../patient-registration.types';
 import { PatientRegistrationContext } from '../../patient-registration-context';
 import {
-  peruCarnetExtranjeriaPatientIdentifierTypeUuid,
-  peruDiePatientIdentifierTypeUuid,
   peruDniPatientIdentifierTypeUuid,
+  peruForeignPatientIdentifierTypeUuids,
 } from '../../peru-registration-config';
 import Overlay from '../../ui-components/overlay/overlay.component';
 import {
@@ -29,13 +28,9 @@ interface PatientIdentifierOverlayProps {
   closeOverlay: () => void;
 }
 
-const exclusiveIdentifierTypeUuids = {
-  [peruDniPatientIdentifierTypeUuid]: [
-    peruCarnetExtranjeriaPatientIdentifierTypeUuid,
-    peruDiePatientIdentifierTypeUuid,
-  ],
-  [peruCarnetExtranjeriaPatientIdentifierTypeUuid]: peruDniPatientIdentifierTypeUuid,
-  [peruDiePatientIdentifierTypeUuid]: peruDniPatientIdentifierTypeUuid,
+const exclusiveIdentifierTypeUuids: Record<string, string | Array<string>> = {
+  [peruDniPatientIdentifierTypeUuid]: peruForeignPatientIdentifierTypeUuids,
+  ...Object.fromEntries(peruForeignPatientIdentifierTypeUuids.map((uuid) => [uuid, peruDniPatientIdentifierTypeUuid])),
 };
 
 function removeIdentifiersByTypeUuid(
@@ -143,7 +138,7 @@ const PatientIdentifierOverlay: React.FC<PatientIdentifierOverlayProps> = ({ clo
               id={identifierType.uuid}
               value={identifierType.uuid}
               labelText={identifierType.name}
-              onChange={(e, { checked }) => handleCheckingIdentifier(identifierType, checked)}
+              onChange={(_event, { checked }) => handleCheckingIdentifier(identifierType, checked)}
               checked={!!patientIdentifier}
               disabled={isDisabled || (isOffline && isDisabledOffline)}
             />

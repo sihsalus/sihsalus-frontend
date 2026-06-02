@@ -15,9 +15,12 @@ interface AllergyListProps {
 const AllergyList: React.FC<AllergyListProps> = ({ patientUuid }) => {
   const { allergies, isLoading } = useAllergies(patientUuid);
 
-  const sortedAllergies = allergies?.sort(
-    (a, b) => severityOrder[a.reactionSeverity] - severityOrder[b.reactionSeverity],
-  );
+  const sortedAllergies = allergies?.sort((a, b) => {
+    const severityA = a.reactionSeverity ? severityOrder[a.reactionSeverity] : undefined;
+    const severityB = b.reactionSeverity ? severityOrder[b.reactionSeverity] : undefined;
+
+    return (severityA ?? Number.MAX_SAFE_INTEGER) - (severityB ?? Number.MAX_SAFE_INTEGER);
+  });
 
   if (isLoading) {
     return (

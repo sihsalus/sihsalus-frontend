@@ -20,17 +20,7 @@ interface DevelopmentOverviewProps {
 const DevelopmentOverview: React.FC<DevelopmentOverviewProps> = ({ patientUuid }) => {
   const { t } = useTranslation();
   const config = useConfig<ConfigObject>();
-  const testPeruanoConcepts = [
-    config.testPeruano?.scoreCognitivoUuid,
-    config.testPeruano?.scoreMotorUuid,
-    config.testPeruano?.scoreSocialUuid,
-    config.testPeruano?.scoreLenguajeUuid,
-    config.testPeruano?.clasificacionTotalUuid,
-    config.testPeruano?.observacionesUuid,
-    config.testPeruano?.contextoCulturalUuid,
-    config.testPeruano?.idiomaUuid,
-  ];
-  const isTestPeruanoConfigured = testPeruanoConcepts.some(Boolean);
+  const isTestPeruanoConfigured = Boolean(config.testPeruano?.formUuid && config.testPeruano?.concepts?.snapshotUuid);
 
   const handleLaunchTepsi = () => {
     const formUuid = config.formsList.tepsi;

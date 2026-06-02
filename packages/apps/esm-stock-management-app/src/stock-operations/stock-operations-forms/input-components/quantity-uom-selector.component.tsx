@@ -14,6 +14,7 @@ interface QtyUomSelectorProps {
 const QtyUomSelector: React.FC<QtyUomSelectorProps> = ({ stockItemUuid, error, intiallvalue, onValueChange }) => {
   const { t } = useTranslation();
   const { isLoading, error: stockItemError, item } = useStockItem(stockItemUuid);
+  const getPackagingUnitFactor = (unit?: StockItemPackagingUOMDTO) => unit?.factor ?? unit?.quantityFactor ?? 1;
   const initialSelectedItem = useMemo<StockItemPackagingUOMDTO | null>(
     () => (item?.packagingUnits ?? []).find((u) => u.uuid === intiallvalue) ?? item?.packagingUnits?.[0],
     [item?.packagingUnits, intiallvalue],
@@ -43,7 +44,7 @@ const QtyUomSelector: React.FC<QtyUomSelectorProps> = ({ stockItemUuid, error, i
       invalidText={error}
       items={item?.packagingUnits ?? []}
       itemToString={(s: StockItemPackagingUOMDTO) =>
-        s?.packagingUomName ? `${s?.packagingUomName} - ${s?.factor} ` : ''
+        s?.packagingUomName ? `${s.packagingUomName} - ${getPackagingUnitFactor(s)}` : ''
       }
       name={'stockItemPackagingUOMUuid'}
       onChange={(data: { selectedItem?: StockItemPackagingUOMDTO }) => {

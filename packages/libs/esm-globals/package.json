@@ -47,15 +47,15 @@
     "access": "public"
   },
   "dependencies": {
-    "@types/fhir": "0.0.31"
+    "@types/fhir": "0.0.43"
   },
   "peerDependencies": {
     "single-spa": "6.x"
   },
   "devDependencies": {
     "@swc/cli": "0.8.1",
-    "@swc/core": "1.15.21",
-    "@types/fhir": "0.0.31",
+    "@swc/core": "1.15.40",
+    "@types/fhir": "0.0.43",
     "@types/node": "^22.10.7",
     "concurrently": "^9.2.1",
     "rimraf": "^6.1.3",

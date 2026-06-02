@@ -36,12 +36,12 @@
     "rxjs": "6.x"
   },
   "dependencies": {
-    "@carbon/react": "^1.92.1",
-    "@carbon/styles": "^1.102.0",
+    "@carbon/react": "^1.108.0",
+    "@carbon/styles": "^1.107.0",
     "@openmrs/esm-patient-common-lib": "workspace:*",
     "@sihsalus/esm-rbac": "workspace:*",
     "konva": "^9.3.18",
-    "react-konva": "^19.0.5",
+    "react-konva": "^19.2.4",
     "zustand": "^4.5.5"
   },
   "devDependencies": {

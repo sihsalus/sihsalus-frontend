@@ -234,6 +234,9 @@ export function updateIndicadorMock(id: string, payload: IndicadorUpdatePayload)
   const indicador = getIndicadorById(id);
   indicador.nombre = payload.nombre;
   indicador.descripcion = payload.descripcion;
+  if (payload.activo !== undefined) {
+    indicador.activo = payload.activo;
+  }
   return {
     id: indicador.id,
     nombre: indicador.nombre,

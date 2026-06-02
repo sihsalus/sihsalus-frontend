@@ -94,7 +94,7 @@ const IndicadorFormPage: React.FC<IndicadorFormPageProps> = ({ mode }) => {
           <IndicadorForm
             mode={mode}
             defaultValues={defaultValues}
-            initialMetadata={indicador ? { nombre: indicador.nombre, descripcion: indicador.descripcion } : undefined}
+            initialMetadata={indicador ? { nombre: indicador.nombre, descripcion: indicador.descripcion, activo: indicador.activo } : undefined}
             serverError={serverError}
             onSubmit={handleSubmit}
           />

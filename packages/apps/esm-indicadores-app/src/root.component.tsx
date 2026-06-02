@@ -4,6 +4,7 @@ import React from 'react';
 import { BrowserRouter, NavLink, Route, Routes } from 'react-router-dom';
 
 import { useMockMode } from './api/mock-mode';
+import { useIndicatorsHealth } from './hooks/useIndicatorsHealth';
 import styles from './indicators-dashboard.module.scss';
 import IndicadorDetailPage from './pages/IndicadorDetailPage';
 import IndicadoresPage from './pages/IndicadoresPage';
@@ -14,6 +15,7 @@ const trimTrailingSlash = (path: string) => path.replace(/\/+$/, '');
 
 const RootComponent: React.FC = () => {
   const { isMockMode, errorMessage } = useMockMode();
+  useIndicatorsHealth(); // side-effect: checks backend health on mount
   const spaBase = trimTrailingSlash(window.getOpenmrsSpaBase?.() ?? globalThis.spaBase ?? '/openmrs/spa');
   const basePath = `${spaBase}/indicators`;
 

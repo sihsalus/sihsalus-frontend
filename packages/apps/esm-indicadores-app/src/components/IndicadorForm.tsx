@@ -1,4 +1,4 @@
-import { Button, Select, SelectItem, TextArea, TextInput, Tile } from '@carbon/react';
+import { Button, Select, SelectItem, TextArea, TextInput, Tile, Toggle } from '@carbon/react';
 import React, { useMemo, useState } from 'react';
 
 import type {
@@ -18,7 +18,7 @@ type FormMode = 'create' | 'edit' | 'version';
 interface IndicadorFormProps {
   mode: FormMode;
   defaultValues?: Partial<IndicadorFormValues>;
-  initialMetadata?: Pick<IndicadorUpdatePayload, 'nombre' | 'descripcion'>;
+  initialMetadata?: Pick<IndicadorUpdatePayload, 'nombre' | 'descripcion' | 'activo'>;
   isSubmitting?: boolean;
   serverError?: string | null;
   onSubmit: (payload: {
@@ -114,6 +114,7 @@ const IndicadorForm: React.FC<IndicadorFormProps> = ({
     nombre: initialMetadata?.nombre ?? initialValues?.nombre ?? '',
     descripcion: initialMetadata?.descripcion ?? initialValues?.descripcion ?? '',
   });
+  const [activo, setActivo] = useState<boolean>(initialMetadata?.activo ?? true);
   const [validationError, setValidationError] = useState<string | null>(null);
 
   const isEditMode = mode === 'edit';
@@ -150,10 +151,14 @@ const IndicadorForm: React.FC<IndicadorFormProps> = ({
       return;
     }
 
-    const metadata = {
+    const metadata: IndicadorUpdatePayload = {
       nombre: (isVersionMode ? initialMetadata?.nombre : values.nombre)?.trim() ?? '',
       descripcion: (isVersionMode ? initialMetadata?.descripcion : values.descripcion)?.trim() || null,
     };
+
+    if (isEditMode) {
+      metadata.activo = activo;
+    }
 
     await onSubmit({
       metadata,
@@ -188,6 +193,14 @@ const IndicadorForm: React.FC<IndicadorFormProps> = ({
               onChange={(event) => updateField('descripcion', event.target.value)}
               disabled={isSubmitting}
             />
+            {isEditMode ? (
+              <Toggle
+                id="activo-toggle"
+                labelText={activo ? 'Activo' : 'Inactivo'}
+                toggled={activo}
+                onToggle={(toggled) => setActivo(toggled)}
+              />
+            ) : null}
           </div>
         </section>
       ) : null}

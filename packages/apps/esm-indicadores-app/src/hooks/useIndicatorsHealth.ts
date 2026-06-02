@@ -1,13 +1,8 @@
 import { openmrsFetch, useConfig } from '@openmrs/esm-framework';
-import { useEffect, useState } from 'react';
+import { useEffect } from 'react';
 
+import { activateMockMode, resetMockMode } from '../api/mock-mode';
 import { type Config } from '../config-schema';
-
-export interface IndicatorsHealthState {
-  isChecking: boolean;
-  isMockMode: boolean;
-  errorMessage?: string;
-}
 
 const DEFAULT_ERROR = 'No se pudo conectar con el API de indicadores.';
 
@@ -23,12 +18,9 @@ function normalizeErrorMessage(error: unknown): string {
   return DEFAULT_ERROR;
 }
 
-export function useIndicatorsHealth(): IndicatorsHealthState {
+/** Side-effect hook that checks backend health on mount and updates the mock-mode store. */
+export function useIndicatorsHealth(): void {
   const config = useConfig<Config>();
-  const [state, setState] = useState<IndicatorsHealthState>({
-    isChecking: true,
-    isMockMode: false,
-  });
 
   useEffect(() => {
     let isMounted = true;
@@ -41,18 +33,11 @@ export function useIndicatorsHealth(): IndicatorsHealthState {
         });
 
         if (isMounted) {
-          setState({
-            isChecking: false,
-            isMockMode: false,
-          });
+          resetMockMode();
         }
       } catch (error) {
         if (isMounted && !controller.signal.aborted) {
-          setState({
-            isChecking: false,
-            isMockMode: true,
-            errorMessage: normalizeErrorMessage(error),
-          });
+          activateMockMode(normalizeErrorMessage(error));
         }
       }
     };
@@ -64,6 +49,4 @@ export function useIndicatorsHealth(): IndicatorsHealthState {
       controller.abort();
     };
   }, [config.indicatorsApiPath]);
-
-  return state;
 }

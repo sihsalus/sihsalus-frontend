@@ -5,7 +5,7 @@ import type { DefinicionIndicadorForm } from '../api/types';
 import DefinicionView from '../components/DefinicionView';
 import IndicadorForm from '../components/IndicadorForm';
 import SQLPreviewSection from '../components/SQLPreviewSection';
-import { notifyError, notifySuccess, useCreateVersion, useIndicador } from '../features/indicadores/hooks';
+import { notifyError, notifySuccess, useCreateVersion, useIndicador, useResolvedOrdenes } from '../features/indicadores/hooks';
 import { parseDefinicion } from '../features/indicadores/parseDefinicion';
 import styles from '../indicators-dashboard.module.scss';
 
@@ -21,6 +21,15 @@ const IndicadorDetailPage: React.FC = () => {
     () => data?.versiones.reduce((max, version) => (version.version > max.version ? version : max), data.versiones[0]),
     [data],
   );
+
+  const ordenUuids = useMemo(() => {
+    if (!latestVersion) {
+      return [];
+    }
+    return latestVersion.definicion.evento?.ordenes?.flatMap((item) => item.concepto_uuids) ?? [];
+  }, [latestVersion]);
+
+  const { data: ordenesData } = useResolvedOrdenes(ordenUuids);
 
   const handleCreateVersion = async ({
     definicion,
@@ -79,7 +88,7 @@ const IndicadorDetailPage: React.FC = () => {
               <h3 className={styles.sectionTitle}>Crear nueva versión</h3>
               <IndicadorForm
                 mode="version"
-                defaultValues={latestVersion ? parseDefinicion(latestVersion.definicion) : undefined}
+                defaultValues={latestVersion ? parseDefinicion(latestVersion.definicion, ordenesData) : undefined}
                 initialMetadata={{ nombre: data.nombre, descripcion: data.descripcion }}
                 serverError={serverError}
                 onSubmit={handleCreateVersion}

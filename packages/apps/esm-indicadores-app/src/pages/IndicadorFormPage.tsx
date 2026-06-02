@@ -7,6 +7,7 @@ import {
   notifySuccess,
   useCreateIndicador,
   useIndicador,
+  useResolvedOrdenes,
   useUpdateIndicador,
 } from '../features/indicadores/hooks';
 import { parseDefinicion } from '../features/indicadores/parseDefinicion';
@@ -24,6 +25,15 @@ const IndicadorFormPage: React.FC<IndicadorFormPageProps> = ({ mode }) => {
   const { updateIndicador } = useUpdateIndicador();
   const { data: indicador, isLoading, error } = useIndicador(mode === 'edit' ? (id ?? '') : '');
 
+  const ordenUuids = useMemo(() => {
+    if (!indicador?.versiones.length) {
+      return [];
+    }
+    return indicador.versiones[0].definicion.evento?.ordenes?.flatMap((item) => item.concepto_uuids) ?? [];
+  }, [indicador]);
+
+  const { data: ordenesData } = useResolvedOrdenes(ordenUuids);
+
   const defaultValues = useMemo(() => {
     if (!indicador?.versiones.length) {
       return undefined;
@@ -32,9 +42,9 @@ const IndicadorFormPage: React.FC<IndicadorFormPageProps> = ({ mode }) => {
     return {
       nombre: indicador.nombre,
       descripcion: indicador.descripcion ?? '',
-      ...parseDefinicion(indicador.versiones[0].definicion),
+      ...parseDefinicion(indicador.versiones[0].definicion, ordenesData),
     };
-  }, [indicador]);
+  }, [indicador, ordenesData]);
 
   const handleSubmit = async ({
     metadata,

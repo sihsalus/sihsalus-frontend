@@ -1,7 +1,7 @@
 import React, { useMemo } from 'react';
 
 import type { DefinicionIndicadorForm } from '../api/types';
-import { useResolvedDiagnosticos, useResolvedLocations } from '../features/indicadores/hooks';
+import { useResolvedDiagnosticos, useResolvedLocations, useResolvedOrdenes } from '../features/indicadores/hooks';
 import styles from '../indicators-dashboard.module.scss';
 
 interface DefinicionViewProps {
@@ -26,9 +26,14 @@ const DefinicionView: React.FC<DefinicionViewProps> = ({ definicion }) => {
     () => definicion.evento?.diagnosticos?.flatMap((item) => item.concepto_uuids) ?? [],
     [definicion.evento?.diagnosticos],
   );
+  const ordenUuids = useMemo(
+    () => definicion.evento?.ordenes?.flatMap((item) => item.concepto_uuids) ?? [],
+    [definicion.evento?.ordenes],
+  );
 
   const { displayMap } = useResolvedLocations(locationUuids);
   const { resolveMap } = useResolvedDiagnosticos(diagnosticoUuids);
+  const { data: ordenesData } = useResolvedOrdenes(ordenUuids);
 
   return (
     <div className={styles.definitionList}>
@@ -56,7 +61,9 @@ const DefinicionView: React.FC<DefinicionViewProps> = ({ definicion }) => {
       <div>
         <strong>Órdenes:</strong>{' '}
         {definicion.evento?.ordenes?.length
-          ? definicion.evento.ordenes.map((item) => item.concepto_uuids.join(', ')).join(' | ')
+          ? definicion.evento.ordenes
+              .map((item) => item.concepto_uuids.map((uuid) => ordenesData?.[uuid] ?? uuid).join(', '))
+              .join(' | ')
           : 'Sin filtro'}
       </div>
       <div>

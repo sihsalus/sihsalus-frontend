@@ -21,6 +21,7 @@ import {
   listIndicadores,
   resolveDiagnosticosMock,
   resolveLocationsMock,
+  resolveOrdenesMock,
   searchDiagnosticosMock,
   searchLocationsMock,
   searchOrdenesMock,
@@ -171,6 +172,20 @@ export async function resolveDiagnosticos(uuids: Array<string>): Promise<Array<D
       return fetchJson<Array<DiagnosticoOption>>(`${conceptosPath}/diagnosticos/resolve?uuids=${uuids.join(',')}`);
     },
     () => resolveDiagnosticosMock(uuids),
+  );
+}
+
+export async function resolveOrdenes(uuids: Array<string>): Promise<Record<string, string>> {
+  if (!uuids.length) {
+    return {};
+  }
+
+  return withMockFallback(
+    async () => {
+      const conceptosPath = await getConceptosResourcePath();
+      return fetchJson<Record<string, string>>(`${conceptosPath}/buscar/resolve?uuids=${uuids.join(',')}`);
+    },
+    () => resolveOrdenesMock(uuids),
   );
 }
 

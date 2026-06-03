@@ -14,6 +14,9 @@ interface ReferenceRangeDisplayProps {
  * Shows "N/A" when no valid range is available.
  */
 export const ReferenceRangeDisplay: React.FC<ReferenceRangeDisplayProps> = ({ ranges, units }) => {
+  console.warn('DEBUG_REFERENCE_RANGE_DISPLAY_123 ranges:', ranges);
+  console.warn('DEBUG_REFERENCE_RANGE_DISPLAY_123 units:', units);
+
   const { t } = useTranslation();
   const formatted = formatReferenceRange(ranges, units);
 

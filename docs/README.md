@@ -6,6 +6,7 @@ Punto de entrada a la documentación del monorepo. El [`README.md`](../README.md
 
 | Documento | Descripción |
 |---|---|
+| [`app-template.md`](./app-template.md) | Plantilla base y checklist para crear apps `esm-*-app` nuevas |
 | [`e2e-testing.md`](./e2e-testing.md) | Cómo correr las suites Playwright (raíz vs modulares) y cómo se normalizan las URLs E2E |
 | [`fhir-validation-todo.md`](./fhir-validation-todo.md) | TODO de validación de recursos FHIR R4 generados desde formularios CRED |
 | [`../SECURITY.md`](../SECURITY.md) | Política de seguridad y reporte de vulnerabilidades |

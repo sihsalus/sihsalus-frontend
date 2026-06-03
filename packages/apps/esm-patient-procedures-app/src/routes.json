@@ -39,7 +39,7 @@
       "order": 8,
       "meta": {
         "slot": "patient-chart-clinical-procedures-dashboard-slot",
-        "path": "procedimientos-clinicos"
+        "path": "procedures"
       }
     }
   ],

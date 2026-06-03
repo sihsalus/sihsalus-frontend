@@ -71,6 +71,7 @@ describe('Conditions form', () => {
     expect(screen.getByRole('group', { name: /clinical status/i })).toBeInTheDocument();
     expect(screen.getByRole('searchbox', { name: /enter antecedent/i })).toBeInTheDocument();
     expect(screen.getByRole('radio', { name: /patol|patholog/i })).toBeInTheDocument();
+    expect(screen.queryByRole('radio', { name: /surgical|quirúrgico/i })).not.toBeInTheDocument();
     expect(screen.getByRole('button', { name: /clear search input/i })).toBeInTheDocument();
     expect(screen.getByLabelText(/^active/i)).toBeInTheDocument();
     expect(screen.getByLabelText(/^active/i)).not.toBeChecked();

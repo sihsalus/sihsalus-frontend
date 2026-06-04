@@ -23,6 +23,7 @@ const mockUseConfig = vi.mocked(useConfig);
 
 const defaultConfig: Config = {
   indicatorsApiPath: '/ws/module/indicators/api',
+  reportesSqlApiPath: '/services/reportes-sql',
 };
 
 describe('useIndicatorsHealth', () => {

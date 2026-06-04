@@ -28,7 +28,7 @@ export function useIndicatorsHealth(): void {
 
     const checkHealth = async () => {
       try {
-        await openmrsFetch(`${config.indicatorsApiPath.replace(/\/+$/, '')}/health`, {
+        await openmrsFetch(`${config.reportesSqlApiPath.replace(/\/+$/, '')}/health`, {
           signal: controller.signal,
         });
 
@@ -48,5 +48,5 @@ export function useIndicatorsHealth(): void {
       isMounted = false;
       controller.abort();
     };
-  }, [config.indicatorsApiPath]);
+  }, [config.reportesSqlApiPath]);
 }

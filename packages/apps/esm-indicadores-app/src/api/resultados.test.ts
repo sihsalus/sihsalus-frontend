@@ -1,7 +1,7 @@
 import { openmrsFetch } from '@openmrs/esm-framework';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
-import { getReportesSqlApiPath } from './config';
+import { getReportesSqlApiPath, getReportesSqlResourcePath } from './config';
 import { getIndicadores, previewSql } from './indicadores';
 import { calcularAhora, getResultados } from './resultados';
 
@@ -9,6 +9,13 @@ vi.mock('./config');
 
 const mockedOpenmrsFetch = vi.mocked(openmrsFetch);
 const mockedGetReportesSqlApiPath = vi.mocked(getReportesSqlApiPath);
+const mockedGetReportesSqlResourcePath = vi.mocked(getReportesSqlResourcePath);
+
+// Default: make getReportesSqlResourcePath delegate to getReportesSqlApiPath behaviour
+function mockResourcePath(base: string) {
+  mockedGetReportesSqlApiPath.mockResolvedValue(base);
+  mockedGetReportesSqlResourcePath.mockImplementation(async (resource) => `${base}/${resource}`);
+}
 
 describe('previewSql routing', () => {
   afterEach(() => {
@@ -16,7 +23,7 @@ describe('previewSql routing', () => {
   });
 
   it('calls openmrsFetch with /services/reportes-sql/indicadores/{id}/preview-sql', async () => {
-    mockedGetReportesSqlApiPath.mockResolvedValue('/services/reportes-sql');
+    mockResourcePath('/services/reportes-sql');
     mockedOpenmrsFetch.mockResolvedValue({
       data: { sql: 'SELECT 1', params: {}, periodo_inicio: '', periodo_fin: '', version_id: '', version_num: 1 },
     } as any);
@@ -28,7 +35,7 @@ describe('previewSql routing', () => {
   });
 
   it('appends versionId as query param when provided', async () => {
-    mockedGetReportesSqlApiPath.mockResolvedValue('/services/reportes-sql');
+    mockResourcePath('/services/reportes-sql');
     mockedOpenmrsFetch.mockResolvedValue({
       data: { sql: 'SELECT 1', params: {}, periodo_inicio: '', periodo_fin: '', version_id: '', version_num: 1 },
     } as any);
@@ -40,7 +47,7 @@ describe('previewSql routing', () => {
   });
 
   it('does NOT use indicatorsApiPath for previewSql', async () => {
-    mockedGetReportesSqlApiPath.mockResolvedValue('/services/reportes-sql');
+    mockResourcePath('/services/reportes-sql');
     mockedOpenmrsFetch.mockResolvedValue({
       data: { sql: 'SELECT 1', params: {}, periodo_inicio: '', periodo_fin: '', version_id: '', version_num: 1 },
     } as any);
@@ -58,7 +65,7 @@ describe('getResultados routing', () => {
   });
 
   it('calls openmrsFetch with a URL starting with /services/reportes-sql', async () => {
-    mockedGetReportesSqlApiPath.mockResolvedValue('/services/reportes-sql');
+    mockResourcePath('/services/reportes-sql');
     mockedOpenmrsFetch.mockResolvedValue({
       data: { items: [], total: 0, page: 1, size: 10, pages: 0 },
     } as any);
@@ -70,7 +77,7 @@ describe('getResultados routing', () => {
   });
 
   it('includes query parameters in the URL', async () => {
-    mockedGetReportesSqlApiPath.mockResolvedValue('/services/reportes-sql');
+    mockResourcePath('/services/reportes-sql');
     mockedOpenmrsFetch.mockResolvedValue({
       data: { items: [], total: 0, page: 1, size: 10, pages: 0 },
     } as any);
@@ -84,7 +91,7 @@ describe('getResultados routing', () => {
   });
 
   it('does NOT use indicatorsApiPath for getResultados', async () => {
-    mockedGetReportesSqlApiPath.mockResolvedValue('/services/reportes-sql');
+    mockResourcePath('/services/reportes-sql');
     mockedOpenmrsFetch.mockResolvedValue({
       data: { items: [], total: 0, page: 1, size: 10, pages: 0 },
     } as any);
@@ -102,7 +109,7 @@ describe('calcularAhora routing', () => {
   });
 
   it('calls openmrsFetch with /services/reportes-sql/resultados/calcular-ahora', async () => {
-    mockedGetReportesSqlApiPath.mockResolvedValue('/services/reportes-sql');
+    mockResourcePath('/services/reportes-sql');
     mockedOpenmrsFetch.mockResolvedValue({
       data: { calculados: 3, errores: [], total: 3 },
     } as any);
@@ -114,7 +121,7 @@ describe('calcularAhora routing', () => {
   });
 
   it('uses POST method', async () => {
-    mockedGetReportesSqlApiPath.mockResolvedValue('/services/reportes-sql');
+    mockResourcePath('/services/reportes-sql');
     mockedOpenmrsFetch.mockResolvedValue({
       data: { calculados: 0, errores: [], total: 0 },
     } as any);
@@ -127,12 +134,12 @@ describe('calcularAhora routing', () => {
   });
 });
 
-describe('regression: existing API flows remain on indicatorsApiPath', () => {
+describe('indicadores CRUD now routes through reportes-sql', () => {
   afterEach(() => {
     vi.clearAllMocks();
   });
 
-  it('getIndicadores does NOT route through reportes-sql base', async () => {
+  it('getIndicadores routes through reportes-sql base', async () => {
     mockedOpenmrsFetch.mockResolvedValue({
       data: { items: [], total: 0, page: 1, size: 10, pages: 0 },
     } as any);
@@ -141,6 +148,17 @@ describe('regression: existing API flows remain on indicatorsApiPath', () => {
 
     const calledUrl = mockedOpenmrsFetch.mock.calls[0]?.[0] as string | undefined;
     expect(calledUrl).toBeDefined();
-    expect(calledUrl).not.toContain('/services/reportes-sql');
+    expect(calledUrl).toContain('/services/reportes-sql/indicadores');
+  });
+
+  it('getIndicadores does NOT use legacy indicatorsApiPath', async () => {
+    mockedOpenmrsFetch.mockResolvedValue({
+      data: { items: [], total: 0, page: 1, size: 10, pages: 0 },
+    } as any);
+
+    await getIndicadores(1, 10);
+
+    const calledUrl = mockedOpenmrsFetch.mock.calls[0]?.[0] as string | undefined;
+    expect(calledUrl).not.toContain('/ws/module/indicators/api');
   });
 });

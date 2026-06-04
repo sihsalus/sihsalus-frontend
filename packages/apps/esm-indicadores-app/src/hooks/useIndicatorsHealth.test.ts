@@ -26,6 +26,8 @@ const defaultConfig: Config = {
   reportesSqlApiPath: '/services/reportes-sql',
 };
 
+const CUSTOM_REPORTES_SQL_PATH = '/custom/reportes-sql';
+
 describe('useIndicatorsHealth', () => {
   beforeEach(() => {
     vi.clearAllMocks();
@@ -70,6 +72,58 @@ describe('useIndicatorsHealth', () => {
       expect(activateMockMode).toHaveBeenCalledTimes(1);
       expect(activateMockMode).toHaveBeenCalledWith('No se pudo conectar con el API de indicadores.');
     });
+  });
+
+  it('calls health endpoint using reportesSqlApiPath from config', async () => {
+    mockOpenmrsFetch.mockResolvedValueOnce({
+      data: { status: 'ok' },
+      status: 200,
+    } as never);
+
+    renderHook(() => useIndicatorsHealth());
+
+    await vi.waitFor(() => {
+      expect(mockOpenmrsFetch).toHaveBeenCalledTimes(1);
+    });
+
+    const calledUrl = mockOpenmrsFetch.mock.calls[0][0] as string;
+    expect(calledUrl).toContain('/services/reportes-sql/health');
+  });
+
+  it('uses custom reportesSqlApiPath from config when provided', async () => {
+    mockUseConfig.mockReturnValue({
+      ...defaultConfig,
+      reportesSqlApiPath: CUSTOM_REPORTES_SQL_PATH,
+    });
+    mockOpenmrsFetch.mockResolvedValueOnce({
+      data: { status: 'ok' },
+      status: 200,
+    } as never);
+
+    renderHook(() => useIndicatorsHealth());
+
+    await vi.waitFor(() => {
+      expect(mockOpenmrsFetch).toHaveBeenCalledTimes(1);
+    });
+
+    const calledUrl = mockOpenmrsFetch.mock.calls[0][0] as string;
+    expect(calledUrl).toContain(`${CUSTOM_REPORTES_SQL_PATH}/health`);
+  });
+
+  it('does NOT use indicatorsApiPath for health check', async () => {
+    mockOpenmrsFetch.mockResolvedValueOnce({
+      data: { status: 'ok' },
+      status: 200,
+    } as never);
+
+    renderHook(() => useIndicatorsHealth());
+
+    await vi.waitFor(() => {
+      expect(mockOpenmrsFetch).toHaveBeenCalledTimes(1);
+    });
+
+    const calledUrl = mockOpenmrsFetch.mock.calls[0][0] as string;
+    expect(calledUrl).not.toContain('/ws/module/indicators/api');
   });
 
   it('does not call activateMockMode after component unmount during request', async () => {

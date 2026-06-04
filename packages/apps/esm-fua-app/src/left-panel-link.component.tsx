@@ -1,6 +1,5 @@
 import { Document } from '@carbon/react/icons';
-import { ConfigurableLink, useSession } from '@openmrs/esm-framework';
-import { AppErrorBoundary } from 'libs/esm-rbac/src';
+import { ConfigurableLink, UserHasAccess } from '@openmrs/esm-framework';
 import last from 'lodash-es/last';
 import { useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -16,8 +15,6 @@ export function LinkExtension({ config }: { config: LinkConfig }): JSX.Element {
   const { name, title } = config;
   const location = useLocation();
   const spaBasePath = globalThis.getOpenmrsSpaBase() + 'home';
-  const session = useSession();
-  console.log(session);
 
   let urlSegment = useMemo(() => decodeURIComponent(last(location.pathname.split('/'))), [location.pathname]);
 
@@ -31,13 +28,7 @@ export function LinkExtension({ config }: { config: LinkConfig }): JSX.Element {
   }
 
   return (
-    <AppErrorBoundary
-      appName="esm-fua-app"
-      user={session.user}
-      privilegesRequired={['Fua Privilege']}
-      checkAccess={true}
-      disappear={true}
-    >
+    <UserHasAccess privilege="Fua Privilege">
       <ConfigurableLink
         to={spaBasePath + '/' + name}
         className={`cds--side-nav__link ${name === urlSegment && 'active-left-nav-link'}`}
@@ -47,7 +38,7 @@ export function LinkExtension({ config }: { config: LinkConfig }): JSX.Element {
           <span className="sihsalus-side-nav__text">{t(title, title)}</span>
         </span>
       </ConfigurableLink>
-    </AppErrorBoundary>
+    </UserHasAccess>
   );
 }
 

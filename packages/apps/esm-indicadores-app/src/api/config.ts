@@ -24,3 +24,15 @@ export async function getConceptosResourcePath() {
   const apiPath = await getIndicatorsApiPath();
   return `${apiPath}/conceptos`;
 }
+
+const defaultReportesSqlApiPath = '/services/reportes-sql';
+
+export async function getReportesSqlApiPath(): Promise<string> {
+  const config = (await getConfig(moduleName)) as Config | undefined;
+  return config?.reportesSqlApiPath?.replace(/\/+$/, '') || defaultReportesSqlApiPath;
+}
+
+export async function getReportesSqlResourcePath(resource: string): Promise<string> {
+  const base = await getReportesSqlApiPath();
+  return `${base}/${resource}`;
+}

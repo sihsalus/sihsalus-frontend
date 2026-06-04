@@ -11,7 +11,7 @@ import type {
   PaginatedResponse,
   DefinicionIndicadorForm,
 } from './types';
-import { getConceptosResourcePath, getIndicadoresResourcePath } from './config';
+import { getConceptosResourcePath, getIndicadoresResourcePath, getReportesSqlApiPath } from './config';
 import {
   createIndicadorMock,
   createVersionMock,
@@ -109,9 +109,9 @@ export async function createVersion(id: string, definicion: DefinicionIndicadorF
 }
 
 export async function previewSql(id: string, versionId?: string): Promise<IndicadorSQLPreview> {
-  const indicadoresPath = await getIndicadoresResourcePath();
+  const reportesSqlBase = await getReportesSqlApiPath();
   return withMockFallback(
-    () => fetchJson<IndicadorSQLPreview>(ensureQuery(`${indicadoresPath}/${id}/preview-sql`, { versionId })),
+    () => fetchJson<IndicadorSQLPreview>(ensureQuery(`${reportesSqlBase}/indicadores/${id}/preview-sql`, { versionId })),
     () => getSqlPreviewMock(id, versionId),
   );
 }

@@ -1,5 +1,5 @@
 import type { BatchCalcularNowResponse, GetResultadosParams, IndicadorResultado, PaginatedResponse } from './types';
-import { getResultadosResourcePath } from './config';
+import { getReportesSqlApiPath } from './config';
 import { calcularAhoraMock, listResultados } from '../mocks/indicators-data';
 import { fetchJson, withMockFallback } from './client';
 
@@ -15,7 +15,7 @@ function ensureQuery(params: Record<string, string | number | undefined>) {
 }
 
 export async function getResultados(params: GetResultadosParams): Promise<PaginatedResponse<IndicadorResultado>> {
-  const resultadosPath = await getResultadosResourcePath();
+  const reportesSqlBase = await getReportesSqlApiPath();
   const queryParams: Record<string, string | number | undefined> = {
     page: params.page,
     size: params.size,
@@ -25,15 +25,15 @@ export async function getResultados(params: GetResultadosParams): Promise<Pagina
   };
 
   return withMockFallback(
-    () => fetchJson<PaginatedResponse<IndicadorResultado>>(`${resultadosPath}/${ensureQuery(queryParams)}`),
+    () => fetchJson<PaginatedResponse<IndicadorResultado>>(`${reportesSqlBase}/resultados/${ensureQuery(queryParams)}`),
     () => listResultados(params),
   );
 }
 
 export async function calcularAhora(): Promise<BatchCalcularNowResponse> {
-  const resultadosPath = await getResultadosResourcePath();
+  const reportesSqlBase = await getReportesSqlApiPath();
   return withMockFallback(
-    () => fetchJson<BatchCalcularNowResponse>(`${resultadosPath}/calcular-ahora`, { method: 'POST' }),
+    () => fetchJson<BatchCalcularNowResponse>(`${reportesSqlBase}/resultados/calcular-ahora`, { method: 'POST' }),
     () => calcularAhoraMock(),
   );
 }

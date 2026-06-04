@@ -1057,8 +1057,8 @@ export const configSchema = {
         snapshotUuid: 'c4010004-0000-4000-8000-000000000004',
         referralUuid: 'c4010005-0000-4000-8000-000000000005',
         referralAnswers: {
-          yes: '1065AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA',
-          no: '1066AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA',
+          yes: 'cf82933b-3f3f-45e7-a5ab-5d31aaee3da3',
+          no: '488b58ff-64f5-4f8a-8979-fa79940b1594',
         },
         planUuid: 'c4010006-0000-4000-8000-000000000006',
         observationsUuid: '161011AAAAAAAAAAAAAAAAAAAAAAAAAAAAAA',

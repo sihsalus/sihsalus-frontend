@@ -26,7 +26,7 @@ Terminología de dominio: visita = consulta, encounter = atención, appointment 
 - Definir el concept set real para `CRED.perinatalConceptSetUuid`; actualmente queda vacío y marcado pendiente de OCL.
 - Validar en content/QLTY los UUIDs sintéticos usados por Test Peruano (`c401...`) y ESAVI (`f000...`). El frontend ya tiene defaults, pero pueden fallar si el paquete de contenido no los instala.
 - Confirmar que el guardado de reacción adversa ESAVI tenga en content el encounter type `vaccinationAdministration`, el form `adverseReactionForm` y los conceptos configurados en `adverseReactionReporting`.
-- Validar que los formularios placeholder de `formsList` existan en backend antes de exponerlos en el selector CRED: nutrición infantil (`c106...` a `c108...`), EDI/TEA/salud mental (`c109...` a `c111...`) y formularios normativos (`c212...` a `c225...`).
+- Validar que los formularios placeholder de `formsList` existan en backend antes de exponerlos en el selector CRED: EDI/TEA/salud mental (`c109...` a `c111...`) y formularios normativos (`c212...` a `c225...`). Para Nutrición Infantil, usar el UUID real del Form cargado en OpenMRS, no el `uuid` interno del JSON Ampath (`c106...` a `c108...`).
 - Configurar `credScheduling.appointmentServiceUuid` con el servicio real de citas CRED; si queda vacío, la generación de citas debe permanecer oculta o mostrar error claro.
 - Corregir edición vs creación en widgets que abren form engine con `encounterUuid: ''`; varios resúmenes todavía crean registros nuevos en vez de editar el encounter existente.
 - Revisar `useCreateCarePlanAppointments`: hoy queda como helper TODO para planes de cuidado (madre gestante, CRED y vacunación), pero no está integrado como contrato estable.

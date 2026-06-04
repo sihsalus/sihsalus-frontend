@@ -26,14 +26,15 @@ Configuracion de conceptos:
 Contratos de frontend:
 
 - Los conceptos y mappings de vacunacion deben venir de `config-schema`; no agregar UUIDs clinicos hardcodeados.
-- Un `501 Not Implemented` de FHIR2 Immunization debe mostrarse como error operativo claro para QA/backend o degradar a estado vacio si el flujo es solo lectura.
+- Un `501 Not Implemented` de FHIR2 `Immunization` no debe romper la UI cuando `ampathFormPersistence.enabled=true`: las lecturas degradan al fallback Ampath/REST y el formulario guarda vacunas nuevas como encounters.
+- Si `ampathFormPersistence.enabled=false`, el modulo depende directamente de FHIR2 `Immunization`; un `501` debe mostrarse como error operativo claro para QA/backend.
 - El usuario final no debe ver detalles tecnicos del endpoint, salvo que sea una pantalla de diagnostico.
 - Las advertencias MINSA por edad/dosis no deben bloquear guardado sin una regla clinica explicita.
 - Si una vacuna de la NTS no existe en content/backend, debe estar deshabilitada o documentada como pendiente, no simulada silenciosamente.
 
 TODO content/backend:
 
-- Corregir en backend QLTY el `501 Not Implemented` de `GET /openmrs/ws/fhir2/R4/Immunization?patient=<uuid>`. El frontend ya degrada a estado vacio para no romper la UI, pero la solucion real es habilitar/actualizar FHIR2 Immunization y sus mappings de contenido.
+- Corregir en backend QLTY el `501 Not Implemented` de `GET /openmrs/ws/fhir2/R4/Immunization?patient=<uuid>`. El frontend usa fallback Ampath/REST cuando esta habilitado, pero la solucion real es habilitar/actualizar FHIR2 Immunization y sus mappings de contenido.
 - Validar en el content reference application que `CIEL:1421` exista como mapping unico para FHIR2 `Immunization`.
 - Validar que `CIEL:984` resuelva al set local correcto de vacunas, o sobreescribir `immunizationConceptSet` en config con el mapping/UUID local.
 - Confirmar que las vacunas configuradas como respuestas del set local existan como conceptos activos y con mappings estables.

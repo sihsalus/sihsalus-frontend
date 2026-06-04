@@ -381,6 +381,12 @@ describe('Visit form', () => {
     expect(screen.getByRole('option', { name: /Inpatient Ward/i })).toBeInTheDocument();
   });
 
+  it('does not render the extra visit attributes slot by default', () => {
+    renderVisitForm();
+
+    expect(hasRenderedExtensionSlot('extra-visit-attribute-slot')).toBe(false);
+  });
+
   it('does not render visit type combo box if atFacilityVisitType set', async () => {
     mockUseEmrConfiguration.mockReturnValue({
       emrConfiguration: {
@@ -541,6 +547,73 @@ describe('Visit form', () => {
       title: expect.stringContaining('Additional visit information updated successfully'),
       kind: 'success',
     });
+  });
+
+  it('submits extra visit attributes when the extra visit attributes slot is enabled', async () => {
+    const user = userEvent.setup();
+    const extraVisitAttribute = {
+      attributeType: 'payment-details-attribute-type-uuid',
+      value: 'paying-concept-uuid',
+    };
+
+    mockUseConfig.mockReturnValue({
+      ...getDefaultsFromConfigSchema(esmPatientChartSchema),
+      showExtraVisitAttributesSlot: true,
+      visitAttributeTypes: [],
+      defaultVisitAttributesFromPersonAttributes: [],
+    });
+    mockExtensionSlot.mockImplementation(({ children, name, state }): React.JSX.Element => {
+      if (name === 'extra-visit-attribute-slot') {
+        const extraVisitSlotState = state as {
+          setExtraVisitInfo: (state: { attributes: Array<{ attributeType: string; value: string }> }) => void;
+        };
+
+        return (
+          <ExtraVisitSlotTestDouble
+            setExtraVisitInfo={extraVisitSlotState.setExtraVisitInfo}
+            attributes={[extraVisitAttribute]}
+          />
+        );
+      }
+
+      if (typeof children === 'function') {
+        return (
+          <>
+            {children({
+              id: 'test-extension-id',
+              meta: {},
+              moduleName: '@openmrs/esm-patient-chart-app',
+              name: 'test-extension-name',
+              config: {},
+            } as AssignedExtension)}
+          </>
+        );
+      }
+
+      return <>{children ?? null}</>;
+    });
+
+    renderVisitForm();
+    await screen.findByTestId('extra-visit-attribute-slot');
+
+    await selectVisitType(user);
+
+    const locationPicker = screen.getByRole('combobox', {
+      name: /Select a location/i,
+    });
+    await user.selectOptions(locationPicker, 'Inpatient Ward');
+
+    await user.click(screen.getByRole('button', { name: /Start visit/i }));
+
+    expect(mockSaveVisit).toHaveBeenCalledWith(
+      expect.objectContaining({
+        attributes: expect.arrayContaining([extraVisitAttribute]),
+        location: mockLocations.data.results[1].uuid,
+        patient: mockPatient.id,
+        visitType: 'some-uuid1',
+      }),
+      expect.any(Object),
+    );
   });
 
   it('prefills visit attributes from matching patient person attributes', async () => {
@@ -913,4 +986,22 @@ async function selectVisitType(user: ReturnType<typeof userEvent.setup>, visitTy
 
 function renderVisitForm(visitToEdit?: Visit) {
   render(React.createElement(StartVisitForm, { ...testProps, visitToEdit }));
+}
+
+function hasRenderedExtensionSlot(name: string) {
+  return mockExtensionSlot.mock.calls.some(([props]) => props.name === name);
+}
+
+function ExtraVisitSlotTestDouble({
+  attributes,
+  setExtraVisitInfo,
+}: {
+  attributes: Array<{ attributeType: string; value: string }>;
+  setExtraVisitInfo: (state: { attributes: Array<{ attributeType: string; value: string }> }) => void;
+}) {
+  React.useEffect(() => {
+    setExtraVisitInfo({ attributes });
+  }, [attributes, setExtraVisitInfo]);
+
+  return <div data-testid="extra-visit-attribute-slot" />;
 }

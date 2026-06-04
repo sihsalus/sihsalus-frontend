@@ -1,4 +1,4 @@
-import { useFhirFetchAll, useOpenmrsFetchAll } from '@openmrs/esm-framework';
+import { getDefaultsFromConfigSchema, useConfig, useFhirFetchAll, useOpenmrsFetchAll } from '@openmrs/esm-framework';
 import { screen } from '@testing-library/react';
 import {
   mockImmunizationData,
@@ -7,6 +7,7 @@ import {
   renderWithSwr,
   waitForLoadingToFinish,
 } from 'test-utils';
+import { configSchema, type ImmunizationConfigObject } from '../config-schema';
 import ImmunizationsOverview from './immunizations-overview.component';
 
 const testProps = {
@@ -17,9 +18,12 @@ const testProps = {
 
 const mockUseFhirFetchAll = useFhirFetchAll as vi.Mock;
 const mockUseOpenmrsFetchAll = useOpenmrsFetchAll as vi.Mock;
+const mockUseConfig = vi.mocked(useConfig<ImmunizationConfigObject>);
+const immunizationConfig = getDefaultsFromConfigSchema(configSchema) as ImmunizationConfigObject;
 
 describe('ImmunizationOverview', () => {
   beforeEach(() => {
+    mockUseConfig.mockReturnValue(immunizationConfig);
     mockUseOpenmrsFetchAll.mockReturnValue({
       data: [],
       error: null,
@@ -96,5 +100,58 @@ describe('ImmunizationOverview', () => {
 
     expect(screen.getAllByRole('row').length).toEqual(4);
     expect(screen.getByText(/1–3 of 3 items/i)).toBeInTheDocument();
+  });
+
+  it('falls back to AMPATH encounter immunizations when FHIR2 Immunization is not implemented', async () => {
+    const {
+      ampathFormPersistence: { concepts },
+    } = immunizationConfig;
+
+    mockUseFhirFetchAll.mockReturnValue({
+      data: null,
+      error: {
+        message: '501 Not Implemented',
+        response: {
+          status: 501,
+          statusText: 'Not Implemented',
+        },
+      },
+      isLoading: false,
+      isValidating: false,
+      mutate: vi.fn(),
+    });
+    mockUseOpenmrsFetchAll.mockReturnValue({
+      data: [
+        {
+          uuid: 'ampath-immunization-encounter',
+          encounterDatetime: '2024-01-03T00:00:00.000Z',
+          visit: { uuid: 'visit-uuid' },
+          obs: [
+            {
+              concept: { uuid: concepts.vaccineUuid },
+              value: {
+                uuid: '783AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA',
+                display: 'Polio vaccination, oral',
+              },
+            },
+            { concept: { uuid: concepts.vaccinationDate }, value: '2024-01-03T00:00:00.000Z' },
+            { concept: { uuid: concepts.doseNumber }, value: 1 },
+            { concept: { uuid: concepts.status }, value: 'completed' },
+            { concept: { uuid: concepts.programContext }, value: 'routine' },
+          ],
+        },
+      ],
+      error: null,
+      isLoading: false,
+      isValidating: false,
+      mutate: vi.fn(),
+    });
+
+    renderWithSwr(<ImmunizationsOverview {...testProps} />);
+
+    await waitForLoadingToFinish();
+
+    expect(screen.queryByText(/Error 501/i)).not.toBeInTheDocument();
+    expect(screen.getByRole('row', { name: /Polio vaccination, oral/i })).toBeInTheDocument();
   });
 });

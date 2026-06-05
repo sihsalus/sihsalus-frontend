@@ -1,6 +1,6 @@
-import type { EventEmitter } from 'events';
+import type { EventEmitter } from 'node:events';
+import { createGunzip } from 'node:zlib';
 import * as tar from 'tar';
-import { createGunzip } from 'zlib';
 
 const TarParser = tar.Parser as unknown as new () => NodeJS.ReadWriteStream;
 

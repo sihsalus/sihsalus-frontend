@@ -32,7 +32,7 @@ jobs:
       # Only needed for `changeset publish` on tag builds
       - name: Setup Node
         if: startsWith(github.ref, 'refs/tags/v')
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v6
         with:
           node-version: 24
 
@@ -86,7 +86,7 @@ jobs:
 
       - name: Upload Trivy scan
         uses: github/codeql-action/upload-sarif@v4
-        if: always()
+        if: ${{ always() && hashFiles('trivy-release-results.sarif') != '' }}
         with:
           sarif_file: trivy-release-results.sarif
 
@@ -97,7 +97,7 @@ jobs:
         uses: peter-evans/repository-dispatch@v4
         with:
           token: ${{ secrets.DEPLOY_TOKEN }}
-          repository: sihsalus/sihsalus
+          repository: sihsalus/sihsalus-frontend
           event-type: frontend-published
           client-payload: '{"image":"ghcr.io/sihsalus/sihsalus-frontend:latest","sha":"${{ github.sha }}"}'
 

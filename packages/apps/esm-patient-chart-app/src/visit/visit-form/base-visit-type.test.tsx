@@ -8,6 +8,7 @@ import BaseVisitType from './base-visit-type.component';
 vi.mock('lodash-es/debounce', async () => vi.fn((fn) => fn));
 
 const mockUseVisitTypes = vi.mocked(useVisitTypes);
+const mockOnChange = vi.fn();
 
 vi.mock('react-hook-form', async () => ({
   ...(await vi.importActual('react-hook-form')),
@@ -44,7 +45,7 @@ vi.mock('react-hook-form', async () => ({
   Controller: ({ render }) =>
     render({
       field: {
-        onChange: vi.fn(),
+        onChange: mockOnChange,
         onBlur: vi.fn(),
         value: '',
         ref: vi.fn(),
@@ -62,91 +63,37 @@ vi.mock('react-hook-form', async () => ({
 }));
 
 describe('VisitTypeOverview', () => {
+  beforeEach(() => {
+    mockOnChange.mockReset();
+  });
+
   const renderVisitTypeOverview = () => {
     mockUseVisitTypes.mockReturnValue(mockVisitTypes);
     render(<BaseVisitType visitTypes={mockVisitTypes} />);
   };
 
-  it('renders a list of the available visit types', () => {
+  it('renders the visit type category selector', async () => {
+    const user = userEvent.setup();
     renderVisitTypeOverview();
 
+    const categoryDropdown = screen.getByRole('combobox', { name: /categoría de consulta/i });
+    expect(categoryDropdown).toBeInTheDocument();
+
+    await user.click(categoryDropdown);
+
     mockVisitTypes.forEach((visitType) => {
-      const radio = screen.getByRole('radio', { name: new RegExp(visitType.display, 'i') });
-      expect(radio).toBeInTheDocument();
-      expect(radio).not.toBeChecked();
+      expect(screen.getByText(visitType.display)).toBeInTheDocument();
     });
   });
 
-  it('allows keyboard navigation through visit types', async () => {
+  it('selects a visit type when the category has no child options', async () => {
     const user = userEvent.setup();
 
     renderVisitTypeOverview();
 
-    const firstVisitType = screen.getByRole('radio', { name: new RegExp(mockVisitTypes[0].display, 'i') });
-    firstVisitType.focus();
+    await user.click(screen.getByRole('combobox', { name: /categoría de consulta/i }));
+    await user.click(screen.getByText('Outpatient Visit'));
 
-    await user.keyboard('{ArrowDown}');
-    expect(screen.getByRole('radio', { name: new RegExp(mockVisitTypes[1].display, 'i') })).toHaveFocus();
-
-    await user.keyboard('{ArrowUp}');
-    expect(firstVisitType).toHaveFocus();
-  });
-
-  it('clears the search input when the clear button is clicked', async () => {
-    const user = userEvent.setup();
-
-    renderVisitTypeOverview();
-
-    const searchInput = screen.getByRole('searchbox');
-    await user.type(searchInput, 'HIV');
-
-    const clearButton = screen.getByRole('button', { name: /clear/i });
-    await user.click(clearButton);
-
-    expect(searchInput).toHaveValue('');
-    mockVisitTypes.forEach((visitType) => {
-      expect(screen.getByRole('radio', { name: new RegExp(visitType.display, 'i') })).toBeInTheDocument();
-    });
-  });
-
-  it('searches for a matching visit type when the user types in the search input', async () => {
-    const user = userEvent.setup();
-
-    renderVisitTypeOverview();
-
-    const hivVisit = screen.getByRole('radio', { name: /HIV Return Visit/i });
-    const outpatientVisit = screen.getByRole('radio', { name: /Outpatient Visit/i });
-
-    expect(outpatientVisit).toBeInTheDocument();
-    expect(hivVisit).toBeInTheDocument();
-
-    const searchInput = screen.getByRole('searchbox');
-    await user.type(searchInput, 'HIV');
-
-    expect(outpatientVisit).toBeEmptyDOMElement();
-    expect(hivVisit).toBeInTheDocument();
-  });
-
-  it('renders an empty state when a search yields no matching results', async () => {
-    const user = userEvent.setup();
-
-    renderVisitTypeOverview();
-
-    const searchInput = screen.getByRole('searchbox');
-    await user.type(searchInput, 'NonexistentVisitType');
-
-    expect(screen.getByText(/no visit types to display/i)).toBeInTheDocument();
-    expect(screen.getByText(/check the filters above/i)).toBeInTheDocument();
-  });
-
-  it('selects a visit type when clicked', async () => {
-    const user = userEvent.setup();
-
-    renderVisitTypeOverview();
-
-    const hivVisit = screen.getByRole('radio', { name: /HIV Return Visit/i });
-    await user.click(hivVisit);
-
-    expect(hivVisit).toBeChecked();
+    expect(mockOnChange).toHaveBeenCalledWith('some-uuid1');
   });
 });

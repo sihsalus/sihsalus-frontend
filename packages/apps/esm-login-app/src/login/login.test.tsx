@@ -9,8 +9,8 @@ import {
 import { screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { Route, Routes } from 'react-router-dom';
-
 import { mockConfig } from '../../../../test-utils/mocks/login-config.mock';
+import loginPackageJson from '../../package.json';
 import renderWithRouter from '../test-helpers/render-with-router';
 
 import Login from './login.component';
@@ -62,6 +62,7 @@ describe('Login', () => {
     expect(screen.getAllByRole('img', { name: /Sihsalus logo/i })).toHaveLength(1);
     expect(screen.getByText(/Sihsalus/i)).toBeInTheDocument();
     expect(screen.queryByAltText(/^logo$/i)).not.toBeInTheDocument();
+    expect(screen.getByText(`Frontend v${loginPackageJson.version}`)).toBeInTheDocument();
     screen.getByRole('textbox', { name: /Username/i });
     screen.getByRole('button', { name: /Continue/i });
   });

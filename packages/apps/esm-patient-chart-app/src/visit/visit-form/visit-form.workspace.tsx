@@ -550,14 +550,16 @@ const StartVisitForm: React.FC<StartVisitFormProps> = (props) => {
 
       const abortController = new AbortController();
 
-      const { handleCreateExtraVisitInfo, attributes: extraAttributes } = extraVisitInfo ?? {};
-      if (Array.isArray(extraAttributes) && extraAttributes.length > 0) {
-        if (!payload.attributes) {
-          payload.attributes = [];
+      if (config.showExtraVisitAttributesSlot) {
+        const { handleCreateExtraVisitInfo, attributes: extraAttributes } = extraVisitInfo ?? {};
+        if (Array.isArray(extraAttributes) && extraAttributes.length > 0) {
+          if (!payload.attributes) {
+            payload.attributes = [];
+          }
+          payload.attributes.push(...extraAttributes);
         }
-        payload.attributes.push(...extraAttributes);
+        handleCreateExtraVisitInfo?.();
       }
-      handleCreateExtraVisitInfo?.();
 
       if (isOnline) {
         const visitRequest = visitToEdit?.uuid
@@ -667,6 +669,7 @@ const StartVisitForm: React.FC<StartVisitFormProps> = (props) => {
     [
       closeCurrentWorkspace,
       config.offlineVisitTypeUuid,
+      config.showExtraVisitAttributesSlot,
       displayVisitStopDateTimeFields,
       extraVisitInfo,
       handleVisitAttributes,
@@ -834,7 +837,9 @@ const StartVisitForm: React.FC<StartVisitFormProps> = (props) => {
               </section>
             )}
 
-            <MemoizedExtraVisitSlot patientUuid={patientUuid} setExtraVisitInfo={setExtraVisitInfo} />
+            {config.showExtraVisitAttributesSlot && (
+              <MemoizedExtraVisitSlot patientUuid={patientUuid} setExtraVisitInfo={setExtraVisitInfo} />
+            )}
 
             {/* Visit type attribute fields. These get shown when visit attribute types are configured */}
             <section>

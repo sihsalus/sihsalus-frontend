@@ -1,74 +1,12 @@
 import { useConfig } from '@openmrs/esm-framework';
-import { render, screen } from '@testing-library/react';
+import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { type BillingConfig } from '../config-schema';
 import BillingCheckInForm from './billing-checkin-form.component';
-import { useBillableItems, useCashPoint, usePaymentMethods } from './billing-form.resource';
+import { usePaymentMethods } from './billing-form.resource';
 
 const mockUseConfig = vi.mocked(useConfig<BillingConfig>);
-const mockUseCashPoint = vi.mocked(useCashPoint);
-const mockUseBillableItems = vi.mocked(useBillableItems);
 const mockUsePaymentMethods = vi.mocked(usePaymentMethods);
-
-const mockCashPoints = [
-  {
-    uuid: '54065383-b4d4-42d2-af4d-d250a1fd2590',
-    name: 'Cashier 2',
-    description: '',
-    retired: false,
-  },
-];
-
-const mockBillableItems = [
-  {
-    uuid: 'b37dddd6-4490-4bf7-b694-43bf19d04059',
-    name: 'Consultation',
-    conceptUuid: '1926AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA',
-    conceptName: 'Consultation billable item',
-    hasExpiration: false,
-    preferredVendorUuid: '359006e7-2669-4204-aee8-27462514b10a',
-    preferredVendorName: 'Consolt',
-    categoryUuid: '6469ff7e-f8c7-42d6-bff3-ac9605ec99df',
-    categoryName: 'Non Drug',
-    commonName: 'Consultation',
-    acronym: 'CONSULT',
-    servicePrices: [
-      {
-        uuid: 'price-1',
-        name: 'Default',
-        price: '100.00',
-        paymentMode: {
-          uuid: '1c30ee58-82d4-4ea4-a8c1-4bf2f9dfc8cf',
-          name: 'Insurance',
-        },
-      },
-    ],
-  },
-  {
-    uuid: 'b47dddd6-4490-4bf7-b694-43bf19d04059',
-    name: 'Lab Testing',
-    conceptUuid: '1926AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA',
-    conceptName: 'Lab Testing billable item',
-    hasExpiration: false,
-    preferredVendorUuid: '359006e7-2669-4204-aee8-27462514b10a',
-    preferredVendorName: 'Consolt',
-    categoryUuid: '6469ff7e-f8c7-42d6-bff3-ac9605ec99df',
-    categoryName: 'Non Drug',
-    commonName: 'Lab Testing',
-    acronym: 'CONSULT',
-    servicePrices: [
-      {
-        uuid: 'price-2',
-        name: 'Default',
-        price: '500.00001',
-        paymentMode: {
-          uuid: '1c30ee58-82d4-4ea4-a8c1-4bf2f9dfc8cf',
-          name: 'Insurance',
-        },
-      },
-    ],
-  },
-];
 
 const mockPaymentMethods = [
   {
@@ -84,9 +22,6 @@ const mockPaymentMethods = [
 ];
 
 vi.mock('./billing-form.resource', () => ({
-  useBillableItems: vi.fn(),
-  useCashPoint: vi.fn(),
-  createPatientBill: vi.fn(),
   usePaymentMethods: vi.fn(),
 }));
 
@@ -117,32 +52,13 @@ describe('BillingCheckInForm', () => {
     mockUsePaymentMethods.mockReturnValue({ paymentModes: mockPaymentMethods, isLoading: false, error: null });
   });
 
-  test('should show the loading spinner while retrieving data', () => {
-    mockUseBillableItems.mockReturnValueOnce({ lineItems: [], isLoading: true, error: null });
-    mockUseCashPoint.mockReturnValueOnce({ cashPoints: [], isLoading: true, error: null });
-    renderBillingCheckinForm();
-
-    expect(screen.getByText(/Loading billing services.../)).toBeInTheDocument();
-  });
-
-  test('should show error state when an error occurs while fetching data', () => {
-    const error = new Error('Internal server error');
-    mockUseBillableItems.mockReturnValueOnce({ lineItems: [], isLoading: false, error });
-    mockUseCashPoint.mockReturnValueOnce({ cashPoints: [], isLoading: false, error });
-    renderBillingCheckinForm();
-
-    expect(screen.getByText(/billing service error/i)).toBeInTheDocument();
-    expect(screen.getByText(/error loading bill services/i)).toBeInTheDocument();
-  });
-
-  test('should render the form correctly and generate the required payload', async () => {
+  test('should render the payment form without a billable service selector and generate visit attributes', async () => {
     const user = userEvent.setup();
-    mockUseCashPoint.mockReturnValue({ cashPoints: mockCashPoints, isLoading: false, error: null });
-    mockUseBillableItems.mockReturnValue({ lineItems: mockBillableItems, isLoading: false, error: null });
     renderBillingCheckinForm();
 
     const paymentTypeSelect = screen.getByRole('group', { name: /payment details/i });
     expect(paymentTypeSelect).toBeInTheDocument();
+    expect(screen.queryByRole('combobox', { name: /billable service/i })).not.toBeInTheDocument();
 
     // Select "Paying" radio button
     const paymentTypeRadio = screen.getByRole('radio', { name: 'Paying' });
@@ -158,46 +74,20 @@ describe('BillingCheckInForm', () => {
     const insuranceOption = await screen.findByText('Insurance');
     await user.click(insuranceOption);
 
-    // Now select billable service
-    const billableSelect = screen.getByRole('combobox', { name: /billable service/i });
-    expect(billableSelect).toBeInTheDocument();
-    await user.click(billableSelect);
-
-    // Click on Lab Testing option
-    const labTestingOption = await screen.findByText(/Lab Testing \(Default: 500\.00001\)/);
-    await user.click(labTestingOption);
-
-    expect(testProps.setExtraVisitInfo).toHaveBeenCalled();
-    expect(testProps.setExtraVisitInfo).toHaveBeenCalledWith({
-      createBillPayload: {
-        lineItems: [
-          {
-            billableService: 'b47dddd6-4490-4bf7-b694-43bf19d04059',
-            quantity: 1,
-            price: '500.00001',
-            priceName: 'Default',
-            priceUuid: 'price-2',
-            lineItemOrder: 0,
-            paymentStatus: 'PENDING',
-          },
-        ],
-        cashPoint: '54065383-b4d4-42d2-af4d-d250a1fd2590',
-        patient: 'some-patient-uuid',
-        status: 'PENDING',
-        payments: [],
-      },
-      handleCreateExtraVisitInfo: expect.anything(),
-      attributes: expect.arrayContaining([
-        expect.objectContaining({
-          attributeType: 'fbc0702d-b4c9-4968-be63-af8ad3ad6239',
-          value: '44b34972-6630-4e5a-a9f6-a6eb0f109650',
-        }),
-        expect.objectContaining({
-          attributeType: '8553afa0-bdb9-4d3c-8a98-05fa9350aa85',
-          value: '1c30ee58-82d4-4ea4-a8c1-4bf2f9dfc8cf',
-        }),
-      ]),
-    });
+    await waitFor(() =>
+      expect(testProps.setExtraVisitInfo).toHaveBeenCalledWith({
+        attributes: expect.arrayContaining([
+          expect.objectContaining({
+            attributeType: 'fbc0702d-b4c9-4968-be63-af8ad3ad6239',
+            value: '44b34972-6630-4e5a-a9f6-a6eb0f109650',
+          }),
+          expect.objectContaining({
+            attributeType: '8553afa0-bdb9-4d3c-8a98-05fa9350aa85',
+            value: '1c30ee58-82d4-4ea4-a8c1-4bf2f9dfc8cf',
+          }),
+        ]),
+      }),
+    );
   });
 });
 

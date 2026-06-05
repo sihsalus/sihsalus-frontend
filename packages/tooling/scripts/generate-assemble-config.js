@@ -14,8 +14,8 @@
  * packages can still be appended manually for modules not yet in the monorepo.
  */
 
-const fs = require('fs');
-const path = require('path');
+const fs = require('node:fs');
+const path = require('node:path');
 const chalk = require('chalk');
 
 const logInfo = (msg) => console.log(`${chalk.cyan.bold('[gen-config]')} ${msg}`);
@@ -68,6 +68,10 @@ const existing = fs.existsSync(outPath) ? JSON.parse(fs.readFileSync(outPath, 'u
 const localBaseNames = new Set(Object.keys(frontendModules).map((n) => n.replace(/^@[^/]+\//, '')));
 
 const externalEntries = Object.entries(existing.frontendModules || {}).filter(([name]) => {
+  if (name.startsWith('@sihsalus/')) {
+    return false;
+  }
+
   const baseName = name.replace(/^@[^/]+\//, '');
   return !localBaseNames.has(baseName);
 });

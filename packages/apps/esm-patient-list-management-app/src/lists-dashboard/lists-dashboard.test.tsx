@@ -1,18 +1,16 @@
-import { type FetchResponse, openmrsFetch, restBaseUrl, useSession } from '@openmrs/esm-framework';
+import { type FetchResponse, openmrsFetch, restBaseUrl } from '@openmrs/esm-framework';
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import React from 'react';
 import { useLocation } from 'react-router-dom';
-import { mockSession } from 'test-utils';
 
 import ListsDashboard from './lists-dashboard.component';
 
 const mockOpenmrsFetch = vi.mocked(openmrsFetch);
 const mockUseLocation = vi.mocked(useLocation);
-const mockUseSession = vi.mocked(useSession);
 
 vi.mock('@sihsalus/esm-rbac', async () => ({
-  AppErrorBoundary: ({ children }: { children: React.ReactNode }) => <>{children}</>,
+  RequirePrivilege: ({ children }: { children: React.ReactNode }) => <>{children}</>,
 }));
 
 vi.mock('react-router-dom', async () => ({
@@ -29,8 +27,6 @@ describe('ListsDashboard', () => {
       state: null,
       key: 'default',
     });
-
-    mockUseSession.mockReturnValue(mockSession.data);
 
     mockOpenmrsFetch.mockResolvedValue({
       data: {

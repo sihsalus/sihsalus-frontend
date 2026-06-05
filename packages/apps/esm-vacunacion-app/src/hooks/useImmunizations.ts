@@ -52,15 +52,17 @@ export function useImmunizations(patientUuid: string) {
   } = useOpenmrsFetchAll<AmpathImmunizationEncounter>(ampathImmunizationsUrl, { partialData: true });
 
   const errorDetails = getImmunizationSaveErrorDetails(error, fhirConceptMappings);
-  const isSetupError = errorDetails.type === 'missing-fhir-mapping' || errorDetails.type === 'fhir-setup';
-  const isUnsupported = isUnsupportedFhirImmunizationError(error) && !isSetupError;
-  const fhirImmunizations = data && !isUnsupported ? mapFromFHIRImmunizationBundle(data) : [];
+  const shouldUseAmpathFallback =
+    ampathPersistence.enabled &&
+    isUnsupportedFhirImmunizationError(error) &&
+    errorDetails.type !== 'missing-fhir-mapping';
+  const fhirImmunizations = data && !shouldUseAmpathFallback ? mapFromFHIRImmunizationBundle(data) : [];
   const ampathImmunizations = mapFromAmpathImmunizationEncounters(ampathData, config);
   const existingImmunizations = mergeImmunizationGroups(fhirImmunizations, ampathImmunizations);
 
   return {
     data: existingImmunizations,
-    error: (isUnsupported ? null : error) ?? ampathError,
+    error: (shouldUseAmpathFallback ? null : error) ?? ampathError,
     isLoading: isLoading || isLoadingAmpath,
     isValidating: isValidating || isValidatingAmpath,
     mutate: async () => {

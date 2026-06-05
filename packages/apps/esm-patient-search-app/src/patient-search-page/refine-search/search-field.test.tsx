@@ -164,7 +164,7 @@ describe('SearchField', () => {
       mockUsePersonAttributeType.mockReturnValue({
         data: {
           format: 'java.lang.String',
-          display: 'Phone Number',
+          display: 'Nombre del Acompañante',
           uuid: 'test-uuid',
         },
         isLoading: false,
@@ -174,7 +174,37 @@ describe('SearchField', () => {
 
     it('renders person attribute field with correct props', () => {
       renderWithSwr(<SearchField field={personAttributeField} {...defaultProps} />);
-      expect(screen.getByText('Phone Number')).toBeInTheDocument();
+      expect(screen.getByText('Nombre del Acompañante')).toBeInTheDocument();
+    });
+
+    it('renders configured string answer options for boolean-like person attributes', () => {
+      mockUsePersonAttributeType.mockReturnValue({
+        data: {
+          format: 'java.lang.String',
+          display: 'Paciente No Identificado',
+          uuid: 'unknown-patient-uuid',
+        },
+        isLoading: false,
+        error: null,
+      });
+
+      renderWithSwr(
+        <SearchField
+          field={{
+            name: 'unknown-patient-uuid',
+            type: 'personAttribute',
+            attributeTypeUuid: 'unknown-patient-uuid',
+            stringAnswerOptions: [
+              { label: 'Sí', value: 'true' },
+              { label: 'No', value: 'false' },
+            ],
+          }}
+          {...defaultProps}
+        />,
+      );
+
+      expect(screen.getByText('Paciente No Identificado')).toBeInTheDocument();
+      expect(screen.getByRole('combobox')).toBeInTheDocument();
     });
   });
 

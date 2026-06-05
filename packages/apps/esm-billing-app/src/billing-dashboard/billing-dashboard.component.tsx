@@ -22,7 +22,7 @@ export function BillingDashboard() {
   }, [params.date]);
 
   return (
-    <AppErrorBoundary appName="testing billing" privilegesRequired={['Get Queue Entries']}>
+    <AppErrorBoundary appName="esm-billing-app">
       <SelectedDateContext.Provider value={{ selectedDate, setSelectedDate }}>
         <BillingHeader title={t('billing', 'Billing')} />
         {/**

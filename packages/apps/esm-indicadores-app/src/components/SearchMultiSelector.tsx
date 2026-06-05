@@ -75,7 +75,12 @@ function SearchMultiSelector<T>({
           {selectedItems.map((item) => (
             <span key={itemKey(item)} className={styles.selectedItemPill}>
               <span>{itemLabel(item)}</span>
-              <button type="button" className={styles.pillRemoveButton} onClick={() => handleRemove(item)} aria-label={`Quitar ${itemLabel(item)}`}>
+              <button
+                type="button"
+                className={styles.pillRemoveButton}
+                onClick={() => handleRemove(item)}
+                aria-label={`Quitar ${itemLabel(item)}`}
+              >
                 ×
               </button>
             </span>

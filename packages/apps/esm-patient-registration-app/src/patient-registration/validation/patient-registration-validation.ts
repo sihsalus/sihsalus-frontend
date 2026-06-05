@@ -35,6 +35,29 @@ export function hasResponsibleRelationship(
   );
 }
 
+function isUnidentifiedPatient(values: FormValues, config: RegistrationConfig) {
+  const unidentifiedPatientAttributeTypeUuid = config.fieldConfigurations.name?.unidentifiedPatientAttributeTypeUuid;
+
+  return !!unidentifiedPatientAttributeTypeUuid && values.attributes?.[unidentifiedPatientAttributeTypeUuid] === 'true';
+}
+
+function hasResponsiblePersonAttribute(values: FormValues, config: RegistrationConfig) {
+  const companionNameField = config.fieldDefinitions?.find((field) => field.id === 'companionName');
+
+  return !!companionNameField?.uuid && !!values.attributes?.[companionNameField.uuid]?.trim();
+}
+
+function hasResponsibleParty(
+  values: FormValues,
+  relationships: Array<RelationshipValue> | undefined,
+  config: RegistrationConfig,
+) {
+  return (
+    hasResponsibleRelationship(relationships, config.relationshipOptions?.minorResponsibleRelationshipTypes) ||
+    hasResponsiblePersonAttribute(values, config)
+  );
+}
+
 export function getValidationSchema(config: RegistrationConfig) {
   return Yup.object({
     givenName: Yup.string().required(t('givenNameRequired', 'Given name is required')),
@@ -170,10 +193,22 @@ export function getValidationSchema(config: RegistrationConfig) {
           'A responsible family member or guardian relationship is required for minors',
         ),
         function (relationships?: Array<RelationshipValue>) {
+          const values = this.parent as FormValues;
           return (
-            !isMinorPatient(this.parent as FormValues) ||
+            !isMinorPatient(values) ||
             hasResponsibleRelationship(relationships, config.relationshipOptions?.minorResponsibleRelationshipTypes)
           );
+        },
+      )
+      .test(
+        'responsible-required-for-unidentified-patient',
+        t(
+          'responsibleRequiredForUnidentifiedPatient',
+          'A responsible person or institution is required for unidentified patients',
+        ),
+        function (relationships?: Array<RelationshipValue>) {
+          const values = this.parent as FormValues;
+          return !isUnidentifiedPatient(values, config) || hasResponsibleParty(values, relationships, config);
         },
       ),
   });

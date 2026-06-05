@@ -1,21 +1,21 @@
-@use '@carbon/colors';
-@use '@carbon/layout';
-@use '@carbon/type';
-@use '@openmrs/esm-styleguide/src/vars' as *;
+@use "@carbon/colors";
+@use "@carbon/layout";
+@use "@carbon/type";
+@use "@openmrs/esm-styleguide/src/vars" as *;
 
 .productiveHeading02 {
-  @include type.type-style('heading-compact-02');
+  @include type.type-style("heading-compact-02");
   margin-bottom: layout.$spacing-05;
 }
 
 .productiveHeading02Light {
-  @include type.type-style('heading-compact-02');
+  @include type.type-style("heading-compact-02");
   margin-bottom: layout.$spacing-05;
   color: colors.$gray-70;
 }
 
 .label01 {
-  @include type.type-style('label-01');
+  @include type.type-style("label-01");
 }
 
 .grid {
@@ -27,7 +27,7 @@
 .basicInfoNameLayout {
   display: grid;
   grid-template-columns: minmax(0, 1fr) minmax(12rem, 14rem);
-  column-gap: layout.$spacing-09;
+  column-gap: layout.$spacing-07;
   align-items: start;
 }
 
@@ -46,15 +46,15 @@
 }
 
 .requiredHeading::after {
-  content: ' *';
+  content: " *";
   color: colors.$red-60;
 }
 
 :global(.cds--form-item:has(input[required]) .cds--label::after),
 :global(.cds--form-item:has(select[required]) .cds--label::after),
 :global(.cds--form-item:has(textarea[required]) .cds--label::after),
-:global(.cds--form-item:has(input[aria-required='true']) .cds--label::after) {
-  content: ' *';
+:global(.cds--form-item:has(input[aria-required="true"]) .cds--label::after) {
+  content: " *";
   color: colors.$red-60;
 }
 
@@ -109,6 +109,9 @@
   justify-self: start;
   width: 100%;
   max-width: 14rem;
+  // Reserve the space the photo capture widget occupies so the column does not
+  // collapse (and the surrounding layout does not jump) while the widget mounts.
+  min-height: 13.75rem;
 }
 
 .sexField,

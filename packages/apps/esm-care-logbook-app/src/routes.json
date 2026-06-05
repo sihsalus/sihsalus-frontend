@@ -1,0 +1,46 @@
+{
+  "$schema": "https://json.openmrs.org/routes.schema.json",
+  "backendDependencies": {
+    "webservices.rest": ">=2.24.0"
+  },
+  "extensions": [
+    {
+      "component": "careLogbookAppMenuLink",
+      "name": "care-logbook-app-menu-item",
+      "slot": "app-menu-slot"
+    },
+    {
+      "component": "careLogbookHomeDashboardLink",
+      "name": "care-logbook-home-dashboard-link",
+      "slot": "homepage-dashboard-slot",
+      "meta": {
+        "name": "admission",
+        "slot": "admission-dashboard-slot",
+        "title": "admissionReportByUps"
+      },
+      "order": 20
+    },
+    {
+      "component": "careLogbookHomeDashboard",
+      "name": "care-logbook-home-dashboard",
+      "slot": "admission-dashboard-slot",
+      "online": true,
+      "offline": false
+    },
+    {
+      "component": "careLogbookMergePatientsAction",
+      "name": "care-logbook-merge-patients-action",
+      "slot": "top-nav-actions-slot",
+      "online": true,
+      "offline": false
+    }
+  ],
+  "pages": [
+    {
+      "component": "root",
+      "route": "admission",
+      "online": true,
+      "offline": false
+    }
+  ]
+}

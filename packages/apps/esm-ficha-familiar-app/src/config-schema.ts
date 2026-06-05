@@ -93,8 +93,8 @@ export const configSchema = {
       'a6b3803f-e594-4318-8624-3eaed46322a7': {
         display: 'Add Patient Contact',
         answers: {
-          '1065AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA': 'Yes',
-          '1066AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA': 'No',
+          'cf82933b-3f3f-45e7-a5ab-5d31aaee3da3': 'Yes',
+          '488b58ff-64f5-4f8a-8979-fa79940b1594': 'No',
         },
       },
       '7b827b42-9733-4d4f-8015-b40a07ac3052': {
@@ -109,8 +109,8 @@ export const configSchema = {
       '36906d55-ade7-4d1a-b3b7-18fd59bffb0f': {
         display: 'Living with client',
         answers: {
-          '1065AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA': 'Yes',
-          '1066AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA': 'No',
+          'cf82933b-3f3f-45e7-a5ab-5d31aaee3da3': 'Yes',
+          '488b58ff-64f5-4f8a-8979-fa79940b1594': 'No',
           '162570AAAAAAAAAAAAAAAAAAAAAAAAAAAAAA': 'Declined to answer',
         },
       },

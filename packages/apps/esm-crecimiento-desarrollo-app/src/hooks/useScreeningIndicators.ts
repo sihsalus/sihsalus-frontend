@@ -45,7 +45,11 @@ export function useScreeningIndicators(patientUuid: string): ScreeningIndicators
       });
     }
     if (config.prenatalScreening?.vihResultConceptUuid) {
-      concepts.push({ name: 'VIH', translationKey: 'screeningHiv', uuid: config.prenatalScreening.vihResultConceptUuid });
+      concepts.push({
+        name: 'VIH',
+        translationKey: 'screeningHiv',
+        uuid: config.prenatalScreening.vihResultConceptUuid,
+      });
     }
     if (config.prenatalScreening?.sifilisResultConceptUuid) {
       concepts.push({

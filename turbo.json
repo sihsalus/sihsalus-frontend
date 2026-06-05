@@ -47,7 +47,8 @@
         "vitest.config.ts",
         "vitest.config.js"
       ],
-      "env": ["TZ"]
+      "env": ["TZ"],
+      "outputLogs": "errors-only"
     },
     "test:watch": {
       "cache": false,
@@ -66,6 +67,11 @@
     },
     "extract-translations": {
       "cache": false
+    },
+    "document": {
+      "dependsOn": ["^build"],
+      "inputs": ["src/**", "typedoc.json", "tsconfig.typedoc.json"],
+      "outputs": ["docs/**"]
     },
     "e2e": {
       "dependsOn": ["build"],

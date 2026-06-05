@@ -178,6 +178,11 @@ const GeneralOrderType: React.FC<GeneralOrderTypeProps> = ({
   );
   const CarbonOrderTypeIcon = getOrderTypeIconComponent(orderTypeIcon);
 
+  const getOrderBasketItemKey = (item: OrderBasketItem) =>
+    item?.uuid ??
+    item?.orderNumber ??
+    `${item?.action ?? 'unknown'}-${item?.concept?.uuid ?? item?.concept?.display ?? 'concept'}-${item?.orderType ?? 'type'}`;
+
   return (
     <Tile className={classNames(styles.desktopTile, { [styles.collapsedTile]: !isExpanded })}>
       <div className={styles.container}>
@@ -208,21 +213,19 @@ const GeneralOrderType: React.FC<GeneralOrderTypeProps> = ({
             renderIcon={(props: ComponentProps<typeof ChevronUpIcon>) =>
               isExpanded ? <ChevronUpIcon size={16} {...props} /> : <ChevronDownIcon size={16} {...props} />
             }
-            iconDescription="View"
+            iconDescription={isExpanded ? t('collapseOrders', 'Collapse orders') : t('expandOrders', 'Expand orders')}
             disabled={orders.length === 0}
             onClick={() => setIsExpanded(!isExpanded)}
-          >
-            {t('add', 'Add')}
-          </Button>
+          />
         </div>
       </div>
       {isExpanded && (
         <>
           {incompleteOrderBasketItems.length > 0 && (
             <>
-              {incompleteOrderBasketItems.map((order, index) => (
+              {incompleteOrderBasketItems.map((order) => (
                 <OrderBasketItemTile
-                  key={index}
+                  key={getOrderBasketItemKey(order)}
                   orderBasketItem={order}
                   onItemClick={() => openOrderForm(order)}
                   onRemoveClick={() => removeOrder(order)}
@@ -232,9 +235,9 @@ const GeneralOrderType: React.FC<GeneralOrderTypeProps> = ({
           )}
           {newOrderBasketItems.length > 0 && (
             <>
-              {newOrderBasketItems.map((order, index) => (
+              {newOrderBasketItems.map((order) => (
                 <OrderBasketItemTile
-                  key={index}
+                  key={getOrderBasketItemKey(order)}
                   orderBasketItem={order}
                   onItemClick={() => openOrderForm(order)}
                   onRemoveClick={() => removeOrder(order)}
@@ -245,9 +248,9 @@ const GeneralOrderType: React.FC<GeneralOrderTypeProps> = ({
 
           {renewedOrderBasketItems.length > 0 && (
             <>
-              {renewedOrderBasketItems.map((item, index) => (
+              {renewedOrderBasketItems.map((item) => (
                 <OrderBasketItemTile
-                  key={index}
+                  key={getOrderBasketItemKey(item)}
                   orderBasketItem={item}
                   onItemClick={() => openOrderForm(item)}
                   onRemoveClick={() => removeOrder(item)}
@@ -258,9 +261,9 @@ const GeneralOrderType: React.FC<GeneralOrderTypeProps> = ({
 
           {revisedOrderBasketItems.length > 0 && (
             <>
-              {revisedOrderBasketItems.map((item, index) => (
+              {revisedOrderBasketItems.map((item) => (
                 <OrderBasketItemTile
-                  key={index}
+                  key={getOrderBasketItemKey(item)}
                   orderBasketItem={item}
                   onItemClick={() => openOrderForm(item)}
                   onRemoveClick={() => removeOrder(item)}
@@ -271,9 +274,9 @@ const GeneralOrderType: React.FC<GeneralOrderTypeProps> = ({
 
           {discontinuedOrderBasketItems.length > 0 && (
             <>
-              {discontinuedOrderBasketItems.map((item, index) => (
+              {discontinuedOrderBasketItems.map((item) => (
                 <OrderBasketItemTile
-                  key={index}
+                  key={getOrderBasketItemKey(item)}
                   orderBasketItem={item}
                   onItemClick={() => openOrderForm(item)}
                   onRemoveClick={() => removeOrder(item)}

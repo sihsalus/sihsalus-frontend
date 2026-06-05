@@ -36,12 +36,31 @@ export const configSchema = {
           min: 0,
         },
         postcode: {
-          enabled: true,
+          enabled: false,
         },
         personAttributes: [
           {
-            attributeTypeUuid: '14d4f066-15f5-102d-96e4-000c29c2a5d7',
+            attributeTypeUuid: '8b56eac7-5c76-4b9c-8c6f-1deab8d3fc47',
+            stringAnswerOptions: [
+              {
+                label: 'Sí',
+                value: 'true',
+              },
+              {
+                label: 'No',
+                value: 'false',
+              },
+            ],
           },
+          {
+            attributeTypeUuid: '4697d0e6-5b24-416b-aee6-708cd9a3a1db',
+            placeholder: 'Nombre del responsable o acompañante',
+          },
+          {
+            attributeTypeUuid: 'a180fa5f-c44e-4490-a981-d7196b70c6ac',
+            placeholder: 'Parentesco o vínculo con el paciente',
+          },
+          // TODO: Enable identification status once the content package deploys that attribute type.
         ],
       },
       gender: {
@@ -87,8 +106,8 @@ export const configSchema = {
         _description: 'Configuration for the postcode field',
         enabled: {
           _type: Type.Boolean,
-          _description: 'Optional. If true, determines whether to display the postcode field or not. Defaults to true',
-          _default: true,
+          _description: 'Optional. If true, determines whether to display the postcode field or not. Defaults to false',
+          _default: false,
         },
       },
       personAttributes: {
@@ -121,6 +140,23 @@ export const configSchema = {
             _default: null,
             _description:
               'Only for fields with "person attribute" type `org.openmrs.Location`. This filters the list of location options in the dropdown based on their location tag.',
+          },
+          stringAnswerOptions: {
+            _type: Type.Array,
+            _description:
+              'Optional fixed answer options for string-backed person attributes, such as boolean-like administrative flags stored as text.',
+            _default: [],
+            _elements: {
+              _type: Type.Object,
+              label: {
+                _type: Type.String,
+                _description: 'Display label for the option',
+              },
+              value: {
+                _type: Type.String,
+                _description: 'Stored person attribute value for the option',
+              },
+            },
           },
         },
         _default: [],
@@ -166,6 +202,7 @@ export interface PersonAttributeFieldConfig {
   answerConceptSetUuid?: string;
   conceptAnswersUuids?: Array<string>;
   locationTag?: string;
+  stringAnswerOptions?: Array<{ label: string; value: string }>;
 }
 
 export interface BuiltInFieldConfig {

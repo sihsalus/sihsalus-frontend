@@ -4,7 +4,7 @@ import { basename, resolve } from 'node:path';
 import express from 'express';
 import { createProxyMiddleware } from 'http-proxy-middleware';
 
-import { logInfo, logWarn, removeTrailingSlash } from '../utils';
+import { logInfo, logWarn, removeTrailingSlash, shouldAllowSelfSignedTls } from '../utils';
 
 const upstreamSpaUrl = 'https://dev3.openmrs.org/openmrs/spa';
 const backendFetchTimeoutMs = Number(process.env.SIHSALUS_BACKEND_FETCH_TIMEOUT_MS) || 5000;
@@ -179,7 +179,7 @@ export async function runStart(args: StartArgs) {
   const spaPath = '/openmrs/spa';
   const backendUrl = removeTrailingSlash(backend);
   const pageUrl = `http://${host}:${port}${spaPath}`;
-  const allowSelfSignedTls = process.env.SIHSALUS_ALLOW_SELF_SIGNED_TLS === 'true';
+  const allowSelfSignedTls = shouldAllowSelfSignedTls(backend);
 
   // Rewrite index.html to use local importmap and routes instead of the upstream demo shell URLs.
   // Also disable offline/service-worker to prevent stale caches during local dev.

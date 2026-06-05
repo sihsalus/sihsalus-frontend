@@ -46,7 +46,7 @@ export interface Identifier {
   display: string;
 }
 
-const imagingUrl = '/openmrs/ws/rest/v1/imaging';
+const imagingUrl = 'imaging';
 
 export const generateRandomPatient = async (api: APIRequestContext): Promise<Patient> => {
   const identifierRes = await api.post('idgen/identifiersource/8549f706-7e85-4c1d-9424-217d50a2988b/identifier', {

@@ -6,7 +6,7 @@
  * the framework version pinned in this repo.
  */
 // eslint-disable-next-line @typescript-eslint/no-var-requires
-const path = require('path');
+const path = require('node:path');
 const upstreamMockPath = require.resolve(
   path.join(path.dirname(require.resolve('@openmrs/esm-framework/package.json')), 'mock-vitest.tsx'),
 );

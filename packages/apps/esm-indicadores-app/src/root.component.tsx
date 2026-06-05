@@ -6,8 +6,8 @@ import { BrowserRouter, NavLink, Route, Routes } from 'react-router-dom';
 import { useMockMode } from './api/mock-mode';
 import styles from './indicators-dashboard.module.scss';
 import IndicadorDetailPage from './pages/IndicadorDetailPage';
-import IndicadorFormPage from './pages/IndicadorFormPage';
 import IndicadoresPage from './pages/IndicadoresPage';
+import IndicadorFormPage from './pages/IndicadorFormPage';
 import ResultadosPage from './pages/ResultadosPage';
 
 const trimTrailingSlash = (path: string) => path.replace(/\/+$/, '');
@@ -24,7 +24,9 @@ const RootComponent: React.FC = () => {
           <div className={styles.moduleHeader}>
             <div>
               <h1 className={styles.pageTitle}>Indicadores Clínicos</h1>
-              <p className={styles.subtitle}>Configuración, versionado y resultados de indicadores clínicos en un solo módulo.</p>
+              <p className={styles.subtitle}>
+                Configuración, versionado y resultados de indicadores clínicos en un solo módulo.
+              </p>
             </div>
             <nav className={styles.navTabs} aria-label="Navegación de indicadores">
               <NavLink to="/" end className={({ isActive }) => (isActive ? styles.navTabActive : styles.navTab)}>

@@ -1,6 +1,6 @@
 import { Document } from '@carbon/react/icons';
-import { ConfigurableLink, useSession } from '@openmrs/esm-framework';
-import { AppErrorBoundary } from 'libs/esm-rbac/src';
+import { ConfigurableLink } from '@openmrs/esm-framework';
+import { RequirePrivilege } from '@sihsalus/esm-rbac';
 import last from 'lodash-es/last';
 import { useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -16,8 +16,6 @@ export function LinkExtension({ config }: { config: LinkConfig }): JSX.Element {
   const { name, title } = config;
   const location = useLocation();
   const spaBasePath = globalThis.getOpenmrsSpaBase() + 'home';
-  const session = useSession();
-  console.log(session)
 
   let urlSegment = useMemo(() => decodeURIComponent(last(location.pathname.split('/'))), [location.pathname]);
 
@@ -31,24 +29,17 @@ export function LinkExtension({ config }: { config: LinkConfig }): JSX.Element {
   }
 
   return (
-    <AppErrorBoundary 
-      appName='esm-fua-app' 
-      user={session.user} 
-      privilegesRequired={["Fua Privilege"]} 
-      checkAccess={true} 
-      disappear={true}
-    >
+    <RequirePrivilege privilege="Fua Privilege" hideUnauthorized>
       <ConfigurableLink
         to={spaBasePath + '/' + name}
         className={`cds--side-nav__link ${name === urlSegment && 'active-left-nav-link'}`}
       >
         <span className="sihsalus-side-nav__item">
-          <p>a</p>
           <Document aria-hidden="true" className="sihsalus-side-nav__icon" size={20} />
           <span className="sihsalus-side-nav__text">{t(title, title)}</span>
         </span>
       </ConfigurableLink>
-    </AppErrorBoundary>
+    </RequirePrivilege>
   );
 }
 

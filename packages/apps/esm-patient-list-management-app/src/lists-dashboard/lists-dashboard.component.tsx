@@ -1,6 +1,6 @@
 import { Tab, TabList, Tabs } from '@carbon/react';
-import { launchWorkspace2, useSession } from '@openmrs/esm-framework';
-import { AppErrorBoundary } from '@sihsalus/esm-rbac';
+import { launchWorkspace2 } from '@openmrs/esm-framework';
+import { RequirePrivilege } from '@sihsalus/esm-rbac';
 import classnames from 'classnames';
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -54,8 +54,6 @@ const ListsDashboard: React.FC = () => {
     }
   }, [handleShowNewListOverlay, search]);
 
-  const user = useSession();
-
   const tableHeaders = [
     { id: 1, key: 'display', header: t('listName', 'List name') },
     { id: 2, key: 'type', header: t('listType', 'List type') },
@@ -64,12 +62,7 @@ const ListsDashboard: React.FC = () => {
   ];
 
   return (
-    <AppErrorBoundary
-      appName="esm-patient-list-management-app"
-      checkAccess={true}
-      privilegesRequired={['Get Queue Entries']}
-      user={user}
-    >
+    <RequirePrivilege privilege="Get Queue Entries">
       <main className={classnames('omrs-main-content', styles.dashboardContainer)}>
         <section className={styles.dashboard}>
           <Header handleShowNewListOverlay={handleShowNewListOverlay} />
@@ -103,7 +96,7 @@ const ListsDashboard: React.FC = () => {
           </div>
         </section>
       </main>
-    </AppErrorBoundary>
+    </RequirePrivilege>
   );
 };
 

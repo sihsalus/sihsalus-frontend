@@ -25,6 +25,7 @@ const mockUseConfig = vi.mocked<() => ImmunizationConfigObject>(useConfig);
 const mockUseSession = vi.mocked(useSession);
 const mockToOmrsIsoString = vi.mocked(toOmrsIsoString);
 const mockToDateObjectStrict = vi.mocked(toDateObjectStrict);
+const defaultImmunizationConfig = getDefaultsFromConfigSchema(configSchema) as ImmunizationConfigObject;
 
 vi.mock('../hooks/useImmunizationsConceptSet', () => ({
   useImmunizationsConceptSet: vi.fn(() => ({
@@ -89,28 +90,6 @@ const testProps: PatientWorkspace2DefinitionProps<Record<string, never>, Record<
   showActionMenu: true,
 };
 
-mockUseConfig.mockReturnValue({
-  ...getDefaultsFromConfigSchema(configSchema),
-  ampathFormPersistence: {
-    ...getDefaultsFromConfigSchema(configSchema).ampathFormPersistence,
-    enabled: false,
-  },
-  immunizationConceptSet: '984AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA',
-  sequenceDefinitions: [
-    {
-      vaccineConceptUuid: '783AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA',
-      sequences: [
-        { sequenceLabel: 'Dose-1', sequenceNumber: 1 },
-        { sequenceLabel: 'Dose-2', sequenceNumber: 2 },
-        { sequenceLabel: 'Dose-3', sequenceNumber: 3 },
-        { sequenceLabel: 'Dose-4', sequenceNumber: 4 },
-        { sequenceLabel: 'Booster-1', sequenceNumber: 11 },
-        { sequenceLabel: 'Booster-2', sequenceNumber: 12 },
-      ],
-    },
-  ],
-});
-
 mockUseSession.mockReturnValue(mockSessionDataResponse.data);
 
 describe('Immunizations Form', () => {
@@ -121,6 +100,7 @@ describe('Immunizations Form', () => {
 
   beforeEach(() => {
     vi.clearAllMocks();
+    mockUseConfig.mockReturnValue(createTestImmunizationConfig({ ampathEnabled: false }));
     mockSavePatientImmunizationViaAmpathForm.mockResolvedValue({});
     mockToOmrsIsoString.mockReturnValue(mockVaccinationDate.toISOString());
     mockToDateObjectStrict.mockImplementation((dateString) => dayjs(dateString, isoFormat).toDate());
@@ -238,6 +218,54 @@ describe('Immunizations Form', () => {
         kind: 'success',
         title: 'Vaccination saved successfully',
       });
+    });
+  });
+
+  it('should save new immunizations through AMPATH encounter persistence when enabled', async () => {
+    const user = userEvent.setup();
+    const config = createTestImmunizationConfig({ ampathEnabled: true });
+
+    mockUseConfig.mockReturnValue(config);
+    mockSavePatientImmunizationViaAmpathForm.mockResolvedValue({
+      status: 201,
+      ok: true,
+      data: {
+        uuid: 'ampath-immunization-encounter',
+      },
+    });
+
+    render(<ImmunizationsForm {...testProps} />);
+
+    await selectOption(screen.getByRole('combobox', { name: /Immunization/i }), 'Hepatitis B vaccination');
+
+    const doseField = screen.getByRole('spinbutton', { name: /Dose number within series/i });
+    await user.clear(doseField);
+    await user.type(doseField, '1');
+
+    await user.type(screen.getByRole('textbox', { name: /Manufacturer/i }), 'Pfizer');
+    await user.type(screen.getByRole('textbox', { name: /note/i }), 'Routine dose');
+    await user.click(screen.getByRole('button', { name: /Save/i }));
+
+    const { concepts } = config.ampathFormPersistence;
+    await waitFor(() => {
+      expect(mockSavePatientImmunization).not.toHaveBeenCalled();
+      expect(mockSavePatientImmunizationViaAmpathForm).toHaveBeenCalledWith(
+        expect.objectContaining({
+          patient: mockPatient.uuid,
+          encounterType: config.ampathFormPersistence.encounterTypeUuid,
+          form: config.ampathFormPersistence.formUuid,
+          visit: mockCurrentVisit.uuid,
+          location: mockSessionDataResponse.data.sessionLocation.uuid,
+          obs: expect.arrayContaining([
+            { concept: concepts.vaccineUuid, value: '782AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA' },
+            { concept: concepts.doseNumber, value: 1 },
+            { concept: concepts.manufacturer, value: 'Pfizer' },
+            { concept: concepts.note, value: 'Routine dose' },
+          ]),
+        }),
+        undefined,
+        expect.anything(),
+      );
     });
   });
 
@@ -489,4 +517,28 @@ async function selectOption(dropdown: HTMLElement, optionLabel: string) {
   const user = userEvent.setup();
   await user.click(dropdown);
   await user.click(screen.getByText(optionLabel));
+}
+
+function createTestImmunizationConfig({ ampathEnabled }: { ampathEnabled: boolean }): ImmunizationConfigObject {
+  return {
+    ...defaultImmunizationConfig,
+    ampathFormPersistence: {
+      ...defaultImmunizationConfig.ampathFormPersistence,
+      enabled: ampathEnabled,
+    },
+    immunizationConceptSet: '984AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA',
+    sequenceDefinitions: [
+      {
+        vaccineConceptUuid: '783AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA',
+        sequences: [
+          { sequenceLabel: 'Dose-1', sequenceNumber: 1 },
+          { sequenceLabel: 'Dose-2', sequenceNumber: 2 },
+          { sequenceLabel: 'Dose-3', sequenceNumber: 3 },
+          { sequenceLabel: 'Dose-4', sequenceNumber: 4 },
+          { sequenceLabel: 'Booster-1', sequenceNumber: 11 },
+          { sequenceLabel: 'Booster-2', sequenceNumber: 12 },
+        ],
+      },
+    ],
+  };
 }

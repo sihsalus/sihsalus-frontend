@@ -1,5 +1,24 @@
 # esm-patient-registration-app
 
+App para crear y editar datos de filiación, identificadores y atributos administrativos del paciente.
+
+## Pacientes no identificados o incapaces de comunicarse
+
+El registro debe permitir crear un paciente aunque no exista DNI, nombre legal confirmado, teléfono, dirección o fecha exacta de nacimiento. Ese caso se marca con el atributo `Paciente No Identificado` configurado en `fieldConfigurations.name.unidentifiedPatientAttributeTypeUuid`.
+
+Cuando el paciente está no identificado o no puede comunicar datos/consentimiento, el formulario debe exigir un responsable, acompañante, institución o autoridad. Los datos mínimos esperados son:
+
+- nombre o institución responsable,
+- tipo de responsable o relación cuando se conoce,
+- parentesco/vínculo cuando se conoce,
+- edad u otro dato administrativo si el flujo local lo requiere.
+
+El DNI y el teléfono no son obligatorios en este modo. Deben quedar como desconocidos, no disponibles o pendientes de confirmar hasta que el paciente o responsable pueda aportar información confiable.
+
+## Identificadores temporales
+
+El identificador temporal debe generarse con el tipo/fuente configurada de OpenMRS/IdGen. No debe construirse en frontend con lógica ad hoc. Cuando luego aparece DNI u otro documento civil, se agrega como identificador adicional y se actualiza el estado de identificación; no se elimina automáticamente el código temporal porque sirve para reconciliación y auditoría.
+
 ## Configuring the Registration App to collect custom observations
 
 [PR-221](https://github.com/openmrs/openmrs-esm-patient-management/pull/221) made it possible to configure the registration app to include obs, as demoed in the gif video below, using fieldDefinitions:

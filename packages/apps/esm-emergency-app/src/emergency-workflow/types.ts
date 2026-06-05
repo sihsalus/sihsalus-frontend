@@ -36,6 +36,15 @@ export interface SearchedPatient {
       display?: string;
     };
   };
+  emergencyRegistrationContext?: {
+    arrivalDateTime?: string;
+    communicationCondition?: string;
+    identificationStatus?: string;
+    responsibleType?: string;
+    companionName?: string;
+    companionRelationship?: string;
+    administrativeNotes?: string;
+  };
 }
 
 /** Pre-triage classification: 'emergency' skips triage (direct to attention), 'urgency' goes to triage queue. */

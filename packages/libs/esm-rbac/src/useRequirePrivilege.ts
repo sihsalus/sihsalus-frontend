@@ -21,8 +21,8 @@ export function checkRequirePrivilege(
     return { status: 'authorized' };
   }
 
-  const privilegeNames = privileges.map((p) => p.name);
-  const missing = privilegesRequired.filter((p) => !privilegeNames.includes(p));
+  const privilegeDisplays = privileges.map((p) => p.display);
+  const missing = privilegesRequired.filter((p) => !privilegeDisplays.includes(p));
   const hasAccess = requireAll ? missing.length === 0 : missing.length < privilegesRequired.length;
 
   if (hasAccess) {

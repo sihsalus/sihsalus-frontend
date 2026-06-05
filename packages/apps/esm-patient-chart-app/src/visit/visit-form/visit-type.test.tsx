@@ -6,6 +6,7 @@ import { mockVisitTypes } from 'test-utils';
 import BaseVisitType from './base-visit-type.component';
 
 const mockUseVisitTypes = vi.mocked(useVisitTypes);
+const mockOnChange = vi.fn();
 
 vi.mock('lodash-es/debounce', async () => vi.fn((fn) => fn));
 vi.mock('react-hook-form', async () => ({
@@ -43,7 +44,7 @@ vi.mock('react-hook-form', async () => ({
   Controller: ({ render }) =>
     render({
       field: {
-        onChange: vi.fn(),
+        onChange: mockOnChange,
         onBlur: vi.fn(),
         value: '',
         ref: vi.fn(),
@@ -61,27 +62,24 @@ vi.mock('react-hook-form', async () => ({
 }));
 
 describe('VisitTypeOverview', () => {
+  beforeEach(() => {
+    mockOnChange.mockReset();
+  });
+
   const renderVisitTypeOverview = () => {
     mockUseVisitTypes.mockReturnValue(mockVisitTypes);
 
     render(<BaseVisitType visitTypes={mockVisitTypes} />);
   };
 
-  it('should be able to search for a visit type', async () => {
+  it('should select a visit type from the category dropdown', async () => {
     const user = userEvent.setup();
 
     renderVisitTypeOverview();
 
-    const hivVisit = screen.getByRole('radio', { name: /HIV Return Visit/i });
-    const outpatientVisit = screen.getByRole('radio', { name: /Outpatient Visit/i });
+    await user.click(screen.getByRole('combobox', { name: /categoría de consulta/i }));
+    await user.click(screen.getByText('HIV Return Visit'));
 
-    expect(outpatientVisit).toBeInTheDocument();
-    expect(hivVisit).toBeInTheDocument();
-
-    const searchInput = screen.getByRole('searchbox');
-    await user.type(searchInput, 'HIV');
-
-    expect(outpatientVisit).toBeEmptyDOMElement();
-    expect(hivVisit).toBeInTheDocument();
+    expect(mockOnChange).toHaveBeenCalledWith('some-uuid2');
   });
 });

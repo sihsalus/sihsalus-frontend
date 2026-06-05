@@ -78,7 +78,7 @@
     "swr": "^2.2.5",
     "turbo": "^2.9.14",
     "typescript": "6.0.3",
-    "vitest": "^4.1.0"
+    "vitest": "^4.1.7"
   },
   "packageManager": "yarn@4.10.3"
 }

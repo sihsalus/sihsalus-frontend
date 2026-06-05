@@ -1,7 +1,8 @@
 import { chromium, request } from '@playwright/test';
+import { getOpenmrsBaseUrl, getSpaBaseUrl } from './e2e-urls.mjs';
 
-const spaBase = (process.env.E2E_BASE_URL ?? 'http://localhost:8090/openmrs/spa').replace(/\/$/, '');
-const openmrsBase = spaBase.replace(/\/spa$/, '');
+const spaBase = getSpaBaseUrl('http://localhost:8090/openmrs/spa');
+const openmrsBase = getOpenmrsBaseUrl('http://localhost:8090/openmrs/spa');
 const username = process.env.E2E_USERNAME ?? 'admin';
 const password = process.env.E2E_PASSWORD ?? 'Admin123';
 

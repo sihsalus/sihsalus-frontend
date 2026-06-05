@@ -1,5 +1,5 @@
-import { fork } from 'child_process';
-import { resolve } from 'path';
+import { fork } from 'node:child_process';
+import { resolve } from 'node:path';
 
 export function startDevServer(source: string, port: number, cwd = process.cwd()) {
   const runner = resolve(__dirname, 'debugger.js');

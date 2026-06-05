@@ -13,6 +13,7 @@ import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next';
 import { useLocation, useNavigate } from 'react-router-dom';
 
+import loginPackageJson from '../../package.json';
 import { type ConfigSchema } from '../config-schema';
 import Logo from '../logo.component';
 
@@ -25,6 +26,7 @@ export interface LoginReferrer {
 
 type LoginErrorKey = 'invalidCredentials' | 'serverUnavailable' | 'sessionEndpointNotFound';
 type LoginView = 'login' | 'passwordRecovery';
+const frontendVersion = loginPackageJson.version;
 
 // t('invalidCredentials', 'Invalid username or password')
 // t('serverUnavailable', 'The authentication server is not responding. Please try again later.')
@@ -490,6 +492,9 @@ const Login: React.FC = () => {
                   <img src={pucpLogoSrc} alt={t('pucpLogo', 'Logo de la PUCP')} />
                 </a>
               </div>
+              <p className={styles.frontendVersion}>
+                {t('frontendVersion', 'Frontend v{{version}}', { version: frontendVersion })}
+              </p>
             </div>
           </div>
         </main>

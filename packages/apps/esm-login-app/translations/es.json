@@ -12,6 +12,7 @@
   "errorChangingPassword": "Error al cambiar la contraseña",
   "footerlogo": "Logo del pie de página",
   "forgotPassword": "¿Olvidaste tu contraseña?",
+  "frontendVersion": "Frontend v{{version}}",
   "invalidCredentials": "Nombre de usuario o contraseña inválidos",
   "learnMore": "Más información",
   "locationPreferenceRemoved": "Preferencia de ubicación de inicio de sesión eliminada",

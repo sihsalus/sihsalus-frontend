@@ -1,7 +1,7 @@
 import classNames from 'classnames';
 import dayjs from 'dayjs';
 import type { TFunction } from 'i18next';
-import React, { type Dispatch, useCallback, useEffect, useRef, useState } from 'react';
+import React, { type Dispatch, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import 'dayjs/plugin/utc';
 import {
@@ -85,10 +85,18 @@ const ConditionsWidget: React.FC<ConditionsWidgetProps> = ({
   const displayName = conditionToEdit?.display;
   const editableClinicalStatus = conditionToEdit?.clinicalStatus;
   const editableAbatementDateTime = conditionToEdit?.abatementDateTime;
+  const editableAntecedentType = matchingCondition?.antecedentType ?? conditionToEdit?.antecedentType;
   const [selectedCondition, setSelectedCondition] = useState<CodedCondition>(null);
   const [searchTerm, setSearchTerm] = useState('');
   const debouncedSearchTerm = useDebounce(searchTerm);
   const { searchResults, isSearching } = useConditionsSearch(debouncedSearchTerm);
+  const availableAntecedentTypeOptions = useMemo(
+    () =>
+      antecedentTypeOptions.filter(
+        (option) => option.code !== 'surgical' || lockedAntecedentType || editableAntecedentType === 'surgical',
+      ),
+    [editableAntecedentType, lockedAntecedentType],
+  );
 
   const handleConditionChange = useCallback((selectedCondition: CodedCondition) => {
     setSelectedCondition(selectedCondition);
@@ -229,7 +237,7 @@ const ConditionsWidget: React.FC<ConditionsWidgetProps> = ({
                 valueSelected={value ?? ''}
                 aria-labelledby={errors?.antecedentType ? 'antecedentTypeError' : undefined}
               >
-                {antecedentTypeOptions.map((option) => (
+                {availableAntecedentTypeOptions.map((option) => (
                   <RadioButton
                     key={option.code}
                     id={`antecedent-type-${option.code}`}

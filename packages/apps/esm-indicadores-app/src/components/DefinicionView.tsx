@@ -32,13 +32,19 @@ const DefinicionView: React.FC<DefinicionViewProps> = ({ definicion }) => {
 
   return (
     <div className={styles.definitionList}>
-      <div><strong>Tipo:</strong> {tipoLabels[definicion.tipo]}</div>
-      <div><strong>Periodo:</strong> {periodoLabels[definicion.periodo]}</div>
+      <div>
+        <strong>Tipo:</strong> {tipoLabels[definicion.tipo]}
+      </div>
+      <div>
+        <strong>Periodo:</strong> {periodoLabels[definicion.periodo]}
+      </div>
       <div>
         <strong>Servicios:</strong>{' '}
         {locationUuids.length ? locationUuids.map((uuid) => displayMap.get(uuid) ?? uuid).join(', ') : 'Todos'}
       </div>
-      <div><strong>Mínimo de ocurrencias:</strong> {definicion.evento?.minimo_ocurrencias ?? 1}</div>
+      <div>
+        <strong>Mínimo de ocurrencias:</strong> {definicion.evento?.minimo_ocurrencias ?? 1}
+      </div>
       <div>
         <strong>Diagnósticos:</strong>{' '}
         {definicion.evento?.diagnosticos?.length
@@ -53,10 +59,12 @@ const DefinicionView: React.FC<DefinicionViewProps> = ({ definicion }) => {
           ? definicion.evento.ordenes.map((item) => item.concepto_uuids.join(', ')).join(' | ')
           : 'Sin filtro'}
       </div>
-      <div><strong>Sexo:</strong> {definicion.poblacion?.sexo ?? 'Sin filtro'}</div>
       <div>
-        <strong>Edad:</strong>{' '}
-        min {definicion.poblacion?.min_anios ?? '-'} años / max {definicion.poblacion?.max_anios_excl ?? '-'} años
+        <strong>Sexo:</strong> {definicion.poblacion?.sexo ?? 'Sin filtro'}
+      </div>
+      <div>
+        <strong>Edad:</strong> min {definicion.poblacion?.min_anios ?? '-'} años / max{' '}
+        {definicion.poblacion?.max_anios_excl ?? '-'} años
       </div>
     </div>
   );

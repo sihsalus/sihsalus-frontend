@@ -13,8 +13,13 @@ vi.mock('@openmrs/esm-framework', async () => {
     ...(await vi.importActual('@openmrs/esm-framework')),
     ConfigurableLink: ({ children, to, ...props }) => React.createElement('a', { href: to, ...props }, children),
     navigate: vi.fn(),
+    useSession: vi.fn(() => ({ user: { privileges: [{ name: 'app:adt' }] } })),
   };
 });
+
+vi.mock('@sihsalus/esm-rbac', () => ({
+  AppErrorBoundary: ({ children }: { children: React.ReactNode }) => <>{children}</>,
+}));
 
 const mockNavigate = vi.mocked(navigate);
 

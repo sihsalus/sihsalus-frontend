@@ -1,12 +1,24 @@
-import { ConfigurableLink } from '@openmrs/esm-framework';
+import { ConfigurableLink, useSession } from '@openmrs/esm-framework';
+import { AppErrorBoundary } from '@sihsalus/esm-rbac';
 import { useTranslation } from 'react-i18next';
 
-import { basePath, moduleName } from '../constants';
+import { admissionPrivilege, basePath, moduleName } from '../constants';
 
 export default function AdmissionAppMenuLink() {
+  const session = useSession();
   const { t } = useTranslation(moduleName);
 
   return (
-    <ConfigurableLink to={`${globalThis.spaBase}${basePath}`}>{t('admission', 'Libro de Atenciones')}</ConfigurableLink>
+    <AppErrorBoundary
+      appName="esm-admission-app"
+      checkAccess={true}
+      privilegesRequired={[admissionPrivilege]}
+      user={session}
+      disappear={true}
+    >
+      <ConfigurableLink to={`${globalThis.spaBase}${basePath}`}>
+        {t('admission', 'Libro de Atenciones')}
+      </ConfigurableLink>
+    </AppErrorBoundary>
   );
 }

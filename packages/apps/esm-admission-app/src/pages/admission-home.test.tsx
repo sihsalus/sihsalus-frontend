@@ -1,4 +1,4 @@
-import { useConfig } from '@openmrs/esm-framework';
+import { useConfig, useSession } from '@openmrs/esm-framework';
 import { fireEvent, render, screen } from '@testing-library/react';
 import { BrowserRouter } from 'react-router-dom';
 
@@ -8,6 +8,11 @@ import AdmissionHome from './admission-home.component';
 vi.mock('@openmrs/esm-framework', async () => ({
   ...(await vi.importActual('@openmrs/esm-framework')),
   useConfig: vi.fn(),
+  useSession: vi.fn(),
+}));
+
+vi.mock('@sihsalus/esm-rbac', () => ({
+  AppErrorBoundary: ({ children }: { children: React.ReactNode }) => <>{children}</>,
 }));
 
 vi.mock('../resources/admissions.resource', () => ({
@@ -16,6 +21,7 @@ vi.mock('../resources/admissions.resource', () => ({
 
 const mockUseAdmissions = vi.mocked(useAdmissions);
 const mockUseConfig = vi.mocked(useConfig);
+const mockUseSession = vi.mocked(useSession);
 
 function renderAdmissionHome() {
   return render(
@@ -54,6 +60,7 @@ describe('AdmissionHome', () => {
     window.history.pushState({}, '', '/');
     globalThis.getOpenmrsSpaBase = vi.fn(() => '/openmrs/spa/');
     mockUseConfig.mockReturnValue({ admissionReportPageSize: 75 });
+    mockUseSession.mockReturnValue({ user: { privileges: [{ name: 'app:adt' }] } } as any);
   });
 
   it('renders the care encounters by UPSS report with accreditation columns', () => {

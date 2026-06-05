@@ -1,14 +1,16 @@
-import { useLeftNav } from '@openmrs/esm-framework';
+import { useLeftNav, useSession } from '@openmrs/esm-framework';
 import { AppErrorBoundary } from '@sihsalus/esm-rbac';
 import { BrowserRouter, Route, Routes } from 'react-router-dom';
 
-import { basePath } from './constants';
+import { admissionPrivilege, basePath } from './constants';
 import AdmissionHome from './pages/admission-home.component';
 import PatientMerge from './pages/patient-merge.component';
 import PatientAdmissionDetail from './patient/patient-admission-detail.component';
 import styles from './root.scss';
 
 export default function Root() {
+  const session = useSession();
+
   useLeftNav({
     name: 'homepage-dashboard-slot',
     basePath,
@@ -16,7 +18,12 @@ export default function Root() {
   });
 
   return (
-    <AppErrorBoundary appName="esm-admission-app">
+    <AppErrorBoundary
+      appName="esm-admission-app"
+      checkAccess={true}
+      privilegesRequired={[admissionPrivilege]}
+      user={session}
+    >
       <div className={styles.root}>
         <BrowserRouter
           basename={`${globalThis.getOpenmrsSpaBase().slice(0, -1)}${basePath}`}

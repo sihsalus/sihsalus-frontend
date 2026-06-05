@@ -5,6 +5,7 @@ import Root from './root.component';
 vi.mock('@openmrs/esm-framework', async () => ({
   ...(await vi.importActual('@openmrs/esm-framework')),
   useLeftNav: vi.fn(),
+  useSession: vi.fn(() => ({ user: { privileges: [{ name: 'app:adt' }] } })),
 }));
 
 vi.mock('@sihsalus/esm-rbac', () => ({

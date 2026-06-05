@@ -22,7 +22,7 @@ const GlobalHomeNavLink: React.FC = () => {
 
   return (
     <div className={styles.homeNavSection}>
-      <ConfigurableLink to={`${spaBase}/home/home`} className={styles.homeButton} aria-label={label} title={label}>
+      <ConfigurableLink to={`${spaBase}/home`} className={styles.homeButton} aria-label={label} title={label}>
         <Home aria-hidden="true" className={styles.homeIcon} size={20} />
         <span className={styles.homeText}>{label}</span>
       </ConfigurableLink>

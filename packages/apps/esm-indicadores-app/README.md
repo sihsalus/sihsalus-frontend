@@ -25,21 +25,12 @@ Terminología de dominio: visita = consulta, encounter = atención, appointment 
 
 ## Backend local FastAPI
 
-- Para desarrollo local, `config/frontend.json` puede definir:
-
-```json
-{
-  "@sihsalus/esm-indicadores-app": {
-    "reportesSqlApiPath": "http://127.0.0.1:8000"
-  }
-}
-```
-
 - El frontend espera el backend reportes-sql con estas rutas base:
   - `/health`
   - `/indicadores`
   - `/resultados`
   - `/conceptos`
 
+- Para detalles de configuración local con este backend, ver el `README.md` de `reportes-sql`.
 - Para producción o contenedores, la recomendación es que `reportesSqlApiPath` apunte al gateway y no al servicio interno directo.
 - `indicatorsApiPath` está deprecado y ya no es consumido por la app.

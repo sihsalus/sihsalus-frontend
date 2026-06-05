@@ -35,6 +35,15 @@ RUN rm -rf /usr/local/lib/node_modules/npm /usr/local/bin/npm /usr/local/bin/npx
 ENV NODE_ENV=production
 ENV SPA_OUTPUT_DIR=/spa
 
+# Build provenance — supplied by CI (--build-arg) and promoted to env so the
+# assemble step (run as CMD at container start) can stamp build-info.json.
+ARG APP_VERSION=0.0.0-dev
+ARG GIT_SHA=""
+ARG BUILD_TIME=""
+ENV APP_VERSION=${APP_VERSION}
+ENV GIT_SHA=${GIT_SHA}
+ENV BUILD_TIME=${BUILD_TIME}
+
 COPY --from=builder /app/node_modules ./node_modules
 COPY --from=builder /app/packages/apps ./packages/apps
 COPY --from=builder /app/packages/tooling/scripts/assemble-importmap.js ./packages/tooling/scripts/assemble-importmap.js
@@ -53,6 +62,15 @@ RUN rm -rf /usr/local/lib/node_modules/npm /usr/local/bin/npm /usr/local/bin/npx
 
 ENV NODE_ENV=production
 ENV SPA_OUTPUT_DIR=/spa
+
+# Build provenance — supplied by CI (--build-arg) and promoted to env so the
+# assemble step (run as CMD at container start) can stamp build-info.json.
+ARG APP_VERSION=0.0.0-dev
+ARG GIT_SHA=""
+ARG BUILD_TIME=""
+ENV APP_VERSION=${APP_VERSION}
+ENV GIT_SHA=${GIT_SHA}
+ENV BUILD_TIME=${BUILD_TIME}
 
 COPY --from=builder --chown=node:node /app/node_modules ./node_modules
 COPY --from=builder --chown=node:node /app/packages/apps ./packages/apps
@@ -75,6 +93,14 @@ ENV API_URL=/openmrs
 ENV SPA_PATH=/openmrs/spa
 ENV SPA_CONFIG_URLS=/openmrs/spa/frontend.json
 ENV SPA_DEFAULT_LOCALE=es
+
+# Build provenance — assemble runs here at build time, so env is enough.
+ARG APP_VERSION=0.0.0-dev
+ARG GIT_SHA=""
+ARG BUILD_TIME=""
+ENV APP_VERSION=${APP_VERSION}
+ENV GIT_SHA=${GIT_SHA}
+ENV BUILD_TIME=${BUILD_TIME}
 
 COPY config/ ./config/
 COPY assets/ ./assets/

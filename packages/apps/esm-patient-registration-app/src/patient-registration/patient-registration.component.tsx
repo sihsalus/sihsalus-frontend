@@ -79,7 +79,7 @@ export const PatientRegistration: React.FC<PatientRegistrationProps> = ({ savePa
   );
   const { data: photo } = usePatientPhoto(patientToEdit?.id);
   const savePatientTransactionManager = useRef(new SavePatientTransactionManager());
-  const validationSchema = getValidationSchema(config);
+  const validationSchema = getValidationSchema(config, identifierTypes);
   const areIdentifiersUnavailableForSubmit = (hasFormIdentifiers: boolean) =>
     !isOffline &&
     !(inEditMode && hasFormIdentifiers) &&

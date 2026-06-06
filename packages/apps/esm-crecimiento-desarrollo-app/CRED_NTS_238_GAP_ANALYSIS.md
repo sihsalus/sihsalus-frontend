@@ -30,12 +30,14 @@ El modulo `esm-crecimiento-desarrollo-app` ya tiene buena base de UI y configura
 
 ## Plan de implementacion
 
-1. Alinear calendario CRED a NTS 238.
-2. Corregir el selector de formularios CRED para construir objetos `Form` validos desde `formsList`.
-3. Expandir `formsList` y `CREDFormsByAgeGroup` con placeholders normativos configurables.
-4. Mantener formularios existentes, pero agregar los faltantes como claves configurables para que puedan conectarse a formularios reales del backend.
-5. En una siguiente iteracion, crear una matriz normativa central reutilizable que no solo liste formularios, sino actividades obligatorias por edad.
-6. En una siguiente iteracion, agregar reglas de seguimiento: malnutricion, anemia, rezago/riesgo de desarrollo, TEA, violencia, prematuridad, bajo peso y ausencia a citas.
+Estado actual del plan:
+
+1. Calendario CRED NTS 238: implementado en `cred-schedule-rules.ts` y cubierto por `cred-schedule-rules.test.ts`.
+2. Selector de formularios CRED: corregido en `useCREDFormsForAgeGroup`, que construye objetos `Form` validos desde keys de `formsList`.
+3. `formsList` y `CREDFormsByAgeGroup`: ampliados con placeholders normativos configurables; falta validar que esos forms existan en content/QLTY.
+4. Pendiente: conectar formularios reales del backend para los placeholders normativos antes de exponerlos como flujo productivo.
+5. Pendiente: crear una matriz normativa central reutilizable que no solo liste formularios, sino actividades obligatorias por edad.
+6. Pendiente: agregar reglas de seguimiento: malnutricion, anemia, rezago/riesgo de desarrollo, TEA, violencia, prematuridad, bajo peso y ausencia a citas.
 
 ## No cubierto aun
 

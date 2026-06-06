@@ -1,31 +1,23 @@
 import type { AntecedentTypeCode } from '@sihsalus/esm-sihsalus-shared';
 import type { Condition } from './conditions.resource';
 
-export type ConditionSection =
-  | 'antecedents'
-  | 'other-antecedents'
-  | 'active-problems'
-  | 'past-diagnoses'
-  | 'procedures';
+export type ConditionSection = 'antecedents' | 'other-antecedents' | 'active-problems' | 'past-diagnoses';
 
 export const workspaceNamesBySection: Record<ConditionSection, string> = {
   antecedents: 'conditions-form-workspace',
   'other-antecedents': 'conditions-form-workspace',
   'active-problems': 'active-problem-form-workspace',
   'past-diagnoses': 'past-diagnosis-form-workspace',
-  procedures: 'procedure-surgery-form-workspace',
 };
 
 export const defaultAntecedentTypeBySection: Partial<Record<ConditionSection, AntecedentTypeCode>> = {
   'active-problems': 'pathological',
   'past-diagnoses': 'definitive-diagnosis',
-  procedures: 'surgical',
 };
 
 export const defaultClinicalStatusBySection: Partial<Record<ConditionSection, 'active' | 'inactive'>> = {
   'active-problems': 'active',
   'past-diagnoses': 'inactive',
-  procedures: 'inactive',
 };
 
 export function isProcedureOrSurgery(condition: Condition) {
@@ -50,8 +42,6 @@ export function filterConditionsBySection(conditions: Array<Condition>, section:
       return conditions.filter(isActiveProblem);
     case 'past-diagnoses':
       return conditions.filter(isPastDiagnosis);
-    case 'procedures':
-      return conditions.filter(isProcedureOrSurgery);
     case 'other-antecedents':
       return conditions.filter(isGeneralAntecedent);
     case 'antecedents':

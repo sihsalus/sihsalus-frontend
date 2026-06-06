@@ -653,6 +653,22 @@ function patchIndexHtml() {
   }
 }
 
+// ── Phase 8: Write build-info.json ───────────────────────────────────
+// Stamps the assembled SPA with its provenance so the running app can report
+// exactly which version/commit is deployed. Values come from CI build args that
+// are promoted to env vars in the runtime image (see Dockerfile). Falls back to
+// a dev placeholder when assembled locally without those vars.
+function writeBuildInfo() {
+  logInfo('Phase 8: Build info');
+  const buildInfo = {
+    version: process.env.APP_VERSION || '0.0.0-dev',
+    gitSha: process.env.GIT_SHA || '',
+    buildTime: process.env.BUILD_TIME || new Date().toISOString(),
+  };
+  fs.writeFileSync(path.join(outDir, 'build-info.json'), JSON.stringify(buildInfo, null, 2));
+  logInfo(`OK build-info.json (version=${buildInfo.version}, sha=${buildInfo.gitSha || 'n/a'})`);
+}
+
 // ── Main ──────────────────────────────────────────────────────────────
 (async () => {
   await downloadNpmModules();
@@ -661,6 +677,7 @@ function patchIndexHtml() {
   copyConfigFiles();
   copyAssets();
   patchIndexHtml();
+  writeBuildInfo();
   logInfo('Done! dist/spa/ is self-contained.');
 })().catch((err) => {
   logFail(err.message);

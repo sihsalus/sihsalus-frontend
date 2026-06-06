@@ -7,10 +7,11 @@ import {
   RegistrationPictogram,
   useConfig,
 } from '@openmrs/esm-framework';
+import { AppErrorBoundary, RequirePrivilege } from '@sihsalus/esm-rbac';
 import { useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
-import { moduleName } from '../constants';
+import { admissionPrivilege, moduleName } from '../constants';
 import { useAdmissions } from '../resources/admissions.resource';
 import styles from './admission-home.scss';
 
@@ -164,7 +165,9 @@ export default function AdmissionHome() {
   const spaBasePath = globalThis.getOpenmrsSpaBase().slice(0, -1);
 
   return (
-    <main className={styles.page}>
+    <AppErrorBoundary appName="esm-care-logbook-app">
+      <RequirePrivilege privilege={admissionPrivilege}>
+      <main className={styles.page}>
       <h1 className={styles.visuallyHidden}>{t('admissionReportByUps', 'Libro de Atenciones')}</h1>
       <PageHeader className={styles.header}>
         <PageHeaderContent
@@ -306,6 +309,8 @@ export default function AdmissionHome() {
           </div>
         </Layer>
       </div>
-    </main>
+      </main>
+      </RequirePrivilege>
+    </AppErrorBoundary>
   );
 }

@@ -67,8 +67,8 @@ export const hivScreeningConceptMap = {
   '5619AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA': {
     display: 'Client a health care worker?',
     answers: {
-      '1065AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA': 'Yes',
-      '1066AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA': 'No',
+      'cf82933b-3f3f-45e7-a5ab-5d31aaee3da3': 'Yes',
+      '488b58ff-64f5-4f8a-8979-fa79940b1594': 'No',
     },
   },
   '166570AAAAAAAAAAAAAAAAAAAAAAAAAAAAAA': {
@@ -121,8 +121,8 @@ export const hivScreeningConceptMap = {
   '164401AAAAAAAAAAAAAAAAAAAAAAAAAAAAAA': {
     display: 'Tested for HIV before',
     answers: {
-      '1065AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA': 'Yes',
-      '1066AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA': 'No',
+      'cf82933b-3f3f-45e7-a5ab-5d31aaee3da3': 'Yes',
+      '488b58ff-64f5-4f8a-8979-fa79940b1594': 'No',
     },
   },
   'cabad9c8-87e1-4163-b5fc-64cab0ca578b': {
@@ -147,8 +147,8 @@ export const hivScreeningConceptMap = {
   '64132ecd-3a0f-41b8-b743-78c26af2f4b9': {
     display: 'Client started on ART :',
     answers: {
-      '1065AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA': 'Yes',
-      '1066AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA': 'No',
+      'cf82933b-3f3f-45e7-a5ab-5d31aaee3da3': 'Yes',
+      '488b58ff-64f5-4f8a-8979-fa79940b1594': 'No',
     },
   },
   '162053AAAAAAAAAAAAAAAAAAAAAAAAAAAAAA': {
@@ -158,8 +158,8 @@ export const hivScreeningConceptMap = {
   '160109AAAAAAAAAAAAAAAAAAAAAAAAAAAAAA': {
     display: 'Is the client sexually active?',
     answers: {
-      '1065AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA': 'Yes',
-      '1066AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA': 'No',
+      'cf82933b-3f3f-45e7-a5ab-5d31aaee3da3': 'Yes',
+      '488b58ff-64f5-4f8a-8979-fa79940b1594': 'No',
       '162570AAAAAAAAAAAAAAAAAAAAAAAAAAAAAA': 'Declined to answer',
     },
   },
@@ -173,8 +173,8 @@ export const hivScreeningConceptMap = {
   '167144AAAAAAAAAAAAAAAAAAAAAAAAAAAAAA': {
     display: 'Has the client had a new sexual partner in the last 3 months?',
     answers: {
-      '1065AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA': 'Yes',
-      '1066AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA': 'No',
+      'cf82933b-3f3f-45e7-a5ab-5d31aaee3da3': 'Yes',
+      '488b58ff-64f5-4f8a-8979-fa79940b1594': 'No',
       '162570AAAAAAAAAAAAAAAAAAAAAAAAAAAAAA': 'Declined to answer',
     },
   },
@@ -190,8 +190,8 @@ export const hivScreeningConceptMap = {
   '6096AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA': {
     display: 'Discordant Couple',
     answers: {
-      '1065AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA': 'Yes',
-      '1066AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA': 'No',
+      'cf82933b-3f3f-45e7-a5ab-5d31aaee3da3': 'Yes',
+      '488b58ff-64f5-4f8a-8979-fa79940b1594': 'No',
       '162570AAAAAAAAAAAAAAAAAAAAAAAAAAAAAA': 'Declined to answer',
     },
   },
@@ -218,54 +218,54 @@ export const hivScreeningConceptMap = {
   '160579AAAAAAAAAAAAAAAAAAAAAAAAAAAAAA': {
     display: 'Have you ever had unprotected sex in exchange of money or other material gains?',
     answers: {
-      '1065AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA': 'Yes',
-      '1066AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA': 'No',
+      'cf82933b-3f3f-45e7-a5ab-5d31aaee3da3': 'Yes',
+      '488b58ff-64f5-4f8a-8979-fa79940b1594': 'No',
       '162570AAAAAAAAAAAAAAAAAAAAAAAAAAAAAA': 'Declined to answer',
     },
   },
   '166559AAAAAAAAAAAAAAAAAAAAAAAAAAAAAA': {
     display: 'Have you recently had any incident of condom burst?',
     answers: {
-      '1065AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA': 'Yes',
-      '1066AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA': 'No',
+      'cf82933b-3f3f-45e7-a5ab-5d31aaee3da3': 'Yes',
+      '488b58ff-64f5-4f8a-8979-fa79940b1594': 'No',
       '162570AAAAAAAAAAAAAAAAAAAAAAAAAAAAAA': 'Declined to answer',
     },
   },
   '159218AAAAAAAAAAAAAAAAAAAAAAAAAAAAAA': {
     display: 'Have you engaged in unprotected sex with someone you don’t know their HIV status in the last 12 months?',
     answers: {
-      '1065AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA': 'Yes',
-      '1066AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA': 'No',
+      'cf82933b-3f3f-45e7-a5ab-5d31aaee3da3': 'Yes',
+      '488b58ff-64f5-4f8a-8979-fa79940b1594': 'No',
       '162570AAAAAAAAAAAAAAAAAAAAAAAAAAAAAA': 'Declined to answer',
     },
   },
   '163568AAAAAAAAAAAAAAAAAAAAAAAAAAAAAA': {
     display: 'Have you had unprotected sex with someone who has known HIV positive status?',
     answers: {
-      '1065AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA': 'Yes',
-      '1066AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA': 'No',
+      'cf82933b-3f3f-45e7-a5ab-5d31aaee3da3': 'Yes',
+      '488b58ff-64f5-4f8a-8979-fa79940b1594': 'No',
       '162570AAAAAAAAAAAAAAAAAAAAAAAAAAAAAA': 'Declined to answer',
     },
   },
   'c8ae2850-abab-4b9c-927c-129ecc2c2752': {
     display: 'Have you ever shared a needle while injecting drugs with someone else?',
     answers: {
-      '1065AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA': 'Yes',
-      '1066AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA': 'No',
+      'cf82933b-3f3f-45e7-a5ab-5d31aaee3da3': 'Yes',
+      '488b58ff-64f5-4f8a-8979-fa79940b1594': 'No',
     },
   },
   '3ac6cb43-0fc9-437d-aca2-bc2b66066941': {
     display: 'Has the client had needle stick injuries?',
     answers: {
-      '1065AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA': 'Yes',
-      '1066AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA': 'No',
+      'cf82933b-3f3f-45e7-a5ab-5d31aaee3da3': 'Yes',
+      '488b58ff-64f5-4f8a-8979-fa79940b1594': 'No',
     },
   },
   '166365AAAAAAAAAAAAAAAAAAAAAAAAAAAAAA': {
     display: 'Traditional /non-medical procedures',
     answers: {
-      '1065AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA': 'Yes',
-      '1066AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA': 'No',
+      'cf82933b-3f3f-45e7-a5ab-5d31aaee3da3': 'Yes',
+      '488b58ff-64f5-4f8a-8979-fa79940b1594': 'No',
     },
   },
   '165908AAAAAAAAAAAAAAAAAAAAAAAAAAAAAA': {
@@ -284,22 +284,22 @@ export const hivScreeningConceptMap = {
   '167161AAAAAAAAAAAAAAAAAAAAAAAAAAAAAA': {
     display: 'Has the client recently experienced GBV?',
     answers: {
-      '1065AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA': 'Yes',
-      '1066AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA': 'No',
+      'cf82933b-3f3f-45e7-a5ab-5d31aaee3da3': 'Yes',
+      '488b58ff-64f5-4f8a-8979-fa79940b1594': 'No',
     },
   },
   '167145AAAAAAAAAAAAAAAAAAAAAAAAAAAAAA': {
     display: 'Within the last 3 months, has the client experienced either physical or sexual violence?',
     answers: {
-      '1065AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA': 'Yes',
-      '1066AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA': 'No',
+      'cf82933b-3f3f-45e7-a5ab-5d31aaee3da3': 'Yes',
+      '488b58ff-64f5-4f8a-8979-fa79940b1594': 'No',
     },
   },
   '160658AAAAAAAAAAAAAAAAAAAAAAAAAAAAAA': {
     display: 'Have you recently been forced to participate into sexual activity against your wish?',
     answers: {
-      '1065AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA': 'Yes',
-      '1066AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA': 'No',
+      'cf82933b-3f3f-45e7-a5ab-5d31aaee3da3': 'Yes',
+      '488b58ff-64f5-4f8a-8979-fa79940b1594': 'No',
     },
   },
   'cb583a50-2b6c-4a6a-a458-a6a3c41fa1a7': {
@@ -311,8 +311,8 @@ export const hivScreeningConceptMap = {
   '2f3e668b-695e-4a79-9531-15872b89e5c6': {
     display: 'Is the client currently on PrEP?',
     answers: {
-      '1065AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA': 'Yes',
-      '1066AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA': 'No',
+      'cf82933b-3f3f-45e7-a5ab-5d31aaee3da3': 'Yes',
+      '488b58ff-64f5-4f8a-8979-fa79940b1594': 'No',
     },
   },
   '164845AAAAAAAAAAAAAAAAAAAAAAAAAAAAAA': {
@@ -338,30 +338,30 @@ export const hivScreeningConceptMap = {
   'd7b6a98f-025e-4732-b0b2-2fe8b00e6b4c': {
     display: 'Has the client had an STI in the last 3 months?',
     answers: {
-      '1065AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA': 'Yes',
-      '1066AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA': 'No',
+      'cf82933b-3f3f-45e7-a5ab-5d31aaee3da3': 'Yes',
+      '488b58ff-64f5-4f8a-8979-fa79940b1594': 'No',
       '162570AAAAAAAAAAAAAAAAAAAAAAAAAAAAAA': 'Declined to answer',
     },
   },
   'cddbf6fe-4bcd-40b6-a7ea-8573e4080192': {
     display: 'Has the client been screened for TB?',
     answers: {
-      '1065AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA': 'Yes',
-      '1066AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA': 'No',
+      'cf82933b-3f3f-45e7-a5ab-5d31aaee3da3': 'Yes',
+      '488b58ff-64f5-4f8a-8979-fa79940b1594': 'No',
     },
   },
   '5959AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA': {
     display: 'Cough of any duration',
     answers: {
-      '1065AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA': 'Yes',
-      '1066AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA': 'No',
+      'cf82933b-3f3f-45e7-a5ab-5d31aaee3da3': 'Yes',
+      '488b58ff-64f5-4f8a-8979-fa79940b1594': 'No',
     },
   },
   '140238AAAAAAAAAAAAAAAAAAAAAAAAAAAAAA': {
     display: 'Client has a fever?',
     answers: {
-      '1065AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA': 'Yes',
-      '1066AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA': 'No',
+      'cf82933b-3f3f-45e7-a5ab-5d31aaee3da3': 'Yes',
+      '488b58ff-64f5-4f8a-8979-fa79940b1594': 'No',
     },
   },
   '832AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA': {
@@ -390,22 +390,22 @@ export const hivScreeningConceptMap = {
   '5272AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA': {
     display: 'Client currently pregnant?',
     answers: {
-      '1065AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA': 'Yes',
-      '1066AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA': 'No',
+      'cf82933b-3f3f-45e7-a5ab-5d31aaee3da3': 'Yes',
+      '488b58ff-64f5-4f8a-8979-fa79940b1594': 'No',
     },
   },
   '5632AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA': {
     display: 'Breastfeeding mother',
     answers: {
-      '1065AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA': 'Yes',
-      '1066AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA': 'No',
+      'cf82933b-3f3f-45e7-a5ab-5d31aaee3da3': 'Yes',
+      '488b58ff-64f5-4f8a-8979-fa79940b1594': 'No',
     },
   },
   '162699AAAAAAAAAAAAAAAAAAAAAAAAAAAAAA': {
     display: 'Client referred for testing',
     answers: {
-      '1065AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA': 'Yes',
-      '1066AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA': 'No',
+      'cf82933b-3f3f-45e7-a5ab-5d31aaee3da3': 'Yes',
+      '488b58ff-64f5-4f8a-8979-fa79940b1594': 'No',
     },
   },
   'd79488b7-eb63-49ba-b99c-a52f777a1a7f': {
@@ -420,8 +420,8 @@ export const hivScreeningConceptMap = {
   '167229AAAAAAAAAAAAAAAAAAAAAAAAAAAAAA': {
     display: 'Did you recommend HIV testing?',
     answers: {
-      '1065AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA': 'Yes',
-      '1066AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA': 'No',
+      'cf82933b-3f3f-45e7-a5ab-5d31aaee3da3': 'Yes',
+      '488b58ff-64f5-4f8a-8979-fa79940b1594': 'No',
     },
   },
   '164082AAAAAAAAAAAAAAAAAAAAAAAAAAAAAA': {

@@ -168,9 +168,9 @@ export const configSchema = {
       stimulationCounselingForm: '50550177-303e-4fca-8257-f78268a7d75a',
 
       // Nutrición Infantil Forms
-      nutritionalAssessmentForm: 'c1060000-0000-4000-8000-000000000006',
-      feedingCounselingForm: 'c1070000-0000-4000-8000-000000000007',
-      nutritionFollowupForm: 'c1080000-0000-4000-8000-000000000008',
+      nutritionalAssessmentForm: '21f010ce-4876-32ec-8844-27dfedc6705a',
+      feedingCounselingForm: '1fa86795-3d84-304a-ac9e-320a39b69ca7',
+      nutritionFollowupForm: '24e8dd94-f712-352f-96c2-0dbd8c15068d',
       ediDevelopmentForm: 'c1090000-0000-4000-8000-000000000009',
       autismScreeningForm: 'c1100000-0000-4000-8000-000000000010',
       childMentalHealthForm: 'c1110000-0000-4000-8000-000000000011',
@@ -1057,8 +1057,8 @@ export const configSchema = {
         snapshotUuid: 'c4010004-0000-4000-8000-000000000004',
         referralUuid: 'c4010005-0000-4000-8000-000000000005',
         referralAnswers: {
-          yes: '1065AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA',
-          no: '1066AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA',
+          yes: 'cf82933b-3f3f-45e7-a5ab-5d31aaee3da3',
+          no: '488b58ff-64f5-4f8a-8979-fa79940b1594',
         },
         planUuid: 'c4010006-0000-4000-8000-000000000006',
         observationsUuid: '161011AAAAAAAAAAAAAAAAAAAAAAAAAAAAAA',

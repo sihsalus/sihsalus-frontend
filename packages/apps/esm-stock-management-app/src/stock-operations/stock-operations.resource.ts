@@ -9,6 +9,10 @@ import { type StockOperationDTO } from '../core/api/types/stockOperation/StockOp
 import { type StockOperationItemCost } from '../core/api/types/stockOperation/StockOperationItemCost';
 import { type StockOperationItemDtoSchema } from './validation-schema';
 
+export type StockOperationPayload = Omit<StockOperationItemDtoSchema, 'stockOperationItems'> & {
+  stockOperationItems: Array<StockOperationItemDtoSchema['stockOperationItems'][number]>;
+};
+
 export interface StockOperationFilter extends ResourceFilterCriteria {
   status?: string | null | undefined;
   operationTypeUuid?: string | null | undefined;
@@ -127,11 +131,10 @@ export function deleteStockOperationItem(id: string) {
 }
 
 // createStockOperation
-export function createStockOperation(data: StockOperationItemDtoSchema) {
+export function createStockOperation(data: StockOperationPayload) {
   const apiUrl = `${restBaseUrl}/stockmanagement/stockoperation`;
   const abortController = new AbortController();
   const payload = { ...data } as Record<string, unknown>;
-  delete payload.atLocationUuid;
   delete payload.atLocationName;
   return openmrsFetch<StockOperationDTO>(apiUrl, {
     method: 'POST',
@@ -144,11 +147,10 @@ export function createStockOperation(data: StockOperationItemDtoSchema) {
 }
 
 // updateStockOperation
-export function updateStockOperation(stockOperation: StockOperationDTO, data: StockOperationItemDtoSchema) {
+export function updateStockOperation(stockOperation: StockOperationDTO, data: StockOperationPayload) {
   const apiUrl = `${restBaseUrl}/stockmanagement/stockoperation/${stockOperation.uuid}`;
   const abortController = new AbortController();
   const payload = { ...data } as Record<string, unknown>;
-  delete payload.atLocationUuid;
   delete payload.atLocationName;
   return openmrsFetch<StockOperationDTO>(apiUrl, {
     method: 'POST',

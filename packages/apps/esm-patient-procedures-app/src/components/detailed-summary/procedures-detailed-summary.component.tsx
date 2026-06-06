@@ -46,7 +46,6 @@ type ProcedureTableRow = {
   procedureType: string;
   bodySite: string;
   startDateTimeRender: string;
-  estimatedStartDate?: string;
   endDateTimeRender: string;
   status: string;
   notes?: string;
@@ -89,13 +88,16 @@ const ProceduresDetailedSummary = ({ patient }: ProceduresDetailedSummaryProps) 
     () =>
       procedures?.map((p) => ({
         id: p.uuid,
-        display: p.display,
-        procedureType: p.procedureType.name,
-        bodySite: p.bodySite.display ?? '--',
-        startDateTimeRender: p.estimatedStartDate ?? p.startDateTime,
-        estimatedStartDate: p.estimatedStartDate,
+        display: p.display ?? p.procedureNonCoded ?? '--',
+        procedureType: p.procedureType?.name ?? '--',
+        bodySite: p.bodySite?.display ?? '--',
+        startDateTimeRender: p.estimatedStartDate
+          ? `${formatPartialDate(p.estimatedStartDate, { mode: 'wide' })}`
+          : p.startDateTime
+            ? formatDate(parseDate(p.startDateTime), { mode: 'wide', time: true })
+            : '--',
         endDateTimeRender: p.endDateTime ? formatDate(parseDate(p.endDateTime), { mode: 'wide' }) : '--',
-        status: p.status.display,
+        status: p.status?.display ?? '--',
         notes: p.notes,
       })),
     [procedures],
@@ -152,20 +154,13 @@ const ProceduresDetailedSummary = ({ patient }: ProceduresDetailedSummaryProps) 
                   </TableHead>
                   <TableBody>
                     {rows.map((row) => {
-                      const matchingRow = tableRows?.find((r) => r.id === row.id);
                       const matchingProcedure = procedures?.find((p) => p.uuid === row.id);
                       return (
                         <React.Fragment key={row.id}>
                           <TableExpandRow {...getRowProps({ row })}>
-                            {row.cells.map((cell) => {
-                              if (cell.info.header === 'startDateTimeRender') {
-                                const display = matchingRow?.estimatedStartDate
-                                  ? `${formatPartialDate(matchingRow.estimatedStartDate, { mode: 'wide' })}`
-                                  : formatDate(parseDate(cell.value), { mode: 'wide', time: true });
-                                return <TableCell key={cell.id}>{display}</TableCell>;
-                              }
-                              return <TableCell key={cell.id}>{cell.value}</TableCell>;
-                            })}
+                            {row.cells.map((cell) => (
+                              <TableCell key={cell.id}>{cell.value}</TableCell>
+                            ))}
                             <TableCell className="cds--table-column-menu">
                               <ProceduresActionMenu procedure={matchingProcedure} patientUuid={patient.id} />
                             </TableCell>
@@ -179,7 +174,7 @@ const ProceduresDetailedSummary = ({ patient }: ProceduresDetailedSummaryProps) 
                             </p>
                             <p>
                               <strong>{t('notes', 'Notes')}: </strong>
-                              {matchingRow?.notes ?? '--'}
+                              {matchingProcedure?.notes ?? '--'}
                             </p>
                           </TableExpandedRow>
                         </React.Fragment>

@@ -49,15 +49,13 @@ const StockOperationSubmissionFormStep: React.FC<StockOperationSubmissionFormSte
     await form.handleSubmit(async (formData) => {
       try {
         const payloadData = { ...formData } as StockOperationItemDtoSchema;
-        delete payloadData.atLocationUuid;
-        delete payloadData.atLocationName;
         // Get deleted items (items in stock operation bt not i form data)
         const itemsToDelete =
           stockOperation?.stockOperationItems?.reduce<Array<StockOperationItemDTO>>((prev, curr) => {
             const itemDoNotExistInFormData =
               formData.stockOperationItems.findIndex((item) => item.uuid === curr.uuid) === -1;
             if (itemDoNotExistInFormData) {
-              return [...prev, curr];
+              prev.push(curr);
             }
             return prev;
           }, []) ?? [];
@@ -97,8 +95,8 @@ const StockOperationSubmissionFormStep: React.FC<StockOperationSubmissionFormSte
           ],
         };
         const resp = await (stockOperation
-          ? updateStockOperation(stockOperation, payload as any)
-          : createStockOperation(payload as any));
+          ? updateStockOperation(stockOperation, payload)
+          : createStockOperation(payload));
         result = resp.data; // Store the response data
         handleMutate(`${restBaseUrl}/stockmanagement/stockoperation`);
         dismissWorkspace?.();

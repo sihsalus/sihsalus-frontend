@@ -300,12 +300,8 @@ const ImmunizationsForm: React.FC<PatientWorkspace2DefinitionProps<Record<string
           manufacturer,
         };
 
-        const persistenceSource =
-          immunizationToEditMeta?.persistenceSource ??
-          (immunizationToEditMeta?.immunizationObsUuid ? 'fhir' : ampathPersistence.enabled ? 'ampath-form' : 'fhir');
-
-        if (persistenceSource === 'ampath-form') {
-          await savePatientImmunizationViaAmpathForm(
+        const saveViaAmpathForm = () =>
+          savePatientImmunizationViaAmpathForm(
             mapToAmpathImmunizationEncounterPayload(
               immunization,
               config,
@@ -315,8 +311,9 @@ const ImmunizationsForm: React.FC<PatientWorkspace2DefinitionProps<Record<string
             immunizationToEditMeta?.immunizationObsUuid,
             abortController,
           );
-        } else {
-          await savePatientImmunization(
+
+        const saveViaFhir = () =>
+          savePatientImmunization(
             mapToFHIRImmunizationResource(
               immunization,
               immunizationToEditMeta?.visitUuid || visitContext?.uuid,
@@ -326,6 +323,25 @@ const ImmunizationsForm: React.FC<PatientWorkspace2DefinitionProps<Record<string
             immunizationToEditMeta?.immunizationObsUuid,
             abortController,
           );
+
+        if (immunizationToEditMeta?.persistenceSource === 'ampath-form') {
+          await saveViaAmpathForm();
+        } else {
+          try {
+            await saveViaFhir();
+          } catch (err) {
+            const errorDetails = getImmunizationSaveErrorDetails(err, fhirConceptMappings);
+            const canFallbackToAmpath =
+              !immunizationToEditMeta?.immunizationObsUuid &&
+              ampathPersistence.enabled &&
+              errorDetails.type === 'fhir-setup';
+
+            if (!canFallbackToAmpath) {
+              throw err;
+            }
+
+            await saveViaAmpathForm();
+          }
         }
         closeWorkspace({ discardUnsavedChanges: true });
         mutate();

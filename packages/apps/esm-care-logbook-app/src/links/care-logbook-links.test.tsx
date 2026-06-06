@@ -16,6 +16,10 @@ vi.mock('@openmrs/esm-framework', async () => {
   };
 });
 
+vi.mock('@sihsalus/esm-rbac', () => ({
+  RequirePrivilege: ({ children }: { children: React.ReactNode }) => <>{children}</>,
+}));
+
 const mockNavigate = vi.mocked(navigate);
 
 describe('care logbook navigation links', () => {

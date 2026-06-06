@@ -2,7 +2,7 @@ const trimTrailingSlash = (path: string) => path.replace(/\/+$/, '');
 
 const getSpaBase = () => trimTrailingSlash(globalThis.getOpenmrsSpaBase?.() ?? globalThis.spaBase ?? '/openmrs/spa');
 
-export const getPatientSearchFallbackUrl = () => `${getSpaBase()}/home/home`;
+export const getPatientSearchFallbackUrl = () => `${getSpaBase()}/home`;
 
 export const getPatientSearchReturnUrl = () => {
   const storedReturnUrl = globalThis.sessionStorage.getItem('searchReturnUrl');
@@ -12,6 +12,7 @@ export const getPatientSearchReturnUrl = () => {
     storedReturnUrl &&
     storedReturnUrl !== spaBase &&
     storedReturnUrl !== `${spaBase}/` &&
+    storedReturnUrl !== `${spaBase}/home/home` &&
     !storedReturnUrl.startsWith(`${spaBase}/search`)
   ) {
     return storedReturnUrl;

@@ -87,6 +87,10 @@ describe('ProceduresOverview', () => {
     // Header row + 5 data rows = 6
     expect(screen.getAllByRole('row').length).toEqual(6);
     expect(screen.getByText(/5 \/ 6 items/i)).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: /see all/i })).toHaveAttribute(
+      'href',
+      expect.stringContaining('/chart/procedures'),
+    );
 
     const nextPageButton = screen.getByRole('button', { name: /next page/i });
     await user.click(nextPageButton);

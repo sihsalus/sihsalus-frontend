@@ -22,11 +22,14 @@ Terminología de dominio: visita = consulta, encounter = atención, appointment 
 
 ## TODO content/backend
 
-- Completar en content los conceptos del Test Peruano de Desarrollo Infantil. En `config-schema.ts`, `testPeruano` todavía tiene UUIDs vacíos para puntajes, clasificación, observaciones, contexto cultural e idioma.
 - Validar los UUIDs de CRED Controls. `consultationTime`, `controlNumber` y `attendedAge` comparten el mismo UUID por copy-paste y deben apuntar a conceptos distintos.
 - Definir el concept set real para `CRED.perinatalConceptSetUuid`; actualmente queda vacío y marcado pendiente de OCL.
-- Confirmar que el guardado de reacción adversa ESAVI tenga en content el encounter type, form y conceptos configurados en `adverseReactionReporting`.
-- Probar edición vs creación en los widgets que abren form engine con `encounterUuid: ''`; varios resúmenes todavía crean nuevos registros en vez de editar el encounter existente.
+- Validar en content/QLTY los UUIDs sintéticos usados por Test Peruano (`c401...`) y ESAVI (`f000...`). El frontend ya tiene defaults, pero pueden fallar si el paquete de contenido no los instala.
+- Confirmar que el guardado de reacción adversa ESAVI tenga en content el encounter type `vaccinationAdministration`, el form `adverseReactionForm` y los conceptos configurados en `adverseReactionReporting`.
+- Validar que los formularios placeholder de `formsList` existan en backend antes de exponerlos en el selector CRED: EDI/TEA/salud mental (`c109...` a `c111...`) y formularios normativos (`c212...` a `c225...`). Para Nutrición Infantil, usar el UUID real del Form cargado en OpenMRS, no el `uuid` interno del JSON Ampath (`c106...` a `c108...`).
+- Configurar `credScheduling.appointmentServiceUuid` con el servicio real de citas CRED; si queda vacío, la generación de citas debe permanecer oculta o mostrar error claro.
+- Corregir edición vs creación en widgets que abren form engine con `encounterUuid: ''`; varios resúmenes todavía crean registros nuevos en vez de editar el encounter existente.
+- Revisar `useCreateCarePlanAppointments`: hoy queda como helper TODO para planes de cuidado (madre gestante, CRED y vacunación), pero no está integrado como contrato estable.
 
 ## TODO QA/QLTY
 
@@ -39,8 +42,14 @@ Terminología de dominio: visita = consulta, encounter = atención, appointment 
 
 ## TODO i18n/UI
 
-- Agregar smoke tests que detecten claves crudas visibles en dashboards, por ejemplo `NeonatalCare`, `newbornVitals`, `wellChildCare` o `childNutrition`.
+- Ampliar smoke tests de i18n más allá de dashboards: workspaces, botones de acción, estados vacíos y formularios sloteados.
 - Agregar smoke test para textos duplicados de estados vacíos, por ejemplo `No hay no hay`.
 - Revisar componentes CRED que usan `useTranslation()` sin namespace explícito cuando se renderizan dentro de slots compartidos.
 - Acortar labels largos en tabs para evitar truncamiento visual; por ejemplo, evaluar `Consejería en lactancia materna` como `Lactancia`.
 - Revisar `en.json` porque aún conserva textos heredados en español y puede confundir validaciones bilingües.
+
+## TODO ya cubiertos en código
+
+- Calendario CRED alineado a NTS 238: `cred-schedule-rules.ts` define 27 controles y `cred-schedule-rules.test.ts` lo verifica.
+- Selector CRED: `useCREDFormsForAgeGroup` ya convierte keys de `formsList` en objetos `Form` válidos para el selector.
+- Traducciones base de dashboards: `dashboard-translations.test.ts` cubre keys principales como `neonatalCare`, `newbornVitals`, `wellChildCare` y `childNutrition`.

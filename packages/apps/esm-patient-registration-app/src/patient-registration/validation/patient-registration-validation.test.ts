@@ -80,10 +80,10 @@ describe('Patient registration validation', () => {
     attributes: {},
   };
 
-  const validateFormValues = async (formValues) => {
+  const validateFormValues = async (formValues, identifierTypes = []) => {
     const config = (await getConfig('@openmrs/esm-patient-registration-app')) as unknown as RegistrationConfig;
 
-    const validationSchema = getValidationSchema(config);
+    const validationSchema = getValidationSchema(config, identifierTypes);
     try {
       await validationSchema.validate(formValues, { abortEarly: false });
     } catch (err) {
@@ -112,6 +112,67 @@ describe('Patient registration validation', () => {
     };
     const validationError = await validateFormValues(invalidFormValues);
     expect(validationError.errors).toContain('familyNameRequired');
+  });
+
+  it('should reject names shorter than 2 characters', async () => {
+    const invalidFormValues = {
+      ...validFormValues,
+      givenName: 'J',
+    };
+    const validationError = await validateFormValues(invalidFormValues);
+    expect(validationError.errors).toContain('nameTooShort');
+  });
+
+  it('should reject names containing digits', async () => {
+    const invalidFormValues = {
+      ...validFormValues,
+      familyName: 'D03',
+    };
+    const validationError = await validateFormValues(invalidFormValues);
+    expect(validationError.errors).toContain('nameContainsInvalidCharacters');
+  });
+
+  it('should reject names containing forbidden symbols', async () => {
+    const invalidFormValues = {
+      ...validFormValues,
+      givenName: 'John@',
+    };
+    const validationError = await validateFormValues(invalidFormValues);
+    expect(validationError.errors).toContain('nameContainsInvalidCharacters');
+  });
+
+  it('should allow names with accents, hyphens and apostrophes', async () => {
+    const validNameValues = {
+      ...validFormValues,
+      givenName: 'José',
+      familyName: "O'Brien-De la Cruz",
+    };
+    const validationError = await validateFormValues(validNameValues);
+    expect(validationError).toBeFalsy();
+  });
+
+  it('should reject an identifier that does not match the backend format', async () => {
+    const identifierTypes = [{ fieldName: 'nationalId', format: '^[0-9]{8}$', name: 'DNI', uuid: 'dni-uuid' }];
+    const invalidFormValues = {
+      ...validFormValues,
+      identifiers: {
+        nationalId: { required: true, identifierValue: '123456789', identifierTypeUuid: 'dni-uuid' },
+      },
+    };
+    const validationError = await validateFormValues(invalidFormValues, identifierTypes);
+    expect(validationError.errors).toContain('identifierInvalidFormat');
+  });
+
+  it('should allow an identifier that matches the backend format', async () => {
+    const identifierTypes = [{ fieldName: 'nationalId', format: '^[0-9]{8}$', name: 'DNI', uuid: 'dni-uuid' }];
+    const validIdentifierValues = {
+      ...validFormValues,
+      identifiers: {
+        nationalId: { required: true, identifierValue: '12345678', identifierTypeUuid: 'dni-uuid' },
+      },
+    };
+    const validationError = await validateFormValues(validIdentifierValues, identifierTypes);
+    expect(validationError).toBeFalsy();
   });
 
   it('should require additionalGivenName when addNameInLocalLanguage is true', async () => {

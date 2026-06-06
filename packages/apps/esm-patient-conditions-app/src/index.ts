@@ -4,7 +4,7 @@ import React from 'react';
 import conditionsDetailedSummaryComponent from './conditions/conditions-detailed-summary.component';
 import conditionsOverviewComponent from './conditions/conditions-overview.component';
 import { configSchema } from './config-schema';
-import { dashboardMeta, proceduresDashboardMeta } from './dashboard.meta';
+import { dashboardMeta } from './dashboard.meta';
 
 const moduleName = '@sihsalus/esm-patient-conditions-app';
 
@@ -14,7 +14,6 @@ const options = {
 };
 
 type ConditionsOverviewLifecycleProps = React.ComponentProps<typeof conditionsOverviewComponent>;
-type ConditionsDetailedSummaryLifecycleProps = React.ComponentProps<typeof conditionsDetailedSummaryComponent>;
 
 export const importTranslation = require.context('../translations', false, /.json$/, 'lazy');
 
@@ -36,19 +35,7 @@ export const pastDiagnosesOverview = getSyncLifecycle(
   options,
 );
 
-export const proceduresOverview = getSyncLifecycle(
-  (props: ConditionsOverviewLifecycleProps) =>
-    React.createElement(conditionsOverviewComponent, { ...props, section: 'procedures' }),
-  options,
-);
-
 export const conditionsDetailedSummary = getSyncLifecycle(conditionsDetailedSummaryComponent, options);
-
-export const proceduresDetailedSummary = getSyncLifecycle(
-  (props: ConditionsDetailedSummaryLifecycleProps) =>
-    React.createElement(conditionsDetailedSummaryComponent, { ...props, section: 'procedures' }),
-  options,
-);
 
 export const conditionsWidget = getAsyncLifecycle(() => import('./conditions/conditions-widget.component'), options);
 
@@ -57,16 +44,6 @@ export const conditionsDashboardLink =
   getSyncLifecycle(
     createDashboardLink({
       ...dashboardMeta,
-      moduleName,
-    }),
-    options,
-  );
-
-export const proceduresDashboardLink =
-  // t('Procedimientos y cirugías', 'Procedimientos y cirugías')
-  getSyncLifecycle(
-    createDashboardLink({
-      ...proceduresDashboardMeta,
       moduleName,
     }),
     options,

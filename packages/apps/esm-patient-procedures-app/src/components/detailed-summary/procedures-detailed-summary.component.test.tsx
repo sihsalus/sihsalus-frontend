@@ -5,7 +5,7 @@ import {
   openmrsFetch,
   useConfig,
 } from '@openmrs/esm-framework';
-import { screen } from '@testing-library/react';
+import { screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { mockPatient, mockProceduresResponse, renderWithSwr, waitForLoadingToFinish } from 'test-utils';
 import { describe, expect, it, vi } from 'vitest';
@@ -98,6 +98,30 @@ describe('ProceduresDetailedSummary', () => {
 
     expect(screen.getByText(/45 Minutes/i)).toBeInTheDocument();
     expect(screen.getByText(/Procedure went well/i)).toBeInTheDocument();
+  });
+
+  it('renders incomplete procedure records without crashing', async () => {
+    mockOpenmrsFetch.mockResolvedValueOnce({
+      data: {
+        results: [
+          {
+            uuid: 'proc-incomplete-1',
+            procedureNonCoded: 'Custom procedure',
+            voided: false,
+          },
+        ],
+        links: [],
+        totalCount: 1,
+      },
+    } as FetchResponse);
+
+    renderWithSwr(<ProceduresDetailedSummary patient={mockFhirPatient} />);
+
+    await waitForLoadingToFinish();
+
+    const row = screen.getByRole('row', { name: /custom procedure/i });
+    expect(row).toBeInTheDocument();
+    expect(within(row).getAllByText('--').length).toBeGreaterThanOrEqual(4);
   });
 
   it('renders an "Add" button that launches the procedures form workspace', async () => {

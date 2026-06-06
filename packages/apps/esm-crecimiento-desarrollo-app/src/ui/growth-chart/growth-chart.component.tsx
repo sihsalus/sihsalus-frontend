@@ -1,4 +1,4 @@
-import { LineChart, ScaleTypes } from '@carbon/charts-react';
+import { LineChart } from '@carbon/charts-react';
 import { InlineNotification, Tab, TabListVertical, TabPanel, TabPanels, TabsVertical, Tag } from '@carbon/react';
 import { age } from '@openmrs/esm-framework';
 import classNames from 'classnames';
@@ -17,6 +17,7 @@ import {
 } from './data-sets';
 import { chartData as rawChartData } from './data-sets/WhoStandardDataSets/ChartData';
 import styles from './growth-chart.scss';
+import { buildGrowthChartOptions } from './growth-chart-options';
 import {
   type GrowthChartPoint,
   getMeasurementXValue,
@@ -212,7 +213,7 @@ const GrowthChart: React.FC<GrowthChartProps> = ({
   }, [measurementPlotData]);
 
   const data = useMemo(() => [...chartLineData, ...measurementPlotData], [chartLineData, measurementPlotData]);
-  const colorScale = useMemo(() => {
+  const colorScale = useMemo<Record<string, string>>(() => {
     const dataGroups = new Set(data.map((entry) => entry.group));
     const visibleReferenceLineColors = Object.fromEntries(
       Object.entries(REFERENCE_LINE_COLORS).filter(([group]) => dataGroups.has(group)),
@@ -234,7 +235,7 @@ const GrowthChart: React.FC<GrowthChartProps> = ({
     [dataSetValues, measurementPlotData],
   );
 
-  const yDomain = useMemo(() => {
+  const yDomain = useMemo<[number, number]>(() => {
     if (!yValues.length) {
       return [0, 1];
     }
@@ -260,53 +261,20 @@ const GrowthChart: React.FC<GrowthChartProps> = ({
   );
 
   const options = useMemo(
-    () => ({
-      title: chartTitle,
-      axes: {
-        bottom: {
-          title: translatedXAxisLabel,
-          mapsTo: 'date',
-          scaleType: ScaleTypes.LINEAR,
-        },
-        left: {
-          title: translatedYAxisLabel,
-          mapsTo: 'value',
-          scaleType: ScaleTypes.LINEAR,
-          domain: yDomain,
-        },
-      },
-      legend: { enabled: true },
-      tooltip: {
-        customHTML: (tooltipData: GrowthChartPoint[]) =>
-          buildTooltipHtml(tooltipData[0], {
+    () =>
+      buildGrowthChartOptions({
+        chartTitle,
+        colorScale,
+        translatedXAxisLabel,
+        translatedYAxisLabel,
+        yDomain,
+        tooltipHtml: (datum) =>
+          buildTooltipHtml(datum, {
             patientName,
             xAxisLabel: translatedXAxisLabel,
             yAxisLabel: translatedYAxisLabel,
           }),
-      },
-      toolbar: {
-        enabled: true,
-        numberOfIcons: 4,
-        controls: [
-          { type: 'Zoom in' },
-          { type: 'Zoom out' },
-          { type: 'Reset zoom' },
-          { type: 'Export as CSV' },
-          { type: 'Export as PNG' },
-          { type: 'Make fullscreen' },
-        ],
-      },
-      zoomBar: {
-        top: {
-          enabled: true,
-        },
-      },
-      height: '400px',
-      points: { enabled: true, radius: 2 },
-      color: {
-        scale: colorScale,
-      },
-    }),
+      }),
     [chartTitle, colorScale, patientName, translatedXAxisLabel, translatedYAxisLabel, yDomain],
   );
 

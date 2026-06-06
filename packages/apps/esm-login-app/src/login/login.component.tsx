@@ -13,7 +13,6 @@ import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next';
 import { useLocation, useNavigate } from 'react-router-dom';
 
-import loginPackageJson from '../../package.json';
 import { type ConfigSchema } from '../config-schema';
 import Logo from '../logo.component';
 
@@ -26,7 +25,44 @@ export interface LoginReferrer {
 
 type LoginErrorKey = 'invalidCredentials' | 'serverUnavailable' | 'sessionEndpointNotFound';
 type LoginView = 'login' | 'passwordRecovery';
-const frontendVersion = loginPackageJson.version;
+
+interface BuildInfo {
+  version: string;
+  gitSha: string;
+  buildTime?: string;
+}
+
+/**
+ * Reads the deployed build provenance from `<spaBase>/build-info.json`, which CI
+ * stamps at image build time (see assemble-importmap.js / Dockerfile). Best-effort:
+ * returns empty values when the file is absent (e.g. local dev) so the UI just
+ * hides the version line instead of erroring.
+ */
+function useBuildInfo(): BuildInfo {
+  const [buildInfo, setBuildInfo] = useState<BuildInfo>({ version: '', gitSha: '' });
+
+  useEffect(() => {
+    let active = true;
+    const spaBase = typeof globalThis.getOpenmrsSpaBase === 'function' ? globalThis.getOpenmrsSpaBase() : '/';
+
+    fetch(`${spaBase}build-info.json`, { headers: { Accept: 'application/json' } })
+      .then((res) => (res.ok ? res.json() : null))
+      .then((data) => {
+        if (active && data && typeof data.version === 'string') {
+          setBuildInfo({ version: data.version, gitSha: data.gitSha ?? '', buildTime: data.buildTime });
+        }
+      })
+      .catch(() => {
+        // build-info.json is optional; ignore fetch/parse errors.
+      });
+
+    return () => {
+      active = false;
+    };
+  }, []);
+
+  return buildInfo;
+}
 
 // t('invalidCredentials', 'Invalid username or password')
 // t('serverUnavailable', 'The authentication server is not responding. Please try again later.')
@@ -72,6 +108,7 @@ const Login: React.FC = () => {
   const isLoginEnabled = useConnectivity();
   const { t } = useTranslation();
   const { user } = useSession();
+  const buildInfo = useBuildInfo();
   const location = useLocation() as unknown as Omit<Location, 'state'> & {
     state: LoginReferrer;
   };
@@ -492,9 +529,12 @@ const Login: React.FC = () => {
                   <img src={pucpLogoSrc} alt={t('pucpLogo', 'Logo de la PUCP')} />
                 </a>
               </div>
-              <p className={styles.frontendVersion}>
-                {t('frontendVersion', 'Frontend v{{version}}', { version: frontendVersion })}
-              </p>
+              {buildInfo.version ? (
+                <p className={styles.frontendVersion}>
+                  {t('frontendVersion', 'Frontend v{{version}}', { version: buildInfo.version })}
+                  {buildInfo.gitSha ? ` · ${buildInfo.gitSha}` : ''}
+                </p>
+              ) : null}
             </div>
           </div>
         </main>

@@ -4,7 +4,7 @@ import { moduleName } from './constants';
 export const dashboardMeta: DashboardLinkConfig & { slot: string } = {
   moduleName,
   slot: 'patient-chart-clinical-procedures-dashboard-slot',
-  path: 'procedimientos-clinicos',
+  path: 'procedures',
   title: 'Procedimientos clínicos',
   icon: 'omrs-icon-procedure-order',
 };

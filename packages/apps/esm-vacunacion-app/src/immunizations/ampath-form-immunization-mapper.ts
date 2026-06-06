@@ -70,6 +70,21 @@ function getNumberValue(encounter: AmpathImmunizationEncounter, conceptUuid: str
 function toDateString(value?: string | null): string {
   return value ? dayjs(value).startOf('day').toDate().toISOString() : '';
 }
+//DEUDA TECNICA, ESTE ARCHIVO CREO QUE TIENE QUE VLOLAR
+function toOpenmrsDateObsValue(value: string): string {
+  const dateOnlyValue = value.match(/^(\d{4}-\d{2}-\d{2})$/)?.[1];
+  if (dateOnlyValue) {
+    return dateOnlyValue;
+  }
+
+  const utcMidnightDateValue = value.match(/^(\d{4}-\d{2}-\d{2})T00:00:00(?:\.000)?Z$/)?.[1];
+  if (utcMidnightDateValue) {
+    return utcMidnightDateValue;
+  }
+
+  const date = dayjs(value);
+  return date.isValid() ? date.format('YYYY-MM-DD') : value;
+}
 
 export function mapToAmpathImmunizationEncounterPayload(
   immunization: ImmunizationFormData,
@@ -86,7 +101,7 @@ export function mapToAmpathImmunizationEncounterPayload(
     },
     {
       concept: concepts.vaccinationDate,
-      value: immunization.vaccinationDate,
+      value: toOpenmrsDateObsValue(immunization.vaccinationDate),
     },
     {
       concept: concepts.status,
@@ -103,15 +118,24 @@ export function mapToAmpathImmunizationEncounterPayload(
   }
 
   if (immunization.manufacturer?.trim()) {
-    obs.push({ concept: concepts.manufacturer, value: immunization.manufacturer.trim() });
+    obs.push({
+      concept: concepts.manufacturer,
+      value: immunization.manufacturer.trim(),
+    });
   }
 
   if (immunization.lotNumber?.trim()) {
-    obs.push({ concept: concepts.lotNumber, value: immunization.lotNumber.trim() });
+    obs.push({
+      concept: concepts.lotNumber,
+      value: immunization.lotNumber.trim(),
+    });
   }
 
   if (immunization.expirationDate) {
-    obs.push({ concept: concepts.expirationDate, value: immunization.expirationDate });
+    obs.push({
+      concept: concepts.expirationDate,
+      value: toOpenmrsDateObsValue(immunization.expirationDate),
+    });
   }
 
   if (immunization.note?.trim()) {
@@ -119,11 +143,17 @@ export function mapToAmpathImmunizationEncounterPayload(
   }
 
   if (immunization.nextDoseDate) {
-    obs.push({ concept: concepts.nextDoseDate, value: immunization.nextDoseDate });
+    obs.push({
+      concept: concepts.nextDoseDate,
+      value: toOpenmrsDateObsValue(immunization.nextDoseDate),
+    });
   }
 
   if (immunization.statusReason?.trim()) {
-    obs.push({ concept: concepts.statusReason, value: immunization.statusReason.trim() });
+    obs.push({
+      concept: concepts.statusReason,
+      value: immunization.statusReason.trim(),
+    });
   }
 
   return {
@@ -143,7 +173,11 @@ export function mapFromAmpathImmunizationEncounters(
 ): Array<ImmunizationGrouped> {
   const concepts = getAmpathImmunizationFormPersistence(config).concepts;
 
-  const doses: Array<{ vaccineUuid: string; vaccineName: string; dose: ExistingDoses }> = (encounters ?? [])
+  const doses: Array<{
+    vaccineUuid: string;
+    vaccineName: string;
+    dose: ExistingDoses;
+  }> = (encounters ?? [])
     .map((encounter) => {
       const vaccineObs = getObsByConcept(encounter, concepts.vaccineUuid);
       const vaccineUuid = getValueUuid(vaccineObs?.value);
@@ -178,7 +212,15 @@ export function mapFromAmpathImmunizationEncounters(
         } as ExistingDoses,
       };
     })
-    .filter((item): item is { vaccineUuid: string; vaccineName: string; dose: ExistingDoses } => Boolean(item));
+    .filter(
+      (
+        item,
+      ): item is {
+        vaccineUuid: string;
+        vaccineName: string;
+        dose: ExistingDoses;
+      } => Boolean(item),
+    );
 
   const grouped = doses.reduce<Record<string, ImmunizationGrouped>>((acc, item) => {
     if (!acc[item.vaccineUuid]) {

@@ -23,7 +23,7 @@
       "name": "clinical-procedures-overview-widget",
       "slot": "patient-chart-summary-dashboard-slot",
       "component": "proceduresOverview",
-      "order": 4,
+      "order": 6,
       "meta": { "fullWidth": false }
     },
     {
@@ -39,7 +39,7 @@
       "order": 8,
       "meta": {
         "slot": "patient-chart-clinical-procedures-dashboard-slot",
-        "path": "procedimientos-clinicos"
+        "path": "procedures"
       }
     }
   ],

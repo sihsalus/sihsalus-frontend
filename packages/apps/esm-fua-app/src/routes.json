@@ -71,15 +71,6 @@
       }
     },
     {
-      "name": "fua-patient-chart-widget",
-      "component": "fuaPatientWidget",
-      "slot": "patient-chart-summary-dashboard-slot",
-      "meta": {
-        "columnSpan": 2,
-        "title": "fua"
-      }
-    },
-    {
       "name": "all-fua-requests-panel",
       "component": "allFuaRequestsTable",
       "slot": "fua-panels-slot",

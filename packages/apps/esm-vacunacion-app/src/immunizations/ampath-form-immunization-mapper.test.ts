@@ -41,8 +41,11 @@ describe('AMPATH immunization form mapper', () => {
     expect(payload.obs).toEqual(
       expect.arrayContaining([
         { concept: config.ampathFormPersistence.concepts.vaccineUuid, value: 'vaccine-uuid' },
+        { concept: config.ampathFormPersistence.concepts.vaccinationDate, value: '2026-05-28' },
         { concept: config.ampathFormPersistence.concepts.doseNumber, value: 1 },
         { concept: config.ampathFormPersistence.concepts.lotNumber, value: 'LOT-1' },
+        { concept: config.ampathFormPersistence.concepts.expirationDate, value: '2026-12-31' },
+        { concept: config.ampathFormPersistence.concepts.nextDoseDate, value: '2026-06-28' },
       ]),
     );
   });

@@ -13,11 +13,16 @@ import dayjs from 'dayjs';
 import { mockCurrentVisit, mockPatient, mockSessionDataResponse } from 'test-utils';
 import { configSchema, type ImmunizationConfigObject } from '../config-schema';
 import { FHIR_NEXT_DOSE_DATE_EXTENSION_URL } from './immunization-mapper';
-import { savePatientImmunization, savePatientImmunizationViaAmpathForm } from './immunizations.resource';
+import {
+  getImmunizationSaveErrorDetails,
+  savePatientImmunization,
+  savePatientImmunizationViaAmpathForm,
+} from './immunizations.resource';
 import ImmunizationsForm from './immunizations-form.workspace';
 import { immunizationFormSub } from './utils';
 
 const mockCloseWorkspace = vi.fn();
+const mockGetImmunizationSaveErrorDetails = getImmunizationSaveErrorDetails as vi.Mock;
 const mockSavePatientImmunization = savePatientImmunization as vi.Mock;
 const mockSavePatientImmunizationViaAmpathForm = savePatientImmunizationViaAmpathForm as vi.Mock;
 const mockMutate = vi.fn();
@@ -101,6 +106,7 @@ describe('Immunizations Form', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     mockUseConfig.mockReturnValue(createTestImmunizationConfig({ ampathEnabled: false }));
+    mockGetImmunizationSaveErrorDetails.mockReturnValue({ type: 'unknown' });
     mockSavePatientImmunizationViaAmpathForm.mockResolvedValue({});
     mockToOmrsIsoString.mockReturnValue(mockVaccinationDate.toISOString());
     mockToDateObjectStrict.mockImplementation((dateString) => dayjs(dateString, isoFormat).toDate());
@@ -221,11 +227,42 @@ describe('Immunizations Form', () => {
     });
   });
 
-  it('should save new immunizations through AMPATH encounter persistence when enabled', async () => {
+  it('should prefer FHIR when AMPATH encounter persistence is enabled', async () => {
     const user = userEvent.setup();
     const config = createTestImmunizationConfig({ ampathEnabled: true });
 
     mockUseConfig.mockReturnValue(config);
+    mockSavePatientImmunization.mockResolvedValue({
+      status: 201,
+      ok: true,
+      data: {
+        id: 'fhir-immunization-id',
+      },
+    });
+
+    render(<ImmunizationsForm {...testProps} />);
+
+    await selectOption(screen.getByRole('combobox', { name: /Immunization/i }), 'Hepatitis B vaccination');
+
+    const doseField = screen.getByRole('spinbutton', { name: /Dose number within series/i });
+    await user.clear(doseField);
+    await user.type(doseField, '1');
+
+    await user.click(screen.getByRole('button', { name: /Save/i }));
+
+    await waitFor(() => {
+      expect(mockSavePatientImmunization).toHaveBeenCalledTimes(1);
+      expect(mockSavePatientImmunizationViaAmpathForm).not.toHaveBeenCalled();
+    });
+  });
+
+  it('should fall back to AMPATH encounter persistence when FHIR setup is not available', async () => {
+    const user = userEvent.setup();
+    const config = createTestImmunizationConfig({ ampathEnabled: true });
+
+    mockUseConfig.mockReturnValue(config);
+    mockSavePatientImmunization.mockRejectedValue({ status: 501 });
+    mockGetImmunizationSaveErrorDetails.mockReturnValueOnce({ type: 'fhir-setup' });
     mockSavePatientImmunizationViaAmpathForm.mockResolvedValue({
       status: 201,
       ok: true,
@@ -248,7 +285,7 @@ describe('Immunizations Form', () => {
 
     const { concepts } = config.ampathFormPersistence;
     await waitFor(() => {
-      expect(mockSavePatientImmunization).not.toHaveBeenCalled();
+      expect(mockSavePatientImmunization).toHaveBeenCalledTimes(1);
       expect(mockSavePatientImmunizationViaAmpathForm).toHaveBeenCalledWith(
         expect.objectContaining({
           patient: mockPatient.uuid,

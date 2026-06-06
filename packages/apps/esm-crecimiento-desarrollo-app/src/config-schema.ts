@@ -168,9 +168,9 @@ export const configSchema = {
       stimulationCounselingForm: '50550177-303e-4fca-8257-f78268a7d75a',
 
       // Nutrición Infantil Forms
-      nutritionalAssessmentForm: 'c1060000-0000-4000-8000-000000000006',
-      feedingCounselingForm: 'c1070000-0000-4000-8000-000000000007',
-      nutritionFollowupForm: 'c1080000-0000-4000-8000-000000000008',
+      nutritionalAssessmentForm: '21f010ce-4876-32ec-8844-27dfedc6705a',
+      feedingCounselingForm: '1fa86795-3d84-304a-ac9e-320a39b69ca7',
+      nutritionFollowupForm: '24e8dd94-f712-352f-96c2-0dbd8c15068d',
       ediDevelopmentForm: 'c1090000-0000-4000-8000-000000000009',
       autismScreeningForm: 'c1100000-0000-4000-8000-000000000010',
       childMentalHealthForm: 'c1110000-0000-4000-8000-000000000011',

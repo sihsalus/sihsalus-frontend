@@ -83,16 +83,6 @@ export const esmPatientChartSchema = {
     _description: 'The UUID of the visit type to be used for the automatically created offline visits.',
     _default: 'a22733fa-3501-4020-a520-da024eeff088',
   },
-  FUATemplateUuid: {
-    _type: Type.UUID,
-    _description: 'The UUID of the FUA template form in OpenMRS.',
-    _default: 'a22733fa-3501-4020-a520-da024eeff088',
-  },
-  fuaGeneratorEndpoint: {
-    _type: Type.String,
-    _default: '',
-    _description: 'URL of the FUA HTML generator endpoint. Receives ?visitUuid=<uuid> and returns the FUA as HTML.',
-  },
   restrictByVisitLocationTag: {
     _type: Type.Boolean,
     _description:
@@ -257,8 +247,6 @@ export interface ChartConfig {
   diagnosisTypeConceptMap: Record<string, 'presuntivo' | 'definitivo' | 'repetitivo'>;
   numberOfVisitsToLoad: number;
   offlineVisitTypeUuid: string;
-  FUATemplateUuid: string;
-  fuaGeneratorEndpoint: string;
   restrictByVisitLocationTag: boolean;
   showAllEncountersTab: boolean;
   showExtraVisitAttributesSlot: boolean;

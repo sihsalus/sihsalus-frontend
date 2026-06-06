@@ -4,9 +4,37 @@ import * as Yup from 'yup';
 
 import { type RegistrationConfig } from '../../config-schema';
 import { getDatetime } from '../patient-registration.resource';
-import { type FormValues, type RelationshipValue } from '../patient-registration.types';
+import {
+  type FetchedPatientIdentifierType,
+  type FormValues,
+  type RelationshipValue,
+} from '../patient-registration.types';
 
 const t = (key: string, _value: string) => key;
+
+/**
+ * Allowed characters for a person name: must start with a Unicode letter and may
+ * contain additional letters, combining marks (accents), spaces, hyphens, apostrophes
+ * and periods. This blocks digits and symbols such as `@`, `#`, `/`, etc. while still
+ * supporting names like "O'Brien", "De la Cruz" or "Jean-Pierre".
+ */
+const nameRegex = /^\p{L}[\p{L}\p{M}'.\- ]*$/u;
+const nameInvalidCharactersMessage = t(
+  'nameContainsInvalidCharacters',
+  'Name can only contain letters, spaces, hyphens and apostrophes',
+);
+const nameTooShortMessage = t('nameTooShort', 'Name must be at least 2 characters long');
+
+function buildIdentifierFormatRegex(format?: string): RegExp | undefined {
+  if (!format) {
+    return undefined;
+  }
+  try {
+    return new RegExp(format);
+  } catch {
+    return undefined;
+  }
+}
 
 export function isMinorPatient(values: Pick<FormValues, 'birthdate' | 'birthdateEstimated' | 'yearsEstimated'>) {
   if (values.birthdateEstimated) {
@@ -58,25 +86,39 @@ function hasResponsibleParty(
   );
 }
 
-export function getValidationSchema(config: RegistrationConfig) {
+export function getValidationSchema(
+  config: RegistrationConfig,
+  identifierTypes: Array<FetchedPatientIdentifierType> = [],
+) {
   return Yup.object({
-    givenName: Yup.string().required(t('givenNameRequired', 'Given name is required')),
-    familyName: Yup.string().required(t('familyNameRequired', 'Family name is required')),
-    familyName2: config.fieldConfigurations.name.requireFamilyName2
-      ? Yup.string().required(t('familyName2Required', 'Second family name is required'))
-      : Yup.string().notRequired(),
-    additionalGivenName: Yup.string().when('addNameInLocalLanguage', {
-      is: true,
-      // biome-ignore lint/suspicious/noThenProperty: Yup's conditional schema API requires the `then` property.
-      then: Yup.string().required(t('givenNameRequired', 'Given name is required')),
-      otherwise: Yup.string().notRequired(),
-    }),
-    additionalFamilyName: Yup.string().when('addNameInLocalLanguage', {
-      is: true,
-      // biome-ignore lint/suspicious/noThenProperty: Yup's conditional schema API requires the `then` property.
-      then: Yup.string().required(t('familyNameRequired', 'Family name is required')),
-      otherwise: Yup.string().notRequired(),
-    }),
+    givenName: Yup.string()
+      .required(t('givenNameRequired', 'Given name is required'))
+      .min(2, nameTooShortMessage)
+      .matches(nameRegex, { message: nameInvalidCharactersMessage, excludeEmptyString: true }),
+    familyName: Yup.string()
+      .required(t('familyNameRequired', 'Family name is required'))
+      .min(2, nameTooShortMessage)
+      .matches(nameRegex, { message: nameInvalidCharactersMessage, excludeEmptyString: true }),
+    familyName2: (config.fieldConfigurations.name.requireFamilyName2
+      ? Yup.string().required(t('familyName2Required', 'Second family name is required')).min(2, nameTooShortMessage)
+      : Yup.string().notRequired()
+    ).matches(nameRegex, { message: nameInvalidCharactersMessage, excludeEmptyString: true }),
+    additionalGivenName: Yup.string()
+      .matches(nameRegex, { message: nameInvalidCharactersMessage, excludeEmptyString: true })
+      .when('addNameInLocalLanguage', {
+        is: true,
+        // biome-ignore lint/suspicious/noThenProperty: Yup's conditional schema API requires the `then` property.
+        then: Yup.string().required(t('givenNameRequired', 'Given name is required')).min(2, nameTooShortMessage),
+        otherwise: Yup.string().notRequired(),
+      }),
+    additionalFamilyName: Yup.string()
+      .matches(nameRegex, { message: nameInvalidCharactersMessage, excludeEmptyString: true })
+      .when('addNameInLocalLanguage', {
+        is: true,
+        // biome-ignore lint/suspicious/noThenProperty: Yup's conditional schema API requires the `then` property.
+        then: Yup.string().required(t('familyNameRequired', 'Family name is required')).min(2, nameTooShortMessage),
+        otherwise: Yup.string().notRequired(),
+      }),
     gender: Yup.string()
       .oneOf(
         config.fieldConfigurations.gender.map((g) => g.value),
@@ -166,17 +208,35 @@ export function getValidationSchema(config: RegistrationConfig) {
     email: Yup.string().optional().email(t('invalidEmail', 'Invalid email')),
     identifiers: Yup.lazy((obj: FormValues['identifiers']) =>
       Yup.object(
-        mapValues(obj, () =>
-          Yup.object({
+        mapValues(obj, (identifier, fieldName) => {
+          const identifierType = identifierTypes.find(
+            (type) => type.fieldName === fieldName || type.uuid === identifier?.identifierTypeUuid,
+          );
+          const formatRegex = buildIdentifierFormatRegex(identifierType?.format);
+
+          return Yup.object({
             required: Yup.bool(),
-            identifierValue: Yup.string().when('required', {
-              is: true,
-              // biome-ignore lint/suspicious/noThenProperty: Yup's conditional schema API requires the `then` property.
-              then: Yup.string().required(t('identifierValueRequired', 'Identifier value is required')),
-              otherwise: Yup.string().notRequired(),
-            }),
-          }),
-        ),
+            identifierValue: Yup.string()
+              .when('required', {
+                is: true,
+                // biome-ignore lint/suspicious/noThenProperty: Yup's conditional schema API requires the `then` property.
+                then: Yup.string().required(t('identifierValueRequired', 'Identifier value is required')),
+                otherwise: Yup.string().notRequired(),
+              })
+              .test(
+                'identifier-format',
+                t('identifierInvalidFormat', 'Identifier does not match the expected format'),
+                function (value) {
+                  // Skip when there is no backend format, the field is empty, or the value
+                  // is auto-generated by the server (validated server-side).
+                  if (!formatRegex || !value || value === 'auto-generated') {
+                    return true;
+                  }
+                  return formatRegex.test(value);
+                },
+              ),
+          });
+        }),
       ),
     ),
     relationships: Yup.array()

@@ -9,6 +9,7 @@ vi.mock('@openmrs/esm-framework', async () => ({
 
 vi.mock('@sihsalus/esm-rbac', () => ({
   AppErrorBoundary: ({ children }: { children: React.ReactNode }) => <>{children}</>,
+  RequirePrivilege: ({ children }: { children: React.ReactNode }) => <>{children}</>,
 }));
 
 vi.mock('./pages/admission-home.component', () => ({

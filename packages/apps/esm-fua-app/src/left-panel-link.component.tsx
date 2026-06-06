@@ -1,5 +1,6 @@
 import { Document } from '@carbon/react/icons';
-import { ConfigurableLink, UserHasAccess } from '@openmrs/esm-framework';
+import { ConfigurableLink } from '@openmrs/esm-framework';
+import { RequirePrivilege } from '@sihsalus/esm-rbac';
 import last from 'lodash-es/last';
 import { useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -28,7 +29,7 @@ export function LinkExtension({ config }: { config: LinkConfig }): JSX.Element {
   }
 
   return (
-    <UserHasAccess privilege="Fua Privilege">
+    <RequirePrivilege privilege="Fua Privilege" hideUnauthorized>
       <ConfigurableLink
         to={spaBasePath + '/' + name}
         className={`cds--side-nav__link ${name === urlSegment && 'active-left-nav-link'}`}
@@ -38,7 +39,7 @@ export function LinkExtension({ config }: { config: LinkConfig }): JSX.Element {
           <span className="sihsalus-side-nav__text">{t(title, title)}</span>
         </span>
       </ConfigurableLink>
-    </UserHasAccess>
+    </RequirePrivilege>
   );
 }
 

@@ -16,6 +16,9 @@
       }
     }
   },
+  "@sihsalus/esm-indicadores-app": {
+    "indicatorsApiPath": "http://127.0.0.1:8000"
+  },
   "@sihsalus/esm-patient-vitals-app": {
     "concepts": {
       "bodyMassIndexUuid": "5b877648-ae50-4d45-ad36-0196042baa1a"

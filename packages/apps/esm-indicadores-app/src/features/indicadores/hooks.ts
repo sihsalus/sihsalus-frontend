@@ -11,6 +11,7 @@ import {
   previewSql,
   resolveDiagnosticos,
   resolveLocations,
+  resolveOrdenes,
   searchDiagnosticos,
   searchLocations,
   searchOrdenes,
@@ -179,6 +180,16 @@ export function useResolvedDiagnosticos(uuids: Array<string>) {
   );
   const resolveMap = useMemo(() => new Map((data ?? []).map((item) => [item.uuid, item])), [data]);
   return { data: data ?? [], resolveMap, error, isLoading };
+}
+
+export function useResolvedOrdenes(uuids: Array<string>) {
+  const deduped = useMemo(() => Array.from(new Set(uuids.filter(Boolean))), [uuids]);
+  const { data, error, isLoading } = useSWR<Record<string, string>, Error>(
+    deduped.length ? ['resolved-ordenes', ...deduped] : null,
+    () => resolveOrdenes(deduped),
+  );
+  const displayMap = useMemo(() => new Map(Object.entries(data ?? {})), [data]);
+  return { data, displayMap, error, isLoading };
 }
 
 export function notifySuccess(message: string) {

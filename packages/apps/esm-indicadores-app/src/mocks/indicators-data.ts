@@ -234,6 +234,9 @@ export function updateIndicadorMock(id: string, payload: IndicadorUpdatePayload)
   const indicador = getIndicadorById(id);
   indicador.nombre = payload.nombre;
   indicador.descripcion = payload.descripcion;
+  if (payload.activo !== undefined) {
+    indicador.activo = payload.activo;
+  }
   return {
     id: indicador.id,
     nombre: indicador.nombre,
@@ -361,4 +364,18 @@ export function resolveLocationsMock(uuids: Array<string>) {
 
 export function resolveDiagnosticosMock(uuids: Array<string>) {
   return mockDiagnosticos.filter((item) => uuids.includes(item.uuid));
+}
+
+export function resolveOrdenesMock(uuids: Array<string>): Record<string, string> {
+  if (!uuids.length) {
+    return {};
+  }
+
+  const result: Record<string, string> = {};
+  for (const item of mockOrdenes) {
+    if (uuids.includes(item.uuid)) {
+      result[item.uuid] = item.display;
+    }
+  }
+  return result;
 }

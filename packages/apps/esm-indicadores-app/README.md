@@ -20,5 +20,17 @@ Terminología de dominio: visita = consulta, encounter = atención, appointment 
 
 ## TODO backend/integración
 
-- El módulo valida `indicatorsApiPath` (`/ws/module/indicators/api` por defecto). Si responde 404 u otro error, entra en **modo demo** y usa la vista mock del front.
-- Mantener el botón del módulo en el menú (`app-menu-item-slot`) para acceso sin depender de ese OMOD.
+- El módulo valida `reportesSqlApiPath` (`/services/reportes-sql` por defecto). Si la respuesta falla, entra en **modo demo** y usa la vista mock del front.
+- Mantener el botón del módulo en el menú (`app-menu-item-slot`) para acceso sin depender del backend.
+
+## Backend local FastAPI
+
+- El frontend espera el backend reportes-sql con estas rutas base:
+  - `/health`
+  - `/indicadores`
+  - `/resultados`
+  - `/conceptos`
+
+- Para detalles de configuración local con este backend, ver el `README.md` de `reportes-sql`.
+- Para producción o contenedores, la recomendación es que `reportesSqlApiPath` apunte al gateway y no al servicio interno directo.
+- `indicatorsApiPath` está deprecado y ya no es consumido por la app.

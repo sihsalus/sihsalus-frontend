@@ -73,6 +73,7 @@ export interface IndicadorCreatePayload {
 export interface IndicadorUpdatePayload {
   nombre: string;
   descripcion: string | null;
+  activo?: boolean;
 }
 
 export interface EncounterTypeOption {

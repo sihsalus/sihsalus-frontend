@@ -4,7 +4,10 @@ function toStringValue(value?: number) {
   return value === undefined ? '' : String(value);
 }
 
-export function parseDefinicion(definicion?: DefinicionIndicadorForm): Partial<IndicadorFormValues> {
+export function parseDefinicion(
+  definicion?: DefinicionIndicadorForm,
+  ordenesMap?: Record<string, string>,
+): Partial<IndicadorFormValues> {
   if (!definicion) {
     return {};
   }
@@ -24,7 +27,7 @@ export function parseDefinicion(definicion?: DefinicionIndicadorForm): Partial<I
         : 'ninguno',
     selectedDiagnosticos: (diagnosticos?.concepto_uuids ?? []).map((uuid) => ({ uuid, nombre: uuid })),
     diagnosticoTipo: diagnosticos?.tipo_diagnostico ?? '',
-    selectedOrdenes: (ordenes?.concepto_uuids ?? []).map((uuid) => ({ uuid, display: uuid })),
+    selectedOrdenes: (ordenes?.concepto_uuids ?? []).map((uuid) => ({ uuid, display: ordenesMap?.[uuid] ?? uuid })),
     sexo: definicion.poblacion?.sexo ?? '',
     minAnios: toStringValue(definicion.poblacion?.min_anios),
     minMeses: toStringValue(definicion.poblacion?.min_meses),

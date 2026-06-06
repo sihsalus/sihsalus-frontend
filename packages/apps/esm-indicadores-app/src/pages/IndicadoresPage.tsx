@@ -7,14 +7,14 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-  Tag,
   Tile,
+  Toggle,
 } from '@carbon/react';
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 
 import PaginationBar from '../components/PaginationBar';
-import { notifyError, notifySuccess, useDeleteIndicador, useIndicadores } from '../features/indicadores/hooks';
+import { notifyError, notifySuccess, useDeleteIndicador, useIndicadores, useUpdateIndicador } from '../features/indicadores/hooks';
 import styles from '../indicators-dashboard.module.scss';
 
 const IndicadoresPage: React.FC = () => {
@@ -23,6 +23,7 @@ const IndicadoresPage: React.FC = () => {
   const pageSize = 10;
   const { data, isLoading, error } = useIndicadores(page, pageSize);
   const { deleteIndicador } = useDeleteIndicador();
+  const { updateIndicador } = useUpdateIndicador();
 
   const handleDelete = async (id: string) => {
     try {
@@ -30,6 +31,14 @@ const IndicadoresPage: React.FC = () => {
       notifySuccess('Indicador eliminado');
     } catch (deleteError) {
       notifyError(deleteError instanceof Error ? deleteError.message : 'No se pudo eliminar el indicador');
+    }
+  };
+
+  const handleToggleActivo = async (id: string, nombre: string, descripcion: string | null, activo: boolean) => {
+    try {
+      await updateIndicador(id, { nombre, descripcion, activo: !activo });
+    } catch (toggleError) {
+      notifyError(toggleError instanceof Error ? toggleError.message : 'No se pudo actualizar el estado');
     }
   };
 
@@ -72,7 +81,15 @@ const IndicadoresPage: React.FC = () => {
                       </TableCell>
                       <TableCell>{indicador.descripcion ?? 'Sin descripción'}</TableCell>
                       <TableCell>
-                        <Tag type={indicador.activo ? 'green' : 'gray'}>{indicador.activo ? 'Activo' : 'Inactivo'}</Tag>
+                        <Toggle
+                          id={`toggle-${indicador.id}`}
+                          labelText={indicador.activo ? 'Activo' : 'Inactivo'}
+                          hideLabel
+                          toggled={indicador.activo}
+                          onToggle={() =>
+                            handleToggleActivo(indicador.id, indicador.nombre, indicador.descripcion, indicador.activo)
+                          }
+                        />
                       </TableCell>
                       <TableCell>{new Date(indicador.creado_en).toLocaleString('es-PE')}</TableCell>
                       <TableCell>

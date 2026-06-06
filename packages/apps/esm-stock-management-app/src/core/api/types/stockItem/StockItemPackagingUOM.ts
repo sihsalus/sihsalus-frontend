@@ -15,6 +15,7 @@ export interface StockItemPackagingUOMDTO {
   packagingUomName?: string;
   packagingUomUuid?: string;
   factor?: number | null;
+  quantityFactor?: number | string | null;
   isDefaultStockOperationsUoM?: boolean;
   isDispensingUnit?: boolean;
 }

@@ -42,7 +42,7 @@
     "@sihsalus/esm-rbac": "workspace:*",
     "konva": "^9.3.18",
     "react-konva": "^19.0.5",
-    "zustand": "^4.5.5"
+    "zustand": "^5.0.14"
   },
   "devDependencies": {
     "openmrs": "workspace:*",

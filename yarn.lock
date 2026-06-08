@@ -8487,7 +8487,7 @@ __metadata:
     "@carbon/styles": "npm:^1.102.0"
     "@openmrs/esm-patient-common-lib": "workspace:*"
     "@sihsalus/esm-rbac": "workspace:*"
-    konva: "npm:^9.3.18"
+    konva: "npm:^10.3.0"
     openmrs: "workspace:*"
     react-konva: "npm:^19.0.5"
     typescript: "npm:6.0.3"
@@ -18332,10 +18332,10 @@ __metadata:
   languageName: node
   linkType: hard
 
-"konva@npm:^9.3.18":
-  version: 9.3.22
-  resolution: "konva@npm:9.3.22"
-  checksum: 10c0/d9bdaaffec95381e5f4225485a102b14971a3a8f6fd691a78ac55bf88104654cca876714265999eceb3bbb4fc50d1f34b0385e5876d6b918739456c2d7de37fa
+"konva@npm:^10.3.0":
+  version: 10.3.0
+  resolution: "konva@npm:10.3.0"
+  checksum: 10c0/f97bf5b370633b97e8860209f3248f0641cd88116036c0ec8c1c1227c9e988e500ef07482fc6677300e066312841fe1851119eafcfcdf93c0e747b958582bef0
   languageName: node
   linkType: hard
 

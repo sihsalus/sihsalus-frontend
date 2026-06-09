@@ -12,6 +12,7 @@
   grid-auto-rows: auto;
   grid-gap: 1.3125rem;
   margin: 1.3125rem;
+  min-width: 0;
 }
 
 // See https://zpl.io/lrlmdq0 for the Visits dashboard design
@@ -26,6 +27,11 @@
   container-type: inline-size;
 }
 
+.dashboardContainer {
+  min-width: 0;
+  max-width: 100%;
+}
+
 // When the dashboard's width is less than or equal to 68.25rem (1100px),
 // the layout should switch to a single column. This adjustment ensures
 // proper rendering when the workspace area is opened.
@@ -37,12 +43,46 @@
 
 .extensionWrapper {
   height: 100%;
+  min-width: 0;
 
   > * {
     height: 100%;
     display: flex;
     flex-direction: column;
+    min-width: 0;
   }
+}
+
+.extension {
+  min-width: 0;
+}
+
+.dashboard :global(.cds--tile),
+.dashboard :global(.cds--data-table-container),
+.dashboard :global(.cds--data-table-content),
+.dashboard :global(.cds--structured-list),
+.dashboard :global(.cds--pagination) {
+  max-width: 100%;
+  min-width: 0;
+}
+
+.dashboard :global(.cds--data-table-container),
+.dashboard :global(.cds--data-table-content) {
+  overflow-x: auto;
+}
+
+.dashboard :global(.cds--data-table) {
+  min-width: max-content;
+}
+
+.dashboard :global(.cds--data-table-header),
+.dashboard :global(.cds--table-toolbar) {
+  min-width: 0;
+}
+
+.dashboard :global(.cds--data-table-header__title),
+.dashboard :global(.cds--data-table-header__description) {
+  overflow-wrap: anywhere;
 }
 
 .extension:only-child {
@@ -67,6 +107,7 @@
   display: flex;
   flex-direction: column;
   flex-wrap: wrap;
+  margin: layout.$spacing-03;
 }
 
 :global(.omrs-breakpoint-lt-tablet) .dashboard > div {

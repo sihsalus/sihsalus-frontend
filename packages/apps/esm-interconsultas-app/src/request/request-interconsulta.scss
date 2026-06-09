@@ -1,0 +1,28 @@
+@use "@carbon/layout";
+
+.form {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  justify-content: space-between;
+}
+
+.formContent {
+  padding: layout.$spacing-05;
+}
+
+.buttonSet {
+  margin-top: auto;
+  display: flex;
+  justify-content: flex-end;
+}
+
+.tabletButtonSet {
+  padding: 0;
+  margin: 0;
+}
+
+.button {
+  max-width: 50%;
+  width: 50%;
+}

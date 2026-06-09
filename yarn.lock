@@ -8416,6 +8416,32 @@ __metadata:
   languageName: unknown
   linkType: soft
 
+"@sihsalus/esm-interconsultas-app@workspace:packages/apps/esm-interconsultas-app":
+  version: 0.0.0-use.local
+  resolution: "@sihsalus/esm-interconsultas-app@workspace:packages/apps/esm-interconsultas-app"
+  dependencies:
+    "@rspack/cli": "npm:1.7.11"
+    "@rspack/core": "npm:1.7.11"
+    "@sihsalus/esm-rbac": "workspace:*"
+    openmrs: "workspace:*"
+    typescript: "npm:6.0.3"
+    vitest: "npm:^4.1.7"
+  peerDependencies:
+    "@carbon/colors": 11.x
+    "@carbon/layout": 11.x
+    "@carbon/react": 1.x
+    "@carbon/styles": 1.x
+    "@openmrs/esm-framework": "*"
+    "@openmrs/esm-patient-common-lib": "*"
+    dayjs: 1.x
+    react: 18.x
+    react-i18next: 16.x
+    react-router-dom: 6.x
+    single-spa: 6.x
+    swr: 2.x
+  languageName: unknown
+  linkType: soft
+
 "@sihsalus/esm-laboratory-app@workspace:packages/apps/esm-laboratory-app":
   version: 0.0.0-use.local
   resolution: "@sihsalus/esm-laboratory-app@workspace:packages/apps/esm-laboratory-app"

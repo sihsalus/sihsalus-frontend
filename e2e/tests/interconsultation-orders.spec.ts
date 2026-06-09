@@ -1,4 +1,4 @@
-import { type APIRequestContext, type APIResponse, expect, type Playwright, test } from '@playwright/test';
+import { type APIRequestContext, type APIResponse, expect, type PlaywrightWorkerArgs, test } from '@playwright/test';
 import { getE2ECredentials } from '../utils/e2e-api';
 import { getOpenmrsRestBaseUrl, shouldIgnoreHTTPSErrors } from '../utils/e2e-urls';
 
@@ -56,7 +56,7 @@ async function expectOk<T = unknown>(response: APIResponse, message: string): Pr
   return body as T;
 }
 
-async function createApiContext(playwright: Playwright) {
+async function createApiContext(playwright: PlaywrightWorkerArgs['playwright']) {
   const { username, password } = getE2ECredentials();
   return playwright.request.newContext({
     baseURL: getOpenmrsRestBaseUrl(),
@@ -77,7 +77,7 @@ async function getDefaultLocation(api: APIRequestContext) {
     payload.results?.find((candidate) => candidate.uuid);
 
   expect(location?.uuid, 'Expected at least one location').toBeTruthy();
-  return location;
+  return location!;
 }
 
 async function getDefaultVisitType(api: APIRequestContext) {
@@ -91,7 +91,7 @@ async function getDefaultVisitType(api: APIRequestContext) {
     payload.results?.find((candidate) => candidate.uuid);
 
   expect(visitType?.uuid, 'Expected at least one visit type').toBeTruthy();
-  return visitType;
+  return visitType!;
 }
 
 async function getAdminProvider(api: APIRequestContext) {
@@ -103,7 +103,7 @@ async function getAdminProvider(api: APIRequestContext) {
   const provider = payload.results?.[0];
 
   expect(provider?.uuid, 'Expected admin provider').toBeTruthy();
-  return provider;
+  return provider!;
 }
 
 async function getInterconsultationConcept(api: APIRequestContext) {
@@ -119,7 +119,7 @@ async function getInterconsultationConcept(api: APIRequestContext) {
     payload.results?.find((candidate) => candidate.uuid);
 
   expect(concept?.uuid, 'Expected at least one interconsultation concept').toBeTruthy();
-  return concept;
+  return concept!;
 }
 
 async function createPatient(api: APIRequestContext, locationUuid: string) {

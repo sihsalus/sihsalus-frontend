@@ -27,6 +27,7 @@
   "newPasswordRequired": "Nouveau mot de passe requis",
   "oldPassword": "Ancien mot de passe",
   "oldPasswordRequired": "Ancien mot de passe requis",
+  "openmrsLogo": "Logo OpenMRS",
   "password": "Mot de passe",
   "passwordChangedSuccessfully": "Modification du mot de passe réussie",
   "passwordConfirmationRequired": "Confirmation du mot de passe nécessaire",

@@ -1,9 +1,8 @@
 import {
   ExtensionSlot,
   setCurrentVisit,
-  setLeftNav,
   showSnackbar,
-  unsetLeftNav,
+  useLeftNav,
   usePatient,
 } from '@openmrs/esm-framework';
 import {
@@ -20,7 +19,6 @@ import { useParams } from 'react-router-dom';
 import { moduleName, spaBasePath } from '../constants';
 import Loader from '../loader/loader.component';
 import ChartReview from '../patient-chart/chart-review/chart-review.component';
-import SideMenuPanel from '../side-nav/side-menu.component';
 
 import { type LayoutMode } from './chart-review/dashboard-view.component';
 import styles from './patient-chart.scss';
@@ -119,13 +117,11 @@ const PatientChart: React.FC = () => {
   }, [currentVisit, mutateVisitContext, patient, patientUuid]);
 
   const leftNavBasePath = useMemo(() => spaBasePath.replace(':patientUuid', patientUuid), [patientUuid]);
-  useEffect(() => {
-    setLeftNav({
-      name: 'patient-chart-dashboard-slot',
-      basePath: leftNavBasePath,
-    });
-    return () => unsetLeftNav('patient-chart-dashboard-slot');
-  }, [leftNavBasePath]);
+  useLeftNav({
+    name: 'patient-chart-dashboard-slot',
+    basePath: leftNavBasePath,
+    mode: 'normal',
+  });
 
   useEffect(() => {
     isMounted.current = true;
@@ -197,7 +193,6 @@ const PatientChart: React.FC = () => {
 
   return (
     <>
-      <SideMenuPanel />
       <main className={classNames('omrs-main-content', styles.chartContainer)}>
         <div
           className={classNames(

@@ -58,7 +58,6 @@ vi.mock('react-router-dom', () => ({
 
 vi.mock('../loader/loader.component', () => ({ default: () => <div>Loading</div> }));
 vi.mock('../patient-chart/chart-review/chart-review.component', () => ({ default: () => <div>Chart review</div> }));
-vi.mock('../side-nav/side-menu.component', () => ({ default: () => <div>Side menu</div> }));
 
 describe('PatientChart', () => {
   beforeEach(() => {

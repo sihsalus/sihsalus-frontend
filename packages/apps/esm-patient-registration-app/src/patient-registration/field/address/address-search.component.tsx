@@ -7,6 +7,10 @@ import { useAddressHierarchy } from './address-hierarchy.resource';
 import styles from './address-search.scss';
 import { type AddressFieldDefinition } from './address-types';
 
+interface AddressLayoutField {
+  name: string;
+}
+
 interface AddressSearchComponentProps {
   addressLayout: Array<AddressFieldDefinition>;
 }
@@ -75,6 +79,7 @@ const AddressSearchComponent: React.FC<AddressSearchComponentProps> = ({ address
 
   return (
     <div className={styles.autocomplete} ref={wrapper}>
+      <span className={styles.searchLabel}>{t('addressHeader', 'Address')} ({t('optional', 'optional')})</span>
       <Search
         onChange={handleInputChange}
         onKeyDown={(e) => {

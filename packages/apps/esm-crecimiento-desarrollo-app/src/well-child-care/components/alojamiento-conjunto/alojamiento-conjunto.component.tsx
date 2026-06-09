@@ -1,10 +1,10 @@
-import { launchWorkspace2, useConfig } from '@openmrs/esm-framework';
+import { useConfig } from '@openmrs/esm-framework';
 import { PatientSummaryTable } from '@sihsalus/esm-sihsalus-shared';
 import React from 'react';
 import { useTranslation } from 'react-i18next';
 import type { ConfigObject } from '../../../config-schema';
+import { useCREDFormLauncher } from '../../../hooks/useCREDFormLauncher';
 import { useLatestValidEncounter } from '../../../hooks/useLatestEncounter';
-import { formEntryWorkspace } from '../../../types';
 
 interface AlojamientoConjuntoProps {
   patientUuid: string;
@@ -19,6 +19,7 @@ const AlojamientoConjunto: React.FC<AlojamientoConjuntoProps> = ({ patientUuid }
     patientUuid,
     config.encounterTypes.alojamientoConjunto,
   );
+  const { launchForm } = useCREDFormLauncher('roomingIn');
 
   const obsData = React.useMemo(() => {
     if (!encounter?.obs) return {};
@@ -31,20 +32,8 @@ const AlojamientoConjunto: React.FC<AlojamientoConjuntoProps> = ({ patientUuid }
   }, [encounter]);
 
   const handleLaunchForm = React.useCallback(() => {
-    if (!config.formsList?.roomingIn) {
-      console.error('Form UUID not configured for roomingIn');
-      return;
-    }
-
-    try {
-      launchWorkspace2(formEntryWorkspace, {
-        form: { uuid: config.formsList.roomingIn },
-        encounterUuid: encounter?.uuid || '',
-      });
-    } catch (error) {
-      console.error('Error launching workspace:', error);
-    }
-  }, [config.formsList.roomingIn, encounter?.uuid]);
+    launchForm(encounter?.uuid || '');
+  }, [encounter?.uuid, launchForm]);
 
   const dataHook = React.useCallback(() => {
     return {

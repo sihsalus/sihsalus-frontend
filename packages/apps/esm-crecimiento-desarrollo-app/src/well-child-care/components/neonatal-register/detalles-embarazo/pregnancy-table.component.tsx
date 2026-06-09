@@ -1,10 +1,10 @@
-import { launchWorkspace2, useConfig } from '@openmrs/esm-framework';
+import { useConfig } from '@openmrs/esm-framework';
 import { PatientSummaryTable } from '@sihsalus/esm-sihsalus-shared'; // Ajusta la ruta
 import React from 'react';
 import { useTranslation } from 'react-i18next';
 import type { ConfigObject } from '../../../../config-schema'; // Ajusta la ruta
+import { useCREDFormLauncher } from '../../../../hooks/useCREDFormLauncher';
 import { useLatestValidEncounter } from '../../../../hooks/useLatestEncounter'; // Ajusta la ruta
-import { formEntryWorkspace } from '../../../../types';
 
 interface PregnancyBirthProps {
   patientUuid: string;
@@ -19,6 +19,7 @@ const PregnancyBirthTable: React.FC<PregnancyBirthProps> = ({ patientUuid }) => 
     patientUuid,
     config.encounterTypes.antecedentesPerinatales, // Asegúrate de tener este tipo de encounter configurado
   );
+  const { launchForm } = useCREDFormLauncher('pregnancyDetails');
 
   const obsData = React.useMemo(() => {
     if (!encounter?.obs) return {};
@@ -28,12 +29,9 @@ const PregnancyBirthTable: React.FC<PregnancyBirthProps> = ({ patientUuid }) => 
     }, {});
   }, [encounter]);
 
-  const handleLaunchForm = () => {
-    launchWorkspace2(formEntryWorkspace, {
-      form: { uuid: config.formsList.pregnancyDetails },
-      encounterUuid: encounter?.uuid || '',
-    });
-  };
+  const handleLaunchForm = React.useCallback(() => {
+    launchForm(encounter?.uuid || '');
+  }, [encounter?.uuid, launchForm]);
 
   const dataHook = () => {
     return {

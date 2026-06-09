@@ -37,6 +37,38 @@ export const childNutritionFormFallbacks = {
   },
 } as const satisfies Partial<Record<CREDFormKey, CREDFormFallback>>;
 
+export const neonatalFormFallbacks = {
+  atencionImmediataNewborn: {
+    display: '(Página 5) ATENCIÓN INMEDIATA DEL RECIÉN NACIDO',
+    identifier: '33b6449b-3fc6-3ec1-be3f-0bd29146315f',
+  },
+  newbornNeuroEval: {
+    display: '(Página 6) EVALUACIÓN CÉFALO-CAUDAL Y NEUROLÓGICO DEL RECIÉN NACIDO',
+    identifier: '87745826-b5ac-3366-b17f-5c7335c39006',
+  },
+  breastfeedingObservation: {
+    display: '(Página 8) Ficha de Observación del Amamantamiento de la Consejería en Lactancia Materna',
+    identifier: '46624035-79b7-3025-abfc-b02249f16e77',
+  },
+  roomingIn: {
+    display: '(Página 10) Alojamiento Conjunto',
+    identifier: '4767ab9c-00c8-358f-a2cd-cd7f0d4b42d3',
+  },
+  birthDetails: {
+    display: '(CRED) Detalles de Nacimiento',
+    identifier: '8db0f1dc-c191-3468-854c-6c6c41ef6198',
+  },
+  pregnancyDetails: {
+    display: '(CRED) Embarazo y Parto',
+    identifier: '307e2887-9902-3ab2-83d9-f3e48ef7bdb2',
+  },
+} as const satisfies Partial<Record<CREDFormKey, CREDFormFallback>>;
+
+const credFormFallbacks = {
+  ...childNutritionFormFallbacks,
+  ...neonatalFormFallbacks,
+} as const satisfies Partial<Record<CREDFormKey, CREDFormFallback>>;
+
 const formRepresentation =
   '(uuid,name,display,version,published,retired,resources:(uuid,name,dataType,valueReference))';
 const uuidPattern = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
@@ -78,7 +110,7 @@ export async function resolveCREDForm(identifier: string, fallbackDisplay: strin
   return normalizeForm(form, fallbackDisplay);
 }
 
-export function useCREDFormLauncher(formKey: CREDFormKey, fallback = childNutritionFormFallbacks[formKey]) {
+export function useCREDFormLauncher(formKey: CREDFormKey, fallback = credFormFallbacks[formKey]) {
   const { t } = useTranslation();
   const config = useConfig<ConfigObject>();
   const formIdentifier = getCREDFormIdentifier(config?.formsList, formKey, fallback);

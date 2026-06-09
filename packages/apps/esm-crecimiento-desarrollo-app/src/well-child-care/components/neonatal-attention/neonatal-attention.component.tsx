@@ -1,10 +1,10 @@
-import { launchWorkspace2, useConfig } from '@openmrs/esm-framework';
+import { useConfig } from '@openmrs/esm-framework';
 import { PatientSummaryTable } from '@sihsalus/esm-sihsalus-shared'; // Ajusta la ruta
 import React from 'react';
 import { useTranslation } from 'react-i18next';
 import type { ConfigObject } from '../../../config-schema';
+import { useCREDFormLauncher } from '../../../hooks/useCREDFormLauncher';
 import { useLatestValidEncounter } from '../../../hooks/useLatestEncounter'; // Ajusta la ruta
-import { formEntryWorkspace } from '../../../types';
 
 interface ImmediateNewbornAttentionProps {
   patientUuid: string;
@@ -20,6 +20,7 @@ const NeonatalAttention: React.FC<ImmediateNewbornAttentionProps> = ({ patientUu
     patientUuid,
     config.encounterTypes.atencionInmediata,
   );
+  const { launchForm } = useCREDFormLauncher('atencionImmediataNewborn');
 
   // Procesar observaciones, manejando múltiples valores para checkboxes
   const obsData = React.useMemo(() => {
@@ -41,13 +42,10 @@ const NeonatalAttention: React.FC<ImmediateNewbornAttentionProps> = ({ patientUu
     return obsMap;
   }, [encounter]);
 
-  const handleLaunchForm = () => {
-    launchWorkspace2(formEntryWorkspace, {
-      form: { uuid: config.formsList.atencionImmediataNewborn },
-      encounterUuid: encounter?.uuid || '',
-    });
+  const handleLaunchForm = React.useCallback(() => {
+    launchForm(encounter?.uuid || '');
     setTimeout(() => mutate(), 1000); // Forzar revalidación
-  };
+  }, [encounter?.uuid, launchForm, mutate]);
 
   const dataHook = () => ({
     data: encounter ? [obsData] : [],

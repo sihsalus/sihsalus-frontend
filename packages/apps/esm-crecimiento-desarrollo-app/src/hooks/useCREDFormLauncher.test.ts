@@ -1,6 +1,11 @@
 import { openmrsFetch } from '@openmrs/esm-framework';
 
-import { childNutritionFormFallbacks, getCREDFormIdentifier, resolveCREDForm } from './useCREDFormLauncher';
+import {
+  childNutritionFormFallbacks,
+  getCREDFormIdentifier,
+  neonatalFormFallbacks,
+  resolveCREDForm,
+} from './useCREDFormLauncher';
 
 vi.mock('@openmrs/esm-framework', async () => ({
   ...(await vi.importActual('@openmrs/esm-framework')),
@@ -26,6 +31,12 @@ describe('CRED form launcher resources', () => {
         childNutritionFormFallbacks.nutritionalAssessmentForm,
       ),
     ).toBe('21f010ce-4876-32ec-8844-27dfedc6705a');
+  });
+
+  it('uses the neonatal fallback when config does not provide the form key', () => {
+    expect(getCREDFormIdentifier(undefined, 'birthDetails', neonatalFormFallbacks.birthDetails)).toBe(
+      '8db0f1dc-c191-3468-854c-6c6c41ef6198',
+    );
   });
 
   it('prefers the configured form identifier over the fallback', () => {

@@ -107,12 +107,12 @@ export const configSchema = {
       atencionPrenatal: 'OBST-003-ATENCIÓN PRENATAL',
 
       // CRED Forms
-      atencionImmediataNewborn: '459005e3-2f66-4916-b48e-9838ba232aac',
-      breastfeedingObservation: '7da8f374-4827-4028-bf71-70c0bf36efdd',
-      newbornNeuroEval: '4d8f35e8-338b-4b87-8556-c6a93b8966cf',
-      roomingIn: '73dd01eb-3a15-4485-b030-e0d1feb84844',
-      birthDetails: 'c7f42b18-2709-467b-b34c-388be7ecdea5',
-      pregnancyDetails: '891f468b-a725-46c0-b7f1-d74654539f35',
+      atencionImmediataNewborn: '33b6449b-3fc6-3ec1-be3f-0bd29146315f',
+      breastfeedingObservation: '46624035-79b7-3025-abfc-b02249f16e77',
+      newbornNeuroEval: '87745826-b5ac-3366-b17f-5c7335c39006',
+      roomingIn: '4767ab9c-00c8-358f-a2cd-cd7f0d4b42d3',
+      birthDetails: '8db0f1dc-c191-3468-854c-6c6c41ef6198',
+      pregnancyDetails: '307e2887-9902-3ab2-83d9-f3e48ef7bdb2',
 
       // EEDP Forms
       eedp2Months: 'fe582b4e-2310-446c-994f-c898c00ce202',

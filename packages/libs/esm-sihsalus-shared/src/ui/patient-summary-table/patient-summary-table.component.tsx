@@ -187,11 +187,15 @@ const PatientSummaryTable = <T,>({
               <Table {...getTableProps()} aria-label={t('dataTable', 'Data table')}>
                 <TableHead>
                   <TableRow>
-                    {headers.map((header) => (
-                      <TableHeader key={header.key} {...getHeaderProps({ header })}>
-                        {header.header}
-                      </TableHeader>
-                    ))}
+                    {headers.map((header) => {
+                      const { key, ...headerProps } = getHeaderProps({ header });
+
+                      return (
+                        <TableHeader key={key ?? header.key} {...headerProps}>
+                          {header.header}
+                        </TableHeader>
+                      );
+                    })}
                   </TableRow>
                 </TableHead>
                 <TableBody>

@@ -5,8 +5,15 @@ import type { ReactNode } from 'react';
 export interface WorkspaceProps {
   availableForms?: unknown;
   backWorkspace?: string | null;
+  control?: {
+    controlNumber?: number;
+    label?: string;
+    targetDate?: Date | string;
+  };
   controlNumber?: number;
+  controlTargetDate?: string;
   patientAge?: string;
+  patientBirthDate?: string;
   patientUuid?: string;
   subtitle?: string;
   title?: string;

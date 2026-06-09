@@ -1,7 +1,9 @@
-import { openmrsFetch, restBaseUrl } from '@openmrs/esm-framework';
-import { filter, includes, map, uniqBy } from 'lodash-es';
+import { openmrsFetch, restBaseUrl, useConfig, usePatient } from '@openmrs/esm-framework';
+import { uniqBy } from 'lodash-es';
 import useSWR from 'swr';
+import type { ConfigObject } from '../config-schema';
 import type { PatientProgram, Program, ProgramsFetchResponse, ProgramWorkflowState } from '../types';
+import { filterEligiblePrograms, type PatientLike, type ProgramEligibilityRule } from './program-eligibility';
 
 export const customRepresentation = `custom:(uuid,display,program,dateEnrolled,dateCompleted,location:(uuid,display),states:(startDate,endDate,voided,state:(uuid,concept:(display))))`;
 
@@ -29,7 +31,11 @@ export function useEnrollments(patientUuid: string) {
   };
 }
 
-export function useAvailablePrograms(enrollments?: Array<PatientProgram>) {
+export function useAvailablePrograms(
+  enrollments?: Array<PatientProgram>,
+  patient?: PatientLike,
+  programEligibilityRules: Array<ProgramEligibilityRule> = [],
+) {
   const { data, error, isLoading } = useSWR<{ data: { results: Array<Program> } }, Error>(
     `${restBaseUrl}/program?v=custom:(uuid,display,allWorkflows,concept:(uuid,display))`,
     openmrsFetch,
@@ -37,10 +43,7 @@ export function useAvailablePrograms(enrollments?: Array<PatientProgram>) {
 
   const availablePrograms = data?.data?.results ?? null;
 
-  const eligiblePrograms = filter(
-    availablePrograms,
-    (program) => !includes(map(enrollments, 'program.uuid'), program.uuid),
-  );
+  const eligiblePrograms = filterEligiblePrograms(availablePrograms, enrollments, patient, programEligibilityRules);
 
   return {
     data: availablePrograms,
@@ -92,6 +95,8 @@ export function deleteProgramEnrollment(programEnrollmentUuid: string) {
 }
 
 export const usePrograms = (patientUuid: string) => {
+  const config = useConfig<ConfigObject>();
+  const { patient } = usePatient(patientUuid);
   const {
     data: enrollments,
     error: enrollError,
@@ -99,7 +104,11 @@ export const usePrograms = (patientUuid: string) => {
     isValidating,
     activeEnrollments,
   } = useEnrollments(patientUuid);
-  const { data: availablePrograms, eligiblePrograms } = useAvailablePrograms(enrollments);
+  const { data: availablePrograms, eligiblePrograms } = useAvailablePrograms(
+    enrollments ?? [],
+    patient,
+    config?.programEligibilityRules ?? [],
+  );
 
   const status = { isLoading: enrolLoading, error: enrollError };
   return {

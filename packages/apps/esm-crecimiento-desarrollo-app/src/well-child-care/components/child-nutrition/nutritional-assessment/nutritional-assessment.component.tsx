@@ -8,13 +8,11 @@ import {
   Tag,
 } from '@carbon/react';
 import { Add } from '@carbon/react/icons';
-import { launchWorkspace2, useConfig } from '@openmrs/esm-framework';
 import { CardHeader, ErrorState } from '@openmrs/esm-patient-common-lib';
-import React, { useCallback } from 'react';
+import React from 'react';
 import { useTranslation } from 'react-i18next';
-import type { ConfigObject } from '../../../../config-schema';
+import { useCREDFormLauncher } from '../../../../hooks/useCREDFormLauncher';
 import { useNutritionalAssessment } from '../../../../hooks/useNutritionalAssessment';
-import { formEntryWorkspace } from '../../../../types';
 
 import styles from './nutritional-assessment.scss';
 
@@ -24,21 +22,12 @@ interface NutritionalAssessmentProps {
 
 const NutritionalAssessment: React.FC<NutritionalAssessmentProps> = ({ patientUuid }) => {
   const { t } = useTranslation();
-  const config = useConfig<ConfigObject>();
   const { weightForAge, heightForAge, weightForHeight, lastMeasurementDate, isLoading, error } =
     useNutritionalAssessment(patientUuid);
+  const { launchForm: handleAdd, isLoading: isFormLoading } = useCREDFormLauncher('nutritionalAssessmentForm');
   const headerTitle = t('cnAssessmentTitle', 'Estado nutricional');
 
   const hasData = weightForAge || heightForAge || weightForHeight;
-
-  const handleAdd = useCallback(() => {
-    const formUuid = config.formsList.nutritionalAssessmentForm;
-    if (!formUuid) return;
-    launchWorkspace2(formEntryWorkspace, {
-      form: { uuid: formUuid },
-      encounterUuid: '',
-    });
-  }, [config.formsList.nutritionalAssessmentForm]);
 
   if (isLoading) {
     return <DataTableSkeleton size="sm" rowCount={4} columnCount={2} />;
@@ -54,7 +43,14 @@ const NutritionalAssessment: React.FC<NutritionalAssessmentProps> = ({ patientUu
         <Tag type={hasData ? 'green' : 'gray'} size="sm">
           {hasData ? (weightForAge ?? t('noData', 'Sin datos')) : t('noData', 'Sin datos')}
         </Tag>
-        <Button kind="ghost" size="sm" renderIcon={Add} onClick={handleAdd} iconDescription={t('add', 'Add')}>
+        <Button
+          kind="ghost"
+          size="sm"
+          renderIcon={Add}
+          onClick={() => handleAdd()}
+          iconDescription={t('add', 'Add')}
+          disabled={isFormLoading}
+        >
           {t('add', 'Add')}
         </Button>
       </CardHeader>

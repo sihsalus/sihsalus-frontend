@@ -1,6 +1,11 @@
 import { FormLabel, NumberInput, TextArea } from '@carbon/react';
 import { Warning } from '@carbon/react/icons';
 import { ResponsiveWrapper, useLayoutType } from '@openmrs/esm-framework';
+import {
+  parsePlainDecimalInput,
+  preventScientificNotationKey,
+  preventScientificNotationPaste,
+} from '@sihsalus/esm-sihsalus-shared';
 import classNames from 'classnames';
 import React, { Fragment, useId, useState } from 'react';
 import type { Control } from 'react-hook-form';
@@ -77,9 +82,10 @@ const NewbornVitalsInput: React.FC<NewbornVitalsInputProps> = ({
   const hasAbnormalValue = !isFocused && interpretation && abnormalValues.includes(interpretation as AbnormalValue);
 
   function checkValidity(value, onChange) {
-    const parsedValue = value === '' ? undefined : Number(value);
-    setInvalid(parsedValue === undefined || Number.isNaN(parsedValue));
-    if (!invalid) {
+    const parsedValue = value === '' ? undefined : parsePlainDecimalInput(value);
+    const isInvalid = value !== '' && parsedValue === undefined;
+    setInvalid(isInvalid);
+    if (!isInvalid) {
       onChange(parsedValue);
     }
   }
@@ -149,6 +155,8 @@ const NewbornVitalsInput: React.FC<NewbornVitalsInputProps> = ({
                             onBlur={() => handleFocusChange(false)}
                             onChange={(_event, { value }) => checkValidity(String(value ?? ''), onChange)}
                             onFocus={() => handleFocusChange(true)}
+                            onKeyDown={preventScientificNotationKey}
+                            onPaste={preventScientificNotationPaste}
                             placeholder={generatePlaceholder(fieldProperty.name)}
                             readOnly={readOnly}
                             ref={ref}

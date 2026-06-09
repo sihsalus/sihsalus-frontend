@@ -397,6 +397,41 @@ describe('Address hierarchy', () => {
     });
   });
 
+  it('uses required fields from address hierarchy when the address template does not define required elements', () => {
+    mockUseConfig.mockReturnValue({
+      ...getDefaultsFromConfigSchema(esmPatientRegistrationSchema),
+      fieldConfigurations: {
+        address: {
+          useAddressHierarchy: {
+            enabled: true,
+            useQuickSearch: false,
+            searchAddressByLevel: false,
+          },
+        },
+      } as RegistrationConfig['fieldConfigurations'],
+    });
+
+    mockUseOrderedAddressHierarchyLevels.mockReturnValue({
+      orderedFields: mockedOrderedFields,
+      requiredFields: new Set(['country', 'stateProvince']),
+      isLoadingFieldOrder: false,
+      errorFetchingFieldOrder: undefined,
+    });
+
+    mockResourcesContextValue.addressTemplate = {
+      ...mockedAddressTemplate,
+      requiredElements: null,
+    };
+
+    renderAddressHierarchy(initialContextValues);
+
+    expect(screen.getByLabelText('Country')).toBeRequired();
+    expect(screen.getByLabelText('Province')).toBeRequired();
+    expect(screen.queryByLabelText('Country (optional)')).not.toBeInTheDocument();
+    expect(screen.queryByLabelText('Province (optional)')).not.toBeInTheDocument();
+    expect(screen.getByLabelText('Village (optional)')).not.toBeRequired();
+  });
+
   it('renders combobox fields when address hierarchy is enabled and searchAddressByLevel is set to true', () => {
     mockUseConfig.mockReturnValue({
       ...getDefaultsFromConfigSchema(esmPatientRegistrationSchema),

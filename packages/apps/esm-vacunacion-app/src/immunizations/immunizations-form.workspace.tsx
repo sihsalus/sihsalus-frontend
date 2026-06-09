@@ -31,6 +31,10 @@ import { type ImmunizationConfigObject } from '../config-schema';
 import { useImmunizations } from '../hooks/useImmunizations';
 import { useImmunizationsConceptSet } from '../hooks/useImmunizationsConceptSet';
 import { type ImmunizationFormData } from '../types';
+import {
+  scheduleEntriesToSequenceDefinitions,
+  useVaccinationSchedule,
+} from '../vaccine-scheduling-builder/vaccination-schedule.resource';
 import { getAmpathImmunizationFormPersistence } from './ampath-form-immunization-config';
 import { mapToAmpathImmunizationEncounterPayload } from './ampath-form-immunization-mapper';
 import { DoseInput } from './components/dose-input.component';
@@ -56,6 +60,7 @@ const ImmunizationsForm: React.FC<PatientWorkspace2DefinitionProps<Record<string
   const { t } = useTranslation();
   const { immunizationsConceptSet } = useImmunizationsConceptSet(config);
   const { data: existingImmunizations, isLoading: isLoadingImmunizations, mutate } = useImmunizations(patientUuid);
+  const { scheduleData } = useVaccinationSchedule();
 
   const [immunizationToEditMeta, setImmunizationToEditMeta] = useState<{
     immunizationObsUuid: string;
@@ -138,6 +143,10 @@ const ImmunizationsForm: React.FC<PatientWorkspace2DefinitionProps<Record<string
   const vaccineUuid = watch('vaccineUuid');
   const doseNumber = watch('doseNumber');
   const immunizationStatus = watch('status');
+  const activeScheduleSequenceDefinitions = useMemo(() => {
+    const scheduleSequences = scheduleEntriesToSequenceDefinitions(scheduleData);
+    return scheduleSequences.length ? scheduleSequences : config.sequenceDefinitions;
+  }, [config.sequenceDefinitions, scheduleData]);
 
   const duplicateDoseWarning = useMemo(() => {
     if (!vaccineUuid || doseNumber == null) return undefined;
@@ -163,10 +172,10 @@ const ImmunizationsForm: React.FC<PatientWorkspace2DefinitionProps<Record<string
   const selectedSequence = useMemo(() => {
     if (!vaccineUuid || doseNumber == null) return null;
 
-    return config.sequenceDefinitions
+    return activeScheduleSequenceDefinitions
       .find((sequence) => sequence.vaccineConceptUuid === vaccineUuid)
       ?.sequences.find((sequence) => sequence.sequenceNumber === doseNumber);
-  }, [config.sequenceDefinitions, doseNumber, vaccineUuid]);
+  }, [activeScheduleSequenceDefinitions, doseNumber, vaccineUuid]);
 
   const minsaAgeWarning = useMemo(() => {
     if (!selectedSequence || !vaccinationDate || !patient.birthDate) return null;
@@ -241,7 +250,7 @@ const ImmunizationsForm: React.FC<PatientWorkspace2DefinitionProps<Record<string
   useEffect(() => {
     if (!vaccineUuid || doseNumber == null || !vaccinationDate) return;
 
-    const sequenceDefinition = config.sequenceDefinitions.find(
+    const sequenceDefinition = activeScheduleSequenceDefinitions.find(
       (sequence) => sequence.vaccineConceptUuid === vaccineUuid,
     );
     if (!sequenceDefinition) return;
@@ -258,7 +267,7 @@ const ImmunizationsForm: React.FC<PatientWorkspace2DefinitionProps<Record<string
         },
       );
     }
-  }, [config.sequenceDefinitions, doseNumber, setValue, vaccinationDate, vaccineUuid]);
+  }, [activeScheduleSequenceDefinitions, doseNumber, setValue, vaccinationDate, vaccineUuid]);
 
   const existingDoseNumbers = useMemo(() => {
     const immunization = existingImmunizations?.find((candidate) => candidate.vaccineUuid === vaccineUuid);
@@ -446,7 +455,7 @@ const ImmunizationsForm: React.FC<PatientWorkspace2DefinitionProps<Record<string
               <ResponsiveWrapper>
                 <DoseInput
                   vaccine={vaccineUuid}
-                  sequences={config.sequenceDefinitions}
+                  sequences={activeScheduleSequenceDefinitions}
                   control={control}
                   existingDoseNumbers={existingDoseNumbers}
                   warningMessage={duplicateDoseWarning}

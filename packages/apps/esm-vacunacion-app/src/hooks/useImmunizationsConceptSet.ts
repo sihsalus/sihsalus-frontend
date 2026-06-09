@@ -4,25 +4,14 @@ import { type ImmunizationWidgetConfigObject, type OpenmrsConcept } from '../typ
 
 export function useImmunizationsConceptSet(config: ImmunizationWidgetConfigObject) {
   const conceptRepresentation =
-    'custom:(uuid,display,answers:(uuid,display),conceptMappings:(conceptReferenceTerm:(conceptSource:(name),code)))';
+    'custom:(uuid,display,answers:(uuid,display),setMembers:(uuid,display),conceptMappings:(conceptReferenceTerm:(conceptSource:(name),code)))';
 
   const { data, isLoading } = useSWR<{ data: { results: Array<OpenmrsConcept> } }, Error>(
     `${restBaseUrl}/concept?references=${config.immunizationConceptSet}&v=${conceptRepresentation}`,
     openmrsFetch,
   );
   const conceptSet = data?.data?.results?.[0];
-
-  // MINSA 2026 adds biologics such as VRS/Nirsevimab before every OpenMRS
-  // dictionary has them in the base immunization concept set. Keep them
-  // configurable here so the UI can expose them once the content package
-  // provides the local concepts.
-  const supplementalAnswers = config.supplementalVaccines?.map((vaccine) => ({
-    uuid: vaccine.uuid,
-    display: vaccine.display,
-  }));
-  const answersByUuid = new Map(
-    [...(conceptSet?.answers ?? []), ...(supplementalAnswers ?? [])].map((answer) => [answer.uuid, answer]),
-  );
+  const answers = getImmunizationConceptAnswers(conceptSet, config.supplementalVaccines);
 
   return {
     immunizationsConceptSet: {
@@ -30,8 +19,25 @@ export function useImmunizationsConceptSet(config: ImmunizationWidgetConfigObjec
         uuid: config.immunizationConceptSet,
         display: 'Configured immunizations',
       }),
-      answers: Array.from(answersByUuid.values()),
+      answers,
     },
     isLoading,
   };
+}
+
+export function getImmunizationConceptAnswers(
+  conceptSet: OpenmrsConcept | undefined,
+  supplementalVaccines: ImmunizationWidgetConfigObject['supplementalVaccines'],
+) {
+  const supplementalAnswers = supplementalVaccines?.map((vaccine) => ({
+    uuid: vaccine.uuid,
+    display: vaccine.display,
+  }));
+  const answersByUuid = new Map(
+    [...(conceptSet?.answers ?? []), ...(conceptSet?.setMembers ?? []), ...(supplementalAnswers ?? [])].map(
+      (answer) => [answer.uuid, answer],
+    ),
+  );
+
+  return Array.from(answersByUuid.values());
 }

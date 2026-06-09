@@ -38,9 +38,10 @@ const CredCheckups: React.FC<CredCheckupsProps> = ({ patientUuid }) => {
     launchWorkspace2('wellchild-control-form', {
       workspaceTitle: t('newCredEncounter', 'Nuevo Control Crecimiento y Desarrollo'),
       patientUuid,
+      control: nextDueControl,
       type: 'newControl',
     });
-  }, [patientUuid, t]);
+  }, [nextDueControl, patientUuid, t]);
 
   const handleGenerateAppointments = useCallback(async () => {
     const serviceUuid = config.credScheduling?.appointmentServiceUuid;

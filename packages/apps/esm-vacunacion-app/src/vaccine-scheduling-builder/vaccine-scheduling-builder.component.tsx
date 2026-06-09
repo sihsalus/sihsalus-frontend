@@ -1,5 +1,6 @@
 import {
   Button,
+  Dropdown,
   InlineLoading,
   InlineNotification,
   Search,
@@ -12,34 +13,15 @@ import {
   TableRow,
 } from '@carbon/react';
 import { Save } from '@carbon/react/icons';
-import { showSnackbar } from '@openmrs/esm-framework';
+import { showSnackbar, useSession } from '@openmrs/esm-framework';
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import ImmunizationPlanHeader from './immunization-plan-header.component';
 import type { ScheduleEntry } from './vaccination-schedule.resource';
-import { saveScheduleData, useVaccinationSchedule } from './vaccination-schedule.resource';
+import { AGE_PERIODS, saveScheduleData, useVaccinationSchedule } from './vaccination-schedule.resource';
 import styles from './vaccine-scheduling-builder.scss';
 
 type DoseStatus = 'required' | 'optional' | 'empty';
-
-interface AgePeriod {
-  id: string;
-  label: string;
-  ageRange: string;
-}
-
-const AGE_PERIODS: AgePeriod[] = [
-  { id: 'rn', label: 'RN', ageRange: '0 días' },
-  { id: '2m', label: '2m', ageRange: '2 meses' },
-  { id: '4m', label: '4m', ageRange: '4 meses' },
-  { id: '6m', label: '6m', ageRange: '6 meses' },
-  { id: '12m', label: '12m', ageRange: '12 meses' },
-  { id: '15m', label: '15m', ageRange: '15 meses' },
-  { id: '18m', label: '18m', ageRange: '18 meses' },
-  { id: '2a', label: '2a', ageRange: '2 años' },
-  { id: '4a', label: '4a', ageRange: '4 años' },
-  { id: '5a', label: '5a', ageRange: '5 años' },
-];
 
 const DEFAULT_ENTRIES: ScheduleEntry[] = [
   { conceptUuid: 'hvb', name: 'Hepatitis B (HvB)', schedule: { rn: 'required' } },
@@ -79,19 +61,32 @@ function dotClass(status: DoseStatus, s: typeof styles): string {
 
 const VaccineSchedulingBuilder: React.FC = () => {
   const { t } = useTranslation();
-  const { scheduleData, settingUuid, isLoading, error, mutate } = useVaccinationSchedule();
+  const session = useSession();
+  const { scheduleData, scheduleStore, versions, settingUuid, isLoading, error, mutate } = useVaccinationSchedule();
 
   const [entries, setEntries] = useState<ScheduleEntry[]>(DEFAULT_ENTRIES);
   const [searchTerm, setSearchTerm] = useState('');
   const [saving, setSaving] = useState(false);
   const [isDirty, setIsDirty] = useState(false);
+  const [selectedVersion, setSelectedVersion] = useState<number | null>(null);
+
+  const selectedScheduleVersion = useMemo(
+    () => versions.find((version) => version.version === selectedVersion) ?? scheduleData,
+    [scheduleData, selectedVersion, versions],
+  );
 
   useEffect(() => {
-    if (scheduleData?.entries?.length) {
-      setEntries(scheduleData.entries);
+    if (scheduleData?.version) {
+      setSelectedVersion(scheduleData.version);
+    }
+  }, [scheduleData?.version]);
+
+  useEffect(() => {
+    if (selectedScheduleVersion?.entries?.length) {
+      setEntries(selectedScheduleVersion.entries);
       setIsDirty(false);
     }
-  }, [scheduleData]);
+  }, [selectedScheduleVersion]);
 
   const filtered = useMemo(
     () => (searchTerm ? entries.filter((e) => e.name.toLowerCase().includes(searchTerm.toLowerCase())) : entries),
@@ -119,10 +114,9 @@ const VaccineSchedulingBuilder: React.FC = () => {
   const handleSave = useCallback(async () => {
     setSaving(true);
     try {
-      await saveScheduleData(settingUuid, {
-        version: (scheduleData?.version ?? 0) + 1,
-        updatedAt: new Date().toISOString(),
+      await saveScheduleData(settingUuid, scheduleStore, {
         entries,
+        updatedBy: session?.user?.display,
       });
       await mutate();
       setIsDirty(false);
@@ -140,7 +134,7 @@ const VaccineSchedulingBuilder: React.FC = () => {
     } finally {
       setSaving(false);
     }
-  }, [settingUuid, scheduleData, entries, mutate, t]);
+  }, [entries, mutate, scheduleStore, session?.user?.display, settingUuid, t]);
 
   const legendItems: Array<{ status: DoseStatus; label: string }> = [
     { status: 'required', label: t('required', 'Obligatoria') },
@@ -152,14 +146,26 @@ const VaccineSchedulingBuilder: React.FC = () => {
     <div className={styles.container}>
       <ImmunizationPlanHeader title={t('vaccinationScheduleBuilder', 'Gestor del calendario de vacunación')} />
 
-      {scheduleData && (
-        <div className={styles.scheduleInfo}>
-          <span className={styles.scheduleName}>
-            {t('peruNationalSchedule', 'Esquema Nacional de Vacunación — Perú')}
+      <div className={styles.scheduleInfo}>
+        <span className={styles.scheduleName}>
+          {t('peruNationalSchedule', 'Esquema Nacional de Vacunación — Perú')}
+        </span>
+        <span className={styles.scheduleVersion}>
+          {scheduleData
+            ? t('activeScheduleVersion', 'v{{version}} activa', { version: scheduleData.version })
+            : t('localDraft', 'borrador local')}
+        </span>
+        {selectedScheduleVersion && selectedScheduleVersion.version !== scheduleData?.version && (
+          <span className={styles.scheduleVersion}>
+            {t('viewingScheduleVersion', 'viendo v{{version}}', { version: selectedScheduleVersion.version })}
           </span>
-          <span className={styles.scheduleVersion}>v{scheduleData.version}</span>
-        </div>
-      )}
+        )}
+        {versions.length > 0 && (
+          <span className={styles.scheduleVersion}>
+            {t('savedVersionsCount', '{{count}} versiones guardadas', { count: versions.length })}
+          </span>
+        )}
+      </div>
 
       {error && (
         <InlineNotification
@@ -182,13 +188,36 @@ const VaccineSchedulingBuilder: React.FC = () => {
             disabled={isLoading}
           />
         </div>
+        {versions.length > 0 && (
+          <Dropdown
+            id="schedule-version"
+            items={versions.map((version) => version.version)}
+            itemToString={(version) => {
+              const scheduleVersion = versions.find((candidate) => candidate.version === version);
+              const suffix = scheduleVersion?.status === 'published' ? ` ${t('active', 'activa')}` : '';
+              return version ? `v${version}${suffix}` : '';
+            }}
+            label={t('selectVersion', 'Seleccionar versión')}
+            onChange={({ selectedItem }) => {
+              setSelectedVersion(selectedItem ?? null);
+              setIsDirty(false);
+            }}
+            selectedItem={selectedVersion}
+            titleText={t('scheduleVersion', 'Versión del esquema')}
+            size="lg"
+          />
+        )}
         <Button
           kind="primary"
           renderIcon={saving ? undefined : Save}
           onClick={handleSave}
           disabled={saving || !isDirty}
         >
-          {saving ? <InlineLoading description={t('saving', 'Guardando...')} /> : t('saveSchedule', 'Guardar esquema')}
+          {saving ? (
+            <InlineLoading description={t('saving', 'Guardando...')} />
+          ) : (
+            t('saveScheduleVersion', 'Guardar nueva versión')
+          )}
         </Button>
       </div>
 

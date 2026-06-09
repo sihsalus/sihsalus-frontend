@@ -1,10 +1,10 @@
-import { launchWorkspace2, useConfig } from '@openmrs/esm-framework';
+import { useConfig } from '@openmrs/esm-framework';
 import { PatientSummaryTable } from '@sihsalus/esm-sihsalus-shared'; // Ajusta la ruta
 import React from 'react';
 import { useTranslation } from 'react-i18next';
 import type { ConfigObject } from '../../../config-schema'; // Ajusta la ruta
+import { useCREDFormLauncher } from '../../../hooks/useCREDFormLauncher';
 import { useLatestValidEncounter } from '../../../hooks/useLatestEncounter'; // Ajusta la ruta
-import { formEntryWorkspace } from '../../../types';
 
 interface CephaloCaudalNeurologicalEvaluationProps {
   patientUuid: string;
@@ -21,6 +21,7 @@ const CephaloCaudalNeurologicalEvaluationTable: React.FC<CephaloCaudalNeurologic
     patientUuid,
     config.encounterTypes.cefaloCaudal,
   );
+  const { launchForm } = useCREDFormLauncher('newbornNeuroEval');
 
   const obsData = React.useMemo(() => {
     if (!encounter?.obs) return {};
@@ -30,12 +31,9 @@ const CephaloCaudalNeurologicalEvaluationTable: React.FC<CephaloCaudalNeurologic
     }, {});
   }, [encounter]);
 
-  const handleLaunchForm = () => {
-    launchWorkspace2(formEntryWorkspace, {
-      form: { uuid: config.formsList.newbornNeuroEval },
-      encounterUuid: encounter?.uuid || '',
-    });
-  };
+  const handleLaunchForm = React.useCallback(() => {
+    launchForm(encounter?.uuid || '');
+  }, [encounter?.uuid, launchForm]);
 
   const dataHook = () => {
     return {

@@ -412,12 +412,12 @@ function vitalsProperties(
 
 export function saveVitalsAndBiometrics(
   encounterTypeUuid: string,
-  formUuid: string,
   concepts: ConfigObject['concepts'],
   patientUuid: string,
   vitals: VitalsBiometricsFormData,
   abortController: AbortController,
   location: string,
+  visitUuid?: string,
 ) {
   return openmrsFetch<unknown>(`${restBaseUrl}/encounter`, {
     method: 'POST',
@@ -429,7 +429,7 @@ export function saveVitalsAndBiometrics(
       patient: patientUuid,
       location: location,
       encounterType: encounterTypeUuid,
-      form: formUuid,
+      ...(visitUuid ? { visit: visitUuid } : {}),
       obs: createObsObject(vitals, concepts),
     },
   });
@@ -465,7 +465,7 @@ function createObsObject(
   concepts: ConfigObject['concepts'],
 ): Array<Omit<ObsRecord, 'effectiveDateTime' | 'conceptClass' | 'encounter'>> {
   return Object.entries(vitals)
-    .filter(([_, result]) => Boolean(result))
+    .filter(([_, result]) => result != null && result !== '')
     .map(([name, result]) => {
       return {
         concept: concepts[name + 'Uuid'],

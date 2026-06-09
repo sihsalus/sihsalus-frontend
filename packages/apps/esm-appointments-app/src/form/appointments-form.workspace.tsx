@@ -91,6 +91,10 @@ interface AppointmentsFormProps {
   workspaceTitle?: string;
 }
 
+// MINSA appointment services are configured without a default `durationMins`,
+// so new appointments fall back to this duration until the user overrides it.
+const DEFAULT_APPOINTMENT_DURATION_MINUTES = 30;
+
 const time12HourFormatRegexPattern = '^(1[0-2]|0?[1-9]):[0-5][0-9]$';
 
 const isValidTime = (timeStr: string) => timeStr.match(new RegExp(time12HourFormatRegexPattern));
@@ -151,7 +155,7 @@ function resolveAppointmentFormDefaults(
     defaultDuration:
       appointment?.startDateTime && appointment?.endDateTime
         ? dayjs(appointment.endDateTime).diff(dayjs(appointment.startDateTime), 'minutes')
-        : undefined,
+        : DEFAULT_APPOINTMENT_DURATION_MINUTES,
     defaultRecurringPatternType: (recurringPattern?.type || 'DAY') as 'DAY' | 'WEEK',
     defaultRecurringPatternPeriod: recurringPattern?.period || 1,
     defaultRecurringPatternDaysOfWeek: recurringPattern?.daysOfWeek || [],
@@ -604,10 +608,10 @@ const AppointmentsForm: React.FC<
                     onBlur={onBlur}
                     onChange={(event) => {
                       if (context === 'creating') {
-                        setValue(
-                          'duration',
-                          services?.find((service) => service.name === event.target.value)?.durationMins,
-                        );
+                        const selectedServiceDuration = services?.find(
+                          (service) => service.name === event.target.value,
+                        )?.durationMins;
+                        setValue('duration', selectedServiceDuration ?? DEFAULT_APPOINTMENT_DURATION_MINUTES);
                       } else if (context === 'editing') {
                         const previousServiceDuration = services?.find(
                           (service) => service.name === getValues('selectedService'),

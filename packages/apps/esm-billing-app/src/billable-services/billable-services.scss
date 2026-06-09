@@ -254,16 +254,21 @@
   display: flex;
   align-items: center;
   gap: 0.75rem;
+  width: 100%;
   min-width: 0;
 }
 
 :global(.sihsalus-side-nav__icon) {
-  flex: 0 0 auto;
+  inline-size: 1.25rem;
+  block-size: 1.25rem;
+  flex: 0 0 1.25rem;
   color: colors.$gray-70;
 }
 
 :global(.cds--side-nav__submenu > .cds--side-nav__icon:not(.cds--side-nav__submenu-chevron)) {
-  flex: 0 0 auto;
+  inline-size: 1.25rem;
+  block-size: 1.25rem;
+  flex: 0 0 1.25rem;
   margin-inline-end: 0.75rem;
   color: colors.$gray-70;
 }

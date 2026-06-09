@@ -10,6 +10,7 @@ import { fireEvent, render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { mockCareProgramsResponse, mockEnrolledProgramsResponse, mockLocationsResponse, mockPatient } from 'test-utils';
 import { type ConfigObject, configSchema } from '../config-schema';
+import { mutatePatientProgramEnrollments } from './program-enrollment-cache';
 import {
   createProgramEnrollment,
   updateProgramEnrollment,
@@ -22,6 +23,7 @@ const mockUseAvailablePrograms = vi.mocked(useAvailablePrograms);
 const mockUseEnrollments = vi.mocked(useEnrollments);
 const mockCreateProgramEnrollment = vi.mocked(createProgramEnrollment);
 const mockUpdateProgramEnrollment = vi.mocked(updateProgramEnrollment);
+const mockMutatePatientProgramEnrollments = vi.mocked(mutatePatientProgramEnrollments);
 const mockShowSnackbar = vi.mocked(showSnackbar);
 const mockUseLocations = vi.mocked(useLocations);
 const mockCloseWorkspace = vi.fn();
@@ -56,11 +58,15 @@ vi.mock('./programs.resource', () => ({
   findLastState: vi.fn(),
 }));
 
+vi.mock('./program-enrollment-cache', () => ({
+  mutatePatientProgramEnrollments: vi.fn(),
+}));
+
 mockUseLocations.mockReturnValue(mockLocationsResponse);
 
 mockUseAvailablePrograms.mockReturnValue({
   data: mockCareProgramsResponse,
-  eligiblePrograms: [],
+  eligiblePrograms: mockCareProgramsResponse,
   error: null,
   isLoading: false,
 });
@@ -122,6 +128,7 @@ describe('ProgramsForm', () => {
         dateEnrolled: expect.stringMatching(/^2020-05-05T/),
       }),
     );
+    expect(mockMutatePatientProgramEnrollments).toHaveBeenCalledWith(mockPatient.id);
 
     expect(mockCloseWorkspace).toHaveBeenCalledTimes(1);
     expect(mockShowSnackbar).toHaveBeenCalledTimes(1);
@@ -168,6 +175,7 @@ describe('ProgramsForm', () => {
         dateEnrolled: expect.stringMatching(/^2020-01-1[5-6]T/),
       }),
     );
+    expect(mockMutatePatientProgramEnrollments).toHaveBeenCalledWith(mockPatient.id);
 
     expect(mockShowSnackbar).toHaveBeenCalledWith(
       expect.objectContaining({

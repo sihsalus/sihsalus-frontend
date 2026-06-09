@@ -3,24 +3,20 @@ import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { mockPatient } from 'test-utils';
 import DeleteProgramModal from './delete-program.modal';
-import { deleteProgramEnrollment, useEnrollments } from './programs.resource';
+import { mutatePatientProgramEnrollments } from './program-enrollment-cache';
+import { deleteProgramEnrollment } from './programs.resource';
 
 vi.mock('./programs.resource', () => ({
   deleteProgramEnrollment: vi.fn(),
-  useEnrollments: vi.fn(),
+}));
+
+vi.mock('./program-enrollment-cache', () => ({
+  mutatePatientProgramEnrollments: vi.fn(),
 }));
 
 const mockDeleteProgramEnrollment = vi.mocked(deleteProgramEnrollment);
+const mockMutatePatientProgramEnrollments = vi.mocked(mutatePatientProgramEnrollments);
 const mockShowSnackbar = vi.mocked(showSnackbar);
-const mockUseEnrollments = vi.mocked(useEnrollments);
-const mockMutateEnrollments = vi.fn();
-
-mockUseEnrollments.mockImplementation(
-  () =>
-    ({
-      mutateEnrollments: mockMutateEnrollments,
-    }) as unknown as ReturnType<typeof useEnrollments>,
-);
 
 const testProps = {
   programEnrollmentId: '123',
@@ -73,6 +69,7 @@ describe('DeleteProgramModal', () => {
 
     expect(mockDeleteProgramEnrollment).toHaveBeenCalledTimes(1);
     expect(mockDeleteProgramEnrollment).toHaveBeenCalledWith(testProps.programEnrollmentId);
+    expect(mockMutatePatientProgramEnrollments).toHaveBeenCalledWith(mockPatient.id);
     expect(mockShowSnackbar).toHaveBeenCalledWith({
       isLowContrast: true,
       kind: 'success',
@@ -90,7 +87,7 @@ describe('DeleteProgramModal', () => {
 
     expect(mockDeleteProgramEnrollment).toHaveBeenCalledTimes(1);
     expect(mockDeleteProgramEnrollment).toHaveBeenCalledWith(testProps.programEnrollmentId);
-    expect(mockMutateEnrollments).not.toHaveBeenCalled();
+    expect(mockMutatePatientProgramEnrollments).not.toHaveBeenCalled();
     expect(mockShowSnackbar).toHaveBeenCalledWith({
       isLowContrast: false,
       kind: 'error',

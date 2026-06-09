@@ -8,6 +8,11 @@
  */
 
 import { NumberInput } from '@carbon/react';
+import {
+  parsePlainDecimalInput,
+  preventScientificNotationKey,
+  preventScientificNotationPaste,
+} from '@sihsalus/esm-sihsalus-shared';
 import classNames from 'classnames';
 import React, { useState } from 'react';
 import { type Control, Controller, type FieldErrors, useWatch } from 'react-hook-form';
@@ -58,12 +63,15 @@ const VitalInput: React.FC<VitalInputProps> = ({ fieldName, label, control, erro
             disableWheel
             value={field.value ?? ''}
             onChange={(_e: unknown, { value: val }: { value: string | number }) => {
-              const isValid = Number(val) || val === '';
+              const parsedValue = val === '' ? undefined : parsePlainDecimalInput(val);
+              const isValid = val === '' || parsedValue !== undefined;
               setInvalid(!isValid);
               if (isValid) {
-                field.onChange(val === '' ? undefined : Number(val));
+                field.onChange(parsedValue);
               }
             }}
+            onKeyDown={preventScientificNotationKey}
+            onPaste={preventScientificNotationPaste}
             invalid={!!formError || invalid}
             invalidText={formError?.message}
             hideSteppers

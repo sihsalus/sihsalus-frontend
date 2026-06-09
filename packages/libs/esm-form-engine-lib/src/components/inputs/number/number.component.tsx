@@ -6,6 +6,11 @@ import { useFormProviderContext } from '../../../provider/form-provider';
 import { type FormFieldInputProps } from '../../../types';
 import { isTrue } from '../../../utils/boolean-utils';
 import { shouldUseInlineLayout } from '../../../utils/form-helper';
+import {
+  parsePlainDecimalInput,
+  preventScientificNotationKey,
+  preventScientificNotationPaste,
+} from '../../../utils/plain-number-input';
 import FieldLabel from '../../field-label/field-label.component';
 import FieldValueView from '../../value/view/field-value-view.component';
 import styles from './number.scss';
@@ -29,7 +34,7 @@ const NumberField: React.FC<FormFieldInputProps<number | string | null | undefin
 
   const getNumericValue = useCallback(
     (value: string | number) =>
-      typeof value === 'undefined' || Number.isNaN(Number(value)) ? undefined : Number(value),
+      value === '' || typeof value === 'undefined' ? undefined : parsePlainDecimalInput(value),
     [],
   );
 
@@ -73,6 +78,8 @@ const NumberField: React.FC<FormFieldInputProps<number | string | null | undefin
           name={field.id}
           value={numberValue}
           onChange={handleChange}
+          onKeyDown={preventScientificNotationKey}
+          onPaste={preventScientificNotationPaste}
           allowEmpty={true}
           size="lg"
           hideSteppers={field.hideSteppers ?? false}

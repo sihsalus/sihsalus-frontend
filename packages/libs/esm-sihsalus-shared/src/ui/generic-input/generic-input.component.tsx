@@ -7,6 +7,11 @@ import type { Control, Path } from 'react-hook-form';
 import { Controller } from 'react-hook-form';
 import { useTranslation } from 'react-i18next';
 
+import {
+  parsePlainDecimalInput,
+  preventScientificNotationKey,
+  preventScientificNotationPaste,
+} from '../../utils/plain-number-input';
 import styles from './generic-input.scss';
 
 type FieldTypes = 'number' | 'textarea';
@@ -66,12 +71,12 @@ const GenericInput = <T extends FormData>({
     field: (typeof fieldProperties)[0],
   ): void {
     if (field.type === 'number' || !field.type) {
-      const parsedValue = value === '' ? undefined : Number(value);
+      const parsedValue = value === '' ? undefined : parsePlainDecimalInput(value);
+      const isInvalidNumber = value !== '' && parsedValue === undefined;
       const isOutOfRange =
         parsedValue !== undefined &&
-        ((field.min !== null && parsedValue < field.min) || (field.max !== null && parsedValue > field.max));
-      const isInvalid = parsedValue === undefined || Number.isNaN(parsedValue) || isOutOfRange;
-      setInvalid(isInvalid);
+        ((field.min != null && parsedValue < field.min) || (field.max != null && parsedValue > field.max));
+      setInvalid(isInvalidNumber || isOutOfRange);
       onChange(parsedValue);
     } else {
       onChange(value as unknown as number | undefined); // Cast value to match the expected type
@@ -140,6 +145,8 @@ const GenericInput = <T extends FormData>({
                             onBlur={() => handleFocusChange(false)}
                             onChange={(event) => checkValidity(event.currentTarget.value, onChange, fieldProperty)}
                             onFocus={() => handleFocusChange(true)}
+                            onKeyDown={preventScientificNotationKey}
+                            onPaste={preventScientificNotationPaste}
                             placeholder={placeholder} // Usar el prop directamente
                             readOnly={readOnly}
                             ref={ref}

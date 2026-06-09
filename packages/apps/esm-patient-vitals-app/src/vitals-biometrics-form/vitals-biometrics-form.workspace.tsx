@@ -283,16 +283,26 @@ const VitalsAndBiometricsForm: React.FC<VitalsBiometricsWorkspaceProps> = (props
           return;
         }
 
+        if (!currentVisit?.uuid || currentVisit.stopDatetime) {
+          showSnackbar({
+            title: t('vitalsAndBiometricsSaveError', 'Error saving vitals and biometrics'),
+            kind: 'error',
+            isLowContrast: false,
+            subtitle: t('noActiveVisit', 'An active visit is required to record vitals and biometrics.'),
+          });
+          return;
+        }
+
         const abortController = new AbortController();
 
         savePatientVitals(
           config.vitals.encounterTypeUuid,
-          config.vitals.formUuid,
           config.concepts,
           patientUuid,
           formData,
           abortController,
           locationUuid,
+          currentVisit.uuid,
         )
           .then((response) => {
             if (response.status === 201 || response.status === 200) {
@@ -327,7 +337,8 @@ const VitalsAndBiometricsForm: React.FC<VitalsBiometricsWorkspaceProps> = (props
       conceptMetadata,
       config.concepts,
       config.vitals.encounterTypeUuid,
-      config.vitals.formUuid,
+      currentVisit?.stopDatetime,
+      currentVisit?.uuid,
       getPatientReferenceRange,
       patientUuid,
       session?.sessionLocation?.uuid,

@@ -12,34 +12,15 @@ import {
   TableRow,
 } from '@carbon/react';
 import { Save } from '@carbon/react/icons';
-import { showSnackbar } from '@openmrs/esm-framework';
+import { showSnackbar, useSession } from '@openmrs/esm-framework';
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import ImmunizationPlanHeader from './immunization-plan-header.component';
 import type { ScheduleEntry } from './vaccination-schedule.resource';
-import { saveScheduleData, useVaccinationSchedule } from './vaccination-schedule.resource';
+import { AGE_PERIODS, saveScheduleData, useVaccinationSchedule } from './vaccination-schedule.resource';
 import styles from './vaccine-scheduling-builder.scss';
 
 type DoseStatus = 'required' | 'optional' | 'empty';
-
-interface AgePeriod {
-  id: string;
-  label: string;
-  ageRange: string;
-}
-
-const AGE_PERIODS: AgePeriod[] = [
-  { id: 'rn', label: 'RN', ageRange: '0 días' },
-  { id: '2m', label: '2m', ageRange: '2 meses' },
-  { id: '4m', label: '4m', ageRange: '4 meses' },
-  { id: '6m', label: '6m', ageRange: '6 meses' },
-  { id: '12m', label: '12m', ageRange: '12 meses' },
-  { id: '15m', label: '15m', ageRange: '15 meses' },
-  { id: '18m', label: '18m', ageRange: '18 meses' },
-  { id: '2a', label: '2a', ageRange: '2 años' },
-  { id: '4a', label: '4a', ageRange: '4 años' },
-  { id: '5a', label: '5a', ageRange: '5 años' },
-];
 
 const DEFAULT_ENTRIES: ScheduleEntry[] = [
   { conceptUuid: 'hvb', name: 'Hepatitis B (HvB)', schedule: { rn: 'required' } },
@@ -79,7 +60,8 @@ function dotClass(status: DoseStatus, s: typeof styles): string {
 
 const VaccineSchedulingBuilder: React.FC = () => {
   const { t } = useTranslation();
-  const { scheduleData, settingUuid, isLoading, error, mutate } = useVaccinationSchedule();
+  const session = useSession();
+  const { scheduleData, scheduleStore, versions, settingUuid, isLoading, error, mutate } = useVaccinationSchedule();
 
   const [entries, setEntries] = useState<ScheduleEntry[]>(DEFAULT_ENTRIES);
   const [searchTerm, setSearchTerm] = useState('');
@@ -119,10 +101,9 @@ const VaccineSchedulingBuilder: React.FC = () => {
   const handleSave = useCallback(async () => {
     setSaving(true);
     try {
-      await saveScheduleData(settingUuid, {
-        version: (scheduleData?.version ?? 0) + 1,
-        updatedAt: new Date().toISOString(),
+      await saveScheduleData(settingUuid, scheduleStore, {
         entries,
+        updatedBy: session?.user?.display,
       });
       await mutate();
       setIsDirty(false);
@@ -140,7 +121,7 @@ const VaccineSchedulingBuilder: React.FC = () => {
     } finally {
       setSaving(false);
     }
-  }, [settingUuid, scheduleData, entries, mutate, t]);
+  }, [entries, mutate, scheduleStore, session?.user?.display, settingUuid, t]);
 
   const legendItems: Array<{ status: DoseStatus; label: string }> = [
     { status: 'required', label: t('required', 'Obligatoria') },
@@ -152,14 +133,21 @@ const VaccineSchedulingBuilder: React.FC = () => {
     <div className={styles.container}>
       <ImmunizationPlanHeader title={t('vaccinationScheduleBuilder', 'Gestor del calendario de vacunación')} />
 
-      {scheduleData && (
-        <div className={styles.scheduleInfo}>
-          <span className={styles.scheduleName}>
-            {t('peruNationalSchedule', 'Esquema Nacional de Vacunación — Perú')}
+      <div className={styles.scheduleInfo}>
+        <span className={styles.scheduleName}>
+          {t('peruNationalSchedule', 'Esquema Nacional de Vacunación — Perú')}
+        </span>
+        <span className={styles.scheduleVersion}>
+          {scheduleData
+            ? t('activeScheduleVersion', 'v{{version}} activa', { version: scheduleData.version })
+            : t('localDraft', 'borrador local')}
+        </span>
+        {versions.length > 0 && (
+          <span className={styles.scheduleVersion}>
+            {t('savedVersionsCount', '{{count}} versiones guardadas', { count: versions.length })}
           </span>
-          <span className={styles.scheduleVersion}>v{scheduleData.version}</span>
-        </div>
-      )}
+        )}
+      </div>
 
       {error && (
         <InlineNotification

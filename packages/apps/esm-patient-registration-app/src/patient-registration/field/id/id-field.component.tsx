@@ -231,7 +231,7 @@ export const Identifiers: React.FC = () => {
             countIdentityDocumentIdentifiers(values.identifiers, identifierTypes) > 1;
 
           return (
-            <div key={fieldName} style={{ display: 'flex', alignItems: 'center', justifyContent: 'initial' }}>
+            <div key={fieldName} className={styles.identifierFieldRow}>
               <IdentifierInput fieldName={fieldName} patientIdentifier={patientIdentifierWithRequired} />
               {canRemove && (
                 <Button

@@ -6,8 +6,12 @@ import { moduleName } from '../../../constants';
 import { useAddressHierarchy } from './address-hierarchy.resource';
 import styles from './address-search.scss';
 
+interface AddressLayoutField {
+  name: string;
+}
+
 interface AddressSearchComponentProps {
-  addressLayout: Array<any>;
+  addressLayout: Array<AddressLayoutField>;
 }
 
 const AddressSearchComponent: React.FC<AddressSearchComponentProps> = ({ addressLayout }) => {
@@ -74,6 +78,7 @@ const AddressSearchComponent: React.FC<AddressSearchComponentProps> = ({ address
 
   return (
     <div className={styles.autocomplete} ref={wrapper}>
+      <span className={styles.searchLabel}>{t('addressHeader', 'Address')} ({t('optional', 'optional')})</span>
       <Search
         onChange={handleInputChange}
         onKeyDown={(e) => {
@@ -95,9 +100,11 @@ const AddressSearchComponent: React.FC<AddressSearchComponentProps> = ({ address
           ) : error ? (
             <li className={styles.noResults}>{t('errorFetchingAddresses', 'Error fetching address results')}</li>
           ) : addressOptions.length > 0 ? (
-            addressOptions.map((address, index) => (
-              <li key={index} onClick={() => handleChange(address)}>
-                {address}
+            addressOptions.map((address) => (
+              <li key={address}>
+                <button className={styles.suggestionButton} type="button" onClick={() => handleChange(address)}>
+                  {address}
+                </button>
               </li>
             ))
           ) : (

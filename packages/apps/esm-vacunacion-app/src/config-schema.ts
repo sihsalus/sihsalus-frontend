@@ -32,7 +32,7 @@ export const configSchema = {
     _type: Type.String,
     _default: 'CIEL:984',
     _description:
-      'A UUID or concept mapping for the vaccine concept set. The default CIEL:984 is resolved through REST and should have all selectable vaccines as answers.',
+      'A UUID or concept mapping for the vaccine concept set. The default CIEL:984 is resolved through REST and should have all selectable vaccines as answers or set members.',
   },
   fhirConceptMappings: {
     _type: Type.Object,

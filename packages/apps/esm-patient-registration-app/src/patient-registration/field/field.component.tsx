@@ -10,6 +10,7 @@ import { DateAndTimeOfDeathField } from './date-and-time-of-death/date-and-time-
 import { DobField } from './dob/dob.component';
 import { GenderField } from './gender/gender-field.component';
 import { Identifiers } from './id/id-field.component';
+import { MinsaLookupField } from './minsa-lookup/minsa-lookup-field.component';
 import { NameField } from './name/name-field.component';
 import { PhoneField } from './phone/phone-field.component';
 
@@ -33,6 +34,8 @@ export function Field({ name }: FieldProps) {
   }
 
   switch (name) {
+    case 'minsaLookup':
+      return <MinsaLookupField />;
     case 'name':
       return <NameField />;
     case 'gender':

@@ -14,8 +14,11 @@ export const peruForeignPatientIdentifierTypeUuids = [
   peruDiePatientIdentifierTypeUuid, // Documento de Identidad Extranjero
 ];
 
-const peruSections = ['filiation', 'medicalRecord', 'insurance', 'responsiblePerson'];
-const peruDemographicsFieldOrder = ['name', 'id', 'dob', 'gender'];
+const peruSections = ['birthplace', 'filiation', 'bloodData', 'medicalRecord', 'insurance', 'responsiblePerson'];
+const peruDemographicsFieldOrder = ['name', 'id', 'minsaLookup', 'dob', 'gender'];
+const peruPersonNameValidationRegex = "^[A-Za-zÁÉÍÓÚÜÑáéíóúüñ][A-Za-zÁÉÍÓÚÜÑáéíóúüñ'.\\- ]*$";
+const peruAgeValidationRegex = '^(?:[0-9]|[1-9][0-9]|1[01][0-9]|120)$';
+const peruTextWithoutDigitsValidationRegex = '^[^0-9]+$';
 const minorResponsibleRelationshipTypes = [
   '8d91a210-c2cc-11de-8d13-0010c6dffdff/aIsToB',
   '8d91a210-c2cc-11de-8d13-0010c6dffd0f/aIsToB',
@@ -24,19 +27,19 @@ const minorResponsibleRelationshipTypes = [
 
 const peruSectionDefinitions: Array<SectionDefinition> = [
   {
+    id: 'birthplace',
+    name: 'Lugar de nacimiento',
+    fields: ['birthplace'],
+  },
+  {
     id: 'filiation',
     name: 'Datos de filiación',
-    fields: [
-      'birthplace',
-      'civilStatus',
-      'ethnicity',
-      'nativeLanguage',
-      'occupation',
-      'educationLevel',
-      'religion',
-      'bloodGroup',
-      'rhFactor',
-    ],
+    fields: ['civilStatus', 'ethnicity', 'nativeLanguage', 'occupation', 'educationLevel', 'religion'],
+  },
+  {
+    id: 'bloodData',
+    name: 'Datos sanguíneos',
+    fields: ['bloodGroup', 'rhFactor'],
   },
   {
     id: 'medicalRecord',
@@ -208,6 +211,7 @@ const peruFieldDefinitions: Array<FieldDefinition> = [
     uuid: '4697d0e6-5b24-416b-aee6-708cd9a3a1db',
     label: 'Nombre del acompañante o responsable',
     showHeading: false,
+    validation: { required: false, matches: peruPersonNameValidationRegex },
   },
   {
     id: 'companionAge',
@@ -215,6 +219,7 @@ const peruFieldDefinitions: Array<FieldDefinition> = [
     uuid: '70ce4571-2e2e-44da-a39f-9dae2a658606',
     label: 'Edad del acompañante o responsable',
     showHeading: false,
+    validation: { required: false, matches: peruAgeValidationRegex },
   },
   {
     id: 'companionRelationship',
@@ -222,6 +227,7 @@ const peruFieldDefinitions: Array<FieldDefinition> = [
     uuid: 'a180fa5f-c44e-4490-a981-d7196b70c6ac',
     label: 'Parentesco del acompañante o responsable',
     showHeading: false,
+    validation: { required: false, matches: peruTextWithoutDigitsValidationRegex },
   },
 ];
 
@@ -274,7 +280,9 @@ function orderPeruDemographicsSection(sectionDefinitions: Array<SectionDefinitio
 }
 
 function orderPeruDemographicsFields(fields: Array<string>) {
-  const visibleDemographicsFields = fields.filter((field) => field !== 'nationality');
+  const visibleDemographicsFields = ['minsaLookup', ...fields.filter((field) => field !== 'nationality')].filter(
+    (field, index, demographicsFields) => demographicsFields.indexOf(field) === index,
+  );
 
   return [
     ...peruDemographicsFieldOrder.filter((field) => visibleDemographicsFields.includes(field)),
@@ -283,18 +291,17 @@ function orderPeruDemographicsFields(fields: Array<string>) {
 }
 
 export function getEffectiveRegistrationConfig(config: RegistrationConfig): RegistrationConfig {
-  const sections = [...config.sections];
+  const relationshipsIndex = config.sections.indexOf('relationships');
+  const sections = config.sections.filter((section) => section !== 'relationships');
+  let insertionIndex = relationshipsIndex >= 0 ? relationshipsIndex : sections.length;
 
   peruSections.forEach((section) => {
     if (sections.includes(section)) {
       return;
     }
-    const relationshipsIndex = sections.indexOf('relationships');
-    if (relationshipsIndex >= 0) {
-      sections.splice(relationshipsIndex, 0, section);
-    } else {
-      sections.push(section);
-    }
+
+    sections.splice(insertionIndex, 0, section);
+    insertionIndex += 1;
   });
 
   const defaultPatientIdentifierTypes = [

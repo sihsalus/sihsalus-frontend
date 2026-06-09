@@ -99,6 +99,7 @@ export function getValidationSchema(
       .required(t('familyNameRequired', 'Family name is required'))
       .min(2, nameTooShortMessage)
       .matches(nameRegex, { message: nameInvalidCharactersMessage, excludeEmptyString: true }),
+    middleName: Yup.string().matches(nameRegex, { message: nameInvalidCharactersMessage, excludeEmptyString: true }),
     familyName2: (config.fieldConfigurations.name.requireFamilyName2
       ? Yup.string().required(t('familyName2Required', 'Second family name is required')).min(2, nameTooShortMessage)
       : Yup.string().notRequired()
@@ -111,6 +112,10 @@ export function getValidationSchema(
         then: Yup.string().required(t('givenNameRequired', 'Given name is required')).min(2, nameTooShortMessage),
         otherwise: Yup.string().notRequired(),
       }),
+    additionalMiddleName: Yup.string().matches(nameRegex, {
+      message: nameInvalidCharactersMessage,
+      excludeEmptyString: true,
+    }),
     additionalFamilyName: Yup.string()
       .matches(nameRegex, { message: nameInvalidCharactersMessage, excludeEmptyString: true })
       .when('addNameInLocalLanguage', {
@@ -119,6 +124,10 @@ export function getValidationSchema(
         then: Yup.string().required(t('familyNameRequired', 'Family name is required')).min(2, nameTooShortMessage),
         otherwise: Yup.string().notRequired(),
       }),
+    additionalFamilyName2: Yup.string().matches(nameRegex, {
+      message: nameInvalidCharactersMessage,
+      excludeEmptyString: true,
+    }),
     gender: Yup.string()
       .oneOf(
         config.fieldConfigurations.gender.map((g) => g.value),

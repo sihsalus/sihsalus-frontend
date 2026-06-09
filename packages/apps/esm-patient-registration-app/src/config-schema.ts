@@ -110,6 +110,7 @@ export const builtInSections: Array<SectionDefinition> = [
 
 // These fields are handled specially in field.component.tsx
 export const builtInFields = [
+  'minsaLookup',
   'name',
   'gender',
   'dob',

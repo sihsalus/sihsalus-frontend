@@ -12,11 +12,26 @@ describe('getEffectiveRegistrationConfig', () => {
     const config = getEffectiveRegistrationConfig(getDefaultsFromConfigSchema(esmPatientRegistrationSchema));
 
     const demographics = config.sectionDefinitions.find((section) => section.id === 'demographics');
+    const birthplace = config.sectionDefinitions.find((section) => section.id === 'birthplace');
     const filiation = config.sectionDefinitions.find((section) => section.id === 'filiation');
+    const bloodData = config.sectionDefinitions.find((section) => section.id === 'bloodData');
     const nationality = config.fieldDefinitions.find((field) => field.id === 'nationality');
 
-    expect(demographics?.fields).toEqual(['name', 'id', 'dob', 'gender']);
+    expect(demographics?.fields).toEqual(['name', 'id', 'minsaLookup', 'dob', 'gender']);
     expect(demographics?.fields).not.toContain('nationality');
+    expect(birthplace).toMatchObject({
+      id: 'birthplace',
+      name: 'Lugar de nacimiento',
+      fields: ['birthplace'],
+    });
+    expect(filiation?.fields).not.toContain('birthplace');
+    expect(filiation?.fields).not.toContain('bloodGroup');
+    expect(filiation?.fields).not.toContain('rhFactor');
+    expect(bloodData).toMatchObject({
+      id: 'bloodData',
+      name: 'Datos sanguíneos',
+      fields: ['bloodGroup', 'rhFactor'],
+    });
     expect(filiation?.fields).not.toContain('nationality');
     expect(nationality).toMatchObject({
       id: 'nationality',
@@ -38,6 +53,51 @@ describe('getEffectiveRegistrationConfig', () => {
     const config = getEffectiveRegistrationConfig(getDefaultsFromConfigSchema(esmPatientRegistrationSchema));
 
     expect(config.defaultPatientIdentifierTypes).toEqual([peruDniPatientIdentifierTypeUuid]);
+  });
+
+  it('merges responsible person data and relationships into one visible section', () => {
+    const config = getEffectiveRegistrationConfig(getDefaultsFromConfigSchema(esmPatientRegistrationSchema));
+    const responsiblePerson = config.sectionDefinitions.find((section) => section.id === 'responsiblePerson');
+
+    expect(config.sections).toEqual([
+      'demographics',
+      'contact',
+      'birthplace',
+      'filiation',
+      'bloodData',
+      'medicalRecord',
+      'insurance',
+      'responsiblePerson',
+    ]);
+    expect(config.sections).not.toContain('relationships');
+    expect(responsiblePerson).toMatchObject({
+      id: 'responsiblePerson',
+      name: 'Acompañante o responsable',
+      fields: ['companionName', 'companionAge', 'companionRelationship'],
+    });
+  });
+
+  it('validates responsible person optional fields when provided', () => {
+    const config = getEffectiveRegistrationConfig(getDefaultsFromConfigSchema(esmPatientRegistrationSchema));
+    const fieldsById = Object.fromEntries(config.fieldDefinitions.map((field) => [field.id, field]));
+    const companionNameRegex = new RegExp(fieldsById.companionName.validation.matches);
+    const companionAgeRegex = new RegExp(fieldsById.companionAge.validation.matches);
+    const companionRelationshipRegex = new RegExp(fieldsById.companionRelationship.validation.matches);
+
+    expect(fieldsById.companionName.validation.required).toBe(false);
+    expect(companionNameRegex.test('José De la Cruz')).toBe(true);
+    expect(companionNameRegex.test('José2')).toBe(false);
+    expect(companionNameRegex.test('José@')).toBe(false);
+
+    expect(fieldsById.companionAge.validation.required).toBe(false);
+    expect(companionAgeRegex.test('35')).toBe(true);
+    expect(companionAgeRegex.test('120')).toBe(true);
+    expect(companionAgeRegex.test('121')).toBe(false);
+    expect(companionAgeRegex.test('treinta')).toBe(false);
+
+    expect(fieldsById.companionRelationship.validation.required).toBe(false);
+    expect(companionRelationshipRegex.test('Tío/a')).toBe(true);
+    expect(companionRelationshipRegex.test('Tío2')).toBe(false);
   });
 
   it('preconfigures safe administrative defaults for new Peru registrations', () => {

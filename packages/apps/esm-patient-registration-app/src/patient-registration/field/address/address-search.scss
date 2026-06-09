@@ -23,7 +23,6 @@
 }
 
 .suggestions li {
-  padding: layout.$spacing-05;
   line-height: 1.29;
   color: #525252;
 }
@@ -36,6 +35,23 @@
   background-color: #e5e5e5;
   color: #161616;
   cursor: pointer;
+}
+
+.suggestionButton {
+  all: unset;
+  box-sizing: border-box;
+  color: inherit;
+  cursor: pointer;
+  display: block;
+  padding: layout.$spacing-05;
+  width: 100%;
+}
+
+.suggestionButton:focus {
+  background-color: #e5e5e5;
+  color: #161616;
+  outline: 2px solid $interactive-01;
+  outline-offset: -2px;
 }
 
 .suggestions li:not(:last-of-type) {
@@ -56,6 +72,7 @@
   color: $text-02;
   cursor: default;
   border-bottom: none;
+  padding: layout.$spacing-05;
 }
 
 .noResults:hover,

@@ -132,6 +132,20 @@ describe('Patient registration validation', () => {
     expect(validationError.errors).toContain('nameContainsInvalidCharacters');
   });
 
+  it.each([
+    ['middleName', 'R2'],
+    ['familyName2', 'D03'],
+    ['additionalMiddleName', 'R2'],
+    ['additionalFamilyName2', 'D03'],
+  ])('should reject digits in optional name field %s', async (fieldName, value) => {
+    const invalidFormValues = {
+      ...validFormValues,
+      [fieldName]: value,
+    };
+    const validationError = await validateFormValues(invalidFormValues);
+    expect(validationError.errors).toContain('nameContainsInvalidCharacters');
+  });
+
   it('should reject names containing forbidden symbols', async () => {
     const invalidFormValues = {
       ...validFormValues,

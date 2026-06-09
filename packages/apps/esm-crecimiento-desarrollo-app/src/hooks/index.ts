@@ -10,6 +10,7 @@ export { default as useAppointmentsCRED } from './useAppointmentsCRED';
 export { useCephaloCaudalNeurologicalEvaluation } from './useCephaloCaudalNeurologicalEvaluation';
 // Generic clinical
 export { useClinicalEncounter } from './useClinicalEncounter';
+export { useCREDFormLauncher } from './useCREDFormLauncher';
 export { useCREDFormsForAgeGroup } from './useCREDFormsForAgeGroup';
 export { useCREDSchedule } from './useCREDSchedule';
 // Prenatal context (used by neonatal register)

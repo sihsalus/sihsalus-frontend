@@ -35,6 +35,10 @@ import { useTranslation } from 'react-i18next';
 import type { ImmunizationConfigObject } from '../config-schema';
 import { useImmunizations } from '../hooks/useImmunizations';
 import type { ImmunizationGrouped } from '../types';
+import {
+  scheduleEntriesToSequenceDefinitions,
+  useVaccinationSchedule,
+} from '../vaccine-scheduling-builder/vaccination-schedule.resource';
 import SequenceTable from './components/immunizations-sequence-table.component';
 import styles from './immunizations-detailed-summary.scss';
 import { immunizationFormSub, latestFirst, linkConfiguredSequences } from './utils';
@@ -54,7 +58,11 @@ const ImmunizationsDetailedSummary: React.FC<ImmunizationsDetailedSummaryProps> 
   const headerTitle = t('immunizations', 'Immunizations');
   const { currentVisit: visitContext } = useVisitOrOfflineVisit(patientUuid);
   const isTablet = useLayoutType() === 'tablet';
-  const sequenceDefinitions = config.sequenceDefinitions;
+  const { scheduleData } = useVaccinationSchedule();
+  const sequenceDefinitions = useMemo(() => {
+    const scheduleSequences = scheduleEntriesToSequenceDefinitions(scheduleData);
+    return scheduleSequences.length ? scheduleSequences : config.sequenceDefinitions;
+  }, [config.sequenceDefinitions, scheduleData]);
 
   const { data: existingImmunizations, isLoading, error, isValidating } = useImmunizations(patientUuid);
 

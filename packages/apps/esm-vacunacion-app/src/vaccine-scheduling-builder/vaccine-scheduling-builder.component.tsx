@@ -1,5 +1,6 @@
 import {
   Button,
+  Dropdown,
   InlineLoading,
   InlineNotification,
   Search,
@@ -67,13 +68,25 @@ const VaccineSchedulingBuilder: React.FC = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [saving, setSaving] = useState(false);
   const [isDirty, setIsDirty] = useState(false);
+  const [selectedVersion, setSelectedVersion] = useState<number | null>(null);
+
+  const selectedScheduleVersion = useMemo(
+    () => versions.find((version) => version.version === selectedVersion) ?? scheduleData,
+    [scheduleData, selectedVersion, versions],
+  );
 
   useEffect(() => {
-    if (scheduleData?.entries?.length) {
-      setEntries(scheduleData.entries);
+    if (scheduleData?.version) {
+      setSelectedVersion(scheduleData.version);
+    }
+  }, [scheduleData?.version]);
+
+  useEffect(() => {
+    if (selectedScheduleVersion?.entries?.length) {
+      setEntries(selectedScheduleVersion.entries);
       setIsDirty(false);
     }
-  }, [scheduleData]);
+  }, [selectedScheduleVersion]);
 
   const filtered = useMemo(
     () => (searchTerm ? entries.filter((e) => e.name.toLowerCase().includes(searchTerm.toLowerCase())) : entries),
@@ -142,6 +155,11 @@ const VaccineSchedulingBuilder: React.FC = () => {
             ? t('activeScheduleVersion', 'v{{version}} activa', { version: scheduleData.version })
             : t('localDraft', 'borrador local')}
         </span>
+        {selectedScheduleVersion && selectedScheduleVersion.version !== scheduleData?.version && (
+          <span className={styles.scheduleVersion}>
+            {t('viewingScheduleVersion', 'viendo v{{version}}', { version: selectedScheduleVersion.version })}
+          </span>
+        )}
         {versions.length > 0 && (
           <span className={styles.scheduleVersion}>
             {t('savedVersionsCount', '{{count}} versiones guardadas', { count: versions.length })}
@@ -170,13 +188,36 @@ const VaccineSchedulingBuilder: React.FC = () => {
             disabled={isLoading}
           />
         </div>
+        {versions.length > 0 && (
+          <Dropdown
+            id="schedule-version"
+            items={versions.map((version) => version.version)}
+            itemToString={(version) => {
+              const scheduleVersion = versions.find((candidate) => candidate.version === version);
+              const suffix = scheduleVersion?.status === 'published' ? ` ${t('active', 'activa')}` : '';
+              return version ? `v${version}${suffix}` : '';
+            }}
+            label={t('selectVersion', 'Seleccionar versión')}
+            onChange={({ selectedItem }) => {
+              setSelectedVersion(selectedItem ?? null);
+              setIsDirty(false);
+            }}
+            selectedItem={selectedVersion}
+            titleText={t('scheduleVersion', 'Versión del esquema')}
+            size="lg"
+          />
+        )}
         <Button
           kind="primary"
           renderIcon={saving ? undefined : Save}
           onClick={handleSave}
           disabled={saving || !isDirty}
         >
-          {saving ? <InlineLoading description={t('saving', 'Guardando...')} /> : t('saveSchedule', 'Guardar esquema')}
+          {saving ? (
+            <InlineLoading description={t('saving', 'Guardando...')} />
+          ) : (
+            t('saveScheduleVersion', 'Guardar nueva versión')
+          )}
         </Button>
       </div>
 

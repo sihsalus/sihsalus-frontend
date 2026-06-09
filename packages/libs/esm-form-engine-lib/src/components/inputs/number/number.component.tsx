@@ -1,4 +1,9 @@
 import { Layer, NumberInput } from '@carbon/react';
+import {
+  parsePlainDecimalInput,
+  preventScientificNotationKey,
+  preventScientificNotationPaste,
+} from '@openmrs/esm-utils';
 import classNames from 'classnames';
 import React, { useCallback, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -6,11 +11,6 @@ import { useFormProviderContext } from '../../../provider/form-provider';
 import { type FormFieldInputProps } from '../../../types';
 import { isTrue } from '../../../utils/boolean-utils';
 import { shouldUseInlineLayout } from '../../../utils/form-helper';
-import {
-  parsePlainDecimalInput,
-  preventScientificNotationKey,
-  preventScientificNotationPaste,
-} from '../../../utils/plain-number-input';
 import FieldLabel from '../../field-label/field-label.component';
 import FieldValueView from '../../value/view/field-value-view.component';
 import styles from './number.scss';

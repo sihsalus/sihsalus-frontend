@@ -3,12 +3,12 @@ import {
   getDefaultsFromConfigSchema,
   showSnackbar,
   useConfig,
-  useLocations,
+  useSession,
 } from '@openmrs/esm-framework';
 import { type PatientWorkspace2DefinitionProps } from '@openmrs/esm-patient-common-lib';
 import { fireEvent, render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { mockCareProgramsResponse, mockEnrolledProgramsResponse, mockLocationsResponse, mockPatient } from 'test-utils';
+import { mockCareProgramsResponse, mockEnrolledProgramsResponse, mockPatient, mockSession } from 'test-utils';
 import { type ConfigObject, configSchema } from '../config-schema';
 import { mutatePatientProgramEnrollments } from './program-enrollment-cache';
 import {
@@ -25,7 +25,7 @@ const mockCreateProgramEnrollment = vi.mocked(createProgramEnrollment);
 const mockUpdateProgramEnrollment = vi.mocked(updateProgramEnrollment);
 const mockMutatePatientProgramEnrollments = vi.mocked(mutatePatientProgramEnrollments);
 const mockShowSnackbar = vi.mocked(showSnackbar);
-const mockUseLocations = vi.mocked(useLocations);
+const mockUseSession = vi.mocked(useSession);
 const mockCloseWorkspace = vi.fn();
 const mockUseConfig = vi.mocked(useConfig<ConfigObject>);
 
@@ -48,6 +48,7 @@ const testProps: PatientWorkspace2DefinitionProps<ProgramsFormProps, {}> = {
 
 beforeEach(() => {
   vi.clearAllMocks();
+  mockUseSession.mockReturnValue(mockSession.data);
 });
 
 vi.mock('./programs.resource', () => ({
@@ -61,8 +62,6 @@ vi.mock('./programs.resource', () => ({
 vi.mock('./program-enrollment-cache', () => ({
   mutatePatientProgramEnrollments: vi.fn(),
 }));
-
-mockUseLocations.mockReturnValue(mockLocationsResponse);
 
 mockUseAvailablePrograms.mockReturnValue({
   data: mockCareProgramsResponse,
@@ -90,16 +89,12 @@ describe('ProgramsForm', () => {
     const user = userEvent.setup();
 
     const oncologyScreeningProgramUuid = '11b129ca-a5e7-4025-84bf-b92a173e20de';
-    const mockLocation = {
-      uuid: 'uuid_2',
-      name: 'location_2',
-    };
+    const sessionLocation = mockSession.data.sessionLocation;
 
     renderProgramsForm();
 
     const programNameInput = screen.getByRole('combobox', { name: /program name/i });
     const enrollmentDateInput = screen.getByRole('textbox', { name: /date enrolled/i });
-    const enrollmentLocationInput = screen.getByRole('radio', { name: mockLocation.name });
     const enrollButton = screen.getByRole('button', { name: /save and close/i });
 
     await user.click(enrollButton);
@@ -107,8 +102,8 @@ describe('ProgramsForm', () => {
 
     fireEvent.change(enrollmentDateInput, { target: { value: '2020-05-05' } });
     await user.selectOptions(programNameInput, [oncologyScreeningProgramUuid]);
-    await user.click(enrollmentLocationInput);
-    expect(screen.getByRole('radio', { name: mockLocation.name })).toBeInTheDocument();
+    expect(screen.getByDisplayValue(sessionLocation.display)).toBeInTheDocument();
+    expect(screen.queryByRole('radio')).not.toBeInTheDocument();
 
     await user.click(enrollButton);
 
@@ -116,7 +111,7 @@ describe('ProgramsForm', () => {
     expect(mockCreateProgramEnrollment).toHaveBeenCalledWith(
       expect.objectContaining({
         dateCompleted: null,
-        location: mockLocation.uuid,
+        location: sessionLocation.uuid,
         patient: mockPatient.id,
         program: oncologyScreeningProgramUuid,
         states: [],
@@ -183,6 +178,32 @@ describe('ProgramsForm', () => {
         kind: 'success',
         title: 'Program enrollment updated',
       }),
+    );
+  });
+
+  it('preserves the existing enrollment location when editing', async () => {
+    const user = userEvent.setup();
+
+    renderProgramsForm(mockEnrolledProgramsResponse[0].uuid);
+
+    const enrollButton = screen.getByRole('button', { name: /save and close/i });
+
+    mockUpdateProgramEnrollment.mockResolvedValue({
+      status: 200,
+      statusText: 'OK',
+    } as unknown as FetchResponse);
+
+    expect(screen.getByDisplayValue(mockEnrolledProgramsResponse[0].location.display)).toBeInTheDocument();
+    expect(screen.queryByDisplayValue(mockSession.data.sessionLocation.display)).not.toBeInTheDocument();
+
+    await user.click(enrollButton);
+
+    expect(mockUpdateProgramEnrollment).toHaveBeenCalledWith(
+      mockEnrolledProgramsResponse[0].uuid,
+      expect.objectContaining({
+        location: mockEnrolledProgramsResponse[0].location.uuid,
+      }),
+      expect.any(AbortController),
     );
   });
 

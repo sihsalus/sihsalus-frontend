@@ -21,7 +21,6 @@ export { default as useEncountersCRED } from './useEncountersCRED';
 export { useFeedingAssessment } from './useFeedingAssessment';
 export { useImmediateNewbornAttentions } from './useImmediateNewbornAttentions';
 export { useLatestValidEncounter } from './useLatestEncounter';
-export { useLaunchCREDForm } from './useLaunchCREDForm';
 export { useNeonatalSummary } from './useNeonatalSummary';
 export { useNutritionalAssessment } from './useNutritionalAssessment';
 export { useNutritionFollowup } from './useNutritionFollowup';

@@ -1,6 +1,11 @@
 import { FormLabel, NumberInput, TextArea } from '@carbon/react';
 import { Warning } from '@carbon/react/icons';
 import { ResponsiveWrapper, useLayoutType } from '@openmrs/esm-framework';
+import {
+  parsePlainDecimalInput,
+  preventScientificNotationKey,
+  preventScientificNotationPaste,
+} from '@openmrs/esm-utils';
 import classNames from 'classnames';
 import React, { Fragment, useId, useState } from 'react';
 import { type Control, Controller } from 'react-hook-form';
@@ -8,11 +13,6 @@ import { useTranslation } from 'react-i18next';
 
 import { generatePlaceholder } from '../common';
 
-import {
-  parsePlainDecimalInput,
-  preventScientificNotationKey,
-  preventScientificNotationPaste,
-} from './plain-number-input';
 import { type VitalsBiometricsFormData } from './vitals-biometrics-form.workspace';
 import styles from './vitals-biometrics-input.scss';
 

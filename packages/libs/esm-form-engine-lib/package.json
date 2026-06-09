@@ -37,6 +37,7 @@
   },
   "dependencies": {
     "@carbon/react": "^1.83.0",
+    "@openmrs/esm-utils": "workspace:*",
     "classnames": "^2.5.1",
     "jsep": "^1.4.0",
     "lodash-es": "^4.17.21",

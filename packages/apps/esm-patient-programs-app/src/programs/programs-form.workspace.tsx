@@ -10,11 +10,11 @@ import {
   Select,
   SelectItem,
   Stack,
+  TextInput,
 } from '@carbon/react';
 import { zodResolver } from '@hookform/resolvers/zod';
 import {
   getCoreTranslation,
-  LocationPicker,
   OpenmrsDatePicker,
   parseDate,
   showSnackbar,
@@ -55,7 +55,6 @@ const createProgramsFormSchema = (t: TFunction) =>
     selectedProgram: z.string().refine((value) => !!value, t('programRequired', 'Program is required')),
     enrollmentDate: z.date(),
     completionDate: z.date().optional().nullable(),
-    enrollmentLocation: z.string(),
     selectedProgramStatus: z.string(),
   });
 
@@ -108,12 +107,11 @@ const ProgramsForm: React.FC<ProgramsWorkspaceProps> = (props) => {
 
   const eligiblePrograms = currentProgram ? [currentProgram] : eligibleAvailablePrograms;
 
-  const getLocationUuid = () => {
-    if (!currentEnrollment?.location?.uuid && session?.sessionLocation?.uuid) {
-      return session?.sessionLocation?.uuid;
-    }
-    return currentEnrollment?.location?.uuid ?? null;
-  };
+  const enrollmentLocationUuid = currentEnrollment?.location?.uuid ?? session?.sessionLocation?.uuid ?? '';
+  const enrollmentLocationDisplay =
+    currentEnrollment?.location?.display ??
+    session?.sessionLocation?.display ??
+    t('currentLocationUnavailable', 'Current location unavailable');
 
   const currentState = currentEnrollment ? findLastState(currentEnrollment.states) : null;
 
@@ -129,7 +127,6 @@ const ProgramsForm: React.FC<ProgramsWorkspaceProps> = (props) => {
       selectedProgram: currentEnrollment?.program.uuid ?? '',
       enrollmentDate: currentEnrollment?.dateEnrolled ? parseDate(currentEnrollment.dateEnrolled) : new Date(),
       completionDate: currentEnrollment?.dateCompleted ? parseDate(currentEnrollment.dateCompleted) : null,
-      enrollmentLocation: getLocationUuid() ?? '',
       selectedProgramStatus: currentState?.state.uuid ?? '',
     },
   });
@@ -138,14 +135,26 @@ const ProgramsForm: React.FC<ProgramsWorkspaceProps> = (props) => {
 
   const onSubmit = useCallback(
     async (data: ProgramsFormData) => {
-      const { selectedProgram, enrollmentDate, completionDate, enrollmentLocation, selectedProgramStatus } = data;
+      const { selectedProgram, enrollmentDate, completionDate, selectedProgramStatus } = data;
+
+      if (!enrollmentLocationUuid) {
+        showSnackbar({
+          kind: 'error',
+          title: t('programEnrollmentSaveError', 'Error saving program enrollment'),
+          subtitle: t(
+            'programEnrollmentLocationRequired',
+            'A current session location is required to enroll a patient in a program',
+          ),
+        });
+        return;
+      }
 
       const payload = {
         patient: patientUuid,
         program: selectedProgram,
         dateEnrolled: enrollmentDate ? dayjs(enrollmentDate).format() : null,
         dateCompleted: completionDate ? dayjs(completionDate).format() : null,
-        location: enrollmentLocation,
+        location: enrollmentLocationUuid,
         states:
           !!selectedProgramStatus && selectedProgramStatus !== currentState?.state.uuid
             ? [{ state: { uuid: selectedProgramStatus } }]
@@ -181,7 +190,7 @@ const ProgramsForm: React.FC<ProgramsWorkspaceProps> = (props) => {
         });
       }
     },
-    [closeWorkspace, currentEnrollment, currentState, patientUuid, t],
+    [closeWorkspace, currentEnrollment, currentState, enrollmentLocationUuid, patientUuid, t],
   );
 
   const programName = (
@@ -258,22 +267,11 @@ const ProgramsForm: React.FC<ProgramsWorkspaceProps> = (props) => {
   );
 
   const enrollmentLocation = (
-    <Controller
-      name="enrollmentLocation"
-      control={control}
-      render={({ field: { onChange, value } }) => (
-        <React.Fragment>
-          <FormLabel className={`${styles.locationLabel} cds--label`}>
-            {t('enrollmentLocation', 'Enrollment location')}
-          </FormLabel>
-          <LocationPicker
-            selectedLocationUuid={value}
-            defaultLocationUuid={session?.sessionLocation?.uuid}
-            locationTag="Login Location"
-            onChange={(locationUuid) => onChange(locationUuid)}
-          />
-        </React.Fragment>
-      )}
+    <TextInput
+      id="enrollmentLocation"
+      labelText={t('enrollmentLocation', 'Enrollment location')}
+      readOnly
+      value={enrollmentLocationDisplay}
     />
   );
 

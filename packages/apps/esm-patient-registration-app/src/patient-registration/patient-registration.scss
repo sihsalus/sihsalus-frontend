@@ -49,14 +49,13 @@
   grid-template-columns: minmax(13rem, 15rem) minmax(0, 1fr);
   column-gap: layout.$spacing-07;
   width: 100%;
-  align-items: start;
+  align-items: stretch;
+  height: calc(100vh - #{layout.$spacing-09});
+  overflow: hidden;
 }
 
 .stickyColumn {
-  position: sticky;
   margin-top: layout.$spacing-05;
-  // layout.$spacing-09 for the nav height and layout.$spacing-05 for top margin
-  top: layout.$spacing-10;
   max-height: calc(100vh - #{layout.$spacing-10} - #{layout.$spacing-05});
   overflow-y: auto;
   padding-right: layout.$spacing-03;
@@ -128,12 +127,21 @@ html[dir="rtl"] {
   }
 }
 
+@media (min-width: 1024px) {
+  .infoGrid {
+    overflow-y: auto;
+    padding-right: layout.$spacing-05;
+  }
+}
+
 :global(.omrs-breakpoint-lt-desktop) {
   .formContainer {
     display: block;
     // Breathing room from the frame on tablet/mobile. The sticky bottom action
     // bar bleeds back to the edge via its negative margin below.
     padding: 0 layout.$spacing-05;
+    height: auto;
+    overflow: visible;
   }
 
   .stickyColumn {

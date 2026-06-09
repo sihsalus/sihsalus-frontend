@@ -66,7 +66,7 @@ describe('Login', () => {
       },
     );
 
-    expect(screen.getAllByRole('img', { name: /Sihsalus logo/i })).toHaveLength(1);
+    expect(screen.getAllByRole('img', { name: /OpenMRS logo/i })).toHaveLength(1);
     expect(screen.getByText(/Sihsalus/i)).toBeInTheDocument();
     expect(screen.queryByAltText(/^logo$/i)).not.toBeInTheDocument();
     // Version + short SHA are fetched asynchronously from build-info.json

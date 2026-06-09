@@ -30,6 +30,7 @@
   "newPasswordRequired": "New password is required",
   "oldPassword": "Old password",
   "oldPasswordRequired": "Old password is required",
+  "openmrsLogo": "OpenMRS logo",
   "password": "Password",
   "passwordChangedSuccessfully": "Password changed successfully",
   "passwordConfirmationRequired": "Password confirmation is required",

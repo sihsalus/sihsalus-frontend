@@ -40,6 +40,11 @@ export const configSchema = {
     _description: 'Ethnic self-identification concept UUID displayed in the expanded patient banner details',
     _default: '160581AAAAAAAAAAAAAAAAAAAAAAAAAAAAAA',
   },
+  ethnicIdentityAttributeTypeUuid: {
+    _type: Type.UUID,
+    _description: 'Person attribute type UUID that stores ethnicity displayed in the expanded patient banner details',
+    _default: '8d871386-c2cc-11de-8d13-0010c6dffd0f',
+  },
   printPatientSticker: {
     header: {
       _type: Type.Object,
@@ -102,6 +107,7 @@ export interface ConfigObject {
   contactAttributeTypes: Array<string>;
   additionalAttributeTypes: Array<string>;
   ethnicIdentityConceptUuid: string;
+  ethnicIdentityAttributeTypeUuid: string;
   printPatientSticker: {
     header: {
       showBarcode: boolean;

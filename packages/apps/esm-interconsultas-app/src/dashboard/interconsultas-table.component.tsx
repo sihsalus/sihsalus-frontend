@@ -120,7 +120,12 @@ const InterconsultasTable: React.FC<InterconsultasTableProps> = ({ filter }) => 
     (order: InterconsultaOrder) => {
       const status = deriveStatus(order);
       return (
-        <OverflowMenu aria-label={t('actions', 'Acciones')} flipped size="sm">
+        <OverflowMenu
+          aria-label={t('actions', 'Acciones')}
+          iconDescription={t('actions', 'Acciones')}
+          flipped
+          size="sm"
+        >
           <OverflowMenuItem
             itemText={t('viewDetail', 'Ver detalle')}
             onClick={() => openModal('interconsulta-detail-modal', order)}

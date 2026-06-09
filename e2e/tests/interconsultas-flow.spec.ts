@@ -216,21 +216,23 @@ test('interconsulta: solicitud, bandeja, pickup, respuesta y chart', async ({ pa
     await page.goto('home/interconsultas');
     await page.waitForLoadState('networkidle').catch(() => null);
 
-    // Bandeja "Solicitadas" activa por defecto: buscar al paciente
-    const searchBox = page.getByPlaceholder(/Buscar en esta lista|Search this list/i).first();
+    // Bandeja "Solicitadas" activa por defecto: buscar al paciente.
+    // getByRole solo matchea el tabpanel visible (los demás están ocultos).
+    const activePanel = () => page.getByRole('tabpanel');
+    const searchBox = activePanel().getByPlaceholder(/Buscar en esta lista|Search this list/i);
     await expect(searchBox).toBeVisible({ timeout: 30_000 });
     await searchBox.fill(familyName);
 
-    const requestedRow = page.getByRole('row', { name: new RegExp(familyName, 'i') });
+    const requestedRow = activePanel().getByRole('row', { name: new RegExp(familyName, 'i') });
     await expect(requestedRow).toBeVisible({ timeout: 15_000 });
 
     // ---------- Doctor B la recoge (Atender) ----------
-    await requestedRow.getByRole('button', { name: /Acciones|Actions/i }).click();
-    await page.getByRole('menuitem', { name: /Atender|Attend/i }).click();
+    await requestedRow.getByRole('button', { name: /Acciones|Actions|Options/i }).click({ timeout: 15_000 });
+    await page.getByRole('menuitem', { name: /Atender|Attend/i }).click({ timeout: 15_000 });
     await page
+      .getByRole('dialog')
       .getByRole('button', { name: /Atender \(recoger\)|Attend \(pick up\)/i })
-      .last()
-      .click();
+      .click({ timeout: 15_000 });
 
     // Estado pasa a En atención (verificación de contrato + UI)
     await expect
@@ -244,22 +246,24 @@ test('interconsulta: solicitud, bandeja, pickup, respuesta y chart', async ({ pa
       )
       .toBe('IN_PROGRESS');
 
-    await page.getByRole('tab', { name: /En atención|In progress/i }).click();
-    await page
-      .getByPlaceholder(/Buscar en esta lista|Search this list/i)
-      .last()
-      .fill(familyName);
-    const inProgressRow = page.getByRole('row', { name: new RegExp(familyName, 'i') });
+    await page.getByRole('tab', { name: /En atención|In progress/i }).click({ timeout: 15_000 });
+    const inProgressSearch = activePanel().getByPlaceholder(/Buscar en esta lista|Search this list/i);
+    await expect(inProgressSearch).toBeVisible({ timeout: 15_000 });
+    await inProgressSearch.fill(familyName);
+    const inProgressRow = activePanel().getByRole('row', { name: new RegExp(familyName, 'i') });
     await expect(inProgressRow).toBeVisible({ timeout: 15_000 });
 
     // ---------- Doctor B responde / completa ----------
-    await inProgressRow.getByRole('button', { name: /Acciones|Actions/i }).click();
-    await page.getByRole('menuitem', { name: /Responder|Respond/i }).click();
-    await page
+    await inProgressRow.getByRole('button', { name: /Acciones|Actions|Options/i }).click({ timeout: 15_000 });
+    await page.getByRole('menuitem', { name: /Responder|Respond/i }).click({ timeout: 15_000 });
+    const respondDialog = page.getByRole('dialog');
+    await respondDialog
       .locator('#respond-respuesta')
-      .fill('E2E: paciente evaluado por el servicio destino, sin hallazgos agudos.');
-    await page.locator('#respond-recomendaciones').fill('E2E: control ambulatorio en 30 días.');
-    await page.getByRole('button', { name: /Responder y completar|Respond and complete/i }).click();
+      .fill('E2E: paciente evaluado por el servicio destino, sin hallazgos agudos.', { timeout: 15_000 });
+    await respondDialog.locator('#respond-recomendaciones').fill('E2E: control ambulatorio en 30 días.');
+    await respondDialog
+      .getByRole('button', { name: /Responder y completar|Respond and complete/i })
+      .click({ timeout: 15_000 });
 
     await expect
       .poll(
@@ -287,13 +291,24 @@ test('interconsulta: solicitud, bandeja, pickup, respuesta y chart', async ({ pa
     await page.goto(`patient/${patient.uuid}/chart/interconsultas`);
     await page.waitForLoadState('networkidle').catch(() => null);
 
+    // Si otro microfrontend falla al cargar, su notificación atrapa el foco; descartarla.
+    await page
+      .getByRole('button', { name: /close notification/i })
+      .click({ timeout: 3_000 })
+      .catch(() => null);
+
     const chartWidget = page.getByText(/Interconsultas|Interconsultations/i).first();
     await expect(chartWidget).toBeVisible({ timeout: 30_000 });
 
-    const requestEntry = page.getByText(new RegExp(serviceConcept.display ?? 'interconsulta', 'i')).first();
+    // La solicitud aparece como item del acordeón con su estado
+    const requestEntry = page
+      .getByRole('button', { name: new RegExp(serviceConcept.display ?? 'interconsulta', 'i') })
+      .first();
     await expect(requestEntry).toBeVisible({ timeout: 15_000 });
+    await expect(page.getByText(/Respondida|Responded/i).first()).toBeVisible({ timeout: 15_000 });
 
-    await requestEntry.click().catch(() => null);
+    // Al expandir se ve la respuesta registrada
+    await requestEntry.click({ timeout: 15_000 });
     await expect(page.getByText(/paciente evaluado por el servicio destino/i).first()).toBeVisible({
       timeout: 15_000,
     });

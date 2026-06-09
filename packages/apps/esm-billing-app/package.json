@@ -83,9 +83,9 @@
     "rxjs": "^6.6.7",
     "sass": "^1.70.0",
     "swr": "^2.2.4",
-    "turbo": "^2.9.14",
+    "turbo": "^2.9.17",
     "typescript": "6.0.3",
-    "vitest": "^4.1.7"
+    "vitest": "^4.1.8"
   },
   "packageManager": "yarn@4.10.3"
 }

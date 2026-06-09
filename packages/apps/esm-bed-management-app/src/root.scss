@@ -24,9 +24,11 @@
   block-size: layout.$spacing-05;
   flex: 0 0 layout.$spacing-05;
   color: colors.$gray-70;
+  display: block;
 }
 
 :global(.sihsalus-side-nav__text) {
+  display: block;
   min-width: 0;
   max-width: 12rem;
   overflow: hidden;

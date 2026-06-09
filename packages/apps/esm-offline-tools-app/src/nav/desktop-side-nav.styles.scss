@@ -51,9 +51,11 @@
   block-size: 1.25rem;
   flex: 0 0 1.25rem;
   color: colors.$gray-70;
+  display: block;
 }
 
 :global(.sihsalus-side-nav__text) {
+  display: block;
   min-width: 0;
   max-width: 12rem;
   overflow: hidden;

@@ -17,7 +17,6 @@ export function parseDefinicion(
 
   return {
     tipo: definicion.tipo,
-    periodo: definicion.periodo,
     selectedLocations: (definicion.evento?.location_uuids ?? []).map((uuid) => ({ uuid, display: uuid })),
     minimoOcurrencias: toStringValue(definicion.evento?.minimo_ocurrencias),
     filtroClinico: diagnosticos?.concepto_uuids?.length

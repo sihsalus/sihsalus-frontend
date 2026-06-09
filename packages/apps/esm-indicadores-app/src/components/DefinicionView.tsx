@@ -13,13 +13,6 @@ const tipoLabels = {
   conteo_pacientes: 'Conteo de pacientes',
 };
 
-const periodoLabels = {
-  mes_actual: 'Mes actual',
-  trimestre_actual: 'Trimestre actual',
-  semestre_actual: 'Semestre actual',
-  anual_actual: 'Año actual',
-};
-
 const DefinicionView: React.FC<DefinicionViewProps> = ({ definicion }) => {
   const locationUuids = useMemo(() => definicion.evento?.location_uuids ?? [], [definicion.evento?.location_uuids]);
   const diagnosticoUuids = useMemo(
@@ -39,9 +32,6 @@ const DefinicionView: React.FC<DefinicionViewProps> = ({ definicion }) => {
     <div className={styles.definitionList}>
       <div>
         <strong>Tipo:</strong> {tipoLabels[definicion.tipo]}
-      </div>
-      <div>
-        <strong>Periodo:</strong> {periodoLabels[definicion.periodo]}
       </div>
       <div>
         <strong>Servicios:</strong>{' '}

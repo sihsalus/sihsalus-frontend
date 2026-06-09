@@ -99,3 +99,52 @@ describe('IndicadorForm activo toggle', () => {
     expect(submittedPayload.metadata.activo).toBe(false);
   });
 });
+
+describe('IndicadorForm periodo removal', () => {
+  it('does NOT render periodo Select in create mode', () => {
+    render(<IndicadorForm mode="create" onSubmit={vi.fn()} />);
+
+    // The "Periodo" label should not appear anywhere in the form
+    expect(screen.queryByText('Periodo')).not.toBeInTheDocument();
+    // The periodo select items from the legacy UI should not be present
+    expect(screen.queryByText('Mes actual')).not.toBeInTheDocument();
+    expect(screen.queryByText('Trimestre actual')).not.toBeInTheDocument();
+    expect(screen.queryByText('Semestre actual')).not.toBeInTheDocument();
+    expect(screen.queryByText('Año actual')).not.toBeInTheDocument();
+  });
+
+  it('does NOT render periodo Select in version mode', () => {
+    render(
+      <IndicadorForm
+        mode="version"
+        initialMetadata={{ nombre: 'Test', descripcion: null }}
+        onSubmit={vi.fn()}
+      />,
+    );
+
+    expect(screen.queryByText('Periodo')).not.toBeInTheDocument();
+  });
+
+  it('does NOT include periodo in built definicion when submitted', async () => {
+    const onSubmit = vi.fn().mockResolvedValue(undefined);
+
+    render(<IndicadorForm mode="create" onSubmit={onSubmit} />);
+
+    const nombreInput = screen.getByLabelText('Nombre');
+    await act(async () => {
+      fireEvent.change(nombreInput, { target: { value: 'Test' } });
+    });
+
+    const submitButton = screen.getByRole('button', { name: 'Guardar' });
+    await act(async () => {
+      fireEvent.click(submitButton);
+    });
+
+    expect(onSubmit).toHaveBeenCalledTimes(1);
+    const submittedPayload = onSubmit.mock.calls[0][0];
+    // The definicion must NOT contain periodo
+    expect(submittedPayload.definicion).toBeDefined();
+    expect(submittedPayload.definicion).not.toHaveProperty('periodo');
+    expect(submittedPayload.definicion.tipo).toBe('conteo_atenciones');
+  });
+});

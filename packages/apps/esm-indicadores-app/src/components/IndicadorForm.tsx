@@ -31,7 +31,6 @@ const defaultValues: IndicadorFormValues = {
   nombre: '',
   descripcion: '',
   tipo: 'conteo_atenciones',
-  periodo: 'mes_actual',
   selectedLocations: [],
   minimoOcurrencias: '1',
   filtroClinico: 'ninguno',
@@ -94,7 +93,6 @@ function buildDefinicion(values: IndicadorFormValues): DefinicionIndicadorForm {
 
   return {
     tipo: values.tipo,
-    periodo: values.periodo,
     evento,
     poblacion: hasPoblacion ? poblacion : undefined,
   };
@@ -209,8 +207,8 @@ const IndicadorForm: React.FC<IndicadorFormProps> = ({
         <>
           <section className={styles.formSectionCard}>
             <div className={styles.sectionHeader}>
-              <h3 className={styles.sectionTitle}>Tipo y periodo</h3>
-              <p className={styles.sectionHint}>Define qué se cuenta y la ventana temporal principal.</p>
+              <h3 className={styles.sectionTitle}>Tipo</h3>
+              <p className={styles.sectionHint}>Define qué se cuenta. Las mediciones son siempre mensuales.</p>
             </div>
             <div className={styles.formColumns}>
               <Select
@@ -221,17 +219,6 @@ const IndicadorForm: React.FC<IndicadorFormProps> = ({
               >
                 <SelectItem value="conteo_atenciones" text="Conteo de atenciones" />
                 <SelectItem value="conteo_pacientes" text="Conteo de pacientes" />
-              </Select>
-              <Select
-                id="periodo"
-                labelText="Periodo"
-                value={values.periodo}
-                onChange={(event) => updateField('periodo', event.target.value as IndicadorFormValues['periodo'])}
-              >
-                <SelectItem value="mes_actual" text="Mes actual" />
-                <SelectItem value="trimestre_actual" text="Trimestre actual" />
-                <SelectItem value="semestre_actual" text="Semestre actual" />
-                <SelectItem value="anual_actual" text="Año actual" />
               </Select>
             </div>
           </section>

@@ -1,6 +1,6 @@
-import type { BatchCalcularNowResponse, GetResultadosParams, IndicadorResultado, PaginatedResponse } from './types';
+import type { BatchCalcularNowResponse, GetResultadosParams, GetSeriesParams, IndicadorResultado, PaginatedResponse, SeriesResponse } from './types';
 import { getReportesSqlApiPath } from './config';
-import { calcularAhoraMock, listResultados } from '../mocks/indicators-data';
+import { calcularAhoraMock, getSeriesMock, listResultados } from '../mocks/indicators-data';
 import { fetchJson, withMockFallback } from './client';
 
 function ensureQuery(params: Record<string, string | number | undefined>) {
@@ -35,5 +35,19 @@ export async function calcularAhora(): Promise<BatchCalcularNowResponse> {
   return withMockFallback(
     () => fetchJson<BatchCalcularNowResponse>(`${reportesSqlBase}/resultados/calcular-ahora`, { method: 'POST' }),
     () => calcularAhoraMock(),
+  );
+}
+
+export async function getResultadosSeries(params: GetSeriesParams): Promise<SeriesResponse> {
+  const reportesSqlBase = await getReportesSqlApiPath();
+  const queryParams: Record<string, string | number | undefined> = {
+    indicador_id: params.indicador_id,
+    anio: params.anio,
+    granularity: params.granularity ?? 'mensual',
+  };
+
+  return withMockFallback(
+    () => fetchJson<SeriesResponse>(`${reportesSqlBase}/resultados/series${ensureQuery(queryParams)}`),
+    () => getSeriesMock(params),
   );
 }

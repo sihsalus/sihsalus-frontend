@@ -6,7 +6,6 @@ import { parseDefinicion } from './parseDefinicion';
 function makeDefinicionWithOrdenes(uuids: Array<string>): DefinicionIndicadorForm {
   return {
     tipo: 'conteo_atenciones',
-    periodo: 'mes_actual',
     evento: {
       location_uuids: [],
       ordenes: [{ concepto_uuids: uuids }],

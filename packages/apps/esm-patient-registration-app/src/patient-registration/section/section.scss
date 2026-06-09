@@ -36,6 +36,14 @@
   align-items: flex-start;
 }
 
+.demographicsField {
+  min-width: 0;
+}
+
+.demographicsField[data-field-name='name'] {
+  grid-column: 1 / -1;
+}
+
 .isDeadFieldContainer {
   margin-bottom: layout.$spacing-05;
 }

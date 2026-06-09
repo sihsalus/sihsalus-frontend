@@ -62,7 +62,9 @@
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(min(100%, 18rem), 1fr));
   column-gap: layout.$spacing-05;
+  row-gap: layout.$spacing-03;
   padding-bottom: layout.$spacing-05;
+  align-items: start;
 }
 
 .halfWidthInDesktopView {
@@ -168,6 +170,16 @@
   }
 }
 
+.identifierFieldRow {
+  display: flex;
+  align-items: center;
+  justify-content: initial;
+}
+
+.identifierFieldRow + .identifierFieldRow {
+  margin-top: layout.$spacing-03;
+}
+
 .attributeField {
   margin-bottom: layout.$spacing-05;
 }
@@ -219,6 +231,10 @@
   }
 
   .fullWidthInDesktopView {
+    width: 100%;
+  }
+
+  .identifierFieldRow {
     width: 100%;
   }
 }

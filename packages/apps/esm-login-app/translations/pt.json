@@ -27,6 +27,7 @@
   "newPasswordRequired": "Nova senha é obrigatória",
   "oldPassword": "Senha antiga",
   "oldPasswordRequired": "A senha antiga é obrigatória",
+  "openmrsLogo": "Logotipo do OpenMRS",
   "password": "Senha",
   "passwordChangedSuccessfully": "Senha alterada com sucesso",
   "passwordConfirmationRequired": "A confirmação da senha é obrigatória",

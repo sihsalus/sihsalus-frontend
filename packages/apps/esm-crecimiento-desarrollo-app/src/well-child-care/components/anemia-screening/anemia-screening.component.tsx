@@ -8,13 +8,11 @@ import {
   Tag,
 } from '@carbon/react';
 import { Add, CheckmarkFilled, WarningFilled } from '@carbon/react/icons';
-import { launchWorkspace2, useConfig } from '@openmrs/esm-framework';
 import { CardHeader, ErrorState } from '@openmrs/esm-patient-common-lib';
-import React, { useCallback } from 'react';
+import React from 'react';
 import { useTranslation } from 'react-i18next';
-import type { ConfigObject } from '../../../config-schema';
 import { useAnemiaScreening } from '../../../hooks/useAnemiaScreening';
-import { formEntryWorkspace } from '../../../types';
+import { useCREDFormLauncher } from '../../../hooks/useCREDFormLauncher';
 
 import styles from './anemia-screening.scss';
 
@@ -24,21 +22,9 @@ interface AnemiaScreeningProps {
 
 const AnemiaScreening: React.FC<AnemiaScreeningProps> = ({ patientUuid }) => {
   const { t } = useTranslation();
-  const config = useConfig<ConfigObject>();
   const { lastHb, lastDate, isAnemic, nextDueDate, isLoading, error } = useAnemiaScreening(patientUuid);
+  const { launchForm: handleAdd, isLoading: isFormLoading } = useCREDFormLauncher('anemiaScreeningForm');
   const headerTitle = t('anemiaScreening', 'Tamizaje de Anemia');
-
-  const handleAdd = useCallback(() => {
-    const formUuid = config.formsList.anemiaScreeningForm;
-    if (!formUuid) {
-      console.warn('Form UUID not configured for anemiaScreeningForm');
-      return;
-    }
-    launchWorkspace2(formEntryWorkspace, {
-      form: { uuid: formUuid },
-      encounterUuid: '',
-    });
-  }, [config.formsList.anemiaScreeningForm]);
 
   if (isLoading) {
     return <DataTableSkeleton size="sm" rowCount={3} columnCount={2} />;
@@ -56,7 +42,14 @@ const AnemiaScreening: React.FC<AnemiaScreeningProps> = ({ patientUuid }) => {
             {isAnemic ? t('anemic', 'Anemia') : t('normal', 'Normal')}
           </Tag>
         )}
-        <Button kind="ghost" size="sm" renderIcon={Add} onClick={handleAdd} iconDescription={t('add', 'Add')}>
+        <Button
+          kind="ghost"
+          size="sm"
+          renderIcon={Add}
+          onClick={() => handleAdd()}
+          iconDescription={t('add', 'Add')}
+          disabled={isFormLoading}
+        >
           {t('add', 'Add')}
         </Button>
       </CardHeader>

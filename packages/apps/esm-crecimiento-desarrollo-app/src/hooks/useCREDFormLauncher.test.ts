@@ -5,6 +5,7 @@ import {
   getCREDFormIdentifier,
   neonatalFormFallbacks,
   resolveCREDForm,
+  wellChildControlFormFallbacks,
 } from './useCREDFormLauncher';
 
 vi.mock('@openmrs/esm-framework', async () => ({
@@ -30,13 +31,23 @@ describe('CRED form launcher resources', () => {
         'nutritionalAssessmentForm',
         childNutritionFormFallbacks.nutritionalAssessmentForm,
       ),
-    ).toBe('21f010ce-4876-32ec-8844-27dfedc6705a');
+    ).toBe('CRED-006-EVALUACIÓN NUTRICIONAL');
   });
 
   it('uses the neonatal fallback when config does not provide the form key', () => {
     expect(getCREDFormIdentifier(undefined, 'birthDetails', neonatalFormFallbacks.birthDetails)).toBe(
       '8db0f1dc-c191-3468-854c-6c6c41ef6198',
     );
+  });
+
+  it('uses the well-child control fallback when config does not provide the form key', () => {
+    expect(
+      getCREDFormIdentifier(
+        undefined,
+        'stimulationFollowupForm',
+        wellChildControlFormFallbacks.stimulationFollowupForm,
+      ),
+    ).toBe('CRED-004-SEGUIMIENTO DEL DESARROLLO');
   });
 
   it('prefers the configured form identifier over the fallback', () => {

@@ -25,15 +25,134 @@ type OpenmrsFormSearchResponse = {
 export const childNutritionFormFallbacks = {
   nutritionalAssessmentForm: {
     display: 'CRED-006-EVALUACIÓN NUTRICIONAL',
-    identifier: '21f010ce-4876-32ec-8844-27dfedc6705a',
+    identifier: 'CRED-006-EVALUACIÓN NUTRICIONAL',
   },
   feedingCounselingForm: {
     display: 'CRED-007-CONSEJERÍA ALIMENTARIA',
-    identifier: '1fa86795-3d84-304a-ac9e-320a39b69ca7',
+    identifier: 'CRED-007-CONSEJERÍA ALIMENTARIA',
   },
   nutritionFollowupForm: {
     display: 'CRED-008-SEGUIMIENTO NUTRICIONAL',
-    identifier: '24e8dd94-f712-352f-96c2-0dbd8c15068d',
+    identifier: 'CRED-008-SEGUIMIENTO NUTRICIONAL',
+  },
+} as const satisfies Partial<Record<CREDFormKey, CREDFormFallback>>;
+
+export const wellChildControlFormFallbacks = {
+  nursingAssessment: {
+    display: '(Página 11 y 12) Valoración de Enfermería',
+    identifier: '(Página 11 y 12) Valoración de Enfermería',
+  },
+  riskInterview0to30: {
+    display: '(Página 19) PRIMERA ENTREVISTA EN BUSCA DE FACTORES DE RIESGO (0 - 30 meses)',
+    identifier: '(Página 19) PRIMERA ENTREVISTA EN BUSCA DE FACTORES DE RIESGO (0 - 30 meses)',
+  },
+  childFeeding0to5: {
+    display: '(Página 20) Evaluación de la alimentación del niño/niña (0 - 5 meses)',
+    identifier: '(Página 20) Evaluación de la alimentación del niño/niña (0 - 5 meses)',
+  },
+  childFeeding6to42: {
+    display: '(Página 20) Evaluación de la alimentación del niño/niña (6 - 42 meses)',
+    identifier: '(Página 20) Evaluación de la alimentación del niño/niña (6 - 42 meses)',
+  },
+  childAbuseScreening: {
+    display: '(Página 37) Ficha de Tamizaje Violencia y maltrato infantil',
+    identifier: '(Página 37) Ficha de Tamizaje Violencia y maltrato infantil',
+  },
+  anemiaScreeningForm: {
+    display: 'CRED-001-TAMIZAJE DE ANEMIA',
+    identifier: 'CRED-001-TAMIZAJE DE ANEMIA',
+  },
+  supplementationForm: {
+    display: 'CRED-002-SUPLEMENTACIÓN NIÑO',
+    identifier: 'CRED-002-SUPLEMENTACIÓN NIÑO',
+  },
+  stimulationSessionForm: {
+    display: 'CRED-003-SESIÓN DE ESTIMULACIÓN TEMPRANA',
+    identifier: 'CRED-003-SESIÓN DE ESTIMULACIÓN TEMPRANA',
+  },
+  stimulationFollowupForm: {
+    display: 'CRED-004-SEGUIMIENTO DEL DESARROLLO',
+    identifier: 'CRED-004-SEGUIMIENTO DEL DESARROLLO',
+  },
+  stimulationCounselingForm: {
+    display: 'CRED-005-CONSEJERÍA A PADRES',
+    identifier: 'CRED-005-CONSEJERÍA A PADRES',
+  },
+  ediDevelopmentForm: {
+    display: 'CRED-009-EDI',
+    identifier: 'CRED-009-EDI',
+  },
+  autismScreeningForm: {
+    display: 'CRED-010-TAMIZAJE TEA',
+    identifier: 'CRED-010-TAMIZAJE TEA',
+  },
+  childMentalHealthForm: {
+    display: 'CRED-011-SALUD MENTAL NIÑO Y CUIDADOR',
+    identifier: 'CRED-011-SALUD MENTAL NIÑO Y CUIDADOR',
+  },
+  parasitosisScreeningForm: {
+    display: 'CRED-012-DESCARTE DE PARASITOSIS',
+    identifier: 'CRED-012-DESCARTE DE PARASITOSIS',
+  },
+  vitaminAAdministrationForm: {
+    display: 'CRED-013-ADMINISTRACIÓN DE VITAMINA A',
+    identifier: 'CRED-013-ADMINISTRACIÓN DE VITAMINA A',
+  },
+  physicalExamForm: {
+    display: 'CRED-014-EXAMEN FÍSICO INTEGRAL',
+    identifier: 'CRED-014-EXAMEN FÍSICO INTEGRAL',
+  },
+  growthNutritionEvaluationForm: {
+    display: 'CRED-015-CRECIMIENTO Y ESTADO NUTRICIONAL',
+    identifier: 'CRED-015-CRECIMIENTO Y ESTADO NUTRICIONAL',
+  },
+  oralHealthInspectionForm: {
+    display: 'CRED-016-INSPECCIÓN DE CAVIDAD BUCAL',
+    identifier: 'CRED-016-INSPECCIÓN DE CAVIDAD BUCAL',
+  },
+  visualScreeningForm: {
+    display: 'CRED-017-TAMIZAJE VISUAL',
+    identifier: 'CRED-017-TAMIZAJE VISUAL',
+  },
+  hearingScreeningForm: {
+    display: 'CRED-018-EVALUACIÓN AUDITIVA',
+    identifier: 'CRED-018-EVALUACIÓN AUDITIVA',
+  },
+  cancerWarningSignsForm: {
+    display: 'CRED-019-SIGNOS DE SOSPECHA DE CÁNCER',
+    identifier: 'CRED-019-SIGNOS DE SOSPECHA DE CÁNCER',
+  },
+  metalsExposureScreeningForm: {
+    display: 'CRED-020-EXPOSICIÓN A METALES PESADOS',
+    identifier: 'CRED-020-EXPOSICIÓN A METALES PESADOS',
+  },
+  violenceDisciplineScreeningForm: {
+    display: 'CRED-021-VIOLENCIA DISCIPLINA Y CASTIGO FÍSICO',
+    identifier: 'CRED-021-VIOLENCIA DISCIPLINA Y CASTIGO FÍSICO',
+  },
+  credCounselingAgreementForm: {
+    display: 'CRED-022-CONSEJERÍA ACUERDOS Y COMPROMISOS',
+    identifier: 'CRED-022-CONSEJERÍA ACUERDOS Y COMPROMISOS',
+  },
+  homeVisitFollowupForm: {
+    display: 'CRED-023-VISITA DOMICILIARIA Y SEGUIMIENTO',
+    identifier: 'CRED-023-VISITA DOMICILIARIA Y SEGUIMIENTO',
+  },
+  referralInterconsultationForm: {
+    display: 'CRED-024-INTERCONSULTA DERIVACIÓN REFERENCIA',
+    identifier: 'CRED-024-INTERCONSULTA DERIVACIÓN REFERENCIA',
+  },
+  schoolHealthCounselingForm: {
+    display: 'CRED-025-CONSEJERÍA ESCOLAR Y LONCHERA SALUDABLE',
+    identifier: 'CRED-025-CONSEJERÍA ESCOLAR Y LONCHERA SALUDABLE',
+  },
+  tepsi: {
+    display: '(Página 34, 35 y 36) TEPSI',
+    identifier: '(Página 34, 35 y 36) TEPSI',
+  },
+  adverseReactionForm: {
+    display: 'INMU-002-REPORTE ESAVI',
+    identifier: 'INMU-002-REPORTE ESAVI',
   },
 } as const satisfies Partial<Record<CREDFormKey, CREDFormFallback>>;
 
@@ -66,6 +185,7 @@ export const neonatalFormFallbacks = {
 
 const credFormFallbacks = {
   ...childNutritionFormFallbacks,
+  ...wellChildControlFormFallbacks,
   ...neonatalFormFallbacks,
 } as const satisfies Partial<Record<CREDFormKey, CREDFormFallback>>;
 

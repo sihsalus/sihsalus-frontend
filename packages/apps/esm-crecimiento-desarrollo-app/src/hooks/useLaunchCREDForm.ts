@@ -3,6 +3,7 @@ import { useCallback } from 'react';
 
 import { type ConfigObject } from '../config-schema';
 import { type Form, formEntryWorkspace } from '../types';
+import { resolveCREDForm } from './useCREDFormLauncher';
 
 /**
  * Custom hook for launching CRED forms with workspace functionality
@@ -19,32 +20,24 @@ export function useLaunchCREDForm(_patientUuid: string) {
   }, []);
 
   /**
-   * Launch a specific CRED form by its UUID from config
+   * Launch a specific CRED form by its configured identifier.
    * @param formKey - The key from config.formsList (e.g., 'eedp2Months', 'tepsi')
    * @param encounterUuid - Optional encounter UUID for editing existing encounter
    */
   const launchCREDFormByKey = useCallback(
     (formKey: keyof ConfigObject['formsList'], encounterUuid: string = '') => {
-      const formUuid = config.formsList[formKey];
+      const formIdentifier = config.formsList[formKey];
 
-      if (!formUuid) {
-        console.warn(`Form UUID not found for key: ${formKey}`);
+      if (!formIdentifier) {
+        console.warn(`Form identifier not found for key: ${formKey}`);
         return;
       }
 
-      // Create a Form object from the config
-      const form: Form = {
-        uuid: formUuid,
-        name: formKey,
-        display: getFormDisplayName(formKey),
-        version: '1.0',
-        published: true,
-        retired: false,
-        resources: [],
-        formCategory: 'CRED',
-      };
-
-      launchCREDForm(form, encounterUuid);
+      void resolveCREDForm(formIdentifier, getFormDisplayName(formKey))
+        .then((form) => launchCREDForm(form, encounterUuid))
+        .catch((error) => {
+          console.warn(`Could not resolve CRED form for key: ${formKey}`, error);
+        });
     },
     [config.formsList, launchCREDForm],
   );

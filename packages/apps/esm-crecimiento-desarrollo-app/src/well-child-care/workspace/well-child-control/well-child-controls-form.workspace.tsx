@@ -49,6 +49,7 @@ const CREDControlsWorkspace: React.FC<DefaultPatientWorkspaceProps> = ({
   const { encounters: rawEncounters, isLoading: isEncountersLoading } = useCREDEncounters(patientUuid);
   const encounters = useMemo(() => rawEncounters ?? [], [rawEncounters]);
   const { getAgeGroupForForms } = useAgeGroups();
+  const selectedControl = workspaceProps?.control;
 
   const [showErrorNotification, setShowErrorNotification] = useState(false);
 
@@ -71,7 +72,10 @@ const CREDControlsWorkspace: React.FC<DefaultPatientWorkspaceProps> = ({
     },
   });
 
-  const credControlNumber = useMemo(() => (encounters ? encounters.length + 1 : 1), [encounters]);
+  const credControlNumber = useMemo(
+    () => selectedControl?.controlNumber ?? (encounters ? encounters.length + 1 : 1),
+    [encounters, selectedControl?.controlNumber],
+  );
 
   const ageGroup = useMemo(() => {
     if (!patient?.birthDate) return null;
@@ -85,7 +89,7 @@ const CREDControlsWorkspace: React.FC<DefaultPatientWorkspaceProps> = ({
 
   const formattedAge = useMemo(() => (patient?.birthDate ? age(patient.birthDate) : ''), [patient?.birthDate]);
 
-  const allAvailableForms = useCREDFormsForAgeGroup(config, patient?.birthDate);
+  const allAvailableForms = useCREDFormsForAgeGroup(config, patient?.birthDate, selectedControl?.targetDate);
 
   const handleStartControl = useCallback(() => {
     const consultationData = watch();
@@ -107,7 +111,10 @@ const CREDControlsWorkspace: React.FC<DefaultPatientWorkspaceProps> = ({
 
     launchWorkspace2('forms-selector-workspace', {
       availableForms: allAvailableForms,
+      patientUuid,
       patientAge: formattedAge,
+      patientBirthDate: patient?.birthDate,
+      controlTargetDate: selectedControl?.targetDate ? new Date(selectedControl.targetDate).toISOString() : undefined,
       controlNumber: credControlNumber,
       title: t('credFormsSelection', 'Selección de Formularios Crecimiento y Desarrollo'),
       subtitle: t(
@@ -116,7 +123,17 @@ const CREDControlsWorkspace: React.FC<DefaultPatientWorkspaceProps> = ({
       ),
       backWorkspace: 'wellchild-control-form',
     });
-  }, [watch, patientUuid, visit, allAvailableForms, formattedAge, credControlNumber, t]);
+  }, [
+    watch,
+    patientUuid,
+    visit,
+    allAvailableForms,
+    formattedAge,
+    patient?.birthDate,
+    selectedControl?.targetDate,
+    credControlNumber,
+    t,
+  ]);
 
   useEffect(() => {
     const now = new Date();

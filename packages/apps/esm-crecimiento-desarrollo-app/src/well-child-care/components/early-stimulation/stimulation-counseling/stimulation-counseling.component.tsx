@@ -8,13 +8,11 @@ import {
   Tag,
 } from '@carbon/react';
 import { Add } from '@carbon/react/icons';
-import { launchWorkspace2, useConfig } from '@openmrs/esm-framework';
 import { CardHeader, ErrorState } from '@openmrs/esm-patient-common-lib';
-import React, { useCallback } from 'react';
+import React from 'react';
 import { useTranslation } from 'react-i18next';
-import type { ConfigObject } from '../../../../config-schema';
+import { useCREDFormLauncher } from '../../../../hooks/useCREDFormLauncher';
 import { useStimulationCounseling } from '../../../../hooks/useStimulationCounseling';
-import { formEntryWorkspace } from '../../../../types';
 
 import styles from './stimulation-counseling.scss';
 
@@ -24,22 +22,10 @@ interface StimulationCounselingProps {
 
 const StimulationCounseling: React.FC<StimulationCounselingProps> = ({ patientUuid }) => {
   const { t } = useTranslation();
-  const config = useConfig<ConfigObject>();
   const { totalSessions, lastCounselingDate, lastCounselingResult, isLoading, error } =
     useStimulationCounseling(patientUuid);
+  const { launchForm: handleAdd, isLoading: isFormLoading } = useCREDFormLauncher('stimulationCounselingForm');
   const headerTitle = t('esCounselingTitle', 'Consejería a padres');
-
-  const handleAdd = useCallback(() => {
-    const formUuid = config.formsList.stimulationCounselingForm;
-    if (!formUuid) {
-      console.warn('Form UUID not configured for stimulationCounselingForm');
-      return;
-    }
-    launchWorkspace2(formEntryWorkspace, {
-      form: { uuid: formUuid },
-      encounterUuid: '',
-    });
-  }, [config.formsList.stimulationCounselingForm]);
 
   if (isLoading) {
     return <DataTableSkeleton size="sm" rowCount={3} columnCount={2} />;
@@ -55,7 +41,14 @@ const StimulationCounseling: React.FC<StimulationCounselingProps> = ({ patientUu
         <Tag type={totalSessions ? 'blue' : 'gray'} size="sm">
           {totalSessions ? `${totalSessions} ${t('sessions', 'sesiones')}` : t('noData', 'Sin datos')}
         </Tag>
-        <Button kind="ghost" size="sm" renderIcon={Add} onClick={handleAdd} iconDescription={t('add', 'Add')}>
+        <Button
+          kind="ghost"
+          size="sm"
+          renderIcon={Add}
+          onClick={() => handleAdd()}
+          iconDescription={t('add', 'Add')}
+          disabled={isFormLoading}
+        >
           {t('add', 'Add')}
         </Button>
       </CardHeader>

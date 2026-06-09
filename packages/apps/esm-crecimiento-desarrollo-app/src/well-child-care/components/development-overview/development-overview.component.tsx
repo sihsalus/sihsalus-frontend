@@ -5,7 +5,7 @@ import React from 'react';
 import { useTranslation } from 'react-i18next';
 
 import type { ConfigObject } from '../../../config-schema';
-import { formEntryWorkspace } from '../../../types';
+import { useCREDFormLauncher } from '../../../hooks/useCREDFormLauncher';
 
 import styles from './development-overview.scss';
 
@@ -20,20 +20,8 @@ interface DevelopmentOverviewProps {
 const DevelopmentOverview: React.FC<DevelopmentOverviewProps> = ({ patientUuid }) => {
   const { t } = useTranslation();
   const config = useConfig<ConfigObject>();
+  const { launchForm: handleLaunchTepsi, isLoading: isTepsiFormLoading } = useCREDFormLauncher('tepsi');
   const isTestPeruanoConfigured = Boolean(config.testPeruano?.formUuid && config.testPeruano?.concepts?.snapshotUuid);
-
-  const handleLaunchTepsi = () => {
-    const formUuid = config.formsList.tepsi;
-    if (!formUuid) {
-      console.warn('Form UUID not configured for TEPSI');
-      return;
-    }
-
-    launchWorkspace2(formEntryWorkspace, {
-      form: { uuid: formUuid },
-      encounterUuid: '',
-    });
-  };
 
   const handleLaunchTestPeruano = () => {
     launchWorkspace2('test-peruano-form', { patientUuid });
@@ -53,7 +41,13 @@ const DevelopmentOverview: React.FC<DevelopmentOverviewProps> = ({ patientUuid }
               {t('tepsiDescription', 'Evaluación del desarrollo psicomotor (2-5 años)')}
             </p>
           </div>
-          <Button kind="tertiary" size="sm" renderIcon={Education} onClick={handleLaunchTepsi}>
+          <Button
+            kind="tertiary"
+            size="sm"
+            renderIcon={Education}
+            onClick={() => handleLaunchTepsi()}
+            disabled={isTepsiFormLoading}
+          >
             {t('startTepsi', 'Realizar TEPSI')}
           </Button>
         </div>

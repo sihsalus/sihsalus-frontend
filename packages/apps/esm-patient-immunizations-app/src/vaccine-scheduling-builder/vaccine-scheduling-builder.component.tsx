@@ -17,7 +17,7 @@ import { showSnackbar, useSession } from '@openmrs/esm-framework';
 import { RequirePrivilege } from '@sihsalus/esm-rbac';
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { credImmunizationEditPrivilege } from '../constants';
+import { immunizationEditPrivilege } from '../constants';
 import ImmunizationPlanHeader from './immunization-plan-header.component';
 import type { ScheduleEntry } from './vaccination-schedule.resource';
 import { AGE_PERIODS, saveScheduleData, useVaccinationSchedule } from './vaccination-schedule.resource';
@@ -181,7 +181,7 @@ const VaccineSchedulingBuilder: React.FC = () => {
   ];
 
   return (
-    <RequirePrivilege privilege={credImmunizationEditPrivilege}>
+    <RequirePrivilege privilege={immunizationEditPrivilege}>
       <div className={styles.container}>
         <ImmunizationPlanHeader title={t('vaccinationScheduleBuilder', 'Gestor del calendario de vacunación')} />
 

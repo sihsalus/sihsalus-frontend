@@ -23,7 +23,7 @@ import {
 } from '@openmrs/esm-framework';
 import React, { useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
-import { credImmunizationEditPrivilege } from '../../constants';
+import { immunizationEditPrivilege } from '../../constants';
 import { type ImmunizationGrouped } from '../../types';
 import { immunizationFormSub } from '../utils';
 import styles from './immunizations-sequence-table.scss';
@@ -48,7 +48,7 @@ const SequenceTable: React.FC<SequenceTableProps> = ({
 }) => {
   const { t } = useTranslation();
   const session = useSession();
-  const canEdit = userHasAccess(credImmunizationEditPrivilege, session?.user);
+  const canEdit = userHasAccess(immunizationEditPrivilege, session?.user);
   const { existingDoses, sequences, vaccineUuid } = immunizationsByVaccine;
   const isTablet = useLayoutType() === 'tablet';
   const responsiveSize = isTablet ? 'md' : 'sm';

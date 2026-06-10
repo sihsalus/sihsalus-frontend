@@ -11,12 +11,8 @@ import {
   Stack,
   Tag,
   TextArea,
-} from "@carbon/react";
-import {
-  CheckmarkFilled,
-  CircleDash,
-  WarningAltFilled,
-} from "@carbon/react/icons";
+} from '@carbon/react';
+import { CheckmarkFilled, CircleDash, WarningAltFilled } from '@carbon/react/icons';
 import {
   getPatientName,
   openmrsFetch,
@@ -26,15 +22,14 @@ import {
   useLayoutType,
   usePatient,
   useSession,
-} from "@openmrs/esm-framework";
-import React, { useCallback, useEffect, useMemo, useState } from "react";
-import { useTranslation } from "react-i18next";
-
-import { credEarlyStimulationEditPrivilege } from "../../../constants";
-import type { ConfigObject } from "../../../config-schema";
-import { DashboardAccess } from "../../../rbac";
-import type { DefaultPatientWorkspaceProps } from "../../../types";
-import styles from "./test-peruano-form.scss";
+} from '@openmrs/esm-framework';
+import { RequirePrivilege } from '@sihsalus/esm-rbac';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import { useTranslation } from 'react-i18next';
+import type { ConfigObject } from '../../../config-schema';
+import { credEarlyStimulationEditPrivilege } from '../../../constants';
+import type { DefaultPatientWorkspaceProps } from '../../../types';
+import styles from './test-peruano-form.scss';
 import {
   calculateTestPeruanoResults,
   createEmptyTestPeruanoProfile,
@@ -45,7 +40,7 @@ import {
   type TestPeruanoCellStatus,
   type TestPeruanoClassification,
   type TestPeruanoFormData,
-} from "./test-peruano-form.utils";
+} from './test-peruano-form.utils';
 
 function getAgeInMonths(birthDate?: string) {
   if (!birthDate) {
@@ -63,50 +58,43 @@ function getAgeInMonths(birthDate?: string) {
 
 function getClassificationTag(classification: TestPeruanoClassification) {
   switch (classification) {
-    case "normal":
-      return "green";
-    case "riesgo":
-      return "magenta";
-    case "retraso":
-      return "red";
+    case 'normal':
+      return 'green';
+    case 'riesgo':
+      return 'magenta';
+    case 'retraso':
+      return 'red';
     default:
-      return "gray";
+      return 'gray';
   }
 }
 
 function getCellStatusIcon(status: TestPeruanoCellStatus) {
-  if (status === "achieved") {
+  if (status === 'achieved') {
     return <CheckmarkFilled size={14} />;
   }
 
-  if (status === "notAchieved") {
+  if (status === 'notAchieved') {
     return <WarningAltFilled size={14} />;
   }
 
   return <CircleDash size={14} />;
 }
 
-const TestPeruanoForm: React.FC<DefaultPatientWorkspaceProps> = ({
-  closeWorkspace,
-  workspaceProps,
-}) => {
-  const patientUuid = workspaceProps?.patientUuid ?? "";
+const TestPeruanoForm: React.FC<DefaultPatientWorkspaceProps> = ({ closeWorkspace, workspaceProps }) => {
+  const patientUuid = workspaceProps?.patientUuid ?? '';
   const { t } = useTranslation();
-  const isTablet = useLayoutType() === "tablet";
+  const isTablet = useLayoutType() === 'tablet';
   const config = useConfig<ConfigObject>();
   const session = useSession();
   const patient = usePatient(patientUuid);
   const [profile, setProfile] = useState(createEmptyTestPeruanoProfile);
   const [childAgeMonths, setChildAgeMonths] = useState<number>(0);
-  const [evaluationDate, setEvaluationDate] = useState(
-    new Date().toISOString().split("T")[0],
-  );
-  const [culturalContext, setCulturalContext] =
-    useState<TestPeruanoFormData["culturalContext"]>("urbano");
-  const [primaryLanguage, setPrimaryLanguage] =
-    useState<TestPeruanoFormData["primaryLanguage"]>("espaÃ±ol");
-  const [observations, setObservations] = useState("");
-  const [culturalNotes, setCulturalNotes] = useState("");
+  const [evaluationDate, setEvaluationDate] = useState(new Date().toISOString().split('T')[0]);
+  const [culturalContext, setCulturalContext] = useState<TestPeruanoFormData['culturalContext']>('urbano');
+  const [primaryLanguage, setPrimaryLanguage] = useState<TestPeruanoFormData['primaryLanguage']>('español');
+  const [observations, setObservations] = useState('');
+  const [culturalNotes, setCulturalNotes] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showErrorNotification, setShowErrorNotification] = useState(false);
 
@@ -122,23 +110,17 @@ const TestPeruanoForm: React.FC<DefaultPatientWorkspaceProps> = ({
     (nearest, month) => (month <= childAgeMonths ? month : nearest),
     TEST_PERUANO_AGE_MONTHS[0],
   );
-  const results = useMemo(
-    () => calculateTestPeruanoResults(profile, childAgeMonths),
-    [profile, childAgeMonths],
-  );
+  const results = useMemo(() => calculateTestPeruanoResults(profile, childAgeMonths), [profile, childAgeMonths]);
 
-  const updateCell = useCallback(
-    (areaId: (typeof TEST_PERUANO_AREAS)[number]["id"], month: number) => {
-      setProfile((current) => ({
-        ...current,
-        [areaId]: {
-          ...current[areaId],
-          [month]: getNextTestPeruanoCellStatus(current[areaId][month]),
-        },
-      }));
-    },
-    [],
-  );
+  const updateCell = useCallback((areaId: (typeof TEST_PERUANO_AREAS)[number]['id'], month: number) => {
+    setProfile((current) => ({
+      ...current,
+      [areaId]: {
+        ...current[areaId],
+        [month]: getNextTestPeruanoCellStatus(current[areaId][month]),
+      },
+    }));
+  }, []);
 
   const resetProfile = useCallback(() => {
     setProfile(createEmptyTestPeruanoProfile());
@@ -153,21 +135,12 @@ const TestPeruanoForm: React.FC<DefaultPatientWorkspaceProps> = ({
       const locationUuid = session?.sessionLocation?.uuid;
       if (!locationUuid || !isAgeSupported) {
         showSnackbar({
-          title: t(
-            "testPeruanoSaveError",
-            "No se pudo guardar el Test Peruano",
-          ),
-          kind: "error",
+          title: t('testPeruanoSaveError', 'No se pudo guardar el Test Peruano'),
+          kind: 'error',
           isLowContrast: false,
           subtitle: !locationUuid
-            ? t(
-                "noSessionLocation",
-                "No se pudo determinar la sede de sesiÃ³n.",
-              )
-            : t(
-                "tpUnsupportedAge",
-                "El Test Peruano aplica hasta los 30 meses.",
-              ),
+            ? t('noSessionLocation', 'No se pudo determinar la sede de sesión.')
+            : t('tpUnsupportedAge', 'El Test Peruano aplica hasta los 30 meses.'),
         });
         setIsSubmitting(false);
         return;
@@ -191,35 +164,27 @@ const TestPeruanoForm: React.FC<DefaultPatientWorkspaceProps> = ({
 
       try {
         const response = await openmrsFetch(`${restBaseUrl}/encounter`, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
           body: payload,
         });
 
         if (response.status === 201 || response.status === 200) {
           showSnackbar({
             isLowContrast: true,
-            kind: "success",
-            title: t("testPeruanoSaved", "Test Peruano guardado"),
-            subtitle: t(
-              "testPeruanoDataAvailable",
-              "La evaluaciÃ³n estÃ¡ disponible en el registro del paciente",
-            ),
+            kind: 'success',
+            title: t('testPeruanoSaved', 'Test Peruano guardado'),
+            subtitle: t('testPeruanoDataAvailable', 'La evaluación está disponible en el registro del paciente'),
           });
           closeWorkspace({ discardUnsavedChanges: true });
         }
       } catch (error) {
         setShowErrorNotification(true);
         showSnackbar({
-          title: t(
-            "testPeruanoSaveError",
-            "No se pudo guardar el Test Peruano",
-          ),
-          kind: "error",
+          title: t('testPeruanoSaveError', 'No se pudo guardar el Test Peruano'),
+          kind: 'error',
           isLowContrast: false,
-          subtitle:
-            (error as Error)?.message ??
-            t("unexpectedError", "OcurriÃ³ un error inesperado."),
+          subtitle: (error as Error)?.message ?? t('unexpectedError', 'Ocurrió un error inesperado.'),
         });
       } finally {
         setIsSubmitting(false);
@@ -244,42 +209,23 @@ const TestPeruanoForm: React.FC<DefaultPatientWorkspaceProps> = ({
   );
 
   return (
-    <DashboardAccess privilege={credEarlyStimulationEditPrivilege}>
+    <RequirePrivilege privilege={credEarlyStimulationEditPrivilege}>
       <Form className={styles.form} onSubmit={saveTestPeruanoData}>
         <Stack gap={6}>
           <header className={styles.header}>
             <div>
-              <h3>
-                {t("testPeruanoTitle", "Test Peruano de Desarrollo del NiÃ±o")}
-              </h3>
-              <p>
-                {t(
-                  "testPeruanoSubtitle",
-                  "Perfil grÃ¡fico de hitos del desarrollo de 0 a 30 meses",
-                )}
-              </p>
+              <h3>{t('testPeruanoTitle', 'Test Peruano de Desarrollo del Niño')}</h3>
+              <p>{t('testPeruanoSubtitle', 'Perfil gráfico de hitos del desarrollo de 0 a 30 meses')}</p>
             </div>
-            <Tag
-              type={getClassificationTag(results.total.classification)}
-              size="md"
-            >
-              {t(
-                `tpClassification_${results.total.classification}`,
-                results.total.classification,
-              )}
+            <Tag type={getClassificationTag(results.total.classification)} size="md">
+              {t(`tpClassification_${results.total.classification}`, results.total.classification)}
             </Tag>
           </header>
 
           <section className={styles.patientPanel}>
             <div>
-              <span className={styles.fieldLabel}>
-                {t("patient", "Paciente")}
-              </span>
-              <strong>
-                {patient.patient
-                  ? getPatientName(patient.patient)
-                  : t("loading", "Cargando...")}
-              </strong>
+              <span className={styles.fieldLabel}>{t('patient', 'Paciente')}</span>
+              <strong>{patient.patient ? getPatientName(patient.patient) : t('loading', 'Cargando...')}</strong>
             </div>
             <NumberInput
               allowEmpty={false}
@@ -287,16 +233,11 @@ const TestPeruanoForm: React.FC<DefaultPatientWorkspaceProps> = ({
               hideSteppers
               id="child-age-months"
               invalid={!isAgeSupported}
-              invalidText={t(
-                "tpUnsupportedAge",
-                "El Test Peruano aplica hasta los 30 meses.",
-              )}
-              label={t("ageMonthsLabel", "Edad en meses")}
+              invalidText={t('tpUnsupportedAge', 'El Test Peruano aplica hasta los 30 meses.')}
+              label={t('ageMonthsLabel', 'Edad en meses')}
               max={30}
               min={0}
-              onChange={(_event, { value }) =>
-                setChildAgeMonths(Number(value) || 0)
-              }
+              onChange={(_event, { value }) => setChildAgeMonths(Number(value) || 0)}
               value={childAgeMonths}
             />
             <DatePicker
@@ -304,65 +245,54 @@ const TestPeruanoForm: React.FC<DefaultPatientWorkspaceProps> = ({
               dateFormat="Y-m-d"
               onChange={(dates) => {
                 if (dates[0]) {
-                  setEvaluationDate(dates[0].toISOString().split("T")[0]);
+                  setEvaluationDate(dates[0].toISOString().split('T')[0]);
                 }
               }}
               value={evaluationDate}
             >
               <DatePickerInput
                 id="evaluation-date"
-                labelText={t("evaluationDate", "Fecha de evaluaciÃ³n")}
+                labelText={t('evaluationDate', 'Fecha de evaluación')}
                 placeholder="yyyy-mm-dd"
               />
             </DatePicker>
             <Select
               id="cultural-context"
-              labelText={t("culturalContext", "Contexto")}
-              onChange={(event) =>
-                setCulturalContext(
-                  event.target.value as TestPeruanoFormData["culturalContext"],
-                )
-              }
+              labelText={t('culturalContext', 'Contexto')}
+              onChange={(event) => setCulturalContext(event.target.value as TestPeruanoFormData['culturalContext'])}
               value={culturalContext}
             >
-              <SelectItem value="urbano" text={t("urban", "Urbano")} />
-              <SelectItem value="rural" text={t("rural", "Rural")} />
-              <SelectItem
-                value="urbano_marginal"
-                text={t("urbanMarginal", "Urbano marginal")}
-              />
+              <SelectItem value="urbano" text={t('urban', 'Urbano')} />
+              <SelectItem value="rural" text={t('rural', 'Rural')} />
+              <SelectItem value="urbano_marginal" text={t('urbanMarginal', 'Urbano marginal')} />
             </Select>
             <Select
               id="primary-language"
-              labelText={t("primaryLanguage", "Idioma")}
-              onChange={(event) =>
-                setPrimaryLanguage(
-                  event.target.value as TestPeruanoFormData["primaryLanguage"],
-                )
-              }
+              labelText={t('primaryLanguage', 'Idioma')}
+              onChange={(event) => setPrimaryLanguage(event.target.value as TestPeruanoFormData['primaryLanguage'])}
               value={primaryLanguage}
             >
-              <SelectItem value="espaÃ±ol" text={t("spanish", "EspaÃ±ol")} />
-              <SelectItem value="quechua" text={t("quechua", "Quechua")} />
-              <SelectItem value="bilingue" text={t("bilingual", "BilingÃ¼e")} />
+              <SelectItem value="español" text={t('spanish', 'Español')} />
+              <SelectItem value="quechua" text={t('quechua', 'Quechua')} />
+              <SelectItem value="bilingue" text={t('bilingual', 'Bilingüe')} />
             </Select>
           </section>
 
           <section className={styles.summaryPanel}>
             <div className={styles.summaryMetric}>
-              <span>{t("tpExpectedMilestones", "Hitos esperados")}</span>
+              <span>{t('tpExpectedMilestones', 'Hitos esperados')}</span>
               <strong>{results.total.expected}</strong>
             </div>
             <div className={styles.summaryMetric}>
-              <span>{t("tpAchievedMilestones", "Logrados")}</span>
+              <span>{t('tpAchievedMilestones', 'Logrados')}</span>
               <strong>{results.total.achieved}</strong>
             </div>
             <div className={styles.summaryMetric}>
-              <span>{t("tpPendingMilestones", "Sin evaluar")}</span>
+              <span>{t('tpPendingMilestones', 'Sin evaluar')}</span>
               <strong>{results.total.pending}</strong>
             </div>
             <div className={styles.summaryMetric}>
-              <span>{t("tpScorePercent", "Avance")}</span>
+              <span>{t('tpScorePercent', 'Avance')}</span>
               <strong>{results.total.scorePercent}%</strong>
             </div>
           </section>
@@ -370,38 +300,28 @@ const TestPeruanoForm: React.FC<DefaultPatientWorkspaceProps> = ({
           <section className={styles.profileSection}>
             <div className={styles.sectionHeader}>
               <div>
-                <h4>{t("tpGraphicProfile", "Perfil grÃ¡fico")}</h4>
-                <p>
-                  {t(
-                    "tpGraphicProfileHint",
-                    "Marque cada cruce Ã¡rea/edad: logrado, no logrado o sin evaluar.",
-                  )}
-                </p>
+                <h4>{t('tpGraphicProfile', 'Perfil gráfico')}</h4>
+                <p>{t('tpGraphicProfileHint', 'Marque cada cruce área/edad: logrado, no logrado o sin evaluar.')}</p>
               </div>
               <div className={styles.legend}>
                 <span>
-                  <CheckmarkFilled size={14} /> {t("achieved", "Logrado")}
+                  <CheckmarkFilled size={14} /> {t('achieved', 'Logrado')}
                 </span>
                 <span>
-                  <WarningAltFilled size={14} />{" "}
-                  {t("notAchieved", "No logrado")}
+                  <WarningAltFilled size={14} /> {t('notAchieved', 'No logrado')}
                 </span>
                 <span>
-                  <CircleDash size={14} /> {t("notEvaluated", "Sin evaluar")}
+                  <CircleDash size={14} /> {t('notEvaluated', 'Sin evaluar')}
                 </span>
               </div>
             </div>
 
-            <div
-              className={styles.profileGrid}
-              role="grid"
-              aria-label={t("tpGraphicProfile", "Perfil grÃ¡fico")}
-            >
-              <div className={styles.cornerCell}>{t("area", "Ãrea")}</div>
+            <div className={styles.profileGrid} role="grid" aria-label={t('tpGraphicProfile', 'Perfil gráfico')}>
+              <div className={styles.cornerCell}>{t('area', 'Área')}</div>
               {TEST_PERUANO_AGE_MONTHS.map((month) => (
                 <div
                   key={month}
-                  className={`${styles.monthHeader} ${month === currentAgeColumn ? styles.currentMonth : ""}`}
+                  className={`${styles.monthHeader} ${month === currentAgeColumn ? styles.currentMonth : ''}`}
                 >
                   {month}
                 </div>
@@ -409,9 +329,7 @@ const TestPeruanoForm: React.FC<DefaultPatientWorkspaceProps> = ({
 
               {TEST_PERUANO_AREAS.map((area) => (
                 <React.Fragment key={area.id}>
-                  <div className={styles.areaName}>
-                    {t(area.labelKey, area.labelDefault)}
-                  </div>
+                  <div className={styles.areaName}>{t(area.labelKey, area.labelDefault)}</div>
                   {TEST_PERUANO_AGE_MONTHS.map((month) => {
                     const status = profile[area.id][month];
                     const isExpected = month <= childAgeMonths;
@@ -419,7 +337,7 @@ const TestPeruanoForm: React.FC<DefaultPatientWorkspaceProps> = ({
                     return (
                       <button
                         aria-label={`${t(area.labelKey, area.labelDefault)} ${month} ${t(status, status)}`}
-                        className={`${styles.profileCell} ${styles[status]} ${isExpected ? styles.expected : ""}`}
+                        className={`${styles.profileCell} ${styles[status]} ${isExpected ? styles.expected : ''}`}
                         key={`${area.id}-${month}`}
                         onClick={() => updateCell(area.id, month)}
                         type="button"
@@ -441,22 +359,15 @@ const TestPeruanoForm: React.FC<DefaultPatientWorkspaceProps> = ({
                 <div className={styles.areaResult} key={area.id}>
                   <div className={styles.areaResultHeader}>
                     <strong>{t(area.labelKey, area.labelDefault)}</strong>
-                    <Tag
-                      type={getClassificationTag(areaResult.classification)}
-                      size="sm"
-                    >
-                      {t(
-                        `tpClassification_${areaResult.classification}`,
-                        areaResult.classification,
-                      )}
+                    <Tag type={getClassificationTag(areaResult.classification)} size="sm">
+                      {t(`tpClassification_${areaResult.classification}`, areaResult.classification)}
                     </Tag>
                   </div>
                   <div className={styles.progressTrack}>
                     <span style={{ width: `${areaResult.scorePercent}%` }} />
                   </div>
                   <small>
-                    {areaResult.achieved}/{areaResult.expected} Â·{" "}
-                    {areaResult.scorePercent}%
+                    {areaResult.achieved}/{areaResult.expected} · {areaResult.scorePercent}%
                   </small>
                 </div>
               );
@@ -465,22 +376,19 @@ const TestPeruanoForm: React.FC<DefaultPatientWorkspaceProps> = ({
 
           <section className={styles.notesGrid}>
             <TextArea
-              labelText={t("culturalNotes", "Notas culturales y de contexto")}
+              labelText={t('culturalNotes', 'Notas culturales y de contexto')}
               onChange={(event) => setCulturalNotes(event.target.value)}
               placeholder={t(
-                "culturalNotesPlaceholder",
-                "Factores familiares, lingÃ¼Ã­sticos o ambientales relevantes para interpretar el perfil...",
+                'culturalNotesPlaceholder',
+                'Factores familiares, lingüísticos o ambientales relevantes para interpretar el perfil...',
               )}
               rows={3}
               value={culturalNotes}
             />
             <TextArea
-              labelText={t("generalObservations", "Observaciones generales")}
+              labelText={t('generalObservations', 'Observaciones generales')}
               onChange={(event) => setObservations(event.target.value)}
-              placeholder={t(
-                "observationsPlaceholder",
-                "Observaciones clÃ­nicas de la evaluaciÃ³n...",
-              )}
+              placeholder={t('observationsPlaceholder', 'Observaciones clínicas de la evaluación...')}
               rows={3}
               value={observations}
             />
@@ -488,60 +396,35 @@ const TestPeruanoForm: React.FC<DefaultPatientWorkspaceProps> = ({
 
           <InlineNotification
             hideCloseButton
-            kind={
-              results.total.classification === "normal" ? "success" : "warning"
-            }
+            kind={results.total.classification === 'normal' ? 'success' : 'warning'}
             lowContrast
-            title={t("recommendation", "RecomendaciÃ³n")}
-            subtitle={t(
-              results.total.recommendationKey,
-              results.total.recommendationDefault,
-            )}
+            title={t('recommendation', 'Recomendación')}
+            subtitle={t(results.total.recommendationKey, results.total.recommendationDefault)}
           />
 
           {showErrorNotification && (
             <InlineNotification
               kind="error"
-              title={t("error", "Error")}
-              subtitle={t(
-                "testPeruanoSaveErrorRetry",
-                "Revise el formulario e intente nuevamente.",
-              )}
+              title={t('error', 'Error')}
+              subtitle={t('testPeruanoSaveErrorRetry', 'Revise el formulario e intente nuevamente.')}
               onClose={() => setShowErrorNotification(false)}
             />
           )}
 
-          <ButtonSet
-            className={isTablet ? styles.tabletActions : styles.actions}
-          >
-            <Button
-              kind="secondary"
-              onClick={() => closeWorkspace()}
-              disabled={isSubmitting}
-            >
-              {t("cancel", "Cancelar")}
+          <ButtonSet className={isTablet ? styles.tabletActions : styles.actions}>
+            <Button kind="secondary" onClick={() => closeWorkspace()} disabled={isSubmitting}>
+              {t('cancel', 'Cancelar')}
             </Button>
-            <Button
-              kind="tertiary"
-              onClick={resetProfile}
-              disabled={isSubmitting}
-              type="button"
-            >
-              {t("reset", "Limpiar")}
+            <Button kind="tertiary" onClick={resetProfile} disabled={isSubmitting} type="button">
+              {t('reset', 'Limpiar')}
             </Button>
-            <Button
-              kind="primary"
-              type="submit"
-              disabled={isSubmitting || !isAgeSupported}
-            >
-              {isSubmitting
-                ? t("saving", "Guardando...")
-                : t("saveAndClose", "Guardar y cerrar")}
+            <Button kind="primary" type="submit" disabled={isSubmitting || !isAgeSupported}>
+              {isSubmitting ? t('saving', 'Guardando...') : t('saveAndClose', 'Guardar y cerrar')}
             </Button>
           </ButtonSet>
         </Stack>
       </Form>
-    </DashboardAccess>
+    </RequirePrivilege>
   );
 };
 

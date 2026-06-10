@@ -1,10 +1,10 @@
 import { Eyedropper, Pills } from '@carbon/react/icons';
 import { usePatient } from '@openmrs/esm-framework';
+import { RequirePrivilege } from '@sihsalus/esm-rbac';
 import type { TabConfig } from '@sihsalus/esm-sihsalus-shared';
 import { TabbedDashboard } from '@sihsalus/esm-sihsalus-shared';
 import React, { useMemo } from 'react';
 import { credImmunizationPrivilege } from '../constants';
-import { DashboardAccess } from '../rbac';
 
 const translationNamespace = '@sihsalus/esm-cred-app';
 
@@ -41,7 +41,7 @@ export const ChildImmunizationSchedule: React.FC<ChildImmunizationProps> = ({
   }
 
   return (
-    <DashboardAccess privilege={credImmunizationPrivilege}>
+    <RequirePrivilege privilege={credImmunizationPrivilege}>
       <TabbedDashboard
         patient={patient}
         patientUuid={patientUuid}
@@ -50,6 +50,6 @@ export const ChildImmunizationSchedule: React.FC<ChildImmunizationProps> = ({
         ariaLabelKey="immunizationTabs"
         translationNamespace={translationNamespace}
       />
-    </DashboardAccess>
+    </RequirePrivilege>
   );
 };

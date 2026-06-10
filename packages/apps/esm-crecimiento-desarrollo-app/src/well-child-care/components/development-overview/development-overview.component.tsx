@@ -1,13 +1,11 @@
 import { Button, Tile } from '@carbon/react';
 import { Education, Growth } from '@carbon/react/icons';
-import { launchWorkspace2, useConfig } from '@openmrs/esm-framework';
+import { launchWorkspace2, useConfig, userHasAccess, useSession } from '@openmrs/esm-framework';
 import React from 'react';
 import { useTranslation } from 'react-i18next';
-
-import { credEarlyStimulationEditPrivilege } from '../../../constants';
 import type { ConfigObject } from '../../../config-schema';
+import { credEarlyStimulationEditPrivilege } from '../../../constants';
 import { useCREDFormLauncher } from '../../../hooks/useCREDFormLauncher';
-import { useHasPrivilege } from '../../../rbac';
 
 import styles from './development-overview.scss';
 
@@ -22,7 +20,8 @@ interface DevelopmentOverviewProps {
 const DevelopmentOverview: React.FC<DevelopmentOverviewProps> = ({ patientUuid }) => {
   const { t } = useTranslation();
   const config = useConfig<ConfigObject>();
-  const canEdit = useHasPrivilege(credEarlyStimulationEditPrivilege);
+  const session = useSession();
+  const canEdit = userHasAccess(credEarlyStimulationEditPrivilege, session?.user);
   const { launchForm: handleLaunchTepsi, isLoading: isTepsiFormLoading } = useCREDFormLauncher('tepsi');
   const isTestPeruanoConfigured = Boolean(config.testPeruano?.formUuid && config.testPeruano?.concepts?.snapshotUuid);
 

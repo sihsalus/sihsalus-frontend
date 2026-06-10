@@ -7,11 +7,11 @@ import {
   WatsonHealthCobbAngle,
 } from '@carbon/react/icons';
 import { usePatient } from '@openmrs/esm-framework';
+import { RequirePrivilege } from '@sihsalus/esm-rbac';
 import type { TabConfig } from '@sihsalus/esm-sihsalus-shared';
 import { TabbedDashboard } from '@sihsalus/esm-sihsalus-shared';
 import React, { useMemo } from 'react';
 import { credNeonatalPrivilege } from '../constants';
-import { DashboardAccess } from '../rbac';
 
 export interface NeonatalCareProps {
   patient?: fhir.Patient | null;
@@ -64,7 +64,7 @@ export const NeonatalCare: React.FC<NeonatalCareProps> = ({ patient: patientProp
   }
 
   return (
-    <DashboardAccess privilege={credNeonatalPrivilege}>
+    <RequirePrivilege privilege={credNeonatalPrivilege}>
       <TabbedDashboard
         patient={patient}
         patientUuid={patientUuid}
@@ -73,6 +73,6 @@ export const NeonatalCare: React.FC<NeonatalCareProps> = ({ patient: patientProp
         ariaLabelKey="neonatalCareTabs"
         translationNamespace={translationNamespace}
       />
-    </DashboardAccess>
+    </RequirePrivilege>
   );
 };

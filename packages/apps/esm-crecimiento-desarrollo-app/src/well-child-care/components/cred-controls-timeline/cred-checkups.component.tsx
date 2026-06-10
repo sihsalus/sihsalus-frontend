@@ -1,13 +1,11 @@
 import { Button, InlineLoading, InlineNotification, Tag } from '@carbon/react';
 import { Add, Calendar } from '@carbon/react/icons';
-import { launchWorkspace2, showSnackbar, useConfig, useSession } from '@openmrs/esm-framework';
+import { launchWorkspace2, showSnackbar, useConfig, userHasAccess, useSession } from '@openmrs/esm-framework';
 import dayjs from 'dayjs';
 import React, { useCallback, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-
-import { credCourseLifeEditPrivilege } from '../../../constants';
-import { useHasPrivilege } from '../../../rbac';
 import type { ConfigObject } from '../../../config-schema';
+import { credCourseLifeEditPrivilege } from '../../../constants';
 import { useCREDSchedule } from '../../../hooks/useCREDSchedule';
 import { useMutateAppointments } from '../../../ui/form/appointments-form.resource';
 import { translateCredControlLabel } from '../../../utils/cred-label-translations';
@@ -23,7 +21,7 @@ const CredCheckups: React.FC<CredCheckupsProps> = ({ patientUuid }) => {
   const { t } = useTranslation();
   const config = useConfig<ConfigObject>();
   const session = useSession();
-  const canEdit = useHasPrivilege(credCourseLifeEditPrivilege);
+  const canEdit = userHasAccess(credCourseLifeEditPrivilege, session?.user);
   const { controls, nextDueControl, overdueControls, completedCount, totalCount, isLoading, error } =
     useCREDSchedule(patientUuid);
   const { mutateAppointments } = useMutateAppointments();

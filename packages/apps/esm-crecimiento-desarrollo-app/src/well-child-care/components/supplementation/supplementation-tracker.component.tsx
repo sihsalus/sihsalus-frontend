@@ -1,12 +1,12 @@
 import { Button, DataTableSkeleton, ProgressBar, Tag } from '@carbon/react';
 import { Add } from '@carbon/react/icons';
+import { userHasAccess, useSession } from '@openmrs/esm-framework';
 import { CardHeader, ErrorState } from '@openmrs/esm-patient-common-lib';
 import React from 'react';
 import { useTranslation } from 'react-i18next';
 import { credNutritionEditPrivilege } from '../../../constants';
 import { useCREDFormLauncher } from '../../../hooks/useCREDFormLauncher';
 import { useSupplementationTracker } from '../../../hooks/useSupplementationTracker';
-import { useHasPrivilege } from '../../../rbac';
 
 import styles from './supplementation-tracker.scss';
 
@@ -16,7 +16,8 @@ interface SupplementationTrackerProps {
 
 const SupplementationTracker: React.FC<SupplementationTrackerProps> = ({ patientUuid }) => {
   const { t } = useTranslation();
-  const canEdit = useHasPrivilege(credNutritionEditPrivilege);
+  const session = useSession();
+  const canEdit = userHasAccess(credNutritionEditPrivilege, session?.user);
   const { delivered, total, percentage, isComplete, isLoading, error } = useSupplementationTracker(patientUuid);
   const { launchForm: handleAdd, isLoading: isFormLoading } = useCREDFormLauncher('supplementationForm');
   const headerTitle = t('mmnSupplementation', 'Suplementación MMN');

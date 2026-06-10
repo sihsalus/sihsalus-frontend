@@ -1,11 +1,16 @@
 import { Button, ContentSwitcher, DataTableSkeleton, IconSwitch } from '@carbon/react';
 import { Add, Analytics, ChartLineData } from '@carbon/react/icons';
-import { isDesktop as isDesktopLayout, launchWorkspace2, useLayoutType } from '@openmrs/esm-framework';
+import {
+  isDesktop as isDesktopLayout,
+  launchWorkspace2,
+  useLayoutType,
+  userHasAccess,
+  useSession,
+} from '@openmrs/esm-framework';
 import { CardHeader, EmptyState, ErrorState } from '@openmrs/esm-patient-common-lib';
 import React, { useCallback, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { credNeonatalEditPrivilege } from '../../constants';
-import { useHasPrivilege } from '../../rbac';
 import { getSafePatientName } from '../../utils/utils';
 import GrowthChart from './growth-chart.component';
 import styles from './growth-chart-overview.scss';
@@ -21,7 +26,8 @@ const GrowthChartOverview: React.FC<GrowthChartProps> = ({ patient, patientUuid 
   const headerTitle = t('growthChart', 'Evaluación del Crecimiento y Desarrollo');
   const displayText = t('relatedData', 'datos de crecimiento y desarrollo');
   const formWorkspace = 'newborn-anthropometric-form';
-  const canEdit = useHasPrivilege(credNeonatalEditPrivilege);
+  const session = useSession();
+  const canEdit = userHasAccess(credNeonatalEditPrivilege, session?.user);
 
   // Estado para controlar el modo de visualización (percentiles vs z-scores)
   const [isPercentiles, setIsPercentiles] = useState(true);
@@ -76,7 +82,12 @@ const GrowthChartOverview: React.FC<GrowthChartProps> = ({ patient, patientUuid 
             </ContentSwitcher>
             <span className={styles.divider}>|</span>
             {canEdit && (
-              <Button kind="ghost" renderIcon={Add} iconDescription={t('addData', 'Agregar datos')} onClick={launchForm}>
+              <Button
+                kind="ghost"
+                renderIcon={Add}
+                iconDescription={t('addData', 'Agregar datos')}
+                onClick={launchForm}
+              >
                 {t('add', 'Agregar')}
               </Button>
             )}
@@ -94,7 +105,9 @@ const GrowthChartOverview: React.FC<GrowthChartProps> = ({ patient, patientUuid 
     );
   }
 
-  return <EmptyState displayText={displayText} headerTitle={headerTitle} launchForm={canEdit ? launchForm : undefined} />;
+  return (
+    <EmptyState displayText={displayText} headerTitle={headerTitle} launchForm={canEdit ? launchForm : undefined} />
+  );
 };
 
 export default GrowthChartOverview;

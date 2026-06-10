@@ -14,11 +14,18 @@ import {
   TableHeader,
   TableRow,
 } from '@carbon/react';
-import { AddIcon, formatDate, isDesktop, launchWorkspace2, useLayoutType } from '@openmrs/esm-framework';
+import {
+  AddIcon,
+  formatDate,
+  isDesktop,
+  launchWorkspace2,
+  useLayoutType,
+  userHasAccess,
+  useSession,
+} from '@openmrs/esm-framework';
 import { CardHeader, EmptyState, ErrorState } from '@openmrs/esm-patient-common-lib';
 import React, { useCallback, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
-import { useHasPrivilege } from '../../rbac';
 import { useFilteredEncounter } from '../../hooks/useFilteredEncounter';
 import { formEntryWorkspace } from '../../types';
 
@@ -77,7 +84,8 @@ const PatientObservationGroupTable: React.FC<PatientObservationGroupTableProps> 
   const { t } = useTranslation();
   const layout = useLayoutType();
   const desktopLayout = isDesktop(layout);
-  const canEdit = useHasPrivilege(editPrivilege);
+  const session = useSession();
+  const canEdit = userHasAccess(editPrivilege, session?.user);
   const canLaunchForm = Boolean(formWorkspace && (!editPrivilege || canEdit));
 
   const {
@@ -171,7 +179,13 @@ const PatientObservationGroupTable: React.FC<PatientObservationGroupTableProps> 
   }
 
   if (!isLoading && observationGroups.length === 0) {
-    return <EmptyState headerTitle={headerTitle} displayText={displayText} launchForm={canLaunchForm ? launchForm : undefined} />;
+    return (
+      <EmptyState
+        headerTitle={headerTitle}
+        displayText={displayText}
+        launchForm={canLaunchForm ? launchForm : undefined}
+      />
+    );
   }
 
   return (

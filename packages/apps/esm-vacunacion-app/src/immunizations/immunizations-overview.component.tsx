@@ -12,30 +12,23 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from "@carbon/react";
+} from '@carbon/react';
 import {
   AddIcon,
   formatDate,
   launchWorkspace2,
   parseDate,
   usePagination,
-} from "@openmrs/esm-framework";
-import {
-  CardHeader,
-  EmptyState,
-  ErrorState,
-  PatientChartPagination,
-} from "@openmrs/esm-patient-common-lib";
-import classNames from "classnames";
-import React, { type ComponentProps, useMemo } from "react";
-import { useTranslation } from "react-i18next";
-import {
-  credImmunizationEditPrivilege,
-  credImmunizationPrivilege,
-} from "../constants";
-import { useImmunizations } from "../hooks/useImmunizations";
-import { DashboardAccess, useHasPrivilege } from "../rbac";
-import styles from "./immunizations-overview.scss";
+  userHasAccess,
+  useSession,
+} from '@openmrs/esm-framework';
+import { CardHeader, EmptyState, ErrorState, PatientChartPagination } from '@openmrs/esm-patient-common-lib';
+import classNames from 'classnames';
+import React, { type ComponentProps, useMemo } from 'react';
+import { useTranslation } from 'react-i18next';
+import { credImmunizationEditPrivilege } from '../constants';
+import { useImmunizations } from '../hooks/useImmunizations';
+import styles from './immunizations-overview.scss';
 
 export interface ImmunizationsOverviewProps {
   basePath: string;
@@ -43,44 +36,29 @@ export interface ImmunizationsOverviewProps {
   patientUuid: string;
 }
 
-const ImmunizationsOverview: React.FC<ImmunizationsOverviewProps> = ({
-  patient: _patient,
-  patientUuid,
-  basePath,
-}) => {
+const ImmunizationsOverview: React.FC<ImmunizationsOverviewProps> = ({ patient: _patient, patientUuid, basePath }) => {
   const { t } = useTranslation();
-  const canEdit = useHasPrivilege(credImmunizationEditPrivilege);
+  const session = useSession();
+  const canEdit = userHasAccess(credImmunizationEditPrivilege, session?.user);
   const immunizationsCount = 5;
-  const displayText = t("immunizations__lower", "immunizations");
-  const headerTitle = t("immunizations", "Immunizations");
-  const urlLabel = t("seeAll", "See all");
-  const pageUrl = globalThis.spaBase + basePath + "/immunizations";
+  const displayText = t('immunizations__lower', 'immunizations');
+  const headerTitle = t('immunizations', 'Immunizations');
+  const urlLabel = t('seeAll', 'See all');
+  const pageUrl = globalThis.spaBase + basePath + '/immunizations';
 
-  const {
-    data: immunizations,
-    error,
-    isLoading,
-    isValidating,
-  } = useImmunizations(patientUuid);
-  const {
-    results: paginatedImmunizations,
-    goTo,
-    currentPage,
-  } = usePagination(immunizations ?? [], immunizationsCount);
+  const { data: immunizations, error, isLoading, isValidating } = useImmunizations(patientUuid);
+  const { results: paginatedImmunizations, goTo, currentPage } = usePagination(immunizations ?? [], immunizationsCount);
 
-  const launchImmunizationsForm = React.useCallback(
-    () => launchWorkspace2("vacunacion-form-workspace"),
-    [],
-  );
+  const launchImmunizationsForm = React.useCallback(() => launchWorkspace2('vacunacion-form-workspace'), []);
 
   const tableHeaders = [
     {
-      key: "vaccineName",
-      header: t("recentVaccination", "Recent vaccination"),
+      key: 'vaccineName',
+      header: t('recentVaccination', 'Recent vaccination'),
     },
     {
-      key: "vaccinationDate",
-      header: t("vaccinationDate", "Vaccination date"),
+      key: 'vaccinationDate',
+      header: t('vaccinationDate', 'Vaccination date'),
     },
   ];
 
@@ -91,14 +69,11 @@ const ImmunizationsOverview: React.FC<ImmunizationsOverviewProps> = ({
       vaccineName: immunization.vaccineName,
       vaccinationDate:
         immunization.existingDoses.length > 0
-          ? formatDate(
-              parseDate(immunization.existingDoses[0].occurrenceDateTime),
-              {
-                day: false,
-                time: false,
-              },
-            )
-          : "--",
+          ? formatDate(parseDate(immunization.existingDoses[0].occurrenceDateTime), {
+              day: false,
+              time: false,
+            })
+          : '--',
     }));
   }, [paginatedImmunizations]);
 
@@ -113,23 +88,15 @@ const ImmunizationsOverview: React.FC<ImmunizationsOverviewProps> = ({
         {canEdit ? (
           <Button
             kind="ghost"
-            renderIcon={(props: ComponentProps<typeof AddIcon>) => (
-              <AddIcon size={16} {...props} />
-            )}
-            iconDescription={t("addImmunizations", "Add immunizations")}
+            renderIcon={(props: ComponentProps<typeof AddIcon>) => <AddIcon size={16} {...props} />}
+            iconDescription={t('addImmunizations', 'Add immunizations')}
             onClick={launchImmunizationsForm}
           >
-            {t("add", "Add")}
+            {t('add', 'Add')}
           </Button>
         ) : null}
       </CardHeader>
-      <DataTable
-        headers={tableHeaders}
-        rows={tableRows}
-        isSortable
-        size="sm"
-        useZebraStyles
-      >
+      <DataTable headers={tableHeaders} rows={tableRows} isSortable size="sm" useZebraStyles>
         {({ rows, headers, getHeaderProps, getTableProps }) => (
           <TableContainer>
             <Table aria-label="immunizations overview" {...getTableProps()}>
@@ -143,10 +110,7 @@ const ImmunizationsOverview: React.FC<ImmunizationsOverviewProps> = ({
                     return (
                       <TableHeader
                         key={key}
-                        className={classNames(
-                          styles.productiveHeading01,
-                          styles.text02,
-                        )}
+                        className={classNames(styles.productiveHeading01, styles.text02)}
                         {...headerProps}
                       >
                         {header.header}
@@ -159,9 +123,7 @@ const ImmunizationsOverview: React.FC<ImmunizationsOverviewProps> = ({
                 {rows.map((row) => (
                   <TableRow key={row.id}>
                     {row.cells.map((cell) => (
-                      <TableCell key={cell.id}>
-                        {cell.value?.content ?? cell.value}
-                      </TableCell>
+                      <TableCell key={cell.id}>{cell.value?.content ?? cell.value}</TableCell>
                     ))}
                   </TableRow>
                 ))}
@@ -190,11 +152,7 @@ const ImmunizationsOverview: React.FC<ImmunizationsOverviewProps> = ({
     />
   );
 
-  return (
-    <DashboardAccess privilege={credImmunizationPrivilege}>
-      {content}
-    </DashboardAccess>
-  );
+  return content;
 };
 
 export default ImmunizationsOverview;

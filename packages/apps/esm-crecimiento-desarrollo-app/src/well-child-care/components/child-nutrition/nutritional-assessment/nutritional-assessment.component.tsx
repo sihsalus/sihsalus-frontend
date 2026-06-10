@@ -8,13 +8,13 @@ import {
   Tag,
 } from '@carbon/react';
 import { Add } from '@carbon/react/icons';
+import { userHasAccess, useSession } from '@openmrs/esm-framework';
 import { CardHeader, ErrorState } from '@openmrs/esm-patient-common-lib';
 import React from 'react';
 import { useTranslation } from 'react-i18next';
 import { credNutritionEditPrivilege } from '../../../../constants';
 import { useCREDFormLauncher } from '../../../../hooks/useCREDFormLauncher';
 import { useNutritionalAssessment } from '../../../../hooks/useNutritionalAssessment';
-import { useHasPrivilege } from '../../../../rbac';
 
 import styles from './nutritional-assessment.scss';
 
@@ -24,7 +24,8 @@ interface NutritionalAssessmentProps {
 
 const NutritionalAssessment: React.FC<NutritionalAssessmentProps> = ({ patientUuid }) => {
   const { t } = useTranslation();
-  const canEdit = useHasPrivilege(credNutritionEditPrivilege);
+  const session = useSession();
+  const canEdit = userHasAccess(credNutritionEditPrivilege, session?.user);
   const { weightForAge, heightForAge, weightForHeight, lastMeasurementDate, isLoading, error } =
     useNutritionalAssessment(patientUuid);
   const { launchForm: handleAdd, isLoading: isFormLoading } = useCREDFormLauncher('nutritionalAssessmentForm');

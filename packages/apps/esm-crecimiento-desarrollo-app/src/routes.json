@@ -1,8 +1,8 @@
 {
   "$schema": "https://json.openmrs.org/routes.schema.json",
   "backendDependencies": {
-    "fhir2": "\u003e=1.2",
-    "webservices.rest": "\u003e=2.2.0"
+    "fhir2": ">=1.2",
+    "webservices.rest": ">=2.2.0"
   },
   "extensions": [
     {
@@ -14,7 +14,7 @@
       "name": "child-immunization-schedule",
       "component": "childImmunizationScheduleLink",
       "slot": "well-child-care-slot",
-      "privilege": "app:cred.immunization",
+      "privileges": "app:cred.immunization",
       "meta": {
         "columns": 1,
         "columnSpan": 1,
@@ -26,8 +26,7 @@
     {
       "name": "child-immunization-schedule-dashboard",
       "slot": "patient-chart-child-immunization-schedule-dashboard-slot",
-      "component": "childImmunizationSchedule",
-      "privilege": "app:cred.immunization"
+      "component": "childImmunizationSchedule"
     },
     {
       "name": "cred-checkouts",
@@ -74,14 +73,13 @@
     {
       "name": "neonatal-care-dashboard",
       "slot": "patient-chart-neonatal-care-dashboard-slot",
-      "component": "neonatalCare",
-      "privilege": "app:cred.neonatal"
+      "component": "neonatalCare"
     },
     {
       "name": "neonatal-care-dashboard-link",
       "component": "neonatalCareLink",
       "slot": "well-child-care-slot",
-      "privilege": "app:cred.neonatal",
+      "privileges": "app:cred.neonatal",
       "meta": {
         "columns": 1,
         "columnSpan": 1,
@@ -160,19 +158,19 @@
       "name": "vaccination-appointment",
       "component": "vaccinationAppointment",
       "slot": "vaccination-appointment-slot",
-      "privilege": "app:cred.immunization"
+      "privileges": "app:cred.immunization"
     },
     {
       "name": "vaccination-schedule",
       "component": "vaccinationSchedule",
       "slot": "vaccination-schedule-slot",
-      "privilege": "app:cred.immunization"
+      "privileges": "app:cred.immunization"
     },
     {
       "name": "well-child-care",
       "component": "wellChildCareLink",
       "slot": "well-child-care-slot",
-      "privilege": "app:cred.wellChild",
+      "privileges": "app:cred.wellChild",
       "meta": {
         "columns": 1,
         "columnSpan": 1,
@@ -184,14 +182,13 @@
     {
       "name": "well-child-care-dashboard",
       "slot": "patient-chart-well-child-care-dashboard-slot",
-      "component": "wellChildCare",
-      "privilege": "app:cred.wellChild"
+      "component": "wellChildCare"
     },
     {
       "name": "well-child-care-dashboard-group-link",
       "component": "wellChildCareSideNavGroup",
       "slot": "patient-chart-dashboard-slot",
-      "privilege": "app:cred.cursoVida",
+      "privileges": "app:cred.cursoVida",
       "meta": {
         "slot": "well-child-care-slot",
         "isFolder": true
@@ -200,14 +197,13 @@
     {
       "name": "early-stimulation-dashboard",
       "slot": "patient-chart-early-stimulation-dashboard-slot",
-      "component": "earlyStimulation",
-      "privilege": "app:cred.earlyStim"
+      "component": "earlyStimulation"
     },
     {
       "name": "early-stimulation-dashboard-link",
       "component": "earlyStimulationLink",
       "slot": "well-child-care-slot",
-      "privilege": "app:cred.earlyStim",
+      "privileges": "app:cred.earlyStim",
       "meta": {
         "columns": 1,
         "columnSpan": 1,
@@ -219,14 +215,13 @@
     {
       "name": "child-nutrition-dashboard",
       "slot": "patient-chart-child-nutrition-dashboard-slot",
-      "component": "childNutrition",
-      "privilege": "app:cred.nutrition"
+      "component": "childNutrition"
     },
     {
       "name": "child-nutrition-dashboard-link",
       "component": "childNutritionLink",
       "slot": "well-child-care-slot",
-      "privilege": "app:cred.nutrition",
+      "privileges": "app:cred.nutrition",
       "meta": {
         "columns": 1,
         "columnSpan": 1,
@@ -276,13 +271,13 @@
       "component": "credFormActionButton",
       "slot": "action-menu-items-slot",
       "order": 1,
-      "privilege": "app:cred.cursoVida.edit"
+      "privileges": "app:cred.cursoVida.edit"
     },
     {
       "name": "antecedentes-patologicos-overview",
       "component": "antecedentesPatologicos",
       "slot": "additional-health-services-slot",
-      "privilege": "app:cred.antecedentes"
+      "privileges": "app:cred.antecedentes"
     },
     {
       "name": "development-overview-widget",
@@ -294,7 +289,6 @@
       "name": "well-child-care-dashboard-route",
       "component": "hiddenDashboardMarker",
       "slot": "patient-chart-dashboard-slot",
-      "privilege": "app:cred.wellChild",
       "meta": {
         "slot": "patient-chart-well-child-care-dashboard-slot",
         "path": "well-child-care-dashboard",
@@ -308,7 +302,6 @@
       "name": "neonatal-care-dashboard-route",
       "component": "hiddenDashboardMarker",
       "slot": "patient-chart-dashboard-slot",
-      "privilege": "app:cred.neonatal",
       "meta": {
         "slot": "patient-chart-neonatal-care-dashboard-slot",
         "path": "neonatal-care-dashboard",
@@ -322,7 +315,6 @@
       "name": "child-immunization-schedule-dashboard-route",
       "component": "hiddenDashboardMarker",
       "slot": "patient-chart-dashboard-slot",
-      "privilege": "app:cred.immunization",
       "meta": {
         "slot": "patient-chart-child-immunization-schedule-dashboard-slot",
         "path": "child-immunization-schedule-dashboard",
@@ -336,7 +328,6 @@
       "name": "early-stimulation-dashboard-route",
       "component": "hiddenDashboardMarker",
       "slot": "patient-chart-dashboard-slot",
-      "privilege": "app:cred.earlyStim",
       "meta": {
         "slot": "patient-chart-early-stimulation-dashboard-slot",
         "path": "early-stimulation-dashboard",
@@ -350,7 +341,6 @@
       "name": "child-nutrition-dashboard-route",
       "component": "hiddenDashboardMarker",
       "slot": "patient-chart-dashboard-slot",
-      "privilege": "app:cred.nutrition",
       "meta": {
         "slot": "patient-chart-child-nutrition-dashboard-slot",
         "path": "child-nutrition-dashboard",
@@ -364,8 +354,7 @@
   "modals": [
     {
       "name": "condition-delete-confirmation-dialog",
-      "component": "conditionFilterDeleteConfirmationDialog",
-      "privilege": "app:cred.antecedentes.edit"
+      "component": "conditionFilterDeleteConfirmationDialog"
     }
   ],
   "workspaces": [
@@ -373,133 +362,113 @@
       "name": "adverse-reaction-form-workspace",
       "component": "adverseReactionFormWorkspace",
       "title": "Reacción Adversa",
-      "type": "form",
-      "privilege": "app:cred.immunization.edit"
+      "type": "form"
     },
     {
       "name": "antecedentes-patologicos-form-workspace",
       "component": "antecedentesPatologicosFormWorkspace",
       "title": "Antecedentes Patológicos",
-      "type": "form",
-      "privilege": "app:cred.antecedentes.edit"
+      "type": "form"
     },
     {
       "name": "conditions-filter-form-workspace",
       "component": "conditionsFilterWorkspace",
       "title": "Agregar Condición",
-      "type": "form",
-      "privilege": "app:cred.antecedentes.edit"
+      "type": "form"
     },
     {
       "name": "maternal-conditions-form-workspace",
       "component": "conditionsFilterWorkspace",
       "title": "Agregar Condición",
-      "type": "form",
-      "privilege": "app:cred.antecedentes.edit"
+      "type": "form"
     },
     {
       "name": "forms-selector-workspace",
       "component": "formsSelectorWorkspace",
       "title": "Selección de Formularios",
-      "type": "form",
-      "privilege": "app:cred.cursoVida.edit"
+      "type": "form"
     },
     {
       "name": "newborn-anthropometric-form",
       "component": "newbornAnthropometricsworkspace",
       "title": "Antropometría del Recién Nacido",
-      "type": "form",
-      "privilege": "app:cred.neonatal.edit"
+      "type": "form"
     },
     {
       "name": "newborn-fluidBalance-form",
       "component": "newbornFluidBalanceworkspace",
       "title": "Balance Hídrico del Recién Nacido",
-      "type": "form",
-      "privilege": "app:cred.neonatal.edit"
+      "type": "form"
     },
     {
       "name": "perinatal-register-form",
       "component": "perinatalRegisterworkspace",
       "title": "Registro Perinatal",
-      "type": "form",
-      "privilege": "app:cred.neonatal.edit"
+      "type": "form"
     },
     {
       "name": "wellchild-control-form",
       "component": "wellchildControlsworkspace",
       "title": "Control de Niño Sano",
-      "type": "form",
-      "privilege": "app:cred.cursoVida.edit"
+      "type": "form"
     },
     {
       "name": "test-peruano-form",
       "component": "testPeruanoFormWorkspace",
       "title": "Test Peruano de Desarrollo",
-      "type": "form",
-      "privilege": "app:cred.earlyStim.edit"
+      "type": "form"
     }
   ],
   "workspaces2": [
     {
       "name": "adverse-reaction-form-workspace",
       "component": "adverseReactionFormWorkspace",
-      "window": "patient-chart-well-child-care-forms",
-      "privilege": "app:cred.immunization.edit"
+      "window": "patient-chart-well-child-care-forms"
     },
     {
       "name": "antecedentes-patologicos-form-workspace",
       "component": "antecedentesPatologicosFormWorkspace",
-      "window": "patient-chart-well-child-care-forms",
-      "privilege": "app:cred.antecedentes.edit"
+      "window": "patient-chart-well-child-care-forms"
     },
     {
       "name": "conditions-filter-form-workspace",
       "component": "conditionsFilterWorkspace",
-      "window": "patient-chart-well-child-care-forms",
-      "privilege": "app:cred.antecedentes.edit"
+      "window": "patient-chart-well-child-care-forms"
     },
     {
       "name": "maternal-conditions-form-workspace",
       "component": "conditionsFilterWorkspace",
-      "window": "patient-chart-well-child-care-forms",
-      "privilege": "app:cred.antecedentes.edit"
+      "window": "patient-chart-well-child-care-forms"
     },
     {
       "name": "forms-selector-workspace",
       "component": "formsSelectorWorkspace",
-      "window": "patient-chart-well-child-care-forms",
-      "privilege": "app:cred.cursoVida.edit"
+      "window": "patient-chart-well-child-care-forms"
     },
     {
       "name": "newborn-anthropometric-form",
       "component": "newbornAnthropometricsworkspace",
-      "window": "patient-chart-well-child-care-forms",
-      "privilege": "app:cred.neonatal.edit"
+      "window": "patient-chart-well-child-care-forms"
     },
     {
       "name": "newborn-fluidBalance-form",
       "component": "newbornFluidBalanceworkspace",
-      "window": "patient-chart-well-child-care-forms",
-      "privilege": "app:cred.neonatal.edit"
+      "window": "patient-chart-well-child-care-forms"
     },
     {
       "name": "perinatal-register-form",
       "component": "perinatalRegisterworkspace",
-      "window": "patient-chart-well-child-care-forms",
-      "privilege": "app:cred.neonatal.edit"
+      "window": "patient-chart-well-child-care-forms"
     },
     {
       "name": "wellchild-control-form",
       "component": "wellchildControlsworkspace",
-      "window": "patient-chart-well-child-care-forms",
-      "privilege": "app:cred.cursoVida.edit"
+      "window": "patient-chart-well-child-care-forms"
     },
     {
       "name": "test-peruano-form",
       "component": "testPeruanoFormWorkspace",
-      "window": "patient-chart-well-child-care-forms",
-      "privilege": "app:cred.earlyStim.edit"
+      "window": "patient-chart-well-child-care-forms"
     }
   ],
   "workspaceWindows2": [

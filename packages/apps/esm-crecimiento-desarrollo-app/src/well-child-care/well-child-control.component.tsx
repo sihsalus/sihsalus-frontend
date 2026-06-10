@@ -1,10 +1,10 @@
 import { Calendar, Friendship, Growth, ReminderMedical } from '@carbon/react/icons';
 import { usePatient } from '@openmrs/esm-framework';
+import { RequirePrivilege } from '@sihsalus/esm-rbac';
 import type { TabConfig } from '@sihsalus/esm-sihsalus-shared';
 import { TabbedDashboard } from '@sihsalus/esm-sihsalus-shared';
 import React, { useMemo } from 'react';
 import { credWellChildPrivilege } from '../constants';
-import { DashboardAccess } from '../rbac';
 
 const translationNamespace = '@sihsalus/esm-cred-app';
 
@@ -51,7 +51,7 @@ export const WellChildControl: React.FC<WellChildControlProps> = ({
   }
 
   return (
-    <DashboardAccess privilege={credWellChildPrivilege}>
+    <RequirePrivilege privilege={credWellChildPrivilege}>
       <TabbedDashboard
         patient={patient}
         patientUuid={patientUuid}
@@ -60,6 +60,6 @@ export const WellChildControl: React.FC<WellChildControlProps> = ({
         ariaLabelKey="wellChildCareTabs"
         translationNamespace={translationNamespace}
       />
-    </DashboardAccess>
+    </RequirePrivilege>
   );
 };

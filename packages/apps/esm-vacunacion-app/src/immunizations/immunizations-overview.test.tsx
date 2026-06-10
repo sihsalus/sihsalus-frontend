@@ -1,4 +1,10 @@
-import { getDefaultsFromConfigSchema, useConfig, useFhirFetchAll, useOpenmrsFetchAll } from '@openmrs/esm-framework';
+import {
+  getDefaultsFromConfigSchema,
+  useConfig,
+  useFhirFetchAll,
+  useOpenmrsFetchAll,
+  useSession,
+} from '@openmrs/esm-framework';
 import { screen } from '@testing-library/react';
 import {
   mockImmunizationData,
@@ -19,10 +25,24 @@ const testProps = {
 const mockUseFhirFetchAll = useFhirFetchAll as vi.Mock;
 const mockUseOpenmrsFetchAll = useOpenmrsFetchAll as vi.Mock;
 const mockUseConfig = vi.mocked(useConfig<ImmunizationConfigObject>);
+const mockUseSession = vi.mocked(useSession);
 const immunizationConfig = getDefaultsFromConfigSchema(configSchema) as ImmunizationConfigObject;
+
+const sessionWithEditPrivilege = {
+  authenticated: true,
+  user: {
+    privileges: [{ display: 'app:cred.immunization' }, { display: 'app:cred.immunization.edit' }],
+  },
+} as unknown as ReturnType<typeof useSession>;
+
+const sessionWithoutPrivileges = {
+  authenticated: true,
+  user: { privileges: [] },
+} as unknown as ReturnType<typeof useSession>;
 
 describe('ImmunizationOverview', () => {
   beforeEach(() => {
+    mockUseSession.mockReturnValue(sessionWithEditPrivilege);
     mockUseConfig.mockReturnValue(immunizationConfig);
     mockUseOpenmrsFetchAll.mockReturnValue({
       data: [],
@@ -153,5 +173,17 @@ describe('ImmunizationOverview', () => {
 
     expect(screen.queryByText(/Error 501/i)).not.toBeInTheDocument();
     expect(screen.getByRole('row', { name: /Polio vaccination, oral/i })).toBeInTheDocument();
+  });
+
+  it('does not offer to record immunizations when the user lacks the edit privilege', async () => {
+    mockUseSession.mockReturnValue(sessionWithoutPrivileges);
+    mockUseFhirFetchAll.mockReturnValue({ data: [] });
+
+    renderWithSwr(<ImmunizationsOverview {...testProps} />);
+
+    await waitForLoadingToFinish();
+
+    expect(screen.getByRole('heading', { name: /immunizations/i })).toBeInTheDocument();
+    expect(screen.queryByText(/Record immunizations/i)).not.toBeInTheDocument();
   });
 });

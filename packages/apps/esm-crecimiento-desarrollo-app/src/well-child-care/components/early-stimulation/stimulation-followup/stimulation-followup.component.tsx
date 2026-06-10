@@ -8,12 +8,12 @@ import {
   Tag,
 } from '@carbon/react';
 import { Add } from '@carbon/react/icons';
+import { userHasAccess, useSession } from '@openmrs/esm-framework';
 import { CardHeader, ErrorState } from '@openmrs/esm-patient-common-lib';
 import React from 'react';
 import { useTranslation } from 'react-i18next';
 import { credEarlyStimulationEditPrivilege } from '../../../../constants';
 import { useCREDFormLauncher } from '../../../../hooks/useCREDFormLauncher';
-import { useHasPrivilege } from '../../../../rbac';
 import { useStimulationFollowup } from '../../../../hooks/useStimulationFollowup';
 
 import styles from './stimulation-followup.scss';
@@ -24,7 +24,8 @@ interface StimulationFollowupProps {
 
 const StimulationFollowup: React.FC<StimulationFollowupProps> = ({ patientUuid }) => {
   const { t } = useTranslation();
-  const canEdit = useHasPrivilege(credEarlyStimulationEditPrivilege);
+  const session = useSession();
+  const canEdit = userHasAccess(credEarlyStimulationEditPrivilege, session?.user);
   const { lastEvaluationResult, lastEvaluationDate, hasStimulationLack, isLoading, error } =
     useStimulationFollowup(patientUuid);
   const { launchForm: handleAdd, isLoading: isFormLoading } = useCREDFormLauncher('stimulationFollowupForm');

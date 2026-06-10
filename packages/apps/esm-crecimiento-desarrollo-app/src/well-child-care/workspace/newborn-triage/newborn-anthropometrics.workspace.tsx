@@ -8,35 +8,28 @@ import {
   NumberInputSkeleton,
   Row,
   Stack,
-} from "@carbon/react";
-import { zodResolver } from "@hookform/resolvers/zod";
-import {
-  createErrorHandler,
-  showSnackbar,
-  useConfig,
-  useLayoutType,
-  useSession,
-} from "@openmrs/esm-framework";
-import React, { useCallback, useMemo, useState } from "react";
-import { useForm } from "react-hook-form";
-import { useTranslation } from "react-i18next";
-import { z } from "zod";
-
-import { credNeonatalEditPrivilege } from "../../../constants";
-import type { ConfigObject } from "../../../config-schema";
-import { DashboardAccess } from "../../../rbac";
-import type { DefaultPatientWorkspaceProps } from "../../../types";
+} from '@carbon/react';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { createErrorHandler, showSnackbar, useConfig, useLayoutType, useSession } from '@openmrs/esm-framework';
+import { RequirePrivilege } from '@sihsalus/esm-rbac';
+import React, { useCallback, useMemo, useState } from 'react';
+import { useForm } from 'react-hook-form';
+import { useTranslation } from 'react-i18next';
+import { z } from 'zod';
+import type { ConfigObject } from '../../../config-schema';
+import { credNeonatalEditPrivilege } from '../../../constants';
+import type { DefaultPatientWorkspaceProps } from '../../../types';
 import {
   assessValue,
   getReferenceRangesForConcept,
   invalidateCachedVitalsAndBiometrics,
   saveVitalsAndBiometrics,
   useVitalsConceptMetadata,
-} from "../../common";
+} from '../../common';
 
-import styles from "./newborn-vitals-form.scss";
-import NewbornVitalsInput from "./newborn-vitals-input.component";
-import { isValueWithinReferenceRange } from "./vitals-biometrics-form.utils";
+import styles from './newborn-vitals-form.scss';
+import NewbornVitalsInput from './newborn-vitals-input.component';
+import { isValueWithinReferenceRange } from './vitals-biometrics-form.utils';
 
 const AnthropometricsSchema = z
   .object({
@@ -47,27 +40,19 @@ const AnthropometricsSchema = z
   })
   .partial()
   .refine((fields) => Object.values(fields).some((value) => Boolean(value)), {
-    message: "Please fill at least one field",
-    path: ["oneFieldRequired"],
+    message: 'Please fill at least one field',
+    path: ['oneFieldRequired'],
   });
 
 export type AnthropometricsFormType = z.infer<typeof AnthropometricsSchema>;
 
-const NewbornAnthropometricsForm: React.FC<DefaultPatientWorkspaceProps> = ({
-  closeWorkspace,
-  workspaceProps,
-}) => {
-  const patientUuid = workspaceProps?.patientUuid ?? "";
+const NewbornAnthropometricsForm: React.FC<DefaultPatientWorkspaceProps> = ({ closeWorkspace, workspaceProps }) => {
+  const patientUuid = workspaceProps?.patientUuid ?? '';
   const { t } = useTranslation();
-  const isTablet = useLayoutType() === "tablet";
+  const isTablet = useLayoutType() === 'tablet';
   const config = useConfig<ConfigObject>();
   const session = useSession();
-  const {
-    data: conceptUnits,
-    conceptMetadata,
-    conceptRanges,
-    isLoading,
-  } = useVitalsConceptMetadata();
+  const { data: conceptUnits, conceptMetadata, conceptRanges, isLoading } = useVitalsConceptMetadata();
   const [showErrorNotification, setShowErrorNotification] = useState(false);
   const [showErrorMessage, setShowErrorMessage] = useState(false);
 
@@ -77,22 +62,18 @@ const NewbornAnthropometricsForm: React.FC<DefaultPatientWorkspaceProps> = ({
     watch,
     formState: { isSubmitting },
   } = useForm<AnthropometricsFormType>({
-    mode: "all",
+    mode: 'all',
     resolver: zodResolver(AnthropometricsSchema),
   });
 
-  const weight = watch("weight");
+  const weight = watch('weight');
 
   const concepts = useMemo(
     () => ({
       weightRange: conceptRanges.get(config.concepts.weightUuid),
       heightRange: conceptRanges.get(config.concepts.heightUuid),
-      headCircumferenceRange: conceptRanges.get(
-        config.concepts.headCircumferenceUuid,
-      ),
-      chestCircumferenceRange: conceptRanges.get(
-        config.concepts.chestCircumferenceUuid,
-      ),
+      headCircumferenceRange: conceptRanges.get(config.concepts.headCircumferenceUuid),
+      chestCircumferenceRange: conceptRanges.get(config.concepts.chestCircumferenceUuid),
     }),
     [
       conceptRanges,
@@ -110,13 +91,7 @@ const NewbornAnthropometricsForm: React.FC<DefaultPatientWorkspaceProps> = ({
 
       const allFieldsAreValid = Object.entries(data)
         .filter(([, value]) => Boolean(value))
-        .every(([key, value]) =>
-          isValueWithinReferenceRange(
-            conceptMetadata,
-            config.concepts[`${key}Uuid`],
-            value,
-          ),
-        );
+        .every(([key, value]) => isValueWithinReferenceRange(conceptMetadata, config.concepts[`${key}Uuid`], value));
 
       if (allFieldsAreValid) {
         setShowErrorMessage(false);
@@ -137,31 +112,19 @@ const NewbornAnthropometricsForm: React.FC<DefaultPatientWorkspaceProps> = ({
               closeWorkspace({ discardUnsavedChanges: true });
               showSnackbar({
                 isLowContrast: true,
-                kind: "success",
-                title: t(
-                  "anthropometricsRecorded",
-                  "Datos AntropomÃ©tricos registrados",
-                ),
-                subtitle: t(
-                  "anthropometricsNowAvailable",
-                  "Ahora visibles en la pÃ¡gina de Datos AntropomÃ©tricos",
-                ),
+                kind: 'success',
+                title: t('anthropometricsRecorded', 'Datos Antropométricos registrados'),
+                subtitle: t('anthropometricsNowAvailable', 'Ahora visibles en la página de Datos Antropométricos'),
               });
             }
           })
           .catch(() => {
             createErrorHandler();
             showSnackbar({
-              title: t(
-                "anthropometricsSaveError",
-                "Error guardando los datos antropomÃ©tricos",
-              ),
-              kind: "error",
+              title: t('anthropometricsSaveError', 'Error guardando los datos antropométricos'),
+              kind: 'error',
               isLowContrast: false,
-              subtitle: t(
-                "checkForValidity",
-                "Some of the values entered may be invalid",
-              ),
+              subtitle: t('checkForValidity', 'Some of the values entered may be invalid'),
             });
           })
           .finally(() => abortController.abort());
@@ -192,9 +155,7 @@ const NewbornAnthropometricsForm: React.FC<DefaultPatientWorkspaceProps> = ({
       <div className={styles.grid}>
         <Stack>
           <Column>
-            <p className={styles.title}>
-              {t("recordAnthropometrics", "Registrar Datos AntropomÃ©tricos")}
-            </p>
+            <p className={styles.title}>{t('recordAnthropometrics', 'Registrar Datos Antropométricos')}</p>
           </Column>
           <Row className={styles.row}>
             <Column>
@@ -222,84 +183,68 @@ const NewbornAnthropometricsForm: React.FC<DefaultPatientWorkspaceProps> = ({
       <div className={styles.grid}>
         <Stack gap={4}>
           <Column>
-            <p className={styles.title}>
-              {t(
-                "anthropometrics",
-                "Datos AntropomÃ©tricos del ReciÃ©n Nacido",
-              )}
-            </p>
+            <p className={styles.title}>{t('anthropometrics', 'Datos Antropométricos del Recién Nacido')}</p>
           </Column>
           <Row className={styles.row}>
             <NewbornVitalsInput
               control={control}
               fieldProperties={[
                 {
-                  name: t("weight", "Weight"),
-                  type: "number",
+                  name: t('weight', 'Weight'),
+                  type: 'number',
                   min: concepts.weightRange?.lowAbsolute,
                   max: concepts.weightRange?.highAbsolute,
-                  id: "weight",
+                  id: 'weight',
                 },
               ]}
               interpretation={
-                weight &&
-                assessValue(
-                  weight,
-                  getReferenceRangesForConcept(
-                    config.concepts.weightUuid,
-                    conceptMetadata,
-                  ),
-                )
+                weight && assessValue(weight, getReferenceRangesForConcept(config.concepts.weightUuid, conceptMetadata))
               }
               showErrorMessage={showErrorMessage}
-              label={t("weight", "Weight")}
-              unitSymbol={conceptUnits.get(config.concepts.weightUuid) ?? "kg"}
+              label={t('weight', 'Weight')}
+              unitSymbol={conceptUnits.get(config.concepts.weightUuid) ?? 'kg'}
             />
             <NewbornVitalsInput
               control={control}
               fieldProperties={[
                 {
-                  id: "height",
-                  name: t("height", "Height"),
-                  type: "number",
+                  id: 'height',
+                  name: t('height', 'Height'),
+                  type: 'number',
                   min: concepts.heightRange?.lowAbsolute,
                   max: concepts.heightRange?.highAbsolute,
                 },
               ]}
-              label={t("height", "Height")}
-              unitSymbol={conceptUnits.get(config.concepts.heightUuid) ?? "cm"}
+              label={t('height', 'Height')}
+              unitSymbol={conceptUnits.get(config.concepts.heightUuid) ?? 'cm'}
             />
             <NewbornVitalsInput
               control={control}
               fieldProperties={[
                 {
-                  id: "headCircumference",
-                  name: t("headCircumference", "Head circumference"),
-                  type: "number",
+                  id: 'headCircumference',
+                  name: t('headCircumference', 'Head circumference'),
+                  type: 'number',
                   min: 25,
                   max: 50,
                 },
               ]}
-              label={t("headCircumference", "Head circumference")}
-              unitSymbol={
-                conceptUnits.get(config.concepts.headCircumferenceUuid) ?? "cm"
-              }
+              label={t('headCircumference', 'Head circumference')}
+              unitSymbol={conceptUnits.get(config.concepts.headCircumferenceUuid) ?? 'cm'}
             />
             <NewbornVitalsInput
               control={control}
               fieldProperties={[
                 {
-                  id: "chestCircumference",
-                  name: t("chestCircumference", "Chest circumference"),
-                  type: "number",
+                  id: 'chestCircumference',
+                  name: t('chestCircumference', 'Chest circumference'),
+                  type: 'number',
                   min: 20,
                   max: 45,
                 },
               ]}
-              label={t("chestCircumference", "Chest circumference")}
-              unitSymbol={
-                conceptUnits.get(config.concepts.chestCircumferenceUuid) ?? "cm"
-              }
+              label={t('chestCircumference', 'Chest circumference')}
+              unitSymbol={conceptUnits.get(config.concepts.chestCircumferenceUuid) ?? 'cm'}
             />
           </Row>
         </Stack>
@@ -310,20 +255,14 @@ const NewbornAnthropometricsForm: React.FC<DefaultPatientWorkspaceProps> = ({
             className={styles.errorNotification}
             lowContrast={false}
             onClose={() => setShowErrorNotification(false)}
-            title={t("error", "Error")}
-            subtitle={
-              t("pleaseFillField", "Please fill at least one field") + "."
-            }
+            title={t('error', 'Error')}
+            subtitle={t('pleaseFillField', 'Please fill at least one field') + '.'}
           />
         </Column>
       )}
       <ButtonSet className={isTablet ? styles.tablet : styles.desktop}>
-        <Button
-          className={styles.button}
-          kind="secondary"
-          onClick={() => closeWorkspace()}
-        >
-          {t("discard", "Discard")}
+        <Button className={styles.button} kind="secondary" onClick={() => closeWorkspace()}>
+          {t('discard', 'Discard')}
         </Button>
         <Button
           className={styles.button}
@@ -332,17 +271,13 @@ const NewbornAnthropometricsForm: React.FC<DefaultPatientWorkspaceProps> = ({
           disabled={isSubmitting}
           type="submit"
         >
-          {t("submit", "Save and close")}
+          {t('submit', 'Save and close')}
         </Button>
       </ButtonSet>
     </Form>
   );
 
-  return (
-    <DashboardAccess privilege={credNeonatalEditPrivilege}>
-      {content}
-    </DashboardAccess>
-  );
+  return <RequirePrivilege privilege={credNeonatalEditPrivilege}>{content}</RequirePrivilege>;
 };
 
 export default NewbornAnthropometricsForm;

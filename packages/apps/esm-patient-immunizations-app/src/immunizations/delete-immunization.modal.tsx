@@ -3,7 +3,7 @@ import { getCoreTranslation, showSnackbar, useConfig, userHasAccess, useSession 
 import React, { useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { type ImmunizationConfigObject } from '../config-schema';
-import { credImmunizationEditPrivilege } from '../constants';
+import { immunizationEditPrivilege } from '../constants';
 import { deletePatientImmunization, useImmunizations } from '../hooks/useImmunizations';
 import { useImmunizationsConceptSet } from '../hooks/useImmunizationsConceptSet';
 import styles from './delete-immunization.scss';
@@ -31,7 +31,7 @@ const DeleteImmunization: React.FC<DeleteConfirmModelProps> = ({
   const { mutate } = useImmunizations(patientUuid);
   const [isDeleting, setIsDeleting] = useState(false);
   const session = useSession();
-  const canEditImmunizations = userHasAccess(credImmunizationEditPrivilege, session?.user);
+  const canEditImmunizations = userHasAccess(immunizationEditPrivilege, session?.user);
 
   const vaccineName = useMemo(
     () =>

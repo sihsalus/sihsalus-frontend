@@ -12,6 +12,7 @@ import { screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { mockCurrentVisit, mockPatient, renderWithSwr, waitForLoadingToFinish } from 'test-utils';
 import { configSchema, type ImmunizationConfigObject } from '../config-schema';
+import { immunizationEditPrivilege, immunizationPrivilege } from '../constants';
 import { useImmunizations } from '../hooks/useImmunizations';
 import ImmunizationsDetailedSummary from './immunizations-detailed-summary.component';
 
@@ -35,14 +36,14 @@ const mockUseSession = vi.mocked(useSession);
 const sessionWithEditPrivilege = {
   authenticated: true,
   user: {
-    privileges: [{ display: 'app:cred.immunization' }, { display: 'app:cred.immunization.edit' }],
+    privileges: [{ display: immunizationPrivilege }, { display: immunizationEditPrivilege }],
   },
 } as unknown as ReturnType<typeof useSession>;
 
 const sessionWithoutEditPrivilege = {
   authenticated: true,
   user: {
-    privileges: [{ display: 'app:cred.immunization' }],
+    privileges: [{ display: immunizationPrivilege }],
   },
 } as unknown as ReturnType<typeof useSession>;
 

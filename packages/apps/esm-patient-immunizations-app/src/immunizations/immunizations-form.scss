@@ -1,6 +1,6 @@
-@use '@carbon/layout';
-@use '@carbon/type';
-@use '@openmrs/esm-styleguide/src/vars' as *;
+@use "@carbon/layout";
+@use "@carbon/type";
+@use "@openmrs/esm-styleguide/src/vars" as *;
 
 .container {
   margin: layout.$spacing-05;
@@ -43,5 +43,5 @@
 }
 
 .vaccineBatchHeading {
-  @include type.type-style('heading-compact-02');
+  @include type.type-style("heading-compact-02");
 }

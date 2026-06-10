@@ -249,7 +249,7 @@ Si una app falla con `501`, `workspace not registered`, `modal not registered`, 
 - `esm-patient-chart-app`: layout principal, left sidebar, right sidebar, banner, visitas, workspaces y extension slots.
 - `esm-styleguide`: componentes compartidos y sistemas de workspace; cambios pequenos impactan muchas apps.
 - `esm-patient-orders-app`: depende de visita activa, workspaces, conceptos de ordenes, stock/billing/FHIR opcional.
-- `esm-vacunacion-app`: depende de FHIR2 `Immunization`, conceptos/mappings de inmunizacion y contenido MINSA.
+- `esm-patient-immunizations-app`: depende de FHIR2 `Immunization`, conceptos/mappings de inmunizacion y contenido MINSA.
 - `esm-service-queues-app`: depende de configuracion de colas, ubicaciones, servicios, rooms y conceptos de prioridad/estado.
 - `esm-home-app`: rutas y accesos rapidos; no debe esconder errores de registro de extensiones ni dejar paneles huerfanos.
 
@@ -260,7 +260,7 @@ Si una app falla con `501`, `workspace not registered`, `modal not registered`, 
 | `esm-patient-registration-app`   | `@openmrs/esm-patient-registration-app`  |
 | `esm-patient-search-app`         | `@openmrs/esm-patient-search-app`        |
 | `esm-billing-app`                | `@openmrs/esm-billing-app`               |
-| `esm-vacunacion-app`             | `@openmrs/esm-patient-immunizations-app` |
+| `esm-patient-immunizations-app`  | `@openmrs/esm-patient-immunizations-app` |
 
 Custom modules with no upstream equivalent: `esm-atencion-ambulatoria-app`, `esm-care-logbook-app`, `esm-coststructure-app`, `esm-cred-app` (`packages/apps/esm-crecimiento-desarrollo-app`), `esm-dyaku-app`, `esm-emergency-app`, `esm-ficha-familiar-app`, `esm-fua-app`, `esm-indicadores-app`, `esm-odontologia-app` (`packages/apps/esm-odontologia-app`), `esm-reports-app`, `esm-salud-materna-app`, `esm-seguimiento-casos-app`.
 

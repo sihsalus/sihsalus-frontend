@@ -1,8 +1,8 @@
-# esm-vacunacion-app
+# esm-patient-immunizations-app
 
 Microfrontend consolidado de vacunacion para SIHSALUS.
 
-Este modulo vive en `packages/apps/esm-vacunacion-app`, se publica como `@sihsalus/esm-vacunacion-app` y reemplaza al upstream `esm-patient-immunizations-app` con adaptaciones para el esquema MINSA.
+Este modulo vive en `packages/apps/esm-patient-immunizations-app`, se publica como `@sihsalus/esm-patient-immunizations-app` y reemplaza al upstream `esm-patient-immunizations-app` con adaptaciones para el esquema MINSA.
 
 Base tecnica:
 

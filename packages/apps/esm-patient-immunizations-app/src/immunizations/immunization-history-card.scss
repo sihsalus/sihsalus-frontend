@@ -1,7 +1,7 @@
-@use '@carbon/layout';
-@use '@carbon/colors';
-@use '@carbon/type';
-@use '@openmrs/esm-styleguide/src/vars' as *;
+@use "@carbon/layout";
+@use "@carbon/colors";
+@use "@carbon/type";
+@use "@openmrs/esm-styleguide/src/vars" as *;
 
 .content {
   background-color: $ui-background;
@@ -19,7 +19,7 @@
 }
 
 .doseDate {
-  @include type.type-style('label-02');
+  @include type.type-style("label-02");
   color: $text-02;
 }
 
@@ -84,16 +84,20 @@
   padding: layout.$spacing-03 0;
 
   background:
-    linear-gradient(to left, $ui-background, rgba($ui-background, 0)) 100% 0 / 1.25rem 100% no-repeat,
-    linear-gradient(to left, rgba(0, 0, 0, 0.12), rgba(0, 0, 0, 0)) 100% 0 / 0.5rem 100% no-repeat;
+    linear-gradient(to left, $ui-background, rgba($ui-background, 0)) 100% 0 /
+      1.25rem 100% no-repeat,
+    linear-gradient(to left, rgba(0, 0, 0, 0.12), rgba(0, 0, 0, 0)) 100% 0 /
+      0.5rem 100% no-repeat;
   background-attachment: local, scroll;
 }
 
 /* RTL: flip right-edge hint to left edge */
-[dir='rtl'] .vaccineDose {
+[dir="rtl"] .vaccineDose {
   background:
-    linear-gradient(to right, $ui-background, rgba($ui-background, 0)) 0 0 / 1.25rem 100% no-repeat,
-    linear-gradient(to right, rgba(0, 0, 0, 0.12), rgba(0, 0, 0, 0)) 0 0 / 0.5rem 100% no-repeat;
+    linear-gradient(to right, $ui-background, rgba($ui-background, 0)) 0 0 /
+      1.25rem 100% no-repeat,
+    linear-gradient(to right, rgba(0, 0, 0, 0.12), rgba(0, 0, 0, 0)) 0 0 /
+      0.5rem 100% no-repeat;
   background-attachment: local, scroll;
 }
 
@@ -104,21 +108,21 @@
 }
 
 .nextDoseDateLabel {
-  @include type.type-style('label-01');
+  @include type.type-style("label-01");
   border-radius: layout.$spacing-05;
   text-align: center;
   padding: layout.$spacing-01;
   margin-top: layout.$spacing-02;
 
-  &[data-status='OVERDUE'] {
+  &[data-status="OVERDUE"] {
     background-color: colors.$red-20;
   }
 
-  &[data-status='DUE_SOON'] {
+  &[data-status="DUE_SOON"] {
     background-color: colors.$yellow-20;
   }
 
-  &[data-status='SCHEDULED'] {
+  &[data-status="SCHEDULED"] {
     background-color: colors.$green-20;
   }
 }

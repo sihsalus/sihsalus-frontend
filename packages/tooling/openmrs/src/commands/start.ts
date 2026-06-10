@@ -201,16 +201,6 @@ export async function runStart(args: StartArgs) {
   // e.g. local "@sihsalus/esm-fua-app" should exclude backend "@pucp-gidis-hiisc/esm-fua-app"
   const localBaseNames = new Set(Object.keys(localImportmap.imports).map((name) => name.replace(/^@[^/]+\//, '')));
 
-  // Backend modules that map to local modules with different names.
-  // e.g. backend "esm-patient-immunizations-app" is replaced by local "esm-vacunacion-app"
-  const backendAliases: Record<string, string> = {
-    'esm-indicators-app': 'esm-indicadores-app',
-    'esm-patient-immunizations-app': 'esm-vacunacion-app',
-  };
-  for (const [backendName, localName] of Object.entries(backendAliases)) {
-    if (localBaseNames.has(localName)) localBaseNames.add(backendName);
-  }
-
   logInfo(`Fetching backend importmap from ${backendUrl}...`);
   const backendImportmap = (await fetchBackendJson(`${backendUrl}/openmrs/spa/importmap.json`)) as {
     imports?: Record<string, string>;

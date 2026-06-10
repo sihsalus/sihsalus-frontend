@@ -1,3 +1,5 @@
+import { translateFrom } from '@openmrs/esm-framework';
+import { formEngineAppName } from '../globals';
 import { type FormField, type FormFieldValidator, type ValidationResult } from '../types';
 import { isPlainObject } from '../utils/common-utils';
 export const fieldRequiredErrCode = 'field.required';
@@ -10,9 +12,12 @@ export const FieldValidator: FormFieldValidator = {
     }
     if (isEmpty(value) && field.isRequired) {
       if (typeof field.required === 'object' && field.required.type === 'conditionalRequired' && field.isRequired) {
-        return addError(fieldRequiredErrCode, field.required.message ?? 'Field is mandatory');
+        return addError(
+          fieldRequiredErrCode,
+          field.required.message ?? translateValidationMessage('fieldMandatory', 'Field is mandatory'),
+        );
       } else if (field.isRequired) {
-        return addError(fieldRequiredErrCode, 'Field is mandatory');
+        return addError(fieldRequiredErrCode, translateValidationMessage('fieldMandatory', 'Field is mandatory'));
       }
     }
     if (field.questionOptions.rendering === 'text') {
@@ -32,10 +37,16 @@ export const FieldValidator: FormFieldValidator = {
           : false);
       if (isEmpty(value)) return [];
       if (typeof value !== 'number') {
-        return addError(fieldOutOfBoundErrCode, 'Value must be a number');
+        return addError(
+          fieldOutOfBoundErrCode,
+          translateValidationMessage('valueMustBeNumber', 'Value must be a number'),
+        );
       }
       if (disallowDecimals && !Number.isInteger(value)) {
-        return addError(fieldOutOfBoundErrCode, 'Decimal values are not allowed for this field');
+        return addError(
+          fieldOutOfBoundErrCode,
+          translateValidationMessage('decimalValuesNotAllowed', 'Decimal values are not allowed for this field'),
+        );
       }
       if (!Number.isNaN(min) || !Number.isNaN(max)) {
         return numberInputRangeValidator(min, max, value);
@@ -47,11 +58,21 @@ export const FieldValidator: FormFieldValidator = {
 
 export function numberInputRangeValidator(min: number, max: number, inputValue: number): ValidationResult[] {
   if (!Number.isNaN(min) && inputValue < min) {
-    return addError(fieldOutOfBoundErrCode, `Value must be greater than ${min}`);
+    return addError(
+      fieldOutOfBoundErrCode,
+      translateValidationMessage('valueMustBeGreaterThanOrEqualTo', 'Value must be greater than or equal to {{min}}', {
+        min,
+      }),
+    );
   }
 
   if (!Number.isNaN(max) && inputValue > max) {
-    return addError(fieldOutOfBoundErrCode, `Value must be lower than ${max}`);
+    return addError(
+      fieldOutOfBoundErrCode,
+      translateValidationMessage('valueMustBeLessThanOrEqualTo', 'Value must be less than or equal to {{max}}', {
+        max,
+      }),
+    );
   }
 
   return [];
@@ -84,15 +105,35 @@ export function textInputLengthValidator(
     }
 
     if (minLen && inputLength < minLen) {
-      return addError(fieldOutOfBoundErrCode, `Length should be at least ${minLen} characters`);
+      return addError(
+        fieldOutOfBoundErrCode,
+        translateValidationMessage('lengthAtLeastCharacters', 'Length should be at least {{min}} characters', {
+          min: minLen,
+        }),
+      );
     }
 
     if (maxLen && inputLength > maxLen) {
-      return addError(fieldOutOfBoundErrCode, `Length should not exceed ${maxLen} characters`);
+      return addError(
+        fieldOutOfBoundErrCode,
+        translateValidationMessage('lengthMustNotExceedCharacters', 'Length should not exceed {{max}} characters', {
+          max: maxLen,
+        }),
+      );
     }
 
     if (maxLen && minLen && inputLength < minLen && inputLength > maxLen) {
-      return addError(fieldOutOfBoundErrCode, `Length should be between ${minLen} and ${maxLen} characters`);
+      return addError(
+        fieldOutOfBoundErrCode,
+        translateValidationMessage(
+          'lengthBetweenCharacters',
+          'Length should be between {{min}} and {{max}} characters',
+          {
+            max: maxLen,
+            min: minLen,
+          },
+        ),
+      );
     }
   }
 }
@@ -105,4 +146,12 @@ export function addError(errorCode: string, message: string): ValidationResult[]
       message: message,
     },
   ];
+}
+
+export function translateValidationMessage(
+  key: string,
+  defaultValue: string,
+  options?: Record<string, unknown>,
+): string {
+  return translateFrom(formEngineAppName, key, defaultValue, options);
 }

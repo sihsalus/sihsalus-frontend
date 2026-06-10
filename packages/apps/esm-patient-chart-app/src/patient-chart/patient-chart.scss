@@ -11,6 +11,7 @@ $actionPanelExpandedOffset: $actionNavOffset + $actionPanelOffset;
   grid-template-rows: 1fr;
   align-items: stretch;
   width: inherit;
+  min-width: 0;
 }
 
 .chartReview {
@@ -19,6 +20,7 @@ $actionPanelExpandedOffset: $actionNavOffset + $actionPanelOffset;
   align-self: start;
   height: 90%;
   width: 100%;
+  min-width: 0;
   margin: 0 auto;
   padding-bottom: layout.$spacing-10;
 }
@@ -36,6 +38,7 @@ $actionPanelExpandedOffset: $actionNavOffset + $actionPanelOffset;
   display: flex;
   align-items: flex-start;
   flex-direction: column;
+  min-width: 0;
 }
 
 :global(.omrs-breakpoint-gt-tablet) .chartContainer {
@@ -49,6 +52,7 @@ $actionPanelExpandedOffset: $actionNavOffset + $actionPanelOffset;
 .innerChartContainer {
   display: flex;
   width: 100%;
+  min-width: 0;
   flex-direction: column;
 }
 

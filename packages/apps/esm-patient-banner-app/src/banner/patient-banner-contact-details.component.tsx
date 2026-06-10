@@ -130,11 +130,12 @@ const Address: React.FC<{ patientId: string }> = ({ patientId }) => {
 
 const Contact: React.FC<{ patientUuid: string }> = ({ patientUuid }) => {
   const { t } = useTranslation();
-  const { ethnicIdentityConceptUuid } = useConfig<ConfigObject>();
+  const { ethnicIdentityAttributeTypeUuid, ethnicIdentityConceptUuid } = useConfig<ConfigObject>();
   const { isLoading: isLoadingAttributes, contactAttributes } = usePatientContactAttributes(patientUuid);
   const { currentValue: ethnicIdentity, isLoading: isLoadingEthnicIdentity } = useEthnicIdentity(
     patientUuid,
     ethnicIdentityConceptUuid,
+    ethnicIdentityAttributeTypeUuid,
   );
   const showLoading = useBoundedLoading(isLoadingAttributes || isLoadingEthnicIdentity);
 
@@ -145,7 +146,7 @@ const Contact: React.FC<{ patientUuid: string }> = ({ patientUuid }) => {
             contact.attributeType.display
               ? getCoreTranslation(contact.attributeType.display as CoreTranslationKey, contact.attributeType.display)
               : '',
-            contact.value,
+            getDisplayValue(contact.value),
           ])
         : [],
     [contactAttributes],

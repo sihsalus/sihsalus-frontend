@@ -1,4 +1,4 @@
-import { Button, ContentSwitcher, DataTableSkeleton, IconSwitch } from '@carbon/react';
+import { Button, ContentSwitcher, DataTableSkeleton, IconSwitch, InlineNotification } from '@carbon/react';
 import { Add, Analytics, ChartLineData } from '@carbon/react/icons';
 import {
   isDesktop as isDesktopLayout,
@@ -44,10 +44,13 @@ const GrowthChartOverview: React.FC<GrowthChartProps> = ({ patient, patientUuid 
 
   const gender = useMemo(() => {
     const raw = patient?.gender?.toUpperCase?.();
-    return raw === 'FEMALE' || raw === 'MALE' ? raw.charAt(0) : 'M';
+    return raw === 'FEMALE' || raw === 'MALE' ? raw.charAt(0) : null;
   }, [patient]);
 
-  const dateOfBirth = useMemo(() => new Date(patient?.birthDate ?? new Date()), [patient?.birthDate]);
+  const dateOfBirth = useMemo(() => {
+    const parsed = patient?.birthDate ? new Date(patient.birthDate) : null;
+    return parsed && !Number.isNaN(parsed.getTime()) ? parsed : null;
+  }, [patient?.birthDate]);
   const { data, isLoading: isLoading, error } = useBiometrics(patientUuid);
 
   const handleViewChange = useCallback((evt: { name: string }) => {
@@ -60,6 +63,23 @@ const GrowthChartOverview: React.FC<GrowthChartProps> = ({ patient, patientUuid 
 
   if (error) {
     return <ErrorState error={error} headerTitle={headerTitle} />;
+  }
+
+  // Sin sexo M/F o sin fecha de nacimiento válida no hay curva de referencia OMS aplicable:
+  // graficar con valores por defecto mostraría curvas clínicamente incorrectas.
+  if (!gender || !dateOfBirth) {
+    return (
+      <InlineNotification
+        kind="warning"
+        lowContrast
+        hideCloseButton
+        title={headerTitle}
+        subtitle={t(
+          'growthChartMissingDemographics',
+          'No se puede graficar: el paciente no tiene sexo (M/F) o fecha de nacimiento válida registrada.',
+        )}
+      />
+    );
   }
 
   if (data?.length) {

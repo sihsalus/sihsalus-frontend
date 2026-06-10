@@ -1,4 +1,4 @@
-export interface MinsaIdentityLookupResult {
+export interface ReniecIdentityLookupResult {
   documentNumber: string;
   givenName: string;
   middleName?: string;
@@ -8,7 +8,7 @@ export interface MinsaIdentityLookupResult {
   gender: 'male' | 'female' | 'other' | 'unknown';
 }
 
-const mockMinsaIdentityLookup: Record<string, MinsaIdentityLookupResult> = {
+const mockReniecIdentityLookup: Record<string, ReniecIdentityLookupResult> = {
   '12345678': {
     documentNumber: '12345678',
     givenName: 'Juan',
@@ -29,7 +29,7 @@ const mockMinsaIdentityLookup: Record<string, MinsaIdentityLookupResult> = {
   },
 };
 
-export async function lookupMinsaIdentityByDni(dni: string): Promise<MinsaIdentityLookupResult | null> {
+export async function lookupReniecIdentityByDni(dni: string): Promise<ReniecIdentityLookupResult | null> {
   // Replace this mock with the identitylookup OMOD endpoint once it is exposed.
-  return mockMinsaIdentityLookup[dni] ?? null;
+  return mockReniecIdentityLookup[dni] ?? null;
 }

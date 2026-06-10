@@ -171,7 +171,7 @@ export const neonatalFormFallbacks = {
   },
   roomingIn: {
     display: '(Página 10) Alojamiento Conjunto',
-    identifier: '4767ab9c-00c8-358f-a2cd-cd7f0d4b42d3',
+    identifier: '(Página 10) Alojamiento Conjunto',
   },
   birthDetails: {
     display: '(CRED) Detalles de Nacimiento',

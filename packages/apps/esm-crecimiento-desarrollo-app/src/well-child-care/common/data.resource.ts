@@ -30,7 +30,7 @@ const NewbornVitalsSchema = z
     vomitGramsML: z.number(),
   })
   .partial()
-  .refine((fields) => Object.values(fields).some((value) => Boolean(value)), {
+  .refine((fields) => Object.values(fields).some((value) => value != null), {
     message: 'Please fill at least one field',
     path: ['oneFieldRequired'],
   });
@@ -383,7 +383,7 @@ function createObsObject(
   concepts: ConfigObject['concepts'],
 ): Array<Omit<ObsRecord, 'effectiveDateTime' | 'conceptClass' | 'encounter'>> {
   return Object.entries(vitals)
-    .filter(([_, result]) => Boolean(result))
+    .filter(([, result]) => result != null)
     .map(([name, result]) => {
       return {
         concept: concepts[name + 'Uuid'],

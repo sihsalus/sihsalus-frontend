@@ -1,10 +1,11 @@
 import { getDefaultsFromConfigSchema } from '@openmrs/esm-framework';
 
-import { esmPatientRegistrationSchema } from '../config-schema';
+import { esmPatientRegistrationSchema, type RegistrationConfig } from '../config-schema';
 import {
   getEffectiveRegistrationConfig,
   peruDniPatientIdentifierTypeUuid,
   peruForeignPatientIdentifierTypeUuids,
+  peruPhoneAttributeTypeUuid,
 } from './peru-registration-config';
 
 describe('getEffectiveRegistrationConfig', () => {
@@ -12,17 +13,16 @@ describe('getEffectiveRegistrationConfig', () => {
     const config = getEffectiveRegistrationConfig(getDefaultsFromConfigSchema(esmPatientRegistrationSchema));
 
     const demographics = config.sectionDefinitions.find((section) => section.id === 'demographics');
-    const birthplace = config.sectionDefinitions.find((section) => section.id === 'birthplace');
+    const contact = config.sectionDefinitions.find((section) => section.id === 'contact');
     const filiation = config.sectionDefinitions.find((section) => section.id === 'filiation');
     const bloodData = config.sectionDefinitions.find((section) => section.id === 'bloodData');
     const nationality = config.fieldDefinitions.find((field) => field.id === 'nationality');
 
-    expect(demographics?.fields).toEqual(['name', 'id', 'minsaLookup', 'dob', 'gender']);
+    expect(demographics?.fields).toEqual(['name', 'id', 'reniecLookup', 'dob', 'gender']);
     expect(demographics?.fields).not.toContain('nationality');
-    expect(birthplace).toMatchObject({
-      id: 'birthplace',
-      name: 'Lugar de nacimiento',
-      fields: ['birthplace'],
+    expect(contact).toMatchObject({
+      id: 'contact',
+      fields: ['address', 'birthplace', 'phone'],
     });
     expect(filiation?.fields).not.toContain('birthplace');
     expect(filiation?.fields).not.toContain('bloodGroup');
@@ -62,7 +62,6 @@ describe('getEffectiveRegistrationConfig', () => {
     expect(config.sections).toEqual([
       'demographics',
       'contact',
-      'birthplace',
       'filiation',
       'bloodData',
       'medicalRecord',
@@ -70,11 +69,28 @@ describe('getEffectiveRegistrationConfig', () => {
       'responsiblePerson',
     ]);
     expect(config.sections).not.toContain('relationships');
+    expect(config.sections).not.toContain('birthplace');
     expect(responsiblePerson).toMatchObject({
       id: 'responsiblePerson',
       name: 'Acompañante o responsable',
       fields: ['companionName', 'companionAge', 'companionRelationship'],
     });
+  });
+
+  it('maps legacy MINSA identity lookup config to RENIEC lookup', () => {
+    const defaultConfig = getDefaultsFromConfigSchema(esmPatientRegistrationSchema) as RegistrationConfig;
+    defaultConfig.sectionDefinitions = [
+      {
+        id: 'demographics',
+        name: 'Basic Info',
+        fields: ['name', 'id', 'minsaLookup', 'dob', 'gender'],
+      },
+    ];
+
+    const config = getEffectiveRegistrationConfig(defaultConfig);
+    const demographics = config.sectionDefinitions.find((section) => section.id === 'demographics');
+
+    expect(demographics?.fields).toEqual(['name', 'id', 'reniecLookup', 'dob', 'gender']);
   });
 
   it('validates responsible person optional fields when provided', () => {
@@ -107,8 +123,31 @@ describe('getEffectiveRegistrationConfig', () => {
     expect(fieldsById.medicalRecordStatus.defaultValue).toBe('9b3df0a1-0c58-4f55-9868-9c38f1db2031');
     expect(fieldsById.medicalRecordArchiveType.defaultValue).toBe('9b3df0a1-0c58-4f55-9868-9c38f1db2041');
     expect(fieldsById.insuranceAccreditationStatus.defaultValue).toBe('9b3df0a1-0c58-4f55-9868-9c38f1db2054');
+    expect(config.sectionDefinitions.find((section) => section.id === 'insurance')?.fields).toContain('sisLookup');
+    expect(config.fieldConfigurations.phone.personAttributeUuid).toBe(peruPhoneAttributeTypeUuid);
+    expect(config.fieldConfigurations.phone.validation?.matches).toBe('^\\+?[0-9][0-9\\s().-]{5,19}$');
+    expect(fieldsById.birthplace.validation?.matches).toBe(
+      "^[A-Za-zÁÉÍÓÚÜÑáéíóúüñ0-9][A-Za-zÁÉÍÓÚÜÑáéíóúüñ0-9 ,.'\\-/()]{1,119}$",
+    );
     expect(fieldsById.gender?.defaultValue).toBeUndefined();
     expect(fieldsById.bloodGroup.defaultValue).toBeUndefined();
     expect(fieldsById.rhFactor.defaultValue).toBeUndefined();
+  });
+
+  it('removes legacy standalone birthplace sections from the visible order', () => {
+    const defaultConfig = getDefaultsFromConfigSchema(esmPatientRegistrationSchema) as RegistrationConfig;
+    defaultConfig.sections = ['demographics', 'contact', 'birthplace', 'relationships'];
+
+    const config = getEffectiveRegistrationConfig(defaultConfig);
+
+    expect(config.sections).toEqual([
+      'demographics',
+      'contact',
+      'filiation',
+      'bloodData',
+      'medicalRecord',
+      'insurance',
+      'responsiblePerson',
+    ]);
   });
 });

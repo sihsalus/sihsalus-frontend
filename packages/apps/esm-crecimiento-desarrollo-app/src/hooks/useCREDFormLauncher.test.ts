@@ -40,6 +40,12 @@ describe('CRED form launcher resources', () => {
     );
   });
 
+  it('uses the rooming-in form name as the neonatal fallback', () => {
+    expect(getCREDFormIdentifier(undefined, 'roomingIn', neonatalFormFallbacks.roomingIn)).toBe(
+      '(Página 10) Alojamiento Conjunto',
+    );
+  });
+
   it('uses the well-child control fallback when config does not provide the form key', () => {
     expect(
       getCREDFormIdentifier(

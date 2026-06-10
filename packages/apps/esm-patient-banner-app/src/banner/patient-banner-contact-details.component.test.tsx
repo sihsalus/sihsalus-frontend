@@ -60,6 +60,7 @@ describe('PatientBannerContactDetails', () => {
     mockUseConfig.mockReturnValue({
       additionalAttributeTypes: [],
       contactAttributeTypes: [],
+      ethnicIdentityAttributeTypeUuid: '8d871386-c2cc-11de-8d13-0010c6dffd0f',
       ethnicIdentityConceptUuid: '',
       printPatientSticker: {
         fields: [],

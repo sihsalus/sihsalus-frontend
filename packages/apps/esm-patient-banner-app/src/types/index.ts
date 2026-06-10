@@ -36,7 +36,7 @@ export interface Attribute {
   attributeType: OpenmrsResource;
   display: string;
   uuid: string;
-  value: string | number;
+  value: string | number | { display?: string; name?: string; value?: string | number };
 }
 
 export interface PatientIdentifier {

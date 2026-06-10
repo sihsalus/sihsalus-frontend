@@ -36,6 +36,35 @@ function buildIdentifierFormatRegex(format?: string): RegExp | undefined {
   }
 }
 
+function buildPersonAttributeValidationSchema(config: RegistrationConfig) {
+  const attributeSchemas = Object.fromEntries(
+    (config.fieldDefinitions ?? [])
+      .filter((field) => field.type === 'person attribute' && !!field.uuid && !!field.validation)
+      .map((field) => {
+        const formatRegex = buildIdentifierFormatRegex(field.validation?.matches);
+        let schema = Yup.string().nullable();
+
+        if (field.validation?.required) {
+          schema = schema.required(t('fieldRequired', 'Field is required'));
+        }
+
+        if (formatRegex) {
+          schema = schema.test('person-attribute-format', t('invalidInput', 'Invalid Input'), (value) => {
+            if (!value) {
+              return true;
+            }
+
+            return formatRegex.test(value);
+          });
+        }
+
+        return [field.uuid, schema];
+      }),
+  );
+
+  return Yup.object(attributeSchemas);
+}
+
 export function isMinorPatient(values: Pick<FormValues, 'birthdate' | 'birthdateEstimated' | 'yearsEstimated'>) {
   if (values.birthdateEstimated) {
     return typeof values.yearsEstimated === 'number' && values.yearsEstimated < 18;
@@ -215,6 +244,7 @@ export function getValidationSchema(
       otherwise: Yup.string().nullable(),
     }),
     email: Yup.string().optional().email(t('invalidEmail', 'Invalid email')),
+    attributes: buildPersonAttributeValidationSchema(config),
     identifiers: Yup.lazy((obj: FormValues['identifiers']) =>
       Yup.object(
         mapValues(obj, (identifier, fieldName) => {

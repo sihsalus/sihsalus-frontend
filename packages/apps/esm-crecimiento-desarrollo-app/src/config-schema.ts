@@ -110,7 +110,7 @@ export const configSchema = {
       atencionImmediataNewborn: '33b6449b-3fc6-3ec1-be3f-0bd29146315f',
       breastfeedingObservation: '46624035-79b7-3025-abfc-b02249f16e77',
       newbornNeuroEval: '87745826-b5ac-3366-b17f-5c7335c39006',
-      roomingIn: '4767ab9c-00c8-358f-a2cd-cd7f0d4b42d3',
+      roomingIn: '(Página 10) Alojamiento Conjunto',
       birthDetails: '8db0f1dc-c191-3468-854c-6c6c41ef6198',
       pregnancyDetails: '307e2887-9902-3ab2-83d9-f3e48ef7bdb2',
 

@@ -1,10 +1,10 @@
 import { ChartLineData, Stethoscope, UserFollow } from '@carbon/react/icons';
 import { usePatient } from '@openmrs/esm-framework';
+import { RequirePrivilege } from '@sihsalus/esm-rbac';
 import type { TabConfig } from '@sihsalus/esm-sihsalus-shared';
 import { TabbedDashboard } from '@sihsalus/esm-sihsalus-shared';
 import React, { useMemo } from 'react';
 import { credNutritionPrivilege } from '../constants';
-import { DashboardAccess } from '../rbac';
 
 const translationNamespace = '@sihsalus/esm-cred-app';
 
@@ -46,7 +46,7 @@ export const ChildNutrition: React.FC<ChildNutritionProps> = ({
   }
 
   return (
-    <DashboardAccess privilege={credNutritionPrivilege}>
+    <RequirePrivilege privilege={credNutritionPrivilege}>
       <TabbedDashboard
         patient={patient}
         patientUuid={patientUuid}
@@ -55,6 +55,6 @@ export const ChildNutrition: React.FC<ChildNutritionProps> = ({
         ariaLabelKey="childNutritionTabs"
         translationNamespace={translationNamespace}
       />
-    </DashboardAccess>
+    </RequirePrivilege>
   );
 };

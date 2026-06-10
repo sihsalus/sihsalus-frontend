@@ -1,9 +1,8 @@
-import { formatDate, parseDate, useConfig } from '@openmrs/esm-framework';
+import { formatDate, parseDate, useConfig, userHasAccess, useSession } from '@openmrs/esm-framework';
 import { ClinicalDataOverview } from '@sihsalus/esm-sihsalus-shared';
 import React, { useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { credNeonatalEditPrivilege } from '../../../../constants';
-import { useHasPrivilege } from '../../../../rbac';
 import { useBalance, useVitalsConceptMetadata, withUnit } from '../../../common';
 
 interface BalanceOverviewProps {
@@ -13,7 +12,8 @@ interface BalanceOverviewProps {
 
 const NewbornBalanceOverview: React.FC<BalanceOverviewProps> = ({ patientUuid, pageSize = 10 }) => {
   const { t } = useTranslation();
-  const canEdit = useHasPrivilege(credNeonatalEditPrivilege);
+  const session = useSession();
+  const canEdit = userHasAccess(credNeonatalEditPrivilege, session?.user);
   const config = useConfig();
   const { data: conceptUnits } = useVitalsConceptMetadata();
   const { data: balanceData, error, isLoading, isValidating } = useBalance(patientUuid);

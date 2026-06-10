@@ -22,15 +22,15 @@ import {
   useConfig,
   useLayoutType,
   usePagination,
+  userHasAccess,
+  useSession,
 } from '@openmrs/esm-framework';
 import { CardHeader, EmptyState, ErrorState, PatientChartPagination } from '@openmrs/esm-patient-common-lib';
 import classNames from 'classnames';
 import React, { type ComponentProps, useCallback, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-
-import { credAntecedentsEditPrivilege } from '../../constants';
-import { useHasPrivilege } from '../../rbac';
 import type { ConfigObject } from '../../config-schema';
+import { credAntecedentsEditPrivilege } from '../../constants';
 import { type Condition, useConditionsFromConceptSet, useConditionsSorting } from './conditions.resource';
 import { ConditionsActionMenu } from './conditions-action-menu.component';
 import styles from './conditions-overview.scss';
@@ -82,7 +82,8 @@ const GenericConditionsOverview: React.FC<GenericConditionsOverviewProps> = ({
   const layout = useLayoutType();
   const isDesktop = isDesktopLayout(layout);
   const isTablet = !isDesktop;
-  const canEdit = useHasPrivilege(editPrivilege);
+  const session = useSession();
+  const canEdit = userHasAccess(editPrivilege, session?.user);
   const canShowEditActions = enableAdd && canEdit;
 
   const { conditions, error, isLoading, isValidating } = useConditionsFromConceptSet(patientUuid, conceptSetUuid);
@@ -262,7 +263,13 @@ const GenericConditionsOverview: React.FC<GenericConditionsOverviewProps> = ({
       </div>
     );
   }
-  return <EmptyState displayText={displayText} headerTitle={headerTitle} launchForm={canShowEditActions ? launchConditionsForm : undefined} />;
+  return (
+    <EmptyState
+      displayText={displayText}
+      headerTitle={headerTitle}
+      launchForm={canShowEditActions ? launchConditionsForm : undefined}
+    />
+  );
 };
 
 export default GenericConditionsOverview;

@@ -4,6 +4,7 @@ import {
   launchWorkspace2,
   parseDate,
   useConfig,
+  useSession,
   type VisitReturnType,
 } from '@openmrs/esm-framework';
 import { usePatientChartStore, useVisitOrOfflineVisit } from '@openmrs/esm-patient-common-lib';
@@ -29,6 +30,23 @@ const mockLaunchWorkspace = launchWorkspace2 as vi.Mock;
 const mockUseConfig = vi.mocked(useConfig<ImmunizationConfigObject>);
 const mockUsePatientChartStore = vi.mocked(usePatientChartStore);
 const mockUseVisitOrOfflineVisit = vi.mocked(useVisitOrOfflineVisit);
+const mockUseSession = vi.mocked(useSession);
+
+const sessionWithEditPrivilege = {
+  authenticated: true,
+  user: {
+    privileges: [{ display: 'app:cred.immunization' }, { display: 'app:cred.immunization.edit' }],
+  },
+} as unknown as ReturnType<typeof useSession>;
+
+const sessionWithoutEditPrivilege = {
+  authenticated: true,
+  user: {
+    privileges: [{ display: 'app:cred.immunization' }],
+  },
+} as unknown as ReturnType<typeof useSession>;
+
+mockUseSession.mockReturnValue(sessionWithEditPrivilege);
 
 mockUseConfig.mockReturnValue(getDefaultsFromConfigSchema(configSchema));
 
@@ -75,6 +93,7 @@ const mockImmunizationData = [
 describe('ImmunizationsDetailedSummary', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    mockUseSession.mockReturnValue(sessionWithEditPrivilege);
     mockUseConfig.mockReturnValue({
       immunizationConceptSet: 'CIEL:984',
       fhirConceptMappings: {
@@ -455,5 +474,24 @@ describe('ImmunizationsDetailedSummary', () => {
     // Should show vaccine name but no date information
     expect(screen.getByText(/Polio/i)).toBeInTheDocument();
     expect(screen.queryByText(/Last dose on/i)).not.toBeInTheDocument();
+  });
+
+  it('hides every add action when the user lacks the edit privilege', async () => {
+    mockUseSession.mockReturnValue(sessionWithoutEditPrivilege);
+    mockUseImmunizations.mockReturnValue({
+      data: mockImmunizationData,
+      isLoading: false,
+      error: null,
+      isValidating: false,
+      mutate: vi.fn(),
+    });
+
+    renderWithSwr(<ImmunizationsDetailedSummary patientUuid={mockPatient.id} launchStartVisitPrompt={vi.fn()} />);
+
+    await waitForLoadingToFinish();
+
+    expect(screen.getByRole('table')).toBeInTheDocument();
+    expect(screen.queryByTestId('add-immunizations-button')).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /^add$/i })).not.toBeInTheDocument();
   });
 });

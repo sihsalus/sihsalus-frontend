@@ -13,7 +13,7 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from "@carbon/react";
+} from '@carbon/react';
 import {
   AddIcon,
   formatDate,
@@ -22,66 +22,55 @@ import {
   useConfig,
   useLayoutType,
   usePagination,
-} from "@openmrs/esm-framework";
+  userHasAccess,
+  useSession,
+} from '@openmrs/esm-framework';
 import {
   CardHeader,
   EmptyState,
   ErrorState,
   PatientChartPagination,
   useVisitOrOfflineVisit,
-} from "@openmrs/esm-patient-common-lib";
-import React, { type ComponentProps, useCallback, useMemo } from "react";
-import { useTranslation } from "react-i18next";
-import type { ImmunizationConfigObject } from "../config-schema";
-import {
-  credImmunizationEditPrivilege,
-  credImmunizationPrivilege,
-} from "../constants";
-import { useImmunizations } from "../hooks/useImmunizations";
-import { DashboardAccess, useHasPrivilege } from "../rbac";
-import type { ImmunizationGrouped } from "../types";
+} from '@openmrs/esm-patient-common-lib';
+import { RequirePrivilege } from '@sihsalus/esm-rbac';
+import React, { type ComponentProps, useCallback, useMemo } from 'react';
+import { useTranslation } from 'react-i18next';
+import type { ImmunizationConfigObject } from '../config-schema';
+import { credImmunizationEditPrivilege, credImmunizationPrivilege } from '../constants';
+import { useImmunizations } from '../hooks/useImmunizations';
+import type { ImmunizationGrouped } from '../types';
 import {
   scheduleEntriesToSequenceDefinitions,
   useVaccinationSchedule,
-} from "../vaccine-scheduling-builder/vaccination-schedule.resource";
-import SequenceTable from "./components/immunizations-sequence-table.component";
-import styles from "./immunizations-detailed-summary.scss";
-import {
-  immunizationFormSub,
-  latestFirst,
-  linkConfiguredSequences,
-} from "./utils";
+} from '../vaccine-scheduling-builder/vaccination-schedule.resource';
+import SequenceTable from './components/immunizations-sequence-table.component';
+import styles from './immunizations-detailed-summary.scss';
+import { immunizationFormSub, latestFirst, linkConfiguredSequences } from './utils';
 
 interface ImmunizationsDetailedSummaryProps {
   patientUuid: string;
   launchStartVisitPrompt: () => void;
 }
 
-const ImmunizationsDetailedSummary: React.FC<
-  ImmunizationsDetailedSummaryProps
-> = ({ patientUuid, launchStartVisitPrompt }) => {
+const ImmunizationsDetailedSummary: React.FC<ImmunizationsDetailedSummaryProps> = ({
+  patientUuid,
+  launchStartVisitPrompt,
+}) => {
   const { t } = useTranslation();
-  const canEdit = useHasPrivilege(credImmunizationEditPrivilege);
+  const session = useSession();
+  const canEdit = userHasAccess(credImmunizationEditPrivilege, session?.user);
   const config = useConfig<ImmunizationConfigObject>();
-  const displayText = t("immunizations__lower", "immunizations");
-  const headerTitle = t("immunizations", "Immunizations");
+  const displayText = t('immunizations__lower', 'immunizations');
+  const headerTitle = t('immunizations', 'Immunizations');
   const { currentVisit: visitContext } = useVisitOrOfflineVisit(patientUuid);
-  const isTablet = useLayoutType() === "tablet";
+  const isTablet = useLayoutType() === 'tablet';
   const { scheduleData } = useVaccinationSchedule();
   const sequenceDefinitions = useMemo(() => {
-    const scheduleSequences =
-      scheduleEntriesToSequenceDefinitions(scheduleData);
-    return scheduleSequences.length
-      ? scheduleSequences
-      : config.sequenceDefinitions;
+    const scheduleSequences = scheduleEntriesToSequenceDefinitions(scheduleData);
+    return scheduleSequences.length ? scheduleSequences : config.sequenceDefinitions;
   }, [config.sequenceDefinitions, scheduleData]);
 
-  const {
-    data: existingImmunizations,
-    isLoading,
-    error,
-    isValidating,
-  } = useImmunizations(patientUuid);
+  const { data: existingImmunizations, isLoading, error, isValidating } = useImmunizations(patientUuid);
 
   const consolidatedImmunizations = useMemo(() => {
     return linkConfiguredSequences(existingImmunizations, sequenceDefinitions);
@@ -92,7 +81,7 @@ const ImmunizationsDetailedSummary: React.FC<
       launchStartVisitPrompt();
       return;
     }
-    launchWorkspace2("vacunacion-form-workspace");
+    launchWorkspace2('vacunacion-form-workspace');
   }, [visitContext, launchStartVisitPrompt]);
 
   const sortedImmunizations = useMemo(() => {
@@ -100,9 +89,7 @@ const ImmunizationsDetailedSummary: React.FC<
       const latestTime = (imm: ImmunizationGrouped) => {
         if (!imm.existingDoses?.length) return 0;
         const latest = imm.existingDoses.reduce((prev, cur) =>
-          new Date(cur.occurrenceDateTime) > new Date(prev.occurrenceDateTime)
-            ? cur
-            : prev,
+          new Date(cur.occurrenceDateTime) > new Date(prev.occurrenceDateTime) ? cur : prev,
         );
         return new Date(latest.occurrenceDateTime).getTime();
       };
@@ -112,12 +99,12 @@ const ImmunizationsDetailedSummary: React.FC<
 
   const tableHeader = useMemo(
     () => [
-      { key: "vaccine", header: t("vaccine", "Vaccine") },
+      { key: 'vaccine', header: t('vaccine', 'Vaccine') },
       {
-        key: "recentVaccination",
-        header: t("recentVaccination", "Recent vaccination"),
+        key: 'recentVaccination',
+        header: t('recentVaccination', 'Recent vaccination'),
       },
-      { key: "add", header: "" },
+      { key: 'add', header: '' },
     ],
     [t],
   );
@@ -125,38 +112,34 @@ const ImmunizationsDetailedSummary: React.FC<
   const tableRows = useMemo(
     () =>
       sortedImmunizations?.map((immunization) => {
-        const sortedDoses = immunization.existingDoses
-          ? [...immunization.existingDoses].sort(latestFirst)
-          : [];
+        const sortedDoses = immunization.existingDoses ? [...immunization.existingDoses].sort(latestFirst) : [];
         const latestDose = sortedDoses?.[0];
 
         const hasDoses = !!latestDose;
         const hasSequences = immunization.sequences?.length > 0;
 
         const sequenceLabel = hasSequences
-          ? immunization.sequences.find(
-              (seq) => seq.sequenceNumber === latestDose?.doseNumber,
-            )?.sequenceLabel
+          ? immunization.sequences.find((seq) => seq.sequenceNumber === latestDose?.doseNumber)?.sequenceLabel
           : null;
 
         const occurrenceDate = hasDoses
-          ? `${t("lastDoseOnDate", "Last dose on {{date}}", {
+          ? `${t('lastDoseOnDate', 'Last dose on {{date}}', {
               date: formatDate(parseDate(latestDose.occurrenceDateTime), {
-                mode: "standard",
+                mode: 'standard',
                 noToday: true,
                 time: false,
               }),
-            })}, ${sequenceLabel ?? t("doseNumber", "Dose {{number}}", { number: latestDose.doseNumber })}`
-          : "";
+            })}, ${sequenceLabel ?? t('doseNumber', 'Dose {{number}}', { number: latestDose.doseNumber })}`
+          : '';
 
         return {
           id: immunization.vaccineUuid,
           vaccine: immunization.vaccineName,
           recentVaccination: occurrenceDate,
-          add: (
+          add: canEdit ? (
             <Button
               hasIconOnly
-              iconDescription={t("add", "Add")}
+              iconDescription={t('add', 'Add')}
               kind="ghost"
               onClick={() => {
                 immunizationFormSub.next({
@@ -165,38 +148,26 @@ const ImmunizationsDetailedSummary: React.FC<
                   vaccinationDate: null,
                   doseNumber: 0,
                   nextDoseDate: null,
-                  note: "",
+                  note: '',
                   expirationDate: null,
                   lotNumber: null,
                   manufacturer: null,
                 });
                 launchImmunizationsForm();
               }}
-              renderIcon={(props: ComponentProps<typeof AddIcon>) => (
-                <AddIcon size={16} {...props} />
-              )}
+              renderIcon={(props: ComponentProps<typeof AddIcon>) => <AddIcon size={16} {...props} />}
               size="sm"
             />
-          ),
+          ) : null,
         };
       }),
-    [launchImmunizationsForm, sortedImmunizations, t],
+    [canEdit, launchImmunizationsForm, sortedImmunizations, t],
   );
 
-  const {
-    results: paginatedImmunizations,
-    currentPage,
-    goTo,
-  } = usePagination(tableRows, 10);
+  const { results: paginatedImmunizations, currentPage, goTo } = usePagination(tableRows, 10);
 
   const immunizationsByVaccineUuid = useMemo(
-    () =>
-      new Map(
-        sortedImmunizations?.map((immunization) => [
-          immunization.vaccineUuid,
-          immunization,
-        ]) ?? [],
-      ),
+    () => new Map(sortedImmunizations?.map((immunization) => [immunization.vaccineUuid, immunization]) ?? []),
     [sortedImmunizations],
   );
 
@@ -212,24 +183,17 @@ const ImmunizationsDetailedSummary: React.FC<
           {canEdit ? (
             <Button
               data-testid="add-immunizations-button"
-              iconDescription={t("addImmunizations", "Add immunizations")}
+              iconDescription={t('addImmunizations', 'Add immunizations')}
               kind="ghost"
-              renderIcon={(props: ComponentProps<typeof AddIcon>) => (
-                <AddIcon size={16} {...props} />
-              )}
+              renderIcon={(props: ComponentProps<typeof AddIcon>) => <AddIcon size={16} {...props} />}
               onClick={launchImmunizationsForm}
             >
-              {t("add", "Add")}
+              {t('add', 'Add')}
             </Button>
           ) : null}
         </CardHeader>
 
-        <DataTable
-          rows={paginatedImmunizations}
-          headers={tableHeader}
-          size={isTablet ? "lg" : "sm"}
-          useZebraStyles
-        >
+        <DataTable rows={paginatedImmunizations} headers={tableHeader} size={isTablet ? 'lg' : 'sm'} useZebraStyles>
           {({
             rows,
             headers,
@@ -240,17 +204,10 @@ const ImmunizationsDetailedSummary: React.FC<
             getExpandHeaderProps,
           }) => (
             <TableContainer>
-              <Table
-                aria-label="immunizations summary"
-                size={isTablet ? "md" : "sm"}
-                {...getTableProps()}
-              >
+              <Table aria-label="immunizations summary" size={isTablet ? 'md' : 'sm'} {...getTableProps()}>
                 <TableHead>
                   <TableRow>
-                    <TableExpandHeader
-                      enableToggle
-                      {...getExpandHeaderProps()}
-                    />
+                    <TableExpandHeader enableToggle {...getExpandHeaderProps()} />
                     {headers.map((header) => {
                       const { key, ...headerProps } = getHeaderProps({
                         header,
@@ -276,33 +233,23 @@ const ImmunizationsDetailedSummary: React.FC<
                           return (
                             <TableExpandRow key={key} {...rowProps}>
                               {row.cells.map((cell) => (
-                                <TableCell key={cell.id}>
-                                  {cell.value}
-                                </TableCell>
+                                <TableCell key={cell.id}>{cell.value}</TableCell>
                               ))}
                             </TableExpandRow>
                           );
                         })()}
                         {row.isExpanded ? (
-                          <TableExpandedRow
-                            {...getExpandedRowProps({ row })}
-                            colSpan={headers.length + 2}
-                          >
+                          <TableExpandedRow {...getExpandedRowProps({ row })} colSpan={headers.length + 2}>
                             {immunization && (
                               <SequenceTable
                                 immunizationsByVaccine={immunization}
-                                launchPatientImmunizationForm={
-                                  launchImmunizationsForm
-                                }
+                                launchPatientImmunizationForm={launchImmunizationsForm}
                                 patientUuid={patientUuid}
                               />
                             )}
                           </TableExpandedRow>
                         ) : (
-                          <TableExpandedRow
-                            className={styles.hiddenRow}
-                            colSpan={headers.length + 2}
-                          />
+                          <TableExpandedRow className={styles.hiddenRow} colSpan={headers.length + 2} />
                         )}
                       </React.Fragment>
                     );
@@ -330,11 +277,7 @@ const ImmunizationsDetailedSummary: React.FC<
       />
     );
 
-  return (
-    <DashboardAccess privilege={credImmunizationPrivilege}>
-      {content}
-    </DashboardAccess>
-  );
+  return <RequirePrivilege privilege={credImmunizationPrivilege}>{content}</RequirePrivilege>;
 };
 
 export default ImmunizationsDetailedSummary;

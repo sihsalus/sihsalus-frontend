@@ -1,13 +1,11 @@
 import { Tile } from '@carbon/react';
-import { launchWorkspace2, useConfig, usePatient } from '@openmrs/esm-framework';
+import { launchWorkspace2, useConfig, usePatient, userHasAccess, useSession } from '@openmrs/esm-framework';
 import classNames from 'classnames';
 import dayjs from 'dayjs';
 import React, { useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-
-import { credCourseLifeEditPrivilege } from '../../../constants';
-import { useHasPrivilege } from '../../../rbac';
 import type { ConfigObject } from '../../../config-schema';
+import { credCourseLifeEditPrivilege } from '../../../constants';
 import { useCREDSchedule } from '../../../hooks/useCREDSchedule';
 import { translateCredAgeGroupLabel, translateCredAgeGroupSublabel } from '../../../utils/cred-label-translations';
 
@@ -20,7 +18,8 @@ interface CredAgeGroupsProps {
 const CredAgeGroups: React.FC<CredAgeGroupsProps> = ({ patientUuid }) => {
   const { t } = useTranslation();
   const { ageGroupsCRED } = useConfig<ConfigObject>();
-  const canEdit = useHasPrivilege(credCourseLifeEditPrivilege);
+  const session = useSession();
+  const canEdit = userHasAccess(credCourseLifeEditPrivilege, session?.user);
   const { patient, isLoading: isPatientLoading, error: patientError } = usePatient(patientUuid);
   const { controls } = useCREDSchedule(patientUuid);
   const [selectedAgeGroup, setSelectedAgeGroup] = useState<(typeof ageGroupsCRED)[0] | null>(null);

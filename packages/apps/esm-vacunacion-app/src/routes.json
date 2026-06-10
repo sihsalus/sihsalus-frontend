@@ -12,19 +12,18 @@
       "order": 35,
       "online": true,
       "offline": true,
-      "privilege": "app:cred.immunization.edit"
+      "privileges": "app:cred.immunization.edit"
     },
     {
       "name": "vacunacion-overview-widget",
       "component": "immunizationsOverview",
       "order": 8,
-      "privilege": "app:cred.immunization"
+      "privileges": "app:cred.immunization"
     },
     {
       "name": "vacunacion-detailed-history-card",
       "component": "immunizationHistorySummary",
       "slot": "patient-chart-vacunacion-dashboard-slot",
-      "privilege": "app:cred.immunization",
       "meta": {
         "fullWidth": true
       }
@@ -33,7 +32,6 @@
       "name": "vacunacion-details-widget",
       "component": "immunizationsDetailedSummary",
       "slot": "patient-chart-vacunacion-dashboard-slot",
-      "privilege": "app:cred.immunization",
       "meta": {
         "fullWidth": true
       }
@@ -42,7 +40,7 @@
       "name": "vacunacion-summary-dashboard",
       "component": "immunizationsDashboardLink",
       "slot": "patient-chart-dashboard-slot",
-      "privilege": "app:cred.immunization",
+      "privileges": "app:cred.immunization",
       "meta": {
         "slot": "patient-chart-vacunacion-dashboard-slot",
         "path": "Vacunacion"
@@ -56,34 +54,29 @@
       "component": "vaccineSchedulingBuilderPage",
       "route": "vaccine-scheduling-builder",
       "online": true,
-      "offline": false,
-      "privilege": "app:cred.immunization.edit"
+      "offline": false
     }
   ],
   "modals": [
     {
       "name": "vacunacion-delete-confirmation-modal",
-      "component": "deleteImmunizationConfirmationModal",
-      "privilege": "app:cred.immunization.edit"
+      "component": "deleteImmunizationConfirmationModal"
     },
     {
       "name": "immunization-delete-confirmation-modal",
-      "component": "deleteImmunizationConfirmationModal",
-      "privilege": "app:cred.immunization.edit"
+      "component": "deleteImmunizationConfirmationModal"
     }
   ],
   "workspaces2": [
     {
       "name": "vacunacion-form-workspace",
       "component": "immunizationFormWorkspace",
-      "window": "vacunacion-form-window",
-      "privilege": "app:cred.immunization.edit"
+      "window": "vacunacion-form-window"
     },
     {
       "name": "immunization-form-workspace",
       "component": "immunizationFormWorkspace",
-      "window": "vacunacion-form-window",
-      "privilege": "app:cred.immunization.edit"
+      "window": "vacunacion-form-window"
     }
   ],
   "workspaceWindows2": [

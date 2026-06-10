@@ -1,5 +1,11 @@
 import type { ConfigObject } from '../config-schema';
-import { getCREDFormsForAgeGroup } from './useCREDFormsForAgeGroup';
+import {
+  credCourseLifeEditPrivilege,
+  credEarlyStimulationEditPrivilege,
+  credNeonatalEditPrivilege,
+  credNutritionEditPrivilege,
+} from '../constants';
+import { getCREDFormEditPrivilege, getCREDFormsForAgeGroup } from './useCREDFormsForAgeGroup';
 
 const config = {
   formsList: {
@@ -105,5 +111,26 @@ describe('getCREDFormsForAgeGroup', () => {
     const forms = getCREDFormsForAgeGroup(configWithoutFormGroups, '2026-02-04', '2026-02-07T05:00:00.000Z');
 
     expect(forms.map(({ form }) => form.uuid).slice(0, 2)).toEqual(['ATENCION-RN', 'EVAL-RN']);
+  });
+
+  it('attaches the section edit privilege required to launch each form', () => {
+    const forms = getCREDFormsForAgeGroup(config, '2026-02-04T00:00:00.000Z', '2026-02-07T00:00:00.000Z');
+
+    expect(forms.map(({ requiredPrivilege }) => requiredPrivilege)).toEqual([
+      credNeonatalEditPrivilege,
+      credNeonatalEditPrivilege,
+    ]);
+  });
+});
+
+describe('getCREDFormEditPrivilege', () => {
+  it('maps forms to the edit privilege of their CRED section', () => {
+    expect(getCREDFormEditPrivilege('atencionImmediataNewborn')).toBe(credNeonatalEditPrivilege);
+    expect(getCREDFormEditPrivilege('anemiaScreeningForm')).toBe(credNutritionEditPrivilege);
+    expect(getCREDFormEditPrivilege('stimulationSessionForm')).toBe(credEarlyStimulationEditPrivilege);
+  });
+
+  it('falls back to the course-of-life edit privilege for unmapped forms', () => {
+    expect(getCREDFormEditPrivilege('childAbuseScreening')).toBe(credCourseLifeEditPrivilege);
   });
 });

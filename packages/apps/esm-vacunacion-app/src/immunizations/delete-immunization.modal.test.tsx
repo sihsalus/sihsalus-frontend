@@ -1,4 +1,4 @@
-import { showSnackbar, useConfig } from '@openmrs/esm-framework';
+import { showSnackbar, useConfig, useSession } from '@openmrs/esm-framework';
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { mockPatient } from 'test-utils';
@@ -7,6 +7,19 @@ import { deletePatientImmunization } from '../hooks/useImmunizations';
 import DeleteImmunizationModal from './delete-immunization.modal';
 
 const mockUseConfig = vi.mocked(useConfig<ImmunizationConfigObject>);
+const mockUseSession = vi.mocked(useSession);
+
+const sessionWithEditPrivilege = {
+  authenticated: true,
+  user: {
+    privileges: [{ display: 'app:cred.immunization' }, { display: 'app:cred.immunization.edit' }],
+  },
+} as unknown as ReturnType<typeof useSession>;
+
+const sessionWithoutPrivileges = {
+  authenticated: true,
+  user: { privileges: [] },
+} as unknown as ReturnType<typeof useSession>;
 
 vi.mock('../hooks/useImmunizations', async () => ({
   ...(await vi.importActual('../hooks/useImmunizations')),
@@ -28,6 +41,7 @@ vi.mock('../hooks/useImmunizationsConceptSet', async () => ({
 }));
 
 beforeEach(() => {
+  mockUseSession.mockReturnValue(sessionWithEditPrivilege);
   return mockUseConfig.mockReturnValue({
     immunizationConceptSet: '',
     fhirConceptMappings: {
@@ -97,5 +111,16 @@ describe('DeleteImmunizationModal', () => {
       subtitle: 'Failed to delete immunization: Server error',
       kind: 'error',
     });
+  });
+
+  it('closes without rendering when the user lacks the edit privilege', () => {
+    mockUseSession.mockReturnValue(sessionWithoutPrivileges);
+    const close = vi.fn();
+
+    render(<DeleteImmunizationModal {...defaultProps} close={close} />);
+
+    expect(screen.queryByRole('heading', { name: /delete immunization/i })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /delete/i })).not.toBeInTheDocument();
+    expect(close).toHaveBeenCalled();
   });
 });

@@ -11,21 +11,20 @@ import {
   TableRow,
 } from '@carbon/react';
 import { Add } from '@carbon/react/icons';
-import { launchWorkspace2, useConfig, usePatient } from '@openmrs/esm-framework';
+import { launchWorkspace2, useConfig, usePatient, userHasAccess, useSession } from '@openmrs/esm-framework';
 import { CardHeader, EmptyState, ErrorState } from '@openmrs/esm-patient-common-lib';
 import React, { useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
-
-import { credImmunizationEditPrivilege } from '../../../constants';
-import { useHasPrivilege } from '../../../rbac';
 import type { ConfigObject } from '../../../config-schema';
+import { credImmunizationEditPrivilege } from '../../../constants';
 import { useAdverseReactions } from '../../workspace/adverse-reaction/adverse-reaction.resource';
 
 const AdverseReactionsSummary: React.FC = () => {
   const { t } = useTranslation();
   const config = useConfig<ConfigObject>();
   const { patientUuid } = usePatient();
-  const canEdit = useHasPrivilege(credImmunizationEditPrivilege);
+  const session = useSession();
+  const canEdit = userHasAccess(credImmunizationEditPrivilege, session?.user);
   const { reactions, error, isLoading } = useAdverseReactions(patientUuid, config);
   const headerTitle = t('adverseReactions', 'Reacciones Adversas a Vacunas');
   const displayText = t('adverseReactions', 'Reacciones Adversas a Vacunas');
@@ -52,14 +51,25 @@ const AdverseReactionsSummary: React.FC = () => {
   }
 
   if (!reactions.length) {
-    return <EmptyState displayText={displayText} headerTitle={headerTitle} launchForm={canEdit ? launchAdverseReactionForm : undefined} />;
+    return (
+      <EmptyState
+        displayText={displayText}
+        headerTitle={headerTitle}
+        launchForm={canEdit ? launchAdverseReactionForm : undefined}
+      />
+    );
   }
 
   return (
     <div>
       <CardHeader title={headerTitle}>
         {canEdit && (
-          <Button kind="ghost" renderIcon={Add} iconDescription={t('add', 'Agregar')} onClick={launchAdverseReactionForm}>
+          <Button
+            kind="ghost"
+            renderIcon={Add}
+            iconDescription={t('add', 'Agregar')}
+            onClick={launchAdverseReactionForm}
+          >
             {t('add', 'Agregar')}
           </Button>
         )}

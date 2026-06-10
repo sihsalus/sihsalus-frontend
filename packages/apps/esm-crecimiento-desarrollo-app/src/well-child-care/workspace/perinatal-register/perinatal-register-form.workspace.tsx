@@ -2,13 +2,14 @@
 import { Button, ButtonSet, ButtonSkeleton, Column, Form, InlineNotification, Stack } from '@carbon/react';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { createErrorHandler, showSnackbar, useConfig, useLayoutType, useSession } from '@openmrs/esm-framework';
+import { RequirePrivilege } from '@sihsalus/esm-rbac';
 import { GenericInput } from '@sihsalus/esm-sihsalus-shared';
 import React, { useCallback, useEffect, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { useTranslation } from 'react-i18next';
 import { z } from 'zod';
-import { credNeonatalEditPrivilege } from '../../../constants';
 import type { ConfigObject } from '../../../config-schema';
+import { credNeonatalEditPrivilege } from '../../../constants';
 import {
   invalidateCachedPrenatalAntecedents,
   savePrenatalAntecedents,
@@ -16,7 +17,6 @@ import {
   usePrenatalConceptMetadata,
 } from '../../../hooks/usePrenatalAntecedents';
 import type { DefaultPatientWorkspaceProps } from '../../../types';
-import { DashboardAccess } from '../../../rbac';
 
 import styles from './perinatal-register-form.scss';
 
@@ -223,124 +223,124 @@ const PerinatalRegisterForm: React.FC<DefaultPatientWorkspaceProps> = ({ closeWo
   }
 
   return (
-    <DashboardAccess privilege={credNeonatalEditPrivilege}>
+    <RequirePrivilege privilege={credNeonatalEditPrivilege}>
       <Form className={styles.form} onSubmit={handleSubmit(savePerinatalData, onError)}>
-      <div className={styles.grid}>
-        <Stack gap={4}>
-          <Column>
-            <p className={styles.title}>{t('perinatalRegister', 'Perinatal Maternal Carnet')}</p>
-          </Column>
+        <div className={styles.grid}>
+          <Stack gap={4}>
+            <Column>
+              <p className={styles.title}>{t('perinatalRegister', 'Perinatal Maternal Carnet')}</p>
+            </Column>
 
-          <Column>
-            <GenericInput
-              control={control}
-              fieldProperties={[
-                {
-                  id: 'gravidez',
-                  name: t('gravidez', 'Gravidez'),
-                  min: 0,
-                  max: 20,
-                },
-              ]}
-              label={t('gravidez', 'Gravidez')}
-              showErrorMessage={!!errors.gravidez}
+            <Column>
+              <GenericInput
+                control={control}
+                fieldProperties={[
+                  {
+                    id: 'gravidez',
+                    name: t('gravidez', 'Gravidez'),
+                    min: 0,
+                    max: 20,
+                  },
+                ]}
+                label={t('gravidez', 'Gravidez')}
+                showErrorMessage={!!errors.gravidez}
+              />
+            </Column>
+
+            <Column>
+              <GenericInput
+                control={control}
+                fieldProperties={[
+                  {
+                    id: 'partoAlTermino',
+                    name: t('partoAlTermino', 'Partos a término'),
+                    min: 0,
+                    max: 20,
+                  },
+                ]}
+                label={t('partoAlTermino', 'Partos a término')}
+                showErrorMessage={!!errors.partoAlTermino}
+              />
+            </Column>
+
+            <Column>
+              <GenericInput
+                control={control}
+                fieldProperties={[
+                  {
+                    id: 'partoPrematuro',
+                    name: t('partoPrematuro', 'Partos prematuros'),
+                    min: 0,
+                    max: 20,
+                  },
+                ]}
+                label={t('partoPrematuro', 'Partos prematuros')}
+                showErrorMessage={!!errors.partoPrematuro}
+              />
+            </Column>
+
+            <Column>
+              <GenericInput
+                control={control}
+                fieldProperties={[
+                  {
+                    id: 'partoAborto',
+                    name: t('partoAborto', 'Abortos'),
+                    min: 0,
+                    max: 20,
+                  },
+                ]}
+                label={t('partoAborto', 'Abortos')}
+                showErrorMessage={!!errors.partoAborto}
+              />
+            </Column>
+
+            <Column>
+              <GenericInput
+                control={control}
+                fieldProperties={[
+                  {
+                    id: 'partoNacidoVivo',
+                    name: t('partoNacidoVivo', 'Nacidos vivos'),
+                    min: 0,
+                    max: 20,
+                  },
+                ]}
+                label={t('partoNacidoVivo', 'Nacidos vivos')}
+                showErrorMessage={!!errors.partoNacidoVivo}
+              />
+            </Column>
+          </Stack>
+        </div>
+
+        {showErrorNotification && (
+          <Column className={styles.errorContainer}>
+            <InlineNotification
+              className={styles.errorNotification}
+              lowContrast={false}
+              onClose={() => setShowErrorNotification(false)}
+              title={t('error', 'Error')}
+              subtitle={t('pleaseFillField', 'Please fill at least one field') + '.'}
             />
           </Column>
+        )}
 
-          <Column>
-            <GenericInput
-              control={control}
-              fieldProperties={[
-                {
-                  id: 'partoAlTermino',
-                  name: t('partoAlTermino', 'Partos a término'),
-                  min: 0,
-                  max: 20,
-                },
-              ]}
-              label={t('partoAlTermino', 'Partos a término')}
-              showErrorMessage={!!errors.partoAlTermino}
-            />
-          </Column>
-
-          <Column>
-            <GenericInput
-              control={control}
-              fieldProperties={[
-                {
-                  id: 'partoPrematuro',
-                  name: t('partoPrematuro', 'Partos prematuros'),
-                  min: 0,
-                  max: 20,
-                },
-              ]}
-              label={t('partoPrematuro', 'Partos prematuros')}
-              showErrorMessage={!!errors.partoPrematuro}
-            />
-          </Column>
-
-          <Column>
-            <GenericInput
-              control={control}
-              fieldProperties={[
-                {
-                  id: 'partoAborto',
-                  name: t('partoAborto', 'Abortos'),
-                  min: 0,
-                  max: 20,
-                },
-              ]}
-              label={t('partoAborto', 'Abortos')}
-              showErrorMessage={!!errors.partoAborto}
-            />
-          </Column>
-
-          <Column>
-            <GenericInput
-              control={control}
-              fieldProperties={[
-                {
-                  id: 'partoNacidoVivo',
-                  name: t('partoNacidoVivo', 'Nacidos vivos'),
-                  min: 0,
-                  max: 20,
-                },
-              ]}
-              label={t('partoNacidoVivo', 'Nacidos vivos')}
-              showErrorMessage={!!errors.partoNacidoVivo}
-            />
-          </Column>
-        </Stack>
-      </div>
-
-      {showErrorNotification && (
-        <Column className={styles.errorContainer}>
-          <InlineNotification
-            className={styles.errorNotification}
-            lowContrast={false}
-            onClose={() => setShowErrorNotification(false)}
-            title={t('error', 'Error')}
-            subtitle={t('pleaseFillField', 'Please fill at least one field') + '.'}
-          />
-        </Column>
-      )}
-
-      <ButtonSet className={isTablet ? styles.tablet : styles.desktop}>
-        <Button className={styles.button} kind="secondary" onClick={() => closeWorkspace()}>
-          {t('discard', 'Discard')}
-        </Button>
-        <Button
-          className={styles.button}
-          kind="primary"
-          onClick={handleSubmit(savePerinatalData, onError)}
-          disabled={isSubmitting}
-          type="submit"
-        >
-          {t('submit', 'Save and close')}
-        </Button>
-      </ButtonSet>
+        <ButtonSet className={isTablet ? styles.tablet : styles.desktop}>
+          <Button className={styles.button} kind="secondary" onClick={() => closeWorkspace()}>
+            {t('discard', 'Discard')}
+          </Button>
+          <Button
+            className={styles.button}
+            kind="primary"
+            onClick={handleSubmit(savePerinatalData, onError)}
+            disabled={isSubmitting}
+            type="submit"
+          >
+            {t('submit', 'Save and close')}
+          </Button>
+        </ButtonSet>
       </Form>
-    </DashboardAccess>
+    </RequirePrivilege>
   );
 };
 

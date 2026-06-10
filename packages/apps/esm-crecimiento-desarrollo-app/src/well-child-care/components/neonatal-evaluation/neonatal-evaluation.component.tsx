@@ -1,12 +1,11 @@
-import { useConfig } from '@openmrs/esm-framework';
+import { useConfig, userHasAccess, useSession } from '@openmrs/esm-framework';
 import { PatientSummaryTable } from '@sihsalus/esm-sihsalus-shared'; // Ajusta la ruta
 import React from 'react';
 import { useTranslation } from 'react-i18next';
-import { credNeonatalEditPrivilege } from '../../../constants';
 import type { ConfigObject } from '../../../config-schema'; // Ajusta la ruta
+import { credNeonatalEditPrivilege } from '../../../constants';
 import { useCREDFormLauncher } from '../../../hooks/useCREDFormLauncher';
 import { useLatestValidEncounter } from '../../../hooks/useLatestEncounter'; // Ajusta la ruta
-import { useHasPrivilege } from '../../../rbac';
 
 interface CephaloCaudalNeurologicalEvaluationProps {
   patientUuid: string;
@@ -16,7 +15,8 @@ const CephaloCaudalNeurologicalEvaluationTable: React.FC<CephaloCaudalNeurologic
   patientUuid,
 }) => {
   const { t } = useTranslation();
-  const canEdit = useHasPrivilege(credNeonatalEditPrivilege);
+  const session = useSession();
+  const canEdit = userHasAccess(credNeonatalEditPrivilege, session?.user);
   const config = useConfig() as ConfigObject;
   const { neonatalConcepts } = config;
   const headerTitle = t('cephaloCaudalNeurologicalEvaluation', 'Cephalo-caudal and neurological evaluation');

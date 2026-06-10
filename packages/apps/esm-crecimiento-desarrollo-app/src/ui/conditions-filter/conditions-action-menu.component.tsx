@@ -1,9 +1,8 @@
 import { Layer, OverflowMenu, OverflowMenuItem } from '@carbon/react';
-import { launchWorkspace2, showModal, useLayoutType } from '@openmrs/esm-framework';
+import { launchWorkspace2, showModal, useLayoutType, userHasAccess, useSession } from '@openmrs/esm-framework';
 import { useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
 import { credAntecedentsEditPrivilege } from '../../constants';
-import { useHasPrivilege } from '../../rbac';
 import { type Condition } from './conditions.resource';
 import styles from './conditions-action-menu.scss';
 
@@ -15,7 +14,8 @@ interface conditionsActionMenuProps {
 export const ConditionsActionMenu = ({ condition, patientUuid }: conditionsActionMenuProps) => {
   const { t } = useTranslation();
   const isTablet = useLayoutType() === 'tablet';
-  const canEdit = useHasPrivilege(credAntecedentsEditPrivilege);
+  const session = useSession();
+  const canEdit = userHasAccess(credAntecedentsEditPrivilege, session?.user);
 
   const launchEditConditionsForm = useCallback(
     () =>

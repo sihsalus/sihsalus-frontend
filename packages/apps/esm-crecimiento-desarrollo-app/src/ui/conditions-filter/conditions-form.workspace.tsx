@@ -1,6 +1,7 @@
 import { Button, ButtonSet, Form, InlineLoading, InlineNotification } from '@carbon/react';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useLayoutType } from '@openmrs/esm-framework';
+import { RequirePrivilege } from '@sihsalus/esm-rbac';
 import classNames from 'classnames';
 import type { TFunction } from 'i18next';
 import React, { useState } from 'react';
@@ -9,7 +10,6 @@ import { useTranslation } from 'react-i18next';
 import { z } from 'zod';
 
 import { credAntecedentsEditPrivilege } from '../../constants';
-import { DashboardAccess } from '../../rbac';
 import { type DefaultPatientWorkspaceProps } from '../../types';
 import { type ConditionDataTableRow, useConditions } from './conditions.resource';
 import styles from './conditions-form.scss';
@@ -81,7 +81,7 @@ const ConditionsForm: React.FC<ConditionFormProps> = ({ closeWorkspace, conditio
   const onError = () => setIsSubmittingForm(false);
 
   return (
-    <DashboardAccess privilege={credAntecedentsEditPrivilege}>
+    <RequirePrivilege privilege={credAntecedentsEditPrivilege}>
       <FormProvider {...methods}>
         <Form className={styles.form} onSubmit={methods.handleSubmit(onSubmit, onError)}>
           <ConditionsWidget
@@ -135,7 +135,7 @@ const ConditionsForm: React.FC<ConditionFormProps> = ({ closeWorkspace, conditio
           </div>
         </Form>
       </FormProvider>
-    </DashboardAccess>
+    </RequirePrivilege>
   );
 };
 

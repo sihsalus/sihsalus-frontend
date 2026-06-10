@@ -55,4 +55,23 @@ describe('GrowthChartOverview', () => {
     expect(screen.queryByRole('button', { name: /record/i })).not.toBeInTheDocument();
     expect(screen.getByText(/there are no/i)).toBeInTheDocument();
   });
+
+  it('warns instead of plotting when the patient has no valid birth date', () => {
+    mockUseSession.mockReturnValue(sessionWithEditPrivilege);
+    const patientWithoutBirthDate = { ...patient, birthDate: undefined } as unknown as fhir.Patient;
+
+    render(<GrowthChartOverview patient={patientWithoutBirthDate} patientUuid="patient-1" />);
+
+    expect(screen.getByText(/no se puede graficar/i)).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /record/i })).not.toBeInTheDocument();
+  });
+
+  it('warns instead of plotting when the patient gender is not male or female', () => {
+    mockUseSession.mockReturnValue(sessionWithEditPrivilege);
+    const patientWithOtherGender = { ...patient, gender: 'other' } as unknown as fhir.Patient;
+
+    render(<GrowthChartOverview patient={patientWithOtherGender} patientUuid="patient-1" />);
+
+    expect(screen.getByText(/no se puede graficar/i)).toBeInTheDocument();
+  });
 });

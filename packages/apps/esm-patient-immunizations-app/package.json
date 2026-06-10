@@ -1,9 +1,9 @@
 {
-  "name": "@sihsalus/esm-vacunacion-app",
+  "name": "@sihsalus/esm-patient-immunizations-app",
   "version": "1.0.0-alpha",
   "license": "MPL-2.0",
   "description": "Patient immunizations microfrontend for the SIHSALUS SPA",
-  "browser": "dist/sihsalus-esm-vacunacion-app.js",
+  "browser": "dist/openmrs-esm-patient-immunizations-app.js",
   "main": "src/index.ts",
   "source": true,
   "scripts": {

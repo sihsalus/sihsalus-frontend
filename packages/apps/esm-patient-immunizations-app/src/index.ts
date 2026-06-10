@@ -7,7 +7,7 @@ import immunizationsDetailedSummaryComponent from './immunizations/immunizations
 import immunizationsOverviewComponent from './immunizations/immunizations-overview.component';
 import vaccinationScheduleAppMenuItemComponent from './vaccination-schedule-app-menu-item.component';
 
-const moduleName = '@sihsalus/esm-vacunacion-app';
+const moduleName = '@sihsalus/esm-patient-immunizations-app';
 
 const options = {
   featureName: 'patient-immunizations',

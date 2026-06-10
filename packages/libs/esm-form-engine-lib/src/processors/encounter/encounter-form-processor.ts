@@ -31,9 +31,11 @@ import {
   prepareEncounter,
   preparePatientIdentifiers,
   preparePatientPrograms,
+  preparePersonAttributes,
   saveAttachments,
   savePatientIdentifiers,
   savePatientPrograms,
+  savePersonAttributes,
 } from './encounter-processor-helper';
 
 type FormValues = Record<string, unknown>;
@@ -120,6 +122,7 @@ const contextInitializableTypes = new Set([
   'patientIdentifier',
   'encounterRole',
   'programState',
+  'personAttribute',
 ]);
 
 export class EncounterFormProcessor extends FormProcessor {
@@ -202,6 +205,27 @@ export class EncounterFormProcessor extends FormProcessor {
       const errorMessages = extractErrorMessagesFromResponse(error);
       throw new FormSubmissionError({
         title: t('errorSavingPatientIdentifiers', 'Error saving patient identifiers'),
+        subtitle: errorMessages.join(', '),
+        kind: 'error',
+        isLowContrast: false,
+      });
+    }
+
+    // save person attributes
+    try {
+      const personAttributes = preparePersonAttributes(context.formFields);
+      await Promise.all(savePersonAttributes(context.patient, personAttributes));
+      if (personAttributes?.length) {
+        showSnackbar({
+          title: t('personAttributesSaved', 'Person attribute(s) saved successfully'),
+          kind: 'success',
+          isLowContrast: true,
+        });
+      }
+    } catch (error) {
+      const errorMessages = extractErrorMessagesFromResponse(error);
+      throw new FormSubmissionError({
+        title: t('errorSavingPersonAttributes', 'Error saving person attributes'),
         subtitle: errorMessages.join(', '),
         kind: 'error',
         isLowContrast: false,

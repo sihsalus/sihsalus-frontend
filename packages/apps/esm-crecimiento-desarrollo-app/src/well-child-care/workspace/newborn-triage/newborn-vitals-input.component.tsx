@@ -5,7 +5,7 @@ import {
   parsePlainDecimalInput,
   preventScientificNotationKey,
   preventScientificNotationPaste,
-} from '@sihsalus/esm-sihsalus-shared';
+} from '@openmrs/esm-utils';
 import classNames from 'classnames';
 import React, { Fragment, useId, useState } from 'react';
 import type { Control } from 'react-hook-form';

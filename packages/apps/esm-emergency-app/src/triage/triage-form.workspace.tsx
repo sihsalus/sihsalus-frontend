@@ -3,9 +3,9 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { type DefaultWorkspaceProps, showSnackbar, useConfig } from '@openmrs/esm-framework';
 import {
   parsePlainDecimalInput,
-  preventScientificNotationKey,
-  preventScientificNotationPaste,
-} from '@sihsalus/esm-sihsalus-shared';
+  preventScientificNotationAndSignKeys,
+  preventScientificNotationAndSignPaste,
+} from '@openmrs/esm-utils';
 import React, { useCallback, useMemo, useState } from 'react';
 import { Controller, useForm } from 'react-hook-form';
 import { useTranslation } from 'react-i18next';
@@ -392,8 +392,8 @@ const TriageFormWorkspace: React.FC<TriageFormWorkspaceProps> = ({ closeWorkspac
                     field.onChange(parsedValue);
                   }
                 }}
-                onKeyDown={preventScientificNotationKey}
-                onPaste={preventScientificNotationPaste}
+                onKeyDown={preventScientificNotationAndSignKeys}
+                onPaste={preventScientificNotationAndSignPaste}
                 invalid={!!errors.weight}
                 invalidText={errors.weight?.message}
                 hideSteppers
@@ -420,8 +420,8 @@ const TriageFormWorkspace: React.FC<TriageFormWorkspaceProps> = ({ closeWorkspac
                     field.onChange(parsedValue);
                   }
                 }}
-                onKeyDown={preventScientificNotationKey}
-                onPaste={preventScientificNotationPaste}
+                onKeyDown={preventScientificNotationAndSignKeys}
+                onPaste={preventScientificNotationAndSignPaste}
                 invalid={!!errors.height}
                 invalidText={errors.height?.message}
                 hideSteppers

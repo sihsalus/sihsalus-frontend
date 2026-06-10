@@ -42,3 +42,16 @@ export function preventScientificNotationPaste(event: PlainNumberClipboardEvent)
     event.preventDefault();
   }
 }
+
+export function preventScientificNotationAndSignKeys(event: PlainNumberKeyEvent) {
+  if (event.key === 'e' || event.key === 'E' || event.key === '+' || event.key === '-') {
+    event.preventDefault();
+  }
+}
+
+export function preventScientificNotationAndSignPaste(event: PlainNumberClipboardEvent) {
+  const pastedValue = event.clipboardData.getData('text');
+  if (pastedValue && (!isPlainDecimalInput(pastedValue) || Number(pastedValue) < 0)) {
+    event.preventDefault();
+  }
+}

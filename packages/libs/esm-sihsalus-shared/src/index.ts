@@ -95,9 +95,3 @@ export { default as TabbedDashboard, type TabConfig } from './ui/tabbed-dashboar
 
 // Identifier utilities
 export { getPreferredIdentifier, preferredIdentifierNames } from './utils/identifiers';
-export {
-  isPlainDecimalInput,
-  parsePlainDecimalInput,
-  preventScientificNotationKey,
-  preventScientificNotationPaste,
-} from './utils/plain-number-input';

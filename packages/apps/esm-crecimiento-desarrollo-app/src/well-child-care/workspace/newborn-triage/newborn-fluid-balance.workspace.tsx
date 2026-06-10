@@ -34,12 +34,28 @@ const FluidBalanceSchema = z
     vomitGramsML: z.number(),
   })
   .partial()
-  .refine((fields) => Object.values(fields).some((value) => Boolean(value)), {
+  .refine((fields) => Object.values(fields).some((value) => value != null), {
     message: 'Please fill at least one field',
     path: ['oneFieldRequired'],
   });
 
 export type FluidBalanceFormType = z.infer<typeof FluidBalanceSchema>;
+
+type FluidBalanceFieldId = keyof FluidBalanceFormType;
+
+type FluidBalanceFieldConfig = {
+  conceptUuid: string;
+  id: FluidBalanceFieldId;
+  label: string;
+  max: number;
+  min: number;
+  unitSymbol: string;
+};
+
+const defaultFluidBalanceRange = {
+  min: 0,
+  max: 20,
+};
 
 const NewbornFluidBalanceForm: React.FC<DefaultPatientWorkspaceProps> = ({ closeWorkspace, workspaceProps }) => {
   const patientUuid = workspaceProps?.patientUuid ?? '';
@@ -49,35 +65,109 @@ const NewbornFluidBalanceForm: React.FC<DefaultPatientWorkspaceProps> = ({ close
   const session = useSession();
   const { data: conceptUnits, conceptMetadata, conceptRanges, isLoading } = useVitalsConceptMetadata();
   const [showErrorNotification, setShowErrorNotification] = useState(false);
-  const [_showErrorMessage, setShowErrorMessage] = useState(false);
+  const [showErrorMessage, setShowErrorMessage] = useState(false);
 
   const {
     control,
     handleSubmit,
+    watch,
     formState: { isSubmitting },
   } = useForm<FluidBalanceFormType>({
     mode: 'all',
     resolver: zodResolver(FluidBalanceSchema),
   });
 
-  const _concepts = useMemo(
-    () => ({
-      stoolCountRange: conceptRanges.get(config.concepts.stoolCountUuid),
-      stoolGramsRange: conceptRanges.get(config.concepts.stoolGramsUuid),
-      urineCountRange: conceptRanges.get(config.concepts.urineCountUuid),
-      urineGramsRange: conceptRanges.get(config.concepts.urineGramsUuid),
-      vomitCountRange: conceptRanges.get(config.concepts.vomitCountUuid),
-      vomitGramsMLRange: conceptRanges.get(config.concepts.vomitGramsMLUuid),
-    }),
+  const currentValues = watch();
+
+  const getConfiguredRange = useCallback(
+    (conceptUuid: string) => {
+      const range = conceptRanges.get(conceptUuid);
+      return {
+        min: range?.lowAbsolute ?? defaultFluidBalanceRange.min,
+        max: range?.highAbsolute ?? defaultFluidBalanceRange.max,
+      };
+    },
+    [conceptRanges],
+  );
+
+  const fluidBalanceFields = useMemo<Array<FluidBalanceFieldConfig>>(
+    () => [
+      {
+        id: 'stoolCount',
+        label: t('stoolCount', 'Stool Count'),
+        conceptUuid: config.concepts.stoolCountUuid,
+        unitSymbol: conceptUnits.get(config.concepts.stoolCountUuid) ?? '',
+        ...getConfiguredRange(config.concepts.stoolCountUuid),
+      },
+      {
+        id: 'stoolGrams',
+        label: t('stoolGrams', 'Stool Weight (g)'),
+        conceptUuid: config.concepts.stoolGramsUuid,
+        unitSymbol: conceptUnits.get(config.concepts.stoolGramsUuid) ?? 'g',
+        ...getConfiguredRange(config.concepts.stoolGramsUuid),
+      },
+      {
+        id: 'urineCount',
+        label: t('urineCount', 'Urine Count'),
+        conceptUuid: config.concepts.urineCountUuid,
+        unitSymbol: conceptUnits.get(config.concepts.urineCountUuid) ?? '',
+        ...getConfiguredRange(config.concepts.urineCountUuid),
+      },
+      {
+        id: 'urineGrams',
+        label: t('urineGrams', 'Urine Volume (g/mL)'),
+        conceptUuid: config.concepts.urineGramsUuid,
+        unitSymbol: conceptUnits.get(config.concepts.urineGramsUuid) ?? 'g/mL',
+        ...getConfiguredRange(config.concepts.urineGramsUuid),
+      },
+      {
+        id: 'vomitCount',
+        label: t('vomitCount', 'Vomit Count'),
+        conceptUuid: config.concepts.vomitCountUuid,
+        unitSymbol: conceptUnits.get(config.concepts.vomitCountUuid) ?? '',
+        ...getConfiguredRange(config.concepts.vomitCountUuid),
+      },
+      {
+        id: 'vomitGramsML',
+        label: t('vomitGramsML', 'Vomit Volume (g/mL)'),
+        conceptUuid: config.concepts.vomitGramsMLUuid,
+        unitSymbol: conceptUnits.get(config.concepts.vomitGramsMLUuid) ?? 'g/mL',
+        ...getConfiguredRange(config.concepts.vomitGramsMLUuid),
+      },
+    ],
     [
-      conceptRanges,
+      conceptUnits,
       config.concepts.stoolCountUuid,
       config.concepts.stoolGramsUuid,
       config.concepts.urineCountUuid,
       config.concepts.urineGramsUuid,
       config.concepts.vomitCountUuid,
       config.concepts.vomitGramsMLUuid,
+      getConfiguredRange,
+      t,
     ],
+  );
+
+  const fluidBalanceFieldsById = useMemo(
+    () => new Map(fluidBalanceFields.map((field) => [field.id, field])),
+    [fluidBalanceFields],
+  );
+
+  const isValueWithinConfiguredRange = useCallback(
+    (fieldId: FluidBalanceFieldId, value?: number) => {
+      if (value == null) {
+        return true;
+      }
+
+      const field = fluidBalanceFieldsById.get(fieldId);
+      return Boolean(
+        field &&
+          value >= field.min &&
+          value <= field.max &&
+          isValueWithinReferenceRange(conceptMetadata, field.conceptUuid, value),
+      );
+    },
+    [conceptMetadata, fluidBalanceFieldsById],
   );
 
   const saveFluidBalance = useCallback(
@@ -86,8 +176,8 @@ const NewbornFluidBalanceForm: React.FC<DefaultPatientWorkspaceProps> = ({ close
       setShowErrorNotification(false);
 
       const allFieldsAreValid = Object.entries(data)
-        .filter(([, value]) => Boolean(value))
-        .every(([key, value]) => isValueWithinReferenceRange(conceptMetadata, config.concepts[`${key}Uuid`], value));
+        .filter(([, value]) => value != null)
+        .every(([key, value]) => isValueWithinConfiguredRange(key as FluidBalanceFieldId, value));
 
       if (allFieldsAreValid) {
         setShowErrorMessage(false);
@@ -130,10 +220,10 @@ const NewbornFluidBalanceForm: React.FC<DefaultPatientWorkspaceProps> = ({ close
     },
     [
       closeWorkspace,
-      conceptMetadata,
       config.concepts,
       config.vitals.encounterTypeUuid,
       config.vitals.formUuid,
+      isValueWithinConfiguredRange,
       patientUuid,
       session?.sessionLocation?.uuid,
       t,
@@ -186,44 +276,58 @@ const NewbornFluidBalanceForm: React.FC<DefaultPatientWorkspaceProps> = ({ close
             <p className={styles.title}>{t('fluidBalance', 'Balance de líquidos')}</p>
           </Column>
           <Row className={styles.row}>
-            <NewbornVitalsInput
-              control={control}
-              label={t('stoolCount', 'Stool Count')}
-              fieldProperties={[{ id: 'stoolCount', name: 'Stool Count', type: 'number', min: 0, max: 20 }]}
-              unitSymbol={conceptUnits.get(config.concepts.stoolCountUuid) ?? ''} // Usar conceptUnits
-            />
-            <NewbornVitalsInput
-              control={control}
-              label={t('stoolGrams', 'Stool Weight (g)')}
-              fieldProperties={[{ id: 'stoolGrams', name: 'Grams', type: 'number', min: 0 }]}
-              unitSymbol={conceptUnits.get(config.concepts.stoolGramsUuid) ?? 'g'} // Usar conceptUnits con fallback
-            />
-            <NewbornVitalsInput
-              control={control}
-              label={t('urineCount', 'Urine Count')}
-              fieldProperties={[{ id: 'urineCount', name: 'Urine Count', type: 'number', min: 0, max: 20 }]}
-              unitSymbol={conceptUnits.get(config.concepts.urineCountUuid) ?? ''} // Usar conceptUnits
-            />
-            <NewbornVitalsInput
-              control={control}
-              label={t('urineGrams', 'Urine Volume (g/mL)')}
-              fieldProperties={[{ id: 'urineGrams', name: 'Grams', type: 'number', min: 0 }]}
-              unitSymbol={conceptUnits.get(config.concepts.urineGramsUuid) ?? 'g/mL'} // Usar conceptUnits con fallback
-            />
+            {fluidBalanceFields.slice(0, 4).map((field) => (
+              <NewbornVitalsInput
+                key={field.id}
+                control={control}
+                label={field.label}
+                fieldProperties={[
+                  {
+                    id: field.id,
+                    name: field.label,
+                    type: 'number',
+                    min: field.min,
+                    max: field.max,
+                    invalidText: t('fieldRangeValidationInputError', '{{field}} debe estar entre {{min}} y {{max}}', {
+                      field: field.label,
+                      min: field.min,
+                      max: field.max,
+                    }),
+                  },
+                ]}
+                isValueWithinReferenceRange={isValueWithinConfiguredRange(field.id, currentValues[field.id])}
+                showErrorMessage={showErrorMessage}
+                showInlineValidation
+                unitSymbol={field.unitSymbol}
+              />
+            ))}
           </Row>
           <Row className={styles.row}>
-            <NewbornVitalsInput
-              control={control}
-              label={t('vomitCount', 'Vomit Count')}
-              fieldProperties={[{ id: 'vomitCount', name: 'Vomit Count', type: 'number', min: 0, max: 20 }]}
-              unitSymbol={conceptUnits.get(config.concepts.vomitCountUuid) ?? ''} // Usar conceptUnits
-            />
-            <NewbornVitalsInput
-              control={control}
-              label={t('vomitGramsML', 'Vomit Volume (g/mL)')}
-              fieldProperties={[{ id: 'vomitGramsML', name: 'Grams', type: 'number', min: 0 }]}
-              unitSymbol={conceptUnits.get(config.concepts.vomitGramsMLUuid) ?? 'g/mL'} // Usar conceptUnits con fallback
-            />
+            {fluidBalanceFields.slice(4).map((field) => (
+              <NewbornVitalsInput
+                key={field.id}
+                control={control}
+                label={field.label}
+                fieldProperties={[
+                  {
+                    id: field.id,
+                    name: field.label,
+                    type: 'number',
+                    min: field.min,
+                    max: field.max,
+                    invalidText: t('fieldRangeValidationInputError', '{{field}} debe estar entre {{min}} y {{max}}', {
+                      field: field.label,
+                      min: field.min,
+                      max: field.max,
+                    }),
+                  },
+                ]}
+                isValueWithinReferenceRange={isValueWithinConfiguredRange(field.id, currentValues[field.id])}
+                showErrorMessage={showErrorMessage}
+                showInlineValidation
+                unitSymbol={field.unitSymbol}
+              />
+            ))}
           </Row>
         </Stack>
       </div>

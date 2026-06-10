@@ -202,6 +202,12 @@ export interface PatientIdentifier {
   preferred?: boolean;
 }
 
+export interface PersonAttribute {
+  uuid?: string;
+  value: string;
+  attributeType: string;
+}
+
 export interface DiagnosisPayload {
   patient: string;
   condition: null;

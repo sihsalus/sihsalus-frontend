@@ -11,7 +11,9 @@ import { Add } from '@carbon/react/icons';
 import { CardHeader, ErrorState } from '@openmrs/esm-patient-common-lib';
 import React from 'react';
 import { useTranslation } from 'react-i18next';
+import { credEarlyStimulationEditPrivilege } from '../../../../constants';
 import { useCREDFormLauncher } from '../../../../hooks/useCREDFormLauncher';
+import { useHasPrivilege } from '../../../../rbac';
 import { useStimulationFollowup } from '../../../../hooks/useStimulationFollowup';
 
 import styles from './stimulation-followup.scss';
@@ -22,6 +24,7 @@ interface StimulationFollowupProps {
 
 const StimulationFollowup: React.FC<StimulationFollowupProps> = ({ patientUuid }) => {
   const { t } = useTranslation();
+  const canEdit = useHasPrivilege(credEarlyStimulationEditPrivilege);
   const { lastEvaluationResult, lastEvaluationDate, hasStimulationLack, isLoading, error } =
     useStimulationFollowup(patientUuid);
   const { launchForm: handleAdd, isLoading: isFormLoading } = useCREDFormLauncher('stimulationFollowupForm');
@@ -44,16 +47,18 @@ const StimulationFollowup: React.FC<StimulationFollowupProps> = ({ patientUuid }
         <Tag type={riskTagType} size="sm">
           {riskLabel ?? t('noData', 'Sin datos')}
         </Tag>
-        <Button
-          kind="ghost"
-          size="sm"
-          renderIcon={Add}
-          onClick={() => handleAdd()}
-          iconDescription={t('add', 'Add')}
-          disabled={isFormLoading}
-        >
-          {t('add', 'Add')}
-        </Button>
+        {canEdit && (
+          <Button
+            kind="ghost"
+            size="sm"
+            renderIcon={Add}
+            onClick={() => handleAdd()}
+            iconDescription={t('add', 'Add')}
+            disabled={isFormLoading}
+          >
+            {t('add', 'Add')}
+          </Button>
+        )}
       </CardHeader>
       <div className={styles.container}>
         <StructuredListWrapper isCondensed>

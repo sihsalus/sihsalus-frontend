@@ -7,6 +7,7 @@ import React, { useCallback, useEffect, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { useTranslation } from 'react-i18next';
 import { z } from 'zod';
+import { credNeonatalEditPrivilege } from '../../../constants';
 import type { ConfigObject } from '../../../config-schema';
 import {
   invalidateCachedPrenatalAntecedents,
@@ -15,6 +16,7 @@ import {
   usePrenatalConceptMetadata,
 } from '../../../hooks/usePrenatalAntecedents';
 import type { DefaultPatientWorkspaceProps } from '../../../types';
+import { DashboardAccess } from '../../../rbac';
 
 import styles from './perinatal-register-form.scss';
 
@@ -221,7 +223,8 @@ const PerinatalRegisterForm: React.FC<DefaultPatientWorkspaceProps> = ({ closeWo
   }
 
   return (
-    <Form className={styles.form} onSubmit={handleSubmit(savePerinatalData, onError)}>
+    <DashboardAccess privilege={credNeonatalEditPrivilege}>
+      <Form className={styles.form} onSubmit={handleSubmit(savePerinatalData, onError)}>
       <div className={styles.grid}>
         <Stack gap={4}>
           <Column>
@@ -336,7 +339,8 @@ const PerinatalRegisterForm: React.FC<DefaultPatientWorkspaceProps> = ({ closeWo
           {t('submit', 'Save and close')}
         </Button>
       </ButtonSet>
-    </Form>
+      </Form>
+    </DashboardAccess>
   );
 };
 

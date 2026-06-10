@@ -11,8 +11,10 @@ import { Add } from '@carbon/react/icons';
 import { CardHeader, ErrorState } from '@openmrs/esm-patient-common-lib';
 import React from 'react';
 import { useTranslation } from 'react-i18next';
+import { credNutritionEditPrivilege } from '../../../../constants';
 import { useCREDFormLauncher } from '../../../../hooks/useCREDFormLauncher';
 import { useNutritionFollowup } from '../../../../hooks/useNutritionFollowup';
+import { useHasPrivilege } from '../../../../rbac';
 
 import styles from './nutrition-followup.scss';
 
@@ -22,6 +24,7 @@ interface NutritionFollowupProps {
 
 const NutritionFollowup: React.FC<NutritionFollowupProps> = ({ patientUuid }) => {
   const { t } = useTranslation();
+  const canEdit = useHasPrivilege(credNutritionEditPrivilege);
   const { mmnStatus, ironStatus, counselingCount, lastFollowupDate, isLoading, error } =
     useNutritionFollowup(patientUuid);
   const { launchForm: handleAdd, isLoading: isFormLoading } = useCREDFormLauncher('nutritionFollowupForm');
@@ -41,16 +44,18 @@ const NutritionFollowup: React.FC<NutritionFollowupProps> = ({ patientUuid }) =>
         <Tag type={lastFollowupDate ? 'blue' : 'gray'} size="sm">
           {lastFollowupDate ? t('inProgress', 'En curso') : t('pending', 'Pending')}
         </Tag>
-        <Button
-          kind="ghost"
-          size="sm"
-          renderIcon={Add}
-          onClick={() => handleAdd()}
-          iconDescription={t('add', 'Add')}
-          disabled={isFormLoading}
-        >
-          {t('add', 'Add')}
-        </Button>
+        {canEdit && (
+          <Button
+            kind="ghost"
+            size="sm"
+            renderIcon={Add}
+            onClick={() => handleAdd()}
+            iconDescription={t('add', 'Add')}
+            disabled={isFormLoading}
+          >
+            {t('add', 'Add')}
+          </Button>
+        )}
       </CardHeader>
       <div className={styles.container}>
         <StructuredListWrapper isCondensed>

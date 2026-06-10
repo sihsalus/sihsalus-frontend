@@ -16,7 +16,9 @@ import { launchWorkspace2, useConfig } from '@openmrs/esm-framework';
 import { CardHeader, EmptyState, ErrorState } from '@openmrs/esm-patient-common-lib';
 import React, { useCallback, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
+import { credNutritionEditPrivilege } from '../../../constants';
 import type { ConfigObject } from '../../../config-schema';
+import { useHasPrivilege } from '../../../rbac';
 import { useScreeningIndicators } from '../../../hooks/useScreeningIndicators';
 import { formEntryWorkspace } from '../../../types';
 
@@ -28,6 +30,7 @@ interface ScreeningIndicatorsProps {
 
 const ScreeningIndicators: React.FC<ScreeningIndicatorsProps> = ({ patientUuid }) => {
   const { t } = useTranslation();
+  const canEdit = useHasPrivilege(credNutritionEditPrivilege);
   const config = useConfig<ConfigObject>();
   const { screenings, completedCount, totalRequired, isLoading, error } = useScreeningIndicators(patientUuid);
   const headerTitle = t('screeningIndicators', 'Tamizajes Obligatorios');
@@ -88,9 +91,11 @@ const ScreeningIndicators: React.FC<ScreeningIndicatorsProps> = ({ patientUuid }
         <Tag type={completedCount === totalRequired ? 'green' : 'gray'} size="sm">
           {completedCount}/{totalRequired}
         </Tag>
-        <Button kind="ghost" size="sm" renderIcon={Add} onClick={handleAdd} iconDescription={t('add', 'Add')}>
-          {t('add', 'Add')}
-        </Button>
+        {canEdit && (
+          <Button kind="ghost" size="sm" renderIcon={Add} onClick={handleAdd} iconDescription={t('add', 'Add')}>
+            {t('add', 'Add')}
+          </Button>
+        )}
       </CardHeader>
       <DataTable headers={tableHeaders} rows={tableRows} size="sm" useZebraStyles>
         {({ rows, headers, getHeaderProps, getTableProps }) => (

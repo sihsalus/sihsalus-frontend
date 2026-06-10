@@ -2,9 +2,11 @@ import { useConfig } from '@openmrs/esm-framework';
 import { PatientSummaryTable } from '@sihsalus/esm-sihsalus-shared'; // Ajusta la ruta
 import React from 'react';
 import { useTranslation } from 'react-i18next';
+import { credNeonatalEditPrivilege } from '../../../../constants';
 import type { ConfigObject } from '../../../../config-schema'; // Ajusta la ruta
 import { useCREDFormLauncher } from '../../../../hooks/useCREDFormLauncher';
 import { useLatestValidEncounter } from '../../../../hooks/useLatestEncounter'; // Ajusta la ruta
+import { useHasPrivilege } from '../../../../rbac';
 
 interface PregnancyBirthProps {
   patientUuid: string;
@@ -12,6 +14,7 @@ interface PregnancyBirthProps {
 
 const PregnancyBirthTable: React.FC<PregnancyBirthProps> = ({ patientUuid }) => {
   const { t } = useTranslation();
+  const canEdit = useHasPrivilege(credNeonatalEditPrivilege);
   const config = useConfig() as ConfigObject;
   const { neonatalConcepts } = config;
   const headerTitle = t('pregnancyBirth', 'Pregnancy and birth');
@@ -87,7 +90,7 @@ const PregnancyBirthTable: React.FC<PregnancyBirthProps> = ({ patientUuid }) => 
       displayText={t('pregnancyBirth', 'Pregnancy and birth')}
       dataHook={dataHook}
       rowConfig={rowConfig}
-      onFormLaunch={handleLaunchForm}
+      onFormLaunch={canEdit ? handleLaunchForm : undefined}
     />
   );
 };

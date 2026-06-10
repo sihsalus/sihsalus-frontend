@@ -11,7 +11,9 @@ import { Add } from '@carbon/react/icons';
 import { CardHeader, ErrorState } from '@openmrs/esm-patient-common-lib';
 import React from 'react';
 import { useTranslation } from 'react-i18next';
+import { credEarlyStimulationEditPrivilege } from '../../../../constants';
 import { useCREDFormLauncher } from '../../../../hooks/useCREDFormLauncher';
+import { useHasPrivilege } from '../../../../rbac';
 import { useStimulationSessions } from '../../../../hooks/useStimulationSessions';
 
 import styles from './stimulation-sessions.scss';
@@ -22,6 +24,7 @@ interface StimulationSessionsProps {
 
 const StimulationSessions: React.FC<StimulationSessionsProps> = ({ patientUuid }) => {
   const { t } = useTranslation();
+  const canEdit = useHasPrivilege(credEarlyStimulationEditPrivilege);
   const { totalSessions, lastSessionDate, developmentAreas, isLoading, error } = useStimulationSessions(patientUuid);
   const { launchForm: handleAdd, isLoading: isFormLoading } = useCREDFormLauncher('stimulationSessionForm');
   const headerTitle = t('esSessionsTitle', 'Sesiones de estimulación');
@@ -40,16 +43,18 @@ const StimulationSessions: React.FC<StimulationSessionsProps> = ({ patientUuid }
         <Tag type={totalSessions ? 'blue' : 'gray'} size="sm">
           {totalSessions ? `${totalSessions} ${t('sessions', 'sesiones')}` : t('noData', 'Sin datos')}
         </Tag>
-        <Button
-          kind="ghost"
-          size="sm"
-          renderIcon={Add}
-          onClick={() => handleAdd()}
-          iconDescription={t('add', 'Add')}
-          disabled={isFormLoading}
-        >
-          {t('add', 'Add')}
-        </Button>
+        {canEdit && (
+          <Button
+            kind="ghost"
+            size="sm"
+            renderIcon={Add}
+            onClick={() => handleAdd()}
+            iconDescription={t('add', 'Add')}
+            disabled={isFormLoading}
+          >
+            {t('add', 'Add')}
+          </Button>
+        )}
       </CardHeader>
       <div className={styles.container}>
         <StructuredListWrapper isCondensed>

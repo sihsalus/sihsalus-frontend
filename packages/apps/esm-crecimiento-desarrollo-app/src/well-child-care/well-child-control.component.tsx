@@ -3,6 +3,8 @@ import { usePatient } from '@openmrs/esm-framework';
 import type { TabConfig } from '@sihsalus/esm-sihsalus-shared';
 import { TabbedDashboard } from '@sihsalus/esm-sihsalus-shared';
 import React, { useMemo } from 'react';
+import { credWellChildPrivilege } from '../constants';
+import { DashboardAccess } from '../rbac';
 
 const translationNamespace = '@sihsalus/esm-cred-app';
 
@@ -49,13 +51,15 @@ export const WellChildControl: React.FC<WellChildControlProps> = ({
   }
 
   return (
-    <TabbedDashboard
-      patient={patient}
-      patientUuid={patientUuid}
-      titleKey="wellChildCare"
-      tabs={tabs}
-      ariaLabelKey="wellChildCareTabs"
-      translationNamespace={translationNamespace}
-    />
+    <DashboardAccess privilege={credWellChildPrivilege}>
+      <TabbedDashboard
+        patient={patient}
+        patientUuid={patientUuid}
+        titleKey="wellChildCare"
+        tabs={tabs}
+        ariaLabelKey="wellChildCareTabs"
+        translationNamespace={translationNamespace}
+      />
+    </DashboardAccess>
   );
 };

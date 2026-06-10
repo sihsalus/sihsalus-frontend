@@ -2,9 +2,11 @@ import { useConfig } from '@openmrs/esm-framework';
 import { PatientSummaryTable } from '@sihsalus/esm-sihsalus-shared'; // Ajusta la ruta
 import React from 'react';
 import { useTranslation } from 'react-i18next';
+import { credNeonatalEditPrivilege } from '../../../constants';
 import type { ConfigObject } from '../../../config-schema';
 import { useCREDFormLauncher } from '../../../hooks/useCREDFormLauncher';
 import { useLatestValidEncounter } from '../../../hooks/useLatestEncounter'; // Ajusta la ruta
+import { useHasPrivilege } from '../../../rbac';
 
 interface ImmediateNewbornAttentionProps {
   patientUuid: string;
@@ -12,6 +14,7 @@ interface ImmediateNewbornAttentionProps {
 
 const NeonatalAttention: React.FC<ImmediateNewbornAttentionProps> = ({ patientUuid }) => {
   const { t } = useTranslation();
+  const canEdit = useHasPrivilege(credNeonatalEditPrivilege);
   const config = useConfig() as ConfigObject;
   const { neonatalConcepts } = config;
   const headerTitle = t('immediateNewbornAttention', 'Atención inmediata del recién nacido');
@@ -145,7 +148,7 @@ const NeonatalAttention: React.FC<ImmediateNewbornAttentionProps> = ({ patientUu
       displayText={displayText}
       dataHook={dataHook}
       rowConfig={rowConfig}
-      onFormLaunch={handleLaunchForm}
+      onFormLaunch={canEdit ? handleLaunchForm : undefined}
     />
   );
 };

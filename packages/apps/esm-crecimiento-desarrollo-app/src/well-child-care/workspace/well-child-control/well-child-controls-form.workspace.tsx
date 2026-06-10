@@ -15,10 +15,12 @@ import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { useTranslation } from 'react-i18next';
 import { z } from 'zod';
+import { credCourseLifeEditPrivilege } from '../../../constants';
 import type { ConfigObject } from '../../../config-schema';
 import { useAgeGroups } from '../../../hooks/useAgeGroups';
 import { useCREDFormsForAgeGroup } from '../../../hooks/useCREDFormsForAgeGroup';
 import useCREDEncounters from '../../../hooks/useEncountersCRED';
+import { DashboardAccess } from '../../../rbac';
 import { type DefaultPatientWorkspaceProps } from '../../../types';
 
 import styles from './well-child-controls-form.scss';
@@ -155,7 +157,8 @@ const CREDControlsWorkspace: React.FC<DefaultPatientWorkspaceProps> = ({
   }
 
   return (
-    <Form className={styles.form}>
+    <DashboardAccess privilege={credCourseLifeEditPrivilege}>
+      <Form className={styles.form}>
       <div className={styles.grid}>
         <EncounterDateTimeSection
           control={control}
@@ -255,7 +258,8 @@ const CREDControlsWorkspace: React.FC<DefaultPatientWorkspaceProps> = ({
           {t('startControl', 'Empezar Control')}
         </Button>
       </ButtonSet>
-    </Form>
+      </Form>
+    </DashboardAccess>
   );
 };
 

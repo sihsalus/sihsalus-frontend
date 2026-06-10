@@ -11,7 +11,9 @@ import { Add } from '@carbon/react/icons';
 import { CardHeader, ErrorState } from '@openmrs/esm-patient-common-lib';
 import React from 'react';
 import { useTranslation } from 'react-i18next';
+import { credEarlyStimulationEditPrivilege } from '../../../../constants';
 import { useCREDFormLauncher } from '../../../../hooks/useCREDFormLauncher';
+import { useHasPrivilege } from '../../../../rbac';
 import { useStimulationCounseling } from '../../../../hooks/useStimulationCounseling';
 
 import styles from './stimulation-counseling.scss';
@@ -22,6 +24,7 @@ interface StimulationCounselingProps {
 
 const StimulationCounseling: React.FC<StimulationCounselingProps> = ({ patientUuid }) => {
   const { t } = useTranslation();
+  const canEdit = useHasPrivilege(credEarlyStimulationEditPrivilege);
   const { totalSessions, lastCounselingDate, lastCounselingResult, isLoading, error } =
     useStimulationCounseling(patientUuid);
   const { launchForm: handleAdd, isLoading: isFormLoading } = useCREDFormLauncher('stimulationCounselingForm');
@@ -41,16 +44,18 @@ const StimulationCounseling: React.FC<StimulationCounselingProps> = ({ patientUu
         <Tag type={totalSessions ? 'blue' : 'gray'} size="sm">
           {totalSessions ? `${totalSessions} ${t('sessions', 'sesiones')}` : t('noData', 'Sin datos')}
         </Tag>
-        <Button
-          kind="ghost"
-          size="sm"
-          renderIcon={Add}
-          onClick={() => handleAdd()}
-          iconDescription={t('add', 'Add')}
-          disabled={isFormLoading}
-        >
-          {t('add', 'Add')}
-        </Button>
+        {canEdit && (
+          <Button
+            kind="ghost"
+            size="sm"
+            renderIcon={Add}
+            onClick={() => handleAdd()}
+            iconDescription={t('add', 'Add')}
+            disabled={isFormLoading}
+          >
+            {t('add', 'Add')}
+          </Button>
+        )}
       </CardHeader>
       <div className={styles.container}>
         <StructuredListWrapper isCondensed>

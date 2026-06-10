@@ -10,6 +10,8 @@ import { usePatient } from '@openmrs/esm-framework';
 import type { TabConfig } from '@sihsalus/esm-sihsalus-shared';
 import { TabbedDashboard } from '@sihsalus/esm-sihsalus-shared';
 import React, { useMemo } from 'react';
+import { credNeonatalPrivilege } from '../constants';
+import { DashboardAccess } from '../rbac';
 
 export interface NeonatalCareProps {
   patient?: fhir.Patient | null;
@@ -62,13 +64,15 @@ export const NeonatalCare: React.FC<NeonatalCareProps> = ({ patient: patientProp
   }
 
   return (
-    <TabbedDashboard
-      patient={patient}
-      patientUuid={patientUuid}
-      titleKey="neonatalCare"
-      tabs={tabs}
-      ariaLabelKey="neonatalCareTabs"
-      translationNamespace={translationNamespace}
-    />
+    <DashboardAccess privilege={credNeonatalPrivilege}>
+      <TabbedDashboard
+        patient={patient}
+        patientUuid={patientUuid}
+        titleKey="neonatalCare"
+        tabs={tabs}
+        ariaLabelKey="neonatalCareTabs"
+        translationNamespace={translationNamespace}
+      />
+    </DashboardAccess>
   );
 };

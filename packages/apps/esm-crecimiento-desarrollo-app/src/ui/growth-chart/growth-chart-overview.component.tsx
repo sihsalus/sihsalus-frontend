@@ -4,6 +4,8 @@ import { isDesktop as isDesktopLayout, launchWorkspace2, useLayoutType } from '@
 import { CardHeader, EmptyState, ErrorState } from '@openmrs/esm-patient-common-lib';
 import React, { useCallback, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
+import { credNeonatalEditPrivilege } from '../../constants';
+import { useHasPrivilege } from '../../rbac';
 import { getSafePatientName } from '../../utils/utils';
 import GrowthChart from './growth-chart.component';
 import styles from './growth-chart-overview.scss';
@@ -19,6 +21,7 @@ const GrowthChartOverview: React.FC<GrowthChartProps> = ({ patient, patientUuid 
   const headerTitle = t('growthChart', 'Evaluación del Crecimiento y Desarrollo');
   const displayText = t('relatedData', 'datos de crecimiento y desarrollo');
   const formWorkspace = 'newborn-anthropometric-form';
+  const canEdit = useHasPrivilege(credNeonatalEditPrivilege);
 
   // Estado para controlar el modo de visualización (percentiles vs z-scores)
   const [isPercentiles, setIsPercentiles] = useState(true);
@@ -72,9 +75,11 @@ const GrowthChartOverview: React.FC<GrowthChartProps> = ({ patient, patientUuid 
               </IconSwitch>
             </ContentSwitcher>
             <span className={styles.divider}>|</span>
-            <Button kind="ghost" renderIcon={Add} iconDescription={t('addData', 'Agregar datos')} onClick={launchForm}>
-              {t('add', 'Agregar')}
-            </Button>
+            {canEdit && (
+              <Button kind="ghost" renderIcon={Add} iconDescription={t('addData', 'Agregar datos')} onClick={launchForm}>
+                {t('add', 'Agregar')}
+              </Button>
+            )}
           </div>
         </CardHeader>
 
@@ -89,7 +94,7 @@ const GrowthChartOverview: React.FC<GrowthChartProps> = ({ patient, patientUuid 
     );
   }
 
-  return <EmptyState displayText={displayText} headerTitle={headerTitle} launchForm={launchForm} />;
+  return <EmptyState displayText={displayText} headerTitle={headerTitle} launchForm={canEdit ? launchForm : undefined} />;
 };
 
 export default GrowthChartOverview;

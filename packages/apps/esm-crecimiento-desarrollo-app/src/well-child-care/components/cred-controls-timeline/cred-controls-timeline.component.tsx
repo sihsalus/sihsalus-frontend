@@ -5,6 +5,8 @@ import dayjs from 'dayjs';
 import React, { useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
+import { credCourseLifeEditPrivilege } from '../../../constants';
+import { useHasPrivilege } from '../../../rbac';
 import type { ConfigObject } from '../../../config-schema';
 import { useCREDSchedule } from '../../../hooks/useCREDSchedule';
 import { translateCredAgeGroupLabel, translateCredAgeGroupSublabel } from '../../../utils/cred-label-translations';
@@ -18,6 +20,7 @@ interface CredAgeGroupsProps {
 const CredAgeGroups: React.FC<CredAgeGroupsProps> = ({ patientUuid }) => {
   const { t } = useTranslation();
   const { ageGroupsCRED } = useConfig<ConfigObject>();
+  const canEdit = useHasPrivilege(credCourseLifeEditPrivilege);
   const { patient, isLoading: isPatientLoading, error: patientError } = usePatient(patientUuid);
   const { controls } = useCREDSchedule(patientUuid);
   const [selectedAgeGroup, setSelectedAgeGroup] = useState<(typeof ageGroupsCRED)[0] | null>(null);
@@ -102,7 +105,7 @@ const CredAgeGroups: React.FC<CredAgeGroupsProps> = ({ patientUuid }) => {
                 [styles.groupCompleted]: allCompleted,
                 [styles.groupOverdue]: hasOverdue,
               })}
-              onClick={() => handleAgeGroupClick(group)}
+              onClick={canEdit ? () => handleAgeGroupClick(group) : undefined}
             >
               <strong>{translateCredAgeGroupLabel(t, group.label)}</strong>
               {group.sublabel && <div>{translateCredAgeGroupSublabel(t, group.sublabel)}</div>}

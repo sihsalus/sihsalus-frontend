@@ -1,10 +1,19 @@
 import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { Form, Formik } from 'formik';
+import type React from 'react';
+
 import { type FormValues } from '../../patient-registration.types';
 import { PatientRegistrationContext, type PatientRegistrationContextProps } from '../../patient-registration-context';
-import { peruDniPatientIdentifierTypeUuid } from '../../peru-registration-config';
-import { MinsaLookupField } from './minsa-lookup-field.component';
+import {
+  peruDniPatientIdentifierTypeUuid,
+  peruInsuranceAccreditationActiveConceptUuid,
+  peruInsuranceAccreditationCheckedAtAttributeTypeUuid,
+  peruInsuranceAccreditationStatusAttributeTypeUuid,
+  peruInsuranceCodeAttributeTypeUuid,
+} from '../../peru-registration-config';
+import { ReniecLookupField } from './reniec-lookup-field.component';
+import { SisLookupField } from './sis-lookup-field.component';
 
 function buildFormValues(identifierValue = '12345678') {
   return {
@@ -14,6 +23,7 @@ function buildFormValues(identifierValue = '12345678') {
     additionalMiddleName: '',
     addNameInLocalLanguage: false,
     address: {},
+    attributes: {},
     birthdate: '',
     birthdateEstimated: false,
     deathCause: '',
@@ -46,9 +56,7 @@ function buildFormValues(identifierValue = '12345678') {
   } as FormValues;
 }
 
-const baseValues = buildFormValues();
-
-function renderMinsaLookup(values: FormValues = baseValues) {
+function renderLookup(component: React.ReactNode, values: FormValues = buildFormValues()) {
   const setFieldValue = vi.fn();
   const setFieldTouched = vi.fn();
   const contextValues = {
@@ -73,9 +81,7 @@ function renderMinsaLookup(values: FormValues = baseValues) {
   render(
     <Formik initialValues={{}} onSubmit={vi.fn()}>
       <Form>
-        <PatientRegistrationContext.Provider value={contextValues}>
-          <MinsaLookupField />
-        </PatientRegistrationContext.Provider>
+        <PatientRegistrationContext.Provider value={contextValues}>{component}</PatientRegistrationContext.Provider>
       </Form>
     </Formik>,
   );
@@ -83,12 +89,12 @@ function renderMinsaLookup(values: FormValues = baseValues) {
   return { setFieldTouched, setFieldValue };
 }
 
-describe('MinsaLookupField', () => {
-  it('loads mock MINSA data into the registration form', async () => {
+describe('ReniecLookupField', () => {
+  it('loads mock RENIEC data into the registration form', async () => {
     const user = userEvent.setup();
-    const { setFieldTouched, setFieldValue } = renderMinsaLookup();
+    const { setFieldTouched, setFieldValue } = renderLookup(<ReniecLookupField />);
 
-    await user.click(screen.getByRole('button', { name: /buscar en minsa/i }));
+    await user.click(screen.getByRole('button', { name: /buscar en reniec/i }));
 
     await waitFor(() => expect(setFieldValue).toHaveBeenCalledWith('givenName', 'Juan', false));
 
@@ -100,29 +106,69 @@ describe('MinsaLookupField', () => {
     expect(setFieldValue).toHaveBeenCalledWith('yearsEstimated', 0, false);
     expect(setFieldValue).toHaveBeenCalledWith('monthsEstimated', '', false);
     expect(setFieldTouched).toHaveBeenCalledWith('givenName', true, false);
-    expect(screen.getByText('Datos MINSA cargados')).toBeInTheDocument();
+    expect(screen.getByText('Datos RENIEC cargados')).toBeInTheDocument();
 
     const birthdateCall = setFieldValue.mock.calls.find(([fieldName]) => fieldName === 'birthdate');
     expect(birthdateCall?.[1]).toEqual(new Date(1990, 4, 14));
   });
 
-  it('validates the DNI before searching', async () => {
+  it('validates the DNI before searching RENIEC', async () => {
     const user = userEvent.setup();
-    const { setFieldValue } = renderMinsaLookup(buildFormValues('123'));
+    const { setFieldValue } = renderLookup(<ReniecLookupField />, buildFormValues('123'));
 
-    await user.click(screen.getByRole('button', { name: /buscar en minsa/i }));
+    await user.click(screen.getByRole('button', { name: /buscar en reniec/i }));
 
     expect(screen.getByText('El DNI debe tener 8 dígitos')).toBeInTheDocument();
     expect(setFieldValue).not.toHaveBeenCalled();
   });
 
-  it('does not modify the form when the mock has no matching DNI', async () => {
+  it('does not modify the form when the RENIEC mock has no matching DNI', async () => {
     const user = userEvent.setup();
-    const { setFieldValue } = renderMinsaLookup(buildFormValues('11111111'));
+    const { setFieldValue } = renderLookup(<ReniecLookupField />, buildFormValues('11111111'));
 
-    await user.click(screen.getByRole('button', { name: /buscar en minsa/i }));
+    await user.click(screen.getByRole('button', { name: /buscar en reniec/i }));
 
-    await waitFor(() => expect(screen.getByText('No se encontraron datos MINSA')).toBeInTheDocument());
+    await waitFor(() => expect(screen.getByText('No se encontraron datos RENIEC')).toBeInTheDocument());
+    expect(setFieldValue).not.toHaveBeenCalled();
+  });
+});
+
+describe('SisLookupField', () => {
+  it('loads mock SIS accreditation data into insurance fields', async () => {
+    const user = userEvent.setup();
+    const { setFieldTouched, setFieldValue } = renderLookup(<SisLookupField />);
+
+    await user.click(screen.getByRole('button', { name: /consultar sis/i }));
+
+    await waitFor(() =>
+      expect(setFieldValue).toHaveBeenCalledWith(
+        `attributes.${peruInsuranceCodeAttributeTypeUuid}`,
+        'SIS-12345678',
+        false,
+      ),
+    );
+
+    expect(setFieldValue).toHaveBeenCalledWith(
+      `attributes.${peruInsuranceAccreditationStatusAttributeTypeUuid}`,
+      peruInsuranceAccreditationActiveConceptUuid,
+      false,
+    );
+    expect(setFieldValue).toHaveBeenCalledWith(
+      `attributes.${peruInsuranceAccreditationCheckedAtAttributeTypeUuid}`,
+      '2026-06-10T09:30:00-05:00',
+      false,
+    );
+    expect(setFieldTouched).toHaveBeenCalledWith(`attributes.${peruInsuranceCodeAttributeTypeUuid}`, true, false);
+    expect(screen.getByText('Acreditación SIS vigente cargada')).toBeInTheDocument();
+  });
+
+  it('validates the DNI before searching SIS', async () => {
+    const user = userEvent.setup();
+    const { setFieldValue } = renderLookup(<SisLookupField />, buildFormValues('123'));
+
+    await user.click(screen.getByRole('button', { name: /consultar sis/i }));
+
+    expect(screen.getByText('El DNI debe tener 8 dígitos')).toBeInTheDocument();
     expect(setFieldValue).not.toHaveBeenCalled();
   });
 });

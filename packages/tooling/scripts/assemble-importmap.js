@@ -1,5 +1,6 @@
 const fs = require('node:fs');
 const path = require('node:path');
+const { execFileSync } = require('node:child_process');
 const chalk = require('chalk');
 
 const logInfo = (msg) => console.log(`${chalk.green.bold('[assemble]')} ${msg}`);
@@ -657,12 +658,39 @@ function patchIndexHtml() {
 // Stamps the assembled SPA with its provenance so the running app can report
 // exactly which version/commit is deployed. Values come from CI build args that
 // are promoted to env vars in the runtime image (see Dockerfile). Falls back to
-// a dev placeholder when assembled locally without those vars.
+// the root package version when assembled locally without those vars.
+function getRootPackageVersion() {
+  try {
+    const rootPackageJson = JSON.parse(fs.readFileSync('package.json', 'utf8'));
+    return typeof rootPackageJson.version === 'string' ? rootPackageJson.version : '';
+  } catch {
+    return '';
+  }
+}
+
+function getCurrentGitSha() {
+  try {
+    return execFileSync('git', ['rev-parse', '--short', 'HEAD'], {
+      encoding: 'utf8',
+      stdio: ['ignore', 'pipe', 'ignore'],
+    }).trim();
+  } catch {
+    return '';
+  }
+}
+
+function getBuildValue(value) {
+  const trimmedValue = typeof value === 'string' ? value.trim() : '';
+  return trimmedValue && trimmedValue !== '0.0.0-dev' ? trimmedValue : '';
+}
+
 function writeBuildInfo() {
   logInfo('Phase 8: Build info');
+  const version = getBuildValue(process.env.APP_VERSION) || getRootPackageVersion() || '0.0.0-dev';
+  const gitSha = getBuildValue(process.env.GIT_SHA) || getCurrentGitSha();
   const buildInfo = {
-    version: process.env.APP_VERSION || '0.0.0-dev',
-    gitSha: process.env.GIT_SHA || '',
+    version,
+    gitSha,
     buildTime: process.env.BUILD_TIME || new Date().toISOString(),
   };
   fs.writeFileSync(path.join(outDir, 'build-info.json'), JSON.stringify(buildInfo, null, 2));

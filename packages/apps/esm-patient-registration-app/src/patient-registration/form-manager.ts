@@ -70,6 +70,7 @@ export class FormManager {
     const syncItem: PatientRegistration = {
       fhirPatient: FormManager.mapPatientToFhirPatient(
         FormManager.getPatientToCreate(isNewPatient, values, patientUuidMap, initialAddressFieldValues, [], config),
+        config,
       ),
       _patientRegistrationData: {
         isNewPatient,
@@ -429,7 +430,7 @@ export class FormManager {
     };
   }
 
-  static mapPatientToFhirPatient(patient: Partial<Patient>): fhir.Patient {
+  static mapPatientToFhirPatient(patient: Partial<Patient>, config?: RegistrationConfig): fhir.Patient {
     // Important:
     // When changing this code, ideally assume that `patient` can be missing any attribute.
     // The `fhir.Patient` provides us with the benefit that all properties are nullable and thus
@@ -441,6 +442,13 @@ export class FormManager {
     // https://github.com/openmrs/openmrs-module-fhir/blob/669b3c52220bb9abc622f815f4dc0d8523687a57/api/src/main/java/org/openmrs/module/fhir/api/util/FHIRPatientUtil.java#L36
     // https://github.com/openmrs/openmrs-esm-patient-management/blob/94e6f637fb37cf4984163c355c5981ea6b8ca38c/packages/esm-patient-search-app/src/patient-search-result/patient-search-result.component.tsx#L21
     // Update as required.
+    const phoneAttributeTypeUuid = config?.fieldConfigurations?.phone?.personAttributeUuid;
+    const phoneAttribute = patient.person?.attributes?.find(
+      (attribute) =>
+        !!attribute.value &&
+        (attribute.attributeType === phoneAttributeTypeUuid || attribute.attributeType === 'Telephone Number'),
+    );
+
     return {
       id: patient.uuid,
       gender: patient.person?.gender,
@@ -460,7 +468,15 @@ export class FormManager {
         state: address.stateProvince,
         use: 'home',
       })),
-      telecom: patient.person.attributes?.filter((attribute) => attribute.attributeType === 'Telephone Number'),
+      telecom: phoneAttribute
+        ? [
+            {
+              system: 'phone',
+              use: 'mobile',
+              value: phoneAttribute.value,
+            },
+          ]
+        : undefined,
     };
   }
 }

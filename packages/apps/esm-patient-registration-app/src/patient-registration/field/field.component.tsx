@@ -8,9 +8,10 @@ import { CauseOfDeathField } from './cause-of-death/cause-of-death.component';
 import { CustomField } from './custom-field.component';
 import { DateAndTimeOfDeathField } from './date-and-time-of-death/date-and-time-of-death.component';
 import { DobField } from './dob/dob.component';
+import { ReniecLookupField } from './external-lookup/reniec-lookup-field.component';
+import { SisLookupField } from './external-lookup/sis-lookup-field.component';
 import { GenderField } from './gender/gender-field.component';
 import { Identifiers } from './id/id-field.component';
-import { MinsaLookupField } from './minsa-lookup/minsa-lookup-field.component';
 import { NameField } from './name/name-field.component';
 import { PhoneField } from './phone/phone-field.component';
 
@@ -34,8 +35,11 @@ export function Field({ name }: FieldProps) {
   }
 
   switch (name) {
+    case 'reniecLookup':
     case 'minsaLookup':
-      return <MinsaLookupField />;
+      return <ReniecLookupField />;
+    case 'sisLookup':
+      return <SisLookupField />;
     case 'name':
       return <NameField />;
     case 'gender':

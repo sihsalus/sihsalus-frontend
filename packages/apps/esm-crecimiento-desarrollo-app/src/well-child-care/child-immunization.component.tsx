@@ -3,6 +3,8 @@ import { usePatient } from '@openmrs/esm-framework';
 import type { TabConfig } from '@sihsalus/esm-sihsalus-shared';
 import { TabbedDashboard } from '@sihsalus/esm-sihsalus-shared';
 import React, { useMemo } from 'react';
+import { credImmunizationPrivilege } from '../constants';
+import { DashboardAccess } from '../rbac';
 
 const translationNamespace = '@sihsalus/esm-cred-app';
 
@@ -39,13 +41,15 @@ export const ChildImmunizationSchedule: React.FC<ChildImmunizationProps> = ({
   }
 
   return (
-    <TabbedDashboard
-      patient={patient}
-      patientUuid={patientUuid}
-      titleKey="childImmunizationSchedule"
-      tabs={tabs}
-      ariaLabelKey="immunizationTabs"
-      translationNamespace={translationNamespace}
-    />
+    <DashboardAccess privilege={credImmunizationPrivilege}>
+      <TabbedDashboard
+        patient={patient}
+        patientUuid={patientUuid}
+        titleKey="childImmunizationSchedule"
+        tabs={tabs}
+        ariaLabelKey="immunizationTabs"
+        translationNamespace={translationNamespace}
+      />
+    </DashboardAccess>
   );
 };

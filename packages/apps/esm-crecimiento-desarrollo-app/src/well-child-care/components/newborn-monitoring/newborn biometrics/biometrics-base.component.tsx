@@ -2,6 +2,8 @@ import { formatDatetime, parseDate, useConfig } from '@openmrs/esm-framework';
 import { ClinicalDataOverview } from '@sihsalus/esm-sihsalus-shared'; // Ajusta la ruta según tu estructura
 import React, { useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
+import { credNeonatalEditPrivilege } from '../../../../constants';
+import { useHasPrivilege } from '../../../../rbac';
 import { useVitalsAndBiometrics, useVitalsConceptMetadata, withUnit } from '../../../common';
 
 interface BiometricsBaseProps {
@@ -11,6 +13,7 @@ interface BiometricsBaseProps {
 
 const NewbornBiometricsBase: React.FC<BiometricsBaseProps> = ({ patientUuid, pageSize = 10 }) => {
   const { t } = useTranslation();
+  const canEdit = useHasPrivilege(credNeonatalEditPrivilege);
   const config = useConfig();
   const { data: conceptUnits } = useVitalsConceptMetadata();
   const { data: biometrics, error, isLoading, isValidating } = useVitalsAndBiometrics(patientUuid, 'biometrics');
@@ -116,7 +119,7 @@ const NewbornBiometricsBase: React.FC<BiometricsBaseProps> = ({ patientUuid, pag
       isValidating={isValidating}
       tableHeaders={tableHeaders}
       tableRows={tableRows}
-      formWorkspace="newborn-anthropometric-form"
+      formWorkspace={canEdit ? 'newborn-anthropometric-form' : undefined}
       emptyStateDisplayText={t('biometrics_lower', 'biometrics')}
       conceptUnits={conceptUnits || new Map()} // Aseguramos que conceptUnits no sea undefined
       config={config}

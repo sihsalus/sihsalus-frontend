@@ -28,6 +28,8 @@ import classNames from 'classnames';
 import React, { type ComponentProps, useCallback, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
+import { credAntecedentsEditPrivilege } from '../../constants';
+import { useHasPrivilege } from '../../rbac';
 import type { ConfigObject } from '../../config-schema';
 import { type Condition, useConditionsFromConceptSet, useConditionsSorting } from './conditions.resource';
 import { ConditionsActionMenu } from './conditions-action-menu.component';
@@ -67,6 +69,7 @@ const ConditionsOverview: React.FC<ConditionsOverviewProps> = ({ patientUuid }) 
   const layout = useLayoutType();
   const isDesktop = isDesktopLayout(layout);
   const isTablet = !isDesktop;
+  const canEdit = useHasPrivilege(credAntecedentsEditPrivilege);
 
   const conceptSetUuid = config?.conditionConceptSets?.antecedentesPatologicos?.uuid;
   const { conditions, error, isLoading, isValidating } = useConditionsFromConceptSet(patientUuid, conceptSetUuid);
@@ -172,15 +175,19 @@ const ConditionsOverview: React.FC<ConditionsOverviewProps> = ({ patientUuid }) 
                 size={isTablet ? 'lg' : 'sm'}
               />
             </div>
-            <div className={styles.divider}>|</div>
-            <Button
-              kind="ghost"
-              renderIcon={(props: ComponentProps<typeof AddIcon>) => <AddIcon size={16} {...props} />}
-              iconDescription="Add conditions"
-              onClick={launchConditionsForm}
-            >
-              {t('add', 'Add')}
-            </Button>
+            {canEdit && (
+              <>
+                <div className={styles.divider}>|</div>
+                <Button
+                  kind="ghost"
+                  renderIcon={(props: ComponentProps<typeof AddIcon>) => <AddIcon size={16} {...props} />}
+                  iconDescription="Add conditions"
+                  onClick={launchConditionsForm}
+                >
+                  {t('add', 'Add')}
+                </Button>
+              </>
+            )}
           </div>
         </CardHeader>
         <DataTable
@@ -211,7 +218,7 @@ const ConditionsOverview: React.FC<ConditionsOverviewProps> = ({ patientUuid }) 
                           {renderHeaderLabel(header.header)}
                         </TableHeader>
                       ))}
-                      <TableHeader aria-label={t('actions', 'Actions')} />
+                      {canEdit ? <TableHeader aria-label={t('actions', 'Actions')} /> : null}
                     </TableRow>
                   </TableHead>
                   <TableBody>
@@ -220,9 +227,11 @@ const ConditionsOverview: React.FC<ConditionsOverviewProps> = ({ patientUuid }) 
                         {row.cells.map((cell) => (
                           <TableCell key={cell.id}>{cell.value?.content ?? cell.value}</TableCell>
                         ))}
-                        <TableCell className="cds--table-column-menu">
-                          <ConditionsActionMenu condition={sortedRows[index]} patientUuid={patientUuid} />
-                        </TableCell>
+                        {canEdit ? (
+                          <TableCell className="cds--table-column-menu">
+                            <ConditionsActionMenu condition={sortedRows[index]} patientUuid={patientUuid} />
+                          </TableCell>
+                        ) : null}
                       </TableRow>
                     ))}
                   </TableBody>
@@ -254,7 +263,7 @@ const ConditionsOverview: React.FC<ConditionsOverviewProps> = ({ patientUuid }) 
       </div>
     );
   }
-  return <EmptyState displayText={displayText} headerTitle={headerTitle} launchForm={launchConditionsForm} />;
+  return <EmptyState displayText={displayText} headerTitle={headerTitle} launchForm={canEdit ? launchConditionsForm : undefined} />;
 };
 
 export default ConditionsOverview;

@@ -3,8 +3,10 @@ import { Add } from '@carbon/react/icons';
 import { CardHeader, ErrorState } from '@openmrs/esm-patient-common-lib';
 import React from 'react';
 import { useTranslation } from 'react-i18next';
+import { credNutritionEditPrivilege } from '../../../constants';
 import { useCREDFormLauncher } from '../../../hooks/useCREDFormLauncher';
 import { useSupplementationTracker } from '../../../hooks/useSupplementationTracker';
+import { useHasPrivilege } from '../../../rbac';
 
 import styles from './supplementation-tracker.scss';
 
@@ -14,6 +16,7 @@ interface SupplementationTrackerProps {
 
 const SupplementationTracker: React.FC<SupplementationTrackerProps> = ({ patientUuid }) => {
   const { t } = useTranslation();
+  const canEdit = useHasPrivilege(credNutritionEditPrivilege);
   const { delivered, total, percentage, isComplete, isLoading, error } = useSupplementationTracker(patientUuid);
   const { launchForm: handleAdd, isLoading: isFormLoading } = useCREDFormLauncher('supplementationForm');
   const headerTitle = t('mmnSupplementation', 'Suplementación MMN');
@@ -32,16 +35,18 @@ const SupplementationTracker: React.FC<SupplementationTrackerProps> = ({ patient
         <Tag type={isComplete ? 'green' : 'blue'} size="sm">
           {isComplete ? t('complete', 'Completo') : t('inProgress', 'En curso')}
         </Tag>
-        <Button
-          kind="ghost"
-          size="sm"
-          renderIcon={Add}
-          onClick={() => handleAdd()}
-          iconDescription={t('add', 'Add')}
-          disabled={isFormLoading}
-        >
-          {t('add', 'Add')}
-        </Button>
+        {canEdit && (
+          <Button
+            kind="ghost"
+            size="sm"
+            renderIcon={Add}
+            onClick={() => handleAdd()}
+            iconDescription={t('add', 'Add')}
+            disabled={isFormLoading}
+          >
+            {t('add', 'Add')}
+          </Button>
+        )}
       </CardHeader>
       <div className={styles.container}>
         <div className={styles.progressRow}>

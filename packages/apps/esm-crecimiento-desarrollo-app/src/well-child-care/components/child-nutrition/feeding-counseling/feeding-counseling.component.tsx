@@ -11,8 +11,10 @@ import { Add } from '@carbon/react/icons';
 import { CardHeader, ErrorState } from '@openmrs/esm-patient-common-lib';
 import React from 'react';
 import { useTranslation } from 'react-i18next';
+import { credNutritionEditPrivilege } from '../../../../constants';
 import { useCREDFormLauncher } from '../../../../hooks/useCREDFormLauncher';
 import { useFeedingAssessment } from '../../../../hooks/useFeedingAssessment';
+import { useHasPrivilege } from '../../../../rbac';
 
 import styles from './feeding-counseling.scss';
 
@@ -22,6 +24,7 @@ interface FeedingCounselingProps {
 
 const FeedingCounseling: React.FC<FeedingCounselingProps> = ({ patientUuid }) => {
   const { t } = useTranslation();
+  const canEdit = useHasPrivilege(credNutritionEditPrivilege);
   const { feedingType, lastAssessmentDate, isBreastfeeding, isLoading, error } = useFeedingAssessment(patientUuid);
   const { launchForm: handleAdd, isLoading: isFormLoading } = useCREDFormLauncher('feedingCounselingForm');
   const headerTitle = t('cnCounselingTitle', 'Consejería alimentaria');
@@ -40,16 +43,18 @@ const FeedingCounseling: React.FC<FeedingCounselingProps> = ({ patientUuid }) =>
         <Tag type={lastAssessmentDate ? 'green' : 'gray'} size="sm">
           {lastAssessmentDate ? t('completed', 'Completed') : t('pending', 'Pending')}
         </Tag>
-        <Button
-          kind="ghost"
-          size="sm"
-          renderIcon={Add}
-          onClick={() => handleAdd()}
-          iconDescription={t('add', 'Add')}
-          disabled={isFormLoading}
-        >
-          {t('add', 'Add')}
-        </Button>
+        {canEdit && (
+          <Button
+            kind="ghost"
+            size="sm"
+            renderIcon={Add}
+            onClick={() => handleAdd()}
+            iconDescription={t('add', 'Add')}
+            disabled={isFormLoading}
+          >
+            {t('add', 'Add')}
+          </Button>
+        )}
       </CardHeader>
       <div className={styles.container}>
         <StructuredListWrapper isCondensed>

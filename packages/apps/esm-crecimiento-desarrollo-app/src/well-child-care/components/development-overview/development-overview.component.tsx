@@ -4,8 +4,10 @@ import { launchWorkspace2, useConfig } from '@openmrs/esm-framework';
 import React from 'react';
 import { useTranslation } from 'react-i18next';
 
+import { credEarlyStimulationEditPrivilege } from '../../../constants';
 import type { ConfigObject } from '../../../config-schema';
 import { useCREDFormLauncher } from '../../../hooks/useCREDFormLauncher';
+import { useHasPrivilege } from '../../../rbac';
 
 import styles from './development-overview.scss';
 
@@ -20,6 +22,7 @@ interface DevelopmentOverviewProps {
 const DevelopmentOverview: React.FC<DevelopmentOverviewProps> = ({ patientUuid }) => {
   const { t } = useTranslation();
   const config = useConfig<ConfigObject>();
+  const canEdit = useHasPrivilege(credEarlyStimulationEditPrivilege);
   const { launchForm: handleLaunchTepsi, isLoading: isTepsiFormLoading } = useCREDFormLauncher('tepsi');
   const isTestPeruanoConfigured = Boolean(config.testPeruano?.formUuid && config.testPeruano?.concepts?.snapshotUuid);
 
@@ -46,7 +49,7 @@ const DevelopmentOverview: React.FC<DevelopmentOverviewProps> = ({ patientUuid }
             size="sm"
             renderIcon={Education}
             onClick={() => handleLaunchTepsi()}
-            disabled={isTepsiFormLoading}
+            disabled={isTepsiFormLoading || !canEdit}
           >
             {t('startTepsi', 'Realizar TEPSI')}
           </Button>
@@ -64,7 +67,7 @@ const DevelopmentOverview: React.FC<DevelopmentOverviewProps> = ({ patientUuid }
             size="sm"
             renderIcon={Growth}
             onClick={handleLaunchTestPeruano}
-            disabled={!isTestPeruanoConfigured}
+            disabled={!isTestPeruanoConfigured || !canEdit}
           >
             {t('startTestPeruano', 'Realizar Test Peruano')}
           </Button>

@@ -53,7 +53,7 @@ interface ClinicalDataOverviewProps {
   isValidating: boolean;
   tableHeaders: Array<ClinicalTableHeader>;
   tableRows: Array<ClinicalTableRow>;
-  formWorkspace: string;
+  formWorkspace?: string;
   emptyStateDisplayText: string;
   conceptUnits: Map<string, string>;
   config: Record<string, string>;
@@ -89,6 +89,9 @@ const ClinicalDataOverview: React.FC<ClinicalDataOverviewProps> = ({
   const { currentVisit } = useVisitOrOfflineVisit(patientUuid);
 
   const launchForm = useCallback(() => {
+    if (!formWorkspace) {
+      return;
+    }
     if (!currentVisit) {
       launchStartVisitPrompt();
       return;
@@ -121,10 +124,14 @@ const ClinicalDataOverview: React.FC<ClinicalDataOverviewProps> = ({
                       <Analytics size={16} />
                     </IconSwitch>
                   </ContentSwitcher>
-                  <span className={styles.divider}>|</span>
-                  <Button kind="ghost" renderIcon={Add} iconDescription={t('addData', 'Add data')} onClick={launchForm}>
-                    {t('add', 'Add')}
-                  </Button>
+                  {formWorkspace ? (
+                    <>
+                      <span className={styles.divider}>|</span>
+                      <Button kind="ghost" renderIcon={Add} iconDescription={t('addData', 'Add data')} onClick={launchForm}>
+                        {t('add', 'Add')}
+                      </Button>
+                    </>
+                  ) : null}
                 </div>
               </CardHeader>
               {chartView && chartConfig ? (
@@ -140,7 +147,7 @@ const ClinicalDataOverview: React.FC<ClinicalDataOverviewProps> = ({
             </div>
           );
         }
-        return <EmptyState displayText={emptyStateDisplayText} headerTitle={headerTitle} launchForm={launchForm} />;
+        return <EmptyState displayText={emptyStateDisplayText} headerTitle={headerTitle} launchForm={formWorkspace ? launchForm : undefined} />;
       })()}
     </>
   );

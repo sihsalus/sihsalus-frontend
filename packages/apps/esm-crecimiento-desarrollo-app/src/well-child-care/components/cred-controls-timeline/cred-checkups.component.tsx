@@ -5,6 +5,8 @@ import dayjs from 'dayjs';
 import React, { useCallback, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
+import { credCourseLifeEditPrivilege } from '../../../constants';
+import { useHasPrivilege } from '../../../rbac';
 import type { ConfigObject } from '../../../config-schema';
 import { useCREDSchedule } from '../../../hooks/useCREDSchedule';
 import { useMutateAppointments } from '../../../ui/form/appointments-form.resource';
@@ -21,6 +23,7 @@ const CredCheckups: React.FC<CredCheckupsProps> = ({ patientUuid }) => {
   const { t } = useTranslation();
   const config = useConfig<ConfigObject>();
   const session = useSession();
+  const canEdit = useHasPrivilege(credCourseLifeEditPrivilege);
   const { controls, nextDueControl, overdueControls, completedCount, totalCount, isLoading, error } =
     useCREDSchedule(patientUuid);
   const { mutateAppointments } = useMutateAppointments();
@@ -148,9 +151,11 @@ const CredCheckups: React.FC<CredCheckupsProps> = ({ patientUuid }) => {
                   {t('expectedDate', 'Fecha esperada')}: {dayjs(nextDueControl.targetDate).format('DD/MM/YYYY')}
                 </span>
               </div>
-              <Button kind="primary" size="sm" renderIcon={Add} onClick={handleRegisterControl}>
-                {t('registerControl', 'Registrar Control')}
-              </Button>
+              {canEdit && (
+                <Button kind="primary" size="sm" renderIcon={Add} onClick={handleRegisterControl}>
+                  {t('registerControl', 'Registrar Control')}
+                </Button>
+              )}
             </div>
           </>
         )}
@@ -212,17 +217,19 @@ const CredCheckups: React.FC<CredCheckupsProps> = ({ patientUuid }) => {
 
         {/* Generate appointments button */}
         <div className={styles.generateSection}>
-          <Button
-            kind="tertiary"
-            size="md"
-            renderIcon={Calendar}
-            onClick={handleGenerateAppointments}
-            disabled={isGenerating || pendingControls.length === 0}
-          >
-            {isGenerating
-              ? t('generatingAppointments', 'Generando citas...')
-              : t('generateAppointments', 'Generar Citas Crecimiento y Desarrollo')}
-          </Button>
+          {canEdit && (
+            <Button
+              kind="tertiary"
+              size="md"
+              renderIcon={Calendar}
+              onClick={handleGenerateAppointments}
+              disabled={isGenerating || pendingControls.length === 0}
+            >
+              {isGenerating
+                ? t('generatingAppointments', 'Generando citas...')
+                : t('generateAppointments', 'Generar Citas Crecimiento y Desarrollo')}
+            </Button>
+          )}
         </div>
       </div>
     </div>

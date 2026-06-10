@@ -10,7 +10,7 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from '@carbon/react';
+} from "@carbon/react";
 import {
   EditIcon,
   formatDate,
@@ -18,12 +18,14 @@ import {
   showModal,
   TrashCanIcon,
   useLayoutType,
-} from '@openmrs/esm-framework';
-import React, { useMemo } from 'react';
-import { useTranslation } from 'react-i18next';
-import { type ImmunizationGrouped } from '../../types';
-import { immunizationFormSub } from '../utils';
-import styles from './immunizations-sequence-table.scss';
+} from "@openmrs/esm-framework";
+import React, { useMemo } from "react";
+import { useTranslation } from "react-i18next";
+import { credImmunizationEditPrivilege } from "../../constants";
+import { useHasPrivilege } from "../../rbac";
+import { type ImmunizationGrouped } from "../../types";
+import { immunizationFormSub } from "../utils";
+import styles from "./immunizations-sequence-table.scss";
 
 interface SequenceTableProps {
   immunizationsByVaccine: ImmunizationGrouped;
@@ -34,7 +36,7 @@ interface SequenceTableProps {
 interface DeleteImmunizationParams {
   doseNumber: number;
   immunizationId: string;
-  persistenceSource?: 'fhir' | 'ampath-form';
+  persistenceSource?: "fhir" | "ampath-form";
   vaccineUuid: string;
 }
 
@@ -44,28 +46,31 @@ const SequenceTable: React.FC<SequenceTableProps> = ({
   patientUuid,
 }) => {
   const { t } = useTranslation();
+  const canEdit = useHasPrivilege(credImmunizationEditPrivilege);
   const { existingDoses, sequences, vaccineUuid } = immunizationsByVaccine;
-  const isTablet = useLayoutType() === 'tablet';
-  const responsiveSize = isTablet ? 'md' : 'sm';
+  const isTablet = useLayoutType() === "tablet";
+  const responsiveSize = isTablet ? "md" : "sm";
 
   const tableHeaders = useMemo(
     () => [
       {
-        key: 'sequence',
-        header: sequences.length ? t('sequence', 'Sequence') : t('doseNumberWithinSeries', 'Dose number within series'),
+        key: "sequence",
+        header: sequences.length
+          ? t("sequence", "Sequence")
+          : t("doseNumberWithinSeries", "Dose number within series"),
       },
       {
-        key: 'status',
-        header: t('immunizationStatus', 'Estado de aplicación'),
+        key: "status",
+        header: t("immunizationStatus", "Estado de aplicación"),
       },
       {
-        key: 'vaccinationDate',
-        header: t('vaccinationDate', 'Vaccination date'),
+        key: "vaccinationDate",
+        header: t("vaccinationDate", "Vaccination date"),
       },
-      { key: 'nextDoseDate', header: t('nextDoseDate', 'Next dose date') },
-      { key: 'expirationDate', header: t('expirationDate', 'Expiration date') },
-      { key: 'note', header: t('note', 'Note') },
-      { key: 'actions', header: t('actions', 'Actions') },
+      { key: "nextDoseDate", header: t("nextDoseDate", "Next dose date") },
+      { key: "expirationDate", header: t("expirationDate", "Expiration date") },
+      { key: "note", header: t("note", "Note") },
+      { key: "actions", header: t("actions", "Actions") },
     ],
     [t, sequences.length],
   );
@@ -76,7 +81,7 @@ const SequenceTable: React.FC<SequenceTableProps> = ({
     persistenceSource,
     vaccineUuid,
   }: DeleteImmunizationParams) => {
-    const dispose = showModal('vacunacion-delete-confirmation-modal', {
+    const dispose = showModal("vacunacion-delete-confirmation-modal", {
       doseNumber,
       immunizationId,
       persistenceSource,
@@ -90,39 +95,40 @@ const SequenceTable: React.FC<SequenceTableProps> = ({
     id: dose?.immunizationObsUuid,
     sequence: !sequences.length
       ? dose.doseNumber || 0
-      : sequences?.find((s) => s.sequenceNumber === dose.doseNumber)?.sequenceLabel || dose.doseNumber,
+      : sequences?.find((s) => s.sequenceNumber === dose.doseNumber)
+          ?.sequenceLabel || dose.doseNumber,
     status:
-      dose.status === 'not-done'
-        ? `${t('notAdministered', 'No aplicada / diferida')}${dose.statusReason ? `: ${dose.statusReason}` : ''}`
-        : t('administered', 'Aplicada'),
+      dose.status === "not-done"
+        ? `${t("notAdministered", "No aplicada / diferida")}${dose.statusReason ? `: ${dose.statusReason}` : ""}`
+        : t("administered", "Aplicada"),
     vaccinationDate:
       dose?.occurrenceDateTime &&
       formatDate(new Date(dose.occurrenceDateTime), {
-        mode: 'standard',
+        mode: "standard",
         noToday: true,
         time: false,
       }),
     nextDoseDate: dose?.nextDoseDate
       ? formatDate(new Date(dose.nextDoseDate), {
-          mode: 'standard',
+          mode: "standard",
           noToday: true,
           time: false,
         })
-      : '--',
+      : "--",
     expirationDate:
       (dose?.expirationDate &&
         formatDate(new Date(dose.expirationDate), {
-          mode: 'standard',
+          mode: "standard",
           noToday: true,
           time: false,
         })) ||
-      '--',
-    note: dose?.note?.[0]?.text || '--',
-    actions: (
+      "--",
+    note: dose?.note?.[0]?.text || "--",
+    actions: canEdit ? (
       <div className={styles.actionButtons}>
         <IconButton
           kind="ghost"
-          label={getCoreTranslation('edit')}
+          label={getCoreTranslation("edit")}
           onClick={() => {
             immunizationFormSub.next({
               vaccineUuid: vaccineUuid,
@@ -148,7 +154,7 @@ const SequenceTable: React.FC<SequenceTableProps> = ({
         </IconButton>
         <IconButton
           kind="ghost"
-          label={getCoreTranslation('delete')}
+          label={getCoreTranslation("delete")}
           onClick={() =>
             handleDeleteImmunization({
               doseNumber: dose.doseNumber,
@@ -162,7 +168,7 @@ const SequenceTable: React.FC<SequenceTableProps> = ({
           <TrashCanIcon size={16} />
         </IconButton>
       </div>
-    ),
+    ) : null,
   }));
 
   if (tableRows?.length) {

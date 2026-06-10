@@ -170,14 +170,14 @@
   }
 }
 
-.minsaLookup {
+.externalLookup {
   display: grid;
   row-gap: layout.$spacing-04;
-  padding-left: layout.$spacing-05;
-  border-left: 0.25rem solid colors.$blue-60;
+  padding: layout.$spacing-04 0 layout.$spacing-04 layout.$spacing-05;
+  border-left: 0.25rem solid colors.$green-60;
 }
 
-.minsaLookupHeader {
+.externalLookupHeader {
   display: flex;
   flex-wrap: wrap;
   align-items: baseline;
@@ -188,19 +188,19 @@
   }
 }
 
-.minsaLookupDocument {
+.externalLookupDocument {
   @include type.type-style("label-01");
   color: colors.$gray-70;
 }
 
-.minsaLookupAction {
+.externalLookupAction {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
   gap: layout.$spacing-04;
 }
 
-.minsaLookupNotification {
+.externalLookupNotification {
   margin: 0;
   max-width: 32rem;
 }

@@ -19,7 +19,7 @@ export const SectionWrapper = ({ sectionDefinition, index }: SectionWrapperProps
    *
    * DO NOT REMOVE THESE UNLESS A DEFAULT SECTION IS REMOVED
    * t('demographicsSection', 'Basic Info')
-   * t('contactSection', 'Contact Details')
+   * t('contactSection', 'Residence, birthplace and contact')
    * t('deathSection', 'Death Info')
    * t('relationshipsSection', 'Relationships')
    */

@@ -45,7 +45,7 @@ test.describe('Peru patient registration', () => {
   test('renders Peru-specific sections in the expected order', async ({ page }) => {
     await gotoPatientRegistration(page);
 
-    await expectSectionVisible(page, 'birthplace', /Lugar de nacimiento/i);
+    const contact = await expectSectionVisible(page, 'contact', /Residencia, nacimiento y contacto/i);
     const filiation = await expectSectionVisible(page, 'filiation', /Datos de filiaci[oó]n/i);
     const bloodData = await expectSectionVisible(page, 'bloodData', /Datos sangu[ií]neos/i);
     await expectSectionVisible(page, 'medicalRecord', /Historia cl[ií]nica/i);
@@ -55,7 +55,6 @@ test.describe('Peru patient registration', () => {
     await expectSectionOrder(page, [
       'demographics',
       'contact',
-      'birthplace',
       'filiation',
       'bloodData',
       'medicalRecord',
@@ -63,6 +62,10 @@ test.describe('Peru patient registration', () => {
       'responsiblePerson',
     ]);
 
+    await expect(page.locator('div[id="birthplace"]')).toHaveCount(0);
+    await expect(contact.getByRole('heading', { name: /Direcci[oó]n de residencia/i })).toBeVisible();
+    await expect(contact.getByLabel(/Lugar de nacimiento/i)).toBeVisible();
+    await expect(contact.getByLabel(/N[uú]mero de Tel[eé]fono|N[uú]mero de celular/i)).toBeVisible();
     await expect(filiation.getByText(/Estado civil/i)).toBeVisible();
     await expect(filiation.getByText(/Grupo sangu[ií]neo/i)).toHaveCount(0);
     await expect(filiation.getByText(/Factor Rh/i)).toHaveCount(0);
@@ -70,16 +73,29 @@ test.describe('Peru patient registration', () => {
     await expect(bloodData.getByText(/Factor Rh/i)).toBeVisible();
   });
 
-  test('fills basic patient data from the MINSA mock lookup', async ({ page }) => {
+  test('validates contact fields before registration submit', async ({ page }) => {
+    await gotoPatientRegistration(page);
+
+    const contact = await expectSectionVisible(page, 'contact', /Residencia, nacimiento y contacto/i);
+    await fillTextbox(contact.getByLabel(/N[uú]mero de Tel[eé]fono|N[uú]mero de celular/i).first(), 'e100');
+    await contact
+      .getByLabel(/N[uú]mero de Tel[eé]fono|N[uú]mero de celular/i)
+      .first()
+      .blur();
+
+    await expect(contact.getByText(/Entrada inv[aá]lida|Invalid Input/i)).toBeVisible({ timeout: 10_000 });
+  });
+
+  test('fills basic patient data from the RENIEC mock lookup', async ({ page }) => {
     await gotoPatientRegistration(page);
 
     await fillTextbox(
       page.locator('input[name="identifiers.dni.identifierValue"], #identifiers\\.dni\\.identifierValue').first(),
       '12345678',
     );
-    await page.getByRole('button', { name: /Buscar en MINSA/i }).click();
+    await page.getByRole('button', { name: /Buscar en RENIEC/i }).click();
 
-    await expect(page.getByText(/Datos MINSA cargados/i)).toBeVisible({ timeout: 10_000 });
+    await expect(page.getByText(/Datos RENIEC cargados/i)).toBeVisible({ timeout: 10_000 });
     await expect(page.locator('#givenName')).toHaveValue('Juan');
     await expect(page.locator('#middleName')).toHaveValue('Carlos');
     await expect(page.locator('#familyName')).toHaveValue('Perez');

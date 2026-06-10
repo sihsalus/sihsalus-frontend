@@ -37,7 +37,7 @@ ENV SPA_OUTPUT_DIR=/spa
 
 # Build provenance — supplied by CI (--build-arg) and promoted to env so the
 # assemble step (run as CMD at container start) can stamp build-info.json.
-ARG APP_VERSION=0.0.0-dev
+ARG APP_VERSION=""
 ARG GIT_SHA=""
 ARG BUILD_TIME=""
 ENV APP_VERSION=${APP_VERSION}
@@ -65,7 +65,7 @@ ENV SPA_OUTPUT_DIR=/spa
 
 # Build provenance — supplied by CI (--build-arg) and promoted to env so the
 # assemble step (run as CMD at container start) can stamp build-info.json.
-ARG APP_VERSION=0.0.0-dev
+ARG APP_VERSION=""
 ARG GIT_SHA=""
 ARG BUILD_TIME=""
 ENV APP_VERSION=${APP_VERSION}
@@ -95,7 +95,7 @@ ENV SPA_CONFIG_URLS=/openmrs/spa/frontend.json
 ENV SPA_DEFAULT_LOCALE=es
 
 # Build provenance — assemble runs here at build time, so env is enough.
-ARG APP_VERSION=0.0.0-dev
+ARG APP_VERSION=""
 ARG GIT_SHA=""
 ARG BUILD_TIME=""
 ENV APP_VERSION=${APP_VERSION}

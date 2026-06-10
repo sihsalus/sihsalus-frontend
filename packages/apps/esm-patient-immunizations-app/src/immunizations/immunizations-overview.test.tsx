@@ -14,6 +14,7 @@ import {
   waitForLoadingToFinish,
 } from 'test-utils';
 import { configSchema, type ImmunizationConfigObject } from '../config-schema';
+import { immunizationEditPrivilege, immunizationPrivilege } from '../constants';
 import ImmunizationsOverview from './immunizations-overview.component';
 
 const testProps = {
@@ -31,7 +32,7 @@ const immunizationConfig = getDefaultsFromConfigSchema(configSchema) as Immuniza
 const sessionWithEditPrivilege = {
   authenticated: true,
   user: {
-    privileges: [{ display: 'app:cred.immunization' }, { display: 'app:cred.immunization.edit' }],
+    privileges: [{ display: immunizationPrivilege }, { display: immunizationEditPrivilege }],
   },
 } as unknown as ReturnType<typeof useSession>;
 

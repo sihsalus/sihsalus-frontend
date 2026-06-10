@@ -12,13 +12,13 @@
       "order": 35,
       "online": true,
       "offline": true,
-      "privileges": "app:cred.immunization.edit"
+      "privileges": "app:immunization.edit"
     },
     {
       "name": "vacunacion-overview-widget",
       "component": "immunizationsOverview",
       "order": 8,
-      "privileges": "app:cred.immunization"
+      "privileges": "app:immunization"
     },
     {
       "name": "vacunacion-detailed-history-card",
@@ -40,7 +40,7 @@
       "name": "vacunacion-summary-dashboard",
       "component": "immunizationsDashboardLink",
       "slot": "patient-chart-dashboard-slot",
-      "privileges": "app:cred.immunization",
+      "privileges": "app:immunization",
       "meta": {
         "slot": "patient-chart-vacunacion-dashboard-slot",
         "path": "Vacunacion"

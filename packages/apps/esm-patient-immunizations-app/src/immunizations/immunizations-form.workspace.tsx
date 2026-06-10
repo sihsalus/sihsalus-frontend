@@ -29,7 +29,7 @@ import { Controller, FormProvider, useForm } from 'react-hook-form';
 import { useTranslation } from 'react-i18next';
 import { z } from 'zod';
 import { type ImmunizationConfigObject } from '../config-schema';
-import { credImmunizationEditPrivilege } from '../constants';
+import { immunizationEditPrivilege } from '../constants';
 import { useImmunizations } from '../hooks/useImmunizations';
 import { useImmunizationsConceptSet } from '../hooks/useImmunizationsConceptSet';
 import { type ImmunizationFormData } from '../types';
@@ -411,7 +411,7 @@ const ImmunizationsForm: React.FC<PatientWorkspace2DefinitionProps<Record<string
   );
   return (
     <Workspace2 title={t('immunizationWorkspaceTitle', 'Immunization')} hasUnsavedChanges={isDirty}>
-      <RequirePrivilege privilege={credImmunizationEditPrivilege}>
+      <RequirePrivilege privilege={immunizationEditPrivilege}>
         <FormProvider {...formProps}>
           <Form className={styles.form} onSubmit={handleSubmit(onSubmit)}>
             <Stack gap={5} className={styles.container}>

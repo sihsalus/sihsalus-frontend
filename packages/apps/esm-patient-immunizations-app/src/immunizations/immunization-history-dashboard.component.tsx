@@ -2,7 +2,7 @@ import { CardHeader } from '@openmrs/esm-patient-common-lib';
 import { RequirePrivilege } from '@sihsalus/esm-rbac';
 import React from 'react';
 import { useTranslation } from 'react-i18next';
-import { credImmunizationPrivilege } from '../constants';
+import { immunizationPrivilege } from '../constants';
 import { useImmunizations } from '../hooks/useImmunizations';
 import ImmunizationHistoryCard from './immunization-history-card.component';
 import styles from './immunization-history-card.scss';
@@ -23,7 +23,7 @@ const ImmunizationHistoryDashboard: React.FC<ImmunizationHistoryDashboardProps> 
   }
 
   return (
-    <RequirePrivilege privilege={credImmunizationPrivilege}>
+    <RequirePrivilege privilege={immunizationPrivilege}>
       <div className={styles.widgetCard}>
         <CardHeader title={headerTitle}>{null}</CardHeader>
         <div className={styles.content}>

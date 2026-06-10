@@ -36,7 +36,7 @@ import { RequirePrivilege } from '@sihsalus/esm-rbac';
 import React, { type ComponentProps, useCallback, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import type { ImmunizationConfigObject } from '../config-schema';
-import { credImmunizationEditPrivilege, credImmunizationPrivilege } from '../constants';
+import { immunizationEditPrivilege, immunizationPrivilege } from '../constants';
 import { useImmunizations } from '../hooks/useImmunizations';
 import type { ImmunizationGrouped } from '../types';
 import {
@@ -58,7 +58,7 @@ const ImmunizationsDetailedSummary: React.FC<ImmunizationsDetailedSummaryProps> 
 }) => {
   const { t } = useTranslation();
   const session = useSession();
-  const canEdit = userHasAccess(credImmunizationEditPrivilege, session?.user);
+  const canEdit = userHasAccess(immunizationEditPrivilege, session?.user);
   const config = useConfig<ImmunizationConfigObject>();
   const displayText = t('immunizations__lower', 'immunizations');
   const headerTitle = t('immunizations', 'Immunizations');
@@ -277,7 +277,7 @@ const ImmunizationsDetailedSummary: React.FC<ImmunizationsDetailedSummaryProps> 
       />
     );
 
-  return <RequirePrivilege privilege={credImmunizationPrivilege}>{content}</RequirePrivilege>;
+  return <RequirePrivilege privilege={immunizationPrivilege}>{content}</RequirePrivilege>;
 };
 
 export default ImmunizationsDetailedSummary;

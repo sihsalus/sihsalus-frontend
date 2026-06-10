@@ -26,7 +26,7 @@ import { CardHeader, EmptyState, ErrorState, PatientChartPagination } from '@ope
 import classNames from 'classnames';
 import React, { type ComponentProps, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
-import { credImmunizationEditPrivilege } from '../constants';
+import { immunizationEditPrivilege } from '../constants';
 import { useImmunizations } from '../hooks/useImmunizations';
 import styles from './immunizations-overview.scss';
 
@@ -39,7 +39,7 @@ export interface ImmunizationsOverviewProps {
 const ImmunizationsOverview: React.FC<ImmunizationsOverviewProps> = ({ patient: _patient, patientUuid, basePath }) => {
   const { t } = useTranslation();
   const session = useSession();
-  const canEdit = userHasAccess(credImmunizationEditPrivilege, session?.user);
+  const canEdit = userHasAccess(immunizationEditPrivilege, session?.user);
   const immunizationsCount = 5;
   const displayText = t('immunizations__lower', 'immunizations');
   const headerTitle = t('immunizations', 'Immunizations');

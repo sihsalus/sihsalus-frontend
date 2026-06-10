@@ -1,17 +1,16 @@
 import { FormLabel, NumberInput, TextArea } from '@carbon/react';
 import { Warning } from '@carbon/react/icons';
 import { ResponsiveWrapper, useLayoutType } from '@openmrs/esm-framework';
+import {
+  parsePlainDecimalInput,
+  preventScientificNotationKey,
+  preventScientificNotationPaste,
+} from '@openmrs/esm-utils';
 import classNames from 'classnames';
 import React, { Fragment, useId, useState } from 'react';
 import type { Control, Path } from 'react-hook-form';
 import { Controller } from 'react-hook-form';
 import { useTranslation } from 'react-i18next';
-
-import {
-  parsePlainDecimalInput,
-  preventScientificNotationKey,
-  preventScientificNotationPaste,
-} from '../../utils/plain-number-input';
 import styles from './generic-input.scss';
 
 type FieldTypes = 'number' | 'textarea';

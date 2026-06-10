@@ -10,9 +10,9 @@
 import { NumberInput } from '@carbon/react';
 import {
   parsePlainDecimalInput,
-  preventScientificNotationKey,
-  preventScientificNotationPaste,
-} from '@sihsalus/esm-sihsalus-shared';
+  preventScientificNotationAndSignKeys,
+  preventScientificNotationAndSignPaste,
+} from '@openmrs/esm-utils';
 import classNames from 'classnames';
 import React, { useState } from 'react';
 import { type Control, Controller, type FieldErrors, useWatch } from 'react-hook-form';
@@ -70,8 +70,8 @@ const VitalInput: React.FC<VitalInputProps> = ({ fieldName, label, control, erro
                 field.onChange(parsedValue);
               }
             }}
-            onKeyDown={preventScientificNotationKey}
-            onPaste={preventScientificNotationPaste}
+            onKeyDown={preventScientificNotationAndSignKeys}
+            onPaste={preventScientificNotationAndSignPaste}
             invalid={!!formError || invalid}
             invalidText={formError?.message}
             hideSteppers

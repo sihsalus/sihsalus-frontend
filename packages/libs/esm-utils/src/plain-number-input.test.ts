@@ -2,6 +2,8 @@ import { describe, expect, it, vi } from 'vitest';
 import {
   isPlainDecimalInput,
   parsePlainDecimalInput,
+  preventScientificNotationAndSignKeys,
+  preventScientificNotationAndSignPaste,
   preventScientificNotationKey,
   preventScientificNotationPaste,
 } from './plain-number-input';
@@ -35,5 +37,43 @@ describe('plain-number-input', () => {
     };
     preventScientificNotationPaste(pasteEvent);
     expect(pasteEvent.preventDefault).toHaveBeenCalled();
+  });
+
+  it('keeps allowing the minus sign key in the base handler', () => {
+    const minusEvent = { key: '-', preventDefault: vi.fn() };
+    preventScientificNotationKey(minusEvent);
+    expect(minusEvent.preventDefault).not.toHaveBeenCalled();
+  });
+
+  it('prevents sign keys in the strict handler', () => {
+    for (const key of ['e', 'E', '+', '-']) {
+      const keyEvent = { key, preventDefault: vi.fn() };
+      preventScientificNotationAndSignKeys(keyEvent);
+      expect(keyEvent.preventDefault).toHaveBeenCalled();
+    }
+
+    const digitEvent = { key: '5', preventDefault: vi.fn() };
+    preventScientificNotationAndSignKeys(digitEvent);
+    expect(digitEvent.preventDefault).not.toHaveBeenCalled();
+
+    const decimalEvent = { key: '.', preventDefault: vi.fn() };
+    preventScientificNotationAndSignKeys(decimalEvent);
+    expect(decimalEvent.preventDefault).not.toHaveBeenCalled();
+  });
+
+  it('prevents pasting negative values in the strict paste handler', () => {
+    const blockedPaste = {
+      clipboardData: { getData: () => '-5' },
+      preventDefault: vi.fn(),
+    };
+    preventScientificNotationAndSignPaste(blockedPaste);
+    expect(blockedPaste.preventDefault).toHaveBeenCalled();
+
+    const allowedPaste = {
+      clipboardData: { getData: () => '36.5' },
+      preventDefault: vi.fn(),
+    };
+    preventScientificNotationAndSignPaste(allowedPaste);
+    expect(allowedPaste.preventDefault).not.toHaveBeenCalled();
   });
 });

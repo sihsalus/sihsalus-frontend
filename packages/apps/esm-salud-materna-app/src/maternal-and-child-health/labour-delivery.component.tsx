@@ -1,8 +1,8 @@
 import { ChartMultitype, Report } from '@carbon/react/icons';
 import { BabyIcon, usePatient } from '@openmrs/esm-framework';
-import type { TabConfig } from '@sihsalus/esm-sihsalus-shared';
+import type { TabConfig } from '@openmrs/esm-patient-common-lib';
 
-import { TabbedDashboard } from '@sihsalus/esm-sihsalus-shared';
+import { TabbedDashboard } from '@openmrs/esm-patient-common-lib';
 import React, { useMemo } from 'react';
 
 const translationNamespace = '@sihsalus/esm-salud-materna-app';

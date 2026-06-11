@@ -54,7 +54,7 @@
   },
   "dependencies": {
     "@openmrs/esm-offline": "workspace:*",
-    "@types/fhir": "0.0.31",
+    "@types/fhir": "0.0.44",
     "lodash-es": "^4.17.21"
   },
   "peerDependencies": {
@@ -66,8 +66,8 @@
     "@openmrs/esm-api": "workspace:*",
     "@openmrs/esm-state": "workspace:*",
     "@swc/cli": "0.8.1",
-    "@swc/core": "1.15.21",
-    "@types/fhir": "0.0.31",
+    "@swc/core": "1.15.41",
+    "@types/fhir": "0.0.44",
     "@types/node": "^22.10.7",
     "@vitest/coverage-v8": "^4.1.2",
     "concurrently": "^9.2.1",

@@ -19,7 +19,7 @@
     "react": ">=18.0.0"
   },
   "devDependencies": {
-    "@carbon/react": "^1.102.0",
+    "@carbon/react": "^1.109.0",
     "@openmrs/esm-framework": "workspace:*",
     "@sihsalus/esm-audit-logger": "workspace:*",
     "react": "^18.3.1",

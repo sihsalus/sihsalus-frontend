@@ -1,7 +1,6 @@
 import {
   getPatientName,
   PatientBannerActionsMenu,
-  PatientBannerPatientInfo,
   PatientBannerToggleContactDetailsButton,
   PatientPhoto,
 } from '@openmrs/esm-framework';
@@ -9,6 +8,7 @@ import classNames from 'classnames';
 import React, { Suspense, useCallback, useEffect, useState } from 'react';
 import { PatientBannerContactDetails } from './patient-banner-contact-details.component';
 import styles from './patient-banner.scss';
+import { SihsalusPatientInfo } from './sihsalus-patient-info.component';
 
 interface PatientBannerProps {
   patient?: fhir.Patient | null;
@@ -66,7 +66,7 @@ const PatientBanner: React.FC<PatientBannerProps> = ({ patient, patientUuid, hid
         <div className={styles.patientAvatar}>
           <PatientPhoto patientUuid={patientUuid} patientName={patientName} />
         </div>
-        <PatientBannerPatientInfo patient={patient} renderedFrom="patient-chart" />
+        <SihsalusPatientInfo patient={patient} renderedFrom="patient-chart" />
         <div className={styles.buttonCol}>
           <div className={styles.buttonRow}>
             {!hideActionsOverflow ? (

@@ -2,7 +2,6 @@ import {
   ConfigurableLink,
   getPatientName,
   interpolateString,
-  PatientBannerPatientInfo,
   PatientPhoto,
   useConfig,
 } from '@openmrs/esm-framework';
@@ -12,6 +11,7 @@ import { v4 as uuidv4 } from 'uuid';
 
 import { type PatientSearchConfig } from '../config-schema';
 import { PatientSearchContext } from '../patient-search-context';
+import { SihsalusPatientInfo } from '../sihsalus-patient-info/sihsalus-patient-info.component';
 import type { FHIRPatientType, SearchedPatient } from '../types';
 
 import styles from './compact-patient-banner.scss';
@@ -104,7 +104,7 @@ const CompactPatientBanner = forwardRef<HTMLDivElement, CompactPatientBannerProp
           <div className={styles.patientAvatar} role="img">
             <PatientPhoto patientUuid={patient.id} patientName={patientName} />
           </div>
-          <PatientBannerPatientInfo patient={patient} renderedFrom="patient-search" />
+          <SihsalusPatientInfo patient={patient} renderedFrom="patient-search" />
         </ClickablePatientContainer>
       );
     },

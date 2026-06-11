@@ -1,9 +1,6 @@
 export {
   type ConceptMetadata,
-  invalidateCachedVitalsAndBiometrics,
-  saveVitalsAndBiometrics,
-  updateVitalsAndBiometrics,
-  useBalance, //nuevo
+  useBalance,
   useVitalsAndBiometrics,
   useVitalsConceptMetadata,
   withUnit,

@@ -1,5 +1,4 @@
-import { openmrsFetch, restBaseUrl } from '@openmrs/esm-framework';
-import { getPreferredIdentifier } from '@sihsalus/esm-sihsalus-shared';
+import { getPreferredIdentifier, openmrsFetch, restBaseUrl } from '@openmrs/esm-framework';
 import useSWR from 'swr';
 
 import { ModuleFuaRestURL } from '../constant';

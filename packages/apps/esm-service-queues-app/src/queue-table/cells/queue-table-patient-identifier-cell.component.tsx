@@ -1,4 +1,4 @@
-import { getPreferredIdentifier } from '@sihsalus/esm-sihsalus-shared';
+import { getPreferredIdentifier } from '@openmrs/esm-framework';
 
 import { type PatientIdentifierColumnConfig } from '../../config-schema';
 import { type QueueEntry, type QueueTableCellComponentProps, type QueueTableColumnFunction } from '../../types';

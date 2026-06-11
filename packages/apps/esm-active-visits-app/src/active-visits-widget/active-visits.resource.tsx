@@ -21,7 +21,7 @@ import { type ActiveVisit, type VisitResponse } from '../types';
 
 dayjs.extend(isToday);
 
-import { getPreferredIdentifier } from '@sihsalus/esm-sihsalus-shared';
+import { getPreferredIdentifier } from '@openmrs/esm-framework';
 
 type VisitIdentifier = NonNullable<Visit['patient']>['identifiers'][number];
 

@@ -8342,6 +8342,8 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "@sihsalus/esm-home-app@workspace:packages/apps/esm-home-app"
   dependencies:
+    i18next: "npm:^25.0.0"
+    i18next-parser: "npm:^9.3.0"
     openmrs: "npm:*"
     typescript: "npm:6.0.3"
     vitest: "npm:^4.1.7"

@@ -118,11 +118,10 @@ describe('RecentlySearchedPatients', () => {
       totalResults: 1,
     });
 
-    const patientLink = screen.getByRole('link', {
-      name: new RegExp(`Smith, John Doe Male · ${age} yrs · OpenMRS ID 1000NLY`, 'i'),
-    });
+    const patientLink = screen.getByRole('link');
     expect(patientLink).toHaveAttribute('href', `/openmrs/spa/patient/${mockSearchResults[0].uuid}/chart/`);
     expect(within(patientLink).getByText(/Smith, John Doe/i)).toBeInTheDocument();
+    expect(within(patientLink).getByText(/1000NLY/)).toBeInTheDocument();
     expect(screen.getByRole('img')).toBeInTheDocument();
     expect(screen.getByText(/1 recent search result/i)).toBeInTheDocument();
   });

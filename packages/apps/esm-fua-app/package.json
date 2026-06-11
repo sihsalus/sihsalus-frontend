@@ -39,7 +39,6 @@
   },
   "dependencies": {
     "@sihsalus/esm-rbac": "workspace:*",
-    "@sihsalus/esm-sihsalus-shared": "workspace:*",
     "exceljs": "^4.4.0",
     "lodash-es": "^4.17.21"
   },

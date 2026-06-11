@@ -39,7 +39,6 @@
   },
   "dependencies": {
     "@hookform/resolvers": "^3.3.1",
-    "@sihsalus/esm-sihsalus-shared": "workspace:*",
     "lodash-es": "^4.17.21",
     "zod": "^3.24.1"
   },

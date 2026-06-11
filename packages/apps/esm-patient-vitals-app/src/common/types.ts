@@ -45,11 +45,15 @@ export interface PatientVitalsAndBiometrics {
   respiratoryRateRenderInterpretation?: ObservationInterpretation;
   muacRenderInterpretation?: ObservationInterpretation;
   abdominalCircumferenceRenderInterpretation?: ObservationInterpretation;
+  headCircumferenceRenderInterpretation?: ObservationInterpretation;
+  chestCircumferenceRenderInterpretation?: ObservationInterpretation;
   pulse?: number;
   temperature?: number;
   spo2?: number;
   height?: number;
   weight?: number;
+  headCircumference?: number;
+  chestCircumference?: number;
   bmi?: number | null;
   respiratoryRate?: number;
   muac?: number;

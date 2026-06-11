@@ -41,6 +41,7 @@ export * from './launchStartVisitPrompt';
 export * from './nav-group/createDashboardGroup';
 export * from './nav-group/DashboardGroupExtension';
 export * from './nav-group/nav-group';
+export * from './observations';
 export * from './offline/visit';
 export * from './orders';
 export * from './pagination';

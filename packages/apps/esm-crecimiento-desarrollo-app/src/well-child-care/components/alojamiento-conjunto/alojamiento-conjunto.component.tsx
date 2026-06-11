@@ -1,11 +1,11 @@
 import { useConfig, userHasAccess, useSession } from '@openmrs/esm-framework';
-import { PatientSummaryTable } from '@sihsalus/esm-sihsalus-shared';
 import React from 'react';
 import { useTranslation } from 'react-i18next';
 import type { ConfigObject } from '../../../config-schema';
 import { credNeonatalEditPrivilege } from '../../../constants';
 import { useCREDFormLauncher } from '../../../hooks/useCREDFormLauncher';
 import { useLatestValidEncounter } from '../../../hooks/useLatestEncounter';
+import PatientSummaryTable from '../../../ui/patient-summary-table/patient-summary-table.component';
 
 interface AlojamientoConjuntoProps {
   patientUuid: string;

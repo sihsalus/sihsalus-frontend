@@ -168,14 +168,6 @@ export const monthlyAppointmentFilterCalendar = getAsyncLifecycle(
   () => import('./ui/appointment-filter-calendar/appointment-filter-calendar'),
   options,
 );
-export const newbornAnthropometricsworkspace = getAsyncLifecycle(
-  () => import('./well-child-care/workspace/newborn-triage/newborn-anthropometrics.workspace'),
-  options,
-);
-export const newbornFluidBalanceworkspace = getAsyncLifecycle(
-  () => import('./well-child-care/workspace/newborn-triage/newborn-fluid-balance.workspace'),
-  options,
-);
 export const perinatalRegisterworkspace = getAsyncLifecycle(
   () => import('./well-child-care/workspace/perinatal-register/perinatal-register-form.workspace'),
   options,

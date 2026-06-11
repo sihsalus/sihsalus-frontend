@@ -6,9 +6,9 @@ import {
   userHasAccess,
   useSession,
 } from '@openmrs/esm-framework';
+import type { CompletedFormInfo, Form } from '@openmrs/esm-patient-common-lib';
+import { FormsSelectorWorkspace } from '@openmrs/esm-patient-common-lib';
 import { RequirePrivilege } from '@sihsalus/esm-rbac';
-import { FormsSelectorWorkspace } from '@sihsalus/esm-sihsalus-shared';
-import type { CompletedFormInfo, Form } from '@sihsalus/esm-sihsalus-shared/src/ui/forms-selector/types';
 import React, { useCallback, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import type { ConfigObject } from '../../config-schema';

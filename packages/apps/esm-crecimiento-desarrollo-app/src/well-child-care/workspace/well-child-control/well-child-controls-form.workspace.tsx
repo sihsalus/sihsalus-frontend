@@ -11,7 +11,6 @@ import {
   useVisit,
 } from '@openmrs/esm-framework';
 import { RequirePrivilege } from '@sihsalus/esm-rbac';
-import { EncounterDateTimeSection } from '@sihsalus/esm-sihsalus-shared';
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { useTranslation } from 'react-i18next';
@@ -22,6 +21,7 @@ import { useAgeGroups } from '../../../hooks/useAgeGroups';
 import { useCREDFormsForAgeGroup } from '../../../hooks/useCREDFormsForAgeGroup';
 import useCREDEncounters from '../../../hooks/useEncountersCRED';
 import { type DefaultPatientWorkspaceProps } from '../../../types';
+import EncounterDateTimeSection from '../../../ui/encounter-date-time/encounter-date-time.component';
 
 import styles from './well-child-controls-form.scss';
 

@@ -389,18 +389,6 @@
       "type": "form"
     },
     {
-      "name": "newborn-anthropometric-form",
-      "component": "newbornAnthropometricsworkspace",
-      "title": "Antropometría del Recién Nacido",
-      "type": "form"
-    },
-    {
-      "name": "newborn-fluidBalance-form",
-      "component": "newbornFluidBalanceworkspace",
-      "title": "Balance Hídrico del Recién Nacido",
-      "type": "form"
-    },
-    {
       "name": "perinatal-register-form",
       "component": "perinatalRegisterworkspace",
       "title": "Registro Perinatal",
@@ -443,16 +431,6 @@
     {
       "name": "forms-selector-workspace",
       "component": "formsSelectorWorkspace",
-      "window": "patient-chart-well-child-care-forms"
-    },
-    {
-      "name": "newborn-anthropometric-form",
-      "component": "newbornAnthropometricsworkspace",
-      "window": "patient-chart-well-child-care-forms"
-    },
-    {
-      "name": "newborn-fluidBalance-form",
-      "component": "newbornFluidBalanceworkspace",
       "window": "patient-chart-well-child-care-forms"
     },
     {

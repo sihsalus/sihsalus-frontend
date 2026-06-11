@@ -8,41 +8,23 @@ import {
 } from '@openmrs/esm-utils';
 import classNames from 'classnames';
 import React, { Fragment, useId, useState } from 'react';
-import type { Control } from 'react-hook-form';
+import type { Control, Path } from 'react-hook-form';
 import { Controller } from 'react-hook-form';
 import { useTranslation } from 'react-i18next';
+import styles from './generic-input.scss';
 
-import { generatePlaceholder } from '../../common';
-import type { NewbornVitalsFormType } from '../../common/data.resource';
-
-import styles from './vitals-biometrics-input.scss';
-
-type FieldId =
-  | 'temperature' // was 'temperature'
-  | 'oxygenSaturation' // was 'saturacionOxigeno'
-  | 'systolicBloodPressure' // was 'presionSistolica'
-  | 'respiratoryRate' // was 'frecuenciaRespiratoria'
-  | 'weight' // was 'peso'
-  | 'height' // was 'talla'
-  | 'headCircumference' // was 'perimetroCefalico'
-  | 'chestCircumference' // was 'perimetroToracico'
-  | 'stoolCount' // was 'numeroDeposiciones'
-  | 'stoolGrams' // was 'deposicionesGramos'
-  | 'urineCount' // was 'numeroMicciones'
-  | 'urineGrams' // was 'miccionesGramos'
-  | 'vomitCount' // was 'numeroVomito'
-  | 'vomitGramsML'; // was 'vomitoGramosML'
-
-type AbnormalValue = 'critically_low' | 'critically_high' | 'high' | 'low';
 type FieldTypes = 'number' | 'textarea';
+type AbnormalValue = 'critically_low' | 'critically_high' | 'high' | 'low';
 
-interface NewbornVitalsInputProps {
-  control: Control<NewbornVitalsFormType>;
+interface FormData {
+  [key: string]: number | string | undefined;
+}
+
+interface GenericInputProps<T extends FormData> {
+  control: Control<T>;
   fieldProperties: Array<{
-    id: FieldId;
+    id: string;
     className?: string;
-    invalidText?: string;
-    invalid?: boolean;
     max?: number | null;
     min?: number | null;
     name: string;
@@ -57,11 +39,10 @@ interface NewbornVitalsInputProps {
   placeholder?: string;
   readOnly?: boolean;
   showErrorMessage?: boolean;
-  showInlineValidation?: boolean;
   unitSymbol?: string;
 }
 
-const NewbornVitalsInput: React.FC<NewbornVitalsInputProps> = ({
+const GenericInput = <T extends FormData>({
   control,
   fieldProperties,
   fieldStyles,
@@ -70,78 +51,43 @@ const NewbornVitalsInput: React.FC<NewbornVitalsInputProps> = ({
   isValueWithinReferenceRange = true,
   label,
   placeholder,
-  readOnly,
-  showErrorMessage,
-  showInlineValidation = false,
+  readOnly = false,
+  showErrorMessage = false,
   unitSymbol,
-}) => {
+}: GenericInputProps<T>): JSX.Element => {
   const { t } = useTranslation();
   const fieldId = useId();
   const isTablet = useLayoutType() === 'tablet';
-  const [invalidText, setInvalidText] = useState('');
   const [invalid, setInvalid] = useState(false);
   const [isFocused, setIsFocused] = useState(false);
 
   const abnormalValues: AbnormalValue[] = ['critically_low', 'critically_high', 'high', 'low'];
   const hasAbnormalValue = !isFocused && interpretation && abnormalValues.includes(interpretation as AbnormalValue);
 
-  function getRangeValidationMessage(fieldProperty: NewbornVitalsInputProps['fieldProperties'][number]) {
-    if (fieldProperty.invalidText) {
-      return fieldProperty.invalidText;
-    }
-
-    if (fieldProperty.min != null && fieldProperty.max != null) {
-      return t('validationInputError', `El valor debe estar entre {{min}} y {{max}}`, {
-        min: fieldProperty.min,
-        max: fieldProperty.max,
-      });
-    }
-
-    if (fieldProperty.min != null) {
-      return t('minValidationInputError', `El valor debe ser mayor o igual a {{min}}`, {
-        min: fieldProperty.min,
-      });
-    }
-
-    if (fieldProperty.max != null) {
-      return t('maxValidationInputError', `El valor debe ser menor o igual a {{max}}`, {
-        max: fieldProperty.max,
-      });
-    }
-
-    return t('numberValidationInputError', 'El valor debe ser numérico');
-  }
-
   function checkValidity(
     value: string,
     onChange: (value: number | undefined) => void,
-    fieldProperty: NewbornVitalsInputProps['fieldProperties'][number],
-  ) {
-    const parsedValue = value === '' ? undefined : parsePlainDecimalInput(value);
-
-    if (value !== '' && parsedValue === undefined) {
-      setInvalid(true);
-      setInvalidText(t('numberValidationInputError', 'El valor debe ser numérico'));
-      return;
+    field: (typeof fieldProperties)[0],
+  ): void {
+    if (field.type === 'number' || !field.type) {
+      const parsedValue = value === '' ? undefined : parsePlainDecimalInput(value);
+      const isInvalidNumber = value !== '' && parsedValue === undefined;
+      const isOutOfRange =
+        parsedValue !== undefined &&
+        ((field.min != null && parsedValue < field.min) || (field.max != null && parsedValue > field.max));
+      setInvalid(isInvalidNumber || isOutOfRange);
+      onChange(parsedValue);
+    } else {
+      onChange(value as unknown as number | undefined); // Cast value to match the expected type
     }
-
-    const isOutOfRange =
-      parsedValue != null &&
-      ((fieldProperty.min != null && parsedValue < fieldProperty.min) ||
-        (fieldProperty.max != null && parsedValue > fieldProperty.max));
-
-    setInvalid(isOutOfRange);
-    setInvalidText(isOutOfRange ? getRangeValidationMessage(fieldProperty) : '');
-    onChange(parsedValue);
   }
 
-  function handleFocusChange(isFocused: boolean) {
+  function handleFocusChange(isFocused: boolean): void {
     setIsFocused(isFocused);
   }
 
   const isInvalidInput = !isValueWithinReferenceRange || invalid;
-  const showInvalidInputError = Boolean((showErrorMessage || (showInlineValidation && invalid)) && isInvalidInput);
-  const errorMessageClass = showInvalidInputError ? styles.invalidInput : '';
+  const showInvalidInputError = Boolean(showErrorMessage && isInvalidInput);
 
   const containerClasses = classNames(styles.container, {
     [styles.inputInTabletView]: isTablet,
@@ -152,7 +98,7 @@ const NewbornVitalsInput: React.FC<NewbornVitalsInputProps> = ({
     [styles['critical-value']]: hasAbnormalValue,
     [styles.focused]: isFocused,
     [styles.readonly]: readOnly,
-    [errorMessageClass]: true,
+    [styles.invalidInput]: showInvalidInputError,
   });
 
   return (
@@ -160,11 +106,9 @@ const NewbornVitalsInput: React.FC<NewbornVitalsInputProps> = ({
       <div className={containerClasses} style={{ width: fieldWidth }}>
         <section className={styles.labelContainer}>
           <span className={styles.label}>{label}</span>
-
           {hasAbnormalValue && (
             <span className={styles[interpretation.replace('_', '-')]} title={t('abnormalValue', 'Valor anormal')} />
           )}
-
           {showInvalidInputError && (
             <span className={styles.invalidInputIcon}>
               <Warning />
@@ -172,7 +116,7 @@ const NewbornVitalsInput: React.FC<NewbornVitalsInputProps> = ({
           )}
         </section>
 
-        <section className={inputClasses} style={{ ...fieldStyles }}>
+        <section className={inputClasses} style={fieldStyles}>
           <div
             className={classNames({
               [styles.centered]: !isTablet || unitSymbol === 'mmHg',
@@ -182,10 +126,10 @@ const NewbornVitalsInput: React.FC<NewbornVitalsInputProps> = ({
               <Fragment key={fieldProperty.id}>
                 <ResponsiveWrapper>
                   <Controller
-                    name={fieldProperty.id}
+                    name={fieldProperty.id as Path<T>}
                     control={control}
                     render={({ field: { onChange, ref, value } }) => {
-                      if (fieldProperty.type === 'number') {
+                      if (fieldProperty.type === 'number' || !fieldProperty.type) {
                         return (
                           <NumberInput
                             allowEmpty
@@ -198,18 +142,16 @@ const NewbornVitalsInput: React.FC<NewbornVitalsInputProps> = ({
                             min={fieldProperty.min ?? undefined}
                             name={fieldProperty.name}
                             onBlur={() => handleFocusChange(false)}
-                            onChange={(_event, { value }) =>
-                              checkValidity(String(value ?? ''), onChange, fieldProperty)
-                            }
+                            onChange={(event) => checkValidity(event.currentTarget.value, onChange, fieldProperty)}
                             onFocus={() => handleFocusChange(true)}
                             onKeyDown={preventScientificNotationKey}
                             onPaste={preventScientificNotationPaste}
-                            placeholder={generatePlaceholder(fieldProperty.name)}
+                            placeholder={placeholder} // Usar el prop directamente
                             readOnly={readOnly}
                             ref={ref}
-                            style={{ ...fieldStyles }}
+                            style={fieldStyles}
                             title={fieldProperty.name}
-                            value={value ?? ''}
+                            value={value !== undefined ? (value as number) : ''}
                           />
                         );
                       }
@@ -223,14 +165,15 @@ const NewbornVitalsInput: React.FC<NewbornVitalsInputProps> = ({
                             maxCount={100}
                             name={fieldProperty.name}
                             onBlur={() => handleFocusChange(false)}
-                            onChange={onChange}
+                            onChange={(event) => checkValidity(event.currentTarget.value, onChange, fieldProperty)}
                             onFocus={() => handleFocusChange(true)}
-                            placeholder={placeholder}
+                            placeholder={placeholder} // Usar el prop directamente
+                            readOnly={readOnly}
                             ref={ref}
                             rows={2}
-                            style={{ ...fieldStyles }}
+                            style={fieldStyles}
                             title={fieldProperty.name}
-                            value={value}
+                            value={value !== undefined ? (value as string) : ''}
                           />
                         );
                       }
@@ -242,24 +185,21 @@ const NewbornVitalsInput: React.FC<NewbornVitalsInputProps> = ({
                 {fieldProperty.separator}
               </Fragment>
             ))}
+            {unitSymbol && <p className={styles.unitName}>{unitSymbol}</p>}
           </div>
-
-          {unitSymbol && <p className={styles.unitName}>{unitSymbol}</p>}
         </section>
       </div>
 
       {showInvalidInputError && (
         <FormLabel className={styles.invalidInputError}>
-          {invalidText ||
-            fieldProperties[0].invalidText ||
-            t('validationInputError', `El valor debe estar entre {{min}} y {{max}}`, {
-              min: fieldProperties[0].min,
-              max: fieldProperties[0].max,
-            })}
+          {t('validationInputError', `El valor debe estar entre {{min}} y {{max}}`, {
+            min: fieldProperties[0].min,
+            max: fieldProperties[0].max,
+          })}
         </FormLabel>
       )}
     </>
   );
 };
 
-export default NewbornVitalsInput;
+export default GenericInput;

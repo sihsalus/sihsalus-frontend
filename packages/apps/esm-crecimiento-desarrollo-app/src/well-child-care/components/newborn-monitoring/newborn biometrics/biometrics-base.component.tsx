@@ -1,8 +1,8 @@
 import { formatDatetime, parseDate, useConfig, userHasAccess, useSession } from '@openmrs/esm-framework';
-import { ClinicalDataOverview } from '@sihsalus/esm-sihsalus-shared'; // Ajusta la ruta según tu estructura
 import React, { useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { credNeonatalEditPrivilege } from '../../../../constants';
+import ClinicalDataOverview from '../../../../ui/clinical-data/clinical-data-overview.component';
 import { useVitalsAndBiometrics, useVitalsConceptMetadata, withUnit } from '../../../common';
 
 interface BiometricsBaseProps {

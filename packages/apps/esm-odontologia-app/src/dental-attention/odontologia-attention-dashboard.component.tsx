@@ -10,8 +10,8 @@ import {
   TableRow,
 } from '@carbon/react';
 import { ErrorState, formatDate, openmrsFetch, showModal, showSnackbar, useConfig } from '@openmrs/esm-framework';
+import type { Encounter } from '@openmrs/esm-patient-common-lib';
 import { CardHeader, launchPatientWorkspace } from '@openmrs/esm-patient-common-lib';
-import type { Encounter } from '@sihsalus/esm-sihsalus-shared';
 import React, { useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import useSWR from 'swr';

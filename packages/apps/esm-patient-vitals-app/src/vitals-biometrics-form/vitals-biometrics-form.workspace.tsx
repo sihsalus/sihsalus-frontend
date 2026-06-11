@@ -44,9 +44,12 @@ import type { ConfigObject } from '../config-schema';
 
 import styles from './vitals-biometrics-form.scss';
 import {
+  type ConditionalFieldOverrides,
   calculateBodyMassIndex,
   extractNumbers,
+  getAgeInDays,
   getMuacColorCode,
+  isConditionalFieldVisible,
   isValueWithinReferenceRange,
 } from './vitals-biometrics-form.utils';
 import VitalsAndBiometricsInput from './vitals-biometrics-input.component';
@@ -64,6 +67,8 @@ const VitalsAndBiometricFormSchema = z
     height: z.number(),
     midUpperArmCircumference: z.number(),
     abdominalCircumference: z.number(),
+    headCircumference: z.number(),
+    chestCircumference: z.number(),
     computedBodyMassIndex: z.number(),
   })
   .partial()
@@ -79,8 +84,10 @@ const VitalsAndBiometricFormSchema = z
 
 export type VitalsBiometricsFormData = z.infer<typeof VitalsAndBiometricFormSchema>;
 
-type VitalsBiometricsWorkspace2Props = PatientWorkspace2DefinitionProps<object, object>;
-type VitalsBiometricsWorkspaceProps = DefaultPatientWorkspaceProps | VitalsBiometricsWorkspace2Props;
+type VitalsBiometricsWorkspace2Props = PatientWorkspace2DefinitionProps<ConditionalFieldOverrides, object>;
+type VitalsBiometricsWorkspaceProps =
+  | (DefaultPatientWorkspaceProps & ConditionalFieldOverrides)
+  | VitalsBiometricsWorkspace2Props;
 
 function isWorkspace2Props(props: VitalsBiometricsWorkspaceProps): props is VitalsBiometricsWorkspace2Props {
   return 'groupProps' in props && 'workspaceProps' in props;
@@ -104,9 +111,13 @@ const VitalsAndBiometricsForm: React.FC<VitalsBiometricsWorkspaceProps> = (props
       config.concepts.heightUuid,
       config.concepts.midUpperArmCircumferenceUuid,
       config.concepts.abdominalCircumferenceUuid,
+      config.concepts.headCircumferenceUuid,
+      config.concepts.chestCircumferenceUuid,
     ],
     [
       config.concepts.abdominalCircumferenceUuid,
+      config.concepts.chestCircumferenceUuid,
+      config.concepts.headCircumferenceUuid,
       config.concepts.heightUuid,
       config.concepts.midUpperArmCircumferenceUuid,
       config.concepts.weightUuid,
@@ -188,6 +199,23 @@ const VitalsAndBiometricsForm: React.FC<VitalsBiometricsWorkspaceProps> = (props
   const weight = watch('weight');
   const height = watch('height');
   const abdominalCircumference = watch('abdominalCircumference');
+  const headCircumference = watch('headCircumference');
+  const chestCircumference = watch('chestCircumference');
+
+  const fieldOverrides: ConditionalFieldOverrides = isWorkspace2Props(props) ? (props.workspaceProps ?? {}) : props;
+  const ageInDays = getAgeInDays(patient?.patient?.birthDate);
+  const showHeadCircumference = isConditionalFieldVisible(
+    'headCircumference',
+    config.biometrics.headCircumference,
+    ageInDays,
+    fieldOverrides,
+  );
+  const showChestCircumference = isConditionalFieldVisible(
+    'chestCircumference',
+    config.biometrics.chestCircumference,
+    ageInDays,
+    fieldOverrides,
+  );
 
   useEffect(() => {
     const patientBirthDate = patient?.patient?.birthDate;
@@ -216,6 +244,12 @@ const VitalsAndBiometricsForm: React.FC<VitalsBiometricsWorkspaceProps> = (props
       abdominalCircumferenceRange:
         patientReferenceRanges.get(config.concepts.abdominalCircumferenceUuid) ??
         getReferenceRangesForConcept(config.concepts.abdominalCircumferenceUuid, conceptMetadata),
+      headCircumferenceRange:
+        patientReferenceRanges.get(config.concepts.headCircumferenceUuid) ??
+        getReferenceRangesForConcept(config.concepts.headCircumferenceUuid, conceptMetadata),
+      chestCircumferenceRange:
+        patientReferenceRanges.get(config.concepts.chestCircumferenceUuid) ??
+        getReferenceRangesForConcept(config.concepts.chestCircumferenceUuid, conceptMetadata),
       diastolicBloodPressureRange: conceptRanges.get(config.concepts.diastolicBloodPressureUuid),
       systolicBloodPressureRange: conceptRanges.get(config.concepts.systolicBloodPressureUuid),
       oxygenSaturationRange: conceptRanges.get(config.concepts.oxygenSaturationUuid),
@@ -230,6 +264,8 @@ const VitalsAndBiometricsForm: React.FC<VitalsBiometricsWorkspaceProps> = (props
       conceptMetadata,
       patientReferenceRanges,
       config.concepts.abdominalCircumferenceUuid,
+      config.concepts.chestCircumferenceUuid,
+      config.concepts.headCircumferenceUuid,
       config.concepts.diastolicBloodPressureUuid,
       config.concepts.heightUuid,
       config.concepts.midUpperArmCircumferenceUuid,
@@ -651,6 +687,80 @@ const VitalsAndBiometricsForm: React.FC<VitalsBiometricsWorkspaceProps> = (props
                 unitSymbol={conceptUnits.get(config.concepts.heightUuid) ?? ''}
               />
             </Column>
+            {showHeadCircumference && (
+              <Column>
+                <VitalsAndBiometricsInput
+                  control={control}
+                  fieldProperties={[
+                    {
+                      name: t('headCircumference', 'Head circumference'),
+                      type: 'number',
+                      min: concepts.headCircumferenceRange?.lowAbsolute,
+                      max: concepts.headCircumferenceRange?.hiAbsolute,
+                      id: 'headCircumference',
+                    },
+                  ]}
+                  interpretation={
+                    headCircumference != null &&
+                    assessValue(headCircumference, getPatientReferenceRange(config.concepts.headCircumferenceUuid))
+                  }
+                  isValueWithinReferenceRange={
+                    headCircumference
+                      ? isValueWithinReferenceRange(
+                          conceptMetadata,
+                          config.concepts['headCircumferenceUuid'],
+                          headCircumference,
+                          getPatientReferenceRange(config.concepts.headCircumferenceUuid),
+                        )
+                      : true
+                  }
+                  showErrorMessage={showErrorMessage}
+                  label={t('headCircumference', 'Head circumference')}
+                  unitSymbol={
+                    conceptUnits.get(config.concepts.headCircumferenceUuid) ??
+                    concepts.headCircumferenceRange?.units ??
+                    config.biometrics.headCircumference.unit
+                  }
+                />
+              </Column>
+            )}
+            {showChestCircumference && (
+              <Column>
+                <VitalsAndBiometricsInput
+                  control={control}
+                  fieldProperties={[
+                    {
+                      name: t('chestCircumference', 'Chest circumference'),
+                      type: 'number',
+                      min: concepts.chestCircumferenceRange?.lowAbsolute,
+                      max: concepts.chestCircumferenceRange?.hiAbsolute,
+                      id: 'chestCircumference',
+                    },
+                  ]}
+                  interpretation={
+                    chestCircumference != null &&
+                    assessValue(chestCircumference, getPatientReferenceRange(config.concepts.chestCircumferenceUuid))
+                  }
+                  isValueWithinReferenceRange={
+                    chestCircumference
+                      ? isValueWithinReferenceRange(
+                          conceptMetadata,
+                          config.concepts['chestCircumferenceUuid'],
+                          chestCircumference,
+                          getPatientReferenceRange(config.concepts.chestCircumferenceUuid),
+                        )
+                      : true
+                  }
+                  showErrorMessage={showErrorMessage}
+                  label={t('chestCircumference', 'Chest circumference')}
+                  unitSymbol={
+                    conceptUnits.get(config.concepts.chestCircumferenceUuid) ??
+                    concepts.chestCircumferenceRange?.units ??
+                    config.biometrics.chestCircumference.unit
+                  }
+                />
+              </Column>
+            )}
             <Column>
               <VitalsAndBiometricsInput
                 control={control}

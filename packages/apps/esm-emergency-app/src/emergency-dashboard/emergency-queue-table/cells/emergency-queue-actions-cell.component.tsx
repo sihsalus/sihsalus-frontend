@@ -14,6 +14,7 @@ import { Button, OverflowMenu, OverflowMenuItem } from '@carbon/react';
 import {
   isDesktop,
   launchWorkspace,
+  launchWorkspace2,
   navigate,
   restBaseUrl,
   showModal,
@@ -55,9 +56,7 @@ export const EmergencyQueueActionsCell: React.FC<EmergencyQueueTableCellProps> =
   }, [queueEntry]);
 
   const handleOpenTriage = useCallback(() => {
-    launchWorkspace(WORKSPACES.TRIAGE_FORM, {
-      queueEntry,
-    });
+    launchWorkspace2(WORKSPACES.TRIAGE_VITALS_FORM, null, null, { patientUuid: queueEntry.patient.uuid });
   }, [queueEntry]);
 
   const handleOpenAttention = useCallback(() => {

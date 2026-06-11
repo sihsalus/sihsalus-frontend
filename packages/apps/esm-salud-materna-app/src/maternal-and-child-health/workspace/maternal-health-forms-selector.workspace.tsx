@@ -1,6 +1,6 @@
 import { launchWorkspace2, useConfig } from '@openmrs/esm-framework';
-import { FormsSelectorWorkspace } from '@sihsalus/esm-sihsalus-shared';
-import type { CompletedFormInfo, Form } from '@sihsalus/esm-sihsalus-shared/src/ui/forms-selector/types';
+import type { CompletedFormInfo, Form } from '@openmrs/esm-patient-common-lib';
+import { FormsSelectorWorkspace } from '@openmrs/esm-patient-common-lib';
 import React, { useCallback, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import type { ConfigObject } from '../../config-schema';

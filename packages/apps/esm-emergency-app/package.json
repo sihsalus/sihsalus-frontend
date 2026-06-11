@@ -42,7 +42,6 @@
     "@hookform/resolvers": "^3.3.0",
     "@openmrs/esm-utils": "workspace:*",
     "@sihsalus/esm-rbac": "workspace:*",
-    "@sihsalus/esm-sihsalus-shared": "workspace:*",
     "lodash-es": "^4.17.21",
     "react-hook-form": "^7.51.0",
     "swr": "^2.3.6",

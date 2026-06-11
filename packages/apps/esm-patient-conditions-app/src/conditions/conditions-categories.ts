@@ -1,4 +1,4 @@
-import type { AntecedentTypeCode } from '@sihsalus/esm-sihsalus-shared';
+import type { AntecedentTypeCode } from '@openmrs/esm-patient-common-lib';
 import type { Condition } from './conditions.resource';
 
 export type ConditionSection = 'antecedents' | 'other-antecedents' | 'active-problems' | 'past-diagnoses';

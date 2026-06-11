@@ -11,13 +11,14 @@ import {
 } from '@carbon/react';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { launchWorkspace, useConfig, useLayoutType } from '@openmrs/esm-framework';
-import { type DefaultPatientWorkspaceProps, launchPatientWorkspace } from '@openmrs/esm-patient-common-lib';
 import {
   type AntecedentTypeCode,
   antecedentTypeOptions,
+  type DefaultPatientWorkspaceProps,
   getAntecedentTypeLabel,
+  launchPatientWorkspace,
   normalizeAntecedentTypeCode,
-} from '@sihsalus/esm-sihsalus-shared';
+} from '@openmrs/esm-patient-common-lib';
 import classNames from 'classnames';
 import type { TFunction } from 'i18next';
 import React, { useEffect, useState } from 'react';

@@ -3,7 +3,6 @@ import { Button, ButtonSet, ButtonSkeleton, Column, Form, InlineNotification, St
 import { zodResolver } from '@hookform/resolvers/zod';
 import { createErrorHandler, showSnackbar, useConfig, useLayoutType, useSession } from '@openmrs/esm-framework';
 import { RequirePrivilege } from '@sihsalus/esm-rbac';
-import { GenericInput } from '@sihsalus/esm-sihsalus-shared';
 import React, { useCallback, useEffect, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { useTranslation } from 'react-i18next';
@@ -17,6 +16,7 @@ import {
   usePrenatalConceptMetadata,
 } from '../../../hooks/usePrenatalAntecedents';
 import type { DefaultPatientWorkspaceProps } from '../../../types';
+import GenericInput from '../../../ui/generic-input/generic-input.component';
 
 import styles from './perinatal-register-form.scss';
 

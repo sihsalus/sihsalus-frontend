@@ -9,7 +9,7 @@ import {
   getAntecedentTypeFromCondition,
   getConditionCategoryDisplay,
   getConditionNoteText,
-} from '@sihsalus/esm-sihsalus-shared';
+} from '@openmrs/esm-patient-common-lib';
 import { useMemo, useState } from 'react';
 import useSWR from 'swr';
 

@@ -5070,6 +5070,18 @@ export const mockVitalsConfig = {
     heightUnit: 'm',
     weightUnit: 'kg',
     bmiMinimumAge: 0,
+    headCircumference: {
+      enabled: true,
+      minAgeDays: 0,
+      maxAgeDays: 4380,
+      unit: 'cm',
+    },
+    chestCircumference: {
+      enabled: true,
+      minAgeDays: 0,
+      maxAgeDays: 365,
+      unit: 'cm',
+    },
   },
   concepts: {
     diastolicBloodPressureUuid: '5086AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA',
@@ -5077,6 +5089,8 @@ export const mockVitalsConfig = {
     heightUuid: '5090AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA',
     midUpperArmCircumferenceUuid: '1343AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA',
     abdominalCircumferenceUuid: '18fcbd1f-5b4f-44ed-a664-8637a83cc7eb',
+    headCircumferenceUuid: 'c4d39248-c896-433a-bc69-e24d04b7f0e5',
+    chestCircumferenceUuid: '911eb398-e7de-4270-af63-e4c615ec22a9',
     oxygenSaturationUuid: '5092AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA',
     pulseUuid: '5087AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA',
     respiratoryRateUuid: '5242AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA',

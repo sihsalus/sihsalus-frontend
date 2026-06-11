@@ -1,8 +1,8 @@
 import { ChartLineData, Task, UserFollow } from '@carbon/react/icons';
 import { usePatient } from '@openmrs/esm-framework';
-import type { TabConfig } from '@sihsalus/esm-sihsalus-shared';
+import type { TabConfig } from '@openmrs/esm-patient-common-lib';
 
-import { TabbedDashboard } from '@sihsalus/esm-sihsalus-shared';
+import { TabbedDashboard } from '@openmrs/esm-patient-common-lib';
 import React, { useMemo } from 'react';
 import MaternalNtsCompliance from './components/maternal-nts-compliance.component';
 

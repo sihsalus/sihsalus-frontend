@@ -33,9 +33,6 @@
   "publishConfig": {
     "access": "public"
   },
-  "dependencies": {
-    "@sihsalus/esm-sihsalus-shared": "workspace:*"
-  },
   "peerDependencies": {
     "@carbon/react": "1.x",
     "@carbon/styles": "1.x",

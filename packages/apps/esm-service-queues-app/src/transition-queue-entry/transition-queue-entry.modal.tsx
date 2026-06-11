@@ -23,7 +23,7 @@ enum priorityComment {
   REQUEUED = 'Requeued',
 }
 
-import { preferredIdentifierNames } from '@sihsalus/esm-sihsalus-shared';
+import { preferredIdentifierNames } from '@openmrs/esm-framework';
 
 function getPreferredIdentifiers(
   identifiers: MappedVisitQueueEntry['identifiers'] = [],

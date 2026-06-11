@@ -14,8 +14,13 @@ import {
   Tile,
 } from '@carbon/react';
 import { AddIcon, formatDate, parseDate, useLayoutType } from '@openmrs/esm-framework';
-import { CardHeader, EmptyState, ErrorState, launchPatientWorkspace } from '@openmrs/esm-patient-common-lib';
-import { getAntecedentTypeLabel } from '@sihsalus/esm-sihsalus-shared';
+import {
+  CardHeader,
+  EmptyState,
+  ErrorState,
+  getAntecedentTypeLabel,
+  launchPatientWorkspace,
+} from '@openmrs/esm-patient-common-lib';
 import classNames from 'classnames';
 import type { TFunction } from 'i18next';
 import { type ComponentProps, useCallback, useMemo, useState } from 'react';

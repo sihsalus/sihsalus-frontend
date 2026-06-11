@@ -29,8 +29,7 @@ import {
 } from '@carbon/react';
 import { CheckmarkFilled, SendFilled, User, UserFollow } from '@carbon/react/icons';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { OpenmrsDatePicker, showSnackbar, useConfig } from '@openmrs/esm-framework';
-import { getPreferredIdentifier } from '@sihsalus/esm-sihsalus-shared';
+import { getPreferredIdentifier, OpenmrsDatePicker, showSnackbar, useConfig } from '@openmrs/esm-framework';
 import dayjs from 'dayjs';
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Controller, useForm } from 'react-hook-form';

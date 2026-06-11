@@ -40,7 +40,6 @@
     "@carbon/react": "^1.71.0",
     "@hookform/resolvers": "^3.9.1",
     "@sihsalus/esm-rbac": "workspace:*",
-    "@sihsalus/esm-sihsalus-shared": "workspace:*",
     "classnames": "^2.3.2",
     "lodash-es": "^4.17.15",
     "react-hook-form": "^7.54.0",

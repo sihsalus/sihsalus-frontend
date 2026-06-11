@@ -45,7 +45,6 @@
     "url": "https://github.com/sihsalus/sihsalus-esm-modules/issues"
   },
   "dependencies": {
-    "@sihsalus/esm-sihsalus-shared": "workspace:*",
     "lodash-es": "^4.17.21"
   },
   "peerDependencies": {

@@ -30,6 +30,12 @@
   padding: layout.$spacing-05 0;
 }
 
+.combinedPanel {
+  display: flex;
+  flex-direction: column;
+  gap: layout.$spacing-05;
+}
+
 .emptyState {
   display: flex;
   flex-direction: column;

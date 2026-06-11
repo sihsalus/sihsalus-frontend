@@ -54,7 +54,7 @@
     "access": "public"
   },
   "dependencies": {
-    "zustand": "^4.5.5"
+    "zustand": "^5.0.14"
   },
   "peerDependencies": {
     "@openmrs/esm-globals": "9.x",

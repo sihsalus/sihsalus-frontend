@@ -45,6 +45,16 @@ export const configSchema = {
     _description: 'Person attribute type UUID that stores ethnicity displayed in the expanded patient banner details',
     _default: '8d871386-c2cc-11de-8d13-0010c6dffd0f',
   },
+  birthplaceAttributeTypeUuid: {
+    _type: Type.UUID,
+    _description: 'Person attribute type UUID that stores birthplace displayed in the expanded patient banner details',
+    _default: '8d8718c2-c2cc-11de-8d13-0010c6dffd0f',
+  },
+  occupationAttributeTypeUuid: {
+    _type: Type.UUID,
+    _description: 'Person attribute type UUID that stores occupation displayed in the expanded patient banner details',
+    _default: '8d871afc-c2cc-11de-8d13-0010c6dffd0f',
+  },
   printPatientSticker: {
     header: {
       _type: Type.Object,
@@ -106,8 +116,10 @@ export type AllowedPatientFields = 'address' | 'age' | 'contact' | 'dob' | 'gend
 export interface ConfigObject {
   contactAttributeTypes: Array<string>;
   additionalAttributeTypes: Array<string>;
+  birthplaceAttributeTypeUuid: string;
   ethnicIdentityConceptUuid: string;
   ethnicIdentityAttributeTypeUuid: string;
+  occupationAttributeTypeUuid: string;
   printPatientSticker: {
     header: {
       showBarcode: boolean;

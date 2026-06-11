@@ -59,9 +59,11 @@ describe('PatientBannerContactDetails', () => {
     vi.useFakeTimers();
     mockUseConfig.mockReturnValue({
       additionalAttributeTypes: [],
+      birthplaceAttributeTypeUuid: '8d8718c2-c2cc-11de-8d13-0010c6dffd0f',
       contactAttributeTypes: [],
       ethnicIdentityAttributeTypeUuid: '8d871386-c2cc-11de-8d13-0010c6dffd0f',
       ethnicIdentityConceptUuid: '',
+      occupationAttributeTypeUuid: '8d871afc-c2cc-11de-8d13-0010c6dffd0f',
       printPatientSticker: {
         fields: [],
         header: {
@@ -124,16 +126,20 @@ describe('PatientBannerContactDetails', () => {
 
     const identifiersSection = screen.getByText('Identifiers').parentElement;
     const relationshipsSection = screen.getByText('Relationships').parentElement;
-    expect(within(identifiersSection!).getByRole('progressbar')).toBeInTheDocument();
-    expect(within(relationshipsSection!).getByRole('progressbar')).toBeInTheDocument();
+    if (!identifiersSection || !relationshipsSection) {
+      throw new Error('Expected identifiers and relationships sections to render');
+    }
+
+    expect(within(identifiersSection).getByRole('progressbar')).toBeInTheDocument();
+    expect(within(relationshipsSection).getByRole('progressbar')).toBeInTheDocument();
 
     act(() => vi.advanceTimersByTime(10000));
 
-    expect(within(identifiersSection!).queryByRole('progressbar')).not.toBeInTheDocument();
-    expect(within(identifiersSection!).getByText('--')).toBeInTheDocument();
-    expect(within(relationshipsSection!).queryByRole('progressbar')).not.toBeInTheDocument();
-    expect(within(relationshipsSection!).getByText('--')).toBeInTheDocument();
-    expect(screen.getByText(/Status:\s*--/i)).toBeInTheDocument();
+    expect(within(identifiersSection).queryByRole('progressbar')).not.toBeInTheDocument();
+    expect(within(identifiersSection).getByText('No identifiers recorded')).toBeInTheDocument();
+    expect(within(relationshipsSection).queryByRole('progressbar')).not.toBeInTheDocument();
+    expect(within(relationshipsSection).getByText('No relationships recorded')).toBeInTheDocument();
+    expect(screen.getByText('No demographics recorded')).toBeInTheDocument();
   });
 
   it('renders identifiers and relationships when data arrives after the timeout fallback', () => {
@@ -180,9 +186,60 @@ describe('PatientBannerContactDetails', () => {
 
     rerender(<PatientBannerContactDetails patientId={patientId} deceased={false} />);
 
-    expect(screen.getByText(/DNI: 12345678/i)).toBeInTheDocument();
+    expect(screen.getByText('DNI:').closest('li')).toHaveTextContent(/DNI:\s*12345678/i);
     expect(screen.getByText(/Preferred/i)).toBeInTheDocument();
     expect(screen.getByRole('link', { name: 'Juan Perez' })).toBeInTheDocument();
     expect(screen.getByText('Father')).toBeInTheDocument();
+  });
+
+  it('renders affiliation details without duplicating ethnicity in contact details', () => {
+    mockUseEthnicIdentity.mockReturnValue({
+      currentValue: 'Ashaninka',
+      isLoading: false,
+    } as ReturnType<typeof useEthnicIdentity>);
+    mockUsePatientContactAttributes.mockReturnValue({
+      contactAttributes: [
+        { attributeType: { display: 'Phone', uuid: 'phone-uuid' }, display: 'Phone = 999999999', uuid: 'phone', value: '999999999' },
+      ],
+      isLoading: false,
+    });
+    mockUsePatientAdditionalAttributes.mockReturnValue({
+      additionalAttributes: [
+        {
+          attributeType: { display: 'Etnia', uuid: '8d871386-c2cc-11de-8d13-0010c6dffd0f' },
+          display: 'Etnia = Ashaninka',
+          uuid: 'ethnicity',
+          value: 'Ashaninka',
+        },
+        {
+          attributeType: { display: 'Ocupacion', uuid: '8d871afc-c2cc-11de-8d13-0010c6dffd0f' },
+          display: 'Ocupacion = Agricultor',
+          uuid: 'occupation',
+          value: 'Agricultor',
+        },
+        {
+          attributeType: { display: 'Lugar de nacimiento', uuid: '8d8718c2-c2cc-11de-8d13-0010c6dffd0f' },
+          display: 'Lugar de nacimiento = Loreto - Maynas',
+          uuid: 'birthplace',
+          value: 'Loreto - Maynas',
+        },
+      ],
+      identifiers: [],
+      isLoading: false,
+      person: loadedPerson,
+    });
+
+    render(<PatientBannerContactDetails patientId={patientId} deceased={false} />);
+
+    const contactSection = screen.getByText('Contact details').parentElement;
+    const additionalSection = screen.getByText('Additional details').parentElement;
+    if (!contactSection || !additionalSection) {
+      throw new Error('Expected contact and additional details sections to render');
+    }
+
+    expect(within(contactSection).queryByText('Ethnicity:')).not.toBeInTheDocument();
+    expect(within(additionalSection).getByText('Ethnicity:').closest('li')).toHaveTextContent(/Ashaninka/);
+    expect(within(additionalSection).getByText('Occupation:').closest('li')).toHaveTextContent(/Agricultor/);
+    expect(within(additionalSection).getByText('Place of birth:').closest('li')).toHaveTextContent(/Loreto - Maynas/);
   });
 });

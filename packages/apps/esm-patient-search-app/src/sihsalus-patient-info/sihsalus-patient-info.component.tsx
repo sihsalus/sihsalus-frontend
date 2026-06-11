@@ -1,11 +1,6 @@
-import {
-  age,
-  ExtensionSlot,
-  formatPartialDate,
-  getPatientName,
-} from '@openmrs/esm-framework';
+import { age, ExtensionSlot, formatPartialDate, getPatientName } from '@openmrs/esm-framework';
 import React, { useMemo } from 'react';
-import styles from './patient-banner.scss';
+import styles from './sihsalus-patient-info.scss';
 
 interface SihsalusPatientInfoProps {
   patient: fhir.Patient;
@@ -14,6 +9,7 @@ interface SihsalusPatientInfoProps {
 
 const dniIdentifierTypeUuid = '550e8400-e29b-41d4-a716-446655440001';
 const dniValuePattern = /^\d{8}$/;
+
 function isDniIdentifier(identifier: fhir.Identifier) {
   const type = identifier.type;
   const typeText = type?.text?.trim().toLowerCase();
@@ -45,13 +41,7 @@ function getGenderDisplay(gender?: string) {
   }
 }
 
-function Identifier({
-  identifier,
-  highlighted,
-}: {
-  identifier: fhir.Identifier;
-  highlighted: boolean;
-}) {
+function Identifier({ identifier, highlighted }: { identifier: fhir.Identifier; highlighted: boolean }) {
   const label = identifier.type?.text;
 
   return (

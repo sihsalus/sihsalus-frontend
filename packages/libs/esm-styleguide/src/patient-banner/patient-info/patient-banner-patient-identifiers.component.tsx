@@ -24,7 +24,7 @@ function PrimaryIdentifier({ showIdentifierLabel, type, value }: IdentifiersProp
   return (
     <span className={styles.primaryIdentifier}>
       <Tag className={styles.tag} type="gray">
-        {showIdentifierLabel && type?.text && <span className={styles.label}>{type.text}: </span>}
+        {showIdentifierLabel && type?.text && <span className={styles.label}>{type.text}:&nbsp;</span>}
         <span className={styles.value}>{value}</span>
       </Tag>
     </span>
@@ -34,7 +34,7 @@ function PrimaryIdentifier({ showIdentifierLabel, type, value }: IdentifiersProp
 function SecondaryIdentifier({ showIdentifierLabel, type, value }: IdentifiersProps) {
   return (
     <FormLabel className={styles.secondaryIdentifier} id={`patient-banner-identifier-${value}`}>
-      {showIdentifierLabel && <span className={styles.label}>{type?.text}: </span>}
+      {showIdentifierLabel && type?.text && <span className={styles.label}>{type.text}:&nbsp;</span>}
       <span className={styles.value}>{value}</span>
     </FormLabel>
   );

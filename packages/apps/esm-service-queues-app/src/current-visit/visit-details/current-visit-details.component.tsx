@@ -5,20 +5,22 @@ import {
   StructuredListRow,
   StructuredListWrapper,
 } from '@carbon/react';
-import { formatTime, type OpenmrsResource, parseDate } from '@openmrs/esm-framework';
+import { formatTime, type OpenmrsResource, parseDate, useConfig, type Visit } from '@openmrs/esm-framework';
 import React, { useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 
+import { type ConfigObject } from '../../config-schema';
 import { type DiagnosisItem, type Encounter, type Note, type Observation } from '../../types/index';
 import styles from '../current-visit.scss';
 import { useVitalsFromObs } from '../hooks/useVitalsConceptMetadata';
 
-import TriageNote from './triage-note.component';
+import VisitNote from './visit-note.component';
 import Vitals from './vitals.component';
 
 interface CurrentVisitProps {
   patientUuid: string;
   encounters: Array<Encounter | OpenmrsResource>;
+  visit?: Visit;
 }
 
 enum visitTypes {
@@ -26,8 +28,9 @@ enum visitTypes {
   PAST = 'pastVisit',
 }
 
-const CurrentVisitDetails: React.FC<CurrentVisitProps> = ({ patientUuid, encounters }) => {
+const CurrentVisitDetails: React.FC<CurrentVisitProps> = ({ patientUuid, encounters, visit }) => {
   const { t } = useTranslation();
+  const { concepts, visitNoteEncounterTypeUuid } = useConfig<ConfigObject>();
 
   const [diagnoses, notes, vitalsToRetrieve]: [Array<DiagnosisItem>, Array<Note>, Array<Encounter>] = useMemo(() => {
     const notes: Array<Note> = [];
@@ -37,14 +40,14 @@ const CurrentVisitDetails: React.FC<CurrentVisitProps> = ({ patientUuid, encount
     // Iterating through every Encounter
     encounters?.forEach((enc: Encounter) => {
       // Check for Visit Diagnoses and Notes
-      if (enc.encounterType?.display === 'Visit Note') {
-        enc.obs.forEach((obs: Observation) => {
-          if (obs.concept && obs.concept.display === 'Visit Diagnoses') {
-            // // Putting all the diagnoses in a single array.
-            diagnoses.push({
-              diagnosis: obs.groupMembers.find((mem) => mem.concept.display === 'PROBLEM LIST').value.display,
-            });
-          } else if (obs.concept && obs.concept.display === 'General patient note') {
+      if (enc.encounterType?.uuid === visitNoteEncounterTypeUuid) {
+        enc.obs?.forEach((obs: Observation) => {
+          if (obs.concept?.uuid === concepts.visitDiagnosesConceptUuid) {
+            const problemList = obs.groupMembers?.find((mem) => mem.concept?.uuid === concepts.problemListConceptUuid);
+            if (problemList?.value?.display) {
+              diagnoses.push({ diagnosis: problemList.value.display });
+            }
+          } else if (obs.concept?.uuid === concepts.generalPatientNoteConceptUuid) {
             // Putting all notes in a single array.
             notes.push({
               note: obs.value,
@@ -62,7 +65,13 @@ const CurrentVisitDetails: React.FC<CurrentVisitProps> = ({ patientUuid, encount
       vitalsToRetrieve.push(enc);
     });
     return [diagnoses, notes, vitalsToRetrieve];
-  }, [encounters]);
+  }, [
+    encounters,
+    visitNoteEncounterTypeUuid,
+    concepts.generalPatientNoteConceptUuid,
+    concepts.problemListConceptUuid,
+    concepts.visitDiagnosesConceptUuid,
+  ]);
 
   return (
     <div className={styles.wrapper}>
@@ -71,9 +80,9 @@ const CurrentVisitDetails: React.FC<CurrentVisitProps> = ({ patientUuid, encount
           <StructuredListHead></StructuredListHead>
           <StructuredListBody>
             <StructuredListRow className={styles.structuredListRow}>
-              <StructuredListCell>{t('triageNote', 'Triage note')}</StructuredListCell>
+              <StructuredListCell>{t('visitNote', 'Visit note')}</StructuredListCell>
               <StructuredListCell>
-                <TriageNote notes={notes} diagnoses={diagnoses} patientUuid={patientUuid} />
+                <VisitNote notes={notes} diagnoses={diagnoses} patientUuid={patientUuid} />
               </StructuredListCell>
             </StructuredListRow>
 
@@ -85,6 +94,7 @@ const CurrentVisitDetails: React.FC<CurrentVisitProps> = ({ patientUuid, encount
                   vitals={useVitalsFromObs(vitalsToRetrieve)}
                   patientUuid={patientUuid}
                   visitType={visitTypes.CURRENT}
+                  visit={visit}
                 />
               </StructuredListCell>
             </StructuredListRow>

@@ -36,6 +36,35 @@ function buildIdentifierFormatRegex(format?: string): RegExp | undefined {
   }
 }
 
+function buildPersonAttributeValidationSchema(config: RegistrationConfig) {
+  const attributeSchemas = Object.fromEntries(
+    (config.fieldDefinitions ?? [])
+      .filter((field) => field.type === 'person attribute' && !!field.uuid && !!field.validation)
+      .map((field) => {
+        const formatRegex = buildIdentifierFormatRegex(field.validation?.matches);
+        let schema = Yup.string().nullable();
+
+        if (field.validation?.required) {
+          schema = schema.required(t('fieldRequired', 'Field is required'));
+        }
+
+        if (formatRegex) {
+          schema = schema.test('person-attribute-format', t('invalidInput', 'Invalid Input'), (value) => {
+            if (!value) {
+              return true;
+            }
+
+            return formatRegex.test(value);
+          });
+        }
+
+        return [field.uuid, schema];
+      }),
+  );
+
+  return Yup.object(attributeSchemas);
+}
+
 export function isMinorPatient(values: Pick<FormValues, 'birthdate' | 'birthdateEstimated' | 'yearsEstimated'>) {
   if (values.birthdateEstimated) {
     return typeof values.yearsEstimated === 'number' && values.yearsEstimated < 18;
@@ -99,6 +128,7 @@ export function getValidationSchema(
       .required(t('familyNameRequired', 'Family name is required'))
       .min(2, nameTooShortMessage)
       .matches(nameRegex, { message: nameInvalidCharactersMessage, excludeEmptyString: true }),
+    middleName: Yup.string().matches(nameRegex, { message: nameInvalidCharactersMessage, excludeEmptyString: true }),
     familyName2: (config.fieldConfigurations.name.requireFamilyName2
       ? Yup.string().required(t('familyName2Required', 'Second family name is required')).min(2, nameTooShortMessage)
       : Yup.string().notRequired()
@@ -111,6 +141,10 @@ export function getValidationSchema(
         then: Yup.string().required(t('givenNameRequired', 'Given name is required')).min(2, nameTooShortMessage),
         otherwise: Yup.string().notRequired(),
       }),
+    additionalMiddleName: Yup.string().matches(nameRegex, {
+      message: nameInvalidCharactersMessage,
+      excludeEmptyString: true,
+    }),
     additionalFamilyName: Yup.string()
       .matches(nameRegex, { message: nameInvalidCharactersMessage, excludeEmptyString: true })
       .when('addNameInLocalLanguage', {
@@ -119,6 +153,10 @@ export function getValidationSchema(
         then: Yup.string().required(t('familyNameRequired', 'Family name is required')).min(2, nameTooShortMessage),
         otherwise: Yup.string().notRequired(),
       }),
+    additionalFamilyName2: Yup.string().matches(nameRegex, {
+      message: nameInvalidCharactersMessage,
+      excludeEmptyString: true,
+    }),
     gender: Yup.string()
       .oneOf(
         config.fieldConfigurations.gender.map((g) => g.value),
@@ -206,6 +244,7 @@ export function getValidationSchema(
       otherwise: Yup.string().nullable(),
     }),
     email: Yup.string().optional().email(t('invalidEmail', 'Invalid email')),
+    attributes: buildPersonAttributeValidationSchema(config),
     identifiers: Yup.lazy((obj: FormValues['identifiers']) =>
       Yup.object(
         mapValues(obj, (identifier, fieldName) => {

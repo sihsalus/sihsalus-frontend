@@ -52,8 +52,11 @@ import type { ConfigObject } from '../config-schema';
 import type { Concept, Diagnosis, DiagnosisPayload, VisitNotePayload } from '../types';
 import { defaultVisitNoteClinicalConceptUuids } from './visit-note-config-schema';
 import {
+  buildTipoDxObs,
   deletePatientDiagnosis,
   fetchDiagnosisConceptsByName,
+  getCertaintyForTipo,
+  parseTipoDxObs,
   savePatientDiagnosis,
   saveVisitNote,
   updateVisitNote,
@@ -341,27 +344,10 @@ const VisitNotesForm: React.FC<PatientWorkspace2DefinitionProps<VisitNotesFormPr
         setSelectedSecondaryDiagnoses(secondaryDiagnoses);
         setCombinedDiagnoses([...primaryDiagnoses, ...secondaryDiagnoses]);
 
-        // Restore the exact MINSA diagnosis type saved alongside the encounter.
-        // The formFieldPath ties the type obs back to its coded diagnosis.
-        const obsArray = (encounter.obs ?? []) as Array<EncounterFormObs>;
-        const tipoObs = obsArray.filter(
-          (o) =>
-            o.formFieldNamespace === 'visit-notes' &&
-            typeof o.formFieldPath === 'string' &&
-            o.formFieldPath.startsWith('tipo-dx-'),
-        );
-        if (tipoObs.length) {
-          const restored: Record<string, string> = {};
-          tipoObs.forEach((o) => {
-            const codedUuid = (o.formFieldPath as string).replace('tipo-dx-', '');
-            const valueUuid =
-              typeof o.value === 'object' && o.value !== null
-                ? o.value.uuid
-                : o.value != null
-                  ? String(o.value)
-                  : undefined;
-            if (codedUuid && valueUuid) restored[codedUuid] = valueUuid;
-          });
+        // Restore the exact MINSA diagnosis type (P/D/R) saved alongside the
+        // encounter, keyed back to its coded diagnosis via the formFieldPath.
+        const restored = parseTipoDxObs((encounter.obs ?? []) as Array<EncounterFormObs>);
+        if (Object.keys(restored).length) {
           setDiagnosisTipos(restored);
         }
       } catch {
@@ -604,12 +590,13 @@ const VisitNotesForm: React.FC<PatientWorkspace2DefinitionProps<VisitNotesFormPr
       // Persist the exact MINSA diagnosis type for each CIE-10 diagnosis.
       // This complements patientdiagnoses.certainty, which cannot represent
       // "Repetitivo" without losing information.
-      const tipoObsList = combinedDiagnoses.map((dx) => ({
-        concept: { uuid: diagnosisTypeConceptUuid, display: '' },
-        value: diagnosisTipos[dx.diagnosis.coded] ?? diagnosisTypePresuntivoUuid,
-        formFieldNamespace: 'visit-notes',
-        formFieldPath: `tipo-dx-${dx.diagnosis.coded}`,
-      }));
+      const tipoObsList = combinedDiagnoses.map((dx) =>
+        buildTipoDxObs(
+          diagnosisTypeConceptUuid,
+          dx.diagnosis.coded,
+          diagnosisTipos[dx.diagnosis.coded] ?? diagnosisTypePresuntivoUuid,
+        ),
+      );
 
       const obsPayload = [
         ...(clinicalNote?.trim()
@@ -674,8 +661,7 @@ const VisitNotesForm: React.FC<PatientWorkspace2DefinitionProps<VisitNotesFormPr
                 diagnosis: {
                   coded: diagnosis.diagnosis.coded,
                 },
-                // NTS-139: Definitivo → CONFIRMED, Presuntivo/Repetitivo → PROVISIONAL
-                certainty: tipoUuid === diagnosisTypeDefinitivoUuid ? 'CONFIRMED' : 'PROVISIONAL',
+                certainty: getCertaintyForTipo(tipoUuid, diagnosisTypeDefinitivoUuid),
                 rank: diagnosis.rank,
               };
               return savePatientDiagnosis(abortController, diagnosesPayload);

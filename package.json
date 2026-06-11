@@ -1,6 +1,6 @@
 {
   "name": "@sihsalus/sihsalus-esm",
-  "version": "1.0.0",
+  "version": "1.0.1-alpha",
   "private": true,
   "author": {
     "name": "Pontificia Universidad Catolica del Peru (PUCP) - Grupo de Investigacion y Desarrollo de Ingenieria de Software (GIDIS)",
@@ -112,6 +112,7 @@
     "follow-redirects": "1.16.0",
     "flatted": "3.4.2",
     "node-forge": "^1.4.0",
+    "shell-quote": "npm:1.8.4",
     "lodash": "4.18.1",
     "lodash-es": "4.18.1",
     "vite": "^8.0.13",

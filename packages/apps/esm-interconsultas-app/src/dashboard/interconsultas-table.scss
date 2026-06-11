@@ -1,0 +1,43 @@
+@use "@carbon/layout";
+
+.tableContainer {
+  background-color: var(--cds-layer, #ffffff);
+  margin: layout.$spacing-05;
+  padding: 0;
+}
+
+.tableToolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.toolbarItem {
+  display: flex;
+  align-items: center;
+  background-color: transparent;
+}
+
+.table {
+  width: 100%;
+}
+
+.tileContainer {
+  background-color: var(--cds-layer, #ffffff);
+  padding: layout.$spacing-07 0;
+}
+
+.tile {
+  margin: auto;
+  text-align: center;
+}
+
+.emptyStateText {
+  font-size: 0.875rem;
+  font-weight: 600;
+}
+
+.emptyStateHelperText {
+  font-size: 0.75rem;
+  color: var(--cds-text-secondary, #525252);
+}

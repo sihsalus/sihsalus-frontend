@@ -135,5 +135,27 @@
       "type": "service-queues",
       "width": "wider"
     }
+  ],
+  "workspaces2": [
+    {
+      "name": "service-queues-patient-vitals-workspace",
+      "component": "@sihsalus/esm-patient-vitals-app#vitalsBiometricsFormWorkspace",
+      "window": "service-queues-patient-vitals"
+    },
+    {
+      "name": "service-queues-visit-notes-workspace",
+      "component": "@sihsalus/esm-patient-notes-app#visitNotesFormWorkspace",
+      "window": "service-queues-visit-note"
+    }
+  ],
+  "workspaceWindows2": [
+    {
+      "name": "service-queues-patient-vitals",
+      "group": "service-queues"
+    },
+    {
+      "name": "service-queues-visit-note",
+      "group": "service-queues"
+    }
   ]
 }

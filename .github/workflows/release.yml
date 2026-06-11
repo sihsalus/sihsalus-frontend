@@ -37,8 +37,11 @@ jobs:
         run: |
           SHA_SHORT="$(git rev-parse --short HEAD)"
           BUILD_TIME="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
+          PACKAGE_VERSION="$(node -p "require('./package.json').version" 2>/dev/null || true)"
           if [[ "${GITHUB_REF}" == refs/tags/sihsalus-v* ]]; then
             VERSION="${GITHUB_REF#refs/tags/sihsalus-v}"
+          elif [[ -n "${PACKAGE_VERSION}" ]]; then
+            VERSION="${PACKAGE_VERSION}"
           else
             DESC="$(git describe --tags --match 'sihsalus-v*' --always 2>/dev/null || echo '')"
             if [[ "${DESC}" == sihsalus-v* ]]; then

@@ -1,7 +1,17 @@
 export type TipoIndicador = 'conteo_atenciones' | 'conteo_pacientes';
-export type PeriodoIndicador = 'mes_actual' | 'trimestre_actual' | 'semestre_actual' | 'anual_actual';
 export type TipoDiagnostico = 'definitivo' | 'presuntivo';
 export type Sexo = 'M' | 'F';
+
+/**
+ * @deprecated `periodo` is no longer part of the indicator definition.
+ * Kept only for backward compat with legacy data that may still reference it.
+ */
+export type PeriodoIndicador = 'mes_actual' | 'trimestre_actual' | 'semestre_actual' | 'anual_actual';
+
+/**
+ * Granularity for time-series rollup queries.
+ */
+export type Granularity = 'mensual' | 'trimestral' | 'semestral' | 'anual';
 
 export interface PaginatedResponse<T> {
   items: Array<T>;
@@ -47,7 +57,6 @@ export interface PoblacionForm {
 
 export interface DefinicionIndicadorForm {
   tipo: TipoIndicador;
-  periodo: PeriodoIndicador;
   evento: FiltrosEventoForm | null;
   poblacion?: PoblacionForm;
 }
@@ -106,6 +115,31 @@ export interface IndicadorResultado {
   periodo_fin: string;
   valor: number;
   calculado_en: string;
+  mes_referencia?: string | null;
+  es_canonico?: boolean;
+}
+
+export interface SerieRow {
+  periodo_label: string;
+  valor: number;
+  meses_disponibles: number;
+  anio: number;
+  mes_referencia?: string;
+  trimestre?: number;
+  semestre?: number;
+}
+
+export interface SeriesResponse {
+  items: Array<SerieRow>;
+  indicador_id: string;
+  anio: number;
+  granularity: Granularity;
+}
+
+export interface GetSeriesParams {
+  indicador_id: string;
+  anio?: number;
+  granularity?: Granularity;
 }
 
 export interface ErrorCalculo {
@@ -144,7 +178,6 @@ export interface IndicadorFormValues {
   nombre: string;
   descripcion: string;
   tipo: TipoIndicador;
-  periodo: PeriodoIndicador;
   selectedLocations: Array<LocationOption>;
   minimoOcurrencias: string;
   filtroClinico: 'ninguno' | 'diagnosticos' | 'ordenes';

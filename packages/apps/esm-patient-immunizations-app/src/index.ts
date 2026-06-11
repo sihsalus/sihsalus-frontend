@@ -1,0 +1,61 @@
+import { defineConfigSchema, getAsyncLifecycle, getSyncLifecycle } from '@openmrs/esm-framework';
+import { createDashboardLink } from '@openmrs/esm-patient-common-lib';
+import { configSchema } from './config-schema';
+import { dashboardMeta } from './dashboard.meta';
+import immunizationHistorySummaryComponent from './immunizations/immunization-history-dashboard.component';
+import immunizationsDetailedSummaryComponent from './immunizations/immunizations-detailed-summary.component';
+import immunizationsOverviewComponent from './immunizations/immunizations-overview.component';
+import vaccinationScheduleAppMenuItemComponent from './vaccination-schedule-app-menu-item.component';
+
+const moduleName = '@sihsalus/esm-patient-immunizations-app';
+
+const options = {
+  featureName: 'patient-immunizations',
+  moduleName,
+};
+
+export const importTranslation = require.context('../translations', false, /.json$/, 'lazy');
+
+export function startupApp() {
+  defineConfigSchema(moduleName, configSchema);
+}
+
+export const immunizationsOverview = getSyncLifecycle(immunizationsOverviewComponent, options);
+
+export const vaccinationScheduleAppMenuItem = getSyncLifecycle(vaccinationScheduleAppMenuItemComponent, options);
+
+export const immunizationsDetailedSummary = getSyncLifecycle(immunizationsDetailedSummaryComponent, options);
+
+export const immunizationHistorySummary = getSyncLifecycle(immunizationHistorySummaryComponent, options);
+export const immunizationsDashboardLink =
+  // t('Immunizations', 'Immunizations')
+  // t('vaccination', 'Vaccination')
+  // t('vaccinationTooltip', 'Vaccination')
+  getSyncLifecycle(
+    createDashboardLink({
+      ...dashboardMeta,
+      moduleName,
+    }),
+    options,
+  );
+
+// t('immunizationWorkspaceTitle', 'Immunization Form')
+export const immunizationFormWorkspace = getAsyncLifecycle(
+  () => import('./immunizations/immunizations-form.workspace'),
+  options,
+);
+
+export const deleteImmunizationConfirmationModal = getAsyncLifecycle(
+  () => import('./immunizations/delete-immunization.modal'),
+  options,
+);
+
+export const schedulingAdminPageCardLink = getAsyncLifecycle(
+  () => import('./immunization-plan/scheduling-admin-link.component'),
+  options,
+);
+
+export const vaccineSchedulingBuilderPage = getAsyncLifecycle(
+  () => import('./vaccine-scheduling-builder/vaccine-scheduling-builder.component'),
+  options,
+);

@@ -102,12 +102,14 @@ export const handleFormValidation = async (
             handleQuestionValidation(question, errors, configObject, warnings),
             handleAnswerValidation(question, errors),
             handlePatientIdentifierValidation(question, errors),
+            handlePersonAttributeValidation(question, errors),
           );
           if (question.type === 'obsGroup') {
             question?.questions?.forEach((obsGrpQuestion) => {
               asyncTasks.push(
                 handleQuestionValidation(obsGrpQuestion, errors, configObject, warnings),
                 handleAnswerValidation(obsGrpQuestion, errors),
+                handlePersonAttributeValidation(obsGrpQuestion, errors),
               );
             });
           }
@@ -183,7 +185,10 @@ const handleQuestionValidation = async (
     } catch (error) {
       console.error(error);
     }
-  } else if (conceptObject.questionOptions.rendering !== 'workspace-launcher') {
+  } else if (
+    conceptObject.questionOptions.rendering !== 'workspace-launcher' &&
+    conceptObject.type !== 'personAttribute'
+  ) {
     errorsArray.push({
       errorMessage: `❓ No UUID`,
       field: conceptObject,
@@ -215,6 +220,38 @@ const handlePatientIdentifierValidation = async (question: FormField, errors: Ar
       console.error('Error fetching patient identifier:', error);
       errors.push({
         errorMessage: `❓ The identifier type does not exist`,
+        field: question,
+      });
+    }
+  }
+};
+
+const handlePersonAttributeValidation = async (question: FormField, errors: Array<ErrorMessageResponse>) => {
+  const personAttribute = (question.questionOptions as { attributeType?: string }).attributeType;
+
+  if (question.type === 'personAttribute' && !personAttribute) {
+    errors.push({
+      errorMessage: `❓ Person attribute type missing in schema`,
+      field: question,
+    });
+    return;
+  }
+
+  if (personAttribute) {
+    try {
+      const response = await openmrsFetch<PatientIdentifierTypeResponse>(
+        `${restBaseUrl}/personattributetype/${personAttribute}`,
+      );
+      if (!hasPatientIdentifierData(response)) {
+        errors.push({
+          errorMessage: `❓ The person attribute type does not exist`,
+          field: question,
+        });
+      }
+    } catch (error) {
+      console.error('Error fetching person attribute:', error);
+      errors.push({
+        errorMessage: `❓ The person attribute type does not exist`,
         field: question,
       });
     }

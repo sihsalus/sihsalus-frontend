@@ -1,0 +1,62 @@
+{
+  "name": "@sihsalus/esm-patient-task-list-app",
+  "version": "1.0.0-alpha",
+  "license": "MPL-2.0",
+  "description": "Task list microfrontend for the OpenMRS SPA patient chart",
+  "browser": "dist/sihsalus-esm-patient-task-list-app.js",
+  "main": "src/index.ts",
+  "source": true,
+  "scripts": {
+    "start": "openmrs develop",
+    "serve": "rspack serve --mode=development",
+    "build": "rspack --mode=production",
+    "analyze": "rspack --mode=production --env analyze=true",
+    "lint": "node ../../tooling/scripts/run-biome.js lint .",
+    "typescript": "tsc --noEmit",
+    "test": "vitest run --passWithNoTests",
+    "test:watch": "vitest watch",
+    "coverage": "vitest run --coverage --passWithNoTests",
+    "extract-translations": "i18next 'src/**/*.{ts,tsx}' '!src/**/*.test.{ts,tsx}' '!src/**/*.spec.{ts,tsx}' --config ../../tooling/scripts/i18next-parser.config.js"
+  },
+  "browserslist": [
+    "extends browserslist-config-openmrs"
+  ],
+  "keywords": [
+    "openmrs"
+  ],
+  "homepage": "https://github.com/openmrs/openmrs-esm-patient-chart#readme",
+  "publishConfig": {
+    "access": "public"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/openmrs/openmrs-esm-patient-chart.git"
+  },
+  "bugs": {
+    "url": "https://github.com/openmrs/openmrs-esm-patient-chart/issues"
+  },
+  "dependencies": {
+    "@carbon/react": "^1.83.0",
+    "@hookform/resolvers": "^3.3.1",
+    "@openmrs/esm-patient-common-lib": "workspace:*",
+    "react-hook-form": "^7.46.2",
+    "zod": "^3.23.8"
+  },
+  "peerDependencies": {
+    "@openmrs/esm-framework": "*",
+    "@openmrs/esm-patient-common-lib": "*",
+    "dayjs": "1.x",
+    "react": "18.x",
+    "react-i18next": "16.x",
+    "react-router-dom": "6.x",
+    "rxjs": "6.x",
+    "swr": "2.x"
+  },
+  "devDependencies": {
+    "@openmrs/esm-patient-common-lib": "workspace:*",
+    "@rspack/cli": "1.7.11",
+    "openmrs": "workspace:*",
+    "typescript": "6.0.3",
+    "vitest": "^4.1.7"
+  }
+}

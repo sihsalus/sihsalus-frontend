@@ -82,7 +82,9 @@ const getMockConfig = (overrides: Partial<ConfigObject> = {}): ConfigObject => {
 
 vi.mock('lodash-es/debounce', () => ({ default: vi.fn((fn) => fn) }));
 
-vi.mock('./visit-notes.resource', () => ({
+vi.mock('./visit-notes.resource', async () => ({
+  // Pure P/D/R mapping helpers carry no side effects — use the real ones.
+  ...(await vi.importActual<typeof import('./visit-notes.resource')>('./visit-notes.resource')),
   fetchDiagnosisConceptsByName: vi.fn(),
   deletePatientDiagnosis: vi.fn(),
   savePatientDiagnosis: vi.fn(),

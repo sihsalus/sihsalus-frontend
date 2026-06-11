@@ -26,7 +26,7 @@ const RenderTypeComponent: React.FC = () => {
   const { formField } = useFormField();
   // Get allowed rendering types based on formField.type
   const allowedRenderingTypes =
-    formField.type && formField.type !== 'obs' && isQuestionTypeWithRenderOptions(formField.type)
+    formField.type && isQuestionTypeWithRenderOptions(formField.type)
       ? renderTypeOptions[formField.type]
       : renderingTypes;
 

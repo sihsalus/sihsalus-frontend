@@ -11,12 +11,13 @@ import {
 } from '@carbon/react';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { createErrorHandler, showSnackbar, useConfig, useLayoutType, useSession } from '@openmrs/esm-framework';
+import { RequirePrivilege } from '@sihsalus/esm-rbac';
 import React, { useCallback, useMemo, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { useTranslation } from 'react-i18next';
 import { z } from 'zod';
-
 import type { ConfigObject } from '../../../config-schema';
+import { credNeonatalEditPrivilege } from '../../../constants';
 import type { DefaultPatientWorkspaceProps } from '../../../types';
 import {
   assessValue,
@@ -149,39 +150,35 @@ const NewbornAnthropometricsForm: React.FC<DefaultPatientWorkspaceProps> = ({ cl
     }
   }
 
-  if (isLoading) {
-    return (
-      <Form className={styles.form}>
-        <div className={styles.grid}>
-          <Stack>
+  const content = isLoading ? (
+    <Form className={styles.form}>
+      <div className={styles.grid}>
+        <Stack>
+          <Column>
+            <p className={styles.title}>{t('recordAnthropometrics', 'Registrar Datos Antropométricos')}</p>
+          </Column>
+          <Row className={styles.row}>
             <Column>
-              <p className={styles.title}>{t('recordAnthropometrics', 'Registrar Datos Antropométricos')}</p>
+              <NumberInputSkeleton />
             </Column>
-            <Row className={styles.row}>
-              <Column>
-                <NumberInputSkeleton />
-              </Column>
-              <Column>
-                <NumberInputSkeleton />
-              </Column>
-              <Column>
-                <NumberInputSkeleton />
-              </Column>
-              <Column>
-                <NumberInputSkeleton />
-              </Column>
-            </Row>
-          </Stack>
-        </div>
-        <ButtonSet className={isTablet ? styles.tablet : styles.desktop}>
-          <ButtonSkeleton className={styles.button} />
-          <ButtonSkeleton className={styles.button} />
-        </ButtonSet>
-      </Form>
-    );
-  }
-
-  return (
+            <Column>
+              <NumberInputSkeleton />
+            </Column>
+            <Column>
+              <NumberInputSkeleton />
+            </Column>
+            <Column>
+              <NumberInputSkeleton />
+            </Column>
+          </Row>
+        </Stack>
+      </div>
+      <ButtonSet className={isTablet ? styles.tablet : styles.desktop}>
+        <ButtonSkeleton className={styles.button} />
+        <ButtonSkeleton className={styles.button} />
+      </ButtonSet>
+    </Form>
+  ) : (
     <Form className={styles.form}>
       <div className={styles.grid}>
         <Stack gap={4}>
@@ -205,7 +202,7 @@ const NewbornAnthropometricsForm: React.FC<DefaultPatientWorkspaceProps> = ({ cl
               }
               showErrorMessage={showErrorMessage}
               label={t('weight', 'Weight')}
-              unitSymbol={conceptUnits.get(config.concepts.weightUuid) ?? 'kg'} // Usar conceptUnits con fallback
+              unitSymbol={conceptUnits.get(config.concepts.weightUuid) ?? 'kg'}
             />
             <NewbornVitalsInput
               control={control}
@@ -219,7 +216,7 @@ const NewbornAnthropometricsForm: React.FC<DefaultPatientWorkspaceProps> = ({ cl
                 },
               ]}
               label={t('height', 'Height')}
-              unitSymbol={conceptUnits.get(config.concepts.heightUuid) ?? 'cm'} // Usar conceptUnits con fallback
+              unitSymbol={conceptUnits.get(config.concepts.heightUuid) ?? 'cm'}
             />
             <NewbornVitalsInput
               control={control}
@@ -233,7 +230,7 @@ const NewbornAnthropometricsForm: React.FC<DefaultPatientWorkspaceProps> = ({ cl
                 },
               ]}
               label={t('headCircumference', 'Head circumference')}
-              unitSymbol={conceptUnits.get(config.concepts.headCircumferenceUuid) ?? 'cm'} // Usar conceptUnits con fallback
+              unitSymbol={conceptUnits.get(config.concepts.headCircumferenceUuid) ?? 'cm'}
             />
             <NewbornVitalsInput
               control={control}
@@ -247,7 +244,7 @@ const NewbornAnthropometricsForm: React.FC<DefaultPatientWorkspaceProps> = ({ cl
                 },
               ]}
               label={t('chestCircumference', 'Chest circumference')}
-              unitSymbol={conceptUnits.get(config.concepts.chestCircumferenceUuid) ?? 'cm'} // Usar conceptUnits con fallback
+              unitSymbol={conceptUnits.get(config.concepts.chestCircumferenceUuid) ?? 'cm'}
             />
           </Row>
         </Stack>
@@ -279,6 +276,8 @@ const NewbornAnthropometricsForm: React.FC<DefaultPatientWorkspaceProps> = ({ cl
       </ButtonSet>
     </Form>
   );
+
+  return <RequirePrivilege privilege={credNeonatalEditPrivilege}>{content}</RequirePrivilege>;
 };
 
 export default NewbornAnthropometricsForm;

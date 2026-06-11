@@ -14,7 +14,15 @@ import {
   TableHeader,
   TableRow,
 } from '@carbon/react';
-import { AddIcon, formatDate, isDesktop, launchWorkspace2, useLayoutType } from '@openmrs/esm-framework';
+import {
+  AddIcon,
+  formatDate,
+  isDesktop,
+  launchWorkspace2,
+  useLayoutType,
+  userHasAccess,
+  useSession,
+} from '@openmrs/esm-framework';
 import { CardHeader, EmptyState, ErrorState } from '@openmrs/esm-patient-common-lib';
 import React, { useCallback, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -33,6 +41,7 @@ interface PatientObservationGroupTableProps {
   encounterType: string;
   formUuid: string;
   formWorkspace?: string;
+  editPrivilege?: string | string[];
 }
 
 interface ObservationGroupTableRowData {
@@ -70,10 +79,14 @@ const PatientObservationGroupTable: React.FC<PatientObservationGroupTableProps> 
   encounterType,
   formUuid,
   formWorkspace,
+  editPrivilege,
 }) => {
   const { t } = useTranslation();
   const layout = useLayoutType();
   const desktopLayout = isDesktop(layout);
+  const session = useSession();
+  const canEdit = userHasAccess(editPrivilege, session?.user);
+  const canLaunchForm = Boolean(formWorkspace && (!editPrivilege || canEdit));
 
   const {
     prenatalEncounter: data,
@@ -84,7 +97,7 @@ const PatientObservationGroupTable: React.FC<PatientObservationGroupTableProps> 
   //TODO: MODIFY THIS TO SEND THE CURRENT DATA TO THE WORKSPACE , IT SHOULD BE EDITABLE
   const launchForm = useCallback(() => {
     try {
-      if (formWorkspace) {
+      if (canLaunchForm && formWorkspace) {
         launchWorkspace2(formEntryWorkspace, {
           form: { uuid: formWorkspace },
           encounterUuid: '',
@@ -96,7 +109,7 @@ const PatientObservationGroupTable: React.FC<PatientObservationGroupTableProps> 
     } catch (err) {
       console.error('Failed to launch form:', err);
     }
-  }, [formWorkspace, mutate]);
+  }, [canLaunchForm, formWorkspace, mutate]);
 
   const parseDisplay = useCallback((display: string) => {
     const [category, ...rest] = display.split(': ');
@@ -166,14 +179,20 @@ const PatientObservationGroupTable: React.FC<PatientObservationGroupTableProps> 
   }
 
   if (!isLoading && observationGroups.length === 0) {
-    return <EmptyState headerTitle={headerTitle} displayText={displayText} launchForm={launchForm} />;
+    return (
+      <EmptyState
+        headerTitle={headerTitle}
+        displayText={displayText}
+        launchForm={canLaunchForm ? launchForm : undefined}
+      />
+    );
   }
 
   return (
     <div className={styles.widgetCard} role="region" aria-label={headerTitle}>
       <CardHeader title={headerTitle}>
         {isLoading && <InlineLoading description={t('refreshing', 'Refreshing...')} status="active" />}
-        {formWorkspace && (
+        {canLaunchForm && (
           <Button
             kind="ghost"
             renderIcon={(props) => <AddIcon size={16} {...props} />}

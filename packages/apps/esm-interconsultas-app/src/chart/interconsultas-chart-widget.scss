@@ -1,0 +1,44 @@
+@use "@carbon/layout";
+
+.widgetContainer {
+  background-color: var(--cds-layer, #ffffff);
+  border: 1px solid var(--cds-border-subtle, #e0e0e0);
+  width: 100%;
+}
+
+.widgetHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: layout.$spacing-04 layout.$spacing-05;
+  border-bottom: 1px solid var(--cds-border-subtle, #e0e0e0);
+}
+
+.widgetTitle {
+  font-size: 1rem;
+  font-weight: 600;
+}
+
+.accordionTitle {
+  font-size: 0.875rem;
+}
+
+.emptyState {
+  text-align: center;
+  margin: layout.$spacing-05;
+}
+
+.detailList {
+  display: grid;
+  grid-template-columns: minmax(8rem, max-content) 1fr;
+  gap: layout.$spacing-03 layout.$spacing-05;
+  padding: layout.$spacing-03 0;
+
+  dt {
+    font-weight: 600;
+  }
+}
+
+.responseText {
+  white-space: pre-wrap;
+}

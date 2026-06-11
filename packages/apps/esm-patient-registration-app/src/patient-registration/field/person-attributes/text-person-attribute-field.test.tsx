@@ -73,6 +73,28 @@ describe('TextPersonAttributeField', () => {
     expect(screen.getByText(/invalid input/i)).toBeInTheDocument();
   });
 
+  it('reports an invalid validationRegex without crashing the field', async () => {
+    const user = userEvent.setup();
+
+    render(
+      <Formik initialValues={{}} onSubmit={() => {}}>
+        <Form>
+          <TextPersonAttributeField
+            id="attributeId"
+            personAttributeType={mockPersonAttributeType}
+            validationRegex="["
+          />
+        </Form>
+      </Formik>,
+    );
+
+    const textbox = screen.getByRole('textbox', { name: /referred by \(optional\)/i });
+    await user.type(textbox, 'abc');
+    await user.tab();
+
+    expect(screen.getByText(/invalid validation configuration/i)).toBeInTheDocument();
+  });
+
   it('renders the input field as required when required prop is true', () => {
     render(
       <Formik initialValues={{}} onSubmit={() => {}}>

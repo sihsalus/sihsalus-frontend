@@ -56,6 +56,28 @@ Playwright para evitar un segundo `yarn start`:
 E2E_DISABLE_WEB_SERVER=true yarn playwright test e2e/tests/smoke.spec.ts --project=desktop
 ```
 
+### Registro de pacientes Peru
+
+El spec `e2e/tests/patient-registration-peru.spec.ts` valida la superficie de
+admision peruana contra el frontend actual:
+
+- la seccion fusionada `Residencia, nacimiento y contacto`,
+- captura separada de direccion de residencia, lugar de nacimiento y telefono,
+- bloqueo de formatos invalidos como `e100` en telefono,
+- mock actual de consulta RENIEC.
+
+Para correr solo ese spec contra el backend configurado en `.env`:
+
+```bash
+E2E_DISABLE_WEB_SERVER=true \
+  yarn playwright test e2e/tests/patient-registration-peru.spec.ts --project=desktop
+```
+
+El backend debe exponer los tipos de atributo `Lugar de nacimiento`
+(`8d8718c2-c2cc-11de-8d13-0010c6dffd0f`) y `Numero de Telefono`
+(`14d4f066-15f5-102d-96e4-000c29c2a5d7`), ademas de la plantilla
+`layout.address.format`.
+
 ## Suites modulares
 
 Las suites modulares viven bajo `e2e/<modulo>/` y prueban apps concretas:

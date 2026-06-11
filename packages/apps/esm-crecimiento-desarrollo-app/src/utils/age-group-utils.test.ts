@@ -27,6 +27,11 @@ describe('age-group-utils', () => {
     expect(calculateAgeInMonths('2024-01-15T00:00:00.000Z')).toBe(12);
   });
 
+  it('calculates age from an explicit reference date', () => {
+    expect(calculateAgeInDays('2026-02-04T00:00:00.000Z', '2026-02-07T00:00:00.000Z')).toBe(3);
+    expect(calculateAgeInMonths('2026-02-04T00:00:00.000Z', '2026-06-09T00:00:00.000Z')).toBeGreaterThan(4);
+  });
+
   it('finds the matching age group from months and from birth date', () => {
     expect(getAgeGroup(6, ageGroups)).toEqual(ageGroups[1]);
     expect(getAgeGroupFromBirthDate('2024-07-15T00:00:00.000Z', ageGroups)).toEqual(ageGroups[1]);

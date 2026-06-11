@@ -7729,6 +7729,7 @@ __metadata:
     "@carbon/react": "npm:^1.83.0"
     "@hookform/resolvers": "npm:^3.3.4"
     "@openmrs/esm-framework": "workspace:*"
+    "@openmrs/esm-patient-common-lib": "workspace:*"
     "@playwright/test": "npm:^1.53.2"
     "@sihsalus/esm-rbac": "workspace:*"
     "@swc/cli": "npm:0.8.1"
@@ -7764,6 +7765,7 @@ __metadata:
     zod: "npm:^3.22.4"
   peerDependencies:
     "@openmrs/esm-framework": "*"
+    "@openmrs/esm-patient-common-lib": "*"
     react: 18.x
     react-dom: 18.x
     react-i18next: 16.x
@@ -7897,8 +7899,10 @@ __metadata:
     "@hookform/resolvers": "npm:^3.3.1"
     "@openmrs/esm-framework": "workspace:*"
     "@openmrs/esm-patient-common-lib": "workspace:*"
+    "@openmrs/esm-utils": "workspace:*"
     "@rspack/cli": "npm:1.7.11"
     "@rspack/core": "npm:1.7.11"
+    "@sihsalus/esm-rbac": "workspace:*"
     "@sihsalus/esm-sihsalus-shared": "workspace:*"
     classnames: "npm:^2.5.1"
     dayjs: "npm:^1.11.13"
@@ -8033,6 +8037,7 @@ __metadata:
     "@hookform/resolvers": "npm:^3.3.0"
     "@openmrs/esm-framework": "workspace:*"
     "@openmrs/esm-styleguide": "workspace:*"
+    "@openmrs/esm-utils": "workspace:*"
     "@sihsalus/esm-rbac": "workspace:*"
     "@sihsalus/esm-sihsalus-shared": "workspace:*"
     cross-env: "npm:^7.0.3"
@@ -8196,6 +8201,7 @@ __metadata:
     "@carbon/react": "npm:^1.83.0"
     "@openmrs/esm-framework": "workspace:*"
     "@openmrs/esm-styleguide": "workspace:*"
+    "@openmrs/esm-utils": "workspace:*"
     "@swc/cli": "npm:0.8.1"
     "@swc/core": "npm:^1.5.7"
     "@types/lodash": "npm:^4.17.4"
@@ -8412,6 +8418,32 @@ __metadata:
     react-i18next: 16.x
     react-router-dom: 6.x
     rxjs: 6.x
+  languageName: unknown
+  linkType: soft
+
+"@sihsalus/esm-interconsultas-app@workspace:packages/apps/esm-interconsultas-app":
+  version: 0.0.0-use.local
+  resolution: "@sihsalus/esm-interconsultas-app@workspace:packages/apps/esm-interconsultas-app"
+  dependencies:
+    "@rspack/cli": "npm:1.7.11"
+    "@rspack/core": "npm:1.7.11"
+    "@sihsalus/esm-rbac": "workspace:*"
+    openmrs: "workspace:*"
+    typescript: "npm:6.0.3"
+    vitest: "npm:^4.1.7"
+  peerDependencies:
+    "@carbon/colors": 11.x
+    "@carbon/layout": 11.x
+    "@carbon/react": 1.x
+    "@carbon/styles": 1.x
+    "@openmrs/esm-framework": "*"
+    "@openmrs/esm-patient-common-lib": "*"
+    dayjs: 1.x
+    react: 18.x
+    react-i18next: 16.x
+    react-router-dom: 6.x
+    single-spa: 6.x
+    swr: 2.x
   languageName: unknown
   linkType: soft
 
@@ -8784,6 +8816,32 @@ __metadata:
   languageName: unknown
   linkType: soft
 
+"@sihsalus/esm-patient-immunizations-app@workspace:packages/apps/esm-patient-immunizations-app":
+  version: 0.0.0-use.local
+  resolution: "@sihsalus/esm-patient-immunizations-app@workspace:packages/apps/esm-patient-immunizations-app"
+  dependencies:
+    "@carbon/react": "npm:^1.83.0"
+    "@hookform/resolvers": "npm:^3.3.1"
+    "@openmrs/esm-patient-common-lib": "workspace:*"
+    "@rspack/cli": "npm:1.7.11"
+    "@sihsalus/esm-rbac": "workspace:*"
+    openmrs: "workspace:*"
+    react-hook-form: "npm:^7.46.2"
+    typescript: "npm:6.0.3"
+    vitest: "npm:^4.1.7"
+    zod: "npm:^3.23.8"
+  peerDependencies:
+    "@openmrs/esm-framework": "*"
+    "@openmrs/esm-patient-common-lib": "*"
+    dayjs: 1.x
+    react: 18.x
+    react-i18next: 16.x
+    react-router-dom: 6.x
+    rxjs: 6.x
+    swr: 2.x
+  languageName: unknown
+  linkType: soft
+
 "@sihsalus/esm-patient-label-printing-app@workspace:packages/apps/esm-patient-label-printing-app":
   version: 0.0.0-use.local
   resolution: "@sihsalus/esm-patient-label-printing-app@workspace:packages/apps/esm-patient-label-printing-app"
@@ -9013,6 +9071,31 @@ __metadata:
   languageName: unknown
   linkType: soft
 
+"@sihsalus/esm-patient-task-list-app@workspace:packages/apps/esm-patient-task-list-app":
+  version: 0.0.0-use.local
+  resolution: "@sihsalus/esm-patient-task-list-app@workspace:packages/apps/esm-patient-task-list-app"
+  dependencies:
+    "@carbon/react": "npm:^1.83.0"
+    "@hookform/resolvers": "npm:^3.3.1"
+    "@openmrs/esm-patient-common-lib": "workspace:*"
+    "@rspack/cli": "npm:1.7.11"
+    openmrs: "workspace:*"
+    react-hook-form: "npm:^7.46.2"
+    typescript: "npm:6.0.3"
+    vitest: "npm:^4.1.7"
+    zod: "npm:^3.23.8"
+  peerDependencies:
+    "@openmrs/esm-framework": "*"
+    "@openmrs/esm-patient-common-lib": "*"
+    dayjs: 1.x
+    react: 18.x
+    react-i18next: 16.x
+    react-router-dom: 6.x
+    rxjs: 6.x
+    swr: 2.x
+  languageName: unknown
+  linkType: soft
+
 "@sihsalus/esm-patient-tests-app@workspace:packages/apps/esm-patient-tests-app":
   version: 0.0.0-use.local
   resolution: "@sihsalus/esm-patient-tests-app@workspace:packages/apps/esm-patient-tests-app"
@@ -9046,6 +9129,7 @@ __metadata:
     "@carbon/charts-react": "npm:^1.27.0"
     "@carbon/react": "npm:^1.83.0"
     "@openmrs/esm-patient-common-lib": "workspace:*"
+    "@openmrs/esm-utils": "workspace:*"
     "@rspack/cli": "npm:1.7.11"
     d3: "npm:^7.6.1"
     lodash-es: "npm:^4.17.23"
@@ -9305,6 +9389,7 @@ __metadata:
     "@carbon/styles": "npm:^1.102.0"
     "@openmrs/esm-framework": "workspace:*"
     "@openmrs/esm-patient-common-lib": "workspace:*"
+    "@openmrs/esm-utils": "workspace:*"
     dayjs: "npm:^1.11.13"
     i18next: "npm:^25.7.2"
     lodash-es: "npm:^4.17.21"
@@ -9520,31 +9605,6 @@ __metadata:
     react-i18next: 16.x
     react-router-dom: 6.x
     rxjs: 6.x
-  languageName: unknown
-  linkType: soft
-
-"@sihsalus/esm-vacunacion-app@workspace:packages/apps/esm-vacunacion-app":
-  version: 0.0.0-use.local
-  resolution: "@sihsalus/esm-vacunacion-app@workspace:packages/apps/esm-vacunacion-app"
-  dependencies:
-    "@carbon/react": "npm:^1.83.0"
-    "@hookform/resolvers": "npm:^3.3.1"
-    "@openmrs/esm-patient-common-lib": "workspace:*"
-    "@rspack/cli": "npm:1.7.11"
-    openmrs: "workspace:*"
-    react-hook-form: "npm:^7.46.2"
-    typescript: "npm:6.0.3"
-    vitest: "npm:^4.1.7"
-    zod: "npm:^3.23.8"
-  peerDependencies:
-    "@openmrs/esm-framework": "*"
-    "@openmrs/esm-patient-common-lib": "*"
-    dayjs: 1.x
-    react: 18.x
-    react-i18next: 16.x
-    react-router-dom: 6.x
-    rxjs: 6.x
-    swr: 2.x
   languageName: unknown
   linkType: soft
 
@@ -23276,10 +23336,10 @@ __metadata:
   languageName: node
   linkType: hard
 
-"shell-quote@npm:1.8.3, shell-quote@npm:^1.8.1, shell-quote@npm:^1.8.3":
-  version: 1.8.3
-  resolution: "shell-quote@npm:1.8.3"
-  checksum: 10c0/bee87c34e1e986cfb4c30846b8e6327d18874f10b535699866f368ade11ea4ee45433d97bf5eada22c4320c27df79c3a6a7eb1bf3ecfc47f2c997d9e5e2672fd
+"shell-quote@npm:1.8.4":
+  version: 1.8.4
+  resolution: "shell-quote@npm:1.8.4"
+  checksum: 10c0/86c93678bc394cb81f5ddcdc87df9c95d279ef9652775cd1cd1eed361404169a8d8cbaacaeed232ab09919e36ee1e5363863570390d78571f8c22b7f6312fb40
   languageName: node
   linkType: hard
 

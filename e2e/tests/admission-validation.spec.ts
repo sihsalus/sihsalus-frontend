@@ -19,7 +19,7 @@ async function isVisibleBySelector(page: Page, selector: string, timeout = 12_00
     .catch(() => false);
 }
 
-test.describe('MINSA admission accreditation checks', () => {
+test.describe('Peru admission accreditation checks', () => {
   test('patient registration exposes the admission data capture surface', async ({ page }) => {
     await page.goto('patient-registration', { waitUntil: 'domcontentloaded' });
     await page.waitForLoadState('networkidle').catch(() => null);
@@ -29,8 +29,11 @@ test.describe('MINSA admission accreditation checks', () => {
 
     const requiredTexts: Array<[string, RegExp]> = [
       ['filiation section', /Datos de filiación/i],
+      ['residence birthplace contact section', /Residencia, nacimiento y contacto/i],
       ['responsible person section', /Acompañante o responsable/i],
+      ['residence address field', /Dirección de residencia/i],
       ['birthplace field', /Lugar de nacimiento/i],
+      ['phone field', /Número de Teléfono|Número de celular/i],
       ['civil status field', /Estado civil/i],
       ['native language field', /Idioma nativo/i],
       ['occupation field', /Ocupación/i],

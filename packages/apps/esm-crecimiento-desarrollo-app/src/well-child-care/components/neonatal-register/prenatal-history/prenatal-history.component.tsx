@@ -10,11 +10,12 @@ import {
   TableHeader,
   TableRow,
 } from '@carbon/react';
-import { AddIcon, launchWorkspace2 } from '@openmrs/esm-framework';
+import { AddIcon, launchWorkspace2, userHasAccess, useSession } from '@openmrs/esm-framework';
 import { CardHeader, EmptyState, ErrorState } from '@openmrs/esm-patient-common-lib';
 import React, { useCallback, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 
+import { credNeonatalEditPrivilege } from '../../../../constants';
 import { usePrenatalAntecedents } from '../../../../hooks/usePrenatalAntecedents';
 
 import styles from './prenatal-history.scss';
@@ -25,6 +26,8 @@ interface NeonatalSummaryProps {
 
 const PrenatalAntecedents: React.FC<NeonatalSummaryProps> = ({ patientUuid }) => {
   const { t } = useTranslation();
+  const session = useSession();
+  const canEdit = userHasAccess(credNeonatalEditPrivilege, session?.user);
   const headerTitle = t('prenatalAntecedents', 'Antecedentes Prenatales');
   const displayText = headerTitle;
 
@@ -74,9 +77,11 @@ const PrenatalAntecedents: React.FC<NeonatalSummaryProps> = ({ patientUuid }) =>
     return (
       <div className={styles.widgetCard}>
         <CardHeader title={headerTitle}>
-          <Button kind="ghost" renderIcon={(props) => <AddIcon size={16} {...props} />} onClick={launchPerinatalForm}>
-            {t('update', 'Actualizar')}
-          </Button>
+          {canEdit && (
+            <Button kind="ghost" renderIcon={(props) => <AddIcon size={16} {...props} />} onClick={launchPerinatalForm}>
+              {t('update', 'Actualizar')}
+            </Button>
+          )}
         </CardHeader>
         <DataTable
           rows={tableRows}
@@ -115,7 +120,13 @@ const PrenatalAntecedents: React.FC<NeonatalSummaryProps> = ({ patientUuid }) =>
       </div>
     );
   }
-  return <EmptyState displayText={displayText} headerTitle={headerTitle} launchForm={launchPerinatalForm} />;
+  return (
+    <EmptyState
+      displayText={displayText}
+      headerTitle={headerTitle}
+      launchForm={canEdit ? launchPerinatalForm : undefined}
+    />
+  );
 };
 
 export default PrenatalAntecedents;

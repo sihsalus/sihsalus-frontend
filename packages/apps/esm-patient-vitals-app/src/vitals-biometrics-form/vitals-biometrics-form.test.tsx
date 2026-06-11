@@ -90,13 +90,17 @@ mockUsePatient.mockReturnValue({
   },
 } as ReturnType<typeof usePatient>);
 
-mockUseVisit.mockReturnValue({
-  currentVisit: null,
-} as ReturnType<typeof useVisit>);
+const activeVisitMock = {
+  currentVisit: {
+    uuid: 'test-visit-uuid',
+    stopDatetime: null,
+  },
+} as ReturnType<typeof useVisit>;
 
 describe('VitalsBiometricsForm', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    mockUseVisit.mockReturnValue(activeVisitMock);
   });
 
   it('renders the vitals and biometrics form', async () => {
@@ -212,7 +216,6 @@ describe('VitalsBiometricsForm', () => {
     expect(mockSavePatientVitals).toHaveBeenCalledTimes(1);
     expect(mockSavePatientVitals).toHaveBeenCalledWith(
       mockVitalsConfig.vitals.encounterTypeUuid,
-      mockVitalsConfig.vitals.formUuid,
       mockVitalsConfig.concepts,
       mockPatient.id,
       expect.objectContaining({
@@ -228,6 +231,7 @@ describe('VitalsBiometricsForm', () => {
       }),
       expect.any(AbortController),
       'test-session-location',
+      'test-visit-uuid',
     );
 
     expect(mockShowSnackbar).toHaveBeenCalledTimes(1);
@@ -289,6 +293,27 @@ describe('VitalsBiometricsForm', () => {
       isLowContrast: false,
       kind: 'error',
       subtitle: 'Some of the values entered are invalid',
+      title: 'Error saving vitals and biometrics',
+    });
+  });
+
+  it('does not save vitals and biometrics without an active visit', async () => {
+    const user = userEvent.setup();
+
+    mockUseVisit.mockReturnValue({
+      currentVisit: null,
+    } as ReturnType<typeof useVisit>);
+
+    render(<VitalsAndBiometricsForm {...testProps} />);
+
+    await user.type(screen.getByRole('spinbutton', { name: /weight/i }), weightValue.toString());
+    await user.click(screen.getByRole('button', { name: /save and close/i }));
+
+    expect(mockSavePatientVitals).not.toHaveBeenCalled();
+    expect(mockShowSnackbar).toHaveBeenCalledWith({
+      isLowContrast: false,
+      kind: 'error',
+      subtitle: 'An active visit is required to record vitals and biometrics.',
       title: 'Error saving vitals and biometrics',
     });
   });

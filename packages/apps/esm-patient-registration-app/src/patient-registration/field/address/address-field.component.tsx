@@ -10,6 +10,7 @@ import styles from '../field.scss';
 import { useOrderedAddressHierarchyLevels } from './address-hierarchy.resource';
 import AddressHierarchyLevels from './address-hierarchy-levels.component';
 import AddressSearchComponent from './address-search.component';
+import { type AddressFieldDefinition } from './address-types';
 
 const peruAddressDefaults = {
   country: 'Perú',
@@ -48,18 +49,27 @@ export const AddressComponent: React.FC = () => {
   } = config;
 
   const { inEditMode, setFieldValue, values } = useContext(PatientRegistrationContext);
-  const { orderedFields, isLoadingFieldOrder, errorFetchingFieldOrder } = useOrderedAddressHierarchyLevels();
+  const { orderedFields, requiredFields, isLoadingFieldOrder, errorFetchingFieldOrder } =
+    useOrderedAddressHierarchyLevels();
   const hasAddressTemplate = !!addressTemplate?.lines?.length;
   const isAddressTemplateLoading =
     isLoadingAddressTemplate ||
     (isLoadingAddressTemplate === undefined && !addressTemplateError && !hasAddressTemplate);
+  const addressFields = useMemo<Array<AddressFieldDefinition>>(
+    () =>
+      addressLayout.map((field) => ({
+        ...field,
+        required: field.required || (addressHierarchyEnabled && (requiredFields?.has(field.name) ?? false)),
+      })),
+    [addressHierarchyEnabled, addressLayout, requiredFields],
+  );
 
   useEffect(() => {
-    if (!addressLayout.length) {
+    if (!addressFields.length) {
       return;
     }
 
-    const availableAddressFields = new Set<string>(addressLayout.map((field) => field.name));
+    const availableAddressFields = new Set<string>(addressFields.map((field) => field.name));
     const defaults = {
       ...(inEditMode ? {} : peruAddressDefaults),
       ...(addressTemplate?.elementDefaults ?? {}),
@@ -70,7 +80,7 @@ export const AddressComponent: React.FC = () => {
         setFieldValue(`address.${name}`, defaultValue);
       }
     });
-  }, [addressLayout, addressTemplate?.elementDefaults, inEditMode, setFieldValue, values.address]);
+  }, [addressFields, addressTemplate?.elementDefaults, inEditMode, setFieldValue, values.address]);
 
   const orderedAddressFields = useMemo(() => {
     if (isLoadingFieldOrder || errorFetchingFieldOrder) {
@@ -78,17 +88,17 @@ export const AddressComponent: React.FC = () => {
     }
 
     if (!orderedFields?.length) {
-      return addressLayout;
+      return addressFields;
     }
 
     const orderMap = Object.fromEntries(orderedFields.map((field, indx) => [field, indx]));
 
-    return [...addressLayout].sort(
+    return [...addressFields].sort(
       (existingField1, existingField2) =>
         (orderMap[existingField1.name] ?? Number.MAX_SAFE_INTEGER) -
         (orderMap[existingField2.name] ?? Number.MAX_SAFE_INTEGER),
     );
-  }, [isLoadingFieldOrder, errorFetchingFieldOrder, orderedFields, addressLayout]);
+  }, [isLoadingFieldOrder, errorFetchingFieldOrder, orderedFields, addressFields]);
 
   if (isAddressTemplateLoading) {
     return (
@@ -120,9 +130,9 @@ export const AddressComponent: React.FC = () => {
   if (!addressHierarchyEnabled || !isOnline) {
     return (
       <AddressComponentContainer>
-        {addressLayout.map((attributes, index) => (
+        {addressFields.map((attributes) => (
           <Input
-            key={`combo_input_${index}`}
+            key={`address_input_${attributes.name}`}
             name={`address.${attributes.name}`}
             labelText={t(attributes.label)}
             id={attributes.name}
@@ -161,9 +171,9 @@ export const AddressComponent: React.FC = () => {
       {searchAddressByLevel ? (
         <AddressHierarchyLevels orderedAddressFields={orderedAddressFields} />
       ) : (
-        orderedAddressFields.map((attributes, index) => (
+        orderedAddressFields.map((attributes) => (
           <Input
-            key={`combo_input_${index}`}
+            key={`address_input_${attributes.name}`}
             name={`address.${attributes.name}`}
             labelText={t(attributes.label)}
             id={attributes.name}

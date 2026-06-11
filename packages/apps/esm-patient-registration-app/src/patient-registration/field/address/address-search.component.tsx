@@ -5,13 +5,14 @@ import { useTranslation } from 'react-i18next';
 import { moduleName } from '../../../constants';
 import { useAddressHierarchy } from './address-hierarchy.resource';
 import styles from './address-search.scss';
+import { type AddressFieldDefinition } from './address-types';
 
 interface AddressLayoutField {
   name: string;
 }
 
 interface AddressSearchComponentProps {
-  addressLayout: Array<AddressLayoutField>;
+  addressLayout: Array<AddressFieldDefinition>;
 }
 
 const AddressSearchComponent: React.FC<AddressSearchComponentProps> = ({ addressLayout }) => {
@@ -102,7 +103,7 @@ const AddressSearchComponent: React.FC<AddressSearchComponentProps> = ({ address
           ) : addressOptions.length > 0 ? (
             addressOptions.map((address) => (
               <li key={address}>
-                <button className={styles.suggestionButton} type="button" onClick={() => handleChange(address)}>
+                <button type="button" className={styles.suggestionButton} onClick={() => handleChange(address)}>
                   {address}
                 </button>
               </li>

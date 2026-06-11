@@ -6,6 +6,8 @@ import { type RegistrationConfig } from '../../config-schema';
 import { getValidationSchema } from './patient-registration-validation';
 
 const mockGetConfig = vi.mocked(getConfig);
+const birthplaceAttributeUuid = '8d8718c2-c2cc-11de-8d13-0010c6dffd0f';
+const phoneAttributeUuid = '14d4f066-15f5-102d-96e4-000c29c2a5d7';
 
 describe('Patient registration validation', () => {
   beforeEach(() => {
@@ -47,6 +49,26 @@ describe('Patient registration validation', () => {
           type: 'person attribute',
           uuid: 'companion-name-attribute',
           showHeading: false,
+        },
+        {
+          id: 'birthplace',
+          type: 'person attribute',
+          uuid: birthplaceAttributeUuid,
+          showHeading: false,
+          validation: {
+            required: false,
+            matches: "^[A-Za-zÁÉÍÓÚÜÑáéíóúüñ0-9][A-Za-zÁÉÍÓÚÜÑáéíóúüñ0-9 ,.'\\-/()]{1,119}$",
+          },
+        },
+        {
+          id: 'phone',
+          type: 'person attribute',
+          uuid: phoneAttributeUuid,
+          showHeading: false,
+          validation: {
+            required: false,
+            matches: '^\\+?[0-9][0-9\\s().-]{5,19}$',
+          },
         },
       ],
     });
@@ -132,6 +154,20 @@ describe('Patient registration validation', () => {
     expect(validationError.errors).toContain('nameContainsInvalidCharacters');
   });
 
+  it.each([
+    ['middleName', 'R2'],
+    ['familyName2', 'D03'],
+    ['additionalMiddleName', 'R2'],
+    ['additionalFamilyName2', 'D03'],
+  ])('should reject digits in optional name field %s', async (fieldName, value) => {
+    const invalidFormValues = {
+      ...validFormValues,
+      [fieldName]: value,
+    };
+    const validationError = await validateFormValues(invalidFormValues);
+    expect(validationError.errors).toContain('nameContainsInvalidCharacters');
+  });
+
   it('should reject names containing forbidden symbols', async () => {
     const invalidFormValues = {
       ...validFormValues,
@@ -149,6 +185,46 @@ describe('Patient registration validation', () => {
     };
     const validationError = await validateFormValues(validNameValues);
     expect(validationError).toBeFalsy();
+  });
+
+  it('should allow valid residence contact attributes', async () => {
+    const validValues = {
+      ...validFormValues,
+      attributes: {
+        [birthplaceAttributeUuid]: 'Huancavelica - Churcampa',
+        [phoneAttributeUuid]: '999 888 777',
+      },
+    };
+
+    const validationError = await validateFormValues(validValues);
+
+    expect(validationError).toBeFalsy();
+  });
+
+  it('should reject scientific notation in phone attributes', async () => {
+    const invalidFormValues = {
+      ...validFormValues,
+      attributes: {
+        [phoneAttributeUuid]: 'e100',
+      },
+    };
+
+    const validationError = await validateFormValues(invalidFormValues);
+
+    expect(validationError.errors).toContain('invalidInput');
+  });
+
+  it('should reject unsupported birthplace characters', async () => {
+    const invalidFormValues = {
+      ...validFormValues,
+      attributes: {
+        [birthplaceAttributeUuid]: '###',
+      },
+    };
+
+    const validationError = await validateFormValues(invalidFormValues);
+
+    expect(validationError.errors).toContain('invalidInput');
   });
 
   it('should reject an identifier that does not match the backend format', async () => {

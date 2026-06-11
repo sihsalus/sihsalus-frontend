@@ -170,6 +170,41 @@
   }
 }
 
+.externalLookup {
+  display: grid;
+  row-gap: layout.$spacing-04;
+  padding: layout.$spacing-04 0 layout.$spacing-04 layout.$spacing-05;
+  border-left: 0.25rem solid colors.$green-60;
+}
+
+.externalLookupHeader {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: layout.$spacing-03 layout.$spacing-05;
+
+  .productiveHeading02Light {
+    margin-bottom: 0;
+  }
+}
+
+.externalLookupDocument {
+  @include type.type-style("label-01");
+  color: colors.$gray-70;
+}
+
+.externalLookupAction {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: layout.$spacing-04;
+}
+
+.externalLookupNotification {
+  margin: 0;
+  max-width: 32rem;
+}
+
 .identifierFieldRow {
   display: flex;
   align-items: center;

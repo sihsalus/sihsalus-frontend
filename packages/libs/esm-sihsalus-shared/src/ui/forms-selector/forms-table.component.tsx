@@ -65,33 +65,41 @@ const FormsTable = ({
               <Table aria-label="forms" {...getTableProps()} className={styles.table}>
                 <TableHead>
                   <TableRow>
-                    {headers.map((header) => (
-                      <TableHeader key={header.key} {...getHeaderProps({ header })}>
-                        {header.header}
-                      </TableHeader>
-                    ))}
+                    {headers.map((header) => {
+                      const { key, ...headerProps } = getHeaderProps({ header });
+
+                      return (
+                        <TableHeader key={key ?? header.key} {...headerProps}>
+                          {header.header}
+                        </TableHeader>
+                      );
+                    })}
                   </TableRow>
                 </TableHead>
                 <TableBody>
-                  {rows.map((row, i) => (
-                    <TableRow key={row.id} {...getRowProps({ row })}>
-                      <TableCell key={row.cells[0].id}>
-                        <Link
-                          style={{ cursor: 'pointer' }}
-                          onClick={() => {
-                            handleFormOpen(tableRows[i].form, '');
-                          }}
-                          role="presentation"
-                          className={styles.formName}
-                        >
-                          {tableRows[i]?.formName}
-                        </Link>
-                      </TableCell>
-                      <TableCell className={styles.editCell}>
-                        <label>{row.cells[1].value ?? t('never', 'Nunca')}</label>
-                      </TableCell>
-                    </TableRow>
-                  ))}
+                  {rows.map((row, i) => {
+                    const { key, ...rowProps } = getRowProps({ row });
+
+                    return (
+                      <TableRow key={key ?? row.id} {...rowProps}>
+                        <TableCell key={row.cells[0].id}>
+                          <Link
+                            style={{ cursor: 'pointer' }}
+                            onClick={() => {
+                              handleFormOpen(tableRows[i].form, '');
+                            }}
+                            role="presentation"
+                            className={styles.formName}
+                          >
+                            {tableRows[i]?.formName}
+                          </Link>
+                        </TableCell>
+                        <TableCell className={styles.editCell}>
+                          <label>{row.cells[1].value ?? t('never', 'Nunca')}</label>
+                        </TableCell>
+                      </TableRow>
+                    );
+                  })}
                 </TableBody>
               </Table>
             )}

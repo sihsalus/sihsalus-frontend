@@ -19,7 +19,6 @@ const mockUseResolvedDiagnosticos = vi.mocked(useResolvedDiagnosticos);
 function makeDefinicionWithOrdenes(uuids: Array<string>): DefinicionIndicadorForm {
   return {
     tipo: 'conteo_atenciones',
-    periodo: 'mes_actual',
     evento: {
       location_uuids: [],
       ordenes: [{ concepto_uuids: uuids }],
@@ -30,7 +29,6 @@ function makeDefinicionWithOrdenes(uuids: Array<string>): DefinicionIndicadorFor
 function makeDefinicionWithoutOrdenes(): DefinicionIndicadorForm {
   return {
     tipo: 'conteo_atenciones',
-    periodo: 'mes_actual',
     evento: {
       location_uuids: [],
       ordenes: [],
@@ -117,5 +115,54 @@ describe('DefinicionView orden rendering', () => {
 
     expect(screen.getByText(/Órdenes:/)).toBeInTheDocument();
     expect(screen.getByText('ord-hemograma')).toBeInTheDocument();
+  });
+});
+
+describe('DefinicionView periodo removal', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    mockUseResolvedLocations.mockReturnValue({
+      data: [],
+      displayMap: new Map(),
+      error: undefined,
+      isLoading: false,
+    } as ReturnType<typeof useResolvedLocations>);
+    mockUseResolvedDiagnosticos.mockReturnValue({
+      data: [],
+      resolveMap: new Map(),
+      error: undefined,
+      isLoading: false,
+    } as ReturnType<typeof useResolvedDiagnosticos>);
+    mockUseResolvedOrdenes.mockReturnValue({
+      data: undefined,
+      displayMap: new Map(),
+      error: undefined,
+      isLoading: false,
+    });
+  });
+
+  it('does NOT render a Periodo label in the definition view', () => {
+    const definicion: DefinicionIndicadorForm = {
+      tipo: 'conteo_atenciones',
+      evento: { location_uuids: ['uuid-x'] },
+    };
+    render(<DefinicionView definicion={definicion} />);
+
+    // The "Periodo:" label should never appear
+    expect(screen.queryByText('Periodo:')).not.toBeInTheDocument();
+    // Legacy periodo labels should not appear
+    expect(screen.queryByText('Mes actual')).not.toBeInTheDocument();
+    expect(screen.queryByText('Trimestre actual')).not.toBeInTheDocument();
+  });
+
+  it('still renders Tipo correctly without periodo', () => {
+    const definicion: DefinicionIndicadorForm = {
+      tipo: 'conteo_pacientes',
+      evento: null,
+    };
+    render(<DefinicionView definicion={definicion} />);
+
+    expect(screen.getByText(/Tipo:/)).toBeInTheDocument();
+    expect(screen.getByText('Conteo de pacientes')).toBeInTheDocument();
   });
 });

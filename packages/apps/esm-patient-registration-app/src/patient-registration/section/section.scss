@@ -36,12 +36,31 @@
   align-items: flex-start;
 }
 
+.demographicsSection {
+  grid-template-columns: minmax(0, 1fr) minmax(17rem, 0.72fr);
+}
+
 .demographicsField {
   min-width: 0;
 }
 
-.demographicsField[data-field-name='name'] {
+.demographicsField[data-field-name="name"] {
   grid-column: 1 / -1;
+}
+
+.demographicsField[data-field-name="id"],
+.demographicsField[data-field-name="reniecLookup"],
+.demographicsField[data-field-name="minsaLookup"] {
+  grid-column: 1;
+}
+
+.demographicsField[data-field-name="dob"] {
+  grid-column: 2;
+  grid-row: 2 / span 2;
+}
+
+.demographicsField[data-field-name="gender"] {
+  grid-column: 1;
 }
 
 .isDeadFieldContainer {
@@ -51,5 +70,14 @@
 :global(.omrs-breakpoint-lt-desktop) {
   .sectionTile {
     padding: layout.$spacing-05;
+  }
+
+  .demographicsSection {
+    grid-template-columns: 1fr;
+  }
+
+  .demographicsField[data-field-name] {
+    grid-column: auto;
+    grid-row: auto;
   }
 }

@@ -1,6 +1,11 @@
 import { Button, ButtonSet, Dropdown, Form, InlineNotification, NumberInput, TextArea, TextInput } from '@carbon/react';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { type DefaultWorkspaceProps, showSnackbar, useConfig } from '@openmrs/esm-framework';
+import {
+  parsePlainDecimalInput,
+  preventScientificNotationAndSignKeys,
+  preventScientificNotationAndSignPaste,
+} from '@openmrs/esm-utils';
 import React, { useCallback, useMemo, useState } from 'react';
 import { Controller, useForm } from 'react-hook-form';
 import { useTranslation } from 'react-i18next';
@@ -382,10 +387,13 @@ const TriageFormWorkspace: React.FC<TriageFormWorkspaceProps> = ({ closeWorkspac
                 disableWheel
                 value={field.value ?? ''}
                 onChange={(_e: unknown, { value: val }: { value: string | number }) => {
-                  if (Number(val) || val === '') {
-                    field.onChange(val === '' ? undefined : Number(val));
+                  const parsedValue = val === '' ? undefined : parsePlainDecimalInput(val);
+                  if (val === '' || parsedValue !== undefined) {
+                    field.onChange(parsedValue);
                   }
                 }}
+                onKeyDown={preventScientificNotationAndSignKeys}
+                onPaste={preventScientificNotationAndSignPaste}
                 invalid={!!errors.weight}
                 invalidText={errors.weight?.message}
                 hideSteppers
@@ -407,10 +415,13 @@ const TriageFormWorkspace: React.FC<TriageFormWorkspaceProps> = ({ closeWorkspac
                 disableWheel
                 value={field.value ?? ''}
                 onChange={(_e: unknown, { value: val }: { value: string | number }) => {
-                  if (Number(val) || val === '') {
-                    field.onChange(val === '' ? undefined : Number(val));
+                  const parsedValue = val === '' ? undefined : parsePlainDecimalInput(val);
+                  if (val === '' || parsedValue !== undefined) {
+                    field.onChange(parsedValue);
                   }
                 }}
+                onKeyDown={preventScientificNotationAndSignKeys}
+                onPaste={preventScientificNotationAndSignPaste}
                 invalid={!!errors.height}
                 invalidText={errors.height?.message}
                 hideSteppers

@@ -1,4 +1,9 @@
 import { Layer, NumberInput } from '@carbon/react';
+import {
+  parsePlainDecimalInput,
+  preventScientificNotationKey,
+  preventScientificNotationPaste,
+} from '@openmrs/esm-utils';
 import classNames from 'classnames';
 import React, { useCallback, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -29,7 +34,7 @@ const NumberField: React.FC<FormFieldInputProps<number | string | null | undefin
 
   const getNumericValue = useCallback(
     (value: string | number) =>
-      typeof value === 'undefined' || Number.isNaN(Number(value)) ? undefined : Number(value),
+      value === '' || typeof value === 'undefined' ? undefined : parsePlainDecimalInput(value),
     [],
   );
 
@@ -73,6 +78,8 @@ const NumberField: React.FC<FormFieldInputProps<number | string | null | undefin
           name={field.id}
           value={numberValue}
           onChange={handleChange}
+          onKeyDown={preventScientificNotationKey}
+          onPaste={preventScientificNotationPaste}
           allowEmpty={true}
           size="lg"
           hideSteppers={field.hideSteppers ?? false}

@@ -9,10 +9,11 @@ import {
   TableHeader,
   TableRow,
 } from '@carbon/react';
-import { launchWorkspace2, useConfig } from '@openmrs/esm-framework';
+import { launchWorkspace2, useConfig, userHasAccess, useSession } from '@openmrs/esm-framework';
 import { EmptyState, ErrorState } from '@openmrs/esm-patient-common-lib';
 import React, { useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
+import { credNeonatalEditPrivilege } from '../../../../constants';
 import { useCurrentPregnancy } from '../../../../hooks/useCurrentPregnancy';
 import { formEntryWorkspace } from '../../../../types';
 
@@ -32,6 +33,8 @@ interface SummaryRow {
 // Component
 const LabourHistorySummary: React.FC<LabourHistorySummaryProps> = ({ patientUuid }) => {
   const { t } = useTranslation();
+  const session = useSession();
+  const canEdit = userHasAccess(credNeonatalEditPrivilege, session?.user);
 
   const headerTitle = t('labourHistorySummary', 'Labour history summary');
   const config = useConfig();
@@ -180,7 +183,7 @@ const LabourHistorySummary: React.FC<LabourHistorySummaryProps> = ({ patientUuid
         <EmptyState
           headerTitle={headerTitle}
           displayText={t('noDataAvailableDescription', 'No data available')}
-          launchForm={handleAddLabourDetails}
+          launchForm={canEdit ? handleAddLabourDetails : undefined}
         />
       )}
     </div>

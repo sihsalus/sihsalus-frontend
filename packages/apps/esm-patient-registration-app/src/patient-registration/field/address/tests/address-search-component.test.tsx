@@ -6,7 +6,6 @@ import { mockedAddressOptions, mockedAddressTemplate, mockedOrderedFields } from
 
 import { esmPatientRegistrationSchema, type RegistrationConfig } from '../../../../config-schema';
 import { type Resources, ResourcesContext } from '../../../../offline.resources';
-import { PatientRegistrationContext } from '../../../patient-registration-context';
 import { useAddressHierarchy, useOrderedAddressHierarchyLevels } from '../address-hierarchy.resource';
 import AddressSearchComponent from '../address-search.component';
 
@@ -38,6 +37,7 @@ const allFields = mockedAddressTemplate.lines
     id: codeName,
     name: codeName,
     label: displayText,
+    required: false,
   }));
 const orderMap = Object.fromEntries(mockedOrderedFields.map((field, indx) => [field, indx]));
 allFields.sort((existingField1, existingField2) => orderMap[existingField1.name] - orderMap[existingField2.name]);
@@ -47,9 +47,7 @@ async function renderAddressHierarchy(addressTemplate = mockedAddressTemplate) {
     <ResourcesContext.Provider value={{ addressTemplate } as Resources}>
       <Formik initialValues={{}} onSubmit={null}>
         <Form>
-          <PatientRegistrationContext.Provider value={{ setFieldValue: vi.fn() } as any}>
-            <AddressSearchComponent addressLayout={allFields} />
-          </PatientRegistrationContext.Provider>
+          <AddressSearchComponent addressLayout={allFields} />
         </Form>
       </Formik>
     </ResourcesContext.Provider>,

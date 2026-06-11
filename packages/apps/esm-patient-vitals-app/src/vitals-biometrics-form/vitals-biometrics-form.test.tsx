@@ -7,8 +7,8 @@ import {
   useSession,
   useVisit,
 } from '@openmrs/esm-framework';
-import { useReferenceRanges } from '@openmrs/esm-patient-common-lib';
-import { render, screen } from '@testing-library/react';
+import { type PatientWorkspace2DefinitionProps, useReferenceRanges } from '@openmrs/esm-patient-common-lib';
+import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { mockConceptMetadata, mockConceptRanges, mockConceptUnits, mockPatient, mockVitalsConfig } from 'test-utils';
 
@@ -34,6 +34,23 @@ const testProps = {
   promptBeforeClosing: vi.fn(),
   formContext: 'creating' as 'creating' | 'editing',
   setTitle: vi.fn(),
+};
+
+const testWorkspace2Props: PatientWorkspace2DefinitionProps<{ encounterTypeUuid?: string }, object> = {
+  closeWorkspace: vi.fn(),
+  groupProps: {
+    patient: mockPatient as unknown as fhir.Patient,
+    patientUuid: mockPatient.id,
+    visitContext: null,
+    mutateVisitContext: null,
+  },
+  launchChildWorkspace: vi.fn(),
+  workspaceProps: {},
+  workspaceName: '',
+  windowProps: {},
+  windowName: '',
+  isRootWorkspace: false,
+  showActionMenu: true,
 };
 
 const mockShowSnackbar = vi.mocked(showSnackbar);
@@ -242,6 +259,42 @@ describe('VitalsBiometricsForm', () => {
         subtitle: 'They are now visible on the Vitals and Biometrics page',
         title: 'Vitals and Biometrics saved',
       }),
+    );
+  });
+
+  it('uses the workspace encounter type override when saving from Workspace 2', async () => {
+    const user = userEvent.setup();
+    const triageEncounterTypeUuid = 'triage-encounter-type-uuid';
+
+    mockSavePatientVitals.mockResolvedValue({
+      statusText: 'created',
+      status: 201,
+      data: [],
+    } as FetchResponse<unknown>);
+
+    render(
+      <VitalsAndBiometricsForm
+        {...testWorkspace2Props}
+        workspaceProps={{
+          encounterTypeUuid: triageEncounterTypeUuid,
+        }}
+      />,
+    );
+
+    await user.type(screen.getByRole('spinbutton', { name: /weight/i }), weightValue.toString());
+    await user.click(screen.getByRole('button', { name: /save and close/i }));
+
+    await waitFor(() => expect(mockSavePatientVitals).toHaveBeenCalledTimes(1));
+    expect(mockSavePatientVitals).toHaveBeenCalledWith(
+      triageEncounterTypeUuid,
+      mockVitalsConfig.concepts,
+      mockPatient.id,
+      expect.objectContaining({
+        weight: weightValue,
+      }),
+      expect.any(AbortController),
+      'test-session-location',
+      'test-visit-uuid',
     );
   });
 

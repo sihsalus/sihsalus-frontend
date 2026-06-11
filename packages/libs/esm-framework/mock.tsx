@@ -220,6 +220,8 @@ export {
   formatPatientName,
   getDefaultsFromConfigSchema,
   getPatientName,
+  getPreferredIdentifier,
+  preferredIdentifierNames,
   selectPreferredName,
 } from '@openmrs/esm-utils';
 

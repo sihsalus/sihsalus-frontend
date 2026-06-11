@@ -84,9 +84,13 @@ const VitalsAndBiometricFormSchema = z
 
 export type VitalsBiometricsFormData = z.infer<typeof VitalsAndBiometricFormSchema>;
 
-type VitalsBiometricsWorkspace2Props = PatientWorkspace2DefinitionProps<ConditionalFieldOverrides, object>;
+interface VitalsBiometricsWorkspaceOverrides extends ConditionalFieldOverrides {
+  encounterTypeUuid?: string;
+}
+
+type VitalsBiometricsWorkspace2Props = PatientWorkspace2DefinitionProps<VitalsBiometricsWorkspaceOverrides, object>;
 type VitalsBiometricsWorkspaceProps =
-  | (DefaultPatientWorkspaceProps & ConditionalFieldOverrides)
+  | (DefaultPatientWorkspaceProps & VitalsBiometricsWorkspaceOverrides)
   | VitalsBiometricsWorkspace2Props;
 
 function isWorkspace2Props(props: VitalsBiometricsWorkspaceProps): props is VitalsBiometricsWorkspace2Props {
@@ -202,7 +206,11 @@ const VitalsAndBiometricsForm: React.FC<VitalsBiometricsWorkspaceProps> = (props
   const headCircumference = watch('headCircumference');
   const chestCircumference = watch('chestCircumference');
 
-  const fieldOverrides: ConditionalFieldOverrides = isWorkspace2Props(props) ? (props.workspaceProps ?? {}) : props;
+  const workspaceOverrides: VitalsBiometricsWorkspaceOverrides = isWorkspace2Props(props)
+    ? (props.workspaceProps ?? {})
+    : props;
+  const fieldOverrides: ConditionalFieldOverrides = workspaceOverrides;
+  const encounterTypeUuid = workspaceOverrides.encounterTypeUuid ?? config.vitals.encounterTypeUuid;
   const ageInDays = getAgeInDays(patient?.patient?.birthDate);
   const showHeadCircumference = isConditionalFieldVisible(
     'headCircumference',
@@ -332,7 +340,7 @@ const VitalsAndBiometricsForm: React.FC<VitalsBiometricsWorkspaceProps> = (props
         const abortController = new AbortController();
 
         savePatientVitals(
-          config.vitals.encounterTypeUuid,
+          encounterTypeUuid,
           config.concepts,
           patientUuid,
           formData,
@@ -372,9 +380,9 @@ const VitalsAndBiometricsForm: React.FC<VitalsBiometricsWorkspaceProps> = (props
       closeCurrentWorkspaceWithSavedChanges,
       conceptMetadata,
       config.concepts,
-      config.vitals.encounterTypeUuid,
       currentVisit?.stopDatetime,
       currentVisit?.uuid,
+      encounterTypeUuid,
       getPatientReferenceRange,
       patientUuid,
       session?.sessionLocation?.uuid,
@@ -389,6 +397,7 @@ const VitalsAndBiometricsForm: React.FC<VitalsBiometricsWorkspaceProps> = (props
         state={{
           view: 'form',
           formUuid: config.vitals.formUuid,
+          encounterTypeUuid,
           visitUuid: currentVisit?.uuid,
           visitTypeUuid: currentVisit?.visitType?.uuid,
           patientUuid: patientUuid ?? null,

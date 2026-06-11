@@ -23,7 +23,7 @@ interface ServePatientModalProps {
 
 const ServePatientModal: React.FC<ServePatientModalProps> = ({ queueEntry, closeModal }) => {
   const { t } = useTranslation();
-  const { queueStatuses, emergencyTriageQueueUuid } = useEmergencyConfig();
+  const { queueStatuses, emergencyTriageQueueUuid, triageEncounter } = useEmergencyConfig();
   const { mutate } = useSWRConfig();
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -54,7 +54,12 @@ const ServePatientModal: React.FC<ServePatientModalProps> = ({ queueEntry, close
 
           if (isTriageQueue) {
             // In triage queue: capture vitals with the shared vitals workspace
-            launchWorkspace2(WORKSPACES.TRIAGE_VITALS_FORM, null, null, { patientUuid: queueEntry.patient.uuid });
+            launchWorkspace2(
+              WORKSPACES.TRIAGE_VITALS_FORM,
+              { encounterTypeUuid: triageEncounter.encounterTypeUuid },
+              null,
+              { patientUuid: queueEntry.patient.uuid },
+            );
           } else {
             // In attention queue: open attention form workspace directly
             launchWorkspace(WORKSPACES.ATTENTION_FORM, { queueEntry });
@@ -71,7 +76,7 @@ const ServePatientModal: React.FC<ServePatientModalProps> = ({ queueEntry, close
       .finally(() => {
         setIsSubmitting(false);
       });
-  }, [queueEntry, queueStatuses.inService, isTriageQueue, mutate, closeModal, t]);
+  }, [queueEntry, queueStatuses.inService, isTriageQueue, mutate, closeModal, t, triageEncounter.encounterTypeUuid]);
 
   return (
     <div>

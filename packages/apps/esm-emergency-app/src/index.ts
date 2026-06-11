@@ -12,7 +12,7 @@
  *
  * Exports registered via `getAsyncLifecycle()`:
  * - Pages: root, emergencyHome
- * - Workspaces: emergencyWorkflow, triageForm, attentionForm
+ * - Workspaces: emergencyWorkflow, attentionForm (triage vitals use the shared vitals workspace)
  * - Extensions: header, alerts, metrics, queue table, priority cards (standalone + integrated)
  * - Modals: serve, remove, transition, move, clear queue entries
  */
@@ -205,11 +205,6 @@ export const transitionQueueEntryModal = getAsyncLifecycle(
 export const moveQueueEntryModal = getAsyncLifecycle(() => import('./modals/move-queue-entry.modal'), options);
 
 export const clearQueueEntriesModal = getAsyncLifecycle(() => import('./modals/clear-queue-entries.modal'), options);
-
-/**
- * Triage Form Workspace
- */
-export const triageFormWorkspace = getAsyncLifecycle(() => import('./triage/triage-form.workspace'), options);
 
 /**
  * Attention Form Workspace — Emergency medical attention (diagnosis, treatment, exams)

@@ -7,10 +7,11 @@
  */
 
 import { Button, ModalBody, ModalFooter, ModalHeader, Tag } from '@carbon/react';
-import { getPreferredIdentifier, launchWorkspace, showSnackbar } from '@openmrs/esm-framework';
+import { getPreferredIdentifier, launchWorkspace, launchWorkspace2, showSnackbar } from '@openmrs/esm-framework';
 import React, { useCallback, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useSWRConfig } from 'swr';
+import { WORKSPACES } from '../constants';
 import { useEmergencyConfig } from '../hooks/usePriorityConfig';
 import { type EmergencyQueueEntry, updateEmergencyQueueEntry } from '../resources/emergency.resource';
 import styles from './serve-patient.modal.scss';
@@ -52,11 +53,11 @@ const ServePatientModal: React.FC<ServePatientModalProps> = ({ queueEntry, close
           closeModal();
 
           if (isTriageQueue) {
-            // In triage queue: open triage form workspace directly
-            launchWorkspace('triage-form-workspace', { queueEntry });
+            // In triage queue: capture vitals with the shared vitals workspace
+            launchWorkspace2(WORKSPACES.TRIAGE_VITALS_FORM, null, null, { patientUuid: queueEntry.patient.uuid });
           } else {
             // In attention queue: open attention form workspace directly
-            launchWorkspace('attention-form-workspace', { queueEntry });
+            launchWorkspace(WORKSPACES.ATTENTION_FORM, { queueEntry });
           }
         }
       })

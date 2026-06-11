@@ -18,9 +18,11 @@ import styles from './vitals-biometrics-input.scss';
 
 type fieldId =
   | 'abdominalCircumference'
+  | 'chestCircumference'
   | 'computedBodyMassIndex'
   | 'diastolicBloodPressure'
   | 'generalPatientNote'
+  | 'headCircumference'
   | 'height'
   | 'midUpperArmCircumference'
   | 'oxygenSaturation'

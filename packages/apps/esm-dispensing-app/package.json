@@ -64,7 +64,7 @@
     "@types/react-dom": "^18.3.0",
     "dayjs": "^1.11.13",
     "dotenv": "^16.3.1",
-    "i18next": "^25.0.0",
+    "i18next": "^26.3.1",
     "i18next-parser": "^9.3.0",
     "openmrs": "*",
     "react": "^18.3.1",

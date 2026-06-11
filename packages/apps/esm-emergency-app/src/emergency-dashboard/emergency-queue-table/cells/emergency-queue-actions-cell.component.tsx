@@ -56,8 +56,10 @@ export const EmergencyQueueActionsCell: React.FC<EmergencyQueueTableCellProps> =
   }, [queueEntry]);
 
   const handleOpenTriage = useCallback(() => {
-    launchWorkspace2(WORKSPACES.TRIAGE_VITALS_FORM, null, null, { patientUuid: queueEntry.patient.uuid });
-  }, [queueEntry]);
+    launchWorkspace2(WORKSPACES.TRIAGE_VITALS_FORM, { encounterTypeUuid: triageEncounterTypeUuid }, null, {
+      patientUuid: queueEntry.patient.uuid,
+    });
+  }, [queueEntry.patient.uuid, triageEncounterTypeUuid]);
 
   const handleOpenAttention = useCallback(() => {
     launchWorkspace(WORKSPACES.ATTENTION_FORM, {

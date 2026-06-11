@@ -18,8 +18,7 @@ import {
   useDebounce,
   useSession,
 } from '@openmrs/esm-framework';
-import { type DefaultPatientWorkspaceProps } from '@openmrs/esm-patient-common-lib';
-import { type AntecedentTypeCode } from '@sihsalus/esm-sihsalus-shared';
+import { type AntecedentTypeCode, type DefaultPatientWorkspaceProps } from '@openmrs/esm-patient-common-lib';
 import classNames from 'classnames';
 import dayjs from 'dayjs';
 import 'dayjs/plugin/utc';

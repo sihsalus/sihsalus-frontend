@@ -27,10 +27,10 @@ import {
   CardHeader,
   EmptyState,
   ErrorState,
+  getAntecedentTypeLabel,
   launchPatientWorkspace,
   PatientChartPagination,
 } from '@openmrs/esm-patient-common-lib';
-import { getAntecedentTypeLabel } from '@sihsalus/esm-sihsalus-shared';
 import classNames from 'classnames';
 import type { TFunction } from 'i18next';
 import React, { type ComponentProps, useCallback, useMemo, useState } from 'react';

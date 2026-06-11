@@ -1,11 +1,11 @@
 import { Button, ButtonSet, Form, InlineLoading, InlineNotification } from '@carbon/react';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useLayoutType, Workspace2 } from '@openmrs/esm-framework';
+import type { AntecedentTypeCode } from '@openmrs/esm-patient-common-lib';
 import {
   type DefaultPatientWorkspaceProps,
   type PatientWorkspace2DefinitionProps,
 } from '@openmrs/esm-patient-common-lib';
-import type { AntecedentTypeCode } from '@sihsalus/esm-sihsalus-shared';
 import classNames from 'classnames';
 import type { TFunction } from 'i18next';
 import React, { useCallback, useState } from 'react';

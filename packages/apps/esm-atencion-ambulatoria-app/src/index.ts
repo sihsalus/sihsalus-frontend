@@ -1,6 +1,5 @@
 import { defineConfigSchema, getAsyncLifecycle, getSyncLifecycle } from '@openmrs/esm-framework';
-import { createDashboardLink } from '@openmrs/esm-patient-common-lib';
-import { FormsSelectorWorkspace } from '@sihsalus/esm-sihsalus-shared';
+import { createDashboardLink, FormsSelectorWorkspace } from '@openmrs/esm-patient-common-lib';
 
 import ClinicalEncounterDashboard from './clinical-encounter/dashboard/clinical-encounter-dashboard.component';
 import { configSchema } from './config-schema';

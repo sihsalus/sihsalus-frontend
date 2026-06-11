@@ -1,6 +1,6 @@
 import { formatDate, parseDate, useConfig } from '@openmrs/esm-framework';
-import type { EncounterListColumn } from '@sihsalus/esm-sihsalus-shared';
-import { EncounterList, getObsFromEncounter } from '@sihsalus/esm-sihsalus-shared';
+import type { EncounterListColumn } from '@openmrs/esm-patient-common-lib';
+import { EncounterList, getObsFromEncounter } from '@openmrs/esm-patient-common-lib';
 import React, { useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import type { ConfigObject } from '../../../../config-schema';

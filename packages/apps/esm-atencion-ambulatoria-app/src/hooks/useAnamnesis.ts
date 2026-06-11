@@ -1,11 +1,11 @@
 import { openmrsFetch, restBaseUrl } from '@openmrs/esm-framework';
+import useSWR from 'swr';
 import {
   type AnamnesisConceptMap,
   type AnamnesisEncounter,
   hasAnamnesisData,
   mapEncounterToAnamnesisEntry,
-} from '@sihsalus/esm-sihsalus-shared';
-import useSWR from 'swr';
+} from '../anamnesis/anamnesis';
 
 export function useAnamnesis(patientUuid: string, encounterTypeUuid: string, concepts: AnamnesisConceptMap) {
   const url =

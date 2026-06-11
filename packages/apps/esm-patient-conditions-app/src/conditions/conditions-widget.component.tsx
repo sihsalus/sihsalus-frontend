@@ -17,7 +17,11 @@ import {
 } from '@carbon/react';
 import { WarningFilled } from '@carbon/react/icons';
 import { OpenmrsDatePicker, ResponsiveWrapper, showSnackbar, useDebounce, useSession } from '@openmrs/esm-framework';
-import { type AntecedentTypeCode, antecedentTypeOptions, getAntecedentTypeLabel } from '@sihsalus/esm-sihsalus-shared';
+import {
+  type AntecedentTypeCode,
+  antecedentTypeOptions,
+  getAntecedentTypeLabel,
+} from '@openmrs/esm-patient-common-lib';
 import { Controller, useFormContext } from 'react-hook-form';
 import {
   type CodedCondition,

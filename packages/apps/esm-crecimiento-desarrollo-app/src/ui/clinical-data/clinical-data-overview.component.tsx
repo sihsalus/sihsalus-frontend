@@ -1,6 +1,6 @@
 import { Button, ContentSwitcher, DataTableSkeleton, IconSwitch, InlineLoading } from '@carbon/react';
 import { Add, Analytics, Table } from '@carbon/react/icons';
-import { launchWorkspace, useLayoutType } from '@openmrs/esm-framework';
+import { launchWorkspace2, useLayoutType } from '@openmrs/esm-framework';
 import {
   CardHeader,
   EmptyState,
@@ -54,6 +54,8 @@ interface ClinicalDataOverviewProps {
   tableHeaders: Array<ClinicalTableHeader>;
   tableRows: Array<ClinicalTableRow>;
   formWorkspace?: string;
+  /** Workspace props forwarded on launch (e.g. showFields for the vitals workspace) */
+  formWorkspaceProps?: object;
   emptyStateDisplayText: string;
   conceptUnits: Map<string, string>;
   config: Record<string, string>;
@@ -78,6 +80,7 @@ const ClinicalDataOverview: React.FC<ClinicalDataOverviewProps> = ({
   tableHeaders,
   tableRows,
   formWorkspace,
+  formWorkspaceProps,
   emptyStateDisplayText,
   conceptUnits,
   config: _config,
@@ -96,8 +99,8 @@ const ClinicalDataOverview: React.FC<ClinicalDataOverviewProps> = ({
       launchStartVisitPrompt();
       return;
     }
-    launchWorkspace<{ patientUuid: string }>(formWorkspace, { patientUuid });
-  }, [currentVisit, patientUuid, formWorkspace]);
+    void launchWorkspace2(formWorkspace, formWorkspaceProps ?? null, null, { patientUuid });
+  }, [currentVisit, patientUuid, formWorkspace, formWorkspaceProps]);
 
   return (
     <>

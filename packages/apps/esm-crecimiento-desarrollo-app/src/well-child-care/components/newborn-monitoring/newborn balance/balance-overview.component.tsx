@@ -1,7 +1,6 @@
-import { formatDate, parseDate, useConfig, userHasAccess, useSession } from '@openmrs/esm-framework';
+import { formatDate, parseDate, useConfig } from '@openmrs/esm-framework';
 import React, { useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
-import { credNeonatalEditPrivilege } from '../../../../constants';
 import ClinicalDataOverview from '../../../../ui/clinical-data/clinical-data-overview.component';
 import { useBalance, useVitalsConceptMetadata, withUnit } from '../../../common';
 
@@ -12,8 +11,6 @@ interface BalanceOverviewProps {
 
 const NewbornBalanceOverview: React.FC<BalanceOverviewProps> = ({ patientUuid, pageSize = 10 }) => {
   const { t } = useTranslation();
-  const session = useSession();
-  const canEdit = userHasAccess(credNeonatalEditPrivilege, session?.user);
   const config = useConfig();
   const { data: conceptUnits } = useVitalsConceptMetadata();
   const { data: balanceData, error, isLoading, isValidating } = useBalance(patientUuid);
@@ -133,7 +130,7 @@ const NewbornBalanceOverview: React.FC<BalanceOverviewProps> = ({ patientUuid, p
       isValidating={isValidating}
       tableHeaders={tableHeaders}
       tableRows={tableRows}
-      formWorkspace={canEdit ? 'newborn-fluidBalance-form' : undefined}
+      // Read-only until a replacement for the removed newborn fluid balance form exists
       emptyStateDisplayText={t('balanceOverview', 'Balance de líquidos del recién nacido')}
       conceptUnits={conceptUnits}
       config={config}

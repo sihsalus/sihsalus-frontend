@@ -5,9 +5,12 @@ import {
   useConfig,
   usePatient,
   useSession,
-  useVisit,
 } from '@openmrs/esm-framework';
-import { type PatientWorkspace2DefinitionProps, useReferenceRanges } from '@openmrs/esm-patient-common-lib';
+import {
+  type PatientWorkspace2DefinitionProps,
+  useReferenceRanges,
+  useVisitOrOfflineVisit,
+} from '@openmrs/esm-patient-common-lib';
 import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { mockConceptMetadata, mockConceptRanges, mockConceptUnits, mockPatient, mockVitalsConfig } from 'test-utils';
@@ -59,7 +62,7 @@ const mockUseConfig = vi.mocked(useConfig<ConfigObject>);
 const mockUsePatient = vi.mocked(usePatient);
 const mockUseReferenceRanges = vi.mocked(useReferenceRanges);
 const mockUseSession = vi.mocked(useSession);
-const mockUseVisit = vi.mocked(useVisit);
+const mockUseVisitOrOfflineVisit = vi.mocked(useVisitOrOfflineVisit);
 
 vi.mock('../common', () => ({
   assessValue: vi.fn(),
@@ -87,6 +90,7 @@ vi.mock('@openmrs/esm-patient-common-lib', async () => {
       error: undefined,
       mutate: vi.fn(),
     }),
+    useVisitOrOfflineVisit: vi.fn(),
   };
 });
 
@@ -112,12 +116,12 @@ const activeVisitMock = {
     uuid: 'test-visit-uuid',
     stopDatetime: null,
   },
-} as ReturnType<typeof useVisit>;
+} as ReturnType<typeof useVisitOrOfflineVisit>;
 
 describe('VitalsBiometricsForm', () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    mockUseVisit.mockReturnValue(activeVisitMock);
+    mockUseVisitOrOfflineVisit.mockReturnValue(activeVisitMock);
   });
 
   it('renders the vitals and biometrics form', async () => {
@@ -353,9 +357,9 @@ describe('VitalsBiometricsForm', () => {
   it('does not save vitals and biometrics without an active visit', async () => {
     const user = userEvent.setup();
 
-    mockUseVisit.mockReturnValue({
+    mockUseVisitOrOfflineVisit.mockReturnValue({
       currentVisit: null,
-    } as ReturnType<typeof useVisit>);
+    } as ReturnType<typeof useVisitOrOfflineVisit>);
 
     render(<VitalsAndBiometricsForm {...testProps} />);
 

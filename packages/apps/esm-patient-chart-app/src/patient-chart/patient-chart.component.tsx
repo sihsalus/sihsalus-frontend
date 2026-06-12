@@ -1,10 +1,4 @@
-import {
-  ExtensionSlot,
-  setCurrentVisit,
-  showSnackbar,
-  useLeftNav,
-  usePatient,
-} from '@openmrs/esm-framework';
+import { ExtensionSlot, setCurrentVisit, showSnackbar, useLeftNav, usePatient } from '@openmrs/esm-framework';
 import {
   getPatientChartStore,
   type PatientWorkspaceGroupProps,
@@ -94,10 +88,14 @@ const PatientChart: React.FC = () => {
   // patient search) must be updated in the callback, which is called when the patient
   // chart unmounts.
   useEffect(() => {
+    // Point the visit context store at this patient so that useVisit can promote
+    // the active visit into the visit context (framework 9.x no longer does this
+    // unless the store already references the patient).
+    setCurrentVisit(patientUuid, null);
     return () => {
       setCurrentVisit(null, null);
     };
-  }, []);
+  }, [patientUuid]);
 
   useEffect(() => {
     getPatientChartStore().setState({

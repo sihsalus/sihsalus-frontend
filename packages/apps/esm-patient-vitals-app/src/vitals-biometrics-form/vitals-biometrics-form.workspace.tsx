@@ -19,13 +19,13 @@ import {
   useLayoutType,
   usePatient,
   useSession,
-  useVisit,
   Workspace2,
 } from '@openmrs/esm-framework';
 import {
   type DefaultPatientWorkspaceProps,
   type PatientWorkspace2DefinitionProps,
   useReferenceRanges,
+  useVisitOrOfflineVisit,
 } from '@openmrs/esm-patient-common-lib';
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { useForm } from 'react-hook-form';
@@ -107,7 +107,7 @@ const VitalsAndBiometricsForm: React.FC<VitalsBiometricsWorkspaceProps> = (props
 
   const session = useSession();
   const patient = usePatient(patientUuid);
-  const { currentVisit } = useVisit(patientUuid);
+  const { currentVisit } = useVisitOrOfflineVisit(patientUuid);
   const { data: conceptUnits, conceptMetadata, conceptRanges, isLoading } = useVitalsConceptMetadata();
   const biometricsConceptUuids = useMemo(
     () => [

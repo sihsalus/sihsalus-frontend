@@ -1,17 +1,17 @@
-@use '@carbon/layout';
-@use '@carbon/type';
-@use '@openmrs/esm-styleguide/src/vars' as *;
+@use "@carbon/layout";
+@use "@carbon/type";
+@use "@openmrs/esm-styleguide/src/vars" as *;
 
 .desktopHeading {
   text-align: left;
   text-transform: capitalize;
 
   h4 {
-    @include type.type-style('heading-compact-02');
+    @include type.type-style("heading-compact-02");
     color: $text-02;
 
     &:after {
-      content: '';
+      content: "";
       display: block;
       width: 2rem;
       padding-top: 3px;
@@ -45,7 +45,7 @@
   text-align: center;
 
   p {
-    @include type.type-style('body-compact-01');
+    @include type.type-style("body-compact-01");
     color: $text-02;
     margin-top: layout.$spacing-03;
   }
@@ -59,7 +59,7 @@
 }
 
 .tableHeaderTitle {
-  @include type.type-style('heading-compact-01');
+  @include type.type-style("heading-compact-01");
   color: $text-02;
 }
 
@@ -70,26 +70,26 @@
 }
 
 .badgePresumptive {
-  color: #da1e28;
+  color: $danger;
 }
 
 .badgeDefinitive {
-  color: #198038;
+  color: $support-02;
 }
 
 .badgeNew {
-  color: #0043ce;
+  color: $interactive-01;
 }
 
 .badgeRepeat {
-  color: #6929c4;
+  color: $text-02;
 }
 
 .soapSection {
   margin-bottom: layout.$spacing-05;
 
   h5 {
-    @include type.type-style('heading-compact-01');
+    @include type.type-style("heading-compact-01");
     color: $text-02;
     margin-bottom: layout.$spacing-03;
     padding: layout.$spacing-02 layout.$spacing-03;
@@ -97,7 +97,7 @@
   }
 
   p {
-    @include type.type-style('body-compact-01');
+    @include type.type-style("body-compact-01");
     color: $text-02;
     padding-left: layout.$spacing-05;
   }
@@ -108,15 +108,15 @@
 }
 
 .soapObjective h5 {
-  border-left-color: #0043ce;
+  border-left-color: $interactive-01;
 }
 
 .soapAssessment h5 {
-  border-left-color: #6929c4;
+  border-left-color: $text-02;
 }
 
 .soapPlan h5 {
-  border-left-color: #198038;
+  border-left-color: $support-02;
 }
 
 // Triage styles
@@ -141,12 +141,12 @@
 }
 
 .vitalLabel {
-  @include type.type-style('label-01');
+  @include type.type-style("label-01");
   color: $text-02;
 }
 
 .vitalValue {
-  @include type.type-style('body-compact-01');
+  @include type.type-style("body-compact-01");
   color: $text-02;
 }
 
@@ -161,7 +161,7 @@
   margin-bottom: layout.$spacing-04;
 
   span:first-child {
-    @include type.type-style('heading-compact-01');
+    @include type.type-style("heading-compact-01");
     color: $text-02;
   }
 }

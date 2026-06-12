@@ -103,27 +103,25 @@ export const SisLookupField = () => {
   };
 
   return (
-    <div className={styles.fullWidthInDesktopView}>
-      <div className={styles.externalLookup}>
-        <div className={styles.externalLookupHeader}>
-          <h4 className={styles.productiveHeading02Light}>{t('sisLookupTitle', 'Consulta SIS')}</h4>
-          {dni ? <span className={styles.externalLookupDocument}>DNI {dni}</span> : null}
-        </div>
-        <div className={styles.externalLookupAction}>
-          <Button kind="tertiary" size="sm" renderIcon={Search} onClick={handleLookup} disabled={isLoading}>
-            {t('sisLookupButton', 'Consultar SIS')}
-          </Button>
-          {isLoading ? <InlineLoading description={t('sisLookupLoading', 'Consultando SIS')} /> : null}
-        </div>
-        {status ? (
-          <InlineNotification
-            className={styles.externalLookupNotification}
-            kind={status.kind}
-            lowContrast
-            title={status.title}
-          />
-        ) : null}
+    <div className={styles.externalLookup}>
+      <div className={styles.externalLookupHeader}>
+        <h4 className={styles.productiveHeading02Light}>{t('sisLookupTitle', 'Consulta SIS')}</h4>
+        {dni ? <span className={styles.externalLookupDocument}>DNI {dni}</span> : null}
       </div>
+      <div className={styles.externalLookupAction}>
+        <Button kind="tertiary" size="sm" renderIcon={Search} onClick={handleLookup} disabled={isLoading}>
+          {t('sisLookupButton', 'Consultar SIS')}
+        </Button>
+        {isLoading ? <InlineLoading description={t('sisLookupLoading', 'Consultando SIS')} /> : null}
+      </div>
+      {status ? (
+        <InlineNotification
+          className={styles.externalLookupNotification}
+          kind={status.kind}
+          lowContrast
+          title={status.title}
+        />
+      ) : null}
     </div>
   );
 };

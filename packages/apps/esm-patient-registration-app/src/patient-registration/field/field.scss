@@ -172,8 +172,12 @@
 
 .externalLookup {
   display: grid;
+  align-content: start;
   row-gap: layout.$spacing-04;
-  padding: layout.$spacing-04 0 layout.$spacing-04 layout.$spacing-05;
+  height: 100%;
+  min-height: 8rem;
+  background-color: colors.$gray-10;
+  padding: layout.$spacing-05;
   border-left: 0.25rem solid colors.$green-60;
 }
 
@@ -211,8 +215,15 @@
   justify-content: initial;
 }
 
+.identifierFieldsGrid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  column-gap: layout.$spacing-05;
+  row-gap: layout.$spacing-03;
+}
+
 .identifierFieldRow + .identifierFieldRow {
-  margin-top: layout.$spacing-03;
+  margin-top: 0;
 }
 
 .attributeField {
@@ -271,6 +282,10 @@
 
   .identifierFieldRow {
     width: 100%;
+  }
+
+  .identifierFieldsGrid {
+    grid-template-columns: 1fr;
   }
 }
 

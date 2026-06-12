@@ -281,7 +281,7 @@ describe('Identifiers', () => {
     const configureButton = screen.getByRole('button', { name: 'Configure' });
     expect(configureButton).toBeInTheDocument();
     expect(configureButton).toBeEnabled();
-    expect(screen.getByTestId('nationality-field')).toHaveTextContent('Nacionalidad');
+    expect(screen.queryByTestId('nationality-field')).not.toBeInTheDocument();
   });
 
   it('should open identifier selection overlay when "Configure" button is clicked', async () => {

@@ -16,7 +16,6 @@ import type {
 import { PatientRegistrationContext } from '../../patient-registration-context';
 import { getEffectiveRegistrationConfig } from '../../peru-registration-config';
 import styles from '../field.scss';
-import { NationalityField } from '../person-attributes/nationality-field.component';
 import IdentifierSelectionOverlay from './identifier-selection-overlay.component';
 
 export function setIdentifierSource(
@@ -106,9 +105,6 @@ export const Identifiers: React.FC = () => {
   const [showIdentifierOverlay, setShowIdentifierOverlay] = useState(false);
   const config = getEffectiveRegistrationConfig(useConfig() as RegistrationConfig);
   const { defaultPatientIdentifierTypes } = config;
-  const nationalityFieldDefinition = config.fieldDefinitions.find(
-    (fieldDefinition) => fieldDefinition.id === 'nationality',
-  );
 
   useEffect(() => {
     if (identifierTypes) {
@@ -219,7 +215,7 @@ export const Identifiers: React.FC = () => {
           ) : null}
         </div>
       </UserHasAccess>
-      <div>
+      <div className={styles.identifierFieldsGrid}>
         {Object.keys(values.identifiers).map((fieldName) => {
           const patientIdentifierWithRequired = {
             ...values.identifiers[fieldName],
@@ -253,7 +249,6 @@ export const Identifiers: React.FC = () => {
           <IdentifierSelectionOverlay setFieldValue={setFieldValue} closeOverlay={closeIdentifierSelectionOverlay} />
         ) : null}
       </div>
-      {nationalityFieldDefinition ? <NationalityField fieldDefinition={nationalityFieldDefinition} /> : null}
     </div>
   );
 };

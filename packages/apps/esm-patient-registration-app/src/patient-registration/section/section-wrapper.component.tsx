@@ -13,6 +13,14 @@ export interface SectionWrapperProps {
 
 export const SectionWrapper = ({ sectionDefinition, index }: SectionWrapperProps) => {
   const { t } = useTranslation(moduleName);
+  const isIdentityLookupSection = sectionDefinition.id === 'identityLookup';
+  const sectionNumber = isIdentityLookupSection ? 0 : index;
+  const helperText = isIdentityLookupSection
+    ? t(
+        'identityLookupSectionHelpText',
+        'Ingrese el DNI del paciente y consulte RENIEC/SIS antes de completar los datos.',
+      )
+    : t('allFieldsRequiredText', 'All fields are required unless marked optional');
 
   /*
    * This comment exists to provide translation keys for the default section names.
@@ -26,11 +34,9 @@ export const SectionWrapper = ({ sectionDefinition, index }: SectionWrapperProps
   return (
     <div className={styles.sectionAnchor} id={sectionDefinition.id}>
       <h3 className={styles.productiveHeading02}>
-        {index + 1}. {t(`${sectionDefinition.id}Section`, sectionDefinition.name)}
+        {sectionNumber}. {t(`${sectionDefinition.id}Section`, sectionDefinition.name)}
       </h3>
-      <span className={styles.label01}>
-        {t('allFieldsRequiredText', 'All fields are required unless marked optional')}
-      </span>
+      <span className={styles.label01}>{helperText}</span>
       <div className={styles.sectionCard}>
         <Tile className={styles.sectionTile}>
           <Section sectionDefinition={sectionDefinition} />

@@ -12,14 +12,15 @@ describe('getEffectiveRegistrationConfig', () => {
   it('orders Peru basic info fields for registration', () => {
     const config = getEffectiveRegistrationConfig(getDefaultsFromConfigSchema(esmPatientRegistrationSchema));
 
+    const identityLookup = config.sectionDefinitions.find((section) => section.id === 'identityLookup');
     const demographics = config.sectionDefinitions.find((section) => section.id === 'demographics');
     const contact = config.sectionDefinitions.find((section) => section.id === 'contact');
     const filiation = config.sectionDefinitions.find((section) => section.id === 'filiation');
     const bloodData = config.sectionDefinitions.find((section) => section.id === 'bloodData');
     const nationality = config.fieldDefinitions.find((field) => field.id === 'nationality');
 
-    expect(demographics?.fields).toEqual(['name', 'id', 'reniecLookup', 'dob', 'gender']);
-    expect(demographics?.fields).not.toContain('nationality');
+    expect(identityLookup?.fields).toEqual(['id', 'reniecLookup', 'sisLookup']);
+    expect(demographics?.fields).toEqual(['name', 'dob', 'gender', 'nationality']);
     expect(contact).toMatchObject({
       id: 'contact',
       fields: ['address', 'birthplace', 'phone'],
@@ -60,6 +61,7 @@ describe('getEffectiveRegistrationConfig', () => {
     const responsiblePerson = config.sectionDefinitions.find((section) => section.id === 'responsiblePerson');
 
     expect(config.sections).toEqual([
+      'identityLookup',
       'demographics',
       'contact',
       'filiation',
@@ -90,7 +92,12 @@ describe('getEffectiveRegistrationConfig', () => {
     const config = getEffectiveRegistrationConfig(defaultConfig);
     const demographics = config.sectionDefinitions.find((section) => section.id === 'demographics');
 
-    expect(demographics?.fields).toEqual(['name', 'id', 'reniecLookup', 'dob', 'gender']);
+    expect(config.sectionDefinitions.find((section) => section.id === 'identityLookup')?.fields).toEqual([
+      'id',
+      'reniecLookup',
+      'sisLookup',
+    ]);
+    expect(demographics?.fields).toEqual(['name', 'dob', 'gender', 'nationality']);
   });
 
   it('validates responsible person optional fields when provided', () => {
@@ -123,7 +130,8 @@ describe('getEffectiveRegistrationConfig', () => {
     expect(fieldsById.medicalRecordStatus.defaultValue).toBe('9b3df0a1-0c58-4f55-9868-9c38f1db2031');
     expect(fieldsById.medicalRecordArchiveType.defaultValue).toBe('9b3df0a1-0c58-4f55-9868-9c38f1db2041');
     expect(fieldsById.insuranceAccreditationStatus.defaultValue).toBe('9b3df0a1-0c58-4f55-9868-9c38f1db2054');
-    expect(config.sectionDefinitions.find((section) => section.id === 'insurance')?.fields).toContain('sisLookup');
+    expect(config.sectionDefinitions.find((section) => section.id === 'identityLookup')?.fields).toContain('sisLookup');
+    expect(config.sectionDefinitions.find((section) => section.id === 'insurance')?.fields).not.toContain('sisLookup');
     expect(config.fieldConfigurations.phone.personAttributeUuid).toBe(peruPhoneAttributeTypeUuid);
     expect(config.fieldConfigurations.phone.validation?.matches).toBe('^\\+?[0-9][0-9\\s().-]{5,19}$');
     expect(fieldsById.birthplace.validation?.matches).toBe(
@@ -141,6 +149,7 @@ describe('getEffectiveRegistrationConfig', () => {
     const config = getEffectiveRegistrationConfig(defaultConfig);
 
     expect(config.sections).toEqual([
+      'identityLookup',
       'demographics',
       'contact',
       'filiation',

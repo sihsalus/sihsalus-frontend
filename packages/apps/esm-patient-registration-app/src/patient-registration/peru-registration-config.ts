@@ -20,8 +20,10 @@ export const peruForeignPatientIdentifierTypeUuids = [
   peruDiePatientIdentifierTypeUuid, // Documento de Identidad Extranjero
 ];
 
+const peruPreRegistrationSections = ['identityLookup'];
 const peruSections = ['filiation', 'bloodData', 'medicalRecord', 'insurance', 'responsiblePerson'];
-const peruDemographicsFieldOrder = ['name', 'id', 'reniecLookup', 'dob', 'gender'];
+const peruIdentityLookupFieldOrder = ['id', 'reniecLookup', 'sisLookup'];
+const peruDemographicsFieldOrder = ['name', 'dob', 'gender', 'nationality'];
 const peruContactFieldOrder = ['address', 'birthplace', 'phone'];
 const peruBirthplaceValidationRegex = "^[A-Za-zÁÉÍÓÚÜÑáéíóúüñ0-9][A-Za-zÁÉÍÓÚÜÑáéíóúüñ0-9 ,.'\\-/()]{1,119}$";
 const peruPhoneValidationRegex = '^\\+?[0-9][0-9\\s().-]{5,19}$';
@@ -35,6 +37,11 @@ const minorResponsibleRelationshipTypes = [
 ];
 
 const peruSectionDefinitions: Array<SectionDefinition> = [
+  {
+    id: 'identityLookup',
+    name: 'Validación de identidad y seguro',
+    fields: peruIdentityLookupFieldOrder,
+  },
   {
     id: 'contact',
     name: 'Residencia, nacimiento y contacto',
@@ -58,13 +65,7 @@ const peruSectionDefinitions: Array<SectionDefinition> = [
   {
     id: 'insurance',
     name: 'Seguro',
-    fields: [
-      'insuranceType',
-      'insuranceCode',
-      'insuranceAccreditationStatus',
-      'insuranceAccreditationCheckedAt',
-      'sisLookup',
-    ],
+    fields: ['insuranceType', 'insuranceCode', 'insuranceAccreditationStatus', 'insuranceAccreditationCheckedAt'],
   },
   {
     id: 'responsiblePerson',
@@ -297,16 +298,41 @@ function orderPeruDemographicsSection(sectionDefinitions: Array<SectionDefinitio
 
 function orderPeruDemographicsFields(fields: Array<string>) {
   const visibleDemographicsFields = [
-    'reniecLookup',
     ...fields
-      .filter((field) => field !== 'nationality')
-      .map((field) => (field === 'minsaLookup' ? 'reniecLookup' : field)),
+      .filter((field) => !peruIdentityLookupFieldOrder.includes(field) && field !== 'minsaLookup')
+      .map((field) => (field === 'birthplace' ? 'birthplace' : field)),
+    'nationality',
   ].filter((field, index, demographicsFields) => demographicsFields.indexOf(field) === index);
 
   return [
     ...peruDemographicsFieldOrder.filter((field) => visibleDemographicsFields.includes(field)),
     ...visibleDemographicsFields.filter((field) => !peruDemographicsFieldOrder.includes(field)),
   ];
+}
+
+function normalizePeruLookupSection(sectionDefinitions: Array<SectionDefinition>) {
+  const lookupFields = new Set([...peruIdentityLookupFieldOrder, 'minsaLookup']);
+
+  return sectionDefinitions.map((section) => {
+    if (section.id === 'identityLookup') {
+      const fields = [
+        ...peruIdentityLookupFieldOrder.filter((field) => section.fields.includes(field)),
+        ...section.fields
+          .map((field) => (field === 'minsaLookup' ? 'reniecLookup' : field))
+          .filter((field) => !peruIdentityLookupFieldOrder.includes(field)),
+      ].filter((field, index, fields) => fields.indexOf(field) === index);
+
+      return {
+        ...section,
+        fields,
+      };
+    }
+
+    return {
+      ...section,
+      fields: section.fields.filter((field) => !lookupFields.has(field)),
+    };
+  });
 }
 
 function orderPeruContactSection(sectionDefinitions: Array<SectionDefinition>) {
@@ -326,12 +352,23 @@ function orderPeruContactSection(sectionDefinitions: Array<SectionDefinition>) {
 }
 
 export function getEffectiveRegistrationConfig(config: RegistrationConfig): RegistrationConfig {
-  const relationshipsIndex = config.sections.indexOf('relationships');
-  const sections = config.sections.filter((section) => section !== 'relationships' && section !== 'birthplace');
-  let insertionIndex = relationshipsIndex >= 0 ? relationshipsIndex : sections.length;
+  const sections = config.sections.filter(
+    (section) => section !== 'relationships' && section !== 'birthplace' && !peruPreRegistrationSections.includes(section),
+  );
   const phoneFieldConfiguration = (config.fieldConfigurations.phone ?? {}) as Partial<
     RegistrationConfig['fieldConfigurations']['phone']
   >;
+
+  peruPreRegistrationSections
+    .slice()
+    .reverse()
+    .forEach((section) => {
+      if (!sections.includes(section)) {
+        sections.unshift(section);
+      }
+    });
+
+  let insertionIndex = sections.length;
 
   peruSections.forEach((section) => {
     if (sections.includes(section)) {
@@ -351,7 +388,9 @@ export function getEffectiveRegistrationConfig(config: RegistrationConfig): Regi
     ...config,
     sections,
     sectionDefinitions: orderPeruContactSection(
-      orderPeruDemographicsSection(mergeSectionDefinitions(config.sectionDefinitions, peruSectionDefinitions)),
+      orderPeruDemographicsSection(
+        normalizePeruLookupSection(mergeSectionDefinitions(config.sectionDefinitions, peruSectionDefinitions)),
+      ),
     ),
     fieldDefinitions: appendMissingById(config.fieldDefinitions, peruFieldDefinitions),
     fieldConfigurations: {

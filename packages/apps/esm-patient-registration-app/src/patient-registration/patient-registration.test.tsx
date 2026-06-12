@@ -5,7 +5,7 @@ import {
   useConfig,
   usePatient,
 } from '@openmrs/esm-framework';
-import { fireEvent, render, screen, within } from '@testing-library/react';
+import { fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { BrowserRouter as Router, useParams } from 'react-router-dom';
 import { mockedAddressTemplate, mockIdentifierTypes, mockOpenmrsId, mockPatient } from 'test-utils';
@@ -15,11 +15,12 @@ import { type Resources, ResourcesContext } from '../offline.resources';
 
 import { FormManager } from './form-manager';
 import { PatientRegistration } from './patient-registration.component';
-import { saveEncounter, savePatient } from './patient-registration.resource';
+import { generateIdentifier, saveEncounter, savePatient } from './patient-registration.resource';
 import type { AddressTemplate, Encounter, FormValues } from './patient-registration.types';
 import { useInitialFormValues } from './patient-registration-hooks';
 
 const mockSaveEncounter = vi.mocked(saveEncounter);
+const mockGenerateIdentifier = vi.mocked(generateIdentifier);
 const mockSavePatient = savePatient as vi.Mock;
 const mockShowSnackbar = vi.mocked(showSnackbar);
 const mockUseConfig = vi.mocked(useConfig<RegistrationConfig>);
@@ -95,6 +96,7 @@ vi.mock('react-router-dom', async () => ({
 
 vi.mock('./patient-registration.resource', async () => ({
   ...(await vi.importActual('./patient-registration.resource')),
+  generateIdentifier: vi.fn(),
   saveEncounter: vi.fn(),
   savePatient: vi.fn(),
 }));
@@ -294,6 +296,7 @@ describe('Registering a new patient', () => {
       } as unknown as FormValues,
       vi.fn(),
     ]);
+    mockGenerateIdentifier.mockResolvedValue({ data: { identifier: '100NEW' }, ok: true } as unknown as FetchResponse);
     mockSavePatient.mockReturnValue({ data: { uuid: 'new-pt-uuid' }, ok: true });
   });
 
@@ -331,9 +334,16 @@ describe('Registering a new patient', () => {
 
     await fillRequiredFields();
     await user.click(await screen.findByText(/Register Patient/i));
+    await waitFor(() => expect(mockSavePatient).toHaveBeenCalled());
     expect(mockSavePatient).toHaveBeenCalledWith(
       expect.objectContaining({
-        identifiers: [],
+        identifiers: expect.arrayContaining([
+          expect.objectContaining({
+            identifier: '100NEW',
+            identifierType: '05a29f94-c0ed-11e2-94be-8c13b969e334',
+            preferred: true,
+          }),
+        ]),
         person: {
           addresses: expect.arrayContaining([expect.any(Object)]),
           attributes: [],
@@ -392,7 +402,7 @@ describe('Registering a new patient', () => {
 
     await user.click(screen.getByText(/Register Patient/i));
 
-    expect(mockSavePatient).toHaveBeenCalled();
+    await waitFor(() => expect(mockSavePatient).toHaveBeenCalled());
 
     expect(mockSaveEncounter).toHaveBeenCalledWith(
       expect.objectContaining<Partial<Encounter>>({
@@ -427,14 +437,14 @@ describe('Registering a new patient', () => {
 
     await user.click(registerPatientButton);
 
-    expect(mockSavePatient).toHaveBeenCalledTimes(1);
+    await waitFor(() => expect(mockSavePatient).toHaveBeenCalledTimes(1));
     expect(mockSaveEncounter).toHaveBeenCalledTimes(1);
 
     expect(mockShowSnackbar).toHaveBeenCalledWith(expect.objectContaining({ subtitle: 'an error message' }));
     mockSaveEncounter.mockResolvedValue({} as FetchResponse);
 
     await user.click(registerPatientButton);
-    expect(mockSavePatient).toHaveBeenCalledTimes(2);
+    await waitFor(() => expect(mockSavePatient).toHaveBeenCalledTimes(2));
     expect(mockSaveEncounter).toHaveBeenCalledTimes(2);
 
     expect(mockShowSnackbar).toHaveBeenCalledWith(expect.objectContaining({ kind: 'success' }));
@@ -564,8 +574,8 @@ describe('Updating an existing patient record', () => {
         familyName2: 'Materno',
         gender: 'male',
         givenName: 'John',
-        identifiers: {
-          idCard: {
+        identifiers: expect.objectContaining({
+          idCard: expect.objectContaining({
             autoGeneration: false,
             identifierName: 'ID Card',
             identifierTypeUuid: 'b4143563-16cd-4439-b288-f83d61670fc8',
@@ -575,8 +585,8 @@ describe('Updating an existing patient record', () => {
             preferred: false,
             required: false,
             selectedSource: null,
-          },
-          openMrsId: {
+          }),
+          openMrsId: expect.objectContaining({
             autoGeneration: false,
             identifierName: 'OpenMRS ID',
             identifierTypeUuid: '05a29f94-c0ed-11e2-94be-8c13b969e334',
@@ -586,8 +596,8 @@ describe('Updating an existing patient record', () => {
             preferred: true,
             required: true,
             selectedSource: null,
-          },
-        },
+          }),
+        }),
         isDead: false,
         middleName: '',
         monthsEstimated: 0,
@@ -603,7 +613,7 @@ describe('Updating an existing patient record', () => {
       expect.anything(),
       expect.anything(),
       expect.anything(),
-      { patientSaved: false },
+      expect.objectContaining({ patientSaved: false }),
       expect.anything(),
     );
   });

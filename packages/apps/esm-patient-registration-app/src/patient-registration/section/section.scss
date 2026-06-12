@@ -36,8 +36,21 @@
   align-items: flex-start;
 }
 
+.sectionField {
+  min-width: 0;
+}
+
+.identityLookupSection {
+  grid-template-columns: minmax(30rem, 1.45fr) repeat(2, minmax(14rem, 0.8fr));
+  align-items: stretch;
+}
+
+.identityLookupSection .sectionField {
+  height: 100%;
+}
+
 .demographicsSection {
-  grid-template-columns: minmax(0, 1fr) minmax(17rem, 0.72fr);
+  grid-template-columns: repeat(12, minmax(0, 1fr));
 }
 
 .demographicsField {
@@ -48,19 +61,16 @@
   grid-column: 1 / -1;
 }
 
-.demographicsField[data-field-name="id"],
-.demographicsField[data-field-name="reniecLookup"],
-.demographicsField[data-field-name="minsaLookup"] {
-  grid-column: 1;
-}
-
 .demographicsField[data-field-name="dob"] {
-  grid-column: 2;
-  grid-row: 2 / span 2;
+  grid-column: 1 / span 4;
 }
 
 .demographicsField[data-field-name="gender"] {
-  grid-column: 1;
+  grid-column: 5 / span 3;
+}
+
+.demographicsField[data-field-name="nationality"] {
+  grid-column: 8 / span 3;
 }
 
 .isDeadFieldContainer {
@@ -73,6 +83,10 @@
   }
 
   .demographicsSection {
+    grid-template-columns: 1fr;
+  }
+
+  .identityLookupSection {
     grid-template-columns: 1fr;
   }
 

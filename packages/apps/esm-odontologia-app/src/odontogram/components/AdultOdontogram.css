@@ -54,14 +54,13 @@
 
 /* Horizontal padding aligns the leftmost tooth column with the form's left
    inset (FormDentalClinicalFindings has 1rem horizontal padding).
-   `overflow-x: auto` lets the natural 1260px width of the teeth row scroll
-   horizontally on narrow containers (replaces the old transform-scale
-   wrapper that introduced a layout-box vs visual-box mismatch). */
+   El `ResponsiveOdontogramWrapper` interno escala con CSS `zoom` para que
+   todo entre dentro del ancho disponible — no se necesita scroll horizontal
+   ni overflow. */
 :global(.adult-odontogram-container .teeth-visualization) {
   background: #ffffff;
   padding: 0 1rem;
-  overflow-x: auto;
-  overflow-y: hidden;
+  overflow: hidden;
 }
 
 :global(.adult-odontogram-container .upper-teeth-section),

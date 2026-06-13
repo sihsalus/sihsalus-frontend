@@ -46,7 +46,7 @@ describe('postOrdersOnNewEncounter', () => {
     vi.restoreAllMocks();
   });
 
-  it('uses the current time for an active visit with no stop date', async () => {
+  it('omits the encounterDatetime for an active visit with no stop date', async () => {
     const activeVisit = {
       uuid: 'visit-uuid',
       startDatetime: '2026-05-21T10:00:00.000Z',
@@ -71,7 +71,6 @@ describe('postOrdersOnNewEncounter', () => {
         patient: 'patient-uuid',
         location: 'location-uuid',
         encounterType: 'encounter-type-uuid',
-        encounterDatetime: new Date('2026-05-21T15:00:00.000Z'),
         visit: 'visit-uuid',
         orders: [
           {
@@ -83,9 +82,10 @@ describe('postOrdersOnNewEncounter', () => {
       }),
       signal: expect.any(AbortSignal),
     });
+    expect(mockOpenmrsFetch.mock.calls[0][1].body).not.toHaveProperty('encounterDatetime');
   });
 
-  it('uses the current time when there is no active visit', async () => {
+  it('omits the encounterDatetime when there is no active visit', async () => {
     await postOrdersOnNewEncounter('patient-uuid', 'encounter-type-uuid', null, 'location-uuid', new AbortController());
 
     expect(console.warn).not.toHaveBeenCalled();
@@ -98,7 +98,6 @@ describe('postOrdersOnNewEncounter', () => {
         patient: 'patient-uuid',
         location: 'location-uuid',
         encounterType: 'encounter-type-uuid',
-        encounterDatetime: new Date('2026-05-21T15:00:00.000Z'),
         visit: undefined,
         orders: [
           {
@@ -110,6 +109,7 @@ describe('postOrdersOnNewEncounter', () => {
       }),
       signal: expect.any(AbortSignal),
     });
+    expect(mockOpenmrsFetch.mock.calls[0][1].body).not.toHaveProperty('encounterDatetime');
   });
 
   it('warns and uses the visit start date when the provided visit is not active', async () => {

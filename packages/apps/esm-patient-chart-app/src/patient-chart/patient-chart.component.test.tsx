@@ -73,6 +73,35 @@ describe('PatientChart', () => {
     };
   });
 
+  // Regression test: useVisit only promotes the active visit into the visit context
+  // when the visit store already references the patient, so the chart must point the
+  // store at the patient on mount. Without this, currentVisit stays null chart-wide
+  // (e.g., "An active visit is required to record vitals and biometrics").
+  it('points the visit context store at the patient on mount and clears it on unmount', () => {
+    const { unmount } = render(<PatientChart />);
+
+    expect(mockSetCurrentVisit).toHaveBeenCalledWith('patient-uuid', null);
+
+    unmount();
+
+    expect(mockSetCurrentVisit).toHaveBeenLastCalledWith(null, null);
+  });
+
+  it('re-points the visit context store when navigating to another patient', () => {
+    const { rerender } = render(<PatientChart />);
+
+    expect(mockSetCurrentVisit).toHaveBeenLastCalledWith('patient-uuid', null);
+
+    mockPatientUuid = 'other-patient-uuid';
+    mockPatient = {
+      id: 'other-patient-uuid',
+    };
+
+    rerender(<PatientChart />);
+
+    expect(mockSetCurrentVisit).toHaveBeenLastCalledWith('other-patient-uuid', null);
+  });
+
   it('launches the patient-chart workspace group with the active visit context', async () => {
     render(<PatientChart />);
 

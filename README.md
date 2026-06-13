@@ -32,8 +32,8 @@ yarn clean && yarn build && yarn assemble
 SIHSALUS_DEV_APPS=esm-login-app,esm-home-app yarn start
 # → http://localhost:8080/openmrs/spa/
 
-You can also specify the port with the flag
-SIHSALUS_PORT=3000 SIHSALUS_DEV_APPS=esm-login-app,esm-home-app yarn start
+# Para usar un puerto distinto:
+yarn start --port 3000
 # → http://localhost:3000/openmrs/spa/
 ```
 

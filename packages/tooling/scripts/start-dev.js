@@ -20,7 +20,14 @@ const backendSource = hadBackendBeforeDotenv ? 'shell' : dotenvResult.parsed?.SI
 const requireBackendUrl = process.env.SIHSALUS_REQUIRE_BACKEND_URL === 'true';
 const authMode = process.env.SIHSALUS_AUTH_MODE || 'openmrs';
 const fhirBase = process.env.SIHSALUS_FHIR_BASE || `${backend}/openmrs/ws/fhir2/R4`;
-const proxyPort = Number(process.env.SIHSALUS_PORT) || 8080;
+const proxyPort = (() => {
+  const portArgIdx = process.argv.indexOf('--port');
+  if (portArgIdx !== -1 && process.argv[portArgIdx + 1]) {
+    const val = Number(process.argv[portArgIdx + 1]);
+    if (Number.isFinite(val) && val > 0) return val;
+  }
+  return 8080;
+})();
 const selfSignedTlsDefaultHosts = new Set(['gidis-hsc-dev.inf.pucp.edu.pe', 'gidis-hsc-qlty.inf.pucp.edu.pe']);
 const allowSelfSignedTls = shouldAllowSelfSignedTls(backend);
 let selfSignedBackendDispatcher;
@@ -369,7 +376,7 @@ async function startWithProxy(cliArgs) {
   server.on('error', (error) => {
     if (error.code === 'EADDRINUSE') {
       logFail(`Port ${proxyPort} is already in use.`);
-      logFail(`  Stop the process using it or run with SIHSALUS_PORT=<free-port>.`);
+      logFail(`  Stop the process using it or run with --port <free-port>.`);
     } else {
       logFail(`Could not start local proxy on port ${proxyPort}: ${error.message}`);
     }

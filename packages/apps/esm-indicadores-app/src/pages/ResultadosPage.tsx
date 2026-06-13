@@ -1,8 +1,10 @@
 import {
   Button,
+  ContentSwitcher,
   InlineLoading,
   Select,
   SelectItem,
+  Switch,
   Table,
   TableBody,
   TableCell,
@@ -10,15 +12,12 @@ import {
   TableHeader,
   TableRow,
   Tile,
-  ContentSwitcher,
-  Switch,
 } from '@carbon/react';
 import React, { useMemo, useState } from 'react';
-
+import type { Granularity } from '../api/types';
 import PaginationBar from '../components/PaginationBar';
 import { notifyError, notifySuccess, useIndicadores } from '../features/indicadores/hooks';
 import { useCalcularAhora, useResultados, useResultadosSeries } from '../features/resultados/hooks';
-import type { Granularity } from '../api/types';
 import styles from '../indicators-dashboard.module.scss';
 
 const ResultadosPage: React.FC = () => {
@@ -56,11 +55,7 @@ const ResultadosPage: React.FC = () => {
     [filters.indicador_id, granularity],
   );
 
-  const {
-    data: seriesData,
-    isLoading: seriesLoading,
-    error: seriesError,
-  } = useResultadosSeries(seriesParams);
+  const { data: seriesData, isLoading: seriesLoading, error: seriesError } = useResultadosSeries(seriesParams);
 
   const { calcularAhora } = useCalcularAhora();
 
@@ -181,9 +176,7 @@ const ResultadosPage: React.FC = () => {
               </Table>
             </div>
           ) : (
-            <Tile className={styles.empty}>
-              No hay datos de serie para el indicador y año seleccionados.
-            </Tile>
+            <Tile className={styles.empty}>No hay datos de serie para el indicador y año seleccionados.</Tile>
           )
         ) : (
           <Tile className={styles.empty}>Seleccioná un indicador para ver su serie temporal.</Tile>

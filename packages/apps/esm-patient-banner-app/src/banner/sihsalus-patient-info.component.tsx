@@ -1,9 +1,4 @@
-import {
-  age,
-  ExtensionSlot,
-  formatPartialDate,
-  getPatientName,
-} from '@openmrs/esm-framework';
+import { age, ExtensionSlot, formatPartialDate, getPatientName } from '@openmrs/esm-framework';
 import React, { useMemo } from 'react';
 import styles from './patient-banner.scss';
 
@@ -45,13 +40,7 @@ function getGenderDisplay(gender?: string) {
   }
 }
 
-function Identifier({
-  identifier,
-  highlighted,
-}: {
-  identifier: fhir.Identifier;
-  highlighted: boolean;
-}) {
+function Identifier({ identifier, highlighted }: { identifier: fhir.Identifier; highlighted: boolean }) {
   const label = identifier.type?.text;
 
   return (
@@ -74,7 +63,9 @@ function PatientIdentifiers({ identifiers }: { identifiers?: fhir.Identifier[] }
         return (
           <React.Fragment key={`${identifier.type?.text}-${identifier.value}`}>
             <Identifier identifier={identifier} highlighted={highlighted} />
-            {index < filteredIdentifiers.length - 1 ? <span className={styles.patientInfoSeparator}>&middot;</span> : null}
+            {index < filteredIdentifiers.length - 1 ? (
+              <span className={styles.patientInfoSeparator}>&middot;</span>
+            ) : null}
           </React.Fragment>
         );
       })}
@@ -84,10 +75,7 @@ function PatientIdentifiers({ identifiers }: { identifiers?: fhir.Identifier[] }
 
 export function SihsalusPatientInfo({ patient, renderedFrom }: SihsalusPatientInfoProps) {
   const gender = getGenderDisplay(patient.gender);
-  const extensionState = useMemo(
-    () => ({ patientUuid: patient.id, patient, renderedFrom }),
-    [patient, renderedFrom],
-  );
+  const extensionState = useMemo(() => ({ patientUuid: patient.id, patient, renderedFrom }), [patient, renderedFrom]);
 
   return (
     <div className={styles.patientInfo}>

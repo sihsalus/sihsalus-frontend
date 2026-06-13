@@ -14,7 +14,13 @@ import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 
 import PaginationBar from '../components/PaginationBar';
-import { notifyError, notifySuccess, useDeleteIndicador, useIndicadores, useUpdateIndicador } from '../features/indicadores/hooks';
+import {
+  notifyError,
+  notifySuccess,
+  useDeleteIndicador,
+  useIndicadores,
+  useUpdateIndicador,
+} from '../features/indicadores/hooks';
 import styles from '../indicators-dashboard.module.scss';
 
 const IndicadoresPage: React.FC = () => {

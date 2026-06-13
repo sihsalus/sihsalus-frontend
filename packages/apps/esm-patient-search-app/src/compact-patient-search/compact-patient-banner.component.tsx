@@ -1,10 +1,4 @@
-import {
-  ConfigurableLink,
-  getPatientName,
-  interpolateString,
-  PatientPhoto,
-  useConfig,
-} from '@openmrs/esm-framework';
+import { ConfigurableLink, getPatientName, interpolateString, PatientPhoto, useConfig } from '@openmrs/esm-framework';
 import classNames from 'classnames';
 import React, { forwardRef, useCallback, useContext, useMemo } from 'react';
 import { v4 as uuidv4 } from 'uuid';

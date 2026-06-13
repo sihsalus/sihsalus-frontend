@@ -4,8 +4,7 @@ export const configSchema = {
   indicatorsApiPath: {
     _type: Type.String,
     _default: '/ws/module/indicators/api',
-    _description:
-      'DEPRECATED: Replaced by reportesSqlApiPath. This key is no longer consumed by the app.',
+    _description: 'DEPRECATED: Replaced by reportesSqlApiPath. This key is no longer consumed by the app.',
   },
   reportesSqlApiPath: {
     _type: Type.String,

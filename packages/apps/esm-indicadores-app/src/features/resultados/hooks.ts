@@ -2,7 +2,13 @@ import { useCallback } from 'react';
 import useSWR, { useSWRConfig } from 'swr';
 
 import { calcularAhora, getResultados, getResultadosSeries } from '../../api/resultados';
-import type { GetResultadosParams, GetSeriesParams, IndicadorResultado, PaginatedResponse, SeriesResponse } from '../../api/types';
+import type {
+  GetResultadosParams,
+  GetSeriesParams,
+  IndicadorResultado,
+  PaginatedResponse,
+  SeriesResponse,
+} from '../../api/types';
 
 export function useResultados(params: GetResultadosParams) {
   const { data, error, isLoading, mutate } = useSWR<PaginatedResponse<IndicadorResultado>, Error>(

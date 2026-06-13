@@ -41,9 +41,5 @@ export const DashboardExtension = ({
     </ConfigurableLink>
   );
 
-  return (
-    <div key={path}>
-      {link}
-    </div>
-  );
+  return <div key={path}>{link}</div>;
 };

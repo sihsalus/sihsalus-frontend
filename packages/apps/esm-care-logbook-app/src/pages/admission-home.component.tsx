@@ -167,149 +167,156 @@ export default function AdmissionHome() {
   return (
     <AppErrorBoundary appName="esm-care-logbook-app">
       <RequirePrivilege privilege={admissionPrivilege}>
-      <main className={styles.page}>
-      <h1 className={styles.visuallyHidden}>{t('admissionReportByUps', 'Libro de Atenciones')}</h1>
-      <PageHeader className={styles.header}>
-        <PageHeaderContent
-          title={t('admissionReportByUps', 'Libro de Atenciones')}
-          illustration={<RegistrationPictogram />}
-        />
-        <ConfigurableLink to={`${spaBasePath}/admission/merge`} className={styles.headerAction}>
-          <Button kind="secondary" renderIcon={Launch} as="span">
-            {t('mergeDuplicatePatients', 'Fusionar historias duplicadas')}
-          </Button>
-        </ConfigurableLink>
-      </PageHeader>
+        <main className={styles.page}>
+          <h1 className={styles.visuallyHidden}>{t('admissionReportByUps', 'Libro de Atenciones')}</h1>
+          <PageHeader className={styles.header}>
+            <PageHeaderContent
+              title={t('admissionReportByUps', 'Libro de Atenciones')}
+              illustration={<RegistrationPictogram />}
+            />
+            <ConfigurableLink to={`${spaBasePath}/admission/merge`} className={styles.headerAction}>
+              <Button kind="secondary" renderIcon={Launch} as="span">
+                {t('mergeDuplicatePatients', 'Fusionar historias duplicadas')}
+              </Button>
+            </ConfigurableLink>
+          </PageHeader>
 
-      <div className={styles.content}>
-        <section
-          className={styles.summary}
-          aria-label={t('admissionReportMetrics', 'Métricas del libro de atenciones')}
-        >
-          <div>
-            <span>{t('reportedAdmissions', 'Atenciones registradas')}</span>
-            <strong>{reportSummary.total}</strong>
-          </div>
-          <div>
-            <span>{t('activeAdmissions', 'En curso')}</span>
-            <strong>{reportSummary.active}</strong>
-          </div>
-          <div>
-            <span>{t('finishedAdmissions', 'Finalizadas')}</span>
-            <strong>{reportSummary.finished}</strong>
-          </div>
-          <div>
-            <span>{t('reportedUpsServices', 'UPSS/servicios')}</span>
-            <strong>{reportSummary.services}</strong>
-          </div>
-        </section>
+          <div className={styles.content}>
+            <section
+              className={styles.summary}
+              aria-label={t('admissionReportMetrics', 'Métricas del libro de atenciones')}
+            >
+              <div>
+                <span>{t('reportedAdmissions', 'Atenciones registradas')}</span>
+                <strong>{reportSummary.total}</strong>
+              </div>
+              <div>
+                <span>{t('activeAdmissions', 'En curso')}</span>
+                <strong>{reportSummary.active}</strong>
+              </div>
+              <div>
+                <span>{t('finishedAdmissions', 'Finalizadas')}</span>
+                <strong>{reportSummary.finished}</strong>
+              </div>
+              <div>
+                <span>{t('reportedUpsServices', 'UPSS/servicios')}</span>
+                <strong>{reportSummary.services}</strong>
+              </div>
+            </section>
 
-        <section
-          className={styles.controls}
-          aria-label={t('admissionReportFilters', 'Filtros del libro de atenciones')}
-        >
-          <TextInput
-            id="admission-report-search"
-            labelText={t('searchAdmissions', 'Buscar por paciente, HCE, documento, responsable, servicio o ubicación')}
-            placeholder={t('searchAdmissionsPlaceholder', 'Paciente, HCE, documento, responsable, servicio...')}
-            value={searchTerm}
-            onChange={(event) => setSearchTerm(event.target.value)}
-          />
-          <Select
-            id="admission-status-filter"
-            labelText={t('filterByStatus', 'Filtrar por estado')}
-            value={statusFilter}
-            onChange={(event) => setStatusFilter(event.target.value)}
-          >
-            <SelectItem value="all" text={t('allStatuses', 'Todos los estados')} />
-            {availableStatuses.map((status) => (
-              <SelectItem key={status} value={status} text={status} />
-            ))}
-          </Select>
-          <Button
-            kind="tertiary"
-            renderIcon={Download}
-            onClick={exportFilteredAdmissions}
-            disabled={filteredAdmissions.length === 0}
-          >
-            {t('exportCsv', 'Exportar CSV')}
-          </Button>
-        </section>
-
-        {isLoading ? <InlineLoading description={t('loadingAdmissions', 'Cargando atenciones')} /> : null}
-        {error ? (
-          <InlineNotification
-            kind="error"
-            lowContrast
-            title={t('admissionReportError', 'No se pudo cargar el libro de atenciones')}
-          />
-        ) : null}
-
-        <Layer>
-          <div className={styles.tableWrap}>
-            <table className={styles.table}>
-              <thead>
-                <tr>
-                  <th rowSpan={2}>{t('date', 'Fecha')}</th>
-                  <th rowSpan={2}>{t('medicalRecordNumber', 'HCE / código temporal')}</th>
-                  <th rowSpan={2}>{t('documentNumber', 'Documento')}</th>
-                  <th rowSpan={2}>{t('identificationStatus', 'Estado identificación')}</th>
-                  <th rowSpan={2}>{t('communicationCondition', 'Condición comunicación')}</th>
-                  <th rowSpan={2}>{t('responsiblePerson', 'Responsable')}</th>
-                  <th rowSpan={2}>{t('birthDateShort', 'F. Nac.')}</th>
-                  <th rowSpan={2}>{t('hasSis', 'Tiene SIS')}</th>
-                  <th rowSpan={2}>{t('fullName', 'Nombres y apellidos')}</th>
-                  <th rowSpan={2}>{t('address', 'Dirección')}</th>
-                  <th colSpan={2}>{t('age', 'Edad')}</th>
-                  <th rowSpan={2}>{t('service', 'Servicio')}</th>
-                  <th rowSpan={2}>{t('orderNumber', 'Número de orden')}</th>
-                </tr>
-                <tr>
-                  <th>{t('maleInitial', 'M')}</th>
-                  <th>{t('femaleInitial', 'F')}</th>
-                </tr>
-              </thead>
-              <tbody>
-                {filteredAdmissions.map((admission, index) => (
-                  <tr key={admission.uuid}>
-                    <td>{formatDate(admission.startDatetime)}</td>
-                    <td>{admission.medicalRecordNumber}</td>
-                    <td>{admission.documentNumber || t('pending', 'Pendiente')}</td>
-                    <td>{admission.identificationStatus}</td>
-                    <td>{admission.communicationCondition}</td>
-                    <td>
-                      {[admission.responsibleName, admission.responsibleRelationship].filter(Boolean).join(' - ')}
-                    </td>
-                    <td>{formatDate(admission.birthDate)}</td>
-                    <td>{admission.hasSis}</td>
-                    <td>
-                      {admission.patientUuid ? (
-                        <ConfigurableLink
-                          to={`${spaBasePath}/admission/patient/${admission.patientUuid}`}
-                          className={styles.patientLink}
-                        >
-                          {admission.patientName}
-                        </ConfigurableLink>
-                      ) : (
-                        admission.patientName
-                      )}
-                    </td>
-                    <td>{admission.address}</td>
-                    <td>{getAgeForGender(admission.gender, 'male', admission.birthDate, admission.startDatetime)}</td>
-                    <td>{getAgeForGender(admission.gender, 'female', admission.birthDate, admission.startDatetime)}</td>
-                    <td>{admission.service}</td>
-                    <td>{index + 1}</td>
-                  </tr>
+            <section
+              className={styles.controls}
+              aria-label={t('admissionReportFilters', 'Filtros del libro de atenciones')}
+            >
+              <TextInput
+                id="admission-report-search"
+                labelText={t(
+                  'searchAdmissions',
+                  'Buscar por paciente, HCE, documento, responsable, servicio o ubicación',
+                )}
+                placeholder={t('searchAdmissionsPlaceholder', 'Paciente, HCE, documento, responsable, servicio...')}
+                value={searchTerm}
+                onChange={(event) => setSearchTerm(event.target.value)}
+              />
+              <Select
+                id="admission-status-filter"
+                labelText={t('filterByStatus', 'Filtrar por estado')}
+                value={statusFilter}
+                onChange={(event) => setStatusFilter(event.target.value)}
+              >
+                <SelectItem value="all" text={t('allStatuses', 'Todos los estados')} />
+                {availableStatuses.map((status) => (
+                  <SelectItem key={status} value={status} text={status} />
                 ))}
-              </tbody>
-            </table>
-            {!isLoading && filteredAdmissions.length === 0 ? (
-              <p className={styles.empty}>{t('noAdmissionsFound', 'No se encontraron atenciones recientes.')}</p>
+              </Select>
+              <Button
+                kind="tertiary"
+                renderIcon={Download}
+                onClick={exportFilteredAdmissions}
+                disabled={filteredAdmissions.length === 0}
+              >
+                {t('exportCsv', 'Exportar CSV')}
+              </Button>
+            </section>
+
+            {isLoading ? <InlineLoading description={t('loadingAdmissions', 'Cargando atenciones')} /> : null}
+            {error ? (
+              <InlineNotification
+                kind="error"
+                lowContrast
+                title={t('admissionReportError', 'No se pudo cargar el libro de atenciones')}
+              />
             ) : null}
+
+            <Layer>
+              <div className={styles.tableWrap}>
+                <table className={styles.table}>
+                  <thead>
+                    <tr>
+                      <th rowSpan={2}>{t('date', 'Fecha')}</th>
+                      <th rowSpan={2}>{t('medicalRecordNumber', 'HCE / código temporal')}</th>
+                      <th rowSpan={2}>{t('documentNumber', 'Documento')}</th>
+                      <th rowSpan={2}>{t('identificationStatus', 'Estado identificación')}</th>
+                      <th rowSpan={2}>{t('communicationCondition', 'Condición comunicación')}</th>
+                      <th rowSpan={2}>{t('responsiblePerson', 'Responsable')}</th>
+                      <th rowSpan={2}>{t('birthDateShort', 'F. Nac.')}</th>
+                      <th rowSpan={2}>{t('hasSis', 'Tiene SIS')}</th>
+                      <th rowSpan={2}>{t('fullName', 'Nombres y apellidos')}</th>
+                      <th rowSpan={2}>{t('address', 'Dirección')}</th>
+                      <th colSpan={2}>{t('age', 'Edad')}</th>
+                      <th rowSpan={2}>{t('service', 'Servicio')}</th>
+                      <th rowSpan={2}>{t('orderNumber', 'Número de orden')}</th>
+                    </tr>
+                    <tr>
+                      <th>{t('maleInitial', 'M')}</th>
+                      <th>{t('femaleInitial', 'F')}</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {filteredAdmissions.map((admission, index) => (
+                      <tr key={admission.uuid}>
+                        <td>{formatDate(admission.startDatetime)}</td>
+                        <td>{admission.medicalRecordNumber}</td>
+                        <td>{admission.documentNumber || t('pending', 'Pendiente')}</td>
+                        <td>{admission.identificationStatus}</td>
+                        <td>{admission.communicationCondition}</td>
+                        <td>
+                          {[admission.responsibleName, admission.responsibleRelationship].filter(Boolean).join(' - ')}
+                        </td>
+                        <td>{formatDate(admission.birthDate)}</td>
+                        <td>{admission.hasSis}</td>
+                        <td>
+                          {admission.patientUuid ? (
+                            <ConfigurableLink
+                              to={`${spaBasePath}/admission/patient/${admission.patientUuid}`}
+                              className={styles.patientLink}
+                            >
+                              {admission.patientName}
+                            </ConfigurableLink>
+                          ) : (
+                            admission.patientName
+                          )}
+                        </td>
+                        <td>{admission.address}</td>
+                        <td>
+                          {getAgeForGender(admission.gender, 'male', admission.birthDate, admission.startDatetime)}
+                        </td>
+                        <td>
+                          {getAgeForGender(admission.gender, 'female', admission.birthDate, admission.startDatetime)}
+                        </td>
+                        <td>{admission.service}</td>
+                        <td>{index + 1}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+                {!isLoading && filteredAdmissions.length === 0 ? (
+                  <p className={styles.empty}>{t('noAdmissionsFound', 'No se encontraron atenciones recientes.')}</p>
+                ) : null}
+              </div>
+            </Layer>
           </div>
-        </Layer>
-      </div>
-      </main>
+        </main>
       </RequirePrivilege>
     </AppErrorBoundary>
   );

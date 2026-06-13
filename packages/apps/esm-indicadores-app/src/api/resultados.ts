@@ -1,7 +1,14 @@
-import type { BatchCalcularNowResponse, GetResultadosParams, GetSeriesParams, IndicadorResultado, PaginatedResponse, SeriesResponse } from './types';
-import { getReportesSqlApiPath } from './config';
 import { calcularAhoraMock, getSeriesMock, listResultados } from '../mocks/indicators-data';
 import { fetchJson, withMockFallback } from './client';
+import { getReportesSqlApiPath } from './config';
+import type {
+  BatchCalcularNowResponse,
+  GetResultadosParams,
+  GetSeriesParams,
+  IndicadorResultado,
+  PaginatedResponse,
+  SeriesResponse,
+} from './types';
 
 function ensureQuery(params: Record<string, string | number | undefined>) {
   const search = new URLSearchParams();

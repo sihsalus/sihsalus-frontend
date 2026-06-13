@@ -79,7 +79,9 @@ const AddressSearchComponent: React.FC<AddressSearchComponentProps> = ({ address
 
   return (
     <div className={styles.autocomplete} ref={wrapper}>
-      <span className={styles.searchLabel}>{t('addressHeader', 'Address')} ({t('optional', 'optional')})</span>
+      <span className={styles.searchLabel}>
+        {t('addressHeader', 'Address')} ({t('optional', 'optional')})
+      </span>
       <Search
         onChange={handleInputChange}
         onKeyDown={(e) => {

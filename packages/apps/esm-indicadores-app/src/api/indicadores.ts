@@ -1,17 +1,3 @@
-import type {
-  DiagnosticoOption,
-  Indicador,
-  IndicadorCreatePayload,
-  IndicadorDetail,
-  IndicadorSQLPreview,
-  IndicadorUpdatePayload,
-  IndicadorVersion,
-  LocationOption,
-  OrdenOption,
-  PaginatedResponse,
-  DefinicionIndicadorForm,
-} from './types';
-import { getReportesSqlApiPath, getReportesSqlResourcePath } from './config';
 import {
   createIndicadorMock,
   createVersionMock,
@@ -28,7 +14,21 @@ import {
   updateIndicadorMock,
 } from '../mocks/indicators-data';
 import { fetchJson, toJsonBody, withMockFallback } from './client';
+import { getReportesSqlApiPath, getReportesSqlResourcePath } from './config';
 import { getMockModeState } from './mock-mode';
+import type {
+  DefinicionIndicadorForm,
+  DiagnosticoOption,
+  Indicador,
+  IndicadorCreatePayload,
+  IndicadorDetail,
+  IndicadorSQLPreview,
+  IndicadorUpdatePayload,
+  IndicadorVersion,
+  LocationOption,
+  OrdenOption,
+  PaginatedResponse,
+} from './types';
 
 interface OpenmrsConcept {
   uuid: string;
@@ -60,12 +60,18 @@ function mapConceptToOrden(concept: OpenmrsConcept): OrdenOption {
 export async function getIndicadores(page: number, size: number): Promise<PaginatedResponse<Indicador>> {
   const indicadoresPath = await getReportesSqlResourcePath('indicadores');
   const url = ensureQuery(`${indicadoresPath}/`, { page, size });
-  return withMockFallback(() => fetchJson<PaginatedResponse<Indicador>>(url), () => listIndicadores(page, size));
+  return withMockFallback(
+    () => fetchJson<PaginatedResponse<Indicador>>(url),
+    () => listIndicadores(page, size),
+  );
 }
 
 export async function getIndicador(id: string): Promise<IndicadorDetail> {
   const indicadoresPath = await getReportesSqlResourcePath('indicadores');
-  return withMockFallback(() => fetchJson<IndicadorDetail>(`${indicadoresPath}/${id}`), () => getIndicadorById(id));
+  return withMockFallback(
+    () => fetchJson<IndicadorDetail>(`${indicadoresPath}/${id}`),
+    () => getIndicadorById(id),
+  );
 }
 
 export async function createIndicador(payload: IndicadorCreatePayload): Promise<Indicador> {
@@ -111,7 +117,8 @@ export async function createVersion(id: string, definicion: DefinicionIndicadorF
 export async function previewSql(id: string, versionId?: string): Promise<IndicadorSQLPreview> {
   const reportesSqlBase = await getReportesSqlApiPath();
   return withMockFallback(
-    () => fetchJson<IndicadorSQLPreview>(ensureQuery(`${reportesSqlBase}/indicadores/${id}/preview-sql`, { versionId })),
+    () =>
+      fetchJson<IndicadorSQLPreview>(ensureQuery(`${reportesSqlBase}/indicadores/${id}/preview-sql`, { versionId })),
     () => getSqlPreviewMock(id, versionId),
   );
 }
@@ -140,7 +147,9 @@ export async function searchOrdenes(query: string): Promise<Array<OrdenOption>> 
   return withMockFallback(
     async () => {
       const conceptosPath = await getReportesSqlResourcePath('conceptos');
-      const response = await fetchJson<Array<OpenmrsConcept>>(ensureQuery(`${conceptosPath}/buscar`, { q: query, clase: 'Test' }));
+      const response = await fetchJson<Array<OpenmrsConcept>>(
+        ensureQuery(`${conceptosPath}/buscar`, { q: query, clase: 'Test' }),
+      );
       return response.map(mapConceptToOrden);
     },
     () => searchOrdenesMock(query),

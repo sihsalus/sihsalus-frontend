@@ -353,7 +353,8 @@ function orderPeruContactSection(sectionDefinitions: Array<SectionDefinition>) {
 
 export function getEffectiveRegistrationConfig(config: RegistrationConfig): RegistrationConfig {
   const sections = config.sections.filter(
-    (section) => section !== 'relationships' && section !== 'birthplace' && !peruPreRegistrationSections.includes(section),
+    (section) =>
+      section !== 'relationships' && section !== 'birthplace' && !peruPreRegistrationSections.includes(section),
   );
   const phoneFieldConfiguration = (config.fieldConfigurations.phone ?? {}) as Partial<
     RegistrationConfig['fieldConfigurations']['phone']

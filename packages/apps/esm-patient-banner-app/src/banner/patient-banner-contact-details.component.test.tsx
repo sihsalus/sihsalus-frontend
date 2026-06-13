@@ -199,7 +199,12 @@ describe('PatientBannerContactDetails', () => {
     } as ReturnType<typeof useEthnicIdentity>);
     mockUsePatientContactAttributes.mockReturnValue({
       contactAttributes: [
-        { attributeType: { display: 'Phone', uuid: 'phone-uuid' }, display: 'Phone = 999999999', uuid: 'phone', value: '999999999' },
+        {
+          attributeType: { display: 'Phone', uuid: 'phone-uuid' },
+          display: 'Phone = 999999999',
+          uuid: 'phone',
+          value: '999999999',
+        },
       ],
       isLoading: false,
     });

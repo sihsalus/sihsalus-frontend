@@ -84,7 +84,9 @@ const PatientLists: React.FC<{ patientUuid: string }> = ({ patientUuid }) => {
             const slicedLists = sortedLists.slice(0, 3);
             return slicedLists?.map((cohort) => (
               <li key={cohort.uuid}>
-                <ConfigurableLink to={`${window.spaBase}/home/patient-lists/${cohort.uuid}`}>{cohort.name}</ConfigurableLink>
+                <ConfigurableLink to={`${window.spaBase}/home/patient-lists/${cohort.uuid}`}>
+                  {cohort.name}
+                </ConfigurableLink>
               </li>
             ));
           })()}
@@ -136,7 +138,11 @@ const Address: React.FC<{ patientId: string }> = ({ patientId }) => {
                   />
                 ))
               ) : (
-                <DetailItem key={`address-${key}`} label={getCoreTranslation(key as CoreTranslationKey, key)} value={value} />
+                <DetailItem
+                  key={`address-${key}`}
+                  label={getCoreTranslation(key as CoreTranslationKey, key)}
+                  value={value}
+                />
               ),
             )}
         </ul>
@@ -229,7 +235,10 @@ const PatientAdministrativeDetails: React.FC<{ patientUuid: string }> = ({ patie
   const hasDemographics = Boolean(person?.age || person?.birthdate || gender || status || person?.deathDate);
   const hasIdentifiers = identifiers?.length > 0;
   const hasAdditionalDetails = Boolean(
-    ethnicIdentity || occupation || birthplace || remainingAdditionalAttributes.some((attribute) => getDisplayValue(attribute.value)),
+    ethnicIdentity ||
+      occupation ||
+      birthplace ||
+      remainingAdditionalAttributes.some((attribute) => getDisplayValue(attribute.value)),
   );
 
   return (
@@ -251,7 +260,9 @@ const PatientAdministrativeDetails: React.FC<{ patientUuid: string }> = ({ patie
               <DetailItem
                 label={t('deathDate', 'Death date')}
                 value={
-                  person?.deathDate ? formatDate(parseDate(String(person.deathDate)), { mode: 'wide', time: false }) : ''
+                  person?.deathDate
+                    ? formatDate(parseDate(String(person.deathDate)), { mode: 'wide', time: false })
+                    : ''
                 }
               />
             )}
@@ -297,7 +308,10 @@ const PatientAdministrativeDetails: React.FC<{ patientUuid: string }> = ({ patie
                 key={attribute.uuid}
                 label={
                   attribute.attributeType.display
-                    ? getCoreTranslation(attribute.attributeType.display as CoreTranslationKey, attribute.attributeType.display)
+                    ? getCoreTranslation(
+                        attribute.attributeType.display as CoreTranslationKey,
+                        attribute.attributeType.display,
+                      )
                     : t('attribute', 'Attribute')
                 }
                 value={getDisplayValue(attribute.value)}

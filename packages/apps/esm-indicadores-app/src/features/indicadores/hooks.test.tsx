@@ -28,10 +28,9 @@ describe('useResolvedOrdenes', () => {
       'ord-ferritina': 'Ferritina sérica',
     });
 
-    const { result } = renderHook(
-      () => useResolvedOrdenes(['ord-hemograma', 'ord-ferritina']),
-      { wrapper: swrWrapper },
-    );
+    const { result } = renderHook(() => useResolvedOrdenes(['ord-hemograma', 'ord-ferritina']), {
+      wrapper: swrWrapper,
+    });
 
     await waitFor(() => {
       expect(result.current.isLoading).toBe(false);
@@ -55,10 +54,7 @@ describe('useResolvedOrdenes', () => {
       'ord-hemograma': 'Hemograma',
     });
 
-    renderHook(
-      () => useResolvedOrdenes(['ord-hemograma', 'ord-hemograma', 'ord-hemograma']),
-      { wrapper: swrWrapper },
-    );
+    renderHook(() => useResolvedOrdenes(['ord-hemograma', 'ord-hemograma', 'ord-hemograma']), { wrapper: swrWrapper });
 
     await waitFor(() => {
       expect(mockResolveOrdenes).toHaveBeenCalledWith(['ord-hemograma']);
@@ -68,10 +64,7 @@ describe('useResolvedOrdenes', () => {
   it('returns error state when resolution fails', async () => {
     mockResolveOrdenes.mockRejectedValue(new Error('Resolution failed'));
 
-    const { result } = renderHook(
-      () => useResolvedOrdenes(['ord-hemograma']),
-      { wrapper: swrWrapper },
-    );
+    const { result } = renderHook(() => useResolvedOrdenes(['ord-hemograma']), { wrapper: swrWrapper });
 
     await waitFor(() => {
       expect(result.current.error).toBeDefined();
@@ -84,10 +77,7 @@ describe('useResolvedOrdenes', () => {
   it('shows isLoading=true initially when UUIDs are provided', () => {
     mockResolveOrdenes.mockReturnValue(new Promise(() => {})); // never resolves
 
-    const { result } = renderHook(
-      () => useResolvedOrdenes(['ord-hemograma']),
-      { wrapper: swrWrapper },
-    );
+    const { result } = renderHook(() => useResolvedOrdenes(['ord-hemograma']), { wrapper: swrWrapper });
 
     expect(result.current.isLoading).toBe(true);
   });

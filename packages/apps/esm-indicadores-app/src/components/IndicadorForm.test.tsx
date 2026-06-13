@@ -1,6 +1,6 @@
 import { act, fireEvent, render, screen } from '@testing-library/react';
-import IndicadorForm from './IndicadorForm';
 import type { IndicadorUpdatePayload } from '../api/types';
+import IndicadorForm from './IndicadorForm';
 
 describe('IndicadorForm activo toggle', () => {
   const editInitialMetadata: Pick<IndicadorUpdatePayload, 'nombre' | 'descripcion' | 'activo'> = {
@@ -10,13 +10,7 @@ describe('IndicadorForm activo toggle', () => {
   };
 
   it('renders activo Toggle in edit mode', () => {
-    render(
-      <IndicadorForm
-        mode="edit"
-        initialMetadata={editInitialMetadata}
-        onSubmit={vi.fn()}
-      />,
-    );
+    render(<IndicadorForm mode="edit" initialMetadata={editInitialMetadata} onSubmit={vi.fn()} />);
 
     // The Toggle switch should have accessible name "Activo"
     const toggle = screen.getByRole('switch', { name: 'Activo' });
@@ -33,11 +27,7 @@ describe('IndicadorForm activo toggle', () => {
 
   it('renders Toggle as unchecked when initialMetadata.activo is false', () => {
     render(
-      <IndicadorForm
-        mode="edit"
-        initialMetadata={{ ...editInitialMetadata, activo: false }}
-        onSubmit={vi.fn()}
-      />,
+      <IndicadorForm mode="edit" initialMetadata={{ ...editInitialMetadata, activo: false }} onSubmit={vi.fn()} />,
     );
 
     const toggle = screen.getByRole('switch', { name: 'Inactivo' });
@@ -48,13 +38,7 @@ describe('IndicadorForm activo toggle', () => {
   it('includes activo in submitted metadata when form is submitted in edit mode', async () => {
     const onSubmit = vi.fn().mockResolvedValue(undefined);
 
-    render(
-      <IndicadorForm
-        mode="edit"
-        initialMetadata={editInitialMetadata}
-        onSubmit={onSubmit}
-      />,
-    );
+    render(<IndicadorForm mode="edit" initialMetadata={editInitialMetadata} onSubmit={onSubmit} />);
 
     const submitButton = screen.getByRole('button', { name: 'Guardar' });
     await act(async () => {
@@ -75,13 +59,7 @@ describe('IndicadorForm activo toggle', () => {
   it('includes toggled-off activo in submitted metadata when user toggles before submit', async () => {
     const onSubmit = vi.fn().mockResolvedValue(undefined);
 
-    render(
-      <IndicadorForm
-        mode="edit"
-        initialMetadata={editInitialMetadata}
-        onSubmit={onSubmit}
-      />,
-    );
+    render(<IndicadorForm mode="edit" initialMetadata={editInitialMetadata} onSubmit={onSubmit} />);
 
     // Toggle activo off
     const toggle = screen.getByRole('switch', { name: 'Activo' });
@@ -114,13 +92,7 @@ describe('IndicadorForm periodo removal', () => {
   });
 
   it('does NOT render periodo Select in version mode', () => {
-    render(
-      <IndicadorForm
-        mode="version"
-        initialMetadata={{ nombre: 'Test', descripcion: null }}
-        onSubmit={vi.fn()}
-      />,
-    );
+    render(<IndicadorForm mode="version" initialMetadata={{ nombre: 'Test', descripcion: null }} onSubmit={vi.fn()} />);
 
     expect(screen.queryByText('Periodo')).not.toBeInTheDocument();
   });

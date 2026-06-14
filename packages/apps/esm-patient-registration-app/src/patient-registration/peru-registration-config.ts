@@ -9,6 +9,7 @@ export const peruInsuranceAccreditationCheckedAtAttributeTypeUuid = '9b3df0a1-0c
 export const peruInsuranceAccreditationActiveConceptUuid = '9b3df0a1-0c58-4f55-9868-9c38f1db2051';
 export const peruInsuranceAccreditationInactiveConceptUuid = '9b3df0a1-0c58-4f55-9868-9c38f1db2052';
 export const peruPhoneAttributeTypeUuid = '14d4f066-15f5-102d-96e4-000c29c2a5d7';
+export const peruMobilePhoneAttributeTypeUuid = 'fee4e8ef-aef8-4bb9-8ed0-7ded6055c61f';
 
 const peruDefaultPatientIdentifierTypeUuids = [
   peruDniPatientIdentifierTypeUuid, // DNI
@@ -24,7 +25,7 @@ const peruPreRegistrationSections = ['identityLookup'];
 const peruSections = ['filiation', 'bloodData', 'medicalRecord', 'insurance', 'responsiblePerson'];
 const peruIdentityLookupFieldOrder = ['id', 'reniecLookup', 'sisLookup'];
 const peruDemographicsFieldOrder = ['name', 'dob', 'gender', 'nationality'];
-const peruContactFieldOrder = ['address', 'birthplace', 'phone'];
+const peruContactFieldOrder = ['address', 'birthplace', 'phone', 'mobilePhone'];
 const peruBirthplaceValidationRegex = "^[A-Za-zÁÉÍÓÚÜÑáéíóúüñ0-9][A-Za-zÁÉÍÓÚÜÑáéíóúüñ0-9 ,.'\\-/()]{1,119}$";
 const peruPhoneValidationRegex = '^\\+?[0-9][0-9\\s().-]{5,19}$';
 const peruPersonNameValidationRegex = "^[A-Za-zÁÉÍÓÚÜÑáéíóúüñ][A-Za-zÁÉÍÓÚÜÑáéíóúüñ'.\\- ]*$";
@@ -45,7 +46,7 @@ const peruSectionDefinitions: Array<SectionDefinition> = [
   {
     id: 'contact',
     name: 'Residencia, nacimiento y contacto',
-    fields: ['address', 'birthplace', 'phone'],
+    fields: ['address', 'birthplace', 'phone', 'mobilePhone'],
   },
   {
     id: 'filiation',
@@ -82,6 +83,14 @@ const peruFieldDefinitions: Array<FieldDefinition> = [
     label: 'Lugar de nacimiento',
     showHeading: false,
     validation: { required: false, matches: peruBirthplaceValidationRegex },
+  },
+  {
+    id: 'mobilePhone',
+    type: 'person attribute',
+    uuid: peruMobilePhoneAttributeTypeUuid,
+    label: 'Número de Celular',
+    showHeading: false,
+    validation: { required: false, matches: peruPhoneValidationRegex },
   },
   {
     id: 'nationality',

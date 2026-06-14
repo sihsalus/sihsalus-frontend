@@ -23,7 +23,7 @@ describe('getEffectiveRegistrationConfig', () => {
     expect(demographics?.fields).toEqual(['name', 'dob', 'gender', 'nationality']);
     expect(contact).toMatchObject({
       id: 'contact',
-      fields: ['address', 'birthplace', 'phone'],
+      fields: ['address', 'birthplace', 'phone', 'mobilePhone'],
     });
     expect(filiation?.fields).not.toContain('birthplace');
     expect(filiation?.fields).not.toContain('bloodGroup');

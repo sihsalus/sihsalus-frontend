@@ -1,0 +1,9 @@
+@use "@carbon/layout";
+
+.subsection {
+  margin-bottom: layout.$spacing-06;
+}
+
+.subsection:last-child {
+  margin-bottom: 0;
+}

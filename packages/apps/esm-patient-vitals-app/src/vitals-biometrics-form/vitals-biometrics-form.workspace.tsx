@@ -705,7 +705,7 @@ const VitalsAndBiometricsForm: React.FC<VitalsBiometricsWorkspaceProps> = (props
                       name: t('headCircumference', 'Head circumference'),
                       type: 'number',
                       min: concepts.headCircumferenceRange?.lowAbsolute,
-                      max: concepts.headCircumferenceRange?.highAbsolute,
+                      max: concepts.headCircumferenceRange?.hiAbsolute,
                       id: 'headCircumference',
                     },
                   ]}
@@ -742,7 +742,7 @@ const VitalsAndBiometricsForm: React.FC<VitalsBiometricsWorkspaceProps> = (props
                       name: t('chestCircumference', 'Chest circumference'),
                       type: 'number',
                       min: concepts.chestCircumferenceRange?.lowAbsolute,
-                      max: concepts.chestCircumferenceRange?.highAbsolute,
+                      max: concepts.chestCircumferenceRange?.hiAbsolute,
                       id: 'chestCircumference',
                     },
                   ]}
@@ -793,7 +793,7 @@ const VitalsAndBiometricsForm: React.FC<VitalsBiometricsWorkspaceProps> = (props
                     name: t('abdominalCircumference', 'Abdominal circumference'),
                     type: 'number',
                     min: concepts.abdominalCircumferenceRange?.lowAbsolute,
-                    max: concepts.abdominalCircumferenceRange?.highAbsolute,
+                    max: concepts.abdominalCircumferenceRange?.hiAbsolute,
                     id: 'abdominalCircumference',
                   },
                 ]}

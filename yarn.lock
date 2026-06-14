@@ -9020,7 +9020,9 @@ __metadata:
   resolution: "@sihsalus/esm-patient-registration-app@workspace:packages/apps/esm-patient-registration-app"
   dependencies:
     "@carbon/react": "npm:^1.71.0"
+    "@openmrs/esm-patient-common-lib": "workspace:*"
     "@rspack/cli": "npm:1.7.11"
+    "@sihsalus/esm-form-engine-lib": "workspace:*"
     "@sihsalus/esm-rbac": "workspace:*"
     classnames: "npm:^2.3.2"
     formik: "npm:^2.1.5"

@@ -1,8 +1,14 @@
-import { defineConfigSchema, getAsyncLifecycle, getSyncLifecycle, registerBreadcrumbs } from '@openmrs/esm-framework';
+import {
+  defineConfigSchema,
+  getAsyncLifecycle,
+  getSyncLifecycle,
+  registerBreadcrumbs,
+  registerFeatureFlag,
+} from '@openmrs/esm-framework';
 
 import addPatientLinkComponent from './add-patient-link.extension';
 import { esmPatientRegistrationSchema } from './config-schema';
-import { moduleName, patientRegistration } from './constants';
+import { externalIdentityLookupsFlag, moduleName, patientRegistration } from './constants';
 import { setupOffline } from './offline';
 
 export const importTranslation = require.context('../translations', false, /.json$/, 'lazy');
@@ -14,6 +20,12 @@ const options = {
 
 export function startupApp() {
   defineConfigSchema(moduleName, esmPatientRegistrationSchema);
+
+  registerFeatureFlag(
+    externalIdentityLookupsFlag,
+    'Consultas externas RENIEC/SIS',
+    'Muestra los botones de consulta a RENIEC y SIS en el formulario de registro de pacientes. Permanecen ocultos mientras esté desactivado.',
+  );
 
   registerBreadcrumbs([
     {

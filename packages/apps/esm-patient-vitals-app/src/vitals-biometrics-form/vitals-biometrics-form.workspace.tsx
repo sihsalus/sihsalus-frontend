@@ -119,12 +119,12 @@ const VitalsAndBiometricsForm: React.FC<VitalsBiometricsWorkspaceProps> = (props
       config.concepts.chestCircumferenceUuid,
     ],
     [
-      config.concepts.abdominalCircumferenceUuid,
-      config.concepts.chestCircumferenceUuid,
-      config.concepts.headCircumferenceUuid,
+      config.concepts.weightUuid,
       config.concepts.heightUuid,
       config.concepts.midUpperArmCircumferenceUuid,
-      config.concepts.weightUuid,
+      config.concepts.abdominalCircumferenceUuid,
+      config.concepts.headCircumferenceUuid,
+      config.concepts.chestCircumferenceUuid,
     ],
   );
   const { ranges: patientReferenceRanges, isLoading: isLoadingReferenceRanges } = useReferenceRanges(
@@ -705,7 +705,7 @@ const VitalsAndBiometricsForm: React.FC<VitalsBiometricsWorkspaceProps> = (props
                       name: t('headCircumference', 'Head circumference'),
                       type: 'number',
                       min: concepts.headCircumferenceRange?.lowAbsolute,
-                      max: concepts.headCircumferenceRange?.hiAbsolute,
+                      max: concepts.headCircumferenceRange?.highAbsolute,
                       id: 'headCircumference',
                     },
                   ]}
@@ -742,7 +742,7 @@ const VitalsAndBiometricsForm: React.FC<VitalsBiometricsWorkspaceProps> = (props
                       name: t('chestCircumference', 'Chest circumference'),
                       type: 'number',
                       min: concepts.chestCircumferenceRange?.lowAbsolute,
-                      max: concepts.chestCircumferenceRange?.hiAbsolute,
+                      max: concepts.chestCircumferenceRange?.highAbsolute,
                       id: 'chestCircumference',
                     },
                   ]}
@@ -793,7 +793,7 @@ const VitalsAndBiometricsForm: React.FC<VitalsBiometricsWorkspaceProps> = (props
                     name: t('abdominalCircumference', 'Abdominal circumference'),
                     type: 'number',
                     min: concepts.abdominalCircumferenceRange?.lowAbsolute,
-                    max: concepts.abdominalCircumferenceRange?.hiAbsolute,
+                    max: concepts.abdominalCircumferenceRange?.highAbsolute,
                     id: 'abdominalCircumference',
                   },
                 ]}

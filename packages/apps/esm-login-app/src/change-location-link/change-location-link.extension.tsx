@@ -23,10 +23,9 @@ const ChangeLocationLink: React.FC = () => {
       aria-label={t('changeLocation', 'Change location')}
       className={styles.changeLocationButton}
       onClick={changeLocation}
-      title={currentLocation}
     >
       <LocationIcon size={16} />
-      <span className={styles.currentLocationText}>{currentLocation}</span>
+      <span className={styles.currentLocationText} title={currentLocation}>{currentLocation}</span>
     </HeaderGlobalAction>
   );
 };

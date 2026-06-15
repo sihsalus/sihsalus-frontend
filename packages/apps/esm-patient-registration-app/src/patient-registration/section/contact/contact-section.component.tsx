@@ -11,7 +11,7 @@ export interface ContactSectionProps {
 }
 
 const residenceFieldIds = new Set(['address']);
-const birthplaceFieldIds = new Set(['birthplace', 'birthAddress']);
+const birthplaceFieldIds = new Set(['birthAddress']);
 
 /**
  * Renders the "Residencia, nacimiento y contacto" section split into three
@@ -39,20 +39,9 @@ export const ContactSection = ({ sectionDefinition }: ContactSectionProps) => {
 
       {birthplaceFields.length > 0 && (
         <div className={styles.subsection}>
-          {birthplaceFields.includes('birthAddress') ? (
-            birthplaceFields.map((name) => <Field key={`contact-${name}`} name={name} />)
-          ) : (
-            <>
-              <h4 className={fieldStyles.productiveHeading02Light}>
-                {t('birthplaceSubsectionHeading', 'Lugar de nacimiento')}
-              </h4>
-              <div className={fieldStyles.addressFieldGrid}>
-                {birthplaceFields.map((name) => (
-                  <Field key={`contact-${name}`} name={name} />
-                ))}
-              </div>
-            </>
-          )}
+          {birthplaceFields.map((name) => (
+            <Field key={`contact-${name}`} name={name} />
+          ))}
         </div>
       )}
 

@@ -26,7 +26,6 @@ const peruSections = ['filiation', 'bloodData', 'medicalRecord', 'insurance', 'r
 const peruIdentityLookupFieldOrder = ['id', 'reniecLookup', 'sisLookup'];
 const peruDemographicsFieldOrder = ['name', 'dob', 'gender', 'nationality'];
 const peruContactFieldOrder = ['address', 'birthAddress', 'phone', 'mobilePhone'];
-const peruBirthplaceValidationRegex = "^[A-Za-zÁÉÍÓÚÜÑáéíóúüñ0-9][A-Za-zÁÉÍÓÚÜÑáéíóúüñ0-9 ,.'\\-/()]{1,119}$";
 const peruPhoneValidationRegex = '^\\+?[0-9][0-9\\s().-]{5,19}$';
 const peruPersonNameValidationRegex = "^[A-Za-zÁÉÍÓÚÜÑáéíóúüñ][A-Za-zÁÉÍÓÚÜÑáéíóúüñ'.\\- ]*$";
 const peruAgeValidationRegex = '^(?:[0-9]|[1-9][0-9]|1[01][0-9]|120)$';
@@ -76,14 +75,6 @@ const peruSectionDefinitions: Array<SectionDefinition> = [
 ];
 
 const peruFieldDefinitions: Array<FieldDefinition> = [
-  {
-    id: 'birthplace',
-    type: 'person attribute',
-    uuid: '8d8718c2-c2cc-11de-8d13-0010c6dffd0f',
-    label: 'Lugar de nacimiento',
-    showHeading: false,
-    validation: { required: false, matches: peruBirthplaceValidationRegex },
-  },
   {
     id: 'mobilePhone',
     type: 'person attribute',
@@ -354,7 +345,7 @@ function orderPeruContactSection(sectionDefinitions: Array<SectionDefinition>) {
       return section;
     }
 
-    const fields = section.fields.map((field) => (field === 'birthplace' ? 'birthAddress' : field));
+    const fields = section.fields.filter((field) => field !== 'birthplace');
 
     return {
       ...section,

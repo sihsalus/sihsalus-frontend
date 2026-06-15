@@ -28,7 +28,7 @@ La persistencia sigue separada:
 - La residencia se guarda en `person.addresses` como dirección preferida (`preferred: true`) usando la plantilla de dirección activa del backend.
 - El lugar de nacimiento se guarda como una segunda dirección no preferida (`preferred: false`) dentro de `person.addresses`.
 - La dirección de nacimiento se identifica con la marca interna `address15 = SIHSALUS_BIRTH_ADDRESS`. `address15` no debe agregarse al template visible de dirección en `sihsalus-content`; se usa solo para distinguir el tipo de dirección al hidratar edición/FHIR.
-- El atributo de persona `Lugar de Nacimiento` (`8d8718c2-c2cc-11de-8d13-0010c6dffd0f`) queda como compatibilidad para configs heredadas, pero el flujo Perú por defecto usa `birthAddress`.
+- No hay fallback textual de `Lugar de Nacimiento`. Ese `PersonAttributeType` debe estar retirado en `sihsalus-content`; si se necesita un código administrativo, usar un atributo separado como `UBIGEO de Nacimiento`.
 - El teléfono/celular se guarda como atributo de persona `14d4f066-15f5-102d-96e4-000c29c2a5d7` y también se mapea a `telecom` en el modelo FHIR/offline.
 
 Validaciones locales:
@@ -41,9 +41,6 @@ Validación contra backend:
 
 ```bash
 source .env
-curl -fsS -u "$E2E_USER_ADMIN_USERNAME:$E2E_USER_ADMIN_PASSWORD" \
-  "$E2E_API_BASE_URL/ws/rest/v1/personattributetype/8d8718c2-c2cc-11de-8d13-0010c6dffd0f?v=full"
-
 curl -fsS -u "$E2E_USER_ADMIN_USERNAME:$E2E_USER_ADMIN_PASSWORD" \
   "$E2E_API_BASE_URL/ws/rest/v1/personattributetype/14d4f066-15f5-102d-96e4-000c29c2a5d7?v=full"
 

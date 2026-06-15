@@ -136,9 +136,7 @@ describe('getEffectiveRegistrationConfig', () => {
     expect(config.fieldConfigurations.phone.validation?.matches).toBe('^\\+?[0-9][0-9\\s().-]{5,19}$');
     expect(config.sectionDefinitions.find((section) => section.id === 'contact')?.fields).toContain('birthAddress');
     expect(config.sectionDefinitions.find((section) => section.id === 'contact')?.fields).not.toContain('birthplace');
-    expect(fieldsById.birthplace.validation?.matches).toBe(
-      "^[A-Za-zÁÉÍÓÚÜÑáéíóúüñ0-9][A-Za-zÁÉÍÓÚÜÑáéíóúüñ0-9 ,.'\\-/()]{1,119}$",
-    );
+    expect(fieldsById.birthplace).toBeUndefined();
     expect(fieldsById.gender?.defaultValue).toBeUndefined();
     expect(fieldsById.bloodGroup.defaultValue).toBeUndefined();
     expect(fieldsById.rhFactor.defaultValue).toBeUndefined();
@@ -162,7 +160,7 @@ describe('getEffectiveRegistrationConfig', () => {
     ]);
   });
 
-  it('normalizes legacy contact birthplace fields to structured birthAddress', () => {
+  it('drops legacy contact birthplace fields from the Peru flow', () => {
     const defaultConfig = getDefaultsFromConfigSchema(esmPatientRegistrationSchema) as RegistrationConfig;
     defaultConfig.sectionDefinitions = [
       {

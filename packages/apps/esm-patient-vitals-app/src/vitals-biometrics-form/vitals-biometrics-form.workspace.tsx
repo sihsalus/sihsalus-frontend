@@ -486,6 +486,7 @@ const VitalsAndBiometricsForm: React.FC<VitalsBiometricsWorkspaceProps> = (props
                     name: t('systolic', 'systolic'),
                     separator: '/',
                     type: 'number',
+                    integer: true,
                     min: concepts.systolicBloodPressureRange?.lowAbsolute,
                     max: concepts.systolicBloodPressureRange?.highAbsolute,
                     id: 'systolicBloodPressure',
@@ -493,6 +494,7 @@ const VitalsAndBiometricsForm: React.FC<VitalsBiometricsWorkspaceProps> = (props
                   {
                     name: t('diastolic', 'diastolic'),
                     type: 'number',
+                    integer: true,
                     min: concepts.diastolicBloodPressureRange?.lowAbsolute,
                     max: concepts.diastolicBloodPressureRange?.highAbsolute,
                     id: 'diastolicBloodPressure',
@@ -534,6 +536,7 @@ const VitalsAndBiometricsForm: React.FC<VitalsBiometricsWorkspaceProps> = (props
                   {
                     name: t('pulse', 'Pulse'),
                     type: 'number',
+                    integer: true,
                     min: concepts.pulseRange?.lowAbsolute,
                     max: concepts.pulseRange?.highAbsolute,
                     id: 'pulse',
@@ -558,6 +561,7 @@ const VitalsAndBiometricsForm: React.FC<VitalsBiometricsWorkspaceProps> = (props
                   {
                     name: t('respirationRate', 'Respiration rate'),
                     type: 'number',
+                    integer: true,
                     min: concepts.respiratoryRateRange?.lowAbsolute,
                     max: concepts.respiratoryRateRange?.highAbsolute,
                     id: 'respiratoryRate',
@@ -586,6 +590,7 @@ const VitalsAndBiometricsForm: React.FC<VitalsBiometricsWorkspaceProps> = (props
                   {
                     name: t('oxygenSaturation', 'Oxygen saturation'),
                     type: 'number',
+                    integer: true,
                     min: concepts.oxygenSaturationRange?.lowAbsolute,
                     max: concepts.oxygenSaturationRange?.highAbsolute,
                     id: 'oxygenSaturation',

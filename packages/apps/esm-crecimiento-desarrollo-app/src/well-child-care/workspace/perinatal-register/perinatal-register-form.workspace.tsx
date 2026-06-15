@@ -237,6 +237,7 @@ const PerinatalRegisterForm: React.FC<DefaultPatientWorkspaceProps> = ({ closeWo
                 fieldProperties={[
                   {
                     id: 'gravidez',
+                    integer: true,
                     name: t('gravidez', 'Gravidez'),
                     min: 0,
                     max: 20,
@@ -253,6 +254,7 @@ const PerinatalRegisterForm: React.FC<DefaultPatientWorkspaceProps> = ({ closeWo
                 fieldProperties={[
                   {
                     id: 'partoAlTermino',
+                    integer: true,
                     name: t('partoAlTermino', 'Partos a término'),
                     min: 0,
                     max: 20,
@@ -269,6 +271,7 @@ const PerinatalRegisterForm: React.FC<DefaultPatientWorkspaceProps> = ({ closeWo
                 fieldProperties={[
                   {
                     id: 'partoPrematuro',
+                    integer: true,
                     name: t('partoPrematuro', 'Partos prematuros'),
                     min: 0,
                     max: 20,
@@ -285,6 +288,7 @@ const PerinatalRegisterForm: React.FC<DefaultPatientWorkspaceProps> = ({ closeWo
                 fieldProperties={[
                   {
                     id: 'partoAborto',
+                    integer: true,
                     name: t('partoAborto', 'Abortos'),
                     min: 0,
                     max: 20,
@@ -301,6 +305,7 @@ const PerinatalRegisterForm: React.FC<DefaultPatientWorkspaceProps> = ({ closeWo
                 fieldProperties={[
                   {
                     id: 'partoNacidoVivo',
+                    integer: true,
                     name: t('partoNacidoVivo', 'Nacidos vivos'),
                     min: 0,
                     max: 20,

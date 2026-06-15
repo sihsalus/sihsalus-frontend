@@ -1,3 +1,4 @@
+import { validatePlainNumberInput } from '@openmrs/esm-utils';
 import isNumber from 'lodash-es/isNumber';
 
 import { type ConceptMetadata } from '../common';
@@ -12,6 +13,26 @@ export interface ConditionalFieldOverrides {
   showFields?: Array<ConditionalFieldId>;
   /** Force-hide these fields regardless of age rules (takes precedence over showFields) */
   hideFields?: Array<ConditionalFieldId>;
+}
+
+interface ClinicalNumberInputConstraints {
+  integer?: boolean;
+  max?: number | null;
+  min?: number | null;
+}
+
+export interface ClinicalNumberInputValidation {
+  isInvalid: boolean;
+  isInvalidFormat: boolean;
+  isOutOfRange: boolean;
+  parsedValue: number | undefined;
+}
+
+export function validateClinicalNumberInput(
+  value: string | number,
+  constraints: ClinicalNumberInputConstraints = {},
+): ClinicalNumberInputValidation {
+  return validatePlainNumberInput(value, { ...constraints, nonNegative: true });
 }
 
 export function getAgeInDays(birthDate: string | undefined, asOf: Date = new Date()): number | null {

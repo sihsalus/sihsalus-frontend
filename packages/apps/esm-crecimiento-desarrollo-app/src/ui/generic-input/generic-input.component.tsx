@@ -2,9 +2,9 @@ import { FormLabel, NumberInput, TextArea } from '@carbon/react';
 import { Warning } from '@carbon/react/icons';
 import { ResponsiveWrapper, useLayoutType } from '@openmrs/esm-framework';
 import {
-  parsePlainDecimalInput,
-  preventScientificNotationKey,
-  preventScientificNotationPaste,
+  shouldPreventPlainNumberKey,
+  shouldPreventPlainNumberPaste,
+  validatePlainNumberInput,
 } from '@openmrs/esm-utils';
 import classNames from 'classnames';
 import React, { Fragment, useId, useState } from 'react';
@@ -25,9 +25,11 @@ interface GenericInputProps<T extends FormData> {
   fieldProperties: Array<{
     id: string;
     className?: string;
+    integer?: boolean;
     max?: number | null;
     min?: number | null;
     name: string;
+    nonNegative?: boolean;
     separator?: string;
     type?: FieldTypes;
   }>;
@@ -70,15 +72,50 @@ const GenericInput = <T extends FormData>({
     field: (typeof fieldProperties)[0],
   ): void {
     if (field.type === 'number' || !field.type) {
-      const parsedValue = value === '' ? undefined : parsePlainDecimalInput(value);
-      const isInvalidNumber = value !== '' && parsedValue === undefined;
-      const isOutOfRange =
-        parsedValue !== undefined &&
-        ((field.min != null && parsedValue < field.min) || (field.max != null && parsedValue > field.max));
-      setInvalid(isInvalidNumber || isOutOfRange);
-      onChange(parsedValue);
+      const nonNegative = field.nonNegative ?? (typeof field.min === 'number' && field.min >= 0);
+      const { isInvalid, isInvalidFormat, parsedValue } = validatePlainNumberInput(value, {
+        integer: field.integer,
+        max: field.max,
+        min: field.min,
+        nonNegative,
+      });
+      setInvalid(isInvalid);
+
+      if (!isInvalidFormat) {
+        onChange(parsedValue);
+      }
     } else {
       onChange(value as unknown as number | undefined); // Cast value to match the expected type
+    }
+  }
+
+  function preventInvalidNumberKey(event: React.KeyboardEvent<HTMLInputElement>, field: (typeof fieldProperties)[0]) {
+    if (event.ctrlKey || event.metaKey || event.altKey) {
+      return;
+    }
+
+    const nonNegative = field.nonNegative ?? (typeof field.min === 'number' && field.min >= 0);
+
+    if (shouldPreventPlainNumberKey(event.key, { integer: field.integer, nonNegative })) {
+      event.preventDefault();
+    }
+  }
+
+  function preventInvalidNumberPaste(
+    event: React.ClipboardEvent<HTMLInputElement>,
+    field: (typeof fieldProperties)[0],
+  ) {
+    const pastedValue = event.clipboardData.getData('text');
+    const nonNegative = field.nonNegative ?? (typeof field.min === 'number' && field.min >= 0);
+    if (
+      shouldPreventPlainNumberPaste(pastedValue, {
+        integer: field.integer,
+        max: field.max,
+        min: field.min,
+        nonNegative,
+      })
+    ) {
+      event.preventDefault();
     }
   }
 
@@ -144,12 +181,13 @@ const GenericInput = <T extends FormData>({
                             onBlur={() => handleFocusChange(false)}
                             onChange={(event) => checkValidity(event.currentTarget.value, onChange, fieldProperty)}
                             onFocus={() => handleFocusChange(true)}
-                            onKeyDown={preventScientificNotationKey}
-                            onPaste={preventScientificNotationPaste}
+                            onKeyDown={(event) => preventInvalidNumberKey(event, fieldProperty)}
+                            onPaste={(event) => preventInvalidNumberPaste(event, fieldProperty)}
                             placeholder={placeholder} // Usar el prop directamente
                             readOnly={readOnly}
                             ref={ref}
                             style={fieldStyles}
+                            step={fieldProperty.integer ? 1 : 0.1}
                             title={fieldProperty.name}
                             value={value !== undefined ? (value as number) : ''}
                           />

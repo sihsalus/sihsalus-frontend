@@ -34,6 +34,7 @@ export const configSchema = {
         age: {
           enabled: true,
           min: 0,
+          max: 130,
         },
         postcode: {
           enabled: false,
@@ -55,10 +56,12 @@ export const configSchema = {
           {
             attributeTypeUuid: '4697d0e6-5b24-416b-aee6-708cd9a3a1db',
             placeholder: 'Nombre del responsable o acompañante',
+            disallowNumbers: true,
           },
           {
             attributeTypeUuid: 'a180fa5f-c44e-4490-a981-d7196b70c6ac',
             placeholder: 'Parentesco o vínculo con el paciente',
+            disallowNumbers: true,
           },
           // TODO: Enable identification status once the content package deploys that attribute type.
         ],
@@ -98,7 +101,7 @@ export const configSchema = {
         max: {
           _type: Type.Number,
           _description: 'The maximum value for the age field',
-          _default: 0,
+          _default: 130,
         },
       },
       postcode: {
@@ -158,6 +161,12 @@ export const configSchema = {
               },
             },
           },
+          disallowNumbers: {
+            _type: Type.Boolean,
+            _description:
+              'Optional. If true, numeric characters and unsupported symbols are stripped from string-backed person attribute search filters.',
+            _default: false,
+          },
         },
         _default: [],
       },
@@ -203,6 +212,7 @@ export interface PersonAttributeFieldConfig {
   conceptAnswersUuids?: Array<string>;
   locationTag?: string;
   stringAnswerOptions?: Array<{ label: string; value: string }>;
+  disallowNumbers?: boolean;
 }
 
 export interface BuiltInFieldConfig {

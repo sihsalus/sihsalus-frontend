@@ -1,6 +1,6 @@
-@use '@carbon/layout';
-@use '@carbon/type';
-@use '@carbon/colors';
+@use "@carbon/layout";
+@use "@carbon/type";
+@use "@carbon/colors";
 
 .fieldTabletOrOverlay {
   margin-bottom: layout.$spacing-07;
@@ -25,8 +25,26 @@
   margin-bottom: layout.$spacing-03;
 }
 
+.genderField {
+  :global(.cds--content-switcher) {
+    inline-size: 100%;
+  }
+
+  :global(.cds--content-switcher-btn) {
+    min-inline-size: 0;
+    max-inline-size: none;
+    padding-inline: layout.$spacing-03;
+  }
+
+  :global(.cds--content-switcher-btn span) {
+    overflow: visible;
+    text-overflow: clip;
+    white-space: normal;
+  }
+}
+
 .label01 {
-  @include type.type-style('label-01');
+  @include type.type-style("label-01");
 }
 
 .locationAttributeFieldContainer {

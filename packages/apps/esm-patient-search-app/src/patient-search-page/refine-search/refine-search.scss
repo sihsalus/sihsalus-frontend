@@ -1,7 +1,9 @@
-@use '@carbon/layout';
-@use '@carbon/type';
+@use "@carbon/layout";
+@use "@carbon/type";
 
 .refineSearchContainer {
+  min-width: 19rem;
+
   h2 {
     margin: layout.$spacing-03 0;
   }
@@ -21,5 +23,5 @@
 }
 
 .productiveHeading02 {
-  @include type.type-style('heading-compact-02');
+  @include type.type-style("heading-compact-02");
 }

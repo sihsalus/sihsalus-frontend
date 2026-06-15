@@ -5,7 +5,7 @@ import { renderWithSwr } from 'test-utils';
 import { type AdvancedPatientSearchState, type SearchFieldConfig } from '../../types';
 
 import { usePersonAttributeType } from './person-attributes.resource';
-import { SearchField } from './search-field.component';
+import { getIntegerInputValue, isValidIntegerInput, SearchField } from './search-field.component';
 
 vi.mock('./person-attributes.resource', async () => ({
   usePersonAttributeType: vi.fn(),
@@ -64,6 +64,20 @@ describe('SearchField', () => {
 
   beforeEach(() => {
     vi.clearAllMocks();
+  });
+
+  describe('Integer input guards', () => {
+    it('rejects scientific notation and decimal values', () => {
+      expect(isValidIntegerInput('232.3e1231', 130, 3)).toBe(false);
+      expect(isValidIntegerInput('1e2', 130, 3)).toBe(false);
+      expect(isValidIntegerInput('12.5', 130, 3)).toBe(false);
+    });
+
+    it('keeps the current value when the next value is invalid', () => {
+      expect(getIntegerInputValue(23, '232', 130, 3)).toBe(23);
+      expect(getIntegerInputValue(23, '2e3', 130, 3)).toBe(23);
+      expect(getIntegerInputValue(23, '', 130, 3)).toBe(0);
+    });
   });
 
   describe('Gender field', () => {

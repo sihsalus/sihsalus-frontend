@@ -9,7 +9,11 @@ import {
   type SearchFieldConfig,
 } from '../../types';
 
-import { PersonAttributeField, type PersonAttributeFieldProps } from './person-attribute-field.component';
+import {
+  PersonAttributeField,
+  type PersonAttributeFieldProps,
+  sanitizePersonAttributeText,
+} from './person-attribute-field.component';
 import {
   useAttributeConceptAnswers,
   useConfiguredAnswerConcepts,
@@ -96,6 +100,17 @@ describe('PersonAttributeField', () => {
 
   beforeEach(() => {
     vi.clearAllMocks();
+  });
+
+  describe('String input guards', () => {
+    it('strips digits and unsupported symbols when numbers are disallowed', () => {
+      expect(sanitizePersonAttributeText('Juan 123 @_ Perez', true)).toBe('Juan Perez');
+      expect(sanitizePersonAttributeText('Tio-abuelo 2', true)).toBe('Tio-abuelo ');
+    });
+
+    it('preserves ordinary text when numeric stripping is not configured', () => {
+      expect(sanitizePersonAttributeText('Codigo 123', false)).toBe('Codigo 123');
+    });
   });
 
   describe('String Attribute Type', () => {

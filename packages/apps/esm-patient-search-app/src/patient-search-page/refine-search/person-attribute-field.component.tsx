@@ -14,6 +14,21 @@ import {
 } from './person-attributes.resource';
 import styles from './search-field.scss';
 
+export function sanitizePersonAttributeText(value: string, disallowNumbers?: boolean) {
+  const text = Array.from(value)
+    .filter((char) => {
+      const charCode = char.charCodeAt(0);
+      return charCode >= 32 && charCode !== 127;
+    })
+    .join('');
+
+  if (!disallowNumbers) {
+    return text;
+  }
+
+  return text.replace(/[^\p{L}\s.'-]/gu, '').replace(/\s{2,}/g, ' ');
+}
+
 export interface PersonAttributeFieldProps {
   field: SearchFieldConfig;
   control: Control<AdvancedPatientSearchState>;
@@ -53,9 +68,10 @@ export function PersonAttributeField({ field, control, isTablet }: PersonAttribu
                 id={field.name}
                 labelText={t(personAttributeType.display)}
                 value={value || ''}
-                onChange={(e) => onChange(e.target.value)}
+                onChange={(e) => onChange(sanitizePersonAttributeText(e.target.value, field.disallowNumbers))}
                 placeholder={field.placeholder}
                 size={isTablet ? 'lg' : 'md'}
+                maxLength={80}
               />
             )}
           />

@@ -178,6 +178,7 @@ export interface SearchFieldConfig {
   locationTag?: string;
   attributeTypeUuid?: string;
   stringAnswerOptions?: Array<{ label: string; value: string }>;
+  disallowNumbers?: boolean;
   min?: number;
   max?: number;
 }

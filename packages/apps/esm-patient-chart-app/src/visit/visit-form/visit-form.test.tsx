@@ -779,6 +779,77 @@ describe('Visit form', () => {
     );
   });
 
+  it('keeps the saved procedencia value when editing an existing visit', async () => {
+    const patientWithResidence = {
+      ...mockFhirPatient,
+      address: [
+        {
+          use: 'home',
+          city: 'San Rafael',
+          district: 'Napo',
+          state: 'Maynas',
+          country: 'PERU',
+          extension: [
+            {
+              url: 'http://openmrs.org/fhir/StructureDefinition/address',
+              extension: [
+                {
+                  url: 'http://openmrs.org/fhir/StructureDefinition/address#address1',
+                  valueString: 'Loreto',
+                },
+              ],
+            },
+          ],
+        },
+      ],
+    } as fhir.Patient;
+    const visitToEdit = {
+      ...mockVisitWithAttributes,
+      attributes: [
+        {
+          attributeType: {
+            uuid: visitAttributes.provenance.uuid,
+            display: 'Procedencia',
+            links: [],
+          },
+          display: 'Procedencia: Comunidad guardada',
+          uuid: '9acfb220-109a-48e5-b7bb-f708170491e1',
+          value: 'Comunidad guardada',
+        },
+      ],
+    } as unknown as Visit;
+
+    mockUsePatient.mockReturnValue({
+      error: null,
+      isLoading: false,
+      patient: patientWithResidence,
+      patientUuid: mockPatient.id,
+    });
+    mockUseConfig.mockReturnValue({
+      ...getDefaultsFromConfigSchema(esmPatientChartSchema),
+      visitAttributeTypes: [
+        {
+          uuid: visitAttributes.provenance.uuid,
+          required: false,
+          displayInThePatientBanner: true,
+        },
+      ],
+      defaultVisitAttributesFromPersonAttributes: [],
+      defaultVisitAttributesFromPatientAddress: [
+        {
+          visitAttributeTypeUuid: visitAttributes.provenance.uuid,
+          addressKind: 'residence',
+          addressFields: ['cityVillage', 'countyDistrict', 'stateProvince', 'address1', 'country'],
+          separator: ', ',
+        },
+      ],
+    });
+
+    renderVisitForm(visitToEdit);
+
+    expect(screen.getByRole('textbox', { name: 'Procedencia (optional)' })).toHaveValue('Comunidad guardada');
+  });
+
   it('updates visit attributes when editing an existing visit', async () => {
     const user = userEvent.setup();
 

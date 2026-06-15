@@ -14,7 +14,7 @@ export const configSchema = {
       'Organizational: Registration Clerk': 'home',
     },
     _description:
-      'Keys are OpenMRS user roles, values are names of dashboards (what goes in the URL after /home/). If a role\'s default dashboard is not configured here, "home" is the default.',
+      'Keys are user roles, values are names of dashboards (what goes in the URL after /home/). If a role\'s default dashboard is not configured here, "home" is the default.',
     _elements: {
       _type: Type.String,
     },

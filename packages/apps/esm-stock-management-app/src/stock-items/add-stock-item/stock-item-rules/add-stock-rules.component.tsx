@@ -58,7 +58,7 @@ const StockRulesAddOrUpdate: React.FC<AddStockRuleProps> = ({ model, stockItemUu
   });
 
   useEffect(() => {
-    if (model != null && Object.keys(model).length != 0) {
+    if (model != null && Object.keys(model).length !== 0) {
       // To prevent editing properties like date created
       const { ...rest } = model;
       const tmpFormModel = { ...rest };

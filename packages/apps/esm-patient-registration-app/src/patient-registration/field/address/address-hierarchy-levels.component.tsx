@@ -4,19 +4,14 @@ import { useTranslation } from 'react-i18next';
 import { moduleName } from '../../../constants';
 import ComboInput from '../../input/combo-input/combo-input.component';
 import { useAddressEntries, useAddressEntryFetchConfig } from './address-hierarchy.resource';
+import { type AddressFieldDefinition } from './address-types';
 
 interface AddressComboBoxProps {
-  attribute: {
-    id: string;
-    name: string;
-    value: string;
-    label: string;
-    required?: boolean;
-  };
+  attribute: AddressFieldDefinition;
 }
 
 interface AddressHierarchyLevelsProps {
-  orderedAddressFields: Array<any>;
+  orderedAddressFields: Array<AddressFieldDefinition>;
 }
 
 const AddressComboBox: React.FC<AddressComboBoxProps> = ({ attribute }) => {
@@ -27,7 +22,7 @@ const AddressComboBox: React.FC<AddressComboBoxProps> = ({ attribute }) => {
     fetchEntriesForField,
     searchString,
   );
-  const label = t(attribute.label) + (attribute?.required ? '' : ` (${t('optional', 'optional')})`);
+  const label = attribute?.required ? t(attribute.label) : t(attribute.label) + ` (${t('optional', 'optional')})`;
 
   const handleInputChange = useCallback(
     (newValue) => {

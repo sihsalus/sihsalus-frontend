@@ -28,6 +28,8 @@ export const homeWidgetDashboard = getSyncLifecycle(homeWidgetDashboardComponent
 
 export const homeAppMenuItem = getSyncLifecycle(homeAppMenuItemComponent, options);
 
+export const globalHomeNavLink = getAsyncLifecycle(() => import('./global-home-nav-link.component'), options);
+
 export const peruHomeActions = getAsyncLifecycle(
   () => import('./peru-home-actions/peru-home-actions.component'),
   options,

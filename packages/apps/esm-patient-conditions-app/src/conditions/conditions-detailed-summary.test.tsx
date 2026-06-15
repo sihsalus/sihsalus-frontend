@@ -5,46 +5,53 @@ import { mockPatient } from 'test-utils';
 import { useConditions } from './conditions.resource';
 import ConditionsDetailedSummary from './conditions-detailed-summary.component';
 
-jest.mock('./conditions.resource', () => {
-  const actual = jest.requireActual('./conditions.resource');
+vi.mock('./conditions.resource', async () => {
+  const actual = await vi.importActual('./conditions.resource');
 
   return {
     ...actual,
-    useConditions: jest.fn(),
+    useConditions: vi.fn(),
   };
 });
 
-jest.mock('@openmrs/esm-patient-common-lib', () => ({
-  ...jest.requireActual('@openmrs/esm-patient-common-lib'),
-  launchPatientWorkspace: jest.fn(),
+vi.mock('@openmrs/esm-patient-common-lib', async () => ({
+  ...(await vi.importActual('@openmrs/esm-patient-common-lib')),
+  launchPatientWorkspace: vi.fn(),
 }));
 
-const mockLaunchPatientWorkspace = jest.mocked(launchPatientWorkspace);
-const mockUseConditions = jest.mocked(useConditions);
+const mockLaunchPatientWorkspace = vi.mocked(launchPatientWorkspace);
+const mockUseConditions = vi.mocked(useConditions);
+const fhirMockPatient = mockPatient as unknown as fhir.Patient;
 
 beforeEach(() => {
-  jest.clearAllMocks();
+  vi.clearAllMocks();
 });
 
-it('renders an empty state view if conditions data is unavailable', async () => {
+it('renders an empty state view if antecedents data is unavailable', async () => {
   mockUseConditions.mockReturnValue({
     conditions: [],
     error: null,
     isLoading: false,
     isValidating: false,
-    mutate: jest.fn(),
+    mutate: vi.fn(),
   });
 
-  render(<ConditionsDetailedSummary patient={mockPatient} />);
+  render(<ConditionsDetailedSummary patient={fhirMockPatient} />);
 
   expect(screen.queryByRole('progressbar')).not.toBeInTheDocument();
-  expect(screen.getByRole('heading', { name: /conditions/i })).toBeInTheDocument();
-  expect(screen.getByTitle(/Empty data illustration/i)).toBeInTheDocument();
-  expect(screen.getByText(/There are no conditions to display for this patient/i)).toBeInTheDocument();
-  expect(screen.getByText(/Record conditions/i)).toBeInTheDocument();
+  expect(screen.getByRole('heading', { name: /active problems/i })).toBeInTheDocument();
+  expect(screen.getByRole('heading', { name: /past diagnoses/i })).toBeInTheDocument();
+  expect(screen.getByRole('heading', { name: /antecedents/i })).toBeInTheDocument();
+  expect(screen.getAllByTitle(/Empty data illustration/i)).toHaveLength(3);
+  expect(screen.getByText(/There are no active problems to display for this patient/i)).toBeInTheDocument();
+  expect(screen.getByText(/There are no past diagnoses to display for this patient/i)).toBeInTheDocument();
+  expect(screen.getByText(/There are no antecedents to display for this patient/i)).toBeInTheDocument();
+  expect(screen.getByText(/Record active problems/i)).toBeInTheDocument();
+  expect(screen.getByText(/Record past diagnoses/i)).toBeInTheDocument();
+  expect(screen.getByText(/Record antecedents/i)).toBeInTheDocument();
 });
 
-it('renders an error state view if there is a problem fetching conditions data', async () => {
+it('renders an error state view if there is a problem fetching antecedents data', async () => {
   const error = {
     name: 'UnauthorizedError',
     message: 'You are not logged in',
@@ -59,25 +66,26 @@ it('renders an error state view if there is a problem fetching conditions data',
     error,
     isLoading: false,
     isValidating: false,
-    mutate: jest.fn(),
+    mutate: vi.fn(),
   });
 
-  render(<ConditionsDetailedSummary patient={mockPatient as unknown as fhir.Patient} />);
+  render(<ConditionsDetailedSummary patient={fhirMockPatient} />);
 
   expect(screen.queryByRole('table')).not.toBeInTheDocument();
-  expect(screen.getByText(/Error 401: Unauthorized/i)).toBeInTheDocument();
+  expect(screen.getAllByText(/Error 401: Unauthorized/i).length).toBeGreaterThan(0);
   expect(
-    screen.getByText(
+    screen.getAllByText(
       /Sorry, there was a problem displaying this information. You can try to reload this page, or contact the site administrator and quote the error code above/i,
-    ),
-  ).toBeInTheDocument();
+    ).length,
+  ).toBeGreaterThan(0);
 });
 
-it("renders a detailed summary of the patient's conditions when present", async () => {
+it("renders a detailed summary of the patient's antecedents when present", async () => {
   mockUseConditions.mockReturnValue({
     conditions: [
       {
         clinicalStatus: 'Active',
+        antecedentType: 'pathological',
         conceptId: '138571AAAAAAAAAAAAAAAAAAAAAAAAAAAAAA',
         display: 'HIV Positive',
         id: 'cbffbb42-41b4-4c38-bc14-842ef675df85',
@@ -136,27 +144,27 @@ it("renders a detailed summary of the patient's conditions when present", async 
     error: null,
     isLoading: false,
     isValidating: false,
-    mutate: jest.fn(),
+    mutate: vi.fn(),
   });
 
   render(<ConditionsDetailedSummary patient={mockPatient as unknown as fhir.Patient} />);
 
-  expect(screen.getByRole('heading', { name: /conditions/i })).toBeInTheDocument();
-  expect(screen.getByRole('button', { name: /add/i })).toBeInTheDocument();
+  expect(screen.getByRole('heading', { name: /active problems/i })).toBeInTheDocument();
+  expect(screen.getAllByRole('button', { name: /add/i }).length).toBeGreaterThan(0);
 
-  const expectedColumnHeaders = [/condition/, /date of onset/, /status/];
-  expectedColumnHeaders.forEach((header) => {
-    expect(screen.getByRole('columnheader', { name: new RegExp(header, 'i') })).toBeInTheDocument();
-  });
+  expect(screen.getAllByRole('button', { name: /^antecedent$/i }).length).toBeGreaterThan(0);
+  expect(screen.getAllByRole('button', { name: /antecedent type/i }).length).toBeGreaterThan(0);
+  expect(screen.getAllByRole('button', { name: /date of onset/i }).length).toBeGreaterThan(0);
+  expect(screen.getAllByRole('button', { name: /status/i }).length).toBeGreaterThan(0);
 
-  const expectedTableRows = [/hiv positive/, /malaria, confirmed/, /Malaria sevère/, /anaemia/];
+  const expectedTableRows = [/hiv positive/, /patol|patholog/, /malaria, confirmed/, /Malaria sevère/, /anaemia/];
   expectedTableRows.forEach((row) => {
     expect(screen.getByRole('row', { name: new RegExp(row, 'i') })).toBeInTheDocument();
   });
-  expect(screen.getAllByRole('row').length).toEqual(8);
+  expect(screen.getAllByRole('row').length).toEqual(10);
 });
 
-it('clicking the Add button or Record Conditions link launches the conditions form', async () => {
+it('clicking the Add button or Record Antecedents link launches the antecedents form', async () => {
   const user = userEvent.setup();
 
   mockUseConditions.mockReturnValue({
@@ -164,15 +172,18 @@ it('clicking the Add button or Record Conditions link launches the conditions fo
     error: null,
     isLoading: false,
     isValidating: false,
-    mutate: jest.fn(),
+    mutate: vi.fn(),
   });
 
   render(<ConditionsDetailedSummary patient={mockPatient as unknown as fhir.Patient} />);
 
-  const recordConditionsLink = screen.getByText(/record conditions/i);
+  const recordConditionsLink = screen.getByText(/record antecedents/i);
 
   await user.click(recordConditionsLink);
 
   expect(mockLaunchPatientWorkspace).toHaveBeenCalledTimes(1);
-  expect(mockLaunchPatientWorkspace).toHaveBeenCalledWith('conditions-form-workspace', { formContext: 'creating' });
+  expect(mockLaunchPatientWorkspace).toHaveBeenCalledWith('conditions-form-workspace', {
+    formContext: 'creating',
+    workspaceTitle: 'Record antecedent',
+  });
 });

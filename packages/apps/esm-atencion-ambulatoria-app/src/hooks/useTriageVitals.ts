@@ -44,7 +44,7 @@ function getNumericObs(obs: Obs[], conceptUuid: string | undefined): number | nu
   const match = obs.find((o) => o.concept?.uuid === conceptUuid);
   if (!match) return null;
   const val = typeof match.value === 'number' ? match.value : parseFloat(String(match.value));
-  return isNaN(val) ? null : val;
+  return Number.isNaN(val) ? null : val;
 }
 
 export function useTriageVitals(patientUuid: string, triageEncounterTypeUuid: string, concepts: VitalsConcepts) {

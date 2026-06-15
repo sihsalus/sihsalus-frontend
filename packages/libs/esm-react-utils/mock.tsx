@@ -75,7 +75,21 @@ export const useExtensionInternalStore = createGlobalStore('extensionInternal', 
 
 export const useExtensionStore = vi.fn();
 
-export const ExtensionSlot = vi.fn(({ children }) => <>{children}</>);
+type MockExtensionSlotProps = Omit<React.HTMLAttributes<HTMLDivElement>, 'children'> & {
+  children?: React.ReactNode | ((...args: Array<unknown>) => React.ReactNode);
+  extensionSlotName?: string;
+  name?: string;
+  select?: (...args: Array<unknown>) => unknown;
+  state?: Record<PropertyKey, unknown>;
+};
+
+export const ExtensionSlot = vi.fn(
+  ({ children, extensionSlotName, name, select: _select, state: _state, ...props }: MockExtensionSlotProps) => (
+    <div data-extension-slot-name={name ?? extensionSlotName} {...props}>
+      {typeof children === 'function' ? null : children}
+    </div>
+  ),
+);
 
 export const Extension = vi.fn((_props: any) => <slot />);
 

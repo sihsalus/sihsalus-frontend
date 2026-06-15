@@ -1,12 +1,13 @@
 import { Tile } from '@carbon/react';
-import { launchWorkspace2, useConfig, usePatient } from '@openmrs/esm-framework';
+import { launchWorkspace2, useConfig, usePatient, userHasAccess, useSession } from '@openmrs/esm-framework';
 import classNames from 'classnames';
 import dayjs from 'dayjs';
 import React, { useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-
 import type { ConfigObject } from '../../../config-schema';
+import { credCourseLifeEditPrivilege } from '../../../constants';
 import { useCREDSchedule } from '../../../hooks/useCREDSchedule';
+import { translateCredAgeGroupLabel, translateCredAgeGroupSublabel } from '../../../utils/cred-label-translations';
 
 import styles from './cred-schedule.scss';
 
@@ -17,6 +18,8 @@ interface CredAgeGroupsProps {
 const CredAgeGroups: React.FC<CredAgeGroupsProps> = ({ patientUuid }) => {
   const { t } = useTranslation();
   const { ageGroupsCRED } = useConfig<ConfigObject>();
+  const session = useSession();
+  const canEdit = userHasAccess(credCourseLifeEditPrivilege, session?.user);
   const { patient, isLoading: isPatientLoading, error: patientError } = usePatient(patientUuid);
   const { controls } = useCREDSchedule(patientUuid);
   const [selectedAgeGroup, setSelectedAgeGroup] = useState<(typeof ageGroupsCRED)[0] | null>(null);
@@ -67,7 +70,7 @@ const CredAgeGroups: React.FC<CredAgeGroupsProps> = ({ patientUuid }) => {
   const handleAgeGroupClick = (group) => {
     setSelectedAgeGroup(group);
     launchWorkspace2('wellchild-control-form', {
-      workspaceTitle: `${t('ageGroupDetails', 'Control Crecimiento y Desarrollo - Grupo Etario')} - ${group.label}`,
+      workspaceTitle: `${t('ageGroupDetails', 'Control Crecimiento y Desarrollo - Grupo Etario')} - ${translateCredAgeGroupLabel(t, group.label)}`,
       patientUuid,
       ageGroup: group,
       type: 'ageGroup',
@@ -101,10 +104,10 @@ const CredAgeGroups: React.FC<CredAgeGroupsProps> = ({ patientUuid }) => {
                 [styles.groupCompleted]: allCompleted,
                 [styles.groupOverdue]: hasOverdue,
               })}
-              onClick={() => handleAgeGroupClick(group)}
+              onClick={canEdit ? () => handleAgeGroupClick(group) : undefined}
             >
-              <strong>{group.label}</strong>
-              {group.sublabel && <div>{group.sublabel}</div>}
+              <strong>{translateCredAgeGroupLabel(t, group.label)}</strong>
+              {group.sublabel && <div>{translateCredAgeGroupSublabel(t, group.sublabel)}</div>}
               {summary && summary.total > 0 && (
                 <div className={styles.groupStatus}>
                   {summary.completed}/{summary.total}

@@ -2,6 +2,7 @@ import { Button, ModalBody, ModalFooter, ModalHeader } from '@carbon/react';
 import { type Attachment, getCoreTranslation } from '@openmrs/esm-framework';
 import React from 'react';
 import { useTranslation } from 'react-i18next';
+import { moduleName } from '../constants';
 import styles from './delete-attachment.scss';
 
 interface DeleteAttachmentConfirmationProps {
@@ -15,7 +16,7 @@ const DeleteAttachmentConfirmation: React.FC<DeleteAttachmentConfirmationProps> 
   attachment,
   onConfirmation,
 }) => {
-  const { t } = useTranslation();
+  const { t } = useTranslation(moduleName);
 
   return (
     <>

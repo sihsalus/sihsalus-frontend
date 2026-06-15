@@ -1,9 +1,9 @@
 import { Button, DataTableSkeleton } from '@carbon/react';
-import { AddIcon, launchWorkspace, useLayoutType } from '@openmrs/esm-framework';
-import { CardHeader, EmptyState, ErrorState } from '@openmrs/esm-patient-common-lib';
-import React, { useCallback } from 'react';
+import { AddIcon, launchWorkspace } from '@openmrs/esm-framework';
+import { CardHeader, type DefaultPatientWorkspaceProps, EmptyState, ErrorState } from '@openmrs/esm-patient-common-lib';
+import { useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
-import { useRequestProcedures, useRequestsByPatient, useStudiesByPatient } from '../../api';
+import { useRequestsByPatient, useStudiesByPatient } from '../../api';
 import RequestProcedureTable from '../components/requests-details-table.component';
 import StudiesDetailTable from '../components/studies-details-table.component';
 import { addNewRequestWorkspace, linkStudiesFormWorkspace, uploadStudiesFormWorkspace } from '../constants';
@@ -14,11 +14,18 @@ interface ImagingDetailedSummaryProps {
 
 export default function ImagingDetailedSummary({ patientUuid }: ImagingDetailedSummaryProps) {
   const { t } = useTranslation();
-  const layout = useLayoutType();
-  const isDesktop = layout === 'small-desktop' || layout === 'large-desktop';
-  const launchUploadStudiesWorkspace = useCallback(() => launchWorkspace(uploadStudiesFormWorkspace), []);
-  const launchLinkStudiesWorkspace = useCallback(() => launchWorkspace(linkStudiesFormWorkspace), []);
-  const launchAddRequestWorkspace = useCallback(() => launchWorkspace(addNewRequestWorkspace), []);
+  const launchUploadStudiesWorkspace = useCallback(
+    () => launchWorkspace<DefaultPatientWorkspaceProps>(uploadStudiesFormWorkspace, { patientUuid }),
+    [patientUuid],
+  );
+  const launchLinkStudiesWorkspace = useCallback(
+    () => launchWorkspace<DefaultPatientWorkspaceProps>(linkStudiesFormWorkspace, { patientUuid }),
+    [patientUuid],
+  );
+  const launchAddRequestWorkspace = useCallback(
+    () => launchWorkspace<DefaultPatientWorkspaceProps>(addNewRequestWorkspace, { patientUuid }),
+    [patientUuid],
+  );
   const headerTitle = t('managerStudies', 'Manager studies');
 
   const {

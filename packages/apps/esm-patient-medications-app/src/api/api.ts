@@ -1,6 +1,12 @@
-import { type FetchResponse, openmrsFetch, restBaseUrl, useConfig } from '@openmrs/esm-framework';
 import {
-  careSettingUuid,
+  type FetchResponse,
+  openmrsFetch,
+  parseDate,
+  restBaseUrl,
+  toOmrsIsoString,
+  useConfig,
+} from '@openmrs/esm-framework';
+import {
   type DrugOrderBasketItem,
   type DrugOrderPost,
   type Order,
@@ -38,7 +44,7 @@ function sortOrdersByDateActivated(orders: Order[]) {
  * @param patientUuid The UUID of the patient whose orders should be fetched.
  */
 export function usePatientOrders(patientUuid: string) {
-  const { drugOrderTypeUUID } = useConfig<ConfigObject>();
+  const { careSettingUuid, drugOrderTypeUUID } = useConfig<ConfigObject>();
   const { mutate } = useSWRConfig();
 
   const ordersUrl = `${restBaseUrl}/order?patient=${patientUuid}&careSetting=${careSettingUuid}&orderTypes=${drugOrderTypeUUID}&v=${customRepresentation}&excludeDiscontinueOrders=true`;
@@ -75,7 +81,7 @@ export function usePatientOrders(patientUuid: string) {
  * @param patientUuid The UUID of the patient whose active orders should be fetched.
  */
 export function useActivePatientOrders(patientUuid: string) {
-  const { drugOrderTypeUUID } = useConfig<ConfigObject>();
+  const { careSettingUuid, drugOrderTypeUUID } = useConfig<ConfigObject>();
   const { mutate } = useSWRConfig();
 
   const ordersUrl = useMemo(
@@ -83,7 +89,7 @@ export function useActivePatientOrders(patientUuid: string) {
       patientUuid
         ? `${restBaseUrl}/order?patient=${patientUuid}&careSetting=${careSettingUuid}&orderTypes=${drugOrderTypeUUID}&excludeCanceledAndExpired=true&v=${customRepresentation}`
         : null,
-    [patientUuid, drugOrderTypeUUID],
+    [patientUuid, careSettingUuid, drugOrderTypeUUID],
   );
   const { data, error, isLoading, isValidating } = useSWR<FetchResponse<PatientOrderFetchResponse>, Error>(
     ordersUrl,
@@ -130,6 +136,10 @@ export function usePastPatientOrders(patientUuid: string) {
   };
 }
 
+function isSameCalendarDay(a: Date, b: Date): boolean {
+  return a.getFullYear() === b.getFullYear() && a.getMonth() === b.getMonth() && a.getDate() === b.getDate();
+}
+
 /**
  * Converts a DrugOrderBasketItem into an Order POST payload
  */
@@ -138,8 +148,19 @@ export const prepMedicationOrderPostData = (
   patientUuid: string,
   encounterUuid: string | null,
   orderingProviderUuid?: string,
+  careSettingUuid?: string,
 ): DrugOrderPost => {
   const orderer = orderingProviderUuid ?? order.orderer;
+  const startDate = order.startDate
+    ? typeof order.startDate === 'string'
+      ? parseDate(order.startDate)
+      : order.startDate
+    : null;
+  // Only send an explicit dateActivated for intentionally backdated orders. For orders
+  // starting today, omit it so the backend defaults it to the order save time; a
+  // client-side timestamp (set when the item was added to the basket) lands before the
+  // encounterDatetime and fails the dateActivated >= encounterDatetime validation.
+  const dateActivated = startDate && !isSameCalendarDay(startDate, new Date()) ? toOmrsIsoString(startDate) : undefined;
 
   if (order.action === 'NEW') {
     return {
@@ -149,6 +170,7 @@ export const prepMedicationOrderPostData = (
       careSetting: careSettingUuid,
       orderer,
       encounter: encounterUuid,
+      dateActivated,
       drug: order.drug.uuid,
       dose: order.dosage,
       doseUnits: order.unit?.valueCoded,
@@ -177,6 +199,7 @@ export const prepMedicationOrderPostData = (
       careSetting: careSettingUuid,
       orderer,
       encounter: encounterUuid,
+      dateActivated,
       drug: order.drug.uuid,
       dose: order.dosage,
       doseUnits: order.unit?.valueCoded,
@@ -205,6 +228,7 @@ export const prepMedicationOrderPostData = (
       careSetting: careSettingUuid,
       orderer,
       encounter: encounterUuid,
+      dateActivated,
       drug: order.drug.uuid,
       dose: order.dosage,
       doseUnits: order.unit?.valueCoded,

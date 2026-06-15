@@ -1,5 +1,5 @@
 import { ComboBox, SelectSkeleton } from '@carbon/react';
-import React, { type ReactNode, useMemo } from 'react';
+import { type ReactNode, useMemo } from 'react';
 import { type Control, Controller, type FieldValues } from 'react-hook-form';
 import { type StockItemPackagingUOMDTO } from '../../../core/api/types/stockItem/StockItemPackagingUOM';
 

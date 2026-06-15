@@ -1,11 +1,17 @@
 import { readFileSync } from 'node:fs';
 import { readFile } from 'node:fs/promises';
 import { basename, resolve } from 'node:path';
-
 import express from 'express';
 import { createProxyMiddleware } from 'http-proxy-middleware';
-
-import { type ImportmapDeclaration, logInfo, logWarn, type RoutesDeclaration, removeTrailingSlash } from '../utils';
+import {
+  type ImportmapDeclaration,
+  logInfo,
+  logWarn,
+  type RoutesDeclaration,
+  removeTrailingSlash,
+  shouldAllowSelfSignedTls,
+} from '../utils';
+import { createInMemoryRateLimit, readRateLimitEnv } from './develop-rate-limit';
 
 export interface DevelopArgs {
   port: number;
@@ -21,6 +27,11 @@ export interface DevelopArgs {
   configFiles: Array<string>;
   addCookie: string;
   supportOffline: boolean;
+}
+
+function rewriteLocalDevSetCookie(setCookie: Array<string>): Array<string> {
+  const rewrite = (cookie: string) => cookie.replace(/;\s*Secure/gi, '');
+  return setCookie.map(rewrite);
 }
 
 export async function runDevelop(args: DevelopArgs) {
@@ -39,7 +50,16 @@ export async function runDevelop(args: DevelopArgs) {
   } = args;
   const apiUrl = removeTrailingSlash(args.apiUrl);
   const spaPath = removeTrailingSlash(args.spaPath);
+  const allowSelfSignedTls = shouldAllowSelfSignedTls(backend);
   const app = express();
+  const indexRateLimit = createInMemoryRateLimit({
+    windowMs: readRateLimitEnv('SIHSALUS_DEV_RATE_LIMIT_WINDOW_MS', 60_000),
+    max: readRateLimitEnv('SIHSALUS_DEV_RATE_LIMIT_MAX', 0),
+  });
+  const apiRateLimit = createInMemoryRateLimit({
+    windowMs: readRateLimitEnv('SIHSALUS_DEV_API_RATE_LIMIT_WINDOW_MS', 60_000),
+    max: readRateLimitEnv('SIHSALUS_DEV_API_RATE_LIMIT_MAX', 0),
+  });
 
   const localConfigUrlPrefix = '__local_config__';
   const localConfigUrls = configFiles.map((path) => `${spaPath}/${localConfigUrlPrefix}/${basename(path)}`);
@@ -118,14 +138,14 @@ export async function runDevelop(args: DevelopArgs) {
 
   // Route for custom `service-worker.js` before most things
   if (supportOffline) {
-    app.get(`${spaPath}/service-worker.js`, (_, res) => {
+    app.get(`${spaPath}/service-worker.js`, indexRateLimit, (_, res) => {
       res.contentType('js').send(swContent);
     });
   }
 
   configFiles.forEach((file, i) => {
     const url = localConfigUrls[i];
-    app.get(url, (_, res) => {
+    app.get(url, indexRateLimit, (_, res) => {
       res.contentType('application/json').send(readFileSync(resolve(process.cwd(), file)));
     });
   });
@@ -136,7 +156,7 @@ export async function runDevelop(args: DevelopArgs) {
   const indexHtmlPathMatcher = /\/openmrs\/spa\/(?!.*\.(js|woff2?|json|.{2,3}$)).*$/;
 
   // Route for custom `index.html` goes above static assets
-  app.get(indexHtmlPathMatcher, (_, res) => res.contentType('text/html').send(indexContent));
+  app.get(indexHtmlPathMatcher, indexRateLimit, (_, res) => res.contentType('text/html').send(indexContent));
 
   // Return static assets for any request for which we have one, except importmap.json and index.html
   app.use(spaPath, express.static(source, { index: false }));
@@ -146,6 +166,7 @@ export async function runDevelop(args: DevelopArgs) {
   // JS bundles located at the same domain as `apiUrl`.
   app.use(
     apiUrl,
+    apiRateLimit,
     createProxyMiddleware(
       (path) => {
         return new RegExp(`${apiUrl}/.*`).test(path) && !indexHtmlPathMatcher.test(path);
@@ -153,11 +174,18 @@ export async function runDevelop(args: DevelopArgs) {
       {
         target: backend,
         changeOrigin: true,
+        secure: !allowSelfSignedTls,
         onProxyReq(proxyReq) {
           if (addCookie) {
             const origCookie = proxyReq.getHeader('cookie');
             const newCookie = `${origCookie};${addCookie}`;
             proxyReq.setHeader('cookie', newCookie);
+          }
+        },
+        onProxyRes(proxyRes) {
+          const setCookie = proxyRes.headers['set-cookie'];
+          if (setCookie) {
+            proxyRes.headers['set-cookie'] = rewriteLocalDevSetCookie(setCookie);
           }
         },
       },

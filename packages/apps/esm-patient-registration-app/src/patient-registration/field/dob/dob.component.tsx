@@ -58,7 +58,7 @@ export const DobField: React.FC = () => {
     (ev: ChangeEvent<HTMLInputElement>) => {
       const years = +ev.target.value;
 
-      if (!isNaN(years) && years < 140 && years >= 0) {
+      if (!Number.isNaN(years) && years < 140 && years >= 0) {
         setFieldValue('yearsEstimated', years);
         setFieldValue('birthdate', calcBirthdate(years, monthsEstimateMeta.value, dateOfBirth));
       }
@@ -70,7 +70,7 @@ export const DobField: React.FC = () => {
     (ev: ChangeEvent<HTMLInputElement>) => {
       const months = +ev.target.value;
 
-      if (!isNaN(months)) {
+      if (!Number.isNaN(months)) {
         setFieldValue('monthsEstimated', months);
         setFieldValue('birthdate', calcBirthdate(yearsEstimateMeta.value, months, dateOfBirth));
       }
@@ -91,7 +91,9 @@ export const DobField: React.FC = () => {
 
   return (
     <div className={styles.halfWidthInDesktopView}>
-      <h4 className={styles.productiveHeading02Light}>{t('birthFieldLabelText', 'Birth')}</h4>
+      <h4 className={`${styles.productiveHeading02Light} ${styles.requiredHeading}`}>
+        {t('birthFieldLabelText', 'Birth')}
+      </h4>
       {(allowEstimatedBirthDate || dobUnknown) && (
         <div className={styles.dobField}>
           <div className={styles.dobContentSwitcherLabel}>
@@ -113,6 +115,7 @@ export const DobField: React.FC = () => {
               onChange={onDateChange}
               onBlur={() => setFieldTouched('birthdate', true, false)}
               maxDate={today}
+              isRequired
               labelText={t('dateOfBirthLabelText', 'Date of birth')}
               isInvalid={!!(birthdateMeta.touched && birthdateMeta.error)}
               invalidText={t(birthdateMeta.error)}

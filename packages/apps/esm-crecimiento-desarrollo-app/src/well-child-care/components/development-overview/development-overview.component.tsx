@@ -1,11 +1,11 @@
-import { Button, Tag, Tile } from '@carbon/react';
+import { Button, Tile } from '@carbon/react';
 import { Education, Growth } from '@carbon/react/icons';
-import { launchWorkspace2, useConfig } from '@openmrs/esm-framework';
+import { launchWorkspace2, useConfig, userHasAccess, useSession } from '@openmrs/esm-framework';
 import React from 'react';
 import { useTranslation } from 'react-i18next';
-
 import type { ConfigObject } from '../../../config-schema';
-import { formEntryWorkspace } from '../../../types';
+import { credEarlyStimulationEditPrivilege } from '../../../constants';
+import { useCREDFormLauncher } from '../../../hooks/useCREDFormLauncher';
 
 import styles from './development-overview.scss';
 
@@ -20,30 +20,10 @@ interface DevelopmentOverviewProps {
 const DevelopmentOverview: React.FC<DevelopmentOverviewProps> = ({ patientUuid }) => {
   const { t } = useTranslation();
   const config = useConfig<ConfigObject>();
-  const testPeruanoConcepts = [
-    config.testPeruano?.scoreCognitivoUuid,
-    config.testPeruano?.scoreMotorUuid,
-    config.testPeruano?.scoreSocialUuid,
-    config.testPeruano?.scoreLenguajeUuid,
-    config.testPeruano?.clasificacionTotalUuid,
-    config.testPeruano?.observacionesUuid,
-    config.testPeruano?.contextoCulturalUuid,
-    config.testPeruano?.idiomaUuid,
-  ];
-  const isTestPeruanoConfigured = testPeruanoConcepts.some(Boolean);
-
-  const handleLaunchTepsi = () => {
-    const formUuid = config.formsList.tepsi;
-    if (!formUuid) {
-      console.warn('Form UUID not configured for TEPSI');
-      return;
-    }
-
-    launchWorkspace2(formEntryWorkspace, {
-      form: { uuid: formUuid },
-      encounterUuid: '',
-    });
-  };
+  const session = useSession();
+  const canEdit = userHasAccess(credEarlyStimulationEditPrivilege, session?.user);
+  const { launchForm: handleLaunchTepsi, isLoading: isTepsiFormLoading } = useCREDFormLauncher('tepsi');
+  const isTestPeruanoConfigured = Boolean(config.testPeruano?.formUuid && config.testPeruano?.concepts?.snapshotUuid);
 
   const handleLaunchTestPeruano = () => {
     launchWorkspace2('test-peruano-form', { patientUuid });
@@ -63,7 +43,13 @@ const DevelopmentOverview: React.FC<DevelopmentOverviewProps> = ({ patientUuid }
               {t('tepsiDescription', 'Evaluación del desarrollo psicomotor (2-5 años)')}
             </p>
           </div>
-          <Button kind="tertiary" size="sm" renderIcon={Education} onClick={handleLaunchTepsi}>
+          <Button
+            kind="tertiary"
+            size="sm"
+            renderIcon={Education}
+            onClick={() => handleLaunchTepsi()}
+            disabled={isTepsiFormLoading || !canEdit}
+          >
             {t('startTepsi', 'Realizar TEPSI')}
           </Button>
         </div>
@@ -80,7 +66,7 @@ const DevelopmentOverview: React.FC<DevelopmentOverviewProps> = ({ patientUuid }
             size="sm"
             renderIcon={Growth}
             onClick={handleLaunchTestPeruano}
-            disabled={!isTestPeruanoConfigured}
+            disabled={!isTestPeruanoConfigured || !canEdit}
           >
             {t('startTestPeruano', 'Realizar Test Peruano')}
           </Button>

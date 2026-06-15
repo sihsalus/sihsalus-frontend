@@ -4,16 +4,22 @@ import { mockPatientAlice } from './patient.mock';
 export const mockEncounterTypeAdmission: EncounterType = {
   uuid: '9c7877f8-16db-11f0-a002-00155db2a7da',
   display: 'Admission',
+  editPrivilege: null,
 };
 
 export const mockEncounterTypeVisitNote: EncounterType = {
   uuid: '10056ed2-16dd-11f0-a337-00155db2a7d',
   display: 'Visit Note',
+  editPrivilege: null,
 };
 
 export const mockEncounterTypeConsultation: EncounterType = {
   uuid: 'e0b8402c-16dd-11f0-ac5f-00155db2a7da',
   display: 'Consultation',
+  editPrivilege: {
+    uuid: 'f25f3de4-16dd-11f0-9b43-00155db2a7da',
+    display: 'edit',
+  },
 };
 
 export const mockEncounterTypes: Array<EncounterType> = [
@@ -28,7 +34,6 @@ export const mockEncountersAlice: Array<Encounter> = [
     encounterDatetime: '2022-01-18T16:25:27.000+0000',
     patient: mockPatientAlice,
     encounterType: mockEncounterTypeAdmission,
-    editPrivilege: null,
     form: {
       uuid: '17e3bc1a-d319-408f-8b57-73e367f7fa80',
       display: 'POC Consent Form',
@@ -51,7 +56,6 @@ export const mockEncountersAlice: Array<Encounter> = [
     patient: mockPatientAlice,
     encounterDatetime: '2021-08-03T00:47:48.000+0000',
     encounterType: mockEncounterTypeVisitNote,
-    editPrivilege: null,
     form: null,
     obs: [
       {
@@ -111,10 +115,6 @@ export const mockEncountersAlice: Array<Encounter> = [
     patient: mockPatientAlice,
     encounterDatetime: '2021-07-05T10:07:18.000+0000',
     encounterType: mockEncounterTypeConsultation,
-    editPrivilege: {
-      uuid: 'f25f3de4-16dd-11f0-9b43-00155db2a7da',
-      display: 'edit',
-    },
     form: {
       uuid: '9e1a0c68-ca19-3482-9ffb-0a6b4e591c2a',
       display: 'Covid 19',
@@ -153,7 +153,7 @@ export const mockEncounters = [
     id: '979d38e3-fb68-47cf-843f-2b0263690f49',
     datetime: '2022-01-18T16:25:27.000+0000',
     encounterType: 'Admission',
-    editPrivilege: null,
+    editPrivilege: '',
     form: { uuid: '17e3bc1a-d319-408f-8b57-73e367f7fa80', display: 'POC Consent Form' },
     obs: [],
     provider: '--',
@@ -167,7 +167,7 @@ export const mockEncounters = [
     id: '09eadbdd-6924-4126-8a3b-c92aac04b8e7',
     datetime: '2021-08-03T00:47:48.000+0000',
     encounterType: 'Visit Note',
-    editPrivilege: null,
+    editPrivilege: '',
     form: null,
     obs: [],
     provider: 'User One',

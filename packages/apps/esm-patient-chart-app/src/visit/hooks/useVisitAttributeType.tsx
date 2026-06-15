@@ -100,3 +100,23 @@ export function useConceptAnswersForVisitAttributeType(conceptUuid?: string) {
 
   return results;
 }
+
+export function useConceptDisplay(conceptUuid?: string) {
+  const { data, error, isLoading } = useSWRImmutable<FetchResponse<Pick<Concept, 'uuid' | 'display'>>, Error>(
+    conceptUuid ? `${restBaseUrl}/concept/${conceptUuid}?v=custom:(uuid,display)` : null,
+    openmrsFetch,
+  );
+
+  if (error) {
+    console.error(`Failed to fetch concept display ${conceptUuid}: `, error);
+  }
+
+  return useMemo(
+    () => ({
+      isLoading,
+      error,
+      display: data?.data?.display,
+    }),
+    [data, error, isLoading],
+  );
+}

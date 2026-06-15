@@ -38,6 +38,7 @@ const LocationPickerView: React.FC<LocationPickerProps> = ({ hideWelcomeMessage,
     locationCount,
     firstLocation,
   } = useLocationCount(chooseLocation.useLoginLocationTag);
+  const firstLocationResourceId = firstLocation?.resource?.id;
 
   const { user, sessionLocation } = useSession();
   const { currentUser, userProperties } = useMemo(
@@ -93,14 +94,13 @@ const LocationPickerView: React.FC<LocationPickerProps> = ({ hideWelcomeMessage,
     if (locationCount === 0) {
       changeLocation();
     } else if (locationCount === 1 || !chooseLocation.enabled) {
-      if (firstLocation?.resource?.id) {
-        changeLocation(firstLocation.resource.id, true);
+      if (firstLocationResourceId) {
+        changeLocation(firstLocationResourceId, true);
       } else {
-        console.error('Expected location data is missing', { firstLocation, locationCount });
+        console.error('Expected location data is missing', { firstLocationResourceId, locationCount });
       }
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [locationCount, isLoadingLocationCount]);
+  }, [changeLocation, chooseLocation.enabled, firstLocationResourceId, isLoadingLocationCount, locationCount]);
 
   // Handle cases where the login location is present in the userProperties.
   useEffect(() => {

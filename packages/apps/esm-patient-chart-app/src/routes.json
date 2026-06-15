@@ -1,5 +1,8 @@
 {
   "$schema": "https://json.openmrs.org/routes.schema.json",
+  "backendDependencies": {
+    "fhir2": ">=1.2"
+  },
   "optionalBackendDependencies": {
     "emrapi": {
       "version": ">=2.0.0",
@@ -239,18 +242,28 @@
       "offline": true
     }
   ],
-  "workspaces": [
-    {
-      "name": "mark-patient-deceased-workspace-form",
-      "component": "markPatientDeceasedForm",
-      "title": "Mark patient deceased",
-      "type": "form"
-    },
+  "workspaces2": [
     {
       "name": "start-visit-workspace-form",
       "component": "startVisitWorkspace",
-      "title": "startVisitWorkspaceTitle",
-      "type": "start-visit"
+      "window": "start-visit-workspace-window"
+    },
+    {
+      "name": "mark-patient-deceased-workspace-form",
+      "component": "markPatientDeceasedForm",
+      "window": "mark-patient-deceased-workspace-window"
+    }
+  ],
+  "workspaceWindows2": [
+    {
+      "name": "start-visit-workspace-window",
+      "group": "patient-chart",
+      "width": "wider"
+    },
+    {
+      "name": "mark-patient-deceased-workspace-window",
+      "group": "patient-chart",
+      "width": "wider"
     }
   ],
   "workspaceGroups2": [

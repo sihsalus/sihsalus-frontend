@@ -35,6 +35,7 @@ const CancelAppointmentModal: React.FC<CancelAppointmentModalProps> = ({
         });
       })
       .catch((err) => {
+        setIsSubmitting(false);
         showSnackbar({
           title: t('appointmentCancelError', 'Error cancelling appointment'),
           kind: 'error',

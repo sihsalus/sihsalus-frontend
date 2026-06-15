@@ -1,4 +1,9 @@
 import { Layer, NumberInput } from '@carbon/react';
+import {
+  parsePlainDecimalInput,
+  preventScientificNotationKey,
+  preventScientificNotationPaste,
+} from '@openmrs/esm-utils';
 import classNames from 'classnames';
 import React, { useCallback, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -21,21 +26,22 @@ const NumberField: React.FC<FormFieldInputProps<number | string | null | undefin
   const { layoutType, sessionMode, workspaceLayout } = useFormProviderContext();
 
   const numberValue = useMemo(() => {
-    if (typeof value === 'number' && isNaN(value)) {
+    if (typeof value === 'number' && Number.isNaN(value)) {
       return '';
     }
     return value ?? '';
   }, [value]);
 
   const getNumericValue = useCallback(
-    (value: string | number) => (typeof value === 'undefined' || isNaN(Number(value)) ? undefined : Number(value)),
+    (value: string | number) =>
+      value === '' || typeof value === 'undefined' ? undefined : parsePlainDecimalInput(value),
     [],
   );
 
   const handleChange = useCallback(
     (_event: unknown, { value }: { value: string | number }) => {
       const parsedValue = getNumericValue(value);
-      setFieldValue(typeof parsedValue === 'number' && !isNaN(parsedValue) ? parsedValue : undefined);
+      setFieldValue(typeof parsedValue === 'number' && !Number.isNaN(parsedValue) ? parsedValue : undefined);
     },
     [setFieldValue, getNumericValue],
   );
@@ -72,6 +78,8 @@ const NumberField: React.FC<FormFieldInputProps<number | string | null | undefin
           name={field.id}
           value={numberValue}
           onChange={handleChange}
+          onKeyDown={preventScientificNotationKey}
+          onPaste={preventScientificNotationPaste}
           allowEmpty={true}
           size="lg"
           hideSteppers={field.hideSteppers ?? false}

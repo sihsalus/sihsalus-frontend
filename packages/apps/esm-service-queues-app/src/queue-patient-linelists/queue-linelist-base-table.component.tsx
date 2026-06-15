@@ -1,7 +1,6 @@
 import {
   Button,
   DataTable,
-  type DataTableHeader,
   DataTableSkeleton,
   Layer,
   Pagination,
@@ -27,7 +26,7 @@ import {
   parseDate,
   usePagination,
 } from '@openmrs/esm-framework';
-import React, { useMemo, useState } from 'react';
+import React, { useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import { getGender } from '../helpers/functions';
@@ -72,6 +71,7 @@ const QueuePatientBaseTable: React.FC<QueuePatientTableProps> = ({
 }) => {
   const { t } = useTranslation();
   const { results, currentPage, goTo } = usePagination(patientData ?? [], 100);
+  const searchClassName = typeof styles.search === 'string' ? styles.search : undefined;
 
   const handleFilter = ({ rowIds, headers, cellsById, inputValue, getCellId }: FilterProps): Array<string> => {
     return rowIds.filter((rowId) =>
@@ -113,7 +113,7 @@ const QueuePatientBaseTable: React.FC<QueuePatientTableProps> = ({
           id: entry.id,
           name: {
             content: (
-              <ConfigurableLink to={`\${openmrsSpaBase}/patient/${entry.patientUuid}/chart`}>
+              <ConfigurableLink to={`${globalThis.spaBase}/patient/${entry.patientUuid}/chart`}>
                 {entry.name}
               </ConfigurableLink>
             ),
@@ -185,7 +185,7 @@ const QueuePatientBaseTable: React.FC<QueuePatientTableProps> = ({
             <TableToolbar style={{ position: 'static', height: '3rem', overflow: 'visible', backgroundColor: 'color' }}>
               <TableToolbarContent className={styles.toolbarContent}>
                 <TableToolbarSearch
-                  className={styles.search}
+                  className={searchClassName}
                   expanded
                   onChange={onInputChange}
                   placeholder={t('searchThisList', 'Search this list')}
@@ -196,20 +196,30 @@ const QueuePatientBaseTable: React.FC<QueuePatientTableProps> = ({
             <Table {...getTableProps()} className={styles.queueTable}>
               <TableHead>
                 <TableRow>
-                  {headers.map((header) => (
-                    <TableHeader {...getHeaderProps({ header })}>{header.header}</TableHeader>
-                  ))}
+                  {headers.map((header) => {
+                    const { key, ...headerProps } = getHeaderProps({ header });
+                    return (
+                      <TableHeader key={key} {...headerProps}>
+                        {header.header}
+                      </TableHeader>
+                    );
+                  })}
                 </TableRow>
               </TableHead>
               <TableBody>
-                {rows.map((row, index) => {
+                {rows.map((row, _index) => {
                   return (
                     <React.Fragment key={row.id}>
-                      <TableRow {...getRowProps({ row })}>
-                        {row.cells.map((cell) => (
-                          <TableCell key={cell.id}>{cell.value?.content ?? cell.value}</TableCell>
-                        ))}
-                      </TableRow>
+                      {(() => {
+                        const { key, ...rowProps } = getRowProps({ row });
+                        return (
+                          <TableRow key={key} {...rowProps}>
+                            {row.cells.map((cell) => (
+                              <TableCell key={cell.id}>{cell.value?.content ?? cell.value}</TableCell>
+                            ))}
+                          </TableRow>
+                        );
+                      })()}
                     </React.Fragment>
                   );
                 })}

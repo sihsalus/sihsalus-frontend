@@ -108,6 +108,14 @@ export const configSchema = {
       labourAndDelivery: '496c7cc3-0eea-4e84-a04c-2292949e2f7f',
 
       atencionPrenatal: 'OBST-003-ATENCIÓN PRENATAL',
+      prenatalSupplementationForm: 'OBST-011-SUPLEMENTACIÓN GESTANTE',
+      psychoprophylaxisForm: 'OBST-012-PSICOPROFILAXIS',
+      maternalDischargeForm: 'OBST-007-EGRESO MATERNO',
+      maternalReadmissionForm: 'OBST-008-REINGRESO MATERNO',
+      obstetricsServiceForm: 'OBST-010-SERVICIO DE OBSTETRICIA',
+      adolescentPregnancyCareForm: 'OBST-016-ATENCIÓN DIFERENCIADA GESTANTE ADOLESCENTE',
+      obstetricReferralForm: 'OBST-017-REFERENCIA CONTRARREFERENCIA OBSTÉTRICA',
+      culturalBirthPreferencesForm: 'OBST-018-PERTINENCIA CULTURAL Y PREFERENCIA DE PARTO',
 
       // CRED Forms
       atencionImmediataNewborn: '(Página 5) ATENCIÓN INMEDIATA DEL RECIÉN NACIDO',
@@ -1073,6 +1081,89 @@ export const configSchema = {
     },
   },
 
+  // 16. PARTOGRAPHY CONFIGURATION
+  partography: {
+    _type: Type.Object,
+    _description:
+      'Configuración de partograma: encounter, formulario y conceptos usados para mostrar evolución del parto',
+    _default: {
+      encounterTypeUuid: '8993b43c-7878-4e80-9257-1da45e84a904',
+      formUuid: 'HOSP-011-HOJA DE MONITORIZACIÓN OBSTÉTRICA-PARTO',
+      progressConceptUuid: '44426693-0529-4e37-8efe-8ec5b2cbb290',
+      concepts: {
+        timeRecordedUuid: '2c67cd3d-407c-4f4d-bdf7-0f32b42ccfb4',
+        fetalHeartRateUuid: 'b1fb2d14-92ec-4fda-90e5-40f3227c9c65',
+        cervicalDilationUuid: '',
+        descentOfHeadUuid: '',
+        contractionFrequencyUuid: '20eb9478-2ab2-48bd-8dca-3b563b0c7c47',
+        contractionIntensityUuid: 'ba6099d8-f7ce-41de-b9ec-6e8b42252911',
+        contractionDurationUuid: '9641ed77-354a-4a10-b16e-85b8f934031d',
+        maternalSystolicBloodPressureUuid: '5085AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA',
+        maternalDiastolicBloodPressureUuid: '5086AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA',
+        maternalPulseUuid: '5087AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA',
+        maternalTemperatureUuid: '5088AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA',
+        maternalRespiratoryRateUuid: '5242AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA',
+        urineOutputUuid: 'e204d05c-f4f2-4935-88a2-c6ebcded999f',
+        fetalDeathUuid: '9e77be6d-6659-4cf3-bb27-8956ce6dcb67',
+        observationsUuid: 'f947a4ad-3d8d-4516-8e6b-67b3dca4e227',
+      },
+      descentOfHeadAnswerLabels: {
+        '162135AAAAAAAAAAAAAAAAAAAAAAAAAAAAAA': '1/5',
+        '166065AAAAAAAAAAAAAAAAAAAAAAAAAAAAAA': '2/5',
+        '166066AAAAAAAAAAAAAAAAAAAAAAAAAAAAAA': '3/5',
+        '166067AAAAAAAAAAAAAAAAAAAAAAAAAAAAAA': '4/5',
+        '163734AAAAAAAAAAAAAAAAAAAAAAAAAAAAAA': '5/5',
+      },
+    },
+    encounterTypeUuid: {
+      _type: Type.UUID,
+      _description: 'Encounter type UUID usado para recuperar datos seriados del partograma/monitorización obstétrica',
+      _default: '8993b43c-7878-4e80-9257-1da45e84a904',
+    },
+    formUuid: {
+      _type: Type.String,
+      _description: 'Identificador, UUID o nombre del formulario usado al abrir y filtrar el registro del partograma',
+      _default: 'HOSP-011-HOJA DE MONITORIZACIÓN OBSTÉTRICA-PARTO',
+    },
+    progressConceptUuid: {
+      _type: Type.ConceptUuid,
+      _description: 'Concept UUID del grupo de observaciones de progreso del partograma',
+      _default: '44426693-0529-4e37-8efe-8ec5b2cbb290',
+    },
+    concepts: {
+      _type: Type.Object,
+      _description: 'Conceptos clínicos que componen una fila del partograma',
+      _default: {
+        timeRecordedUuid: '2c67cd3d-407c-4f4d-bdf7-0f32b42ccfb4',
+        fetalHeartRateUuid: 'b1fb2d14-92ec-4fda-90e5-40f3227c9c65',
+        cervicalDilationUuid: '',
+        descentOfHeadUuid: '',
+        contractionFrequencyUuid: '20eb9478-2ab2-48bd-8dca-3b563b0c7c47',
+        contractionIntensityUuid: 'ba6099d8-f7ce-41de-b9ec-6e8b42252911',
+        contractionDurationUuid: '9641ed77-354a-4a10-b16e-85b8f934031d',
+        maternalSystolicBloodPressureUuid: '5085AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA',
+        maternalDiastolicBloodPressureUuid: '5086AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA',
+        maternalPulseUuid: '5087AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA',
+        maternalTemperatureUuid: '5088AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA',
+        maternalRespiratoryRateUuid: '5242AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA',
+        urineOutputUuid: 'e204d05c-f4f2-4935-88a2-c6ebcded999f',
+        fetalDeathUuid: '9e77be6d-6659-4cf3-bb27-8956ce6dcb67',
+        observationsUuid: 'f947a4ad-3d8d-4516-8e6b-67b3dca4e227',
+      },
+    },
+    descentOfHeadAnswerLabels: {
+      _type: Type.Object,
+      _description: 'Mapa configurable de respuestas de descenso de cabeza a etiquetas clínicas',
+      _default: {
+        '162135AAAAAAAAAAAAAAAAAAAAAAAAAAAAAA': '1/5',
+        '166065AAAAAAAAAAAAAAAAAAAAAAAAAAAAAA': '2/5',
+        '166066AAAAAAAAAAAAAAAAAAAAAAAAAAAAAA': '3/5',
+        '166067AAAAAAAAAAAAAAAAAAAAAAAAAAAAAA': '4/5',
+        '163734AAAAAAAAAAAAAAAAAAAAAAAAAAAAAA': '5/5',
+      },
+    },
+  },
+
   // 17. CRED FORMS BY AGE GROUP CONFIGURATION
   CREDFormsByAgeGroup: {
     _type: Type.Array,
@@ -1208,13 +1299,31 @@ export interface LegendConfigObject {
 }
 
 export interface PartographyConfigObject {
+  encounterTypeUuid: string;
+  formUuid: string;
+  progressConceptUuid: string;
   concepts: {
-    obsDateUiid: string;
+    obsDateUiid?: string;
+    obsDateUuid?: string;
     timeRecordedUuid: string;
     fetalHeartRateUuid: string;
-    cervicalDilationUiid: string;
-    descentOfHead: string;
+    cervicalDilationUiid?: string;
+    cervicalDilationUuid: string;
+    descentOfHead?: string;
+    descentOfHeadUuid: string;
+    contractionFrequencyUuid: string;
+    contractionIntensityUuid?: string;
+    contractionDurationUuid: string;
+    maternalSystolicBloodPressureUuid?: string;
+    maternalDiastolicBloodPressureUuid?: string;
+    maternalPulseUuid?: string;
+    maternalTemperatureUuid?: string;
+    maternalRespiratoryRateUuid?: string;
+    urineOutputUuid?: string;
+    fetalDeathUuid?: string;
+    observationsUuid?: string;
   };
+  descentOfHeadAnswerLabels: Record<string, string>;
 }
 
 export interface PartograpyComponents {
@@ -1305,6 +1414,14 @@ export interface ConfigObject {
     postnatal: string;
     labourAndDelivery: string;
     atencionPrenatal: string;
+    prenatalSupplementationForm: string;
+    psychoprophylaxisForm: string;
+    maternalDischargeForm: string;
+    maternalReadmissionForm: string;
+    obstetricsServiceForm: string;
+    adolescentPregnancyCareForm: string;
+    obstetricReferralForm: string;
+    culturalBirthPreferencesForm: string;
     atencionImmediataNewborn: string;
     maternalHistory: string;
     deliveryOrAbortion: string;

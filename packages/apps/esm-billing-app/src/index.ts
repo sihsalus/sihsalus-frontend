@@ -1,5 +1,6 @@
 import { Settings, Wallet } from '@carbon/react/icons';
-import { createDashboard, defineConfigSchema, getAsyncLifecycle, getSyncLifecycle } from '@openmrs/esm-framework';
+import { defineConfigSchema, getAsyncLifecycle, getSyncLifecycle } from '@openmrs/esm-framework';
+import { createDashboardLink } from '@openmrs/esm-patient-common-lib';
 import BillHistory from './bill-history/bill-history.component';
 import EditBillLineItemModal from './bill-item-actions/edit-bill-item.modal';
 import BillableServiceHome from './billable-services/billable-services-home.component';
@@ -10,7 +11,6 @@ import AddCashPointModal from './billable-services/cash-point/add-cash-point.mod
 import DeletePaymentModeModal from './billable-services/payment-modes/delete-payment-mode.modal';
 import PaymentModeFormModal from './billable-services/payment-modes/payment-mode-form.modal';
 import BillableServicesCardLink from './billable-services-admin-card-link.component';
-import BillingCheckInForm from './billing-form/billing-checkin-form.component';
 import { configSchema } from './config-schema';
 import { dashboardMeta } from './dashboard.meta';
 import VisitAttributeTags from './invoice/payments/visit-tags/visit-attribute.component';
@@ -41,7 +41,10 @@ export function startupApp() {
 }
 
 // t('billingHistory', 'Billing History')
-export const billingSummaryDashboardLink = getSyncLifecycle(createDashboard(dashboardMeta), options);
+export const billingSummaryDashboardLink = getSyncLifecycle(
+  createDashboardLink({ ...dashboardMeta, moduleName }),
+  options,
+);
 
 // t('billableServices', 'Billable services')
 export const billableServicesAppMenuItem = getSyncLifecycle(appMenu, options);
@@ -49,8 +52,6 @@ export const billableServicesAppMenuItem = getSyncLifecycle(appMenu, options);
 export const billableServicesCardLink = getSyncLifecycle(BillableServicesCardLink, options);
 
 export const billableServicesHome = getSyncLifecycle(BillableServiceHome, options);
-
-export const billingCheckInForm = getSyncLifecycle(BillingCheckInForm, options);
 
 export const billingPatientSummary = getSyncLifecycle(BillHistory, options);
 

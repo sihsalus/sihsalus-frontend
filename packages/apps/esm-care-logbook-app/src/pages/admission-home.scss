@@ -1,0 +1,133 @@
+@use "@carbon/layout";
+@use "@openmrs/esm-styleguide/src/vars" as *;
+
+.page {
+  width: 100%;
+  padding: 0;
+}
+
+.visuallyHidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+.header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: layout.$spacing-05;
+  margin-bottom: 1.5rem;
+  padding-right: layout.$spacing-03;
+  background-color: $ui-02;
+  border: 1px solid $ui-03;
+  border-left: 0;
+}
+
+.headerAction {
+  text-decoration: none;
+}
+
+.content {
+  padding: 0 1.5rem 1.5rem;
+}
+
+.summary {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 1px;
+  margin-bottom: 1rem;
+  background: #e0e0e0;
+}
+
+.summary div {
+  min-height: 5rem;
+  padding: 1rem;
+  background: #ffffff;
+}
+
+.summary span {
+  display: block;
+  margin-bottom: 0.5rem;
+  color: #525252;
+  font-size: 0.875rem;
+}
+
+.summary strong {
+  display: block;
+  font-size: 1.75rem;
+  font-weight: 600;
+  line-height: 1.2;
+}
+
+.controls {
+  display: grid;
+  grid-template-columns: minmax(16rem, 1fr) minmax(12rem, 18rem) auto;
+  gap: 1rem;
+  align-items: end;
+  margin-bottom: 1rem;
+}
+
+.tableWrap {
+  overflow-x: auto;
+  background: #ffffff;
+}
+
+.table {
+  width: 100%;
+  min-width: 78rem;
+  border-collapse: collapse;
+}
+
+.table th,
+.table td {
+  padding: 0.75rem 1rem;
+  border-bottom: 1px solid #e0e0e0;
+  text-align: left;
+  vertical-align: top;
+}
+
+.table th {
+  background: #f4f4f4;
+  font-weight: 600;
+}
+
+.patientLink {
+  color: #0f62fe;
+  text-decoration: none;
+
+  &:hover {
+    text-decoration: underline;
+  }
+}
+
+.empty {
+  margin: 0;
+  padding: 1rem;
+  color: #525252;
+}
+
+@media (max-width: 42rem) {
+  .page {
+    padding: 0;
+  }
+
+  .header {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .content {
+    padding: 0 1rem 1rem;
+  }
+
+  .summary,
+  .controls {
+    grid-template-columns: 1fr;
+  }
+}

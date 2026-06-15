@@ -57,12 +57,7 @@
       }
     },
     {
-      "name": "billing-checkin-form",
-      "slot": "extra-visit-attribute-slot",
-      "component": "billingCheckInForm"
-    },
-    {
-      "slot": "system-admin-page-card-link-slot",
+      "slot": "legacy-system-admin-page-card-link-slot",
       "component": "billableServicesCardLink",
       "name": "billable-services-admin-card-link"
     },

@@ -7,19 +7,19 @@ import { type AdvancedPatientSearchState, type SearchFieldConfig } from '../../t
 import { usePersonAttributeType } from './person-attributes.resource';
 import { SearchField } from './search-field.component';
 
-jest.mock('./person-attributes.resource', () => ({
-  usePersonAttributeType: jest.fn(),
+vi.mock('./person-attributes.resource', async () => ({
+  usePersonAttributeType: vi.fn(),
 }));
 
-const mockUsePersonAttributeType = jest.mocked(usePersonAttributeType);
+const mockUsePersonAttributeType = vi.mocked(usePersonAttributeType);
 
-jest.mock('react-hook-form', () => ({
-  ...jest.requireActual('react-hook-form'),
-  useForm: jest.fn().mockReturnValue({
+vi.mock('react-hook-form', async () => ({
+  ...(await vi.importActual('react-hook-form')),
+  useForm: vi.fn().mockReturnValue({
     control: {
-      register: jest.fn(),
-      unregister: jest.fn(),
-      getFieldState: jest.fn(),
+      register: vi.fn(),
+      unregister: vi.fn(),
+      getFieldState: vi.fn(),
       _names: {
         array: new Set(['test']),
         mount: new Set(['test']),
@@ -29,32 +29,31 @@ jest.mock('react-hook-form', () => ({
         watchAll: false,
       },
       _subjects: {
-        watch: jest.fn(),
-        array: jest.fn(),
-        state: jest.fn(),
+        watch: vi.fn(),
+        array: vi.fn(),
+        state: vi.fn(),
       },
-      _getWatch: jest.fn(),
+      _getWatch: vi.fn(),
       _formValues: {},
       _defaultValues: {},
     },
-    getValues: jest.fn(),
-    setValue: jest.fn(),
+    getValues: vi.fn(),
+    setValue: vi.fn(),
     formState: { errors: {} },
   }),
   Controller: ({ render, name, control: _control }) =>
     render({
       field: {
-        onChange: jest.fn(),
-        onBlur: jest.fn(),
+        onChange: vi.fn(),
+        onBlur: vi.fn(),
         value: '',
         name,
-        ref: jest.fn(),
+        ref: vi.fn(),
       },
       formState: { errors: {} },
       fieldState: { error: undefined },
     }),
 }));
-it;
 
 describe('SearchField', () => {
   const defaultProps = {
@@ -64,7 +63,7 @@ describe('SearchField', () => {
   };
 
   beforeEach(() => {
-    jest.clearAllMocks();
+    vi.clearAllMocks();
   });
 
   describe('Gender field', () => {
@@ -165,7 +164,7 @@ describe('SearchField', () => {
       mockUsePersonAttributeType.mockReturnValue({
         data: {
           format: 'java.lang.String',
-          display: 'Phone Number',
+          display: 'Nombre del Acompañante',
           uuid: 'test-uuid',
         },
         isLoading: false,
@@ -175,7 +174,37 @@ describe('SearchField', () => {
 
     it('renders person attribute field with correct props', () => {
       renderWithSwr(<SearchField field={personAttributeField} {...defaultProps} />);
-      expect(screen.getByText('Phone Number')).toBeInTheDocument();
+      expect(screen.getByText('Nombre del Acompañante')).toBeInTheDocument();
+    });
+
+    it('renders configured string answer options for boolean-like person attributes', () => {
+      mockUsePersonAttributeType.mockReturnValue({
+        data: {
+          format: 'java.lang.String',
+          display: 'Paciente No Identificado',
+          uuid: 'unknown-patient-uuid',
+        },
+        isLoading: false,
+        error: null,
+      });
+
+      renderWithSwr(
+        <SearchField
+          field={{
+            name: 'unknown-patient-uuid',
+            type: 'personAttribute',
+            attributeTypeUuid: 'unknown-patient-uuid',
+            stringAnswerOptions: [
+              { label: 'Sí', value: 'true' },
+              { label: 'No', value: 'false' },
+            ],
+          }}
+          {...defaultProps}
+        />,
+      );
+
+      expect(screen.getByText('Paciente No Identificado')).toBeInTheDocument();
+      expect(screen.getByRole('combobox')).toBeInTheDocument();
     });
   });
 
@@ -186,13 +215,36 @@ describe('SearchField', () => {
     };
 
     it('applies tablet styles when in tablet mode', () => {
+      const { unmount } = render(<SearchField field={ageField} {...defaultProps} />);
+      const defaultInput = screen.getByLabelText('Age');
+      const defaultNumberInput = defaultInput.closest('.cds--number');
+      const defaultClassName = defaultNumberInput?.getAttribute('class') ?? '';
+      unmount();
+
       render(<SearchField field={ageField} {...defaultProps} isTablet={true} />);
-      expect(screen.getByLabelText('Age')).toBeInTheDocument();
+      const tabletInput = screen.getByLabelText('Age');
+      const tabletNumberInput = tabletInput.closest('.cds--number');
+      const tabletClassName = tabletNumberInput?.getAttribute('class') ?? '';
+
+      expect(tabletInput).toBeInTheDocument();
+      expect(tabletClassName).not.toEqual(defaultClassName);
     });
 
     it('applies overlay styles when in overlay mode', () => {
-      render(<SearchField field={ageField} {...defaultProps} inTabletOrOverlay={true} />);
-      expect(screen.getByLabelText('Age')).toBeInTheDocument();
+      const { container: defaultContainer, unmount } = render(<SearchField field={ageField} {...defaultProps} />);
+      const defaultRoot = defaultContainer.firstElementChild;
+      const defaultClassName = defaultRoot?.getAttribute('class') ?? '';
+      unmount();
+
+      const { container: overlayContainer } = render(
+        <SearchField field={ageField} {...defaultProps} inTabletOrOverlay={true} />,
+      );
+      const overlayInput = screen.getByLabelText('Age');
+      const overlayRoot = overlayContainer.firstElementChild;
+      const overlayClassName = overlayRoot?.getAttribute('class') ?? '';
+
+      expect(overlayInput).toBeInTheDocument();
+      expect(overlayClassName).not.toEqual(defaultClassName);
     });
   });
 });

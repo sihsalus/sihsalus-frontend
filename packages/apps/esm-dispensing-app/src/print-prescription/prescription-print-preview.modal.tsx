@@ -23,7 +23,11 @@ type PrescriptionPrintPreviewModalProps = {
   status: string;
 };
 
-const PrescriptionPrintPreviewModal: React.FC<PrescriptionPrintPreviewModalProps> = ({ onClose, encounterUuid }) => {
+const PrescriptionPrintPreviewModal: React.FC<PrescriptionPrintPreviewModalProps> = ({
+  onClose,
+  encounterUuid,
+  patientUuid,
+}) => {
   const { t } = useTranslation();
   const { medicationRequestBundles, error, isLoading } = usePrescriptionDetails(encounterUuid);
 
@@ -67,6 +71,7 @@ const PrescriptionPrintPreviewModal: React.FC<PrescriptionPrintPreviewModalProps
               <PrescriptionsPrintout
                 excludedPrescription={excludedPrescriptions}
                 medicationRequests={medicationRequestBundles}
+                patientUuid={patientUuid}
               />
             </div>
           </div>

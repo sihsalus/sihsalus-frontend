@@ -1,0 +1,86 @@
+{
+  "$schema": "https://json.openmrs.org/routes.schema.json",
+  "backendDependencies": {
+    "webservices.rest": ">=2.2.0"
+  },
+  "pages": [
+    {
+      "component": "root",
+      "route": "interconsultas"
+    }
+  ],
+  "extensions": [
+    {
+      "name": "interconsultas-dashboard",
+      "slot": "interconsultas-dashboard-slot",
+      "component": "root"
+    },
+    {
+      "name": "interconsultas-dashboard-link",
+      "slot": "homepage-dashboard-slot",
+      "component": "interconsultasDashboardLink",
+      "meta": {
+        "name": "interconsultas",
+        "slot": "interconsultas-dashboard-slot",
+        "title": "Interconsultas"
+      },
+      "order": 16
+    },
+    {
+      "name": "interconsultas-chart-dashboard-link",
+      "component": "interconsultasChartDashboardLink",
+      "slot": "patient-chart-dashboard-slot",
+      "order": 14,
+      "meta": {
+        "slot": "patient-chart-interconsultas-slot",
+        "columns": 1,
+        "title": "Interconsultas",
+        "path": "interconsultas",
+        "icon": "omrs-icon-referral-order",
+        "layoutMode": "anchored"
+      }
+    },
+    {
+      "name": "interconsultas-chart-widget",
+      "component": "interconsultasChartWidget",
+      "slot": "patient-chart-interconsultas-slot",
+      "order": 0
+    },
+    {
+      "name": "request-interconsulta-action-button",
+      "component": "requestInterconsultaActionButton",
+      "slot": "patient-actions-slot"
+    }
+  ],
+  "modals": [
+    {
+      "name": "receive-interconsulta-modal",
+      "component": "receiveInterconsultaModal"
+    },
+    {
+      "name": "pickup-interconsulta-modal",
+      "component": "pickupInterconsultaModal"
+    },
+    {
+      "name": "reject-interconsulta-modal",
+      "component": "rejectInterconsultaModal"
+    },
+    {
+      "name": "respond-interconsulta-modal",
+      "component": "respondInterconsultaModal"
+    },
+    {
+      "name": "interconsulta-detail-modal",
+      "component": "interconsultaDetailModal"
+    }
+  ],
+  "workspaces": [
+    {
+      "name": "request-interconsulta-workspace",
+      "component": "requestInterconsultaWorkspace",
+      "title": "requestInterconsulta",
+      "type": "form",
+      "width": "wider"
+    }
+  ]
+}

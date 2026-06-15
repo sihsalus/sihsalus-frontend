@@ -2,6 +2,7 @@ import classNames from 'classnames';
 import type { Dayjs } from 'dayjs';
 import dayjs from 'dayjs';
 import React, { useContext, useMemo } from 'react';
+import { useTranslation } from 'react-i18next';
 
 import SelectedDateContext from '../../../hooks/selectedDateContext';
 import type { PatientAppointment } from '../../../types';
@@ -16,6 +17,7 @@ export interface MonthlyWorkloadViewProps {
 }
 
 const MonthlyWorkloadView: React.FC<MonthlyWorkloadViewProps> = ({ dateTime, events }) => {
+  const { t } = useTranslation();
   const { selectedDate } = useContext(SelectedDateContext);
 
   const currentData = useMemo(
@@ -26,7 +28,7 @@ const MonthlyWorkloadView: React.FC<MonthlyWorkloadViewProps> = ({ dateTime, eve
     [dateTime, events],
   );
 
-  const handleAppoiment = (serviceUuid: string) => {};
+  const handleAppointment = (_serviceUuid: string) => undefined;
 
   return (
     <div
@@ -47,11 +49,18 @@ const MonthlyWorkloadView: React.FC<MonthlyWorkloadViewProps> = ({ dateTime, eve
                 tabIndex={0}
                 onClick={(e) => {
                   e.stopPropagation();
-                  handleAppoiment(currentData.appointmentId);
+                  handleAppointment(currentData.appointmentId);
+                }}
+                onKeyDown={(event) => {
+                  if (event.key === 'Enter' || event.key === ' ') {
+                    event.preventDefault();
+                    event.stopPropagation();
+                    handleAppointment(currentData.appointmentId);
+                  }
                 }}
                 className={styles.serviceArea}
               >
-                <span>Atender Cita</span>
+                <span>{t('attendAppointment', 'Atender Cita')}</span>
               </div>
             </div>
           )}

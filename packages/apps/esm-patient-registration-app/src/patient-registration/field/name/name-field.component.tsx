@@ -1,7 +1,7 @@
 import { ContentSwitcher, Switch } from '@carbon/react';
 import { ExtensionSlot, useConfig } from '@openmrs/esm-framework';
 import { useField } from 'formik';
-import React, { useCallback, useContext } from 'react';
+import { useCallback, useContext } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import { type RegistrationConfig } from '../../../config-schema';
@@ -11,7 +11,6 @@ import { PatientRegistrationContext } from '../../patient-registration-context';
 import { getEffectiveRegistrationConfig } from '../../peru-registration-config';
 import styles from '../field.scss';
 
-export const unidentifiedPatientAttributeTypeUuid = '8b56eac7-5c76-4b9c-8c6f-1deab8d3fc47';
 const containsNoNumbers = /^([^0-9]*)$/;
 
 function checkNumber(value: string) {
@@ -33,6 +32,7 @@ export const NameField = () => {
         defaultUnknownGivenName,
         defaultUnknownFamilyName,
         defaultUnknownFamilyName2,
+        unidentifiedPatientAttributeTypeUuid,
         displayMiddleName,
         displayReverseFieldOrder,
         requireFamilyName2,
@@ -61,6 +61,11 @@ export const NameField = () => {
     },
     [setCapturePhotoProps, setFieldTouched],
   );
+
+  const onClearPhoto = useCallback(() => {
+    setCapturePhotoProps?.(null);
+    setFieldTouched('photo', true, false);
+  }, [setCapturePhotoProps, setFieldTouched]);
 
   const toggleNameKnown = (e) => {
     if (e.name === 'known') {
@@ -120,20 +125,12 @@ export const NameField = () => {
   );
 
   return (
-    <div>
+    <div className={styles.fullWidthInDesktopView}>
       <h4 className={styles.productiveHeading02Light}>{t('fullNameLabelText', 'Full Name')}</h4>
-      <div className={styles.grid}>
-        {displayCapturePhoto && (
-          <ExtensionSlot
-            className={styles.photoExtension}
-            name="capture-patient-photo-slot"
-            state={{ onCapturePhoto, initialState: currentPhoto }}
-          />
-        )}
-
-        <div className={styles.nameField}>
+      <div className={styles.basicInfoNameLayout}>
+        <div className={styles.nameInputsPanel}>
           {(allowUnidentifiedPatients || isPatientUnknown) && (
-            <>
+            <div className={styles.nameKnownToggle}>
               <div className={styles.dobContentSwitcherLabel}>
                 <span className={styles.label01}>{t('patientNameKnown', "Patient's Name is Known?")}</span>
               </div>
@@ -145,25 +142,35 @@ export const NameField = () => {
                 <Switch name="known" text={t('yes', 'Yes')} />
                 <Switch name="unknown" text={t('no', 'No')} />
               </ContentSwitcher>
-            </>
+            </div>
           )}
-          {!isPatientUnknown &&
-            (!displayReverseFieldOrder ? (
-              <>
-                {firstNameField}
-                {middleNameField}
-                {familyNameField}
-                {familyName2Field}
-              </>
-            ) : (
-              <>
-                {familyNameField}
-                {familyName2Field}
-                {middleNameField}
-                {firstNameField}
-              </>
-            ))}
+          {!isPatientUnknown && (
+            <div className={styles.nameFieldsGrid}>
+              {!displayReverseFieldOrder ? (
+                <>
+                  {firstNameField}
+                  {middleNameField}
+                  {familyNameField}
+                  {familyName2Field}
+                </>
+              ) : (
+                <>
+                  {familyNameField}
+                  {familyName2Field}
+                  {middleNameField}
+                  {firstNameField}
+                </>
+              )}
+            </div>
+          )}
         </div>
+        {displayCapturePhoto && (
+          <ExtensionSlot
+            className={styles.photoExtension}
+            name="capture-patient-photo-slot"
+            state={{ onCapturePhoto, onClearPhoto, initialState: currentPhoto }}
+          />
+        )}
       </div>
     </div>
   );

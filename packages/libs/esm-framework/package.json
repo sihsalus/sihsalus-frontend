@@ -19,16 +19,16 @@
     },
     "./mock": {
       "import": "./mock.tsx",
-      "require": "./mock-jest.tsx"
+      "require": "./mock-vitest.tsx"
     },
     "./mock.tsx": {
       "import": "./mock.tsx",
-      "require": "./mock-jest.tsx"
+      "require": "./mock-vitest.tsx"
     }
   },
   "source": true,
   "scripts": {
-    "document": "../../../tools/document.sh",
+    "document": "typedoc",
     "test": "cross-env TZ=UTC vitest run --passWithNoTests",
     "test:watch": "cross-env TZ=UTC vitest watch",
     "coverage": "cross-env TZ=UTC vitest run --coverage --passWithNoTests",
@@ -74,7 +74,7 @@
     "@openmrs/esm-react-utils": "workspace:*",
     "@openmrs/esm-routes": "workspace:*",
     "@openmrs/esm-state": "workspace:*",
-    "@openmrs/esm-styleguide": "9.0.3-pre.4728",
+    "@openmrs/esm-styleguide": "workspace:*",
     "@openmrs/esm-translations": "workspace:*",
     "@openmrs/esm-utils": "workspace:*"
   },
@@ -103,8 +103,8 @@
     "typedoc": "^0.28.5",
     "typedoc-plugin-markdown": "^4.6.3",
     "typedoc-plugin-no-inherit": "^1.6.1",
-    "typescript": "^6.0.0",
-    "vitest": "^4.1.2"
+    "typescript": "6.0.3",
+    "vitest": "^4.1.7"
   },
   "stableVersion": "9.0.2"
 }

@@ -1,5 +1,4 @@
-import { openmrsFetch, restBaseUrl } from '@openmrs/esm-framework';
-import { getPreferredIdentifier } from '@sihsalus/esm-sihsalus-shared';
+import { getPreferredIdentifier, openmrsFetch, restBaseUrl } from '@openmrs/esm-framework';
 import useSWR from 'swr';
 
 import { ModuleFuaRestURL } from '../constant';
@@ -64,4 +63,21 @@ export async function generateFuaFromVisit(visitUuid: string) {
 
   await revalidateFuaRequestCaches();
   return response;
+}
+
+export async function generateFuasFromVisits(visitUuids: Array<string>) {
+  const results = await Promise.allSettled(
+    visitUuids.map((visitUuid) =>
+      openmrsFetch(`${ModuleFuaRestURL}/generateFromVisit/${encodeURIComponent(visitUuid)}`, {
+        method: 'POST',
+      }),
+    ),
+  );
+
+  await revalidateFuaRequestCaches();
+
+  return {
+    successful: results.filter((result) => result.status === 'fulfilled').length,
+    failed: results.filter((result) => result.status === 'rejected').length,
+  };
 }

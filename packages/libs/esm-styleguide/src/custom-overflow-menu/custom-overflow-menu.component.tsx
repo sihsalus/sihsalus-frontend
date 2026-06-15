@@ -118,6 +118,7 @@ export function CustomOverflowMenu({ menuTitle, children }: CustomOverflowMenuPr
   return (
     <div data-overflow-menu className={classNames('cds--overflow-menu', styles.container)} ref={ref}>
       <button
+        type="button"
         className={classNames(
           'cds--btn',
           'cds--btn--ghost',
@@ -162,7 +163,16 @@ export function CustomOverflowMenu({ menuTitle, children }: CustomOverflowMenuPr
 
 type OverflowMenuItemProps = ComponentProps<typeof OverflowMenuItem>;
 
-export function CustomOverflowMenuItem(props: Omit<OverflowMenuItemProps, 'closeMenu'>) {
+export function CustomOverflowMenuItem({
+  handleOverflowMenuItemFocus,
+  index,
+  ...props
+}: Omit<OverflowMenuItemProps, 'closeMenu'> & {
+  handleOverflowMenuItemFocus?: unknown;
+  index?: number;
+}) {
   const context = useContext(CustomOverflowMenuContext);
+  void handleOverflowMenuItemFocus;
+  void index;
   return <OverflowMenuItem {...props} closeMenu={context?.closeMenu} />;
 }

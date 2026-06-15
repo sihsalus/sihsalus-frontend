@@ -1,6 +1,6 @@
 import { type FormField, type FormFieldValidator } from '../types';
 import { isTrue } from '../utils/boolean-utils';
-import { FieldValidator } from './form-validator';
+import { FieldValidator, translateValidationMessage } from './form-validator';
 
 interface DateValidatorConfig {
   allowFutureDates?: string | boolean;
@@ -16,7 +16,13 @@ export const DateValidator: FormFieldValidator = {
     }
     if (value instanceof Date && !isTrue(resolvedConfig.allowFutureDates)) {
       return value.getTime() > now.getTime()
-        ? [{ resultType: 'error', errCode: 'value.invalid', message: 'Future dates not allowed' }]
+        ? [
+            {
+              resultType: 'error',
+              errCode: 'value.invalid',
+              message: translateValidationMessage('futureDatesNotAllowed', 'Future dates not allowed'),
+            },
+          ]
         : [];
     }
     return [];

@@ -2,6 +2,13 @@ import { getVisitStore, type Visit, type VisitStoreState } from '@openmrs/esm-em
 import { useEffect, useId } from 'react';
 import { type Actions, useStoreWithActions } from './useStore';
 
+type VisitContextStoreActions = {
+  setVisitContext: (newSelectedVisit: Visit | null) => void;
+  mutateVisit: () => void;
+};
+
+type VisitContextStore = VisitStoreState & VisitContextStoreActions;
+
 const visitContextStoreActions = {
   setVisitContext(_: VisitStoreState, newSelectedVisit: Visit | null) {
     if (newSelectedVisit == null) {
@@ -13,7 +20,7 @@ const visitContextStoreActions = {
     };
   },
   mutateVisit(currState: VisitStoreState) {
-    for (const mutateCallback of Object.values(currState.mutateVisitCallbacks ?? {})) {
+    for (const mutateCallback of Object.values(currState.mutateVisitCallbacks ?? {}) as Array<() => void>) {
       mutateCallback();
     }
     return {};
@@ -27,7 +34,7 @@ const visitContextStoreActions = {
  * callbacks also registered into the store)
  * @returns
  */
-export function useVisitContextStore(mutateVisitCallback?: () => void) {
+export function useVisitContextStore(mutateVisitCallback?: () => void): VisitContextStore {
   const id = useId();
 
   useEffect(() => {
@@ -53,5 +60,5 @@ export function useVisitContextStore(mutateVisitCallback?: () => void) {
     };
   }, [id, mutateVisitCallback]);
 
-  return useStoreWithActions(getVisitStore(), visitContextStoreActions);
+  return useStoreWithActions(getVisitStore(), visitContextStoreActions) as VisitContextStore;
 }

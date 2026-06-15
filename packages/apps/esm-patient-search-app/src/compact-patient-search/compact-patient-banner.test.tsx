@@ -1,5 +1,5 @@
 import { getDefaultsFromConfigSchema, restBaseUrl, useConfig } from '@openmrs/esm-framework';
-import { render, screen } from '@testing-library/react';
+import { render, screen, within } from '@testing-library/react';
 import dayjs from 'dayjs';
 
 import { configSchema, type PatientSearchConfig } from '../config-schema';
@@ -8,7 +8,7 @@ import { type SearchedPatient } from '../types';
 
 import CompactPatientBanner from './compact-patient-banner.component';
 
-const mockUseConfig = jest.mocked(useConfig<PatientSearchConfig>);
+const mockUseConfig = vi.mocked(useConfig<PatientSearchConfig>);
 
 const birthdate = '1990-01-01T00:00:00.000+0000';
 const age = dayjs().diff(birthdate, 'years');
@@ -67,12 +67,10 @@ describe('CompactPatientBanner', () => {
       </PatientSearchContext.Provider>,
     );
 
-    // TODO: Restore these tests once we improve the patient banner test stubs
-    // expect(
-    //   screen.getByRole('link', { name: new RegExp(`Smith, John Doe Male · ${age} yrs · OpenMRS ID 1000NLY`, 'i') }),
-    // ).toBeInTheDocument();
-    // expect(screen.getByRole('link')).toHaveAttribute('href', `/openmrs/spa/patient/${patients[0].uuid}/chart/`);
+    const patientLink = screen.getByRole('link');
+    expect(patientLink).toHaveAttribute('href', `/openmrs/spa/patient/${patients[0].uuid}/chart/`);
+    expect(within(patientLink).getByText(/Smith, John Doe/)).toBeInTheDocument();
+    expect(within(patientLink).getByText(/1000NLY/)).toBeInTheDocument();
     expect(screen.getByRole('img')).toBeInTheDocument();
-    // expect(screen.getByRole('heading', { name: /Smith, John Doe/ })).toBeInTheDocument();
   });
 });

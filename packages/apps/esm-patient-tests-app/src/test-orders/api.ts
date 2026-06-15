@@ -11,9 +11,8 @@ import { useCallback, useMemo } from 'react';
 import useSWR, { mutate } from 'swr';
 import useSWRImmutable from 'swr/immutable';
 
+import type { ConfigObject } from '../config-schema';
 import type { TestOrderBasketItem } from '../types';
-
-export const careSettingUuid = '6f0c9a92-6f24-11e3-af88-005056821db0';
 
 /**
  * SWR-based data fetcher for patient orders.
@@ -22,13 +21,10 @@ export const careSettingUuid = '6f0c9a92-6f24-11e3-af88-005056821db0';
  * @param status Allows fetching either all orders or only active orders.
  */
 export function usePatientLabOrders(patientUuid: string, status: 'ACTIVE' | 'any') {
-  const { orders } = useConfig<{
-    orders?: {
-      labOrderTypeUuid?: string;
-    };
-  }>();
-  const labOrderTypeUUID = orders?.labOrderTypeUuid ?? '';
-  const ordersUrl = `${restBaseUrl}/order?patient=${patientUuid}&careSetting=${careSettingUuid}&status=${status}&orderType=${labOrderTypeUUID}`;
+  const { orders } = useConfig<ConfigObject>();
+  const labOrderTypeUUID = orders.labOrderTypeUuid;
+  const configuredCareSettingUuid = orders.careSettingUuid;
+  const ordersUrl = `${restBaseUrl}/order?patient=${patientUuid}&careSetting=${configuredCareSettingUuid}&status=${status}&orderType=${labOrderTypeUUID}`;
 
   const { data, error, isLoading, isValidating } = useSWR<FetchResponse<PatientOrderFetchResponse>, Error>(
     patientUuid ? ordersUrl : null,
@@ -92,20 +88,21 @@ export function prepTestOrderPostData(
   order: TestOrderBasketItem,
   patientUuid: string,
   encounterUuid: string | null,
+  configuredCareSettingUuid: string,
 ): TestOrderPost {
   if (order.action === 'NEW' || order.action === 'RENEW') {
     return {
       action: 'NEW',
       type: 'testorder',
       patient: patientUuid,
-      careSetting: careSettingUuid,
+      careSetting: configuredCareSettingUuid,
       orderer: order.orderer,
       encounter: encounterUuid,
       concept: order.testType.conceptUuid,
       instructions: order.instructions,
       orderReason: order.orderReason,
       accessionNumber: order.accessionNumber,
-      urgency: order.urgency,
+      urgency: order.urgencyCode ?? order.urgency,
       scheduledDate: order.scheduledDate ? toOmrsIsoString(order.scheduledDate) : null,
     };
   } else if (order.action === 'REVISE') {
@@ -121,7 +118,7 @@ export function prepTestOrderPostData(
       orderReason: order.orderReason,
       previousOrder: order.previousOrder,
       accessionNumber: order.accessionNumber,
-      urgency: order.urgency,
+      urgency: order.urgencyCode ?? order.urgency,
       scheduledDate: order.scheduledDate ? toOmrsIsoString(order.scheduledDate) : null,
     };
   } else if (order.action === 'DISCONTINUE') {
@@ -136,7 +133,7 @@ export function prepTestOrderPostData(
       orderReason: order.orderReason,
       previousOrder: order.previousOrder,
       accessionNumber: order.accessionNumber,
-      urgency: order.urgency,
+      urgency: order.urgencyCode ?? order.urgency,
       scheduledDate: order.scheduledDate ? toOmrsIsoString(order.scheduledDate) : null,
     };
   } else {

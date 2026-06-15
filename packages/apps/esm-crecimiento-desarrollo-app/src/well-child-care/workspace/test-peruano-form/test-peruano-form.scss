@@ -2,431 +2,287 @@
 @use "@carbon/styles/scss/type";
 @use "@openmrs/esm-styleguide/src/vars" as *;
 
-// Carbon v11 tokens not exported by esm-styleguide _vars.scss
 $text-primary: #161616;
 $text-secondary: #525252;
+$background: #ffffff;
 $layer-01: #f4f4f4;
 $layer-02: #ffffff;
-$background: #ffffff;
 $border-subtle-01: #e0e0e0;
 $border-subtle-02: #c6c6c6;
-$layer-accent-01: #e0e0e0;
-$support-info: #0043ce;
 $support-success: #24a148;
-$support-success-inverse: #42be65;
 $support-warning: #f1c21b;
-$notification-background-info: #edf5ff;
+$support-error: #da1e28;
+$support-info: #0043ce;
 
 .form {
   height: 100%;
   display: flex;
   flex-direction: column;
+  color: $text-primary;
+}
 
-  .title {
+.header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: spacing.$spacing-05;
+  border-bottom: 1px solid $border-subtle-01;
+  padding-bottom: spacing.$spacing-05;
+
+  h3 {
     @include type.type-style("heading-04");
-    color: $text-primary;
-    margin-bottom: spacing.$spacing-03;
-    border-bottom: 2px solid $brand-teal-01;
-    padding-bottom: spacing.$spacing-03;
+    margin: 0 0 spacing.$spacing-02;
   }
 
-  .subtitle {
+  p {
     @include type.type-style("body-01");
     color: $text-secondary;
-    margin-bottom: spacing.$spacing-05;
-    font-style: italic;
-  }
-
-  .patientInfo {
-    background: $layer-01;
-    border-left: 4px solid $brand-teal-01;
-
-    .infoGrid {
-      display: grid;
-      grid-template-columns: 1fr 1fr 1fr;
-      gap: spacing.$spacing-05;
-
-      @media (max-width: 768px) {
-        grid-template-columns: 1fr;
-        gap: spacing.$spacing-03;
-      }
-    }
-  }
-
-  .results {
-    background: linear-gradient(135deg, $layer-01 0%, $layer-02 100%);
-    border: 1px solid $border-subtle-01;
-    border-radius: 8px;
-
-    .resultGrid {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-      gap: spacing.$spacing-04;
-      margin-bottom: spacing.$spacing-05;
-
-      .resultCard {
-        background: $background;
-        border: 1px solid $border-subtle-01;
-        border-radius: 6px;
-        padding: spacing.$spacing-04;
-        text-align: center;
-        transition:
-          transform 0.2s ease,
-          box-shadow 0.2s ease;
-
-        &:hover {
-          transform: translateY(-2px);
-          box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-        }
-
-        h5 {
-          @include type.type-style("heading-compact-01");
-          color: $text-primary;
-          margin-bottom: spacing.$spacing-03;
-          font-weight: 600;
-        }
-
-        p {
-          @include type.type-style("body-compact-01");
-          color: $text-secondary;
-          margin-bottom: spacing.$spacing-02;
-          font-weight: 500;
-        }
-
-        .percentile {
-          @include type.type-style("label-01");
-          color: $text-primary;
-          font-weight: 600;
-          background: $layer-accent-01;
-          border-radius: 12px;
-          padding: 2px spacing.$spacing-03;
-          display: inline-block;
-          margin-bottom: spacing.$spacing-03;
-        }
-
-        &.totalCard {
-          border: 2px solid $brand-teal-01;
-          background: linear-gradient(135deg, $background 0%, $layer-01 100%);
-
-          h5 {
-            color: $brand-teal-01;
-          }
-        }
-      }
-    }
-
-    .recommendation {
-      background: $notification-background-info;
-      border-left: 4px solid $support-info;
-      border-radius: 4px;
-      padding: spacing.$spacing-04;
-
-      h5 {
-        @include type.type-style("heading-compact-01");
-        color: $text-primary;
-        margin-bottom: spacing.$spacing-02;
-      }
-
-      p {
-        @include type.type-style("body-01");
-        color: $text-secondary;
-        line-height: 1.5;
-      }
-    }
-  }
-
-  .areaSection {
-    background: $layer-01;
-    border-radius: 8px;
-    padding: spacing.$spacing-05;
-    border: 1px solid $border-subtle-01;
-
-    .areaTitle {
-      @include type.type-style("heading-compact-02");
-      color: $text-primary;
-      margin-bottom: spacing.$spacing-04;
-      padding-bottom: spacing.$spacing-02;
-      border-bottom: 1px solid $border-subtle-01;
-      display: flex;
-      align-items: center;
-
-      &::before {
-        content: "";
-        width: 4px;
-        height: 20px;
-        background: $brand-teal-01;
-        border-radius: 2px;
-        margin-right: spacing.$spacing-03;
-      }
-    }
-
-    .itemsGrid {
-      display: grid;
-      grid-template-columns: 1fr;
-      gap: spacing.$spacing-04;
-    }
-
-    .itemContainer {
-      background: $background;
-      border: 1px solid $border-subtle-01;
-      border-radius: 6px;
-      padding: spacing.$spacing-04;
-      transition: all 0.2s ease;
-
-      &:hover {
-        border-color: $brand-teal-01;
-        background: $layer-accent-01;
-      }
-
-      .itemCheckbox {
-        .cds--checkbox-label-text {
-          @include type.type-style("body-01");
-          color: $text-primary;
-          line-height: 1.4;
-          font-weight: 500;
-        }
-
-        &:checked + .itemContainer {
-          background: $support-success-inverse;
-          border-color: $support-success;
-        }
-      }
-
-      .instruction {
-        @include type.type-style("helper-text-01");
-        color: $text-secondary;
-        font-style: italic;
-        margin-top: spacing.$spacing-02;
-        border-left: 2px solid $border-subtle-02;
-        background: $layer-02;
-        border-radius: 0 4px 4px 0;
-        padding: spacing.$spacing-02 spacing.$spacing-03;
-      }
-    }
-  }
-
-  // Estilos específicos para contexto cultural
-  .culturalContext {
-    .urbano {
-      border-left-color: $support-info;
-    }
-
-    .rural {
-      border-left-color: $support-success;
-    }
-
-    .urbano_marginal {
-      border-left-color: $support-warning;
-    }
-  }
-
-  // Estilos para idiomas
-  .languageIndicator {
-    &.español {
-      background: linear-gradient(90deg, #d4122a 0%, #d4122a 100%);
-    }
-
-    &.quechua {
-      background: linear-gradient(90deg, #ff6b0a 0%, #ffa726 100%);
-    }
-
-    &.bilingue {
-      background: linear-gradient(
-        90deg,
-        #d4122a 0%,
-        #d4122a 50%,
-        #ff6b0a 50%,
-        #ffa726 100%
-      );
-    }
-
-    color: white;
-    padding: 2px spacing.$spacing-02;
-    border-radius: 12px;
-    font-size: 12px;
-    font-weight: 600;
-    display: inline-block;
-  }
-
-  .desktop {
-    position: sticky;
-    bottom: 0;
-    background: $background;
-    border-top: 1px solid $border-subtle-01;
-    padding: spacing.$spacing-04 0;
-    margin-top: auto;
-  }
-
-  .tablet {
-    @extend .desktop;
-    padding: spacing.$spacing-03 0;
+    margin: 0;
   }
 }
 
-// Animaciones para feedback visual
-@keyframes pulseSuccess {
-  0% {
-    transform: scale(1);
-  }
-  50% {
-    transform: scale(1.05);
-  }
-  100% {
-    transform: scale(1);
-  }
-}
+.patientPanel {
+  display: grid;
+  grid-template-columns: minmax(12rem, 1.25fr) repeat(4, minmax(9rem, 1fr));
+  gap: spacing.$spacing-05;
+  align-items: end;
+  padding: spacing.$spacing-05;
+  background: $layer-01;
+  border-left: 4px solid $brand-teal-01;
 
-@keyframes slideInUp {
-  from {
-    opacity: 0;
-    transform: translateY(20px);
+  @media (max-width: 1056px) {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
-  to {
-    opacity: 1;
-    transform: translateY(0);
+
+  @media (max-width: 672px) {
+    grid-template-columns: 1fr;
   }
 }
 
-.results .resultCard {
-  animation: slideInUp 0.3s ease-out;
+.fieldLabel {
+  @include type.type-style("label-01");
+  display: block;
+  color: $text-secondary;
+  margin-bottom: spacing.$spacing-02;
 }
 
-.itemContainer {
-  &.completed {
-    animation: pulseSuccess 0.6s ease-out;
-  }
-}
+.summaryPanel {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  border: 1px solid $border-subtle-01;
 
-// Estilos específicos para clasificaciones
-.classification {
-  &.superior {
-    border-color: #8a3ffc;
-    background: linear-gradient(
-      135deg,
-      rgba(138, 63, 252, 0.1) 0%,
-      rgba(138, 63, 252, 0.05) 100%
-    );
-  }
-
-  &.normal_alto {
-    border-color: #0f62fe;
-    background: linear-gradient(
-      135deg,
-      rgba(15, 98, 254, 0.1) 0%,
-      rgba(15, 98, 254, 0.05) 100%
-    );
-  }
-
-  &.normal {
-    border-color: #24a148;
-    background: linear-gradient(
-      135deg,
-      rgba(36, 161, 72, 0.1) 0%,
-      rgba(36, 161, 72, 0.05) 100%
-    );
-  }
-
-  &.normal_bajo {
-    border-color: #f1c21b;
-    background: linear-gradient(
-      135deg,
-      rgba(241, 194, 27, 0.1) 0%,
-      rgba(241, 194, 27, 0.05) 100%
-    );
-  }
-
-  &.limite {
-    border-color: #ff832b;
-    background: linear-gradient(
-      135deg,
-      rgba(255, 131, 43, 0.1) 0%,
-      rgba(255, 131, 43, 0.05) 100%
-    );
-  }
-
-  &.retraso {
-    border-color: #da1e28;
-    background: linear-gradient(
-      135deg,
-      rgba(218, 30, 40, 0.1) 0%,
-      rgba(218, 30, 40, 0.05) 100%
-    );
+  @media (max-width: 672px) {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 }
 
-// Responsive design para dispositivos móviles
-@media (max-width: 672px) {
-  .form {
-    .resultGrid {
-      grid-template-columns: 1fr;
-    }
+.summaryMetric {
+  padding: spacing.$spacing-05;
+  border-right: 1px solid $border-subtle-01;
 
-    .areaSection {
-      padding: spacing.$spacing-04;
-    }
+  &:last-child {
+    border-right: 0;
+  }
 
-    .patientInfo .infoGrid {
-      grid-template-columns: 1fr;
-    }
+  span {
+    @include type.type-style("label-01");
+    display: block;
+    color: $text-secondary;
+    margin-bottom: spacing.$spacing-02;
+  }
+
+  strong {
+    @include type.type-style("heading-03");
   }
 }
 
-// Estilos para impresión
+.profileSection {
+  border: 1px solid $border-subtle-01;
+  overflow: auto;
+}
+
+.sectionHeader {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: spacing.$spacing-05;
+  padding: spacing.$spacing-05;
+  background: $layer-01;
+  border-bottom: 1px solid $border-subtle-01;
+
+  h4 {
+    @include type.type-style("heading-compact-02");
+    margin: 0 0 spacing.$spacing-02;
+  }
+
+  p {
+    @include type.type-style("body-compact-01");
+    color: $text-secondary;
+    margin: 0;
+  }
+
+  @media (max-width: 672px) {
+    display: block;
+  }
+}
+
+.legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: spacing.$spacing-04;
+  min-width: 18rem;
+
+  span {
+    @include type.type-style("label-01");
+    display: inline-flex;
+    align-items: center;
+    gap: spacing.$spacing-02;
+    color: $text-secondary;
+  }
+}
+
+.profileGrid {
+  display: grid;
+  grid-template-columns: minmax(11rem, 1.4fr) repeat(17, minmax(2.5rem, 1fr));
+  min-width: 61rem;
+}
+
+.cornerCell,
+.monthHeader,
+.areaName,
+.profileCell {
+  min-height: 2.75rem;
+  border-right: 1px solid $border-subtle-01;
+  border-bottom: 1px solid $border-subtle-01;
+}
+
+.cornerCell,
+.monthHeader {
+  @include type.type-style("label-01");
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: $layer-01;
+  color: $text-secondary;
+  position: sticky;
+  top: 0;
+  z-index: 1;
+}
+
+.currentMonth {
+  color: $brand-teal-01;
+  box-shadow: inset 0 -3px 0 $brand-teal-01;
+}
+
+.areaName {
+  @include type.type-style("body-compact-01");
+  display: flex;
+  align-items: center;
+  padding: 0 spacing.$spacing-04;
+  background: $background;
+  font-weight: 600;
+  position: sticky;
+  left: 0;
+  z-index: 1;
+}
+
+.profileCell {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: $layer-02;
+  color: $text-secondary;
+  cursor: pointer;
+  padding: 0;
+
+  &:hover {
+    outline: 2px solid $brand-teal-01;
+    outline-offset: -2px;
+  }
+
+  &.expected {
+    background: #edf5ff;
+  }
+}
+
+.achieved {
+  color: $support-success;
+  background: #defbe6;
+}
+
+.notAchieved {
+  color: $support-error;
+  background: #fff1f1;
+}
+
+.notEvaluated {
+  color: #8d8d8d;
+}
+
+.areaResults {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(13rem, 1fr));
+  gap: spacing.$spacing-04;
+}
+
+.areaResult {
+  border: 1px solid $border-subtle-01;
+  padding: spacing.$spacing-04;
+  background: $background;
+}
+
+.areaResultHeader {
+  display: flex;
+  justify-content: space-between;
+  gap: spacing.$spacing-03;
+  align-items: center;
+  margin-bottom: spacing.$spacing-03;
+}
+
+.progressTrack {
+  height: 0.5rem;
+  background: $layer-01;
+  margin-bottom: spacing.$spacing-03;
+
+  span {
+    display: block;
+    height: 100%;
+    background: $brand-teal-01;
+  }
+}
+
+.notesGrid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: spacing.$spacing-05;
+
+  @media (max-width: 672px) {
+    grid-template-columns: 1fr;
+  }
+}
+
+.actions {
+  position: sticky;
+  bottom: 0;
+  background: $background;
+  border-top: 1px solid $border-subtle-01;
+  padding: spacing.$spacing-04 0;
+  margin-top: auto;
+  z-index: 2;
+}
+
+.tabletActions {
+  @extend .actions;
+  padding: spacing.$spacing-03 0;
+}
+
 @media print {
-  .form {
-    .desktop,
-    .tablet {
-      display: none;
-    }
-
-    .resultCard {
-      break-inside: avoid;
-      box-shadow: none;
-      border: 1px solid #000;
-    }
-
-    .areaSection {
-      break-inside: avoid;
-    }
+  .actions,
+  .tabletActions {
+    display: none;
   }
-}
 
-// Modo de alto contraste
-@media (prefers-contrast: high) {
-  .form {
-    .resultCard {
-      border-width: 2px;
-    }
-
-    .areaTitle::before {
-      background: #000;
-    }
-
-    .instruction {
-      border-left-width: 3px;
-    }
-  }
-}
-
-// Modo oscuro (si está disponible)
-@media (prefers-color-scheme: dark) {
-  .languageIndicator {
-    &.español {
-      background: linear-gradient(90deg, #ff6b6b 0%, #ff8e8e 100%);
-    }
-
-    &.quechua {
-      background: linear-gradient(90deg, #ffa726 0%, #ffcc02 100%);
-    }
-
-    &.bilingue {
-      background: linear-gradient(
-        90deg,
-        #ff6b6b 0%,
-        #ff6b6b 50%,
-        #ffa726 50%,
-        #ffcc02 100%
-      );
-    }
+  .profileSection {
+    overflow: visible;
   }
 }

@@ -65,7 +65,9 @@ const SavedCohorts: React.FC<SavedCohortsProps> = ({ onViewCohort }) => {
             <TableHead>
               <TableRow>
                 {headers.map((header) => (
-                  <TableHeader {...getHeaderProps({ header })}>{header.header}</TableHeader>
+                  <TableHeader key={header.key} {...getHeaderProps({ header })}>
+                    {header.header}
+                  </TableHeader>
                 ))}
                 <TableHeader className={mainStyles.optionHeader}></TableHeader>
               </TableRow>

@@ -1,14 +1,7 @@
-import {
-  type Encounter,
-  getDefaultsFromConfigSchema,
-  showSnackbar,
-  useConfig,
-  useSession,
-} from '@openmrs/esm-framework';
+import { getDefaultsFromConfigSchema, showSnackbar, useConfig, useSession } from '@openmrs/esm-framework';
 import { type PatientWorkspace2DefinitionProps } from '@openmrs/esm-patient-common-lib';
-import { render, screen } from '@testing-library/react';
+import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import React from 'react';
 import {
   ConfigMock,
   diagnosisSearchResponse,
@@ -19,17 +12,23 @@ import {
   mockSessionDataResponse,
 } from 'test-utils';
 import { type ConfigObject, configSchema } from '../config-schema';
+import { defaultVisitNoteClinicalConceptUuids } from './visit-note-config-schema';
 import {
   deletePatientDiagnosis,
   fetchDiagnosisConceptsByName,
   savePatientDiagnosis,
   saveVisitNote,
   updateVisitNote,
+  useProviderSignatureDetails,
+  useVisitNoteClinicalContext,
 } from './visit-notes.resource';
-import VisitNotesForm, { type VisitNotesFormProps } from './visit-notes-form.workspace';
+import VisitNotesForm, {
+  type EditableVisitNoteEncounter,
+  type VisitNotesFormProps,
+} from './visit-notes-form.workspace';
 
 const defaultProps: PatientWorkspace2DefinitionProps<VisitNotesFormProps, {}> = {
-  closeWorkspace: jest.fn(),
+  closeWorkspace: vi.fn(),
   workspaceProps: {
     formContext: 'creating' as const,
   },
@@ -39,7 +38,7 @@ const defaultProps: PatientWorkspace2DefinitionProps<VisitNotesFormProps, {}> = 
     visitContext: null,
     mutateVisitContext: null,
   },
-  launchChildWorkspace: jest.fn(),
+  launchChildWorkspace: vi.fn(),
   windowProps: {},
   workspaceName: '',
   windowName: '',
@@ -55,38 +54,83 @@ function renderVisitNotesForm(workspaceProps: Partial<VisitNotesFormProps> = {})
   render(<VisitNotesForm {...props} />);
 }
 
-const mockFetchDiagnosisConceptsByName = jest.mocked(fetchDiagnosisConceptsByName);
-const mockDeletePatientDiagnosis = jest.mocked(deletePatientDiagnosis);
-const mockSavePatientDiagnosis = jest.mocked(savePatientDiagnosis);
-const mockSaveVisitNote = jest.mocked(saveVisitNote);
-const mockShowSnackbar = jest.mocked(showSnackbar);
-const mockUpdateVisitNote = jest.mocked(updateVisitNote);
-const mockUseConfig = jest.mocked(useConfig<ConfigObject>);
-const mockUseSession = jest.mocked(useSession);
+const mockFetchDiagnosisConceptsByName = vi.mocked(fetchDiagnosisConceptsByName);
+const mockDeletePatientDiagnosis = vi.mocked(deletePatientDiagnosis);
+const mockSavePatientDiagnosis = vi.mocked(savePatientDiagnosis);
+const mockSaveVisitNote = vi.mocked(saveVisitNote);
+const mockShowSnackbar = vi.mocked(showSnackbar);
+const mockUpdateVisitNote = vi.mocked(updateVisitNote);
+const mockUseProviderSignatureDetails = vi.mocked(useProviderSignatureDetails);
+const mockUseVisitNoteClinicalContext = vi.mocked(useVisitNoteClinicalContext);
+const mockUseConfig = vi.mocked(useConfig<ConfigObject>);
+const mockUseSession = vi.mocked(useSession);
 
-jest.mock('lodash-es/debounce', () => jest.fn((fn) => fn));
+const getMockConfig = (overrides: Partial<ConfigObject> = {}): ConfigObject => {
+  const defaults = getDefaultsFromConfigSchema(configSchema);
+  return {
+    ...defaults,
+    ...ConfigMock,
+    ...overrides,
+    visitNoteConfig: {
+      ...defaultVisitNoteClinicalConceptUuids,
+      ...defaults.visitNoteConfig,
+      ...ConfigMock.visitNoteConfig,
+      ...overrides.visitNoteConfig,
+    },
+  } as ConfigObject;
+};
 
-jest.mock('./visit-notes.resource', () => ({
-  fetchDiagnosisConceptsByName: jest.fn(),
-  deletePatientDiagnosis: jest.fn(),
-  savePatientDiagnosis: jest.fn(),
-  updateVisitNote: jest.fn(),
-  useLocationUuid: jest.fn().mockImplementation(() => ({
+vi.mock('lodash-es/debounce', () => ({ default: vi.fn((fn) => fn) }));
+
+vi.mock('./visit-notes.resource', async () => ({
+  // Pure P/D/R mapping helpers carry no side effects — use the real ones.
+  ...(await vi.importActual<typeof import('./visit-notes.resource')>('./visit-notes.resource')),
+  fetchDiagnosisConceptsByName: vi.fn(),
+  deletePatientDiagnosis: vi.fn(),
+  savePatientDiagnosis: vi.fn(),
+  updateVisitNote: vi.fn(),
+  useLocationUuid: vi.fn().mockImplementation(() => ({
     data: mockFetchLocationByUuidResponse.data.uuid,
   })),
-  useProviderUuid: jest.fn().mockImplementation(() => ({
+  useProviderUuid: vi.fn().mockImplementation(() => ({
     data: mockFetchProviderByUuidResponse.data.uuid,
   })),
-  saveVisitNote: jest.fn(),
-  useVisitNotes: jest.fn().mockImplementation(() => ({
-    mutateVisitNotes: jest.fn(),
+  saveVisitNote: vi.fn(),
+  useProviderSignatureDetails: vi.fn().mockImplementation(() => ({
+    providerSignatureDetails: {
+      name: 'Test Provider',
+      professionalRegistration: 'CMP-12345',
+    },
+  })),
+  useVisitNoteClinicalContext: vi.fn().mockImplementation(() => ({
+    clinicalContext: {},
+  })),
+  useVisitNotes: vi.fn().mockImplementation(() => ({
+    mutateVisitNotes: vi.fn(),
   })),
 }));
 
 mockUseSession.mockReturnValue(mockSessionDataResponse.data);
-mockUseConfig.mockReturnValue({
-  ...getDefaultsFromConfigSchema(configSchema),
-  ...ConfigMock,
+mockUseConfig.mockReturnValue(getMockConfig());
+
+beforeEach(() => {
+  vi.clearAllMocks();
+  mockUseConfig.mockReturnValue(getMockConfig());
+  mockFetchDiagnosisConceptsByName.mockResolvedValue([]);
+  mockUseProviderSignatureDetails.mockReturnValue({
+    providerSignatureDetails: {
+      name: 'Test Provider',
+      professionalRegistration: 'CMP-12345',
+    },
+    error: undefined,
+    isLoading: false,
+  });
+  mockUseVisitNoteClinicalContext.mockReturnValue({
+    clinicalContext: {},
+    error: undefined,
+    isLoading: false,
+    isValidating: false,
+  });
 });
 
 test('renders the visit notes form with all the relevant fields and values', () => {
@@ -95,12 +139,35 @@ test('renders the visit notes form with all the relevant fields and values', () 
   renderVisitNotesForm();
 
   expect(screen.getByLabelText(/visit date/i)).toBeInTheDocument();
-  expect(screen.getByRole('textbox', { name: /write your notes/i })).toBeInTheDocument();
+  expect(screen.getByText(/Test Provider/i)).toBeInTheDocument();
+  expect(screen.getByText(/CMP-12345/i)).toBeInTheDocument();
+  expect(screen.getByRole('textbox', { name: /chief complaint/i })).toBeInTheDocument();
+  expect(screen.getByRole('textbox', { name: /objective \/ physical exam/i })).toBeInTheDocument();
+  expect(screen.getByRole('textbox', { name: /additional notes/i })).toBeInTheDocument();
   expect(screen.getByRole('searchbox', { name: /enter primary diagnoses/i })).toBeInTheDocument();
   expect(screen.getByRole('searchbox', { name: /enter secondary diagnoses/i })).toBeInTheDocument();
   expect(screen.getByRole('button', { name: /add image/i })).toBeInTheDocument();
   expect(screen.getByRole('button', { name: /discard/i })).toBeInTheDocument();
   expect(screen.getByRole('button', { name: /save and close/i })).toBeInTheDocument();
+});
+
+test('prefills normative fields from saved clinical context', async () => {
+  mockUseVisitNoteClinicalContext.mockReturnValue({
+    clinicalContext: {
+      chiefComplaint: 'Fever and cough',
+      biologicalFunctions: 'Appetite: decreased',
+      plan: 'Hydration and follow-up',
+    },
+    error: undefined,
+    isLoading: false,
+    isValidating: false,
+  });
+
+  renderVisitNotesForm();
+
+  await waitFor(() => expect(screen.getByRole('textbox', { name: /chief complaint/i })).toHaveValue('Fever and cough'));
+  expect(screen.getByRole('textbox', { name: /biological functions/i })).toHaveValue('Appetite: decreased');
+  expect(screen.getByRole('textbox', { name: /treatment plan/i })).toHaveValue('Hydration and follow-up');
 });
 
 test('typing in the diagnosis search input triggers a search', async () => {
@@ -114,9 +181,9 @@ test('typing in the diagnosis search input triggers a search', async () => {
   await user.type(searchBox, 'Diabetes Mellitus');
 
   // Wait for the search results to appear
-  const targetSearchResult = await screen.findByRole('menuitem', { name: 'Diabetes Mellitus' });
+  const targetSearchResult = await screen.findByRole('button', { name: 'Diabetes Mellitus' });
   expect(targetSearchResult).toBeInTheDocument();
-  expect(screen.getByRole('menuitem', { name: 'Diabetes Mellitus, Type II' })).toBeInTheDocument();
+  expect(screen.getByRole('button', { name: 'Diabetes Mellitus, Type II' })).toBeInTheDocument();
 
   // clicking on a search result displays the selected diagnosis as a tag
   await user.click(targetSearchResult);
@@ -157,7 +224,7 @@ test('closes the form and the workspace when the cancel button is clicked', asyn
 
 test('renders a success snackbar upon successfully recording a visit note', async () => {
   const user = userEvent.setup();
-  const mockConsoleError = jest.spyOn(console, 'error').mockImplementation(() => {});
+  const mockConsoleError = vi.spyOn(console, 'error').mockImplementation(() => {});
 
   const successPayload = {
     encounterProviders: expect.arrayContaining([
@@ -174,26 +241,25 @@ test('renders a success snackbar upon successfully recording a visit note', asyn
         concept: { display: '', uuid: '162169AAAAAAAAAAAAAAAAAAAAAAAAAAAAAA' },
         value: 'Sample clinical note',
       },
+      {
+        concept: { display: '', uuid: '71b58cff-879b-4358-98d5-2165434d4324' },
+        value: 'Cough and fever',
+      },
     ]),
     patient: mockPatient.id,
     encounterDatetime: undefined,
   };
 
-  mockSaveVisitNote.mockResolvedValueOnce({ status: 201, body: 'Condition created' } as unknown as ReturnType<
-    typeof saveVisitNote
-  >);
+  mockSaveVisitNote.mockResolvedValueOnce({
+    status: 201,
+    data: { uuid: 'new-visit-note-encounter-uuid' },
+  } as Awaited<ReturnType<typeof saveVisitNote>>);
   mockFetchDiagnosisConceptsByName.mockResolvedValue(diagnosisSearchResponse.results);
 
   renderVisitNotesForm();
 
-  const clinicalNote = screen.getByRole('textbox', { name: /Write your notes/i });
-  await user.type(clinicalNote, 'x');
-  const submitButton = screen.getByRole('button', { name: /Save and close/i });
-  await user.click(submitButton);
-
-  expect(screen.getByText(/choose at least one primary diagnosis/i)).toBeInTheDocument();
-
-  await user.clear(clinicalNote);
+  const chiefComplaint = screen.getByRole('textbox', { name: /Chief complaint/i });
+  const clinicalNote = screen.getByRole('textbox', { name: /Additional notes/i });
   const searchBox = screen.getByPlaceholderText('Choose a primary diagnosis');
   await user.type(searchBox, 'Diabetes Mellitus');
   const targetSearchResult = await screen.findByText('Diabetes Mellitus');
@@ -201,14 +267,24 @@ test('renders a success snackbar upon successfully recording a visit note', asyn
 
   await user.click(targetSearchResult);
 
+  await user.type(chiefComplaint, 'Cough and fever');
   await user.clear(clinicalNote);
   await user.type(clinicalNote, 'Sample clinical note');
   expect(clinicalNote).toHaveValue('Sample clinical note');
 
+  const submitButton = screen.getByRole('button', { name: /Save and close/i });
   await user.click(submitButton);
 
-  expect(mockSaveVisitNote).toHaveBeenCalledTimes(1);
-  expect(mockSaveVisitNote).toHaveBeenCalledWith(new AbortController(), expect.objectContaining(successPayload));
+  await waitFor(() => expect(mockSaveVisitNote).toHaveBeenCalledTimes(1));
+  expect(mockSaveVisitNote).toHaveBeenCalledWith(expect.any(AbortController), expect.objectContaining(successPayload));
+  await waitFor(() =>
+    expect(mockShowSnackbar).toHaveBeenCalledWith({
+      isLowContrast: true,
+      kind: 'success',
+      subtitle: 'It is now visible on the Visits page',
+      title: 'Visit note saved',
+    }),
+  );
   mockConsoleError.mockRestore();
 });
 
@@ -237,7 +313,7 @@ test('renders an error snackbar if there was a problem recording a condition', a
 
   await user.click(targetSearchResult);
 
-  const clinicalNote = screen.getByRole('textbox', { name: /Write your notes/i });
+  const clinicalNote = screen.getByRole('textbox', { name: /Additional notes/i });
   await user.clear(clinicalNote);
   await user.type(clinicalNote, 'Sample clinical note');
   expect(clinicalNote).toHaveValue('Sample clinical note');
@@ -279,14 +355,14 @@ test('initializes form with existing encounter data when in edit mode', () => {
 
   renderVisitNotesForm({
     formContext: 'editing',
-    encounter: mockEncounter as any as Encounter, // TODO: fix
+    encounter: mockEncounter as unknown as EditableVisitNoteEncounter,
   });
 
   // Verify date is pre-filled
   expect(screen.getByLabelText(/visit date/i)).toHaveValue('20/03/2024');
 
   // Verify clinical note is pre-filled
-  expect(screen.getByRole('textbox', { name: /write your notes/i })).toHaveValue('Existing clinical note');
+  expect(screen.getByRole('textbox', { name: /additional notes/i })).toHaveValue('Existing clinical note');
 
   // Verify diagnosis is pre-filled
   expect(screen.getByTitle('Diabetes Mellitus')).toBeInTheDocument();
@@ -346,19 +422,24 @@ test('updates existing visit note when in edit mode', async () => {
   };
 
   mockFetchDiagnosisConceptsByName.mockResolvedValue(diagnosisSearchResponse.results);
-  mockUpdateVisitNote.mockResolvedValueOnce({ status: 200, body: 'Visit note updated' } as unknown as ReturnType<
-    typeof updateVisitNote
-  >);
-  mockDeletePatientDiagnosis.mockResolvedValue({ status: 204 } as unknown as ReturnType<typeof deletePatientDiagnosis>);
-  mockSavePatientDiagnosis.mockResolvedValue({ status: 201 } as unknown as ReturnType<typeof savePatientDiagnosis>);
+  mockUpdateVisitNote.mockResolvedValueOnce({
+    status: 200,
+    body: 'Visit note updated',
+  } as unknown as Awaited<ReturnType<typeof updateVisitNote>>);
+  mockDeletePatientDiagnosis.mockResolvedValue({
+    status: 204,
+  } as Awaited<ReturnType<typeof deletePatientDiagnosis>>);
+  mockSavePatientDiagnosis.mockResolvedValue({
+    status: 201,
+  } as Awaited<ReturnType<typeof savePatientDiagnosis>>);
 
   renderVisitNotesForm({
     formContext: 'editing',
-    encounter: mockEncounter as any as Encounter, // TODO: fix
+    encounter: mockEncounter as unknown as EditableVisitNoteEncounter,
   });
 
   // Update clinical note
-  const clinicalNote = screen.getByRole('textbox', { name: /Write your notes/i });
+  const clinicalNote = screen.getByRole('textbox', { name: /Additional notes/i });
   await user.clear(clinicalNote);
   await user.type(clinicalNote, 'Updated clinical note');
   expect(clinicalNote).toHaveValue('Updated clinical note');
@@ -398,7 +479,7 @@ test('handles existing diagnoses correctly when in edit mode', async () => {
 
   renderVisitNotesForm({
     formContext: 'editing',
-    encounter: mockEncounter,
+    encounter: mockEncounter as unknown as EditableVisitNoteEncounter,
   });
 
   // Verify existing diagnosis is displayed
@@ -424,11 +505,7 @@ test('handles existing diagnoses correctly when in edit mode', async () => {
 test('allows saving visit note without primary diagnosis when isPrimaryDiagnosisRequired is false', async () => {
   const user = userEvent.setup();
 
-  mockUseConfig.mockReturnValue({
-    ...getDefaultsFromConfigSchema(configSchema),
-    ...ConfigMock,
-    isPrimaryDiagnosisRequired: false,
-  });
+  mockUseConfig.mockReturnValue(getMockConfig({ isPrimaryDiagnosisRequired: false }));
 
   const successPayload = {
     encounterProviders: expect.arrayContaining([
@@ -450,14 +527,15 @@ test('allows saving visit note without primary diagnosis when isPrimaryDiagnosis
     encounterDatetime: undefined,
   };
 
-  mockSaveVisitNote.mockResolvedValueOnce({ status: 201, body: 'Visit note created' } as unknown as ReturnType<
-    typeof saveVisitNote
-  >);
+  mockSaveVisitNote.mockResolvedValueOnce({
+    status: 201,
+    body: 'Visit note created',
+  } as unknown as Awaited<ReturnType<typeof saveVisitNote>>);
   mockFetchDiagnosisConceptsByName.mockResolvedValue(diagnosisSearchResponse.results);
 
   renderVisitNotesForm();
 
-  const clinicalNote = screen.getByRole('textbox', { name: /Write your notes/i });
+  const clinicalNote = screen.getByRole('textbox', { name: /Additional notes/i });
   await user.clear(clinicalNote);
   await user.type(clinicalNote, 'Clinical note without diagnosis');
   expect(clinicalNote).toHaveValue('Clinical note without diagnosis');
@@ -470,29 +548,22 @@ test('allows saving visit note without primary diagnosis when isPrimaryDiagnosis
 
   // Should successfully save the visit note
   expect(mockSaveVisitNote).toHaveBeenCalledTimes(1);
-  expect(mockSaveVisitNote).toHaveBeenCalledWith(new AbortController(), expect.objectContaining(successPayload));
+  expect(mockSaveVisitNote).toHaveBeenCalledWith(expect.any(AbortController), expect.objectContaining(successPayload));
 
   // Reset mock for other tests
-  mockUseConfig.mockReturnValue({
-    ...getDefaultsFromConfigSchema(configSchema),
-    ...ConfigMock,
-  });
+  mockUseConfig.mockReturnValue(getMockConfig());
 });
 
 test('requires primary diagnosis when isPrimaryDiagnosisRequired is true', async () => {
   const user = userEvent.setup();
 
-  mockUseConfig.mockReturnValue({
-    ...getDefaultsFromConfigSchema(configSchema),
-    ...ConfigMock,
-    isPrimaryDiagnosisRequired: true,
-  });
+  mockUseConfig.mockReturnValue(getMockConfig({ isPrimaryDiagnosisRequired: true }));
 
   mockFetchDiagnosisConceptsByName.mockResolvedValue(diagnosisSearchResponse.results);
 
   renderVisitNotesForm();
 
-  const clinicalNote = screen.getByRole('textbox', { name: /Write your notes/i });
+  const clinicalNote = screen.getByRole('textbox', { name: /Additional notes/i });
   await user.clear(clinicalNote);
   await user.type(clinicalNote, 'Clinical note without diagnosis');
 
@@ -506,8 +577,5 @@ test('requires primary diagnosis when isPrimaryDiagnosisRequired is true', async
   expect(mockSaveVisitNote).not.toHaveBeenCalled();
 
   // Reset mock for other tests
-  mockUseConfig.mockReturnValue({
-    ...getDefaultsFromConfigSchema(configSchema),
-    ...ConfigMock,
-  });
+  mockUseConfig.mockReturnValue(getMockConfig());
 });

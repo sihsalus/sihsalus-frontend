@@ -1,6 +1,6 @@
 import { ComboBox, TextInputSkeleton } from '@carbon/react';
 import { useConfig } from '@openmrs/esm-framework';
-import React, { type ReactNode } from 'react';
+import { type ReactNode } from 'react';
 import { type Control, Controller, type FieldValues } from 'react-hook-form';
 import { type ConfigObject } from '../../../config-schema';
 import { type Concept } from '../../../core/api/types/concept/Concept';

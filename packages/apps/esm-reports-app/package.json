@@ -13,9 +13,9 @@
     "analyze": "rspack --mode=production --env analyze=true",
     "lint": "node ../../tooling/scripts/run-biome.js lint .",
     "typescript": "tsc",
-    "test": "jest --config jest.config.js --verbose false --passWithNoTests --color",
-    "test:watch": "cross-env TZ=UTC jest --watch --config jest.config.js --color",
-    "extract-translations": "i18next 'src/**/*.{ts,tsx}' '!src/**/*.test.{ts,tsx}' --config ../../tooling/scripts/i18next-parser.config.js"
+    "test": "vitest run --passWithNoTests",
+    "test:watch": "vitest watch",
+    "extract-translations": "i18next 'src/**/*.{ts,tsx}' '!src/**/*.test.{ts,tsx}' '!src/**/*.spec.{ts,tsx}' --config ../../tooling/scripts/i18next-parser.config.js"
   },
   "browserslist": [
     "extends browserslist-config-openmrs"
@@ -42,8 +42,7 @@
     "@datasert/cronjs-parser": "^1.2.0",
     "cronstrue": "^2.41.0",
     "dayjs": "^1.8.36",
-    "lodash-es": "^4.17.21",
-    "react-image-annotate": "^1.8.0"
+    "lodash-es": "^4.17.21"
   },
   "peerDependencies": {
     "@openmrs/esm-framework": "*",
@@ -55,8 +54,8 @@
     "rxjs": "6.x"
   },
   "devDependencies": {
-    "jest": "^29.7.0",
     "openmrs": "*",
-    "typescript": "^6.0.0"
+    "typescript": "6.0.3",
+    "vitest": "^4.1.7"
   }
 }

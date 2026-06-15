@@ -35,7 +35,7 @@ const AllergiesOverview: React.FC<AllergiesOverviewProps> = ({ patient }) => {
   const displayText = t('allergyIntolerances', 'allergy intolerances');
   const headerTitle = t('allergies', 'Allergies');
   const urlLabel = t('seeAll', 'See all');
-  const pageUrl = `\${openmrsSpaBase}/patient/${patient.id}/chart/Allergies`;
+  const pageUrl = `${globalThis.spaBase}/patient/${patient.id}/chart/Allergies`;
   const layout = useLayoutType();
   const isTablet = layout === 'tablet';
   const _isDesktop = layout === 'small-desktop' || layout === 'large-desktop';
@@ -58,10 +58,10 @@ const AllergiesOverview: React.FC<AllergiesOverviewProps> = ({ patient }) => {
     return paginatedAllergies?.map((allergy) => ({
       ...allergy,
       reactions: `${allergy.reactionManifestations?.sort((a, b) => a.localeCompare(b))?.join(', ') || ''} ${
-        allergy.reactionSeverity ? `(${allergy.reactionSeverity})` : ''
+        allergy.reactionSeverity ? `(${t(allergy.reactionSeverity, allergy.reactionSeverity)})` : ''
       }`,
     }));
-  }, [paginatedAllergies]);
+  }, [paginatedAllergies, t]);
 
   const launchAllergiesForm = useCallback(() => launchPatientWorkspace(patientAllergiesFormWorkspace), []);
 
@@ -95,6 +95,7 @@ const AllergiesOverview: React.FC<AllergiesOverviewProps> = ({ patient }) => {
                   <TableRow>
                     {headers.map((header) => (
                       <TableHeader
+                        key={header.key}
                         className={styles.tableHeader}
                         {...getHeaderProps({
                           header,

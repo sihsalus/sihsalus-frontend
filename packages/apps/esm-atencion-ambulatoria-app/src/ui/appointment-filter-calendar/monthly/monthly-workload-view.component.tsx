@@ -60,6 +60,13 @@ const MonthlyWorkloadView: React.FC<MonthlyWorkloadViewProps> = ({ dateTime, eve
                   e.stopPropagation();
                   handleAppoiment(currentData.appointmentId);
                 }}
+                onKeyDown={(event) => {
+                  if (event.key === 'Enter' || event.key === ' ') {
+                    event.preventDefault();
+                    event.stopPropagation();
+                    handleAppoiment(currentData.appointmentId);
+                  }
+                }}
                 className={styles.serviceArea}
               >
                 <span>{t('attendAppointment', 'Atender Cita')}</span>

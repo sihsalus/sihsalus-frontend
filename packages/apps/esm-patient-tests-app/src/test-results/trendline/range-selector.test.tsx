@@ -4,7 +4,7 @@ import userEvent from '@testing-library/user-event';
 import RangeSelector from './range-selector.component';
 
 describe('RangeSelector', () => {
-  const mockSetLowerRange = jest.fn();
+  const mockSetLowerRange = vi.fn();
   const user = userEvent.setup();
 
   it('should render all range tabs', () => {

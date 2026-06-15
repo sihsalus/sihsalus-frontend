@@ -24,6 +24,12 @@ import { useTranslation } from 'react-i18next';
 import { FuaFormatRestURL } from '../constant';
 import useFuaFormats, { type FuaFormat } from '../hooks/useFuaFormats';
 
+const loadHtmlInWindow = (targetWindow: Window, html: string) => {
+  const url = URL.createObjectURL(new Blob([html], { type: 'text/html' }));
+  targetWindow.addEventListener('load', () => URL.revokeObjectURL(url), { once: true });
+  targetWindow.location.href = url;
+};
+
 import styles from './fua-request-table.scss';
 
 const formatDateValue = (dateValue: string | null | undefined) => {
@@ -71,7 +77,7 @@ const FuaFormatTable: React.FC = () => {
         return;
       }
 
-      fuaWindow.document.write(`<p>${t('loadingFuaDocument', 'Cargando documento FUA...')}</p>`);
+      fuaWindow.document.body.textContent = t('loadingFuaDocument', 'Cargando documento FUA...');
 
       try {
         const response = await openmrsFetch(`${FuaFormatRestURL}/${encodeURIComponent(fuaFormat.uuid)}/render`, {
@@ -82,14 +88,10 @@ const FuaFormatTable: React.FC = () => {
         });
 
         const html = await response.text();
-        fuaWindow.document.open();
-        fuaWindow.document.write(html);
-        fuaWindow.document.close();
+        loadHtmlInWindow(fuaWindow, html);
       } catch (error) {
         const errorMessage = error instanceof Error ? error.message : t('unknownError', 'Error desconocido');
-        fuaWindow.document.open();
-        fuaWindow.document.write(`<p>${errorMessage}</p>`);
-        fuaWindow.document.close();
+        fuaWindow.document.body.textContent = errorMessage;
         showSnackbar({
           kind: 'error',
           title: t('errorLoadingFua', 'Error al cargar FUA'),

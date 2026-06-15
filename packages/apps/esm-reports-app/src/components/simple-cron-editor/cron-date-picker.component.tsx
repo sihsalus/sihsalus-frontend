@@ -38,7 +38,7 @@ const CronDatePicker: React.FC<CronDatePickerProps> = ({ value, onChange }) => {
 
   useEffect(() => {
     validate();
-  }, [validate, valueInternal]);
+  }, [validate]);
 
   return (
     <div>

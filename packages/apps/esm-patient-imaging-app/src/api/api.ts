@@ -88,6 +88,7 @@ export function useOrthancConfigurations() {
 export async function uploadStudies(
   files: File[],
   configuration: OrthancConfiguration,
+  patientUuid: string | undefined,
   abortController: AbortController,
 ) {
   const uploadUrl = imagingUrl + '/instances';
@@ -96,6 +97,9 @@ export async function uploadStudies(
     const formData = new FormData();
     formData.append('configurationId', configuration.id.toString());
     formData.append('file', file);
+    if (patientUuid) {
+      formData.append('patient', patientUuid);
+    }
 
     const response = await openmrsFetch(uploadUrl, {
       method: 'POST',

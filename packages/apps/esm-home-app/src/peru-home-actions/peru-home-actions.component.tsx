@@ -1,34 +1,20 @@
-import {
-  Calendar,
-  Document,
-  Microscope,
-  Search,
-  UserFollow,
-  WatsonHealthStackedScrolling_1,
-} from '@carbon/react/icons';
-import {
-  AppointmentsPictogram,
-  Assessment1Pictogram,
-  ConfigurableLink,
-  LaboratoryPictogram,
-  PatientSearchPictogram,
-  RegistrationPictogram,
-  ServiceQueuesPictogram,
-} from '@openmrs/esm-framework';
+import { ConfigurableLink } from '@openmrs/esm-framework';
 import React from 'react';
 import { useTranslation } from 'react-i18next';
 
+import appointmentsIllustration from '../../../../../assets/resources/illustrations/citas.svg';
+import careQueuesIllustration from '../../../../../assets/resources/illustrations/colas-de-atencion.svg';
+import fuaIllustration from '../../../../../assets/resources/illustrations/fua-seguro-sis.svg';
+import laboratoryIllustration from '../../../../../assets/resources/illustrations/laboratorio.svg';
+import patientRegistrationIllustration from '../../../../../assets/resources/illustrations/registrar-paciente.svg';
+import patientSearchIllustration from '../../../../../assets/resources/illustrations/buscar-paciente.svg';
 import styles from './peru-home-actions.scss';
-
-type ActionIllustration = React.ComponentType<{ className?: string; size?: number }>;
-type ActionIcon = React.ComponentType<{ className?: string; size?: number | string }>;
 
 type Action = {
   key: string;
   descriptionKey: string;
   href: string;
-  icon: ActionIcon;
-  illustration: ActionIllustration;
+  illustrationSrc: string;
   toneClass: string;
 };
 
@@ -49,52 +35,49 @@ const actions = [
     key: 'searchPatient',
     descriptionKey: 'searchPatientDescription',
     href: '/search',
-    icon: Search,
-    illustration: PatientSearchPictogram,
-    toneClass: 'patientSearchAction',
+    illustrationSrc: patientSearchIllustration,
+    toneClass: 'admissionAction',
   },
   {
     key: 'registerPatient',
     descriptionKey: 'registerPatientDescription',
     href: '/patient-registration',
-    icon: UserFollow,
-    illustration: RegistrationPictogram,
-    toneClass: 'registrationAction',
+    illustrationSrc: patientRegistrationIllustration,
+    toneClass: 'admissionAction',
   },
   {
     key: 'careQueues',
     descriptionKey: 'careQueuesDescription',
     href: '/home/service-queues',
-    icon: WatsonHealthStackedScrolling_1,
-    illustration: ServiceQueuesPictogram,
-    toneClass: 'queuesAction',
+    illustrationSrc: careQueuesIllustration,
+    toneClass: 'admissionAction',
   },
   {
     key: 'appointments',
     descriptionKey: 'appointmentsDescription',
     href: '/home/appointments',
-    icon: Calendar,
-    illustration: AppointmentsPictogram,
+    illustrationSrc: appointmentsIllustration,
     toneClass: 'appointmentsAction',
   },
   {
     key: 'laboratory',
     descriptionKey: 'laboratoryDescription',
     href: '/home/laboratory',
-    icon: Microscope,
-    illustration: LaboratoryPictogram,
+    illustrationSrc: laboratoryIllustration,
     toneClass: 'laboratoryAction',
   },
   {
     key: 'fua',
     descriptionKey: 'fuaDescription',
     href: '/home/fua-request',
-    icon: Document,
-    /*No encontré un ícono que representara esta acción xd*/
-    illustration: Assessment1Pictogram,
+    illustrationSrc: fuaIllustration,
     toneClass: 'fuaAction',
   },
 ] satisfies Array<Action>;
+
+const ActionIllustration: React.FC<{ illustrationSrc: string }> = ({ illustrationSrc }) => (
+  <img className={styles.actionIllustration} src={illustrationSrc} alt="" loading="lazy" />
+);
 
 const PeruHomeActions: React.FC = () => {
   const { t } = useTranslation();
@@ -102,17 +85,16 @@ const PeruHomeActions: React.FC = () => {
 
   return (
     <section className={styles.quickActions} aria-label={t('peruHomeActions', 'Accesos de admisión')}>
-      {actions.map(({ key, descriptionKey, href, icon: Icon, illustration: Illustration, toneClass }) => (
+      {actions.map(({ key, descriptionKey, href, illustrationSrc, toneClass }) => (
         <ConfigurableLink key={key} className={`${styles.actionLink} ${styles[toneClass]}`} to={`${spaBase}${href}`}>
           <span className={styles.actionHeader}>
-            <Icon size={24} />
             <span className={styles.actionText}>
               <strong>{t(key)}</strong>
               <span>{t(descriptionKey)}</span>
             </span>
           </span>
           <span className={styles.illustrationArea} aria-hidden="true">
-            <Illustration className={styles.actionIllustration} size={128} />
+            <ActionIllustration illustrationSrc={illustrationSrc} />
           </span>
         </ConfigurableLink>
       ))}

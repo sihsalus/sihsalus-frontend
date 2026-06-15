@@ -15,7 +15,7 @@ interface StockOperationExpandedRowProps {
 
 const StockOperationExpandedRow: React.FC<StockOperationExpandedRowProps> = (props) => {
   const { t } = useTranslation();
-  const { types, isLoading, error } = useStockOperationTypes();
+  const { types, isLoading } = useStockOperationTypes();
   const currentOperationType = useMemo(() => {
     return types?.results?.find(({ uuid }) => props.model.operationTypeUuid === uuid);
   }, [props.model.operationTypeUuid, types?.results]);

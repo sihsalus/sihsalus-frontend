@@ -1,12 +1,10 @@
-import { Tooltip } from '@carbon/react';
-import { ConfigurableLink, MaybeIcon } from '@openmrs/esm-framework';
+import { ConfigurableLink } from '@openmrs/esm-framework';
+import { MaybeIcon } from '@openmrs/esm-styleguide';
 import classNames from 'classnames';
 import { last } from 'lodash-es';
 import { useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useLocation } from 'react-router-dom';
-
-import styles from './dashboard-extension.scss';
 
 export interface DashboardExtensionProps {
   readonly path: string;
@@ -33,25 +31,15 @@ export const DashboardExtension = ({
   const link = (
     <ConfigurableLink
       className={classNames('cds--side-nav__link', { 'active-left-nav-link': path === navLink })}
-      to={`${basePath}/${encodeURIComponent(path)}`}
       title={translatedTooltip}
+      to={`${basePath}/${encodeURIComponent(path)}`}
     >
-      <span className={styles.menu}>
-        <MaybeIcon icon={icon} className={styles.icon} size={16} />
-        <span>{t(title)}</span>
+      <span className="sihsalus-side-nav__item">
+        <MaybeIcon icon={icon} className="sihsalus-side-nav__icon" size={20} />
+        <span className="sihsalus-side-nav__text">{t(title)}</span>
       </span>
     </ConfigurableLink>
   );
 
-  return (
-    <div key={path}>
-      {translatedTooltip ? (
-        <Tooltip align="right" label={translatedTooltip} enterDelayMs={400} leaveDelayMs={100}>
-          {link}
-        </Tooltip>
-      ) : (
-        link
-      )}
-    </div>
-  );
+  return <div key={path}>{link}</div>;
 };

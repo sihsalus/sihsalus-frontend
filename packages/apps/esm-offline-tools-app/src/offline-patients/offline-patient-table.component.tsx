@@ -1,6 +1,9 @@
 import {
   Button,
   DataTable,
+  type DataTableHeader,
+  type DataTableProps,
+  type DataTableRow,
   DataTableSkeleton,
   Layer,
   Search,
@@ -45,8 +48,26 @@ export interface OfflinePatientTableProps {
   showHeader: boolean;
 }
 
+interface FilterableCellValue {
+  value: React.ReactNode;
+  filterableValue: string;
+}
+
+interface OfflinePatientTableRow {
+  id: string;
+  name: FilterableCellValue;
+  lastUpdated: React.ReactNode;
+  gender: string;
+  age: string;
+}
+
+type OfflinePatientTableColumnValues = [FilterableCellValue, React.ReactNode, string, string];
+type OfflinePatientDataTableRow = DataTableRow<OfflinePatientTableColumnValues> & OfflinePatientTableRow;
+type OfflinePatientFilterRows = NonNullable<
+  DataTableProps<OfflinePatientTableRow, OfflinePatientTableColumnValues>['filterRows']
+>;
+
 const OfflinePatientTable: React.FC<OfflinePatientTableProps> = ({ isInteractive, showHeader }) => {
-  // TODO: Restore @carbon/react type annotations
   const { t } = useTranslation();
   const layout = useLayoutType();
   const offlinePatientsSwr = useOfflinePatientsWithEntries();
@@ -56,7 +77,7 @@ const OfflinePatientTable: React.FC<OfflinePatientTableProps> = ({ isInteractive
   const headers = useOfflinePatientTableHeaders();
   const rows = useOfflinePatientTableRows(syncingPatientUuids);
 
-  const handleUpdateSelectedPatientsClick = async (selectedRows) => {
+  const handleUpdateSelectedPatientsClick = async (selectedRows: Array<OfflinePatientDataTableRow>) => {
     const selectedPatientUuids = selectedRows.map((row) => row.id);
     setSyncingPatientUuids(selectedPatientUuids);
     await syncSelectedOfflinePatients(selectedPatientUuids).finally(() => setSyncingPatientUuids([]));
@@ -65,7 +86,7 @@ const OfflinePatientTable: React.FC<OfflinePatientTableProps> = ({ isInteractive
     offlineRegisteredPatientsSwr.mutate();
   };
 
-  const handleRemovePatientsFromOfflineListClick = async (selectedRows) => {
+  const handleRemovePatientsFromOfflineListClick = async (selectedRows: Array<OfflinePatientDataTableRow>) => {
     const closeModal = showModal('offline-tools-confirmation-modal', {
       title: t('offlinePatientsTableDeleteConfirmationModalTitle', 'Remove offline patients'),
       children: t(
@@ -98,7 +119,11 @@ const OfflinePatientTable: React.FC<OfflinePatientTableProps> = ({ isInteractive
 
   return (
     <>
-      <DataTable rows={rows} headers={headers} filterRows={filterTableRows}>
+      <DataTable<OfflinePatientTableRow, OfflinePatientTableColumnValues>
+        rows={rows}
+        headers={headers}
+        filterRows={filterTableRows}
+      >
         {({
           rows,
           headers,
@@ -155,7 +180,7 @@ const OfflinePatientTable: React.FC<OfflinePatientTableProps> = ({ isInteractive
                 <TableRow>
                   {isInteractive && <TableSelectAll {...getSelectionProps()} />}
                   {headers.map((header) => (
-                    <TableHeader {...getHeaderProps({ header })} isSortable>
+                    <TableHeader key={header.key} {...getHeaderProps({ header })} isSortable>
                       {header.header}
                     </TableHeader>
                   ))}
@@ -163,10 +188,12 @@ const OfflinePatientTable: React.FC<OfflinePatientTableProps> = ({ isInteractive
               </TableHead>
               <TableBody>
                 {rows.map((row) => (
-                  <TableRow {...getRowProps({ row })}>
+                  <TableRow key={row.id} {...getRowProps({ row })}>
                     {isInteractive && <TableSelectRow {...getSelectionProps({ row })} />}
                     {row.cells.map((cell) => (
-                      <TableCell key={cell.id}>{cell.value?.value ?? cell.value}</TableCell>
+                      <TableCell key={cell.id}>
+                        {getTableCellDisplayValue(cell.value as OfflinePatientTableColumnValues[number])}
+                      </TableCell>
                     ))}
                   </TableRow>
                 ))}
@@ -191,18 +218,26 @@ const TableSkeleton: React.FC<{ showHeader: boolean }> = ({ showHeader }) => {
   );
 };
 
-function filterTableRows({ rowIds, headers, cellsById, inputValue, getCellId }) {
+const filterTableRows: OfflinePatientFilterRows = ({ rowIds, headers, cellsById, inputValue, getCellId }) => {
   return rowIds.filter((rowId) =>
     headers.some(({ key }) => {
       const cellId = getCellId(rowId, key);
-      const value = cellsById[cellId].value;
-      const filterableValue = value?.filterableValue?.toString() ?? value?.toString() ?? '';
+      const value = cellsById[cellId].value as OfflinePatientTableColumnValues[number];
+      const filterableValue = isFilterableCellValue(value) ? value.filterableValue : (value?.toString() ?? '');
       return filterableValue.replace(/\s/g, '').toLowerCase().includes(inputValue.replace(/\s/g, '').toLowerCase());
     }),
   );
+};
+
+function isFilterableCellValue(value: unknown): value is FilterableCellValue {
+  return typeof value === 'object' && value !== null && 'value' in value && 'filterableValue' in value;
 }
 
-function useOfflinePatientTableHeaders() {
+function getTableCellDisplayValue(value: OfflinePatientTableColumnValues[number]) {
+  return isFilterableCellValue(value) ? value.value : value;
+}
+
+function useOfflinePatientTableHeaders(): DataTableHeader[] {
   const { t } = useTranslation();
   return useMemo(
     () => [
@@ -227,12 +262,12 @@ function useOfflinePatientTableHeaders() {
   );
 }
 
-function useOfflinePatientTableRows(syncingPatientUuids: Array<string>) {
+function useOfflinePatientTableRows(syncingPatientUuids: Array<string>): Array<OfflinePatientTableRow> {
   const offlinePatientsSwr = useOfflinePatientsWithEntries();
   const offlineRegisteredPatientsSwr = useOfflineRegisteredPatients();
 
   return useMemo(() => {
-    const result = [];
+    const result: Array<OfflinePatientTableRow> = [];
     const mapPatientToRow = (
       patient: fhir.Patient,
       isNewlyRegistered: boolean,

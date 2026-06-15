@@ -74,7 +74,7 @@ const Address: React.FC<{ patientId: string }> = ({ patientId }) => {
       <ul>
         {address ? (
           Object.entries(address)
-            .filter(([key]) => key !== 'id' && key !== 'use' && key !== 'postalCode')
+            .filter(([key]) => key !== 'id' && key !== 'use')
             .map(([key, value]) =>
               key === 'extension' ? (
                 address.extension?.[0]?.extension?.map((add, i) => (

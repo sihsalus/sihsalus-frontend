@@ -17,7 +17,7 @@ export type BoundActions<T, A extends Actions<T>> =
 
 // Given function type F, returns a new function type
 // with F's first input argument removed and its return type set to void
-type Bind<F extends (...args: any[]) => any> = F extends (firstArg, ...restArgs: infer RestArgsType) => any
+type Bind<F extends (...args: any[]) => any> = F extends (firstArg: any, ...restArgs: infer RestArgsType) => any
   ? (...args: RestArgsType) => void
   : never;
 
@@ -31,15 +31,17 @@ function bindActions<T>(store: StoreApi<T>, actions: Actions<T>): BoundActions<T
     actions = actions(store);
   }
 
-  const bound = {};
+  const bound = {} as BoundActions<T, ActionFunctionsRecord<T>>;
+  const typedActions = actions as ActionFunctionsRecord<T>;
 
-  for (const [actionName, actionFunction] of Object.entries(actions)) {
-    const boundFunction: Bind<ActionFunction<T>> = function (...args) {
+  for (const actionName of Object.keys(typedActions)) {
+    const actionFunction = typedActions[actionName];
+    const boundFunction: Bind<ActionFunction<T>> = function (...args: any[]) {
       store.setState((state) => {
         return actionFunction(state, ...args);
       });
     };
-    bound[actionName] = boundFunction;
+    bound[actionName as keyof ActionFunctionsRecord<T>] = boundFunction as Bind<ActionFunction<T>>;
   }
 
   return bound;
@@ -80,8 +82,8 @@ function useStore<T, U, A extends Actions<T>>(
 
   const state = useSyncExternalStore(subscribe, getSnapshot, getSnapshot);
 
-  const boundActions: BoundActions<T, Actions<T>> = useMemo(
-    () => (actions ? bindActions(store, actions) : {}),
+  const boundActions: BoundActions<T, A> = useMemo(
+    () => (actions ? (bindActions(store, actions) as BoundActions<T, A>) : ({} as BoundActions<T, A>)),
     [store, actions],
   );
 
@@ -111,8 +113,8 @@ function createUseStore<T>(store: StoreApi<T>) {
     const getSnapshot = useCallback(() => store.getState(), []);
     const state = useSyncExternalStore(subscribe, getSnapshot, getSnapshot);
 
-    const boundActions: BoundActions<T, Actions<T>> = useMemo(
-      () => (actions ? bindActions(store, actions) : {}),
+    const boundActions: BoundActions<T, A> = useMemo(
+      () => (actions ? (bindActions(store, actions) as BoundActions<T, A>) : ({} as BoundActions<T, A>)),
       [actions],
     );
 

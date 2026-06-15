@@ -9,7 +9,7 @@ import { useUser } from '../../../stock-lookups/stock-lookups.resource';
 import useSearchUser from '../hooks/useSearchUser';
 
 const UsersSelector = () => {
-  const { isLoading, userList, setSearchString } = useSearchUser();
+  const { userList, setSearchString } = useSearchUser();
   const { t } = useTranslation();
   const debouncedSearch = useDebounce((query: string) => {
     setSearchString(query);

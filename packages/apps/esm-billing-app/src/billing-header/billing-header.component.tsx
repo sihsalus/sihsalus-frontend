@@ -3,7 +3,6 @@ import { Location, UserFollow } from '@carbon/react/icons';
 import { PageHeader, PageHeaderContent, PaymentsDeskPictogram, useSession } from '@openmrs/esm-framework';
 import dayjs from 'dayjs';
 import React, { useContext } from 'react';
-import { useTranslation } from 'react-i18next';
 import { omrsDateFormat } from '../constants';
 import SelectedDateContext from '../hooks/selectedDateContext';
 import styles from './billing-header.scss';
@@ -13,7 +12,6 @@ interface BillingHeaderProps {
 }
 
 const BillingHeader: React.FC<BillingHeaderProps> = ({ title }) => {
-  const { t } = useTranslation();
   const session = useSession();
   const location = session?.sessionLocation?.display;
   const { selectedDate, setSelectedDate } = useContext(SelectedDateContext);

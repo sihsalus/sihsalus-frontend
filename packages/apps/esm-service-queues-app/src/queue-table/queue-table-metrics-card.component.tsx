@@ -1,7 +1,6 @@
 import { Layer, Tile } from '@carbon/react';
 import classNames from 'classnames';
 import React from 'react';
-import { useTranslation } from 'react-i18next';
 
 import { useQueueEntriesMetrics } from '../hooks/useQueueEntries';
 
@@ -22,7 +21,6 @@ const QueueTableMetricsCard: React.FC<QueueTableMetricsCardProps> = ({
   headerLabel,
   children,
 }) => {
-  const { t } = useTranslation();
   const { count } = useQueueEntriesMetrics({
     queue: queueUuid,
     status: status,
@@ -43,7 +41,7 @@ const QueueTableMetricsCard: React.FC<QueueTableMetricsCardProps> = ({
           </div>
         </div>
         <div>
-          <label className={styles.valueLabel}>{!isNaN(value) ? value : count}</label>
+          <label className={styles.valueLabel}>{!Number.isNaN(value) ? value : count}</label>
         </div>
       </Tile>
     </Layer>

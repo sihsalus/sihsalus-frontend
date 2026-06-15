@@ -12,6 +12,7 @@
   "cameraAccessErrorMessage": "Ative o acesso à câmera nas configurações do seu navegador e tente novamente.",
   "cameraError": "Erro da câmera",
   "chooseAnAllowedFileType": "O arquivo \"{{fileName}}\" não pode ser carregado. Carregue um arquivo com uma das seguintes extensões: {{supportedExtensions}}, ou {{ lastExtension }}.",
+  "clearSelectedImage": "Limpar",
   "closeModal": "Fechar",
   "closePreview": "Fechar visualização",
   "dateUploaded": "Data do upload",
@@ -35,6 +36,7 @@
   "gridView": "Visualização da grade",
   "image": "Imagem",
   "imageDescription": "Descrição da imagem",
+  "imageName": "Nome da imagem",
   "imagePlaceholder": "Espaço reservado para imagem",
   "imagePreview": "Visualização da imagem",
   "keepAttachment": "Keep attachment",
@@ -46,6 +48,7 @@
   "successfullyDeleted": "excluído com sucesso",
   "supportedFiletypes": "Os arquivos suportados são {{supportedFiles}}",
   "tableView": "Visualização da tabela",
+  "takePhoto": "Tirar foto",
   "type": "Tipo de módulo",
   "unsavedAttachment": "Unsaved attachment",
   "unsavedAttachmentMessage": "You have an unsaved attachment. Are you sure you want to discard it?",
@@ -54,7 +57,9 @@
   "uploadedSuccessfully": "carregado com sucesso",
   "uploadError": "Erro ao carregar o arquivo",
   "uploadFiles": "Fazer upload de arquivos",
+  "uploadImage": "Fazer upload de imagem",
   "uploading": "Carregamento",
   "uploadWillContinueInTheBackground": "Os arquivos serão carregados em segundo plano. Você pode fechar esse modal.",
-  "webcam": "Webcam"
+  "webcam": "Webcam",
+  "webcamPreview": "Prévia da webcam"
 }

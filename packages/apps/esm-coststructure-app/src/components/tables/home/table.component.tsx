@@ -2,6 +2,7 @@ import type { DataTableHeader } from '@carbon/react';
 import { DataTable, Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@carbon/react';
 import { Edit, TrashCan } from '@carbon/react/icons';
 import React from 'react';
+import { useTranslation } from 'react-i18next';
 
 import type { CostStructure, Procedure } from '../../../types';
 
@@ -17,22 +18,23 @@ interface IRow {
 interface CostStructureT extends CostStructure {
   procedure: Procedure;
 }
-const headers: DataTableHeader[] = [
-  { key: 'code', header: 'Código' },
-  { key: 'name', header: 'Nombre del procedimiento' },
-  { key: 'created_date', header: 'Fecha creada' },
-  { key: 'start_date', header: 'Fecha Inicio' },
-  { key: 'end_date', header: 'Fecha Actualizacion' },
-  { key: 'actions', header: 'Acciones' },
-];
 interface HomeTableProps {
   data: CostStructureT[];
 }
 const HomeTable: React.FC<HomeTableProps> = ({ data }) => {
+  const { t } = useTranslation();
+  const headers: DataTableHeader[] = [
+    { key: 'code', header: t('code', 'Código') },
+    { key: 'name', header: t('procedureName', 'Nombre del procedimiento') },
+    { key: 'created_date', header: t('createdDate', 'Fecha creada') },
+    { key: 'start_date', header: t('startDate', 'Fecha Inicio') },
+    { key: 'end_date', header: t('updatedDate', 'Fecha Actualizacion') },
+    { key: 'actions', header: t('actions', 'Acciones') },
+  ];
   const rows: IRow[] = data.map((cs, index) => ({
     id: cs.uuid ?? String(index),
     code: cs.procedure?.conceptId?.toString() ?? `PROC-${index + 1}`,
-    name: cs.procedure?.name ?? 'Sin procedimiento',
+    name: cs.procedure?.name ?? t('noProcedure', 'Sin procedimiento'),
     created_date: cs.createdDate ? new Date(cs.createdDate).toLocaleDateString('es-PE') : '--',
     end_date: cs.endDate ? new Date(cs.endDate).toLocaleDateString('es-PE') : '--',
     start_date: cs.startDate ? new Date(cs.startDate).toLocaleDateString('es-PE') : '--',
@@ -41,11 +43,13 @@ const HomeTable: React.FC<HomeTableProps> = ({ data }) => {
     <>
       <DataTable rows={rows} headers={headers}>
         {({ getTableProps, getHeaderProps, getRowProps, getCellProps }) => (
-          <Table {...getTableProps()} aria-label="Estructura de costos">
+          <Table {...getTableProps()} aria-label={t('costStructure', 'Estructura de costos')}>
             <TableHead>
               <TableRow>
                 {headers.map((header) => (
-                  <TableHeader {...getHeaderProps({ header })}>{header.header}</TableHeader>
+                  <TableHeader key={header.key} {...getHeaderProps({ header })}>
+                    {header.header}
+                  </TableHeader>
                 ))}
               </TableRow>
             </TableHead>

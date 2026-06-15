@@ -1,66 +1,69 @@
 import type { FormSchema } from '@sihsalus/esm-form-engine-lib';
 import { act, render, screen } from '@testing-library/react';
 import React from 'react';
-
+import * as formEngineRuntime from '../form-engine-lib-runtime';
 import FormRenderer from './form-renderer.component';
 
 void React;
 
 // Mock dependencies
-jest.mock('@openmrs/esm-framework', () => ({
-  showModal: jest.fn(() => jest.fn()),
-  useConfig: jest.fn(() => ({
+vi.mock('@openmrs/esm-framework', async () => ({
+  ...(await vi.importActual('@openmrs/esm-framework')),
+  showModal: vi.fn(() => vi.fn()),
+  useConfig: vi.fn(() => ({
     dataSources: { monthlySchedule: false },
     customDataSources: [],
     appointmentsResourceUrl: '/etl-latest/etl/get-monthly-schedule',
     customEncounterDatetime: false,
   })),
-  openmrsFetch: jest.fn(),
+  openmrsFetch: vi.fn(),
   restBaseUrl: '/ws/rest/v1',
-  getGlobalStore: jest.fn(() => ({
+  getGlobalStore: vi.fn(() => ({
     getState: () => ({}),
-    setState: jest.fn(),
-    subscribe: jest.fn(() => jest.fn()),
+    setState: vi.fn(),
+    subscribe: vi.fn(() => vi.fn()),
   })),
-  createGlobalStore: jest.fn(() => ({
+  createGlobalStore: vi.fn(() => ({
     getState: () => ({}),
-    setState: jest.fn(),
-    subscribe: jest.fn(() => jest.fn()),
+    setState: vi.fn(),
+    subscribe: vi.fn(() => vi.fn()),
   })),
-  showSnackbar: jest.fn(),
+  showSnackbar: vi.fn(),
 }));
 
-jest.mock('../form-engine-lib-runtime', () => ({
-  FormEngine: jest.fn(() => <div data-testid="form-engine">FormEngine Mock</div>),
+vi.mock('../form-engine-lib-runtime', () => ({
+  FormEngine: vi.fn(() => <div data-testid="form-engine">FormEngine Mock</div>),
 }));
 
-jest.mock('@openmrs/esm-patient-common-lib', () => ({
+vi.mock('@openmrs/esm-patient-common-lib', () => ({
   clinicalFormsWorkspace: 'clinical-forms-workspace',
-  launchPatientWorkspace: jest.fn(),
+  launchPatientWorkspace: vi.fn(),
 }));
 
-jest.mock('../hooks/useFormSchema', () => ({
+vi.mock('../hooks/useFormSchema', () => ({
   __esModule: true,
-  default: jest.fn(),
+  default: vi.fn(),
 }));
 
-jest.mock('../hooks/useCustomDataSources', () => ({
-  useCustomDataSources: jest.fn(),
+vi.mock('../hooks/useCustomDataSources', () => ({
+  useCustomDataSources: vi.fn(),
 }));
 
-const mockShowLabOrdersNotification = jest.fn();
+const mockShowLabOrdersNotification = vi.fn();
 
-jest.mock('../hooks/useLabOrderNotification', () => ({
-  useLabOrderNotification: jest.fn(() => ({ showLabOrdersNotification: mockShowLabOrdersNotification })),
+vi.mock('../hooks/useLabOrderNotification', () => ({
+  useLabOrderNotification: vi.fn(() => ({
+    showLabOrdersNotification: mockShowLabOrdersNotification,
+  })),
 }));
 
-jest.mock('../hooks/useCustomEncounterDatetime', () => ({
-  useCustomEncounterDatetime: jest.fn((_, __, preFilled) => preFilled),
+vi.mock('../hooks/useCustomEncounterDatetime', () => ({
+  useCustomEncounterDatetime: vi.fn((_, __, preFilled) => preFilled),
 }));
 
 import useFormSchema from '../hooks/useFormSchema';
 
-const mockUseFormSchema = jest.mocked(useFormSchema);
+const mockUseFormSchema = vi.mocked(useFormSchema);
 
 const mockSchema: FormSchema = {
   uuid: 'test',
@@ -68,6 +71,7 @@ const mockSchema: FormSchema = {
   encounterType: 'enc-type-uuid',
   pages: [],
 };
+const mockFormEngine = vi.mocked(formEngineRuntime.FormEngine);
 
 const defaultProps = {
   formUuid: 'test-form-uuid',
@@ -78,10 +82,10 @@ const defaultProps = {
   visitStartDatetime: '2024-01-01T08:00:00.000+0000',
   visitStopDatetime: '2024-01-01T18:00:00.000+0000',
   isOffline: false,
-  closeWorkspace: jest.fn(),
-  closeWorkspaceWithSavedChanges: jest.fn(),
-  promptBeforeClosing: jest.fn(),
-  setTitle: jest.fn(),
+  closeWorkspace: vi.fn(),
+  closeWorkspaceWithSavedChanges: vi.fn(),
+  promptBeforeClosing: vi.fn(),
+  setTitle: vi.fn(),
 };
 
 const canonicalProps = {
@@ -95,25 +99,33 @@ const canonicalProps = {
     encounters: [],
     visitType: { uuid: 'visit-type-123', display: 'Visit type' },
   },
-  closeWorkspace: jest.fn(),
-  closeWorkspaceWithSavedChanges: jest.fn(),
-  setHasUnsavedChanges: jest.fn(),
+  closeWorkspace: vi.fn(),
+  closeWorkspaceWithSavedChanges: vi.fn(),
+  setHasUnsavedChanges: vi.fn(),
 };
 
 describe('FormRenderer', () => {
   beforeEach(() => {
-    jest.clearAllMocks();
+    vi.clearAllMocks();
     mockShowLabOrdersNotification.mockReset();
   });
 
   it('renders loading state', () => {
-    mockUseFormSchema.mockReturnValue({ schema: undefined, error: undefined, isLoading: true });
+    mockUseFormSchema.mockReturnValue({
+      schema: undefined,
+      error: undefined,
+      isLoading: true,
+    });
     render(<FormRenderer {...defaultProps} />);
     expect(screen.getByText('Loading ...')).toBeInTheDocument();
   });
 
   it('renders error state', () => {
-    mockUseFormSchema.mockReturnValue({ schema: undefined, error: new Error('fail'), isLoading: false });
+    mockUseFormSchema.mockReturnValue({
+      schema: undefined,
+      error: new Error('fail'),
+      isLoading: false,
+    });
     render(<FormRenderer {...defaultProps} />);
     expect(screen.getByText(/there was an error with this form/i)).toBeInTheDocument();
   });
@@ -129,7 +141,6 @@ describe('FormRenderer', () => {
   });
 
   it('passes encounterUUID for edit mode', () => {
-    const { FormEngine } = jest.requireMock('../form-engine-lib-runtime');
     mockUseFormSchema.mockReturnValue({
       schema: mockSchema,
       error: undefined,
@@ -137,7 +148,7 @@ describe('FormRenderer', () => {
     });
 
     render(<FormRenderer {...defaultProps} encounterUuid="enc-123" />);
-    expect(FormEngine).toHaveBeenCalledWith(
+    expect(mockFormEngine).toHaveBeenCalledWith(
       expect.objectContaining({
         encounterUUID: 'enc-123',
         mode: 'edit',
@@ -147,7 +158,6 @@ describe('FormRenderer', () => {
   });
 
   it('defaults to enter mode when no encounterUuid', () => {
-    const { FormEngine } = jest.requireMock('../form-engine-lib-runtime');
     mockUseFormSchema.mockReturnValue({
       schema: mockSchema,
       error: undefined,
@@ -155,7 +165,7 @@ describe('FormRenderer', () => {
     });
 
     render(<FormRenderer {...defaultProps} />);
-    expect(FormEngine).toHaveBeenCalledWith(
+    expect(mockFormEngine).toHaveBeenCalledWith(
       expect.objectContaining({
         mode: 'enter',
       }),
@@ -164,7 +174,6 @@ describe('FormRenderer', () => {
   });
 
   it('constructs visit object from string props', () => {
-    const { FormEngine } = jest.requireMock('../form-engine-lib-runtime');
     mockUseFormSchema.mockReturnValue({
       schema: mockSchema,
       error: undefined,
@@ -172,7 +181,7 @@ describe('FormRenderer', () => {
     });
 
     render(<FormRenderer {...defaultProps} visitTypeUuid="visit-type-123" />);
-    expect(FormEngine).toHaveBeenCalledWith(
+    expect(mockFormEngine).toHaveBeenCalledWith(
       expect.objectContaining({
         visit: expect.objectContaining({
           uuid: 'test-visit-uuid',
@@ -186,7 +195,6 @@ describe('FormRenderer', () => {
   });
 
   it('uses the canonical visit object when provided by a v12-style caller', () => {
-    const { FormEngine } = jest.requireMock('../form-engine-lib-runtime');
     mockUseFormSchema.mockReturnValue({
       schema: mockSchema,
       error: undefined,
@@ -195,7 +203,7 @@ describe('FormRenderer', () => {
 
     render(<FormRenderer {...canonicalProps} />);
 
-    expect(FormEngine).toHaveBeenCalledWith(
+    expect(mockFormEngine).toHaveBeenCalledWith(
       expect.objectContaining({
         visit: canonicalProps.visit,
       }),
@@ -204,7 +212,6 @@ describe('FormRenderer', () => {
   });
 
   it('allows canonical callers to omit visit context', () => {
-    const { FormEngine } = jest.requireMock('../form-engine-lib-runtime');
     mockUseFormSchema.mockReturnValue({
       schema: mockSchema,
       error: undefined,
@@ -213,7 +220,7 @@ describe('FormRenderer', () => {
 
     render(<FormRenderer {...canonicalProps} visit={undefined} />);
 
-    expect(FormEngine).toHaveBeenCalledWith(
+    expect(mockFormEngine).toHaveBeenCalledWith(
       expect.objectContaining({
         visit: undefined,
       }),
@@ -222,7 +229,6 @@ describe('FormRenderer', () => {
   });
 
   it('bridges dirty state through promptBeforeClosing for legacy callers', () => {
-    const { FormEngine } = jest.requireMock('../form-engine-lib-runtime');
     mockUseFormSchema.mockReturnValue({
       schema: mockSchema,
       error: undefined,
@@ -230,7 +236,7 @@ describe('FormRenderer', () => {
     });
 
     render(<FormRenderer {...defaultProps} />);
-    const formEngineProps = (FormEngine as jest.Mock).mock.calls[0][0];
+    const formEngineProps = mockFormEngine.mock.calls[0][0];
 
     formEngineProps.markFormAsDirty(true);
 
@@ -239,7 +245,6 @@ describe('FormRenderer', () => {
   });
 
   it('uses setHasUnsavedChanges directly for canonical callers', () => {
-    const { FormEngine } = jest.requireMock('../form-engine-lib-runtime');
     mockUseFormSchema.mockReturnValue({
       schema: mockSchema,
       error: undefined,
@@ -247,7 +252,7 @@ describe('FormRenderer', () => {
     });
 
     render(<FormRenderer {...canonicalProps} />);
-    const formEngineProps = (FormEngine as jest.Mock).mock.calls[0][0];
+    const formEngineProps = mockFormEngine.mock.calls[0][0];
 
     formEngineProps.markFormAsDirty(true);
 
@@ -255,8 +260,7 @@ describe('FormRenderer', () => {
   });
 
   it('shows lab order notifications and closes the workspace after a successful submit', async () => {
-    const { FormEngine } = jest.requireMock('../form-engine-lib-runtime');
-    const handlePostResponse = jest.fn();
+    const handlePostResponse = vi.fn();
     mockUseFormSchema.mockReturnValue({
       schema: mockSchema,
       error: undefined,
@@ -264,8 +268,11 @@ describe('FormRenderer', () => {
     });
 
     render(<FormRenderer {...defaultProps} handlePostResponse={handlePostResponse} />);
-    const formEngineProps = (FormEngine as jest.Mock).mock.calls[0][0];
-    const submittedEncounter = { uuid: 'encounter-123' };
+    const formEngineProps = mockFormEngine.mock.calls[0][0];
+    const submittedEncounter = {
+      uuid: 'encounter-123',
+      display: 'Encounter 123',
+    };
 
     await act(async () => {
       await formEngineProps.onSubmit([submittedEncounter]);

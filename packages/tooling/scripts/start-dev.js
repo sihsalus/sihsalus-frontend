@@ -1,9 +1,9 @@
 #!/usr/bin/env node
 
-const { spawn, spawnSync } = require('child_process');
-const { existsSync, statSync } = require('fs');
-const net = require('net');
-const { resolve } = require('path');
+const { spawn, spawnSync } = require('node:child_process');
+const { existsSync, readFileSync, statSync } = require('node:fs');
+const net = require('node:net');
+const { extname, join, resolve } = require('node:path');
 
 const envPath = resolve(process.cwd(), '.env');
 const hadBackendBeforeDotenv = Boolean(process.env.SIHSALUS_BACKEND_URL);
@@ -17,9 +17,20 @@ const logFail = (msg) => console.error(`${chalk.red.bold('[start-dev]')} ${chalk
 const defaultBackend = 'http://gidis-hsc-dev.inf.pucp.edu.pe';
 const backend = process.env.SIHSALUS_BACKEND_URL || defaultBackend;
 const backendSource = hadBackendBeforeDotenv ? 'shell' : dotenvResult.parsed?.SIHSALUS_BACKEND_URL ? '.env' : 'default';
+const requireBackendUrl = process.env.SIHSALUS_REQUIRE_BACKEND_URL === 'true';
 const authMode = process.env.SIHSALUS_AUTH_MODE || 'openmrs';
 const fhirBase = process.env.SIHSALUS_FHIR_BASE || `${backend}/openmrs/ws/fhir2/R4`;
-const proxyPort = Number(process.env.SIHSALUS_PORT) || 8080;
+const proxyPort = (() => {
+  const portArgIdx = process.argv.indexOf('--port');
+  if (portArgIdx !== -1 && process.argv[portArgIdx + 1]) {
+    const val = Number(process.argv[portArgIdx + 1]);
+    if (Number.isFinite(val) && val > 0) return val;
+  }
+  return 8080;
+})();
+const selfSignedTlsDefaultHosts = new Set(['gidis-hsc-dev.inf.pucp.edu.pe', 'gidis-hsc-qlty.inf.pucp.edu.pe']);
+const allowSelfSignedTls = shouldAllowSelfSignedTls(backend);
+let selfSignedBackendDispatcher;
 
 // SIHSALUS_DEV_APPS=esm-login-app,esm-home-app  → hot-reload those apps
 // Unset → serve pre-assembled importmap (no recompilation, just shell + proxy)
@@ -32,6 +43,27 @@ const frontendConfig = resolve(__dirname, '..', '..', '..', 'config', 'frontend.
 const spaPath = '/openmrs/spa';
 const sessionPath = '/openmrs/ws/rest/v1/session';
 const sessionFallbackTimeoutMs = Number(process.env.SIHSALUS_SESSION_FALLBACK_TIMEOUT_MS) || 3000;
+
+function shouldAllowSelfSignedTls(backendUrl) {
+  const configuredValue = process.env.SIHSALUS_ALLOW_SELF_SIGNED_TLS;
+  if (configuredValue === 'true') {
+    return true;
+  }
+  if (configuredValue === 'false') {
+    return false;
+  }
+
+  try {
+    const parsedBackendUrl = new URL(backendUrl);
+    return parsedBackendUrl.protocol === 'https:' && selfSignedTlsDefaultHosts.has(parsedBackendUrl.hostname);
+  } catch {
+    return false;
+  }
+}
+
+function getBackendSessionUrl() {
+  return `${backend.replace(/\/+$/, '').replace(/\/openmrs$/, '')}${sessionPath}`;
+}
 
 function logStartupSummary({ mode, apps = [] }) {
   console.log();
@@ -51,7 +83,46 @@ function logStartupSummary({ mode, apps = [] }) {
   if (backendSource === 'default') {
     logWarn(`SIHSALUS_BACKEND_URL not set, using default: ${backend}`);
   }
+  if (allowSelfSignedTls) {
+    logWarn(
+      'SIHSALUS_ALLOW_SELF_SIGNED_TLS=true; backend TLS certificate verification is disabled only for backend-bound local dev requests.',
+    );
+  }
   console.log();
+}
+
+if (requireBackendUrl && backendSource === 'default') {
+  logFail('SIHSALUS_BACKEND_URL is required because SIHSALUS_REQUIRE_BACKEND_URL=true.');
+  logFail('  Set SIHSALUS_BACKEND_URL in the shell or in .env.');
+  process.exit(1);
+}
+
+function rewriteLocalDevSetCookie(setCookie) {
+  if (!setCookie) return setCookie;
+  const rewrite = (cookie) => cookie.replace(/;\s*Secure/gi, '');
+  return Array.isArray(setCookie) ? setCookie.map(rewrite) : rewrite(setCookie);
+}
+
+function readRequestBody(req) {
+  return new Promise((resolve, reject) => {
+    const chunks = [];
+    req.on('data', (chunk) => chunks.push(chunk));
+    req.on('end', () => resolve(Buffer.concat(chunks)));
+    req.on('error', reject);
+  });
+}
+
+function getBackendFetchDispatcher() {
+  if (!allowSelfSignedTls) {
+    return undefined;
+  }
+
+  if (!selfSignedBackendDispatcher) {
+    const { Agent } = require('undici');
+    selfSignedBackendDispatcher = new Agent({ connect: { rejectUnauthorized: false } });
+  }
+
+  return selfSignedBackendDispatcher;
 }
 
 function findFreePort() {
@@ -101,7 +172,7 @@ function ensureOpenmrsCli() {
   const openmrsBin = resolve(workspaceRoot, 'node_modules', 'openmrs', 'dist', 'cli.js');
 
   if (!existsSync(rspackConfigEntry)) {
-    logWarn('@openmrs/rspack-config no encontrado en dist. Compilando workspace "@openmrs/rspack-config"...');
+    logWarn('@openmrs/rspack-config not found in dist. Building workspace "@openmrs/rspack-config"...');
     runWorkspaceBuild('@openmrs/rspack-config', workspaceRoot);
   }
 
@@ -109,11 +180,11 @@ function ensureOpenmrsCli() {
     return openmrsBin;
   }
 
-  logWarn('openmrs CLI no encontrado en node_modules/openmrs/dist/cli.js. Compilando workspace "openmrs"...');
+  logWarn('openmrs CLI not found at node_modules/openmrs/dist/cli.js. Building workspace "openmrs"...');
   runWorkspaceBuild('openmrs', workspaceRoot);
 
   if (!existsSync(openmrsBin)) {
-    logFail('La compilación terminó, pero sigue faltando node_modules/openmrs/dist/cli.js.');
+    logFail('Build finished, but node_modules/openmrs/dist/cli.js is still missing.');
     process.exit(1);
   }
 
@@ -128,9 +199,64 @@ function runWorkspaceBuild(workspaceName, workspaceRoot) {
   });
 
   if (build.error || build.status !== 0) {
-    logFail(`No se pudo compilar el workspace "${workspaceName}".`);
+    logFail(`Failed to build workspace "${workspaceName}".`);
     process.exit(build.status || 1);
   }
+}
+
+function readRateLimitEnv(name, fallback) {
+  const value = process.env[name];
+  if (!value) {
+    return fallback;
+  }
+
+  const parsedValue = Number(value);
+  if (!Number.isFinite(parsedValue)) {
+    return fallback;
+  }
+
+  return Math.floor(parsedValue);
+}
+
+function createInMemoryRateLimit({ windowMs, max }) {
+  if (windowMs <= 0 || max <= 0) {
+    return (_req, _res, next) => next();
+  }
+
+  const requestsByIp = new Map();
+  const cleanupIntervalMs = Math.max(1000, Math.min(windowMs, 60_000));
+  const cleanupTimer = setInterval(() => {
+    const now = Date.now();
+
+    for (const [ip, entry] of requestsByIp.entries()) {
+      if (entry.resetAt <= now) {
+        requestsByIp.delete(ip);
+      }
+    }
+  }, cleanupIntervalMs);
+
+  if (typeof cleanupTimer.unref === 'function') {
+    cleanupTimer.unref();
+  }
+
+  return (req, res, next) => {
+    const now = Date.now();
+    const key = req.ip || req.socket.remoteAddress || 'unknown';
+    const current = requestsByIp.get(key);
+
+    if (!current || current.resetAt <= now) {
+      requestsByIp.set(key, { count: 1, resetAt: now + windowMs });
+      return next();
+    }
+
+    current.count += 1;
+    if (current.count > max) {
+      res.setHeader('retry-after', Math.ceil((current.resetAt - now) / 1000));
+      return res.status(429).send('Too many requests');
+    }
+
+    return next();
+  };
 }
 
 /**
@@ -154,13 +280,18 @@ async function startWithProxy(cliArgs) {
   const cliManagedPaths = new Set(['/importmap.json', '/routes.registry.json', '/routes.json']);
 
   const app = express();
-  const staticHandler = express.static(distSpa, { index: false });
+  const staticHandler = express.static(distSpa);
+  const spaIndexHtml = readFileSync(join(distSpa, 'index.html'), 'utf8');
+  const spaIndexRateLimit = createInMemoryRateLimit({
+    windowMs: readRateLimitEnv('SIHSALUS_SPA_RATE_LIMIT_WINDOW_MS', 60_000),
+    max: readRateLimitEnv('SIHSALUS_SPA_RATE_LIMIT_MAX', 0),
+  });
 
-  app.get(sessionPath, async (req, res) => {
+  app.all(sessionPath, async (req, res) => {
     const authorization = req.get('authorization');
     const cookie = req.get('cookie') || '';
 
-    if (!authorization && !cookie) {
+    if (req.method === 'GET' && !authorization && !cookie) {
       res.status(200).json({ authenticated: false, sessionId: '' });
       return;
     }
@@ -169,12 +300,18 @@ async function startWithProxy(cliArgs) {
     const timeout = setTimeout(() => controller.abort(), sessionFallbackTimeoutMs);
 
     try {
-      const backendResponse = await fetch(`${backend}${sessionPath}`, {
+      const body = req.method === 'GET' || req.method === 'HEAD' ? undefined : await readRequestBody(req);
+      const backendFetchDispatcher = getBackendFetchDispatcher();
+      const backendResponse = await fetch(getBackendSessionUrl(), {
+        method: req.method,
+        ...(backendFetchDispatcher ? { dispatcher: backendFetchDispatcher } : {}),
         headers: {
           accept: req.get('accept') || 'application/json',
+          ...(req.get('content-type') ? { 'content-type': req.get('content-type') } : {}),
           ...(authorization ? { authorization } : {}),
           cookie,
         },
+        ...(body && body.length > 0 ? { body, duplex: 'half' } : {}),
         signal: controller.signal,
       });
       clearTimeout(timeout);
@@ -186,15 +323,22 @@ async function startWithProxy(cliArgs) {
       }
       const setCookie = backendResponse.headers.get('set-cookie');
       if (setCookie) {
-        res.setHeader('set-cookie', setCookie);
+        res.setHeader('set-cookie', rewriteLocalDevSetCookie(setCookie));
       }
       res.send(await backendResponse.text());
-    } catch {
+    } catch (error) {
       clearTimeout(timeout);
+      const isTimeout = error?.name === 'AbortError';
+      const status = isTimeout ? 504 : 502;
       logWarn(
-        `Backend login session did not respond within ${sessionFallbackTimeoutMs}ms; returning unauthenticated local session.`,
+        `Backend login session ${isTimeout ? `did not respond within ${sessionFallbackTimeoutMs}ms` : 'failed'}; returning ${status}.`,
       );
-      res.status(200).json({ authenticated: false, sessionId: '', backendUnavailable: true });
+      res.status(status).json({
+        error: 'backend_session_unavailable',
+        message: isTimeout
+          ? `Backend session endpoint did not respond within ${sessionFallbackTimeoutMs}ms.`
+          : 'Backend session endpoint failed.',
+      });
     }
   });
 
@@ -204,6 +348,13 @@ async function startWithProxy(cliArgs) {
       return next();
     }
     staticHandler(req, res, next);
+  });
+
+  app.get(`${spaPath}/*`, spaIndexRateLimit, (req, res, next) => {
+    if (cliManagedPaths.has(req.path) || extname(req.path)) {
+      return next();
+    }
+    res.type('html').send(spaIndexHtml);
   });
 
   // Proxy everything else to the openmrs CLI (importmap, index.html, API, etc.)
@@ -225,7 +376,7 @@ async function startWithProxy(cliArgs) {
   server.on('error', (error) => {
     if (error.code === 'EADDRINUSE') {
       logFail(`Port ${proxyPort} is already in use.`);
-      logFail(`  Stop the process using it or run with SIHSALUS_PORT=<free-port>.`);
+      logFail(`  Stop the process using it or run with --port <free-port>.`);
     } else {
       logFail(`Could not start local proxy on port ${proxyPort}: ${error.message}`);
     }

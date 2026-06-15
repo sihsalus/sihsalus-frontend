@@ -26,17 +26,14 @@ export function useLocations(locationTag: string | null, searchQuery: string = '
       urlSearchParameters.append('_tag', locationTag);
     }
 
-    if (typeof debouncedSearchQuery === 'string' && debouncedSearchQuery != '') {
+    if (typeof debouncedSearchQuery === 'string' && debouncedSearchQuery !== '') {
       urlSearchParameters.append('name:contains', debouncedSearchQuery);
     }
 
     return url + urlSearchParameters.toString();
   }, [locationTag, debouncedSearchQuery]);
 
-  const { data, error, isLoading, isValidating } = useSWR<FetchResponse<LocationResponse>, Error>(
-    constructUrl,
-    openmrsFetch,
-  );
+  const { data, isLoading, isValidating } = useSWR<FetchResponse<LocationResponse>, Error>(constructUrl, openmrsFetch);
 
   return useMemo(
     () => ({

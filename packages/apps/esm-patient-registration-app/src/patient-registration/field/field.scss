@@ -1,21 +1,21 @@
-@use '@carbon/colors';
-@use '@carbon/layout';
-@use '@carbon/type';
-@use '@openmrs/esm-styleguide/src/vars' as *;
+@use "@carbon/colors";
+@use "@carbon/layout";
+@use "@carbon/type";
+@use "@openmrs/esm-styleguide/src/vars" as *;
 
 .productiveHeading02 {
-  @include type.type-style('heading-compact-02');
+  @include type.type-style("heading-compact-02");
   margin-bottom: layout.$spacing-05;
 }
 
 .productiveHeading02Light {
-  @include type.type-style('heading-compact-02');
+  @include type.type-style("heading-compact-02");
   margin-bottom: layout.$spacing-05;
   color: colors.$gray-70;
 }
 
 .label01 {
-  @include type.type-style('label-01');
+  @include type.type-style("label-01");
 }
 
 .grid {
@@ -24,8 +24,58 @@
   column-gap: layout.$spacing-05;
 }
 
+.basicInfoNameLayout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(12rem, 14rem);
+  column-gap: layout.$spacing-07;
+  align-items: start;
+}
+
+.nameInputsPanel {
+  min-width: 0;
+}
+
+.nameKnownToggle {
+  margin-bottom: layout.$spacing-05;
+}
+
+.nameFieldsGrid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(14rem, 1fr));
+  column-gap: layout.$spacing-05;
+}
+
+.requiredHeading::after {
+  content: " *";
+  color: colors.$red-60;
+}
+
+:global(.cds--form-item:has(input[required]) .cds--label::after),
+:global(.cds--form-item:has(select[required]) .cds--label::after),
+:global(.cds--form-item:has(textarea[required]) .cds--label::after),
+:global(.cds--form-item:has(input[aria-required="true"]) .cds--label::after) {
+  content: " *";
+  color: colors.$red-60;
+}
+
+.addressFieldGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 18rem), 1fr));
+  column-gap: layout.$spacing-05;
+  row-gap: layout.$spacing-03;
+  padding-bottom: layout.$spacing-05;
+  align-items: start;
+}
+
 .halfWidthInDesktopView {
-  width: calc(50% - layout.$spacing-05);
+  width: 100%;
+  min-width: 0;
+}
+
+.fullWidthInDesktopView {
+  width: 100%;
+  grid-column: 1 / -1;
+  min-width: 0;
 }
 
 .patientPhoto {
@@ -58,9 +108,12 @@
 
 .photoExtension {
   margin-bottom: layout.$spacing-05;
-  grid-row: 1;
-  grid-column: 2;
-  justify-self: center;
+  justify-self: start;
+  width: 100%;
+  max-width: 14rem;
+  // Reserve the space the photo capture widget occupies so the column does not
+  // collapse (and the surrounding layout does not jump) while the widget mounts.
+  min-height: 13.75rem;
 }
 
 .sexField,
@@ -117,6 +170,62 @@
   }
 }
 
+.externalLookup {
+  display: grid;
+  align-content: start;
+  row-gap: layout.$spacing-04;
+  height: 100%;
+  min-height: 8rem;
+  background-color: colors.$gray-10;
+  padding: layout.$spacing-05;
+  border-left: 0.25rem solid colors.$green-60;
+}
+
+.externalLookupHeader {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: layout.$spacing-03 layout.$spacing-05;
+
+  .productiveHeading02Light {
+    margin-bottom: 0;
+  }
+}
+
+.externalLookupDocument {
+  @include type.type-style("label-01");
+  color: colors.$gray-70;
+}
+
+.externalLookupAction {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: layout.$spacing-04;
+}
+
+.externalLookupNotification {
+  margin: 0;
+  max-width: 32rem;
+}
+
+.identifierFieldRow {
+  display: flex;
+  align-items: center;
+  justify-content: initial;
+}
+
+.identifierFieldsGrid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  column-gap: layout.$spacing-05;
+  row-gap: layout.$spacing-03;
+}
+
+.identifierFieldRow + .identifierFieldRow {
+  margin-top: 0;
+}
+
 .attributeField {
   margin-bottom: layout.$spacing-05;
 }
@@ -138,6 +247,15 @@
     grid-template-rows: auto auto;
   }
 
+  .basicInfoNameLayout {
+    grid-template-columns: 1fr;
+    row-gap: layout.$spacing-05;
+  }
+
+  .nameFieldsGrid {
+    grid-template-columns: 1fr;
+  }
+
   .nameField {
     grid-row: 2;
     grid-column: 1;
@@ -145,7 +263,7 @@
 
   .photoExtension {
     grid-column: 1;
-    grid-row: 1;
+    grid-row: auto;
     justify-self: start;
   }
 
@@ -155,6 +273,19 @@
 
   .halfWidthInDesktopView {
     width: 100%;
+    min-width: 0;
+  }
+
+  .fullWidthInDesktopView {
+    width: 100%;
+  }
+
+  .identifierFieldRow {
+    width: 100%;
+  }
+
+  .identifierFieldsGrid {
+    grid-template-columns: 1fr;
   }
 }
 

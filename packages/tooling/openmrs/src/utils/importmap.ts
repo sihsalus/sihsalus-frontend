@@ -1,8 +1,7 @@
+import { exec } from 'node:child_process';
 import { existsSync, readFileSync } from 'node:fs';
 import { basename, resolve } from 'node:path';
 import { URL } from 'node:url';
-import axios from 'axios';
-import { exec } from 'child_process';
 import glob from 'glob';
 
 import { getAppRoutes, getMainBundle, type PackageManifest } from './dependencies';
@@ -51,10 +50,7 @@ async function readRoutes(path: string, backend?: string, spaPath?: string) {
 }
 
 async function fetchRemoteImportmap(fetchUrl: string) {
-  return await axios
-    .get(fetchUrl)
-    .then((res) => res.data)
-    .then((m) => (typeof m === 'string' ? JSON.parse(m) : m))
+  return await fetchJson(fetchUrl)
     .then((m) => {
       if (typeof m === 'object' && 'imports' in m) {
         Object.keys(m.imports).forEach((key) => {
@@ -71,11 +67,17 @@ async function fetchRemoteImportmap(fetchUrl: string) {
 }
 
 async function fetchRemoteRoutes(fetchUrl: string) {
-  return await axios
-    .get(fetchUrl)
-    .then((res) => res.data)
-    .then((m) => (typeof m === 'string' ? JSON.parse(m) : m))
-    .then((m) => JSON.stringify(m));
+  return await fetchJson(fetchUrl).then((m) => JSON.stringify(m));
+}
+
+async function fetchJson(fetchUrl: string) {
+  const response = await fetch(fetchUrl);
+
+  if (!response.ok) {
+    throw new Error(`Failed to fetch ${fetchUrl}: ${response.status} ${response.statusText}`);
+  }
+
+  return response.json();
 }
 
 export interface ImportmapDeclaration {

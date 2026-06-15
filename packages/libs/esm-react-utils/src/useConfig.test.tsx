@@ -16,12 +16,7 @@ vi.mock('@openmrs/esm-state', () => import('@openmrs/esm-state/mock'));
 
 vi.mock('@openmrs/esm-config', async () => {
   const actual = await vi.importActual('@openmrs/esm-config');
-  const mock = await import('@openmrs/esm-config/mock');
-
-  return {
-    ...actual,
-    ...mock,
-  };
+  return actual;
 });
 
 const mockConfigInternalStore = configInternalStore as MockedStore<ConfigInternalStore>;
@@ -29,20 +24,20 @@ const mockConfigInternalStore = configInternalStore as MockedStore<ConfigInterna
 function RenderConfig(props) {
   const config = useConfig();
 
-  return <button>{config[props.configKey]}</button>;
+  return <button type="button">{config[props.configKey]}</button>;
 }
 
 function RenderExternalConfig(props) {
   const config = useConfig({ externalModuleName: props.externalModuleName });
 
-  return <button>{config[props.configKey]}</button>;
+  return <button type="button">{config[props.configKey]}</button>;
 }
 
 function clearConfig() {
   mockConfigInternalStore.resetMock();
 }
 
-describe.skip(`useConfig in root context`, () => {
+describe(`useConfig in root context`, () => {
   afterEach(clearConfig);
 
   it('can return config as a react hook', async () => {
@@ -60,7 +55,7 @@ describe.skip(`useConfig in root context`, () => {
       </React.Suspense>,
     );
 
-    await waitFor(() => expect(screen.findByText('The first thing')).toBeTruthy());
+    expect(await screen.findByText('The first thing')).toBeInTheDocument();
   });
 
   it('can handle multiple calls to useConfig from different modules', async () => {
@@ -84,7 +79,7 @@ describe.skip(`useConfig in root context`, () => {
       </React.Suspense>,
     );
 
-    await waitFor(() => expect(screen.findByText('foo thing')).toBeTruthy());
+    expect(await screen.findByText('foo thing')).toBeInTheDocument();
 
     render(
       <React.Suspense fallback={<div>Suspense!</div>}>
@@ -94,7 +89,7 @@ describe.skip(`useConfig in root context`, () => {
       </React.Suspense>,
     );
 
-    await waitFor(() => expect(screen.findByText('bar thing')).toBeTruthy());
+    expect(await screen.findByText('bar thing')).toBeInTheDocument();
   });
 
   it('updates with a new value when the temporary config is updated', async () => {
@@ -112,7 +107,7 @@ describe.skip(`useConfig in root context`, () => {
       </React.Suspense>,
     );
 
-    await waitFor(() => expect(screen.findByText('The first thing')).toBeTruthy());
+    expect(await screen.findByText('The first thing')).toBeInTheDocument();
 
     act(() =>
       temporaryConfigStore.setState({

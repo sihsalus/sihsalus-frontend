@@ -7,9 +7,9 @@ import { configSchema, type PatientSearchConfig } from '../config-schema';
 
 import CompactPatientSearchComponent from './compact-patient-search.component';
 
-const mockUseConfig = jest.mocked(useConfig<PatientSearchConfig>);
-const mockUseSession = jest.mocked(useSession);
-const mockNavigate = jest.mocked(navigate);
+const mockUseConfig = vi.mocked(useConfig<PatientSearchConfig>);
+const mockUseSession = vi.mocked(useSession);
+const mockNavigate = vi.mocked(navigate);
 
 describe('CompactPatientSearchComponent', () => {
   beforeEach(() => {

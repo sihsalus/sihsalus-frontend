@@ -14,7 +14,7 @@ import {
   Tile,
 } from '@carbon/react';
 import { AddIcon, formatDate, launchWorkspace, parseDate, useLayoutType } from '@openmrs/esm-framework';
-import { CardHeader, EmptyState, ErrorState } from '@openmrs/esm-patient-common-lib';
+import { CardHeader, EmptyState, ErrorState, getAntecedentTypeLabel } from '@openmrs/esm-patient-common-lib';
 import classNames from 'classnames';
 import React, { type ComponentProps, useCallback, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -29,8 +29,8 @@ const renderHeaderLabel = (header: React.ReactNode): React.ReactNode =>
 
 function ConditionsDetailedSummary({ patient }) {
   const { t } = useTranslation();
-  const displayText = t('conditions', 'Conditions');
-  const headerTitle = t('conditions', 'Conditions');
+  const displayText = t('antecedents', 'Antecedents');
+  const headerTitle = t('antecedents', 'Antecedents');
   const [filter, setFilter] = useState<'All' | 'Active' | 'Inactive'>('Active');
   const layout = useLayoutType();
   const isTablet = layout === 'tablet';
@@ -39,24 +39,26 @@ function ConditionsDetailedSummary({ patient }) {
   const { conditions, error, isLoading, isValidating } = useConditions(patient.id);
 
   const filteredConditions = useMemo(() => {
-    if (!filter || filter == 'All') {
+    if (filter === 'All') {
       return conditions;
     }
 
-    if (filter) {
-      return conditions?.filter((condition) => condition.clinicalStatus === filter);
-    }
-
-    return conditions;
+    return conditions?.filter((condition) => condition.clinicalStatus === filter);
   }, [filter, conditions]);
 
   const headers: Array<ConditionTableHeader> = useMemo(
     () => [
       {
         key: 'display',
-        header: t('condition', 'Condition'),
+        header: t('antecedent', 'Antecedent'),
         isSortable: true,
         sortFunc: (valueA, valueB) => valueA.display?.localeCompare(valueB.display),
+      },
+      {
+        key: 'antecedentTypeRender',
+        header: t('antecedentType', 'Antecedent type'),
+        isSortable: true,
+        sortFunc: (valueA, valueB) => valueA.antecedentTypeRender?.localeCompare(valueB.antecedentTypeRender),
       },
       {
         key: 'onsetDateTimeRender',
@@ -84,13 +86,16 @@ function ConditionsDetailedSummary({ patient }) {
         id: condition.id,
         condition: condition.display,
         abatementDateTime: condition.abatementDateTime,
+        antecedentTypeRender: condition.antecedentType
+          ? getAntecedentTypeLabel(condition.antecedentType, t)
+          : (condition.categoryText ?? '--'),
         onsetDateTimeRender: condition.onsetDateTime
           ? formatDate(parseDate(condition.onsetDateTime), { mode: 'wide', time: 'for today' })
           : '--',
         status: condition.clinicalStatus,
       };
     });
-  }, [filteredConditions]);
+  }, [filteredConditions, t]);
 
   const { sortedRows, sortRow } = useConditionsSorting(headers, tableRows);
 
@@ -128,7 +133,7 @@ function ConditionsDetailedSummary({ patient }) {
             <Button
               kind="ghost"
               renderIcon={(props: ComponentProps<typeof AddIcon>) => <AddIcon size={16} {...props} />}
-              iconDescription={t('addConditions', 'Add conditions')}
+              iconDescription={t('addAntecedent', 'Add antecedent')}
               onClick={launchConditionsForm}
             >
               {t('add', 'Add')}
@@ -149,13 +154,14 @@ function ConditionsDetailedSummary({ patient }) {
               <TableContainer>
                 <Table
                   {...getTableProps()}
-                  aria-label={t('conditionsSummary', 'Conditions summary')}
+                  aria-label={t('antecedentsSummary', 'Antecedents summary')}
                   className={styles.table}
                 >
                   <TableHead>
                     <TableRow>
                       {headers.map((header) => (
                         <TableHeader
+                          key={header.key}
                           className={classNames(styles.productiveHeading01, styles.text02)}
                           {...getHeaderProps({
                             header,
@@ -187,7 +193,7 @@ function ConditionsDetailedSummary({ patient }) {
                 <div className={styles.tileContainer}>
                   <Tile className={styles.tile}>
                     <div className={styles.tileContent}>
-                      <p className={styles.content}>{t('noConditionsToDisplay', 'No conditions to display')}</p>
+                      <p className={styles.content}>{t('noAntecedentsToDisplay', 'No antecedents to display')}</p>
                       <p className={styles.helper}>{t('checkFilters', 'Check the filters above')}</p>
                     </div>
                   </Tile>

@@ -5,11 +5,12 @@ import { cancelFuaRequest } from '../hooks/useFuaRequests';
 
 import CancelFuaModal from './cancel-fua.modal';
 
-jest.mock('../hooks/useFuaRequests', () => ({
-  cancelFuaRequest: jest.fn(),
+vi.mock('../hooks/useFuaRequests', () => ({
+  cancelFuaRequest: vi.fn(),
 }));
-jest.mock('@openmrs/esm-framework', () => ({
-  showSnackbar: jest.fn(),
+vi.mock('@openmrs/esm-framework', async () => ({
+  ...(await vi.importActual('@openmrs/esm-framework')),
+  showSnackbar: vi.fn(),
 }));
 
 const mockFua = {
@@ -24,10 +25,10 @@ const mockFua = {
 };
 
 describe('CancelFuaModal', () => {
-  const closeModal = jest.fn();
-  const onCancelled = jest.fn();
+  const closeModal = vi.fn();
+  const onCancelled = vi.fn();
 
-  beforeEach(() => jest.clearAllMocks());
+  beforeEach(() => vi.clearAllMocks());
 
   it('renders the FUA name', () => {
     render(<CancelFuaModal closeModal={closeModal} fuaRequest={mockFua} onCancelled={onCancelled} />);
@@ -43,7 +44,7 @@ describe('CancelFuaModal', () => {
   });
 
   it('calls cancelFuaRequest with fuaId and comment', async () => {
-    (cancelFuaRequest as jest.Mock).mockResolvedValueOnce({});
+    (cancelFuaRequest as vi.Mock).mockResolvedValueOnce({});
     render(<CancelFuaModal closeModal={closeModal} fuaRequest={mockFua} onCancelled={onCancelled} />);
 
     fireEvent.change(screen.getByRole('textbox'), { target: { value: 'Registro duplicado' } });
@@ -57,7 +58,7 @@ describe('CancelFuaModal', () => {
   });
 
   it('shows error snackbar when cancelFuaRequest fails', async () => {
-    (cancelFuaRequest as jest.Mock).mockRejectedValueOnce(new Error('Error'));
+    (cancelFuaRequest as vi.Mock).mockRejectedValueOnce(new Error('Error'));
     render(<CancelFuaModal closeModal={closeModal} fuaRequest={mockFua} onCancelled={onCancelled} />);
 
     fireEvent.change(screen.getByRole('textbox'), { target: { value: 'Motivo' } });

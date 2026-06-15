@@ -1,5 +1,6 @@
 import { Document } from '@carbon/react/icons';
 import { ConfigurableLink } from '@openmrs/esm-framework';
+import { RequirePrivilege } from '@sihsalus/esm-rbac';
 import last from 'lodash-es/last';
 import { useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -28,15 +29,17 @@ export function LinkExtension({ config }: { config: LinkConfig }): JSX.Element {
   }
 
   return (
-    <ConfigurableLink
-      to={spaBasePath + '/' + name}
-      className={`cds--side-nav__link ${name === urlSegment && 'active-left-nav-link'}`}
-    >
-      <span className="sihsalus-side-nav__item">
-        <Document aria-hidden="true" className="sihsalus-side-nav__icon" size={20} />
-        <span className="sihsalus-side-nav__text">{t(title, title)}</span>
-      </span>
-    </ConfigurableLink>
+    <RequirePrivilege privilege="Fua Privilege" hideUnauthorized>
+      <ConfigurableLink
+        to={spaBasePath + '/' + name}
+        className={`cds--side-nav__link ${name === urlSegment && 'active-left-nav-link'}`}
+      >
+        <span className="sihsalus-side-nav__item">
+          <Document aria-hidden="true" className="sihsalus-side-nav__icon" size={20} />
+          <span className="sihsalus-side-nav__text">{t(title, title)}</span>
+        </span>
+      </ConfigurableLink>
+    </RequirePrivilege>
   );
 }
 

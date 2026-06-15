@@ -4,19 +4,29 @@ import { usePatientAllergies, usePrescriptionDetails } from '../medication-reque
 import { useStaleEncounterUuids } from '../utils';
 import PrescriptionDetails from './prescription-details.component';
 
-jest.mock('../medication-request/medication-request.resource');
-jest.mock('../utils', () => ({
-  ...jest.requireActual('../utils'),
-  useStaleEncounterUuids: jest.fn(),
+vi.mock('../medication-request/medication-request.resource');
+vi.mock('../utils', async () => ({
+  ...(await vi.importActual('../utils')),
+  useStaleEncounterUuids: vi.fn(),
 }));
 
-const mockUseConfig = jest.mocked(useConfig);
-const mockUsePrescriptionDetails = jest.mocked(usePrescriptionDetails);
-const mockUsePatientAllergies = jest.mocked(usePatientAllergies);
-const mockUseStaleEncounterUuids = jest.mocked(useStaleEncounterUuids);
+const mockUseConfig = vi.mocked(useConfig);
+const mockUsePrescriptionDetails = vi.mocked(usePrescriptionDetails);
+const mockUsePatientAllergies = vi.mocked(usePatientAllergies);
+const mockUseStaleEncounterUuids = vi.mocked(useStaleEncounterUuids);
 
 const mockEncounterUuid = 'test-encounter-uuid';
 const mockPatientUuid = 'test-patient-uuid';
+const asAllergy = (allergy: {
+  id: string;
+  code: {
+    text?: string;
+    coding: Array<{
+      code: string;
+      display?: string;
+    }>;
+  };
+}) => allergy as ReturnType<typeof usePatientAllergies>['allergies'][number];
 
 describe('PrescriptionDetails', () => {
   beforeEach(() => {
@@ -46,7 +56,7 @@ describe('PrescriptionDetails', () => {
         prescriptionDate: new Date(),
         error: undefined,
         isLoading: false,
-        mutate: jest.fn(),
+        mutate: vi.fn(),
         isValidating: false,
       });
 
@@ -69,7 +79,7 @@ describe('PrescriptionDetails', () => {
         prescriptionDate: new Date(),
         error: undefined,
         isLoading: false,
-        mutate: jest.fn(),
+        mutate: vi.fn(),
         isValidating: false,
       });
 
@@ -90,7 +100,7 @@ describe('PrescriptionDetails', () => {
         prescriptionDate: new Date(),
         error: undefined,
         isLoading: false,
-        mutate: jest.fn(),
+        mutate: vi.fn(),
         isValidating: false,
       });
 
@@ -102,21 +112,21 @@ describe('PrescriptionDetails', () => {
     it('displays allergy count and names', () => {
       mockUsePatientAllergies.mockReturnValue({
         allergies: [
-          {
+          asAllergy({
             id: 'allergy-1',
             code: {
               text: 'Penicillin',
               coding: [{ code: '123', display: 'Penicillin' }],
             },
-          },
-          {
+          }),
+          asAllergy({
             id: 'allergy-2',
             code: {
               text: 'Aspirin',
               coding: [{ code: '456', display: 'Aspirin' }],
             },
-          },
-        ] as any,
+          }),
+        ],
         totalAllergies: 2,
         error: undefined,
         isLoading: false,
@@ -126,7 +136,7 @@ describe('PrescriptionDetails', () => {
         prescriptionDate: new Date(),
         error: undefined,
         isLoading: false,
-        mutate: jest.fn(),
+        mutate: vi.fn(),
         isValidating: false,
       });
 
@@ -143,14 +153,14 @@ describe('PrescriptionDetails', () => {
       // display shows "Other" but code.text contains the actual allergen name
       mockUsePatientAllergies.mockReturnValue({
         allergies: [
-          {
+          asAllergy({
             id: 'allergy-1',
             code: {
               text: 'Corn', // Should prefer this
               coding: [{ code: '5622', display: 'Other' }], // Over this
             },
-          },
-        ] as any,
+          }),
+        ],
         totalAllergies: 1,
         error: undefined,
         isLoading: false,
@@ -160,7 +170,7 @@ describe('PrescriptionDetails', () => {
         prescriptionDate: new Date(),
         error: undefined,
         isLoading: false,
-        mutate: jest.fn(),
+        mutate: vi.fn(),
         isValidating: false,
       });
 
@@ -173,13 +183,13 @@ describe('PrescriptionDetails', () => {
     it('falls back to coding.display when code.text is not available', () => {
       mockUsePatientAllergies.mockReturnValue({
         allergies: [
-          {
+          asAllergy({
             id: 'allergy-1',
             code: {
               coding: [{ code: '123', display: 'Sulfonamides' }],
             },
-          },
-        ] as any,
+          }),
+        ],
         totalAllergies: 1,
         error: undefined,
         isLoading: false,
@@ -189,7 +199,7 @@ describe('PrescriptionDetails', () => {
         prescriptionDate: new Date(),
         error: undefined,
         isLoading: false,
-        mutate: jest.fn(),
+        mutate: vi.fn(),
         isValidating: false,
       });
 
@@ -212,7 +222,7 @@ describe('PrescriptionDetails', () => {
         prescriptionDate: new Date(),
         error: undefined,
         isLoading: true,
-        mutate: jest.fn(),
+        mutate: vi.fn(),
         isValidating: false,
       });
 
@@ -233,7 +243,7 @@ describe('PrescriptionDetails', () => {
         prescriptionDate: new Date(),
         error: new Error('Failed to load'),
         isLoading: false,
-        mutate: jest.fn(),
+        mutate: vi.fn(),
         isValidating: false,
       });
 
@@ -254,7 +264,7 @@ describe('PrescriptionDetails', () => {
         prescriptionDate: new Date(),
         error: undefined,
         isLoading: false,
-        mutate: jest.fn(),
+        mutate: vi.fn(),
         isValidating: false,
       });
 

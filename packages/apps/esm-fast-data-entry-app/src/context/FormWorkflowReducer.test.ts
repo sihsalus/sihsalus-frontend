@@ -2,7 +2,7 @@ import { navigate } from '@openmrs/esm-framework';
 import { initialWorkflowState } from './FormWorkflowContext';
 import reducer, { fdeWorkflowStorageName, fdeWorkflowStorageVersion } from './FormWorkflowReducer';
 
-const mockNavigate = jest.mocked(navigate);
+const mockNavigate = vi.mocked(navigate);
 
 const buildState = (formStateOverrides = {}) => ({
   ...initialWorkflowState,
@@ -81,7 +81,7 @@ describe('FormWorkflowReducer', () => {
   });
 
   it('dispatches the submit event and moves the workflow into SUBMIT_FOR_NEXT', () => {
-    const dispatchEventSpy = jest.spyOn(window, 'dispatchEvent');
+    const dispatchEventSpy = vi.spyOn(window, 'dispatchEvent');
     const state = buildState({
       workflowState: 'EDIT_FORM',
       activePatientUuid: 'patient-a',

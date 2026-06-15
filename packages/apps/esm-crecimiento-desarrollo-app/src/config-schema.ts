@@ -90,7 +90,7 @@ export const configSchema = {
   // 2. FORMS CONFIGURATION
   formsList: {
     _type: Type.Object,
-    _description: 'List of form UUIDs',
+    _description: 'List of form identifiers. Values can be UUIDs or published OpenMRS form names.',
     _default: {
       // Maternal Forms
       prenatal: 'e8f98494-af35-4bb8-9fc7-c409c8fed843',
@@ -107,13 +107,12 @@ export const configSchema = {
       atencionPrenatal: 'OBST-003-ATENCIÓN PRENATAL',
 
       // CRED Forms
-      atencionImmediataNewborn: '(Página 5) ATENCIÓN INMEDIATA DEL RECIÉN NACIDO',
-      breastfeedingObservation:
-        '(Página 8) Ficha de Observación del Amamantamiento de la Consejería en Lactancia Materna',
-      newbornNeuroEval: '(Página 6) EVALUACIÓN CÉFALO-CAUDAL Y NEUROLÓGICO DEL RECIÉN NACIDO',
+      atencionImmediataNewborn: '33b6449b-3fc6-3ec1-be3f-0bd29146315f',
+      breastfeedingObservation: '46624035-79b7-3025-abfc-b02249f16e77',
+      newbornNeuroEval: '87745826-b5ac-3366-b17f-5c7335c39006',
       roomingIn: '(Página 10) Alojamiento Conjunto',
-      birthDetails: '(CRED) Detalles de Nacimiento',
-      pregnancyDetails: '(CRED) Embarazo y Parto',
+      birthDetails: '8db0f1dc-c191-3468-854c-6c6c41ef6198',
+      pregnancyDetails: '307e2887-9902-3ab2-83d9-f3e48ef7bdb2',
 
       // EEDP Forms
       eedp2Months: 'Página (30, 31, 32 y 33) EEDP (2 meses)',
@@ -175,6 +174,20 @@ export const configSchema = {
       ediDevelopmentForm: 'CRED-009-EDI',
       autismScreeningForm: 'CRED-010-TAMIZAJE TEA',
       childMentalHealthForm: 'CRED-011-SALUD MENTAL NIÑO Y CUIDADOR',
+      parasitosisScreeningForm: 'CRED-012-DESCARTE DE PARASITOSIS',
+      vitaminAAdministrationForm: 'CRED-013-ADMINISTRACIÓN DE VITAMINA A',
+      physicalExamForm: 'CRED-014-EXAMEN FÍSICO INTEGRAL',
+      growthNutritionEvaluationForm: 'CRED-015-CRECIMIENTO Y ESTADO NUTRICIONAL',
+      oralHealthInspectionForm: 'CRED-016-INSPECCIÓN DE CAVIDAD BUCAL',
+      visualScreeningForm: 'CRED-017-TAMIZAJE VISUAL',
+      hearingScreeningForm: 'CRED-018-EVALUACIÓN AUDITIVA',
+      cancerWarningSignsForm: 'CRED-019-SIGNOS DE SOSPECHA DE CÁNCER',
+      metalsExposureScreeningForm: 'CRED-020-EXPOSICIÓN A METALES PESADOS',
+      violenceDisciplineScreeningForm: 'CRED-021-VIOLENCIA DISCIPLINA Y CASTIGO FÍSICO',
+      credCounselingAgreementForm: 'CRED-022-CONSEJERÍA ACUERDOS Y COMPROMISOS',
+      homeVisitFollowupForm: 'CRED-023-VISITA DOMICILIARIA Y SEGUIMIENTO',
+      referralInterconsultationForm: 'CRED-024-INTERCONSULTA DERIVACIÓN REFERENCIA',
+      schoolHealthCounselingForm: 'CRED-025-CONSEJERÍA ESCOLAR Y LONCHERA SALUDABLE',
       adverseReactionForm: 'INMU-002-REPORTE ESAVI',
     },
   },
@@ -190,6 +203,57 @@ export const configSchema = {
         mild: 'f0000161-0000-4000-8000-000000000161',
         moderate: 'f0000162-0000-4000-8000-000000000162',
         severe: 'f0000163-0000-4000-8000-000000000163',
+      },
+    },
+  },
+
+  partography: {
+    _type: Type.Object,
+    _description: 'Configuración de partograma: encounter, formulario y concepto de progreso usado por CRED',
+    _default: {
+      encounterTypeUuid: 'b212032f-9903-4696-ab31-173d432d1d3d',
+      formUuid: 'd4c4dcfa-5c7b-4727-a7a6-f79a3b2c2735',
+      progressConceptUuid: '160116AAAAAAAAAAAAAAAAAAAAAAAAAAAAAA',
+      concepts: {
+        obsDateUiid: '',
+        timeRecordedUuid: '163286AAAAAAAAAAAAAAAAAAAAAAAAAAAAAA',
+        fetalHeartRateUuid: '1440AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA',
+        cervicalDilationUiid: '162261AAAAAAAAAAAAAAAAAAAAAAAAAAAAAA',
+        cervicalDilationUuid: '162261AAAAAAAAAAAAAAAAAAAAAAAAAAAAAA',
+        descentOfHead: '1810AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA',
+        descentOfHeadUuid: '1810AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA',
+        contractionFrequencyUuid: '163749AAAAAAAAAAAAAAAAAAAAAAAAAAAAAA',
+        contractionDurationUuid: '163750AAAAAAAAAAAAAAAAAAAAAAAAAAAAAA',
+      },
+    },
+    encounterTypeUuid: {
+      _type: Type.UUID,
+      _description: 'Encounter type UUID de atención en sala de partos usado para recuperar datos del partograma',
+      _default: 'b212032f-9903-4696-ab31-173d432d1d3d',
+    },
+    formUuid: {
+      _type: Type.UUID,
+      _description: 'Form UUID del partograma',
+      _default: 'd4c4dcfa-5c7b-4727-a7a6-f79a3b2c2735',
+    },
+    progressConceptUuid: {
+      _type: Type.ConceptUuid,
+      _description: 'Concept UUID del grupo de observaciones de progreso del partograma',
+      _default: '160116AAAAAAAAAAAAAAAAAAAAAAAAAAAAAA',
+    },
+    concepts: {
+      _type: Type.Object,
+      _description: 'Conceptos clínicos que componen los datos del partograma',
+      _default: {
+        obsDateUiid: '',
+        timeRecordedUuid: '163286AAAAAAAAAAAAAAAAAAAAAAAAAAAAAA',
+        fetalHeartRateUuid: '1440AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA',
+        cervicalDilationUiid: '162261AAAAAAAAAAAAAAAAAAAAAAAAAAAAAA',
+        cervicalDilationUuid: '162261AAAAAAAAAAAAAAAAAAAAAAAAAAAAAA',
+        descentOfHead: '1810AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA',
+        descentOfHeadUuid: '1810AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA',
+        contractionFrequencyUuid: '163749AAAAAAAAAAAAAAAAAAAAAAAAAAAAAA',
+        contractionDurationUuid: '163750AAAAAAAAAAAAAAAAAAAAAAAAAAAAAA',
       },
     },
   },
@@ -248,6 +312,90 @@ export const configSchema = {
     bmiUnit: {
       _type: Type.String,
       _default: 'kg / m²',
+    },
+  },
+
+  neonatalConcepts: {
+    _type: Type.Object,
+    _description: 'Concept UUIDs used by neonatal and well-child-care summary widgets.',
+    _default: {
+      skinColorUuid: 'c00971b1-029f-4160-9b68-55e101a512a8',
+      fontanelleUuid: '52956c82-e8ad-4f85-8dd7-9b993f3d54df',
+      suturesUuid: 'dde87a4f-cd8c-4fe7-b7ef-f0f43bb31637',
+      earsUuid: '4b4f8ad4-a934-4ead-921a-266ca1d2102c',
+      noseUuid: '313226d7-d67d-4246-8d84-62f7208badf5',
+      mouthUuid: '1a512c73-916f-4df3-938d-6f2c3d705fc3',
+      neckUuid: '7978016d-a854-427b-8451-9f6ca62b5186',
+      thoraxUuid: '08579338-2599-438e-b3be-6cd3e7d955bd',
+      nipplesUuid: '36094aaf-31f7-46e8-92f1-8e8f7b7181ec',
+      clavicleUuid: '3d81681d-081e-4c31-ad24-d5faea4c2833',
+      esophagusPermeabilityUuid: 'f49edae8-ea0c-4013-8452-4dde09d7f8a7',
+      umbilicalCordUuid: '7f75f2a9-3531-4f9a-b2ac-eaf61d74f614',
+      abdomenCharacteristicsUuid: '49d05fba-f1d0-4bb7-8b63-5084d78638e2',
+      genitourinaryUuid: '57746a04-5f9e-4e42-9233-efeeeb3db0d0',
+      observationUuid: 'f947a4ad-3d8d-4516-8e6b-67b3dca4e227',
+      genitourinaryEliminationUuid: 'd79f07ac-bc26-4e3d-84d2-fb764da9409b',
+      spinalColumnUuid: 'd5d244f7-911b-43ca-90a1-3001c167b342',
+      limbsUuid: '46dc8706-c1af-4b04-b5d8-7432de862fef',
+      muscleToneUuid: '0d73ab1a-faee-4774-b570-609d98d8f6e0',
+      hipUuid: 'ca9f422f-f103-43c4-ae56-1b43bc2e7ec1',
+      neurologicalEvaluationUuid: '7378ae3c-4a25-4d09-adbc-b3fe6b739aa3',
+      immediateAssessmentUuid: '7dbb1546-3eef-4983-99ad-4c7f065cf093',
+      birthQuestionnaireUuid: '517afc20-481d-4cdf-ba88-5641418aa762',
+      newbornEvaluationUuid: 'ebe4e1c4-7f4f-4779-a8b3-8b2e5a5cc9b6',
+      cordClampingUuid: 'b7f5376f-b025-4da5-80e2-bb20065a1b30',
+      skinToSkinContactUuid: '3bbebee4-ccc8-4a01-a5e8-14f9222a6827',
+      oxygenSupportUuid: '06e7e25f-23c5-4035-800a-d86f598d50cf',
+      vitaminKAdminUuid: '5da8b9b1-f566-411f-b50b-f634ed6321c0',
+      heartRateUuid: 'c6f1da2a-0163-407c-9fe1-649fc2dca5a4',
+      respiratoryRateUuid: 'aeecf295-048b-4c40-a6a0-c3a7db169466',
+      oxygenSaturationUuid: '4dc51434-3f62-483c-b4db-441eae51f0a3',
+      bodyTemperatureUuid: '89c9c0bf-e746-4f8d-8d04-b2d2ad9826eb',
+      apgar1MinUuid: 'a2010a1f-d7ca-4d6f-9255-f53da4fa5c3f',
+      apgar5MinUuid: '0f3be2f6-986f-4928-8761-b531044c1f36',
+      apgar10MinUuid: 'f621e8d3-2c34-48fc-95c1-50ad0606ed68',
+      weightUuid: '5cacede4-c947-4092-9df4-24287a7f13ae',
+      heightUuid: '3f85a289-bcb4-4d67-8053-7c8415e09aef',
+      headCircumferenceUuid: 'c4d39248-c896-433a-bc69-e24d04b7f0e5',
+      chestCircumferenceUuid: '911eb398-e7de-4270-af63-e4c615ec22a9',
+      gastricLavageUuid: '0d17ad63-b1c0-46db-b8e7-c4c2d8343edf',
+      gastricLavageCountUuid: '1c2e66e6-1a67-488c-a36b-e2f3536b72fe',
+      nursingDiagnosisUuid: '8e779adc-c463-434a-9113-a74c5e12399d',
+      gestationalAgeUuid: '2eb9b2c4-cd08-4e6f-a11f-e1e6dc3cb54f',
+      birthWeightUuid: '5a7f6473-ce0b-4ae5-95e1-3cb93ffaae65',
+      birthHeightUuid: 'bf82beb1-d3b8-400e-8160-90869cad8136',
+      weightForGestationalAgeUuid: 'b17dca04-fbf6-483f-bc95-951f17a233f7',
+      congenitalDiseaseUuid: '1c3c6e76-5c02-4f7a-9ace-394973c2b223',
+      roomingInUuid: '98360dd3-0000-4b58-a21c-fe0189302d1a',
+      breastfeedingFirstHourUuid: '82821bfe-a9f3-425e-9287-579ba4660832',
+      requiredHospitalizationUuid: '49011148-6906-4885-b0a8-da2a0f8fd24b',
+      hospitalizationTimeUuid: '0b9dcf14-5acb-427b-a017-71794d320d22',
+      admissionDateTimeUuid: '38d40f48-10cb-4d80-a269-ec00b0be0cd0',
+      hematocritUuid: '9a9c73d0-76e6-4b84-b20c-dfe8efea9542',
+      motherAgeUuid: 'dcc62b2c-2fc7-4053-9239-0e79335ecdbc',
+      numberOfChildrenUuid: '6cce201f-26eb-46d0-a8cb-f17ef045af78',
+      deliveryTypeAcUuid: '590f32e5-d78a-47c6-98fc-9e4ddb3e7ede',
+      nipplesAcUuid: '84f9275b-5a46-4c5c-96f6-e3752e0652ab',
+      milkProductionUuid: 'ed328efb-4ca4-475b-a610-05c142738e06',
+      latchUuid: 'df387d42-759e-4968-9f84-731c0fa3a089',
+      suctionAcUuid: '8c68ada1-17b0-4c97-a521-6e7d3024b8fd',
+      swallowingUuid: '4f8eb241-0cb9-4c10-825a-61889a73c42f',
+      nursingDiagnosisAcUuid: 'c20d1f4e-d19a-47b6-b545-181a85477187',
+      nursingInterventionUuid: '47a5ae3a-36a8-422c-a0b0-9b18bb44655f',
+      examDateUuid: '8b88b123-a28f-4d70-a86d-49fd322c46d5',
+      bodyPositionUuid: 'a2fa14e7-cf20-494c-ae55-6d1a0d01171c',
+      responsesUuid: '08aeaea7-6fb4-4346-9834-d137e8a9a503',
+      affectiveBondUuid: '60c8d705-ed11-43f2-a9fe-85036fead073',
+      anatomyUuid: '8be83572-62bc-47cf-8691-f04fdc33a882',
+      suctionCounselUuid: 'a4c047c9-30f8-49f6-8fb9-43e15e91d18c',
+      timeUuid: 'dfe757a2-b7c6-4081-a151-2d8a58e80115',
+      feedingTimeUuid: '4cb55646-934c-44f5-a986-166654b44996',
+      pregnancyNumberUuid: 'ae27daee-d2f3-4df3-8e07-eff75c81872e',
+      prenatalCareNumberUuid: '9156b8d5-e5d3-4c2b-b8fc-1faafeda8f6c',
+      prenatalCareLocationUuid: '52a2755e-7510-473e-96d9-4875d7435f8d',
+      deliveryConditionUuid: '899e0cc8-5f6a-4334-b51d-c559f71ea550',
+      deliveryLocationUuid: 'b4c79dec-245b-4d9f-ae52-2db757c4561a',
+      deliveryAttendantUuid: 'cff0f194-0a8c-4f2c-bbe4-35b356b23d24',
     },
   },
 
@@ -638,10 +786,10 @@ export const configSchema = {
     // (Truncated for brevity - the remaining CRED concepts would follow the same organization)
   },
 
-  // 10A. TAMIZAJE DE ANEMIA (NTS 137)
+  // 10A. TAMIZAJE DE ANEMIA (NTS 238)
   anemiaScreening: {
     _type: Type.Object,
-    _description: 'Configuración del tamizaje de anemia según NTS 137',
+    _description: 'Configuración del tamizaje de anemia según NTS 238',
     _default: {
       hemoglobinaConceptUuid: '0ffe780c-a3ee-4c9c-b4dd-bf2e0f79dc7f',
       anemiaThreshold: 11.0,
@@ -653,7 +801,7 @@ export const configSchema = {
     },
     anemiaThreshold: {
       _type: Type.Number,
-      _description: 'Umbral para considerar anemia (g/dL). NTS 137: < 11.0',
+      _description: 'Umbral para considerar anemia (g/dL). NTS 238: < 11.0',
       _default: 11.0,
     },
   },
@@ -894,14 +1042,27 @@ export const configSchema = {
     _description: 'Configuración del Test Peruano de Desarrollo Infantil',
     _default: {
       encounterTypeUuid: 'a990eabc-3405-419f-bfb1-96ca2d8279b8', // Control de Niño Sano — NTS 102
-      scoreCognitivoUuid: '', // TODO: concept UUID for cognitive score
-      scoreMotorUuid: '', // TODO: concept UUID for motor score
-      scoreSocialUuid: '', // TODO: concept UUID for social-emotional score
-      scoreLenguajeUuid: '', // TODO: concept UUID for language score
-      clasificacionTotalUuid: '', // TODO: concept UUID for overall classification (Coded)
-      observacionesUuid: '', // TODO: concept UUID for observations text
-      contextoCulturalUuid: '', // TODO: concept UUID for cultural context
-      idiomaUuid: '', // TODO: concept UUID for primary language
+      formUuid: '6de41002-6b38-4fdc-9551-c78642256040',
+      concepts: {
+        ageMonthsUuid: '1410AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA',
+        instrumentUuid: 'c4010001-0000-4000-8000-000000000001',
+        instrumentTestPeruanoAnswerUuid: 'c4010013-0000-4000-8000-000000000013',
+        classificationUuid: 'c4010002-0000-4000-8000-000000000002',
+        classificationAnswers: {
+          normal: '1115AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA',
+          riesgo: 'c4010021-0000-4000-8000-000000000021',
+          retraso: 'c4010022-0000-4000-8000-000000000022',
+        },
+        totalScoreUuid: 'c4010003-0000-4000-8000-000000000003',
+        snapshotUuid: 'c4010004-0000-4000-8000-000000000004',
+        referralUuid: 'c4010005-0000-4000-8000-000000000005',
+        referralAnswers: {
+          yes: 'cf82933b-3f3f-45e7-a5ab-5d31aaee3da3',
+          no: '488b58ff-64f5-4f8a-8979-fa79940b1594',
+        },
+        planUuid: 'c4010006-0000-4000-8000-000000000006',
+        observationsUuid: '161011AAAAAAAAAAAAAAAAAAAAAAAAAAAAAA',
+      },
     },
     encounterTypeUuid: {
       _type: Type.UUID,
@@ -909,50 +1070,19 @@ export const configSchema = {
         'Encounter type UUID para el Test Peruano de Desarrollo. Por defecto usa Control de Niño Sano (NTS 102).',
       _default: 'a990eabc-3405-419f-bfb1-96ca2d8279b8',
     },
-    scoreCognitivoUuid: {
-      _type: Type.ConceptUuid,
-      _description: 'Concept UUID del puntaje de desarrollo cognitivo — pendiente configurar en OCL',
-      _default: '',
+    formUuid: {
+      _type: Type.UUID,
+      _description: 'Form UUID de CRED-004 Seguimiento del Desarrollo usado para persistir el perfil gráfico.',
+      _default: '6de41002-6b38-4fdc-9551-c78642256040',
     },
-    scoreMotorUuid: {
-      _type: Type.ConceptUuid,
-      _description: 'Concept UUID del puntaje de desarrollo motor — pendiente configurar en OCL',
-      _default: '',
-    },
-    scoreSocialUuid: {
-      _type: Type.ConceptUuid,
-      _description: 'Concept UUID del puntaje de desarrollo social-emocional — pendiente configurar en OCL',
-      _default: '',
-    },
-    scoreLenguajeUuid: {
-      _type: Type.ConceptUuid,
-      _description: 'Concept UUID del puntaje de desarrollo del lenguaje — pendiente configurar en OCL',
-      _default: '',
-    },
-    clasificacionTotalUuid: {
-      _type: Type.ConceptUuid,
-      _description:
-        'Concept UUID de la clasificación total del test (Coded: superior/normal/limite/retraso) — pendiente configurar en OCL',
-      _default: '',
-    },
-    observacionesUuid: {
-      _type: Type.ConceptUuid,
-      _description: 'Concept UUID para observaciones generales del evaluador — pendiente configurar en OCL',
-      _default: '',
-    },
-    contextoCulturalUuid: {
-      _type: Type.ConceptUuid,
-      _description: 'Concept UUID del contexto cultural (urbano/rural/urbano_marginal) — pendiente configurar en OCL',
-      _default: '',
-    },
-    idiomaUuid: {
-      _type: Type.ConceptUuid,
-      _description: 'Concept UUID del idioma primario del niño — pendiente configurar en OCL',
-      _default: '',
+    concepts: {
+      _type: Type.Object,
+      _description: 'Conceptos usados para persistir el perfil gráfico del Test Peruano en CRED-004.',
+      _default: {},
     },
   },
 
-  // 10H. ESTIMULACIÓN TEMPRANA (NTS 137)
+  // 10H. ESTIMULACIÓN TEMPRANA (NTS 238)
   earlyStimulation: {
     _type: Type.Object,
     _description: 'Concepts para estimulación temprana y seguimiento del desarrollo',
@@ -995,10 +1125,9 @@ export const configSchema = {
     _type: Type.Array,
     _description: 'Configuración de grupos etarios para CRED',
     _default: [
-      { label: 'RN - 48h', sublabel: 'CONTROL 1 (2 DÍAS)', minDays: 0, maxDays: 3, neonatalControl: 1 },
-      { label: 'RN - 7d', sublabel: 'CONTROL 2 (7 DÍAS)', minDays: 4, maxDays: 10, neonatalControl: 2 },
-      { label: 'RN - 14d', sublabel: 'CONTROL 3 (14 DÍAS)', minDays: 11, maxDays: 17, neonatalControl: 3 },
-      { label: 'RN - 21d', sublabel: 'CONTROL 4 (21 DÍAS)', minDays: 18, maxDays: 29, neonatalControl: 4 },
+      { label: 'RN - 3 a 6d', sublabel: 'CONTROL 1 (3 A 6 DÍAS)', minDays: 0, maxDays: 6, neonatalControl: 1 },
+      { label: 'RN - 7 a 14d', sublabel: 'CONTROL 2 (7 A 13 DÍAS)', minDays: 7, maxDays: 13, neonatalControl: 2 },
+      { label: 'RN - 14 a 21d', sublabel: 'CONTROL 3 (14 A 21 DÍAS)', minDays: 14, maxDays: 28, neonatalControl: 3 },
       { label: '0 AÑOS', sublabel: '1 A 11 MESES', minMonths: 1, maxMonths: 11 },
       { label: '1 AÑO', sublabel: '12 A 23 MESES', minMonths: 12, maxMonths: 23 },
       { label: '2 AÑOS', sublabel: '24 A 35 MESES', minMonths: 24, maxMonths: 35 },
@@ -1147,111 +1276,345 @@ export const configSchema = {
     _description: 'Configuración de formularios CRED por grupo etario',
     _default: [
       {
-        label: 'RN - 48h (Control 1)',
+        label: 'RN - 3 a 6 días (Control 1)',
         minDays: 0,
-        maxDays: 3,
+        maxDays: 6,
         neonatalControl: 1,
-        forms: ['atencionImmediataNewborn', 'newbornNeuroEval', 'breastfeedingObservation', 'roomingIn'],
+        forms: [
+          'atencionImmediataNewborn',
+          'newbornNeuroEval',
+          'breastfeedingObservation',
+          'roomingIn',
+          'riskInterview0to30',
+          'physicalExamForm',
+          'oralHealthInspectionForm',
+          'cancerWarningSignsForm',
+          'metalsExposureScreeningForm',
+          'violenceDisciplineScreeningForm',
+          'credCounselingAgreementForm',
+          'homeVisitFollowupForm',
+        ],
       },
       {
-        label: 'RN - 7d (Control 2)',
-        minDays: 4,
-        maxDays: 10,
+        label: 'RN - 7 a 14 días (Control 2)',
+        minDays: 7,
+        maxDays: 13,
         neonatalControl: 2,
-        forms: ['nursingAssessment', 'breastfeedingObservation'],
+        forms: [
+          'nursingAssessment',
+          'breastfeedingObservation',
+          'riskInterview0to30',
+          'physicalExamForm',
+          'oralHealthInspectionForm',
+          'cancerWarningSignsForm',
+          'metalsExposureScreeningForm',
+          'violenceDisciplineScreeningForm',
+          'credCounselingAgreementForm',
+        ],
       },
       {
-        label: 'RN - 14d (Control 3)',
-        minDays: 11,
-        maxDays: 17,
+        label: 'RN - 14 a 21 días (Control 3)',
+        minDays: 14,
+        maxDays: 28,
         neonatalControl: 3,
-        forms: ['nursingAssessment', 'breastfeedingObservation'],
+        forms: [
+          'nursingAssessment',
+          'breastfeedingObservation',
+          'riskInterview0to30',
+          'physicalExamForm',
+          'oralHealthInspectionForm',
+          'cancerWarningSignsForm',
+          'metalsExposureScreeningForm',
+          'violenceDisciplineScreeningForm',
+          'credCounselingAgreementForm',
+        ],
       },
       {
-        label: 'RN - 21d (Control 4)',
-        minDays: 18,
-        maxDays: 29,
-        neonatalControl: 4,
-        forms: ['nursingAssessment', 'breastfeedingObservation'],
+        label: '1 MES',
+        minMonths: 1,
+        maxMonths: 2,
+        forms: [
+          'nursingAssessment',
+          'riskInterview0to30',
+          'physicalExamForm',
+          'growthNutritionEvaluationForm',
+          'breastfeedingObservation',
+          'childMentalHealthForm',
+          'violenceDisciplineScreeningForm',
+          'credCounselingAgreementForm',
+        ],
       },
       {
         label: '2 MESES',
-        minMonths: 1,
-        maxMonths: 2.5,
-        forms: ['eedp2Months', 'nursingAssessment', 'childFeeding0to5', 'riskInterview0to30'],
+        minMonths: 2,
+        maxMonths: 3,
+        forms: [
+          'nursingAssessment',
+          'riskInterview0to30',
+          'physicalExamForm',
+          'growthNutritionEvaluationForm',
+          'childFeeding0to5',
+          'stimulationFollowupForm',
+          'stimulationCounselingForm',
+          'credCounselingAgreementForm',
+        ],
+      },
+      {
+        label: '3 MESES',
+        minMonths: 3,
+        maxMonths: 4,
+        forms: [
+          'nursingAssessment',
+          'riskInterview0to30',
+          'physicalExamForm',
+          'growthNutritionEvaluationForm',
+          'childFeeding0to5',
+          'stimulationFollowupForm',
+          'stimulationCounselingForm',
+          'credCounselingAgreementForm',
+        ],
       },
       {
         label: '4 MESES',
-        minMonths: 2.5,
-        maxMonths: 5,
-        forms: ['eedp5Months', 'nursingAssessment', 'childFeeding0to5', 'riskInterview0to30'],
+        minMonths: 4,
+        maxMonths: 6,
+        forms: [
+          'nursingAssessment',
+          'riskInterview0to30',
+          'physicalExamForm',
+          'growthNutritionEvaluationForm',
+          'childFeeding0to5',
+          'stimulationFollowupForm',
+          'stimulationCounselingForm',
+          'credCounselingAgreementForm',
+        ],
       },
       {
         label: '6 MESES',
-        minMonths: 5,
-        maxMonths: 8,
-        forms: ['eedp5Months', 'nursingAssessment', 'childFeeding6to42', 'riskInterview0to30'],
+        minMonths: 6,
+        maxMonths: 7,
+        forms: [
+          'nursingAssessment',
+          'riskInterview0to30',
+          'physicalExamForm',
+          'growthNutritionEvaluationForm',
+          'childFeeding6to42',
+          'anemiaScreeningForm',
+          'supplementationForm',
+          'ediDevelopmentForm',
+          'stimulationCounselingForm',
+          'credCounselingAgreementForm',
+        ],
+      },
+      {
+        label: '7 MESES',
+        minMonths: 7,
+        maxMonths: 9,
+        forms: [
+          'nursingAssessment',
+          'riskInterview0to30',
+          'physicalExamForm',
+          'growthNutritionEvaluationForm',
+          'childFeeding6to42',
+          'supplementationForm',
+          'stimulationFollowupForm',
+          'stimulationCounselingForm',
+          'credCounselingAgreementForm',
+        ],
       },
       {
         label: '9 MESES',
-        minMonths: 8,
-        maxMonths: 11,
-        forms: ['eedp8Months', 'nursingAssessment', 'childFeeding6to42', 'riskInterview0to30'],
+        minMonths: 9,
+        maxMonths: 12,
+        forms: [
+          'nursingAssessment',
+          'riskInterview0to30',
+          'physicalExamForm',
+          'growthNutritionEvaluationForm',
+          'childFeeding6to42',
+          'anemiaScreeningForm',
+          'supplementationForm',
+          'ediDevelopmentForm',
+          'stimulationCounselingForm',
+          'credCounselingAgreementForm',
+        ],
       },
       {
         label: '12 MESES',
-        minMonths: 11,
+        minMonths: 12,
         maxMonths: 15,
-        forms: ['eedp12Months', 'nursingAssessment', 'childFeeding6to42', 'riskInterview0to30', 'childAbuseScreening'],
+        forms: [
+          'nursingAssessment',
+          'riskInterview0to30',
+          'physicalExamForm',
+          'growthNutritionEvaluationForm',
+          'childFeeding6to42',
+          'childMentalHealthForm',
+          'violenceDisciplineScreeningForm',
+          'parasitosisScreeningForm',
+          'vitaminAAdministrationForm',
+          'stimulationFollowupForm',
+          'credCounselingAgreementForm',
+        ],
       },
       {
         label: '15 MESES',
         minMonths: 15,
         maxMonths: 18,
-        forms: ['eedp15Months', 'nursingAssessment', 'childFeeding6to42', 'childAbuseScreening'],
+        forms: [
+          'nursingAssessment',
+          'physicalExamForm',
+          'growthNutritionEvaluationForm',
+          'childFeeding6to42',
+          'supplementationForm',
+          'vitaminAAdministrationForm',
+          'stimulationFollowupForm',
+          'credCounselingAgreementForm',
+        ],
       },
       {
         label: '18 MESES',
         minMonths: 18,
-        maxMonths: 24,
-        forms: ['eedp18Months', 'nursingAssessment', 'childFeeding6to42', 'childAbuseScreening'],
+        maxMonths: 21,
+        forms: [
+          'nursingAssessment',
+          'physicalExamForm',
+          'growthNutritionEvaluationForm',
+          'childFeeding6to42',
+          'anemiaScreeningForm',
+          'supplementationForm',
+          'ediDevelopmentForm',
+          'stimulationCounselingForm',
+          'credCounselingAgreementForm',
+        ],
       },
       {
-        label: '2 AÑOS',
+        label: '21 MESES',
+        minMonths: 21,
+        maxMonths: 24,
+        forms: [
+          'nursingAssessment',
+          'physicalExamForm',
+          'growthNutritionEvaluationForm',
+          'childFeeding6to42',
+          'supplementationForm',
+          'stimulationFollowupForm',
+          'stimulationCounselingForm',
+          'credCounselingAgreementForm',
+        ],
+      },
+      {
+        label: '24 MESES',
         minMonths: 24,
         maxMonths: 30,
-        forms: ['eedp21Months', 'nursingAssessment', 'childFeeding6to42', 'childAbuseScreening'],
+        forms: [
+          'nursingAssessment',
+          'physicalExamForm',
+          'growthNutritionEvaluationForm',
+          'childFeeding6to42',
+          'childMentalHealthForm',
+          'autismScreeningForm',
+          'violenceDisciplineScreeningForm',
+          'parasitosisScreeningForm',
+          'vitaminAAdministrationForm',
+          'stimulationFollowupForm',
+          'credCounselingAgreementForm',
+        ],
       },
       {
         label: '30 MESES',
         minMonths: 30,
         maxMonths: 36,
-        forms: ['tepsi', 'nursingAssessment', 'childFeeding6to42', 'childAbuseScreening'],
+        forms: [
+          'nursingAssessment',
+          'physicalExamForm',
+          'growthNutritionEvaluationForm',
+          'childFeeding6to42',
+          'ediDevelopmentForm',
+          'stimulationCounselingForm',
+          'credCounselingAgreementForm',
+        ],
       },
       {
         label: '3 AÑOS',
         minMonths: 36,
         maxMonths: 48,
-        forms: ['tepsi', 'nursingAssessment', 'childAbuseScreening'],
+        forms: [
+          'nursingAssessment',
+          'physicalExamForm',
+          'growthNutritionEvaluationForm',
+          'childMentalHealthForm',
+          'violenceDisciplineScreeningForm',
+          'parasitosisScreeningForm',
+          'vitaminAAdministrationForm',
+          'visualScreeningForm',
+          'hearingScreeningForm',
+          'stimulationFollowupForm',
+          'credCounselingAgreementForm',
+        ],
       },
       {
         label: '4 AÑOS',
         minMonths: 48,
         maxMonths: 60,
-        forms: ['tepsi', 'nursingAssessment', 'childAbuseScreening'],
+        forms: [
+          'nursingAssessment',
+          'physicalExamForm',
+          'growthNutritionEvaluationForm',
+          'childMentalHealthForm',
+          'violenceDisciplineScreeningForm',
+          'parasitosisScreeningForm',
+          'vitaminAAdministrationForm',
+          'visualScreeningForm',
+          'hearingScreeningForm',
+          'stimulationFollowupForm',
+          'credCounselingAgreementForm',
+        ],
       },
       {
         label: '5 AÑOS',
         minMonths: 60,
-        maxMonths: 120,
-        forms: ['tepsi', 'nursingAssessment', 'childAbuseScreening'],
+        maxMonths: 72,
+        forms: [
+          'nursingAssessment',
+          'physicalExamForm',
+          'growthNutritionEvaluationForm',
+          'ediDevelopmentForm',
+          'childMentalHealthForm',
+          'violenceDisciplineScreeningForm',
+          'parasitosisScreeningForm',
+          'visualScreeningForm',
+          'hearingScreeningForm',
+          'schoolHealthCounselingForm',
+          'credCounselingAgreementForm',
+        ],
+      },
+      {
+        label: '6 A 11 AÑOS',
+        minMonths: 72,
+        maxMonths: 144,
+        forms: [
+          'nursingAssessment',
+          'physicalExamForm',
+          'growthNutritionEvaluationForm',
+          'childMentalHealthForm',
+          'parasitosisScreeningForm',
+          'visualScreeningForm',
+          'hearingScreeningForm',
+          'schoolHealthCounselingForm',
+          'credCounselingAgreementForm',
+          'referralInterconsultationForm',
+        ],
       },
     ],
     _elements: {
       _type: Type.Object,
       label: { _type: Type.String },
-      minMonths: { _type: Type.Number },
-      maxMonths: { _type: Type.Number },
+      minDays: { _type: Type.Number, _optional: true },
+      maxDays: { _type: Type.Number, _optional: true },
+      neonatalControl: { _type: Type.Number, _optional: true },
+      minMonths: { _type: Type.Number, _optional: true },
+      maxMonths: { _type: Type.Number, _optional: true },
       forms: { _type: Type.Array, _elements: { _type: Type.String } },
     },
   },
@@ -1276,12 +1639,19 @@ export interface LegendConfigObject {
 }
 
 export interface PartographyConfigObject {
+  encounterTypeUuid: string;
+  formUuid: string;
+  progressConceptUuid: string;
   concepts: {
     obsDateUiid: string;
     timeRecordedUuid: string;
     fetalHeartRateUuid: string;
     cervicalDilationUiid: string;
+    cervicalDilationUuid?: string;
     descentOfHead: string;
+    descentOfHeadUuid?: string;
+    contractionFrequencyUuid?: string;
+    contractionDurationUuid?: string;
   };
 }
 
@@ -1430,6 +1800,20 @@ export interface ConfigObject {
     ediDevelopmentForm: string;
     autismScreeningForm: string;
     childMentalHealthForm: string;
+    parasitosisScreeningForm: string;
+    vitaminAAdministrationForm: string;
+    physicalExamForm: string;
+    growthNutritionEvaluationForm: string;
+    oralHealthInspectionForm: string;
+    visualScreeningForm: string;
+    hearingScreeningForm: string;
+    cancerWarningSignsForm: string;
+    metalsExposureScreeningForm: string;
+    violenceDisciplineScreeningForm: string;
+    credCounselingAgreementForm: string;
+    homeVisitFollowupForm: string;
+    referralInterconsultationForm: string;
+    schoolHealthCounselingForm: string;
     adverseReactionForm: string;
   };
   adverseReactionReporting: {
@@ -1442,6 +1826,7 @@ export interface ConfigObject {
       severe: string;
     };
   };
+  neonatalConcepts: Record<string, string>;
   clinicalEncounterUuid: string;
   concepts: Record<string, string>;
   registrationEncounterUuid: string;
@@ -1528,13 +1913,26 @@ export interface ConfigObject {
   };
   testPeruano: {
     encounterTypeUuid: string;
-    scoreCognitivoUuid: string;
-    scoreMotorUuid: string;
-    scoreSocialUuid: string;
-    scoreLenguajeUuid: string;
-    clasificacionTotalUuid: string;
-    observacionesUuid: string;
-    contextoCulturalUuid: string;
-    idiomaUuid: string;
+    formUuid: string;
+    concepts: {
+      ageMonthsUuid: string;
+      instrumentUuid: string;
+      instrumentTestPeruanoAnswerUuid: string;
+      classificationUuid: string;
+      classificationAnswers: {
+        normal: string;
+        riesgo: string;
+        retraso: string;
+      };
+      totalScoreUuid: string;
+      snapshotUuid: string;
+      referralUuid: string;
+      referralAnswers: {
+        yes: string;
+        no: string;
+      };
+      planUuid: string;
+      observationsUuid: string;
+    };
   };
 }

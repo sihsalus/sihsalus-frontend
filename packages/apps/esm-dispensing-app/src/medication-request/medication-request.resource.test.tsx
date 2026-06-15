@@ -11,11 +11,11 @@ import {
   usePrescriptionsTable,
 } from './medication-request.resource';
 
-jest.mocked(openmrsFetch);
-jest.mock('swr');
-jest.mock('react', () => ({
-  ...jest.requireActual('react'),
-  useMemo: jest.fn((fn) => fn()),
+vi.mocked(openmrsFetch);
+vi.mock('swr');
+vi.mock('react', async () => ({
+  ...(await vi.importActual('react')),
+  useMemo: vi.fn((fn) => fn()),
 }));
 
 describe('Medication Request Resource Test', () => {

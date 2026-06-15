@@ -1,9 +1,12 @@
 name: Release
 
 on:
-  push:
+  workflow_run:
+    workflows: [CI]
+    types: [completed]
     branches: [main, pre-release]
-    tags: ['v*']
+  push:
+    tags: ['sihsalus-v*']
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
@@ -12,6 +15,9 @@ concurrency:
 jobs:
   build-and-push:
     runs-on: ubuntu-latest
+    if: >
+      (github.event_name == 'workflow_run' && github.event.workflow_run.conclusion == 'success') ||
+      startsWith(github.ref, 'refs/tags/sihsalus-v')
     permissions:
       contents: write
       packages: write
@@ -23,20 +29,35 @@ jobs:
         with:
           fetch-depth: 0
 
-      # Only needed for `changeset publish` on tag builds
-      - name: Setup Node
-        if: startsWith(github.ref, 'refs/tags/v')
-        uses: actions/setup-node@v6
-        with:
-          node-version: 24
-
-      - name: Enable Corepack
-        if: startsWith(github.ref, 'refs/tags/v')
-        run: corepack enable
-
-      - name: Install dependencies
-        if: startsWith(github.ref, 'refs/tags/v')
-        run: HUSKY=0 yarn install --immutable
+      # Derive build provenance from git. On a `sihsalus-vX.Y.Z` tag the version is
+      # exact; on branch builds it is `git describe` relative to the last such tag
+      # (e.g. 1.2.0-5-gabc1234), falling back to a dev placeholder.
+      - name: Compute version
+        id: version
+        run: |
+          SHA_SHORT="$(git rev-parse --short HEAD)"
+          BUILD_TIME="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
+          PACKAGE_VERSION="$(node -p "require('./package.json').version" 2>/dev/null || true)"
+          if [[ "${GITHUB_REF}" == refs/tags/sihsalus-v* ]]; then
+            VERSION="${GITHUB_REF#refs/tags/sihsalus-v}"
+          elif [[ -n "${PACKAGE_VERSION}" ]]; then
+            VERSION="${PACKAGE_VERSION}"
+          else
+            DESC="$(git describe --tags --match 'sihsalus-v*' --always 2>/dev/null || echo '')"
+            if [[ "${DESC}" == sihsalus-v* ]]; then
+              VERSION="${DESC#sihsalus-v}"
+            else
+              VERSION="0.0.0-dev+${SHA_SHORT}"
+            fi
+          fi
+          MAJOR_MINOR="$(printf '%s' "${VERSION}" | grep -oE '^[0-9]+\.[0-9]+' || true)"
+          {
+            echo "version=${VERSION}"
+            echo "major_minor=${MAJOR_MINOR}"
+            echo "sha_short=${SHA_SHORT}"
+            echo "build_time=${BUILD_TIME}"
+          } >> "${GITHUB_OUTPUT}"
+          echo "Resolved version=${VERSION} sha=${SHA_SHORT}"
 
       - uses: docker/setup-buildx-action@v4
 
@@ -52,10 +73,10 @@ jobs:
           images: ghcr.io/sihsalus/sihsalus-frontend
           tags: |
             type=sha,prefix=sha-,format=long
-            type=raw,value=latest,enable=${{ github.ref == 'refs/heads/main' }}
-            type=raw,value=next,enable=${{ github.ref == 'refs/heads/pre-release' }}
-            type=semver,pattern={{version}}
-            type=semver,pattern={{major}}.{{minor}}
+            type=raw,value=latest,enable=${{ github.ref == 'refs/heads/main' || github.event.workflow_run.head_branch == 'main' }}
+            type=raw,value=next,enable=${{ github.ref == 'refs/heads/pre-release' || github.event.workflow_run.head_branch == 'pre-release' }}
+            type=raw,value=${{ steps.version.outputs.version }},enable=${{ startsWith(github.ref, 'refs/tags/sihsalus-v') }}
+            type=raw,value=${{ steps.version.outputs.major_minor }},enable=${{ startsWith(github.ref, 'refs/tags/sihsalus-v') }}
 
       - uses: docker/build-push-action@v7
         with:
@@ -65,6 +86,10 @@ jobs:
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
           platforms: linux/amd64
+          build-args: |
+            APP_VERSION=${{ steps.version.outputs.version }}
+            GIT_SHA=${{ steps.version.outputs.sha_short }}
+            BUILD_TIME=${{ steps.version.outputs.build_time }}
           cache-from: type=gha,scope=release-amd64
           cache-to: type=gha,scope=release-amd64,mode=max
 
@@ -80,23 +105,25 @@ jobs:
 
       - name: Upload Trivy scan
         uses: github/codeql-action/upload-sarif@v4
-        if: always()
+        if: ${{ always() && hashFiles('trivy-release-results.sarif') != '' }}
         with:
           sarif_file: trivy-release-results.sarif
 
       - name: Notify sihsalus deployment
-        if: github.ref == 'refs/heads/main' && env.HAS_DEPLOY_TOKEN == 'true'
+        if: >
+          (github.event.workflow_run.head_branch == 'main' || github.ref == 'refs/heads/main') &&
+          env.HAS_DEPLOY_TOKEN == 'true'
         uses: peter-evans/repository-dispatch@v4
         with:
           token: ${{ secrets.DEPLOY_TOKEN }}
-          repository: sihsalus/sihsalus
+          repository: sihsalus/sihsalus-frontend
           event-type: frontend-published
           client-payload: '{"image":"ghcr.io/sihsalus/sihsalus-frontend:latest","sha":"${{ github.sha }}"}'
 
-      - name: Create Release (on tags)
-        if: startsWith(github.ref, 'refs/tags/v')
-        uses: changesets/action@v1
+      - name: Create GitHub Release (on tags)
+        if: startsWith(github.ref, 'refs/tags/sihsalus-v')
+        uses: softprops/action-gh-release@v2
         with:
-          publish: yarn changeset publish
+          generate_release_notes: true
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

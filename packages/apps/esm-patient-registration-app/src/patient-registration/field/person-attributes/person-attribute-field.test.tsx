@@ -1,25 +1,25 @@
-import { render, screen } from '@testing-library/react';
+import { render, screen, waitFor } from '@testing-library/react';
 import { Form, Formik } from 'formik';
-import React from 'react';
 
 import { type FieldDefinition } from '../../../config-schema';
+import { PatientRegistrationContext, type PatientRegistrationContextProps } from '../../patient-registration-context';
 import { useConceptAnswers } from '../field.resource';
 
 import { PersonAttributeField } from './person-attribute-field.component';
 import { usePersonAttributeType } from './person-attributes.resource';
 
-jest.mock('./person-attributes.resource', () => ({
-  ...jest.requireActual('./person-attributes.resource'),
-  usePersonAttributeType: jest.fn(),
+vi.mock('./person-attributes.resource', async () => ({
+  ...(await vi.importActual('./person-attributes.resource')),
+  usePersonAttributeType: vi.fn(),
 }));
 
-jest.mock('../field.resource', () => ({
-  ...jest.requireActual('../field.resource'),
-  useConceptAnswers: jest.fn(),
+vi.mock('../field.resource', async () => ({
+  ...(await vi.importActual('../field.resource')),
+  useConceptAnswers: vi.fn(),
 }));
 
-const mockUsePersonAttributeType = jest.mocked(usePersonAttributeType);
-const mockUseConceptAnswers = jest.mocked(useConceptAnswers);
+const mockUsePersonAttributeType = vi.mocked(usePersonAttributeType);
+const mockUseConceptAnswers = vi.mocked(useConceptAnswers);
 
 const mockPersonAttributeType = {
   format: 'java.lang.String',
@@ -118,6 +118,32 @@ describe('PersonAttributeField', () => {
     expect(input.type).toBe('select-one');
     expect(screen.getByText('Option 1')).toBeInTheDocument();
     expect(screen.getByText('Option 2')).toBeInTheDocument();
+  });
+
+  it('applies a configured default value for new registrations', async () => {
+    const setFieldValue = vi.fn();
+
+    render(
+      <Formik initialValues={{ attributes: {} }} onSubmit={() => {}}>
+        <Form>
+          <PatientRegistrationContext.Provider
+            value={
+              {
+                inEditMode: false,
+                setFieldValue,
+                values: { attributes: {} },
+              } as unknown as PatientRegistrationContextProps
+            }
+          >
+            <PersonAttributeField fieldDefinition={{ ...fieldDefinition, defaultValue: 'default-value' }} />
+          </PatientRegistrationContext.Provider>
+        </Form>
+      </Formik>,
+    );
+
+    await waitFor(() =>
+      expect(setFieldValue).toHaveBeenCalledWith(`attributes.${mockPersonAttributeType.uuid}`, 'default-value', false),
+    );
   });
 
   it('renders an error notification if attribute type has unknown format', () => {

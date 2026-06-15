@@ -1,12 +1,17 @@
 import { openmrsFetch, restBaseUrl } from '@openmrs/esm-framework';
 
-import { savePatient } from './patient-registration.resource';
+import { savePatient, savePatientPhoto } from './patient-registration.resource';
 
-const mockOpenmrsFetch = openmrsFetch as jest.Mock;
+const mockOpenmrsFetch = openmrsFetch as vi.Mock;
 
-jest.mock('@openmrs/esm-framework', () => ({
-  openmrsFetch: jest.fn(),
+vi.mock('@openmrs/esm-framework', async () => ({
+  ...(await vi.importActual('@openmrs/esm-framework')),
+  openmrsFetch: vi.fn(),
 }));
+
+beforeEach(() => {
+  mockOpenmrsFetch.mockReset();
+});
 
 describe('savePatient', () => {
   it('appends patient uuid in url if provided', () => {
@@ -19,5 +24,48 @@ describe('savePatient', () => {
     mockOpenmrsFetch.mockImplementationOnce(() => {});
     savePatient(null);
     expect(mockOpenmrsFetch.mock.calls[0][0]).toEqual(`${restBaseUrl}/patient/`);
+  });
+});
+
+describe('savePatientPhoto', () => {
+  it('posts complex obs metadata as multipart fields', async () => {
+    const obsUrl = `${restBaseUrl}/obs`;
+    const obsDatetime = '2026-05-29T05:00:00.000Z';
+
+    mockOpenmrsFetch.mockResolvedValueOnce({});
+
+    await savePatientPhoto(
+      'patient-uuid',
+      'data:image/png;base64,aGVsbG8=',
+      obsUrl,
+      obsDatetime,
+      'patient-photo-concept-uuid',
+    );
+
+    expect(mockOpenmrsFetch).toHaveBeenCalledWith(
+      obsUrl,
+      expect.objectContaining({
+        method: 'POST',
+        body: expect.any(FormData),
+      }),
+    );
+
+    const formData = mockOpenmrsFetch.mock.calls[0][1].body as FormData;
+    expect(formData.get('patient')).toBe('patient-uuid');
+    expect(formData.get('person')).toBe('patient-uuid');
+    expect(formData.get('concept')).toBe('patient-photo-concept-uuid');
+    expect(formData.get('obsDatetime')).toBe(obsDatetime);
+    expect(formData.get('json')).toBe(
+      JSON.stringify({
+        person: 'patient-uuid',
+        concept: 'patient-photo-concept-uuid',
+        groupMembers: [],
+        obsDatetime,
+      }),
+    );
+
+    const file = formData.get('file') as File;
+    expect(file.name).toBe('patient-photo.png');
+    expect(file.type).toBe('image/png');
   });
 });

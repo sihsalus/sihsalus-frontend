@@ -8,19 +8,19 @@ import {
 } from '@openmrs/esm-framework';
 import { render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import React from 'react';
 import { mockLocations, mockMappedQueueEntry, mockServices, mockSession } from 'test-utils';
+import type { MockInstance } from 'vitest';
 
 import { type ConfigObject, configSchema } from '../config-schema';
 
 import { updateQueueEntry } from './active-visits-table.resource';
 import ChangeStatusModal from './change-status.modal';
 
-const mockShowSnackbar = jest.mocked(showSnackbar);
-const mockUpdateQueueEntry = jest.mocked(updateQueueEntry);
-const mockUseConfig = jest.mocked(useConfig<ConfigObject>);
-const mockUseLocations = jest.mocked(useLocations);
-const mockUseSession = jest.mocked(useSession);
+const mockShowSnackbar = vi.mocked(showSnackbar);
+const mockUpdateQueueEntry = vi.mocked(updateQueueEntry);
+const mockUseConfig = vi.mocked(useConfig<ConfigObject>);
+const mockUseLocations = vi.mocked(useLocations);
+const mockUseSession = vi.mocked(useSession);
 const mockMappedVisitQueueEntry = {
   ...mockMappedQueueEntry,
   priority: mockMappedQueueEntry.priority.display as 'Emergency' | 'Not Urgent' | 'Priority',
@@ -30,27 +30,27 @@ const mockMappedVisitQueueEntry = {
   statusUuid: mockMappedQueueEntry.status.uuid,
 };
 
-jest.mock('./active-visits-table.resource', () => ({
-  ...jest.requireActual('./active-visits-table.resource'),
-  updateQueueEntry: jest.fn(),
+vi.mock('./active-visits-table.resource', async () => ({
+  ...(await vi.importActual('./active-visits-table.resource')),
+  updateQueueEntry: vi.fn(),
 }));
 
-jest.mock('../create-queue-entry/hooks/useQueueLocations', () => {
+vi.mock('../create-queue-entry/hooks/useQueueLocations', async () => {
   return {
-    useQueueLocations: jest.fn().mockReturnValue({
+    useQueueLocations: vi.fn().mockReturnValue({
       queueLocations: mockLocations.data?.results.map((location) => ({ ...location, id: location.uuid })),
     }),
   };
 });
 
-jest.mock('../hooks/useQueues', () => {
+vi.mock('../hooks/useQueues', async () => {
   return {
-    useQueues: jest.fn().mockReturnValue({ queues: mockServices }),
+    useQueues: vi.fn().mockReturnValue({ queues: mockServices }),
   };
 });
 
 describe('ChangeStatusModal', () => {
-  let consoleSpy: jest.SpyInstance;
+  let consoleSpy: MockInstance;
 
   beforeEach(() => {
     mockUseConfig.mockReturnValue({
@@ -60,7 +60,7 @@ describe('ChangeStatusModal', () => {
     mockUseLocations.mockReturnValue(mockLocations.data.results);
     mockUseSession.mockReturnValue(mockSession.data);
 
-    consoleSpy = jest.spyOn(console, 'error').mockImplementation(() => {});
+    consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
   });
 
   afterEach(() => {

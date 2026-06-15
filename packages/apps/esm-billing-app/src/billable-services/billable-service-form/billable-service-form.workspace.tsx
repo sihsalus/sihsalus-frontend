@@ -137,7 +137,7 @@ const createBillableServiceSchema = (t: TFunction) => {
       }
 
       const numValue = typeof val === 'number' ? val : parseFloat(val);
-      if (isNaN(numValue) || numValue <= 0) {
+      if (Number.isNaN(numValue) || numValue <= 0) {
         ctx.addIssue({
           code: z.ZodIssueCode.custom,
           message: t('priceMustBePositive', 'Price must be greater than 0'),
@@ -404,7 +404,6 @@ const BillableServiceFormWorkspace: React.FC<Workspace2DefinitionProps<BillableS
                           });
                           setSearchTerm('');
                         }}
-                        role="menuitem"
                       >
                         {searchResult.display}
                       </li>

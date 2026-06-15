@@ -2853,6 +2853,7 @@ export const formattedBiometrics = [
     height: 186,
     bmi: '26.0',
     muac: 17,
+    abdominalCircumference: 95,
   },
   {
     id: '1',
@@ -2861,6 +2862,7 @@ export const formattedBiometrics = [
     height: 198,
     bmi: '20.4',
     muac: 23,
+    abdominalCircumference: 88,
   },
   {
     id: '2',
@@ -5063,16 +5065,32 @@ export const mockBiometricsConfig = {
 
 export const mockVitalsConfig = {
   biometrics: {
+    abdominalCircumferenceUnit: 'cm',
     bmiUnit: 'kg / m²',
     heightUnit: 'm',
     weightUnit: 'kg',
     bmiMinimumAge: 0,
+    headCircumference: {
+      enabled: true,
+      minAgeDays: 0,
+      maxAgeDays: 4380,
+      unit: 'cm',
+    },
+    chestCircumference: {
+      enabled: true,
+      minAgeDays: 0,
+      maxAgeDays: 365,
+      unit: 'cm',
+    },
   },
   concepts: {
     diastolicBloodPressureUuid: '5086AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA',
     generalPatientNoteUuid: '165095AAAAAAAAAAAAAAAAAAAAAAAAAAAAAA',
     heightUuid: '5090AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA',
     midUpperArmCircumferenceUuid: '1343AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA',
+    abdominalCircumferenceUuid: '18fcbd1f-5b4f-44ed-a664-8637a83cc7eb',
+    headCircumferenceUuid: 'c4d39248-c896-433a-bc69-e24d04b7f0e5',
+    chestCircumferenceUuid: '911eb398-e7de-4270-af63-e4c615ec22a9',
     oxygenSaturationUuid: '5092AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA',
     pulseUuid: '5087AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA',
     respiratoryRateUuid: '5242AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA',

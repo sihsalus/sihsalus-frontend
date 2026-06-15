@@ -48,6 +48,7 @@ export const coreTranslations = {
   actions: 'Actions',
   actionableNotification: 'Actionable notification',
   address: 'Address',
+  additionalDetails: 'Additional details',
   age: 'Age',
   batchActionItemSelected: '{{totalSelected}} item selected',
   batchActionsItemsSelected: '{{totalSelected}} items selected',

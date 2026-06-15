@@ -17,12 +17,12 @@ const mockCohorts: DefinitionDataRow[] = [
   },
 ];
 
-const mockOpenmrsFetch = openmrsFetch as jest.Mock;
-const mockUseCohorts = jest.mocked(useCohorts);
+const mockOpenmrsFetch = openmrsFetch as vi.Mock;
+const mockUseCohorts = vi.mocked(useCohorts);
 
-jest.mock('./saved-cohorts.resources', () => ({
-  useCohorts: jest.fn(),
-  onDeleteCohort: jest.fn(),
+vi.mock('./saved-cohorts.resources', () => ({
+  useCohorts: vi.fn(),
+  onDeleteCohort: vi.fn(),
 }));
 
 describe('SavedCohorts', () => {
@@ -34,7 +34,7 @@ describe('SavedCohorts', () => {
     });
     mockOpenmrsFetch.mockReturnValue({ data: { results: mockCohorts } });
 
-    render(<SavedCohorts onViewCohort={jest.fn()} />);
+    render(<SavedCohorts onViewCohort={vi.fn()} />);
 
     await screen.findByRole('table');
     expect(screen.getByText(mockCohorts[0].name)).toBeInTheDocument();

@@ -4,7 +4,7 @@ import React from 'react';
 import { mockFhirAllergyIntoleranceResponse, mockFhirPatient, renderWithSwr } from 'test-utils';
 import AllergiesTile from './allergies-tile.extension';
 
-const mockOpenmrsFetch = openmrsFetch as jest.Mock;
+const mockOpenmrsFetch = openmrsFetch as vi.Mock;
 void React;
 
 describe('AllergiesTile', () => {

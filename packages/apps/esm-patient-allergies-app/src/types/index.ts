@@ -13,6 +13,45 @@ export interface FHIRAllergyResponse {
   type: string;
 }
 
+export interface RestAllergyResponse {
+  results?: Array<RestAllergy>;
+}
+
+export interface RestAllergy {
+  uuid?: string;
+  display?: string;
+  allergen?: {
+    allergenType?: AllergenType;
+    codedAllergen?: {
+      uuid?: string;
+      display?: string;
+    };
+    nonCodedAllergen?: string | null;
+  };
+  severity?: {
+    uuid?: string;
+    display?: string;
+  };
+  comment?: string | null;
+  reactions?: Array<{
+    reaction?: {
+      uuid?: string;
+      display?: string;
+    };
+    reactionNonCoded?: string | null;
+  }>;
+  auditInfo?: {
+    creator?: {
+      display?: string;
+    };
+    dateCreated?: string;
+    changedBy?: {
+      display?: string;
+    };
+    dateChanged?: string;
+  };
+}
+
 export interface FHIRAllergy {
   category: Array<string>;
   clinicalStatus: {
@@ -119,7 +158,7 @@ export type Allergy = {
   note: string;
   reactionToSubstance: string;
   reactionManifestations: Array<string>;
-  reactionSeverity: ReactionSeverity;
+  reactionSeverity?: ReactionSeverity;
   lastUpdated: string;
 };
 

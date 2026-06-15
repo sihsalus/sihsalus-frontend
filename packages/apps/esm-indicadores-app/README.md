@@ -20,7 +20,17 @@ Terminología de dominio: visita = consulta, encounter = atención, appointment 
 
 ## TODO backend/integración
 
-- Confirmar si el backend actualizado incluye el OMOD de indicadores. El hook actual usa `/ws/module/indicators/api/indicators`, que responde `404` si el módulo no está instalado.
-- Usar `indicatorsApiPath` de `config-schema.ts` dentro de `useIndicators.ts`; hoy el hook mantiene el endpoint hardcodeado.
-- Definir fallback funcional si no habrá OMOD: ocultar la app, mostrar estado de integración no disponible o migrar a endpoints estándar.
-- Agregar prueba de integración contra backend para listar indicadores y evaluar un indicador por ID.
+- El módulo valida `reportesSqlApiPath` (`/services/reportes-sql` por defecto). Si la respuesta falla, entra en **modo demo** y usa la vista mock del front.
+- Mantener el botón del módulo en el menú (`app-menu-item-slot`) para acceso sin depender del backend.
+
+## Backend local FastAPI
+
+- El frontend espera el backend reportes-sql con estas rutas base:
+  - `/health`
+  - `/indicadores`
+  - `/resultados`
+  - `/conceptos`
+
+- Para detalles de configuración local con este backend, ver el `README.md` de `reportes-sql`.
+- Para producción o contenedores, la recomendación es que `reportesSqlApiPath` apunte al gateway y no al servicio interno directo.
+- `indicatorsApiPath` está deprecado y ya no es consumido por la app.

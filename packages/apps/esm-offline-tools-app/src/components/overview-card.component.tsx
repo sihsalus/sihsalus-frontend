@@ -25,7 +25,7 @@ const OverviewCard: React.FC<OverviewCardProps> = ({ header, viewLink, children 
             kind="ghost"
             renderIcon={(props) => <ArrowRightIcon size={16} {...props} />}
             size="sm"
-            onClick={() => navigate({ to: `\${openmrsSpaBase}/${viewLink}` })}
+            onClick={() => navigate({ to: `${globalThis.spaBase}/${viewLink}` })}
           >
             {t('homeOverviewCardView', 'View')}
           </Button>

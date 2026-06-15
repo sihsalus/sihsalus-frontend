@@ -11,9 +11,9 @@ type OpenmrsFetchResponse = Promise<
   }>
 >;
 
-const mockedOpenmrsFetch = jest.mocked(openmrsFetch);
-const mockedDeleteForm = jest.mocked(deleteForm);
-const mockedShowModal = jest.mocked(showModal);
+const mockedOpenmrsFetch = vi.mocked(openmrsFetch);
+const mockedDeleteForm = vi.mocked(deleteForm);
+const mockedShowModal = vi.mocked(showModal);
 
 const formsResponse = [
   {
@@ -37,11 +37,12 @@ const formsResponse = [
   },
 ];
 
-jest.mock('@resources/forms.resource', () => ({
-  deleteForm: jest.fn(),
+vi.mock('@resources/forms.resource', () => ({
+  deleteForm: vi.fn(),
+  unretireForm: vi.fn(),
 }));
 
-global.window.URL.createObjectURL = jest.fn();
+global.window.URL.createObjectURL = vi.fn();
 
 describe('Dashboard', () => {
   it('renders an empty state view if no forms are available', async () => {
@@ -211,7 +212,7 @@ describe('Dashboard', () => {
     expect(window.URL.createObjectURL).toHaveBeenCalled();
   });
 
-  it('clicking the "delete button" lets you delete a form', async () => {
+  it('clicking the "retire button" lets you retire a form', async () => {
     const user = userEvent.setup();
 
     mockedOpenmrsFetch.mockReturnValueOnce({
@@ -226,10 +227,10 @@ describe('Dashboard', () => {
 
     await waitForLoadingToFinish();
 
-    const deleteButton = screen.getByRole('button', { name: /delete schema/i });
-    expect(deleteButton).toBeInTheDocument();
+    const retireButton = screen.getByRole('button', { name: /retire schema/i });
+    expect(retireButton).toBeInTheDocument();
 
-    await user.click(deleteButton);
+    await user.click(retireButton);
 
     expect(mockedShowModal).toHaveBeenCalledTimes(1);
     expect(mockedShowModal).toHaveBeenCalledWith(

@@ -7,12 +7,12 @@ import { type Concept } from '../../../core/api/types/concept/Concept';
 import { useConcept } from '../../../stock-lookups/stock-lookups.resource';
 import StockItemCategorySelector from './stock-item-category-selector.component';
 
-jest.mock('../../../stock-lookups/stock-lookups.resource', () => ({
-  useConcept: jest.fn(),
+vi.mock('../../../stock-lookups/stock-lookups.resource', () => ({
+  useConcept: vi.fn(),
 }));
 
-const mockUseConcept = jest.mocked(useConcept);
-const mockUseConfig = jest.mocked(useConfig);
+const mockUseConcept = vi.mocked(useConcept);
+const mockUseConfig = vi.mocked(useConfig);
 
 const drugCategory: Partial<Concept> = { uuid: 'cat-drugs', display: 'Drugs' };
 const nonDrugCategory: Partial<Concept> = { uuid: 'cat-non-drugs', display: 'Non Drugs' };

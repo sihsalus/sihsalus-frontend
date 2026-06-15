@@ -1,25 +1,24 @@
 import { showSnackbar } from '@openmrs/esm-framework';
 import { act, fireEvent, render, screen, waitFor } from '@testing-library/react';
-import { use } from 'i18next';
-import React from 'react';
 import * as api from '../../api';
 import DeleteProcedureStepModal from './delete-procedureStep.modal';
 
-jest.mock('react-i18next', () => ({
+vi.mock('react-i18next', () => ({
   useTranslation: () => ({
-    t: (key: string, defaultValue: string) => defaultValue,
+    t: (_key: string, defaultValue: string) => defaultValue,
   }),
 }));
 
-jest.mock('../../api');
+vi.mock('../../api');
 
-jest.mock('@openmrs/esm-framework', () => ({
-  showSnackbar: jest.fn(),
+vi.mock('@openmrs/esm-framework', async () => ({
+  ...(await vi.importActual('@openmrs/esm-framework')),
+  showSnackbar: vi.fn(),
 }));
 
 describe('DeleteProcedureStepModal', () => {
-  const closeDeleteModal = jest.fn();
-  const mutateMock = jest.fn();
+  const closeDeleteModal = vi.fn();
+  const mutateMock = vi.fn();
   const requestId = 1;
   const stepId = 1;
 
@@ -27,8 +26,8 @@ describe('DeleteProcedureStepModal', () => {
     render(<DeleteProcedureStepModal closeDeleteModal={closeDeleteModal} requestId={requestId} stepId={stepId} />);
   };
   beforeEach(() => {
-    jest.clearAllMocks();
-    (api.useProcedureStep as jest.Mock).mockReturnValue({
+    vi.clearAllMocks();
+    (api.useProcedureStep as vi.Mock).mockReturnValue({
       mutate: mutateMock,
     });
   });
@@ -49,7 +48,7 @@ describe('DeleteProcedureStepModal', () => {
   });
 
   it('calls deleteProcedureStep and shows success snackbar', async () => {
-    (api.deleteProcedureStep as jest.Mock).mockResolvedValue({ ok: true });
+    (api.deleteProcedureStep as vi.Mock).mockResolvedValue({ ok: true });
 
     setup();
 
@@ -70,7 +69,7 @@ describe('DeleteProcedureStepModal', () => {
 
   it('shows error snackbar when deleteProcedureStep fails', async () => {
     const errorMessage = new Error('An error occurred while deleting the procedure step');
-    (api.deleteProcedureStep as jest.Mock).mockRejectedValueOnce(errorMessage);
+    (api.deleteProcedureStep as vi.Mock).mockRejectedValueOnce(errorMessage);
 
     setup();
 
@@ -94,7 +93,7 @@ describe('DeleteProcedureStepModal', () => {
   it('disables delete button and shows loading state while deleting', async () => {
     let resolveDelete: (value?: unknown) => void;
 
-    (api.deleteProcedureStep as jest.Mock).mockReturnValueOnce(
+    (api.deleteProcedureStep as vi.Mock).mockReturnValueOnce(
       new Promise((resolve) => {
         resolveDelete = resolve;
       }),

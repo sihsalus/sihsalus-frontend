@@ -1,8 +1,15 @@
 import type { i18n } from 'i18next';
 
+type WebpackShareScopes = Record<
+  string,
+  Record<string, { loaded?: 1; get: () => Promise<unknown>; from: string; eager: boolean }>
+>;
+
 declare global {
   // eslint-disable-next-line no-var
   var __webpack_init_sharing__: (scope: string) => Promise<void>;
+  // eslint-disable-next-line no-var
+  var __webpack_share_scopes__: WebpackShareScopes;
 
   interface Window {
     /**

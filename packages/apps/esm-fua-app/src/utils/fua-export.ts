@@ -1,5 +1,5 @@
 import dayjs from 'dayjs';
-import * as XLSX from 'xlsx';
+import type { Workbook } from 'exceljs';
 
 import type { FuaRequest } from '../hooks/useFuaRequests';
 
@@ -25,23 +25,49 @@ export function buildExportRows(fuaOrders: Array<FuaRequest>): Array<FuaExportRo
   }));
 }
 
-export function exportFuasToExcel(fuaOrders: Array<FuaRequest>, filename?: string): void {
+const fuaExportColumns = [
+  { header: 'N° FUA', key: 'N° FUA', width: 20 },
+  { header: 'Nombre', key: 'Nombre', width: 40 },
+  { header: 'Estado', key: 'Estado', width: 20 },
+  { header: 'UUID Visita', key: 'UUID Visita', width: 38 },
+  { header: 'Obs. SETI-SIS', key: 'Obs. SETI-SIS', width: 50 },
+  { header: 'Fecha Creación', key: 'Fecha Creación', width: 18 },
+  { header: 'Fecha Actualización', key: 'Fecha Actualización', width: 18 },
+];
+
+export async function exportFuasToExcel(fuaOrders: Array<FuaRequest>, filename?: string): Promise<void> {
   const rows = buildExportRows(fuaOrders);
-  const worksheet = XLSX.utils.json_to_sheet(rows);
-  const workbook = XLSX.utils.book_new();
-  XLSX.utils.book_append_sheet(workbook, worksheet, 'FUAs');
-
-  // Column widths
-  worksheet['!cols'] = [
-    { wch: 20 }, // N° FUA
-    { wch: 40 }, // Nombre
-    { wch: 20 }, // Estado
-    { wch: 38 }, // UUID Visita
-    { wch: 50 }, // Obs. SETI-SIS
-    { wch: 18 }, // Fecha Creación
-    { wch: 18 }, // Fecha Actualización
-  ];
-
   const exportFilename = filename ?? `FUAs_${dayjs().format('YYYYMMDD_HHmm')}.xlsx`;
-  XLSX.writeFile(workbook, exportFilename);
+  const { Workbook } = await import('exceljs');
+  const workbook = new Workbook();
+  const worksheet = workbook.addWorksheet('FUAs');
+
+  worksheet.columns = fuaExportColumns;
+  worksheet.getRow(1).font = { bold: true };
+
+  for (const row of rows) {
+    worksheet.addRow(row);
+  }
+
+  await downloadWorkbook(workbook, exportFilename);
+}
+
+async function downloadWorkbook(workbook: Workbook, fileName: string): Promise<void> {
+  const buffer = await workbook.xlsx.writeBuffer();
+  const blob = new Blob([buffer as BlobPart], {
+    type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+  });
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement('a');
+
+  try {
+    link.href = url;
+    link.download = fileName;
+    link.style.display = 'none';
+    document.body.appendChild(link);
+    link.click();
+  } finally {
+    link.remove();
+    URL.revokeObjectURL(url);
+  }
 }

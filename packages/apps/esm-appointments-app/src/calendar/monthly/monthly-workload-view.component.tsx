@@ -95,6 +95,13 @@ const MonthlyWorkloadView: React.FC<MonthlyWorkloadViewProps> = ({ dateTime, eve
                     e.stopPropagation();
                     navigateToAppointmentsByDate(serviceUuid);
                   }}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter' || e.key === ' ') {
+                      e.preventDefault();
+                      e.stopPropagation();
+                      navigateToAppointmentsByDate(serviceUuid);
+                    }
+                  }}
                   className={styles.serviceArea}
                 >
                   <span>{serviceName}</span>

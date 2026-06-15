@@ -23,7 +23,7 @@ enum priorityComment {
   REQUEUED = 'Requeued',
 }
 
-import { preferredIdentifierNames } from '@sihsalus/esm-sihsalus-shared';
+import { preferredIdentifierNames } from '@openmrs/esm-framework';
 
 function getPreferredIdentifiers(
   identifiers: MappedVisitQueueEntry['identifiers'] = [],
@@ -76,7 +76,7 @@ const TransitionQueueEntryModal: React.FC<TransitionQueueEntryModalProps> = ({ c
           });
           closeModal();
           mutateQueueEntries();
-          navigate({ to: `\${openmrsSpaBase}/patient/${queueEntry?.patientUuid}/chart` });
+          navigate({ to: `${globalThis.spaBase}/patient/${queueEntry?.patientUuid}/chart` });
         });
       },
       (error) => {

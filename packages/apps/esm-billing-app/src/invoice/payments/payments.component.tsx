@@ -6,6 +6,7 @@ import { FormProvider, useForm, useWatch } from 'react-hook-form';
 import { useTranslation } from 'react-i18next';
 import { z } from 'zod';
 import { processBillPayment } from '../../billing.resource';
+import type { BillingConfig } from '../../config-schema';
 import { convertToCurrency } from '../../helpers';
 import type { MappedBill } from '../../types';
 import { InvoiceBreakDown } from './invoice-breakdown/invoice-breakdown.component';
@@ -43,7 +44,7 @@ const Payments: React.FC<PaymentProps> = ({ bill, mutate }) => {
 
   const paymentFormSchema = z.object({ payment: paymentSchema });
   const { currentVisit } = useVisit(bill?.patientUuid);
-  const { defaultCurrency } = useConfig();
+  const { defaultCurrency, patientCategory } = useConfig<BillingConfig>();
   const defaultPaymentValues: PaymentFormValue = {
     payment: { method: '', amount: undefined, referenceCode: '' },
   };
@@ -91,7 +92,7 @@ const Payments: React.FC<PaymentProps> = ({ bill, mutate }) => {
         kind: 'success',
       });
       if (currentVisit) {
-        updateBillVisitAttribute(currentVisit);
+        updateBillVisitAttribute(currentVisit, patientCategory.formPayloadPending);
       }
       methods.reset(defaultPaymentValues);
       mutate();

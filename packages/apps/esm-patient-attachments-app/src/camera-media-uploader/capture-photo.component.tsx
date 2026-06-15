@@ -1,38 +1,50 @@
 import { Button } from '@carbon/react';
-import { EditIcon, showModal, toOmrsIsoString, type UploadedFile, useLayoutType } from '@openmrs/esm-framework';
+import { Camera, TrashCan, Upload } from '@carbon/react/icons';
+import { showModal, toOmrsIsoString, type UploadedFile, useLayoutType } from '@openmrs/esm-framework';
 import classNames from 'classnames';
 import React, { type ComponentProps, useCallback, useState } from 'react';
 import { useTranslation } from 'react-i18next';
+import { moduleName } from '../constants';
+import { type CameraMediaUploadView } from './camera-media-uploader-types';
 import styles from './capture-photo.scss';
 
 export interface CapturePhotoProps {
   onCapturePhoto(dataUri: string, photoDateTime: string): void;
+  onClearPhoto?(): void;
   initialState?: string;
 }
 
-const CapturePhoto: React.FC<CapturePhotoProps> = ({ initialState, onCapturePhoto }) => {
-  const { t } = useTranslation();
+const CapturePhoto: React.FC<CapturePhotoProps> = ({ initialState, onCapturePhoto, onClearPhoto }) => {
+  const { t } = useTranslation(moduleName);
   const isTablet = useLayoutType() === 'tablet';
   const responsiveSize = isTablet ? 'lg' : 'sm';
-  const [dataUri, setDataUri] = useState(null);
+  const [dataUri, setDataUri] = useState<string | null>(null);
 
-  const showCam = useCallback(() => {
-    const close = showModal('capture-photo-modal', {
-      saveFile(file: UploadedFile) {
-        return Promise.resolve().then(() => {
-          setDataUri(file.base64Content);
-          onCapturePhoto(file.base64Content, toOmrsIsoString(new Date()));
+  const openPhotoModal = useCallback(
+    (initialView: CameraMediaUploadView) => {
+      const close = showModal('capture-photo-modal', {
+        saveFile(file: UploadedFile) {
+          return Promise.resolve().then(() => {
+            setDataUri(file.base64Content);
+            onCapturePhoto(file.base64Content, toOmrsIsoString(new Date()));
+            close();
+          });
+        },
+        collectDescription: false,
+        closeModal: () => {
           close();
-        });
-      },
-      cameraOnly: false,
-      collectDescription: false,
-      closeModal: () => {
-        close();
-      },
-      title: t('addAnImage', 'Add image'),
-    });
-  }, [onCapturePhoto, t]);
+        },
+        initialView,
+        title: initialView === 'camera' ? t('takePhoto', 'Take photo') : t('addAnImage', 'Add image'),
+      });
+    },
+    [onCapturePhoto, t],
+  );
+
+  const handleClearPhoto = useCallback(() => {
+    setDataUri(null);
+    onClearPhoto?.();
+  }, [onClearPhoto]);
 
   const showEmptyState = !dataUri && !initialState;
 
@@ -52,16 +64,36 @@ const CapturePhoto: React.FC<CapturePhotoProps> = ({ initialState, onCapturePhot
           />
         )}
       </div>
-      <div className={styles.editButtonContainer}>
+      <div className={styles.buttonContainer}>
         <Button
-          className={styles.editButton}
+          className={styles.actionButton}
           kind="secondary"
-          onClick={showCam}
-          renderIcon={(props: ComponentProps<typeof EditIcon>) => <EditIcon {...props} />}
+          onClick={() => openPhotoModal('camera')}
+          renderIcon={(props: ComponentProps<typeof Camera>) => <Camera {...props} />}
           size={responsiveSize}
         >
-          <span>{t('edit', 'Edit')}</span>
+          {t('takePhoto', 'Take photo')}
         </Button>
+        <Button
+          className={styles.actionButton}
+          kind="tertiary"
+          onClick={() => openPhotoModal('upload')}
+          renderIcon={(props: ComponentProps<typeof Upload>) => <Upload {...props} />}
+          size={responsiveSize}
+        >
+          {t('uploadImage', 'Upload image')}
+        </Button>
+        {dataUri ? (
+          <Button
+            className={styles.actionButton}
+            kind="danger--ghost"
+            onClick={handleClearPhoto}
+            renderIcon={(props: ComponentProps<typeof TrashCan>) => <TrashCan {...props} />}
+            size={responsiveSize}
+          >
+            {t('clearSelectedImage', 'Clear')}
+          </Button>
+        ) : null}
       </div>
     </>
   );

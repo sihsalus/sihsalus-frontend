@@ -5,9 +5,13 @@ import {
   useConfig,
   usePatient,
   useSession,
-  useVisit,
 } from '@openmrs/esm-framework';
-import { render, screen } from '@testing-library/react';
+import {
+  type PatientWorkspace2DefinitionProps,
+  useReferenceRanges,
+  useVisitOrOfflineVisit,
+} from '@openmrs/esm-patient-common-lib';
+import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { mockConceptMetadata, mockConceptRanges, mockConceptUnits, mockPatient, mockVitalsConfig } from 'test-utils';
 
@@ -18,6 +22,7 @@ import VitalsAndBiometricsForm from './vitals-biometrics-form.workspace';
 
 const heightValue = 180;
 const muacValue = 23;
+const abdominalCircumferenceValue = 95;
 const oxygenSaturationValue = 100;
 const pulseValue = 80;
 const respiratoryRateValue = 16;
@@ -27,34 +32,67 @@ const temperatureValue = 37;
 
 const testProps = {
   closeWorkspace: () => {},
-  closeWorkspaceWithSavedChanges: jest.fn(),
+  closeWorkspaceWithSavedChanges: vi.fn(),
   patientUuid: mockPatient.id,
-  promptBeforeClosing: jest.fn(),
+  promptBeforeClosing: vi.fn(),
   formContext: 'creating' as 'creating' | 'editing',
-  setTitle: jest.fn(),
+  setTitle: vi.fn(),
 };
 
-const mockShowSnackbar = jest.mocked(showSnackbar);
-const mockSavePatientVitals = jest.mocked(saveVitalsAndBiometrics);
-const mockUseConfig = jest.mocked(useConfig<ConfigObject>);
-const mockUsePatient = jest.mocked(usePatient);
-const mockUseSession = jest.mocked(useSession);
-const mockUseVisit = jest.mocked(useVisit);
+const testWorkspace2Props: PatientWorkspace2DefinitionProps<{ encounterTypeUuid?: string }, object> = {
+  closeWorkspace: vi.fn(),
+  groupProps: {
+    patient: mockPatient as unknown as fhir.Patient,
+    patientUuid: mockPatient.id,
+    visitContext: null,
+    mutateVisitContext: null,
+  },
+  launchChildWorkspace: vi.fn(),
+  workspaceProps: {},
+  workspaceName: '',
+  windowProps: {},
+  windowName: '',
+  isRootWorkspace: false,
+  showActionMenu: true,
+};
 
-jest.mock('../common', () => ({
-  assessValue: jest.fn(),
-  getReferenceRangesForConcept: jest.fn(),
-  generatePlaceholder: jest.fn(),
-  interpretBloodPressure: jest.fn(),
-  invalidateCachedVitalsAndBiometrics: jest.fn(),
-  saveVitalsAndBiometrics: jest.fn(),
-  useVitalsAndBiometrics: jest.fn(),
-  useVitalsConceptMetadata: jest.fn().mockImplementation(() => ({
+const mockShowSnackbar = vi.mocked(showSnackbar);
+const mockSavePatientVitals = vi.mocked(saveVitalsAndBiometrics);
+const mockUseConfig = vi.mocked(useConfig<ConfigObject>);
+const mockUsePatient = vi.mocked(usePatient);
+const mockUseReferenceRanges = vi.mocked(useReferenceRanges);
+const mockUseSession = vi.mocked(useSession);
+const mockUseVisitOrOfflineVisit = vi.mocked(useVisitOrOfflineVisit);
+
+vi.mock('../common', () => ({
+  assessValue: vi.fn(),
+  getReferenceRangesForConcept: vi.fn(),
+  generatePlaceholder: vi.fn(),
+  interpretBloodPressure: vi.fn(),
+  invalidateCachedVitalsAndBiometrics: vi.fn(),
+  saveVitalsAndBiometrics: vi.fn(),
+  useVitalsAndBiometrics: vi.fn(),
+  useVitalsConceptMetadata: vi.fn().mockImplementation(() => ({
     data: mockConceptUnits,
     conceptMetadata: mockConceptMetadata,
     conceptRanges: mockConceptRanges,
   })),
 }));
+
+vi.mock('@openmrs/esm-patient-common-lib', async () => {
+  const originalModule = await vi.importActual('@openmrs/esm-patient-common-lib');
+
+  return {
+    ...originalModule,
+    useReferenceRanges: vi.fn().mockReturnValue({
+      ranges: new Map(),
+      isLoading: false,
+      error: undefined,
+      mutate: vi.fn(),
+    }),
+    useVisitOrOfflineVisit: vi.fn(),
+  };
+});
 
 mockUseConfig.mockReturnValue({
   ...getDefaultsFromConfigSchema(configSchema),
@@ -73,13 +111,17 @@ mockUsePatient.mockReturnValue({
   },
 } as ReturnType<typeof usePatient>);
 
-mockUseVisit.mockReturnValue({
-  currentVisit: null,
-} as ReturnType<typeof useVisit>);
+const activeVisitMock = {
+  currentVisit: {
+    uuid: 'test-visit-uuid',
+    stopDatetime: null,
+  },
+} as ReturnType<typeof useVisitOrOfflineVisit>;
 
 describe('VitalsBiometricsForm', () => {
   beforeEach(() => {
-    jest.clearAllMocks();
+    vi.clearAllMocks();
+    mockUseVisitOrOfflineVisit.mockReturnValue(activeVisitMock);
   });
 
   it('renders the vitals and biometrics form', async () => {
@@ -108,9 +150,21 @@ describe('VitalsBiometricsForm', () => {
     expect(screen.getByRole('spinbutton', { name: /height/i })).toBeInTheDocument();
     expect(screen.getByText(/bmi \(calc.\)/i)).toBeInTheDocument();
     expect(screen.getByText(/kg \/ m²/i)).toBeInTheDocument();
+    const abdominalCircumferenceInput = screen.getByRole('spinbutton', { name: /abdominal circumference/i });
+    expect(abdominalCircumferenceInput).toBeInTheDocument();
+    expect(abdominalCircumferenceInput.closest('section')).toHaveTextContent(/^cm$/i);
     expect(screen.getByRole('spinbutton', { name: /muac/i })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: /discard/i })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: /save and close/i })).toBeInTheDocument();
+  });
+
+  it('loads patient reference ranges for abdominal circumference', async () => {
+    render(<VitalsAndBiometricsForm {...testProps} />);
+
+    expect(mockUseReferenceRanges).toHaveBeenCalledWith(
+      mockPatient.id,
+      expect.arrayContaining([mockVitalsConfig.concepts.abdominalCircumferenceUuid]),
+    );
   });
 
   it("computes a patient's BMI from the given height and weight values", async () => {
@@ -131,13 +185,13 @@ describe('VitalsBiometricsForm', () => {
   it('renders a success snackbar upon clicking the save button', async () => {
     const user = userEvent.setup();
 
-    const response: Partial<FetchResponse> = {
+    const response = {
       statusText: 'created',
       status: 201,
       data: [],
-    };
+    } as FetchResponse<unknown>;
 
-    mockSavePatientVitals.mockResolvedValue(response as ReturnType<typeof saveVitalsAndBiometrics>);
+    mockSavePatientVitals.mockResolvedValue(response);
 
     render(<VitalsAndBiometricsForm {...testProps} />);
 
@@ -146,9 +200,16 @@ describe('VitalsBiometricsForm', () => {
     const bmiInput = screen.getByRole('spinbutton', { name: /bmi/i });
     const systolic = screen.getByRole('spinbutton', { name: /systolic/i });
     const pulse = screen.getByRole('spinbutton', { name: /pulse/i });
-    const oxygenSaturation = screen.getByRole('spinbutton', { name: /oxygen saturation/i });
-    const respirationRate = screen.getByRole('spinbutton', { name: /respiration rate/i });
-    const temperature = screen.getByRole('spinbutton', { name: /temperature/i });
+    const oxygenSaturation = screen.getByRole('spinbutton', {
+      name: /oxygen saturation/i,
+    });
+    const respirationRate = screen.getByRole('spinbutton', {
+      name: /respiration rate/i,
+    });
+    const temperature = screen.getByRole('spinbutton', {
+      name: /temperature/i,
+    });
+    const abdominalCircumference = screen.getByRole('spinbutton', { name: /abdominal circumference/i });
     const muac = screen.getByRole('spinbutton', { name: /muac/i });
     const saveButton = screen.getByRole('button', { name: /Save and close/i });
 
@@ -159,6 +220,7 @@ describe('VitalsBiometricsForm', () => {
     await user.type(oxygenSaturation, oxygenSaturationValue.toString());
     await user.type(respirationRate, respiratoryRateValue.toString());
     await user.type(temperature, temperatureValue.toString());
+    await user.type(abdominalCircumference, abdominalCircumferenceValue.toString());
     await user.type(muac, muacValue.toString());
 
     expect(bmiInput).toHaveValue(19.1);
@@ -167,6 +229,7 @@ describe('VitalsBiometricsForm', () => {
     expect(oxygenSaturation).toHaveValue(100);
     expect(respirationRate).toHaveValue(16);
     expect(temperature).toHaveValue(37);
+    expect(abdominalCircumference).toHaveValue(95);
     expect(muac).toHaveValue(23);
 
     await user.click(saveButton);
@@ -174,11 +237,11 @@ describe('VitalsBiometricsForm', () => {
     expect(mockSavePatientVitals).toHaveBeenCalledTimes(1);
     expect(mockSavePatientVitals).toHaveBeenCalledWith(
       mockVitalsConfig.vitals.encounterTypeUuid,
-      mockVitalsConfig.vitals.formUuid,
       mockVitalsConfig.concepts,
       mockPatient.id,
       expect.objectContaining({
         height: heightValue,
+        abdominalCircumference: abdominalCircumferenceValue,
         midUpperArmCircumference: muacValue,
         oxygenSaturation: oxygenSaturationValue,
         pulse: pulseValue,
@@ -187,8 +250,9 @@ describe('VitalsBiometricsForm', () => {
         temperature: temperatureValue,
         weight: weightValue,
       }),
-      new AbortController(),
+      expect.any(AbortController),
       'test-session-location',
+      'test-visit-uuid',
     );
 
     expect(mockShowSnackbar).toHaveBeenCalledTimes(1);
@@ -199,6 +263,42 @@ describe('VitalsBiometricsForm', () => {
         subtitle: 'They are now visible on the Vitals and Biometrics page',
         title: 'Vitals and Biometrics saved',
       }),
+    );
+  });
+
+  it('uses the workspace encounter type override when saving from Workspace 2', async () => {
+    const user = userEvent.setup();
+    const triageEncounterTypeUuid = 'triage-encounter-type-uuid';
+
+    mockSavePatientVitals.mockResolvedValue({
+      statusText: 'created',
+      status: 201,
+      data: [],
+    } as FetchResponse<unknown>);
+
+    render(
+      <VitalsAndBiometricsForm
+        {...testWorkspace2Props}
+        workspaceProps={{
+          encounterTypeUuid: triageEncounterTypeUuid,
+        }}
+      />,
+    );
+
+    await user.type(screen.getByRole('spinbutton', { name: /weight/i }), weightValue.toString());
+    await user.click(screen.getByRole('button', { name: /save and close/i }));
+
+    await waitFor(() => expect(mockSavePatientVitals).toHaveBeenCalledTimes(1));
+    expect(mockSavePatientVitals).toHaveBeenCalledWith(
+      triageEncounterTypeUuid,
+      mockVitalsConfig.concepts,
+      mockPatient.id,
+      expect.objectContaining({
+        weight: weightValue,
+      }),
+      expect.any(AbortController),
+      'test-session-location',
+      'test-visit-uuid',
     );
   });
 
@@ -221,9 +321,15 @@ describe('VitalsBiometricsForm', () => {
     const weightInput = screen.getByRole('spinbutton', { name: /weight/i });
     const systolic = screen.getByRole('spinbutton', { name: /systolic/i });
     const pulse = screen.getByRole('spinbutton', { name: /pulse/i });
-    const oxygenSaturation = screen.getByRole('spinbutton', { name: /oxygen saturation/i });
-    const respirationRate = screen.getByRole('spinbutton', { name: /respiration rate/i });
-    const temperature = screen.getByRole('spinbutton', { name: /temperature/i });
+    const oxygenSaturation = screen.getByRole('spinbutton', {
+      name: /oxygen saturation/i,
+    });
+    const respirationRate = screen.getByRole('spinbutton', {
+      name: /respiration rate/i,
+    });
+    const temperature = screen.getByRole('spinbutton', {
+      name: /temperature/i,
+    });
     const muac = screen.getByRole('spinbutton', { name: /muac/i });
 
     await user.type(heightInput, heightValue.toString());
@@ -248,6 +354,27 @@ describe('VitalsBiometricsForm', () => {
     });
   });
 
+  it('does not save vitals and biometrics without an active visit', async () => {
+    const user = userEvent.setup();
+
+    mockUseVisitOrOfflineVisit.mockReturnValue({
+      currentVisit: null,
+    } as ReturnType<typeof useVisitOrOfflineVisit>);
+
+    render(<VitalsAndBiometricsForm {...testProps} />);
+
+    await user.type(screen.getByRole('spinbutton', { name: /weight/i }), weightValue.toString());
+    await user.click(screen.getByRole('button', { name: /save and close/i }));
+
+    expect(mockSavePatientVitals).not.toHaveBeenCalled();
+    expect(mockShowSnackbar).toHaveBeenCalledWith({
+      isLowContrast: false,
+      kind: 'error',
+      subtitle: 'An active visit is required to record vitals and biometrics.',
+      title: 'Error saving vitals and biometrics',
+    });
+  });
+
   it('Display an inline error notification on submit if value of vitals entered is invalid', async () => {
     const user = userEvent.setup();
 
@@ -255,8 +382,12 @@ describe('VitalsBiometricsForm', () => {
 
     const systolic = screen.getByRole('spinbutton', { name: /systolic/i });
     const pulse = screen.getByRole('spinbutton', { name: /pulse/i });
-    const oxygenSaturation = screen.getByRole('spinbutton', { name: /oxygen saturation/i });
-    const temperature = screen.getByRole('spinbutton', { name: /temperature/i });
+    const oxygenSaturation = screen.getByRole('spinbutton', {
+      name: /oxygen saturation/i,
+    });
+    const temperature = screen.getByRole('spinbutton', {
+      name: /temperature/i,
+    });
 
     await user.type(systolic, '1000');
     await user.type(pulse, pulseValue.toString());
@@ -281,12 +412,12 @@ describe('VitalsBiometricsForm', () => {
 
     render(<VitalsAndBiometricsForm {...testProps} />);
 
-    const initialGuard = jest.mocked(testProps.promptBeforeClosing).mock.calls.at(-1)?.[0];
+    const initialGuard = vi.mocked(testProps.promptBeforeClosing).mock.calls.at(-1)?.[0];
     expect(initialGuard?.()).toBe(false);
 
     await user.type(screen.getByRole('spinbutton', { name: /height/i }), '180');
 
-    const updatedGuard = jest.mocked(testProps.promptBeforeClosing).mock.calls.at(-1)?.[0];
+    const updatedGuard = vi.mocked(testProps.promptBeforeClosing).mock.calls.at(-1)?.[0];
     expect(updatedGuard?.()).toBe(true);
   });
 });

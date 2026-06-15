@@ -1,10 +1,11 @@
 import { Button } from '@carbon/react';
 import { Add } from '@carbon/react/icons';
-import { ExtensionSlot, launchWorkspace2, showSnackbar } from '@openmrs/esm-framework';
+import { ExtensionSlot, launchWorkspace2, showSnackbar, userHasAccess, useSession } from '@openmrs/esm-framework';
 import { CardHeader } from '@openmrs/esm-patient-common-lib';
 import React, { useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
 
+import { credImmunizationEditPrivilege } from '../../../constants';
 import styles from './vaccination-schedule.scss';
 
 interface VaccinationScheduleProps {
@@ -13,6 +14,8 @@ interface VaccinationScheduleProps {
 
 const VaccinationSchedule: React.FC<VaccinationScheduleProps> = ({ patientUuid }) => {
   const { t } = useTranslation();
+  const session = useSession();
+  const canEdit = userHasAccess(credImmunizationEditPrivilege, session?.user);
 
   const headerTitle = t('vaccinationSchedule', 'Calendario de Vacunación');
 
@@ -37,14 +40,16 @@ const VaccinationSchedule: React.FC<VaccinationScheduleProps> = ({ patientUuid }
   return (
     <div className={styles.widgetCard} role="region" aria-label={headerTitle}>
       <CardHeader title={headerTitle}>
-        <Button
-          kind="ghost"
-          renderIcon={(props) => <Add size={16} {...props} />}
-          onClick={handleAddVaccination}
-          aria-label={t('updateVaccinations', 'Actualizar vacunas')}
-        >
-          {t('update', 'Actualizar')}
-        </Button>
+        {canEdit && (
+          <Button
+            kind="ghost"
+            renderIcon={(props) => <Add size={16} {...props} />}
+            onClick={handleAddVaccination}
+            aria-label={t('updateVaccinations', 'Actualizar vacunas')}
+          >
+            {t('update', 'Actualizar')}
+          </Button>
+        )}
       </CardHeader>
 
       <ExtensionSlot

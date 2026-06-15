@@ -16,25 +16,25 @@ import { configSchema } from '../config-schema';
 
 import OrderDetailsTable from './orders-details-table.component';
 
-const mockUsePatientOrders = usePatientOrders as jest.Mock;
-const mockUseOrderTypes = useOrderTypes as jest.Mock;
-const mockOpenmrsFetch = openmrsFetch as jest.Mock;
-const mockGetLocale = jest.mocked(getLocale);
-const mockSession = jest.mocked(useSession);
-const mockUseConfig = jest.mocked(useConfig<ConfigObject>);
-const mockUseReactToPrint = jest.mocked(useReactToPrint);
+const mockUsePatientOrders = usePatientOrders as vi.Mock;
+const mockUseOrderTypes = useOrderTypes as vi.Mock;
+const mockOpenmrsFetch = openmrsFetch as vi.Mock;
+const mockGetLocale = vi.mocked(getLocale);
+const mockSession = vi.mocked(useSession);
+const mockUseConfig = vi.mocked(useConfig<ConfigObject>);
+const mockUseReactToPrint = vi.mocked(useReactToPrint);
 
 mockSession.mockReturnValue(mockSessionDataResponse.data);
 mockGetLocale.mockReturnValue('en');
-mockOpenmrsFetch.mockImplementation(jest.fn());
+mockOpenmrsFetch.mockImplementation(vi.fn());
 
-jest.mock('react-to-print', () => ({
-  ...jest.requireActual('react-to-print'),
-  useReactToPrint: jest.fn(),
+vi.mock('react-to-print', async () => ({
+  ...(await vi.importActual('react-to-print')),
+  useReactToPrint: vi.fn(),
 }));
 
-jest.mock('@carbon/react', () => {
-  const originalModule = jest.requireActual('@carbon/react');
+vi.mock('@carbon/react', async () => {
+  const originalModule = await vi.importActual('@carbon/react');
 
   return {
     ...originalModule,
@@ -43,14 +43,14 @@ jest.mock('@carbon/react', () => {
   };
 });
 
-jest.mock('@openmrs/esm-patient-common-lib', () => {
-  const originalModule = jest.requireActual('@openmrs/esm-patient-common-lib');
+vi.mock('@openmrs/esm-patient-common-lib', async () => {
+  const originalModule = await vi.importActual('@openmrs/esm-patient-common-lib');
 
   return {
     ...originalModule,
-    usePatientOrders: jest.fn(),
-    useOrderTypes: jest.fn(),
-    usePatient: jest.fn(),
+    usePatientOrders: vi.fn(),
+    useOrderTypes: vi.fn(),
+    usePatient: vi.fn(),
   };
 });
 
@@ -243,7 +243,7 @@ describe('OrderDetailsTable', () => {
   });
 
   it('prints the orders in the list when the print button is clicked', async () => {
-    const mockHandlePrint = jest.fn();
+    const mockHandlePrint = vi.fn();
 
     mockUseReactToPrint.mockReturnValue(mockHandlePrint);
     mockUseOrderTypes.mockReturnValue({

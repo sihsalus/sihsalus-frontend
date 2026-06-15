@@ -1,4 +1,3 @@
-import { calculateTotalAmount, convertToCurrency } from '../helpers';
 import { type MappedBill } from '../types';
 
 /**

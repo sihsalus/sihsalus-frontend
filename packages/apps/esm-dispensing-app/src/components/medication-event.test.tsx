@@ -3,7 +3,7 @@ import { render, screen } from '@testing-library/react';
 import { type MedicationRequest, MedicationRequestStatus } from '../types';
 import MedicationEvent from './medication-event.component';
 
-const mockUseConfig = jest.mocked(useConfig);
+const mockUseConfig = vi.mocked(useConfig);
 
 const baseMedicationRequest: MedicationRequest = {
   resourceType: 'MedicationRequest',
@@ -202,7 +202,7 @@ describe('MedicationEvent', () => {
   it('renders children when provided', () => {
     render(
       <MedicationEvent medicationEvent={baseMedicationRequest}>
-        <button>Action Button</button>
+        <button type="button">Action Button</button>
       </MedicationEvent>,
     );
 

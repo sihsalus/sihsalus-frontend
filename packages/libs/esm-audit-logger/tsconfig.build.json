@@ -6,9 +6,9 @@
     "rootDir": "src",
     "moduleResolution": "node",
     "isolatedModules": false,
-    "strict": true,
-    "noCheck": true
+    "incremental": false,
+    "strict": true
   },
-  "include": ["src"],
-  "exclude": ["**/*.test.ts"]
+  "include": ["src/**/*.ts"],
+  "exclude": ["**/*.test.*"]
 }

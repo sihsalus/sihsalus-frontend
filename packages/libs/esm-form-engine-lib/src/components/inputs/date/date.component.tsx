@@ -98,21 +98,10 @@ const DateField: React.FC<FormFieldInputProps<DateFieldValue>> = ({
         {(field.datePickerFormat === 'calendar' || field.datePickerFormat === 'both') && (
           <div className={styles.datePickerSpacing}>
             <Layer>
-              <OpenmrsDatePicker
-                id={field.id}
-                onChange={onDateChange}
-                labelText={
-                  <span className={styles.datePickerLabel}>
-                    <FieldLabel field={field} />
-                  </span>
-                }
-                isDisabled={field.isDisabled}
-                isReadOnly={isTrue(field.readonly)}
-                isRequired={field.isRequired ?? false}
-                isInvalid={errors.length > 0}
-                invalidText={errors[0]?.message}
-                value={dateValue}
-              />
+              <div className={styles.datePickerLabel} id={`${field.id}-label`}>
+                <FieldLabel field={field} />
+              </div>
+              <OpenmrsDatePicker id={field.id} onChange={onDateChange} value={dateValue} aria-label={t(field.label)} />
             </Layer>
             {warnings.length > 0 ? <div className={styles.datePickerWarn}>{warnings[0]?.message}</div> : null}
           </div>

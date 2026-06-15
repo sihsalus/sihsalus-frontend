@@ -10,20 +10,22 @@ function DefaultWardUnassignedPatients() {
   const { wardPatientGroupDetails } = useAppContext<WardViewContext>('ward-view-context') ?? {};
   const { wardUnassignedPatientsList } = wardPatientGroupDetails ?? {};
 
-  const wardUnassignedPatients = wardUnassignedPatientsList?.map((inpatientAdmission) => {
-    return (
-      <DefaultWardPatientCard
-        wardPatient={{
-          patient: inpatientAdmission.patient,
-          visit: inpatientAdmission.visit,
-          bed: null,
-          inpatientAdmission,
-          inpatientRequest: inpatientAdmission.currentInpatientRequest,
-        }}
-        key={inpatientAdmission.patient.uuid}
-      />
-    );
-  });
+  const wardUnassignedPatients = wardUnassignedPatientsList
+    ?.filter((inpatientAdmission) => inpatientAdmission?.patient)
+    .map((inpatientAdmission) => {
+      return (
+        <DefaultWardPatientCard
+          wardPatient={{
+            patient: inpatientAdmission.patient,
+            visit: inpatientAdmission.visit,
+            bed: null,
+            inpatientAdmission,
+            inpatientRequest: inpatientAdmission.currentInpatientRequest,
+          }}
+          key={inpatientAdmission.patient.uuid}
+        />
+      );
+    });
 
   return <>{wardUnassignedPatients}</>;
 }

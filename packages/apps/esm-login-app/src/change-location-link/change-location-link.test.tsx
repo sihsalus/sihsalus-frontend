@@ -1,23 +1,33 @@
 import { navigate, type Session, useSession } from '@openmrs/esm-framework';
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import React from 'react';
 
 import ChangeLocationLink from './change-location-link.extension';
 
-const mockNavigate = jest.mocked(navigate);
-const mockUseSession = jest.mocked(useSession);
-
-delete window.location;
-(window.location as Location) = new URL('https://dev3.openmrs.org/openmrs/spa/home') as unknown as Location;
+const mockNavigate = vi.mocked(navigate);
+const mockUseSession = vi.mocked(useSession);
+const originalLocation = window.location;
 
 describe('ChangeLocationLink', () => {
   beforeEach(() => {
+    Object.defineProperty(window, 'location', {
+      configurable: true,
+      value: new URL('https://dev3.openmrs.org/openmrs/spa/home') as unknown as Location,
+    });
+
     mockUseSession.mockReturnValue({
       sessionLocation: {
         display: 'Waffle House',
       },
     } as Session);
+  });
+
+  afterEach(() => {
+    Object.defineProperty(window, 'location', {
+      configurable: true,
+      value: originalLocation,
+    });
+    vi.clearAllMocks();
   });
 
   it('should display the `Change location` link', async () => {
@@ -31,7 +41,7 @@ describe('ChangeLocationLink', () => {
     await user.click(changeLocationButton);
 
     expect(mockNavigate).toHaveBeenCalledWith({
-      to: '${openmrsSpaBase}/login/location?returnToUrl=/openmrs/spa/home&update=true',
+      to: '/spa/login/location?returnToUrl=/openmrs/spa/home&update=true',
     });
   });
 });

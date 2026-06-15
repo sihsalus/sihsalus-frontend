@@ -3,18 +3,19 @@ import useSWR from 'swr';
 
 import type { ConfigObject } from '../config-schema';
 import type { OpenmrsEncounter } from '../types';
-import { DeliveryForm_UUID, encounterRepresentation, MchEncounterType_UUID } from '../utils/constants';
+import { encounterRepresentation } from '../utils/constants';
 
 export function useNeonatalSummary(patientUuid: string, encounterType: string) {
-  const config = useConfig() as ConfigObject;
-  const url = `/ws/rest/v1/encounter?encounterType=${MchEncounterType_UUID}&patient=${patientUuid}&v=${encounterRepresentation}`;
+  const { encounterTypes, formsList } = useConfig<ConfigObject>();
+  const resolvedEncounterType = encounterType || encounterTypes.deliveryRoomCare;
+  const url = `/ws/rest/v1/encounter?encounterType=${resolvedEncounterType}&patient=${patientUuid}&v=${encounterRepresentation}`;
 
   const { data, error, isLoading, isValidating, mutate } = useSWR<{ data: { results: OpenmrsEncounter[] } }, Error>(
     url,
     openmrsFetch,
   );
 
-  const neonatalEncounter = data?.data?.results?.filter((enc) => enc.form.uuid === DeliveryForm_UUID);
+  const neonatalEncounter = data?.data?.results?.filter((enc) => enc.form.uuid === formsList.deliveryOrAbortion);
 
   return {
     encounters: data?.data ? neonatalEncounter : [],

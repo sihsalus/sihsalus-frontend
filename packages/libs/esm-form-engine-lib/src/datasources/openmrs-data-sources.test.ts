@@ -2,16 +2,16 @@ import { openmrsFetch } from '@openmrs/esm-framework/src/internal';
 import { EncounterRoleDataSource } from './encounter-role-datasource';
 import { ProviderDataSource } from './provider-datasource';
 
-jest.mock('@openmrs/esm-framework/src/internal', () => ({
-  openmrsFetch: jest.fn(),
+vi.mock('@openmrs/esm-framework/src/internal', () => ({
+  openmrsFetch: vi.fn(),
   restBaseUrl: '/openmrs/ws/rest/v1',
 }));
 
-const mockOpenmrsFetch = jest.mocked(openmrsFetch);
+const mockOpenmrsFetch = vi.mocked(openmrsFetch);
 
 describe('OpenMRS data sources', () => {
   beforeEach(() => {
-    jest.clearAllMocks();
+    vi.clearAllMocks();
   });
 
   it('fetches a single provider item without crashing on edit mode resolution', async () => {

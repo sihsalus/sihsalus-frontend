@@ -17,7 +17,7 @@ export const ConditionsActionMenu = ({ condition, patientUuid }: conditionsActio
   const launchEditConditionsForm = useCallback(
     () =>
       launchWorkspace('conditions-filter-form-workspace', {
-        workspaceTitle: t('editCondition', 'Edit a Condition'),
+        workspaceTitle: t('editAntecedent', 'Edit antecedent'),
         condition,
         formContext: 'editing',
       }),
@@ -35,7 +35,7 @@ export const ConditionsActionMenu = ({ condition, patientUuid }: conditionsActio
   return (
     <Layer className={styles.layer}>
       <OverflowMenu
-        aria-label={t('editOrDeleteCondition', 'Edit or delete condition')}
+        aria-label={t('editOrDeleteAntecedent', 'Edit or delete antecedent')}
         size={isTablet ? 'lg' : 'sm'}
         flipped
         align="left"

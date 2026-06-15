@@ -2,16 +2,6 @@ import type { FuaRequest } from '../hooks/useFuaRequests';
 
 import { buildExportRows, exportFuasToExcel } from './fua-export';
 
-// Mock xlsx so it doesn't write real files in tests
-jest.mock('xlsx', () => ({
-  utils: {
-    json_to_sheet: jest.fn(() => ({})),
-    book_new: jest.fn(() => ({})),
-    book_append_sheet: jest.fn(),
-  },
-  writeFile: jest.fn(),
-}));
-
 const mockFua: FuaRequest = {
   uuid: 'fua-uuid-1',
   id: 1,
@@ -53,24 +43,41 @@ describe('buildExportRows', () => {
   });
 
   it('handles FUA without estado', () => {
-    const fua = { ...mockFua, fuaEstado: null as any };
+    const fua = { ...mockFua, fuaEstado: null };
     const rows = buildExportRows([fua]);
     expect(rows[0]['Estado']).toBe('Sin estado');
   });
 });
 
 describe('exportFuasToExcel', () => {
-  it('calls xlsx writeFile with default filename pattern', () => {
-    const XLSX = require('xlsx');
-    exportFuasToExcel([mockFua]);
-    expect(XLSX.utils.json_to_sheet).toHaveBeenCalled();
-    expect(XLSX.utils.book_append_sheet).toHaveBeenCalled();
-    expect(XLSX.writeFile).toHaveBeenCalledWith(expect.anything(), expect.stringMatching(/^FUAs_\d{8}_\d{4}\.xlsx$/));
+  const createObjectURL = vi.fn(() => 'blob:mock-url');
+  const revokeObjectURL = vi.fn();
+  let downloadedFileName = '';
+
+  beforeEach(() => {
+    downloadedFileName = '';
+    vi.stubGlobal('URL', { createObjectURL, revokeObjectURL });
+    vi.spyOn(HTMLAnchorElement.prototype, 'click').mockImplementation(function (this: HTMLAnchorElement) {
+      downloadedFileName = this.download;
+    });
   });
 
-  it('uses custom filename when provided', () => {
-    const XLSX = require('xlsx');
-    exportFuasToExcel([mockFua], 'reporte.xlsx');
-    expect(XLSX.writeFile).toHaveBeenCalledWith(expect.anything(), 'reporte.xlsx');
+  afterEach(() => {
+    vi.unstubAllGlobals();
+    vi.restoreAllMocks();
+  });
+
+  it('downloads an Excel file with the default filename pattern', async () => {
+    await exportFuasToExcel([mockFua]);
+
+    expect(createObjectURL).toHaveBeenCalledWith(expect.any(Blob));
+    expect(downloadedFileName).toMatch(/^FUAs_\d{8}_\d{4}\.xlsx$/);
+    expect(revokeObjectURL).toHaveBeenCalledWith('blob:mock-url');
+  });
+
+  it('uses custom filename when provided', async () => {
+    await exportFuasToExcel([mockFua], 'reporte.xlsx');
+
+    expect(downloadedFileName).toBe('reporte.xlsx');
   });
 });

@@ -12,10 +12,10 @@
     "build": "rspack --mode=production",
     "analyze": "rspack --mode=production --env analyze=true",
     "lint": "node ../../tooling/scripts/run-biome.js lint .",
-    "typescript": "tsc --noEmit --noCheck",
-    "test": "jest --config jest.config.js --verbose false --passWithNoTests --color",
-    "test:watch": "cross-env TZ=UTC jest --watch --config jest.config.js --color",
-    "extract-translations": "i18next 'src/**/*.tsx' --config ../../tooling/scripts/i18next-parser.config.js"
+    "typescript": "tsc --noEmit",
+    "test": "vitest run --passWithNoTests",
+    "test:watch": "vitest watch",
+    "extract-translations": "i18next 'src/**/*.{ts,tsx}' '!src/**/*.test.{ts,tsx}' '!src/**/*.spec.{ts,tsx}' --config ../../tooling/scripts/i18next-parser.config.js"
   },
   "browserslist": [
     "extends browserslist-config-openmrs"
@@ -45,8 +45,8 @@
     "zustand": "^4.5.5"
   },
   "devDependencies": {
-    "jest": "^29.7.0",
     "openmrs": "workspace:*",
-    "typescript": "^6.0.0"
+    "typescript": "6.0.3",
+    "vitest": "^4.1.7"
   }
 }

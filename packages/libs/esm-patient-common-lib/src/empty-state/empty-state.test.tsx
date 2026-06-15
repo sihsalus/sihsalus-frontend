@@ -1,17 +1,16 @@
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import React from 'react';
 
 import { launchPatientWorkspace } from '..';
 
 import { EmptyState } from '.';
 
-jest.mock('@openmrs/esm-patient-common-lib', () => {
-  const originalModule = jest.requireActual('@openmrs/esm-patient-common-lib');
+vi.mock('@openmrs/esm-patient-common-lib', async () => {
+  const originalModule = await vi.importActual('@openmrs/esm-patient-common-lib');
 
   return {
     ...originalModule,
-    launchPatientWorkspace: jest.fn(),
+    launchPatientWorkspace: vi.fn(),
   };
 });
 

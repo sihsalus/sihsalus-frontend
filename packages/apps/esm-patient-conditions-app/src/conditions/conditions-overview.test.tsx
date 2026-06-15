@@ -7,23 +7,23 @@ import { type ConfigObject, configSchema } from '../config-schema';
 import { useConditions } from './conditions.resource';
 import ConditionsOverview from './conditions-overview.component';
 
-jest.mock('./conditions.resource', () => {
-  const actual = jest.requireActual('./conditions.resource');
+vi.mock('./conditions.resource', async () => {
+  const actual = await vi.importActual('./conditions.resource');
 
   return {
     ...actual,
-    useConditions: jest.fn(),
+    useConditions: vi.fn(),
   };
 });
 
-jest.mock('@openmrs/esm-patient-common-lib', () => ({
-  ...jest.requireActual('@openmrs/esm-patient-common-lib'),
-  launchPatientWorkspace: jest.fn(),
+vi.mock('@openmrs/esm-patient-common-lib', async () => ({
+  ...(await vi.importActual('@openmrs/esm-patient-common-lib')),
+  launchPatientWorkspace: vi.fn(),
 }));
 
-const mockUseConfig = jest.mocked(useConfig<ConfigObject>);
-const mockLaunchPatientWorkspace = jest.mocked(launchPatientWorkspace);
-const mockUseConditions = jest.mocked(useConditions);
+const mockUseConfig = vi.mocked(useConfig<ConfigObject>);
+const mockLaunchPatientWorkspace = vi.mocked(launchPatientWorkspace);
+const mockUseConditions = vi.mocked(useConditions);
 
 mockUseConfig.mockReturnValue({
   ...getDefaultsFromConfigSchema(configSchema),
@@ -32,28 +32,28 @@ mockUseConfig.mockReturnValue({
 
 describe('ConditionsOverview', () => {
   beforeEach(() => {
-    jest.clearAllMocks();
+    vi.clearAllMocks();
   });
 
-  it('renders an empty state view if conditions data is unavailable', async () => {
+  it('renders an empty state view if antecedents data is unavailable', async () => {
     mockUseConditions.mockReturnValue({
       conditions: [],
       error: null,
       isLoading: false,
       isValidating: false,
-      mutate: jest.fn(),
+      mutate: vi.fn(),
     });
 
     render(<ConditionsOverview patientUuid={mockPatient.id} />);
 
     expect(screen.queryByRole('progressbar')).not.toBeInTheDocument();
-    expect(screen.getByRole('heading', { name: /conditions/i })).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: /antecedents and problems/i })).toBeInTheDocument();
     expect(screen.getByTitle(/Empty data illustration/i)).toBeInTheDocument();
-    expect(screen.getByText(/There are no conditions to display for this patient/i)).toBeInTheDocument();
-    expect(screen.getByText(/record conditions/i)).toBeInTheDocument();
+    expect(screen.getByText(/There are no antecedents and problems to display for this patient/i)).toBeInTheDocument();
+    expect(screen.getByText(/record antecedents and problems/i)).toBeInTheDocument();
   });
 
-  it('renders an error state view if there is a problem fetching conditions', async () => {
+  it('renders an error state view if there is a problem fetching antecedents', async () => {
     const error = {
       name: 'UnauthorizedError',
       message: 'You are not logged in',
@@ -68,7 +68,7 @@ describe('ConditionsOverview', () => {
       error,
       isLoading: false,
       isValidating: false,
-      mutate: jest.fn(),
+      mutate: vi.fn(),
     });
 
     render(<ConditionsOverview patientUuid={mockPatient.id} />);
@@ -78,13 +78,14 @@ describe('ConditionsOverview', () => {
     expect(screen.getByText(/Sorry, there was a problem displaying this information./i)).toBeInTheDocument();
   });
 
-  it("renders an overview of the patient's conditions when present", async () => {
+  it("renders an overview of the patient's antecedents when present", async () => {
     const user = userEvent.setup();
 
     mockUseConditions.mockReturnValue({
       conditions: [
         {
           clinicalStatus: 'Active',
+          antecedentType: 'pathological',
           conceptId: '138571AAAAAAAAAAAAAAAAAAAAAAAAAAAAAA',
           display: 'HIV Positive',
           id: 'cbffbb42-41b4-4c38-bc14-842ef675df85',
@@ -143,20 +144,27 @@ describe('ConditionsOverview', () => {
       error: null,
       isLoading: false,
       isValidating: false,
-      mutate: jest.fn(),
+      mutate: vi.fn(),
     });
 
     render(<ConditionsOverview patientUuid={mockPatient.id} />);
 
-    expect(screen.getByRole('heading', { name: /conditions/i })).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: /antecedents and problems/i })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: /add/i })).toBeInTheDocument();
 
-    const expectedColumnHeaders = [/condition/, /date of onset/, /status/];
-    expectedColumnHeaders.forEach((header) => {
-      expect(screen.getByRole('columnheader', { name: new RegExp(header, 'i') })).toBeInTheDocument();
-    });
+    expect(screen.getByRole('button', { name: /^antecedent$/i })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /antecedent type/i })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /date of onset/i })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /status/i })).toBeInTheDocument();
 
-    const expectedTableRows = [/hiv positive/, /malaria, confirmed/, /malaria sevère/, /anaemia/, /hypertension/];
+    const expectedTableRows = [
+      /hiv positive/,
+      /patol|patholog/,
+      /malaria, confirmed/,
+      /malaria sevère/,
+      /anaemia/,
+      /hypertension/,
+    ];
     expectedTableRows.forEach((row) => {
       expect(screen.getByRole('row', { name: new RegExp(row, 'i') })).toBeInTheDocument();
     });
@@ -171,7 +179,7 @@ describe('ConditionsOverview', () => {
     expect(screen.getAllByRole('row').length).toEqual(3);
   });
 
-  it('clicking the Add button or Record Conditions link launches the conditions form', async () => {
+  it('clicking the Add button or Record Antecedents link launches the antecedents form', async () => {
     const user = userEvent.setup();
 
     mockUseConditions.mockReturnValue({
@@ -179,16 +187,19 @@ describe('ConditionsOverview', () => {
       error: null,
       isLoading: false,
       isValidating: false,
-      mutate: jest.fn(),
+      mutate: vi.fn(),
     });
 
     render(<ConditionsOverview patientUuid={mockPatient.id} />);
 
-    const recordConditionsLink = screen.getByRole('button', { name: /record conditions/i });
+    const recordConditionsLink = screen.getByRole('button', { name: /record antecedents and problems/i });
 
     await user.click(recordConditionsLink);
 
     expect(mockLaunchPatientWorkspace).toHaveBeenCalledTimes(1);
-    expect(mockLaunchPatientWorkspace).toHaveBeenCalledWith('conditions-form-workspace', { formContext: 'creating' });
+    expect(mockLaunchPatientWorkspace).toHaveBeenCalledWith('conditions-form-workspace', {
+      formContext: 'creating',
+      workspaceTitle: 'Record antecedent',
+    });
   });
 });

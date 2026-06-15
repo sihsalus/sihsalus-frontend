@@ -1,32 +1,35 @@
 import { type FetchResponse, showSnackbar } from '@openmrs/esm-framework';
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import React from 'react';
 import { mockPatient } from 'test-utils';
 import { deleteCondition } from './conditions.resource';
 import DeleteConditionModal from './delete-condition.modal';
 
-const mockDeleteCondition = jest.mocked(deleteCondition);
-const mockShowSnackbar = jest.mocked(showSnackbar);
+const mockDeleteCondition = vi.mocked(deleteCondition);
+const mockShowSnackbar = vi.mocked(showSnackbar);
 
-jest.mock('./conditions.resource', () => ({
-  ...jest.requireActual('./conditions.resource'),
-  deleteCondition: jest.fn(),
-  useConditions: jest.fn().mockReturnValue({ mutate: jest.fn() }),
+vi.mock('./conditions.resource', async () => ({
+  ...(await vi.importActual('./conditions.resource')),
+  deleteCondition: vi.fn(),
+  useConditions: vi.fn().mockReturnValue({ mutate: vi.fn() }),
 }));
 
 const defaultProps = {
-  closeDeleteModal: jest.fn(),
+  closeDeleteModal: vi.fn(),
   conditionId: '123e4567-e89b-12d3-a456-426614174000',
   patientUuid: mockPatient.id,
 };
 
 describe('<DeleteConditionModal />', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
   it('renders a modal with the correct elements', () => {
     render(<DeleteConditionModal {...defaultProps} />);
 
-    expect(screen.getByRole('heading', { name: /delete condition/i })).toBeInTheDocument();
-    expect(screen.getByText(/are you sure you want to delete this condition/i)).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: /delete antecedent/i })).toBeInTheDocument();
+    expect(screen.getByText(/are you sure you want to delete this antecedent/i)).toBeInTheDocument();
     expect(screen.getByRole('button', { name: /close/i })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: /cancel/i })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: /delete/i })).toBeInTheDocument();
@@ -57,12 +60,12 @@ describe('<DeleteConditionModal />', () => {
     expect(mockShowSnackbar).toHaveBeenCalledWith({
       isLowContrast: true,
       kind: 'success',
-      title: 'Condition deleted',
+      title: 'Antecedent deleted',
     });
   });
 
   it('renders an error message if the delete operation fails', async () => {
-    const consoleSpy = jest.spyOn(console, 'error').mockImplementation(() => {});
+    const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
     const user = userEvent.setup();
 
     mockDeleteCondition.mockRejectedValue({ message: 'Internal server error', status: 500 });
@@ -78,7 +81,7 @@ describe('<DeleteConditionModal />', () => {
     expect(mockShowSnackbar).toHaveBeenCalledWith({
       isLowContrast: false,
       kind: 'error',
-      title: 'Error deleting condition',
+      title: 'Error deleting antecedent',
       subtitle: 'Internal server error',
     });
     expect(deleteButton).toBeDisabled();

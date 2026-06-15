@@ -10,16 +10,16 @@ import {
 import { getTemplateOrderBasketItem } from '../add-drug-order/drug-search/drug-search.resource';
 import DrugOrderBasketPanel, { type DrugOrderBasketPanelExtensionProps } from './drug-order-basket-panel.extension';
 
-const mockUseOrderBasket = jest.fn();
+const mockUseOrderBasket = vi.fn();
 
-jest.mock('@openmrs/esm-patient-common-lib', () => ({
-  ...jest.requireActual('@openmrs/esm-patient-common-lib'),
+vi.mock('@openmrs/esm-patient-common-lib', async () => ({
+  ...(await vi.importActual('@openmrs/esm-patient-common-lib')),
   useOrderBasket: () => mockUseOrderBasket(),
 }));
 
 const testProps: DrugOrderBasketPanelExtensionProps = {
   patient: mockFhirPatient,
-  launchDrugOrderForm: jest.fn(),
+  launchDrugOrderForm: vi.fn(),
 };
 
 describe('OrderBasketPanel', () => {
@@ -28,6 +28,17 @@ describe('OrderBasketPanel', () => {
     render(<DrugOrderBasketPanel {...testProps} />);
     expect(screen.getByRole('heading', { name: /Drug orders \(0\)/i })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: /Add/i })).toBeInTheDocument();
+  });
+
+  test('launches the drug order form from the order basket state callback', async () => {
+    const user = userEvent.setup();
+    const launchAddDrugOrder = vi.fn();
+    mockUseOrderBasket.mockReturnValue({ orders: [] });
+    render(<DrugOrderBasketPanel patient={mockFhirPatient} launchAddDrugOrder={launchAddDrugOrder} />);
+
+    await user.click(screen.getByRole('button', { name: /Add/i }));
+
+    expect(launchAddDrugOrder).toHaveBeenCalledWith(undefined);
   });
 
   test('renders a tile-based layout of orders, including new, renewing, modifying, and discontinuing', async () => {
@@ -40,7 +51,7 @@ describe('OrderBasketPanel', () => {
     medications[2].action = 'RENEW';
     medications[3].action = 'DISCONTINUE';
     let orders = [...medications];
-    const mockSetOrders = jest.fn((newOrders: Array<DrugOrderBasketItem>) => {
+    const mockSetOrders = vi.fn((newOrders: Array<DrugOrderBasketItem>) => {
       orders = newOrders;
     });
     mockUseOrderBasket.mockImplementation(() => ({

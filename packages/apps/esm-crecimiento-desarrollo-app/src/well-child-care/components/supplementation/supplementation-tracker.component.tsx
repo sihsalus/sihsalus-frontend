@@ -1,12 +1,12 @@
 import { Button, DataTableSkeleton, ProgressBar, Tag } from '@carbon/react';
 import { Add } from '@carbon/react/icons';
-import { launchWorkspace2, useConfig } from '@openmrs/esm-framework';
+import { userHasAccess, useSession } from '@openmrs/esm-framework';
 import { CardHeader, ErrorState } from '@openmrs/esm-patient-common-lib';
-import React, { useCallback } from 'react';
+import React from 'react';
 import { useTranslation } from 'react-i18next';
-import type { ConfigObject } from '../../../config-schema';
+import { credNutritionEditPrivilege } from '../../../constants';
+import { useCREDFormLauncher } from '../../../hooks/useCREDFormLauncher';
 import { useSupplementationTracker } from '../../../hooks/useSupplementationTracker';
-import { formEntryWorkspace } from '../../../types';
 
 import styles from './supplementation-tracker.scss';
 
@@ -16,21 +16,11 @@ interface SupplementationTrackerProps {
 
 const SupplementationTracker: React.FC<SupplementationTrackerProps> = ({ patientUuid }) => {
   const { t } = useTranslation();
-  const config = useConfig<ConfigObject>();
+  const session = useSession();
+  const canEdit = userHasAccess(credNutritionEditPrivilege, session?.user);
   const { delivered, total, percentage, isComplete, isLoading, error } = useSupplementationTracker(patientUuid);
+  const { launchForm: handleAdd, isLoading: isFormLoading } = useCREDFormLauncher('supplementationForm');
   const headerTitle = t('mmnSupplementation', 'Suplementación MMN');
-
-  const handleAdd = useCallback(() => {
-    const formUuid = config.formsList.supplementationForm;
-    if (!formUuid) {
-      console.warn('Form UUID not configured for supplementationForm');
-      return;
-    }
-    launchWorkspace2(formEntryWorkspace, {
-      form: { uuid: formUuid },
-      encounterUuid: '',
-    });
-  }, [config.formsList.supplementationForm]);
 
   if (isLoading) {
     return <DataTableSkeleton size="sm" rowCount={2} columnCount={2} />;
@@ -46,9 +36,18 @@ const SupplementationTracker: React.FC<SupplementationTrackerProps> = ({ patient
         <Tag type={isComplete ? 'green' : 'blue'} size="sm">
           {isComplete ? t('complete', 'Completo') : t('inProgress', 'En curso')}
         </Tag>
-        <Button kind="ghost" size="sm" renderIcon={Add} onClick={handleAdd} iconDescription={t('add', 'Add')}>
-          {t('add', 'Add')}
-        </Button>
+        {canEdit && (
+          <Button
+            kind="ghost"
+            size="sm"
+            renderIcon={Add}
+            onClick={() => handleAdd()}
+            iconDescription={t('add', 'Add')}
+            disabled={isFormLoading}
+          >
+            {t('add', 'Add')}
+          </Button>
+        )}
       </CardHeader>
       <div className={styles.container}>
         <div className={styles.progressRow}>

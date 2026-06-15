@@ -139,13 +139,14 @@ const conceptCache: Record<ConceptUuid, Promise<ConceptRecord>> = {};
  */
 export function loadPresentConcepts(entries: Array<ObsRecord>): Promise<Array<ConceptRecord>> {
   return Promise.all(
-    [...new Set(entries.map(getEntryConceptClassUuid))].map(
-      (conceptUuid) =>
-        conceptCache[conceptUuid] ||
-        (conceptCache[conceptUuid] = fetch(
-          `${globalThis.openmrsBase}${restBaseUrl}/concept/${conceptUuid}?v=full`,
-        ).then((res) => res.json())),
-    ),
+    [...new Set(entries.map(getEntryConceptClassUuid))].map((conceptUuid) => {
+      if (!conceptCache[conceptUuid]) {
+        conceptCache[conceptUuid] = fetch(`${globalThis.openmrsBase}${restBaseUrl}/concept/${conceptUuid}?v=full`).then(
+          (res) => res.json(),
+        );
+      }
+      return conceptCache[conceptUuid];
+    }),
   );
 }
 

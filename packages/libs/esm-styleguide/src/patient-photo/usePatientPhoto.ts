@@ -28,6 +28,11 @@ interface PhotoObs {
   };
 }
 
+function getObsDatetime(obs: PhotoObs) {
+  const timestamp = new Date(obs.obsDatetime).getTime();
+  return Number.isNaN(timestamp) ? 0 : timestamp;
+}
+
 export function usePatientPhoto(patientUuid: string): UsePatientPhotoResult {
   const { patientPhotoConceptUuid } = useConfig<StyleguideConfigObject>({
     externalModuleName: '@openmrs/esm-styleguide',
@@ -39,7 +44,13 @@ export function usePatientPhoto(patientUuid: string): UsePatientPhotoResult {
 
   const { data, error, isLoading } = useSWR<{ data: ObsFetchResponse }, Error>(patientUuid ? url : null, openmrsFetch);
 
-  const item = data?.data?.results[0];
+  const item = data?.data?.results.reduce<PhotoObs | undefined>((latest, candidate) => {
+    if (!latest) {
+      return candidate;
+    }
+
+    return getObsDatetime(candidate) > getObsDatetime(latest) ? candidate : latest;
+  }, undefined);
 
   return {
     data: item

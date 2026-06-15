@@ -1,5 +1,3 @@
-import React from 'react';
-
 import { type SectionDefinition } from '../../config-schema';
 
 import { DeathInfoSection } from './death-info/death-info-section.component';
@@ -17,6 +15,13 @@ export function Section({ sectionDefinition }: SectionProps) {
       return <DemographicsSection fields={sectionDefinition.fields} />;
     case 'death':
       return <DeathInfoSection fields={sectionDefinition.fields} />;
+    case 'responsiblePerson':
+      return (
+        <>
+          <GenericSection sectionDefinition={sectionDefinition} />
+          <RelationshipsSection />
+        </>
+      );
     case 'relationships':
       return <RelationshipsSection />;
     default: // includes 'contact'

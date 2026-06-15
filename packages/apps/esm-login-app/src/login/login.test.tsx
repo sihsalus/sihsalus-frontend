@@ -8,18 +8,27 @@ import {
 } from '@openmrs/esm-framework';
 import { screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { useState } from 'react';
-
+import { Route, Routes } from 'react-router-dom';
 import { mockConfig } from '../../../../test-utils/mocks/login-config.mock';
 import renderWithRouter from '../test-helpers/render-with-router';
 
 import Login from './login.component';
 
-const mockGetSessionStore = jest.mocked(getSessionStore);
-const mockLogin = jest.mocked(refetchCurrentUser);
-const mockUseConfig = jest.mocked(useConfig);
-const mockUseConnectivity = jest.mocked(useConnectivity);
-const mockUseSession = jest.mocked(useSession);
+const mockGetSessionStore = vi.mocked(getSessionStore);
+const mockLogin = vi.mocked(refetchCurrentUser);
+const mockUseConfig = vi.mocked(useConfig);
+const mockUseConnectivity = vi.mocked(useConnectivity);
+const mockUseSession = vi.mocked(useSession);
+
+const mockBuildInfo = { version: '1.2.3', gitSha: 'abc1234', buildTime: '2026-06-04T00:00:00Z' };
+const openmrsSpaBasePlaceholder = '$' + '{openmrsSpaBase}';
+
+const LoginRoutes = () => (
+  <Routes>
+    <Route path="/login" element={<Login />} />
+    <Route path="/login/location" element={<div>Location select page</div>} />
+  </Routes>
+);
 
 describe('Login', () => {
   beforeEach(() => {
@@ -27,23 +36,29 @@ describe('Login', () => {
     mockLogin.mockResolvedValue({} as SessionStore);
     mockGetSessionStore.mockImplementation(() => {
       return {
-        getState: jest.fn().mockReturnValue({
+        getState: vi.fn().mockReturnValue({
           loaded: true,
           session: {
             authenticated: true,
           },
         }),
-        setState: jest.fn(),
-        getInitialState: jest.fn(),
-        subscribe: jest.fn(),
-        destroy: jest.fn(),
+        setState: vi.fn(),
+        getInitialState: vi.fn(),
+        subscribe: vi.fn(),
+        destroy: vi.fn(),
       };
     });
     mockUseSession.mockReturnValue({ authenticated: false, sessionId: '123' });
     mockUseConfig.mockReturnValue(mockConfig);
+
+    globalThis.fetch = vi.fn((input: RequestInfo | URL) =>
+      String(input).endsWith('build-info.json')
+        ? Promise.resolve({ ok: true, json: () => Promise.resolve(mockBuildInfo) } as Response)
+        : Promise.resolve({ ok: false, json: () => Promise.resolve(null) } as Response),
+    ) as typeof fetch;
   });
 
-  it('renders the login form', () => {
+  it('renders the login form', async () => {
     renderWithRouter(
       Login,
       {},
@@ -52,10 +67,32 @@ describe('Login', () => {
       },
     );
 
-    expect(screen.getAllByRole('img', { name: /OpenMRS logo/i })).toHaveLength(2);
+    const [openmrsLogo] = screen.getAllByRole('img', { name: /OpenMRS logo/i });
+    expect(openmrsLogo).toHaveAttribute('src', '/openmrs/spa/logos/logo-openmrs.svg');
+    expect(screen.getByText(/Sihsalus/i)).toBeInTheDocument();
     expect(screen.queryByAltText(/^logo$/i)).not.toBeInTheDocument();
+    // Version + short SHA are fetched asynchronously from build-info.json
+    expect(await screen.findByText(/Frontend v1\.2\.3 · abc1234/)).toBeInTheDocument();
     screen.getByRole('textbox', { name: /Username/i });
     screen.getByRole('button', { name: /Continue/i });
+  });
+
+  it('loads the optimized AVIF login image before falling back to PNG', () => {
+    const { container } = renderWithRouter(
+      Login,
+      {},
+      {
+        route: '/login',
+      },
+    );
+
+    const optimizedSource = container.querySelector('picture source[type="image/avif"]');
+    const fallbackImage = container.querySelector('picture img');
+
+    expect(optimizedSource).toHaveAttribute('srcset', '/openmrs/spa/login.avif');
+    expect(fallbackImage).toHaveAttribute('src', '/openmrs/spa/login.png');
+    expect(fallbackImage).toHaveAttribute('width', '1672');
+    expect(fallbackImage).toHaveAttribute('height', '941');
   });
 
   it('renders a configurable logo', () => {
@@ -72,7 +109,7 @@ describe('Login', () => {
 
     const logo = screen.getByAltText(customLogoConfig.alt);
 
-    expect(screen.queryByTitle(/openmrs logo/i)).not.toBeInTheDocument();
+    expect(screen.queryByText(/^Sihsalus$/i)).not.toBeInTheDocument();
     expect(logo).toHaveAttribute('src', customLogoConfig.src);
     expect(logo).toHaveAttribute('alt', customLogoConfig.alt);
   });
@@ -151,23 +188,15 @@ describe('Login', () => {
     expect(await screen.findByText(/The login service is not available at this backend address/i)).toBeInTheDocument();
   });
 
-  // TODO: Complete the test
   it('sends the user to the location select page on login if there is more than one location', async () => {
-    let refreshUser = (_user: unknown) => {};
-    mockLogin.mockImplementation(() => {
-      refreshUser({
-        display: 'my name',
-      });
-      return Promise.resolve({ data: { authenticated: true } } as unknown as SessionStore);
-    });
-    mockUseSession.mockImplementation(() => {
-      const [user, setUser] = useState();
-      refreshUser = setUser;
-      return { user, authenticated: !!user, sessionId: '123' };
-    });
+    mockLogin.mockResolvedValue({
+      session: {
+        authenticated: true,
+      },
+    } as SessionStore);
 
     renderWithRouter(
-      Login,
+      LoginRoutes,
       {},
       {
         route: '/login',
@@ -181,6 +210,8 @@ describe('Login', () => {
     await screen.findByLabelText(/^password$/i);
     await user.type(screen.getByLabelText(/^password$/i), 'no-tax-fraud');
     await user.click(screen.getByRole('button', { name: /log in/i }));
+
+    expect(await screen.findByText('Location select page')).toBeInTheDocument();
   });
 
   it('should render the both the username and password fields when the showPasswordOnSeparateScreen config is false', async () => {
@@ -359,7 +390,7 @@ describe('Login', () => {
   it('interpolates relative background image paths into CSS custom properties', () => {
     mockUseConfig.mockReturnValue({
       ...mockConfig,
-      background: { image: '${openmrsSpaBase}/assets/bg.jpg', color: '' },
+      background: { image: `${openmrsSpaBasePlaceholder}/assets/bg.jpg`, color: '' },
     });
 
     renderWithRouter(
@@ -373,7 +404,7 @@ describe('Login', () => {
 
     const bgImage = root.style.getPropertyValue('--login-bg-image');
     expect(bgImage).toContain('/openmrs/spa/assets/bg.jpg');
-    expect(bgImage).not.toContain('${openmrsSpaBase}');
+    expect(bgImage).not.toContain(openmrsSpaBasePlaceholder);
     expect(root.className).toMatch(/containerWithImage/);
   });
 

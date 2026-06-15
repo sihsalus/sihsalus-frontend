@@ -8,7 +8,7 @@ import {
   useLeftNavStore,
   useSession,
 } from '@openmrs/esm-framework';
-import React, { useCallback, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { Navigate } from 'react-router-dom';
 
 import { isDesktop } from '../../utils';
@@ -21,14 +21,30 @@ import styles from './navbar.scss';
 const HeaderItems: React.FC = () => {
   const config = useConfig();
   const [activeHeaderPanel, setActiveHeaderPanel] = useState<string>(null);
+  const [isSideMenuExpanded, setIsSideMenuExpanded] = useState(true);
   const layout = useLayoutType();
   const { slotName, mode } = useLeftNavStore();
   const navMenuItems = useAssignedExtensions(slotName);
-  const isActivePanel = useCallback((panelName: string) => activeHeaderPanel === panelName, [activeHeaderPanel]);
+  const isDesktopLayout = isDesktop(layout);
+  const isFixedSideNav = isDesktopLayout && mode === 'normal';
+  const isActivePanel = useCallback(
+    (panelName: string) =>
+      panelName === 'sideMenu' && isFixedSideNav ? isSideMenuExpanded : activeHeaderPanel === panelName,
+    [activeHeaderPanel, isFixedSideNav, isSideMenuExpanded],
+  );
 
-  const togglePanel = useCallback((panelName: string) => {
-    setActiveHeaderPanel((activeHeaderPanel) => (activeHeaderPanel === panelName ? null : panelName));
-  }, []);
+  const togglePanel = useCallback(
+    (panelName: string) => {
+      if (panelName === 'sideMenu' && isFixedSideNav) {
+        setIsSideMenuExpanded((expanded) => !expanded);
+        setActiveHeaderPanel(null);
+        return;
+      }
+
+      setActiveHeaderPanel((activeHeaderPanel) => (activeHeaderPanel === panelName ? null : panelName));
+    },
+    [isFixedSideNav],
+  );
 
   const hidePanel = useCallback(
     (panelName: string) => () => {
@@ -37,14 +53,27 @@ const HeaderItems: React.FC = () => {
     [],
   );
 
-  const showHamburger = useMemo(
-    () => (!isDesktop(layout) || mode === 'collapsed') && mode !== 'hidden' && navMenuItems.length > 0,
-    [navMenuItems.length, layout, mode],
-  );
+  const showHamburger = useMemo(() => mode !== 'hidden' && navMenuItems.length > 0, [navMenuItems.length, mode]);
+
+  useEffect(() => {
+    if (!isFixedSideNav) {
+      globalThis.document.documentElement.style.removeProperty('--sihsalus-left-nav-width');
+      return;
+    }
+
+    globalThis.document.documentElement.style.setProperty(
+      '--sihsalus-left-nav-width',
+      isSideMenuExpanded ? '16rem' : '0rem',
+    );
+
+    return () => {
+      globalThis.document.documentElement.style.removeProperty('--sihsalus-left-nav-width');
+    };
+  }, [isFixedSideNav, isSideMenuExpanded]);
 
   return (
     <>
-      <Header aria-label="OpenMRS" className={styles.topNavHeader}>
+      <Header aria-label="Sihsalus" className={styles.topNavHeader}>
         {showHamburger && (
           <HeaderMenuButton
             aria-label="Open menu"
@@ -55,7 +84,7 @@ const HeaderItems: React.FC = () => {
             }}
             onMouseDown={(e) => e.stopPropagation()}
             onTouchStart={(e) => e.stopPropagation()}
-            isActive={isActivePanel('sideMenu')}
+            isActive={isFixedSideNav ? false : isActivePanel('sideMenu')}
           />
         )}
         <div className={styles.logoWrapper}>

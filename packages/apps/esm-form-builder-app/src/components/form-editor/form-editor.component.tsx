@@ -1,4 +1,5 @@
 import {
+  ActionableNotification,
   Button,
   Column,
   CopyButton,
@@ -18,8 +19,9 @@ import { ArrowLeft, Download, Maximize, Minimize } from '@carbon/react/icons';
 import { useLanguageOptions } from '@hooks/getLanguageOptionsFromSession';
 import { useClobdata } from '@hooks/useClobdata';
 import { useForm } from '@hooks/useForm';
-import { ConfigurableLink, showModal, useConfig } from '@openmrs/esm-framework';
+import { ConfigurableLink, showModal, showSnackbar, useConfig } from '@openmrs/esm-framework';
 import { handleFormValidation } from '@resources/form-validator.resource';
+import { unretireForm } from '@resources/forms.resource';
 import type { FormSchema } from '@sihsalus/esm-form-engine-lib';
 import type { Schema } from '@types';
 import classNames from 'classnames';
@@ -77,8 +79,9 @@ const FormEditorContent: React.FC<TranslationFnProps> = ({ t }) => {
   const { blockRenderingWithErrors, dataTypeToRenderingMap } = useConfig<ConfigObject>();
   const isNewSchema = !formUuid;
   const [schema, setSchema] = useState<Schema>();
-  const { form, formError, isLoadingForm } = useForm(formUuid);
+  const { form, formError, isLoadingForm, mutate: mutateForm } = useForm(formUuid);
   const { clobdata, clobdataError, isLoadingClobdata } = useClobdata(form);
+  const [isRestoringForm, setIsRestoringForm] = useState(false);
   const [status, setStatus] = useState<Status>('idle');
   const [isMaximized, setIsMaximized] = useState(false);
   const [stringifiedSchema, setStringifiedSchema] = useState(schema ? JSON.stringify(schema, null, 2) : '');
@@ -125,6 +128,38 @@ const FormEditorContent: React.FC<TranslationFnProps> = ({ t }) => {
     });
   }, [updateSchema]);
 
+  const handleRestoreForm = useCallback(async () => {
+    if (!form) {
+      return;
+    }
+
+    setIsRestoringForm(true);
+    try {
+      const res = await unretireForm(form.uuid);
+      if (res.status === 200) {
+        showSnackbar({
+          title: t('formRestored', 'Form restored'),
+          kind: 'success',
+          isLowContrast: true,
+          subtitle: t('formRestoredMessage', 'The form "{{- formName}}" has been restored', {
+            formName: form.name,
+          }),
+        });
+        await mutateForm();
+      }
+    } catch (e: unknown) {
+      if (e instanceof Error) {
+        showSnackbar({
+          title: t('errorRestoringForm', 'Error restoring form'),
+          kind: 'error',
+          subtitle: e.message,
+        });
+      }
+    } finally {
+      setIsRestoringForm(false);
+    }
+  }, [form, mutateForm, t]);
+
   useEffect(() => {
     if (formUuid) {
       if (form && Object.keys(form).length > 0) {
@@ -141,7 +176,7 @@ const FormEditorContent: React.FC<TranslationFnProps> = ({ t }) => {
         localStorage.setItem('formJSON', JSON.stringify(clobdata));
       }
     }
-  }, [clobdata, form, formUuid, isLoadingClobdata, isLoadingFormOrSchema, launchRestoreDraftSchemaModal, status]);
+  }, [clobdata, form, formUuid, isLoadingClobdata, launchRestoreDraftSchemaModal, status]);
 
   useEffect(() => {
     setStringifiedSchema(JSON.stringify(schema, null, 2));
@@ -274,8 +309,17 @@ const FormEditorContent: React.FC<TranslationFnProps> = ({ t }) => {
     }
   }, [blockRenderingWithErrors, errors.length, renderSchemaChanges, selectedLanguageCode]);
 
-  const handleSchemaImport = (event: React.ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files[0];
+  const handleSchemaImport = (
+    event: React.SyntheticEvent<HTMLElement>,
+    data?: { addedFiles: Array<{ file: File }> },
+  ) => {
+    const file =
+      data?.addedFiles[0]?.file ?? (event.target instanceof HTMLInputElement ? event.target.files?.item(0) : undefined);
+
+    if (!file) {
+      return;
+    }
+
     const reader = new FileReader();
 
     reader.onload = (e) => {
@@ -315,6 +359,18 @@ const FormEditorContent: React.FC<TranslationFnProps> = ({ t }) => {
 
   return (
     <div className={styles.container}>
+      {form?.retired && (
+        <ActionableNotification
+          className={styles.retiredNotification}
+          kind="warning"
+          lowContrast
+          inline
+          hideCloseButton
+          title={t('formIsRetired', 'This form is retired.')}
+          actionButtonLabel={isRestoringForm ? t('restoring', 'Restoring') : t('restoreForm', 'Restore form')}
+          onActionButtonClick={handleRestoreForm}
+        />
+      )}
       <Grid
         className={classNames(styles.grid, {
           [styles.maximized]: isMaximized,

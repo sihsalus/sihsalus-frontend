@@ -3,7 +3,7 @@ import React from 'react';
 import useRelativeHivEnrollment from '../hooks/useRelativeHivEnrollment';
 import useRelativeHTSEncounter from '../hooks/useRelativeHTSEncounter';
 
-import { getHivStatusBasedOnEnrollmentAndHTSEncounters } from './contact-list.resource';
+import { useLocalizedHivStatus } from './contact-list.resource';
 
 interface HIVStatusProps {
   relativeUuid: string;
@@ -12,11 +12,12 @@ interface HIVStatusProps {
 const HIVStatus: React.FC<HIVStatusProps> = ({ relativeUuid }) => {
   const { enrollment, isLoading } = useRelativeHivEnrollment(relativeUuid);
   const { encounters, isLoading: encounterLoading } = useRelativeHTSEncounter(relativeUuid);
+  const { localizedStatus } = useLocalizedHivStatus(encounters ?? [], enrollment);
 
   if (isLoading || encounterLoading) {
     return <SkeletonText />;
   }
-  return <div>{getHivStatusBasedOnEnrollmentAndHTSEncounters(encounters, enrollment)}</div>;
+  return <div>{localizedStatus}</div>;
 };
 
 export default HIVStatus;

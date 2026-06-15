@@ -1,8 +1,35 @@
 /** @module @category Extension */
-import { mountRootParcel, type Parcel, type ParcelConfig } from 'single-spa';
+import { type LifeCycles, mountRootParcel, type Parcel, type ParcelConfig } from 'single-spa';
 import { getExtensionNameFromId, getExtensionRegistration } from './extensions';
 import { checkStatus } from './helpers';
 import { updateInternalExtensionStore } from './store';
+
+type ParcelTimeouts = {
+  bootstrap: { millis: number; dieOnTimeout: boolean; warningMillis: number };
+  mount: { millis: number; dieOnTimeout: boolean; warningMillis: number };
+  update: { millis: number; dieOnTimeout: boolean; warningMillis: number };
+  unmount: { millis: number; dieOnTimeout: boolean; warningMillis: number };
+};
+
+type LifeCyclesWithTimeouts = LifeCycles & {
+  timeouts?: Partial<ParcelTimeouts>;
+};
+
+const extensionParcelTimeouts: ParcelTimeouts = {
+  bootstrap: { millis: 10000, dieOnTimeout: false, warningMillis: 10000 },
+  mount: { millis: 10000, dieOnTimeout: false, warningMillis: 10000 },
+  update: { millis: 10000, dieOnTimeout: false, warningMillis: 10000 },
+  unmount: { millis: 10000, dieOnTimeout: false, warningMillis: 10000 },
+};
+
+function getExtensionParcelTimeouts(overrides: Partial<ParcelTimeouts> | undefined): ParcelTimeouts {
+  return {
+    bootstrap: { ...extensionParcelTimeouts.bootstrap, ...overrides?.bootstrap },
+    mount: { ...extensionParcelTimeouts.mount, ...overrides?.mount },
+    update: { ...extensionParcelTimeouts.update, ...overrides?.update },
+    unmount: { ...extensionParcelTimeouts.unmount, ...overrides?.unmount },
+  };
+}
 
 export interface CancelLoading {
   (): void;
@@ -54,13 +81,16 @@ export async function renderExtension(
         };
       });
 
-      const lifecycle = await load();
+      const lifecycle = (await load()) as LifeCyclesWithTimeouts;
       const id = parcelCount++;
+      const timeouts = getExtensionParcelTimeouts(lifecycle.timeouts);
+
       parcel = mountRootParcel(
         renderFunction({
           ...lifecycle,
           name: `${extensionSlotName}/${extensionName}-${id}`,
-        }),
+          timeouts,
+        } as ParcelConfig),
         {
           ...additionalProps,
           _meta: meta,

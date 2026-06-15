@@ -14,17 +14,22 @@ import {
   TableHeader,
   TableRow,
 } from '@carbon/react';
-import { AddIcon, formatDate, isDesktop, launchWorkspace2, useLayoutType } from '@openmrs/esm-framework';
+import {
+  AddIcon,
+  formatDate,
+  isDesktop,
+  launchWorkspace2,
+  useLayoutType,
+  userHasAccess,
+  useSession,
+} from '@openmrs/esm-framework';
 import { CardHeader, EmptyState, ErrorState } from '@openmrs/esm-patient-common-lib';
 import React, { useCallback, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useFilteredEncounter } from '../../hooks/useFilteredEncounter';
 import { formEntryWorkspace } from '../../types';
 
-import ObservationGroupDetails, {
-  type ObservationGroup,
-  type ObservationRow,
-} from './observation-group-details.component';
+import ObservationGroupDetails, { type ObservationGroup } from './observation-group-details.component';
 import styles from './patient-observation-group-table.scss';
 
 // Importar tipos desde el componente separado
@@ -36,6 +41,7 @@ interface PatientObservationGroupTableProps {
   encounterType: string;
   formUuid: string;
   formWorkspace?: string;
+  editPrivilege?: string | string[];
 }
 
 interface ObservationGroupTableRowData {
@@ -59,7 +65,7 @@ const GroupTitleCell: React.FC<{ group: ObservationGroup }> = ({ group }) => (
 const GroupDateCell: React.FC<{ group: ObservationGroup }> = ({ group }) => <div>{group.date}</div>;
 
 // Componente para acciones (si necesitas agregar alguna)
-const GroupActionsCell: React.FC<{ group: ObservationGroup }> = ({ group }) => (
+const GroupActionsCell: React.FC<{ group: ObservationGroup }> = () => (
   <div>{/* Aquí puedes agregar acciones específicas por grupo si es necesario */}</div>
 );
 
@@ -73,10 +79,14 @@ const PatientObservationGroupTable: React.FC<PatientObservationGroupTableProps> 
   encounterType,
   formUuid,
   formWorkspace,
+  editPrivilege,
 }) => {
   const { t } = useTranslation();
   const layout = useLayoutType();
   const desktopLayout = isDesktop(layout);
+  const session = useSession();
+  const canEdit = userHasAccess(editPrivilege, session?.user);
+  const canLaunchForm = Boolean(formWorkspace && (!editPrivilege || canEdit));
 
   const {
     prenatalEncounter: data,
@@ -87,7 +97,7 @@ const PatientObservationGroupTable: React.FC<PatientObservationGroupTableProps> 
   //TODO: MODIFY THIS TO SEND THE CURRENT DATA TO THE WORKSPACE , IT SHOULD BE EDITABLE
   const launchForm = useCallback(() => {
     try {
-      if (formWorkspace) {
+      if (canLaunchForm && formWorkspace) {
         launchWorkspace2(formEntryWorkspace, {
           form: { uuid: formWorkspace },
           encounterUuid: '',
@@ -99,15 +109,15 @@ const PatientObservationGroupTable: React.FC<PatientObservationGroupTableProps> 
     } catch (err) {
       console.error('Failed to launch form:', err);
     }
-  }, [formWorkspace, mutate]);
+  }, [canLaunchForm, formWorkspace, mutate]);
 
-  const parseDisplay = (display: string) => {
+  const parseDisplay = useCallback((display: string) => {
     const [category, ...rest] = display.split(': ');
     return {
       category,
       value: rest.join(': ') || '',
     };
-  };
+  }, []);
 
   // Transformar datos para la tabla expandible
   const observationGroups = useMemo((): ObservationGroup[] => {
@@ -135,7 +145,7 @@ const PatientObservationGroupTable: React.FC<PatientObservationGroupTableProps> 
           encounterUuid: data.uuid,
         };
       });
-  }, [data]);
+  }, [data, parseDisplay]);
 
   // Configuración de columnas para la tabla principal
   const columns = [
@@ -169,14 +179,20 @@ const PatientObservationGroupTable: React.FC<PatientObservationGroupTableProps> 
   }
 
   if (!isLoading && observationGroups.length === 0) {
-    return <EmptyState headerTitle={headerTitle} displayText={displayText} launchForm={launchForm} />;
+    return (
+      <EmptyState
+        headerTitle={headerTitle}
+        displayText={displayText}
+        launchForm={canLaunchForm ? launchForm : undefined}
+      />
+    );
   }
 
   return (
     <div className={styles.widgetCard} role="region" aria-label={headerTitle}>
       <CardHeader title={headerTitle}>
         {isLoading && <InlineLoading description={t('refreshing', 'Refreshing...')} status="active" />}
-        {formWorkspace && (
+        {canLaunchForm && (
           <Button
             kind="ghost"
             renderIcon={(props) => <AddIcon size={16} {...props} />}

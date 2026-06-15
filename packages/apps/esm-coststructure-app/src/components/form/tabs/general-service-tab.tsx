@@ -61,12 +61,14 @@ export default function GeneralServiceTab({ form }: Props) {
         <div className="cds--col cds--spacing-03">
           <table className="cds--data-table cds--data-table--compact cds--data-table--zebra">
             <thead>
-              <th>{t('upss', 'Service Production Unit (UPSS)')}</th>
-              <th>{t('adminCost', 'Administrative Cost')}</th>
-              <th>{t('generalServicesCost', 'General Services Cost')}</th>
-              <th>{t('projectedProduction', 'Projected procedure production')}</th>
-              <th>{t('adminUnitCostIndirect', 'Indirect Standard Admin Unit Cost')}</th>
-              <th>{t('generalUnitCostIndirect', 'Indirect Standard General Unit Cost')}</th>
+              <tr>
+                <th>{t('upss', 'Service Production Unit (UPSS)')}</th>
+                <th>{t('adminCost', 'Administrative Cost')}</th>
+                <th>{t('generalServicesCost', 'General Services Cost')}</th>
+                <th>{t('projectedProduction', 'Projected procedure production')}</th>
+                <th>{t('adminUnitCostIndirect', 'Indirect Standard Admin Unit Cost')}</th>
+                <th>{t('generalUnitCostIndirect', 'Indirect Standard General Unit Cost')}</th>
+              </tr>
             </thead>
             <tbody>
               {infrastructures.length > 0 ? (

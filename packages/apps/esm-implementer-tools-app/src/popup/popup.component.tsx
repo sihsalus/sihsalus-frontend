@@ -1,6 +1,6 @@
 import { ContentSwitcher, IconButton, Switch, Theme } from '@carbon/react';
 import { CloseIcon } from '@openmrs/esm-framework';
-import React, { useMemo, useState } from 'react';
+import { useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import { BackendDependencies } from '../backend-dependencies/backend-dependencies.component';
@@ -36,7 +36,7 @@ export default function Popup({
   const { t } = useTranslation();
   const [activeTab, setActiveTab] = useState(visibleTabIndex ? visibleTabIndex : 0);
   const tabContent = useMemo(() => {
-    if (activeTab == 0) {
+    if (activeTab === 0) {
       return <Configuration />;
     } else if (activeTab === 1) {
       return <FrontendModules frontendModules={frontendModules} />;

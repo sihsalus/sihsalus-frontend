@@ -1,10 +1,9 @@
 import { type FetchResponse, openmrsFetch, showSnackbar } from '@openmrs/esm-framework';
 import { type PatientWorkspace2DefinitionProps } from '@openmrs/esm-patient-common-lib';
-import { render, screen, waitFor } from '@testing-library/react';
+import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import dayjs from 'dayjs';
 import utc from 'dayjs/plugin/utc';
-import React from 'react';
 import { getByTextWithMarkup, mockFhirConditionsResponse, mockPatient, searchedCondition } from 'test-utils';
 import { createCondition, useConditionsSearch } from './conditions.resource';
 import ConditionsForm, { type ConditionFormProps } from './conditions-form.workspace';
@@ -12,7 +11,7 @@ import ConditionsForm, { type ConditionFormProps } from './conditions-form.works
 dayjs.extend(utc);
 
 const defaultProps: PatientWorkspace2DefinitionProps<ConditionFormProps, object> = {
-  closeWorkspace: jest.fn(),
+  closeWorkspace: vi.fn(),
   groupProps: {
     patientUuid: mockPatient.id,
     patient: mockPatient as unknown as fhir.Patient,
@@ -20,7 +19,7 @@ const defaultProps: PatientWorkspace2DefinitionProps<ConditionFormProps, object>
     mutateVisitContext: null,
   },
   workspaceName: '',
-  launchChildWorkspace: jest.fn(),
+  launchChildWorkspace: vi.fn(),
   workspaceProps: {
     condition: null,
     formContext: 'creating' as 'creating' | 'editing',
@@ -42,16 +41,16 @@ function renderConditionsForm(workspaceProps?: ConditionFormProps) {
   render(<ConditionsForm {...props} />);
 }
 
-const mockCreateCondition = jest.mocked(createCondition);
-const mockUseConditionsSearch = jest.mocked(useConditionsSearch);
-const mockShowSnackbar = jest.mocked(showSnackbar);
-const mockOpenmrsFetch = jest.mocked(openmrsFetch);
+const mockCreateCondition = vi.mocked(createCondition);
+const mockUseConditionsSearch = vi.mocked(useConditionsSearch);
+const mockShowSnackbar = vi.mocked(showSnackbar);
+const mockOpenmrsFetch = vi.mocked(openmrsFetch);
 
-jest.mock('./conditions.resource', () => ({
-  ...jest.requireActual('./conditions.resource'),
-  createCondition: jest.fn(),
-  editCondition: jest.fn(),
-  useConditionsSearch: jest.fn(),
+vi.mock('./conditions.resource', async () => ({
+  ...(await vi.importActual('./conditions.resource')),
+  createCondition: vi.fn(),
+  editCondition: vi.fn(),
+  useConditionsSearch: vi.fn(),
 }));
 
 mockOpenmrsFetch.mockResolvedValue({ data: [] } as FetchResponse);
@@ -67,10 +66,12 @@ describe('Conditions form', () => {
   it('renders the conditions form with all the relevant fields and values', () => {
     renderConditionsForm();
 
-    expect(screen.getByRole('group', { name: /condition/i })).toBeInTheDocument();
+    expect(screen.getByRole('group', { name: /antecedent type/i })).toBeInTheDocument();
     expect(screen.getByLabelText(/onset date/i)).toBeInTheDocument();
     expect(screen.getByRole('group', { name: /clinical status/i })).toBeInTheDocument();
-    expect(screen.getByRole('searchbox', { name: /enter condition/i })).toBeInTheDocument();
+    expect(screen.getByRole('searchbox', { name: /enter antecedent/i })).toBeInTheDocument();
+    expect(screen.getByRole('radio', { name: /patol|patholog/i })).toBeInTheDocument();
+    expect(screen.queryByRole('radio', { name: /surgical|quirúrgico/i })).not.toBeInTheDocument();
     expect(screen.getByRole('button', { name: /clear search input/i })).toBeInTheDocument();
     expect(screen.getByLabelText(/^active/i)).toBeInTheDocument();
     expect(screen.getByLabelText(/^active/i)).not.toBeChecked();
@@ -97,8 +98,7 @@ describe('Conditions form', () => {
     const user = userEvent.setup();
     renderConditionsForm();
 
-    // TODO: use better selector
-    await user.click(screen.getByLabelText(/^active/i));
+    await user.click(screen.getByRole('radio', { name: 'Active' }));
     expect(screen.queryByLabelText('End date')).not.toBeInTheDocument();
 
     await user.click(screen.getByLabelText(/inactive/i));
@@ -109,7 +109,7 @@ describe('Conditions form', () => {
     const user = userEvent.setup();
     renderConditionsForm();
 
-    const conditionSearchInput = screen.getByRole('searchbox', { name: /enter condition/i });
+    const conditionSearchInput = screen.getByRole('searchbox', { name: /enter antecedent/i });
     expect(screen.queryByRole('menuitem', { name: /Headache/i })).not.toBeInTheDocument();
     expect(screen.queryByDisplayValue('Headache')).not.toBeInTheDocument();
 
@@ -121,7 +121,7 @@ describe('Conditions form', () => {
     const user = userEvent.setup();
     renderConditionsForm();
 
-    const conditionSearchInput = screen.getByRole('searchbox', { name: /enter condition/i });
+    const conditionSearchInput = screen.getByRole('searchbox', { name: /enter antecedent/i });
     expect(screen.queryByRole('menuitem', { name: /Post-acute sequelae of COVID-19/i })).not.toBeInTheDocument();
     expect(screen.queryByDisplayValue(/Post-acute sequelae of COVID-19/i)).not.toBeInTheDocument();
 
@@ -147,30 +147,80 @@ describe('Conditions form', () => {
     const cancelButton = screen.getByRole('button', { name: /cancel/i });
     const submitButton = screen.getByRole('button', { name: /save & close/i });
     const activeStatusInput = screen.getByRole('radio', { name: 'Active' });
-    const conditionSearchInput = screen.getByRole('searchbox', { name: /enter condition/i });
+    const antecedentTypeInput = screen.getByRole('radio', { name: /patol|patholog/i });
+    const conditionSearchInput = screen.getByRole('searchbox', { name: /enter antecedent/i });
 
     const onsetDateInput = screen.getByRole('textbox', { name: /onset date/i });
     expect(onsetDateInput).toBeInTheDocument();
 
     expect(cancelButton).toBeEnabled();
 
+    await user.click(antecedentTypeInput);
     await user.type(conditionSearchInput, 'Headache');
-    await user.click(screen.getByRole('menuitem', { name: /headache/i }));
+    await user.click(screen.getByRole('button', { name: /headache/i }));
     await user.click(activeStatusInput);
     await user.click(onsetDateInput);
     await user.paste('2020-05-05');
     expect(onsetDateInput).toHaveDisplayValue(/05\/05\/2020/i);
     expect(submitButton).toBeEnabled();
-    await user.click(submitButton);
+    fireEvent.submit(submitButton.closest('form')!);
 
     await waitFor(() => {
       expect(mockShowSnackbar).toHaveBeenCalled();
     });
     expect(mockShowSnackbar).toHaveBeenCalledWith({
       kind: 'success',
-      subtitle: 'It is now visible on the Conditions page',
-      title: 'Condition saved',
+      subtitle: 'It is now visible on the Antecedents page',
+      title: 'Antecedent saved',
     });
+    expect(mockCreateCondition).toHaveBeenCalledWith(
+      expect.objectContaining({
+        antecedentType: 'pathological',
+        clinicalStatus: 'active',
+      }),
+    );
+  });
+
+  it('preconfigures procedure and surgery workspaces before posting to the backend resource', async () => {
+    const user = userEvent.setup();
+
+    mockUseConditionsSearch.mockReturnValue({
+      searchResults: searchedCondition,
+      error: null,
+      isSearching: false,
+    });
+    mockOpenmrsFetch.mockResolvedValue({
+      data: mockFhirConditionsResponse,
+      mutate: Promise.resolve(undefined),
+    } as unknown as FetchResponse);
+    mockCreateCondition.mockResolvedValue({ status: 201, body: 'Condition created' } as unknown as FetchResponse);
+
+    renderConditionsForm({
+      defaultAntecedentType: 'surgical',
+      defaultClinicalStatus: 'inactive',
+      formContext: 'creating',
+      lockedAntecedentType: true,
+      workspaceTitle: 'Record procedure or surgery',
+    });
+
+    expect(screen.getByRole('radio', { name: /surgical|quirúrgico/i })).toBeChecked();
+    expect(screen.getByRole('radio', { name: /surgical|quirúrgico/i })).toBeDisabled();
+    expect(screen.getByLabelText(/inactive/i)).toBeChecked();
+
+    await user.type(screen.getByRole('searchbox', { name: /enter antecedent/i }), 'Headache');
+    await user.click(screen.getByRole('button', { name: /headache/i }));
+    await user.click(screen.getByRole('textbox', { name: /onset date/i }));
+    await user.paste('2020-05-05');
+    await user.click(screen.getByRole('button', { name: /save & close/i }));
+
+    await waitFor(() =>
+      expect(mockCreateCondition).toHaveBeenCalledWith(
+        expect.objectContaining({
+          antecedentType: 'surgical',
+          clinicalStatus: 'inactive',
+        }),
+      ),
+    );
   });
 
   it('renders an error notification if there was a problem recording a condition', async () => {
@@ -186,7 +236,8 @@ describe('Conditions form', () => {
 
     const submitButton = screen.getByRole('button', { name: /save & close/i });
     const activeStatusInput = screen.getByRole('radio', { name: 'Active' });
-    const conditionSearchInput = screen.getByRole('searchbox', { name: /enter condition/i });
+    const antecedentTypeInput = screen.getByRole('radio', { name: /patol|patholog/i });
+    const conditionSearchInput = screen.getByRole('searchbox', { name: /enter antecedent/i });
     const onsetDateInput = screen.getByRole('textbox', { name: /onset date/i });
 
     const error = {
@@ -198,8 +249,9 @@ describe('Conditions form', () => {
     };
 
     mockCreateCondition.mockRejectedValue(error);
+    await user.click(antecedentTypeInput);
     await user.type(conditionSearchInput, 'Headache');
-    await user.click(screen.getByRole('menuitem', { name: /Headache/i }));
+    await user.click(screen.getByRole('button', { name: /Headache/i }));
     await user.click(onsetDateInput);
     await user.paste('2020-05-05');
     await user.click(activeStatusInput);
@@ -221,23 +273,29 @@ describe('Conditions form', () => {
 
     renderConditionsForm();
 
-    const conditionSearchInput = screen.getByRole('searchbox', { name: /enter condition/i });
+    const conditionSearchInput = screen.getByRole('searchbox', { name: /enter antecedent/i });
+    const antecedentTypeInput = screen.getByRole('radio', { name: /patol|patholog/i });
     const submitButton = screen.getByRole('button', { name: /save & close/i });
-    await user.click(submitButton);
+    const form = submitButton.closest('form')!;
+    fireEvent.submit(form);
 
-    expect(screen.getByText(/a condition is required/i)).toBeInTheDocument();
+    await waitFor(() => expect(screen.getByText(/an antecedent is required/i)).toBeInTheDocument());
+    expect(screen.getByText(/an antecedent type is required/i)).toBeInTheDocument();
     expect(screen.getByText(/a clinical status is required/i)).toBeInTheDocument();
 
     await user.type(conditionSearchInput, 'Headache');
-    await user.click(screen.getByRole('menuitem', { name: /headache/i }));
-    await user.click(submitButton);
+    await user.click(screen.getByRole('button', { name: /headache/i }));
+    fireEvent.submit(form);
 
-    expect(screen.getByText(/a clinical status is required/i)).toBeInTheDocument();
+    await waitFor(() => expect(screen.getByText(/a clinical status is required/i)).toBeInTheDocument());
+    expect(screen.getByText(/an antecedent type is required/i)).toBeInTheDocument();
 
+    await user.click(antecedentTypeInput);
     await user.click(screen.getByLabelText(/^active/i));
-    await user.click(submitButton);
+    fireEvent.submit(form);
 
-    expect(screen.queryByText(/a condition is required/i)).not.toBeInTheDocument();
+    await waitFor(() => expect(screen.queryByText(/an antecedent is required/i)).not.toBeInTheDocument());
+    expect(screen.queryByText(/an antecedent type is required/i)).not.toBeInTheDocument();
     expect(screen.queryByText(/a clinical status is required/i)).not.toBeInTheDocument();
 
     await waitFor(() => {
@@ -245,8 +303,8 @@ describe('Conditions form', () => {
     });
     expect(mockShowSnackbar).toHaveBeenCalledWith({
       kind: 'success',
-      subtitle: 'It is now visible on the Conditions page',
-      title: 'Condition saved',
+      subtitle: 'It is now visible on the Antecedents page',
+      title: 'Antecedent saved',
     });
   });
 
@@ -267,11 +325,13 @@ describe('Conditions form', () => {
 
     renderConditionsForm({ condition: conditionToEdit, formContext: 'editing' });
 
-    expect(screen.queryByRole('searchbox', { name: /enter condition/i })).not.toBeInTheDocument();
+    expect(screen.queryByRole('searchbox', { name: /enter antecedent/i })).not.toBeInTheDocument();
 
     const inactiveStatusInput = screen.getByLabelText(/inactive/i);
+    const antecedentTypeInput = screen.getByRole('radio', { name: /patol|patholog/i });
     const submitButton = screen.getByRole('button', { name: /save & close/i });
 
+    await user.click(antecedentTypeInput);
     await user.click(inactiveStatusInput);
     await user.click(submitButton);
   });

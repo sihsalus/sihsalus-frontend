@@ -12,23 +12,22 @@ import {
   useSession,
 } from '@openmrs/esm-framework';
 import { render, waitFor } from '@testing-library/react';
-import React from 'react';
 import { mutate } from 'swr';
 
 import RedirectLogout from './redirect-logout.component';
 
-jest.mock('swr', () => ({
-  mutate: jest.fn(),
+vi.mock('swr', () => ({
+  mutate: vi.fn(),
 }));
 
-const mockClearCurrentUser = jest.mocked(clearCurrentUser);
-const mockNavigate = jest.mocked(navigate);
-const mockOpenmrsFetch = jest.mocked(openmrsFetch);
-const mockRefetchCurrentUser = jest.mocked(refetchCurrentUser);
-const mockSetUserLanguage = jest.mocked(setUserLanguage);
-const mockUseConfig = jest.mocked(useConfig);
-const mockUseConnectivity = jest.mocked(useConnectivity);
-const mockUseSession = jest.mocked(useSession);
+const mockClearCurrentUser = vi.mocked(clearCurrentUser);
+const mockNavigate = vi.mocked(navigate);
+const mockOpenmrsFetch = vi.mocked(openmrsFetch);
+const mockRefetchCurrentUser = vi.mocked(refetchCurrentUser);
+const mockSetUserLanguage = vi.mocked(setUserLanguage);
+const mockUseConfig = vi.mocked(useConfig);
+const mockUseConnectivity = vi.mocked(useConnectivity);
+const mockUseSession = vi.mocked(useSession);
 
 describe('RedirectLogout', () => {
   beforeEach(() => {
@@ -114,7 +113,7 @@ describe('RedirectLogout', () => {
   });
 
   it('should handle logout failure gracefully', async () => {
-    const consoleError = jest.spyOn(console, 'error').mockImplementation(() => {});
+    const consoleError = vi.spyOn(console, 'error').mockImplementation(() => {});
     mockOpenmrsFetch.mockRejectedValue(new Error('Logout failed'));
 
     render(<RedirectLogout />);

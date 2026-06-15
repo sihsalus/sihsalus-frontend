@@ -10,15 +10,15 @@
   "scripts": {
     "start": "openmrs develop",
     "serve": "rspack serve --mode=development",
-    "debug": "npm run serve",
+    "debug": "yarn serve",
     "build": "rspack --mode=production",
     "analyze": "rspack --mode=production --env analyze=true",
     "lint": "node ../../tooling/scripts/run-biome.js lint .",
-    "test": "jest --config jest.config.js --verbose false --passWithNoTests --color",
-    "test:watch": "cross-env TZ=UTC jest --watch --config jest.config.js --color",
-    "coverage": "yarn test --coverage",
+    "test": "vitest run --passWithNoTests",
+    "test:watch": "vitest watch",
+    "coverage": "vitest run --coverage --passWithNoTests",
     "typescript": "tsc",
-    "extract-translations": "i18next 'src/**/*.{ts,tsx}' '!src/**/*.test.{ts,tsx}' --config ../../tooling/scripts/i18next-parser.config.js"
+    "extract-translations": "i18next 'src/**/*.{ts,tsx}' '!src/**/*.test.{ts,tsx}' '!src/**/*.spec.{ts,tsx}' --config ../../tooling/scripts/i18next-parser.config.js"
   },
   "browserslist": [
     "extends browserslist-config-openmrs"
@@ -55,8 +55,8 @@
   },
   "devDependencies": {
     "@rspack/cli": "1.7.11",
-    "jest": "^29.7.0",
     "openmrs": "*",
-    "typescript": "^6.0.0"
+    "typescript": "6.0.3",
+    "vitest": "^4.1.7"
   }
 }

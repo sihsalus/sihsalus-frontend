@@ -3,6 +3,7 @@ import { type Attachment, CloseIcon, useLayoutType } from '@openmrs/esm-framewor
 import Linkify from 'linkify-react';
 import React, { useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
+import { moduleName } from '../constants';
 import styles from './attachment-preview.scss';
 
 interface AttachmentPreviewProps {
@@ -16,7 +17,7 @@ const AttachmentPreview: React.FC<AttachmentPreviewProps> = ({
   onClosePreview,
   onDeleteAttachment,
 }) => {
-  const { t } = useTranslation();
+  const { t } = useTranslation(moduleName);
   const isTablet = useLayoutType() === 'tablet';
   const isPdf = attachmentToPreview.bytesContentFamily === 'PDF';
   const isImage = attachmentToPreview.bytesContentFamily === 'IMAGE';
@@ -24,7 +25,7 @@ const AttachmentPreview: React.FC<AttachmentPreviewProps> = ({
 
   useEffect(() => {
     const closePreviewOnEscape = (event) => {
-      if (event.key == 'Escape') {
+      if (event.key === 'Escape') {
         onClosePreview();
       }
     };

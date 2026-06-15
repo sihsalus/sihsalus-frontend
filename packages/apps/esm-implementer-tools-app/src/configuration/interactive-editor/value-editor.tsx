@@ -1,6 +1,6 @@
 import { Button } from '@carbon/react';
 import { CloseIcon, type Config, type ConfigSchema, getCoreTranslation, SaveIcon, Type } from '@openmrs/esm-framework';
-import React, { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 
 import type { ConfigValueDescriptor } from './editable-value.component';
 import { validateValue } from './validators.resource';

@@ -12,30 +12,47 @@ import {
   TextArea,
 } from '@carbon/react';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { showSnackbar, useLayoutType } from '@openmrs/esm-framework';
-import { type DefaultPatientWorkspaceProps, type Order, usePatientOrders } from '@openmrs/esm-patient-common-lib';
+import { showSnackbar, useConfig, useLayoutType, Workspace2 } from '@openmrs/esm-framework';
+import {
+  type DefaultPatientWorkspaceProps,
+  type Order,
+  type PatientWorkspace2DefinitionProps,
+  usePatientOrders,
+} from '@openmrs/esm-patient-common-lib';
 import dayjs from 'dayjs';
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { Controller, type FieldErrors, useForm } from 'react-hook-form';
 import { useTranslation } from 'react-i18next';
 import { z } from 'zod';
+import type { ConfigObject } from '../config-schema';
 import { cancelOrder } from './cancel-order.resource';
 import styles from './cancel-order-form.scss';
 
-interface OrderCancellationFormProps extends DefaultPatientWorkspaceProps {
+interface OrderCancellationFormWorkspaceProps {
   order: Order;
 }
 
-const OrderCancellationForm: React.FC<OrderCancellationFormProps> = ({
-  order,
-  patientUuid,
-  closeWorkspace,
-  promptBeforeClosing,
-}) => {
+type LegacyOrderCancellationFormProps = DefaultPatientWorkspaceProps & OrderCancellationFormWorkspaceProps;
+type Workspace2OrderCancellationFormProps = PatientWorkspace2DefinitionProps<
+  OrderCancellationFormWorkspaceProps,
+  object
+>;
+type OrderCancellationFormProps = LegacyOrderCancellationFormProps | Workspace2OrderCancellationFormProps;
+
+function isWorkspace2Props(props: OrderCancellationFormProps): props is Workspace2OrderCancellationFormProps {
+  return 'groupProps' in props && 'workspaceProps' in props;
+}
+
+const OrderCancellationForm: React.FC<OrderCancellationFormProps> = (props) => {
+  const isWorkspace2 = isWorkspace2Props(props);
+  const order = isWorkspace2 ? props.workspaceProps.order : props.order;
+  const patientUuid = isWorkspace2 ? props.groupProps.patientUuid : props.patientUuid;
   const { t } = useTranslation();
   const isTablet = useLayoutType() === 'tablet';
   const [showErrorNotification, setShowErrorNotification] = useState(false);
-  const { mutate } = usePatientOrders(patientUuid);
+  const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
+  const { careSettingUuid } = useConfig<ConfigObject>();
+  const { mutate } = usePatientOrders(patientUuid, undefined, undefined, undefined, undefined, careSettingUuid);
 
   const cancelOrderSchema = useMemo(() => {
     return z.object({
@@ -69,9 +86,25 @@ const OrderCancellationForm: React.FC<OrderCancellationFormProps> = ({
     }
   }
 
+  const closeCurrentWorkspace = useCallback(
+    (discardUnsavedChanges = false) => {
+      if (isWorkspace2) {
+        void props.closeWorkspace({ discardUnsavedChanges });
+        return;
+      }
+
+      props.closeWorkspace({ ignoreChanges: discardUnsavedChanges });
+    },
+    [isWorkspace2, props],
+  );
+
   useEffect(() => {
-    promptBeforeClosing(() => isDirty);
-  }, [isDirty, promptBeforeClosing]);
+    if (isWorkspace2) {
+      setHasUnsavedChanges(isDirty);
+    } else {
+      props.promptBeforeClosing(() => isDirty);
+    }
+  }, [isDirty, isWorkspace2, props]);
 
   const cancelOrderRequest = useCallback(
     (data: CancelOrderFormData) => {
@@ -85,7 +118,7 @@ const OrderCancellationForm: React.FC<OrderCancellationFormProps> = ({
 
       cancelOrder(order, payload).then(
         () => {
-          closeWorkspace();
+          closeCurrentWorkspace(true);
           mutate();
 
           showSnackbar({
@@ -106,10 +139,10 @@ const OrderCancellationForm: React.FC<OrderCancellationFormProps> = ({
         },
       );
     },
-    [closeWorkspace, mutate, order, t],
+    [closeCurrentWorkspace, mutate, order, t],
   );
 
-  return (
+  const content = (
     <Form className={styles.form}>
       <div className={styles.grid}>
         <Stack>
@@ -175,7 +208,7 @@ const OrderCancellationForm: React.FC<OrderCancellationFormProps> = ({
       )}
 
       <ButtonSet className={isTablet ? styles.tablet : styles.desktop}>
-        <Button className={styles.button} kind="secondary" onClick={() => closeWorkspace()}>
+        <Button className={styles.button} kind="secondary" onClick={() => closeCurrentWorkspace()}>
           {t('discard', 'Discard')}
         </Button>
         <Button
@@ -194,6 +227,16 @@ const OrderCancellationForm: React.FC<OrderCancellationFormProps> = ({
       </ButtonSet>
     </Form>
   );
+
+  if (isWorkspace2) {
+    return (
+      <Workspace2 title={t('orderCancellation', 'Order cancellation')} hasUnsavedChanges={hasUnsavedChanges}>
+        {content}
+      </Workspace2>
+    );
+  }
+
+  return content;
 };
 
 export default OrderCancellationForm;

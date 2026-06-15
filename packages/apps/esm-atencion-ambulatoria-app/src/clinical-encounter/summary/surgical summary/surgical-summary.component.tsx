@@ -1,18 +1,12 @@
 import { InlineLoading, OverflowMenu, OverflowMenuItem } from '@carbon/react';
-import { formatDate, launchWorkspace, parseDate, useConfig } from '@openmrs/esm-framework';
-import { EmptyState, ErrorState } from '@openmrs/esm-patient-common-lib';
-import { getObsFromEncounter } from '@sihsalus/esm-sihsalus-shared';
+import { formatDate, parseDate, useConfig } from '@openmrs/esm-framework';
+import { EmptyState, ErrorState, getObsFromEncounter, launchPatientWorkspace } from '@openmrs/esm-patient-common-lib';
 import React from 'react';
 import { useTranslation } from 'react-i18next';
 import type { KeyedMutator } from 'swr';
 import type { ConfigObject } from '../../../config-schema';
 import type { OpenmrsEncounter } from '../../../types';
-import {
-  AdmissionDate_UUID,
-  AdmissionWard_UUID,
-  PriorityOfAdmission_UUID,
-  patientFormEntryWorkspace,
-} from '../../../utils/constants';
+import { patientFormEntryWorkspace } from '../../../utils/constants';
 import styles from '../../dashboard/in-patient.scss';
 import SummaryCard from '../summary-card.component';
 
@@ -35,10 +29,11 @@ const ClinicalEncounter: React.FC<SurgicalSummaryProps> = ({
 }) => {
   const { t } = useTranslation();
   const {
+    concepts,
     formsList: { clinicalEncounterFormUuid },
   } = useConfig<ConfigObject>();
   const handleOpenOrEditClinicalEncounterForm = (encounterUUID = '') => {
-    launchWorkspace(patientFormEntryWorkspace, {
+    launchPatientWorkspace(patientFormEntryWorkspace, {
       workspaceTitle: t('clinicalEncounter', 'Clinical Encounter'),
       mutateForm: mutate,
       formInfo: {
@@ -51,17 +46,18 @@ const ClinicalEncounter: React.FC<SurgicalSummaryProps> = ({
     });
   };
   const formattedEncounters = encounters.map((encounter) => {
+    const admissionDate = getObsFromEncounter(encounter, concepts.admissionDateUuid);
+
     return {
       encounterDate: formatDate(new Date(encounter.encounterDatetime)),
       admissionDate:
-        getObsFromEncounter(encounter, AdmissionDate_UUID) === '--' ||
-        getObsFromEncounter(encounter, AdmissionDate_UUID) == null
+        admissionDate === '--' || admissionDate == null
           ? formatDate(parseDate(encounter.encounterDatetime))
-          : formatDate(parseDate(String(getObsFromEncounter(encounter, AdmissionDate_UUID)))),
+          : formatDate(parseDate(String(admissionDate))),
       primaryDiagnosis: encounter.diagnoses.length > 0 ? encounter.diagnoses[0].diagnosis.coded.display : '--',
-      priorityOfAdmission: String(getObsFromEncounter(encounter, PriorityOfAdmission_UUID)),
+      priorityOfAdmission: String(getObsFromEncounter(encounter, concepts.priorityOfAdmissionUuid)),
       admittingDoctor: encounter.encounterProviders.length > 0 ? encounter.encounterProviders[0].display : '',
-      admissionWard: String(getObsFromEncounter(encounter, AdmissionWard_UUID)),
+      admissionWard: String(getObsFromEncounter(encounter, concepts.admissionWardUuid)),
       actions: (
         <OverflowMenu aria-label={t('actions', 'Actions')} flipped={false}>
           <OverflowMenuItem

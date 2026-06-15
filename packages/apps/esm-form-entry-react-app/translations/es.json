@@ -25,6 +25,7 @@
   "fileUploadDescriptionAny": "Subir cualquier tipo de archivo",
   "invalidWorkspaceName": "Nombre de espacio de trabajo inválido.",
   "invalidWorkspaceNameSubtitle": "Por favor, proporcione un nombre de espacio de trabajo válido.",
+  "labOrdersGenerated": "Órdenes de laboratorio generadas",
   "launchWorkspace": "Abrir Espacio de Trabajo",
   "loading": "Cargando",
   "notification": "Notificación",
@@ -47,5 +48,7 @@
   "upload": "Subir",
   "uploadedPhoto": "Foto subida",
   "uploadImage": "Subir imagen",
-  "valuesOutOfBound": "Algunos de los valores están fuera de los límites permitidos."
+  "valuesOutOfBound": "Algunos de los valores están fuera de los límites permitidos.",
+  "visitDateAdjusted": "Fecha de consulta ajustada",
+  "visitDateAdjustedDescription": "Las fechas de la consulta se ajustaron automáticamente para incluir la fecha de atención."
 }

@@ -1,7 +1,6 @@
 import { type FetchResponse, openmrsFetch, showSnackbar, useVisit } from '@openmrs/esm-framework';
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import React from 'react';
 import { mockCurrentVisit, mockPatient, mockVisitQueueEntries } from 'test-utils';
 
 import { removeQueuedPatient } from '../hooks/useServiceQueue';
@@ -9,24 +8,24 @@ import { type MappedVisitQueueEntry, useVisitQueueEntry } from '../queue-entry/q
 
 import CancelVisitDialog from './cancel-visit-dialog.component';
 
-const mockCloseModal = jest.fn();
-const mockOpenmrsFetch = jest.mocked(openmrsFetch);
-const mockRemoveQueuedPatient = jest.mocked(removeQueuedPatient);
-const mockShowSnackbar = jest.mocked(showSnackbar);
-const mockUseVisit = jest.mocked(useVisit);
-const mockUseVisitQueueEntry = jest.mocked(useVisitQueueEntry);
+const mockCloseModal = vi.fn();
+const mockOpenmrsFetch = vi.mocked(openmrsFetch);
+const mockRemoveQueuedPatient = vi.mocked(removeQueuedPatient);
+const mockShowSnackbar = vi.mocked(showSnackbar);
+const mockUseVisit = vi.mocked(useVisit);
+const mockUseVisitQueueEntry = vi.mocked(useVisitQueueEntry);
 
-jest.mock('../queue-entry/queue.resource', () => ({
-  ...jest.requireActual('../queue-entry/queue.resource'),
-  useVisitQueueEntry: jest.fn(),
+vi.mock('../queue-entry/queue.resource', async () => ({
+  ...(await vi.importActual('../queue-entry/queue.resource')),
+  useVisitQueueEntry: vi.fn(),
 }));
 
-jest.mock('../hooks/useServiceQueue', () => {
-  const originalModule = jest.requireActual('../hooks/useServiceQueue');
+vi.mock('../hooks/useServiceQueue', async () => {
+  const originalModule = await vi.importActual('../hooks/useServiceQueue');
 
   return {
     ...originalModule,
-    removeQueuedPatient: jest.fn(),
+    removeQueuedPatient: vi.fn(),
   };
 });
 
@@ -39,7 +38,7 @@ describe('Cancel visit', () => {
       error: null,
       isLoading: false,
       isValidating: false,
-      mutate: jest.fn(),
+      mutate: vi.fn(),
     });
   });
 
@@ -57,7 +56,7 @@ describe('Cancel visit', () => {
       isLoading: false,
       error: undefined,
       isValidating: false,
-      mutate: jest.fn(),
+      mutate: vi.fn(),
     });
     mockRemoveQueuedPatient.mockResolvedValue(response as FetchResponse);
 
@@ -104,7 +103,7 @@ describe('Cancel visit', () => {
       isLoading: false,
       error: undefined,
       isValidating: false,
-      mutate: jest.fn(),
+      mutate: vi.fn(),
     });
 
     mockRemoveQueuedPatient.mockResolvedValue(response as FetchResponse);

@@ -161,16 +161,14 @@ const BillHistory: React.FC<BillHistoryProps> = ({ patientUuid }) => {
                 <TableHead>
                   <TableRow>
                     <TableExpandHeader enableToggle {...getExpandHeaderProps()} />
-                    {headers.map((header, i) => (
-                      <TableHeader
-                        key={i}
-                        {...getHeaderProps({
-                          header,
-                        })}
-                      >
-                        {header.header}
-                      </TableHeader>
-                    ))}
+                    {headers.map((header) => {
+                      const { key, ...headerProps } = getHeaderProps({ header });
+                      return (
+                        <TableHeader key={key} {...headerProps}>
+                          {header.header}
+                        </TableHeader>
+                      );
+                    })}
                   </TableRow>
                 </TableHead>
                 <TableBody>
@@ -179,13 +177,18 @@ const BillHistory: React.FC<BillHistoryProps> = ({ patientUuid }) => {
 
                     return (
                       <React.Fragment key={row.id}>
-                        <TableExpandRow {...getRowProps({ row })}>
-                          {row.cells.map((cell) => (
-                            <TableCell key={cell.id} className={styles.tableCells}>
-                              {cell.value}
-                            </TableCell>
-                          ))}
-                        </TableExpandRow>
+                        {(() => {
+                          const { key, ...rowProps } = getRowProps({ row });
+                          return (
+                            <TableExpandRow key={key} {...rowProps}>
+                              {row.cells.map((cell) => (
+                                <TableCell key={cell.id} className={styles.tableCells}>
+                                  {cell.value}
+                                </TableCell>
+                              ))}
+                            </TableExpandRow>
+                          );
+                        })()}
                         {row.isExpanded ? (
                           <TableExpandedRow colSpan={headers.length + 1}>
                             <div className={styles.container} key={i}>

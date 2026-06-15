@@ -1,12 +1,12 @@
 import { render, screen } from '@testing-library/react';
-import React from 'react';
+import { vi } from 'vitest';
 import { useDefaultFacility } from '../../billing.resource';
 import PrintableFooter from './printable-footer.component';
 
-const mockUseDefaultFacility = jest.mocked<typeof useDefaultFacility>(useDefaultFacility);
+const mockUseDefaultFacility = vi.mocked<typeof useDefaultFacility>(useDefaultFacility);
 
-jest.mock('../../billing.resource', () => ({
-  useDefaultFacility: jest.fn(),
+vi.mock('../../billing.resource', () => ({
+  useDefaultFacility: vi.fn(),
 }));
 
 describe('PrintableFooter', () => {

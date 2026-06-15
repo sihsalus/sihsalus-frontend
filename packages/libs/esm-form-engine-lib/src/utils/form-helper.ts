@@ -83,7 +83,8 @@ export function evaluateConditionalAnswered(field: FormField, allFields: FormFie
 
   const referencedField = allFields.find((candidate) => candidate.id === referencedFieldId);
   if (referencedField) {
-    (referencedField.fieldDependents || (referencedField.fieldDependents = new Set())).add(field.id);
+    referencedField.fieldDependents ??= new Set();
+    referencedField.fieldDependents.add(field.id);
   }
 }
 
@@ -127,7 +128,8 @@ export function evalConditionalRequired(
   const { referenceQuestionAnswers, referenceQuestionId } = field.required;
   const referencedField = allFields.find((candidate) => candidate.id === referenceQuestionId);
   if (referencedField) {
-    (referencedField.fieldDependents || (referencedField.fieldDependents = new Set())).add(field.id);
+    referencedField.fieldDependents ??= new Set();
+    referencedField.fieldDependents.add(field.id);
     const referencedValue = formValues[referenceQuestionId];
     return typeof referencedValue === 'string' ? (referenceQuestionAnswers?.includes(referencedValue) ?? false) : false;
   }
@@ -278,12 +280,10 @@ export const extractObsValueAndDisplay = (
     };
   } else {
     const conceptUuid = isObsValueWithUuid(omrsObs.value) ? omrsObs.value.uuid : null;
+    const matchingAnswer = field.questionOptions.answers?.find((option) => option.concept === conceptUuid);
     return {
       value: conceptUuid,
-      display:
-        typeof field.questionOptions.answers?.find((option) => option.concept === conceptUuid)?.label === 'string'
-          ? field.questionOptions.answers.find((option) => option.concept === conceptUuid)?.label
-          : null,
+      display: typeof matchingAnswer?.label === 'string' ? matchingAnswer.label : null,
     };
   }
 };

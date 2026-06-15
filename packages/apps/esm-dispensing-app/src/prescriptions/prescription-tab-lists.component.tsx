@@ -46,7 +46,7 @@ const PrescriptionTabLists: React.FC = () => {
               {t('allPrescriptions', 'All Prescriptions')}
             </Tab>
             {customTabs.map((tab, index) => (
-              <Tab title={t(tab.title)} id={'custom_tab_' + index} className={styles.tab}>
+              <Tab key={tab.title} title={t(tab.title)} id={'custom_tab_' + index} className={styles.tab}>
                 {t(tab.title)}
               </Tab>
             ))}
@@ -57,6 +57,7 @@ const PrescriptionTabLists: React.FC = () => {
             <PrescriptionTabPanel isTabActive={selectedTab === 2} status={''} />
             {customTabs.map((tab, index) => (
               <PrescriptionTabPanel
+                key={tab.title}
                 isTabActive={selectedTab === index + 3}
                 customPrescriptionsTableEndpoint={tab.customPrescriptionsTableEndpoint}
               />

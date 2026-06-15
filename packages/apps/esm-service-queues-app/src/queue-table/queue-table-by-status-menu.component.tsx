@@ -1,7 +1,6 @@
 import { SideNavMenu } from '@carbon/react';
 import { ConfigurableLink } from '@openmrs/esm-framework';
 import classNames from 'classnames';
-import React from 'react';
 import { useTranslation } from 'react-i18next';
 import { BrowserRouter, generatePath, useMatch } from 'react-router-dom';
 
@@ -35,7 +34,7 @@ function QueueTableByStatusLink({ queue }: { queue: Queue }) {
   return (
     <ConfigurableLink
       className={classNames('cds--side-nav__link', {
-        'active-left-nav-link': queue.uuid == uuid,
+        'active-left-nav-link': queue.uuid === uuid,
       })}
       to={generatePath(path, { uuid: queue.uuid })}
     >

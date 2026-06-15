@@ -4,7 +4,7 @@ import { emrConfigurationMock } from '__mocks__';
 import { type PatientNote } from '../types';
 import PatientNotesHistory from './notes-container.component';
 
-const mockedUseEmrConfiguration = jest.mocked(useEmrConfiguration);
+const mockedUseEmrConfiguration = vi.mocked(useEmrConfiguration);
 
 const mockPatientNotes: PatientNote[] = [
   {
@@ -57,18 +57,18 @@ const mockEditedPatientNote: PatientNote = {
 
 const defaultProps = {
   patientNotes: [],
-  mutatePatientNotes: jest.fn(),
+  mutatePatientNotes: vi.fn(),
   isLoading: false,
   errorFetchingPatientNotes: null,
-  promptBeforeClosing: jest.fn(),
+  promptBeforeClosing: vi.fn(),
 };
 
 describe('PatientNotesHistory', () => {
   beforeEach(() => {
-    jest.resetAllMocks();
+    vi.resetAllMocks();
     mockedUseEmrConfiguration.mockReturnValue({
       emrConfiguration: emrConfigurationMock,
-      mutateEmrConfiguration: jest.fn(),
+      mutateEmrConfiguration: vi.fn(),
       isLoadingEmrConfiguration: false,
       errorFetchingEmrConfiguration: null,
     });

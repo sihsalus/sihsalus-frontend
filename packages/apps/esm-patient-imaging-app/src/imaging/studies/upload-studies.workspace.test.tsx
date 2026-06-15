@@ -1,64 +1,73 @@
 import * as framework from '@openmrs/esm-framework';
 import { fireEvent, render, screen, waitFor } from '@testing-library/react';
-import React from 'react';
-import * as api from '../../api';
+import type { ReactNode } from 'react';
+import * as imagingApi from '../../api/api';
 import { maxUploadImageDataSize } from '../constants';
 import UploadStudiesWorkspace from './upload-studies.workspace';
 
-jest.mock('react-i18next', () => ({
-  useTranslation: () => ({ t: (key: string, fallback: string) => fallback }),
+type WrapperProps = {
+  children?: ReactNode;
+};
+
+vi.mock('react-i18next', async () => ({
+  useTranslation: () => ({ t: (_key: string, fallback: string) => fallback }),
 }));
 
-jest.mock('../../api', () => ({
-  uploadStudies: jest.fn(),
-  useOrthancConfigurations: jest.fn(),
-}));
-
-jest.mock('@openmrs/esm-framework', () => ({
-  showSnackbar: jest.fn(),
-  createErrorHandler: jest.fn(),
-  useLayoutType: jest.fn(),
+vi.mock('@openmrs/esm-framework', async () => ({
+  ...(await vi.importActual('@openmrs/esm-framework')),
+  showSnackbar: vi.fn(),
+  createErrorHandler: vi.fn(),
+  useLayoutType: vi.fn(),
   ExtensionSlot: () => <div>ExtensionSlot</div>,
-  ResponsiveWrapper: ({ children }: any) => <div>{children}</div>,
+  ResponsiveWrapper: ({ children }: WrapperProps) => <div>{children}</div>,
 }));
-
-jest.mock('@carbon/react', () => {
-  const original = jest.requireActual('@carbon/react');
-  return {
-    ...original,
-    ComboBox: ({ onChange, selectedItem }: any) => (
-      <select
-        data-testid="combobox"
-        value={selectedItem?.id || ''}
-        onChange={(e) => onChange({ selectedItem: { id: Number(e.target.value), orthancBaseUrl: e.target.value } })}
-      >
-        <option value="">Select</option>
-        <option value="1">Server 1</option>
-        <option value="2">Server 2</option>
-      </select>
-    ),
-    FileUploader: ({ onChange }: any) => <input type="file" data-testid="file-uploader" onChange={onChange} multiple />,
-    Button: ({ children, ...props }: any) => <button {...props}>{children}</button>,
-    Form: ({ children, ...props }: any) => <form {...props}>{children}</form>,
-    Stack: ({ children }: any) => <div>{children}</div>,
-    Row: ({ children }: any) => <div>{children}</div>,
-    FormGroup: ({ children }: any) => <div>{children}</div>,
-  };
-});
 
 describe('UploadStudiesWorkspace', () => {
   const patientUuid = 'patient-123';
-  const closeWorkspace = jest.fn();
+  const closeWorkspace = vi.fn();
+  const mockUseOrthancConfigurations = vi.spyOn(imagingApi, 'useOrthancConfigurations');
+  const mockUseStudiesByPatient = vi.spyOn(imagingApi, 'useStudiesByPatient');
+  const mockUploadStudies = vi.spyOn(imagingApi, 'uploadStudies');
+  const buildStudiesHookResult = (
+    overrides: Partial<ReturnType<typeof imagingApi.useStudiesByPatient>> = {},
+  ): ReturnType<typeof imagingApi.useStudiesByPatient> =>
+    ({
+      data: [],
+      error: null,
+      isLoading: false,
+      isValidating: false,
+      mutate: vi.fn().mockResolvedValue(undefined),
+      ...overrides,
+    }) as ReturnType<typeof imagingApi.useStudiesByPatient>;
+
+  const selectOrthancServer = () => {
+    const comboBox = screen.getByTestId('orthanc-server-combobox');
+    fireEvent.change(comboBox, { target: { value: 'url1' } });
+    fireEvent.keyDown(comboBox, { key: 'ArrowDown' });
+    fireEvent.keyDown(comboBox, { key: 'Enter' });
+  };
+
+  const selectFiles = (files: File[]) => {
+    const input = screen
+      .getByTestId('upload-studies-fileuploader')
+      .querySelector('input[type="file"]') as HTMLInputElement;
+    fireEvent.change(input, { target: { files } });
+  };
 
   beforeEach(() => {
-    (api.useOrthancConfigurations as jest.Mock).mockReturnValue({
+    vi.clearAllMocks();
+    mockUseOrthancConfigurations.mockReturnValue({
       data: [
         { id: 1, orthancBaseUrl: 'url1', orthancProxyUrl: null },
         { id: 2, orthancBaseUrl: 'url2', orthancProxyUrl: null },
       ],
-    });
-    (framework.useLayoutType as jest.Mock).mockReturnValue('desktop');
-    jest.clearAllMocks();
+    } as ReturnType<typeof imagingApi.useOrthancConfigurations>);
+    mockUseStudiesByPatient.mockReturnValue(buildStudiesHookResult());
+    (framework.useLayoutType as vi.Mock).mockReturnValue('desktop');
+  });
+
+  beforeAll(() => {
+    window.HTMLElement.prototype.scrollIntoView = vi.fn();
   });
 
   const setup = () => {
@@ -66,9 +75,9 @@ describe('UploadStudiesWorkspace', () => {
       <UploadStudiesWorkspace
         patientUuid={patientUuid}
         closeWorkspace={closeWorkspace}
-        promptBeforeClosing={jest.fn()}
-        closeWorkspaceWithSavedChanges={jest.fn()}
-        setTitle={jest.fn()}
+        promptBeforeClosing={vi.fn()}
+        closeWorkspaceWithSavedChanges={vi.fn()}
+        setTitle={vi.fn()}
       />,
     );
   };
@@ -76,8 +85,8 @@ describe('UploadStudiesWorkspace', () => {
   it('renders form elements correctly', () => {
     setup();
 
-    expect(screen.getByTestId('combobox')).toBeInTheDocument();
-    expect(screen.getByTestId('file-uploader')).toBeInTheDocument();
+    expect(screen.getByTestId('orthanc-server-combobox')).toBeInTheDocument();
+    expect(screen.getByTestId('upload-studies-fileuploader')).toBeInTheDocument();
     expect(screen.getByText('Upload')).toBeInTheDocument();
     expect(screen.getByText('Cancel')).toBeInTheDocument();
   });
@@ -85,8 +94,7 @@ describe('UploadStudiesWorkspace', () => {
   it('shows error snackbar if no files are selected', async () => {
     setup();
 
-    // Select a valid Orthanc server to pass form validation
-    fireEvent.change(screen.getByTestId('combobox'), { target: { value: '1' } });
+    selectOrthancServer();
 
     fireEvent.click(screen.getByText('Upload'));
 
@@ -104,8 +112,8 @@ describe('UploadStudiesWorkspace', () => {
       type: 'application/dicom',
     });
 
-    fireEvent.change(screen.getByTestId('file-uploader'), { target: { files: [file] } });
-    fireEvent.change(screen.getByTestId('combobox'), { target: { value: '1' } });
+    selectFiles([file]);
+    selectOrthancServer();
     fireEvent.click(screen.getByText('Upload'));
 
     await waitFor(() =>
@@ -119,29 +127,71 @@ describe('UploadStudiesWorkspace', () => {
 
   it('calls uploadStudies and closes workspace on successful upload', async () => {
     const file = new File(['dummy content'], 'test.dcm', { type: 'application/dicom' });
-    (api.uploadStudies as jest.Mock).mockResolvedValue({});
+    mockUploadStudies.mockResolvedValue(undefined);
+    const mutate = vi.fn().mockResolvedValue(undefined);
+    mockUseStudiesByPatient.mockReturnValue(buildStudiesHookResult({ mutate }));
 
     setup();
 
-    fireEvent.change(screen.getByTestId('file-uploader'), { target: { files: [file] } });
-    fireEvent.change(screen.getByTestId('combobox'), { target: { value: '1' } });
+    selectFiles([file]);
+    selectOrthancServer();
 
     fireEvent.click(screen.getByText('Upload'));
 
     await waitFor(() => {
-      expect(api.uploadStudies).toHaveBeenCalled();
+      expect(mockUploadStudies).toHaveBeenCalledWith(
+        [file],
+        expect.objectContaining({
+          id: expect.any(Number),
+          orthancBaseUrl: expect.any(String),
+        }),
+        patientUuid,
+        expect.any(AbortController),
+      );
+      expect(mutate).toHaveBeenCalled();
+      expect(closeWorkspace).toHaveBeenCalled();
+    });
+  });
+
+  it('shows an inline loading state while uploading files', async () => {
+    const file = new File(['dummy content'], 'test.dcm', { type: 'application/dicom' });
+    let resolveUpload: () => void;
+    mockUploadStudies.mockImplementation(
+      () =>
+        new Promise<void>((resolve) => {
+          resolveUpload = resolve;
+        }),
+    );
+
+    setup();
+
+    selectFiles([file]);
+    selectOrthancServer();
+
+    fireEvent.click(screen.getByText('Upload'));
+
+    await waitFor(() => {
+      expect(screen.getByTestId('upload-studies-loading')).toBeInTheDocument();
+      expect(screen.getByText('Uploading studies...')).toBeInTheDocument();
+      expect(screen.getByTestId('upload-studies-submit')).toBeDisabled();
+      expect(screen.getByTestId('upload-studies-cancel')).toBeDisabled();
+    });
+
+    resolveUpload?.();
+
+    await waitFor(() => {
       expect(closeWorkspace).toHaveBeenCalled();
     });
   });
 
   it('shows snackbar on upload failure', async () => {
     const file = new File(['dummy content'], 'test.dcm', { type: 'application/dicom' });
-    (api.uploadStudies as jest.Mock).mockRejectedValue(new Error('Upload failed'));
+    mockUploadStudies.mockRejectedValue(new Error('Upload failed'));
 
     setup();
 
-    fireEvent.change(screen.getByTestId('file-uploader'), { target: { files: [file] } });
-    fireEvent.change(screen.getByTestId('combobox'), { target: { value: '1' } });
+    selectFiles([file]);
+    selectOrthancServer();
 
     fireEvent.click(screen.getByText('Upload'));
 

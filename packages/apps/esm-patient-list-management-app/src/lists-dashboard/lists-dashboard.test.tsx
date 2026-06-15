@@ -1,23 +1,21 @@
-import { type FetchResponse, openmrsFetch, restBaseUrl, useSession } from '@openmrs/esm-framework';
+import { type FetchResponse, openmrsFetch, restBaseUrl } from '@openmrs/esm-framework';
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import React from 'react';
 import { useLocation } from 'react-router-dom';
-import { mockSession } from 'test-utils';
 
 import ListsDashboard from './lists-dashboard.component';
 
-const mockOpenmrsFetch = jest.mocked(openmrsFetch);
-const mockUseLocation = jest.mocked(useLocation);
-const mockUseSession = jest.mocked(useSession);
+const mockOpenmrsFetch = vi.mocked(openmrsFetch);
+const mockUseLocation = vi.mocked(useLocation);
 
-jest.mock('@sihsalus/esm-rbac', () => ({
-  AppErrorBoundary: ({ children }: { children: React.ReactNode }) => <>{children}</>,
+vi.mock('@sihsalus/esm-rbac', async () => ({
+  RequirePrivilege: ({ children }: { children: React.ReactNode }) => <>{children}</>,
 }));
 
-jest.mock('react-router-dom', () => ({
-  ...jest.requireActual('react-router-dom'),
-  useLocation: jest.fn(),
+vi.mock('react-router-dom', async () => ({
+  ...(await vi.importActual('react-router-dom')),
+  useLocation: vi.fn(),
 }));
 
 describe('ListsDashboard', () => {
@@ -29,8 +27,6 @@ describe('ListsDashboard', () => {
       state: null,
       key: 'default',
     });
-
-    mockUseSession.mockReturnValue(mockSession.data);
 
     mockOpenmrsFetch.mockResolvedValue({
       data: {

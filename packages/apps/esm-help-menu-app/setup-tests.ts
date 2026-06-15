@@ -1,14 +1,14 @@
 import type {} from '@openmrs/esm-framework';
 import { cleanup } from '@testing-library/react';
 
-jest.mock('@openmrs/esm-framework', () => require('@openmrs/esm-framework/mock'));
+vi.mock('@openmrs/esm-framework', () => require('@openmrs/esm-framework/mock'));
 
 (window as unknown as { importMapOverrides: unknown }).importMapOverrides = {
-  getOverrideMap: jest.fn().mockReturnValue({ imports: {} }),
+  getOverrideMap: vi.fn().mockReturnValue({ imports: {} }),
 };
 
 afterEach(cleanup);
 
-jest.mock('workbox-window', () => ({
-  Workbox: jest.fn(),
+vi.mock('workbox-window', () => ({
+  Workbox: vi.fn(),
 }));

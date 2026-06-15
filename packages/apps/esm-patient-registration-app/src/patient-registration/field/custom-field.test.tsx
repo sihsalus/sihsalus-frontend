@@ -7,13 +7,17 @@ import { type FormValues } from '../patient-registration.types';
 import { PatientRegistrationContext } from '../patient-registration-context';
 import { CustomField } from './custom-field.component';
 
-jest.mock('./person-attributes/person-attribute-field.component', () => ({
+vi.mock('./person-attributes/person-attribute-field.component', () => ({
   PersonAttributeField: ({ fieldDefinition }) => (
     <div data-testid="person-attribute-field">{fieldDefinition.label}</div>
   ),
 }));
 
-const mockUseConfig = jest.mocked(useConfig<RegistrationConfig>);
+vi.mock('./person-attributes/nationality-field.component', () => ({
+  NationalityField: ({ fieldDefinition }) => <div data-testid="nationality-field">{fieldDefinition.label}</div>,
+}));
+
+const mockUseConfig = vi.mocked(useConfig<RegistrationConfig>);
 
 const resources = {
   identifierTypes: [
@@ -36,10 +40,10 @@ const baseContext = {
   inEditMode: false,
   initialFormValues: { identifiers: {} } as FormValues,
   isOffline: false,
-  setCapturePhotoProps: jest.fn(),
-  setFieldValue: jest.fn(),
-  setInitialFormValues: jest.fn(),
-  setFieldTouched: jest.fn(),
+  setCapturePhotoProps: vi.fn(),
+  setFieldValue: vi.fn(),
+  setInitialFormValues: vi.fn(),
+  setFieldTouched: vi.fn(),
   validationSchema: null,
 };
 
@@ -60,11 +64,11 @@ function renderCustomField(identifiers: FormValues['identifiers']) {
 
 describe('CustomField', () => {
   beforeEach(() => {
-    jest.clearAllMocks();
+    vi.clearAllMocks();
     mockUseConfig.mockReturnValue(getDefaultsFromConfigSchema(esmPatientRegistrationSchema));
   });
 
-  it('hides nationality while foreign identifiers have no value', () => {
+  it('shows nationality while foreign identifiers have no value', () => {
     renderCustomField({
       ce: {
         identifierTypeUuid: '550e8400-e29b-41d4-a716-446655440002',
@@ -77,7 +81,7 @@ describe('CustomField', () => {
       },
     });
 
-    expect(screen.queryByTestId('person-attribute-field')).not.toBeInTheDocument();
+    expect(screen.getByTestId('nationality-field')).toHaveTextContent('Nacionalidad');
   });
 
   it('shows nationality when CE has a value', () => {
@@ -93,10 +97,10 @@ describe('CustomField', () => {
       },
     });
 
-    expect(screen.getByTestId('person-attribute-field')).toHaveTextContent('Nacionalidad');
+    expect(screen.getByTestId('nationality-field')).toHaveTextContent('Nacionalidad');
   });
 
-  it('does not show nationality for DNI-only registrations', () => {
+  it('shows nationality for DNI-only registrations', () => {
     renderCustomField({
       dni: {
         identifierTypeUuid: '550e8400-e29b-41d4-a716-446655440001',
@@ -109,6 +113,6 @@ describe('CustomField', () => {
       },
     });
 
-    expect(screen.queryByTestId('person-attribute-field')).not.toBeInTheDocument();
+    expect(screen.getByTestId('nationality-field')).toHaveTextContent('Nacionalidad');
   });
 });

@@ -16,11 +16,7 @@ interface SpaceBetweenLegendsProps {
   position?: 'upper' | 'lower';
 }
 
-const SpaceBetweenLegends: React.FC<SpaceBetweenLegendsProps> = ({
-  leftToothId,
-  rightToothId,
-  position = 'upper',
-}) => {
+const SpaceBetweenLegends: React.FC<SpaceBetweenLegendsProps> = ({ leftToothId, rightToothId, position = 'upper' }) => {
   const { data, formSelection, legendActions, readOnly } = useOdontogramContext();
 
   const { selectedFindingId, selectedColor, isComplete } = formSelection;
@@ -80,17 +76,17 @@ const SpaceBetweenLegends: React.FC<SpaceBetweenLegendsProps> = ({
         className={isSelected && !isDisabled && !readOnly ? 'interactive-svg' : ''}
       >
         {(() => {
-        const showHighlight = !isDisabled && !readOnly && isSelected;
-        return (
-          <rect
-            width="20"
-            height="30"
-            fill={showHighlight ? 'lightgray' : 'white'}
-            stroke={showHighlight ? '#a8a8a8' : 'none'}
-            strokeWidth={showHighlight ? 0.3 : 0}
-          />
-        );
-      })()}
+          const showHighlight = !isDisabled && !readOnly && isSelected;
+          return (
+            <rect
+              width="20"
+              height="30"
+              fill={showHighlight ? 'lightgray' : 'white'}
+              stroke={showHighlight ? '#a8a8a8' : 'none'}
+              strokeWidth={showHighlight ? 0.3 : 0}
+            />
+          );
+        })()}
         {renderDesign()}
       </svg>
     </div>

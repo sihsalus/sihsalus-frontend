@@ -1,4 +1,4 @@
-import { useTranslation } from 'react-i18next';
+import type { OrthancConfiguration } from '../../types';
 
 /**
  *
@@ -16,7 +16,7 @@ export function toDICOMDateTime(date: Date): string {
   const minute = pad(date.getMinutes());
   const second = pad(date.getSeconds());
 
-  const timezoneOffset = -date.getTimezoneOffset(); // in minutes
+  const _timezoneOffset = -date.getTimezoneOffset(); // in minutes
   // const tzSign = timezoneOffset >= 0 ? '+' : '-';
   // const tzHours = pad(Math.floor(Math.abs(timezoneOffset) / 60));
   // const tzMinutes = pad(Math.abs(timezoneOffset) % 60);
@@ -39,7 +39,7 @@ export function generateAccessionNumber(): string {
     String(date.getMinutes()).padStart(2, '0') +
     String(date.getSeconds()).padStart(2, '0');
 
-  const randomPart: string = Math.floor(10000 + Math.random() * 90000).toString();
+  const randomPart = crypto.getRandomValues(new Uint32Array(1))[0].toString().padStart(10, '0').slice(0, 5);
 
   const accessionNumber: string = formattedDate + randomPart;
 
@@ -87,9 +87,112 @@ export function buildURL(
   specialUrl: string,
   params: Array<{ code: string; value: string }>,
 ): string {
-  const basicUrl = new URL(specialUrl, configurationUrl);
+  if (!configurationUrl) {
+    return '';
+  }
+
+  const normalizedBaseUrl = `${trimTrailingSlash(configurationUrl)}/`;
+  const normalizedSpecialUrl = specialUrl.replace(/^\/+/, '');
+  const basicUrl = new URL(normalizedSpecialUrl, normalizedBaseUrl);
   for (const { code, value } of params) {
     basicUrl.searchParams.set(code, value);
   }
   return basicUrl.toString();
+}
+
+function getSafeHttpUrl(url: string | undefined | null): URL | null {
+  if (!url) {
+    return null;
+  }
+
+  try {
+    const parsedUrl = new URL(url);
+    if (parsedUrl.protocol !== 'https:' && parsedUrl.protocol !== 'http:') {
+      return null;
+    }
+    return parsedUrl;
+  } catch {
+    return null;
+  }
+}
+
+function trimTrailingSlash(url: string): string {
+  return url.replace(/\/+$/, '');
+}
+
+function getBrowserOrigin(): URL | null {
+  const origin = globalThis.location?.origin;
+  return getSafeHttpUrl(origin);
+}
+
+function shouldUseConfiguredOrthancRoot(candidate: URL, browserOrigin: URL | null): boolean {
+  const normalizedPath = trimTrailingSlash(candidate.pathname.toLowerCase());
+  const isLocalhostCandidate = ['localhost', '127.0.0.1'].includes(candidate.hostname);
+  const isLocalhostBrowser = browserOrigin && ['localhost', '127.0.0.1'].includes(browserOrigin.hostname);
+
+  return normalizedPath.endsWith('/orthanc') || !browserOrigin || (isLocalhostCandidate && isLocalhostBrowser);
+}
+
+export function getOrthancPublicRoot(configuration: OrthancConfiguration): string {
+  const browserOrigin = getBrowserOrigin();
+  const configuredRoot = getSafeHttpUrl(configuration.orthancProxyUrl) ?? getSafeHttpUrl(configuration.orthancBaseUrl);
+
+  if (configuredRoot && shouldUseConfiguredOrthancRoot(configuredRoot, browserOrigin)) {
+    return trimTrailingSlash(configuredRoot.toString());
+  }
+
+  if (browserOrigin) {
+    return `${trimTrailingSlash(browserOrigin.toString())}/orthanc`;
+  }
+
+  return configuredRoot ? trimTrailingSlash(configuredRoot.toString()) : '';
+}
+
+export function getOhifPublicRoot(): string {
+  const browserOrigin = getBrowserOrigin();
+  return browserOrigin ? `${trimTrailingSlash(browserOrigin.toString())}/imaging` : '';
+}
+
+export function buildOrthancExplorerUrl(
+  configuration: OrthancConfiguration,
+  params: Array<{ code: string; value: string }>,
+): string {
+  const orthancRoot = getOrthancPublicRoot(configuration);
+  if (!orthancRoot) {
+    return '';
+  }
+
+  const searchParams = new URLSearchParams();
+  for (const { code, value } of params) {
+    searchParams.set(code, value);
+  }
+
+  const queryString = searchParams.toString();
+  return `${orthancRoot}/ui/app/#/filtered-studies${queryString ? `?${queryString}` : ''}`;
+}
+
+export function buildOrthancInstancePreviewUrl(
+  configuration: OrthancConfiguration,
+  orthancInstanceUID: string,
+): string {
+  return buildURL(getOrthancPublicRoot(configuration), `/instances/${orthancInstanceUID}/preview`, []);
+}
+
+export function buildLocalInstancePreviewUrl(studyId: number, orthancInstanceUID: string): string {
+  return buildURL(getOhifPublicRoot(), '/previewinstance', [
+    { code: 'orthancInstanceUID', value: orthancInstanceUID },
+    { code: 'studyId', value: String(studyId) },
+  ]);
+}
+
+export function buildOhifViewerUrl(params: Array<{ code: string; value: string }>): string {
+  return buildURL(getOhifPublicRoot(), '/viewer', params);
+}
+
+export function openInNewWindow(url: string): void {
+  if (!url) {
+    return;
+  }
+
+  globalThis.open(url, '_blank', 'noopener,noreferrer');
 }

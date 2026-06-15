@@ -6,12 +6,12 @@ export const configSchema = {
       _type: Type.String,
       _default: '${openmrsSpaBase}/sihsalus-horizontal-white.svg',
       _description:
-        'The path or URL to the logo image. If set to an empty string, the default OpenMRS SVG sprite will be used.',
+        'The path or URL to the Sihsalus logo image. If set to an empty string, the Sihsalus wordmark text is used.',
       _validators: [validators.isUrl],
     },
     alt: {
       _type: Type.String,
-      _default: '',
+      _default: 'Sihsalus',
       _description: 'The alternative text for the logo image, displayed when the image cannot be loaded or on hover.',
     },
     name: {

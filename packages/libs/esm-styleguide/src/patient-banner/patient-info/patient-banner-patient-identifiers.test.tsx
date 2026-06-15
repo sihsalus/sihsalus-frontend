@@ -1,4 +1,3 @@
-import React from 'react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import '@testing-library/jest-dom/vitest';
 import { useConfig, usePrimaryIdentifierCode } from '@openmrs/esm-react-utils';
@@ -72,5 +71,31 @@ describe('PatientBannerPatientIdentifiers', () => {
 
     expect(screen.getByText(/openmrs id/i)).toBeInTheDocument();
     expect(screen.queryByText(/national id/i)).not.toBeInTheDocument();
+  });
+
+  it('highlights DNI instead of the primary identifier when DNI is present', () => {
+    const identifiersWithDni = [
+      {
+        use: 'official',
+        type: {
+          coding: [{ code: '05a29f94-c0ed-11e2-94be-8c13b969e334' }],
+          text: 'N° Historia Clínica',
+        },
+        value: '100000',
+      },
+      {
+        use: 'official',
+        type: {
+          coding: [{ code: '550e8400-e29b-41d4-a716-446655440001' }],
+          text: 'DNI',
+        },
+        value: '12345678',
+      },
+    ];
+
+    render(<PatientBannerPatientIdentifiers identifiers={identifiersWithDni} showIdentifierLabel />);
+
+    expect(screen.getByText('100000').closest('.secondaryIdentifier')).toBeInTheDocument();
+    expect(screen.getByText('12345678').closest('.primaryIdentifier')).toBeInTheDocument();
   });
 });

@@ -55,7 +55,7 @@ const ReportParameterInput: React.FC<ReportParameterInputProps> = ({ parameter, 
   const focusAndClearSearchInput = useCallback(() => {
     setSearchTerm('');
     searchInputRef.current?.focus();
-  }, [setSearchTerm]);
+  }, []);
 
   const handleOnChange = useCallback(
     (event: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
@@ -115,7 +115,7 @@ const ReportParameterInput: React.FC<ReportParameterInputProps> = ({ parameter, 
         setSelectedConcept(null);
       }
     },
-    [setSearchTerm, selectedConcept],
+    [selectedConcept],
   );
 
   useEffect(() => {

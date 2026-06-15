@@ -177,6 +177,7 @@ export interface SearchFieldConfig {
   conceptAnswersUuids?: Array<string>;
   locationTag?: string;
   attributeTypeUuid?: string;
+  stringAnswerOptions?: Array<{ label: string; value: string }>;
   min?: number;
   max?: number;
 }

@@ -4,9 +4,9 @@ import type { FormEntryReactConfig } from '../types';
 
 import { useCustomDataSources } from './useCustomDataSources';
 
-const mockRegisterCustomDataSource = jest.fn();
+const mockRegisterCustomDataSource = vi.fn();
 
-jest.mock('../form-engine-lib-runtime', () => ({
+vi.mock('../form-engine-lib-runtime', () => ({
   registerCustomDataSource: (registration: unknown) => mockRegisterCustomDataSource(registration),
 }));
 
@@ -52,13 +52,13 @@ describe('useCustomDataSources', () => {
 
   it('registers module federation custom data sources from config', async () => {
     const customDataSource = {
-      fetchData: jest.fn(),
-      fetchSingleItem: jest.fn(),
-      toUuidAndDisplay: jest.fn(),
+      fetchData: vi.fn(),
+      fetchSingleItem: vi.fn(),
+      toUuidAndDisplay: vi.fn(),
     };
 
     window['_custom_module'] = {
-      get: jest.fn().mockResolvedValue(() => ({
+      get: vi.fn().mockResolvedValue(() => ({
         customDataSource,
       })),
     };

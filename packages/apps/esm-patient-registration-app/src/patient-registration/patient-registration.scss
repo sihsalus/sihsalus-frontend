@@ -1,6 +1,6 @@
-@use '@carbon/layout';
-@use '@carbon/type';
-@use '@openmrs/esm-styleguide/src/vars' as *;
+@use "@carbon/layout";
+@use "@carbon/type";
+@use "@openmrs/esm-styleguide/src/vars" as *;
 
 .submit {
   width: 15.625rem;
@@ -11,21 +11,20 @@
 }
 
 .cancelButton {
-  width: 11.688rem;
+  width: 100%;
 }
 
 .submitButton {
-  margin-bottom: layout.$spacing-05;
-  width: 11.688rem;
+  width: 100%;
   display: block;
 }
 
 .infoGrid {
   width: 100%;
-  padding-left: layout.$spacing-07;
-  margin-bottom: 40vh;
+  min-width: 0;
+  margin-bottom: layout.$spacing-09;
   margin-top: layout.$spacing-05;
-  max-width: 50rem;
+  max-width: min(88rem, calc(100vw - 22rem));
 }
 
 :global(.omrs-breakpoint-lt-desktop) {
@@ -35,7 +34,7 @@
 }
 
 .label01 {
-  @include type.type-style('label-01');
+  @include type.type-style("label-01");
   margin-top: layout.$spacing-05;
   margin-bottom: layout.$spacing-05;
   color: $ui-04;
@@ -46,15 +45,41 @@
 }
 
 .formContainer {
-  display: flex;
+  display: grid;
+  grid-template-columns: minmax(13rem, 15rem) minmax(0, 1fr);
+  column-gap: layout.$spacing-07;
   width: 100%;
+  align-items: stretch;
+  height: calc(100vh - #{layout.$spacing-09});
+  overflow: hidden;
 }
 
 .stickyColumn {
-  position: sticky;
   margin-top: layout.$spacing-05;
-  // layout.$spacing-09 for the nav height and layout.$spacing-05 for top margin
-  top: layout.$spacing-10;
+  max-height: calc(100vh - #{layout.$spacing-10} - #{layout.$spacing-05});
+  overflow-y: auto;
+  padding-right: layout.$spacing-03;
+}
+
+.actionPanel {
+  display: grid;
+  gap: layout.$spacing-03;
+  margin: layout.$spacing-05 0 layout.$spacing-06;
+}
+
+.bottomActionPanel {
+  display: grid;
+  grid-template-columns: minmax(11rem, 16rem) minmax(8rem, 12rem);
+  justify-content: end;
+  gap: layout.$spacing-03;
+  border-top: 1px solid $ui-03;
+  margin-top: layout.$spacing-07;
+  padding-top: layout.$spacing-05;
+}
+
+.sectionNav {
+  border-top: 1px solid $ui-03;
+  padding-top: layout.$spacing-03;
 }
 
 .touchTarget a:active {
@@ -84,12 +109,12 @@
   width: max-content;
 
   :global(.cds--inline-loading__text) {
-    @include type.type-style('body-01');
+    @include type.type-style("body-01");
   }
 }
 
 // Overriding styles for RTL support
-html[dir='rtl'] {
+html[dir="rtl"] {
   .linkName {
     & > svg {
       transform: scale(-1, 1);
@@ -99,5 +124,56 @@ html[dir='rtl'] {
   .infoGrid {
     padding-left: unset;
     padding-right: layout.$spacing-07;
+  }
+}
+
+@media (min-width: 1024px) {
+  .infoGrid {
+    overflow-y: auto;
+    padding-right: layout.$spacing-05;
+  }
+}
+
+:global(.omrs-breakpoint-lt-desktop) {
+  .formContainer {
+    display: block;
+    // Breathing room from the frame on tablet/mobile. The sticky bottom action
+    // bar bleeds back to the edge via its negative margin below.
+    padding: 0 layout.$spacing-05;
+    height: auto;
+    overflow: visible;
+  }
+
+  .stickyColumn {
+    position: static;
+    max-height: none;
+    overflow: visible;
+    padding-right: 0;
+  }
+
+  .actionPanel {
+    grid-template-columns: 1fr 1fr;
+    gap: layout.$spacing-03;
+  }
+
+  .sectionNav {
+    display: none;
+  }
+
+  .infoGrid {
+    margin-bottom: layout.$spacing-10;
+    margin-top: layout.$spacing-06;
+    max-width: unset;
+    padding-bottom: layout.$spacing-09;
+  }
+
+  .bottomActionPanel {
+    position: sticky;
+    bottom: 0;
+    z-index: 2;
+    grid-template-columns: 1fr 1fr;
+    background-color: $ui-02;
+    margin: layout.$spacing-06 calc(-1 * #{layout.$spacing-05}) 0;
+    padding: layout.$spacing-03 layout.$spacing-05;
   }
 }

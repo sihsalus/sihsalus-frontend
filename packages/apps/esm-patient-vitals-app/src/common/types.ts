@@ -8,12 +8,12 @@ export type FHIRSearchBundleResponse = FetchResponse<{
 }>;
 
 export interface ObsReferenceRanges {
-  hiAbsolute: ReferenceRangeValue;
-  hiCritical: ReferenceRangeValue;
-  hiNormal: ReferenceRangeValue;
-  lowNormal: ReferenceRangeValue;
-  lowCritical: ReferenceRangeValue;
-  lowAbsolute: ReferenceRangeValue;
+  hiAbsolute?: ReferenceRangeValue;
+  hiCritical?: ReferenceRangeValue;
+  hiNormal?: ReferenceRangeValue;
+  lowNormal?: ReferenceRangeValue;
+  lowCritical?: ReferenceRangeValue;
+  lowAbsolute?: ReferenceRangeValue;
 }
 
 export type ObservationInterpretation = 'critically_low' | 'critically_high' | 'high' | 'low' | 'normal';
@@ -44,14 +44,20 @@ export interface PatientVitalsAndBiometrics {
   bmiRenderInterpretation?: ObservationInterpretation;
   respiratoryRateRenderInterpretation?: ObservationInterpretation;
   muacRenderInterpretation?: ObservationInterpretation;
+  abdominalCircumferenceRenderInterpretation?: ObservationInterpretation;
+  headCircumferenceRenderInterpretation?: ObservationInterpretation;
+  chestCircumferenceRenderInterpretation?: ObservationInterpretation;
   pulse?: number;
   temperature?: number;
   spo2?: number;
   height?: number;
   weight?: number;
+  headCircumference?: number;
+  chestCircumference?: number;
   bmi?: number | null;
   respiratoryRate?: number;
   muac?: number;
+  abdominalCircumference?: number;
   note?: string;
 }
 

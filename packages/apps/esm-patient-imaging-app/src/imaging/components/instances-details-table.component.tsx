@@ -1,6 +1,7 @@
 import {
   DataTable,
   IconButton,
+  InlineLoading,
   Table,
   TableBody,
   TableCell,
@@ -9,17 +10,22 @@ import {
   TableHeader,
   TableRow,
 } from '@carbon/react';
-import { showModal, useLayoutType, usePagination } from '@openmrs/esm-framework';
+import { useLayoutType, usePagination } from '@openmrs/esm-framework';
 
 import { compare, EmptyState, PatientChartPagination } from '@openmrs/esm-patient-common-lib';
-import React, { useRef } from 'react';
+import React from 'react';
 import { useTranslation } from 'react-i18next';
 import { useStudyInstances } from '../../api';
 import orthancExplorer from '../../assets/orthanc.png';
 import preview from '../../assets/preview.png';
-import { getBrowserUrl, type OrthancConfiguration } from '../../types';
-import { instancePreviewDialog, instancesCount } from '../constants';
-import { buildURL } from '../utils/help';
+import { type OrthancConfiguration } from '../../types';
+import { instancesCount } from '../constants';
+import {
+  buildLocalInstancePreviewUrl,
+  buildOrthancExplorerUrl,
+  buildOrthancInstancePreviewUrl,
+  openInNewWindow,
+} from '../utils/help';
 import styles from './details-table.scss';
 
 export interface InstancesDetailsTableProps {
@@ -39,26 +45,15 @@ const InstancesDetailsTable: React.FC<InstancesDetailsTableProps> = ({
 }) => {
   const {
     data: instances,
-    error: seriesError,
     isLoading: isLoadingSeries,
     isValidating: isValidatingSeries,
   } = useStudyInstances(studyId, seriesInstanceUID);
-
-  const launchInstancePreviewDialog = (orthancInstanceUID: string, studyId: number, instancePosition: string) => {
-    const dispose = showModal(instancePreviewDialog, {
-      closeInstancePreviewModal: () => dispose(),
-      orthancInstanceUID,
-      studyId,
-      instancePosition,
-    });
-  };
 
   const { t } = useTranslation();
   const displayText = t('instances', 'Instances');
   const headerTitle = t('instances', 'Instances');
   const { results, goTo, currentPage } = usePagination(instances, instancesCount);
   const layout = useLayoutType();
-  const shouldOnClickBeCalled = useRef(true);
   const isTablet = layout === 'tablet';
 
   const tableHeaders = [
@@ -90,10 +85,7 @@ const InstancesDetailsTable: React.FC<InstancesDetailsTableProps> = ({
                 align="left"
                 size={isTablet ? 'lg' : 'sm'}
                 label={t('instanceViewLocal', 'Instance preview local')}
-                onClick={() => {
-                  shouldOnClickBeCalled.current = false;
-                  launchInstancePreviewDialog(instance.orthancInstanceUID, studyId, instance.imagePositionPatient);
-                }}
+                onClick={() => openInNewWindow(buildLocalInstancePreviewUrl(studyId, instance.orthancInstanceUID))}
               >
                 <img alt="" className="stone-img" src={preview} style={{ width: 23, height: 23 }} />
               </IconButton>
@@ -102,14 +94,8 @@ const InstancesDetailsTable: React.FC<InstancesDetailsTableProps> = ({
                 align="left"
                 size={isTablet ? 'lg' : 'sm'}
                 label={t('instanceViewInOrthanc', 'Instance view in Orthanc')}
-                onClick={
-                  () =>
-                    (globalThis.location.href = buildURL(
-                      getBrowserUrl(orthancConfig),
-                      `instances/${instance.orthancInstanceUID}/preview`,
-                      [],
-                    ))
-                  // `${orthancBaseUrl}instances/${instance.orthancInstanceUID}/preview`)
+                onClick={() =>
+                  openInNewWindow(buildOrthancInstancePreviewUrl(orthancConfig, instance.orthancInstanceUID))
                 }
               >
                 <img alt="" className="orthanc-img" src={preview} style={{ width: 23, height: 23 }} />
@@ -120,9 +106,14 @@ const InstancesDetailsTable: React.FC<InstancesDetailsTableProps> = ({
             kind="ghost"
             align="left"
             size={isTablet ? 'lg' : 'sm'}
-            label={t('orthancExplorer2', 'Show data in orthanc explorere')}
+            label={t('orthancExplorer2', 'Open in Orthanc')}
             onClick={() =>
-              (globalThis.location.href = `${getBrowserUrl(orthancConfig)}/ui/app/#/filtered-studies?StudyInstanceUID=${encodeURIComponent(studyInstanceUID)}&expand=series`)
+              openInNewWindow(
+                buildOrthancExplorerUrl(orthancConfig, [
+                  { code: 'StudyInstanceUID', value: studyInstanceUID },
+                  { code: 'expand', value: 'series' },
+                ]),
+              )
             }
           >
             <img alt="" className="orthanc-img" src={orthancExplorer} style={{ width: 26, height: 26, marginTop: 0 }} />
@@ -139,7 +130,7 @@ const InstancesDetailsTable: React.FC<InstancesDetailsTableProps> = ({
   };
 
   if (isLoadingSeries || isValidatingSeries) {
-    return <div>Loading ...</div>;
+    return <InlineLoading description={t('loadingInstances', 'Loading instances...')} />;
   }
 
   if (!instances?.length) {
@@ -159,35 +150,40 @@ const InstancesDetailsTable: React.FC<InstancesDetailsTableProps> = ({
       >
         {({ rows, headers, getHeaderProps, getTableProps }) => (
           <TableContainer>
-            <Table aria-label="Instances summary" className={styles.table} {...getTableProps()} />
-            <TableHead>
-              <TableRow>
-                {headers.map((header, index) => {
-                  const { key, ...headerProps } = getHeaderProps({ header });
+            <Table
+              aria-label={t('instancesSummary', 'Instances summary')}
+              className={styles.table}
+              {...getTableProps()}
+            >
+              <TableHead>
+                <TableRow>
+                  {headers.map((header, index) => {
+                    const { key, ...headerProps } = getHeaderProps({ header });
+                    return (
+                      <TableHeader key={key} {...headerProps} style={index === 4 ? { width: '180px' } : {}}>
+                        {header.header}
+                      </TableHeader>
+                    );
+                  })}
+                  <TableHeader />
+                </TableRow>
+              </TableHead>
+              <TableBody>
+                {rows.map((row) => {
                   return (
-                    <TableHeader key={key} {...headerProps} style={index === 4 ? { width: '180px' } : {}}>
-                      {header.header}
-                    </TableHeader>
+                    <React.Fragment key={row.id}>
+                      <TableRow className={styles.row}>
+                        {row.cells.map((cell) => (
+                          <TableCell className={styles.tableCell} key={cell.id}>
+                            {cell.value?.content ?? cell.value}
+                          </TableCell>
+                        ))}
+                      </TableRow>
+                    </React.Fragment>
                   );
                 })}
-                <TableHeader />
-              </TableRow>
-            </TableHead>
-            <TableBody>
-              {rows.map((row) => {
-                return (
-                  <React.Fragment key={row.id}>
-                    <TableRow className={styles.row}>
-                      {row.cells.map((cell) => (
-                        <TableCell className={styles.tableCell} key={cell.id}>
-                          {cell.value?.content ?? cell.value}
-                        </TableCell>
-                      ))}
-                    </TableRow>
-                  </React.Fragment>
-                );
-              })}
-            </TableBody>
+              </TableBody>
+            </Table>
           </TableContainer>
         )}
       </DataTable>

@@ -9,17 +9,9 @@ import {
   TableHeader,
   TableRow,
 } from '@carbon/react';
-import {
-  ErrorState,
-  formatDate,
-  launchWorkspace,
-  openmrsFetch,
-  showModal,
-  showSnackbar,
-  useConfig,
-} from '@openmrs/esm-framework';
-import { CardHeader } from '@openmrs/esm-patient-common-lib';
-import type { Encounter } from '@sihsalus/esm-sihsalus-shared';
+import { ErrorState, formatDate, openmrsFetch, showModal, showSnackbar, useConfig } from '@openmrs/esm-framework';
+import type { Encounter } from '@openmrs/esm-patient-common-lib';
+import { CardHeader, launchPatientWorkspace } from '@openmrs/esm-patient-common-lib';
 import React, { useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import useSWR from 'swr';
@@ -68,10 +60,11 @@ const OdontologiaAttentionDashboard: React.FC<OdontologiaAttentionDashboardProps
   );
 
   const launchDentalForm = (encounterUuid = '') => {
-    launchWorkspace(patientFormEntryWorkspace, {
+    launchPatientWorkspace(patientFormEntryWorkspace, {
       workspaceTitle: t('dentalAttention', 'Atención odontológica'),
       mutateForm: mutate,
       formInfo: {
+        patientUuid,
         encounterUuid,
         formUuid: dentalFormUuid,
         additionalProps: {},

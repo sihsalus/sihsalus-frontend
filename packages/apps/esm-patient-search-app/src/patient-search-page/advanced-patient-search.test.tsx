@@ -1,5 +1,5 @@
 import { getDefaultsFromConfigSchema, useConfig } from '@openmrs/esm-framework';
-import { render, screen } from '@testing-library/react';
+import { render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import React from 'react';
 import { mockAdvancedSearchResults } from 'test-utils';
@@ -12,34 +12,34 @@ import { type PatientSearchResponse } from '../types';
 import AdvancedPatientSearchComponent from './advanced-patient-search.component';
 import { usePersonAttributeType } from './refine-search/person-attributes.resource';
 
-const mockUseConfig = jest.mocked(useConfig<PatientSearchConfig>);
-const mockUseInfinitePatientSearch = jest.mocked(useInfinitePatientSearch);
-const mockUsePersonAttributeType = jest.mocked(usePersonAttributeType);
+const mockUseConfig = vi.mocked(useConfig<PatientSearchConfig>);
+const mockUseInfinitePatientSearch = vi.mocked(useInfinitePatientSearch);
+const mockUsePersonAttributeType = vi.mocked(usePersonAttributeType);
 
-jest.mock('../patient-search.resource', () => ({
-  useInfinitePatientSearch: jest.fn(),
+vi.mock('../patient-search.resource', async () => ({
+  useInfinitePatientSearch: vi.fn(),
 }));
 
-jest.mock('./refine-search/person-attributes.resource', () => ({
-  usePersonAttributeType: jest.fn(),
+vi.mock('./refine-search/person-attributes.resource', async () => ({
+  usePersonAttributeType: vi.fn(),
 }));
 
-jest.mock('react-router-dom', () => ({
-  ...jest.requireActual('react-router-dom'),
-  useParams: jest.fn(() => ({
+vi.mock('react-router-dom', async () => ({
+  ...(await vi.importActual('react-router-dom')),
+  useParams: vi.fn(() => ({
     page: 1,
   })),
-  useLocation: jest.fn(),
-  useSearchParams: jest.fn(() => [
+  useLocation: vi.fn(),
+  useSearchParams: vi.fn(() => [
     {
-      get: jest.fn(() => 'Jos'),
+      get: vi.fn(() => 'Jos'),
     },
   ]),
 }));
 
 const mockPatientActionContextValue = {
-  nonNavigationSelectPatientAction: jest.fn(),
-  selectPatientAction: jest.fn(),
+  nonNavigationSelectPatientAction: vi.fn(),
+  selectPatientAction: vi.fn(),
 };
 
 const mockSearchResults: PatientSearchResponse = {
@@ -47,10 +47,28 @@ const mockSearchResults: PatientSearchResponse = {
   totalResults: 2,
   data: mockAdvancedSearchResults as unknown as PatientSearchResponse['data'],
   currentPage: 1,
-  setPage: jest.fn(),
+  setPage: vi.fn(),
   hasMore: false,
   isLoading: false,
   fetchError: null as unknown as Error,
+};
+
+const personAttributeTypes: Record<string, { format: string; uuid: string; display: string }> = {
+  '8b56eac7-5c76-4b9c-8c6f-1deab8d3fc47': {
+    format: 'java.lang.String',
+    uuid: '8b56eac7-5c76-4b9c-8c6f-1deab8d3fc47',
+    display: 'Paciente No Identificado',
+  },
+  '4697d0e6-5b24-416b-aee6-708cd9a3a1db': {
+    format: 'java.lang.String',
+    uuid: '4697d0e6-5b24-416b-aee6-708cd9a3a1db',
+    display: 'Nombre del Acompañante',
+  },
+  'a180fa5f-c44e-4490-a981-d7196b70c6ac': {
+    format: 'java.lang.String',
+    uuid: 'a180fa5f-c44e-4490-a981-d7196b70c6ac',
+    display: 'Parentesco del Acompañante',
+  },
 };
 
 const Wrapper: React.FC<{ children: React.ReactNode }> = ({ children }) => (
@@ -62,42 +80,12 @@ describe('AdvancedPatientSearchComponent', () => {
 
   beforeEach(() => {
     mockUseInfinitePatientSearch.mockReturnValue(mockSearchResults);
-    mockUseConfig.mockReturnValue({
-      ...getDefaultsFromConfigSchema(configSchema),
-      search: {
-        disableTabletSearchOnKeyUp: false,
-        showRecentlySearchedPatients: false,
-        searchFilterFields: {
-          gender: {
-            enabled: true,
-          },
-          dateOfBirth: {
-            enabled: true,
-          },
-          age: {
-            enabled: true,
-            min: 0,
-          },
-          postcode: {
-            enabled: true,
-          },
-          personAttributes: [
-            {
-              attributeTypeUuid: '14d4f066-15f5-102d-96e4-000c29c2a5d7',
-            },
-          ],
-        },
-      } as PatientSearchConfig['search'],
-    });
-    mockUsePersonAttributeType.mockReturnValue({
+    mockUseConfig.mockReturnValue(getDefaultsFromConfigSchema(configSchema) as PatientSearchConfig);
+    mockUsePersonAttributeType.mockImplementation((attributeTypeUuid: string) => ({
       isLoading: false,
       error: undefined,
-      data: {
-        format: 'java.lang.String',
-        uuid: '14d4f066-15f5-102d-96e4-000c29c2a5d7',
-        display: 'Telephone Number',
-      },
-    });
+      data: personAttributeTypes[attributeTypeUuid],
+    }));
   });
 
   const renderComponent = (props = {}) => {
@@ -118,6 +106,14 @@ describe('AdvancedPatientSearchComponent', () => {
     expect(screen.getByText(/2 search result/)).toBeInTheDocument();
   });
 
+  it('does not show postcode or telephone filters by default', () => {
+    renderComponent();
+
+    expect(screen.queryByLabelText(/postcode/i)).not.toBeInTheDocument();
+    expect(screen.queryByText(/telephone|tel[eé]fono|phone/i)).not.toBeInTheDocument();
+    expect(screen.getByLabelText(/nombre del acompa/i)).toBeInTheDocument();
+  });
+
   describe('Filtering', () => {
     it('filters by gender correctly', async () => {
       renderComponent();
@@ -136,42 +132,21 @@ describe('AdvancedPatientSearchComponent', () => {
       await user.type(ageInput, '30');
       await user.click(screen.getByRole('button', { name: /apply/i }));
 
-      // TODO: Restore these tests once we improve the patient banner test stubs
-      // expect one patient Joseph Davis
-      // const patientBanners = screen.getAllByRole('banner');
-      // expect(patientBanners).toHaveLength(1);
-      // expect(within(patientBanners[0]).getByText(/Joseph Davis/i)).toBeInTheDocument();
-      // expect(within(patientBanners[0]).getByText(/30/)).toBeInTheDocument();
-    });
-
-    it('filters by postcode correctly', async () => {
-      renderComponent();
-
-      // Set postcode filter
-      const postcodeInput = screen.getByRole('textbox', { name: /postcode/i });
-      await user.type(postcodeInput, '46548');
-      await user.click(screen.getByRole('button', { name: /apply/i }));
-
-      // TODO: Restore these tests once we improve the patient banner test stubs
-      // // expect one patient Joseph Davis
-      // const patientBanners = screen.getAllByRole('banner');
-      // expect(patientBanners).toHaveLength(1);
-      // expect(within(patientBanners[0]).getByText(/Joseph Davis/i)).toBeInTheDocument();
+      const patientBanners = screen.getAllByRole('banner');
+      expect(patientBanners).toHaveLength(1);
+      expect(within(patientBanners[0]).getByText(/Joseph Davis/i)).toBeInTheDocument();
     });
 
     it('filters by person attribute correctly', async () => {
       renderComponent();
 
-      // Set phone number attribute filter
-      const phoneInput = screen.getByLabelText(/phone number/i);
-      await user.type(phoneInput, '0785434125');
+      const responsibleInput = screen.getByLabelText(/nombre del acompa/i);
+      await user.type(responsibleInput, 'SAMU');
       await user.click(screen.getByRole('button', { name: /apply/i }));
 
-      // TODO: Restore these tests once we improve the patient banner test stubs
-      // const patientBanners = screen.getAllByRole('banner');
-      // expect(patientBanners).toHaveLength(1);
-
-      // expect(within(patientBanners[0]).getByText(/Joshua Johnson/)).toBeInTheDocument();
+      const patientBanners = screen.getAllByRole('banner');
+      expect(patientBanners).toHaveLength(1);
+      expect(within(patientBanners[0]).getByText(/Joshua Johnson/)).toBeInTheDocument();
     });
 
     it('combines multiple filters correctly', async () => {
@@ -183,11 +158,9 @@ describe('AdvancedPatientSearchComponent', () => {
       await user.type(ageInput, '5');
       await user.click(screen.getByRole('button', { name: /apply/i }));
 
-      // TODO: Restore these tests once we improve the patient banner test stubs
-      // // expect one patient Joshua Johnson
-      // const patientBanners = screen.getAllByRole('banner');
-      // expect(patientBanners).toHaveLength(1);
-      // expect(within(patientBanners[0]).getByText(/Joshua Johnson/)).toBeInTheDocument();
+      const patientBanners = screen.getAllByRole('banner');
+      expect(patientBanners).toHaveLength(1);
+      expect(within(patientBanners[0]).getByText(/Joshua Johnson/)).toBeInTheDocument();
     });
 
     it('resets filters correctly', async () => {
@@ -200,10 +173,8 @@ describe('AdvancedPatientSearchComponent', () => {
       // Reset filters
       await user.click(screen.getByRole('button', { name: /reset fields/i }));
 
-      // TODO: Restore these tests once we improve the patient banner test stubs
-      // // expects all search results 2 patients
-      // const patientBanners = screen.getAllByRole('banner');
-      // expect(patientBanners).toHaveLength(2);
+      const patientBanners = screen.getAllByRole('banner');
+      expect(patientBanners).toHaveLength(2);
     });
   });
 

@@ -8,13 +8,13 @@ import {
   Tag,
 } from '@carbon/react';
 import { Add } from '@carbon/react/icons';
-import { launchWorkspace2, useConfig } from '@openmrs/esm-framework';
+import { userHasAccess, useSession } from '@openmrs/esm-framework';
 import { CardHeader, ErrorState } from '@openmrs/esm-patient-common-lib';
-import React, { useCallback } from 'react';
+import React from 'react';
 import { useTranslation } from 'react-i18next';
-import type { ConfigObject } from '../../../../config-schema';
+import { credEarlyStimulationEditPrivilege } from '../../../../constants';
+import { useCREDFormLauncher } from '../../../../hooks/useCREDFormLauncher';
 import { useStimulationFollowup } from '../../../../hooks/useStimulationFollowup';
-import { formEntryWorkspace } from '../../../../types';
 
 import styles from './stimulation-followup.scss';
 
@@ -24,22 +24,12 @@ interface StimulationFollowupProps {
 
 const StimulationFollowup: React.FC<StimulationFollowupProps> = ({ patientUuid }) => {
   const { t } = useTranslation();
-  const config = useConfig<ConfigObject>();
+  const session = useSession();
+  const canEdit = userHasAccess(credEarlyStimulationEditPrivilege, session?.user);
   const { lastEvaluationResult, lastEvaluationDate, hasStimulationLack, isLoading, error } =
     useStimulationFollowup(patientUuid);
-  const headerTitle = t('esFollowUpTitle', 'Seguimiento del Desarrollo');
-
-  const handleAdd = useCallback(() => {
-    const formUuid = config.formsList.stimulationFollowupForm;
-    if (!formUuid) {
-      console.warn('Form UUID not configured for stimulationFollowupForm');
-      return;
-    }
-    launchWorkspace2(formEntryWorkspace, {
-      form: { uuid: formUuid },
-      encounterUuid: '',
-    });
-  }, [config.formsList.stimulationFollowupForm]);
+  const { launchForm: handleAdd, isLoading: isFormLoading } = useCREDFormLauncher('stimulationFollowupForm');
+  const headerTitle = t('esFollowUpTitle', 'Seguimiento del desarrollo');
 
   if (isLoading) {
     return <DataTableSkeleton size="sm" rowCount={4} columnCount={2} />;
@@ -58,9 +48,18 @@ const StimulationFollowup: React.FC<StimulationFollowupProps> = ({ patientUuid }
         <Tag type={riskTagType} size="sm">
           {riskLabel ?? t('noData', 'Sin datos')}
         </Tag>
-        <Button kind="ghost" size="sm" renderIcon={Add} onClick={handleAdd} iconDescription={t('add', 'Add')}>
-          {t('add', 'Add')}
-        </Button>
+        {canEdit && (
+          <Button
+            kind="ghost"
+            size="sm"
+            renderIcon={Add}
+            onClick={() => handleAdd()}
+            iconDescription={t('add', 'Add')}
+            disabled={isFormLoading}
+          >
+            {t('add', 'Add')}
+          </Button>
+        )}
       </CardHeader>
       <div className={styles.container}>
         <StructuredListWrapper isCondensed>

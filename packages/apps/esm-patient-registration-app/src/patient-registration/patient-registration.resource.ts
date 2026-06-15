@@ -1,10 +1,7 @@
-import { openmrsFetch, restBaseUrl } from '@openmrs/esm-framework';
+import { createAttachment, openmrsFetch, restBaseUrl, type UploadedFile } from '@openmrs/esm-framework';
 import dayjs from 'dayjs';
 
 import { type Encounter, type Patient, type PatientIdentifier, type Relationship } from './patient-registration.types';
-
-export const uuidIdentifier = '05a29f94-c0ed-11e2-94be-8c13b969e334';
-export const uuidTelephoneNumber = '14d4f066-15f5-102d-96e4-000c29c2a5d7';
 
 function dataURItoFile(dataURI: string) {
   const byteString = globalThis.atob(dataURI.split(',')[1]);
@@ -17,7 +14,7 @@ function dataURItoFile(dataURI: string) {
   }
 
   const blob = new Blob([buffer], { type: mimeString });
-  return new File([blob], 'patient-photo.png');
+  return new File([blob], 'patient-photo.png', { type: mimeString });
 }
 
 export function savePatient(patient: Patient | null, updatePatientUuid?: string) {
@@ -114,10 +111,14 @@ export async function savePatientPhoto(
   conceptUuid: string,
 ) {
   const abortController = new AbortController();
+  const patientPhoto = dataURItoFile(content);
 
   const formData = new FormData();
   formData.append('patient', patientUuid);
-  formData.append('file', dataURItoFile(content));
+  formData.append('person', patientUuid);
+  formData.append('concept', conceptUuid);
+  formData.append('obsDatetime', date);
+  formData.append('file', patientPhoto, patientPhoto.name);
   formData.append(
     'json',
     JSON.stringify({
@@ -133,6 +134,19 @@ export async function savePatientPhoto(
     signal: abortController.signal,
     body: formData,
   });
+}
+
+export function savePatientPhotoAsAttachment(patientUuid: string, content: string) {
+  const patientPhoto = dataURItoFile(content);
+  const uploadedFile: UploadedFile = {
+    base64Content: content,
+    file: patientPhoto,
+    fileDescription: 'Patient photo',
+    fileName: patientPhoto.name,
+    fileType: 'image',
+  };
+
+  return createAttachment(patientUuid, uploadedFile);
 }
 
 export async function fetchPerson(query: string, abortController: AbortController) {

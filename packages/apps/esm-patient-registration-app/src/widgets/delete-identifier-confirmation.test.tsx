@@ -1,11 +1,10 @@
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import React from 'react';
 
 import DeleteIdentifierConfirmationModal from './delete-identifier-confirmation.modal';
 
 describe('DeleteIdentifierConfirmationModal', () => {
-  const mockDeleteIdentifier = jest.fn();
+  const mockDeleteIdentifier = vi.fn();
   const mockIdentifierName = 'Identifier Name';
   const mockIdentifierValue = 'Identifier Value';
 
@@ -14,7 +13,7 @@ describe('DeleteIdentifierConfirmationModal', () => {
 
     render(
       <DeleteIdentifierConfirmationModal
-        closeModal={jest.fn()}
+        closeModal={vi.fn()}
         deleteIdentifier={mockDeleteIdentifier}
         identifierName={mockIdentifierName}
         identifierValue={mockIdentifierValue}

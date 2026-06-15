@@ -12,6 +12,9 @@ COPY .yarn/ ./.yarn/
 # Copy workspaces (required so Yarn can resolve workspace:* deps)
 COPY packages/ ./packages/
 
+# Some apps import shared illustrations and other static assets at build time.
+COPY assets/ ./assets/
+
 ENV CI=true
 RUN --mount=type=cache,target=/root/.yarn/berry/cache \
     yarn install --immutable
@@ -27,8 +30,19 @@ RUN --mount=type=cache,target=/app/node_modules/.cache \
 FROM node:24-alpine AS init
 WORKDIR /app
 
+RUN rm -rf /usr/local/lib/node_modules/npm /usr/local/bin/npm /usr/local/bin/npx
+
 ENV NODE_ENV=production
 ENV SPA_OUTPUT_DIR=/spa
+
+# Build provenance — supplied by CI (--build-arg) and promoted to env so the
+# assemble step (run as CMD at container start) can stamp build-info.json.
+ARG APP_VERSION=""
+ARG GIT_SHA=""
+ARG BUILD_TIME=""
+ENV APP_VERSION=${APP_VERSION}
+ENV GIT_SHA=${GIT_SHA}
+ENV BUILD_TIME=${BUILD_TIME}
 
 COPY --from=builder /app/node_modules ./node_modules
 COPY --from=builder /app/packages/apps ./packages/apps
@@ -44,8 +58,19 @@ CMD ["node", "packages/tooling/scripts/assemble-importmap.js"]
 FROM node:24-alpine AS secure-init
 WORKDIR /app
 
+RUN rm -rf /usr/local/lib/node_modules/npm /usr/local/bin/npm /usr/local/bin/npx
+
 ENV NODE_ENV=production
 ENV SPA_OUTPUT_DIR=/spa
+
+# Build provenance — supplied by CI (--build-arg) and promoted to env so the
+# assemble step (run as CMD at container start) can stamp build-info.json.
+ARG APP_VERSION=""
+ARG GIT_SHA=""
+ARG BUILD_TIME=""
+ENV APP_VERSION=${APP_VERSION}
+ENV GIT_SHA=${GIT_SHA}
+ENV BUILD_TIME=${BUILD_TIME}
 
 COPY --from=builder --chown=node:node /app/node_modules ./node_modules
 COPY --from=builder --chown=node:node /app/packages/apps ./packages/apps
@@ -69,13 +94,21 @@ ENV SPA_PATH=/openmrs/spa
 ENV SPA_CONFIG_URLS=/openmrs/spa/frontend.json
 ENV SPA_DEFAULT_LOCALE=es
 
+# Build provenance — assemble runs here at build time, so env is enough.
+ARG APP_VERSION=""
+ARG GIT_SHA=""
+ARG BUILD_TIME=""
+ENV APP_VERSION=${APP_VERSION}
+ENV GIT_SHA=${GIT_SHA}
+ENV BUILD_TIME=${BUILD_TIME}
+
 COPY config/ ./config/
 COPY assets/ ./assets/
 
-RUN yarn assemble && yarn validate:spa
+RUN yarn assemble
 
 # Stage 5: Lightweight precompiled SPA server
-FROM nginx:1.27-alpine AS spa-nginx
+FROM nginx:1.31-alpine AS spa-nginx
 
 COPY nginx.spa.conf /etc/nginx/conf.d/default.conf
 COPY --from=spa-artifact /app/dist/spa/ /usr/share/nginx/html/

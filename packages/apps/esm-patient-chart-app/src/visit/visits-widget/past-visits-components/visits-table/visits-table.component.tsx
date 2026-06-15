@@ -76,6 +76,8 @@ const VisitTable: React.FC<VisitTableProps> = ({ showAllEncounters, visits, pati
   const { t } = useTranslation();
   const desktopLayout = isDesktop(useLayoutType());
   const session = useSession();
+  const searchClassName = typeof styles.search === 'string' ? styles.search : undefined;
+  const tableHeaderClassName = typeof styles.tableHeader === 'string' ? styles.tableHeader : undefined;
 
   const [htmlFormEntryFormsConfig, setHtmlFormEntryFormsConfig] = useState<Array<HtmlFormEntryForm> | undefined>();
 
@@ -92,15 +94,11 @@ const VisitTable: React.FC<VisitTableProps> = ({ showAllEncounters, visits, pati
   const [filter, setFilter] = useState('');
 
   const filteredRows = useMemo(() => {
-    if (!filter || filter == 'All') {
+    if (!filter || filter === 'All') {
       return visits;
     }
 
-    if (filter) {
-      return visits?.filter((encounter) => encounter.encounterType === filter);
-    }
-
-    return visits;
+    return visits?.filter((encounter) => encounter.encounterType === filter);
   }, [filter, visits]);
 
   const { results: paginatedVisits, goTo, currentPage } = usePagination(filteredRows ?? [], visitCount);
@@ -241,7 +239,7 @@ const VisitTable: React.FC<VisitTableProps> = ({ showAllEncounters, visits, pati
                     />
                   </div>
                   <TableToolbarSearch
-                    className={styles.search}
+                    className={searchClassName}
                     expanded
                     onChange={onInputChange}
                     placeholder={t('searchThisList', 'Search this list')}
@@ -252,15 +250,14 @@ const VisitTable: React.FC<VisitTableProps> = ({ showAllEncounters, visits, pati
                 <TableHead>
                   <TableRow>
                     <TableExpandHeader enableToggle {...getExpandHeaderProps()} />
-                    {headers.map((header) => (
-                      <TableHeader
-                        className={styles.tableHeader}
-                        key={String(header.key ?? header.header)}
-                        {...getHeaderProps({ header })}
-                      >
-                        {header.header}
-                      </TableHeader>
-                    ))}
+                    {headers.map((header) => {
+                      const { key, ...headerProps } = getHeaderProps({ header });
+                      return (
+                        <TableHeader className={tableHeaderClassName} key={key} {...headerProps}>
+                          {header.header}
+                        </TableHeader>
+                      );
+                    })}
                     {showAllEncounters ? <TableExpandHeader /> : null}
                   </TableRow>
                 </TableHead>
@@ -270,60 +267,65 @@ const VisitTable: React.FC<VisitTableProps> = ({ showAllEncounters, visits, pati
 
                     return (
                       <React.Fragment key={row.id}>
-                        <TableExpandRow {...getRowProps({ row })}>
-                          {row.cells.map((cell) => (
-                            <TableCell key={cell.id}>{cell.value}</TableCell>
-                          ))}
-                          {showAllEncounters ? (
-                            <TableCell className="cds--table-column-menu">
-                              <Layer className={styles.layer}>
-                                <OverflowMenu
-                                  data-floating-menu-container
-                                  aria-label="Encounter table actions menu"
-                                  size={desktopLayout ? 'sm' : 'lg'}
-                                  flipped
-                                  align="left"
-                                >
-                                  <OverflowMenuItem
-                                    className={styles.menuItem}
-                                    itemText={t('goToThisEncounter', 'Go to this encounter')}
-                                  />
-                                  {userHasAccess(selectedVisit?.editPrivilege, session?.user) &&
-                                    selectedVisit?.form?.uuid && (
+                        {(() => {
+                          const { key, ...rowProps } = getRowProps({ row });
+                          return (
+                            <TableExpandRow key={key} {...rowProps}>
+                              {row.cells.map((cell) => (
+                                <TableCell key={cell.id}>{cell.value}</TableCell>
+                              ))}
+                              {showAllEncounters ? (
+                                <TableCell className="cds--table-column-menu">
+                                  <Layer className={styles.layer}>
+                                    <OverflowMenu
+                                      data-floating-menu-container
+                                      aria-label="Encounter table actions menu"
+                                      size={desktopLayout ? 'sm' : 'lg'}
+                                      flipped
+                                      align="left"
+                                    >
                                       <OverflowMenuItem
                                         className={styles.menuItem}
-                                        itemText={t('editThisEncounter', 'Edit this encounter')}
-                                        onClick={() => {
-                                          launchFormEntryOrHtmlForms(
-                                            htmlFormEntryFormsConfig,
-                                            patientUuid,
-                                            selectedVisit?.form?.uuid,
-                                            selectedVisit?.visitUuid,
-                                            selectedVisit?.id,
-                                            selectedVisit?.form?.display,
-                                            selectedVisit?.visitTypeUuid,
-                                            selectedVisit?.visitStartDatetime,
-                                            selectedVisit?.visitStopDatetime,
-                                          );
-                                        }}
+                                        itemText={t('goToThisEncounter', 'Go to this encounter')}
                                       />
-                                    )}
-                                  {userHasAccess(selectedVisit?.editPrivilege, session?.user) && (
-                                    <OverflowMenuItem
-                                      className={styles.menuItem}
-                                      itemText={t('deleteThisEncounter', 'Delete this encounter')}
-                                      onClick={() =>
-                                        handleDeleteEncounter(selectedVisit.id, selectedVisit.form?.display)
-                                      }
-                                      hasDivider
-                                      isDelete
-                                    />
-                                  )}
-                                </OverflowMenu>
-                              </Layer>
-                            </TableCell>
-                          ) : null}
-                        </TableExpandRow>
+                                      {userHasAccess(selectedVisit?.editPrivilege, session?.user) &&
+                                        selectedVisit?.form?.uuid && (
+                                          <OverflowMenuItem
+                                            className={styles.menuItem}
+                                            itemText={t('editThisEncounter', 'Edit this encounter')}
+                                            onClick={() => {
+                                              launchFormEntryOrHtmlForms(
+                                                htmlFormEntryFormsConfig,
+                                                patientUuid,
+                                                selectedVisit?.form?.uuid,
+                                                selectedVisit?.visitUuid,
+                                                selectedVisit?.id,
+                                                selectedVisit?.form?.display,
+                                                selectedVisit?.visitTypeUuid,
+                                                selectedVisit?.visitStartDatetime,
+                                                selectedVisit?.visitStopDatetime,
+                                              );
+                                            }}
+                                          />
+                                        )}
+                                      {userHasAccess(selectedVisit?.editPrivilege, session?.user) && (
+                                        <OverflowMenuItem
+                                          className={styles.menuItem}
+                                          itemText={t('deleteThisEncounter', 'Delete this encounter')}
+                                          onClick={() =>
+                                            handleDeleteEncounter(selectedVisit.id, selectedVisit.form?.display)
+                                          }
+                                          hasDivider
+                                          isDelete
+                                        />
+                                      )}
+                                    </OverflowMenu>
+                                  </Layer>
+                                </TableCell>
+                              ) : null}
+                            </TableExpandRow>
+                          );
+                        })()}
                         {row.isExpanded ? (
                           <TableExpandedRow className={styles.expandedRow} colSpan={headers.length + 2}>
                             <>

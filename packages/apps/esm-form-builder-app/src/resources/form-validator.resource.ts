@@ -1,5 +1,5 @@
 import { type FetchResponse, openmrsFetch, restBaseUrl } from '@openmrs/esm-framework';
-import type { FormField } from '@sihsalus/esm-form-engine-lib';
+import { ConceptFalse, ConceptTrue, type FormField } from '@sihsalus/esm-form-engine-lib';
 import type { Schema } from '@types';
 import type { ConfigObject } from '../config-schema';
 
@@ -102,12 +102,14 @@ export const handleFormValidation = async (
             handleQuestionValidation(question, errors, configObject, warnings),
             handleAnswerValidation(question, errors),
             handlePatientIdentifierValidation(question, errors),
+            handlePersonAttributeValidation(question, errors),
           );
           if (question.type === 'obsGroup') {
             question?.questions?.forEach((obsGrpQuestion) => {
               asyncTasks.push(
                 handleQuestionValidation(obsGrpQuestion, errors, configObject, warnings),
                 handleAnswerValidation(obsGrpQuestion, errors),
+                handlePersonAttributeValidation(obsGrpQuestion, errors),
               );
             });
           }
@@ -153,10 +155,7 @@ const handleQuestionValidation = async (
         const [resObject] = results;
         if (resObject.datatype.name === 'Boolean') {
           conceptObject.questionOptions.answers?.forEach((answer) => {
-            if (
-              answer.concept !== 'cf82933b-3f3f-45e7-a5ab-5d31aaee3da3' &&
-              answer.concept !== '488b58ff-64f5-4f8a-8979-fa79940b1594'
-            ) {
+            if (answer.concept !== ConceptTrue && answer.concept !== ConceptFalse) {
               errorsArray.push({
                 errorMessage: `❌ concept "${conceptObject.questionOptions.concept}" of type "boolean" has a non-boolean answer "${answer.label}"`,
                 field: conceptObject,
@@ -186,7 +185,10 @@ const handleQuestionValidation = async (
     } catch (error) {
       console.error(error);
     }
-  } else if (conceptObject.questionOptions.rendering !== 'workspace-launcher') {
+  } else if (
+    conceptObject.questionOptions.rendering !== 'workspace-launcher' &&
+    conceptObject.type !== 'personAttribute'
+  ) {
     errorsArray.push({
       errorMessage: `❓ No UUID`,
       field: conceptObject,
@@ -218,6 +220,38 @@ const handlePatientIdentifierValidation = async (question: FormField, errors: Ar
       console.error('Error fetching patient identifier:', error);
       errors.push({
         errorMessage: `❓ The identifier type does not exist`,
+        field: question,
+      });
+    }
+  }
+};
+
+const handlePersonAttributeValidation = async (question: FormField, errors: Array<ErrorMessageResponse>) => {
+  const personAttribute = (question.questionOptions as { attributeType?: string }).attributeType;
+
+  if (question.type === 'personAttribute' && !personAttribute) {
+    errors.push({
+      errorMessage: `❓ Person attribute type missing in schema`,
+      field: question,
+    });
+    return;
+  }
+
+  if (personAttribute) {
+    try {
+      const response = await openmrsFetch<PatientIdentifierTypeResponse>(
+        `${restBaseUrl}/personattributetype/${personAttribute}`,
+      );
+      if (!hasPatientIdentifierData(response)) {
+        errors.push({
+          errorMessage: `❓ The person attribute type does not exist`,
+          field: question,
+        });
+      }
+    } catch (error) {
+      console.error('Error fetching person attribute:', error);
+      errors.push({
+        errorMessage: `❓ The person attribute type does not exist`,
         field: question,
       });
     }

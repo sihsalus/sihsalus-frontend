@@ -28,8 +28,9 @@ const SideMenuPanel: React.FC<SideMenuPanelProps> = ({ expanded, hidePanel }) =>
       {(!isDesktop(layout) || mode === 'collapsed') && expanded && <LeftNavMenu ref={menuRef} isChildOfHeader />}
       {isDesktop(layout) &&
         mode === 'normal' &&
+        expanded &&
         leftNavContainer &&
-        createPortal(<LeftNavMenu ref={menuRef} isChildOfHeader />, leftNavContainer)}
+        createPortal(<LeftNavMenu isChildOfHeader />, leftNavContainer)}
     </>
   );
 };

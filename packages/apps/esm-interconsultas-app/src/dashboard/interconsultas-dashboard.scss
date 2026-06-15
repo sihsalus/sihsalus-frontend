@@ -1,0 +1,14 @@
+@use "@carbon/layout";
+
+.dashboardContainer {
+  background-color: var(--cds-background, #f4f4f4);
+  min-height: 100vh;
+}
+
+.pageHeader {
+  border-bottom: 1px solid var(--cds-border-subtle, #e0e0e0);
+}
+
+.tabPanel {
+  padding: 0;
+}

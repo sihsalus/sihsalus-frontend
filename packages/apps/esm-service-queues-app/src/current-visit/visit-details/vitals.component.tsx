@@ -1,11 +1,11 @@
 import { Button, Tile } from '@carbon/react';
 import { ArrowRight, CircleFilled } from '@carbon/react/icons';
-import { navigate, useConfig } from '@openmrs/esm-framework';
+import { launchWorkspace2, useConfig, usePatient, type Visit } from '@openmrs/esm-framework';
 import classNames from 'classnames';
 import React from 'react';
 import { useTranslation } from 'react-i18next';
-
 import { type ConfigObject } from '../../config-schema';
+import { serviceQueuesPatientVitalsWorkspace } from '../../constants';
 import { type PatientVitals } from '../../types/index';
 import { assessValue, calculateBMI, getReferenceRangesForConcept } from '../current-visit.resource';
 import { useVitalsConceptMetadata } from '../hooks/useVitalsConceptMetadata';
@@ -16,11 +16,13 @@ interface VitalsComponentProps {
   vitals: Array<PatientVitals>;
   patientUuid: string;
   visitType: string;
+  visit?: Visit;
 }
 
-const Vitals: React.FC<VitalsComponentProps> = ({ vitals, patientUuid, visitType }) => {
+const Vitals: React.FC<VitalsComponentProps> = ({ vitals, patientUuid, visitType, visit }) => {
   const { t } = useTranslation();
   const config = useConfig<ConfigObject>();
+  const { patient } = usePatient(patientUuid);
   const { data: conceptUnits, conceptMetadata } = useVitalsConceptMetadata();
 
   const vitalsToDisplay = vitals.reduce(
@@ -149,8 +151,15 @@ const Vitals: React.FC<VitalsComponentProps> = ({ vitals, patientUuid, visitType
               <Button
                 size="sm"
                 kind="ghost"
+                disabled={!patient}
                 renderIcon={(props) => <ArrowRight size={16} {...props} />}
-                onClick={() => navigate({ to: `\${openmrsSpaBase}/patient/${patientUuid}/chart` })}
+                onClick={() =>
+                  launchWorkspace2(serviceQueuesPatientVitalsWorkspace, {
+                    patient,
+                    patientUuid,
+                    visitContext: visit,
+                  })
+                }
                 iconDescription={t('vitalsForm', 'Vitals form')}
               >
                 {t('vitalsForm', 'Vitals form')}

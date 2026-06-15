@@ -8,6 +8,7 @@ import { getEffectiveRegistrationConfig, peruForeignPatientIdentifierTypeUuids }
 
 import { AddressField } from './address/custom-address-field.component';
 import { ObsField } from './obs/obs-field.component';
+import { NationalityField } from './person-attributes/nationality-field.component';
 import { PersonAttributeField } from './person-attributes/person-attribute-field.component';
 
 export interface CustomFieldProps {
@@ -35,6 +36,10 @@ export function CustomField({ name }: CustomFieldProps) {
       return !!identifierType && foreignIdentifierTypeUuids.has(identifierType.uuid);
     });
   }, [identifierTypes, values.identifiers]);
+
+  if (name === 'nationality') {
+    return <NationalityField fieldDefinition={fieldDefinition} />;
+  }
 
   if (fieldDefinition.showIf?.foreignIdentifierPresent && !hasForeignIdentifier) {
     return null;

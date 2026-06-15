@@ -7,7 +7,7 @@ import {
 } from '@openmrs/esm-framework/src/internal';
 import classNames from 'classnames';
 import { type TFunction } from 'i18next';
-import React, { useMemo, useState } from 'react';
+import { useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import { type ImplementerToolsStore, implementerToolsStore } from '../store';
@@ -36,15 +36,13 @@ export default function UiEditor() {
   const getExtensionCount = (slotName: string, moduleName: string) => {
     if (!extensions || !moduleName) return 0;
 
-    const count = 0;
-
     const slot = slots?.[slotName];
 
     if (slot && Array.isArray(slot.attachedIds)) {
       return slot.attachedIds.length;
     }
 
-    return count;
+    return 0;
   };
 
   const slotElements = useMemo(() => {
@@ -163,6 +161,7 @@ export function SlotOverlay({ slotName, moduleName, extensionCount = 0, colorSch
     <>
       <div className={overlayClass}></div>
       <button
+        type="button"
         className={buttonClass}
         onClick={(event) => {
           event.preventDefault();

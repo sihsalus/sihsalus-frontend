@@ -1,3 +1,4 @@
+import { type DataTableCell } from '@carbon/react';
 import { Edit, TrashCan } from '@carbon/react/icons';
 import { showModal, userHasAccess, useSession } from '@openmrs/esm-framework';
 import React from 'react';
@@ -13,8 +14,15 @@ import ReportScheduleDescription from './report-schedule-description.component';
 import styles from './reports.scss';
 import ScheduledReportStatus from './scheduled-report-status.component';
 
+interface ScheduledReportActions {
+  reportDefinitionUuid: string;
+  reportRequestUuid: string;
+}
+
+type ScheduledReportCell = DataTableCell<string | boolean | ScheduledReportActions>;
+
 interface ScheduledOverviewCellContentProps {
-  cell: { info: { header: string }; value: unknown };
+  cell: ScheduledReportCell;
   mutate: () => void;
 }
 

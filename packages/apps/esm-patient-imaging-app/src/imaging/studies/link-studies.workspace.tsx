@@ -90,7 +90,10 @@ const LinkStudiesWorkspace: React.FC<DefaultPatientWorkspaceProps> = ({ patientU
       try {
         await getLinkStudies(fetchOption, serverConfig, abortController);
         closeWorkspace();
-        launchWorkspace(assignStudiesFormWorkspace, { configuration: serverConfig });
+        launchWorkspace<DefaultPatientWorkspaceProps & { configuration: OrthancConfiguration }>(
+          assignStudiesFormWorkspace,
+          { configuration: serverConfig, patientUuid },
+        );
       } catch (err) {
         createErrorHandler();
         showSnackbar({
@@ -104,7 +107,7 @@ const LinkStudiesWorkspace: React.FC<DefaultPatientWorkspaceProps> = ({ patientU
         setIsLoading(false);
       }
     },
-    [closeWorkspace, t],
+    [closeWorkspace, t, patientUuid],
   );
 
   return (

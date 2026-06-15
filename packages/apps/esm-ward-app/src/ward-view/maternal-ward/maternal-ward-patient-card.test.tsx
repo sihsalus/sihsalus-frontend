@@ -10,20 +10,22 @@ import { useObs } from '../../hooks/useObs';
 import { type WardPatient, type WardViewContext } from '../../types';
 import MaternalWardPatientCard from './maternal-ward-patient-card.component';
 
-const mockUseConfig = jest.mocked(useConfig<WardConfigObject>);
+const mockUseConfig = vi.mocked(useConfig<WardConfigObject>);
 
-jest.mocked(useAppContext<WardViewContext>).mockReturnValue(mockWardViewContext);
+vi.mocked(useAppContext<WardViewContext>).mockReturnValue(mockWardViewContext);
 
-jest.mock('../../hooks/useObs', () => ({
-  useObs: jest.fn(),
+vi.mock('../../hooks/useObs', () => ({
+  useObs: vi.fn(),
 }));
 
-jest.mock('../../ward-patient-card/row-elements/ward-patient-obs.resource', () => ({
-  useConceptToTagColorMap: jest.fn(),
+vi.mock('../../ward-patient-card/row-elements/ward-patient-obs.resource', () => ({
+  obsCustomRepresentation: 'custom:(uuid,display)',
+  getObsEncounterString: vi.fn(),
+  useConceptToTagColorMap: vi.fn(),
 }));
 
 //@ts-expect-error
-jest.mocked(useObs).mockReturnValue({
+vi.mocked(useObs).mockReturnValue({
   data: [],
 });
 

@@ -18,7 +18,7 @@ const testProps = {
   patientUuid: mockPatient.id,
 };
 
-const mockOpenmrsFetch = jest.mocked(openmrsFetch);
+const mockOpenmrsFetch = vi.mocked(openmrsFetch);
 
 describe('AppointmentsOverview', () => {
   it('renders an empty state if appointments data is unavailable', async () => {

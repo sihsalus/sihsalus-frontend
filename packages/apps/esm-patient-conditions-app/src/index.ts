@@ -1,5 +1,6 @@
 import { defineConfigSchema, getAsyncLifecycle, getSyncLifecycle } from '@openmrs/esm-framework';
 import { createDashboardLink } from '@openmrs/esm-patient-common-lib';
+import React from 'react';
 import conditionsDetailedSummaryComponent from './conditions/conditions-detailed-summary.component';
 import conditionsOverviewComponent from './conditions/conditions-overview.component';
 import { configSchema } from './config-schema';
@@ -12,6 +13,8 @@ const options = {
   moduleName,
 };
 
+type ConditionsOverviewLifecycleProps = React.ComponentProps<typeof conditionsOverviewComponent>;
+
 export const importTranslation = require.context('../translations', false, /.json$/, 'lazy');
 
 export function startupApp() {
@@ -20,12 +23,24 @@ export function startupApp() {
 
 export const conditionsOverview = getSyncLifecycle(conditionsOverviewComponent, options);
 
+export const activeProblemsOverview = getSyncLifecycle(
+  (props: ConditionsOverviewLifecycleProps) =>
+    React.createElement(conditionsOverviewComponent, { ...props, section: 'active-problems' }),
+  options,
+);
+
+export const pastDiagnosesOverview = getSyncLifecycle(
+  (props: ConditionsOverviewLifecycleProps) =>
+    React.createElement(conditionsOverviewComponent, { ...props, section: 'past-diagnoses' }),
+  options,
+);
+
 export const conditionsDetailedSummary = getSyncLifecycle(conditionsDetailedSummaryComponent, options);
 
 export const conditionsWidget = getAsyncLifecycle(() => import('./conditions/conditions-widget.component'), options);
 
 export const conditionsDashboardLink =
-  // t('Conditions', 'Conditions')
+  // t('Antecedentes y problemas', 'Antecedentes y problemas')
   getSyncLifecycle(
     createDashboardLink({
       ...dashboardMeta,
@@ -39,7 +54,7 @@ export const conditionDeleteConfirmationDialog = getAsyncLifecycle(
   options,
 );
 
-// t('recordCondition', 'Record a Condition')
+// t('recordAntecedent', 'Record antecedent')
 export const conditionsFormWorkspace = getAsyncLifecycle(
   () => import('./conditions/conditions-form.workspace'),
   options,

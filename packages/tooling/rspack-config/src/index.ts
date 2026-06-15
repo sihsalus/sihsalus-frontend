@@ -37,6 +37,8 @@
  * from `/d/e/`, then it *might* in *some cases* try to import `/d/e/c`.
  */
 
+import { existsSync, statSync } from 'node:fs';
+import { basename, dirname, resolve } from 'node:path';
 import rspack, {
   CopyRspackPlugin,
   container,
@@ -47,9 +49,7 @@ import rspack, {
   type RuleSetRule,
 } from '@rspack/core';
 import { CleanWebpackPlugin } from 'clean-webpack-plugin';
-import { existsSync, statSync } from 'fs';
 import { merge, mergeWith } from 'lodash';
-import { basename, dirname, resolve } from 'path';
 import { inc } from 'semver';
 import { TsCheckerRspackPlugin } from 'ts-checker-rspack-plugin';
 import { BundleAnalyzerPlugin } from 'webpack-bundle-analyzer';
@@ -94,17 +94,22 @@ type VersionedPackageJson = {
 
 const alwaysHostSharedDependencies = new Set([
   '@carbon/react',
-  '@openmrs/esm-config',
-  '@openmrs/esm-extensions',
   '@openmrs/esm-framework',
   '@openmrs/esm-framework/src/internal',
+  'single-spa',
+]);
+
+// These packages are re-exported by @openmrs/esm-framework/src/internal in the app shell.
+// Sharing them by their own package names fails because the shell does not publish those
+// names in the share scope; bundling them locally creates duplicate global stores.
+const frameworkInternalSharedDependencies = new Set([
+  '@openmrs/esm-config',
+  '@openmrs/esm-extensions',
   '@openmrs/esm-navigation',
   '@openmrs/esm-offline',
   '@openmrs/esm-react-utils',
   '@openmrs/esm-state',
-  'single-spa',
-  'single-spa-react',
-  'single-spa-react/parcel',
+  '@openmrs/esm-styleguide',
 ]);
 
 const production = 'production';
@@ -441,10 +446,14 @@ export default (env: Record<string, string>, argv: Record<string, string> = {}) 
           ...new Set([
             ...Object.keys(peerDependencies),
             ...alwaysHostSharedDependencies,
+            ...frameworkInternalSharedDependencies,
             '@openmrs/esm-framework/src/internal',
           ]),
         ].reduce<Record<string, SharedDependencyConfig>>((obj, depName) => {
-          const versionSpec = peerDependencies[depName] ?? false;
+          const isProvidedByFrameworkInternal = frameworkInternalSharedDependencies.has(depName);
+          const versionSpec = isProvidedByFrameworkInternal
+            ? (peerDependencies['@openmrs/esm-framework'] ?? false)
+            : (peerDependencies[depName] ?? false);
 
           if (typeof versionSpec === 'string' && versionSpec.startsWith('workspace:')) {
             const msg =
@@ -470,15 +479,22 @@ export default (env: Record<string, string>, argv: Record<string, string> = {}) 
               version: (require('swr/package.json') as VersionedPackageJson).version,
             };
           } else {
-            const installedVersion = getInstalledVersion(depName);
+            const sharedHostDependency = isProvidedByFrameworkInternal
+              ? '@openmrs/esm-framework/src/internal'
+              : depName;
+            const installedVersion = getInstalledVersion(sharedHostDependency);
             const packageName = getPackageNameForDependency(depName);
             obj[depName] = {
               requiredVersion: versionSpec,
               strictVersion: false,
               singleton: true,
-              import: alwaysHostSharedDependencies.has(depName) ? false : depName,
-              ...(depName !== packageName ? { packageName } : {}),
-              shareKey: depName,
+              import: alwaysHostSharedDependencies.has(depName) || isProvidedByFrameworkInternal ? false : depName,
+              ...(isProvidedByFrameworkInternal
+                ? { packageName: '@openmrs/esm-framework' }
+                : depName !== packageName
+                  ? { packageName }
+                  : {}),
+              shareKey: sharedHostDependency,
               shareScope: 'default',
               version: installedVersion,
             };

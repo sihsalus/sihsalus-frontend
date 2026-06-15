@@ -1,22 +1,22 @@
 import { getDefaultsFromConfigSchema, showSnackbar, UserHasAccess, useConfig } from '@openmrs/esm-framework';
 import { screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import React from 'react';
 import { mockFhirPatient, renderWithSwr } from 'test-utils';
 import { type ConfigObject, configSchema } from '../config-schema';
 import { useStickerPdfPrinter } from '../hooks/useStickerPdfPrinter';
 import PrintIdentifierStickerOverflowMenuItem from './print-identifier-sticker-action-button.component';
 
-jest.mock('../hooks/useStickerPdfPrinter');
+vi.mock('../hooks/useStickerPdfPrinter');
 
-const mockUseConfig = jest.mocked(useConfig<ConfigObject>);
-const mockShowSnackbar = jest.mocked(showSnackbar);
-const mockUseStickerPdfPrinter = jest.mocked(useStickerPdfPrinter);
-const mockUserHasAccess = jest.mocked(UserHasAccess);
-const mockPrintPdf = jest.fn();
+const mockUseConfig = vi.mocked(useConfig<ConfigObject>);
+const mockShowSnackbar = vi.mocked(showSnackbar);
+const mockUseStickerPdfPrinter = vi.mocked(useStickerPdfPrinter);
+const mockUserHasAccess = vi.mocked(UserHasAccess);
+const mockPrintPdf = vi.fn();
 
 describe('PrintIdentifierStickerOverflowMenuItem', () => {
   beforeEach(() => {
+    vi.clearAllMocks();
     mockUseConfig.mockReturnValue({
       ...getDefaultsFromConfigSchema(configSchema),
       showPrintIdentifierStickerButton: true,

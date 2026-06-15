@@ -3,12 +3,11 @@
   "version": "12.1.0",
   "license": "MPL-2.0",
   "description": "Library for common patient chart components",
-  "browser": "dist/openmrs-esm-patient-common-lib.js",
   "main": "src/index.ts",
   "source": true,
   "scripts": {
     "lint": "node ../../tooling/scripts/run-biome.js lint src",
-    "test": "TZ=UTC yarn exec jest --config jest.config.js --verbose false --passWithNoTests",
+    "test": "vitest run --passWithNoTests",
     "typescript": "tsc"
   },
   "browserslist": [
@@ -32,15 +31,21 @@
     "@carbon/react": "^1.83.0",
     "jsep": "^1.4.0",
     "lodash-es": "^4.17.23",
-    "uuid": "^8.3.2"
+    "uuid": "^14.0.0"
   },
   "peerDependencies": {
-    "@openmrs/esm-framework": "workspace:*",
+    "@openmrs/esm-extensions": "*",
+    "@openmrs/esm-framework": "*",
+    "@openmrs/esm-styleguide": "*",
+    "@sihsalus/esm-form-engine-lib": "*",
     "react": "18.x",
     "single-spa": "6.x"
   },
   "devDependencies": {
-    "jest": "^29.7.0",
-    "typescript": "^6.0.0"
+    "@openmrs/esm-extensions": "workspace:*",
+    "@openmrs/esm-styleguide": "workspace:*",
+    "@sihsalus/esm-form-engine-lib": "workspace:*",
+    "typescript": "6.0.3",
+    "vitest": "^4.1.7"
   }
 }

@@ -23,7 +23,13 @@ import {
   useLayoutType,
   usePagination,
 } from '@openmrs/esm-framework';
-import { CardHeader, EmptyState, ErrorState, PatientChartPagination } from '@openmrs/esm-patient-common-lib';
+import {
+  CardHeader,
+  EmptyState,
+  ErrorState,
+  getAntecedentTypeLabel,
+  PatientChartPagination,
+} from '@openmrs/esm-patient-common-lib';
 import classNames from 'classnames';
 import React, { type ComponentProps, useCallback, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -37,11 +43,12 @@ interface ConditionTableRow extends Condition {
   id: string;
   condition: string;
   abatementDateTime: string;
+  antecedentTypeRender: string;
   onsetDateTimeRender: string;
 }
 
 interface ConditionTableHeader {
-  key: 'display' | 'onsetDateTimeRender' | 'status';
+  key: 'display' | 'antecedentTypeRender' | 'onsetDateTimeRender' | 'status';
   header: string;
   isSortable: true;
   sortFunc: (valueA: ConditionTableRow, valueB: ConditionTableRow) => number;
@@ -67,14 +74,14 @@ const GenericConditionsOverview: React.FC<GenericConditionsOverviewProps> = ({
   title,
   workspaceFormId = 'conditions-filter-form-workspace',
   enableAdd = true,
-  urlPath = 'Conditions',
+  urlPath = 'Antecedentes',
 }) => {
   const { conditionPageSize } = useConfig<ConfigObject>();
   const { t } = useTranslation();
   const displayText = title;
   const headerTitle = title;
   const urlLabel = t('seeAll', 'See all');
-  const pageUrl = `\${openmrsSpaBase}/patient/${patientUuid}/chart/${urlPath}`;
+  const pageUrl = `${globalThis.spaBase}/patient/${patientUuid}/chart/${urlPath}`;
   const layout = useLayoutType();
   const isDesktop = isDesktopLayout(layout);
   const isTablet = !isDesktop;
@@ -93,24 +100,26 @@ const GenericConditionsOverview: React.FC<GenericConditionsOverviewProps> = ({
   );
 
   const filteredConditions = useMemo(() => {
-    if (!filter || filter == 'All') {
+    if (!filter || filter === 'All') {
       return conditions;
     }
 
-    if (filter) {
-      return conditions?.filter((condition) => condition.clinicalStatus === filter);
-    }
-
-    return conditions;
+    return conditions?.filter((condition) => condition.clinicalStatus === filter);
   }, [filter, conditions]);
 
   const headers: Array<ConditionTableHeader> = useMemo(
     () => [
       {
         key: 'display',
-        header: t('condition', 'Condition'),
+        header: t('antecedent', 'Antecedent'),
         isSortable: true,
         sortFunc: (valueA, valueB) => valueA.display?.localeCompare(valueB.display),
+      },
+      {
+        key: 'antecedentTypeRender',
+        header: t('antecedentType', 'Antecedent type'),
+        isSortable: true,
+        sortFunc: (valueA, valueB) => valueA.antecedentTypeRender?.localeCompare(valueB.antecedentTypeRender),
       },
       {
         key: 'onsetDateTimeRender',
@@ -138,13 +147,16 @@ const GenericConditionsOverview: React.FC<GenericConditionsOverviewProps> = ({
         id: condition.id,
         condition: condition.display,
         abatementDateTime: condition.abatementDateTime,
+        antecedentTypeRender: condition.antecedentType
+          ? getAntecedentTypeLabel(condition.antecedentType, t)
+          : (condition.categoryText ?? '--'),
         onsetDateTimeRender: condition.onsetDateTime
           ? formatDate(parseDate(condition.onsetDateTime), { mode: 'wide', time: 'for today' })
           : '--',
         status: condition.clinicalStatus,
       };
     });
-  }, [filteredConditions]);
+  }, [filteredConditions, t]);
 
   const { sortedRows, sortRow } = useConditionsSorting(headers, tableRows);
 
@@ -178,7 +190,7 @@ const GenericConditionsOverview: React.FC<GenericConditionsOverviewProps> = ({
                 <Button
                   kind="ghost"
                   renderIcon={(props: ComponentProps<typeof AddIcon>) => <AddIcon size={16} {...props} />}
-                  iconDescription={t('addConditions', 'Add conditions')}
+                  iconDescription={t('addAntecedent', 'Add antecedent')}
                   onClick={launchConditionsForm}
                 >
                   {t('add', 'Add')}
@@ -188,7 +200,7 @@ const GenericConditionsOverview: React.FC<GenericConditionsOverviewProps> = ({
           </div>
         </CardHeader>
         <DataTable
-          aria-label={t('conditionsOverview', 'Conditions overview')}
+          aria-label={t('antecedentsOverview', 'Antecedents overview')}
           rows={paginatedConditions}
           headers={headers}
           isSortable
@@ -205,6 +217,7 @@ const GenericConditionsOverview: React.FC<GenericConditionsOverviewProps> = ({
                     <TableRow>
                       {headers.map((header) => (
                         <TableHeader
+                          key={header.key}
                           className={classNames(styles.productiveHeading01, styles.text02)}
                           {...getHeaderProps({
                             header,
@@ -236,7 +249,7 @@ const GenericConditionsOverview: React.FC<GenericConditionsOverviewProps> = ({
                 <div className={styles.tileContainer}>
                   <Tile className={styles.tile}>
                     <div className={styles.tileContent}>
-                      <p className={styles.content}>{t('noConditionsToDisplay', 'No conditions to display')}</p>
+                      <p className={styles.content}>{t('noAntecedentsToDisplay', 'No antecedents to display')}</p>
                       <p className={styles.helper}>{t('checkFilters', 'Check the filters above')}</p>
                     </div>
                   </Tile>

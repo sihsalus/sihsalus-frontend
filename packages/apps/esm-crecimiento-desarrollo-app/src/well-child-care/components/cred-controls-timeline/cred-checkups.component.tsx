@@ -1,13 +1,14 @@
 import { Button, InlineLoading, InlineNotification, Tag } from '@carbon/react';
 import { Add, Calendar } from '@carbon/react/icons';
-import { launchWorkspace2, showSnackbar, useConfig, useSession } from '@openmrs/esm-framework';
+import { launchWorkspace2, showSnackbar, useConfig, userHasAccess, useSession } from '@openmrs/esm-framework';
 import dayjs from 'dayjs';
 import React, { useCallback, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-
 import type { ConfigObject } from '../../../config-schema';
+import { credCourseLifeEditPrivilege } from '../../../constants';
 import { useCREDSchedule } from '../../../hooks/useCREDSchedule';
 import { useMutateAppointments } from '../../../ui/form/appointments-form.resource';
+import { translateCredControlLabel } from '../../../utils/cred-label-translations';
 import { createCREDAppointments } from '../../common/cred-appointments.resource';
 
 import styles from './cred-schedule.scss';
@@ -20,6 +21,7 @@ const CredCheckups: React.FC<CredCheckupsProps> = ({ patientUuid }) => {
   const { t } = useTranslation();
   const config = useConfig<ConfigObject>();
   const session = useSession();
+  const canEdit = userHasAccess(credCourseLifeEditPrivilege, session?.user);
   const { controls, nextDueControl, overdueControls, completedCount, totalCount, isLoading, error } =
     useCREDSchedule(patientUuid);
   const { mutateAppointments } = useMutateAppointments();
@@ -37,9 +39,10 @@ const CredCheckups: React.FC<CredCheckupsProps> = ({ patientUuid }) => {
     launchWorkspace2('wellchild-control-form', {
       workspaceTitle: t('newCredEncounter', 'Nuevo Control Crecimiento y Desarrollo'),
       patientUuid,
+      control: nextDueControl,
       type: 'newControl',
     });
-  }, [patientUuid, t]);
+  }, [nextDueControl, patientUuid, t]);
 
   const handleGenerateAppointments = useCallback(async () => {
     const serviceUuid = config.credScheduling?.appointmentServiceUuid;
@@ -140,15 +143,17 @@ const CredCheckups: React.FC<CredCheckupsProps> = ({ patientUuid }) => {
             <div className={styles.nextDueCard}>
               <div className={styles.nextDueInfo}>
                 <span className={styles.nextDueLabel}>
-                  #{nextDueControl.controlNumber} - {nextDueControl.label}
+                  #{nextDueControl.controlNumber} - {translateCredControlLabel(t, nextDueControl.label)}
                 </span>
                 <span className={styles.nextDueDate}>
                   {t('expectedDate', 'Fecha esperada')}: {dayjs(nextDueControl.targetDate).format('DD/MM/YYYY')}
                 </span>
               </div>
-              <Button kind="primary" size="sm" renderIcon={Add} onClick={handleRegisterControl}>
-                {t('registerControl', 'Registrar Control')}
-              </Button>
+              {canEdit && (
+                <Button kind="primary" size="sm" renderIcon={Add} onClick={handleRegisterControl}>
+                  {t('registerControl', 'Registrar Control')}
+                </Button>
+              )}
             </div>
           </>
         )}
@@ -164,7 +169,7 @@ const CredCheckups: React.FC<CredCheckupsProps> = ({ patientUuid }) => {
                 <div key={control.controlNumber} className={styles.overdueItem}>
                   <div>
                     <span className={styles.overdueItemLabel}>
-                      #{control.controlNumber} - {control.label}
+                      #{control.controlNumber} - {translateCredControlLabel(t, control.label)}
                     </span>
                     <div className={styles.overdueItemDate}>
                       {t('wasExpectedOn', 'Se esperaba el')} {dayjs(control.targetDate).format('DD/MM/YYYY')}
@@ -186,7 +191,7 @@ const CredCheckups: React.FC<CredCheckupsProps> = ({ patientUuid }) => {
             {scheduledControls.map((control) => (
               <div key={control.controlNumber} className={styles.checkupItem}>
                 <span>
-                  #{control.controlNumber} - {control.label}
+                  #{control.controlNumber} - {translateCredControlLabel(t, control.label)}
                 </span>
                 <span className={styles.dueDate}>
                   {control.appointmentDate ? dayjs(control.appointmentDate).format('DD/MM/YYYY') : ''}
@@ -210,17 +215,19 @@ const CredCheckups: React.FC<CredCheckupsProps> = ({ patientUuid }) => {
 
         {/* Generate appointments button */}
         <div className={styles.generateSection}>
-          <Button
-            kind="tertiary"
-            size="md"
-            renderIcon={Calendar}
-            onClick={handleGenerateAppointments}
-            disabled={isGenerating || pendingControls.length === 0}
-          >
-            {isGenerating
-              ? t('generatingAppointments', 'Generando citas...')
-              : t('generateAppointments', 'Generar Citas Crecimiento y Desarrollo')}
-          </Button>
+          {canEdit && (
+            <Button
+              kind="tertiary"
+              size="md"
+              renderIcon={Calendar}
+              onClick={handleGenerateAppointments}
+              disabled={isGenerating || pendingControls.length === 0}
+            >
+              {isGenerating
+                ? t('generatingAppointments', 'Generando citas...')
+                : t('generateAppointments', 'Generar Citas Crecimiento y Desarrollo')}
+            </Button>
+          )}
         </div>
       </div>
     </div>

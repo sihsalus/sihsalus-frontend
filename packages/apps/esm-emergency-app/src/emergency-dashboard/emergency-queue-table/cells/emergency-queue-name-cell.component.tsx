@@ -3,10 +3,7 @@
  * with the most relevant identity document (DNI preferred, HCE fallback).
  */
 
-import { ConfigurableLink, useConfig } from '@openmrs/esm-framework';
-import { getPreferredIdentifier } from '@sihsalus/esm-sihsalus-shared';
-import React from 'react';
-import { type Config } from '../../../config-schema';
+import { ConfigurableLink, getPreferredIdentifier } from '@openmrs/esm-framework';
 import { type EmergencyQueueEntry } from '../../../resources/emergency.resource';
 
 /** Shared props interface for all emergency queue table cell components. */
@@ -14,13 +11,13 @@ export interface EmergencyQueueTableCellProps {
   queueEntry: EmergencyQueueEntry;
 }
 
-export const EmergencyQueueNameCell: React.FC<EmergencyQueueTableCellProps> = ({ queueEntry }) => {
+export const EmergencyQueueNameCell = ({ queueEntry }: EmergencyQueueTableCellProps) => {
   const identifiers = queueEntry.patient.identifiers || [];
   const preferredIdentifier = getPreferredIdentifier(identifiers);
   const patientName = queueEntry.patient.person?.display || queueEntry.patient.display;
 
   return (
-    <ConfigurableLink to={`\${openmrsSpaBase}/patient/${queueEntry.patient.uuid}/chart`}>
+    <ConfigurableLink to={`${globalThis.spaBase}/patient/${queueEntry.patient.uuid}/chart`}>
       {patientName}
       {preferredIdentifier
         ? ` - ${preferredIdentifier.identifierType?.display}: ${preferredIdentifier.identifier}`

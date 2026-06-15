@@ -50,8 +50,8 @@ const ConditionsForm: React.FC<ConditionFormProps> = ({ closeWorkspace, conditio
   const isTablet = useLayoutType() === 'tablet';
   const { conditions } = useConditions(patientUuid);
   const [isSubmittingForm, setIsSubmittingForm] = useState(false);
-  const [errorCreating, setErrorCreating] = useState(null);
-  const [errorUpdating, setErrorUpdating] = useState(null);
+  const [errorCreating, setErrorCreating] = useState<Error | null>(null);
+  const [errorUpdating, setErrorUpdating] = useState<Error | null>(null);
   const isEditing = formContext === 'editing';
 
   const matchingCondition = conditions?.find((c) => c?.id === condition?.id);

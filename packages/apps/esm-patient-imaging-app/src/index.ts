@@ -88,8 +88,8 @@ export function createErrorHandler() {
   };
 }
 
-function ensureErrorObject(thing: any) {
-  let message;
+function ensureErrorObject(thing: unknown) {
+  let message: string;
 
   if (thing instanceof Error) {
     return thing;
@@ -98,7 +98,7 @@ function ensureErrorObject(thing: any) {
   } else if (typeof thing === 'object') {
     try {
       message = `Object thrown as error: ${JSON.stringify(thing)}`;
-    } catch (e) {
+    } catch {
       message = `Object thrown as error with the following properties: ${Object.keys(thing)}`;
     }
     return Error(message);

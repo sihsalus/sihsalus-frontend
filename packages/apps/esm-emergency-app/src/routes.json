@@ -21,13 +21,6 @@
       "preferredWindowSize": "wider"
     },
     {
-      "name": "triage-form-workspace",
-      "title": "triageForm",
-      "component": "triageFormWorkspace",
-      "type": "clinical-form",
-      "preferredWindowSize": "wider"
-    },
-    {
       "name": "attention-form-workspace",
       "title": "emergencyAttention",
       "component": "attentionFormWorkspace",
@@ -58,6 +51,26 @@
     }
   ],
   "extensions": [
+    {
+      "name": "emergency-dashboard-link",
+      "component": "emergencyDashboardLink",
+      "slot": "homepage-dashboard-slot",
+      "meta": {
+        "name": "emergency",
+        "slot": "emergency-dashboard-slot",
+        "title": "emergencyDepartment"
+      },
+      "order": 15,
+      "online": true,
+      "offline": false
+    },
+    {
+      "name": "emergency-dashboard",
+      "component": "emergencyDashboard",
+      "slot": "emergency-dashboard-slot",
+      "online": true,
+      "offline": false
+    },
     {
       "name": "Priority I Card",
       "component": "priorityICard",

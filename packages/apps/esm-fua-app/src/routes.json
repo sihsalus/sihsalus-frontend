@@ -71,15 +71,6 @@
       }
     },
     {
-      "name": "fua-patient-chart-widget",
-      "component": "fuaPatientWidget",
-      "slot": "patient-chart-summary-dashboard-slot",
-      "meta": {
-        "columnSpan": 2,
-        "title": "fua"
-      }
-    },
-    {
       "name": "all-fua-requests-panel",
       "component": "allFuaRequestsTable",
       "slot": "fua-panels-slot",
@@ -139,20 +130,6 @@
       "icon": "fuaEncounterActionButton",
       "width": "extra-wide",
       "order": 4
-    }
-  ],
-  "workspaces": [
-    {
-      "name": "fua-encounter-workspace",
-      "component": "fuaEncounterWorkspace",
-      "type": "fua-encounter",
-      "title": "createFuaWorkspaceTitle"
-    },
-    {
-      "name": "fua-viewer-workspace",
-      "component": "fuaViewerWorkspace",
-      "type": "form",
-      "title": "viewFua"
     }
   ],
   "modals": [

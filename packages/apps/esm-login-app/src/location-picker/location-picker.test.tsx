@@ -23,9 +23,9 @@ import renderWithRouter from '../test-helpers/render-with-router';
 import { useDefaultLocation, useLocationCount } from './location-picker.resource';
 import LocationPickerView from './location-picker-view.component';
 
-jest.mock('./location-picker.resource', () => ({
-  useDefaultLocation: jest.fn(),
-  useLocationCount: jest.fn(),
+vi.mock('./location-picker.resource', () => ({
+  useDefaultLocation: vi.fn(),
+  useLocationCount: vi.fn(),
 }));
 
 const fistLocation = {
@@ -41,15 +41,15 @@ const secondLocation = {
 const invalidLocationUuid = '2gf1b7d4-c865-4178-82b0-5932e51503d6';
 const userUuid = '90bd24b3-e700-46b0-a5ef-c85afdfededd';
 
-const mockOpenmrsFetch = jest.mocked(openmrsFetch);
-const mockUseConfig = jest.mocked(useConfig);
-const mockUseSession = jest.mocked(useSession);
-const mockSetSessionLocation = jest.mocked(setSessionLocation);
-const mockSetUserProperties = jest.mocked(setUserProperties);
-const mockUseConnectivity = jest.mocked(useConnectivity);
-const mockShowSnackbar = jest.mocked(showSnackbar);
-const mockUseDefaultLocation = jest.mocked(useDefaultLocation);
-const mockUseLocationCount = jest.mocked(useLocationCount);
+const mockOpenmrsFetch = vi.mocked(openmrsFetch);
+const mockUseConfig = vi.mocked(useConfig);
+const mockUseSession = vi.mocked(useSession);
+const mockSetSessionLocation = vi.mocked(setSessionLocation);
+const mockSetUserProperties = vi.mocked(setUserProperties);
+const mockUseConnectivity = vi.mocked(useConnectivity);
+const mockShowSnackbar = vi.mocked(showSnackbar);
+const mockUseDefaultLocation = vi.mocked(useDefaultLocation);
+const mockUseLocationCount = vi.mocked(useLocationCount);
 
 let mockedStoredDefaultLocation: string | undefined;
 let mockedValidatedDefaultLocation: string | null;
@@ -88,6 +88,7 @@ describe('LocationPickerView', () => {
     mockUseDefaultLocation.mockImplementation(((/* isUpdateFlow */) => {
       const React = require('react') as typeof import('react');
       const [savePreference, setSavePreference] = React.useState(Boolean(mockedStoredDefaultLocation));
+      const defaultLocationUuid = mockedValidatedDefaultLocation ?? undefined;
 
       return {
         defaultLocation: mockedValidatedDefaultLocation,
@@ -104,7 +105,7 @@ describe('LocationPickerView', () => {
             ]
           : [],
         updateDefaultLocation: async (locationUuid?: string, saveDefaultLocation?: boolean) => {
-          if (savePreference && locationUuid === mockedValidatedDefaultLocation) {
+          if (savePreference && locationUuid === defaultLocationUuid) {
             return;
           }
 

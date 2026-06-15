@@ -15,6 +15,7 @@ import FpCounseling from './maternal-and-child-health/components/family-planning
 import FpFollowup from './maternal-and-child-health/components/family-planning/fp-followup/fp-followup.component';
 import DeliveryOrAbortionTable from './maternal-and-child-health/components/labour-delivery/deliveryOrAbortion.component';
 import SummaryOfLaborAndPostpartumTable from './maternal-and-child-health/components/labour-delivery/summaryOfLaborAndPostpartum.component';
+import MaternalHealthFormsActionButton from './maternal-and-child-health/components/maternal-health-forms-action-button.component';
 import ImmediatePostpartumTable from './maternal-and-child-health/components/postnatal-care/immediatePostpartum.component';
 import PostpartumTrackingWidget from './maternal-and-child-health/components/postnatal-care/postpartum-tracking.component';
 import PostpartumControlTable from './maternal-and-child-health/components/postnatal-care/postpartumControl.component';
@@ -37,8 +38,9 @@ import { FamilyPlanning } from './maternal-and-child-health/family-planning.comp
 import { LabourDelivery } from './maternal-and-child-health/labour-delivery.component';
 import { PostnatalCare } from './maternal-and-child-health/postnatal-care.component';
 import { PrenatalCare } from './maternal-and-child-health/prenatal-care.component';
+import MaternalHealthFormsSelectorWorkspace from './maternal-and-child-health/workspace/maternal-health-forms-selector.workspace';
 import { ObstetricHistoryBase } from './ui/obstetric-history-widget';
-import PartographChart from './ui/partography/partograph-chart';
+import Partograph from './ui/partography/partograph.component';
 
 const moduleName = '@sihsalus/esm-salud-materna-app';
 const options = {
@@ -88,10 +90,12 @@ export const postnatalCare = getSyncLifecycle(PostnatalCare, options);
 export const prenatalCare = getSyncLifecycle(PrenatalCare, options);
 export const familyPlanning = getSyncLifecycle(FamilyPlanning, options);
 export const cancerPrevention = getSyncLifecycle(CancerPrevention, options);
+export const maternalHealthFormsActionButton = getSyncLifecycle(MaternalHealthFormsActionButton, options);
+export const maternalHealthFormsSelectorWorkspace = getSyncLifecycle(MaternalHealthFormsSelectorWorkspace, options);
 
 // Labour & Delivery Components
 export const deliveryOrAbortionTable = getSyncLifecycle(DeliveryOrAbortionTable, options);
-export const partograph = getSyncLifecycle(PartographChart, options);
+export const partograph = getSyncLifecycle(Partograph, options);
 export const summaryOfLaborAndPostpartumTable = getSyncLifecycle(SummaryOfLaborAndPostpartumTable, options);
 
 // Obstetric History

@@ -11,6 +11,7 @@ $actionPanelExpandedOffset: $actionNavOffset + $actionPanelOffset;
   grid-template-rows: 1fr;
   align-items: stretch;
   width: inherit;
+  min-width: 0;
 }
 
 .chartReview {
@@ -19,6 +20,7 @@ $actionPanelExpandedOffset: $actionNavOffset + $actionPanelOffset;
   align-self: start;
   height: 90%;
   width: 100%;
+  min-width: 0;
   margin: 0 auto;
   padding-bottom: layout.$spacing-10;
 }
@@ -36,15 +38,21 @@ $actionPanelExpandedOffset: $actionNavOffset + $actionPanelOffset;
   display: flex;
   align-items: flex-start;
   flex-direction: column;
+  min-width: 0;
 }
 
-:global(.omrs-breakpoint-gt-small-desktop) .chartContainer {
-  margin-left: var(--omrs-sidenav-width);
+:global(.omrs-breakpoint-gt-tablet) .chartContainer {
+  margin-inline-start: var(--sihsalus-left-nav-width, 16rem);
+  width: calc(100% - var(--sihsalus-left-nav-width, 16rem));
+  transition:
+    margin-inline-start 300ms ease,
+    width 300ms ease;
 }
 
 .innerChartContainer {
   display: flex;
   width: 100%;
+  min-width: 0;
   flex-direction: column;
 }
 
@@ -59,9 +67,9 @@ html[dir='rtl'] {
     padding-left: layout.$spacing-01;
   }
 
-  :global(.omrs-breakpoint-gt-small-desktop) .chartContainer {
-    margin-right: var(--omrs-sidenav-width);
-    margin-left: unset;
+  :global(.omrs-breakpoint-gt-tablet) .chartContainer {
+    margin-inline-start: 0;
+    margin-inline-end: var(--sihsalus-left-nav-width, 16rem);
   }
 
   :global(.omrs-breakpoint-lt-desktop) .innerChartContainer {

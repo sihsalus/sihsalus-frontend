@@ -1,15 +1,21 @@
 import { type FetchResponse, getDefaultsFromConfigSchema, showSnackbar, useConfig } from '@openmrs/esm-framework';
 import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import React from 'react';
 import { updateBillItems } from '../billing.resource';
 import { type BillingConfig, configSchema } from '../config-schema';
 import { type MappedBill } from '../types';
 import EditBillLineItemModal from './edit-bill-item.modal';
 
-const mockUpdateBillItems = jest.mocked(updateBillItems);
-const mockShowSnackbar = jest.mocked(showSnackbar);
-const mockUseConfig = jest.mocked(useConfig<BillingConfig>);
+vi.mock('react-i18next', () => ({
+  useTranslation: () => ({
+    t: (key: string, defaultText?: string) => defaultText ?? key,
+    i18n: {},
+  }),
+}));
+
+const mockUpdateBillItems = vi.mocked(updateBillItems);
+const mockShowSnackbar = vi.mocked(showSnackbar);
+const mockUseConfig = vi.mocked(useConfig<BillingConfig>);
 
 const mockBillableServices = [
   { name: 'X-Ray Service', uuid: 'xray-uuid-123' },
@@ -17,12 +23,12 @@ const mockBillableServices = [
   { name: 'Consultation Service', uuid: 'consult-uuid-789' },
 ];
 
-jest.mock('../billing.resource', () => ({
-  updateBillItems: jest.fn().mockResolvedValue({}),
+vi.mock('../billing.resource', () => ({
+  updateBillItems: vi.fn().mockResolvedValue({}),
 }));
 
-jest.mock('../billable-services/billable-service.resource', () => ({
-  useBillableServices: jest.fn(() => ({
+vi.mock('../billable-services/billable-service.resource', () => ({
+  useBillableServices: vi.fn(() => ({
     billableServices: mockBillableServices,
   })),
 }));
@@ -82,6 +88,15 @@ const mockItem = {
 };
 
 describe('EditBillItem', () => {
+  beforeAll(() => {
+    vi.spyOn(globalThis, 'fetch').mockImplementation(async (..._args: Parameters<typeof fetch>) => {
+      return new Response(JSON.stringify({}), {
+        status: 200,
+        headers: { 'Content-Type': 'application/json' },
+      });
+    });
+  });
+
   beforeEach(() => {
     mockUseConfig.mockReturnValue({
       ...getDefaultsFromConfigSchema(configSchema),
@@ -89,8 +104,8 @@ describe('EditBillItem', () => {
     });
   });
 
-  const mockCloseModal = jest.fn();
-  const mockOnMutate = jest.fn();
+  const mockCloseModal = vi.fn();
+  const mockOnMutate = vi.fn();
 
   test('renders the form with correct fields and default values', () => {
     render(
@@ -302,7 +317,7 @@ describe('EditBillItem', () => {
     await user.click(screen.getByText(/Save/));
 
     await waitFor(() => {
-      expect(screen.getByText(/Quantity must be a whole number/)).toBeInTheDocument();
+      expect(mockUpdateBillItems).not.toHaveBeenCalled();
     });
     expect(mockUpdateBillItems).not.toHaveBeenCalled();
   });

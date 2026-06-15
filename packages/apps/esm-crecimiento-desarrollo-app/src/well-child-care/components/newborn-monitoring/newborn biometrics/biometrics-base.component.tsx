@@ -1,7 +1,8 @@
-import { formatDatetime, parseDate, useConfig } from '@openmrs/esm-framework';
-import { ClinicalDataOverview } from '@sihsalus/esm-sihsalus-shared'; // Ajusta la ruta según tu estructura
+import { formatDatetime, parseDate, useConfig, userHasAccess, useSession } from '@openmrs/esm-framework';
 import React, { useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
+import { credNeonatalEditPrivilege } from '../../../../constants';
+import ClinicalDataOverview from '../../../../ui/clinical-data/clinical-data-overview.component';
 import { useVitalsAndBiometrics, useVitalsConceptMetadata, withUnit } from '../../../common';
 
 interface BiometricsBaseProps {
@@ -11,6 +12,8 @@ interface BiometricsBaseProps {
 
 const NewbornBiometricsBase: React.FC<BiometricsBaseProps> = ({ patientUuid, pageSize = 10 }) => {
   const { t } = useTranslation();
+  const session = useSession();
+  const canEdit = userHasAccess(credNeonatalEditPrivilege, session?.user);
   const config = useConfig();
   const { data: conceptUnits } = useVitalsConceptMetadata();
   const { data: biometrics, error, isLoading, isValidating } = useVitalsAndBiometrics(patientUuid, 'biometrics');
@@ -77,7 +80,7 @@ const NewbornBiometricsBase: React.FC<BiometricsBaseProps> = ({ patientUuid, pag
     // Generar tableRows
     const rows =
       biometrics?.map((item, index) => {
-        const row: { id: string; [key: string]: any } = { id: `${index}` };
+        const row: { id: string; [key: string]: string | number | React.ReactNode } = { id: `${index}` };
         clinicalFields.forEach((field) => {
           row[field.key] = field.format ? field.format(item[field.key]) : (item[field.key] ?? '--');
         });
@@ -103,18 +106,21 @@ const NewbornBiometricsBase: React.FC<BiometricsBaseProps> = ({ patientUuid, pag
     };
   }, [clinicalFields, biometrics, conceptUnits, config.concepts, t]);
 
+  const clinicalData = (biometrics ?? []) as unknown as Array<{ date: string; [key: string]: string | number | null }>;
+
   return (
     <ClinicalDataOverview
       patientUuid={patientUuid}
       pageSize={pageSize}
       headerTitle={t('newbornAntropometrics', 'Antropometría')}
-      data={biometrics as unknown as any[]}
+      data={clinicalData}
       error={error}
       isLoading={isLoading}
       isValidating={isValidating}
       tableHeaders={tableHeaders}
       tableRows={tableRows}
-      formWorkspace="newborn-anthropometric-form"
+      formWorkspace={canEdit ? 'patient-vitals-biometrics-form-workspace' : undefined}
+      formWorkspaceProps={{ showFields: ['headCircumference', 'chestCircumference'] }}
       emptyStateDisplayText={t('biometrics_lower', 'biometrics')}
       conceptUnits={conceptUnits || new Map()} // Aseguramos que conceptUnits no sea undefined
       config={config}

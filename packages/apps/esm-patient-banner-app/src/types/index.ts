@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
 import { type OpenmrsResource } from '@openmrs/esm-framework';
 
 export interface Location {
@@ -16,14 +15,14 @@ export interface VisitType {
 export interface Patient {
   uuid: string;
   display: string;
-  identifiers: Array<any>;
+  identifiers: Array<PatientIdentifier>;
   person: Person;
 }
 
 export interface Person {
   age: number;
   attributes: Array<Attribute>;
-  birthDate: string;
+  birthdate: string;
   gender: string;
   display: string;
   preferredAddress: OpenmrsResource;
@@ -37,7 +36,19 @@ export interface Attribute {
   attributeType: OpenmrsResource;
   display: string;
   uuid: string;
-  value: string | number;
+  value: string | number | { display?: string; name?: string; value?: string | number };
+}
+
+export interface PatientIdentifier {
+  identifier: string;
+  uuid: string;
+  preferred?: boolean;
+  location?: Location;
+  identifierType?: {
+    uuid: string;
+    name: string;
+    display?: string;
+  };
 }
 
 export interface PersonFetchResponse {

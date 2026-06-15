@@ -5,7 +5,6 @@ import { type OpenedWindow } from '@openmrs/esm-extensions';
 import { ComponentContext, useLayoutType } from '@openmrs/esm-react-utils';
 import classNames from 'classnames';
 import React, { useContext } from 'react';
-import { SingleSpaContext } from 'single-spa-react';
 import { launchWorkspace2, useWorkspace2Store } from '../workspace2';
 import styles from './action-menu-button2.module.scss';
 
@@ -35,8 +34,9 @@ export interface ActionMenuButtonProps2 {
   tagContent?: string | React.ReactNode;
   workspaceToLaunch: {
     workspaceName: string;
-    workspaceProps?: Record<string, any>;
-    windowProps?: Record<string, any>;
+    workspaceProps?: object;
+    windowProps?: object;
+    groupProps?: object | null;
   };
 
   /**
@@ -95,8 +95,8 @@ export const ActionMenuButton2: React.FC<ActionMenuButtonProps2> = ({
     } else {
       const shouldLaunch = await (onBeforeWorkspaceLaunch?.() ?? true);
       if (shouldLaunch) {
-        const { workspaceName, workspaceProps, windowProps } = workspaceToLaunch;
-        launchWorkspace2(workspaceName, workspaceProps, windowProps);
+        const { workspaceName, workspaceProps, windowProps, groupProps } = workspaceToLaunch;
+        launchWorkspace2(workspaceName, workspaceProps, windowProps, groupProps);
       }
     }
   };

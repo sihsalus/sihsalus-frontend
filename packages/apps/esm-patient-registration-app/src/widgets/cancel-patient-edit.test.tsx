@@ -1,12 +1,11 @@
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import React from 'react';
 
 import CancelPatientEdit from './cancel-patient-edit.modal';
 
 describe('CancelPatientEdit modal', () => {
-  const mockClose = jest.fn();
-  const mockOnConfirm = jest.fn();
+  const mockClose = vi.fn();
+  const mockOnConfirm = vi.fn();
 
   it('renders the modal and triggers close and onConfirm functions', async () => {
     const user = userEvent.setup();

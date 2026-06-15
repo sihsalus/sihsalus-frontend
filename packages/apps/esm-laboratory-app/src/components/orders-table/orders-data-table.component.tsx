@@ -288,19 +288,29 @@ const OrdersDataTable: React.FC<OrdersDataTableProps> = (props) => {
             <TableHead>
               <TableRow>
                 <TableExpandHeader enableToggle {...getExpandHeaderProps()} />
-                {headers.map((header) => (
-                  <TableHeader {...getHeaderProps({ header })}>{header.header}</TableHeader>
-                ))}
+                {headers.map((header) => {
+                  const { key, ...headerProps } = getHeaderProps({ header });
+                  return (
+                    <TableHeader key={key} {...headerProps}>
+                      {header.header}
+                    </TableHeader>
+                  );
+                })}
               </TableRow>
             </TableHead>
             <TableBody>
               {rows.map((row) => (
                 <React.Fragment key={row.id}>
-                  <TableExpandRow {...getRowProps({ row })} key={row.id}>
-                    {row.cells.map((cell) => (
-                      <TableCell key={cell.id}>{cell.value?.content ?? cell.value}</TableCell>
-                    ))}
-                  </TableExpandRow>
+                  {(() => {
+                    const { key, ...rowProps } = getRowProps({ row });
+                    return (
+                      <TableExpandRow key={key} {...rowProps}>
+                        {row.cells.map((cell) => (
+                          <TableCell key={cell.id}>{cell.value?.content ?? cell.value}</TableCell>
+                        ))}
+                      </TableExpandRow>
+                    );
+                  })()}
                   {row.isExpanded ? (
                     <TableExpandedRow colSpan={headers.length + 2}>
                       <ListOrderDetails

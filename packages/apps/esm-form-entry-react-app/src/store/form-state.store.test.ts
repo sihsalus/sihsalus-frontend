@@ -2,7 +2,7 @@ import type { FormState } from '../types';
 
 import { getFormState, setFormState } from './form-state.store';
 
-jest.mock('@openmrs/esm-framework', () => {
+vi.mock('@openmrs/esm-framework', async () => {
   type TestStoreState = Record<string, FormState>;
   type Subscriber = (state: TestStoreState) => void;
   type TestStore = {
@@ -13,7 +13,8 @@ jest.mock('@openmrs/esm-framework', () => {
 
   const stores: Record<string, TestStore> = {};
   return {
-    createGlobalStore: jest.fn((name, initialState) => {
+    ...(await vi.importActual('@openmrs/esm-framework')),
+    createGlobalStore: vi.fn((name, initialState) => {
       let state = { ...initialState } as TestStoreState;
       const subscribers: Array<Subscriber> = [];
       stores[name] = {
@@ -34,7 +35,7 @@ jest.mock('@openmrs/esm-framework', () => {
       };
       return stores[name];
     }),
-    getGlobalStore: jest.fn((name) => stores[name]),
+    getGlobalStore: vi.fn((name) => stores[name]),
   };
 });
 

@@ -72,7 +72,7 @@ const StockOperationForm: React.FC<StockOperationFormProps> = ({
     user: { uuid: defaultLoggedUserUuid },
   } = useSession();
   const { autoPopulateResponsiblePerson } = useConfig<ConfigObject>();
-  const { error, items: _stockOperation, isLoading } = useStockOperationAndItems(stockRequisitionUuid);
+  const { error, items: _stockOperation } = useStockOperationAndItems(stockRequisitionUuid);
 
   const form = useForm<StockOperationItemDtoSchema>({
     defaultValues: {
@@ -95,6 +95,8 @@ const StockOperationForm: React.FC<StockOperationFormProps> = ({
         ) ?? [],
       sourceUuid: stockOperation?.sourceUuid ?? '',
       destinationUuid: stockOperation?.destinationUuid ?? '',
+      atLocationUuid: stockOperation?.atLocationUuid ?? '',
+      atLocationName: stockOperation?.atLocationName ?? '',
     },
     mode: 'all',
     values: stockRequisitionUuid
@@ -149,7 +151,7 @@ const StockOperationForm: React.FC<StockOperationFormProps> = ({
       });
       setRenderItemForm(true);
     },
-    [stockOperationType, form, setItemFormProps, setRenderItemForm],
+    [stockOperationType, form],
   );
   const steps: TabItem[] = useMemo(() => {
     return [

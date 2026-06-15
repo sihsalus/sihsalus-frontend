@@ -1,21 +1,21 @@
 import { generateCREDSchedule, getCREDControlDefinitions } from './cred-schedule-rules';
 
 describe('cred-schedule-rules', () => {
-  it('exposes the 33 expected static control definitions', () => {
+  it('exposes the NTS 238 expected static control definitions', () => {
     const definitions = getCREDControlDefinitions();
 
-    expect(definitions).toHaveLength(33);
+    expect(definitions).toHaveLength(27);
     expect(definitions[0]).toEqual(
       expect.objectContaining({
         controlNumber: 1,
-        label: 'RN - 48h',
+        label: 'RN - 3 a 6 días',
         phase: 'neonatal',
       }),
     );
     expect(definitions.at(-1)).toEqual(
       expect.objectContaining({
-        controlNumber: 33,
-        label: '12 años',
+        controlNumber: 27,
+        label: '11 años',
         phase: 'school',
       }),
     );
@@ -24,25 +24,51 @@ describe('cred-schedule-rules', () => {
   it('builds a concrete schedule from the provided birth date', () => {
     const schedule = generateCREDSchedule('2024-01-01T00:00:00.000Z');
 
-    expect(schedule).toHaveLength(33);
+    expect(schedule).toHaveLength(27);
     expect(schedule[0]).toEqual(
       expect.objectContaining({
         controlNumber: 1,
-        targetDate: new Date('2024-01-03T00:00:00.000Z'),
+        targetDate: new Date('2024-01-04T00:00:00.000Z'),
       }),
     );
-    expect(schedule[4]).toEqual(
+    expect(schedule[3]).toEqual(
       expect.objectContaining({
-        controlNumber: 5,
+        controlNumber: 4,
         label: '1 mes',
         targetDate: new Date('2024-01-31T00:00:00.000Z'),
       }),
     );
     expect(schedule.at(-1)).toEqual(
       expect.objectContaining({
-        controlNumber: 33,
-        targetDate: new Date('2036-01-01T00:00:00.000Z'),
+        controlNumber: 27,
+        targetDate: new Date('2035-01-01T00:00:00.000Z'),
       }),
     );
+  });
+
+  it('keeps control numbers and target dates increasing through each phase', () => {
+    const schedule = generateCREDSchedule('2024-01-01T00:00:00.000Z');
+
+    expect(schedule.map((control) => control.controlNumber)).toEqual(
+      Array.from({ length: 27 }, (_, index) => index + 1),
+    );
+    expect(schedule.every((control, index) => index === 0 || control.targetDate > schedule[index - 1].targetDate)).toBe(
+      true,
+    );
+    expect(
+      schedule.reduce(
+        (counts, control) => ({
+          ...counts,
+          [control.phase]: (counts[control.phase] ?? 0) + 1,
+        }),
+        {},
+      ),
+    ).toEqual({
+      neonatal: 3,
+      infant: 7,
+      toddler: 5,
+      preschool: 5,
+      school: 7,
+    });
   });
 });

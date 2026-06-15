@@ -13,6 +13,48 @@ export const configSchema = {
       _type: Type.UUID,
     },
   },
+  additionalAttributeTypes: {
+    _type: Type.Array,
+    _description: 'The UUIDs of person attribute types to display in the expanded patient banner details',
+    _default: [
+      '9b3df0a1-0c58-4f55-9868-9c38f1db1007',
+      '8d8718c2-c2cc-11de-8d13-0010c6dffd0f',
+      '8d871f2a-c2cc-11de-8d13-0010c6dffd0f',
+      '8d871386-c2cc-11de-8d13-0010c6dffd0f',
+      '8d872150-c2cc-11de-8d13-0010c6dffd0f',
+      '8d871afc-c2cc-11de-8d13-0010c6dffd0f',
+      '8d87236c-c2cc-11de-8d13-0010c6dffd0f',
+      '77bbb234-2312-4644-99d0-fa894d438817',
+      '9b3df0a1-0c58-4f55-9868-9c38f1db1001',
+      '9b3df0a1-0c58-4f55-9868-9c38f1db1002',
+      '56188294-b42c-481d-a987-4b495116c580',
+      '374b130f-7457-476f-87b1-f182aa77c434',
+      '9b3df0a1-0c58-4f55-9868-9c38f1db1005',
+    ],
+    _elements: {
+      _type: Type.UUID,
+    },
+  },
+  ethnicIdentityConceptUuid: {
+    _type: Type.ConceptUuid,
+    _description: 'Ethnic self-identification concept UUID displayed in the expanded patient banner details',
+    _default: '160581AAAAAAAAAAAAAAAAAAAAAAAAAAAAAA',
+  },
+  ethnicIdentityAttributeTypeUuid: {
+    _type: Type.UUID,
+    _description: 'Person attribute type UUID that stores ethnicity displayed in the expanded patient banner details',
+    _default: '8d871386-c2cc-11de-8d13-0010c6dffd0f',
+  },
+  birthplaceAttributeTypeUuid: {
+    _type: Type.UUID,
+    _description: 'Person attribute type UUID that stores birthplace displayed in the expanded patient banner details',
+    _default: '8d8718c2-c2cc-11de-8d13-0010c6dffd0f',
+  },
+  occupationAttributeTypeUuid: {
+    _type: Type.UUID,
+    _description: 'Person attribute type UUID that stores occupation displayed in the expanded patient banner details',
+    _default: '8d871afc-c2cc-11de-8d13-0010c6dffd0f',
+  },
   printPatientSticker: {
     header: {
       _type: Type.Object,
@@ -73,6 +115,11 @@ export type AllowedPatientFields = 'address' | 'age' | 'contact' | 'dob' | 'gend
 
 export interface ConfigObject {
   contactAttributeTypes: Array<string>;
+  additionalAttributeTypes: Array<string>;
+  birthplaceAttributeTypeUuid: string;
+  ethnicIdentityConceptUuid: string;
+  ethnicIdentityAttributeTypeUuid: string;
+  occupationAttributeTypeUuid: string;
   printPatientSticker: {
     header: {
       showBarcode: boolean;

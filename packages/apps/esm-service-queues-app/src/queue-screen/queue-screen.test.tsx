@@ -1,23 +1,22 @@
 import { render, screen } from '@testing-library/react';
-import React from 'react';
 
 import QueueScreen from './queue-screen.component';
 import { useActiveTickets } from './useActiveTickets';
 
-const mockUseActiveTickets = jest.mocked(useActiveTickets);
+const mockUseActiveTickets = vi.mocked(useActiveTickets);
 
-jest.mock('./useActiveTickets', () => ({
-  useActiveTickets: jest.fn(),
+vi.mock('./useActiveTickets', () => ({
+  useActiveTickets: vi.fn(),
 }));
 
-jest.mock('../helpers/helpers', () => ({
-  useSelectedQueueLocationName: jest.fn().mockReturnValue('Room A'),
-  useSelectedQueueLocationUuid: jest.fn().mockReturnValue(''),
+vi.mock('../helpers/helpers', () => ({
+  useSelectedQueueLocationName: vi.fn().mockReturnValue('Room A'),
+  useSelectedQueueLocationUuid: vi.fn().mockReturnValue(''),
 }));
 
 describe('QueueScreen component', () => {
   test('renders loading skeleton when data is loading', () => {
-    mockUseActiveTickets.mockReturnValue({ isLoading: true, activeTickets: [], error: undefined, mutate: jest.fn() });
+    mockUseActiveTickets.mockReturnValue({ isLoading: true, activeTickets: [], error: undefined, mutate: vi.fn() });
 
     render(<QueueScreen />);
 
@@ -29,12 +28,12 @@ describe('QueueScreen component', () => {
       error: new Error('Error'),
       isLoading: false,
       activeTickets: [],
-      mutate: jest.fn(),
+      mutate: vi.fn(),
     });
 
     render(<QueueScreen />);
 
-    expect(screen.getByText('Error')).toBeInTheDocument();
+    expect(screen.getByText('Error loading queue entries')).toBeInTheDocument();
   });
 
   test('renders table with active tickets when data is loaded', () => {
@@ -48,7 +47,7 @@ describe('QueueScreen component', () => {
       ],
       isLoading: false,
       error: undefined,
-      mutate: jest.fn(),
+      mutate: vi.fn(),
     });
 
     render(<QueueScreen />);

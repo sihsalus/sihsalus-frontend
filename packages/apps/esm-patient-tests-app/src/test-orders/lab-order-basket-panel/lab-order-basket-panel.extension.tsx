@@ -1,5 +1,5 @@
 import { Button, Tile } from '@carbon/react';
-import { AddIcon, ChevronDownIcon, ChevronUpIcon, MaybeIcon, useConfig, useLayoutType } from '@openmrs/esm-framework';
+import { AddIcon, ChevronDownIcon, ChevronUpIcon, MaybeIcon, useConfig } from '@openmrs/esm-framework';
 import { type OrderBasketItem, useOrderBasket, useOrderType } from '@openmrs/esm-patient-common-lib';
 import classNames from 'classnames';
 import { type ComponentProps, useCallback, useEffect, useMemo, useState } from 'react';
@@ -53,10 +53,15 @@ interface LabOrderBasketPanelProps extends OrderTypeConfig {
 
 function LabOrderBasketPanel({ orderTypeUuid, label, icon, launchAddLabOrder }: LabOrderBasketPanelProps) {
   const { t } = useTranslation();
-  const isTablet = useLayoutType() === 'tablet';
   const { orderType, isLoadingOrderType } = useOrderType(orderTypeUuid);
+  const { orders: orderConfig } = useConfig<ConfigObject>();
+  const prepareTestOrderPostData = useCallback(
+    (order: TestOrderBasketItem, patientUuid: string, encounterUuid: string | null) =>
+      prepTestOrderPostData(order, patientUuid, encounterUuid, orderConfig.careSettingUuid),
+    [orderConfig.careSettingUuid],
+  );
 
-  const { orders, setOrders } = useOrderBasket<TestOrderBasketItem>(orderTypeUuid, prepTestOrderPostData);
+  const { orders, setOrders } = useOrderBasket<TestOrderBasketItem>(orderTypeUuid, prepareTestOrderPostData);
   const [isExpanded, setIsExpanded] = useState(orders.length > 0);
   const {
     incompleteOrderBasketItems,
@@ -124,13 +129,13 @@ function LabOrderBasketPanel({ orderTypeUuid, label, icon, launchAddLabOrder }: 
 
   return (
     <Tile
-      className={classNames(styles.tile, isTablet ? styles.tabletTile : styles.desktopTile, {
+      className={classNames(styles.tile, styles.desktopTile, {
         [styles.collapsedTile]: !isExpanded,
       })}
     >
       <div className={styles.container}>
         <div className={styles.iconAndLabel}>
-          <MaybeIcon icon={icon ? icon : 'omrs-icon-generic-order-type'} size={isTablet ? 40 : 24} />
+          <MaybeIcon icon={icon ? icon : 'omrs-icon-generic-order-type'} size={24} />
           <h4 className={styles.heading}>{`${label ? t(label) : orderType?.display} (${orders.length})`}</h4>
         </div>
         <div className={styles.buttonContainer}>
@@ -140,7 +145,7 @@ function LabOrderBasketPanel({ orderTypeUuid, label, icon, launchAddLabOrder }: 
             kind="ghost"
             onClick={openNewLabForm}
             renderIcon={(props: ComponentProps<typeof AddIcon>) => <AddIcon size={16} {...props} />}
-            size={isTablet ? 'md' : 'sm'}
+            size="sm"
           >
             {t('add', 'Add')}
           </Button>

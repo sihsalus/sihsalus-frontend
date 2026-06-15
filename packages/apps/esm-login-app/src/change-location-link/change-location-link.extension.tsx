@@ -14,7 +14,7 @@ const ChangeLocationLink: React.FC = () => {
     // update=true is passed as a query param for updating the location preference,
     // The location picker won't redirect with default location on finding the update=true param.
     navigate({
-      to: `\${openmrsSpaBase}/login/location?returnToUrl=${globalThis.location.pathname}&update=true`,
+      to: `${globalThis.spaBase}/login/location?returnToUrl=${globalThis.location.pathname}&update=true`,
     });
   };
 
@@ -25,7 +25,9 @@ const ChangeLocationLink: React.FC = () => {
       onClick={changeLocation}
     >
       <LocationIcon size={16} />
-      <span className={styles.currentLocationText}>{currentLocation}</span>
+      <span className={styles.currentLocationText} title={currentLocation}>
+        {currentLocation}
+      </span>
     </HeaderGlobalAction>
   );
 };

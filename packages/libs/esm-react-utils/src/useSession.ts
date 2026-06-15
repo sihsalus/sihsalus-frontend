@@ -1,6 +1,6 @@
 /** @module @category API */
 import type { Session } from '@openmrs/esm-api';
-import { getSessionStore } from '@openmrs/esm-api';
+import { getSessionStore, type SessionStore } from '@openmrs/esm-api';
 import { useEffect, useRef, useState } from 'react';
 
 let promise: undefined | Promise<Session>;
@@ -47,7 +47,7 @@ export function useSession(): Session {
       // is loaded. As soon as we have the initial session data, we remove this initial
       // store subscription so we can set up the "ongoing" one later.
       promise = new Promise<Session>((resolve) => {
-        const handleNewSession = ({ loaded, session: newSession }) => {
+        const handleNewSession = ({ loaded, session: newSession }: SessionStore) => {
           if (loaded) {
             resolve(newSession);
             session = newSession;
@@ -68,6 +68,9 @@ export function useSession(): Session {
       // there's already a session that we can return.
       const currentState = getSessionStore().getState();
       if (currentState.loaded) {
+        if (!currentState.session) {
+          throw Error('Session loaded with no session data.');
+        }
         session = currentState.session;
       }
     }
@@ -88,8 +91,11 @@ export function useSession(): Session {
   // get here.
   useEffect(() => {
     if (!unsubscribe.current) {
-      unsubscribe.current = getSessionStore().subscribe(({ loaded, session: newSession }) => {
+      unsubscribe.current = getSessionStore().subscribe(({ loaded, session: newSession }: SessionStore) => {
         if (loaded) {
+          if (!newSession) {
+            throw Error('Session loaded with no session data.');
+          }
           session = newSession;
           setStateSession(newSession);
         }

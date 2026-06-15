@@ -2,8 +2,8 @@ import { openmrsFetch } from '@openmrs/esm-framework';
 import useSWR from 'swr';
 import { useMedicationCodeableConcept, useMedicationFormulations } from './medication.resource';
 
-jest.mocked(openmrsFetch);
-jest.mock('swr');
+vi.mocked(openmrsFetch);
+vi.mock('swr');
 
 describe('Medication Resource Tests', () => {
   test('useMedicationCodeableConcept should call useSWR with null reference if existing codeable concept uuid passed in', () => {

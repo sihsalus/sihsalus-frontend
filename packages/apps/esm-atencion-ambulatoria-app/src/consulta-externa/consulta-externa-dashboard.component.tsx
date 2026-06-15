@@ -1,25 +1,13 @@
 import { Layer, Tab, TabList, TabPanel, TabPanels, Tabs, Tile } from '@carbon/react';
-import {
-  Activity,
-  Catalog,
-  Chat,
-  DocumentMultiple_01,
-  Finance,
-  ListChecked,
-  Migrate,
-  UserIdentification,
-} from '@carbon/react/icons';
+import { Activity, Catalog, DocumentMultiple_01, ListChecked } from '@carbon/react/icons';
 import React from 'react';
 import { useTranslation } from 'react-i18next';
 import Anamnesis from './anamnesis.component';
 import styles from './consulta-externa-dashboard.scss';
 import DiagnosticoClasificado from './diagnostico-clasificado.component';
-import Financiador from './financiador.component';
 import MotivoConsulta from './motivo-consulta.component';
 import NotasSoap from './notas-soap.component';
-import PertenenciaEtnica from './pertenencia-etnica.component';
 import PlanTratamiento from './plan-tratamiento.component';
-import ReferenciaContraReferencia from './referencia-contrarreferencia.component';
 import TriageSummary from './triage-summary.component';
 
 interface ConsultaExternaDashboardProps {
@@ -42,23 +30,19 @@ const ConsultaExternaDashboard: React.FC<ConsultaExternaDashboardProps> = ({ pat
       <Layer className={styles.tabsContainer}>
         <Tabs>
           <TabList contained activation="manual" aria-label={t('consultaExternaTabs', 'Consulta Externa tabs')}>
-            <Tab renderIcon={Activity}>{t('triage', 'Triaje')}</Tab>
-            <Tab renderIcon={Chat}>{t('chiefComplaint', 'Motivo de Consulta')}</Tab>
+            <Tab renderIcon={Activity}>{t('triageAndChiefComplaint', 'Triaje y Motivo de Consulta')}</Tab>
             <Tab renderIcon={DocumentMultiple_01}>{t('anamnesis', 'Anamnesis')}</Tab>
             <Tab renderIcon={Catalog}>{t('diagnosisClassification', 'Diagnóstico')}</Tab>
             <Tab renderIcon={DocumentMultiple_01}>{t('soapNotes', 'Notas SOAP')}</Tab>
             <Tab renderIcon={ListChecked}>{t('treatmentPlan', 'Plan de Tratamiento')}</Tab>
-            <Tab renderIcon={Finance}>{t('insuranceProvider', 'Financiador')}</Tab>
-            <Tab renderIcon={UserIdentification}>{t('ethnicIdentity', 'Pertenencia Étnica')}</Tab>
-            <Tab renderIcon={Migrate}>{t('referralCounterReferral', 'Ref. / Contraref.')}</Tab>
           </TabList>
 
           <TabPanels>
             <TabPanel>
-              <TriageSummary patientUuid={patientUuid} />
-            </TabPanel>
-            <TabPanel>
-              <MotivoConsulta patientUuid={patientUuid} />
+              <div className={styles.combinedPanel}>
+                <TriageSummary patientUuid={patientUuid} />
+                <MotivoConsulta patientUuid={patientUuid} />
+              </div>
             </TabPanel>
             <TabPanel>
               <Anamnesis patientUuid={patientUuid} />
@@ -71,15 +55,6 @@ const ConsultaExternaDashboard: React.FC<ConsultaExternaDashboardProps> = ({ pat
             </TabPanel>
             <TabPanel>
               <PlanTratamiento patientUuid={patientUuid} />
-            </TabPanel>
-            <TabPanel>
-              <Financiador patientUuid={patientUuid} />
-            </TabPanel>
-            <TabPanel>
-              <PertenenciaEtnica patientUuid={patientUuid} />
-            </TabPanel>
-            <TabPanel>
-              <ReferenciaContraReferencia patientUuid={patientUuid} />
             </TabPanel>
           </TabPanels>
         </Tabs>

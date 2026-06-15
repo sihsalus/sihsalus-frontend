@@ -272,7 +272,7 @@ export async function launchWorkspace2<
         return false;
       }
     }
-  } else if (groupDef.persistence == 'closable') {
+  } else if (groupDef.persistence === 'closable') {
     const okToCloseWorkspaces = await promptForClosingWorkspaces({
       reason: 'CLOSE_OTHER_WINDOWS',
       explicit: false,
@@ -515,7 +515,7 @@ export const workspace2StoreActions = {
     // as the request workspace should be a child workspace, the corresponding window
     // to contain the workspace should already be opened
     const openedWindowIndex = state.openedWindows.findIndex((window) => window.windowName === childWorkspaceDef.window);
-    if (openedWindowIndex == -1) {
+    if (openedWindowIndex === -1) {
       throw new Error(
         `Cannot open child workspace ${childWorkspaceName} as window ${childWorkspaceDef.window} is not opened`,
       );
@@ -534,7 +534,7 @@ export const workspace2StoreActions = {
 
     return {
       openedWindows: state.openedWindows.map((w, i) => {
-        if (i == openedWindowIndex) {
+        if (i === openedWindowIndex) {
           return {
             ...w,
             openedWorkspaces: [...trimmedWorkspaces, newOpenedWorkspace(childWorkspaceName, childWorkspaceProps)],

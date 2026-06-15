@@ -64,7 +64,7 @@ const BeforeSavePrompt: React.FC<BeforeSavePromptProps> = ({ when, redirect }) =
 
   useEffect(() => {
     if (typeof target === 'string') {
-      navigate({ to: `\${openmrsSpaBase}/${getUrlWithoutPrefix(target)}` });
+      navigate({ to: `${globalThis.spaBase}/${getUrlWithoutPrefix(target)}` });
     }
   }, [target]);
 

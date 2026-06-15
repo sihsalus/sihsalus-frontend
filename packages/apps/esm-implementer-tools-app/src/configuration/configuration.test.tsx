@@ -1,20 +1,22 @@
-import React from 'react';
 import { implementerToolsConfigStore, Type, temporaryConfigStore } from '@openmrs/esm-framework/src/internal';
-import { render, screen, within } from '@testing-library/react';
+import { cleanup, render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
+import { act } from 'react';
+import type { MockInstance } from 'vitest';
 import { Configuration } from './configuration.component';
 import { useConceptLookup, useGetConceptByUuid } from './interactive-editor/value-editors/concept-search.resource';
 
-const mockUseConceptLookup = jest.mocked(useConceptLookup);
-const mockUseGetConceptByUuid = jest.mocked(useGetConceptByUuid);
+const mockUseConceptLookup = vi.mocked(useConceptLookup);
+const mockUseGetConceptByUuid = vi.mocked(useGetConceptByUuid);
+(globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
 
-jest.mock('./interactive-editor/value-editors/concept-search.resource', () => ({
-  useConceptLookup: jest.fn().mockImplementation(() => ({
+vi.mock('./interactive-editor/value-editors/concept-search.resource', () => ({
+  useConceptLookup: vi.fn().mockImplementation(() => ({
     concepts: [],
     error: undefined,
     isSearchingConcepts: false,
   })),
-  useGetConceptByUuid: jest.fn().mockImplementation(() => ({
+  useGetConceptByUuid: vi.fn().mockImplementation(() => ({
     concept: null,
     error: undefined,
     isLoadingConcept: false,
@@ -89,10 +91,10 @@ const mockImplToolsConfig = {
 };
 
 describe('Configuration', () => {
-  let temporaryConfigSetStateSpy: jest.SpyInstance;
+  let temporaryConfigSetStateSpy: MockInstance;
 
   beforeEach(() => {
-    temporaryConfigSetStateSpy = jest.spyOn(temporaryConfigStore, 'setState');
+    temporaryConfigSetStateSpy = vi.spyOn(temporaryConfigStore, 'setState');
 
     mockUseConceptLookup.mockImplementation(() => ({
       concepts: [],
@@ -107,7 +109,9 @@ describe('Configuration', () => {
     }));
   });
 
-  afterEach(() => {
+  afterEach(async () => {
+    await act(async () => {});
+    cleanup();
     implementerToolsConfigStore.setState({ config: {} });
     temporaryConfigStore.setState({ config: {} });
     temporaryConfigSetStateSpy.mockRestore();
@@ -117,10 +121,10 @@ describe('Configuration', () => {
     render(<Configuration />);
   }
 
-  it('renders the configuration component inside the implementer tools panel', () => {
+  it('renders the configuration component inside the implementer tools panel', async () => {
     renderConfiguration();
 
-    screen.findByRole('textbox', { name: /search configuration/i });
+    await screen.findByRole('textbox', { name: /search configuration/i });
     screen.getByRole('switch', { name: /json editor/i });
     screen.getByRole('switch', { name: /ui editor/i });
     screen.getByRole('button', { name: /clear local config/i });
@@ -138,14 +142,12 @@ describe('Configuration', () => {
 
     renderConfiguration();
 
-    screen.findByText('hasHat');
+    await screen.findByText('hasHat');
     const rowElement = screen.getByText('hasHat').closest('.cds--structured-list-row');
     expect(rowElement).toBeInTheDocument();
 
     if (rowElement) {
       const row = within(rowElement as HTMLElement);
-      const editButton = row.getByText('Edit').parentElement as any;
-      await user.click(editButton);
       const editor = row.getByRole('button', { name: /edit/i });
 
       await user.click(editor);
@@ -226,7 +228,7 @@ describe('Configuration', () => {
 
     renderConfiguration();
 
-    screen.findByText('numberFingers');
+    await screen.findByText('numberFingers');
     const rowElement = screen.getByText('numberFingers').closest('.cds--structured-list-row');
     expect(rowElement).toBeInTheDocument();
 
@@ -264,7 +266,7 @@ describe('Configuration', () => {
 
     renderConfiguration();
 
-    screen.findByText('nemesisName');
+    await screen.findByText('nemesisName');
     const rowElement = screen.getByText('nemesisName').closest('.cds--structured-list-row');
     expect(rowElement).toBeInTheDocument();
 
@@ -297,7 +299,7 @@ describe('Configuration', () => {
 
     renderConfiguration();
 
-    screen.findByText('mustacheUuid');
+    await screen.findByText('mustacheUuid');
     const rowElement = screen.getByText('mustacheUuid').closest('.cds--structured-list-row');
     expect(rowElement).toBeInTheDocument();
 
@@ -333,7 +335,7 @@ describe('Configuration', () => {
 
     renderConfiguration();
 
-    screen.findByText('favoriteNumbers');
+    await screen.findByText('favoriteNumbers');
     const rowElement = screen.getByText('favoriteNumbers').closest('.cds--structured-list-row');
     expect(rowElement).toBeInTheDocument();
 

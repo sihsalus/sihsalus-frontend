@@ -3,9 +3,36 @@
     "Brand color #1": "#27348b",
     "Brand color #2": "#17205f",
     "Brand color #3": "#2c7d35",
-    "implementationName": "SIHSALUS"
+    "implementationName": "Clinic",
+    "patientPhotoConceptUuid": "7cac8397-53cd-4f00-a6fe-028e8d743f8e"
   },
-  "@sihsalus/esm-home-app": {
-    "leftNavMode": "normal"
+  "core": {
+    "Translation overrides": {
+      "en": {
+        "Clinic": "SIHSALUS"
+      },
+      "es": {
+        "Clinic": "SIHSALUS"
+      }
+    }
+  },
+  "@sihsalus/esm-indicadores-app": {
+    "indicatorsApiPath": "http://127.0.0.1:8000"
+  },
+  "@sihsalus/esm-patient-vitals-app": {
+    "concepts": {
+      "bodyMassIndexUuid": "5b877648-ae50-4d45-ad36-0196042baa1a"
+    }
+  },
+  "@sihsalus/esm-cred-app": {
+    "supplementation": {
+      "mmnConceptUuid": "c2010002-0000-4000-8000-000000000002"
+    },
+    "formsList": {
+      "tepsi": "1fe2f9e8-a9b1-34d2-94ce-b897ca2e16cc"
+    },
+    "testPeruano": {
+      "formUuid": "951fbbab-6eb2-3d74-8a09-8ac55d8bddc4"
+    }
   }
 }

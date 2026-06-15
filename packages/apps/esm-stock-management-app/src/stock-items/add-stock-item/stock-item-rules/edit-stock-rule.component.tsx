@@ -13,7 +13,7 @@ interface EditStockRulesActionMenuProps {
 const EditStockRuleActionsMenu: React.FC<EditStockRulesActionMenuProps> = ({ data, stockItemUuid }) => {
   const { t } = useTranslation();
   const handleClick = useCallback(() => {
-    launchWorkspace('stock-item-rules-form-workspace', {
+    launchWorkspace<{ stockItemUuid?: string; model?: StockRule }>('stock-item-rules-form-workspace', {
       workspaceTitle: t('editStockRule', 'Edit Stock Rule'),
       stockItemUuid,
       model: data,

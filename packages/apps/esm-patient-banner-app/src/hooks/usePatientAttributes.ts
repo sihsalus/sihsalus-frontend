@@ -23,8 +23,24 @@ export const usePatientAttributes = (patientUuid: string | null) => {
   return {
     isLoading,
     attributes: data?.data?.person?.attributes ?? [],
+    identifiers: data?.data?.identifiers ?? [],
     person: data?.data?.person ?? null,
     error: error,
+  };
+};
+
+export const usePatientAdditionalAttributes = (patientUuid: string) => {
+  const { additionalAttributeTypes } = useConfig<ConfigObject>();
+  const { attributes, identifiers, isLoading, person } = usePatientAttributes(patientUuid);
+  const additionalAttributes = attributes?.filter(({ attributeType }) =>
+    additionalAttributeTypes.includes(attributeType?.uuid),
+  );
+
+  return {
+    additionalAttributes: additionalAttributes ?? [],
+    identifiers,
+    isLoading,
+    person,
   };
 };
 

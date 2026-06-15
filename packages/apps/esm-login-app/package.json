@@ -2,23 +2,23 @@
   "name": "@sihsalus/esm-login-app",
   "version": "1.0.0-alpha",
   "license": "MPL-2.0",
-  "description": "The login microfrontend for the OpenMRS SPA",
+  "description": "The login microfrontend for the Sihsalus SPA",
   "browser": "dist/openmrs-esm-login-app.js",
   "main": "src/index.ts",
   "source": true,
   "scripts": {
     "start": "openmrs develop",
     "serve": "rspack serve --mode=development",
-    "debug": "npm run serve",
-    "test": "jest --config jest.config.js --passWithNoTests --color --runInBand",
-    "test:watch": "cross-env TZ=UTC jest --watch --config jest.config.js --color",
-    "coverage": "cross-env TZ=UTC jest --config jest.config.js --coverage --passWithNoTests --color",
+    "debug": "yarn serve",
+    "test": "vitest run --passWithNoTests",
+    "test:watch": "vitest watch",
+    "coverage": "vitest run --coverage --passWithNoTests",
     "build": "rspack --mode=production",
     "build:development": "rspack --mode=development",
     "analyze": "rspack --mode=production --env analyze=true",
     "typescript": "tsc",
     "lint": "node ../../tooling/scripts/run-biome.js lint .",
-    "extract-translations": "i18next 'src/**/*.{ts,tsx}' '!src/**/*.test.{ts,tsx}' --config='../../tooling/scripts/i18next-parser.config.js'"
+    "extract-translations": "i18next 'src/**/*.{ts,tsx}' '!src/**/*.test.{ts,tsx}' '!src/**/*.spec.{ts,tsx}' --config ../../tooling/scripts/i18next-parser.config.js"
   },
   "keywords": [
     "openmrs",
@@ -57,7 +57,6 @@
     "swr": "2.x"
   },
   "devDependencies": {
-    "jest": "^29.7.0",
     "openmrs": "*",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
@@ -65,6 +64,7 @@
     "react-router-dom": "^6.3.0",
     "rxjs": "^6.5.3",
     "swr": "2.2.5",
-    "typescript": "^6.0.0"
+    "typescript": "6.0.3",
+    "vitest": "^4.1.7"
   }
 }

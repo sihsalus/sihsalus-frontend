@@ -1,4 +1,4 @@
-import { Button, ComboBox, FileUploader, Form, FormGroup, Row, Stack } from '@carbon/react';
+import { Button, ComboBox, FileUploader, Form, FormGroup, InlineLoading, Row, Stack } from '@carbon/react';
 import { zodResolver } from '@hookform/resolvers/zod';
 import {
   createErrorHandler,
@@ -8,12 +8,12 @@ import {
   useLayoutType,
 } from '@openmrs/esm-framework';
 import { type DefaultPatientWorkspaceProps } from '@openmrs/esm-patient-common-lib';
-import React, { useCallback, useMemo, useState } from 'react';
+import React, { type ChangeEvent, useCallback, useMemo, useState } from 'react';
 import { Controller, FormProvider, useForm } from 'react-hook-form';
 import { useTranslation } from 'react-i18next';
 import { z } from 'zod';
-import { uploadStudies, useOrthancConfigurations } from '../../api';
-import { getBrowserUrl, type OrthancConfiguration } from '../../types';
+import { uploadStudies, useOrthancConfigurations, useStudiesByPatient } from '../../api';
+import { type OrthancConfiguration } from '../../types';
 import { maxUploadImageDataSize } from '../constants';
 import styles from './studies.scss';
 
@@ -22,6 +22,7 @@ const UploadStudiesWorkspace: React.FC<DefaultPatientWorkspaceProps> = ({ patien
   const isTablet = useLayoutType() === 'tablet';
   const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
   const orthancConfigurations = useOrthancConfigurations();
+  const { mutate } = useStudiesByPatient(patientUuid);
   const patientState = useMemo(() => ({ patientUuid }), [patientUuid]);
 
   const uploadStudiesFormSchema = useMemo(() => {
@@ -44,11 +45,11 @@ const UploadStudiesWorkspace: React.FC<DefaultPatientWorkspaceProps> = ({ patien
   const {
     control,
     handleSubmit,
-    formState: { errors, isDirty },
+    formState: { errors, isSubmitting },
   } = formProps;
 
   const onSubmit = useCallback(
-    (data: UploadStudiesFormData) => {
+    async (data: UploadStudiesFormData) => {
       const { orthancConfiguration } = data;
       const abortController = new AbortController();
 
@@ -61,8 +62,8 @@ const UploadStudiesWorkspace: React.FC<DefaultPatientWorkspaceProps> = ({ patien
 
       if (selectedFiles.length === 0) {
         showSnackbar({
-          title: 'Upload studies error',
-          subtitle: 'Select files to upload',
+          title: t('uploadStudiesError', 'Upload studies error'),
+          subtitle: t('selectFilesUploadError', 'Select files to upload'),
           kind: 'error',
           isLowContrast: false,
         });
@@ -82,22 +83,23 @@ const UploadStudiesWorkspace: React.FC<DefaultPatientWorkspaceProps> = ({ patien
         return;
       }
 
-      uploadStudies(selectedFiles, serverConfig, abortController)
-        .then(() => {
-          closeWorkspace();
-          return () => abortController.abort();
-        })
-        .catch((err) => {
-          createErrorHandler();
-          showSnackbar({
-            title: t('uploadStudiesError', 'Upload studies error'),
-            kind: 'error',
-            isLowContrast: false,
-            subtitle: t('checkForUpload', 'Check for upload') + ': ' + err?.message,
-          });
+      try {
+        await uploadStudies(selectedFiles, serverConfig, patientUuid, abortController);
+        await mutate();
+        closeWorkspace();
+      } catch (err) {
+        createErrorHandler();
+        showSnackbar({
+          title: t('uploadStudiesError', 'Upload studies error'),
+          kind: 'error',
+          isLowContrast: false,
+          subtitle: t('checkForUpload', 'Check for upload') + ': ' + err?.message,
         });
+      } finally {
+        abortController.abort();
+      }
     },
-    [selectedFiles, t, closeWorkspace],
+    [selectedFiles, t, closeWorkspace, patientUuid, mutate],
   );
 
   return (
@@ -123,6 +125,7 @@ const UploadStudiesWorkspace: React.FC<DefaultPatientWorkspaceProps> = ({ patien
                       onChange={({ selectedItem }) => onChange(selectedItem)}
                       placeholder={t('selectOrthancServer', 'Select an Orthanc server')}
                       selectedItem={value}
+                      disabled={isSubmitting}
                       invalid={!!errors.orthancConfiguration}
                       data-testid="orthanc-server-combobox"
                       invalidText={
@@ -147,19 +150,34 @@ const UploadStudiesWorkspace: React.FC<DefaultPatientWorkspaceProps> = ({ patien
                 buttonLabel={t('chooseFiles', 'Choose Files')}
                 multiple
                 accept={['.dcm', '.zip']}
+                disabled={isSubmitting}
                 filenameStatus="complete"
-                onChange={(e: any) => {
+                onChange={(e: ChangeEvent<HTMLInputElement>) => {
                   const files = Array.from<File>(e.target.files ?? []);
                   setSelectedFiles(files);
                 }}
               />
             </div>
           </section>
+          {isSubmitting ? (
+            <div className={styles.uploadProgress} data-testid="upload-studies-loading">
+              <InlineLoading description={t('uploadingStudies', 'Uploading studies...')} />
+            </div>
+          ) : null}
           <div className={styles['popup-box-btn']}>
-            <Button type="submit" kind="primary" data-testid="upload-studies-submit">
-              {t('upload', 'Upload')}
+            <Button type="submit" kind="primary" data-testid="upload-studies-submit" disabled={isSubmitting}>
+              {isSubmitting ? (
+                <InlineLoading description={t('uploading', 'Uploading') + '...'} />
+              ) : (
+                t('upload', 'Upload')
+              )}
             </Button>
-            <Button kind="secondary" onClick={() => closeWorkspace()} data-testid="upload-studies-cancel">
+            <Button
+              kind="secondary"
+              onClick={() => closeWorkspace()}
+              data-testid="upload-studies-cancel"
+              disabled={isSubmitting}
+            >
               {t('cancel', 'Cancel')}
             </Button>
           </div>

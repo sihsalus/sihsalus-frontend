@@ -1,7 +1,7 @@
-import { reportError, useConfig } from '@openmrs/esm-framework';
-import React from 'react';
+import { reportError, useConfig, useFeatureFlag } from '@openmrs/esm-framework';
 
 import { builtInFields, type RegistrationConfig } from '../../config-schema';
+import { externalIdentityLookupsFlag } from '../../constants';
 import { getEffectiveRegistrationConfig } from '../peru-registration-config';
 
 import { AddressComponent } from './address/address-field.component';
@@ -9,6 +9,8 @@ import { CauseOfDeathField } from './cause-of-death/cause-of-death.component';
 import { CustomField } from './custom-field.component';
 import { DateAndTimeOfDeathField } from './date-and-time-of-death/date-and-time-of-death.component';
 import { DobField } from './dob/dob.component';
+import { ReniecLookupField } from './external-lookup/reniec-lookup-field.component';
+import { SisLookupField } from './external-lookup/sis-lookup-field.component';
 import { GenderField } from './gender/gender-field.component';
 import { Identifiers } from './id/id-field.component';
 import { NameField } from './name/name-field.component';
@@ -20,9 +22,10 @@ export interface FieldProps {
 
 export function Field({ name }: FieldProps) {
   const config = getEffectiveRegistrationConfig(useConfig() as RegistrationConfig);
+  const externalLookupsEnabled = useFeatureFlag(externalIdentityLookupsFlag);
   if (
     !(builtInFields as ReadonlyArray<string>).includes(name) &&
-    !config.fieldDefinitions.some((def) => def.id == name)
+    !config.fieldDefinitions.some((def) => def.id === name)
   ) {
     reportError(
       `Invalid field name '${name}'. Valid options are '${config.fieldDefinitions
@@ -34,6 +37,11 @@ export function Field({ name }: FieldProps) {
   }
 
   switch (name) {
+    case 'reniecLookup':
+    case 'minsaLookup':
+      return externalLookupsEnabled ? <ReniecLookupField /> : null;
+    case 'sisLookup':
+      return externalLookupsEnabled ? <SisLookupField /> : null;
     case 'name':
       return <NameField />;
     case 'gender':

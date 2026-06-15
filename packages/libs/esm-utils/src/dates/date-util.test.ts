@@ -1,7 +1,7 @@
 import dayjs from 'dayjs';
 import type { i18n } from 'i18next';
 import timezoneMock from 'timezone-mock';
-import { afterAll, describe, expect, it } from 'vitest';
+import { afterAll, describe, expect, it, vi } from 'vitest';
 import {
   duration,
   formatDate,
@@ -94,6 +94,14 @@ describe('Openmrs Dates', () => {
     expect(formatPartialDate('2021-04-09')).toEqual('09-Apr-2021');
     expect(formatPartialDate('2021-01-01')).toEqual('01-Jan-2021');
     expect(formatPartialDate('2021-12')).toEqual('Dec 2021');
+  });
+
+  it('does not throw on nullish input', () => {
+    window.i18next.language = 'en';
+    expect(formatDate(null as unknown as Date)).toEqual('');
+    expect(formatDate(undefined as unknown as Date)).toEqual('');
+    expect(formatPartialDate(null as unknown as string)).toBeNull();
+    expect(formatPartialDate(undefined as unknown as string)).toBeNull();
   });
 
   it('formats dates with respect to the active calendar', () => {
@@ -324,6 +332,8 @@ describe('duration', () => {
     });
 
     it('returns null for invalid string', () => {
+      vi.spyOn(console, 'error').mockImplementation(() => {});
+
       expect(duration('not a date', now)).toBeNull();
     });
   });
@@ -466,6 +476,8 @@ describe('formatDurationBetween', () => {
   });
 
   it('returns null for invalid string', () => {
+    vi.spyOn(console, 'error').mockImplementation(() => {});
+
     expect(formatDurationBetween('not a date', now)).toBeNull();
   });
 

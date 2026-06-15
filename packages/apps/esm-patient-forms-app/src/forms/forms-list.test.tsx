@@ -7,11 +7,11 @@ import FormsList, { type FormsListProps } from './forms-list.component';
 
 void React;
 
-jest.mock('lodash-es/debounce', () => jest.fn((fn: (...args: Array<unknown>) => unknown) => fn));
+vi.mock('lodash-es/debounce', () => ({ default: vi.fn((fn: (...args: Array<unknown>) => unknown) => fn) }));
 
 const defaultProps: FormsListProps & { reset: () => void } = {
   forms: [],
-  handleFormOpen: jest.fn(),
+  handleFormOpen: vi.fn(),
   reset() {
     this.forms = [];
   },
@@ -59,7 +59,7 @@ it('renders a list of forms fetched from the server', async () => {
 
 it('opens the filtered form without relying on the pre-filter row index', async () => {
   const user = userEvent.setup();
-  const handleFormOpen = jest.fn();
+  const handleFormOpen = vi.fn();
 
   renderFormsList({
     forms: forms.map((form, index) => ({
@@ -81,7 +81,51 @@ it('opens the filtered form without relying on the pre-filter row index', async 
   );
 });
 
+it('filters forms by unit prefix', async () => {
+  const user = userEvent.setup();
+
+  renderFormsList({
+    forms: forms.map((form) => ({ form, associatedEncounters: [] })),
+  });
+
+  await user.selectOptions(screen.getByLabelText(/filter by unit/i), 'CRED');
+
+  expect(screen.getByRole('row', { name: /\(cred\) detalles de nacimiento never/i })).toBeInTheDocument();
+  expect(screen.queryByRole('row', { name: /ce consulta externa never/i })).not.toBeInTheDocument();
+  expect(screen.queryByRole('row', { name: /laboratory tests never/i })).not.toBeInTheDocument();
+});
+
 const forms = [
+  {
+    uuid: '4e51e4b6-f2ce-4faa-8db4-cf6a9175e061',
+    name: '(CRED) Detalles de Nacimiento',
+    display: '(CRED) Detalles de Nacimiento',
+    encounterType: {
+      uuid: 'dd528487-82a5-4082-9c72-ed246bd49591',
+      name: 'Consultation',
+      viewPrivilege: null,
+      editPrivilege: null,
+    },
+    version: '1',
+    published: true,
+    retired: false,
+    resources: [],
+  },
+  {
+    uuid: '0db7bc31-f110-4afe-ab49-d081e745f280',
+    name: 'CE-001-CONSULTA EXTERNA',
+    display: 'CE-001-CONSULTA EXTERNA',
+    encounterType: {
+      uuid: 'dd528487-82a5-4082-9c72-ed246bd49591',
+      name: 'Consultation',
+      viewPrivilege: null,
+      editPrivilege: null,
+    },
+    version: '1',
+    published: true,
+    retired: false,
+    resources: [],
+  },
   {
     uuid: '4077b82a-6d5b-4fc6-abb9-8bc6846600f0',
     name: 'BirthTest',

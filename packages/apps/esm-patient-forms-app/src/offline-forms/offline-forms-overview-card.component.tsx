@@ -22,7 +22,7 @@ const OfflineFormsOverviewCard: React.FC = () => {
             kind="ghost"
             renderIcon={(props: ComponentProps<typeof ArrowRightIcon>) => <ArrowRightIcon size={16} {...props} />}
             size="sm"
-            onClick={() => navigate({ to: `\${openmrsSpaBase}/offline-tools/forms` })}
+            onClick={() => navigate({ to: `${globalThis.spaBase}/offline-tools/forms` })}
           >
             {t('homeOverviewCardView', 'View')}
           </Button>

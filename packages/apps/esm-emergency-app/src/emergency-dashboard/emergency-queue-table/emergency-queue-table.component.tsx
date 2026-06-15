@@ -36,6 +36,7 @@ import { emergencyWorkflowWorkspace } from '../../emergency-workflow/constants';
 import { usePriorityConfig } from '../../hooks/usePriorityConfig';
 import { type EmergencyQueueEntry, useEmergencyQueueEntries } from '../../resources/emergency.resource';
 import { useEmergencyQueueColumns } from './emergency-queue-columns.resource';
+import { getQueueEntryIdentificationStatus } from './emergency-queue-identity.utils';
 import styles from './emergency-queue-table.scss';
 
 /**
@@ -63,6 +64,7 @@ const EmergencyQueueTable: React.FC<EmergencyQueueTableProps> = ({ queueUuid }) 
   const [selectedStatusUuid, setSelectedStatusUuid] = useState<string | null>(null);
   const [selectedPriorityUuid, setSelectedPriorityUuid] = useState<string | null>(null);
   const [selectedProviderUuid, setSelectedProviderUuid] = useState<string | null>(null);
+  const [selectedIdentificationStatus, setSelectedIdentificationStatus] = useState<string | null>(null);
   const [selectedWaitTimeRange, setSelectedWaitTimeRange] = useState<string | null>(null);
   const [currentPageSize, setPageSize] = useState(10);
   const pageSizes = [10, 20, 30, 40, 50];
@@ -107,6 +109,10 @@ const EmergencyQueueTable: React.FC<EmergencyQueueTableProps> = ({ queueUuid }) 
     );
   }, [queueEntries]);
 
+  const availableIdentificationStatuses = useMemo(() => {
+    return Array.from(new Set(queueEntries.map(getQueueEntryIdentificationStatus).filter(Boolean))).sort();
+  }, [queueEntries]);
+
   // Static wait time range options aligned with Norma Técnica thresholds
   const waitTimeRangeOptions = useMemo(
     () => [
@@ -118,12 +124,18 @@ const EmergencyQueueTable: React.FC<EmergencyQueueTableProps> = ({ queueUuid }) 
     [t],
   );
 
-  const hasActiveFilters = selectedStatusUuid || selectedPriorityUuid || selectedProviderUuid || selectedWaitTimeRange;
+  const hasActiveFilters =
+    selectedStatusUuid ||
+    selectedPriorityUuid ||
+    selectedProviderUuid ||
+    selectedIdentificationStatus ||
+    selectedWaitTimeRange;
 
   const clearAllFilters = useCallback(() => {
     setSelectedStatusUuid(null);
     setSelectedPriorityUuid(null);
     setSelectedProviderUuid(null);
+    setSelectedIdentificationStatus(null);
     setSelectedWaitTimeRange(null);
   }, []);
 
@@ -142,6 +154,10 @@ const EmergencyQueueTable: React.FC<EmergencyQueueTableProps> = ({ queueUuid }) 
 
     if (selectedProviderUuid) {
       entries = entries.filter((entry) => entry.providerWaitingFor?.uuid === selectedProviderUuid);
+    }
+
+    if (selectedIdentificationStatus) {
+      entries = entries.filter((entry) => getQueueEntryIdentificationStatus(entry) === selectedIdentificationStatus);
     }
 
     if (selectedWaitTimeRange) {
@@ -178,6 +194,7 @@ const EmergencyQueueTable: React.FC<EmergencyQueueTableProps> = ({ queueUuid }) 
     selectedStatusUuid,
     selectedPriorityUuid,
     selectedProviderUuid,
+    selectedIdentificationStatus,
     selectedWaitTimeRange,
     searchTerm,
     columns,
@@ -222,7 +239,7 @@ const EmergencyQueueTable: React.FC<EmergencyQueueTableProps> = ({ queueUuid }) 
 
   useEffect(() => {
     goTo(1);
-  }, [goTo, sortedQueueEntries]);
+  }, [goTo]);
 
   // Build rows using column components
   const rows = useMemo(() => {
@@ -368,6 +385,21 @@ const EmergencyQueueTable: React.FC<EmergencyQueueTableProps> = ({ queueUuid }) 
                       )}
                       <div className={styles.filterContainer}>
                         <Dropdown
+                          id="identificationStatusFilter"
+                          items={[
+                            { id: '', label: t('any', 'Any') },
+                            ...availableIdentificationStatuses.map((status) => ({ id: status, label: status })),
+                          ]}
+                          itemToString={(item) => item?.label ?? ''}
+                          label={selectedIdentificationStatus || t('all', 'All')}
+                          onChange={({ selectedItem }) => setSelectedIdentificationStatus(selectedItem?.id || null)}
+                          size={isDesktop(layout) ? 'sm' : 'lg'}
+                          titleText={t('filterByIdentificationStatus', 'Identificación:')}
+                          type="inline"
+                        />
+                      </div>
+                      <div className={styles.filterContainer}>
+                        <Dropdown
                           id="waitTimeFilter"
                           items={[{ id: '', label: t('any', 'Any') }, ...waitTimeRangeOptions]}
                           itemToString={(item) => (item ? item.label : '')}
@@ -397,7 +429,7 @@ const EmergencyQueueTable: React.FC<EmergencyQueueTableProps> = ({ queueUuid }) 
                         className={styles.search}
                         expanded
                         onChange={(e: React.ChangeEvent<HTMLInputElement>) => setSearchTerm(e.target.value)}
-                        placeholder={t('searchThisList', 'Search this list')}
+                        placeholder={t('searchThisList', 'Paciente, HCE, documento, responsable...')}
                         size={isDesktop(layout) ? 'md' : 'lg'}
                         persistent
                       />

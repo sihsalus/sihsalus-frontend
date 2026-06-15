@@ -39,7 +39,7 @@ const CronDayOfWeekSelect: React.FC<CronDayOfWeekSelectProps> = ({ value, onChan
 
   useEffect(() => {
     validate();
-  }, [validate, valueInternal]);
+  }, [validate]);
 
   return (
     <FilterableMultiSelect

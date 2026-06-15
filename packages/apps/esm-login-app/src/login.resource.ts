@@ -71,7 +71,7 @@ export function useLoginLocations(
       urlSearchParameters.append('_tag', 'Login Location');
     }
 
-    if (typeof debouncedSearchQuery === 'string' && debouncedSearchQuery != '') {
+    if (typeof debouncedSearchQuery === 'string' && debouncedSearchQuery !== '') {
       urlSearchParameters.append('name:contains', debouncedSearchQuery);
     }
 

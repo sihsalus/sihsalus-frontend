@@ -1,13 +1,12 @@
 import { Accordion, AccordionItem, Button, InlineLoading, Tag } from '@carbon/react';
 import { Add } from '@carbon/react/icons';
-import { formatDate, launchWorkspace, useConfig } from '@openmrs/esm-framework';
+import { formatDate, useConfig } from '@openmrs/esm-framework';
+import { launchPatientWorkspace } from '@openmrs/esm-patient-common-lib';
 import React from 'react';
 import { useTranslation } from 'react-i18next';
-
 import type { ConfigObject } from '../config-schema';
 import { useSoapNotes } from '../hooks/useSoapNotes';
 import { patientFormEntryWorkspace } from '../utils/constants';
-
 import styles from './consulta-externa-dashboard.scss';
 
 interface NotasSoapProps {
@@ -24,8 +23,9 @@ const NotasSoap: React.FC<NotasSoapProps> = ({ patientUuid }) => {
   );
 
   const handleLaunchForm = () => {
-    launchWorkspace(patientFormEntryWorkspace, {
+    launchPatientWorkspace(patientFormEntryWorkspace, {
       formInfo: {
+        patientUuid,
         formUuid: config.formsList?.soapNoteForm ?? config.formsList?.consultaExternaForm,
       },
     });

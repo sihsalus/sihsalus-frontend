@@ -15,6 +15,7 @@ import { useTranslation } from 'react-i18next';
 import { useOdontogramHistory } from '../hooks/useOdontogramHistory';
 import OdontogramCanvas from '../odontogram/components/Odontogram';
 import { adultConfig } from '../odontogram/config/adultConfig';
+import { createEmptyOdontogramData } from '../odontogram/types/odontogram';
 import useOdontogramDataStore from '../store/odontogramDataStore';
 import type { OdontogramBaseGroup, OdontogramRecord } from '../types/odontogram-record';
 import DentalEmptyState from '../ui/dental-empty-state.component';
@@ -178,6 +179,21 @@ const OdontogramDashboard: React.FC<OdontogramDashboardProps> = ({ patientUuid, 
   const { groups, baseRecords, isLoading, error, mutate: _mutate } = useOdontogramHistory(patientUuid);
   const hasBase = baseRecords.length > 0;
 
+  const selectedRecord = useMemo(() => {
+    for (const group of groups) {
+      if (group.base.encounterUuid === selectedEncounterUuid) {
+        return group.base;
+      }
+
+      const attention = group.attentions.find((record) => record.encounterUuid === selectedEncounterUuid);
+      if (attention) {
+        return attention;
+      }
+    }
+
+    return groups[0]?.base ?? null;
+  }, [groups, selectedEncounterUuid]);
+
   // Sync patient into store
   useEffect(() => {
     setPatient(patientUuid);
@@ -192,14 +208,22 @@ const OdontogramDashboard: React.FC<OdontogramDashboardProps> = ({ patientUuid, 
     }
   }, [hasBase, baseRecords, selectedEncounterUuid, setSelectedEncounterUuid, setActiveBaseEncounterUuid]);
 
+  useEffect(() => {
+    if (selectedRecord?.data) {
+      setData(selectedRecord.data);
+    }
+  }, [selectedRecord, setData]);
+
   const handleGenerateBase = useCallback(() => {
+    setData(createEmptyOdontogramData(adultConfig));
     setWorkspaceMode('base');
     launchWorkspace('odontologia-odontogram-form-workspace', { patientUuid, workspaceMode: 'base' });
-  }, [patientUuid, setWorkspaceMode]);
+  }, [patientUuid, setData, setWorkspaceMode]);
 
   const handleAddClick = useCallback(() => {
     if (!hasBase) {
       // No base yet → create one
+      setData(createEmptyOdontogramData(adultConfig));
       setWorkspaceMode('base');
       launchWorkspace('odontologia-odontogram-form-workspace', { patientUuid, workspaceMode: 'base' });
     } else {
@@ -211,7 +235,7 @@ const OdontogramDashboard: React.FC<OdontogramDashboardProps> = ({ patientUuid, 
         baseEncounterUuid: activeBaseEncounterUuid,
       });
     }
-  }, [hasBase, patientUuid, activeBaseEncounterUuid, setWorkspaceMode]);
+  }, [hasBase, patientUuid, activeBaseEncounterUuid, setData, setWorkspaceMode]);
 
   const handleSelectRecord = useCallback(
     (record: OdontogramRecord, parentBase: OdontogramRecord) => {

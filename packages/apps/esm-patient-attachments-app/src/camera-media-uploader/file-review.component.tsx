@@ -7,6 +7,7 @@ import React, { type SyntheticEvent, useCallback, useContext, useState } from 'r
 import { Controller, type SubmitHandler, useForm } from 'react-hook-form';
 import { useTranslation } from 'react-i18next';
 import { z } from 'zod';
+import { moduleName } from '../constants';
 import CameraMediaUploaderContext from './camera-media-uploader-context.resources';
 import styles from './file-review.scss';
 
@@ -16,7 +17,6 @@ export interface FileReviewContainerProps {
 }
 
 interface FilePreviewProps {
-  clearData?(): void;
   collectDescription?: boolean;
   moveToNextFile: () => void;
   onSaveFile: (dataUri: UploadedFile) => void;
@@ -27,7 +27,7 @@ interface FilePreviewProps {
 }
 
 const FileReviewContainer: React.FC<FileReviewContainerProps> = ({ title, onCompletion }) => {
-  const { t } = useTranslation();
+  const { t } = useTranslation(moduleName);
   const [currentFileIndex, setCurrentFileIndex] = useState(0);
   const [showWarningDialog, setShowWarningDialog] = useState(false);
 
@@ -40,7 +40,7 @@ const FileReviewContainer: React.FC<FileReviewContainerProps> = ({ title, onComp
     } else {
       onCompletion();
     }
-  }, [setCurrentFileIndex, currentFileIndex, filesToUpload, onCompletion]);
+  }, [currentFileIndex, filesToUpload, onCompletion]);
 
   const handleSave = useCallback(
     (updatedFile: UploadedFile) => {
@@ -87,7 +87,6 @@ const FileReviewContainer: React.FC<FileReviewContainerProps> = ({ title, onComp
             {filesToUpload.length > 1 && `(${currentFileIndex + 1} of ${filesToUpload.length})`}
           </ModalHeader>
           <FilePreview
-            clearData={clearData}
             closeModal={handleClose}
             collectDescription={filesToUpload[currentFileIndex].fileType === 'image' && collectDescription}
             key={`${filesToUpload[currentFileIndex]?.fileName}-${currentFileIndex}`}
@@ -107,10 +106,9 @@ const FilePreview: React.FC<FilePreviewProps> = ({
   uploadedFile,
   collectDescription,
   onSaveFile,
-  clearData,
   closeModal,
 }) => {
-  const { t } = useTranslation();
+  const { t } = useTranslation(moduleName);
   const { allowedFileExtensions } = useAllowedFileExtensions();
   const fileNameWithoutExtension = uploadedFile.fileName.trim().replace(/\.[^\\/.]+$/, '');
 
@@ -135,6 +133,13 @@ const FilePreview: React.FC<FilePreviewProps> = ({
     },
   });
 
+  const getFileExtension = useCallback((filename: string): string => {
+    const validExtension = filename.match(/\.[0-9a-z]+$/i);
+    return validExtension ? validExtension[0].toLowerCase() : '';
+  }, []);
+
+  const fileExtension = getFileExtension(uploadedFile.fileName);
+
   const onSubmit: SubmitHandler<z.infer<typeof schema>> = (data) => {
     const { fileName, fileDescription } = data;
 
@@ -150,13 +155,6 @@ const FilePreview: React.FC<FilePreviewProps> = ({
       fileDescription: fileDescription ?? '',
     });
   };
-
-  const getFileExtension = useCallback((filename: string): string => {
-    const validExtension = filename.match(/\.[0-9a-z]+$/i);
-    return validExtension ? validExtension[0].toLowerCase() : '';
-  }, []);
-
-  const fileExtension = getFileExtension(uploadedFile.fileName);
 
   const handleCancelUpload = useCallback(
     (event: SyntheticEvent) => {
@@ -192,10 +190,9 @@ const FilePreview: React.FC<FilePreviewProps> = ({
                     id="caption"
                     invalid={!!errors.fileName}
                     invalidText={errors.fileName?.message}
-                    labelText={`${uploadedFile.fileType === 'image' ? t('image', 'Image') : t('file', 'File')} ${t(
-                      'name',
-                      'name',
-                    )}`}
+                    labelText={
+                      uploadedFile.fileType === 'image' ? t('imageName', 'Image name') : t('fileName', 'File name')
+                    }
                     onChange={onChange}
                     placeholder={t('enterAttachmentName', 'Enter attachment name')}
                     value={value}

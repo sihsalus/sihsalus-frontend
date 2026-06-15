@@ -1,5 +1,5 @@
 import { type Diagnosis } from '@openmrs/esm-emr-api';
-import React from 'react';
+import type React from 'react';
 import { vi } from 'vitest';
 
 /* Please keep these stubs in alphabetical order for readability */
@@ -156,11 +156,36 @@ export const EmptyCard = ({
     <h4>{headerTitle}</h4>
     <EmptyCardIllustration />
     <p>There are no {displayText} to display</p>
-    {launchForm && <button onClick={launchForm}>Record {displayText}</button>}
+    {launchForm && (
+      <button type="button" onClick={launchForm}>
+        Record {displayText}
+      </button>
+    )}
   </div>
 );
 
-export { CardHeader, ErrorCard, PageHeader, PageHeaderContent, Pagination } from '@openmrs/esm-styleguide/src/internal';
+export const PageHeader = ({ children, className, ...props }: React.HTMLAttributes<HTMLElement>) => (
+  <section className={className} {...props}>
+    {children}
+  </section>
+);
+
+export const PageHeaderContent = ({
+  className,
+  illustration,
+  title,
+}: {
+  className?: string;
+  illustration?: React.ReactNode;
+  title: React.ReactNode;
+}) => (
+  <div className={className}>
+    {illustration}
+    <span>{title}</span>
+  </div>
+);
+
+export { CardHeader, ErrorCard, Pagination } from '@openmrs/esm-styleguide/src/internal';
 
 export const OpenmrsDatePicker = () => <span>OpenmrsDatePicker</span>;
 export const OpenmrsDateRangePicker = () => <span>OpenmrsDateRangePicker</span>;

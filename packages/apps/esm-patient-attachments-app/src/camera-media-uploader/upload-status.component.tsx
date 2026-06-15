@@ -2,6 +2,7 @@ import { Button, ButtonSet, FileUploaderItem, ModalBody, ModalFooter, ModalHeade
 import { showSnackbar } from '@openmrs/esm-framework';
 import React, { useContext, useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
+import { moduleName } from '../constants';
 import CameraMediaUploaderContext from './camera-media-uploader-context.resources';
 import styles from './upload-status.scss';
 
@@ -10,7 +11,7 @@ interface UploadStatusComponentProps {
 }
 
 const UploadStatusComponent: React.FC<UploadStatusComponentProps> = ({ title }) => {
-  const { t } = useTranslation();
+  const { t } = useTranslation(moduleName);
   const { filesToUpload, saveFile, closeModal, clearData, onCompletion } = useContext(CameraMediaUploaderContext);
   const [filesUploading, setFilesUploading] = useState([]);
 
@@ -23,7 +24,7 @@ const UploadStatusComponent: React.FC<UploadStatusComponentProps> = ({ title }) 
         })),
       );
     }
-  }, [filesToUpload, setFilesUploading]);
+  }, [filesToUpload]);
 
   useEffect(() => {
     Promise.all(
@@ -58,7 +59,7 @@ const UploadStatusComponent: React.FC<UploadStatusComponentProps> = ({ title }) 
     ).then(() => {
       onCompletion?.();
     });
-  }, [onCompletion, saveFile, filesToUpload, t, setFilesUploading]);
+  }, [onCompletion, saveFile, filesToUpload, t]);
 
   return (
     <div className={styles.cameraSection}>

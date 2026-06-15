@@ -1,23 +1,23 @@
 import { useVisitTypes } from '@openmrs/esm-framework';
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import React from 'react';
 import { mockVisitTypes } from 'test-utils';
 
 import BaseVisitType from './base-visit-type.component';
 
-jest.mock('lodash-es/debounce', () => jest.fn((fn) => fn));
+vi.mock('lodash-es/debounce', async () => vi.fn((fn) => fn));
 
-const mockUseVisitTypes = jest.mocked(useVisitTypes);
+const mockUseVisitTypes = vi.mocked(useVisitTypes);
+const mockOnChange = vi.fn();
 
-jest.mock('react-hook-form', () => ({
-  ...jest.requireActual('react-hook-form'),
-  useFormContext: jest.fn().mockImplementation(() => ({
-    handleSubmit: () => jest.fn(),
+vi.mock('react-hook-form', async () => ({
+  ...(await vi.importActual('react-hook-form')),
+  useFormContext: vi.fn().mockImplementation(() => ({
+    handleSubmit: () => vi.fn(),
     control: {
-      register: jest.fn(),
-      unregister: jest.fn(),
-      getFieldState: jest.fn(),
+      register: vi.fn(),
+      unregister: vi.fn(),
+      getFieldState: vi.fn(),
       _names: {
         array: new Set('test'),
         mount: new Set('test'),
@@ -27,28 +27,28 @@ jest.mock('react-hook-form', () => ({
         watchAll: false,
       },
       _subjects: {
-        watch: jest.fn(),
-        array: jest.fn(),
-        state: jest.fn(),
+        watch: vi.fn(),
+        array: vi.fn(),
+        state: vi.fn(),
       },
-      _getWatch: jest.fn(),
+      _getWatch: vi.fn(),
       _formValues: [],
       _defaultValues: [],
     },
     getValues: () => {
       return [];
     },
-    setValue: () => jest.fn(),
-    formState: () => jest.fn(),
-    watch: () => jest.fn(),
+    setValue: () => vi.fn(),
+    formState: () => vi.fn(),
+    watch: () => vi.fn(),
   })),
   Controller: ({ render }) =>
     render({
       field: {
-        onChange: jest.fn(),
-        onBlur: jest.fn(),
+        onChange: mockOnChange,
+        onBlur: vi.fn(),
         value: '',
-        ref: jest.fn(),
+        ref: vi.fn(),
       },
       formState: {
         isSubmitted: false,
@@ -58,96 +58,42 @@ jest.mock('react-hook-form', () => ({
       },
     }),
   useSubscribe: () => ({
-    r: { current: { subject: { subscribe: () => jest.fn() } } },
+    r: { current: { subject: { subscribe: () => vi.fn() } } },
   }),
 }));
 
 describe('VisitTypeOverview', () => {
+  beforeEach(() => {
+    mockOnChange.mockReset();
+  });
+
   const renderVisitTypeOverview = () => {
     mockUseVisitTypes.mockReturnValue(mockVisitTypes);
     render(<BaseVisitType visitTypes={mockVisitTypes} />);
   };
 
-  it('renders a list of the available visit types', () => {
+  it('renders the visit type category selector', async () => {
+    const user = userEvent.setup();
     renderVisitTypeOverview();
 
+    const categoryDropdown = screen.getByRole('combobox', { name: /categoría de consulta/i });
+    expect(categoryDropdown).toBeInTheDocument();
+
+    await user.click(categoryDropdown);
+
     mockVisitTypes.forEach((visitType) => {
-      const radio = screen.getByRole('radio', { name: new RegExp(visitType.display, 'i') });
-      expect(radio).toBeInTheDocument();
-      expect(radio).not.toBeChecked();
+      expect(screen.getByText(visitType.display)).toBeInTheDocument();
     });
   });
 
-  it('allows keyboard navigation through visit types', async () => {
+  it('selects a visit type when the category has no child options', async () => {
     const user = userEvent.setup();
 
     renderVisitTypeOverview();
 
-    const firstVisitType = screen.getByRole('radio', { name: new RegExp(mockVisitTypes[0].display, 'i') });
-    firstVisitType.focus();
+    await user.click(screen.getByRole('combobox', { name: /categoría de consulta/i }));
+    await user.click(screen.getByText('Outpatient Visit'));
 
-    await user.keyboard('{ArrowDown}');
-    expect(screen.getByRole('radio', { name: new RegExp(mockVisitTypes[1].display, 'i') })).toHaveFocus();
-
-    await user.keyboard('{ArrowUp}');
-    expect(firstVisitType).toHaveFocus();
-  });
-
-  it('clears the search input when the clear button is clicked', async () => {
-    const user = userEvent.setup();
-
-    renderVisitTypeOverview();
-
-    const searchInput = screen.getByRole('searchbox');
-    await user.type(searchInput, 'HIV');
-
-    const clearButton = screen.getByRole('button', { name: /clear/i });
-    await user.click(clearButton);
-
-    expect(searchInput).toHaveValue('');
-    mockVisitTypes.forEach((visitType) => {
-      expect(screen.getByRole('radio', { name: new RegExp(visitType.display, 'i') })).toBeInTheDocument();
-    });
-  });
-
-  it('searches for a matching visit type when the user types in the search input', async () => {
-    const user = userEvent.setup();
-
-    renderVisitTypeOverview();
-
-    const hivVisit = screen.getByRole('radio', { name: /HIV Return Visit/i });
-    const outpatientVisit = screen.getByRole('radio', { name: /Outpatient Visit/i });
-
-    expect(outpatientVisit).toBeInTheDocument();
-    expect(hivVisit).toBeInTheDocument();
-
-    const searchInput = screen.getByRole('searchbox');
-    await user.type(searchInput, 'HIV');
-
-    expect(outpatientVisit).toBeEmptyDOMElement();
-    expect(hivVisit).toBeInTheDocument();
-  });
-
-  it('renders an empty state when a search yields no matching results', async () => {
-    const user = userEvent.setup();
-
-    renderVisitTypeOverview();
-
-    const searchInput = screen.getByRole('searchbox');
-    await user.type(searchInput, 'NonexistentVisitType');
-
-    expect(screen.getByText(/no visit types to display/i)).toBeInTheDocument();
-    expect(screen.getByText(/check the filters above/i)).toBeInTheDocument();
-  });
-
-  it('selects a visit type when clicked', async () => {
-    const user = userEvent.setup();
-
-    renderVisitTypeOverview();
-
-    const hivVisit = screen.getByRole('radio', { name: /HIV Return Visit/i });
-    await user.click(hivVisit);
-
-    expect(hivVisit).toBeChecked();
+    expect(mockOnChange).toHaveBeenCalledWith('some-uuid1');
   });
 });

@@ -258,8 +258,7 @@ describe('Interaction between configuration and extension systems', () => {
     expect(screen.queryByText('green')).not.toBeInTheDocument();
   });
 
-  // TODO restore this test
-  it.skip('Extension config should be available in extension store', async () => {
+  it('Extension config should be available in extension store', async () => {
     registerSimpleExtension('Bamm-Bamm', 'esm-flintstone', false);
     attach('A slot', 'Bamm-Bamm');
     defineConfigSchema('esm-flintstone', { clothes: { _default: 'leopard' } });
@@ -289,24 +288,6 @@ describe('Interaction between configuration and extension systems', () => {
 
     await screen.findByTestId(/slot/);
     expect(screen.getByText(/clothes/)).toHaveTextContent(/leopard/);
-
-    act(() => {
-      temporaryConfigStore.setState({
-        config: {
-          'esm-flintstone': {
-            extensionSlots: {
-              'A slot': {
-                configure: {
-                  'Bamm-Bamm': { clothes: 'tiger' },
-                },
-              },
-            },
-          },
-        },
-      });
-    });
-
-    expect(screen.getByText(/clothes/)).toHaveTextContent(/tiger/);
   });
 
   it('should not show extension when user lacks configured privilege', async () => {

@@ -4,14 +4,14 @@ import { mockFhirPatient, mockPatient, mockPatientFlags } from 'test-utils';
 import { usePatientFlags } from '../hooks/usePatientFlags';
 import FlagsWorkspace from './flags.workspace';
 
-const mockUsePatientFlags = usePatientFlags as jest.Mock;
+const mockUsePatientFlags = usePatientFlags as vi.Mock;
 
-jest.mock('../hooks/usePatientFlags', () => {
-  const originalModule = jest.requireActual('../hooks/usePatientFlags');
+vi.mock('../hooks/usePatientFlags', async () => {
+  const originalModule = await vi.importActual('../hooks/usePatientFlags');
 
   return {
     ...originalModule,
-    usePatientFlags: jest.fn(),
+    usePatientFlags: vi.fn(),
   };
 });
 
@@ -21,12 +21,12 @@ it('renders an Edit form that enables users to toggle flags on or off', async ()
     isLoading: false,
     error: null,
     isValidating: false,
-    mutate: jest.fn(),
+    mutate: vi.fn(),
   });
 
   render(
     <FlagsWorkspace
-      closeWorkspace={jest.fn()}
+      closeWorkspace={vi.fn()}
       groupProps={{
         patientUuid: mockPatient.id,
         patient: mockFhirPatient,
@@ -63,12 +63,12 @@ it('sorts by active and retired correctly via controlled dropdown', async () => 
     isLoading: false,
     error: null,
     isValidating: false,
-    mutate: jest.fn(),
+    mutate: vi.fn(),
   });
 
   render(
     <FlagsWorkspace
-      closeWorkspace={jest.fn()}
+      closeWorkspace={vi.fn()}
       groupProps={{
         patientUuid: mockPatient.id,
         patient: mockFhirPatient,

@@ -3,7 +3,7 @@ import { ChevronDownIcon, TranslateIcon } from '@openmrs/esm-framework';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
-import styles from './login.scss';
+import styles from './login.module.scss';
 
 const loginLocaleStorageKey = 'sihsalus.login.locale';
 

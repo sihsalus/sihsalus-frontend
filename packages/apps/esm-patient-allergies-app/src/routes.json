@@ -44,17 +44,6 @@
       "component": "deleteAllergyModal"
     }
   ],
-  "workspaces": [
-    {
-      "name": "patient-allergy-form-workspace",
-      "title": "Allergy",
-      "component": "allergyFormWorkspace",
-      "type": "patient-allergy",
-      "canHide": true,
-      "canMaximize": true,
-      "width": "wider"
-    }
-  ],
   "workspaces2": [
     {
       "name": "patient-allergy-form-workspace",

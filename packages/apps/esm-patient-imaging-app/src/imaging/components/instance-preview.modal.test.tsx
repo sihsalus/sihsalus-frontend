@@ -1,5 +1,4 @@
-import { fireEvent, render, screen, waitFor, waitForElementToBeRemoved } from '@testing-library/react';
-import React from 'react';
+import { render, screen, waitFor } from '@testing-library/react';
 import InstancePreviewModal from './instance-preview.modal';
 import '@testing-library/jest-dom';
 import { showSnackbar } from '@openmrs/esm-framework';
@@ -8,19 +7,20 @@ import * as api from '../../api';
 
 const mockT = (_key: string, defaultValue: string) => defaultValue;
 
-jest.mock('react-i18next', () => ({
+vi.mock('react-i18next', () => ({
   useTranslation: () => ({
     t: mockT,
   }),
 }));
 
-jest.mock('../../api');
-jest.mock('@openmrs/esm-framework', () => ({
-  showSnackbar: jest.fn(),
+vi.mock('../../api');
+vi.mock('@openmrs/esm-framework', async () => ({
+  ...(await vi.importActual('@openmrs/esm-framework')),
+  showSnackbar: vi.fn(),
 }));
 
 describe('InstancePreviewModal', () => {
-  const closeMock = jest.fn();
+  const closeMock = vi.fn();
   const defaultProps = {
     closeInstancePreviewModal: closeMock,
     studyId: 1,
@@ -31,19 +31,19 @@ describe('InstancePreviewModal', () => {
   const setup = () => render(<InstancePreviewModal {...defaultProps} />);
 
   beforeEach(() => {
-    jest.clearAllMocks();
+    vi.clearAllMocks();
   });
 
   beforeAll(() => {
-    global.URL.createObjectURL = jest.fn(() => 'blob:mock-url');
+    global.URL.createObjectURL = vi.fn(() => 'blob:mock-url');
   });
 
   afterAll(() => {
-    (global.URL.createObjectURL as jest.Mock).mockRestore?.();
+    (global.URL.createObjectURL as vi.Mock).mockRestore?.();
   });
 
   it('renders loading state initially', async () => {
-    (api.previewInstance as jest.Mock).mockReturnValue(new Promise(() => {}));
+    (api.previewInstance as vi.Mock).mockReturnValue(new Promise(() => {}));
 
     await act(async () => {
       setup();
@@ -56,8 +56,8 @@ describe('InstancePreviewModal', () => {
   it('renders image after successful fetch', async () => {
     const blob = new Blob(['fake image'], { type: 'image/png' });
 
-    const response = { blob: jest.fn().mockResolvedValue(blob) };
-    (api.previewInstance as jest.Mock).mockResolvedValue(response);
+    const response = { blob: vi.fn().mockResolvedValue(blob) };
+    (api.previewInstance as vi.Mock).mockResolvedValue(response);
 
     setup();
 
@@ -70,7 +70,7 @@ describe('InstancePreviewModal', () => {
 
   it('handles fetch error', async () => {
     const error = new Error('Failed to fetch');
-    (api.previewInstance as jest.Mock).mockImplementation(() => Promise.reject(error));
+    (api.previewInstance as vi.Mock).mockImplementation(() => Promise.reject(error));
 
     setup();
 
@@ -88,8 +88,8 @@ describe('InstancePreviewModal', () => {
 
   it('renders and finishes loading', async () => {
     const blob = new Blob(['fake image'], { type: 'image/png' });
-    const response = { blob: jest.fn().mockResolvedValue(blob) };
-    (api.previewInstance as jest.Mock).mockResolvedValue(response);
+    const response = { blob: vi.fn().mockResolvedValue(blob) };
+    (api.previewInstance as vi.Mock).mockResolvedValue(response);
 
     setup();
 

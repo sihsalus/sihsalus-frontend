@@ -80,24 +80,24 @@ const expectedQuery = {
   },
 };
 
-const mockOpenmrsFetch = openmrsFetch as jest.Mock;
-const mockUseLocations = jest.mocked(useLocations);
-const mockUsePrograms = jest.mocked(usePrograms);
+const mockOpenmrsFetch = openmrsFetch as vi.Mock;
+const mockUseLocations = vi.mocked(useLocations);
+const mockUsePrograms = vi.mocked(usePrograms);
 
-jest.mock('./search-by-enrollments.resources', () => {
-  const original = jest.requireActual('./search-by-enrollments.resources');
+vi.mock('./search-by-enrollments.resources', async () => {
+  const original = await vi.importActual('./search-by-enrollments.resources');
   return {
     ...original,
-    usePrograms: jest.fn(),
-    useLocations: jest.fn(),
+    usePrograms: vi.fn(),
+    useLocations: vi.fn(),
   };
 });
 
-jest.mock('../../cohort-builder.resources', () => {
-  const original = jest.requireActual('../../cohort-builder.resources');
+vi.mock('../../cohort-builder.resources', async () => {
+  const original = await vi.importActual('../../cohort-builder.resources');
   return {
     ...original,
-    useLocations: jest.fn(),
+    useLocations: vi.fn(),
   };
 });
 
@@ -124,7 +124,7 @@ describe('Test the search by enrollments component', () => {
       data: { results: mockPrograms },
     });
 
-    const mockSubmit = jest.fn();
+    const mockSubmit = vi.fn();
     render(<SearchByEnrollments onSubmit={mockSubmit} />);
 
     await user.click(screen.getByText(/select locations/i));

@@ -1,12 +1,11 @@
 import { navigate } from '@openmrs/esm-framework';
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import React from 'react';
 import { mockPatient } from 'test-utils';
 
 import EditPatientDetailsButton from './edit-patient-details-button.component';
 
-const mockNavigate = jest.mocked(navigate);
+const mockNavigate = vi.mocked(navigate);
 
 describe('EditPatientDetailsButton', () => {
   const patientUuid = mockPatient.uuid;
@@ -25,7 +24,7 @@ describe('EditPatientDetailsButton', () => {
   it('should call the onTransition function when provided', async () => {
     const user = userEvent.setup();
 
-    const onTransitionMock = jest.fn();
+    const onTransitionMock = vi.fn();
     render(<EditPatientDetailsButton patientUuid={patientUuid} onTransition={onTransitionMock} />);
 
     const button = screen.getByRole('menuitem');

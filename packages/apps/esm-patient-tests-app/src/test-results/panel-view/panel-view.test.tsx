@@ -6,11 +6,11 @@ import { mockPanelData } from 'test-utils';
 import PanelView from './panel-view.component';
 import usePanelData from './usePanelData';
 
-const mockIsDesktop = jest.mocked(isDesktop);
-const mockUseLayoutType = jest.mocked(useLayoutType);
-const mockUsePanelData = jest.mocked(usePanelData);
+const mockIsDesktop = vi.mocked(isDesktop);
+const mockUseLayoutType = vi.mocked(useLayoutType);
+const mockUsePanelData = vi.mocked(usePanelData);
 
-jest.mock('./usePanelData');
+vi.mock('./usePanelData');
 
 describe('PanelView', () => {
   beforeEach(() => {

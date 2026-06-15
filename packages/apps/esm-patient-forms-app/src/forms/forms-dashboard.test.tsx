@@ -10,10 +10,10 @@ import FormsDashboard from './forms-dashboard.component';
 void React;
 
 const mockFhirPatient = mockPatient as unknown as fhir.Patient;
-const mockUseConfig = jest.mocked(useConfig<ConfigObject>);
+const mockUseConfig = vi.mocked(useConfig<ConfigObject>);
 
-jest.mock('../hooks/use-forms', () => ({
-  useForms: jest.fn().mockReturnValue({
+vi.mock('../hooks/use-forms', () => ({
+  useForms: vi.fn().mockReturnValue({
     data: [],
     error: null,
     isValidating: false,
@@ -24,7 +24,7 @@ mockUseConfig.mockReturnValue({ ...getDefaultsFromConfigSchema(configSchema), ht
 
 describe('FormsDashboard', () => {
   test('renders an empty state if there are no forms persisted on the server', async () => {
-    render(<FormsDashboard patient={mockFhirPatient} visitContext={mockCurrentVisit} handleFormOpen={jest.fn()} />);
+    render(<FormsDashboard patient={mockFhirPatient} visitContext={mockCurrentVisit} handleFormOpen={vi.fn()} />);
 
     expect(screen.getByText(/there are no forms to display/i)).toBeInTheDocument();
   });

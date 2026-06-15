@@ -1,6 +1,7 @@
-import { openmrsFetch, useSession } from '@openmrs/esm-framework';
+import { launchWorkspace2, openmrsFetch, useSession } from '@openmrs/esm-framework';
 import { ErrorState } from '@openmrs/esm-patient-common-lib';
 import { screen, within } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
 import {
   mockFhirPatient,
   mockPatientDrugOrdersApiData,
@@ -10,17 +11,22 @@ import {
 } from 'test-utils';
 import PastMedications from './past-medications.component';
 
-const mockUseSession = jest.mocked(useSession);
-const mockOpenmrsFetch = openmrsFetch as jest.Mock;
+const mockUseSession = vi.mocked(useSession);
+const mockOpenmrsFetch = openmrsFetch as vi.Mock;
+const mockLaunchWorkspace2 = launchWorkspace2 as vi.Mock;
+const mockUseLaunchWorkspaceRequiringVisit = vi.fn().mockImplementation((_, name) => {
+  return () => mockLaunchWorkspace2(name);
+});
 
 mockUseSession.mockReturnValue(mockSessionDataResponse.data);
 
-jest.mock('@openmrs/esm-patient-common-lib', () => {
-  const originalModule = jest.requireActual('@openmrs/esm-patient-common-lib');
+vi.mock('@openmrs/esm-patient-common-lib', async () => {
+  const originalModule = await vi.importActual('@openmrs/esm-patient-common-lib');
 
   return {
     ...originalModule,
-    ErrorState: jest.fn(() => null),
+    ErrorState: vi.fn(() => null),
+    useLaunchWorkspaceRequiringVisit: (...args) => mockUseLaunchWorkspaceRequiringVisit(...args),
   };
 });
 
@@ -36,6 +42,7 @@ describe('PastMedications', () => {
     expect(screen.getByRole('heading', { name: /past medications/i })).toBeInTheDocument();
     expect(screen.getByTitle(/empty data illustration/i)).toBeInTheDocument();
     expect(screen.getByText(/There are no past medications to display for this patient/i)).toBeInTheDocument();
+    expect(screen.getByText(/Record past medications/i)).toBeInTheDocument();
   });
 
   test('renders an error state view if there is a problem fetching medications data', async () => {
@@ -94,4 +101,17 @@ describe('PastMedications', () => {
       expect(within(table).getByRole('row', { name: row })).toBeInTheDocument();
     });
   });
+});
+
+test('clicking the Record past medications link opens the order basket form', async () => {
+  const user = userEvent.setup();
+  mockOpenmrsFetch.mockReturnValueOnce({ data: { results: [] } });
+  mockOpenmrsFetch.mockReturnValueOnce({ data: { results: [] } });
+
+  renderWithSwr(<PastMedications patient={mockFhirPatient} />);
+
+  await waitForLoadingToFinish();
+  const orderLink = screen.getByText(/Record past medications/i);
+  await user.click(orderLink);
+  expect(mockLaunchWorkspace2).toHaveBeenCalledWith('order-basket');
 });

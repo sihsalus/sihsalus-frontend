@@ -1,21 +1,11 @@
-import { launchWorkspace2, useConfig } from '@openmrs/esm-framework';
-import { PatientSummaryTable } from '@sihsalus/esm-sihsalus-shared'; // Ajusta la ruta
+import { useConfig, userHasAccess, useSession } from '@openmrs/esm-framework';
 import React from 'react';
 import { useTranslation } from 'react-i18next';
 import type { ConfigObject } from '../../../config-schema';
+import { credNeonatalEditPrivilege } from '../../../constants';
+import { useCREDFormLauncher } from '../../../hooks/useCREDFormLauncher';
 import { useLatestValidEncounter } from '../../../hooks/useLatestEncounter'; // Ajusta la ruta
-import { formEntryWorkspace } from '../../../types';
-import {
-  AFFECTIVE_BOND_UUID,
-  ANATOMY_UUID,
-  BODY_POSITION_UUID,
-  EXAM_DATE_UUID,
-  FEEDING_TIME_UUID,
-  OBSERVATION_UUID,
-  RESPONSES_UUID,
-  SUCTION_COUNSEL_UUID,
-  TIME_UUID,
-} from '../../concepts/neonatal-concepts';
+import PatientSummaryTable from '../../../ui/patient-summary-table/patient-summary-table.component';
 
 interface NeonatalCounselingProps {
   patientUuid: string;
@@ -23,12 +13,16 @@ interface NeonatalCounselingProps {
 
 const NeonatalCounseling: React.FC<NeonatalCounselingProps> = ({ patientUuid }) => {
   const { t } = useTranslation();
+  const session = useSession();
+  const canEdit = userHasAccess(credNeonatalEditPrivilege, session?.user);
   const config = useConfig() as ConfigObject;
-  const headerTitle = t('neonatalCounseling', 'Consejeria Lactancia Materna');
+  const { neonatalConcepts } = config;
+  const headerTitle = t('neonatalCounseling', 'Consejería sobre lactancia materna');
   const { encounter, isLoading, error, mutate } = useLatestValidEncounter(
     patientUuid,
     config.encounterTypes.consejeriaMaterna,
   );
+  const { launchForm } = useCREDFormLauncher('breastfeedingObservation');
 
   // Procesar observaciones, manejando múltiples valores para checkboxes
   const obsData = React.useMemo(() => {
@@ -50,13 +44,10 @@ const NeonatalCounseling: React.FC<NeonatalCounselingProps> = ({ patientUuid }) 
     return obsMap;
   }, [encounter]);
 
-  const handleLaunchForm = () => {
-    launchWorkspace2(formEntryWorkspace, {
-      form: { uuid: config.formsList.breastfeedingObservation },
-      encounterUuid: encounter?.uuid || '',
-    });
+  const handleLaunchForm = React.useCallback(() => {
+    launchForm(encounter?.uuid || '');
     setTimeout(() => mutate(), 1000); // Forzar revalidación
-  };
+  }, [encounter?.uuid, launchForm, mutate]);
 
   const dataHook = () => ({
     data: encounter ? [obsData] : [],
@@ -69,38 +60,38 @@ const NeonatalCounseling: React.FC<NeonatalCounselingProps> = ({ patientUuid }) 
     {
       id: 'examDate',
       label: t('examDate', 'Fecha y Hora de Inicio del Examen'),
-      dataKey: EXAM_DATE_UUID,
+      dataKey: neonatalConcepts.examDateUuid,
     },
     {
       id: 'bodyPosition',
       label: t('bodyPosition', 'Posición del Cuerpo'),
-      dataKey: BODY_POSITION_UUID,
+      dataKey: neonatalConcepts.bodyPositionUuid,
     },
-    { id: 'responses', label: t('responses', 'Respuestas'), dataKey: RESPONSES_UUID },
+    { id: 'responses', label: t('responses', 'Respuestas'), dataKey: neonatalConcepts.responsesUuid },
     {
       id: 'affectiveBond',
       label: t('affectiveBond', 'Vínculo Afectivo'),
-      dataKey: AFFECTIVE_BOND_UUID,
+      dataKey: neonatalConcepts.affectiveBondUuid,
     },
-    { id: 'anatomy', label: t('anatomy', 'Anatomía'), dataKey: ANATOMY_UUID },
-    { id: 'suction', label: t('suction', 'Succión'), dataKey: SUCTION_COUNSEL_UUID },
-    { id: 'time', label: t('time', 'Tiempo'), dataKey: TIME_UUID },
+    { id: 'anatomy', label: t('anatomy', 'Anatomía'), dataKey: neonatalConcepts.anatomyUuid },
+    { id: 'suction', label: t('suction', 'Succión'), dataKey: neonatalConcepts.suctionCounselUuid },
+    { id: 'time', label: t('time', 'Tiempo'), dataKey: neonatalConcepts.timeUuid },
     {
       id: 'feedingTime',
       label: t('feedingTime', 'Tiempo que el Bebé Mamó (min)'),
-      dataKey: FEEDING_TIME_UUID,
+      dataKey: neonatalConcepts.feedingTimeUuid,
     },
-    { id: 'notes', label: t('notes', 'Notas'), dataKey: OBSERVATION_UUID },
+    { id: 'notes', label: t('notes', 'Notas'), dataKey: neonatalConcepts.observationUuid },
   ];
 
   return (
     <PatientSummaryTable
       patientUuid={patientUuid}
       headerTitle={headerTitle}
-      displayText={t('neonatalCounseling', 'Consejeria Lactancia Materna')}
+      displayText={t('neonatalCounseling', 'Consejería sobre lactancia materna')}
       dataHook={dataHook}
       rowConfig={rowConfig}
-      onFormLaunch={handleLaunchForm}
+      onFormLaunch={canEdit ? handleLaunchForm : undefined}
     />
   );
 };

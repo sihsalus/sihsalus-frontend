@@ -29,8 +29,8 @@ interface ObstetricChartData {
 const ObstetricHistoryChart: React.FC<ObstetricHistoryChartProps> = ({
   obstetricData,
   historicalData,
-  conceptUnits,
-  config,
+  conceptUnits: _conceptUnits,
+  config: _config,
 }) => {
   const { t } = useTranslation();
 

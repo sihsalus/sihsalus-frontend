@@ -10,6 +10,7 @@ export { default as useAppointmentsCRED } from './useAppointmentsCRED';
 export { useCephaloCaudalNeurologicalEvaluation } from './useCephaloCaudalNeurologicalEvaluation';
 // Generic clinical
 export { useClinicalEncounter } from './useClinicalEncounter';
+export { useCREDFormLauncher } from './useCREDFormLauncher';
 export { useCREDFormsForAgeGroup } from './useCREDFormsForAgeGroup';
 export { useCREDSchedule } from './useCREDSchedule';
 // Prenatal context (used by neonatal register)
@@ -20,7 +21,6 @@ export { default as useEncountersCRED } from './useEncountersCRED';
 export { useFeedingAssessment } from './useFeedingAssessment';
 export { useImmediateNewbornAttentions } from './useImmediateNewbornAttentions';
 export { useLatestValidEncounter } from './useLatestEncounter';
-export { useLaunchCREDForm } from './useLaunchCREDForm';
 export { useNeonatalSummary } from './useNeonatalSummary';
 export { useNutritionalAssessment } from './useNutritionalAssessment';
 export { useNutritionFollowup } from './useNutritionFollowup';

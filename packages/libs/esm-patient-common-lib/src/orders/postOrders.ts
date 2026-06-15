@@ -12,6 +12,10 @@ import type {
   TestOrderPost,
 } from './types';
 
+function isValidDate(date: Date | null): date is Date {
+  return Boolean(date) && !Number.isNaN(date.getTime());
+}
+
 export async function postOrdersOnNewEncounter(
   patientUuid: string,
   orderEncounterType: string,
@@ -20,20 +24,28 @@ export async function postOrdersOnNewEncounter(
   abortController?: AbortController,
 ) {
   const now = new Date();
-  const visitStartDate = parseDate(activeVisit?.startDatetime);
-  const visitEndDate = parseDate(activeVisit?.stopDatetime);
-  let encounterDate: Date;
-  if (!activeVisit || (visitStartDate < now && (!visitEndDate || visitEndDate > now))) {
-    encounterDate = now;
+  const visitStartDate = activeVisit?.startDatetime ? parseDate(activeVisit.startDatetime) : null;
+  const visitEndDate = activeVisit?.stopDatetime ? parseDate(activeVisit.stopDatetime) : null;
+  let encounterDate: Date | null;
+  const visitIsCurrentlyActive =
+    isValidDate(visitStartDate) && visitStartDate < now && (!isValidDate(visitEndDate) || visitEndDate > now);
+  if (!activeVisit || visitIsCurrentlyActive) {
+    // Omit the encounterDatetime so the server defaults it to its own "now". A
+    // client-side timestamp can land after the server-defaulted dateActivated of the
+    // embedded orders, failing the dateActivated >= encounterDatetime validation.
+    encounterDate = null;
   } else {
     console.warn(
       'postOrdersOnNewEncounter received an active visit that is not currently active. This is a programming error. Attempting to place the order using the visit start date.',
     );
-    encounterDate = visitStartDate;
+    encounterDate = isValidDate(visitStartDate) ? visitStartDate : now;
   }
 
   const { items, postDataPrepFunctions }: OrderBasketStore = orderBasketStore.getState();
-  const patientItems = items[patientUuid];
+  const patientItems = items?.[patientUuid];
+  if (!patientItems) {
+    return [];
+  }
 
   const orders: Array<DrugOrderPost | TestOrderPost> = [];
 
@@ -47,7 +59,7 @@ export async function postOrdersOnNewEncounter(
     patient: patientUuid,
     location: sessionLocationUuid,
     encounterType: orderEncounterType,
-    encounterDatetime: encounterDate,
+    ...(encounterDate ? { encounterDatetime: encounterDate } : {}),
     visit: activeVisit?.uuid,
     obs: [],
     orders,
@@ -65,8 +77,14 @@ export async function postOrdersOnNewEncounter(
 
 export async function postOrders(encounterUuid: string, abortController: AbortController) {
   const patientUuid = getPatientUuidFromStore();
+  if (!patientUuid) {
+    return [];
+  }
   const { items, postDataPrepFunctions }: OrderBasketStore = orderBasketStore.getState();
-  const patientItems = items[patientUuid];
+  const patientItems = items?.[patientUuid];
+  if (!patientItems) {
+    return [];
+  }
 
   const erroredItems: Array<OrderBasketItem> = [];
   for (const grouping in patientItems) {
@@ -103,15 +121,15 @@ export function postOrder(body: OrderPost, abortController?: AbortController) {
 
 function extractErrorDetails(errorObject: OrderErrorObject): ExtractedOrderErrorObject {
   const errorDetails = {
-    message: errorObject.responseBody?.error?.message,
+    message: errorObject.responseBody?.error?.message ?? '',
     fieldErrors: [],
-    globalErrors: errorObject.responseBody?.error?.globalErrors,
+    globalErrors: errorObject.responseBody?.error?.globalErrors ?? [],
   };
 
   if (errorObject.responseBody?.error?.fieldErrors) {
     const fieldErrors = errorObject.responseBody?.error?.fieldErrors;
     for (const fieldName in fieldErrors) {
-      fieldErrors[fieldName].forEach((error) => {
+      fieldErrors[fieldName as keyof typeof fieldErrors]?.forEach((error) => {
         errorDetails.fieldErrors.push(error.message);
       });
     }

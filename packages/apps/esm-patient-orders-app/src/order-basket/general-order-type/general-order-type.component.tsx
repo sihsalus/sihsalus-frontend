@@ -1,5 +1,6 @@
 import { Button, Tile } from '@carbon/react';
-import { AddIcon, ChevronDownIcon, ChevronUpIcon, MaybeIcon, useLayoutType } from '@openmrs/esm-framework';
+import { ImageMedical, Medication, UserFollow } from '@carbon/react/icons';
+import { AddIcon, ChevronDownIcon, ChevronUpIcon, MaybeIcon } from '@openmrs/esm-framework';
 import { type OrderBasketItem, useOrderBasket, useOrderType } from '@openmrs/esm-patient-common-lib';
 import classNames from 'classnames';
 import React, { type ComponentProps, useCallback, useEffect, useMemo, useState } from 'react';
@@ -13,6 +14,76 @@ import { prepOrderPostData } from './resources';
 
 interface GeneralOrderTypeProps extends OrderTypeDefinition {
   launchOrderableConceptWorkspace: (orderTypeUuid: string, order?: OrderBasketItem) => void;
+  canCreateOrders: boolean;
+  onMissingActiveVisit: () => void;
+}
+
+const iconAliases: Record<string, string> = {
+  Syringe: 'omrs-icon-syringe',
+  'User--follow': 'omrs-icon-user-follow',
+  UserFollow: 'omrs-icon-user-follow',
+  ImageMedical: 'omrs-icon-image-medical',
+  Report: 'omrs-icon-report',
+  UserXray: 'omrs-icon-user-xray',
+  ReferralOrder: 'omrs-icon-referral-order',
+};
+
+function normalizeOrderTypeLabel(label?: string) {
+  return (label ?? '')
+    .normalize('NFD')
+    .replace(/\p{Diacritic}/gu, '')
+    .toLocaleLowerCase();
+}
+
+function getOrderTypeIcon(icon?: string, label?: string, orderTypeUuid?: string) {
+  const normalizedLabel = normalizeOrderTypeLabel(label);
+
+  if (
+    orderTypeUuid === 'f9c5d0b8-8b5a-11e5-8e9b-12345678a01a' ||
+    normalizedLabel.includes('radiolog') ||
+    normalizedLabel.includes('imagen')
+  ) {
+    return 'omrs-icon-image-medical';
+  }
+
+  if (
+    orderTypeUuid === 'e1f95924-697a-11e3-bd76-0800271c1b75' ||
+    normalizedLabel.includes('inmuniz') ||
+    normalizedLabel.includes('immuniz') ||
+    normalizedLabel.includes('vacun')
+  ) {
+    return 'omrs-icon-syringe';
+  }
+
+  if (
+    orderTypeUuid === 'f3c2e4b6-8b5a-11e5-8e9b-12345678901b' ||
+    normalizedLabel.includes('interconsulta') ||
+    normalizedLabel.includes('referral') ||
+    normalizedLabel.includes('refer')
+  ) {
+    return 'omrs-icon-referral-order';
+  }
+
+  const configuredIcon = icon ? (iconAliases[icon] ?? icon) : '';
+
+  if (configuredIcon && configuredIcon !== 'omrs-icon-generic-order-type') {
+    return configuredIcon;
+  }
+
+  return 'omrs-icon-generic-order-type';
+}
+
+function getOrderTypeIconComponent(icon: string) {
+  switch (icon) {
+    case 'omrs-icon-image-medical':
+      return ImageMedical;
+    case 'omrs-icon-syringe':
+      return Medication;
+    case 'omrs-icon-referral-order':
+      return UserFollow;
+    default:
+      return null;
+  }
 }
 
 const GeneralOrderType: React.FC<GeneralOrderTypeProps> = ({
@@ -20,9 +91,10 @@ const GeneralOrderType: React.FC<GeneralOrderTypeProps> = ({
   label,
   icon,
   launchOrderableConceptWorkspace,
+  canCreateOrders,
+  onMissingActiveVisit,
 }) => {
   const { t } = useTranslation();
-  const isTablet = useLayoutType() === 'tablet';
   const { orderType, isLoadingOrderType } = useOrderType(orderTypeUuid);
 
   const { orders, setOrders } = useOrderBasket<OrderBasketItem>(orderTypeUuid, prepOrderPostData);
@@ -64,10 +136,20 @@ const GeneralOrderType: React.FC<GeneralOrderTypeProps> = ({
   }, [orders]);
 
   const openConceptSearch = () => {
+    if (!canCreateOrders) {
+      onMissingActiveVisit();
+      return;
+    }
+
     launchOrderableConceptWorkspace(orderTypeUuid);
   };
 
   const openOrderForm = (order: OrderBasketItem) => {
+    if (!canCreateOrders) {
+      onMissingActiveVisit();
+      return;
+    }
+
     launchOrderableConceptWorkspace(orderTypeUuid, order);
   };
 
@@ -88,23 +170,39 @@ const GeneralOrderType: React.FC<GeneralOrderTypeProps> = ({
     return null;
   }
 
+  const orderTypeDisplay = label ? t(label, { defaultValue: label }) : (orderType?.display ?? t('order', 'Order'));
+  const orderTypeIcon = getOrderTypeIcon(
+    icon,
+    `${label ?? ''} ${orderTypeDisplay} ${orderType?.display ?? ''}`,
+    orderTypeUuid,
+  );
+  const CarbonOrderTypeIcon = getOrderTypeIconComponent(orderTypeIcon);
+
+  const getOrderBasketItemKey = (item: OrderBasketItem) =>
+    item?.uuid ??
+    item?.orderNumber ??
+    `${item?.action ?? 'unknown'}-${item?.concept?.uuid ?? item?.concept?.display ?? 'concept'}-${item?.orderType ?? 'type'}`;
+
   return (
-    <Tile
-      className={classNames(isTablet ? styles.tabletTile : styles.desktopTile, { [styles.collapsedTile]: !isExpanded })}
-    >
+    <Tile className={classNames(styles.desktopTile, { [styles.collapsedTile]: !isExpanded })}>
       <div className={styles.container}>
         <div className={styles.iconAndLabel}>
-          <MaybeIcon icon={icon ? icon : 'omrs-icon-generic-order-type'} size={isTablet ? 40 : 24} />
-          <h4 className={styles.heading}>{`${label ? t(label) : orderType?.display} (${orders.length})`}</h4>
+          {CarbonOrderTypeIcon ? (
+            <CarbonOrderTypeIcon aria-hidden="true" className={styles.orderTypeIcon} size={24} />
+          ) : (
+            <MaybeIcon icon={orderTypeIcon} size={24} />
+          )}
+          <h4 className={styles.heading}>{`${orderTypeDisplay} (${orders.length})`}</h4>
         </div>
         <div className={styles.buttonContainer}>
           <Button
             className={styles.addButton}
             kind="ghost"
             renderIcon={(props: ComponentProps<typeof AddIcon>) => <AddIcon size={16} {...props} />}
-            iconDescription="Add medication"
+            iconDescription={t('addOrder', 'Add order')}
             onClick={openConceptSearch}
-            size={isTablet ? 'md' : 'sm'}
+            disabled={!canCreateOrders}
+            size="sm"
           >
             {t('add', 'Add')}
           </Button>
@@ -115,21 +213,19 @@ const GeneralOrderType: React.FC<GeneralOrderTypeProps> = ({
             renderIcon={(props: ComponentProps<typeof ChevronUpIcon>) =>
               isExpanded ? <ChevronUpIcon size={16} {...props} /> : <ChevronDownIcon size={16} {...props} />
             }
-            iconDescription="View"
+            iconDescription={isExpanded ? t('collapseOrders', 'Collapse orders') : t('expandOrders', 'Expand orders')}
             disabled={orders.length === 0}
             onClick={() => setIsExpanded(!isExpanded)}
-          >
-            {t('add', 'Add')}
-          </Button>
+          />
         </div>
       </div>
       {isExpanded && (
         <>
           {incompleteOrderBasketItems.length > 0 && (
             <>
-              {incompleteOrderBasketItems.map((order, index) => (
+              {incompleteOrderBasketItems.map((order) => (
                 <OrderBasketItemTile
-                  key={index}
+                  key={getOrderBasketItemKey(order)}
                   orderBasketItem={order}
                   onItemClick={() => openOrderForm(order)}
                   onRemoveClick={() => removeOrder(order)}
@@ -139,9 +235,9 @@ const GeneralOrderType: React.FC<GeneralOrderTypeProps> = ({
           )}
           {newOrderBasketItems.length > 0 && (
             <>
-              {newOrderBasketItems.map((order, index) => (
+              {newOrderBasketItems.map((order) => (
                 <OrderBasketItemTile
-                  key={index}
+                  key={getOrderBasketItemKey(order)}
                   orderBasketItem={order}
                   onItemClick={() => openOrderForm(order)}
                   onRemoveClick={() => removeOrder(order)}
@@ -152,9 +248,9 @@ const GeneralOrderType: React.FC<GeneralOrderTypeProps> = ({
 
           {renewedOrderBasketItems.length > 0 && (
             <>
-              {renewedOrderBasketItems.map((item, index) => (
+              {renewedOrderBasketItems.map((item) => (
                 <OrderBasketItemTile
-                  key={index}
+                  key={getOrderBasketItemKey(item)}
                   orderBasketItem={item}
                   onItemClick={() => openOrderForm(item)}
                   onRemoveClick={() => removeOrder(item)}
@@ -165,9 +261,9 @@ const GeneralOrderType: React.FC<GeneralOrderTypeProps> = ({
 
           {revisedOrderBasketItems.length > 0 && (
             <>
-              {revisedOrderBasketItems.map((item, index) => (
+              {revisedOrderBasketItems.map((item) => (
                 <OrderBasketItemTile
-                  key={index}
+                  key={getOrderBasketItemKey(item)}
                   orderBasketItem={item}
                   onItemClick={() => openOrderForm(item)}
                   onRemoveClick={() => removeOrder(item)}
@@ -178,9 +274,9 @@ const GeneralOrderType: React.FC<GeneralOrderTypeProps> = ({
 
           {discontinuedOrderBasketItems.length > 0 && (
             <>
-              {discontinuedOrderBasketItems.map((item, index) => (
+              {discontinuedOrderBasketItems.map((item) => (
                 <OrderBasketItemTile
-                  key={index}
+                  key={getOrderBasketItemKey(item)}
                   orderBasketItem={item}
                   onItemClick={() => openOrderForm(item)}
                   onRemoveClick={() => removeOrder(item)}

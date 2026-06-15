@@ -1,25 +1,24 @@
 import { mockSubscription } from '@mocks/openconceptlab.mock';
-import { type FetchResponse, openmrsFetch, showNotification } from '@openmrs/esm-framework';
+import { type FetchResponse, openmrsFetch, showSnackbar } from '@openmrs/esm-framework';
 import { screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { renderWithSwr } from '@tools/test-helpers';
-import React from 'react';
 
 import Subscription from './subscription.component';
 import { deleteSubscription, updateSubscription } from './subscription.resource';
 
-const mockOpenmrsFetch = openmrsFetch as jest.Mock;
-const mockUpdateSubscription = jest.mocked(updateSubscription);
-const mockDeleteSubscription = jest.mocked(deleteSubscription);
-const mockShowNotification = jest.mocked(showNotification);
+const mockOpenmrsFetch = openmrsFetch as vi.Mock;
+const mockUpdateSubscription = vi.mocked(updateSubscription);
+const mockDeleteSubscription = vi.mocked(deleteSubscription);
+const mockShowSnackbar = vi.mocked(showSnackbar);
 
-jest.mock('./subscription.resource', () => {
-  const originalModule = jest.requireActual<Record<string, unknown>>('./subscription.resource');
+vi.mock('./subscription.resource', async () => {
+  const originalModule = await vi.importActual<Record<string, unknown>>('./subscription.resource');
 
   return {
     ...originalModule,
-    updateSubscription: jest.fn(),
-    deleteSubscription: jest.fn(),
+    updateSubscription: vi.fn(),
+    deleteSubscription: vi.fn(),
   };
 });
 
@@ -49,7 +48,7 @@ describe('Subscription component', () => {
     expect(screen.getByRole('button', { name: 'danger Unsubscribe' })).toBeEnabled();
   });
 
-  xit('allows adding a new subscription', async () => {
+  it('allows adding a new subscription', async () => {
     const user = userEvent.setup();
     mockOpenmrsFetch.mockReturnValueOnce({ data: { results: [] } });
     renderWithSwr(<Subscription />);
@@ -66,21 +65,26 @@ describe('Subscription component', () => {
     await user.click(saveButton);
 
     expect(mockUpdateSubscription).toHaveBeenCalledWith(
-      expect.objectContaining(mockSubscription),
-      new AbortController(),
+      expect.objectContaining({
+        subscribedToSnapshot: mockSubscription.subscribedToSnapshot,
+        token: mockSubscription.token,
+        url: mockSubscription.url,
+        validationType: mockSubscription.validationType,
+      }),
+      expect.any(AbortController),
     );
     expect(mockUpdateSubscription).toHaveBeenCalledTimes(1);
 
-    expect(mockShowNotification).toHaveBeenCalledWith(
+    expect(mockShowSnackbar).toHaveBeenCalledWith(
       expect.objectContaining({
-        description: 'Subscription created successfully',
+        subtitle: 'Subscription created successfully',
         kind: 'success',
       }),
     );
-    expect(mockShowNotification).toHaveBeenCalledTimes(1);
+    expect(mockShowSnackbar).toHaveBeenCalledTimes(1);
   });
 
-  xit('allows changing the saved subscription', async () => {
+  it('allows changing the saved subscription', async () => {
     const user = userEvent.setup();
     mockOpenmrsFetch.mockReturnValueOnce({ data: { results: [mockSubscription] } });
     renderWithSwr(<Subscription />);
@@ -105,20 +109,20 @@ describe('Subscription component', () => {
         url: 'https://api.openconceptlab.org/orgs/openmrs/collections/DemoQueueConcepts/2',
         token: 'token123',
       }),
-      new AbortController(),
+      expect.any(AbortController),
     );
     expect(mockUpdateSubscription).toHaveBeenCalledTimes(1);
 
-    expect(mockShowNotification).toHaveBeenCalledWith(
+    expect(mockShowSnackbar).toHaveBeenCalledWith(
       expect.objectContaining({
-        description: 'Subscription updated successfully',
+        subtitle: 'Subscription updated successfully',
         kind: 'success',
       }),
     );
-    expect(mockShowNotification).toHaveBeenCalledTimes(1);
+    expect(mockShowSnackbar).toHaveBeenCalledTimes(1);
   });
 
-  xit('allows removing the saved subscription', async () => {
+  it('allows removing the saved subscription', async () => {
     const user = userEvent.setup();
     mockOpenmrsFetch.mockReturnValueOnce({ data: { results: [mockSubscription] } });
     renderWithSwr(<Subscription />);
@@ -133,17 +137,17 @@ describe('Subscription component', () => {
 
     expect(mockDeleteSubscription).toHaveBeenCalledWith(
       expect.objectContaining(mockSubscription),
-      new AbortController(),
+      expect.any(AbortController),
     );
     expect(mockDeleteSubscription).toHaveBeenCalledTimes(1);
 
-    expect(mockShowNotification).toHaveBeenCalledWith(
+    expect(mockShowSnackbar).toHaveBeenCalledWith(
       expect.objectContaining({
-        description: 'Successfully unsubscribed',
+        subtitle: 'Successfully unsubscribed',
         kind: 'success',
       }),
     );
-    expect(mockShowNotification).toHaveBeenCalledTimes(1);
+    expect(mockShowSnackbar).toHaveBeenCalledTimes(1);
   });
 });
 

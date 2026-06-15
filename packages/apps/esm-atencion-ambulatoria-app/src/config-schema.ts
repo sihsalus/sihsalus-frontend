@@ -1,5 +1,17 @@
 import { Type } from '@openmrs/esm-framework';
-import { ANAMNESIS_DEFAULT_CONCEPT_UUIDS } from '@sihsalus/esm-sihsalus-shared';
+
+const anamnesisConceptDefaults = {
+  anamnesisUuid: '6d99603e-ae9d-4838-8a09-ba75e27ff1e9',
+  illnessDurationUuid: '577876b1-0b6e-4c57-b4c3-7af969a1d501',
+  onsetTypeUuid: '34e03399-cb72-484b-85b8-616ef19919c1',
+  courseUuid: 'e7d98188-16ba-4ef3-aed9-e891680bacf9',
+  appetiteUuid: 'f0000182-0000-4000-8000-000000000182',
+  thirstUuid: 'f0000183-0000-4000-8000-000000000183',
+  sleepUuid: 'f0000184-0000-4000-8000-000000000184',
+  moodUuid: 'f0000185-0000-4000-8000-000000000185',
+  urineUuid: 'f0000186-0000-4000-8000-000000000186',
+  bowelMovementsUuid: 'f0000187-0000-4000-8000-000000000187',
+} as const;
 
 // ===============================
 // MAIN CONFIGURATION SCHEMA
@@ -98,7 +110,7 @@ export const configSchema = {
 
       // Consulta Externa Forms
       consultaExternaForm: 'e375206e-186b-3357-9cbf-fdae409f7949',
-      anamnesisForm: 'e375206e-186b-3357-9cbf-fdae409f7949',
+      anamnesisForm: 'dea96c94-fe4f-3671-98b9-324fb374b558',
       soapNoteForm: 'e375206e-186b-3357-9cbf-fdae409f7949',
       referralForm: 'a7379846-a7f9-3fc9-9c8f-f95973fd4c88',
 
@@ -270,52 +282,52 @@ export const configSchema = {
     anamnesisUuid: {
       _type: Type.ConceptUuid,
       _description: 'Anamnesis / current illness narrative',
-      _default: ANAMNESIS_DEFAULT_CONCEPT_UUIDS.anamnesisUuid,
+      _default: anamnesisConceptDefaults.anamnesisUuid,
     },
     illnessDurationUuid: {
       _type: Type.ConceptUuid,
       _description: 'Tiempo de enfermedad',
-      _default: ANAMNESIS_DEFAULT_CONCEPT_UUIDS.illnessDurationUuid,
+      _default: anamnesisConceptDefaults.illnessDurationUuid,
     },
     onsetTypeUuid: {
       _type: Type.ConceptUuid,
       _description: 'Forma de inicio',
-      _default: ANAMNESIS_DEFAULT_CONCEPT_UUIDS.onsetTypeUuid,
+      _default: anamnesisConceptDefaults.onsetTypeUuid,
     },
     courseUuid: {
       _type: Type.ConceptUuid,
       _description: 'Curso de la enfermedad actual',
-      _default: ANAMNESIS_DEFAULT_CONCEPT_UUIDS.courseUuid,
+      _default: anamnesisConceptDefaults.courseUuid,
     },
     appetiteUuid: {
       _type: Type.ConceptUuid,
       _description: 'Función biológica: apetito',
-      _default: ANAMNESIS_DEFAULT_CONCEPT_UUIDS.appetiteUuid,
+      _default: anamnesisConceptDefaults.appetiteUuid,
     },
     thirstUuid: {
       _type: Type.ConceptUuid,
       _description: 'Función biológica: sed',
-      _default: ANAMNESIS_DEFAULT_CONCEPT_UUIDS.thirstUuid,
+      _default: anamnesisConceptDefaults.thirstUuid,
     },
     sleepUuid: {
       _type: Type.ConceptUuid,
       _description: 'Función biológica: sueño',
-      _default: ANAMNESIS_DEFAULT_CONCEPT_UUIDS.sleepUuid,
+      _default: anamnesisConceptDefaults.sleepUuid,
     },
     moodUuid: {
       _type: Type.ConceptUuid,
       _description: 'Función biológica: estado de ánimo',
-      _default: ANAMNESIS_DEFAULT_CONCEPT_UUIDS.moodUuid,
+      _default: anamnesisConceptDefaults.moodUuid,
     },
     urineUuid: {
       _type: Type.ConceptUuid,
       _description: 'Función biológica: orina',
-      _default: ANAMNESIS_DEFAULT_CONCEPT_UUIDS.urineUuid,
+      _default: anamnesisConceptDefaults.urineUuid,
     },
     bowelMovementsUuid: {
       _type: Type.ConceptUuid,
       _description: 'Función biológica: deposiciones',
-      _default: ANAMNESIS_DEFAULT_CONCEPT_UUIDS.bowelMovementsUuid,
+      _default: anamnesisConceptDefaults.bowelMovementsUuid,
     },
 
     // SOAP Notes (CE-5)
@@ -353,6 +365,21 @@ export const configSchema = {
       _description: 'Diagnosis occurrence: New vs Repeat',
       _default: '159946AAAAAAAAAAAAAAAAAAAAAAAAAAAAAA',
     },
+    diagnosisTypeConceptUuid: {
+      _type: Type.ConceptUuid,
+      _description: 'Tipo de diagnóstico según NTS-139: presuntivo, definitivo o repetitivo',
+      _default: '2d53d39f-c93f-4128-8f7c-1bb45b498497',
+    },
+    definitiveDiagnosisTypeUuid: {
+      _type: Type.ConceptUuid,
+      _description: 'Respuesta de tipo de diagnóstico definitivo según NTS-139',
+      _default: '2c60a8f6-1787-41be-8434-30ebeb5656ff',
+    },
+    repeatDiagnosisTypeUuid: {
+      _type: Type.ConceptUuid,
+      _description: 'Respuesta de tipo de diagnóstico repetitivo según NTS-139',
+      _default: '6f653861-8469-4dfa-a0b5-2804f1cfc527',
+    },
 
     // Treatment Plan (CE-4)
     labOrdersUuid: {
@@ -384,6 +411,77 @@ export const configSchema = {
       _type: Type.ConceptUuid,
       _description: 'Next appointment date concept',
       _default: '5096AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA',
+    },
+
+    // Admission / hospitalization details
+    admissionDateUuid: {
+      _type: Type.ConceptUuid,
+      _description: 'Admission date concept',
+      _default: '1640AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA',
+    },
+    priorityOfAdmissionUuid: {
+      _type: Type.ConceptUuid,
+      _description: 'Priority of admission concept',
+      _default: '1655AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA',
+    },
+    admissionWardUuid: {
+      _type: Type.ConceptUuid,
+      _description: 'Admission ward concept',
+      _default: '5fc29316-0869-4b3b-ae2f-cc37c6014eb7',
+    },
+
+    // Social history
+    alcoholUseUuid: {
+      _type: Type.ConceptUuid,
+      _description: 'Alcohol use concept',
+      _default: '159449AAAAAAAAAAAAAAAAAAAAAAAAAAAAAA',
+    },
+    alcoholUseDurationUuid: {
+      _type: Type.ConceptUuid,
+      _description: 'Alcohol use duration concept',
+      _default: '1546AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA',
+    },
+    smokingUuid: {
+      _type: Type.ConceptUuid,
+      _description: 'Smoking concept',
+      _default: '163201AAAAAAAAAAAAAAAAAAAAAAAAAAAAAA',
+    },
+    smokingDurationUuid: {
+      _type: Type.ConceptUuid,
+      _description: 'Smoking duration concept',
+      _default: '159931AAAAAAAAAAAAAAAAAAAAAAAAAAAAAA',
+    },
+    otherSubstanceAbuseUuid: {
+      _type: Type.ConceptUuid,
+      _description: 'Other substance abuse concept',
+      _default: '163731AAAAAAAAAAAAAAAAAAAAAAAAAAAAAA',
+    },
+
+    // Medical history
+    surgicalHistoryUuid: {
+      _type: Type.ConceptUuid,
+      _description: 'Surgical history concept',
+      _default: '30fe6669-75f3-4a1d-89c3-753a060d559a',
+    },
+    accidentTraumaUuid: {
+      _type: Type.ConceptUuid,
+      _description: 'Accident or trauma history concept',
+      _default: '159520AAAAAAAAAAAAAAAAAAAAAAAAAAAAAA',
+    },
+    bloodTransfusionUuid: {
+      _type: Type.ConceptUuid,
+      _description: 'Blood transfusion history concept',
+      _default: '161927AAAAAAAAAAAAAAAAAAAAAAAAAAAAAA',
+    },
+    chronicDiseaseUuid: {
+      _type: Type.ConceptUuid,
+      _description: 'Chronic disease history concept',
+      _default: '1284AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA',
+    },
+    trueConceptUuid: {
+      _type: Type.ConceptUuid,
+      _description: 'Boolean true concept',
+      _default: 'cf82933b-3f3f-45e7-a5ab-5d31aaee3da3',
     },
 
     // Ethnic Identity (CE-7)

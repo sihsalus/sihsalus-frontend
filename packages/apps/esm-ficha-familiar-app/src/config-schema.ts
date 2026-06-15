@@ -46,6 +46,75 @@ export const configSchema = {
       _description: 'Problem list concept UUID',
       _default: '1284AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA',
     },
+    maritalStatusConceptUuid: {
+      _type: Type.ConceptUuid,
+      _description: 'Civil status concept UUID used when creating contacts',
+      _default: '1056AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA',
+    },
+    partnerHivStatusConceptUuid: {
+      _type: Type.ConceptUuid,
+      _description: 'Partner HIV status concept UUID used by contact list workflows',
+      _default: '1436AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA',
+    },
+    pnsApproachConceptUuid: {
+      _type: Type.ConceptUuid,
+      _description: 'Preferred PNS approach concept UUID used by contact list workflows',
+      _default: '7b827b42-9733-4d4f-8015-b40a07ac3052',
+    },
+    livingWithPatientConceptUuid: {
+      _type: Type.ConceptUuid,
+      _description: 'Living with patient concept UUID used by contact list workflows',
+      _default: '36906d55-ade7-4d1a-b3b7-18fd59bffb0f',
+    },
+  },
+
+  contactListConceptMap: {
+    _type: Type.Object,
+    _description: 'Display labels and answer labels used by the contact list forms',
+    _default: {
+      '1436AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA': {
+        display: 'Partner HIV Status:',
+        answers: {
+          '703AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA': 'HIV Positive',
+          '664AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA': 'HIV Negative',
+          '1067AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA': 'Unknown',
+        },
+      },
+      '1056AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA': {
+        display: 'Civil status',
+        answers: {
+          '1057AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA': 'Single',
+          '1058AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA': 'Divorced',
+          '1059AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA': 'Widowed',
+          '159715AAAAAAAAAAAAAAAAAAAAAAAAAAAAAA': 'Married Polygamous',
+          '5555AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA': 'Married Monogamous',
+        },
+      },
+      'a6b3803f-e594-4318-8624-3eaed46322a7': {
+        display: 'Add Patient Contact',
+        answers: {
+          'cf82933b-3f3f-45e7-a5ab-5d31aaee3da3': 'Yes',
+          '488b58ff-64f5-4f8a-8979-fa79940b1594': 'No',
+        },
+      },
+      '7b827b42-9733-4d4f-8015-b40a07ac3052': {
+        display: 'Prefered PNS Aproach',
+        answers: {
+          '160551AAAAAAAAAAAAAAAAAAAAAAAAAAAAAA': 'Passive referral',
+          '161642AAAAAAAAAAAAAAAAAAAAAAAAAAAAAA': 'Contract referral',
+          '163096AAAAAAAAAAAAAAAAAAAAAAAAAAAAAA': 'Provider referral',
+          '162284AAAAAAAAAAAAAAAAAAAAAAAAAAAAAA': 'Dual referral',
+        },
+      },
+      '36906d55-ade7-4d1a-b3b7-18fd59bffb0f': {
+        display: 'Living with client',
+        answers: {
+          'cf82933b-3f3f-45e7-a5ab-5d31aaee3da3': 'Yes',
+          '488b58ff-64f5-4f8a-8979-fa79940b1594': 'No',
+          '162570AAAAAAAAAAAAAAAAAAAAAAAAAAAAAA': 'Declined to answer',
+        },
+      },
+    },
   },
 
   // Contact person attributes (PNS / HIV context)
@@ -138,7 +207,12 @@ export interface ConfigObject {
   concepts: {
     probableCauseOfDeathConceptUuid: string;
     problemListConceptUuid: string;
+    maritalStatusConceptUuid: string;
+    partnerHivStatusConceptUuid: string;
+    pnsApproachConceptUuid: string;
+    livingWithPatientConceptUuid: string;
   };
+  contactListConceptMap: Record<string, { display: string; answers: Record<string, string> }>;
   contactPersonAttributesUuid: {
     telephone: string;
     baselineHIVStatus: string;

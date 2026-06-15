@@ -1,7 +1,7 @@
 import { formatDate, parseDate, useConfig } from '@openmrs/esm-framework';
-import { ClinicalDataOverview } from '@sihsalus/esm-sihsalus-shared';
 import React, { useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
+import ClinicalDataOverview from '../../../../ui/clinical-data/clinical-data-overview.component';
 import { useBalance, useVitalsConceptMetadata, withUnit } from '../../../common';
 
 interface BalanceOverviewProps {
@@ -91,7 +91,7 @@ const NewbornBalanceOverview: React.FC<BalanceOverviewProps> = ({ patientUuid, p
     // Generar tableRows
     const rows =
       balanceData?.map((item, index) => {
-        const row = { id: `${index}` };
+        const row: { id: string; [key: string]: string | number | React.ReactNode } = { id: `${index}` };
         clinicalFields.forEach((field) => {
           row[field.key] = field.format ? field.format(item[field.key] || item.date) : (item[field.key] ?? '--');
         });
@@ -117,19 +117,21 @@ const NewbornBalanceOverview: React.FC<BalanceOverviewProps> = ({ patientUuid, p
     };
   }, [clinicalFields, balanceData, conceptUnits, config.concepts, t]);
 
+  const clinicalData = (balanceData ?? []) as unknown as Array<{ date: string; [key: string]: string | number | null }>;
+
   return (
     <ClinicalDataOverview
       patientUuid={patientUuid}
       pageSize={pageSize}
-      headerTitle={t('balanceOverview', 'Fluid balance overview')}
-      data={balanceData as unknown as any[]}
+      headerTitle={t('balanceOverview', 'Balance de líquidos del recién nacido')}
+      data={clinicalData}
       error={error}
       isLoading={isLoading}
       isValidating={isValidating}
       tableHeaders={tableHeaders}
       tableRows={tableRows}
-      formWorkspace="newborn-fluidBalance-form"
-      emptyStateDisplayText={t('balanceOverview', 'Fluid balance overview')}
+      // Read-only until a replacement for the removed newborn fluid balance form exists
+      emptyStateDisplayText={t('balanceOverview', 'Balance de líquidos del recién nacido')}
       conceptUnits={conceptUnits}
       config={config}
       chartConfig={chartConfig}

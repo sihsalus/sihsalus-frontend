@@ -1,11 +1,17 @@
 import { openmrsFetch } from '@openmrs/esm-framework';
 import { screen } from '@testing-library/react';
 import React from 'react';
-import { mockFhirAllergyIntoleranceResponse, mockFhirPatient, renderWithSwr, waitForLoadingToFinish } from 'test-utils';
+import {
+  mockAllergyResult,
+  mockFhirAllergyIntoleranceResponse,
+  mockFhirPatient,
+  renderWithSwr,
+  waitForLoadingToFinish,
+} from 'test-utils';
 import AllergiesDetailedSummary from './allergies-detailed-summary.component';
 
-const mockOpenmrsFetch = openmrsFetch as jest.Mock;
-mockOpenmrsFetch.mockImplementation(jest.fn());
+const mockOpenmrsFetch = openmrsFetch as vi.Mock;
+mockOpenmrsFetch.mockImplementation(vi.fn());
 void React;
 
 describe('AllergiesDetailedSummary', () => {
@@ -65,6 +71,14 @@ describe('AllergiesDetailedSummary', () => {
     expectedAllergies.forEach((allergy) => {
       expect(screen.getByRole('row', { name: new RegExp(allergy) })).toBeInTheDocument();
     });
+  });
+
+  it('renders severity from the REST allergy payload', async () => {
+    mockOpenmrsFetch.mockReturnValueOnce({ data: { results: [mockAllergyResult] } });
+    renderWithSwr(React.createElement(AllergiesDetailedSummary, { patient: mockFhirPatient }));
+    await waitForLoadingToFinish();
+
+    expect(screen.getByRole('row', { name: /ace inhibitors mild cough/i })).toBeInTheDocument();
   });
 
   it("renders non-coded allergen name and non-coded allergic reaction name in the detailed summary of the patient's allergies", async () => {

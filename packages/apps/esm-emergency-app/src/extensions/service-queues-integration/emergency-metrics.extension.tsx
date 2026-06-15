@@ -13,7 +13,7 @@
  * When emergency location is selected, shows emergency metrics and hides standard metrics.
  * When not emergency, returns null to allow standard metrics to show.
  */
-import React, { useEffect } from 'react';
+import { useEffect } from 'react';
 import CompactMetricsContainer from '../../emergency-dashboard/compact-metrics/compact-metrics-container.component';
 import { useIsEmergencyLocation } from '../../utils/emergency-detection';
 

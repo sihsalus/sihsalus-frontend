@@ -1,12 +1,9 @@
 import { Extension, ExtensionSlot } from '@openmrs/esm-framework';
 import React from 'react';
-import { useTranslation } from 'react-i18next';
 
 import styles from './charts.scss';
 
 export const Charts: React.FC = () => {
-  const { t } = useTranslation();
-
   return (
     <div className={styles.container}>
       <ExtensionSlot name="Charts" className={styles.charts}>

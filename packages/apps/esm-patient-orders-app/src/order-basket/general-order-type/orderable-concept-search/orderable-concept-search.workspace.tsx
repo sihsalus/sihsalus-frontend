@@ -54,8 +54,6 @@ function isWorkspace2Props(
   return 'groupProps' in props && 'workspaceProps' in props;
 }
 
-export const careSettingUuid = '6f0c9a92-6f24-11e3-af88-005056821db0';
-
 type DrugsOrOrders = Pick<OrderBasketItem, 'action'>;
 
 export function ordersEqual(order1: DrugsOrOrders, order2: DrugsOrOrders) {
@@ -73,8 +71,13 @@ const OrderableConceptSearchWorkspace: React.FC<OrderableConceptSearchWorkspaceP
     ? (props.workspaceProps.orderBasketWorkspaceName ?? 'order-basket')
     : (props.orderBasketWorkspaceName ?? 'order-basket');
   const isTablet = useLayoutType() === 'tablet';
-  const { orders } = useOrderBasket<OrderBasketItem>(orderTypeUuid, prepOrderPostData);
-  const { orderTypes } = useConfig<ConfigObject>();
+  const { careSettingUuid, orderTypes } = useConfig<ConfigObject>();
+  const prepareOrderPostData = useCallback(
+    (order: OrderBasketItem, patientUuid: string, encounterUuid: string | null) =>
+      prepOrderPostData(order, patientUuid, encounterUuid, careSettingUuid),
+    [careSettingUuid],
+  );
+  const { orders } = useOrderBasket<OrderBasketItem>(orderTypeUuid, prepareOrderPostData);
   const [currentOrder, setCurrentOrder] = useState(initialOrder);
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
   const [workspaceTitle, setWorkspaceTitle] = useState(t('searchOrderables', 'Search orderables'));
@@ -120,15 +123,24 @@ const OrderableConceptSearchWorkspace: React.FC<OrderableConceptSearchWorkspaceP
     [props],
   );
 
+  const configuredOrderTypeLabel = useMemo(
+    () => orderTypes.find((orderType) => orderType.orderTypeUuid === orderTypeUuid)?.label,
+    [orderTypeUuid, orderTypes],
+  );
+
   useEffect(() => {
-    if (orderType) {
+    const orderTypeDisplay = configuredOrderTypeLabel
+      ? t(configuredOrderTypeLabel, { defaultValue: configuredOrderTypeLabel })
+      : orderType?.display;
+
+    if (orderTypeDisplay) {
       handleSetTitle(
         t(`addOrderableForOrderType`, 'Add {{orderTypeDisplay}}', {
-          orderTypeDisplay: orderType.display.toLocaleLowerCase(),
+          orderTypeDisplay: orderTypeDisplay.toLocaleLowerCase(),
         }),
       );
     }
-  }, [handleSetTitle, orderType, t]);
+  }, [configuredOrderTypeLabel, handleSetTitle, orderType, t]);
 
   const orderableConceptSets = useMemo(
     () =>

@@ -1,5 +1,3 @@
-/** @module @category UI */
-import React from 'react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import '@testing-library/jest-dom/vitest';
 import { usePatient } from '@openmrs/esm-react-utils';
@@ -143,8 +141,8 @@ describe('ContactDetails', () => {
     expect(screen.getByText(/patient lists/i)).toBeInTheDocument();
     expect(screen.getByText(/Test patient List-47/)).toBeInTheDocument();
     expect(screen.getByText(/List three/)).toBeInTheDocument();
-    expect(screen.queryByText(/postal code/i)).not.toBeInTheDocument();
-    expect(screen.queryByText(/00100/)).not.toBeInTheDocument();
+    expect(screen.getByText(/postal code/i)).toBeInTheDocument();
+    expect(screen.getByText(/00100/)).toBeInTheDocument();
   });
 
   it('patient related name should be a link', async () => {

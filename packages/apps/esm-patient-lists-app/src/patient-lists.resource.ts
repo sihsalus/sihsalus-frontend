@@ -1,4 +1,11 @@
-import { type FetchResponse, formatDate, openmrsFetch, parseDate, restBaseUrl } from '@openmrs/esm-framework';
+import {
+  type FetchResponse,
+  formatDate,
+  getPreferredIdentifier,
+  openmrsFetch,
+  parseDate,
+  restBaseUrl,
+} from '@openmrs/esm-framework';
 import { useEffect } from 'react';
 import useSWR from 'swr';
 import useSWRInfinite from 'swr/infinite';
@@ -111,8 +118,6 @@ interface PatientListResponse {
   links: Array<{ rel: 'prev' | 'next' }>;
   totalCount: number;
 }
-
-import { getPreferredIdentifier } from '@sihsalus/esm-sihsalus-shared';
 
 /**
  * Fetches patient lists from the OpenMRS Cohort resource.

@@ -159,9 +159,9 @@ export default function PublicServicesTab({ form }: Props) {
                         )}
                       />
                     </td>
-                    <td>{calculateInductor(publicServices[index].energyConsumption, infrastructure.areaM2)}</td>
-                    <td>{calculateInductor(publicServices[index].waterConsumption, infrastructure.areaM2)}</td>
-                    <td>{calculateInductor(publicServices[index].phoneNetConsumption, infrastructure.areaM2)}</td>
+                    <td>{calculateInductor(publicServices[index]?.energyConsumption ?? 0, infrastructure.areaM2)}</td>
+                    <td>{calculateInductor(publicServices[index]?.waterConsumption ?? 0, infrastructure.areaM2)}</td>
+                    <td>{calculateInductor(publicServices[index]?.phoneNetConsumption ?? 0, infrastructure.areaM2)}</td>
                     {/* Total de inductores */}
                   </tr>
                 ))
@@ -201,12 +201,19 @@ export default function PublicServicesTab({ form }: Props) {
               <tbody>
                 {infrastructures.length > 0 ? (
                   infrastructures.map((infrastructure, index) => {
-                    const waterInductor = publicServices[index].waterInductor;
-                    const energyInductor = publicServices[index].energyInductor;
-                    const phoneNetInductor = publicServices[index].phoneNetInductor;
-                    const totalInductorWater = publicServices.reduce((acc, curr) => acc + curr.waterInductor, 0);
-                    const totalInductorEnergy = publicServices.reduce((acc, curr) => acc + curr.energyInductor, 0);
-                    const totalInductorPhone = publicServices.reduce((acc, curr) => acc + curr.phoneNetInductor, 0);
+                    const publicService = publicServices[index];
+                    const waterInductor = publicService?.waterInductor ?? 0;
+                    const energyInductor = publicService?.energyInductor ?? 0;
+                    const phoneNetInductor = publicService?.phoneNetInductor ?? 0;
+                    const totalInductorWater = publicServices.reduce((acc, curr) => acc + (curr.waterInductor ?? 0), 0);
+                    const totalInductorEnergy = publicServices.reduce(
+                      (acc, curr) => acc + (curr.energyInductor ?? 0),
+                      0,
+                    );
+                    const totalInductorPhone = publicServices.reduce(
+                      (acc, curr) => acc + (curr.phoneNetInductor ?? 0),
+                      0,
+                    );
                     const totalCostEnergy = calculateAsignedCost(
                       annualServices.annualEnergyCost,
                       totalInductorEnergy,
@@ -224,8 +231,8 @@ export default function PublicServicesTab({ form }: Props) {
                     );
                     const totalCostAssigned = totalCostEnergy + totalCostWater + totalCostPhone;
                     const costPerUnit =
-                      publicServices[index].productionProyected > 0
-                        ? totalCostAssigned / publicServices[index].productionProyected
+                      publicService?.productionProyected > 0
+                        ? totalCostAssigned / publicService.productionProyected
                         : 0;
                     return (
                       <tr key={index}>

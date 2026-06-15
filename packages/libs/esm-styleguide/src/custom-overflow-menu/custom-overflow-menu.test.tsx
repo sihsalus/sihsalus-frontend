@@ -1,4 +1,3 @@
-import React from 'react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import '@testing-library/jest-dom/vitest';
 import { useLayoutType } from '@openmrs/esm-react-utils';
@@ -14,7 +13,11 @@ describe('CustomOverflowMenu', () => {
   });
 
   it('should render', () => {
-    render(<CustomOverflowMenu menuTitle="Test Menu" children={<li>Option 1</li>} />);
+    render(
+      <CustomOverflowMenu menuTitle="Test Menu">
+        <li>Option 1</li>
+      </CustomOverflowMenu>,
+    );
     expect(screen.getByRole('button', { name: /test menu/i })).toBeInTheDocument();
   });
 
@@ -23,8 +26,8 @@ describe('CustomOverflowMenu', () => {
 
     render(
       <CustomOverflowMenu menuTitle="Menu">
-        <li>Option 1</li>
-        <li>Option 2</li>
+        <CustomOverflowMenuItem itemText="Option 1" />
+        <CustomOverflowMenuItem itemText="Option 2" />
       </CustomOverflowMenu>,
     );
 
@@ -42,8 +45,8 @@ describe('CustomOverflowMenu', () => {
 
     render(
       <CustomOverflowMenu menuTitle="Menu">
-        <li role="menuitem">Option 1</li>
-        <li role="menuitem">Option 2</li>
+        <CustomOverflowMenuItem itemText="Option 1" />
+        <CustomOverflowMenuItem itemText="Option 2" />
       </CustomOverflowMenu>,
     );
 
@@ -186,11 +189,15 @@ describe('CustomOverflowMenuItem', () => {
 
 describe('useCustomOverflowMenu', () => {
   it('should throw error when used outside CustomOverflowMenu', () => {
+    const consoleError = vi.spyOn(console, 'error').mockImplementation(() => {});
+
     const TestComponent = () => {
       useCustomOverflowMenu();
       return null;
     };
 
     expect(() => render(<TestComponent />)).toThrow('useCustomOverflowMenu must be used within a CustomOverflowMenu');
+    expect(consoleError).toHaveBeenCalled();
+    consoleError.mockRestore();
   });
 });

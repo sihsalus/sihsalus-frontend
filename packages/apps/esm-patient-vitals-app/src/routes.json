@@ -67,11 +67,18 @@
     }
   ],
   "pages": [],
-  "workspaces": [
+  "workspaces2": [
     {
       "name": "patient-vitals-biometrics-form-workspace",
-      "title": "recordVitalsAndBiometrics",
-      "component": "vitalsBiometricsFormWorkspace"
+      "component": "vitalsBiometricsFormWorkspace",
+      "window": "patient-vitals-biometrics-form-window"
+    }
+  ],
+  "workspaceWindows2": [
+    {
+      "name": "patient-vitals-biometrics-form-window",
+      "group": "patient-chart",
+      "width": "wider"
     }
   ]
 }

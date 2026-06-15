@@ -35,6 +35,7 @@ const Summary: React.FC = () => {
 
           return (
             <WardCard
+              key={admissionLocation.ward.uuid}
               headerLabel={admissionLocation.ward.display}
               label={t('beds', 'Beds')}
               value={admissionLocation?.totalBeds}
@@ -54,7 +55,7 @@ const Summary: React.FC = () => {
     );
   }
 
-  if (!isLoading && admissionLocations?.length === 0 && !error) {
+  if (admissionLocations?.length === 0 && !error) {
     return <EmptyState msg="No data to display" helper={''} />;
   }
 

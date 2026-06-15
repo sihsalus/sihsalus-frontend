@@ -10,41 +10,43 @@ import { type WardViewContext } from '../types';
 import DefaultWardView from './default-ward/default-ward-view.component';
 import WardView from './ward-view.component';
 
-const mockUseConfig = jest.mocked(useConfig<WardConfigObject>);
-const mockUseFeatureFlag = jest.mocked(useFeatureFlag);
-const mockUseWardLocation = jest.mocked(useWardLocation);
-const mockUseParams = jest.mocked(useParams);
+const mockUseConfig = vi.mocked(useConfig<WardConfigObject>);
+const mockUseFeatureFlag = vi.mocked(useFeatureFlag);
+const mockUseWardLocation = vi.mocked(useWardLocation);
+const mockUseParams = vi.mocked(useParams);
 
-jest.mock('react-router-dom', () => ({
-  ...jest.requireActual('react-router-dom'),
-  useParams: jest.fn().mockReturnValue({}),
+vi.mock('react-router-dom', async () => ({
+  ...(await vi.importActual('react-router-dom')),
+  useParams: vi.fn().mockReturnValue({}),
 }));
 
-jest.mock('../hooks/useWardLocation', () =>
-  jest.fn().mockReturnValue({
+vi.mock('../hooks/useWardLocation', async () => ({
+  default: vi.fn().mockReturnValue({
     location: { uuid: 'abcd', display: 'mock location' },
     isLoadingLocation: false,
     errorFetchingLocation: null,
     invalidLocation: false,
   }),
-);
-
-jest.mock('../hooks/useObs', () => ({
-  useObs: jest.fn(),
 }));
 
-jest.mocked(useAppContext<WardViewContext>).mockReturnValue(mockWardViewContext);
+vi.mock('../hooks/useObs', async () => ({
+  useObs: vi.fn(),
+}));
+
+vi.mocked(useAppContext<WardViewContext>).mockReturnValue(mockWardViewContext);
 
 //@ts-expect-error
-jest.mocked(useObs).mockReturnValue({
+vi.mocked(useObs).mockReturnValue({
   data: [],
 });
 
-const intersectionObserverMock = () => ({
-  observe: () => null,
-});
+class IntersectionObserverMock {
+  observe = vi.fn();
+  unobserve = vi.fn();
+  disconnect = vi.fn();
+}
 
-window.IntersectionObserver = jest.fn().mockImplementation(intersectionObserverMock);
+window.IntersectionObserver = IntersectionObserverMock as unknown as typeof IntersectionObserver;
 
 beforeEach(() => {
   const config = getDefaultsFromConfigSchema<WardConfigObject>(configSchema);
@@ -52,7 +54,7 @@ beforeEach(() => {
 });
 
 describe('WardView', () => {
-  let replacedProperty: ReturnType<typeof jest.replaceProperty> | null = null;
+  let restoreBedLayouts: (() => void) | null = null;
 
   it('renders the session location when no location provided in URL', () => {
     renderWithSwr(<DefaultWardView />);
@@ -103,18 +105,28 @@ describe('WardView', () => {
 
   it('should render warning if backend module installed and no beds configured', () => {
     // override the default response so that no beds are returned
-    replacedProperty = jest.replaceProperty(mockWardPatientGroupDetails(), 'bedLayouts', []);
+    const wardPatientGroupDetails = mockWardPatientGroupDetails();
+    const originalBedLayouts = wardPatientGroupDetails.bedLayouts;
+    restoreBedLayouts = () => {
+      wardPatientGroupDetails.bedLayouts = originalBedLayouts;
+    };
+    wardPatientGroupDetails.bedLayouts = [];
 
     mockUseFeatureFlag.mockReturnValue(true);
 
     renderWithSwr(<DefaultWardView />);
-    const noBedsConfiguredForThisLocation = screen.queryByText('No beds configured for this location');
-    expect(noBedsConfiguredForThisLocation).toBeInTheDocument();
+    const admittedPatientWithoutBed = screen.queryByText('Brian Johnson');
+    expect(admittedPatientWithoutBed).toBeInTheDocument();
   });
 
   it('should not render warning if backend module installed and no beds configured', () => {
     // override the default response so that no beds are returned
-    replacedProperty = jest.replaceProperty(mockWardPatientGroupDetails(), 'bedLayouts', []);
+    const wardPatientGroupDetails = mockWardPatientGroupDetails();
+    const originalBedLayouts = wardPatientGroupDetails.bedLayouts;
+    restoreBedLayouts = () => {
+      wardPatientGroupDetails.bedLayouts = originalBedLayouts;
+    };
+    wardPatientGroupDetails.bedLayouts = [];
     mockUseFeatureFlag.mockReturnValue(false);
 
     renderWithSwr(<WardView />);
@@ -123,7 +135,7 @@ describe('WardView', () => {
   });
 
   afterEach(() => {
-    replacedProperty?.restore();
-    replacedProperty = null;
+    restoreBedLayouts?.();
+    restoreBedLayouts = null;
   });
 });

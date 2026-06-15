@@ -1,5 +1,5 @@
-import { type Visit } from '@openmrs/esm-framework';
-import { launchPatientWorkspace, launchStartVisitPrompt } from '@openmrs/esm-patient-common-lib';
+import { showSnackbar, type Visit } from '@openmrs/esm-framework';
+import { getPatientChartStore, launchPatientWorkspace, launchStartVisitPrompt } from '@openmrs/esm-patient-common-lib';
 
 import { invalidateCachedVitalsAndBiometrics } from './common';
 import { type ConfigObject } from './config-schema';
@@ -30,16 +30,37 @@ export function launchFormEntry(
  * @param currentVisit - The current visit.
  * @param config - The configuration object.
  */
-export function launchVitalsAndBiometricsForm(currentVisit: Visit | null | undefined, config: ConfigObject) {
-  if (!currentVisit) {
-    launchStartVisitPrompt();
-    return;
-  }
+interface LaunchVitalsAndBiometricsFormOptions {
+  workspaceErrorMessage?: string;
+}
 
-  if (config.vitals.useFormEngine) {
-    const { formUuid, formName, formEntryWorkspaceName } = config.vitals;
-    launchFormEntry(formUuid, '', formName, formEntryWorkspaceName);
-  } else {
-    launchPatientWorkspace(patientVitalsBiometricsFormWorkspace);
+export function launchVitalsAndBiometricsForm(
+  currentVisit: Visit | null | undefined,
+  config: ConfigObject,
+  options: LaunchVitalsAndBiometricsFormOptions = {},
+) {
+  try {
+    const patientChartVisit = getPatientChartStore().getState().visitContext;
+    const activeVisit = currentVisit ?? patientChartVisit;
+
+    if (config.vitals.useFormEngine) {
+      if (!activeVisit || activeVisit.stopDatetime) {
+        launchStartVisitPrompt();
+        return;
+      }
+
+      const { formUuid, formName, formEntryWorkspaceName } = config.vitals;
+      launchFormEntry(formUuid, '', formName, formEntryWorkspaceName);
+    } else {
+      launchPatientWorkspace(patientVitalsBiometricsFormWorkspace);
+    }
+  } catch (error) {
+    showSnackbar({
+      kind: 'error',
+      title:
+        options.workspaceErrorMessage ??
+        'The vitals and biometrics form is not available. Please contact the system administrator.',
+    });
+    console.error('Error launching vitals and biometrics workspace:', error);
   }
 }

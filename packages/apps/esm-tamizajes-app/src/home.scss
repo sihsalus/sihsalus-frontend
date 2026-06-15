@@ -1,0 +1,89 @@
+@use "@carbon/styles/scss/spacing";
+@use "@carbon/styles/scss/type";
+@use "@openmrs/esm-styleguide/src/vars" as *;
+
+.header {
+  background-color: $ui-02;
+  border: 1px solid $ui-03;
+  border-left: 0;
+  display: flex;
+  justify-content: space-between;
+  padding-right: spacing.$spacing-03;
+}
+
+.container {
+  padding: spacing.$spacing-06;
+}
+
+.hero {
+  align-items: flex-start;
+  background: linear-gradient(135deg, #eef6ff 0%, #f8fbf5 100%);
+  border: 1px solid var(--cds-border-subtle-01);
+  display: flex;
+  gap: spacing.$spacing-06;
+  justify-content: space-between;
+  margin-block-end: spacing.$spacing-06;
+  padding: spacing.$spacing-06;
+}
+
+.eyebrow {
+  @include type.type-style("label-01");
+  color: var(--cds-text-secondary);
+  letter-spacing: 0.08em;
+  margin: 0 0 spacing.$spacing-03;
+  text-transform: uppercase;
+}
+
+.hero h2 {
+  @include type.type-style("heading-05");
+  margin: 0 0 spacing.$spacing-03;
+}
+
+.description {
+  @include type.type-style("body-02");
+  color: var(--cds-text-secondary);
+  margin: 0;
+  max-width: 48rem;
+}
+
+.grid {
+  display: grid;
+  gap: spacing.$spacing-05;
+  grid-template-columns: repeat(auto-fit, minmax(16rem, 1fr));
+}
+
+.tile {
+  min-height: 12rem;
+}
+
+.tileHeader {
+  align-items: flex-start;
+  display: flex;
+  gap: spacing.$spacing-03;
+  justify-content: space-between;
+  margin-block-end: spacing.$spacing-04;
+}
+
+.tileHeader h3 {
+  @include type.type-style("heading-03");
+  margin: 0;
+}
+
+.tile p {
+  @include type.type-style("body-compact-01");
+  color: var(--cds-text-secondary);
+}
+
+.tileAction {
+  align-items: center;
+  color: var(--cds-link-primary);
+  display: inline-flex;
+  gap: spacing.$spacing-02;
+  margin-block-start: spacing.$spacing-05;
+}
+
+@media (max-width: 42rem) {
+  .hero {
+    flex-direction: column;
+  }
+}

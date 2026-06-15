@@ -1,7 +1,7 @@
 import classNames from 'classnames';
 import dayjs from 'dayjs';
 import type { TFunction } from 'i18next';
-import React, { type Dispatch, useCallback, useEffect, useRef, useState } from 'react';
+import React, { type Dispatch, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import 'dayjs/plugin/utc';
 import {
@@ -17,6 +17,11 @@ import {
 } from '@carbon/react';
 import { WarningFilled } from '@carbon/react/icons';
 import { OpenmrsDatePicker, ResponsiveWrapper, showSnackbar, useDebounce, useSession } from '@openmrs/esm-framework';
+import {
+  type AntecedentTypeCode,
+  antecedentTypeOptions,
+  getAntecedentTypeLabel,
+} from '@openmrs/esm-patient-common-lib';
 import { Controller, useFormContext } from 'react-hook-form';
 import {
   type CodedCondition,
@@ -40,6 +45,7 @@ interface ConditionsWidgetProps {
   setErrorUpdating?: (error: Error) => void;
   setHasSubmissibleValue?: (value: boolean) => void;
   setIsSubmittingForm: Dispatch<boolean>;
+  lockedAntecedentType?: boolean;
 }
 
 interface RequiredFieldLabelProps {
@@ -65,6 +71,7 @@ const ConditionsWidget: React.FC<ConditionsWidgetProps> = ({
   setErrorCreating,
   setErrorUpdating,
   setIsSubmittingForm,
+  lockedAntecedentType,
 }) => {
   const { t } = useTranslation();
   const { conditions, mutate } = useConditions(patientUuid);
@@ -82,10 +89,18 @@ const ConditionsWidget: React.FC<ConditionsWidgetProps> = ({
   const displayName = conditionToEdit?.display;
   const editableClinicalStatus = conditionToEdit?.clinicalStatus;
   const editableAbatementDateTime = conditionToEdit?.abatementDateTime;
+  const editableAntecedentType = matchingCondition?.antecedentType ?? conditionToEdit?.antecedentType;
   const [selectedCondition, setSelectedCondition] = useState<CodedCondition>(null);
   const [searchTerm, setSearchTerm] = useState('');
   const debouncedSearchTerm = useDebounce(searchTerm);
   const { searchResults, isSearching } = useConditionsSearch(debouncedSearchTerm);
+  const availableAntecedentTypeOptions = useMemo(
+    () =>
+      antecedentTypeOptions.filter(
+        (option) => option.code !== 'surgical' || lockedAntecedentType || editableAntecedentType === 'surgical',
+      ),
+    [editableAntecedentType, lockedAntecedentType],
+  );
 
   const handleConditionChange = useCallback((selectedCondition: CodedCondition) => {
     setSelectedCondition(selectedCondition);
@@ -104,6 +119,7 @@ const ConditionsWidget: React.FC<ConditionsWidgetProps> = ({
       onsetDateTime: getValues('onsetDateTime') ? dayjs(getValues('onsetDateTime')).format() : null,
       patientId: patientUuid,
       userId: session?.user?.uuid,
+      antecedentType: getValues('antecedentType') as AntecedentTypeCode,
     };
 
     try {
@@ -112,8 +128,8 @@ const ConditionsWidget: React.FC<ConditionsWidgetProps> = ({
 
       showSnackbar({
         kind: 'success',
-        subtitle: t('conditionNowVisible', 'It is now visible on the Conditions page'),
-        title: t('conditionSaved', 'Condition saved'),
+        subtitle: t('antecedentNowVisible', 'It is now visible on the Antecedents page'),
+        title: t('antecedentSaved', 'Antecedent saved'),
       });
 
       closeWorkspaceWithSavedChanges();
@@ -146,6 +162,7 @@ const ConditionsWidget: React.FC<ConditionsWidgetProps> = ({
       onsetDateTime: getValues('onsetDateTime') ? dayjs(getValues('onsetDateTime')).format() : null,
       patientId: patientUuid,
       userId: session?.user?.uuid,
+      antecedentType: getValues('antecedentType') as AntecedentTypeCode,
     };
 
     try {
@@ -154,8 +171,8 @@ const ConditionsWidget: React.FC<ConditionsWidgetProps> = ({
 
       showSnackbar({
         kind: 'success',
-        subtitle: t('conditionNowVisible', 'It is now visible on the Conditions page'),
-        title: t('conditionUpdated', 'Condition updated'),
+        subtitle: t('antecedentNowVisible', 'It is now visible on the Antecedents page'),
+        title: t('antecedentUpdated', 'Antecedent updated'),
       });
 
       closeWorkspaceWithSavedChanges();
@@ -180,9 +197,9 @@ const ConditionsWidget: React.FC<ConditionsWidgetProps> = ({
     editableAbatementDateTime,
   ]);
 
-  const focusOnSearchInput = () => {
+  const focusOnSearchInput = useCallback(() => {
     searchInputRef?.current?.focus();
-  };
+  }, []);
 
   const handleSearchTermChange = (searchTerm: string) => {
     setSearchTerm(searchTerm);
@@ -204,12 +221,45 @@ const ConditionsWidget: React.FC<ConditionsWidgetProps> = ({
         handleCreate();
       }
     }
-  }, [handleUpdate, isEditing, handleCreate, isSubmittingForm, errors, setIsSubmittingForm]);
+  }, [handleUpdate, isEditing, handleCreate, isSubmittingForm, errors, setIsSubmittingForm, focusOnSearchInput]);
 
   return (
     <div className={styles.formContainer}>
       <Stack gap={7}>
-        <FormGroup legendText={<RequiredFieldLabel label={t('condition', 'Condition')} t={t} />}>
+        <FormGroup legendText={<RequiredFieldLabel label={t('antecedentType', 'Antecedent type')} t={t} />}>
+          <Controller
+            name="antecedentType"
+            control={control}
+            render={({ field: { onChange, value, onBlur } }) => (
+              <RadioButtonGroup
+                className={styles.radioGroup}
+                invalid={Boolean(errors?.antecedentType)}
+                name="antecedentType"
+                onBlur={onBlur}
+                onChange={onChange}
+                orientation="vertical"
+                valueSelected={value ?? ''}
+                aria-labelledby={errors?.antecedentType ? 'antecedentTypeError' : undefined}
+              >
+                {availableAntecedentTypeOptions.map((option) => (
+                  <RadioButton
+                    key={option.code}
+                    id={`antecedent-type-${option.code}`}
+                    labelText={getAntecedentTypeLabel(option.code, t)}
+                    value={option.code}
+                    disabled={lockedAntecedentType}
+                  />
+                ))}
+              </RadioButtonGroup>
+            )}
+          />
+          {errors?.antecedentType && (
+            <p id="antecedentTypeError" className={styles.errorMessage}>
+              {errors.antecedentType.message}
+            </p>
+          )}
+        </FormGroup>
+        <FormGroup legendText={<RequiredFieldLabel label={t('antecedent', 'Antecedent')} t={t} />}>
           {isEditing ? (
             <FormLabel className={styles.conditionLabel}>{displayName}</FormLabel>
           ) : (
@@ -227,7 +277,7 @@ const ConditionsWidget: React.FC<ConditionsWidgetProps> = ({
                       disabled={isEditing}
                       id="conditionsSearch"
                       aria-labelledby={errors?.conditionName ? 'conditionsSearchError' : undefined}
-                      labelText={t('enterCondition', 'Enter condition')}
+                      labelText={t('enterAntecedent', 'Enter antecedent')}
                       onChange={(event) => {
                         const val = event.target.value;
                         onChange(val);
@@ -237,7 +287,7 @@ const ConditionsWidget: React.FC<ConditionsWidgetProps> = ({
                         setSearchTerm('');
                         setSelectedCondition(null);
                       }}
-                      placeholder={t('searchConditions', 'Search conditions')}
+                      placeholder={t('searchAntecedents', 'Search antecedents')}
                       ref={searchInputRef}
                       renderIcon={errors?.conditionName && ((props) => <WarningFilled fill="red" {...props} />)}
                       value={(() => {
@@ -369,17 +419,14 @@ function SearchResults({
     return <InlineLoading className={styles.loader} description={t('searching', 'Searching') + '...'} />;
   }
 
-  if (!isSearching && searchResults?.length > 0) {
+  if (searchResults?.length > 0) {
     return (
       <ul className={styles.conditionsList}>
         {searchResults?.map((searchResult) => (
-          <li
-            className={styles.condition}
-            key={searchResult?.uuid}
-            onClick={() => onConditionChange(searchResult)}
-            role="menuitem"
-          >
-            {searchResult.display}
+          <li key={searchResult?.uuid}>
+            <button className={styles.condition} onClick={() => onConditionChange(searchResult)} type="button">
+              {searchResult.display}
+            </button>
           </li>
         ))}
       </ul>

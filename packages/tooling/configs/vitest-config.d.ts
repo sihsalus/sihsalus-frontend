@@ -1,4 +1,8 @@
 import aliasPresets from './alias-presets.json';
+type TestOptions = {
+    setupFiles?: string | string[];
+    [key: string]: unknown;
+};
 type AliasMap = Record<string, string>;
 type VitestConfigLike = {
     resolve?: {
@@ -7,7 +11,7 @@ type VitestConfigLike = {
             replacement: string;
         }>;
     };
-    test?: Record<string, unknown>;
+    test?: TestOptions;
     [key: string]: unknown;
 };
 export declare function defineWorkspaceVitestConfig(config?: VitestConfigLike): UserConfig;
@@ -20,4 +24,5 @@ export declare function defineAppVitestConfig(rootDir: string, options?: {
     }>;
     test?: VitestConfigLike['test'];
 }): UserConfig;
+export declare function defineWorkspaceVitestConfigWithSetup(config?: VitestConfigLike): UserConfig;
 //# sourceMappingURL=vitest-config.d.ts.map

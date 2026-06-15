@@ -17,20 +17,20 @@ const CostStructureLayout: React.FC = () => {
       <section>
         <SideNav>
           <SideNavItems>
-            <SideNavLink onClick={() => handleNavigation()} renderIcon={Document} isActive={currLocation == '/'}>
+            <SideNavLink onClick={() => handleNavigation()} renderIcon={Document} isActive={currLocation === '/'}>
               Estructura de costos
             </SideNavLink>
             <SideNavLink
               onClick={() => handleNavigation('add')}
               renderIcon={DocumentAdd}
-              isActive={currLocation == '/add'}
+              isActive={currLocation === '/add'}
             >
               Añadir
             </SideNavLink>
             <SideNavLink
               onClick={() => handleNavigation('report')}
               renderIcon={Report}
-              isActive={currLocation == '/report'}
+              isActive={currLocation === '/report'}
             >
               Reportes
             </SideNavLink>

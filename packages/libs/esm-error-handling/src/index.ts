@@ -1,12 +1,13 @@
 /** @module @category Error Handling */
 import { dispatchToastShown } from '@openmrs/esm-globals';
 
-window.onerror = function (error) {
-  console.error('Unexpected error: ', error);
+window.onerror = function (message, _source, _lineno, _colno, error) {
+  const reason = error ?? message;
+  console.error('Unexpected error: ', reason);
   dispatchToastShown({
-    description: error ?? 'Oops! An unexpected error occurred.',
+    description: getUserFacingErrorMessage(reason, 'Oops! An unexpected error occurred.'),
     kind: 'error',
-    title: 'Error',
+    title: getUserFacingErrorTitle(reason),
   });
   return false;
 };
@@ -14,9 +15,9 @@ window.onerror = function (error) {
 window.onunhandledrejection = function (event: PromiseRejectionEvent) {
   console.error('Unhandled rejection: ', event.reason);
   dispatchToastShown({
-    description: event.reason ?? 'Oops! An unhandled promise rejection occurred.',
+    description: getUserFacingErrorMessage(event.reason, 'Oops! An unhandled promise rejection occurred.'),
     kind: 'error',
-    title: 'Error',
+    title: getUserFacingErrorTitle(event.reason),
   });
 };
 
@@ -95,4 +96,33 @@ function ensureErrorObject(thing: any) {
   } else {
     return Error(thing.toString());
   }
+}
+
+function getUserFacingErrorTitle(error: unknown) {
+  return isMicrofrontendLoadError(error) ? 'No se pudo cargar la página' : 'Error';
+}
+
+function getUserFacingErrorMessage(error: unknown, fallback: string) {
+  if (isMicrofrontendLoadError(error)) {
+    return 'No se pudo cargar un módulo de la aplicación. Recarga la página. Si el problema continúa, contacta a soporte.';
+  }
+
+  if (error instanceof Error) {
+    return error.message || fallback;
+  }
+
+  if (typeof error === 'string') {
+    return error || fallback;
+  }
+
+  return fallback;
+}
+
+function isMicrofrontendLoadError(error: unknown) {
+  const message = error instanceof Error ? error.message : typeof error === 'string' ? error : '';
+  return (
+    message.includes('died in status LOADING_SOURCE_CODE') ||
+    message.includes("doesn't exist in shared scope") ||
+    message.includes('Shared module')
+  );
 }

@@ -7,12 +7,11 @@
  */
 
 import { Button, ModalBody, ModalFooter, ModalHeader, Tag } from '@carbon/react';
-import { launchWorkspace, showSnackbar, useConfig } from '@openmrs/esm-framework';
-import { getPreferredIdentifier } from '@sihsalus/esm-sihsalus-shared';
+import { getPreferredIdentifier, launchWorkspace, launchWorkspace2, showSnackbar } from '@openmrs/esm-framework';
 import React, { useCallback, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useSWRConfig } from 'swr';
-import { type Config } from '../config-schema';
+import { WORKSPACES } from '../constants';
 import { useEmergencyConfig } from '../hooks/usePriorityConfig';
 import { type EmergencyQueueEntry, updateEmergencyQueueEntry } from '../resources/emergency.resource';
 import styles from './serve-patient.modal.scss';
@@ -24,8 +23,7 @@ interface ServePatientModalProps {
 
 const ServePatientModal: React.FC<ServePatientModalProps> = ({ queueEntry, closeModal }) => {
   const { t } = useTranslation();
-  const config = useConfig<Config>();
-  const { queueStatuses, emergencyTriageQueueUuid } = useEmergencyConfig();
+  const { queueStatuses, emergencyTriageQueueUuid, triageEncounter } = useEmergencyConfig();
   const { mutate } = useSWRConfig();
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -55,11 +53,16 @@ const ServePatientModal: React.FC<ServePatientModalProps> = ({ queueEntry, close
           closeModal();
 
           if (isTriageQueue) {
-            // In triage queue: open triage form workspace directly
-            launchWorkspace('triage-form-workspace', { queueEntry });
+            // In triage queue: capture vitals with the shared vitals workspace
+            launchWorkspace2(
+              WORKSPACES.TRIAGE_VITALS_FORM,
+              { encounterTypeUuid: triageEncounter.encounterTypeUuid },
+              null,
+              { patientUuid: queueEntry.patient.uuid },
+            );
           } else {
             // In attention queue: open attention form workspace directly
-            launchWorkspace('attention-form-workspace', { queueEntry });
+            launchWorkspace(WORKSPACES.ATTENTION_FORM, { queueEntry });
           }
         }
       })
@@ -73,7 +76,7 @@ const ServePatientModal: React.FC<ServePatientModalProps> = ({ queueEntry, close
       .finally(() => {
         setIsSubmitting(false);
       });
-  }, [queueEntry, queueStatuses.inService, isTriageQueue, mutate, closeModal, t]);
+  }, [queueEntry, queueStatuses.inService, isTriageQueue, mutate, closeModal, t, triageEncounter.encounterTypeUuid]);
 
   return (
     <div>

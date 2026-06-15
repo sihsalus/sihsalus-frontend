@@ -1,5 +1,5 @@
 import { getDefaultsFromConfigSchema, useConfig } from '@openmrs/esm-framework';
-import { render, screen } from '@testing-library/react';
+import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { Form, Formik } from 'formik';
 import React from 'react';
@@ -12,17 +12,97 @@ import { PatientRegistrationContext, type PatientRegistrationContextProps } from
 
 import { Identifiers, setIdentifierSource } from './id-field.component';
 
-const mockUseConfig = jest.mocked(useConfig<RegistrationConfig>);
+vi.mock('../person-attributes/nationality-field.component', () => ({
+  NationalityField: ({ fieldDefinition }) => <div data-testid="nationality-field">{fieldDefinition.label}</div>,
+}));
+
+const dniIdentifierType = {
+  name: 'DNI',
+  fieldName: 'dni',
+  required: false,
+  uuid: '550e8400-e29b-41d4-a716-446655440001',
+  format: null,
+  isPrimary: false,
+  uniquenessBehavior: 'UNIQUE' as const,
+  identifierSources: [],
+};
+
+const carnetIdentifierType = {
+  name: 'Carnet de Extranjeria',
+  fieldName: 'carnetDeExtranjeria',
+  required: false,
+  uuid: '550e8400-e29b-41d4-a716-446655440002',
+  format: null,
+  isPrimary: false,
+  uniquenessBehavior: 'UNIQUE' as const,
+  identifierSources: [],
+};
+
+const passportIdentifierType = {
+  name: 'Pasaporte',
+  fieldName: 'pasaporte',
+  required: false,
+  uuid: '550e8400-e29b-41d4-a716-446655440003',
+  format: null,
+  isPrimary: false,
+  uniquenessBehavior: 'UNIQUE' as const,
+  identifierSources: [],
+};
+
+const dieIdentifierType = {
+  name: 'Documento de Identidad Extranjero',
+  fieldName: 'documentoDeIdentidadExtranjero',
+  required: false,
+  uuid: '8d793bee-c2cc-11de-8d13-0010c6dffd0f',
+  format: null,
+  isPrimary: false,
+  uniquenessBehavior: 'UNIQUE' as const,
+  identifierSources: [],
+};
+
+const clinicalHistoryIdentifierType = {
+  name: 'Nº de Historia Clínica',
+  fieldName: 'numeroDeHistoriaClinica',
+  required: true,
+  uuid: 'clinical-history-identifier-type-uuid',
+  format: null,
+  isPrimary: true,
+  uniquenessBehavior: 'UNIQUE' as const,
+  identifierSources: [],
+};
+
+const peruIdentifierTypes = [
+  clinicalHistoryIdentifierType,
+  dniIdentifierType,
+  carnetIdentifierType,
+  passportIdentifierType,
+  dieIdentifierType,
+];
+
+function buildIdentifier(identifierType, identifierValue = '') {
+  return {
+    identifierTypeUuid: identifierType.uuid,
+    identifierName: identifierType.name,
+    preferred: identifierType.isPrimary,
+    initialValue: '',
+    required: identifierType.required,
+    identifierValue,
+    selectedSource: undefined,
+  };
+}
+
+const mockUseConfig = vi.mocked(useConfig<RegistrationConfig>);
 
 const mockResourcesContextValue = {
   addressTemplate: null as unknown as AddressTemplate,
   currentSession: mockSession.data,
-  identifierTypes: [],
+  identifierTypes: undefined,
   relationshipTypes: [],
-} as Resources;
+} as unknown as Resources;
 
 const mockInitialFormValues = {
   additionalFamilyName: '',
+  additionalFamilyName2: '',
   additionalGivenName: '',
   additionalMiddleName: '',
   addNameInLocalLanguage: false,
@@ -31,13 +111,17 @@ const mockInitialFormValues = {
   birthdateEstimated: false,
   deathCause: '',
   deathDate: '',
+  deathTime: '',
+  deathTimeFormat: 'AM' as const,
   familyName: 'Doe',
+  familyName2: '',
   gender: 'male',
   givenName: 'John',
   identifiers: mockOpenmrsId,
   isDead: false,
   middleName: 'Test',
   monthsEstimated: 0,
+  nonCodedCauseOfDeath: '',
   patientUuid: mockPatient.uuid,
   relationships: [],
   telephoneNumber: '',
@@ -50,15 +134,60 @@ const mockContextValues: PatientRegistrationContextProps = {
   identifierTypes: [],
   initialFormValues: mockInitialFormValues,
   isOffline: false,
-  setCapturePhotoProps: jest.fn(),
-  setFieldValue: jest.fn(),
-  setInitialFormValues: jest.fn(),
+  setCapturePhotoProps: vi.fn(),
+  setFieldValue: vi.fn(),
+  setInitialFormValues: vi.fn(),
   validationSchema: null,
   values: mockInitialFormValues,
 } as unknown as PatientRegistrationContextProps;
 
+function renderIdentifiersWithState(initialIdentifiers = {}) {
+  function StatefulIdentifiers() {
+    const [values, setValues] = React.useState({
+      ...mockInitialFormValues,
+      identifiers: initialIdentifiers,
+    });
+
+    const setFieldValue = vi.fn((fieldName, value) => {
+      if (fieldName === 'identifiers') {
+        setValues((previousValues) => ({
+          ...previousValues,
+          identifiers: value,
+        }));
+      }
+    });
+
+    return (
+      <ResourcesContext.Provider value={{ ...mockResourcesContextValue, identifierTypes: peruIdentifierTypes }}>
+        <Formik initialValues={{}} onSubmit={null}>
+          <Form>
+            <PatientRegistrationContext.Provider
+              value={{
+                ...mockContextValues,
+                initialFormValues: {
+                  ...mockInitialFormValues,
+                  identifiers: initialIdentifiers,
+                },
+                setFieldValue,
+                values,
+              }}
+            >
+              <Identifiers />
+            </PatientRegistrationContext.Provider>
+          </Form>
+        </Formik>
+      </ResourcesContext.Provider>
+    );
+  }
+
+  return render(<StatefulIdentifiers />);
+}
+
 describe('Identifiers', () => {
   beforeEach(() => {
+    mockResourcesContextValue.identifierTypes = [];
+    mockResourcesContextValue.identifierTypesError = undefined;
+    mockResourcesContextValue.isLoadingIdentifierTypes = false;
     mockUseConfig.mockReturnValue({
       ...getDefaultsFromConfigSchema(esmPatientRegistrationSchema),
       defaultPatientIdentifierTypes: ['OpenMRS ID'],
@@ -67,7 +196,7 @@ describe('Identifiers', () => {
 
   it('should render loading skeleton when identifier types are loading', () => {
     render(
-      <ResourcesContext.Provider value={mockResourcesContextValue}>
+      <ResourcesContext.Provider value={{ ...mockResourcesContextValue, isLoadingIdentifierTypes: true }}>
         <Formik initialValues={{}} onSubmit={null}>
           <Form>
             <PatientRegistrationContext.Provider value={mockContextValues}>
@@ -79,6 +208,58 @@ describe('Identifiers', () => {
     );
 
     expect(screen.getByRole('progressbar')).toBeInTheDocument();
+  });
+
+  it('should render a non-loading message when identifier types are unavailable', () => {
+    const contextValues = {
+      ...mockContextValues,
+      initialFormValues: { ...mockInitialFormValues, identifiers: {} },
+      values: { ...mockInitialFormValues, identifiers: {} },
+    };
+
+    render(
+      <ResourcesContext.Provider value={mockResourcesContextValue}>
+        <Formik initialValues={{}} onSubmit={null}>
+          <Form>
+            <PatientRegistrationContext.Provider value={contextValues}>
+              <Identifiers />
+            </PatientRegistrationContext.Provider>
+          </Form>
+        </Formik>
+      </ResourcesContext.Provider>,
+    );
+
+    expect(screen.queryByRole('progressbar')).not.toBeInTheDocument();
+    expect(screen.getByText('Identification data unavailable')).toBeInTheDocument();
+  });
+
+  it('shows existing identifiers in edit mode when identifier types are unavailable', () => {
+    render(
+      <ResourcesContext.Provider
+        value={{ ...mockResourcesContextValue, identifierTypesError: new Error('identifier types unavailable') }}
+      >
+        <Formik initialValues={{}} onSubmit={null}>
+          <Form>
+            <PatientRegistrationContext.Provider
+              value={{
+                ...mockContextValues,
+                inEditMode: true,
+                initialFormValues: { ...mockInitialFormValues, identifiers: mockOpenmrsId },
+                values: { ...mockInitialFormValues, identifiers: mockOpenmrsId },
+              }}
+            >
+              <Identifiers />
+            </PatientRegistrationContext.Provider>
+          </Form>
+        </Formik>
+      </ResourcesContext.Provider>,
+    );
+
+    expect(screen.queryByRole('progressbar')).not.toBeInTheDocument();
+    expect(screen.getByText('Identification data unavailable')).toBeInTheDocument();
+    expect(screen.getByText('OpenMRS ID')).toBeInTheDocument();
+    expect(screen.getByText('Auto-generated')).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Configure' })).not.toBeInTheDocument();
   });
 
   it('should render identifier inputs when identifier types are loaded', () => {
@@ -100,6 +281,7 @@ describe('Identifiers', () => {
     const configureButton = screen.getByRole('button', { name: 'Configure' });
     expect(configureButton).toBeInTheDocument();
     expect(configureButton).toBeEnabled();
+    expect(screen.queryByTestId('nationality-field')).not.toBeInTheDocument();
   });
 
   it('should open identifier selection overlay when "Configure" button is clicked', async () => {
@@ -121,6 +303,112 @@ describe('Identifiers', () => {
     await user.click(configureButton);
 
     expect(screen.getByRole('button', { name: 'Close overlay' })).toBeInTheDocument();
+  });
+
+  it('defaults new Peru registrations to DNI only', async () => {
+    renderIdentifiersWithState();
+
+    await waitFor(() => expect(screen.getByText('DNI')).toBeInTheDocument());
+
+    expect(screen.queryByText('Carnet de Extranjeria')).not.toBeInTheDocument();
+    expect(screen.queryByText('Pasaporte')).not.toBeInTheDocument();
+  });
+
+  it('keeps DNI and Carnet de Extranjeria mutually exclusive in the identifier configuration panel', async () => {
+    const user = userEvent.setup();
+    renderIdentifiersWithState({
+      dni: buildIdentifier(dniIdentifierType),
+    });
+
+    await user.click(screen.getByRole('button', { name: 'Configure' }));
+    await user.click(screen.getByRole('checkbox', { name: 'Carnet de Extranjeria' }));
+
+    expect(screen.getByRole('checkbox', { name: 'DNI' })).not.toBeChecked();
+    expect(screen.getByRole('checkbox', { name: 'Carnet de Extranjeria' })).toBeChecked();
+
+    await user.click(screen.getByRole('button', { name: 'Configure identifiers' }));
+
+    expect(screen.queryByText('DNI')).not.toBeInTheDocument();
+    expect(screen.getByText('Carnet de Extranjeria')).toBeInTheDocument();
+  });
+
+  it('keeps DNI and DIE mutually exclusive in the identifier configuration panel', async () => {
+    const user = userEvent.setup();
+    renderIdentifiersWithState({
+      dni: buildIdentifier(dniIdentifierType),
+    });
+
+    await user.click(screen.getByRole('button', { name: 'Configure' }));
+    await user.click(screen.getByRole('checkbox', { name: 'Documento de Identidad Extranjero' }));
+
+    expect(screen.getByRole('checkbox', { name: 'DNI' })).not.toBeChecked();
+    expect(screen.getByRole('checkbox', { name: 'Documento de Identidad Extranjero' })).toBeChecked();
+
+    await user.click(screen.getByRole('button', { name: 'Configure identifiers' }));
+
+    expect(screen.queryByText('DNI')).not.toBeInTheDocument();
+    expect(screen.getByText('Documento de Identidad Extranjero')).toBeInTheDocument();
+  });
+
+  it('keeps DNI and Pasaporte mutually exclusive in the identifier configuration panel', async () => {
+    const user = userEvent.setup();
+    renderIdentifiersWithState({
+      dni: buildIdentifier(dniIdentifierType),
+    });
+
+    await user.click(screen.getByRole('button', { name: 'Configure' }));
+    await user.click(screen.getByRole('checkbox', { name: 'Pasaporte' }));
+
+    expect(screen.getByRole('checkbox', { name: 'DNI' })).not.toBeChecked();
+    expect(screen.getByRole('checkbox', { name: 'Pasaporte' })).toBeChecked();
+
+    await user.click(screen.getByRole('button', { name: 'Configure identifiers' }));
+
+    expect(screen.queryByText('DNI')).not.toBeInTheDocument();
+    expect(screen.getByText('Pasaporte')).toBeInTheDocument();
+  });
+
+  it('deletes identifier inputs while keeping the configuration panel in sync', async () => {
+    const user = userEvent.setup();
+    renderIdentifiersWithState({
+      dni: buildIdentifier(dniIdentifierType),
+      pasaporte: buildIdentifier(passportIdentifierType),
+    });
+
+    await user.click(screen.getAllByRole('button', { name: 'Delete' })[1]);
+
+    expect(screen.getByText('DNI')).toBeInTheDocument();
+    expect(screen.queryByText('Pasaporte')).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Delete' })).not.toBeInTheDocument();
+
+    await user.click(screen.getByRole('button', { name: 'Configure' }));
+
+    expect(screen.getByRole('checkbox', { name: 'DNI' })).toBeChecked();
+    expect(screen.getByRole('checkbox', { name: 'Pasaporte' })).not.toBeChecked();
+  });
+
+  it('does not count the clinical history identifier toward the minimum identity document requirement', async () => {
+    const user = userEvent.setup();
+    renderIdentifiersWithState({
+      numeroDeHistoriaClinica: buildIdentifier(clinicalHistoryIdentifierType, 'auto-generated'),
+      dni: buildIdentifier(dniIdentifierType),
+    });
+
+    expect(screen.getByText('Nº de Historia Clínica')).toBeInTheDocument();
+    expect(screen.getByText('DNI')).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Delete' })).not.toBeInTheDocument();
+
+    await user.click(screen.getByRole('button', { name: 'Configure' }));
+
+    expect(screen.getByRole('checkbox', { name: 'Nº de Historia Clínica' })).toBeDisabled();
+    expect(screen.getByRole('checkbox', { name: 'DNI' })).toBeDisabled();
+
+    await user.click(screen.getByRole('checkbox', { name: 'Documento de Identidad Extranjero' }));
+    await user.click(screen.getByRole('button', { name: 'Configure identifiers' }));
+
+    expect(screen.getByText('Nº de Historia Clínica')).toBeInTheDocument();
+    expect(screen.queryByText('DNI')).not.toBeInTheDocument();
+    expect(screen.getByText('Documento de Identidad Extranjero')).toBeInTheDocument();
   });
 });
 

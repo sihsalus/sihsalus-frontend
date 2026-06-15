@@ -9,7 +9,7 @@ import {
   showToast,
   useLayoutType,
 } from '@openmrs/esm-framework';
-import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import ClearQueueEntries from '../clear-queue-entries-modal/clear-queue-entries.component';
@@ -35,8 +35,8 @@ function DefaultQueuePage() {
   const { t } = useTranslation();
   const layout = useLayoutType();
   const selectedService = useSelectedService();
-  const currentLocationUuid = useSelectedQueueLocationUuid();
-  const selectedQueueStatus = useSelectedQueueStatus();
+  const _currentLocationUuid = useSelectedQueueLocationUuid();
+  const _selectedQueueStatus = useSelectedQueueStatus();
   const [isPatientSearchOpen, setIsPatientSearchOpen] = useState(false);
   const [patientSearchQuery, setPatientSearchQuery] = useState('');
 
@@ -93,6 +93,7 @@ function QueueTableSection() {
   const currentLocationUuid = useSelectedQueueLocationUuid();
   const selectedQueueStatus = useSelectedQueueStatus();
   const [searchTerm, setSearchTerm] = useState('');
+  const searchClassName = typeof styles.search === 'string' ? styles.search : undefined;
 
   const searchCriteria = useMemo(
     () => ({
@@ -151,7 +152,7 @@ function QueueTableSection() {
         <>
           <QueueDropdownFilter /> <StatusDropdownFilter />
           <TableToolbarSearch
-            className={styles.search}
+            className={searchClassName}
             onChange={(value) => setSearchTerm(typeof value === 'string' ? value : value.currentTarget.value)}
             placeholder={t('searchThisList', 'Search this list')}
             size={isDesktop(layout) ? 'sm' : 'lg'}

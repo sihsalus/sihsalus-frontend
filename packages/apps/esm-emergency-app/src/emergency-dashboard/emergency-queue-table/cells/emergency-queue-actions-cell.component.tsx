@@ -14,6 +14,7 @@ import { Button, OverflowMenu, OverflowMenuItem } from '@carbon/react';
 import {
   isDesktop,
   launchWorkspace,
+  launchWorkspace2,
   navigate,
   restBaseUrl,
   showModal,
@@ -55,10 +56,10 @@ export const EmergencyQueueActionsCell: React.FC<EmergencyQueueTableCellProps> =
   }, [queueEntry]);
 
   const handleOpenTriage = useCallback(() => {
-    launchWorkspace(WORKSPACES.TRIAGE_FORM, {
-      queueEntry,
+    launchWorkspace2(WORKSPACES.TRIAGE_VITALS_FORM, { encounterTypeUuid: triageEncounterTypeUuid }, null, {
+      patientUuid: queueEntry.patient.uuid,
     });
-  }, [queueEntry]);
+  }, [queueEntry.patient.uuid, triageEncounterTypeUuid]);
 
   const handleOpenAttention = useCallback(() => {
     launchWorkspace(WORKSPACES.ATTENTION_FORM, {
@@ -68,7 +69,7 @@ export const EmergencyQueueActionsCell: React.FC<EmergencyQueueTableCellProps> =
 
   const handleGoToChart = useCallback(() => {
     navigate({
-      to: `\${openmrsSpaBase}/patient/${queueEntry.patient.uuid}/chart/Patient%20Summary`,
+      to: `${globalThis.spaBase}/patient/${queueEntry.patient.uuid}/chart/Patient%20Summary`,
     });
   }, [queueEntry.patient.uuid]);
 

@@ -9,20 +9,20 @@ import { useGetManyObstreeData } from '../grouped-timeline';
 
 import TreeViewWrapper from './tree-view-wrapper.component';
 
-const mockUsePatient = jest.mocked(usePatient);
-const mockUseConfig = jest.mocked(useConfig<ConfigObject>);
-const mockUseLayoutType = jest.mocked(useLayoutType);
-const mockUseGetManyObstreeData = jest.mocked(useGetManyObstreeData);
+const mockUsePatient = vi.mocked(usePatient);
+const mockUseConfig = vi.mocked(useConfig<ConfigObject>);
+const mockUseLayoutType = vi.mocked(useLayoutType);
+const mockUseGetManyObstreeData = vi.mocked(useGetManyObstreeData);
 const mockFhirPatient = mockPatient as unknown as fhir.Patient;
 
-jest.mock('../panel-timeline/helpers', () => ({
-  ...jest.requireActual('../panel-timeline/helpers'),
-  parseTime: jest.fn(),
+vi.mock('../panel-timeline/helpers', async () => ({
+  ...(await vi.importActual('../panel-timeline/helpers')),
+  parseTime: vi.fn(),
 }));
 
-jest.mock('../grouped-timeline', () => ({
-  ...jest.requireActual('../grouped-timeline'),
-  useGetManyObstreeData: jest.fn(),
+vi.mock('../grouped-timeline', async () => ({
+  ...(await vi.importActual('../grouped-timeline')),
+  useGetManyObstreeData: vi.fn(),
 }));
 
 const mockProps = {
@@ -43,10 +43,10 @@ const mockFilterContext: FilterContextProps = {
   someChecked: true,
   lowestParents: mockGroupedResults['lowestParents'],
   totalResultsCount: 0,
-  initialize: jest.fn(),
-  toggleVal: jest.fn(),
-  updateParent: jest.fn(),
-  resetTree: jest.fn(),
+  initialize: vi.fn(),
+  toggleVal: vi.fn(),
+  updateParent: vi.fn(),
+  resetTree: vi.fn(),
   roots: mockResults as any,
   tests: {},
 };

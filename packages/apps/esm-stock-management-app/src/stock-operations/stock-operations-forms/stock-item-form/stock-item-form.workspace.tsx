@@ -131,7 +131,7 @@ const StockItemForm: React.FC<StockItemFormProps> = ({
                 control={form.control}
                 name={'expiration' as keyof FormData}
                 render={({ field, fieldState: { error } }) => {
-                  const { value, onChange, onBlur, name, ref } = field;
+                  const { value, onChange } = field;
                   return (
                     <DatePicker
                       datePickerType="single"

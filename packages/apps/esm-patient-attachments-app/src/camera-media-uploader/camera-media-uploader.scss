@@ -1,17 +1,39 @@
-@use '@carbon/layout';
-@use '@openmrs/esm-styleguide/src/vars' as *;
+@use "@carbon/layout";
+@use "@openmrs/esm-styleguide/src/vars" as *;
 
 .cameraSection {
   width: 100%;
   background-color: $ui-02;
 }
 
-.cameraSection :global(.react-html5-camera-photo) {
-  & > img,
-  & > video {
-    max-width: 100%;
-    max-height: 100%;
-  }
+.cameraPreviewContainer {
+  display: flex;
+  flex-direction: column;
+  gap: layout.$spacing-05;
+  padding: layout.$spacing-05;
+  width: 100%;
+  background-color: $ui-02;
+}
+
+.cameraVideo {
+  width: 100%;
+  max-height: 32rem;
+  aspect-ratio: 4 / 3;
+  object-fit: cover;
+  background-color: $ui-05;
+}
+
+.cameraCanvas {
+  display: none;
+}
+
+.cameraActions {
+  display: flex;
+  justify-content: flex-end;
+}
+
+.captureButton {
+  min-width: 10rem;
 }
 
 .uploadFile {

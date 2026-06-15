@@ -136,11 +136,13 @@ const QueueRoomForm: React.FC<DefaultWorkspaceProps> = ({ closeWorkspace }) => {
                   value={value || ''}
                 >
                   <SelectItem text={t('selectQueueRoomLocation', 'Select a queue room location')} value="" />
-                  {queueLocations?.map((location) => (
-                    <SelectItem key={location.id} text={location.name} value={location.id}>
-                      {location.name}
-                    </SelectItem>
-                  ))}
+                  {queueLocations
+                    ?.filter((location) => location.id && location.name)
+                    .map((location) => (
+                      <SelectItem key={location.id} text={location.name} value={location.id}>
+                        {location.name}
+                      </SelectItem>
+                    ))}
                 </Select>
               )}
             />
@@ -163,11 +165,13 @@ const QueueRoomForm: React.FC<DefaultWorkspaceProps> = ({ closeWorkspace }) => {
                   value={value || ''}
                 >
                   <SelectItem text={t('selectQueueRoomService', 'Select a queue room service')} value="" />
-                  {queues?.map((service) => (
-                    <SelectItem key={service.uuid} text={service.display} value={service.uuid}>
-                      {service.display}
-                    </SelectItem>
-                  ))}
+                  {queues
+                    ?.filter((service) => service.uuid && service.display)
+                    .map((service) => (
+                      <SelectItem key={service.uuid} text={service.display} value={service.uuid}>
+                        {service.display}
+                      </SelectItem>
+                    ))}
                 </Select>
               )}
             />

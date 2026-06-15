@@ -19,7 +19,7 @@ import {
   Tag,
   Tile,
 } from '@carbon/react';
-import { Add, DocumentImport, Download, Edit, TrashCan } from '@carbon/react/icons';
+import { Add, DocumentImport, Download, Edit, TrashCan, Undo } from '@carbon/react/icons';
 import { useClobdata } from '@hooks/useClobdata';
 import { useForms } from '@hooks/useForms';
 import {
@@ -33,7 +33,7 @@ import {
   useLayoutType,
   usePagination,
 } from '@openmrs/esm-framework';
-import { deleteForm } from '@resources/forms.resource';
+import { deleteForm, unretireForm } from '@resources/forms.resource';
 import type { Form as TypedForm } from '@types';
 import { type TFunction } from 'i18next';
 import React, { useCallback, useMemo, useState } from 'react';
@@ -66,19 +66,20 @@ interface FormsListProps {
   t: TFunction;
 }
 
-function CustomTag({ condition }: { condition?: boolean }) {
+function CustomTag({ condition, invertTone = false }: { condition?: boolean; invertTone?: boolean }) {
   const { t } = useTranslation();
+  const trueTagType = invertTone ? 'red' : 'green';
 
   if (condition) {
     return (
-      <Tag type="green" size="md" data-testid="yes-tag">
+      <Tag type={trueTagType} size="md" data-testid="yes-tag">
         {t('yes', 'Yes')}
       </Tag>
     );
   }
 
   return (
-    <Tag type="red" size="md" data-testid="no-tag">
+    <Tag type="cool-gray" size="md" data-testid="no-tag">
       {t('no', 'No')}
     </Tag>
   );
@@ -104,10 +105,10 @@ function ActionButtons({ form, mutate, responsiveSize, t }: ActionButtonsProps) 
         const res = await deleteForm(formUuid);
         if (res.status === 204) {
           showSnackbar({
-            title: t('formDeleted', 'Form deleted'),
+            title: t('formRetired', 'Form retired'),
             kind: 'success',
             isLowContrast: true,
-            subtitle: t('formDeletedMessage', 'The form "{{- formName}}" has been deleted successfully', {
+            subtitle: t('formRetiredMessage', 'The form "{{- formName}}" has been retired successfully', {
               formName: form.name,
             }),
           });
@@ -116,7 +117,7 @@ function ActionButtons({ form, mutate, responsiveSize, t }: ActionButtonsProps) 
       } catch (e: unknown) {
         if (e instanceof Error) {
           showSnackbar({
-            title: t('errorDeletingForm', 'Error deleting form'),
+            title: t('errorRetiringForm', 'Error retiring form'),
             kind: 'error',
             subtitle: e?.message,
           });
@@ -127,6 +128,31 @@ function ActionButtons({ form, mutate, responsiveSize, t }: ActionButtonsProps) 
     },
     [form.name, mutate, t],
   );
+
+  const handleUnretireForm = useCallback(async () => {
+    try {
+      const res = await unretireForm(form.uuid);
+      if (res.status === 200) {
+        showSnackbar({
+          title: t('formRestored', 'Form restored'),
+          kind: 'success',
+          isLowContrast: true,
+          subtitle: t('formRestoredMessage', 'The form "{{- formName}}" has been restored', {
+            formName: form.name,
+          }),
+        });
+        await mutate();
+      }
+    } catch (e: unknown) {
+      if (e instanceof Error) {
+        showSnackbar({
+          title: t('errorRestoringForm', 'Error restoring form'),
+          kind: 'error',
+          subtitle: e?.message,
+        });
+      }
+    }
+  }, [form.uuid, form.name, mutate, t]);
 
   const launchDeleteFormModal = useCallback(() => {
     const dispose = showModal('delete-form-modal', {
@@ -188,7 +214,7 @@ function ActionButtons({ form, mutate, responsiveSize, t }: ActionButtonsProps) 
       <IconButton
         enterDelayMs={defaultEnterDelayInMs}
         kind="ghost"
-        label={t('deleteSchema', 'Delete schema')}
+        label={t('retireSchema', 'Retire schema')}
         onClick={launchDeleteFormModal}
         size={responsiveSize}
       >
@@ -197,9 +223,23 @@ function ActionButtons({ form, mutate, responsiveSize, t }: ActionButtonsProps) 
     );
   };
 
+  const RestoreButton = () => {
+    return (
+      <IconButton
+        enterDelayMs={defaultEnterDelayInMs}
+        kind="ghost"
+        label={t('restoreSchema', 'Restore form')}
+        onClick={handleUnretireForm}
+        size={responsiveSize}
+      >
+        <Undo />
+      </IconButton>
+    );
+  };
+
   return (
     <>
-      {formResources.length == 0 || !form?.resources[0] ? (
+      {formResources.length === 0 || !form?.resources[0] ? (
         <ImportButton />
       ) : (
         <>
@@ -207,7 +247,7 @@ function ActionButtons({ form, mutate, responsiveSize, t }: ActionButtonsProps) 
           <DownloadSchemaButton />
         </>
       )}
-      <DeleteButton />
+      {form.retired ? <RestoreButton /> : <DeleteButton />}
     </>
   );
 }
@@ -216,20 +256,24 @@ function FormsList({ forms, isValidating, mutate, t }: FormsListProps) {
   const pageSize = 10;
   const isTablet = useLayoutType() === 'tablet';
   const responsiveSize: 'sm' | 'lg' = isTablet ? 'lg' : 'sm';
-  const [filter, setFilter] = useState('');
+  const [filter, setFilter] = useState('Active');
   const [searchString, setSearchString] = useState('');
 
   const filteredRows = useMemo(() => {
-    if (!filter) {
+    if (!filter || filter === 'All') {
       return forms;
     }
 
+    if (filter === 'Active') {
+      return forms.filter((form) => !form.retired);
+    }
+
     if (filter === 'Published') {
-      return forms.filter((form) => form.published);
+      return forms.filter((form) => form.published && !form.retired);
     }
 
     if (filter === 'Unpublished') {
-      return forms.filter((form) => !form.published);
+      return forms.filter((form) => !form.published && !form.retired);
     }
 
     if (filter === 'Retired') {
@@ -285,18 +329,18 @@ function FormsList({ forms, isValidating, mutate, t }: FormsListProps) {
       </ConfigurableLink>
     ),
     published: <CustomTag condition={form.published} />,
-    retired: <CustomTag condition={form.retired} />,
+    retired: <CustomTag condition={form.retired} invertTone />,
     actions: <ActionButtons form={form} mutate={mutate} responsiveSize={responsiveSize} t={t} />,
   }));
 
   const handleFilter = ({ selectedItem }: { selectedItem: string }) => setFilter(selectedItem);
 
   const handleSearch = useCallback(
-    (e: React.ChangeEvent<HTMLInputElement>) => {
+    (event: React.ChangeEvent<HTMLInputElement> | '', value?: string) => {
       goTo(1);
-      setSearchString(e.target.value);
+      setSearchString(value ?? (event ? event.target.value : ''));
     },
-    [goTo, setSearchString],
+    [goTo],
   );
 
   return (
@@ -306,12 +350,12 @@ function FormsList({ forms, isValidating, mutate, t }: FormsListProps) {
           <Dropdown
             className={styles.filterDropdown}
             id="publishStatusFilter"
-            initialSelectedItem={'All'}
+            initialSelectedItem={'Active'}
             label=""
             titleText={t('filterBy', 'Filter by') + ':'}
             size={responsiveSize}
             type="inline"
-            items={['All', 'Published', 'Unpublished', 'Retired']}
+            items={['Active', 'All', 'Published', 'Unpublished', 'Retired']}
             onChange={handleFilter}
           />
         </div>
@@ -352,7 +396,9 @@ function FormsList({ forms, isValidating, mutate, t }: FormsListProps) {
                 <TableHead>
                   <TableRow>
                     {headers.map((header) => (
-                      <TableHeader {...getHeaderProps({ header })}>{header.header}</TableHeader>
+                      <TableHeader key={header.key} {...getHeaderProps({ header })}>
+                        {header.header}
+                      </TableHeader>
                     ))}
                   </TableRow>
                 </TableHead>

@@ -7,6 +7,7 @@ import type { ConfigObject } from '../config-schema';
 
 interface ScreeningItem {
   name: string;
+  translationKey: string;
   completed: boolean;
   date: string | null;
   result: string | null;
@@ -24,7 +25,7 @@ interface ScreeningIndicatorsResult {
 
 /**
  * Hook para tamizajes obligatorios:
- * - CRED (NTS 137): Hemoglobina, desarrollo (EEDP/TEPSI), violencia, visual, auditivo
+ * - CRED (NTS 238): Hemoglobina, desarrollo (EDI/vigilancia), violencia, visual, auditivo
  * - Prenatal (NTS 159): VIH, Sífilis (RPR/VDRL), Hepatitis B (HBsAg)
  *
  * Usa: config.anemiaScreening.hemoglobinaConceptUuid para Hb
@@ -34,19 +35,35 @@ export function useScreeningIndicators(patientUuid: string): ScreeningIndicators
   const config = useConfig<ConfigObject>();
 
   const screeningConcepts = useMemo(() => {
-    const concepts: Array<{ name: string; uuid: string }> = [];
+    const concepts: Array<{ name: string; translationKey: string; uuid: string }> = [];
 
     if (config.anemiaScreening?.hemoglobinaConceptUuid) {
-      concepts.push({ name: 'Hemoglobina', uuid: config.anemiaScreening.hemoglobinaConceptUuid });
+      concepts.push({
+        name: 'Hemoglobina',
+        translationKey: 'screeningHemoglobin',
+        uuid: config.anemiaScreening.hemoglobinaConceptUuid,
+      });
     }
     if (config.prenatalScreening?.vihResultConceptUuid) {
-      concepts.push({ name: 'VIH', uuid: config.prenatalScreening.vihResultConceptUuid });
+      concepts.push({
+        name: 'VIH',
+        translationKey: 'screeningHiv',
+        uuid: config.prenatalScreening.vihResultConceptUuid,
+      });
     }
     if (config.prenatalScreening?.sifilisResultConceptUuid) {
-      concepts.push({ name: 'Sífilis (RPR/VDRL)', uuid: config.prenatalScreening.sifilisResultConceptUuid });
+      concepts.push({
+        name: 'Sífilis (RPR/VDRL)',
+        translationKey: 'screeningSyphilis',
+        uuid: config.prenatalScreening.sifilisResultConceptUuid,
+      });
     }
     if (config.prenatalScreening?.hepatitisBResultConceptUuid) {
-      concepts.push({ name: 'Hepatitis B (HBsAg)', uuid: config.prenatalScreening.hepatitisBResultConceptUuid });
+      concepts.push({
+        name: 'Hepatitis B (HBsAg)',
+        translationKey: 'screeningHepatitisB',
+        uuid: config.prenatalScreening.hepatitisBResultConceptUuid,
+      });
     }
 
     return concepts;
@@ -74,6 +91,7 @@ export function useScreeningIndicators(patientUuid: string): ScreeningIndicators
       const obs = data[idx]?.results?.[0];
       return {
         name: concept.name,
+        translationKey: concept.translationKey,
         completed: !!obs,
         date: obs?.obsDatetime ? dayjs(obs.obsDatetime).format('DD/MM/YYYY') : null,
         result: obs?.display ?? null,

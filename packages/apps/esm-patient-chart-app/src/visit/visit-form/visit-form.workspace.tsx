@@ -1,8 +1,3 @@
-import classNames from 'classnames';
-import React, { useCallback, useEffect, useMemo, useState } from 'react';
-
-dayjs.extend(isSameOrBefore);
-
 import {
   Button,
   ButtonSet,
@@ -37,16 +32,20 @@ import {
   useSession,
   useVisit,
   type Visit,
+  Workspace2,
 } from '@openmrs/esm-framework';
 import {
   convertTime12to24,
   createOfflineVisitForPatient,
   type DefaultPatientWorkspaceProps,
+  type PatientWorkspace2DefinitionProps,
   time12HourFormatRegex,
   useActivePatientEnrollment,
 } from '@openmrs/esm-patient-common-lib';
+import classNames from 'classnames';
 import dayjs from 'dayjs';
 import isSameOrBefore from 'dayjs/plugin/isSameOrBefore';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { Controller, FormProvider, useForm } from 'react-hook-form';
 import { useTranslation } from 'react-i18next';
 import { z } from 'zod';
@@ -74,7 +73,9 @@ import {
 } from './visit-form.resource';
 import styles from './visit-form.scss';
 
-interface StartVisitFormProps extends DefaultPatientWorkspaceProps {
+dayjs.extend(isSameOrBefore);
+
+interface StartVisitFormWorkspaceProps {
   /**
    * A unique string identifying where the visit form is opened from.
    * This string is passed into various extensions within the form to
@@ -82,8 +83,17 @@ interface StartVisitFormProps extends DefaultPatientWorkspaceProps {
    */
   openedFrom: string;
   showPatientHeader?: boolean;
-  showVisitEndDateTimeFields: boolean;
+  showVisitEndDateTimeFields?: boolean;
   visitToEdit?: Visit;
+  workspaceTitle?: string;
+}
+
+type LegacyStartVisitFormProps = DefaultPatientWorkspaceProps & StartVisitFormWorkspaceProps;
+type Workspace2StartVisitFormProps = PatientWorkspace2DefinitionProps<StartVisitFormWorkspaceProps, object>;
+type StartVisitFormProps = LegacyStartVisitFormProps | Workspace2StartVisitFormProps;
+
+function isWorkspace2Props(props: StartVisitFormProps): props is Workspace2StartVisitFormProps {
+  return 'groupProps' in props && 'workspaceProps' in props;
 }
 
 interface ExtraVisitInfoState {
@@ -91,16 +101,37 @@ interface ExtraVisitInfoState {
   handleCreateExtraVisitInfo?: () => void;
 }
 
-const StartVisitForm: React.FC<StartVisitFormProps> = ({
-  closeWorkspace,
-  patientUuid: initialPatientUuid,
-  promptBeforeClosing,
-  showPatientHeader = false,
-  showVisitEndDateTimeFields,
-  visitToEdit,
-  openedFrom,
-}) => {
+const StartVisitForm: React.FC<StartVisitFormProps> = (props) => {
   const { t } = useTranslation();
+  const isWorkspace2 = isWorkspace2Props(props);
+  const workspaceProps = isWorkspace2 ? props.workspaceProps : props;
+  const {
+    showPatientHeader = false,
+    showVisitEndDateTimeFields,
+    visitToEdit,
+    openedFrom,
+    workspaceTitle,
+  } = workspaceProps;
+  const initialPatientUuid = isWorkspace2 ? props.groupProps.patientUuid : props.patientUuid;
+  const closeCurrentWorkspace = useCallback(
+    (options?: { ignoreChanges?: boolean }) => {
+      if (isWorkspace2Props(props)) {
+        void props.closeWorkspace({ discardUnsavedChanges: options?.ignoreChanges });
+        return;
+      }
+
+      props.closeWorkspace(options);
+    },
+    [props],
+  );
+  const promptBeforeClosing = useCallback(
+    (testFcn: () => boolean) => {
+      if (!isWorkspace2Props(props)) {
+        props.promptBeforeClosing(testFcn);
+      }
+    },
+    [props],
+  );
   const isTablet = useLayoutType() === 'tablet';
   const isEmrApiModuleInstalled = useFeatureFlag('emrapi-module');
   const isOnline = useConnectivity();
@@ -519,14 +550,16 @@ const StartVisitForm: React.FC<StartVisitFormProps> = ({
 
       const abortController = new AbortController();
 
-      const { handleCreateExtraVisitInfo, attributes: extraAttributes } = extraVisitInfo ?? {};
-      if (Array.isArray(extraAttributes) && extraAttributes.length > 0) {
-        if (!payload.attributes) {
-          payload.attributes = [];
+      if (config.showExtraVisitAttributesSlot) {
+        const { handleCreateExtraVisitInfo, attributes: extraAttributes } = extraVisitInfo ?? {};
+        if (Array.isArray(extraAttributes) && extraAttributes.length > 0) {
+          if (!payload.attributes) {
+            payload.attributes = [];
+          }
+          payload.attributes.push(...extraAttributes);
         }
-        payload.attributes.push(...extraAttributes);
+        handleCreateExtraVisitInfo?.();
       }
-      handleCreateExtraVisitInfo?.();
 
       if (isOnline) {
         const visitRequest = visitToEdit?.uuid
@@ -591,7 +624,7 @@ const StartVisitForm: React.FC<StartVisitFormProps> = ({
             return Promise.all([visitAttributesRequest, ...onVisitCreatedOrUpdatedRequests]);
           })
           .then(() => {
-            closeWorkspace({ ignoreChanges: true });
+            closeCurrentWorkspace({ ignoreChanges: true });
           })
           .catch(() => {
             // do nothing, this catches any reject promises used for short-circuiting
@@ -610,7 +643,7 @@ const StartVisitForm: React.FC<StartVisitFormProps> = ({
         ).then(
           () => {
             mutateCurrentVisit();
-            closeWorkspace({ ignoreChanges: true });
+            closeCurrentWorkspace({ ignoreChanges: true });
             showSnackbar({
               isLowContrast: true,
               kind: 'success',
@@ -634,8 +667,9 @@ const StartVisitForm: React.FC<StartVisitFormProps> = ({
       }
     },
     [
-      closeWorkspace,
+      closeCurrentWorkspace,
       config.offlineVisitTypeUuid,
+      config.showExtraVisitAttributesSlot,
       displayVisitStopDateTimeFields,
       extraVisitInfo,
       handleVisitAttributes,
@@ -650,7 +684,7 @@ const StartVisitForm: React.FC<StartVisitFormProps> = ({
     ],
   );
 
-  return (
+  const content = (
     <FormProvider {...methods}>
       <Form className={styles.form} onSubmit={handleSubmit(onSubmit)} data-openmrs-role="Start Visit Form">
         {showPatientHeader && patient && (
@@ -803,7 +837,9 @@ const StartVisitForm: React.FC<StartVisitFormProps> = ({
               </section>
             )}
 
-            <MemoizedExtraVisitSlot patientUuid={patientUuid} setExtraVisitInfo={setExtraVisitInfo} />
+            {config.showExtraVisitAttributesSlot && (
+              <MemoizedExtraVisitSlot patientUuid={patientUuid} setExtraVisitInfo={setExtraVisitInfo} />
+            )}
 
             {/* Visit type attribute fields. These get shown when visit attribute types are configured */}
             <section>
@@ -834,7 +870,7 @@ const StartVisitForm: React.FC<StartVisitFormProps> = ({
             [styles.desktop]: !isTablet,
           })}
         >
-          <Button className={styles.button} kind="secondary" onClick={() => closeWorkspace()}>
+          <Button className={styles.button} kind="secondary" onClick={() => closeCurrentWorkspace()}>
             {t('discard', 'Discard')}
           </Button>
           <Button
@@ -860,6 +896,22 @@ const StartVisitForm: React.FC<StartVisitFormProps> = ({
       </Form>
     </FormProvider>
   );
+
+  if (isWorkspace2) {
+    return (
+      <Workspace2
+        title={
+          workspaceTitle ??
+          (visitToEdit ? t('editVisitDetails', 'Edit visit details') : t('startVisitWorkspaceTitle', 'Start visit'))
+        }
+        hasUnsavedChanges={isDirty}
+      >
+        {content}
+      </Workspace2>
+    );
+  }
+
+  return content;
 };
 
 interface VisitFormExtensionSlotProps {

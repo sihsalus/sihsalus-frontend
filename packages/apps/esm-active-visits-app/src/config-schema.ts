@@ -5,6 +5,7 @@ export interface ActiveVisitsConfigSchema {
     pageSize: number;
     pageSizes: Array<number>;
     identifiers: Array<IdentifiersDefinition>;
+    attributes: Array<ActiveVisitAttributeDefinition>;
     obs: Array<string>;
   };
 }
@@ -16,6 +17,14 @@ export interface IdentifiersDefinition {
     default: string;
   };
   identifierName: string;
+}
+
+export interface ActiveVisitAttributeDefinition {
+  display: string;
+  header: {
+    key: string;
+    default: string;
+  };
 }
 
 export const configSchema = {
@@ -52,6 +61,30 @@ export const configSchema = {
           identifierName: 'N° Historia Clínica',
         },
       ],
+    },
+    attributes: {
+      _type: Type.Array,
+      _description: 'Customizable list of patient person attributes to display on active visits table.',
+      _elements: {
+        display: {
+          _type: Type.String,
+          _default: null,
+          _description: 'Display name of the person attribute type to include.',
+        },
+        header: {
+          key: {
+            _type: Type.String,
+            _default: null,
+            _description: 'Key to be used for translation purposes.',
+          },
+          default: {
+            _type: Type.String,
+            _default: null,
+            _description: 'Default text to be displayed if no translation is found.',
+          },
+        },
+      },
+      _default: [],
     },
     pageSize: {
       _type: Type.Number,

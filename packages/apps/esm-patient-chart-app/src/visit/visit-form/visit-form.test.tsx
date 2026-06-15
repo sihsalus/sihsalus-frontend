@@ -12,7 +12,7 @@ import {
   useVisitTypes,
   type Visit,
 } from '@openmrs/esm-framework';
-import { render, screen } from '@testing-library/react';
+import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import dayjs from 'dayjs';
 import React from 'react';
@@ -31,12 +31,24 @@ import {
 } from './visit-form.resource';
 import StartVisitForm from './visit-form.workspace';
 
-jest.mock('@carbon/react', () => {
-  const actual = jest.requireActual('@carbon/react');
-  const React = jest.requireActual('react');
-  const dayjs = jest.requireActual('dayjs');
+vi.mock('@carbon/react', async () => {
+  const actual = await vi.importActual('@carbon/react');
+  const React = await vi.importActual<typeof import('react')>('react');
+  const { default: dayjs } = await vi.importActual<{ default: typeof import('dayjs') }>('dayjs');
+  const { default: customParseFormat } = await vi.importActual<{
+    default: typeof import('dayjs/plugin/customParseFormat');
+  }>('dayjs/plugin/customParseFormat');
 
-  const MockDatePickerInput = React.forwardRef(function MockDatePickerInput(
+  dayjs.extend(customParseFormat);
+
+  const MockDatePickerInput = React.forwardRef<
+    HTMLInputElement,
+    React.ComponentPropsWithoutRef<'input'> & {
+      labelText?: React.ReactNode;
+      invalid?: boolean;
+      invalidText?: React.ReactNode;
+    }
+  >(function MockDatePickerInput(
     { id, labelText, invalid, invalidText, placeholder, style, value, onChange, ...props },
     ref,
   ) {
@@ -88,12 +100,24 @@ jest.mock('@carbon/react', () => {
         </>
       );
     },
-    DatePicker: ({ children, onChange, value }) => {
-      const child = React.Children.only(children);
-      const formattedValue = value ? dayjs(value).format('DD/MM/YYYY') : '';
+    DatePicker: ({
+      children,
+      onChange,
+      value,
+    }: {
+      children: React.ReactNode;
+      onChange?: (dates: Array<Date | undefined>) => void;
+      value?: Date | string;
+    }) => {
+      const child = React.Children.only(children) as React.ReactElement<
+        React.ComponentPropsWithoutRef<'input'> & {
+          onChange?: (...args: unknown[]) => void;
+        }
+      >;
+      const formattedValue = typeof value === 'string' ? value : value ? dayjs(value).format('DD/MM/YYYY') : '';
 
       return React.cloneElement(child, {
-        onChange: (event) => {
+        onChange: (event: React.ChangeEvent<HTMLInputElement>) => {
           child.props.onChange?.(event);
           const parsedDate = dayjs(event.target.value, 'DD/MM/YYYY', true);
           onChange?.([parsedDate.isValid() ? parsedDate.toDate() : undefined]);
@@ -129,9 +153,9 @@ const visitAttributes = {
   },
 };
 
-const mockCloseWorkspace = jest.fn();
-const mockPromptBeforeClosing = jest.fn();
-const mockSetTitle = jest.fn();
+const mockCloseWorkspace = vi.fn();
+const mockPromptBeforeClosing = vi.fn();
+const mockSetTitle = vi.fn();
 
 const testProps = {
   openedFrom: 'test',
@@ -143,38 +167,38 @@ const testProps = {
   setTitle: mockSetTitle,
 };
 
-const mockSaveVisit = jest.mocked(saveVisit);
-const mockUpdateVisit = jest.mocked(updateVisit);
-const mockExtensionSlot = jest.mocked(ExtensionSlot);
-const mockUseConfig = jest.mocked(useConfig<ChartConfig>);
-const mockUseVisitAttributeType = jest.mocked(useVisitAttributeType);
-const mockUseVisitTypes = jest.mocked(useVisitTypes);
-const mockUsePatient = jest.mocked(usePatient);
-const mockUseLocations = jest.mocked(useLocations);
-const mockUseEmrConfiguration = jest.mocked(useEmrConfiguration);
+const mockSaveVisit = vi.mocked(saveVisit);
+const mockUpdateVisit = vi.mocked(updateVisit);
+const mockExtensionSlot = vi.mocked(ExtensionSlot);
+const mockUseConfig = vi.mocked(useConfig<ChartConfig>);
+const mockUseVisitAttributeType = vi.mocked(useVisitAttributeType);
+const mockUseVisitTypes = vi.mocked(useVisitTypes);
+const mockUsePatient = vi.mocked(usePatient);
+const mockUseLocations = vi.mocked(useLocations);
+const mockUseEmrConfiguration = vi.mocked(useEmrConfiguration);
 const mockFhirPatient = mockPatient as unknown as fhir.Patient;
 
 // from ./visit-form.resource
-const mockOnVisitCreatedOrUpdatedCallback = jest.fn();
-jest.mocked(useVisitFormCallbacks).mockReturnValue([
+const mockOnVisitCreatedOrUpdatedCallback = vi.fn();
+vi.mocked(useVisitFormCallbacks).mockReturnValue([
   new Map([['test-extension-id', { onVisitCreatedOrUpdated: mockOnVisitCreatedOrUpdatedCallback }]]), // visitFormCallbacks
-  jest.fn(), // setVisitFormCallbacks
+  vi.fn(), // setVisitFormCallbacks
 ]);
-const mockCreateVisitAttribute = jest.mocked(createVisitAttribute).mockResolvedValue({} as unknown as FetchResponse);
-const mockUpdateVisitAttribute = jest.mocked(updateVisitAttribute).mockResolvedValue({} as unknown as FetchResponse);
-const mockDeleteVisitAttribute = jest.mocked(deleteVisitAttribute).mockResolvedValue({} as unknown as FetchResponse);
-const mockUsePersonAttributesForVisitDefaults = jest.mocked(usePersonAttributesForVisitDefaults);
+const mockCreateVisitAttribute = vi.mocked(createVisitAttribute).mockResolvedValue({} as unknown as FetchResponse);
+const mockUpdateVisitAttribute = vi.mocked(updateVisitAttribute).mockResolvedValue({} as unknown as FetchResponse);
+const mockDeleteVisitAttribute = vi.mocked(deleteVisitAttribute).mockResolvedValue({} as unknown as FetchResponse);
+const mockUsePersonAttributesForVisitDefaults = vi.mocked(usePersonAttributesForVisitDefaults);
 
-jest.mock('@openmrs/esm-patient-common-lib', () => ({
-  ...jest.requireActual('@openmrs/esm-patient-common-lib'),
-  useActivePatientEnrollment: jest.fn().mockReturnValue({
+vi.mock('@openmrs/esm-patient-common-lib', async () => ({
+  ...(await vi.importActual('@openmrs/esm-patient-common-lib')),
+  useActivePatientEnrollment: vi.fn().mockReturnValue({
     activePatientEnrollment: [],
     isLoading: false,
   }),
 }));
 
-jest.mock('../hooks/useVisitAttributeType', () => ({
-  useVisitAttributeType: jest.fn((attributeUuid) => {
+vi.mock('../hooks/useVisitAttributeType', async () => ({
+  useVisitAttributeType: vi.fn((attributeUuid) => {
     if (attributeUuid === visitAttributes.punctuality.uuid) {
       return {
         isLoading: false,
@@ -190,12 +214,12 @@ jest.mock('../hooks/useVisitAttributeType', () => ({
       };
     }
   }),
-  useVisitAttributeTypes: jest.fn(() => ({
+  useVisitAttributeTypes: vi.fn(() => ({
     isLoading: false,
     error: null,
     visitAttributeTypes: [visitAttributes.punctuality, visitAttributes.insurancePolicyNumber],
   })),
-  useConceptAnswersForVisitAttributeType: jest.fn(() => ({
+  useConceptAnswersForVisitAttributeType: vi.fn(() => ({
     isLoading: false,
     error: null,
     answers: [
@@ -223,33 +247,38 @@ jest.mock('../hooks/useVisitAttributeType', () => ({
       },
     ],
   })),
+  useConceptDisplay: vi.fn(() => ({
+    isLoading: false,
+    error: null,
+    display: undefined,
+  })),
 }));
 
-jest.mock('../hooks/useEmrConfiguration', () => ({
-  useEmrConfiguration: jest.fn(() => ({})),
+vi.mock('../hooks/useEmrConfiguration', async () => ({
+  useEmrConfiguration: vi.fn(() => ({})),
 }));
 
-jest.mock('../hooks/useDefaultFacilityLocation', () => {
-  const requireActual = jest.requireActual('../hooks/useDefaultFacilityLocation');
+vi.mock('../hooks/useDefaultFacilityLocation', async () => {
+  const requireActual = await vi.importActual('../hooks/useDefaultFacilityLocation');
 
   return {
     ...requireActual,
-    useDefaultLoginLocation: jest.fn(() => ({
+    useDefaultLoginLocation: vi.fn(() => ({
       defaultFacility: null,
       isLoading: false,
     })),
   };
 });
 
-jest.mock('./visit-form.resource', () => {
-  const requireActual = jest.requireActual('./visit-form.resource');
+vi.mock('./visit-form.resource', async () => {
+  const requireActual = await vi.importActual('./visit-form.resource');
   return {
     ...requireActual,
-    useVisitFormCallbacks: jest.fn(),
-    usePersonAttributesForVisitDefaults: jest.fn(),
-    createVisitAttribute: jest.fn(),
-    updateVisitAttribute: jest.fn(),
-    deleteVisitAttribute: jest.fn(),
+    useVisitFormCallbacks: vi.fn(),
+    usePersonAttributesForVisitDefaults: vi.fn(),
+    createVisitAttribute: vi.fn(),
+    updateVisitAttribute: vi.fn(),
+    deleteVisitAttribute: vi.fn(),
   };
 });
 
@@ -265,6 +294,7 @@ mockSaveVisit.mockResolvedValue({
 
 describe('Visit form', () => {
   beforeEach(() => {
+    vi.clearAllMocks();
     mockExtensionSlot.mockImplementation(({ children }): React.JSX.Element => {
       if (typeof children === 'function') {
         return (
@@ -296,6 +326,7 @@ describe('Visit form', () => {
           displayInThePatientBanner: true,
         },
       ],
+      defaultVisitAttributesFromPersonAttributes: [],
     });
     mockUsePatient.mockReturnValue({
       error: null,
@@ -321,13 +352,18 @@ describe('Visit form', () => {
   });
 
   it('renders the Start Visit form with all the relevant fields and values', async () => {
+    const user = userEvent.setup();
+
     renderVisitForm();
 
     expect(screen.getByRole('textbox', { name: /Date/i })).toBeInTheDocument();
     expect(screen.getByRole('textbox', { name: /Time/i })).toBeInTheDocument();
     expect(screen.getByRole('combobox', { name: /Time/i })).toBeInTheDocument();
     expect(screen.getByRole('combobox', { name: /Select a location/i })).toBeInTheDocument();
-    expect(screen.getByRole('radio', { name: /HIV Return Visit/ })).toBeInTheDocument();
+    const visitTypeCategory = screen.getByRole('combobox', { name: /categoría de consulta/i });
+    expect(visitTypeCategory).toBeInTheDocument();
+    await user.click(visitTypeCategory);
+    expect(await screen.findByText(/HIV Return Visit/i)).toBeInTheDocument();
     expect(screen.getByRole('option', { name: /AM/i })).toBeInTheDocument();
     expect(screen.getByRole('option', { name: /PM/i })).toBeInTheDocument();
     expect(screen.getByText(/Punctuality/i)).toBeInTheDocument();
@@ -336,11 +372,19 @@ describe('Visit form', () => {
     expect(screen.getByRole('button', { name: /Discard/i })).toBeInTheDocument();
 
     // Testing the location picker
-    const combobox = screen.getByRole('combobox', { name: /Select a location/i });
+    const combobox = screen.getByRole('combobox', {
+      name: /Select a location/i,
+    });
     expect(screen.getByText(/Outpatient Visit/i)).toBeInTheDocument();
     expect(combobox).toHaveDisplayValue('Mosoriot');
     expect(screen.getByRole('option', { name: /Mosoriot/i })).toBeInTheDocument();
     expect(screen.getByRole('option', { name: /Inpatient Ward/i })).toBeInTheDocument();
+  });
+
+  it('does not render the extra visit attributes slot by default', () => {
+    renderVisitForm();
+
+    expect(hasRenderedExtensionSlot('extra-visit-attribute-slot')).toBe(false);
   });
 
   it('does not render visit type combo box if atFacilityVisitType set', async () => {
@@ -355,7 +399,7 @@ describe('Visit form', () => {
       mutateEmrConfiguration: null,
     });
     renderVisitForm();
-    expect(screen.queryByRole('radio', { name: /HIV Return Visit/ })).not.toBeInTheDocument();
+    expect(screen.queryByRole('combobox', { name: /categoría de consulta/i })).not.toBeInTheDocument();
   });
 
   it('renders a validation error when required fields are not filled', async () => {
@@ -364,18 +408,19 @@ describe('Visit form', () => {
     renderVisitForm();
 
     const saveButton = screen.getByRole('button', { name: /start visit/i });
-    const locationPicker = screen.getByRole('combobox', { name: /select a location/i });
+    const locationPicker = screen.getByRole('combobox', {
+      name: /select a location/i,
+    });
     await user.selectOptions(locationPicker, 'Inpatient Ward');
     await user.click(saveButton);
 
     expect(screen.getByText(/missing visit type/i)).toBeInTheDocument();
     expect(screen.getByText(/please select a visit type/i)).toBeInTheDocument();
 
-    await user.click(screen.getByLabelText(/Outpatient visit/i));
+    await selectVisitType(user);
   });
 
-  // TODO: Figure out why this test is failing
-  xit('displays an error message when the visit start time is in the future', async () => {
+  it('displays an error message when the visit start time is in the future', async () => {
     const user = userEvent.setup();
 
     renderVisitForm();
@@ -383,16 +428,19 @@ describe('Visit form', () => {
     const dateInput = screen.getByRole('textbox', { name: /date/i });
     const timeInput = screen.getByRole('textbox', { name: /time/i });
     const amPmSelect = screen.getByRole('combobox', { name: /time format/i });
+    const locationPicker = screen.getByRole('combobox', {
+      name: /select a location/i,
+    });
     const futureTime = dayjs().add(1, 'hour');
 
-    await user.clear(dateInput);
-    await user.type(dateInput, futureTime.format('DD/MM/YYYY'));
-    await user.clear(timeInput);
-    await user.type(timeInput, futureTime.format('hh:mm'));
+    fireEvent.change(dateInput, { target: { value: futureTime.format('DD/MM/YYYY') } });
+    fireEvent.change(timeInput, { target: { value: futureTime.format('hh:mm') } });
     await user.selectOptions(amPmSelect, futureTime.format('A'));
-    await user.tab();
+    await user.selectOptions(locationPicker, 'Inpatient Ward');
+    await selectVisitType(user);
+    await user.click(screen.getByRole('button', { name: /start visit/i }));
 
-    expect(screen.getByText(/start time cannot be in the future/i)).toBeInTheDocument();
+    expect(await screen.findByText(/start time cannot be in the future/i)).toBeInTheDocument();
   });
 
   it('starts a new visit upon successful submission of the form', async () => {
@@ -403,10 +451,12 @@ describe('Visit form', () => {
     const saveButton = screen.getByRole('button', { name: /Start visit/i });
 
     // Set visit type
-    await user.click(screen.getByLabelText(/Outpatient visit/i));
+    await selectVisitType(user);
 
     // Set location
-    const locationPicker = screen.getByRole('combobox', { name: /Select a location/i });
+    const locationPicker = screen.getByRole('combobox', {
+      name: /Select a location/i,
+    });
     await user.selectOptions(locationPicker, 'Inpatient Ward');
 
     await user.click(saveButton);
@@ -438,16 +488,22 @@ describe('Visit form', () => {
     const saveButton = screen.getByRole('button', { name: /Start visit/i });
 
     // Set visit type
-    await user.click(screen.getByLabelText(/Outpatient visit/i));
+    await selectVisitType(user);
 
     // Set location
-    const locationPicker = screen.getByRole('combobox', { name: /Select a location/i });
+    const locationPicker = screen.getByRole('combobox', {
+      name: /Select a location/i,
+    });
     await user.selectOptions(locationPicker, 'Inpatient Ward');
 
-    const punctualityPicker = screen.getByRole('combobox', { name: 'Punctuality (optional)' });
+    const punctualityPicker = screen.getByRole('combobox', {
+      name: 'Punctuality (optional)',
+    });
     await user.selectOptions(punctualityPicker, 'On time');
 
-    const insuranceNumberInput = screen.getByRole('textbox', { name: 'Insurance Policy Number (optional)' });
+    const insuranceNumberInput = screen.getByRole('textbox', {
+      name: 'Insurance Policy Number (optional)',
+    });
     await user.clear(insuranceNumberInput);
     await user.type(insuranceNumberInput, '183299');
 
@@ -493,9 +549,97 @@ describe('Visit form', () => {
     });
   });
 
+  it('submits extra visit attributes when the extra visit attributes slot is enabled', async () => {
+    const user = userEvent.setup();
+    const extraVisitAttribute = {
+      attributeType: 'payment-details-attribute-type-uuid',
+      value: 'paying-concept-uuid',
+    };
+
+    mockUseConfig.mockReturnValue({
+      ...getDefaultsFromConfigSchema(esmPatientChartSchema),
+      showExtraVisitAttributesSlot: true,
+      visitAttributeTypes: [],
+      defaultVisitAttributesFromPersonAttributes: [],
+    });
+    mockExtensionSlot.mockImplementation(({ children, name, state }): React.JSX.Element => {
+      if (name === 'extra-visit-attribute-slot') {
+        const extraVisitSlotState = state as {
+          setExtraVisitInfo: (state: { attributes: Array<{ attributeType: string; value: string }> }) => void;
+        };
+
+        return (
+          <ExtraVisitSlotTestDouble
+            setExtraVisitInfo={extraVisitSlotState.setExtraVisitInfo}
+            attributes={[extraVisitAttribute]}
+          />
+        );
+      }
+
+      if (typeof children === 'function') {
+        return (
+          <>
+            {children({
+              id: 'test-extension-id',
+              meta: {},
+              moduleName: '@openmrs/esm-patient-chart-app',
+              name: 'test-extension-name',
+              config: {},
+            } as AssignedExtension)}
+          </>
+        );
+      }
+
+      return <>{children ?? null}</>;
+    });
+
+    renderVisitForm();
+    await screen.findByTestId('extra-visit-attribute-slot');
+
+    await selectVisitType(user);
+
+    const locationPicker = screen.getByRole('combobox', {
+      name: /Select a location/i,
+    });
+    await user.selectOptions(locationPicker, 'Inpatient Ward');
+
+    await user.click(screen.getByRole('button', { name: /Start visit/i }));
+
+    expect(mockSaveVisit).toHaveBeenCalledWith(
+      expect.objectContaining({
+        attributes: expect.arrayContaining([extraVisitAttribute]),
+        location: mockLocations.data.results[1].uuid,
+        patient: mockPatient.id,
+        visitType: 'some-uuid1',
+      }),
+      expect.any(Object),
+    );
+  });
+
   it('prefills visit attributes from matching patient person attributes', async () => {
     const user = userEvent.setup();
 
+    mockUseConfig.mockReturnValue({
+      ...getDefaultsFromConfigSchema(esmPatientChartSchema),
+      visitAttributeTypes: [
+        {
+          uuid: visitAttributes.punctuality.uuid,
+          required: false,
+          displayInThePatientBanner: true,
+        },
+        {
+          uuid: visitAttributes.insurancePolicyNumber.uuid,
+          required: false,
+          displayInThePatientBanner: true,
+        },
+      ],
+      defaultVisitAttributesFromPersonAttributes: [
+        {
+          personAttributeTypeUuid: '374b130f-7457-476f-87b1-f182aa77c434',
+          visitAttributeTypeUuid: visitAttributes.insurancePolicyNumber.uuid,
+        },
+      ],
+    });
     mockUsePersonAttributesForVisitDefaults.mockReturnValue({
       attributes: [
         {
@@ -513,20 +657,27 @@ describe('Visit form', () => {
 
     renderVisitForm();
 
-    const insuranceNumberInput = screen.getByRole('textbox', { name: 'Insurance Policy Number (optional)' });
-    expect(insuranceNumberInput).toHaveValue('SIS-183299');
+    const insuranceNumberInput = screen.getByRole('textbox', {
+      name: 'Insurance Policy Number',
+    });
+    await waitFor(() => expect(insuranceNumberInput).toHaveValue('SIS-183299'));
+    expect(insuranceNumberInput).toHaveAttribute('readonly');
 
-    await user.click(screen.getByLabelText(/Outpatient visit/i));
+    await selectVisitType(user);
 
-    const locationPicker = screen.getByRole('combobox', { name: /Select a location/i });
-    await user.selectOptions(locationPicker, 'Inpatient Ward');
+    const locationPicker = screen.getByRole('combobox', {
+      name: /Select a location/i,
+    });
+    fireEvent.change(locationPicker, { target: { value: mockLocations.data.results[1].uuid } });
 
-    await user.click(screen.getByRole('button', { name: /Start visit/i }));
+    fireEvent.click(screen.getByRole('button', { name: /Start visit/i }));
 
-    expect(mockCreateVisitAttribute).toHaveBeenCalledWith(
-      visitUuid,
-      visitAttributes.insurancePolicyNumber.uuid,
-      'SIS-183299',
+    await waitFor(() =>
+      expect(mockCreateVisitAttribute).toHaveBeenCalledWith(
+        visitUuid,
+        visitAttributes.insurancePolicyNumber.uuid,
+        'SIS-183299',
+      ),
     );
   });
 
@@ -538,16 +689,22 @@ describe('Visit form', () => {
     const saveButton = screen.getByRole('button', { name: /Update visit/i });
 
     // Set visit type
-    await user.click(screen.getByLabelText(/Outpatient visit/i));
+    await selectVisitType(user);
 
     // Set location
-    const locationPicker = screen.getByRole('combobox', { name: /Select a location/i });
+    const locationPicker = screen.getByRole('combobox', {
+      name: /Select a location/i,
+    });
     await user.selectOptions(locationPicker, 'Inpatient Ward');
 
-    const punctualityPicker = screen.getByRole('combobox', { name: 'Punctuality (optional)' });
+    const punctualityPicker = screen.getByRole('combobox', {
+      name: 'Punctuality (optional)',
+    });
     await user.selectOptions(punctualityPicker, 'Late');
 
-    const insuranceNumberInput = screen.getByRole('textbox', { name: 'Insurance Policy Number (optional)' });
+    const insuranceNumberInput = screen.getByRole('textbox', {
+      name: 'Insurance Policy Number (optional)',
+    });
     await user.clear(insuranceNumberInput);
     await user.type(insuranceNumberInput, '1873290');
 
@@ -597,16 +754,22 @@ describe('Visit form', () => {
     const saveButton = screen.getByRole('button', { name: /Update visit/i });
 
     // Set visit type
-    await user.click(screen.getByLabelText(/Outpatient visit/i));
+    await selectVisitType(user);
 
     // Set location
-    const locationPicker = screen.getByRole('combobox', { name: /Select a location/i });
+    const locationPicker = screen.getByRole('combobox', {
+      name: /Select a location/i,
+    });
     await user.selectOptions(locationPicker, 'Inpatient Ward');
 
-    const punctualityPicker = screen.getByRole('combobox', { name: 'Punctuality (optional)' });
+    const punctualityPicker = screen.getByRole('combobox', {
+      name: 'Punctuality (optional)',
+    });
     await user.selectOptions(punctualityPicker, 'Select an option');
 
-    const insuranceNumberInput = screen.getByRole('textbox', { name: 'Insurance Policy Number (optional)' });
+    const insuranceNumberInput = screen.getByRole('textbox', {
+      name: 'Insurance Policy Number (optional)',
+    });
     await user.clear(insuranceNumberInput);
 
     mockUpdateVisit.mockResolvedValue({
@@ -647,14 +810,19 @@ describe('Visit form', () => {
   it('renders an error message if there was a problem starting a new visit', async () => {
     const user = userEvent.setup();
 
-    mockSaveVisit.mockRejectedValueOnce({ status: 500, statusText: 'Internal server error' });
+    mockSaveVisit.mockRejectedValueOnce({
+      status: 500,
+      statusText: 'Internal server error',
+    });
 
     renderVisitForm();
 
-    await user.click(screen.getByLabelText(/Outpatient visit/i));
+    await selectVisitType(user);
 
     const saveButton = screen.getByRole('button', { name: /Start Visit/i });
-    const locationPicker = screen.getByRole('combobox', { name: /Select a location/i });
+    const locationPicker = screen.getByRole('combobox', {
+      name: /Select a location/i,
+    });
     await user.selectOptions(locationPicker, 'Inpatient Ward');
 
     await user.click(saveButton);
@@ -674,20 +842,29 @@ describe('Visit form', () => {
   it('renders an error message if there was a problem updating visit attributes after starting a new visit', async () => {
     const user = userEvent.setup();
 
-    mockCreateVisitAttribute.mockRejectedValue({ status: 500, statusText: 'Internal server error' });
+    mockCreateVisitAttribute.mockRejectedValue({
+      status: 500,
+      statusText: 'Internal server error',
+    });
 
     renderVisitForm();
 
-    await user.click(screen.getByLabelText(/Outpatient visit/i));
+    await selectVisitType(user);
 
     const saveButton = screen.getByRole('button', { name: /Start Visit/i });
-    const locationPicker = screen.getByRole('combobox', { name: /Select a location/i });
+    const locationPicker = screen.getByRole('combobox', {
+      name: /Select a location/i,
+    });
     await user.selectOptions(locationPicker, 'Inpatient Ward');
 
-    const punctualityPicker = screen.getByRole('combobox', { name: 'Punctuality (optional)' });
+    const punctualityPicker = screen.getByRole('combobox', {
+      name: 'Punctuality (optional)',
+    });
     await user.selectOptions(punctualityPicker, 'On time');
 
-    const insuranceNumberInput = screen.getByRole('textbox', { name: 'Insurance Policy Number (optional)' });
+    const insuranceNumberInput = screen.getByRole('textbox', {
+      name: 'Insurance Policy Number (optional)',
+    });
     await user.clear(insuranceNumberInput);
     await user.type(insuranceNumberInput, '183299');
 
@@ -722,7 +899,7 @@ describe('Visit form', () => {
 
     renderVisitForm();
 
-    await user.click(screen.getByLabelText(/Outpatient visit/i));
+    await selectVisitType(user);
 
     const closeButton = screen.getByRole('button', { name: /Discard/i });
 
@@ -764,10 +941,12 @@ describe('Visit form', () => {
     const saveButton = screen.getByRole('button', { name: /Start visit/i });
 
     // Set visit type
-    await user.click(screen.getByLabelText(/Outpatient visit/i));
+    await selectVisitType(user);
 
     // Set location
-    const locationPicker = screen.getByRole('combobox', { name: /Select a location/i });
+    const locationPicker = screen.getByRole('combobox', {
+      name: /Select a location/i,
+    });
     await user.selectOptions(locationPicker, 'Inpatient Ward');
     await user.click(saveButton);
 
@@ -800,6 +979,29 @@ describe('Visit form', () => {
   });
 });
 
+async function selectVisitType(user: ReturnType<typeof userEvent.setup>, visitType = 'Outpatient Visit') {
+  await user.click(screen.getByRole('combobox', { name: /categoría de consulta/i }));
+  await user.click(await screen.findByText(visitType));
+}
+
 function renderVisitForm(visitToEdit?: Visit) {
   render(React.createElement(StartVisitForm, { ...testProps, visitToEdit }));
+}
+
+function hasRenderedExtensionSlot(name: string) {
+  return mockExtensionSlot.mock.calls.some(([props]) => props.name === name);
+}
+
+function ExtraVisitSlotTestDouble({
+  attributes,
+  setExtraVisitInfo,
+}: {
+  attributes: Array<{ attributeType: string; value: string }>;
+  setExtraVisitInfo: (state: { attributes: Array<{ attributeType: string; value: string }> }) => void;
+}) {
+  React.useEffect(() => {
+    setExtraVisitInfo({ attributes });
+  }, [attributes, setExtraVisitInfo]);
+
+  return <div data-testid="extra-visit-attribute-slot" />;
 }

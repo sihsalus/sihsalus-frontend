@@ -34,22 +34,22 @@ const concepts: Array<Concept> = [
     mappings: [{ display: 'CIEL:1656', conceptMapType: { display: 'SAME-AS' } }],
   },
 ];
-const mockUseConceptLookup = jest.mocked(useConceptLookup);
-jest.mock('@hooks/useConceptLookup', () => ({
-  ...jest.requireActual('@hooks/useConceptLookup'),
-  useConceptLookup: jest.fn(),
+const mockUseConceptLookup = vi.mocked(useConceptLookup);
+vi.mock('@hooks/useConceptLookup', async () => ({
+  ...(await vi.importActual('@hooks/useConceptLookup')),
+  useConceptLookup: vi.fn(),
 }));
-const mockUseConceptId = jest.mocked(useConceptId);
-jest.mock('@hooks/useConceptId', () => ({
-  ...jest.requireActual('@hooks/useConceptId'),
-  useConceptId: jest.fn(),
+const mockUseConceptId = vi.mocked(useConceptId);
+vi.mock('@hooks/useConceptId', async () => ({
+  ...(await vi.importActual('@hooks/useConceptId')),
+  useConceptId: vi.fn(),
 }));
-const onSelectConcept = jest.fn();
-const mockSetFormField = jest.fn();
-const setConcept = jest.fn();
-const setIsConceptValid = jest.fn();
-jest.mock('../../../form-field-context', () => ({
-  ...jest.requireActual('../../../form-field-context'),
+const onSelectConcept = vi.fn();
+const mockSetFormField = vi.fn();
+const setConcept = vi.fn();
+const setIsConceptValid = vi.fn();
+vi.mock('../../../form-field-context', async () => ({
+  ...(await vi.importActual('../../../form-field-context')),
   useFormField: () => ({ formField, setFormField: mockSetFormField, setConcept, setIsConceptValid }),
 }));
 
@@ -83,9 +83,7 @@ describe('Concept search component', () => {
     await user.click(searchInput);
     await user.type(searchInput, 'Concept 1');
 
-    const conceptMenuItem = await screen.findByRole('menuitem', {
-      name: /concept 1/i,
-    });
+    const conceptMenuItem = await screen.findByText(/concept 1/i);
     expect(conceptMenuItem).toBeInTheDocument();
     expect(searchInput).toHaveDisplayValue(/concept 1/i);
   });

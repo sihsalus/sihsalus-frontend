@@ -63,10 +63,14 @@ import {
 import styles from './appointments-form.scss';
 
 function getConflictErrorMessage(
-  responseData: Record<string, unknown>,
+  responseData: Record<string, unknown> | null | undefined,
   context: string,
   t: (key: string, defaultValue: string) => string,
 ): string | null {
+  if (!responseData) {
+    return null;
+  }
+
   const defaultMessage = t('appointmentConflict', 'Appointment conflict');
   if (Object.hasOwn(responseData, 'SERVICE_UNAVAILABLE')) {
     return t('serviceUnavailable', 'Appointment time is outside of service hours');
@@ -87,9 +91,28 @@ interface AppointmentsFormProps {
   workspaceTitle?: string;
 }
 
+// MINSA appointment services are configured without a default `durationMins`,
+// so new appointments fall back to this duration until the user overrides it.
+const DEFAULT_APPOINTMENT_DURATION_MINUTES = 30;
+
 const time12HourFormatRegexPattern = '^(1[0-2]|0?[1-9]):[0-5][0-9]$';
 
 const isValidTime = (timeStr: string) => timeStr.match(new RegExp(time12HourFormatRegexPattern));
+
+const isSuccessfulAppointmentResponse = (status?: number) => status >= 200 && status < 300 && status !== 204;
+
+const getErrorMessage = (error: unknown, fallback: string) => {
+  if (error instanceof Error) {
+    return error.message;
+  }
+
+  if (typeof error === 'object' && error && 'message' in error) {
+    const message = (error as { message?: unknown }).message;
+    return typeof message === 'string' ? message : fallback;
+  }
+
+  return fallback;
+};
 
 interface AppointmentFormDefaults {
   defaultTimeFormat: 'AM' | 'PM';
@@ -132,7 +155,7 @@ function resolveAppointmentFormDefaults(
     defaultDuration:
       appointment?.startDateTime && appointment?.endDateTime
         ? dayjs(appointment.endDateTime).diff(dayjs(appointment.startDateTime), 'minutes')
-        : undefined,
+        : DEFAULT_APPOINTMENT_DURATION_MINUTES,
     defaultRecurringPatternType: (recurringPattern?.type || 'DAY') as 'DAY' | 'WEEK',
     defaultRecurringPatternPeriod: recurringPattern?.period || 1,
     defaultRecurringPatternDaysOfWeek: recurringPattern?.daysOfWeek || [],
@@ -303,7 +326,7 @@ const AppointmentsForm: React.FC<
       recurringPatternPeriod: defaultRecurringPatternPeriod,
       recurringPatternDaysOfWeek: defaultRecurringPatternDaysOfWeek,
       startTime: defaultAppointmentStartTime,
-      duration: defaultDuration,
+      duration: defaultDuration ?? null,
       timeFormat: defaultTimeFormat,
       appointmentDateTime: {
         startDate: defaultStartDate,
@@ -377,7 +400,23 @@ const AppointmentsForm: React.FC<
     const appointmentPayload = constructAppointmentPayload(data);
 
     // check if Duplicate Response Occurs
-    const response: FetchResponse = await checkAppointmentConflict(appointmentPayload);
+    let response: FetchResponse;
+    try {
+      response = await checkAppointmentConflict(appointmentPayload);
+    } catch (error) {
+      setIsSubmitting(false);
+      showSnackbar({
+        title:
+          context === 'editing'
+            ? t('appointmentEditError', 'Error editing appointment')
+            : t('appointmentFormError', 'Error scheduling appointment'),
+        kind: 'error',
+        isLowContrast: false,
+        subtitle: getErrorMessage(error, t('appointmentConflictCheckError', 'Unable to check appointment conflicts')),
+      });
+      return;
+    }
+
     const errorMessage = getConflictErrorMessage(response?.data, context, t);
 
     if (response.status === 200 && errorMessage) {
@@ -403,7 +442,7 @@ const AppointmentsForm: React.FC<
       : saveAppointment(appointmentPayload, abortController)
     ).then(
       ({ status }) => {
-        if (status === 200) {
+        if (isSuccessfulAppointmentResponse(status)) {
           setIsSubmitting(false);
           setIsSuccessful(true);
           mutateAppointments();
@@ -439,7 +478,7 @@ const AppointmentsForm: React.FC<
               : t('appointmentFormError', 'Error scheduling appointment'),
           kind: 'error',
           isLowContrast: false,
-          subtitle: error?.message,
+          subtitle: getErrorMessage(error, t('unknownError', 'Unknown error')),
         });
       },
     );
@@ -461,18 +500,21 @@ const AppointmentsForm: React.FC<
     } = data;
 
     const serviceUuid = services?.find((service) => service.name === selectedService)?.uuid;
-    const hoursAndMinutes = startTime.split(':').map((item) => parseInt(item, 10));
-    const hours = (hoursAndMinutes[0] % 12) + (timeFormat === 'PM' ? 12 : 0);
-    const minutes = hoursAndMinutes[1];
-    const startDatetime = startDate.setHours(hours, minutes);
-    const endDatetime = dayjs(startDatetime).add(duration, 'minutes').toDate();
+    const [hourValue, minuteValue] = startTime.split(':').map((item) => parseInt(item, 10));
+    const hours = (hourValue % 12) + (timeFormat === 'PM' ? 12 : 0);
+    const startDateTime = isAllDayAppointment
+      ? dayjs(startDate).startOf('day')
+      : dayjs(startDate).hour(hours).minute(minuteValue).second(0).millisecond(0);
+    const endDateTime = isAllDayAppointment
+      ? dayjs(startDate).endOf('day')
+      : startDateTime.add(duration ?? 0, 'minutes');
 
     return {
       appointmentKind: selectedAppointmentType,
       status: appointmentStatus,
       serviceUuid: serviceUuid,
-      startDateTime: dayjs(startDatetime).format(),
-      endDateTime: dayjs(endDatetime).format(),
+      startDateTime: startDateTime.format(),
+      endDateTime: endDateTime.format(),
       locationUuid: location,
       providers: [{ uuid: provider }],
       patientUuid: patientUuid,
@@ -566,10 +608,10 @@ const AppointmentsForm: React.FC<
                     onBlur={onBlur}
                     onChange={(event) => {
                       if (context === 'creating') {
-                        setValue(
-                          'duration',
-                          services?.find((service) => service.name === event.target.value)?.durationMins,
-                        );
+                        const selectedServiceDuration = services?.find(
+                          (service) => service.name === event.target.value,
+                        )?.durationMins;
+                        setValue('duration', selectedServiceDuration ?? DEFAULT_APPOINTMENT_DURATION_MINUTES);
                       } else if (context === 'editing') {
                         const previousServiceDuration = services?.find(
                           (service) => service.name === getValues('selectedService'),
@@ -865,7 +907,7 @@ const AppointmentsForm: React.FC<
                 render={({ field: { onChange, value, onBlur, ref } }) => (
                   <Select
                     id="provider"
-                    invalidText="Required"
+                    invalidText={t('required', 'Required')}
                     labelText={t('selectProvider', 'Select a provider')}
                     onChange={onChange}
                     onBlur={onBlur}
@@ -1001,7 +1043,7 @@ function TimeAndDuration({ t, watch: _watch, control, services: _services, error
               }
               ref={ref}
               size="md"
-              value={value}
+              value={value ?? ''}
             />
           )}
         />

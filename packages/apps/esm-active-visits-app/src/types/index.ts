@@ -31,7 +31,7 @@ export interface Identifier {
 
 export interface Encounter {
   uuid: string;
-  encounterDateTime: string;
+  encounterDatetime: string;
   encounterProviders: Array<{
     uuid: string;
     display: string;
@@ -171,6 +171,7 @@ export interface ActiveVisit {
   location: string;
   name: string;
   patientUuid: string;
+  visitStartDatetime?: string;
   visitStartTime: string;
   visitType: string;
   visitUuid: string;

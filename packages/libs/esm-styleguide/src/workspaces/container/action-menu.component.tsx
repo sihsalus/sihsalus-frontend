@@ -2,7 +2,7 @@
 
 import { ComponentContext, ExtensionSlot, isDesktop, useLayoutType } from '@openmrs/esm-react-utils';
 import classNames from 'classnames';
-import React, { useContext, useEffect, useRef, useState } from 'react';
+import { useContext, useEffect, useRef, useState } from 'react';
 import styles from './action-menu.module.scss';
 
 export interface ActionMenuProps {
@@ -20,15 +20,15 @@ export function ActionMenu({ isWithinWorkspace, name, actionMenuProps = {} }: Ac
   useEffect(() => {
     const handleKeyboardVisibilityChange = () => {
       setKeyboardVisible(!isDesktop(layout) && initialHeight.current > window.innerHeight);
-      if (initialHeight.current != window.innerHeight) {
+      if (initialHeight.current !== window.innerHeight) {
         initialHeight.current = window.innerHeight;
       }
     };
     window.addEventListener('resize', handleKeyboardVisibilityChange);
     return () => window.removeEventListener('resize', handleKeyboardVisibilityChange);
-  }, [initialHeight]);
+  }, [layout]);
 
-  const extensionSlotName = `action-menu-${name && name != 'default' ? name : featureName}-items-slot`;
+  const extensionSlotName = `action-menu-${name && name !== 'default' ? name : featureName}-items-slot`;
 
   return (
     <aside

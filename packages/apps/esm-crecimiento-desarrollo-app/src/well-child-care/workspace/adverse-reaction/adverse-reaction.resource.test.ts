@@ -4,12 +4,13 @@ import type { ConfigObject } from '../../../config-schema';
 
 import { saveAdverseReaction } from './adverse-reaction.resource';
 
-jest.mock('@openmrs/esm-framework', () => ({
-  openmrsFetch: jest.fn(),
+vi.mock('@openmrs/esm-framework', async () => ({
+  ...(await vi.importActual('@openmrs/esm-framework')),
+  openmrsFetch: vi.fn(),
   restBaseUrl: '/ws/rest/v1',
 }));
 
-const mockOpenmrsFetch = jest.mocked(openmrsFetch);
+const mockOpenmrsFetch = vi.mocked(openmrsFetch);
 
 const config = {
   encounterTypes: {

@@ -4,23 +4,24 @@ import type { SWRResponse } from 'swr';
 
 import useFormSchema from './useFormSchema';
 
-jest.mock('@openmrs/esm-framework', () => ({
-  openmrsFetch: jest.fn(),
+vi.mock('@openmrs/esm-framework', async () => ({
+  ...(await vi.importActual('@openmrs/esm-framework')),
+  openmrsFetch: vi.fn(),
   restBaseUrl: '/ws/rest/v1',
 }));
 
-jest.mock('swr', () => {
-  const actual = jest.requireActual('swr');
+vi.mock('swr', async () => {
+  const actual = await vi.importActual('swr');
   return {
     ...actual,
     __esModule: true,
-    default: jest.fn(),
+    default: vi.fn(),
   };
 });
 
 import useSWR from 'swr';
 
-const mockUseSWR = jest.mocked(useSWR);
+const mockUseSWR = vi.mocked(useSWR);
 type FormSchemaApiResponse = { data: FormSchema };
 
 function createSwrResponse<T>(overrides: Partial<SWRResponse<T, Error>>): SWRResponse<T, Error> {
@@ -29,14 +30,14 @@ function createSwrResponse<T>(overrides: Partial<SWRResponse<T, Error>>): SWRRes
     error: undefined,
     isLoading: false,
     isValidating: false,
-    mutate: jest.fn(),
+    mutate: vi.fn(),
     ...overrides,
   } as SWRResponse<T, Error>;
 }
 
 describe('useFormSchema', () => {
   beforeEach(() => {
-    jest.clearAllMocks();
+    vi.clearAllMocks();
   });
 
   it('returns loading state initially', () => {

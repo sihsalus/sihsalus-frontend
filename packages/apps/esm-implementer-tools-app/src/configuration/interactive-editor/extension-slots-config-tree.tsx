@@ -2,7 +2,7 @@
 import type { ExtensionSlotConfigureValueObject } from '@openmrs/esm-framework';
 import { useAssignedExtensions } from '@openmrs/esm-framework';
 import isEqual from 'lodash-es/isEqual';
-import React, { useEffect, useRef } from 'react';
+import { useEffect, useRef } from 'react';
 import { useStore } from 'zustand';
 
 import { implementerToolsStore } from '../../store';
@@ -65,8 +65,7 @@ function ExtensionSlotConfigTree({ config, path }: ExtensionSlotConfigProps) {
     if (shouldFocus) {
       itemRef.current?.scrollIntoView();
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [uiSelectedPath]);
+  }, [uiSelectedPath, path]);
 
   function setActiveExtensionSlotOnMouseEnter(moduleName, slotName) {
     if (!implementerToolsStore.getState().configPathBeingEdited) {

@@ -1,7 +1,7 @@
 import { Layer, OverflowMenu, OverflowMenuItem } from '@carbon/react';
 import { showModal, useLayoutType } from '@openmrs/esm-framework';
 import { launchPatientWorkspace } from '@openmrs/esm-patient-common-lib';
-import React, { useCallback } from 'react';
+import { useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
 import { type Condition } from './conditions.resource';
 import styles from './conditions-action-menu.scss';
@@ -18,7 +18,7 @@ export const ConditionsActionMenu = ({ condition, patientUuid }: conditionsActio
   const launchEditConditionsForm = useCallback(
     () =>
       launchPatientWorkspace('conditions-form-workspace', {
-        workspaceTitle: t('editCondition', 'Edit a Condition'),
+        workspaceTitle: t('editAntecedent', 'Edit antecedent'),
         condition,
         formContext: 'editing',
       }),
@@ -35,7 +35,12 @@ export const ConditionsActionMenu = ({ condition, patientUuid }: conditionsActio
 
   return (
     <Layer className={styles.layer}>
-      <OverflowMenu aria-label="Edit or delete condition" align="left" size={isTablet ? 'lg' : 'sm'} flipped>
+      <OverflowMenu
+        aria-label={t('editOrDeleteAntecedent', 'Edit or delete antecedent')}
+        align="left"
+        size={isTablet ? 'lg' : 'sm'}
+        flipped
+      >
         <OverflowMenuItem
           className={styles.menuItem}
           id="editCondition"

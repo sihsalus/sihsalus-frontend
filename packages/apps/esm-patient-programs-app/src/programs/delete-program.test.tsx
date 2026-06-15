@@ -1,34 +1,33 @@
 import { type FetchResponse, showSnackbar } from '@openmrs/esm-framework';
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import React from 'react';
 import { mockPatient } from 'test-utils';
 import DeleteProgramModal from './delete-program.modal';
-import { deleteProgramEnrollment, useEnrollments } from './programs.resource';
+import { mutatePatientProgramEnrollments } from './program-enrollment-cache';
+import { deleteProgramEnrollment } from './programs.resource';
 
-jest.mock('./programs.resource', () => ({
-  deleteProgramEnrollment: jest.fn(),
-  useEnrollments: jest.fn(),
+vi.mock('./programs.resource', () => ({
+  deleteProgramEnrollment: vi.fn(),
 }));
 
-const mockDeleteProgramEnrollment = jest.mocked(deleteProgramEnrollment);
-const mockShowSnackbar = jest.mocked(showSnackbar);
-const mockUseEnrollments = jest.mocked(useEnrollments);
-const mockMutateEnrollments = jest.fn();
+vi.mock('./program-enrollment-cache', () => ({
+  mutatePatientProgramEnrollments: vi.fn(),
+}));
 
-mockUseEnrollments.mockImplementation(
-  () =>
-    ({
-      mutateEnrollments: mockMutateEnrollments,
-    }) as unknown as ReturnType<typeof useEnrollments>,
-);
+const mockDeleteProgramEnrollment = vi.mocked(deleteProgramEnrollment);
+const mockMutatePatientProgramEnrollments = vi.mocked(mutatePatientProgramEnrollments);
+const mockShowSnackbar = vi.mocked(showSnackbar);
 
 const testProps = {
   programEnrollmentId: '123',
   patientUuid: mockPatient.id,
 };
 
-const closeDeleteModalMock = jest.fn();
+const closeDeleteModalMock = vi.fn();
+
+beforeEach(() => {
+  vi.clearAllMocks();
+});
 
 const renderDeleteProgramModal = () => {
   return render(
@@ -70,6 +69,7 @@ describe('DeleteProgramModal', () => {
 
     expect(mockDeleteProgramEnrollment).toHaveBeenCalledTimes(1);
     expect(mockDeleteProgramEnrollment).toHaveBeenCalledWith(testProps.programEnrollmentId);
+    expect(mockMutatePatientProgramEnrollments).toHaveBeenCalledWith(mockPatient.id);
     expect(mockShowSnackbar).toHaveBeenCalledWith({
       isLowContrast: true,
       kind: 'success',
@@ -87,7 +87,7 @@ describe('DeleteProgramModal', () => {
 
     expect(mockDeleteProgramEnrollment).toHaveBeenCalledTimes(1);
     expect(mockDeleteProgramEnrollment).toHaveBeenCalledWith(testProps.programEnrollmentId);
-    expect(mockMutateEnrollments).not.toHaveBeenCalled();
+    expect(mockMutatePatientProgramEnrollments).not.toHaveBeenCalled();
     expect(mockShowSnackbar).toHaveBeenCalledWith({
       isLowContrast: false,
       kind: 'error',

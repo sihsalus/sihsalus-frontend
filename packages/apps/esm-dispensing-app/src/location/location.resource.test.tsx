@@ -4,8 +4,8 @@ import useSWR from 'swr';
 import { type PharmacyConfig } from '../config-schema';
 import { useLocations } from './location.resource';
 
-jest.mocked(openmrsFetch);
-jest.mock('swr');
+vi.mocked(openmrsFetch);
+vi.mock('swr');
 
 const pharmacyConfig: PharmacyConfig = {
   appName: '',
@@ -34,6 +34,7 @@ const pharmacyConfig: PharmacyConfig = {
     },
   },
   refreshInterval: 10000,
+  serviceConceptSetUuid: '330c0ec6-0ac7-4b86-9c70-29d76f0ae20a',
   medicationRequestExpirationPeriodInDays: 0,
   valueSets: {
     reasonForPause: { uuid: '' },

@@ -15,16 +15,21 @@ describe('age-group-utils', () => {
   ];
 
   beforeEach(() => {
-    jest.useFakeTimers().setSystemTime(new Date('2025-01-15T00:00:00.000Z'));
+    vi.useFakeTimers().setSystemTime(new Date('2025-01-15T00:00:00.000Z'));
   });
 
   afterEach(() => {
-    jest.useRealTimers();
+    vi.useRealTimers();
   });
 
   it('calculates age in days and months from the current system date', () => {
     expect(calculateAgeInDays('2025-01-01T00:00:00.000Z')).toBe(14);
     expect(calculateAgeInMonths('2024-01-15T00:00:00.000Z')).toBe(12);
+  });
+
+  it('calculates age from an explicit reference date', () => {
+    expect(calculateAgeInDays('2026-02-04T00:00:00.000Z', '2026-02-07T00:00:00.000Z')).toBe(3);
+    expect(calculateAgeInMonths('2026-02-04T00:00:00.000Z', '2026-06-09T00:00:00.000Z')).toBeGreaterThan(4);
   });
 
   it('finds the matching age group from months and from birth date', () => {

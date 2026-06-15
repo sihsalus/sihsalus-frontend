@@ -1,33 +1,41 @@
-import { showModal } from '@openmrs/esm-framework';
 import { fireEvent, render, screen, within } from '@testing-library/react';
-import React, { act } from 'react';
+import { act } from 'react';
 import * as api from '../../api';
 import InstancesDetailsTable, { type InstancesDetailsTableProps } from './instances-details-table.component';
 
-jest.mock('../../api');
-jest.mock('@openmrs/esm-framework', () => ({
+type PaginationProps = {
+  pageNumber: number;
+  totalItems: number;
+};
+
+type EmptyStateProps = {
+  displayText: string;
+};
+
+vi.mock('../../api');
+vi.mock('@openmrs/esm-framework', () => ({
+  restBaseUrl: '/ws/rest/v1',
   useLayoutType: () => 'desktop',
-  usePagination: (data: any[], pagesize: number) => ({
+  usePagination: (data: unknown[], pagesize: number) => ({
     results: data.slice(0, pagesize),
-    goto: jest.fn(),
+    goto: vi.fn(),
     currentPage: 1,
   }),
-  showModal: jest.fn(() => jest.fn()),
 }));
 
-jest.mock('@openmrs/esm-patient-common-lib', () => ({
-  compare: jest.fn((a, b) => (a > b ? 1 : a < b ? -1 : 0)),
-  PatientChartPagination: ({ pageNumber, totalItems }: any) => (
+vi.mock('@openmrs/esm-patient-common-lib', () => ({
+  compare: vi.fn((a, b) => (a > b ? 1 : a < b ? -1 : 0)),
+  PatientChartPagination: ({ pageNumber, totalItems }: PaginationProps) => (
     <div data-testid="pagination">
       Page {pageNumber} of {totalItems}
     </div>
   ),
-  EmptyState: ({ displayText }: any) => <div data-testid="empty-state">{displayText}</div>,
+  EmptyState: ({ displayText }: EmptyStateProps) => <div data-testid="empty-state">{displayText}</div>,
 }));
 
-jest.mock('react-i18next', () => ({
+vi.mock('react-i18next', () => ({
   useTranslation: () => ({
-    t: (key: string, defaultValue: string) => defaultValue,
+    t: (_key: string, defaultValue: string) => defaultValue,
   }),
 }));
 
@@ -49,7 +57,7 @@ describe('InstancesDetailsTable', () => {
   };
 
   beforeAll(() => {
-    jest.spyOn(console, 'error').mockImplementation((msg, ...args) => {
+    vi.spyOn(console, 'error').mockImplementation((msg, ...args) => {
       if (msg.includes('warning') || msg.includes('ResizeObserver')) {
         return;
       }
@@ -62,9 +70,9 @@ describe('InstancesDetailsTable', () => {
   });
 
   beforeEach(() => {
-    jest.clearAllMocks();
+    vi.clearAllMocks();
 
-    (api.useStudyInstances as jest.Mock).mockReturnValue({
+    (api.useStudyInstances as vi.Mock).mockReturnValue({
       data: [
         {
           sopInstanceUID: '1.2.3',
@@ -89,14 +97,10 @@ describe('InstancesDetailsTable', () => {
     Object.defineProperty(window, 'location', {
       writable: true,
       value: {
-        set href(url: string) {
-          this._href = url;
-        },
-        get href() {
-          return this._href;
-        },
+        origin: 'http://openmrs.sihsalus.gidistest',
       },
     });
+    window.open = vi.fn();
   });
 
   it('renders table with instances and pagination', async () => {
@@ -126,7 +130,7 @@ describe('InstancesDetailsTable', () => {
     expect(screen.getByTestId('pagination')).toBeInTheDocument();
   });
 
-  it('triggers preview modal when button clicked', async () => {
+  it('opens local and Orthanc previews in new windows when buttons are clicked', async () => {
     await act(async () => {
       render(<InstancesDetailsTable {...defaultProps} />);
     });
@@ -142,11 +146,21 @@ describe('InstancesDetailsTable', () => {
       fireEvent.click(orthancBtn);
     });
 
-    expect(window.location.href).toContain('instances/inst-1/preview');
+    expect(window.open).toHaveBeenNthCalledWith(
+      1,
+      'http://openmrs.sihsalus.gidistest/imaging/previewinstance?orthancInstanceUID=inst-1&studyId=1',
+      '_blank',
+      'noopener,noreferrer',
+    );
+    expect(window.open).toHaveBeenCalledWith(
+      'http://openmrs.sihsalus.gidistest/orthanc/instances/inst-1/preview',
+      '_blank',
+      'noopener,noreferrer',
+    );
   });
 
   it('shows loading state when data is being fetched', async () => {
-    (api.useStudyInstances as jest.Mock).mockReturnValue({
+    (api.useStudyInstances as vi.Mock).mockReturnValue({
       data: [],
       error: null,
       isLoading: true,

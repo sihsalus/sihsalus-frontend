@@ -27,6 +27,7 @@ function PopupHandler() {
       .map((dependency) => `${dependency.name} ${dependency.installedVersion} -> ${dependency.requiredVersion}`),
   );
   const dependencyExamples = [...missingDependencies, ...versionMismatches].slice(0, 3).join(', ');
+  const dependencyExamplesDescription = `${t('examples', 'Examples')}: ${dependencyExamples || t('none', 'None')}`;
 
   useEffect(() => {
     // displaying actionable notification if backend modules have missing dependencies
@@ -46,13 +47,12 @@ function PopupHandler() {
               'backendConnectionError',
               'Could not connect to backend to fetch module list. Check the Implementer Tools for details.',
             )
-          : t('missingBackendDependenciesMessage', {
+          : `${t('missingBackendDependenciesMessage', {
               defaultValue:
-                '{{missingCount}} backend module(s) are missing and {{versionMismatchCount}} have incompatible versions. Check the Backend Modules tab in the Implementer Tools for details. Examples: {{examples}}',
+                '{{missingCount}} backend module(s) are missing and {{versionMismatchCount}} have incompatible versions. Check the Backend Modules tab in the Implementer Tools for details.',
               missingCount: missingDependencies.length,
               versionMismatchCount: versionMismatches.length,
-              examples: dependencyExamples || t('none', 'None'),
-            }),
+            })} ${dependencyExamplesDescription}`,
         title: backendError
           ? t('backendConnectionProblem', 'Backend Connection Problem')
           : t('modulesWithMissingDependenciesWarning', 'Some modules have unresolved backend dependencies'),
@@ -66,7 +66,7 @@ function PopupHandler() {
     backendError,
     missingDependencies.length,
     versionMismatches.length,
-    dependencyExamples,
+    dependencyExamplesDescription,
   ]);
 
   const { isOpen, isUIEditorEnabled, openTabIndex } = useStore(implementerToolsStore);

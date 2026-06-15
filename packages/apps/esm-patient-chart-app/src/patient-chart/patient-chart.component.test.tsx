@@ -2,36 +2,44 @@ import { render, waitFor } from '@testing-library/react';
 
 import PatientChart from './patient-chart.component';
 
-const mockLaunchWorkspaceGroup2 = jest.fn();
-const mockSetCurrentVisit = jest.fn();
-const mockSetLeftNav = jest.fn();
-const mockUnsetLeftNav = jest.fn();
-const mockStoreSetState = jest.fn();
-const mockMutateVisitContext = jest.fn();
-const mockCurrentVisit = {
+const mockLaunchWorkspaceGroup2 = vi.fn();
+const mockSetCurrentVisit = vi.fn();
+const mockSetLeftNav = vi.fn();
+const mockUnsetLeftNav = vi.fn();
+const mockStoreSetState = vi.fn();
+const mockMutateVisitContext = vi.fn();
+let mockIsLoadingPatient = false;
+let mockPatientUuid = 'patient-uuid';
+let mockPatient = {
+  id: 'patient-uuid',
+};
+let mockCurrentVisit: { uuid: string } | null = {
   uuid: 'active-visit-uuid',
-} as const;
+};
 
-jest.mock('@openmrs/esm-framework', () => ({
+vi.mock('@openmrs/esm-framework', async () => ({
+  ...(await vi.importActual('@openmrs/esm-framework')),
   ExtensionSlot: () => null,
-  WorkspaceContainer: () => null,
-  launchWorkspaceGroup2: (...args: Array<unknown>) => mockLaunchWorkspaceGroup2(...args),
   setCurrentVisit: (...args: Array<unknown>) => mockSetCurrentVisit(...args),
   setLeftNav: (...args: Array<unknown>) => mockSetLeftNav(...args),
   unsetLeftNav: (...args: Array<unknown>) => mockUnsetLeftNav(...args),
   usePatient: () => ({
-    isLoading: false,
-    patient: {
-      id: 'patient-uuid',
-    },
+    isLoading: mockIsLoadingPatient,
+    patient: mockPatient,
   }),
+}));
+
+vi.mock('@openmrs/esm-styleguide', () => ({
+  WorkspaceContainer: () => null,
+  launchWorkspaceGroup2: (...args: Array<unknown>) => mockLaunchWorkspaceGroup2(...args),
   useWorkspaces: () => ({
     workspaceWindowState: 'hidden',
     active: false,
   }),
 }));
 
-jest.mock('@openmrs/esm-patient-common-lib', () => ({
+vi.mock('@openmrs/esm-patient-common-lib', async () => ({
+  ...(await vi.importActual('@openmrs/esm-patient-common-lib')),
   getPatientChartStore: () => ({
     setState: mockStoreSetState,
   }),
@@ -41,20 +49,57 @@ jest.mock('@openmrs/esm-patient-common-lib', () => ({
   }),
 }));
 
-jest.mock('react-router-dom', () => ({
+vi.mock('react-router-dom', () => ({
   useParams: () => ({
-    patientUuid: 'patient-uuid',
+    patientUuid: mockPatientUuid,
     view: undefined,
   }),
 }));
 
-jest.mock('../loader/loader.component', () => () => <div>Loading</div>);
-jest.mock('../patient-chart/chart-review/chart-review.component', () => () => <div>Chart review</div>);
-jest.mock('../side-nav/side-menu.component', () => () => <div>Side menu</div>);
+vi.mock('../loader/loader.component', () => ({ default: () => <div>Loading</div> }));
+vi.mock('../patient-chart/chart-review/chart-review.component', () => ({ default: () => <div>Chart review</div> }));
 
 describe('PatientChart', () => {
   beforeEach(() => {
-    jest.clearAllMocks();
+    vi.clearAllMocks();
+    mockLaunchWorkspaceGroup2.mockResolvedValue(true);
+    mockIsLoadingPatient = false;
+    mockPatientUuid = 'patient-uuid';
+    mockPatient = {
+      id: 'patient-uuid',
+    };
+    mockCurrentVisit = {
+      uuid: 'active-visit-uuid',
+    };
+  });
+
+  // Regression test: useVisit only promotes the active visit into the visit context
+  // when the visit store already references the patient, so the chart must point the
+  // store at the patient on mount. Without this, currentVisit stays null chart-wide
+  // (e.g., "An active visit is required to record vitals and biometrics").
+  it('points the visit context store at the patient on mount and clears it on unmount', () => {
+    const { unmount } = render(<PatientChart />);
+
+    expect(mockSetCurrentVisit).toHaveBeenCalledWith('patient-uuid', null);
+
+    unmount();
+
+    expect(mockSetCurrentVisit).toHaveBeenLastCalledWith(null, null);
+  });
+
+  it('re-points the visit context store when navigating to another patient', () => {
+    const { rerender } = render(<PatientChart />);
+
+    expect(mockSetCurrentVisit).toHaveBeenLastCalledWith('patient-uuid', null);
+
+    mockPatientUuid = 'other-patient-uuid';
+    mockPatient = {
+      id: 'other-patient-uuid',
+    };
+
+    rerender(<PatientChart />);
+
+    expect(mockSetCurrentVisit).toHaveBeenLastCalledWith('other-patient-uuid', null);
   });
 
   it('launches the patient-chart workspace group with the active visit context', async () => {
@@ -76,6 +121,142 @@ describe('PatientChart', () => {
         patientUuid: 'patient-uuid',
         visitContext: mockCurrentVisit,
         mutateVisitContext: mockMutateVisitContext,
+      }),
+    );
+  });
+
+  it('relaunches the patient-chart workspace group when the visit context changes', async () => {
+    const { rerender } = render(<PatientChart />);
+
+    await waitFor(() => {
+      expect(mockLaunchWorkspaceGroup2).toHaveBeenCalledTimes(1);
+    });
+
+    mockCurrentVisit = {
+      uuid: 'updated-visit-uuid',
+    };
+
+    rerender(<PatientChart />);
+
+    await waitFor(() => {
+      expect(mockLaunchWorkspaceGroup2).toHaveBeenCalledTimes(2);
+    });
+
+    expect(mockLaunchWorkspaceGroup2).toHaveBeenLastCalledWith(
+      'patient-chart',
+      expect.objectContaining({
+        patientUuid: 'patient-uuid',
+        visitContext: mockCurrentVisit,
+        mutateVisitContext: mockMutateVisitContext,
+      }),
+    );
+    expect(mockStoreSetState).toHaveBeenCalledWith(
+      expect.objectContaining({
+        visitContext: mockCurrentVisit,
+      }),
+    );
+  });
+
+  it('does not relaunch the patient-chart workspace group when the same visit is returned with a new object reference', async () => {
+    const { rerender } = render(<PatientChart />);
+
+    await waitFor(() => {
+      expect(mockLaunchWorkspaceGroup2).toHaveBeenCalledTimes(1);
+    });
+
+    mockCurrentVisit = {
+      uuid: 'active-visit-uuid',
+    };
+
+    rerender(<PatientChart />);
+
+    await waitFor(() => {
+      expect(mockStoreSetState).toHaveBeenCalledWith(
+        expect.objectContaining({
+          visitContext: mockCurrentVisit,
+        }),
+      );
+    });
+
+    expect(mockLaunchWorkspaceGroup2).toHaveBeenCalledTimes(1);
+  });
+
+  it('relaunches the patient-chart workspace group when the patient changes and neither patient has an active visit', async () => {
+    mockCurrentVisit = null;
+    const { rerender } = render(<PatientChart />);
+
+    await waitFor(() => {
+      expect(mockLaunchWorkspaceGroup2).toHaveBeenCalledTimes(1);
+    });
+    expect(mockLaunchWorkspaceGroup2).toHaveBeenLastCalledWith(
+      'patient-chart',
+      expect.objectContaining({
+        patientUuid: 'patient-uuid',
+        visitContext: null,
+      }),
+    );
+
+    mockPatientUuid = 'other-patient-uuid';
+    mockPatient = {
+      id: 'other-patient-uuid',
+    };
+
+    rerender(<PatientChart />);
+
+    await waitFor(() => {
+      expect(mockLaunchWorkspaceGroup2).toHaveBeenCalledTimes(2);
+    });
+    expect(mockLaunchWorkspaceGroup2).toHaveBeenLastCalledWith(
+      'patient-chart',
+      expect.objectContaining({
+        patientUuid: 'other-patient-uuid',
+        visitContext: null,
+      }),
+    );
+  });
+
+  it('launches the latest visit context after a previous launch resolves', async () => {
+    let resolveFirstLaunch!: (value: boolean) => void;
+    const firstLaunch = new Promise<boolean>((resolve) => {
+      resolveFirstLaunch = resolve;
+    });
+    mockLaunchWorkspaceGroup2.mockReturnValueOnce(firstLaunch).mockResolvedValue(true);
+
+    const { rerender } = render(<PatientChart />);
+
+    await waitFor(() => {
+      expect(mockLaunchWorkspaceGroup2).toHaveBeenCalledTimes(1);
+    });
+    expect(mockLaunchWorkspaceGroup2).toHaveBeenLastCalledWith(
+      'patient-chart',
+      expect.objectContaining({
+        visitContext: mockCurrentVisit,
+      }),
+    );
+
+    mockCurrentVisit = {
+      uuid: 'latest-visit-uuid',
+    };
+    rerender(<PatientChart />);
+
+    await waitFor(() => {
+      expect(mockStoreSetState).toHaveBeenCalledWith(
+        expect.objectContaining({
+          visitContext: mockCurrentVisit,
+        }),
+      );
+    });
+    expect(mockLaunchWorkspaceGroup2).toHaveBeenCalledTimes(1);
+
+    resolveFirstLaunch(true);
+
+    await waitFor(() => {
+      expect(mockLaunchWorkspaceGroup2).toHaveBeenCalledTimes(2);
+    });
+    expect(mockLaunchWorkspaceGroup2).toHaveBeenLastCalledWith(
+      'patient-chart',
+      expect.objectContaining({
+        visitContext: mockCurrentVisit,
       }),
     );
   });

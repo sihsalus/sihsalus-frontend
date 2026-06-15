@@ -1,19 +1,13 @@
-import { Button, InlineLoading, Tile } from '@carbon/react';
-import { Privilege, reportError, User } from '@openmrs/esm-framework';
+import { Button, Tile } from '@carbon/react';
+import { reportError } from '@openmrs/esm-framework';
 import { auditLogger } from '@sihsalus/esm-audit-logger';
-import React, { Component, type ErrorInfo, type ReactNode } from 'react';
-import { checkRequirePrivilege } from './useRequirePrivilege';
+import { Component, type ErrorInfo, type ReactNode } from 'react';
 
 interface AppErrorBoundaryProps {
   readonly appName: string;
-  readonly user?: any;
   readonly children: ReactNode;
-  readonly checkAccess?: boolean;
   readonly loading?: boolean;
   readonly onError?: (error: Error, info: ErrorInfo) => void;
-  // Security Props
-  readonly privilegesRequired?: string[];
-  readonly privileges?: string[];
 }
 
 interface AppErrorBoundaryState {
@@ -41,28 +35,6 @@ export class AppErrorBoundary extends Component<AppErrorBoundaryProps, AppErrorB
   }
 
   render(): ReactNode {
-    if (this.props.checkAccess === true) {
-      const authStatus = checkRequirePrivilege(
-        this.props.user.user?.privileges ?? ([] as Privilege[]),
-        this.props.privilegesRequired ?? ([] as string[]),
-        true,
-      );
-      //console.log("Answer: ",authStatus.status);
-
-      if (authStatus.status == 'unauthorized') {
-        return (
-          <Tile>
-            <p>
-              <strong>Access restricted</strong>
-            </p>
-            <p style={{ color: '#6f6f6f', marginTop: '0.5rem' }}>
-              You do not have permission to view {this.props.appName}.
-            </p>
-          </Tile>
-        );
-      }
-    }
-
     if (this.state.error) {
       return (
         <Tile>

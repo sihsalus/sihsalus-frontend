@@ -44,7 +44,7 @@ import { globalsAsync } from './globals';
  * @param expression The expression to analyze, either as a string or pre-parsed expression.
  * @returns An array of variable names that are unbound in the expression.
  */
-export function extractVariableNames(expression: string | jsep.Expression) {
+export function extractVariableNames(expression: string | jsep.Expression): Array<string> {
   if (typeof expression !== 'string' && (typeof expression !== 'object' || !expression || !('type' in expression))) {
     throw `Unknown expression type ${expression}. Expressions must either be a string or pre-compiled string.`;
   }
@@ -55,7 +55,7 @@ export function extractVariableNames(expression: string | jsep.Expression) {
   return [...context.variables];
 }
 
-function visitExpression(expression: jsep.Expression, context: EvaluationContext) {
+function visitExpression(expression: jsep.Expression, context: EvaluationContext): unknown {
   switch (expression.type) {
     case 'UnaryExpression':
       return visitUnaryExpression(expression as jsep.UnaryExpression, context);
@@ -88,30 +88,33 @@ function visitExpression(expression: jsep.Expression, context: EvaluationContext
   }
 }
 
-function visitUnaryExpression(expression: jsep.UnaryExpression, context: EvaluationContext) {
+function visitUnaryExpression(expression: jsep.UnaryExpression, context: EvaluationContext): unknown {
   return visitExpression(expression.argument, context);
 }
 
-function visitBinaryExpression(expression: jsep.BinaryExpression, context: EvaluationContext) {
+function visitBinaryExpression(expression: jsep.BinaryExpression, context: EvaluationContext): Array<unknown> {
   const left = visitExpression(expression.left, context);
   const right = visitExpression(expression.right, context);
   return [left, right].filter(Boolean);
 }
 
-function visitConditionalExpression(expression: jsep.ConditionalExpression, context: EvaluationContext) {
+function visitConditionalExpression(
+  expression: jsep.ConditionalExpression,
+  context: EvaluationContext,
+): Array<unknown> {
   const consequent = visitExpression(expression.consequent, context);
   const test = visitExpression(expression.test, context);
   const alternate = visitExpression(expression.alternate, context);
   return [consequent, test, alternate].filter(Boolean);
 }
 
-function visitCallExpression(expression: jsep.CallExpression, context: EvaluationContext) {
+function visitCallExpression(expression: jsep.CallExpression, context: EvaluationContext): unknown {
   const fn = visitExpression(expression.callee, context);
   expression.arguments?.map(handleNullableExpression(context));
   return fn;
 }
 
-function visitArrowFunctionExpression(expression: ArrowExpression, context: EvaluationContext) {
+function visitArrowFunctionExpression(expression: ArrowExpression, context: EvaluationContext): void {
   const newContext = { ...context };
   newContext.isLocalExpression = true;
 
@@ -127,33 +130,33 @@ function visitArrowFunctionExpression(expression: ArrowExpression, context: Eval
   }
 }
 
-function visitMemberExpression(expression: jsep.MemberExpression, context: EvaluationContext) {
+function visitMemberExpression(expression: jsep.MemberExpression, context: EvaluationContext): void {
   visitExpression(expression.object, context);
   const newContext = { ...context };
   newContext.isLocalExpression = true;
   visitExpression(expression.property, newContext);
 }
 
-function visitArrayExpression(expression: jsep.ArrayExpression, context: EvaluationContext) {
+function visitArrayExpression(expression: jsep.ArrayExpression, context: EvaluationContext): void {
   expression.elements?.map(handleNullableExpression(context));
 }
 
-function visitSequenceExpression(expression: jsep.SequenceExpression, context: EvaluationContext) {
+function visitSequenceExpression(expression: jsep.SequenceExpression, context: EvaluationContext): void {
   expression.expressions?.map(handleNullableExpression(context));
 }
 
-function visitNewExpression(expression: NewExpression, context: EvaluationContext) {
+function visitNewExpression(expression: NewExpression, context: EvaluationContext): void {
   expression.arguments?.map(handleNullableExpression(context));
 }
 
-function visitTemplateLiteral(expression: TemplateLiteral, context: EvaluationContext) {
+function visitTemplateLiteral(expression: TemplateLiteral, context: EvaluationContext): void {
   expression.expressions?.map(handleNullableExpression(context));
   expression.quasis?.map(handleNullableExpression(context));
 }
 
-function visitTemplateElement(_expression: TemplateElement, _context: EvaluationContext) {} // NOSONAR
+function visitTemplateElement(_expression: TemplateElement, _context: EvaluationContext): void {} // NOSONAR
 
-function visitIdentifier(expression: jsep.Identifier, context: EvaluationContext) {
+function visitIdentifier(expression: jsep.Identifier, context: EvaluationContext): string | void {
   if (!(expression.name in context.globals)) {
     if (!context.isLocalExpression) {
       context.variables.add(expression.name);
@@ -163,7 +166,7 @@ function visitIdentifier(expression: jsep.Identifier, context: EvaluationContext
   }
 }
 
-function visitLiteral(_expression: jsep.Literal, _context: EvaluationContext) {} // NOSONAR
+function visitLiteral(_expression: jsep.Literal, _context: EvaluationContext): void {} // NOSONAR
 
 // Internals
 interface EvaluationContext {
@@ -187,7 +190,7 @@ function createContextInternal(globals_: typeof globalsAsync) {
 }
 
 function handleNullableExpression(context: EvaluationContext) {
-  return function handleNullableExpressionInner(expression: jsep.Expression | null) {
+  return function handleNullableExpressionInner(expression: jsep.Expression | null): unknown | null {
     if (expression === null) {
       return null;
     }

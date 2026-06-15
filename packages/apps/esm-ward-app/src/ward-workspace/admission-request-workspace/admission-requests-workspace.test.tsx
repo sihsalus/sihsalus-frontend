@@ -7,15 +7,15 @@ import { type WardViewContext } from '../../types';
 import DefaultWardPendingPatients from '../../ward-view/default-ward/default-ward-pending-patients.component';
 import AdmissionRequestsWorkspace, { type AdmissionRequestsWorkspaceProps } from './admission-requests.workspace';
 
-jest.mocked(useAppContext<WardViewContext>).mockReturnValue(mockWardViewContext);
-const mockUseWorkspace2Context = jest.mocked(useWorkspace2Context);
+vi.mocked(useAppContext<WardViewContext>).mockReturnValue(mockWardViewContext);
+const mockUseWorkspace2Context = vi.mocked(useWorkspace2Context);
 
-jest.mock('../../hooks/useEmrConfiguration', () => jest.fn());
-const mockedUseEmrConfiguration = jest.mocked(useEmrConfiguration);
+vi.mock('../../hooks/useEmrConfiguration', () => ({ default: vi.fn() }));
+const mockedUseEmrConfiguration = vi.mocked(useEmrConfiguration);
 
 const workspaceProps: Workspace2DefinitionProps<AdmissionRequestsWorkspaceProps> = {
-  closeWorkspace: jest.fn(),
-  launchChildWorkspace: jest.fn(),
+  closeWorkspace: vi.fn(),
+  launchChildWorkspace: vi.fn(),
   workspaceProps: {
     wardPendingPatients: <DefaultWardPendingPatients />,
   },
@@ -45,11 +45,11 @@ describe('Admission Requests Workspace', () => {
           uuid: 'clinician-encounter-role-uuid',
         },
       },
-      mutateEmrConfiguration: jest.fn(),
+      mutateEmrConfiguration: vi.fn(),
     });
     mockUseWorkspace2Context.mockReturnValue({
-      closeWorkspace: jest.fn(),
-      launchChildWorkspace: jest.fn(),
+      closeWorkspace: vi.fn(),
+      launchChildWorkspace: vi.fn(),
       workspaceProps: undefined,
       windowProps: undefined,
       groupProps: undefined,
@@ -71,7 +71,7 @@ describe('Admission Requests Workspace', () => {
       isLoadingEmrConfiguration: false,
       errorFetchingEmrConfiguration: true,
       emrConfiguration: null,
-      mutateEmrConfiguration: jest.fn(),
+      mutateEmrConfiguration: vi.fn(),
     });
 
     renderWithSwr(<AdmissionRequestsWorkspace {...workspaceProps} />);

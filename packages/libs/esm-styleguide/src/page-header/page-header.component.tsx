@@ -1,7 +1,6 @@
 /** @module @category UI */
 
 import { getConfig } from '@openmrs/esm-config';
-import { type CoreTranslationKey, getCoreTranslation } from '@openmrs/esm-translations';
 import classNames from 'classnames';
 import React, { useEffect, useState } from 'react';
 import { type StyleguideConfigObject } from '../config-schema';
@@ -92,7 +91,7 @@ export const PageHeaderContent: React.FC<PageHeaderContentProps> = ({ title, ill
   const [config, setConfig] = useState<StyleguideConfigObject | null>(null);
 
   useEffect(() => {
-    getConfig('@openmrs/esm-styleguide').then((fetchedConfig: StyleguideConfigObject) => {
+    getConfig<StyleguideConfigObject>('@openmrs/esm-styleguide').then((fetchedConfig) => {
       setConfig(fetchedConfig);
     });
   }, []);

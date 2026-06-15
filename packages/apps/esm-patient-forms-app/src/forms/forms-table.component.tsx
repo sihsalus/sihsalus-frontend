@@ -8,17 +8,19 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-  TableToolbar,
-  TableToolbarContent,
   TableToolbarSearch,
+  Select,
+  SelectItem,
 } from '@carbon/react';
 import { EditIcon } from '@openmrs/esm-framework';
-import React from 'react';
+import React, { type ComponentProps } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import type { Form } from '../types';
 
 import styles from './forms-table.scss';
+
+const renderEditIcon = (props: ComponentProps<typeof EditIcon>) => (EditIcon ? <EditIcon {...props} /> : null);
 
 interface FormsTableProps {
   tableHeaders: Array<{
@@ -33,12 +35,24 @@ interface FormsTableProps {
     encounterUuid: string;
     form: Form;
   }>;
+  unitOptions: Array<string>;
+  selectedUnit: string;
   isTablet: boolean;
   handleSearch: (search: string) => void;
+  handleUnitChange: (unit: string) => void;
   handleFormOpen: (form: Form, encounterUuid?: string) => void;
 }
 
-const FormsTable = ({ tableHeaders, tableRows, isTablet, handleSearch, handleFormOpen }: FormsTableProps) => {
+const FormsTable = ({
+  tableHeaders,
+  tableRows,
+  unitOptions,
+  selectedUnit,
+  isTablet,
+  handleSearch,
+  handleUnitChange,
+  handleFormOpen,
+}: FormsTableProps) => {
   const { t } = useTranslation();
   const rowsById = React.useMemo(() => new Map(tableRows.map((row) => [row.id, row])), [tableRows]);
 
@@ -47,25 +61,37 @@ const FormsTable = ({ tableHeaders, tableRows, isTablet, handleSearch, handleFor
       {({ rows, headers, getTableProps, getHeaderProps, getRowProps }) => (
         <>
           <TableContainer className={styles.tableContainer}>
-            <div className={styles.toolbarWrapper}>
-              <TableToolbar className={styles.tableToolbar}>
-                <TableToolbarContent>
-                  <TableToolbarSearch
-                    className={styles.search}
-                    expanded
-                    onChange={(_, value) => handleSearch(value ?? '')}
-                    placeholder={t('searchThisList', 'Search this list')}
-                    size="sm"
-                  />
-                </TableToolbarContent>
-              </TableToolbar>
+            <div className={styles.filtersBar}>
+              <Select
+                className={styles.unitFilter}
+                hideLabel
+                id="clinical-forms-unit-filter"
+                labelText={t('filterByUnit', 'Filter by unit')}
+                onChange={(event) => handleUnitChange(event.target.value)}
+                size="sm"
+                value={selectedUnit}
+              >
+                <SelectItem text={t('allUnits', 'All units')} value="" />
+                {unitOptions.map((unit) => (
+                  <SelectItem key={unit} text={unit} value={unit} />
+                ))}
+              </Select>
+              <TableToolbarSearch
+                className={styles.search}
+                expanded
+                onChange={(_, value) => handleSearch(value ?? '')}
+                placeholder={t('searchThisList', 'Search this list')}
+                size="sm"
+              />
             </div>
             {rows.length > 0 && (
               <Table aria-label="forms" {...getTableProps()} className={styles.table}>
                 <TableHead>
                   <TableRow>
                     {headers.map((header) => (
-                      <TableHeader {...getHeaderProps({ header })}>{header.header}</TableHeader>
+                      <TableHeader key={header.key} {...getHeaderProps({ header })}>
+                        {header.header}
+                      </TableHeader>
                     ))}
                     <TableHeader />
                   </TableRow>
@@ -79,7 +105,7 @@ const FormsTable = ({ tableHeaders, tableRows, isTablet, handleSearch, handleFor
                     }
 
                     return (
-                      <TableRow {...getRowProps({ row })}>
+                      <TableRow key={row.id} {...getRowProps({ row })}>
                         <TableCell key={row.cells[0].id}>
                           <button
                             type="button"
@@ -106,7 +132,7 @@ const FormsTable = ({ tableHeaders, tableRows, isTablet, handleSearch, handleFor
                           {tableRow.encounterUuid ? (
                             <Button
                               hasIconOnly
-                              renderIcon={EditIcon}
+                              renderIcon={renderEditIcon}
                               aria-label={t('editForm', 'Edit form')}
                               iconDescription={t('editForm', 'Edit form')}
                               onClick={() => handleFormOpen(tableRow.form, tableRow.encounterUuid)}

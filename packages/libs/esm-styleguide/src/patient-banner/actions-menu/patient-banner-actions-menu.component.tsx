@@ -105,6 +105,7 @@ export function PatientBannerActionsMenu({
         ref={ref}
       >
         <button
+          type="button"
           className={classNames(
             'cds--btn',
             'cds--btn--ghost',

@@ -88,7 +88,7 @@ export const configSchema = {
       _type: Type.String,
       _default: '${openmrsSpaBase}/sihsalus-vertical.svg',
       _description:
-        'The path or URL to the logo image. If set to an empty string, the default OpenMRS SVG sprite will be used.',
+        'The path or URL to the Sihsalus logo image. If set to an empty string, the Sihsalus wordmark text is used.',
       _validators: [validators.isUrl],
     },
     alt: {
@@ -115,7 +115,7 @@ export const configSchema = {
         },
       },
       _default: [],
-      _description: 'An array of logos to be displayed in the footer next to the OpenMRS logo.',
+      _description: 'An array of partner logos to be displayed in the login footer.',
     },
   },
   showPasswordOnSeparateScreen: {

@@ -1,6 +1,5 @@
 import classNames from 'classnames';
 import { Field } from 'formik';
-import React from 'react';
 import { useTranslation } from 'react-i18next';
 import { moduleName } from '../../../constants';
 import { Input } from '../../input/basic-input/input/input.component';
@@ -28,12 +27,16 @@ export function TextPersonAttributeField({
     if (!value || !validationRegex || validationRegex === '' || typeof validationRegex !== 'string' || value === '') {
       return;
     }
-    const regex = new RegExp(validationRegex);
-    if (regex.test(value)) {
-      return;
-    } else {
-      return t('invalidInput', 'Invalid Input');
+    try {
+      const regex = new RegExp(validationRegex);
+      if (regex.test(value)) {
+        return;
+      }
+    } catch {
+      return t('invalidFieldValidationConfig', 'This field has an invalid validation configuration');
     }
+
+    return t('invalidInput', 'Invalid Input');
   };
 
   const fieldName = `attributes.${personAttributeType.uuid}`;
@@ -41,13 +44,12 @@ export function TextPersonAttributeField({
   return (
     <div className={classNames(styles.customField, styles.halfWidthInDesktopView)}>
       <Field name={fieldName} validate={validateInput}>
-        {({ field, form: { touched, errors }, meta }) => {
+        {({ field }) => {
           return (
             <Input
               id={id}
               name={`person-attribute-${personAttributeType.uuid}`}
               labelText={label ?? personAttributeType?.display}
-              invalid={errors[fieldName] && touched[fieldName]}
               {...field}
               required={required}
             />

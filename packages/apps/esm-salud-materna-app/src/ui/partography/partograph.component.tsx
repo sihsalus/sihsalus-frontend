@@ -13,26 +13,18 @@ import {
   Tile,
 } from '@carbon/react';
 import { Add, ChartLineSmooth } from '@carbon/react/icons';
-import { formatDate, isDesktop, launchWorkspace2, parseDate, useLayoutType } from '@openmrs/esm-framework';
+import { formatDate, isDesktop, launchWorkspace2, parseDate, useConfig, useLayoutType } from '@openmrs/esm-framework';
 import { CardHeader, EmptyDataIllustration, EmptyState, ErrorState } from '@openmrs/esm-patient-common-lib';
 import dayjs from 'dayjs';
-import React from 'react';
+import React, { useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
+import type { ConfigObject } from '../../config-schema';
 import { usePartograph } from '../../hooks/usePartograph';
 import { formEntryWorkspace } from '../../types';
-import {
-  CervicalDilation,
-  ContractionDuration,
-  ContractionFrequency,
-  DeviceRecorded,
-  descentOfHeadObj,
-  FetalHeartRate,
-  PartographEncounterFormUuid,
-  SurgicalProcedure,
-} from '../../utils';
 
 import styles from './labour-delivery.scss';
 import PartographChart from './partograph-chart';
+import { buildPartographRecords, type PartographProgressObservation } from './partograph-utils';
 
 const renderHeaderLabel = (header: React.ReactNode): React.ReactNode =>
   typeof header === 'object' && header !== null && 'content' in header
@@ -41,15 +33,17 @@ const renderHeaderLabel = (header: React.ReactNode): React.ReactNode =>
 
 interface PartographyProps {
   patientUuid: string;
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  filter?: (encounter: Record<string, any>) => boolean;
+  filter?: (encounter: Record<string, unknown>) => boolean;
 }
 
 const Partograph: React.FC<PartographyProps> = ({ patientUuid }) => {
   const { t } = useTranslation();
+  const { partography } = useConfig<ConfigObject>();
+  const partographyConcepts = partography.concepts;
+  const descentOfHeadAnswerLabels = partography.descentOfHeadAnswerLabels;
   const layout = useLayoutType();
-  const [chartView, setChartView] = React.useState<boolean>();
-  const { encounters = [], isLoading, isValidating, error, mutate } = usePartograph(patientUuid);
+  const [chartView, setChartView] = React.useState<boolean>(false);
+  const { encounters = [], isLoading, isValidating, error } = usePartograph(patientUuid);
   const headerTitle = t('partograph', 'Partograph');
   const displayText = t('partographData', 'Vital Components');
   const headers = [
@@ -66,6 +60,26 @@ const Partograph: React.FC<PartographyProps> = ({ patientUuid }) => {
       key: 'fetalHeartRate',
     },
     {
+      header: t('bloodPressure', 'Blood pressure'),
+      key: 'bloodPressure',
+    },
+    {
+      header: t('maternalPulse', 'Maternal pulse'),
+      key: 'maternalPulse',
+    },
+    {
+      header: t('temperature', 'Temperature'),
+      key: 'maternalTemperature',
+    },
+    {
+      header: t('respiratoryRate', 'Respiratory rate'),
+      key: 'maternalRespiratoryRate',
+    },
+    {
+      header: t('urineOutput', 'Urine output'),
+      key: 'urineOutput',
+    },
+    {
       header: t('cervicalDilation', 'Cervical Dilation cm'),
       key: 'cervicalDilation',
     },
@@ -78,50 +92,60 @@ const Partograph: React.FC<PartographyProps> = ({ patientUuid }) => {
       key: 'contractionFrequency',
     },
     {
+      header: t('contractionIntensity', 'Intensity'),
+      key: 'contractionIntensity',
+    },
+    {
       header: t('contractionDuration', 'Duration (s)'),
       key: 'contractionDuration',
     },
+    {
+      header: t('fetalDeath', 'Fetal death'),
+      key: 'fetalDeath',
+    },
+    {
+      header: t('observations', 'Observations'),
+      key: 'observations',
+    },
   ];
-  const tableRows =
-    encounters.map((encounter) => {
-      const groupMembers = encounter.groupMembers;
-      const groupmembersObj = groupMembers.reduce((acc, curr) => {
-        acc[curr.concept.uuid] =
-          typeof curr.value === 'string' || typeof curr.value === 'number' ? curr.value : curr.value.uuid;
-        return acc;
-      });
-      return {
-        id: `${encounter.uuid}`,
-        date: formatDate(parseDate(encounter.obsDatetime.toString()), { mode: 'wide', time: true }),
-        timeRecorded: dayjs(new Date(groupmembersObj[DeviceRecorded])).format('HH:mm'),
-        fetalHeartRate: groupmembersObj[FetalHeartRate],
-        cervicalDilation: groupmembersObj[CervicalDilation],
-        descentOfHead: descentOfHeadObj[groupmembersObj[SurgicalProcedure]],
-        contractionFrequency: groupmembersObj[ContractionFrequency] ?? '--',
-        contractionDuration: groupmembersObj[ContractionDuration] ?? '--',
-      };
-    }) ?? [];
-  const chartData =
-    encounters.map((encounter) => {
-      const groupMembers = encounter.groupMembers;
-      const groupmembersObj = groupMembers.reduce((acc, curr) => {
-        acc[curr.concept.uuid] =
-          typeof curr.value === 'string' || typeof curr.value === 'number' ? curr.value : curr.value.uuid;
-        return acc;
-      });
-      return {
-        id: `${encounter.uuid}`,
-        date: formatDate(parseDate(encounter.obsDatetime.toString()), { mode: 'wide', time: true }),
-        fetalHeartRate: groupmembersObj[FetalHeartRate],
-        cervicalDilation: groupmembersObj[CervicalDilation],
-        descentOfHead: descentOfHeadObj[groupmembersObj[SurgicalProcedure]],
-        contractionFrequency: groupmembersObj[ContractionFrequency],
-        contractionDuration: groupmembersObj[ContractionDuration],
-      };
-    }) ?? [];
+  const partographRecords = useMemo(
+    () =>
+      buildPartographRecords(
+        encounters as unknown as PartographProgressObservation[],
+        partographyConcepts,
+        descentOfHeadAnswerLabels,
+      ),
+    [descentOfHeadAnswerLabels, encounters, partographyConcepts],
+  );
+
+  const tableRows = useMemo(
+    () =>
+      partographRecords.map((record) => ({
+        id: record.id,
+        date: formatDate(parseDate(record.date), { mode: 'wide', time: true }),
+        timeRecorded: record.timeRecorded ? dayjs(new Date(record.timeRecorded)).format('HH:mm') : '--',
+        fetalHeartRate: record.fetalHeartRate ?? '--',
+        bloodPressure:
+          record.maternalSystolicBloodPressure !== undefined || record.maternalDiastolicBloodPressure !== undefined
+            ? `${record.maternalSystolicBloodPressure ?? '--'}/${record.maternalDiastolicBloodPressure ?? '--'}`
+            : '--',
+        maternalPulse: record.maternalPulse ?? '--',
+        maternalTemperature: record.maternalTemperature ?? '--',
+        maternalRespiratoryRate: record.maternalRespiratoryRate ?? '--',
+        urineOutput: record.urineOutput ?? '--',
+        cervicalDilation: record.cervicalDilation ?? '--',
+        descentOfHead: record.descentOfHead ?? '--',
+        contractionFrequency: record.contractionFrequency ?? '--',
+        contractionIntensity: record.contractionIntensity ?? '--',
+        contractionDuration: record.contractionDuration ?? '--',
+        fetalDeath: record.fetalDeath ?? '--',
+        observations: record.observations ?? '--',
+      })),
+    [partographRecords],
+  );
   const handleAddHistory = () => {
     launchWorkspace2(formEntryWorkspace, {
-      form: { uuid: PartographEncounterFormUuid },
+      form: { uuid: partography.formUuid },
       encounterUuid: '',
     });
   };
@@ -134,7 +158,7 @@ const Partograph: React.FC<PartographyProps> = ({ patientUuid }) => {
     return <ErrorState headerTitle={headerTitle} error={error} />;
   }
 
-  if (encounters?.length === 0) {
+  if (partographRecords.length === 0) {
     return (
       <Layer>
         <Tile className={styles.tile}>
@@ -142,9 +166,11 @@ const Partograph: React.FC<PartographyProps> = ({ patientUuid }) => {
             <h4>{headerTitle}</h4>
           </div>
           <EmptyDataIllustration />
-          <p className={styles.content}>There is no partograph data to display for this patient.</p>
+          <p className={styles.content}>
+            {t('noPartographData', 'No hay datos de partograma para mostrar en esta paciente.')}
+          </p>
           <Button onClick={handleAddHistory} renderIcon={Add} kind="ghost">
-            {t('recordLabourDetails', 'Record labour details')}
+            {t('recordLabourDetails', 'Registrar datos del trabajo de parto')}
           </Button>
         </Tile>
       </Layer>
@@ -153,7 +179,7 @@ const Partograph: React.FC<PartographyProps> = ({ patientUuid }) => {
   return (
     <>
       {(() => {
-        if (encounters && encounters?.length) {
+        if (partographRecords.length) {
           return (
             <div className={styles.widgetCard}>
               <CardHeader title={headerTitle}>
@@ -186,14 +212,15 @@ const Partograph: React.FC<PartographyProps> = ({ patientUuid }) => {
                   <Button
                     kind="ghost"
                     renderIcon={(props) => <Add {...props} size={16} />}
-                    iconDescription="Add vitals"
+                    iconDescription={t('recordLabourDetails', 'Registrar datos del trabajo de parto')}
+                    onClick={handleAddHistory}
                   >
-                    {t('add', 'Add')}
+                    {t('add', 'Agregar')}
                   </Button>
                 </div>
               </CardHeader>
               {chartView ? (
-                <PartographChart partograpyComponents={chartData} />
+                <PartographChart partographRecords={partographRecords} />
               ) : (
                 <DataTable
                   useZebraStyles
@@ -208,6 +235,7 @@ const Partograph: React.FC<PartographyProps> = ({ patientUuid }) => {
                             <TableRow>
                               {headers.map((header) => (
                                 <TableHeader
+                                  key={header.key}
                                   {...getHeaderProps({
                                     header,
                                     isSortable: header.isSortable,

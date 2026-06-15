@@ -28,20 +28,20 @@
     "rules": {
       "recommended": true,
       "a11y": {
-        "noInteractiveElementToNoninteractiveRole": "off",
-        "noNoninteractiveElementToInteractiveRole": "off",
+        "noInteractiveElementToNoninteractiveRole": "error",
+        "noNoninteractiveElementToInteractiveRole": "error",
         "noLabelWithoutControl": "off",
         "noSvgWithoutTitle": "off",
         "useAltText": "off",
-        "useAriaPropsForRole": "off",
-        "useButtonType": "warn",
+        "useAriaPropsForRole": "error",
+        "useButtonType": "error",
         "useFocusableInteractive": "off",
-        "useHeadingContent": "off",
-        "useIframeTitle": "off",
-        "useKeyWithClickEvents": "off",
+        "useHeadingContent": "warn",
+        "useIframeTitle": "error",
+        "useKeyWithClickEvents": "warn",
         "useSemanticElements": "off",
-        "useValidAnchor": "off",
-        "useValidAriaRole": "warn"
+        "useValidAnchor": "warn",
+        "useValidAriaRole": "error"
       },
       "complexity": {
         "noBannedTypes": "off",
@@ -56,23 +56,23 @@
         "useFlatMap": "off",
         "useLiteralKeys": "off",
         "useOptionalChain": "off",
-        "noCommaOperator": "off"
+        "noCommaOperator": "warn"
       },
       "correctness": {
         "noChildrenProp": "off",
-        "useExhaustiveDependencies": "warn",
-        "useJsxKeyInIterable": "off"
+        "useExhaustiveDependencies": "error",
+        "useJsxKeyInIterable": "error"
       },
       "performance": {
-        "noAccumulatingSpread": "off",
+        "noAccumulatingSpread": "warn",
         "noDelete": "off"
       },
       "security": {
-        "noGlobalEval": "off"
+        "noGlobalEval": "error"
       },
       "style": {
         "noInferrableTypes": "off",
-        "noNonNullAssertion": "off",
+        "noNonNullAssertion": "warn",
         "noParameterAssign": "off",
         "useSingleVarDeclarator": "off",
         "noUnusedTemplateLiteral": "off",
@@ -81,28 +81,40 @@
         "useEnumInitializers": "off",
         "useExportType": "off",
         "useImportType": "off",
-        "useNodejsImportProtocol": "off",
+        "useNodejsImportProtocol": "error",
         "useNumberNamespace": "off",
         "useShorthandFunctionType": "off",
         "useSelfClosingElements": "off",
         "useTemplate": "off"
       },
       "suspicious": {
-        "noArrayIndexKey": "off",
-        "noAssignInExpressions": "off",
-        "noConfusingVoidType": "off",
-        "noEmptyInterface": "off",
+        "noArrayIndexKey": "warn",
+        "noAssignInExpressions": "error",
+        "noConfusingVoidType": "warn",
+        "noEmptyInterface": "warn",
         "noExplicitAny": "warn",
-        "noGlobalIsNan": "off",
-        "noImplicitAnyLet": "off",
-        "noMisleadingCharacterClass": "off",
-        "noShorthandPropertyOverrides": "off",
-        "noShadowRestrictedNames": "off",
-        "noThenProperty": "off",
-        "noDoubleEquals": "warn"
+        "noGlobalIsNan": "error",
+        "noImplicitAnyLet": "warn",
+        "noMisleadingCharacterClass": "error",
+        "noShorthandPropertyOverrides": "error",
+        "noShadowRestrictedNames": "error",
+        "noThenProperty": "error",
+        "noDoubleEquals": "error"
       }
     }
   },
+  "overrides": [
+    {
+      "includes": ["packages/libs/esm-styleguide/**"],
+      "linter": {
+        "rules": {
+          "correctness": {
+            "useExhaustiveDependencies": "warn"
+          }
+        }
+      }
+    }
+  ],
   "javascript": {
     "globals": [
       "CustomEvent",

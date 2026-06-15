@@ -1,4 +1,4 @@
-import { Button, SkeletonText } from '@carbon/react';
+import { Button, InlineNotification, SkeletonText } from '@carbon/react';
 import { ArrowRight, TrashCan } from '@carbon/react/icons';
 import { isDesktop, UserHasAccess, useConfig, useLayoutType } from '@openmrs/esm-framework';
 import React, { useCallback, useContext, useEffect, useState } from 'react';
@@ -57,14 +57,49 @@ export function initializeIdentifier(identifierType: PatientIdentifierType, iden
   };
 }
 
-export function deleteIdentifierType(identifiers: FormValues['identifiers'], identifierFieldName) {
+export function isIdentityDocumentIdentifier(
+  identifiers: FormValues['identifiers'],
+  identifierFieldName: string,
+  identifierTypes: Array<PatientIdentifierType> = [],
+) {
+  const identifier = identifiers?.[identifierFieldName];
+  const identifierType = identifierTypes.find(
+    (type) => type.fieldName === identifierFieldName || type.uuid === identifier?.identifierTypeUuid,
+  );
+
+  return identifierType ? !identifierType.isPrimary && !identifierType.required : !identifier?.required;
+}
+
+export function countIdentityDocumentIdentifiers(
+  identifiers: FormValues['identifiers'],
+  identifierTypes: Array<PatientIdentifierType> = [],
+) {
+  return Object.keys(identifiers ?? {}).filter((fieldName) =>
+    isIdentityDocumentIdentifier(identifiers, fieldName, identifierTypes),
+  ).length;
+}
+
+export function deleteIdentifierType(
+  identifiers: FormValues['identifiers'],
+  identifierFieldName,
+  identifierTypes: Array<PatientIdentifierType> = [],
+) {
+  if (
+    isIdentityDocumentIdentifier(identifiers, identifierFieldName, identifierTypes) &&
+    countIdentityDocumentIdentifiers(identifiers, identifierTypes) <= 1
+  ) {
+    return identifiers;
+  }
+
   return Object.fromEntries(Object.entries(identifiers).filter(([fieldName]) => fieldName !== identifierFieldName));
 }
 
 export const Identifiers: React.FC = () => {
-  const { identifierTypes } = useContext(ResourcesContext);
-  const isLoading = !identifierTypes?.length;
+  const { identifierTypes = [], identifierTypesError, isLoadingIdentifierTypes } = useContext(ResourcesContext);
+  const isLoading = isLoadingIdentifierTypes && !identifierTypes.length;
   const { values, setFieldValue, initialFormValues, isOffline } = useContext(PatientRegistrationContext);
+  const hasSelectedIdentifiers = Object.keys(values.identifiers ?? {}).length > 0;
+  const hasUnavailableIdentifierTypes = !isLoading && !identifierTypes.length;
   const { t } = useTranslation(moduleName);
   const layout = useLayoutType();
   const [showIdentifierOverlay, setShowIdentifierOverlay] = useState(false);
@@ -80,15 +115,16 @@ export const Identifiers: React.FC = () => {
           (type) =>
             type.isPrimary ||
             type.required ||
-            !!defaultPatientIdentifierTypes?.find(
-              (defaultIdentifierTypeUuid) => defaultIdentifierTypeUuid === type.uuid,
-            ),
+            (!hasSelectedIdentifiers &&
+              !!defaultPatientIdentifierTypes?.find(
+                (defaultIdentifierTypeUuid) => defaultIdentifierTypeUuid === type.uuid,
+              )),
         )
         .filter((type) => !values.identifiers[type.fieldName])
         .forEach((type) => {
           identifiers[type.fieldName] = initializeIdentifier(
             type,
-            values.identifiers[type.uuid] ?? initialFormValues.identifiers[type.uuid] ?? {},
+            values.identifiers[type.fieldName] ?? initialFormValues.identifiers[type.fieldName] ?? {},
           );
         });
 
@@ -105,18 +141,16 @@ export const Identifiers: React.FC = () => {
     defaultPatientIdentifierTypes,
     values.identifiers,
     initialFormValues.identifiers,
+    hasSelectedIdentifiers,
   ]);
 
-  const closeIdentifierSelectionOverlay = useCallback(
-    () => setShowIdentifierOverlay(false),
-    [setShowIdentifierOverlay],
-  );
+  const closeIdentifierSelectionOverlay = useCallback(() => setShowIdentifierOverlay(false), []);
 
   const removeIdentifier = useCallback(
     (identifierFieldName: string) => {
-      setFieldValue('identifiers', deleteIdentifierType(values.identifiers, identifierFieldName));
+      setFieldValue('identifiers', deleteIdentifierType(values.identifiers, identifierFieldName, identifierTypes));
     },
-    [setFieldValue, values.identifiers],
+    [identifierTypes, setFieldValue, values.identifiers],
   );
 
   if (isLoading && !isOffline) {
@@ -132,33 +166,68 @@ export const Identifiers: React.FC = () => {
     );
   }
 
+  if (hasUnavailableIdentifierTypes && !isOffline && !hasSelectedIdentifiers) {
+    return (
+      <div className={styles.halfWidthInDesktopView}>
+        <div className={styles.identifierLabelText}>
+          <h4 className={styles.productiveHeading02Light}>{t('idFieldLabelText', 'Identifiers')}</h4>
+        </div>
+        <InlineNotification
+          style={{ margin: '0', minWidth: '100%' }}
+          kind={identifierTypesError ? 'error' : 'warning'}
+          lowContrast={true}
+          title={t('identifierTypesUnavailableTitle', 'Identification data unavailable')}
+          subtitle={t(
+            'identifierTypesUnavailableSubtitle',
+            'Refresh the page. If the problem continues, check that patient identifier types are configured and that your session is active.',
+          )}
+        />
+      </div>
+    );
+  }
+
   return (
     <div className={styles.halfWidthInDesktopView}>
+      {hasUnavailableIdentifierTypes && !isOffline ? (
+        <InlineNotification
+          style={{ margin: '0 0 1rem', minWidth: '100%' }}
+          kind={identifierTypesError ? 'error' : 'warning'}
+          lowContrast={true}
+          title={t('identifierTypesUnavailableTitle', 'Identification data unavailable')}
+          subtitle={t(
+            'identifierTypesEditModeUnavailableSubtitle',
+            'Existing identification data is shown, but identifier types are unavailable. Refresh the page before adding or changing identifiers.',
+          )}
+        />
+      ) : null}
       <UserHasAccess privilege={['Get Identifier Types', 'Add patient identifiers']}>
         <div className={styles.identifierLabelText}>
           <h4 className={styles.productiveHeading02Light}>{t('idFieldLabelText', 'Identifiers')}</h4>
-          <Button
-            kind="ghost"
-            className={styles.configureIdentifiersButton}
-            onClick={() => setShowIdentifierOverlay(true)}
-            size={isDesktop(layout) ? 'sm' : 'md'}
-          >
-            {t('configure', 'Configure')} <ArrowRight className={styles.arrowRightIcon} size={16} />
-          </Button>
+          {identifierTypes.length ? (
+            <Button
+              kind="ghost"
+              className={styles.configureIdentifiersButton}
+              onClick={() => setShowIdentifierOverlay(true)}
+              size={isDesktop(layout) ? 'sm' : 'md'}
+            >
+              {t('configure', 'Configure')} <ArrowRight className={styles.arrowRightIcon} size={16} />
+            </Button>
+          ) : null}
         </div>
       </UserHasAccess>
-      <div>
-        {Object.entries(values.identifiers).map(([fieldName, identifier]) => {
+      <div className={styles.identifierFieldsGrid}>
+        {Object.keys(values.identifiers).map((fieldName) => {
           const patientIdentifierWithRequired = {
             ...values.identifiers[fieldName],
             required: true,
           };
 
-          const identifierType = identifierTypes?.find((type) => type.fieldName === fieldName);
-          const canRemove = !identifierType?.isPrimary && !identifierType?.required;
+          const canRemove =
+            isIdentityDocumentIdentifier(values.identifiers, fieldName, identifierTypes) &&
+            countIdentityDocumentIdentifiers(values.identifiers, identifierTypes) > 1;
 
           return (
-            <div key={fieldName} style={{ display: 'flex', alignItems: 'center', justifyContent: 'initial' }}>
+            <div key={fieldName} className={styles.identifierFieldRow}>
               <IdentifierInput fieldName={fieldName} patientIdentifier={patientIdentifierWithRequired} />
               {canRemove && (
                 <Button
@@ -176,9 +245,9 @@ export const Identifiers: React.FC = () => {
           );
         })}
 
-        {showIdentifierOverlay && (
+        {showIdentifierOverlay && identifierTypes.length ? (
           <IdentifierSelectionOverlay setFieldValue={setFieldValue} closeOverlay={closeIdentifierSelectionOverlay} />
-        )}
+        ) : null}
       </div>
     </div>
   );

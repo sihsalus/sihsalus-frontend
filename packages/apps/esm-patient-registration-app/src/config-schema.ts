@@ -12,6 +12,7 @@ export interface FieldDefinition {
   label?: string;
   uuid: string;
   placeholder?: string;
+  defaultValue?: string;
   allowFutureDates?: boolean;
   allowPastDates?: boolean;
   showHeading: boolean;
@@ -52,6 +53,7 @@ export interface RegistrationConfig {
       defaultUnknownGivenName: string;
       defaultUnknownFamilyName: string;
       defaultUnknownFamilyName2: string;
+      unidentifiedPatientAttributeTypeUuid: string;
       displayCapturePhoto: boolean;
       displayReverseFieldOrder: boolean;
       requireFamilyName2: boolean;
@@ -108,6 +110,9 @@ export const builtInSections: Array<SectionDefinition> = [
 
 // These fields are handled specially in field.component.tsx
 export const builtInFields = [
+  'reniecLookup',
+  'sisLookup',
+  'minsaLookup',
   'name',
   'gender',
   'dob',
@@ -184,6 +189,12 @@ export const esmPatientRegistrationSchema = {
         _type: Type.String,
         _default: '',
         _description: 'Placeholder that will appear in the input.',
+      },
+      defaultValue: {
+        _type: Type.String,
+        _default: null,
+        _description:
+          'Default value to apply for new registrations when this field has no existing value. For coded fields, use the answer concept UUID.',
       },
       allowFutureDates: {
         _type: Type.Boolean,
@@ -276,6 +287,11 @@ export const esmPatientRegistrationSchema = {
         _type: Type.String,
         _default: 'DESCONOCIDO',
         _description: 'The family/last name 2 to record for unidentified patients.',
+      },
+      unidentifiedPatientAttributeTypeUuid: {
+        _type: Type.UUID,
+        _default: '8b56eac7-5c76-4b9c-8c6f-1deab8d3fc47',
+        _description: 'Person attribute type UUID used to mark an unidentified patient.',
       },
       displayCapturePhoto: {
         _type: Type.Boolean,
@@ -406,6 +422,7 @@ export const esmPatientRegistrationSchema = {
   links: {
     submitButton: {
       _type: Type.String,
+      // biome-ignore lint/suspicious/noTemplateCurlyInString: OpenMRS resolves this runtime URL template.
       _default: '${openmrsSpaBase}/patient/${patientUuid}/chart',
       _validators: [validators.isUrlWithTemplateParameters(['patientUuid'])],
     },

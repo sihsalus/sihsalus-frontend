@@ -1,6 +1,8 @@
 import { getDefaultsFromConfigSchema, useConfig } from '@openmrs/esm-framework';
 import { screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
+import dayjs from 'dayjs';
+import utc from 'dayjs/plugin/utc';
 import {
   formattedVitals,
   mockConceptMetadata,
@@ -17,6 +19,8 @@ import { type ConfigObject, configSchema } from '../config-schema';
 
 import VitalsOverview from './vitals-overview.component';
 
+dayjs.extend(utc);
+
 const testProps = {
   patientUuid: mockPatient.id,
   pageSize: 5,
@@ -25,36 +29,36 @@ const testProps = {
   patient: mockFhirPatient as fhir.Patient,
 };
 
-const mockUseConfig = jest.mocked(useConfig<ConfigObject>);
-const mockUseVitalsAndBiometrics = jest.mocked(useVitalsAndBiometrics);
+const mockUseConfig = vi.mocked(useConfig<ConfigObject>);
+const mockUseVitalsAndBiometrics = vi.mocked(useVitalsAndBiometrics);
 
-global.ResizeObserver = jest.fn().mockImplementation(() => ({
-  observe: jest.fn(),
-  unobserve: jest.fn(),
-  disconnect: jest.fn(),
+global.ResizeObserver = vi.fn().mockImplementation(() => ({
+  observe: vi.fn(),
+  unobserve: vi.fn(),
+  disconnect: vi.fn(),
 }));
 
-jest.mock('@openmrs/esm-patient-common-lib', () => {
-  const originalModule = jest.requireActual('@openmrs/esm-patient-common-lib');
+vi.mock('@openmrs/esm-patient-common-lib', async () => {
+  const originalModule = await vi.importActual('@openmrs/esm-patient-common-lib');
 
   return {
     ...originalModule,
-    launchPatientWorkspace: jest.fn(),
+    launchPatientWorkspace: vi.fn(),
   };
 });
 
-jest.mock('../common', () => {
-  const originalModule = jest.requireActual('../common');
+vi.mock('../common', async () => {
+  const originalModule = await vi.importActual('../common');
 
   return {
     ...originalModule,
-    launchPatientWorkspace: jest.fn(),
-    useVitalsConceptMetadata: jest.fn().mockImplementation(() => ({
+    launchPatientWorkspace: vi.fn(),
+    useVitalsConceptMetadata: vi.fn().mockImplementation(() => ({
       data: mockConceptUnits,
       conceptMetadata: mockConceptMetadata,
       isLoading: false,
     })),
-    useVitalsAndBiometrics: jest.fn(),
+    useVitalsAndBiometrics: vi.fn(),
   };
 });
 
@@ -132,10 +136,9 @@ describe('VitalsOverview', () => {
     });
 
     const expectedTableRows = [
-      /19 .* May .* 2021/,
-      /10 .* May .* 2021/,
-      /07 .* May .* 2021/,
-      /08 .* Apr .* 2021/,
+      ...formattedVitals
+        .slice(0, 4)
+        .map((vital) => new RegExp(dayjs.utc(vital.date).local().format('DD .* MMM .* YYYY'), 'i')),
       /121 \/ 89/,
       /120 \/ 90/,
       /120 \/ 80/,
@@ -145,7 +148,9 @@ describe('VitalsOverview', () => {
       expect(screen.getByText(row)).toBeInTheDocument();
     });
 
-    const sortRowsButton = screen.getByRole('button', { name: /date and time/i });
+    const sortRowsButton = screen.getByRole('button', {
+      name: /date and time/i,
+    });
 
     // Sorting in descending order
     // Since the date order is already in descending order, the rows should be the same
@@ -203,11 +208,11 @@ describe('VitalsOverview', () => {
     renderWithSwr(<VitalsOverview {...testProps} />);
     await waitForLoadingToFinish();
 
-    const expandButtons = screen.queryAllByRole('button', { name: /expand current row/i });
-    if (expandButtons.length > 0) {
-      await user.click(expandButtons[0]);
-      const noteText = screen.queryByText(/Pt reports severe L chest pain/i);
-      if (noteText) expect(noteText).toBeInTheDocument();
-    }
+    const expandButtons = screen.queryAllByRole('button', {
+      name: /expand current row/i,
+    });
+    expect(expandButtons.length).toBeGreaterThan(0);
+    await user.click(expandButtons[0]);
+    expect(screen.getByText(/Pt reports severe L chest pain/i)).toBeInTheDocument();
   });
 });

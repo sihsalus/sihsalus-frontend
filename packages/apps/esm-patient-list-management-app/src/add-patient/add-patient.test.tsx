@@ -7,24 +7,24 @@ import { useAddablePatientLists } from '../api/api-remote';
 
 import AddPatient from './add-patient.modal';
 
-const mockNavigate = jest.mocked(navigate);
-const mockUseAddablePatientLists = jest.mocked(useAddablePatientLists);
-const mockCloseModal = jest.fn();
+const mockNavigate = vi.mocked(navigate);
+const mockUseAddablePatientLists = vi.mocked(useAddablePatientLists);
+const mockCloseModal = vi.fn();
 
-jest.mock('../api/api-remote', () => ({
-  useAddablePatientLists: jest.fn(),
+vi.mock('../api/api-remote', () => ({
+  useAddablePatientLists: vi.fn(),
 }));
 
 describe('AddPatient', () => {
   beforeEach(() => {
     mockUseAddablePatientLists.mockReturnValue({
       data: [
-        { id: 'list1', displayName: 'List 1', addPatient: jest.fn() },
-        { id: 'list2', displayName: 'List 2', addPatient: jest.fn() },
+        { id: 'list1', displayName: 'List 1', addPatient: vi.fn() },
+        { id: 'list2', displayName: 'List 2', addPatient: vi.fn() },
       ],
       isLoading: false,
       error: null,
-      mutate: jest.fn(),
+      mutate: vi.fn(),
       isValidating: false,
     });
   });

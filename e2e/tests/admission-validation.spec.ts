@@ -1,8 +1,7 @@
 import { expect, type Page, test } from '@playwright/test';
+import { getOpenmrsBaseUrl } from '../utils/e2e-urls';
 
-const API_BASE_URL =
-  process.env.E2E_API_BASE_URL ??
-  (process.env.E2E_BASE_URL ?? 'http://localhost:8080/openmrs/spa').replace(/\/spa\/?$/, '').replace(/\/$/, '');
+const API_BASE_URL = getOpenmrsBaseUrl();
 
 async function isVisibleByText(page: Page, pattern: RegExp, timeout = 12_000) {
   return await page
@@ -20,7 +19,7 @@ async function isVisibleBySelector(page: Page, selector: string, timeout = 12_00
     .catch(() => false);
 }
 
-test.describe('MINSA admission accreditation checks', () => {
+test.describe('Peru admission accreditation checks', () => {
   test('patient registration exposes the admission data capture surface', async ({ page }) => {
     await page.goto('patient-registration', { waitUntil: 'domcontentloaded' });
     await page.waitForLoadState('networkidle').catch(() => null);
@@ -30,8 +29,11 @@ test.describe('MINSA admission accreditation checks', () => {
 
     const requiredTexts: Array<[string, RegExp]> = [
       ['filiation section', /Datos de filiación/i],
+      ['residence birthplace contact section', /Residencia, nacimiento y contacto/i],
       ['responsible person section', /Acompañante o responsable/i],
+      ['residence address field', /Dirección de residencia/i],
       ['birthplace field', /Lugar de nacimiento/i],
+      ['phone field', /Número de Teléfono|Número de celular/i],
       ['civil status field', /Estado civil/i],
       ['native language field', /Idioma nativo/i],
       ['occupation field', /Ocupación/i],
@@ -114,18 +116,16 @@ test.describe('MINSA admission accreditation checks', () => {
     await page.goto('admission', { waitUntil: 'domcontentloaded' });
 
     await expect(page).not.toHaveURL(/\/login/);
-    await expect(
-      page.getByRole('heading', { name: /Reporte de admisiones por UPS|Admissions report by UPS/i }),
-    ).toBeVisible();
+    await expect(page.getByRole('heading', { name: /Libro de Atenciones|Admissions report by UPS/i })).toBeVisible();
 
     for (const column of [
       /Fecha|Date/i,
-      /Hora|Time/i,
-      /Paciente|Patient/i,
-      /^HC$|MRN/i,
-      /UPS\/servicio|UPS\/service/i,
-      /Ubicación|Location/i,
-      /Estado|Status/i,
+      /HCE|MRN|código temporal/i,
+      /Documento|Document/i,
+      /Estado identificación|Identification status/i,
+      /Responsable|Responsible/i,
+      /Paciente|Patient|Nombres y apellidos/i,
+      /Servicio|Service/i,
     ]) {
       await expect(page.getByRole('columnheader', { name: column })).toBeVisible();
     }

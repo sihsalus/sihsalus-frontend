@@ -10,7 +10,7 @@ import {
 } from 'test-utils';
 import AllergiesOverview from './allergies-overview.component';
 
-const mockOpenmrsFetch = openmrsFetch as jest.Mock;
+const mockOpenmrsFetch = openmrsFetch as vi.Mock;
 void React;
 
 describe('AllergiesOverview', () => {

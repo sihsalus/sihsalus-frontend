@@ -6,6 +6,11 @@ import { useTranslation } from 'react-i18next';
 
 import type { ConfigObject } from '../../../config-schema';
 import { type CREDControlWithStatus, useCREDSchedule } from '../../../hooks/useCREDSchedule';
+import {
+  translateCredAgeGroupLabel,
+  translateCredAgeGroupSublabel,
+  translateCredControlLabel,
+} from '../../../utils/cred-label-translations';
 
 import styles from './cred-matrix.scss';
 import CredTile from './cred-tile';
@@ -19,7 +24,7 @@ const CredControlsMatrix: React.FC<CredControlsMatrixProps> = ({ patientUuid }) 
   const { controls, completedCount, totalCount, overdueControls, isLoading, error } = useCREDSchedule(patientUuid);
   const { t } = useTranslation();
 
-  const headerTitle = t('controlsAndAtentions', 'Atenciones y Controles');
+  const headerTitle = t('controlsAndAtentions', 'Atenciones y controles');
 
   const groupedControls = useMemo(() => {
     const grouped: Record<string, CREDControlWithStatus[]> = {};
@@ -64,8 +69,10 @@ const CredControlsMatrix: React.FC<CredControlsMatrixProps> = ({ patientUuid }) 
             return (
               <div key={group.label} className={styles.matrixColumn}>
                 <div className={styles.columnHeader}>
-                  <strong>{group.label}</strong>
-                  {group.sublabel && <div className={styles.sublabel}>{group.sublabel}</div>}
+                  <strong>{translateCredAgeGroupLabel(t, group.label)}</strong>
+                  {group.sublabel && (
+                    <div className={styles.sublabel}>{translateCredAgeGroupSublabel(t, group.sublabel)}</div>
+                  )}
                 </div>
                 <div className={styles.columnBody}>
                   {groupControls.map((control) => (
@@ -73,7 +80,7 @@ const CredControlsMatrix: React.FC<CredControlsMatrixProps> = ({ patientUuid }) 
                       key={control.controlNumber}
                       uuid={control.encounterUuid}
                       controlNumber={control.controlNumber}
-                      label={control.label}
+                      label={translateCredControlLabel(t, control.label)}
                       date={control.encounterDate ?? control.appointmentDate ?? control.targetDate}
                       status={control.status}
                     />

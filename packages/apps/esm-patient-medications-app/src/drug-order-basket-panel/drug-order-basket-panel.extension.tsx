@@ -1,5 +1,5 @@
 import { Button, Tile } from '@carbon/react';
-import { AddIcon, ChevronDownIcon, ChevronUpIcon, useConfig, useLayoutType } from '@openmrs/esm-framework';
+import { AddIcon, ChevronDownIcon, ChevronUpIcon, useConfig, useLayoutType, useSession } from '@openmrs/esm-framework';
 import { type DrugOrderBasketItem, type PostDataPrepFunction, useOrderBasket } from '@openmrs/esm-patient-common-lib';
 import classNames from 'classnames';
 import { type ComponentProps, useCallback, useEffect, useMemo, useState } from 'react';
@@ -18,19 +18,35 @@ import RxIcon from './rx-icon.component';
  */
 export interface DrugOrderBasketPanelExtensionProps {
   patient: fhir.Patient;
-  launchDrugOrderForm: (order?: DrugOrderBasketItem) => void;
+  launchDrugOrderForm?: (order?: DrugOrderBasketItem) => void;
+  launchAddDrugOrder?: (order?: DrugOrderBasketItem) => void;
+  canCreateOrders?: boolean;
+  onMissingActiveVisit?: () => void;
 }
 
-function DrugOrderBasketPanelExtension({ patient, launchDrugOrderForm }: DrugOrderBasketPanelExtensionProps) {
+function DrugOrderBasketPanelExtension({
+  patient,
+  launchDrugOrderForm,
+  launchAddDrugOrder,
+  canCreateOrders = true,
+  onMissingActiveVisit,
+}: DrugOrderBasketPanelExtensionProps) {
   const { t } = useTranslation();
   const config = useConfig<ConfigObject>();
+  const session = useSession();
+  const orderingProviderUuid = session?.currentProvider?.uuid;
   const isTablet = useLayoutType() === 'tablet';
 
   const responsiveSize = isTablet ? 'md' : 'sm';
+  const prepareMedicationOrderPostData = useCallback(
+    (order: DrugOrderBasketItem, patientUuid: string, encounterUuid: string | null) =>
+      prepMedicationOrderPostData(order, patientUuid, encounterUuid, orderingProviderUuid, config.careSettingUuid),
+    [config.careSettingUuid, orderingProviderUuid],
+  );
   const { orders, setOrders } = useOrderBasket<DrugOrderBasketItem>(
     patient,
     'medications',
-    prepMedicationOrderPostData as PostDataPrepFunction,
+    prepareMedicationOrderPostData as PostDataPrepFunction,
   );
   const [isExpanded, setIsExpanded] = useState(orders.length > 0);
   const {
@@ -88,6 +104,19 @@ function DrugOrderBasketPanelExtension({ patient, launchDrugOrderForm }: DrugOrd
     }
   }, [config.orderTypeUuid, config.drugOrderTypeUUID]);
 
+  const openDrugOrderForm = useCallback(
+    (order?: DrugOrderBasketItem) => {
+      if (!canCreateOrders) {
+        onMissingActiveVisit?.();
+        return;
+      }
+
+      const launchOrderForm = launchDrugOrderForm ?? launchAddDrugOrder;
+      launchOrderForm?.(order);
+    },
+    [canCreateOrders, launchAddDrugOrder, launchDrugOrderForm, onMissingActiveVisit],
+  );
+
   return (
     <Tile
       className={classNames(isTablet ? styles.tabletTile : styles.desktopTile, { [styles.collapsedTile]: !isExpanded })}
@@ -103,7 +132,8 @@ function DrugOrderBasketPanelExtension({ patient, launchDrugOrderForm }: DrugOrd
             kind="ghost"
             renderIcon={(props: ComponentProps<typeof AddIcon>) => <AddIcon size={16} {...props} />}
             iconDescription="Add medication"
-            onClick={() => launchDrugOrderForm()}
+            onClick={() => openDrugOrderForm()}
+            disabled={!canCreateOrders}
             size={responsiveSize}
           >
             {t('add', 'Add')}
@@ -132,7 +162,7 @@ function DrugOrderBasketPanelExtension({ patient, launchDrugOrderForm }: DrugOrd
                 <OrderBasketItemTile
                   key={index}
                   orderBasketItem={order}
-                  onItemClick={() => launchDrugOrderForm(order)}
+                  onItemClick={() => openDrugOrderForm(order)}
                   onRemoveClick={() => removeMedication(order)}
                 />
               ))}
@@ -144,7 +174,7 @@ function DrugOrderBasketPanelExtension({ patient, launchDrugOrderForm }: DrugOrd
                 <OrderBasketItemTile
                   key={index}
                   orderBasketItem={order}
-                  onItemClick={() => launchDrugOrderForm(order)}
+                  onItemClick={() => openDrugOrderForm(order)}
                   onRemoveClick={() => removeMedication(order)}
                 />
               ))}
@@ -157,7 +187,7 @@ function DrugOrderBasketPanelExtension({ patient, launchDrugOrderForm }: DrugOrd
                 <OrderBasketItemTile
                   key={index}
                   orderBasketItem={item}
-                  onItemClick={() => launchDrugOrderForm(item)}
+                  onItemClick={() => openDrugOrderForm(item)}
                   onRemoveClick={() => removeMedication(item)}
                 />
               ))}
@@ -170,7 +200,7 @@ function DrugOrderBasketPanelExtension({ patient, launchDrugOrderForm }: DrugOrd
                 <OrderBasketItemTile
                   key={index}
                   orderBasketItem={item}
-                  onItemClick={() => launchDrugOrderForm(item)}
+                  onItemClick={() => openDrugOrderForm(item)}
                   onRemoveClick={() => removeMedication(item)}
                 />
               ))}
@@ -183,7 +213,7 @@ function DrugOrderBasketPanelExtension({ patient, launchDrugOrderForm }: DrugOrd
                 <OrderBasketItemTile
                   key={index}
                   orderBasketItem={item}
-                  onItemClick={() => launchDrugOrderForm(item)}
+                  onItemClick={() => openDrugOrderForm(item)}
                   onRemoveClick={() => removeMedication(item)}
                 />
               ))}

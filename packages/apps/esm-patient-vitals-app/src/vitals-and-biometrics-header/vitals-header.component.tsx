@@ -75,10 +75,8 @@ const VitalsHeader: React.FC<VitalsHeaderProps> = ({
     );
   }
 
-  if (latestVitals && Object.keys(latestVitals)?.length && conceptMetadata?.length) {
-    const isActiveVisit = visitContext
-      ? Boolean(visitContext && !visitContext.stopDatetime)
-      : Boolean(currentVisit?.uuid);
+  if (latestVitals && Object.keys(latestVitals).length && conceptMetadata?.length) {
+    const isActiveVisit = visitContext ? !visitContext.stopDatetime : Boolean(currentVisit?.uuid);
 
     const vitalsOverdueThresholdHours = config.vitals.vitalsOverdueThresholdHours ?? 12;
     const vitalsTakenTimeAgo = dayjs.duration(dayjs().diff(latestVitals?.date));
@@ -90,24 +88,36 @@ const VitalsHeader: React.FC<VitalsHeaderProps> = ({
 
     let overdueVitalsTagContent: React.ReactNode;
     if (vitalsOverdueDayCount < 1) {
+      const hoursLabel = hoursSinceVitalsTaken === 1 ? 'hour old' : 'hours old';
       overdueVitalsTagContent = (
-        <Trans i18nKey="hoursOldVitals" count={hoursSinceVitalsTaken}>
+        <Trans
+          i18nKey={hoursSinceVitalsTaken === 1 ? 'hoursOldVitals_one' : 'hoursOldVitals_other'}
+          count={hoursSinceVitalsTaken}
+        >
           <span>
-            {/* @ts-expect-error Workaround for i18next types issue */}
-            These vitals are <strong>{{ count: hoursSinceVitalsTaken }} hour old</strong>
+            These vitals are{' '}
+            <strong>
+              {hoursSinceVitalsTaken} {hoursLabel}
+            </strong>
           </span>
         </Trans>
       );
     } else if (vitalsOverdueDayCount >= 1 && vitalsOverdueDayCount < 7) {
+      const daysLabel = vitalsOverdueDayCount === 1 ? 'day old' : 'days old';
       overdueVitalsTagContent = (
-        <Trans i18nKey="daysOldVitals" count={vitalsOverdueDayCount}>
+        <Trans
+          i18nKey={vitalsOverdueDayCount === 1 ? 'daysOldVitals_one' : 'daysOldVitals_other'}
+          count={vitalsOverdueDayCount}
+        >
           <span>
-            {/* @ts-expect-error Workaround for i18next types issue (see https://github.com/i18next/react-i18next/issues/1543 and https://github.com/i18next/react-i18next/issues/465). Additionally, I can't find a way to get the proper plural suffix to be used in the translation file without amending the translation file by hand. */}
-            These vitals are <strong>{{ count: vitalsOverdueDayCount }} day old</strong>
+            These vitals are{' '}
+            <strong>
+              {vitalsOverdueDayCount} {daysLabel}
+            </strong>
           </span>
         </Trans>
       );
-    } else if (vitalsOverdueDayCount >= 8 && vitalsOverdueDayCount <= 14) {
+    } else if (vitalsOverdueDayCount >= 7 && vitalsOverdueDayCount <= 14) {
       overdueVitalsTagContent = (
         <Trans i18nKey="overOneWeekOldVitals">
           <span>
@@ -127,7 +137,18 @@ const VitalsHeader: React.FC<VitalsHeaderProps> = ({
 
     return (
       <div className={styles.container}>
-        <div className={styles.vitalsHeader} role="button" tabIndex={0} onClick={toggleDetailsPanel}>
+        <div
+          className={styles.vitalsHeader}
+          onClick={toggleDetailsPanel}
+          onKeyDown={(event) => {
+            if (event.key === 'Enter' || event.key === ' ') {
+              event.preventDefault();
+              toggleDetailsPanel();
+            }
+          }}
+          role="button"
+          tabIndex={0}
+        >
           <div className={styles.headerItems}>
             <span className={styles.heading}>{t('vitalsAndBiometrics', 'Vitals and biometrics')}</span>
             <span className={styles.bodyText}>
@@ -141,7 +162,7 @@ const VitalsHeader: React.FC<VitalsHeaderProps> = ({
             {!hideLinks && (
               <ConfigurableLink
                 className={styles.link}
-                to={`\${openmrsSpaBase}/patient/${patientUuid}/chart/Vitals & Biometrics`}
+                to={`${globalThis.spaBase}/patient/${patientUuid}/chart/Vitals & Biometrics`}
               >
                 {t('vitalsHistory', 'Vitals history')}
               </ConfigurableLink>
@@ -149,7 +170,9 @@ const VitalsHeader: React.FC<VitalsHeaderProps> = ({
           </div>
           {isValidating ? (
             <div className={styles.backgroundDataFetchingIndicator}>
-              <span>{isValidating ? <InlineLoading /> : null}</span>
+              <span>
+                <InlineLoading />
+              </span>
             </div>
           ) : null}
           {!hideLinks && (
@@ -261,6 +284,17 @@ const VitalsHeader: React.FC<VitalsHeaderProps> = ({
                   (latestVitals?.muac && conceptUnits.get(config.concepts.midUpperArmCircumferenceUuid)) ?? ''
                 }
                 value={latestVitals?.muac ?? '--'}
+              />
+            )}
+            {latestVitals?.abdominalCircumference && (
+              <VitalsHeaderItem
+                interpretation={latestVitals.abdominalCircumferenceRenderInterpretation}
+                unitName={t('abdominalCircumference', 'Abdominal circumference')}
+                unitSymbol={
+                  conceptUnits.get(config.concepts.abdominalCircumferenceUuid) ??
+                  config.biometrics.abdominalCircumferenceUnit
+                }
+                value={latestVitals.abdominalCircumference}
               />
             )}
           </div>

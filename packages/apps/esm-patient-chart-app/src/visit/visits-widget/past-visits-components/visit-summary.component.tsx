@@ -15,6 +15,7 @@ import classNames from 'classnames';
 import React, { useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 
+import type { ChartConfig } from '../../../config-schema';
 import {
   type Diagnosis,
   type Encounter,
@@ -33,6 +34,7 @@ import VisitsTable from './visits-table/visits-table.component';
 
 interface DiagnosisItem {
   diagnosis: string;
+  diagnosisType?: DiagnosisType;
   rank: number;
   type: NonNullable<TagProps<'div'>['type']>;
   voided?: boolean;
@@ -44,9 +46,101 @@ interface VisitSummaryProps {
 }
 
 const visitSummaryPanelSlot = 'visit-summary-panels';
+const diagnosisTypeFieldPathPrefix = 'tipo-dx-';
+
+type DiagnosisType = 'presuntivo' | 'definitivo' | 'repetitivo';
+type DiagnosisTypeConceptMap = Record<string, DiagnosisType>;
+
+const diagnosisTypeTranslation: Record<DiagnosisType, { key: string; defaultValue: string }> = {
+  presuntivo: { key: 'diagnosisTypePresuntivo', defaultValue: 'Presuntivo' },
+  definitivo: { key: 'diagnosisTypeDefinitivo', defaultValue: 'Definitivo' },
+  repetitivo: { key: 'diagnosisTypeRepetitivo', defaultValue: 'Repetitivo' },
+};
+
+function getObjectValue(value: unknown, key: string) {
+  return typeof value === 'object' && value !== null && key in value ? (value as Record<string, unknown>)[key] : null;
+}
+
+function getDiagnosisTypeValueUuid(value: unknown) {
+  if (typeof value === 'string') {
+    return value;
+  }
+
+  const uuid = getObjectValue(value, 'uuid');
+  return typeof uuid === 'string' ? uuid : null;
+}
+
+function getDiagnosisTypeValueDisplay(value: unknown) {
+  if (typeof value === 'string') {
+    return value;
+  }
+
+  const display = getObjectValue(value, 'display');
+  if (typeof display === 'string') {
+    return display;
+  }
+
+  const name = getObjectValue(value, 'name');
+  if (typeof name === 'string') {
+    return name;
+  }
+
+  return null;
+}
+
+function getDiagnosisTypeFromValue(
+  value: unknown,
+  diagnosisTypeConceptMap: DiagnosisTypeConceptMap,
+): DiagnosisType | undefined {
+  const valueUuid = getDiagnosisTypeValueUuid(value);
+  if (valueUuid && diagnosisTypeConceptMap[valueUuid]) {
+    return diagnosisTypeConceptMap[valueUuid];
+  }
+
+  const display = getDiagnosisTypeValueDisplay(value)?.toLocaleLowerCase();
+  if (display?.includes('presunt')) {
+    return 'presuntivo';
+  }
+  if (display?.includes('definit')) {
+    return 'definitivo';
+  }
+  if (display?.includes('repetit')) {
+    return 'repetitivo';
+  }
+
+  return undefined;
+}
+
+function getDiagnosisTypeFromEncounterObs(
+  encounter: Encounter,
+  diagnosis: Diagnosis,
+  diagnosisTypeConceptMap: DiagnosisTypeConceptMap,
+) {
+  const diagnosisConceptUuid = diagnosis.diagnosis?.coded?.uuid;
+  if (!diagnosisConceptUuid || !Array.isArray(encounter.obs)) {
+    return undefined;
+  }
+
+  const diagnosisTypeObs = encounter.obs.find(
+    (obs) => obs.formFieldPath === `${diagnosisTypeFieldPathPrefix}${diagnosisConceptUuid}`,
+  );
+
+  return getDiagnosisTypeFromValue(diagnosisTypeObs?.value, diagnosisTypeConceptMap);
+}
+
+function getDiagnosisTypeFromCertainty(certainty?: string): DiagnosisType | undefined {
+  if (certainty === 'CONFIRMED') {
+    return 'definitivo';
+  }
+  if (certainty === 'PROVISIONAL') {
+    return 'presuntivo';
+  }
+
+  return undefined;
+}
 
 const VisitSummary: React.FC<VisitSummaryProps> = ({ visit, patientUuid }) => {
-  const config = useConfig();
+  const config = useConfig<ChartConfig>();
   const { t } = useTranslation();
   const extensions = useAssignedExtensions(visitSummaryPanelSlot);
   const layout = useLayoutType();
@@ -80,6 +174,9 @@ const VisitSummary: React.FC<VisitSummaryProps> = ({ visit, patientUuid }) => {
             .filter((diagnosis: Diagnosis) => !diagnosis.voided)
             .map((diagnosis: Diagnosis) => ({
               diagnosis: diagnosis.display,
+              diagnosisType:
+                getDiagnosisTypeFromEncounterObs(enc, diagnosis, config.diagnosisTypeConceptMap) ??
+                getDiagnosisTypeFromCertainty(diagnosis.certainty),
               type: diagnosis.rank === 1 ? ('red' as const) : ('blue' as const),
               rank: diagnosis.rank,
               voided: diagnosis.voided,
@@ -111,7 +208,7 @@ const VisitSummary: React.FC<VisitSummaryProps> = ({ visit, patientUuid }) => {
     diagnoses.sort((a, b) => a.rank - b.rank);
 
     return [diagnoses, notes, medications];
-  }, [config.notesConceptUuids, encounters]);
+  }, [config.diagnosisTypeConceptMap, config.notesConceptUuids, encounters]);
 
   const testsFilter = useMemo<ExternalOverviewProps['filter']>(() => {
     const encounterIds = encounters.map((e) => `Encounter/${e.uuid}`);
@@ -125,11 +222,35 @@ const VisitSummary: React.FC<VisitSummaryProps> = ({ visit, patientUuid }) => {
       <p className={styles.diagnosisLabel}>{t('diagnoses', 'Diagnoses')}</p>
       <div className={styles.diagnosesList}>
         {diagnoses.length > 0 ? (
-          diagnoses.map((diagnosis, i) => (
-            <Tag key={`${diagnosis.diagnosis}-${i}`} type={diagnosis.type}>
-              {diagnosis.diagnosis}
-            </Tag>
-          ))
+          diagnoses.map((diagnosis, i) => {
+            const diagnosisTypeConfig = diagnosis.diagnosisType
+              ? diagnosisTypeTranslation[diagnosis.diagnosisType]
+              : null;
+            const diagnosisTypeLabel = diagnosisTypeConfig
+              ? t(diagnosisTypeConfig.key, diagnosisTypeConfig.defaultValue)
+              : null;
+            const diagnosisTitle = diagnosisTypeLabel
+              ? `${diagnosis.diagnosis} (${diagnosisTypeLabel})`
+              : diagnosis.diagnosis;
+
+            return (
+              <div
+                key={`${diagnosisTitle}-${i}`}
+                className={classNames(styles.diagnosisPill, {
+                  [styles.primaryDiagnosis]: diagnosis.type === 'red',
+                  [styles.secondaryDiagnosis]: diagnosis.type !== 'red',
+                })}
+                title={diagnosisTitle}
+              >
+                <span className={styles.diagnosisText}>{diagnosis.diagnosis}</span>
+                {diagnosisTypeLabel ? (
+                  <Tag className={styles.diagnosisTypeTag} type={diagnosis.type}>
+                    {diagnosisTypeLabel}
+                  </Tag>
+                ) : null}
+              </div>
+            );
+          })
         ) : (
           <p className={classNames(styles.bodyLong01, styles.text02)} style={{ marginBottom: '0.5rem' }}>
             {t('noDiagnosesFound', 'No diagnoses found')}

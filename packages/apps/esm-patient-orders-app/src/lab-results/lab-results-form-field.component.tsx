@@ -1,4 +1,10 @@
 import { NumberInput, Select, SelectItem, TextInput } from '@carbon/react';
+import {
+  type PlainNumberInputConstraints,
+  shouldPreventPlainNumberKey,
+  shouldPreventPlainNumberPaste,
+  validatePlainNumberInput,
+} from '@openmrs/esm-utils';
 import React from 'react';
 import { type Control, Controller, type FieldErrors } from 'react-hook-form';
 import { useTranslation } from 'react-i18next';
@@ -56,6 +62,32 @@ const ResultFormField: React.FC<ResultFormFieldProps> = ({ concept, control, def
     return typeof savedValue === 'string' || typeof savedValue === 'number' ? savedValue : undefined;
   };
 
+  const getNumberConstraints = (concept: LabOrderConcept): PlainNumberInputConstraints => ({
+    integer: concept.allowDecimal === false,
+    max: concept.hiAbsolute,
+    min: concept.lowAbsolute,
+    nonNegative: typeof concept.lowAbsolute === 'number' && concept.lowAbsolute >= 0,
+  });
+
+  const getNumericResultValue = (value: string | number, concept: LabOrderConcept) =>
+    value === '' ? null : (validatePlainNumberInput(value, getNumberConstraints(concept)).parsedValue ?? null);
+
+  const preventInvalidNumberKey = (concept: LabOrderConcept) => (event: React.KeyboardEvent<HTMLInputElement>) => {
+    if (event.ctrlKey || event.metaKey || event.altKey) {
+      return;
+    }
+
+    if (shouldPreventPlainNumberKey(event.key, getNumberConstraints(concept))) {
+      event.preventDefault();
+    }
+  };
+
+  const preventInvalidNumberPaste = (concept: LabOrderConcept) => (event: React.ClipboardEvent<HTMLInputElement>) => {
+    if (shouldPreventPlainNumberPaste(event.clipboardData.getData('text'), getNumberConstraints(concept))) {
+      event.preventDefault();
+    }
+  };
+
   return (
     <>
       {isText(concept) && (
@@ -91,7 +123,11 @@ const ResultFormField: React.FC<ResultFormFieldProps> = ({ concept, control, def
               id={concept.uuid}
               key={concept.uuid}
               label={`${concept?.display ? concept.display + ' ' : ''}${formatLabRange(concept)}`}
-              onChange={(_, { value }) => field.onChange(value === '' ? null : parseFloat(String(value)))}
+              max={concept.hiAbsolute ?? undefined}
+              min={concept.lowAbsolute ?? undefined}
+              onChange={(_, { value }) => field.onChange(getNumericResultValue(value, concept))}
+              onKeyDown={preventInvalidNumberKey(concept)}
+              onPaste={preventInvalidNumberPaste(concept)}
               value={typeof field.value === 'number' ? field.value : ''}
               invalidText={getErrorMessage(concept.uuid)}
               invalid={!!errors[concept.uuid]}
@@ -163,7 +199,11 @@ const ResultFormField: React.FC<ResultFormFieldProps> = ({ concept, control, def
                     id={`number-${member.uuid}`}
                     key={member.uuid}
                     label={`${member?.display ? member.display + ' ' : ''}${formatLabRange(member)}`}
-                    onChange={(_, { value }) => field.onChange(value === '' ? null : parseFloat(String(value)))}
+                    max={member.hiAbsolute ?? undefined}
+                    min={member.lowAbsolute ?? undefined}
+                    onChange={(_, { value }) => field.onChange(getNumericResultValue(value, member))}
+                    onKeyDown={preventInvalidNumberKey(member)}
+                    onPaste={preventInvalidNumberPaste(member)}
                     value={typeof field.value === 'number' ? field.value : ''}
                     invalidText={getErrorMessage(member.uuid)}
                     invalid={!!errors[member.uuid]}

@@ -7,7 +7,7 @@ import {
   useConfig,
 } from '@openmrs/esm-framework';
 import type { PatientWorkspace2DefinitionProps } from '@openmrs/esm-patient-common-lib';
-import { render, screen, waitFor, within } from '@testing-library/react';
+import { fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import React from 'react';
 import { mockPatient, mockProceduresResponse, mockProcedureTypes, searchedProcedure } from 'test-utils';
@@ -426,6 +426,22 @@ describe('ProceduresForm', () => {
         expect.objectContaining({ duration: 30, durationUnit: 'proc-concept-uuid-1' }),
       ),
     );
+  });
+
+  it('prevents scientific notation and signed values in procedure duration', async () => {
+    mockUseConceptSearch.mockReturnValue({ searchResults: searchedProcedure, isSearching: false, error: undefined });
+
+    renderProceduresForm();
+
+    const durationInput = screen.getByRole('spinbutton', { name: /^duration$/i });
+    for (const key of ['e', 'E', '+', '-', ',']) {
+      expect(fireEvent.keyDown(durationInput, { key })).toBe(false);
+    }
+    expect(
+      fireEvent.paste(durationInput, {
+        clipboardData: { getData: () => '1e2' },
+      }),
+    ).toBe(false);
   });
 
   it('requires a duration unit when a duration value is entered', async () => {

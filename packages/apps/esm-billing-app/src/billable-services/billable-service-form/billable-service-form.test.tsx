@@ -398,19 +398,19 @@ describe('BillableServiceFormWorkspace', () => {
       expect(mockCreateBillableService).not.toHaveBeenCalled();
     });
 
-    test('should show "Price must be greater than 0" error for negative price', async () => {
+    test('should prevent negative price input', async () => {
       const user = userEvent.setup();
       renderBillableServicesForm();
 
       await fillRequiredFields(user, { skipPrice: true });
 
       const priceInput = screen.getByRole('spinbutton', { name: /Selling Price/i });
-      await user.type(priceInput, '-10');
-
-      await submitForm();
-
-      expect(screen.getByText('Price must be greater than 0')).toBeInTheDocument();
-      expect(mockCreateBillableService).not.toHaveBeenCalled();
+      expect(fireEvent.keyDown(priceInput, { key: '-' })).toBe(false);
+      expect(
+        fireEvent.paste(priceInput, {
+          clipboardData: { getData: () => '-10' },
+        }),
+      ).toBe(false);
     });
 
     test('should show "Service name is required" error when service name is empty', async () => {

@@ -12,6 +12,11 @@ import {
 } from '@carbon/react';
 import { useConfig } from '@openmrs/esm-framework';
 import { safeEvaluateExpression } from '@openmrs/esm-patient-common-lib';
+import {
+  shouldPreventPlainNumberKey,
+  shouldPreventPlainNumberPaste,
+  validatePlainNumberInput,
+} from '@openmrs/esm-utils';
 import dayjs from 'dayjs';
 import React, { useEffect, useId, useMemo } from 'react';
 import { Controller, type ControllerRenderProps, useFormContext } from 'react-hook-form';
@@ -26,6 +31,22 @@ import {
 
 import styles from './visit-attribute-type.scss';
 import { type VisitFormData } from './visit-form.resource';
+
+function preventInvalidFloatKey(event: React.KeyboardEvent<HTMLInputElement>) {
+  if (event.ctrlKey || event.metaKey || event.altKey) {
+    return;
+  }
+
+  if (shouldPreventPlainNumberKey(event.key)) {
+    event.preventDefault();
+  }
+}
+
+function preventInvalidFloatPaste(event: React.ClipboardEvent<HTMLInputElement>) {
+  if (shouldPreventPlainNumberPaste(event.clipboardData.getData('text'))) {
+    event.preventDefault();
+  }
+}
 
 interface VisitAttributeTypeFieldsProps {
   setErrorFetchingResources: React.Dispatch<
@@ -184,12 +205,28 @@ const AttributeTypeField: React.FC<AttributeTypeFieldProps> = ({
         return (
           <NumberInput
             {...fieldProps}
+            value={fieldProps.value ?? ''}
             id={`number-input-${id}`}
             label={labelText}
             hideSteppers
             invalid={!!errors.visitAttributes?.[uuid]}
             invalidText={errors.visitAttributes?.[uuid]?.message}
             disabled={readOnly}
+            onChange={(_event, { value }) => {
+              const nextValue = value?.toString() ?? '';
+
+              if (nextValue === '') {
+                onChange('');
+                return;
+              }
+
+              const validation = validatePlainNumberInput(nextValue);
+              if (!validation.isInvalidFormat) {
+                onChange(validation.parsedValue ?? '');
+              }
+            }}
+            onKeyDown={preventInvalidFloatKey}
+            onPaste={preventInvalidFloatPaste}
           />
         );
       case 'org.openmrs.customdatatype.datatype.FreeTextDatatype':

@@ -1,5 +1,5 @@
 import { getDefaultsFromConfigSchema, useConfig } from '@openmrs/esm-framework';
-import { render, screen } from '@testing-library/react';
+import { fireEvent, render, screen } from '@testing-library/react';
 import React from 'react';
 import { mockOpenmrsId, mockPatient } from 'test-utils';
 
@@ -240,6 +240,22 @@ describe('ObsField', () => {
     render(<ObsField fieldDefinition={numberFieldDef} />);
 
     expect(screen.getByRole('spinbutton', { name: 'Weight (optional)' })).toBeInTheDocument();
+  });
+
+  it('prevents scientific notation and symbols in numeric obs fields while allowing negative decimals', () => {
+    render(<ObsField fieldDefinition={numberFieldDef} />);
+
+    const input = screen.getByRole('spinbutton', { name: 'Weight (optional)' });
+    for (const key of ['e', 'E', '+', ',']) {
+      expect(fireEvent.keyDown(input, { key })).toBe(false);
+    }
+    expect(fireEvent.keyDown(input, { key: '-' })).toBe(true);
+    expect(fireEvent.keyDown(input, { key: '.' })).toBe(true);
+    expect(
+      fireEvent.paste(input, {
+        clipboardData: { getData: () => '1e2' },
+      }),
+    ).toBe(false);
   });
 
   it('renders a datepicker for date concept', async () => {

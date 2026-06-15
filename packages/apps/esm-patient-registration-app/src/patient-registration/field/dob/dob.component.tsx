@@ -1,5 +1,10 @@
 import { ContentSwitcher, Layer, Switch, TextInput } from '@carbon/react';
 import { OpenmrsDatePicker, useConfig } from '@openmrs/esm-framework';
+import {
+  shouldPreventPlainNumberKey,
+  shouldPreventPlainNumberPaste,
+  validatePlainNumberInput,
+} from '@openmrs/esm-utils';
 import { useField } from 'formik';
 import React, { type ChangeEvent, useCallback, useContext } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -21,6 +26,29 @@ const calcBirthdate = (yearDelta, monthDelta, dateOfBirth) => {
   );
   return enabled ? new Date(resultDate.getFullYear(), month, dayOfMonth) : resultDate;
 };
+
+const estimatedYearsConstraints = { integer: true, max: 139, min: 0, nonNegative: true };
+const estimatedMonthsConstraints = { integer: true, min: 0, nonNegative: true };
+
+const preventInvalidEstimatedAgeKey =
+  (constraints: typeof estimatedYearsConstraints | typeof estimatedMonthsConstraints) =>
+  (event: React.KeyboardEvent<HTMLInputElement>) => {
+    if (event.ctrlKey || event.metaKey || event.altKey) {
+      return;
+    }
+
+    if (shouldPreventPlainNumberKey(event.key, constraints)) {
+      event.preventDefault();
+    }
+  };
+
+const preventInvalidEstimatedAgePaste =
+  (constraints: typeof estimatedYearsConstraints | typeof estimatedMonthsConstraints) =>
+  (event: React.ClipboardEvent<HTMLInputElement>) => {
+    if (shouldPreventPlainNumberPaste(event.clipboardData.getData('text'), constraints)) {
+      event.preventDefault();
+    }
+  };
 
 export const DobField: React.FC = () => {
   const { t } = useTranslation(moduleName);
@@ -56,9 +84,14 @@ export const DobField: React.FC = () => {
 
   const onEstimatedYearsChange = useCallback(
     (ev: ChangeEvent<HTMLInputElement>) => {
-      const years = +ev.target.value;
+      if (!ev.target.value.trim()) {
+        setFieldValue('yearsEstimated', '');
+        return;
+      }
 
-      if (!Number.isNaN(years) && years < 140 && years >= 0) {
+      const years = validatePlainNumberInput(ev.target.value, estimatedYearsConstraints).parsedValue;
+
+      if (years != null) {
         setFieldValue('yearsEstimated', years);
         setFieldValue('birthdate', calcBirthdate(years, monthsEstimateMeta.value, dateOfBirth));
       }
@@ -68,9 +101,14 @@ export const DobField: React.FC = () => {
 
   const onEstimatedMonthsChange = useCallback(
     (ev: ChangeEvent<HTMLInputElement>) => {
-      const months = +ev.target.value;
+      if (!ev.target.value.trim()) {
+        setFieldValue('monthsEstimated', '');
+        return;
+      }
 
-      if (!Number.isNaN(months)) {
+      const months = validatePlainNumberInput(ev.target.value, estimatedMonthsConstraints).parsedValue;
+
+      if (months != null) {
         setFieldValue('monthsEstimated', months);
         setFieldValue('birthdate', calcBirthdate(yearsEstimateMeta.value, months, dateOfBirth));
       }
@@ -126,17 +164,19 @@ export const DobField: React.FC = () => {
           <div className={styles.grid}>
             <div className={styles.dobField}>
               <TextInput
+                {...yearsEstimated}
                 id="yearsEstimated"
                 type="number"
                 name={yearsEstimated.name}
                 onChange={onEstimatedYearsChange}
+                onKeyDown={preventInvalidEstimatedAgeKey(estimatedYearsConstraints)}
+                onPaste={preventInvalidEstimatedAgePaste(estimatedYearsConstraints)}
                 labelText={t('estimatedAgeInYearsLabelText', 'Estimated age in years')}
                 invalid={!!(yearsEstimateMeta.touched && yearsEstimateMeta.error)}
                 invalidText={yearsEstimateMeta.error && t(yearsEstimateMeta.error)}
                 value={yearsEstimated.value}
                 min={0}
                 required
-                {...yearsEstimated}
                 onBlur={(e) => {
                   yearsEstimated.onBlur(e);
                   setFieldTouched('yearsEstimated', true, false);
@@ -146,16 +186,18 @@ export const DobField: React.FC = () => {
             </div>
             <div className={styles.dobField}>
               <TextInput
+                {...monthsEstimated}
                 id="monthsEstimated"
                 type="number"
                 name={monthsEstimated.name}
                 onChange={onEstimatedMonthsChange}
+                onKeyDown={preventInvalidEstimatedAgeKey(estimatedMonthsConstraints)}
+                onPaste={preventInvalidEstimatedAgePaste(estimatedMonthsConstraints)}
                 labelText={t('estimatedAgeInMonthsLabelText', 'Estimated age in months')}
                 invalid={!!(monthsEstimateMeta.touched && monthsEstimateMeta.error)}
                 invalidText={monthsEstimateMeta.error && t(monthsEstimateMeta.error)}
                 value={monthsEstimated.value}
                 min={0}
-                {...monthsEstimated}
                 required={!yearsEstimateMeta.value}
                 onBlur={(e) => {
                   monthsEstimated.onBlur(e);

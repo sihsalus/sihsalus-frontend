@@ -30,6 +30,11 @@ import {
 import { CheckmarkFilled, SendFilled, User, UserFollow } from '@carbon/react/icons';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { getPreferredIdentifier, OpenmrsDatePicker, showSnackbar, useConfig } from '@openmrs/esm-framework';
+import {
+  shouldPreventPlainNumberKey,
+  shouldPreventPlainNumberPaste,
+  validatePlainNumberInput,
+} from '@openmrs/esm-utils';
 import dayjs from 'dayjs';
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Controller, useForm } from 'react-hook-form';
@@ -60,6 +65,7 @@ interface PatientSearchRegistrationProps {
 }
 
 const defaultNationalityCountryCode = 'PE';
+const ageInputConstraints = { integer: true, max: 130, min: 0, nonNegative: true };
 const nationalityOptions = [
   { code: 'PE', label: 'Perú' },
   { code: 'CO', label: 'Colombia' },
@@ -93,6 +99,22 @@ function addOptionalAttribute(
 ) {
   if (attributeTypeUuid && value) {
     attributes.push({ attributeType: attributeTypeUuid, value });
+  }
+}
+
+function preventInvalidAgeKey(event: React.KeyboardEvent<HTMLInputElement>) {
+  if (event.ctrlKey || event.metaKey || event.altKey) {
+    return;
+  }
+
+  if (shouldPreventPlainNumberKey(event.key, ageInputConstraints)) {
+    event.preventDefault();
+  }
+}
+
+function preventInvalidAgePaste(event: React.ClipboardEvent<HTMLInputElement>) {
+  if (shouldPreventPlainNumberPaste(event.clipboardData.getData('text'), ageInputConstraints)) {
+    event.preventDefault();
   }
 }
 
@@ -922,7 +944,14 @@ const PatientSearchRegistration: React.FC<PatientSearchRegistrationProps> = ({ o
                               invalid={!!errors.yearsEstimated}
                               invalidText={errors.yearsEstimated?.message}
                               disabled={isRegistering}
-                              {...register('yearsEstimated', { valueAsNumber: true })}
+                              onKeyDown={preventInvalidAgeKey}
+                              onPaste={preventInvalidAgePaste}
+                              {...register('yearsEstimated', {
+                                setValueAs: (value) =>
+                                  value === ''
+                                    ? undefined
+                                    : validatePlainNumberInput(value, ageInputConstraints).parsedValue,
+                              })}
                             />
                           </div>
                         )}
@@ -1054,6 +1083,10 @@ const PatientSearchRegistration: React.FC<PatientSearchRegistrationProps> = ({ o
                               labelText={t('companionAge', 'Edad')}
                               placeholder={t('enterCompanionAge', 'Años')}
                               disabled={isRegistering}
+                              invalid={!!errors.companionAge}
+                              invalidText={errors.companionAge?.message}
+                              onKeyDown={preventInvalidAgeKey}
+                              onPaste={preventInvalidAgePaste}
                               {...register('companionAge')}
                             />
                             <TextInput

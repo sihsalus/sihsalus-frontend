@@ -1,5 +1,10 @@
 import { InlineNotification, Layer, Select, SelectItem } from '@carbon/react';
 import { OpenmrsDatePicker, useConfig } from '@openmrs/esm-framework';
+import {
+  shouldPreventPlainNumberKey,
+  shouldPreventPlainNumberPaste,
+  validatePlainNumberInput,
+} from '@openmrs/esm-utils';
 import classNames from 'classnames';
 import { Field } from 'formik';
 import { useContext, useMemo } from 'react';
@@ -135,11 +140,21 @@ interface NumericObsFieldProps {
 }
 
 function NumericObsField({ concept, label, required }: NumericObsFieldProps) {
+  const { t } = useTranslation(moduleName);
   const fieldName = `obs.${concept.uuid}`;
+  const validateNumericInput = (value: string | number) => {
+    if (value === '' || value == null) {
+      return;
+    }
+
+    if (validatePlainNumberInput(value).isInvalidFormat) {
+      return t('invalidInput', 'Invalid Input');
+    }
+  };
 
   return (
     <div className={classNames(styles.customField, styles.halfWidthInDesktopView)}>
-      <Field name={fieldName}>
+      <Field name={fieldName} validate={validateNumericInput}>
         {({ field, form: { touched, errors }, meta }) => {
           return (
             <Input
@@ -148,6 +163,19 @@ function NumericObsField({ concept, label, required }: NumericObsFieldProps) {
               required={required}
               invalid={errors[fieldName] && touched[fieldName]}
               type="number"
+              onKeyDown={(event) => {
+                if (event.ctrlKey || event.metaKey || event.altKey) {
+                  return;
+                }
+                if (shouldPreventPlainNumberKey(event.key)) {
+                  event.preventDefault();
+                }
+              }}
+              onPaste={(event) => {
+                if (shouldPreventPlainNumberPaste(event.clipboardData.getData('text'))) {
+                  event.preventDefault();
+                }
+              }}
               {...field}
             />
           );

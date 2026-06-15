@@ -5,6 +5,12 @@ import React, { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useSWRConfig } from 'swr';
 import { processBillPayment } from '../../billing.resource';
+import {
+  getValidatedBillingNumber,
+  nonNegativeAmountConstraints,
+  preventInvalidBillingNumberKey,
+  preventInvalidBillingNumberPaste,
+} from '../../billing-number-input.utils';
 import type { BillingConfig } from '../../config-schema';
 import { apiBasePath } from '../../constants';
 import { calculateTotalAmount, convertToCurrency } from '../../helpers';
@@ -89,7 +95,21 @@ const BillWaiverForm: React.FC<BillWaiverFormProps> = ({ bill, lineItems, setPat
               label={t('amountToWaiveLabel', 'Amount to waive')}
               max={billTotal}
               min={0}
-              onChange={(_, { value }) => setWaiverAmount(Number(value) || 0)}
+              onChange={(_, { value }) =>
+                setWaiverAmount(
+                  getValidatedBillingNumber(
+                    value,
+                    { ...nonNegativeAmountConstraints, max: billTotal },
+                    {
+                      enforceRange: true,
+                    },
+                  ) ?? 0,
+                )
+              }
+              onKeyDown={(event) => preventInvalidBillingNumberKey(event, nonNegativeAmountConstraints)}
+              onPaste={(event) =>
+                preventInvalidBillingNumberPaste(event, { ...nonNegativeAmountConstraints, max: billTotal })
+              }
               value={waiverAmount}
             />
           </Layer>

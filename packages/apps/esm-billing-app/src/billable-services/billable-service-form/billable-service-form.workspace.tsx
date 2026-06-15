@@ -29,6 +29,12 @@ import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { Controller, useFieldArray, useForm, useWatch } from 'react-hook-form';
 import { useTranslation } from 'react-i18next';
 import { z } from 'zod';
+import {
+  getValidatedBillingNumber,
+  nonNegativeAmountConstraints,
+  preventInvalidBillingNumberKey,
+  preventInvalidBillingNumberPaste,
+} from '../../billing-number-input.utils';
 import type { BillableService, ServicePrice } from '../../types';
 import {
   createBillableService,
@@ -482,8 +488,14 @@ const BillableServiceFormWorkspace: React.FC<Workspace2DefinitionProps<BillableS
                           label={t('sellingPrice', 'Selling price')}
                           min={0}
                           onChange={(_, { value }) => {
-                            field.onChange(value === '' || value === undefined ? '' : value);
+                            field.onChange(
+                              value === '' || value === undefined
+                                ? ''
+                                : (getValidatedBillingNumber(value, nonNegativeAmountConstraints) ?? field.value ?? ''),
+                            );
                           }}
+                          onKeyDown={(event) => preventInvalidBillingNumberKey(event, nonNegativeAmountConstraints)}
+                          onPaste={(event) => preventInvalidBillingNumberPaste(event, nonNegativeAmountConstraints)}
                           placeholder={t('enterSellingPrice', 'Enter selling price')}
                           step={0.01}
                           value={field.value === undefined || field.value === null ? '' : field.value}

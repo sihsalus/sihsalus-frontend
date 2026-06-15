@@ -20,6 +20,13 @@ import {
 import React, { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { processBillItems, useBillableServices } from '../billing.resource';
+import {
+  billQuantityConstraints,
+  billQuantityFormatConstraints,
+  getValidatedBillingNumber,
+  preventInvalidBillingNumberKey,
+  preventInvalidBillingNumberPaste,
+} from '../billing-number-input.utils';
 import type { BillingConfig } from '../config-schema';
 import { calculateTotalAmount, convertToCurrency } from '../helpers/functions';
 import type { BillableItem, LineItem, ServicePrice } from '../types';
@@ -269,10 +276,12 @@ const BillingForm: React.FC<Workspace2DefinitionProps<BillingFormProps>> = ({
                         id={`quantity-${item.uuid}`}
                         invalid={!item.quantity || item.quantity < 1}
                         invalidText={t('quantityMustBeAtLeastOne', 'Quantity must be at least 1')}
+                        min={1}
                         onChange={(_, { value }) => {
-                          const number = parseFloat(String(value));
-                          updateQuantity(item.uuid, Number.isNaN(number) ? 0 : number);
+                          updateQuantity(item.uuid, getValidatedBillingNumber(value, billQuantityConstraints) ?? 0);
                         }}
+                        onKeyDown={(event) => preventInvalidBillingNumberKey(event, billQuantityFormatConstraints)}
+                        onPaste={(event) => preventInvalidBillingNumberPaste(event, billQuantityFormatConstraints)}
                         value={item.quantity}
                       />
                     </div>

@@ -1,9 +1,16 @@
 import { Dropdown, NumberInput } from '@carbon/react';
+import {
+  shouldPreventPlainNumberKey,
+  shouldPreventPlainNumberPaste,
+  validatePlainNumberInput,
+} from '@openmrs/esm-utils';
 import React, { useCallback, useMemo } from 'react';
 import { type Control, useController } from 'react-hook-form';
 import { useTranslation } from 'react-i18next';
 import { type ImmunizationSequenceDefinition } from '../../types/fhir-immunization-domain';
 import styles from './../immunizations-form.scss';
+
+const doseNumberConstraints = { integer: true, min: 1, nonNegative: true };
 
 export const DoseInput: React.FC<{
   vaccine: string;
@@ -28,12 +35,27 @@ export const DoseInput: React.FC<{
 
   const handleChange = useCallback(
     (_event, { value }) => {
-      const parsedValue =
-        value === '' || value === null || (typeof value === 'string' && !value.trim()) ? undefined : Number(value);
-      field.onChange(Number.isNaN(parsedValue) ? undefined : parsedValue);
+      const parsedValue = validatePlainNumberInput(value ?? '', doseNumberConstraints).parsedValue;
+      field.onChange(parsedValue);
     },
     [field],
   );
+
+  const handleKeyDown = useCallback((event: React.KeyboardEvent<HTMLInputElement>) => {
+    if (event.ctrlKey || event.metaKey || event.altKey) {
+      return;
+    }
+
+    if (shouldPreventPlainNumberKey(event.key, doseNumberConstraints)) {
+      event.preventDefault();
+    }
+  }, []);
+
+  const handlePaste = useCallback((event: React.ClipboardEvent<HTMLInputElement>) => {
+    if (shouldPreventPlainNumberPaste(event.clipboardData.getData('text'), doseNumberConstraints)) {
+      event.preventDefault();
+    }
+  }, []);
 
   return (
     <div className={styles.row}>
@@ -68,6 +90,8 @@ export const DoseInput: React.FC<{
           label={t('doseNumberWithinSeries', 'Dose number within series')}
           min={1}
           onChange={handleChange}
+          onKeyDown={handleKeyDown}
+          onPaste={handlePaste}
           required
           value={field.value}
           warn={showWarning}

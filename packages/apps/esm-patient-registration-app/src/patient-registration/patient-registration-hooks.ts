@@ -76,6 +76,7 @@ export function useInitialFormValues(patientUuid: string): [FormValues, Dispatch
     relationships: [],
     identifiers: {},
     address: {},
+    birthAddress: {},
   });
 
   useEffect(() => {
@@ -92,6 +93,7 @@ export function useInitialFormValues(patientUuid: string): [FormValues, Dispatch
           ...initialFormValues,
           ...getFormValuesFromFhirPatient(patientToEdit),
           address: getAddressFieldValuesFromFhirPatient(patientToEdit),
+          birthAddress: getAddressFieldValuesFromFhirPatient(patientToEdit, 'birth'),
           ...getPhonePersonAttributeValueFromFhirPatient(patientToEdit),
           birthdateEstimated: !/^\d{4}-\d{2}-\d{2}$/.test(patientToEdit.birthDate),
           yearsEstimated,
@@ -192,6 +194,7 @@ export function useInitialAddressFieldValues(patientUuid: string, fallback = {})
         setInitialAddressFieldValues({
           ...initialAddressFieldValues,
           address: getAddressFieldValuesFromFhirPatient(patient),
+          birthAddress: getAddressFieldValuesFromFhirPatient(patient, 'birth'),
         });
       } else if (!isLoading && patientUuid) {
         const registration = await getPatientRegistration(patientUuid);

@@ -3,6 +3,7 @@ import camelCase from 'lodash-es/camelCase';
 import * as Yup from 'yup';
 
 import {
+  type AddressProperties,
   type AddressValidationSchemaType,
   type Encounter,
   type FormValues,
@@ -12,6 +13,8 @@ import {
 } from './patient-registration.types';
 
 const familyName2ExtensionUrl = 'http://openmrs.org/fhir/StructureDefinition/patient-family-name2';
+export const birthAddressMarkerField: AddressProperties = 'address15';
+export const birthAddressMarker = 'SIHSALUS_BIRTH_ADDRESS';
 
 function getFamilyName2(name?: fhir.HumanName): string | undefined {
   const matchingExtension = name?.extension?.find((extension) => extension.url === familyName2ExtensionUrl);
@@ -143,9 +146,8 @@ export function getFormValuesFromFhirPatient(patient: fhir.Patient) {
   };
 }
 
-export function getAddressFieldValuesFromFhirPatient(patient: fhir.Patient) {
+function getAddressFieldValuesFromFhirAddress(address?: fhir.Address) {
   const result = {};
-  const address = patient.address?.[0];
 
   if (address) {
     for (const key of Object.keys(address)) {
@@ -177,15 +179,61 @@ export function getAddressFieldValuesFromFhirPatient(patient: fhir.Patient) {
   return result;
 }
 
+function getOpenmrsAddressExtensionValue(address: fhir.Address | undefined, field: AddressProperties) {
+  if (!address?.extension?.length) {
+    return undefined;
+  }
+
+  for (const extensionContainer of address.extension) {
+    const matchingExtension = extensionContainer.extension?.find((extension) => extension.url?.split('#')[1] === field);
+
+    if (matchingExtension?.valueString) {
+      return matchingExtension.valueString;
+    }
+  }
+
+  return undefined;
+}
+
+function getBirthAddressFromFhirPatient(patient: fhir.Patient) {
+  return patient.address?.find(
+    (address) => getOpenmrsAddressExtensionValue(address, birthAddressMarkerField) === birthAddressMarker,
+  );
+}
+
+function getResidenceAddressFromFhirPatient(patient: fhir.Patient) {
+  return (
+    patient.address?.find(
+      (address) =>
+        address.use === 'home' &&
+        getOpenmrsAddressExtensionValue(address, birthAddressMarkerField) !== birthAddressMarker,
+    ) ??
+    patient.address?.find(
+      (address) => getOpenmrsAddressExtensionValue(address, birthAddressMarkerField) !== birthAddressMarker,
+    )
+  );
+}
+
+export function getAddressFieldValuesFromFhirPatient(
+  patient: fhir.Patient,
+  addressKind: 'residence' | 'birth' = 'residence',
+) {
+  const address =
+    addressKind === 'birth' ? getBirthAddressFromFhirPatient(patient) : getResidenceAddressFromFhirPatient(patient);
+  return getAddressFieldValuesFromFhirAddress(address);
+}
+
 export function getPatientUuidMapFromFhirPatient(patient: fhir.Patient): PatientUuidMapType {
   const patientName = patient.name[0];
   const additionalPatientName = patient.name[1];
-  const address = patient.address?.[0];
+  const residenceAddress = getResidenceAddressFromFhirPatient(patient);
+  const birthAddress = getBirthAddressFromFhirPatient(patient);
 
   return {
     preferredNameUuid: patientName?.id,
     additionalNameUuid: additionalPatientName?.id,
-    preferredAddressUuid: address?.id,
+    preferredAddressUuid: residenceAddress?.id,
+    birthAddressUuid: birthAddress?.id,
     ...patient.identifier.map((identifier) => {
       const key = camelCase(identifier.system || identifier.type.text);
       return { [key]: { uuid: identifier.id, value: identifier.value } };

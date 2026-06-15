@@ -7,15 +7,19 @@ import { useAddressHierarchy } from './address-hierarchy.resource';
 import styles from './address-search.scss';
 import { type AddressFieldDefinition } from './address-types';
 
-interface AddressLayoutField {
-  name: string;
-}
-
 interface AddressSearchComponentProps {
   addressLayout: Array<AddressFieldDefinition>;
+  fieldPrefix?: string;
+  labelKey?: string;
+  labelDefault?: string;
 }
 
-const AddressSearchComponent: React.FC<AddressSearchComponentProps> = ({ addressLayout }) => {
+const AddressSearchComponent: React.FC<AddressSearchComponentProps> = ({
+  addressLayout,
+  fieldPrefix = 'address',
+  labelKey = 'addressHeader',
+  labelDefault = 'Address',
+}) => {
   const { t } = useTranslation(moduleName);
   const separator = ' > ';
   const searchBox = useRef(null);
@@ -58,7 +62,7 @@ const AddressSearchComponent: React.FC<AddressSearchComponentProps> = ({ address
     if (address) {
       const values = address.split(separator);
       addressLayout.forEach(({ name }, index) => {
-        setFieldValue(`address.${name}`, values?.[index] ?? '', false);
+        setFieldValue(`${fieldPrefix}.${name}`, values?.[index] ?? '', false);
       });
       setSearchString('');
       setDebouncedSearchString('');
@@ -80,7 +84,7 @@ const AddressSearchComponent: React.FC<AddressSearchComponentProps> = ({ address
   return (
     <div className={styles.autocomplete} ref={wrapper}>
       <span className={styles.searchLabel}>
-        {t('addressHeader', 'Address')} ({t('optional', 'optional')})
+        {t(labelKey, labelDefault)} ({t('optional', 'optional')})
       </span>
       <Search
         onChange={handleInputChange}

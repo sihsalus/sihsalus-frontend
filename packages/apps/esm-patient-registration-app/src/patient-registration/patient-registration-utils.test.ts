@@ -1,4 +1,10 @@
-import { filterOutUndefinedPatientIdentifiers } from './patient-registration-utils';
+import {
+  birthAddressMarker,
+  birthAddressMarkerField,
+  filterOutUndefinedPatientIdentifiers,
+  getAddressFieldValuesFromFhirPatient,
+  getPatientUuidMapFromFhirPatient,
+} from './patient-registration-utils';
 
 describe('filterOutUndefinedPatientIdentifiers', () => {
   const getIdentifiers = (autoGeneration = true, manualEntryEnabled = false) => ({
@@ -29,5 +35,79 @@ describe('filterOutUndefinedPatientIdentifiers', () => {
   it('should retain auto-generated identifiers with manual entry', () => {
     const filteredIdentifiers = filterOutUndefinedPatientIdentifiers(getIdentifiers(true, true));
     expect(filteredIdentifiers.OpenMRSId).toBeDefined();
+  });
+});
+
+describe('structured patient addresses', () => {
+  const openmrsAddressExtensionUrl = 'http://openmrs.org/fhir/StructureDefinition/address';
+
+  const getOpenmrsAddressExtension = (values: Record<string, string>) => ({
+    url: openmrsAddressExtensionUrl,
+    extension: Object.entries(values).map(([field, value]) => ({
+      url: `${openmrsAddressExtensionUrl}#${field}`,
+      valueString: value,
+    })),
+  });
+
+  const patient = {
+    name: [{ id: 'name-uuid', given: ['Juan'], family: 'Perez' }],
+    identifier: [],
+    address: [
+      {
+        id: 'birth-address-uuid',
+        country: 'PERU',
+        state: 'MAYNAS',
+        district: 'NAPO',
+        use: 'old',
+        extension: [
+          getOpenmrsAddressExtension({
+            address1: 'LORETO',
+            cityVillage: 'SANTA CLOTILDE',
+            [birthAddressMarkerField]: birthAddressMarker,
+          }),
+        ],
+      },
+      {
+        id: 'residence-address-uuid',
+        country: 'PERU',
+        state: 'CHURCAMPA',
+        district: 'CHURCAMPA',
+        use: 'home',
+        extension: [
+          getOpenmrsAddressExtension({
+            address1: 'HUANCAVELICA',
+            address4: 'JR LIMA 123',
+          }),
+        ],
+      },
+    ],
+  } as unknown as fhir.Patient;
+
+  it('reads the preferred residence address without using the birth address by position', () => {
+    expect(getAddressFieldValuesFromFhirPatient(patient)).toEqual({
+      address1: 'HUANCAVELICA',
+      address4: 'JR LIMA 123',
+      country: 'PERU',
+      countyDistrict: 'CHURCAMPA',
+      stateProvince: 'CHURCAMPA',
+    });
+  });
+
+  it('reads the structured birthplace address by marker', () => {
+    expect(getAddressFieldValuesFromFhirPatient(patient, 'birth')).toEqual({
+      address1: 'LORETO',
+      address15: birthAddressMarker,
+      cityVillage: 'SANTA CLOTILDE',
+      country: 'PERU',
+      countyDistrict: 'NAPO',
+      stateProvince: 'MAYNAS',
+    });
+  });
+
+  it('keeps separate address UUIDs for edit mode', () => {
+    expect(getPatientUuidMapFromFhirPatient(patient)).toMatchObject({
+      preferredAddressUuid: 'residence-address-uuid',
+      birthAddressUuid: 'birth-address-uuid',
+    });
   });
 });

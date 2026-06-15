@@ -6,7 +6,6 @@ import { type RegistrationConfig } from '../../config-schema';
 import { getValidationSchema } from './patient-registration-validation';
 
 const mockGetConfig = vi.mocked(getConfig);
-const birthplaceAttributeUuid = '8d8718c2-c2cc-11de-8d13-0010c6dffd0f';
 const phoneAttributeUuid = '14d4f066-15f5-102d-96e4-000c29c2a5d7';
 
 describe('Patient registration validation', () => {
@@ -49,16 +48,6 @@ describe('Patient registration validation', () => {
           type: 'person attribute',
           uuid: 'companion-name-attribute',
           showHeading: false,
-        },
-        {
-          id: 'birthplace',
-          type: 'person attribute',
-          uuid: birthplaceAttributeUuid,
-          showHeading: false,
-          validation: {
-            required: false,
-            matches: "^[A-Za-zÁÉÍÓÚÜÑáéíóúüñ0-9][A-Za-zÁÉÍÓÚÜÑáéíóúüñ0-9 ,.'\\-/()]{1,119}$",
-          },
         },
         {
           id: 'phone',
@@ -191,7 +180,6 @@ describe('Patient registration validation', () => {
     const validValues = {
       ...validFormValues,
       attributes: {
-        [birthplaceAttributeUuid]: 'Huancavelica - Churcampa',
         [phoneAttributeUuid]: '999 888 777',
       },
     };
@@ -206,19 +194,6 @@ describe('Patient registration validation', () => {
       ...validFormValues,
       attributes: {
         [phoneAttributeUuid]: 'e100',
-      },
-    };
-
-    const validationError = await validateFormValues(invalidFormValues);
-
-    expect(validationError.errors).toContain('invalidInput');
-  });
-
-  it('should reject unsupported birthplace characters', async () => {
-    const invalidFormValues = {
-      ...validFormValues,
-      attributes: {
-        [birthplaceAttributeUuid]: '###',
       },
     };
 

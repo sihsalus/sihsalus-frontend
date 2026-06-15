@@ -23,7 +23,7 @@ describe('getEffectiveRegistrationConfig', () => {
     expect(demographics?.fields).toEqual(['name', 'dob', 'gender', 'nationality']);
     expect(contact).toMatchObject({
       id: 'contact',
-      fields: ['address', 'birthplace', 'phone', 'mobilePhone'],
+      fields: ['address', 'birthAddress', 'phone', 'mobilePhone'],
     });
     expect(filiation?.fields).not.toContain('birthplace');
     expect(filiation?.fields).not.toContain('bloodGroup');
@@ -134,6 +134,8 @@ describe('getEffectiveRegistrationConfig', () => {
     expect(config.sectionDefinitions.find((section) => section.id === 'insurance')?.fields).not.toContain('sisLookup');
     expect(config.fieldConfigurations.phone.personAttributeUuid).toBe(peruPhoneAttributeTypeUuid);
     expect(config.fieldConfigurations.phone.validation?.matches).toBe('^\\+?[0-9][0-9\\s().-]{5,19}$');
+    expect(config.sectionDefinitions.find((section) => section.id === 'contact')?.fields).toContain('birthAddress');
+    expect(config.sectionDefinitions.find((section) => section.id === 'contact')?.fields).not.toContain('birthplace');
     expect(fieldsById.birthplace.validation?.matches).toBe(
       "^[A-Za-zÁÉÍÓÚÜÑáéíóúüñ0-9][A-Za-zÁÉÍÓÚÜÑáéíóúüñ0-9 ,.'\\-/()]{1,119}$",
     );
@@ -157,6 +159,26 @@ describe('getEffectiveRegistrationConfig', () => {
       'medicalRecord',
       'insurance',
       'responsiblePerson',
+    ]);
+  });
+
+  it('normalizes legacy contact birthplace fields to structured birthAddress', () => {
+    const defaultConfig = getDefaultsFromConfigSchema(esmPatientRegistrationSchema) as RegistrationConfig;
+    defaultConfig.sectionDefinitions = [
+      {
+        id: 'contact',
+        name: 'Contact Details',
+        fields: ['address', 'birthplace', 'phone'],
+      },
+    ];
+
+    const config = getEffectiveRegistrationConfig(defaultConfig);
+
+    expect(config.sectionDefinitions.find((section) => section.id === 'contact')?.fields).toEqual([
+      'address',
+      'birthAddress',
+      'phone',
+      'mobilePhone',
     ]);
   });
 });

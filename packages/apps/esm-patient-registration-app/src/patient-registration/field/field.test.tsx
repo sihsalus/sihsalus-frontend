@@ -12,6 +12,13 @@ import { PatientRegistrationContext } from '../patient-registration-context';
 
 import { Field } from './field.component';
 
+vi.mock('./address/address-hierarchy.resource', async () => ({
+  ...(await vi.importActual('./address/address-hierarchy.resource')),
+  useOrderedAddressHierarchyLevels: vi
+    .fn()
+    .mockReturnValue({ orderedFields: [], isLoadingFieldOrder: false, errorFetchingFieldOrder: null }),
+}));
+
 const mockUseConfig = vi.mocked(useConfig<RegistrationConfig>);
 
 const predefinedAddressTemplate = {
@@ -172,13 +179,6 @@ describe('Field', () => {
   });
 
   it('should render AddressComponent component when name prop is "address"', () => {
-    vi.mock('./address/address-hierarchy.resource', async () => ({
-      ...(await vi.importActual('./address/address-hierarchy.resource')),
-      useOrderedAddressHierarchyLevels: vi
-        .fn()
-        .mockReturnValue({ orderedFields: [], isLoadingFieldOrder: false, errorFetchingFieldOrder: null }),
-    }));
-
     mockUseConfig.mockReturnValue({
       ...getDefaultsFromConfigSchema(esmPatientRegistrationSchema),
       fieldConfigurations: {
@@ -194,6 +194,24 @@ describe('Field', () => {
 
     render(<Field name="address" />, { wrapper: ContextWrapper });
     expect(screen.getByText('Address')).toBeInTheDocument();
+  });
+
+  it('should render AddressComponent component when name prop is "birthAddress"', () => {
+    mockUseConfig.mockReturnValue({
+      ...getDefaultsFromConfigSchema(esmPatientRegistrationSchema),
+      fieldConfigurations: {
+        address: {
+          useAddressHierarchy: {
+            enabled: false,
+            useQuickSearch: false,
+            searchAddressByLevel: false,
+          },
+        },
+      } as RegistrationConfig['fieldConfigurations'],
+    });
+
+    render(<Field name="birthAddress" />, { wrapper: ContextWrapper });
+    expect(screen.getByText('Lugar de nacimiento')).toBeInTheDocument();
   });
 
   it('should render Identifiers component when name prop is "id"', () => {

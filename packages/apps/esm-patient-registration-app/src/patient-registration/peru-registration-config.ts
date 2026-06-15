@@ -25,7 +25,7 @@ const peruPreRegistrationSections = ['identityLookup'];
 const peruSections = ['filiation', 'bloodData', 'medicalRecord', 'insurance', 'responsiblePerson'];
 const peruIdentityLookupFieldOrder = ['id', 'reniecLookup', 'sisLookup'];
 const peruDemographicsFieldOrder = ['name', 'dob', 'gender', 'nationality'];
-const peruContactFieldOrder = ['address', 'birthplace', 'phone', 'mobilePhone'];
+const peruContactFieldOrder = ['address', 'birthAddress', 'phone', 'mobilePhone'];
 const peruBirthplaceValidationRegex = "^[A-Za-zÁÉÍÓÚÜÑáéíóúüñ0-9][A-Za-zÁÉÍÓÚÜÑáéíóúüñ0-9 ,.'\\-/()]{1,119}$";
 const peruPhoneValidationRegex = '^\\+?[0-9][0-9\\s().-]{5,19}$';
 const peruPersonNameValidationRegex = "^[A-Za-zÁÉÍÓÚÜÑáéíóúüñ][A-Za-zÁÉÍÓÚÜÑáéíóúüñ'.\\- ]*$";
@@ -46,7 +46,7 @@ const peruSectionDefinitions: Array<SectionDefinition> = [
   {
     id: 'contact',
     name: 'Residencia, nacimiento y contacto',
-    fields: ['address', 'birthplace', 'phone', 'mobilePhone'],
+    fields: ['address', 'birthAddress', 'phone', 'mobilePhone'],
   },
   {
     id: 'filiation',
@@ -307,9 +307,13 @@ function orderPeruDemographicsSection(sectionDefinitions: Array<SectionDefinitio
 
 function orderPeruDemographicsFields(fields: Array<string>) {
   const visibleDemographicsFields = [
-    ...fields
-      .filter((field) => !peruIdentityLookupFieldOrder.includes(field) && field !== 'minsaLookup')
-      .map((field) => (field === 'birthplace' ? 'birthplace' : field)),
+    ...fields.filter(
+      (field) =>
+        !peruIdentityLookupFieldOrder.includes(field) &&
+        field !== 'minsaLookup' &&
+        field !== 'birthplace' &&
+        field !== 'birthAddress',
+    ),
     'nationality',
   ].filter((field, index, demographicsFields) => demographicsFields.indexOf(field) === index);
 
@@ -350,12 +354,14 @@ function orderPeruContactSection(sectionDefinitions: Array<SectionDefinition>) {
       return section;
     }
 
+    const fields = section.fields.map((field) => (field === 'birthplace' ? 'birthAddress' : field));
+
     return {
       ...section,
       fields: [
-        ...peruContactFieldOrder.filter((field) => section.fields.includes(field)),
-        ...section.fields.filter((field) => !peruContactFieldOrder.includes(field)),
-      ],
+        ...peruContactFieldOrder.filter((field) => fields.includes(field)),
+        ...fields.filter((field) => !peruContactFieldOrder.includes(field)),
+      ].filter((field, index, fields) => fields.indexOf(field) === index),
     };
   });
 }

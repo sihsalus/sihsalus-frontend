@@ -66,10 +66,10 @@ export function useAddressEntries(fetchResults, searchString) {
  * This hook returns the valid search term for valid fields to get suitable entries for the field
  * This also returns the function to reset the lower ordered fields if the value of a field is changed.
  */
-export function useAddressEntryFetchConfig(addressField: string) {
+export function useAddressEntryFetchConfig(addressField: string, fieldPrefix = 'address') {
   const { orderedFields, isLoadingFieldOrder } = useOrderedAddressHierarchyLevels();
   const { setFieldValue } = useContext(PatientRegistrationContext);
-  const [, { value: addressValues }] = useField('address');
+  const [, { value: addressValues }] = useField(fieldPrefix);
 
   const index = useMemo(
     () => (!isLoadingFieldOrder ? (orderedFields?.indexOf(addressField) ?? -1) : -1),
@@ -103,9 +103,9 @@ export function useAddressEntryFetchConfig(addressField: string) {
       return;
     }
     orderedFields.slice(index + 1).forEach((fieldName) => {
-      setFieldValue(`address.${fieldName}`, '', false);
+      setFieldValue(`${fieldPrefix}.${fieldName}`, '', false);
     });
-  }, [index, isLoadingFieldOrder, orderedFields, setFieldValue]);
+  }, [fieldPrefix, index, isLoadingFieldOrder, orderedFields, setFieldValue]);
 
   const results = useMemo(
     () => ({

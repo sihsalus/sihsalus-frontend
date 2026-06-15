@@ -10,6 +10,7 @@
   "birthdayNotOver140YearsAgo": "Birthday cannot be more than 140 years ago",
   "birthdayRequired": "Birthday is required",
   "birthFieldLabelText": "Birth",
+  "birthAddressSearchLabel": "Search birthplace",
   "birthplaceSubsectionHeading": "Birthplace",
   "cancel": "Cancel",
   "causeOfDeathInputLabel": "Cause of death",

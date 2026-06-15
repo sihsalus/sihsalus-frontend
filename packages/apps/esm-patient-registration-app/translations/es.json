@@ -10,6 +10,7 @@
   "birthdayNotOver140YearsAgo": "La fecha de nacimiento no puede ser de hace más de 140 años",
   "birthdayRequired": "La fecha de nacimiento es obligatoria",
   "birthFieldLabelText": "Nacimiento",
+  "birthAddressSearchLabel": "Buscar lugar de nacimiento",
   "birthplaceSubsectionHeading": "Lugar de nacimiento",
   "cancel": "Cancelar",
   "causeOfDeathInputLabel": "Causa de muerte",

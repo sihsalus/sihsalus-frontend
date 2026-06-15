@@ -55,6 +55,7 @@
       "@openmrs/esm-translations": ["../node_modules/@openmrs/esm-translations/dist/index"],
       "@openmrs/esm-translations/src/public": ["../node_modules/@openmrs/esm-translations/dist/public"],
       "@openmrs/esm-utils": ["../node_modules/@openmrs/esm-utils/dist/index"],
+      "@sihsalus/esm-form-engine-lib": ["./libs/esm-form-engine-lib/src/index"],
       "test-utils": ["./test-utils/index.tsx"],
       "test-utils/*": ["./test-utils/*"],
       "@openmrs/*": ["./apps/*"]

@@ -1,6 +1,7 @@
-import { reportError, useConfig } from '@openmrs/esm-framework';
+import { reportError, useConfig, useFeatureFlag } from '@openmrs/esm-framework';
 
 import { builtInFields, type RegistrationConfig } from '../../config-schema';
+import { externalIdentityLookupsFlag } from '../../constants';
 import { getEffectiveRegistrationConfig } from '../peru-registration-config';
 
 import { AddressComponent } from './address/address-field.component';
@@ -21,6 +22,7 @@ export interface FieldProps {
 
 export function Field({ name }: FieldProps) {
   const config = getEffectiveRegistrationConfig(useConfig() as RegistrationConfig);
+  const externalLookupsEnabled = useFeatureFlag(externalIdentityLookupsFlag);
   if (
     !(builtInFields as ReadonlyArray<string>).includes(name) &&
     !config.fieldDefinitions.some((def) => def.id === name)
@@ -37,9 +39,9 @@ export function Field({ name }: FieldProps) {
   switch (name) {
     case 'reniecLookup':
     case 'minsaLookup':
-      return <ReniecLookupField />;
+      return externalLookupsEnabled ? <ReniecLookupField /> : null;
     case 'sisLookup':
-      return <SisLookupField />;
+      return externalLookupsEnabled ? <SisLookupField /> : null;
     case 'name':
       return <NameField />;
     case 'gender':

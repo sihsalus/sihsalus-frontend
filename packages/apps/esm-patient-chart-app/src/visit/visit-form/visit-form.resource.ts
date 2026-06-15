@@ -12,6 +12,11 @@ import useSWR from 'swr';
 
 import { useOfflineVisitType } from '../hooks/useOfflineVisitType';
 
+const addressExtensionUrl = 'http://openmrs.org/fhir/StructureDefinition/address';
+const birthAddressMarkerField = 'address15';
+const birthAddressMarker = 'SIHSALUS_BIRTH_ADDRESS';
+const defaultAddressFieldsForVisitAttribute = ['cityVillage', 'countyDistrict', 'stateProvince', 'address1', 'country'];
+
 export type VisitFormData = {
   visitStartDate: Date;
   visitStartTime: string;
@@ -28,6 +33,13 @@ export type VisitFormData = {
   visitAttributes: {
     [x: string]: string;
   };
+};
+
+export type PatientAddressVisitAttributeDefault = {
+  visitAttributeTypeUuid: string;
+  addressKind?: 'residence' | 'birth' | string;
+  addressFields?: Array<string>;
+  separator?: string;
 };
 
 export function useConditionalVisitTypes() {
@@ -75,6 +87,72 @@ export function usePersonAttributesForVisitDefaults(patientUuid?: string) {
     }),
     [data?.data?.results, error, isLoading],
   );
+}
+
+function getOpenmrsAddressExtensionValue(address: fhir.Address | undefined, field: string) {
+  const addressExtension = address?.extension?.find((extension) => extension.url === addressExtensionUrl);
+  return addressExtension?.extension?.find((extension) => extension.url?.split('#')[1] === field)?.valueString;
+}
+
+function getAddressFieldValue(address: fhir.Address | undefined, field: string) {
+  if (!address) {
+    return undefined;
+  }
+
+  switch (field) {
+    case 'cityVillage':
+      return address.city;
+    case 'stateProvince':
+      return address.state;
+    case 'countyDistrict':
+      return address.district;
+    case 'postalCode':
+      return address.postalCode;
+    case 'country':
+      return address.country;
+    default:
+      return getOpenmrsAddressExtensionValue(address, field);
+  }
+}
+
+function isBirthAddress(address: fhir.Address | undefined) {
+  return getOpenmrsAddressExtensionValue(address, birthAddressMarkerField) === birthAddressMarker;
+}
+
+function getPatientAddress(patient: fhir.Patient | undefined, addressKind: string | undefined) {
+  if (addressKind === 'birth') {
+    return patient?.address?.find(isBirthAddress);
+  }
+
+  return (
+    patient?.address?.find((address) => address.use === 'home' && !isBirthAddress(address)) ??
+    patient?.address?.find((address) => !isBirthAddress(address))
+  );
+}
+
+export function getDefaultVisitAttributesFromPatientAddress(
+  patient: fhir.Patient | undefined,
+  mappings: Array<PatientAddressVisitAttributeDefault> = [],
+  configuredVisitAttributeUuids = new Set<string>(),
+) {
+  return mappings.reduce<Record<string, string>>((defaults, mapping) => {
+    if (!configuredVisitAttributeUuids.has(mapping.visitAttributeTypeUuid)) {
+      return defaults;
+    }
+
+    const address = getPatientAddress(patient, mapping.addressKind);
+    const fields = mapping.addressFields?.length ? mapping.addressFields : defaultAddressFieldsForVisitAttribute;
+    const separator = mapping.separator ?? ', ';
+    const values = fields
+      .map((field) => getAddressFieldValue(address, field)?.trim())
+      .filter((value, index, values) => !!value && values.indexOf(value) === index);
+
+    if (values.length) {
+      defaults[mapping.visitAttributeTypeUuid] = values.join(separator);
+    }
+
+    return defaults;
+  }, {});
 }
 
 export function createVisitAttribute(visitUuid: string, attributeType: string, value: string) {

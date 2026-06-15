@@ -1,3 +1,5 @@
+/* biome-ignore-all lint/correctness/noUnknownPseudoClass: :global() is required because the app processes CSS imports as CSS Modules. */
+
 /* The project's rspack config processes all .css files as CSS Modules,
    hashing class selectors. We use literal classNames in the JSX so the
    selector is wrapped in :global() to keep the name un-hashed. */

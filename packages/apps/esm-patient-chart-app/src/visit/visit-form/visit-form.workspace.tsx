@@ -64,6 +64,7 @@ import VisitDateTimeField from './visit-date-time.component';
 import {
   createVisitAttribute,
   deleteVisitAttribute,
+  getDefaultVisitAttributesFromPatientAddress,
   updateVisitAttribute,
   useConditionalVisitTypes,
   usePersonAttributesForVisitDefaults,
@@ -261,7 +262,7 @@ const StartVisitForm: React.FC<StartVisitFormProps> = (props) => {
         visitToEdit?.attributes.reduce<Record<string, string>>((acc, curr) => {
           acc[curr.attributeType.uuid] = typeof curr.value === 'object' ? curr?.value?.uuid : `${curr.value ?? ''}`;
           return acc;
-        }, {}) ?? getDefaultVisitAttributesFromPersonAttributes(),
+        }, {}) ?? getDefaultVisitAttributes(),
     };
 
     if (visitStopDate) {
@@ -273,29 +274,37 @@ const StartVisitForm: React.FC<StartVisitFormProps> = (props) => {
       };
     }
 
-    function getDefaultVisitAttributesFromPersonAttributes() {
+    function getDefaultVisitAttributes() {
       const configuredVisitAttributeUuids = new Set(config.visitAttributeTypes?.map(({ uuid }) => uuid));
-
-      return (config.defaultVisitAttributesFromPersonAttributes ?? []).reduce<Record<string, string>>(
-        (defaults, { personAttributeTypeUuid, visitAttributeTypeUuid }) => {
-          if (!configuredVisitAttributeUuids.has(visitAttributeTypeUuid)) {
-            return defaults;
-          }
-
-          const personAttribute = personAttributesForVisitDefaults.find(
-            (attribute) => attribute.attributeType.uuid === personAttributeTypeUuid,
-          );
-          const value = personAttribute?.value;
-          const normalizedValue = typeof value === 'object' ? value?.uuid : value;
-
-          if (normalizedValue) {
-            defaults[visitAttributeTypeUuid] = normalizedValue;
-          }
-
+      const personAttributeDefaults = (config.defaultVisitAttributesFromPersonAttributes ?? []).reduce<
+        Record<string, string>
+      >((defaults, { personAttributeTypeUuid, visitAttributeTypeUuid }) => {
+        if (!configuredVisitAttributeUuids.has(visitAttributeTypeUuid)) {
           return defaults;
-        },
-        {},
+        }
+
+        const personAttribute = personAttributesForVisitDefaults.find(
+          (attribute) => attribute.attributeType.uuid === personAttributeTypeUuid,
+        );
+        const value = personAttribute?.value;
+        const normalizedValue = typeof value === 'object' ? value?.uuid : value;
+
+        if (normalizedValue) {
+          defaults[visitAttributeTypeUuid] = normalizedValue;
+        }
+
+        return defaults;
+      }, {});
+      const addressDefaults = getDefaultVisitAttributesFromPatientAddress(
+        patient,
+        config.defaultVisitAttributesFromPatientAddress,
+        configuredVisitAttributeUuids,
       );
+
+      return {
+        ...addressDefaults,
+        ...personAttributeDefaults,
+      };
     }
 
     return defaultValues;
@@ -303,8 +312,10 @@ const StartVisitForm: React.FC<StartVisitFormProps> = (props) => {
     visitToEdit,
     defaultVisitLocation,
     emrConfiguration,
+    patient,
     config.visitAttributeTypes,
     config.defaultVisitAttributesFromPersonAttributes,
+    config.defaultVisitAttributesFromPatientAddress,
     personAttributesForVisitDefaults,
   ]);
 

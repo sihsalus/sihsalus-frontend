@@ -178,6 +178,49 @@ export const esmPatientChartSchema = {
         required: false,
         displayInThePatientBanner: true,
       },
+      {
+        uuid: '9b640334-69e7-49a8-bc8d-1a379742f2f1',
+        required: false,
+        displayInThePatientBanner: true,
+      },
+    ],
+  },
+  defaultVisitAttributesFromPatientAddress: {
+    _type: Type.Array,
+    _description:
+      'Mappings used to prefill visit attributes from patient addresses when starting a visit. Values remain editable in the form.',
+    _elements: {
+      visitAttributeTypeUuid: {
+        _type: Type.UUID,
+        _description: 'UUID of the visit attribute type used as target',
+      },
+      addressKind: {
+        _type: Type.String,
+        _description: 'Patient address to use as source. Supported values: residence, birth.',
+        _default: 'residence',
+      },
+      addressFields: {
+        _type: Type.Array,
+        _description:
+          'Address fields to concatenate for the visit attribute value, ordered from more specific to broader.',
+        _elements: {
+          _type: Type.String,
+        },
+        _default: [],
+      },
+      separator: {
+        _type: Type.String,
+        _description: 'Separator used to join address field values.',
+        _default: ', ',
+      },
+    },
+    _default: [
+      {
+        visitAttributeTypeUuid: '9b640334-69e7-49a8-bc8d-1a379742f2f1',
+        addressKind: 'residence',
+        addressFields: ['cityVillage', 'countyDistrict', 'stateProvince', 'address1', 'country'],
+        separator: ', ',
+      },
     ],
   },
   defaultVisitAttributesFromPersonAttributes: {
@@ -272,6 +315,12 @@ export interface ChartConfig {
   defaultVisitAttributesFromPersonAttributes: Array<{
     personAttributeTypeUuid: string;
     visitAttributeTypeUuid: string;
+  }>;
+  defaultVisitAttributesFromPatientAddress: Array<{
+    visitAttributeTypeUuid: string;
+    addressKind?: 'residence' | 'birth' | string;
+    addressFields?: Array<string>;
+    separator?: string;
   }>;
   visitDiagnosisConceptUuid: string;
   requireActiveVisitForEncounterTile: boolean;

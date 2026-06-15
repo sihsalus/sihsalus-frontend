@@ -54,6 +54,18 @@ export function Field({ name }: FieldProps) {
       return <CauseOfDeathField />;
     case 'address':
       return <AddressComponent />;
+    case 'birthAddress':
+      return (
+        <AddressComponent
+          fieldPrefix="birthAddress"
+          headingKey="birthplaceSubsectionHeading"
+          headingDefault="Lugar de nacimiento"
+          searchLabelKey="birthAddressSearchLabel"
+          searchLabelDefault="Buscar lugar de nacimiento"
+          applyDefaults={false}
+          forceOptionalFields={true}
+        />
+      );
     case 'id':
       return <Identifiers />;
     case 'phone':

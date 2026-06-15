@@ -28,18 +28,65 @@ import {
   updateRelationship,
 } from './patient-registration.resource';
 import {
+  type AddressProperties,
   type AttributeValue,
   type CapturePhotoProps,
   type Encounter,
   type FormValues,
   type Patient,
+  type PatientAddress,
   type PatientIdentifier,
   type PatientRegistration,
   type PatientUuidMapType,
   type RelationshipValue,
 } from './patient-registration.types';
+import { birthAddressMarker, birthAddressMarkerField } from './patient-registration-utils';
 
 const familyName2ExtensionUrl = 'http://openmrs.org/fhir/StructureDefinition/patient-family-name2';
+const addressExtensionUrl = 'http://openmrs.org/fhir/StructureDefinition/address';
+const fhirAddressExtensionFields: Array<AddressProperties> = [
+  'address1',
+  'address2',
+  'address3',
+  'address4',
+  'address5',
+  'address6',
+  'address7',
+  'address8',
+  'address9',
+  'address10',
+  'address11',
+  'address12',
+  'address13',
+  'address14',
+  'address15',
+  'cityVillage',
+  'stateProvince',
+  'countyDistrict',
+  'postalCode',
+  'country',
+];
+
+function hasAddressContent(address: FormValues['address'] | undefined) {
+  return Object.entries(address ?? {}).some(([field, value]) => field !== birthAddressMarkerField && !!value?.trim());
+}
+
+function cleanAddress(address: FormValues['address'] | undefined): Partial<Record<AddressProperties, string>> {
+  return Object.fromEntries(
+    Object.entries(address ?? {}).filter(([, value]) => typeof value === 'string' && value.trim()),
+  ) as Partial<Record<AddressProperties, string>>;
+}
+
+function getAddressExtensions(address: PatientAddress) {
+  const extension = fhirAddressExtensionFields
+    .filter((field) => !!address[field])
+    .map((field) => ({
+      url: `${addressExtensionUrl}#${field}`,
+      valueString: address[field],
+    }));
+
+  return extension.length ? [{ url: addressExtensionUrl, extension }] : undefined;
+}
 
 export type SavePatientForm = (
   isNewPatient: boolean,
@@ -349,11 +396,34 @@ export class FormManager {
         birthdate,
         birthdateEstimated: values.birthdateEstimated,
         attributes: FormManager.getPatientAttributes(isNewPatient, values, patientUuidMap),
-        addresses: [values.address],
+        addresses: FormManager.getPatientAddresses(values, patientUuidMap),
         ...FormManager.getPatientDeathInfo(values, config),
       },
       identifiers,
     };
+  }
+
+  static getPatientAddresses(values: FormValues, patientUuidMap: PatientUuidMapType): Array<PatientAddress> {
+    const residenceAddress: PatientAddress = {
+      ...cleanAddress(values.address),
+      uuid: patientUuidMap.preferredAddressUuid,
+      preferred: true,
+    };
+
+    const shouldPersistBirthAddress = hasAddressContent(values.birthAddress) || !!patientUuidMap.birthAddressUuid;
+    if (!shouldPersistBirthAddress) {
+      return [residenceAddress];
+    }
+
+    return [
+      residenceAddress,
+      {
+        ...cleanAddress(values.birthAddress),
+        uuid: patientUuidMap.birthAddressUuid,
+        preferred: false,
+        [birthAddressMarkerField]: birthAddressMarker,
+      },
+    ];
   }
 
   static getNames(values: FormValues, patientUuidMap: PatientUuidMapType) {
@@ -462,11 +532,14 @@ export class FormManager {
         ...(name.familyName2 ? { extension: [{ url: familyName2ExtensionUrl, valueString: name.familyName2 }] } : {}),
       })),
       address: patient.person?.addresses.map((address) => ({
+        id: address.uuid,
         city: address.cityVillage,
         country: address.country,
+        district: address.countyDistrict,
         postalCode: address.postalCode,
         state: address.stateProvince,
-        use: 'home',
+        use: address.preferred === false ? 'old' : 'home',
+        extension: getAddressExtensions(address),
       })),
       telecom: phoneAttribute
         ? [

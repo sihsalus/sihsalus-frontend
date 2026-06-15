@@ -113,11 +113,16 @@ export type Patient = {
     birthdate: string;
     birthdateEstimated: boolean;
     attributes: Array<AttributeValue>;
-    addresses: Array<Record<string, string>>;
+    addresses: Array<PatientAddress>;
     dead: boolean;
     deathDate?: string;
     causeOfDeath?: string;
   };
+};
+
+export type PatientAddress = Partial<Record<AddressProperties, string>> & {
+  uuid?: string;
+  preferred?: boolean;
 };
 
 export interface Encounter {
@@ -165,6 +170,9 @@ export interface FormValues {
   address: {
     [addressField: string]: string;
   };
+  birthAddress?: {
+    [addressField: string]: string;
+  };
   attributes?: {
     [attributeTypeUuid: string]: string;
   };
@@ -196,6 +204,7 @@ export interface FormValues {
 
 export interface PatientUuidMapType {
   additionalNameUuid?: string;
+  birthAddressUuid?: string;
   preferredNameUuid?: string;
   preferredAddressUuid?: string;
 }

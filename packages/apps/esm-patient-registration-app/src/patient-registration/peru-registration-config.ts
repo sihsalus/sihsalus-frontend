@@ -9,6 +9,7 @@ export const peruInsuranceAccreditationCheckedAtAttributeTypeUuid = '9b3df0a1-0c
 export const peruInsuranceAccreditationActiveConceptUuid = '9b3df0a1-0c58-4f55-9868-9c38f1db2051';
 export const peruInsuranceAccreditationInactiveConceptUuid = '9b3df0a1-0c58-4f55-9868-9c38f1db2052';
 export const peruPhoneAttributeTypeUuid = '14d4f066-15f5-102d-96e4-000c29c2a5d7';
+export const peruMobilePhoneAttributeTypeUuid = 'fee4e8ef-aef8-4bb9-8ed0-7ded6055c61f';
 
 const peruDefaultPatientIdentifierTypeUuids = [
   peruDniPatientIdentifierTypeUuid, // DNI
@@ -24,8 +25,7 @@ const peruPreRegistrationSections = ['identityLookup'];
 const peruSections = ['filiation', 'bloodData', 'medicalRecord', 'insurance', 'responsiblePerson'];
 const peruIdentityLookupFieldOrder = ['id', 'reniecLookup', 'sisLookup'];
 const peruDemographicsFieldOrder = ['name', 'dob', 'gender', 'nationality'];
-const peruContactFieldOrder = ['address', 'birthplace', 'phone'];
-const peruBirthplaceValidationRegex = "^[A-Za-zÁÉÍÓÚÜÑáéíóúüñ0-9][A-Za-zÁÉÍÓÚÜÑáéíóúüñ0-9 ,.'\\-/()]{1,119}$";
+const peruContactFieldOrder = ['address', 'birthAddress', 'phone', 'mobilePhone'];
 const peruPhoneValidationRegex = '^\\+?[0-9][0-9\\s().-]{5,19}$';
 const peruPersonNameValidationRegex = "^[A-Za-zÁÉÍÓÚÜÑáéíóúüñ][A-Za-zÁÉÍÓÚÜÑáéíóúüñ'.\\- ]*$";
 const peruAgeValidationRegex = '^(?:[0-9]|[1-9][0-9]|1[01][0-9]|120)$';
@@ -45,7 +45,7 @@ const peruSectionDefinitions: Array<SectionDefinition> = [
   {
     id: 'contact',
     name: 'Residencia, nacimiento y contacto',
-    fields: ['address', 'birthplace', 'phone'],
+    fields: ['address', 'birthAddress', 'phone', 'mobilePhone'],
   },
   {
     id: 'filiation',
@@ -76,12 +76,12 @@ const peruSectionDefinitions: Array<SectionDefinition> = [
 
 const peruFieldDefinitions: Array<FieldDefinition> = [
   {
-    id: 'birthplace',
+    id: 'mobilePhone',
     type: 'person attribute',
-    uuid: '8d8718c2-c2cc-11de-8d13-0010c6dffd0f',
-    label: 'Lugar de nacimiento',
+    uuid: peruMobilePhoneAttributeTypeUuid,
+    label: 'Número de Celular',
     showHeading: false,
-    validation: { required: false, matches: peruBirthplaceValidationRegex },
+    validation: { required: false, matches: peruPhoneValidationRegex },
   },
   {
     id: 'nationality',
@@ -298,9 +298,13 @@ function orderPeruDemographicsSection(sectionDefinitions: Array<SectionDefinitio
 
 function orderPeruDemographicsFields(fields: Array<string>) {
   const visibleDemographicsFields = [
-    ...fields
-      .filter((field) => !peruIdentityLookupFieldOrder.includes(field) && field !== 'minsaLookup')
-      .map((field) => (field === 'birthplace' ? 'birthplace' : field)),
+    ...fields.filter(
+      (field) =>
+        !peruIdentityLookupFieldOrder.includes(field) &&
+        field !== 'minsaLookup' &&
+        field !== 'birthplace' &&
+        field !== 'birthAddress',
+    ),
     'nationality',
   ].filter((field, index, demographicsFields) => demographicsFields.indexOf(field) === index);
 
@@ -341,12 +345,14 @@ function orderPeruContactSection(sectionDefinitions: Array<SectionDefinition>) {
       return section;
     }
 
+    const fields = section.fields.filter((field) => field !== 'birthplace');
+
     return {
       ...section,
       fields: [
-        ...peruContactFieldOrder.filter((field) => section.fields.includes(field)),
-        ...section.fields.filter((field) => !peruContactFieldOrder.includes(field)),
-      ],
+        ...peruContactFieldOrder.filter((field) => fields.includes(field)),
+        ...fields.filter((field) => !peruContactFieldOrder.includes(field)),
+      ].filter((field, index, fields) => fields.indexOf(field) === index),
     };
   });
 }

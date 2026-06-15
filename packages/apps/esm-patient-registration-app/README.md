@@ -25,23 +25,22 @@ El registro Perú muestra residencia, lugar de nacimiento y teléfono en una sol
 
 La persistencia sigue separada:
 
-- La residencia se guarda en `person.addresses` usando la plantilla de dirección activa del backend.
-- El lugar de nacimiento se guarda como atributo de persona `8d8718c2-c2cc-11de-8d13-0010c6dffd0f`.
+- La residencia se guarda en `person.addresses` como dirección preferida (`preferred: true`) usando la plantilla de dirección activa del backend.
+- El lugar de nacimiento se guarda como una segunda dirección no preferida (`preferred: false`) dentro de `person.addresses`.
+- La dirección de nacimiento se identifica con la marca interna `address15 = SIHSALUS_BIRTH_ADDRESS`. `address15` no debe agregarse al template visible de dirección en `sihsalus-content`; se usa solo para distinguir el tipo de dirección al hidratar edición/FHIR.
+- No hay fallback textual de `Lugar de Nacimiento`. Ese `PersonAttributeType` debe estar retirado en `sihsalus-content`; si se necesita un código administrativo, usar un atributo separado como `UBIGEO de Nacimiento`.
 - El teléfono/celular se guarda como atributo de persona `14d4f066-15f5-102d-96e4-000c29c2a5d7` y también se mapea a `telecom` en el modelo FHIR/offline.
 
 Validaciones locales:
 
 - El teléfono es opcional, pero si se ingresa debe tener formato telefónico. Se bloquean letras y notación científica como `e100`.
-- El lugar de nacimiento es opcional, pero si se ingresa debe tener al menos 2 caracteres y solo acepta letras, números, espacios y puntuación administrativa común.
+- El lugar de nacimiento estructurado es opcional y reutiliza la jerarquía de direcciones del backend. No aplica defaults automáticos de residencia para evitar guardar un nacimiento falso cuando el usuario no completa la subsección.
 - Las validaciones se aplican en el input y en el schema global de submit para cubrir flujo online, offline y tests.
 
 Validación contra backend:
 
 ```bash
 source .env
-curl -fsS -u "$E2E_USER_ADMIN_USERNAME:$E2E_USER_ADMIN_PASSWORD" \
-  "$E2E_API_BASE_URL/ws/rest/v1/personattributetype/8d8718c2-c2cc-11de-8d13-0010c6dffd0f?v=full"
-
 curl -fsS -u "$E2E_USER_ADMIN_USERNAME:$E2E_USER_ADMIN_PASSWORD" \
   "$E2E_API_BASE_URL/ws/rest/v1/personattributetype/14d4f066-15f5-102d-96e4-000c29c2a5d7?v=full"
 

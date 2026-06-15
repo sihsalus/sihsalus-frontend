@@ -4,6 +4,7 @@ import { esmPatientRegistrationSchema, type RegistrationConfig } from '../config
 import { FormManager } from './form-manager';
 import { generateIdentifier } from './patient-registration.resource';
 import { type FormValues } from './patient-registration.types';
+import { birthAddressMarker, birthAddressMarkerField } from './patient-registration-utils';
 import {
   getEffectiveRegistrationConfig,
   peruInsuranceCodeAttributeTypeUuid,
@@ -49,6 +50,7 @@ const formValues: FormValues = {
     country: 'string',
     postalCode: 'string',
   },
+  birthAddress: {},
   identifiers: {
     foo: {
       identifierUuid: 'aUuid',
@@ -117,7 +119,6 @@ describe('FormManager', () => {
         gender: 'male',
         birthdate: new Date(1990, 4, 14),
         attributes: {
-          '8d8718c2-c2cc-11de-8d13-0010c6dffd0f': 'HUANCAVELICA',
           [peruPhoneAttributeTypeUuid]: '999888777',
           [peruInsuranceCodeAttributeTypeUuid]: 'SIS-12345678',
         },
@@ -127,18 +128,97 @@ describe('FormManager', () => {
           countyDistrict: 'CHURCAMPA',
           address1: 'JR LIMA 123',
         },
+        birthAddress: {
+          country: 'PERU',
+          address1: 'LORETO',
+          stateProvince: 'MAYNAS',
+          countyDistrict: 'NAPO',
+          cityVillage: 'SANTA CLOTILDE',
+        },
       };
 
       const patient = FormManager.getPatientToCreate(true, values, {}, {}, [], config);
 
-      expect(patient.person.addresses).toEqual([values.address]);
+      expect(patient.person.addresses).toEqual([
+        {
+          ...values.address,
+          preferred: true,
+        },
+        {
+          ...values.birthAddress,
+          preferred: false,
+          [birthAddressMarkerField]: birthAddressMarker,
+        },
+      ]);
       expect(patient.person.attributes).toEqual(
         expect.arrayContaining([
-          { attributeType: '8d8718c2-c2cc-11de-8d13-0010c6dffd0f', value: 'HUANCAVELICA' },
           { attributeType: peruPhoneAttributeTypeUuid, value: '999888777' },
           { attributeType: peruInsuranceCodeAttributeTypeUuid, value: 'SIS-12345678' },
         ]),
       );
+    });
+
+    it('does not create a birthplace address when the structured birthplace is empty', () => {
+      const config = getPeruRegistrationConfig();
+      const patient = FormManager.getPatientToCreate(
+        true,
+        {
+          ...formValues,
+          patientUuid: 'patient-uuid',
+          gender: 'male',
+          birthdate: '1990-05-14',
+          birthAddress: {},
+        },
+        {},
+        {},
+        [],
+        config,
+      );
+
+      expect(patient.person.addresses).toEqual([
+        {
+          country: 'string',
+          postalCode: 'string',
+          preferred: true,
+          stateProvince: 'New York',
+        },
+      ]);
+    });
+
+    it('keeps existing residence and birthplace address UUIDs while editing', () => {
+      const config = getPeruRegistrationConfig();
+      const patient = FormManager.getPatientToCreate(
+        false,
+        {
+          ...formValues,
+          patientUuid: 'patient-uuid',
+          gender: 'male',
+          birthdate: '1990-05-14',
+          birthAddress: {
+            country: 'PERU',
+            address1: 'HUANCAVELICA',
+          },
+        },
+        {
+          preferredAddressUuid: 'residence-address-uuid',
+          birthAddressUuid: 'birth-address-uuid',
+        },
+        {},
+        [],
+        config,
+      );
+
+      expect(patient.person.addresses).toEqual([
+        expect.objectContaining({
+          uuid: 'residence-address-uuid',
+          preferred: true,
+        }),
+        expect.objectContaining({
+          uuid: 'birth-address-uuid',
+          preferred: false,
+          [birthAddressMarkerField]: birthAddressMarker,
+        }),
+      ]);
     });
   });
 

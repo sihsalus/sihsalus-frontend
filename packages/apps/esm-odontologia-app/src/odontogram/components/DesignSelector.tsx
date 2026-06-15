@@ -1,6 +1,7 @@
 import { Modal, Tag } from '@carbon/react';
 import { CheckmarkFilled } from '@carbon/react/icons';
 import React from 'react';
+import { createPortal } from 'react-dom';
 import { useTranslation } from 'react-i18next';
 import {
   Finding5Design1,
@@ -203,7 +204,16 @@ const DesignSelector: React.FC<DesignSelectorProps> = ({
   const colorTagType: 'red' | 'blue' | 'gray' =
     selectedColor?.name === 'red' ? 'red' : selectedColor?.name === 'blue' ? 'blue' : 'gray';
 
-  return (
+  // Render via createPortal targeted directly at `document.body`. The Modal
+  // is rendered from inside ToothVisualization, which lives inside the
+  // <foreignObject> of the responsive SVG wrapper. Without an explicit portal
+  // out, the Modal's positioning (position: fixed centering) gets confused by
+  // the SVG containing-block context. Forcing body as target guarantees the
+  // modal is laid out relative to the viewport, centered correctly, and full
+  // coverage with backdrop regardless of how the odontogram is scaled.
+  if (typeof document === 'undefined') return null;
+
+  const modalNode = (
     <Modal
       open={isOpen}
       passiveModal
@@ -324,6 +334,8 @@ const DesignSelector: React.FC<DesignSelectorProps> = ({
       </div>
     </Modal>
   );
+
+  return createPortal(modalNode, document.body);
 };
 
 export default DesignSelector;

@@ -118,6 +118,7 @@ export const builtInFields = [
   'dob',
   'id',
   'address',
+  'birthAddress',
   'phone',
   'causeOfDeath',
   'dateAndTimeOfDeath',

@@ -54,7 +54,7 @@ const peruSectionDefinitions: Array<SectionDefinition> = [
   },
   {
     id: 'bloodData',
-    name: 'Datos sanguíneos',
+    name: 'Grupo sanguíneo y factor Rh',
     fields: ['bloodGroup', 'rhFactor'],
   },
   {

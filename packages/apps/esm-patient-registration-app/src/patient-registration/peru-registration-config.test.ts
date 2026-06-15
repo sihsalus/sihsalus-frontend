@@ -30,7 +30,7 @@ describe('getEffectiveRegistrationConfig', () => {
     expect(filiation?.fields).not.toContain('rhFactor');
     expect(bloodData).toMatchObject({
       id: 'bloodData',
-      name: 'Datos sanguíneos',
+      name: 'Grupo sanguíneo y factor Rh',
       fields: ['bloodGroup', 'rhFactor'],
     });
     expect(filiation?.fields).not.toContain('nationality');

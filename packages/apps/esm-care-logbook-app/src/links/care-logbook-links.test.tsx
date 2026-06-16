@@ -5,6 +5,7 @@ import userEvent from '@testing-library/user-event';
 import CareLogbookAppMenuLink from './care-logbook-app-menu-link.component';
 import CareLogbookDashboardLink from './care-logbook-dashboard-link.component';
 import CareLogbookMergePatientsAction from './care-logbook-merge-patients-action.component';
+import CareLogbookMergePatientsMenuItem from './care-logbook-merge-patients-menu-item.component';
 
 vi.mock('@openmrs/esm-framework', async () => {
   const React = require('react');
@@ -48,6 +49,15 @@ describe('care logbook navigation links', () => {
     render(<CareLogbookMergePatientsAction />);
 
     await user.click(screen.getByRole('button', { name: /fusionar historias/i }));
+
+    expect(mockNavigate).toHaveBeenCalledWith({ to: '/openmrs/spa/admission/merge' });
+  });
+
+  it('renders the patient actions merge entry as a text menu item', async () => {
+    const user = userEvent.setup();
+    render(<CareLogbookMergePatientsMenuItem closeMenu={vi.fn()} />);
+
+    await user.click(screen.getByRole('menuitem', { name: /fusionar historias/i }));
 
     expect(mockNavigate).toHaveBeenCalledWith({ to: '/openmrs/spa/admission/merge' });
   });

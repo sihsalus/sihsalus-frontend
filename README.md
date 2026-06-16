@@ -56,6 +56,7 @@ packages/
     esm-rbac/                           # @sihsalus/esm-rbac — HIPAA role-based access control
     esm-audit-logger/                   # @sihsalus/esm-audit-logger — Client-side PHI audit logging
     esm-sihsalus-shared/                # @sihsalus/esm-sihsalus-shared — Shared UI components and hooks
+    esm-framework/                      # @openmrs/esm-framework — local workspace fork
     esm-patient-common-lib/             # @openmrs/esm-patient-common-lib — Shared patient utilities
     esm-styleguide/                     # @openmrs/esm-styleguide — Carbon-based component library
 packages/tooling/
@@ -65,7 +66,7 @@ packages/tooling/
 e2e/                                    # Playwright E2E tests
 ```
 
-> **Note:** The OpenMRS framework (`@openmrs/esm-framework`) and app shell (`@openmrs/esm-app-shell`) are consumed as npm dependencies, not vendored in this repo.
+> **Note:** OpenMRS core packages are mixed: `@openmrs/esm-framework` is provided by the local workspace at `packages/libs/esm-framework`, while `@openmrs/esm-app-shell` is resolved from npm and patched through Yarn (`.yarn/patches/openmrs-esm-app-shell-npm-9.0.2-form-stack-sharing.patch`).
 
 ## Commands
 

@@ -1,18 +1,18 @@
-@use '@carbon/layout';
-@use '@carbon/type';
-@use '@carbon/colors';
-@use '@openmrs/esm-styleguide/src/vars' as *;
+@use "@carbon/layout";
+@use "@carbon/type";
+@use "@carbon/colors";
+@use "@openmrs/esm-styleguide/src/vars" as *;
 
 .label01 {
-  @include type.type-style('label-01');
+  @include type.type-style("label-01");
 }
 
 .bodyLong01 {
-  @include type.type-style('body-01');
+  @include type.type-style("body-01");
 }
 
 .productiveHeading04 {
-  @include type.type-style('heading-04');
+  @include type.type-style("heading-04");
 }
 
 .container {
@@ -35,21 +35,21 @@
   color: $ui-05;
 
   // TODO: Move to styleguide overrides
-  :global(.cds--number input[type='number']) {
+  :global(.cds--number input[type="number"]) {
     border: none !important;
     text-align: center;
-    @include type.type-style('heading-04');
+    @include type.type-style("heading-04");
     font-family:
       ibm plex sans,
       system-ui,
       -apple-system,
       BlinkMacSystemFont,
-      '.sfnstext-regular',
+      ".sfnstext-regular",
       sans-serif;
     min-width: auto !important;
   }
 
-  :global(.cds--number--nosteppers input[type='number']) {
+  :global(.cds--number--nosteppers input[type="number"]) {
     padding-right: layout.$spacing-05 !important;
   }
 
@@ -138,6 +138,24 @@
   }
 }
 
+.selectInput {
+  width: 100%;
+  min-width: 11rem;
+  text-align: left;
+
+  :global(.cds--select-input) {
+    border: none;
+    border-bottom: none;
+    background-color: transparent;
+    height: 3rem;
+    padding-left: layout.$spacing-03;
+  }
+
+  :global(.cds--select-input:focus) {
+    outline: none;
+  }
+}
+
 .centered {
   display: flex;
   flex-direction: row;
@@ -148,7 +166,7 @@
 }
 
 .unitName {
-  @include type.type-style('body-compact-01');
+  @include type.type-style("body-compact-01");
   color: $text-02;
   margin-top: layout.$spacing-03;
 }
@@ -205,25 +223,25 @@
 .low,
 .high {
   &::after {
-    @include type.type-style('heading-compact-01');
+    @include type.type-style("heading-compact-01");
     color: $text-02;
   }
 }
 
 .low::after {
-  content: ' ↓';
+  content: " ↓";
 }
 
 .critically-low::after {
-  content: ' ↓↓';
+  content: " ↓↓";
 }
 
 .high::after {
-  content: ' ↑';
+  content: " ↑";
 }
 
 .critically-high::after {
-  content: ' ↑↑';
+  content: " ↑↑";
 }
 
 .inputInTabletView {

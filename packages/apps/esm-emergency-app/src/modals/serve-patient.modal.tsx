@@ -56,7 +56,7 @@ const ServePatientModal: React.FC<ServePatientModalProps> = ({ queueEntry, close
             // In triage queue: capture vitals with the shared vitals workspace
             launchWorkspace2(
               WORKSPACES.TRIAGE_VITALS_FORM,
-              { encounterTypeUuid: triageEncounter.encounterTypeUuid },
+              { encounterTypeUuid: triageEncounter.encounterTypeUuid, profile: 'emergency-triage' },
               null,
               { patientUuid: queueEntry.patient.uuid },
             );

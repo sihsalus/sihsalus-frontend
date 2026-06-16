@@ -242,6 +242,28 @@ describe('VitalsAndBiometricsInput', () => {
     expect(screen.getByTitle(/notes/i)).toBeInTheDocument();
   });
 
+  it('renders select inputs correctly based on the props provided', () => {
+    renderVitalsBiometricsInput({
+      fieldProperties: [
+        {
+          id: 'glasgowEyeOpening',
+          name: 'Eye opening',
+          type: 'select',
+          options: [
+            { value: 4, label: '4 - Spontaneous' },
+            { value: 1, label: '1 - None' },
+          ],
+        },
+      ],
+      label: 'Eye opening',
+    });
+
+    expect(screen.getByRole('combobox', { name: /eye opening/i })).toBeInTheDocument();
+    expect(screen.getByRole('option', { name: /select an option/i })).toBeInTheDocument();
+    expect(screen.getByRole('option', { name: /4 - spontaneous/i })).toBeInTheDocument();
+    expect(screen.getByTitle(/eye opening/i)).toBeInTheDocument();
+  });
+
   it('should validate the input based on the provided interpretation and reference range values', async () => {
     const config = useConfig();
 

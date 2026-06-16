@@ -47,6 +47,10 @@ export interface PatientVitalsAndBiometrics {
   abdominalCircumferenceRenderInterpretation?: ObservationInterpretation;
   headCircumferenceRenderInterpretation?: ObservationInterpretation;
   chestCircumferenceRenderInterpretation?: ObservationInterpretation;
+  glasgowEyeOpeningRenderInterpretation?: ObservationInterpretation;
+  glasgowVerbalResponseRenderInterpretation?: ObservationInterpretation;
+  glasgowMotorResponseRenderInterpretation?: ObservationInterpretation;
+  glasgowTotalRenderInterpretation?: ObservationInterpretation;
   pulse?: number;
   temperature?: number;
   spo2?: number;
@@ -58,6 +62,10 @@ export interface PatientVitalsAndBiometrics {
   respiratoryRate?: number;
   muac?: number;
   abdominalCircumference?: number;
+  glasgowEyeOpening?: string;
+  glasgowVerbalResponse?: string;
+  glasgowMotorResponse?: string;
+  glasgowTotal?: number;
   note?: string;
 }
 

@@ -186,6 +186,7 @@
   "searchExistingPerson": "Search existing person",
   "searching": "Searching...",
   "searchLocationPersonAttribute": "Search location",
+  "sessionExpiredError": "Your session has expired. Please sign in again.",
   "selectAnOption": "Select an option",
   "selectedPerson": "Selected person",
   "selectNationality": "Select nationality",

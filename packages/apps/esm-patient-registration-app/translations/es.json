@@ -186,6 +186,7 @@
   "searchExistingPerson": "Buscar persona existente",
   "searching": "Buscando...",
   "searchLocationPersonAttribute": "Buscar ubicación",
+  "sessionExpiredError": "La sesión ha expirado. Vuelve a iniciar sesión.",
   "selectAnOption": "Seleccione una opción",
   "selectedPerson": "Persona seleccionada",
   "selectNationality": "Seleccione nacionalidad",

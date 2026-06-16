@@ -7,6 +7,7 @@ import { moduleName } from '../../../constants';
 import { PatientRegistrationContext } from '../../patient-registration-context';
 import styles from '../field.scss';
 import { CodedPersonAttributeField } from './coded-person-attribute-field.component';
+import { DatePersonAttributeField } from './date-person-attribute-field.component';
 import { LocationPersonAttributeField } from './location-person-attribute-field.component';
 import { usePersonAttributeType } from './person-attributes.resource';
 import { TextPersonAttributeField } from './text-person-attribute-field.component';
@@ -45,6 +46,19 @@ export function PersonAttributeField({ fieldDefinition }: PersonAttributeFieldPr
     }
     switch (personAttributeType.format) {
       case 'java.lang.String':
+        if (fieldDefinition.inputType === 'date') {
+          return (
+            <DatePersonAttributeField
+              personAttributeType={personAttributeType}
+              label={fieldDefinition.label}
+              required={fieldDefinition.validation?.required ?? false}
+              allowPastDates={fieldDefinition.allowPastDates}
+              allowFutureDates={fieldDefinition.allowFutureDates}
+              id={fieldDefinition?.id}
+            />
+          );
+        }
+
         return (
           <TextPersonAttributeField
             personAttributeType={personAttributeType}

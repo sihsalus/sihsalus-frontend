@@ -9,6 +9,7 @@ export interface SectionDefinition {
 export interface FieldDefinition {
   id: string;
   type: string;
+  inputType?: 'date';
   label?: string;
   uuid: string;
   placeholder?: string;
@@ -171,6 +172,13 @@ export const esmPatientRegistrationSchema = {
         _type: Type.String,
         _description: "How this field's data will be stored—a person attribute or an obs.",
         _validators: [validators.oneOf(['person attribute', 'obs'])],
+      },
+      inputType: {
+        _type: Type.String,
+        _default: null,
+        _description:
+          'Optional UI input type override for fields stored as strings. Currently supports `date` for date-only values.',
+        _validators: [validators.oneOf(['date'])],
       },
       uuid: {
         _type: Type.UUID,

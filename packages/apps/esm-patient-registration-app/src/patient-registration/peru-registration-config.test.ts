@@ -107,6 +107,24 @@ describe('getEffectiveRegistrationConfig', () => {
     expect(fieldsById.medicalRecordStatus.defaultValue).toBe('9b3df0a1-0c58-4f55-9868-9c38f1db2031');
     expect(fieldsById.medicalRecordArchiveType.defaultValue).toBe('9b3df0a1-0c58-4f55-9868-9c38f1db2041');
     expect(fieldsById.insuranceAccreditationStatus.defaultValue).toBe('9b3df0a1-0c58-4f55-9868-9c38f1db2054');
+    expect(fieldsById.civilStatus.customConceptAnswers).toContainEqual({
+      uuid: 'a10b6eeb-287f-4580-8ba7-9c8ee78a6ffc',
+      label: 'Divorciado(a)',
+    });
+    expect(fieldsById.civilStatus.customConceptAnswers?.map((answer) => answer.label)).not.toContain('Divorced');
+    expect(fieldsById.insuranceType.customConceptAnswers?.map((answer) => answer.label)).toEqual([
+      'SIS Gratuito',
+      'SIS Emprendedor',
+      'SIS Semicontributivo',
+      'Plan de atención SIS',
+      'ESSALUD',
+      'FOSPOLI',
+      'Seguro privado',
+    ]);
+    expect(fieldsById.rhFactor.customConceptAnswers).toEqual([
+      { uuid: '9b3df0a1-0c58-4f55-9868-9c38f1db2021', label: 'Rh positivo' },
+      { uuid: '9b3df0a1-0c58-4f55-9868-9c38f1db2022', label: 'Rh negativo' },
+    ]);
     expect(config.sectionDefinitions.find((section) => section.id === 'identityLookup')?.fields).toContain('sisLookup');
     expect(config.sectionDefinitions.find((section) => section.id === 'insurance')?.fields).not.toContain('sisLookup');
     expect(config.fieldConfigurations.phone.personAttributeUuid).toBe(peruPhoneAttributeTypeUuid);

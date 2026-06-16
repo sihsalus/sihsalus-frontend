@@ -41,6 +41,19 @@ async function fillTextbox(locator: Locator, value: string) {
   await locator.fill(value);
 }
 
+async function enableExternalIdentityLookups(page: Page) {
+  await page.addInitScript(() => {
+    localStorage.setItem('openmrs:feature-flag:patient-registration-external-lookups', 'true');
+    localStorage.setItem(
+      'openmrs:feature-flag-meta:patient-registration-external-lookups',
+      JSON.stringify({
+        label: 'Consultas externas RENIEC/SIS',
+        description: 'Muestra los botones de consulta a RENIEC y SIS en el formulario de registro de pacientes.',
+      }),
+    );
+  });
+}
+
 test.describe('Peru patient registration', () => {
   test('renders Peru-specific sections in the expected order', async ({ page }) => {
     await gotoPatientRegistration(page);
@@ -97,7 +110,23 @@ test.describe('Peru patient registration', () => {
     await expect(contact.getByText(/Entrada inv[aá]lida|Invalid Input/i)).toBeVisible({ timeout: 10_000 });
   });
 
+  test('quick searches residence addresses from the configured address hierarchy', async ({ page }) => {
+    await gotoPatientRegistration(page);
+
+    const contact = await expectSectionVisible(page, 'contact', /Residencia, nacimiento y contacto/i);
+    const residenceSearch = contact.getByRole('searchbox', { name: /Buscar direcci[oó]n|Search address/i }).first();
+
+    await residenceSearch.fill('PER');
+    const peruOption = contact.getByRole('button', { name: /^PERU$/i });
+    await expect(peruOption).toBeVisible({ timeout: 15_000 });
+
+    await peruOption.click();
+    await expect(contact.getByLabel(/^Pa[ií]s/i).first()).toHaveValue(/^PERU$/i);
+    await expect(residenceSearch).toHaveValue('');
+  });
+
   test('fills basic patient data from the RENIEC mock lookup', async ({ page }) => {
+    await enableExternalIdentityLookups(page);
     await gotoPatientRegistration(page);
 
     await fillTextbox(

@@ -37,7 +37,8 @@ const AddressSearchComponent: React.FC<AddressSearchComponentProps> = ({
   }, [searchString]);
 
   const searchQuery = debouncedSearchString.length >= 3 ? debouncedSearchString : '';
-  const { addresses, isLoading, error } = useAddressHierarchy(searchQuery, separator);
+  const addressFields = useMemo(() => addressLayout.map(({ name }) => name), [addressLayout]);
+  const { addresses, isLoading, error } = useAddressHierarchy(searchQuery, separator, addressFields);
 
   const addressOptions: Array<string> = useMemo(() => {
     const options: Set<string> = new Set();

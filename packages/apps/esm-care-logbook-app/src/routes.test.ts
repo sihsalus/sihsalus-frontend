@@ -30,6 +30,11 @@ describe('routes.json', () => {
           name: 'care-logbook-merge-patients-action',
           slot: 'top-nav-actions-slot',
         }),
+        expect.objectContaining({
+          component: 'careLogbookMergePatientsMenuItem',
+          name: 'care-logbook-merge-patients-menu-item',
+          slot: 'patient-actions-slot',
+        }),
       ]),
     );
   });

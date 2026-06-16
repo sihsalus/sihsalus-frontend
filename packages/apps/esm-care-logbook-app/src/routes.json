@@ -35,6 +35,13 @@
       "slot": "top-nav-actions-slot",
       "online": true,
       "offline": false
+    },
+    {
+      "component": "careLogbookMergePatientsMenuItem",
+      "name": "care-logbook-merge-patients-menu-item",
+      "slot": "patient-actions-slot",
+      "online": true,
+      "offline": false
     }
   ],
   "pages": [

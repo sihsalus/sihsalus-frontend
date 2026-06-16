@@ -3,10 +3,12 @@ import {
   type DefaultPatientWorkspaceProps,
   type PatientWorkspace2DefinitionProps,
 } from '@openmrs/esm-patient-common-lib';
+import { RequirePrivilege } from '@sihsalus/esm-rbac';
 import React from 'react';
 import { useTranslation } from 'react-i18next';
 
 import FuaHtmlViewer from '../components/fua-html-viewer.component';
+import { fuaReadPrivilege } from '../constant';
 
 interface LegacyFuaViewerWorkspaceProps extends DefaultPatientWorkspaceProps {
   fuaId?: string;
@@ -34,10 +36,14 @@ const FuaViewerWorkspace: React.FC<FuaViewerWorkspaceProps> = (props) => {
   );
 
   if (isWorkspace2Props(props)) {
-    return <Workspace2 title={t('viewFua', 'Ver FUA')}>{content}</Workspace2>;
+    return (
+      <Workspace2 title={t('viewFua', 'Ver FUA')}>
+        <RequirePrivilege privilege={fuaReadPrivilege}>{content}</RequirePrivilege>
+      </Workspace2>
+    );
   }
 
-  return content;
+  return <RequirePrivilege privilege={fuaReadPrivilege}>{content}</RequirePrivilege>;
 };
 
 export default FuaViewerWorkspace;

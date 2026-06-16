@@ -1,8 +1,10 @@
 import { Button, InlineLoading, ModalBody, ModalFooter, ModalHeader, TextArea } from '@carbon/react';
 import { showSnackbar } from '@openmrs/esm-framework';
+import { RequirePrivilege } from '@sihsalus/esm-rbac';
 import React, { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
+import { fuaUpdatePrivilege } from '../constant';
 import { cancelFuaRequest, type FuaRequest } from '../hooks/useFuaRequests';
 
 import styles from './fua-modals.scss';
@@ -54,7 +56,7 @@ const CancelFuaModal: React.FC<CancelFuaModalProps> = ({ closeModal, fuaRequest,
   };
 
   return (
-    <>
+    <RequirePrivilege privilege={fuaUpdatePrivilege}>
       <ModalHeader closeModal={closeModal} title={t('cancelFua', 'Cancelar FUA')} />
       <ModalBody>
         <div className={styles.modalContent}>
@@ -96,7 +98,7 @@ const CancelFuaModal: React.FC<CancelFuaModalProps> = ({ closeModal, fuaRequest,
           )}
         </Button>
       </ModalFooter>
-    </>
+    </RequirePrivilege>
   );
 };
 

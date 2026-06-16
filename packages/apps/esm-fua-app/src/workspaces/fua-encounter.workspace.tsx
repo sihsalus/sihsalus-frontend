@@ -5,11 +5,13 @@ import {
   type PatientWorkspace2DefinitionProps,
   useVisitOrOfflineVisit,
 } from '@openmrs/esm-patient-common-lib';
+import { RequirePrivilege } from '@sihsalus/esm-rbac';
 import React, { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import FuaHtmlViewer from '../components/fua-html-viewer.component';
 import type { Config } from '../config-schema';
+import { fuaReadPrivilege } from '../constant';
 
 interface LegacyFuaEncounterWorkspaceProps extends DefaultPatientWorkspaceProps {
   encounterUuid?: string;
@@ -35,7 +37,7 @@ interface FuaPatientOrder {
   visitUuid?: string | null;
 }
 
-const FuaEncounterWorkspace: React.FC<FuaEncounterWorkspaceProps> = (props) => {
+const FuaEncounterWorkspaceContent: React.FC<FuaEncounterWorkspaceProps> = (props) => {
   const { t } = useTranslation();
   const config = useConfig<Config>();
   const patientUuid = isWorkspace2Props(props) ? props.groupProps.patientUuid : props.patientUuid;
@@ -156,5 +158,11 @@ const FuaEncounterWorkspace: React.FC<FuaEncounterWorkspaceProps> = (props) => {
 
   return content;
 };
+
+const FuaEncounterWorkspace: React.FC<FuaEncounterWorkspaceProps> = (props) => (
+  <RequirePrivilege privilege={fuaReadPrivilege}>
+    <FuaEncounterWorkspaceContent {...props} />
+  </RequirePrivilege>
+);
 
 export default FuaEncounterWorkspace;

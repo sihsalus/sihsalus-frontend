@@ -2,6 +2,7 @@ import { render, screen } from '@testing-library/react';
 import type { ReactNode } from 'react';
 import { BrowserRouter } from 'react-router-dom';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { fuaReadPrivilege } from './constant';
 import { LinkExtension } from './left-panel-link.component';
 
 type UserHasAccessProps = {
@@ -37,7 +38,7 @@ describe('LinkExtension', () => {
     mockUserHasAccess.mockImplementation(({ children }) => <>{children}</>);
   });
 
-  it('protects the FUA side-nav link with the Fua Privilege privilege', () => {
+  it('protects the FUA side-nav link with the read privilege', () => {
     render(
       <BrowserRouter>
         <LinkExtension config={{ name: 'fua', title: 'FUA' }} />
@@ -46,7 +47,7 @@ describe('LinkExtension', () => {
 
     expect(mockUserHasAccess).toHaveBeenCalledWith(
       expect.objectContaining({
-        privilege: 'Fua Privilege',
+        privilege: fuaReadPrivilege,
         children: expect.anything(),
       }),
     );

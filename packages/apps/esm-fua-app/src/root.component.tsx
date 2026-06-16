@@ -1,12 +1,15 @@
-import { AppErrorBoundary } from '@sihsalus/esm-rbac';
+import { AppErrorBoundary, RequirePrivilege } from '@sihsalus/esm-rbac';
 import React from 'react';
 
+import { fuaReadPrivilege } from './constant';
 import FuaDashboard from './fua-dashboard.component';
 
 const Root: React.FC = () => {
   return (
     <AppErrorBoundary appName="esm-fua-app">
-      <FuaDashboard />
+      <RequirePrivilege privilege={fuaReadPrivilege}>
+        <FuaDashboard />
+      </RequirePrivilege>
     </AppErrorBoundary>
   );
 };

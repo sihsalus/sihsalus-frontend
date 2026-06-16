@@ -98,20 +98,12 @@ function isUnidentifiedPatient(values: FormValues, config: RegistrationConfig) {
   return !!unidentifiedPatientAttributeTypeUuid && values.attributes?.[unidentifiedPatientAttributeTypeUuid] === 'true';
 }
 
-function hasResponsiblePersonAttribute(values: FormValues, config: RegistrationConfig) {
-  const companionNameField = config.fieldDefinitions?.find((field) => field.id === 'companionName');
-
-  return !!companionNameField?.uuid && !!values.attributes?.[companionNameField.uuid]?.trim();
-}
-
-function hasResponsibleParty(
-  values: FormValues,
-  relationships: Array<RelationshipValue> | undefined,
-  config: RegistrationConfig,
-) {
+function hasActiveRelationship(relationships: Array<RelationshipValue> | undefined) {
   return (
-    hasResponsibleRelationship(relationships, config.relationshipOptions?.minorResponsibleRelationshipTypes) ||
-    hasResponsiblePersonAttribute(values, config)
+    relationships?.some(
+      (relationship) =>
+        relationship.action !== 'DELETE' && !!relationship.relatedPersonUuid && !!relationship.relationshipType,
+    ) ?? false
   );
 }
 
@@ -307,7 +299,7 @@ export function getValidationSchema(
         ),
         function (relationships?: Array<RelationshipValue>) {
           const values = this.parent as FormValues;
-          return !isUnidentifiedPatient(values, config) || hasResponsibleParty(values, relationships, config);
+          return !isUnidentifiedPatient(values, config) || hasActiveRelationship(relationships);
         },
       ),
   });

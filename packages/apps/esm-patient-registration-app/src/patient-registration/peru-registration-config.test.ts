@@ -66,16 +66,16 @@ describe('getEffectiveRegistrationConfig', () => {
       'contact',
       'filiation',
       'bloodData',
-      'medicalRecord',
       'insurance',
       'responsiblePerson',
+      'medicalRecord',
     ]);
     expect(config.sections).not.toContain('relationships');
     expect(config.sections).not.toContain('birthplace');
     expect(responsiblePerson).toMatchObject({
       id: 'responsiblePerson',
       name: 'Acompañante o responsable',
-      fields: ['companionName', 'companionAge', 'companionRelationship'],
+      fields: [],
     });
   });
 
@@ -98,29 +98,6 @@ describe('getEffectiveRegistrationConfig', () => {
       'sisLookup',
     ]);
     expect(demographics?.fields).toEqual(['name', 'dob', 'gender', 'nationality']);
-  });
-
-  it('validates responsible person optional fields when provided', () => {
-    const config = getEffectiveRegistrationConfig(getDefaultsFromConfigSchema(esmPatientRegistrationSchema));
-    const fieldsById = Object.fromEntries(config.fieldDefinitions.map((field) => [field.id, field]));
-    const companionNameRegex = new RegExp(fieldsById.companionName.validation.matches);
-    const companionAgeRegex = new RegExp(fieldsById.companionAge.validation.matches);
-    const companionRelationshipRegex = new RegExp(fieldsById.companionRelationship.validation.matches);
-
-    expect(fieldsById.companionName.validation.required).toBe(false);
-    expect(companionNameRegex.test('José De la Cruz')).toBe(true);
-    expect(companionNameRegex.test('José2')).toBe(false);
-    expect(companionNameRegex.test('José@')).toBe(false);
-
-    expect(fieldsById.companionAge.validation.required).toBe(false);
-    expect(companionAgeRegex.test('35')).toBe(true);
-    expect(companionAgeRegex.test('120')).toBe(true);
-    expect(companionAgeRegex.test('121')).toBe(false);
-    expect(companionAgeRegex.test('treinta')).toBe(false);
-
-    expect(fieldsById.companionRelationship.validation.required).toBe(false);
-    expect(companionRelationshipRegex.test('Tío/a')).toBe(true);
-    expect(companionRelationshipRegex.test('Tío2')).toBe(false);
   });
 
   it('preconfigures safe administrative defaults for new Peru registrations', () => {
@@ -154,9 +131,9 @@ describe('getEffectiveRegistrationConfig', () => {
       'contact',
       'filiation',
       'bloodData',
-      'medicalRecord',
       'insurance',
       'responsiblePerson',
+      'medicalRecord',
     ]);
   });
 

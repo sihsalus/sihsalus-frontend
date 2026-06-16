@@ -1,6 +1,6 @@
 import { openmrsFetch, restBaseUrl } from '@openmrs/esm-framework';
 
-import { savePatient, savePatientPhoto } from './patient-registration.resource';
+import { savePatient, savePatientPhoto, savePerson } from './patient-registration.resource';
 
 const mockOpenmrsFetch = openmrsFetch as vi.Mock;
 
@@ -24,6 +24,32 @@ describe('savePatient', () => {
     mockOpenmrsFetch.mockImplementationOnce(() => {});
     savePatient(null);
     expect(mockOpenmrsFetch.mock.calls[0][0]).toEqual(`${restBaseUrl}/patient/`);
+  });
+});
+
+describe('savePerson', () => {
+  it('posts to the OpenMRS person endpoint without patient identifiers', () => {
+    const person = {
+      names: [
+        {
+          givenName: 'Maria',
+          familyName: 'Quispe',
+          preferred: true,
+        },
+      ],
+      gender: 'F',
+    };
+
+    savePerson(person);
+
+    expect(mockOpenmrsFetch).toHaveBeenCalledWith(`${restBaseUrl}/person`, {
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      method: 'POST',
+      body: person,
+      signal: expect.any(AbortSignal),
+    });
   });
 });
 

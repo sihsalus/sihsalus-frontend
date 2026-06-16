@@ -3,6 +3,19 @@ import dayjs from 'dayjs';
 
 import { type Encounter, type Patient, type PatientIdentifier, type Relationship } from './patient-registration.types';
 
+export interface SavePersonPayload {
+  names: Array<{
+    givenName: string;
+    middleName?: string;
+    familyName: string;
+    familyName2?: string;
+    preferred: boolean;
+  }>;
+  gender: string;
+  birthdate?: string;
+  birthdateEstimated?: boolean;
+}
+
 function dataURItoFile(dataURI: string) {
   const byteString = globalThis.atob(dataURI.split(',')[1]);
   const mimeString = dataURI.split(',')[0].split(':')[1].split(';')[0];
@@ -61,6 +74,19 @@ export function deletePersonName(nameUuid: string, personUuid: string) {
 
   return openmrsFetch(`${restBaseUrl}/person/${personUuid}/name/${nameUuid}`, {
     method: 'DELETE',
+    signal: abortController.signal,
+  });
+}
+
+export function savePerson(person: SavePersonPayload) {
+  const abortController = new AbortController();
+
+  return openmrsFetch(`${restBaseUrl}/person`, {
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    method: 'POST',
+    body: person,
     signal: abortController.signal,
   });
 }

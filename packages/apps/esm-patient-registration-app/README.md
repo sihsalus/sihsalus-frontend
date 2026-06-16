@@ -8,12 +8,19 @@ El registro debe permitir crear un paciente aunque no exista DNI, nombre legal c
 
 Cuando el paciente está no identificado o no puede comunicar datos/consentimiento, el formulario debe exigir un responsable, acompañante, institución o autoridad. Los datos mínimos esperados son:
 
-- nombre o institución responsable,
-- tipo de responsable o relación cuando se conoce,
-- parentesco/vínculo cuando se conoce,
-- edad u otro dato administrativo si el flujo local lo requiere.
+- una persona responsable seleccionada o registrada,
+- tipo de relación con el paciente,
+- sexo administrativo de la persona responsable,
+- edad aproximada si el flujo local la conoce.
 
 El DNI y el teléfono no son obligatorios en este modo. Deben quedar como desconocidos, no disponibles o pendientes de confirmar hasta que el paciente o responsable pueda aportar información confiable.
+
+Modelo de persistencia:
+
+- El responsable se registra como `Person` de OpenMRS y se vincula al paciente con `Relationship`.
+- No se crea `Patient`, identificador ni historia clínica para el responsable solo por acompañar o representar al paciente.
+- La sección Perú `Acompañante o responsable` no muestra ni valida los atributos textuales históricos `Nombre/Edad/Parentesco del acompañante`; el flujo operativo usa solo la relación estructurada.
+- Para evitar personas huérfanas, el frontend exige seleccionar el tipo de relación antes de crear una nueva persona responsable.
 
 ## Identificadores temporales
 

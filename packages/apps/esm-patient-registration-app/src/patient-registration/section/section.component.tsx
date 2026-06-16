@@ -19,8 +19,8 @@ export function Section({ sectionDefinition }: SectionProps) {
     case 'responsiblePerson':
       return (
         <>
-          <GenericSection sectionDefinition={sectionDefinition} />
-          <RelationshipsSection />
+          {sectionDefinition.fields.length ? <GenericSection sectionDefinition={sectionDefinition} /> : null}
+          <RelationshipsSection defaultNewRelationship />
         </>
       );
     case 'relationships':

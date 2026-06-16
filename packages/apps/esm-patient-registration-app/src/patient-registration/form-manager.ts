@@ -92,7 +92,7 @@ export type SavePatientForm = (
   isNewPatient: boolean,
   values: FormValues,
   patientUuidMap: PatientUuidMapType,
-  initialAddressFieldValues: Record<string, any>,
+  initialAddressFieldValues: Record<string, unknown>,
   capturePhotoProps: CapturePhotoProps | null,
   currentLocation: string,
   initialIdentifierValues: FormValues['identifiers'],
@@ -100,7 +100,7 @@ export type SavePatientForm = (
   config: RegistrationConfig,
   savePatientTransactionManager: SavePatientTransactionManager,
   abortController?: AbortController,
-) => Promise<string | void>;
+) => Promise<string | null>;
 
 export class FormManager {
   static savePatientFormOffline: SavePatientForm = async (
@@ -154,7 +154,7 @@ export class FormManager {
     currentUser,
     config,
     savePatientTransactionManager,
-    abortController,
+    _abortController,
   ) => {
     const patientIdentifiers: Array<PatientIdentifier> = await FormManager.savePatientIdentifiers(
       isNewPatient,
@@ -373,11 +373,11 @@ export class FormManager {
     isNewPatient: boolean,
     values: FormValues,
     patientUuidMap: PatientUuidMapType,
-    initialAddressFieldValues: Record<string, any>,
+    _initialAddressFieldValues: Record<string, unknown>,
     identifiers: Array<PatientIdentifier>,
     config?: RegistrationConfig,
   ): Patient {
-    let birthdate;
+    let birthdate: string;
     if (values.birthdate instanceof Date) {
       const y = values.birthdate.getFullYear();
       const m = String(values.birthdate.getMonth() + 1).padStart(2, '0');

@@ -29,6 +29,8 @@ import {
   BOOLEAN_YES,
   ContactListFormSchema,
   contactipvOutcomeOptions,
+  IPV_OUTCOME_NEGATIVE,
+  IPV_OUTCOME_POSITIVE,
   saveContact,
 } from './contact-list.resource';
 import styles from './contact-list-form.scss';
@@ -127,11 +129,11 @@ const ContactListForm: React.FC<ContactListFormProps> = ({
 
   useEffect(() => {
     if ([observablePhysicalAssault, observableThreatened, observableSexualAssault].includes(BOOLEAN_YES)) {
-      form.setValue('ipvOutcome', 'True');
+      form.setValue('ipvOutcome', IPV_OUTCOME_POSITIVE);
     } else if (
       [observablePhysicalAssault, observableThreatened, observableSexualAssault].every((v) => v === BOOLEAN_NO)
     ) {
-      form.setValue('ipvOutcome', 'False');
+      form.setValue('ipvOutcome', IPV_OUTCOME_NEGATIVE);
     }
     if (!showIPVRelatedFields) {
       form.setValue('ipvOutcome', undefined);

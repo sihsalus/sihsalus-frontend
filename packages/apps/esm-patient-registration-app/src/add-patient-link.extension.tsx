@@ -9,7 +9,10 @@ import { moduleName } from './constants';
 
 export default function Root() {
   const { t } = useTranslation(moduleName);
-  const addPatient = React.useCallback(() => navigate({ to: '${openmrsSpaBase}/patient-registration' }), []);
+  const addPatient = React.useCallback(
+    () => navigate({ to: `${globalThis.getOpenmrsSpaBase()}patient-registration` }),
+    [],
+  );
 
   return (
     <HeaderGlobalAction

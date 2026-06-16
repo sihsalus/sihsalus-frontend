@@ -34,13 +34,14 @@ export function useLocations(locationTag: string | null, searchQuery: string = '
   }, [locationTag, debouncedSearchQuery]);
 
   const { data, isLoading, isValidating } = useSWR<FetchResponse<LocationResponse>, Error>(constructUrl, openmrsFetch);
+  const locationEntries = Array.isArray(data?.data?.entry) ? data.data.entry : [];
 
   return useMemo(
     () => ({
-      locations: data?.data?.entry || [],
+      locations: locationEntries,
       isLoading,
       loadingNewData: isValidating,
     }),
-    [data, isLoading, isValidating],
+    [locationEntries, isLoading, isValidating],
   );
 }

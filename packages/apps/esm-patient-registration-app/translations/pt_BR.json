@@ -109,6 +109,7 @@
   "searchAddress": "Endereço de pesquisa",
   "searchIdentifierPlaceholder": "Identificador de pesquisa",
   "searchLocationPersonAttribute": "Local da pesquisa",
+  "sessionExpiredError": "Sua sessão expirou. Faça login novamente.",
   "selectAnOption": "Selecione uma opção",
   "sexFieldLabelText": "Sexo",
   "source": "Origem",

@@ -205,6 +205,7 @@ function TestTypeSearchResults({
 
   const resultsContainerRef = useRef<HTMLDivElement>(null);
 
+  // biome-ignore lint/correctness/useExhaustiveDependencies: re-apply the saved scroll position whenever the list contents or loading state change.
   useEffect(() => {
     if (resultsContainerRef.current) {
       resultsContainerRef.current.scrollTop = lastScrollTop;

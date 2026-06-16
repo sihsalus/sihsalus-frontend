@@ -38,8 +38,8 @@ export const configSchema = {
   concepts: {
     probableCauseOfDeathConceptUuid: {
       _type: Type.ConceptUuid,
-      _description: 'Probable cause of death concept UUID',
-      _default: '1599AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA',
+      _description: 'Cause of death concept UUID. Must be a Question/Coded concept.',
+      _default: '9272a14b-7260-4353-9e5b-5787b5dead9d',
     },
     problemListConceptUuid: {
       _type: Type.ConceptUuid,
@@ -48,23 +48,23 @@ export const configSchema = {
     },
     maritalStatusConceptUuid: {
       _type: Type.ConceptUuid,
-      _description: 'Civil status concept UUID used when creating contacts',
-      _default: '1056AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA',
+      _description: 'Civil status concept UUID used when creating contacts. Must be a Question/Coded concept.',
+      _default: 'aa345a81-3811-4e9c-be18-d6be727623e0',
     },
     partnerHivStatusConceptUuid: {
       _type: Type.ConceptUuid,
       _description: 'Partner HIV status concept UUID used by contact list workflows',
-      _default: '1436AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA',
+      _default: 'f5b9fcf6-2a36-448e-b135-387581d84ae7',
     },
     pnsApproachConceptUuid: {
       _type: Type.ConceptUuid,
       _description: 'Preferred PNS approach concept UUID used by contact list workflows',
-      _default: '7b827b42-9733-4d4f-8015-b40a07ac3052',
+      _default: '3d496077-411f-43f2-b151-263f2a76c761',
     },
     livingWithPatientConceptUuid: {
       _type: Type.ConceptUuid,
       _description: 'Living with patient concept UUID used by contact list workflows',
-      _default: '36906d55-ade7-4d1a-b3b7-18fd59bffb0f',
+      _default: '7a3639b3-5a62-473b-b97d-d7661ce50aab',
     },
   },
 
@@ -72,46 +72,49 @@ export const configSchema = {
     _type: Type.Object,
     _description: 'Display labels and answer labels used by the contact list forms',
     _default: {
-      '1436AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA': {
-        display: 'Partner HIV Status:',
+      'f5b9fcf6-2a36-448e-b135-387581d84ae7': {
+        display: 'Estado VIH del contacto',
         answers: {
-          '703AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA': 'HIV Positive',
-          '664AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA': 'HIV Negative',
-          '1067AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA': 'Unknown',
+          'b4454bf6-5e67-4235-9507-6875d784656d': 'Positivo',
+          '707bd07e-7d27-4571-ad92-ec419af1a0f4': 'Negativo',
+          '96b73231-84e5-4567-97b8-4713f559d9f0': 'Desconocido',
+          'd8f64422-862b-4770-91a8-d3966988b2af': 'No desea responder',
         },
       },
-      '1056AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA': {
-        display: 'Civil status',
+      'aa345a81-3811-4e9c-be18-d6be727623e0': {
+        display: 'Estado Civil',
         answers: {
-          '1057AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA': 'Single',
-          '1058AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA': 'Divorced',
-          '1059AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA': 'Widowed',
-          '159715AAAAAAAAAAAAAAAAAAAAAAAAAAAAAA': 'Married Polygamous',
-          '5555AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA': 'Married Monogamous',
+          '798d5304-a301-4fb9-9a55-c568ab843c2d': 'Soltero(a)',
+          'c40e34a1-47b4-4627-945f-bea67f9017df': 'Casado(a)',
+          'bff95b64-d1b5-45ec-b5ad-a736c38a4cc1': 'Conviviente',
+          'a10b6eeb-287f-4580-8ba7-9c8ee78a6ffc': 'Divorciado(a)',
+          'b8e84a87-3dca-4c0b-a524-ef2b124166d4': 'Viudo(a)',
+          '62bd5ec8-5ffb-4ddc-97b4-84fde7bab601': 'Otros',
+          '3a88104a-3f04-4a43-8835-bc976b950527': 'No indicado',
         },
       },
-      'a6b3803f-e594-4318-8624-3eaed46322a7': {
-        display: 'Add Patient Contact',
+      '171f88e2-b081-4b28-8c29-7d444a7b2745': {
+        display: 'Contacto creado desde PNS',
         answers: {
-          'cf82933b-3f3f-45e7-a5ab-5d31aaee3da3': 'Yes',
-          '488b58ff-64f5-4f8a-8979-fa79940b1594': 'No',
+          'f7e458ef-8dea-4e53-b429-81664cbeda49': 'Sí',
+          '17455a61-ab7d-4bfb-a8d2-68f75a10d5f0': 'No',
         },
       },
-      '7b827b42-9733-4d4f-8015-b40a07ac3052': {
-        display: 'Prefered PNS Aproach',
+      '3d496077-411f-43f2-b151-263f2a76c761': {
+        display: 'Método de notificación PNS',
         answers: {
-          '160551AAAAAAAAAAAAAAAAAAAAAAAAAAAAAA': 'Passive referral',
-          '161642AAAAAAAAAAAAAAAAAAAAAAAAAAAAAA': 'Contract referral',
-          '163096AAAAAAAAAAAAAAAAAAAAAAAAAAAAAA': 'Provider referral',
-          '162284AAAAAAAAAAAAAAAAAAAAAAAAAAAAAA': 'Dual referral',
+          '2f3b088e-4cf7-4088-935a-2a353af4b4df': 'Notificación por el paciente',
+          '25018822-0be6-4ac7-8201-3a2d585c9afb': 'Notificación por el proveedor',
+          '94287802-aba0-4cdb-af77-c4d5e91291b8': 'Notificación dual',
+          '9a329153-735a-4614-ab43-269b67dc1367': 'Notificación anónima',
         },
       },
-      '36906d55-ade7-4d1a-b3b7-18fd59bffb0f': {
-        display: 'Living with client',
+      '7a3639b3-5a62-473b-b97d-d7661ce50aab': {
+        display: 'Convive con el paciente',
         answers: {
-          'cf82933b-3f3f-45e7-a5ab-5d31aaee3da3': 'Yes',
-          '488b58ff-64f5-4f8a-8979-fa79940b1594': 'No',
-          '162570AAAAAAAAAAAAAAAAAAAAAAAAAAAAAA': 'Declined to answer',
+          'f7e458ef-8dea-4e53-b429-81664cbeda49': 'Sí',
+          '17455a61-ab7d-4bfb-a8d2-68f75a10d5f0': 'No',
+          'd8f64422-862b-4770-91a8-d3966988b2af': 'No desea responder',
         },
       },
     },
@@ -122,13 +125,13 @@ export const configSchema = {
     _type: Type.Object,
     _description: 'Person attribute type UUIDs for contact list fields',
     _default: {
-      telephone: 'b2c38640-2603-4629-aebd-3b54f33f1e3a',
-      baselineHIVStatus: '3ca03c84-632d-4e53-95ad-91f1bd9d96d6',
-      contactCreated: '7c94bd35-fba7-4ef7-96f5-29c89a318fcf',
-      preferedPnsAproach: '59d1b886-90c8-4f7f-9212-08b20a9ee8cf',
-      livingWithContact: '35a08d84-9f80-4991-92b4-c4ae5903536e',
-      contactipvOutcome: '49c543c2-a72a-4b0a-8cca-39c375c0726f',
-      dataConsent: 'a7c3e2f1-9b4d-4e8a-b15c-2d6f8e3a1c90',
+      telephone: '14d4f066-15f5-102d-96e4-000c29c2a5d7',
+      baselineHIVStatus: 'b978d331-e162-45b1-b9ca-65d3aa9a851f',
+      contactCreated: 'e91775be-cf11-45e3-9b34-3c3f8849d4d6',
+      preferedPnsAproach: '98c0a958-515e-4dec-a771-7a4cb9aa5492',
+      livingWithContact: '1a951a91-231f-4a3a-9a22-e396fa93455c',
+      contactipvOutcome: '81a8b164-befa-4cac-8978-da059082297c',
+      dataConsent: '49ff9334-9d9-47d0-a236-72c0c9d4dea9',
     },
   },
 
@@ -136,7 +139,7 @@ export const configSchema = {
   hivProgramUuid: {
     _type: Type.String,
     _description: 'HIV Program UUID',
-    _default: 'dfdc6d40-2f2f-463d-ba90-cc97350441a8',
+    _default: '1eb6833d-fc44-4d2c-b243-ddab949479b3',
   },
 
   // Encounter type for HIV testing — used by contact list HTS status check

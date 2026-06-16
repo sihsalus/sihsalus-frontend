@@ -1,6 +1,6 @@
 {
   "name": "@sihsalus/esm-atencion-ambulatoria-app",
-  "version": "1.0.0-alpha",
+  "version": "1.0.1-alpha",
   "description": "Módulo de Atención Ambulatoria (orquestador clínico) para el contexto de salud peruano - OpenMRS O3",
   "browser": "dist/sihsalus-esm-atencion-ambulatoria-app.js",
   "main": "src/index.ts",

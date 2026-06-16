@@ -256,6 +256,7 @@ export function useInitialPatientIdentifiers(patientUuid: string): {
       : null,
     openmrsFetch,
   );
+  const identifierResults = Array.isArray(data?.data?.results) ? data.data.results : [];
 
   const result: {
     data: FormValues['identifiers'];
@@ -263,7 +264,7 @@ export function useInitialPatientIdentifiers(patientUuid: string): {
   } = useMemo(() => {
     const identifiers: FormValues['identifiers'] = {};
 
-    data?.data?.results?.forEach((patientIdentifier) => {
+    identifierResults.forEach((patientIdentifier) => {
       identifiers[camelCase(patientIdentifier.identifierType.name)] = {
         identifierUuid: patientIdentifier.uuid,
         preferred: patientIdentifier.preferred,
@@ -280,7 +281,7 @@ export function useInitialPatientIdentifiers(patientUuid: string): {
       data: identifiers,
       isLoading,
     };
-  }, [data?.data?.results, isLoading]);
+  }, [identifierResults, isLoading]);
 
   return result;
 }
@@ -293,14 +294,15 @@ function useInitialEncounters(patientUuid: string, patientToEdit: fhir.Patient) 
       : null,
     openmrsFetch,
   );
-  const obs = data?.data.results.sort(latestFirstEncounter)?.at(0)?.obs;
-  const encounters = obs
+  const encounterResults = Array.isArray(data?.data?.results) ? data.data.results : [];
+  const obs = encounterResults.sort(latestFirstEncounter)?.at(0)?.obs;
+  const patientEncounters = obs
     ?.map(({ concept, value }) => ({
       [(concept as OpenmrsResource).uuid]: typeof value === 'object' ? value?.uuid : value,
     }))
     .reduce((accu, curr) => Object.assign(accu, curr), {});
 
-  return { data: encounters, isLoading, error };
+  return { data: patientEncounters, isLoading, error };
 }
 
 function useInitialPersonAttributes(personUuid: string) {
@@ -311,12 +313,14 @@ function useInitialPersonAttributes(personUuid: string) {
       : null,
     openmrsFetch,
   );
+  const personAttributes = Array.isArray(data?.data?.results) ? data.data.results : [];
+
   const result = useMemo(() => {
     return {
-      data: data?.data?.results,
+      data: personAttributes,
       isLoading,
     };
-  }, [data?.data?.results, isLoading]);
+  }, [personAttributes, isLoading]);
   return result;
 }
 

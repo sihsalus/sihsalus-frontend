@@ -34,6 +34,8 @@ import { getValidationSchema } from './validation/patient-registration-validatio
 export const initialFormValues = {} as FormValues;
 
 interface RegistrationSubmitError {
+  status?: number;
+  message?: string;
   responseBody?: {
     error?: {
       globalErrors?: Array<{ message?: string }>;
@@ -44,6 +46,19 @@ interface RegistrationSubmitError {
 
 function isRegistrationSubmitError(error: unknown): error is RegistrationSubmitError {
   return typeof error === 'object' && error !== null && 'responseBody' in error;
+}
+
+function isSessionExpired(error: unknown): boolean {
+  if (typeof error !== 'object' || error === null) {
+    return false;
+  }
+
+  const typedError = error as RegistrationSubmitError & { responseStatus?: number; message?: string };
+  const status = typedError.status ?? typedError.responseStatus;
+  const lowerCaseMessage = `${typedError.message ?? ''} ${typedError.responseBody?.error?.message ?? ''}`.toLowerCase();
+  return (
+    status === 401 || status === 403 || lowerCaseMessage.includes('session') || lowerCaseMessage.includes('expired')
+  );
 }
 
 export interface PatientRegistrationProps {
@@ -143,24 +158,22 @@ export const PatientRegistration: React.FC<PatientRegistrationProps> = ({ savePa
 
       setTarget(redirectUrl);
     } catch (error: unknown) {
-      if (isRegistrationSubmitError(error) && error.responseBody?.error?.globalErrors) {
-        error.responseBody.error.globalErrors.forEach((globalError) => {
-          showSnackbar({
-            title: inEditMode
-              ? t('updatePatientErrorSnackbarTitle', 'Patient Details Update Failed')
-              : t('registrationErrorSnackbarTitle', 'Patient Registration Failed'),
-            subtitle: globalError.message,
-            kind: 'error',
-          });
-        });
-      } else if (isRegistrationSubmitError(error) && error.responseBody?.error?.message) {
+      const errorTitle = inEditMode
+        ? t('updatePatientErrorSnackbarTitle', 'Patient Details Update Failed')
+        : t('registrationErrorSnackbarTitle', 'Patient Registration Failed');
+
+      if (isSessionExpired(error)) {
         showSnackbar({
-          title: inEditMode
-            ? t('updatePatientErrorSnackbarTitle', 'Patient Details Update Failed')
-            : t('registrationErrorSnackbarTitle', 'Patient Registration Failed'),
-          subtitle: error.responseBody.error.message,
+          title: errorTitle,
+          subtitle: t('sessionExpiredError', 'Your session has expired. Please sign in again.'),
           kind: 'error',
         });
+      } else if (isRegistrationSubmitError(error) && error.responseBody?.error?.globalErrors) {
+        error.responseBody.error.globalErrors.forEach((globalError) => {
+          showSnackbar({ title: errorTitle, subtitle: globalError.message, kind: 'error' });
+        });
+      } else if (isRegistrationSubmitError(error) && error.responseBody?.error?.message) {
+        showSnackbar({ title: errorTitle, subtitle: error.responseBody.error.message, kind: 'error' });
       } else {
         createErrorHandler()(error);
       }
@@ -172,9 +185,9 @@ export const PatientRegistration: React.FC<PatientRegistrationProps> = ({ savePa
   const getDescription = (errors: FormikErrors<FormValues>) => {
     return (
       <ul style={{ listStyle: 'inside' }}>
-        {Object.keys(errors).map((error, index) => {
-          return <li key={index}>{t(`${error}LabelText`, error)}</li>;
-        })}
+        {Object.keys(errors).map((error) => (
+          <li key={error}>{t(`${error}LabelText`, error)}</li>
+        ))}
       </ul>
     );
   };

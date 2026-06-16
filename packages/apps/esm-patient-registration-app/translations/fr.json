@@ -109,6 +109,7 @@
   "searchAddress": "Rechercher l'adresse",
   "searchIdentifierPlaceholder": "Rechercher un identifiant",
   "searchLocationPersonAttribute": "Sélectionner une localisation",
+  "sessionExpiredError": "Votre session a expiré. Veuillez vous reconnecter.",
   "selectAnOption": "Sélectionner une option",
   "sexFieldLabelText": "Sexe",
   "source": "Source",

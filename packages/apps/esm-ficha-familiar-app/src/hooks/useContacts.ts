@@ -3,6 +3,7 @@ import { useMemo } from 'react';
 import useSWR from 'swr';
 
 import type { ConfigObject } from '../config-schema';
+import { BOOLEAN_YES } from '../contact-list/contact-list.resource';
 import type { Contact, Person, Relationship } from '../types';
 
 function extractValue(display: string) {
@@ -14,25 +15,8 @@ function extractValue(display: string) {
   return display.trim();
 }
 
-const getConceptName = (key) => {
-  return conceptIdNameMap.get(key);
-};
-
-const conceptIdNameMap = new Map([
-  ['162284', 'Dual referral'],
-  ['163096', 'Provider referral'],
-  ['161642', 'Contract referral'],
-  ['160551', 'Passive referral'],
-  ['703', 'Positive'],
-  ['664', 'Negative'],
-  ['1067', 'Unknown'],
-  ['1066', 'No'],
-  ['1065', 'Yes'],
-  ['162570', 'Declined to answer'],
-]);
-
 function extractAttributeData(person: Person, config: ConfigObject) {
-  return person.attributes.reduce<{
+  const attributeData: {
     contact: string | null;
     baselineHIVStatus: string | null;
     personContactCreated: string | null;
@@ -40,35 +24,35 @@ function extractAttributeData(person: Person, config: ConfigObject) {
     livingWithClient: string | null;
     ipvOutcome: string | null;
     dataConsent: boolean | null;
-  }>(
-    (prev, attr) => {
-      if (attr.attributeType.uuid === config.contactPersonAttributesUuid.telephone) {
-        return { ...prev, contact: attr.display ? extractValue(attr.display) : null };
-      } else if (attr.attributeType.uuid === config.contactPersonAttributesUuid.baselineHIVStatus) {
-        return { ...prev, baselineHIVStatus: getConceptName(attr.value) ?? null };
-      } else if (attr.attributeType.uuid === config.contactPersonAttributesUuid.contactCreated) {
-        return { ...prev, personContactCreated: getConceptName(attr.value) ?? null };
-      } else if (attr.attributeType.uuid === config.contactPersonAttributesUuid.livingWithContact) {
-        return { ...prev, livingWithClient: getConceptName(attr.value) ?? null };
-      } else if (attr.attributeType.uuid === config.contactPersonAttributesUuid.preferedPnsAproach) {
-        return { ...prev, pnsAproach: getConceptName(attr.value) ?? null };
-      } else if (attr.attributeType.uuid === config.contactPersonAttributesUuid.contactipvOutcome) {
-        return { ...prev, ipvOutcome: attr.display ? extractValue(attr.display) : null };
-      } else if (attr.attributeType.uuid === config.contactPersonAttributesUuid.dataConsent) {
-        return { ...prev, dataConsent: attr.value === 'true' || attr.value === '1065' };
-      }
-      return prev;
-    },
-    {
-      contact: null,
-      baselineHIVStatus: null,
-      personContactCreated: null,
-      pnsAproach: null,
-      livingWithClient: null,
-      ipvOutcome: null,
-      dataConsent: null,
-    },
-  );
+  } = {
+    contact: null,
+    baselineHIVStatus: null,
+    personContactCreated: null,
+    pnsAproach: null,
+    livingWithClient: null,
+    ipvOutcome: null,
+    dataConsent: null,
+  };
+
+  for (const attr of person.attributes) {
+    if (attr.attributeType.uuid === config.contactPersonAttributesUuid.telephone) {
+      attributeData.contact = attr.display ? extractValue(attr.display) : null;
+    } else if (attr.attributeType.uuid === config.contactPersonAttributesUuid.baselineHIVStatus) {
+      attributeData.baselineHIVStatus = attr.display ? extractValue(attr.display) : null;
+    } else if (attr.attributeType.uuid === config.contactPersonAttributesUuid.contactCreated) {
+      attributeData.personContactCreated = attr.display ? extractValue(attr.display) : null;
+    } else if (attr.attributeType.uuid === config.contactPersonAttributesUuid.livingWithContact) {
+      attributeData.livingWithClient = attr.display ? extractValue(attr.display) : null;
+    } else if (attr.attributeType.uuid === config.contactPersonAttributesUuid.preferedPnsAproach) {
+      attributeData.pnsAproach = attr.display ? extractValue(attr.display) : null;
+    } else if (attr.attributeType.uuid === config.contactPersonAttributesUuid.contactipvOutcome) {
+      attributeData.ipvOutcome = attr.display ? extractValue(attr.display) : null;
+    } else if (attr.attributeType.uuid === config.contactPersonAttributesUuid.dataConsent) {
+      attributeData.dataConsent = attr.value === BOOLEAN_YES || attr.value === 'true';
+    }
+  }
+
+  return attributeData;
 }
 
 function getContact(relationship: Relationship, config: ConfigObject, person: 'personA' | 'personB') {

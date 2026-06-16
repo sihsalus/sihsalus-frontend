@@ -22,14 +22,18 @@ export function useOrderedAddressHierarchyLevels(): OrderedAddressHierarchyLevel
   const url = '/module/addresshierarchy/ajax/getOrderedAddressHierarchyLevels.form';
   const { data, isLoading, error } = useSWRImmutable<FetchResponse<Array<AddressFields>>, Error>(url, openmrsFetch);
 
+  const orderedAddressFields = Array.isArray(data?.data) ? data.data : [];
+
   const results = useMemo(
     () => ({
-      orderedFields: data?.data?.map((field) => field.addressField),
-      requiredFields: new Set(data?.data?.filter((field) => field.required).map((field) => field.addressField) ?? []),
+      orderedFields: orderedAddressFields.map((field) => field.addressField),
+      requiredFields: new Set(
+        orderedAddressFields.filter((field) => field.required).map((field) => field.addressField),
+      ),
       isLoadingFieldOrder: isLoading,
       errorFetchingFieldOrder: error,
     }),
-    [data, isLoading, error],
+    [orderedAddressFields, isLoading, error],
   );
 
   return results;
@@ -50,13 +54,15 @@ export function useAddressEntries(fetchResults, searchString) {
     }
   }, [error]);
 
+  const addressEntries = Array.isArray(data?.data) ? data.data : [];
+
   const results = useMemo(
     () => ({
-      entries: data?.data?.map((item) => item.name),
+      entries: addressEntries.map((item) => item.name),
       isLoadingAddressEntries: isLoading,
       errorFetchingAddressEntries: error,
     }),
-    [data, isLoading, error],
+    [addressEntries, isLoading, error],
   );
   return results;
 }
@@ -135,13 +141,15 @@ export function useAddressHierarchy(searchString: string, separator: string) {
     openmrsFetch,
   );
 
+  const addressHierarchy = Array.isArray(data?.data) ? data.data : [];
+
   const results = useMemo(
     () => ({
-      addresses: data?.data?.map((address) => address.address) ?? [],
+      addresses: addressHierarchy.map((address) => address.address),
       error,
       isLoading,
     }),
-    [data?.data, error, isLoading],
+    [addressHierarchy, error, isLoading],
   );
   return results;
 }
@@ -164,13 +172,15 @@ export function useAddressHierarchyWithParentSearch(addressField: string, parent
     openmrsFetch,
   );
 
+  const possibleParentEntries = Array.isArray(data?.data) ? data.data : [];
+
   const results = useMemo(
     () => ({
       error: error,
       isLoading,
-      addresses: data?.data ?? [],
+      addresses: possibleParentEntries,
     }),
-    [data?.data, error, isLoading],
+    [possibleParentEntries, error, isLoading],
   );
 
   return results;

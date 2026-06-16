@@ -1,6 +1,6 @@
 {
   "name": "@sihsalus/esm-seguimiento-casos-app",
-  "version": "1.0.0-alpha",
+  "version": "1.0.1-alpha",
   "description": "Módulo de monitoreo y seguimiento de casos N1 para VIH, TB, diabetes y otras condiciones priorizadas - OpenMRS O3",
   "browser": "dist/sihsalus-esm-seguimiento-casos-app.js",
   "main": "src/index.ts",

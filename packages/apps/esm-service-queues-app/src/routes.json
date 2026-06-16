@@ -22,6 +22,7 @@
         "slot": "service-queues-dashboard-slot",
         "title": "serviceQueues"
       },
+      "privileges": "app:service-queues",
       "online": true,
       "offline": true,
       "order": 10
@@ -34,13 +35,15 @@
         "slot": "service-queues-dashboard-slot",
         "title": "serviceQueues"
       },
+      "privileges": "app:service-queues",
       "online": true,
       "offline": true
     },
     {
       "component": "root",
       "name": "service-queues-dashboard",
-      "slot": "service-queues-dashboard-slot"
+      "slot": "service-queues-dashboard-slot",
+      "privileges": "app:service-queues"
     },
     {
       "name": "remove-queue-entry",

@@ -7972,6 +7972,7 @@ __metadata:
     "@openmrs/esm-framework": "workspace:*"
     "@openmrs/esm-utils": "workspace:*"
     "@playwright/test": "npm:^1.52.0"
+    "@sihsalus/esm-rbac": "workspace:*"
     "@swc/core": "npm:1.15.21"
     "@types/react": "npm:^18.3.21"
     "@types/react-dom": "npm:^18.3.0"
@@ -8346,6 +8347,7 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "@sihsalus/esm-home-app@workspace:packages/apps/esm-home-app"
   dependencies:
+    "@sihsalus/esm-rbac": "workspace:*"
     i18next: "npm:^25.0.0"
     i18next-parser: "npm:^9.3.0"
     openmrs: "npm:*"

@@ -13,7 +13,8 @@
     {
       "name": "interconsultas-dashboard",
       "slot": "interconsultas-dashboard-slot",
-      "component": "root"
+      "component": "root",
+      "privileges": "app:interconsultas"
     },
     {
       "name": "interconsultas-dashboard-link",
@@ -24,6 +25,7 @@
         "slot": "interconsultas-dashboard-slot",
         "title": "Interconsultas"
       },
+      "privileges": "app:interconsultas",
       "order": 16
     },
     {

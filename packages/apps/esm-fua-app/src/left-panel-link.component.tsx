@@ -5,6 +5,7 @@ import last from 'lodash-es/last';
 import { useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { BrowserRouter, useLocation } from 'react-router-dom';
+import { fuaReadPrivilege } from './constant';
 
 export interface LinkConfig {
   name: string;
@@ -29,7 +30,7 @@ export function LinkExtension({ config }: { config: LinkConfig }): JSX.Element {
   }
 
   return (
-    <RequirePrivilege privilege="Fua Privilege" hideUnauthorized>
+    <RequirePrivilege privilege={fuaReadPrivilege} hideUnauthorized>
       <ConfigurableLink
         to={spaBasePath + '/' + name}
         className={`cds--side-nav__link ${name === urlSegment && 'active-left-nav-link'}`}

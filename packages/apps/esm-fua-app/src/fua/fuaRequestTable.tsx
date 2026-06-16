@@ -22,6 +22,7 @@ import {
 } from '@carbon/react';
 import { Download, EventSchedule, Renew, View } from '@carbon/react/icons';
 import { formatDate, openmrsFetch, showModal, showSnackbar, usePagination } from '@openmrs/esm-framework';
+import { RequirePrivilege } from '@sihsalus/esm-rbac';
 import React, { useCallback, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
@@ -31,7 +32,7 @@ const loadHtmlInWindow = (targetWindow: Window, html: string) => {
   targetWindow.location.href = url;
 };
 
-import { ModuleFuaRestURL } from '../constant';
+import { fuaUpdatePrivilege, ModuleFuaRestURL } from '../constant';
 import useFuaRequests, { type FuaRequest, revalidateFuaRequestCaches, setFuaEstado } from '../hooks/useFuaRequests';
 import { useVisit } from '../hooks/useVisit';
 import { FUA_ESTADOS } from '../modals/change-fua-status.modal';
@@ -104,18 +105,20 @@ const FuaActionsCell: React.FC<FuaActionsCellProps> = ({
       onClick={() => onViewHistory(fuaRequest)}
       tooltipPosition="left"
     />
-    <OverflowMenu size="sm" flipped ariaLabel={t('actions', 'Acciones')}>
-      <OverflowMenuItem itemText={t('changeStatus', 'Cambiar Estado')} onClick={() => onChangeStatus(fuaRequest)} />
-      {fuaRequest?.fuaEstado?.nombre === FUA_ESTADOS.RECHAZADO.nombre && (
-        <OverflowMenuItem itemText={t('resend', 'Reenviar a SETI-SIS')} onClick={() => onResend(fuaRequest)} />
-      )}
-      <OverflowMenuItem
-        itemText={t('cancelFua', 'Cancelar FUA')}
-        onClick={() => onCancel(fuaRequest)}
-        isDelete
-        hasDivider
-      />
-    </OverflowMenu>
+    <RequirePrivilege privilege={fuaUpdatePrivilege} hideUnauthorized>
+      <OverflowMenu size="sm" flipped ariaLabel={t('actions', 'Acciones')}>
+        <OverflowMenuItem itemText={t('changeStatus', 'Cambiar Estado')} onClick={() => onChangeStatus(fuaRequest)} />
+        {fuaRequest?.fuaEstado?.nombre === FUA_ESTADOS.RECHAZADO.nombre && (
+          <OverflowMenuItem itemText={t('resend', 'Reenviar a SETI-SIS')} onClick={() => onResend(fuaRequest)} />
+        )}
+        <OverflowMenuItem
+          itemText={t('cancelFua', 'Cancelar FUA')}
+          onClick={() => onCancel(fuaRequest)}
+          isDelete
+          hasDivider
+        />
+      </OverflowMenu>
+    </RequirePrivilege>
   </div>
 );
 

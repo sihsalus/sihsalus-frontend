@@ -20,9 +20,11 @@ import {
 } from '@carbon/react';
 import { Add, Renew } from '@carbon/react/icons';
 import { showSnackbar, usePagination } from '@openmrs/esm-framework';
+import { RequirePrivilege } from '@sihsalus/esm-rbac';
 import React, { useCallback, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
+import { fuaManagePrivilege } from '../constant';
 import { generateFuaFromVisit, generateFuasFromVisits, useVisits, type VisitSummary } from '../hooks/useVisit';
 
 import styles from './fua-request-table.scss';
@@ -196,34 +198,36 @@ const VisitTable: React.FC = () => {
                     size="sm"
                   />
                 </Layer>
-                {isBulkSelectionMode ? (
-                  <>
+                <RequirePrivilege privilege={fuaManagePrivilege} hideUnauthorized>
+                  {isBulkSelectionMode ? (
+                    <>
+                      <Button
+                        kind="primary"
+                        size="sm"
+                        renderIcon={Add}
+                        disabled={selectedRows.length === 0 || isBulkGenerating}
+                        onClick={() => handleBulkGenerateFuas(selectedRows.map((row) => row.id))}
+                      >
+                        {isBulkGenerating
+                          ? t('generatingFuas', 'Generando FUAs...')
+                          : t('generateSelectedFuas', 'Generar FUAs seleccionados')}
+                      </Button>
+                      <Button kind="ghost" size="sm" onClick={handleCancelBulkSelection} disabled={isBulkGenerating}>
+                        {t('cancel', 'Cancelar')}
+                      </Button>
+                    </>
+                  ) : (
                     <Button
-                      kind="primary"
+                      kind="secondary"
                       size="sm"
                       renderIcon={Add}
-                      disabled={selectedRows.length === 0 || isBulkGenerating}
-                      onClick={() => handleBulkGenerateFuas(selectedRows.map((row) => row.id))}
+                      onClick={() => setIsBulkSelectionMode(true)}
+                      disabled={isBulkGenerating}
                     >
-                      {isBulkGenerating
-                        ? t('generatingFuas', 'Generando FUAs...')
-                        : t('generateSelectedFuas', 'Generar FUAs seleccionados')}
+                      {t('generateFuasInBulk', 'Generar FUAs en masa')}
                     </Button>
-                    <Button kind="ghost" size="sm" onClick={handleCancelBulkSelection} disabled={isBulkGenerating}>
-                      {t('cancel', 'Cancelar')}
-                    </Button>
-                  </>
-                ) : (
-                  <Button
-                    kind="secondary"
-                    size="sm"
-                    renderIcon={Add}
-                    onClick={() => setIsBulkSelectionMode(true)}
-                    disabled={isBulkGenerating}
-                  >
-                    {t('generateFuasInBulk', 'Generar FUAs en masa')}
-                  </Button>
-                )}
+                  )}
+                </RequirePrivilege>
                 <Button kind="ghost" size="sm" renderIcon={Renew} onClick={handleRefresh} disabled={isValidating}>
                   {isValidating ? t('refreshing', 'Actualizando...') : t('refresh', 'Actualizar')}
                 </Button>
@@ -232,7 +236,11 @@ const VisitTable: React.FC = () => {
             <Table {...getTableProps()} className={styles.table} aria-label={t('visits', 'Visitas')}>
               <TableHead>
                 <TableRow>
-                  {isBulkSelectionMode ? <TableSelectAll {...getSelectionProps()} disabled={isBulkGenerating} /> : null}
+                  {isBulkSelectionMode ? (
+                    <RequirePrivilege privilege={fuaManagePrivilege} hideUnauthorized>
+                      <TableSelectAll {...getSelectionProps()} disabled={isBulkGenerating} />
+                    </RequirePrivilege>
+                  ) : null}
                   {headers.map((header) => (
                     <TableHeader key={header.key} {...getHeaderProps({ header })} className={styles.tableHeader}>
                       {header.header}
@@ -244,23 +252,27 @@ const VisitTable: React.FC = () => {
                 {rows.map((row) => (
                   <TableRow key={row.id} {...getRowProps({ row })}>
                     {isBulkSelectionMode ? (
-                      <TableSelectRow {...getSelectionProps({ row })} disabled={isBulkGenerating} />
+                      <RequirePrivilege privilege={fuaManagePrivilege} hideUnauthorized>
+                        <TableSelectRow {...getSelectionProps({ row })} disabled={isBulkGenerating} />
+                      </RequirePrivilege>
                     ) : null}
                     {row.cells.map((cell) => (
                       <TableCell key={cell.id} className={styles.tableCell}>
                         {cell.info.header === 'actions' ? (
-                          <Button
-                            kind="ghost"
-                            size="sm"
-                            renderIcon={Add}
-                            iconDescription={t('generateFua', 'Generar FUA')}
-                            disabled={!cell.value || generatingVisitUuid === cell.value || isBulkGenerating}
-                            onClick={() => handleGenerateFua(cell.value)}
-                          >
-                            {generatingVisitUuid === cell.value
-                              ? t('generatingFua', 'Generando FUA...')
-                              : t('generateFua', 'Generar FUA')}
-                          </Button>
+                          <RequirePrivilege privilege={fuaManagePrivilege} hideUnauthorized>
+                            <Button
+                              kind="ghost"
+                              size="sm"
+                              renderIcon={Add}
+                              iconDescription={t('generateFua', 'Generar FUA')}
+                              disabled={!cell.value || generatingVisitUuid === cell.value || isBulkGenerating}
+                              onClick={() => handleGenerateFua(cell.value)}
+                            >
+                              {generatingVisitUuid === cell.value
+                                ? t('generatingFua', 'Generando FUA...')
+                                : t('generateFua', 'Generar FUA')}
+                            </Button>
+                          </RequirePrivilege>
                         ) : (
                           cell.value
                         )}

@@ -35,6 +35,9 @@
   "bugs": {
     "url": "https://github.com/openmrs/openmrs-esm-home/issues"
   },
+  "dependencies": {
+    "@sihsalus/esm-rbac": "workspace:*"
+  },
   "peerDependencies": {
     "@openmrs/esm-framework": "*",
     "react": "18.x",

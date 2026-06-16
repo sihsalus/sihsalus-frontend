@@ -1,8 +1,10 @@
 import { Button, InlineLoading, ModalBody, ModalFooter, ModalHeader, Select, SelectItem } from '@carbon/react';
 import { showSnackbar } from '@openmrs/esm-framework';
+import { RequirePrivilege } from '@sihsalus/esm-rbac';
 import React, { useCallback, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
+import { fuaUpdatePrivilege } from '../constant';
 import { type FuaRequest, setFuaEstado } from '../hooks/useFuaRequests';
 
 import styles from './fua-modals.scss';
@@ -92,7 +94,7 @@ const ChangeFuaStatusModal: React.FC<ChangeFuaStatusModalProps> = ({ closeModal,
   };
 
   return (
-    <>
+    <RequirePrivilege privilege={fuaUpdatePrivilege}>
       <ModalHeader closeModal={closeModal} title={t('changeStatus', 'Cambiar Estado del FUA')} />
       <ModalBody>
         <div className={styles.modalContent}>
@@ -138,7 +140,7 @@ const ChangeFuaStatusModal: React.FC<ChangeFuaStatusModalProps> = ({ closeModal,
           {isSubmitting ? <InlineLoading description={t('saving', 'Guardando...')} /> : t('save', 'Guardar')}
         </Button>
       </ModalFooter>
-    </>
+    </RequirePrivilege>
   );
 };
 

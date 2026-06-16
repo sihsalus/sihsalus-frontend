@@ -14,12 +14,14 @@
         "slot": "tamizajes-home-slot",
         "path": "/home/tamizajes"
       },
+      "privileges": "app:tamizajes",
       "order": 45
     },
     {
       "name": "tamizajes-home",
       "component": "root",
       "slot": "tamizajes-home-slot",
+      "privileges": "app:tamizajes",
       "order": 0,
       "online": true,
       "offline": false

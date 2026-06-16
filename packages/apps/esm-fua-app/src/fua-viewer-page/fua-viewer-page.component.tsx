@@ -1,13 +1,15 @@
 import { InlineLoading } from '@carbon/react';
 import { showSnackbar, useConfig } from '@openmrs/esm-framework';
+import { RequirePrivilege } from '@sihsalus/esm-rbac';
 import React, { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import type { Config } from '../config-schema';
+import { fuaReadPrivilege } from '../constant';
 
 import styles from './fua-viewer-page.scss';
 
-const FuaViewerPage: React.FC = () => {
+const FuaViewerPageContent: React.FC = () => {
   const config = useConfig<Config>();
   const { t } = useTranslation();
   const endpoint = config.fuaGeneratorEndpoint;
@@ -105,5 +107,11 @@ const FuaViewerPage: React.FC = () => {
     </div>
   );
 };
+
+const FuaViewerPage: React.FC = () => (
+  <RequirePrivilege privilege={fuaReadPrivilege}>
+    <FuaViewerPageContent />
+  </RequirePrivilege>
+);
 
 export default FuaViewerPage;

@@ -17,6 +17,7 @@
       "name": "dispensing-link",
       "slot": "app-menu-slot",
       "component": "dispensingLink",
+      "privileges": "app:dispensing",
       "online": true,
       "offline": true
     },
@@ -38,6 +39,7 @@
       "name": "dispensing-dashboard",
       "slot": "dispensing-dashboard-slot",
       "component": "dispensingDashboard",
+      "privileges": "app:dispensing",
       "online": true,
       "offline": true
     },
@@ -50,6 +52,7 @@
         "slot": "dispensing-dashboard-slot",
         "title": "dispensing"
       },
+      "privileges": "app:dispensing",
       "order": 40
     },
     {

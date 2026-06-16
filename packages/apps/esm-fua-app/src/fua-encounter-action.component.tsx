@@ -6,10 +6,11 @@ import {
   useStartVisitIfNeeded,
   useVisitOrOfflineVisit,
 } from '@openmrs/esm-patient-common-lib';
+import { RequirePrivilege } from '@sihsalus/esm-rbac';
 import React, { useCallback, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
-import { ModuleFuaRestURL } from './constant';
+import { fuaManagePrivilege, ModuleFuaRestURL } from './constant';
 
 interface VisitSearchResponse {
   results?: Array<{
@@ -17,7 +18,7 @@ interface VisitSearchResponse {
   }>;
 }
 
-const FuaEncounterAction: React.FC<PatientChartWorkspaceActionButtonProps> = ({
+const FuaEncounterActionContent: React.FC<PatientChartWorkspaceActionButtonProps> = ({
   groupProps: { patientUuid, visitContext, mutateVisitContext },
 }) => {
   const { t } = useTranslation();
@@ -121,5 +122,11 @@ const FuaEncounterAction: React.FC<PatientChartWorkspaceActionButtonProps> = ({
     </IconButton>
   );
 };
+
+const FuaEncounterAction: React.FC<PatientChartWorkspaceActionButtonProps> = (props) => (
+  <RequirePrivilege privilege={fuaManagePrivilege} hideUnauthorized>
+    <FuaEncounterActionContent {...props} />
+  </RequirePrivilege>
+);
 
 export default FuaEncounterAction;

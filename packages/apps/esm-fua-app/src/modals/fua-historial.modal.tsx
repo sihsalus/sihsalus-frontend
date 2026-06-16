@@ -1,8 +1,10 @@
 import { Button, InlineNotification, ModalBody, ModalFooter, ModalHeader, SkeletonText, Tag } from '@carbon/react';
 import { formatDate } from '@openmrs/esm-framework';
+import { RequirePrivilege } from '@sihsalus/esm-rbac';
 import React from 'react';
 import { useTranslation } from 'react-i18next';
 
+import { fuaReadPrivilege } from '../constant';
 import { useFuaHistorial } from '../hooks/useFuaHistorial';
 import type { FuaRequest } from '../hooks/useFuaRequests';
 
@@ -22,7 +24,7 @@ const ESTADO_TAG: Record<string, 'blue' | 'cyan' | 'gray' | 'green' | 'magenta' 
   Cancelado: 'magenta',
 };
 
-const FuaHistorialModal: React.FC<FuaHistorialModalProps> = ({ closeModal, fuaRequest }) => {
+const FuaHistorialModalContent: React.FC<FuaHistorialModalProps> = ({ closeModal, fuaRequest }) => {
   const { t } = useTranslation();
   const { historial, isLoading, error } = useFuaHistorial(fuaRequest.id);
 
@@ -86,5 +88,11 @@ const FuaHistorialModal: React.FC<FuaHistorialModalProps> = ({ closeModal, fuaRe
     </>
   );
 };
+
+const FuaHistorialModal: React.FC<FuaHistorialModalProps> = (props) => (
+  <RequirePrivilege privilege={fuaReadPrivilege}>
+    <FuaHistorialModalContent {...props} />
+  </RequirePrivilege>
+);
 
 export default FuaHistorialModal;

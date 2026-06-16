@@ -58,12 +58,14 @@
         "slot": "case-management-dashboard-slot",
         "path": "/seguimiento/casos"
       },
+      "privileges": "app:case-monitoring",
       "order": 70
     },
     {
       "name": "case-monitoring-wrap-component-view",
       "slot": "case-management-dashboard-slot",
       "component": "wrapComponent",
+      "privileges": "app:case-monitoring",
       "order": 2,
       "online": true,
       "offline": false

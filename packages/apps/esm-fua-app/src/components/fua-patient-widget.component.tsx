@@ -2,9 +2,11 @@ import { Button, DataTableSkeleton, Tag, Tile } from '@carbon/react';
 import { View } from '@carbon/react/icons';
 import { formatDate } from '@openmrs/esm-framework';
 import { launchPatientWorkspace } from '@openmrs/esm-patient-common-lib';
+import { RequirePrivilege } from '@sihsalus/esm-rbac';
 import React from 'react';
 import { useTranslation } from 'react-i18next';
 
+import { fuaReadPrivilege } from '../constant';
 import { useFuasByPatient } from '../hooks/useFuaRequests';
 
 import styles from './fua-patient-widget.scss';
@@ -22,7 +24,7 @@ const ESTADO_TAG: Record<string, 'blue' | 'cyan' | 'gray' | 'green' | 'magenta' 
   Cancelado: 'magenta',
 };
 
-const FuaPatientWidget: React.FC<FuaPatientWidgetProps> = ({ patientUuid }) => {
+const FuaPatientWidgetContent: React.FC<FuaPatientWidgetProps> = ({ patientUuid }) => {
   const { t } = useTranslation();
   const { fuaOrders, isLoading, isError } = useFuasByPatient(patientUuid);
 
@@ -79,5 +81,11 @@ const FuaPatientWidget: React.FC<FuaPatientWidgetProps> = ({ patientUuid }) => {
     </div>
   );
 };
+
+const FuaPatientWidget: React.FC<FuaPatientWidgetProps> = (props) => (
+  <RequirePrivilege privilege={fuaReadPrivilege} hideUnauthorized>
+    <FuaPatientWidgetContent {...props} />
+  </RequirePrivilege>
+);
 
 export default FuaPatientWidget;

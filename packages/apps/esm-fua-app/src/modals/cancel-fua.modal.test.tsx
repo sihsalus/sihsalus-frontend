@@ -1,5 +1,6 @@
 import { showSnackbar } from '@openmrs/esm-framework';
 import { fireEvent, render, screen, waitFor } from '@testing-library/react';
+import type { ReactNode } from 'react';
 
 import { cancelFuaRequest } from '../hooks/useFuaRequests';
 
@@ -12,6 +13,13 @@ vi.mock('@openmrs/esm-framework', async () => ({
   ...(await vi.importActual('@openmrs/esm-framework')),
   showSnackbar: vi.fn(),
 }));
+vi.mock('@sihsalus/esm-rbac', async () => {
+  const React = await import('react');
+
+  return {
+    RequirePrivilege: ({ children }: { children?: ReactNode }) => React.createElement(React.Fragment, null, children),
+  };
+});
 
 const mockFua = {
   uuid: 'fua-uuid',

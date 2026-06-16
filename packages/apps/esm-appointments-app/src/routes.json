@@ -19,12 +19,14 @@
         "slot": "clinical-appointments-dashboard-slot",
         "title": "Appointments"
       },
+      "privileges": "app:appointments",
       "order": 20
     },
     {
       "component": "root",
       "name": "clinical-appointments-dashboard",
-      "slot": "clinical-appointments-dashboard-slot"
+      "slot": "clinical-appointments-dashboard-slot",
+      "privileges": "app:appointments"
     },
     {
       "name": "appointments-calendar-dashboard-link",

@@ -8,12 +8,14 @@ import {
   restBaseUrl,
   showModal,
   showSnackbar,
+  UserHasAccess,
   useLayoutType,
   type Visit,
   type Workspace2DefinitionProps,
 } from '@openmrs/esm-framework';
 import React from 'react';
 import { useTranslation } from 'react-i18next';
+import { PRIVILEGE_CREATE_DISPENSE } from '../constants';
 import styles from './fill-prescription-button.scss';
 
 const FillPrescriptionButton: React.FC<{}> = () => {
@@ -72,16 +74,18 @@ const FillPrescriptionButton: React.FC<{}> = () => {
   };
 
   return (
-    <div className={styles.buttonContainer}>
-      <Button
-        kind="primary"
-        renderIcon={(props) => <AddIcon size={16} {...props} />}
-        size={responsiveSize}
-        onClick={launchSearchWorkspace}
-      >
-        {t('fillPrescription', 'Fill prescription')}
-      </Button>
-    </div>
+    <UserHasAccess privilege={PRIVILEGE_CREATE_DISPENSE}>
+      <div className={styles.buttonContainer}>
+        <Button
+          kind="primary"
+          renderIcon={(props) => <AddIcon size={16} {...props} />}
+          size={responsiveSize}
+          onClick={launchSearchWorkspace}
+        >
+          {t('fillPrescription', 'Fill prescription')}
+        </Button>
+      </div>
+    </UserHasAccess>
   );
 };
 

@@ -151,6 +151,14 @@
   --action-illustration-filter: hue-rotate(-28deg) saturate(1.08);
 }
 
+.dispensingAction {
+  --action-accent: #7d3f98;
+  --action-surface: #fbf7fd;
+  --action-illustration-muted: #eadcf0;
+  --action-illustration-strong: #7d3f98;
+  --action-illustration-filter: hue-rotate(22deg) saturate(1.08);
+}
+
 .fuaAction {
   --action-accent: #a66f00;
   --action-surface: #fff9ed;

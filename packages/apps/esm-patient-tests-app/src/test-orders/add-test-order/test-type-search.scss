@@ -151,3 +151,43 @@
 .text02 {
   color: $text-02;
 }
+
+.searchContainer {
+  display: flex;
+  flex-direction: column;
+  gap: layout.$spacing-04;
+  margin-bottom: layout.$spacing-04;
+}
+
+.selectWrapper {
+  width: 100%;
+}
+
+.groupHeader {
+  @include type.type-style('heading-01');
+  color: colors.$gray-80;
+  font-weight: 600;
+  margin-top: layout.$spacing-05;
+  margin-bottom: layout.$spacing-03;
+  padding-bottom: layout.$spacing-02;
+  border-bottom: 1px solid colors.$gray-30;
+}
+
+.groupContainer {
+  margin-bottom: layout.$spacing-05;
+}
+
+.resultsContainer {
+  overflow-y: auto;
+  max-height: calc(100vh - 220px);
+}
+
+.headerActions {
+  display: flex;
+  gap: layout.$spacing-03;
+  align-items: center;
+}
+
+
+
+

@@ -1,19 +1,21 @@
-import { ActionMenuButton, ReferralOrderIcon } from '@openmrs/esm-framework';
+import { OverflowMenuItem } from '@carbon/react';
 import { useLaunchWorkspaceRequiringVisit } from '@openmrs/esm-patient-common-lib';
-import React, { type ComponentProps } from 'react';
+import React from 'react';
 import { useTranslation } from 'react-i18next';
 
-const RequestInterconsultaActionButton: React.FC = () => {
+interface RequestInterconsultaActionButtonProps {
+  closeMenu?: () => void;
+}
+
+const RequestInterconsultaActionButton: React.FC<RequestInterconsultaActionButtonProps> = ({ closeMenu }) => {
   const { t } = useTranslation();
   const launchRequestWorkspace = useLaunchWorkspaceRequiringVisit('request-interconsulta-workspace');
 
   return (
-    <ActionMenuButton
-      getIcon={(props: ComponentProps<typeof ReferralOrderIcon>) => <ReferralOrderIcon {...props} />}
-      label={t('requestInterconsulta', 'Solicitar interconsulta')}
-      iconDescription={t('requestInterconsulta', 'Solicitar interconsulta')}
-      handler={launchRequestWorkspace}
-      type="request-interconsulta"
+    <OverflowMenuItem
+      itemText={t('requestInterconsulta', 'Solicitar interconsulta')}
+      onClick={launchRequestWorkspace}
+      closeMenu={closeMenu}
     />
   );
 };

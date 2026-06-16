@@ -39,6 +39,26 @@ export const configSchema = {
         conceptUuid: '1bcb541a-55e8-4c5d-83fb-d121a9d54d9d',
         defaultOpen: false,
       },
+      {
+        conceptUuid: '654b11a8-a326-45c9-885e-2fae6143404a',
+        defaultOpen: false,
+      },
+      {
+        conceptUuid: '968c8a41-ab1b-426c-86ee-761b88c26e40',
+        defaultOpen: false,
+      },
+      {
+        conceptUuid: 'ef0a9d25-658b-466b-9b7e-4571673b28b0',
+        defaultOpen: false,
+      },
+      {
+        conceptUuid: '7969c932-60db-4a38-8723-2f3a5bba8c16',
+        defaultOpen: false,
+      },
+      {
+        conceptUuid: 'bb3af485-89b6-4c04-848c-8d024a6b4a7a',
+        defaultOpen: false,
+      },
     ],
   },
   orders: {

@@ -4,6 +4,7 @@ import { basePath, moduleName } from './constants';
 import CareLogbookAppMenuLink from './links/care-logbook-app-menu-link.component';
 import CareLogbookDashboardLink from './links/care-logbook-dashboard-link.component';
 import CareLogbookMergePatientsAction from './links/care-logbook-merge-patients-action.component';
+import CareLogbookMergePatientsMenuItem from './links/care-logbook-merge-patients-menu-item.component';
 import Root from './root.component';
 
 const options = {
@@ -51,5 +52,7 @@ export const careLogbookHomeDashboard = getAsyncLifecycle(() => import('./pages/
 export const careLogbookHomeDashboardLink = getSyncLifecycle(CareLogbookDashboardLink, options);
 
 export const careLogbookMergePatientsAction = getSyncLifecycle(CareLogbookMergePatientsAction, options);
+
+export const careLogbookMergePatientsMenuItem = getSyncLifecycle(CareLogbookMergePatientsMenuItem, options);
 
 export const patientMerge = getAsyncLifecycle(() => import('./pages/patient-merge.component'), options);

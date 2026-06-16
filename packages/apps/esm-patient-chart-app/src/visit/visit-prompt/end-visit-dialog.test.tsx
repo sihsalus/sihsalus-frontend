@@ -42,14 +42,14 @@ describe('End visit dialog', () => {
 
     render(<EndVisitDialog patientUuid="some-patient-uuid" closeModal={mockCloseModal} />);
 
-    // ModalHeader renders a close button with aria-label "Close" (exact); "End Visit" is a separate button
+    // ModalHeader renders a close button with aria-label "Close" (exact); "Close Visit" is a separate button
     const closeModalButton = screen.getByRole('button', { name: /^close$/i });
     const cancelButton = screen.getByRole('button', { name: /cancel/i });
-    const endVisitButton = screen.getByRole('button', { name: /end visit/i });
+    const closeVisitButton = screen.getByRole('button', { name: /close visit/i });
 
     expect(closeModalButton).toBeInTheDocument();
     expect(cancelButton).toBeInTheDocument();
-    expect(endVisitButton).toBeInTheDocument();
+    expect(closeVisitButton).toBeInTheDocument();
     expect(
       screen.getByRole('heading', { name: /are you sure you want to end this active visit?/i }),
     ).toBeInTheDocument();
@@ -57,7 +57,7 @@ describe('End visit dialog', () => {
       screen.getByText(/you can add additional encounters to this visit in the visit summary/i),
     ).toBeInTheDocument();
 
-    await user.click(endVisitButton);
+    await user.click(closeVisitButton);
 
     expect(updateVisit).toHaveBeenCalledWith(mockCurrentVisit.uuid, endVisitPayload, expect.anything());
 
@@ -88,10 +88,10 @@ describe('End visit dialog', () => {
       screen.getByText(/you can add additional encounters to this visit in the visit summary/i),
     ).toBeInTheDocument();
 
-    const endVisitButton = screen.getByRole('button', { name: /end visit/i });
-    expect(endVisitButton).toBeInTheDocument();
+    const closeVisitButton = screen.getByRole('button', { name: /close visit/i });
+    expect(closeVisitButton).toBeInTheDocument();
 
-    await user.click(endVisitButton);
+    await user.click(closeVisitButton);
 
     expect(updateVisit).toHaveBeenCalledWith(mockCurrentVisit.uuid, endVisitPayload, expect.anything());
     expect(mockShowSnackbar).toHaveBeenCalledWith({

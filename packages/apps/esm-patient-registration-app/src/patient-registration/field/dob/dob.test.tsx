@@ -1,5 +1,5 @@
 import { getDefaultsFromConfigSchema, useConfig } from '@openmrs/esm-framework';
-import { render, screen } from '@testing-library/react';
+import { fireEvent, render, screen } from '@testing-library/react';
 import { Form, Formik } from 'formik';
 
 import { esmPatientRegistrationSchema, type RegistrationConfig } from '../../../config-schema';
@@ -82,5 +82,51 @@ describe('Dob', () => {
 
     const dateOfBirthInput = screen.getByRole('textbox', { name: /date of birth/i });
     expect(dateOfBirthInput).toBeInTheDocument();
+  });
+
+  it('prevents and ignores invalid estimated age values', () => {
+    const setFieldValue = vi.fn();
+
+    render(
+      <Formik
+        initialValues={{ birthdate: '', birthdateEstimated: true, yearsEstimated: 0, monthsEstimated: '' }}
+        onSubmit={() => {}}
+      >
+        <Form>
+          <PatientRegistrationContext.Provider
+            value={{
+              identifierTypes: [],
+              values: { ...initialFormValues, birthdateEstimated: true },
+              validationSchema: null,
+              inEditMode: false,
+              setFieldValue,
+              setCapturePhotoProps: (_value) => {},
+              setFieldTouched: () => {},
+              currentPhoto: '',
+              isOffline: false,
+              initialFormValues: initialFormValues,
+            }}
+          >
+            <DobField />
+          </PatientRegistrationContext.Provider>
+        </Form>
+      </Formik>,
+    );
+
+    const yearsInput = screen.getByRole('spinbutton', { name: /estimated age in years/i });
+    for (const key of ['e', 'E', '+', '-', '.', ',']) {
+      expect(fireEvent.keyDown(yearsInput, { key })).toBe(false);
+    }
+    expect(
+      fireEvent.paste(yearsInput, {
+        clipboardData: { getData: () => '1e2' },
+      }),
+    ).toBe(false);
+
+    fireEvent.change(yearsInput, { target: { value: '1e2' } });
+    expect(setFieldValue).not.toHaveBeenCalledWith('yearsEstimated', expect.any(Number));
+
+    fireEvent.change(yearsInput, { target: { value: '12' } });
+    expect(setFieldValue).toHaveBeenCalledWith('yearsEstimated', 12);
   });
 });

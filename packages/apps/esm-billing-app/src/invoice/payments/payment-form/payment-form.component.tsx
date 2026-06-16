@@ -3,6 +3,12 @@ import { ErrorState } from '@openmrs/esm-framework';
 import React from 'react';
 import { Controller, useFormContext } from 'react-hook-form';
 import { useTranslation } from 'react-i18next';
+import {
+  getValidatedBillingNumber,
+  nonNegativeAmountConstraints,
+  preventInvalidBillingNumberKey,
+  preventInvalidBillingNumberPaste,
+} from '../../../billing-number-input.utils';
 import { usePaymentModes } from '../payment.resource';
 import { type PaymentFormValue } from '../payments.component';
 import styles from './payment-form.scss';
@@ -68,9 +74,10 @@ const PaymentForm: React.FC<PaymentFormProps> = ({ disablePayment }) => {
               invalidText={errors?.payment?.amount?.message}
               label={t('amount', 'Amount')}
               onChange={(_, { value }) => {
-                const numValue = value === '' || value === undefined ? undefined : Number(value);
-                field.onChange(numValue);
+                field.onChange(getValidatedBillingNumber(value, nonNegativeAmountConstraints));
               }}
+              onKeyDown={(event) => preventInvalidBillingNumberKey(event, nonNegativeAmountConstraints)}
+              onPaste={(event) => preventInvalidBillingNumberPaste(event, nonNegativeAmountConstraints)}
               placeholder={t('enterAmount', 'Enter amount')}
               value={field.value ?? ''}
             />

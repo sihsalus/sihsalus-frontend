@@ -13,6 +13,11 @@ import {
   TextArea,
 } from '@carbon/react';
 import { ResponsiveWrapper, showSnackbar, useConfig, useLayoutType } from '@openmrs/esm-framework';
+import {
+  shouldPreventPlainNumberKey,
+  shouldPreventPlainNumberPaste,
+  validatePlainNumberInput,
+} from '@openmrs/esm-utils';
 import classNames from 'classnames';
 import dayjs from 'dayjs';
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
@@ -357,8 +362,27 @@ const ProceduresFormComponent: React.FC<ProceduresFormComponentProps> = ({
                           onChange(null);
                           return;
                         }
-                        const parsed = typeof nextValue === 'number' ? nextValue : Number(nextValue);
-                        onChange(Number.isNaN(parsed) ? null : parsed);
+                        onChange(
+                          validatePlainNumberInput(nextValue, { min: 1, nonNegative: true }).parsedValue ?? null,
+                        );
+                      }}
+                      onKeyDown={(event) => {
+                        if (event.ctrlKey || event.metaKey || event.altKey) {
+                          return;
+                        }
+                        if (shouldPreventPlainNumberKey(event.key, { nonNegative: true })) {
+                          event.preventDefault();
+                        }
+                      }}
+                      onPaste={(event) => {
+                        if (
+                          shouldPreventPlainNumberPaste(event.clipboardData.getData('text'), {
+                            min: 1,
+                            nonNegative: true,
+                          })
+                        ) {
+                          event.preventDefault();
+                        }
                       }}
                     />
                   </ResponsiveWrapper>

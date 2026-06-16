@@ -1,3 +1,4 @@
+import { validatePlainNumberInput } from '@openmrs/esm-utils';
 import { z } from 'zod';
 
 export const communicationConditionOptions = [
@@ -51,8 +52,14 @@ const optionalEstimatedYears = z.preprocess((value) => {
     return undefined;
   }
 
-  return Number(value);
+  return validatePlainNumberInput(String(value), { integer: true, min: 0, nonNegative: true }).parsedValue ?? value;
 }, z.number().min(0, 'Edad estimada no puede ser negativa').optional());
+
+const optionalAgeString = optionalTrimmedString.refine(
+  (value) =>
+    !value || !validatePlainNumberInput(value, { integer: true, max: 130, min: 0, nonNegative: true }).isInvalid,
+  'Edad debe ser un número entero válido',
+);
 
 export const quickRegistrationSchema = z
   .object({
@@ -81,7 +88,7 @@ export const quickRegistrationSchema = z
     // Acompañante / responsable
     responsibleType: optionalTrimmedString,
     companionName: optionalTrimmedString,
-    companionAge: optionalTrimmedString,
+    companionAge: optionalAgeString,
     companionRelationship: optionalTrimmedString,
   })
   .superRefine((data, ctx) => {

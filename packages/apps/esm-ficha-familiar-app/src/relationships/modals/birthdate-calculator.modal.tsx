@@ -11,10 +11,33 @@ import {
   Stack,
   TextInput,
 } from '@carbon/react';
-import React, { useState } from 'react';
+import {
+  shouldPreventPlainNumberKey,
+  shouldPreventPlainNumberPaste,
+  validatePlainNumberInput,
+} from '@openmrs/esm-utils';
+import React, { type ClipboardEvent, type KeyboardEvent, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import styles from './relationship-modal.scss';
+
+const ageConstraints = { integer: true, min: 5, nonNegative: true };
+
+function preventInvalidAgeKey(event: KeyboardEvent<HTMLInputElement>) {
+  if (event.ctrlKey || event.metaKey || event.altKey) {
+    return;
+  }
+
+  if (shouldPreventPlainNumberKey(event.key, ageConstraints)) {
+    event.preventDefault();
+  }
+}
+
+function preventInvalidAgePaste(event: ClipboardEvent<HTMLInputElement>) {
+  if (shouldPreventPlainNumberPaste(event.clipboardData.getData('text'), ageConstraints)) {
+    event.preventDefault();
+  }
+}
 
 interface BirthDateCalculatorProps {
   onClose: () => void;
@@ -64,12 +87,15 @@ const BirthDateCalculator: React.FC<BirthDateCalculatorProps> = ({ onClose, prop
                 type="number"
                 min={5}
                 value={formState.age}
-                onChange={(e) =>
+                onChange={(e) => {
+                  const validation = validatePlainNumberInput(e.target.value, ageConstraints);
                   setFormState({
                     ...formState,
-                    age: e.target.value ? Number(e.target.value) : undefined,
-                  })
-                }
+                    age: validation.parsedValue,
+                  });
+                }}
+                onKeyDown={preventInvalidAgeKey}
+                onPaste={preventInvalidAgePaste}
               />
             </Layer>
           </Column>

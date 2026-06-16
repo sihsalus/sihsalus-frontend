@@ -1,5 +1,5 @@
 import { type Order } from '@openmrs/esm-patient-common-lib';
-import { render, screen, waitFor } from '@testing-library/react';
+import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 
 import { type Encounter } from '../types/encounter';
@@ -149,35 +149,77 @@ describe('LabResultsForm', () => {
     });
   });
 
-  test('validate when we have a concept with allowDecimal set to null', async () => {
-    const user = userEvent.setup();
+  test('prevents decimal values when the concept does not allow decimals', async () => {
     render(<LabResultsForm {...testProps} />);
 
     const input = await screen.findByLabelText(`Test Concept (0 - 100 mg/dL)`);
-    await user.type(input, '50.5');
-
-    const saveButton = screen.getByRole('button', { name: /Save and close/i });
-    await user.click(saveButton);
-
-    // if allowDecimal is null or false, we should not allow decimal values
-    await waitFor(() => {
-      expect(screen.getByText('Test Concept must be a whole number')).toBeInTheDocument();
-    });
+    expect(fireEvent.keyDown(input, { key: '.' })).toBe(false);
+    expect(
+      fireEvent.paste(input, {
+        clipboardData: { getData: () => '50.5' },
+      }),
+    ).toBe(false);
   });
 
-  test('validate numeric input with negative value', async () => {
-    const user = userEvent.setup();
+  test('prevents negative values when the concept lower bound is non-negative', async () => {
     render(<LabResultsForm {...testProps} />);
 
     const input = await screen.findByLabelText(`Test Concept (0 - 100 mg/dL)`);
-    await user.type(input, '-50');
+    expect(fireEvent.keyDown(input, { key: '-' })).toBe(false);
+    expect(
+      fireEvent.paste(input, {
+        clipboardData: { getData: () => '-50' },
+      }),
+    ).toBe(false);
+  });
 
-    const saveButton = screen.getByRole('button', { name: /Save and close/i });
-    await user.click(saveButton);
+  test('prevents scientific notation and symbols in numeric lab results', async () => {
+    render(<LabResultsForm {...testProps} />);
 
-    await waitFor(() => {
-      expect(screen.getByText('Test Concept must be between 0 and 100')).toBeInTheDocument();
+    const input = await screen.findByLabelText(`Test Concept (0 - 100 mg/dL)`);
+    for (const key of ['e', 'E', '+', '.', ',']) {
+      expect(fireEvent.keyDown(input, { key })).toBe(false);
+    }
+    expect(
+      fireEvent.paste(input, {
+        clipboardData: { getData: () => '1e2' },
+      }),
+    ).toBe(false);
+  });
+
+  test('allows negative decimal values when the concept range permits them', async () => {
+    mockUseOrderConceptByUuid.mockReturnValue({
+      concept: {
+        uuid: 'concept-uuid',
+        display: 'Test Concept',
+        setMembers: [],
+        datatype: { display: 'Numeric', hl7Abbreviation: 'NM' },
+        hiAbsolute: 100,
+        lowAbsolute: -100,
+        lowCritical: null,
+        lowNormal: null,
+        hiCritical: null,
+        hiNormal: null,
+        units: 'mg/dL',
+        allowDecimal: true,
+      } as LabOrderConcept,
+      isLoading: false,
+      error: null,
+      isValidating: false,
+      mutate: vi.fn(),
     });
+
+    render(<LabResultsForm {...testProps} />);
+
+    const input = await screen.findByLabelText(`Test Concept (-100 - 100 mg/dL)`);
+    expect(fireEvent.keyDown(input, { key: '-' })).toBe(true);
+    expect(fireEvent.keyDown(input, { key: '.' })).toBe(true);
+    expect(
+      fireEvent.paste(input, {
+        clipboardData: { getData: () => '-50.5' },
+      }),
+    ).toBe(true);
+    expect(fireEvent.keyDown(input, { key: 'e' })).toBe(false);
   });
 
   test('validate numeric input with zero value', async () => {
@@ -228,8 +270,7 @@ describe('LabResultsForm', () => {
     });
   });
 
-  test('validate numeric input with concept having only lowAbsolute', async () => {
-    const user = userEvent.setup();
+  test('prevents negative input when concept has only a non-negative lowAbsolute', () => {
     mockUseOrderConceptByUuid.mockReturnValue({
       concept: {
         uuid: 'concept-uuid',
@@ -254,14 +295,12 @@ describe('LabResultsForm', () => {
     const input = screen.getByRole('spinbutton', {
       name: /Test Concept/i,
     });
-    await user.type(input, '-50');
-
-    const saveButton = screen.getByRole('button', { name: /Save and close/i });
-    await user.click(saveButton);
-
-    await waitFor(() => {
-      expect(screen.getByText('Test Concept must be greater than or equal to 0')).toBeInTheDocument();
-    });
+    expect(fireEvent.keyDown(input, { key: '-' })).toBe(false);
+    expect(
+      fireEvent.paste(input, {
+        clipboardData: { getData: () => '-50' },
+      }),
+    ).toBe(false);
   });
 
   test('submits form with valid data', async () => {

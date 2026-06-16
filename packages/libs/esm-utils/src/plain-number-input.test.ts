@@ -6,6 +6,9 @@ import {
   preventScientificNotationAndSignPaste,
   preventScientificNotationKey,
   preventScientificNotationPaste,
+  shouldPreventPlainNumberKey,
+  shouldPreventPlainNumberPaste,
+  validatePlainNumberInput,
 } from './plain-number-input';
 
 describe('plain-number-input', () => {
@@ -75,5 +78,68 @@ describe('plain-number-input', () => {
     };
     preventScientificNotationAndSignPaste(allowedPaste);
     expect(allowedPaste.preventDefault).not.toHaveBeenCalled();
+  });
+
+  it('validates constrained plain number input', () => {
+    expect(validatePlainNumberInput('1e100').isInvalidFormat).toBe(true);
+    expect(validatePlainNumberInput('-1', { nonNegative: true }).isInvalidFormat).toBe(true);
+    expect(validatePlainNumberInput('+1').isInvalidFormat).toBe(true);
+    expect(validatePlainNumberInput('1,2').isInvalidFormat).toBe(true);
+    expect(validatePlainNumberInput('12@').isInvalidFormat).toBe(true);
+    expect(validatePlainNumberInput('120.0', { integer: true }).isInvalidFormat).toBe(true);
+    expect(validatePlainNumberInput('251', { min: 0, max: 250 }).isOutOfRange).toBe(true);
+    expect(validatePlainNumberInput('36.5', { nonNegative: true }).parsedValue).toBe(36.5);
+  });
+
+  it('keeps empty input valid without coercing it to zero', () => {
+    const validation = validatePlainNumberInput('');
+
+    expect(validation.isInvalid).toBe(false);
+    expect(validation.isInvalidFormat).toBe(false);
+    expect(validation.isOutOfRange).toBe(false);
+    expect(validation.parsedValue).toBeUndefined();
+  });
+
+  it('allows negative values for generic numeric inputs unless nonNegative is requested', () => {
+    expect(validatePlainNumberInput('-1').parsedValue).toBe(-1);
+    expect(shouldPreventPlainNumberKey('-')).toBe(false);
+    expect(shouldPreventPlainNumberPaste('-1')).toBe(false);
+
+    expect(validatePlainNumberInput('-1', { nonNegative: true }).isInvalidFormat).toBe(true);
+    expect(shouldPreventPlainNumberKey('-', { nonNegative: true })).toBe(true);
+    expect(shouldPreventPlainNumberPaste('-1', { nonNegative: true })).toBe(true);
+  });
+
+  it('allows decimal values while enforcing integer-only fields when configured', () => {
+    expect(validatePlainNumberInput('36.5').parsedValue).toBe(36.5);
+    expect(shouldPreventPlainNumberKey('.')).toBe(false);
+    expect(shouldPreventPlainNumberPaste('36.5')).toBe(false);
+
+    expect(validatePlainNumberInput('36.5', { integer: true }).isInvalidFormat).toBe(true);
+    expect(shouldPreventPlainNumberKey('.', { integer: true })).toBe(true);
+    expect(shouldPreventPlainNumberPaste('36.5', { integer: true })).toBe(true);
+  });
+
+  it('prevents invalid constrained keys without blocking control keys', () => {
+    for (const key of ['+', ',', '@', 'e', 'E']) {
+      expect(shouldPreventPlainNumberKey(key)).toBe(true);
+    }
+
+    expect(shouldPreventPlainNumberKey('-', { nonNegative: true })).toBe(true);
+    expect(shouldPreventPlainNumberKey('-', { nonNegative: false })).toBe(false);
+    expect(shouldPreventPlainNumberKey('.', { integer: true })).toBe(true);
+    expect(shouldPreventPlainNumberKey('.')).toBe(false);
+    expect(shouldPreventPlainNumberKey('5')).toBe(false);
+    expect(shouldPreventPlainNumberKey('Backspace')).toBe(false);
+  });
+
+  it('prevents invalid constrained paste values', () => {
+    expect(shouldPreventPlainNumberPaste('+1')).toBe(true);
+    expect(shouldPreventPlainNumberPaste('-1', { nonNegative: true })).toBe(true);
+    expect(shouldPreventPlainNumberPaste('1,2')).toBe(true);
+    expect(shouldPreventPlainNumberPaste('12@')).toBe(true);
+    expect(shouldPreventPlainNumberPaste('120.0', { integer: true })).toBe(true);
+    expect(shouldPreventPlainNumberPaste('251', { min: 0, max: 250 })).toBe(true);
+    expect(shouldPreventPlainNumberPaste('36.5', { nonNegative: true })).toBe(false);
   });
 });

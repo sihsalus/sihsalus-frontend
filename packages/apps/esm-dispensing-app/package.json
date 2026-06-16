@@ -44,6 +44,7 @@
   },
   "dependencies": {
     "@carbon/react": "^1.83.0",
+    "@openmrs/esm-utils": "workspace:*",
     "classnames": "^2.5.1",
     "react-to-print": "^2.14.13"
   },

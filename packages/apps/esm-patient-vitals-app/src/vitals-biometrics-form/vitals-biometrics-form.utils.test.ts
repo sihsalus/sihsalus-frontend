@@ -3,6 +3,7 @@ import {
   getAgeInDays,
   getMuacColorCode,
   isConditionalFieldVisible,
+  validateClinicalNumberInput,
 } from './vitals-biometrics-form.utils';
 
 describe('vitals biometrics form utils', () => {
@@ -23,6 +24,28 @@ describe('vitals biometrics form utils', () => {
 
     getMuacColorCode(19, 19.6, setColorCode);
     expect(setColorCode).toHaveBeenLastCalledWith('yellow');
+  });
+});
+
+describe('validateClinicalNumberInput', () => {
+  it('rejects scientific notation, negative values and non-numeric text', () => {
+    expect(validateClinicalNumberInput('1e100').isInvalidFormat).toBe(true);
+    expect(validateClinicalNumberInput('-1').isInvalidFormat).toBe(true);
+    expect(validateClinicalNumberInput('+1').isInvalidFormat).toBe(true);
+    expect(validateClinicalNumberInput('1,2').isInvalidFormat).toBe(true);
+    expect(validateClinicalNumberInput('12@').isInvalidFormat).toBe(true);
+    expect(validateClinicalNumberInput('abc').isInvalidFormat).toBe(true);
+  });
+
+  it('rejects decimals for integer-only clinical fields', () => {
+    expect(validateClinicalNumberInput('120.5', { integer: true }).isInvalidFormat).toBe(true);
+    expect(validateClinicalNumberInput('120.0', { integer: true }).isInvalidFormat).toBe(true);
+    expect(validateClinicalNumberInput('120', { integer: true }).parsedValue).toBe(120);
+  });
+
+  it('marks values outside configured clinical ranges', () => {
+    expect(validateClinicalNumberInput('251', { min: 0, max: 250 }).isOutOfRange).toBe(true);
+    expect(validateClinicalNumberInput('80', { min: 0, max: 250 }).isInvalid).toBe(false);
   });
 });
 

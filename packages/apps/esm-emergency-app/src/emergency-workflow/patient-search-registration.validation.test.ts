@@ -62,4 +62,28 @@ describe('quickRegistrationSchema', () => {
       );
     }
   });
+
+  it('rejects scientific notation and signed values in age fields', () => {
+    for (const yearsEstimated of ['1e2', '+12', '-1', '12.5']) {
+      expect(
+        quickRegistrationSchema.safeParse({
+          ...validKnownPatient,
+          birthdateEstimated: true,
+          yearsEstimated,
+        }).success,
+      ).toBe(false);
+    }
+
+    for (const companionAge of ['1e2', '+12', '-1', '12.5']) {
+      expect(
+        quickRegistrationSchema.safeParse({
+          ...validKnownPatient,
+          communicationCondition: 'non_verbal',
+          responsibleType: 'family',
+          companionName: 'Ana Perez',
+          companionAge,
+        }).success,
+      ).toBe(false);
+    }
+  });
 });

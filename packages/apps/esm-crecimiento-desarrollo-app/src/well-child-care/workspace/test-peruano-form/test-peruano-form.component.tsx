@@ -23,6 +23,11 @@ import {
   usePatient,
   useSession,
 } from '@openmrs/esm-framework';
+import {
+  shouldPreventPlainNumberKey,
+  shouldPreventPlainNumberPaste,
+  validatePlainNumberInput,
+} from '@openmrs/esm-utils';
 import { RequirePrivilege } from '@sihsalus/esm-rbac';
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -41,6 +46,24 @@ import {
   type TestPeruanoClassification,
   type TestPeruanoFormData,
 } from './test-peruano-form.utils';
+
+const childAgeMonthsConstraints = { integer: true, max: 30, min: 0, nonNegative: true };
+
+function preventInvalidChildAgeKey(event: React.KeyboardEvent<HTMLInputElement>) {
+  if (event.ctrlKey || event.metaKey || event.altKey) {
+    return;
+  }
+
+  if (shouldPreventPlainNumberKey(event.key, childAgeMonthsConstraints)) {
+    event.preventDefault();
+  }
+}
+
+function preventInvalidChildAgePaste(event: React.ClipboardEvent<HTMLInputElement>) {
+  if (shouldPreventPlainNumberPaste(event.clipboardData.getData('text'), childAgeMonthsConstraints)) {
+    event.preventDefault();
+  }
+}
 
 function getAgeInMonths(birthDate?: string) {
   if (!birthDate) {
@@ -237,7 +260,12 @@ const TestPeruanoForm: React.FC<DefaultPatientWorkspaceProps> = ({ closeWorkspac
               label={t('ageMonthsLabel', 'Edad en meses')}
               max={30}
               min={0}
-              onChange={(_event, { value }) => setChildAgeMonths(Number(value) || 0)}
+              onChange={(_event, { value }) => {
+                const validation = validatePlainNumberInput(value ?? '', childAgeMonthsConstraints);
+                setChildAgeMonths(validation.parsedValue ?? 0);
+              }}
+              onKeyDown={preventInvalidChildAgeKey}
+              onPaste={preventInvalidChildAgePaste}
               value={childAgeMonths}
             />
             <DatePicker

@@ -17,6 +17,12 @@ import { useTranslation } from 'react-i18next';
 import { z } from 'zod';
 import { useBillableServices } from '../billable-services/billable-service.resource';
 import { updateBillItems } from '../billing.resource';
+import {
+  billQuantityFormatConstraints,
+  getValidatedBillingNumber,
+  preventInvalidBillingNumberKey,
+  preventInvalidBillingNumberPaste,
+} from '../billing-number-input.utils';
 import { type BillingConfig } from '../config-schema';
 import { convertToCurrency } from '../helpers';
 import { getBillableServiceUuid } from '../invoice/payments/utils';
@@ -177,8 +183,15 @@ const EditBillLineItemModal: React.FC<EditBillLineItemModalProps> = ({ bill, clo
                     invalidText={errors.quantity?.message}
                     label={t('quantity', 'Quantity')}
                     onChange={(_event, state: { value: number | string; direction: string }) => {
-                      onChange(state.value);
+                      const nextValue =
+                        state.value === '' ||
+                        getValidatedBillingNumber(state.value, billQuantityFormatConstraints) != null
+                          ? state.value
+                          : value;
+                      onChange(nextValue);
                     }}
+                    onKeyDown={(event) => preventInvalidBillingNumberKey(event, billQuantityFormatConstraints)}
+                    onPaste={(event) => preventInvalidBillingNumberPaste(event, billQuantityFormatConstraints)}
                     value={value}
                   />
                 )}

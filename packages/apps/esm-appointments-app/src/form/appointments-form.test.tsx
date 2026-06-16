@@ -7,7 +7,7 @@ import {
   useLocations,
   useSession,
 } from '@openmrs/esm-framework';
-import { screen, waitFor } from '@testing-library/react';
+import { fireEvent, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import {
   mockLocations,
@@ -152,6 +152,24 @@ describe('AppointmentForm', () => {
       'Atención ambulatoria por enfermera(o)',
     ]);
     expect(durationInput).toHaveValue(30);
+  });
+
+  it('prevents scientific notation, signs, and decimals in appointment duration', async () => {
+    mockOpenmrsFetch.mockResolvedValue({ data: mockUseAppointmentServiceData } as unknown as FetchResponse);
+
+    renderWithSwr(<AppointmentForm {...defaultProps} />);
+
+    await waitForLoadingToFinish();
+
+    const durationInput = screen.getByRole('spinbutton', { name: /duration/i });
+    for (const key of ['e', 'E', '+', '-', '.', ',']) {
+      expect(fireEvent.keyDown(durationInput, { key })).toBe(false);
+    }
+    expect(
+      fireEvent.paste(durationInput, {
+        clipboardData: { getData: () => '1e2' },
+      }),
+    ).toBe(false);
   });
 
   it('closes the workspace when the cancel button is clicked', async () => {

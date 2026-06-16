@@ -1,5 +1,11 @@
 import { ComboBox, Dropdown, NumberInput, Stack, TextArea, Toggle } from '@carbon/react';
 import { OpenmrsDatePicker, ResponsiveWrapper, useConfig, userHasAccess, useSession } from '@openmrs/esm-framework';
+import {
+  type PlainNumberInputConstraints,
+  shouldPreventPlainNumberKey,
+  shouldPreventPlainNumberPaste,
+  validatePlainNumberInput,
+} from '@openmrs/esm-utils';
 import dayjs from 'dayjs';
 import React, { useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -18,6 +24,31 @@ import {
 import { useMedicationRequest, usePrescriptionDetails } from '../medication-request/medication-request.resource';
 import { type Medication, type MedicationDispense } from '../types';
 import { getConceptCodingUuid, getMedicationReferenceOrCodeableConcept, getOpenMRSMedicineDrugName } from '../utils';
+
+const dispenseQuantityConstraints: PlainNumberInputConstraints = { min: 0, nonNegative: true };
+const dispenseDoseConstraints: PlainNumberInputConstraints = { min: 0, nonNegative: true };
+
+function preventInvalidDispenseNumberKey(
+  event: React.KeyboardEvent<HTMLInputElement>,
+  constraints: PlainNumberInputConstraints,
+) {
+  if (event.ctrlKey || event.metaKey || event.altKey) {
+    return;
+  }
+
+  if (shouldPreventPlainNumberKey(event.key, constraints)) {
+    event.preventDefault();
+  }
+}
+
+function preventInvalidDispenseNumberPaste(
+  event: React.ClipboardEvent<HTMLInputElement>,
+  constraints: PlainNumberInputConstraints,
+) {
+  if (shouldPreventPlainNumberPaste(event.clipboardData.getData('text'), constraints)) {
+    event.preventDefault();
+  }
+}
 
 interface MedicationDispenseReviewProps {
   medicationDispense: MedicationDispense;
@@ -357,13 +388,24 @@ const MedicationDispenseReview: React.FC<MedicationDispenseReviewProps> = ({
             min={0}
             max={config.dispenseBehavior.restrictTotalQuantityDispensed ? quantityRemaining : undefined}
             onChange={(_event, state) => {
+              const validation = validatePlainNumberInput(state.value ?? '', {
+                ...dispenseQuantityConstraints,
+                max: config.dispenseBehavior.restrictTotalQuantityDispensed ? quantityRemaining : undefined,
+              });
               updateMedicationDispense({
                 quantity: {
                   ...medicationDispense.quantity,
-                  value: state.value ? parseFloat(state.value.toString()) : 0,
+                  value: validation.parsedValue ?? 0,
                 },
               });
             }}
+            onKeyDown={(event) => preventInvalidDispenseNumberKey(event, dispenseQuantityConstraints)}
+            onPaste={(event) =>
+              preventInvalidDispenseNumberPaste(event, {
+                ...dispenseQuantityConstraints,
+                max: config.dispenseBehavior.restrictTotalQuantityDispensed ? quantityRemaining : undefined,
+              })
+            }
           />
           <ResponsiveWrapper>
             <ComboBox
@@ -464,6 +506,7 @@ const MedicationDispenseReview: React.FC<MedicationDispenseReviewProps> = ({
                 label={t('dose', 'Dose')}
                 value={medicationDispense.dosageInstruction[0].doseAndRate[0].doseQuantity.value}
                 onChange={(_event, state) => {
+                  const validation = validatePlainNumberInput(state.value ?? '', dispenseDoseConstraints);
                   updateMedicationDispense({
                     dosageInstruction: [
                       {
@@ -473,7 +516,7 @@ const MedicationDispenseReview: React.FC<MedicationDispenseReviewProps> = ({
                             ...medicationDispense.dosageInstruction[0].doseAndRate[0],
                             doseQuantity: {
                               ...medicationDispense.dosageInstruction[0].doseAndRate[0].doseQuantity,
-                              value: state.value ? parseFloat(state.value.toString()) : 0,
+                              value: validation.parsedValue ?? 0,
                             },
                           },
                         ],
@@ -481,6 +524,8 @@ const MedicationDispenseReview: React.FC<MedicationDispenseReviewProps> = ({
                     ],
                   });
                 }}
+                onKeyDown={(event) => preventInvalidDispenseNumberKey(event, dispenseDoseConstraints)}
+                onPaste={(event) => preventInvalidDispenseNumberPaste(event, dispenseDoseConstraints)}
               />
               <ResponsiveWrapper>
                 <ComboBox

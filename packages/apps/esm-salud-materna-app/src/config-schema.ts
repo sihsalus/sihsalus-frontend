@@ -1018,7 +1018,7 @@ export const configSchema = {
   hivProgramUuid: {
     _type: Type.String,
     _description: 'HIV Program UUID',
-    _default: 'dfdc6d40-2f2f-463d-ba90-cc97350441a8',
+    _default: '1eb6833d-fc44-4d2c-b243-ddab949479b3',
   },
 
   // 13. CONTACT ATTRIBUTES
@@ -1026,12 +1026,12 @@ export const configSchema = {
     _type: Type.Object,
     _description: 'Contact created patient attributes UUID',
     _default: {
-      telephone: 'b2c38640-2603-4629-aebd-3b54f33f1e3a',
-      baselineHIVStatus: '3ca03c84-632d-4e53-95ad-91f1bd9d96d6',
-      contactCreated: '7c94bd35-fba7-4ef7-96f5-29c89a318fcf',
-      preferedPnsAproach: '59d1b886-90c8-4f7f-9212-08b20a9ee8cf',
-      livingWithContact: '35a08d84-9f80-4991-92b4-c4ae5903536e',
-      contactipvOutcome: '49c543c2-a72a-4b0a-8cca-39c375c0726f',
+      telephone: '14d4f066-15f5-102d-96e4-000c29c2a5d7',
+      baselineHIVStatus: 'b978d331-e162-45b1-b9ca-65d3aa9a851f',
+      contactCreated: 'e91775be-cf11-45e3-9b34-3c3f8849d4d6',
+      preferedPnsAproach: '98c0a958-515e-4dec-a771-7a4cb9aa5492',
+      livingWithContact: '1a951a91-231f-4a3a-9a22-e396fa93455c',
+      contactipvOutcome: '81a8b164-befa-4cac-8978-da059082297c',
     },
   },
 

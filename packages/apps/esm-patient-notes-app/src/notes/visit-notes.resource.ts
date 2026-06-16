@@ -20,6 +20,7 @@ interface UseVisitNotes {
 }
 
 export interface VisitNoteClinicalContext {
+  codigoPrestacional?: string;
   chiefComplaint?: string;
   illnessDuration?: string;
   biologicalFunctions?: string;
@@ -105,20 +106,25 @@ export function useVisitNotes(patientUuid: string): UseVisitNotes {
     openmrsFetch,
   );
 
-  const mapNoteProperties = (note: RESTPatientNote, index: number): PatientNote => ({
-    id: `${index}`,
-    diagnoses: note.diagnoses
-      .filter((diagnosis) => !diagnosis.voided)
-      .map((diagnosisData) => diagnosisData.display)
-      .filter((val) => val)
-      .join(', '),
-    encounterDate: note.encounterDatetime,
-    encounterNote: note.obs.find((observation) => observation.concept.uuid === encounterNoteTextConceptUuid)?.value,
-    encounterNoteRecordedAt: note.obs.find((observation) => observation.concept.uuid === encounterNoteTextConceptUuid)
-      ?.obsDatetime,
-    encounterProvider: note?.encounterProviders[0]?.provider?.person?.display,
-    encounterProviderRole: note?.encounterProviders[0]?.encounterRole?.display,
-  });
+  const mapNoteProperties = (note: RESTPatientNote, index: number): PatientNote => {
+    const encounterNoteObs = note.obs.find(
+      (observation) => observation.concept.uuid === encounterNoteTextConceptUuid && !observation.formFieldPath,
+    );
+
+    return {
+      id: `${index}`,
+      diagnoses: note.diagnoses
+        .filter((diagnosis) => !diagnosis.voided)
+        .map((diagnosisData) => getDisplayText(diagnosisData.display))
+        .filter((val) => val)
+        .join(', '),
+      encounterDate: note.encounterDatetime,
+      encounterNote: encounterNoteObs ? getObsTextValue(encounterNoteObs) : '',
+      encounterNoteRecordedAt: encounterNoteObs?.obsDatetime,
+      encounterProvider: getDisplayText(note?.encounterProviders[0]?.provider?.person?.display),
+      encounterProviderRole: getDisplayText(note?.encounterProviders[0]?.encounterRole?.display),
+    };
+  };
 
   const formattedVisitNotes = data?.data?.results
     ?.map(mapNoteProperties)
@@ -151,20 +157,45 @@ export function saveVisitNote(abortController: AbortController, payload: VisitNo
   });
 }
 
+function getDisplayText(value: unknown) {
+  if (value == null) {
+    return '';
+  }
+
+  if (typeof value === 'string' || typeof value === 'number' || typeof value === 'boolean') {
+    return String(value);
+  }
+
+  if (Array.isArray(value)) {
+    return value.map(getDisplayText).filter(Boolean).join(', ');
+  }
+
+  if (typeof value === 'object') {
+    const displayValue = 'display' in value ? (value as { display?: unknown }).display : undefined;
+    if (displayValue) {
+      return getDisplayText(displayValue);
+    }
+
+    const nameValue = 'name' in value ? (value as { name?: unknown }).name : undefined;
+    if (nameValue) {
+      return getDisplayText(nameValue);
+    }
+
+    const uuidValue = 'uuid' in value ? (value as { uuid?: unknown }).uuid : undefined;
+    if (uuidValue) {
+      return getDisplayText(uuidValue);
+    }
+  }
+
+  return '';
+}
+
 function getObsTextValue(obs: { value?: unknown; display?: string }) {
   if (obs.value == null) {
     return '';
   }
 
-  if (typeof obs.value === 'string' || typeof obs.value === 'number' || typeof obs.value === 'boolean') {
-    return String(obs.value);
-  }
-
-  if (typeof obs.value === 'object' && 'display' in obs.value && obs.value.display) {
-    return String(obs.value.display);
-  }
-
-  return obs.display ?? '';
+  return getDisplayText(obs.value) || obs.display || '';
 }
 
 function getLatestObsValue(
@@ -236,6 +267,7 @@ export function useVisitNoteClinicalContext(patientUuid: string, visitUuid?: str
     (conceptUuid !== visitNoteConfig.encounterNoteTextConceptUuid ? getLatest(conceptUuid) : undefined);
 
   const clinicalContext: VisitNoteClinicalContext = {
+    codigoPrestacional: getLatest(visitNoteConfig.codigoPrestacionalConceptUuid, 'codigo-prestacional'),
     chiefComplaint: getLatest(visitNoteConfig.chiefComplaintConceptUuid),
     illnessDuration: getLatest(visitNoteConfig.illnessDurationConceptUuid),
     biologicalFunctions:

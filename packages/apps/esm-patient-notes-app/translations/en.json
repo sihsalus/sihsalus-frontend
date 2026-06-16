@@ -14,6 +14,8 @@
   "clinicalNoteLabel": "Additional notes",
   "clinicalNotePlaceholder": "Add observations that do not fit the fields above",
   "clinicalSummary": "Clinical summary",
+  "codigoPrestacional": "Codigo Prestacional",
+  "codigoPrestacionalPlaceholder": "Enter Codigo Prestacional",
   "date": "Date",
   "definitivo": "D - Definitivo",
   "diagnoses": "Diagnoses",

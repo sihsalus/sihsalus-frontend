@@ -1,11 +1,12 @@
 import { Button, ModalBody, ModalFooter, ModalHeader } from '@carbon/react';
-import { showSnackbar, updateVisit, useVisit } from '@openmrs/esm-framework';
+import { openmrsFetch, showSnackbar, updateVisit, useVisit } from '@openmrs/esm-framework';
 import React from 'react';
 import { useTranslation } from 'react-i18next';
-
 import { useInfiniteVisits2 } from '../visits-widget/visit.resource';
 
 import styles from './end-visit-dialog.scss';
+
+const ModuleFuaRestURL = '/ws/module/fua';
 
 interface EndVisitDialogProps {
   patientUuid: string;
@@ -54,6 +55,45 @@ const EndVisitDialog: React.FC<EndVisitDialogProps> = ({ patientUuid, closeModal
     }
   };
 
+  const handleEndVisitAndGenerateFUA = async () => {
+    if (!activeVisit) {
+      showSnackbar({
+        title: t('errorGeneratingFUA', 'Error generating FUA'),
+        kind: 'error',
+        isLowContrast: false,
+        subtitle: t('noActiveVisitForFua', 'There is no active visit to create a FUA'),
+      });
+      return;
+    }
+
+    const abortController = new AbortController();
+    try {
+      await updateVisit(activeVisit.uuid, { stopDatetime: new Date() }, abortController);
+      void mutate();
+      void mutateInfiniteVisits();
+      closeModal();
+
+      await openmrsFetch(`${ModuleFuaRestURL}/generateFromVisit/${encodeURIComponent(activeVisit.uuid)}`, {
+        method: 'POST',
+      });
+
+      showSnackbar({
+        isLowContrast: true,
+        kind: 'success',
+        subtitle: t('visitEndedAndFUAGenerated', 'Visit ended and FUA Generated'),
+        title: t('visitEndedAndFUAGenerated', 'Visit ended and FUA Generated'),
+      });
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : t('unknownError', 'Unknown error');
+      showSnackbar({
+        title: t('errorEndingVisitOrGeneratingFUA', 'Error ending visit or generating FUA'),
+        kind: 'error',
+        isLowContrast: false,
+        subtitle: message,
+      });
+    }
+  };
+
   return (
     <div>
       <ModalHeader
@@ -69,8 +109,14 @@ const EndVisitDialog: React.FC<EndVisitDialogProps> = ({ patientUuid, closeModal
         <Button kind="secondary" onClick={closeModal}>
           {t('cancel', 'Cancel')}
         </Button>
-        <Button kind="danger" onClick={handleEndVisit}>
-          {t('endVisit_title', 'End Visit')}
+        <Button
+          kind="danger"
+          onClick={() => void handleEndVisitAndGenerateFUA()}
+        >
+          {t('endVisitAndGenerateFua_title', 'End Visit and Generate FUA')}
+        </Button>
+        <Button kind="danger--tertiary" onClick={handleEndVisit}>
+          {t('closeVisit_title', 'Close Visit')}
         </Button>
       </ModalFooter>
     </div>

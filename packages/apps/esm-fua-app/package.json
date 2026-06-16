@@ -38,6 +38,7 @@
     "url": "https://github.com/sihsalus/sihsalus-esm-modules/issues"
   },
   "dependencies": {
+    "@openmrs/esm-utils": "workspace:*",
     "@sihsalus/esm-rbac": "workspace:*",
     "exceljs": "^4.4.0",
     "lodash-es": "^4.17.21"

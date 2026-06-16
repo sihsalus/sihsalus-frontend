@@ -5,6 +5,7 @@ import { useTranslation } from 'react-i18next';
 import patientSearchIllustration from '../../../../../assets/resources/illustrations/buscar-paciente.svg';
 import appointmentsIllustration from '../../../../../assets/resources/illustrations/citas.svg';
 import careQueuesIllustration from '../../../../../assets/resources/illustrations/colas-de-atencion.svg';
+import dispensingIllustration from '../../../../../assets/resources/illustrations/farmacia.svg';
 import fuaIllustration from '../../../../../assets/resources/illustrations/fua-seguro-sis.svg';
 import laboratoryIllustration from '../../../../../assets/resources/illustrations/laboratorio.svg';
 import patientRegistrationIllustration from '../../../../../assets/resources/illustrations/registrar-paciente.svg';
@@ -23,6 +24,7 @@ const admissionPrivilege = 'app:adt';
 const appointmentsPrivilege = 'app:appointments';
 const serviceQueuesPrivilege = 'app:service-queues';
 const laboratoryPrivilege = 'app:laboratory';
+const dispensingPrivilege = 'app:dispensing';
 const fuaReadPrivilege = 'Read Fua';
 
 // t('searchPatient', 'Search patient')
@@ -35,6 +37,8 @@ const fuaReadPrivilege = 'Read Fua';
 // t('appointmentsDescription', 'View and manage appointments')
 // t('laboratory', 'Laboratory')
 // t('laboratoryDescription', 'Review lab orders and results')
+// t('dispensing', 'Dispensing')
+// t('dispensingDescription', 'Dispense prescribed medications')
 // t('fua', 'FUA')
 // t('fuaDescription', 'Manage Formato Unico de Atencion')
 const actions = [
@@ -77,6 +81,14 @@ const actions = [
     illustrationSrc: laboratoryIllustration,
     privilege: laboratoryPrivilege,
     toneClass: 'laboratoryAction',
+  },
+  {
+    key: 'dispensing',
+    descriptionKey: 'dispensingDescription',
+    href: '/dispensing',
+    illustrationSrc: dispensingIllustration,
+    privilege: dispensingPrivilege,
+    toneClass: 'dispensingAction',
   },
   {
     key: 'fua',

@@ -7972,6 +7972,7 @@ __metadata:
     "@openmrs/esm-framework": "workspace:*"
     "@openmrs/esm-utils": "workspace:*"
     "@playwright/test": "npm:^1.52.0"
+    "@sihsalus/esm-rbac": "workspace:*"
     "@swc/core": "npm:1.15.21"
     "@types/react": "npm:^18.3.21"
     "@types/react-dom": "npm:^18.3.0"

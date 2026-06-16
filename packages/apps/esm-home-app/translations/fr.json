@@ -2,6 +2,8 @@
   "contactAdministrator": "Veuillez essayer d'utiliser les liens du menu de navigation à gauche. Si le problème persiste, contactez votre administrateur système.",
   "dashboardNotFound": "Le tableau de bord recherché est inexistant",
   "dashboardNotFoundDescription": "La page que vous avez demandée est introuvable. Elle a peut-être été déplacée, supprimée ou le tableau de bord configuré n'existe pas.",
+  "dispensing": "Dispensation",
+  "dispensingDescription": "Dispensation de médicaments prescrits",
   "appointments": "Rendez-vous",
   "appointmentsDescription": "Agenda quotidien",
   "careQueues": "Files d'attente",

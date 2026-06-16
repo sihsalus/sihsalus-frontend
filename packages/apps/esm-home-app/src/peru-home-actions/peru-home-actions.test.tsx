@@ -52,6 +52,9 @@ describe('PeruHomeActions', () => {
       expect.objectContaining({ privilege: 'app:laboratory', hideUnauthorized: true }),
     );
     expect(mockRequirePrivilege).toHaveBeenCalledWith(
+      expect.objectContaining({ privilege: 'app:dispensing', hideUnauthorized: true }),
+    );
+    expect(mockRequirePrivilege).toHaveBeenCalledWith(
       expect.objectContaining({ privilege: 'Read Fua', hideUnauthorized: true }),
     );
   });
@@ -69,6 +72,35 @@ describe('PeruHomeActions', () => {
     expect(screen.getByText('registerPatient')).toBeInTheDocument();
     expect(screen.getByText('careQueues')).toBeInTheDocument();
     expect(screen.getByText('appointments')).toBeInTheDocument();
+    expect(screen.queryByText('laboratory')).not.toBeInTheDocument();
+    expect(screen.queryByText('dispensing')).not.toBeInTheDocument();
+    expect(screen.queryByText('fua')).not.toBeInTheDocument();
+  });
+
+  it('shows only the laboratory quick action for a laboratory user', () => {
+    mockRequirePrivilege.mockImplementation(({ children, privilege }) =>
+      privilege === 'app:laboratory' ? <>{children}</> : null,
+    );
+
+    render(<PeruHomeActions />);
+
+    expect(screen.getByText('laboratory')).toBeInTheDocument();
+    expect(screen.queryByText('searchPatient')).not.toBeInTheDocument();
+    expect(screen.queryByText('registerPatient')).not.toBeInTheDocument();
+    expect(screen.queryByText('dispensing')).not.toBeInTheDocument();
+    expect(screen.queryByText('fua')).not.toBeInTheDocument();
+  });
+
+  it('shows only the dispensing quick action for a pharmacy user', () => {
+    mockRequirePrivilege.mockImplementation(({ children, privilege }) =>
+      privilege === 'app:dispensing' ? <>{children}</> : null,
+    );
+
+    render(<PeruHomeActions />);
+
+    expect(screen.getByText('dispensing')).toBeInTheDocument();
+    expect(screen.queryByText('searchPatient')).not.toBeInTheDocument();
+    expect(screen.queryByText('registerPatient')).not.toBeInTheDocument();
     expect(screen.queryByText('laboratory')).not.toBeInTheDocument();
     expect(screen.queryByText('fua')).not.toBeInTheDocument();
   });

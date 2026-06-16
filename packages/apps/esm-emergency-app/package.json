@@ -38,12 +38,12 @@
     "url": "https://github.com/sihsalus/sihsalus-esm/issues"
   },
   "dependencies": {
-    "@carbon/react": "^1.83.0",
+    "@carbon/react": "^1.109.0",
     "@hookform/resolvers": "^3.3.0",
     "@openmrs/esm-utils": "workspace:*",
     "@sihsalus/esm-rbac": "workspace:*",
     "lodash-es": "^4.17.21",
-    "react-hook-form": "^7.51.0",
+    "react-hook-form": "^7.79.0",
     "swr": "^2.3.6",
     "zod": "^3.22.0"
   },

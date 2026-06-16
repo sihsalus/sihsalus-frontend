@@ -40,7 +40,7 @@
     "url": "https://github.com/sihsalus/sihsalus-esm-modules/issues"
   },
   "dependencies": {
-    "@carbon/react": "^1.83.0",
+    "@carbon/react": "^1.109.0",
     "@openmrs/esm-utils": "workspace:*",
     "dayjs": "1.x"
   },

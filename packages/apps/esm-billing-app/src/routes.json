@@ -20,12 +20,14 @@
         "title": "billing",
         "slot": "billing-dashboard-slot"
       },
+      "privileges": "app:billing",
       "order": 90
     },
     {
       "component": "root",
       "name": "billing-dashboard-root",
-      "slot": "billing-dashboard-slot"
+      "slot": "billing-dashboard-slot",
+      "privileges": "app:billing"
     },
     {
       "name": "billing-patient-summary",

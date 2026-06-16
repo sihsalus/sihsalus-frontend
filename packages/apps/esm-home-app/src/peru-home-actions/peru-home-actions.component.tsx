@@ -1,13 +1,13 @@
 import { ConfigurableLink } from '@openmrs/esm-framework';
+import { RequirePrivilege } from '@sihsalus/esm-rbac';
 import React from 'react';
 import { useTranslation } from 'react-i18next';
-
+import patientSearchIllustration from '../../../../../assets/resources/illustrations/buscar-paciente.svg';
 import appointmentsIllustration from '../../../../../assets/resources/illustrations/citas.svg';
 import careQueuesIllustration from '../../../../../assets/resources/illustrations/colas-de-atencion.svg';
 import fuaIllustration from '../../../../../assets/resources/illustrations/fua-seguro-sis.svg';
 import laboratoryIllustration from '../../../../../assets/resources/illustrations/laboratorio.svg';
 import patientRegistrationIllustration from '../../../../../assets/resources/illustrations/registrar-paciente.svg';
-import patientSearchIllustration from '../../../../../assets/resources/illustrations/buscar-paciente.svg';
 import styles from './peru-home-actions.scss';
 
 type Action = {
@@ -15,8 +15,15 @@ type Action = {
   descriptionKey: string;
   href: string;
   illustrationSrc: string;
+  privilege: string;
   toneClass: string;
 };
+
+const admissionPrivilege = 'app:adt';
+const appointmentsPrivilege = 'app:appointments';
+const serviceQueuesPrivilege = 'app:service-queues';
+const laboratoryPrivilege = 'app:laboratory';
+const fuaReadPrivilege = 'Read Fua';
 
 // t('searchPatient', 'Search patient')
 // t('searchPatientDescription', 'Find an existing patient record')
@@ -36,6 +43,7 @@ const actions = [
     descriptionKey: 'searchPatientDescription',
     href: '/search',
     illustrationSrc: patientSearchIllustration,
+    privilege: admissionPrivilege,
     toneClass: 'admissionAction',
   },
   {
@@ -43,6 +51,7 @@ const actions = [
     descriptionKey: 'registerPatientDescription',
     href: '/patient-registration',
     illustrationSrc: patientRegistrationIllustration,
+    privilege: admissionPrivilege,
     toneClass: 'admissionAction',
   },
   {
@@ -50,6 +59,7 @@ const actions = [
     descriptionKey: 'careQueuesDescription',
     href: '/home/service-queues',
     illustrationSrc: careQueuesIllustration,
+    privilege: serviceQueuesPrivilege,
     toneClass: 'admissionAction',
   },
   {
@@ -57,6 +67,7 @@ const actions = [
     descriptionKey: 'appointmentsDescription',
     href: '/home/appointments',
     illustrationSrc: appointmentsIllustration,
+    privilege: appointmentsPrivilege,
     toneClass: 'appointmentsAction',
   },
   {
@@ -64,6 +75,7 @@ const actions = [
     descriptionKey: 'laboratoryDescription',
     href: '/home/laboratory',
     illustrationSrc: laboratoryIllustration,
+    privilege: laboratoryPrivilege,
     toneClass: 'laboratoryAction',
   },
   {
@@ -71,6 +83,7 @@ const actions = [
     descriptionKey: 'fuaDescription',
     href: '/home/fua-request',
     illustrationSrc: fuaIllustration,
+    privilege: fuaReadPrivilege,
     toneClass: 'fuaAction',
   },
 ] satisfies Array<Action>;
@@ -85,18 +98,20 @@ const PeruHomeActions: React.FC = () => {
 
   return (
     <section className={styles.quickActions} aria-label={t('peruHomeActions', 'Accesos de admisión')}>
-      {actions.map(({ key, descriptionKey, href, illustrationSrc, toneClass }) => (
-        <ConfigurableLink key={key} className={`${styles.actionLink} ${styles[toneClass]}`} to={`${spaBase}${href}`}>
-          <span className={styles.actionHeader}>
-            <span className={styles.actionText}>
-              <strong>{t(key)}</strong>
-              <span>{t(descriptionKey)}</span>
+      {actions.map(({ key, descriptionKey, href, illustrationSrc, privilege, toneClass }) => (
+        <RequirePrivilege key={key} privilege={privilege} hideUnauthorized>
+          <ConfigurableLink className={`${styles.actionLink} ${styles[toneClass]}`} to={`${spaBase}${href}`}>
+            <span className={styles.actionHeader}>
+              <span className={styles.actionText}>
+                <strong>{t(key)}</strong>
+                <span>{t(descriptionKey)}</span>
+              </span>
             </span>
-          </span>
-          <span className={styles.illustrationArea} aria-hidden="true">
-            <ActionIllustration illustrationSrc={illustrationSrc} />
-          </span>
-        </ConfigurableLink>
+            <span className={styles.illustrationArea} aria-hidden="true">
+              <ActionIllustration illustrationSrc={illustrationSrc} />
+            </span>
+          </ConfigurableLink>
+        </RequirePrivilege>
       ))}
     </section>
   );

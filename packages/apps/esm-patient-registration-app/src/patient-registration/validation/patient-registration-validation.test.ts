@@ -44,12 +44,6 @@ describe('Patient registration validation', () => {
       },
       fieldDefinitions: [
         {
-          id: 'companionName',
-          type: 'person attribute',
-          uuid: 'companion-name-attribute',
-          showHeading: false,
-        },
-        {
           id: 'phone',
           type: 'person attribute',
           uuid: phoneAttributeUuid,
@@ -347,17 +341,22 @@ describe('Patient registration validation', () => {
     expect(validationError.errors).toContain('responsibleRequiredForUnidentifiedPatient');
   });
 
-  it('should allow an unidentified patient with a responsible person attribute', async () => {
-    const unidentifiedWithResponsibleAttribute = {
+  it('should allow an unidentified patient with a responsible relationship', async () => {
+    const unidentifiedWithResponsibleRelationship = {
       ...validFormValues,
       attributes: {
         'unknown-patient-attribute': 'true',
-        'companion-name-attribute': 'PNP Comisaría Napo',
       },
-      relationships: [],
+      relationships: [
+        {
+          action: 'ADD',
+          relatedPersonUuid: '11524ae7-3ef6-4ab6-aff6-804ffc58704a',
+          relationshipType: '057de23f-3d9c-4314-9391-4452970739c6/bIsToA',
+        },
+      ],
     };
 
-    const validationError = await validateFormValues(unidentifiedWithResponsibleAttribute);
+    const validationError = await validateFormValues(unidentifiedWithResponsibleRelationship);
 
     expect(validationError).toBeFalsy();
   });

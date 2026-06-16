@@ -22,14 +22,11 @@ export const peruForeignPatientIdentifierTypeUuids = [
 ];
 
 const peruPreRegistrationSections = ['identityLookup'];
-const peruSections = ['filiation', 'bloodData', 'medicalRecord', 'insurance', 'responsiblePerson'];
+const peruSections = ['filiation', 'bloodData', 'insurance', 'responsiblePerson', 'medicalRecord'];
 const peruIdentityLookupFieldOrder = ['id', 'reniecLookup', 'sisLookup'];
 const peruDemographicsFieldOrder = ['name', 'dob', 'gender', 'nationality'];
 const peruContactFieldOrder = ['address', 'birthAddress', 'phone', 'mobilePhone'];
 const peruPhoneValidationRegex = '^\\+?[0-9][0-9\\s().-]{5,19}$';
-const peruPersonNameValidationRegex = "^[A-Za-zÁÉÍÓÚÜÑáéíóúüñ][A-Za-zÁÉÍÓÚÜÑáéíóúüñ'.\\- ]*$";
-const peruAgeValidationRegex = '^(?:[0-9]|[1-9][0-9]|1[01][0-9]|120)$';
-const peruTextWithoutDigitsValidationRegex = '^[^0-9]+$';
 const minorResponsibleRelationshipTypes = [
   '8d91a210-c2cc-11de-8d13-0010c6dffdff/aIsToB',
   '8d91a210-c2cc-11de-8d13-0010c6dffd0f/aIsToB',
@@ -58,11 +55,6 @@ const peruSectionDefinitions: Array<SectionDefinition> = [
     fields: ['bloodGroup', 'rhFactor'],
   },
   {
-    id: 'medicalRecord',
-    name: 'Historia clínica',
-    fields: ['medicalRecordStatus', 'medicalRecordArchiveType'],
-  },
-  {
     id: 'insurance',
     name: 'Seguro',
     fields: ['insuranceType', 'insuranceCode', 'insuranceAccreditationStatus', 'insuranceAccreditationCheckedAt'],
@@ -70,7 +62,12 @@ const peruSectionDefinitions: Array<SectionDefinition> = [
   {
     id: 'responsiblePerson',
     name: 'Acompañante o responsable',
-    fields: ['companionName', 'companionAge', 'companionRelationship'],
+    fields: [],
+  },
+  {
+    id: 'medicalRecord',
+    name: 'Historia clínica',
+    fields: ['medicalRecordStatus', 'medicalRecordArchiveType'],
   },
 ];
 
@@ -221,30 +218,6 @@ const peruFieldDefinitions: Array<FieldDefinition> = [
     uuid: peruInsuranceAccreditationCheckedAtAttributeTypeUuid,
     label: 'Fecha/hora de acreditación',
     showHeading: false,
-  },
-  {
-    id: 'companionName',
-    type: 'person attribute',
-    uuid: '4697d0e6-5b24-416b-aee6-708cd9a3a1db',
-    label: 'Nombre del acompañante o responsable',
-    showHeading: false,
-    validation: { required: false, matches: peruPersonNameValidationRegex },
-  },
-  {
-    id: 'companionAge',
-    type: 'person attribute',
-    uuid: '70ce4571-2e2e-44da-a39f-9dae2a658606',
-    label: 'Edad del acompañante o responsable',
-    showHeading: false,
-    validation: { required: false, matches: peruAgeValidationRegex },
-  },
-  {
-    id: 'companionRelationship',
-    type: 'person attribute',
-    uuid: 'a180fa5f-c44e-4490-a981-d7196b70c6ac',
-    label: 'Parentesco del acompañante o responsable',
-    showHeading: false,
-    validation: { required: false, matches: peruTextWithoutDigitsValidationRegex },
   },
 ];
 

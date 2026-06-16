@@ -87,7 +87,7 @@ export interface PatientRegistration {
     isNewPatient: boolean;
     formValues: FormValues;
     patientUuidMap: PatientUuidMapType;
-    initialAddressFieldValues: Record<string, any>;
+    initialAddressFieldValues: Record<string, unknown>;
     capturePhotoProps: CapturePhotoProps | null;
     currentLocation: string;
     initialIdentifierValues: FormValues['identifiers'];
@@ -142,6 +142,7 @@ export interface Encounter {
 }
 
 export interface RelationshipValue {
+  clientId?: string;
   relatedPersonName?: string;
   relatedPersonUuid: string;
   relation?: string;

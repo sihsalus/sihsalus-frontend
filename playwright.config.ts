@@ -1,6 +1,6 @@
 import { defineConfig, devices } from '@playwright/test';
 import dotenv from 'dotenv';
-import { getSpaBaseUrl, getSpaUrl } from './e2e/utils/e2e-urls';
+import { getSpaBaseUrl, getSpaUrl, shouldIgnoreHTTPSErrors } from './e2e/utils/e2e-urls';
 
 dotenv.config();
 
@@ -26,6 +26,7 @@ export default defineConfig({
   use: {
     baseURL: BASE_URL,
     storageState,
+    ignoreHTTPSErrors: shouldIgnoreHTTPSErrors(),
     trace: 'on-first-retry',
     screenshot: 'only-on-failure',
   },

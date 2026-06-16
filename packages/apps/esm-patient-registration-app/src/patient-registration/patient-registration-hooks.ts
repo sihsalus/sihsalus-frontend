@@ -184,9 +184,12 @@ export function useInitialFormValues(patientUuid: string): [FormValues, Dispatch
   return [initialFormValues, setInitialFormValues];
 }
 
-export function useInitialAddressFieldValues(patientUuid: string, fallback = {}): [object, Dispatch<object>] {
+export function useInitialAddressFieldValues(
+  patientUuid: string,
+  fallback: Record<string, unknown> = {},
+): [Record<string, unknown>, Dispatch<Record<string, unknown>>] {
   const { isLoading, patient } = usePatient(patientUuid);
-  const [initialAddressFieldValues, setInitialAddressFieldValues] = useState<object>(fallback);
+  const [initialAddressFieldValues, setInitialAddressFieldValues] = useState<Record<string, unknown>>(fallback);
 
   useEffect(() => {
     (async () => {

@@ -19,8 +19,14 @@ import {
   TextInput,
 } from '@carbon/react';
 import { Add, Save, TrashCan } from '@carbon/react/icons';
+import {
+  type PlainNumberInputConstraints,
+  shouldPreventPlainNumberKey,
+  shouldPreventPlainNumberPaste,
+  validatePlainNumberInput,
+} from '@openmrs/esm-utils';
 import dayjs from 'dayjs';
-import { useMemo, useState } from 'react';
+import { type ClipboardEvent, type KeyboardEvent, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import {
@@ -42,6 +48,31 @@ import {
 import styles from './staff-scheduling.scss';
 
 type NotificationState = { kind: 'success' | 'error'; title: string; subtitle: string } | null;
+
+const slotMinutesConstraints: PlainNumberInputConstraints = { integer: true, max: 240, min: 5, nonNegative: true };
+const capacityPerSlotConstraints: PlainNumberInputConstraints = { integer: true, max: 99, min: 1, nonNegative: true };
+
+function preventInvalidScheduleNumberKey(
+  event: KeyboardEvent<HTMLInputElement>,
+  constraints: PlainNumberInputConstraints,
+) {
+  if (event.ctrlKey || event.metaKey || event.altKey) {
+    return;
+  }
+
+  if (shouldPreventPlainNumberKey(event.key, constraints)) {
+    event.preventDefault();
+  }
+}
+
+function preventInvalidScheduleNumberPaste(
+  event: ClipboardEvent<HTMLInputElement>,
+  constraints: PlainNumberInputConstraints,
+) {
+  if (shouldPreventPlainNumberPaste(event.clipboardData.getData('text'), constraints)) {
+    event.preventDefault();
+  }
+}
 
 const emptyAvailabilityForm = {
   locationUuid: '',
@@ -415,9 +446,12 @@ export default function StaffScheduling() {
                       max={240}
                       step={5}
                       value={shiftForm.slotMinutes}
-                      onChange={(_, { value }) =>
-                        setShiftForm((form) => ({ ...form, slotMinutes: Number(value) || 30 }))
-                      }
+                      onChange={(_, { value }) => {
+                        const validation = validatePlainNumberInput(value ?? '', slotMinutesConstraints);
+                        setShiftForm((form) => ({ ...form, slotMinutes: validation.parsedValue ?? 30 }));
+                      }}
+                      onKeyDown={(event) => preventInvalidScheduleNumberKey(event, slotMinutesConstraints)}
+                      onPaste={(event) => preventInvalidScheduleNumberPaste(event, slotMinutesConstraints)}
                     />
                     <NumberInput
                       id="capacity-per-slot"
@@ -425,9 +459,12 @@ export default function StaffScheduling() {
                       min={1}
                       max={99}
                       value={shiftForm.capacityPerSlot}
-                      onChange={(_, { value }) =>
-                        setShiftForm((form) => ({ ...form, capacityPerSlot: Number(value) || 1 }))
-                      }
+                      onChange={(_, { value }) => {
+                        const validation = validatePlainNumberInput(value ?? '', capacityPerSlotConstraints);
+                        setShiftForm((form) => ({ ...form, capacityPerSlot: validation.parsedValue ?? 1 }));
+                      }}
+                      onKeyDown={(event) => preventInvalidScheduleNumberKey(event, capacityPerSlotConstraints)}
+                      onPaste={(event) => preventInvalidScheduleNumberPaste(event, capacityPerSlotConstraints)}
                     />
                   </div>
                   <Select

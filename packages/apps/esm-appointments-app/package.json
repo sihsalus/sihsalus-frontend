@@ -39,6 +39,7 @@
   "dependencies": {
     "@carbon/react": "^1.71.0",
     "@hookform/resolvers": "^3.9.1",
+    "@openmrs/esm-utils": "workspace:*",
     "@sihsalus/esm-rbac": "workspace:*",
     "classnames": "^2.3.2",
     "exceljs": "^4.4.0",
@@ -62,6 +63,6 @@
     "@rspack/cli": "1.7.11",
     "openmrs": "workspace:*",
     "typescript": "6.0.3",
-    "vitest": "^4.1.0"
+    "vitest": "^4.1.7"
   }
 }

@@ -5,9 +5,10 @@ import {
   createRequest,
   deleteProcedureStep,
   deleteRequest,
-  getOrthancConfigurations,
+  getFirstOrthancConfiguration,
   getProcedureSteps,
   getRequestsByPatient,
+  requireFirst,
 } from '../commands/imaging-operations';
 import type { CreateRequestProcedure, CreateRequestProcedureStep, RequestProcedure } from '../commands/types';
 import { test } from '../core';
@@ -31,9 +32,7 @@ test.describe.configure({ mode: 'serial' });
 
 test.describe('ImagingWorklist - Manager worklist workflow', () => {
   test('Create and delete a request procedure', async ({ page, api }) => {
-    const orthancConfigurations = await getOrthancConfigurations(api);
-    expect(orthancConfigurations.length).toBeGreaterThan(0);
-    const orthancConfiguration = orthancConfigurations[0];
+    const orthancConfiguration = await getFirstOrthancConfiguration(api);
 
     // Define a request payload
     const requestPayload: CreateRequestProcedure = {
@@ -51,14 +50,16 @@ test.describe('ImagingWorklist - Manager worklist workflow', () => {
 
     const requestsBeforeDelete = await getRequestsByPatient(api, patientUuid);
     const createdRequest = requestsBeforeDelete.find((r) => r.accessionNumber === requestPayload.accessionNumber);
-    expect(createdRequest).toBeDefined();
-    expect(createdRequest['mrsPatientUuid']).toBe(patientUuid);
+    if (!createdRequest) {
+      throw new Error('Expected the created request to be present');
+    }
+    expect(createdRequest.patientUuid).toBe(patientUuid);
 
-    await deleteRequest(api, createdRequest!.id);
+    await deleteRequest(api, createdRequest.id);
 
     // Verify request is visible for this patient
     const requestsAfterDelete: RequestProcedure[] = await getRequestsByPatient(api, patientUuid);
-    const deletedRequest = requestsAfterDelete.find((r) => r.id === createdRequest!.id);
+    const deletedRequest = requestsAfterDelete.find((r) => r.id === createdRequest.id);
     expect(deletedRequest).toBeUndefined();
 
     const reqs = await getRequestsByPatient(api, patientUuid);
@@ -66,9 +67,7 @@ test.describe('ImagingWorklist - Manager worklist workflow', () => {
   });
 
   test('Create and delete the steps for the request procedure', async ({ page, api }) => {
-    const orthancConfigurations = await getOrthancConfigurations(api);
-    expect(orthancConfigurations.length).toBeGreaterThan(0);
-    const orthancConfiguration = orthancConfigurations[0];
+    const orthancConfiguration = await getFirstOrthancConfiguration(api);
 
     // Create request
     const requestPayload: CreateRequestProcedure = {
@@ -84,13 +83,14 @@ test.describe('ImagingWorklist - Manager worklist workflow', () => {
 
     const requests = await getRequestsByPatient(api, patientUuid);
     const createdRequest = requests.find((r) => r.accessionNumber === requestPayload.accessionNumber);
-
-    expect(createdRequest).toBeDefined();
-    expect(createdRequest!.id).toBeGreaterThan(0);
+    if (!createdRequest) {
+      throw new Error('Expected the created request to be present');
+    }
+    expect(createdRequest.id).toBeGreaterThan(0);
 
     // Create procedure step
     const stepPayload1: CreateRequestProcedureStep = {
-      requestId: createdRequest!.id,
+      requestId: createdRequest.id,
       modality: 'CT',
       aetTitle: 'TEST_AET',
       scheduledReferringPhysician: 'Dr. Scheduler',
@@ -103,7 +103,7 @@ test.describe('ImagingWorklist - Manager worklist workflow', () => {
     await createProcedureStep(api, createdRequest.id, stepPayload1);
 
     const stepPayload2: CreateRequestProcedureStep = {
-      requestId: createdRequest!.id,
+      requestId: createdRequest.id,
       modality: 'MRI',
       aetTitle: 'TEST_AET',
       scheduledReferringPhysician: 'Dr. Scheduler',
@@ -117,18 +117,25 @@ test.describe('ImagingWorklist - Manager worklist workflow', () => {
 
     // verify the steps
     const steps = await getProcedureSteps(api, createdRequest.id);
-    expect(steps.length).toBeGreaterThan(1), expect(steps[0].requestProcedureId).toBe(createdRequest.id);
-    expect(steps[0].modality).toBe('CT');
-    expect(steps[0].stationName).toBe('Station-1');
+    expect(steps.length).toBeGreaterThan(1);
+    const firstStep = requireFirst(steps, 'Expected at least one procedure step');
+    const secondStep = steps[1];
+    if (!secondStep) {
+      throw new Error('Expected at least two procedure steps');
+    }
+    expect(firstStep.requestProcedureId).toBe(createdRequest.id);
+    expect(firstStep.modality).toBe('CT');
+    expect(firstStep.stationName).toBe('Station-1');
 
-    expect(steps[1].requestProcedureId).toBe(createdRequest.id);
-    expect(steps[1].modality).toBe('MRI');
-    expect(steps[1].stationName).toBe('Station-2');
+    expect(secondStep.requestProcedureId).toBe(createdRequest.id);
+    expect(secondStep.modality).toBe('MRI');
+    expect(secondStep.stationName).toBe('Station-2');
 
-    await deleteProcedureStep(api, steps[0].id.toString());
+    await deleteProcedureStep(api, firstStep.id.toString());
     const stepsAfterDelete = await getProcedureSteps(api, createdRequest.id);
-    expect(stepsAfterDelete).toHaveLength(1), expect(stepsAfterDelete[0]).toBeDefined();
-    expect(stepsAfterDelete[0].modality).toBe('MRI');
+    expect(stepsAfterDelete).toHaveLength(1);
+    const remainingStep = requireFirst(stepsAfterDelete, 'Expected one remaining procedure step');
+    expect(remainingStep.modality).toBe('MRI');
 
     await deleteRequest(api, createdRequest.id);
     const reqs = await getRequestsByPatient(api, patientUuid);

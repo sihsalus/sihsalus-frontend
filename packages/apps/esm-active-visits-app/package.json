@@ -38,7 +38,6 @@
   },
   "dependencies": {
     "@carbon/react": "^1.71.0",
-    "@sihsalus/esm-sihsalus-shared": "workspace:*",
     "classnames": "^2.3.2",
     "lodash-es": "^4.17.15"
   },
@@ -54,6 +53,6 @@
     "@rspack/cli": "1.7.11",
     "openmrs": "*",
     "typescript": "6.0.3",
-    "vitest": "^4.1.0"
+    "vitest": "^4.1.7"
   }
 }

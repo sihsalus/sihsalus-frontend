@@ -151,6 +151,16 @@ const visitAttributes = {
     preferredHandlerClassname: 'default',
     retired: false,
   },
+  provenance: {
+    uuid: '9b640334-69e7-49a8-bc8d-1a379742f2f1',
+    name: 'Procedencia',
+    display: 'Procedencia',
+    datatypeConfig: '',
+    datatypeClassname: 'org.openmrs.customdatatype.datatype.FreeTextDatatype',
+    description: '',
+    preferredHandlerClassname: 'default',
+    retired: false,
+  },
 };
 
 const mockCloseWorkspace = vi.fn();
@@ -213,11 +223,22 @@ vi.mock('../hooks/useVisitAttributeType', async () => ({
         data: visitAttributes.insurancePolicyNumber,
       };
     }
+    if (attributeUuid === visitAttributes.provenance.uuid) {
+      return {
+        isLoading: false,
+        error: null,
+        data: visitAttributes.provenance,
+      };
+    }
   }),
   useVisitAttributeTypes: vi.fn(() => ({
     isLoading: false,
     error: null,
-    visitAttributeTypes: [visitAttributes.punctuality, visitAttributes.insurancePolicyNumber],
+    visitAttributeTypes: [
+      visitAttributes.punctuality,
+      visitAttributes.insurancePolicyNumber,
+      visitAttributes.provenance,
+    ],
   })),
   useConceptAnswersForVisitAttributeType: vi.fn(() => ({
     isLoading: false,
@@ -246,6 +267,11 @@ vi.mock('../hooks/useVisitAttributeType', async () => ({
         ],
       },
     ],
+  })),
+  useConceptDisplay: vi.fn(() => ({
+    isLoading: false,
+    error: null,
+    display: undefined,
   })),
 }));
 
@@ -321,6 +347,7 @@ describe('Visit form', () => {
           displayInThePatientBanner: true,
         },
       ],
+      defaultVisitAttributesFromPersonAttributes: [],
     });
     mockUsePatient.mockReturnValue({
       error: null,
@@ -346,13 +373,18 @@ describe('Visit form', () => {
   });
 
   it('renders the Start Visit form with all the relevant fields and values', async () => {
+    const user = userEvent.setup();
+
     renderVisitForm();
 
     expect(screen.getByRole('textbox', { name: /Date/i })).toBeInTheDocument();
     expect(screen.getByRole('textbox', { name: /Time/i })).toBeInTheDocument();
     expect(screen.getByRole('combobox', { name: /Time/i })).toBeInTheDocument();
     expect(screen.getByRole('combobox', { name: /Select a location/i })).toBeInTheDocument();
-    expect(screen.getByRole('radio', { name: /HIV Return Visit/ })).toBeInTheDocument();
+    const visitTypeCategory = screen.getByRole('combobox', { name: /categoría de consulta/i });
+    expect(visitTypeCategory).toBeInTheDocument();
+    await user.click(visitTypeCategory);
+    expect(await screen.findByText(/HIV Return Visit/i)).toBeInTheDocument();
     expect(screen.getByRole('option', { name: /AM/i })).toBeInTheDocument();
     expect(screen.getByRole('option', { name: /PM/i })).toBeInTheDocument();
     expect(screen.getByText(/Punctuality/i)).toBeInTheDocument();
@@ -370,6 +402,12 @@ describe('Visit form', () => {
     expect(screen.getByRole('option', { name: /Inpatient Ward/i })).toBeInTheDocument();
   });
 
+  it('does not render the extra visit attributes slot by default', () => {
+    renderVisitForm();
+
+    expect(hasRenderedExtensionSlot('extra-visit-attribute-slot')).toBe(false);
+  });
+
   it('does not render visit type combo box if atFacilityVisitType set', async () => {
     mockUseEmrConfiguration.mockReturnValue({
       emrConfiguration: {
@@ -382,7 +420,7 @@ describe('Visit form', () => {
       mutateEmrConfiguration: null,
     });
     renderVisitForm();
-    expect(screen.queryByRole('radio', { name: /HIV Return Visit/ })).not.toBeInTheDocument();
+    expect(screen.queryByRole('combobox', { name: /categoría de consulta/i })).not.toBeInTheDocument();
   });
 
   it('renders a validation error when required fields are not filled', async () => {
@@ -400,7 +438,7 @@ describe('Visit form', () => {
     expect(screen.getByText(/missing visit type/i)).toBeInTheDocument();
     expect(screen.getByText(/please select a visit type/i)).toBeInTheDocument();
 
-    await user.click(screen.getByLabelText(/Outpatient visit/i));
+    await selectVisitType(user);
   });
 
   it('displays an error message when the visit start time is in the future', async () => {
@@ -420,7 +458,7 @@ describe('Visit form', () => {
     fireEvent.change(timeInput, { target: { value: futureTime.format('hh:mm') } });
     await user.selectOptions(amPmSelect, futureTime.format('A'));
     await user.selectOptions(locationPicker, 'Inpatient Ward');
-    await user.click(screen.getByLabelText(/Outpatient visit/i));
+    await selectVisitType(user);
     await user.click(screen.getByRole('button', { name: /start visit/i }));
 
     expect(await screen.findByText(/start time cannot be in the future/i)).toBeInTheDocument();
@@ -434,7 +472,7 @@ describe('Visit form', () => {
     const saveButton = screen.getByRole('button', { name: /Start visit/i });
 
     // Set visit type
-    await user.click(screen.getByLabelText(/Outpatient visit/i));
+    await selectVisitType(user);
 
     // Set location
     const locationPicker = screen.getByRole('combobox', {
@@ -471,7 +509,7 @@ describe('Visit form', () => {
     const saveButton = screen.getByRole('button', { name: /Start visit/i });
 
     // Set visit type
-    await user.click(screen.getByLabelText(/Outpatient visit/i));
+    await selectVisitType(user);
 
     // Set location
     const locationPicker = screen.getByRole('combobox', {
@@ -532,7 +570,76 @@ describe('Visit form', () => {
     });
   });
 
+  it('submits extra visit attributes when the extra visit attributes slot is enabled', async () => {
+    const user = userEvent.setup();
+    const extraVisitAttribute = {
+      attributeType: 'payment-details-attribute-type-uuid',
+      value: 'paying-concept-uuid',
+    };
+
+    mockUseConfig.mockReturnValue({
+      ...getDefaultsFromConfigSchema(esmPatientChartSchema),
+      showExtraVisitAttributesSlot: true,
+      visitAttributeTypes: [],
+      defaultVisitAttributesFromPersonAttributes: [],
+    });
+    mockExtensionSlot.mockImplementation(({ children, name, state }): React.JSX.Element => {
+      if (name === 'extra-visit-attribute-slot') {
+        const extraVisitSlotState = state as {
+          setExtraVisitInfo: (state: { attributes: Array<{ attributeType: string; value: string }> }) => void;
+        };
+
+        return (
+          <ExtraVisitSlotTestDouble
+            setExtraVisitInfo={extraVisitSlotState.setExtraVisitInfo}
+            attributes={[extraVisitAttribute]}
+          />
+        );
+      }
+
+      if (typeof children === 'function') {
+        return (
+          <>
+            {children({
+              id: 'test-extension-id',
+              meta: {},
+              moduleName: '@openmrs/esm-patient-chart-app',
+              name: 'test-extension-name',
+              config: {},
+            } as AssignedExtension)}
+          </>
+        );
+      }
+
+      return <>{children ?? null}</>;
+    });
+
+    renderVisitForm();
+    await screen.findByTestId('extra-visit-attribute-slot');
+
+    await selectVisitType(user);
+
+    const locationPicker = screen.getByRole('combobox', {
+      name: /Select a location/i,
+    });
+    await user.selectOptions(locationPicker, 'Inpatient Ward');
+
+    await user.click(screen.getByRole('button', { name: /Start visit/i }));
+
+    expect(mockSaveVisit).toHaveBeenCalledWith(
+      expect.objectContaining({
+        attributes: expect.arrayContaining([extraVisitAttribute]),
+        location: mockLocations.data.results[1].uuid,
+        patient: mockPatient.id,
+        visitType: 'some-uuid1',
+      }),
+      expect.any(Object),
+    );
+  });
+
   it('prefills visit attributes from matching patient person attributes', async () => {
+    const user = userEvent.setup();
+
     mockUseConfig.mockReturnValue({
       ...getDefaultsFromConfigSchema(esmPatientChartSchema),
       visitAttributeTypes: [
@@ -572,11 +679,12 @@ describe('Visit form', () => {
     renderVisitForm();
 
     const insuranceNumberInput = screen.getByRole('textbox', {
-      name: 'Insurance Policy Number (optional)',
+      name: 'Insurance Policy Number',
     });
     await waitFor(() => expect(insuranceNumberInput).toHaveValue('SIS-183299'));
+    expect(insuranceNumberInput).toHaveAttribute('readonly');
 
-    fireEvent.click(screen.getByLabelText(/Outpatient visit/i));
+    await selectVisitType(user);
 
     const locationPicker = screen.getByRole('combobox', {
       name: /Select a location/i,
@@ -594,6 +702,154 @@ describe('Visit form', () => {
     );
   });
 
+  it('prefills procedencia from the patient residence address when starting a visit', async () => {
+    const user = userEvent.setup();
+    const patientWithResidence = {
+      ...mockFhirPatient,
+      address: [
+        {
+          use: 'home',
+          city: 'San Rafael',
+          district: 'Napo',
+          state: 'Maynas',
+          country: 'PERU',
+          extension: [
+            {
+              url: 'http://openmrs.org/fhir/StructureDefinition/address',
+              extension: [
+                {
+                  url: 'http://openmrs.org/fhir/StructureDefinition/address#address1',
+                  valueString: 'Loreto',
+                },
+              ],
+            },
+          ],
+        },
+      ],
+    } as fhir.Patient;
+
+    mockUsePatient.mockReturnValue({
+      error: null,
+      isLoading: false,
+      patient: patientWithResidence,
+      patientUuid: mockPatient.id,
+    });
+    mockUseConfig.mockReturnValue({
+      ...getDefaultsFromConfigSchema(esmPatientChartSchema),
+      visitAttributeTypes: [
+        {
+          uuid: visitAttributes.provenance.uuid,
+          required: false,
+          displayInThePatientBanner: true,
+        },
+      ],
+      defaultVisitAttributesFromPersonAttributes: [],
+      defaultVisitAttributesFromPatientAddress: [
+        {
+          visitAttributeTypeUuid: visitAttributes.provenance.uuid,
+          addressKind: 'residence',
+          addressFields: ['cityVillage', 'countyDistrict', 'stateProvince', 'address1', 'country'],
+          separator: ', ',
+        },
+      ],
+    });
+
+    renderVisitForm();
+
+    const provenanceInput = screen.getByRole('textbox', {
+      name: 'Procedencia (optional)',
+    });
+    await waitFor(() => expect(provenanceInput).toHaveValue('San Rafael, Napo, Maynas, Loreto, PERU'));
+
+    await selectVisitType(user);
+    await user.selectOptions(
+      screen.getByRole('combobox', {
+        name: /Select a location/i,
+      }),
+      'Inpatient Ward',
+    );
+    await user.click(screen.getByRole('button', { name: /Start visit/i }));
+
+    await waitFor(() =>
+      expect(mockCreateVisitAttribute).toHaveBeenCalledWith(
+        visitUuid,
+        visitAttributes.provenance.uuid,
+        'San Rafael, Napo, Maynas, Loreto, PERU',
+      ),
+    );
+  });
+
+  it('keeps the saved procedencia value when editing an existing visit', async () => {
+    const patientWithResidence = {
+      ...mockFhirPatient,
+      address: [
+        {
+          use: 'home',
+          city: 'San Rafael',
+          district: 'Napo',
+          state: 'Maynas',
+          country: 'PERU',
+          extension: [
+            {
+              url: 'http://openmrs.org/fhir/StructureDefinition/address',
+              extension: [
+                {
+                  url: 'http://openmrs.org/fhir/StructureDefinition/address#address1',
+                  valueString: 'Loreto',
+                },
+              ],
+            },
+          ],
+        },
+      ],
+    } as fhir.Patient;
+    const visitToEdit = {
+      ...mockVisitWithAttributes,
+      attributes: [
+        {
+          attributeType: {
+            uuid: visitAttributes.provenance.uuid,
+            display: 'Procedencia',
+            links: [],
+          },
+          display: 'Procedencia: Comunidad guardada',
+          uuid: '9acfb220-109a-48e5-b7bb-f708170491e1',
+          value: 'Comunidad guardada',
+        },
+      ],
+    } as unknown as Visit;
+
+    mockUsePatient.mockReturnValue({
+      error: null,
+      isLoading: false,
+      patient: patientWithResidence,
+      patientUuid: mockPatient.id,
+    });
+    mockUseConfig.mockReturnValue({
+      ...getDefaultsFromConfigSchema(esmPatientChartSchema),
+      visitAttributeTypes: [
+        {
+          uuid: visitAttributes.provenance.uuid,
+          required: false,
+          displayInThePatientBanner: true,
+        },
+      ],
+      defaultVisitAttributesFromPersonAttributes: [],
+      defaultVisitAttributesFromPatientAddress: [
+        {
+          visitAttributeTypeUuid: visitAttributes.provenance.uuid,
+          addressKind: 'residence',
+          addressFields: ['cityVillage', 'countyDistrict', 'stateProvince', 'address1', 'country'],
+          separator: ', ',
+        },
+      ],
+    });
+
+    renderVisitForm(visitToEdit);
+
+    expect(screen.getByRole('textbox', { name: 'Procedencia (optional)' })).toHaveValue('Comunidad guardada');
+  });
+
   it('updates visit attributes when editing an existing visit', async () => {
     const user = userEvent.setup();
 
@@ -602,7 +858,7 @@ describe('Visit form', () => {
     const saveButton = screen.getByRole('button', { name: /Update visit/i });
 
     // Set visit type
-    await user.click(screen.getByLabelText(/Outpatient visit/i));
+    await selectVisitType(user);
 
     // Set location
     const locationPicker = screen.getByRole('combobox', {
@@ -667,7 +923,7 @@ describe('Visit form', () => {
     const saveButton = screen.getByRole('button', { name: /Update visit/i });
 
     // Set visit type
-    await user.click(screen.getByLabelText(/Outpatient visit/i));
+    await selectVisitType(user);
 
     // Set location
     const locationPicker = screen.getByRole('combobox', {
@@ -730,7 +986,7 @@ describe('Visit form', () => {
 
     renderVisitForm();
 
-    await user.click(screen.getByLabelText(/Outpatient visit/i));
+    await selectVisitType(user);
 
     const saveButton = screen.getByRole('button', { name: /Start Visit/i });
     const locationPicker = screen.getByRole('combobox', {
@@ -762,7 +1018,7 @@ describe('Visit form', () => {
 
     renderVisitForm();
 
-    await user.click(screen.getByLabelText(/Outpatient visit/i));
+    await selectVisitType(user);
 
     const saveButton = screen.getByRole('button', { name: /Start Visit/i });
     const locationPicker = screen.getByRole('combobox', {
@@ -812,7 +1068,7 @@ describe('Visit form', () => {
 
     renderVisitForm();
 
-    await user.click(screen.getByLabelText(/Outpatient visit/i));
+    await selectVisitType(user);
 
     const closeButton = screen.getByRole('button', { name: /Discard/i });
 
@@ -854,7 +1110,7 @@ describe('Visit form', () => {
     const saveButton = screen.getByRole('button', { name: /Start visit/i });
 
     // Set visit type
-    await user.click(screen.getByLabelText(/Outpatient visit/i));
+    await selectVisitType(user);
 
     // Set location
     const locationPicker = screen.getByRole('combobox', {
@@ -892,6 +1148,29 @@ describe('Visit form', () => {
   });
 });
 
+async function selectVisitType(user: ReturnType<typeof userEvent.setup>, visitType = 'Outpatient Visit') {
+  await user.click(screen.getByRole('combobox', { name: /categoría de consulta/i }));
+  await user.click(await screen.findByText(visitType));
+}
+
 function renderVisitForm(visitToEdit?: Visit) {
   render(React.createElement(StartVisitForm, { ...testProps, visitToEdit }));
+}
+
+function hasRenderedExtensionSlot(name: string) {
+  return mockExtensionSlot.mock.calls.some(([props]) => props.name === name);
+}
+
+function ExtraVisitSlotTestDouble({
+  attributes,
+  setExtraVisitInfo,
+}: {
+  attributes: Array<{ attributeType: string; value: string }>;
+  setExtraVisitInfo: (state: { attributes: Array<{ attributeType: string; value: string }> }) => void;
+}) {
+  React.useEffect(() => {
+    setExtraVisitInfo({ attributes });
+  }, [attributes, setExtraVisitInfo]);
+
+  return <div data-testid="extra-visit-attribute-slot" />;
 }

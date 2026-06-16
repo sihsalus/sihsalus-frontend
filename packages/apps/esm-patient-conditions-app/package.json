@@ -39,7 +39,6 @@
   "dependencies": {
     "@carbon/react": "^1.83.0",
     "@openmrs/esm-patient-common-lib": "workspace:*",
-    "@sihsalus/esm-sihsalus-shared": "workspace:*",
     "lodash-es": "^4.17.23"
   },
   "peerDependencies": {
@@ -57,6 +56,6 @@
     "@rspack/cli": "1.7.11",
     "openmrs": "workspace:*",
     "typescript": "6.0.3",
-    "vitest": "^4.1.0"
+    "vitest": "^4.1.7"
   }
 }

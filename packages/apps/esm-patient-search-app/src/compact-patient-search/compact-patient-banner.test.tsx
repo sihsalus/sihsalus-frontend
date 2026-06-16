@@ -67,11 +67,10 @@ describe('CompactPatientBanner', () => {
       </PatientSearchContext.Provider>,
     );
 
-    const patientLink = screen.getByRole('link', {
-      name: new RegExp(`Smith, John Doe Male · ${age} yrs · OpenMRS ID 1000NLY`, 'i'),
-    });
+    const patientLink = screen.getByRole('link');
     expect(patientLink).toHaveAttribute('href', `/openmrs/spa/patient/${patients[0].uuid}/chart/`);
-    expect(screen.getByRole('img')).toBeInTheDocument();
     expect(within(patientLink).getByText(/Smith, John Doe/)).toBeInTheDocument();
+    expect(within(patientLink).getByText(/1000NLY/)).toBeInTheDocument();
+    expect(screen.getByRole('img')).toBeInTheDocument();
   });
 });

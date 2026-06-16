@@ -42,7 +42,8 @@
     "@carbon/charts": "^1.23.7",
     "@carbon/charts-react": "^1.23.7",
     "@hookform/resolvers": "^3.3.1",
-    "@sihsalus/esm-sihsalus-shared": "workspace:*",
+    "@openmrs/esm-utils": "workspace:*",
+    "@sihsalus/esm-rbac": "workspace:*",
     "classnames": "^2.5.1",
     "exceljs": "^4.4.0",
     "lodash-es": "^4.17.21",
@@ -87,6 +88,6 @@
     "single-spa": "^6.0.3",
     "swr": "^2.4.1",
     "typescript": "6.0.3",
-    "vitest": "^4.1.0"
+    "vitest": "^4.1.7"
   }
 }

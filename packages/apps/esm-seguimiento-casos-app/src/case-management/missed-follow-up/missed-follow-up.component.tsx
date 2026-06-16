@@ -14,8 +14,13 @@ import {
 } from '@carbon/react';
 import { Add } from '@carbon/react/icons';
 import { formatDate, parseDate, useConfig } from '@openmrs/esm-framework';
-import { CardHeader, EmptyState, ErrorState, launchPatientWorkspace } from '@openmrs/esm-patient-common-lib';
-import { getObsFromEncounter } from '@sihsalus/esm-sihsalus-shared';
+import {
+  CardHeader,
+  EmptyState,
+  ErrorState,
+  getObsFromEncounter,
+  launchPatientWorkspace,
+} from '@openmrs/esm-patient-common-lib';
 import React from 'react';
 import { useTranslation } from 'react-i18next';
 

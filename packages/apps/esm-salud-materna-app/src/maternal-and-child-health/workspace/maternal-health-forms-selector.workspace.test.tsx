@@ -1,5 +1,5 @@
 import { launchWorkspace2, useConfig } from '@openmrs/esm-framework';
-import { FormsSelectorWorkspace } from '@sihsalus/esm-sihsalus-shared';
+import { FormsSelectorWorkspace } from '@openmrs/esm-patient-common-lib';
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { formEntryWorkspace } from '../../types';
@@ -12,8 +12,8 @@ const defaultWorkspaceProps = {
   closeWorkspace: vi.fn<() => Promise<boolean>>().mockResolvedValue(true),
 };
 
-vi.mock('@sihsalus/esm-sihsalus-shared', async () => {
-  const originalModule = await vi.importActual('@sihsalus/esm-sihsalus-shared');
+vi.mock('@openmrs/esm-patient-common-lib', async () => {
+  const originalModule = await vi.importActual('@openmrs/esm-patient-common-lib');
 
   return {
     ...originalModule,

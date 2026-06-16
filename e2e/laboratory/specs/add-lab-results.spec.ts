@@ -1,5 +1,6 @@
 import { type Order, type Visit } from '@openmrs/esm-framework';
 import { expect } from '@playwright/test';
+import { getSpaUrl } from '../../utils/e2e-urls';
 import {
   createEncounter,
   deleteEncounter,
@@ -33,7 +34,7 @@ test.describe('Laboratory order workflow', () => {
 
     await test.step('Given I navigate to the laboratory page', async () => {
       await laboratoryPage.goTo();
-      await expect(page).toHaveURL(process.env.E2E_BASE_URL + `/spa/home/laboratory`);
+      await expect(page).toHaveURL(getSpaUrl('home/laboratory'));
     });
 
     await test.step('When I expand the patient row on the Tests ordered tab', async () => {

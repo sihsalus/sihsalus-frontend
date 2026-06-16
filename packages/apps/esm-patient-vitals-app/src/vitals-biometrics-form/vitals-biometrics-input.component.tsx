@@ -1,6 +1,7 @@
 import { FormLabel, NumberInput, TextArea } from '@carbon/react';
 import { Warning } from '@carbon/react/icons';
 import { ResponsiveWrapper, useLayoutType } from '@openmrs/esm-framework';
+import { shouldPreventPlainNumberKey, shouldPreventPlainNumberPaste } from '@openmrs/esm-utils';
 import classNames from 'classnames';
 import React, { Fragment, useId, useState } from 'react';
 import { type Control, Controller } from 'react-hook-form';
@@ -8,14 +9,17 @@ import { useTranslation } from 'react-i18next';
 
 import { generatePlaceholder } from '../common';
 
+import { validateClinicalNumberInput } from './vitals-biometrics-form.utils';
 import { type VitalsBiometricsFormData } from './vitals-biometrics-form.workspace';
 import styles from './vitals-biometrics-input.scss';
 
 type fieldId =
   | 'abdominalCircumference'
+  | 'chestCircumference'
   | 'computedBodyMassIndex'
   | 'diastolicBloodPressure'
   | 'generalPatientNote'
+  | 'headCircumference'
   | 'height'
   | 'midUpperArmCircumference'
   | 'oxygenSaturation'
@@ -35,6 +39,7 @@ interface VitalsAndBiometricsInputProps {
   fieldProperties: Array<{
     className?: string;
     id: fieldId;
+    integer?: boolean;
     invalid?: boolean;
     max?: number | null;
     min?: number | null;
@@ -77,12 +82,51 @@ const VitalsAndBiometricsInput: React.FC<VitalsAndBiometricsInputProps> = ({
   const abnormalValues: Array<AbnormalValue> = ['critically_low', 'critically_high', 'high', 'low'];
   const hasAbnormalValue = !isFocused && interpretation && abnormalValues.includes(interpretation as AbnormalValue);
 
-  function checkValidity(value: string, onChange: (value: number | undefined) => void) {
-    const isInvalid = value !== '' && Number.isNaN(Number(value));
+  function checkValidity(
+    value: string,
+    fieldProperty: VitalsAndBiometricsInputProps['fieldProperties'][number],
+    onChange: (value: number | undefined) => void,
+  ) {
+    const { isInvalid, isInvalidFormat, parsedValue } = validateClinicalNumberInput(value, {
+      integer: fieldProperty.integer,
+      max: fieldProperty.max,
+      min: fieldProperty.min,
+    });
+
     setInvalid(isInvalid);
 
-    if (!isInvalid) {
-      onChange(value === '' ? undefined : Number(value));
+    if (!isInvalidFormat) {
+      onChange(parsedValue);
+    }
+  }
+
+  function preventInvalidNumberKey(
+    event: React.KeyboardEvent<HTMLInputElement>,
+    fieldProperty: VitalsAndBiometricsInputProps['fieldProperties'][number],
+  ) {
+    if (event.ctrlKey || event.metaKey || event.altKey) {
+      return;
+    }
+
+    if (shouldPreventPlainNumberKey(event.key, { integer: fieldProperty.integer, nonNegative: true })) {
+      event.preventDefault();
+    }
+  }
+
+  function preventInvalidNumberPaste(
+    event: React.ClipboardEvent<HTMLInputElement>,
+    fieldProperty: VitalsAndBiometricsInputProps['fieldProperties'][number],
+  ) {
+    const pastedValue = event.clipboardData.getData('text');
+    if (
+      shouldPreventPlainNumberPaste(pastedValue, {
+        integer: fieldProperty.integer,
+        max: fieldProperty.max,
+        min: fieldProperty.min,
+        nonNegative: true,
+      })
+    ) {
+      event.preventDefault();
     }
   }
 
@@ -151,12 +195,17 @@ const VitalsAndBiometricsInput: React.FC<VitalsAndBiometricsInputProps> = ({
                               min={fieldProperty.min ?? undefined}
                               name={fieldProperty.name}
                               onBlur={() => handleFocusChange(false)}
-                              onChange={(_event, { value }) => checkValidity(String(value ?? ''), onChange)}
+                              onChange={(_event, { value }) =>
+                                checkValidity(String(value ?? ''), fieldProperty, onChange)
+                              }
                               onFocus={() => handleFocusChange(true)}
+                              onKeyDown={(event) => preventInvalidNumberKey(event, fieldProperty)}
+                              onPaste={(event) => preventInvalidNumberPaste(event, fieldProperty)}
                               placeholder={generatePlaceholder(fieldProperty.name)}
                               readOnly={readOnly}
                               ref={ref}
                               style={{ ...fieldStyles }}
+                              step={fieldProperty.integer ? 1 : 0.1}
                               title={fieldProperty.name}
                               type="number"
                               value={value ?? ''}

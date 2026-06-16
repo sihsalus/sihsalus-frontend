@@ -1,5 +1,5 @@
 import { getDefaultsFromConfigSchema, useConfig } from '@openmrs/esm-framework';
-import { render, screen } from '@testing-library/react';
+import { fireEvent, render, screen } from '@testing-library/react';
 import { mockConceptUnits } from 'test-utils';
 
 import { assessValue, getReferenceRangesForConcept } from '../common';
@@ -139,6 +139,88 @@ describe('VitalsAndBiometricsInput', () => {
     expect(screen.getByPlaceholderText('--')).toBeInTheDocument();
     expect(screen.getByTitle(/heart rate/i)).toBeInTheDocument();
     expect(screen.getByText(/bpm/i)).toBeInTheDocument();
+  });
+
+  it('blocks invalid clinical numeric keys and preserves keyboard shortcuts', () => {
+    renderVitalsBiometricsInput({
+      fieldProperties: [
+        {
+          id: 'pulse',
+          integer: true,
+          name: 'Heart rate',
+          type: 'number',
+        },
+      ],
+      label: 'Heart rate',
+      unitSymbol: 'bpm',
+    });
+
+    const heartRateInput = screen.getByRole('spinbutton', {
+      name: /heart rate/i,
+    });
+
+    for (const key of ['+', '-', ',', '@', 'e', 'E', '.']) {
+      expect(fireEvent.keyDown(heartRateInput, { key })).toBe(false);
+    }
+
+    expect(fireEvent.keyDown(heartRateInput, { key: '5' })).toBe(true);
+    expect(fireEvent.keyDown(heartRateInput, { key: 'v', metaKey: true })).toBe(true);
+    expect(fireEvent.keyDown(heartRateInput, { key: 'v', ctrlKey: true })).toBe(true);
+  });
+
+  it('blocks pasting invalid clinical numeric values', () => {
+    renderVitalsBiometricsInput({
+      fieldProperties: [
+        {
+          id: 'pulse',
+          integer: true,
+          max: 250,
+          min: 0,
+          name: 'Heart rate',
+          type: 'number',
+        },
+      ],
+      label: 'Heart rate',
+      unitSymbol: 'bpm',
+    });
+
+    const heartRateInput = screen.getByRole('spinbutton', {
+      name: /heart rate/i,
+    });
+
+    for (const value of ['+1', '-1', '1,2', '12@', '1e100', '120.0', '251']) {
+      expect(fireEvent.paste(heartRateInput, { clipboardData: { getData: () => value } })).toBe(false);
+    }
+
+    expect(fireEvent.paste(heartRateInput, { clipboardData: { getData: () => '120' } })).toBe(true);
+  });
+
+  it('keeps decimal-capable clinical fields usable while blocking invalid values', () => {
+    renderVitalsBiometricsInput({
+      fieldProperties: [
+        {
+          id: 'temperature',
+          max: 45,
+          min: 30,
+          name: 'Temperature',
+          type: 'number',
+        },
+      ],
+      label: 'Temperature',
+      unitSymbol: 'C',
+    });
+
+    const temperatureInput = screen.getByRole('spinbutton', {
+      name: /temperature/i,
+    });
+
+    expect(fireEvent.keyDown(temperatureInput, { key: '.' })).toBe(true);
+    expect(fireEvent.keyDown(temperatureInput, { key: '-' })).toBe(false);
+    expect(fireEvent.keyDown(temperatureInput, { key: 'e' })).toBe(false);
+
+    expect(fireEvent.paste(temperatureInput, { clipboardData: { getData: () => '36.5' } })).toBe(true);
+    expect(fireEvent.paste(temperatureInput, { clipboardData: { getData: () => '46' } })).toBe(false);
+    expect(fireEvent.paste(temperatureInput, { clipboardData: { getData: () => '1e2' } })).toBe(false);
   });
 
   it('renders textarea inputs correctly based on the props provided', () => {

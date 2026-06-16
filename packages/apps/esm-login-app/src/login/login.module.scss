@@ -243,6 +243,13 @@
   }
 }
 
+.frontendVersion {
+  @extend .caption01;
+  margin: layout.$spacing-04 0 0;
+  color: $text-02;
+  text-align: center;
+}
+
 .pucpLogoLink {
   img {
     max-width: none;

@@ -46,6 +46,14 @@ export const configSchema = {
       _type: Type.ConceptUuid,
       _default: '18fcbd1f-5b4f-44ed-a664-8637a83cc7eb',
     },
+    headCircumferenceUuid: {
+      _type: Type.ConceptUuid,
+      _default: 'c4d39248-c896-433a-bc69-e24d04b7f0e5',
+    },
+    chestCircumferenceUuid: {
+      _type: Type.ConceptUuid,
+      _default: '911eb398-e7de-4270-af63-e4c615ec22a9',
+    },
     bodyMassIndexUuid: {
       _type: Type.ConceptUuid,
       _default: '1342AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA',
@@ -127,8 +135,59 @@ export const configSchema = {
       _default: 0,
       _description: 'The minimum age (in years) required to display BMI. Set to 0 to show BMI for all patients.',
     },
+    headCircumference: {
+      enabled: {
+        _type: Type.Boolean,
+        _default: true,
+        _description: 'Whether the head circumference field is available in the vitals and biometrics form.',
+      },
+      minAgeDays: {
+        _type: Type.Number,
+        _default: 0,
+      },
+      maxAgeDays: {
+        _type: Type.Number,
+        _default: 4380,
+        _description:
+          'Hide the field for patients older than this age in days. The default covers the CRED range (NTS N.° 238-MINSA/DGIESP-2025): birth to 11 years, 11 months and 29 days.',
+      },
+      unit: {
+        _type: Type.String,
+        _default: 'cm',
+        _description: 'Fallback unit symbol when the concept does not define one.',
+      },
+    },
+    chestCircumference: {
+      enabled: {
+        _type: Type.Boolean,
+        _default: true,
+        _description: 'Whether the chest circumference field is available in the vitals and biometrics form.',
+      },
+      minAgeDays: {
+        _type: Type.Number,
+        _default: 0,
+      },
+      maxAgeDays: {
+        _type: Type.Number,
+        _default: 365,
+        _description:
+          'Hide the field for patients older than this age in days. Chest circumference is routinely measured during the first year of life.',
+      },
+      unit: {
+        _type: Type.String,
+        _default: 'cm',
+        _description: 'Fallback unit symbol when the concept does not define one.',
+      },
+    },
   },
 };
+
+export interface ConditionalBiometricFieldConfig {
+  enabled: boolean;
+  minAgeDays: number;
+  maxAgeDays: number;
+  unit: string;
+}
 
 export interface BiometricsConfigObject {
   abdominalCircumferenceUnit: string;
@@ -136,6 +195,8 @@ export interface BiometricsConfigObject {
   heightUnit: string;
   weightUnit: string;
   bmiMinimumAge: number;
+  headCircumference: ConditionalBiometricFieldConfig;
+  chestCircumference: ConditionalBiometricFieldConfig;
 }
 
 export interface ConfigObject {
@@ -151,6 +212,8 @@ export interface ConfigObject {
     generalPatientNoteUuid: string;
     midUpperArmCircumferenceUuid: string;
     abdominalCircumferenceUuid: string;
+    headCircumferenceUuid: string;
+    chestCircumferenceUuid: string;
     bodyMassIndexUuid: string;
     vitalSignsConceptSetUuid: string;
   };

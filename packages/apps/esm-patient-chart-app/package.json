@@ -39,6 +39,7 @@
     "url": "https://github.com/PROYECTO-SANTACLOTILDE/openmrs-esm-patient-chart/issues"
   },
   "dependencies": {
+    "@openmrs/esm-utils": "workspace:*",
     "@sihsalus/esm-rbac": "workspace:*",
     "lodash-es": "^4.17.21",
     "uuid": "^14.0.0"
@@ -67,6 +68,6 @@
     "eslint": "^10.2.0",
     "openmrs": "workspace:*",
     "typescript": "6.0.3",
-    "vitest": "^4.1.0"
+    "vitest": "^4.1.7"
   }
 }

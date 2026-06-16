@@ -4,6 +4,7 @@ import { useFormField } from '../../form-field-context';
 import {
   ObsTypeQuestion,
   PatientIdentifierTypeQuestion,
+  PersonAttributeTypeQuestion,
   ProgramStateTypeQuestion,
   TestOrderTypeQuestion,
 } from './inputs';
@@ -12,6 +13,7 @@ const componentMap: Partial<Record<QuestionType, React.FC>> = {
   obs: ObsTypeQuestion,
   programState: ProgramStateTypeQuestion,
   patientIdentifier: PatientIdentifierTypeQuestion,
+  personAttribute: PersonAttributeTypeQuestion,
   obsGroup: ObsTypeQuestion,
   testOrder: TestOrderTypeQuestion,
 };

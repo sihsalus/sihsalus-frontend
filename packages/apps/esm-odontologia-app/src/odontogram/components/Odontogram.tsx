@@ -14,6 +14,7 @@ import React from 'react';
 import { OdontogramProvider } from '../providers/OdontogramProvider';
 import FormDentalClinicalFindings from './FormDentalClinicalFindings';
 import OdontogramTextFields from './OdontogramTextFields';
+import ResponsiveOdontogramWrapper from './ResponsiveOdontogramWrapper';
 import TeethArch from './TeethArch';
 import './AdultOdontogram.css';
 
@@ -53,19 +54,21 @@ const Odontogram: React.FC<OdontogramProps> = ({ config, data, onChange, readOnl
             </div>
           )}
 
-          {/* Visualización del odontograma — los teeth tienen ancho natural
-              de 1260px. Para containers más narrows, `overflow-x: auto` en
-              `.teeth-visualization` (ver AdultOdontogram.css) permite scroll
-              horizontal sin recurrir a CSS transform que rompía el layout
-              box altura. */}
+          {/* Visualización del odontograma envuelta en el wrapper responsive
+              que aplica CSS `zoom` para escalar todo en proporción cuando el
+              contenedor es más narrow que el ancho natural (1260px). Con
+              `zoom` el layout-box sigue el escalado visual, así no quedan
+              huecos verticales por debajo del odontograma. */}
           <div className="teeth-visualization">
-            <div className="upper-teeth-section">
-              <TeethArch position="upper" />
-            </div>
+            <ResponsiveOdontogramWrapper>
+              <div className="upper-teeth-section">
+                <TeethArch position="upper" />
+              </div>
 
-            <div className="lower-teeth-section">
-              <TeethArch position="lower" />
-            </div>
+              <div className="lower-teeth-section">
+                <TeethArch position="lower" />
+              </div>
+            </ResponsiveOdontogramWrapper>
           </div>
 
           {/* Campos de texto que SIEMPRE viajan con el odontograma.

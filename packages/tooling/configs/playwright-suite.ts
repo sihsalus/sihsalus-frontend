@@ -16,8 +16,8 @@ type SuiteOptions = {
   workers?: number;
   retries?: number;
   locale?: string;
-  trace?: PlaywrightTestConfig['use']['trace'];
-  video?: PlaywrightTestConfig['use']['video'];
+  trace?: NonNullable<PlaywrightTestConfig['use']>['trace'];
+  video?: NonNullable<PlaywrightTestConfig['use']>['video'];
   channel?: string;
   outputDir?: string;
   reporter?: PlaywrightTestConfig['reporter'];

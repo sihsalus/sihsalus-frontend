@@ -1,6 +1,6 @@
 import { openmrsFetch, restBaseUrl } from '@openmrs/esm-framework';
 
-import type { Encounter } from '@sihsalus/esm-sihsalus-shared';
+import type { Encounter } from '@openmrs/esm-patient-common-lib';
 
 export interface EncountersResponse {
   results: Encounter[];

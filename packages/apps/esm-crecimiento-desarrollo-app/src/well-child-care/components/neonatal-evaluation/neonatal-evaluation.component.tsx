@@ -1,10 +1,11 @@
-import { launchWorkspace2, useConfig } from '@openmrs/esm-framework';
-import { PatientSummaryTable } from '@sihsalus/esm-sihsalus-shared'; // Ajusta la ruta
+import { useConfig, userHasAccess, useSession } from '@openmrs/esm-framework';
 import React from 'react';
 import { useTranslation } from 'react-i18next';
 import type { ConfigObject } from '../../../config-schema'; // Ajusta la ruta
+import { credNeonatalEditPrivilege } from '../../../constants';
+import { useCREDFormLauncher } from '../../../hooks/useCREDFormLauncher';
 import { useLatestValidEncounter } from '../../../hooks/useLatestEncounter'; // Ajusta la ruta
-import { formEntryWorkspace } from '../../../types';
+import PatientSummaryTable from '../../../ui/patient-summary-table/patient-summary-table.component';
 
 interface CephaloCaudalNeurologicalEvaluationProps {
   patientUuid: string;
@@ -14,6 +15,8 @@ const CephaloCaudalNeurologicalEvaluationTable: React.FC<CephaloCaudalNeurologic
   patientUuid,
 }) => {
   const { t } = useTranslation();
+  const session = useSession();
+  const canEdit = userHasAccess(credNeonatalEditPrivilege, session?.user);
   const config = useConfig() as ConfigObject;
   const { neonatalConcepts } = config;
   const headerTitle = t('cephaloCaudalNeurologicalEvaluation', 'Cephalo-caudal and neurological evaluation');
@@ -21,6 +24,7 @@ const CephaloCaudalNeurologicalEvaluationTable: React.FC<CephaloCaudalNeurologic
     patientUuid,
     config.encounterTypes.cefaloCaudal,
   );
+  const { launchForm } = useCREDFormLauncher('newbornNeuroEval');
 
   const obsData = React.useMemo(() => {
     if (!encounter?.obs) return {};
@@ -30,12 +34,9 @@ const CephaloCaudalNeurologicalEvaluationTable: React.FC<CephaloCaudalNeurologic
     }, {});
   }, [encounter]);
 
-  const handleLaunchForm = () => {
-    launchWorkspace2(formEntryWorkspace, {
-      form: { uuid: config.formsList.newbornNeuroEval },
-      encounterUuid: encounter?.uuid || '',
-    });
-  };
+  const handleLaunchForm = React.useCallback(() => {
+    launchForm(encounter?.uuid || '');
+  }, [encounter?.uuid, launchForm]);
 
   const dataHook = () => {
     return {
@@ -109,7 +110,7 @@ const CephaloCaudalNeurologicalEvaluationTable: React.FC<CephaloCaudalNeurologic
       displayText={t('cephaloCaudalNeurologicalEvaluation', 'Cephalo-caudal and neurological evaluation')}
       dataHook={dataHook}
       rowConfig={rowConfig}
-      onFormLaunch={handleLaunchForm}
+      onFormLaunch={canEdit ? handleLaunchForm : undefined}
     />
   );
 };

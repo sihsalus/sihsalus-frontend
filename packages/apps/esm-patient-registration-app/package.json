@@ -38,6 +38,7 @@
   },
   "dependencies": {
     "@carbon/react": "^1.71.0",
+    "@openmrs/esm-utils": "workspace:*",
     "@sihsalus/esm-rbac": "workspace:*",
     "classnames": "^2.3.2",
     "formik": "^2.1.5",
@@ -54,11 +55,13 @@
     "swr": "2.x"
   },
   "devDependencies": {
+    "@openmrs/esm-patient-common-lib": "workspace:*",
     "@rspack/cli": "1.7.11",
+    "@sihsalus/esm-form-engine-lib": "workspace:*",
     "i18next": "^25.0.0",
     "i18next-parser": "^9.0.2",
     "openmrs": "*",
     "typescript": "6.0.3",
-    "vitest": "^4.1.0"
+    "vitest": "^4.1.7"
   }
 }

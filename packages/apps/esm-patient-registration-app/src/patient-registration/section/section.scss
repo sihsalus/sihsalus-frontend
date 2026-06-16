@@ -1,17 +1,17 @@
-@use '@carbon/colors';
-@use '@carbon/layout';
-@use '@carbon/type';
-@use '@openmrs/esm-styleguide/src/vars' as *;
+@use "@carbon/colors";
+@use "@carbon/layout";
+@use "@carbon/type";
+@use "@openmrs/esm-styleguide/src/vars" as *;
 
 .label01 {
-  @include type.type-style('label-01');
+  @include type.type-style("label-01");
   margin-top: layout.$spacing-05;
   margin-bottom: layout.$spacing-05;
   color: $ui-04;
 }
 
 .productiveHeading02 {
-  @include type.type-style('heading-compact-02');
+  @include type.type-style("heading-compact-02");
   color: colors.$gray-100;
   cursor: pointer;
 }
@@ -32,8 +32,45 @@
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(min(100%, 19rem), 1fr));
   column-gap: layout.$spacing-05;
-  row-gap: layout.$spacing-03;
+  row-gap: layout.$spacing-05;
   align-items: flex-start;
+}
+
+.sectionField {
+  min-width: 0;
+}
+
+.identityLookupSection {
+  grid-template-columns: minmax(30rem, 1.45fr) repeat(2, minmax(14rem, 0.8fr));
+  align-items: stretch;
+}
+
+.identityLookupSection .sectionField {
+  height: 100%;
+}
+
+.demographicsSection {
+  grid-template-columns: repeat(12, minmax(0, 1fr));
+}
+
+.demographicsField {
+  min-width: 0;
+}
+
+.demographicsField[data-field-name="name"] {
+  grid-column: 1 / -1;
+}
+
+.demographicsField[data-field-name="dob"] {
+  grid-column: 1 / span 4;
+}
+
+.demographicsField[data-field-name="gender"] {
+  grid-column: 5 / span 3;
+}
+
+.demographicsField[data-field-name="nationality"] {
+  grid-column: 8 / span 3;
 }
 
 .isDeadFieldContainer {
@@ -43,5 +80,18 @@
 :global(.omrs-breakpoint-lt-desktop) {
   .sectionTile {
     padding: layout.$spacing-05;
+  }
+
+  .demographicsSection {
+    grid-template-columns: 1fr;
+  }
+
+  .identityLookupSection {
+    grid-template-columns: 1fr;
+  }
+
+  .demographicsField[data-field-name] {
+    grid-column: auto;
+    grid-row: auto;
   }
 }

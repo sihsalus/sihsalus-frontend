@@ -4,6 +4,6 @@ export class ImagingPage {
   constructor(readonly page: Page) {}
 
   async goto(patientUuid: string) {
-    await this.page.goto(`/openmrs/spa/patient/${patientUuid}/chart/Imaging`);
+    await this.page.goto(`patient/${patientUuid}/chart/Imaging`);
   }
 }

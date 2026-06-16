@@ -1,6 +1,6 @@
 import { usePatient, useSession } from '@openmrs/esm-framework';
 import { render, screen } from '@testing-library/react';
-import { type MedicationRequestBundle } from '../types';
+import { type MedicationRequest, type MedicationRequestBundle } from '../types';
 import PrescriptionsPrintout from './prescription-printout.component';
 
 vi.mock('@openmrs/esm-framework', async () => ({
@@ -23,7 +23,7 @@ describe('PrescriptionsPrintout', () => {
       sessionLocation: {
         display: 'Central Pharmacy',
       },
-    } as any);
+    } as ReturnType<typeof useSession>);
   });
 
   it('renders the patient name and DNI on separate lines', () => {
@@ -44,7 +44,7 @@ describe('PrescriptionsPrintout', () => {
           },
         ],
       },
-    } as any);
+    } as ReturnType<typeof usePatient>);
 
     const medicationRequests: Array<MedicationRequestBundle> = [
       {
@@ -73,7 +73,7 @@ describe('PrescriptionsPrintout', () => {
               start: '2026-05-29',
             },
           },
-        } as any,
+        } as MedicationRequest,
         dispenses: [],
       },
     ];

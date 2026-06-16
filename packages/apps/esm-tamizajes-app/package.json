@@ -33,9 +33,6 @@
   "publishConfig": {
     "access": "public"
   },
-  "dependencies": {
-    "@sihsalus/esm-sihsalus-shared": "workspace:*"
-  },
   "peerDependencies": {
     "@carbon/react": "1.x",
     "@carbon/styles": "1.x",
@@ -57,6 +54,6 @@
     "react-router-dom": "^6.30.2",
     "sass": "^1.98.0",
     "typescript": "6.0.3",
-    "vitest": "^4.1.0"
+    "vitest": "^4.1.7"
   }
 }

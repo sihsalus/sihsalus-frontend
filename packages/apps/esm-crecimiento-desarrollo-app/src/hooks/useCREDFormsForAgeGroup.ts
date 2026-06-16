@@ -2,11 +2,21 @@
 
 import { useMemo } from 'react';
 
-import type { ConfigObject } from '../config-schema';
+import { type ConfigObject, configSchema } from '../config-schema';
+import {
+  credCourseLifeEditPrivilege,
+  credEarlyStimulationEditPrivilege,
+  credNeonatalEditPrivilege,
+  credNutritionEditPrivilege,
+} from '../constants';
 import type { CompletedFormInfo } from '../types';
 import { calculateAgeInDays, calculateAgeInMonths, getAgeGroup } from '../utils/age-group-utils';
 
 type CredFormKey = keyof ConfigObject['formsList'];
+type CompletedCREDFormInfo = CompletedFormInfo & {
+  formKey?: CredFormKey;
+  requiredPrivilege?: string;
+};
 
 const credFormLabels: Partial<Record<CredFormKey, string>> = {
   atencionImmediataNewborn: 'Atención inmediata del recién nacido',
@@ -45,52 +55,103 @@ const credFormLabels: Partial<Record<CredFormKey, string>> = {
   schoolHealthCounselingForm: 'Consejería escolar y lonchera saludable',
 };
 
-export function useCREDFormsForAgeGroup(config: ConfigObject, birthDate: string | undefined): CompletedFormInfo[] {
+const credFormEditPrivileges: Partial<Record<CredFormKey, string>> = {
+  atencionImmediataNewborn: credNeonatalEditPrivilege,
+  breastfeedingObservation: credNeonatalEditPrivilege,
+  newbornNeuroEval: credNeonatalEditPrivilege,
+  roomingIn: credNeonatalEditPrivilege,
+  birthDetails: credNeonatalEditPrivilege,
+  pregnancyDetails: credNeonatalEditPrivilege,
+  childFeeding0to5: credNutritionEditPrivilege,
+  childFeeding6to42: credNutritionEditPrivilege,
+  anemiaScreeningForm: credNutritionEditPrivilege,
+  supplementationForm: credNutritionEditPrivilege,
+  nutritionalAssessmentForm: credNutritionEditPrivilege,
+  feedingCounselingForm: credNutritionEditPrivilege,
+  nutritionFollowupForm: credNutritionEditPrivilege,
+  parasitosisScreeningForm: credNutritionEditPrivilege,
+  vitaminAAdministrationForm: credNutritionEditPrivilege,
+  growthNutritionEvaluationForm: credNutritionEditPrivilege,
+  stimulationSessionForm: credEarlyStimulationEditPrivilege,
+  stimulationFollowupForm: credEarlyStimulationEditPrivilege,
+  stimulationCounselingForm: credEarlyStimulationEditPrivilege,
+  ediDevelopmentForm: credEarlyStimulationEditPrivilege,
+  autismScreeningForm: credEarlyStimulationEditPrivilege,
+  childMentalHealthForm: credEarlyStimulationEditPrivilege,
+  tepsi: credEarlyStimulationEditPrivilege,
+};
+
+export function useCREDFormsForAgeGroup(
+  config: ConfigObject,
+  birthDate: string | undefined,
+  referenceDate?: Date | string,
+): CompletedCREDFormInfo[] {
   return useMemo(() => {
-    if (!birthDate || !config?.CREDFormsByAgeGroup || !config?.formsList) return [];
+    return getCREDFormsForAgeGroup(config, birthDate, referenceDate);
+  }, [birthDate, config, referenceDate]);
+}
 
-    const days = calculateAgeInDays(birthDate);
-    const months = Math.max(1, calculateAgeInMonths(birthDate));
-    const matchedGroup =
-      days <= 28
-        ? config.CREDFormsByAgeGroup.find(
-            (group) =>
-              group.minDays !== undefined &&
-              group.maxDays !== undefined &&
-              days >= group.minDays &&
-              days <= group.maxDays,
-          )
-        : getAgeGroup(
-            months,
-            config.CREDFormsByAgeGroup.filter(
-              (group) => group.minMonths !== undefined && group.maxMonths !== undefined,
-            ),
-          );
+export function getCREDFormsForAgeGroup(
+  config: ConfigObject,
+  birthDate: string | undefined,
+  referenceDate?: Date | string,
+): CompletedCREDFormInfo[] {
+  const configuredAgeGroups = config?.CREDFormsByAgeGroup;
+  const credFormsByAgeGroup = configuredAgeGroups?.some((group) => Array.isArray(group.forms) && group.forms.length > 0)
+    ? configuredAgeGroups
+    : configSchema.CREDFormsByAgeGroup._default;
+  const formsList = config?.formsList ?? {};
+  const defaultFormsList = configSchema.formsList._default;
 
-    if (!matchedGroup || !matchedGroup.forms) return [];
+  if (!birthDate || !credFormsByAgeGroup || !formsList) return [];
 
-    return matchedGroup.forms
-      .map((formKey) => {
-        const typedFormKey = formKey as CredFormKey;
-        const formUuid = config.formsList?.[typedFormKey];
-        if (!formUuid) return null;
+  const days = calculateAgeInDays(birthDate, referenceDate);
+  const months = Math.max(1, calculateAgeInMonths(birthDate, referenceDate));
+  const matchedGroup =
+    days <= 28
+      ? credFormsByAgeGroup.find(
+          (group) =>
+            group.minDays !== undefined &&
+            group.maxDays !== undefined &&
+            days >= group.minDays &&
+            days <= group.maxDays,
+        )
+      : getAgeGroup(
+          months,
+          credFormsByAgeGroup.filter((group) => group.minMonths !== undefined && group.maxMonths !== undefined),
+        );
 
-        const display = credFormLabels[typedFormKey] ?? String(formUuid);
-        return {
-          form: {
-            uuid: String(formUuid),
-            name: display,
-            display,
-            version: '1',
-            published: true,
-            retired: false,
-            resources: [],
-            formCategory: 'CRED',
-          },
-          associatedEncounters: [],
-          lastCompletedDate: undefined,
-        };
-      })
-      .filter(Boolean) as CompletedFormInfo[];
-  }, [birthDate, config]);
+  if (!matchedGroup || !matchedGroup.forms) return [];
+
+  const uniqueFormKeys = Array.from(new Set(matchedGroup.forms));
+
+  return uniqueFormKeys
+    .map((formKey) => {
+      const typedFormKey = formKey as CredFormKey;
+      const formUuid = formsList?.[typedFormKey] || defaultFormsList?.[typedFormKey];
+      if (!formUuid) return null;
+
+      const display = credFormLabels[typedFormKey] ?? String(formUuid);
+      return {
+        form: {
+          uuid: String(formUuid),
+          name: display,
+          display,
+          version: '1',
+          published: true,
+          retired: false,
+          resources: [],
+          formCategory: 'CRED',
+        },
+        formKey: typedFormKey,
+        requiredPrivilege: getCREDFormEditPrivilege(typedFormKey),
+        associatedEncounters: [],
+        lastCompletedDate: undefined,
+      };
+    })
+    .filter(Boolean) as CompletedCREDFormInfo[];
+}
+
+export function getCREDFormEditPrivilege(formKey: CredFormKey): string {
+  return credFormEditPrivileges[formKey] ?? credCourseLifeEditPrivilege;
 }

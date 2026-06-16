@@ -98,6 +98,20 @@ export const TrashCanIcon = () => <span />;
 
 export const UserHasAccess = ({ children }: { children?: React.ReactNode }) => <>{children}</>;
 
+export const userHasAccess = vi.fn(
+  (
+    requiredPrivilege: string | Array<string> | undefined,
+    user?: { privileges?: Array<{ display?: string; name?: string }> } | null,
+  ) => {
+    if (!requiredPrivilege) {
+      return true;
+    }
+    const userPrivileges = (user?.privileges ?? []).map((privilege) => privilege?.display ?? privilege?.name);
+    const required = Array.isArray(requiredPrivilege) ? requiredPrivilege : [requiredPrivilege];
+    return required.every((privilege) => userPrivileges.includes(privilege));
+  },
+);
+
 export const LocationPicker = ({ onChange }: { onChange?: (uuid: string) => void }) => (
   <div>
     <button type="button" role="radio" aria-checked="false" onClick={() => onChange?.('uuid_1')}>

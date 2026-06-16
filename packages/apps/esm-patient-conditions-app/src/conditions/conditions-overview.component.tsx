@@ -27,10 +27,10 @@ import {
   CardHeader,
   EmptyState,
   ErrorState,
+  getAntecedentTypeLabel,
   launchPatientWorkspace,
   PatientChartPagination,
 } from '@openmrs/esm-patient-common-lib';
-import { getAntecedentTypeLabel } from '@sihsalus/esm-sihsalus-shared';
 import classNames from 'classnames';
 import type { TFunction } from 'i18next';
 import React, { type ComponentProps, useCallback, useMemo, useState } from 'react';
@@ -89,16 +89,6 @@ const getSectionCopy = (section: ConditionSection, t: TFunction) => {
         headerTitle: t('pastDiagnoses', 'Past diagnoses'),
         pagePath: 'Antecedentes',
         recordText: t('recordPastDiagnosis', 'Record past diagnosis'),
-      };
-    case 'procedures':
-      return {
-        addIconDescription: t('addProcedureSurgery', 'Add procedure or surgery'),
-        ariaLabel: t('proceduresAndSurgeriesOverview', 'Procedures and surgeries overview'),
-        displayText: t('proceduresAndSurgeries_lower', 'procedures and surgeries'),
-        emptyText: t('noProceduresAndSurgeriesToDisplay', 'No procedures or surgeries to display'),
-        headerTitle: t('proceduresAndSurgeries', 'Procedures and surgeries'),
-        pagePath: 'Procedimientos-y-cirugias',
-        recordText: t('recordProcedureSurgery', 'Record procedure or surgery'),
       };
     case 'antecedents':
     default:

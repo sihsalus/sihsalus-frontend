@@ -31,6 +31,7 @@ export const MODALS = {
 /** Workspace identifiers — used in launchWorkspace() and index.ts registration */
 export const WORKSPACES = {
   EMERGENCY_WORKFLOW: 'emergency-workflow-workspace',
-  TRIAGE_FORM: 'triage-form-workspace',
+  /** Triage vitals are captured with the shared vitals workspace (esm-patient-vitals-app, workspaces2) */
+  TRIAGE_VITALS_FORM: 'patient-vitals-biometrics-form-workspace',
   ATTENTION_FORM: 'attention-form-workspace',
 } as const;

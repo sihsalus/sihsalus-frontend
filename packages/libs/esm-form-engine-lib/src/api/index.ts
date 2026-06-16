@@ -17,6 +17,7 @@ import type {
   PatientIdentifier,
   PatientProgram,
   PatientProgramPayload,
+  PersonAttribute,
   ProgramsFetchResponse,
 } from '../types';
 import { isUuid } from '../utils/boolean-utils';
@@ -265,6 +266,23 @@ export function savePatientIdentifier(
     },
     method: 'POST',
     body: JSON.stringify(patientIdentifier),
+  });
+}
+
+export function savePersonAttribute(
+  personAttribute: PersonAttribute,
+  patientUuid: string,
+): Promise<FetchResponse<unknown>> {
+  const url = personAttribute.uuid
+    ? `${restBaseUrl}/person/${patientUuid}/attribute/${personAttribute.uuid}`
+    : `${restBaseUrl}/person/${patientUuid}/attribute`;
+
+  return openmrsFetch(url, {
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    method: 'POST',
+    body: personAttribute,
   });
 }
 

@@ -12,10 +12,33 @@ import {
   Toggle,
 } from '@carbon/react';
 import { type DefaultWorkspaceProps, OpenmrsDatePicker, useLayoutType, useVisitTypes } from '@openmrs/esm-framework';
+import {
+  shouldPreventPlainNumberKey,
+  shouldPreventPlainNumberPaste,
+  validatePlainNumberInput,
+} from '@openmrs/esm-utils';
 import React, { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import styles from './queue-linelist-filter.scss';
+
+const ageInputConstraints = { integer: true, max: 100, min: 0, nonNegative: true };
+
+function preventInvalidAgeKey(event: React.KeyboardEvent<HTMLInputElement>) {
+  if (event.ctrlKey || event.metaKey || event.altKey) {
+    return;
+  }
+
+  if (shouldPreventPlainNumberKey(event.key, ageInputConstraints)) {
+    event.preventDefault();
+  }
+}
+
+function preventInvalidAgePaste(event: React.ClipboardEvent<HTMLInputElement>) {
+  if (shouldPreventPlainNumberPaste(event.clipboardData.getData('text'), ageInputConstraints)) {
+    event.preventDefault();
+  }
+}
 
 const QueueLinelistFilter: React.FC<DefaultWorkspaceProps> = ({ closeWorkspace }) => {
   const { t } = useTranslation();
@@ -37,11 +60,19 @@ const QueueLinelistFilter: React.FC<DefaultWorkspaceProps> = ({ closeWorkspace }
   };
 
   const handleStartAgeChange = (event) => {
-    setStartAge(event.currentTarget.value === '' ? '' : Number(event.currentTarget.value));
+    setStartAge(
+      event.currentTarget.value === ''
+        ? ''
+        : (validatePlainNumberInput(event.currentTarget.value, ageInputConstraints).parsedValue ?? ''),
+    );
   };
 
   const handleEndAgeChange = (event) => {
-    setEndAge(event.currentTarget.value === '' ? '' : Number(event.currentTarget.value));
+    setEndAge(
+      event.currentTarget.value === ''
+        ? ''
+        : (validatePlainNumberInput(event.currentTarget.value, ageInputConstraints).parsedValue ?? ''),
+    );
   };
 
   return (
@@ -91,6 +122,8 @@ const QueueLinelistFilter: React.FC<DefaultWorkspaceProps> = ({ closeWorkspace }
                     max={100}
                     min={0}
                     onChange={handleStartAgeChange}
+                    onKeyDown={preventInvalidAgeKey}
+                    onPaste={preventInvalidAgePaste}
                     size="md"
                     value={startAge}
                   />
@@ -103,6 +136,8 @@ const QueueLinelistFilter: React.FC<DefaultWorkspaceProps> = ({ closeWorkspace }
                     max={100}
                     min={0}
                     onChange={handleEndAgeChange}
+                    onKeyDown={preventInvalidAgeKey}
+                    onPaste={preventInvalidAgePaste}
                     size="md"
                     value={endAge}
                   />

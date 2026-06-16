@@ -42,15 +42,14 @@ describe('End visit dialog', () => {
 
     render(<EndVisitDialog patientUuid="some-patient-uuid" closeModal={mockCloseModal} />);
 
-    // ModalHeader renders a close button with aria-label "Close" (exact); "Close Visit" is a separate button
+    // ModalHeader renders a close button with aria-label "Close" (exact); "End Visit" is a separate button
     const closeModalButton = screen.getByRole('button', { name: /^close$/i });
     const cancelButton = screen.getByRole('button', { name: /cancel/i });
-    // "Close Visit" triggers handleEndVisit — same behaviour as the original "End visit" button
-    const closeVisitButton = screen.getByRole('button', { name: /close visit/i });
+    const endVisitButton = screen.getByRole('button', { name: /end visit/i });
 
     expect(closeModalButton).toBeInTheDocument();
     expect(cancelButton).toBeInTheDocument();
-    expect(closeVisitButton).toBeInTheDocument();
+    expect(endVisitButton).toBeInTheDocument();
     expect(
       screen.getByRole('heading', { name: /are you sure you want to end this active visit?/i }),
     ).toBeInTheDocument();
@@ -58,7 +57,7 @@ describe('End visit dialog', () => {
       screen.getByText(/you can add additional encounters to this visit in the visit summary/i),
     ).toBeInTheDocument();
 
-    await user.click(closeVisitButton);
+    await user.click(endVisitButton);
 
     expect(updateVisit).toHaveBeenCalledWith(mockCurrentVisit.uuid, endVisitPayload, expect.anything());
 
@@ -89,11 +88,10 @@ describe('End visit dialog', () => {
       screen.getByText(/you can add additional encounters to this visit in the visit summary/i),
     ).toBeInTheDocument();
 
-    // "Close Visit" triggers handleEndVisit which shows the error snackbar expected below
-    const closeVisitButton = screen.getByRole('button', { name: /close visit/i });
-    expect(closeVisitButton).toBeInTheDocument();
+    const endVisitButton = screen.getByRole('button', { name: /end visit/i });
+    expect(endVisitButton).toBeInTheDocument();
 
-    await user.click(closeVisitButton);
+    await user.click(endVisitButton);
 
     expect(updateVisit).toHaveBeenCalledWith(mockCurrentVisit.uuid, endVisitPayload, expect.anything());
     expect(mockShowSnackbar).toHaveBeenCalledWith({

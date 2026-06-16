@@ -6,8 +6,6 @@ import { useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useLocation } from 'react-router-dom';
 
-import styles from './dashboard-extension.scss';
-
 export interface DashboardExtensionProps {
   readonly path: string;
   readonly title: string;
@@ -36,16 +34,12 @@ export const DashboardExtension = ({
       title={translatedTooltip}
       to={`${basePath}/${encodeURIComponent(path)}`}
     >
-      <span className={styles.menu}>
-        <MaybeIcon icon={icon} className={styles.icon} size={16} />
-        <span>{t(title)}</span>
+      <span className="sihsalus-side-nav__item">
+        <MaybeIcon icon={icon} className="sihsalus-side-nav__icon" size={20} />
+        <span className="sihsalus-side-nav__text">{t(title)}</span>
       </span>
     </ConfigurableLink>
   );
 
-  return (
-    <div key={path} className={styles.navItem}>
-      {link}
-    </div>
-  );
+  return <div key={path}>{link}</div>;
 };

@@ -1,5 +1,5 @@
 import { type FetchResponse, getDefaultsFromConfigSchema, showSnackbar, useConfig } from '@openmrs/esm-framework';
-import { render, screen, waitFor } from '@testing-library/react';
+import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { updateBillItems } from '../billing.resource';
 import { type BillingConfig, configSchema } from '../config-schema';
@@ -304,22 +304,20 @@ describe('EditBillItem', () => {
     expect(mockUpdateBillItems).not.toHaveBeenCalled();
   });
 
-  test('shows validation error for non-integer quantity', async () => {
-    const user = userEvent.setup();
+  test('prevents decimal and scientific notation for quantity', () => {
     render(
       <EditBillLineItemModal bill={mockBill} item={mockItem} closeModal={mockCloseModal} onMutate={mockOnMutate} />,
     );
 
     const quantityInput = screen.getByRole('spinbutton', { name: /Quantity/ });
-    await user.clear(quantityInput);
-    await user.type(quantityInput, '2.5');
-
-    await user.click(screen.getByText(/Save/));
-
-    await waitFor(() => {
-      expect(mockUpdateBillItems).not.toHaveBeenCalled();
-    });
-    expect(mockUpdateBillItems).not.toHaveBeenCalled();
+    for (const key of ['e', 'E', '+', '-', '.', ',']) {
+      expect(fireEvent.keyDown(quantityInput, { key })).toBe(false);
+    }
+    expect(
+      fireEvent.paste(quantityInput, {
+        clipboardData: { getData: () => '2.5' },
+      }),
+    ).toBe(false);
   });
 
   test('clears validation error when valid quantity is entered', async () => {

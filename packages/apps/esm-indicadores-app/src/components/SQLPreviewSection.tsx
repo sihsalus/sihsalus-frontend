@@ -33,7 +33,9 @@ const SQLPreviewSection: React.FC<SQLPreviewSectionProps> = ({ indicadorId, vers
           <div className={styles.errorBanner}>{error.message}</div>
         ) : data ? (
           <div className={styles.sqlBody}>
-            <div className={styles.mutedText}>Período: {data.periodo_inicio} - {data.periodo_fin}</div>
+            <div className={styles.mutedText}>
+              Período: {data.periodo_inicio} - {data.periodo_fin}
+            </div>
             <pre className={styles.codeBlock}>{data.sql}</pre>
             <pre className={styles.codeBlock}>{JSON.stringify(data.params, null, 2)}</pre>
           </div>

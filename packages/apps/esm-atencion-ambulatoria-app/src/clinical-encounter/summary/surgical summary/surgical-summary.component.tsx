@@ -1,7 +1,6 @@
 import { InlineLoading, OverflowMenu, OverflowMenuItem } from '@carbon/react';
 import { formatDate, parseDate, useConfig } from '@openmrs/esm-framework';
-import { EmptyState, ErrorState, launchPatientWorkspace } from '@openmrs/esm-patient-common-lib';
-import { getObsFromEncounter } from '@sihsalus/esm-sihsalus-shared';
+import { EmptyState, ErrorState, getObsFromEncounter, launchPatientWorkspace } from '@openmrs/esm-patient-common-lib';
 import React from 'react';
 import { useTranslation } from 'react-i18next';
 import type { KeyedMutator } from 'swr';

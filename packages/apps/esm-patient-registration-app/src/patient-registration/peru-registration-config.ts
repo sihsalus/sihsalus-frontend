@@ -3,6 +3,13 @@ import { type FieldDefinition, type RegistrationConfig, type SectionDefinition }
 export const peruDniPatientIdentifierTypeUuid = '550e8400-e29b-41d4-a716-446655440001';
 export const peruCarnetExtranjeriaPatientIdentifierTypeUuid = '550e8400-e29b-41d4-a716-446655440002';
 export const peruDiePatientIdentifierTypeUuid = '8d793bee-c2cc-11de-8d13-0010c6dffd0f';
+export const peruInsuranceCodeAttributeTypeUuid = '374b130f-7457-476f-87b1-f182aa77c434';
+export const peruInsuranceAccreditationStatusAttributeTypeUuid = '9b3df0a1-0c58-4f55-9868-9c38f1db1005';
+export const peruInsuranceAccreditationCheckedAtAttributeTypeUuid = '9b3df0a1-0c58-4f55-9868-9c38f1db1006';
+export const peruInsuranceAccreditationActiveConceptUuid = '9b3df0a1-0c58-4f55-9868-9c38f1db2051';
+export const peruInsuranceAccreditationInactiveConceptUuid = '9b3df0a1-0c58-4f55-9868-9c38f1db2052';
+export const peruPhoneAttributeTypeUuid = '14d4f066-15f5-102d-96e4-000c29c2a5d7';
+export const peruMobilePhoneAttributeTypeUuid = 'fee4e8ef-aef8-4bb9-8ed0-7ded6055c61f';
 
 const peruDefaultPatientIdentifierTypeUuids = [
   peruDniPatientIdentifierTypeUuid, // DNI
@@ -14,8 +21,15 @@ export const peruForeignPatientIdentifierTypeUuids = [
   peruDiePatientIdentifierTypeUuid, // Documento de Identidad Extranjero
 ];
 
-const peruSections = ['filiation', 'medicalRecord', 'insurance', 'responsiblePerson'];
-const peruDemographicsFieldOrder = ['name', 'id', 'dob', 'gender'];
+const peruPreRegistrationSections = ['identityLookup'];
+const peruSections = ['filiation', 'bloodData', 'medicalRecord', 'insurance', 'responsiblePerson'];
+const peruIdentityLookupFieldOrder = ['id', 'reniecLookup', 'sisLookup'];
+const peruDemographicsFieldOrder = ['name', 'dob', 'gender', 'nationality'];
+const peruContactFieldOrder = ['address', 'birthAddress', 'phone', 'mobilePhone'];
+const peruPhoneValidationRegex = '^\\+?[0-9][0-9\\s().-]{5,19}$';
+const peruPersonNameValidationRegex = "^[A-Za-zÁÉÍÓÚÜÑáéíóúüñ][A-Za-zÁÉÍÓÚÜÑáéíóúüñ'.\\- ]*$";
+const peruAgeValidationRegex = '^(?:[0-9]|[1-9][0-9]|1[01][0-9]|120)$';
+const peruTextWithoutDigitsValidationRegex = '^[^0-9]+$';
 const minorResponsibleRelationshipTypes = [
   '8d91a210-c2cc-11de-8d13-0010c6dffdff/aIsToB',
   '8d91a210-c2cc-11de-8d13-0010c6dffd0f/aIsToB',
@@ -24,19 +38,24 @@ const minorResponsibleRelationshipTypes = [
 
 const peruSectionDefinitions: Array<SectionDefinition> = [
   {
+    id: 'identityLookup',
+    name: 'Validación de identidad y seguro',
+    fields: peruIdentityLookupFieldOrder,
+  },
+  {
+    id: 'contact',
+    name: 'Residencia, nacimiento y contacto',
+    fields: ['address', 'birthAddress', 'phone', 'mobilePhone'],
+  },
+  {
     id: 'filiation',
     name: 'Datos de filiación',
-    fields: [
-      'birthplace',
-      'civilStatus',
-      'ethnicity',
-      'nativeLanguage',
-      'occupation',
-      'educationLevel',
-      'religion',
-      'bloodGroup',
-      'rhFactor',
-    ],
+    fields: ['civilStatus', 'ethnicity', 'nativeLanguage', 'occupation', 'educationLevel', 'religion'],
+  },
+  {
+    id: 'bloodData',
+    name: 'Grupo sanguíneo y factor Rh',
+    fields: ['bloodGroup', 'rhFactor'],
   },
   {
     id: 'medicalRecord',
@@ -57,11 +76,12 @@ const peruSectionDefinitions: Array<SectionDefinition> = [
 
 const peruFieldDefinitions: Array<FieldDefinition> = [
   {
-    id: 'birthplace',
+    id: 'mobilePhone',
     type: 'person attribute',
-    uuid: '8d8718c2-c2cc-11de-8d13-0010c6dffd0f',
-    label: 'Lugar de nacimiento',
+    uuid: peruMobilePhoneAttributeTypeUuid,
+    label: 'Número de Celular',
     showHeading: false,
+    validation: { required: false, matches: peruPhoneValidationRegex },
   },
   {
     id: 'nationality',
@@ -127,7 +147,7 @@ const peruFieldDefinitions: Array<FieldDefinition> = [
   {
     id: 'insuranceCode',
     type: 'person attribute',
-    uuid: '374b130f-7457-476f-87b1-f182aa77c434',
+    uuid: peruInsuranceCodeAttributeTypeUuid,
     label: 'Código de seguro',
     showHeading: false,
   },
@@ -183,13 +203,13 @@ const peruFieldDefinitions: Array<FieldDefinition> = [
   {
     id: 'insuranceAccreditationStatus',
     type: 'person attribute',
-    uuid: '9b3df0a1-0c58-4f55-9868-9c38f1db1005',
+    uuid: peruInsuranceAccreditationStatusAttributeTypeUuid,
     label: 'Estado de acreditación de seguro',
     showHeading: false,
     answerConceptSetUuid: '9b3df0a1-0c58-4f55-9868-9c38f1db2005',
     customConceptAnswers: [
-      { uuid: '9b3df0a1-0c58-4f55-9868-9c38f1db2051', label: 'Vigente' },
-      { uuid: '9b3df0a1-0c58-4f55-9868-9c38f1db2052', label: 'No vigente' },
+      { uuid: peruInsuranceAccreditationActiveConceptUuid, label: 'Vigente' },
+      { uuid: peruInsuranceAccreditationInactiveConceptUuid, label: 'No vigente' },
       { uuid: '9b3df0a1-0c58-4f55-9868-9c38f1db2053', label: 'Pendiente' },
       { uuid: '9b3df0a1-0c58-4f55-9868-9c38f1db2054', label: 'No consultada' },
     ],
@@ -198,7 +218,7 @@ const peruFieldDefinitions: Array<FieldDefinition> = [
   {
     id: 'insuranceAccreditationCheckedAt',
     type: 'person attribute',
-    uuid: '9b3df0a1-0c58-4f55-9868-9c38f1db1006',
+    uuid: peruInsuranceAccreditationCheckedAtAttributeTypeUuid,
     label: 'Fecha/hora de acreditación',
     showHeading: false,
   },
@@ -208,6 +228,7 @@ const peruFieldDefinitions: Array<FieldDefinition> = [
     uuid: '4697d0e6-5b24-416b-aee6-708cd9a3a1db',
     label: 'Nombre del acompañante o responsable',
     showHeading: false,
+    validation: { required: false, matches: peruPersonNameValidationRegex },
   },
   {
     id: 'companionAge',
@@ -215,6 +236,7 @@ const peruFieldDefinitions: Array<FieldDefinition> = [
     uuid: '70ce4571-2e2e-44da-a39f-9dae2a658606',
     label: 'Edad del acompañante o responsable',
     showHeading: false,
+    validation: { required: false, matches: peruAgeValidationRegex },
   },
   {
     id: 'companionRelationship',
@@ -222,6 +244,7 @@ const peruFieldDefinitions: Array<FieldDefinition> = [
     uuid: 'a180fa5f-c44e-4490-a981-d7196b70c6ac',
     label: 'Parentesco del acompañante o responsable',
     showHeading: false,
+    validation: { required: false, matches: peruTextWithoutDigitsValidationRegex },
   },
 ];
 
@@ -274,7 +297,16 @@ function orderPeruDemographicsSection(sectionDefinitions: Array<SectionDefinitio
 }
 
 function orderPeruDemographicsFields(fields: Array<string>) {
-  const visibleDemographicsFields = fields.filter((field) => field !== 'nationality');
+  const visibleDemographicsFields = [
+    ...fields.filter(
+      (field) =>
+        !peruIdentityLookupFieldOrder.includes(field) &&
+        field !== 'minsaLookup' &&
+        field !== 'birthplace' &&
+        field !== 'birthAddress',
+    ),
+    'nationality',
+  ].filter((field, index, demographicsFields) => demographicsFields.indexOf(field) === index);
 
   return [
     ...peruDemographicsFieldOrder.filter((field) => visibleDemographicsFields.includes(field)),
@@ -282,19 +314,76 @@ function orderPeruDemographicsFields(fields: Array<string>) {
   ];
 }
 
+function normalizePeruLookupSection(sectionDefinitions: Array<SectionDefinition>) {
+  const lookupFields = new Set([...peruIdentityLookupFieldOrder, 'minsaLookup']);
+
+  return sectionDefinitions.map((section) => {
+    if (section.id === 'identityLookup') {
+      const fields = [
+        ...peruIdentityLookupFieldOrder.filter((field) => section.fields.includes(field)),
+        ...section.fields
+          .map((field) => (field === 'minsaLookup' ? 'reniecLookup' : field))
+          .filter((field) => !peruIdentityLookupFieldOrder.includes(field)),
+      ].filter((field, index, fields) => fields.indexOf(field) === index);
+
+      return {
+        ...section,
+        fields,
+      };
+    }
+
+    return {
+      ...section,
+      fields: section.fields.filter((field) => !lookupFields.has(field)),
+    };
+  });
+}
+
+function orderPeruContactSection(sectionDefinitions: Array<SectionDefinition>) {
+  return sectionDefinitions.map((section) => {
+    if (section.id !== 'contact') {
+      return section;
+    }
+
+    const fields = section.fields.filter((field) => field !== 'birthplace');
+
+    return {
+      ...section,
+      fields: [
+        ...peruContactFieldOrder.filter((field) => fields.includes(field)),
+        ...fields.filter((field) => !peruContactFieldOrder.includes(field)),
+      ].filter((field, index, fields) => fields.indexOf(field) === index),
+    };
+  });
+}
+
 export function getEffectiveRegistrationConfig(config: RegistrationConfig): RegistrationConfig {
-  const sections = [...config.sections];
+  const sections = config.sections.filter(
+    (section) =>
+      section !== 'relationships' && section !== 'birthplace' && !peruPreRegistrationSections.includes(section),
+  );
+  const phoneFieldConfiguration = (config.fieldConfigurations.phone ?? {}) as Partial<
+    RegistrationConfig['fieldConfigurations']['phone']
+  >;
+
+  peruPreRegistrationSections
+    .slice()
+    .reverse()
+    .forEach((section) => {
+      if (!sections.includes(section)) {
+        sections.unshift(section);
+      }
+    });
+
+  let insertionIndex = sections.length;
 
   peruSections.forEach((section) => {
     if (sections.includes(section)) {
       return;
     }
-    const relationshipsIndex = sections.indexOf('relationships');
-    if (relationshipsIndex >= 0) {
-      sections.splice(relationshipsIndex, 0, section);
-    } else {
-      sections.push(section);
-    }
+
+    sections.splice(insertionIndex, 0, section);
+    insertionIndex += 1;
   });
 
   const defaultPatientIdentifierTypes = [
@@ -305,8 +394,10 @@ export function getEffectiveRegistrationConfig(config: RegistrationConfig): Regi
   return {
     ...config,
     sections,
-    sectionDefinitions: orderPeruDemographicsSection(
-      mergeSectionDefinitions(config.sectionDefinitions, peruSectionDefinitions),
+    sectionDefinitions: orderPeruContactSection(
+      orderPeruDemographicsSection(
+        normalizePeruLookupSection(mergeSectionDefinitions(config.sectionDefinitions, peruSectionDefinitions)),
+      ),
     ),
     fieldDefinitions: appendMissingById(config.fieldDefinitions, peruFieldDefinitions),
     fieldConfigurations: {
@@ -314,6 +405,14 @@ export function getEffectiveRegistrationConfig(config: RegistrationConfig): Regi
       name: {
         ...config.fieldConfigurations.name,
         requireFamilyName2: true,
+      },
+      phone: {
+        ...phoneFieldConfiguration,
+        personAttributeUuid: phoneFieldConfiguration.personAttributeUuid || peruPhoneAttributeTypeUuid,
+        validation: {
+          required: phoneFieldConfiguration.validation?.required ?? false,
+          matches: phoneFieldConfiguration.validation?.matches || peruPhoneValidationRegex,
+        },
       },
     },
     relationshipOptions: {

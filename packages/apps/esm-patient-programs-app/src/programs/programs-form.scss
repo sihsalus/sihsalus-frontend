@@ -1,6 +1,6 @@
-@use '@carbon/type';
-@use '@carbon/layout';
-@use '@openmrs/esm-styleguide/src/vars' as *;
+@use "@carbon/type";
+@use "@carbon/layout";
+@use "@openmrs/esm-styleguide/src/vars" as *;
 
 .loading {
   margin-left: layout.$spacing-05;
@@ -20,7 +20,7 @@
   }
 
   :global(.cds--inline-loading__text) {
-    @include type.type-style('body-01');
+    @include type.type-style("body-01");
   }
 }
 
@@ -51,9 +51,5 @@
 }
 
 .programName {
-  @include type.type-style('body-compact-02');
-}
-
-.locationLabel {
-  margin-bottom: layout.$spacing-05;
+  @include type.type-style("body-compact-02");
 }

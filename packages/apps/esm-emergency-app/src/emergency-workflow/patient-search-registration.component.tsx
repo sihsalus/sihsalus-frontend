@@ -23,55 +23,38 @@ import {
   Stack,
   Switch,
   Tag,
+  TextArea,
   TextInput,
   Tile,
 } from '@carbon/react';
 import { CheckmarkFilled, SendFilled, User, UserFollow } from '@carbon/react/icons';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { OpenmrsDatePicker, showSnackbar, useConfig } from '@openmrs/esm-framework';
-import { getPreferredIdentifier } from '@sihsalus/esm-sihsalus-shared';
+import { getPreferredIdentifier, OpenmrsDatePicker, showSnackbar, useConfig } from '@openmrs/esm-framework';
+import {
+  shouldPreventPlainNumberKey,
+  shouldPreventPlainNumberPaste,
+  validatePlainNumberInput,
+} from '@openmrs/esm-utils';
 import dayjs from 'dayjs';
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Controller, useForm } from 'react-hook-form';
 import { useTranslation } from 'react-i18next';
-import { z } from 'zod';
 import type { Config } from '../config-schema';
 import { generateIdentifier, saveEmergencyPatient } from '../resources/patient-registration.resource';
 import InitialPrioritySelector, { type InitialPriority } from './components/initial-priority-selector.component';
 import styles from './patient-search-registration.component.scss';
+import {
+  communicationConditionLabels,
+  communicationConditionOptions,
+  identificationStatusLabels,
+  identificationStatusOptions,
+  type QuickRegistrationFormData,
+  quickRegistrationSchema,
+  responsibleTypeLabels,
+  responsibleTypeOptions,
+} from './patient-search-registration.validation';
 import type { SearchedPatient } from './types';
 import { usePatientSearch } from './usePatientSearch';
-
-// ============================================================================
-// SCHEMAS
-// ============================================================================
-
-const quickRegistrationSchema = z.object({
-  // Identificación
-  givenName: z.string().min(1, 'Primer nombre es requerido'),
-  familyName: z.string().min(1, 'Apellido paterno es requerido'),
-  familyName2: z.string().optional(),
-  gender: z.enum(['M', 'F'], { required_error: 'Sexo es requerido' }),
-  yearsEstimated: z.number().min(0).optional(),
-  birthdate: z.string().optional(),
-  identifierType: z.string().optional(),
-  identifier: z.string().optional(),
-  nationality: z.string().optional(),
-  isUnknown: z.boolean().optional(),
-  // Ubicación
-  district: z.string().optional(),
-  village: z.string().optional(),
-  address: z.string().optional(),
-  // Seguro
-  insuranceType: z.string().optional(),
-  insuranceCode: z.string().optional(),
-  // Acompañante
-  companionName: z.string().optional(),
-  companionAge: z.string().optional(),
-  companionRelationship: z.string().optional(),
-});
-
-type QuickRegistrationFormData = z.infer<typeof quickRegistrationSchema>;
 
 // ============================================================================
 // COMPONENT PROPS
@@ -82,6 +65,7 @@ interface PatientSearchRegistrationProps {
 }
 
 const defaultNationalityCountryCode = 'PE';
+const ageInputConstraints = { integer: true, max: 130, min: 0, nonNegative: true };
 const nationalityOptions = [
   { code: 'PE', label: 'Perú' },
   { code: 'CO', label: 'Colombia' },
@@ -94,6 +78,45 @@ const nationalityOptions = [
   { code: 'US', label: 'Estados Unidos' },
   { code: 'OTHER', label: 'Otro país' },
 ];
+
+function formatGenderLabel(gender?: string) {
+  switch (gender) {
+    case 'M':
+      return 'M';
+    case 'F':
+      return 'F';
+    case 'U':
+      return 'No determinado';
+    default:
+      return '';
+  }
+}
+
+function addOptionalAttribute(
+  attributes: Array<{ attributeType: string; value: string }>,
+  attributeTypeUuid: string | null | undefined,
+  value: string | undefined,
+) {
+  if (attributeTypeUuid && value) {
+    attributes.push({ attributeType: attributeTypeUuid, value });
+  }
+}
+
+function preventInvalidAgeKey(event: React.KeyboardEvent<HTMLInputElement>) {
+  if (event.ctrlKey || event.metaKey || event.altKey) {
+    return;
+  }
+
+  if (shouldPreventPlainNumberKey(event.key, ageInputConstraints)) {
+    event.preventDefault();
+  }
+}
+
+function preventInvalidAgePaste(event: React.ClipboardEvent<HTMLInputElement>) {
+  if (shouldPreventPlainNumberPaste(event.clipboardData.getData('text'), ageInputConstraints)) {
+    event.preventDefault();
+  }
+}
 
 // ============================================================================
 // MAIN COMPONENT
@@ -159,6 +182,10 @@ const PatientSearchRegistration: React.FC<PatientSearchRegistrationProps> = ({ o
       isUnknown: false,
       identifierType: config.patientRegistration.defaultIdentifierTypeUuid,
       nationality: defaultNationalityCountryCode,
+      arrivalDateTime: dayjs().format('YYYY-MM-DDTHH:mm'),
+      communicationCondition: 'communicates',
+      identificationStatus: 'confirmed',
+      responsibleType: '',
       district: 'NAPO',
       village: 'SANTA CLOTILDE',
       address: '',
@@ -215,6 +242,31 @@ const PatientSearchRegistration: React.FC<PatientSearchRegistrationProps> = ({ o
     setInitialPriority(undefined);
   }, []);
 
+  const handleOpenRegistrationForm = useCallback(
+    (unknownPatient = false) => {
+      setSelectedPatient(null);
+      setRegisteredPatient(null);
+      setShowRegistrationForm(true);
+      setIsPatientUnknown(unknownPatient);
+      reset({
+        isUnknown: unknownPatient,
+        givenName: unknownPatient ? 'DESCONOCIDO' : '',
+        familyName: unknownPatient ? 'DESCONOCIDO' : '',
+        familyName2: '',
+        identifierType: config.patientRegistration.defaultIdentifierTypeUuid,
+        nationality: defaultNationalityCountryCode,
+        arrivalDateTime: dayjs().format('YYYY-MM-DDTHH:mm'),
+        communicationCondition: unknownPatient ? '' : 'communicates',
+        identificationStatus: unknownPatient ? 'pending' : 'confirmed',
+        responsibleType: '',
+        district: 'NAPO',
+        village: 'SANTA CLOTILDE',
+        address: '',
+      });
+    },
+    [config.patientRegistration.defaultIdentifierTypeUuid, reset],
+  );
+
   // Debounced search
   useEffect(() => {
     if (searchTerm.length >= 2) {
@@ -237,12 +289,16 @@ const PatientSearchRegistration: React.FC<PatientSearchRegistrationProps> = ({ o
         setValue('givenName', '');
         setValue('familyName', '');
         setValue('familyName2', '');
+        setValue('communicationCondition', 'communicates');
+        setValue('identificationStatus', 'confirmed');
       } else {
         setIsPatientUnknown(true);
         setValue('isUnknown', true);
         setValue('givenName', 'DESCONOCIDO');
         setValue('familyName', 'DESCONOCIDO');
         setValue('familyName2', '');
+        setValue('communicationCondition', '');
+        setValue('identificationStatus', 'pending');
       }
     },
     [setValue],
@@ -351,6 +407,21 @@ const PatientSearchRegistration: React.FC<PatientSearchRegistrationProps> = ({ o
             value: data.companionRelationship,
           });
         }
+        addOptionalAttribute(
+          attributes,
+          config.patientRegistration.communicationConditionAttributeTypeUuid,
+          data.communicationCondition,
+        );
+        addOptionalAttribute(
+          attributes,
+          config.patientRegistration.identificationStatusAttributeTypeUuid,
+          data.identificationStatus,
+        );
+        addOptionalAttribute(
+          attributes,
+          config.patientRegistration.responsibleTypeAttributeTypeUuid,
+          data.responsibleType,
+        );
 
         // 6. Build address
         const addressObj: Record<string, string> = {
@@ -426,6 +497,15 @@ const PatientSearchRegistration: React.FC<PatientSearchRegistrationProps> = ({ o
               display: displayName,
             },
           },
+          emergencyRegistrationContext: {
+            arrivalDateTime: data.arrivalDateTime,
+            communicationCondition: data.communicationCondition,
+            identificationStatus: data.identificationStatus,
+            responsibleType: data.responsibleType,
+            companionName: data.companionName,
+            companionRelationship: data.companionRelationship,
+            administrativeNotes: data.administrativeNotes,
+          },
         };
 
         showSnackbar({
@@ -497,6 +577,19 @@ const PatientSearchRegistration: React.FC<PatientSearchRegistrationProps> = ({ o
                 onClear={handleClearSearch}
               />
               {isLoading && <InlineLoading description={t('searchingPatients', 'Buscando...')} />}
+              <div className={styles.quickActions}>
+                <Button kind="tertiary" renderIcon={UserFollow} onClick={() => handleOpenRegistrationForm()} size="sm">
+                  {t('registerNewPatient', 'Registrar nuevo paciente')}
+                </Button>
+                <Button
+                  kind="danger--tertiary"
+                  renderIcon={UserFollow}
+                  onClick={() => handleOpenRegistrationForm(true)}
+                  size="sm"
+                >
+                  {t('registerUnidentifiedPatient', 'Registrar paciente no identificado / incapaz')}
+                </Button>
+              </div>
             </Layer>
 
             {/* Search Results */}
@@ -523,7 +616,7 @@ const PatientSearchRegistration: React.FC<PatientSearchRegistrationProps> = ({ o
                                   {patient.person?.age || '?'} {t('years', 'años')}
                                 </span>
                                 <span className={styles.separator}>|</span>
-                                <span>{patient.person?.gender === 'M' ? t('male', 'M') : t('female', 'F')}</span>
+                                <span>{formatGenderLabel(patient.person?.gender) || t('unknown', 'Desconocido')}</span>
                                 {preferredIdentifier && (
                                   <>
                                     <span className={styles.separator}>|</span>
@@ -558,7 +651,7 @@ const PatientSearchRegistration: React.FC<PatientSearchRegistrationProps> = ({ o
                   title={t('patientNotFound', 'Paciente no encontrado')}
                   subtitle={t('noResultsFor', 'Sin resultados para "{{term}}"', { term: searchQuery })}
                 />
-                <Button kind="tertiary" renderIcon={UserFollow} onClick={() => setShowRegistrationForm(true)} size="md">
+                <Button kind="tertiary" renderIcon={UserFollow} onClick={() => handleOpenRegistrationForm()} size="md">
                   {t('registerNewPatient', 'Registrar nuevo paciente')}
                 </Button>
               </Stack>
@@ -619,6 +712,77 @@ const PatientSearchRegistration: React.FC<PatientSearchRegistrationProps> = ({ o
                             )}
                           />
                         )}
+
+                        <fieldset className={styles.formSection}>
+                          <legend className={styles.sectionTitle}>{t('intakeContext', 'Contexto de ingreso')}</legend>
+                          <div className={styles.fieldRow}>
+                            <TextInput
+                              id="arrivalDateTime"
+                              type="datetime-local"
+                              labelText={t('arrivalDateTime', 'Fecha/hora de ingreso') + ' *'}
+                              invalid={!!errors.arrivalDateTime}
+                              invalidText={errors.arrivalDateTime?.message}
+                              disabled={isRegistering}
+                              {...register('arrivalDateTime')}
+                            />
+                            <Controller
+                              name="identificationStatus"
+                              control={control}
+                              render={({ field }) => (
+                                <Select
+                                  id="identificationStatus"
+                                  labelText={t('identificationStatus', 'Estado de identificación')}
+                                  disabled={isRegistering}
+                                  value={field.value || (isPatientUnknown ? 'pending' : 'confirmed')}
+                                  onChange={(e) => field.onChange(e.target.value)}
+                                >
+                                  {identificationStatusOptions.map((option) => (
+                                    <SelectItem
+                                      key={option.value}
+                                      value={option.value}
+                                      text={identificationStatusLabels[option.value]}
+                                    />
+                                  ))}
+                                </Select>
+                              )}
+                            />
+                          </div>
+                          <Controller
+                            name="communicationCondition"
+                            control={control}
+                            render={({ field }) => (
+                              <Select
+                                id="communicationCondition"
+                                labelText={t('communicationCondition', 'Condición de comunicación') + ' *'}
+                                invalid={!!errors.communicationCondition}
+                                invalidText={errors.communicationCondition?.message}
+                                disabled={isRegistering}
+                                value={field.value || ''}
+                                onChange={(e) => field.onChange(e.target.value)}
+                              >
+                                <SelectItem value="" text={t('select', 'Seleccionar')} />
+                                {communicationConditionOptions.map((option) => (
+                                  <SelectItem
+                                    key={option.value}
+                                    value={option.value}
+                                    text={communicationConditionLabels[option.value]}
+                                  />
+                                ))}
+                              </Select>
+                            )}
+                          />
+                          <TextArea
+                            id="administrativeNotes"
+                            labelText={t('administrativeNotes', 'Observaciones administrativas')}
+                            rows={3}
+                            maxCount={500}
+                            enableCounter
+                            invalid={!!errors.administrativeNotes}
+                            invalidText={errors.administrativeNotes?.message}
+                            disabled={isRegistering}
+                            {...register('administrativeNotes')}
+                          />
+                        </fieldset>
 
                         {/* ── Identificación ── */}
                         {!isPatientUnknown && (
@@ -686,6 +850,7 @@ const PatientSearchRegistration: React.FC<PatientSearchRegistrationProps> = ({ o
                                     <SelectItem value="" text="..." />
                                     <SelectItem value="M" text="M" />
                                     <SelectItem value="F" text="F" />
+                                    <SelectItem value="U" text={t('undetermined', 'No determinado')} />
                                   </Select>
                                 )}
                               />
@@ -767,6 +932,7 @@ const PatientSearchRegistration: React.FC<PatientSearchRegistrationProps> = ({ o
                                   <SelectItem value="" text="..." />
                                   <SelectItem value="M" text="M" />
                                   <SelectItem value="F" text="F" />
+                                  <SelectItem value="U" text={t('undetermined', 'No determinado')} />
                                 </Select>
                               )}
                             />
@@ -778,7 +944,14 @@ const PatientSearchRegistration: React.FC<PatientSearchRegistrationProps> = ({ o
                               invalid={!!errors.yearsEstimated}
                               invalidText={errors.yearsEstimated?.message}
                               disabled={isRegistering}
-                              {...register('yearsEstimated', { valueAsNumber: true })}
+                              onKeyDown={preventInvalidAgeKey}
+                              onPaste={preventInvalidAgePaste}
+                              {...register('yearsEstimated', {
+                                setValueAs: (value) =>
+                                  value === ''
+                                    ? undefined
+                                    : validatePlainNumberInput(value, ageInputConstraints).parsedValue,
+                              })}
                             />
                           </div>
                         )}
@@ -868,37 +1041,63 @@ const PatientSearchRegistration: React.FC<PatientSearchRegistrationProps> = ({ o
                         )}
 
                         {/* ── Acompañante / Responsable ── */}
-                        {!isPatientUnknown && (
-                          <fieldset className={styles.formSection}>
-                            <legend className={styles.sectionTitle}>
-                              {t('companion', 'Acompañante / Responsable')}
-                            </legend>
+                        <fieldset className={styles.formSection}>
+                          <legend className={styles.sectionTitle}>{t('companion', 'Acompañante / Responsable')}</legend>
+                          <Controller
+                            name="responsibleType"
+                            control={control}
+                            render={({ field }) => (
+                              <Select
+                                id="responsibleType"
+                                labelText={t('responsibleType', 'Tipo de responsable') + (isPatientUnknown ? ' *' : '')}
+                                invalid={!!errors.responsibleType}
+                                invalidText={errors.responsibleType?.message}
+                                disabled={isRegistering}
+                                value={field.value || ''}
+                                onChange={(e) => field.onChange(e.target.value)}
+                              >
+                                <SelectItem value="" text={t('select', 'Seleccionar')} />
+                                {responsibleTypeOptions.map((option) => (
+                                  <SelectItem
+                                    key={option.value}
+                                    value={option.value}
+                                    text={responsibleTypeLabels[option.value]}
+                                  />
+                                ))}
+                              </Select>
+                            )}
+                          />
+                          <TextInput
+                            id="companionName"
+                            labelText={t('companionName', 'Nombre completo') + (isPatientUnknown ? ' *' : '')}
+                            placeholder={t('enterCompanionName', 'Nombre del acompañante')}
+                            invalid={!!errors.companionName}
+                            invalidText={errors.companionName?.message}
+                            disabled={isRegistering}
+                            {...register('companionName')}
+                          />
+                          <div className={styles.fieldRow}>
                             <TextInput
-                              id="companionName"
-                              labelText={t('companionName', 'Nombre completo')}
-                              placeholder={t('enterCompanionName', 'Nombre del acompañante')}
+                              id="companionAge"
+                              type="number"
+                              labelText={t('companionAge', 'Edad')}
+                              placeholder={t('enterCompanionAge', 'Años')}
                               disabled={isRegistering}
-                              {...register('companionName')}
+                              invalid={!!errors.companionAge}
+                              invalidText={errors.companionAge?.message}
+                              onKeyDown={preventInvalidAgeKey}
+                              onPaste={preventInvalidAgePaste}
+                              {...register('companionAge')}
                             />
-                            <div className={styles.fieldRow}>
-                              <TextInput
-                                id="companionAge"
-                                type="number"
-                                labelText={t('companionAge', 'Edad')}
-                                placeholder={t('enterCompanionAge', 'Años')}
-                                disabled={isRegistering}
-                                {...register('companionAge')}
-                              />
-                              <TextInput
-                                id="companionRelationship"
-                                labelText={t('companionRelationship', 'Parentesco')}
-                                placeholder={t('enterRelationship', 'Ej: Padre, Madre')}
-                                disabled={isRegistering}
-                                {...register('companionRelationship')}
-                              />
-                            </div>
-                          </fieldset>
-                        )}
+                            <TextInput
+                              id="companionRelationship"
+                              labelText={t('companionRelationship', 'Parentesco o vínculo')}
+                              placeholder={t('enterRelationship', 'Ej: Padre, Madre, PNP, SAMU')}
+                              disabled={isRegistering}
+                              {...register('companionRelationship')}
+                            />
+                          </div>
+                        </fieldset>
 
                         <div className={styles.formActions}>
                           <Button
@@ -906,6 +1105,7 @@ const PatientSearchRegistration: React.FC<PatientSearchRegistrationProps> = ({ o
                             size="md"
                             onClick={() => {
                               setShowRegistrationForm(false);
+                              setIsPatientUnknown(false);
                               reset();
                             }}
                             disabled={isRegistering}
@@ -950,7 +1150,7 @@ const PatientSearchRegistration: React.FC<PatientSearchRegistrationProps> = ({ o
                       {readyPatient.person?.gender && (
                         <>
                           <span className={styles.separator}>|</span>
-                          <span>{readyPatient.person.gender === 'M' ? t('male', 'M') : t('female', 'F')}</span>
+                          <span>{formatGenderLabel(readyPatient.person.gender) || t('unknown', 'Desconocido')}</span>
                         </>
                       )}
                       {readyPatient.identifiers?.[0] && (

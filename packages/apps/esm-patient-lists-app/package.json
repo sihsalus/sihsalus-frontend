@@ -38,8 +38,7 @@
     "url": "https://github.com/openmrs/openmrs-esm-patient-chart/issues"
   },
   "dependencies": {
-    "@carbon/react": "^1.83.0",
-    "@sihsalus/esm-sihsalus-shared": "workspace:*"
+    "@carbon/react": "^1.83.0"
   },
   "peerDependencies": {
     "@openmrs/esm-framework": "*",
@@ -56,6 +55,6 @@
     "@rspack/cli": "1.7.11",
     "openmrs": "workspace:*",
     "typescript": "6.0.3",
-    "vitest": "^4.1.0"
+    "vitest": "^4.1.7"
   }
 }

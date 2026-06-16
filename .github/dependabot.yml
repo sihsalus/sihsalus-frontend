@@ -1,5 +1,6 @@
 version: 2
 updates:
+  # GitHub Actions
   - package-ecosystem: "github-actions"
     directory: "/"
     schedule:
@@ -13,3 +14,73 @@ updates:
           - "*"
     labels:
       - "dependencies"
+
+  # npm — Yarn workspaces monorepo (root yarn.lock covers all packages)
+  - package-ecosystem: "npm"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      time: "08:00"
+      timezone: "UTC"
+    open-pull-requests-limit: 8
+    labels:
+      - "dependencies"
+    ignore:
+      # Pinned for OpenMRS app-shell / offline compatibility (see prior renovate config)
+      - dependency-name: "@openmrs/esm-app-shell"
+      - dependency-name: "@openmrs/esm-offline"
+      - dependency-name: "workbox-window"
+    groups:
+      # Build/test tooling — low risk, group minor+patch into one PR
+      tooling:
+        patterns:
+          - "@biomejs/*"
+          - "@playwright/*"
+          - "@vitest/*"
+          - "vitest"
+          - "turbo"
+          - "typescript"
+          - "prettier"
+          - "swc-loader"
+          - "@swc/*"
+        update-types:
+          - "minor"
+          - "patch"
+      # Type definitions — almost always safe, group together
+      types:
+        patterns:
+          - "@types/*"
+        update-types:
+          - "minor"
+          - "patch"
+      # Everything else (runtime deps) — minor+patch grouped by dependency type
+      production-minor-patch:
+        dependency-type: "production"
+        update-types:
+          - "minor"
+          - "patch"
+      development-minor-patch:
+        dependency-type: "development"
+        update-types:
+          - "minor"
+          - "patch"
+    # Major bumps are intentionally left ungrouped so each gets its own PR for review.
+
+  # Docker base images (Dockerfile + docker-compose.yml)
+  - package-ecosystem: "docker"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      time: "08:00"
+      timezone: "UTC"
+    labels:
+      - "dependencies"
+    groups:
+      docker:
+        patterns:
+          - "*"
+        update-types:
+          - "minor"
+          - "patch"

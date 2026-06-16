@@ -1,5 +1,5 @@
 import { Button, DataTableSkeleton, Link, OverflowMenu, OverflowMenuItem, Pagination } from '@carbon/react';
-import { AddIcon, navigate, openmrsFetch, showModal, showSnackbar, type Visit } from '@openmrs/esm-framework';
+import { AddIcon, navigate, showModal, showSnackbar, type Visit } from '@openmrs/esm-framework';
 import { EmptyState } from '@openmrs/esm-patient-common-lib';
 import React, { useCallback, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -11,8 +11,6 @@ import { launchEncounterForm } from '../utils/helpers';
 
 import styles from './encounter-list.scss';
 import { EncounterListDataTable } from './table.component';
-
-const ModuleFuaRestURL = '/ws/module/fua';
 
 export interface EncounterListColumn {
   key: string;
@@ -208,37 +206,6 @@ export const EncounterList: React.FC<EncounterListProps> = ({
     [onFormSave, t, mutate],
   );
 
-  const handleCreateFua = useCallback(
-    async (visitUuid?: string) => {
-      if (!visitUuid) {
-        showSnackbar({
-          kind: 'error',
-          title: t('errorGeneratingFUA', 'Error generating FUA'),
-          subtitle: t('noActiveVisitForFua', 'There is no active visit to create a FUA'),
-        });
-        return;
-      }
-
-      try {
-        await openmrsFetch(`${ModuleFuaRestURL}/generateFromVisit/${encodeURIComponent(visitUuid)}`, {
-          method: 'POST',
-        });
-        showSnackbar({
-          kind: 'success',
-          title: t('success', 'Success'),
-          subtitle: t('fuaGeneratedSuccessfully', 'FUA generated successfully'),
-        });
-      } catch (error) {
-        showSnackbar({
-          kind: 'error',
-          title: t('errorGeneratingFUA', 'Error generating FUA'),
-          subtitle: error instanceof Error ? error.message : t('errorGeneratingFUA', 'Error generating FUA'),
-        });
-      }
-    },
-    [t],
-  );
-
   const tableRows = useMemo<Array<TableRow & Record<string, ColumnValue>>>(() => {
     return encounters.map((encounter: Encounter) => {
       const tableRow = { id: encounter.uuid, actions: null } as TableRow & Record<string, ColumnValue>;
@@ -305,13 +272,6 @@ export const EncounterList: React.FC<EncounterListProps> = ({
               )
             );
           })}
-          <OverflowMenuItem
-            itemText={t('createFua', 'Crear FUA')}
-            onClick={(e) => {
-              e.preventDefault();
-              void handleCreateFua(encounter.visit ?? currentVisit?.uuid);
-            }}
-          />
         </OverflowMenu>
       );
 
@@ -325,7 +285,6 @@ export const EncounterList: React.FC<EncounterListProps> = ({
     formsJson,
     t,
     handleDeleteEncounter,
-    handleCreateFua,
     onFormSave,
     patientUuid,
     currentVisit,

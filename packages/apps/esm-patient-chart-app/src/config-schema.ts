@@ -83,16 +83,6 @@ export const esmPatientChartSchema = {
     _description: 'The UUID of the visit type to be used for the automatically created offline visits.',
     _default: 'a22733fa-3501-4020-a520-da024eeff088',
   },
-  FUATemplateUuid: {
-    _type: Type.UUID,
-    _description: 'The UUID of the FUA template form in OpenMRS.',
-    _default: 'a22733fa-3501-4020-a520-da024eeff088',
-  },
-  fuaGeneratorEndpoint: {
-    _type: Type.String,
-    _default: '',
-    _description: 'URL of the FUA HTML generator endpoint. Receives ?visitUuid=<uuid> and returns the FUA as HTML.',
-  },
   restrictByVisitLocationTag: {
     _type: Type.Boolean,
     _description:
@@ -188,6 +178,49 @@ export const esmPatientChartSchema = {
         required: false,
         displayInThePatientBanner: true,
       },
+      {
+        uuid: '9b640334-69e7-49a8-bc8d-1a379742f2f1',
+        required: false,
+        displayInThePatientBanner: true,
+      },
+    ],
+  },
+  defaultVisitAttributesFromPatientAddress: {
+    _type: Type.Array,
+    _description:
+      'Mappings used to prefill visit attributes from patient addresses when starting a visit. Values remain editable in the form.',
+    _elements: {
+      visitAttributeTypeUuid: {
+        _type: Type.UUID,
+        _description: 'UUID of the visit attribute type used as target',
+      },
+      addressKind: {
+        _type: Type.String,
+        _description: 'Patient address to use as source. Supported values: residence, birth.',
+        _default: 'residence',
+      },
+      addressFields: {
+        _type: Type.Array,
+        _description:
+          'Address fields to concatenate for the visit attribute value, ordered from more specific to broader.',
+        _elements: {
+          _type: Type.String,
+        },
+        _default: [],
+      },
+      separator: {
+        _type: Type.String,
+        _description: 'Separator used to join address field values.',
+        _default: ', ',
+      },
+    },
+    _default: [
+      {
+        visitAttributeTypeUuid: '9b640334-69e7-49a8-bc8d-1a379742f2f1',
+        addressKind: 'residence',
+        addressFields: ['cityVillage', 'countyDistrict', 'stateProvince', 'address1', 'country'],
+        separator: ', ',
+      },
     ],
   },
   defaultVisitAttributesFromPersonAttributes: {
@@ -227,12 +260,12 @@ export const esmPatientChartSchema = {
   trueConceptUuid: {
     _type: Type.String,
     _description: 'Default concept uuid for true in forms',
-    _default: '1065AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA',
+    _default: 'cf82933b-3f3f-45e7-a5ab-5d31aaee3da3',
   },
   falseConceptUuid: {
     _type: Type.String,
     _description: 'Default concept uuid for false in forms',
-    _default: '1066AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA',
+    _default: '488b58ff-64f5-4f8a-8979-fa79940b1594',
   },
   otherConceptUuid: {
     _type: Type.String,
@@ -257,8 +290,6 @@ export interface ChartConfig {
   diagnosisTypeConceptMap: Record<string, 'presuntivo' | 'definitivo' | 'repetitivo'>;
   numberOfVisitsToLoad: number;
   offlineVisitTypeUuid: string;
-  FUATemplateUuid: string;
-  fuaGeneratorEndpoint: string;
   restrictByVisitLocationTag: boolean;
   showAllEncountersTab: boolean;
   showExtraVisitAttributesSlot: boolean;
@@ -284,6 +315,12 @@ export interface ChartConfig {
   defaultVisitAttributesFromPersonAttributes: Array<{
     personAttributeTypeUuid: string;
     visitAttributeTypeUuid: string;
+  }>;
+  defaultVisitAttributesFromPatientAddress: Array<{
+    visitAttributeTypeUuid: string;
+    addressKind?: 'residence' | 'birth' | string;
+    addressFields?: Array<string>;
+    separator?: string;
   }>;
   visitDiagnosisConceptUuid: string;
   requireActiveVisitForEncounterTile: boolean;

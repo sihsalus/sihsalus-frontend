@@ -14,7 +14,7 @@ interface QuestionProps {
 }
 
 function isQuestionTypeWithRenderOptions(value: string): value is keyof typeof renderTypeOptions {
-  return questionTypes.includes(value as keyof typeof renderTypeOptions);
+  return value in renderTypeOptions;
 }
 
 const Question: React.FC<QuestionProps> = ({ checkIfQuestionIdExists }) => {
@@ -57,7 +57,7 @@ const Question: React.FC<QuestionProps> = ({ checkIfQuestionIdExists }) => {
       setFormField((prevFormField) => {
         const hasPreviousRenderingType = prevFormField?.questionOptions?.rendering;
         if (hasPreviousRenderingType) {
-          if (newQuestionType !== 'obs' && isQuestionTypeWithRenderOptions(newQuestionType)) {
+          if (isQuestionTypeWithRenderOptions(newQuestionType)) {
             const isRenderingTypeValidForQuestionType = renderTypeOptions[newQuestionType].includes(
               prevFormField.questionOptions.rendering,
             );
@@ -144,8 +144,8 @@ const Question: React.FC<QuestionProps> = ({ checkIfQuestionIdExists }) => {
         required
       >
         {!formField?.type && <SelectItem text={t('chooseQuestionType', 'Choose a question type')} value="" />}
-        {questionTypes.map((questionType, key) => (
-          <SelectItem text={questionType} value={questionType} key={key} />
+        {questionTypes.map((questionType) => (
+          <SelectItem text={questionType} value={questionType} key={questionType} />
         ))}
       </Select>
       <Select
@@ -171,11 +171,9 @@ const Question: React.FC<QuestionProps> = ({ checkIfQuestionIdExists }) => {
         {!formField.questionOptions?.rendering && (
           <SelectItem text={t('chooseRenderingType', 'Choose a rendering type')} value="" />
         )}
-        {formField.type && formField.type !== 'obs' && isQuestionTypeWithRenderOptions(formField.type)
-          ? renderTypeOptions[formField?.type].map((type, key) => (
-              <SelectItem key={`${type}-${key}`} text={type} value={type} />
-            ))
-          : renderingTypes.map((type, key) => <SelectItem key={key} text={type} value={type} />)}
+        {formField.type && isQuestionTypeWithRenderOptions(formField.type)
+          ? renderTypeOptions[formField?.type].map((type) => <SelectItem key={type} text={type} value={type} />)
+          : renderingTypes.map((type) => <SelectItem key={type} text={type} value={type} />)}
       </Select>
       {formField.questionOptions && formField.questionOptions.rendering !== 'markdown' && (
         <>

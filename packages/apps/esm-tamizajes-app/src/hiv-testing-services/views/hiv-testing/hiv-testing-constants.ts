@@ -20,8 +20,8 @@ export const hivTestingConceptMap = {
   '91a87033-8f75-4f08-9f15-0d8ae66bd9d9': {
     display: 'Does client have any disability?',
     answers: {
-      '1065AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA': 'Yes',
-      '1066AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA': 'No',
+      'cf82933b-3f3f-45e7-a5ab-5d31aaee3da3': 'Yes',
+      '488b58ff-64f5-4f8a-8979-fa79940b1594': 'No',
     },
   },
   '162558AAAAAAAAAAAAAAAAAAAAAAAAAAAAAA': {
@@ -42,8 +42,8 @@ export const hivTestingConceptMap = {
   '164401AAAAAAAAAAAAAAAAAAAAAAAAAAAAAA': {
     display: '   Has the client ever been tested for HIV by a HTS provider?',
     answers: {
-      '1065AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA': 'Yes',
-      '1066AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA': 'No',
+      'cf82933b-3f3f-45e7-a5ab-5d31aaee3da3': 'Yes',
+      '488b58ff-64f5-4f8a-8979-fa79940b1594': 'No',
     },
   },
   '159813AAAAAAAAAAAAAAAAAAAAAAAAAAAAAA': {
@@ -53,15 +53,15 @@ export const hivTestingConceptMap = {
   '2797e57b-d1ff-4928-b10e-b72e95b63faf': {
     display: 'Has the client done HIV self test in the last 12 months?',
     answers: {
-      '1065AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA': 'Yes',
-      '1066AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA': 'No',
+      'cf82933b-3f3f-45e7-a5ab-5d31aaee3da3': 'Yes',
+      '488b58ff-64f5-4f8a-8979-fa79940b1594': 'No',
     },
   },
   '193d9d3b-d1c5-42f6-b44d-0c1905940c73': {
     display: 'Is client willing to share results?',
     answers: {
-      '1065AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA': 'Yes',
-      '1066AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA': 'No',
+      'cf82933b-3f3f-45e7-a5ab-5d31aaee3da3': 'Yes',
+      '488b58ff-64f5-4f8a-8979-fa79940b1594': 'No',
     },
   },
   'c3a6b427-32cb-41d1-badc-9b623bb411c1': {
@@ -164,23 +164,23 @@ export const hivTestingConceptMap = {
   '164848AAAAAAAAAAAAAAAAAAAAAAAAAAAAAA': {
     display: 'Results given to client?',
     answers: {
-      '1065AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA': 'Yes',
-      '1066AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA': 'No',
+      'cf82933b-3f3f-45e7-a5ab-5d31aaee3da3': 'Yes',
+      '488b58ff-64f5-4f8a-8979-fa79940b1594': 'No',
     },
   },
   '6096AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA': {
     display: 'Couple is discordant:',
     answers: {
-      '1065AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA': 'Yes',
-      '1066AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA': 'No',
+      'cf82933b-3f3f-45e7-a5ab-5d31aaee3da3': 'Yes',
+      '488b58ff-64f5-4f8a-8979-fa79940b1594': 'No',
       '1175AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA': '--',
     },
   },
   'c9404c8f-cf83-4bfe-acc0-4881599c78ba': {
     display: 'Client referred for other services:',
     answers: {
-      '1065AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA': 'Yes',
-      '1066AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA': 'No',
+      'cf82933b-3f3f-45e7-a5ab-5d31aaee3da3': 'Yes',
+      '488b58ff-64f5-4f8a-8979-fa79940b1594': 'No',
     },
   },
   '163180AAAAAAAAAAAAAAAAAAAAAAAAAAAAAA': {
@@ -213,8 +213,8 @@ export const hivTestingConceptMap = {
   '163777AAAAAAAAAAAAAAAAAAAAAAAAAAAAAA': {
     display: 'Has recency screening been done:',
     answers: {
-      '1065AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA': 'Yes',
-      '1066AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA': 'No',
+      'cf82933b-3f3f-45e7-a5ab-5d31aaee3da3': 'Yes',
+      '488b58ff-64f5-4f8a-8979-fa79940b1594': 'No',
     },
   },
   '163042AAAAAAAAAAAAAAAAAAAAAAAAAAAAAA': {

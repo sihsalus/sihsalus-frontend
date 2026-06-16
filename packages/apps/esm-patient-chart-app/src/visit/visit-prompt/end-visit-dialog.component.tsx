@@ -18,10 +18,6 @@ interface EndVisitDialogProps {
  * patient banner. It should only show when the patient has an active visit. See stop-visit.component.tsx
  * for the button.
  */
-
-/**
- * Se esta modificando esta funcion para darle soporte a la funcionalidad de generar FUA (formato unico de atención).
- */
 const EndVisitDialog: React.FC<EndVisitDialogProps> = ({ patientUuid, closeModal }) => {
   const { t } = useTranslation();
   const { activeVisit, mutate } = useVisit(patientUuid);

@@ -39,7 +39,6 @@
   },
   "dependencies": {
     "@sihsalus/esm-rbac": "workspace:*",
-    "@sihsalus/esm-sihsalus-shared": "workspace:*",
     "exceljs": "^4.4.0",
     "lodash-es": "^4.17.21"
   },
@@ -60,6 +59,6 @@
     "@rspack/cli": "1.7.11",
     "openmrs": "workspace:*",
     "typescript": "6.0.3",
-    "vitest": "^4.1.0"
+    "vitest": "^4.1.7"
   }
 }

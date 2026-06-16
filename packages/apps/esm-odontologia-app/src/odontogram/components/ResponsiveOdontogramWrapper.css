@@ -1,55 +1,11 @@
-/* =========================================================================
-   ResponsiveOdontogramWrapper
-   ========================================================================= */
+/* biome-ignore-all lint/correctness/noUnknownPseudoClass: :global() is required because the app processes CSS imports as CSS Modules. */
 
-.responsive-odontogram-viewport {
-  position: relative;
-  width: 100%;
-  overflow: hidden;
-  /*
-   * manipulation = allows pan (scroll) + pinch-zoom natively,
-   * but disables the 300ms tap delay and double-tap zoom.
-   * Our usePinchZoom hook intercepts the two-finger gesture and calls
-   * preventDefault() only on those touch-move events, so normal
-   * single-finger vertical scrolling is preserved.
-   */
-  touch-action: manipulation;
-}
+/* The project's rspack config processes all .css files as CSS Modules,
+   hashing class selectors. We use literal classNames in the JSX so the
+   selector is wrapped in :global() to keep the name un-hashed. */
 
-.responsive-odontogram-content {
-  will-change: transform;
-}
-
-/* Zoom badge */
-.responsive-odontogram-zoom-badge {
-  position: absolute;
-  top: 6px;
-  right: 6px;
-  z-index: 20;
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  padding: 3px 8px;
-  background: rgba(15, 23, 42, 0.7);
-  color: #f8fafc;
-  font-size: 11px;
-  font-weight: 600;
-  border-radius: 6px;
-  user-select: none;
-  pointer-events: auto;
-}
-
-.responsive-odontogram-zoom-reset {
-  background: rgba(255, 255, 255, 0.2);
-  border: none;
-  color: #f8fafc;
-  font-size: 10px;
-  font-weight: 600;
-  padding: 2px 6px;
-  border-radius: 4px;
-  cursor: pointer;
-}
-
-.responsive-odontogram-zoom-reset:hover {
-  background: rgba(255, 255, 255, 0.35);
+:global(.responsive-odontogram-svg) {
+  /* width + height set inline so the SVG follows the viewBox aspect ratio
+     and never overflows its container horizontally. */
+  max-width: 100%;
 }

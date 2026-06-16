@@ -3,7 +3,13 @@ import dayjs from 'dayjs';
 import { assignedDiagnosesIds } from '../../adapters/encounter-diagnosis-adapter';
 import { assignedObsIds, constructObs, voidObs } from '../../adapters/obs-adapter';
 import { assignedOrderIds } from '../../adapters/orders-adapter';
-import { createAttachment, findPatientsByIdentifier, savePatientIdentifier, saveProgramEnrollment } from '../../api';
+import {
+  createAttachment,
+  findPatientsByIdentifier,
+  savePatientIdentifier,
+  savePersonAttribute,
+  saveProgramEnrollment,
+} from '../../api';
 import { cloneRepeatField } from '../../components/repeat/helpers';
 import { ConceptTrue } from '../../constants';
 import { type FormContextProps } from '../../provider/form-provider';
@@ -18,6 +24,7 @@ import {
   type PatientIdentifier,
   type PatientProgram,
   type PatientProgramPayload,
+  type PersonAttribute,
 } from '../../types';
 import {
   getResourceUuid,
@@ -121,6 +128,19 @@ export function savePatientIdentifiers(patient: fhir.Patient, identifiers: Patie
   });
 }
 
+export function preparePersonAttributes(fields: FormField[]): PersonAttribute[] {
+  return fields
+    .filter((field) => field.type === 'personAttribute' && hasSubmission(field))
+    .map((field) => field.meta.submission.newValue)
+    .filter(isPersonAttributeValue);
+}
+
+export function savePersonAttributes(patient: fhir.Patient, attributes: PersonAttribute[]): Promise<unknown>[] {
+  return attributes.map((personAttribute) => {
+    return savePersonAttribute(personAttribute, patient.id);
+  });
+}
+
 export async function hasDuplicatePatientIdentifiers(
   patient: fhir.Patient,
   identifiers: PatientIdentifier[],
@@ -171,6 +191,15 @@ export async function hasDuplicatePatientIdentifiers(
     console.warn('Failed to check duplicate patient identifiers before submission.', error);
     return false;
   }
+}
+
+function isPersonAttributeValue(value: unknown): value is PersonAttribute {
+  return (
+    isPlainObject(value) &&
+    typeof value.value === 'string' &&
+    typeof value.attributeType === 'string' &&
+    (!('uuid' in value) || typeof value.uuid === 'string' || value.uuid === undefined)
+  );
 }
 
 export function preparePatientPrograms(

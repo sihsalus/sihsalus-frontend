@@ -1,28 +1,36 @@
-import { Button, Select, SelectItem, TextArea, TextInput, Tile } from '@carbon/react';
+import { Button, Select, SelectItem, TextArea, TextInput, Tile, Toggle } from '@carbon/react';
 import React, { useMemo, useState } from 'react';
 
-import type { DefinicionIndicadorForm, IndicadorFormValues, IndicadorUpdatePayload, Sexo, TipoDiagnostico } from '../api/types';
+import type {
+  DefinicionIndicadorForm,
+  IndicadorFormValues,
+  IndicadorUpdatePayload,
+  Sexo,
+  TipoDiagnostico,
+} from '../api/types';
+import styles from '../indicators-dashboard.module.scss';
 import DiagnosticoSearchSelector from './DiagnosticoSearchSelector';
 import LocationSearchSelector from './LocationSearchSelector';
 import OrdenSearchSelector from './OrdenSearchSelector';
-import styles from '../indicators-dashboard.module.scss';
 
 type FormMode = 'create' | 'edit' | 'version';
 
 interface IndicadorFormProps {
   mode: FormMode;
   defaultValues?: Partial<IndicadorFormValues>;
-  initialMetadata?: Pick<IndicadorUpdatePayload, 'nombre' | 'descripcion'>;
+  initialMetadata?: Pick<IndicadorUpdatePayload, 'nombre' | 'descripcion' | 'activo'>;
   isSubmitting?: boolean;
   serverError?: string | null;
-  onSubmit: (payload: { metadata: IndicadorUpdatePayload; definicion?: DefinicionIndicadorForm }) => Promise<void> | void;
+  onSubmit: (payload: {
+    metadata: IndicadorUpdatePayload;
+    definicion?: DefinicionIndicadorForm;
+  }) => Promise<void> | void;
 }
 
 const defaultValues: IndicadorFormValues = {
   nombre: '',
   descripcion: '',
   tipo: 'conteo_atenciones',
-  periodo: 'mes_actual',
   selectedLocations: [],
   minimoOcurrencias: '1',
   filtroClinico: 'ninguno',
@@ -59,9 +67,15 @@ function buildDefinicion(values: IndicadorFormValues): DefinicionIndicadorForm {
           minimo_ocurrencias: parseNumber(values.minimoOcurrencias) ?? 1,
           diagnosticos:
             values.filtroClinico === 'diagnosticos' && diagnosticoUuids.length
-              ? [{ concepto_uuids: diagnosticoUuids, tipo_diagnostico: (values.diagnosticoTipo || undefined) as TipoDiagnostico | undefined }]
+              ? [
+                  {
+                    concepto_uuids: diagnosticoUuids,
+                    tipo_diagnostico: (values.diagnosticoTipo || undefined) as TipoDiagnostico | undefined,
+                  },
+                ]
               : undefined,
-          ordenes: values.filtroClinico === 'ordenes' && ordenUuids.length ? [{ concepto_uuids: ordenUuids }] : undefined,
+          ordenes:
+            values.filtroClinico === 'ordenes' && ordenUuids.length ? [{ concepto_uuids: ordenUuids }] : undefined,
         }
       : null;
 
@@ -79,19 +93,26 @@ function buildDefinicion(values: IndicadorFormValues): DefinicionIndicadorForm {
 
   return {
     tipo: values.tipo,
-    periodo: values.periodo,
     evento,
     poblacion: hasPoblacion ? poblacion : undefined,
   };
 }
 
-const IndicadorForm: React.FC<IndicadorFormProps> = ({ mode, defaultValues: initialValues, initialMetadata, isSubmitting, serverError, onSubmit }) => {
+const IndicadorForm: React.FC<IndicadorFormProps> = ({
+  mode,
+  defaultValues: initialValues,
+  initialMetadata,
+  isSubmitting,
+  serverError,
+  onSubmit,
+}) => {
   const [values, setValues] = useState<IndicadorFormValues>({
     ...defaultValues,
     ...initialValues,
     nombre: initialMetadata?.nombre ?? initialValues?.nombre ?? '',
     descripcion: initialMetadata?.descripcion ?? initialValues?.descripcion ?? '',
   });
+  const [activo, setActivo] = useState<boolean>(initialMetadata?.activo ?? true);
   const [validationError, setValidationError] = useState<string | null>(null);
 
   const isEditMode = mode === 'edit';
@@ -128,10 +149,14 @@ const IndicadorForm: React.FC<IndicadorFormProps> = ({ mode, defaultValues: init
       return;
     }
 
-    const metadata = {
+    const metadata: IndicadorUpdatePayload = {
       nombre: (isVersionMode ? initialMetadata?.nombre : values.nombre)?.trim() ?? '',
       descripcion: (isVersionMode ? initialMetadata?.descripcion : values.descripcion)?.trim() || null,
     };
+
+    if (isEditMode) {
+      metadata.activo = activo;
+    }
 
     await onSubmit({
       metadata,
@@ -152,8 +177,28 @@ const IndicadorForm: React.FC<IndicadorFormProps> = ({ mode, defaultValues: init
             <p className={styles.sectionHint}>Nombre visible y descripción operativa del indicador.</p>
           </div>
           <div className={styles.formGrid}>
-            <TextInput id="nombre" labelText="Nombre" value={values.nombre} onChange={(event) => updateField('nombre', event.target.value)} disabled={isSubmitting} />
-            <TextArea id="descripcion" labelText="Descripción" value={values.descripcion} onChange={(event) => updateField('descripcion', event.target.value)} disabled={isSubmitting} />
+            <TextInput
+              id="nombre"
+              labelText="Nombre"
+              value={values.nombre}
+              onChange={(event) => updateField('nombre', event.target.value)}
+              disabled={isSubmitting}
+            />
+            <TextArea
+              id="descripcion"
+              labelText="Descripción"
+              value={values.descripcion}
+              onChange={(event) => updateField('descripcion', event.target.value)}
+              disabled={isSubmitting}
+            />
+            {isEditMode ? (
+              <Toggle
+                id="activo-toggle"
+                labelText={activo ? 'Activo' : 'Inactivo'}
+                toggled={activo}
+                onToggle={(toggled) => setActivo(toggled)}
+              />
+            ) : null}
           </div>
         </section>
       ) : null}
@@ -162,19 +207,18 @@ const IndicadorForm: React.FC<IndicadorFormProps> = ({ mode, defaultValues: init
         <>
           <section className={styles.formSectionCard}>
             <div className={styles.sectionHeader}>
-              <h3 className={styles.sectionTitle}>Tipo y periodo</h3>
-              <p className={styles.sectionHint}>Define qué se cuenta y la ventana temporal principal.</p>
+              <h3 className={styles.sectionTitle}>Tipo</h3>
+              <p className={styles.sectionHint}>Define qué se cuenta. Las mediciones son siempre mensuales.</p>
             </div>
             <div className={styles.formColumns}>
-              <Select id="tipo" labelText="Tipo" value={values.tipo} onChange={(event) => updateField('tipo', event.target.value as IndicadorFormValues['tipo'])}>
+              <Select
+                id="tipo"
+                labelText="Tipo"
+                value={values.tipo}
+                onChange={(event) => updateField('tipo', event.target.value as IndicadorFormValues['tipo'])}
+              >
                 <SelectItem value="conteo_atenciones" text="Conteo de atenciones" />
                 <SelectItem value="conteo_pacientes" text="Conteo de pacientes" />
-              </Select>
-              <Select id="periodo" labelText="Periodo" value={values.periodo} onChange={(event) => updateField('periodo', event.target.value as IndicadorFormValues['periodo'])}>
-                <SelectItem value="mes_actual" text="Mes actual" />
-                <SelectItem value="trimestre_actual" text="Trimestre actual" />
-                <SelectItem value="semestre_actual" text="Semestre actual" />
-                <SelectItem value="anual_actual" text="Año actual" />
               </Select>
             </div>
           </section>
@@ -182,27 +226,63 @@ const IndicadorForm: React.FC<IndicadorFormProps> = ({ mode, defaultValues: init
           <section className={styles.formSectionCard}>
             <div className={styles.sectionHeader}>
               <h3 className={styles.sectionTitle}>Atención</h3>
-              <p className={styles.sectionHint}>Acotá el origen clínico del cálculo: servicios, frecuencia mínima y filtro clínico.</p>
+              <p className={styles.sectionHint}>
+                Acotá el origen clínico del cálculo: servicios, frecuencia mínima y filtro clínico.
+              </p>
             </div>
             <div className={styles.formGrid}>
-              <LocationSearchSelector selectedItems={values.selectedLocations} onChange={(items) => updateField('selectedLocations', items)} />
-              <TextInput id="minimo-ocurrencias" labelText="Mínimo de ocurrencias" type="number" value={values.minimoOcurrencias} onChange={(event) => updateField('minimoOcurrencias', event.target.value)} />
+              <LocationSearchSelector
+                selectedItems={values.selectedLocations}
+                onChange={(items) => updateField('selectedLocations', items)}
+              />
+              <TextInput
+                id="minimo-ocurrencias"
+                labelText="Mínimo de ocurrencias"
+                type="number"
+                value={values.minimoOcurrencias}
+                onChange={(event) => updateField('minimoOcurrencias', event.target.value)}
+              />
             </div>
             <div className={styles.filterSwitches}>
-              <Button kind={values.filtroClinico === 'ninguno' ? 'primary' : 'secondary'} size="sm" type="button" onClick={() => updateField('filtroClinico', 'ninguno')}>
+              <Button
+                kind={values.filtroClinico === 'ninguno' ? 'primary' : 'secondary'}
+                size="sm"
+                type="button"
+                onClick={() => updateField('filtroClinico', 'ninguno')}
+              >
                 Sin filtro clínico
               </Button>
-              <Button kind={values.filtroClinico === 'diagnosticos' ? 'primary' : 'secondary'} size="sm" type="button" onClick={() => updateField('filtroClinico', 'diagnosticos')}>
+              <Button
+                kind={values.filtroClinico === 'diagnosticos' ? 'primary' : 'secondary'}
+                size="sm"
+                type="button"
+                onClick={() => updateField('filtroClinico', 'diagnosticos')}
+              >
                 Diagnósticos
               </Button>
-              <Button kind={values.filtroClinico === 'ordenes' ? 'primary' : 'secondary'} size="sm" type="button" onClick={() => updateField('filtroClinico', 'ordenes')}>
+              <Button
+                kind={values.filtroClinico === 'ordenes' ? 'primary' : 'secondary'}
+                size="sm"
+                type="button"
+                onClick={() => updateField('filtroClinico', 'ordenes')}
+              >
                 Órdenes
               </Button>
             </div>
             {values.filtroClinico === 'diagnosticos' ? (
               <div className={styles.formColumns}>
-                <DiagnosticoSearchSelector selectedItems={values.selectedDiagnosticos} onChange={(items) => updateField('selectedDiagnosticos', items)} />
-                <Select id="tipo-diagnostico" labelText="Tipo de diagnóstico" value={values.diagnosticoTipo} onChange={(event) => updateField('diagnosticoTipo', event.target.value as IndicadorFormValues['diagnosticoTipo'])}>
+                <DiagnosticoSearchSelector
+                  selectedItems={values.selectedDiagnosticos}
+                  onChange={(items) => updateField('selectedDiagnosticos', items)}
+                />
+                <Select
+                  id="tipo-diagnostico"
+                  labelText="Tipo de diagnóstico"
+                  value={values.diagnosticoTipo}
+                  onChange={(event) =>
+                    updateField('diagnosticoTipo', event.target.value as IndicadorFormValues['diagnosticoTipo'])
+                  }
+                >
                   <SelectItem value="" text="Sin especificar" />
                   <SelectItem value="definitivo" text="Definitivo" />
                   <SelectItem value="presuntivo" text="Presuntivo" />
@@ -210,7 +290,10 @@ const IndicadorForm: React.FC<IndicadorFormProps> = ({ mode, defaultValues: init
               </div>
             ) : null}
             {values.filtroClinico === 'ordenes' ? (
-              <OrdenSearchSelector selectedItems={values.selectedOrdenes} onChange={(items) => updateField('selectedOrdenes', items)} />
+              <OrdenSearchSelector
+                selectedItems={values.selectedOrdenes}
+                onChange={(items) => updateField('selectedOrdenes', items)}
+              />
             ) : null}
           </section>
 
@@ -220,7 +303,12 @@ const IndicadorForm: React.FC<IndicadorFormProps> = ({ mode, defaultValues: init
               <p className={styles.sectionHint}>Filtrá por sexo y rango etario si el indicador lo requiere.</p>
             </div>
             <div className={styles.populationLayout}>
-              <Select id="sexo" labelText="Sexo" value={values.sexo} onChange={(event) => updateField('sexo', event.target.value as IndicadorFormValues['sexo'])}>
+              <Select
+                id="sexo"
+                labelText="Sexo"
+                value={values.sexo}
+                onChange={(event) => updateField('sexo', event.target.value as IndicadorFormValues['sexo'])}
+              >
                 <SelectItem value="" text="Sin filtro" />
                 <SelectItem value="F" text="Femenino" />
                 <SelectItem value="M" text="Masculino" />
@@ -231,9 +319,27 @@ const IndicadorForm: React.FC<IndicadorFormProps> = ({ mode, defaultValues: init
                   <span className={styles.mutedText}>Completá solo lo necesario.</span>
                 </div>
                 <div className={styles.ageGrid}>
-                <TextInput id="min-anios" labelText="Edad mínima años" type="number" value={values.minAnios} onChange={(event) => updateField('minAnios', event.target.value)} />
-                <TextInput id="min-meses" labelText="Edad mínima meses" type="number" value={values.minMeses} onChange={(event) => updateField('minMeses', event.target.value)} />
-                <TextInput id="min-dias" labelText="Edad mínima días" type="number" value={values.minDias} onChange={(event) => updateField('minDias', event.target.value)} />
+                  <TextInput
+                    id="min-anios"
+                    labelText="Edad mínima años"
+                    type="number"
+                    value={values.minAnios}
+                    onChange={(event) => updateField('minAnios', event.target.value)}
+                  />
+                  <TextInput
+                    id="min-meses"
+                    labelText="Edad mínima meses"
+                    type="number"
+                    value={values.minMeses}
+                    onChange={(event) => updateField('minMeses', event.target.value)}
+                  />
+                  <TextInput
+                    id="min-dias"
+                    labelText="Edad mínima días"
+                    type="number"
+                    value={values.minDias}
+                    onChange={(event) => updateField('minDias', event.target.value)}
+                  />
                 </div>
               </div>
               <div className={styles.ageBlock}>
@@ -242,9 +348,27 @@ const IndicadorForm: React.FC<IndicadorFormProps> = ({ mode, defaultValues: init
                   <span className={styles.mutedText}>Se interpreta como límite superior del rango.</span>
                 </div>
                 <div className={styles.ageGrid}>
-                <TextInput id="max-anios" labelText="Edad máxima años" type="number" value={values.maxAnios} onChange={(event) => updateField('maxAnios', event.target.value)} />
-                <TextInput id="max-meses" labelText="Edad máxima meses" type="number" value={values.maxMeses} onChange={(event) => updateField('maxMeses', event.target.value)} />
-                <TextInput id="max-dias" labelText="Edad máxima días" type="number" value={values.maxDias} onChange={(event) => updateField('maxDias', event.target.value)} />
+                  <TextInput
+                    id="max-anios"
+                    labelText="Edad máxima años"
+                    type="number"
+                    value={values.maxAnios}
+                    onChange={(event) => updateField('maxAnios', event.target.value)}
+                  />
+                  <TextInput
+                    id="max-meses"
+                    labelText="Edad máxima meses"
+                    type="number"
+                    value={values.maxMeses}
+                    onChange={(event) => updateField('maxMeses', event.target.value)}
+                  />
+                  <TextInput
+                    id="max-dias"
+                    labelText="Edad máxima días"
+                    type="number"
+                    value={values.maxDias}
+                    onChange={(event) => updateField('maxDias', event.target.value)}
+                  />
                 </div>
               </div>
             </div>

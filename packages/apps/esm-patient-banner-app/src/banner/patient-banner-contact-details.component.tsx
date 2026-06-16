@@ -16,6 +16,7 @@ import { useEthnicIdentity } from '../hooks/useEthnicIdentity';
 import { usePatientAdditionalAttributes, usePatientContactAttributes } from '../hooks/usePatientAttributes';
 import { usePatientListsForPatient } from '../hooks/usePatientListsForPatient';
 import { useRelationships } from '../hooks/useRelationships';
+import { type Attribute } from '../types';
 import styles from './patient-banner-contact-details.module.scss';
 
 const contactDetailsLoadingTimeoutMs = 10000;
@@ -42,7 +43,28 @@ function useBoundedLoading(isLoading: boolean) {
   return isLoading && !hasTimedOut;
 }
 
+function DetailItem({ label, value }: { label: string; value: React.ReactNode }) {
+  if (value === null || value === undefined || value === '' || value === '--') {
+    return null;
+  }
+
+  return (
+    <li>
+      <span className={styles.itemLabel}>{label}:</span> {value}
+    </li>
+  );
+}
+
+function EmptyState({ message }: { message: string }) {
+  return <p className={styles.emptyState}>{message}</p>;
+}
+
+function getAttributeByTypeUuid(attributes: Array<Attribute>, uuid?: string) {
+  return uuid ? attributes.find(({ attributeType }) => attributeType?.uuid === uuid) : undefined;
+}
+
 const PatientLists: React.FC<{ patientUuid: string }> = ({ patientUuid }) => {
+  const { t } = useTranslation();
   const { cohorts = [], isLoading } = usePatientListsForPatient(patientUuid);
   const showLoading = useBoundedLoading(isLoading);
 
@@ -53,23 +75,20 @@ const PatientLists: React.FC<{ patientUuid: string }> = ({ patientUuid }) => {
       </p>
       {showLoading ? (
         <InlineLoading description={`${getCoreTranslation('loading', 'Loading')} ...`} role="progressbar" />
-      ) : (
-        <ul>
+      ) : cohorts?.length > 0 ? (
+        <ul className={styles.detailList}>
           {(() => {
-            if (cohorts?.length > 0) {
-              const sortedLists = cohorts.sort(
-                (a, b) => parseDate(a?.startDate).getTime() - parseDate(b?.startDate).getTime(),
-              );
-              const slicedLists = sortedLists.slice(0, 3);
-              return slicedLists?.map((cohort) => (
-                <li key={cohort.uuid}>
-                  <ConfigurableLink to={`${window.spaBase}/home/patient-lists/${cohort.uuid}`}>
-                    {cohort.name}
-                  </ConfigurableLink>
-                </li>
-              ));
-            }
-            return <li>--</li>;
+            const sortedLists = cohorts.sort(
+              (a, b) => parseDate(a?.startDate).getTime() - parseDate(b?.startDate).getTime(),
+            );
+            const slicedLists = sortedLists.slice(0, 3);
+            return slicedLists?.map((cohort) => (
+              <li key={cohort.uuid}>
+                <ConfigurableLink to={`${window.spaBase}/home/patient-lists/${cohort.uuid}`}>
+                  {cohort.name}
+                </ConfigurableLink>
+              </li>
+            ));
           })()}
           {cohorts.length > 3 && (
             <li>
@@ -81,12 +100,15 @@ const PatientLists: React.FC<{ patientUuid: string }> = ({ patientUuid }) => {
             </li>
           )}
         </ul>
+      ) : (
+        <EmptyState message={t('noPatientLists', 'No patient lists')} />
       )}
     </>
   );
 };
 
 const Address: React.FC<{ patientId: string }> = ({ patientId }) => {
+  const { t } = useTranslation();
   const { patient, isLoading } = usePatient(patientId);
   const address = patient?.address?.find((entry) => entry.use === 'home');
   const getAddressKey = (url: string) => url.split('#')[1];
@@ -98,55 +120,54 @@ const Address: React.FC<{ patientId: string }> = ({ patientId }) => {
 
   return (
     <>
-      <p className={styles.heading}>{getCoreTranslation('address', 'Address')}</p>
-      <ul>
-        {address ? (
-          Object.entries(address)
+      <p className={styles.heading}>{t('residence', 'Place of residence')}</p>
+      {address ? (
+        <ul className={styles.detailList}>
+          {Object.entries(address)
             .filter(([key]) => key !== 'id' && key !== 'use')
             .map(([key, value]) =>
               key === 'extension' ? (
-                address.extension?.[0]?.extension?.map((addressExtension, index) => (
-                  <li key={`address-${key}-${index}`}>
-                    {getCoreTranslation(
+                address.extension?.[0]?.extension?.map((addressExtension) => (
+                  <DetailItem
+                    key={`address-${key}-${addressExtension.url}`}
+                    label={getCoreTranslation(
                       getAddressKey(addressExtension.url) as CoreTranslationKey,
                       getAddressKey(addressExtension.url) as CoreTranslationKey,
                     )}
-                    : {addressExtension.valueString}
-                  </li>
+                    value={addressExtension.valueString}
+                  />
                 ))
               ) : (
-                <li key={`address-${key}`}>
-                  {getCoreTranslation(key as CoreTranslationKey, key)}: {value}
-                </li>
+                <DetailItem
+                  key={`address-${key}`}
+                  label={getCoreTranslation(key as CoreTranslationKey, key)}
+                  value={value}
+                />
               ),
-            )
-        ) : (
-          <li>--</li>
-        )}
-      </ul>
+            )}
+        </ul>
+      ) : (
+        <EmptyState message={t('noResidence', 'No residence recorded')} />
+      )}
     </>
   );
 };
 
 const Contact: React.FC<{ patientUuid: string }> = ({ patientUuid }) => {
   const { t } = useTranslation();
-  const { ethnicIdentityConceptUuid } = useConfig<ConfigObject>();
   const { isLoading: isLoadingAttributes, contactAttributes } = usePatientContactAttributes(patientUuid);
-  const { currentValue: ethnicIdentity, isLoading: isLoadingEthnicIdentity } = useEthnicIdentity(
-    patientUuid,
-    ethnicIdentityConceptUuid,
-  );
-  const showLoading = useBoundedLoading(isLoadingAttributes || isLoadingEthnicIdentity);
+  const showLoading = useBoundedLoading(isLoadingAttributes);
 
   const contacts = useMemo(
     () =>
       contactAttributes
-        ? contactAttributes.map((contact) => [
-            contact.attributeType.display
+        ? contactAttributes.map((contact) => ({
+            key: contact.uuid,
+            label: contact.attributeType.display
               ? getCoreTranslation(contact.attributeType.display as CoreTranslationKey, contact.attributeType.display)
               : '',
-            contact.value,
-          ])
+            value: getDisplayValue(contact.value),
+          }))
         : [],
     [contactAttributes],
   );
@@ -156,17 +177,14 @@ const Contact: React.FC<{ patientUuid: string }> = ({ patientUuid }) => {
       <p className={styles.heading}>{getCoreTranslation('contactDetails', 'Contact Details')}</p>
       {showLoading ? (
         <InlineLoading description={`${getCoreTranslation('loading', 'Loading')} ...`} role="progressbar" />
-      ) : (
-        <ul>
-          {contacts.map(([label, value], index) => (
-            <li key={`${label}-${value}-${index}`}>
-              {label}: {value}
-            </li>
+      ) : contacts.length > 0 ? (
+        <ul className={styles.detailList}>
+          {contacts.map(({ key, label, value }) => (
+            <DetailItem key={key} label={label} value={value} />
           ))}
-          <li>
-            {t('ethnicity', 'Ethnicity')}: {ethnicIdentity || '--'}
-          </li>
         </ul>
+      ) : (
+        <EmptyState message={t('noContactDetails', 'No contact details recorded')} />
       )}
     </>
   );
@@ -174,12 +192,12 @@ const Contact: React.FC<{ patientUuid: string }> = ({ patientUuid }) => {
 
 const getDisplayValue = (value: unknown): string => {
   if (value === null || value === undefined || value === '') {
-    return '--';
+    return '';
   }
 
   if (typeof value === 'object') {
     const displayableValue = value as { display?: string; name?: string; value?: string | number };
-    return String(displayableValue.display ?? displayableValue.name ?? displayableValue.value ?? '--');
+    return String(displayableValue.display ?? displayableValue.name ?? displayableValue.value ?? '');
   }
 
   return String(value);
@@ -187,12 +205,41 @@ const getDisplayValue = (value: unknown): string => {
 
 const PatientAdministrativeDetails: React.FC<{ patientUuid: string }> = ({ patientUuid }) => {
   const { t } = useTranslation();
+  const {
+    birthplaceAttributeTypeUuid,
+    ethnicIdentityAttributeTypeUuid,
+    ethnicIdentityConceptUuid,
+    occupationAttributeTypeUuid,
+  } = useConfig<ConfigObject>();
   const { additionalAttributes, identifiers, isLoading, person } = usePatientAdditionalAttributes(patientUuid);
-  const showLoading = useBoundedLoading(isLoading);
+  const { currentValue: ethnicIdentity, isLoading: isLoadingEthnicIdentity } = useEthnicIdentity(
+    patientUuid,
+    ethnicIdentityConceptUuid,
+    ethnicIdentityAttributeTypeUuid,
+  );
+  const showLoading = useBoundedLoading(isLoading || isLoadingEthnicIdentity);
   const gender = person?.gender
     ? getCoreTranslation(person.gender === 'M' ? 'male' : person.gender === 'F' ? 'female' : 'unknown', person.gender)
-    : '--';
-  const status = person ? (person.dead ? t('deceased', 'Deceased') : t('active', 'Active')) : '--';
+    : '';
+  const status = person ? (person.dead ? t('deceased', 'Deceased') : t('active', 'Active')) : '';
+  const birthplace = getDisplayValue(getAttributeByTypeUuid(additionalAttributes, birthplaceAttributeTypeUuid)?.value);
+  const occupation = getDisplayValue(getAttributeByTypeUuid(additionalAttributes, occupationAttributeTypeUuid)?.value);
+  const reservedAttributeTypeUuids = new Set([
+    birthplaceAttributeTypeUuid,
+    ethnicIdentityAttributeTypeUuid,
+    occupationAttributeTypeUuid,
+  ]);
+  const remainingAdditionalAttributes = additionalAttributes.filter(
+    ({ attributeType }) => !reservedAttributeTypeUuids.has(attributeType?.uuid),
+  );
+  const hasDemographics = Boolean(person?.age || person?.birthdate || gender || status || person?.deathDate);
+  const hasIdentifiers = identifiers?.length > 0;
+  const hasAdditionalDetails = Boolean(
+    ethnicIdentity ||
+      occupation ||
+      birthplace ||
+      remainingAdditionalAttributes.some((attribute) => getDisplayValue(attribute.value)),
+  );
 
   return (
     <>
@@ -200,73 +247,79 @@ const PatientAdministrativeDetails: React.FC<{ patientUuid: string }> = ({ patie
         <p className={styles.heading}>{t('demographics', 'Demographics')}</p>
         {showLoading ? (
           <InlineLoading description={`${getCoreTranslation('loading', 'Loading')} ...`} role="progressbar" />
-        ) : (
-          <ul>
-            <li>
-              {t('age', 'Age')}: {person?.age ?? '--'}
-            </li>
-            <li>
-              {t('dateOfBirth', 'Date of birth')}:{' '}
-              {person?.birthdate ? formatDate(parseDate(person.birthdate), { mode: 'wide', time: false }) : '--'}
-            </li>
-            <li>
-              {t('gender', 'Gender')}: {gender}
-            </li>
-            <li>
-              {t('status', 'Status')}: {status}
-            </li>
+        ) : hasDemographics ? (
+          <ul className={styles.detailList}>
+            <DetailItem label={t('age', 'Age')} value={person?.age} />
+            <DetailItem
+              label={t('dateOfBirth', 'Date of birth')}
+              value={person?.birthdate ? formatDate(parseDate(person.birthdate), { mode: 'wide', time: false }) : ''}
+            />
+            <DetailItem label={t('gender', 'Gender')} value={gender} />
+            <DetailItem label={t('status', 'Status')} value={status} />
             {person?.dead && (
-              <li>
-                {t('deathDate', 'Death date')}:{' '}
-                {person?.deathDate
-                  ? formatDate(parseDate(String(person.deathDate)), { mode: 'wide', time: false })
-                  : '--'}
-              </li>
+              <DetailItem
+                label={t('deathDate', 'Death date')}
+                value={
+                  person?.deathDate
+                    ? formatDate(parseDate(String(person.deathDate)), { mode: 'wide', time: false })
+                    : ''
+                }
+              />
             )}
           </ul>
+        ) : (
+          <EmptyState message={t('noDemographics', 'No demographics recorded')} />
         )}
       </div>
       <div className={styles.col}>
         <p className={styles.heading}>{t('identifiers', 'Identifiers')}</p>
         {showLoading ? (
           <InlineLoading description={`${getCoreTranslation('loading', 'Loading')} ...`} role="progressbar" />
-        ) : (
-          <ul>
-            {identifiers?.length > 0 ? (
-              identifiers.map((identifier) => (
-                <li key={identifier.uuid}>
-                  {identifier.identifierType?.name ?? t('identifier', 'Identifier')}: {identifier.identifier}
-                  {identifier.preferred ? ` (${t('preferred', 'Preferred')})` : ''}
-                </li>
-              ))
-            ) : (
-              <li>--</li>
-            )}
+        ) : hasIdentifiers ? (
+          <ul className={styles.detailList}>
+            {identifiers.map((identifier) => (
+              <DetailItem
+                key={identifier.uuid}
+                label={identifier.identifierType?.name ?? t('identifier', 'Identifier')}
+                value={
+                  <>
+                    {identifier.identifier}
+                    {identifier.preferred ? ` (${t('preferred', 'Preferred')})` : ''}
+                  </>
+                }
+              />
+            ))}
           </ul>
+        ) : (
+          <EmptyState message={t('noIdentifiers', 'No identifiers recorded')} />
         )}
       </div>
       <div className={styles.col}>
         <p className={styles.heading}>{t('additionalDetails', 'Additional details')}</p>
         {showLoading ? (
           <InlineLoading description={`${getCoreTranslation('loading', 'Loading')} ...`} role="progressbar" />
-        ) : (
-          <ul>
-            {additionalAttributes?.length > 0 ? (
-              additionalAttributes.map((attribute) => (
-                <li key={attribute.uuid}>
-                  {attribute.attributeType.display
+        ) : hasAdditionalDetails ? (
+          <ul className={styles.detailList}>
+            <DetailItem label={t('ethnicity', 'Ethnicity')} value={ethnicIdentity} />
+            <DetailItem label={t('occupation', 'Occupation')} value={occupation} />
+            <DetailItem label={t('birthplace', 'Place of birth')} value={birthplace} />
+            {remainingAdditionalAttributes.map((attribute) => (
+              <DetailItem
+                key={attribute.uuid}
+                label={
+                  attribute.attributeType.display
                     ? getCoreTranslation(
                         attribute.attributeType.display as CoreTranslationKey,
                         attribute.attributeType.display,
                       )
-                    : t('attribute', 'Attribute')}
-                  : {getDisplayValue(attribute.value)}
-                </li>
-              ))
-            ) : (
-              <li>--</li>
-            )}
+                    : t('attribute', 'Attribute')
+                }
+                value={getDisplayValue(attribute.value)}
+              />
+            ))}
           </ul>
+        ) : (
+          <EmptyState message={t('noAdditionalDetails', 'No additional details recorded')} />
         )}
       </div>
     </>
@@ -274,6 +327,7 @@ const PatientAdministrativeDetails: React.FC<{ patientUuid: string }> = ({ patie
 };
 
 const Relationships: React.FC<{ patientId: string }> = ({ patientId }) => {
+  const { t } = useTranslation();
   const { data: relationships, isLoading } = useRelationships(patientId);
   const showLoading = useBoundedLoading(isLoading);
 
@@ -282,32 +336,30 @@ const Relationships: React.FC<{ patientId: string }> = ({ patientId }) => {
       <p className={styles.heading}>{getCoreTranslation('relationships', 'Relationships')}</p>
       {showLoading ? (
         <InlineLoading description={`${getCoreTranslation('loading', 'Loading')} ...`} role="progressbar" />
-      ) : (
-        <ul>
-          {relationships && relationships.length > 0 ? (
-            relationships.map((relationship) => (
-              <li key={relationship.uuid} className={styles.relationship}>
-                <div>
-                  <ConfigurableLink to={`${window.spaBase}/patient/${relationship.relativeUuid}/chart`}>
-                    {relationship.display}
-                  </ConfigurableLink>
-                </div>
-                <div>{relationship.relationshipType}</div>
-                <div>
-                  {`${relationship.relativeAge ? relationship.relativeAge : '--'} ${
-                    relationship.relativeAge
-                      ? relationship.relativeAge === 1
+      ) : relationships && relationships.length > 0 ? (
+        <ul className={styles.detailList}>
+          {relationships.map((relationship) => (
+            <li key={relationship.uuid} className={styles.relationship}>
+              <div>
+                <ConfigurableLink to={`${window.spaBase}/patient/${relationship.relativeUuid}/chart`}>
+                  {relationship.display}
+                </ConfigurableLink>
+              </div>
+              <div>{relationship.relationshipType}</div>
+              <div>
+                {relationship.relativeAge
+                  ? `${relationship.relativeAge} ${
+                      relationship.relativeAge === 1
                         ? getCoreTranslation('yearAbbreviation', 'yr')
                         : getCoreTranslation('yearsAbbreviation', 'yrs')
-                      : ''
-                  }`}
-                </div>
-              </li>
-            ))
-          ) : (
-            <li>--</li>
-          )}
+                    }`
+                  : ''}
+              </div>
+            </li>
+          ))}
         </ul>
+      ) : (
+        <EmptyState message={t('noRelationships', 'No relationships recorded')} />
       )}
     </>
   );

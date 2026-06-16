@@ -1,6 +1,6 @@
 import { getDefaultsFromConfigSchema, useConfig, useSession } from '@openmrs/esm-framework';
 import { type DrugOrderBasketItem } from '@openmrs/esm-patient-common-lib';
-import { render, screen, waitFor } from '@testing-library/react';
+import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { mockDrugSearchResultApiData, mockFhirPatient, mockSessionDataResponse } from 'test-utils';
 import { useRequireOutpatientQuantity } from '../api/api';
@@ -83,6 +83,31 @@ function createNewOrderBasketItem(overrides?: Partial<DrugOrderBasketItem>): Dru
 }
 
 describe('DrugOrderForm - auto-calculation of dispense quantity', () => {
+  it('prevents scientific notation and signs in medication dose and duration inputs', () => {
+    renderDrugOrderForm(createNewOrderBasketItem());
+
+    const doseInput = screen.getByRole('spinbutton', { name: /dose/i });
+    for (const key of ['e', 'E', '+', '-', ',']) {
+      expect(fireEvent.keyDown(doseInput, { key })).toBe(false);
+    }
+    expect(fireEvent.keyDown(doseInput, { key: '.' })).toBe(true);
+    expect(
+      fireEvent.paste(doseInput, {
+        clipboardData: { getData: () => '1e2' },
+      }),
+    ).toBe(false);
+
+    const durationInput = screen.getByRole('spinbutton', { name: /duration/i });
+    for (const key of ['e', 'E', '+', '-', '.', ',']) {
+      expect(fireEvent.keyDown(durationInput, { key })).toBe(false);
+    }
+    expect(
+      fireEvent.paste(durationInput, {
+        clipboardData: { getData: () => '1e2' },
+      }),
+    ).toBe(false);
+  });
+
   it('renders and validates an incomplete order for a drug without dosage form', async () => {
     const user = userEvent.setup();
     const drugWithoutDosageForm = createNewOrderBasketItem({

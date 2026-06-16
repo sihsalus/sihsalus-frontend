@@ -6,6 +6,7 @@ import PatientBanner from './patient-banner.component';
 
 vi.mock('@openmrs/esm-framework', async () => ({
   ...(await vi.importActual('@openmrs/esm-framework')),
+  formatPartialDate: vi.fn(() => '07 May 1998'),
   getPatientName: vi.fn(),
   PatientBannerActionsMenu: () => <div>actions</div>,
   PatientBannerPatientInfo: () => <div>patient-info</div>,
@@ -74,7 +75,7 @@ describe('PatientBanner', () => {
     await user.click(screen.getByRole('button', { name: 'toggle-details' }));
 
     expect(screen.getByText('patient-photo')).toBeInTheDocument();
-    expect(screen.getByText('patient-info')).toBeInTheDocument();
+    expect(screen.getByText('Prueba Laboratorio Masculino')).toBeInTheDocument();
     expect(screen.getByText('actions')).toBeInTheDocument();
     expect(screen.getByText('contact-details')).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'toggle-less' })).toBeInTheDocument();

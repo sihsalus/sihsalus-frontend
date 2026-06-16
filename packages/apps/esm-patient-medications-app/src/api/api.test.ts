@@ -31,7 +31,8 @@ describe('prepMedicationOrderPostData', () => {
     commonMedicationName: 'Drug',
   } as DrugOrderBasketItem;
 
-  it('maps the form start date to the order activation date', () => {
+  it('maps a backdated start date to the order activation date', () => {
+    // baseOrder.startDate is a fixed date in the past relative to "now"
     expect(prepMedicationOrderPostData(baseOrder, 'patient-uuid', 'encounter-uuid', 'provider-uuid')).toEqual(
       expect.objectContaining({
         action: 'NEW',
@@ -41,5 +42,34 @@ describe('prepMedicationOrderPostData', () => {
         patient: 'patient-uuid',
       }),
     );
+  });
+
+  // Regression tests: orders starting today must not carry an explicit dateActivated.
+  // The basket sets startDate when the item is created, so by signing time that
+  // timestamp precedes the encounterDatetime and the backend rejects the order with
+  // "Date activated cannot be before that of the associated encounter".
+  it.each(['NEW', 'RENEW', 'REVISE'] as const)('omits dateActivated for %s orders starting today', (action) => {
+    const startOfToday = new Date();
+    startOfToday.setHours(0, 0, 0, 0);
+    const order = {
+      ...baseOrder,
+      action,
+      previousOrder: action === 'NEW' ? null : 'previous-order-uuid',
+      startDate: startOfToday,
+    } as DrugOrderBasketItem;
+
+    const result = prepMedicationOrderPostData(order, 'patient-uuid', 'encounter-uuid', 'provider-uuid');
+
+    expect(result.dateActivated).toBeUndefined();
+  });
+
+  it('sends an explicit dateActivated for orders backdated to a previous day', () => {
+    const startDate = new Date();
+    startDate.setDate(startDate.getDate() - 3);
+    const order = { ...baseOrder, startDate } as DrugOrderBasketItem;
+
+    const result = prepMedicationOrderPostData(order, 'patient-uuid', 'encounter-uuid', 'provider-uuid');
+
+    expect(result.dateActivated).toBe(toOmrsIsoString(startDate));
   });
 });

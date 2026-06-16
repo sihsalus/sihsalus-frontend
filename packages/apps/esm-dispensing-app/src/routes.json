@@ -14,6 +14,13 @@
   ],
   "extensions": [
     {
+      "name": "dispensing-link",
+      "slot": "app-menu-slot",
+      "component": "dispensingLink",
+      "online": true,
+      "offline": true
+    },
+    {
       "name": "patient-diagnoses",
       "component": "patientDiagnoses",
       "slot": "dispensing-condition-and-diagnoses",

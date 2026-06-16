@@ -33,6 +33,12 @@ import {
   Workspace2,
   type Workspace2DefinitionProps,
 } from '@openmrs/esm-framework';
+import {
+  type PlainNumberInputConstraints,
+  shouldPreventPlainNumberKey,
+  shouldPreventPlainNumberPaste,
+  validatePlainNumberInput,
+} from '@openmrs/esm-utils';
 import dayjs from 'dayjs';
 import React, { useContext, useEffect, useState } from 'react';
 import { Controller, useController, useForm } from 'react-hook-form';
@@ -62,6 +68,27 @@ import {
 } from './appointments-form.resource';
 import styles from './appointments-form.scss';
 
+const preventInvalidIntegerKey =
+  (constraints: PlainNumberInputConstraints) => (event: React.KeyboardEvent<HTMLInputElement>) => {
+    if (event.ctrlKey || event.metaKey || event.altKey) {
+      return;
+    }
+
+    if (shouldPreventPlainNumberKey(event.key, constraints)) {
+      event.preventDefault();
+    }
+  };
+
+const preventInvalidIntegerPaste =
+  (constraints: PlainNumberInputConstraints) => (event: React.ClipboardEvent<HTMLInputElement>) => {
+    if (shouldPreventPlainNumberPaste(event.clipboardData.getData('text'), constraints)) {
+      event.preventDefault();
+    }
+  };
+
+const getIntegerValue = (value: string | number, constraints: PlainNumberInputConstraints) =>
+  validatePlainNumberInput(value, constraints).parsedValue ?? null;
+
 function getConflictErrorMessage(
   responseData: Record<string, unknown> | null | undefined,
   context: string,
@@ -90,6 +117,10 @@ interface AppointmentsFormProps {
   context?: string;
   workspaceTitle?: string;
 }
+
+// MINSA appointment services are configured without a default `durationMins`,
+// so new appointments fall back to this duration until the user overrides it.
+const DEFAULT_APPOINTMENT_DURATION_MINUTES = 30;
 
 const time12HourFormatRegexPattern = '^(1[0-2]|0?[1-9]):[0-5][0-9]$';
 
@@ -151,7 +182,7 @@ function resolveAppointmentFormDefaults(
     defaultDuration:
       appointment?.startDateTime && appointment?.endDateTime
         ? dayjs(appointment.endDateTime).diff(dayjs(appointment.startDateTime), 'minutes')
-        : undefined,
+        : DEFAULT_APPOINTMENT_DURATION_MINUTES,
     defaultRecurringPatternType: (recurringPattern?.type || 'DAY') as 'DAY' | 'WEEK',
     defaultRecurringPatternPeriod: recurringPattern?.period || 1,
     defaultRecurringPatternDaysOfWeek: recurringPattern?.daysOfWeek || [],
@@ -604,10 +635,10 @@ const AppointmentsForm: React.FC<
                     onBlur={onBlur}
                     onChange={(event) => {
                       if (context === 'creating') {
-                        setValue(
-                          'duration',
-                          services?.find((service) => service.name === event.target.value)?.durationMins,
-                        );
+                        const selectedServiceDuration = services?.find(
+                          (service) => service.name === event.target.value,
+                        )?.durationMins;
+                        setValue('duration', selectedServiceDuration ?? DEFAULT_APPOINTMENT_DURATION_MINUTES);
                       } else if (context === 'editing') {
                         const previousServiceDuration = services?.find(
                           (service) => service.name === getValues('selectedService'),
@@ -747,9 +778,18 @@ const AppointmentsForm: React.FC<
                           invalidText={t('invalidNumber', 'Number is not valid')}
                           size="md"
                           value={value}
+                          onKeyDown={preventInvalidIntegerKey({ integer: true, max: 356, min: 1, nonNegative: true })}
+                          onPaste={preventInvalidIntegerPaste({
+                            integer: true,
+                            max: 356,
+                            min: 1,
+                            nonNegative: true,
+                          })}
                           onBlur={onBlur}
                           onChange={(_event, { value: nextValue }) => {
-                            onChange(typeof nextValue === 'string' ? Number(nextValue) : nextValue);
+                            onChange(
+                              getIntegerValue(nextValue, { integer: true, max: 356, min: 1, nonNegative: true }),
+                            );
                           }}
                         />
                       )}
@@ -1034,8 +1074,14 @@ function TimeAndDuration({ t, watch: _watch, control, services: _services, error
               max={1440}
               min={0}
               onBlur={onBlur}
+              onKeyDown={preventInvalidIntegerKey({ integer: true, max: 1440, min: 0, nonNegative: true })}
+              onPaste={preventInvalidIntegerPaste({ integer: true, max: 1440, min: 0, nonNegative: true })}
               onChange={(_event, { value: nextValue }) =>
-                onChange(nextValue === '' || nextValue === undefined ? null : Number(nextValue))
+                onChange(
+                  nextValue === '' || nextValue === undefined
+                    ? null
+                    : getIntegerValue(nextValue, { integer: true, max: 1440, min: 0, nonNegative: true }),
+                )
               }
               ref={ref}
               size="md"

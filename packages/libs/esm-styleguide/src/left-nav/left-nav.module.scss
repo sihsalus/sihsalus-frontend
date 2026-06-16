@@ -38,9 +38,10 @@
 
   // Left nav menu item
   :global(.cds--side-nav__link) {
+    align-items: center;
     color: $text-02;
     @include type.type-style("heading-compact-01");
-    padding: 0 1rem;
+    padding: layout.$spacing-03 1rem;
 
     &:focus,
     &:hover {
@@ -53,12 +54,46 @@
       border-inline-start: layout.$spacing-02 solid var(--brand-01);
       background-color: $ui-03;
       outline: none;
-      padding: 0 layout.$spacing-04;
+      padding: layout.$spacing-03 layout.$spacing-04;
     }
   }
 
   :global(.cds--side-nav__menu a.cds--side-nav__link) {
     padding-inline-start: layout.$spacing-04;
+  }
+
+  :global(.sihsalus-side-nav__item) {
+    display: flex;
+    align-items: center;
+    gap: layout.$spacing-04;
+    width: 100%;
+    min-width: 0;
+  }
+
+  :global(.sihsalus-side-nav__icon) {
+    inline-size: layout.$spacing-05;
+    block-size: layout.$spacing-05;
+    flex: 0 0 layout.$spacing-05;
+    color: $text-02;
+    display: block;
+  }
+
+  :global(.sihsalus-side-nav__text) {
+    display: block;
+    min-width: 0;
+    max-width: 12rem;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    transition:
+      opacity 300ms ease,
+      max-width 300ms ease;
+  }
+
+  :global(.active-left-nav-link .sihsalus-side-nav__icon),
+  :global(.cds--side-nav__link:hover .sihsalus-side-nav__icon),
+  :global(.cds--side-nav__link:focus .sihsalus-side-nav__icon) {
+    color: var(--brand-01);
   }
 
   &:global(.cds--side-nav--collapsed) {
@@ -102,13 +137,15 @@
 /* Desktop */
 :global(.omrs-breakpoint-gt-tablet) {
   :global(.cds--side-nav__link) {
-    height: layout.$spacing-07;
+    min-height: layout.$spacing-07;
+    height: auto;
   }
 }
 
 /* Tablet */
 :global(.omrs-breakpoint-lt-desktop) {
   :global(.cds--side-nav__link) {
-    height: layout.$spacing-09;
+    min-height: layout.$spacing-09;
+    height: auto;
   }
 }

@@ -1,0 +1,92 @@
+{
+  "$schema": "https://json.openmrs.org/routes.schema.json",
+  "backendDependencies": {
+    "fhir2": ">=1.2",
+    "webservices.rest": ">=2.2.0"
+  },
+  "extensions": [
+    {
+      "name": "vaccination-schedule-app-menu-item",
+      "slot": "app-menu-item-slot",
+      "component": "vaccinationScheduleAppMenuItem",
+      "order": 35,
+      "online": true,
+      "offline": true,
+      "privileges": "app:immunization.edit"
+    },
+    {
+      "name": "vacunacion-overview-widget",
+      "component": "immunizationsOverview",
+      "order": 8,
+      "privileges": "app:immunization"
+    },
+    {
+      "name": "vacunacion-detailed-history-card",
+      "component": "immunizationHistorySummary",
+      "slot": "patient-chart-vacunacion-dashboard-slot",
+      "meta": {
+        "fullWidth": true
+      }
+    },
+    {
+      "name": "vacunacion-details-widget",
+      "component": "immunizationsDetailedSummary",
+      "slot": "patient-chart-vacunacion-dashboard-slot",
+      "meta": {
+        "fullWidth": true
+      }
+    },
+    {
+      "name": "vacunacion-summary-dashboard",
+      "component": "immunizationsDashboardLink",
+      "slot": "patient-chart-dashboard-slot",
+      "privileges": "app:immunization",
+      "meta": {
+        "slot": "patient-chart-vacunacion-dashboard-slot",
+        "path": "Vacunacion"
+      },
+      "order": 9
+    }
+  ],
+  "pages": [
+    {
+      "name": "vaccine-scheduling-builder-page",
+      "component": "vaccineSchedulingBuilderPage",
+      "route": "vaccine-scheduling-builder",
+      "online": true,
+      "offline": false
+    }
+  ],
+  "modals": [
+    {
+      "name": "vacunacion-delete-confirmation-modal",
+      "component": "deleteImmunizationConfirmationModal"
+    },
+    {
+      "name": "immunization-delete-confirmation-modal",
+      "component": "deleteImmunizationConfirmationModal"
+    }
+  ],
+  "workspaces2": [
+    {
+      "name": "vacunacion-form-workspace",
+      "component": "immunizationFormWorkspace",
+      "window": "vacunacion-form-window"
+    },
+    {
+      "name": "immunization-form-workspace",
+      "component": "immunizationFormWorkspace",
+      "window": "vacunacion-form-window"
+    }
+  ],
+  "workspaceWindows2": [
+    {
+      "name": "vacunacion-form-window",
+      "group": "patient-chart"
+    },
+    {
+      "name": "immunization-form-window",
+      "group": "patient-chart"
+    }
+  ]
+}

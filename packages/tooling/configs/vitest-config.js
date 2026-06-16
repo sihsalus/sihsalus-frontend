@@ -56,6 +56,7 @@ export function defineWorkspaceVitestConfig(config = {}) {
           environment: 'happy-dom',
           clearMocks: true,
           globals: true,
+          reporters: ['dot'],
           css: {
             modules: {
               classNameStrategy: 'non-scoped',

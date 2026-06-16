@@ -7,7 +7,7 @@ import {
   useLocations,
   useSession,
 } from '@openmrs/esm-framework';
-import { screen, waitFor } from '@testing-library/react';
+import { fireEvent, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import {
   mockLocations,
@@ -129,6 +129,47 @@ describe('AppointmentForm', () => {
     expect(screen.getByRole('textbox', { name: /time/i })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: /discard/i })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: /save and close/i })).toBeInTheDocument();
+  });
+
+  it('defaults the duration to 30 minutes for a new appointment, even after picking a service without durationMins', async () => {
+    const user = userEvent.setup();
+
+    // MINSA services come back without a durationMins, so the fallback must hold.
+    const servicesWithoutDuration = [
+      { uuid: 'svc-no-duration-uuid', name: 'Atención ambulatoria por enfermera(o)', durationMins: null },
+    ];
+    mockOpenmrsFetch.mockResolvedValue({ data: servicesWithoutDuration } as unknown as FetchResponse);
+
+    renderWithSwr(<AppointmentForm {...defaultProps} />);
+
+    await waitForLoadingToFinish();
+
+    const durationInput = screen.getByRole('spinbutton', { name: /duration/i });
+    expect(durationInput).toHaveValue(30);
+
+    // Picking a service whose durationMins is null keeps the 30-minute fallback.
+    await user.selectOptions(screen.getByRole('combobox', { name: /select a service/i }), [
+      'Atención ambulatoria por enfermera(o)',
+    ]);
+    expect(durationInput).toHaveValue(30);
+  });
+
+  it('prevents scientific notation, signs, and decimals in appointment duration', async () => {
+    mockOpenmrsFetch.mockResolvedValue({ data: mockUseAppointmentServiceData } as unknown as FetchResponse);
+
+    renderWithSwr(<AppointmentForm {...defaultProps} />);
+
+    await waitForLoadingToFinish();
+
+    const durationInput = screen.getByRole('spinbutton', { name: /duration/i });
+    for (const key of ['e', 'E', '+', '-', '.', ',']) {
+      expect(fireEvent.keyDown(durationInput, { key })).toBe(false);
+    }
+    expect(
+      fireEvent.paste(durationInput, {
+        clipboardData: { getData: () => '1e2' },
+      }),
+    ).toBe(false);
   });
 
   it('closes the workspace when the cancel button is clicked', async () => {

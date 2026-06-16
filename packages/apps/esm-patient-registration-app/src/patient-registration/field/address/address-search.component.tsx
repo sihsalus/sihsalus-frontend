@@ -5,12 +5,21 @@ import { useTranslation } from 'react-i18next';
 import { moduleName } from '../../../constants';
 import { useAddressHierarchy } from './address-hierarchy.resource';
 import styles from './address-search.scss';
+import { type AddressFieldDefinition } from './address-types';
 
 interface AddressSearchComponentProps {
-  addressLayout: Array<any>;
+  addressLayout: Array<AddressFieldDefinition>;
+  fieldPrefix?: string;
+  labelKey?: string;
+  labelDefault?: string;
 }
 
-const AddressSearchComponent: React.FC<AddressSearchComponentProps> = ({ addressLayout }) => {
+const AddressSearchComponent: React.FC<AddressSearchComponentProps> = ({
+  addressLayout,
+  fieldPrefix = 'address',
+  labelKey = 'addressHeader',
+  labelDefault = 'Address',
+}) => {
   const { t } = useTranslation(moduleName);
   const separator = ' > ';
   const searchBox = useRef(null);
@@ -53,7 +62,7 @@ const AddressSearchComponent: React.FC<AddressSearchComponentProps> = ({ address
     if (address) {
       const values = address.split(separator);
       addressLayout.forEach(({ name }, index) => {
-        setFieldValue(`address.${name}`, values?.[index] ?? '', false);
+        setFieldValue(`${fieldPrefix}.${name}`, values?.[index] ?? '', false);
       });
       setSearchString('');
       setDebouncedSearchString('');
@@ -74,6 +83,9 @@ const AddressSearchComponent: React.FC<AddressSearchComponentProps> = ({ address
 
   return (
     <div className={styles.autocomplete} ref={wrapper}>
+      <span className={styles.searchLabel}>
+        {t(labelKey, labelDefault)} ({t('optional', 'optional')})
+      </span>
       <Search
         onChange={handleInputChange}
         onKeyDown={(e) => {
@@ -95,9 +107,11 @@ const AddressSearchComponent: React.FC<AddressSearchComponentProps> = ({ address
           ) : error ? (
             <li className={styles.noResults}>{t('errorFetchingAddresses', 'Error fetching address results')}</li>
           ) : addressOptions.length > 0 ? (
-            addressOptions.map((address, index) => (
-              <li key={index} onClick={() => handleChange(address)}>
-                {address}
+            addressOptions.map((address) => (
+              <li key={address}>
+                <button type="button" className={styles.suggestionButton} onClick={() => handleChange(address)}>
+                  {address}
+                </button>
               </li>
             ))
           ) : (

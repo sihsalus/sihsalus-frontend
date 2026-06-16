@@ -10,12 +10,31 @@ import styles from '../field.scss';
 import { useOrderedAddressHierarchyLevels } from './address-hierarchy.resource';
 import AddressHierarchyLevels from './address-hierarchy-levels.component';
 import AddressSearchComponent from './address-search.component';
+import { type AddressFieldDefinition } from './address-types';
 
 const peruAddressDefaults = {
   country: 'Perú',
 };
 
-export const AddressComponent: React.FC = () => {
+interface AddressComponentProps {
+  applyDefaults?: boolean;
+  fieldPrefix?: 'address' | 'birthAddress';
+  forceOptionalFields?: boolean;
+  headingDefault?: string;
+  headingKey?: string;
+  searchLabelDefault?: string;
+  searchLabelKey?: string;
+}
+
+export const AddressComponent: React.FC<AddressComponentProps> = ({
+  applyDefaults = true,
+  fieldPrefix = 'address',
+  forceOptionalFields = false,
+  headingDefault = 'Address',
+  headingKey = 'addressHeader',
+  searchLabelDefault = 'Address',
+  searchLabelKey = 'addressHeader',
+}) => {
   const selected = '';
   const { addressTemplate, addressTemplateError, isLoadingAddressTemplate } = useContext(ResourcesContext);
   const addressLayout = useMemo(() => {
@@ -48,29 +67,49 @@ export const AddressComponent: React.FC = () => {
   } = config;
 
   const { inEditMode, setFieldValue, values } = useContext(PatientRegistrationContext);
-  const { orderedFields, isLoadingFieldOrder, errorFetchingFieldOrder } = useOrderedAddressHierarchyLevels();
+  const addressValues = values[fieldPrefix] ?? {};
+  const { orderedFields, requiredFields, isLoadingFieldOrder, errorFetchingFieldOrder } =
+    useOrderedAddressHierarchyLevels();
   const hasAddressTemplate = !!addressTemplate?.lines?.length;
   const isAddressTemplateLoading =
     isLoadingAddressTemplate ||
     (isLoadingAddressTemplate === undefined && !addressTemplateError && !hasAddressTemplate);
+  const addressFields = useMemo<Array<AddressFieldDefinition>>(
+    () =>
+      addressLayout.map((field) => ({
+        ...field,
+        required:
+          !forceOptionalFields &&
+          (field.required || (addressHierarchyEnabled && (requiredFields?.has(field.name) ?? false))),
+      })),
+    [addressHierarchyEnabled, addressLayout, forceOptionalFields, requiredFields],
+  );
 
   useEffect(() => {
-    if (!addressLayout.length) {
+    if (!applyDefaults || !addressFields.length) {
       return;
     }
 
-    const availableAddressFields = new Set<string>(addressLayout.map((field) => field.name));
+    const availableAddressFields = new Set<string>(addressFields.map((field) => field.name));
     const defaults = {
       ...(inEditMode ? {} : peruAddressDefaults),
       ...(addressTemplate?.elementDefaults ?? {}),
     };
 
     Object.entries(defaults).forEach(([name, defaultValue]) => {
-      if (availableAddressFields.has(name) && defaultValue && !Object.hasOwn(values.address ?? {}, name)) {
-        setFieldValue(`address.${name}`, defaultValue);
+      if (availableAddressFields.has(name) && defaultValue && !Object.hasOwn(addressValues, name)) {
+        setFieldValue(`${fieldPrefix}.${name}`, defaultValue);
       }
     });
-  }, [addressLayout, addressTemplate?.elementDefaults, inEditMode, setFieldValue, values.address]);
+  }, [
+    addressFields,
+    addressTemplate?.elementDefaults,
+    addressValues,
+    applyDefaults,
+    fieldPrefix,
+    inEditMode,
+    setFieldValue,
+  ]);
 
   const orderedAddressFields = useMemo(() => {
     if (isLoadingFieldOrder || errorFetchingFieldOrder) {
@@ -78,21 +117,21 @@ export const AddressComponent: React.FC = () => {
     }
 
     if (!orderedFields?.length) {
-      return addressLayout;
+      return addressFields;
     }
 
     const orderMap = Object.fromEntries(orderedFields.map((field, indx) => [field, indx]));
 
-    return [...addressLayout].sort(
+    return [...addressFields].sort(
       (existingField1, existingField2) =>
         (orderMap[existingField1.name] ?? Number.MAX_SAFE_INTEGER) -
         (orderMap[existingField2.name] ?? Number.MAX_SAFE_INTEGER),
     );
-  }, [isLoadingFieldOrder, errorFetchingFieldOrder, orderedFields, addressLayout]);
+  }, [isLoadingFieldOrder, errorFetchingFieldOrder, orderedFields, addressFields]);
 
   if (isAddressTemplateLoading) {
     return (
-      <AddressComponentContainer>
+      <AddressComponentContainer headingDefault={headingDefault} headingKey={headingKey}>
         <div role="progressbar">
           <SkeletonText />
         </div>
@@ -102,7 +141,7 @@ export const AddressComponent: React.FC = () => {
 
   if (!hasAddressTemplate) {
     return (
-      <AddressComponentContainer>
+      <AddressComponentContainer headingDefault={headingDefault} headingKey={headingKey}>
         <InlineNotification
           style={{ margin: '0', minWidth: '100%' }}
           kind={addressTemplateError ? 'error' : 'warning'}
@@ -119,13 +158,13 @@ export const AddressComponent: React.FC = () => {
 
   if (!addressHierarchyEnabled || !isOnline) {
     return (
-      <AddressComponentContainer>
-        {addressLayout.map((attributes, index) => (
+      <AddressComponentContainer headingDefault={headingDefault} headingKey={headingKey}>
+        {addressFields.map((attributes) => (
           <Input
-            key={`combo_input_${index}`}
-            name={`address.${attributes.name}`}
+            key={`${fieldPrefix}_input_${attributes.name}`}
+            name={`${fieldPrefix}.${attributes.name}`}
             labelText={t(attributes.label)}
-            id={attributes.name}
+            id={`${fieldPrefix}.${attributes.name}`}
             value={selected}
             required={attributes.required}
           />
@@ -136,7 +175,7 @@ export const AddressComponent: React.FC = () => {
 
   if (isLoadingFieldOrder) {
     return (
-      <AddressComponentContainer>
+      <AddressComponentContainer headingDefault={headingDefault} headingKey={headingKey}>
         <SkeletonText />
       </AddressComponentContainer>
     );
@@ -144,7 +183,7 @@ export const AddressComponent: React.FC = () => {
 
   if (errorFetchingFieldOrder) {
     return (
-      <AddressComponentContainer>
+      <AddressComponentContainer headingDefault={headingDefault} headingKey={headingKey}>
         <InlineNotification
           style={{ margin: '0', minWidth: '100%' }}
           kind="error"
@@ -156,17 +195,24 @@ export const AddressComponent: React.FC = () => {
   }
 
   return (
-    <AddressComponentContainer>
-      {useQuickSearch && <AddressSearchComponent addressLayout={orderedAddressFields} />}
+    <AddressComponentContainer headingDefault={headingDefault} headingKey={headingKey}>
+      {useQuickSearch && (
+        <AddressSearchComponent
+          addressLayout={orderedAddressFields}
+          fieldPrefix={fieldPrefix}
+          labelDefault={searchLabelDefault}
+          labelKey={searchLabelKey}
+        />
+      )}
       {searchAddressByLevel ? (
-        <AddressHierarchyLevels orderedAddressFields={orderedAddressFields} />
+        <AddressHierarchyLevels orderedAddressFields={orderedAddressFields} fieldPrefix={fieldPrefix} />
       ) : (
-        orderedAddressFields.map((attributes, index) => (
+        orderedAddressFields.map((attributes) => (
           <Input
-            key={`combo_input_${index}`}
-            name={`address.${attributes.name}`}
+            key={`${fieldPrefix}_input_${attributes.name}`}
+            name={`${fieldPrefix}.${attributes.name}`}
             labelText={t(attributes.label)}
-            id={attributes.name}
+            id={`${fieldPrefix}.${attributes.name}`}
             value={selected}
             required={attributes.required}
           />
@@ -176,11 +222,15 @@ export const AddressComponent: React.FC = () => {
   );
 };
 
-const AddressComponentContainer: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+const AddressComponentContainer: React.FC<{
+  children: React.ReactNode;
+  headingDefault: string;
+  headingKey: string;
+}> = ({ children, headingDefault, headingKey }) => {
   const { t } = useTranslation(moduleName);
   return (
     <div className={styles.fullWidthInDesktopView}>
-      <h4 className={styles.productiveHeading02Light}>{t('addressHeader', 'Address')}</h4>
+      <h4 className={styles.productiveHeading02Light}>{t(headingKey, headingDefault)}</h4>
       <div className={styles.addressFieldGrid}>{children}</div>
     </div>
   );

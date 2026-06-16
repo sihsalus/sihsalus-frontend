@@ -26,11 +26,14 @@ export async function postOrdersOnNewEncounter(
   const now = new Date();
   const visitStartDate = activeVisit?.startDatetime ? parseDate(activeVisit.startDatetime) : null;
   const visitEndDate = activeVisit?.stopDatetime ? parseDate(activeVisit.stopDatetime) : null;
-  let encounterDate: Date;
+  let encounterDate: Date | null;
   const visitIsCurrentlyActive =
     isValidDate(visitStartDate) && visitStartDate < now && (!isValidDate(visitEndDate) || visitEndDate > now);
   if (!activeVisit || visitIsCurrentlyActive) {
-    encounterDate = now;
+    // Omit the encounterDatetime so the server defaults it to its own "now". A
+    // client-side timestamp can land after the server-defaulted dateActivated of the
+    // embedded orders, failing the dateActivated >= encounterDatetime validation.
+    encounterDate = null;
   } else {
     console.warn(
       'postOrdersOnNewEncounter received an active visit that is not currently active. This is a programming error. Attempting to place the order using the visit start date.',
@@ -56,7 +59,7 @@ export async function postOrdersOnNewEncounter(
     patient: patientUuid,
     location: sessionLocationUuid,
     encounterType: orderEncounterType,
-    encounterDatetime: encounterDate,
+    ...(encounterDate ? { encounterDatetime: encounterDate } : {}),
     visit: activeVisit?.uuid,
     obs: [],
     orders,

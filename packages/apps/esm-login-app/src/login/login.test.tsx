@@ -9,7 +9,6 @@ import {
 import { screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { Route, Routes } from 'react-router-dom';
-
 import { mockConfig } from '../../../../test-utils/mocks/login-config.mock';
 import renderWithRouter from '../test-helpers/render-with-router';
 
@@ -20,6 +19,9 @@ const mockLogin = vi.mocked(refetchCurrentUser);
 const mockUseConfig = vi.mocked(useConfig);
 const mockUseConnectivity = vi.mocked(useConnectivity);
 const mockUseSession = vi.mocked(useSession);
+
+const mockBuildInfo = { version: '1.2.3', gitSha: 'abc1234', buildTime: '2026-06-04T00:00:00Z' };
+const openmrsSpaBasePlaceholder = '$' + '{openmrsSpaBase}';
 
 const LoginRoutes = () => (
   <Routes>
@@ -48,9 +50,15 @@ describe('Login', () => {
     });
     mockUseSession.mockReturnValue({ authenticated: false, sessionId: '123' });
     mockUseConfig.mockReturnValue(mockConfig);
+
+    globalThis.fetch = vi.fn((input: RequestInfo | URL) =>
+      String(input).endsWith('build-info.json')
+        ? Promise.resolve({ ok: true, json: () => Promise.resolve(mockBuildInfo) } as Response)
+        : Promise.resolve({ ok: false, json: () => Promise.resolve(null) } as Response),
+    ) as typeof fetch;
   });
 
-  it('renders the login form', () => {
+  it('renders the login form', async () => {
     renderWithRouter(
       Login,
       {},
@@ -59,9 +67,12 @@ describe('Login', () => {
       },
     );
 
-    expect(screen.getAllByRole('img', { name: /Sihsalus logo/i })).toHaveLength(1);
+    const [openmrsLogo] = screen.getAllByRole('img', { name: /OpenMRS logo/i });
+    expect(openmrsLogo).toHaveAttribute('src', '/openmrs/spa/logos/logo-openmrs.svg');
     expect(screen.getByText(/Sihsalus/i)).toBeInTheDocument();
     expect(screen.queryByAltText(/^logo$/i)).not.toBeInTheDocument();
+    // Version + short SHA are fetched asynchronously from build-info.json
+    expect(await screen.findByText(/Frontend v1\.2\.3 · abc1234/)).toBeInTheDocument();
     screen.getByRole('textbox', { name: /Username/i });
     screen.getByRole('button', { name: /Continue/i });
   });
@@ -379,7 +390,7 @@ describe('Login', () => {
   it('interpolates relative background image paths into CSS custom properties', () => {
     mockUseConfig.mockReturnValue({
       ...mockConfig,
-      background: { image: '${openmrsSpaBase}/assets/bg.jpg', color: '' },
+      background: { image: `${openmrsSpaBasePlaceholder}/assets/bg.jpg`, color: '' },
     });
 
     renderWithRouter(
@@ -393,7 +404,7 @@ describe('Login', () => {
 
     const bgImage = root.style.getPropertyValue('--login-bg-image');
     expect(bgImage).toContain('/openmrs/spa/assets/bg.jpg');
-    expect(bgImage).not.toContain('${openmrsSpaBase}');
+    expect(bgImage).not.toContain(openmrsSpaBasePlaceholder);
     expect(root.className).toMatch(/containerWithImage/);
   });
 

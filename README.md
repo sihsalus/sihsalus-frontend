@@ -1,4 +1,4 @@
-# SIH Salus ESM
+# SIH Salus Frontend
 
 Turborepo-powered monorepo for the **SIH Salus Hospital Information System** — an offline-oriented, FHIR-aware and compliance-oriented frontend serving ~30,000 inhabitants across 112 native Amazonian communities along 500+ km of the Napo River (Peru).
 
@@ -6,7 +6,7 @@ Built on [OpenMRS 3.x](https://openmrs.org/) with the single-spa microfrontend a
 
 This repository was developed by the **Pontificia Universidad Catolica del Peru (PUCP)** through the **Grupo de Investigacion y Desarrollo de Ingenieria de Software (GIDIS)**.
 
-Contact: `gonzalo.galvezc@pucp.edu.pe`
+Contact: `sihsalus@pucp.edu.pe`
 
 ## Prerequisites
 
@@ -18,26 +18,26 @@ Contact: `gonzalo.galvezc@pucp.edu.pe`
 
 ```bash
 # 1. Clonar e instalar
-git clone git@github.com:sihsalus/sihsalus-esm.git
-cd sihsalus-esm
+git clone https://github.com/sihsalus/sihsalus-frontend.git
+cd sihsalus-frontend
 corepack enable          # activa la versión de Yarn incluida en .yarn/releases/
 nvm use                  # usa la versión definida en .nvmrc
 yarn install
 
 # 2. Configurar entorno (recomendado)
-cp .env.example .env     # editar si se necesita apuntar a otro backend
+cp .env.template .env    # editar si se necesita apuntar a otro backend
 
 # 3. Levantar el dev server
 yarn clean && yarn build && yarn assemble
 SIHSALUS_DEV_APPS=esm-login-app,esm-home-app yarn start
 # → http://localhost:8080/openmrs/spa/
 
-You can also specify the port with the flag
-SIHSALUS_PORT=3000 SIHSALUS_DEV_APPS=esm-login-app,esm-home-app yarn start
+# Para usar un puerto distinto:
+yarn start --port 3000
 # → http://localhost:3000/openmrs/spa/
 ```
 
-El dev server hace proxy de las peticiones de API al backend definido en `SIHSALUS_BACKEND_URL` (ver [.env.example](.env.example)). Si no se define, usa el backend dev por defecto y lo advierte al arrancar.
+El dev server hace proxy de las peticiones de API al backend definido en `SIHSALUS_BACKEND_URL` (ver [.env.template](.env.template)). Si no se define, usa el backend dev por defecto y lo advierte al arrancar.
 
 ## Repository Structure
 
@@ -63,7 +63,6 @@ packages/tooling/
   start-dev.js                          # Local dev server entrypoint
   i18next-parser.config.js               # i18n extraction config
 e2e/                                    # Playwright E2E tests
-docs/                                   # Architecture docs and ADRs
 ```
 
 > **Note:** The OpenMRS framework (`@openmrs/esm-framework`) and app shell (`@openmrs/esm-app-shell`) are consumed as npm dependencies, not vendored in this repo.
@@ -115,10 +114,7 @@ yarn verify                                 # lint + typecheck + test
 yarn verify:changed --base origin/main      # Verify changed workspaces plus workspace dependents
 ```
 
-Repository discipline and workspace ownership expectations live in:
-
-- [docs/operations/monorepo-discipline-rfc.md](docs/operations/monorepo-discipline-rfc.md)
-- [docs/operations/workspace-quality-registry.md](docs/operations/workspace-quality-registry.md)
+Repository discipline and workspace ownership expectations should stay close to the touched package README and the relevant quality commands.
 
 ### TODO RBAC, auditoria y permisos
 
@@ -137,6 +133,14 @@ Repository discipline and workspace ownership expectations live in:
 - Identificar configs con `_default: ''` que representan conceptos, forms, encounter types o endpoints obligatorios, y convertirlos en defaults reales o feature flags.
 - Validar que cada app SIHSALUS custom tenga README propio con limites funcionales, dependencias backend/content, permisos y eventos auditables.
 - Agregar owners reales y warning budget a los workspaces custom prioritarios: atencion ambulatoria, CRED, salud materna, vacunacion, orders, dispensing, FUA, indicadores, ward, emergency, stock y billing.
+- Validar en QLTY el fallback del formulario de vacunas: con `ampathFormPersistence.enabled=true`, FHIR2 `Immunization` puede responder `501` sin romper la UI ni bloquear guardado nuevo; el pendiente backend sigue siendo habilitar FHIR2/content/mappings para lectura FHIR completa.
+- Corregir el formulario de visita/consulta: revisar apertura del workspace, dependencia de visita activa, guardado de `visit`/`encounter`, validaciones obligatorias y manejo de errores backend.
+- Corregir/ocultar campos semisoportados del formulario de inicio de visita en QLTY: el endpoint de tipos recomendados `/etl-latest/etl/patient/...` responde `404`; mantener `showRecommendedVisitTypeTab=false` o implementar backend/config real antes de mostrar `Program` y `Recommended`.
+- Revisar si `Upcoming appointments` y campos de cola (`Queue location`, `Service`, `Priority`) deben mostrarse en inicio de visita para QLTY; los endpoints responden, pero el flujo debe validarse con datos reales y sin crear entradas huerfanas.
+- Revisar Consulta Externa / Atencion ambulatoria end-to-end: entrada desde home, busqueda de paciente, inicio de consulta, cola, formularios clinicos, guardado de encounter, ordenes y mensajes de error.
+- Auditar formularios clinicos con el mismo patron de riesgo (vacunacion, visita/consulta, CRED, salud materna, procedimientos y FUA) para detectar `501`, workspace no registrado, rutas rotas, payloads incompletos y mensajes de error sin traducir.
+- Validar nuevo content package.
+- Revisar cambios RBAC doctor.
 
 ### Cleaning
 
@@ -161,10 +165,23 @@ yarn turbo run test --filter=@openmrs/esm-login-app   # Single package
 ### Docker
 
 ```bash
-docker build -t sihsalus/sihsalus-esm .
+docker build -t ghcr.io/sihsalus/sihsalus-frontend:dev .
 ```
 
 Nginx / reverse proxy configuration is managed in the infra repo (`sihsalus-distro-referenceapplication`).
+
+Para levantar la imagen publicada (branch `main`) en un servidor:
+
+```bash
+# 1) Traer la etiqueta latest y resolver el digest exacto
+docker pull ghcr.io/sihsalus/sihsalus-frontend:latest
+DIGEST=$(docker inspect --format '{{ index .RepoDigests 0 }}' ghcr.io/sihsalus/sihsalus-frontend:latest)
+echo "$DIGEST"
+
+# 2) Redeploy con ese digest (recomendado para reproducibilidad)
+docker rm -f sihsalus-frontend || true
+docker run -d --name sihsalus-frontend -p 8080:8080 "$DIGEST"
+```
 
 ## Architecture
 
@@ -193,6 +210,17 @@ Terminologia practica usada en este repositorio:
 - `workspace`: panel lateral/modal de OpenMRS 3 usado para crear o editar datos.
 - `extension slot`: punto de extension del shell donde otro microfrontend inyecta UI.
 
+### Contrato de identidad del paciente
+
+El flujo de identidad no debe depender solo del DNI. En registro, emergencia, busqueda y Libro de Atenciones, un paciente debe poder ubicarse por identificadores, codigo temporal, nombre, fecha/hora de atencion, visita/cola, responsable, servicio, ubicacion y estado de identificacion.
+
+Reglas transversales:
+
+- `@sihsalus/esm-care-logbook-app` se presenta como `Libro de Atenciones`; la ruta historica `/admission` se conserva por compatibilidad.
+- Pacientes no identificados o incapaces de comunicarse pueden registrarse sin DNI, telefono, direccion o fecha exacta de nacimiento.
+- Cuando el paciente no puede aportar datos o consentimiento, se debe capturar responsable, institucion o autoridad responsable.
+- `zipcode/postcode` y telefono no son filtros avanzados por defecto en Patient Search. Pueden existir como datos demograficos/contacto, pero no como pivotes principales de busqueda.
+
 ### Contratos que no deben romperse
 
 - No agregar UUIDs clinicos hardcodeados si pueden vivir en `config-schema`. Conceptos, encounter types, visit types, forms, order types, identifiers y care settings deben ser configurables.
@@ -201,7 +229,7 @@ Terminologia practica usada en este repositorio:
 - No asumir que FHIR2 soporta un recurso solo porque el endpoint existe. Algunos backends responden `501 Not Implemented` hasta que el OMOD/content este alineado.
 - No guardar datos clinicos sin visita/consulta activa salvo que el flujo documente explicitamente otra semantica.
 - No mezclar nombres tecnicos de OpenMRS con lenguaje de usuario final. El personal de salud debe ver terminos operativos claros.
-- Los titulos de rutas, dashboards y sidebars son contrato de producto: deben usar keys traducibles y estar alineados con el nombre funcional del modulo. Ejemplo: `esm-admission-app` se presenta como `Libro de Atenciones`, no como `Admisiones`, porque lista atenciones/consultas por UPSS y no ingresos hospitalarios.
+- Los titulos de rutas, dashboards y sidebars son contrato de producto: deben usar keys traducibles y estar alineados con el nombre funcional del modulo. Ejemplo: `esm-care-logbook-app` se presenta como `Libro de Atenciones`, no como `Admisiones`, porque lista atenciones/consultas por UPSS y no ingresos hospitalarios.
 
 ### Dependencias backend/content
 
@@ -221,7 +249,7 @@ Si una app falla con `501`, `workspace not registered`, `modal not registered`, 
 - `esm-patient-chart-app`: layout principal, left sidebar, right sidebar, banner, visitas, workspaces y extension slots.
 - `esm-styleguide`: componentes compartidos y sistemas de workspace; cambios pequenos impactan muchas apps.
 - `esm-patient-orders-app`: depende de visita activa, workspaces, conceptos de ordenes, stock/billing/FHIR opcional.
-- `esm-vacunacion-app`: depende de FHIR2 `Immunization`, conceptos/mappings de inmunizacion y contenido MINSA.
+- `esm-patient-immunizations-app`: depende de FHIR2 `Immunization`, conceptos/mappings de inmunizacion y contenido MINSA.
 - `esm-service-queues-app`: depende de configuracion de colas, ubicaciones, servicios, rooms y conceptos de prioridad/estado.
 - `esm-home-app`: rutas y accesos rapidos; no debe esconder errores de registro de extensiones ni dejar paneles huerfanos.
 
@@ -232,9 +260,9 @@ Si una app falla con `501`, `workspace not registered`, `modal not registered`, 
 | `esm-patient-registration-app`   | `@openmrs/esm-patient-registration-app`  |
 | `esm-patient-search-app`         | `@openmrs/esm-patient-search-app`        |
 | `esm-billing-app`                | `@openmrs/esm-billing-app`               |
-| `esm-vacunacion-app`             | `@openmrs/esm-patient-immunizations-app` |
+| `esm-patient-immunizations-app`  | `@openmrs/esm-patient-immunizations-app` |
 
-Custom modules with no upstream equivalent: `esm-atencion-ambulatoria-app`, `esm-coststructure-app`, `esm-cred-app` (`packages/apps/esm-crecimiento-desarrollo-app`), `esm-dyaku-app`, `esm-emergency-app`, `esm-ficha-familiar-app`, `esm-fua-app`, `esm-indicadores-app`, `esm-odontologia-app` (`packages/apps/esm-odontologia-app`), `esm-reports-app`, `esm-salud-materna-app`, `esm-seguimiento-casos-app`.
+Custom modules with no upstream equivalent: `esm-atencion-ambulatoria-app`, `esm-care-logbook-app`, `esm-coststructure-app`, `esm-cred-app` (`packages/apps/esm-crecimiento-desarrollo-app`), `esm-dyaku-app`, `esm-emergency-app`, `esm-ficha-familiar-app`, `esm-fua-app`, `esm-indicadores-app`, `esm-odontologia-app` (`packages/apps/esm-odontologia-app`), `esm-reports-app`, `esm-salud-materna-app`, `esm-seguimiento-casos-app`.
 
 ## Calidad esperada antes de agregar features
 
@@ -249,7 +277,7 @@ Antes de sumar funcionalidad clinica nueva, revisar:
 
 ## Environment Variables
 
-Crea un archivo `.env` en la raíz del repo (ver [.env.example](.env.example)):
+Crea un archivo `.env` en la raíz del repo (ver [.env.template](.env.template)):
 
 | Variable                         | Default                                | Descripción                                                            |
 | -------------------------------- | -------------------------------------- | ---------------------------------------------------------------------- |
@@ -257,7 +285,7 @@ Crea un archivo `.env` en la raíz del repo (ver [.env.example](.env.example)):
 | `SIHSALUS_REQUIRE_BACKEND_URL`   | `false`                                | Si es `true`, `yarn start` falla cuando falta `SIHSALUS_BACKEND_URL`   |
 | `SIHSALUS_BACKEND_FETCH_TIMEOUT_MS` | `5000`                              | Timeout para descargar importmap/rutas del backend en `openmrs start`  |
 | `SIHSALUS_AUTH_MODE`             | `openmrs`                              | Modo de auth: `openmrs` (básico) o `keycloak` (OIDC)                   |
-| `SIHSALUS_ALLOW_SELF_SIGNED_TLS` | `false`                                | Activa TLS "insecure" para backends con certificados auto-firmados en desarrollo |
+| `SIHSALUS_ALLOW_SELF_SIGNED_TLS` | `true` para DEV/QLTY internos; `false` para otros backends | Activa TLS "insecure" para backends internos con certificados auto-firmados en desarrollo. Usa `false` para forzar validación estricta |
 | `SIHSALUS_FHIR_BASE`             | *(derivado del backend)*               | URL base de FHIR R4                                                    |
 | `SPA_PATH`                       | `/openmrs/spa`                         | Base path para los assets del SPA                                      |
 | `API_URL`                        | `/openmrs`                             | Base path de la API de OpenMRS                                         |

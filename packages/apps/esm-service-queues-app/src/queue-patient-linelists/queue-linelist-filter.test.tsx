@@ -1,5 +1,5 @@
 import { useLayoutType, useVisitTypes } from '@openmrs/esm-framework';
-import { render, screen } from '@testing-library/react';
+import { fireEvent, render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { mockVisitTypes } from 'test-utils';
 
@@ -66,6 +66,20 @@ describe('QueueLinelistFilter', () => {
     await user.type(startAgeInput, '10');
 
     expect(startAgeInput).toHaveValue(10);
+  });
+
+  it('prevents scientific notation, signs, and decimals in age filters', () => {
+    render(<QueueLinelistFilter {...workspaceProps} />);
+
+    const startAgeInput = screen.getByLabelText('Between');
+    for (const key of ['e', 'E', '+', '-', '.', ',']) {
+      expect(fireEvent.keyDown(startAgeInput, { key })).toBe(false);
+    }
+    expect(
+      fireEvent.paste(startAgeInput, {
+        clipboardData: { getData: () => '1e2' },
+      }),
+    ).toBe(false);
   });
 
   it('should open the visit type dropdown and close after selection', async () => {

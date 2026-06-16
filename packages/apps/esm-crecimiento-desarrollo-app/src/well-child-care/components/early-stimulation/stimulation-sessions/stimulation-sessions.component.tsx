@@ -8,13 +8,13 @@ import {
   Tag,
 } from '@carbon/react';
 import { Add } from '@carbon/react/icons';
-import { launchWorkspace2, useConfig } from '@openmrs/esm-framework';
+import { userHasAccess, useSession } from '@openmrs/esm-framework';
 import { CardHeader, ErrorState } from '@openmrs/esm-patient-common-lib';
-import React, { useCallback } from 'react';
+import React from 'react';
 import { useTranslation } from 'react-i18next';
-import type { ConfigObject } from '../../../../config-schema';
+import { credEarlyStimulationEditPrivilege } from '../../../../constants';
+import { useCREDFormLauncher } from '../../../../hooks/useCREDFormLauncher';
 import { useStimulationSessions } from '../../../../hooks/useStimulationSessions';
-import { formEntryWorkspace } from '../../../../types';
 
 import styles from './stimulation-sessions.scss';
 
@@ -24,21 +24,11 @@ interface StimulationSessionsProps {
 
 const StimulationSessions: React.FC<StimulationSessionsProps> = ({ patientUuid }) => {
   const { t } = useTranslation();
-  const config = useConfig<ConfigObject>();
+  const session = useSession();
+  const canEdit = userHasAccess(credEarlyStimulationEditPrivilege, session?.user);
   const { totalSessions, lastSessionDate, developmentAreas, isLoading, error } = useStimulationSessions(patientUuid);
+  const { launchForm: handleAdd, isLoading: isFormLoading } = useCREDFormLauncher('stimulationSessionForm');
   const headerTitle = t('esSessionsTitle', 'Sesiones de estimulación');
-
-  const handleAdd = useCallback(() => {
-    const formUuid = config.formsList.stimulationSessionForm;
-    if (!formUuid) {
-      console.warn('Form UUID not configured for stimulationSessionForm');
-      return;
-    }
-    launchWorkspace2(formEntryWorkspace, {
-      form: { uuid: formUuid },
-      encounterUuid: '',
-    });
-  }, [config.formsList.stimulationSessionForm]);
 
   if (isLoading) {
     return <DataTableSkeleton size="sm" rowCount={3} columnCount={2} />;
@@ -54,9 +44,18 @@ const StimulationSessions: React.FC<StimulationSessionsProps> = ({ patientUuid }
         <Tag type={totalSessions ? 'blue' : 'gray'} size="sm">
           {totalSessions ? `${totalSessions} ${t('sessions', 'sesiones')}` : t('noData', 'Sin datos')}
         </Tag>
-        <Button kind="ghost" size="sm" renderIcon={Add} onClick={handleAdd} iconDescription={t('add', 'Add')}>
-          {t('add', 'Add')}
-        </Button>
+        {canEdit && (
+          <Button
+            kind="ghost"
+            size="sm"
+            renderIcon={Add}
+            onClick={() => handleAdd()}
+            iconDescription={t('add', 'Add')}
+            disabled={isFormLoading}
+          >
+            {t('add', 'Add')}
+          </Button>
+        )}
       </CardHeader>
       <div className={styles.container}>
         <StructuredListWrapper isCondensed>

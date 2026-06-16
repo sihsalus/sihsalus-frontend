@@ -14,8 +14,13 @@ import {
   Tile,
 } from '@carbon/react';
 import { AddIcon, formatDate, parseDate, useLayoutType } from '@openmrs/esm-framework';
-import { CardHeader, EmptyState, ErrorState, launchPatientWorkspace } from '@openmrs/esm-patient-common-lib';
-import { getAntecedentTypeLabel } from '@sihsalus/esm-sihsalus-shared';
+import {
+  CardHeader,
+  EmptyState,
+  ErrorState,
+  getAntecedentTypeLabel,
+  launchPatientWorkspace,
+} from '@openmrs/esm-patient-common-lib';
 import classNames from 'classnames';
 import type { TFunction } from 'i18next';
 import { type ComponentProps, useCallback, useMemo, useState } from 'react';
@@ -55,15 +60,6 @@ const getSectionCopy = (section: ConditionSection, t: TFunction) => {
         emptyText: t('noPastDiagnosesToDisplay', 'No past diagnoses to display'),
         headerTitle: t('pastDiagnoses', 'Past diagnoses'),
         recordText: t('recordPastDiagnosis', 'Record past diagnosis'),
-      };
-    case 'procedures':
-      return {
-        addIconDescription: t('addProcedureSurgery', 'Add procedure or surgery'),
-        ariaLabel: t('proceduresAndSurgeriesSummary', 'Procedures and surgeries summary'),
-        displayText: t('proceduresAndSurgeries_lower', 'procedures and surgeries'),
-        emptyText: t('noProceduresAndSurgeriesToDisplay', 'No procedures or surgeries to display'),
-        headerTitle: t('proceduresAndSurgeries', 'Procedures and surgeries'),
-        recordText: t('recordProcedureSurgery', 'Record procedure or surgery'),
       };
     case 'other-antecedents':
     case 'antecedents':
@@ -285,11 +281,7 @@ function ConditionsDetailedTable({ patient, section = 'antecedents' }: Condition
   return <EmptyState displayText={displayText} headerTitle={headerTitle} launchForm={launchConditionsForm} />;
 }
 
-function ConditionsDetailedSummary({ patient, section }: ConditionsDetailedSummaryProps) {
-  if (section === 'procedures') {
-    return <ConditionsDetailedTable patient={patient} section="procedures" />;
-  }
-
+function ConditionsDetailedSummary({ patient }: ConditionsDetailedSummaryProps) {
   return (
     <>
       <ConditionsDetailedTable patient={patient} section="active-problems" />

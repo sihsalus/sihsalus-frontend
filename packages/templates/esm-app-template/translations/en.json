@@ -1,0 +1,8 @@
+{
+  "templateAppTitle": "Template app",
+  "templateDescription": "Replace this placeholder with the module workflow.",
+  "templateDisabled": "This app is disabled by configuration.",
+  "templateEyebrow": "SIHSALUS frontend",
+  "templateReady": "The app shell, route, translations and tests are ready.",
+  "templateTitle": "Template app"
+}

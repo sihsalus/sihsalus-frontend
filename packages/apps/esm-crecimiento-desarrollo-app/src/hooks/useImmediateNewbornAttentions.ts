@@ -1,5 +1,5 @@
 import { openmrsFetch, restBaseUrl, useConfig } from '@openmrs/esm-framework';
-import type { Encounter } from '@sihsalus/esm-sihsalus-shared';
+import type { Encounter } from '@openmrs/esm-patient-common-lib';
 import useSWR from 'swr';
 import type { ConfigObject } from '../config-schema'; // Adjust the import path as needed
 import { encounterRepresentation } from '../utils/constants'; // Adjust the import path as needed

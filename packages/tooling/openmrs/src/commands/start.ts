@@ -4,7 +4,7 @@ import { basename, resolve } from 'node:path';
 import express from 'express';
 import { createProxyMiddleware } from 'http-proxy-middleware';
 
-import { logInfo, logWarn, removeTrailingSlash } from '../utils';
+import { logInfo, logWarn, removeTrailingSlash, shouldAllowSelfSignedTls } from '../utils';
 
 const upstreamSpaUrl = 'https://dev3.openmrs.org/openmrs/spa';
 const backendFetchTimeoutMs = Number(process.env.SIHSALUS_BACKEND_FETCH_TIMEOUT_MS) || 5000;
@@ -179,7 +179,7 @@ export async function runStart(args: StartArgs) {
   const spaPath = '/openmrs/spa';
   const backendUrl = removeTrailingSlash(backend);
   const pageUrl = `http://${host}:${port}${spaPath}`;
-  const allowSelfSignedTls = process.env.SIHSALUS_ALLOW_SELF_SIGNED_TLS === 'true';
+  const allowSelfSignedTls = shouldAllowSelfSignedTls(backend);
 
   // Rewrite index.html to use local importmap and routes instead of the upstream demo shell URLs.
   // Also disable offline/service-worker to prevent stale caches during local dev.
@@ -200,16 +200,6 @@ export async function runStart(args: StartArgs) {
   // Build a set of "base names" from local modules to detect duplicates under different scopes
   // e.g. local "@sihsalus/esm-fua-app" should exclude backend "@pucp-gidis-hiisc/esm-fua-app"
   const localBaseNames = new Set(Object.keys(localImportmap.imports).map((name) => name.replace(/^@[^/]+\//, '')));
-
-  // Backend modules that map to local modules with different names.
-  // e.g. backend "esm-patient-immunizations-app" is replaced by local "esm-vacunacion-app"
-  const backendAliases: Record<string, string> = {
-    'esm-indicators-app': 'esm-indicadores-app',
-    'esm-patient-immunizations-app': 'esm-vacunacion-app',
-  };
-  for (const [backendName, localName] of Object.entries(backendAliases)) {
-    if (localBaseNames.has(localName)) localBaseNames.add(backendName);
-  }
 
   logInfo(`Fetching backend importmap from ${backendUrl}...`);
   const backendImportmap = (await fetchBackendJson(`${backendUrl}/openmrs/spa/importmap.json`)) as {

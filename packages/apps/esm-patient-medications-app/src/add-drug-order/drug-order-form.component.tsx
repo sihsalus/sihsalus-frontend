@@ -40,6 +40,12 @@ import type {
   QuantityUnit,
 } from '@openmrs/esm-patient-common-lib';
 import { type Drug } from '@openmrs/esm-patient-common-lib';
+import {
+  type PlainNumberInputConstraints,
+  shouldPreventPlainNumberKey,
+  shouldPreventPlainNumberPaste,
+  validatePlainNumberInput,
+} from '@openmrs/esm-utils';
 import classNames from 'classnames';
 import { capitalize } from 'lodash-es';
 import { type ChangeEvent, type ComponentProps, useCallback, useEffect, useMemo, useRef, useState } from 'react';
@@ -592,6 +598,7 @@ export function DrugOrderForm({
                         name="duration"
                         type="number"
                         id="durationInput"
+                        integer
                         label={t('duration', 'Duration')}
                         min={0}
                         step={1}
@@ -604,6 +611,7 @@ export function DrugOrderForm({
                         setValue={setValue}
                         name="duration"
                         labelText={t('duration', 'Duration')}
+                        min={0}
                       />
                     )}
                   </InputWrapper>
@@ -681,6 +689,7 @@ export function DrugOrderForm({
                         name="numRefills"
                         type="number"
                         id="prescriptionRefills"
+                        integer
                         min={0}
                         label={t('prescriptionRefills', 'Prescription refills')}
                         max={99}
@@ -693,6 +702,8 @@ export function DrugOrderForm({
                         setValue={setValue}
                         name="numRefills"
                         labelText={t('prescriptionRefills', 'Prescription refills')}
+                        max={99}
+                        min={0}
                       />
                     )}
                   </InputWrapper>
@@ -754,12 +765,34 @@ interface CustomNumberInputProps {
   name: keyof MedicationOrderFormData;
   labelText: string;
   isTablet: boolean;
+  max?: number;
+  min?: number;
+  integer?: boolean;
   inputProps?: Partial<ComponentProps<typeof TextInput>>;
 }
 
-const CustomNumberInput = ({ setValue, control, name, labelText, isTablet, ...inputProps }: CustomNumberInputProps) => {
+const CustomNumberInput = ({
+  setValue,
+  control,
+  name,
+  labelText,
+  isTablet,
+  max,
+  min = 0,
+  integer = true,
+  ...inputProps
+}: CustomNumberInputProps) => {
   const { t } = useTranslation();
   const responsiveSize = isTablet ? 'md' : 'sm';
+  const inputConstraints = useMemo(
+    () => ({
+      integer,
+      max,
+      min,
+      nonNegative: typeof min === 'number' && min >= 0,
+    }),
+    [integer, max, min],
+  );
 
   const {
     field: { onBlur, onChange, value, ref },
@@ -767,18 +800,42 @@ const CustomNumberInput = ({ setValue, control, name, labelText, isTablet, ...in
 
   const handleChange = useCallback(
     (e: ChangeEvent<HTMLInputElement>) => {
-      const number = parseFloat(String(e.target.value));
-      onChange(Number.isNaN(number) ? null : number);
+      const parsedValue = validatePlainNumberInput(e.target.value, inputConstraints).parsedValue;
+      onChange(parsedValue ?? null);
     },
-    [onChange],
+    [inputConstraints, onChange],
+  );
+
+  const handleKeyDown = useCallback(
+    (event: React.KeyboardEvent<HTMLInputElement>) => {
+      if (event.ctrlKey || event.metaKey || event.altKey) {
+        return;
+      }
+
+      if (shouldPreventPlainNumberKey(event.key, inputConstraints)) {
+        event.preventDefault();
+      }
+    },
+    [inputConstraints],
+  );
+
+  const handlePaste = useCallback(
+    (event: React.ClipboardEvent<HTMLInputElement>) => {
+      if (shouldPreventPlainNumberPaste(event.clipboardData.getData('text'), inputConstraints)) {
+        event.preventDefault();
+      }
+    },
+    [inputConstraints],
   );
 
   const increment = () => {
-    setValue(name, Number(value) + 1);
+    const nextValue = (Number(value) || 0) + 1;
+    setValue(name, typeof max === 'number' ? Math.min(nextValue, max) : nextValue);
   };
 
   const decrement = () => {
-    setValue(name, Math.max(Number(value) - 1, 0));
+    const nextValue = (Number(value) || 0) - 1;
+    setValue(name, Math.max(nextValue, min));
   };
 
   return (
@@ -792,6 +849,8 @@ const CustomNumberInput = ({ setValue, control, name, labelText, isTablet, ...in
         </IconButton>
         <TextInput
           onChange={handleChange}
+          onKeyDown={handleKeyDown}
+          onPaste={handlePaste}
           className={styles.customInput}
           onBlur={onBlur}
           ref={ref}
@@ -823,7 +882,10 @@ interface BaseControlledFieldInputProps {
 
 type ControlledFieldInputProps = BaseControlledFieldInputProps &
   (
-    | ({ type: 'number' } & Omit<ComponentProps<typeof NumberInput>, 'onChange' | 'onBlur' | 'value' | 'ref'>)
+    | ({ type: 'number'; integer?: boolean } & Omit<
+        ComponentProps<typeof NumberInput>,
+        'onChange' | 'onBlur' | 'value' | 'ref'
+      >)
     | ({ type: 'toggle' } & Omit<ComponentProps<typeof Toggle>, 'onChange' | 'onBlur' | 'toggled' | 'ref'>)
     | ({ type: 'checkbox' } & Omit<ComponentProps<typeof Checkbox>, 'onChange' | 'onBlur' | 'checked' | 'ref'> & {
           labelText: string;
@@ -890,16 +952,39 @@ const ControlledFieldInput = ({
     }
 
     if (type === 'number') {
-      const numberInputProps = restProps as ComponentProps<typeof NumberInput>;
+      const { integer, max, min, ...numberInputProps } = restProps as ComponentProps<typeof NumberInput> & {
+        integer?: boolean;
+      };
+      const inputConstraints: PlainNumberInputConstraints = {
+        integer,
+        max: typeof max === 'number' ? max : undefined,
+        min: typeof min === 'number' ? min : undefined,
+        nonNegative: typeof min === 'number' && min >= 0,
+      };
       return (
         <NumberInput
           allowEmpty
           className={fieldErrorStyles}
           disableWheel
+          max={max}
+          min={min}
           onBlur={onBlur}
           onChange={(_, { value }) => {
-            const number = parseFloat(String(value));
-            handleChange(Number.isNaN(number) ? null : number);
+            const parsedValue = validatePlainNumberInput(value ?? '', inputConstraints).parsedValue;
+            handleChange(parsedValue ?? null);
+          }}
+          onKeyDown={(event) => {
+            if (event.ctrlKey || event.metaKey || event.altKey) {
+              return;
+            }
+            if (shouldPreventPlainNumberKey(event.key, inputConstraints)) {
+              event.preventDefault();
+            }
+          }}
+          onPaste={(event) => {
+            if (shouldPreventPlainNumberPaste(event.clipboardData.getData('text'), inputConstraints)) {
+              event.preventDefault();
+            }
           }}
           ref={ref}
           size={isTablet ? 'md' : 'sm'}

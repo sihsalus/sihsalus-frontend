@@ -1,5 +1,6 @@
 import { type SectionDefinition } from '../../config-schema';
 
+import { ContactSection } from './contact/contact-section.component';
 import { DeathInfoSection } from './death-info/death-info-section.component';
 import { DemographicsSection } from './demographics/demographics-section.component';
 import { GenericSection } from './generic-section.component';
@@ -15,9 +16,18 @@ export function Section({ sectionDefinition }: SectionProps) {
       return <DemographicsSection fields={sectionDefinition.fields} />;
     case 'death':
       return <DeathInfoSection fields={sectionDefinition.fields} />;
+    case 'responsiblePerson':
+      return (
+        <>
+          <GenericSection sectionDefinition={sectionDefinition} />
+          <RelationshipsSection />
+        </>
+      );
     case 'relationships':
       return <RelationshipsSection />;
-    default: // includes 'contact'
+    case 'contact':
+      return <ContactSection sectionDefinition={sectionDefinition} />;
+    default:
       return <GenericSection sectionDefinition={sectionDefinition} />;
   }
 }

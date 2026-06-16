@@ -7,6 +7,7 @@ import {
   type OpenmrsEncounter,
   type OpenmrsObs,
   type Order,
+  type PersonAttribute,
   type ProgramState,
 } from './domain';
 
@@ -24,6 +25,7 @@ export type FormFieldValue =
   | OpenmrsObs
   | Order
   | PatientIdentifier
+  | PersonAttribute
   | string
   | number
   | boolean
@@ -249,6 +251,7 @@ export interface FormQuestionOptions {
   workspaceProps?: Record<string, unknown>;
   buttonLabel?: string;
   identifierType?: string;
+  attributeType?: string;
   orderSettingUuid?: string;
   orderType?: string;
   selectableOrders?: Array<Record<string, unknown>>;

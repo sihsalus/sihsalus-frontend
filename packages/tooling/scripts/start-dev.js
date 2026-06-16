@@ -1,9 +1,9 @@
 #!/usr/bin/env node
 
-const { spawn, spawnSync } = require('child_process');
-const { existsSync, readFileSync, statSync } = require('fs');
-const net = require('net');
-const { extname, join, resolve } = require('path');
+const { spawn, spawnSync } = require('node:child_process');
+const { existsSync, readFileSync, statSync } = require('node:fs');
+const net = require('node:net');
+const { extname, join, resolve } = require('node:path');
 
 const envPath = resolve(process.cwd(), '.env');
 const hadBackendBeforeDotenv = Boolean(process.env.SIHSALUS_BACKEND_URL);
@@ -20,8 +20,16 @@ const backendSource = hadBackendBeforeDotenv ? 'shell' : dotenvResult.parsed?.SI
 const requireBackendUrl = process.env.SIHSALUS_REQUIRE_BACKEND_URL === 'true';
 const authMode = process.env.SIHSALUS_AUTH_MODE || 'openmrs';
 const fhirBase = process.env.SIHSALUS_FHIR_BASE || `${backend}/openmrs/ws/fhir2/R4`;
-const proxyPort = Number(process.env.SIHSALUS_PORT) || 8080;
-const allowSelfSignedTls = process.env.SIHSALUS_ALLOW_SELF_SIGNED_TLS === 'true';
+const proxyPort = (() => {
+  const portArgIdx = process.argv.indexOf('--port');
+  if (portArgIdx !== -1 && process.argv[portArgIdx + 1]) {
+    const val = Number(process.argv[portArgIdx + 1]);
+    if (Number.isFinite(val) && val > 0) return val;
+  }
+  return 8080;
+})();
+const selfSignedTlsDefaultHosts = new Set(['gidis-hsc-dev.inf.pucp.edu.pe', 'gidis-hsc-qlty.inf.pucp.edu.pe']);
+const allowSelfSignedTls = shouldAllowSelfSignedTls(backend);
 let selfSignedBackendDispatcher;
 
 // SIHSALUS_DEV_APPS=esm-login-app,esm-home-app  → hot-reload those apps
@@ -35,6 +43,23 @@ const frontendConfig = resolve(__dirname, '..', '..', '..', 'config', 'frontend.
 const spaPath = '/openmrs/spa';
 const sessionPath = '/openmrs/ws/rest/v1/session';
 const sessionFallbackTimeoutMs = Number(process.env.SIHSALUS_SESSION_FALLBACK_TIMEOUT_MS) || 3000;
+
+function shouldAllowSelfSignedTls(backendUrl) {
+  const configuredValue = process.env.SIHSALUS_ALLOW_SELF_SIGNED_TLS;
+  if (configuredValue === 'true') {
+    return true;
+  }
+  if (configuredValue === 'false') {
+    return false;
+  }
+
+  try {
+    const parsedBackendUrl = new URL(backendUrl);
+    return parsedBackendUrl.protocol === 'https:' && selfSignedTlsDefaultHosts.has(parsedBackendUrl.hostname);
+  } catch {
+    return false;
+  }
+}
 
 function getBackendSessionUrl() {
   return `${backend.replace(/\/+$/, '').replace(/\/openmrs$/, '')}${sessionPath}`;
@@ -179,7 +204,25 @@ function runWorkspaceBuild(workspaceName, workspaceRoot) {
   }
 }
 
+function readRateLimitEnv(name, fallback) {
+  const value = process.env[name];
+  if (!value) {
+    return fallback;
+  }
+
+  const parsedValue = Number(value);
+  if (!Number.isFinite(parsedValue)) {
+    return fallback;
+  }
+
+  return Math.floor(parsedValue);
+}
+
 function createInMemoryRateLimit({ windowMs, max }) {
+  if (windowMs <= 0 || max <= 0) {
+    return (_req, _res, next) => next();
+  }
+
   const requestsByIp = new Map();
   const cleanupIntervalMs = Math.max(1000, Math.min(windowMs, 60_000));
   const cleanupTimer = setInterval(() => {
@@ -240,8 +283,8 @@ async function startWithProxy(cliArgs) {
   const staticHandler = express.static(distSpa);
   const spaIndexHtml = readFileSync(join(distSpa, 'index.html'), 'utf8');
   const spaIndexRateLimit = createInMemoryRateLimit({
-    windowMs: Number(process.env.SIHSALUS_SPA_RATE_LIMIT_WINDOW_MS) || 60_000,
-    max: Number(process.env.SIHSALUS_SPA_RATE_LIMIT_MAX) || 300,
+    windowMs: readRateLimitEnv('SIHSALUS_SPA_RATE_LIMIT_WINDOW_MS', 60_000),
+    max: readRateLimitEnv('SIHSALUS_SPA_RATE_LIMIT_MAX', 0),
   });
 
   app.all(sessionPath, async (req, res) => {
@@ -333,7 +376,7 @@ async function startWithProxy(cliArgs) {
   server.on('error', (error) => {
     if (error.code === 'EADDRINUSE') {
       logFail(`Port ${proxyPort} is already in use.`);
-      logFail(`  Stop the process using it or run with SIHSALUS_PORT=<free-port>.`);
+      logFail(`  Stop the process using it or run with --port <free-port>.`);
     } else {
       logFail(`Could not start local proxy on port ${proxyPort}: ${error.message}`);
     }

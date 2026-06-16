@@ -3,6 +3,7 @@ import type {
   DefinicionIndicadorForm,
   DiagnosticoOption,
   GetResultadosParams,
+  GetSeriesParams,
   Indicador,
   IndicadorCreatePayload,
   IndicadorDetail,
@@ -13,6 +14,8 @@ import type {
   LocationOption,
   OrdenOption,
   PaginatedResponse,
+  SeriesResponse,
+  SerieRow,
 } from '../api/types';
 
 const nowIso = () => new Date().toISOString();
@@ -38,7 +41,6 @@ const mockOrdenes: Array<OrdenOption> = [
 
 const definicionPrenatal: DefinicionIndicadorForm = {
   tipo: 'conteo_atenciones',
-  periodo: 'mes_actual',
   evento: {
     location_uuids: ['loc-materno'],
     minimo_ocurrencias: 1,
@@ -49,7 +51,6 @@ const definicionPrenatal: DefinicionIndicadorForm = {
 
 const definicionAnemia: DefinicionIndicadorForm = {
   tipo: 'conteo_pacientes',
-  periodo: 'trimestre_actual',
   evento: {
     location_uuids: ['loc-consulta'],
     minimo_ocurrencias: 1,
@@ -60,7 +61,6 @@ const definicionAnemia: DefinicionIndicadorForm = {
 
 const definicionOdonto: DefinicionIndicadorForm = {
   tipo: 'conteo_atenciones',
-  periodo: 'anual_actual',
   evento: {
     location_uuids: ['loc-odontologia'],
     minimo_ocurrencias: 1,
@@ -129,6 +129,8 @@ let resultados: Array<IndicadorResultado> = [
     periodo_fin: '2026-04-30',
     valor: 312,
     calculado_en: '2026-05-01T02:00:00.000Z',
+    mes_referencia: '2026-04-01',
+    es_canonico: true,
   },
   {
     id: uid('res'),
@@ -139,6 +141,8 @@ let resultados: Array<IndicadorResultado> = [
     periodo_fin: '2026-03-31',
     valor: 154,
     calculado_en: '2026-04-01T02:00:00.000Z',
+    mes_referencia: '2026-01-01',
+    es_canonico: true,
   },
 ];
 
@@ -155,7 +159,10 @@ function toPaginatedResponse<T>(items: Array<T>, page: number, size: number): Pa
 }
 
 function latestVersion(indicador: IndicadorDetail) {
-  return indicador.versiones.reduce((max, current) => (current.version > max.version ? current : max), indicador.versiones[0]);
+  return indicador.versiones.reduce(
+    (max, current) => (current.version > max.version ? current : max),
+    indicador.versiones[0],
+  );
 }
 
 function definitionToSql(definicion: DefinicionIndicadorForm) {
@@ -218,14 +225,29 @@ export function createIndicadorMock(payload: IndicadorCreatePayload): Indicador 
     ],
   };
   indicadores = [detail, ...indicadores];
-  return { id, nombre: detail.nombre, descripcion: detail.descripcion, activo: detail.activo, creado_en: detail.creado_en };
+  return {
+    id,
+    nombre: detail.nombre,
+    descripcion: detail.descripcion,
+    activo: detail.activo,
+    creado_en: detail.creado_en,
+  };
 }
 
 export function updateIndicadorMock(id: string, payload: IndicadorUpdatePayload): Indicador {
   const indicador = getIndicadorById(id);
   indicador.nombre = payload.nombre;
   indicador.descripcion = payload.descripcion;
-  return { id: indicador.id, nombre: indicador.nombre, descripcion: indicador.descripcion, activo: indicador.activo, creado_en: indicador.creado_en };
+  if (payload.activo !== undefined) {
+    indicador.activo = payload.activo;
+  }
+  return {
+    id: indicador.id,
+    nombre: indicador.nombre,
+    descripcion: indicador.descripcion,
+    activo: indicador.activo,
+    creado_en: indicador.creado_en,
+  };
 }
 
 export function deleteIndicadorMock(id: string) {
@@ -249,9 +271,7 @@ export function createVersionMock(id: string, definicion: DefinicionIndicadorFor
 
 export function getSqlPreviewMock(id: string, versionId?: string): IndicadorSQLPreview {
   const indicador = getIndicadorById(id);
-  const version = versionId
-    ? indicador.versiones.find((item) => item.id === versionId)
-    : latestVersion(indicador);
+  const version = versionId ? indicador.versiones.find((item) => item.id === versionId) : latestVersion(indicador);
 
   if (!version) {
     throw new Error('Versión no encontrada');
@@ -272,6 +292,54 @@ export function getSqlPreviewMock(id: string, versionId?: string): IndicadorSQLP
     periodo_fin: periodEnd,
     version_id: version.id,
     version_num: version.version,
+  };
+}
+
+export function getSeriesMock(params: GetSeriesParams): SeriesResponse {
+  const year = params.anio ?? new Date().getFullYear();
+  const granularity = params.granularity ?? 'mensual';
+
+  const monthlyRows: Array<SerieRow> = [
+    { periodo_label: `${year}-01`, valor: 98, meses_disponibles: 1, anio: year, mes_referencia: `${year}-01-01` },
+    { periodo_label: `${year}-02`, valor: 87, meses_disponibles: 1, anio: year, mes_referencia: `${year}-02-01` },
+    { periodo_label: `${year}-03`, valor: 105, meses_disponibles: 1, anio: year, mes_referencia: `${year}-03-01` },
+    { periodo_label: `${year}-04`, valor: 112, meses_disponibles: 1, anio: year, mes_referencia: `${year}-04-01` },
+    { periodo_label: `${year}-05`, valor: 95, meses_disponibles: 1, anio: year, mes_referencia: `${year}-05-01` },
+  ];
+
+  if (granularity === 'mensual') {
+    return { items: monthlyRows, indicador_id: params.indicador_id, anio: year, granularity };
+  }
+
+  if (granularity === 'trimestral') {
+    return {
+      items: [
+        { periodo_label: 'Q1', valor: 290, meses_disponibles: 3, anio: year, trimestre: 1 },
+        { periodo_label: 'Q2', valor: 207, meses_disponibles: 2, anio: year, trimestre: 2 },
+      ],
+      indicador_id: params.indicador_id,
+      anio: year,
+      granularity,
+    };
+  }
+
+  if (granularity === 'semestral') {
+    return {
+      items: [
+        { periodo_label: 'H1', valor: 290, meses_disponibles: 3, anio: year, semestre: 1 },
+        { periodo_label: 'H2', valor: 207, meses_disponibles: 2, anio: year, semestre: 2 },
+      ],
+      indicador_id: params.indicador_id,
+      anio: year,
+      granularity,
+    };
+  }
+
+  return {
+    items: [{ periodo_label: String(year), valor: 497, meses_disponibles: 5, anio: year }],
+    indicador_id: params.indicador_id,
+    anio: year,
+    granularity,
   };
 }
 
@@ -315,6 +383,8 @@ export function calcularAhoraMock(): BatchCalcularNowResponse {
       periodo_fin: '2026-05-31',
       valor: Math.floor(Math.random() * 400) + 1,
       calculado_en: nowIso(),
+      mes_referencia: '2026-05-01',
+      es_canonico: true,
     } satisfies IndicadorResultado;
   });
 
@@ -348,4 +418,18 @@ export function resolveLocationsMock(uuids: Array<string>) {
 
 export function resolveDiagnosticosMock(uuids: Array<string>) {
   return mockDiagnosticos.filter((item) => uuids.includes(item.uuid));
+}
+
+export function resolveOrdenesMock(uuids: Array<string>): Record<string, string> {
+  if (!uuids.length) {
+    return {};
+  }
+
+  const result: Record<string, string> = {};
+  for (const item of mockOrdenes) {
+    if (uuids.includes(item.uuid)) {
+      result[item.uuid] = item.display;
+    }
+  }
+  return result;
 }

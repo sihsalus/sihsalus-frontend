@@ -25,7 +25,9 @@ const ChangeLocationLink: React.FC = () => {
       onClick={changeLocation}
     >
       <LocationIcon size={16} />
-      <span className={styles.currentLocationText}>{currentLocation}</span>
+      <span className={styles.currentLocationText} title={currentLocation}>
+        {currentLocation}
+      </span>
     </HeaderGlobalAction>
   );
 };

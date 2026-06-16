@@ -1,10 +1,11 @@
-import { launchWorkspace2, useConfig } from '@openmrs/esm-framework';
-import { PatientSummaryTable } from '@sihsalus/esm-sihsalus-shared'; // Ajusta la ruta
+import { useConfig, userHasAccess, useSession } from '@openmrs/esm-framework';
 import React from 'react';
 import { useTranslation } from 'react-i18next';
 import type { ConfigObject } from '../../../../config-schema'; // Ajusta la ruta
+import { credNeonatalEditPrivilege } from '../../../../constants';
+import { useCREDFormLauncher } from '../../../../hooks/useCREDFormLauncher';
 import { useLatestValidEncounter } from '../../../../hooks/useLatestEncounter'; // Ajusta la ruta
-import { formEntryWorkspace } from '../../../../types';
+import PatientSummaryTable from '../../../../ui/patient-summary-table/patient-summary-table.component';
 
 interface PregnancyBirthProps {
   patientUuid: string;
@@ -12,6 +13,8 @@ interface PregnancyBirthProps {
 
 const PregnancyBirthTable: React.FC<PregnancyBirthProps> = ({ patientUuid }) => {
   const { t } = useTranslation();
+  const session = useSession();
+  const canEdit = userHasAccess(credNeonatalEditPrivilege, session?.user);
   const config = useConfig() as ConfigObject;
   const { neonatalConcepts } = config;
   const headerTitle = t('pregnancyBirth', 'Pregnancy and birth');
@@ -19,6 +22,7 @@ const PregnancyBirthTable: React.FC<PregnancyBirthProps> = ({ patientUuid }) => 
     patientUuid,
     config.encounterTypes.antecedentesPerinatales, // Asegúrate de tener este tipo de encounter configurado
   );
+  const { launchForm } = useCREDFormLauncher('pregnancyDetails');
 
   const obsData = React.useMemo(() => {
     if (!encounter?.obs) return {};
@@ -28,12 +32,9 @@ const PregnancyBirthTable: React.FC<PregnancyBirthProps> = ({ patientUuid }) => 
     }, {});
   }, [encounter]);
 
-  const handleLaunchForm = () => {
-    launchWorkspace2(formEntryWorkspace, {
-      form: { uuid: config.formsList.pregnancyDetails },
-      encounterUuid: encounter?.uuid || '',
-    });
-  };
+  const handleLaunchForm = React.useCallback(() => {
+    launchForm(encounter?.uuid || '');
+  }, [encounter?.uuid, launchForm]);
 
   const dataHook = () => {
     return {
@@ -89,7 +90,7 @@ const PregnancyBirthTable: React.FC<PregnancyBirthProps> = ({ patientUuid }) => 
       displayText={t('pregnancyBirth', 'Pregnancy and birth')}
       dataHook={dataHook}
       rowConfig={rowConfig}
-      onFormLaunch={handleLaunchForm}
+      onFormLaunch={canEdit ? handleLaunchForm : undefined}
     />
   );
 };

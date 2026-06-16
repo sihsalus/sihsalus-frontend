@@ -6,16 +6,26 @@ import useSWRImmutable from 'swr/immutable';
 import { PatientRegistrationContext } from '../../patient-registration-context';
 
 interface AddressFields {
+  name: string;
   addressField: string;
+  required?: boolean;
 }
 
-export function useOrderedAddressHierarchyLevels() {
+interface OrderedAddressHierarchyLevelsResult {
+  orderedFields?: Array<string>;
+  requiredFields?: Set<string>;
+  isLoadingFieldOrder: boolean;
+  errorFetchingFieldOrder?: Error;
+}
+
+export function useOrderedAddressHierarchyLevels(): OrderedAddressHierarchyLevelsResult {
   const url = '/module/addresshierarchy/ajax/getOrderedAddressHierarchyLevels.form';
   const { data, isLoading, error } = useSWRImmutable<FetchResponse<Array<AddressFields>>, Error>(url, openmrsFetch);
 
   const results = useMemo(
     () => ({
       orderedFields: data?.data?.map((field) => field.addressField),
+      requiredFields: new Set(data?.data?.filter((field) => field.required).map((field) => field.addressField) ?? []),
       isLoadingFieldOrder: isLoading,
       errorFetchingFieldOrder: error,
     }),
@@ -56,13 +66,13 @@ export function useAddressEntries(fetchResults, searchString) {
  * This hook returns the valid search term for valid fields to get suitable entries for the field
  * This also returns the function to reset the lower ordered fields if the value of a field is changed.
  */
-export function useAddressEntryFetchConfig(addressField: string) {
+export function useAddressEntryFetchConfig(addressField: string, fieldPrefix = 'address') {
   const { orderedFields, isLoadingFieldOrder } = useOrderedAddressHierarchyLevels();
   const { setFieldValue } = useContext(PatientRegistrationContext);
-  const [, { value: addressValues }] = useField('address');
+  const [, { value: addressValues }] = useField(fieldPrefix);
 
   const index = useMemo(
-    () => (!isLoadingFieldOrder ? (orderedFields?.findIndex((field) => field === addressField) ?? -1) : -1),
+    () => (!isLoadingFieldOrder ? (orderedFields?.indexOf(addressField) ?? -1) : -1),
     [orderedFields, addressField, isLoadingFieldOrder],
   );
 
@@ -93,9 +103,9 @@ export function useAddressEntryFetchConfig(addressField: string) {
       return;
     }
     orderedFields.slice(index + 1).forEach((fieldName) => {
-      setFieldValue(`address.${fieldName}`, '', false);
+      setFieldValue(`${fieldPrefix}.${fieldName}`, '', false);
     });
-  }, [index, isLoadingFieldOrder, orderedFields, setFieldValue]);
+  }, [fieldPrefix, index, isLoadingFieldOrder, orderedFields, setFieldValue]);
 
   const results = useMemo(
     () => ({

@@ -1,9 +1,10 @@
 import type { Page } from '@playwright/test';
 import { expect, test } from '@playwright/test';
+import { getSpaUrl } from '../utils/e2e-urls';
 
 // Global setup for authenticated tests
 async function login(page: Page) {
-  await page.goto('/openmrs/spa/home');
+  await page.goto('home');
   await page.waitForLoadState('networkidle').catch(() => null);
 
   const appShell = page.locator('main, banner, nav, [role="banner"], [role="navigation"]').first();
@@ -11,7 +12,7 @@ async function login(page: Page) {
     return;
   }
 
-  await page.goto('/openmrs/spa/login');
+  await page.goto('login');
   const usernameField = page.locator('input[name="username"], input[type="text"]').first();
   const passwordField = page.locator('input[name="password"], input[type="password"]').first();
 
@@ -38,19 +39,17 @@ async function login(page: Page) {
   }
 }
 
-const SPA_BASE_URL = process.env.E2E_BASE_URL ?? 'http://localhost:8080/openmrs/spa';
-
 test.describe('Critical User Journeys', () => {
   test.beforeEach(async ({ page }) => {
     // Go to home page first to ensure we're in the app
-    await page.goto('/openmrs/spa/home').catch(() => null);
+    await page.goto('home').catch(() => null);
   });
 
   test('User Login Flow', async ({ browser }) => {
     const ctx = await browser.newContext();
     const page = await ctx.newPage();
 
-    await page.goto(`${SPA_BASE_URL}/login`);
+    await page.goto(getSpaUrl('login'));
 
     // 1. Fill credentials
     const usernameField = page.locator('input[type="text"]').first();
@@ -78,7 +77,7 @@ test.describe('Critical User Journeys', () => {
     await login(page);
 
     // Navigate to patient search
-    await page.goto('/openmrs/spa/patient-search');
+    await page.goto('patient-search');
     await page.waitForLoadState('networkidle').catch(() => null);
 
     // 1. Search for a patient
@@ -111,7 +110,7 @@ test.describe('Critical User Journeys', () => {
     await login(page);
 
     // Navigate to patient if we can
-    await page.goto('/openmrs/spa/patient-search');
+    await page.goto('patient-search');
     await page.waitForLoadState('networkidle').catch(() => null);
 
     // Look for form or encounter button
@@ -159,14 +158,14 @@ test.describe('Critical User Journeys', () => {
 
   test('Error Handling - Network Resilience', async ({ page }) => {
     // 1. Start normal navigation
-    await page.goto('/openmrs/spa/home').catch(() => null);
+    await page.goto('home').catch(() => null);
     await page.waitForLoadState('networkidle').catch(() => null);
 
     // 2. Go offline
     await page.context().setOffline(true);
 
     // 3. Try to navigate
-    await page.goto('/openmrs/spa/patient-search').catch(() => null);
+    await page.goto('patient-search').catch(() => null);
     await page.waitForTimeout(1000);
 
     // 4. Go back online
@@ -182,7 +181,7 @@ test.describe('Critical User Journeys', () => {
   });
 
   test('Accessibility - Login Page Navigation', async ({ page }) => {
-    await page.goto('/openmrs/spa/login');
+    await page.goto('login');
     await page.waitForLoadState('networkidle').catch(() => null);
 
     // 1. Test keyboard navigation
@@ -213,7 +212,7 @@ test.describe('Critical User Journeys', () => {
     await login(page);
 
     // Navigate to dashboard which loads multiple components
-    await page.goto('/openmrs/spa/home');
+    await page.goto('home');
 
     await page.waitForLoadState('networkidle').catch(() => null);
 
@@ -223,7 +222,7 @@ test.describe('Critical User Journeys', () => {
   });
 
   test('Location Selector if Required', async ({ page }) => {
-    await page.goto('/openmrs/spa/login');
+    await page.goto('login');
 
     // Login
     const usernameField = page.locator('input[type="text"]').first();

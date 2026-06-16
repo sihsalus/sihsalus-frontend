@@ -1,7 +1,7 @@
 import classNames from 'classnames';
 import dayjs from 'dayjs';
 import type { TFunction } from 'i18next';
-import React, { type Dispatch, useCallback, useEffect, useRef, useState } from 'react';
+import React, { type Dispatch, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import 'dayjs/plugin/utc';
 import {
@@ -17,7 +17,11 @@ import {
 } from '@carbon/react';
 import { WarningFilled } from '@carbon/react/icons';
 import { OpenmrsDatePicker, ResponsiveWrapper, showSnackbar, useDebounce, useSession } from '@openmrs/esm-framework';
-import { type AntecedentTypeCode, antecedentTypeOptions, getAntecedentTypeLabel } from '@sihsalus/esm-sihsalus-shared';
+import {
+  type AntecedentTypeCode,
+  antecedentTypeOptions,
+  getAntecedentTypeLabel,
+} from '@openmrs/esm-patient-common-lib';
 import { Controller, useFormContext } from 'react-hook-form';
 import {
   type CodedCondition,
@@ -85,10 +89,18 @@ const ConditionsWidget: React.FC<ConditionsWidgetProps> = ({
   const displayName = conditionToEdit?.display;
   const editableClinicalStatus = conditionToEdit?.clinicalStatus;
   const editableAbatementDateTime = conditionToEdit?.abatementDateTime;
+  const editableAntecedentType = matchingCondition?.antecedentType ?? conditionToEdit?.antecedentType;
   const [selectedCondition, setSelectedCondition] = useState<CodedCondition>(null);
   const [searchTerm, setSearchTerm] = useState('');
   const debouncedSearchTerm = useDebounce(searchTerm);
   const { searchResults, isSearching } = useConditionsSearch(debouncedSearchTerm);
+  const availableAntecedentTypeOptions = useMemo(
+    () =>
+      antecedentTypeOptions.filter(
+        (option) => option.code !== 'surgical' || lockedAntecedentType || editableAntecedentType === 'surgical',
+      ),
+    [editableAntecedentType, lockedAntecedentType],
+  );
 
   const handleConditionChange = useCallback((selectedCondition: CodedCondition) => {
     setSelectedCondition(selectedCondition);
@@ -229,7 +241,7 @@ const ConditionsWidget: React.FC<ConditionsWidgetProps> = ({
                 valueSelected={value ?? ''}
                 aria-labelledby={errors?.antecedentType ? 'antecedentTypeError' : undefined}
               >
-                {antecedentTypeOptions.map((option) => (
+                {availableAntecedentTypeOptions.map((option) => (
                   <RadioButton
                     key={option.code}
                     id={`antecedent-type-${option.code}`}

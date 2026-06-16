@@ -17,7 +17,8 @@
 .tiles {
   @include type.type-style("body-compact-01");
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(16rem, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(18rem, 1fr));
+  align-items: stretch;
 }
 
 .tiles > .col {
@@ -27,13 +28,30 @@
   border-bottom: 1px solid $ui-03;
 }
 
-.tiles li {
+.detailList {
+  margin: layout.$spacing-03 0 0;
+  padding-left: layout.$spacing-05;
+  list-style: disc;
+}
+
+.detailList li {
   margin: layout.$spacing-03 0;
+  padding-left: layout.$spacing-02;
+}
+
+.itemLabel {
+  font-weight: 600;
+}
+
+.emptyState {
+  margin: layout.$spacing-03 0 0;
+  color: $text-02;
 }
 
 .relationship {
   display: flex;
   flex-flow: row nowrap;
+  gap: layout.$spacing-03;
 }
 
 .relationship div {

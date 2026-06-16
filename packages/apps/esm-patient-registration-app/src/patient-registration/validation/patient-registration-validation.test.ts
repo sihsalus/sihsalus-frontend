@@ -6,6 +6,7 @@ import { type RegistrationConfig } from '../../config-schema';
 import { getValidationSchema } from './patient-registration-validation';
 
 const mockGetConfig = vi.mocked(getConfig);
+const phoneAttributeUuid = '14d4f066-15f5-102d-96e4-000c29c2a5d7';
 
 describe('Patient registration validation', () => {
   beforeEach(() => {
@@ -13,6 +14,7 @@ describe('Patient registration validation', () => {
       fieldConfigurations: {
         name: {
           requireFamilyName2: false,
+          unidentifiedPatientAttributeTypeUuid: 'unknown-patient-attribute',
         },
         gender: [
           {
@@ -40,6 +42,24 @@ describe('Patient registration validation', () => {
           '057de23f-3d9c-4314-9391-4452970739c6/aIsToB',
         ],
       },
+      fieldDefinitions: [
+        {
+          id: 'companionName',
+          type: 'person attribute',
+          uuid: 'companion-name-attribute',
+          showHeading: false,
+        },
+        {
+          id: 'phone',
+          type: 'person attribute',
+          uuid: phoneAttributeUuid,
+          showHeading: false,
+          validation: {
+            required: false,
+            matches: '^\\+?[0-9][0-9\\s().-]{5,19}$',
+          },
+        },
+      ],
     });
   });
 
@@ -68,12 +88,13 @@ describe('Patient registration validation', () => {
       },
     },
     relationships: [],
+    attributes: {},
   };
 
-  const validateFormValues = async (formValues) => {
+  const validateFormValues = async (formValues, identifierTypes = []) => {
     const config = (await getConfig('@openmrs/esm-patient-registration-app')) as unknown as RegistrationConfig;
 
-    const validationSchema = getValidationSchema(config);
+    const validationSchema = getValidationSchema(config, identifierTypes);
     try {
       await validationSchema.validate(formValues, { abortEarly: false });
     } catch (err) {
@@ -102,6 +123,107 @@ describe('Patient registration validation', () => {
     };
     const validationError = await validateFormValues(invalidFormValues);
     expect(validationError.errors).toContain('familyNameRequired');
+  });
+
+  it('should reject names shorter than 2 characters', async () => {
+    const invalidFormValues = {
+      ...validFormValues,
+      givenName: 'J',
+    };
+    const validationError = await validateFormValues(invalidFormValues);
+    expect(validationError.errors).toContain('nameTooShort');
+  });
+
+  it('should reject names containing digits', async () => {
+    const invalidFormValues = {
+      ...validFormValues,
+      familyName: 'D03',
+    };
+    const validationError = await validateFormValues(invalidFormValues);
+    expect(validationError.errors).toContain('nameContainsInvalidCharacters');
+  });
+
+  it.each([
+    ['middleName', 'R2'],
+    ['familyName2', 'D03'],
+    ['additionalMiddleName', 'R2'],
+    ['additionalFamilyName2', 'D03'],
+  ])('should reject digits in optional name field %s', async (fieldName, value) => {
+    const invalidFormValues = {
+      ...validFormValues,
+      [fieldName]: value,
+    };
+    const validationError = await validateFormValues(invalidFormValues);
+    expect(validationError.errors).toContain('nameContainsInvalidCharacters');
+  });
+
+  it('should reject names containing forbidden symbols', async () => {
+    const invalidFormValues = {
+      ...validFormValues,
+      givenName: 'John@',
+    };
+    const validationError = await validateFormValues(invalidFormValues);
+    expect(validationError.errors).toContain('nameContainsInvalidCharacters');
+  });
+
+  it('should allow names with accents, hyphens and apostrophes', async () => {
+    const validNameValues = {
+      ...validFormValues,
+      givenName: 'José',
+      familyName: "O'Brien-De la Cruz",
+    };
+    const validationError = await validateFormValues(validNameValues);
+    expect(validationError).toBeFalsy();
+  });
+
+  it('should allow valid residence contact attributes', async () => {
+    const validValues = {
+      ...validFormValues,
+      attributes: {
+        [phoneAttributeUuid]: '999 888 777',
+      },
+    };
+
+    const validationError = await validateFormValues(validValues);
+
+    expect(validationError).toBeFalsy();
+  });
+
+  it('should reject scientific notation in phone attributes', async () => {
+    const invalidFormValues = {
+      ...validFormValues,
+      attributes: {
+        [phoneAttributeUuid]: 'e100',
+      },
+    };
+
+    const validationError = await validateFormValues(invalidFormValues);
+
+    expect(validationError.errors).toContain('invalidInput');
+  });
+
+  it('should reject an identifier that does not match the backend format', async () => {
+    const identifierTypes = [{ fieldName: 'nationalId', format: '^[0-9]{8}$', name: 'DNI', uuid: 'dni-uuid' }];
+    const invalidFormValues = {
+      ...validFormValues,
+      identifiers: {
+        nationalId: { required: true, identifierValue: '123456789', identifierTypeUuid: 'dni-uuid' },
+      },
+    };
+    const validationError = await validateFormValues(invalidFormValues, identifierTypes);
+    expect(validationError.errors).toContain('identifierInvalidFormat');
+  });
+
+  it('should allow an identifier that matches the backend format', async () => {
+    const identifierTypes = [{ fieldName: 'nationalId', format: '^[0-9]{8}$', name: 'DNI', uuid: 'dni-uuid' }];
+    const validIdentifierValues = {
+      ...validFormValues,
+      identifiers: {
+        nationalId: { required: true, identifierValue: '12345678', identifierTypeUuid: 'dni-uuid' },
+      },
+    };
+    const validationError = await validateFormValues(validIdentifierValues, identifierTypes);
+    expect(validationError).toBeFalsy();
   });
 
   it('should require additionalGivenName when addNameInLocalLanguage is true', async () => {
@@ -209,6 +331,35 @@ describe('Patient registration validation', () => {
     };
     const validationError = await validateFormValues(invalidFormValues);
     expect(validationError.errors).toContain('responsibleRelationshipRequiredForMinor');
+  });
+
+  it('should require a responsible party when the patient is unidentified', async () => {
+    const invalidFormValues = {
+      ...validFormValues,
+      attributes: {
+        'unknown-patient-attribute': 'true',
+      },
+      relationships: [],
+    };
+
+    const validationError = await validateFormValues(invalidFormValues);
+
+    expect(validationError.errors).toContain('responsibleRequiredForUnidentifiedPatient');
+  });
+
+  it('should allow an unidentified patient with a responsible person attribute', async () => {
+    const unidentifiedWithResponsibleAttribute = {
+      ...validFormValues,
+      attributes: {
+        'unknown-patient-attribute': 'true',
+        'companion-name-attribute': 'PNP Comisaría Napo',
+      },
+      relationships: [],
+    };
+
+    const validationError = await validateFormValues(unidentifiedWithResponsibleAttribute);
+
+    expect(validationError).toBeFalsy();
   });
 
   it('should allow a minor patient with a responsible relationship', async () => {

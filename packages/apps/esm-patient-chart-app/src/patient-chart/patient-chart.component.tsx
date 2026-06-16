@@ -1,25 +1,44 @@
-import { ExtensionSlot, setCurrentVisit, setLeftNav, unsetLeftNav, usePatient } from '@openmrs/esm-framework';
-import { getPatientChartStore, useVisitOrOfflineVisit } from '@openmrs/esm-patient-common-lib';
+import { ExtensionSlot, setCurrentVisit, showSnackbar, useLeftNav, usePatient } from '@openmrs/esm-framework';
+import {
+  getPatientChartStore,
+  type PatientWorkspaceGroupProps,
+  useVisitOrOfflineVisit,
+} from '@openmrs/esm-patient-common-lib';
 import { ComponentContext } from '@openmrs/esm-react-utils';
 import { launchWorkspaceGroup2, useWorkspaces, WorkspaceContainer } from '@openmrs/esm-styleguide';
 import classNames from 'classnames';
-import React, { useEffect, useMemo, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useParams } from 'react-router-dom';
 
 import { moduleName, spaBasePath } from '../constants';
 import Loader from '../loader/loader.component';
 import ChartReview from '../patient-chart/chart-review/chart-review.component';
-import SideMenuPanel from '../side-nav/side-menu.component';
 
 import { type LayoutMode } from './chart-review/dashboard-view.component';
 import styles from './patient-chart.scss';
 
 type WorkspaceGroupLauncher = typeof launchWorkspaceGroup2;
+type PatientChartWorkspaceGroupProps = PatientWorkspaceGroupProps | null;
+type WorkspaceGroupLaunchKey = {
+  patientUuid: string | null;
+  visitContextUuid: string | null;
+};
 
-function launchPatientChartWorkspaceGroup(
+function getWorkspaceGroupLaunchKey(groupProps: PatientChartWorkspaceGroupProps | null): WorkspaceGroupLaunchKey {
+  return {
+    patientUuid: groupProps?.patientUuid ?? null,
+    visitContextUuid: groupProps?.visitContext?.uuid ?? null,
+  };
+}
+
+function workspaceGroupLaunchKeysEqual(a: WorkspaceGroupLaunchKey | null, b: WorkspaceGroupLaunchKey | null) {
+  return a?.patientUuid === b?.patientUuid && a?.visitContextUuid === b?.visitContextUuid;
+}
+
+async function launchPatientChartWorkspaceGroup(
   groupName: Parameters<WorkspaceGroupLauncher>[0],
-  groupProps: Parameters<WorkspaceGroupLauncher>[1],
-) {
+  groupProps: PatientChartWorkspaceGroupProps,
+): Promise<boolean> {
   const shellLauncher = (
     globalThis as typeof globalThis & {
       _openmrs_esm_framework?: {
@@ -28,9 +47,9 @@ function launchPatientChartWorkspaceGroup(
     }
   )._openmrs_esm_framework?.launchWorkspaceGroup2;
 
-  return typeof shellLauncher === 'function'
-    ? shellLauncher(groupName, groupProps)
-    : launchWorkspaceGroup2(groupName, groupProps);
+  const launcher = typeof shellLauncher === 'function' ? shellLauncher : launchWorkspaceGroup2;
+
+  return Boolean(await launcher(groupName, groupProps));
 }
 
 const PatientChart: React.FC = () => {
@@ -41,7 +60,10 @@ const PatientChart: React.FC = () => {
   const state = useMemo(() => ({ patient, patientUuid }), [patient, patientUuid]);
   const { workspaceWindowState, active } = useWorkspaces();
   const [layoutMode, setLayoutMode] = useState<LayoutMode>();
-  const launchedWorkspaceGroupPatientUuid = useRef<string | null>(null);
+  const launchedWorkspaceGroupKey = useRef<WorkspaceGroupLaunchKey | null>(null);
+  const latestWorkspaceGroupProps = useRef<PatientChartWorkspaceGroupProps | null>(null);
+  const isWorkspaceGroupLaunchPending = useRef(false);
+  const isMounted = useRef(false);
   const hasVisibleLegacyWorkspace = workspaceWindowState === 'normal' && active;
   const patientChartGroupProps = useMemo(
     () =>
@@ -66,10 +88,14 @@ const PatientChart: React.FC = () => {
   // patient search) must be updated in the callback, which is called when the patient
   // chart unmounts.
   useEffect(() => {
+    // Point the visit context store at this patient so that useVisit can promote
+    // the active visit into the visit context (framework 9.x no longer does this
+    // unless the store already references the patient).
+    setCurrentVisit(patientUuid, null);
     return () => {
       setCurrentVisit(null, null);
     };
-  }, []);
+  }, [patientUuid]);
 
   useEffect(() => {
     getPatientChartStore().setState({
@@ -89,30 +115,82 @@ const PatientChart: React.FC = () => {
   }, [currentVisit, mutateVisitContext, patient, patientUuid]);
 
   const leftNavBasePath = useMemo(() => spaBasePath.replace(':patientUuid', patientUuid), [patientUuid]);
+  useLeftNav({
+    name: 'patient-chart-dashboard-slot',
+    basePath: leftNavBasePath,
+    mode: 'normal',
+  });
+
   useEffect(() => {
-    setLeftNav({
-      name: 'patient-chart-dashboard-slot',
-      basePath: leftNavBasePath,
-    });
-    return () => unsetLeftNav('patient-chart-dashboard-slot');
-  }, [leftNavBasePath]);
+    isMounted.current = true;
+    return () => {
+      isMounted.current = false;
+    };
+  }, []);
+
+  const launchLatestWorkspaceGroup = useCallback(async () => {
+    if (isWorkspaceGroupLaunchPending.current) {
+      return;
+    }
+
+    isWorkspaceGroupLaunchPending.current = true;
+
+    try {
+      let needsLaunch = true;
+      while (needsLaunch) {
+        const groupProps = latestWorkspaceGroupProps.current;
+        const launchKey = getWorkspaceGroupLaunchKey(groupProps);
+
+        if (workspaceGroupLaunchKeysEqual(launchKey, launchedWorkspaceGroupKey.current)) {
+          needsLaunch = false;
+          continue;
+        }
+
+        if (!isMounted.current) {
+          return;
+        }
+
+        const launched = await launchPatientChartWorkspaceGroup('patient-chart', groupProps);
+
+        if (!isMounted.current) {
+          return;
+        }
+
+        if (!launched) {
+          needsLaunch = false;
+          continue;
+        }
+
+        launchedWorkspaceGroupKey.current = launchKey;
+
+        const latestLaunchKey = getWorkspaceGroupLaunchKey(latestWorkspaceGroupProps.current);
+        if (workspaceGroupLaunchKeysEqual(latestLaunchKey, launchedWorkspaceGroupKey.current)) {
+          needsLaunch = false;
+        }
+      }
+    } finally {
+      isWorkspaceGroupLaunchPending.current = false;
+    }
+  }, []);
 
   useEffect(() => {
     if (!patientUuid || isLoadingPatient || hasVisibleLegacyWorkspace) {
       return;
     }
 
-    if (launchedWorkspaceGroupPatientUuid.current === patientUuid) {
-      return;
-    }
-
-    launchedWorkspaceGroupPatientUuid.current = patientUuid;
-    void launchPatientChartWorkspaceGroup('patient-chart', patientChartGroupProps);
-  }, [hasVisibleLegacyWorkspace, isLoadingPatient, patientChartGroupProps, patientUuid]);
+    latestWorkspaceGroupProps.current = patientChartGroupProps;
+    void launchLatestWorkspaceGroup().catch((error) => {
+      showSnackbar({
+        kind: 'error',
+        title: 'Error launching workspace group',
+        subtitle: error?.message,
+        isLowContrast: false,
+      });
+    });
+  }, [hasVisibleLegacyWorkspace, isLoadingPatient, launchLatestWorkspaceGroup, patientChartGroupProps, patientUuid]);
 
   return (
     <>
-      <SideMenuPanel />
       <main className={classNames('omrs-main-content', styles.chartContainer)}>
         <div
           className={classNames(

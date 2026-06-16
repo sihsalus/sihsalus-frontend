@@ -139,6 +139,12 @@ export const configSchema = {
       _description: 'The UUID of the priority with the highest sort weight for the queues eg Emergency.',
       _default: defaultEmergencyPriorityUuid, // 933e6d55-d64a-498d-b1b2-b3d5242e4199
     },
+    generalPatientNoteConceptUuid: {
+      _type: Type.ConceptUuid,
+      _description:
+        'The UUID of the free text note field intended to capture unstructured description of the patient encounter',
+      _default: '162169AAAAAAAAAAAAAAAAAAAAAAAAAAAAAA',
+    },
     heightUuid: {
       _type: Type.ConceptUuid,
       _default: '5090AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA',
@@ -156,6 +162,10 @@ export const configSchema = {
       _type: Type.ConceptUuid,
       _default: '5087AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA',
     },
+    problemListConceptUuid: {
+      _type: Type.ConceptUuid,
+      _default: '1284AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA',
+    },
     respiratoryRateUuid: {
       _type: Type.ConceptUuid,
       _default: '5242AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA',
@@ -163,6 +173,10 @@ export const configSchema = {
     temperatureUuid: {
       _type: Type.ConceptUuid,
       _default: '5088AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA',
+    },
+    visitDiagnosesConceptUuid: {
+      _type: Type.ConceptUuid,
+      _default: '159947AAAAAAAAAAAAAAAAAAAAAAAAAAAAAA',
     },
     weightUuid: {
       _type: Type.ConceptUuid,
@@ -396,6 +410,12 @@ export const configSchema = {
     _description: 'Whether start visit form should display recommended visit type tab. Requires `visitTypeResourceUrl`',
     _default: false,
   },
+  visitNoteEncounterTypeUuid: {
+    _type: Type.UUID,
+    _description:
+      'The UUID of the visit note encounter type, used to source diagnoses and notes shown in the visit summary.',
+    _default: 'd7151f82-c1f3-4152-a605-2f9ea7414a79',
+  },
   visitQueueNumberAttributeUuid: {
     _type: Type.String,
     _description: 'The UUID of the visit attribute that contains the visit queue number.',
@@ -440,13 +460,16 @@ export interface ConfigObject {
     defaultTransitionStatus: string;
     diastolicBloodPressureUuid: string;
     emergencyPriorityConceptUuid: string;
+    generalPatientNoteConceptUuid: string;
     heightUuid: string;
     historicalObsConceptUuid: Array<string>;
     oxygenSaturationUuid: string;
+    problemListConceptUuid: string;
     pulseUuid: string;
     respiratoryRateUuid: string;
     systolicBloodPressureUuid: string;
     temperatureUuid: string;
+    visitDiagnosesConceptUuid: string;
     weightUuid: string;
   };
   contactAttributeType: Array<string>;
@@ -458,6 +481,7 @@ export interface ConfigObject {
   };
   queueTables: TablesConfig;
   showRecommendedVisitTypeTab: boolean;
+  visitNoteEncounterTypeUuid: string;
   visitQueueNumberAttributeUuid: string | null;
   visitTypeResourceUrl: string;
   vitals: VitalsConfigObject;

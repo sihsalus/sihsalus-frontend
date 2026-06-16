@@ -62,7 +62,8 @@ describe('AllergyForm', () => {
     const user = userEvent.setup();
 
     const aceInhibitorsAllergen = mockAllergens.find((allergen) => allergen.display === 'ACE inhibitors');
-    const reactionToAceInhibitors = mockAllergicReactions.find((reaction) => reaction.display === 'Cough')?.display;
+    const aceInhibitorsReaction = mockAllergicReactions.find((reaction) => reaction.display === 'Cough');
+    const reactionToAceInhibitors = aceInhibitorsReaction?.display;
 
     it('creates a new allergy when the user selects an allergen and reaction', async () => {
       renderAllergyForm();
@@ -78,6 +79,14 @@ describe('AllergyForm', () => {
       await user.click(screen.getByRole('button', { name: /save and close/i }));
 
       expect(mockSaveAllergy).toHaveBeenCalledTimes(1);
+      expect(mockSaveAllergy.mock.calls[0][0]).toEqual(
+        buildExpectedPayload(
+          aceInhibitorsAllergen,
+          aceInhibitorsReaction,
+          mockConcepts.moderateReactionUuid,
+          'Patient experienced a persistent dry cough while taking ACE inhibitors, which resolved upon discontinuation and recurred upon rechallenge',
+        ),
+      );
       expect(mockShowSnackbar).toHaveBeenCalledTimes(1);
       expect(mockShowSnackbar).toHaveBeenCalledWith({
         isLowContrast: true,

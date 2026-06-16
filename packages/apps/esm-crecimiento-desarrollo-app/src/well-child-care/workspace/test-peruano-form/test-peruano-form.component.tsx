@@ -23,10 +23,16 @@ import {
   usePatient,
   useSession,
 } from '@openmrs/esm-framework';
+import {
+  shouldPreventPlainNumberKey,
+  shouldPreventPlainNumberPaste,
+  validatePlainNumberInput,
+} from '@openmrs/esm-utils';
+import { RequirePrivilege } from '@sihsalus/esm-rbac';
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-
 import type { ConfigObject } from '../../../config-schema';
+import { credEarlyStimulationEditPrivilege } from '../../../constants';
 import type { DefaultPatientWorkspaceProps } from '../../../types';
 import styles from './test-peruano-form.scss';
 import {
@@ -40,6 +46,24 @@ import {
   type TestPeruanoClassification,
   type TestPeruanoFormData,
 } from './test-peruano-form.utils';
+
+const childAgeMonthsConstraints = { integer: true, max: 30, min: 0, nonNegative: true };
+
+function preventInvalidChildAgeKey(event: React.KeyboardEvent<HTMLInputElement>) {
+  if (event.ctrlKey || event.metaKey || event.altKey) {
+    return;
+  }
+
+  if (shouldPreventPlainNumberKey(event.key, childAgeMonthsConstraints)) {
+    event.preventDefault();
+  }
+}
+
+function preventInvalidChildAgePaste(event: React.ClipboardEvent<HTMLInputElement>) {
+  if (shouldPreventPlainNumberPaste(event.clipboardData.getData('text'), childAgeMonthsConstraints)) {
+    event.preventDefault();
+  }
+}
 
 function getAgeInMonths(birthDate?: string) {
   if (!birthDate) {
@@ -208,220 +232,227 @@ const TestPeruanoForm: React.FC<DefaultPatientWorkspaceProps> = ({ closeWorkspac
   );
 
   return (
-    <Form className={styles.form} onSubmit={saveTestPeruanoData}>
-      <Stack gap={6}>
-        <header className={styles.header}>
-          <div>
-            <h3>{t('testPeruanoTitle', 'Test Peruano de Desarrollo del Niño')}</h3>
-            <p>{t('testPeruanoSubtitle', 'Perfil gráfico de hitos del desarrollo de 0 a 30 meses')}</p>
-          </div>
-          <Tag type={getClassificationTag(results.total.classification)} size="md">
-            {t(`tpClassification_${results.total.classification}`, results.total.classification)}
-          </Tag>
-        </header>
-
-        <section className={styles.patientPanel}>
-          <div>
-            <span className={styles.fieldLabel}>{t('patient', 'Paciente')}</span>
-            <strong>{patient.patient ? getPatientName(patient.patient) : t('loading', 'Cargando...')}</strong>
-          </div>
-          <NumberInput
-            allowEmpty={false}
-            disableWheel
-            hideSteppers
-            id="child-age-months"
-            invalid={!isAgeSupported}
-            invalidText={t('tpUnsupportedAge', 'El Test Peruano aplica hasta los 30 meses.')}
-            label={t('ageMonthsLabel', 'Edad en meses')}
-            max={30}
-            min={0}
-            onChange={(_event, { value }) => setChildAgeMonths(Number(value) || 0)}
-            value={childAgeMonths}
-          />
-          <DatePicker
-            datePickerType="single"
-            dateFormat="Y-m-d"
-            onChange={(dates) => {
-              if (dates[0]) {
-                setEvaluationDate(dates[0].toISOString().split('T')[0]);
-              }
-            }}
-            value={evaluationDate}
-          >
-            <DatePickerInput
-              id="evaluation-date"
-              labelText={t('evaluationDate', 'Fecha de evaluación')}
-              placeholder="yyyy-mm-dd"
-            />
-          </DatePicker>
-          <Select
-            id="cultural-context"
-            labelText={t('culturalContext', 'Contexto')}
-            onChange={(event) => setCulturalContext(event.target.value as TestPeruanoFormData['culturalContext'])}
-            value={culturalContext}
-          >
-            <SelectItem value="urbano" text={t('urban', 'Urbano')} />
-            <SelectItem value="rural" text={t('rural', 'Rural')} />
-            <SelectItem value="urbano_marginal" text={t('urbanMarginal', 'Urbano marginal')} />
-          </Select>
-          <Select
-            id="primary-language"
-            labelText={t('primaryLanguage', 'Idioma')}
-            onChange={(event) => setPrimaryLanguage(event.target.value as TestPeruanoFormData['primaryLanguage'])}
-            value={primaryLanguage}
-          >
-            <SelectItem value="español" text={t('spanish', 'Español')} />
-            <SelectItem value="quechua" text={t('quechua', 'Quechua')} />
-            <SelectItem value="bilingue" text={t('bilingual', 'Bilingüe')} />
-          </Select>
-        </section>
-
-        <section className={styles.summaryPanel}>
-          <div className={styles.summaryMetric}>
-            <span>{t('tpExpectedMilestones', 'Hitos esperados')}</span>
-            <strong>{results.total.expected}</strong>
-          </div>
-          <div className={styles.summaryMetric}>
-            <span>{t('tpAchievedMilestones', 'Logrados')}</span>
-            <strong>{results.total.achieved}</strong>
-          </div>
-          <div className={styles.summaryMetric}>
-            <span>{t('tpPendingMilestones', 'Sin evaluar')}</span>
-            <strong>{results.total.pending}</strong>
-          </div>
-          <div className={styles.summaryMetric}>
-            <span>{t('tpScorePercent', 'Avance')}</span>
-            <strong>{results.total.scorePercent}%</strong>
-          </div>
-        </section>
-
-        <section className={styles.profileSection}>
-          <div className={styles.sectionHeader}>
+    <RequirePrivilege privilege={credEarlyStimulationEditPrivilege}>
+      <Form className={styles.form} onSubmit={saveTestPeruanoData}>
+        <Stack gap={6}>
+          <header className={styles.header}>
             <div>
-              <h4>{t('tpGraphicProfile', 'Perfil gráfico')}</h4>
-              <p>{t('tpGraphicProfileHint', 'Marque cada cruce área/edad: logrado, no logrado o sin evaluar.')}</p>
+              <h3>{t('testPeruanoTitle', 'Test Peruano de Desarrollo del Niño')}</h3>
+              <p>{t('testPeruanoSubtitle', 'Perfil gráfico de hitos del desarrollo de 0 a 30 meses')}</p>
             </div>
-            <div className={styles.legend}>
-              <span>
-                <CheckmarkFilled size={14} /> {t('achieved', 'Logrado')}
-              </span>
-              <span>
-                <WarningAltFilled size={14} /> {t('notAchieved', 'No logrado')}
-              </span>
-              <span>
-                <CircleDash size={14} /> {t('notEvaluated', 'Sin evaluar')}
-              </span>
+            <Tag type={getClassificationTag(results.total.classification)} size="md">
+              {t(`tpClassification_${results.total.classification}`, results.total.classification)}
+            </Tag>
+          </header>
+
+          <section className={styles.patientPanel}>
+            <div>
+              <span className={styles.fieldLabel}>{t('patient', 'Paciente')}</span>
+              <strong>{patient.patient ? getPatientName(patient.patient) : t('loading', 'Cargando...')}</strong>
             </div>
-          </div>
+            <NumberInput
+              allowEmpty={false}
+              disableWheel
+              hideSteppers
+              id="child-age-months"
+              invalid={!isAgeSupported}
+              invalidText={t('tpUnsupportedAge', 'El Test Peruano aplica hasta los 30 meses.')}
+              label={t('ageMonthsLabel', 'Edad en meses')}
+              max={30}
+              min={0}
+              onChange={(_event, { value }) => {
+                const validation = validatePlainNumberInput(value ?? '', childAgeMonthsConstraints);
+                setChildAgeMonths(validation.parsedValue ?? 0);
+              }}
+              onKeyDown={preventInvalidChildAgeKey}
+              onPaste={preventInvalidChildAgePaste}
+              value={childAgeMonths}
+            />
+            <DatePicker
+              datePickerType="single"
+              dateFormat="Y-m-d"
+              onChange={(dates) => {
+                if (dates[0]) {
+                  setEvaluationDate(dates[0].toISOString().split('T')[0]);
+                }
+              }}
+              value={evaluationDate}
+            >
+              <DatePickerInput
+                id="evaluation-date"
+                labelText={t('evaluationDate', 'Fecha de evaluación')}
+                placeholder="yyyy-mm-dd"
+              />
+            </DatePicker>
+            <Select
+              id="cultural-context"
+              labelText={t('culturalContext', 'Contexto')}
+              onChange={(event) => setCulturalContext(event.target.value as TestPeruanoFormData['culturalContext'])}
+              value={culturalContext}
+            >
+              <SelectItem value="urbano" text={t('urban', 'Urbano')} />
+              <SelectItem value="rural" text={t('rural', 'Rural')} />
+              <SelectItem value="urbano_marginal" text={t('urbanMarginal', 'Urbano marginal')} />
+            </Select>
+            <Select
+              id="primary-language"
+              labelText={t('primaryLanguage', 'Idioma')}
+              onChange={(event) => setPrimaryLanguage(event.target.value as TestPeruanoFormData['primaryLanguage'])}
+              value={primaryLanguage}
+            >
+              <SelectItem value="español" text={t('spanish', 'Español')} />
+              <SelectItem value="quechua" text={t('quechua', 'Quechua')} />
+              <SelectItem value="bilingue" text={t('bilingual', 'Bilingüe')} />
+            </Select>
+          </section>
 
-          <div className={styles.profileGrid} role="grid" aria-label={t('tpGraphicProfile', 'Perfil gráfico')}>
-            <div className={styles.cornerCell}>{t('area', 'Área')}</div>
-            {TEST_PERUANO_AGE_MONTHS.map((month) => (
-              <div
-                key={month}
-                className={`${styles.monthHeader} ${month === currentAgeColumn ? styles.currentMonth : ''}`}
-              >
-                {month}
+          <section className={styles.summaryPanel}>
+            <div className={styles.summaryMetric}>
+              <span>{t('tpExpectedMilestones', 'Hitos esperados')}</span>
+              <strong>{results.total.expected}</strong>
+            </div>
+            <div className={styles.summaryMetric}>
+              <span>{t('tpAchievedMilestones', 'Logrados')}</span>
+              <strong>{results.total.achieved}</strong>
+            </div>
+            <div className={styles.summaryMetric}>
+              <span>{t('tpPendingMilestones', 'Sin evaluar')}</span>
+              <strong>{results.total.pending}</strong>
+            </div>
+            <div className={styles.summaryMetric}>
+              <span>{t('tpScorePercent', 'Avance')}</span>
+              <strong>{results.total.scorePercent}%</strong>
+            </div>
+          </section>
+
+          <section className={styles.profileSection}>
+            <div className={styles.sectionHeader}>
+              <div>
+                <h4>{t('tpGraphicProfile', 'Perfil gráfico')}</h4>
+                <p>{t('tpGraphicProfileHint', 'Marque cada cruce área/edad: logrado, no logrado o sin evaluar.')}</p>
               </div>
-            ))}
-
-            {TEST_PERUANO_AREAS.map((area) => (
-              <React.Fragment key={area.id}>
-                <div className={styles.areaName}>{t(area.labelKey, area.labelDefault)}</div>
-                {TEST_PERUANO_AGE_MONTHS.map((month) => {
-                  const status = profile[area.id][month];
-                  const isExpected = month <= childAgeMonths;
-
-                  return (
-                    <button
-                      aria-label={`${t(area.labelKey, area.labelDefault)} ${month} ${t(status, status)}`}
-                      className={`${styles.profileCell} ${styles[status]} ${isExpected ? styles.expected : ''}`}
-                      key={`${area.id}-${month}`}
-                      onClick={() => updateCell(area.id, month)}
-                      type="button"
-                    >
-                      {getCellStatusIcon(status)}
-                    </button>
-                  );
-                })}
-              </React.Fragment>
-            ))}
-          </div>
-        </section>
-
-        <section className={styles.areaResults}>
-          {TEST_PERUANO_AREAS.map((area) => {
-            const areaResult = results.areas[area.id];
-
-            return (
-              <div className={styles.areaResult} key={area.id}>
-                <div className={styles.areaResultHeader}>
-                  <strong>{t(area.labelKey, area.labelDefault)}</strong>
-                  <Tag type={getClassificationTag(areaResult.classification)} size="sm">
-                    {t(`tpClassification_${areaResult.classification}`, areaResult.classification)}
-                  </Tag>
-                </div>
-                <div className={styles.progressTrack}>
-                  <span style={{ width: `${areaResult.scorePercent}%` }} />
-                </div>
-                <small>
-                  {areaResult.achieved}/{areaResult.expected} · {areaResult.scorePercent}%
-                </small>
+              <div className={styles.legend}>
+                <span>
+                  <CheckmarkFilled size={14} /> {t('achieved', 'Logrado')}
+                </span>
+                <span>
+                  <WarningAltFilled size={14} /> {t('notAchieved', 'No logrado')}
+                </span>
+                <span>
+                  <CircleDash size={14} /> {t('notEvaluated', 'Sin evaluar')}
+                </span>
               </div>
-            );
-          })}
-        </section>
+            </div>
 
-        <section className={styles.notesGrid}>
-          <TextArea
-            labelText={t('culturalNotes', 'Notas culturales y de contexto')}
-            onChange={(event) => setCulturalNotes(event.target.value)}
-            placeholder={t(
-              'culturalNotesPlaceholder',
-              'Factores familiares, lingüísticos o ambientales relevantes para interpretar el perfil...',
-            )}
-            rows={3}
-            value={culturalNotes}
-          />
-          <TextArea
-            labelText={t('generalObservations', 'Observaciones generales')}
-            onChange={(event) => setObservations(event.target.value)}
-            placeholder={t('observationsPlaceholder', 'Observaciones clínicas de la evaluación...')}
-            rows={3}
-            value={observations}
-          />
-        </section>
+            <div className={styles.profileGrid} role="grid" aria-label={t('tpGraphicProfile', 'Perfil gráfico')}>
+              <div className={styles.cornerCell}>{t('area', 'Área')}</div>
+              {TEST_PERUANO_AGE_MONTHS.map((month) => (
+                <div
+                  key={month}
+                  className={`${styles.monthHeader} ${month === currentAgeColumn ? styles.currentMonth : ''}`}
+                >
+                  {month}
+                </div>
+              ))}
 
-        <InlineNotification
-          hideCloseButton
-          kind={results.total.classification === 'normal' ? 'success' : 'warning'}
-          lowContrast
-          title={t('recommendation', 'Recomendación')}
-          subtitle={t(results.total.recommendationKey, results.total.recommendationDefault)}
-        />
+              {TEST_PERUANO_AREAS.map((area) => (
+                <React.Fragment key={area.id}>
+                  <div className={styles.areaName}>{t(area.labelKey, area.labelDefault)}</div>
+                  {TEST_PERUANO_AGE_MONTHS.map((month) => {
+                    const status = profile[area.id][month];
+                    const isExpected = month <= childAgeMonths;
 
-        {showErrorNotification && (
+                    return (
+                      <button
+                        aria-label={`${t(area.labelKey, area.labelDefault)} ${month} ${t(status, status)}`}
+                        className={`${styles.profileCell} ${styles[status]} ${isExpected ? styles.expected : ''}`}
+                        key={`${area.id}-${month}`}
+                        onClick={() => updateCell(area.id, month)}
+                        type="button"
+                      >
+                        {getCellStatusIcon(status)}
+                      </button>
+                    );
+                  })}
+                </React.Fragment>
+              ))}
+            </div>
+          </section>
+
+          <section className={styles.areaResults}>
+            {TEST_PERUANO_AREAS.map((area) => {
+              const areaResult = results.areas[area.id];
+
+              return (
+                <div className={styles.areaResult} key={area.id}>
+                  <div className={styles.areaResultHeader}>
+                    <strong>{t(area.labelKey, area.labelDefault)}</strong>
+                    <Tag type={getClassificationTag(areaResult.classification)} size="sm">
+                      {t(`tpClassification_${areaResult.classification}`, areaResult.classification)}
+                    </Tag>
+                  </div>
+                  <div className={styles.progressTrack}>
+                    <span style={{ width: `${areaResult.scorePercent}%` }} />
+                  </div>
+                  <small>
+                    {areaResult.achieved}/{areaResult.expected} · {areaResult.scorePercent}%
+                  </small>
+                </div>
+              );
+            })}
+          </section>
+
+          <section className={styles.notesGrid}>
+            <TextArea
+              labelText={t('culturalNotes', 'Notas culturales y de contexto')}
+              onChange={(event) => setCulturalNotes(event.target.value)}
+              placeholder={t(
+                'culturalNotesPlaceholder',
+                'Factores familiares, lingüísticos o ambientales relevantes para interpretar el perfil...',
+              )}
+              rows={3}
+              value={culturalNotes}
+            />
+            <TextArea
+              labelText={t('generalObservations', 'Observaciones generales')}
+              onChange={(event) => setObservations(event.target.value)}
+              placeholder={t('observationsPlaceholder', 'Observaciones clínicas de la evaluación...')}
+              rows={3}
+              value={observations}
+            />
+          </section>
+
           <InlineNotification
-            kind="error"
-            title={t('error', 'Error')}
-            subtitle={t('testPeruanoSaveErrorRetry', 'Revise el formulario e intente nuevamente.')}
-            onClose={() => setShowErrorNotification(false)}
+            hideCloseButton
+            kind={results.total.classification === 'normal' ? 'success' : 'warning'}
+            lowContrast
+            title={t('recommendation', 'Recomendación')}
+            subtitle={t(results.total.recommendationKey, results.total.recommendationDefault)}
           />
-        )}
 
-        <ButtonSet className={isTablet ? styles.tabletActions : styles.actions}>
-          <Button kind="secondary" onClick={() => closeWorkspace()} disabled={isSubmitting}>
-            {t('cancel', 'Cancelar')}
-          </Button>
-          <Button kind="tertiary" onClick={resetProfile} disabled={isSubmitting} type="button">
-            {t('reset', 'Limpiar')}
-          </Button>
-          <Button kind="primary" type="submit" disabled={isSubmitting || !isAgeSupported}>
-            {isSubmitting ? t('saving', 'Guardando...') : t('saveAndClose', 'Guardar y cerrar')}
-          </Button>
-        </ButtonSet>
-      </Stack>
-    </Form>
+          {showErrorNotification && (
+            <InlineNotification
+              kind="error"
+              title={t('error', 'Error')}
+              subtitle={t('testPeruanoSaveErrorRetry', 'Revise el formulario e intente nuevamente.')}
+              onClose={() => setShowErrorNotification(false)}
+            />
+          )}
+
+          <ButtonSet className={isTablet ? styles.tabletActions : styles.actions}>
+            <Button kind="secondary" onClick={() => closeWorkspace()} disabled={isSubmitting}>
+              {t('cancel', 'Cancelar')}
+            </Button>
+            <Button kind="tertiary" onClick={resetProfile} disabled={isSubmitting} type="button">
+              {t('reset', 'Limpiar')}
+            </Button>
+            <Button kind="primary" type="submit" disabled={isSubmitting || !isAgeSupported}>
+              {isSubmitting ? t('saving', 'Guardando...') : t('saveAndClose', 'Guardar y cerrar')}
+            </Button>
+          </ButtonSet>
+        </Stack>
+      </Form>
+    </RequirePrivilege>
   );
 };
 

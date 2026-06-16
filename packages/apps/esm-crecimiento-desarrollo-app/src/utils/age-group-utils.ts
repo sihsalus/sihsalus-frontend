@@ -15,18 +15,18 @@ export interface AgeGroup {
 /**
  * Calcula la edad en días desde una fecha de nacimiento
  */
-export function calculateAgeInDays(birthDate: string | Date): number {
+export function calculateAgeInDays(birthDate: string | Date, referenceDate: string | Date = new Date()): number {
   const birth = dayjs(birthDate);
-  const now = dayjs();
+  const now = dayjs(referenceDate);
   return now.diff(birth, 'day');
 }
 
 /**
  * Calcula la edad en meses desde una fecha de nacimiento
  */
-export function calculateAgeInMonths(birthDate: string | Date): number {
+export function calculateAgeInMonths(birthDate: string | Date, referenceDate: string | Date = new Date()): number {
   const birth = dayjs(birthDate);
-  const now = dayjs();
+  const now = dayjs(referenceDate);
   return now.diff(birth, 'month', true); // permite fracciones
 }
 
@@ -46,8 +46,12 @@ export function getAgeGroup(ageInMonths: number, ageGroups: AgeGroup[]): AgeGrou
 /**
  * Devuelve el grupo etario que corresponde a una fecha de nacimiento usando la configuración proporcionada
  */
-export function getAgeGroupFromBirthDate(birthDate: string | Date, ageGroups: AgeGroup[]): AgeGroup | null {
-  const months = calculateAgeInMonths(birthDate);
+export function getAgeGroupFromBirthDate(
+  birthDate: string | Date,
+  ageGroups: AgeGroup[],
+  referenceDate: string | Date = new Date(),
+): AgeGroup | null {
+  const months = calculateAgeInMonths(birthDate, referenceDate);
   return getAgeGroup(months, ageGroups);
 }
 

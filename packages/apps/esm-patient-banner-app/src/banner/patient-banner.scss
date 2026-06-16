@@ -38,6 +38,81 @@
   background: none;
 }
 
+.patientInfo {
+  display: flex;
+  flex-direction: column;
+  padding: layout.$spacing-05 layout.$spacing-03 layout.$spacing-05 0;
+  width: 100%;
+  min-width: 0;
+}
+
+.patientNameRow,
+.patientDemographics {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.patientName {
+  @include type.type-style('heading-03');
+  color: #161616;
+  font-weight: 600;
+  margin-right: layout.$spacing-02;
+}
+
+.patientGender {
+  @include type.type-style('body-compact-02');
+  color: $text-02;
+  display: inline-flex;
+  align-items: center;
+  gap: layout.$spacing-01;
+  margin-right: layout.$spacing-03;
+}
+
+.patientTagsSlot {
+  display: inline-flex;
+  align-items: center;
+}
+
+.patientDemographics {
+  @include type.type-style('body-compact-02');
+  color: $text-02;
+  gap: layout.$spacing-02;
+  margin-top: layout.$spacing-02;
+}
+
+.plainIdentifier,
+.highlightedIdentifier {
+  display: inline-flex;
+  align-items: center;
+  white-space: nowrap;
+}
+
+.plainIdentifier {
+  color: $text-02;
+}
+
+.highlightedIdentifier {
+  color: #161616;
+  background-color: $ui-03;
+  border-radius: 1rem;
+  padding: 0 layout.$spacing-03;
+  min-height: 1.5rem;
+
+  .identifierValue {
+    font-weight: 700;
+  }
+}
+
+.patientInfoSeparator {
+  color: $text-02;
+}
+
+.patientBottomSlot {
+  display: inline-flex;
+  align-items: center;
+}
+
 .contactDetails {
   color: $text-02;
   width: 100%;

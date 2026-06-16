@@ -1,11 +1,11 @@
-import { render, screen } from '@testing-library/react';
+import { fireEvent, render, screen } from '@testing-library/react';
 import { useForm } from 'react-hook-form';
 import { renderWithSwr } from 'test-utils';
 
 import { type AdvancedPatientSearchState, type SearchFieldConfig } from '../../types';
 
 import { usePersonAttributeType } from './person-attributes.resource';
-import { SearchField } from './search-field.component';
+import { getIntegerInputValue, isValidIntegerInput, SearchField } from './search-field.component';
 
 vi.mock('./person-attributes.resource', async () => ({
   usePersonAttributeType: vi.fn(),
@@ -64,6 +64,50 @@ describe('SearchField', () => {
 
   beforeEach(() => {
     vi.clearAllMocks();
+  });
+
+  describe('Integer input guards', () => {
+    it('rejects scientific notation and decimal values', () => {
+      expect(isValidIntegerInput('232.3e1231', 130, 3)).toBe(false);
+      expect(isValidIntegerInput('1e2', 130, 3)).toBe(false);
+      expect(isValidIntegerInput('12.5', 130, 3)).toBe(false);
+      expect(isValidIntegerInput('+12', 130, 3)).toBe(false);
+      expect(isValidIntegerInput('-12', 130, 3)).toBe(false);
+      expect(isValidIntegerInput('12,5', 130, 3)).toBe(false);
+      expect(isValidIntegerInput('0', 31, 2, 1)).toBe(false);
+    });
+
+    it('keeps the current value when the next value is invalid', () => {
+      expect(getIntegerInputValue(23, '232', 130, 3)).toBe(23);
+      expect(getIntegerInputValue(23, '2e3', 130, 3)).toBe(23);
+      expect(getIntegerInputValue(23, '+2', 130, 3)).toBe(23);
+      expect(getIntegerInputValue(23, '-2', 130, 3)).toBe(23);
+      expect(getIntegerInputValue(23, '', 130, 3)).toBe(0);
+    });
+
+    it('prevents invalid age keystrokes and paste payloads in the rendered input', () => {
+      render(
+        <SearchField
+          field={{
+            name: 'age',
+            type: 'age',
+            min: 0,
+            max: 120,
+          }}
+          {...defaultProps}
+        />,
+      );
+
+      const ageInput = screen.getByRole('spinbutton', { name: /age/i });
+      for (const key of ['e', 'E', '+', '-', '.', ',']) {
+        expect(fireEvent.keyDown(ageInput, { key })).toBe(false);
+      }
+      expect(
+        fireEvent.paste(ageInput, {
+          clipboardData: { getData: () => '1e2' },
+        }),
+      ).toBe(false);
+    });
   });
 
   describe('Gender field', () => {
@@ -164,7 +208,7 @@ describe('SearchField', () => {
       mockUsePersonAttributeType.mockReturnValue({
         data: {
           format: 'java.lang.String',
-          display: 'Phone Number',
+          display: 'Nombre del Acompañante',
           uuid: 'test-uuid',
         },
         isLoading: false,
@@ -174,7 +218,37 @@ describe('SearchField', () => {
 
     it('renders person attribute field with correct props', () => {
       renderWithSwr(<SearchField field={personAttributeField} {...defaultProps} />);
-      expect(screen.getByText('Phone Number')).toBeInTheDocument();
+      expect(screen.getByText('Nombre del Acompañante')).toBeInTheDocument();
+    });
+
+    it('renders configured string answer options for boolean-like person attributes', () => {
+      mockUsePersonAttributeType.mockReturnValue({
+        data: {
+          format: 'java.lang.String',
+          display: 'Paciente No Identificado',
+          uuid: 'unknown-patient-uuid',
+        },
+        isLoading: false,
+        error: null,
+      });
+
+      renderWithSwr(
+        <SearchField
+          field={{
+            name: 'unknown-patient-uuid',
+            type: 'personAttribute',
+            attributeTypeUuid: 'unknown-patient-uuid',
+            stringAnswerOptions: [
+              { label: 'Sí', value: 'true' },
+              { label: 'No', value: 'false' },
+            ],
+          }}
+          {...defaultProps}
+        />,
+      );
+
+      expect(screen.getByText('Paciente No Identificado')).toBeInTheDocument();
+      expect(screen.getByRole('combobox')).toBeInTheDocument();
     });
   });
 

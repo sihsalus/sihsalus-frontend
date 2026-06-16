@@ -1,6 +1,15 @@
+import { getDefaultsFromConfigSchema } from '@openmrs/esm-framework';
+
+import { esmPatientRegistrationSchema, type RegistrationConfig } from '../config-schema';
 import { FormManager } from './form-manager';
 import { generateIdentifier } from './patient-registration.resource';
 import { type FormValues } from './patient-registration.types';
+import { birthAddressMarker, birthAddressMarkerField } from './patient-registration-utils';
+import {
+  getEffectiveRegistrationConfig,
+  peruInsuranceCodeAttributeTypeUuid,
+  peruPhoneAttributeTypeUuid,
+} from './peru-registration-config';
 
 vi.mock('./patient-registration.resource', async () => ({
   ...(await vi.importActual('./patient-registration.resource')),
@@ -41,6 +50,7 @@ const formValues: FormValues = {
     country: 'string',
     postalCode: 'string',
   },
+  birthAddress: {},
   identifiers: {
     foo: {
       identifierUuid: 'aUuid',
@@ -59,6 +69,12 @@ const formValues: FormValues = {
     },
   },
 };
+
+function getPeruRegistrationConfig() {
+  return getEffectiveRegistrationConfig(
+    getDefaultsFromConfigSchema(esmPatientRegistrationSchema) as RegistrationConfig,
+  );
+}
 
 describe('FormManager', () => {
   describe('createIdentifiers', () => {
@@ -88,6 +104,151 @@ describe('FormManager', () => {
       formValues.identifiers.foo.selectedSource.autoGenerationOption.manualEntryEnabled = true;
       await FormManager.savePatientIdentifiers(true, undefined, formValues.identifiers, {}, 'Nyc');
       expect(mockGenerateIdentifier.mock.calls).toHaveLength(0);
+    });
+  });
+
+  describe('getPatientToCreate', () => {
+    it('keeps residence, birthplace, and phone as separate persisted fields', () => {
+      const config = getPeruRegistrationConfig();
+      const values = {
+        ...formValues,
+        patientUuid: 'patient-uuid',
+        givenName: 'Juan',
+        familyName: 'Perez',
+        familyName2: 'Garcia',
+        gender: 'male',
+        birthdate: new Date(1990, 4, 14),
+        attributes: {
+          [peruPhoneAttributeTypeUuid]: '999888777',
+          [peruInsuranceCodeAttributeTypeUuid]: 'SIS-12345678',
+        },
+        address: {
+          country: 'PERU',
+          stateProvince: 'HUANCAVELICA',
+          countyDistrict: 'CHURCAMPA',
+          address1: 'JR LIMA 123',
+        },
+        birthAddress: {
+          country: 'PERU',
+          address1: 'LORETO',
+          stateProvince: 'MAYNAS',
+          countyDistrict: 'NAPO',
+          cityVillage: 'SANTA CLOTILDE',
+        },
+      };
+
+      const patient = FormManager.getPatientToCreate(true, values, {}, {}, [], config);
+
+      expect(patient.person.addresses).toEqual([
+        {
+          ...values.address,
+          preferred: true,
+        },
+        {
+          ...values.birthAddress,
+          preferred: false,
+          [birthAddressMarkerField]: birthAddressMarker,
+        },
+      ]);
+      expect(patient.person.attributes).toEqual(
+        expect.arrayContaining([
+          { attributeType: peruPhoneAttributeTypeUuid, value: '999888777' },
+          { attributeType: peruInsuranceCodeAttributeTypeUuid, value: 'SIS-12345678' },
+        ]),
+      );
+    });
+
+    it('does not create a birthplace address when the structured birthplace is empty', () => {
+      const config = getPeruRegistrationConfig();
+      const patient = FormManager.getPatientToCreate(
+        true,
+        {
+          ...formValues,
+          patientUuid: 'patient-uuid',
+          gender: 'male',
+          birthdate: '1990-05-14',
+          birthAddress: {},
+        },
+        {},
+        {},
+        [],
+        config,
+      );
+
+      expect(patient.person.addresses).toEqual([
+        {
+          country: 'string',
+          postalCode: 'string',
+          preferred: true,
+          stateProvince: 'New York',
+        },
+      ]);
+    });
+
+    it('keeps existing residence and birthplace address UUIDs while editing', () => {
+      const config = getPeruRegistrationConfig();
+      const patient = FormManager.getPatientToCreate(
+        false,
+        {
+          ...formValues,
+          patientUuid: 'patient-uuid',
+          gender: 'male',
+          birthdate: '1990-05-14',
+          birthAddress: {
+            country: 'PERU',
+            address1: 'HUANCAVELICA',
+          },
+        },
+        {
+          preferredAddressUuid: 'residence-address-uuid',
+          birthAddressUuid: 'birth-address-uuid',
+        },
+        {},
+        [],
+        config,
+      );
+
+      expect(patient.person.addresses).toEqual([
+        expect.objectContaining({
+          uuid: 'residence-address-uuid',
+          preferred: true,
+        }),
+        expect.objectContaining({
+          uuid: 'birth-address-uuid',
+          preferred: false,
+          [birthAddressMarkerField]: birthAddressMarker,
+        }),
+      ]);
+    });
+  });
+
+  describe('mapPatientToFhirPatient', () => {
+    it('maps the configured phone person attribute to FHIR telecom', () => {
+      const config = getPeruRegistrationConfig();
+      const patient = FormManager.getPatientToCreate(
+        true,
+        {
+          ...formValues,
+          patientUuid: 'patient-uuid',
+          gender: 'female',
+          birthdate: '1990-05-14',
+          attributes: {
+            [peruPhoneAttributeTypeUuid]: '999888777',
+          },
+        },
+        {},
+        {},
+        [],
+        config,
+      );
+
+      expect(FormManager.mapPatientToFhirPatient(patient, config).telecom).toEqual([
+        {
+          system: 'phone',
+          use: 'mobile',
+          value: '999888777',
+        },
+      ]);
     });
   });
 });

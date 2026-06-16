@@ -15,15 +15,20 @@
   display: flex;
   align-items: center;
   gap: layout.$spacing-04;
+  width: 100%;
   min-width: 0;
 }
 
 :global(.sihsalus-side-nav__icon) {
-  flex: 0 0 auto;
+  inline-size: layout.$spacing-05;
+  block-size: layout.$spacing-05;
+  flex: 0 0 layout.$spacing-05;
   color: colors.$gray-70;
+  display: block;
 }
 
 :global(.sihsalus-side-nav__text) {
+  display: block;
   min-width: 0;
   max-width: 12rem;
   overflow: hidden;

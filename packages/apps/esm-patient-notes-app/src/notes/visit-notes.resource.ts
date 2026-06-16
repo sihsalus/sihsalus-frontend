@@ -331,3 +331,72 @@ export function deletePatientDiagnosis(abortController: AbortController, diagnos
     signal: abortController.signal,
   });
 }
+
+/**
+ * Tipo de diagnóstico MINSA (NTS-139): P (Presuntivo), D (Definitivo), R (Repetitivo).
+ *
+ * OpenMRS solo guarda `certainty` (CONFIRMED/PROVISIONAL) en `patientdiagnoses`,
+ * que no distingue P de R. Para no perder el tipo exacto, el visit note guarda
+ * además un obs por diagnóstico cuyo `formFieldPath` es `tipo-dx-{conceptUuid}`,
+ * ligando el tipo a su diagnóstico CIE-10. Estos helpers centralizan ese mapeo.
+ */
+export const TIPO_DX_FORM_FIELD_NAMESPACE = 'visit-notes';
+export const TIPO_DX_FIELD_PREFIX = 'tipo-dx-';
+
+/** NTS-139: Definitivo → CONFIRMED; Presuntivo/Repetitivo → PROVISIONAL. */
+export function getCertaintyForTipo(tipoUuid: string, definitivoUuid: string): 'CONFIRMED' | 'PROVISIONAL' {
+  return tipoUuid === definitivoUuid ? 'CONFIRMED' : 'PROVISIONAL';
+}
+
+export interface TipoDxObs {
+  concept: { uuid: string; display: string };
+  value: string;
+  formFieldNamespace: string;
+  formFieldPath: string;
+}
+
+/** Construye el obs que persiste el tipo MINSA (P/D/R) ligado a su diagnóstico CIE-10. */
+export function buildTipoDxObs(
+  diagnosisTypeConceptUuid: string,
+  codedDiagnosisUuid: string,
+  tipoUuid: string,
+): TipoDxObs {
+  return {
+    concept: { uuid: diagnosisTypeConceptUuid, display: '' },
+    value: tipoUuid,
+    formFieldNamespace: TIPO_DX_FORM_FIELD_NAMESPACE,
+    formFieldPath: `${TIPO_DX_FIELD_PREFIX}${codedDiagnosisUuid}`,
+  };
+}
+
+type TipoDxObsValue = string | number | boolean | { uuid?: string; display?: string } | null | undefined;
+
+interface TipoDxSourceObs {
+  formFieldNamespace?: string;
+  formFieldPath?: string;
+  value?: TipoDxObsValue;
+}
+
+/**
+ * Reconstruye el mapa `{ conceptUuid CIE-10 → tipo UUID (P/D/R) }` a partir de los
+ * obs del encounter. Inverso de {@link buildTipoDxObs}.
+ */
+export function parseTipoDxObs(obs: Array<TipoDxSourceObs>): Record<string, string> {
+  const tipos: Record<string, string> = {};
+  for (const o of obs) {
+    if (
+      o.formFieldNamespace !== TIPO_DX_FORM_FIELD_NAMESPACE ||
+      typeof o.formFieldPath !== 'string' ||
+      !o.formFieldPath.startsWith(TIPO_DX_FIELD_PREFIX)
+    ) {
+      continue;
+    }
+    const codedUuid = o.formFieldPath.slice(TIPO_DX_FIELD_PREFIX.length);
+    const valueUuid =
+      typeof o.value === 'object' && o.value !== null ? o.value.uuid : o.value != null ? String(o.value) : undefined;
+    if (codedUuid && valueUuid) {
+      tipos[codedUuid] = valueUuid;
+    }
+  }
+  return tipos;
+}

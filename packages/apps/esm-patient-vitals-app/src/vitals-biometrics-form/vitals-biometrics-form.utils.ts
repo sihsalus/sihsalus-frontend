@@ -1,7 +1,72 @@
+import { validatePlainNumberInput } from '@openmrs/esm-utils';
 import isNumber from 'lodash-es/isNumber';
 
 import { type ConceptMetadata } from '../common';
 import type { ObsReferenceRanges } from '../common/types';
+import type { ConditionalBiometricFieldConfig } from '../config-schema';
+
+/** Anthropometric fields whose visibility depends on age rules and consumer overrides */
+export type ConditionalFieldId = 'chestCircumference' | 'headCircumference';
+
+export interface ConditionalFieldOverrides {
+  /** Force-show these fields regardless of age rules (e.g. CRED launching for a newborn) */
+  showFields?: Array<ConditionalFieldId>;
+  /** Force-hide these fields regardless of age rules (takes precedence over showFields) */
+  hideFields?: Array<ConditionalFieldId>;
+}
+
+interface ClinicalNumberInputConstraints {
+  integer?: boolean;
+  max?: number | null;
+  min?: number | null;
+}
+
+export interface ClinicalNumberInputValidation {
+  isInvalid: boolean;
+  isInvalidFormat: boolean;
+  isOutOfRange: boolean;
+  parsedValue: number | undefined;
+}
+
+export function validateClinicalNumberInput(
+  value: string | number,
+  constraints: ClinicalNumberInputConstraints = {},
+): ClinicalNumberInputValidation {
+  return validatePlainNumberInput(value, { ...constraints, nonNegative: true });
+}
+
+export function getAgeInDays(birthDate: string | undefined, asOf: Date = new Date()): number | null {
+  if (!birthDate) {
+    return null;
+  }
+  const birth = new Date(birthDate);
+  if (Number.isNaN(birth.getTime())) {
+    return null;
+  }
+  return Math.floor((asOf.getTime() - birth.getTime()) / (1000 * 60 * 60 * 24));
+}
+
+export function isConditionalFieldVisible(
+  field: ConditionalFieldId,
+  rule: ConditionalBiometricFieldConfig,
+  ageInDays: number | null,
+  overrides?: ConditionalFieldOverrides,
+): boolean {
+  if (overrides?.hideFields?.includes(field)) {
+    return false;
+  }
+  if (overrides?.showFields?.includes(field)) {
+    return true;
+  }
+  if (!rule.enabled) {
+    return false;
+  }
+  // Without a birth date there is no way to apply the age rule; hide pediatric fields
+  if (ageInDays == null) {
+    return false;
+  }
+  return ageInDays >= rule.minAgeDays && ageInDays <= rule.maxAgeDays;
+}
 
 export function calculateBodyMassIndex(weight: number, height: number): number | undefined {
   if (!weight || !height) return undefined;

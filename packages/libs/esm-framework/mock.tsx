@@ -18,7 +18,15 @@ export * from '@openmrs/esm-state/mock';
 export * from '@openmrs/esm-styleguide/mock';
 export * from '@openmrs/esm-translations/mock';
 
-export { formatDate, formatDatetime, formatTime, isOmrsDateToday, matchLocale, parseDate } from '@openmrs/esm-utils';
+export {
+  formatDate,
+  formatDatetime,
+  formatPartialDate,
+  formatTime,
+  isOmrsDateToday,
+  matchLocale,
+  parseDate,
+} from '@openmrs/esm-utils';
 
 /* esm-globals */
 
@@ -220,6 +228,8 @@ export {
   formatPatientName,
   getDefaultsFromConfigSchema,
   getPatientName,
+  getPreferredIdentifier,
+  preferredIdentifierNames,
   selectPreferredName,
 } from '@openmrs/esm-utils';
 

@@ -256,8 +256,8 @@ export interface MedicationDispense {
   location: Reference;
   type?: CodeableConcept;
   quantity?: Quantity;
-  whenPrepared?: any;
-  whenHandedOver?: any;
+  whenPrepared?: string;
+  whenHandedOver?: string;
   dosageInstruction?: Array<DosageInstruction>;
   substitution?: {
     wasSubstituted: boolean;
@@ -407,10 +407,19 @@ export interface OrderConfig {
   orderFrequencies: Array<CommonConfigProps>;
 }
 
+export interface PatientIdentifier {
+  value?: string;
+  type?: {
+    text?: string;
+    coding?: Array<Coding>;
+  };
+  system?: string;
+}
+
 export interface Patient {
   uuid: string;
   display: string;
-  identifiers: Array<any>;
+  identifiers: Array<PatientIdentifier>;
   person: Person;
 }
 

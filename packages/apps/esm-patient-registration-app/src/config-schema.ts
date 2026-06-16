@@ -110,11 +110,15 @@ export const builtInSections: Array<SectionDefinition> = [
 
 // These fields are handled specially in field.component.tsx
 export const builtInFields = [
+  'reniecLookup',
+  'sisLookup',
+  'minsaLookup',
   'name',
   'gender',
   'dob',
   'id',
   'address',
+  'birthAddress',
   'phone',
   'causeOfDeath',
   'dateAndTimeOfDeath',

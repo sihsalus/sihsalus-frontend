@@ -1,9 +1,15 @@
 import React, { useMemo, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
-
-import IndicadorForm from '../components/IndicadorForm';
 import type { DefinicionIndicadorForm } from '../api/types';
-import { useCreateIndicador, useIndicador, useUpdateIndicador, notifyError, notifySuccess } from '../features/indicadores/hooks';
+import IndicadorForm from '../components/IndicadorForm';
+import {
+  notifyError,
+  notifySuccess,
+  useCreateIndicador,
+  useIndicador,
+  useResolvedOrdenes,
+  useUpdateIndicador,
+} from '../features/indicadores/hooks';
 import { parseDefinicion } from '../features/indicadores/parseDefinicion';
 import styles from '../indicators-dashboard.module.scss';
 
@@ -17,7 +23,16 @@ const IndicadorFormPage: React.FC<IndicadorFormPageProps> = ({ mode }) => {
   const [serverError, setServerError] = useState<string | null>(null);
   const { createIndicador } = useCreateIndicador();
   const { updateIndicador } = useUpdateIndicador();
-  const { data: indicador, isLoading, error } = useIndicador(mode === 'edit' ? id ?? '' : '');
+  const { data: indicador, isLoading, error } = useIndicador(mode === 'edit' ? (id ?? '') : '');
+
+  const ordenUuids = useMemo(() => {
+    if (!indicador?.versiones.length) {
+      return [];
+    }
+    return indicador.versiones[0].definicion.evento?.ordenes?.flatMap((item) => item.concepto_uuids) ?? [];
+  }, [indicador]);
+
+  const { data: ordenesData } = useResolvedOrdenes(ordenUuids);
 
   const defaultValues = useMemo(() => {
     if (!indicador?.versiones.length) {
@@ -27,11 +42,17 @@ const IndicadorFormPage: React.FC<IndicadorFormPageProps> = ({ mode }) => {
     return {
       nombre: indicador.nombre,
       descripcion: indicador.descripcion ?? '',
-      ...parseDefinicion(indicador.versiones[0].definicion),
+      ...parseDefinicion(indicador.versiones[0].definicion, ordenesData),
     };
-  }, [indicador]);
+  }, [indicador, ordenesData]);
 
-  const handleSubmit = async ({ metadata, definicion }: { metadata: { nombre: string; descripcion: string | null }; definicion?: DefinicionIndicadorForm }) => {
+  const handleSubmit = async ({
+    metadata,
+    definicion,
+  }: {
+    metadata: { nombre: string; descripcion: string | null };
+    definicion?: DefinicionIndicadorForm;
+  }) => {
     setServerError(null);
 
     try {
@@ -58,14 +79,18 @@ const IndicadorFormPage: React.FC<IndicadorFormPageProps> = ({ mode }) => {
     <div className={styles.container}>
       <div className={styles.header}>
         <div>
-          <Link to="/" className={styles.backLink}>Volver a indicadores</Link>
+          <Link to="/" className={styles.backLink}>
+            Volver a indicadores
+          </Link>
           <h2>{mode === 'create' ? 'Nuevo indicador' : 'Editar indicador'}</h2>
         </div>
       </div>
 
       {mode === 'edit' && isLoading ? <p>Cargando indicador...</p> : null}
       {mode === 'edit' && error ? <div className={styles.errorBanner}>{error.message}</div> : null}
-      {mode === 'edit' && !indicador && !isLoading && !error ? <div className={styles.errorBanner}>No se encontró el indicador.</div> : null}
+      {mode === 'edit' && !indicador && !isLoading && !error ? (
+        <div className={styles.errorBanner}>No se encontró el indicador.</div>
+      ) : null}
 
       {mode === 'create' || indicador ? (
         <div className={styles.formPageShell}>
@@ -79,7 +104,11 @@ const IndicadorFormPage: React.FC<IndicadorFormPageProps> = ({ mode }) => {
           <IndicadorForm
             mode={mode}
             defaultValues={defaultValues}
-            initialMetadata={indicador ? { nombre: indicador.nombre, descripcion: indicador.descripcion } : undefined}
+            initialMetadata={
+              indicador
+                ? { nombre: indicador.nombre, descripcion: indicador.descripcion, activo: indicador.activo }
+                : undefined
+            }
             serverError={serverError}
             onSubmit={handleSubmit}
           />

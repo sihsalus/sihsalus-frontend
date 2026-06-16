@@ -1,13 +1,14 @@
 import { toOmrsIsoString } from '@openmrs/esm-framework';
 import { type OrderableConcept, type OrderBasketItem, type OrderPost } from '@openmrs/esm-patient-common-lib';
 
-export function createEmptyOrder(concept: OrderableConcept, orderer: string): OrderBasketItem {
+export function createEmptyOrder(concept: OrderableConcept, orderer: string, orderTypeUuid: string): OrderBasketItem {
   return {
     action: 'NEW',
     urgency: '',
     display: concept.display ?? '',
     concept,
     orderer,
+    orderType: orderTypeUuid,
   };
 }
 
@@ -30,6 +31,7 @@ export function prepOrderPostData(
       orderer: order.orderer,
       encounter: encounterUuid,
       concept: order.concept.uuid,
+      orderType: order.orderType,
       instructions: order.instructions,
       // orderReason: order.orderReason,
       accessionNumber: order.accessionNumber,
@@ -45,6 +47,7 @@ export function prepOrderPostData(
       orderer: order.orderer,
       encounter: encounterUuid,
       concept: order?.concept?.uuid,
+      orderType: order.orderType,
       instructions: order.instructions,
       previousOrder: order.previousOrder,
       accessionNumber: order.accessionNumber,
@@ -60,6 +63,7 @@ export function prepOrderPostData(
       orderer: order.orderer,
       encounter: encounterUuid,
       concept: order?.concept?.uuid,
+      orderType: order.orderType,
       previousOrder: order.previousOrder,
       accessionNumber: order.accessionNumber,
       urgency: order.urgencyCode ?? order.urgency,

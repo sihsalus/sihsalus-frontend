@@ -1,11 +1,23 @@
-/* Pull the modal slightly upward so it sits in the upper-third of the viewport
-   instead of the visual mid-point. Carbon centers the modal vertically by
-   default; for tall content like this picker, that pushes the heading too far
-   down. The negative margin shifts the container without breaking responsive. */
+/* Override Carbon Modal's container size so the design picker can show many
+   tile options without scrolling. Carbon's `size="lg"` caps at 64rem wide;
+   we expand to ~95vw × 90vh so the user sees as many designs as possible at
+   a glance. Centered vertically with auto margins on a flex backdrop. */
 .modal :global(.cds--modal-container) {
-  margin-top: max(2rem, 4vh);
-  margin-bottom: max(2rem, 4vh);
-  align-self: flex-start;
+  width: 95vw;
+  max-width: 1500px;
+  height: 90vh;
+  max-height: 90vh;
+  margin: auto;
+  align-self: center;
+}
+
+/* Let the modal body grow to fill the available height of the bigger
+   container, so the design grid uses the extra space instead of leaving
+   empty area at the bottom. */
+.modal :global(.cds--modal-content) {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
 }
 
 .header {
@@ -65,8 +77,13 @@
 
 .designsGrid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
   gap: 0.75rem;
+  /* The grid scrolls inside the modal body if we have a LOT of designs
+     (e.g. finding 5 has 14 tiles). With the bigger modal most fit at once. */
+  overflow-y: auto;
+  flex: 1;
+  align-content: start;
 }
 
 .designTile {

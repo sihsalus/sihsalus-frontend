@@ -19,9 +19,11 @@ vi.mock('./encounter-processor-helper', () => ({
   inferInitialValueFromDefaultFieldValue: vi.fn(),
   prepareEncounter: (...args: Array<unknown>): unknown => mockPrepareEncounter(...args),
   preparePatientIdentifiers: (...args: Array<unknown>): unknown => mockPreparePatientIdentifiers(...args),
+  preparePersonAttributes: vi.fn(() => []),
   preparePatientPrograms: vi.fn(() => []),
   saveAttachments: vi.fn(() => []),
   savePatientIdentifiers: vi.fn(() => []),
+  savePersonAttributes: vi.fn(() => []),
   savePatientPrograms: vi.fn(() => []),
 }));
 

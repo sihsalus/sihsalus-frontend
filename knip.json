@@ -1,0 +1,22 @@
+{
+  "$schema": "https://unpkg.com/knip@6/schema.json",
+  "workspaces": {
+    ".": {
+      "entry": ["packages/tooling/scripts/*.js", "tools/*.ts"],
+      "project": ["packages/tooling/scripts/**", "tools/**"]
+    },
+    "packages/apps/*": {
+      "entry": ["src/index.ts", "src/index.tsx", "rspack.config.{js,cjs,ts}"],
+      "project": ["src/**/*.{ts,tsx}"],
+      "ignore": ["**/*.test.{ts,tsx}", "**/__mocks__/**", "src/setup-tests.ts"]
+    },
+    "packages/libs/*": {
+      "entry": ["src/index.ts", "src/index.tsx"],
+      "project": ["src/**/*.{ts,tsx}"],
+      "ignore": ["**/*.test.{ts,tsx}", "**/__mocks__/**", "src/setup-tests.ts"]
+    }
+  },
+  "ignore": ["dist/**", "**/docs/**", "e2e/**", ".tmp/**", "artifacts/**"],
+  "ignoreBinaries": ["openmrs"],
+  "ignoreDependencies": ["@openmrs/esm-framework"]
+}

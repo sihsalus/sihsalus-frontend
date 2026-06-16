@@ -1,6 +1,6 @@
 {
   "name": "@sihsalus/esm-patient-registration-app",
-  "version": "1.0.0-alpha",
+  "version": "1.0.1-alpha",
   "description": "Patient registration microfrontend for O3",
   "browser": "dist/openmrs-esm-patient-registration-app.js",
   "main": "src/index.ts",

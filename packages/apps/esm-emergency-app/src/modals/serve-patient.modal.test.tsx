@@ -81,7 +81,7 @@ describe('ServePatientModal', () => {
     await waitFor(() =>
       expect(mockLaunchWorkspace2).toHaveBeenCalledWith(
         WORKSPACES.TRIAGE_VITALS_FORM,
-        { encounterTypeUuid: triageEncounterTypeUuid },
+        { encounterTypeUuid: triageEncounterTypeUuid, profile: 'emergency-triage' },
         null,
         { patientUuid: queueEntry.patient.uuid },
       ),

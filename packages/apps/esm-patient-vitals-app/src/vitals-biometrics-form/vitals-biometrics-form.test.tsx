@@ -29,6 +29,10 @@ const respiratoryRateValue = 16;
 const weightValue = 62;
 const systolicBloodPressureValue = 120;
 const temperatureValue = 37;
+const glasgowEyeOpeningSpontaneousUuid = 'faff1dec-14df-44d4-8695-b337dced2274';
+const glasgowEyeOpeningNotTestableUuid = '25c71769-dddb-4d06-a858-cde05e2087e2';
+const glasgowVerbalResponseOrientedUuid = '6440f83b-657e-4c5c-bac5-e3f67660ea4e';
+const glasgowMotorResponseObeysCommandsUuid = 'bddbf4e2-c870-4515-924e-d98cfcb7948f';
 
 const testProps = {
   closeWorkspace: () => {},
@@ -39,7 +43,10 @@ const testProps = {
   setTitle: vi.fn(),
 };
 
-const testWorkspace2Props: PatientWorkspace2DefinitionProps<{ encounterTypeUuid?: string }, object> = {
+const testWorkspace2Props: PatientWorkspace2DefinitionProps<
+  { encounterTypeUuid?: string; profile?: 'default' | 'emergency-triage' },
+  object
+> = {
   closeWorkspace: vi.fn(),
   groupProps: {
     patient: mockPatient as unknown as fhir.Patient,
@@ -156,6 +163,7 @@ describe('VitalsBiometricsForm', () => {
     expect(screen.getByRole('spinbutton', { name: /muac/i })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: /discard/i })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: /save and close/i })).toBeInTheDocument();
+    expect(screen.queryByText(/glasgow coma scale/i)).not.toBeInTheDocument();
   });
 
   it('loads patient reference ranges for abdominal circumference', async () => {
@@ -300,6 +308,118 @@ describe('VitalsBiometricsForm', () => {
       'test-session-location',
       'test-visit-uuid',
     );
+  });
+
+  it('renders Glasgow coma scale only for the emergency triage profile and saves the component concepts', async () => {
+    const user = userEvent.setup();
+    const triageEncounterTypeUuid = 'triage-encounter-type-uuid';
+
+    mockSavePatientVitals.mockResolvedValue({
+      statusText: 'created',
+      status: 201,
+      data: [],
+    } as FetchResponse<unknown>);
+
+    render(
+      <VitalsAndBiometricsForm
+        {...testWorkspace2Props}
+        workspaceProps={{
+          encounterTypeUuid: triageEncounterTypeUuid,
+          profile: 'emergency-triage',
+        }}
+      />,
+    );
+
+    await user.selectOptions(screen.getByRole('combobox', { name: /eye opening/i }), glasgowEyeOpeningSpontaneousUuid);
+    await user.selectOptions(
+      screen.getByRole('combobox', { name: /verbal response/i }),
+      glasgowVerbalResponseOrientedUuid,
+    );
+    await user.selectOptions(
+      screen.getByRole('combobox', { name: /motor response/i }),
+      glasgowMotorResponseObeysCommandsUuid,
+    );
+
+    await waitFor(() => expect(screen.getByRole('spinbutton', { name: /glasgow total/i })).toHaveValue(15));
+
+    await user.click(screen.getByRole('button', { name: /save and close/i }));
+
+    await waitFor(() => expect(mockSavePatientVitals).toHaveBeenCalledTimes(1));
+    expect(mockSavePatientVitals).toHaveBeenCalledWith(
+      triageEncounterTypeUuid,
+      mockVitalsConfig.concepts,
+      mockPatient.id,
+      expect.objectContaining({
+        glasgowEyeOpening: glasgowEyeOpeningSpontaneousUuid,
+        glasgowVerbalResponse: glasgowVerbalResponseOrientedUuid,
+        glasgowMotorResponse: glasgowMotorResponseObeysCommandsUuid,
+        glasgowTotal: 15,
+      }),
+      expect.any(AbortController),
+      'test-session-location',
+      'test-visit-uuid',
+    );
+  });
+
+  it('does not submit a partial Glasgow coma scale', async () => {
+    const user = userEvent.setup();
+
+    render(
+      <VitalsAndBiometricsForm
+        {...testWorkspace2Props}
+        workspaceProps={{
+          profile: 'emergency-triage',
+        }}
+      />,
+    );
+
+    await user.selectOptions(screen.getByRole('combobox', { name: /eye opening/i }), glasgowEyeOpeningSpontaneousUuid);
+    await user.click(screen.getByRole('button', { name: /save and close/i }));
+
+    expect(mockSavePatientVitals).not.toHaveBeenCalled();
+    expect(screen.getByText(/please complete all glasgow coma scale fields/i)).toBeInTheDocument();
+  });
+
+  it('does not compute Glasgow total when a component is not testable', async () => {
+    const user = userEvent.setup();
+
+    mockSavePatientVitals.mockResolvedValue({
+      statusText: 'created',
+      status: 201,
+      data: [],
+    } as FetchResponse<unknown>);
+
+    render(
+      <VitalsAndBiometricsForm
+        {...testWorkspace2Props}
+        workspaceProps={{
+          profile: 'emergency-triage',
+        }}
+      />,
+    );
+
+    await user.selectOptions(screen.getByRole('combobox', { name: /eye opening/i }), glasgowEyeOpeningNotTestableUuid);
+    await user.selectOptions(
+      screen.getByRole('combobox', { name: /verbal response/i }),
+      glasgowVerbalResponseOrientedUuid,
+    );
+    await user.selectOptions(
+      screen.getByRole('combobox', { name: /motor response/i }),
+      glasgowMotorResponseObeysCommandsUuid,
+    );
+
+    expect(screen.getByRole('spinbutton', { name: /glasgow total/i })).toHaveValue(null);
+
+    await user.click(screen.getByRole('button', { name: /save and close/i }));
+
+    await waitFor(() => expect(mockSavePatientVitals).toHaveBeenCalledTimes(1));
+    const savedPayload = mockSavePatientVitals.mock.calls[0][3];
+    expect(savedPayload).toMatchObject({
+      glasgowEyeOpening: glasgowEyeOpeningNotTestableUuid,
+      glasgowVerbalResponse: glasgowVerbalResponseOrientedUuid,
+      glasgowMotorResponse: glasgowMotorResponseObeysCommandsUuid,
+    });
+    expect(savedPayload).not.toHaveProperty('glasgowTotal');
   });
 
   it('renders an error snackbar if there was a problem saving vitals and biometrics', async () => {

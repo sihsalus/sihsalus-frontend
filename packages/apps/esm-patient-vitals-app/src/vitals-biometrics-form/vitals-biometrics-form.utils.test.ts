@@ -1,5 +1,6 @@
 import {
   calculateBodyMassIndex,
+  calculateGlasgowComaScaleTotal,
   getAgeInDays,
   getMuacColorCode,
   isConditionalFieldVisible,
@@ -24,6 +25,12 @@ describe('vitals biometrics form utils', () => {
 
     getMuacColorCode(19, 19.6, setColorCode);
     expect(setColorCode).toHaveBeenLastCalledWith('yellow');
+  });
+
+  it('calculates Glasgow coma scale total only when all components are present', () => {
+    expect(calculateGlasgowComaScaleTotal(4, 5, 6)).toBe(15);
+    expect(calculateGlasgowComaScaleTotal(1, 1, 1)).toBe(3);
+    expect(calculateGlasgowComaScaleTotal(4, undefined, 6)).toBeUndefined();
   });
 });
 

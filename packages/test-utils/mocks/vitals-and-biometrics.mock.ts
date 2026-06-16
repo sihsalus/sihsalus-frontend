@@ -5098,6 +5098,10 @@ export const mockVitalsConfig = {
     temperatureUuid: '5088AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA',
     weightUuid: '5089AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA',
     vitalSignsConceptSetUuid: '1114AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA',
+    glasgowEyeOpeningUuid: '7e540048-19b4-4261-af10-3b20712a92ef',
+    glasgowVerbalResponseUuid: '67f9449e-e7ef-436c-9eb7-837b5afe30e4',
+    glasgowMotorResponseUuid: '98bfda0d-2a22-4ca4-8bc9-b0b6c6505899',
+    glasgowTotalUuid: '9ba86e50-a4fd-48b7-b8b2-f537fde5a382',
   },
   vitals: {
     encounterTypeUuid: '67a71486-1a54-468f-ac3e-7091a9a79584',
@@ -5108,6 +5112,9 @@ export const mockVitalsConfig = {
     showPrintButton: false,
     formName: 'Vitals',
     useMuacColors: false,
+    glasgowComaScale: {
+      enabled: true,
+    },
   },
 };
 

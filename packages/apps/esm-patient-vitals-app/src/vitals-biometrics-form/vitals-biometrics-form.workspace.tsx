@@ -46,13 +46,69 @@ import styles from './vitals-biometrics-form.scss';
 import {
   type ConditionalFieldOverrides,
   calculateBodyMassIndex,
+  calculateGlasgowComaScaleTotal,
   extractNumbers,
   getAgeInDays,
   getMuacColorCode,
   isConditionalFieldVisible,
   isValueWithinReferenceRange,
+  type VitalsBiometricsWorkspaceProfile,
 } from './vitals-biometrics-form.utils';
 import VitalsAndBiometricsInput from './vitals-biometrics-input.component';
+
+const glasgowFieldKeys = ['glasgowEyeOpening', 'glasgowVerbalResponse', 'glasgowMotorResponse'] as const;
+
+interface GlasgowComaScaleOption {
+  label: string;
+  score?: number;
+  value: string;
+}
+
+const GLASGOW_ANSWER_UUIDS = {
+  eyeOpeningSpontaneous: 'faff1dec-14df-44d4-8695-b337dced2274',
+  eyeOpeningToSpeech: '2120199e-03ed-4986-892f-52a3d13b92c0',
+  eyeOpeningToPain: '1633ea34-bc65-4a87-9fec-8fef231b85cf',
+  eyeOpeningNone: '8b4ee185-b709-4cfa-b3db-f15d565ddc04',
+  eyeOpeningNotTestable: '25c71769-dddb-4d06-a858-cde05e2087e2',
+  verbalResponseOriented: '6440f83b-657e-4c5c-bac5-e3f67660ea4e',
+  verbalResponseConfused: '52066114-63ee-48ca-a09b-fa9c0c7f73ba',
+  verbalResponseInappropriateWords: '0b5820f1-f968-4950-bc62-ad54c6166723',
+  verbalResponseIncomprehensibleSounds: '245c6329-b810-4db3-bdc1-62bb9cdc0f31',
+  verbalResponseNone: '1d01f180-1acd-4121-b380-049f4bbb4af7',
+  verbalResponseNotTestable: 'fd4b9335-0f74-453e-b787-46d303a9b3b5',
+  motorResponseObeysCommands: 'bddbf4e2-c870-4515-924e-d98cfcb7948f',
+  motorResponseLocalizesPain: '355eb0e2-c319-4536-9837-43bf3c23f592',
+  motorResponseWithdrawsFromPain: 'a815a9d0-a033-48bc-89e9-836a15b9a3b2',
+  motorResponseAbnormalFlexion: '795e56c8-e783-470e-8b83-3ee11300f4a7',
+  motorResponseExtension: 'b4e10f1d-09e2-4b6b-8471-466c25da1b79',
+  motorResponseNone: '7e16856d-c686-4921-ba7f-65f7bf15771a',
+  motorResponseNotTestable: '09957de5-8eb7-4865-8e29-e946cf895bc4',
+} as const;
+
+const GLASGOW_SCORE_BY_ANSWER_UUID: Record<string, number | undefined> = {
+  [GLASGOW_ANSWER_UUIDS.eyeOpeningSpontaneous]: 4,
+  [GLASGOW_ANSWER_UUIDS.eyeOpeningToSpeech]: 3,
+  [GLASGOW_ANSWER_UUIDS.eyeOpeningToPain]: 2,
+  [GLASGOW_ANSWER_UUIDS.eyeOpeningNone]: 1,
+  [GLASGOW_ANSWER_UUIDS.eyeOpeningNotTestable]: undefined,
+  [GLASGOW_ANSWER_UUIDS.verbalResponseOriented]: 5,
+  [GLASGOW_ANSWER_UUIDS.verbalResponseConfused]: 4,
+  [GLASGOW_ANSWER_UUIDS.verbalResponseInappropriateWords]: 3,
+  [GLASGOW_ANSWER_UUIDS.verbalResponseIncomprehensibleSounds]: 2,
+  [GLASGOW_ANSWER_UUIDS.verbalResponseNone]: 1,
+  [GLASGOW_ANSWER_UUIDS.verbalResponseNotTestable]: undefined,
+  [GLASGOW_ANSWER_UUIDS.motorResponseObeysCommands]: 6,
+  [GLASGOW_ANSWER_UUIDS.motorResponseLocalizesPain]: 5,
+  [GLASGOW_ANSWER_UUIDS.motorResponseWithdrawsFromPain]: 4,
+  [GLASGOW_ANSWER_UUIDS.motorResponseAbnormalFlexion]: 3,
+  [GLASGOW_ANSWER_UUIDS.motorResponseExtension]: 2,
+  [GLASGOW_ANSWER_UUIDS.motorResponseNone]: 1,
+  [GLASGOW_ANSWER_UUIDS.motorResponseNotTestable]: undefined,
+};
+
+function getGlasgowScore(value: string | undefined) {
+  return value ? GLASGOW_SCORE_BY_ANSWER_UUID[value] : undefined;
+}
 
 const VitalsAndBiometricFormSchema = z
   .object({
@@ -69,9 +125,23 @@ const VitalsAndBiometricFormSchema = z
     abdominalCircumference: z.number(),
     headCircumference: z.number(),
     chestCircumference: z.number(),
+    glasgowEyeOpening: z.string(),
+    glasgowVerbalResponse: z.string(),
+    glasgowMotorResponse: z.string(),
+    glasgowTotal: z.number(),
     computedBodyMassIndex: z.number(),
   })
   .partial()
+  .refine(
+    (fields) => {
+      const completedGlasgowFields = glasgowFieldKeys.filter((field) => fields[field] != null);
+      return completedGlasgowFields.length === 0 || completedGlasgowFields.length === glasgowFieldKeys.length;
+    },
+    {
+      message: 'Please complete all Glasgow coma scale fields',
+      path: ['glasgowComaScale'],
+    },
+  )
   .refine(
     (fields) => {
       return Object.values(fields).some((value) => value != null && value !== '');
@@ -86,6 +156,7 @@ export type VitalsBiometricsFormData = z.infer<typeof VitalsAndBiometricFormSche
 
 interface VitalsBiometricsWorkspaceOverrides extends ConditionalFieldOverrides {
   encounterTypeUuid?: string;
+  profile?: VitalsBiometricsWorkspaceProfile;
 }
 
 type VitalsBiometricsWorkspace2Props = PatientWorkspace2DefinitionProps<VitalsBiometricsWorkspaceOverrides, object>;
@@ -135,6 +206,7 @@ const VitalsAndBiometricsForm: React.FC<VitalsBiometricsWorkspaceProps> = (props
   const [muacColorCode, setMuacColorCode] = useState('');
   const [showErrorNotification, setShowErrorNotification] = useState(false);
   const [showErrorMessage, setShowErrorMessage] = useState(false);
+  const [formErrorMessage, setFormErrorMessage] = useState('');
 
   const {
     control,
@@ -205,12 +277,20 @@ const VitalsAndBiometricsForm: React.FC<VitalsBiometricsWorkspaceProps> = (props
   const abdominalCircumference = watch('abdominalCircumference');
   const headCircumference = watch('headCircumference');
   const chestCircumference = watch('chestCircumference');
+  const glasgowEyeOpening = watch('glasgowEyeOpening');
+  const glasgowVerbalResponse = watch('glasgowVerbalResponse');
+  const glasgowMotorResponse = watch('glasgowMotorResponse');
 
   const workspaceOverrides: VitalsBiometricsWorkspaceOverrides = isWorkspace2Props(props)
     ? (props.workspaceProps ?? {})
     : props;
   const fieldOverrides: ConditionalFieldOverrides = workspaceOverrides;
+  const workspaceProfile = workspaceOverrides.profile ?? 'default';
   const encounterTypeUuid = workspaceOverrides.encounterTypeUuid ?? config.vitals.encounterTypeUuid;
+  const showGlasgowComaScale =
+    !fieldOverrides.hideFields?.includes('glasgowComaScale') &&
+    config.vitals.glasgowComaScale.enabled &&
+    (workspaceProfile === 'emergency-triage' || Boolean(fieldOverrides.showFields?.includes('glasgowComaScale')));
   const ageInDays = getAgeInDays(patient?.patient?.birthDate);
   const showHeadCircumference = isConditionalFieldVisible(
     'headCircumference',
@@ -240,8 +320,32 @@ const VitalsAndBiometricsForm: React.FC<VitalsBiometricsWorkspaceProps> = (props
     }
   }, [weight, height, setValue]);
 
+  useEffect(() => {
+    setValue(
+      'glasgowTotal',
+      calculateGlasgowComaScaleTotal(
+        getGlasgowScore(glasgowEyeOpening),
+        getGlasgowScore(glasgowVerbalResponse),
+        getGlasgowScore(glasgowMotorResponse),
+      ),
+      {
+        shouldDirty: false,
+        shouldTouch: false,
+      },
+    );
+  }, [glasgowEyeOpening, glasgowMotorResponse, glasgowVerbalResponse, setValue]);
+
   function onError(err: Record<string, { message?: string }>) {
     if (err?.oneFieldRequired) {
+      setShowErrorMessage(false);
+      setFormErrorMessage(t('pleaseFillField', 'Please fill at least one field'));
+      setShowErrorNotification(true);
+      return;
+    }
+
+    if (err?.glasgowComaScale) {
+      setShowErrorMessage(false);
+      setFormErrorMessage(t('completeGlasgowComaScale', 'Please complete all Glasgow coma scale fields'));
       setShowErrorNotification(true);
     }
   }
@@ -294,9 +398,19 @@ const VitalsAndBiometricsForm: React.FC<VitalsBiometricsWorkspaceProps> = (props
 
   const savePatientVitalsAndBiometrics = useCallback(
     (data: VitalsBiometricsFormData) => {
-      const { computedBodyMassIndex: _bmi, ...formData } = data;
+      const { computedBodyMassIndex: _bmi, glasgowTotal: _glasgowTotal, ...rawFormData } = data;
+      const computedGlasgowTotal = calculateGlasgowComaScaleTotal(
+        getGlasgowScore(rawFormData.glasgowEyeOpening),
+        getGlasgowScore(rawFormData.glasgowVerbalResponse),
+        getGlasgowScore(rawFormData.glasgowMotorResponse),
+      );
+      const formData = {
+        ...rawFormData,
+        ...(computedGlasgowTotal != null ? { glasgowTotal: computedGlasgowTotal } : {}),
+      };
       setShowErrorMessage(true);
       setShowErrorNotification(false);
+      setFormErrorMessage('');
 
       const allFieldsAreValid = Object.entries(formData)
         .filter(([, value]) => value != null && value !== '')
@@ -388,6 +502,92 @@ const VitalsAndBiometricsForm: React.FC<VitalsBiometricsWorkspaceProps> = (props
       session?.sessionLocation?.uuid,
       t,
     ],
+  );
+
+  const glasgowEyeOpeningOptions = useMemo<Array<GlasgowComaScaleOption>>(
+    () => [
+      {
+        value: GLASGOW_ANSWER_UUIDS.eyeOpeningSpontaneous,
+        score: 4,
+        label: t('glasgowEyeOpeningSpontaneous', '4 - Spontaneous'),
+      },
+      {
+        value: GLASGOW_ANSWER_UUIDS.eyeOpeningToSpeech,
+        score: 3,
+        label: t('glasgowEyeOpeningToSpeech', '3 - To speech'),
+      },
+      { value: GLASGOW_ANSWER_UUIDS.eyeOpeningToPain, score: 2, label: t('glasgowEyeOpeningToPain', '2 - To pain') },
+      { value: GLASGOW_ANSWER_UUIDS.eyeOpeningNone, score: 1, label: t('glasgowEyeOpeningNone', '1 - None') },
+      { value: GLASGOW_ANSWER_UUIDS.eyeOpeningNotTestable, label: t('glasgowEyeOpeningNotTestable', 'Not testable') },
+    ],
+    [t],
+  );
+
+  const glasgowVerbalResponseOptions = useMemo<Array<GlasgowComaScaleOption>>(
+    () => [
+      {
+        value: GLASGOW_ANSWER_UUIDS.verbalResponseOriented,
+        score: 5,
+        label: t('glasgowVerbalResponseOriented', '5 - Oriented'),
+      },
+      {
+        value: GLASGOW_ANSWER_UUIDS.verbalResponseConfused,
+        score: 4,
+        label: t('glasgowVerbalResponseConfused', '4 - Confused'),
+      },
+      {
+        value: GLASGOW_ANSWER_UUIDS.verbalResponseInappropriateWords,
+        score: 3,
+        label: t('glasgowVerbalResponseInappropriateWords', '3 - Inappropriate words'),
+      },
+      {
+        value: GLASGOW_ANSWER_UUIDS.verbalResponseIncomprehensibleSounds,
+        score: 2,
+        label: t('glasgowVerbalResponseIncomprehensibleSounds', '2 - Incomprehensible sounds'),
+      },
+      { value: GLASGOW_ANSWER_UUIDS.verbalResponseNone, score: 1, label: t('glasgowVerbalResponseNone', '1 - None') },
+      {
+        value: GLASGOW_ANSWER_UUIDS.verbalResponseNotTestable,
+        label: t('glasgowVerbalResponseNotTestable', 'Not testable'),
+      },
+    ],
+    [t],
+  );
+
+  const glasgowMotorResponseOptions = useMemo<Array<GlasgowComaScaleOption>>(
+    () => [
+      {
+        value: GLASGOW_ANSWER_UUIDS.motorResponseObeysCommands,
+        score: 6,
+        label: t('glasgowMotorResponseObeysCommands', '6 - Obeys commands'),
+      },
+      {
+        value: GLASGOW_ANSWER_UUIDS.motorResponseLocalizesPain,
+        score: 5,
+        label: t('glasgowMotorResponseLocalizesPain', '5 - Localizes pain'),
+      },
+      {
+        value: GLASGOW_ANSWER_UUIDS.motorResponseWithdrawsFromPain,
+        score: 4,
+        label: t('glasgowMotorResponseWithdrawsFromPain', '4 - Withdraws from pain'),
+      },
+      {
+        value: GLASGOW_ANSWER_UUIDS.motorResponseAbnormalFlexion,
+        score: 3,
+        label: t('glasgowMotorResponseAbnormalFlexion', '3 - Abnormal flexion'),
+      },
+      {
+        value: GLASGOW_ANSWER_UUIDS.motorResponseExtension,
+        score: 2,
+        label: t('glasgowMotorResponseExtension', '2 - Extension'),
+      },
+      { value: GLASGOW_ANSWER_UUIDS.motorResponseNone, score: 1, label: t('glasgowMotorResponseNone', '1 - None') },
+      {
+        value: GLASGOW_ANSWER_UUIDS.motorResponseNotTestable,
+        label: t('glasgowMotorResponseNotTestable', 'Not testable'),
+      },
+    ],
+    [t],
   );
 
   if (config.vitals.useFormEngine) {
@@ -636,6 +836,77 @@ const VitalsAndBiometricsForm: React.FC<VitalsBiometricsWorkspaceProps> = (props
             </Column>
           </Row>
         </Stack>
+        {showGlasgowComaScale && (
+          <Stack className={styles.spacer}>
+            <Column>
+              <p className={styles.title}>{t('glasgowComaScale', 'Glasgow coma scale')}</p>
+            </Column>
+            <Row className={styles.row}>
+              <Column>
+                <VitalsAndBiometricsInput
+                  control={control}
+                  fieldWidth={isTablet ? '70%' : '13.5rem'}
+                  fieldProperties={[
+                    {
+                      name: t('glasgowEyeOpening', 'Eye opening'),
+                      type: 'select',
+                      id: 'glasgowEyeOpening',
+                      options: glasgowEyeOpeningOptions,
+                    },
+                  ]}
+                  label={t('glasgowEyeOpening', 'Eye opening')}
+                />
+              </Column>
+              <Column>
+                <VitalsAndBiometricsInput
+                  control={control}
+                  fieldWidth={isTablet ? '70%' : '13.5rem'}
+                  fieldProperties={[
+                    {
+                      name: t('glasgowVerbalResponse', 'Verbal response'),
+                      type: 'select',
+                      id: 'glasgowVerbalResponse',
+                      options: glasgowVerbalResponseOptions,
+                    },
+                  ]}
+                  label={t('glasgowVerbalResponse', 'Verbal response')}
+                />
+              </Column>
+              <Column>
+                <VitalsAndBiometricsInput
+                  control={control}
+                  fieldWidth={isTablet ? '70%' : '13.5rem'}
+                  fieldProperties={[
+                    {
+                      name: t('glasgowMotorResponse', 'Motor response'),
+                      type: 'select',
+                      id: 'glasgowMotorResponse',
+                      options: glasgowMotorResponseOptions,
+                    },
+                  ]}
+                  label={t('glasgowMotorResponse', 'Motor response')}
+                />
+              </Column>
+              <Column>
+                <VitalsAndBiometricsInput
+                  control={control}
+                  fieldProperties={[
+                    {
+                      name: t('glasgowTotal', 'Glasgow total'),
+                      type: 'number',
+                      min: 3,
+                      max: 15,
+                      id: 'glasgowTotal',
+                    },
+                  ]}
+                  readOnly
+                  label={t('glasgowTotal', 'Glasgow total')}
+                  unitSymbol={t('points', 'points')}
+                />
+              </Column>
+            </Row>
+          </Stack>
+        )}
         <Stack className={styles.spacer}>
           <Column>
             <p className={styles.title}>{t('recordBiometrics', 'Record biometrics')}</p>
@@ -865,7 +1136,7 @@ const VitalsAndBiometricsForm: React.FC<VitalsBiometricsWorkspaceProps> = (props
           <InlineNotification
             lowContrast
             title={t('error', 'Error')}
-            subtitle={t('pleaseFillField', 'Please fill at least one field') + '.'}
+            subtitle={`${formErrorMessage || t('pleaseFillField', 'Please fill at least one field')}.`}
             onClose={() => setShowErrorNotification(false)}
           />
         </Column>

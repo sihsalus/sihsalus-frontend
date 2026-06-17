@@ -920,7 +920,9 @@ const VisitNotesForm: React.FC<PatientWorkspace2DefinitionProps<VisitNotesFormPr
             </div>
             <Row className={styles.row}>
               <Column sm={1}>
-                <span className={styles.columnLabel}>{t('primaryDiagnosis', 'Primary diagnosis')}</span>
+                <span className={styles.columnLabel}>
+                  {t('primaryDiagnosisRequiredLabel', '*Diagnóstico principal (Obligatorio)')}
+                </span>
               </Column>
               <Column sm={3}>
                 <FormGroup legendText={t('searchForPrimaryDiagnosis', 'Search for a primary diagnosis')}>
@@ -994,7 +996,7 @@ const VisitNotesForm: React.FC<PatientWorkspace2DefinitionProps<VisitNotesFormPr
             <VisitNoteTextAreaRow
               control={control}
               name="codigoPrestacional"
-              labelText={t('codigoPrestacional', 'Codigo Prestacional')}
+              labelText={t('codigoPrestacionalRequiredLabel', '*Código Prestacional (Obligatorio)')}
               placeholder={t('codigoPrestacionalPlaceholder', 'Ingrese Codigo Prestacional')}
               rows={2}
             />

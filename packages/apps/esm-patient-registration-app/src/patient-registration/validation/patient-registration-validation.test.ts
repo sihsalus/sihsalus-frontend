@@ -7,6 +7,7 @@ import { getValidationSchema } from './patient-registration-validation';
 
 const mockGetConfig = vi.mocked(getConfig);
 const phoneAttributeUuid = '14d4f066-15f5-102d-96e4-000c29c2a5d7';
+const emailAttributeUuid = '4bdf3a33-2f63-11f0-8ab4-1a7535b1b3e8';
 
 describe('Patient registration validation', () => {
   beforeEach(() => {
@@ -44,12 +45,6 @@ describe('Patient registration validation', () => {
       },
       fieldDefinitions: [
         {
-          id: 'companionName',
-          type: 'person attribute',
-          uuid: 'companion-name-attribute',
-          showHeading: false,
-        },
-        {
           id: 'phone',
           type: 'person attribute',
           uuid: phoneAttributeUuid,
@@ -57,6 +52,16 @@ describe('Patient registration validation', () => {
           validation: {
             required: false,
             matches: '^\\+?[0-9][0-9\\s().-]{5,19}$',
+          },
+        },
+        {
+          id: 'email',
+          type: 'person attribute',
+          uuid: emailAttributeUuid,
+          showHeading: false,
+          validation: {
+            required: false,
+            matches: '^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$',
           },
         },
       ],
@@ -180,6 +185,7 @@ describe('Patient registration validation', () => {
     const validValues = {
       ...validFormValues,
       attributes: {
+        [emailAttributeUuid]: 'john.doe@example.org',
         [phoneAttributeUuid]: '999 888 777',
       },
     };
@@ -187,6 +193,19 @@ describe('Patient registration validation', () => {
     const validationError = await validateFormValues(validValues);
 
     expect(validationError).toBeFalsy();
+  });
+
+  it('should reject invalid email contact attributes', async () => {
+    const invalidFormValues = {
+      ...validFormValues,
+      attributes: {
+        [emailAttributeUuid]: 'not-an-email',
+      },
+    };
+
+    const validationError = await validateFormValues(invalidFormValues);
+
+    expect(validationError.errors).toContain('invalidInput');
   });
 
   it('should reject scientific notation in phone attributes', async () => {
@@ -347,17 +366,22 @@ describe('Patient registration validation', () => {
     expect(validationError.errors).toContain('responsibleRequiredForUnidentifiedPatient');
   });
 
-  it('should allow an unidentified patient with a responsible person attribute', async () => {
-    const unidentifiedWithResponsibleAttribute = {
+  it('should allow an unidentified patient with a responsible relationship', async () => {
+    const unidentifiedWithResponsibleRelationship = {
       ...validFormValues,
       attributes: {
         'unknown-patient-attribute': 'true',
-        'companion-name-attribute': 'PNP Comisaría Napo',
       },
-      relationships: [],
+      relationships: [
+        {
+          action: 'ADD',
+          relatedPersonUuid: '11524ae7-3ef6-4ab6-aff6-804ffc58704a',
+          relationshipType: '057de23f-3d9c-4314-9391-4452970739c6/bIsToA',
+        },
+      ],
     };
 
-    const validationError = await validateFormValues(unidentifiedWithResponsibleAttribute);
+    const validationError = await validateFormValues(unidentifiedWithResponsibleRelationship);
 
     expect(validationError).toBeFalsy();
   });

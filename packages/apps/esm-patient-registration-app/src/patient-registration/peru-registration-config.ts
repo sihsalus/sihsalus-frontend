@@ -3,6 +3,7 @@ import { type FieldDefinition, type RegistrationConfig, type SectionDefinition }
 export const peruDniPatientIdentifierTypeUuid = '550e8400-e29b-41d4-a716-446655440001';
 export const peruCarnetExtranjeriaPatientIdentifierTypeUuid = '550e8400-e29b-41d4-a716-446655440002';
 export const peruDiePatientIdentifierTypeUuid = '8d793bee-c2cc-11de-8d13-0010c6dffd0f';
+export const peruInsuranceTypeAttributeTypeUuid = '56188294-b42c-481d-a987-4b495116c580';
 export const peruInsuranceCodeAttributeTypeUuid = '374b130f-7457-476f-87b1-f182aa77c434';
 export const peruInsuranceAccreditationStatusAttributeTypeUuid = '9b3df0a1-0c58-4f55-9868-9c38f1db1005';
 export const peruInsuranceAccreditationCheckedAtAttributeTypeUuid = '9b3df0a1-0c58-4f55-9868-9c38f1db1006';
@@ -10,6 +11,7 @@ export const peruInsuranceAccreditationActiveConceptUuid = '9b3df0a1-0c58-4f55-9
 export const peruInsuranceAccreditationInactiveConceptUuid = '9b3df0a1-0c58-4f55-9868-9c38f1db2052';
 export const peruPhoneAttributeTypeUuid = '14d4f066-15f5-102d-96e4-000c29c2a5d7';
 export const peruMobilePhoneAttributeTypeUuid = 'fee4e8ef-aef8-4bb9-8ed0-7ded6055c61f';
+export const peruEmailAttributeTypeUuid = '4bdf3a33-2f63-11f0-8ab4-1a7535b1b3e8';
 
 const peruDefaultPatientIdentifierTypeUuids = [
   peruDniPatientIdentifierTypeUuid, // DNI
@@ -22,14 +24,12 @@ export const peruForeignPatientIdentifierTypeUuids = [
 ];
 
 const peruPreRegistrationSections = ['identityLookup'];
-const peruSections = ['filiation', 'bloodData', 'medicalRecord', 'insurance', 'responsiblePerson'];
+const peruSections = ['filiation', 'bloodData', 'insurance', 'responsiblePerson', 'medicalRecord'];
 const peruIdentityLookupFieldOrder = ['id', 'reniecLookup', 'sisLookup'];
 const peruDemographicsFieldOrder = ['name', 'dob', 'gender', 'nationality'];
-const peruContactFieldOrder = ['address', 'birthAddress', 'phone', 'mobilePhone'];
+const peruContactFieldOrder = ['address', 'birthAddress', 'phone', 'mobilePhone', 'email'];
 const peruPhoneValidationRegex = '^\\+?[0-9][0-9\\s().-]{5,19}$';
-const peruPersonNameValidationRegex = "^[A-Za-zÁÉÍÓÚÜÑáéíóúüñ][A-Za-zÁÉÍÓÚÜÑáéíóúüñ'.\\- ]*$";
-const peruAgeValidationRegex = '^(?:[0-9]|[1-9][0-9]|1[01][0-9]|120)$';
-const peruTextWithoutDigitsValidationRegex = '^[^0-9]+$';
+const peruEmailValidationRegex = '^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$';
 const minorResponsibleRelationshipTypes = [
   '8d91a210-c2cc-11de-8d13-0010c6dffdff/aIsToB',
   '8d91a210-c2cc-11de-8d13-0010c6dffd0f/aIsToB',
@@ -45,7 +45,7 @@ const peruSectionDefinitions: Array<SectionDefinition> = [
   {
     id: 'contact',
     name: 'Residencia, nacimiento y contacto',
-    fields: ['address', 'birthAddress', 'phone', 'mobilePhone'],
+    fields: ['address', 'birthAddress', 'phone', 'mobilePhone', 'email'],
   },
   {
     id: 'filiation',
@@ -58,11 +58,6 @@ const peruSectionDefinitions: Array<SectionDefinition> = [
     fields: ['bloodGroup', 'rhFactor'],
   },
   {
-    id: 'medicalRecord',
-    name: 'Historia clínica',
-    fields: ['medicalRecordStatus', 'medicalRecordArchiveType'],
-  },
-  {
     id: 'insurance',
     name: 'Seguro',
     fields: ['insuranceType', 'insuranceCode', 'insuranceAccreditationStatus', 'insuranceAccreditationCheckedAt'],
@@ -70,7 +65,12 @@ const peruSectionDefinitions: Array<SectionDefinition> = [
   {
     id: 'responsiblePerson',
     name: 'Acompañante o responsable',
-    fields: ['companionName', 'companionAge', 'companionRelationship'],
+    fields: [],
+  },
+  {
+    id: 'medicalRecord',
+    name: 'Historia clínica',
+    fields: ['medicalRecordStatus', 'medicalRecordArchiveType'],
   },
 ];
 
@@ -82,6 +82,14 @@ const peruFieldDefinitions: Array<FieldDefinition> = [
     label: 'Número de Celular',
     showHeading: false,
     validation: { required: false, matches: peruPhoneValidationRegex },
+  },
+  {
+    id: 'email',
+    type: 'person attribute',
+    uuid: peruEmailAttributeTypeUuid,
+    label: 'Correo Electrónico',
+    showHeading: false,
+    validation: { required: false, matches: peruEmailValidationRegex },
   },
   {
     id: 'nationality',
@@ -97,6 +105,15 @@ const peruFieldDefinitions: Array<FieldDefinition> = [
     label: 'Estado civil',
     showHeading: false,
     answerConceptSetUuid: 'aa345a81-3811-4e9c-be18-d6be727623e0',
+    customConceptAnswers: [
+      { uuid: '798d5304-a301-4fb9-9a55-c568ab843c2d', label: 'Soltero(a)' },
+      { uuid: 'c40e34a1-47b4-4627-945f-bea67f9017df', label: 'Casado(a)' },
+      { uuid: 'bff95b64-d1b5-45ec-b5ad-a736c38a4cc1', label: 'Conviviente' },
+      { uuid: 'a10b6eeb-287f-4580-8ba7-9c8ee78a6ffc', label: 'Divorciado(a)' },
+      { uuid: 'b8e84a87-3dca-4c0b-a524-ef2b124166d4', label: 'Viudo(a)' },
+      { uuid: '62bd5ec8-5ffb-4ddc-97b4-84fde7bab601', label: 'Otros' },
+      { uuid: '3a88104a-3f04-4a43-8835-bc976b950527', label: 'No indicado' },
+    ],
   },
   {
     id: 'ethnicity',
@@ -139,10 +156,19 @@ const peruFieldDefinitions: Array<FieldDefinition> = [
   {
     id: 'insuranceType',
     type: 'person attribute',
-    uuid: '56188294-b42c-481d-a987-4b495116c580',
+    uuid: peruInsuranceTypeAttributeTypeUuid,
     label: 'Tipo de seguro',
     showHeading: false,
     answerConceptSetUuid: '6b932638-242e-49ef-8ba7-0ae87199835c',
+    customConceptAnswers: [
+      { uuid: 'b61a9ff9-1485-4388-9f67-9c341f847f85', label: 'SIS Gratuito' },
+      { uuid: 'cc6958d9-7948-4f29-b244-4ff896c0b2ee', label: 'SIS Emprendedor' },
+      { uuid: 'e43e0a71-0b5d-4fc2-b599-a76e4562ae5a', label: 'SIS Semicontributivo' },
+      { uuid: 'b76a9a24-4905-4132-a215-8a567281852a', label: 'Plan de atención SIS' },
+      { uuid: 'f38b048f-ee8b-4244-b3eb-a47a34c38f04', label: 'ESSALUD' },
+      { uuid: '4e4f62f9-2171-4eef-8d67-1c7edc7735a8', label: 'FOSPOLI' },
+      { uuid: 'ec420364-fde1-452d-9c48-fafb4ea73a58', label: 'Seguro privado' },
+    ],
   },
   {
     id: 'insuranceCode',
@@ -172,6 +198,10 @@ const peruFieldDefinitions: Array<FieldDefinition> = [
     label: 'Factor Rh',
     showHeading: false,
     answerConceptSetUuid: '54b52ca9-8168-4f63-b2a3-a18899bf0baa',
+    customConceptAnswers: [
+      { uuid: '9b3df0a1-0c58-4f55-9868-9c38f1db2021', label: 'Rh positivo' },
+      { uuid: '9b3df0a1-0c58-4f55-9868-9c38f1db2022', label: 'Rh negativo' },
+    ],
   },
   {
     id: 'medicalRecordStatus',
@@ -186,6 +216,7 @@ const peruFieldDefinitions: Array<FieldDefinition> = [
       { uuid: '9b3df0a1-0c58-4f55-9868-9c38f1db2033', label: 'Eliminada' },
     ],
     defaultValue: '9b3df0a1-0c58-4f55-9868-9c38f1db2031',
+    readOnlyOnCreate: true,
   },
   {
     id: 'medicalRecordArchiveType',
@@ -199,6 +230,7 @@ const peruFieldDefinitions: Array<FieldDefinition> = [
       { uuid: '9b3df0a1-0c58-4f55-9868-9c38f1db2042', label: 'Archivo especial' },
     ],
     defaultValue: '9b3df0a1-0c58-4f55-9868-9c38f1db2041',
+    readOnlyOnCreate: true,
   },
   {
     id: 'insuranceAccreditationStatus',
@@ -219,32 +251,10 @@ const peruFieldDefinitions: Array<FieldDefinition> = [
     id: 'insuranceAccreditationCheckedAt',
     type: 'person attribute',
     uuid: peruInsuranceAccreditationCheckedAtAttributeTypeUuid,
-    label: 'Fecha/hora de acreditación',
+    label: 'Fecha de acreditación',
+    inputType: 'date',
+    allowFutureDates: false,
     showHeading: false,
-  },
-  {
-    id: 'companionName',
-    type: 'person attribute',
-    uuid: '4697d0e6-5b24-416b-aee6-708cd9a3a1db',
-    label: 'Nombre del acompañante o responsable',
-    showHeading: false,
-    validation: { required: false, matches: peruPersonNameValidationRegex },
-  },
-  {
-    id: 'companionAge',
-    type: 'person attribute',
-    uuid: '70ce4571-2e2e-44da-a39f-9dae2a658606',
-    label: 'Edad del acompañante o responsable',
-    showHeading: false,
-    validation: { required: false, matches: peruAgeValidationRegex },
-  },
-  {
-    id: 'companionRelationship',
-    type: 'person attribute',
-    uuid: 'a180fa5f-c44e-4490-a981-d7196b70c6ac',
-    label: 'Parentesco del acompañante o responsable',
-    showHeading: false,
-    validation: { required: false, matches: peruTextWithoutDigitsValidationRegex },
   },
 ];
 

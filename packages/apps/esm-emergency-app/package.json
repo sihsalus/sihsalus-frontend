@@ -1,6 +1,6 @@
 {
   "name": "@sihsalus/esm-emergency-app",
-  "version": "1.0.0-alpha",
+  "version": "1.0.1-alpha",
   "description": "Emergency module microfrontend for OpenMRS",
   "browser": "dist/sihsalus-esm-emergency-app.js",
   "main": "src/index.ts",

@@ -43,31 +43,33 @@ export function useInitialPatientRelationships(patientUuid: string): {
   );
 
   const result = useMemo(() => {
-    const relationships: Array<RelationshipValue> | undefined = data?.data?.results.map((r) =>
-      r.personA.uuid === patientUuid
-        ? {
-            relatedPersonName: r.personB.display,
-            relatedPersonUuid: r.personB.uuid,
-            relation: r.relationshipType.bIsToA,
-            relationshipType: `${r.relationshipType.uuid}/bIsToA`,
-            /**
-             * Value kept for restoring initial value
-             */
-            initialrelationshipTypeValue: `${r.relationshipType.uuid}/bIsToA`,
-            uuid: r.uuid,
-          }
-        : {
-            relatedPersonName: r.personA.display,
-            relatedPersonUuid: r.personA.uuid,
-            relation: r.relationshipType.aIsToB,
-            relationshipType: `${r.relationshipType.uuid}/aIsToB`,
-            /**
-             * Value kept for restoring initial value
-             */
-            initialrelationshipTypeValue: `${r.relationshipType.uuid}/aIsToB`,
-            uuid: r.uuid,
-          },
-    );
+    const relationships: Array<RelationshipValue> = Array.isArray(data?.data?.results)
+      ? data.data.results.map((r) =>
+          r.personA.uuid === patientUuid
+            ? {
+                relatedPersonName: r.personB.display,
+                relatedPersonUuid: r.personB.uuid,
+                relation: r.relationshipType.bIsToA,
+                relationshipType: `${r.relationshipType.uuid}/bIsToA`,
+                /**
+                 * Value kept for restoring initial value
+                 */
+                initialrelationshipTypeValue: `${r.relationshipType.uuid}/bIsToA`,
+                uuid: r.uuid,
+              }
+            : {
+                relatedPersonName: r.personA.display,
+                relatedPersonUuid: r.personA.uuid,
+                relation: r.relationshipType.aIsToB,
+                relationshipType: `${r.relationshipType.uuid}/aIsToB`,
+                /**
+                 * Value kept for restoring initial value
+                 */
+                initialrelationshipTypeValue: `${r.relationshipType.uuid}/aIsToB`,
+                uuid: r.uuid,
+              },
+        )
+      : [];
     return {
       data: relationships,
       error,

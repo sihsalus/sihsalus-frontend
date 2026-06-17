@@ -11,6 +11,6 @@ describe('Add patient link component', () => {
     const user = userEvent.setup();
     render(<Root />);
     await user.click(screen.getByRole('button', { name: /add patient/i }));
-    expect(mockNavigate).toHaveBeenCalledWith({ to: '${openmrsSpaBase}/patient-registration' });
+    expect(mockNavigate).toHaveBeenCalledWith({ to: `${globalThis.getOpenmrsSpaBase()}patient-registration` });
   });
 });

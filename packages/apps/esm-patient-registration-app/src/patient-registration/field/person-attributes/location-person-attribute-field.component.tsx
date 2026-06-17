@@ -14,6 +14,7 @@ export interface LocationPersonAttributeFieldProps {
   label?: string;
   locationTag: string;
   required?: boolean;
+  readOnly?: boolean;
 }
 
 export function LocationPersonAttributeField({
@@ -22,6 +23,7 @@ export function LocationPersonAttributeField({
   label,
   locationTag,
   required,
+  readOnly,
 }: LocationPersonAttributeFieldProps) {
   const { t } = useTranslation(moduleName);
   const fieldName = `attributes.${personAttributeType.uuid}`;
@@ -80,7 +82,7 @@ export function LocationPersonAttributeField({
     >
       <Layer>
         <Field name={fieldName}>
-          {({ field, form: { touched, errors } }) => {
+          {({ form: { touched, errors } }) => {
             return (
               <ComboBox
                 id={id}
@@ -88,6 +90,7 @@ export function LocationPersonAttributeField({
                 titleText={titleText}
                 items={locationOptions}
                 placeholder={t('searchLocationPersonAttribute', 'Search location')}
+                disabled={readOnly}
                 onInputChange={handleInputChange}
                 required={required}
                 onChange={handleSelect}

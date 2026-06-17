@@ -29,6 +29,19 @@ interface PaginatedNotesProps {
   urlLabel: string;
 }
 
+const renderText = (value: unknown) => {
+  if (value == null) {
+    return '';
+  }
+  if (typeof value === 'string' || typeof value === 'number' || typeof value === 'boolean') {
+    return String(value);
+  }
+  if (typeof value === 'object' && 'display' in value) {
+    return renderText((value as { display?: unknown }).display);
+  }
+  return '';
+};
+
 const PaginatedNotes: React.FC<PaginatedNotesProps> = ({ notes, pageSize, pageUrl, urlLabel }) => {
   const { t } = useTranslation();
   const layout = useLayoutType();
@@ -85,7 +98,10 @@ const PaginatedNotes: React.FC<PaginatedNotesProps> = ({ notes, pageSize, pageUr
         ...note,
         id: `${note.id}`,
         encounterDate: formatDate(parseDate(note.encounterDate), { mode: 'wide' }),
-        diagnoses: note.diagnoses ? note.diagnoses : '--',
+        diagnoses: renderText(note.diagnoses) || '--',
+        encounterNote: renderText(note.encounterNote),
+        encounterProvider: renderText(note.encounterProvider),
+        encounterProviderRole: renderText(note.encounterProviderRole),
       })),
     [paginatedNotes],
   );
@@ -138,7 +154,7 @@ const PaginatedNotes: React.FC<PaginatedNotesProps> = ({ notes, pageSize, pageUr
                     <React.Fragment key={row.id}>
                       <TableExpandRow key={key} {...rowProps}>
                         {row.cells.map((cell) => (
-                          <TableCell key={cell.id}>{cell.value}</TableCell>
+                          <TableCell key={cell.id}>{renderText(cell.value)}</TableCell>
                         ))}
                       </TableExpandRow>
                       {row.isExpanded ? (

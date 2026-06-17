@@ -28,6 +28,8 @@ test.describe('Peru admission accreditation checks', () => {
     await expect(page.getByText(/Crear nuevo paciente|Create new patient/i).first()).toBeVisible({ timeout: 30_000 });
 
     const requiredTexts: Array<[string, RegExp]> = [
+      ['identity and insurance validation section', /Validación de identidad y seguro/i],
+      ['identification data heading', /Datos de identificación/i],
       ['filiation section', /Datos de filiación/i],
       ['residence birthplace contact section', /Residencia, nacimiento y contacto/i],
       ['responsible person section', /Acompañante o responsable/i],
@@ -48,9 +50,13 @@ test.describe('Peru admission accreditation checks', () => {
       ['insurance code field', /Código de seguro/i],
       ['insurance accreditation status field', /Estado de acreditación de seguro/i],
       ['insurance accreditation date field', /Fecha\/hora de acreditación/i],
-      ['responsible person name field', /Nombre del acompañante o responsable/i],
-      ['responsible person age field', /Edad del acompañante o responsable/i],
-      ['responsible person relationship field', /Parentesco del acompañante o responsable/i],
+      ['responsible person create tab', /Registrar persona nueva|Register new person/i],
+      ['responsible person search tab', /Buscar persona existente|Search existing person/i],
+      ['responsible relationship selector', /Relación con el paciente|Relationship to patient/i],
+      ['responsible person first name field', /Primer nombre|First name/i],
+      ['responsible person family name field', /Apellido paterno|Family name/i],
+      ['responsible person sex field', /Sexo|Sex/i],
+      ['responsible person estimated age field', /Edad aproximada|Approximate age/i],
       ['birth field', /Nacimiento|Birth/i],
     ];
 
@@ -77,15 +83,13 @@ test.describe('Peru admission accreditation checks', () => {
       'second family name field',
     ).toBe(true);
 
-    expect(
-      (await isVisibleByText(page, /Identificadores|Identifiers/i, 5_000)) ||
-        (await isVisibleBySelector(page, '[data-testid="identifier-label"], [data-testid="identifier-input"]', 5_000)),
-      'identifiers field',
-    ).toBe(true);
-
     expect(await isVisibleByText(page, /Nombre.*conocido|Patient.*Name.*Known/i, 5_000), 'unknown patient toggle').toBe(
       true,
     );
+
+    await expect(page.getByText(/Nombre del acompañante o responsable/i)).toHaveCount(0);
+    await expect(page.getByText(/Edad del acompañante o responsable/i)).toHaveCount(0);
+    await expect(page.getByText(/Parentesco del acompañante o responsable/i)).toHaveCount(0);
 
     await expect(
       page.getByRole('button', { name: /Registrar paciente|Guardar|Save|Create|Crear/i }).first(),

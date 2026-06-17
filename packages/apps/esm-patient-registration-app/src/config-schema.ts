@@ -9,10 +9,12 @@ export interface SectionDefinition {
 export interface FieldDefinition {
   id: string;
   type: string;
+  inputType?: 'date';
   label?: string;
   uuid: string;
   placeholder?: string;
   defaultValue?: string;
+  readOnlyOnCreate?: boolean;
   allowFutureDates?: boolean;
   allowPastDates?: boolean;
   showHeading: boolean;
@@ -172,6 +174,13 @@ export const esmPatientRegistrationSchema = {
         _description: "How this field's data will be stored—a person attribute or an obs.",
         _validators: [validators.oneOf(['person attribute', 'obs'])],
       },
+      inputType: {
+        _type: Type.String,
+        _default: null,
+        _description:
+          'Optional UI input type override for fields stored as strings. Currently supports `date` for date-only values.',
+        _validators: [validators.oneOf(['date'])],
+      },
       uuid: {
         _type: Type.UUID,
         _description: "Person attribute type UUID that this field's data should be saved to.",
@@ -196,6 +205,12 @@ export const esmPatientRegistrationSchema = {
         _default: null,
         _description:
           'Default value to apply for new registrations when this field has no existing value. For coded fields, use the answer concept UUID.',
+      },
+      readOnlyOnCreate: {
+        _type: Type.Boolean,
+        _default: false,
+        _description:
+          'Whether the field should be visible but locked while creating a new patient. The field remains editable when editing an existing patient.',
       },
       allowFutureDates: {
         _type: Type.Boolean,

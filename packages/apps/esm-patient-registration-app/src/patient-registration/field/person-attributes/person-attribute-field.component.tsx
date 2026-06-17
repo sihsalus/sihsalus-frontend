@@ -7,6 +7,7 @@ import { moduleName } from '../../../constants';
 import { PatientRegistrationContext } from '../../patient-registration-context';
 import styles from '../field.scss';
 import { CodedPersonAttributeField } from './coded-person-attribute-field.component';
+import { DatePersonAttributeField } from './date-person-attribute-field.component';
 import { LocationPersonAttributeField } from './location-person-attribute-field.component';
 import { usePersonAttributeType } from './person-attributes.resource';
 import { TextPersonAttributeField } from './text-person-attribute-field.component';
@@ -19,6 +20,7 @@ export function PersonAttributeField({ fieldDefinition }: PersonAttributeFieldPr
   const { data: personAttributeType, isLoading, error } = usePersonAttributeType(fieldDefinition.uuid);
   const registrationContext = useContext(PatientRegistrationContext);
   const { t } = useTranslation(moduleName);
+  const readOnly = Boolean(fieldDefinition.readOnlyOnCreate && registrationContext && !registrationContext.inEditMode);
 
   useEffect(() => {
     if (!personAttributeType || !fieldDefinition.defaultValue || registrationContext?.inEditMode) {
@@ -45,6 +47,20 @@ export function PersonAttributeField({ fieldDefinition }: PersonAttributeFieldPr
     }
     switch (personAttributeType.format) {
       case 'java.lang.String':
+        if (fieldDefinition.inputType === 'date') {
+          return (
+            <DatePersonAttributeField
+              personAttributeType={personAttributeType}
+              label={fieldDefinition.label}
+              required={fieldDefinition.validation?.required ?? false}
+              allowPastDates={fieldDefinition.allowPastDates}
+              allowFutureDates={fieldDefinition.allowFutureDates}
+              id={fieldDefinition?.id}
+              readOnly={readOnly}
+            />
+          );
+        }
+
         return (
           <TextPersonAttributeField
             personAttributeType={personAttributeType}
@@ -52,6 +68,7 @@ export function PersonAttributeField({ fieldDefinition }: PersonAttributeFieldPr
             label={fieldDefinition.label}
             required={fieldDefinition.validation?.required ?? false}
             id={fieldDefinition?.id}
+            readOnly={readOnly}
           />
         );
       case 'org.openmrs.Concept':
@@ -63,6 +80,7 @@ export function PersonAttributeField({ fieldDefinition }: PersonAttributeFieldPr
             id={fieldDefinition?.id}
             customConceptAnswers={fieldDefinition.customConceptAnswers ?? []}
             required={fieldDefinition.validation?.required ?? false}
+            readOnly={readOnly}
           />
         );
       case 'org.openmrs.Location':
@@ -73,6 +91,7 @@ export function PersonAttributeField({ fieldDefinition }: PersonAttributeFieldPr
             label={fieldDefinition.label}
             id={fieldDefinition?.id}
             required={fieldDefinition.validation?.required ?? false}
+            readOnly={readOnly}
           />
         );
       default:
@@ -88,7 +107,7 @@ export function PersonAttributeField({ fieldDefinition }: PersonAttributeFieldPr
           </InlineNotification>
         );
     }
-  }, [personAttributeType, fieldDefinition, t]);
+  }, [personAttributeType, fieldDefinition, readOnly, t]);
 
   if (isLoading) {
     return (

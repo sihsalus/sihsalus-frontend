@@ -4,6 +4,7 @@ import { type SectionDefinition } from '../../../config-schema';
 import { moduleName } from '../../../constants';
 import { Field } from '../../field/field.component';
 import fieldStyles from '../../field/field.scss';
+import { CopyResponsibleDataButton } from '../copy-responsible-data/copy-responsible-data-button.component';
 import styles from './contact-section.scss';
 
 export interface ContactSectionProps {
@@ -16,7 +17,7 @@ const birthplaceFieldIds = new Set(['birthAddress']);
 /**
  * Renders the "Residencia, nacimiento y contacto" section split into three
  * sub-sections: residencia (the structured address, which carries its own
- * heading), lugar de nacimiento and contacto.
+ * heading), lugar de nacimiento and other contact details.
  */
 export const ContactSection = ({ sectionDefinition }: ContactSectionProps) => {
   const { t } = useTranslation(moduleName);
@@ -31,6 +32,7 @@ export const ContactSection = ({ sectionDefinition }: ContactSectionProps) => {
     <section aria-label={`${sectionDefinition.name} Section`}>
       {residenceFields.length > 0 && (
         <div className={styles.subsection}>
+          <CopyResponsibleDataButton mode="residenceContact" />
           {residenceFields.map((name) => (
             <Field key={`contact-${name}`} name={name} />
           ))}
@@ -39,6 +41,7 @@ export const ContactSection = ({ sectionDefinition }: ContactSectionProps) => {
 
       {birthplaceFields.length > 0 && (
         <div className={styles.subsection}>
+          <CopyResponsibleDataButton mode="birthAddress" />
           {birthplaceFields.map((name) => (
             <Field key={`contact-${name}`} name={name} />
           ))}
@@ -47,7 +50,9 @@ export const ContactSection = ({ sectionDefinition }: ContactSectionProps) => {
 
       {contactFields.length > 0 && (
         <div className={styles.subsection}>
-          <h4 className={fieldStyles.productiveHeading02Light}>{t('contactSubsectionHeading', 'Contacto')}</h4>
+          <h4 className={fieldStyles.productiveHeading02Light}>
+            {t('contactSubsectionHeading', 'Other contact details')}
+          </h4>
           <div className={fieldStyles.addressFieldGrid}>
             {contactFields.map((name) => (
               <Field key={`contact-${name}`} name={name} />

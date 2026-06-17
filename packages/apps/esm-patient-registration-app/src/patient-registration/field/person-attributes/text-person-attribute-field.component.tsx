@@ -12,6 +12,7 @@ export interface TextPersonAttributeFieldProps {
   validationRegex?: string;
   label?: string;
   required?: boolean;
+  readOnly?: boolean;
 }
 
 export function TextPersonAttributeField({
@@ -20,6 +21,7 @@ export function TextPersonAttributeField({
   validationRegex,
   label,
   required,
+  readOnly,
 }: TextPersonAttributeFieldProps) {
   const { t } = useTranslation(moduleName);
 
@@ -52,6 +54,7 @@ export function TextPersonAttributeField({
               labelText={label ?? personAttributeType?.display}
               {...field}
               required={required}
+              readOnly={readOnly}
             />
           );
         }}

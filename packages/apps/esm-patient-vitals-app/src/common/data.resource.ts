@@ -162,12 +162,20 @@ export function useVitalsAndBiometrics(patientUuid: string, mode: VitalsAndBiome
       concepts.abdominalCircumferenceUuid,
       concepts.headCircumferenceUuid,
       concepts.chestCircumferenceUuid,
+      concepts.glasgowEyeOpeningUuid,
+      concepts.glasgowVerbalResponseUuid,
+      concepts.glasgowMotorResponseUuid,
+      concepts.glasgowTotalUuid,
       concepts.generalPatientNoteUuid,
     ],
     [
       concepts.abdominalCircumferenceUuid,
       concepts.chestCircumferenceUuid,
       concepts.diastolicBloodPressureUuid,
+      concepts.glasgowEyeOpeningUuid,
+      concepts.glasgowMotorResponseUuid,
+      concepts.glasgowTotalUuid,
+      concepts.glasgowVerbalResponseUuid,
       concepts.generalPatientNoteUuid,
       concepts.headCircumferenceUuid,
       concepts.heightUuid,
@@ -194,8 +202,21 @@ export function useVitalsAndBiometrics(patientUuid: string, mode: VitalsAndBiome
     [observationConcepts, biometricsConcepts, mode],
   );
   const referenceRangeConceptUuidList = useMemo(
-    () => observationConceptUuidList.filter((uuid) => uuid !== concepts.generalPatientNoteUuid),
-    [concepts.generalPatientNoteUuid, observationConceptUuidList],
+    () =>
+      observationConceptUuidList.filter(
+        (uuid) =>
+          uuid !== concepts.generalPatientNoteUuid &&
+          uuid !== concepts.glasgowEyeOpeningUuid &&
+          uuid !== concepts.glasgowVerbalResponseUuid &&
+          uuid !== concepts.glasgowMotorResponseUuid,
+      ),
+    [
+      concepts.generalPatientNoteUuid,
+      concepts.glasgowEyeOpeningUuid,
+      concepts.glasgowMotorResponseUuid,
+      concepts.glasgowVerbalResponseUuid,
+      observationConceptUuidList,
+    ],
   );
   const { ranges: patientReferenceRanges } = useReferenceRanges(patientUuid, referenceRangeConceptUuidList);
 
@@ -226,6 +247,14 @@ export function useVitalsAndBiometrics(patientUuid: string, mode: VitalsAndBiome
           return 'headCircumference';
         case concepts.chestCircumferenceUuid:
           return 'chestCircumference';
+        case concepts.glasgowEyeOpeningUuid:
+          return 'glasgowEyeOpening';
+        case concepts.glasgowVerbalResponseUuid:
+          return 'glasgowVerbalResponse';
+        case concepts.glasgowMotorResponseUuid:
+          return 'glasgowMotorResponse';
+        case concepts.glasgowTotalUuid:
+          return 'glasgowTotal';
         default:
           return undefined;
       }
@@ -235,6 +264,10 @@ export function useVitalsAndBiometrics(patientUuid: string, mode: VitalsAndBiome
       concepts.chestCircumferenceUuid,
       concepts.headCircumferenceUuid,
       concepts.heightUuid,
+      concepts.glasgowEyeOpeningUuid,
+      concepts.glasgowMotorResponseUuid,
+      concepts.glasgowTotalUuid,
+      concepts.glasgowVerbalResponseUuid,
       concepts.midUpperArmCircumferenceUuid,
       concepts.systolicBloodPressureUuid,
       concepts.oxygenSaturationUuid,
@@ -269,8 +302,9 @@ export function useVitalsAndBiometrics(patientUuid: string, mode: VitalsAndBiome
       return result;
     },
     getObservationFields: ({ code, key, value }) => {
+      const numericValue = typeof value === 'number' ? value : undefined;
       const interpretation = assessValue(
-        value,
+        numericValue,
         getPatientReferenceRange(code, conceptMetadata, patientReferenceRanges),
       );
       return {

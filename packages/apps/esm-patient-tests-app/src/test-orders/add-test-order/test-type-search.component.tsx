@@ -1,9 +1,11 @@
-import { Button, ButtonSkeleton, Search, SkeletonText, Tile } from '@carbon/react';
+import { Button, ButtonSkeleton, Search, Select, SelectItem, SelectSkeleton, SkeletonText, Tile } from '@carbon/react';
 import { ShoppingCartArrowUp } from '@carbon/react/icons';
 import {
   ArrowRightIcon,
   ResponsiveWrapper,
   ShoppingCartArrowDownIcon,
+  openmrsFetch,
+  restBaseUrl,
   useConfig,
   useDebounce,
   useLayoutType,
@@ -11,8 +13,9 @@ import {
 } from '@openmrs/esm-framework';
 import { useOrderBasket } from '@openmrs/esm-patient-common-lib';
 import classNames from 'classnames';
-import React, { type ComponentProps, useCallback, useMemo, useRef, useState } from 'react';
+import React, { type ComponentProps, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
+import useSWRImmutable from 'swr/immutable';
 import type { ConfigObject } from '../../config-schema';
 import type { TestOrderBasketItem } from '../../types';
 import { prepTestOrderPostData } from '../api';
@@ -41,6 +44,8 @@ interface TestTypeSearchResultItemProps {
   returnToOrderBasket: () => void;
 }
 
+let lastSelectedLabset = 'ALL';
+
 export function TestTypeSearch({
   openLabForm,
   orderTypeUuid,
@@ -52,8 +57,38 @@ export function TestTypeSearch({
   const debouncedSearchTerm = useDebounce(searchTerm);
   const searchInputRef = useRef<HTMLInputElement>(null);
 
+  const config = useConfig<ConfigObject>();
+  const resultsViewerConcepts = config?.resultsViewerConcepts ?? [];
+  const conceptUuids = useMemo(() => {
+    return resultsViewerConcepts.map((c) => c.conceptUuid);
+  }, [resultsViewerConcepts]);
+
+  const fetchConcepts = useCallback((urls: Array<string>) => {
+    return Promise.all(
+      urls.map((url) => openmrsFetch<{ uuid: string; display: string }>(url).then((res) => res.data)),
+    );
+  }, []);
+
+  const { data: fetchedLabsets, isLoading: isLoadingLabsets } = useSWRImmutable<
+    Array<{ uuid: string; display: string }>,
+    Error
+  >(
+    conceptUuids.length
+      ? conceptUuids.map((uuid) => `${restBaseUrl}/concept/${uuid}?v=custom:(uuid,display)`)
+      : null,
+    fetchConcepts,
+  );
+
+  const [selectedLabset, setSelectedLabset] = useState(lastSelectedLabset);
+
+  const activeOrderableConceptSets = useMemo(() => {
+    return selectedLabset === 'ALL' ? orderableConceptSets : [selectedLabset];
+  }, [selectedLabset, orderableConceptSets]);
+
   const focusAndClearSearchInput = () => {
     setSearchTerm('');
+    setSelectedLabset('ALL');
+    lastSelectedLabset = 'ALL';
     searchInputRef.current?.focus();
   };
 
@@ -61,23 +96,50 @@ export function TestTypeSearch({
     setSearchTerm(event.target.value ?? '');
   };
 
+  const handleLabsetChange = (event: React.ChangeEvent<HTMLSelectElement>) => {
+    const value = event.target.value;
+    setSelectedLabset(value);
+    lastSelectedLabset = value;
+  };
+
   return (
     <>
       <ResponsiveWrapper>
-        <Search
-          autoFocus
-          labelText={t('searchFieldPlaceholder', 'Search for a test type')}
-          onChange={handleSearchTermChange}
-          placeholder={t('searchFieldPlaceholder', 'Search for a test type')}
-          ref={searchInputRef}
-          size="lg"
-          value={searchTerm}
-        />
+        <div className={styles.searchContainer}>
+          <Search
+            autoFocus
+            labelText={t('searchFieldPlaceholder', 'Search for a test type')}
+            onChange={handleSearchTermChange}
+            placeholder={t('searchFieldPlaceholder', 'Search for a test type')}
+            ref={searchInputRef}
+            size="lg"
+            value={searchTerm}
+          />
+          <div className={styles.selectWrapper}>
+            {isLoadingLabsets ? (
+              <SelectSkeleton />
+            ) : (
+              <Select
+                id="labset-select"
+                labelText={t('labSetLabel', 'Lab Set')}
+                hideLabel
+                value={selectedLabset}
+                onChange={handleLabsetChange}
+                size="lg"
+              >
+                <SelectItem text={t('allLabTests', 'All lab tests')} value="ALL" />
+                {fetchedLabsets?.map((labset) => (
+                  <SelectItem key={labset.uuid} text={labset.display} value={labset.uuid} />
+                ))}
+              </Select>
+            )}
+          </div>
+        </div>
       </ResponsiveWrapper>
       <TestTypeSearchResults
         cancelOrder={returnToOrderBasket}
         orderTypeUuid={orderTypeUuid}
-        orderableConceptSets={orderableConceptSets}
+        orderableConceptSets={activeOrderableConceptSets}
         focusAndClearSearchInput={focusAndClearSearchInput}
         openLabForm={openLabForm}
         searchTerm={debouncedSearchTerm}
@@ -86,6 +148,8 @@ export function TestTypeSearch({
     </>
   );
 }
+
+let lastScrollTop = 0;
 
 function TestTypeSearchResults({
   cancelOrder,
@@ -98,6 +162,72 @@ function TestTypeSearchResults({
   const { t } = useTranslation();
   const isTablet = useLayoutType() === 'tablet';
   const { testTypes, isLoading, error } = useTestTypes(searchTerm, orderableConceptSets);
+
+  const session = useSession();
+  const { orders: orderConfig } = useConfig<ConfigObject>();
+  const prepareTestOrderPostData = useCallback(
+    (order: TestOrderBasketItem, patientUuid: string, encounterUuid: string | null) =>
+      prepTestOrderPostData(order, patientUuid, encounterUuid, orderConfig.careSettingUuid),
+    [orderConfig.careSettingUuid],
+  );
+  const { orders, setOrders } = useOrderBasket<TestOrderBasketItem>(orderTypeUuid, prepareTestOrderPostData);
+
+  const isSpecificLabsetSelected = useMemo(() => {
+    return (
+      orderableConceptSets?.length === 1 &&
+      !orderConfig.labOrderableConcepts.includes(orderableConceptSets[0])
+    );
+  }, [orderableConceptSets, orderConfig.labOrderableConcepts]);
+
+  const createLabOrder = useCallback(
+    (orderableConcept: TestType) => {
+      return createEmptyLabOrder(orderableConcept, session.currentProvider?.uuid);
+    },
+    [session.currentProvider?.uuid],
+  );
+
+  const addAllToBasket = useCallback(() => {
+    const testsToAdd = testTypes.filter(
+      (testType) => !orders?.some((order) => order.testType.conceptUuid === testType.conceptUuid),
+    );
+
+    if (testsToAdd.length === 0) return;
+
+    const newLabOrders = testsToAdd.map((testType) => {
+      const labOrder = createLabOrder(testType);
+      labOrder.isOrderIncomplete = true;
+      return labOrder;
+    });
+
+    setOrders([...orders, ...newLabOrders]);
+    cancelOrder();
+  }, [testTypes, orders, setOrders, createLabOrder, cancelOrder]);
+
+  const resultsContainerRef = useRef<HTMLDivElement>(null);
+
+  // biome-ignore lint/correctness/useExhaustiveDependencies: re-apply the saved scroll position whenever the list contents or loading state change.
+  useEffect(() => {
+    if (resultsContainerRef.current) {
+      resultsContainerRef.current.scrollTop = lastScrollTop;
+    }
+  }, [testTypes, isLoading]);
+
+  const handleScroll = (event: React.UIEvent<HTMLDivElement>) => {
+    lastScrollTop = event.currentTarget.scrollTop;
+  };
+
+  const grouped = useMemo(() => {
+    const groups: Array<{ label?: string; tests: Array<TestType> }> = [];
+    testTypes?.forEach((test) => {
+      let group = groups.find((g) => g.label === test.groupLabel);
+      if (!group) {
+        group = { label: test.groupLabel, tests: [] };
+        groups.push(group);
+      }
+      group.tests.push(test);
+    });
+    return groups;
+  }, [testTypes]);
 
   if (isLoading) {
     return <TestTypeSearchSkeleton />;
@@ -124,28 +254,52 @@ function TestTypeSearchResults({
     return (
       <>
         <div className={styles.container}>
-          {searchTerm && (
+          {(searchTerm || isSpecificLabsetSelected) && (
             <div className={styles.orderBasketSearchResultsHeader}>
               <span className={styles.searchResultsCount}>
-                {t('searchResultsMatchesForTerm', '{{count}} results for "{{searchTerm}}"', {
-                  count: testTypes?.length,
-                  searchTerm,
-                })}
+                {searchTerm &&
+                  t('searchResultsMatchesForTerm', '{{count}} results for "{{searchTerm}}"', {
+                    count: testTypes?.length,
+                    searchTerm,
+                  })}
               </span>
-              <Button kind="ghost" onClick={focusAndClearSearchInput} size={isTablet ? 'md' : 'sm'}>
-                {t('clearSearchResults', 'Clear results')}
-              </Button>
+              <div className={styles.headerActions}>
+                {isSpecificLabsetSelected && testTypes.length > 0 && (
+                  <Button
+                    kind="ghost"
+                    onClick={addAllToBasket}
+                    size={isTablet ? 'md' : 'sm'}
+                    renderIcon={(props: any) => <ShoppingCartArrowDownIcon size={16} {...props} />}
+                  >
+                    {t('addAllToBasket', 'Agregar todos')}
+                  </Button>
+                )}
+                {searchTerm && (
+                  <Button kind="ghost" onClick={focusAndClearSearchInput} size={isTablet ? 'md' : 'sm'}>
+                    {t('clearSearchResults', 'Clear results')}
+                  </Button>
+                )}
+              </div>
             </div>
           )}
-          <div className={styles.resultsContainer}>
-            {testTypes.map((testType) => (
-              <TestTypeSearchResultItem
-                key={testType.conceptUuid}
-                orderTypeUuid={orderTypeUuid}
-                openOrderForm={openLabForm}
-                testType={testType}
-                returnToOrderBasket={cancelOrder}
-              />
+          <div
+            ref={resultsContainerRef}
+            className={styles.resultsContainer}
+            onScroll={handleScroll}
+          >
+            {grouped.map((group, groupIndex) => (
+              <div key={group.label ?? `ungrouped-${groupIndex}`} className={styles.groupContainer}>
+                {group.label && <h5 className={styles.groupHeader}>{group.label}</h5>}
+                {group.tests.map((testType) => (
+                  <TestTypeSearchResultItem
+                    key={testType.conceptUuid}
+                    orderTypeUuid={orderTypeUuid}
+                    openOrderForm={openLabForm}
+                    testType={testType}
+                    returnToOrderBasket={cancelOrder}
+                  />
+                ))}
+              </div>
             ))}
           </div>
         </div>

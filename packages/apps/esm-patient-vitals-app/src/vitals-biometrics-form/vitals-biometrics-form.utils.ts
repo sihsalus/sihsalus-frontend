@@ -5,8 +5,10 @@ import { type ConceptMetadata } from '../common';
 import type { ObsReferenceRanges } from '../common/types';
 import type { ConditionalBiometricFieldConfig } from '../config-schema';
 
-/** Anthropometric fields whose visibility depends on age rules and consumer overrides */
-export type ConditionalFieldId = 'chestCircumference' | 'headCircumference';
+/** Shared vitals workspace fields that callers can force show/hide for a specific workflow */
+export type ConditionalFieldId = 'chestCircumference' | 'headCircumference' | 'glasgowComaScale';
+
+export type VitalsBiometricsWorkspaceProfile = 'default' | 'emergency-triage';
 
 export interface ConditionalFieldOverrides {
   /** Force-show these fields regardless of age rules (e.g. CRED launching for a newborn) */
@@ -76,6 +78,18 @@ export function calculateBodyMassIndex(weight: number, height: number): number |
   }
 
   return undefined;
+}
+
+export function calculateGlasgowComaScaleTotal(
+  eyeOpening: number | undefined,
+  verbalResponse: number | undefined,
+  motorResponse: number | undefined,
+): number | undefined {
+  if (eyeOpening == null || verbalResponse == null || motorResponse == null) {
+    return undefined;
+  }
+
+  return eyeOpening + verbalResponse + motorResponse;
 }
 
 export function isValueWithinReferenceRange(

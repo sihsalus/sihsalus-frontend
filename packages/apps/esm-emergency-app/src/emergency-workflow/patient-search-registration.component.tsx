@@ -79,6 +79,31 @@ const nationalityOptions = [
   { code: 'OTHER', label: 'Otro país' },
 ];
 
+interface RegistrationSubmitError {
+  status?: number;
+  responseStatus?: number;
+  message?: string;
+  responseBody?: {
+    error?: {
+      message?: string;
+    };
+  };
+}
+
+function isSessionExpired(error: unknown): boolean {
+  if (error === null || typeof error !== 'object') {
+    return false;
+  }
+
+  const typedError = error as RegistrationSubmitError;
+  const status = typedError.status ?? typedError.responseStatus;
+  const lowerCaseMessage = `${typedError.message ?? ''} ${typedError.responseBody?.error?.message ?? ''}`.toLowerCase();
+
+  return (
+    status === 401 || status === 403 || lowerCaseMessage.includes('session') || lowerCaseMessage.includes('expired')
+  );
+}
+
 function formatGenderLabel(gender?: string) {
   switch (gender) {
     case 'M':
@@ -455,35 +480,36 @@ const PatientSearchRegistration: React.FC<PatientSearchRegistrationProps> = ({ o
         const response = await saveEmergencyPatient(patientPayload);
         const savedPatient = response.data;
 
+        const savedPatientIdentifiers = Array.isArray(savedPatient.identifiers)
+          ? savedPatient.identifiers
+              .map((identifier) => ({
+                uuid: identifier.uuid ?? '',
+                identifier: identifier.identifier || identifier.display || '',
+                identifierType: identifier.identifierType,
+              }))
+              .filter((identifier) => identifier.identifier)
+          : [];
+
+        const fallbackIdentifiers = identifiers.map(
+          (id: { identifier: string; identifierType: string }, i: number) => ({
+            uuid: `temp-${i}`,
+            identifier: id.identifier,
+            identifierType: {
+              uuid: id.identifierType,
+              display:
+                i === 0
+                  ? t('medicalRecordNumber', 'HCE / code')
+                  : identityDocumentTypes.find((type) => type.value === id.identifierType)?.label,
+            },
+          }),
+        );
+
         // 8. Mapear respuesta al formato SearchedPatient
         const displayName = [familyName, familyName2, givenName].filter(Boolean).join(' ');
         const newPatient = {
           uuid: savedPatient.uuid,
           display: savedPatient.display || displayName,
-          identifiers:
-            savedPatient.identifiers?.map(
-              (id: {
-                uuid: string;
-                identifier?: string;
-                display?: string;
-                identifierType: { uuid: string; display?: string };
-              }) => ({
-                uuid: id.uuid,
-                identifier: id.identifier ?? id.display,
-                identifierType: id.identifierType,
-              }),
-            ) ??
-            identifiers.map((id: { identifier: string; identifierType: string }, i: number) => ({
-              uuid: `temp-${i}`,
-              identifier: id.identifier,
-              identifierType: {
-                uuid: id.identifierType,
-                display:
-                  i === 0
-                    ? 'N° Historia Clínica'
-                    : identityDocumentTypes.find((type) => type.value === id.identifierType)?.label,
-              },
-            })),
+          identifiers: savedPatientIdentifiers.length > 0 ? savedPatientIdentifiers : fallbackIdentifiers,
           person: {
             age: data.yearsEstimated || undefined,
             gender: data.gender,
@@ -518,9 +544,15 @@ const PatientSearchRegistration: React.FC<PatientSearchRegistrationProps> = ({ o
         setRegisteredPatient(newPatient);
         setShowRegistrationForm(false);
       } catch (error: unknown) {
+        const isExpiredSession = isSessionExpired(error);
+
         showSnackbar({
           title: t('errorRegisteringPatient', 'Error al registrar paciente'),
-          subtitle: error instanceof Error ? error.message : t('unknownError', 'Error desconocido'),
+          subtitle: isExpiredSession
+            ? t('sessionExpiredError', 'Tu sesión ha expirado. Por favor inicia sesión nuevamente.')
+            : error instanceof Error
+              ? error.message
+              : t('unknownError', 'Error desconocido'),
           kind: 'error',
         });
       } finally {

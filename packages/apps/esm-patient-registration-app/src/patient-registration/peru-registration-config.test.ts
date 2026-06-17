@@ -4,6 +4,7 @@ import { esmPatientRegistrationSchema, type RegistrationConfig } from '../config
 import {
   getEffectiveRegistrationConfig,
   peruDniPatientIdentifierTypeUuid,
+  peruEmailAttributeTypeUuid,
   peruForeignPatientIdentifierTypeUuids,
   peruPhoneAttributeTypeUuid,
 } from './peru-registration-config';
@@ -23,7 +24,7 @@ describe('getEffectiveRegistrationConfig', () => {
     expect(demographics?.fields).toEqual(['name', 'dob', 'gender', 'nationality']);
     expect(contact).toMatchObject({
       id: 'contact',
-      fields: ['address', 'birthAddress', 'phone', 'mobilePhone'],
+      fields: ['address', 'birthAddress', 'phone', 'mobilePhone', 'email'],
     });
     expect(filiation?.fields).not.toContain('birthplace');
     expect(filiation?.fields).not.toContain('bloodGroup');
@@ -66,16 +67,16 @@ describe('getEffectiveRegistrationConfig', () => {
       'contact',
       'filiation',
       'bloodData',
-      'medicalRecord',
       'insurance',
       'responsiblePerson',
+      'medicalRecord',
     ]);
     expect(config.sections).not.toContain('relationships');
     expect(config.sections).not.toContain('birthplace');
     expect(responsiblePerson).toMatchObject({
       id: 'responsiblePerson',
       name: 'Acompañante o responsable',
-      fields: ['companionName', 'companionAge', 'companionRelationship'],
+      fields: [],
     });
   });
 
@@ -100,42 +101,47 @@ describe('getEffectiveRegistrationConfig', () => {
     expect(demographics?.fields).toEqual(['name', 'dob', 'gender', 'nationality']);
   });
 
-  it('validates responsible person optional fields when provided', () => {
-    const config = getEffectiveRegistrationConfig(getDefaultsFromConfigSchema(esmPatientRegistrationSchema));
-    const fieldsById = Object.fromEntries(config.fieldDefinitions.map((field) => [field.id, field]));
-    const companionNameRegex = new RegExp(fieldsById.companionName.validation.matches);
-    const companionAgeRegex = new RegExp(fieldsById.companionAge.validation.matches);
-    const companionRelationshipRegex = new RegExp(fieldsById.companionRelationship.validation.matches);
-
-    expect(fieldsById.companionName.validation.required).toBe(false);
-    expect(companionNameRegex.test('José De la Cruz')).toBe(true);
-    expect(companionNameRegex.test('José2')).toBe(false);
-    expect(companionNameRegex.test('José@')).toBe(false);
-
-    expect(fieldsById.companionAge.validation.required).toBe(false);
-    expect(companionAgeRegex.test('35')).toBe(true);
-    expect(companionAgeRegex.test('120')).toBe(true);
-    expect(companionAgeRegex.test('121')).toBe(false);
-    expect(companionAgeRegex.test('treinta')).toBe(false);
-
-    expect(fieldsById.companionRelationship.validation.required).toBe(false);
-    expect(companionRelationshipRegex.test('Tío/a')).toBe(true);
-    expect(companionRelationshipRegex.test('Tío2')).toBe(false);
-  });
-
   it('preconfigures safe administrative defaults for new Peru registrations', () => {
     const config = getEffectiveRegistrationConfig(getDefaultsFromConfigSchema(esmPatientRegistrationSchema));
     const fieldsById = Object.fromEntries(config.fieldDefinitions.map((field) => [field.id, field]));
 
     expect(fieldsById.medicalRecordStatus.defaultValue).toBe('9b3df0a1-0c58-4f55-9868-9c38f1db2031');
     expect(fieldsById.medicalRecordArchiveType.defaultValue).toBe('9b3df0a1-0c58-4f55-9868-9c38f1db2041');
+    expect(fieldsById.medicalRecordStatus.readOnlyOnCreate).toBe(true);
+    expect(fieldsById.medicalRecordArchiveType.readOnlyOnCreate).toBe(true);
     expect(fieldsById.insuranceAccreditationStatus.defaultValue).toBe('9b3df0a1-0c58-4f55-9868-9c38f1db2054');
+    expect(fieldsById.civilStatus.customConceptAnswers).toContainEqual({
+      uuid: 'a10b6eeb-287f-4580-8ba7-9c8ee78a6ffc',
+      label: 'Divorciado(a)',
+    });
+    expect(fieldsById.civilStatus.customConceptAnswers?.map((answer) => answer.label)).not.toContain('Divorced');
+    expect(fieldsById.insuranceType.customConceptAnswers?.map((answer) => answer.label)).toEqual([
+      'SIS Gratuito',
+      'SIS Emprendedor',
+      'SIS Semicontributivo',
+      'Plan de atención SIS',
+      'ESSALUD',
+      'FOSPOLI',
+      'Seguro privado',
+    ]);
+    expect(fieldsById.rhFactor.customConceptAnswers).toEqual([
+      { uuid: '9b3df0a1-0c58-4f55-9868-9c38f1db2021', label: 'Rh positivo' },
+      { uuid: '9b3df0a1-0c58-4f55-9868-9c38f1db2022', label: 'Rh negativo' },
+    ]);
     expect(config.sectionDefinitions.find((section) => section.id === 'identityLookup')?.fields).toContain('sisLookup');
     expect(config.sectionDefinitions.find((section) => section.id === 'insurance')?.fields).not.toContain('sisLookup');
     expect(config.fieldConfigurations.phone.personAttributeUuid).toBe(peruPhoneAttributeTypeUuid);
     expect(config.fieldConfigurations.phone.validation?.matches).toBe('^\\+?[0-9][0-9\\s().-]{5,19}$');
     expect(config.sectionDefinitions.find((section) => section.id === 'contact')?.fields).toContain('birthAddress');
+    expect(config.sectionDefinitions.find((section) => section.id === 'contact')?.fields).toContain('email');
     expect(config.sectionDefinitions.find((section) => section.id === 'contact')?.fields).not.toContain('birthplace');
+    expect(fieldsById.email).toMatchObject({
+      id: 'email',
+      type: 'person attribute',
+      uuid: peruEmailAttributeTypeUuid,
+      label: 'Correo Electrónico',
+      validation: { required: false, matches: '^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$' },
+    });
     expect(fieldsById.birthplace).toBeUndefined();
     expect(fieldsById.gender?.defaultValue).toBeUndefined();
     expect(fieldsById.bloodGroup.defaultValue).toBeUndefined();
@@ -154,9 +160,9 @@ describe('getEffectiveRegistrationConfig', () => {
       'contact',
       'filiation',
       'bloodData',
-      'medicalRecord',
       'insurance',
       'responsiblePerson',
+      'medicalRecord',
     ]);
   });
 
@@ -177,6 +183,7 @@ describe('getEffectiveRegistrationConfig', () => {
       'birthAddress',
       'phone',
       'mobilePhone',
+      'email',
     ]);
   });
 });

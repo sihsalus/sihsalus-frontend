@@ -21,10 +21,10 @@ Terminología de dominio: visita = consulta, encounter = atención, appointment 
 ## TODO content/backend
 
 - Validar en QLTY que todos los UUIDs de `familyRelationshipsTypeList`, `pnsRelationships` y `otherRelationships` existan como relationship types activos y no sean placeholders.
-- Confirmar que los person attributes de `contactPersonAttributesUuid` existan en content y permitan guardar teléfono, estado VIH basal, consentimiento, convivencia y resultado IPV.
-- Completar `registrationObs.encounterTypeUuid` y `registrationObs.registrationFormUuid` cuando el flujo de creación de familiares deba generar encounter/obs de registro.
+- Los person attributes de `contactPersonAttributesUuid` deben venir de `sihsalus-content` y usar conceptos OCL codificados para estado VIH basal, contacto creado desde PNS, método PNS, convivencia, resultado IPV y consentimiento Ley 29733.
+- Completar `registrationObs.registrationFormUuid` cuando el flujo de creación de familiares deba asociar un formulario OpenMRS real al encounter administrativo de registro.
 - Validar `defaultIDUuid` y `defaultIdentifierSourceUuid` contra IdGen/content para evitar crear familiares sin identificador válido.
-- Confirmar que `hivProgramUuid`, `encounterTypes.hivTestingServices` y `formsList.htsInitialTest` existen en QLTY antes de habilitar chequeos PNS/VIH como flujo obligatorio.
+- Confirmar que `formsList.htsInitialTest` exista en content/QLTY antes de habilitar chequeos PNS/VIH como flujo obligatorio; `hivProgramUuid` y `encounterTypes.hivTestingServices` ya apuntan a metadata SIH Salus.
 
 ## TODO QA/QLTY
 

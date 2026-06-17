@@ -7,6 +7,9 @@ const concepts = {
   ...mockVitalsConfig.concepts,
   bodyMassIndexUuid: '1342AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA',
 };
+const glasgowEyeOpeningSpontaneousUuid = 'faff1dec-14df-44d4-8695-b337dced2274';
+const glasgowVerbalResponseOrientedUuid = '6440f83b-657e-4c5c-bac5-e3f67660ea4e';
+const glasgowMotorResponseObeysCommandsUuid = 'bddbf4e2-c870-4515-924e-d98cfcb7948f';
 
 describe('vitals and biometrics resources', () => {
   beforeEach(() => {
@@ -24,6 +27,10 @@ describe('vitals and biometrics resources', () => {
         weight: 70,
         abdominalCircumference: 100,
         oxygenSaturation: 0,
+        glasgowEyeOpening: glasgowEyeOpeningSpontaneousUuid,
+        glasgowVerbalResponse: glasgowVerbalResponseOrientedUuid,
+        glasgowMotorResponse: glasgowMotorResponseObeysCommandsUuid,
+        glasgowTotal: 15,
       },
       abortController,
       'location-uuid',
@@ -53,6 +60,22 @@ describe('vitals and biometrics resources', () => {
           {
             concept: concepts.oxygenSaturationUuid,
             value: 0,
+          },
+          {
+            concept: concepts.glasgowEyeOpeningUuid,
+            value: glasgowEyeOpeningSpontaneousUuid,
+          },
+          {
+            concept: concepts.glasgowVerbalResponseUuid,
+            value: glasgowVerbalResponseOrientedUuid,
+          },
+          {
+            concept: concepts.glasgowMotorResponseUuid,
+            value: glasgowMotorResponseObeysCommandsUuid,
+          },
+          {
+            concept: concepts.glasgowTotalUuid,
+            value: 15,
           },
         ],
       },

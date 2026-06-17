@@ -71,6 +71,7 @@ type VisitNotesFormData = Omit<z.infer<ReturnType<typeof createSchema>>, 'images
 };
 
 type VisitNoteTextFieldName =
+  | 'codigoPrestacional'
   | 'chiefComplaint'
   | 'illnessDuration'
   | 'biologicalFunctions'
@@ -127,6 +128,7 @@ interface DiagnosisSearchProps {
 
 interface VisitNoteTextAreaRowProps {
   control: Control<VisitNotesFormData>;
+  inputLabelText?: string;
   labelText: string;
   name: VisitNoteTextFieldName;
   placeholder: string;
@@ -138,6 +140,7 @@ const createSchema = (_t: TFunction) => {
     noteDate: z.date(),
     primaryDiagnosisSearch: z.string(),
     secondaryDiagnosisSearch: z.string().optional(),
+    codigoPrestacional: z.string().optional(),
     chiefComplaint: z.string().optional(),
     illnessDuration: z.string().optional(),
     biologicalFunctions: z.string().optional(),
@@ -184,6 +187,7 @@ const VisitNotesForm: React.FC<PatientWorkspace2DefinitionProps<VisitNotesFormPr
   const {
     clinicianEncounterRole,
     encounterNoteTextConceptUuid,
+    codigoPrestacionalConceptUuid,
     chiefComplaintConceptUuid,
     illnessDurationConceptUuid,
     biologicalFunctionsConceptUuid,
@@ -281,6 +285,7 @@ const VisitNotesForm: React.FC<PatientWorkspace2DefinitionProps<VisitNotesFormPr
     defaultValues: {
       primaryDiagnosisSearch: '',
       noteDate: isEditing ? new Date(encounter.rawDatetime) : new Date(),
+      codigoPrestacional: isEditing ? getEncounterObsValue(codigoPrestacionalConceptUuid, 'codigo-prestacional') : '',
       chiefComplaint: isEditing ? getEncounterObsValue(chiefComplaintConceptUuid) : '',
       illnessDuration: isEditing ? getEncounterObsValue(illnessDurationConceptUuid) : '',
       biologicalFunctions: isEditing
@@ -312,6 +317,7 @@ const VisitNotesForm: React.FC<PatientWorkspace2DefinitionProps<VisitNotesFormPr
   );
 
   useEffect(() => {
+    prefillTextField('codigoPrestacional', clinicalContext?.codigoPrestacional);
     prefillTextField('chiefComplaint', clinicalContext?.chiefComplaint);
     prefillTextField('illnessDuration', clinicalContext?.illnessDuration);
     prefillTextField('biologicalFunctions', clinicalContext?.biologicalFunctions);
@@ -532,6 +538,7 @@ const VisitNotesForm: React.FC<PatientWorkspace2DefinitionProps<VisitNotesFormPr
     (data: VisitNotesFormData) => {
       const {
         noteDate,
+        codigoPrestacional,
         chiefComplaint,
         illnessDuration,
         biologicalFunctions,
@@ -573,6 +580,7 @@ const VisitNotesForm: React.FC<PatientWorkspace2DefinitionProps<VisitNotesFormPr
       };
 
       const structuredObsList = [
+        buildTextObs(codigoPrestacionalConceptUuid, codigoPrestacional, 'codigo-prestacional'),
         buildTextObs(chiefComplaintConceptUuid, chiefComplaint),
         buildTextObs(illnessDurationConceptUuid, illnessDuration),
         buildTextObs(biologicalFunctionsConceptUuid, biologicalFunctions, 'biological-functions'),
@@ -722,6 +730,7 @@ const VisitNotesForm: React.FC<PatientWorkspace2DefinitionProps<VisitNotesFormPr
       closeWorkspace,
       combinedDiagnoses,
       biologicalFunctionsConceptUuid,
+      codigoPrestacionalConceptUuid,
       diagnosisTipos,
       diagnosisTypeConceptUuid,
       diagnosisTypeDefinitivoUuid,
@@ -912,7 +921,9 @@ const VisitNotesForm: React.FC<PatientWorkspace2DefinitionProps<VisitNotesFormPr
             </div>
             <Row className={styles.row}>
               <Column sm={1}>
-                <span className={styles.columnLabel}>{t('primaryDiagnosis', 'Primary diagnosis')}</span>
+                <span className={styles.columnLabel}>
+                  {t('primaryDiagnosisRequiredLabel', '*Diagnóstico principal (Obligatorio)')}
+                </span>
               </Column>
               <Column sm={3}>
                 <FormGroup legendText={t('searchForPrimaryDiagnosis', 'Search for a primary diagnosis')}>
@@ -983,6 +994,14 @@ const VisitNotesForm: React.FC<PatientWorkspace2DefinitionProps<VisitNotesFormPr
                 </FormGroup>
               </Column>
             </Row>
+            <VisitNoteTextAreaRow
+              control={control}
+              name="codigoPrestacional"
+              inputLabelText={t('codigoPrestacionalInputLabel', 'Indique el Código Prestacional')}
+              labelText={t('codigoPrestacionalRequiredLabel', '*Código Prestacional (Obligatorio)')}
+              placeholder={t('codigoPrestacionalPlaceholder', 'Ingrese Codigo Prestacional')}
+              rows={2}
+            />
             <Row className={styles.row}>
               <Column sm={4}>
                 <h3>{t('clinicalSummary', 'Clinical summary')}</h3>
@@ -1162,7 +1181,14 @@ const VisitNotesForm: React.FC<PatientWorkspace2DefinitionProps<VisitNotesFormPr
   );
 };
 
-function VisitNoteTextAreaRow({ control, labelText, name, placeholder, rows = 3 }: VisitNoteTextAreaRowProps) {
+function VisitNoteTextAreaRow({
+  control,
+  inputLabelText,
+  labelText,
+  name,
+  placeholder,
+  rows = 3,
+}: VisitNoteTextAreaRowProps) {
   return (
     <Row className={styles.row}>
       <Column sm={1}>
@@ -1177,7 +1203,7 @@ function VisitNoteTextAreaRow({ control, labelText, name, placeholder, rows = 3 
               <TextArea
                 id={name}
                 rows={rows}
-                labelText={labelText}
+                labelText={inputLabelText ?? labelText}
                 placeholder={placeholder}
                 value={value ?? ''}
                 onBlur={onBlur}

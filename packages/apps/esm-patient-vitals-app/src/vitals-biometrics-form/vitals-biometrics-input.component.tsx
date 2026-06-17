@@ -1,4 +1,4 @@
-import { FormLabel, NumberInput, TextArea } from '@carbon/react';
+import { FormLabel, NumberInput, Select, SelectItem, TextArea } from '@carbon/react';
 import { Warning } from '@carbon/react/icons';
 import { ResponsiveWrapper, useLayoutType } from '@openmrs/esm-framework';
 import { shouldPreventPlainNumberKey, shouldPreventPlainNumberPaste } from '@openmrs/esm-utils';
@@ -19,6 +19,10 @@ type fieldId =
   | 'computedBodyMassIndex'
   | 'diastolicBloodPressure'
   | 'generalPatientNote'
+  | 'glasgowEyeOpening'
+  | 'glasgowMotorResponse'
+  | 'glasgowTotal'
+  | 'glasgowVerbalResponse'
   | 'headCircumference'
   | 'height'
   | 'midUpperArmCircumference'
@@ -30,7 +34,12 @@ type fieldId =
   | 'weight';
 
 type AbnormalValue = 'critically_low' | 'critically_high' | 'high' | 'low';
-type FieldTypes = 'number' | 'textarea';
+type FieldTypes = 'number' | 'select' | 'textarea';
+
+interface SelectOption {
+  label: string;
+  value: number | string;
+}
 
 interface VitalsAndBiometricsInputProps {
   control: Control<VitalsBiometricsFormData>;
@@ -44,6 +53,7 @@ interface VitalsAndBiometricsInputProps {
     max?: number | null;
     min?: number | null;
     name: string;
+    options?: Array<SelectOption>;
     separator?: string;
     type?: FieldTypes;
   }>;
@@ -243,6 +253,41 @@ const VitalsAndBiometricsInput: React.FC<VitalsAndBiometricsInputProps> = ({
                           title={fieldProperty.name}
                           value={value ?? ''}
                         />
+                      )}
+                    />
+                  </ResponsiveWrapper>
+                );
+              }
+
+              if (fieldProperty.type === 'select') {
+                return (
+                  <ResponsiveWrapper key={fieldProperty.id}>
+                    <Controller
+                      name={fieldProperty.id}
+                      control={control}
+                      render={({ field: { onChange, ref, value } }) => (
+                        <Select
+                          aria-label={fieldProperty.name}
+                          className={styles.selectInput}
+                          disabled={readOnly}
+                          id={`${fieldId}-${fieldProperty.id}`}
+                          labelText=""
+                          name={fieldProperty.name}
+                          onBlur={() => handleFocusChange(false)}
+                          onChange={(event) => {
+                            const selectedValue = event.target.value;
+                            onChange(selectedValue === '' ? undefined : selectedValue);
+                          }}
+                          onFocus={() => handleFocusChange(true)}
+                          ref={ref}
+                          title={fieldProperty.name}
+                          value={value ?? ''}
+                        >
+                          <SelectItem value="" text={t('selectOption', 'Select an option')} />
+                          {fieldProperty.options?.map((option) => (
+                            <SelectItem key={option.value} value={option.value} text={option.label} />
+                          ))}
+                        </Select>
                       )}
                     />
                   </ResponsiveWrapper>

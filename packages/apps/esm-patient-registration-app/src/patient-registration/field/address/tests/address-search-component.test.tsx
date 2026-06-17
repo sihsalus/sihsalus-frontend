@@ -9,6 +9,8 @@ import { type Resources, ResourcesContext } from '../../../../offline.resources'
 import { useAddressHierarchy, useOrderedAddressHierarchyLevels } from '../address-hierarchy.resource';
 import AddressSearchComponent from '../address-search.component';
 
+type AddressSearchProps = React.ComponentProps<typeof AddressSearchComponent>;
+
 const mockUseConfig = vi.mocked(useConfig<RegistrationConfig>);
 const mockUseAddressHierarchy = vi.mocked(useAddressHierarchy);
 const mockUseOrderedAddressHierarchyLevels = vi.mocked(useOrderedAddressHierarchyLevels);
@@ -42,12 +44,12 @@ const allFields = mockedAddressTemplate.lines
 const orderMap = Object.fromEntries(mockedOrderedFields.map((field, indx) => [field, indx]));
 allFields.sort((existingField1, existingField2) => orderMap[existingField1.name] - orderMap[existingField2.name]);
 
-async function renderAddressHierarchy(addressTemplate = mockedAddressTemplate) {
+async function renderAddressHierarchy(addressTemplate = mockedAddressTemplate, props?: Partial<AddressSearchProps>) {
   await render(
     <ResourcesContext.Provider value={{ addressTemplate } as Resources}>
       <Formik initialValues={{}} onSubmit={null}>
         <Form>
-          <AddressSearchComponent addressLayout={allFields} />
+          <AddressSearchComponent addressLayout={allFields} {...props} />
         </Form>
       </Formik>
     </ResourcesContext.Provider>,
@@ -91,6 +93,11 @@ describe('Testing address search bar', () => {
 
     const searchbox = screen.getByRole('searchbox');
     expect(searchbox).toBeInTheDocument();
+    expect(mockUseAddressHierarchy).toHaveBeenLastCalledWith(
+      '',
+      ' > ',
+      allFields.map(({ name }) => name),
+    );
 
     const ul = screen.queryByRole('list');
     expect(ul).not.toBeInTheDocument();
@@ -135,5 +142,30 @@ describe('Testing address search bar', () => {
       });
       await user.type(screen.getByRole('searchbox'), searchString);
     }
+  });
+
+  it('sets address values under the provided field prefix', async () => {
+    const user = userEvent.setup();
+
+    const addressLayout = [
+      { id: 'country', name: 'country', label: 'Country', required: false },
+      { id: 'address1', name: 'address1', label: 'Region', required: false },
+    ];
+
+    mockUseAddressHierarchy.mockReturnValue({
+      addresses: ['Peru > Huancavelica'],
+      error: null,
+      isLoading: false,
+    });
+
+    renderAddressHierarchy(mockedAddressTemplate, { addressLayout, fieldPrefix: 'birthAddress' });
+
+    await user.type(screen.getByRole('searchbox'), 'per');
+    await user.click(await screen.findByRole('button', { name: 'Peru' }));
+
+    await waitFor(() => {
+      expect(setFieldValue).toHaveBeenCalledWith('birthAddress.country', 'Peru', false);
+      expect(setFieldValue).toHaveBeenCalledWith('birthAddress.address1', '', false);
+    });
   });
 });

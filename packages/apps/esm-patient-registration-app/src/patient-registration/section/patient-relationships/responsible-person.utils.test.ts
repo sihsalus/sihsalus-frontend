@@ -1,0 +1,84 @@
+import {
+  buildResponsiblePersonPayload,
+  getResponsiblePersonDisplayName,
+  hasResponsiblePersonFormErrors,
+  type ResponsiblePersonFormValues,
+  validateResponsiblePersonForm,
+} from './responsible-person.utils';
+
+const validResponsiblePerson: ResponsiblePersonFormValues = {
+  givenName: 'María',
+  middleName: '',
+  familyName: 'De la Cruz',
+  familyName2: 'Quispe',
+  gender: 'female',
+  estimatedAge: '35',
+  relationshipType: '057de23f-3d9c-4314-9391-4452970739c6/aIsToB',
+};
+
+describe('responsible person utilities', () => {
+  it('builds an OpenMRS Person payload without creating a Patient identifier', () => {
+    const payload = buildResponsiblePersonPayload(validResponsiblePerson);
+    const expectedBirthYear = new Date().getFullYear() - 35;
+
+    expect(payload).toEqual({
+      names: [
+        {
+          givenName: 'María',
+          middleName: undefined,
+          familyName: 'De la Cruz',
+          familyName2: 'Quispe',
+          preferred: true,
+        },
+      ],
+      gender: 'F',
+      birthdate: `${expectedBirthYear}-01-01`,
+      birthdateEstimated: true,
+    });
+    expect(payload).not.toHaveProperty('identifiers');
+  });
+
+  it('allows optional middle name, second family name, and approximate age', () => {
+    const errors = validateResponsiblePersonForm({
+      ...validResponsiblePerson,
+      middleName: '',
+      familyName2: '',
+      estimatedAge: '',
+    });
+
+    expect(hasResponsiblePersonFormErrors(errors)).toBe(false);
+  });
+
+  it('rejects digits and symbols in person names', () => {
+    const errors = validateResponsiblePersonForm({
+      ...validResponsiblePerson,
+      givenName: 'María2',
+      familyName: 'Quispe@',
+    });
+
+    expect(errors.givenName).toBe('nameContainsInvalidCharacters');
+    expect(errors.familyName).toBe('nameContainsInvalidCharacters');
+  });
+
+  it('requires relationship type before creating a responsible person', () => {
+    const errors = validateResponsiblePersonForm({
+      ...validResponsiblePerson,
+      relationshipType: '',
+    });
+
+    expect(errors.relationshipType).toBe('relationshipTypeRequired');
+  });
+
+  it('rejects invalid approximate ages', () => {
+    expect(validateResponsiblePersonForm({ ...validResponsiblePerson, estimatedAge: 'e100' }).estimatedAge).toBe(
+      'estimatedAgeInvalid',
+    );
+    expect(validateResponsiblePersonForm({ ...validResponsiblePerson, estimatedAge: '121' }).estimatedAge).toBe(
+      'estimatedAgeInvalid',
+    );
+  });
+
+  it('formats the display name for the created person', () => {
+    expect(getResponsiblePersonDisplayName(validResponsiblePerson)).toBe('María De la Cruz Quispe');
+  });
+});

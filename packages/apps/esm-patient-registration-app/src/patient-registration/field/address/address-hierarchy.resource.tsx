@@ -18,18 +18,28 @@ interface OrderedAddressHierarchyLevelsResult {
   errorFetchingFieldOrder?: Error;
 }
 
+interface AddressHierarchyEntry {
+  uuid: string;
+  name: string;
+  parent?: AddressHierarchyEntry | null;
+}
+
 export function useOrderedAddressHierarchyLevels(): OrderedAddressHierarchyLevelsResult {
   const url = '/module/addresshierarchy/ajax/getOrderedAddressHierarchyLevels.form';
   const { data, isLoading, error } = useSWRImmutable<FetchResponse<Array<AddressFields>>, Error>(url, openmrsFetch);
 
+  const orderedAddressFields = Array.isArray(data?.data) ? data.data : [];
+
   const results = useMemo(
     () => ({
-      orderedFields: data?.data?.map((field) => field.addressField),
-      requiredFields: new Set(data?.data?.filter((field) => field.required).map((field) => field.addressField) ?? []),
+      orderedFields: orderedAddressFields.map((field) => field.addressField),
+      requiredFields: new Set(
+        orderedAddressFields.filter((field) => field.required).map((field) => field.addressField),
+      ),
       isLoadingFieldOrder: isLoading,
       errorFetchingFieldOrder: error,
     }),
-    [data, isLoading, error],
+    [orderedAddressFields, isLoading, error],
   );
 
   return results;
@@ -50,13 +60,15 @@ export function useAddressEntries(fetchResults, searchString) {
     }
   }, [error]);
 
+  const addressEntries = Array.isArray(data?.data) ? data.data : [];
+
   const results = useMemo(
     () => ({
-      entries: data?.data?.map((item) => item.name),
+      entries: addressEntries.map((item) => item.name),
       isLoadingAddressEntries: isLoading,
       errorFetchingAddressEntries: error,
     }),
-    [data, isLoading, error],
+    [addressEntries, isLoading, error],
   );
   return results;
 }
@@ -118,30 +130,73 @@ export function useAddressEntryFetchConfig(addressField: string, fieldPrefix = '
   return results;
 }
 
-export function useAddressHierarchy(searchString: string, separator: string) {
+function isAddressHierarchyEntry(value: unknown): value is AddressHierarchyEntry {
+  return typeof value === 'object' && value !== null && typeof (value as AddressHierarchyEntry).name === 'string';
+}
+
+function isAddressHierarchyEntryArray(value: unknown): value is Array<AddressHierarchyEntry> {
+  return Array.isArray(value) && value.every(isAddressHierarchyEntry);
+}
+
+export function buildAddressHierarchyPath(entry: AddressHierarchyEntry, separator: string) {
+  const path = [];
+  let cursor: AddressHierarchyEntry | null | undefined = entry;
+
+  while (cursor) {
+    path.unshift(cursor.name);
+    cursor = cursor.parent;
+  }
+
+  return path.join(separator);
+}
+
+export async function fetchAddressHierarchyQuickSearch(
+  searchString: string,
+  separator: string,
+  addressFields: Array<string>,
+) {
   const encodedSearchString = encodeURIComponent(searchString);
-  const encodedSeparator = encodeURIComponent(separator);
-  const { data, error, isLoading } = useSWRImmutable<
-    FetchResponse<
-      Array<{
-        address: string;
-      }>
-    >,
-    Error
-  >(
-    searchString
-      ? `/module/addresshierarchy/ajax/getPossibleFullAddresses.form?separator=${encodedSeparator}&searchString=${encodedSearchString}`
-      : null,
-    openmrsFetch,
+  const addressResults = await Promise.all(
+    addressFields.map(async (addressField) => {
+      const encodedAddressField = encodeURIComponent(addressField);
+      const response = await openmrsFetch<Array<AddressHierarchyEntry>>(
+        `/module/addresshierarchy/ajax/getPossibleAddressHierarchyEntriesWithParents.form?addressField=${encodedAddressField}&limit=20&searchString=${encodedSearchString}&parentUuid=`,
+      );
+
+      if (!isAddressHierarchyEntryArray(response.data)) {
+        throw new Error('Invalid address hierarchy response');
+      }
+
+      return response.data.map((entry) => buildAddressHierarchyPath(entry, separator));
+    }),
+  );
+
+  return Array.from(new Set(addressResults.flat()))
+    .sort((firstAddress, secondAddress) => {
+      const firstDepth = firstAddress.split(separator).length;
+      const secondDepth = secondAddress.split(separator).length;
+      return firstDepth - secondDepth || firstAddress.localeCompare(secondAddress);
+    })
+    .slice(0, 50);
+}
+
+export function useAddressHierarchy(searchString: string, separator: string, addressFields: Array<string>) {
+  const cacheKey =
+    searchString && addressFields.length
+      ? `address-hierarchy-quick-search:${searchString}:${separator}:${addressFields.join('|')}`
+      : null;
+
+  const { data, error, isLoading } = useSWRImmutable<Array<string>, Error>(cacheKey, () =>
+    fetchAddressHierarchyQuickSearch(searchString, separator, addressFields),
   );
 
   const results = useMemo(
     () => ({
-      addresses: data?.data?.map((address) => address.address) ?? [],
+      addresses: data ?? [],
       error,
       isLoading,
     }),
-    [data?.data, error, isLoading],
+    [data, error, isLoading],
   );
   return results;
 }
@@ -159,18 +214,20 @@ export function useAddressHierarchyWithParentSearch(addressField: string, parent
     Error
   >(
     query
-      ? `/module/addresshierarchy/ajax/getPossibleAddressHierarchyEntriesWithParents.form?addressField=${addressField}&limit=20&searchString=${encodedQuery}&parentUuid=${encodedParentId}`
+      ? `/module/addresshierarchy/ajax/getPossibleAddressHierarchyEntriesWithParents.form?addressField=${encodeURIComponent(addressField)}&limit=20&searchString=${encodedQuery}&parentUuid=${encodedParentId}`
       : null,
     openmrsFetch,
   );
+
+  const possibleParentEntries = Array.isArray(data?.data) ? data.data : [];
 
   const results = useMemo(
     () => ({
       error: error,
       isLoading,
-      addresses: data?.data ?? [],
+      addresses: possibleParentEntries,
     }),
-    [data?.data, error, isLoading],
+    [possibleParentEntries, error, isLoading],
   );
 
   return results;

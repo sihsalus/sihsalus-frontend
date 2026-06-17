@@ -62,6 +62,26 @@ export const configSchema = {
       _type: Type.ConceptUuid,
       _default: '1114AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA',
     },
+    glasgowEyeOpeningUuid: {
+      _type: Type.ConceptUuid,
+      _default: '7e540048-19b4-4261-af10-3b20712a92ef',
+      _description: 'Coded concept UUID used to store the Glasgow Coma Scale eye-opening response.',
+    },
+    glasgowVerbalResponseUuid: {
+      _type: Type.ConceptUuid,
+      _default: '67f9449e-e7ef-436c-9eb7-837b5afe30e4',
+      _description: 'Coded concept UUID used to store the Glasgow Coma Scale verbal response.',
+    },
+    glasgowMotorResponseUuid: {
+      _type: Type.ConceptUuid,
+      _default: '98bfda0d-2a22-4ca4-8bc9-b0b6c6505899',
+      _description: 'Coded concept UUID used to store the Glasgow Coma Scale motor response.',
+    },
+    glasgowTotalUuid: {
+      _type: Type.ConceptUuid,
+      _default: '9ba86e50-a4fd-48b7-b8b2-f537fde5a382',
+      _description: 'Concept UUID used to store the computed Glasgow Coma Scale total score.',
+    },
   },
   vitals: {
     useFormEngine: {
@@ -119,6 +139,14 @@ export const configSchema = {
       _type: Type.Boolean,
       _default: false,
       _description: 'Whether to show/use MUAC color codes. If set to true, the input will show status colors.',
+    },
+    glasgowComaScale: {
+      enabled: {
+        _type: Type.Boolean,
+        _default: true,
+        _description:
+          'Whether the shared vitals workspace may render Glasgow Coma Scale fields when launched with an emergency triage profile.',
+      },
     },
   },
   biometrics: {
@@ -216,6 +244,10 @@ export interface ConfigObject {
     chestCircumferenceUuid: string;
     bodyMassIndexUuid: string;
     vitalSignsConceptSetUuid: string;
+    glasgowEyeOpeningUuid: string;
+    glasgowVerbalResponseUuid: string;
+    glasgowMotorResponseUuid: string;
+    glasgowTotalUuid: string;
   };
   vitals: {
     useFormEngine: boolean;
@@ -231,6 +263,9 @@ export interface ConfigObject {
     formEntryWorkspaceName: string;
     useMuacColors: boolean;
     showPrintButton: boolean;
+    glasgowComaScale: {
+      enabled: boolean;
+    };
   };
   biometrics: BiometricsConfigObject;
 }

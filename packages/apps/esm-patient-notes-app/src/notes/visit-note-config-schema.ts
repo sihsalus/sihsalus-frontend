@@ -1,6 +1,7 @@
 import { Type } from '@openmrs/esm-framework';
 
 export const defaultVisitNoteClinicalConceptUuids = {
+  codigoPrestacionalConceptUuid: '162169AAAAAAAAAAAAAAAAAAAAAAAAAAAAAA',
   chiefComplaintConceptUuid: '71b58cff-879b-4358-98d5-2165434d4324',
   illnessDurationConceptUuid: '577876b1-0b6e-4c57-b4c3-7af969a1d501',
   anamnesisConceptUuid: '6d99603e-ae9d-4838-8a09-ba75e27ff1e9',
@@ -37,6 +38,11 @@ export default {
     _type: Type.ConceptUuid,
     _default: '162169AAAAAAAAAAAAAAAAAAAAAAAAAAAAAA',
     _description: 'Free text note field intended to capture unstructured description of the patient encounter',
+  },
+  codigoPrestacionalConceptUuid: {
+    _type: Type.ConceptUuid,
+    _default: defaultVisitNoteClinicalConceptUuids.codigoPrestacionalConceptUuid,
+    _description: 'Codigo Prestacional saved by visit notes with formFieldPath codigo-prestacional',
   },
   chiefComplaintConceptUuid: {
     _type: Type.ConceptUuid,
@@ -173,6 +179,7 @@ export interface VisitNoteConfigObject {
   encounterTypeUuid: string;
   formConceptUuid: string;
   visitDiagnosesConceptUuid: string;
+  codigoPrestacionalConceptUuid: string;
   chiefComplaintConceptUuid: string;
   illnessDurationConceptUuid: string;
   anamnesisConceptUuid: string;

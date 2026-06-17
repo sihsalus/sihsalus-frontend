@@ -56,6 +56,7 @@ packages/
     esm-rbac/                           # @sihsalus/esm-rbac — HIPAA role-based access control
     esm-audit-logger/                   # @sihsalus/esm-audit-logger — Client-side PHI audit logging
     esm-sihsalus-shared/                # @sihsalus/esm-sihsalus-shared — Shared UI components and hooks
+    esm-framework/                      # @openmrs/esm-framework — local workspace fork
     esm-patient-common-lib/             # @openmrs/esm-patient-common-lib — Shared patient utilities
     esm-styleguide/                     # @openmrs/esm-styleguide — Carbon-based component library
 packages/tooling/
@@ -65,7 +66,7 @@ packages/tooling/
 e2e/                                    # Playwright E2E tests
 ```
 
-> **Note:** The OpenMRS framework (`@openmrs/esm-framework`) and app shell (`@openmrs/esm-app-shell`) are consumed as npm dependencies, not vendored in this repo.
+> **Note:** OpenMRS core packages are mixed: `@openmrs/esm-framework` is provided by the local workspace at `packages/libs/esm-framework`, while `@openmrs/esm-app-shell` is resolved from npm and patched through Yarn (`.yarn/patches/openmrs-esm-app-shell-npm-9.0.2-form-stack-sharing.patch`).
 
 ## Commands
 
@@ -139,6 +140,7 @@ Repository discipline and workspace ownership expectations should stay close to 
 - Revisar si `Upcoming appointments` y campos de cola (`Queue location`, `Service`, `Priority`) deben mostrarse en inicio de visita para QLTY; los endpoints responden, pero el flujo debe validarse con datos reales y sin crear entradas huerfanas.
 - Revisar Consulta Externa / Atencion ambulatoria end-to-end: entrada desde home, busqueda de paciente, inicio de consulta, cola, formularios clinicos, guardado de encounter, ordenes y mensajes de error.
 - Auditar formularios clinicos con el mismo patron de riesgo (vacunacion, visita/consulta, CRED, salud materna, procedimientos y FUA) para detectar `501`, workspace no registrado, rutas rotas, payloads incompletos y mensajes de error sin traducir.
+- Desplegar en QLTY los conceptos/content de Glasgow para triaje de emergencia y repetir smoke real de guardado de signos vitales; actualmente QLTY responde `404` para los UUIDs `glasgowEyeOpeningUuid`, `glasgowVerbalResponseUuid`, `glasgowMotorResponseUuid` y `glasgowTotalUuid`.
 - Validar nuevo content package.
 - Revisar cambios RBAC doctor.
 

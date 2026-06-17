@@ -4,6 +4,7 @@ import { type SectionDefinition } from '../../../config-schema';
 import { moduleName } from '../../../constants';
 import { Field } from '../../field/field.component';
 import fieldStyles from '../../field/field.scss';
+import { CopyResponsibleDataButton } from '../copy-responsible-data/copy-responsible-data-button.component';
 import styles from './contact-section.scss';
 
 export interface ContactSectionProps {
@@ -31,6 +32,7 @@ export const ContactSection = ({ sectionDefinition }: ContactSectionProps) => {
     <section aria-label={`${sectionDefinition.name} Section`}>
       {residenceFields.length > 0 && (
         <div className={styles.subsection}>
+          <CopyResponsibleDataButton mode="residenceContact" />
           {residenceFields.map((name) => (
             <Field key={`contact-${name}`} name={name} />
           ))}
@@ -39,6 +41,7 @@ export const ContactSection = ({ sectionDefinition }: ContactSectionProps) => {
 
       {birthplaceFields.length > 0 && (
         <div className={styles.subsection}>
+          <CopyResponsibleDataButton mode="birthAddress" />
           {birthplaceFields.map((name) => (
             <Field key={`contact-${name}`} name={name} />
           ))}

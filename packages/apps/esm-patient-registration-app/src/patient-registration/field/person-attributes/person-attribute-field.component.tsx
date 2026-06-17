@@ -20,6 +20,7 @@ export function PersonAttributeField({ fieldDefinition }: PersonAttributeFieldPr
   const { data: personAttributeType, isLoading, error } = usePersonAttributeType(fieldDefinition.uuid);
   const registrationContext = useContext(PatientRegistrationContext);
   const { t } = useTranslation(moduleName);
+  const readOnly = Boolean(fieldDefinition.readOnlyOnCreate && registrationContext && !registrationContext.inEditMode);
 
   useEffect(() => {
     if (!personAttributeType || !fieldDefinition.defaultValue || registrationContext?.inEditMode) {
@@ -55,6 +56,7 @@ export function PersonAttributeField({ fieldDefinition }: PersonAttributeFieldPr
               allowPastDates={fieldDefinition.allowPastDates}
               allowFutureDates={fieldDefinition.allowFutureDates}
               id={fieldDefinition?.id}
+              readOnly={readOnly}
             />
           );
         }
@@ -66,6 +68,7 @@ export function PersonAttributeField({ fieldDefinition }: PersonAttributeFieldPr
             label={fieldDefinition.label}
             required={fieldDefinition.validation?.required ?? false}
             id={fieldDefinition?.id}
+            readOnly={readOnly}
           />
         );
       case 'org.openmrs.Concept':
@@ -77,7 +80,11 @@ export function PersonAttributeField({ fieldDefinition }: PersonAttributeFieldPr
             id={fieldDefinition?.id}
             customConceptAnswers={fieldDefinition.customConceptAnswers ?? []}
             required={fieldDefinition.validation?.required ?? false}
+<<<<<<< HEAD
             searchable={fieldDefinition.searchable ?? false}
+=======
+            readOnly={readOnly}
+>>>>>>> 9d2df4efbd61f39190d32f734357cb4b55bd0bb3
           />
         );
       case 'org.openmrs.Location':
@@ -88,6 +95,7 @@ export function PersonAttributeField({ fieldDefinition }: PersonAttributeFieldPr
             label={fieldDefinition.label}
             id={fieldDefinition?.id}
             required={fieldDefinition.validation?.required ?? false}
+            readOnly={readOnly}
           />
         );
       default:
@@ -103,7 +111,7 @@ export function PersonAttributeField({ fieldDefinition }: PersonAttributeFieldPr
           </InlineNotification>
         );
     }
-  }, [personAttributeType, fieldDefinition, t]);
+  }, [personAttributeType, fieldDefinition, readOnly, t]);
 
   if (isLoading) {
     return (

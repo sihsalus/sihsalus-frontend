@@ -17,6 +17,7 @@ export interface CodedPersonAttributeFieldProps {
   customConceptAnswers: Array<{ uuid: string; label?: string }>;
   required: boolean;
   searchable?: boolean;
+  readOnly?: boolean;
 }
 
 export function CodedPersonAttributeField({
@@ -27,6 +28,7 @@ export function CodedPersonAttributeField({
   customConceptAnswers,
   required,
   searchable,
+  readOnly,
 }: CodedPersonAttributeFieldProps) {
   const { data: conceptAnswers, isLoading: isLoadingConceptAnswers } = useConceptAnswers(
     customConceptAnswers.length ? '' : answerConceptSetUuid,
@@ -63,6 +65,7 @@ export function CodedPersonAttributeField({
         );
         setError(true);
       }
+
       if (conceptAnswers?.length === 0) {
         reportError(
           t(
@@ -83,6 +86,7 @@ export function CodedPersonAttributeField({
     if (customConceptAnswers.length) {
       return customConceptAnswers;
     }
+
     return isLoadingConceptAnswers || !conceptAnswers
       ? []
       : conceptAnswers
@@ -105,6 +109,7 @@ export function CodedPersonAttributeField({
           <Field name={fieldName}>
             {({ field, form: { setFieldValue, touched, errors } }) => {
               const selectedAnswer = answers.find((answer) => answer.uuid === field.value) ?? null;
+              const invalid = Boolean(errors[fieldName] && touched[fieldName]);
 
               if (searchable) {
                 return (
@@ -115,7 +120,8 @@ export function CodedPersonAttributeField({
                     selectedItem={selectedAnswer}
                     titleText={labelText}
                     placeholder={t('searchSelectAnOption', 'Search and select an option')}
-                    invalid={errors[fieldName] && touched[fieldName]}
+                    invalid={invalid}
+                    disabled={readOnly}
                     onChange={({ selectedItem }) => {
                       setFieldValue(fieldName, selectedItem?.uuid ?? '');
                     }}
@@ -128,8 +134,9 @@ export function CodedPersonAttributeField({
                   id={id}
                   name={`person-attribute-${personAttributeType.uuid}`}
                   labelText={labelText}
-                  invalid={errors[fieldName] && touched[fieldName]}
+                  invalid={invalid}
                   required={required}
+                  disabled={readOnly}
                   {...field}
                 >
                   <SelectItem value={''} text={t('selectAnOption', 'Select an option')} />

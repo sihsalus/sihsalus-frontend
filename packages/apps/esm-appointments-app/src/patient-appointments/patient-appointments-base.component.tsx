@@ -1,12 +1,13 @@
 import { Button, ContentSwitcher, DataTableSkeleton, InlineLoading, Layer, Switch, Tile } from '@carbon/react';
 import { Add } from '@carbon/react/icons';
-import { launchWorkspace2, useLayoutType } from '@openmrs/esm-framework';
+import { launchWorkspace2, useLayoutType, useSession, userHasAccess } from '@openmrs/esm-framework';
 import { CardHeader, EmptyDataIllustration, ErrorState, launchPatientWorkspace } from '@openmrs/esm-patient-common-lib';
 import dayjs from 'dayjs';
 import React, { useContext, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import PatientAppointmentContext, { PatientAppointmentContextTypes } from '../hooks/patientAppointmentContext';
+import { chartAppointmentsEditPrivilege } from '../constants';
 import { usePatientAppointments } from './patient-appointments.resource';
 import styles from './patient-appointments-base.scss';
 import PatientAppointmentsTable from './patient-appointments-table.component';
@@ -23,6 +24,8 @@ enum AppointmentTypes {
 
 const PatientAppointmentsBase: React.FC<PatientAppointmentsBaseProps> = ({ patientUuid }) => {
   const { t } = useTranslation();
+  const session = useSession();
+  const canEdit = userHasAccess(chartAppointmentsEditPrivilege, session?.user);
   const headerTitle = t('appointments', 'Appointments');
   const isTablet = useLayoutType() === 'tablet';
   const patientAppointmentContext = useContext(PatientAppointmentContext);
@@ -79,14 +82,16 @@ const PatientAppointmentsBase: React.FC<PatientAppointmentsBaseProps> = ({ patie
               <Switch name={'past'} text={t('past', 'Past')} />
             </ContentSwitcher>
             <div className={styles.divider}>|</div>
-            <Button
-              kind="ghost"
-              renderIcon={(props) => <Add size={16} {...props} />}
-              iconDescription="Add Appointments"
-              onClick={handleLaunchAppointmentsForm}
-            >
-              {t('add', 'Add')}
-            </Button>
+            {canEdit ? (
+              <Button
+                kind="ghost"
+                renderIcon={(props) => <Add size={16} {...props} />}
+                iconDescription="Add Appointments"
+                onClick={handleLaunchAppointmentsForm}
+              >
+                {t('add', 'Add')}
+              </Button>
+            ) : null}
           </div>
         </CardHeader>
         {(() => {

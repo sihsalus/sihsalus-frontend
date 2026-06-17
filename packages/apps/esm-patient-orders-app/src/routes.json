@@ -39,6 +39,7 @@
       "name": "patient-orders-summary-dashboard",
       "component": "ordersDashboardLink",
       "slot": "patient-chart-dashboard-slot",
+      "privileges": "app:clinical.chart.orders",
       "meta": {
         "slot": "patient-chart-orders-dashboard-slot",
         "path": "Orders",
@@ -50,6 +51,7 @@
       "name": "patient-orders-dashboard",
       "component": "ordersDashboard",
       "slot": "patient-chart-orders-dashboard-slot",
+      "privileges": "app:clinical.chart.orders",
       "meta": {
         "fullWidth": false
       }
@@ -59,37 +61,44 @@
     {
       "name": "order-basket",
       "component": "orderBasketWorkspace",
-      "window": "patient-chart-orders"
+      "window": "patient-chart-orders",
+      "privileges": "app:clinical.chart.orders.edit"
     },
     {
       "name": "orderable-concept-workspace",
       "component": "orderableConceptSearch",
-      "window": "patient-chart-orders"
+      "window": "patient-chart-orders",
+      "privileges": "app:clinical.chart.orders.edit"
     },
     {
       "name": "patient-orders-form-workspace",
       "component": "patientOrdersFormWorkspace",
-      "window": "patient-chart-orders"
+      "window": "patient-chart-orders",
+      "privileges": "app:clinical.chart.orders.edit"
     },
     {
       "name": "test-results-form-workspace",
       "component": "testResultsFormWorkspace",
-      "window": "patient-chart-orders"
+      "window": "patient-chart-orders",
+      "privileges": "app:clinical.chart.results.edit"
     },
     {
       "name": "add-radiology-order",
       "component": "orderableConceptSearch",
-      "window": "patient-chart-orders"
+      "window": "patient-chart-orders",
+      "privileges": "app:clinical.chart.orders.edit"
     },
     {
       "name": "add-immunization-order",
       "component": "orderableConceptSearch",
-      "window": "patient-chart-orders"
+      "window": "patient-chart-orders",
+      "privileges": "app:clinical.chart.orders.edit"
     },
     {
       "name": "add-referral-order",
       "component": "orderableConceptSearch",
-      "window": "patient-chart-orders"
+      "window": "patient-chart-orders",
+      "privileges": "app:clinical.chart.orders.edit"
     }
   ],
   "workspaceWindows2": [

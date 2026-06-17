@@ -18,12 +18,13 @@
       "name": "vacunacion-overview-widget",
       "component": "immunizationsOverview",
       "order": 8,
-      "privileges": "app:immunization"
+      "privileges": "app:clinical.chart.immunizations"
     },
     {
       "name": "vacunacion-detailed-history-card",
       "component": "immunizationHistorySummary",
       "slot": "patient-chart-vacunacion-dashboard-slot",
+      "privileges": "app:clinical.chart.immunizations",
       "meta": {
         "fullWidth": true
       }
@@ -32,6 +33,7 @@
       "name": "vacunacion-details-widget",
       "component": "immunizationsDetailedSummary",
       "slot": "patient-chart-vacunacion-dashboard-slot",
+      "privileges": "app:clinical.chart.immunizations",
       "meta": {
         "fullWidth": true
       }
@@ -40,7 +42,7 @@
       "name": "vacunacion-summary-dashboard",
       "component": "immunizationsDashboardLink",
       "slot": "patient-chart-dashboard-slot",
-      "privileges": "app:immunization",
+      "privileges": "app:clinical.chart.immunizations",
       "meta": {
         "slot": "patient-chart-vacunacion-dashboard-slot",
         "path": "Vacunacion"
@@ -60,23 +62,27 @@
   "modals": [
     {
       "name": "vacunacion-delete-confirmation-modal",
-      "component": "deleteImmunizationConfirmationModal"
+      "component": "deleteImmunizationConfirmationModal",
+      "privileges": "app:clinical.chart.immunizations.edit"
     },
     {
       "name": "immunization-delete-confirmation-modal",
-      "component": "deleteImmunizationConfirmationModal"
+      "component": "deleteImmunizationConfirmationModal",
+      "privileges": "app:clinical.chart.immunizations.edit"
     }
   ],
   "workspaces2": [
     {
       "name": "vacunacion-form-workspace",
       "component": "immunizationFormWorkspace",
-      "window": "vacunacion-form-window"
+      "window": "vacunacion-form-window",
+      "privileges": "app:clinical.chart.immunizations.edit"
     },
     {
       "name": "immunization-form-workspace",
       "component": "immunizationFormWorkspace",
-      "window": "vacunacion-form-window"
+      "window": "vacunacion-form-window",
+      "privileges": "app:clinical.chart.immunizations.edit"
     }
   ],
   "workspaceWindows2": [

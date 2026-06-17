@@ -1,0 +1,12 @@
+@use "@carbon/layout";
+
+.copyAction {
+  display: flex;
+  flex-direction: column;
+  gap: layout.$spacing-03;
+  margin-bottom: layout.$spacing-04;
+}
+
+.copyFeedback {
+  max-width: 100%;
+}

@@ -31,6 +31,7 @@ import {
 
 import styles from './visit-attribute-type.scss';
 import { type VisitFormData } from './visit-form.resource';
+import VisitProvenanceField, { isProvenanceVisitAttributeType } from './visit-provenance-field.component';
 
 function preventInvalidFloatKey(event: React.KeyboardEvent<HTMLInputElement>) {
   if (event.ctrlKey || event.metaKey || event.altKey) {
@@ -230,6 +231,19 @@ const AttributeTypeField: React.FC<AttributeTypeFieldProps> = ({
           />
         );
       case 'org.openmrs.customdatatype.datatype.FreeTextDatatype':
+        if (isProvenanceVisitAttributeType(data)) {
+          return (
+            <VisitProvenanceField
+              fieldProps={fieldProps}
+              id={uuid}
+              invalid={!!errors.visitAttributes?.[uuid]}
+              invalidText={errors.visitAttributes?.[uuid]?.message}
+              labelText={labelText}
+              readOnly={readOnly}
+            />
+          );
+        }
+
         return (
           <TextInput
             {...fieldProps}

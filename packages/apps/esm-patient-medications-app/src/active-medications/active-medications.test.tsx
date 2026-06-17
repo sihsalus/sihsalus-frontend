@@ -17,7 +17,23 @@ const mockLaunchWorkspace2 = launchWorkspace2 as vi.Mock;
 const mockUseLaunchWorkspaceRequiringVisit = vi.fn().mockImplementation((_, name) => {
   return () => mockLaunchWorkspace2(name);
 });
-mockUseSession.mockReturnValue(mockSessionDataResponse.data);
+const mockSessionWithMedicationEditPrivilege = {
+  ...mockSessionDataResponse.data,
+  user: {
+    ...mockSessionDataResponse.data.user,
+    privileges: [
+      ...mockSessionDataResponse.data.user.privileges,
+      {
+        uuid: 'medications-edit-privilege',
+        display: 'app:clinical.chart.medications.edit',
+        name: 'app:clinical.chart.medications.edit',
+        links: [],
+      },
+    ],
+  },
+};
+
+mockUseSession.mockReturnValue(mockSessionWithMedicationEditPrivilege);
 
 vi.mock('@openmrs/esm-patient-common-lib', async () => {
   const originalModule = await vi.importActual('@openmrs/esm-patient-common-lib');

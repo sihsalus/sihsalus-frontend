@@ -13,6 +13,7 @@ export interface TextPersonAttributeFieldProps {
   validationRegex?: string;
   label?: string;
   required?: boolean;
+  readOnly?: boolean;
 }
 
 export function TextPersonAttributeField({
@@ -21,6 +22,7 @@ export function TextPersonAttributeField({
   validationRegex,
   label,
   required,
+  readOnly,
 }: TextPersonAttributeFieldProps) {
   const { t } = useTranslation(moduleName);
   const isPhoneField = id === 'phone' || id === 'mobilePhone';
@@ -88,6 +90,7 @@ export function TextPersonAttributeField({
               maxLength={isPhoneField ? 20 : undefined}
               helperText={isPhoneField ? t('phoneHelperText', 'Use digits, spaces or hyphens') : undefined}
               required={required}
+              readOnly={readOnly}
             />
           );
         }}

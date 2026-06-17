@@ -25,6 +25,7 @@ const createProgram = (uuid: string, display: string): Program => ({
 const adultProgram = createProgram('adulto-mayor-program', 'Adulto Mayor');
 const tuberculosisProgram = createProgram('tbc-program', 'Tuberculosis');
 const maternalProgram = createProgram('maternal-program', 'Madre Gestante');
+const wellChildProgram = createProgram('well-child-program', 'Control de Niño Sano');
 
 const rules: Array<ProgramEligibilityRule> = [
   {
@@ -39,6 +40,10 @@ const rules: Array<ProgramEligibilityRule> = [
     minAgeYears: 10,
     maxAgeYears: 59,
     genders: ['female'],
+  },
+  {
+    programUuid: wellChildProgram.uuid,
+    maxAgeYears: 11,
   },
 ];
 
@@ -77,6 +82,11 @@ describe('program eligibility', () => {
     expect(
       isProgramEligibleForPatient(maternalProgram, { birthDate: '1960-01-01', gender: 'female' }, rules, today),
     ).toBe(false);
+  });
+
+  it('shows child programs only while the patient is in the configured pediatric age range', () => {
+    expect(isProgramEligibleForPatient(wellChildProgram, { birthDate: '2020-01-01' }, rules, today)).toBe(true);
+    expect(isProgramEligibleForPatient(wellChildProgram, { birthDate: '2010-01-01' }, rules, today)).toBe(false);
   });
 
   it('filters out already-enrolled and demographically ineligible programs', () => {

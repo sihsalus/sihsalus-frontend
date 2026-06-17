@@ -53,6 +53,7 @@ function createAdmission(overrides: Partial<AdmissionRow>): AdmissionRow {
     service: 'Consulta externa',
     location: 'Admision Central',
     status: 'Activa',
+    searchText: '',
     ...overrides,
   };
 }
@@ -180,6 +181,45 @@ describe('AdmissionHome', () => {
 
     expect(screen.queryByRole('cell', { name: 'Grace Hopper' })).not.toBeInTheDocument();
     expect(screen.getByText(/no se encontraron atenciones recientes/i)).toBeInTheDocument();
+  });
+
+  it('filters the report by HCE, temporal code, insurance code, and structured responsible data', () => {
+    mockUseAdmissions.mockReturnValue({
+      admissions: [
+        createAdmission({
+          uuid: 'visit-1',
+          patientUuid: 'patient-1',
+          patientName: 'Niño Prueba',
+          medicalRecordNumber: 'TEMP-001',
+          documentNumber: '77889900',
+          responsibleName: 'María Quispe',
+          responsibleRelationship: 'Madre',
+          searchText: 'Código temporal TEMP-001 Código de Seguro SIS-183299 María Quispe Madre',
+        }),
+        createAdmission({
+          uuid: 'visit-2',
+          patientUuid: 'patient-2',
+          patientName: 'Grace Hopper',
+          medicalRecordNumber: 'HC-100',
+          documentNumber: '87654321',
+          responsibleName: 'Alan Hopper',
+          responsibleRelationship: 'Familiar',
+          searchText: 'Historia Clinica HC-100 Documento 87654321 Alan Hopper Familiar',
+        }),
+      ],
+      error: undefined,
+      isLoading: false,
+    });
+
+    renderAdmissionHome();
+
+    const searchInput = screen.getByRole('textbox', { name: /buscar por paciente/i });
+    for (const query of ['TEMP-001', 'SIS-183299', 'María Quispe', 'Madre']) {
+      fireEvent.change(searchInput, { target: { value: query } });
+
+      expect(screen.getByRole('cell', { name: 'Niño Prueba' })).toBeInTheDocument();
+      expect(screen.queryByRole('cell', { name: 'Grace Hopper' })).not.toBeInTheDocument();
+    }
   });
 
   it('uses the default report page size when config is empty', () => {

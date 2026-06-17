@@ -30,6 +30,7 @@ import {
   useVisitFormCallbacks,
 } from './visit-form.resource';
 import StartVisitForm from './visit-form.workspace';
+import { useVisitProvenanceAddressOptions } from './visit-provenance.resource';
 
 vi.mock('@carbon/react', async () => {
   const actual = await vi.importActual('@carbon/react');
@@ -198,6 +199,7 @@ const mockCreateVisitAttribute = vi.mocked(createVisitAttribute).mockResolvedVal
 const mockUpdateVisitAttribute = vi.mocked(updateVisitAttribute).mockResolvedValue({} as unknown as FetchResponse);
 const mockDeleteVisitAttribute = vi.mocked(deleteVisitAttribute).mockResolvedValue({} as unknown as FetchResponse);
 const mockUsePersonAttributesForVisitDefaults = vi.mocked(usePersonAttributesForVisitDefaults);
+const mockUseVisitProvenanceAddressOptions = vi.mocked(useVisitProvenanceAddressOptions);
 
 vi.mock('@openmrs/esm-patient-common-lib', async () => ({
   ...(await vi.importActual('@openmrs/esm-patient-common-lib')),
@@ -303,6 +305,18 @@ vi.mock('./visit-form.resource', async () => {
   };
 });
 
+vi.mock('./visit-provenance.resource', async () => {
+  const requireActual = await vi.importActual('./visit-provenance.resource');
+  return {
+    ...requireActual,
+    useVisitProvenanceAddressOptions: vi.fn(() => ({
+      addresses: [],
+      error: null,
+      isLoading: false,
+    })),
+  };
+});
+
 mockSaveVisit.mockResolvedValue({
   status: 201,
   data: {
@@ -367,6 +381,11 @@ describe('Visit form', () => {
     });
     mockUsePersonAttributesForVisitDefaults.mockReturnValue({
       attributes: [],
+      error: null,
+      isLoading: false,
+    });
+    mockUseVisitProvenanceAddressOptions.mockReturnValue({
+      addresses: [],
       error: null,
       isLoading: false,
     });
@@ -848,6 +867,81 @@ describe('Visit form', () => {
     renderVisitForm(visitToEdit);
 
     expect(screen.getByRole('textbox', { name: 'Procedencia (optional)' })).toHaveValue('Comunidad guardada');
+  });
+
+  it('sanitizes procedencia so numbers and symbols are not saved', async () => {
+    const user = userEvent.setup();
+
+    mockUseConfig.mockReturnValue({
+      ...getDefaultsFromConfigSchema(esmPatientChartSchema),
+      visitAttributeTypes: [
+        {
+          uuid: visitAttributes.provenance.uuid,
+          required: false,
+          displayInThePatientBanner: true,
+        },
+      ],
+      defaultVisitAttributesFromPersonAttributes: [],
+      defaultVisitAttributesFromPatientAddress: [],
+    });
+
+    renderVisitForm();
+
+    const provenanceInput = screen.getByRole('textbox', {
+      name: 'Procedencia (optional)',
+    });
+    await user.type(provenanceInput, 'MAYNAS123, PERÚ@@@, SAN  JUAN//##');
+
+    expect(provenanceInput).toHaveValue('MAYNAS, PERÚ, SAN JUAN');
+
+    await selectVisitType(user);
+    await user.selectOptions(
+      screen.getByRole('combobox', {
+        name: /Select a location/i,
+      }),
+      'Inpatient Ward',
+    );
+    await user.click(screen.getByRole('button', { name: /Start visit/i }));
+
+    await waitFor(() =>
+      expect(mockCreateVisitAttribute).toHaveBeenCalledWith(
+        visitUuid,
+        visitAttributes.provenance.uuid,
+        'MAYNAS, PERÚ, SAN JUAN',
+      ),
+    );
+  });
+
+  it('lets the user select procedencia from address hierarchy results', async () => {
+    const user = userEvent.setup();
+
+    mockUseConfig.mockReturnValue({
+      ...getDefaultsFromConfigSchema(esmPatientChartSchema),
+      visitAttributeTypes: [
+        {
+          uuid: visitAttributes.provenance.uuid,
+          required: false,
+          displayInThePatientBanner: true,
+        },
+      ],
+      defaultVisitAttributesFromPersonAttributes: [],
+      defaultVisitAttributesFromPatientAddress: [],
+    });
+    mockUseVisitProvenanceAddressOptions.mockReturnValue({
+      addresses: ['San Rafael, Napo, Maynas, Loreto, PERU'],
+      error: null,
+      isLoading: false,
+    });
+
+    renderVisitForm();
+
+    const provenanceInput = screen.getByRole('textbox', {
+      name: 'Procedencia (optional)',
+    });
+    await user.type(provenanceInput, 'San');
+    await user.click(screen.getByRole('option', { name: 'San Rafael, Napo, Maynas, Loreto, PERU' }));
+
+    expect(provenanceInput).toHaveValue('San Rafael, Napo, Maynas, Loreto, PERU');
   });
 
   it('updates visit attributes when editing an existing visit', async () => {

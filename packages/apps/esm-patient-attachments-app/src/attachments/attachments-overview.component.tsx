@@ -8,9 +8,10 @@ import {
   showModal,
   showSnackbar,
   type UploadedFile,
-  UserHasAccess,
+  userHasAccess,
   useAttachments,
   useLayoutType,
+  useSession,
 } from '@openmrs/esm-framework';
 import { CardHeader, EmptyState, useAllowedFileExtensions } from '@openmrs/esm-patient-common-lib';
 import React, { useCallback, useMemo, useState } from 'react';
@@ -38,6 +39,9 @@ type ViewType = 'grid' | 'table';
 const AttachmentsOverview: React.FC<AttachmentsOverviewProps> = ({ patientUuid }) => {
   const isTablet = useLayoutType() === 'tablet';
   const { t } = useTranslation(moduleName);
+  const session = useSession();
+  const canRead = userHasAccess('app:clinical.chart.attachments', session?.user);
+  const canEdit = userHasAccess('app:clinical.chart.attachments.edit', session?.user);
   const { data, mutate, isValidating, isLoading } = useAttachments(patientUuid, true);
   const { allowedFileExtensions } = useAllowedFileExtensions();
 
@@ -95,6 +99,9 @@ const AttachmentsOverview: React.FC<AttachmentsOverviewProps> = ({ patientUuid }
   }, []);
 
   const showAddAttachmentModal = useCallback(() => {
+    if (!canEdit) {
+      return;
+    }
     const close = showModal('capture-photo-modal', {
       saveFile: (file: UploadedFile) => {
         if (file.capturedFromWebcam && !file.fileName.includes('.')) {
@@ -108,10 +115,13 @@ const AttachmentsOverview: React.FC<AttachmentsOverviewProps> = ({ patientUuid }
       multipleFiles: true,
       collectDescription: true,
     });
-  }, [allowedFileExtensions, mutate, patientUuid]);
+  }, [allowedFileExtensions, canEdit, mutate, patientUuid]);
 
   const showDeleteAttachmentModal = useCallback(
     (attachment: Attachment) => {
+      if (!canEdit) {
+        return;
+      }
       const close = showModal('delete-attachment-modal', {
         attachment: attachment,
         close: () => close(),
@@ -121,8 +131,12 @@ const AttachmentsOverview: React.FC<AttachmentsOverviewProps> = ({ patientUuid }
         },
       });
     },
-    [deleteAttachment],
+    [canEdit, deleteAttachment],
   );
+
+  if (!canRead) {
+    return null;
+  }
 
   if (isLoading) {
     return <DataTableSkeleton role="progressbar" />;
@@ -133,14 +147,14 @@ const AttachmentsOverview: React.FC<AttachmentsOverviewProps> = ({ patientUuid }
       <EmptyState
         displayText={t('attachmentsInLowerCase', 'attachments')}
         headerTitle={t('attachmentsInProperFormat', 'Attachments')}
-        launchForm={showAddAttachmentModal}
+        launchForm={canEdit ? showAddAttachmentModal : undefined}
       />
     );
   }
 
   return (
-    <UserHasAccess privilege="View Attachments">
-      <div onDragOverCapture={showAddAttachmentModal} className={styles.overview}>
+    <>
+      <div onDragOverCapture={canEdit ? showAddAttachmentModal : undefined} className={styles.overview}>
         <>
           <CardHeader title={t('attachments', 'Attachments')}>
             <div className={styles.validatingDataIcon}>{isValidating && <Loading withOverlay={false} small />}</div>
@@ -153,19 +167,21 @@ const AttachmentsOverview: React.FC<AttachmentsOverviewProps> = ({ patientUuid }
                 <IconSwitch name="grid" text={t('gridView', 'Grid view')}>
                   <Thumbnail_2 size={16} />
                 </IconSwitch>
-                <IconSwitch name="tabular" text={t('tableView', 'Table view')}>
+                <IconSwitch name="table" text={t('tableView', 'Table view')}>
                   <List size={16} />
                 </IconSwitch>
               </ContentSwitcher>
               <div className={styles.divider} />
-              <Button
-                kind="ghost"
-                renderIcon={AddIcon}
-                iconDescription="Add attachment"
-                onClick={showAddAttachmentModal}
-              >
-                {t('add', 'Add')}
-              </Button>
+              {canEdit ? (
+                <Button
+                  kind="ghost"
+                  renderIcon={AddIcon}
+                  iconDescription="Add attachment"
+                  onClick={showAddAttachmentModal}
+                >
+                  {t('add', 'Add')}
+                </Button>
+              ) : null}
             </div>
           </CardHeader>
           {view === 'grid' ? (
@@ -192,7 +208,7 @@ const AttachmentsOverview: React.FC<AttachmentsOverviewProps> = ({ patientUuid }
           onDeleteAttachment={showDeleteAttachmentModal}
         />
       )}
-    </UserHasAccess>
+    </>
   );
 };
 

@@ -1,7 +1,8 @@
 import { Layer, OverflowMenu, OverflowMenuItem } from '@carbon/react';
-import { showModal, useLayoutType } from '@openmrs/esm-framework';
+import { showModal, useLayoutType, useSession, userHasAccess } from '@openmrs/esm-framework';
 import { launchPatientWorkspace } from '@openmrs/esm-patient-common-lib';
 import { useTranslation } from 'react-i18next';
+import { chartAppointmentsEditPrivilege } from '../constants';
 
 import type { Appointment } from '../types';
 
@@ -15,6 +16,12 @@ interface appointmentsActionMenuProps {
 export const PatientAppointmentsActionMenu = ({ appointment, patientUuid }: appointmentsActionMenuProps) => {
   const { t } = useTranslation();
   const isTablet = useLayoutType() === 'tablet';
+  const session = useSession();
+  const canEdit = userHasAccess(chartAppointmentsEditPrivilege, session?.user);
+
+  if (!canEdit) {
+    return null;
+  }
 
   const handleLaunchEditAppointmentForm = () => {
     launchPatientWorkspace('appointments-form-workspace', {

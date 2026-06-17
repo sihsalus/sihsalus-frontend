@@ -8,6 +8,7 @@
       "name": "psicologia-dashboard-link",
       "component": "psicologiaDashboardLink",
       "slot": "patient-chart-dashboard-slot",
+      "privileges": "app:clinical.chart.psychology",
       "order": 13,
       "meta": {
         "slot": "patient-chart-psicologia-dashboard-slot",
@@ -23,6 +24,7 @@
       "name": "psicologia-dashboard",
       "component": "psicologiaDashboard",
       "slot": "patient-chart-psicologia-dashboard-slot",
+      "privileges": "app:clinical.chart.psychology",
       "order": 0,
       "online": true,
       "offline": false

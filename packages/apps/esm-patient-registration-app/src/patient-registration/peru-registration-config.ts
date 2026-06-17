@@ -4,6 +4,7 @@ export const peruDniPatientIdentifierTypeUuid = '550e8400-e29b-41d4-a716-4466554
 export const peruCarnetExtranjeriaPatientIdentifierTypeUuid = '550e8400-e29b-41d4-a716-446655440002';
 export const peruPassportPatientIdentifierTypeUuid = '550e8400-e29b-41d4-a716-446655440003';
 export const peruDiePatientIdentifierTypeUuid = '8d793bee-c2cc-11de-8d13-0010c6dffd0f';
+export const peruInsuranceTypeAttributeTypeUuid = '56188294-b42c-481d-a987-4b495116c580';
 export const peruInsuranceCodeAttributeTypeUuid = '374b130f-7457-476f-87b1-f182aa77c434';
 export const peruInsuranceAccreditationStatusAttributeTypeUuid = '9b3df0a1-0c58-4f55-9868-9c38f1db1005';
 export const peruInsuranceAccreditationCheckedAtAttributeTypeUuid = '9b3df0a1-0c58-4f55-9868-9c38f1db1006';
@@ -157,7 +158,7 @@ const peruFieldDefinitions: Array<FieldDefinition> = [
   {
     id: 'insuranceType',
     type: 'person attribute',
-    uuid: '56188294-b42c-481d-a987-4b495116c580',
+    uuid: peruInsuranceTypeAttributeTypeUuid,
     label: 'Tipo de seguro',
     showHeading: false,
     answerConceptSetUuid: '6b932638-242e-49ef-8ba7-0ae87199835c',
@@ -217,6 +218,7 @@ const peruFieldDefinitions: Array<FieldDefinition> = [
       { uuid: '9b3df0a1-0c58-4f55-9868-9c38f1db2033', label: 'Eliminada' },
     ],
     defaultValue: '9b3df0a1-0c58-4f55-9868-9c38f1db2031',
+    readOnlyOnCreate: true,
   },
   {
     id: 'medicalRecordArchiveType',
@@ -230,6 +232,7 @@ const peruFieldDefinitions: Array<FieldDefinition> = [
       { uuid: '9b3df0a1-0c58-4f55-9868-9c38f1db2042', label: 'Archivo especial' },
     ],
     defaultValue: '9b3df0a1-0c58-4f55-9868-9c38f1db2041',
+    readOnlyOnCreate: true,
   },
   {
     id: 'insuranceAccreditationStatus',

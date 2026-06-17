@@ -6,13 +6,15 @@
   "pages": [
     {
       "component": "root",
-      "route": "odontologia"
+      "route": "odontologia",
+      "privileges": "app:clinical.chart.dentistry"
     }
   ],
   "extensions": [
     {
       "name": "odontologia-dashboard-link",
       "component": "odontologiaDashboardLink",
+      "privileges": "app:clinical.chart.dentistry",
       "slot": "patient-chart-dashboard-slot",
       "order": 12,
       "meta": {
@@ -27,6 +29,7 @@
     {
       "name": "odontologia-dashboard",
       "component": "odontologiaDashboard",
+      "privileges": "app:clinical.chart.dentistry",
       "slot": "patient-chart-odontologia-slot",
       "order": 0,
       "online": true,
@@ -37,6 +40,7 @@
     {
       "name": "odontologia-odontogram-form-workspace",
       "component": "odontologiaOdontogramWorkspace",
+      "privileges": "app:clinical.chart.dentistry.edit",
       "type": "clinical-form",
       "title": "odontogramWorkspaceTitle",
       "width": "extra-wide",

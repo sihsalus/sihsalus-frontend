@@ -9,7 +9,16 @@ import {
   TableHeader,
   TableRow,
 } from '@carbon/react';
-import { ErrorState, formatDate, openmrsFetch, showModal, showSnackbar, useConfig } from '@openmrs/esm-framework';
+import {
+  ErrorState,
+  formatDate,
+  openmrsFetch,
+  showModal,
+  showSnackbar,
+  useConfig,
+  useSession,
+  userHasAccess,
+} from '@openmrs/esm-framework';
 import type { Encounter } from '@openmrs/esm-patient-common-lib';
 import { CardHeader, launchPatientWorkspace } from '@openmrs/esm-patient-common-lib';
 import React, { useMemo } from 'react';
@@ -39,6 +48,8 @@ const OdontologiaAttentionDashboard: React.FC<OdontologiaAttentionDashboardProps
   embedded = false,
 }) => {
   const { t } = useTranslation();
+  const session = useSession();
+  const canEdit = userHasAccess('app:clinical.chart.dentistry.edit', session?.user);
   const { dentalEncounterTypeUuid, dentalFormUuid } = useConfig<OdontogramConfig>();
 
   const url =
@@ -127,7 +138,7 @@ const OdontologiaAttentionDashboard: React.FC<OdontologiaAttentionDashboardProps
           'No hay registros de atención odontológica para mostrar para este paciente.',
         )}
         actionLabel={t('registerDentalAttention', 'Registrar atención odontológica')}
-        onAction={() => launchDentalForm()}
+        onAction={canEdit ? () => launchDentalForm() : undefined}
       />
     );
   }
@@ -136,15 +147,19 @@ const OdontologiaAttentionDashboard: React.FC<OdontologiaAttentionDashboardProps
     <div>
       {embedded ? (
         <div style={{ display: 'flex', justifyContent: 'flex-end', padding: '1rem 1rem 0.5rem' }}>
-          <Button kind="ghost" onClick={() => launchDentalForm()}>
-            {t('add', 'Add')}
-          </Button>
+          {canEdit ? (
+            <Button kind="ghost" onClick={() => launchDentalForm()}>
+              {t('add', 'Add')}
+            </Button>
+          ) : null}
         </div>
       ) : (
         <CardHeader title={t('dentalAttention', 'Atención odontológica')}>
-          <Button kind="ghost" onClick={() => launchDentalForm()}>
-            {t('add', 'Add')}
-          </Button>
+          {canEdit ? (
+            <Button kind="ghost" onClick={() => launchDentalForm()}>
+              {t('add', 'Add')}
+            </Button>
+          ) : null}
         </CardHeader>
       )}
       <TableContainer>
@@ -164,14 +179,16 @@ const OdontologiaAttentionDashboard: React.FC<OdontologiaAttentionDashboardProps
                 <TableCell>{getVisitType(encounter)}</TableCell>
                 <TableCell>{getProviderName(encounter)}</TableCell>
                 <TableCell>
-                  <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
-                    <Button size="sm" kind="primary" onClick={() => launchDentalForm(encounter.uuid)}>
-                      {t('edit', 'Edit')}
-                    </Button>
-                    <Button size="sm" kind="danger--tertiary" onClick={() => handleDelete(encounter.uuid)}>
-                      {t('delete', 'Delete')}
-                    </Button>
-                  </div>
+                  {canEdit ? (
+                    <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
+                      <Button size="sm" kind="primary" onClick={() => launchDentalForm(encounter.uuid)}>
+                        {t('edit', 'Edit')}
+                      </Button>
+                      <Button size="sm" kind="danger--tertiary" onClick={() => handleDelete(encounter.uuid)}>
+                        {t('delete', 'Delete')}
+                      </Button>
+                    </div>
+                  ) : null}
                 </TableCell>
               </TableRow>
             ))}

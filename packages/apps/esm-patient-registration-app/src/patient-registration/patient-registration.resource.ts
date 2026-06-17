@@ -1,7 +1,14 @@
 import { createAttachment, openmrsFetch, restBaseUrl, type UploadedFile } from '@openmrs/esm-framework';
 import dayjs from 'dayjs';
 
-import { type Encounter, type Patient, type PatientIdentifier, type Relationship } from './patient-registration.types';
+import {
+  type Encounter,
+  type Patient,
+  type PatientAddress,
+  type PatientIdentifier,
+  type PersonAttributeResponse,
+  type Relationship,
+} from './patient-registration.types';
 
 export interface SavePersonPayload {
   names: Array<{
@@ -14,6 +21,28 @@ export interface SavePersonPayload {
   gender: string;
   birthdate?: string;
   birthdateEstimated?: boolean;
+}
+
+export interface PersonRegistrationCopyData {
+  uuid: string;
+  display?: string;
+  addresses?: Array<PatientAddress>;
+  attributes?: Array<PersonAttributeResponse>;
+}
+
+export interface PersonSearchResult {
+  uuid: string;
+  display?: string;
+  age?: number;
+  birthdate?: string;
+  birthdateEstimated?: boolean;
+  person?: {
+    uuid?: string;
+    display?: string;
+    age?: number;
+    birthdate?: string;
+    birthdateEstimated?: boolean;
+  };
 }
 
 function dataURItoFile(dataURI: string) {
@@ -175,17 +204,33 @@ export function savePatientPhotoAsAttachment(patientUuid: string, content: strin
   return createAttachment(patientUuid, uploadedFile);
 }
 
-export async function fetchPerson(query: string, abortController: AbortController) {
+export async function fetchPerson(query: string, abortController: AbortController): Promise<Array<PersonSearchResult>> {
+  const encodedQuery = encodeURIComponent(query);
+  const patientRepresentation = 'custom:(uuid,display,person:(uuid,display,age,birthdate,birthdateEstimated))';
+  const personRepresentation = 'custom:(uuid,display,age,birthdate,birthdateEstimated)';
   const [patientsRes, personsRes] = await Promise.all([
-    openmrsFetch(`${restBaseUrl}/patient?q=${query}`, {
-      signal: abortController.signal,
-    }),
-    openmrsFetch(`${restBaseUrl}/person?q=${query}`, {
-      signal: abortController.signal,
-    }),
+    openmrsFetch<{ results: Array<PersonSearchResult> }>(
+      `${restBaseUrl}/patient?q=${encodedQuery}&v=${patientRepresentation}`,
+      {
+        signal: abortController.signal,
+      },
+    ),
+    openmrsFetch<{ results: Array<PersonSearchResult> }>(
+      `${restBaseUrl}/person?q=${encodedQuery}&v=${personRepresentation}`,
+      {
+        signal: abortController.signal,
+      },
+    ),
   ]);
 
-  const results = [...patientsRes.data.results];
+  const results: Array<PersonSearchResult> = patientsRes.data.results.map((patient) => ({
+    ...patient,
+    uuid: patient.person?.uuid ?? patient.uuid,
+    display: patient.person?.display ?? patient.display,
+    age: patient.person?.age ?? patient.age,
+    birthdate: patient.person?.birthdate ?? patient.birthdate,
+    birthdateEstimated: patient.person?.birthdateEstimated ?? patient.birthdateEstimated,
+  }));
 
   personsRes.data.results.forEach((person) => {
     if (!results.some((patient) => patient.uuid === person.uuid)) {
@@ -194,6 +239,21 @@ export async function fetchPerson(query: string, abortController: AbortControlle
   });
 
   return results;
+}
+
+export async function fetchPersonRegistrationCopyData(personUuid: string) {
+  const abortController = new AbortController();
+  const representation =
+    'custom:(uuid,display,addresses:(uuid,preferred,address1,address2,address3,address4,address5,address6,address7,address8,address9,address10,address11,address12,address13,address14,address15,cityVillage,stateProvince,countyDistrict,postalCode,country),attributes:(uuid,display,attributeType:(uuid,display,format),value))';
+
+  const response = await openmrsFetch<PersonRegistrationCopyData>(
+    `${restBaseUrl}/person/${personUuid}?v=${representation}`,
+    {
+      signal: abortController.signal,
+    },
+  );
+
+  return response.data;
 }
 
 export async function addPatientIdentifier(patientUuid: string, patientIdentifier: PatientIdentifier) {

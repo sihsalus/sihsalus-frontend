@@ -281,7 +281,7 @@ export function getValidationSchema(
         'responsible-relationship-required-for-minors',
         t(
           'responsibleRelationshipRequiredForMinor',
-          'A responsible family member or guardian relationship is required for minors',
+          'For minors, record a responsible family member, guardian, or legal representative.',
         ),
         function (relationships?: Array<RelationshipValue>) {
           const values = this.parent as FormValues;

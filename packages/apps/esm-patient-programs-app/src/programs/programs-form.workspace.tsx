@@ -106,6 +106,8 @@ const ProgramsForm: React.FC<ProgramsWorkspaceProps> = (props) => {
     : null;
 
   const eligiblePrograms = currentProgram ? [currentProgram] : eligibleAvailablePrograms;
+  const hasConfiguredPrograms = availableProgramsList.length > 0;
+  const hasEligiblePrograms = Boolean(eligiblePrograms?.length);
 
   const enrollmentLocationUuid = currentEnrollment?.location?.uuid ?? session?.sessionLocation?.uuid ?? '';
   const enrollmentLocationDisplay =
@@ -355,13 +357,22 @@ const ProgramsForm: React.FC<ProgramsWorkspaceProps> = (props) => {
     <Workspace2 title={t('programEnrollmentWorkspaceTitle', 'Program enrollment')} hasUnsavedChanges={isDirty}>
       <Form className={styles.form} onSubmit={handleSubmit(onSubmit)}>
         <Stack className={styles.formContainer} gap={7}>
-          {!availableProgramsList.length && (
+          {!hasConfiguredPrograms && (
             <InlineNotification
               className={styles.notification}
               kind="error"
               lowContrast
               subtitle={t('configurePrograms', 'Please configure programs to continue.')}
               title={t('noProgramsConfigured', 'No programs configured')}
+            />
+          )}
+          {hasConfiguredPrograms && !hasEligiblePrograms && !inEditMode && (
+            <InlineNotification
+              className={styles.notification}
+              kind="info"
+              lowContrast
+              subtitle={t('noEligibleEnrollments', 'There are no more programs left to enroll this patient in')}
+              title={t('noEligiblePrograms', 'No eligible programs available')}
             />
           )}
           {formGroups.map((group) => (
@@ -374,7 +385,12 @@ const ProgramsForm: React.FC<ProgramsWorkspaceProps> = (props) => {
           <Button className={styles.button} kind="secondary" onClick={() => closeWorkspace()}>
             {getCoreTranslation('cancel')}
           </Button>
-          <Button className={styles.button} disabled={isSubmitting} kind="primary" type="submit">
+          <Button
+            className={styles.button}
+            disabled={isSubmitting || (!inEditMode && !hasEligiblePrograms)}
+            kind="primary"
+            type="submit"
+          >
             {isSubmitting ? (
               <InlineLoading description={t('saving', 'Saving') + '...'} />
             ) : (

@@ -52,6 +52,19 @@ const mockProgramsState = ({ enrollments = [], availablePrograms = mockCareProgr
 };
 
 describe('ProgramsDetailedSummary', () => {
+  beforeEach(() => {
+    globalThis.spaBase = '/openmrs/spa';
+    mockUseConfig.mockReturnValue({
+      ...getDefaultsFromConfigSchema(configSchema),
+      programNavigationTargets: [
+        {
+          programUuid: mockEnrolledProgramsResponse[0].program.uuid,
+          chartPath: 'well-child-care-dashboard',
+        },
+      ],
+    });
+  });
+
   it('renders an empty state view when the patient is not enrolled into any programs', async () => {
     mockProgramsState({ enrollments: [] });
 
@@ -102,6 +115,7 @@ describe('ProgramsDetailedSummary', () => {
     expect(screen.getByRole('columnheader', { name: /active programs/i })).toBeInTheDocument();
     expect(screen.getByRole('columnheader', { name: /date enrolled/i })).toBeInTheDocument();
     expect(screen.getByRole('columnheader', { name: /status/i })).toBeInTheDocument();
+    expect(screen.getByRole('columnheader', { name: /go to/i })).toBeInTheDocument();
 
     const addButton = screen.getByRole('button', { name: /Add/ });
     expect(addButton).toBeInTheDocument();
@@ -109,7 +123,13 @@ describe('ProgramsDetailedSummary', () => {
     expect(row).toBeInTheDocument();
     expect(within(row).getByRole('cell', { name: expectedEnrollmentDate })).toBeInTheDocument();
     expect(within(row).getByRole('cell', { name: /active$/i })).toBeInTheDocument();
-    const actionMenuButton = within(row).getByRole('button', { name: /options$/i });
+    expect(within(row).getByRole('link', { name: /go to/i })).toHaveAttribute(
+      'href',
+      `/openmrs/spa/patient/${mockPatient.id}/chart/well-child-care-dashboard`,
+    );
+    const actionMenuButton = within(row).getByRole('button', {
+      name: /options$/i,
+    });
     expect(actionMenuButton).toBeInTheDocument();
 
     await user.click(actionMenuButton);
@@ -143,7 +163,7 @@ describe('ProgramsDetailedSummary', () => {
     expect(screen.getByRole('row', { name: /hiv differentiated care/i })).toBeInTheDocument();
     expect(screen.getByRole('row', { name: /oncology screening and diagnosis/i })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: /add/i })).toBeDisabled();
-    expect(screen.getByText(/enrolled in all programs/i)).toBeInTheDocument();
+    expect(screen.getByText(/no eligible programs available/i)).toBeInTheDocument();
     expect(screen.getByText(/there are no more programs left to enroll this patient in/i)).toBeInTheDocument();
   });
 

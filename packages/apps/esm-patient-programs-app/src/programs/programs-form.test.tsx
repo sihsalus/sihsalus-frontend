@@ -49,6 +49,25 @@ const testProps: PatientWorkspace2DefinitionProps<ProgramsFormProps, {}> = {
 beforeEach(() => {
   vi.clearAllMocks();
   mockUseSession.mockReturnValue(mockSession.data);
+  mockUseConfig.mockReturnValue(getDefaultsFromConfigSchema(configSchema));
+  mockUseAvailablePrograms.mockReturnValue({
+    data: mockCareProgramsResponse,
+    eligiblePrograms: mockCareProgramsResponse,
+    error: null,
+    isLoading: false,
+  });
+  mockUseEnrollments.mockReturnValue({
+    data: mockEnrolledProgramsResponse,
+    error: null,
+    isLoading: false,
+    isValidating: false,
+    activeEnrollments: [],
+    mutateEnrollments: vi.fn(),
+  });
+  mockCreateProgramEnrollment.mockResolvedValue({
+    status: 201,
+    statusText: 'Created',
+  } as unknown as FetchResponse);
 });
 
 vi.mock('./programs.resource', () => ({
@@ -63,27 +82,6 @@ vi.mock('./program-enrollment-cache', () => ({
   mutatePatientProgramEnrollments: vi.fn(),
 }));
 
-mockUseAvailablePrograms.mockReturnValue({
-  data: mockCareProgramsResponse,
-  eligiblePrograms: mockCareProgramsResponse,
-  error: null,
-  isLoading: false,
-});
-
-mockUseEnrollments.mockReturnValue({
-  data: mockEnrolledProgramsResponse,
-  error: null,
-  isLoading: false,
-  isValidating: false,
-  activeEnrollments: [],
-  mutateEnrollments: vi.fn(),
-});
-
-mockCreateProgramEnrollment.mockResolvedValue({
-  status: 201,
-  statusText: 'Created',
-} as unknown as FetchResponse);
-
 describe('ProgramsForm', () => {
   it('renders a success toast notification upon successfully recording a program enrollment', async () => {
     const user = userEvent.setup();
@@ -93,9 +91,15 @@ describe('ProgramsForm', () => {
 
     renderProgramsForm();
 
-    const programNameInput = screen.getByRole('combobox', { name: /program name/i });
-    const enrollmentDateInput = screen.getByRole('textbox', { name: /date enrolled/i });
-    const enrollButton = screen.getByRole('button', { name: /save and close/i });
+    const programNameInput = screen.getByRole('combobox', {
+      name: /program name/i,
+    });
+    const enrollmentDateInput = screen.getByRole('textbox', {
+      name: /date enrolled/i,
+    });
+    const enrollButton = screen.getByRole('button', {
+      name: /save and close/i,
+    });
 
     await user.click(enrollButton);
     expect(screen.getByText(/program is required/i)).toBeInTheDocument();
@@ -139,9 +143,13 @@ describe('ProgramsForm', () => {
 
     renderProgramsForm(mockEnrolledProgramsResponse[0].uuid);
 
-    const enrollButton = screen.getByRole('button', { name: /save and close/i });
+    const enrollButton = screen.getByRole('button', {
+      name: /save and close/i,
+    });
 
-    const completionDateInput = screen.getByRole('textbox', { name: /date completed/i });
+    const completionDateInput = screen.getByRole('textbox', {
+      name: /date completed/i,
+    });
 
     mockUpdateProgramEnrollment.mockResolvedValue({
       status: 200,
@@ -186,7 +194,9 @@ describe('ProgramsForm', () => {
 
     renderProgramsForm(mockEnrolledProgramsResponse[0].uuid);
 
-    const enrollButton = screen.getByRole('button', { name: /save and close/i });
+    const enrollButton = screen.getByRole('button', {
+      name: /save and close/i,
+    });
 
     mockUpdateProgramEnrollment.mockResolvedValue({
       status: 200,
@@ -216,6 +226,21 @@ describe('ProgramsForm', () => {
     renderProgramsForm();
 
     expect(screen.getByLabelText(/program status/i)).toBeInTheDocument();
+  });
+
+  it('shows a clear disabled state when no configured program is eligible for the patient', async () => {
+    mockUseAvailablePrograms.mockReturnValue({
+      data: mockCareProgramsResponse,
+      eligiblePrograms: [],
+      error: null,
+      isLoading: false,
+    });
+
+    renderProgramsForm();
+
+    expect(screen.getByText(/no eligible programs available/i)).toBeInTheDocument();
+    expect(screen.getByText(/there are no more programs left to enroll this patient in/i)).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /save and close/i })).toBeDisabled();
   });
 });
 

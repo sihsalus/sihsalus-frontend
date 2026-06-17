@@ -1,4 +1,4 @@
-import { Button, ModalBody, ModalFooter, ModalHeader } from '@carbon/react';
+import { Button, InlineLoading, ModalBody, ModalFooter, ModalHeader } from '@carbon/react';
 import { openmrsFetch, restBaseUrl, showSnackbar, updateVisit, useVisit } from '@openmrs/esm-framework';
 import { launchPatientWorkspace } from '@openmrs/esm-patient-common-lib';
 import React from 'react';
@@ -76,8 +76,13 @@ const EndVisitDialog: React.FC<EndVisitDialogProps> = ({ patientUuid, closeModal
   const { t } = useTranslation();
   const { activeVisit, mutate } = useVisit(patientUuid);
   const { mutate: mutateInfiniteVisits } = useInfiniteVisits2(patientUuid);
+  const [isGeneratingFua, setIsGeneratingFua] = React.useState(false);
 
   const handleEndVisitAndGenerateFUA = async () => {
+    if (isGeneratingFua) {
+      return;
+    }
+
     if (!activeVisit) {
       showSnackbar({
         title: t('errorGeneratingFUA', 'Error generating FUA'),
@@ -90,6 +95,7 @@ const EndVisitDialog: React.FC<EndVisitDialogProps> = ({ patientUuid, closeModal
 
     const abortController = new AbortController();
     try {
+      setIsGeneratingFua(true);
       const validation = await validateRequiredVisitSummaryFields(patientUuid, activeVisit.uuid);
       const missingFields = [
         !validation.hasPrimaryDiagnosis ? t('primaryDiagnosis', 'Primary diagnosis') : null,
@@ -97,6 +103,7 @@ const EndVisitDialog: React.FC<EndVisitDialogProps> = ({ patientUuid, closeModal
       ].filter(Boolean);
 
       if (missingFields.length) {
+        setIsGeneratingFua(false);
         closeModal();
         launchPatientWorkspace('visit-notes-form-workspace', {
           formContext: 'creating',
@@ -118,11 +125,12 @@ const EndVisitDialog: React.FC<EndVisitDialogProps> = ({ patientUuid, closeModal
       await updateVisit(activeVisit.uuid, { stopDatetime: new Date() }, abortController);
       void mutate();
       void mutateInfiniteVisits();
-      closeModal();
 
       await openmrsFetch(`${ModuleFuaRestURL}/generateFromVisit/${encodeURIComponent(activeVisit.uuid)}`, {
         method: 'POST',
       });
+
+      closeModal();
 
       showSnackbar({
         isLowContrast: true,
@@ -143,6 +151,8 @@ const EndVisitDialog: React.FC<EndVisitDialogProps> = ({ patientUuid, closeModal
         isLowContrast: false,
         subtitle: message,
       });
+    } finally {
+      setIsGeneratingFua(false);
     }
   };
 
@@ -156,13 +166,21 @@ const EndVisitDialog: React.FC<EndVisitDialogProps> = ({ patientUuid, closeModal
         <p className={styles.bodyShort02}>
           {t('youCanAddAdditionalEncounters', 'You can add additional encounters to this visit in the visit summary.')}
         </p>
+        {isGeneratingFua ? (
+          <InlineLoading
+            description={t('generatingFua', 'Generando FUA...')}
+            status="active"
+          />
+        ) : null}
       </ModalBody>
       <ModalFooter>
-        <Button kind="secondary" onClick={closeModal}>
+        <Button kind="secondary" onClick={closeModal} disabled={isGeneratingFua}>
           {t('cancel', 'Cancel')}
         </Button>
-        <Button kind="danger" onClick={() => void handleEndVisitAndGenerateFUA()}>
-          {t('endVisitAndGenerateFua_title', 'Finalizar Consulta y Generar FUA')}
+        <Button kind="danger" onClick={() => void handleEndVisitAndGenerateFUA()} disabled={isGeneratingFua}>
+          {isGeneratingFua
+            ? t('generatingFua', 'Generando FUA...')
+            : t('endVisitAndGenerateFua_title', 'Finalizar Consulta y Generar FUA')}
         </Button>
       </ModalFooter>
     </div>

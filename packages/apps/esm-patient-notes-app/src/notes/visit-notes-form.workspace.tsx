@@ -128,6 +128,7 @@ interface DiagnosisSearchProps {
 
 interface VisitNoteTextAreaRowProps {
   control: Control<VisitNotesFormData>;
+  inputLabelText?: string;
   labelText: string;
   name: VisitNoteTextFieldName;
   placeholder: string;
@@ -996,6 +997,7 @@ const VisitNotesForm: React.FC<PatientWorkspace2DefinitionProps<VisitNotesFormPr
             <VisitNoteTextAreaRow
               control={control}
               name="codigoPrestacional"
+              inputLabelText={t('codigoPrestacionalInputLabel', 'Indique el Código Prestacional')}
               labelText={t('codigoPrestacionalRequiredLabel', '*Código Prestacional (Obligatorio)')}
               placeholder={t('codigoPrestacionalPlaceholder', 'Ingrese Codigo Prestacional')}
               rows={2}
@@ -1179,7 +1181,14 @@ const VisitNotesForm: React.FC<PatientWorkspace2DefinitionProps<VisitNotesFormPr
   );
 };
 
-function VisitNoteTextAreaRow({ control, labelText, name, placeholder, rows = 3 }: VisitNoteTextAreaRowProps) {
+function VisitNoteTextAreaRow({
+  control,
+  inputLabelText,
+  labelText,
+  name,
+  placeholder,
+  rows = 3,
+}: VisitNoteTextAreaRowProps) {
   return (
     <Row className={styles.row}>
       <Column sm={1}>
@@ -1194,7 +1203,7 @@ function VisitNoteTextAreaRow({ control, labelText, name, placeholder, rows = 3 
               <TextArea
                 id={name}
                 rows={rows}
-                labelText={labelText}
+                labelText={inputLabelText ?? labelText}
                 placeholder={placeholder}
                 value={value ?? ''}
                 onBlur={onBlur}

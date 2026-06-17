@@ -1,6 +1,6 @@
 import { type FetchResponse, openmrsFetch, showSnackbar, updateVisit, useVisit, type Visit } from '@openmrs/esm-framework';
 import { launchPatientWorkspace } from '@openmrs/esm-patient-common-lib';
-import { render, screen, waitFor } from '@testing-library/react';
+import { act, render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { mockCurrentVisit } from 'test-utils';
 
@@ -48,6 +48,10 @@ describe('End visit dialog', () => {
 
   test('ends the visit and generates FUA when required visit summary fields are present', async () => {
     const user = userEvent.setup();
+    let resolveGenerateFua!: (value: FetchResponse) => void;
+    const generateFuaPromise = new Promise<FetchResponse>((resolve) => {
+      resolveGenerateFua = resolve;
+    });
 
     mockOpenmrsFetch
       .mockResolvedValueOnce({
@@ -60,7 +64,7 @@ describe('End visit dialog', () => {
           ],
         },
       } as FetchResponse)
-      .mockResolvedValueOnce({ data: {} } as FetchResponse);
+      .mockReturnValueOnce(generateFuaPromise);
     mockUpdateVisit.mockResolvedValue({
       status: 200,
       data: {
@@ -82,6 +86,13 @@ describe('End visit dialog', () => {
     await user.click(screen.getByRole('button', { name: /finalizar consulta y generar fua/i }));
 
     await waitFor(() => expect(updateVisit).toHaveBeenCalledWith(mockCurrentVisit.uuid, endVisitPayload, expect.anything()));
+    expect(screen.getAllByText(/generando fua/i).length).toBeGreaterThan(0);
+    expect(screen.getByRole('button', { name: /cancel/i })).toBeDisabled();
+
+    await act(async () => {
+      resolveGenerateFua({ data: {} } as FetchResponse);
+      await generateFuaPromise;
+    });
 
     expect(mockShowSnackbar).toHaveBeenCalledWith({
       isLowContrast: true,

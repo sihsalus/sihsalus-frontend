@@ -15,6 +15,7 @@
   "clinicalNotePlaceholder": "Agrega observaciones que no encajen en los campos anteriores",
   "clinicalSummary": "Resumen clínico",
   "codigoPrestacional": "Codigo Prestacional",
+  "codigoPrestacionalInputLabel": "Indique el Código Prestacional",
   "codigoPrestacionalPlaceholder": "Ingrese Codigo Prestacional",
   "codigoPrestacionalRequiredLabel": "*Código Prestacional (Obligatorio)",
   "date": "Fecha",

@@ -15,6 +15,7 @@
   "clinicalNotePlaceholder": "Add observations that do not fit the fields above",
   "clinicalSummary": "Clinical summary",
   "codigoPrestacional": "Codigo Prestacional",
+  "codigoPrestacionalInputLabel": "Indique el Código Prestacional",
   "codigoPrestacionalPlaceholder": "Enter Codigo Prestacional",
   "codigoPrestacionalRequiredLabel": "*Código Prestacional (Obligatorio)",
   "date": "Date",

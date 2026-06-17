@@ -81,6 +81,7 @@
   "filterByEncounterType": "Filtrar por tipo de atención",
   "form": "Nombre del formulario",
   "futureStartTime": "La hora de inicio de la consulta no puede estar en el futuro",
+  "generatingFua": "Generando FUA...",
   "goToThisEncounter": "Ir a esta atención",
   "indication": "Indicación",
   "invalidTimeFormat": "Formato de hora inválido",

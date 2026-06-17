@@ -81,6 +81,7 @@
   "filterByEncounterType": "Filter by encounter type",
   "form": "Form name",
   "futureStartTime": "Visit start time cannot be in the future",
+  "generatingFua": "Generando FUA...",
   "goToThisEncounter": "Go to this encounter",
   "indication": "Indication",
   "invalidTimeFormat": "Invalid time format",

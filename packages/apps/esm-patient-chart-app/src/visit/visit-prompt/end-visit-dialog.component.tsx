@@ -1,5 +1,6 @@
-import { Button, ModalBody, ModalFooter, ModalHeader } from '@carbon/react';
-import { openmrsFetch, showSnackbar, updateVisit, useVisit } from '@openmrs/esm-framework';
+import { Button, InlineLoading, ModalBody, ModalFooter, ModalHeader } from '@carbon/react';
+import { openmrsFetch, restBaseUrl, showSnackbar, updateVisit, useVisit } from '@openmrs/esm-framework';
+import { launchPatientWorkspace } from '@openmrs/esm-patient-common-lib';
 import React from 'react';
 import { useTranslation } from 'react-i18next';
 import { useInfiniteVisits2 } from '../visits-widget/visit.resource';
@@ -7,10 +8,63 @@ import { useInfiniteVisits2 } from '../visits-widget/visit.resource';
 import styles from './end-visit-dialog.scss';
 
 const ModuleFuaRestURL = '/ws/module/fua';
+const codigoPrestacionalFormFieldPath = 'codigo-prestacional';
 
 interface EndVisitDialogProps {
   patientUuid: string;
   closeModal: () => void;
+}
+
+interface VisitEncounterSummary {
+  diagnoses?: Array<{
+    rank?: number;
+    voided?: boolean;
+  }>;
+  obs?: Array<{
+    formFieldPath?: string;
+    value?: unknown;
+    display?: string;
+  }>;
+}
+
+interface RequiredVisitSummaryValidation {
+  hasCodigoPrestacional: boolean;
+  hasPrimaryDiagnosis: boolean;
+}
+
+function getObsTextValue(obs: NonNullable<VisitEncounterSummary['obs']>[number]) {
+  if (obs.value == null) {
+    return obs.display ?? '';
+  }
+
+  if (typeof obs.value === 'object') {
+    const value = obs.value as { display?: unknown; uuid?: unknown };
+    return String(value.display ?? value.uuid ?? obs.display ?? '');
+  }
+
+  return String(obs.value);
+}
+
+async function validateRequiredVisitSummaryFields(
+  patientUuid: string,
+  visitUuid: string,
+): Promise<RequiredVisitSummaryValidation> {
+  const customRepresentation = 'custom:(uuid,diagnoses:(rank,voided),obs:(formFieldPath,value,display))';
+  const { data } = await openmrsFetch<{ results: Array<VisitEncounterSummary> }>(
+    `${restBaseUrl}/encounter?patient=${patientUuid}&visit=${visitUuid}&v=${customRepresentation}&limit=50`,
+  );
+  const encounters = data?.results ?? [];
+
+  return {
+    hasPrimaryDiagnosis: encounters.some((encounter) =>
+      encounter.diagnoses?.some((diagnosis) => diagnosis.rank === 1 && !diagnosis.voided),
+    ),
+    hasCodigoPrestacional: encounters.some((encounter) =>
+      encounter.obs?.some(
+        (obs) => obs.formFieldPath === codigoPrestacionalFormFieldPath && Boolean(getObsTextValue(obs).trim()),
+      ),
+    ),
+  };
 }
 
 /**
@@ -22,40 +76,13 @@ const EndVisitDialog: React.FC<EndVisitDialogProps> = ({ patientUuid, closeModal
   const { t } = useTranslation();
   const { activeVisit, mutate } = useVisit(patientUuid);
   const { mutate: mutateInfiniteVisits } = useInfiniteVisits2(patientUuid);
-
-  const handleEndVisit = () => {
-    if (activeVisit) {
-      const endVisitPayload = {
-        stopDatetime: new Date(),
-      };
-
-      const abortController = new AbortController();
-
-      void updateVisit(activeVisit.uuid, endVisitPayload, abortController)
-        .then((response) => {
-          void mutate();
-          void mutateInfiniteVisits();
-          closeModal();
-
-          showSnackbar({
-            isLowContrast: true,
-            kind: 'success',
-            subtitle: t('visitEndSuccessfully', `${response?.data?.visitType?.display} ended successfully`),
-            title: t('visitEnded', 'Visit ended'),
-          });
-        })
-        .catch((error: { message?: string }) => {
-          showSnackbar({
-            title: t('errorEndingVisit', 'Error ending visit'),
-            kind: 'error',
-            isLowContrast: false,
-            subtitle: error?.message,
-          });
-        });
-    }
-  };
+  const [isGeneratingFua, setIsGeneratingFua] = React.useState(false);
 
   const handleEndVisitAndGenerateFUA = async () => {
+    if (isGeneratingFua) {
+      return;
+    }
+
     if (!activeVisit) {
       showSnackbar({
         title: t('errorGeneratingFUA', 'Error generating FUA'),
@@ -68,14 +95,42 @@ const EndVisitDialog: React.FC<EndVisitDialogProps> = ({ patientUuid, closeModal
 
     const abortController = new AbortController();
     try {
+      setIsGeneratingFua(true);
+      const validation = await validateRequiredVisitSummaryFields(patientUuid, activeVisit.uuid);
+      const missingFields = [
+        !validation.hasPrimaryDiagnosis ? t('primaryDiagnosis', 'Primary diagnosis') : null,
+        !validation.hasCodigoPrestacional ? t('codigoPrestacional', 'Codigo Prestacional') : null,
+      ].filter(Boolean);
+
+      if (missingFields.length) {
+        setIsGeneratingFua(false);
+        closeModal();
+        launchPatientWorkspace('visit-notes-form-workspace', {
+          formContext: 'creating',
+          openedFrom: 'end-visit-dialog',
+        });
+        showSnackbar({
+          title: t('missingRequiredVisitSummaryFields', 'Missing required visit summary data'),
+          kind: 'warning',
+          isLowContrast: true,
+          subtitle: t(
+            'completeRequiredVisitSummaryFields',
+            'Complete {{fields}} in Resumen de consulta before finalizing the visit.',
+            { fields: missingFields.join(', ') },
+          ),
+        });
+        return;
+      }
+
       await updateVisit(activeVisit.uuid, { stopDatetime: new Date() }, abortController);
       void mutate();
       void mutateInfiniteVisits();
-      closeModal();
 
       await openmrsFetch(`${ModuleFuaRestURL}/generateFromVisit/${encodeURIComponent(activeVisit.uuid)}`, {
         method: 'POST',
       });
+
+      closeModal();
 
       showSnackbar({
         isLowContrast: true,
@@ -84,13 +139,20 @@ const EndVisitDialog: React.FC<EndVisitDialogProps> = ({ patientUuid, closeModal
         title: t('visitEndedAndFUAGenerated', 'Visit ended and FUA Generated'),
       });
     } catch (error: unknown) {
-      const message = error instanceof Error ? error.message : t('unknownError', 'Unknown error');
+      const message =
+        error instanceof Error
+          ? error.message
+          : typeof error === 'object' && error && 'message' in error
+            ? String(error.message)
+            : t('unknownError', 'Unknown error');
       showSnackbar({
         title: t('errorEndingVisitOrGeneratingFUA', 'Error ending visit or generating FUA'),
         kind: 'error',
         isLowContrast: false,
         subtitle: message,
       });
+    } finally {
+      setIsGeneratingFua(false);
     }
   };
 
@@ -104,19 +166,21 @@ const EndVisitDialog: React.FC<EndVisitDialogProps> = ({ patientUuid, closeModal
         <p className={styles.bodyShort02}>
           {t('youCanAddAdditionalEncounters', 'You can add additional encounters to this visit in the visit summary.')}
         </p>
+        {isGeneratingFua ? (
+          <InlineLoading
+            description={t('generatingFua', 'Generando FUA...')}
+            status="active"
+          />
+        ) : null}
       </ModalBody>
       <ModalFooter>
-        <Button kind="secondary" onClick={closeModal}>
+        <Button kind="secondary" onClick={closeModal} disabled={isGeneratingFua}>
           {t('cancel', 'Cancel')}
         </Button>
-        <Button
-          kind="danger"
-          onClick={() => void handleEndVisitAndGenerateFUA()}
-        >
-          {t('endVisitAndGenerateFua_title', 'End Visit and Generate FUA')}
-        </Button>
-        <Button kind="danger--tertiary" onClick={handleEndVisit}>
-          {t('closeVisit_title', 'Close Visit')}
+        <Button kind="danger" onClick={() => void handleEndVisitAndGenerateFUA()} disabled={isGeneratingFua}>
+          {isGeneratingFua
+            ? t('generatingFua', 'Generando FUA...')
+            : t('endVisitAndGenerateFua_title', 'Finalizar Consulta y Generar FUA')}
         </Button>
       </ModalFooter>
     </div>

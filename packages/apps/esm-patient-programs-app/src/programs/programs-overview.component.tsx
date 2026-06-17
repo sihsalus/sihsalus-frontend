@@ -33,6 +33,7 @@ import classNames from 'classnames';
 import React, { type ComponentProps, useCallback, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { type ConfigurableProgram } from '../types';
+import { getProgramNavigationHref } from './program-navigation';
 import { findLastState, usePrograms } from './programs.resource';
 import { ProgramsActionMenu } from './programs-action-menu.component';
 import styles from './programs-overview.scss';
@@ -46,6 +47,8 @@ const ProgramsOverview: React.FC<ProgramsOverviewProps> = ({ basePath: _basePath
   const programsCount = 5;
   const { t } = useTranslation();
   const config = useConfig<ConfigObject>();
+  const hideAddProgramButton = config?.hideAddProgramButton ?? false;
+  const programNavigationTargets = config?.programNavigationTargets ?? [];
   const displayText = t('programEnrollmentsLower', 'program enrollments');
   const headerTitle = t('carePrograms', 'Care Programs');
   const urlLabel = t('seeAll', 'See all');
@@ -73,6 +76,15 @@ const ProgramsOverview: React.FC<ProgramsOverviewProps> = ({ basePath: _basePath
 
   const launchProgramsForm = useCallback(() => launchPatientWorkspace('programs-form-workspace'), []);
 
+  const renderProgramNavigationLink = useCallback(
+    (programUuid: string | null | undefined) => {
+      const href = getProgramNavigationHref(patientUuid, programUuid, programNavigationTargets);
+
+      return href ? <a href={href}>{t('goTo', 'Go to')}</a> : '--';
+    },
+    [patientUuid, programNavigationTargets, t],
+  );
+
   const tableHeaders = [
     {
       key: 'display',
@@ -95,14 +107,14 @@ const ProgramsOverview: React.FC<ProgramsOverviewProps> = ({ basePath: _basePath
       header: t('state', 'State'),
     },
     {
-      key: 'actions',
-      header: t('actions', 'Actions'),
+      key: 'goTo',
+      header: t('goTo', 'Go to'),
     },
   ];
 
   const tableRows = useMemo(() => {
     return paginatedEnrollments?.map((enrollment: ConfigurableProgram) => {
-      const state = enrollment ? findLastState(enrollment.states) : null;
+      const state = enrollment ? findLastState(enrollment.states ?? []) : null;
       return {
         id: enrollment.uuid,
         display: enrollment.display,
@@ -112,6 +124,7 @@ const ProgramsOverview: React.FC<ProgramsOverviewProps> = ({ basePath: _basePath
           ? `${t('completedOn', 'Completed On')} ${formatDate(new Date(enrollment.dateCompleted))}`
           : t('active', 'Active'),
         state: state ? state.state.concept.display : '--',
+        goTo: '',
       };
     });
   }, [paginatedEnrollments, t]);
@@ -129,13 +142,13 @@ const ProgramsOverview: React.FC<ProgramsOverviewProps> = ({ basePath: _basePath
       <div className={styles.widgetCard}>
         <CardHeader title={headerTitle}>
           <span>{isValidating ? <InlineLoading /> : null}</span>
-          {config.hideAddProgramButton ? null : (
+          {hideAddProgramButton ? null : (
             <Button
               kind="ghost"
               renderIcon={(props: ComponentProps<typeof AddIcon>) => <AddIcon size={16} {...props} />}
               iconDescription="Add programs"
               onClick={launchProgramsForm}
-              disabled={availablePrograms?.length && eligiblePrograms?.length === 0}
+              disabled={Boolean(availablePrograms?.length && eligiblePrograms?.length === 0)}
             >
               {t('add', 'Add')}
             </Button>
@@ -147,7 +160,7 @@ const ProgramsOverview: React.FC<ProgramsOverviewProps> = ({ basePath: _basePath
             kind={'info'}
             lowContrast
             subtitle={t('noEligibleEnrollments', 'There are no more programs left to enroll this patient in')}
-            title={t('fullyEnrolled', 'Enrolled in all programs')}
+            title={t('noEligiblePrograms', 'No eligible programs available')}
           />
         )}
         <DataTable rows={tableRows} headers={tableHeaders} isSortable size={isTablet ? 'lg' : 'sm'} useZebraStyles>
@@ -167,6 +180,7 @@ const ProgramsOverview: React.FC<ProgramsOverviewProps> = ({ basePath: _basePath
                         {header.header}
                       </TableHeader>
                     ))}
+                    <TableHeader />
                   </TableRow>
                 </TableHead>
                 <TableBody>
@@ -176,7 +190,11 @@ const ProgramsOverview: React.FC<ProgramsOverviewProps> = ({ basePath: _basePath
                     return (
                       <TableRow key={row.id} {...getRowProps({ row })}>
                         {row.cells.map((cell) => (
-                          <TableCell key={cell.id}>{cell.value?.content ?? cell.value}</TableCell>
+                          <TableCell key={cell.id}>
+                            {cell.info.header === 'goTo'
+                              ? renderProgramNavigationLink(enrollment?.program?.uuid)
+                              : (cell.value?.content ?? cell.value)}
+                          </TableCell>
                         ))}
                         {enrollment && (
                           <TableCell className="cds--table-column-menu">

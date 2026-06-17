@@ -5,7 +5,7 @@ type CashPoint = PatientInvoice['cashPoint'];
 type Provider = PatientInvoice['cashier'];
 type Patient = PatientInvoice['patient'];
 
-const mockFormatDate = vi.fn((date: Date, options?: Partial<{ mode: string }>) => `formatted-${date}`);
+const mockFormatDate = vi.fn((date: Date, _options?: Partial<{ mode: string }>) => `formatted-${date}`);
 const mockParseDate = vi.fn((dateString: string): Date => new Date(dateString));
 
 vi.mock('@openmrs/esm-framework', async () => ({

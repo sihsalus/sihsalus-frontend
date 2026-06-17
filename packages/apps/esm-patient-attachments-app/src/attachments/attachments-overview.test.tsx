@@ -1,8 +1,10 @@
-import { useAttachments } from '@openmrs/esm-framework';
+import { useAttachments, userHasAccess } from '@openmrs/esm-framework';
 import { render, screen } from '@testing-library/react';
 import AttachmentsOverview from './attachments-overview.component';
 
 const mockUseAttachments = vi.mocked(useAttachments);
+const mockUserHasAccess = vi.mocked(userHasAccess);
+mockUserHasAccess.mockReturnValue(true);
 
 it('renders a loading skeleton when attachments are loading', () => {
   mockUseAttachments.mockReturnValue({

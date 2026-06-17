@@ -1,4 +1,4 @@
-import { getDefaultsFromConfigSchema, useConfig } from '@openmrs/esm-framework';
+import { getDefaultsFromConfigSchema, useConfig, userHasAccess } from '@openmrs/esm-framework';
 import { screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import {
@@ -26,6 +26,8 @@ const testProps = {
 
 const mockUseConfig = vi.mocked(useConfig<ConfigObject>);
 const mockUseVitalsAndBiometrics = vi.mocked(useVitalsAndBiometrics);
+const mockUserHasAccess = vi.mocked(userHasAccess);
+mockUserHasAccess.mockReturnValue(true);
 
 vi.mock('../common', async () => {
   const originalModule = await vi.importActual('../common');

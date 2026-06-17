@@ -28,8 +28,8 @@ import {
   useConfig,
   usePagination,
   usePaginationInfo,
-  useSession,
   userHasAccess,
+  useSession,
 } from '@openmrs/esm-framework';
 import React, { useState } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -180,7 +180,7 @@ const BillHistory: React.FC<BillHistoryProps> = ({ patientUuid }) => {
                   </TableRow>
                 </TableHead>
                 <TableBody>
-                  {rows.map((row, i) => {
+                  {rows.map((row) => {
                     const currentBill = bills?.find((bill) => bill.uuid === row.id);
 
                     return (
@@ -199,7 +199,7 @@ const BillHistory: React.FC<BillHistoryProps> = ({ patientUuid }) => {
                         })()}
                         {row.isExpanded ? (
                           <TableExpandedRow colSpan={headers.length + 1}>
-                            <div className={styles.container} key={i}>
+                            <div className={styles.container} key={row.id}>
                               <InvoiceTable bill={currentBill} onMutate={mutate} isLoadingBill={isValidating} />
                             </div>
                           </TableExpandedRow>

@@ -32,10 +32,19 @@ const DeleteLineItem: React.FC<DeleteLineItemParams> = ({ closeModal, item, onMu
       });
 
       closeModal();
-    } catch (err: any) {
+    } catch (error: unknown) {
+      const typedError = error as {
+        responseBody?: {
+          error?: {
+            message?: string;
+          };
+        };
+        message?: string;
+      };
+
       const message =
-        err?.responseBody?.error?.message ||
-        err?.message ||
+        typedError?.responseBody?.error?.message ||
+        typedError?.message ||
         t('deleteFailedTryAgain', 'Unable to delete line item. Please try again.');
 
       showSnackbar({

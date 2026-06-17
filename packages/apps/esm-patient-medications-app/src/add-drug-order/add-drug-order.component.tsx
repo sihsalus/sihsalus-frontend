@@ -30,7 +30,7 @@ import DrugSearch from './drug-search/drug-search.component';
 import { useConceptSets } from './drug-search/drug-search.resource';
 import { ordersEqual } from './drug-search/helpers';
 
-export interface AddDrugOrderWorkspaceAdditionalProps {}
+export type AddDrugOrderWorkspaceAdditionalProps = {};
 
 export interface AddDrugOrderProps {
   /**

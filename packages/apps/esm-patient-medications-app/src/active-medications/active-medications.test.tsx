@@ -1,4 +1,4 @@
-import { launchWorkspace2, openmrsFetch, useSession } from '@openmrs/esm-framework';
+import { launchWorkspace2, openmrsFetch, userHasAccess, useSession } from '@openmrs/esm-framework';
 import { ErrorState } from '@openmrs/esm-patient-common-lib';
 import { screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
@@ -14,26 +14,12 @@ import ActiveMedications from './active-medications.component';
 const mockUseSession = vi.mocked(useSession);
 const mockOpenmrsFetch = openmrsFetch as vi.Mock;
 const mockLaunchWorkspace2 = launchWorkspace2 as vi.Mock;
+const mockUserHasAccess = vi.mocked(userHasAccess);
 const mockUseLaunchWorkspaceRequiringVisit = vi.fn().mockImplementation((_, name) => {
   return () => mockLaunchWorkspace2(name);
 });
-const mockSessionWithMedicationEditPrivilege = {
-  ...mockSessionDataResponse.data,
-  user: {
-    ...mockSessionDataResponse.data.user,
-    privileges: [
-      ...mockSessionDataResponse.data.user.privileges,
-      {
-        uuid: 'medications-edit-privilege',
-        display: 'app:clinical.chart.medications.edit',
-        name: 'app:clinical.chart.medications.edit',
-        links: [],
-      },
-    ],
-  },
-};
-
-mockUseSession.mockReturnValue(mockSessionWithMedicationEditPrivilege);
+mockUseSession.mockReturnValue(mockSessionDataResponse.data);
+mockUserHasAccess.mockReturnValue(true);
 
 vi.mock('@openmrs/esm-patient-common-lib', async () => {
   const originalModule = await vi.importActual('@openmrs/esm-patient-common-lib');

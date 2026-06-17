@@ -5,6 +5,8 @@ import { useBills } from '../billing.resource';
 import { type BillingConfig, configSchema } from '../config-schema';
 import BillHistory from './bill-history.component';
 
+type UseBillsResult = ReturnType<typeof useBills>;
+
 const mockUseConfig = vi.mocked(useConfig<BillingConfig>);
 const mockUseBills = vi.mocked<typeof useBills>(useBills);
 
@@ -19,7 +21,7 @@ vi.mock('../billing.resource', () => ({
 
 window.i18next = {
   language: 'en-US',
-} as any;
+} as unknown as typeof window.i18next;
 
 const testProps = {
   patientUuid: 'some-uuid',
@@ -78,7 +80,7 @@ describe('BillHistory', () => {
       isLoading: false,
       isValidating: false,
       error: null,
-      bills: mockBillData as any,
+      bills: mockBillData as unknown as UseBillsResult['bills'],
       mutate: vi.fn(),
     });
     render(<BillHistory {...testProps} />);

@@ -6,8 +6,9 @@ export const useBillableItems = () => {
   const url = `${apiBasePath}billableService?v=custom:(uuid,name,shortName,serviceStatus,serviceType:(display),servicePrices:(uuid,name,price,paymentMode:(uuid,name)))`;
   const { data, isLoading, error } = useSWR<{ data: { results: Array<OpenmrsResource> } }>(url, openmrsFetch);
   const allItems = data?.data?.results ?? [];
+  const isEnabledItem = (item: OpenmrsResource) => (item as { serviceStatus?: string }).serviceStatus === 'ENABLED';
   return {
-    lineItems: allItems.filter((item: any) => item.serviceStatus === 'ENABLED'),
+    lineItems: allItems.filter(isEnabledItem),
     isLoading,
     error,
   };

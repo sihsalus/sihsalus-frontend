@@ -89,9 +89,9 @@ const PatientBills: React.FC<PatientBillsProps> = ({ patientUuid, bills, setPati
               <TableHead>
                 <TableRow>
                   <TableExpandHeader enableToggle {...getExpandHeaderProps()} />
-                  {headers.map((header, i) => (
+                  {headers.map((header) => (
                     <TableHeader
-                      key={i}
+                      key={header.key}
                       {...getHeaderProps({
                         header,
                       })}

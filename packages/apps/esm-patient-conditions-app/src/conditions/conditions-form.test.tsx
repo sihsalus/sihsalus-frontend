@@ -163,7 +163,11 @@ describe('Conditions form', () => {
     await user.paste('2020-05-05');
     expect(onsetDateInput).toHaveDisplayValue(/05\/05\/2020/i);
     expect(submitButton).toBeEnabled();
-    fireEvent.submit(submitButton.closest('form')!);
+    const form = submitButton.closest('form');
+    if (!form) {
+      throw new Error('Expected save & close button to be inside a form');
+    }
+    fireEvent.submit(form);
 
     await waitFor(() => {
       expect(mockShowSnackbar).toHaveBeenCalled();
@@ -276,7 +280,10 @@ describe('Conditions form', () => {
     const conditionSearchInput = screen.getByRole('searchbox', { name: /enter antecedent/i });
     const antecedentTypeInput = screen.getByRole('radio', { name: /patol|patholog/i });
     const submitButton = screen.getByRole('button', { name: /save & close/i });
-    const form = submitButton.closest('form')!;
+    const form = submitButton.closest('form');
+    if (!form) {
+      throw new Error('Expected save & close button to be inside a form');
+    }
     fireEvent.submit(form);
 
     await waitFor(() => expect(screen.getByText(/an antecedent is required/i)).toBeInTheDocument());

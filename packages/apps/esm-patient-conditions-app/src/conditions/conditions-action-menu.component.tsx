@@ -1,5 +1,5 @@
 import { Layer, OverflowMenu, OverflowMenuItem } from '@carbon/react';
-import { showModal, useLayoutType, useSession, userHasAccess } from '@openmrs/esm-framework';
+import { showModal, useLayoutType, userHasAccess, useSession } from '@openmrs/esm-framework';
 import { launchPatientWorkspace } from '@openmrs/esm-patient-common-lib';
 import { useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -17,10 +17,6 @@ export const ConditionsActionMenu = ({ condition, patientUuid }: conditionsActio
   const session = useSession();
   const canEdit = userHasAccess('app:clinical.chart.conditions.edit', session?.user);
 
-  if (!canEdit) {
-    return null;
-  }
-
   const launchEditConditionsForm = useCallback(
     () =>
       launchPatientWorkspace('conditions-form-workspace', {
@@ -30,6 +26,10 @@ export const ConditionsActionMenu = ({ condition, patientUuid }: conditionsActio
       }),
     [condition, t],
   );
+
+  if (!canEdit) {
+    return null;
+  }
 
   const launchDeleteConditionDialog = (conditionId: string) => {
     const dispose = showModal('condition-delete-confirmation-dialog', {

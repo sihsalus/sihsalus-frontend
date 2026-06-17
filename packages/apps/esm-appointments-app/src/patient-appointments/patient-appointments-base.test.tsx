@@ -19,8 +19,25 @@ const testProps = {
 };
 
 const mockOpenmrsFetch = vi.mocked(openmrsFetch);
+const mockUseSession = vi.hoisted(() => vi.fn());
+
+vi.mock('@openmrs/esm-framework', async () => {
+  const actual = await vi.importActual<typeof import('@openmrs/esm-framework')>('@openmrs/esm-framework');
+
+  return {
+    ...actual,
+    useSession: mockUseSession,
+    userHasAccess: () => true,
+  };
+});
 
 describe('AppointmentsOverview', () => {
+  beforeEach(() => {
+    mockUseSession.mockReturnValue({
+      user: { uuid: 'mock-user-uuid', display: 'Mock User' },
+    });
+  });
+
   it('renders an empty state if appointments data is unavailable', async () => {
     mockOpenmrsFetch.mockResolvedValueOnce({
       data: [],

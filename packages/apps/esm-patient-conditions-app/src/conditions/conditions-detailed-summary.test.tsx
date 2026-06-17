@@ -1,3 +1,4 @@
+import { useLayoutType, userHasAccess, useSession } from '@openmrs/esm-framework';
 import { launchPatientWorkspace } from '@openmrs/esm-patient-common-lib';
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
@@ -21,9 +22,31 @@ vi.mock('@openmrs/esm-patient-common-lib', async () => ({
 
 const mockLaunchPatientWorkspace = vi.mocked(launchPatientWorkspace);
 const mockUseConditions = vi.mocked(useConditions);
+const mockUseLayoutType = vi.mocked(useLayoutType);
+const mockUserHasAccess = vi.mocked(userHasAccess);
+const mockUseSession = vi.mocked(useSession);
 const fhirMockPatient = mockPatient as unknown as fhir.Patient;
 
+vi.mock('@openmrs/esm-framework', async () => {
+  const actual = await vi.importActual<typeof import('@openmrs/esm-framework')>('@openmrs/esm-framework');
+
+  return {
+    ...actual,
+    useLayoutType: vi.fn(),
+    useSession: vi.fn(),
+    userHasAccess: vi.fn(),
+  };
+});
+
 beforeEach(() => {
+  mockUseLayoutType.mockReturnValue('small-desktop');
+  mockUseSession.mockReturnValue({
+    user: {
+      uuid: 'mock-user-uuid',
+      display: 'Mock User',
+    },
+  } as never);
+  mockUserHasAccess.mockReturnValue(true);
   vi.clearAllMocks();
 });
 

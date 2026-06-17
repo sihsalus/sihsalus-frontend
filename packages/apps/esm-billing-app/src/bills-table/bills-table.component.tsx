@@ -104,9 +104,12 @@ const BillsTable: React.FC = () => {
   ];
 
   const billList: Array<BillDisplayItem> = useMemo(() => {
-    const billingUrl = '${openmrsSpaBase}/home/billing/patient/${patientUuid}/${uuid}';
+    const openmrsSpaBase = globalThis.getOpenmrsSpaBase ? globalThis.getOpenmrsSpaBase() : '/openmrs/spa/';
+    const normalizedSpaBase = openmrsSpaBase.endsWith('/') ? openmrsSpaBase.slice(0, -1) : openmrsSpaBase;
 
     const mappedBills = bills?.map((bill) => {
+      const billingUrl = `${normalizedSpaBase}/home/billing/patient/${bill.patientUuid}/${bill.uuid}`;
+
       const object = {
         ...bill,
         id: String(bill.id),

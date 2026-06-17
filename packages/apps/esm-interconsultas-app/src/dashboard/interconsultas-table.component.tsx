@@ -20,7 +20,15 @@ import {
   Tag,
   Tile,
 } from '@carbon/react';
-import { ConfigurableLink, formatDate, parseDate, showModal, usePagination, useSession, userHasAccess } from '@openmrs/esm-framework';
+import {
+  ConfigurableLink,
+  formatDate,
+  parseDate,
+  showModal,
+  usePagination,
+  userHasAccess,
+  useSession,
+} from '@openmrs/esm-framework';
 import React, { useCallback, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { deriveStatus, useInterconsultas } from '../interconsultas.resource';
@@ -138,12 +146,13 @@ const InterconsultasTable: React.FC<InterconsultasTableProps> = ({ filter }) => 
               onClick={() => openModal('receive-interconsulta-modal', order)}
             />
           )}
-          {canEdit && (status === 'REQUESTED' || status === 'RECEIVED' || status === 'ON_HOLD' || status === 'EXCEPTION') && (
-            <OverflowMenuItem
-              itemText={t('pickupInterconsulta', 'Atender (recoger)')}
-              onClick={() => openModal('pickup-interconsulta-modal', order)}
-            />
-          )}
+          {canEdit &&
+            (status === 'REQUESTED' || status === 'RECEIVED' || status === 'ON_HOLD' || status === 'EXCEPTION') && (
+              <OverflowMenuItem
+                itemText={t('pickupInterconsulta', 'Atender (recoger)')}
+                onClick={() => openModal('pickup-interconsulta-modal', order)}
+              />
+            )}
           {canEdit && status === 'IN_PROGRESS' && (
             <OverflowMenuItem
               itemText={t('respondInterconsulta', 'Responder')}
@@ -161,7 +170,7 @@ const InterconsultasTable: React.FC<InterconsultasTableProps> = ({ filter }) => 
         </OverflowMenu>
       );
     },
-    [openModal, t],
+    [openModal, t, canEdit],
   );
 
   const tableRows = useMemo(

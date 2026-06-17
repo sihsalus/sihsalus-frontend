@@ -6,7 +6,11 @@ import { BrowserRouter, useLocation } from 'react-router-dom';
 
 export interface BillableServicesMenuConfig {
   title: string;
-  icon?: React.ComponentType<any>;
+  icon?: React.ComponentType<{
+    className?: string;
+    size?: string | number;
+    'aria-hidden'?: string | boolean;
+  }>;
   privilege?: string;
   items: Array<{
     name: string;

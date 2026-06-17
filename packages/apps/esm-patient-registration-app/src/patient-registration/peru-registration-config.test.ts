@@ -4,6 +4,7 @@ import { esmPatientRegistrationSchema, type RegistrationConfig } from '../config
 import {
   getEffectiveRegistrationConfig,
   peruDniPatientIdentifierTypeUuid,
+  peruEmailAttributeTypeUuid,
   peruForeignPatientIdentifierTypeUuids,
   peruPhoneAttributeTypeUuid,
 } from './peru-registration-config';
@@ -23,7 +24,7 @@ describe('getEffectiveRegistrationConfig', () => {
     expect(demographics?.fields).toEqual(['name', 'dob', 'gender', 'nationality']);
     expect(contact).toMatchObject({
       id: 'contact',
-      fields: ['address', 'birthAddress', 'phone', 'mobilePhone'],
+      fields: ['address', 'birthAddress', 'phone', 'mobilePhone', 'email'],
     });
     expect(filiation?.fields).not.toContain('birthplace');
     expect(filiation?.fields).not.toContain('bloodGroup');
@@ -130,7 +131,15 @@ describe('getEffectiveRegistrationConfig', () => {
     expect(config.fieldConfigurations.phone.personAttributeUuid).toBe(peruPhoneAttributeTypeUuid);
     expect(config.fieldConfigurations.phone.validation?.matches).toBe('^\\+?[0-9][0-9\\s().-]{5,19}$');
     expect(config.sectionDefinitions.find((section) => section.id === 'contact')?.fields).toContain('birthAddress');
+    expect(config.sectionDefinitions.find((section) => section.id === 'contact')?.fields).toContain('email');
     expect(config.sectionDefinitions.find((section) => section.id === 'contact')?.fields).not.toContain('birthplace');
+    expect(fieldsById.email).toMatchObject({
+      id: 'email',
+      type: 'person attribute',
+      uuid: peruEmailAttributeTypeUuid,
+      label: 'Correo Electrónico',
+      validation: { required: false, matches: '^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$' },
+    });
     expect(fieldsById.birthplace).toBeUndefined();
     expect(fieldsById.gender?.defaultValue).toBeUndefined();
     expect(fieldsById.bloodGroup.defaultValue).toBeUndefined();
@@ -172,6 +181,7 @@ describe('getEffectiveRegistrationConfig', () => {
       'birthAddress',
       'phone',
       'mobilePhone',
+      'email',
     ]);
   });
 });

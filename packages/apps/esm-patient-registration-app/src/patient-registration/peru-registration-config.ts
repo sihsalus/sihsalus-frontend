@@ -10,6 +10,7 @@ export const peruInsuranceAccreditationActiveConceptUuid = '9b3df0a1-0c58-4f55-9
 export const peruInsuranceAccreditationInactiveConceptUuid = '9b3df0a1-0c58-4f55-9868-9c38f1db2052';
 export const peruPhoneAttributeTypeUuid = '14d4f066-15f5-102d-96e4-000c29c2a5d7';
 export const peruMobilePhoneAttributeTypeUuid = 'fee4e8ef-aef8-4bb9-8ed0-7ded6055c61f';
+export const peruEmailAttributeTypeUuid = '4bdf3a33-2f63-11f0-8ab4-1a7535b1b3e8';
 
 const peruDefaultPatientIdentifierTypeUuids = [
   peruDniPatientIdentifierTypeUuid, // DNI
@@ -25,8 +26,9 @@ const peruPreRegistrationSections = ['identityLookup'];
 const peruSections = ['filiation', 'bloodData', 'insurance', 'responsiblePerson', 'medicalRecord'];
 const peruIdentityLookupFieldOrder = ['id', 'reniecLookup', 'sisLookup'];
 const peruDemographicsFieldOrder = ['name', 'dob', 'gender', 'nationality'];
-const peruContactFieldOrder = ['address', 'birthAddress', 'phone', 'mobilePhone'];
+const peruContactFieldOrder = ['address', 'birthAddress', 'phone', 'mobilePhone', 'email'];
 const peruPhoneValidationRegex = '^\\+?[0-9][0-9\\s().-]{5,19}$';
+const peruEmailValidationRegex = '^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$';
 const minorResponsibleRelationshipTypes = [
   '8d91a210-c2cc-11de-8d13-0010c6dffdff/aIsToB',
   '8d91a210-c2cc-11de-8d13-0010c6dffd0f/aIsToB',
@@ -42,7 +44,7 @@ const peruSectionDefinitions: Array<SectionDefinition> = [
   {
     id: 'contact',
     name: 'Residencia, nacimiento y contacto',
-    fields: ['address', 'birthAddress', 'phone', 'mobilePhone'],
+    fields: ['address', 'birthAddress', 'phone', 'mobilePhone', 'email'],
   },
   {
     id: 'filiation',
@@ -79,6 +81,14 @@ const peruFieldDefinitions: Array<FieldDefinition> = [
     label: 'Número de Celular',
     showHeading: false,
     validation: { required: false, matches: peruPhoneValidationRegex },
+  },
+  {
+    id: 'email',
+    type: 'person attribute',
+    uuid: peruEmailAttributeTypeUuid,
+    label: 'Correo Electrónico',
+    showHeading: false,
+    validation: { required: false, matches: peruEmailValidationRegex },
   },
   {
     id: 'nationality',

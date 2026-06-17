@@ -7,6 +7,7 @@ import { type FormValues } from './patient-registration.types';
 import { birthAddressMarker, birthAddressMarkerField } from './patient-registration-utils';
 import {
   getEffectiveRegistrationConfig,
+  peruEmailAttributeTypeUuid,
   peruInsuranceCodeAttributeTypeUuid,
   peruPhoneAttributeTypeUuid,
 } from './peru-registration-config';
@@ -119,6 +120,7 @@ describe('FormManager', () => {
         gender: 'male',
         birthdate: new Date(1990, 4, 14),
         attributes: {
+          [peruEmailAttributeTypeUuid]: 'juan.perez@example.org',
           [peruPhoneAttributeTypeUuid]: '999888777',
           [peruInsuranceCodeAttributeTypeUuid]: 'SIS-12345678',
         },
@@ -152,6 +154,7 @@ describe('FormManager', () => {
       ]);
       expect(patient.person.attributes).toEqual(
         expect.arrayContaining([
+          { attributeType: peruEmailAttributeTypeUuid, value: 'juan.perez@example.org' },
           { attributeType: peruPhoneAttributeTypeUuid, value: '999888777' },
           { attributeType: peruInsuranceCodeAttributeTypeUuid, value: 'SIS-12345678' },
         ]),

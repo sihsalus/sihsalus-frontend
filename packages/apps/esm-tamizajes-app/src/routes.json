@@ -30,6 +30,7 @@
       "name": "tamizajes-dashboard-link",
       "component": "tamizajesDashboardLink",
       "slot": "patient-chart-dashboard-slot",
+      "privileges": "app:clinical.chart.screenings",
       "order": 11,
       "meta": {
         "slot": "patient-chart-tamizajes-dashboard-slot",
@@ -45,6 +46,7 @@
       "name": "tamizajes-dashboard",
       "component": "tamizajesDashboard",
       "slot": "patient-chart-tamizajes-dashboard-slot",
+      "privileges": "app:clinical.chart.screenings",
       "order": 0,
       "online": true,
       "offline": false

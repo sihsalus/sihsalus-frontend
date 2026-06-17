@@ -8,7 +8,8 @@
     {
       "name": "growth-chart-overview-widget",
       "component": "growthChart",
-      "slot": "patient-chart-summary-dashboard-slot"
+      "slot": "patient-chart-summary-dashboard-slot",
+      "privileges": "app:cred.neonatal"
     },
     {
       "name": "child-immunization-schedule",
@@ -26,54 +27,63 @@
     {
       "name": "child-immunization-schedule-dashboard",
       "slot": "patient-chart-child-immunization-schedule-dashboard-slot",
-      "component": "childImmunizationSchedule"
+      "component": "childImmunizationSchedule",
+      "privileges": "app:cred.immunization"
     },
     {
       "name": "cred-checkouts",
       "component": "credCheckouts",
       "slot": "cred-schedule-slot",
-      "order": 2
+      "order": 2,
+      "privileges": "app:cred.wellChild"
     },
     {
       "name": "cred-controls-timeline",
       "component": "credControls",
       "slot": "cred-schedule-slot",
-      "order": 1
+      "order": 1,
+      "privileges": "app:cred.wellChild"
     },
     {
       "name": "cred-matrix",
       "component": "credControlsMatrix",
       "slot": "cred-following-slot",
-      "order": 3
+      "order": 3,
+      "privileges": "app:cred.wellChild"
     },
     {
       "name": "anemia-screening-widget",
       "component": "anemiaScreening",
       "slot": "cred-following-slot",
-      "order": 4
+      "order": 4,
+      "privileges": "app:cred.nutrition"
     },
     {
       "name": "supplementation-tracker-widget",
       "component": "supplementationTracker",
       "slot": "cred-following-slot",
-      "order": 5
+      "order": 5,
+      "privileges": "app:cred.nutrition"
     },
     {
       "name": "screening-indicators-widget",
       "component": "screeningIndicators",
       "slot": "cred-following-slot",
-      "order": 6
+      "order": 6,
+      "privileges": "app:cred.nutrition"
     },
     {
       "name": "neonatal-attention-chart",
       "component": "neonatalAttentionChart",
       "slot": "neonatal-attention-slot",
-      "order": 1
+      "order": 1,
+      "privileges": "app:cred.neonatal"
     },
     {
       "name": "neonatal-care-dashboard",
       "slot": "patient-chart-neonatal-care-dashboard-slot",
-      "component": "neonatalCare"
+      "component": "neonatalCare",
+      "privileges": "app:cred.neonatal"
     },
     {
       "name": "neonatal-care-dashboard-link",
@@ -92,67 +102,78 @@
       "name": "neonatal-counseling-chart",
       "component": "neonatalCounselingChart",
       "slot": "neonatal-counseling-slot",
-      "order": 1
+      "order": 1,
+      "privileges": "app:cred.neonatal"
     },
     {
       "name": "neonatal-alojamiento-conjunto-chart",
       "component": "alojamientoConjunto",
       "slot": "neonatal-alojamiento-conjunto-slot",
-      "order": 1
+      "order": 1,
+      "privileges": "app:cred.neonatal"
     },
     {
       "name": "neonatal-evaluation-chart",
       "component": "neonatalEvaluationChart",
       "slot": "neonatal-evaluation-slot",
-      "order": 1
+      "order": 1,
+      "privileges": "app:cred.neonatal"
     },
     {
       "name": "prenatal-antecedents-history",
       "component": "childMedicalHistory",
       "slot": "neonatal-perinatal-slot",
-      "order": 1
+      "order": 1,
+      "privileges": "app:cred.antecedentes"
     },
     {
       "name": "prenatal-history-widget",
       "component": "prenatalHistory",
       "slot": "neonatal-perinatal-slot",
-      "order": 2
+      "order": 2,
+      "privileges": "app:cred.neonatal"
     },
     {
       "name": "labour-history-chart",
       "component": "neonatalRegisterChart",
       "slot": "neonatal-perinatal-slot",
-      "order": 3
+      "order": 3,
+      "privileges": "app:cred.neonatal"
     },
     {
       "name": "detalles-nacimiento-chart",
       "component": "neonatalRegisterBirth",
       "slot": "neonatal-perinatal-slot",
-      "order": 4
+      "order": 4,
+      "privileges": "app:cred.neonatal"
     },
     {
       "name": "pregnancy-details-chart",
       "component": "pregnancyDetails",
       "slot": "neonatal-perinatal-slot",
-      "order": 5
+      "order": 5,
+      "privileges": "app:cred.neonatal"
     },
     {
       "name": "grow-chart",
       "component": "growthChart",
       "slot": "neonatal-vitals-slot",
-      "order": 4
+      "order": 4,
+      "privileges": "app:cred.neonatal"
     },
     {
       "name": "newborn-balance-overview-chart",
       "component": "newbornBalanceOverviewChart",
       "slot": "neonatal-vitals-slot",
-      "order": 2
+      "order": 2,
+      "privileges": "app:cred.neonatal"
     },
     {
       "name": "newborn-biometrics-base-chart",
       "component": "newbornBiometricsBaseChart",
       "slot": "neonatal-vitals-slot",
-      "order": 3
+      "order": 3,
+      "privileges": "app:cred.neonatal"
     },
     {
       "name": "vaccination-appointment",
@@ -182,7 +203,8 @@
     {
       "name": "well-child-care-dashboard",
       "slot": "patient-chart-well-child-care-dashboard-slot",
-      "component": "wellChildCare"
+      "component": "wellChildCare",
+      "privileges": "app:cred.wellChild"
     },
     {
       "name": "well-child-care-dashboard-group-link",
@@ -197,7 +219,8 @@
     {
       "name": "early-stimulation-dashboard",
       "slot": "patient-chart-early-stimulation-dashboard-slot",
-      "component": "earlyStimulation"
+      "component": "earlyStimulation",
+      "privileges": "app:cred.earlyStim"
     },
     {
       "name": "early-stimulation-dashboard-link",
@@ -215,7 +238,8 @@
     {
       "name": "child-nutrition-dashboard",
       "slot": "patient-chart-child-nutrition-dashboard-slot",
-      "component": "childNutrition"
+      "component": "childNutrition",
+      "privileges": "app:cred.nutrition"
     },
     {
       "name": "child-nutrition-dashboard-link",
@@ -234,37 +258,43 @@
       "name": "nutritional-assessment-widget",
       "component": "nutritionalAssessment",
       "slot": "child-nutrition-assessment-slot",
-      "order": 1
+      "order": 1,
+      "privileges": "app:cred.nutrition"
     },
     {
       "name": "feeding-counseling-widget",
       "component": "feedingCounseling",
       "slot": "child-nutrition-counseling-slot",
-      "order": 1
+      "order": 1,
+      "privileges": "app:cred.nutrition"
     },
     {
       "name": "nutrition-followup-widget",
       "component": "nutritionFollowup",
       "slot": "child-nutrition-followup-slot",
-      "order": 1
+      "order": 1,
+      "privileges": "app:cred.nutrition"
     },
     {
       "name": "stimulation-sessions-widget",
       "component": "stimulationSessions",
       "slot": "early-stimulation-sessions-slot",
-      "order": 1
+      "order": 1,
+      "privileges": "app:cred.earlyStim"
     },
     {
       "name": "stimulation-followup-widget",
       "component": "stimulationFollowup",
       "slot": "early-stimulation-followup-slot",
-      "order": 1
+      "order": 1,
+      "privileges": "app:cred.earlyStim"
     },
     {
       "name": "stimulation-counseling-widget",
       "component": "stimulationCounseling",
       "slot": "early-stimulation-counseling-slot",
-      "order": 1
+      "order": 1,
+      "privileges": "app:cred.earlyStim"
     },
     {
       "name": "cred-form-action-button",
@@ -283,12 +313,14 @@
       "name": "development-overview-widget",
       "component": "developmentOverview",
       "slot": "cred-development-slot",
-      "order": 1
+      "order": 1,
+      "privileges": "app:cred.earlyStim"
     },
     {
       "name": "well-child-care-dashboard-route",
       "component": "hiddenDashboardMarker",
       "slot": "patient-chart-dashboard-slot",
+      "privileges": "app:cred.wellChild",
       "meta": {
         "slot": "patient-chart-well-child-care-dashboard-slot",
         "path": "well-child-care-dashboard",
@@ -302,6 +334,7 @@
       "name": "neonatal-care-dashboard-route",
       "component": "hiddenDashboardMarker",
       "slot": "patient-chart-dashboard-slot",
+      "privileges": "app:cred.neonatal",
       "meta": {
         "slot": "patient-chart-neonatal-care-dashboard-slot",
         "path": "neonatal-care-dashboard",
@@ -315,6 +348,7 @@
       "name": "child-immunization-schedule-dashboard-route",
       "component": "hiddenDashboardMarker",
       "slot": "patient-chart-dashboard-slot",
+      "privileges": "app:cred.immunization",
       "meta": {
         "slot": "patient-chart-child-immunization-schedule-dashboard-slot",
         "path": "child-immunization-schedule-dashboard",
@@ -328,6 +362,7 @@
       "name": "early-stimulation-dashboard-route",
       "component": "hiddenDashboardMarker",
       "slot": "patient-chart-dashboard-slot",
+      "privileges": "app:cred.earlyStim",
       "meta": {
         "slot": "patient-chart-early-stimulation-dashboard-slot",
         "path": "early-stimulation-dashboard",
@@ -341,6 +376,7 @@
       "name": "child-nutrition-dashboard-route",
       "component": "hiddenDashboardMarker",
       "slot": "patient-chart-dashboard-slot",
+      "privileges": "app:cred.nutrition",
       "meta": {
         "slot": "patient-chart-child-nutrition-dashboard-slot",
         "path": "child-nutrition-dashboard",
@@ -354,7 +390,8 @@
   "modals": [
     {
       "name": "condition-delete-confirmation-dialog",
-      "component": "conditionFilterDeleteConfirmationDialog"
+      "component": "conditionFilterDeleteConfirmationDialog",
+      "privileges": "app:cred.antecedentes.edit"
     }
   ],
   "workspaces": [
@@ -362,91 +399,107 @@
       "name": "adverse-reaction-form-workspace",
       "component": "adverseReactionFormWorkspace",
       "title": "Reacción Adversa",
-      "type": "form"
+      "type": "form",
+      "privileges": "app:cred.immunization.edit"
     },
     {
       "name": "antecedentes-patologicos-form-workspace",
       "component": "antecedentesPatologicosFormWorkspace",
       "title": "Antecedentes Patológicos",
-      "type": "form"
+      "type": "form",
+      "privileges": "app:cred.antecedentes.edit"
     },
     {
       "name": "conditions-filter-form-workspace",
       "component": "conditionsFilterWorkspace",
       "title": "Agregar Condición",
-      "type": "form"
+      "type": "form",
+      "privileges": "app:cred.antecedentes.edit"
     },
     {
       "name": "maternal-conditions-form-workspace",
       "component": "conditionsFilterWorkspace",
       "title": "Agregar Condición",
-      "type": "form"
+      "type": "form",
+      "privileges": "app:cred.antecedentes.edit"
     },
     {
       "name": "forms-selector-workspace",
       "component": "formsSelectorWorkspace",
       "title": "Selección de Formularios",
-      "type": "form"
+      "type": "form",
+      "privileges": "app:cred.cursoVida.edit"
     },
     {
       "name": "perinatal-register-form",
       "component": "perinatalRegisterworkspace",
       "title": "Registro Perinatal",
-      "type": "form"
+      "type": "form",
+      "privileges": "app:cred.neonatal.edit"
     },
     {
       "name": "wellchild-control-form",
       "component": "wellchildControlsworkspace",
       "title": "Control de Niño Sano",
-      "type": "form"
+      "type": "form",
+      "privileges": "app:cred.cursoVida.edit"
     },
     {
       "name": "test-peruano-form",
       "component": "testPeruanoFormWorkspace",
       "title": "Test Peruano de Desarrollo",
-      "type": "form"
+      "type": "form",
+      "privileges": "app:cred.earlyStim.edit"
     }
   ],
   "workspaces2": [
     {
       "name": "adverse-reaction-form-workspace",
       "component": "adverseReactionFormWorkspace",
-      "window": "patient-chart-well-child-care-forms"
+      "window": "patient-chart-well-child-care-forms",
+      "privileges": "app:cred.immunization.edit"
     },
     {
       "name": "antecedentes-patologicos-form-workspace",
       "component": "antecedentesPatologicosFormWorkspace",
-      "window": "patient-chart-well-child-care-forms"
+      "window": "patient-chart-well-child-care-forms",
+      "privileges": "app:cred.antecedentes.edit"
     },
     {
       "name": "conditions-filter-form-workspace",
       "component": "conditionsFilterWorkspace",
-      "window": "patient-chart-well-child-care-forms"
+      "window": "patient-chart-well-child-care-forms",
+      "privileges": "app:cred.antecedentes.edit"
     },
     {
       "name": "maternal-conditions-form-workspace",
       "component": "conditionsFilterWorkspace",
-      "window": "patient-chart-well-child-care-forms"
+      "window": "patient-chart-well-child-care-forms",
+      "privileges": "app:cred.antecedentes.edit"
     },
     {
       "name": "forms-selector-workspace",
       "component": "formsSelectorWorkspace",
-      "window": "patient-chart-well-child-care-forms"
+      "window": "patient-chart-well-child-care-forms",
+      "privileges": "app:cred.cursoVida.edit"
     },
     {
       "name": "perinatal-register-form",
       "component": "perinatalRegisterworkspace",
-      "window": "patient-chart-well-child-care-forms"
+      "window": "patient-chart-well-child-care-forms",
+      "privileges": "app:cred.neonatal.edit"
     },
     {
       "name": "wellchild-control-form",
       "component": "wellchildControlsworkspace",
-      "window": "patient-chart-well-child-care-forms"
+      "window": "patient-chart-well-child-care-forms",
+      "privileges": "app:cred.cursoVida.edit"
     },
     {
       "name": "test-peruano-form",
       "component": "testPeruanoFormWorkspace",
-      "window": "patient-chart-well-child-care-forms"
+      "window": "patient-chart-well-child-care-forms",
+      "privileges": "app:cred.earlyStim.edit"
     }
   ],
   "workspaceWindows2": [

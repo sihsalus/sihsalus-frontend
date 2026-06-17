@@ -23,6 +23,7 @@
       "component": "addPatientLink",
       "name": "add-patient-action",
       "slot": "top-nav-actions-slot",
+      "privileges": "app:adt",
       "online": true,
       "offline": true
     },
@@ -37,6 +38,7 @@
       "component": "editPatientDetailsButton",
       "name": "edit-patient-details-button",
       "slot": "patient-actions-slot",
+      "privileges": "app:adt",
       "online": true,
       "offline": true
     },
@@ -44,6 +46,7 @@
       "component": "editPatientDetailsButton",
       "name": "edit-patient-details-button",
       "slot": "patient-search-actions-slot",
+      "privileges": "app:adt",
       "online": true,
       "offline": true
     }

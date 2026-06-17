@@ -1,5 +1,5 @@
 import { Layer, OverflowMenu, OverflowMenuItem } from '@carbon/react';
-import { showModal, useLayoutType } from '@openmrs/esm-framework';
+import { showModal, useLayoutType, useSession, userHasAccess } from '@openmrs/esm-framework';
 import { launchPatientWorkspace } from '@openmrs/esm-patient-common-lib';
 import { useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -14,6 +14,12 @@ interface conditionsActionMenuProps {
 export const ConditionsActionMenu = ({ condition, patientUuid }: conditionsActionMenuProps) => {
   const { t } = useTranslation();
   const isTablet = useLayoutType() === 'tablet';
+  const session = useSession();
+  const canEdit = userHasAccess('app:clinical.chart.conditions.edit', session?.user);
+
+  if (!canEdit) {
+    return null;
+  }
 
   const launchEditConditionsForm = useCallback(
     () =>

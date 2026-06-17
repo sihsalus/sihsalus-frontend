@@ -27,6 +27,8 @@ import {
   parseDate,
   useConfig,
   useLayoutType,
+  useSession,
+  userHasAccess,
 } from '@openmrs/esm-framework';
 import { PatientChartPagination } from '@openmrs/esm-patient-common-lib';
 import React, { useCallback, useMemo, useState } from 'react';
@@ -54,6 +56,8 @@ type ProcedureTableRow = {
 const ProceduresDetailedSummary = ({ patient }: ProceduresDetailedSummaryProps) => {
   const { t } = useTranslation();
   const { detailedViewPageSize } = useConfig<ConfigObject>();
+  const session = useSession();
+  const canEdit = userHasAccess('app:clinical.chart.procedures.edit', session?.user);
   const headerTitle = t('procedures', 'Procedures');
   const displayText = t('procedures_lower', 'procedures');
   const layout = useLayoutType();
@@ -116,14 +120,16 @@ const ProceduresDetailedSummary = ({ patient }: ProceduresDetailedSummaryProps) 
       <div className={styles.widgetCard}>
         <CardHeader title={headerTitle}>
           <span>{isValidating ? <InlineLoading /> : null}</span>
-          <Button
-            kind="ghost"
-            renderIcon={(props) => <Add size={16} {...props} />}
-            iconDescription={t('addProcedure', 'Add procedure')}
-            onClick={launchProceduresForm}
-          >
-            {t('add', 'Add')}
-          </Button>
+          {canEdit ? (
+            <Button
+              kind="ghost"
+              renderIcon={(props) => <Add size={16} {...props} />}
+              iconDescription={t('addProcedure', 'Add procedure')}
+              onClick={launchProceduresForm}
+            >
+              {t('add', 'Add')}
+            </Button>
+          ) : null}
         </CardHeader>
         <DataTable
           headers={headers}
@@ -206,7 +212,7 @@ const ProceduresDetailedSummary = ({ patient }: ProceduresDetailedSummaryProps) 
     );
   }
 
-  return <EmptyCard displayText={displayText} headerTitle={headerTitle} launchForm={launchProceduresForm} />;
+  return <EmptyCard displayText={displayText} headerTitle={headerTitle} launchForm={canEdit ? launchProceduresForm : undefined} />;
 };
 
 export default ProceduresDetailedSummary;

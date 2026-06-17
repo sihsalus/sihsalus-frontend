@@ -8,7 +8,7 @@ import {
   SkeletonText,
   Tooltip,
 } from '@carbon/react';
-import { launchWorkspace } from '@openmrs/esm-framework';
+import { launchWorkspace, useSession, userHasAccess } from '@openmrs/esm-framework';
 import { CardHeader } from '@openmrs/esm-patient-common-lib';
 import React, { useCallback, useEffect, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -73,6 +73,8 @@ interface RecordSelectorProps {
 
 const RecordSelector: React.FC<RecordSelectorProps> = ({ groups, selectedEncounterUuid, onSelect, onAdd }) => {
   const { t } = useTranslation();
+  const session = useSession();
+  const canEdit = userHasAccess('app:clinical.chart.dentistry.edit', session?.user);
 
   // Resolve which record is currently selected to build the tooltip text
   const selectedRecord = useMemo(() => {
@@ -148,15 +150,17 @@ const RecordSelector: React.FC<RecordSelectorProps> = ({ groups, selectedEncount
         </button>
       </Tooltip>
 
-      <IconButton
-        kind="ghost"
-        size="sm"
-        label={t('addAttention', 'New attention')}
-        onClick={onAdd}
-        data-testid="add-attention-btn"
-      >
-        <Add />
-      </IconButton>
+      {canEdit ? (
+        <IconButton
+          kind="ghost"
+          size="sm"
+          label={t('addAttention', 'New attention')}
+          onClick={onAdd}
+          data-testid="add-attention-btn"
+        >
+          <Add />
+        </IconButton>
+      ) : null}
     </div>
   );
 };

@@ -1,6 +1,6 @@
 import { Button, ContentSwitcher, DataTableSkeleton, IconSwitch, InlineLoading } from '@carbon/react';
 import { Add, Analytics, Table } from '@carbon/react/icons';
-import { formatDatetime, parseDate, useConfig, useLayoutType } from '@openmrs/esm-framework';
+import { formatDatetime, parseDate, useConfig, useLayoutType, useSession, userHasAccess } from '@openmrs/esm-framework';
 import { CardHeader, EmptyState, ErrorState, useVisitOrOfflineVisit } from '@openmrs/esm-patient-common-lib';
 import React, { useCallback, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -24,6 +24,8 @@ interface BiometricsBaseProps {
 
 const BiometricsBase: React.FC<BiometricsBaseProps> = ({ patientUuid, pageSize, urlLabel, pageUrl, patient }) => {
   const { t } = useTranslation();
+  const session = useSession();
+  const canEdit = userHasAccess('app:clinical.chart.vitals.edit', session?.user);
   const displayText = t('biometrics_lower', 'biometrics');
   const headerTitle = t('biometrics', 'Biometrics');
   const [chartView, setChartView] = useState(false);
@@ -129,14 +131,16 @@ const BiometricsBase: React.FC<BiometricsBaseProps> = ({ patientUuid, pageSize, 
             </ContentSwitcher>
             <>
               <span className={styles.divider}>|</span>
-              <Button
-                kind="ghost"
-                renderIcon={(props) => <Add size={16} {...props} />}
-                iconDescription="Add biometrics"
-                onClick={launchBiometricsForm}
-              >
-                {t('add', 'Add')}
-              </Button>
+              {canEdit ? (
+                <Button
+                  kind="ghost"
+                  renderIcon={(props) => <Add size={16} {...props} />}
+                  iconDescription="Add biometrics"
+                  onClick={launchBiometricsForm}
+                >
+                  {t('add', 'Add')}
+                </Button>
+              ) : null}
             </>
           </div>
         </CardHeader>
@@ -154,7 +158,7 @@ const BiometricsBase: React.FC<BiometricsBaseProps> = ({ patientUuid, pageSize, 
       </div>
     );
   }
-  return <EmptyState displayText={displayText} headerTitle={headerTitle} launchForm={launchBiometricsForm} />;
+  return <EmptyState displayText={displayText} headerTitle={headerTitle} launchForm={canEdit ? launchBiometricsForm : undefined} />;
 };
 
 export default BiometricsBase;

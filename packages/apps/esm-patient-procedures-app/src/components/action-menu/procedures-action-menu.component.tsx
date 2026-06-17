@@ -1,5 +1,5 @@
 import { Layer, OverflowMenu, OverflowMenuItem } from '@carbon/react';
-import { launchWorkspace2, showModal, useLayoutType } from '@openmrs/esm-framework';
+import { launchWorkspace2, showModal, useLayoutType, useSession, userHasAccess } from '@openmrs/esm-framework';
 import { useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
 import type { Procedure } from '../../types';
@@ -13,6 +13,12 @@ type ProceduresActionMenuProps = {
 export const ProceduresActionMenu = ({ procedure, patientUuid }: ProceduresActionMenuProps) => {
   const { t } = useTranslation();
   const isTablet = useLayoutType() === 'tablet';
+  const session = useSession();
+  const canEdit = userHasAccess('app:clinical.chart.procedures.edit', session?.user);
+
+  if (!canEdit) {
+    return null;
+  }
 
   const launchEditProcedureForm = useCallback(
     () =>

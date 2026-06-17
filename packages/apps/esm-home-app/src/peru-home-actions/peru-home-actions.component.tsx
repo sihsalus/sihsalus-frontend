@@ -16,11 +16,12 @@ type Action = {
   descriptionKey: string;
   href: string;
   illustrationSrc: string;
-  privilege: string;
+  privilege: string | string[];
   toneClass: string;
 };
 
 const admissionPrivilege = 'app:adt';
+const patientSearchPrivilege = 'Get Patients';
 const appointmentsPrivilege = 'app:appointments';
 const serviceQueuesPrivilege = 'app:service-queues';
 const laboratoryPrivilege = 'app:laboratory';
@@ -47,7 +48,7 @@ const actions = [
     descriptionKey: 'searchPatientDescription',
     href: '/search',
     illustrationSrc: patientSearchIllustration,
-    privilege: admissionPrivilege,
+    privilege: patientSearchPrivilege,
     toneClass: 'admissionAction',
   },
   {

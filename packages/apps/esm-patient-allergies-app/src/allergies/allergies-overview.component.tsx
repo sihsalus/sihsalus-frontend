@@ -11,7 +11,7 @@ import {
   TableHeader,
   TableRow,
 } from '@carbon/react';
-import { AddIcon, useLayoutType, usePagination } from '@openmrs/esm-framework';
+import { AddIcon, useLayoutType, usePagination, useSession, userHasAccess } from '@openmrs/esm-framework';
 import {
   CardHeader,
   EmptyState,
@@ -21,7 +21,7 @@ import {
 } from '@openmrs/esm-patient-common-lib';
 import React, { useCallback, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
-import { allergiesCount, patientAllergiesFormWorkspace } from '../constants';
+import { allergiesCount, allergiesEditPrivilege, patientAllergiesFormWorkspace } from '../constants';
 import styles from './allergies-overview.scss';
 import { useAllergies } from './allergy-intolerance.resource';
 
@@ -32,6 +32,8 @@ interface AllergiesOverviewProps {
 
 const AllergiesOverview: React.FC<AllergiesOverviewProps> = ({ patient }) => {
   const { t } = useTranslation();
+  const session = useSession();
+  const canEdit = userHasAccess(allergiesEditPrivilege, session?.user);
   const displayText = t('allergyIntolerances', 'allergy intolerances');
   const headerTitle = t('allergies', 'Allergies');
   const urlLabel = t('seeAll', 'See all');
@@ -78,14 +80,16 @@ const AllergiesOverview: React.FC<AllergiesOverviewProps> = ({ patient }) => {
       <div className={styles.widgetCard}>
         <CardHeader title={headerTitle}>
           <span>{isValidating ? <InlineLoading /> : null}</span>
-          <Button
-            kind="ghost"
-            renderIcon={(props) => <AddIcon size={16} {...props} />}
-            iconDescription="Add allergies"
-            onClick={launchAllergiesForm}
-          >
-            {t('add', 'Add')}
-          </Button>
+          {canEdit ? (
+            <Button
+              kind="ghost"
+              renderIcon={(props) => <AddIcon size={16} {...props} />}
+              iconDescription="Add allergies"
+              onClick={launchAllergiesForm}
+            >
+              {t('add', 'Add')}
+            </Button>
+          ) : null}
         </CardHeader>
         <DataTable rows={tableRows} headers={tableHeaders} isSortable size={isTablet ? 'lg' : 'sm'} useZebraStyles>
           {({ rows, headers, getHeaderProps, getTableProps }) => (
@@ -131,7 +135,7 @@ const AllergiesOverview: React.FC<AllergiesOverviewProps> = ({ patient }) => {
       </div>
     );
   }
-  return <EmptyState displayText={displayText} headerTitle={headerTitle} launchForm={launchAllergiesForm} />;
+  return <EmptyState displayText={displayText} headerTitle={headerTitle} launchForm={canEdit ? launchAllergiesForm : undefined} />;
 };
 
 export default AllergiesOverview;

@@ -26,6 +26,7 @@ interface PhysicalTherapyTableRow {
 }
 
 type PhysicalTherapyTableProps = {
+  canEdit: boolean;
   encounters: Encounter[];
   onEdit: (encounterUuid: string) => void;
   onDelete: (encounterUuid: string, encounterTypeName?: string) => void;
@@ -33,7 +34,14 @@ type PhysicalTherapyTableProps = {
   rows?: PhysicalTherapyTableRow[];
 };
 
-const PhysicalTherapyTable: React.FC<PhysicalTherapyTableProps> = ({ encounters, onEdit, onDelete, headers, rows }) => {
+const PhysicalTherapyTable: React.FC<PhysicalTherapyTableProps> = ({
+  canEdit,
+  encounters,
+  onEdit,
+  onDelete,
+  headers,
+  rows,
+}) => {
   const { t } = useTranslation();
 
   function formatProviderName(display?: string) {
@@ -82,12 +90,16 @@ const PhysicalTherapyTable: React.FC<PhysicalTherapyTableProps> = ({ encounters,
                   </TableExpandRow>
                   <TableExpandedRow colSpan={headers.length + 1} {...getExpandedRowProps({ row })}>
                     <EncounterObservations observations={encounters[index].obs ?? []} />
-                    <Button onClick={() => onEdit(row.id)} kind="primary" size="sm">
-                      {t('edit', 'Edit')}
-                    </Button>
-                    <Button onClick={() => onDelete(row.id)} kind="danger" size="sm">
-                      {t('delete', 'Delete')}
-                    </Button>
+                    {canEdit ? (
+                      <>
+                        <Button onClick={() => onEdit(row.id)} kind="primary" size="sm">
+                          {t('edit', 'Edit')}
+                        </Button>
+                        <Button onClick={() => onDelete(row.id)} kind="danger" size="sm">
+                          {t('delete', 'Delete')}
+                        </Button>
+                      </>
+                    ) : null}
                   </TableExpandedRow>
                 </React.Fragment>
               ))}

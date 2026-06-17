@@ -10,6 +10,7 @@
       "name": "imaging-details-widget",
       "component": "imagingDetailedSummary",
       "slot": "patient-chart-imaging-dashboard-slot",
+      "privileges": "app:clinical.chart.imaging",
       "online": true,
       "offline": true,
       "meta": {
@@ -20,6 +21,7 @@
       "name": "imaging-summary-dashboard",
       "component": "imagingDashboardLink",
       "slot": "patient-chart-dashboard-slot",
+      "privileges": "app:clinical.chart.imaging",
       "online": true,
       "offline": true,
       "order": 23,
@@ -36,23 +38,28 @@
     },
     {
       "name": "study-delete-confirmation-dialog",
-      "component": "studyDeleteConfirmationDialog"
+      "component": "studyDeleteConfirmationDialog",
+      "privileges": "app:clinical.chart.imaging.edit"
     },
     {
       "name": "series-delete-confirmation-dialog",
-      "component": "seriesDeleteConfirmationDialog"
+      "component": "seriesDeleteConfirmationDialog",
+      "privileges": "app:clinical.chart.imaging.edit"
     },
     {
       "name": "request-delete-confirmation-dialog",
-      "component": "requestDeleteConfirmationDialog"
+      "component": "requestDeleteConfirmationDialog",
+      "privileges": "app:clinical.chart.imaging.edit"
     },
     {
       "name": "procedureStep-delete-confirmation-dialog",
-      "component": "procedureSteptDeleteConfirmationDialog"
+      "component": "procedureSteptDeleteConfirmationDialog",
+      "privileges": "app:clinical.chart.imaging.edit"
     },
     {
       "name": "instance-preview-dialog",
-      "component": "instancePreviewDialog"
+      "component": "instancePreviewDialog",
+      "privileges": "app:clinical.chart.imaging"
     }
   ],
 
@@ -61,19 +68,22 @@
       "name": "upload-studies-form-workspace",
       "title": "Upload study",
       "component": "uploadStudiesFormWorkspace",
-      "type": "form"
+      "type": "form",
+      "privileges": "app:clinical.chart.imaging.edit"
     },
     {
       "name": "link-studies-form-workspace",
       "title": "Link studies",
       "component": "linkStudiesFormWorkspace",
-      "type": "form"
+      "type": "form",
+      "privileges": "app:clinical.chart.imaging.edit"
     },
     {
       "name": "assign-studies-form-workspace",
       "title": "Assign studies",
       "component": "assignStudiesFormWorkspace",
       "type": "form",
+      "privileges": "app:clinical.chart.imaging.edit",
       "canMaximize": true,
       "preferredWindowSize": "maximized"
     },
@@ -82,6 +92,7 @@
       "title": "Add request",
       "component": "addNewRequestWorkspace",
       "type": "form",
+      "privileges": "app:clinical.chart.imaging.edit",
       "canMaximize": true
     },
     {
@@ -89,6 +100,7 @@
       "title": "Add procedure step",
       "component": "addNewProcedureStepWorkspace",
       "type": "form",
+      "privileges": "app:clinical.chart.imaging.edit",
       "canMaximize": true
     }
   ]

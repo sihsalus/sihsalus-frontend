@@ -40,7 +40,7 @@ describe('PeruHomeActions', () => {
     render(<PeruHomeActions />);
 
     expect(mockRequirePrivilege).toHaveBeenCalledWith(
-      expect.objectContaining({ privilege: 'app:adt', hideUnauthorized: true }),
+      expect.objectContaining({ privilege: 'Get Patients', hideUnauthorized: true }),
     );
     expect(mockRequirePrivilege).toHaveBeenCalledWith(
       expect.objectContaining({ privilege: 'app:service-queues', hideUnauthorized: true }),
@@ -60,7 +60,7 @@ describe('PeruHomeActions', () => {
   });
 
   it('shows only admission quick actions for an admission user', () => {
-    const admissionPrivileges = new Set(['app:adt', 'app:service-queues', 'app:appointments']);
+    const admissionPrivileges = new Set(['Get Patients', 'app:adt', 'app:service-queues', 'app:appointments']);
     mockRequirePrivilege.mockImplementation(({ children, privilege }) => {
       const privileges = Array.isArray(privilege) ? privilege : [privilege];
       return privileges.some((item) => admissionPrivileges.has(item)) ? <>{children}</> : null;
@@ -77,18 +77,35 @@ describe('PeruHomeActions', () => {
     expect(screen.queryByText('fua')).not.toBeInTheDocument();
   });
 
-  it('shows only the laboratory quick action for a laboratory user', () => {
-    mockRequirePrivilege.mockImplementation(({ children, privilege }) =>
-      privilege === 'app:laboratory' ? <>{children}</> : null,
-    );
+  it('shows patient search and the laboratory quick action for a laboratory user', () => {
+    const laboratoryPrivileges = new Set(['Get Patients', 'app:laboratory']);
+    mockRequirePrivilege.mockImplementation(({ children, privilege }) => {
+      const privileges = Array.isArray(privilege) ? privilege : [privilege];
+      return privileges.some((item) => laboratoryPrivileges.has(item)) ? <>{children}</> : null;
+    });
 
     render(<PeruHomeActions />);
 
+    expect(screen.getByText('searchPatient')).toBeInTheDocument();
     expect(screen.getByText('laboratory')).toBeInTheDocument();
-    expect(screen.queryByText('searchPatient')).not.toBeInTheDocument();
     expect(screen.queryByText('registerPatient')).not.toBeInTheDocument();
     expect(screen.queryByText('dispensing')).not.toBeInTheDocument();
     expect(screen.queryByText('fua')).not.toBeInTheDocument();
+  });
+
+  it('shows patient search and FUA for a FUA user', () => {
+    const fuaPrivileges = new Set(['Get Patients', 'Read Fua']);
+    mockRequirePrivilege.mockImplementation(({ children, privilege }) => {
+      const privileges = Array.isArray(privilege) ? privilege : [privilege];
+      return privileges.some((item) => fuaPrivileges.has(item)) ? <>{children}</> : null;
+    });
+
+    render(<PeruHomeActions />);
+
+    expect(screen.getByText('searchPatient')).toBeInTheDocument();
+    expect(screen.getByText('fua')).toBeInTheDocument();
+    expect(screen.queryByText('registerPatient')).not.toBeInTheDocument();
+    expect(screen.queryByText('laboratory')).not.toBeInTheDocument();
   });
 
   it('shows only the dispensing quick action for a pharmacy user', () => {

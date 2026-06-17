@@ -26,8 +26,8 @@ import {
   useConfig,
   useLayoutType,
   usePagination,
-  useSession,
   userHasAccess,
+  useSession,
 } from '@openmrs/esm-framework';
 import {
   CardHeader,
@@ -411,10 +411,6 @@ function OrderBasketItemActions({
   const isTablet = useLayoutType() === 'tablet';
   const alreadyInBasket = items.some((x) => x.uuid === medication.uuid);
 
-  if (!canEdit) {
-    return null;
-  }
-
   const workspaceGroupProps: PatientWorkspaceGroupProps = useMemo(
     () => ({
       patient,
@@ -458,6 +454,10 @@ function OrderBasketItemActions({
       workspaceGroupProps,
     );
   }, [items, setItems, medication, workspaceGroupProps]);
+
+  if (!canEdit) {
+    return null;
+  }
 
   return (
     <OverflowMenu

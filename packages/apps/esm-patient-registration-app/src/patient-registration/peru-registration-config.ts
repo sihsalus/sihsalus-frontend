@@ -2,6 +2,7 @@ import { type FieldDefinition, type RegistrationConfig, type SectionDefinition }
 
 export const peruDniPatientIdentifierTypeUuid = '550e8400-e29b-41d4-a716-446655440001';
 export const peruCarnetExtranjeriaPatientIdentifierTypeUuid = '550e8400-e29b-41d4-a716-446655440002';
+export const peruPassportPatientIdentifierTypeUuid = '550e8400-e29b-41d4-a716-446655440003';
 export const peruDiePatientIdentifierTypeUuid = '8d793bee-c2cc-11de-8d13-0010c6dffd0f';
 export const peruInsuranceCodeAttributeTypeUuid = '374b130f-7457-476f-87b1-f182aa77c434';
 export const peruInsuranceAccreditationStatusAttributeTypeUuid = '9b3df0a1-0c58-4f55-9868-9c38f1db1005';
@@ -18,7 +19,7 @@ const peruDefaultPatientIdentifierTypeUuids = [
 
 export const peruForeignPatientIdentifierTypeUuids = [
   peruCarnetExtranjeriaPatientIdentifierTypeUuid, // Carné de Extranjería
-  '550e8400-e29b-41d4-a716-446655440003', // Pasaporte
+  peruPassportPatientIdentifierTypeUuid, // Pasaporte
   peruDiePatientIdentifierTypeUuid, // Documento de Identidad Extranjero
 ];
 
@@ -27,7 +28,7 @@ const peruSections = ['filiation', 'bloodData', 'insurance', 'responsiblePerson'
 const peruIdentityLookupFieldOrder = ['id', 'reniecLookup', 'sisLookup'];
 const peruDemographicsFieldOrder = ['name', 'dob', 'gender', 'nationality'];
 const peruContactFieldOrder = ['address', 'birthAddress', 'phone', 'mobilePhone', 'email'];
-const peruPhoneValidationRegex = '^\\+?[0-9][0-9\\s().-]{5,19}$';
+const peruPhoneValidationRegex = '^\\+?[0-9]{6,19}$';
 const peruEmailValidationRegex = '^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$';
 const minorResponsibleRelationshipTypes = [
   '8d91a210-c2cc-11de-8d13-0010c6dffdff/aIsToB',
@@ -121,6 +122,7 @@ const peruFieldDefinitions: Array<FieldDefinition> = [
     label: 'Etnia',
     showHeading: false,
     answerConceptSetUuid: '70482c1e-181e-416d-a0c4-a93919f9f2ef',
+    searchable: true,
   },
   {
     id: 'nativeLanguage',

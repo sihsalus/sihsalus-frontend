@@ -25,30 +25,80 @@
 }
 
 .locationPickerContainer {
+  position: fixed;
+  inset: 0;
   display: flex;
-  flex-direction: column;
   justify-content: center;
   align-items: center;
-  height: 100vh;
+  min-height: 100vh;
   width: 100%;
+  padding: layout.$spacing-07;
+  overflow: hidden;
+  background: $ui-02;
+}
+
+.locationPickerContainer::before,
+.locationPickerContainer::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+
+.locationPickerContainer::before {
+  z-index: 1;
+  background:
+    linear-gradient(120deg, rgba(19, 33, 68, 0.78), rgba(11, 77, 82, 0.46)),
+    linear-gradient(0deg, rgba(0, 0, 0, 0.34), rgba(0, 0, 0, 0.14));
+}
+
+.locationPickerContainer::after {
+  z-index: 2;
+  background: rgba(245, 247, 250, 0.03);
+}
+
+.backgroundMedia {
+  position: absolute;
+  inset: -1.25rem;
+  z-index: 0;
+
+  img {
+    width: 100%;
+    height: 100%;
+    display: block;
+    object-fit: cover;
+    filter: blur(18px) saturate(0.96) brightness(0.97);
+    transform: scale(1.04);
+  }
+}
+
+.locationPickerForm {
+  position: relative;
+  z-index: 3;
+  width: min(100%, 28rem);
 }
 
 .paddedContainer {
-  padding: layout.$spacing-06 layout.$spacing-06 layout.$spacing-05;
+  padding: layout.$spacing-07 layout.$spacing-07 layout.$spacing-05;
 }
 
 .locationCard {
   display: flex;
   flex-direction: column;
-  width: 23rem;
-  background-color: $ui-02;
+  width: 100%;
+  max-height: calc(100vh - #{layout.$spacing-10});
+  overflow: auto;
+  background-color: rgba(255, 255, 255, 0.94);
   margin: 0;
-  border: 1px solid $ui-03;
+  border: 1px solid rgba(255, 255, 255, 0.68);
+  box-shadow: 0 1.5rem 4rem rgba(0, 0, 0, 0.28);
+  backdrop-filter: blur(18px);
 }
 
 .welcomeTitle {
   @extend .productiveHeading03;
   text-transform: capitalize;
+  color: var(--cds-text-primary);
 }
 
 .welcomeMessage {
@@ -58,7 +108,8 @@
 }
 
 .footerContainer {
-  padding: layout.$spacing-05 layout.$spacing-06 layout.$spacing-06;
+  padding: layout.$spacing-05 layout.$spacing-07 layout.$spacing-07;
+  border-top: 1px solid $ui-03;
 
   .savePreferenceCheckbox {
     padding-bottom: layout.$spacing-05 !important;
@@ -91,4 +142,27 @@
 .errorNotification {
   margin-inline-start: -(layout.$spacing-06);
   margin-inline-end: -(layout.$spacing-06);
+}
+
+@media (max-width: 42rem) {
+  .locationPickerContainer {
+    align-items: stretch;
+    padding: layout.$spacing-05;
+  }
+
+  .locationPickerForm {
+    width: 100%;
+  }
+
+  .locationCard {
+    max-height: calc(100vh - #{layout.$spacing-07});
+  }
+
+  .paddedContainer {
+    padding: layout.$spacing-06 layout.$spacing-05 layout.$spacing-05;
+  }
+
+  .footerContainer {
+    padding: layout.$spacing-05;
+  }
 }

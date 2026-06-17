@@ -16,6 +16,7 @@ import {
 import { type PatientIdentifierValue } from '../../../patient-registration.types';
 import { PatientRegistrationContext } from '../../../patient-registration-context';
 import { getEffectiveRegistrationConfig } from '../../../peru-registration-config';
+import { getPeruIdentifierRule } from '../../../peru-identifier-validation';
 import { Input } from '../../basic-input/input/input.component';
 import styles from '../../input.scss';
 import { shouldBlockPatientIdentifierInOfflineMode } from './utils';
@@ -39,6 +40,7 @@ const IdentifierInput: React.FC<IdentifierInputProps> = ({ patientIdentifier, fi
   const [hideInputField, setHideInputField] = useState(autoGeneration || initialValue === identifierValue);
   const name = `identifiers.${fieldName}.identifierValue`;
   const [identifierField, identifierFieldMeta] = useField(name);
+  const identifierRule = getPeruIdentifierRule(identifierType, patientIdentifier);
 
   const disabled = isOffline && shouldBlockPatientIdentifierInOfflineMode(identifierType);
 
@@ -68,6 +70,29 @@ const IdentifierInput: React.FC<IdentifierInputProps> = ({ patientIdentifier, fi
       ...(autoGeneration && manualEntryEnabled && { identifierValue: initialValue ?? '' }),
     });
   };
+
+  const handleIdentifierChange = useCallback(
+    (event: React.ChangeEvent<HTMLInputElement>) => {
+      const value = identifierRule ? identifierRule.sanitize(event.target.value) : event.target.value;
+      setFieldValue(name, value);
+    },
+    [identifierRule, name, setFieldValue],
+  );
+  const handleIdentifierKeyDown = useCallback(
+    (event: React.KeyboardEvent<HTMLInputElement>) => {
+      if (!identifierRule || event.key.length !== 1) {
+        return;
+      }
+
+      const isValidKey =
+        identifierRule.inputMode === 'numeric' ? /^\d$/.test(event.key) : /^[a-zA-Z0-9]$/.test(event.key);
+
+      if (!isValidKey) {
+        event.preventDefault();
+      }
+    },
+    [identifierRule],
+  );
 
   const handleDelete = () => {
     /*
@@ -104,10 +129,15 @@ const IdentifierInput: React.FC<IdentifierInputProps> = ({ patientIdentifier, fi
           name={name}
           disabled={disabled}
           required={required}
+          helperText={identifierRule ? t(identifierRule.helperKey, identifierRule.helper) : undefined}
+          inputMode={identifierRule?.inputMode}
+          maxLength={identifierRule?.maxLength}
           invalid={!!(identifierFieldMeta.touched && identifierFieldMeta.error)}
           invalidText={identifierFieldMeta.error && t(identifierFieldMeta.error)}
           // t('identifierValueRequired', 'Identifier value is required')
           {...identifierField}
+          onChange={handleIdentifierChange}
+          onKeyDown={handleIdentifierKeyDown}
         />
       ) : (
         <div className={styles.textID}>

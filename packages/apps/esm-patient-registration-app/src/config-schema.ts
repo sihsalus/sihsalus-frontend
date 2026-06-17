@@ -24,6 +24,7 @@ export interface FieldDefinition {
   locationTag?: string;
   answerConceptSetUuid?: string;
   customConceptAnswers?: Array<CustomConceptAnswer>;
+  searchable?: boolean;
   showIf?: {
     foreignIdentifierPresent?: boolean;
   };
@@ -251,6 +252,11 @@ export const esmPatientRegistrationSchema = {
         _default: [],
         _description:
           'For coded questions only (obs or person attrbute). A list of custom concept answers. Overrides answers that come from the obs concept or from `answerSetConceptUuid`.',
+      },
+      searchable: {
+        _type: Type.Boolean,
+        _default: false,
+        _description: 'For coded fields only. Render the answer list as a searchable combobox instead of a select.',
       },
       showIf: {
         foreignIdentifierPresent: {

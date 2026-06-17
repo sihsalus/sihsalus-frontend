@@ -195,6 +195,19 @@ describe('Patient registration validation', () => {
     expect(validationError).toBeFalsy();
   });
 
+  it('should allow phone contact attributes with an international prefix', async () => {
+    const validValues = {
+      ...validFormValues,
+      attributes: {
+        [phoneAttributeUuid]: '+51900000000',
+      },
+    };
+
+    const validationError = await validateFormValues(validValues);
+
+    expect(validationError).toBeFalsy();
+  });
+
   it('should reject invalid email contact attributes', async () => {
     const invalidFormValues = {
       ...validFormValues,
@@ -222,11 +235,13 @@ describe('Patient registration validation', () => {
   });
 
   it('should reject an identifier that does not match the backend format', async () => {
-    const identifierTypes = [{ fieldName: 'nationalId', format: '^[0-9]{8}$', name: 'DNI', uuid: 'dni-uuid' }];
+    const identifierTypes = [
+      { fieldName: 'nationalId', format: '^[0-9]{8}$', name: 'National ID', uuid: 'national-id-uuid' },
+    ];
     const invalidFormValues = {
       ...validFormValues,
       identifiers: {
-        nationalId: { required: true, identifierValue: '123456789', identifierTypeUuid: 'dni-uuid' },
+        nationalId: { required: true, identifierValue: '123456789', identifierTypeUuid: 'national-id-uuid' },
       },
     };
     const validationError = await validateFormValues(invalidFormValues, identifierTypes);
@@ -243,6 +258,18 @@ describe('Patient registration validation', () => {
     };
     const validationError = await validateFormValues(validIdentifierValues, identifierTypes);
     expect(validationError).toBeFalsy();
+  });
+
+  it('should enforce the Peru DNI length even when the backend format is absent', async () => {
+    const identifierTypes = [{ fieldName: 'nationalId', format: '', name: 'DNI', uuid: 'dni-uuid' }];
+    const invalidFormValues = {
+      ...validFormValues,
+      identifiers: {
+        nationalId: { required: true, identifierValue: '123456789', identifierTypeUuid: 'dni-uuid' },
+      },
+    };
+    const validationError = await validateFormValues(invalidFormValues, identifierTypes);
+    expect(validationError.errors).toContain('dniIdentifierInvalid');
   });
 
   it('should require additionalGivenName when addNameInLocalLanguage is true', async () => {

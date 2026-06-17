@@ -169,8 +169,8 @@ export const Input: React.FC<InputProps> = ({ checkWarning, ...props }) => {
     <div style={{ marginBottom: '1rem' }}>
       <Layer>
         <TextInput
-          {...props}
           {...field}
+          {...props}
           labelText={labelText}
           invalid={!!(meta.touched && meta.error)}
           invalidText={invalidText}

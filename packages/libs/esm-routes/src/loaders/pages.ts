@@ -104,7 +104,7 @@ export function registerApp(appName: string, routes: OpenmrsAppRoutes) {
     const availableModals: Array<ModalDefinition> = routes.modals ?? [];
     const availableWorkspaces: Array<WorkspaceDefinition> = routes.workspaces ?? [];
     const availableWorkspaceGroups: Array<WorkspaceGroupDefinition> = routes.workspaceGroups ?? [];
-    const availableFeatureFlags: Array<FeatureFlagDefinition> = routes.featureFlags ?? [];
+    const availableFeatureFlags = getAvailableFeatureFlags(routes);
     const availableWorkspaceGroups2 = routes.workspaceGroups2 ?? [];
     const availableWorkspaceWindows2 = routes.workspaceWindows2 ?? [];
     const availableWorkspaces2 = routes.workspaces2 ?? [];
@@ -191,6 +191,15 @@ export function registerApp(appName: string, routes: OpenmrsAppRoutes) {
       }
     });
   }
+}
+
+export function getAvailableFeatureFlags(routes: OpenmrsAppRoutes): Array<FeatureFlagDefinition> {
+  return [
+    ...Object.values(routes.optionalBackendDependencies ?? {}).flatMap((dependency) =>
+      typeof dependency === 'object' && dependency !== null && dependency.feature ? [dependency.feature] : [],
+    ),
+    ...(routes.featureFlags ?? []),
+  ];
 }
 
 /**

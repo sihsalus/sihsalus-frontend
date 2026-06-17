@@ -98,10 +98,9 @@ describe('Autosuggest', () => {
     list = screen.getByRole('list');
     expect(list).toBeInTheDocument();
 
-    const listitems = screen.getAllByRole('listitem');
-    await user.click(listitems[0]);
+    await user.click(screen.getByRole('button', { name: 'John Doe' }));
 
-    expect(mockHandleSuggestionSelected).toHaveBeenLastCalledWith('person', 'randomuuid1');
+    expect(mockHandleSuggestionSelected).toHaveBeenLastCalledWith('person', 'randomuuid1', mockPersons[0]);
 
     list = screen.queryByRole('list');
     expect(list).not.toBeInTheDocument();

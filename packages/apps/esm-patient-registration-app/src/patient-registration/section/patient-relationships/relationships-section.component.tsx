@@ -20,7 +20,7 @@ import { type RegistrationConfig } from '../../../config-schema';
 import { moduleName } from '../../../constants';
 import { ResourcesContext } from '../../../offline.resources';
 import { Autosuggest } from '../../input/custom-input/autosuggest/autosuggest.component';
-import { fetchPerson, savePerson } from '../../patient-registration.resource';
+import { fetchPerson, type PersonSearchResult, savePerson } from '../../patient-registration.resource';
 import { type FormValues, type RelationshipValue } from '../../patient-registration.types';
 import { PatientRegistrationContext } from '../../patient-registration-context';
 import { getEffectiveRegistrationConfig } from '../../peru-registration-config';
@@ -85,6 +85,46 @@ function getRelationshipKey(relationship: RelationshipValue) {
   );
 }
 
+function getAgeFromBirthdate(birthdate?: string) {
+  if (!birthdate) {
+    return undefined;
+  }
+
+  const birthdateValue = new Date(birthdate);
+  if (Number.isNaN(birthdateValue.getTime())) {
+    return undefined;
+  }
+
+  const today = new Date();
+  let age = today.getFullYear() - birthdateValue.getFullYear();
+  const hasHadBirthdayThisYear =
+    today.getMonth() > birthdateValue.getMonth() ||
+    (today.getMonth() === birthdateValue.getMonth() && today.getDate() >= birthdateValue.getDate());
+
+  if (!hasHadBirthdayThisYear) {
+    age -= 1;
+  }
+
+  return age;
+}
+
+function getPersonSearchResultAge(person?: PersonSearchResult | null) {
+  if (!person) {
+    return undefined;
+  }
+
+  return person.person?.age ?? person.age ?? getAgeFromBirthdate(person.person?.birthdate ?? person.birthdate);
+}
+
+function getPersonSearchResultDisplay(person?: PersonSearchResult | null) {
+  return person?.person?.display ?? person?.display ?? '';
+}
+
+function isMinorPersonSearchResult(person?: PersonSearchResult | null) {
+  const age = getPersonSearchResultAge(person);
+  return typeof age === 'number' && age < 18;
+}
+
 const RelationshipView: React.FC<RelationshipViewProps> = ({
   relationship,
   index,
@@ -93,8 +133,11 @@ const RelationshipView: React.FC<RelationshipViewProps> = ({
 }) => {
   const { t } = useTranslation(moduleName);
   const config = useConfig<RegistrationConfig>();
-  const { setFieldValue } = React.useContext(PatientRegistrationContext);
+  const effectiveConfig = config?.sections ? getEffectiveRegistrationConfig(config) : config;
+  const { setFieldValue, values } = React.useContext(PatientRegistrationContext);
   const [isInvalid, setIsInvalid] = useState(false);
+  const [selectedExistingPerson, setSelectedExistingPerson] = useState<PersonSearchResult | null>(null);
+  const [selectedPersonInvalidText, setSelectedPersonInvalidText] = useState<string | null>(null);
   const [personEntryMode, setPersonEntryMode] = useState<PersonEntryMode>('search');
   const [newPersonValues, setNewPersonValues] = useState<ResponsiblePersonFormValues>({
     ...initialResponsiblePersonValues,
@@ -106,6 +149,8 @@ const RelationshipView: React.FC<RelationshipViewProps> = ({
   const newRelationship = !relationship.uuid;
   const requiresRelatedPerson = newRelationship && !relationship.relatedPersonUuid;
   const genderOptions = config?.fieldConfigurations?.gender ?? defaultGenderOptions;
+  const minorResponsibleRelationshipTypes =
+    effectiveConfig?.relationshipOptions?.minorResponsibleRelationshipTypes ?? [];
 
   const personFormValues = useMemo(
     () => ({
@@ -115,7 +160,15 @@ const RelationshipView: React.FC<RelationshipViewProps> = ({
     [newPersonValues, relationship.relationshipType],
   );
 
-  const personFormErrors = useMemo(() => validateResponsiblePersonForm(personFormValues), [personFormValues]);
+  const requiresAdultResponsible = useMemo(
+    () => isMinorPatient(values) && minorResponsibleRelationshipTypes.includes(personFormValues.relationshipType),
+    [minorResponsibleRelationshipTypes, personFormValues.relationshipType, values],
+  );
+
+  const personFormErrors = useMemo(
+    () => validateResponsiblePersonForm(personFormValues, { requireAdult: requiresAdultResponsible }),
+    [personFormValues, requiresAdultResponsible],
+  );
 
   const handleRelationshipTypeChange = useCallback(
     (event) => {
@@ -133,15 +186,38 @@ const RelationshipView: React.FC<RelationshipViewProps> = ({
   );
 
   const handleSuggestionSelected = useCallback(
-    (field: string, selectedSuggestion: string) => {
-      setIsInvalid(!selectedSuggestion);
-      setFieldValue(field, selectedSuggestion);
-      if (!selectedSuggestion) {
+    (field: string, selectedSuggestion?: string, selectedPerson?: unknown) => {
+      const selectedPersonResult = selectedPerson as PersonSearchResult | undefined;
+      setSelectedExistingPerson(selectedPersonResult ?? null);
+      const selectedPersonIsUnderage = requiresAdultResponsible && isMinorPersonSearchResult(selectedPersonResult);
+
+      if (selectedPersonIsUnderage) {
+        setIsInvalid(true);
+        setSelectedPersonInvalidText(t('responsibleExistingPersonMustBeAdult', 'Responsible person must be an adult'));
+        setFieldValue(field, '');
         setFieldValue(`relationships[${index}].relatedPersonName`, '');
+        return;
       }
+
+      setSelectedPersonInvalidText(null);
+      setIsInvalid(!selectedSuggestion);
+      setFieldValue(field, selectedSuggestion ?? '');
+      setFieldValue(
+        `relationships[${index}].relatedPersonName`,
+        selectedSuggestion ? getPersonSearchResultDisplay(selectedPersonResult) : '',
+      );
     },
-    [index, setFieldValue],
+    [index, requiresAdultResponsible, setFieldValue, t],
   );
+
+  useEffect(() => {
+    if (requiresAdultResponsible && isMinorPersonSearchResult(selectedExistingPerson)) {
+      setIsInvalid(true);
+      setSelectedPersonInvalidText(t('responsibleExistingPersonMustBeAdult', 'Responsible person must be an adult'));
+      setFieldValue(`relationships[${index}].relatedPersonUuid`, '');
+      setFieldValue(`relationships[${index}].relatedPersonName`, '');
+    }
+  }, [index, requiresAdultResponsible, selectedExistingPerson, setFieldValue, t]);
 
   const searchPerson = async (query: string) => {
     const abortController = new AbortController();
@@ -209,7 +285,7 @@ const RelationshipView: React.FC<RelationshipViewProps> = ({
 
   const handleCreatePerson = useCallback(async () => {
     setCreatePersonError(null);
-    const errors = validateResponsiblePersonForm(personFormValues);
+    const errors = validateResponsiblePersonForm(personFormValues, { requireAdult: requiresAdultResponsible });
 
     if (hasResponsiblePersonFormErrors(errors)) {
       markAllNewPersonFieldsTouched();
@@ -242,7 +318,7 @@ const RelationshipView: React.FC<RelationshipViewProps> = ({
     } finally {
       setIsSavingPerson(false);
     }
-  }, [index, markAllNewPersonFieldsTouched, personFormValues, setFieldValue, t]);
+  }, [index, markAllNewPersonFieldsTouched, personFormValues, requiresAdultResponsible, setFieldValue, t]);
 
   return relationship.action !== 'DELETE' ? (
     <div className={styles.relationship}>
@@ -294,16 +370,19 @@ const RelationshipView: React.FC<RelationshipViewProps> = ({
           </ContentSwitcher>
           {personEntryMode === 'search' ? (
             <div className={styles.searchBox}>
-              <Autosuggest
+              <Autosuggest<PersonSearchResult>
                 id={`relationships[${index}].relatedPersonUuid`}
                 labelText={t('relativeFullNameLabelText', 'Full name')}
                 placeholder={t('relativeNamePlaceholder', 'Firstname Familyname')}
                 defaultValue={relationship.relatedPersonName}
                 onSuggestionSelected={handleSuggestionSelected}
                 invalid={isInvalid}
-                invalidText={t('relationshipPersonMustExist', 'Family member or companion must be an existing person')}
+                invalidText={
+                  selectedPersonInvalidText ??
+                  t('relationshipPersonMustExist', 'Family member or companion must be an existing person')
+                }
                 getSearchResults={searchPerson}
-                getDisplayValue={(item) => item.display}
+                getDisplayValue={(item) => getPersonSearchResultDisplay(item)}
                 getFieldValue={(item) => item.uuid}
               />
             </div>
@@ -388,7 +467,11 @@ const RelationshipView: React.FC<RelationshipViewProps> = ({
                 <Layer>
                   <TextInput
                     id={`relationships[${index}].newPerson.estimatedAge`}
-                    labelText={t('responsibleEstimatedAge', 'Approximate age (optional)')}
+                    labelText={
+                      requiresAdultResponsible
+                        ? t('responsibleEstimatedAgeRequiredLabel', 'Approximate age')
+                        : t('responsibleEstimatedAge', 'Approximate age (optional)')
+                    }
                     value={newPersonValues.estimatedAge}
                     inputMode="numeric"
                     maxLength={3}
@@ -396,6 +479,7 @@ const RelationshipView: React.FC<RelationshipViewProps> = ({
                     onBlur={markNewPersonFieldTouched('estimatedAge')}
                     invalid={!!getFieldError('estimatedAge', personFormErrors)}
                     invalidText={getFieldError('estimatedAge', personFormErrors)}
+                    required={requiresAdultResponsible}
                   />
                 </Layer>
               </div>

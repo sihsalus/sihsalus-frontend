@@ -16,6 +16,7 @@ export interface CodedPersonAttributeFieldProps {
   label?: string;
   customConceptAnswers: Array<{ uuid: string; label?: string }>;
   required: boolean;
+  readOnly?: boolean;
 }
 
 export function CodedPersonAttributeField({
@@ -25,6 +26,7 @@ export function CodedPersonAttributeField({
   label,
   customConceptAnswers,
   required,
+  readOnly,
 }: CodedPersonAttributeFieldProps) {
   const { data: conceptAnswers, isLoading: isLoadingConceptAnswers } = useConceptAnswers(
     customConceptAnswers.length ? '' : answerConceptSetUuid,
@@ -97,7 +99,7 @@ export function CodedPersonAttributeField({
       {!isLoadingConceptAnswers ? (
         <Layer>
           <Field name={fieldName}>
-            {({ field, form: { touched, errors }, meta }) => {
+            {({ field, form: { touched, errors } }) => {
               return (
                 <>
                   <Select
@@ -106,6 +108,7 @@ export function CodedPersonAttributeField({
                     labelText={labelText}
                     invalid={errors[fieldName] && touched[fieldName]}
                     required={required}
+                    disabled={readOnly}
                     {...field}
                   >
                     <SelectItem value={''} text={t('selectAnOption', 'Select an option')} />

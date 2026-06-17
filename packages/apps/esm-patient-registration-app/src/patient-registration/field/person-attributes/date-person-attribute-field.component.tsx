@@ -15,6 +15,7 @@ export interface DatePersonAttributeFieldProps {
   required?: boolean;
   allowPastDates?: boolean;
   allowFutureDates?: boolean;
+  readOnly?: boolean;
 }
 
 function parseDateOnlyValue(value: unknown) {
@@ -43,6 +44,7 @@ export function DatePersonAttributeField({
   required,
   allowPastDates,
   allowFutureDates,
+  readOnly,
 }: DatePersonAttributeFieldProps) {
   const { t } = useTranslation(moduleName);
   const fieldName = `attributes.${personAttributeType.uuid}`;
@@ -61,6 +63,7 @@ export function DatePersonAttributeField({
           isRequired={required}
           invalid={!!(meta.touched && meta.error)}
           invalidText={meta.error ? t(meta.error) : undefined}
+          isDisabled={readOnly}
           maxDate={!futureDatesAllowed ? new Date() : undefined}
           minDate={!pastDatesAllowed ? new Date() : undefined}
           onBlur={field.onBlur}

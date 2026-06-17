@@ -97,6 +97,7 @@ export default function AdmissionHome() {
           admission.service,
           admission.location,
           admission.status,
+          admission.searchText,
           formatDate(admission.startDatetime),
         ]
           .join(' ')
@@ -212,9 +213,9 @@ export default function AdmissionHome() {
                 id="admission-report-search"
                 labelText={t(
                   'searchAdmissions',
-                  'Buscar por paciente, HCE, documento, responsable, servicio o ubicación',
+                  'Buscar por paciente, DNI, HCE, código temporal, seguro, responsable, servicio o ubicación',
                 )}
-                placeholder={t('searchAdmissionsPlaceholder', 'Paciente, HCE, documento, responsable, servicio...')}
+                placeholder={t('searchAdmissionsPlaceholder', 'Paciente, DNI, HCE, seguro, responsable, servicio...')}
                 value={searchTerm}
                 onChange={(event) => setSearchTerm(event.target.value)}
               />

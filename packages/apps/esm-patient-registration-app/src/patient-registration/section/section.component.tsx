@@ -4,6 +4,7 @@ import { ContactSection } from './contact/contact-section.component';
 import { DeathInfoSection } from './death-info/death-info-section.component';
 import { DemographicsSection } from './demographics/demographics-section.component';
 import { GenericSection } from './generic-section.component';
+import { InsuranceSection } from './insurance/insurance-section.component';
 import { RelationshipsSection } from './patient-relationships/relationships-section.component';
 
 export interface SectionProps {
@@ -27,6 +28,8 @@ export function Section({ sectionDefinition }: SectionProps) {
       return <RelationshipsSection />;
     case 'contact':
       return <ContactSection sectionDefinition={sectionDefinition} />;
+    case 'insurance':
+      return <InsuranceSection sectionDefinition={sectionDefinition} />;
     default:
       return <GenericSection sectionDefinition={sectionDefinition} />;
   }

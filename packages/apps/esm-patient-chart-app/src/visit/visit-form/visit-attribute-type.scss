@@ -1,5 +1,5 @@
-@use '@carbon/layout';
-@use '@openmrs/esm-styleguide/src/vars' as *;
+@use "@carbon/layout";
+@use "@openmrs/esm-styleguide/src/vars" as *;
 
 .visitAttributeField {
   margin-bottom: layout.$spacing-05;
@@ -9,4 +9,49 @@
   :global(.cds--label) {
     color: $text-02;
   }
+}
+
+.provenanceField {
+  position: relative;
+}
+
+.provenanceOptions {
+  background-color: $ui-01;
+  border: 1px solid $ui-03;
+  border-top-width: 0;
+  left: 0;
+  list-style: none;
+  margin: 0;
+  max-height: 20rem;
+  overflow-y: auto;
+  padding: 0;
+  position: absolute;
+  width: 100%;
+  z-index: 99;
+}
+
+.provenanceOption {
+  appearance: none;
+  background: transparent;
+  border: 0;
+  color: $ui-05;
+  cursor: pointer;
+  display: block;
+  font: inherit;
+  padding: layout.$spacing-05;
+  text-align: left;
+  width: 100%;
+}
+
+.provenanceOption:hover,
+.provenanceOption:focus {
+  background-color: $ui-03;
+  color: $ui-05;
+  outline: 2px solid $interactive-01;
+  outline-offset: -2px;
+}
+
+.provenanceStatus {
+  color: $text-02;
+  padding: layout.$spacing-05;
 }

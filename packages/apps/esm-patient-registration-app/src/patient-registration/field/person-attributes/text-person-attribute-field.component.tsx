@@ -1,5 +1,6 @@
 import classNames from 'classnames';
 import { Field } from 'formik';
+import { type ChangeEvent, type KeyboardEvent, useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
 import { moduleName } from '../../../constants';
 import { Input } from '../../input/basic-input/input/input.component';
@@ -24,6 +25,13 @@ export function TextPersonAttributeField({
   readOnly,
 }: TextPersonAttributeFieldProps) {
   const { t } = useTranslation(moduleName);
+  const isPhoneField = id === 'phone' || id === 'mobilePhone';
+  const sanitizePhoneInput = useCallback((value: string) => {
+    const startsWithPlus = value.startsWith('+');
+    const digits = value.replace(/\D/g, '');
+
+    return `${startsWithPlus ? '+' : ''}${digits}`.slice(0, 20);
+  }, []);
 
   const validateInput = (value: string) => {
     if (!value || !validationRegex || validationRegex === '' || typeof validationRegex !== 'string' || value === '') {
@@ -31,7 +39,7 @@ export function TextPersonAttributeField({
     }
     try {
       const regex = new RegExp(validationRegex);
-      if (regex.test(value)) {
+      if (regex.test(value.trim())) {
         return;
       }
     } catch {
@@ -46,13 +54,41 @@ export function TextPersonAttributeField({
   return (
     <div className={classNames(styles.customField, styles.halfWidthInDesktopView)}>
       <Field name={fieldName} validate={validateInput}>
-        {({ field }) => {
+        {({ field, form: { setFieldValue } }) => {
+          const handleChange = (event: ChangeEvent<HTMLInputElement>) => {
+            setFieldValue(fieldName, isPhoneField ? sanitizePhoneInput(event.target.value) : event.target.value);
+          };
+          const handleKeyDown = (event: KeyboardEvent<HTMLInputElement>) => {
+            if (!isPhoneField || event.key.length !== 1) {
+              return;
+            }
+
+            if (/^\d$/.test(event.key)) {
+              return;
+            }
+
+            const input = event.currentTarget;
+            const isLeadingPlus =
+              event.key === '+' && input.selectionStart === 0 && input.selectionEnd === 0 && !input.value.includes('+');
+
+            if (!isLeadingPlus) {
+              event.preventDefault();
+            }
+          };
+
           return (
             <Input
               id={id}
               name={`person-attribute-${personAttributeType.uuid}`}
               labelText={label ?? personAttributeType?.display}
               {...field}
+              onChange={handleChange}
+              onKeyDown={handleKeyDown}
+              type={isPhoneField ? 'tel' : 'text'}
+              inputMode={isPhoneField ? 'tel' : undefined}
+              placeholder={isPhoneField ? '+51900000000' : undefined}
+              maxLength={isPhoneField ? 20 : undefined}
+              helperText={isPhoneField ? t('phoneHelperText', 'Use digits, spaces or hyphens') : undefined}
               required={required}
               readOnly={readOnly}
             />

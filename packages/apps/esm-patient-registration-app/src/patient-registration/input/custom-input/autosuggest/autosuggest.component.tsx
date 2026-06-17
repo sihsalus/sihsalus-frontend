@@ -4,17 +4,16 @@ import React, { useCallback, useEffect, useRef, useState } from 'react';
 
 import styles from './autosuggest.scss';
 
-interface AutosuggestProps extends Omit<CarbonSearchProps, 'onChange' | 'onClear'> {
-  getDisplayValue: Function;
-  getFieldValue: Function;
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  getSearchResults: (query: string) => Promise<any>;
-  onSuggestionSelected: (field: string, value: string) => void;
+interface AutosuggestProps<TSuggestion = unknown> extends Omit<CarbonSearchProps, 'onChange' | 'onClear'> {
+  getDisplayValue: (item: TSuggestion) => string;
+  getFieldValue: (item: TSuggestion) => string;
+  getSearchResults: (query: string) => Promise<Array<TSuggestion>>;
+  onSuggestionSelected: (field: string, value?: string, selectedItem?: TSuggestion) => void;
   invalid?: boolean | undefined;
   invalidText?: string | undefined;
 }
 
-export const Autosuggest: React.FC<AutosuggestProps> = ({
+export function Autosuggest<TSuggestion = unknown>({
   getDisplayValue,
   getFieldValue,
   getSearchResults,
@@ -22,8 +21,8 @@ export const Autosuggest: React.FC<AutosuggestProps> = ({
   invalid,
   invalidText,
   ...searchProps
-}) => {
-  const [suggestions, setSuggestions] = useState([]);
+}: AutosuggestProps<TSuggestion>) {
+  const [suggestions, setSuggestions] = useState<Array<TSuggestion>>([]);
   const searchBox = useRef<HTMLInputElement>(null);
   const wrapper = useRef<HTMLDivElement>(null);
   const { id: name, labelText } = searchProps;
@@ -65,7 +64,7 @@ export const Autosuggest: React.FC<AutosuggestProps> = ({
     if (searchBox.current) {
       searchBox.current.value = display;
     }
-    onSuggestionSelected(name ?? '', value);
+    onSuggestionSelected(name ?? '', value, suggestions[index]);
     setSuggestions([]);
   };
 
@@ -85,8 +84,10 @@ export const Autosuggest: React.FC<AutosuggestProps> = ({
       {suggestions.length > 0 && (
         <ul className={styles.suggestions}>
           {suggestions.map((suggestion, index) => (
-            <li key={index} onClick={(e) => handleClick(index)}>
-              {getDisplayValue(suggestion)}
+            <li key={`${getFieldValue(suggestion)}-${getDisplayValue(suggestion)}`}>
+              <button type="button" className={styles.suggestionButton} onClick={() => handleClick(index)}>
+                {getDisplayValue(suggestion)}
+              </button>
             </li>
           ))}
         </ul>
@@ -94,4 +95,4 @@ export const Autosuggest: React.FC<AutosuggestProps> = ({
       {invalid ? <label className={classNames(styles.invalidMsg)}>{invalidText}</label> : <></>}
     </div>
   );
-};
+}

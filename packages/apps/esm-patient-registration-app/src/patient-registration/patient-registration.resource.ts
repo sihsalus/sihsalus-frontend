@@ -30,6 +30,21 @@ export interface PersonRegistrationCopyData {
   attributes?: Array<PersonAttributeResponse>;
 }
 
+export interface PersonSearchResult {
+  uuid: string;
+  display?: string;
+  age?: number;
+  birthdate?: string;
+  birthdateEstimated?: boolean;
+  person?: {
+    uuid?: string;
+    display?: string;
+    age?: number;
+    birthdate?: string;
+    birthdateEstimated?: boolean;
+  };
+}
+
 function dataURItoFile(dataURI: string) {
   const byteString = globalThis.atob(dataURI.split(',')[1]);
   const mimeString = dataURI.split(',')[0].split(':')[1].split(';')[0];
@@ -189,17 +204,33 @@ export function savePatientPhotoAsAttachment(patientUuid: string, content: strin
   return createAttachment(patientUuid, uploadedFile);
 }
 
-export async function fetchPerson(query: string, abortController: AbortController) {
+export async function fetchPerson(query: string, abortController: AbortController): Promise<Array<PersonSearchResult>> {
+  const encodedQuery = encodeURIComponent(query);
+  const patientRepresentation = 'custom:(uuid,display,person:(uuid,display,age,birthdate,birthdateEstimated))';
+  const personRepresentation = 'custom:(uuid,display,age,birthdate,birthdateEstimated)';
   const [patientsRes, personsRes] = await Promise.all([
-    openmrsFetch(`${restBaseUrl}/patient?q=${query}`, {
-      signal: abortController.signal,
-    }),
-    openmrsFetch(`${restBaseUrl}/person?q=${query}`, {
-      signal: abortController.signal,
-    }),
+    openmrsFetch<{ results: Array<PersonSearchResult> }>(
+      `${restBaseUrl}/patient?q=${encodedQuery}&v=${patientRepresentation}`,
+      {
+        signal: abortController.signal,
+      },
+    ),
+    openmrsFetch<{ results: Array<PersonSearchResult> }>(
+      `${restBaseUrl}/person?q=${encodedQuery}&v=${personRepresentation}`,
+      {
+        signal: abortController.signal,
+      },
+    ),
   ]);
 
-  const results = [...patientsRes.data.results];
+  const results: Array<PersonSearchResult> = patientsRes.data.results.map((patient) => ({
+    ...patient,
+    uuid: patient.person?.uuid ?? patient.uuid,
+    display: patient.person?.display ?? patient.display,
+    age: patient.person?.age ?? patient.age,
+    birthdate: patient.person?.birthdate ?? patient.birthdate,
+    birthdateEstimated: patient.person?.birthdateEstimated ?? patient.birthdateEstimated,
+  }));
 
   personsRes.data.results.forEach((person) => {
     if (!results.some((patient) => patient.uuid === person.uuid)) {

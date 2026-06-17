@@ -13,6 +13,10 @@ export interface ResponsiblePersonFormValues {
 
 export type ResponsiblePersonValidationErrors = Partial<Record<keyof ResponsiblePersonFormValues, string>>;
 
+export interface ResponsiblePersonValidationOptions {
+  requireAdult?: boolean;
+}
+
 const genderToOpenmrsCode: Record<string, string> = {
   male: 'M',
   female: 'F',
@@ -56,8 +60,12 @@ function validateOptionalName(value: string): string | undefined {
   return undefined;
 }
 
-export function validateResponsiblePersonForm(values: ResponsiblePersonFormValues): ResponsiblePersonValidationErrors {
+export function validateResponsiblePersonForm(
+  values: ResponsiblePersonFormValues,
+  options: ResponsiblePersonValidationOptions = {},
+): ResponsiblePersonValidationErrors {
   const errors: ResponsiblePersonValidationErrors = {};
+  const estimatedAge = values.estimatedAge.trim();
 
   const givenNameError = validateRequiredName(values.givenName, 'givenNameRequired');
   if (givenNameError) {
@@ -83,8 +91,12 @@ export function validateResponsiblePersonForm(values: ResponsiblePersonFormValue
     errors.gender = 'genderRequired';
   }
 
-  if (values.estimatedAge.trim() && !estimatedAgeRegex.test(values.estimatedAge.trim())) {
+  if (estimatedAge && !estimatedAgeRegex.test(estimatedAge)) {
     errors.estimatedAge = 'estimatedAgeInvalid';
+  } else if (options.requireAdult && !estimatedAge) {
+    errors.estimatedAge = 'responsibleEstimatedAgeRequired';
+  } else if (options.requireAdult && Number(estimatedAge) < 18) {
+    errors.estimatedAge = 'responsiblePersonMustBeAdult';
   }
 
   if (!values.relationshipType?.trim()) {

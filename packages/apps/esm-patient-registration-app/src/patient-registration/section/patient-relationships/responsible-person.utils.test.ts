@@ -78,6 +78,21 @@ describe('responsible person utilities', () => {
     );
   });
 
+  it('requires an adult age when the related person must be responsible for a minor', () => {
+    expect(
+      validateResponsiblePersonForm({ ...validResponsiblePerson, estimatedAge: '' }, { requireAdult: true })
+        .estimatedAge,
+    ).toBe('responsibleEstimatedAgeRequired');
+    expect(
+      validateResponsiblePersonForm({ ...validResponsiblePerson, estimatedAge: '17' }, { requireAdult: true })
+        .estimatedAge,
+    ).toBe('responsiblePersonMustBeAdult');
+    expect(
+      validateResponsiblePersonForm({ ...validResponsiblePerson, estimatedAge: '18' }, { requireAdult: true })
+        .estimatedAge,
+    ).toBeUndefined();
+  });
+
   it('formats the display name for the created person', () => {
     expect(getResponsiblePersonDisplayName(validResponsiblePerson)).toBe('María De la Cruz Quispe');
   });

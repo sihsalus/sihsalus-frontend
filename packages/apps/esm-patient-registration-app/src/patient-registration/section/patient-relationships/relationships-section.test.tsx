@@ -1,9 +1,11 @@
+import { useConfig } from '@openmrs/esm-framework';
 import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { Form, Formik } from 'formik';
 
+import { type RegistrationConfig } from '../../../config-schema';
 import { type Resources, ResourcesContext } from '../../../offline.resources';
-import { savePerson } from '../../patient-registration.resource';
+import { fetchPerson, savePerson } from '../../patient-registration.resource';
 import { type FormValues } from '../../patient-registration.types';
 import { PatientRegistrationContext } from '../../patient-registration-context';
 
@@ -42,7 +44,15 @@ const initialContextValues = {
   values: {} as FormValues,
 };
 
+const mockFetchPerson = vi.mocked(fetchPerson);
 const mockSavePerson = vi.mocked(savePerson);
+const mockUseConfig = vi.mocked(useConfig<RegistrationConfig>);
+
+const minorPatientValues = {
+  birthdateEstimated: true,
+  yearsEstimated: 12,
+  relationships: [{ action: 'ADD', relatedPersonUuid: '' }],
+} as FormValues;
 
 const relationshipTypes = {
   results: [
@@ -65,10 +75,20 @@ const relationshipTypes = {
 
 describe('RelationshipsSection', () => {
   beforeEach(() => {
+    mockFetchPerson.mockReset();
+    mockFetchPerson.mockResolvedValue([
+      { uuid: '42ae5ce0-d64b-11ea-9064-5adc43bbdd24', display: 'Person 1', age: 35 },
+      { uuid: '691eed12-c0f1-11e2-94be-8c13b969e334', display: 'Person 2', age: 40 },
+    ]);
     mockSavePerson.mockReset();
     mockSavePerson.mockResolvedValue({
       data: { uuid: 'created-person-uuid', display: 'María Quispe' },
     } as Awaited<ReturnType<typeof savePerson>>);
+    mockUseConfig.mockReturnValue({
+      relationshipOptions: {
+        minorResponsibleRelationshipTypes: ['057de23f-3d9c-4314-9391-4452970739c6/aIsToB'],
+      },
+    } as RegistrationConfig);
     mockResourcesContextValue = {
       ...mockResourcesContextValue,
       relationshipTypes: null,
@@ -232,6 +252,77 @@ describe('RelationshipsSection', () => {
     expect(screen.getByRole('searchbox', { name: /full name/i })).toBeInTheDocument();
   });
 
+  it('keeps the selected existing person name after search selection', async () => {
+    const user = userEvent.setup();
+    const setFieldValue = vi.fn();
+    mockResourcesContextValue = {
+      ...mockResourcesContextValue,
+      relationshipTypes: relationshipTypes,
+    };
+
+    render(
+      <ResourcesContext.Provider value={mockResourcesContextValue}>
+        <Formik
+          initialValues={{
+            relationships: [{ action: 'ADD', relatedPersonUuid: '' }],
+          }}
+          onSubmit={null}
+        >
+          <Form>
+            <PatientRegistrationContext.Provider value={{ ...initialContextValues, setFieldValue }}>
+              <RelationshipsSection />
+            </PatientRegistrationContext.Provider>
+          </Form>
+        </Formik>
+      </ResourcesContext.Provider>,
+    );
+
+    await user.type(screen.getByRole('searchbox', { name: /full name/i }), 'Person');
+    await user.click(await screen.findByText('Person 1'));
+
+    expect(setFieldValue).toHaveBeenCalledWith(
+      'relationships[0].relatedPersonUuid',
+      '42ae5ce0-d64b-11ea-9064-5adc43bbdd24',
+    );
+    expect(setFieldValue).toHaveBeenCalledWith('relationships[0].relatedPersonName', 'Person 1');
+  });
+
+  it('rejects selecting an underage existing person as the responsible person for a minor patient', async () => {
+    const user = userEvent.setup();
+    const setFieldValue = vi.fn();
+    mockFetchPerson.mockResolvedValue([{ uuid: 'minor-person-uuid', display: 'Minor Person', age: 16 }]);
+    mockResourcesContextValue = {
+      ...mockResourcesContextValue,
+      relationshipTypes: relationshipTypes,
+    };
+
+    render(
+      <ResourcesContext.Provider value={mockResourcesContextValue}>
+        <Formik initialValues={minorPatientValues} onSubmit={null}>
+          <Form>
+            <PatientRegistrationContext.Provider
+              value={{ ...initialContextValues, setFieldValue, values: minorPatientValues }}
+            >
+              <RelationshipsSection />
+            </PatientRegistrationContext.Provider>
+          </Form>
+        </Formik>
+      </ResourcesContext.Provider>,
+    );
+
+    await user.selectOptions(
+      screen.getByRole('combobox', { name: /relationship/i }),
+      '057de23f-3d9c-4314-9391-4452970739c6/aIsToB',
+    );
+    await user.type(screen.getByRole('searchbox', { name: /full name/i }), 'Minor');
+    await user.click(await screen.findByText('Minor Person'));
+
+    expect(screen.getByText('Responsible person must be an adult')).toBeInTheDocument();
+    expect(setFieldValue).not.toHaveBeenCalledWith('relationships[0].relatedPersonUuid', 'minor-person-uuid');
+    expect(setFieldValue).toHaveBeenCalledWith('relationships[0].relatedPersonUuid', '');
+    expect(setFieldValue).toHaveBeenCalledWith('relationships[0].relatedPersonName', '');
+  });
+
   it('seeds one empty relationship row for sections that request a default responsible person form', async () => {
     const setFieldValue = vi.fn();
     mockResourcesContextValue = {
@@ -321,6 +412,42 @@ describe('RelationshipsSection', () => {
       '057de23f-3d9c-4314-9391-4452970739c6/aIsToB',
     );
     expect(setFieldValue).toHaveBeenCalledWith('relationships[0].action', 'ADD');
+  });
+
+  it('does not create an underage responsible person for a minor patient', async () => {
+    const user = userEvent.setup();
+    mockResourcesContextValue = {
+      ...mockResourcesContextValue,
+      relationshipTypes: relationshipTypes,
+    };
+
+    render(
+      <ResourcesContext.Provider value={mockResourcesContextValue}>
+        <Formik initialValues={minorPatientValues} onSubmit={null}>
+          <Form>
+            <PatientRegistrationContext.Provider value={{ ...initialContextValues, values: minorPatientValues }}>
+              <RelationshipsSection />
+            </PatientRegistrationContext.Provider>
+          </Form>
+        </Formik>
+      </ResourcesContext.Provider>,
+    );
+
+    await user.click(screen.getByRole('tab', { name: /register new person/i }));
+    await user.selectOptions(
+      screen.getByRole('combobox', { name: /relationship/i }),
+      '057de23f-3d9c-4314-9391-4452970739c6/aIsToB',
+    );
+    await user.type(screen.getByRole('textbox', { name: /first name/i }), 'Luis');
+    await user.type(screen.getByRole('textbox', { name: /^family name/i }), 'Quispe');
+    await user.selectOptions(screen.getByRole('combobox', { name: /sex/i }), 'male');
+    await user.type(screen.getByRole('textbox', { name: /^approximate age$/i }), '16');
+    await user.click(screen.getByRole('button', { name: /register and link to patient/i }));
+
+    expect(mockSavePerson).not.toHaveBeenCalled();
+    await waitFor(() =>
+      expect(screen.getByRole('textbox', { name: /^approximate age$/i })).toHaveAttribute('aria-invalid', 'true'),
+    );
   });
 
   it('does not create a person until the minimum responsible person data is valid', async () => {

@@ -91,6 +91,10 @@ const mockBillsData = [
 ];
 
 describe('BillsTable', () => {
+  afterEach(() => {
+    vi.unstubAllGlobals();
+  });
+
   beforeEach(() => {
     mockBills.mockImplementation(() => ({
       bills: mockBillsData,
@@ -211,6 +215,25 @@ describe('BillsTable', () => {
     const invoiceNumberLink = screen.getByRole('link', { name: 'RCP-001' });
     expect(invoiceNumberLink).toBeInTheDocument();
 
+    expect(invoiceNumberLink).toHaveAttribute('href', '/openmrs/spa/home/billing/patient/uuid1/1');
+  });
+
+  test('should use spa base from global getOpenmrsSpaBase when building invoice links', () => {
+    vi.stubGlobal(
+      'getOpenmrsSpaBase',
+      vi.fn(() => '/openmrs/clinic/spa/'),
+    );
+
+    render(<BillsTable />);
+
+    const invoiceNumberLink = screen.getByRole('link', { name: 'RCP-001' });
+    expect(invoiceNumberLink).toHaveAttribute('href', '/openmrs/clinic/spa/home/billing/patient/uuid1/1');
+  });
+
+  test('should fallback to default spa base when getOpenmrsSpaBase is unavailable', () => {
+    render(<BillsTable />);
+
+    const invoiceNumberLink = screen.getByRole('link', { name: 'RCP-001' });
     expect(invoiceNumberLink).toHaveAttribute('href', '/openmrs/spa/home/billing/patient/uuid1/1');
   });
 

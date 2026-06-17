@@ -4,6 +4,7 @@ import {
   launchWorkspace2,
   openmrsFetch,
   useConfig,
+  userHasAccess,
 } from '@openmrs/esm-framework';
 import { screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
@@ -19,11 +20,17 @@ vi.mock('../action-menu/procedures-action-menu.component', () => ({
 const mockUseConfig = vi.mocked(useConfig<ConfigObject>);
 const mockOpenmrsFetch = vi.mocked(openmrsFetch);
 const mockLaunchWorkspace2 = vi.mocked(launchWorkspace2);
+const mockUserHasAccess = vi.mocked(userHasAccess);
 const mockFhirPatient = mockPatient as unknown as fhir.Patient;
 
 mockUseConfig.mockReturnValue({
   ...getDefaultsFromConfigSchema(configSchema),
   detailedViewPageSize: 20,
+});
+
+beforeEach(() => {
+  vi.clearAllMocks();
+  mockUserHasAccess.mockReturnValue(true);
 });
 
 describe('ProceduresDetailedSummary', () => {

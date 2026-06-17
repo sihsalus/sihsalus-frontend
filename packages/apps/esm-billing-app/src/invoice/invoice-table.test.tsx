@@ -1,4 +1,4 @@
-import { getDefaultsFromConfigSchema, showModal, useConfig } from '@openmrs/esm-framework';
+import { getDefaultsFromConfigSchema, showModal, useConfig, userHasAccess } from '@openmrs/esm-framework';
 import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { vi } from 'vitest';
@@ -8,6 +8,7 @@ import InvoiceTable from './invoice-table.component';
 
 const mockUseConfig = vi.mocked(useConfig<BillingConfig>);
 const mockShowModal = vi.mocked(showModal);
+const mockUserHasAccess = vi.mocked(userHasAccess);
 
 vi.mock('../helpers', () => ({
   convertToCurrency: vi.fn((price) => `USD ${price}`),
@@ -76,6 +77,7 @@ describe('InvoiceTable', () => {
       ...getDefaultsFromConfigSchema(configSchema),
       defaultCurrency: 'USD',
     });
+    mockUserHasAccess.mockReturnValue(true);
   });
 
   it('should render table headers correctly', () => {

@@ -1,7 +1,7 @@
-@use '@carbon/colors';
-@use '@carbon/layout';
-@use '@carbon/type';
-@use '@openmrs/esm-styleguide/src/vars' as *;
+@use "@carbon/colors";
+@use "@carbon/layout";
+@use "@carbon/type";
+@use "@openmrs/esm-styleguide/src/vars" as *;
 
 .form {
   display: flex;
@@ -36,6 +36,11 @@
 
 .service {
   padding: layout.$spacing-05 layout.$spacing-04;
+  border: 0;
+  width: 100%;
+  text-align: left;
+  background: transparent;
+  font: inherit;
 }
 
 .conceptsList {
@@ -44,25 +49,26 @@
   overflow-y: auto;
   border: 1px solid $ui-03;
 
-  li:hover {
+  li:hover button,
+  li:focus-within {
     background-color: $ui-03;
   }
 }
 
 .emptyResults {
-  @include type.type-style('body-compact-01');
+  @include type.type-style("body-compact-01");
   color: $text-02;
   min-height: layout.$spacing-05;
   border: 1px solid $ui-03;
 }
 
 .conceptLabel {
-  @include type.type-style('label-02');
+  @include type.type-style("label-02");
   margin-bottom: layout.$spacing-05;
 }
 
 .errorMessage {
-  @include type.type-style('label-02');
+  @include type.type-style("label-02");
   color: $danger;
   margin-bottom: layout.$spacing-05;
 }
@@ -72,7 +78,7 @@
 }
 
 .serviceNameLabel {
-  @include type.type-style('body-compact-02');
+  @include type.type-style("body-compact-02");
 }
 
 .button {
@@ -87,7 +93,7 @@
   }
 
   :global(.cds--inline-loading__text) {
-    @include type.type-style('body-01');
+    @include type.type-style("body-01");
   }
 }
 

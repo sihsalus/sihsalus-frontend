@@ -136,7 +136,7 @@ describe('EditBillItem', () => {
 
   test('submits the form and shows a success notification', async () => {
     const user = userEvent.setup();
-    mockUpdateBillItems.mockResolvedValueOnce({} as FetchResponse<any>);
+    mockUpdateBillItems.mockResolvedValueOnce({} as FetchResponse<unknown>);
 
     render(
       <EditBillLineItemModal bill={mockBill} item={mockItem} closeModal={mockCloseModal} onMutate={mockOnMutate} />,
@@ -177,7 +177,7 @@ describe('EditBillItem', () => {
 
   test('preserves billable service UUIDs for other line items when editing', async () => {
     const user = userEvent.setup();
-    mockUpdateBillItems.mockResolvedValueOnce({} as FetchResponse<any>);
+    mockUpdateBillItems.mockResolvedValueOnce({} as FetchResponse<unknown>);
 
     // Bill with multiple line items with different billable services
     const billWithMultipleItems: MappedBill = {
@@ -349,7 +349,7 @@ describe('EditBillItem', () => {
 
   test('allows updating the quantity of a zero-price (free) service while keeping price at zero', async () => {
     const user = userEvent.setup();
-    mockUpdateBillItems.mockResolvedValueOnce({} as FetchResponse<any>);
+    mockUpdateBillItems.mockResolvedValueOnce({} as FetchResponse<unknown>);
 
     const freeServiceItem = { ...mockItem, price: 0 };
     const billWithFreeItem: MappedBill = {

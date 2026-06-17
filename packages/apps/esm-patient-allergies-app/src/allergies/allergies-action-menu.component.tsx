@@ -1,5 +1,5 @@
 import { Layer, OverflowMenu, OverflowMenuItem } from '@carbon/react';
-import { showModal, useLayoutType, useSession, userHasAccess } from '@openmrs/esm-framework';
+import { showModal, useLayoutType, userHasAccess, useSession } from '@openmrs/esm-framework';
 import { launchPatientWorkspace } from '@openmrs/esm-patient-common-lib';
 import React, { useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -17,18 +17,17 @@ export const AllergiesActionMenu = ({ allergy, patientUuid }: allergiesActionMen
   const isTablet = useLayoutType() === 'tablet';
   const session = useSession();
   const canEdit = userHasAccess(allergiesEditPrivilege, session?.user);
-  void React;
-
-  if (!canEdit) {
-    return null;
-  }
-
   const launchEditAllergiesForm = useCallback(() => {
     launchPatientWorkspace(patientAllergiesFormWorkspace, {
       allergy,
       formContext: 'editing',
     });
   }, [allergy]);
+  void React;
+
+  if (!canEdit) {
+    return null;
+  }
 
   const launchDeleteAllergyDialog = (allergyId: string) => {
     const dispose = showModal('delete-allergy-modal', {

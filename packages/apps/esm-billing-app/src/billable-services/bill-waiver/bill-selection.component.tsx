@@ -23,11 +23,14 @@ const PatientBillsSelections: React.FC<{ bills: MappedBill; setPatientUuid: (pat
   const [selectedBills, setSelectedBills] = useState<Array<LineItem>>([]);
   const { defaultCurrency } = useConfig();
 
-  const checkBoxLabel = (lineItem) => {
+  const checkBoxLabel = (lineItem: LineItem) => {
     return `${lineItem.item === '' ? lineItem.billableService : lineItem.item} ${convertToCurrency(lineItem.price, defaultCurrency)}`;
   };
 
-  const handleOnCheckBoxChange = (event, { checked, id }) => {
+  const handleOnCheckBoxChange = (
+    _event: React.ChangeEvent<HTMLInputElement>,
+    { checked, id }: { checked: boolean; id: string },
+  ) => {
     const selectedLineItem = bills.lineItems.find((lineItem) => lineItem.uuid === id);
     if (checked) {
       setSelectedBills([...selectedBills, selectedLineItem]);

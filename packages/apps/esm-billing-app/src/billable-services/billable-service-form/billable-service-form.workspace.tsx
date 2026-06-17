@@ -240,7 +240,7 @@ const BillableServiceFormWorkspace: React.FC<Workspace2DefinitionProps<BillableS
     const payload = {
       name: data.name,
       shortName: data.shortName ?? '',
-      serviceType: data.serviceType!.uuid,
+      serviceType: data.serviceType?.uuid ?? '',
       servicePrices: data.payment.map((payment) => {
         const mode = paymentModes.find((m) => m.uuid === payment.paymentMode);
         return {
@@ -399,21 +399,23 @@ const BillableServiceFormWorkspace: React.FC<Workspace2DefinitionProps<BillableS
               if (searchResults && searchResults.length) {
                 return (
                   <ul className={styles.conceptsList}>
-                    {searchResults?.map((searchResult) => (
-                      <li
-                        className={styles.service}
-                        key={searchResult.concept.uuid}
-                        onClick={() => {
-                          setValue('concept', {
-                            uuid: searchResult.concept.uuid,
-                            display: searchResult.display,
-                          });
-                          setSearchTerm('');
-                        }}
-                      >
-                        {searchResult.display}
-                      </li>
-                    ))}
+                    {searchResults?.map((searchResult) => {
+                      const setConcept = () => {
+                        setValue('concept', {
+                          uuid: searchResult.concept.uuid,
+                          display: searchResult.display,
+                        });
+                        setSearchTerm('');
+                      };
+
+                      return (
+                        <li key={searchResult.concept.uuid}>
+                          <button className={styles.service} type="button" onClick={setConcept}>
+                            {searchResult.display}
+                          </button>
+                        </li>
+                      );
+                    })}
                   </ul>
                 );
               }

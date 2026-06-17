@@ -49,7 +49,7 @@ export const convertToCurrency = (amountToConvert: number, currencyType?: string
   return formattedAmount;
 };
 
-export const getGender = (gender: string, t) => {
+export const getGender = (gender: string, _t) => {
   switch (gender) {
     case 'male':
       return getCoreTranslation('male');

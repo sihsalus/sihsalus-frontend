@@ -1,4 +1,4 @@
-import { openmrsFetch } from '@openmrs/esm-framework';
+import { openmrsFetch, userHasAccess } from '@openmrs/esm-framework';
 import { screen } from '@testing-library/react';
 import React from 'react';
 import {
@@ -11,7 +11,9 @@ import {
 import AllergiesDetailedSummary from './allergies-detailed-summary.component';
 
 const mockOpenmrsFetch = openmrsFetch as vi.Mock;
+const mockUserHasAccess = vi.mocked(userHasAccess);
 mockOpenmrsFetch.mockImplementation(vi.fn());
+mockUserHasAccess.mockReturnValue(true);
 void React;
 
 describe('AllergiesDetailedSummary', () => {

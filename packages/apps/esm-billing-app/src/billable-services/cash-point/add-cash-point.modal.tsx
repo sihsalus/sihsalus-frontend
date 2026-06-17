@@ -19,7 +19,7 @@ interface AddCashPointModalProps {
 
 const AddCashPointModal: React.FC<AddCashPointModalProps> = ({ closeModal, onCashPointAdded }) => {
   const { t } = useTranslation();
-  const [locations, setLocations] = useState([]);
+  const [locations, setLocations] = useState<Array<{ id: string; label: string }>>([]);
 
   const cashPointSchema = z.object({
     name: z.string().min(1, t('cashPointNameRequired', 'Cash Point Name is required')),
@@ -49,13 +49,15 @@ const AddCashPointModal: React.FC<AddCashPointModalProps> = ({ closeModal, onCas
 
   const fetchLocations = useCallback(async () => {
     try {
-      const response = await openmrsFetch(`${restBaseUrl}/location?v=default`);
-      const allLocations = response.data.results.map((loc: any) => ({
+      const response = await openmrsFetch<{ results: Array<{ uuid: string; display: string }> }>(
+        `${restBaseUrl}/location?v=default`,
+      );
+      const allLocations = response.data.results.map((loc) => ({
         id: loc.uuid,
         label: loc.display,
       }));
       setLocations(allLocations);
-    } catch (err) {
+    } catch (_err) {
       showSnackbar({
         title: getCoreTranslation('error'),
         subtitle: t('errorFetchingLocations', 'An error occurred while fetching locations.'),

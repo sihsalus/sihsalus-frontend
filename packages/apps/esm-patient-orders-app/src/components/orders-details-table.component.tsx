@@ -38,8 +38,8 @@ import {
   useLayoutType,
   usePagination,
   usePatient,
-  useSession,
   userHasAccess,
+  useSession,
 } from '@openmrs/esm-framework';
 import {
   CardHeader,
@@ -625,11 +625,6 @@ function OrderBasketItemActions({
   const { t } = useTranslation();
   const { orders, setOrders } = useOrderBasket<MutableOrderBasketItem>(orderItem.orderType.uuid);
   const alreadyInBasket = orders.some((x) => x.uuid === orderItem.uuid);
-
-  if (!canEditOrders && !(orderItem?.type === 'testorder' && canEditResults)) {
-    return null;
-  }
-
   const handleModifyClick = useCallback(() => {
     if (orderItem.type === 'drugorder') {
       void getDrugOrderByUuid(orderItem.uuid)
@@ -678,6 +673,10 @@ function OrderBasketItemActions({
       openOrderBasket();
     }
   }, [orderItem, setOrders, orders, openOrderBasket]);
+
+  if (!canEditOrders && !(orderItem?.type === 'testorder' && canEditResults)) {
+    return null;
+  }
 
   return (
     <Layer className={styles.layer}>

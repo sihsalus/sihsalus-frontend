@@ -130,7 +130,7 @@ const LocationPickerView: React.FC<LocationPickerProps> = ({ hideWelcomeMessage,
 
   return (
     <div className={styles.locationPickerContainer}>
-      <picture className={styles.backgroundMedia} aria-hidden="true">
+      <picture className={styles.backgroundMedia}>
         <source srcSet={loginImageAvifSrc} type="image/avif" />
         <img src={loginImageSrc} alt="" width="1672" height="941" />
       </picture>

@@ -1,7 +1,14 @@
 import { createAttachment, openmrsFetch, restBaseUrl, type UploadedFile } from '@openmrs/esm-framework';
 import dayjs from 'dayjs';
 
-import { type Encounter, type Patient, type PatientIdentifier, type Relationship } from './patient-registration.types';
+import {
+  type Encounter,
+  type Patient,
+  type PatientAddress,
+  type PatientIdentifier,
+  type PersonAttributeResponse,
+  type Relationship,
+} from './patient-registration.types';
 
 export interface SavePersonPayload {
   names: Array<{
@@ -14,6 +21,13 @@ export interface SavePersonPayload {
   gender: string;
   birthdate?: string;
   birthdateEstimated?: boolean;
+}
+
+export interface PersonRegistrationCopyData {
+  uuid: string;
+  display?: string;
+  addresses?: Array<PatientAddress>;
+  attributes?: Array<PersonAttributeResponse>;
 }
 
 function dataURItoFile(dataURI: string) {
@@ -194,6 +208,21 @@ export async function fetchPerson(query: string, abortController: AbortControlle
   });
 
   return results;
+}
+
+export async function fetchPersonRegistrationCopyData(personUuid: string) {
+  const abortController = new AbortController();
+  const representation =
+    'custom:(uuid,display,addresses:(uuid,preferred,address1,address2,address3,address4,address5,address6,address7,address8,address9,address10,address11,address12,address13,address14,address15,cityVillage,stateProvince,countyDistrict,postalCode,country),attributes:(uuid,display,attributeType:(uuid,display,format),value))';
+
+  const response = await openmrsFetch<PersonRegistrationCopyData>(
+    `${restBaseUrl}/person/${personUuid}?v=${representation}`,
+    {
+      signal: abortController.signal,
+    },
+  );
+
+  return response.data;
 }
 
 export async function addPatientIdentifier(patientUuid: string, patientIdentifier: PatientIdentifier) {

@@ -1,4 +1,4 @@
-import { showModal, useLayoutType } from '@openmrs/esm-framework';
+import { showModal, useLayoutType, userHasAccess } from '@openmrs/esm-framework';
 import { launchPatientWorkspace } from '@openmrs/esm-patient-common-lib';
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
@@ -13,6 +13,9 @@ vi.mock('@openmrs/esm-patient-common-lib', async () => ({
 const mockLaunchPatientWorkspace = vi.mocked(launchPatientWorkspace);
 const mockShowModal = vi.mocked(showModal);
 const mockUseLayoutType = vi.mocked(useLayoutType);
+
+// The action menu is gated behind the conditions edit privilege; grant it so the menu renders.
+vi.mocked(userHasAccess).mockReturnValue(true);
 
 const mockCondition: Condition = {
   clinicalStatus: 'active',

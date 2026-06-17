@@ -1,4 +1,4 @@
-import { getDefaultsFromConfigSchema, showModal, useConfig } from '@openmrs/esm-framework';
+import { getDefaultsFromConfigSchema, showModal, useConfig, userHasAccess } from '@openmrs/esm-framework';
 import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { vi } from 'vitest';
@@ -8,6 +8,9 @@ import InvoiceTable from './invoice-table.component';
 
 const mockUseConfig = vi.mocked(useConfig<BillingConfig>);
 const mockShowModal = vi.mocked(showModal);
+
+// The line-item action menu is gated behind the billing edit privilege; grant it so the menu renders.
+vi.mocked(userHasAccess).mockReturnValue(true);
 
 vi.mock('../helpers', () => ({
   convertToCurrency: vi.fn((price) => `USD ${price}`),

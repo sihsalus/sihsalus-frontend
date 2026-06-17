@@ -15,10 +15,6 @@ const LineItemActionMenu: React.FC<LineItemActionMenuProps> = ({ bill, item, onM
   const session = useSession();
   const canEdit = userHasAccess('app:clinical.chart.billing.edit', session?.user);
 
-  if (!canEdit) {
-    return null;
-  }
-
   const handleEditLineItem = useCallback(() => {
     const dispose = showModal('edit-bill-line-item-modal', {
       bill,
@@ -37,6 +33,10 @@ const LineItemActionMenu: React.FC<LineItemActionMenuProps> = ({ bill, item, onM
   }, [item, onMutate]);
 
   const isPending = bill?.status === 'PENDING';
+
+  if (!canEdit) {
+    return null;
+  }
 
   return (
     <Layer>

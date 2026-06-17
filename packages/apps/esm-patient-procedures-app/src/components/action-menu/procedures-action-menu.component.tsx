@@ -16,10 +16,6 @@ export const ProceduresActionMenu = ({ procedure, patientUuid }: ProceduresActio
   const session = useSession();
   const canEdit = userHasAccess('app:clinical.chart.procedures.edit', session?.user);
 
-  if (!canEdit) {
-    return null;
-  }
-
   const launchEditProcedureForm = useCallback(
     () =>
       launchWorkspace2('procedures-form-workspace', {
@@ -36,6 +32,10 @@ export const ProceduresActionMenu = ({ procedure, patientUuid }: ProceduresActio
       patientUuid,
     });
   };
+
+  if (!canEdit) {
+    return null;
+  }
 
   return (
     <Layer className={styles.layer}>

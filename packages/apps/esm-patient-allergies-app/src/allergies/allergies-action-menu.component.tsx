@@ -19,10 +19,6 @@ export const AllergiesActionMenu = ({ allergy, patientUuid }: allergiesActionMen
   const canEdit = userHasAccess(allergiesEditPrivilege, session?.user);
   void React;
 
-  if (!canEdit) {
-    return null;
-  }
-
   const launchEditAllergiesForm = useCallback(() => {
     launchPatientWorkspace(patientAllergiesFormWorkspace, {
       allergy,
@@ -37,6 +33,10 @@ export const AllergiesActionMenu = ({ allergy, patientUuid }: allergiesActionMen
       patientUuid,
     });
   };
+
+  if (!canEdit) {
+    return null;
+  }
 
   return (
     <Layer className={styles.layer}>

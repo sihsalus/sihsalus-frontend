@@ -4,6 +4,7 @@ import {
   launchWorkspace2,
   openmrsFetch,
   useConfig,
+  userHasAccess,
 } from '@openmrs/esm-framework';
 import { screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
@@ -20,6 +21,9 @@ mockUseConfig.mockReturnValue({
   ...getDefaultsFromConfigSchema(configSchema),
   overviewPageSize: 5,
 });
+
+// The "Add" action is gated behind the procedures edit privilege; grant it so the button renders.
+vi.mocked(userHasAccess).mockReturnValue(true);
 
 describe('ProceduresOverview', () => {
   it('renders an empty state view if procedures data is unavailable', async () => {

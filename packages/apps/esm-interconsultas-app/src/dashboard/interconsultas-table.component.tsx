@@ -161,7 +161,7 @@ const InterconsultasTable: React.FC<InterconsultasTableProps> = ({ filter }) => 
         </OverflowMenu>
       );
     },
-    [openModal, t],
+    [canEdit, openModal, t],
   );
 
   const tableRows = useMemo(

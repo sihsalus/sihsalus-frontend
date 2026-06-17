@@ -1,3 +1,4 @@
+import { userHasAccess } from '@openmrs/esm-framework';
 import { launchPatientWorkspace } from '@openmrs/esm-patient-common-lib';
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
@@ -22,6 +23,9 @@ vi.mock('@openmrs/esm-patient-common-lib', async () => ({
 const mockLaunchPatientWorkspace = vi.mocked(launchPatientWorkspace);
 const mockUseConditions = vi.mocked(useConditions);
 const fhirMockPatient = mockPatient as unknown as fhir.Patient;
+
+// The "Add"/"Record" actions are gated behind the conditions edit privilege; grant it so they render.
+vi.mocked(userHasAccess).mockReturnValue(true);
 
 beforeEach(() => {
   vi.clearAllMocks();

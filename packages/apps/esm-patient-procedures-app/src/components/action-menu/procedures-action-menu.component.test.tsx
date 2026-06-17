@@ -15,6 +15,8 @@ vi.mock('@openmrs/esm-framework', async () => ({
   launchWorkspace2: vi.fn(),
   showModal: vi.fn().mockReturnValue(vi.fn()),
   useLayoutType: vi.fn().mockReturnValue('small-desktop'),
+  // The action menu is gated behind the procedures edit privilege; grant it so the menu renders.
+  userHasAccess: vi.fn(() => true),
 }));
 
 const mockProcedure = mockProceduresResponse.results[0] as Procedure;

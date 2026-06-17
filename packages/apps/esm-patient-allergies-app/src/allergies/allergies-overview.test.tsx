@@ -1,4 +1,4 @@
-import { openmrsFetch } from '@openmrs/esm-framework';
+import { openmrsFetch, userHasAccess } from '@openmrs/esm-framework';
 import { screen } from '@testing-library/react';
 import React from 'react';
 import {
@@ -12,6 +12,9 @@ import AllergiesOverview from './allergies-overview.component';
 
 const mockOpenmrsFetch = openmrsFetch as vi.Mock;
 void React;
+
+// The "Record" action is gated behind the allergies edit privilege; grant it so it renders.
+vi.mocked(userHasAccess).mockReturnValue(true);
 
 describe('AllergiesOverview', () => {
   it('renders an empty state view if allergy data is unavailable', async () => {

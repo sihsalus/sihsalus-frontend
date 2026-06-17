@@ -17,10 +17,6 @@ export const ConditionsActionMenu = ({ condition, patientUuid }: conditionsActio
   const session = useSession();
   const canEdit = userHasAccess('app:clinical.chart.conditions.edit', session?.user);
 
-  if (!canEdit) {
-    return null;
-  }
-
   const launchEditConditionsForm = useCallback(
     () =>
       launchPatientWorkspace('conditions-form-workspace', {
@@ -38,6 +34,10 @@ export const ConditionsActionMenu = ({ condition, patientUuid }: conditionsActio
       patientUuid,
     });
   };
+
+  if (!canEdit) {
+    return null;
+  }
 
   return (
     <Layer className={styles.layer}>

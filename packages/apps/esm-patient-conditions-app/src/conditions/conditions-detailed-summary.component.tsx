@@ -13,7 +13,7 @@ import {
   TableRow,
   Tile,
 } from '@carbon/react';
-import { AddIcon, formatDate, parseDate, useLayoutType } from '@openmrs/esm-framework';
+import { AddIcon, formatDate, parseDate, useLayoutType, useSession, userHasAccess } from '@openmrs/esm-framework';
 import {
   CardHeader,
   EmptyState,
@@ -77,6 +77,8 @@ const getSectionCopy = (section: ConditionSection, t: TFunction) => {
 
 function ConditionsDetailedTable({ patient, section = 'antecedents' }: ConditionsDetailedSummaryProps) {
   const { t } = useTranslation();
+  const session = useSession();
+  const canEdit = userHasAccess('app:clinical.chart.conditions.edit', session?.user);
   const sectionCopy = getSectionCopy(section, t);
   const displayText = sectionCopy.displayText;
   const headerTitle = sectionCopy.headerTitle;
@@ -196,14 +198,16 @@ function ConditionsDetailedTable({ patient, section = 'antecedents' }: Condition
               />
             </div>
             <div className={styles.divider}>|</div>
-            <Button
-              kind="ghost"
-              renderIcon={(props: ComponentProps<typeof AddIcon>) => <AddIcon size={16} {...props} />}
-              iconDescription={sectionCopy.addIconDescription}
-              onClick={launchConditionsForm}
-            >
-              {t('add', 'Add')}
-            </Button>
+            {canEdit ? (
+              <Button
+                kind="ghost"
+                renderIcon={(props: ComponentProps<typeof AddIcon>) => <AddIcon size={16} {...props} />}
+                iconDescription={sectionCopy.addIconDescription}
+                onClick={launchConditionsForm}
+              >
+                {t('add', 'Add')}
+              </Button>
+            ) : null}
           </div>
         </CardHeader>
         <DataTable
@@ -278,7 +282,7 @@ function ConditionsDetailedTable({ patient, section = 'antecedents' }: Condition
       </div>
     );
   }
-  return <EmptyState displayText={displayText} headerTitle={headerTitle} launchForm={launchConditionsForm} />;
+  return <EmptyState displayText={displayText} headerTitle={headerTitle} launchForm={canEdit ? launchConditionsForm : undefined} />;
 }
 
 function ConditionsDetailedSummary({ patient }: ConditionsDetailedSummaryProps) {

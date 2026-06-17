@@ -8,6 +8,8 @@ import {
   useConfig,
   useLayoutType,
   usePatient,
+  useSession,
+  userHasAccess,
 } from '@openmrs/esm-framework';
 import { CardHeader, EmptyState, ErrorState, useVisitOrOfflineVisit } from '@openmrs/esm-patient-common-lib';
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
@@ -34,6 +36,8 @@ interface VitalsOverviewProps {
 
 const VitalsOverview: React.FC<VitalsOverviewProps> = ({ patientUuid, pageSize, urlLabel, pageUrl, patient }) => {
   const { t } = useTranslation();
+  const session = useSession();
+  const canEdit = userHasAccess('app:clinical.chart.vitals.edit', session?.user);
   const config = useConfig<ConfigObject>();
   const headerTitle = t('vitals', 'Vitals');
   const [chartView, setChartView] = useState(false);
@@ -218,14 +222,16 @@ const VitalsOverview: React.FC<VitalsOverviewProps> = ({ patientUuid, pageSize, 
                         {t('print', 'Print')}
                       </Button>
                     )}
-                    <Button
-                      kind="ghost"
-                      renderIcon={Add}
-                      iconDescription="Add vitals"
-                      onClick={launchVitalsBiometricsForm}
-                    >
-                      {t('add', 'Add')}
-                    </Button>
+                    {canEdit ? (
+                      <Button
+                        kind="ghost"
+                        renderIcon={Add}
+                        iconDescription="Add vitals"
+                        onClick={launchVitalsBiometricsForm}
+                      >
+                        {t('add', 'Add')}
+                      </Button>
+                    ) : null}
                   </>
                 </div>
               </CardHeader>
@@ -252,7 +258,7 @@ const VitalsOverview: React.FC<VitalsOverviewProps> = ({ patientUuid, pageSize, 
           <EmptyState
             displayText={t('vitalSigns', 'Vital signs')}
             headerTitle={headerTitle}
-            launchForm={launchVitalsBiometricsForm}
+            launchForm={canEdit ? launchVitalsBiometricsForm : undefined}
           />
         );
       })()}

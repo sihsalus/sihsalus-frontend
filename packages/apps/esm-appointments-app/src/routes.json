@@ -8,6 +8,7 @@
       "name": "home-appointments",
       "slot": "homepage-widgets-slot",
       "component": "homeAppointments",
+      "privileges": "app:appointments",
       "order": 1
     },
     {
@@ -31,47 +32,56 @@
     {
       "name": "appointments-calendar-dashboard-link",
       "slot": "calendar-dashboard-slot",
-      "component": "appointmentsCalendarDashboardLink"
+      "component": "appointmentsCalendarDashboardLink",
+      "privileges": "app:appointments"
     },
     {
       "name": "todays-appointments-dashboard",
       "slot": "todays-appointment-slot",
-      "component": "homeAppointments"
+      "component": "homeAppointments",
+      "privileges": "app:appointments"
     },
     {
       "name": "expected-appointments-panel",
       "slot": "scheduled-appointments-panels-slot",
-      "component": "appointmentsList"
+      "component": "appointmentsList",
+      "privileges": "app:appointments"
     },
     {
       "name": "checked-in-appointments-panel",
       "slot": "scheduled-appointments-panels-slot",
-      "component": "appointmentsList"
+      "component": "appointmentsList",
+      "privileges": "app:appointments"
     },
     {
       "name": "completed-appointments-panel",
       "slot": "scheduled-appointments-panels-slot",
-      "component": "appointmentsList"
+      "component": "appointmentsList",
+      "privileges": "app:appointments"
     },
     {
       "name": "missed-appointments-panel",
       "slot": "scheduled-appointments-panels-slot",
-      "component": "appointmentsList"
+      "component": "appointmentsList",
+      "privileges": "app:appointments"
     },
     {
       "name": "cancelled-appointments-panel",
       "slot": "scheduled-appointments-panels-slot",
-      "component": "appointmentsList"
+      "component": "appointmentsList",
+      "privileges": "app:appointments"
     },
     {
       "name": "early-appointments-panel",
-      "component": "earlyAppointments"
+      "component": "earlyAppointments",
+      "privileges": "app:appointments"
     },
     {
       "name": "patient-appointments-summary-dashboard",
       "component": "patientAppointmentsSummaryDashboardLink",
       "slot": "patient-chart-dashboard-slot",
       "order": 21,
+      "privileges": "app:clinical.chart.appointments",
       "meta": {
         "columns": 1,
         "columnSpan": 1,
@@ -85,6 +95,7 @@
       "name": "patientAppointments-details-widget",
       "component": "patientAppointmentsDetailedSummary",
       "slot": "patient-chart-appointments-dashboard-slot",
+      "privileges": "app:clinical.chart.appointments",
       "meta": {
         "columnSpan": 1
       }
@@ -92,16 +103,19 @@
     {
       "name": "patient-upcoming-appointment-widget",
       "component": "patientUpcomingAppointmentsWidget",
-      "slot": "visit-form-top-slot"
+      "slot": "visit-form-top-slot",
+      "privileges": "app:appointments"
     },
     {
       "name": "search-patient",
-      "component": "searchPatient"
+      "component": "searchPatient",
+      "privileges": "app:appointments"
     },
     {
       "name": "home-appointments-tile",
       "slot": "home-metrics-tiles-slot",
-      "component": "homeAppointmentsTile"
+      "component": "homeAppointmentsTile",
+      "privileges": "app:appointments"
     }
   ],
   "modals": [
@@ -130,17 +144,20 @@
     {
       "name": "appointments-form-workspace",
       "component": "appointmentsFormWorkspace",
-      "window": "appointments-window"
+      "window": "appointments-window",
+      "privileges": "app:appointments"
     },
     {
       "name": "appointments-patient-search-workspace",
       "component": "searchPatient",
-      "window": "appointments-window"
+      "window": "appointments-window",
+      "privileges": "app:appointments"
     },
     {
       "name": "appointments-start-visit-workspace",
       "component": "@sihsalus/esm-patient-chart-app#startVisitWorkspace",
-      "window": "appointments-window"
+      "window": "appointments-window",
+      "privileges": "app:appointments"
     }
   ]
 }

@@ -8,17 +8,20 @@
     {
       "name": "maternal-health-forms-action-button",
       "slot": "patient-actions-slot",
-      "component": "maternalHealthFormsActionButton"
+      "component": "maternalHealthFormsActionButton",
+      "privileges": "app:clinical.chart.prenatalCare.edit"
     },
     {
       "name": "labour-and-delivery-dashboard",
       "slot": "patient-chart-labour-and-delivery-dashboard-slot",
-      "component": "labourAndDelivery"
+      "component": "labourAndDelivery",
+      "privileges": "app:clinical.chart.labourDelivery"
     },
     {
       "name": "labour-and-delivery-dashboard-link",
       "component": "labourAndDeliveryLink",
       "slot": "maternal-and-child-health-slot",
+      "privileges": "app:clinical.chart.labourDelivery",
       "meta": {
         "columns": 1,
         "columnSpan": 1,
@@ -49,6 +52,7 @@
       "name": "maternal-and-child-health-dashboard-group-link",
       "component": "maternalAndChildHealthSideNavGroup",
       "slot": "patient-chart-dashboard-slot",
+      "privileges": "app:clinical.chart.prenatalCare",
       "meta": {
         "slot": "maternal-and-child-health-slot",
         "isFolder": true
@@ -57,12 +61,14 @@
     {
       "name": "family-planning-dashboard",
       "slot": "patient-chart-family-planning-dashboard-slot",
-      "component": "familyPlanning"
+      "component": "familyPlanning",
+      "privileges": "app:clinical.chart.familyPlanning"
     },
     {
       "name": "family-planning-dashboard-link",
       "component": "familyPlanningLink",
       "slot": "maternal-and-child-health-slot",
+      "privileges": "app:clinical.chart.familyPlanning",
       "meta": {
         "columns": 1,
         "columnSpan": 1,
@@ -74,12 +80,14 @@
     {
       "name": "cancer-prevention-dashboard",
       "slot": "patient-chart-cancer-prevention-dashboard-slot",
-      "component": "cancerPrevention"
+      "component": "cancerPrevention",
+      "privileges": "app:clinical.chart.cancerPrevention"
     },
     {
       "name": "cancer-prevention-dashboard-link",
       "component": "cancerPreventionLink",
       "slot": "maternal-and-child-health-slot",
+      "privileges": "app:clinical.chart.cancerPrevention",
       "meta": {
         "columns": 1,
         "columnSpan": 1,
@@ -103,12 +111,14 @@
     {
       "name": "postnatal-care-dashboard",
       "slot": "patient-chart-postnatal-care-dashboard-slot",
-      "component": "postnatalCare"
+      "component": "postnatalCare",
+      "privileges": "app:clinical.chart.postnatalCare"
     },
     {
       "name": "postnatal-care-dashboard-link",
       "component": "postnatalCareLink",
       "slot": "maternal-and-child-health-slot",
+      "privileges": "app:clinical.chart.postnatalCare",
       "meta": {
         "columns": 1,
         "columnSpan": 1,
@@ -138,12 +148,14 @@
     {
       "name": "prenatal-care-dashboard",
       "slot": "patient-chart-prenatal-care-dashboard-slot",
-      "component": "prenatalCare"
+      "component": "prenatalCare",
+      "privileges": "app:clinical.chart.prenatalCare"
     },
     {
       "name": "prenatal-care-dashboard-link",
       "component": "prenatalCareLink",
       "slot": "maternal-and-child-health-slot",
+      "privileges": "app:clinical.chart.prenatalCare",
       "meta": {
         "columns": 1,
         "columnSpan": 1,
@@ -234,6 +246,7 @@
       "name": "prenatal-care-dashboard-route",
       "component": "hiddenDashboardMarker",
       "slot": "patient-chart-dashboard-slot",
+      "privileges": "app:clinical.chart.prenatalCare",
       "meta": {
         "slot": "patient-chart-prenatal-care-dashboard-slot",
         "path": "prenatal-care-dashboard",
@@ -247,6 +260,7 @@
       "name": "labour-and-delivery-dashboard-route",
       "component": "hiddenDashboardMarker",
       "slot": "patient-chart-dashboard-slot",
+      "privileges": "app:clinical.chart.labourDelivery",
       "meta": {
         "slot": "patient-chart-labour-and-delivery-dashboard-slot",
         "path": "labour-and-delivery-dashboard",
@@ -260,6 +274,7 @@
       "name": "postnatal-care-dashboard-route",
       "component": "hiddenDashboardMarker",
       "slot": "patient-chart-dashboard-slot",
+      "privileges": "app:clinical.chart.postnatalCare",
       "meta": {
         "slot": "patient-chart-postnatal-care-dashboard-slot",
         "path": "postnatal-care-dashboard",
@@ -273,6 +288,7 @@
       "name": "family-planning-dashboard-route",
       "component": "hiddenDashboardMarker",
       "slot": "patient-chart-dashboard-slot",
+      "privileges": "app:clinical.chart.familyPlanning",
       "meta": {
         "slot": "patient-chart-family-planning-dashboard-slot",
         "path": "family-planning-dashboard",
@@ -286,6 +302,7 @@
       "name": "cancer-prevention-dashboard-route",
       "component": "hiddenDashboardMarker",
       "slot": "patient-chart-dashboard-slot",
+      "privileges": "app:clinical.chart.cancerPrevention",
       "meta": {
         "slot": "patient-chart-cancer-prevention-dashboard-slot",
         "path": "cancer-prevention-dashboard",
@@ -299,25 +316,29 @@
   "modals": [
     {
       "name": "condition-delete-confirmation-dialog",
-      "component": "conditionFilterDeleteConfirmationDialog"
+      "component": "conditionFilterDeleteConfirmationDialog",
+      "privileges": "app:clinical.chart.prenatalCare.edit"
     }
   ],
   "workspaces": [
     {
       "name": "conditions-filter-form-workspace",
       "component": "conditionsFilterWorkspace",
+      "privileges": "app:clinical.chart.prenatalCare.edit",
       "title": "Agregar Condición",
       "type": "form"
     },
     {
       "name": "maternal-conditions-form-workspace",
       "component": "conditionsFilterWorkspace",
+      "privileges": "app:clinical.chart.prenatalCare.edit",
       "title": "Agregar Condición",
       "type": "form"
     },
     {
       "name": "maternal-health-forms-selector-workspace",
       "component": "maternalHealthFormsSelectorWorkspace",
+      "privileges": "app:clinical.chart.prenatalCare.edit",
       "title": "Formularios de Salud Materna",
       "type": "form"
     }
@@ -326,16 +347,19 @@
     {
       "name": "maternal-health-forms-selector-workspace",
       "component": "maternalHealthFormsSelectorWorkspace",
+      "privileges": "app:clinical.chart.prenatalCare.edit",
       "window": "patient-chart-maternal-health-forms"
     },
     {
       "name": "maternal-health-conditions-filter-form-workspace",
       "component": "conditionsFilterWorkspace",
+      "privileges": "app:clinical.chart.prenatalCare.edit",
       "window": "patient-chart-maternal-health-forms"
     },
     {
       "name": "maternal-health-maternal-conditions-form-workspace",
       "component": "conditionsFilterWorkspace",
+      "privileges": "app:clinical.chart.prenatalCare.edit",
       "window": "patient-chart-maternal-health-forms"
     }
   ],

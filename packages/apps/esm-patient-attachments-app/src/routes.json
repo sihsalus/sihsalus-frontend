@@ -7,12 +7,14 @@
     {
       "name": "attachments-overview-widget",
       "component": "attachmentsOverview",
-      "slot": "patient-chart-attachments-dashboard-slot"
+      "slot": "patient-chart-attachments-dashboard-slot",
+      "privileges": "app:clinical.chart.attachments"
     },
     {
       "name": "attachments-results-summary-dashboard",
       "component": "attachmentsSummaryResultsDashboard",
       "slot": "patient-chart-dashboard-slot",
+      "privileges": "app:clinical.chart.attachments",
       "meta": {
         "slot": "patient-chart-attachments-dashboard-slot",
         "path": "Attachments"
@@ -22,17 +24,20 @@
     {
       "name": "capture-photo-widget",
       "component": "capturePhotoWidget",
-      "slot": "capture-patient-photo-slot"
+      "slot": "capture-patient-photo-slot",
+      "privileges": "app:clinical.chart.attachments.edit"
     }
   ],
   "modals": [
     {
       "name": "capture-photo-modal",
-      "component": "capturePhotoModal"
+      "component": "capturePhotoModal",
+      "privileges": "app:clinical.chart.attachments.edit"
     },
     {
       "name": "delete-attachment-modal",
-      "component": "deleteAttachmentModal"
+      "component": "deleteAttachmentModal",
+      "privileges": "app:clinical.chart.attachments.edit"
     }
   ],
   "pages": []

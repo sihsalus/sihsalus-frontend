@@ -10,6 +10,7 @@
       "name": "outpatient-side-nav-ext",
       "component": "outpatientSideNav",
       "slot": "outpatient-sidebar-slot",
+      "privileges": "app:service-queues",
       "online": true,
       "offline": true
     },
@@ -47,31 +48,37 @@
     },
     {
       "name": "remove-queue-entry",
-      "component": "removeQueueEntry"
+      "component": "removeQueueEntry",
+      "privileges": "app:service-queues"
     },
     {
       "name": "clear-all-queue-entries",
-      "component": "clearAllQueueEntries"
+      "component": "clearAllQueueEntries",
+      "privileges": "app:service-queues"
     },
     {
       "name": "previous-visit-summary-widget",
       "component": "pastVisitSummary",
-      "slot": "previous-visit-summary-slot"
+      "slot": "previous-visit-summary-slot",
+      "privileges": "app:service-queues"
     },
     {
       "name": "active-visits-row-actions",
       "component": "activeVisitsRowActions",
-      "slot": "queue-table-serve-patient-slot"
+      "slot": "queue-table-serve-patient-slot",
+      "privileges": "app:service-queues"
     },
     {
       "name": "visit-form-queue-fields",
       "component": "visitFormQueueFields",
-      "slot": "visit-form-bottom-slot"
+      "slot": "visit-form-bottom-slot",
+      "privileges": "app:service-queues"
     },
     {
       "name": "queue-patient-info-queue-entry-status",
       "component": "patientBannerQueueEntryStatus",
-      "slot": "patient-banner-tags-slot"
+      "slot": "patient-banner-tags-slot",
+      "privileges": "app:service-queues"
     }
   ],
   "modals": [
@@ -117,25 +124,29 @@
       "name": "service-queues-service-form",
       "title": "addNewQueueService",
       "component": "addNewQueueServiceWorkspace",
-      "type": "service-queues"
+      "type": "service-queues",
+      "privileges": "app:service-queues"
     },
     {
       "name": "service-queues-room-workspace",
       "title": "addNewQueueServiceRoom",
       "component": "addNewQueueServiceRoomWorkspace",
-      "type": "service-queues"
+      "type": "service-queues",
+      "privileges": "app:service-queues"
     },
     {
       "name": "service-queues-linelist-filter",
       "title": "filter",
       "component": "queueLinelistFilterWorkspace",
-      "type": "service-queues"
+      "type": "service-queues",
+      "privileges": "app:service-queues"
     },
     {
       "name": "create-queue-entry-workspace",
       "title": "addPatientToQueue",
       "component": "createQueueEntryWorkspace",
       "type": "service-queues",
+      "privileges": "app:service-queues",
       "width": "wider"
     }
   ],
@@ -143,12 +154,14 @@
     {
       "name": "service-queues-patient-vitals-workspace",
       "component": "@sihsalus/esm-patient-vitals-app#vitalsBiometricsFormWorkspace",
-      "window": "service-queues-patient-vitals"
+      "window": "service-queues-patient-vitals",
+      "privileges": "app:service-queues"
     },
     {
       "name": "service-queues-visit-notes-workspace",
       "component": "@sihsalus/esm-patient-notes-app#visitNotesFormWorkspace",
-      "window": "service-queues-visit-note"
+      "window": "service-queues-visit-note",
+      "privileges": "app:service-queues"
     }
   ],
   "workspaceWindows2": [

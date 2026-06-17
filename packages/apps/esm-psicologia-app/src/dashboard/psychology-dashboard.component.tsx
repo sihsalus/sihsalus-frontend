@@ -1,5 +1,5 @@
 import { Button, DataTableSkeleton } from '@carbon/react';
-import { ErrorState, showModal, showSnackbar, useConfig } from '@openmrs/esm-framework';
+import { ErrorState, showModal, showSnackbar, useConfig, useSession, userHasAccess } from '@openmrs/esm-framework';
 import { CardHeader, EmptyState, launchPatientWorkspace } from '@openmrs/esm-patient-common-lib';
 import React from 'react';
 import { useTranslation } from 'react-i18next';
@@ -15,6 +15,8 @@ const patientFormEntryWorkspace = 'patient-form-entry-workspace';
 
 const PsychologyDashboard: React.FC<PsychologyDashboardProps> = ({ patientUuid }) => {
   const { t } = useTranslation();
+  const session = useSession();
+  const canEdit = userHasAccess('app:clinical.chart.psychology.edit', session?.user);
   const { encounterTypeUuid, formUuid } = useConfig<ConfigObject>();
   const { encounters, isLoading, error, mutate } = useEncounters(encounterTypeUuid, formUuid, patientUuid);
   const clinicalFormTitle = t('psicologia', 'Psicología');
@@ -82,7 +84,7 @@ const PsychologyDashboard: React.FC<PsychologyDashboardProps> = ({ patientUuid }
       <EmptyState
         headerTitle={clinicalFormTitle}
         displayText={clinicalFormTitle}
-        launchForm={() => launchPsychologyForm()}
+        launchForm={canEdit ? () => launchPsychologyForm() : undefined}
       />
     );
   }
@@ -90,11 +92,14 @@ const PsychologyDashboard: React.FC<PsychologyDashboardProps> = ({ patientUuid }
   return (
     <div>
       <CardHeader title={clinicalFormTitle}>
-        <Button onClick={() => launchPsychologyForm()} kind="ghost">
-          {t('add', 'Add')}
-        </Button>
+        {canEdit ? (
+          <Button onClick={() => launchPsychologyForm()} kind="ghost">
+            {t('add', 'Add')}
+          </Button>
+        ) : null}
       </CardHeader>
       <PsychologyTable
+        canEdit={canEdit}
         encounters={encounters}
         onEdit={launchPsychologyForm}
         onDelete={handleDeleteEncounter}

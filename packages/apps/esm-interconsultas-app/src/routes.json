@@ -31,6 +31,7 @@
     {
       "name": "interconsultas-chart-dashboard-link",
       "component": "interconsultasChartDashboardLink",
+      "privileges": "app:clinical.chart.interconsultations",
       "slot": "patient-chart-dashboard-slot",
       "order": 14,
       "meta": {
@@ -45,41 +46,49 @@
     {
       "name": "interconsultas-chart-widget",
       "component": "interconsultasChartWidget",
+      "privileges": "app:clinical.chart.interconsultations",
       "slot": "patient-chart-interconsultas-slot",
       "order": 0
     },
     {
       "name": "request-interconsulta-action-button",
       "component": "requestInterconsultaActionButton",
+      "privileges": "app:clinical.chart.interconsultations.edit",
       "slot": "patient-actions-slot"
     }
   ],
   "modals": [
     {
       "name": "receive-interconsulta-modal",
-      "component": "receiveInterconsultaModal"
+      "component": "receiveInterconsultaModal",
+      "privileges": "app:clinical.chart.interconsultations.edit"
     },
     {
       "name": "pickup-interconsulta-modal",
-      "component": "pickupInterconsultaModal"
+      "component": "pickupInterconsultaModal",
+      "privileges": "app:clinical.chart.interconsultations.edit"
     },
     {
       "name": "reject-interconsulta-modal",
-      "component": "rejectInterconsultaModal"
+      "component": "rejectInterconsultaModal",
+      "privileges": "app:clinical.chart.interconsultations.edit"
     },
     {
       "name": "respond-interconsulta-modal",
-      "component": "respondInterconsultaModal"
+      "component": "respondInterconsultaModal",
+      "privileges": "app:clinical.chart.interconsultations.edit"
     },
     {
       "name": "interconsulta-detail-modal",
-      "component": "interconsultaDetailModal"
+      "component": "interconsultaDetailModal",
+      "privileges": "app:clinical.chart.interconsultations"
     }
   ],
   "workspaces": [
     {
       "name": "request-interconsulta-workspace",
       "component": "requestInterconsultaWorkspace",
+      "privileges": "app:clinical.chart.interconsultations.edit",
       "title": "requestInterconsulta",
       "type": "form",
       "width": "wider"

@@ -23,6 +23,8 @@ import {
   parseDate,
   useConfig,
   useLayoutType,
+  useSession,
+  userHasAccess,
 } from '@openmrs/esm-framework';
 import { PatientChartPagination } from '@openmrs/esm-patient-common-lib';
 import React, { useCallback, useMemo, useState } from 'react';
@@ -38,6 +40,8 @@ type ProceduresOverviewProps = {
 const ProceduresOverview: React.FC<ProceduresOverviewProps> = ({ patientUuid }) => {
   const { overviewPageSize } = useConfig<ConfigObject>();
   const { t } = useTranslation();
+  const session = useSession();
+  const canEdit = userHasAccess('app:clinical.chart.procedures.edit', session?.user);
   const launchProceduresForm = useCallback(
     () => launchWorkspace2('procedures-form-workspace', { formContext: 'creating' }),
     [],
@@ -93,14 +97,16 @@ const ProceduresOverview: React.FC<ProceduresOverviewProps> = ({ patientUuid }) 
       <div className={styles.widgetCard}>
         <CardHeader title={headerTitle}>
           <span>{isValidating ? <InlineLoading /> : null}</span>
-          <Button
-            kind="ghost"
-            renderIcon={(props) => <Add size={16} {...props} />}
-            iconDescription={t('addProcedure', 'Add procedure')}
-            onClick={launchProceduresForm}
-          >
-            {t('add', 'Add')}
-          </Button>
+          {canEdit ? (
+            <Button
+              kind="ghost"
+              renderIcon={(props) => <Add size={16} {...props} />}
+              iconDescription={t('addProcedure', 'Add procedure')}
+              onClick={launchProceduresForm}
+            >
+              {t('add', 'Add')}
+            </Button>
+          ) : null}
         </CardHeader>
         <DataTable
           headers={headers}
@@ -153,7 +159,7 @@ const ProceduresOverview: React.FC<ProceduresOverviewProps> = ({ patientUuid }) 
     );
   }
 
-  return <EmptyCard displayText={displayText} headerTitle={headerTitle} launchForm={launchProceduresForm} />;
+  return <EmptyCard displayText={displayText} headerTitle={headerTitle} launchForm={canEdit ? launchProceduresForm : undefined} />;
 };
 
 export default ProceduresOverview;

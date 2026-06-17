@@ -95,9 +95,7 @@ const RelationshipView: React.FC<RelationshipViewProps> = ({
   const config = useConfig<RegistrationConfig>();
   const { setFieldValue } = React.useContext(PatientRegistrationContext);
   const [isInvalid, setIsInvalid] = useState(false);
-  const [personEntryMode, setPersonEntryMode] = useState<PersonEntryMode>(
-    relationship.relatedPersonUuid ? 'search' : 'create',
-  );
+  const [personEntryMode, setPersonEntryMode] = useState<PersonEntryMode>('search');
   const [newPersonValues, setNewPersonValues] = useState<ResponsiblePersonFormValues>({
     ...initialResponsiblePersonValues,
     relationshipType: relationship.relationshipType ?? '',
@@ -249,7 +247,7 @@ const RelationshipView: React.FC<RelationshipViewProps> = ({
   return relationship.action !== 'DELETE' ? (
     <div className={styles.relationship}>
       <div className={styles.relationshipHeader}>
-        <h4 className={styles.productiveHeading}>{t('relationshipPlaceholder', 'Relationship')}</h4>
+        <h4 className={styles.productiveHeading}>{t('relationshipPlaceholder', 'Family member or companion')}</h4>
         <Button
           kind="ghost"
           iconDescription={t('deleteRelationshipTooltipText', 'Delete')}
@@ -286,12 +284,13 @@ const RelationshipView: React.FC<RelationshipViewProps> = ({
       {requiresRelatedPerson ? (
         <div className={styles.personEntry}>
           <ContentSwitcher
+            className={styles.personEntrySwitcher}
             size="sm"
-            selectedIndex={personEntryMode === 'create' ? 0 : 1}
+            selectedIndex={personEntryMode === 'search' ? 0 : 1}
             onChange={handlePersonEntryModeChange}
           >
-            <Switch name="create" text={t('createResponsiblePerson', 'Register new person')} />
             <Switch name="search" text={t('searchExistingPerson', 'Search existing person')} />
+            <Switch name="create" text={t('createResponsiblePerson', 'Register new person')} />
           </ContentSwitcher>
           {personEntryMode === 'search' ? (
             <div className={styles.searchBox}>
@@ -302,7 +301,7 @@ const RelationshipView: React.FC<RelationshipViewProps> = ({
                 defaultValue={relationship.relatedPersonName}
                 onSuggestionSelected={handleSuggestionSelected}
                 invalid={isInvalid}
-                invalidText={t('relationshipPersonMustExist', 'Related person must be an existing person')}
+                invalidText={t('relationshipPersonMustExist', 'Family member or companion must be an existing person')}
                 getSearchResults={searchPerson}
                 getDisplayValue={(item) => item.display}
                 getFieldValue={(item) => item.uuid}
@@ -401,8 +400,8 @@ const RelationshipView: React.FC<RelationshipViewProps> = ({
                 </Layer>
               </div>
               <div className={styles.createPersonActions}>
-                <Button type="button" kind="secondary" onClick={handleCreatePerson} disabled={isSavingPerson}>
-                  {t('createResponsiblePersonAction', 'Register person and use as responsible party')}
+                <Button type="button" kind="tertiary" size="md" onClick={handleCreatePerson} disabled={isSavingPerson}>
+                  {t('createResponsiblePersonAction', 'Register and link to patient')}
                 </Button>
                 {isSavingPerson ? (
                   <InlineLoading description={t('creatingResponsiblePerson', 'Creating person...')} />
@@ -421,7 +420,7 @@ const RelationshipView: React.FC<RelationshipViewProps> = ({
       )}
     </div>
   ) : (
-    <InlineNotification kind="info" title={t('relationshipRemovedText', 'Relationship removed')}>
+    <InlineNotification kind="info" title={t('relationshipRemovedText', 'Family member or companion removed')}>
       {
         <NotificationActionButton onClick={restoreRelationship}>
           {t('restoreRelationshipActionButton', 'Undo')}
@@ -541,10 +540,10 @@ export const RelationshipsSection: React.FC<RelationshipsSectionProps> = ({ defa
               <InlineNotification
                 kind="warning"
                 lowContrast
-                title={t('responsibleRelationshipRequiredTitle', 'Responsible relationship required')}
+                title={t('responsibleRelationshipRequiredTitle', 'Responsible family member required')}
                 subtitle={t(
                   'responsibleRelationshipRequiredForMinor',
-                  'A responsible family member or guardian relationship is required for minors',
+                  'For minors, record a responsible family member, guardian, or legal representative.',
                 )}
               />
             ) : null}
@@ -571,7 +570,7 @@ export const RelationshipsSection: React.FC<RelationshipsSectionProps> = ({ defa
                   })
                 }
               >
-                {t('addRelationshipButtonText', 'Add Relationship')}
+                {t('addRelationshipButtonText', 'Add family member or companion')}
               </Button>
             </div>
           </div>

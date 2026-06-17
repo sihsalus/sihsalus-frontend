@@ -90,7 +90,7 @@ describe('RelationshipsSection', () => {
 
     expect(screen.getByLabelText(/loading relationships section/i)).toBeInTheDocument();
     expect(screen.getByRole('progressbar')).toBeInTheDocument();
-    expect(screen.queryByText(/add relationship/i)).not.toBeInTheDocument();
+    expect(screen.queryByText(/add family member or companion/i)).not.toBeInTheDocument();
   });
 
   it('renders a non-loading message when relationshipTypes are unavailable', () => {
@@ -106,7 +106,7 @@ describe('RelationshipsSection', () => {
 
     expect(screen.queryByRole('progressbar')).not.toBeInTheDocument();
     expect(screen.getByText('Relationship types unavailable')).toBeInTheDocument();
-    expect(screen.queryByText(/add relationship/i)).not.toBeInTheDocument();
+    expect(screen.queryByText(/add family member or companion/i)).not.toBeInTheDocument();
   });
 
   it('does not show relationship controls in edit mode until relationshipTypes are available', () => {
@@ -156,7 +156,7 @@ describe('RelationshipsSection', () => {
 
     expect(screen.queryByRole('progressbar')).not.toBeInTheDocument();
     expect(screen.getByText('Relationship types unavailable')).toBeInTheDocument();
-    expect(screen.queryByRole('button', { name: /add relationship/i })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /add family member or companion/i })).not.toBeInTheDocument();
     expect(screen.queryByRole('combobox', { name: /relationship/i })).not.toBeInTheDocument();
   });
 
@@ -184,18 +184,22 @@ describe('RelationshipsSection', () => {
     );
 
     expect(screen.getByLabelText(/relationships section/i)).toBeInTheDocument();
-    expect(screen.getByRole('heading', { name: /relationship/i })).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: /family member or companion/i })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: /delete/i })).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: /add relationship/i })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /add family member or companion/i })).toBeInTheDocument();
     expect(screen.getByRole('option', { name: /mother/i })).toBeInTheDocument();
     expect(screen.getByRole('option', { name: /guardian/i })).toBeInTheDocument();
-    expect(screen.getByText(/register new person/i)).toBeInTheDocument();
-    expect(screen.getByRole('textbox', { name: /first name/i })).toBeInTheDocument();
-    expect(screen.getByRole('textbox', { name: /^family name$/i })).toBeInTheDocument();
-    expect(screen.getByRole('combobox', { name: /sex/i })).toBeInTheDocument();
+    expect(screen.getAllByRole('tab').map((tab) => tab.textContent)).toEqual([
+      'Search existing person',
+      'Register new person',
+    ]);
+    expect(screen.getByRole('tab', { name: /search existing person/i })).toHaveAttribute('aria-selected', 'true');
+    expect(screen.getByRole('tab', { name: /register new person/i })).toHaveAttribute('aria-selected', 'false');
+    expect(screen.getByRole('searchbox', { name: /full name/i })).toBeInTheDocument();
+    expect(screen.queryByRole('textbox', { name: /first name/i })).not.toBeInTheDocument();
   });
 
-  it('keeps the existing person search flow available', async () => {
+  it('keeps the existing person search flow as the default', async () => {
     const user = userEvent.setup();
     mockResourcesContextValue = {
       ...mockResourcesContextValue,
@@ -219,8 +223,12 @@ describe('RelationshipsSection', () => {
       </ResourcesContext.Provider>,
     );
 
-    await user.click(screen.getByText(/search existing person/i));
+    expect(screen.getByRole('searchbox', { name: /full name/i })).toBeInTheDocument();
 
+    await user.click(screen.getByRole('tab', { name: /register new person/i }));
+    expect(screen.getByRole('textbox', { name: /first name/i })).toBeInTheDocument();
+
+    await user.click(screen.getByRole('tab', { name: /search existing person/i }));
     expect(screen.getByRole('searchbox', { name: /full name/i })).toBeInTheDocument();
   });
 
@@ -279,6 +287,7 @@ describe('RelationshipsSection', () => {
       </ResourcesContext.Provider>,
     );
 
+    await user.click(screen.getByRole('tab', { name: /register new person/i }));
     await user.selectOptions(
       screen.getByRole('combobox', { name: /relationship/i }),
       '057de23f-3d9c-4314-9391-4452970739c6/aIsToB',
@@ -287,7 +296,7 @@ describe('RelationshipsSection', () => {
     await user.type(screen.getByRole('textbox', { name: /^family name/i }), 'Quispe');
     await user.selectOptions(screen.getByRole('combobox', { name: /sex/i }), 'female');
     await user.type(screen.getByRole('textbox', { name: /approximate age/i }), '35');
-    await user.click(screen.getByRole('button', { name: /register person and use as responsible party/i }));
+    await user.click(screen.getByRole('button', { name: /register and link to patient/i }));
 
     await waitFor(() => expect(mockSavePerson).toHaveBeenCalledTimes(1));
 
@@ -338,7 +347,8 @@ describe('RelationshipsSection', () => {
       </ResourcesContext.Provider>,
     );
 
-    await user.click(screen.getByRole('button', { name: /register person and use as responsible party/i }));
+    await user.click(screen.getByRole('tab', { name: /register new person/i }));
+    await user.click(screen.getByRole('button', { name: /register and link to patient/i }));
 
     expect(mockSavePerson).not.toHaveBeenCalled();
     await waitFor(() =>

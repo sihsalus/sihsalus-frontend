@@ -107,6 +107,8 @@ describe('getEffectiveRegistrationConfig', () => {
 
     expect(fieldsById.medicalRecordStatus.defaultValue).toBe('9b3df0a1-0c58-4f55-9868-9c38f1db2031');
     expect(fieldsById.medicalRecordArchiveType.defaultValue).toBe('9b3df0a1-0c58-4f55-9868-9c38f1db2041');
+    expect(fieldsById.medicalRecordStatus.readOnlyOnCreate).toBe(true);
+    expect(fieldsById.medicalRecordArchiveType.readOnlyOnCreate).toBe(true);
     expect(fieldsById.insuranceAccreditationStatus.defaultValue).toBe('9b3df0a1-0c58-4f55-9868-9c38f1db2054');
     expect(fieldsById.civilStatus.customConceptAnswers).toContainEqual({
       uuid: 'a10b6eeb-287f-4580-8ba7-9c8ee78a6ffc',

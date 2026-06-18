@@ -33,6 +33,20 @@ const exclusiveIdentifierTypeUuids: Record<string, string | Array<string>> = {
   ...Object.fromEntries(peruForeignPatientIdentifierTypeUuids.map((uuid) => [uuid, peruDniPatientIdentifierTypeUuid])),
 };
 
+function getIdentifierTypeDescription(identifierType: PatientIdentifierType) {
+  const description = identifierType.description?.trim();
+  if (!description) {
+    return null;
+  }
+
+  const normalizedDescription = description.toLocaleLowerCase();
+  const labels = [identifierType.name, identifierType.display]
+    .filter(Boolean)
+    .map((label) => label.trim().toLocaleLowerCase());
+
+  return labels.includes(normalizedDescription) ? null : description;
+}
+
 function removeIdentifiersByTypeUuid(
   identifiers: FormValues['identifiers'],
   identifierTypeUuids: string | Array<string>,
@@ -63,7 +77,14 @@ const PatientIdentifierOverlay: React.FC<PatientIdentifierOverlayProps> = ({ clo
   const handleSearch = useCallback((event) => setSearchString(event?.target?.value ?? ''), []);
 
   const filteredIdentifiers = useMemo(
-    () => identifierTypes?.filter((identifier) => identifier?.name?.toLowerCase().includes(searchString.toLowerCase())),
+    () =>
+      identifierTypes?.filter((identifier) =>
+        [identifier?.name, identifier?.display, identifier?.description]
+          .filter(Boolean)
+          .join(' ')
+          .toLocaleLowerCase()
+          .includes(searchString.toLocaleLowerCase()),
+      ),
     [searchString, identifierTypes],
   );
 
@@ -124,6 +145,7 @@ const PatientIdentifierOverlay: React.FC<PatientIdentifierOverlayProps> = ({ clo
       filteredIdentifiers.map((identifierType) => {
         const patientIdentifier = unsavedIdentifierTypes[identifierType.fieldName];
         const selectedIdentityDocumentCount = countIdentityDocumentIdentifiers(unsavedIdentifierTypes, identifierTypes);
+        const identifierTypeDescription = getIdentifierTypeDescription(identifierType);
         const isDisabled =
           identifierType.isPrimary ||
           identifierType.required ||
@@ -137,7 +159,18 @@ const PatientIdentifierOverlay: React.FC<PatientIdentifierOverlayProps> = ({ clo
             <Checkbox
               id={identifierType.uuid}
               value={identifierType.uuid}
-              labelText={identifierType.name}
+              labelText={
+                identifierTypeDescription ? (
+                  <span className={styles.identifierLabel}>
+                    <span>{identifierType.name}</span>
+                    <span className={styles.identifierDescription} aria-hidden="true">
+                      {identifierTypeDescription}
+                    </span>
+                  </span>
+                ) : (
+                  identifierType.name
+                )
+              }
               onChange={(_event, { checked }) => handleCheckingIdentifier(identifierType, checked)}
               checked={!!patientIdentifier}
               disabled={isDisabled || (isOffline && isDisabledOffline)}

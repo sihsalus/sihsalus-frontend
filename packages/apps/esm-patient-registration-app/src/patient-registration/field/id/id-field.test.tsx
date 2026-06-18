@@ -29,6 +29,7 @@ const dniIdentifierType = {
 
 const carnetIdentifierType = {
   name: 'Carnet de Extranjeria',
+  description: 'Documento para personas extranjeras',
   fieldName: 'carnetDeExtranjeria',
   required: false,
   uuid: '550e8400-e29b-41d4-a716-446655440002',
@@ -321,6 +322,9 @@ describe('Identifiers', () => {
     });
 
     await user.click(screen.getByRole('button', { name: 'Configure' }));
+
+    expect(screen.getByText('Documento para personas extranjeras')).toBeInTheDocument();
+
     await user.click(screen.getByRole('checkbox', { name: 'Carnet de Extranjeria' }));
 
     expect(screen.getByRole('checkbox', { name: 'DNI' })).not.toBeChecked();

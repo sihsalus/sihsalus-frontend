@@ -9038,6 +9038,7 @@ __metadata:
     "@sihsalus/esm-form-engine-lib": "workspace:*"
     "@sihsalus/esm-rbac": "workspace:*"
     classnames: "npm:^2.3.2"
+    exceljs: "npm:^4.4.0"
     formik: "npm:^2.1.5"
     i18next: "npm:^25.0.0"
     i18next-parser: "npm:^9.0.2"

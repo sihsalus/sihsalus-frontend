@@ -8,7 +8,7 @@ import {
 
 import addPatientLinkComponent from './add-patient-link.extension';
 import { esmPatientRegistrationSchema } from './config-schema';
-import { externalIdentityLookupsFlag, moduleName, patientRegistration } from './constants';
+import { externalIdentityLookupsFlag, moduleName, patientImport, patientRegistration } from './constants';
 import { setupOffline } from './offline';
 
 export const importTranslation = require.context('../translations', false, /.json$/, 'lazy');
@@ -52,6 +52,18 @@ export function startupApp() {
         ),
       parent: `${globalThis.spaBase}/patient/:patientUuid/chart`,
     },
+    {
+      path: `${globalThis.spaBase}/${patientImport}`,
+      // t('bulkPatientImportBreadcrumb', 'Importar pacientes')
+      title: () =>
+        Promise.resolve(
+          globalThis.i18next.t('bulkPatientImportBreadcrumb', {
+            defaultValue: 'Importar pacientes',
+            ns: moduleName,
+          }),
+        ),
+      parent: `${globalThis.spaBase}/system-administration`,
+    },
   ]);
 
   setupOffline();
@@ -61,7 +73,14 @@ export const root = getAsyncLifecycle(() => import('./root.component'), options)
 
 export const editPatient = getAsyncLifecycle(() => import('./root.component'), options);
 
+export const bulkPatientImport = getAsyncLifecycle(() => import('./root.component'), options);
+
 export const addPatientLink = getSyncLifecycle(addPatientLinkComponent, options);
+
+export const bulkPatientImportAdminCardLink = getAsyncLifecycle(
+  () => import('./bulk-patient-import/bulk-patient-import-admin-card-link.component'),
+  options,
+);
 
 export const cancelPatientEditModal = getAsyncLifecycle(() => import('./widgets/cancel-patient-edit.modal'), options);
 

@@ -5,7 +5,7 @@ import classNames from 'classnames';
 import { useMemo } from 'react';
 import { BrowserRouter, Route, Routes } from 'react-router-dom';
 import useSWRImmutable from 'swr/immutable';
-
+import BulkPatientImport from './bulk-patient-import/bulk-patient-import.component';
 import {
   fetchAddressTemplate,
   fetchAllRelationshipTypes,
@@ -44,7 +44,10 @@ export default function Root() {
 
   return (
     <AppErrorBoundary appName="esm-patient-registration-app">
-      <RequirePrivilege privilege={admissionPrivilege} description="Necesita permisos de admision para registrar o editar pacientes.">
+      <RequirePrivilege
+        privilege={admissionPrivilege}
+        description="Necesita permisos de admision para registrar o editar pacientes."
+      >
         <main className={classNames('omrs-main-content', styles.root)}>
           <Grid className={styles.grid}>
             <Row>
@@ -74,6 +77,7 @@ export default function Root() {
                     path="patient/:patientUuid/edit"
                     element={<PatientRegistration savePatientForm={savePatientForm} isOffline={!isOnline} />}
                   />
+                  <Route path="patient-import" element={<BulkPatientImport isOffline={!isOnline} />} />
                 </Routes>
               </BrowserRouter>
             </ResourcesContext.Provider>

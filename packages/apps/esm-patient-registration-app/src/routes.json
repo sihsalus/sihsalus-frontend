@@ -16,6 +16,12 @@
       "routeRegex": "patient\\/([a-zA-Z0-9\\-]+)\\/edit",
       "online": true,
       "offline": true
+    },
+    {
+      "component": "bulkPatientImport",
+      "route": "patient-import",
+      "online": true,
+      "offline": false
     }
   ],
   "extensions": [
@@ -49,6 +55,14 @@
       "privileges": "app:adt",
       "online": true,
       "offline": true
+    },
+    {
+      "component": "bulkPatientImportAdminCardLink",
+      "name": "system-administration-patient-import-card-link",
+      "slot": "system-admin-page-card-link-slot",
+      "privileges": "app:adt",
+      "online": true,
+      "offline": false
     }
   ],
   "modals": [

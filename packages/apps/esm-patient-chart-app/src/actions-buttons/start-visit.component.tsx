@@ -1,9 +1,10 @@
 import { OverflowMenuItem } from '@carbon/react';
-import { useVisit } from '@openmrs/esm-framework';
+import { useSession, useVisit } from '@openmrs/esm-framework';
 import { launchPatientWorkspace } from '@openmrs/esm-patient-common-lib';
 import React, { useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
 
+import { canStartVisit } from '../visit/visit-access';
 import styles from './action-button.scss';
 
 interface StartVisitOverflowMenuItemProps {
@@ -12,9 +13,11 @@ interface StartVisitOverflowMenuItemProps {
 
 const StartVisitOverflowMenuItem: React.FC<StartVisitOverflowMenuItemProps> = ({ patient }) => {
   const { t } = useTranslation();
+  const { user } = useSession();
   const { activeVisit, currentVisit } = useVisit(patient?.id);
   const effectiveVisit = currentVisit ?? activeVisit;
   const isDeceased = Boolean(patient?.deceasedDateTime);
+  const canStart = canStartVisit(user);
 
   const handleLaunchModal = useCallback(
     () =>
@@ -26,7 +29,8 @@ const StartVisitOverflowMenuItem: React.FC<StartVisitOverflowMenuItemProps> = ({
 
   return (
     !effectiveVisit &&
-    !isDeceased && (
+    !isDeceased &&
+    canStart && (
       <OverflowMenuItem
         className={styles.menuitem}
         itemText={t('startVisit', 'Start visit')}

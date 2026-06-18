@@ -17,7 +17,14 @@ vi.mock('@carbon/react', async () => {
   };
 });
 
-import { getDefaultsFromConfigSchema, useConfig, useVisit, type VisitReturnType } from '@openmrs/esm-framework';
+import {
+  getDefaultsFromConfigSchema,
+  useConfig,
+  userHasAccess,
+  useSession,
+  useVisit,
+  type VisitReturnType,
+} from '@openmrs/esm-framework';
 import { launchPatientWorkspace } from '@openmrs/esm-patient-common-lib';
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
@@ -29,6 +36,8 @@ import { type ChartConfig, esmPatientChartSchema } from '../config-schema';
 import StartVisitOverflowMenuItem from './start-visit.component';
 
 const mockUseConfig = vi.mocked(useConfig<ChartConfig>);
+const mockUseSession = vi.mocked(useSession);
+const mockUserHasAccess = vi.mocked(userHasAccess);
 const mockUseVisit = vi.mocked(useVisit);
 const mockFhirPatient = mockPatient as unknown as fhir.Patient;
 
@@ -50,6 +59,15 @@ mockUseVisit.mockReturnValue({
 } as VisitReturnType);
 
 describe('StartVisitOverflowMenuItem', () => {
+  beforeEach(() => {
+    mockUseSession.mockReturnValue({
+      user: {
+        privileges: [{ display: 'app:adt' }],
+      },
+    } as ReturnType<typeof useSession>);
+    mockUserHasAccess.mockImplementation((privilege) => privilege === 'app:adt');
+  });
+
   it('should launch the start visit form', async () => {
     const user = userEvent.setup();
 
@@ -85,5 +103,17 @@ describe('StartVisitOverflowMenuItem', () => {
       name: /start visit/i,
     });
     expect(startVisitButton).not.toBeInTheDocument();
+  });
+
+  it('should not show start visit button without ADT or visit edit privileges', () => {
+    mockUserHasAccess.mockReturnValue(false);
+
+    render(
+      React.createElement(StartVisitOverflowMenuItem, {
+        patient: mockFhirPatient,
+      }),
+    );
+
+    expect(screen.queryByRole('menuitem', { name: /start visit/i })).not.toBeInTheDocument();
   });
 });

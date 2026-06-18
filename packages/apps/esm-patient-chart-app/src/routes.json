@@ -37,7 +37,7 @@
       "name": "start-visit-button",
       "component": "startVisitActionButton",
       "slot": "patient-actions-slot",
-      "privileges": "app:clinical.chart.visits.edit",
+      "privileges": "app:clinical.chart",
       "online": true,
       "offline": true
     },
@@ -173,7 +173,7 @@
       "name": "start-visit-button-patient-search",
       "slot": "start-visit-button-slot",
       "component": "startVisitPatientSearchActionButton",
-      "privileges": "app:clinical.chart.visits.edit",
+      "privileges": "app:clinical.chart",
       "online": true,
       "offline": true
     },
@@ -255,7 +255,7 @@
     {
       "name": "start-visit-dialog",
       "component": "startVisitModal",
-      "privileges": "app:clinical.chart.visits.edit"
+      "privileges": "app:clinical.chart"
     }
   ],
   "pages": [
@@ -271,7 +271,7 @@
       "name": "start-visit-workspace-form",
       "component": "startVisitWorkspace",
       "window": "start-visit-workspace-window",
-      "privileges": "app:clinical.chart.visits.edit"
+      "privileges": "app:clinical.chart"
     },
     {
       "name": "mark-patient-deceased-workspace-form",

@@ -42,6 +42,7 @@ import {
   time12HourFormatRegex,
   useActivePatientEnrollment,
 } from '@openmrs/esm-patient-common-lib';
+import { UnauthorizedState } from '@sihsalus/esm-rbac';
 import classNames from 'classnames';
 import dayjs from 'dayjs';
 import isSameOrBefore from 'dayjs/plugin/isSameOrBefore';
@@ -54,6 +55,7 @@ import { type ChartConfig } from '../../config-schema';
 import { useDefaultVisitLocation } from '../hooks/useDefaultVisitLocation';
 import { useEmrConfiguration } from '../hooks/useEmrConfiguration';
 import { useVisitAttributeTypes } from '../hooks/useVisitAttributeType';
+import { canStartVisit } from '../visit-access';
 import { invalidateUseVisits, useInfiniteVisits } from '../visits-widget/visit.resource';
 
 import BaseVisitType from './base-visit-type.component';
@@ -1009,4 +1011,19 @@ const MemoizedExtraVisitSlot = React.memo(
   ),
 );
 
-export default StartVisitForm;
+const StartVisitFormGuard: React.FC<StartVisitFormProps> = (props) => {
+  const { user } = useSession();
+
+  if (!canStartVisit(user)) {
+    return (
+      <UnauthorizedState
+        privilege={['app:adt', 'app:clinical.chart.visits.edit']}
+        description="Necesita permisos de admisión o edición de visitas para iniciar una consulta."
+      />
+    );
+  }
+
+  return <StartVisitForm {...props} />;
+};
+
+export default StartVisitFormGuard;

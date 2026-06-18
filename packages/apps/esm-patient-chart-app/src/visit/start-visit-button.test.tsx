@@ -1,3 +1,4 @@
+import { userHasAccess, useSession } from '@openmrs/esm-framework';
 import { launchPatientWorkspace } from '@openmrs/esm-patient-common-lib';
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
@@ -6,6 +7,8 @@ import { mockPatient } from 'test-utils';
 import StartVisitButton from './start-visit-button.component';
 
 const mockLaunchPatientWorkspace = vi.mocked(launchPatientWorkspace);
+const mockUseSession = vi.mocked(useSession);
+const mockUserHasAccess = vi.mocked(userHasAccess);
 
 vi.mock('@openmrs/esm-patient-common-lib', async () => ({
   ...(await vi.importActual('@openmrs/esm-patient-common-lib')),
@@ -13,6 +16,15 @@ vi.mock('@openmrs/esm-patient-common-lib', async () => ({
 }));
 
 describe('StartVisitButton', () => {
+  beforeEach(() => {
+    mockUseSession.mockReturnValue({
+      user: {
+        privileges: [{ display: 'app:adt' }],
+      },
+    } as ReturnType<typeof useSession>);
+    mockUserHasAccess.mockImplementation((privilege) => privilege === 'app:adt');
+  });
+
   it('renders the start visit button', () => {
     render(<StartVisitButton patientUuid={mockPatient.id} />);
 
@@ -32,5 +44,13 @@ describe('StartVisitButton', () => {
       patientUuid: mockPatient.id,
       openedFrom: 'patient-chart-start-visit',
     });
+  });
+
+  it('does not render the start visit button without ADT or visit edit privileges', () => {
+    mockUserHasAccess.mockReturnValue(false);
+
+    render(<StartVisitButton patientUuid={mockPatient.id} />);
+
+    expect(screen.queryByRole('button', { name: /start visit/i })).not.toBeInTheDocument();
   });
 });

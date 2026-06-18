@@ -9,6 +9,8 @@ import {
   useConfig,
   useLocations,
   usePatient,
+  userHasAccess,
+  useSession,
   useVisitTypes,
   type Visit,
 } from '@openmrs/esm-framework';
@@ -182,6 +184,8 @@ const mockSaveVisit = vi.mocked(saveVisit);
 const mockUpdateVisit = vi.mocked(updateVisit);
 const mockExtensionSlot = vi.mocked(ExtensionSlot);
 const mockUseConfig = vi.mocked(useConfig<ChartConfig>);
+const mockUseSession = vi.mocked(useSession);
+const mockUserHasAccess = vi.mocked(userHasAccess);
 const mockUseVisitAttributeType = vi.mocked(useVisitAttributeType);
 const mockUseVisitTypes = vi.mocked(useVisitTypes);
 const mockUsePatient = vi.mocked(usePatient);
@@ -330,6 +334,13 @@ mockSaveVisit.mockResolvedValue({
 describe('Visit form', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    mockUseSession.mockReturnValue({
+      user: {
+        privileges: [{ display: 'app:adt' }],
+      },
+      sessionLocation: mockLocations.data.results[0],
+    } as ReturnType<typeof useSession>);
+    mockUserHasAccess.mockImplementation((privilege) => privilege === 'app:adt');
     mockExtensionSlot.mockImplementation(({ children }): React.JSX.Element => {
       if (typeof children === 'function') {
         return (

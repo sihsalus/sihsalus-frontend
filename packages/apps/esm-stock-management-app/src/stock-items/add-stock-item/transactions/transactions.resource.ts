@@ -30,6 +30,10 @@ export function useStockItemsTransactions(filter?: StockItemInventoryFilter) {
   const [stockBatchUuid, setStockBatchUuid] = useState<string | null>(filter?.stockBatchUuid);
 
   useEffect(() => {
+    setStockItemUuid(filter?.stockItemUuid ?? null);
+  }, [filter?.stockItemUuid]);
+
+  useEffect(() => {
     setStockItemFilter({
       startIndex: currentPage - 1,
       v: ResourceRepresentation.Default,

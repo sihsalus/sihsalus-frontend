@@ -1,15 +1,23 @@
-import { usePagination } from '@openmrs/esm-framework';
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { type StockOperationFilter, useStockOperations } from './stock-operations.resource';
 
 export function useStockOperationPages(filter: StockOperationFilter) {
-  const { items, isLoading, error } = useStockOperations(filter);
-
   const pageSizes = [10, 20, 30, 40, 50];
+  const [currentPage, setCurrentPage] = useState(1);
   const [currentPageSize, setPageSize] = useState(10);
+  const filterKey = JSON.stringify(filter);
 
-  const { goTo, results: paginatedItems, currentPage } = usePagination(items.results, currentPageSize);
+  const paginatedFilter = useMemo(
+    () => ({
+      ...filter,
+      startIndex: (currentPage - 1) * currentPageSize,
+      limit: currentPageSize,
+    }),
+    [currentPage, currentPageSize, filter],
+  );
+  const { items, isLoading, error } = useStockOperations(paginatedFilter);
+  const stockOperations = items?.results ?? [];
 
   const { t } = useTranslation();
 
@@ -60,13 +68,23 @@ export function useStockOperationPages(filter: StockOperationFilter) {
     [t],
   );
 
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [filterKey]);
+
+  useEffect(() => {
+    if (!isLoading && currentPage > 1 && stockOperations.length === 0 && (items.totalCount ?? 0) > 0) {
+      setCurrentPage(1);
+    }
+  }, [currentPage, isLoading, items.totalCount, stockOperations.length]);
+
   return {
-    items: paginatedItems,
-    totalItems: items?.totalCount,
+    items: stockOperations,
+    totalItems: items?.totalCount ?? stockOperations.length,
     currentPage,
     currentPageSize,
-    paginatedItems,
-    goTo,
+    paginatedItems: stockOperations,
+    goTo: setCurrentPage,
     pageSizes,
     isLoading,
     error,

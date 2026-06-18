@@ -531,7 +531,7 @@ const Login: React.FC = () => {
               </div>
               {buildInfo.version ? (
                 <p className={styles.frontendVersion}>
-                  {t('frontendVersion', 'Frontend v{{version}}', { version: buildInfo.version })}
+                  {t('frontendVersion', 'v{{version}}', { version: buildInfo.version })}
                   {buildInfo.gitSha ? ` · ${buildInfo.gitSha}` : ''}
                 </p>
               ) : null}

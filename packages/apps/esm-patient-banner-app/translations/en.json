@@ -43,5 +43,7 @@
   "state": "State",
   "stateProvince": "State",
   "status": "Status",
-  "telephoneNumberWithSeparator": "Telephone number:"
+  "telephoneNumberWithSeparator": "Telephone number:",
+  "yearAbbreviation": "yr",
+  "yearsAbbreviation": "yrs"
 }

@@ -72,7 +72,7 @@ describe('Login', () => {
     expect(screen.getByText(/Sihsalus/i)).toBeInTheDocument();
     expect(screen.queryByAltText(/^logo$/i)).not.toBeInTheDocument();
     // Version + short SHA are fetched asynchronously from build-info.json
-    expect(await screen.findByText(/Frontend v1\.2\.3 · abc1234/)).toBeInTheDocument();
+    expect(await screen.findByText(/v1\.2\.3 · abc1234/)).toBeInTheDocument();
     screen.getByRole('textbox', { name: /Username/i });
     screen.getByRole('button', { name: /Continue/i });
   });

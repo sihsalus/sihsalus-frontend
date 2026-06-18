@@ -190,6 +190,7 @@ describe('PatientBannerContactDetails', () => {
     expect(screen.getByText(/Preferred/i)).toBeInTheDocument();
     expect(screen.getByRole('link', { name: 'Juan Perez' })).toBeInTheDocument();
     expect(screen.getByText('Father')).toBeInTheDocument();
+    expect(screen.getByText('60 yrs')).toBeInTheDocument();
   });
 
   it('renders affiliation details without duplicating ethnicity in contact details', () => {

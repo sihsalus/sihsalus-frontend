@@ -43,5 +43,7 @@
   "state": "Estado",
   "stateProvince": "Estado",
   "status": "Estado",
-  "telephoneNumberWithSeparator": "Número de teléfono:"
+  "telephoneNumberWithSeparator": "Número de teléfono:",
+  "yearAbbreviation": "año",
+  "yearsAbbreviation": "años"
 }

@@ -1,4 +1,7 @@
 import {
+  addressUbigeoField,
+  addressUbigeoPathField,
+  addressUbigeoPathSeparator,
   birthAddressMarker,
   birthAddressMarkerField,
   filterOutUndefinedPatientIdentifiers,
@@ -63,6 +66,10 @@ describe('structured patient addresses', () => {
           getOpenmrsAddressExtension({
             address1: 'LORETO',
             cityVillage: 'SANTA CLOTILDE',
+            [addressUbigeoField]: '1603030001',
+            [addressUbigeoPathField]: ['PERU', 'LORETO', 'MAYNAS', 'NAPO', 'SANTA CLOTILDE'].join(
+              addressUbigeoPathSeparator,
+            ),
             [birthAddressMarkerField]: birthAddressMarker,
           }),
         ],
@@ -77,6 +84,10 @@ describe('structured patient addresses', () => {
           getOpenmrsAddressExtension({
             address1: 'HUANCAVELICA',
             address4: 'JR LIMA 123',
+            [addressUbigeoField]: '090501',
+            [addressUbigeoPathField]: ['PERU', 'HUANCAVELICA', 'CHURCAMPA', 'CHURCAMPA'].join(
+              addressUbigeoPathSeparator,
+            ),
           }),
         ],
       },
@@ -86,6 +97,8 @@ describe('structured patient addresses', () => {
   it('reads the preferred residence address without using the birth address by position', () => {
     expect(getAddressFieldValuesFromFhirPatient(patient)).toEqual({
       address1: 'HUANCAVELICA',
+      address13: ['PERU', 'HUANCAVELICA', 'CHURCAMPA', 'CHURCAMPA'].join(addressUbigeoPathSeparator),
+      address14: '090501',
       address4: 'JR LIMA 123',
       country: 'PERU',
       countyDistrict: 'CHURCAMPA',
@@ -96,6 +109,8 @@ describe('structured patient addresses', () => {
   it('reads the structured birthplace address by marker', () => {
     expect(getAddressFieldValuesFromFhirPatient(patient, 'birth')).toEqual({
       address1: 'LORETO',
+      address13: ['PERU', 'LORETO', 'MAYNAS', 'NAPO', 'SANTA CLOTILDE'].join(addressUbigeoPathSeparator),
+      address14: '1603030001',
       address15: birthAddressMarker,
       cityVillage: 'SANTA CLOTILDE',
       country: 'PERU',

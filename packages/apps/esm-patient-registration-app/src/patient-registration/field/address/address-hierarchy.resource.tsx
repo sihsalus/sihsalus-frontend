@@ -21,7 +21,22 @@ interface OrderedAddressHierarchyLevelsResult {
 interface AddressHierarchyEntry {
   uuid: string;
   name: string;
+  userGeneratedId?: string;
   parent?: AddressHierarchyEntry | null;
+}
+
+export interface AddressHierarchyPathSegment {
+  addressField?: string;
+  name: string;
+  userGeneratedId?: string;
+}
+
+export interface AddressHierarchySearchResult {
+  display: string;
+  fieldValues: Record<string, string>;
+  searchText: string;
+  segments: Array<AddressHierarchyPathSegment>;
+  userGeneratedId?: string;
 }
 
 export function useOrderedAddressHierarchyLevels(): OrderedAddressHierarchyLevelsResult {
@@ -139,15 +154,120 @@ function isAddressHierarchyEntryArray(value: unknown): value is Array<AddressHie
 }
 
 export function buildAddressHierarchyPath(entry: AddressHierarchyEntry, separator: string) {
-  const path = [];
+  return getAddressHierarchyPathSegments(entry)
+    .map((segment) => segment.name)
+    .join(separator);
+}
+
+function getAddressHierarchyPathSegments(entry: AddressHierarchyEntry) {
+  const path: Array<AddressHierarchyPathSegment> = [];
   let cursor: AddressHierarchyEntry | null | undefined = entry;
 
   while (cursor) {
-    path.unshift(cursor.name);
+    path.unshift({
+      name: cursor.name,
+      userGeneratedId: cursor.userGeneratedId,
+    });
     cursor = cursor.parent;
   }
 
-  return path.join(separator);
+  return path;
+}
+
+function buildAddressHierarchySearchResult(
+  entry: AddressHierarchyEntry,
+  separator: string,
+  addressFields: Array<string>,
+  segmentLimit?: number,
+): AddressHierarchySearchResult {
+  const segments = getAddressHierarchyPathSegments(entry)
+    .slice(0, segmentLimit)
+    .map((segment, index) => ({
+      ...segment,
+      addressField: addressFields[index],
+    }));
+  const display = segments.map((segment) => segment.name).join(separator);
+  const fieldValues = Object.fromEntries(
+    segments
+      .filter((segment): segment is AddressHierarchyPathSegment & { addressField: string } => !!segment.addressField)
+      .map((segment) => [segment.addressField, segment.name]),
+  );
+  const lastSegment = segments[segments.length - 1];
+  const userGeneratedIds = segments.map((segment) => segment.userGeneratedId).filter(Boolean);
+
+  return {
+    display,
+    fieldValues,
+    searchText: `${display} ${userGeneratedIds.join(' ')}`.toLowerCase(),
+    segments,
+    userGeneratedId: lastSegment?.userGeneratedId,
+  };
+}
+
+function getUbigeoFromSearchString(searchString: string) {
+  const trimmedSearchString = searchString.trim();
+
+  if (/^\d{1,10}$/.test(trimmedSearchString)) {
+    return trimmedSearchString;
+  }
+
+  return trimmedSearchString.match(/%(\d{1,10})(?!.*%\d)/)?.[1] ?? null;
+}
+
+function getUbigeoSearchTarget(searchString: string, addressFields: Array<string>) {
+  const ubigeo = getUbigeoFromSearchString(searchString);
+
+  if (!ubigeo) {
+    return null;
+  }
+
+  const searchTarget =
+    ubigeo.length <= 2
+      ? { addressField: 'address1', parentCode: '00' }
+      : ubigeo.length <= 4
+        ? { addressField: 'stateProvince', parentCode: ubigeo.slice(0, 2) }
+        : ubigeo.length <= 6
+          ? { addressField: 'countyDistrict', parentCode: ubigeo.slice(0, 4) }
+          : { addressField: 'cityVillage', parentCode: ubigeo.slice(0, 6) };
+
+  if (!addressFields.includes(searchTarget.addressField)) {
+    return null;
+  }
+
+  return {
+    ...searchTarget,
+    ubigeo,
+  };
+}
+
+async function fetchAddressHierarchyByUbigeo(
+  searchString: string,
+  separator: string,
+  addressFields: Array<string>,
+): Promise<Array<AddressHierarchySearchResult>> {
+  const target = getUbigeoSearchTarget(searchString, addressFields);
+
+  if (!target) {
+    return [];
+  }
+
+  const response = await openmrsFetch<Array<AddressHierarchyEntry>>(
+    `/module/addresshierarchy/ajax/getPossibleAddressHierarchyEntriesWithParents.form?addressField=${encodeURIComponent(target.addressField)}&limit=1000&searchString=%25&parentUuid=&userGeneratedIdForParent=${encodeURIComponent(target.parentCode)}`,
+  );
+
+  if (!isAddressHierarchyEntryArray(response.data)) {
+    throw new Error('Invalid address hierarchy response');
+  }
+
+  return response.data
+    .filter((entry) => entry.userGeneratedId?.startsWith(target.ubigeo))
+    .map((entry) => buildAddressHierarchySearchResult(entry, separator, addressFields));
+}
+
+function deduplicateAddressHierarchyResults(results: Array<AddressHierarchySearchResult>) {
+  return Array.from(
+    new Map(results.map((result) => [`${result.userGeneratedId ?? ''}:${result.display}`, result])).values(),
+  );
 }
 
 export async function fetchAddressHierarchyQuickSearch(
@@ -156,26 +276,35 @@ export async function fetchAddressHierarchyQuickSearch(
   addressFields: Array<string>,
 ) {
   const encodedSearchString = encodeURIComponent(searchString);
-  const addressResults = await Promise.all(
-    addressFields.map(async (addressField) => {
-      const encodedAddressField = encodeURIComponent(addressField);
-      const response = await openmrsFetch<Array<AddressHierarchyEntry>>(
-        `/module/addresshierarchy/ajax/getPossibleAddressHierarchyEntriesWithParents.form?addressField=${encodedAddressField}&limit=20&searchString=${encodedSearchString}&parentUuid=`,
-      );
+  const [nameSearchResults, ubigeoSearchResults] = await Promise.all([
+    Promise.all(
+      addressFields.map(async (addressField) => {
+        const encodedAddressField = encodeURIComponent(addressField);
+        const response = await openmrsFetch<Array<AddressHierarchyEntry>>(
+          `/module/addresshierarchy/ajax/getPossibleAddressHierarchyEntriesWithParents.form?addressField=${encodedAddressField}&limit=20&searchString=${encodedSearchString}&parentUuid=`,
+        );
 
-      if (!isAddressHierarchyEntryArray(response.data)) {
-        throw new Error('Invalid address hierarchy response');
-      }
+        if (!isAddressHierarchyEntryArray(response.data)) {
+          throw new Error('Invalid address hierarchy response');
+        }
 
-      return response.data.map((entry) => buildAddressHierarchyPath(entry, separator));
-    }),
-  );
+        return response.data.map((entry) => buildAddressHierarchySearchResult(entry, separator, addressFields));
+      }),
+    ),
+    fetchAddressHierarchyByUbigeo(searchString, separator, addressFields),
+  ]);
+  const normalizedUbigeoSearch = getUbigeoFromSearchString(searchString);
 
-  return Array.from(new Set(addressResults.flat()))
+  return deduplicateAddressHierarchyResults([...nameSearchResults.flat(), ...ubigeoSearchResults])
     .sort((firstAddress, secondAddress) => {
-      const firstDepth = firstAddress.split(separator).length;
-      const secondDepth = secondAddress.split(separator).length;
-      return firstDepth - secondDepth || firstAddress.localeCompare(secondAddress);
+      const firstExactUbigeo = firstAddress.userGeneratedId === normalizedUbigeoSearch ? 0 : 1;
+      const secondExactUbigeo = secondAddress.userGeneratedId === normalizedUbigeoSearch ? 0 : 1;
+      const firstDepth = firstAddress.segments.length;
+      const secondDepth = secondAddress.segments.length;
+      if (firstExactUbigeo !== secondExactUbigeo) {
+        return firstExactUbigeo - secondExactUbigeo;
+      }
+      return firstDepth - secondDepth || firstAddress.display.localeCompare(secondAddress.display);
     })
     .slice(0, 50);
 }
@@ -186,7 +315,7 @@ export function useAddressHierarchy(searchString: string, separator: string, add
       ? `address-hierarchy-quick-search:${searchString}:${separator}:${addressFields.join('|')}`
       : null;
 
-  const { data, error, isLoading } = useSWRImmutable<Array<string>, Error>(cacheKey, () =>
+  const { data, error, isLoading } = useSWRImmutable<Array<AddressHierarchySearchResult>, Error>(cacheKey, () =>
     fetchAddressHierarchyQuickSearch(searchString, separator, addressFields),
   );
 

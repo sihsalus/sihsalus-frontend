@@ -40,7 +40,12 @@ import {
   type PatientUuidMapType,
   type RelationshipValue,
 } from './patient-registration.types';
-import { birthAddressMarker, birthAddressMarkerField } from './patient-registration-utils';
+import {
+  addressUbigeoField,
+  addressUbigeoPathField,
+  birthAddressMarker,
+  birthAddressMarkerField,
+} from './patient-registration-utils';
 
 const familyName2ExtensionUrl = 'http://openmrs.org/fhir/StructureDefinition/patient-family-name2';
 const addressExtensionUrl = 'http://openmrs.org/fhir/StructureDefinition/address';
@@ -68,7 +73,13 @@ const fhirAddressExtensionFields: Array<AddressProperties> = [
 ];
 
 function hasAddressContent(address: FormValues['address'] | undefined) {
-  return Object.entries(address ?? {}).some(([field, value]) => field !== birthAddressMarkerField && !!value?.trim());
+  return Object.entries(address ?? {}).some(
+    ([field, value]) =>
+      field !== birthAddressMarkerField &&
+      field !== addressUbigeoField &&
+      field !== addressUbigeoPathField &&
+      !!value?.trim(),
+  );
 }
 
 function cleanAddress(address: FormValues['address'] | undefined): Partial<Record<AddressProperties, string>> {

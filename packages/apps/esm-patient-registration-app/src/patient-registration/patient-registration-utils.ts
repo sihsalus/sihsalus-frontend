@@ -13,6 +13,9 @@ import {
 } from './patient-registration.types';
 
 const familyName2ExtensionUrl = 'http://openmrs.org/fhir/StructureDefinition/patient-family-name2';
+export const addressUbigeoField: AddressProperties = 'address14';
+export const addressUbigeoPathField: AddressProperties = 'address13';
+export const addressUbigeoPathSeparator = '|';
 export const birthAddressMarkerField: AddressProperties = 'address15';
 export const birthAddressMarker = 'SIHSALUS_BIRTH_ADDRESS';
 

@@ -10,6 +10,11 @@ import {
   PatientRegistrationContext,
   type PatientRegistrationContextProps,
 } from '../../../patient-registration-context';
+import {
+  addressUbigeoField,
+  addressUbigeoPathField,
+  addressUbigeoPathSeparator,
+} from '../../../patient-registration-utils';
 import { AddressComponent } from '../address-field.component';
 import { useOrderedAddressHierarchyLevels } from '../address-hierarchy.resource';
 
@@ -331,6 +336,100 @@ describe('Address hierarchy', () => {
     });
 
     expect(setFieldValue).not.toHaveBeenCalledWith('birthAddress.country', 'Perú');
+  });
+
+  it('clears the hidden UBIGEO metadata when the selected address path no longer matches visible fields', async () => {
+    const setFieldValue = vi.fn();
+
+    mockUseConfig.mockReturnValue({
+      ...getDefaultsFromConfigSchema(esmPatientRegistrationSchema),
+      fieldConfigurations: {
+        address: {
+          useAddressHierarchy: {
+            enabled: true,
+            useQuickSearch: true,
+            searchAddressByLevel: false,
+          },
+        },
+      } as RegistrationConfig['fieldConfigurations'],
+    });
+
+    mockUseOrderedAddressHierarchyLevels.mockReturnValue({
+      orderedFields: ['country', 'address1', 'stateProvince', 'countyDistrict', 'cityVillage'],
+      isLoadingFieldOrder: false,
+      errorFetchingFieldOrder: undefined,
+    });
+
+    mockResourcesContextValue.addressTemplate = mockedAddressTemplate;
+
+    await renderAddressHierarchy({
+      ...initialContextValues,
+      setFieldValue,
+      values: {
+        ...mockInitialFormValues,
+        address: {
+          country: 'PERU',
+          address1: 'UCAYALI',
+          stateProvince: 'ATALAYA',
+          countyDistrict: 'RAYMONDI',
+          cityVillage: 'OTRO CENTRO POBLADO',
+          [addressUbigeoField]: '2502010191',
+          [addressUbigeoPathField]: ['PERU', 'UCAYALI', 'ATALAYA', 'RAYMONDI', 'AGUAJAL'].join(
+            addressUbigeoPathSeparator,
+          ),
+        },
+      },
+    });
+
+    await waitFor(() => {
+      expect(setFieldValue).toHaveBeenCalledWith(`address.${addressUbigeoField}`, '', false);
+      expect(setFieldValue).toHaveBeenCalledWith(`address.${addressUbigeoPathField}`, '', false);
+    });
+  });
+
+  it('keeps hidden UBIGEO metadata when an escaped legacy path still matches visible fields', async () => {
+    const setFieldValue = vi.fn();
+
+    mockUseConfig.mockReturnValue({
+      ...getDefaultsFromConfigSchema(esmPatientRegistrationSchema),
+      fieldConfigurations: {
+        address: {
+          useAddressHierarchy: {
+            enabled: true,
+            useQuickSearch: true,
+            searchAddressByLevel: false,
+          },
+        },
+      } as RegistrationConfig['fieldConfigurations'],
+    });
+
+    mockUseOrderedAddressHierarchyLevels.mockReturnValue({
+      orderedFields: ['country', 'address1', 'stateProvince', 'countyDistrict', 'cityVillage'],
+      isLoadingFieldOrder: false,
+      errorFetchingFieldOrder: undefined,
+    });
+
+    mockResourcesContextValue.addressTemplate = mockedAddressTemplate;
+
+    await renderAddressHierarchy({
+      ...initialContextValues,
+      setFieldValue,
+      values: {
+        ...mockInitialFormValues,
+        address: {
+          country: 'PERU',
+          address1: 'UCAYALI',
+          stateProvince: 'ATALAYA',
+          countyDistrict: 'RAYMONDI',
+          cityVillage: 'AGUAJAL',
+          [addressUbigeoField]: '2502010191',
+          [addressUbigeoPathField]: 'PERU &gt; UCAYALI &gt; ATALAYA &gt; RAYMONDI &gt; AGUAJAL',
+        },
+      },
+    });
+
+    expect(setFieldValue).not.toHaveBeenCalledWith(`address.${addressUbigeoField}`, '', false);
+    expect(setFieldValue).not.toHaveBeenCalledWith(`address.${addressUbigeoPathField}`, '', false);
   });
 
   it('renders the address hierarchy fields in order if the address hierarchy feature is enabled', () => {

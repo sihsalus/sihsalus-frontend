@@ -18,7 +18,7 @@ import { useStockItemsTransactions } from './transactions.resource';
 
 interface TransactionsProps {
   onSubmit?: () => void;
-  stockItemUuid: string;
+  stockItemUuid?: string;
 }
 
 const Transactions: React.FC<TransactionsProps> = ({ stockItemUuid }) => {

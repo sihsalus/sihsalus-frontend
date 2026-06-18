@@ -3,18 +3,17 @@ import React from 'react';
 import { useTranslation } from 'react-i18next';
 import { ResourceRepresentation } from '../core/api/api';
 import MetricsCard from '../core/components/card/metrics-card-component';
-import { type StockOperationFilter } from '../stock-operations/stock-operations.resource';
 import styles from './stock-home.scss';
 import { useStockInventory } from './stock-home-inventory-expiry.resource';
 import { useStockInventoryItems } from './stock-home-inventory-items.resource';
+import { useOutOfStockDrugs } from './stock-home-out-of-stock.resource';
 import { useDisposalList } from './useDisposalList';
-import useStockList from './useStockList';
 
-const StockManagementMetrics: React.FC = (filter: StockOperationFilter) => {
+const StockManagementMetrics: React.FC = () => {
   const { t } = useTranslation();
-  const { stockList: allStocks, error } = useStockList();
   const { items: expiryItems } = useStockInventory();
   const { items: stockItems } = useStockInventoryItems();
+  const { items: outOfStockDrugs, error: outOfStockError } = useOutOfStockDrugs();
 
   const currentDate = new Date();
 
@@ -39,8 +38,8 @@ const StockManagementMetrics: React.FC = (filter: StockOperationFilter) => {
     totalCount: true,
   });
 
-  if (error) {
-    return <ErrorState headerTitle={t('errorStockMetric', 'Error fetching stock metrics')} error={error} />;
+  if (outOfStockError) {
+    return <ErrorState headerTitle={t('errorStockMetric', 'Error fetching stock metrics')} error={outOfStockError} />;
   }
 
   const filteredItems =
@@ -60,11 +59,7 @@ const StockManagementMetrics: React.FC = (filter: StockOperationFilter) => {
       <MetricsCard
         label={t('outOfStock', 'Out of stock')}
         headerLabel={t('outOfStock', 'Out of stock')}
-        outOfStockCount={{
-          itemsBelowMin: [],
-          itemsAboveMax: [],
-        }}
-        value={allStocks?.length}
+        value={outOfStockDrugs.length}
       />
       <MetricsCard
         disposedCount={{

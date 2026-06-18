@@ -26,6 +26,10 @@ export function useStockItemQuantitiesHook(v?: ResourceRepresentation, initialSt
   const [stockBatchUuid, setStockBatchUuid] = useState<string | null>();
 
   useEffect(() => {
+    setStockItemUuid(initialStockItemUuid ?? null);
+  }, [initialStockItemUuid]);
+
+  useEffect(() => {
     setStockItemFilter({
       startIndex: currentPage - 1,
       v: ResourceRepresentation.Default,

@@ -11,7 +11,7 @@ import BatchInformationLocationsFilter from './batch-information-locations/batch
 
 interface BatchInformationProps {
   onSubmit?: () => void;
-  stockItemUuid: string;
+  stockItemUuid?: string;
 }
 
 const BatchInformation: React.FC<BatchInformationProps> = ({ stockItemUuid }) => {

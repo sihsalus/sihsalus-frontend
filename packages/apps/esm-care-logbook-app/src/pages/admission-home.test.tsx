@@ -31,7 +31,7 @@ function renderAdmissionHome() {
 }
 
 function getMetricValue(label: string) {
-  return screen.getByText(label).parentElement?.querySelector('strong');
+  return screen.getByText(label).parentElement;
 }
 
 function createAdmission(overrides: Partial<AdmissionRow>): AdmissionRow {
@@ -107,10 +107,9 @@ describe('AdmissionHome', () => {
     expect(screen.getByRole('heading', { name: /libro de atenciones/i })).toBeInTheDocument();
     for (const header of [
       'Fecha',
-      'HCE / código temporal',
-      'Documento',
+      'HCE',
+      'DNI',
       'Estado identificación',
-      'Condición comunicación',
       'Responsable',
       'F. Nac.',
       'Tiene SIS',
@@ -121,6 +120,7 @@ describe('AdmissionHome', () => {
       'F',
       'Servicio',
       'Número de orden',
+      'Condición comunicación',
     ]) {
       expect(screen.getByRole('columnheader', { name: header })).toBeInTheDocument();
     }

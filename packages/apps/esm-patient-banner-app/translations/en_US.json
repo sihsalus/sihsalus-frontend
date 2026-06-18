@@ -21,6 +21,7 @@
   "postalCode": "Postal code",
   "occupation": "Occupation",
   "residence": "Place of residence",
+  "relationship": "Relationship",
   "started": "Started",
   "state": "State",
   "stateProvince": "State"

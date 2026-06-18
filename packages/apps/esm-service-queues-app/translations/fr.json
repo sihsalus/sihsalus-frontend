@@ -224,5 +224,6 @@
   "vitalsForm": "Formulaire de signes vitaux",
   "vitalsNotRecordedForVisit": "Les constantes pas encore enregistrées pour ce patient à cette visite",
   "waitingFor": "En attente de",
-  "weight": "Poids"
+  "weight": "Poids",
+  "years": "ans"
 }

@@ -9,7 +9,7 @@
   "continue": "Continuar",
   "errorChangingPassword": "Erro ao alterar a senha",
   "footerlogo": "Logotipo do Rodapé",
-  "frontendVersion": "Frontend v{{version}}",
+  "frontendVersion": "v{{version}}",
   "invalidCredentials": "Nome do utilizador ou senha inválida",
   "language": "Idioma",
   "learnMore": "Learn more",

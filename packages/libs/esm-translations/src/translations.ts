@@ -112,6 +112,8 @@ export const coreTranslations = {
   snackbarNotification: 'Snackbar notification',
   toggleDevTools: 'Toggle dev tools',
   unknown: 'Unknown',
+  year: 'year',
   yearAbbreviation: 'yr',
+  years: 'years',
   yearsAbbreviation: 'yrs',
 };

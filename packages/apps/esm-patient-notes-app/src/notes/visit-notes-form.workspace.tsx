@@ -314,7 +314,7 @@ const VisitNotesForm: React.FC<PatientWorkspace2DefinitionProps<VisitNotesFormPr
       primaryDiagnosisSearch: '',
       noteDate: isEditing ? new Date(encounter.rawDatetime) : new Date(),
       codigoPrestacional: isEditing
-        ? (getEncounterObsConceptValue(codigoPrestacionalConceptUuid, 'codigo-prestacional')?.uuid ??
+        ? (getEncounterObsConceptValue(codigoPrestacionalConceptUuid, 'codigo-prestacional')?.display ??
           getEncounterObsValue(codigoPrestacionalConceptUuid, 'codigo-prestacional'))
         : '',
       chiefComplaint: isEditing ? getEncounterObsValue(chiefComplaintConceptUuid) : '',
@@ -505,7 +505,7 @@ const VisitNotesForm: React.FC<PatientWorkspace2DefinitionProps<VisitNotesFormPr
       setSelectedCodigoPrestacional(concept);
       setCodigoPrestacionalSearchValue('');
       setSearchPrestacionalResults([]);
-      setValue('codigoPrestacional', concept.uuid, { shouldDirty: true });
+      setValue('codigoPrestacional', concept.display, { shouldDirty: true });
     },
     [setValue],
   );

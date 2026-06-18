@@ -262,7 +262,7 @@ test('searches and saves one selected codigo prestacional concept', async () => 
           concept: { display: '', uuid: defaultVisitNoteClinicalConceptUuids.codigoPrestacionalConceptUuid },
           formFieldNamespace: 'visit-notes',
           formFieldPath: 'codigo-prestacional',
-          value: 'prestacional-001',
+          value: '001 - Consulta externa',
         }),
       ]),
     }),

@@ -1,4 +1,20 @@
-import { Button, InlineLoading, InlineNotification, Layer, Select, SelectItem, TextInput } from '@carbon/react';
+import {
+  Button,
+  InlineLoading,
+  InlineNotification,
+  Layer,
+  Select,
+  SelectItem,
+  Table,
+  TableBody,
+  TableCell,
+  TableContainer,
+  TableHead,
+  TableHeader,
+  TableRow,
+  TextInput,
+  Tile,
+} from '@carbon/react';
 import { Download, Launch } from '@carbon/react/icons';
 import {
   ConfigurableLink,
@@ -125,10 +141,9 @@ export default function AdmissionHome() {
   const exportFilteredAdmissions = () => {
     const headers = [
       t('date', 'Fecha'),
-      t('medicalRecordNumber', 'HCE / código temporal'),
-      t('documentNumber', 'Documento'),
+      t('medicalRecordNumber', 'HCE'),
+      t('documentNumber', 'DNI'),
       t('identificationStatus', 'Estado identificación'),
-      t('communicationCondition', 'Condición comunicación'),
       t('responsiblePerson', 'Responsable'),
       t('birthDateShort', 'F. Nac.'),
       t('hasSis', 'Tiene SIS'),
@@ -138,13 +153,13 @@ export default function AdmissionHome() {
       t('femaleAge', 'Edad F'),
       t('service', 'Servicio'),
       t('orderNumber', 'Número de orden'),
+      t('communicationCondition', 'Condición comunicación'),
     ];
     const rows = filteredAdmissions.map((admission, index) => [
       formatDate(admission.startDatetime),
       admission.medicalRecordNumber,
       admission.documentNumber || t('pending', 'Pendiente'),
       admission.identificationStatus,
-      admission.communicationCondition,
       [admission.responsibleName, admission.responsibleRelationship].filter(Boolean).join(' - '),
       formatDate(admission.birthDate),
       admission.hasSis,
@@ -154,6 +169,7 @@ export default function AdmissionHome() {
       getAgeForGender(admission.gender, 'female', admission.birthDate, admission.startDatetime),
       admission.service,
       String(index + 1),
+      admission.communicationCondition,
     ]);
     const csv = [headers, ...rows].map((row) => row.map(escapeCsvValue).join(',')).join('\r\n');
     const blob = new Blob([`${EXCEL_CSV_PREAMBLE}${csv}`], { type: 'text/csv;charset=utf-8' });
@@ -174,6 +190,7 @@ export default function AdmissionHome() {
           <h1 className={styles.visuallyHidden}>{t('admissionReportByUps', 'Libro de Atenciones')}</h1>
           <PageHeader className={styles.header}>
             <PageHeaderContent
+              className={styles.headerContent}
               title={t('admissionReportByUps', 'Libro de Atenciones')}
               illustration={<RegistrationPictogram />}
             />
@@ -189,22 +206,36 @@ export default function AdmissionHome() {
               className={styles.summary}
               aria-label={t('admissionReportMetrics', 'Métricas del libro de atenciones')}
             >
-              <div>
-                <span>{t('reportedAdmissions', 'Atenciones registradas')}</span>
-                <strong>{reportSummary.total}</strong>
-              </div>
-              <div>
-                <span>{t('activeAdmissions', 'En curso')}</span>
-                <strong>{reportSummary.active}</strong>
-              </div>
-              <div>
-                <span>{t('finishedAdmissions', 'Finalizadas')}</span>
-                <strong>{reportSummary.finished}</strong>
-              </div>
-              <div>
-                <span>{t('reportedUpsServices', 'UPSS/servicios')}</span>
-                <strong>{reportSummary.services}</strong>
-              </div>
+              <Tile className={styles.summaryTile}>
+                <header className={styles.summaryTileHeader}>
+                  {t('reportedAdmissions', 'Atenciones registradas')}
+                </header>
+                <div className={styles.summaryTileDetails}>
+                  <div className={styles.summaryTileLabel}>{t('admissions', 'Atenciones')}</div>
+                  <div className={styles.summaryTileValue}>{reportSummary.total}</div>
+                </div>
+              </Tile>
+              <Tile className={styles.summaryTile}>
+                <header className={styles.summaryTileHeader}>{t('activeAdmissions', 'En curso')}</header>
+                <div className={styles.summaryTileDetails}>
+                  <div className={styles.summaryTileLabel}>{t('admissions', 'Atenciones')}</div>
+                  <div className={styles.summaryTileValue}>{reportSummary.active}</div>
+                </div>
+              </Tile>
+              <Tile className={styles.summaryTile}>
+                <header className={styles.summaryTileHeader}>{t('finishedAdmissions', 'Finalizadas')}</header>
+                <div className={styles.summaryTileDetails}>
+                  <div className={styles.summaryTileLabel}>{t('admissions', 'Atenciones')}</div>
+                  <div className={styles.summaryTileValue}>{reportSummary.finished}</div>
+                </div>
+              </Tile>
+              <Tile className={styles.summaryTile}>
+                <header className={styles.summaryTileHeader}>{t('reportedUpsServices', 'UPSS/servicios')}</header>
+                <div className={styles.summaryTileDetails}>
+                  <div className={styles.summaryTileLabel}>{t('services', 'Servicios')}</div>
+                  <div className={styles.summaryTileValue}>{reportSummary.services}</div>
+                </div>
+              </Tile>
             </section>
 
             <section
@@ -233,7 +264,7 @@ export default function AdmissionHome() {
                 ))}
               </Select>
               <Button
-                kind="tertiary"
+                kind="primary"
                 renderIcon={Download}
                 onClick={exportFilteredAdmissions}
                 disabled={filteredAdmissions.length === 0}
@@ -252,43 +283,58 @@ export default function AdmissionHome() {
             ) : null}
 
             <Layer>
-              <div className={styles.tableWrap}>
-                <table className={styles.table}>
-                  <thead>
-                    <tr>
-                      <th rowSpan={2}>{t('date', 'Fecha')}</th>
-                      <th rowSpan={2}>{t('medicalRecordNumber', 'HCE / código temporal')}</th>
-                      <th rowSpan={2}>{t('documentNumber', 'Documento')}</th>
-                      <th rowSpan={2}>{t('identificationStatus', 'Estado identificación')}</th>
-                      <th rowSpan={2}>{t('communicationCondition', 'Condición comunicación')}</th>
-                      <th rowSpan={2}>{t('responsiblePerson', 'Responsable')}</th>
-                      <th rowSpan={2}>{t('birthDateShort', 'F. Nac.')}</th>
-                      <th rowSpan={2}>{t('hasSis', 'Tiene SIS')}</th>
-                      <th rowSpan={2}>{t('fullName', 'Nombres y apellidos')}</th>
-                      <th rowSpan={2}>{t('address', 'Dirección')}</th>
-                      <th colSpan={2}>{t('age', 'Edad')}</th>
-                      <th rowSpan={2}>{t('service', 'Servicio')}</th>
-                      <th rowSpan={2}>{t('orderNumber', 'Número de orden')}</th>
-                    </tr>
-                    <tr>
-                      <th>{t('maleInitial', 'M')}</th>
-                      <th>{t('femaleInitial', 'F')}</th>
-                    </tr>
-                  </thead>
-                  <tbody>
+              <TableContainer className={styles.tableWrap}>
+                <Table className={styles.table}>
+                  <colgroup>
+                    <col className={styles.dateColumn} />
+                    <col className={styles.identifierColumn} />
+                    <col className={styles.identifierColumn} />
+                    <col className={styles.statusColumn} />
+                    <col className={styles.responsibleColumn} />
+                    <col className={styles.shortColumn} />
+                    <col className={styles.shortColumn} />
+                    <col className={styles.personColumn} />
+                    <col className={styles.addressColumn} />
+                    <col className={styles.ageColumn} />
+                    <col className={styles.ageColumn} />
+                    <col className={styles.serviceColumn} />
+                    <col className={styles.orderColumn} />
+                    <col className={styles.communicationColumn} />
+                  </colgroup>
+                  <TableHead>
+                    <TableRow>
+                      <TableHeader rowSpan={2}>{t('date', 'Fecha')}</TableHeader>
+                      <TableHeader rowSpan={2}>{t('medicalRecordNumber', 'HCE')}</TableHeader>
+                      <TableHeader rowSpan={2}>{t('documentNumber', 'DNI')}</TableHeader>
+                      <TableHeader rowSpan={2}>{t('identificationStatus', 'Estado identificación')}</TableHeader>
+                      <TableHeader rowSpan={2}>{t('responsiblePerson', 'Responsable')}</TableHeader>
+                      <TableHeader rowSpan={2}>{t('birthDateShort', 'F. Nac.')}</TableHeader>
+                      <TableHeader rowSpan={2}>{t('hasSis', 'Tiene SIS')}</TableHeader>
+                      <TableHeader rowSpan={2}>{t('fullName', 'Nombres y apellidos')}</TableHeader>
+                      <TableHeader rowSpan={2}>{t('address', 'Dirección')}</TableHeader>
+                      <TableHeader colSpan={2}>{t('age', 'Edad')}</TableHeader>
+                      <TableHeader rowSpan={2}>{t('service', 'Servicio')}</TableHeader>
+                      <TableHeader rowSpan={2}>{t('orderNumber', 'Número de orden')}</TableHeader>
+                      <TableHeader rowSpan={2}>{t('communicationCondition', 'Condición comunicación')}</TableHeader>
+                    </TableRow>
+                    <TableRow>
+                      <TableHeader>{t('maleInitial', 'M')}</TableHeader>
+                      <TableHeader>{t('femaleInitial', 'F')}</TableHeader>
+                    </TableRow>
+                  </TableHead>
+                  <TableBody>
                     {filteredAdmissions.map((admission, index) => (
-                      <tr key={admission.uuid}>
-                        <td>{formatDate(admission.startDatetime)}</td>
-                        <td>{admission.medicalRecordNumber}</td>
-                        <td>{admission.documentNumber || t('pending', 'Pendiente')}</td>
-                        <td>{admission.identificationStatus}</td>
-                        <td>{admission.communicationCondition}</td>
-                        <td>
+                      <TableRow key={admission.uuid}>
+                        <TableCell>{formatDate(admission.startDatetime)}</TableCell>
+                        <TableCell>{admission.medicalRecordNumber}</TableCell>
+                        <TableCell>{admission.documentNumber || t('pending', 'Pendiente')}</TableCell>
+                        <TableCell>{admission.identificationStatus}</TableCell>
+                        <TableCell>
                           {[admission.responsibleName, admission.responsibleRelationship].filter(Boolean).join(' - ')}
-                        </td>
-                        <td>{formatDate(admission.birthDate)}</td>
-                        <td>{admission.hasSis}</td>
-                        <td>
+                        </TableCell>
+                        <TableCell>{formatDate(admission.birthDate)}</TableCell>
+                        <TableCell>{admission.hasSis}</TableCell>
+                        <TableCell>
                           {admission.patientUuid ? (
                             <ConfigurableLink
                               to={`${spaBasePath}/admission/patient/${admission.patientUuid}`}
@@ -299,24 +345,25 @@ export default function AdmissionHome() {
                           ) : (
                             admission.patientName
                           )}
-                        </td>
-                        <td>{admission.address}</td>
-                        <td>
+                        </TableCell>
+                        <TableCell>{admission.address}</TableCell>
+                        <TableCell>
                           {getAgeForGender(admission.gender, 'male', admission.birthDate, admission.startDatetime)}
-                        </td>
-                        <td>
+                        </TableCell>
+                        <TableCell>
                           {getAgeForGender(admission.gender, 'female', admission.birthDate, admission.startDatetime)}
-                        </td>
-                        <td>{admission.service}</td>
-                        <td>{index + 1}</td>
-                      </tr>
+                        </TableCell>
+                        <TableCell>{admission.service}</TableCell>
+                        <TableCell>{index + 1}</TableCell>
+                        <TableCell>{admission.communicationCondition}</TableCell>
+                      </TableRow>
                     ))}
-                  </tbody>
-                </table>
+                  </TableBody>
+                </Table>
                 {!isLoading && filteredAdmissions.length === 0 ? (
                   <p className={styles.empty}>{t('noAdmissionsFound', 'No se encontraron atenciones recientes.')}</p>
                 ) : null}
-              </div>
+              </TableContainer>
             </Layer>
           </div>
         </main>

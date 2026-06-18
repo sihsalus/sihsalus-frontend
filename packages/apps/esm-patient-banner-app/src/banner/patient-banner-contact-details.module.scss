@@ -49,11 +49,24 @@
 }
 
 .relationship {
-  display: flex;
-  flex-flow: row nowrap;
-  gap: layout.$spacing-03;
+  display: list-item;
 }
 
-.relationship div {
-  flex: 1 1;
+.relationshipContent {
+  display: flex;
+  flex-wrap: wrap;
+  gap: layout.$spacing-02;
+  align-items: baseline;
+}
+
+.relationshipMeta {
+  display: inline-flex;
+  flex-wrap: wrap;
+  gap: layout.$spacing-02;
+  color: $text-02;
+}
+
+.relationshipMeta span:not(:last-child)::after {
+  content: '\00b7';
+  margin-left: layout.$spacing-02;
 }

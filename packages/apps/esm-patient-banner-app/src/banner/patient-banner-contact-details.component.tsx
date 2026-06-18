@@ -258,6 +258,18 @@ const getDisplayValue = (value: unknown): string => {
   return String(value);
 };
 
+function RelationshipMetaItem({ label, value }: { label: string; value: React.ReactNode }) {
+  if (value === null || value === undefined || value === '' || value === '--') {
+    return null;
+  }
+
+  return (
+    <span>
+      <span className={styles.itemLabel}>{label}:</span> {value}
+    </span>
+  );
+}
+
 const PatientAdministrativeDetails: React.FC<{ patientUuid: string }> = ({ patientUuid }) => {
   const { t } = useTranslation();
   const {
@@ -396,19 +408,25 @@ const Relationships: React.FC<{ patientId: string }> = ({ patientId }) => {
         <ul className={styles.detailList}>
           {relationships.map((relationship) => (
             <li key={relationship.uuid} className={styles.relationship}>
-              <div>
+              <span className={styles.relationshipContent}>
                 <ConfigurableLink to={`${window.spaBase}/patient/${relationship.relativeUuid}/chart`}>
                   {relationship.display}
                 </ConfigurableLink>
-              </div>
-              <div>{relationship.relationshipType}</div>
-              <div>
-                {relationship.relativeAge
-                  ? `${relationship.relativeAge} ${
-                      relationship.relativeAge === 1 ? t('yearAbbreviation', 'yr') : t('yearsAbbreviation', 'yrs')
-                    }`
-                  : ''}
-              </div>
+                <span className={styles.relationshipMeta}>
+                  <RelationshipMetaItem label={t('relationship', 'Relationship')} value={relationship.relationshipType} />
+                  <RelationshipMetaItem label="DNI" value={relationship.dni} />
+                  <RelationshipMetaItem
+                    label={t('age', 'Age')}
+                    value={
+                      relationship.relativeAge
+                        ? `${relationship.relativeAge} ${
+                            relationship.relativeAge === 1 ? t('yearAbbreviation', 'yr') : t('yearsAbbreviation', 'yrs')
+                          }`
+                        : ''
+                    }
+                  />
+                </span>
+              </span>
             </li>
           ))}
         </ul>

@@ -176,6 +176,7 @@ describe('PatientBannerContactDetails', () => {
     mockUseRelationships.mockReturnValue({
       data: [
         {
+          dni: '76543210',
           display: 'Juan Perez',
           relationshipType: 'Father',
           relativeAge: 60,
@@ -188,11 +189,18 @@ describe('PatientBannerContactDetails', () => {
 
     rerender(<PatientBannerContactDetails patientId={patientId} deceased={false} />);
 
-    expect(screen.getByText('DNI:').closest('li')).toHaveTextContent(/DNI:\s*12345678/i);
+    const identifiersSection = screen.getByText('Identifiers').parentElement;
+    const relationshipsSection = screen.getByText('Relationships').parentElement;
+    if (!identifiersSection || !relationshipsSection) {
+      throw new Error('Expected identifiers and relationships sections to render');
+    }
+
+    expect(within(identifiersSection).getByText('DNI:').closest('li')).toHaveTextContent(/DNI:\s*12345678/i);
     expect(screen.getByText(/Preferred/i)).toBeInTheDocument();
-    expect(screen.getByRole('link', { name: 'Juan Perez' })).toBeInTheDocument();
-    expect(screen.getByText('Father')).toBeInTheDocument();
-    expect(screen.getByText('60 yrs')).toBeInTheDocument();
+    expect(within(relationshipsSection).getByRole('link', { name: 'Juan Perez' })).toBeInTheDocument();
+    expect(within(relationshipsSection).getByText('Juan Perez').closest('li')).toHaveTextContent(
+      /Relationship:\s*Father.*DNI:\s*76543210.*Age:\s*60 yrs/,
+    );
   });
 
   it('renders demographic age with year, month, or week units', () => {

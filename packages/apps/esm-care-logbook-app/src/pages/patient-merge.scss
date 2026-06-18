@@ -1,34 +1,185 @@
+@use "@carbon/colors";
+@use "@carbon/layout";
+@use "@carbon/type";
+
 .container {
   width: 100%;
-  max-width: 64rem;
-  padding: 2rem 1.5rem;
+  min-height: 100%;
+  padding: layout.$spacing-07;
+  background: colors.$gray-10;
 }
 
-.header {
+.hero {
+  display: flex;
+  justify-content: space-between;
+  gap: layout.$spacing-06;
+  max-width: 86rem;
+  margin-bottom: layout.$spacing-06;
+}
+
+.hero h1 {
+  @include type.type-style("heading-05");
+  margin: 0 0 layout.$spacing-03;
+}
+
+.hero p {
+  @include type.type-style("body-01");
+  max-width: 48rem;
+  margin: 0;
+  color: colors.$gray-70;
+}
+
+.eyebrow {
+  @include type.type-style("label-01");
+  margin-bottom: layout.$spacing-02;
+  color: colors.$gray-60;
+  text-transform: uppercase;
+}
+
+.searchPanel {
+  display: grid;
+  grid-template-columns: minmax(18rem, 1fr) auto minmax(18rem, 1fr);
+  gap: layout.$spacing-05;
+  max-width: 86rem;
+  margin-bottom: layout.$spacing-06;
+}
+
+.searchCard {
+  display: flex;
+  flex-direction: column;
+  gap: layout.$spacing-05;
+  min-height: 18rem;
+  padding: layout.$spacing-05;
+  border: 1px solid colors.$gray-20;
+  background: colors.$white;
+}
+
+.cardHeader {
+  display: flex;
+  flex-direction: column;
+  gap: layout.$spacing-02;
+}
+
+.cardHeader h2 {
+  @include type.type-style("heading-02");
+  margin: 0;
+}
+
+.cardHeader span {
+  @include type.type-style("label-01");
+  color: colors.$gray-60;
+}
+
+.attributeGrid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: layout.$spacing-04;
+}
+
+.divider {
+  @include type.type-style("heading-04");
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 3rem;
+  color: colors.$gray-70;
+  font-weight: 600;
+}
+
+.resultsPanel,
+.comparisonPanel {
+  max-width: 86rem;
+  margin-bottom: layout.$spacing-06;
+  padding: layout.$spacing-05;
+  border: 1px solid colors.$gray-20;
+  background: colors.$white;
+}
+
+.sectionHeader {
   display: flex;
   align-items: flex-start;
   justify-content: space-between;
-  gap: 1rem;
-  margin-bottom: 1rem;
+  gap: layout.$spacing-05;
+  margin-bottom: layout.$spacing-05;
 }
 
-.header h1 {
+.sectionHeader h2 {
+  @include type.type-style("heading-03");
+  margin: 0 0 layout.$spacing-02;
+}
+
+.sectionHeader p {
   margin: 0;
-  font-size: 1.75rem;
+  color: colors.$gray-70;
+}
+
+.reviewGrid {
+  display: grid;
+  grid-template-columns: minmax(22rem, 0.9fr) minmax(24rem, 1.1fr);
+  gap: layout.$spacing-05;
+  margin-top: layout.$spacing-05;
+}
+
+.patientSummary {
+  padding: layout.$spacing-05;
+  border: 1px solid colors.$gray-20;
+  background: colors.$gray-10;
+}
+
+.patientSummary h3 {
+  @include type.type-style("heading-03");
+  margin: layout.$spacing-05 0;
+}
+
+.patientSummary dl {
+  display: grid;
+  gap: layout.$spacing-02;
+  margin: 0;
+}
+
+.patientSummary dt {
+  margin-top: layout.$spacing-04;
   font-weight: 600;
-  line-height: 1.25;
 }
 
-.summary {
-  max-width: 48rem;
+.patientSummary dd {
   margin: 0;
-  color: #525252;
-  font-size: 1rem;
-  line-height: 1.5;
+  color: colors.$gray-80;
+}
+
+.secondaryResults {
+  margin-top: layout.$spacing-05;
+}
+
+.actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: layout.$spacing-03;
+  margin-top: layout.$spacing-05;
+}
+
+@media (max-width: 66rem) {
+  .searchPanel,
+  .reviewGrid {
+    grid-template-columns: 1fr;
+  }
+
+  .divider {
+    min-height: 2rem;
+  }
 }
 
 @media (max-width: 42rem) {
-  .header {
+  .container {
+    padding: layout.$spacing-05;
+  }
+
+  .sectionHeader,
+  .actions {
     flex-direction: column;
+  }
+
+  .attributeGrid {
+    grid-template-columns: 1fr;
   }
 }

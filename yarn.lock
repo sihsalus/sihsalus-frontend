@@ -1134,7 +1134,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@babel/runtime@npm:^7.21.0, @babel/runtime@npm:^7.29.2":
+"@babel/runtime@npm:^7.21.0":
   version: 7.29.2
   resolution: "@babel/runtime@npm:7.29.2"
   checksum: 10c0/30b80a0140d16467792e1bbeb06f655b0dab70407da38dfac7fedae9c859f9ae9d846ef14ad77bd3814c064295fe9b1bc551f1541ea14646ae9f22b71a8bc17a
@@ -4319,7 +4319,7 @@ __metadata:
     dayjs: "npm:^1.11.13"
     dexie: "npm:^3.0.3"
     happy-dom: "npm:^20.6.0"
-    i18next: "npm:^25.7.2"
+    i18next: "npm:^26.3.1"
     lodash-es: "npm:^4.17.21"
     rimraf: "npm:^6.1.3"
     rxjs: "npm:^6.5.3"
@@ -4383,7 +4383,7 @@ __metadata:
     cross-env: "npm:^10.1.0"
     dayjs: "npm:^1.11.13"
     happy-dom: "npm:^20.6.0"
-    i18next: "npm:^25.5.3"
+    i18next: "npm:^26.3.1"
     lodash-es: "npm:^4.17.21"
     react: "npm:^18.3.1"
     react-dom: "npm:^18.3.1"
@@ -4540,7 +4540,7 @@ __metadata:
     "@types/fhir": "npm:0.0.31"
     "@types/node": "npm:^22.10.7"
     concurrently: "npm:^9.2.1"
-    i18next: "npm:^25.5.3"
+    i18next: "npm:^26.3.1"
     i18next-parser: "npm:^9.3.0"
     rimraf: "npm:^6.1.3"
     typescript: "npm:6.0.3"
@@ -7648,7 +7648,7 @@ __metadata:
     classnames: "npm:^2.5.1"
     dayjs: "npm:^1.11.13"
     exceljs: "npm:^4.4.0"
-    i18next: "npm:^25.7.2"
+    i18next: "npm:^26.3.1"
     lodash-es: "npm:^4.17.21"
     openmrs: "workspace:*"
     react: "npm:^18.3.1"
@@ -7744,7 +7744,7 @@ __metadata:
     dayjs: "npm:^1.11.10"
     dotenv: "npm:^16.4.1"
     fuzzy: "npm:^0.1.3"
-    i18next: "npm:^25.0.0"
+    i18next: "npm:^26.3.1"
     i18next-parser: "npm:^9.3.0"
     lodash: "npm:^4.18.1"
     lodash-es: "npm:^4.17.21"
@@ -7823,7 +7823,7 @@ __metadata:
     classnames: "npm:^2.3.2"
     dayjs: "npm:^1.11.7"
     dotenv: "npm:^16.3.1"
-    i18next: "npm:^25.0.0"
+    i18next: "npm:^26.3.1"
     i18next-parser: "npm:^9.0.2"
     lodash: "npm:^4.18.1"
     lodash-es: "npm:^4.17.21"
@@ -7860,7 +7860,7 @@ __metadata:
     "@types/react-dom": "npm:^18.3.0"
     dayjs: "npm:^1.11.13"
     dotenv: "npm:^17.3.1"
-    i18next: "npm:^25.0.0"
+    i18next: "npm:^26.3.1"
     i18next-parser: "npm:^9.0.2"
     lodash-es: "npm:^4.17.21"
     openmrs: "npm:*"
@@ -7906,7 +7906,7 @@ __metadata:
     classnames: "npm:^2.5.1"
     dayjs: "npm:^1.11.13"
     exceljs: "npm:^4.4.0"
-    i18next: "npm:^25.7.2"
+    i18next: "npm:^26.3.1"
     lodash-es: "npm:^4.17.21"
     openmrs: "workspace:*"
     react: "npm:^18.3.1"
@@ -7979,7 +7979,7 @@ __metadata:
     classnames: "npm:^2.5.1"
     dayjs: "npm:^1.11.13"
     dotenv: "npm:^16.3.1"
-    i18next: "npm:^25.0.0"
+    i18next: "npm:^26.3.1"
     i18next-parser: "npm:^9.3.0"
     openmrs: "npm:*"
     react: "npm:^18.3.1"
@@ -8073,7 +8073,7 @@ __metadata:
     "@types/testing-library__jest-dom": "npm:^5.14.9"
     concurrently: "npm:^6.5.1"
     dotenv: "npm:^16.4.7"
-    i18next: "npm:^25.0.0"
+    i18next: "npm:^26.3.1"
     i18next-parser: "npm:^9.3.0"
     lodash-es: "npm:^4.17.21"
     openmrs: "npm:*"
@@ -8116,7 +8116,7 @@ __metadata:
     "@rspack/cli": "npm:1.7.11"
     "@rspack/core": "npm:1.7.11"
     dayjs: "npm:^1.11.13"
-    i18next: "npm:^25.7.2"
+    i18next: "npm:^26.3.1"
     lodash-es: "npm:^4.17.21"
     openmrs: "workspace:*"
     react: "npm:^18.3.1"
@@ -8166,7 +8166,7 @@ __metadata:
     dotenv: "npm:^16.4.5"
     file-loader: "npm:^6.2.0"
     fuzzy: "npm:^0.1.3"
-    i18next: "npm:^25.0.0"
+    i18next: "npm:^26.3.1"
     i18next-parser: "npm:^9.3.0"
     lodash-es: "npm:^4.17.21"
     openmrs: "npm:*"
@@ -8210,7 +8210,7 @@ __metadata:
     classnames: "npm:^2.5.1"
     dayjs: "npm:^1.11.11"
     husky: "npm:^8.0.3"
-    i18next: "npm:^25.0.0"
+    i18next: "npm:^26.3.1"
     i18next-parser: "npm:^9.3.0"
     jsep: "npm:^1.4.0"
     lint-staged: "npm:^15.2.2"
@@ -8349,7 +8349,7 @@ __metadata:
   resolution: "@sihsalus/esm-home-app@workspace:packages/apps/esm-home-app"
   dependencies:
     "@sihsalus/esm-rbac": "workspace:*"
-    i18next: "npm:^25.0.0"
+    i18next: "npm:^26.3.1"
     i18next-parser: "npm:^9.3.0"
     openmrs: "npm:*"
     typescript: "npm:6.0.3"
@@ -8787,7 +8787,7 @@ __metadata:
     css-loader: "npm:^6.8.1"
     dayjs: "npm:1.x"
     dotenv: "npm:^17.3.1"
-    i18next: "npm:^25.0.0"
+    i18next: "npm:^26.3.1"
     i18next-parser: "npm:^9.0.2"
     lodash-es: "npm:^4.17.21"
     open: "npm:^8.4.0"
@@ -9040,7 +9040,7 @@ __metadata:
     classnames: "npm:^2.3.2"
     exceljs: "npm:^4.4.0"
     formik: "npm:^2.1.5"
-    i18next: "npm:^25.0.0"
+    i18next: "npm:^26.3.1"
     i18next-parser: "npm:^9.0.2"
     lodash-es: "npm:^4.17.15"
     openmrs: "npm:*"
@@ -9067,7 +9067,7 @@ __metadata:
     "@rspack/cli": "npm:1.7.11"
     "@sihsalus/esm-rbac": "workspace:*"
     classnames: "npm:^2.3.2"
-    i18next: "npm:^25.0.0"
+    i18next: "npm:^26.3.1"
     lodash-es: "npm:^4.17.15"
     openmrs: "npm:*"
     react-hook-form: "npm:^7.54.0"
@@ -9302,7 +9302,7 @@ __metadata:
     classnames: "npm:^2.5.1"
     dayjs: "npm:^1.11.13"
     exceljs: "npm:^4.4.0"
-    i18next: "npm:^25.7.2"
+    i18next: "npm:^26.3.1"
     lodash-es: "npm:^4.17.21"
     openmrs: "workspace:*"
     react: "npm:^18.3.1"
@@ -9425,7 +9425,7 @@ __metadata:
     dayjs: "npm:^1.11.9"
     dotenv: "npm:^17.3.1"
     file-saver: "npm:^2.0.5"
-    i18next: "npm:^25.0.0"
+    i18next: "npm:^26.3.1"
     i18next-parser: "npm:^9.3.0"
     lodash-es: "npm:^4.17.21"
     openmrs: "npm:*"
@@ -9551,7 +9551,7 @@ __metadata:
     css-loader: "npm:^6.8.1"
     dayjs: "npm:1.x"
     dotenv: "npm:^16.0.3"
-    i18next: "npm:^25.0.0"
+    i18next: "npm:^26.3.1"
     i18next-parser: "npm:^9.3.0"
     lodash-es: "npm:^4.17.21"
     openmrs: "npm:*"
@@ -17069,7 +17069,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"i18next@npm:^25.0.0, i18next@npm:^25.5.3":
+"i18next@npm:^25.5.3":
   version: 25.8.18
   resolution: "i18next@npm:25.8.18"
   dependencies:
@@ -17083,17 +17083,15 @@ __metadata:
   languageName: node
   linkType: hard
 
-"i18next@npm:^25.7.2":
-  version: 25.10.10
-  resolution: "i18next@npm:25.10.10"
-  dependencies:
-    "@babel/runtime": "npm:^7.29.2"
+"i18next@npm:^26.3.1":
+  version: 26.3.1
+  resolution: "i18next@npm:26.3.1"
   peerDependencies:
     typescript: ^5 || ^6
   peerDependenciesMeta:
     typescript:
       optional: true
-  checksum: 10c0/6ff601b52363c9c974ef293af4a6de04d9f76b4bf2ad9a56c8546235aaf19ff1a7c2109ddba3a73922d418e208ec5b688e5afb323eba6e27c75d629e93827ae1
+  checksum: 10c0/8f26cb9a09b648edde395a58c2fe890dd996cb81a969d0a05da178b9cb4ce3dee009f9c677a480bb58b5a9d8bbf762fd226111626b015e9bbd66b96132dbba39
   languageName: node
   linkType: hard
 

@@ -22,6 +22,8 @@ export interface AttributeValue {
  * Patient Identifier data as it is fetched and composed from the APIs.
  */
 export interface FetchedPatientIdentifierType {
+  description?: string;
+  display?: string;
   name: string;
   required: boolean;
   uuid: string;

@@ -16,6 +16,7 @@ const metadataFetchTimeoutMs = 10_000;
 const serviceWorkerMessageTimeoutMs = 1_000;
 
 interface PatientIdentifierTypeResponse {
+  description?: string;
   display: string;
   format: string;
   name: string;
@@ -166,7 +167,7 @@ export async function fetchPatientIdentifierTypesWithSources(): Promise<Array<Pa
 async function fetchPatientIdentifierTypes(): Promise<Array<FetchedPatientIdentifierType>> {
   try {
     const patientIdentifierTypesResponse = await cacheAndFetch<{ results: Array<PatientIdentifierTypeResponse> }>(
-      `${restBaseUrl}/patientidentifiertype?v=custom:(display,uuid,name,format,required,uniquenessBehavior)`,
+      `${restBaseUrl}/patientidentifiertype?v=custom:(display,uuid,name,description,format,required,uniquenessBehavior)`,
     );
     const primaryIdentifierTypeResponse = await cacheAndFetch<{
       results: Array<{ metadataUuid?: string }>;
@@ -257,7 +258,9 @@ function withTimeout<T>(promise: Promise<T>, timeoutMs: number): Promise<T> {
 
 function mapPatientIdentifierType(patientIdentifierType: PatientIdentifierTypeResponse, isPrimary: boolean) {
   return {
-    name: patientIdentifierType.display,
+    description: patientIdentifierType.description,
+    display: patientIdentifierType.display,
+    name: patientIdentifierType.display || patientIdentifierType.name,
     fieldName: camelCase(patientIdentifierType.name),
     required: patientIdentifierType.required,
     uuid: patientIdentifierType.uuid,

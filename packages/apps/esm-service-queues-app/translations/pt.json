@@ -224,5 +224,6 @@
   "vitalsForm": "Formulário de Sinais Vitais",
   "vitalsNotRecordedForVisit": "Os sinais vitais não foram registados para este utente nesta visita",
   "waitingFor": "Esperando por",
-  "weight": "Peso"
+  "weight": "Peso",
+  "years": "anos"
 }

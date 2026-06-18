@@ -77,6 +77,7 @@ describe('ChangeStatusModal', () => {
     } as FetchResponse);
 
     renderChangeStatusModal();
+    expect(screen.getByText(/Brian Johnson\s*·\s*F\s*·\s*32 years/i)).toBeInTheDocument();
     expect(screen.getByText(/queue service/i)).toBeInTheDocument();
     expect(screen.getByText(/queue priority/i)).toBeInTheDocument();
 

@@ -107,7 +107,7 @@ describe('AdmissionHome', () => {
     expect(screen.getByRole('heading', { name: /libro de atenciones/i })).toBeInTheDocument();
     for (const header of [
       'Fecha',
-      'HCE',
+      'HCE / código temporal',
       'DNI',
       'Estado identificación',
       'Responsable',

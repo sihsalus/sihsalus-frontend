@@ -31,7 +31,7 @@ test.afterEach(async ({ api }) => {
   await endVisit(api, visit);
 });
 
-test('Pause prescription', async ({ page, patient }) => {
+test('Pause prescription', async ({ page }) => {
   const dispensingPage = new DispensingPage(page);
 
   await test.step('When I navigate to the dispensing app', async () => {

@@ -60,6 +60,21 @@ describe('responsible person utilities', () => {
     expect(errors.familyName).toBe('nameContainsInvalidCharacters');
   });
 
+  it('rejects responsible person names that exceed patient name limits', () => {
+    const errors = validateResponsiblePersonForm({
+      ...validResponsiblePerson,
+      givenName: 'A'.repeat(151),
+      middleName: 'B'.repeat(151),
+      familyName: 'C'.repeat(101),
+      familyName2: 'D'.repeat(101),
+    });
+
+    expect(errors.givenName).toBe('givenNameTooLong');
+    expect(errors.middleName).toBe('givenNameTooLong');
+    expect(errors.familyName).toBe('familyNameTooLong');
+    expect(errors.familyName2).toBe('familyNameTooLong');
+  });
+
   it('requires relationship type before creating a responsible person', () => {
     const errors = validateResponsiblePersonForm({
       ...validResponsiblePerson,

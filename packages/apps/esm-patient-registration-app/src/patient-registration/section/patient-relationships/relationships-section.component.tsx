@@ -20,6 +20,7 @@ import { type RegistrationConfig } from '../../../config-schema';
 import { moduleName } from '../../../constants';
 import { ResourcesContext } from '../../../offline.resources';
 import { Autosuggest } from '../../input/custom-input/autosuggest/autosuggest.component';
+import { patientFamilyNameMaxLength, patientGivenNameMaxLength } from '../../patient-name-limits';
 import { fetchPerson, type PersonSearchResult, savePerson } from '../../patient-registration.resource';
 import { type FormValues, type RelationshipValue } from '../../patient-registration.types';
 import { PatientRegistrationContext } from '../../patient-registration-context';
@@ -60,6 +61,8 @@ const defaultGenderOptions: Array<GenderOption> = [
   { value: 'unknown' },
 ];
 
+const invalidMinorResponsibleRelationshipLabels = new Set(['child', 'grandchild', 'hijo', 'nieto']);
+
 const initialResponsiblePersonValues: ResponsiblePersonFormValues = {
   givenName: '',
   middleName: '',
@@ -82,6 +85,42 @@ function getRelationshipKey(relationship: RelationshipValue) {
     relationship.clientId ??
     relationship.relatedPersonUuid ??
     `${relationship.action ?? 'relationship'}-${relationship.relationshipType ?? 'pending'}`
+  );
+}
+
+function normalizeRelationshipLabel(label: string) {
+  return label
+    .trim()
+    .toLocaleLowerCase()
+    .normalize('NFD')
+    .replace(/\p{Diacritic}/gu, '');
+}
+
+function getUniqueRelationshipTypes(relationshipTypes: Array<RelationshipType>) {
+  const labels = new Set<string>();
+
+  return relationshipTypes.filter((relationshipType) => {
+    const normalizedLabel = normalizeRelationshipLabel(relationshipType.display);
+
+    if (!normalizedLabel || labels.has(normalizedLabel)) {
+      return false;
+    }
+
+    labels.add(normalizedLabel);
+    return true;
+  });
+}
+
+function getDisplayRelationshipTypes(relationshipTypes: Array<RelationshipType>, isMinor: boolean) {
+  const uniqueRelationshipTypes = getUniqueRelationshipTypes(relationshipTypes);
+
+  if (!isMinor) {
+    return uniqueRelationshipTypes;
+  }
+
+  return uniqueRelationshipTypes.filter(
+    (relationshipType) =>
+      !invalidMinorResponsibleRelationshipLabels.has(normalizeRelationshipLabel(relationshipType.display)),
   );
 }
 
@@ -402,6 +441,7 @@ const RelationshipView: React.FC<RelationshipViewProps> = ({
                     id={`relationships[${index}].newPerson.givenName`}
                     labelText={t('responsibleGivenName', 'First name')}
                     value={newPersonValues.givenName}
+                    maxLength={patientGivenNameMaxLength}
                     onChange={handleNewPersonFieldChange('givenName')}
                     onBlur={markNewPersonFieldTouched('givenName')}
                     invalid={!!getFieldError('givenName', personFormErrors)}
@@ -414,6 +454,7 @@ const RelationshipView: React.FC<RelationshipViewProps> = ({
                     id={`relationships[${index}].newPerson.middleName`}
                     labelText={t('responsibleMiddleName', 'Middle name (optional)')}
                     value={newPersonValues.middleName}
+                    maxLength={patientGivenNameMaxLength}
                     onChange={handleNewPersonFieldChange('middleName')}
                     onBlur={markNewPersonFieldTouched('middleName')}
                     invalid={!!getFieldError('middleName', personFormErrors)}
@@ -425,6 +466,7 @@ const RelationshipView: React.FC<RelationshipViewProps> = ({
                     id={`relationships[${index}].newPerson.familyName`}
                     labelText={t('responsibleFamilyName', 'Family name')}
                     value={newPersonValues.familyName}
+                    maxLength={patientFamilyNameMaxLength}
                     onChange={handleNewPersonFieldChange('familyName')}
                     onBlur={markNewPersonFieldTouched('familyName')}
                     invalid={!!getFieldError('familyName', personFormErrors)}
@@ -437,6 +479,7 @@ const RelationshipView: React.FC<RelationshipViewProps> = ({
                     id={`relationships[${index}].newPerson.familyName2`}
                     labelText={t('responsibleFamilyName2', 'Second family name (optional)')}
                     value={newPersonValues.familyName2}
+                    maxLength={patientFamilyNameMaxLength}
                     onChange={handleNewPersonFieldChange('familyName2')}
                     onBlur={markNewPersonFieldTouched('familyName2')}
                     invalid={!!getFieldError('familyName2', personFormErrors)}
@@ -532,6 +575,10 @@ export const RelationshipsSection: React.FC<RelationshipsSectionProps> = ({ defa
   const requiresResponsibleRelationship = isMinorPatient(values);
   const minorResponsibleRelationshipTypes = config?.relationshipOptions?.minorResponsibleRelationshipTypes ?? [];
   const hasRelationshipTypes = !!relationshipTypeResults?.length;
+  const visibleRelationshipTypes = useMemo(
+    () => getDisplayRelationshipTypes(displayRelationshipTypes, requiresResponsibleRelationship),
+    [displayRelationshipTypes, requiresResponsibleRelationship],
+  );
 
   useEffect(() => {
     if (hasRelationshipTypes) {
@@ -637,7 +684,7 @@ export const RelationshipsSection: React.FC<RelationshipsSectionProps> = ({ defa
                     <RelationshipView
                       relationship={relationship}
                       index={index}
-                      displayRelationshipTypes={displayRelationshipTypes}
+                      displayRelationshipTypes={visibleRelationshipTypes}
                       remove={remove}
                     />
                   </div>

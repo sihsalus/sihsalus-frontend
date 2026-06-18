@@ -1,10 +1,5 @@
 import { ContentSwitcher, Layer, Switch, TextInput } from '@carbon/react';
 import { OpenmrsDatePicker, useConfig } from '@openmrs/esm-framework';
-import {
-  shouldPreventPlainNumberKey,
-  shouldPreventPlainNumberPaste,
-  validatePlainNumberInput,
-} from '@openmrs/esm-utils';
 import { useField } from 'formik';
 import React, { type ChangeEvent, useCallback, useContext } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -12,6 +7,11 @@ import { useTranslation } from 'react-i18next';
 import { type RegistrationConfig } from '../../../config-schema';
 import { moduleName } from '../../../constants';
 import { PatientRegistrationContext } from '../../patient-registration-context';
+import {
+  shouldPreventPlainNumberKey,
+  shouldPreventPlainNumberPaste,
+  validatePlainNumberInput,
+} from '../../utils/plain-number-input';
 import styles from '../field.scss';
 
 const calcBirthdate = (yearDelta, monthDelta, dateOfBirth) => {

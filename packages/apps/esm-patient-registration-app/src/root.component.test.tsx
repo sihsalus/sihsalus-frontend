@@ -1,6 +1,6 @@
 import { render, screen } from '@testing-library/react';
-import React from 'react';
 import type { ReactNode } from 'react';
+import React from 'react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 type RequirePrivilegeProps = {
@@ -17,6 +17,7 @@ vi.mock('@sihsalus/esm-rbac', () => ({
 
 vi.mock('@openmrs/esm-framework', () => ({
   ExtensionSlot: () => <div>Breadcrumbs</div>,
+  omrsOfflineCachingStrategyHttpHeaderName: 'x-omrs-offline-caching-strategy',
   useConnectivity: () => true,
   useSession: () => ({ user: { uuid: 'test-user' } }),
 }));

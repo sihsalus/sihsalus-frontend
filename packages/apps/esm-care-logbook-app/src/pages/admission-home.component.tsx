@@ -160,6 +160,7 @@ export default function AdmissionHome() {
         [
           admission.patientName,
           admission.medicalRecordNumber,
+          admission.documentType,
           admission.documentNumber,
           admission.identificationStatus,
           admission.communicationCondition,
@@ -198,7 +199,8 @@ export default function AdmissionHome() {
     const headers = [
       t('date', 'Fecha'),
       t('medicalRecordNumber', 'HCE / código temporal'),
-      t('documentNumber', 'DNI'),
+      t('documentType', 'Tipo doc.'),
+      t('documentNumber', 'N° documento'),
       t('identificationStatus', 'Estado identificación'),
       t('responsiblePerson', 'Responsable'),
       t('birthDateShort', 'F. Nac.'),
@@ -214,6 +216,7 @@ export default function AdmissionHome() {
     const rows = filteredAdmissions.map((admission, index) => [
       formatDate(admission.startDatetime),
       admission.medicalRecordNumber,
+      admission.documentType || t('pending', 'Pendiente'),
       admission.documentNumber || t('pending', 'Pendiente'),
       admission.identificationStatus,
       [admission.responsibleName, admission.responsibleRelationship].filter(Boolean).join(' - '),
@@ -302,9 +305,12 @@ export default function AdmissionHome() {
                 id="admission-report-search"
                 labelText={t(
                   'searchAdmissions',
-                  'Buscar por paciente, DNI, HCE, código temporal, seguro, responsable, servicio o ubicación',
+                  'Buscar por paciente, documento, HCE, código temporal, seguro, responsable, servicio o ubicación',
                 )}
-                placeholder={t('searchAdmissionsPlaceholder', 'Paciente, DNI, HCE, seguro, responsable, servicio...')}
+                placeholder={t(
+                  'searchAdmissionsPlaceholder',
+                  'Paciente, documento, HCE, seguro, responsable, servicio...',
+                )}
                 value={searchTerm}
                 onChange={(event) => setSearchTerm(event.target.value)}
               />
@@ -344,6 +350,7 @@ export default function AdmissionHome() {
                   <colgroup>
                     <col className={styles.dateColumn} />
                     <col className={styles.identifierColumn} />
+                    <col className={styles.documentTypeColumn} />
                     <col className={styles.identifierColumn} />
                     <col className={styles.statusColumn} />
                     <col className={styles.responsibleColumn} />
@@ -363,7 +370,8 @@ export default function AdmissionHome() {
                       <TableHeader {...twoRowHeaderProps}>
                         {t('medicalRecordNumber', 'HCE / código temporal')}
                       </TableHeader>
-                      <TableHeader {...twoRowHeaderProps}>{t('documentNumber', 'DNI')}</TableHeader>
+                      <TableHeader {...twoRowHeaderProps}>{t('documentType', 'Tipo doc.')}</TableHeader>
+                      <TableHeader {...twoRowHeaderProps}>{t('documentNumber', 'N° documento')}</TableHeader>
                       <TableHeader {...twoRowHeaderProps}>
                         {t('identificationStatus', 'Estado identificación')}
                       </TableHeader>
@@ -389,6 +397,7 @@ export default function AdmissionHome() {
                       <TableRow key={admission.uuid}>
                         <TableCell>{formatDate(admission.startDatetime)}</TableCell>
                         <TableCell>{admission.medicalRecordNumber}</TableCell>
+                        <TableCell>{admission.documentType || t('pending', 'Pendiente')}</TableCell>
                         <TableCell>{admission.documentNumber || t('pending', 'Pendiente')}</TableCell>
                         <TableCell>{admission.identificationStatus}</TableCell>
                         <TableCell>

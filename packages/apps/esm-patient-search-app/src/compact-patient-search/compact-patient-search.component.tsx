@@ -4,7 +4,12 @@ import { useTranslation } from 'react-i18next';
 
 import { type PatientSearchConfig } from '../config-schema';
 import useArrowNavigation from '../hooks/useArrowNavigation';
-import { useInfinitePatientSearch, useRecentlyViewedPatients, useRestPatients } from '../patient-search.resource';
+import {
+  isForbiddenUserPropertiesError,
+  useInfinitePatientSearch,
+  useRecentlyViewedPatients,
+  useRestPatients,
+} from '../patient-search.resource';
 import PatientSearchBar from '../patient-search-bar/patient-search-bar.component';
 import { PatientSearchContext } from '../patient-search-context';
 import { type SearchedPatient } from '../types';
@@ -76,6 +81,10 @@ const CompactPatientSearchComponent: React.FC<CompactPatientSearchProps> = ({
         await updateRecentlyViewedPatients(patientUuid);
         await mutateUserProperties();
       } catch (error) {
+        if (isForbiddenUserPropertiesError(error)) {
+          return;
+        }
+
         showSnackbar({
           kind: 'error',
           title: t('errorUpdatingRecentlyViewedPatients', 'Error updating recently viewed patients'),
@@ -129,7 +138,7 @@ const CompactPatientSearchComponent: React.FC<CompactPatientSearchProps> = ({
       });
     }
 
-    if (errorFetchingUserProperties) {
+    if (errorFetchingUserProperties && !isForbiddenUserPropertiesError(errorFetchingUserProperties)) {
       showSnackbar({
         kind: 'error',
         title: t('errorFetchingUserProperties', 'Error fetching user properties'),

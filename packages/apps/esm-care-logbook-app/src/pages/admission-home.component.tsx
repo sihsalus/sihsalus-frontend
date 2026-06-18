@@ -15,6 +15,8 @@ import { admissionPrivilege, moduleName } from '../constants';
 import { useAdmissions } from '../resources/admissions.resource';
 import styles from './admission-home.scss';
 
+const EXCEL_CSV_PREAMBLE = '\uFEFFsep=,\r\n';
+
 interface AdmissionConfig {
   admissionReportPageSize?: number;
 }
@@ -153,8 +155,8 @@ export default function AdmissionHome() {
       admission.service,
       String(index + 1),
     ]);
-    const csv = [headers, ...rows].map((row) => row.map(escapeCsvValue).join(',')).join('\n');
-    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8' });
+    const csv = [headers, ...rows].map((row) => row.map(escapeCsvValue).join(',')).join('\r\n');
+    const blob = new Blob([`${EXCEL_CSV_PREAMBLE}${csv}`], { type: 'text/csv;charset=utf-8' });
     const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
     link.href = url;

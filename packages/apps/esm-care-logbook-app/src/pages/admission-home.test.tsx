@@ -222,6 +222,55 @@ describe('AdmissionHome', () => {
     }
   });
 
+  it('exports an Excel-compatible UTF-8 CSV preserving Spanish characters', async () => {
+    const createObjectURL = vi.fn((_blob: Blob | MediaSource) => 'blob:atenciones');
+    const revokeObjectURL = vi.fn();
+    Object.defineProperty(URL, 'createObjectURL', { configurable: true, value: createObjectURL });
+    Object.defineProperty(URL, 'revokeObjectURL', { configurable: true, value: revokeObjectURL });
+
+    mockUseAdmissions.mockReturnValue({
+      admissions: [
+        createAdmission({
+          uuid: 'visit-1',
+          patientUuid: 'patient-1',
+          patientName: 'María Peña Ñaupari',
+          medicalRecordNumber: 'TEMP-001',
+          documentNumber: '',
+          identificationStatus: 'Confirmado',
+          communicationCondition: 'Sí comunica',
+          responsibleName: 'José Quispe',
+          responsibleRelationship: 'Padre',
+          birthDate: '2019-06-01',
+          hasSis: 'Sí',
+          address: 'Jr. Unión 123, Huánuco',
+          gender: 'F',
+          service: 'Consulta ambulatoria',
+          status: 'Activa',
+        }),
+      ],
+      error: undefined,
+      isLoading: false,
+    });
+
+    renderAdmissionHome();
+
+    fireEvent.click(screen.getByRole('button', { name: /exportar csv/i }));
+
+    expect(createObjectURL).toHaveBeenCalledTimes(1);
+    const blob = createObjectURL.mock.calls[0][0] as Blob;
+    const csv = await blob.text();
+
+    expect(csv.startsWith('\uFEFFsep=,\r\n')).toBe(true);
+    expect(csv).toContain('"HCE / código temporal"');
+    expect(csv).toContain('"Estado identificación"');
+    expect(csv).toContain('"Condición comunicación"');
+    expect(csv).toContain('"María Peña Ñaupari"');
+    expect(csv).toContain('"Sí comunica"');
+    expect(csv).toContain('"Jr. Unión 123, Huánuco"');
+    expect(csv).not.toContain('Ã');
+    expect(revokeObjectURL).toHaveBeenCalledWith('blob:atenciones');
+  });
+
   it('uses the default report page size when config is empty', () => {
     mockUseConfig.mockReturnValue({});
     mockUseAdmissions.mockReturnValue({ admissions: [], error: undefined, isLoading: false });

@@ -66,6 +66,33 @@ export type StockOperationPayload = Omit<StockOperationItemDtoSchema, 'stockOper
   stockOperationItems: Array<StockOperationItemDtoSchema['stockOperationItems'][number]>;
 };
 
+function toDateOnlyString(date: Date | string | null | undefined) {
+  if (!date) {
+    return date;
+  }
+
+  if (typeof date === 'string') {
+    return date.split('T')[0];
+  }
+
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const day = String(date.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
+}
+
+function toStockOperationRequestPayload(data: StockOperationPayload) {
+  const payload = {
+    ...data,
+    stockOperationItems: data.stockOperationItems.map((item) => ({
+      ...item,
+      expiration: toDateOnlyString(item.expiration),
+    })),
+  };
+  delete payload.atLocationName;
+  return payload;
+}
+
 export interface StockOperationFilter extends ResourceFilterCriteria {
   status?: string | null | undefined;
   operationTypeUuid?: string | null | undefined;
@@ -187,8 +214,7 @@ export function deleteStockOperationItem(id: string) {
 export function createStockOperation(data: StockOperationPayload) {
   const apiUrl = `${restBaseUrl}/stockmanagement/stockoperation`;
   const abortController = new AbortController();
-  const payload = { ...data } as Record<string, unknown>;
-  delete payload.atLocationName;
+  const payload = toStockOperationRequestPayload(data);
   return openmrsFetch<StockOperationDTO>(apiUrl, {
     method: 'POST',
     headers: {
@@ -203,8 +229,7 @@ export function createStockOperation(data: StockOperationPayload) {
 export function updateStockOperation(stockOperation: StockOperationDTO, data: StockOperationPayload) {
   const apiUrl = `${restBaseUrl}/stockmanagement/stockoperation/${stockOperation.uuid}`;
   const abortController = new AbortController();
-  const payload = { ...data } as Record<string, unknown>;
-  delete payload.atLocationName;
+  const payload = toStockOperationRequestPayload(data);
   return openmrsFetch<StockOperationDTO>(apiUrl, {
     method: 'POST',
     headers: {

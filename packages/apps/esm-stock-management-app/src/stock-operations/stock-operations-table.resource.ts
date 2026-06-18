@@ -68,6 +68,7 @@ export function useStockOperationPages(filter: StockOperationFilter) {
     [t],
   );
 
+  // biome-ignore lint/correctness/useExhaustiveDependencies: filterKey is a JSON.stringify trigger for the filter object.
   useEffect(() => {
     setCurrentPage(1);
   }, [filterKey]);

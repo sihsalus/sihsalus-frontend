@@ -12,7 +12,7 @@
   "errorChangingPassword": "Error changing password",
   "footerlogo": "Footer Logo",
   "forgotPassword": "Forgot your password?",
-  "frontendVersion": "Frontend v{{version}}",
+  "frontendVersion": "v{{version}}",
   "invalidCredentials": "Invalid username or password",
   "learnMore": "Learn more",
   "locationPreferenceRemoved": "Login location preference removed",

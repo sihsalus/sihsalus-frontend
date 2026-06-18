@@ -26,6 +26,7 @@ export const peruForeignPatientIdentifierTypeUuids = [
 
 const peruPreRegistrationSections = ['identityLookup'];
 const peruSections = ['filiation', 'bloodData', 'insurance', 'responsiblePerson', 'medicalRecord'];
+const peruResponsiblePersonSection = 'responsiblePerson';
 const peruIdentityLookupFieldOrder = ['id', 'reniecLookup', 'sisLookup'];
 const peruDemographicsFieldOrder = ['name', 'dob', 'gender', 'nationality'];
 const peruContactFieldOrder = ['address', 'birthAddress', 'phone', 'mobilePhone', 'email'];
@@ -369,6 +370,21 @@ function orderPeruContactSection(sectionDefinitions: Array<SectionDefinition>) {
   });
 }
 
+function placeResponsiblePersonAfterDemographics(sections: Array<string>) {
+  const responsiblePersonIndex = sections.indexOf(peruResponsiblePersonSection);
+
+  if (responsiblePersonIndex === -1) {
+    return sections;
+  }
+
+  sections.splice(responsiblePersonIndex, 1);
+  const demographicsIndex = sections.indexOf('demographics');
+  const insertionIndex = demographicsIndex === -1 ? sections.length : demographicsIndex + 1;
+  sections.splice(insertionIndex, 0, peruResponsiblePersonSection);
+
+  return sections;
+}
+
 export function getEffectiveRegistrationConfig(config: RegistrationConfig): RegistrationConfig {
   const sections = config.sections.filter(
     (section) =>
@@ -397,6 +413,8 @@ export function getEffectiveRegistrationConfig(config: RegistrationConfig): Regi
     sections.splice(insertionIndex, 0, section);
     insertionIndex += 1;
   });
+
+  placeResponsiblePersonAfterDemographics(sections);
 
   const defaultPatientIdentifierTypes = [
     ...config.defaultPatientIdentifierTypes,

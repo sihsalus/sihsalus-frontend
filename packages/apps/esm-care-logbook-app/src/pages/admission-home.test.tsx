@@ -12,6 +12,7 @@ vi.mock('@openmrs/esm-framework', async () => ({
   PageHeader: ({ children }: PropsWithChildren) => <header>{children}</header>,
   PageHeaderContent: ({ children }: PropsWithChildren) => <div>{children}</div>,
   RegistrationPictogram: () => <span />,
+  ageAsDuration: (await vi.importActual<typeof import('@openmrs/esm-utils')>('@openmrs/esm-utils')).ageAsDuration,
   useConfig: vi.fn(),
 }));
 

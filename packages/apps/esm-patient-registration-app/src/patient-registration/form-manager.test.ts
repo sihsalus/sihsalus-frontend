@@ -4,7 +4,13 @@ import { esmPatientRegistrationSchema, type RegistrationConfig } from '../config
 import { FormManager } from './form-manager';
 import { generateIdentifier } from './patient-registration.resource';
 import { type FormValues } from './patient-registration.types';
-import { birthAddressMarker, birthAddressMarkerField } from './patient-registration-utils';
+import {
+  addressUbigeoField,
+  addressUbigeoPathField,
+  addressUbigeoPathSeparator,
+  birthAddressMarker,
+  birthAddressMarkerField,
+} from './patient-registration-utils';
 import {
   getEffectiveRegistrationConfig,
   peruEmailAttributeTypeUuid,
@@ -126,9 +132,15 @@ describe('FormManager', () => {
         },
         address: {
           country: 'PERU',
+          address1: 'HUANCAVELICA',
           stateProvince: 'HUANCAVELICA',
           countyDistrict: 'CHURCAMPA',
-          address1: 'JR LIMA 123',
+          cityVillage: 'PAUCARBAMBA',
+          address4: 'JR LIMA 123',
+          [addressUbigeoField]: '090501',
+          [addressUbigeoPathField]: ['PERU', 'HUANCAVELICA', 'HUANCAVELICA', 'CHURCAMPA'].join(
+            addressUbigeoPathSeparator,
+          ),
         },
         birthAddress: {
           country: 'PERU',
@@ -136,6 +148,10 @@ describe('FormManager', () => {
           stateProvince: 'MAYNAS',
           countyDistrict: 'NAPO',
           cityVillage: 'SANTA CLOTILDE',
+          [addressUbigeoField]: '1603030001',
+          [addressUbigeoPathField]: ['PERU', 'LORETO', 'MAYNAS', 'NAPO', 'SANTA CLOTILDE'].join(
+            addressUbigeoPathSeparator,
+          ),
         },
       };
 

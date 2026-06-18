@@ -112,6 +112,45 @@ describe('PatientBannerContactDetails', () => {
     vi.clearAllMocks();
   });
 
+  it('does not render technical address metadata used for UBIGEO persistence', () => {
+    mockUsePatient.mockReturnValue({
+      isLoading: false,
+      patient: {
+        address: [
+          {
+            country: 'PERU',
+            extension: [
+              {
+                url: 'http://openmrs.org/fhir/StructureDefinition/address',
+                extension: [
+                  {
+                    url: 'http://openmrs.org/fhir/StructureDefinition/address#address1',
+                    valueString: 'UCAYALI',
+                  },
+                  {
+                    url: 'http://openmrs.org/fhir/StructureDefinition/address#address13',
+                    valueString: 'PERU|UCAYALI|ATALAYA|RAYMONDI|AGUAJAL',
+                  },
+                  {
+                    url: 'http://openmrs.org/fhir/StructureDefinition/address#address14',
+                    valueString: '2502010191',
+                  },
+                ],
+              },
+            ],
+            use: 'home',
+          },
+        ],
+      },
+    } as ReturnType<typeof usePatient>);
+
+    render(<PatientBannerContactDetails patientId={patientId} deceased={false} />);
+
+    expect(screen.getByText('UCAYALI')).toBeInTheDocument();
+    expect(screen.queryByText('2502010191')).not.toBeInTheDocument();
+    expect(screen.queryByText('PERU|UCAYALI|ATALAYA|RAYMONDI|AGUAJAL')).not.toBeInTheDocument();
+  });
+
   it('stops showing infinite loading for identifiers and relationships', () => {
     mockUsePatientAdditionalAttributes.mockReturnValue({
       additionalAttributes: [],

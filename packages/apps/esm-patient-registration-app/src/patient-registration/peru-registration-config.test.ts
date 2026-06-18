@@ -64,11 +64,11 @@ describe('getEffectiveRegistrationConfig', () => {
     expect(config.sections).toEqual([
       'identityLookup',
       'demographics',
+      'responsiblePerson',
       'contact',
       'filiation',
       'bloodData',
       'insurance',
-      'responsiblePerson',
       'medicalRecord',
     ]);
     expect(config.sections).not.toContain('relationships');
@@ -157,11 +157,11 @@ describe('getEffectiveRegistrationConfig', () => {
     expect(config.sections).toEqual([
       'identityLookup',
       'demographics',
+      'responsiblePerson',
       'contact',
       'filiation',
       'bloodData',
       'insurance',
-      'responsiblePerson',
       'medicalRecord',
     ]);
   });

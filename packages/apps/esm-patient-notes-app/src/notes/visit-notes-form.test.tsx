@@ -16,6 +16,7 @@ import { defaultVisitNoteClinicalConceptUuids } from './visit-note-config-schema
 import {
   deletePatientDiagnosis,
   fetchDiagnosisConceptsByName,
+  fetchPrestacionalConceptsByName,
   savePatientDiagnosis,
   saveVisitNote,
   updateVisitNote,
@@ -55,6 +56,7 @@ function renderVisitNotesForm(workspaceProps: Partial<VisitNotesFormProps> = {})
 }
 
 const mockFetchDiagnosisConceptsByName = vi.mocked(fetchDiagnosisConceptsByName);
+const mockFetchPrestacionalConceptsByName = vi.mocked(fetchPrestacionalConceptsByName);
 const mockDeletePatientDiagnosis = vi.mocked(deletePatientDiagnosis);
 const mockSavePatientDiagnosis = vi.mocked(savePatientDiagnosis);
 const mockSaveVisitNote = vi.mocked(saveVisitNote);
@@ -86,6 +88,7 @@ vi.mock('./visit-notes.resource', async () => ({
   // Pure P/D/R mapping helpers carry no side effects — use the real ones.
   ...(await vi.importActual<typeof import('./visit-notes.resource')>('./visit-notes.resource')),
   fetchDiagnosisConceptsByName: vi.fn(),
+  fetchPrestacionalConceptsByName: vi.fn(),
   deletePatientDiagnosis: vi.fn(),
   savePatientDiagnosis: vi.fn(),
   updateVisitNote: vi.fn(),
@@ -117,6 +120,7 @@ beforeEach(() => {
   vi.clearAllMocks();
   mockUseConfig.mockReturnValue(getMockConfig());
   mockFetchDiagnosisConceptsByName.mockResolvedValue([]);
+  mockFetchPrestacionalConceptsByName.mockResolvedValue([]);
   mockUseProviderSignatureDetails.mockReturnValue({
     providerSignatureDetails: {
       name: 'Test Provider',
@@ -146,6 +150,7 @@ test('renders the visit notes form with all the relevant fields and values', () 
   expect(screen.getByRole('textbox', { name: /additional notes/i })).toBeInTheDocument();
   expect(screen.getByRole('searchbox', { name: /enter primary diagnoses/i })).toBeInTheDocument();
   expect(screen.getByRole('searchbox', { name: /enter secondary diagnoses/i })).toBeInTheDocument();
+  expect(screen.getByRole('searchbox', { name: /indique el código prestacional/i })).toBeInTheDocument();
   expect(screen.getByRole('button', { name: /add image/i })).toBeInTheDocument();
   expect(screen.getByRole('button', { name: /discard/i })).toBeInTheDocument();
   expect(screen.getByRole('button', { name: /save and close/i })).toBeInTheDocument();
@@ -209,6 +214,59 @@ test('renders an error message when no matching diagnoses are found', async () =
 
   await screen.findByText(/No diagnoses found/i);
   expect(getByTextWithMarkup('No diagnoses found matching "COVID-21"')).toBeInTheDocument();
+});
+
+test('searches and saves one selected codigo prestacional concept', async () => {
+  const user = userEvent.setup();
+
+  mockUseConfig.mockReturnValue(
+    getMockConfig({ prestacionalConceptSourceName: 'Codigos Prestacionales' }),
+  );
+  mockFetchDiagnosisConceptsByName.mockResolvedValue(diagnosisSearchResponse.results);
+  mockFetchPrestacionalConceptsByName.mockResolvedValue([
+    { uuid: 'prestacional-001', display: '001 - Consulta externa' },
+    { uuid: 'prestacional-002', display: '002 - Control ambulatorio' },
+  ]);
+  mockSaveVisitNote.mockResolvedValueOnce({
+    status: 201,
+    data: { uuid: 'new-visit-note-encounter-uuid' },
+  } as Awaited<ReturnType<typeof saveVisitNote>>);
+
+  renderVisitNotesForm();
+
+  const diagnosisSearchBox = screen.getByPlaceholderText('Choose a primary diagnosis');
+  await user.type(diagnosisSearchBox, 'Diabetes Mellitus');
+  await user.click(await screen.findByRole('button', { name: 'Diabetes Mellitus' }));
+
+  const codigoPrestacionalSearchBox = screen.getByRole('searchbox', { name: /indique el código prestacional/i });
+  await user.type(codigoPrestacionalSearchBox, 'consulta');
+
+  await waitFor(() =>
+    expect(mockFetchPrestacionalConceptsByName).toHaveBeenCalledWith('consulta', 'Codigos Prestacionales'),
+  );
+  await user.click(await screen.findByRole('button', { name: '001 - Consulta externa' }));
+
+  expect(screen.getByTitle('001 - Consulta externa')).toBeInTheDocument();
+  expect(codigoPrestacionalSearchBox).toBeDisabled();
+  expect(screen.queryByRole('button', { name: '002 - Control ambulatorio' })).not.toBeInTheDocument();
+
+  const submitButton = screen.getByRole('button', { name: /Save and close/i });
+  await user.click(submitButton);
+
+  await waitFor(() => expect(mockSaveVisitNote).toHaveBeenCalledTimes(1));
+  expect(mockSaveVisitNote).toHaveBeenCalledWith(
+    expect.any(AbortController),
+    expect.objectContaining({
+      obs: expect.arrayContaining([
+        expect.objectContaining({
+          concept: { display: '', uuid: defaultVisitNoteClinicalConceptUuids.codigoPrestacionalConceptUuid },
+          formFieldNamespace: 'visit-notes',
+          formFieldPath: 'codigo-prestacional',
+          value: 'prestacional-001',
+        }),
+      ]),
+    }),
+  );
 });
 
 test('closes the form and the workspace when the cancel button is clicked', async () => {

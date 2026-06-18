@@ -146,6 +146,52 @@ export function fetchDiagnosisConceptsByName(searchTerm: string, diagnosisConcep
   return openmrsFetch<Array<Concept>>(url).then(({ data }) => data['results']);
 }
 
+export function fetchPrestacionalConceptsByName(searchTerm: string, conceptSourceName = 'Codigos Prestacionales') {
+  const configuredConceptSetNames = getConfiguredConceptSourceNames(conceptSourceName);
+  const conceptSetQuery = encodeURIComponent(configuredConceptSetNames[0] ?? conceptSourceName);
+  const customRepresentation = 'custom:(uuid,display,setMembers:(uuid,display))';
+  const url = `${restBaseUrl}/concept?q=${conceptSetQuery}&searchType=fuzzy&v=${customRepresentation}&limit=20`;
+
+  return openmrsFetch<Array<Concept>>(url).then(({ data }) => {
+    const matchingConceptSet = (data['results'] ?? []).find((concept) =>
+      configuredConceptSetNames.some((conceptSetName) => matchesConceptSetDisplay(concept.display, conceptSetName)),
+    );
+    const normalizedSearchTerm = normalizeSearchText(searchTerm);
+
+    return (matchingConceptSet?.setMembers ?? [])
+      .filter((concept) => normalizeSearchText(concept.display).includes(normalizedSearchTerm))
+      .sort((left, right) => left.display.localeCompare(right.display));
+  });
+}
+
+function normalizeConceptSourceName(sourceName?: string | null) {
+  return sourceName?.trim().toLowerCase().replace(/[^a-z0-9]/g, '') ?? '';
+}
+
+function normalizeSearchText(value?: string | null) {
+  return (
+    value
+      ?.trim()
+      .toLowerCase()
+      .normalize('NFD')
+      .replace(/\p{Diacritic}/gu, '') ?? ''
+  );
+}
+
+function getConfiguredConceptSourceNames(conceptSourceName: string) {
+  return conceptSourceName
+    .split(',')
+    .map((sourceName) => sourceName.trim())
+    .filter(Boolean);
+}
+
+function matchesConceptSetDisplay(actualDisplay: string, expectedDisplay: string) {
+  const actual = normalizeConceptSourceName(actualDisplay);
+  const expected = normalizeConceptSourceName(expectedDisplay);
+
+  return Boolean(actual && expected && actual === expected);
+}
+
 export function saveVisitNote(abortController: AbortController, payload: VisitNotePayload) {
   return openmrsFetch(`${restBaseUrl}/encounter`, {
     headers: {

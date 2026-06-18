@@ -55,6 +55,7 @@ import {
   buildTipoDxObs,
   deletePatientDiagnosis,
   fetchDiagnosisConceptsByName,
+  fetchPrestacionalConceptsByName,
   getCertaintyForTipo,
   parseTipoDxObs,
   savePatientDiagnosis,
@@ -135,6 +136,17 @@ interface VisitNoteTextAreaRowProps {
   rows?: number;
 }
 
+interface PrestacionalSearchProps {
+  error?: Error;
+  isLoading: boolean;
+  onAddPrestacional: (concept: Concept) => void;
+  onSearch: (value: string) => void;
+  searchResults: Array<Concept>;
+  selectedConcept: Concept | null;
+  t: TFunction;
+  value: string;
+}
+
 const createSchema = (_t: TFunction) => {
   return z.object({
     noteDate: z.date(),
@@ -212,11 +224,15 @@ const VisitNotesForm: React.FC<PatientWorkspace2DefinitionProps<VisitNotesFormPr
   const { clinicalContext } = useVisitNoteClinicalContext(patientUuid, visitUuid);
   const [isLoadingPrimaryDiagnoses, setIsLoadingPrimaryDiagnoses] = useState(false);
   const [isLoadingSecondaryDiagnoses, setIsLoadingSecondaryDiagnoses] = useState(false);
+  const [isLoadingPrestacionales, setIsLoadingPrestacionales] = useState(false);
   const [isSearching, setIsSearching] = useState(false);
   const [selectedPrimaryDiagnoses, setSelectedPrimaryDiagnoses] = useState<Array<Diagnosis>>([]);
   const [selectedSecondaryDiagnoses, setSelectedSecondaryDiagnoses] = useState<Array<Diagnosis>>([]);
   const [searchPrimaryResults, setSearchPrimaryResults] = useState<Array<Concept>>(null);
   const [searchSecondaryResults, setSearchSecondaryResults] = useState<Array<Concept>>(null);
+  const [searchPrestacionalResults, setSearchPrestacionalResults] = useState<Array<Concept>>([]);
+  const [selectedCodigoPrestacional, setSelectedCodigoPrestacional] = useState<Concept | null>(null);
+  const [codigoPrestacionalSearchValue, setCodigoPrestacionalSearchValue] = useState('');
   const [combinedDiagnoses, setCombinedDiagnoses] = useState<Array<Diagnosis>>([]);
   const [rows, setRows] = useState<number>();
   const [error, setError] = useState<Error>(null);
@@ -246,6 +262,18 @@ const VisitNotesForm: React.FC<PatientWorkspace2DefinitionProps<VisitNotesFormPr
         return String(obs.value.display ?? obs.value.uuid ?? '');
       }
       return String(obs.value);
+    },
+    [getEncounterObs],
+  );
+  const getEncounterObsConceptValue = useCallback(
+    (conceptUuid: string, formFieldPath?: string): Concept | null => {
+      const obs = getEncounterObs(conceptUuid, formFieldPath);
+      if (!obs?.value || typeof obs.value !== 'object') {
+        return null;
+      }
+
+      const value = obs.value as { display?: string; uuid?: string };
+      return value.uuid ? { uuid: value.uuid, display: value.display ?? value.uuid } : null;
     },
     [getEncounterObs],
   );
@@ -285,7 +313,10 @@ const VisitNotesForm: React.FC<PatientWorkspace2DefinitionProps<VisitNotesFormPr
     defaultValues: {
       primaryDiagnosisSearch: '',
       noteDate: isEditing ? new Date(encounter.rawDatetime) : new Date(),
-      codigoPrestacional: isEditing ? getEncounterObsValue(codigoPrestacionalConceptUuid, 'codigo-prestacional') : '',
+      codigoPrestacional: isEditing
+        ? (getEncounterObsConceptValue(codigoPrestacionalConceptUuid, 'codigo-prestacional')?.uuid ??
+          getEncounterObsValue(codigoPrestacionalConceptUuid, 'codigo-prestacional'))
+        : '',
       chiefComplaint: isEditing ? getEncounterObsValue(chiefComplaintConceptUuid) : '',
       illnessDuration: isEditing ? getEncounterObsValue(illnessDurationConceptUuid) : '',
       biologicalFunctions: isEditing
@@ -315,6 +346,13 @@ const VisitNotesForm: React.FC<PatientWorkspace2DefinitionProps<VisitNotesFormPr
     },
     [dirtyFields, isEditing, setValue, watch],
   );
+
+  useEffect(() => {
+    const existingCodigoPrestacional = getEncounterObsConceptValue(codigoPrestacionalConceptUuid, 'codigo-prestacional');
+    if (isEditing && existingCodigoPrestacional) {
+      setSelectedCodigoPrestacional(existingCodigoPrestacional);
+    }
+  }, [codigoPrestacionalConceptUuid, getEncounterObsConceptValue, isEditing]);
 
   useEffect(() => {
     prefillTextField('codigoPrestacional', clinicalContext?.codigoPrestacional);
@@ -416,6 +454,31 @@ const VisitNotesForm: React.FC<PatientWorkspace2DefinitionProps<VisitNotesFormPr
     [config.diagnosisConceptClass, clearErrors],
   );
 
+  const debouncedPrestacionalSearch = useMemo(
+    () =>
+      debounce((query: string) => {
+        const trimmedQuery = query.trim();
+        if (!trimmedQuery) {
+          setSearchPrestacionalResults([]);
+          setIsLoadingPrestacionales(false);
+          return;
+        }
+
+        setIsLoadingPrestacionales(true);
+        fetchPrestacionalConceptsByName(trimmedQuery, config.prestacionalConceptSourceName)
+          .then((matchingPrestacionales) => {
+            setSearchPrestacionalResults(matchingPrestacionales);
+            setIsLoadingPrestacionales(false);
+          })
+          .catch((e) => {
+            setError(e);
+            setIsLoadingPrestacionales(false);
+            createErrorHandler();
+          });
+      }, searchTimeoutInMs),
+    [config.prestacionalConceptSourceName],
+  );
+
   const handleSearch = useCallback(
     (fieldName: 'primaryDiagnosisSearch' | 'secondaryDiagnosisSearch') => {
       const fieldQuery = watch(fieldName);
@@ -426,6 +489,31 @@ const VisitNotesForm: React.FC<PatientWorkspace2DefinitionProps<VisitNotesFormPr
     },
     [debouncedSearch, watch],
   );
+
+  const handlePrestacionalSearch = useCallback(
+    (value: string) => {
+      setCodigoPrestacionalSearchValue(value);
+      setSelectedCodigoPrestacional(null);
+      setValue('codigoPrestacional', '');
+      debouncedPrestacionalSearch(value);
+    },
+    [debouncedPrestacionalSearch, setValue],
+  );
+
+  const handleAddPrestacional = useCallback(
+    (concept: Concept) => {
+      setSelectedCodigoPrestacional(concept);
+      setCodigoPrestacionalSearchValue('');
+      setSearchPrestacionalResults([]);
+      setValue('codigoPrestacional', concept.uuid, { shouldDirty: true });
+    },
+    [setValue],
+  );
+
+  const handleRemovePrestacional = useCallback(() => {
+    setSelectedCodigoPrestacional(null);
+    setValue('codigoPrestacional', '', { shouldDirty: true });
+  }, [setValue]);
 
   const createDiagnosis = useCallback(
     (concept: Concept) => ({
@@ -994,14 +1082,46 @@ const VisitNotesForm: React.FC<PatientWorkspace2DefinitionProps<VisitNotesFormPr
                 </FormGroup>
               </Column>
             </Row>
-            <VisitNoteTextAreaRow
-              control={control}
-              name="codigoPrestacional"
-              inputLabelText={t('codigoPrestacionalInputLabel', 'Indique el Código Prestacional')}
-              labelText={t('codigoPrestacionalRequiredLabel', '*Código Prestacional (Obligatorio)')}
-              placeholder={t('codigoPrestacionalPlaceholder', 'Ingrese Codigo Prestacional')}
-              rows={2}
-            />
+            <Row className={styles.row}>
+              <Column sm={1}>
+                <span className={styles.columnLabel}>
+                  {t('codigoPrestacionalRequiredLabel', '*Código Prestacional (Obligatorio)')}
+                </span>
+              </Column>
+              <Column sm={3}>
+                <PrestacionalSearch
+                  error={error}
+                  isLoading={isLoadingPrestacionales}
+                  onAddPrestacional={handleAddPrestacional}
+                  onSearch={handlePrestacionalSearch}
+                  searchResults={searchPrestacionalResults}
+                  selectedConcept={selectedCodigoPrestacional}
+                  t={t}
+                  value={codigoPrestacionalSearchValue}
+                />
+                {selectedCodigoPrestacional ? (
+                  <DismissibleTag
+                    className={styles.tag}
+                    dismissTooltipLabel={t('clearFilter', 'Clear filter')}
+                    onClose={handleRemovePrestacional}
+                    tagTitle={selectedCodigoPrestacional.display}
+                    text={selectedCodigoPrestacional.display}
+                    title={t('clearFilter', 'Clear filter')}
+                    type="cyan"
+                  />
+                ) : watch('codigoPrestacional') && !codigoPrestacionalSearchValue ? (
+                  <DismissibleTag
+                    className={styles.tag}
+                    dismissTooltipLabel={t('clearFilter', 'Clear filter')}
+                    onClose={handleRemovePrestacional}
+                    tagTitle={watch('codigoPrestacional')}
+                    text={watch('codigoPrestacional')}
+                    title={t('clearFilter', 'Clear filter')}
+                    type="gray"
+                  />
+                ) : null}
+              </Column>
+            </Row>
             <Row className={styles.row}>
               <Column sm={4}>
                 <h3>{t('clinicalSummary', 'Clinical summary')}</h3>
@@ -1267,6 +1387,70 @@ function DiagnosisSearch({
         </>
       )}
     />
+  );
+}
+
+function PrestacionalSearch({
+  error,
+  isLoading,
+  onAddPrestacional,
+  onSearch,
+  searchResults,
+  selectedConcept,
+  t,
+  value,
+}: PrestacionalSearchProps) {
+  const isTablet = useLayoutType() === 'tablet';
+
+  return (
+    <>
+      <ResponsiveWrapper>
+        <Search
+          size={isTablet ? 'lg' : 'md'}
+          id="codigoPrestacionalSearch"
+          labelText={t('codigoPrestacionalInputLabel', 'Indique el Código Prestacional')}
+          placeholder={t('codigoPrestacionalPlaceholder', 'Buscar Código Prestacional')}
+          disabled={Boolean(selectedConcept)}
+          renderIcon={error && ((props) => <WarningFilled fill="red" {...props} />)}
+          onChange={(event) => onSearch(event.target.value)}
+          value={value}
+        />
+      </ResponsiveWrapper>
+      {isLoading ? <Loader /> : null}
+      {!isLoading && value && searchResults?.length > 0 ? (
+        <ul className={styles.diagnosisList}>
+          {searchResults.map((prestacional) => (
+            <li className={styles.diagnosis} key={prestacional.uuid}>
+              <button
+                type="button"
+                className={styles.diagnosis}
+                onClick={() => onAddPrestacional(prestacional)}
+              >
+                {prestacional.display}
+              </button>
+            </li>
+          ))}
+        </ul>
+      ) : null}
+      {!isLoading && value && searchResults?.length === 0 ? (
+        <ResponsiveWrapper>
+          <Tile className={styles.emptyResults}>
+            <span>
+              {t('noMatchingPrestacionales', 'No se encontraron códigos prestacionales coincidentes')}{' '}
+              <strong>"{value}"</strong>
+            </span>
+          </Tile>
+        </ResponsiveWrapper>
+      ) : null}
+      {error ? (
+        <InlineNotification
+          className={styles.errorNotification}
+          lowContrast
+          title={t('error', 'Error')}
+          subtitle={t('errorFetchingConcepts', 'There was a problem fetching concepts') + '.'}
+        />
+      ) : null}
+    </>
   );
 }
 

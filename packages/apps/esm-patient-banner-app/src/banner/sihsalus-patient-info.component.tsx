@@ -25,6 +25,35 @@ function isDniIdentifier(identifier: fhir.Identifier) {
   );
 }
 
+function isClinicalHistoryIdentifier(identifier: fhir.Identifier) {
+  const type = identifier.type;
+  const typeText = type?.text?.trim().toLowerCase() ?? '';
+  const coding = type?.coding?.[0];
+  const codingCode = coding?.code?.trim().toLowerCase() ?? '';
+  const codingDisplay = coding?.display?.trim().toLowerCase() ?? '';
+
+  return (
+    typeText.includes('historia') ||
+    typeText.includes('clinical') ||
+    codingDisplay.includes('historia') ||
+    codingDisplay.includes('clinical') ||
+    codingCode.includes('historia') ||
+    codingCode.includes('clinical')
+  );
+}
+
+function getIdentifierOrder(identifier: fhir.Identifier) {
+  if (isDniIdentifier(identifier)) {
+    return 0;
+  }
+
+  if (isClinicalHistoryIdentifier(identifier)) {
+    return 2;
+  }
+
+  return 1;
+}
+
 function getGenderDisplay(gender?: string) {
   switch (gender?.toLowerCase()) {
     case 'male':
@@ -52,7 +81,9 @@ function Identifier({ identifier, highlighted }: { identifier: fhir.Identifier; 
 }
 
 function PatientIdentifiers({ identifiers }: { identifiers?: fhir.Identifier[] }) {
-  const filteredIdentifiers = identifiers?.filter((identifier) => identifier.value) ?? [];
+  const filteredIdentifiers = (identifiers?.filter((identifier) => identifier.value) ?? []).sort(
+    (firstIdentifier, secondIdentifier) => getIdentifierOrder(firstIdentifier) - getIdentifierOrder(secondIdentifier),
+  );
   const hasDniIdentifier = filteredIdentifiers.some(isDniIdentifier);
 
   return (

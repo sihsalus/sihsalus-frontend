@@ -12,11 +12,18 @@ export const configSchema = {
     _default: true,
     _description: 'Indicates whether a primary diagnosis is required when submitting a visit note',
   },
+  prestacionalConceptSourceName: {
+    _type: Type.String,
+    _default: 'Codigos Prestacionales,Códigos Prestacionales',
+    _description:
+      'Comma-separated OpenMRS concept source names for SIHSALUS prestacional codes imported from OCL',
+  },
   visitNoteConfig: notesConfigSchema,
 };
 
 export interface ConfigObject {
   diagnosisConceptClass: string;
   isPrimaryDiagnosisRequired: boolean;
+  prestacionalConceptSourceName: string;
   visitNoteConfig: VisitNoteConfigObject;
 }

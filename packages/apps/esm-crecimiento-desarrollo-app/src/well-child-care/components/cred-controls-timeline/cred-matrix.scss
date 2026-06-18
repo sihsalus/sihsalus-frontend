@@ -1,12 +1,14 @@
-@use '@carbon/colors';
-@use '@carbon/layout';
-@use '@carbon/type';
-@use '@openmrs/esm-styleguide/src/vars' as *;
+@use "@carbon/colors";
+@use "@carbon/layout";
+@use "@carbon/type";
+@use "@openmrs/esm-styleguide/src/vars" as *;
 
 .widgetCard {
   border: 1px solid $ui-03;
   border-bottom: none;
   width: 100%;
+  max-width: 100%;
+  min-width: 0;
 }
 
 .clinicalDataHeaderActionItems {
@@ -18,7 +20,7 @@
 }
 
 .summaryItem {
-  @include type.type-style('body-compact-01');
+  @include type.type-style("body-compact-01");
   display: flex;
   align-items: center;
   gap: layout.$spacing-02;
@@ -31,13 +33,19 @@
 
 // Horizontal scrollable matrix
 .matrixScroll {
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
   overflow-x: auto;
+  overflow-y: hidden;
   padding-bottom: layout.$spacing-03;
+  -webkit-overflow-scrolling: touch;
 }
 
 .matrixGrid {
-  display: inline-flex;
+  display: flex;
   gap: 0;
+  width: max-content;
   min-width: 100%;
 }
 
@@ -56,7 +64,7 @@
 }
 
 .columnHeader {
-  @include type.type-style('label-01');
+  @include type.type-style("label-01");
   text-align: center;
   padding: layout.$spacing-03;
   background-color: colors.$gray-10;
@@ -70,7 +78,7 @@
 }
 
 .sublabel {
-  @include type.type-style('label-01');
+  @include type.type-style("label-01");
   color: colors.$gray-60;
   font-weight: 400;
   font-size: 0.6875rem;
@@ -86,7 +94,7 @@
 
 // Compact tile
 .ageTile {
-  @include type.type-style('label-01');
+  @include type.type-style("label-01");
   text-align: center;
   padding: layout.$spacing-02 layout.$spacing-03;
   border-radius: 4px;
@@ -111,7 +119,7 @@
 }
 
 .tileLabel {
-  @include type.type-style('label-01');
+  @include type.type-style("label-01");
   color: $text-02;
   font-size: 0.75rem;
   white-space: nowrap;
@@ -120,7 +128,7 @@
 }
 
 .tileDate {
-  @include type.type-style('label-01');
+  @include type.type-style("label-01");
   color: $text-02;
   font-size: 0.75rem;
 }
@@ -194,7 +202,7 @@
 }
 
 .labelUser {
-  @include type.type-style('caption-01');
+  @include type.type-style("caption-01");
   color: colors.$gray-50;
 }
 

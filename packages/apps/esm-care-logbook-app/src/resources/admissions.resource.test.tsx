@@ -84,6 +84,7 @@ describe('admissions resources', () => {
       patientUuid: 'patient-1',
       patientName: 'Ada Lovelace',
       medicalRecordNumber: 'HC-99',
+      documentType: 'DNI',
       documentNumber: 'DNI-123',
       identificationStatus: 'Confirmado',
       communicationCondition: 'Puede comunicarse',
@@ -102,12 +103,45 @@ describe('admissions resources', () => {
       uuid: 'visit-2',
       patientUuid: 'patient-2',
       medicalRecordNumber: '',
+      documentType: 'Documento',
       documentNumber: 'DOC-7',
       identificationStatus: 'Confirmado',
       hasSis: 'No',
       service: '',
       location: '',
       status: 'Finalizada',
+    });
+  });
+
+  it('keeps identity document type and number for non-DNI identifiers', async () => {
+    mockOpenmrsFetch.mockResolvedValueOnce({
+      data: {
+        results: [
+          {
+            uuid: 'visit-foreign-document',
+            patient: {
+              uuid: 'patient-foreign-document',
+              identifiers: [
+                { identifier: '100001W', identifierType: { display: 'N° Historia Clínica' } },
+                { identifier: 'P123456', identifierType: { display: 'PASS' } },
+                { identifier: 'CE654321', identifierType: { display: 'CE' } },
+              ],
+              person: {
+                display: 'Paciente Extranjero',
+              },
+            },
+          },
+        ],
+      },
+    } as Awaited<ReturnType<typeof openmrsFetch>>);
+
+    const { result } = renderHook(() => useAdmissions(10), { wrapper });
+
+    await waitFor(() => expect(result.current.admissions).toHaveLength(1));
+    expect(result.current.admissions[0]).toMatchObject({
+      medicalRecordNumber: '100001W',
+      documentType: 'CE',
+      documentNumber: 'CE654321',
     });
   });
 
@@ -172,6 +206,7 @@ describe('admissions resources', () => {
     await waitFor(() => expect(result.current.isLoading).toBe(false));
     expect(result.current.admissions[0]).toMatchObject({
       medicalRecordNumber: 'TEMP-001',
+      documentType: 'DNI',
       documentNumber: 'DNI-77889900',
       responsibleName: 'María Quispe',
       responsibleRelationship: 'Madre',
@@ -240,7 +275,7 @@ describe('admissions resources', () => {
     expect(result.current.admissions).toEqual([]);
   });
 
-  it('keeps DNI empty and marks unknown patients as pending in the admission report', async () => {
+  it('keeps document data empty and marks unknown patients as pending in the admission report', async () => {
     mockOpenmrsFetch.mockResolvedValueOnce({
       data: {
         results: [
@@ -268,6 +303,7 @@ describe('admissions resources', () => {
     await waitFor(() => expect(result.current.admissions).toHaveLength(1));
     expect(result.current.admissions[0]).toMatchObject({
       medicalRecordNumber: '100045V',
+      documentType: '',
       documentNumber: '',
       identificationStatus: 'Pendiente',
       responsibleName: 'SAMU Loreto',

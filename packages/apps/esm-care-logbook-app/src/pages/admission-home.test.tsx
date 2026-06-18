@@ -42,6 +42,7 @@ function createAdmission(overrides: Partial<AdmissionRow>): AdmissionRow {
     startDatetime: '2026-05-09T08:30:00.000-0500',
     patientName: 'Ada Lovelace',
     medicalRecordNumber: 'HC-99',
+    documentType: 'DNI',
     documentNumber: '12345678',
     identificationStatus: 'Confirmado',
     communicationCondition: 'Puede comunicarse',
@@ -89,7 +90,8 @@ describe('AdmissionHome', () => {
           startDatetime: '2026-05-09T10:00:00.000-0500',
           patientName: 'Grace Hopper',
           medicalRecordNumber: 'HC-100',
-          documentNumber: '87654321',
+          documentType: 'CE',
+          documentNumber: 'CE-876543',
           birthDate: '1985-03-02',
           hasSis: 'No',
           address: 'Jr. Amazonas 45, Iquitos, Loreto',
@@ -109,7 +111,8 @@ describe('AdmissionHome', () => {
     for (const header of [
       'Fecha',
       'HCE / código temporal',
-      'DNI',
+      'Tipo doc.',
+      'N° documento',
       'Estado identificación',
       'Responsable',
       'F. Nac.',
@@ -127,6 +130,8 @@ describe('AdmissionHome', () => {
     }
     expect(screen.getByRole('cell', { name: 'Ada Lovelace' })).toBeInTheDocument();
     expect(screen.getByRole('cell', { name: 'HC-99' })).toBeInTheDocument();
+    expect(screen.getByRole('cell', { name: 'CE' })).toBeInTheDocument();
+    expect(screen.getByRole('cell', { name: 'CE-876543' })).toBeInTheDocument();
     expect(screen.getByRole('cell', { name: '12345678' })).toBeInTheDocument();
     expect(screen.getAllByRole('cell', { name: 'Confirmado' })[0]).toBeInTheDocument();
     expect(screen.getAllByRole('cell', { name: 'Charles Babbage - Familiar' })[0]).toBeInTheDocument();
@@ -269,6 +274,7 @@ describe('AdmissionHome', () => {
           patientUuid: 'patient-1',
           patientName: 'María Peña Ñaupari',
           medicalRecordNumber: 'TEMP-001',
+          documentType: '',
           documentNumber: '',
           identificationStatus: 'Confirmado',
           communicationCondition: 'Sí comunica',
@@ -296,6 +302,8 @@ describe('AdmissionHome', () => {
 
     expect(csv.startsWith('\uFEFFsep=,\r\n')).toBe(true);
     expect(csv).toContain('"HCE / código temporal"');
+    expect(csv).toContain('"Tipo doc."');
+    expect(csv).toContain('"N° documento"');
     expect(csv).toContain('"Estado identificación"');
     expect(csv).toContain('"Condición comunicación"');
     expect(csv).toContain('"María Peña Ñaupari"');

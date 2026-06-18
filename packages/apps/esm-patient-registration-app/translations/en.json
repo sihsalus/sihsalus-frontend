@@ -177,6 +177,8 @@
   "middleNameLabelText": "Middle Name",
   "mobilePhoneFieldLabel": "Mobile phone number",
   "nameContainsInvalidCharacters": "Name can only contain letters, spaces, hyphens and apostrophes",
+  "familyNameTooLong": "Family name must be 100 characters or fewer",
+  "givenNameTooLong": "Name must be 150 characters or fewer",
   "nameTooShort": "Name must be at least 2 characters long",
   "nationalityFieldLabel": "Nationality",
   "nativeLanguageFieldLabel": "Native language",

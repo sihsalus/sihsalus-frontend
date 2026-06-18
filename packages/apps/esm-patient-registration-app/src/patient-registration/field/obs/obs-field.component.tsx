@@ -1,10 +1,5 @@
 import { InlineNotification, Layer, Select, SelectItem } from '@carbon/react';
 import { OpenmrsDatePicker, useConfig } from '@openmrs/esm-framework';
-import {
-  shouldPreventPlainNumberKey,
-  shouldPreventPlainNumberPaste,
-  validatePlainNumberInput,
-} from '@openmrs/esm-utils';
 import classNames from 'classnames';
 import { Field } from 'formik';
 import { useContext, useMemo } from 'react';
@@ -15,6 +10,11 @@ import { moduleName } from '../../../constants';
 import { Input } from '../../input/basic-input/input/input.component';
 import { type ConceptResponse } from '../../patient-registration.types';
 import { PatientRegistrationContext } from '../../patient-registration-context';
+import {
+  shouldPreventPlainNumberKey,
+  shouldPreventPlainNumberPaste,
+  validatePlainNumberInput,
+} from '../../utils/plain-number-input';
 import { useConcept, useConceptAnswers } from '../field.resource';
 import styles from './../field.scss';
 

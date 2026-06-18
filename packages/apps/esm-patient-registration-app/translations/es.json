@@ -177,6 +177,8 @@
   "middleNameLabelText": "Segundo Nombre",
   "mobilePhoneFieldLabel": "Número de Celular",
   "nameContainsInvalidCharacters": "El nombre solo puede contener letras, espacios, guiones y apóstrofes",
+  "familyNameTooLong": "El apellido debe tener 100 caracteres o menos",
+  "givenNameTooLong": "El nombre debe tener 150 caracteres o menos",
   "nameTooShort": "El nombre debe tener al menos 2 caracteres",
   "nationalityFieldLabel": "Nacionalidad",
   "nativeLanguageFieldLabel": "Idioma nativo",

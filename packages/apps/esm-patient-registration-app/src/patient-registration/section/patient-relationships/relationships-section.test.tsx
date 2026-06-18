@@ -73,6 +73,39 @@ const relationshipTypes = {
   ],
 };
 
+const duplicateSpanishRelationshipTypes = {
+  results: [
+    {
+      displayAIsToB: 'Padre',
+      aIsToB: 'Padre',
+      bIsToA: 'Hijo',
+      displayBIsToA: 'Hijo',
+      uuid: 'parent-child-relationship-type',
+    },
+    {
+      displayAIsToB: 'Abuelo',
+      aIsToB: 'Abuelo',
+      bIsToA: 'Nieto',
+      displayBIsToA: 'Nieto',
+      uuid: 'grandparent-grandchild-relationship-type',
+    },
+    {
+      displayAIsToB: 'Sobrino',
+      aIsToB: 'Sobrino',
+      bIsToA: 'Tío',
+      displayBIsToA: 'Tío',
+      uuid: 'uncle-nephew-relationship-type',
+    },
+    {
+      displayAIsToB: 'Sobrino',
+      aIsToB: 'Sobrino',
+      bIsToA: 'Tío',
+      displayBIsToA: 'Tío',
+      uuid: 'duplicate-uncle-nephew-relationship-type',
+    },
+  ],
+};
+
 describe('RelationshipsSection', () => {
   beforeEach(() => {
     mockFetchPerson.mockReset();
@@ -219,6 +252,32 @@ describe('RelationshipsSection', () => {
     expect(screen.queryByRole('textbox', { name: /first name/i })).not.toBeInTheDocument();
   });
 
+  it('deduplicates relationship options and hides child/grandchild options for minor patients', () => {
+    mockResourcesContextValue = {
+      ...mockResourcesContextValue,
+      relationshipTypes: duplicateSpanishRelationshipTypes,
+    };
+
+    render(
+      <ResourcesContext.Provider value={mockResourcesContextValue}>
+        <Formik initialValues={minorPatientValues} onSubmit={null}>
+          <Form>
+            <PatientRegistrationContext.Provider value={{ ...initialContextValues, values: minorPatientValues }}>
+              <RelationshipsSection />
+            </PatientRegistrationContext.Provider>
+          </Form>
+        </Formik>
+      </ResourcesContext.Provider>,
+    );
+
+    expect(screen.getByRole('option', { name: /padre/i })).toBeInTheDocument();
+    expect(screen.getByRole('option', { name: /abuelo/i })).toBeInTheDocument();
+    expect(screen.queryByRole('option', { name: /hijo/i })).not.toBeInTheDocument();
+    expect(screen.queryByRole('option', { name: /nieto/i })).not.toBeInTheDocument();
+    expect(screen.getAllByRole('option', { name: /sobrino/i })).toHaveLength(1);
+    expect(screen.getAllByRole('option', { name: /tío/i })).toHaveLength(1);
+  });
+
   it('keeps the existing person search flow as the default', async () => {
     const user = userEvent.setup();
     mockResourcesContextValue = {
@@ -250,6 +309,39 @@ describe('RelationshipsSection', () => {
 
     await user.click(screen.getByRole('tab', { name: /search existing person/i }));
     expect(screen.getByRole('searchbox', { name: /full name/i })).toBeInTheDocument();
+  });
+
+  it('limits responsible person name inputs when creating a new person', async () => {
+    const user = userEvent.setup();
+    mockResourcesContextValue = {
+      ...mockResourcesContextValue,
+      relationshipTypes: relationshipTypes,
+    };
+
+    render(
+      <ResourcesContext.Provider value={mockResourcesContextValue}>
+        <Formik
+          initialValues={{
+            relationships: [{ action: 'ADD', relatedPersonUuid: '' }],
+          }}
+          onSubmit={null}
+        >
+          <Form>
+            <PatientRegistrationContext.Provider value={initialContextValues}>
+              <RelationshipsSection />
+            </PatientRegistrationContext.Provider>
+          </Form>
+        </Formik>
+      </ResourcesContext.Provider>,
+    );
+
+    await user.click(screen.getByRole('tab', { name: /register new person/i }));
+
+    expect(screen.getByRole('textbox', { name: /first name/i })).toHaveAttribute('maxLength', '150');
+    expect(screen.getByRole('textbox', { name: /middle name/i })).toHaveAttribute('maxLength', '150');
+    expect(screen.getByRole('textbox', { name: /^family name$/i })).toHaveAttribute('maxLength', '100');
+    expect(screen.getByRole('textbox', { name: /second family name/i })).toHaveAttribute('maxLength', '100');
+    expect(screen.getByRole('textbox', { name: /approximate age/i })).toHaveAttribute('maxLength', '3');
   });
 
   it('keeps the selected existing person name after search selection', async () => {

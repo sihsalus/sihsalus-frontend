@@ -181,6 +181,24 @@ describe('Patient registration validation', () => {
     expect(validationError).toBeFalsy();
   });
 
+  it('should reject given names longer than 150 characters', async () => {
+    const invalidFormValues = {
+      ...validFormValues,
+      givenName: 'A'.repeat(151),
+    };
+    const validationError = await validateFormValues(invalidFormValues);
+    expect(validationError.errors).toContain('givenNameTooLong');
+  });
+
+  it('should reject family names longer than 100 characters', async () => {
+    const invalidFormValues = {
+      ...validFormValues,
+      familyName: 'A'.repeat(101),
+    };
+    const validationError = await validateFormValues(invalidFormValues);
+    expect(validationError.errors).toContain('familyNameTooLong');
+  });
+
   it('should allow valid residence contact attributes', async () => {
     const validValues = {
       ...validFormValues,

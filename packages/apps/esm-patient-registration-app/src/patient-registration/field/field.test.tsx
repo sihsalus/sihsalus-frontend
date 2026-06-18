@@ -155,6 +155,25 @@ describe('Field', () => {
     expect(screen.getByText('Full Name')).toBeInTheDocument();
   });
 
+  it('should limit patient name inputs to the accredited maximum lengths', () => {
+    mockUseConfig.mockReturnValue({
+      ...getDefaultsFromConfigSchema(esmPatientRegistrationSchema),
+      fieldConfigurations: {
+        name: {
+          displayMiddleName: true,
+          requireFamilyName2: true,
+        },
+      } as RegistrationConfig['fieldConfigurations'],
+    });
+
+    render(<Field name="name" />, { wrapper: ContextWrapper });
+
+    expect(screen.getByLabelText('First Name')).toHaveAttribute('maxLength', '150');
+    expect(screen.getByLabelText('Middle Name (optional)')).toHaveAttribute('maxLength', '150');
+    expect(screen.getByLabelText('Family Name')).toHaveAttribute('maxLength', '100');
+    expect(screen.getByLabelText('Second Family Name')).toHaveAttribute('maxLength', '100');
+  });
+
   it('should render GenderField component when name prop is "gender"', () => {
     mockUseConfig.mockReturnValue({
       ...getDefaultsFromConfigSchema(esmPatientRegistrationSchema),

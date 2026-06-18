@@ -24,6 +24,7 @@ import {
   useConfig,
 } from '@openmrs/esm-framework';
 import { AppErrorBoundary, RequirePrivilege } from '@sihsalus/esm-rbac';
+import type { ComponentType, PropsWithChildren, ThHTMLAttributes } from 'react';
 import { useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
@@ -32,6 +33,9 @@ import { useAdmissions } from '../resources/admissions.resource';
 import styles from './admission-home.scss';
 
 const EXCEL_CSV_PREAMBLE = '\uFEFFsep=,\r\n';
+const SpanningTableHeader = TableHeader as unknown as ComponentType<
+  PropsWithChildren<ThHTMLAttributes<HTMLTableCellElement>>
+>;
 
 interface AdmissionConfig {
   admissionReportPageSize?: number;
@@ -141,7 +145,7 @@ export default function AdmissionHome() {
   const exportFilteredAdmissions = () => {
     const headers = [
       t('date', 'Fecha'),
-      t('medicalRecordNumber', 'HCE'),
+      t('medicalRecordNumber', 'HCE / código temporal'),
       t('documentNumber', 'DNI'),
       t('identificationStatus', 'Estado identificación'),
       t('responsiblePerson', 'Responsable'),
@@ -303,19 +307,25 @@ export default function AdmissionHome() {
                   </colgroup>
                   <TableHead>
                     <TableRow>
-                      <TableHeader rowSpan={2}>{t('date', 'Fecha')}</TableHeader>
-                      <TableHeader rowSpan={2}>{t('medicalRecordNumber', 'HCE')}</TableHeader>
-                      <TableHeader rowSpan={2}>{t('documentNumber', 'DNI')}</TableHeader>
-                      <TableHeader rowSpan={2}>{t('identificationStatus', 'Estado identificación')}</TableHeader>
-                      <TableHeader rowSpan={2}>{t('responsiblePerson', 'Responsable')}</TableHeader>
-                      <TableHeader rowSpan={2}>{t('birthDateShort', 'F. Nac.')}</TableHeader>
-                      <TableHeader rowSpan={2}>{t('hasSis', 'Tiene SIS')}</TableHeader>
-                      <TableHeader rowSpan={2}>{t('fullName', 'Nombres y apellidos')}</TableHeader>
-                      <TableHeader rowSpan={2}>{t('address', 'Dirección')}</TableHeader>
-                      <TableHeader colSpan={2}>{t('age', 'Edad')}</TableHeader>
-                      <TableHeader rowSpan={2}>{t('service', 'Servicio')}</TableHeader>
-                      <TableHeader rowSpan={2}>{t('orderNumber', 'Número de orden')}</TableHeader>
-                      <TableHeader rowSpan={2}>{t('communicationCondition', 'Condición comunicación')}</TableHeader>
+                      <SpanningTableHeader rowSpan={2}>{t('date', 'Fecha')}</SpanningTableHeader>
+                      <SpanningTableHeader rowSpan={2}>
+                        {t('medicalRecordNumber', 'HCE / código temporal')}
+                      </SpanningTableHeader>
+                      <SpanningTableHeader rowSpan={2}>{t('documentNumber', 'DNI')}</SpanningTableHeader>
+                      <SpanningTableHeader rowSpan={2}>
+                        {t('identificationStatus', 'Estado identificación')}
+                      </SpanningTableHeader>
+                      <SpanningTableHeader rowSpan={2}>{t('responsiblePerson', 'Responsable')}</SpanningTableHeader>
+                      <SpanningTableHeader rowSpan={2}>{t('birthDateShort', 'F. Nac.')}</SpanningTableHeader>
+                      <SpanningTableHeader rowSpan={2}>{t('hasSis', 'Tiene SIS')}</SpanningTableHeader>
+                      <SpanningTableHeader rowSpan={2}>{t('fullName', 'Nombres y apellidos')}</SpanningTableHeader>
+                      <SpanningTableHeader rowSpan={2}>{t('address', 'Dirección')}</SpanningTableHeader>
+                      <SpanningTableHeader colSpan={2}>{t('age', 'Edad')}</SpanningTableHeader>
+                      <SpanningTableHeader rowSpan={2}>{t('service', 'Servicio')}</SpanningTableHeader>
+                      <SpanningTableHeader rowSpan={2}>{t('orderNumber', 'Número de orden')}</SpanningTableHeader>
+                      <SpanningTableHeader rowSpan={2}>
+                        {t('communicationCondition', 'Condición comunicación')}
+                      </SpanningTableHeader>
                     </TableRow>
                     <TableRow>
                       <TableHeader>{t('maleInitial', 'M')}</TableHeader>

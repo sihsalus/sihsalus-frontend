@@ -12,9 +12,9 @@ const BulkPatientImportAdminCardLink: React.FC = () => {
     <Layer>
       <ClickableTile href={`${globalThis.spaBase}/${patientImport}`}>
         <div>
-          <div className="heading">{t('bulkPatientImportAdminCardTitle', 'Importar pacientes')}</div>
+          <div className="heading">{t('bulkPatientImportAdminCardTitle', 'Import patients')}</div>
           <div className="content">
-            {t('bulkPatientImportAdminCardDescription', 'Validar una plantilla Excel y crear pacientes')}
+            {t('bulkPatientImportAdminCardDescription', 'Validate an Excel template and create patients')}
           </div>
         </div>
         <div className="iconWrapper">

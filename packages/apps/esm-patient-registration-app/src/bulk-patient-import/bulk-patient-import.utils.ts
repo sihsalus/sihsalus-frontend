@@ -41,7 +41,7 @@ export function getImportLimits() {
 
 export async function downloadSantaClotildeTemplate() {
   const workbook = await createWorkbook();
-  const worksheet = workbook.addWorksheet('Pacientes');
+  const worksheet = workbook.addWorksheet('Patients');
 
   worksheet.columns = santaClotildeHeaders.map((header) => ({
     header,
@@ -62,7 +62,7 @@ export async function downloadSantaClotildeTemplate() {
   }
   worksheet.views = [{ state: 'frozen', ySplit: 1 }];
 
-  const exampleSheet = workbook.addWorksheet('Ejemplo');
+  const exampleSheet = workbook.addWorksheet('Example');
   exampleSheet.columns = santaClotildeHeaders.map((header) => ({
     header,
     key: header,
@@ -81,51 +81,43 @@ export async function downloadSantaClotildeTemplate() {
     DOMICILIO: 'SAN ANTONIO',
   });
 
-  await downloadWorkbook(workbook, 'plantilla-importacion-pacientes-santa-clotilde.xlsx');
+  await downloadWorkbook(workbook, 'santa-clotilde-patient-import-template.xlsx');
 }
 
 export async function downloadImportReport(rows: Array<ParsedPatientImportRow>) {
   const workbook = await createWorkbook();
-  const worksheet = workbook.addWorksheet('Reporte');
-  const reportHeaders = [
-    'FILA',
-    ...santaClotildeHeaders,
-    'ESTADO',
-    'UUID PACIENTE',
-    'ERRORES',
-    'ADVERTENCIAS',
-    'MENSAJE',
-  ];
+  const worksheet = workbook.addWorksheet('Report');
+  const reportHeaders = ['ROW', ...santaClotildeHeaders, 'STATUS', 'PATIENT UUID', 'ERRORS', 'WARNINGS', 'MESSAGE'];
 
   worksheet.columns = reportHeaders.map((header) => ({
     header,
     key: header,
-    width: header === 'ERRORES' || header === 'ADVERTENCIAS' || header === 'MENSAJE' ? 42 : 18,
+    width: header === 'ERRORS' || header === 'WARNINGS' || header === 'MESSAGE' ? 42 : 18,
   }));
   worksheet.getRow(1).font = { bold: true };
 
   rows.forEach((row) => {
     worksheet.addRow({
-      FILA: row.rowNumber,
+      ROW: row.rowNumber,
       ...Object.fromEntries(santaClotildeHeaders.map((header) => [header, sanitizeSpreadsheetText(row.raw[header])])),
-      ESTADO: row.status,
-      'UUID PACIENTE': row.patientUuid ?? '',
-      ERRORES: sanitizeSpreadsheetText(row.errors.join(' | ')),
-      ADVERTENCIAS: sanitizeSpreadsheetText(row.warnings.join(' | ')),
-      MENSAJE: sanitizeSpreadsheetText(row.importMessage ?? ''),
+      STATUS: row.status,
+      'PATIENT UUID': row.patientUuid ?? '',
+      ERRORS: sanitizeSpreadsheetText(row.errors.join(' | ')),
+      WARNINGS: sanitizeSpreadsheetText(row.warnings.join(' | ')),
+      MESSAGE: sanitizeSpreadsheetText(row.importMessage ?? ''),
     });
   });
 
-  await downloadWorkbook(workbook, 'reporte-importacion-pacientes.xlsx');
+  await downloadWorkbook(workbook, 'patient-import-report.xlsx');
 }
 
 export async function parseSantaClotildeWorkbook(file: File): Promise<Array<ParsedPatientImportRow>> {
   if (!file.name.toLowerCase().endsWith('.xlsx')) {
-    throw new Error('Solo se admite archivo Excel .xlsx para este PoC.');
+    throw new Error('Only .xlsx Excel files are supported.');
   }
 
   if (file.size > maxFileSizeBytes) {
-    throw new Error('El archivo supera el tamaño máximo permitido para el PoC.');
+    throw new Error('The file exceeds the maximum size allowed.');
   }
 
   const workbook = await createWorkbook();
@@ -133,14 +125,14 @@ export async function parseSantaClotildeWorkbook(file: File): Promise<Array<Pars
   const worksheet = workbook.worksheets[0];
 
   if (!worksheet) {
-    throw new Error('El archivo no contiene hojas.');
+    throw new Error('The file does not contain any worksheets.');
   }
 
   const headerMap = readHeaderMap(worksheet.getRow(1));
   const missingHeaders = santaClotildeHeaders.filter((header) => !headerMap[header]);
 
   if (missingHeaders.length) {
-    throw new Error(`Faltan columnas requeridas: ${missingHeaders.join(', ')}.`);
+    throw new Error(`Missing required columns: ${missingHeaders.join(', ')}.`);
   }
 
   const rows: Array<ParsedPatientImportRow> = [];
@@ -176,14 +168,14 @@ export async function parseSantaClotildeWorkbook(file: File): Promise<Array<Pars
   });
 
   if (worksheet.actualRowCount - 1 > maxRows) {
-    throw new Error(`El PoC permite como máximo ${maxRows} filas por archivo.`);
+    throw new Error(`The template allows a maximum of ${maxRows} rows per file.`);
   }
 
-  applyDuplicateMessages(rows, duplicateDniRows, 'DNI duplicado dentro del archivo.', 'error');
+  applyDuplicateMessages(rows, duplicateDniRows, 'Duplicate DNI within the file.', 'error');
   applyDuplicateMessages(
     rows,
     duplicateDemographicRows,
-    'Posible paciente duplicado dentro del archivo: mismo nombre, fecha de nacimiento y sexo.',
+    'Possible duplicate patient within the file: same name, birthdate, and sex.',
     'warning',
   );
 
@@ -278,39 +270,39 @@ function normalizeAndValidateRow(raw: Record<SantaClotildeHeader, string>, rowNu
   const warnings: Array<string> = [];
 
   if (!normalized.orden) {
-    warnings.push('ORDEN esta vacio.');
+    warnings.push('ORDEN is empty.');
   }
 
   if (!/^\d{8}$/.test(dni)) {
-    errors.push('DNI debe tener exactamente 8 digitos.');
+    errors.push('DNI must have exactly 8 digits.');
   }
 
   if (!gender) {
-    errors.push('SEXO debe ser M, F, O o D.');
+    errors.push('SEXO must be M, F, O, or D.');
   }
 
   if (!birthdate) {
-    errors.push('F.N. debe tener formato DD/MM/AAAA y ser una fecha valida.');
+    errors.push('F.N. must use DD/MM/YYYY format and be a valid date.');
   }
 
   if (!normalized.familyName) {
-    errors.push('A.PATERNO es requerido.');
+    errors.push('A.PATERNO is required.');
   }
 
   if (!normalized.familyName2) {
-    errors.push('A.MATERNO es requerido.');
+    errors.push('A.MATERNO is required.');
   }
 
   if (!normalized.givenName) {
-    errors.push('NOMBRES es requerido.');
+    errors.push('NOMBRES is required.');
   }
 
   if (!normalized.domicilio) {
-    warnings.push('DOMICILIO esta vacio.');
+    warnings.push('DOMICILIO is empty.');
   }
 
   if (raw.PARENTESCO.trim()) {
-    warnings.push('PARENTESCO se conserva solo en el reporte del PoC; no se guarda en el paciente.');
+    warnings.push('PARENTESCO is kept only in the report; it is not saved to the patient record.');
   }
 
   return {
@@ -342,7 +334,7 @@ async function buildPatientIdentifiers(
       identifierType.identifierSources?.[0];
 
     if (!source) {
-      throw new Error(`No hay fuente de generacion configurada para ${identifierType.name}.`);
+      throw new Error(`No generation source is configured for ${identifierType.name}.`);
     }
 
     const generated = await generateIdentifier(source.uuid);
@@ -489,7 +481,7 @@ function getCellText(cell): string {
   }
 
   if (typeof value === 'object' && 'formula' in value) {
-    throw new Error(`La celda ${cell.address} contiene una formula. El PoC solo admite valores.`);
+    throw new Error(`Cell ${cell.address} contains a formula. The file only supports values.`);
   }
 
   if (value instanceof Date) {

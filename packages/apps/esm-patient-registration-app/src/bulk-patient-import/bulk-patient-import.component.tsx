@@ -117,7 +117,7 @@ const BulkPatientImport: React.FC<BulkPatientImportProps> = ({ isOffline }) => {
               <p>
                 {t(
                   'bulkPatientImportSubtitle',
-                  'PoC funcional para importar pacientes desde la plantilla Excel de Santa Clotilde.',
+                  'Importar pacientes de forma masiva desde una plantilla Excel.\nNota: Orden y Parentesco no se guardan en los datos del paciente, solo se muestran en el reporte.',
                 )}
               </p>
             </div>
@@ -134,16 +134,6 @@ const BulkPatientImport: React.FC<BulkPatientImportProps> = ({ isOffline }) => {
               )}
             />
           ) : null}
-
-          <InlineNotification
-            kind="warning"
-            lowContrast
-            title={t('bulkPatientImportPocWarningTitle', 'Version PoC')}
-            subtitle={t(
-              'bulkPatientImportPocWarningSubtitle',
-              'Esta version usa una plantilla fija y crea pacientes fila por fila. No detecta duplicados ya existentes salvo los errores que devuelva el servidor.',
-            )}
-          />
 
           <section className={styles.toolbar} aria-label={t('bulkPatientImportActions', 'Acciones de importacion')}>
             <ButtonSet>
@@ -162,7 +152,7 @@ const BulkPatientImport: React.FC<BulkPatientImportProps> = ({ isOffline }) => {
               onChange={handleFileChange}
             />
             <p>
-              {t('bulkPatientImportLimits', 'Limites del PoC: {{rows}} filas y {{mb}} MB por archivo.', {
+              {t('bulkPatientImportLimits', 'Limites: {{rows}} filas y {{mb}} MB por archivo.', {
                 rows: limits.maxRows,
                 mb: Math.round(limits.maxFileSizeBytes / 1024 / 1024),
               })}

@@ -156,6 +156,7 @@ interface OpenmrsDatePickerMockProps extends InputHTMLAttributes<HTMLInputElemen
   invalid?: boolean;
   invalidText?: ReactNode;
   isInvalid?: boolean;
+  isRequired?: boolean;
   labelText?: ReactNode;
   maxDate?: Date;
   minDate?: Date;
@@ -165,7 +166,20 @@ interface OpenmrsDatePickerMockProps extends InputHTMLAttributes<HTMLInputElemen
 
 export const OpenmrsDatePicker = forwardRef<HTMLInputElement, OpenmrsDatePickerMockProps>(
   function OpenmrsDatePickerMock(
-    { id, labelText, value, onChange, invalid, isInvalid, invalidText, maxDate: _maxDate, minDate: _minDate, ...props },
+    {
+      id,
+      labelText,
+      value,
+      onChange,
+      invalid,
+      isInvalid,
+      invalidText,
+      isRequired,
+      maxDate: _maxDate,
+      minDate: _minDate,
+      required,
+      ...props
+    },
     ref,
   ) {
     const hasError = Boolean(invalid || isInvalid);
@@ -177,6 +191,7 @@ export const OpenmrsDatePicker = forwardRef<HTMLInputElement, OpenmrsDatePickerM
           {...props}
           id={id}
           ref={ref}
+          required={required ?? isRequired}
           type="text"
           value={value ? dayjs(value).format('DD/MM/YYYY') : ''}
           onChange={(evt) => onChange?.(dayjs(evt.target.value).toDate())}

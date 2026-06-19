@@ -68,16 +68,17 @@ export function useStockOperationPages(filter: StockOperationFilter) {
     [t],
   );
 
+  // biome-ignore lint/correctness/useExhaustiveDependencies: filterKey is a JSON.stringify trigger for the filter object.
   // biome-ignore lint/correctness/useExhaustiveDependencies: filterKey is a JSON.stringify trigger — it is not used in the callback body but its change must reset pagination
   useEffect(() => {
     setCurrentPage(1);
   }, [filterKey]);
 
   useEffect(() => {
-    if (!isLoading && currentPage > 1 && stockOperations.length === 0 && (items.totalCount ?? 0) > 0) {
+    if (!isLoading && currentPage > 1 && (items?.results?.length ?? 0) === 0 && (items?.totalCount ?? 0) > 0) {
       setCurrentPage(1);
     }
-  }, [currentPage, isLoading, items.totalCount, stockOperations.length]);
+  }, [currentPage, isLoading, items]);
 
   return {
     items: stockOperations,

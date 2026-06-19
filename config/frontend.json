@@ -17,7 +17,7 @@
     }
   },
   "@sihsalus/esm-indicadores-app": {
-    "indicatorsApiPath": "http://127.0.0.1:8000"
+    "reportesSqlApiPath": "http://127.0.0.1:8000"
   },
   "@sihsalus/esm-patient-vitals-app": {
     "concepts": {

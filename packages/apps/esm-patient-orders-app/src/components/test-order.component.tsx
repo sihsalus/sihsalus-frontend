@@ -23,6 +23,21 @@ interface TestOrderProps {
   testOrder: Order;
 }
 
+const getObservationValueDisplay = (value: any): string | number => {
+  if (value && typeof value === 'object') {
+    return value.display || '';
+  }
+  return value;
+};
+
+const hasNormalRange = (concept: any) =>
+  concept?.hiNormal !== null &&
+  concept?.hiNormal !== undefined &&
+  concept?.hiNormal !== '' &&
+  concept?.lowNormal !== null &&
+  concept?.lowNormal !== undefined &&
+  concept?.lowNormal !== '';
+
 const TestOrder: React.FC<TestOrderProps> = ({ testOrder }) => {
   const { t } = useTranslation();
   const isTablet = useLayoutType() === 'tablet';
@@ -46,9 +61,12 @@ const TestOrder: React.FC<TestOrderProps> = ({ testOrder }) => {
 
   const testResultObs = useMemo(() => {
     if (encounter && concept) {
-      return encounter.obs?.find((obs) => obs.concept.uuid === concept.uuid);
+      return (
+        encounter.obs?.find((obs) => obs.order?.uuid === testOrder.uuid) ||
+        encounter.obs?.find((obs) => obs.concept.uuid === concept.uuid)
+      );
     }
-  }, [concept, encounter]);
+  }, [concept, encounter, testOrder.uuid]);
 
   const testRows = useMemo(() => {
     if (concept && concept.setMembers.length > 0) {
@@ -58,20 +76,25 @@ const TestOrder: React.FC<TestOrderProps> = ({ testOrder }) => {
         result: isLoadingResult ? (
           <SkeletonText />
         ) : (
-          (testResultObs?.groupMembers?.find((obs) => obs.concept.uuid === memberConcept.uuid)?.value ?? '--')
+          getObservationValueDisplay(
+            testResultObs?.groupMembers?.find((obs) => obs.concept.uuid === memberConcept.uuid)?.value,
+          ) ?? '--'
         ),
-        normalRange:
-          memberConcept.hiNormal && memberConcept.lowNormal
-            ? `${memberConcept.lowNormal} - ${memberConcept.hiNormal}`
-            : 'N/A',
+        normalRange: hasNormalRange(memberConcept)
+          ? `${memberConcept.lowNormal} - ${memberConcept.hiNormal}`
+          : 'N/A',
       }));
     } else if (concept && concept.setMembers.length === 0) {
       return [
         {
           id: concept.uuid,
           testType: <div className={styles.testType}>{concept.display}</div>,
-          result: isLoadingResult ? <SkeletonText /> : (testResultObs?.value ?? '--'),
-          normalRange: concept.hiNormal && concept.lowNormal ? `${concept.lowNormal} - ${concept.hiNormal}` : 'N/A',
+          result: isLoadingResult ? (
+            <SkeletonText />
+          ) : (
+            getObservationValueDisplay(testResultObs?.value) ?? '--'
+          ),
+          normalRange: hasNormalRange(concept) ? `${concept.lowNormal} - ${concept.hiNormal}` : 'N/A',
         },
       ];
     } else {

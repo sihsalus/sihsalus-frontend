@@ -24,7 +24,8 @@
   }
 
   :global(.cds--table-toolbar) {
-    position: static;
+    position: relative;
+    z-index: 10;
   }
 
   :global(.cds--overflow-menu) {

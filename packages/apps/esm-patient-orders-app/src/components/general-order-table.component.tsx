@@ -23,6 +23,14 @@ interface GeneralOrderProps {
   order: Order;
 }
 
+const hasNormalRange = (concept: any) =>
+  concept?.hiNormal !== null &&
+  concept?.hiNormal !== undefined &&
+  concept?.hiNormal !== '' &&
+  concept?.lowNormal !== null &&
+  concept?.lowNormal !== undefined &&
+  concept?.lowNormal !== '';
+
 const GeneralOrderTable: React.FC<GeneralOrderProps> = ({ order }) => {
   const { t } = useTranslation();
   const isTablet = useLayoutType() === 'tablet';
@@ -48,9 +56,12 @@ const GeneralOrderTable: React.FC<GeneralOrderProps> = ({ order }) => {
 
   const obs = useMemo(() => {
     if (encounter && concept) {
-      return encounter.obs?.find((obs) => obs.concept.uuid === concept.uuid);
+      return (
+        encounter.obs?.find((obs) => obs.order?.uuid === order.uuid) ||
+        encounter.obs?.find((obs) => obs.concept.uuid === concept.uuid)
+      );
     }
-  }, [concept, encounter]);
+  }, [concept, encounter, order.uuid]);
 
   const rows = useMemo(() => {
     if (concept && concept.setMembers.length > 0) {
@@ -63,10 +74,9 @@ const GeneralOrderTable: React.FC<GeneralOrderProps> = ({ order }) => {
         ) : (
           (obs?.groupMembers?.find((obs) => obs.concept.uuid === memberConcept.uuid)?.value.display ?? '--')
         ),
-        normalRange:
-          memberConcept.hiNormal && memberConcept.lowNormal
-            ? `${memberConcept.lowNormal} - ${memberConcept.hiNormal}`
-            : 'N/A',
+        normalRange: hasNormalRange(memberConcept)
+          ? `${memberConcept.lowNormal} - ${memberConcept.hiNormal}`
+          : 'N/A',
         referenceNumber: order?.accessionNumber,
       }));
     } else if (concept && concept.setMembers.length === 0) {
@@ -76,7 +86,7 @@ const GeneralOrderTable: React.FC<GeneralOrderProps> = ({ order }) => {
           orderName: <div className={styles.type}>{concept.display}</div>,
           instructions: order?.instructions ?? '--',
           result: isLoadingResult ? <SkeletonText /> : (obs?.value.display ?? '--'),
-          normalRange: concept.hiNormal && concept.lowNormal ? `${concept.lowNormal} - ${concept.hiNormal}` : 'N/A',
+          normalRange: hasNormalRange(concept) ? `${concept.lowNormal} - ${concept.hiNormal}` : 'N/A',
           referenceNumber: order?.accessionNumber,
         },
       ];

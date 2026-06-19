@@ -121,7 +121,7 @@ const IndividualResultsTable: React.FC<IndividualResultsTableProps> = ({ isLoadi
             value: `${row.value} ${row.units ?? ''}`,
             interpretation: row?.interpretation,
           },
-          referenceRange: `${range || '--'} ${units || '--'}`,
+          referenceRange: range ? (units ? `${range} ${units}` : range) : '--',
         };
       }),
     [index, subRows, launchResultsDialog],

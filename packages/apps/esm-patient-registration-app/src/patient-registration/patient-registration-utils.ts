@@ -109,9 +109,9 @@ function findElementValueInXmlDoc(fieldName: string, elementSelector: string, do
 }
 
 export function scrollIntoView(viewId: string) {
-  document.getElementById(viewId).scrollIntoView({
+  document.getElementById(viewId)?.scrollIntoView({
     behavior: 'smooth',
-    block: 'center',
+    block: 'start',
     inline: 'center',
   });
 }
@@ -265,7 +265,7 @@ type IdentifierMap = { [identifierFieldName: string]: PatientIdentifierValue };
 export const filterOutUndefinedPatientIdentifiers = (patientIdentifiers: IdentifierMap): IdentifierMap =>
   Object.fromEntries(
     Object.entries(patientIdentifiers).filter(
-      ([key, value]) =>
+      ([_key, value]) =>
         (value.autoGeneration && value.selectedSource.autoGenerationOption.manualEntryEnabled) ||
         value.identifierValue !== undefined,
     ),

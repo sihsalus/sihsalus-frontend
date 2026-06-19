@@ -6,7 +6,6 @@ import {
   isDesktop,
   launchWorkspace,
   showSnackbar,
-  showToast,
   useLayoutType,
 } from '@openmrs/esm-framework';
 import { useCallback, useEffect, useMemo, useState } from 'react';
@@ -118,18 +117,20 @@ function QueueTableSection() {
   }, [error?.message, t]);
 
   const columns = useColumns(null, null);
-  if (!columns) {
-    showToast({
-      title: t('notableConfig', 'No table configuration'),
-      kind: 'warning',
-      description: 'No table configuration defined for queue: null and status: null',
-    });
-  }
+  useEffect(() => {
+    if (!columns) {
+      showSnackbar({
+        kind: 'warning',
+        title: t('notableConfig', 'No table configuration'),
+        subtitle: 'No table configuration defined for queue: null and status: null',
+      });
+    }
+  }, [columns, t]);
 
   const filteredQueueEntries = useMemo(() => {
     const searchTermLowercase = searchTerm.toLowerCase();
     return queueEntries?.filter((queueEntry) => {
-      return columns.some((column) => {
+      return columns?.some((column) => {
         const columnSearchTerm = column.getFilterableValue?.(queueEntry)?.toLocaleLowerCase();
         return columnSearchTerm?.includes(searchTermLowercase);
       });

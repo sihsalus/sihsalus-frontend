@@ -40,14 +40,26 @@ const hasNormalRange = (concept: any) =>
   concept?.lowNormal !== '';
 
 const extractRangesFromFhirObs = (fhirObs: any) => {
-  const referenceRange = fhirObs?.referenceRange?.[0];
-  if (!referenceRange) return {};
-  const low = referenceRange.low?.value;
-  const high = referenceRange.high?.value;
-  return {
-    lowNormal: typeof low === 'number' ? low : undefined,
-    hiNormal: typeof high === 'number' ? high : undefined,
-  };
+  const referenceRanges = fhirObs?.referenceRange;
+  if (!referenceRanges?.length) return {};
+
+  const result: any = {};
+  for (const ref of referenceRanges) {
+    const code = ref.type?.coding?.[0]?.code?.toLowerCase();
+    const system = ref.type?.coding?.[0]?.system;
+
+    if (
+      (system === 'http://terminology.hl7.org/CodeSystem/referencerange-meaning' && code === 'normal') ||
+      code === 'normal' ||
+      (!code && referenceRanges.length === 1)
+    ) {
+      const low = ref.low?.value;
+      const high = ref.high?.value;
+      if (typeof low === 'number') result.lowNormal = low;
+      if (typeof high === 'number') result.hiNormal = high;
+    }
+  }
+  return result;
 };
 
 const TestOrder: React.FC<TestOrderProps> = ({ testOrder }) => {
@@ -57,7 +69,7 @@ const TestOrder: React.FC<TestOrderProps> = ({ testOrder }) => {
   const { encounter, isLoading: isLoadingResult } = useLabEncounter(testOrder.encounter.uuid);
 
   const { data: fhirObsBundle } = useSWR<any>(
-    testOrder.encounter.uuid ? `/ws/fhir2/R4/Observation?encounter=${testOrder.encounter.uuid}` : null,
+    testOrder.encounter.uuid ? `/ws/fhir2/R4/Observation?encounter=Encounter/${testOrder.encounter.uuid}&_count=100` : null,
     openmrsFetch,
   );
 

@@ -31,6 +31,21 @@ export async function withMockFallback<T>(request: () => Promise<T>, fallback: (
   }
 }
 
+/**
+ * Variant of `fetchJson` for mutating endpoints (POST/PUT/PATCH/DELETE).
+ *
+ * Unlike `withMockFallback`, this helper does NOT swallow backend failures
+ * with a mock response — a real mutation that the backend rejected must
+ * surface the error to the UI so the user does not believe a write
+ * succeeded when it actually failed. The mock-mode store is still reset
+ * on success so the rest of the app reflects a healthy backend.
+ */
+export async function mutateJson<T>(url: string, init?: FetchConfig): Promise<T> {
+  const response = (await openmrsFetch(url, init)) as FetchResponse<T>;
+  resetMockMode();
+  return response.data;
+}
+
 export function toJsonBody(payload: unknown): Pick<FetchConfig, 'headers' | 'body'> {
   return {
     headers: { 'Content-Type': 'application/json' },

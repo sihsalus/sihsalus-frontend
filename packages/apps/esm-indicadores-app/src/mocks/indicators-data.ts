@@ -14,6 +14,8 @@ import type {
   LocationOption,
   OrdenOption,
   PaginatedResponse,
+  RecalcularAnioParams,
+  RecalcularAnioResponse,
   SeriesResponse,
   SerieRow,
 } from '../api/types';
@@ -394,6 +396,48 @@ export function calcularAhoraMock(): BatchCalcularNowResponse {
     calculados: nuevosResultados.length,
     errores: [],
     total: activeIndicators.length,
+  };
+}
+
+export function recalcularAnioMock(params: RecalcularAnioParams): RecalcularAnioResponse {
+  const anio = params.anio;
+  const filtered = params.indicador_id
+    ? indicadores.filter((item) => item.id === params.indicador_id)
+    : indicadores.filter((item) => item.activo);
+
+  const mesesProcesados = 12;
+  const nuevosResultados: Array<IndicadorResultado> = [];
+
+  filtered.forEach((indicador) => {
+    const version = latestVersion(indicador);
+    for (let mes = 1; mes <= mesesProcesados; mes += 1) {
+      const mesReferencia = `${anio}-${String(mes).padStart(2, '0')}-01`;
+      const periodoFin = `${anio}-${String(mes).padStart(2, '0')}-${new Date(anio, mes, 0).getDate()}`;
+      nuevosResultados.push({
+        id: uid('res'),
+        indicador_version_id: version.id,
+        indicador_nombre: indicador.nombre,
+        indicador_version_num: version.version,
+        periodo_inicio: mesReferencia,
+        periodo_fin: periodoFin,
+        valor: Math.floor(Math.random() * 400) + 1,
+        calculado_en: nowIso(),
+        mes_referencia: mesReferencia,
+        es_canonico: true,
+      });
+    }
+  });
+
+  resultados = [...nuevosResultados, ...resultados];
+
+  return {
+    anio,
+    indicador_id: params.indicador_id ?? null,
+    meses_procesados: mesesProcesados,
+    indicadores_considerados: filtered.length,
+    recalculados: nuevosResultados.length,
+    errores: [],
+    total: filtered.length * mesesProcesados,
   };
 }
 

@@ -10,10 +10,11 @@ import {
   TableHeader,
   TableRow,
 } from '@carbon/react';
-import { useLayoutType } from '@openmrs/esm-framework';
+import { useLayoutType, openmrsFetch } from '@openmrs/esm-framework';
 import { type Order } from '@openmrs/esm-patient-common-lib';
 import React, { useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
+import useSWR from 'swr';
 
 import { useLabEncounter, useOrderConceptByUuid } from '../lab-results/lab-results.resource';
 
@@ -38,11 +39,27 @@ const hasNormalRange = (concept: any) =>
   concept?.lowNormal !== undefined &&
   concept?.lowNormal !== '';
 
+const extractRangesFromFhirObs = (fhirObs: any) => {
+  const referenceRange = fhirObs?.referenceRange?.[0];
+  if (!referenceRange) return {};
+  const low = referenceRange.low?.value;
+  const high = referenceRange.high?.value;
+  return {
+    lowNormal: typeof low === 'number' ? low : undefined,
+    hiNormal: typeof high === 'number' ? high : undefined,
+  };
+};
+
 const TestOrder: React.FC<TestOrderProps> = ({ testOrder }) => {
   const { t } = useTranslation();
   const isTablet = useLayoutType() === 'tablet';
   const { concept, isLoading: isLoadingTestConcepts } = useOrderConceptByUuid(testOrder.concept.uuid);
   const { encounter, isLoading: isLoadingResult } = useLabEncounter(testOrder.encounter.uuid);
+
+  const { data: fhirObsBundle } = useSWR<any>(
+    testOrder.encounter.uuid ? `/ws/fhir2/R4/Observation?encounter=${testOrder.encounter.uuid}` : null,
+    openmrsFetch,
+  );
 
   const tableHeaders: Array<{ key: string; header: string }> = [
     {
@@ -69,22 +86,37 @@ const TestOrder: React.FC<TestOrderProps> = ({ testOrder }) => {
   }, [concept, encounter, testOrder.uuid]);
 
   const testRows = useMemo(() => {
+    const findFhirObs = (obsUuid: string) => fhirObsBundle?.data?.entry?.find((e: any) => e.resource?.id === obsUuid)?.resource;
+
     if (concept && concept.setMembers.length > 0) {
-      return concept?.setMembers.map((memberConcept) => ({
-        id: memberConcept.uuid,
-        testType: <div className={styles.testType}>{memberConcept.display}</div>,
-        result: isLoadingResult ? (
-          <SkeletonText />
-        ) : (
-          getObservationValueDisplay(
-            testResultObs?.groupMembers?.find((obs) => obs.concept.uuid === memberConcept.uuid)?.value,
-          ) ?? '--'
-        ),
-        normalRange: hasNormalRange(memberConcept)
-          ? `${memberConcept.lowNormal} - ${memberConcept.hiNormal}`
-          : 'N/A',
-      }));
+      return concept?.setMembers.map((memberConcept) => {
+        const memberObs = testResultObs?.groupMembers?.find((obs) => obs.concept.uuid === memberConcept.uuid);
+        const fhirObs = memberObs ? findFhirObs(memberObs.uuid) : null;
+        const fhirRanges = extractRangesFromFhirObs(fhirObs);
+
+        const low = fhirRanges.lowNormal ?? memberConcept.lowNormal;
+        const high = fhirRanges.hiNormal ?? memberConcept.hiNormal;
+
+        return {
+          id: memberConcept.uuid,
+          testType: <div className={styles.testType}>{memberConcept.display}</div>,
+          result: isLoadingResult ? (
+            <SkeletonText />
+          ) : (
+            getObservationValueDisplay(memberObs?.value) ?? '--'
+          ),
+          normalRange: hasNormalRange({ lowNormal: low, hiNormal: high })
+            ? `${low} - ${high}`
+            : 'N/A',
+        };
+      });
     } else if (concept && concept.setMembers.length === 0) {
+      const fhirObs = testResultObs ? findFhirObs(testResultObs.uuid) : null;
+      const fhirRanges = extractRangesFromFhirObs(fhirObs);
+
+      const low = fhirRanges.lowNormal ?? concept.lowNormal;
+      const high = fhirRanges.hiNormal ?? concept.hiNormal;
+
       return [
         {
           id: concept.uuid,
@@ -94,13 +126,13 @@ const TestOrder: React.FC<TestOrderProps> = ({ testOrder }) => {
           ) : (
             getObservationValueDisplay(testResultObs?.value) ?? '--'
           ),
-          normalRange: hasNormalRange(concept) ? `${concept.lowNormal} - ${concept.hiNormal}` : 'N/A',
+          normalRange: hasNormalRange({ lowNormal: low, hiNormal: high }) ? `${low} - ${high}` : 'N/A',
         },
       ];
     } else {
       return [];
     }
-  }, [concept, isLoadingResult, testResultObs?.groupMembers, testResultObs?.value]);
+  }, [concept, isLoadingResult, testResultObs, fhirObsBundle]);
 
   return (
     <div className={styles.testOrder}>

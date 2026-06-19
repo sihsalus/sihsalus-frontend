@@ -175,6 +175,12 @@ export const configSchema = {
         urgency: 'ON_SCHEDULED_DATE',
         requiresScheduledDate: true,
       },
+      {
+        conceptUuid: '427a595a-a5ee-4ba7-bcb7-2503248efb31', // Urgencia menor
+        label: 'Urgencia menor',
+        urgency: 'ROUTINE',
+        requiresScheduledDate: false,
+      },
     ],
     _elements: {
       conceptUuid: {

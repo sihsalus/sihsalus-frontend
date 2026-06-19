@@ -8,6 +8,7 @@
       "name": "terapia-fisica-dashboard-link",
       "component": "terapiaFisicaDashboardLink",
       "slot": "patient-chart-dashboard-slot",
+      "privileges": "app:clinical.chart.physicalTherapy",
       "order": 13,
       "meta": {
         "slot": "patient-chart-terapia-fisica-dashboard-slot",
@@ -23,6 +24,7 @@
       "name": "terapia-fisica-dashboard",
       "component": "terapiaFisicaDashboard",
       "slot": "patient-chart-terapia-fisica-dashboard-slot",
+      "privileges": "app:clinical.chart.physicalTherapy",
       "order": 0,
       "online": true,
       "offline": false

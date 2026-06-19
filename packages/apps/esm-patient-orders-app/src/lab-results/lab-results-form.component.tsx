@@ -188,9 +188,10 @@ const LabResultsForm: React.FC<LabResultsFormProps> = (props) => {
         return updateObservation(obs?.uuid, { value });
       });
       const updateResults = await Promise.allSettled(updateTasks);
-      const failedObsconceptUuids = updateResults.reduce((prev, curr, index) => {
+      const failedObsconceptUuids = updateResults.reduce<Array<string | undefined>>((prev, curr, index) => {
         if (curr.status === 'rejected') {
-          return [...prev, Object.keys(formValues).at(index)];
+          const conceptUuid = Object.keys(formValues).at(index);
+          prev.push(conceptUuid);
         }
         return prev;
       }, []);

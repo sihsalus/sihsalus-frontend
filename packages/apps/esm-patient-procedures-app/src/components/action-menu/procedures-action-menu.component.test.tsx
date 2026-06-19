@@ -15,6 +15,7 @@ vi.mock('@openmrs/esm-framework', async () => ({
   launchWorkspace2: vi.fn(),
   showModal: vi.fn().mockReturnValue(vi.fn()),
   useLayoutType: vi.fn().mockReturnValue('small-desktop'),
+  userHasAccess: vi.fn().mockReturnValue(true),
 }));
 
 const mockProcedure = mockProceduresResponse.results[0] as Procedure;
@@ -29,11 +30,11 @@ function getMenuTrigger() {
   return screen.getByRole('button', { name: /options/i });
 }
 
-async function openMenu(user: ReturnType<typeof userEvent.setup>) {
+async function openMenu(user: ReturnType<typeof userEvent.setup>): Promise<HTMLElement | null> {
   const trigger = getMenuTrigger();
   await user.click(trigger);
   const panelId = trigger.getAttribute('aria-controls');
-  return document.getElementById(panelId!);
+  return panelId ? document.getElementById(panelId) : null;
 }
 
 describe('Procedures Action Menu', () => {
@@ -54,9 +55,11 @@ describe('Procedures Action Menu', () => {
     render(<ProceduresActionMenu {...defaultProps} />);
 
     const panel = await openMenu(user);
+    expect(panel).toBeTruthy();
+    const menuPanel = panel as HTMLElement;
 
-    expect(within(panel!).getByText('Edit')).toBeInTheDocument();
-    expect(within(panel!).getByText('Delete')).toBeInTheDocument();
+    expect(within(menuPanel).getByText('Edit')).toBeInTheDocument();
+    expect(within(menuPanel).getByText('Delete')).toBeInTheDocument();
   });
 
   it('clicking Edit launches the procedures form workspace', async () => {
@@ -64,7 +67,10 @@ describe('Procedures Action Menu', () => {
     render(<ProceduresActionMenu {...defaultProps} />);
 
     const panel = await openMenu(user);
-    await user.click(within(panel!).getByText('Edit'));
+    expect(panel).toBeTruthy();
+    const menuPanel = panel as HTMLElement;
+
+    await user.click(within(menuPanel).getByText('Edit'));
 
     expect(mockLaunchWorkspace2).toHaveBeenCalledWith('procedures-form-workspace', {
       procedure: mockProcedure,
@@ -77,7 +83,10 @@ describe('Procedures Action Menu', () => {
     render(<ProceduresActionMenu {...defaultProps} />);
 
     const panel = await openMenu(user);
-    await user.click(within(panel!).getByText('Delete'));
+    expect(panel).toBeTruthy();
+    const menuPanel = panel as HTMLElement;
+
+    await user.click(within(menuPanel).getByText('Delete'));
 
     expect(mockShowModal).toHaveBeenCalledWith(
       'procedure-delete-confirmation-dialog',

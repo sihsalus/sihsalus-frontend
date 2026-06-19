@@ -1,8 +1,10 @@
 import { Button } from '@carbon/react';
-import { showSnackbar } from '@openmrs/esm-framework';
+import { showSnackbar, useSession } from '@openmrs/esm-framework';
 import { launchPatientWorkspace } from '@openmrs/esm-patient-common-lib';
 import { useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
+
+import { canStartVisit } from './visit-access';
 
 interface StartVisitButtonProps {
   patientUuid: string;
@@ -10,7 +12,9 @@ interface StartVisitButtonProps {
 
 const StartVisitButton = ({ patientUuid }: StartVisitButtonProps) => {
   const { t } = useTranslation();
+  const { user } = useSession();
   const startVisitWorkspaceForm = 'start-visit-workspace-form';
+  const canStart = canStartVisit(user);
 
   const handleStartVisit = useCallback(() => {
     try {
@@ -30,11 +34,11 @@ const StartVisitButton = ({ patientUuid }: StartVisitButtonProps) => {
     }
   }, [patientUuid, t]);
 
-  return (
+  return canStart ? (
     <Button aria-label={t('startVisit', 'Start visit')} kind="primary" onClick={handleStartVisit}>
       {t('startVisit', 'Start visit')}
     </Button>
-  );
+  ) : null;
 };
 
 export default StartVisitButton;

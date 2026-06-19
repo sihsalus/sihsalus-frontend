@@ -3,6 +3,9 @@ export const basePath = '/appointments';
 export const spaHomePage = `${globalThis.spaBase}/home`;
 export const omrsDateFormat = 'YYYY-MM-DDTHH:mm:ss.SSSZZ';
 export const appointmentLocationTagName = 'Appointment Location';
+export const appointmentsPrivilege = 'app:appointments';
+export const chartAppointmentsReadPrivilege = 'app:clinical.chart.appointments';
+export const chartAppointmentsEditPrivilege = 'app:clinical.chart.appointments.edit';
 
 export const moduleName = '@sihsalus/esm-appointments-app';
 

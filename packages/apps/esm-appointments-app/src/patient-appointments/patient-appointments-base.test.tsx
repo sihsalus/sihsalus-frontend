@@ -1,13 +1,7 @@
 import { type FetchResponse, openmrsFetch } from '@openmrs/esm-framework';
 import { screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import {
-  mockAppointmentsData,
-  mockPatient,
-  patientChartBasePath,
-  renderWithSwr,
-  waitForLoadingToFinish,
-} from 'test-utils';
+import { mockAppointmentsData, mockPatient, patientChartBasePath, renderWithSwr } from 'test-utils';
 
 import { type AppointmentsFetchResponse } from '../types';
 
@@ -19,8 +13,25 @@ const testProps = {
 };
 
 const mockOpenmrsFetch = vi.mocked(openmrsFetch);
+const mockUseSession = vi.hoisted(() => vi.fn());
+
+vi.mock('@openmrs/esm-framework', async () => {
+  const actual = await vi.importActual<typeof import('@openmrs/esm-framework')>('@openmrs/esm-framework');
+
+  return {
+    ...actual,
+    useSession: mockUseSession,
+    userHasAccess: () => true,
+  };
+});
 
 describe('AppointmentsOverview', () => {
+  beforeEach(() => {
+    mockUseSession.mockReturnValue({
+      user: { uuid: 'mock-user-uuid', display: 'Mock User' },
+    });
+  });
+
   it('renders an empty state if appointments data is unavailable', async () => {
     mockOpenmrsFetch.mockResolvedValueOnce({
       data: [],
@@ -28,9 +39,7 @@ describe('AppointmentsOverview', () => {
 
     renderWithSwr(<AppointmentsBase {...testProps} />);
 
-    await waitForLoadingToFinish();
-
-    expect(screen.getByRole('heading', { name: /appointments/i })).toBeInTheDocument();
+    expect(await screen.findByRole('heading', { name: /appointments/i })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: /add/i })).toBeInTheDocument();
     expect(screen.getByText(/there are no upcoming appointments to display for this patient/i)).toBeInTheDocument();
   });
@@ -48,9 +57,7 @@ describe('AppointmentsOverview', () => {
 
     renderWithSwr(<AppointmentsBase {...testProps} />);
 
-    await waitForLoadingToFinish();
-
-    expect(screen.getByRole('heading', { name: /appointments/i })).toBeInTheDocument();
+    expect(await screen.findByRole('heading', { name: /appointments/i })).toBeInTheDocument();
     expect(
       screen.getByText(
         'Sorry, there was a problem displaying this information. You can try to reload this page, or contact the site administrator and quote the error code above.',
@@ -67,9 +74,7 @@ describe('AppointmentsOverview', () => {
 
     renderWithSwr(<AppointmentsBase {...testProps} />);
 
-    await waitForLoadingToFinish();
-
-    expect(screen.getByRole('heading', { name: /appointments/i })).toBeInTheDocument();
+    expect(await screen.findByRole('heading', { name: /appointments/i })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: /add/i })).toBeInTheDocument();
 
     const upcomingAppointmentsTab = screen.getByRole('tab', { name: /upcoming/i });

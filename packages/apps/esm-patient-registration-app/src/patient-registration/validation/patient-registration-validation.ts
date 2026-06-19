@@ -3,12 +3,14 @@ import mapValues from 'lodash-es/mapValues';
 import * as Yup from 'yup';
 
 import { type RegistrationConfig } from '../../config-schema';
+import { patientFamilyNameMaxLength, patientGivenNameMaxLength } from '../patient-name-limits';
 import { getDatetime } from '../patient-registration.resource';
 import {
   type FetchedPatientIdentifierType,
   type FormValues,
   type RelationshipValue,
 } from '../patient-registration.types';
+import { getPeruIdentifierRule } from '../peru-identifier-validation';
 
 const t = (key: string, _value: string) => key;
 
@@ -24,6 +26,8 @@ const nameInvalidCharactersMessage = t(
   'Name can only contain letters, spaces, hyphens and apostrophes',
 );
 const nameTooShortMessage = t('nameTooShort', 'Name must be at least 2 characters long');
+const givenNameTooLongMessage = t('givenNameTooLong', 'Name must be 150 characters or fewer');
+const familyNameTooLongMessage = t('familyNameTooLong', 'Family name must be 100 characters or fewer');
 
 function buildIdentifierFormatRegex(format?: string): RegExp | undefined {
   if (!format) {
@@ -54,7 +58,7 @@ function buildPersonAttributeValidationSchema(config: RegistrationConfig) {
               return true;
             }
 
-            return formatRegex.test(value);
+            return formatRegex.test(value.trim());
           });
         }
 
@@ -115,37 +119,54 @@ export function getValidationSchema(
     givenName: Yup.string()
       .required(t('givenNameRequired', 'Given name is required'))
       .min(2, nameTooShortMessage)
+      .max(patientGivenNameMaxLength, givenNameTooLongMessage)
       .matches(nameRegex, { message: nameInvalidCharactersMessage, excludeEmptyString: true }),
     familyName: Yup.string()
       .required(t('familyNameRequired', 'Family name is required'))
       .min(2, nameTooShortMessage)
+      .max(patientFamilyNameMaxLength, familyNameTooLongMessage)
       .matches(nameRegex, { message: nameInvalidCharactersMessage, excludeEmptyString: true }),
-    middleName: Yup.string().matches(nameRegex, { message: nameInvalidCharactersMessage, excludeEmptyString: true }),
+    middleName: Yup.string()
+      .max(patientGivenNameMaxLength, givenNameTooLongMessage)
+      .matches(nameRegex, { message: nameInvalidCharactersMessage, excludeEmptyString: true }),
     familyName2: (config.fieldConfigurations.name.requireFamilyName2
-      ? Yup.string().required(t('familyName2Required', 'Second family name is required')).min(2, nameTooShortMessage)
+      ? Yup.string()
+          .required(t('familyName2Required', 'Second family name is required'))
+          .min(2, nameTooShortMessage)
+          .max(patientFamilyNameMaxLength, familyNameTooLongMessage)
       : Yup.string().notRequired()
-    ).matches(nameRegex, { message: nameInvalidCharactersMessage, excludeEmptyString: true }),
+    )
+      .max(patientFamilyNameMaxLength, familyNameTooLongMessage)
+      .matches(nameRegex, { message: nameInvalidCharactersMessage, excludeEmptyString: true }),
     additionalGivenName: Yup.string()
+      .max(patientGivenNameMaxLength, givenNameTooLongMessage)
       .matches(nameRegex, { message: nameInvalidCharactersMessage, excludeEmptyString: true })
       .when('addNameInLocalLanguage', {
         is: true,
         // biome-ignore lint/suspicious/noThenProperty: Yup's conditional schema API requires the `then` property.
-        then: Yup.string().required(t('givenNameRequired', 'Given name is required')).min(2, nameTooShortMessage),
+        then: Yup.string()
+          .required(t('givenNameRequired', 'Given name is required'))
+          .min(2, nameTooShortMessage)
+          .max(patientGivenNameMaxLength, givenNameTooLongMessage),
         otherwise: Yup.string().notRequired(),
       }),
-    additionalMiddleName: Yup.string().matches(nameRegex, {
+    additionalMiddleName: Yup.string().max(patientGivenNameMaxLength, givenNameTooLongMessage).matches(nameRegex, {
       message: nameInvalidCharactersMessage,
       excludeEmptyString: true,
     }),
     additionalFamilyName: Yup.string()
+      .max(patientFamilyNameMaxLength, familyNameTooLongMessage)
       .matches(nameRegex, { message: nameInvalidCharactersMessage, excludeEmptyString: true })
       .when('addNameInLocalLanguage', {
         is: true,
         // biome-ignore lint/suspicious/noThenProperty: Yup's conditional schema API requires the `then` property.
-        then: Yup.string().required(t('familyNameRequired', 'Family name is required')).min(2, nameTooShortMessage),
+        then: Yup.string()
+          .required(t('familyNameRequired', 'Family name is required'))
+          .min(2, nameTooShortMessage)
+          .max(patientFamilyNameMaxLength, familyNameTooLongMessage),
         otherwise: Yup.string().notRequired(),
       }),
-    additionalFamilyName2: Yup.string().matches(nameRegex, {
+    additionalFamilyName2: Yup.string().max(patientFamilyNameMaxLength, familyNameTooLongMessage).matches(nameRegex, {
       message: nameInvalidCharactersMessage,
       excludeEmptyString: true,
     }),
@@ -243,7 +264,8 @@ export function getValidationSchema(
           const identifierType = identifierTypes.find(
             (type) => type.fieldName === fieldName || type.uuid === identifier?.identifierTypeUuid,
           );
-          const formatRegex = buildIdentifierFormatRegex(identifierType?.format);
+          const peruIdentifierRule = getPeruIdentifierRule(identifierType, identifier);
+          const formatRegex = peruIdentifierRule?.pattern ?? buildIdentifierFormatRegex(identifierType?.format);
 
           return Yup.object({
             required: Yup.bool(),
@@ -256,14 +278,16 @@ export function getValidationSchema(
               })
               .test(
                 'identifier-format',
-                t('identifierInvalidFormat', 'Identifier does not match the expected format'),
+                peruIdentifierRule
+                  ? t(peruIdentifierRule.messageKey, peruIdentifierRule.message)
+                  : t('identifierInvalidFormat', 'Identifier does not match the expected format'),
                 function (value) {
                   // Skip when there is no backend format, the field is empty, or the value
                   // is auto-generated by the server (validated server-side).
                   if (!formatRegex || !value || value === 'auto-generated') {
                     return true;
                   }
-                  return formatRegex.test(value);
+                  return formatRegex.test(value.trim());
                 },
               ),
           });
@@ -281,7 +305,7 @@ export function getValidationSchema(
         'responsible-relationship-required-for-minors',
         t(
           'responsibleRelationshipRequiredForMinor',
-          'A responsible family member or guardian relationship is required for minors',
+          'For minors, record a responsible family member, guardian, or legal representative.',
         ),
         function (relationships?: Array<RelationshipValue>) {
           const values = this.parent as FormValues;

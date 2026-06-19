@@ -8,6 +8,7 @@
       "name": "case-monitoring-encounter-link",
       "component": "caseEncounterDashboardLink",
       "slot": "patient-chart-dashboard-slot",
+      "privileges": "app:clinical.chart.caseMonitoring",
       "order": 14,
       "meta": {
         "columns": 1,
@@ -22,6 +23,7 @@
       "name": "case-monitoring-encounter-table",
       "slot": "patient-chart-case-encounter-slot",
       "component": "caseEncounterTable",
+      "privileges": "app:clinical.chart.caseMonitoring",
       "order": 0,
       "online": true,
       "offline": false
@@ -30,6 +32,7 @@
       "name": "missed-follow-up-dashboard-link",
       "component": "missedFollowUpDashboardLink",
       "slot": "patient-chart-dashboard-slot",
+      "privileges": "app:clinical.chart.missedFollowUp",
       "order": 15,
       "meta": {
         "columns": 1,
@@ -44,6 +47,7 @@
       "name": "missed-follow-up-dashboard",
       "slot": "patient-chart-missed-follow-up-slot",
       "component": "missedFollowUpDashboard",
+      "privileges": "app:clinical.chart.missedFollowUp",
       "order": 0,
       "online": true,
       "offline": false
@@ -77,13 +81,15 @@
       "name": "case-management-form",
       "component": "caseManagementForm",
       "title": "Formulario de seguimiento de casos",
-      "type": "form"
+      "type": "form",
+      "privileges": "app:clinical.chart.caseMonitoring.edit"
     },
     {
       "name": "end-relationship-form",
       "component": "endRelationshipWorkspace",
       "title": "Finalizar seguimiento",
-      "type": "form"
+      "type": "form",
+      "privileges": "app:clinical.chart.caseMonitoring.edit"
     }
   ]
 }

@@ -8,6 +8,7 @@
       "name": "family-history",
       "slot": "patient-chart-family-history-slot",
       "component": "familyHistory",
+      "privileges": "app:clinical.chart.family",
       "order": 0,
       "online": true,
       "offline": false
@@ -16,6 +17,7 @@
       "name": "other-relationships",
       "slot": "patient-chart-family-history-slot",
       "component": "otherRelationships",
+      "privileges": "app:clinical.chart.family",
       "order": 1,
       "online": true,
       "offline": false
@@ -24,6 +26,7 @@
       "name": "relationships",
       "slot": "patient-chart-relationships-slot",
       "component": "relationships",
+      "privileges": "app:clinical.chart.family",
       "order": 0,
       "online": true,
       "offline": false
@@ -31,6 +34,7 @@
     {
       "name": "relationships-link",
       "component": "relationshipsLink",
+      "privileges": "app:clinical.chart.family",
       "slot": "patient-chart-dashboard-slot",
       "order": 11,
       "meta": {
@@ -45,35 +49,41 @@
   "modals": [
     {
       "name": "birth-date-calculator",
-      "component": "birthDateCalculator"
+      "component": "birthDateCalculator",
+      "privileges": "app:clinical.chart.family.edit"
     },
     {
       "name": "relationship-delete-confirm-dialog",
-      "component": "relationshipDeleteConfirmDialog"
+      "component": "relationshipDeleteConfirmDialog",
+      "privileges": "app:clinical.chart.family.edit"
     }
   ],
   "workspaces": [
     {
       "name": "family-relationship-form",
       "component": "familyRelationshipForm",
+      "privileges": "app:clinical.chart.family.edit",
       "title": "Formulario de relación familiar",
       "type": "form"
     },
     {
       "name": "other-relationship-form",
       "component": "otherRelationshipsForm",
+      "privileges": "app:clinical.chart.family.edit",
       "title": "Formulario de relación no familiar",
       "type": "form"
     },
     {
       "name": "relationship-update-form",
       "component": "relationshipUpdateForm",
+      "privileges": "app:clinical.chart.family.edit",
       "title": "Editar relación",
       "type": "form"
     },
     {
       "name": "contact-list-form",
       "component": "contactListForm",
+      "privileges": "app:clinical.chart.family.edit",
       "title": "Formulario de contactos sexuales",
       "type": "form"
     }
@@ -82,22 +92,26 @@
     {
       "name": "family-relationship-form",
       "component": "familyRelationshipForm",
-      "window": "patient-chart-family-record-forms"
+      "window": "patient-chart-family-record-forms",
+      "privileges": "app:clinical.chart.family.edit"
     },
     {
       "name": "other-relationship-form",
       "component": "otherRelationshipsForm",
-      "window": "patient-chart-family-record-forms"
+      "window": "patient-chart-family-record-forms",
+      "privileges": "app:clinical.chart.family.edit"
     },
     {
       "name": "relationship-update-form",
       "component": "relationshipUpdateForm",
-      "window": "patient-chart-family-record-forms"
+      "window": "patient-chart-family-record-forms",
+      "privileges": "app:clinical.chart.family.edit"
     },
     {
       "name": "contact-list-form",
       "component": "contactListForm",
-      "window": "patient-chart-family-record-forms"
+      "window": "patient-chart-family-record-forms",
+      "privileges": "app:clinical.chart.family.edit"
     }
   ],
   "workspaceWindows2": [

@@ -110,7 +110,18 @@ const OrderableConceptSearchResults: React.FC<OrderableConceptSearchResultsProps
         </h4>
         <p className={styles.bodyShort01}>
           <span>{t('tryTo', 'Try to')}</span>{' '}
-          <span className={styles.link} role="link" tabIndex={0} onClick={focusAndClearSearchInput}>
+          <span
+            className={styles.link}
+            role="link"
+            tabIndex={0}
+            onClick={focusAndClearSearchInput}
+            onKeyDown={(event: React.KeyboardEvent<HTMLSpanElement>) => {
+              if (event.key === 'Enter' || event.key === ' ') {
+                event.preventDefault();
+                focusAndClearSearchInput();
+              }
+            }}
+          >
             {t('searchAgain', 'search again')}
           </span>{' '}
           <span>{t('usingADifferentTerm', 'using a different term')}</span>
@@ -135,8 +146,13 @@ const TestTypeSearchSkeleton = () => {
         <SkeletonText className={styles.searchResultCntSkeleton} />
         <ButtonSkeleton size={buttonSize} />
       </div>
-      {[...Array(4)].map((_, index) => (
-        <Tile key={index} className={tileClassName}>
+      {[
+        'search-result-skeleton-1',
+        'search-result-skeleton-2',
+        'search-result-skeleton-3',
+        'search-result-skeleton-4',
+      ].map((skeletonId) => (
+        <Tile key={skeletonId} className={tileClassName}>
           <SkeletonText />
         </Tile>
       ))}

@@ -1,4 +1,6 @@
+@use "@carbon/colors";
 @use "@carbon/layout";
+@use "@carbon/type";
 @use "@openmrs/esm-styleguide/src/vars" as *;
 
 .page {
@@ -18,18 +20,27 @@
 }
 
 .header {
-  display: flex;
+  display: grid;
+  grid-template-columns: minmax(max-content, 1fr) auto;
   align-items: center;
-  justify-content: space-between;
   gap: layout.$spacing-05;
   margin-bottom: 1.5rem;
-  padding-right: layout.$spacing-03;
+  padding-right: layout.$spacing-05;
   background-color: $ui-02;
   border: 1px solid $ui-03;
   border-left: 0;
 }
 
+.headerContent {
+  min-width: max-content;
+}
+
+.headerContent p:last-child {
+  white-space: nowrap;
+}
+
 .headerAction {
+  justify-self: end;
   text-decoration: none;
 }
 
@@ -38,31 +49,45 @@
 }
 
 .summary {
-  display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
-  gap: 1px;
+  display: flex;
+  gap: 0;
   margin-bottom: 1rem;
-  background: #e0e0e0;
 }
 
-.summary div {
-  min-height: 5rem;
-  padding: 1rem;
-  background: #ffffff;
+.summaryTile {
+  display: flex;
+  flex: 1 1 0;
+  flex-direction: column;
+  justify-content: flex-start;
+  height: 7.875rem;
+  margin: layout.$spacing-03;
+  padding: layout.$spacing-05;
+  border: 1px solid colors.$gray-20;
+  background-color: colors.$white;
 }
 
-.summary span {
-  display: block;
-  margin-bottom: 0.5rem;
-  color: #525252;
-  font-size: 0.875rem;
-}
-
-.summary strong {
-  display: block;
-  font-size: 1.75rem;
+.summaryTileHeader {
+  @include type.type-style("heading-01");
+  color: colors.$gray-70;
   font-weight: 600;
-  line-height: 1.2;
+  line-height: 1.28572;
+  letter-spacing: 0.16px;
+}
+
+.summaryTileDetails {
+  margin-top: layout.$spacing-06;
+}
+
+.summaryTileLabel {
+  @include type.type-style("label-01");
+  color: $text-02;
+}
+
+.summaryTileValue {
+  color: colors.$black;
+  font-size: 1.75rem;
+  font-weight: 400;
+  line-height: 1.28572;
 }
 
 .controls {
@@ -80,21 +105,75 @@
 
 .table {
   width: 100%;
-  min-width: 78rem;
-  border-collapse: collapse;
+  min-width: 116rem;
+  table-layout: fixed;
 }
 
 .table th,
 .table td {
-  padding: 0.75rem 1rem;
-  border-bottom: 1px solid #e0e0e0;
-  text-align: left;
-  vertical-align: top;
+  vertical-align: middle;
 }
 
 .table th {
-  background: #f4f4f4;
-  font-weight: 600;
+  white-space: normal;
+}
+
+.table td {
+  overflow-wrap: anywhere;
+}
+
+.dateColumn {
+  width: 6rem;
+}
+
+.identifierColumn {
+  width: 8rem;
+}
+
+.documentTypeColumn {
+  width: 6rem;
+}
+
+.statusColumn {
+  width: 9rem;
+}
+
+.responsibleColumn {
+  width: 14rem;
+}
+
+.shortColumn {
+  width: 6rem;
+}
+
+.personColumn {
+  width: 13rem;
+}
+
+.addressColumn {
+  width: 12rem;
+}
+
+.ageColumn {
+  width: 7rem;
+}
+
+.serviceColumn {
+  width: 12rem;
+}
+
+.orderColumn {
+  width: 6rem;
+}
+
+.communicationColumn {
+  width: 12rem;
+}
+
+.table td:nth-child(11),
+.table td:nth-child(12),
+.table td:nth-child(14) {
+  text-align: center;
 }
 
 .patientLink {
@@ -119,7 +198,14 @@
 
   .header {
     align-items: flex-start;
-    flex-direction: column;
+    grid-template-columns: 1fr;
+    gap: layout.$spacing-03;
+    padding-right: layout.$spacing-04;
+    padding-bottom: layout.$spacing-04;
+  }
+
+  .headerAction {
+    justify-self: start;
   }
 
   .content {
@@ -129,5 +215,17 @@
   .summary,
   .controls {
     grid-template-columns: 1fr;
+  }
+
+  .summary {
+    display: grid;
+  }
+
+  .headerContent {
+    min-width: 0;
+  }
+
+  .headerContent p:last-child {
+    white-space: normal;
   }
 }

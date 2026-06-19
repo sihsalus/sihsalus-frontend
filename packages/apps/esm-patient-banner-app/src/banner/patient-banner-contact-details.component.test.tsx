@@ -11,7 +11,8 @@ import { useRelationships } from '../hooks/useRelationships';
 import { PatientBannerContactDetails } from './patient-banner-contact-details.component';
 
 vi.mock('@openmrs/esm-framework', async () => ({
-  ...(await vi.importActual('@openmrs/esm-framework')),
+  ...((await vi.importActual('@openmrs/esm-framework')) as object),
+  ageAsDuration: (await vi.importActual<typeof import('@openmrs/esm-utils')>('@openmrs/esm-utils')).ageAsDuration,
   ConfigurableLink: ({ children, to }: PropsWithChildren<{ to: string }>) => <a href={to}>{children}</a>,
   useConfig: vi.fn(),
   usePatient: vi.fn(),
@@ -57,6 +58,7 @@ const loadedPerson = {
 describe('PatientBannerContactDetails', () => {
   beforeEach(() => {
     vi.useFakeTimers();
+    vi.setSystemTime(new Date('2026-06-18T12:00:00Z'));
     mockUseConfig.mockReturnValue({
       additionalAttributeTypes: [],
       birthplaceAttributeTypeUuid: '8d8718c2-c2cc-11de-8d13-0010c6dffd0f',
@@ -108,6 +110,45 @@ describe('PatientBannerContactDetails', () => {
   afterEach(() => {
     vi.useRealTimers();
     vi.clearAllMocks();
+  });
+
+  it('does not render technical address metadata used for UBIGEO persistence', () => {
+    mockUsePatient.mockReturnValue({
+      isLoading: false,
+      patient: {
+        address: [
+          {
+            country: 'PERU',
+            extension: [
+              {
+                url: 'http://openmrs.org/fhir/StructureDefinition/address',
+                extension: [
+                  {
+                    url: 'http://openmrs.org/fhir/StructureDefinition/address#address1',
+                    valueString: 'UCAYALI',
+                  },
+                  {
+                    url: 'http://openmrs.org/fhir/StructureDefinition/address#address13',
+                    valueString: 'PERU|UCAYALI|ATALAYA|RAYMONDI|AGUAJAL',
+                  },
+                  {
+                    url: 'http://openmrs.org/fhir/StructureDefinition/address#address14',
+                    valueString: '2502010191',
+                  },
+                ],
+              },
+            ],
+            use: 'home',
+          },
+        ],
+      },
+    } as ReturnType<typeof usePatient>);
+
+    render(<PatientBannerContactDetails patientId={patientId} deceased={false} />);
+
+    expect(screen.getByText('UCAYALI')).toBeInTheDocument();
+    expect(screen.queryByText('2502010191')).not.toBeInTheDocument();
+    expect(screen.queryByText('PERU|UCAYALI|ATALAYA|RAYMONDI|AGUAJAL')).not.toBeInTheDocument();
   });
 
   it('stops showing infinite loading for identifiers and relationships', () => {
@@ -174,6 +215,7 @@ describe('PatientBannerContactDetails', () => {
     mockUseRelationships.mockReturnValue({
       data: [
         {
+          dni: '76543210',
           display: 'Juan Perez',
           relationshipType: 'Father',
           relativeAge: 60,
@@ -186,10 +228,42 @@ describe('PatientBannerContactDetails', () => {
 
     rerender(<PatientBannerContactDetails patientId={patientId} deceased={false} />);
 
-    expect(screen.getByText('DNI:').closest('li')).toHaveTextContent(/DNI:\s*12345678/i);
+    const identifiersSection = screen.getByText('Identifiers').parentElement;
+    const relationshipsSection = screen.getByText('Relationships').parentElement;
+    if (!identifiersSection || !relationshipsSection) {
+      throw new Error('Expected identifiers and relationships sections to render');
+    }
+
+    expect(within(identifiersSection).getByText('DNI:').closest('li')).toHaveTextContent(/DNI:\s*12345678/i);
     expect(screen.getByText(/Preferred/i)).toBeInTheDocument();
-    expect(screen.getByRole('link', { name: 'Juan Perez' })).toBeInTheDocument();
-    expect(screen.getByText('Father')).toBeInTheDocument();
+    expect(within(relationshipsSection).getByRole('link', { name: 'Juan Perez' })).toBeInTheDocument();
+    expect(within(relationshipsSection).getByText('Juan Perez').closest('li')).toHaveTextContent(
+      /Relationship:\s*Father.*DNI:\s*76543210.*Age:\s*60 yrs/,
+    );
+  });
+
+  it('renders demographic age with year, month, or week units', () => {
+    for (const { birthdate, expectedAge } of [
+      { birthdate: '2010-06-16', expectedAge: /16 years/i },
+      { birthdate: '2025-06-16', expectedAge: /12 months/i },
+      { birthdate: '2026-05-28', expectedAge: /3 weeks/i },
+      { birthdate: '2026-05-18', expectedAge: /4 weeks/i },
+    ]) {
+      mockUsePatientAdditionalAttributes.mockReturnValue({
+        additionalAttributes: [],
+        identifiers: [],
+        isLoading: false,
+        person: {
+          ...loadedPerson,
+          birthdate,
+        },
+      });
+
+      const { unmount } = render(<PatientBannerContactDetails patientId={patientId} deceased={false} />);
+
+      expect(screen.getByText('Age:').closest('li')).toHaveTextContent(expectedAge);
+      unmount();
+    }
   });
 
   it('renders affiliation details without duplicating ethnicity in contact details', () => {

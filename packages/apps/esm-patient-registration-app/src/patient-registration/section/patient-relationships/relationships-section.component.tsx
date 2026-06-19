@@ -20,7 +20,8 @@ import { type RegistrationConfig } from '../../../config-schema';
 import { moduleName } from '../../../constants';
 import { ResourcesContext } from '../../../offline.resources';
 import { Autosuggest } from '../../input/custom-input/autosuggest/autosuggest.component';
-import { fetchPerson, savePerson } from '../../patient-registration.resource';
+import { patientFamilyNameMaxLength, patientGivenNameMaxLength } from '../../patient-name-limits';
+import { fetchPerson, type PersonSearchResult, savePerson } from '../../patient-registration.resource';
 import { type FormValues, type RelationshipValue } from '../../patient-registration.types';
 import { PatientRegistrationContext } from '../../patient-registration-context';
 import { getEffectiveRegistrationConfig } from '../../peru-registration-config';
@@ -60,6 +61,8 @@ const defaultGenderOptions: Array<GenderOption> = [
   { value: 'unknown' },
 ];
 
+const invalidMinorResponsibleRelationshipLabels = new Set(['child', 'grandchild', 'hijo', 'nieto']);
+
 const initialResponsiblePersonValues: ResponsiblePersonFormValues = {
   givenName: '',
   middleName: '',
@@ -85,6 +88,82 @@ function getRelationshipKey(relationship: RelationshipValue) {
   );
 }
 
+function normalizeRelationshipLabel(label: string) {
+  return label
+    .trim()
+    .toLocaleLowerCase()
+    .normalize('NFD')
+    .replace(/\p{Diacritic}/gu, '');
+}
+
+function getUniqueRelationshipTypes(relationshipTypes: Array<RelationshipType>) {
+  const labels = new Set<string>();
+
+  return relationshipTypes.filter((relationshipType) => {
+    const normalizedLabel = normalizeRelationshipLabel(relationshipType.display);
+
+    if (!normalizedLabel || labels.has(normalizedLabel)) {
+      return false;
+    }
+
+    labels.add(normalizedLabel);
+    return true;
+  });
+}
+
+function getDisplayRelationshipTypes(relationshipTypes: Array<RelationshipType>, isMinor: boolean) {
+  const uniqueRelationshipTypes = getUniqueRelationshipTypes(relationshipTypes);
+
+  if (!isMinor) {
+    return uniqueRelationshipTypes;
+  }
+
+  return uniqueRelationshipTypes.filter(
+    (relationshipType) =>
+      !invalidMinorResponsibleRelationshipLabels.has(normalizeRelationshipLabel(relationshipType.display)),
+  );
+}
+
+function getAgeFromBirthdate(birthdate?: string) {
+  if (!birthdate) {
+    return undefined;
+  }
+
+  const birthdateValue = new Date(birthdate);
+  if (Number.isNaN(birthdateValue.getTime())) {
+    return undefined;
+  }
+
+  const today = new Date();
+  let age = today.getFullYear() - birthdateValue.getFullYear();
+  const hasHadBirthdayThisYear =
+    today.getMonth() > birthdateValue.getMonth() ||
+    (today.getMonth() === birthdateValue.getMonth() && today.getDate() >= birthdateValue.getDate());
+
+  if (!hasHadBirthdayThisYear) {
+    age -= 1;
+  }
+
+  return age;
+}
+
+function getPersonSearchResultAge(person?: PersonSearchResult | null) {
+  if (!person) {
+    return undefined;
+  }
+
+  return person.person?.age ?? person.age ?? getAgeFromBirthdate(person.person?.birthdate ?? person.birthdate);
+}
+
+function getPersonSearchResultDisplay(person?: PersonSearchResult | null) {
+  return person?.person?.display ?? person?.display ?? '';
+}
+
+function isMinorPersonSearchResult(person?: PersonSearchResult | null) {
+  const age = getPersonSearchResultAge(person);
+  return typeof age === 'number' && age < 18;
+}
+
 const RelationshipView: React.FC<RelationshipViewProps> = ({
   relationship,
   index,
@@ -93,11 +172,12 @@ const RelationshipView: React.FC<RelationshipViewProps> = ({
 }) => {
   const { t } = useTranslation(moduleName);
   const config = useConfig<RegistrationConfig>();
-  const { setFieldValue } = React.useContext(PatientRegistrationContext);
+  const effectiveConfig = config?.sections ? getEffectiveRegistrationConfig(config) : config;
+  const { setFieldValue, values } = React.useContext(PatientRegistrationContext);
   const [isInvalid, setIsInvalid] = useState(false);
-  const [personEntryMode, setPersonEntryMode] = useState<PersonEntryMode>(
-    relationship.relatedPersonUuid ? 'search' : 'create',
-  );
+  const [selectedExistingPerson, setSelectedExistingPerson] = useState<PersonSearchResult | null>(null);
+  const [selectedPersonInvalidText, setSelectedPersonInvalidText] = useState<string | null>(null);
+  const [personEntryMode, setPersonEntryMode] = useState<PersonEntryMode>('search');
   const [newPersonValues, setNewPersonValues] = useState<ResponsiblePersonFormValues>({
     ...initialResponsiblePersonValues,
     relationshipType: relationship.relationshipType ?? '',
@@ -108,6 +188,8 @@ const RelationshipView: React.FC<RelationshipViewProps> = ({
   const newRelationship = !relationship.uuid;
   const requiresRelatedPerson = newRelationship && !relationship.relatedPersonUuid;
   const genderOptions = config?.fieldConfigurations?.gender ?? defaultGenderOptions;
+  const minorResponsibleRelationshipTypes =
+    effectiveConfig?.relationshipOptions?.minorResponsibleRelationshipTypes ?? [];
 
   const personFormValues = useMemo(
     () => ({
@@ -117,7 +199,15 @@ const RelationshipView: React.FC<RelationshipViewProps> = ({
     [newPersonValues, relationship.relationshipType],
   );
 
-  const personFormErrors = useMemo(() => validateResponsiblePersonForm(personFormValues), [personFormValues]);
+  const requiresAdultResponsible = useMemo(
+    () => isMinorPatient(values) && minorResponsibleRelationshipTypes.includes(personFormValues.relationshipType),
+    [minorResponsibleRelationshipTypes, personFormValues.relationshipType, values],
+  );
+
+  const personFormErrors = useMemo(
+    () => validateResponsiblePersonForm(personFormValues, { requireAdult: requiresAdultResponsible }),
+    [personFormValues, requiresAdultResponsible],
+  );
 
   const handleRelationshipTypeChange = useCallback(
     (event) => {
@@ -135,15 +225,38 @@ const RelationshipView: React.FC<RelationshipViewProps> = ({
   );
 
   const handleSuggestionSelected = useCallback(
-    (field: string, selectedSuggestion: string) => {
-      setIsInvalid(!selectedSuggestion);
-      setFieldValue(field, selectedSuggestion);
-      if (!selectedSuggestion) {
+    (field: string, selectedSuggestion?: string, selectedPerson?: unknown) => {
+      const selectedPersonResult = selectedPerson as PersonSearchResult | undefined;
+      setSelectedExistingPerson(selectedPersonResult ?? null);
+      const selectedPersonIsUnderage = requiresAdultResponsible && isMinorPersonSearchResult(selectedPersonResult);
+
+      if (selectedPersonIsUnderage) {
+        setIsInvalid(true);
+        setSelectedPersonInvalidText(t('responsibleExistingPersonMustBeAdult', 'Responsible person must be an adult'));
+        setFieldValue(field, '');
         setFieldValue(`relationships[${index}].relatedPersonName`, '');
+        return;
       }
+
+      setSelectedPersonInvalidText(null);
+      setIsInvalid(!selectedSuggestion);
+      setFieldValue(field, selectedSuggestion ?? '');
+      setFieldValue(
+        `relationships[${index}].relatedPersonName`,
+        selectedSuggestion ? getPersonSearchResultDisplay(selectedPersonResult) : '',
+      );
     },
-    [index, setFieldValue],
+    [index, requiresAdultResponsible, setFieldValue, t],
   );
+
+  useEffect(() => {
+    if (requiresAdultResponsible && isMinorPersonSearchResult(selectedExistingPerson)) {
+      setIsInvalid(true);
+      setSelectedPersonInvalidText(t('responsibleExistingPersonMustBeAdult', 'Responsible person must be an adult'));
+      setFieldValue(`relationships[${index}].relatedPersonUuid`, '');
+      setFieldValue(`relationships[${index}].relatedPersonName`, '');
+    }
+  }, [index, requiresAdultResponsible, selectedExistingPerson, setFieldValue, t]);
 
   const searchPerson = async (query: string) => {
     const abortController = new AbortController();
@@ -211,7 +324,7 @@ const RelationshipView: React.FC<RelationshipViewProps> = ({
 
   const handleCreatePerson = useCallback(async () => {
     setCreatePersonError(null);
-    const errors = validateResponsiblePersonForm(personFormValues);
+    const errors = validateResponsiblePersonForm(personFormValues, { requireAdult: requiresAdultResponsible });
 
     if (hasResponsiblePersonFormErrors(errors)) {
       markAllNewPersonFieldsTouched();
@@ -244,12 +357,12 @@ const RelationshipView: React.FC<RelationshipViewProps> = ({
     } finally {
       setIsSavingPerson(false);
     }
-  }, [index, markAllNewPersonFieldsTouched, personFormValues, setFieldValue, t]);
+  }, [index, markAllNewPersonFieldsTouched, personFormValues, requiresAdultResponsible, setFieldValue, t]);
 
   return relationship.action !== 'DELETE' ? (
     <div className={styles.relationship}>
       <div className={styles.relationshipHeader}>
-        <h4 className={styles.productiveHeading}>{t('relationshipPlaceholder', 'Relationship')}</h4>
+        <h4 className={styles.productiveHeading}>{t('relationshipPlaceholder', 'Family member or companion')}</h4>
         <Button
           kind="ghost"
           iconDescription={t('deleteRelationshipTooltipText', 'Delete')}
@@ -286,25 +399,29 @@ const RelationshipView: React.FC<RelationshipViewProps> = ({
       {requiresRelatedPerson ? (
         <div className={styles.personEntry}>
           <ContentSwitcher
+            className={styles.personEntrySwitcher}
             size="sm"
-            selectedIndex={personEntryMode === 'create' ? 0 : 1}
+            selectedIndex={personEntryMode === 'search' ? 0 : 1}
             onChange={handlePersonEntryModeChange}
           >
-            <Switch name="create" text={t('createResponsiblePerson', 'Register new person')} />
             <Switch name="search" text={t('searchExistingPerson', 'Search existing person')} />
+            <Switch name="create" text={t('createResponsiblePerson', 'Register new person')} />
           </ContentSwitcher>
           {personEntryMode === 'search' ? (
             <div className={styles.searchBox}>
-              <Autosuggest
+              <Autosuggest<PersonSearchResult>
                 id={`relationships[${index}].relatedPersonUuid`}
                 labelText={t('relativeFullNameLabelText', 'Full name')}
                 placeholder={t('relativeNamePlaceholder', 'Firstname Familyname')}
                 defaultValue={relationship.relatedPersonName}
                 onSuggestionSelected={handleSuggestionSelected}
                 invalid={isInvalid}
-                invalidText={t('relationshipPersonMustExist', 'Related person must be an existing person')}
+                invalidText={
+                  selectedPersonInvalidText ??
+                  t('relationshipPersonMustExist', 'Family member or companion must be an existing person')
+                }
                 getSearchResults={searchPerson}
-                getDisplayValue={(item) => item.display}
+                getDisplayValue={(item) => getPersonSearchResultDisplay(item)}
                 getFieldValue={(item) => item.uuid}
               />
             </div>
@@ -324,6 +441,7 @@ const RelationshipView: React.FC<RelationshipViewProps> = ({
                     id={`relationships[${index}].newPerson.givenName`}
                     labelText={t('responsibleGivenName', 'First name')}
                     value={newPersonValues.givenName}
+                    maxLength={patientGivenNameMaxLength}
                     onChange={handleNewPersonFieldChange('givenName')}
                     onBlur={markNewPersonFieldTouched('givenName')}
                     invalid={!!getFieldError('givenName', personFormErrors)}
@@ -336,6 +454,7 @@ const RelationshipView: React.FC<RelationshipViewProps> = ({
                     id={`relationships[${index}].newPerson.middleName`}
                     labelText={t('responsibleMiddleName', 'Middle name (optional)')}
                     value={newPersonValues.middleName}
+                    maxLength={patientGivenNameMaxLength}
                     onChange={handleNewPersonFieldChange('middleName')}
                     onBlur={markNewPersonFieldTouched('middleName')}
                     invalid={!!getFieldError('middleName', personFormErrors)}
@@ -347,6 +466,7 @@ const RelationshipView: React.FC<RelationshipViewProps> = ({
                     id={`relationships[${index}].newPerson.familyName`}
                     labelText={t('responsibleFamilyName', 'Family name')}
                     value={newPersonValues.familyName}
+                    maxLength={patientFamilyNameMaxLength}
                     onChange={handleNewPersonFieldChange('familyName')}
                     onBlur={markNewPersonFieldTouched('familyName')}
                     invalid={!!getFieldError('familyName', personFormErrors)}
@@ -359,6 +479,7 @@ const RelationshipView: React.FC<RelationshipViewProps> = ({
                     id={`relationships[${index}].newPerson.familyName2`}
                     labelText={t('responsibleFamilyName2', 'Second family name (optional)')}
                     value={newPersonValues.familyName2}
+                    maxLength={patientFamilyNameMaxLength}
                     onChange={handleNewPersonFieldChange('familyName2')}
                     onBlur={markNewPersonFieldTouched('familyName2')}
                     invalid={!!getFieldError('familyName2', personFormErrors)}
@@ -389,7 +510,11 @@ const RelationshipView: React.FC<RelationshipViewProps> = ({
                 <Layer>
                   <TextInput
                     id={`relationships[${index}].newPerson.estimatedAge`}
-                    labelText={t('responsibleEstimatedAge', 'Approximate age (optional)')}
+                    labelText={
+                      requiresAdultResponsible
+                        ? t('responsibleEstimatedAgeRequiredLabel', 'Approximate age')
+                        : t('responsibleEstimatedAge', 'Approximate age (optional)')
+                    }
                     value={newPersonValues.estimatedAge}
                     inputMode="numeric"
                     maxLength={3}
@@ -397,12 +522,13 @@ const RelationshipView: React.FC<RelationshipViewProps> = ({
                     onBlur={markNewPersonFieldTouched('estimatedAge')}
                     invalid={!!getFieldError('estimatedAge', personFormErrors)}
                     invalidText={getFieldError('estimatedAge', personFormErrors)}
+                    required={requiresAdultResponsible}
                   />
                 </Layer>
               </div>
               <div className={styles.createPersonActions}>
-                <Button type="button" kind="secondary" onClick={handleCreatePerson} disabled={isSavingPerson}>
-                  {t('createResponsiblePersonAction', 'Register person and use as responsible party')}
+                <Button type="button" kind="tertiary" size="md" onClick={handleCreatePerson} disabled={isSavingPerson}>
+                  {t('createResponsiblePersonAction', 'Register and link to patient')}
                 </Button>
                 {isSavingPerson ? (
                   <InlineLoading description={t('creatingResponsiblePerson', 'Creating person...')} />
@@ -421,7 +547,7 @@ const RelationshipView: React.FC<RelationshipViewProps> = ({
       )}
     </div>
   ) : (
-    <InlineNotification kind="info" title={t('relationshipRemovedText', 'Relationship removed')}>
+    <InlineNotification kind="info" title={t('relationshipRemovedText', 'Family member or companion removed')}>
       {
         <NotificationActionButton onClick={restoreRelationship}>
           {t('restoreRelationshipActionButton', 'Undo')}
@@ -449,6 +575,10 @@ export const RelationshipsSection: React.FC<RelationshipsSectionProps> = ({ defa
   const requiresResponsibleRelationship = isMinorPatient(values);
   const minorResponsibleRelationshipTypes = config?.relationshipOptions?.minorResponsibleRelationshipTypes ?? [];
   const hasRelationshipTypes = !!relationshipTypeResults?.length;
+  const visibleRelationshipTypes = useMemo(
+    () => getDisplayRelationshipTypes(displayRelationshipTypes, requiresResponsibleRelationship),
+    [displayRelationshipTypes, requiresResponsibleRelationship],
+  );
 
   useEffect(() => {
     if (hasRelationshipTypes) {
@@ -541,10 +671,10 @@ export const RelationshipsSection: React.FC<RelationshipsSectionProps> = ({ defa
               <InlineNotification
                 kind="warning"
                 lowContrast
-                title={t('responsibleRelationshipRequiredTitle', 'Responsible relationship required')}
+                title={t('responsibleRelationshipRequiredTitle', 'Responsible family member required')}
                 subtitle={t(
                   'responsibleRelationshipRequiredForMinor',
-                  'A responsible family member or guardian relationship is required for minors',
+                  'For minors, record a responsible family member, guardian, or legal representative.',
                 )}
               />
             ) : null}
@@ -554,7 +684,7 @@ export const RelationshipsSection: React.FC<RelationshipsSectionProps> = ({ defa
                     <RelationshipView
                       relationship={relationship}
                       index={index}
-                      displayRelationshipTypes={displayRelationshipTypes}
+                      displayRelationshipTypes={visibleRelationshipTypes}
                       remove={remove}
                     />
                   </div>
@@ -571,7 +701,7 @@ export const RelationshipsSection: React.FC<RelationshipsSectionProps> = ({ defa
                   })
                 }
               >
-                {t('addRelationshipButtonText', 'Add Relationship')}
+                {t('addRelationshipButtonText', 'Add family member or companion')}
               </Button>
             </div>
           </div>

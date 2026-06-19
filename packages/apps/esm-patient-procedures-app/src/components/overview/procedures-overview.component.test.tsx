@@ -4,6 +4,7 @@ import {
   launchWorkspace2,
   openmrsFetch,
   useConfig,
+  userHasAccess,
 } from '@openmrs/esm-framework';
 import { screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
@@ -15,10 +16,16 @@ import ProceduresOverview from './procedures-overview.component';
 const mockUseConfig = vi.mocked(useConfig<ConfigObject>);
 const mockOpenmrsFetch = vi.mocked(openmrsFetch);
 const mockLaunchWorkspace2 = vi.mocked(launchWorkspace2);
+const mockUserHasAccess = vi.mocked(userHasAccess);
 
 mockUseConfig.mockReturnValue({
   ...getDefaultsFromConfigSchema(configSchema),
   overviewPageSize: 5,
+});
+
+beforeEach(() => {
+  vi.clearAllMocks();
+  mockUserHasAccess.mockReturnValue(true);
 });
 
 describe('ProceduresOverview', () => {

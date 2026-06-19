@@ -44,7 +44,7 @@ export function useOrderEncounter(patientUuid: string): {
   isLoading: boolean;
   error: Error | null | undefined;
   encounterUuid: string | null | undefined;
-  mutate: () => void | Promise<unknown>;
+  mutate: () => Promise<unknown>;
 } {
   const { systemVisitEnabled, isLoadingSystemVisitSetting, errorFetchingSystemVisitSetting } = useSystemVisitSetting();
 
@@ -57,6 +57,10 @@ export function useOrderEncounter(patientUuid: string): {
     openmrsFetch,
   );
   const visit = useVisitOrOfflineVisit(patientUuid);
+  const wrapMutate = useCallback((mutator?: (...args: Array<unknown>) => unknown) => {
+    return () => Promise.resolve(mutator?.());
+  }, []);
+  const noOpMutate = useCallback(() => Promise.resolve(), []);
 
   const results = useMemo(() => {
     if (isLoadingSystemVisitSetting || errorFetchingSystemVisitSetting) {
@@ -65,7 +69,7 @@ export function useOrderEncounter(patientUuid: string): {
         isLoading: isLoadingSystemVisitSetting,
         error: errorFetchingSystemVisitSetting,
         encounterUuid: null,
-        mutate: () => {},
+        mutate: noOpMutate,
       };
     }
     return systemVisitEnabled
@@ -74,15 +78,23 @@ export function useOrderEncounter(patientUuid: string): {
           isLoading: visit?.isLoading,
           encounterUuid: visit?.currentVisit?.encounters?.[0]?.uuid,
           error: visit?.error,
-          mutate: visit?.mutate,
+          mutate: wrapMutate(visit?.mutate),
         }
       : {
           activeVisitRequired: false,
           isLoading: todayEncounter?.isLoading,
           encounterUuid: todayEncounter?.data?.data?.results?.[0]?.uuid,
           error: todayEncounter?.error,
-          mutate: todayEncounter?.mutate,
+          mutate: wrapMutate(todayEncounter?.mutate),
         };
-  }, [isLoadingSystemVisitSetting, errorFetchingSystemVisitSetting, visit, todayEncounter, systemVisitEnabled]);
+  }, [
+    isLoadingSystemVisitSetting,
+    errorFetchingSystemVisitSetting,
+    visit,
+    todayEncounter,
+    systemVisitEnabled,
+    noOpMutate,
+    wrapMutate,
+  ]);
   return results;
 }

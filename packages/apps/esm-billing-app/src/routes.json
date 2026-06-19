@@ -33,6 +33,7 @@
       "name": "billing-patient-summary",
       "component": "billingPatientSummary",
       "slot": "patient-chart-billing-dashboard-slot",
+      "privileges": "app:clinical.chart.billing",
       "order": 10,
       "meta": {
         "columnSpan": 4
@@ -42,6 +43,7 @@
       "name": "billing-summary-dashboard-link",
       "component": "billingSummaryDashboardLink",
       "slot": "patient-chart-dashboard-slot",
+      "privileges": "app:clinical.chart.billing",
       "order": 22,
       "meta": {
         "columns": 1,
@@ -97,11 +99,13 @@
     },
     {
       "name": "edit-bill-item-modal",
-      "component": "editBillLineItemModal"
+      "component": "editBillLineItemModal",
+      "privileges": "app:clinical.chart.billing.edit"
     },
     {
       "name": "edit-bill-line-item-modal",
-      "component": "editBillLineItemModal"
+      "component": "editBillLineItemModal",
+      "privileges": "app:clinical.chart.billing.edit"
     },
     {
       "name": "require-billing-modal",
@@ -109,14 +113,16 @@
     },
     {
       "name": "delete-line-item-confirmation-modal",
-      "component": "deleteLineItemConfirmationModal"
+      "component": "deleteLineItemConfirmationModal",
+      "privileges": "app:clinical.chart.billing.edit"
     }
   ],
   "workspaces2": [
     {
       "name": "billing-form-workspace",
       "component": "billingFormWorkspace",
-      "window": "billing-form-window"
+      "window": "billing-form-window",
+      "privileges": "app:clinical.chart.billing.edit"
     },
     {
       "name": "billable-service-form",

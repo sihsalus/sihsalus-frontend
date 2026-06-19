@@ -1,4 +1,4 @@
-import { Layer, Select, SelectItem } from '@carbon/react';
+import { ComboBox, Layer, Select, SelectItem } from '@carbon/react';
 import { reportError } from '@openmrs/esm-framework';
 import classNames from 'classnames';
 import { Field } from 'formik';
@@ -16,6 +16,8 @@ export interface CodedPersonAttributeFieldProps {
   label?: string;
   customConceptAnswers: Array<{ uuid: string; label?: string }>;
   required: boolean;
+  searchable?: boolean;
+  readOnly?: boolean;
 }
 
 export function CodedPersonAttributeField({
@@ -25,6 +27,8 @@ export function CodedPersonAttributeField({
   label,
   customConceptAnswers,
   required,
+  searchable,
+  readOnly,
 }: CodedPersonAttributeFieldProps) {
   const { data: conceptAnswers, isLoading: isLoadingConceptAnswers } = useConceptAnswers(
     customConceptAnswers.length ? '' : answerConceptSetUuid,
@@ -61,6 +65,7 @@ export function CodedPersonAttributeField({
         );
         setError(true);
       }
+
       if (conceptAnswers?.length === 0) {
         reportError(
           t(
@@ -81,6 +86,7 @@ export function CodedPersonAttributeField({
     if (customConceptAnswers.length) {
       return customConceptAnswers;
     }
+
     return isLoadingConceptAnswers || !conceptAnswers
       ? []
       : conceptAnswers
@@ -93,27 +99,51 @@ export function CodedPersonAttributeField({
   }
 
   return (
-    <div className={classNames(styles.customField, styles.halfWidthInDesktopView)}>
+    <div
+      className={classNames(styles.customField, styles.halfWidthInDesktopView, {
+        [styles.searchableCodedField]: searchable,
+      })}
+    >
       {!isLoadingConceptAnswers ? (
         <Layer>
           <Field name={fieldName}>
-            {({ field, form: { touched, errors }, meta }) => {
-              return (
-                <>
-                  <Select
+            {({ field, form: { setFieldValue, touched, errors } }) => {
+              const selectedAnswer = answers.find((answer) => answer.uuid === field.value) ?? null;
+              const invalid = Boolean(errors[fieldName] && touched[fieldName]);
+
+              if (searchable) {
+                return (
+                  <ComboBox
                     id={id}
-                    name={`person-attribute-${personAttributeType.uuid}`}
-                    labelText={labelText}
-                    invalid={errors[fieldName] && touched[fieldName]}
-                    required={required}
-                    {...field}
-                  >
-                    <SelectItem value={''} text={t('selectAnOption', 'Select an option')} />
-                    {answers.map((answer) => (
-                      <SelectItem key={answer.uuid} value={answer.uuid} text={answer.label} />
-                    ))}
-                  </Select>
-                </>
+                    items={answers}
+                    itemToString={(answer) => answer?.label ?? ''}
+                    selectedItem={selectedAnswer}
+                    titleText={labelText}
+                    placeholder={t('searchSelectAnOption', 'Search and select an option')}
+                    invalid={invalid}
+                    disabled={readOnly}
+                    onChange={({ selectedItem }) => {
+                      setFieldValue(fieldName, selectedItem?.uuid ?? '');
+                    }}
+                  />
+                );
+              }
+
+              return (
+                <Select
+                  id={id}
+                  name={`person-attribute-${personAttributeType.uuid}`}
+                  labelText={labelText}
+                  invalid={invalid}
+                  required={required}
+                  disabled={readOnly}
+                  {...field}
+                >
+                  <SelectItem value={''} text={t('selectAnOption', 'Select an option')} />
+                  {answers.map((answer) => (
+                    <SelectItem key={answer.uuid} value={answer.uuid} text={answer.label} />
+                  ))}
+                </Select>
               );
             }}
           </Field>

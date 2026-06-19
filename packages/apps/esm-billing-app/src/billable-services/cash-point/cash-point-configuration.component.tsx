@@ -30,7 +30,7 @@ const CashPointConfiguration: React.FC = () => {
     try {
       const response = await openmrsFetch(`${restBaseUrl}/billing/cashPoint?v=full`);
       setCashPoints(response.data.results || []);
-    } catch (err) {
+    } catch (_err) {
       showSnackbar({
         title: getCoreTranslation('error'),
         subtitle: t('errorFetchingCashPoints', 'An error occurred while fetching cash points.'),

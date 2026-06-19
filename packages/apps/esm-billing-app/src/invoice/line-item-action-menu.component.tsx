@@ -1,5 +1,12 @@
 import { Layer, OverflowMenu, OverflowMenuItem } from '@carbon/react';
-import { getCoreTranslation, isDesktop, showModal, useLayoutType } from '@openmrs/esm-framework';
+import {
+  getCoreTranslation,
+  isDesktop,
+  showModal,
+  useLayoutType,
+  userHasAccess,
+  useSession,
+} from '@openmrs/esm-framework';
 import React, { useCallback } from 'react';
 import { type LineItem, type MappedBill } from '../types';
 import styles from './line-item-action-menu.scss';
@@ -12,6 +19,8 @@ type LineItemActionMenuProps = {
 
 const LineItemActionMenu: React.FC<LineItemActionMenuProps> = ({ bill, item, onMutate }) => {
   const layout = useLayoutType();
+  const session = useSession();
+  const canEdit = userHasAccess('app:clinical.chart.billing.edit', session?.user);
 
   const handleEditLineItem = useCallback(() => {
     const dispose = showModal('edit-bill-line-item-modal', {
@@ -29,6 +38,10 @@ const LineItemActionMenu: React.FC<LineItemActionMenuProps> = ({ bill, item, onM
       onMutate,
     });
   }, [item, onMutate]);
+
+  if (!canEdit) {
+    return null;
+  }
 
   const isPending = bill?.status === 'PENDING';
 

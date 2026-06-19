@@ -14,6 +14,7 @@ export interface FieldDefinition {
   uuid: string;
   placeholder?: string;
   defaultValue?: string;
+  readOnlyOnCreate?: boolean;
   allowFutureDates?: boolean;
   allowPastDates?: boolean;
   showHeading: boolean;
@@ -24,6 +25,7 @@ export interface FieldDefinition {
   locationTag?: string;
   answerConceptSetUuid?: string;
   customConceptAnswers?: Array<CustomConceptAnswer>;
+  searchable?: boolean;
   showIf?: {
     foreignIdentifierPresent?: boolean;
   };
@@ -205,6 +207,12 @@ export const esmPatientRegistrationSchema = {
         _description:
           'Default value to apply for new registrations when this field has no existing value. For coded fields, use the answer concept UUID.',
       },
+      readOnlyOnCreate: {
+        _type: Type.Boolean,
+        _default: false,
+        _description:
+          'Whether the field should be visible but locked while creating a new patient. The field remains editable when editing an existing patient.',
+      },
       allowFutureDates: {
         _type: Type.Boolean,
         _default: true,
@@ -251,6 +259,11 @@ export const esmPatientRegistrationSchema = {
         _default: [],
         _description:
           'For coded questions only (obs or person attrbute). A list of custom concept answers. Overrides answers that come from the obs concept or from `answerSetConceptUuid`.',
+      },
+      searchable: {
+        _type: Type.Boolean,
+        _default: false,
+        _description: 'For coded fields only. Render the answer list as a searchable combobox instead of a select.',
       },
       showIf: {
         foreignIdentifierPresent: {

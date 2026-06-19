@@ -60,6 +60,21 @@ describe('responsible person utilities', () => {
     expect(errors.familyName).toBe('nameContainsInvalidCharacters');
   });
 
+  it('rejects responsible person names that exceed patient name limits', () => {
+    const errors = validateResponsiblePersonForm({
+      ...validResponsiblePerson,
+      givenName: 'A'.repeat(151),
+      middleName: 'B'.repeat(151),
+      familyName: 'C'.repeat(101),
+      familyName2: 'D'.repeat(101),
+    });
+
+    expect(errors.givenName).toBe('givenNameTooLong');
+    expect(errors.middleName).toBe('givenNameTooLong');
+    expect(errors.familyName).toBe('familyNameTooLong');
+    expect(errors.familyName2).toBe('familyNameTooLong');
+  });
+
   it('requires relationship type before creating a responsible person', () => {
     const errors = validateResponsiblePersonForm({
       ...validResponsiblePerson,
@@ -76,6 +91,21 @@ describe('responsible person utilities', () => {
     expect(validateResponsiblePersonForm({ ...validResponsiblePerson, estimatedAge: '121' }).estimatedAge).toBe(
       'estimatedAgeInvalid',
     );
+  });
+
+  it('requires an adult age when the related person must be responsible for a minor', () => {
+    expect(
+      validateResponsiblePersonForm({ ...validResponsiblePerson, estimatedAge: '' }, { requireAdult: true })
+        .estimatedAge,
+    ).toBe('responsibleEstimatedAgeRequired');
+    expect(
+      validateResponsiblePersonForm({ ...validResponsiblePerson, estimatedAge: '17' }, { requireAdult: true })
+        .estimatedAge,
+    ).toBe('responsiblePersonMustBeAdult');
+    expect(
+      validateResponsiblePersonForm({ ...validResponsiblePerson, estimatedAge: '18' }, { requireAdult: true })
+        .estimatedAge,
+    ).toBeUndefined();
   });
 
   it('formats the display name for the created person', () => {

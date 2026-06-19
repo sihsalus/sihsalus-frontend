@@ -1,7 +1,15 @@
 import { CircleDash } from '@carbon/react/icons';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { type DefaultWorkspaceProps, parseDate, showSnackbar, useConfig, useSession } from '@openmrs/esm-framework';
-import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import {
+  type DefaultWorkspaceProps,
+  openmrsFetch,
+  parseDate,
+  restBaseUrl,
+  showSnackbar,
+  useConfig,
+  useSession,
+} from '@openmrs/esm-framework';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { type FieldError, FormProvider, useForm } from 'react-hook-form';
 import { useTranslation } from 'react-i18next';
 import { type ConfigObject } from '../../config-schema';
@@ -13,6 +21,7 @@ import {
   type StockOperationType,
   StockOperationTypeIsStockIssue,
 } from '../../core/api/types/stockOperation/StockOperationType';
+import { type StockItemInventory } from '../../core/api/types/stockItem/StockItemInventory';
 import { type TabItem } from '../../core/components/tabs/types';
 import { otherUser, pick } from '../../core/utils/utils';
 import { useStockOperationAndItems } from '../stock-operations.resource';
@@ -99,29 +108,68 @@ const StockOperationForm: React.FC<StockOperationFormProps> = ({
       atLocationName: stockOperation?.atLocationName ?? '',
     },
     mode: 'all',
-    values: stockRequisitionUuid
-      ? {
-          sourceUuid: _stockOperation?.destinationUuid,
-          destinationUuid: _stockOperation?.sourceUuid,
-          operationTypeUuid: stockOperationType?.uuid,
-          stockOperationItems: (_stockOperation?.stockOperationItems && _stockOperation.stockOperationItems.length > 0
-            ? _stockOperation.stockOperationItems.map((item) =>
-                pick(
-                  { ...item, expiration: item?.expiration ? parseDate(String(item.expiration)) : undefined },
-                  stockOperationItemFormSchema.keyof().options,
-                ),
-              )
-            : []) as [BaseStockOperationItemFormData, ...BaseStockOperationItemFormData[]],
-          requisitionStockOperationUuid: stockRequisitionUuid,
-          responsiblePersonUuid: _stockOperation?.responsiblePersonUuid,
-          responsiblePersonOther: _stockOperation?.responsiblePersonOther,
-          operationDate: _stockOperation?.operationDate ? parseDate(String(_stockOperation.operationDate)) : today(),
-        }
-      : undefined,
     resolver: zodResolver(formschema),
   });
+  const initializedFromRequisition = useRef<string | null>(null);
   const [renderItemForm, setRenderItemForm] = useState(false);
   const [itemsFormProps, setItemFormProps] = useState<StockItemFormProps>();
+
+  useEffect(() => {
+    if (!stockRequisitionUuid || !_stockOperation?.uuid || initializedFromRequisition.current === stockRequisitionUuid) {
+      return;
+    }
+
+    const issueSourceUuid = _stockOperation.destinationUuid ?? '';
+
+    const getAvailableBatchUuid = async (item: StockOperationDTO['stockOperationItems'][number]) => {
+      if (!item.stockItemUuid || !issueSourceUuid) {
+        return item.stockBatchUuid;
+      }
+
+      try {
+        const response = await openmrsFetch<{ results?: Array<StockItemInventory> }>(
+          `${restBaseUrl}/stockmanagement/stockiteminventory?v=default&totalCount=true&startIndex=0&limit=100&stockItemUuid=${item.stockItemUuid}&partyUuid=${issueSourceUuid}&includeBatchNo=true&groupBy=LocationStockItemBatchNo`,
+        );
+        const availableBatches =
+          response.data.results?.filter((batch) => Number(batch.quantity ?? 0) >= Number(item.quantity ?? 0)) ?? [];
+
+        return availableBatches.length === 1 ? availableBatches[0].stockBatchUuid : item.stockBatchUuid;
+      } catch {
+        return item.stockBatchUuid;
+      }
+    };
+
+    (async () => {
+      const stockOperationItems = await Promise.all(
+        (_stockOperation.stockOperationItems ?? []).map(async (item) =>
+          pick(
+            {
+              ...item,
+              stockBatchUuid: await getAvailableBatchUuid(item),
+              expiration: item?.expiration ? parseDate(String(item.expiration)) : undefined,
+            },
+            stockOperationItemFormSchema.keyof().options,
+          ),
+        ),
+      );
+
+      form.reset({
+        ...form.getValues(),
+        sourceUuid: issueSourceUuid,
+        destinationUuid: _stockOperation.sourceUuid ?? '',
+        operationTypeUuid: stockOperationType?.uuid,
+        stockOperationItems: stockOperationItems as [
+          BaseStockOperationItemFormData,
+          ...BaseStockOperationItemFormData[],
+        ],
+        requisitionStockOperationUuid: stockRequisitionUuid,
+        responsiblePersonUuid: _stockOperation.responsiblePersonUuid,
+        responsiblePersonOther: _stockOperation.responsiblePersonOther,
+        operationDate: _stockOperation.operationDate ? parseDate(String(_stockOperation.operationDate)) : today(),
+      });
+      initializedFromRequisition.current = stockRequisitionUuid;
+    })();
+  }, [_stockOperation, form, stockOperationItemFormSchema, stockOperationType?.uuid, stockRequisitionUuid]);
 
   const handleLaunchStockItem = useCallback(
     (stockOperationItem?: BaseStockOperationItemFormData) => {
@@ -270,7 +318,7 @@ const StockOperationForm: React.FC<StockOperationFormProps> = ({
         <StockItemForm {...itemsFormProps} />
       ) : (
         <StockOperationStepper
-          steps={steps.map((tab, index) => ({
+          steps={steps.map((tab) => ({
             title: tab.name,
             component: tab.component,
             disabled: tab.disabled,

@@ -1,5 +1,5 @@
 import { Layer, OverflowMenu, OverflowMenuItem } from '@carbon/react';
-import { launchWorkspace2, showModal, useLayoutType } from '@openmrs/esm-framework';
+import { launchWorkspace2, showModal, useLayoutType, userHasAccess, useSession } from '@openmrs/esm-framework';
 import { useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
 import type { Procedure } from '../../types';
@@ -13,7 +13,8 @@ type ProceduresActionMenuProps = {
 export const ProceduresActionMenu = ({ procedure, patientUuid }: ProceduresActionMenuProps) => {
   const { t } = useTranslation();
   const isTablet = useLayoutType() === 'tablet';
-
+  const session = useSession();
+  const canEdit = userHasAccess('app:clinical.chart.procedures.edit', session?.user);
   const launchEditProcedureForm = useCallback(
     () =>
       launchWorkspace2('procedures-form-workspace', {
@@ -22,6 +23,10 @@ export const ProceduresActionMenu = ({ procedure, patientUuid }: ProceduresActio
       }),
     [procedure],
   );
+
+  if (!canEdit) {
+    return null;
+  }
 
   const launchDeleteProcedureDialog = (procedureUuid: string) => {
     const dispose = showModal('procedure-delete-confirmation-dialog', {

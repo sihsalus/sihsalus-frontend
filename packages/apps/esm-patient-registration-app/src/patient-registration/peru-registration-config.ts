@@ -2,7 +2,9 @@ import { type FieldDefinition, type RegistrationConfig, type SectionDefinition }
 
 export const peruDniPatientIdentifierTypeUuid = '550e8400-e29b-41d4-a716-446655440001';
 export const peruCarnetExtranjeriaPatientIdentifierTypeUuid = '550e8400-e29b-41d4-a716-446655440002';
+export const peruPassportPatientIdentifierTypeUuid = '550e8400-e29b-41d4-a716-446655440003';
 export const peruDiePatientIdentifierTypeUuid = '8d793bee-c2cc-11de-8d13-0010c6dffd0f';
+export const peruInsuranceTypeAttributeTypeUuid = '56188294-b42c-481d-a987-4b495116c580';
 export const peruInsuranceCodeAttributeTypeUuid = '374b130f-7457-476f-87b1-f182aa77c434';
 export const peruInsuranceAccreditationStatusAttributeTypeUuid = '9b3df0a1-0c58-4f55-9868-9c38f1db1005';
 export const peruInsuranceAccreditationCheckedAtAttributeTypeUuid = '9b3df0a1-0c58-4f55-9868-9c38f1db1006';
@@ -10,6 +12,7 @@ export const peruInsuranceAccreditationActiveConceptUuid = '9b3df0a1-0c58-4f55-9
 export const peruInsuranceAccreditationInactiveConceptUuid = '9b3df0a1-0c58-4f55-9868-9c38f1db2052';
 export const peruPhoneAttributeTypeUuid = '14d4f066-15f5-102d-96e4-000c29c2a5d7';
 export const peruMobilePhoneAttributeTypeUuid = 'fee4e8ef-aef8-4bb9-8ed0-7ded6055c61f';
+export const peruEmailAttributeTypeUuid = '4bdf3a33-2f63-11f0-8ab4-1a7535b1b3e8';
 
 const peruDefaultPatientIdentifierTypeUuids = [
   peruDniPatientIdentifierTypeUuid, // DNI
@@ -17,16 +20,18 @@ const peruDefaultPatientIdentifierTypeUuids = [
 
 export const peruForeignPatientIdentifierTypeUuids = [
   peruCarnetExtranjeriaPatientIdentifierTypeUuid, // Carné de Extranjería
-  '550e8400-e29b-41d4-a716-446655440003', // Pasaporte
+  peruPassportPatientIdentifierTypeUuid, // Pasaporte
   peruDiePatientIdentifierTypeUuid, // Documento de Identidad Extranjero
 ];
 
 const peruPreRegistrationSections = ['identityLookup'];
 const peruSections = ['filiation', 'bloodData', 'insurance', 'responsiblePerson', 'medicalRecord'];
+const peruResponsiblePersonSection = 'responsiblePerson';
 const peruIdentityLookupFieldOrder = ['id', 'reniecLookup', 'sisLookup'];
 const peruDemographicsFieldOrder = ['name', 'dob', 'gender', 'nationality'];
-const peruContactFieldOrder = ['address', 'birthAddress', 'phone', 'mobilePhone'];
-const peruPhoneValidationRegex = '^\\+?[0-9][0-9\\s().-]{5,19}$';
+const peruContactFieldOrder = ['address', 'birthAddress', 'phone', 'mobilePhone', 'email'];
+const peruPhoneValidationRegex = '^\\+?[0-9]{6,19}$';
+const peruEmailValidationRegex = '^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$';
 const minorResponsibleRelationshipTypes = [
   '8d91a210-c2cc-11de-8d13-0010c6dffdff/aIsToB',
   '8d91a210-c2cc-11de-8d13-0010c6dffd0f/aIsToB',
@@ -42,7 +47,7 @@ const peruSectionDefinitions: Array<SectionDefinition> = [
   {
     id: 'contact',
     name: 'Residencia, nacimiento y contacto',
-    fields: ['address', 'birthAddress', 'phone', 'mobilePhone'],
+    fields: ['address', 'birthAddress', 'phone', 'mobilePhone', 'email'],
   },
   {
     id: 'filiation',
@@ -81,6 +86,14 @@ const peruFieldDefinitions: Array<FieldDefinition> = [
     validation: { required: false, matches: peruPhoneValidationRegex },
   },
   {
+    id: 'email',
+    type: 'person attribute',
+    uuid: peruEmailAttributeTypeUuid,
+    label: 'Correo Electrónico',
+    showHeading: false,
+    validation: { required: false, matches: peruEmailValidationRegex },
+  },
+  {
     id: 'nationality',
     type: 'person attribute',
     uuid: '9b3df0a1-0c58-4f55-9868-9c38f1db1007',
@@ -111,6 +124,7 @@ const peruFieldDefinitions: Array<FieldDefinition> = [
     label: 'Etnia',
     showHeading: false,
     answerConceptSetUuid: '70482c1e-181e-416d-a0c4-a93919f9f2ef',
+    searchable: true,
   },
   {
     id: 'nativeLanguage',
@@ -145,7 +159,7 @@ const peruFieldDefinitions: Array<FieldDefinition> = [
   {
     id: 'insuranceType',
     type: 'person attribute',
-    uuid: '56188294-b42c-481d-a987-4b495116c580',
+    uuid: peruInsuranceTypeAttributeTypeUuid,
     label: 'Tipo de seguro',
     showHeading: false,
     answerConceptSetUuid: '6b932638-242e-49ef-8ba7-0ae87199835c',
@@ -205,6 +219,7 @@ const peruFieldDefinitions: Array<FieldDefinition> = [
       { uuid: '9b3df0a1-0c58-4f55-9868-9c38f1db2033', label: 'Eliminada' },
     ],
     defaultValue: '9b3df0a1-0c58-4f55-9868-9c38f1db2031',
+    readOnlyOnCreate: true,
   },
   {
     id: 'medicalRecordArchiveType',
@@ -218,6 +233,7 @@ const peruFieldDefinitions: Array<FieldDefinition> = [
       { uuid: '9b3df0a1-0c58-4f55-9868-9c38f1db2042', label: 'Archivo especial' },
     ],
     defaultValue: '9b3df0a1-0c58-4f55-9868-9c38f1db2041',
+    readOnlyOnCreate: true,
   },
   {
     id: 'insuranceAccreditationStatus',
@@ -354,6 +370,21 @@ function orderPeruContactSection(sectionDefinitions: Array<SectionDefinition>) {
   });
 }
 
+function placeResponsiblePersonAfterDemographics(sections: Array<string>) {
+  const responsiblePersonIndex = sections.indexOf(peruResponsiblePersonSection);
+
+  if (responsiblePersonIndex === -1) {
+    return sections;
+  }
+
+  sections.splice(responsiblePersonIndex, 1);
+  const demographicsIndex = sections.indexOf('demographics');
+  const insertionIndex = demographicsIndex === -1 ? sections.length : demographicsIndex + 1;
+  sections.splice(insertionIndex, 0, peruResponsiblePersonSection);
+
+  return sections;
+}
+
 export function getEffectiveRegistrationConfig(config: RegistrationConfig): RegistrationConfig {
   const sections = config.sections.filter(
     (section) =>
@@ -382,6 +413,8 @@ export function getEffectiveRegistrationConfig(config: RegistrationConfig): Regi
     sections.splice(insertionIndex, 0, section);
     insertionIndex += 1;
   });
+
+  placeResponsiblePersonAfterDemographics(sections);
 
   const defaultPatientIdentifierTypes = [
     ...config.defaultPatientIdentifierTypes,

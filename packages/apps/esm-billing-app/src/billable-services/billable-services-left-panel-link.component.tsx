@@ -7,7 +7,11 @@ export interface BillableServicesLinkConfig {
   name: string;
   title: string;
   path: string;
-  icon?: React.ComponentType<any>;
+  icon?: React.ComponentType<{
+    className?: string;
+    size?: string | number;
+    'aria-hidden'?: string | boolean;
+  }>;
   privilege?: string;
 }
 

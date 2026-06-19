@@ -4,6 +4,7 @@ import { esmPatientRegistrationSchema, type RegistrationConfig } from '../config
 import {
   getEffectiveRegistrationConfig,
   peruDniPatientIdentifierTypeUuid,
+  peruEmailAttributeTypeUuid,
   peruForeignPatientIdentifierTypeUuids,
   peruPhoneAttributeTypeUuid,
 } from './peru-registration-config';
@@ -23,7 +24,7 @@ describe('getEffectiveRegistrationConfig', () => {
     expect(demographics?.fields).toEqual(['name', 'dob', 'gender', 'nationality']);
     expect(contact).toMatchObject({
       id: 'contact',
-      fields: ['address', 'birthAddress', 'phone', 'mobilePhone'],
+      fields: ['address', 'birthAddress', 'phone', 'mobilePhone', 'email'],
     });
     expect(filiation?.fields).not.toContain('birthplace');
     expect(filiation?.fields).not.toContain('bloodGroup');
@@ -63,11 +64,11 @@ describe('getEffectiveRegistrationConfig', () => {
     expect(config.sections).toEqual([
       'identityLookup',
       'demographics',
+      'responsiblePerson',
       'contact',
       'filiation',
       'bloodData',
       'insurance',
-      'responsiblePerson',
       'medicalRecord',
     ]);
     expect(config.sections).not.toContain('relationships');
@@ -106,6 +107,8 @@ describe('getEffectiveRegistrationConfig', () => {
 
     expect(fieldsById.medicalRecordStatus.defaultValue).toBe('9b3df0a1-0c58-4f55-9868-9c38f1db2031');
     expect(fieldsById.medicalRecordArchiveType.defaultValue).toBe('9b3df0a1-0c58-4f55-9868-9c38f1db2041');
+    expect(fieldsById.medicalRecordStatus.readOnlyOnCreate).toBe(true);
+    expect(fieldsById.medicalRecordArchiveType.readOnlyOnCreate).toBe(true);
     expect(fieldsById.insuranceAccreditationStatus.defaultValue).toBe('9b3df0a1-0c58-4f55-9868-9c38f1db2054');
     expect(fieldsById.civilStatus.customConceptAnswers).toContainEqual({
       uuid: 'a10b6eeb-287f-4580-8ba7-9c8ee78a6ffc',
@@ -128,9 +131,17 @@ describe('getEffectiveRegistrationConfig', () => {
     expect(config.sectionDefinitions.find((section) => section.id === 'identityLookup')?.fields).toContain('sisLookup');
     expect(config.sectionDefinitions.find((section) => section.id === 'insurance')?.fields).not.toContain('sisLookup');
     expect(config.fieldConfigurations.phone.personAttributeUuid).toBe(peruPhoneAttributeTypeUuid);
-    expect(config.fieldConfigurations.phone.validation?.matches).toBe('^\\+?[0-9][0-9\\s().-]{5,19}$');
+    expect(config.fieldConfigurations.phone.validation?.matches).toBe('^\\+?[0-9]{6,19}$');
     expect(config.sectionDefinitions.find((section) => section.id === 'contact')?.fields).toContain('birthAddress');
+    expect(config.sectionDefinitions.find((section) => section.id === 'contact')?.fields).toContain('email');
     expect(config.sectionDefinitions.find((section) => section.id === 'contact')?.fields).not.toContain('birthplace');
+    expect(fieldsById.email).toMatchObject({
+      id: 'email',
+      type: 'person attribute',
+      uuid: peruEmailAttributeTypeUuid,
+      label: 'Correo Electrónico',
+      validation: { required: false, matches: '^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$' },
+    });
     expect(fieldsById.birthplace).toBeUndefined();
     expect(fieldsById.gender?.defaultValue).toBeUndefined();
     expect(fieldsById.bloodGroup.defaultValue).toBeUndefined();
@@ -146,11 +157,11 @@ describe('getEffectiveRegistrationConfig', () => {
     expect(config.sections).toEqual([
       'identityLookup',
       'demographics',
+      'responsiblePerson',
       'contact',
       'filiation',
       'bloodData',
       'insurance',
-      'responsiblePerson',
       'medicalRecord',
     ]);
   });
@@ -172,6 +183,7 @@ describe('getEffectiveRegistrationConfig', () => {
       'birthAddress',
       'phone',
       'mobilePhone',
+      'email',
     ]);
   });
 });

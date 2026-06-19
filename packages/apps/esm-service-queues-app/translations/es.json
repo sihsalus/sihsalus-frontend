@@ -242,5 +242,6 @@
   "vitalsNotRecordedForVisit": "No se han registrado los signos vitales para este paciente en esta consulta",
   "waitingFor": "En espera para",
   "waitTime": "Tiempo de espera",
-  "weight": "Peso"
+  "weight": "Peso",
+  "years": "años"
 }

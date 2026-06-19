@@ -1,5 +1,6 @@
-@use '@carbon/layout';
-@use '@openmrs/esm-styleguide/src/vars' as *;
+@use "@carbon/layout";
+@use "@carbon/type";
+@use "@openmrs/esm-styleguide/src/vars" as *;
 
 .button {
   height: layout.$spacing-10;
@@ -19,8 +20,11 @@
 }
 
 .radioGroup {
-  background-color: $ui-01;
-  padding: layout.$spacing-05;
+  margin-top: layout.$spacing-03;
+  margin-left: layout.$spacing-07;
+  padding: layout.$spacing-03 layout.$spacing-04;
+  border-left: 2px solid $ui-03;
+  background-color: transparent;
 }
 
 .radioButton {
@@ -32,6 +36,17 @@
 
 .space05 {
   margin: layout.$spacing-05 0;
+}
+
+.identifierLabel {
+  display: flex;
+  flex-direction: column;
+  gap: layout.$spacing-01;
+}
+
+.identifierDescription {
+  @include type.type-style("label-01");
+  color: $text-02;
 }
 
 :global(.omrs-breakpoint-lt-desktop) {

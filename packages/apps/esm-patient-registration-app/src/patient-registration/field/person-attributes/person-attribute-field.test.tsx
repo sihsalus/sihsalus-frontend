@@ -29,7 +29,7 @@ const mockPersonAttributeType = {
   description: 'The person who referred the patient',
 };
 
-let fieldDefinition: FieldDefinition = {
+const baseFieldDefinition: FieldDefinition = {
   id: 'referredby',
   label: 'Referred by',
   type: 'person attribute',
@@ -42,12 +42,23 @@ let fieldDefinition: FieldDefinition = {
   showHeading: true,
 };
 
+let fieldDefinition: FieldDefinition = { ...baseFieldDefinition };
+
 describe('PersonAttributeField', () => {
   beforeEach(() => {
+    fieldDefinition = { ...baseFieldDefinition };
     mockUsePersonAttributeType.mockReturnValue({
       data: mockPersonAttributeType,
       isLoading: false,
       error: null,
+    });
+    mockUseConceptAnswers.mockReturnValue({
+      data: [
+        { uuid: '1', display: 'Option 1' },
+        { uuid: '2', display: 'Option 2' },
+      ],
+      error: null,
+      isLoading: false,
     });
   });
 
@@ -118,6 +129,72 @@ describe('PersonAttributeField', () => {
     expect(input.type).toBe('select-one');
     expect(screen.getByText('Option 1')).toBeInTheDocument();
     expect(screen.getByText('Option 2')).toBeInTheDocument();
+  });
+
+  it('locks read-only-on-create coded attributes when creating a new patient', () => {
+    mockUsePersonAttributeType.mockReturnValue({
+      data: { ...mockPersonAttributeType, format: 'org.openmrs.Concept' },
+      isLoading: false,
+      error: null,
+    });
+
+    render(
+      <Formik initialValues={{ attributes: {} }} onSubmit={() => {}}>
+        <Form>
+          <PatientRegistrationContext.Provider
+            value={
+              {
+                inEditMode: false,
+                values: { attributes: {} },
+              } as unknown as PatientRegistrationContextProps
+            }
+          >
+            <PersonAttributeField
+              fieldDefinition={{
+                ...fieldDefinition,
+                readOnlyOnCreate: true,
+                customConceptAnswers: [{ uuid: 'active', label: 'Activa' }],
+              }}
+            />
+          </PatientRegistrationContext.Provider>
+        </Form>
+      </Formik>,
+    );
+
+    expect(screen.getByLabelText(/Referred by/i)).toBeDisabled();
+  });
+
+  it('keeps read-only-on-create coded attributes editable while editing an existing patient', () => {
+    mockUsePersonAttributeType.mockReturnValue({
+      data: { ...mockPersonAttributeType, format: 'org.openmrs.Concept' },
+      isLoading: false,
+      error: null,
+    });
+
+    render(
+      <Formik initialValues={{ attributes: {} }} onSubmit={() => {}}>
+        <Form>
+          <PatientRegistrationContext.Provider
+            value={
+              {
+                inEditMode: true,
+                values: { attributes: {} },
+              } as unknown as PatientRegistrationContextProps
+            }
+          >
+            <PersonAttributeField
+              fieldDefinition={{
+                ...fieldDefinition,
+                readOnlyOnCreate: true,
+                customConceptAnswers: [{ uuid: 'active', label: 'Activa' }],
+              }}
+            />
+          </PatientRegistrationContext.Provider>
+        </Form>
+      </Formik>,
+    );
+
+    expect(screen.getByLabelText(/Referred by/i)).not.toBeDisabled();
   });
 
   it('applies a configured default value for new registrations', async () => {

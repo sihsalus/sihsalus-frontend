@@ -1,11 +1,11 @@
 import { Grid, Row } from '@carbon/react';
 import { ExtensionSlot, useConnectivity, useSession } from '@openmrs/esm-framework';
-import { AppErrorBoundary } from '@sihsalus/esm-rbac';
+import { AppErrorBoundary, RequirePrivilege } from '@sihsalus/esm-rbac';
 import classNames from 'classnames';
 import { useMemo } from 'react';
 import { BrowserRouter, Route, Routes } from 'react-router-dom';
 import useSWRImmutable from 'swr/immutable';
-
+import BulkPatientImport from './bulk-patient-import/bulk-patient-import.component';
 import {
   fetchAddressTemplate,
   fetchAllRelationshipTypes,
@@ -16,6 +16,8 @@ import {
 import { FormManager } from './patient-registration/form-manager';
 import { PatientRegistration } from './patient-registration/patient-registration.component';
 import styles from './root.scss';
+
+const admissionPrivilege = 'app:adt';
 
 export default function Root() {
   const isOnline = useConnectivity();
@@ -42,40 +44,46 @@ export default function Root() {
 
   return (
     <AppErrorBoundary appName="esm-patient-registration-app">
-      <main className={classNames('omrs-main-content', styles.root)}>
-        <Grid className={styles.grid}>
-          <Row>
-            <ExtensionSlot name="breadcrumbs-slot" />
-          </Row>
-          <ResourcesContext.Provider
-            value={{
-              addressTemplate,
-              addressTemplateError,
-              isLoadingAddressTemplate,
-              relationshipTypes,
-              relationshipTypesError,
-              isLoadingRelationshipTypes,
-              identifierTypes: identifierTypes ?? [],
-              identifierTypesError,
-              isLoadingIdentifierTypes,
-              currentSession,
-            }}
-          >
-            <BrowserRouter basename={globalThis.getOpenmrsSpaBase()}>
-              <Routes>
-                <Route
-                  path="patient-registration"
-                  element={<PatientRegistration savePatientForm={savePatientForm} isOffline={!isOnline} />}
-                />
-                <Route
-                  path="patient/:patientUuid/edit"
-                  element={<PatientRegistration savePatientForm={savePatientForm} isOffline={!isOnline} />}
-                />
-              </Routes>
-            </BrowserRouter>
-          </ResourcesContext.Provider>
-        </Grid>
-      </main>
+      <RequirePrivilege
+        privilege={admissionPrivilege}
+        description="Necesita permisos de admision para registrar o editar pacientes."
+      >
+        <main className={classNames('omrs-main-content', styles.root)}>
+          <Grid className={styles.grid}>
+            <Row>
+              <ExtensionSlot name="breadcrumbs-slot" />
+            </Row>
+            <ResourcesContext.Provider
+              value={{
+                addressTemplate,
+                addressTemplateError,
+                isLoadingAddressTemplate,
+                relationshipTypes,
+                relationshipTypesError,
+                isLoadingRelationshipTypes,
+                identifierTypes: identifierTypes ?? [],
+                identifierTypesError,
+                isLoadingIdentifierTypes,
+                currentSession,
+              }}
+            >
+              <BrowserRouter basename={globalThis.getOpenmrsSpaBase()}>
+                <Routes>
+                  <Route
+                    path="patient-registration"
+                    element={<PatientRegistration savePatientForm={savePatientForm} isOffline={!isOnline} />}
+                  />
+                  <Route
+                    path="patient/:patientUuid/edit"
+                    element={<PatientRegistration savePatientForm={savePatientForm} isOffline={!isOnline} />}
+                  />
+                  <Route path="patient-import" element={<BulkPatientImport isOffline={!isOnline} />} />
+                </Routes>
+              </BrowserRouter>
+            </ResourcesContext.Provider>
+          </Grid>
+        </main>
+      </RequirePrivilege>
     </AppErrorBoundary>
   );
 }

@@ -1,21 +1,26 @@
-import { AppErrorBoundary } from '@sihsalus/esm-rbac';
+import { AppErrorBoundary, RequirePrivilege } from '@sihsalus/esm-rbac';
 import { BrowserRouter, Route, Routes } from 'react-router-dom';
 
-import { basePath, dashboardPath, spaRoot } from './constants';
+import { basePath, clinicalChartPrivilege, dashboardPath, spaRoot } from './constants';
 import PatientChart from './patient-chart/patient-chart.component';
 import styles from './root.scss';
 
 export default function Root() {
   return (
     <AppErrorBoundary appName="esm-patient-chart-app">
-      <div className={styles.patientChartWrapper}>
-        <BrowserRouter basename={spaRoot}>
-          <Routes>
-            <Route path={basePath} element={<PatientChart />} />
-            <Route path={dashboardPath} element={<PatientChart />} />
-          </Routes>
-        </BrowserRouter>
-      </div>
+      <RequirePrivilege
+        privilege={clinicalChartPrivilege}
+        description="Necesita el privilegio de historia clinica para acceder al chart del paciente."
+      >
+        <div className={styles.patientChartWrapper}>
+          <BrowserRouter basename={spaRoot}>
+            <Routes>
+              <Route path={basePath} element={<PatientChart />} />
+              <Route path={dashboardPath} element={<PatientChart />} />
+            </Routes>
+          </BrowserRouter>
+        </div>
+      </RequirePrivilege>
     </AppErrorBoundary>
   );
 }

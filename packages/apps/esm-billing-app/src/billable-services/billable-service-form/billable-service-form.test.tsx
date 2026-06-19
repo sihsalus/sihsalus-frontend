@@ -150,7 +150,7 @@ describe('BillableServiceFormWorkspace', () => {
     renderBillableServicesForm({ closeWorkspace: mockCloseWorkspace });
 
     await fillRequiredFields(user);
-    mockCreateBillableService.mockResolvedValue({} as FetchResponse<any>);
+    mockCreateBillableService.mockResolvedValue({} as FetchResponse<unknown>);
 
     await submitForm();
 
@@ -193,7 +193,7 @@ describe('BillableServiceFormWorkspace', () => {
       });
 
       await fillRequiredFields(user);
-      mockCreateBillableService.mockResolvedValue({} as FetchResponse<any>);
+      mockCreateBillableService.mockResolvedValue({} as FetchResponse<unknown>);
       await submitForm();
 
       await waitFor(() => {
@@ -203,11 +203,11 @@ describe('BillableServiceFormWorkspace', () => {
 
     test('should disable buttons during submission', async () => {
       const user = userEvent.setup();
-      let resolveCreate: (value: any) => void;
-      const createPromise = new Promise((resolve) => {
+      let resolveCreate: ((value: FetchResponse<unknown>) => void) | undefined;
+      const createPromise = new Promise<FetchResponse<unknown>>((resolve) => {
         resolveCreate = resolve;
       });
-      mockCreateBillableService.mockReturnValue(createPromise as any);
+      mockCreateBillableService.mockReturnValue(createPromise);
 
       renderBillableServicesForm();
 
@@ -224,7 +224,7 @@ describe('BillableServiceFormWorkspace', () => {
         expect(cancelButton).toBeDisabled();
       });
 
-      resolveCreate!({} as FetchResponse<any>);
+      resolveCreate?.({} as FetchResponse<unknown>);
       await waitFor(() => {
         expect(saveButton).toBeEnabled();
         expect(cancelButton).toBeEnabled();
@@ -233,11 +233,11 @@ describe('BillableServiceFormWorkspace', () => {
 
     test('should show loading indicator in save button during submission', async () => {
       const user = userEvent.setup();
-      let resolveCreate: (value: any) => void;
-      const createPromise = new Promise((resolve) => {
+      let resolveCreate: ((value: FetchResponse<unknown>) => void) | undefined;
+      const createPromise = new Promise<FetchResponse<unknown>>((resolve) => {
         resolveCreate = resolve;
       });
-      mockCreateBillableService.mockReturnValue(createPromise as any);
+      mockCreateBillableService.mockReturnValue(createPromise);
 
       renderBillableServicesForm();
 
@@ -252,7 +252,7 @@ describe('BillableServiceFormWorkspace', () => {
       });
 
       // Resolve the promise
-      resolveCreate!({} as FetchResponse<any>);
+      resolveCreate?.({} as FetchResponse<unknown>);
       await waitFor(() => {
         expect(screen.queryByText(/saving/i)).not.toBeInTheDocument();
       });
@@ -287,7 +287,7 @@ describe('BillableServiceFormWorkspace', () => {
         workspaceProps: { serviceToEdit: mockServiceToEdit, onWorkspaceClose: mockOnWorkspaceClose },
       });
 
-      mockUpdateBillableService.mockResolvedValue({} as FetchResponse<any>);
+      mockUpdateBillableService.mockResolvedValue({} as FetchResponse<unknown>);
       await submitForm();
 
       await waitFor(() => {
@@ -313,7 +313,7 @@ describe('BillableServiceFormWorkspace', () => {
       const priceInput = screen.getByRole('spinbutton', { name: /Selling Price/i });
       await user.type(priceInput, '50');
 
-      mockCreateBillableService.mockResolvedValue({} as FetchResponse<any>);
+      mockCreateBillableService.mockResolvedValue({} as FetchResponse<unknown>);
 
       await submitForm();
 
@@ -344,7 +344,7 @@ describe('BillableServiceFormWorkspace', () => {
       const priceInput = screen.getByRole('spinbutton', { name: /Selling Price/i });
       await user.type(priceInput, '100');
 
-      mockCreateBillableService.mockResolvedValue({} as FetchResponse<any>);
+      mockCreateBillableService.mockResolvedValue({} as FetchResponse<unknown>);
 
       await submitForm();
 
@@ -444,7 +444,7 @@ describe('BillableServiceFormWorkspace', () => {
       const priceInput = screen.getByRole('spinbutton', { name: /selling price/i });
       await user.type(priceInput, '10.50');
 
-      mockCreateBillableService.mockResolvedValue({} as FetchResponse<any>);
+      mockCreateBillableService.mockResolvedValue({} as FetchResponse<unknown>);
 
       await submitForm();
 
@@ -563,7 +563,7 @@ describe('BillableServiceFormWorkspace', () => {
       await user.clear(shortNameInput);
       await user.type(shortNameInput, 'X-RAY');
 
-      mockUpdateBillableService.mockResolvedValue({} as FetchResponse<any>);
+      mockUpdateBillableService.mockResolvedValue({} as FetchResponse<unknown>);
 
       await submitForm();
 
@@ -599,7 +599,7 @@ describe('BillableServiceFormWorkspace', () => {
       await user.clear(shortNameInput);
       await user.type(shortNameInput, '  X-RAY  ');
 
-      mockUpdateBillableService.mockResolvedValue({} as FetchResponse<any>);
+      mockUpdateBillableService.mockResolvedValue({} as FetchResponse<unknown>);
 
       await submitForm();
 
@@ -620,7 +620,7 @@ describe('BillableServiceFormWorkspace', () => {
         workspaceProps: { serviceToEdit: mockServiceToEdit, onWorkspaceClose: mockOnWorkspaceClose },
       });
 
-      mockUpdateBillableService.mockResolvedValue({} as FetchResponse<any>);
+      mockUpdateBillableService.mockResolvedValue({} as FetchResponse<unknown>);
 
       await submitForm();
 
@@ -705,7 +705,7 @@ describe('BillableServiceFormWorkspace', () => {
       await user.click(screen.getByRole('combobox', { name: /Service type/i }));
       await user.click(screen.getByRole('option', { name: /Lab service/i }));
 
-      mockCreateBillableService.mockResolvedValue({} as FetchResponse<any>);
+      mockCreateBillableService.mockResolvedValue({} as FetchResponse<unknown>);
       await submitForm();
 
       await waitFor(() => {
@@ -797,7 +797,7 @@ describe('BillableServiceFormWorkspace', () => {
       await user.click(screen.getByRole('combobox', { name: /Service type/i }));
       await user.click(screen.getByRole('option', { name: /Lab service/i }));
 
-      mockCreateBillableService.mockResolvedValue({} as FetchResponse<any>);
+      mockCreateBillableService.mockResolvedValue({} as FetchResponse<unknown>);
       await submitForm();
 
       // Verify all three payment modes were submitted

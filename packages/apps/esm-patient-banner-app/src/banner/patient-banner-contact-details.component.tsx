@@ -1,5 +1,6 @@
 import { InlineLoading } from '@carbon/react';
 import {
+  ageAsDuration,
   ConfigurableLink,
   type CoreTranslationKey,
   formatDate,
@@ -20,6 +21,7 @@ import { type Attribute } from '../types';
 import styles from './patient-banner-contact-details.module.scss';
 
 const contactDetailsLoadingTimeoutMs = 10000;
+type AgeDuration = Partial<Record<'years' | 'months' | 'weeks' | 'days', number>>;
 
 interface ContactDetailsProps {
   patientId: string;
@@ -57,6 +59,59 @@ function DetailItem({ label, value }: { label: string; value: React.ReactNode })
 
 function EmptyState({ message }: { message: string }) {
   return <p className={styles.emptyState}>{message}</p>;
+}
+
+function getDurationValue(duration: AgeDuration, unit: keyof AgeDuration) {
+  const value = duration[unit];
+
+  return typeof value === 'number' && value >= 0 ? value : null;
+}
+
+function formatAgeUnit(
+  value: number,
+  singularKey: string,
+  singularFallback: string,
+  pluralKey: string,
+  pluralFallback: string,
+  t: ReturnType<typeof useTranslation>['t'],
+) {
+  const unit = value === 1 ? t(singularKey, singularFallback) : t(pluralKey, pluralFallback);
+
+  return `${value} ${unit}`;
+}
+
+function formatAgeWithUnit(
+  birthdate: string | undefined,
+  ageInYears: number | undefined,
+  t: ReturnType<typeof useTranslation>['t'],
+) {
+  const duration = birthdate ? (ageAsDuration(birthdate) as AgeDuration | null) : null;
+
+  if (duration) {
+    const years = getDurationValue(duration, 'years');
+    if (years !== null && years > 0) {
+      return formatAgeUnit(years, 'ageYear', 'year', 'ageYears', 'years', t);
+    }
+
+    const months = getDurationValue(duration, 'months');
+    if (months !== null && months > 0) {
+      return formatAgeUnit(months, 'ageMonth', 'month', 'ageMonths', 'months', t);
+    }
+
+    const weeks = getDurationValue(duration, 'weeks');
+    if (weeks !== null && weeks > 0) {
+      return formatAgeUnit(weeks, 'ageWeek', 'week', 'ageWeeks', 'weeks', t);
+    }
+
+    const days = getDurationValue(duration, 'days');
+    if (days !== null && days > 0) {
+      return formatAgeUnit(Math.floor(days / 7), 'ageWeek', 'week', 'ageWeeks', 'weeks', t);
+    }
+
+    return formatAgeUnit(0, 'ageWeek', 'week', 'ageWeeks', 'weeks', t);
+  }
+
+  return ageInYears !== undefined ? formatAgeUnit(ageInYears, 'ageYear', 'year', 'ageYears', 'years', t) : '';
 }
 
 function getAttributeByTypeUuid(attributes: Array<Attribute>, uuid?: string) {
@@ -112,6 +167,7 @@ const Address: React.FC<{ patientId: string }> = ({ patientId }) => {
   const { patient, isLoading } = usePatient(patientId);
   const address = patient?.address?.find((entry) => entry.use === 'home');
   const getAddressKey = (url: string) => url.split('#')[1];
+  const hiddenAddressExtensionFields = new Set(['address13', 'address14', 'address15']);
   const showLoading = useBoundedLoading(isLoading);
 
   if (showLoading) {
@@ -127,16 +183,18 @@ const Address: React.FC<{ patientId: string }> = ({ patientId }) => {
             .filter(([key]) => key !== 'id' && key !== 'use')
             .map(([key, value]) =>
               key === 'extension' ? (
-                address.extension?.[0]?.extension?.map((addressExtension) => (
-                  <DetailItem
-                    key={`address-${key}-${addressExtension.url}`}
-                    label={getCoreTranslation(
-                      getAddressKey(addressExtension.url) as CoreTranslationKey,
-                      getAddressKey(addressExtension.url) as CoreTranslationKey,
-                    )}
-                    value={addressExtension.valueString}
-                  />
-                ))
+                address.extension?.[0]?.extension
+                  ?.filter((addressExtension) => !hiddenAddressExtensionFields.has(getAddressKey(addressExtension.url)))
+                  .map((addressExtension) => (
+                    <DetailItem
+                      key={`address-${key}-${addressExtension.url}`}
+                      label={getCoreTranslation(
+                        getAddressKey(addressExtension.url) as CoreTranslationKey,
+                        getAddressKey(addressExtension.url) as CoreTranslationKey,
+                      )}
+                      value={addressExtension.valueString}
+                    />
+                  ))
               ) : (
                 <DetailItem
                   key={`address-${key}`}
@@ -203,6 +261,18 @@ const getDisplayValue = (value: unknown): string => {
   return String(value);
 };
 
+function RelationshipMetaItem({ label, value }: { label: string; value: React.ReactNode }) {
+  if (value === null || value === undefined || value === '' || value === '--') {
+    return null;
+  }
+
+  return (
+    <span>
+      <span className={styles.itemLabel}>{label}:</span> {value}
+    </span>
+  );
+}
+
 const PatientAdministrativeDetails: React.FC<{ patientUuid: string }> = ({ patientUuid }) => {
   const { t } = useTranslation();
   const {
@@ -222,6 +292,7 @@ const PatientAdministrativeDetails: React.FC<{ patientUuid: string }> = ({ patie
     ? getCoreTranslation(person.gender === 'M' ? 'male' : person.gender === 'F' ? 'female' : 'unknown', person.gender)
     : '';
   const status = person ? (person.dead ? t('deceased', 'Deceased') : t('active', 'Active')) : '';
+  const formattedAge = formatAgeWithUnit(person?.birthdate, person?.age, t);
   const birthplace = getDisplayValue(getAttributeByTypeUuid(additionalAttributes, birthplaceAttributeTypeUuid)?.value);
   const occupation = getDisplayValue(getAttributeByTypeUuid(additionalAttributes, occupationAttributeTypeUuid)?.value);
   const reservedAttributeTypeUuids = new Set([
@@ -232,7 +303,7 @@ const PatientAdministrativeDetails: React.FC<{ patientUuid: string }> = ({ patie
   const remainingAdditionalAttributes = additionalAttributes.filter(
     ({ attributeType }) => !reservedAttributeTypeUuids.has(attributeType?.uuid),
   );
-  const hasDemographics = Boolean(person?.age || person?.birthdate || gender || status || person?.deathDate);
+  const hasDemographics = Boolean(formattedAge || person?.birthdate || gender || status || person?.deathDate);
   const hasIdentifiers = identifiers?.length > 0;
   const hasAdditionalDetails = Boolean(
     ethnicIdentity ||
@@ -249,7 +320,7 @@ const PatientAdministrativeDetails: React.FC<{ patientUuid: string }> = ({ patie
           <InlineLoading description={`${getCoreTranslation('loading', 'Loading')} ...`} role="progressbar" />
         ) : hasDemographics ? (
           <ul className={styles.detailList}>
-            <DetailItem label={t('age', 'Age')} value={person?.age} />
+            <DetailItem label={t('age', 'Age')} value={formattedAge} />
             <DetailItem
               label={t('dateOfBirth', 'Date of birth')}
               value={person?.birthdate ? formatDate(parseDate(person.birthdate), { mode: 'wide', time: false }) : ''}
@@ -340,21 +411,28 @@ const Relationships: React.FC<{ patientId: string }> = ({ patientId }) => {
         <ul className={styles.detailList}>
           {relationships.map((relationship) => (
             <li key={relationship.uuid} className={styles.relationship}>
-              <div>
+              <span className={styles.relationshipContent}>
                 <ConfigurableLink to={`${window.spaBase}/patient/${relationship.relativeUuid}/chart`}>
                   {relationship.display}
                 </ConfigurableLink>
-              </div>
-              <div>{relationship.relationshipType}</div>
-              <div>
-                {relationship.relativeAge
-                  ? `${relationship.relativeAge} ${
-                      relationship.relativeAge === 1
-                        ? getCoreTranslation('yearAbbreviation', 'yr')
-                        : getCoreTranslation('yearsAbbreviation', 'yrs')
-                    }`
-                  : ''}
-              </div>
+                <span className={styles.relationshipMeta}>
+                  <RelationshipMetaItem
+                    label={t('relationship', 'Relationship')}
+                    value={relationship.relationshipType}
+                  />
+                  <RelationshipMetaItem label="DNI" value={relationship.dni} />
+                  <RelationshipMetaItem
+                    label={t('age', 'Age')}
+                    value={
+                      relationship.relativeAge
+                        ? `${relationship.relativeAge} ${
+                            relationship.relativeAge === 1 ? t('yearAbbreviation', 'yr') : t('yearsAbbreviation', 'yrs')
+                          }`
+                        : ''
+                    }
+                  />
+                </span>
+              </span>
             </li>
           ))}
         </ul>

@@ -15,24 +15,28 @@
       "name": "patient-search-icon",
       "component": "patientSearchIcon",
       "slot": "top-nav-actions-slot",
+      "privileges": "Get Patients",
       "order": 0
     },
     {
       "name": "patient-search-button",
       "component": "patientSearchButton",
       "slot": "patient-search-button-slot",
+      "privileges": "Get Patients",
       "offline": true
     },
     {
       "name": "patient-search-bar",
       "component": "patientSearchBar",
       "slot": "patient-search-bar-slot",
+      "privileges": "Get Patients",
       "offline": true
     },
     {
       "name": "patient-search-start-visit-button",
       "component": "patientSearchStartVisitButton2",
       "slot": "start-visit-button-slot2",
+      "privileges": "Get Patients",
       "offline": true
     }
   ],
@@ -43,6 +47,7 @@
       "name": "patient-search-workspace",
       "title": "searchPatient",
       "type": "patient-search-workspace",
+      "privileges": "Get Patients",
       "width": "wider"
     }
   ]

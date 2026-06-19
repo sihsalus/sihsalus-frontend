@@ -38,6 +38,8 @@ import {
   useLayoutType,
   usePagination,
   usePatient,
+  userHasAccess,
+  useSession,
 } from '@openmrs/esm-framework';
 import {
   CardHeader,
@@ -76,6 +78,8 @@ interface OrderDetailsProps {
 }
 
 interface OrderBasketItemActionsProps {
+  canEditOrders: boolean;
+  canEditResults: boolean;
   openOrderBasket: () => void;
   openOrderForm: () => void;
   orderItem: Order;
@@ -101,6 +105,9 @@ function getCellContent(value: ReactNode) {
 
 const OrderDetailsTable: React.FC<OrderDetailsProps> = ({ patientUuid, showAddButton, showPrintButton, title }) => {
   const { t } = useTranslation();
+  const session = useSession();
+  const canEditOrders = userHasAccess('app:clinical.chart.orders.edit', session?.user);
+  const canEditResults = userHasAccess('app:clinical.chart.results.edit', session?.user);
   const locale = getLocale() ?? 'en';
   const defaultPageSize = 10;
   const headerTitle = t('orders', 'Orders');
@@ -408,7 +415,7 @@ const OrderDetailsTable: React.FC<OrderDetailsProps> = ({ patientUuid, showAddBu
                           default: selectedOrderName,
                         })
                   }
-                  launchForm={launchOrderBasket}
+                  launchForm={canEditOrders ? launchOrderBasket : undefined}
                 />
               ) : (
                 <div className={styles.widgetCard}>
@@ -430,7 +437,7 @@ const OrderDetailsTable: React.FC<OrderDetailsProps> = ({ patientUuid, showAddBu
                           {t('print', 'Print')}
                         </Button>
                       )}
-                      {showAddButton && (
+                      {showAddButton && canEditOrders && (
                         <Button
                           className={styles.addButton}
                           kind="ghost"
@@ -518,6 +525,8 @@ const OrderDetailsTable: React.FC<OrderDetailsProps> = ({ patientUuid, showAddBu
                                           <TableCell className="cds--table-column-menu">
                                             {matchingOrder && isOmrsOrder(matchingOrder) ? (
                                               <OrderBasketItemActions
+                                                canEditOrders={canEditOrders}
+                                                canEditResults={canEditResults}
                                                 openOrderBasket={launchOrderBasket}
                                                 openOrderForm={() => openOrderForm(matchingOrder)}
                                                 orderItem={matchingOrder}
@@ -606,6 +615,8 @@ const OrderDetailsTable: React.FC<OrderDetailsProps> = ({ patientUuid, showAddBu
 };
 
 function OrderBasketItemActions({
+  canEditOrders,
+  canEditResults,
   orderItem,
   openOrderBasket,
   openOrderForm,
@@ -614,7 +625,6 @@ function OrderBasketItemActions({
   const { t } = useTranslation();
   const { orders, setOrders } = useOrderBasket<MutableOrderBasketItem>(orderItem.orderType.uuid);
   const alreadyInBasket = orders.some((x) => x.uuid === orderItem.uuid);
-
   const handleModifyClick = useCallback(() => {
     if (orderItem.type === 'drugorder') {
       void getDrugOrderByUuid(orderItem.uuid)
@@ -664,6 +674,10 @@ function OrderBasketItemActions({
     }
   }, [orderItem, setOrders, orders, openOrderBasket]);
 
+  if (!canEditOrders && !(orderItem?.type === 'testorder' && canEditResults)) {
+    return null;
+  }
+
   return (
     <Layer className={styles.layer}>
       <OverflowMenu
@@ -673,14 +687,16 @@ function OrderBasketItemActions({
         selectorPrimaryFocus={'#modify'}
         size={responsiveSize === 'md' ? 'sm' : responsiveSize}
       >
-        <OverflowMenuItem
-          className={styles.menuItem}
-          disabled={alreadyInBasket}
-          id="modify"
-          itemText={t('modifyOrder', 'Modify order')}
-          onClick={handleModifyClick}
-        />
-        {orderItem?.type === 'testorder' && (
+        {canEditOrders && (
+          <OverflowMenuItem
+            className={styles.menuItem}
+            disabled={alreadyInBasket}
+            id="modify"
+            itemText={t('modifyOrder', 'Modify order')}
+            onClick={handleModifyClick}
+          />
+        )}
+        {orderItem?.type === 'testorder' && canEditResults && (
           <OverflowMenuItem
             className={styles.menuItem}
             disabled={alreadyInBasket}
@@ -693,15 +709,17 @@ function OrderBasketItemActions({
             onClick={handleAddResultsClick}
           />
         )}
-        <OverflowMenuItem
-          className={styles.menuItem}
-          disabled={alreadyInBasket || orderItem?.action === 'DISCONTINUE'}
-          hasDivider
-          id="discontinue"
-          isDelete
-          itemText={t('cancelOrder', 'Cancel order')}
-          onClick={handleCancelClick}
-        />
+        {canEditOrders && (
+          <OverflowMenuItem
+            className={styles.menuItem}
+            disabled={alreadyInBasket || orderItem?.action === 'DISCONTINUE'}
+            hasDivider
+            id="discontinue"
+            isDelete
+            itemText={t('cancelOrder', 'Cancel order')}
+            onClick={handleCancelClick}
+          />
+        )}
       </OverflowMenu>
     </Layer>
   );

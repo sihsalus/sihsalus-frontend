@@ -1,3 +1,5 @@
+import { patientFamilyNameMaxLength, patientGivenNameMaxLength } from '../../patient-name-limits';
+
 const personNameRegex = /^\p{L}[\p{L}\p{M}'.\- ]*$/u;
 const estimatedAgeRegex = /^(?:[0-9]|[1-9][0-9]|1[01][0-9]|120)$/;
 
@@ -12,6 +14,10 @@ export interface ResponsiblePersonFormValues {
 }
 
 export type ResponsiblePersonValidationErrors = Partial<Record<keyof ResponsiblePersonFormValues, string>>;
+
+export interface ResponsiblePersonValidationOptions {
+  requireAdult?: boolean;
+}
 
 const genderToOpenmrsCode: Record<string, string> = {
   male: 'M',
@@ -42,11 +48,15 @@ function validateRequiredName(value: string, requiredMessage: string): string | 
   return undefined;
 }
 
-function validateOptionalName(value: string): string | undefined {
+function validateOptionalName(value: string, maxLength: number, maxLengthMessage: string): string | undefined {
   const trimmedValue = value.trim();
 
   if (!trimmedValue) {
     return undefined;
+  }
+
+  if (trimmedValue.length > maxLength) {
+    return maxLengthMessage;
   }
 
   if (!isValidPersonName(trimmedValue)) {
@@ -56,25 +66,33 @@ function validateOptionalName(value: string): string | undefined {
   return undefined;
 }
 
-export function validateResponsiblePersonForm(values: ResponsiblePersonFormValues): ResponsiblePersonValidationErrors {
+export function validateResponsiblePersonForm(
+  values: ResponsiblePersonFormValues,
+  options: ResponsiblePersonValidationOptions = {},
+): ResponsiblePersonValidationErrors {
   const errors: ResponsiblePersonValidationErrors = {};
+  const estimatedAge = values.estimatedAge.trim();
 
   const givenNameError = validateRequiredName(values.givenName, 'givenNameRequired');
   if (givenNameError) {
     errors.givenName = givenNameError;
+  } else if (values.givenName.trim().length > patientGivenNameMaxLength) {
+    errors.givenName = 'givenNameTooLong';
   }
 
   const familyNameError = validateRequiredName(values.familyName, 'familyNameRequired');
   if (familyNameError) {
     errors.familyName = familyNameError;
+  } else if (values.familyName.trim().length > patientFamilyNameMaxLength) {
+    errors.familyName = 'familyNameTooLong';
   }
 
-  const middleNameError = validateOptionalName(values.middleName);
+  const middleNameError = validateOptionalName(values.middleName, patientGivenNameMaxLength, 'givenNameTooLong');
   if (middleNameError) {
     errors.middleName = middleNameError;
   }
 
-  const familyName2Error = validateOptionalName(values.familyName2);
+  const familyName2Error = validateOptionalName(values.familyName2, patientFamilyNameMaxLength, 'familyNameTooLong');
   if (familyName2Error) {
     errors.familyName2 = familyName2Error;
   }
@@ -83,8 +101,12 @@ export function validateResponsiblePersonForm(values: ResponsiblePersonFormValue
     errors.gender = 'genderRequired';
   }
 
-  if (values.estimatedAge.trim() && !estimatedAgeRegex.test(values.estimatedAge.trim())) {
+  if (estimatedAge && !estimatedAgeRegex.test(estimatedAge)) {
     errors.estimatedAge = 'estimatedAgeInvalid';
+  } else if (options.requireAdult && !estimatedAge) {
+    errors.estimatedAge = 'responsibleEstimatedAgeRequired';
+  } else if (options.requireAdult && Number(estimatedAge) < 18) {
+    errors.estimatedAge = 'responsiblePersonMustBeAdult';
   }
 
   if (!values.relationshipType?.trim()) {

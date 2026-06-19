@@ -4,6 +4,7 @@ import useSWR from 'swr';
 
 interface Identifier {
   identifier?: string;
+  preferred?: boolean;
   identifierType?: {
     display?: string;
   };
@@ -25,6 +26,23 @@ interface VisitPersonAddress {
   address1?: string;
   cityVillage?: string;
   stateProvince?: string;
+}
+
+interface VisitRelationship {
+  uuid?: string;
+  personA?: {
+    uuid?: string;
+    display?: string;
+  };
+  personB?: {
+    uuid?: string;
+    display?: string;
+  };
+  relationshipType?: {
+    display?: string;
+    aIsToB?: string;
+    bIsToA?: string;
+  };
 }
 
 interface Visit {
@@ -61,6 +79,7 @@ export interface AdmissionRow {
   startDatetime?: string;
   patientName: string;
   medicalRecordNumber: string;
+  documentType: string;
   documentNumber: string;
   identificationStatus: string;
   communicationCondition: string;
@@ -73,24 +92,51 @@ export interface AdmissionRow {
   service: string;
   location: string;
   status: string;
+  searchText: string;
 }
 
 function getMedicalRecordNumber(identifiers: Identifier[] = []) {
   const preferred = identifiers.find((identifier) =>
-    /historia|clinical|openmrs|hc/i.test(identifier.identifierType?.display ?? ''),
+    /historia|clinical|openmrs|\bhce?\b|c[oó]digo.*temporal|temporary/i.test(identifier.identifierType?.display ?? ''),
   );
 
   return preferred?.identifier ?? '';
 }
 
-function getDocumentNumber(identifiers: Identifier[] = []) {
-  const preferred = identifiers.find((identifier) =>
-    /dni|\bce\b|carn[eé].*extranjer|pasaporte|pass|documento|certificado de nacido vivo|cnv|\bdie\b/i.test(
-      identifier.identifierType?.display ?? '',
-    ),
-  );
+const identityDocumentTypePatterns = [
+  /dni|documento nacional de identidad/i,
+  /\bce\b|carn[eé].*extranjer/i,
+  /\bdie\b|documento de identidad extranjero/i,
+  /pasaporte|\bpass\b/i,
+  /\bcnv\b|certificado de nacido vivo/i,
+  /documento/i,
+];
 
-  return preferred?.identifier ?? '';
+function getIdentityDocumentTypePriority(display?: string) {
+  const priority = identityDocumentTypePatterns.findIndex((pattern) => pattern.test(display ?? ''));
+
+  return priority === -1 ? Number.POSITIVE_INFINITY : priority;
+}
+
+function getDocumentIdentifier(identifiers: Identifier[] = []) {
+  const candidates = identifiers
+    .map((identifier, index) => ({
+      identifier,
+      index,
+      priority: getIdentityDocumentTypePriority(identifier.identifierType?.display),
+    }))
+    .filter(
+      ({ identifier, priority }) => priority < Number.POSITIVE_INFINITY && Boolean(identifier.identifier?.trim()),
+    );
+
+  const selected =
+    candidates.find((candidate) => candidate.identifier.preferred) ??
+    candidates.sort((left, right) => left.priority - right.priority || left.index - right.index)[0];
+
+  return {
+    type: selected?.identifier.identifierType?.display?.trim() ?? '',
+    number: selected?.identifier.identifier?.trim() ?? '',
+  };
 }
 
 function getAttributeValue(attributes: VisitPersonAttribute[] = [], pattern: RegExp) {
@@ -98,6 +144,21 @@ function getAttributeValue(attributes: VisitPersonAttribute[] = [], pattern: Reg
   const value = attribute?.value;
 
   return typeof value === 'string' ? value : (value?.display ?? '');
+}
+
+function getAttributeSearchText(attributes: VisitPersonAttribute[] = []) {
+  return attributes
+    .map((attribute) => {
+      const value = typeof attribute.value === 'string' ? attribute.value : attribute.value?.display;
+      return [attribute.attributeType?.display, value].filter(Boolean).join(' ');
+    })
+    .join(' ');
+}
+
+function getIdentifierSearchText(identifiers: Identifier[] = []) {
+  return identifiers
+    .map((identifier) => [identifier.identifierType?.display, identifier.identifier].filter(Boolean).join(' '))
+    .join(' ');
 }
 
 function getIdentificationStatus(attributes: VisitPersonAttribute[] = []) {
@@ -146,35 +207,98 @@ function getAddress(addresses: VisitPersonAddress[] = []) {
 }
 
 function hasSis(identifiers: Identifier[] = [], attributes: VisitPersonAttribute[] = []) {
-  const identifiersText = identifiers
-    .map((identifier) => [identifier.identifierType?.display, identifier.identifier].filter(Boolean).join(' '))
-    .join(' ');
-  const attributesText = attributes
-    .map((attribute) => {
-      const value = typeof attribute.value === 'string' ? attribute.value : attribute.value?.display;
-      return [attribute.attributeType?.display, value].filter(Boolean).join(' ');
-    })
-    .join(' ');
+  const identifiersText = getIdentifierSearchText(identifiers);
+  const attributesText = getAttributeSearchText(attributes);
 
   return /sis|seguro integral/i.test(`${identifiersText} ${attributesText}`);
 }
 
-function mapVisitToAdmission(visit: Visit): AdmissionRow {
+function getRelationshipDisplay(patientUuid: string, relationship: VisitRelationship) {
+  if (relationship.personA?.uuid === patientUuid) {
+    return {
+      name: relationship.personB?.display ?? '',
+      relationship: relationship.relationshipType?.bIsToA ?? relationship.relationshipType?.display ?? '',
+    };
+  }
+
+  return {
+    name: relationship.personA?.display ?? '',
+    relationship: relationship.relationshipType?.aIsToB ?? relationship.relationshipType?.display ?? '',
+  };
+}
+
+function isLikelyResponsibleRelationship(relationship: string) {
+  return /madre|padre|apoderad|tutor|responsable|guardian|representante|acompa[nñ]ante|cuidador|familiar/i.test(
+    relationship,
+  );
+}
+
+function getResponsibleRelationship(patientUuid: string, relationships: VisitRelationship[] = []) {
+  const relationshipRows = relationships
+    .map((relationship) => getRelationshipDisplay(patientUuid, relationship))
+    .filter((relationship) => relationship.name || relationship.relationship);
+
+  return (
+    relationshipRows.find((relationship) => isLikelyResponsibleRelationship(relationship.relationship)) ??
+    relationshipRows[0] ?? { name: '', relationship: '' }
+  );
+}
+
+function getRelationshipSearchText(patientUuid: string, relationships: VisitRelationship[] = []) {
+  return relationships
+    .map((relationship) => {
+      const relationshipDisplay = getRelationshipDisplay(patientUuid, relationship);
+      return [relationshipDisplay.name, relationshipDisplay.relationship, relationship.relationshipType?.display]
+        .filter(Boolean)
+        .join(' ');
+    })
+    .join(' ');
+}
+
+async function fetchRelationshipsForPatients(patientUuids: string[]) {
+  const relationshipsByPatient: Record<string, VisitRelationship[]> = {};
+
+  await Promise.all(
+    patientUuids.map(async (patientUuid) => {
+      try {
+        const { data } = await openmrsFetch<{ results?: VisitRelationship[] }>(
+          `${restBaseUrl}/relationship?person=${patientUuid}&v=${relationshipRepresentation}`,
+        );
+        relationshipsByPatient[patientUuid] = data.results ?? [];
+      } catch {
+        relationshipsByPatient[patientUuid] = [];
+      }
+    }),
+  );
+
+  return relationshipsByPatient;
+}
+
+function mapVisitToAdmission(visit: Visit, relationships: VisitRelationship[] = []): AdmissionRow {
   const identifiers = visit.patient?.identifiers ?? [];
   const person = visit.patient?.person;
   const attributes = person?.attributes ?? [];
+  const patientUuid = visit.patient?.uuid ?? '';
+  const responsibleRelationship = getResponsibleRelationship(patientUuid, relationships);
+  const documentIdentifier = getDocumentIdentifier(identifiers);
+  const fallbackResponsibleName = getAttributeValue(
+    attributes,
+    /nombre del acompa[nñ]ante|responsable|companion name/i,
+  );
+  const fallbackResponsibleRelationship = getAttributeValue(attributes, /parentesco del acompa[nñ]ante|relationship/i);
 
   return {
     uuid: visit.uuid,
-    patientUuid: visit.patient?.uuid ?? '',
+    patientUuid,
     startDatetime: visit.startDatetime,
     patientName: person?.display ?? visit.patient?.display ?? '',
     medicalRecordNumber: getMedicalRecordNumber(identifiers),
-    documentNumber: getDocumentNumber(identifiers),
+    documentType: documentIdentifier.type,
+    documentNumber: documentIdentifier.number,
     identificationStatus: getIdentificationStatus(attributes),
     communicationCondition: getCommunicationCondition(attributes),
-    responsibleName: getAttributeValue(attributes, /nombre del acompa[nñ]ante|responsable|companion name/i),
-    responsibleRelationship: getAttributeValue(attributes, /parentesco del acompa[nñ]ante|relationship/i),
+    responsibleName: responsibleRelationship.name || fallbackResponsibleName,
+    responsibleRelationship: responsibleRelationship.relationship || fallbackResponsibleRelationship,
     birthDate: person?.birthdate ?? '',
     hasSis: hasSis(identifiers, person?.attributes) ? 'Sí' : 'No',
     address: getAddress(person?.addresses),
@@ -182,20 +306,36 @@ function mapVisitToAdmission(visit: Visit): AdmissionRow {
     service: visit.visitType?.display ?? '',
     location: visit.location?.display ?? '',
     status: visit.stopDatetime ? 'Finalizada' : 'Activa',
+    searchText: [
+      getIdentifierSearchText(identifiers),
+      getAttributeSearchText(attributes),
+      getRelationshipSearchText(patientUuid, relationships),
+    ]
+      .filter(Boolean)
+      .join(' '),
   };
 }
 
 const visitRepresentation =
-  'custom:(uuid,startDatetime,stopDatetime,patient:(uuid,display,identifiers:(identifier,identifierType:(display)),person:(display,birthdate,gender,addresses:(preferred,address1,cityVillage,stateProvince),attributes:(attributeType:(display),value))),visitType:(display),location:(display))';
+  'custom:(uuid,startDatetime,stopDatetime,patient:(uuid,display,identifiers:(identifier,preferred,identifierType:(display)),person:(display,birthdate,gender,addresses:(preferred,address1,cityVillage,stateProvince),attributes:(attributeType:(display),value))),visitType:(display),location:(display))';
+
+const relationshipRepresentation =
+  'custom:(display,uuid,personA:(uuid,display),personB:(uuid,display),relationshipType:(uuid,display,description,aIsToB,bIsToA))';
 
 export function useAdmissions(limit: number) {
   const url = `${restBaseUrl}/visit?includeInactive=true&v=${visitRepresentation}&limit=${limit}`;
   const { data, error, isLoading } = useSWR<{ data: VisitResponse }, Error>(url, openmrsFetch);
+  const visits = data?.data.results ?? [];
+  const patientUuids = Array.from(new Set(visits.map((visit) => visit.patient?.uuid).filter(Boolean))).sort();
+  const relationshipsKey = patientUuids.length ? `admission-relationships:${patientUuids.join(',')}` : null;
+  const { data: relationshipsByPatient, isLoading: isLoadingRelationships } = useSWR<
+    Record<string, VisitRelationship[]>
+  >(relationshipsKey, () => fetchRelationshipsForPatients(patientUuids));
 
   return {
-    admissions: data?.data.results?.map(mapVisitToAdmission) ?? [],
+    admissions: visits.map((visit) => mapVisitToAdmission(visit, relationshipsByPatient?.[visit.patient?.uuid ?? ''])),
     error,
-    isLoading,
+    isLoading: isLoading || !!(relationshipsKey && isLoadingRelationships && !relationshipsByPatient),
   };
 }
 

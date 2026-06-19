@@ -48,6 +48,8 @@ const LocationPickerView: React.FC<LocationPickerProps> = ({ hideWelcomeMessage,
     }),
     [user],
   );
+  const loginImageAvifSrc = `${globalThis.getOpenmrsSpaBase()}login.avif`;
+  const loginImageSrc = `${globalThis.getOpenmrsSpaBase()}login.png`;
 
   const [activeLocation, setActiveLocation] = useState(() => {
     if (currentLocationUuid && hideWelcomeMessage) {
@@ -128,7 +130,11 @@ const LocationPickerView: React.FC<LocationPickerProps> = ({ hideWelcomeMessage,
 
   return (
     <div className={styles.locationPickerContainer}>
-      <form onSubmit={handleSubmit}>
+      <picture className={styles.backgroundMedia}>
+        <source srcSet={loginImageAvifSrc} type="image/avif" />
+        <img src={loginImageSrc} alt="" width="1672" height="941" />
+      </picture>
+      <form className={styles.locationPickerForm} onSubmit={handleSubmit}>
         <div className={styles.locationCard}>
           <div className={styles.paddedContainer}>
             <p className={styles.welcomeTitle}>
@@ -143,7 +149,7 @@ const LocationPickerView: React.FC<LocationPickerProps> = ({ hideWelcomeMessage,
           </div>
           <LocationPicker
             selectedLocationUuid={activeLocation}
-            defaultLocationUuid={userProperties.defaultLocation}
+            defaultLocationUuid={userProperties?.defaultLocation}
             locationTag={chooseLocation.useLoginLocationTag && 'Login Location'}
             onChange={(locationUuid) => setActiveLocation(locationUuid)}
           />

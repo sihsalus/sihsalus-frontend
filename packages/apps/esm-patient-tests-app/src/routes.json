@@ -9,6 +9,7 @@
       "name": "test-results-summary-dashboard",
       "component": "testResultsDashboardLink",
       "slot": "patient-chart-dashboard-slot",
+      "privileges": "app:clinical.chart.results",
       "meta": {
         "slot": "patient-chart-test-results-dashboard-slot",
         "path": "Results",
@@ -25,7 +26,8 @@
     {
       "name": "results-viewer",
       "slots": ["patient-chart-results-viewer-slot", "patient-chart-test-results-dashboard-slot"],
-      "component": "resultsViewer"
+      "component": "resultsViewer",
+      "privileges": "app:clinical.chart.results"
     },
     {
       "name": "lab-order-panel",
@@ -37,11 +39,13 @@
   "modals": [
     {
       "name": "timeline-results-modal",
-      "component": "timelineResultsModal"
+      "component": "timelineResultsModal",
+      "privileges": "app:clinical.chart.results"
     },
     {
       "name": "print-modal",
-      "component": "printModal"
+      "component": "printModal",
+      "privileges": "app:clinical.chart.results"
     }
   ],
   "workspaces2": [
@@ -49,7 +53,8 @@
       "name": "add-lab-order",
       "type": "order",
       "component": "addLabOrderWorkspace",
-      "window": "patient-chart-orders"
+      "window": "patient-chart-orders",
+      "privileges": "app:clinical.chart.orders.edit"
     }
   ],
   "workspaces": [
@@ -57,7 +62,8 @@
       "name": "add-lab-order",
       "type": "order",
       "component": "addLabOrderWorkspace",
-      "title": "addLabOrderWorkspaceTitle"
+      "title": "addLabOrderWorkspaceTitle",
+      "privileges": "app:clinical.chart.orders.edit"
     }
   ]
 }

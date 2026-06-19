@@ -7,6 +7,7 @@ import AdmissionHome from './admission-home.component';
 
 vi.mock('@openmrs/esm-framework', async () => ({
   ...(await vi.importActual('@openmrs/esm-framework')),
+  ageAsDuration: (await vi.importActual<typeof import('@openmrs/esm-utils')>('@openmrs/esm-utils')).ageAsDuration,
   useConfig: vi.fn(),
 }));
 
@@ -31,7 +32,7 @@ function renderAdmissionHome() {
 }
 
 function getMetricValue(label: string) {
-  return screen.getByText(label).parentElement?.querySelector('strong');
+  return screen.getByText(label).parentElement;
 }
 
 function createAdmission(overrides: Partial<AdmissionRow>): AdmissionRow {
@@ -41,6 +42,7 @@ function createAdmission(overrides: Partial<AdmissionRow>): AdmissionRow {
     startDatetime: '2026-05-09T08:30:00.000-0500',
     patientName: 'Ada Lovelace',
     medicalRecordNumber: 'HC-99',
+    documentType: 'DNI',
     documentNumber: '12345678',
     identificationStatus: 'Confirmado',
     communicationCondition: 'Puede comunicarse',
@@ -53,6 +55,7 @@ function createAdmission(overrides: Partial<AdmissionRow>): AdmissionRow {
     service: 'Consulta externa',
     location: 'Admision Central',
     status: 'Activa',
+    searchText: '',
     ...overrides,
   };
 }
@@ -87,7 +90,8 @@ describe('AdmissionHome', () => {
           startDatetime: '2026-05-09T10:00:00.000-0500',
           patientName: 'Grace Hopper',
           medicalRecordNumber: 'HC-100',
-          documentNumber: '87654321',
+          documentType: 'CE',
+          documentNumber: 'CE-876543',
           birthDate: '1985-03-02',
           hasSis: 'No',
           address: 'Jr. Amazonas 45, Iquitos, Loreto',
@@ -107,9 +111,9 @@ describe('AdmissionHome', () => {
     for (const header of [
       'Fecha',
       'HCE / código temporal',
-      'Documento',
+      'Tipo doc.',
+      'N° documento',
       'Estado identificación',
-      'Condición comunicación',
       'Responsable',
       'F. Nac.',
       'Tiene SIS',
@@ -120,11 +124,14 @@ describe('AdmissionHome', () => {
       'F',
       'Servicio',
       'Número de orden',
+      'Condición comunicación',
     ]) {
       expect(screen.getByRole('columnheader', { name: header })).toBeInTheDocument();
     }
     expect(screen.getByRole('cell', { name: 'Ada Lovelace' })).toBeInTheDocument();
     expect(screen.getByRole('cell', { name: 'HC-99' })).toBeInTheDocument();
+    expect(screen.getByRole('cell', { name: 'CE' })).toBeInTheDocument();
+    expect(screen.getByRole('cell', { name: 'CE-876543' })).toBeInTheDocument();
     expect(screen.getByRole('cell', { name: '12345678' })).toBeInTheDocument();
     expect(screen.getAllByRole('cell', { name: 'Confirmado' })[0]).toBeInTheDocument();
     expect(screen.getAllByRole('cell', { name: 'Charles Babbage - Familiar' })[0]).toBeInTheDocument();
@@ -141,6 +148,39 @@ describe('AdmissionHome', () => {
       '/openmrs/spa/admission/merge',
     );
     expect(mockUseAdmissions).toHaveBeenCalledWith(75);
+  });
+
+  it('renders age with year, month, and week units in the gender age columns', () => {
+    mockUseAdmissions.mockReturnValue({
+      admissions: [
+        createAdmission({
+          uuid: 'visit-years',
+          gender: 'F',
+          birthDate: '1990-06-18',
+          startDatetime: '2026-06-18T08:30:00.000-0500',
+        }),
+        createAdmission({
+          uuid: 'visit-months',
+          gender: 'M',
+          birthDate: '2025-06-16',
+          startDatetime: '2026-06-18T08:30:00.000-0500',
+        }),
+        createAdmission({
+          uuid: 'visit-weeks',
+          gender: 'M',
+          birthDate: '2026-05-28',
+          startDatetime: '2026-06-18T08:30:00.000-0500',
+        }),
+      ],
+      error: undefined,
+      isLoading: false,
+    });
+
+    renderAdmissionHome();
+
+    expect(screen.getByRole('cell', { name: '36 años' })).toBeInTheDocument();
+    expect(screen.getByRole('cell', { name: '12 meses' })).toBeInTheDocument();
+    expect(screen.getByRole('cell', { name: '3 semanas' })).toBeInTheDocument();
   });
 
   it('filters the report by search text and status', () => {
@@ -180,6 +220,98 @@ describe('AdmissionHome', () => {
 
     expect(screen.queryByRole('cell', { name: 'Grace Hopper' })).not.toBeInTheDocument();
     expect(screen.getByText(/no se encontraron atenciones recientes/i)).toBeInTheDocument();
+  });
+
+  it('filters the report by HCE, temporal code, insurance code, and structured responsible data', () => {
+    mockUseAdmissions.mockReturnValue({
+      admissions: [
+        createAdmission({
+          uuid: 'visit-1',
+          patientUuid: 'patient-1',
+          patientName: 'Niño Prueba',
+          medicalRecordNumber: 'TEMP-001',
+          documentNumber: '77889900',
+          responsibleName: 'María Quispe',
+          responsibleRelationship: 'Madre',
+          searchText: 'Código temporal TEMP-001 Código de Seguro SIS-183299 María Quispe Madre',
+        }),
+        createAdmission({
+          uuid: 'visit-2',
+          patientUuid: 'patient-2',
+          patientName: 'Grace Hopper',
+          medicalRecordNumber: 'HC-100',
+          documentNumber: '87654321',
+          responsibleName: 'Alan Hopper',
+          responsibleRelationship: 'Familiar',
+          searchText: 'Historia Clinica HC-100 Documento 87654321 Alan Hopper Familiar',
+        }),
+      ],
+      error: undefined,
+      isLoading: false,
+    });
+
+    renderAdmissionHome();
+
+    const searchInput = screen.getByRole('textbox', { name: /buscar por paciente/i });
+    for (const query of ['TEMP-001', 'SIS-183299', 'María Quispe', 'Madre']) {
+      fireEvent.change(searchInput, { target: { value: query } });
+
+      expect(screen.getByRole('cell', { name: 'Niño Prueba' })).toBeInTheDocument();
+      expect(screen.queryByRole('cell', { name: 'Grace Hopper' })).not.toBeInTheDocument();
+    }
+  });
+
+  it('exports an Excel-compatible UTF-8 CSV preserving Spanish characters', async () => {
+    const createObjectURL = vi.fn((_blob: Blob | MediaSource) => 'blob:atenciones');
+    const revokeObjectURL = vi.fn();
+    Object.defineProperty(URL, 'createObjectURL', { configurable: true, value: createObjectURL });
+    Object.defineProperty(URL, 'revokeObjectURL', { configurable: true, value: revokeObjectURL });
+
+    mockUseAdmissions.mockReturnValue({
+      admissions: [
+        createAdmission({
+          uuid: 'visit-1',
+          patientUuid: 'patient-1',
+          patientName: 'María Peña Ñaupari',
+          medicalRecordNumber: 'TEMP-001',
+          documentType: '',
+          documentNumber: '',
+          identificationStatus: 'Confirmado',
+          communicationCondition: 'Sí comunica',
+          responsibleName: 'José Quispe',
+          responsibleRelationship: 'Padre',
+          birthDate: '2019-06-01',
+          hasSis: 'Sí',
+          address: 'Jr. Unión 123, Huánuco',
+          gender: 'F',
+          service: 'Consulta ambulatoria',
+          status: 'Activa',
+        }),
+      ],
+      error: undefined,
+      isLoading: false,
+    });
+
+    renderAdmissionHome();
+
+    fireEvent.click(screen.getByRole('button', { name: /exportar csv/i }));
+
+    expect(createObjectURL).toHaveBeenCalledTimes(1);
+    const blob = createObjectURL.mock.calls[0][0] as Blob;
+    const csv = await blob.text();
+
+    expect(csv.startsWith('\uFEFFsep=,\r\n')).toBe(true);
+    expect(csv).toContain('"HCE / código temporal"');
+    expect(csv).toContain('"Tipo doc."');
+    expect(csv).toContain('"N° documento"');
+    expect(csv).toContain('"Estado identificación"');
+    expect(csv).toContain('"Condición comunicación"');
+    expect(csv).toContain('"María Peña Ñaupari"');
+    expect(csv).toContain('"Sí comunica"');
+    expect(csv).toContain('"Jr. Unión 123, Huánuco"');
+    expect(csv).toContain('"6 años"');
+    expect(csv).not.toContain('Ã');
+    expect(revokeObjectURL).toHaveBeenCalledWith('blob:atenciones');
   });
 
   it('uses the default report page size when config is empty', () => {

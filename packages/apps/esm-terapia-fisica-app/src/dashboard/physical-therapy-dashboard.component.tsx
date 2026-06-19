@@ -1,5 +1,5 @@
 import { Button, DataTableSkeleton } from '@carbon/react';
-import { ErrorState, showModal, showSnackbar, useConfig } from '@openmrs/esm-framework';
+import { ErrorState, showModal, showSnackbar, useConfig, useSession, userHasAccess } from '@openmrs/esm-framework';
 import { CardHeader, EmptyState, launchPatientWorkspace } from '@openmrs/esm-patient-common-lib';
 import React from 'react';
 import { useTranslation } from 'react-i18next';
@@ -15,6 +15,8 @@ const patientFormEntryWorkspace = 'patient-form-entry-workspace';
 
 const PhysicalTherapyDashboard: React.FC<PhysicalTherapyDashboardProps> = ({ patientUuid }) => {
   const { t } = useTranslation();
+  const session = useSession();
+  const canEdit = userHasAccess('app:clinical.chart.physicalTherapy.edit', session?.user);
   const { encounterTypeUuid, formUuid } = useConfig<ConfigObject>();
   const { encounters, isLoading, error, mutate } = useEncounters(encounterTypeUuid, formUuid, patientUuid);
   const clinicalFormTitle = t('terapiaFisica', 'Terapia Física');
@@ -82,7 +84,7 @@ const PhysicalTherapyDashboard: React.FC<PhysicalTherapyDashboardProps> = ({ pat
       <EmptyState
         headerTitle={clinicalFormTitle}
         displayText={clinicalFormTitle}
-        launchForm={() => launchPhysicalTherapyForm()}
+        launchForm={canEdit ? () => launchPhysicalTherapyForm() : undefined}
       />
     );
   }
@@ -90,11 +92,14 @@ const PhysicalTherapyDashboard: React.FC<PhysicalTherapyDashboardProps> = ({ pat
   return (
     <div>
       <CardHeader title={clinicalFormTitle}>
-        <Button onClick={() => launchPhysicalTherapyForm()} kind="ghost">
-          {t('add', 'Add')}
-        </Button>
+        {canEdit ? (
+          <Button onClick={() => launchPhysicalTherapyForm()} kind="ghost">
+            {t('add', 'Add')}
+          </Button>
+        ) : null}
       </CardHeader>
       <PhysicalTherapyTable
+        canEdit={canEdit}
         encounters={encounters}
         onEdit={launchPhysicalTherapyForm}
         onDelete={handleDeleteEncounter}

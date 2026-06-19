@@ -230,6 +230,17 @@
   margin-bottom: layout.$spacing-05;
 }
 
+.searchableCodedField {
+  :global(.cds--list-box__wrapper),
+  :global(.cds--combo-box) {
+    margin-block-start: 0;
+  }
+
+  :global(.cds--label) {
+    margin-block-end: layout.$spacing-03;
+  }
+}
+
 .locationAttributeFieldContainer {
   position: relative;
 

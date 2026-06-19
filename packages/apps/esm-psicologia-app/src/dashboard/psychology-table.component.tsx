@@ -26,6 +26,7 @@ interface PsychologyTableRow {
 }
 
 type PsychologyTableProps = {
+  canEdit: boolean;
   encounters: Encounter[];
   onEdit: (encounterUuid: string) => void;
   onDelete: (encounterUuid: string, encounterTypeName?: string) => void;
@@ -33,7 +34,7 @@ type PsychologyTableProps = {
   rows?: PsychologyTableRow[];
 };
 
-const PsychologyTable: React.FC<PsychologyTableProps> = ({ encounters, onEdit, onDelete, headers, rows }) => {
+const PsychologyTable: React.FC<PsychologyTableProps> = ({ canEdit, encounters, onEdit, onDelete, headers, rows }) => {
   const { t } = useTranslation();
 
   function formatProviderName(display?: string) {
@@ -82,12 +83,16 @@ const PsychologyTable: React.FC<PsychologyTableProps> = ({ encounters, onEdit, o
                   </TableExpandRow>
                   <TableExpandedRow colSpan={headers.length + 1} {...getExpandedRowProps({ row })}>
                     <EncounterObservations observations={encounters[index].obs ?? []} />
-                    <Button onClick={() => onEdit(row.id)} kind="primary" size="sm">
-                      {t('edit', 'Edit')}
-                    </Button>
-                    <Button onClick={() => onDelete(row.id)} kind="danger" size="sm">
-                      {t('delete', 'Delete')}
-                    </Button>
+                    {canEdit ? (
+                      <>
+                        <Button onClick={() => onEdit(row.id)} kind="primary" size="sm">
+                          {t('edit', 'Edit')}
+                        </Button>
+                        <Button onClick={() => onDelete(row.id)} kind="danger" size="sm">
+                          {t('delete', 'Delete')}
+                        </Button>
+                      </>
+                    ) : null}
                   </TableExpandedRow>
                 </React.Fragment>
               ))}

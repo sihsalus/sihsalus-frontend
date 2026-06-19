@@ -26,6 +26,8 @@ import {
   useConfig,
   useLayoutType,
   usePagination,
+  userHasAccess,
+  useSession,
 } from '@openmrs/esm-framework';
 import {
   CardHeader,
@@ -74,6 +76,8 @@ const MedicationsDetailsTable: React.FC<MedicationsDetailsTableProps> = ({
 }) => {
   const pageSize = 5;
   const { t } = useTranslation();
+  const session = useSession();
+  const canEdit = userHasAccess('app:clinical.chart.medications.edit', session?.user);
   const launchOrderBasket = useLaunchWorkspaceRequiringVisit(patient.id, 'order-basket');
   const config = useConfig<ConfigObject>();
   const showPrintButton = config.showPrintButton;
@@ -285,7 +289,7 @@ const MedicationsDetailsTable: React.FC<MedicationsDetailsTableProps> = ({
               {t('print', 'Print')}
             </Button>
           )}
-          {(showAddButton ?? true) ? (
+          {(showAddButton ?? true) && canEdit ? (
             <Button
               kind="ghost"
               renderIcon={(props: ComponentProps<typeof AddIcon>) => <AddIcon size={16} {...props} />}
@@ -348,6 +352,7 @@ const MedicationsDetailsTable: React.FC<MedicationsDetailsTableProps> = ({
                               showDiscontinueButton={showDiscontinueButton}
                               showModifyButton={showModifyButton}
                               showRenewButton={showRenewButton}
+                              canEdit={canEdit}
                               medication={medication}
                               items={orders}
                               setItems={setOrders}
@@ -390,6 +395,7 @@ function OrderBasketItemActions({
   medication,
   items,
   setItems,
+  canEdit,
 }: {
   patient: fhir.Patient;
   showDiscontinueButton: boolean;
@@ -398,6 +404,7 @@ function OrderBasketItemActions({
   medication: Order;
   items: Array<DrugOrderBasketItem>;
   setItems: (items: Array<DrugOrderBasketItem>) => void;
+  canEdit: boolean;
 }) {
   const { mutate: globalMutate } = useSWRConfig();
   const { t } = useTranslation();
@@ -447,6 +454,10 @@ function OrderBasketItemActions({
       workspaceGroupProps,
     );
   }, [items, setItems, medication, workspaceGroupProps]);
+
+  if (!canEdit) {
+    return null;
+  }
 
   return (
     <OverflowMenu

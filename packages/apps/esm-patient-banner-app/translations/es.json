@@ -5,6 +5,12 @@
   "address1": "Línea de Dirección 1",
   "address2": "Línea de Dirección 2",
   "age": "Edad",
+  "ageMonth": "mes",
+  "ageMonths": "meses",
+  "ageWeek": "semana",
+  "ageWeeks": "semanas",
+  "ageYear": "año",
+  "ageYears": "años",
   "attribute": "Atributo",
   "birthplace": "Lugar de nacimiento",
   "city": "Ciudad",
@@ -39,9 +45,12 @@
   "preferred": "Preferido",
   "printIdentifierSticker": "Imprimir etiqueta identificadora",
   "residence": "Lugar de residencia",
+  "relationship": "RelaciÃ³n",
   "started": "Iniciado",
   "state": "Estado",
   "stateProvince": "Estado",
   "status": "Estado",
-  "telephoneNumberWithSeparator": "Número de teléfono:"
+  "telephoneNumberWithSeparator": "Número de teléfono:",
+  "yearAbbreviation": "año",
+  "yearsAbbreviation": "años"
 }

@@ -15,13 +15,15 @@ const mockUsePatient = vi.mocked(usePatient);
 const mockUsePaymentModes = vi.mocked(usePaymentModes);
 const mockUseReactToPrint = vi.mocked(useReactToPrint);
 
+type UsePatientHookResult = ReturnType<typeof mockUsePatient>;
+
 vi.mock('../helpers/functions', () => ({
   convertToCurrency: vi.fn((amount) => `USD ${amount}`),
 }));
 
 window.i18next = {
   language: 'en',
-} as any;
+} as unknown as NonNullable<typeof window.i18next>;
 
 vi.mock('./printable-invoice/print-receipt.component', () => ({
   default: vi.fn(() => <div data-testid="mock-print-receipt">Print Receipt Mock</div>),
@@ -95,7 +97,7 @@ describe('Invoice', () => {
     });
 
     mockUsePatient.mockReturnValue({
-      patient: mockPatient as any,
+      patient: mockPatient as UsePatientHookResult['patient'],
       isLoading: false,
       error: null,
       patientUuid: 'patientUuid',
@@ -132,7 +134,7 @@ describe('Invoice', () => {
 
   it('should render loading state when patient is loading', () => {
     mockUsePatient.mockReturnValue({
-      patient: null as any,
+      patient: null as UsePatientHookResult['patient'],
       isLoading: true,
       error: null,
       patientUuid: 'patientUuid',
@@ -387,7 +389,7 @@ describe('Invoice', () => {
     });
 
     mockUsePatient.mockReturnValue({
-      patient: mockPatient as any,
+      patient: mockPatient as UsePatientHookResult['patient'],
       isLoading: false,
       error: null,
       patientUuid: 'patientUuid',
@@ -404,7 +406,7 @@ describe('Invoice', () => {
 
   it('should not render PrintableInvoice when patient is missing', async () => {
     mockUsePatient.mockReturnValue({
-      patient: null as any,
+      patient: null as UsePatientHookResult['patient'],
       isLoading: false,
       error: null,
       patientUuid: 'patientUuid',

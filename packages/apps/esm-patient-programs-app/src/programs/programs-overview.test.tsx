@@ -1,3 +1,4 @@
+import { getDefaultsFromConfigSchema, useConfig } from '@openmrs/esm-framework';
 import { launchPatientWorkspace } from '@openmrs/esm-patient-common-lib';
 import { screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
@@ -9,10 +10,12 @@ import {
   renderWithSwr,
   waitForLoadingToFinish,
 } from 'test-utils';
+import { type ConfigObject, configSchema } from '../config-schema';
 import { usePrograms } from './programs.resource';
 import ProgramsOverview from './programs-overview.component';
 
 const mockLaunchPatientWorkspace = vi.mocked(launchPatientWorkspace);
+const mockUseConfig = vi.mocked(useConfig<ConfigObject>);
 const mockUsePrograms = vi.mocked(usePrograms);
 
 vi.mock('@openmrs/esm-patient-common-lib', async () => {
@@ -56,6 +59,19 @@ const mockProgramsState = ({
 };
 
 describe('ProgramsOverview', () => {
+  beforeEach(() => {
+    globalThis.spaBase = '/openmrs/spa';
+    mockUseConfig.mockReturnValue({
+      ...getDefaultsFromConfigSchema(configSchema),
+      programNavigationTargets: [
+        {
+          programUuid: mockEnrolledProgramsResponse[0].program.uuid,
+          chartPath: 'well-child-care-dashboard',
+        },
+      ],
+    });
+  });
+
   it('renders an empty state view when the patient is not enrolled into any programs', async () => {
     mockProgramsState({ enrollments: [] });
 
@@ -99,9 +115,12 @@ describe('ProgramsOverview', () => {
     expect(screen.getByRole('table')).toBeInTheDocument();
     expect(screen.getByRole('columnheader', { name: /active programs/i })).toBeInTheDocument();
     expect(screen.getByRole('columnheader', { name: /date enrolled/i })).toBeInTheDocument();
+    expect(screen.getByRole('columnheader', { name: /go to/i })).toBeInTheDocument();
 
     const addButton = screen.getByRole('button', { name: /add/i });
-    const previousPageButton = screen.getByRole('button', { name: /previous page/i });
+    const previousPageButton = screen.getByRole('button', {
+      name: /previous page/i,
+    });
     const nextPageButton = screen.getByRole('button', { name: /next page/i });
 
     expect(addButton).toBeInTheDocument();
@@ -111,7 +130,13 @@ describe('ProgramsOverview', () => {
     expect(previousPageButton).toBeDisabled();
     const row = screen.getByRole('row', { name: /HIV Care and Treatment/i });
     expect(row).toBeInTheDocument();
-    const actionMenuButton = within(row).getByRole('button', { name: /options$/i });
+    expect(within(row).getByRole('link', { name: /go to/i })).toHaveAttribute(
+      'href',
+      `/openmrs/spa/patient/${mockPatient.id}/chart/well-child-care-dashboard`,
+    );
+    const actionMenuButton = within(row).getByRole('button', {
+      name: /options$/i,
+    });
     expect(actionMenuButton).toBeInTheDocument();
 
     expect(addButton).toBeEnabled();
@@ -143,7 +168,7 @@ describe('ProgramsOverview', () => {
     expect(screen.getByRole('row', { name: /hiv differentiated care/i })).toBeInTheDocument();
     expect(screen.getByRole('row', { name: /oncology screening and diagnosis/i })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: /add/i })).toBeDisabled();
-    expect(screen.getByText(/enrolled in all programs/i)).toBeInTheDocument();
+    expect(screen.getByText(/no eligible programs available/i)).toBeInTheDocument();
     expect(screen.getByText(/there are no more programs left to enroll this patient in/i)).toBeInTheDocument();
   });
 });

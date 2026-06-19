@@ -35,6 +35,27 @@ export interface PatientNote {
 
 export interface Concept {
   display: string;
+  conceptMappings?: Array<{
+    conceptReferenceTerm?: {
+      code?: string;
+      conceptSource?: {
+        display?: string;
+        name?: string;
+      };
+      display?: string;
+    };
+  }>;
+  mappings?: Array<{
+    conceptReferenceTerm?: {
+      code?: string;
+      conceptSource?: {
+        display?: string;
+        name?: string;
+      };
+      display?: string;
+    };
+  }>;
+  setMembers?: Array<Concept>;
   uuid: string;
 }
 

@@ -100,6 +100,7 @@
       "name": "offline-tools-patient-chart-actions-widget",
       "slot": "patient-chart-summary-dashboard-slot",
       "component": "offlineToolsPatientChartActions",
+      "privileges": "app:clinical.chart.offlineActions",
       "meta": {
         "columnSpan": 4
       },
@@ -111,6 +112,7 @@
       "name": "offline-tools-patient-chart-actions-dashboard",
       "slot": "patient-chart-offline-actions-dashboard-slot",
       "component": "offlineToolsPatientChartActions",
+      "privileges": "app:clinical.chart.offlineActions",
       "online": true,
       "offline": true,
       "order": 0
@@ -119,6 +121,7 @@
       "name": "offline-tools-patient-chart-actions-dashboard-link",
       "slot": "patient-chart-dashboard-slot",
       "component": "offlineToolsPatientChartActionsDashboardLink",
+      "privileges": "app:clinical.chart.offlineActions",
       "meta": {
         "columns": 1,
         "title": "offlineActions",
@@ -142,7 +145,8 @@
   "modals": [
     {
       "name": "offline-tools-confirmation-modal",
-      "component": "offlineToolsConfirmationModal"
+      "component": "offlineToolsConfirmationModal",
+      "privileges": "app:clinical.chart.offlineActions.edit"
     }
   ]
 }

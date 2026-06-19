@@ -9,7 +9,7 @@ import { useStockItemQuantitiesHook } from './quantities.resource';
 
 interface StockQuantitiesProps {
   onSubmit?: () => void;
-  stockItemUuid: string;
+  stockItemUuid?: string;
 }
 
 const StockQuantities: React.FC<StockQuantitiesProps> = ({ stockItemUuid }) => {

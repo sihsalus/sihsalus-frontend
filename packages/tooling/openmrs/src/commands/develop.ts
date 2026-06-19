@@ -63,6 +63,10 @@ export async function runDevelop(args: DevelopArgs) {
 
   const localConfigUrlPrefix = '__local_config__';
   const localConfigUrls = configFiles.map((path) => `${spaPath}/${localConfigUrlPrefix}/${basename(path)}`);
+  const localConfigContents = configFiles.map((file, i) => ({
+    url: localConfigUrls[i],
+    content: readFileSync(resolve(process.cwd(), file), 'utf8'),
+  }));
 
   const source = resolve(require.resolve('@openmrs/esm-app-shell/package.json'), '..', 'dist');
   const index = resolve(source, 'index.html');
@@ -143,10 +147,9 @@ export async function runDevelop(args: DevelopArgs) {
     });
   }
 
-  configFiles.forEach((file, i) => {
-    const url = localConfigUrls[i];
+  localConfigContents.forEach(({ url, content }) => {
     app.get(url, indexRateLimit, (_, res) => {
-      res.contentType('application/json').send(readFileSync(resolve(process.cwd(), file)));
+      res.contentType('application/json').send(content);
     });
   });
 
@@ -167,29 +170,30 @@ export async function runDevelop(args: DevelopArgs) {
   app.use(
     apiUrl,
     apiRateLimit,
-    createProxyMiddleware(
-      (path) => {
-        return new RegExp(`${apiUrl}/.*`).test(path) && !indexHtmlPathMatcher.test(path);
+    createProxyMiddleware({
+      pathFilter: (path, req) => {
+        const requestPath = typeof req.originalUrl === 'string' ? req.originalUrl : path;
+        return new RegExp(`${apiUrl}/.*`).test(requestPath) && !indexHtmlPathMatcher.test(requestPath);
       },
-      {
-        target: backend,
-        changeOrigin: true,
-        secure: !allowSelfSignedTls,
-        onProxyReq(proxyReq) {
+      target: backend,
+      changeOrigin: true,
+      secure: !allowSelfSignedTls,
+      on: {
+        proxyReq(proxyReq) {
           if (addCookie) {
             const origCookie = proxyReq.getHeader('cookie');
             const newCookie = `${origCookie};${addCookie}`;
             proxyReq.setHeader('cookie', newCookie);
           }
         },
-        onProxyRes(proxyRes) {
+        proxyRes(proxyRes) {
           const setCookie = proxyRes.headers['set-cookie'];
           if (setCookie) {
             proxyRes.headers['set-cookie'] = rewriteLocalDevSetCookie(setCookie);
           }
         },
       },
-    ),
+    }),
   );
 
   app.listen(port, host, () => {

@@ -7,6 +7,7 @@ import { useTranslation } from 'react-i18next';
 import { type RegistrationConfig } from '../../../config-schema';
 import { moduleName } from '../../../constants';
 import { Input } from '../../input/basic-input/input/input.component';
+import { patientFamilyNameMaxLength, patientGivenNameMaxLength } from '../../patient-name-limits';
 import { PatientRegistrationContext } from '../../patient-registration-context';
 import { getEffectiveRegistrationConfig } from '../../peru-registration-config';
 import styles from '../field.scss';
@@ -91,6 +92,7 @@ export const NameField = () => {
       name="givenName"
       labelText={t('givenNameLabelText', 'First Name')}
       checkWarning={checkNumber}
+      maxLength={patientGivenNameMaxLength}
       required
     />
   );
@@ -101,6 +103,7 @@ export const NameField = () => {
       name="middleName"
       labelText={t('middleNameLabelText', 'Middle Name')}
       checkWarning={checkNumber}
+      maxLength={patientGivenNameMaxLength}
     />
   );
 
@@ -110,6 +113,7 @@ export const NameField = () => {
       name="familyName"
       labelText={t('familyNameLabelText', 'Family Name')}
       checkWarning={checkNumber}
+      maxLength={patientFamilyNameMaxLength}
       required
     />
   );
@@ -120,6 +124,7 @@ export const NameField = () => {
       name="familyName2"
       labelText={t('familyName2LabelText', 'Second Family Name')}
       checkWarning={checkNumber}
+      maxLength={patientFamilyNameMaxLength}
       required={requireFamilyName2}
     />
   );

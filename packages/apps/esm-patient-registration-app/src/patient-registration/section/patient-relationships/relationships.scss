@@ -21,6 +21,13 @@
   margin-bottom: layout.$spacing-05;
 }
 
+.personEntrySwitcher {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  inline-size: min(100%, 32rem);
+  margin-bottom: layout.$spacing-05;
+}
+
 .relationshipHeader {
   display: flex;
   align-items: center;

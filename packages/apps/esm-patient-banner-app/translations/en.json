@@ -5,6 +5,12 @@
   "address1": "Address line 1",
   "address2": "Address line 2",
   "age": "Age",
+  "ageMonth": "month",
+  "ageMonths": "months",
+  "ageWeek": "week",
+  "ageWeeks": "weeks",
+  "ageYear": "year",
+  "ageYears": "years",
   "attribute": "Attribute",
   "birthplace": "Place of birth",
   "city": "City",
@@ -39,9 +45,12 @@
   "preferred": "Preferred",
   "printIdentifierSticker": "Print identifier sticker",
   "residence": "Place of residence",
+  "relationship": "Relationship",
   "started": "Started",
   "state": "State",
   "stateProvince": "State",
   "status": "Status",
-  "telephoneNumberWithSeparator": "Telephone number:"
+  "telephoneNumberWithSeparator": "Telephone number:",
+  "yearAbbreviation": "yr",
+  "yearsAbbreviation": "yrs"
 }

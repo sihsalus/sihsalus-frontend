@@ -28,6 +28,8 @@ import {
   useConfig,
   usePagination,
   usePaginationInfo,
+  userHasAccess,
+  useSession,
 } from '@openmrs/esm-framework';
 import React, { useState } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -42,6 +44,8 @@ interface BillHistoryProps {
 
 const BillHistory: React.FC<BillHistoryProps> = ({ patientUuid }) => {
   const { t } = useTranslation();
+  const session = useSession();
+  const canEdit = userHasAccess('app:clinical.chart.billing.edit', session?.user);
   const { bills, error, isLoading, isValidating, mutate } = useBills(patientUuid);
   const { paginated, goTo, results, currentPage } = usePagination(bills);
   const { pageSize, defaultCurrency } = useConfig();
@@ -108,17 +112,19 @@ const BillHistory: React.FC<BillHistoryProps> = ({ patientUuid }) => {
             <EmptyCardIllustration />
           </div>
           <p className={styles.content}>{t('noBillsToDisplay', 'There are no bills to display.')}</p>
-          <Button
-            onClick={() =>
-              launchWorkspace2('billing-form-workspace', {
-                patientUuid,
-                onMutate: mutate,
-              })
-            }
-            kind="ghost"
-          >
-            {t('addBillItems', 'Add bill items')}
-          </Button>
+          {canEdit ? (
+            <Button
+              onClick={() =>
+                launchWorkspace2('billing-form-workspace', {
+                  patientUuid,
+                  onMutate: mutate,
+                })
+              }
+              kind="ghost"
+            >
+              {t('addBillItems', 'Add bill items')}
+            </Button>
+          ) : null}
         </Tile>
       </Layer>
     );
@@ -132,18 +138,20 @@ const BillHistory: React.FC<BillHistoryProps> = ({ patientUuid }) => {
             <InlineLoading status="active" />
           </span>
         )}
-        <Button
-          kind="ghost"
-          onClick={() =>
-            launchWorkspace2('billing-form-workspace', {
-              patientUuid,
-              onMutate: mutate,
-            })
-          }
-          renderIcon={Add}
-        >
-          {t('addBillItems', 'Add bill items')}
-        </Button>
+        {canEdit ? (
+          <Button
+            kind="ghost"
+            onClick={() =>
+              launchWorkspace2('billing-form-workspace', {
+                patientUuid,
+                onMutate: mutate,
+              })
+            }
+            renderIcon={Add}
+          >
+            {t('addBillItems', 'Add bill items')}
+          </Button>
+        ) : null}
       </CardHeader>
       <div className={styles.billHistoryContainer}>
         <DataTable isSortable rows={rowData} headers={headerData} size="md" useZebraStyles>
@@ -172,7 +180,7 @@ const BillHistory: React.FC<BillHistoryProps> = ({ patientUuid }) => {
                   </TableRow>
                 </TableHead>
                 <TableBody>
-                  {rows.map((row, i) => {
+                  {rows.map((row) => {
                     const currentBill = bills?.find((bill) => bill.uuid === row.id);
 
                     return (
@@ -191,7 +199,7 @@ const BillHistory: React.FC<BillHistoryProps> = ({ patientUuid }) => {
                         })()}
                         {row.isExpanded ? (
                           <TableExpandedRow colSpan={headers.length + 1}>
-                            <div className={styles.container} key={i}>
+                            <div className={styles.container} key={row.id}>
                               <InvoiceTable bill={currentBill} onMutate={mutate} isLoadingBill={isValidating} />
                             </div>
                           </TableExpandedRow>

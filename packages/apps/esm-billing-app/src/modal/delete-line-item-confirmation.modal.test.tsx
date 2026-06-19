@@ -1,3 +1,4 @@
+import type { FetchResponse } from '@openmrs/esm-framework';
 import { showSnackbar } from '@openmrs/esm-framework';
 import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
@@ -30,6 +31,7 @@ const mockItem = {
 describe('DeleteLineItem Modal', () => {
   const mockCloseModal = vi.fn();
   const mockMutate = vi.fn();
+  const mockFetchResponse = {} as unknown as FetchResponse<unknown>;
 
   beforeEach(() => {
     vi.clearAllMocks();
@@ -57,7 +59,7 @@ describe('DeleteLineItem Modal', () => {
 
   it('calls deleteBillItem API and shows success snackbar', async () => {
     const user = userEvent.setup();
-    mockDeleteBillItem.mockResolvedValueOnce({} as any);
+    mockDeleteBillItem.mockResolvedValueOnce(mockFetchResponse);
 
     render(<DeleteLineItem closeModal={mockCloseModal} item={mockItem} onMutate={mockMutate} />);
 
@@ -211,7 +213,7 @@ describe('DeleteLineItem Modal', () => {
 
   it('works correctly when onMutate is not provided', async () => {
     const user = userEvent.setup();
-    mockDeleteBillItem.mockResolvedValueOnce({} as any);
+    mockDeleteBillItem.mockResolvedValueOnce(mockFetchResponse);
 
     render(<DeleteLineItem closeModal={mockCloseModal} item={mockItem} />);
 
@@ -286,7 +288,7 @@ describe('DeleteLineItem Modal', () => {
 
   it('trims void reason before sending to API', async () => {
     const user = userEvent.setup();
-    mockDeleteBillItem.mockResolvedValueOnce({} as any);
+    mockDeleteBillItem.mockResolvedValueOnce(mockFetchResponse);
 
     render(<DeleteLineItem closeModal={mockCloseModal} item={mockItem} onMutate={mockMutate} />);
 

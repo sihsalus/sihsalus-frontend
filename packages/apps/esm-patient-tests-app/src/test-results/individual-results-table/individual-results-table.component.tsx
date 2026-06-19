@@ -31,19 +31,19 @@ interface IndividualResultsTableProps {
 const getClasses = (interpretation: OBSERVATION_INTERPRETATION) => {
   switch (interpretation) {
     case 'OFF_SCALE_HIGH':
-      return styles['off-scale-high'];
+      return styles['off-scale-high'] || styles['offScaleHigh'];
 
     case 'CRITICALLY_HIGH':
-      return styles['critically-high'];
+      return styles['critically-high'] || styles['criticallyHigh'];
 
     case 'HIGH':
       return styles['high'];
 
     case 'OFF_SCALE_LOW':
-      return styles['off-scale-low'];
+      return styles['off-scale-low'] || styles['offScaleLow'];
 
     case 'CRITICALLY_LOW':
-      return styles['critically-low'];
+      return styles['critically-low'] || styles['criticallyLow'];
 
     case 'LOW':
       return styles['low'];

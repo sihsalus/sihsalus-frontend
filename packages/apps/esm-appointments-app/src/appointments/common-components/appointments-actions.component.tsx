@@ -24,12 +24,15 @@ interface AppointmentsActionsProps {
 const AppointmentsActions: React.FC<AppointmentsActionsProps> = ({ appointment }) => {
   const { t } = useTranslation();
   const { checkInButton, checkOutButton } = useConfig<ConfigObject>();
-  const { visits, mutateVisit } = useTodaysVisits(); // TODO doesn't work if visit didn't start today?  what about inpatient?
+  const { visits, mutateVisit } = useTodaysVisits(); // TODO doesn't work if visit didn't start today? what about inpatient?
+
   const patientUuid = appointment.patient.uuid;
   const visitDate = dayjs(appointment.startDateTime);
+
   const hasActiveVisitToday = visits?.some(
     (visit) => visit?.patient?.uuid === patientUuid && visit?.startDatetime && !visit?.stopDatetime,
   );
+
   const isTodaysAppointment = visitDate.isToday();
   const isCheckedIn = appointment.status === AppointmentStatus.CHECKEDIN;
   const isCompleted = appointment.status === AppointmentStatus.COMPLETED;
@@ -39,7 +42,10 @@ const AppointmentsActions: React.FC<AppointmentsActionsProps> = ({ appointment }
     if (checkOutButton.customUrl) {
       navigate({
         to: checkOutButton.customUrl,
-        templateParams: { patientUuid, appointmentUuid: appointment.uuid },
+        templateParams: {
+          patientUuid,
+          appointmentUuid: appointment.uuid,
+        },
       });
     } else {
       const dispose = showModal('end-appointment-modal', {
@@ -61,21 +67,26 @@ const AppointmentsActions: React.FC<AppointmentsActionsProps> = ({ appointment }
             {t('cancelled', 'Cancelled')}
           </Button>
         );
+
       case isCompleted:
         return (
           <Button kind="ghost" renderIcon={TaskComplete} iconDescription={t('checkedOut', 'Checked out')} size="sm">
             {t('checkedOut', 'Checked out')}
           </Button>
         );
+
       case checkOutButton.enabled && isCheckedIn:
         return (
           <Button onClick={handleCheckout} kind="danger--tertiary" size="sm">
             {t('checkOut', 'Check out')}
           </Button>
         );
-      case checkInButton.enabled && (!hasActiveVisitToday || checkInButton.showIfActiveVisit) && isTodaysAppointment: {
-        return <CheckInButton patientUuid={patientUuid} appointment={appointment} />;
-      }
+
+      case checkInButton.enabled && (!hasActiveVisitToday || checkInButton.showIfActiveVisit) && isTodaysAppointment:
+        return (
+          <CheckInButton patientUuid={patientUuid} appointment={appointment} hasActiveVisit={hasActiveVisitToday} />
+        );
+
       default:
         return null;
     }

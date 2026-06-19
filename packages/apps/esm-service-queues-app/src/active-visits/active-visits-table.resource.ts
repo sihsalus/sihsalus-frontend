@@ -44,16 +44,16 @@ interface ObsData {
     display?: string;
     uuid?: string;
   };
-  value?: string | any;
+  value?: unknown;
   groupMembers?: Array<{
     concept?: { uuid?: string; display?: string };
-    value?: string | any;
+    value?: unknown;
   }>;
   obsDatetime?: string;
 }
 
 interface Encounter {
-  diagnoses?: Array<any>;
+  diagnoses?: Array<unknown>;
   encounterDatetime?: string;
   encounterProviders?: Array<{
     provider?: {
@@ -68,6 +68,8 @@ interface Encounter {
   uuid?: string;
   voided?: boolean;
 }
+
+type QueueWithLocation = Queue & { location?: { uuid?: string } };
 
 interface MappedEncounter extends Omit<Encounter, 'encounterType' | 'provider'> {
   encounterType: string;
@@ -104,7 +106,7 @@ export const mapVisitQueueEntryProperties = (
   startedAt: dayjs(queueEntry.startedAt).toDate(),
   endedAt: queueEntry.endedAt ? dayjs(queueEntry.endedAt).toDate() : null,
   visitType: queueEntry.visit?.visitType?.display,
-  queueLocation: (queueEntry?.queue as any)?.location?.uuid,
+  queueLocation: (queueEntry.queue as QueueWithLocation)?.location?.uuid,
   visitTypeUuid: queueEntry.visit?.visitType?.uuid,
   visitUuid: queueEntry.visit?.uuid,
   queueUuid: queueEntry.queue.uuid,
@@ -189,7 +191,7 @@ export function useServiceQueueEntries(service: string, locationUuid: string) {
     returnDate: visitQueueEntry.queueEntry.startedAt,
     visitType: visitQueueEntry.visit?.visitType?.display,
     gender: visitQueueEntry.queueEntry.patient ? visitQueueEntry?.queueEntry?.patient?.person?.gender : '--',
-    patientUuid: visitQueueEntry.queueEntry ? visitQueueEntry?.queueEntry.uuid : '--',
+    patientUuid: visitQueueEntry.queueEntry.patient?.uuid ?? '--',
   });
 
   const mappedServiceQueueEntries = data?.data?.results?.map(mapServiceQueueEntryProperties);

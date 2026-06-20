@@ -1,0 +1,23 @@
+{
+  "$schema": "https://json.openmrs.org/routes.schema.json",
+  "backendDependencies": {
+    "webservices.rest": ">=2.2.0"
+  },
+  "extensions": [
+    {
+      "name": "openmrs-livekit-admin-card-link",
+      "slot": "system-admin-page-card-link-slot",
+      "component": "adminCardLink",
+      "online": true,
+      "offline": true
+    }
+  ],
+  "pages": [
+    {
+      "component": "root",
+      "route": "openmrs-livekit",
+      "online": true,
+      "offline": true
+    }
+  ]
+}

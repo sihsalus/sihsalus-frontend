@@ -8669,22 +8669,6 @@ __metadata:
   languageName: unknown
   linkType: soft
 
-"@sihsalus/esm-openmrs-livekit-app@workspace:packages/apps/esm-openmrs-livekit-app":
-  version: 0.0.0-use.local
-  resolution: "@sihsalus/esm-openmrs-livekit-app@workspace:packages/apps/esm-openmrs-livekit-app"
-  dependencies:
-    "@carbon/react": "npm:^1.83.0"
-    openmrs: "workspace:*"
-    typescript: "npm:6.0.3"
-    vitest: "npm:^4.1.7"
-  peerDependencies:
-    "@openmrs/esm-framework": "*"
-    react: 18.x
-    react-dom: 18.x
-    react-i18next: 16.x
-  languageName: unknown
-  linkType: soft
-
 "@sihsalus/esm-patient-allergies-app@workspace:packages/apps/esm-patient-allergies-app":
   version: 0.0.0-use.local
   resolution: "@sihsalus/esm-patient-allergies-app@workspace:packages/apps/esm-patient-allergies-app"

@@ -19,6 +19,7 @@ export interface FlattenedOrder {
   orderer?: string;
   instructions?: string;
   fulfillerComment?: string;
+  conceptUuid?: string;
 }
 
 export interface GroupedOrders {

@@ -1,6 +1,5 @@
 import { type Diagnosis } from '@openmrs/esm-emr-api';
-import type React from 'react';
-import { vi } from 'vitest';
+import React from 'react';
 
 /* Please keep these stubs in alphabetical order for readability */
 
@@ -164,33 +163,12 @@ export const EmptyCard = ({
   </div>
 );
 
-export const PageHeader = ({ children, className, ...props }: React.HTMLAttributes<HTMLElement>) => (
-  <section className={className} {...props}>
-    {children}
-  </section>
-);
-
-export const PageHeaderContent = ({
-  className,
-  illustration,
-  title,
-}: {
-  className?: string;
-  illustration?: React.ReactNode;
-  title: React.ReactNode;
-}) => (
-  <div className={className}>
-    {illustration}
-    <span>{title}</span>
-  </div>
-);
-
-export { CardHeader, ErrorCard, Pagination } from '@openmrs/esm-styleguide/src/internal';
+export { CardHeader, ErrorCard, PageHeader, PageHeaderContent, Pagination } from '@openmrs/esm-styleguide/src/internal';
 
 export const OpenmrsDatePicker = () => <span>OpenmrsDatePicker</span>;
 export const OpenmrsDateRangePicker = () => <span>OpenmrsDateRangePicker</span>;
 
-export const LocationPicker = vi.fn(({ onChange, selectedLocationUuid }) => {
+export const LocationPicker = jest.fn(({ onChange, selectedLocationUuid }) => {
   const locations = [
     {
       uuid: 'uuid_1',
@@ -219,7 +197,7 @@ export const LocationPicker = vi.fn(({ onChange, selectedLocationUuid }) => {
   );
 });
 
-export const DiagnosisTags = vi.fn(({ diagnoses }: { diagnoses: Array<Diagnosis> }) => (
+export const DiagnosisTags = jest.fn(({ diagnoses }: { diagnoses: Array<Diagnosis> }) => (
   <>
     {diagnoses.map((d) => (
       <span key={d.uuid}>{d.display}</span>
@@ -227,20 +205,20 @@ export const DiagnosisTags = vi.fn(({ diagnoses }: { diagnoses: Array<Diagnosis>
   </>
 ));
 
-export const Workspace2 = vi.fn(({ title, children }) => (
+export const Workspace2 = jest.fn(({ title, children }) => (
   <div>
     <h1>{title}</h1>
     {children}
   </div>
 ));
 
-export const NumericObservation = vi.fn(({ value, unit, label }) => (
+export const NumericObservation = jest.fn(({ value, unit, label }) => (
   <span>
     {label && <span>{label}</span>}
     {value} {unit}
   </span>
 ));
 
-export const TableBatchActions = vi.fn(({ children }) => <>{children}</>);
+export const TableBatchActions = jest.fn(({ children }) => <>{children}</>);
 
-export const showModal = vi.fn();
+export const showModal = jest.fn();

@@ -29,7 +29,7 @@ const ActiveWorkspaceWindow: React.FC<WorkspaceWindowProps> = ({ openedWindow, s
         return loadLifeCycles(moduleName, component);
       }),
     ).then(setLifeCycles);
-  }, [openedWorkspaces]);
+  }, [openedWorkspaces, registeredWorkspacesByName]);
 
   return (
     <>
@@ -138,7 +138,16 @@ const ActiveWorkspace: React.FC<ActiveWorkspaceProps> = ({
         windowName: openedWindow.windowName,
         showActionMenu,
       },
-    [openedWorkspace, closeWorkspace, openedGroup, openedWindow],
+    [
+      openedWorkspace,
+      closeWorkspace,
+      openedGroup,
+      openedWindow,
+      isRootWorkspace,
+      showActionMenu,
+      openChildWorkspace,
+      isLeafWorkspace,
+    ],
   );
 
   if (!lifeCycle) {

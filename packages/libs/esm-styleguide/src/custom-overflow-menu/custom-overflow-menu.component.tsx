@@ -24,6 +24,12 @@ interface CustomOverflowMenuContextValue {
 
 const CustomOverflowMenuContext = createContext<CustomOverflowMenuContextValue | null>(null);
 
+type CustomOverflowMenuChildProps = {
+  closeMenu?: () => void;
+  handleOverflowMenuItemFocus?: (options: { currentIndex?: number; direction: number }) => void;
+  index?: number;
+};
+
 export function useCustomOverflowMenu() {
   const context = useContext(CustomOverflowMenuContext);
   if (!context) {
@@ -106,7 +112,15 @@ export function CustomOverflowMenu({ menuTitle, children }: CustomOverflowMenuPr
 
   const enrichedChildren = childArray.map((child, index) => {
     if (isValidElement(child)) {
-      return cloneElement(child as React.ReactElement<any>, {
+      if (typeof child.type === 'string') {
+        const element = child as React.ReactElement<React.HTMLAttributes<HTMLElement>>;
+        return cloneElement(element, {
+          role: element.props.role ?? 'menuitem',
+          tabIndex: element.props.tabIndex ?? -1,
+        });
+      }
+
+      return cloneElement(child as React.ReactElement<CustomOverflowMenuChildProps>, {
         closeMenu: closeMenuAndFocusTrigger,
         handleOverflowMenuItemFocus,
         index,
@@ -163,16 +177,7 @@ export function CustomOverflowMenu({ menuTitle, children }: CustomOverflowMenuPr
 
 type OverflowMenuItemProps = ComponentProps<typeof OverflowMenuItem>;
 
-export function CustomOverflowMenuItem({
-  handleOverflowMenuItemFocus,
-  index,
-  ...props
-}: Omit<OverflowMenuItemProps, 'closeMenu'> & {
-  handleOverflowMenuItemFocus?: unknown;
-  index?: number;
-}) {
+export function CustomOverflowMenuItem(props: Omit<OverflowMenuItemProps, 'closeMenu'>) {
   const context = useContext(CustomOverflowMenuContext);
-  void handleOverflowMenuItemFocus;
-  void index;
   return <OverflowMenuItem {...props} closeMenu={context?.closeMenu} />;
 }

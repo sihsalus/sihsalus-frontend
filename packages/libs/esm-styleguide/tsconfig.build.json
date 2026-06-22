@@ -2,12 +2,10 @@
   "$schema": "https://json.schemastore.org/tsconfig.json",
   "compilerOptions": {
     "declarationDir": "dist",
-    "emitDeclarationOnly": true,
-    "incremental": false,
-    "noEmit": false,
     "rootDir": "src",
+    "emitDeclarationOnly": true,
     "skipLibCheck": true
   },
   "extends": "./tsconfig.json",
-  "exclude": ["**/*.test.*", "**/setup-tests.ts", "**/__mocks__/*"]
+  "exclude": ["**/*.test.*", "**/*.stories.*", "**/setup-tests.ts", "**/__mocks__/*"]
 }

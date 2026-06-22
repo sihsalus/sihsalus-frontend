@@ -62,6 +62,7 @@
   "checkedOut": "Salida Registrada",
   "checkFilters": "Revise los filtros anteriores",
   "checkIn": "Registrar Llegada",
+  "checkInFailed": "Check-in failed",
   "checkOut": "Registrar Salida",
   "chooseAppointmentType": "Elija una condición de ingreso",
   "chooseLocation": "Elija una ubicación",

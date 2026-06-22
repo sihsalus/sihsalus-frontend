@@ -11,7 +11,7 @@ import {
   TableHeader,
   TableRow,
 } from '@carbon/react';
-import { AddIcon, formatDate, parseDate, useLayoutType, useSession, userHasAccess } from '@openmrs/esm-framework';
+import { AddIcon, formatDate, parseDate, useLayoutType, userHasAccess, useSession } from '@openmrs/esm-framework';
 import { CardHeader, EmptyState, ErrorState, launchPatientWorkspace } from '@openmrs/esm-patient-common-lib';
 import React, { useCallback, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -129,7 +129,13 @@ const AllergiesDetailedSummary: React.FC<AllergiesDetailedSummaryProps> = ({ pat
     );
   }
 
-  return <EmptyState displayText={displayText} headerTitle={headerTitle} launchForm={canEdit ? launchAllergiesForm : undefined} />;
+  return (
+    <EmptyState
+      displayText={displayText}
+      headerTitle={headerTitle}
+      launchForm={canEdit ? launchAllergiesForm : undefined}
+    />
+  );
 };
 
 export default AllergiesDetailedSummary;

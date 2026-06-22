@@ -11,7 +11,10 @@ import QueueTableByStatusView from './views/queue-table-by-status-view.component
 const Root: React.FC = () => {
   return (
     <AppErrorBoundary appName="esm-service-queues-app">
-      <RequirePrivilege privilege={serviceQueuesPrivilege} description="Necesita permisos de colas para acceder a esta seccion.">
+      <RequirePrivilege
+        privilege={serviceQueuesPrivilege}
+        description="Necesita permisos de colas para acceder a esta seccion."
+      >
         <main>
           <BrowserRouter basename={serviceQueuesBasePath}>
             <Routes>

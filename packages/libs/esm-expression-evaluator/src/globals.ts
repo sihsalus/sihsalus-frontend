@@ -18,7 +18,7 @@ export const globals = {
   encodeURI,
   encodeURIComponent,
   Object: {
-    __proto__: undefined,
+    __proto__: null,
     assign: Object.assign.bind(null),
     fromEntries: Object.fromEntries.bind(null),
     hasOwn: Object.hasOwn.bind(null),

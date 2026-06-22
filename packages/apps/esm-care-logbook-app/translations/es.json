@@ -84,7 +84,7 @@
   "orderNumber": "Número de orden",
   "patient": "Paciente",
   "patientAddress": "Direccion de paciente",
-  "patientId": "Patient Id",
+  "patientId": "ID del paciente",
   "patientIdentifiers": "Identificadores del paciente",
   "patientInformation": "Informacion de paciente",
   "patientLoadError": "No se pudo cargar el paciente",

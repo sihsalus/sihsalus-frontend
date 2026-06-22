@@ -3,24 +3,17 @@ import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { type ConfigObject, configSchema } from '../../config-schema';
 import { useTodaysVisits } from '../../hooks/useTodaysVisits';
-<<<<<<< HEAD
 import {
   changeAppointmentStatus,
   getAppointmentStatus,
 } from '../../patient-appointments/patient-appointments.resource';
-=======
-import { changeAppointmentStatus } from '../../patient-appointments/patient-appointments.resource';
->>>>>>> e2f1ec05 (fix: backport selected upstream patient management fixes)
 import { type Appointment, AppointmentKind, AppointmentStatus } from '../../types';
 
 import AppointmentActions from './appointments-actions.component';
 
 vi.mock('../../patient-appointments/patient-appointments.resource', () => ({
   changeAppointmentStatus: vi.fn(),
-<<<<<<< HEAD
   getAppointmentStatus: vi.fn(),
-=======
->>>>>>> e2f1ec05 (fix: backport selected upstream patient management fixes)
 }));
 
 vi.mock('../../form/appointments-form.resource', () => ({
@@ -28,11 +21,8 @@ vi.mock('../../form/appointments-form.resource', () => ({
 }));
 
 const mockChangeAppointmentStatus = vi.mocked(changeAppointmentStatus);
-<<<<<<< HEAD
 const mockGetAppointmentStatus = vi.mocked(getAppointmentStatus);
 const mockLaunchWorkspace = vi.mocked(launchWorkspace);
-=======
->>>>>>> e2f1ec05 (fix: backport selected upstream patient management fixes)
 
 const appointment: Appointment = {
   uuid: '7cd38a6d-377e-491b-8284-b04cf8b8c6d8',
@@ -288,7 +278,6 @@ describe('AppointmentActions', () => {
     await userEvent.click(btn);
 
     expect(mockChangeAppointmentStatus).toHaveBeenCalledWith('CheckedIn', appointment.uuid);
-<<<<<<< HEAD
   });
 
   it('launches the start visit workspace without checking in immediately when no active visit exists', async () => {
@@ -372,8 +361,6 @@ describe('AppointmentActions', () => {
 
     expect(mockGetAppointmentStatus).toHaveBeenCalledWith(appointment.uuid);
     expect(mockChangeAppointmentStatus).not.toHaveBeenCalled();
-=======
->>>>>>> e2f1ec05 (fix: backport selected upstream patient management fixes)
   });
 
   // commenting these tests out as this functionality is not implemented yet so not sure how they would have ever passed?

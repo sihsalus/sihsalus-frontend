@@ -36,10 +36,7 @@ interface ResponsiveOdontogramWrapperProps {
   naturalWidth?: number;
 }
 
-const ResponsiveOdontogramWrapper: React.FC<ResponsiveOdontogramWrapperProps> = ({
-  children,
-  naturalWidth = 1260,
-}) => {
+const ResponsiveOdontogramWrapper: React.FC<ResponsiveOdontogramWrapperProps> = ({ children, naturalWidth = 1260 }) => {
   const contentRef = useRef<HTMLDivElement>(null);
   // Alto inicial estimado para evitar parpadeo en el primer render. Se
   // actualiza al medir el contenido real con ResizeObserver.
@@ -74,11 +71,7 @@ const ResponsiveOdontogramWrapper: React.FC<ResponsiveOdontogramWrapperProps> = 
             spread porque TypeScript no acepta `xmlns` directamente en un div
             HTML — React igual lo respeta y crea el nodo en el namespace
             correcto. */}
-        <div
-          ref={contentRef}
-          {...{ xmlns: 'http://www.w3.org/1999/xhtml' }}
-          style={{ width: naturalWidth }}
-        >
+        <div ref={contentRef} {...{ xmlns: 'http://www.w3.org/1999/xhtml' }} style={{ width: naturalWidth }}>
           {children}
         </div>
       </foreignObject>

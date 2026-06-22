@@ -87,9 +87,9 @@
     "react-error-boundary": "^4.0.13",
     "react-i18next": "^16.0.0",
     "rxjs": "^6.6.7",
-    "turbo": "^2.9.14",
+    "turbo": "^2.9.18",
     "typescript": "6.0.3",
-    "vitest": "^4.1.7"
+    "vitest": "^4.1.9"
   },
   "lint-staged": {
     "*.{css,js,json,ts,tsx}": "node ../../tooling/scripts/run-biome.js check --write",

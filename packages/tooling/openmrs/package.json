@@ -64,6 +64,6 @@
     "@types/semver": "^7",
     "@types/tar": "^4.0.3",
     "typescript": "6.0.3",
-    "vitest": "^4.1.7"
+    "vitest": "^4.1.9"
   }
 }

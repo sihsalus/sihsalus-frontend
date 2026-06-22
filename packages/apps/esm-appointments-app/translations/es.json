@@ -8,6 +8,7 @@
   "appointmentCancelled": "Cita Cancelada",
   "appointmentCancelledSuccessfully": "Cita cancelada con éxito",
   "appointmentCheckedIn": "Llegada a la cita registrada",
+  "appointmentCheckedInAfterVisitStarted": "La consulta fue iniciada y la llegada a la cita fue registrada",
   "appointmentCheckedInWithExistingVisit": "Llegada a la cita registrada usando la consulta activa existente",
   "appointmentCheckInFailed": "Ocurrió un error al registrar la llegada a la cita",
   "appointmentColor": "Color de la cita",

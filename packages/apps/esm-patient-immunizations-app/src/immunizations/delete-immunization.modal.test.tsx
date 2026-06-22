@@ -1,4 +1,4 @@
-import { showSnackbar, useConfig, useSession } from '@openmrs/esm-framework';
+import { showSnackbar, useConfig, userHasAccess, useSession } from '@openmrs/esm-framework';
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { mockPatient } from 'test-utils';
@@ -9,6 +9,7 @@ import DeleteImmunizationModal from './delete-immunization.modal';
 
 const mockUseConfig = vi.mocked(useConfig<ImmunizationConfigObject>);
 const mockUseSession = vi.mocked(useSession);
+const mockUserHasAccess = vi.mocked(userHasAccess);
 
 const sessionWithEditPrivilege = {
   authenticated: true,
@@ -43,6 +44,7 @@ vi.mock('../hooks/useImmunizationsConceptSet', async () => ({
 
 beforeEach(() => {
   mockUseSession.mockReturnValue(sessionWithEditPrivilege);
+  mockUserHasAccess.mockReturnValue(true);
   return mockUseConfig.mockReturnValue({
     immunizationConceptSet: '',
     fhirConceptMappings: {
@@ -116,6 +118,7 @@ describe('DeleteImmunizationModal', () => {
 
   it('closes without rendering when the user lacks the edit privilege', () => {
     mockUseSession.mockReturnValue(sessionWithoutPrivileges);
+    mockUserHasAccess.mockReturnValue(false);
     const close = vi.fn();
 
     render(<DeleteImmunizationModal {...defaultProps} close={close} />);

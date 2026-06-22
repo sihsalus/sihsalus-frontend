@@ -5,7 +5,7 @@ import { type CoreTranslationKey, getCoreTranslation } from '@openmrs/esm-transl
 import React from 'react';
 
 // Maps Carbon's internal translateWithId keys to OpenMRS core translation keys
-const carbonToCoreTranslationMap: Record<string, string> = {
+const carbonToCoreTranslationMap: Record<string, CoreTranslationKey> = {
   'carbon.table.batch.cancel': 'cancel',
   'carbon.table.batch.items.selected': 'batchActionsItemsSelected',
   'carbon.table.batch.item.selected': 'batchActionItemSelected',
@@ -22,7 +22,7 @@ export const TableBatchActions: React.FC<TableBatchActionsProps> = (props) => {
     <CarbonTableBatchActions
       translateWithId={(id, state) => {
         const key = carbonToCoreTranslationMap[id];
-        return key ? getCoreTranslation(key as CoreTranslationKey, id, state as Record<string, unknown>) : id;
+        return key ? getCoreTranslation(key, id, state as Record<string, unknown>) : id;
       }}
       {...props}
     />

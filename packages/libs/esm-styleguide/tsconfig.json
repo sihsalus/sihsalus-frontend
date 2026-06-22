@@ -1,53 +1,9 @@
 {
   "$schema": "https://json.schemastore.org/tsconfig.json",
-  "extends": "../../../tsconfig.base.json",
+  "extends": "../tsconfig.json",
   "compilerOptions": {
-    "strict": true,
-    "noImplicitAny": true,
-    "strictNullChecks": true,
-    "noUncheckedIndexedAccess": false,
     "types": ["node", "fhir", "vitest/globals"],
-    "baseUrl": ".",
-    "paths": {
-      "@openmrs/esm-api": ["../../../node_modules/@openmrs/esm-api/dist/index"],
-      "@openmrs/esm-api/src/public": ["../../../node_modules/@openmrs/esm-api/dist/public"],
-      "@openmrs/esm-config": ["../../../node_modules/@openmrs/esm-config/dist/index"],
-      "@openmrs/esm-config/src/public": ["../../../node_modules/@openmrs/esm-config/dist/public"],
-      "@openmrs/esm-context": ["../../../node_modules/@openmrs/esm-context/dist/index"],
-      "@openmrs/esm-context/src/public": ["../../../node_modules/@openmrs/esm-context/dist/public"],
-      "@openmrs/esm-dynamic-loading": ["../../../node_modules/@openmrs/esm-dynamic-loading/dist/index"],
-      "@openmrs/esm-dynamic-loading/src/public": ["../../../node_modules/@openmrs/esm-dynamic-loading/dist/public"],
-      "@openmrs/esm-emr-api": ["../../../node_modules/@openmrs/esm-emr-api/dist/index"],
-      "@openmrs/esm-emr-api/src/public": ["../../../node_modules/@openmrs/esm-emr-api/dist/public"],
-      "@openmrs/esm-error-handling": ["../../../node_modules/@openmrs/esm-error-handling/dist/index"],
-      "@openmrs/esm-expression-evaluator": ["../../../node_modules/@openmrs/esm-expression-evaluator/dist/index"],
-      "@openmrs/esm-expression-evaluator/src/public": [
-        "../../../node_modules/@openmrs/esm-expression-evaluator/dist/public"
-      ],
-      "@openmrs/esm-extensions": ["../../../node_modules/@openmrs/esm-extensions/dist/index"],
-      "@openmrs/esm-extensions/src/public": ["../../../node_modules/@openmrs/esm-extensions/dist/public"],
-      "@openmrs/esm-feature-flags": ["../../../node_modules/@openmrs/esm-feature-flags/dist/index"],
-      "@openmrs/esm-feature-flags/src/public": ["../../../node_modules/@openmrs/esm-feature-flags/dist/public"],
-      "@openmrs/esm-framework": ["../../../node_modules/@openmrs/esm-framework/dist/index"],
-      "@openmrs/esm-framework/src/internal": ["../../../node_modules/@openmrs/esm-framework/dist/internal"],
-      "@openmrs/esm-globals": ["../../../node_modules/@openmrs/esm-globals/dist/index"],
-      "@openmrs/esm-navigation": ["../../../node_modules/@openmrs/esm-navigation/dist/index"],
-      "@openmrs/esm-navigation/src/public": ["../../../node_modules/@openmrs/esm-navigation/dist/public"],
-      "@openmrs/esm-offline": ["../../../node_modules/@openmrs/esm-offline/dist/index"],
-      "@openmrs/esm-offline/src/public": ["../../../node_modules/@openmrs/esm-offline/dist/public"],
-      "@openmrs/esm-react-utils": ["../../../node_modules/@openmrs/esm-react-utils/dist/index"],
-      "@openmrs/esm-react-utils/src/public": ["../../../node_modules/@openmrs/esm-react-utils/dist/public"],
-      "@openmrs/esm-routes": ["../../../node_modules/@openmrs/esm-routes/dist/index"],
-      "@openmrs/esm-state": ["../../../node_modules/@openmrs/esm-state/dist/index"],
-      "@openmrs/esm-state/src/public": ["../../../node_modules/@openmrs/esm-state/dist/public"],
-      "@openmrs/esm-styleguide": ["./src/internal"],
-      "@openmrs/esm-styleguide/src/internal": ["./src/internal"],
-      "@openmrs/esm-styleguide/src/public": ["./src/public"],
-      "@openmrs/esm-translations": ["../../../node_modules/@openmrs/esm-translations/dist/index"],
-      "@openmrs/esm-translations/src/public": ["../../../node_modules/@openmrs/esm-translations/dist/public"],
-      "@openmrs/esm-utils": ["../../../node_modules/@openmrs/esm-utils/dist/index"]
-    }
+    "noUncheckedIndexedAccess": false
   },
-  "include": ["src/**/*.ts*", "src/**/*.d.ts"],
-  "exclude": ["**/*.test.*", "**/*.stories.*", "**/setup-tests.ts", "**/__mocks__/*"]
+  "include": ["src/**/*.ts*"]
 }

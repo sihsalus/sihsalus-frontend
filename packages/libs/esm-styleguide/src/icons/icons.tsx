@@ -930,7 +930,7 @@ export const Icon = memo(
           iconRef.current.style.setProperty('--omrs-icon-fill', fill);
         }
       }
-    }, []);
+    }, [fill]);
 
     return (
       <svg

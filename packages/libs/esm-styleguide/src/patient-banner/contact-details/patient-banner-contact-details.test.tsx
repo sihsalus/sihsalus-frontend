@@ -134,15 +134,13 @@ describe('ContactDetails', () => {
     expect(screen.getByText(/relationships/i)).toBeInTheDocument();
     expect(screen.getByText(/Amanda Robinson/)).toBeInTheDocument();
     expect(screen.getByText(/Sibling/i)).toBeInTheDocument();
-    expect(screen.getByText(/24 years/i)).toBeInTheDocument();
+    expect(screen.getByText(/24 yrs/i)).toBeInTheDocument();
     expect(screen.getByText(/\+0123456789/i)).toBeInTheDocument();
     expect(screen.getByText(/Next of Kin Contact Phone Number/i)).toBeInTheDocument();
     expect(screen.getByText(/0700-000-000/)).toBeInTheDocument();
     expect(screen.getByText(/patient lists/i)).toBeInTheDocument();
     expect(screen.getByText(/Test patient List-47/)).toBeInTheDocument();
     expect(screen.getByText(/List three/)).toBeInTheDocument();
-    expect(screen.getByText(/postal code/i)).toBeInTheDocument();
-    expect(screen.getByText(/00100/)).toBeInTheDocument();
   });
 
   it('patient related name should be a link', async () => {

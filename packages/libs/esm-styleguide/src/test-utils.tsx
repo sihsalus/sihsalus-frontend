@@ -1,8 +1,8 @@
 import { type RenderOptions, render } from '@testing-library/react';
-import React, { type ReactElement } from 'react';
+import { type PropsWithChildren, type ReactElement } from 'react';
 import { SWRConfig } from 'swr';
 
-export const swrWrapper = ({ children }: { children: React.ReactNode }) => {
+export const swrWrapper = ({ children }: PropsWithChildren) => {
   return (
     <SWRConfig
       value={{

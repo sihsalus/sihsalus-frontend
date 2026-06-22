@@ -95,7 +95,7 @@ export function PatientPhoto({ patientUuid, patientName, alt }: PatientPhotoProp
   }
 
   return (
-    <div role="img" aria-label={altText}>
+    <div aria-label={altText} role="img">
       <div
         className={styles.avatar}
         title={patientName}

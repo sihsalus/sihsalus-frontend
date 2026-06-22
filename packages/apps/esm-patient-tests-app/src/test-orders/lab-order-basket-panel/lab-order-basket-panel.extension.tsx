@@ -1,5 +1,5 @@
-import { Button, Tile } from '@carbon/react';
-import { AddIcon, ChevronDownIcon, ChevronUpIcon, MaybeIcon, useConfig } from '@openmrs/esm-framework';
+import { Button, Select, SelectItem, Tile } from '@carbon/react';
+import { AddIcon, ChevronDownIcon, ChevronUpIcon, MaybeIcon, OpenmrsDatePicker, useConfig } from '@openmrs/esm-framework';
 import { type OrderBasketItem, useOrderBasket, useOrderType } from '@openmrs/esm-patient-common-lib';
 import classNames from 'classnames';
 import { type ComponentProps, useCallback, useEffect, useMemo, useState } from 'react';
@@ -54,7 +54,8 @@ interface LabOrderBasketPanelProps extends OrderTypeConfig {
 function LabOrderBasketPanel({ orderTypeUuid, label, icon, launchAddLabOrder }: LabOrderBasketPanelProps) {
   const { t } = useTranslation();
   const { orderType, isLoadingOrderType } = useOrderType(orderTypeUuid);
-  const { orders: orderConfig } = useConfig<ConfigObject>();
+  const config = useConfig<ConfigObject>();
+  const { orders: orderConfig, priorityConfigs } = config;
   const prepareTestOrderPostData = useCallback(
     (order: TestOrderBasketItem, patientUuid: string, encounterUuid: string | null) =>
       prepTestOrderPostData(order, patientUuid, encounterUuid, orderConfig.careSettingUuid),
@@ -63,6 +64,79 @@ function LabOrderBasketPanel({ orderTypeUuid, label, icon, launchAddLabOrder }: 
 
   const { orders, setOrders } = useOrderBasket<TestOrderBasketItem>(orderTypeUuid, prepareTestOrderPostData);
   const [isExpanded, setIsExpanded] = useState(orders.length > 0);
+
+  const [selectedPriorityUuid, setSelectedPriorityUuid] = useState<string>(() => {
+    return localStorage.getItem('sihsalus-lab-order-basket-priority') || 'e724bdb6-2c75-4b6f-a00c-d43f2c372974';
+  });
+
+  const [bulkScheduledDate, setBulkScheduledDate] = useState<Date | null>(null);
+
+  const selectedPriority = priorityConfigs?.find((p) => p.conceptUuid === selectedPriorityUuid);
+  const requiresScheduledDate = selectedPriority?.requiresScheduledDate ?? false;
+
+  const handlePriorityChange = (event: React.ChangeEvent<HTMLSelectElement>) => {
+    const newPriorityUuid = event.target.value;
+    setSelectedPriorityUuid(newPriorityUuid);
+    localStorage.setItem('sihsalus-lab-order-basket-priority', newPriorityUuid);
+
+    const priority = priorityConfigs?.find((p) => p.conceptUuid === newPriorityUuid);
+    const newUrgencyCode = priority?.urgency ?? 'STAT';
+    const needsDate = priority?.requiresScheduledDate ?? false;
+
+    if (!needsDate) {
+      setBulkScheduledDate(null);
+    }
+
+    const updatedOrders = orders.map((order) => {
+      const finalDate = needsDate ? bulkScheduledDate : null;
+      return {
+        ...order,
+        urgency: newPriorityUuid,
+        urgencyCode: newUrgencyCode,
+        scheduledDate: finalDate,
+        isOrderIncomplete: needsDate ? !finalDate : false,
+      };
+    });
+    setOrders(updatedOrders);
+  };
+
+  const handleBulkDateChange = (date: Date) => {
+    setBulkScheduledDate(date);
+
+    const updatedOrders = orders.map((order) => {
+      return {
+        ...order,
+        scheduledDate: date,
+        isOrderIncomplete: false,
+      };
+    });
+    setOrders(updatedOrders);
+  };
+
+  useEffect(() => {
+    const hasEmptyUrgency = orders.some((order) => !order.urgency);
+    if (hasEmptyUrgency) {
+      const selectedPriority = priorityConfigs?.find((p) => p.conceptUuid === selectedPriorityUuid);
+      const newUrgencyCode = selectedPriority?.urgency ?? 'STAT';
+      const needsDate = selectedPriority?.requiresScheduledDate ?? false;
+
+      const updatedOrders = orders.map((order) => {
+        if (!order.urgency) {
+          const finalDate = needsDate ? bulkScheduledDate : null;
+          return {
+            ...order,
+            urgency: selectedPriorityUuid,
+            urgencyCode: newUrgencyCode,
+            scheduledDate: finalDate,
+            isOrderIncomplete: needsDate ? !finalDate : false,
+          };
+        }
+        return order;
+      });
+      setOrders(updatedOrders);
+    }
+  }, [orders, selectedPriorityUuid, priorityConfigs, setOrders, bulkScheduledDate]);
+
   const {
     incompleteOrderBasketItems,
     newOrderBasketItems,
@@ -166,6 +240,30 @@ function LabOrderBasketPanel({ orderTypeUuid, label, icon, launchAddLabOrder }: 
       </div>
       {isExpanded && orders.length > 0 && (
         <>
+          <div className={styles.prioritySelectorContainer}>
+            <Select
+              id="bulk-priority-select"
+              labelText={t('priority', 'Priority')}
+              value={selectedPriorityUuid}
+              onChange={handlePriorityChange}
+              size="sm"
+            >
+              {priorityConfigs?.map((option) => (
+                <SelectItem key={option.conceptUuid} text={option.label} value={option.conceptUuid} />
+              ))}
+            </Select>
+          </div>
+          {requiresScheduledDate && (
+            <div className={styles.bulkDatePickerWrapper}>
+              <OpenmrsDatePicker
+                id="bulk-scheduled-date"
+                labelText={t('scheduledDate', 'Scheduled date')}
+                value={bulkScheduledDate}
+                onChange={handleBulkDateChange}
+                minDate={new Date()}
+              />
+            </div>
+          )}
           {incompleteOrderBasketItems.length > 0 &&
             incompleteOrderBasketItems.map((order) => (
               <LabOrderBasketItemTile

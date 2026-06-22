@@ -1,17 +1,15 @@
 {
   "compilerOptions": {
     "esModuleInterop": true,
-    "module": "CommonJS",
-    "target": "es2015",
+    "module": "ES2020",
+    "target": "ES2020",
     "allowSyntheticDefaultImports": true,
     "skipLibCheck": true,
-    "jsx": "react",
     "strictNullChecks": true,
     "moduleResolution": "node",
-    "rootDir": "src",
+    "resolveJsonModule": true,
     "outDir": "dist",
-    "ignoreDeprecations": "6.0",
-    "lib": ["es5", "es2015", "es2015.promise", "es2016.array.include", "es2018"]
+    "lib": ["es2020"]
   },
   "include": ["src/**/*"]
 }

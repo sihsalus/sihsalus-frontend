@@ -1,7 +1,7 @@
 import type {} from '@openmrs/esm-globals';
 import * as utils from '@openmrs/esm-utils/mock';
 import dayjs from 'dayjs';
-import { forwardRef, type InputHTMLAttributes, type ReactNode, useState } from 'react';
+import React, { useState } from 'react';
 import { NEVER } from 'rxjs';
 import { vi } from 'vitest';
 
@@ -18,15 +18,7 @@ export * from '@openmrs/esm-state/mock';
 export * from '@openmrs/esm-styleguide/mock';
 export * from '@openmrs/esm-translations/mock';
 
-export {
-  formatDate,
-  formatDatetime,
-  formatPartialDate,
-  formatTime,
-  isOmrsDateToday,
-  matchLocale,
-  parseDate,
-} from '@openmrs/esm-utils';
+export { formatDate, formatDatetime, formatTime, isOmrsDateToday, matchLocale, parseDate } from '@openmrs/esm-utils';
 
 /* esm-globals */
 
@@ -44,12 +36,14 @@ export const importDynamic = vi.fn();
 /* esm-error-handling */
 export const createErrorHandler = () => vi.fn().mockReturnValue(NEVER);
 
-export const reportError = vi.fn();
+export const reportError = vi.fn().mockImplementation((error) => {
+  throw error;
+});
 
 /* esm-feature-flags */
 export const registerFeatureFlags = vi.fn();
 export const getFeatureFlag = vi.fn().mockReturnValue(true);
-export const subscribeToFeatureFlag = vi.fn((_name: string, callback) => callback(true));
+export const subscribeToFeatureFlag = vi.fn((name: string, callback) => callback(true));
 
 /* esm-navigation */
 export { interpolateString, interpolateUrl } from '@openmrs/esm-navigation';
@@ -88,44 +82,9 @@ export const CustomOverflowMenuItem = vi.fn(({ itemText, ...props }) => (
 ));
 export const PatientBannerActionsMenu = vi.fn(() => <div>Patient Banner Actions Menu</div>);
 export const PatientBannerContactDetails = vi.fn(() => <div>Patient Banner Contact Details</div>);
-interface PatientBannerPatientInfoMockProps {
-  patient: fhir.Patient;
-}
-
-const getPatientBannerGender = (gender?: string) => {
-  switch (gender?.toLowerCase()) {
-    case 'female':
-      return 'Female';
-    case 'male':
-      return 'Male';
-    case 'other':
-      return 'Other';
-    case 'unknown':
-      return 'Unknown';
-    default:
-      return gender;
-  }
-};
-
-export const PatientBannerPatientInfo = vi.fn(({ patient }: PatientBannerPatientInfoMockProps) => {
-  const patientName = utils.getPatientName(patient);
-  const gender = getPatientBannerGender(patient.gender);
-  const patientAge = patient.birthDate ? utils.age(patient.birthDate) : null;
-
-  return (
-    <div>
-      <span>{patientName}</span>
-      {gender ? <span> {gender}</span> : null}
-      {patientAge ? <span> · {patientAge}</span> : null}
-      {patient.identifier?.map((identifier) => (
-        <span key={identifier.id ?? `${identifier.type?.text}-${identifier.value}`}>
-          {' '}
-          · {identifier.type?.text} {identifier.value}
-        </span>
-      ))}
-    </div>
-  );
-});
+export const PatientBannerPatientInfo = vi.fn(({ patient }) => (
+  <div>{patient ? utils.getPatientName(patient) : 'Patient Banner Patient Info'}</div>
+));
 export const PatientBannerPatientIdentifiers = vi.fn(() => <div>Patient Banner Patient Identifier</div>);
 export const PatientBannerToggleContactDetailsButton = vi.fn(() => (
   <div>Patient Banner Toggle Contact Details Button</div>
@@ -153,60 +112,24 @@ export const closeWorkspace = vi.fn();
 export const launchWorkspace = vi.fn();
 export const launchWorkspace2 = vi.fn();
 export const launchWorkspaceGroup = vi.fn();
+export const launchWorkspaceGroup2 = vi.fn();
 export const closeWorkspaceGroup2 = vi.fn();
 export const navigateAndLaunchWorkspace = vi.fn();
 export const useWorkspaces = vi.fn();
 export const useWorkspace2Context = vi.fn();
 
-interface OpenmrsDatePickerMockProps extends InputHTMLAttributes<HTMLInputElement> {
-  invalid?: boolean;
-  invalidText?: ReactNode;
-  isInvalid?: boolean;
-  isRequired?: boolean;
-  labelText?: ReactNode;
-  maxDate?: Date;
-  minDate?: Date;
-  onChange?: (date: Date) => void;
-  value?: Date | string | null;
-}
-
-export const OpenmrsDatePicker = forwardRef<HTMLInputElement, OpenmrsDatePickerMockProps>(
-  function OpenmrsDatePickerMock(
-    {
-      id,
-      labelText,
-      value,
-      onChange,
-      invalid,
-      isInvalid,
-      invalidText,
-      isRequired,
-      maxDate: _maxDate,
-      minDate: _minDate,
-      required,
-      ...props
-    },
-    ref,
-  ) {
-    const hasError = Boolean(invalid || isInvalid);
-
-    return (
-      <>
-        <label htmlFor={id}>{labelText}</label>
-        <input
-          {...props}
-          id={id}
-          ref={ref}
-          required={required ?? isRequired}
-          type="text"
-          value={value ? dayjs(value).format('DD/MM/YYYY') : ''}
-          onChange={(evt) => onChange?.(dayjs(evt.target.value).toDate())}
-        />
-        {hasError && <span>{invalidText}</span>}
-      </>
-    );
-  },
-);
+export const OpenmrsDatePicker = vi.fn(({ id, labelText, value, onChange, isInvalid, invalidText }) => (
+  <>
+    <label htmlFor={id}>{labelText}</label>
+    <input
+      id={id}
+      type="text"
+      value={value ? dayjs(value).format('DD/MM/YYYY') : ''}
+      onChange={(evt) => onChange?.(dayjs(evt.target.value).toDate())}
+    />
+    {isInvalid && <span>{invalidText}</span>}
+  </>
+));
 
 export const OpenmrsDateRangePicker = vi.fn(({ id, labelText, value = [], onChange, isInvalid, invalidText }) => {
   const [inputValue, setInputValue] = useState(() => {
@@ -240,6 +163,7 @@ export const OpenmrsDateRangePicker = vi.fn(({ id, labelText, value = [], onChan
 
 /* esm-utils */
 export {
+  formatPartialDate,
   formatPatientName,
   getDefaultsFromConfigSchema,
   getPatientName,
@@ -248,6 +172,7 @@ export {
   selectPreferredName,
 } from '@openmrs/esm-utils';
 
+export const getLocale = vi.fn(() => 'en');
 export const age = vi.fn((arg) => utils.age(arg));
 
 export function isVersionSatisfied() {

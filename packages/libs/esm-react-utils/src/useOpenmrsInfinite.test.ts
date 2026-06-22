@@ -1,7 +1,7 @@
 import { act, renderHook, waitFor } from '@testing-library/react';
 import { describe, expect, it } from 'vitest';
+import { getIntArray, getTestData } from './pagination-test-helpers';
 import { useOpenmrsInfinite } from './useOpenmrsInfinite';
-import { getIntArray, getTestData } from './useOpenmrsPagination.test';
 
 describe('useOpenmrsInfinite', () => {
   it('should load all rows with 1 fetch if number of rows < pageSize', async () => {

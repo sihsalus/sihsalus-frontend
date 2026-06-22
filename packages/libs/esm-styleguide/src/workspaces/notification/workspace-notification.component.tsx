@@ -46,10 +46,10 @@ export function WorkspaceNotification({ contextKey }: WorkspaceNotificationProps
   // If we navigate away from the current context, we need to prompt if there are
   // unsaved changes.
   useEffect(() => {
-    const handleRouting = (event: CustomEvent<SingleSpaCustomEventDetail>) => {
+    const handleRouting = (event: Event) => {
       const {
         detail: { cancelNavigation, newUrl },
-      } = event;
+      } = event as Event & { detail: SingleSpaCustomEventDetail };
 
       // Check if the new URL matches the current context.
       const regex = new RegExp(`/${escapeRegExp(contextKey)}(/|$)`);
@@ -75,10 +75,10 @@ export function WorkspaceNotification({ contextKey }: WorkspaceNotificationProps
         }
       }
     };
-    window.addEventListener('single-spa:before-routing-event', handleRouting as EventListener);
+    window.addEventListener('single-spa:before-routing-event', handleRouting);
 
     return () => {
-      window.removeEventListener('single-spa:before-routing-event', handleRouting as EventListener);
+      window.removeEventListener('single-spa:before-routing-event', handleRouting);
     };
   }, [contextKey]);
 

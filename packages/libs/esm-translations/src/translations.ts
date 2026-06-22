@@ -48,7 +48,6 @@ export const coreTranslations = {
   actions: 'Actions',
   actionableNotification: 'Actionable notification',
   address: 'Address',
-  additionalDetails: 'Additional details',
   age: 'Age',
   batchActionItemSelected: '{{totalSelected}} item selected',
   batchActionsItemsSelected: '{{totalSelected}} items selected',
@@ -77,11 +76,6 @@ export const coreTranslations = {
   male: 'Male',
   noResultsToDisplay: 'No results to display',
   notAvailable: 'Not available',
-  offlineSetupErrorTitle: 'Offline setup unavailable',
-  offlineSetupGenericError:
-    'Offline mode could not be enabled. You can still sign in and work online. If this continues, contact support and share the technical detail: {{message}}',
-  offlineSetupMissingBrowserCapabilities:
-    'Offline setup unavailable. Offline mode could not be enabled because this browser or browsing context does not allow Service Workers. You can still sign in and work online. To use offline mode, open SIH Salus over HTTPS or localhost, use a compatible browser, and avoid private browsing or browser policies that block Service Workers.',
   other: 'Other',
   paginationItemsCount: '{{pageItemsCount}} / {{totalItems}} items',
   paginationOfPages: 'of {{count}} pages',
@@ -112,8 +106,6 @@ export const coreTranslations = {
   snackbarNotification: 'Snackbar notification',
   toggleDevTools: 'Toggle dev tools',
   unknown: 'Unknown',
-  year: 'year',
   yearAbbreviation: 'yr',
-  years: 'years',
   yearsAbbreviation: 'yrs',
 };

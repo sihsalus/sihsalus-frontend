@@ -16,7 +16,6 @@ export type LoadedSessionStore = {
 export type UnloadedSessionStore = {
   loaded: false;
   session: null;
-  error?: unknown;
 };
 
 /** @internal */
@@ -137,7 +136,7 @@ function isValidLocale(locale: unknown): locale is string {
 
   try {
     new Intl.Locale(locale);
-  } catch (_e) {
+  } catch (e) {
     return false;
   }
 
@@ -204,7 +203,7 @@ function isSuperUser(user: { roles: Array<Role> }) {
  */
 export function refetchCurrentUser(username?: string, password?: string) {
   lastFetchTimeMillis = Date.now();
-  const headers: Record<string, string> = {};
+  const headers = {};
   if (username && password) {
     headers['Authorization'] = `Basic ${window.btoa(`${username}:${password}`)}`;
   }
@@ -423,24 +422,10 @@ function handleSessionResponse(result: Promise<FetchResponse<Session>>) {
         }
       })
       .catch((err) => {
-        reportError(getSessionFetchErrorMessage(err));
-        const nextState: SessionStore = { loaded: false, session: null, error: err };
+        reportError(`Failed to fetch new session information: ${err}`);
+        const nextState: SessionStore = { loaded: false, session: null };
         sessionStore.setState(nextState);
         reject(nextState);
       });
   });
-}
-
-function getSessionFetchErrorMessage(err: unknown) {
-  const status = (err as { response?: { status?: number } })?.response?.status;
-
-  if (status === 404) {
-    return 'Unable to reach the OpenMRS session endpoint. Check that the backend is published at /openmrs.';
-  }
-
-  if (status === 502 || status === 503 || status === 504) {
-    return 'The OpenMRS backend is temporarily unavailable. Please try again later.';
-  }
-
-  return `Unable to refresh the OpenMRS session: ${err}`;
 }

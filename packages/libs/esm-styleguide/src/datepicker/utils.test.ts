@@ -40,24 +40,24 @@ describe('dateToInternationalizedDate', () => {
     const calendar = new EthiopicCalendar();
     const result = dateToInternationalizedDate(date, calendar);
     expect(result).toBeDefined();
-    expect(result!.calendar.identifier).toBe('ethiopic');
+    expect(result?.calendar.identifier).toBe('ethiopic');
   });
 
   it('converts a JS Date to CalendarDate', () => {
     const jsDate = new Date(2025, 2, 15); // March 15, 2025
     const result = dateToInternationalizedDate(jsDate, undefined);
     expect(result).toBeDefined();
-    expect(result!.year).toBe(2025);
-    expect(result!.month).toBe(3);
-    expect(result!.day).toBe(15);
+    expect(result?.year).toBe(2025);
+    expect(result?.month).toBe(3);
+    expect(result?.day).toBe(15);
   });
 
   it('converts an ISO date string to CalendarDate', () => {
     const result = dateToInternationalizedDate('2025-03-15', undefined);
     expect(result).toBeDefined();
-    expect(result!.year).toBe(2025);
-    expect(result!.month).toBe(3);
-    expect(result!.day).toBe(15);
+    expect(result?.year).toBe(2025);
+    expect(result?.month).toBe(3);
+    expect(result?.day).toBe(15);
   });
 
   it('converts a JS Date to a non-Gregorian calendar', () => {
@@ -65,7 +65,7 @@ describe('dateToInternationalizedDate', () => {
     const calendar = new EthiopicCalendar();
     const result = dateToInternationalizedDate(jsDate, calendar);
     expect(result).toBeDefined();
-    expect(result!.calendar.identifier).toBe('ethiopic');
+    expect(result?.calendar.identifier).toBe('ethiopic');
   });
 });
 
@@ -79,18 +79,18 @@ describe('internationalizedDateToDate', () => {
     const calendarDate = new CalendarDate(2025, 3, 15);
     const result = internationalizedDateToDate(calendarDate);
     expect(result).toBeInstanceOf(Date);
-    expect(result!.getFullYear()).toBe(2025);
-    expect(result!.getMonth()).toBe(2); // JS months are 0-indexed
-    expect(result!.getDate()).toBe(15);
+    expect(result?.getFullYear()).toBe(2025);
+    expect(result?.getMonth()).toBe(2); // JS months are 0-indexed
+    expect(result?.getDate()).toBe(15);
   });
 
   it('converts a CalendarDateTime to a JS Date', () => {
     const dateTime = new CalendarDateTime(2025, 6, 18, 14, 30);
     const result = internationalizedDateToDate(dateTime);
     expect(result).toBeInstanceOf(Date);
-    expect(result!.getFullYear()).toBe(2025);
-    expect(result!.getMonth()).toBe(5);
-    expect(result!.getDate()).toBe(18);
+    expect(result?.getFullYear()).toBe(2025);
+    expect(result?.getMonth()).toBe(5);
+    expect(result?.getDate()).toBe(18);
   });
 });
 

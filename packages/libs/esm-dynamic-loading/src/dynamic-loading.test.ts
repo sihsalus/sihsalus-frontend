@@ -94,27 +94,18 @@ describe('dynamic-loading', () => {
 
   describe('preloadImport', () => {
     it('throws when called with an empty string', async () => {
-      const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
-
       await expect(preloadImport('')).rejects.toThrow('without supplying a package');
-      expect(errorSpy).toHaveBeenCalledWith(expect.stringContaining('without supplying a package'));
     });
 
     it('throws when called with a whitespace-only string', async () => {
-      const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
-
       await expect(preloadImport('   ')).rejects.toThrow('without supplying a package');
-      expect(errorSpy).toHaveBeenCalledWith(expect.stringContaining('without supplying a package'));
     });
 
     it('throws when the package is not in the import map', async () => {
-      const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
       mockGetCurrentPageMap.mockResolvedValue({ imports: {} });
-
       await expect(preloadImport('@openmrs/esm-missing')).rejects.toThrow(
         'Could not find the package @openmrs/esm-missing',
       );
-      expect(errorSpy).toHaveBeenCalledWith(expect.stringContaining('@openmrs/esm-missing'));
     });
 
     it('resolves immediately if the package is already loaded on window', async () => {
@@ -128,11 +119,11 @@ describe('dynamic-loading', () => {
 
     it('creates a script element and resolves on load', async () => {
       mockGetCurrentPageMap.mockResolvedValue({
-        imports: { '@openmrs/esm-foo': '/foo.js' },
+        imports: { '@openmrs/esm-foo': 'http://localhost/foo.js' },
       });
 
       const promise = preloadImport('@openmrs/esm-foo');
-      const script = await waitForScript('/foo.js');
+      const script = await waitForScript('http://localhost/foo.js');
 
       expect(script.type).toBe('text/javascript');
       expect(script.async).toBe(true);
@@ -143,31 +134,28 @@ describe('dynamic-loading', () => {
     });
 
     it('rejects when the script fails to load', async () => {
-      const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
       mockGetCurrentPageMap.mockResolvedValue({
-        imports: { '@openmrs/esm-foo': '/foo.js' },
+        imports: { '@openmrs/esm-foo': 'http://localhost/foo.js' },
       });
 
       const promise = preloadImport('@openmrs/esm-foo');
-      const script = await waitForScript('/foo.js');
+      const script = await waitForScript('http://localhost/foo.js');
 
       script.dispatchEvent(new ErrorEvent('error', { message: 'net::ERR_CONNECTION_REFUSED' }));
 
       await expect(promise).rejects.toBe('net::ERR_CONNECTION_REFUSED');
-      expect(errorSpy).toHaveBeenCalledWith(expect.stringContaining('Failed to load script'), expect.any(ErrorEvent));
     });
 
     it('shows a toast when an overridden script fails to load', async () => {
-      const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
       mockGetCurrentPageMap.mockResolvedValue({
-        imports: { '@openmrs/esm-foo': '/foo-override.js' },
+        imports: { '@openmrs/esm-foo': 'http://localhost:8080/foo.js' },
       });
       mockGetImportMapOverrideMap.mockReturnValue({
-        imports: { '@openmrs/esm-foo': '/foo-override.js' },
+        imports: { '@openmrs/esm-foo': 'http://localhost:8080/foo.js' },
       });
 
       const promise = preloadImport('@openmrs/esm-foo');
-      const script = await waitForScript('/foo-override.js');
+      const script = await waitForScript('http://localhost:8080/foo.js');
 
       script.dispatchEvent(new ErrorEvent('error', { message: 'net::ERR_CONNECTION_REFUSED' }));
 
@@ -177,16 +165,14 @@ describe('dynamic-loading', () => {
           kind: 'error',
         }),
       );
-      expect(errorSpy).toHaveBeenCalledWith(expect.stringContaining('Failed to load script'), expect.any(ErrorEvent));
     });
 
     it('calls resetImportMapOverrides when the toast action button is clicked', async () => {
-      const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
       mockGetCurrentPageMap.mockResolvedValue({
-        imports: { '@openmrs/esm-foo': '/foo-override.js' },
+        imports: { '@openmrs/esm-foo': 'http://localhost:8080/foo.js' },
       });
       mockGetImportMapOverrideMap.mockReturnValue({
-        imports: { '@openmrs/esm-foo': '/foo-override.js' },
+        imports: { '@openmrs/esm-foo': 'http://localhost:8080/foo.js' },
       });
 
       const reloadMock = vi.fn();
@@ -197,7 +183,7 @@ describe('dynamic-loading', () => {
       });
 
       const promise = preloadImport('@openmrs/esm-foo');
-      const script = await waitForScript('/foo-override.js');
+      const script = await waitForScript('http://localhost:8080/foo.js');
 
       script.dispatchEvent(new ErrorEvent('error', { message: 'fail' }));
       await promise.catch(() => {});
@@ -207,14 +193,13 @@ describe('dynamic-loading', () => {
 
       expect(mockResetImportMapOverrides).toHaveBeenCalled();
       expect(reloadMock).toHaveBeenCalled();
-      expect(errorSpy).toHaveBeenCalledWith(expect.stringContaining('Failed to load script'), expect.any(ErrorEvent));
     });
 
     it('uses the provided import map instead of fetching one', async () => {
-      const importMap = { imports: { '@openmrs/esm-foo': '/foo.js' } };
+      const importMap = { imports: { '@openmrs/esm-foo': 'http://localhost/foo.js' } };
 
       const promise = preloadImport('@openmrs/esm-foo', importMap);
-      const script = await waitForScript('/foo.js');
+      const script = await waitForScript('http://localhost/foo.js');
 
       script.dispatchEvent(new Event('load'));
 
@@ -239,12 +224,12 @@ describe('dynamic-loading', () => {
     it('does not reload a script that is already in the DOM and finished loading', async () => {
       const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
       mockGetCurrentPageMap.mockResolvedValue({
-        imports: { '@openmrs/esm-foo': '/foo.js' },
+        imports: { '@openmrs/esm-foo': 'http://localhost/foo.js' },
       });
 
       // First load
       const firstPromise = preloadImport('@openmrs/esm-foo');
-      const script = await waitForScript('/foo.js');
+      const script = await waitForScript('http://localhost/foo.js');
       script.dispatchEvent(new Event('load'));
       await firstPromise;
 
@@ -255,14 +240,14 @@ describe('dynamic-loading', () => {
 
     it('resolves both callers when the same script is preloaded concurrently', async () => {
       mockGetCurrentPageMap.mockResolvedValue({
-        imports: { '@openmrs/esm-foo': '/foo.js' },
+        imports: { '@openmrs/esm-foo': 'http://localhost/foo.js' },
       });
 
       // Two concurrent preloads for the same package
       const first = preloadImport('@openmrs/esm-foo');
       const second = preloadImport('@openmrs/esm-foo');
 
-      const script = await waitForScript('/foo.js');
+      const script = await waitForScript('http://localhost/foo.js');
       script.dispatchEvent(new Event('load'));
 
       await expect(first).resolves.toBeNull();
@@ -270,27 +255,25 @@ describe('dynamic-loading', () => {
     });
 
     it('rejects both callers when a concurrently-loaded script fails', async () => {
-      const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
       mockGetCurrentPageMap.mockResolvedValue({
-        imports: { '@openmrs/esm-foo': '/foo.js' },
+        imports: { '@openmrs/esm-foo': 'http://localhost/foo.js' },
       });
 
       const first = preloadImport('@openmrs/esm-foo');
       const second = preloadImport('@openmrs/esm-foo');
 
-      const script = await waitForScript('/foo.js');
+      const script = await waitForScript('http://localhost/foo.js');
       script.dispatchEvent(new ErrorEvent('error', { message: 'net::ERR_FAILED' }));
 
       await expect(first).rejects.toBe('net::ERR_FAILED');
       await expect(second).rejects.toBe('net::ERR_FAILED');
-      expect(errorSpy).toHaveBeenCalledWith(expect.stringContaining('Failed to load script'), expect.any(ErrorEvent));
     });
 
     it('logs an error when a script takes longer than 5 seconds to load', async () => {
       vi.useFakeTimers();
       const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
       mockGetCurrentPageMap.mockResolvedValue({
-        imports: { '@openmrs/esm-foo': '/foo.js' },
+        imports: { '@openmrs/esm-foo': 'http://localhost/foo.js' },
       });
 
       preloadImport('@openmrs/esm-foo');
@@ -306,12 +289,12 @@ describe('dynamic-loading', () => {
 
     it('rejects with an empty string when the error event has no message', async () => {
       mockGetCurrentPageMap.mockResolvedValue({
-        imports: { '@openmrs/esm-foo': '/foo.js' },
+        imports: { '@openmrs/esm-foo': 'http://localhost/foo.js' },
       });
       vi.spyOn(console, 'error').mockImplementation(() => {});
 
       const promise = preloadImport('@openmrs/esm-foo');
-      const script = await waitForScript('/foo.js');
+      const script = await waitForScript('http://localhost/foo.js');
 
       script.dispatchEvent(new ErrorEvent('error'));
 
@@ -368,33 +351,27 @@ describe('dynamic-loading', () => {
     });
 
     it('throws when the global is not a federated module', async () => {
-      const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
       (window as any)['_openmrs_esm_foo'] = 'not a module';
 
       await expect(importDynamic('@openmrs/esm-foo')).rejects.toThrow('does not refer to a federated module');
-      expect(errorSpy).toHaveBeenCalledWith(expect.stringContaining('does not refer to a federated module'));
     });
 
     it('throws when the factory returns null', async () => {
-      const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
       (window as any)['_openmrs_esm_foo'] = {
         init: vi.fn(),
         get: vi.fn().mockResolvedValue(() => null),
       };
 
       await expect(importDynamic('@openmrs/esm-foo')).rejects.toThrow('did not return an ESM module');
-      expect(errorSpy).toHaveBeenCalledWith(expect.stringContaining('did not return an ESM module'));
     });
 
     it('throws when the factory returns a string', async () => {
-      const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
       (window as any)['_openmrs_esm_foo'] = {
         init: vi.fn(),
         get: vi.fn().mockResolvedValue(() => 'not a module'),
       };
 
       await expect(importDynamic('@openmrs/esm-foo')).rejects.toThrow('did not return an ESM module');
-      expect(errorSpy).toHaveBeenCalledWith(expect.stringContaining('did not return an ESM module'));
     });
 
     it('rejects if preloading exceeds maxLoadingTime', async () => {

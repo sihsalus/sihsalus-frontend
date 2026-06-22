@@ -9,38 +9,16 @@ export interface MinimalIdentifier {
 }
 
 export interface PreferredIdentifierOption {
-  /**
-   * Prefer UUIDs when possible because names/displays can change or be translated.
-   */
   uuid?: string;
-
-  /**
-   * Useful when backend/config only gives names.
-   */
   name?: string;
-
-  /**
-   * Useful for UI/search responses where display is present.
-   */
   display?: string;
 }
 
 export interface GetPreferredIdentifierOptions {
-  /**
-   * Ordered list. First match wins. Defaults to {@link preferredIdentifierNames}.
-   */
   priority?: Array<PreferredIdentifierOption | string>;
-
-  /**
-   * Whether OpenMRS `preferred: true` should be used before falling back to first identifier.
-   * Default: true.
-   */
   useOpenmrsPreferred?: boolean;
 }
 
-/**
- * Identifier types commonly used in Peru, in display priority order.
- */
 export const preferredIdentifierNames = ['DNI', 'CE', 'Pasaporte', 'PASS', 'DIE', 'CNV', 'N° Historia Clínica'];
 
 const normalize = (value?: string | null) =>

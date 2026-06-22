@@ -8,27 +8,38 @@ import type { OpenmrsAppRoutes, OpenmrsRoutes } from './types';
  * @returns true if the routes value is an OpenmrsAppRoutes
  */
 export function isOpenmrsAppRoutes(routes: OpenmrsAppRoutes | unknown): routes is OpenmrsAppRoutes {
-  if (!routes || typeof routes !== 'object') {
-    return false;
+  if (routes && typeof routes === 'object') {
+    const maybeRoutes = routes as OpenmrsAppRoutes;
+
+    if (Object.hasOwn(routes, 'pages')) {
+      if (!maybeRoutes.pages || !Array.isArray(maybeRoutes.pages)) {
+        return false;
+      }
+    }
+
+    if (Object.hasOwn(routes, 'extensions')) {
+      if (!maybeRoutes.extensions || !Array.isArray(maybeRoutes.extensions)) {
+        return false;
+      }
+    }
+
+    if (Object.hasOwn(routes, 'workspaces')) {
+      if (!maybeRoutes.workspaces || !Array.isArray(maybeRoutes.workspaces)) {
+        return false;
+      }
+    }
+
+    if (Object.hasOwn(routes, 'modals')) {
+      if (!maybeRoutes.modals || !Array.isArray(maybeRoutes.modals)) {
+        return false;
+      }
+    }
+
+    // A completely empty object is a valid OpenmrsAppRoutes object.
+    return true;
   }
 
-  const maybeRoutes = routes as OpenmrsAppRoutes;
-
-  if (Object.hasOwn(routes, 'pages') && !Array.isArray(maybeRoutes.pages)) {
-    return false;
-  }
-  if (Object.hasOwn(routes, 'extensions') && !Array.isArray(maybeRoutes.extensions)) {
-    return false;
-  }
-  if (Object.hasOwn(routes, 'workspaces') && !Array.isArray(maybeRoutes.workspaces)) {
-    return false;
-  }
-  if (Object.hasOwn(routes, 'modals') && !Array.isArray(maybeRoutes.modals)) {
-    return false;
-  }
-
-  // A completely empty object is a valid OpenmrsAppRoutes object.
-  return true;
+  return false;
 }
 
 /**

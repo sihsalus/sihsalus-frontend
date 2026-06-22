@@ -1,7 +1,7 @@
 import type { i18n } from 'i18next';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import '@testing-library/jest-dom/vitest';
-import { useConfig } from '@openmrs/esm-react-utils/mock';
+import { useConfig } from '@openmrs/esm-react-utils';
 import { render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import styles from './datepicker.module.scss';
@@ -9,10 +9,11 @@ import { DEFAULT_MIN_DATE_FLOOR } from './defaults';
 import { OpenmrsDatePicker } from './index';
 
 window.i18next = { language: 'en' } as i18n;
+const mockUseConfig = vi.mocked(useConfig);
 
 describe('OpenmrsDatePicker', () => {
   beforeEach(() => {
-    useConfig.mockReturnValue({
+    mockUseConfig.mockReturnValue({
       preferredDateLocale: {
         en: 'en-GB',
       },
@@ -27,7 +28,7 @@ describe('OpenmrsDatePicker', () => {
     });
 
     it('should respect the preferred date locale', () => {
-      useConfig.mockReturnValue({
+      mockUseConfig.mockReturnValue({
         preferredDateLocale: {
           en: 'en-US',
         },
@@ -39,7 +40,7 @@ describe('OpenmrsDatePicker', () => {
 
     it('should render RTL layout for Arabic locale', () => {
       window.i18next = { language: 'ar' } as i18n;
-      useConfig.mockReturnValue({ preferredDateLocale: {} });
+      mockUseConfig.mockReturnValue({ preferredDateLocale: {} });
 
       render(<OpenmrsDatePicker aria-label="datepicker" />);
       const input = screen.getByLabelText('datepicker');
@@ -52,7 +53,7 @@ describe('OpenmrsDatePicker', () => {
 
     it('should render RTL layout for Amharic locale', () => {
       window.i18next = { language: 'am' } as i18n;
-      useConfig.mockReturnValue({ preferredDateLocale: {} });
+      mockUseConfig.mockReturnValue({ preferredDateLocale: {} });
 
       render(<OpenmrsDatePicker aria-label="datepicker" />);
       const input = screen.getByLabelText('datepicker');

@@ -2,10 +2,10 @@ import { Button, ButtonSkeleton, Search, Select, SelectItem, SelectSkeleton, Ske
 import { ShoppingCartArrowUp } from '@carbon/react/icons';
 import {
   ArrowRightIcon,
-  ResponsiveWrapper,
-  ShoppingCartArrowDownIcon,
   openmrsFetch,
+  ResponsiveWrapper,
   restBaseUrl,
+  ShoppingCartArrowDownIcon,
   useConfig,
   useDebounce,
   useLayoutType,
@@ -64,18 +64,14 @@ export function TestTypeSearch({
   }, [resultsViewerConcepts]);
 
   const fetchConcepts = useCallback((urls: Array<string>) => {
-    return Promise.all(
-      urls.map((url) => openmrsFetch<{ uuid: string; display: string }>(url).then((res) => res.data)),
-    );
+    return Promise.all(urls.map((url) => openmrsFetch<{ uuid: string; display: string }>(url).then((res) => res.data)));
   }, []);
 
   const { data: fetchedLabsets, isLoading: isLoadingLabsets } = useSWRImmutable<
     Array<{ uuid: string; display: string }>,
     Error
   >(
-    conceptUuids.length
-      ? conceptUuids.map((uuid) => `${restBaseUrl}/concept/${uuid}?v=custom:(uuid,display)`)
-      : null,
+    conceptUuids.length ? conceptUuids.map((uuid) => `${restBaseUrl}/concept/${uuid}?v=custom:(uuid,display)`) : null,
     fetchConcepts,
   );
 
@@ -173,10 +169,7 @@ function TestTypeSearchResults({
   const { orders, setOrders } = useOrderBasket<TestOrderBasketItem>(orderTypeUuid, prepareTestOrderPostData);
 
   const isSpecificLabsetSelected = useMemo(() => {
-    return (
-      orderableConceptSets?.length === 1 &&
-      !orderConfig.labOrderableConcepts.includes(orderableConceptSets[0])
-    );
+    return orderableConceptSets?.length === 1 && !orderConfig.labOrderableConcepts.includes(orderableConceptSets[0]);
   }, [orderableConceptSets, orderConfig.labOrderableConcepts]);
 
   const createLabOrder = useCallback(
@@ -282,11 +275,7 @@ function TestTypeSearchResults({
               </div>
             </div>
           )}
-          <div
-            ref={resultsContainerRef}
-            className={styles.resultsContainer}
-            onScroll={handleScroll}
-          >
+          <div ref={resultsContainerRef} className={styles.resultsContainer} onScroll={handleScroll}>
             {grouped.map((group, groupIndex) => (
               <div key={group.label ?? `ungrouped-${groupIndex}`} className={styles.groupContainer}>
                 {group.label && <h5 className={styles.groupHeader}>{group.label}</h5>}

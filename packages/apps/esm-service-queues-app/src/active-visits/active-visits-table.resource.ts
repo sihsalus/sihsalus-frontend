@@ -69,8 +69,6 @@ interface Encounter {
   voided?: boolean;
 }
 
-type QueueWithLocation = Queue & { location?: { uuid?: string } };
-
 interface MappedEncounter extends Omit<Encounter, 'encounterType' | 'provider'> {
   encounterType: string;
   provider: string;
@@ -106,7 +104,7 @@ export const mapVisitQueueEntryProperties = (
   startedAt: dayjs(queueEntry.startedAt).toDate(),
   endedAt: queueEntry.endedAt ? dayjs(queueEntry.endedAt).toDate() : null,
   visitType: queueEntry.visit?.visitType?.display,
-  queueLocation: (queueEntry.queue as QueueWithLocation)?.location?.uuid,
+  queueLocation: queueEntry.queue?.location?.uuid,
   visitTypeUuid: queueEntry.visit?.visitType?.uuid,
   visitUuid: queueEntry.visit?.uuid,
   queueUuid: queueEntry.queue.uuid,

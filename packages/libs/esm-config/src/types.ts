@@ -22,7 +22,7 @@ export interface ConfigSchema {
 }
 
 export interface Config {
-  [moduleName: string]: any;
+  [moduleName: string]: { [key: string]: any };
 }
 
 export interface ConfigObject {
@@ -43,7 +43,7 @@ export interface DisplayConditionsConfigObject {
   offline?: boolean;
 }
 
-export type ConfigValue = string | number | boolean | void | Array<any> | object;
+export type ConfigValue = string | number | boolean | undefined | Array<any> | object;
 
 export interface ExtensionSlotConfig {
   /** Additional extension IDs to assign to this slot, in addition to those `attach`ed in code. */
@@ -66,4 +66,4 @@ export type ProvidedConfig = {
 
 export type ValidatorFunction = (value: any) => boolean;
 
-export type Validator = (value: any) => void | string;
+export type Validator = (value: any) => undefined | string;

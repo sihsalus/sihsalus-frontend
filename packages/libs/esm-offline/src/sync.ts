@@ -81,7 +81,7 @@ interface SetupOfflineSyncOptions<T> {
 interface SyncHandler {
   readonly type: string;
   readonly dependsOn: ReadonlyArray<string>;
-  readonly process: ProcessSyncItem<unknown>;
+  readonly process: ProcessSyncItem<any>;
   readonly options: Readonly<SetupOfflineSyncOptions<any>>;
 }
 
@@ -176,14 +176,10 @@ async function processHandler(
   const contents: Array<unknown> = [];
   const userId = await getUserId();
 
-  await db.syncQueue
-    .where('userId')
-    .equals(userId)
-    .and((item) => item.type === type)
-    .each((item, cursor) => {
-      items.push([cursor.primaryKey, item.content, item.descriptor]);
-      contents.push(item.content);
-    });
+  await db.syncQueue.where({ type, userId }).each((item, cursor) => {
+    items.push([cursor.primaryKey, item.content, item.descriptor]);
+    contents.push(item.content);
+  });
 
   for (let i = 0; i < items.length; i++) {
     const [key, item, { id, dependencies = [] }] = items[i];
@@ -202,17 +198,13 @@ async function processHandler(
       }
 
       await db.syncQueue.delete(key);
-    } catch (e: unknown) {
-      const error =
-        e instanceof Error
-          ? e
-          : typeof e === 'object' && e && 'name' in e && 'message' in e
-            ? (e as { name?: string; message?: string })
-            : undefined;
+    } catch (e) {
+      const error = e instanceof Error ? e : new Error(String(e));
+
       await db.syncQueue.update(key, {
         lastError: {
-          name: error?.name,
-          message: error?.message ?? (typeof e === 'string' ? e : String(e)),
+          name: error.name,
+          message: error.message,
         },
       });
     } finally {
@@ -244,9 +236,8 @@ export async function queueSynchronizationItemFor<T>(
   if (targetId !== undefined) {
     // in case of replacement (i.e., used same ID) we just remove the existing item
     await db.syncQueue
-      .where('userId')
-      .equals(userId)
-      .and((item) => item.type === type && item?.descriptor.id === targetId)
+      .where({ type, userId })
+      .filter((item) => item?.descriptor.id === targetId)
       .delete()
       .catch(Dexie.errnames.DatabaseClosed);
   }
@@ -291,9 +282,9 @@ export async function getSynchronizationItemsFor<T>(userId: string, type?: strin
  * @param type The identifying type of the synchronization items to be returned..
  */
 export async function getFullSynchronizationItemsFor<T>(userId: string, type?: string): Promise<Array<SyncItem<T>>> {
-  const collection = db.syncQueue.where('userId').equals(userId);
-
-  return await (type ? collection.and((item) => item.type === type) : collection)
+  const filter = type ? { type, userId } : { userId };
+  return await db.syncQueue
+    .where(filter)
     .toArray()
     .catch(Dexie.errnames.DatabaseClosed, () => []);
 }
@@ -383,7 +374,7 @@ export function setupOfflineSync<T>(
   handlers[type] = {
     type,
     dependsOn,
-    process: process as ProcessSyncItem<unknown>,
+    process,
     options,
   };
 }

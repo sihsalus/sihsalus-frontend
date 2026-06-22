@@ -1,2 +1,2 @@
-export function createErrorHandler() {} // NOSONAR
-export function reportError() {} // NOSONAR
+export function createErrorHandler() {}
+export function reportError() {}

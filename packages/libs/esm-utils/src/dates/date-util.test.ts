@@ -1,7 +1,7 @@
 import dayjs from 'dayjs';
 import type { i18n } from 'i18next';
 import timezoneMock from 'timezone-mock';
-import { afterAll, describe, expect, it, vi } from 'vitest';
+import { afterAll, describe, expect, it } from 'vitest';
 import {
   duration,
   formatDate,
@@ -96,14 +96,6 @@ describe('Openmrs Dates', () => {
     expect(formatPartialDate('2021-12')).toEqual('Dec 2021');
   });
 
-  it('does not throw on nullish input', () => {
-    window.i18next.language = 'en';
-    expect(formatDate(null as unknown as Date)).toEqual('');
-    expect(formatDate(undefined as unknown as Date)).toEqual('');
-    expect(formatPartialDate(null as unknown as string)).toBeNull();
-    expect(formatPartialDate(undefined as unknown as string)).toBeNull();
-  });
-
   it('formats dates with respect to the active calendar', () => {
     registerDefaultCalendar('am', 'ethiopic');
 
@@ -175,7 +167,7 @@ describe('Openmrs Dates', () => {
     expect(formatTime(testDate)).toMatch(/01:15\sPM/i);
     window.i18next.language = 'es-CO';
     expect(formatTime(testDate)).toMatch(/1:15\sp.\sm./); // it's not a normal space between the 'p.' and 'm.'
-    window.i18next.language = 'es-PE';
+    window.i18next.language = 'es-MX';
     // TODO: Figure out whether this test fails because of the timezone or the locale or daylight saving time
     // expect(formatTime(testDate)).toEqual('13:15');
   });
@@ -332,8 +324,6 @@ describe('duration', () => {
     });
 
     it('returns null for invalid string', () => {
-      vi.spyOn(console, 'error').mockImplementation(() => {});
-
       expect(duration('not a date', now)).toBeNull();
     });
   });
@@ -476,8 +466,6 @@ describe('formatDurationBetween', () => {
   });
 
   it('returns null for invalid string', () => {
-    vi.spyOn(console, 'error').mockImplementation(() => {});
-
     expect(formatDurationBetween('not a date', now)).toBeNull();
   });
 

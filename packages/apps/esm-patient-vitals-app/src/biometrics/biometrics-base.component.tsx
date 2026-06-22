@@ -1,6 +1,6 @@
 import { Button, ContentSwitcher, DataTableSkeleton, IconSwitch, InlineLoading } from '@carbon/react';
 import { Add, Analytics, Table } from '@carbon/react/icons';
-import { formatDatetime, parseDate, useConfig, useLayoutType, useSession, userHasAccess } from '@openmrs/esm-framework';
+import { formatDatetime, parseDate, useConfig, useLayoutType, userHasAccess, useSession } from '@openmrs/esm-framework';
 import { CardHeader, EmptyState, ErrorState, useVisitOrOfflineVisit } from '@openmrs/esm-patient-common-lib';
 import React, { useCallback, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -158,7 +158,13 @@ const BiometricsBase: React.FC<BiometricsBaseProps> = ({ patientUuid, pageSize, 
       </div>
     );
   }
-  return <EmptyState displayText={displayText} headerTitle={headerTitle} launchForm={canEdit ? launchBiometricsForm : undefined} />;
+  return (
+    <EmptyState
+      displayText={displayText}
+      headerTitle={headerTitle}
+      launchForm={canEdit ? launchBiometricsForm : undefined}
+    />
+  );
 };
 
 export default BiometricsBase;

@@ -167,10 +167,7 @@ const EndVisitDialog: React.FC<EndVisitDialogProps> = ({ patientUuid, closeModal
           {t('youCanAddAdditionalEncounters', 'You can add additional encounters to this visit in the visit summary.')}
         </p>
         {isGeneratingFua ? (
-          <InlineLoading
-            description={t('generatingFua', 'Generando FUA...')}
-            status="active"
-          />
+          <InlineLoading description={t('generatingFua', 'Generando FUA...')} status="active" />
         ) : null}
       </ModalBody>
       <ModalFooter>

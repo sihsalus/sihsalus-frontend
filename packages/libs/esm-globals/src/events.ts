@@ -4,10 +4,6 @@ export interface ConnectivityChangedEvent {
 
 const connectivityChangedEventName = 'openmrs:connectivity-changed';
 
-function createCustomEventListener<T>(cb: (data: T) => void): EventListener {
-  return (ev: Event) => cb((ev as CustomEvent<T>).detail);
-}
-
 /** @internal */
 export function dispatchConnectivityChanged(online: boolean) {
   window.dispatchEvent(new CustomEvent(connectivityChangedEventName, { detail: { online } }));
@@ -19,7 +15,7 @@ export function subscribeConnectivityChanged(cb: (ev: ConnectivityChangedEvent) 
     return () => {};
   }
 
-  const handler = createCustomEventListener(cb);
+  const handler = (ev: CustomEvent) => cb(ev.detail);
   window.addEventListener(connectivityChangedEventName, handler);
   return () => window.removeEventListener(connectivityChangedEventName, handler);
 }
@@ -31,7 +27,7 @@ export function subscribeConnectivity(cb: (ev: ConnectivityChangedEvent) => void
 }
 
 // eslint-disable-next-line @typescript-eslint/no-empty-object-type
-export interface PrecacheStaticDependenciesEvent {}
+export type PrecacheStaticDependenciesEvent = {};
 
 const precacheStaticDependenciesEventName = 'openmrs:precache-static-dependencies';
 
@@ -41,7 +37,7 @@ export function dispatchPrecacheStaticDependencies(data: PrecacheStaticDependenc
 
 /** @category Offline */
 export function subscribePrecacheStaticDependencies(cb: (data: PrecacheStaticDependenciesEvent) => void) {
-  const handler = createCustomEventListener(cb);
+  const handler = (ev: CustomEvent) => cb(ev.detail);
   window.addEventListener(precacheStaticDependenciesEventName, handler);
   return () => window.removeEventListener(precacheStaticDependenciesEventName, handler);
 }
@@ -85,6 +81,17 @@ export interface ShowSnackbarEvent {
   timeoutInMs?: number;
 }
 
+declare global {
+  interface WindowEventMap {
+    'openmrs:connectivity-changed': CustomEvent<ConnectivityChangedEvent>;
+    'openmrs:precache-static-dependencies': CustomEvent<PrecacheStaticDependenciesEvent>;
+    'openmrs:notification-shown': CustomEvent<ShowNotificationEvent>;
+    'openmrs:actionable-notification-shown': CustomEvent<ShowActionableNotificationEvent>;
+    'openmrs:toast-shown': CustomEvent<ShowToastEvent>;
+    'openmrs:snack-bar-shown': CustomEvent<ShowSnackbarEvent>;
+  }
+}
+
 const notificationShownName = 'openmrs:notification-shown';
 const actionableNotificationShownName = 'openmrs:actionable-notification-shown';
 const toastShownName = 'openmrs:toast-shown';
@@ -111,28 +118,28 @@ export function dispatchToastShown(data: ShowToastEvent) {
 
 /** @category UI */
 export function subscribeNotificationShown(cb: (data: ShowNotificationEvent) => void) {
-  const handler = createCustomEventListener(cb);
+  const handler = (ev: CustomEvent) => cb(ev.detail);
   window.addEventListener(notificationShownName, handler);
   return () => window.removeEventListener(notificationShownName, handler);
 }
 
 /** @category UI */
 export function subscribeActionableNotificationShown(cb: (data: ShowActionableNotificationEvent) => void) {
-  const handler = createCustomEventListener(cb);
+  const handler = (ev: CustomEvent) => cb(ev.detail);
   window.addEventListener(actionableNotificationShownName, handler);
   return () => window.removeEventListener(actionableNotificationShownName, handler);
 }
 
 /** @category UI */
 export function subscribeToastShown(cb: (data: ShowToastEvent) => void) {
-  const handler = createCustomEventListener(cb);
+  const handler = (ev: CustomEvent) => cb(ev.detail);
   window.addEventListener(toastShownName, handler);
   return () => window.removeEventListener(toastShownName, handler);
 }
 
 /** @category UI */
 export function subscribeSnackbarShown(cb: (data: ShowSnackbarEvent) => void) {
-  const handler = createCustomEventListener(cb);
+  const handler = (ev: CustomEvent) => cb(ev.detail);
   window.addEventListener(snackbarShownName, handler);
   return () => window.removeEventListener(snackbarShownName, handler);
 }

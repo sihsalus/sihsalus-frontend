@@ -1,4 +1,5 @@
-import { formatDate, type OpenmrsResource } from '@openmrs/esm-framework/src/internal';
+import { type OpenmrsResource } from '@openmrs/esm-framework/src/internal';
+import { formatDate } from '@openmrs/esm-utils';
 import { type FormContextProps } from '../provider/form-provider';
 import {
   type FormField,

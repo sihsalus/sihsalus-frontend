@@ -1,8 +1,10 @@
 {
   "add": "Agregar",
+  "addAllToBasket": "Agregar todos",
   "additionalInstructions": "Instrucciones adicionales",
   "addLabOrderWorkspaceTitle": "Agregar orden de laboratorio",
   "addOrderableForOrderType": "Agregar {{orderTypeDisplay}}",
+  "allLabTests": "Todas las pruebas de laboratorio",
   "back": "Atrás",
   "backToOrderBasket": "Regresar a la canasta de órdenes",
   "backToTimeline": "Regresar al calendario",
@@ -29,6 +31,7 @@
   "hideResultsTable": "Ocultar tabla de resultados",
   "individualTests": "Pruebas individuales",
   "labOrders": "Órdenes de laboratorio",
+  "labSetLabel": "Grupo de pruebas",
   "male": "Masculino",
   "moreResultsAvailable": "Más resultados disponibles",
   "noPanelsFound": "No se encontraron paneles",

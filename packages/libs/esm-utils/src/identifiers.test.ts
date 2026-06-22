@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest';
+
 import { getPreferredIdentifier, preferredIdentifierNames } from './identifiers';
 
 const dni = { identifier: '12345678', identifierType: { name: 'DNI', display: 'DNI' } };

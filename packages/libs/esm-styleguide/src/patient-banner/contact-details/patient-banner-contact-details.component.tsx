@@ -168,8 +168,8 @@ const Relationships: React.FC<{ patientId: string }> = ({ patientId }) => {
                     {`${r.relativeAge ? r.relativeAge : '--'} ${
                       r.relativeAge
                         ? r.relativeAge === 1
-                          ? getCoreTranslation('year', 'year')
-                          : getCoreTranslation('years', 'years')
+                          ? getCoreTranslation('yearAbbreviation', 'yr')
+                          : getCoreTranslation('yearsAbbreviation', 'yrs')
                         : ''
                     }`}
                   </div>

@@ -1,26 +1,21 @@
-import type { LoggedInUser, Privilege, Role, Session } from '@openmrs/esm-api';
+import type { LoggedInUser, Privilege, Role } from '@openmrs/esm-api';
 // eslint-disable-next-line @typescript-eslint/consistent-type-imports
-import { userHasAccess } from '@openmrs/esm-api';
-import { render, screen } from '@testing-library/react';
-import { Suspense } from 'react';
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { getCurrentUser, userHasAccess } from '@openmrs/esm-api';
+import { render, screen, waitFor } from '@testing-library/react';
+import { Observable, type Subscriber } from 'rxjs';
+import { afterAll, beforeEach, describe, expect, it, vi } from 'vitest';
 import { UserHasAccess } from './UserHasAccess';
-// eslint-disable-next-line @typescript-eslint/consistent-type-imports
-import { useSession } from './useSession';
 
-const mocks = vi.hoisted(() => ({
-  useSession: vi.fn(),
-  userHasAccess: vi.fn(),
-}));
+// Mock getCurrentUser and userHasAccess
+const mockGetCurrentUser = vi.fn();
+const mockUserHasAccess = vi.fn();
 
 vi.mock('@openmrs/esm-api', () => ({
-  userHasAccess: (...args: Parameters<typeof userHasAccess>) => mocks.userHasAccess(...args),
+  getCurrentUser: (...args: Parameters<typeof getCurrentUser>) => mockGetCurrentUser(...args),
+  userHasAccess: (...args: Parameters<typeof userHasAccess>) => mockUserHasAccess(...args),
 }));
 
-vi.mock('./useSession', () => ({
-  useSession: (): ReturnType<typeof useSession> => mocks.useSession(),
-}));
-
+// Helper to create a mock user
 function createMockUser(privileges: string[] = [], roles: string[] = []): LoggedInUser {
   return {
     uuid: 'user-uuid',
@@ -32,9 +27,9 @@ function createMockUser(privileges: string[] = [], roles: string[] = []): Logged
       uuid: 'person-uuid',
       display: 'Test User',
     },
-    privileges: privileges.map((privilege) => ({
-      uuid: `priv-${privilege}`,
-      display: privilege,
+    privileges: privileges.map((priv) => ({
+      uuid: `priv-${priv}`,
+      display: priv,
     })) as Privilege[],
     roles: roles.map((role) => ({
       uuid: `role-${role}`,
@@ -46,137 +41,270 @@ function createMockUser(privileges: string[] = [], roles: string[] = []): Logged
   };
 }
 
-function createSession(user?: LoggedInUser): Session {
-  return {
-    authenticated: Boolean(user),
-    sessionId: 'session-id',
-    user,
-  } as Session;
-}
-
 describe('UserHasAccess', () => {
   beforeEach(() => {
     vi.clearAllMocks();
   });
 
-  it('renders children when the loaded user has the required privilege', () => {
-    const user = createMockUser(['Edit Patients']);
-    mocks.useSession.mockReturnValue(createSession(user));
-    mocks.userHasAccess.mockReturnValue(true);
-
-    render(
-      <UserHasAccess privilege="Edit Patients">
-        <div>Protected Content</div>
-      </UserHasAccess>,
-    );
-
-    expect(screen.getByText('Protected Content')).toBeInTheDocument();
-    expect(mocks.userHasAccess).toHaveBeenCalledWith('Edit Patients', user);
+  afterAll(() => {
+    vi.clearAllMocks();
   });
 
-  it('passes multiple required privileges to the access helper', () => {
-    const user = createMockUser(['Edit Patients', 'Delete Patients']);
-    mocks.useSession.mockReturnValue(createSession(user));
-    mocks.userHasAccess.mockReturnValue(true);
+  describe('when user has required privilege', () => {
+    it('should render children for single privilege', () => {
+      const user = createMockUser(['Edit Patients']);
 
-    render(
-      <UserHasAccess privilege={['Edit Patients', 'Delete Patients']}>
-        <div>Protected Content</div>
-      </UserHasAccess>,
-    );
+      mockGetCurrentUser.mockReturnValue(new Observable((subscriber) => subscriber.next(user)));
+      mockUserHasAccess.mockReturnValue(true);
 
-    expect(screen.getByText('Protected Content')).toBeInTheDocument();
-    expect(mocks.userHasAccess).toHaveBeenCalledWith(['Edit Patients', 'Delete Patients'], user);
-  });
+      render(
+        <UserHasAccess privilege="Edit Patients">
+          <div>Protected Content</div>
+        </UserHasAccess>,
+      );
 
-  it('renders nothing when the loaded user lacks access and no fallback is provided', () => {
-    const user = createMockUser(['View Patients']);
-    mocks.useSession.mockReturnValue(createSession(user));
-    mocks.userHasAccess.mockReturnValue(false);
-
-    const { container } = render(
-      <UserHasAccess privilege="Edit Patients">
-        <div>Protected Content</div>
-      </UserHasAccess>,
-    );
-
-    expect(screen.queryByText('Protected Content')).not.toBeInTheDocument();
-    // eslint-disable-next-line jest-dom/prefer-empty, testing-library/no-node-access
-    expect(container.firstChild).toBeNull();
-  });
-
-  it('renders the fallback when the loaded user lacks access', () => {
-    const user = createMockUser(['View Patients']);
-    mocks.useSession.mockReturnValue(createSession(user));
-    mocks.userHasAccess.mockReturnValue(false);
-
-    render(
-      <UserHasAccess privilege="Edit Patients" fallback={<div>Access Denied</div>}>
-        <div>Protected Content</div>
-      </UserHasAccess>,
-    );
-
-    expect(screen.queryByText('Protected Content')).not.toBeInTheDocument();
-    expect(screen.getByText('Access Denied')).toBeInTheDocument();
-  });
-
-  it('renders the fallback when the loaded session is unauthenticated', () => {
-    mocks.useSession.mockReturnValue(createSession());
-
-    render(
-      <UserHasAccess privilege="Edit Patients" fallback={<div>Please log in</div>}>
-        <div>Protected Content</div>
-      </UserHasAccess>,
-    );
-
-    expect(mocks.userHasAccess).not.toHaveBeenCalled();
-    expect(screen.queryByText('Protected Content')).not.toBeInTheDocument();
-    expect(screen.getByText('Please log in')).toBeInTheDocument();
-  });
-
-  it('does not render the unauthorized fallback while the session is still loading', () => {
-    const pendingSession = new Promise<Session>(() => {});
-    mocks.useSession.mockImplementation(() => {
-      throw pendingSession;
+      expect(screen.getByText('Protected Content')).toBeInTheDocument();
+      expect(mockUserHasAccess).toHaveBeenCalledWith('Edit Patients', user);
     });
 
-    render(
-      <Suspense fallback={<div>Loading session</div>}>
-        <UserHasAccess privilege="Edit Patients" fallback={<div>Access Denied</div>}>
-          <div>Protected Content</div>
-        </UserHasAccess>
-      </Suspense>,
-    );
+    it('should render children for multiple privileges', () => {
+      const user = createMockUser(['Edit Patients', 'Delete Patients']);
 
-    expect(screen.getByText('Loading session')).toBeInTheDocument();
-    expect(screen.queryByText('Access Denied')).not.toBeInTheDocument();
-    expect(screen.queryByText('Protected Content')).not.toBeInTheDocument();
+      mockGetCurrentUser.mockReturnValue(new Observable((subscriber) => subscriber.next(user)));
+      mockUserHasAccess.mockReturnValue(true);
+
+      render(
+        <UserHasAccess privilege={['Edit Patients', 'Delete Patients']}>
+          <div>Protected Content</div>
+        </UserHasAccess>,
+      );
+
+      expect(screen.getByText('Protected Content')).toBeInTheDocument();
+      expect(mockUserHasAccess).toHaveBeenCalledWith(['Edit Patients', 'Delete Patients'], user);
+    });
+
+    it('should render multiple children', () => {
+      const user = createMockUser(['Edit Patients']);
+
+      mockGetCurrentUser.mockReturnValue(new Observable((subscriber) => subscriber.next(user)));
+      mockUserHasAccess.mockReturnValue(true);
+
+      render(
+        <UserHasAccess privilege="Edit Patients">
+          <div>First Child</div>
+          <div>Second Child</div>
+        </UserHasAccess>,
+      );
+
+      expect(screen.getByText('First Child')).toBeInTheDocument();
+      expect(screen.getByText('Second Child')).toBeInTheDocument();
+    });
   });
 
-  it('updates authorization when the session changes', () => {
-    const unauthorizedUser = createMockUser(['View Patients']);
-    const authorizedUser = createMockUser(['Edit Patients']);
-    mocks.useSession.mockReturnValue(createSession(unauthorizedUser));
-    mocks.userHasAccess.mockReturnValue(false);
+  describe('when user does not have required privilege', () => {
+    it('should render nothing when no fallback provided', () => {
+      const user = createMockUser(['View Patients']);
 
-    const { rerender } = render(
-      <UserHasAccess privilege="Edit Patients" fallback={<div>No Access</div>}>
-        <div>Protected Content</div>
-      </UserHasAccess>,
-    );
+      mockGetCurrentUser.mockReturnValue(new Observable((subscriber) => subscriber.next(user)));
+      mockUserHasAccess.mockReturnValue(false);
 
-    expect(screen.getByText('No Access')).toBeInTheDocument();
-    expect(screen.queryByText('Protected Content')).not.toBeInTheDocument();
+      const { container } = render(
+        <UserHasAccess privilege="Edit Patients">
+          <div>Protected Content</div>
+        </UserHasAccess>,
+      );
 
-    mocks.useSession.mockReturnValue(createSession(authorizedUser));
-    mocks.userHasAccess.mockReturnValue(true);
-    rerender(
-      <UserHasAccess privilege="Edit Patients" fallback={<div>No Access</div>}>
-        <div>Protected Content</div>
-      </UserHasAccess>,
-    );
+      expect(screen.queryByText('Protected Content')).not.toBeInTheDocument();
+      // eslint-disable-next-line jest-dom/prefer-empty, testing-library/no-node-access
+      expect(container.firstChild).toBeNull();
+    });
 
-    expect(screen.queryByText('No Access')).not.toBeInTheDocument();
-    expect(screen.getByText('Protected Content')).toBeInTheDocument();
+    it('should render fallback when provided', () => {
+      const user = createMockUser(['View Patients']);
+
+      mockGetCurrentUser.mockReturnValue(new Observable((subscriber) => subscriber.next(user)));
+      mockUserHasAccess.mockReturnValue(false);
+
+      render(
+        <UserHasAccess privilege="Edit Patients" fallback={<div>Access Denied</div>}>
+          <div>Protected Content</div>
+        </UserHasAccess>,
+      );
+
+      expect(screen.queryByText('Protected Content')).not.toBeInTheDocument();
+      expect(screen.getByText('Access Denied')).toBeInTheDocument();
+    });
+
+    it('should render fallback for missing privilege in array', () => {
+      const user = createMockUser(['Edit Patients']); // Has one but not both
+
+      mockGetCurrentUser.mockReturnValue(new Observable((subscriber) => subscriber.next(user)));
+      mockUserHasAccess.mockReturnValue(false);
+
+      render(
+        <UserHasAccess privilege={['Edit Patients', 'Delete Patients']} fallback={<div>Need all privileges</div>}>
+          <div>Protected Content</div>
+        </UserHasAccess>,
+      );
+
+      expect(screen.queryByText('Protected Content')).not.toBeInTheDocument();
+      expect(screen.getByText('Need all privileges')).toBeInTheDocument();
+    });
+  });
+
+  describe('when user is not logged in', () => {
+    it('should render nothing when no fallback provided', () => {
+      mockGetCurrentUser.mockReturnValue(new Observable((subscriber) => subscriber.next(null)));
+      mockUserHasAccess.mockReturnValue(false);
+
+      const { container } = render(
+        <UserHasAccess privilege="Edit Patients">
+          <div>Protected Content</div>
+        </UserHasAccess>,
+      );
+
+      expect(screen.queryByText('Protected Content')).not.toBeInTheDocument();
+      // eslint-disable-next-line jest-dom/prefer-empty, testing-library/no-node-access
+      expect(container.firstChild).toBeNull();
+    });
+
+    it('should render fallback when provided', () => {
+      mockGetCurrentUser.mockReturnValue(new Observable((subscriber) => subscriber.next(null)));
+      mockUserHasAccess.mockReturnValue(false);
+
+      render(
+        <UserHasAccess privilege="Edit Patients" fallback={<div>Please log in</div>}>
+          <div>Protected Content</div>
+        </UserHasAccess>,
+      );
+
+      expect(screen.queryByText('Protected Content')).not.toBeInTheDocument();
+      expect(screen.getByText('Please log in')).toBeInTheDocument();
+    });
+  });
+
+  describe('observable subscription management', () => {
+    it('should subscribe to getCurrentUser on mount', () => {
+      const user = createMockUser(['Edit Patients']);
+      const subscribeMock = vi.fn();
+
+      mockGetCurrentUser.mockReturnValue(
+        new Observable((subscriber) => {
+          subscribeMock();
+          subscriber.next(user);
+          return () => {};
+        }),
+      );
+      mockUserHasAccess.mockReturnValue(true);
+
+      render(
+        <UserHasAccess privilege="Edit Patients">
+          <div>Protected Content</div>
+        </UserHasAccess>,
+      );
+
+      expect(mockGetCurrentUser).toHaveBeenCalledWith({ includeAuthStatus: false });
+      expect(subscribeMock).toHaveBeenCalled();
+    });
+
+    it('should unsubscribe from getCurrentUser on unmount', () => {
+      const user = createMockUser(['Edit Patients']);
+      const unsubscribeMock = vi.fn();
+
+      mockGetCurrentUser.mockReturnValue(
+        new Observable((subscriber) => {
+          subscriber.next(user);
+          return unsubscribeMock;
+        }),
+      );
+      mockUserHasAccess.mockReturnValue(true);
+
+      const { unmount } = render(
+        <UserHasAccess privilege="Edit Patients">
+          <div>Protected Content</div>
+        </UserHasAccess>,
+      );
+
+      unmount();
+
+      expect(unsubscribeMock).toHaveBeenCalled();
+    });
+  });
+
+  describe('user updates', () => {
+    it('should update when user changes', async () => {
+      const user1 = createMockUser(['View Patients']);
+      const user2 = createMockUser(['Edit Patients']);
+
+      let subscriber: Subscriber<unknown> | undefined;
+      mockGetCurrentUser.mockReturnValue(
+        new Observable((sub) => {
+          subscriber = sub;
+          sub.next(user1);
+          return () => {};
+        }),
+      );
+
+      // Initially user doesn't have access
+      mockUserHasAccess.mockReturnValue(false);
+
+      render(
+        <UserHasAccess privilege="Edit Patients" fallback={<div>No Access</div>}>
+          <div>Protected Content</div>
+        </UserHasAccess>,
+      );
+
+      expect(screen.queryByText('Protected Content')).not.toBeInTheDocument();
+      expect(screen.getByText('No Access')).toBeInTheDocument();
+
+      // User gains access
+      mockUserHasAccess.mockReturnValue(true);
+      (subscriber as unknown as Subscriber<unknown>)?.next(user2);
+
+      await waitFor(() => {
+        expect(screen.queryByText('No Access')).not.toBeInTheDocument();
+      });
+      expect(screen.getByText('Protected Content')).toBeInTheDocument();
+    });
+  });
+
+  describe('edge cases', () => {
+    it('should handle empty children gracefully', () => {
+      const user = createMockUser(['Edit Patients']);
+
+      mockGetCurrentUser.mockReturnValue(new Observable((subscriber) => subscriber.next(user)));
+      mockUserHasAccess.mockReturnValue(true);
+
+      const { container } = render(<UserHasAccess privilege="Edit Patients" />);
+
+      // Should render empty fragment
+      // eslint-disable-next-line jest-dom/prefer-empty, testing-library/no-node-access
+      expect(container.firstChild).toBeNull();
+    });
+
+    it('should handle complex fallback component', () => {
+      const user = createMockUser(['View Patients']);
+
+      mockGetCurrentUser.mockReturnValue(new Observable((subscriber) => subscriber.next(user)));
+      mockUserHasAccess.mockReturnValue(false);
+
+      render(
+        <UserHasAccess
+          privilege="Edit Patients"
+          fallback={
+            <div>
+              <h1>Access Denied</h1>
+              <p>Contact administrator</p>
+            </div>
+          }
+        >
+          <div>Protected Content</div>
+        </UserHasAccess>,
+      );
+
+      expect(screen.getByText('Access Denied')).toBeInTheDocument();
+      expect(screen.getByText('Contact administrator')).toBeInTheDocument();
+      expect(screen.queryByText('Protected Content')).not.toBeInTheDocument();
+    });
   });
 });

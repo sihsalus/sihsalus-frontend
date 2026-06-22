@@ -1,4 +1,5 @@
 {
-  "editPatientDetailsBreadcrumb": "Edit patient details",
-  "patientRegistrationBreadcrumb": "Patient Registration"
+  "bulkPatientImportBreadcrumb": "Importar pacientes",
+  "editPatientDetailsBreadcrumb": "Editar datos del paciente",
+  "patientRegistrationBreadcrumb": "Registro de pacientes"
 }

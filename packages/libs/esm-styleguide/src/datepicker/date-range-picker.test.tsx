@@ -1,18 +1,20 @@
 import type { i18n } from 'i18next';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import '@testing-library/jest-dom/vitest';
-import { useConfig } from '@openmrs/esm-react-utils/mock';
+import { useConfig } from '@openmrs/esm-react-utils';
 import { render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import styles from './datepicker.module.scss';
 import { DEFAULT_MIN_DATE_FLOOR } from './defaults';
 import { OpenmrsDateRangePicker } from './index';
 
+const mockUseConfig = vi.mocked(useConfig);
+
 describe('OpenmrsDateRangePicker', () => {
   beforeEach(() => {
     window.i18next = { language: 'en' } as i18n;
 
-    useConfig.mockReturnValue({
+    mockUseConfig.mockReturnValue({
       preferredDateLocale: {
         en: 'en-GB',
       },
@@ -28,7 +30,7 @@ describe('OpenmrsDateRangePicker', () => {
     });
 
     it('should respect the preferred date locale', () => {
-      useConfig.mockReturnValue({
+      mockUseConfig.mockReturnValue({
         preferredDateLocale: {
           en: 'en-US',
         },

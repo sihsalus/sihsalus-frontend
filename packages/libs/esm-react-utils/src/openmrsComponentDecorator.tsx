@@ -4,6 +4,7 @@ import type {} from '@openmrs/esm-globals';
 import React, { type ComponentType, type ErrorInfo, Suspense } from 'react';
 import { I18nextProvider } from 'react-i18next';
 import { type Cache, SWRConfig, type SWRConfiguration } from 'swr';
+import { initCache } from 'swr/_internal';
 import { ComponentContext } from './ComponentContext';
 
 const defaultOpts = {
@@ -12,7 +13,14 @@ const defaultOpts = {
   disableTranslations: false,
 };
 
+// One global SWR cache shared by every decorated component, the same regardless
+// of module-federation load order (see #1397). It is pre-initialized here so its
+// SWRGlobalState is owned by this (singleton) module, not by the first
+// `<SWRConfig>` that mounts. Otherwise that boundary's unmount would run
+// `SWRGlobalState.delete(swrCache)` and the other still-mounted decorated
+// components would crash on their next render ("undefined is not iterable").
 const swrCache: Cache = new Map();
+initCache(swrCache);
 
 // Read more about the available config options here: https://swr.vercel.app/docs/api#configuration
 const defaultSwrConfig: SWRConfiguration = {
@@ -54,7 +62,8 @@ export interface ComponentDecoratorOptions {
   featureName: string;
   disableTranslations?: boolean;
   strictMode?: boolean;
-  swrConfig?: Partial<Omit<SWRConfiguration, 'fetcher'>>;
+  // `provider` omitted deliberately (see defaultSwrConfig); `fetcher` is fixed.
+  swrConfig?: Partial<Omit<SWRConfiguration, 'fetcher' | 'provider'>>;
 }
 
 export interface OpenmrsReactComponentProps {
@@ -62,24 +71,18 @@ export interface OpenmrsReactComponentProps {
 }
 
 export interface OpenmrsReactComponentState {
-  caughtError: unknown;
+  caughtError: any;
+  caughtErrorInfo: ErrorInfo | null;
   config: ComponentConfig;
 }
 
 export function openmrsComponentDecorator<T>(userOpts: ComponentDecoratorOptions) {
-  if (typeof userOpts !== 'object' || userOpts === null) {
-    throw new Error('Invalid options: expected an options object');
-  }
-
-  const invalidFields: Array<string> = [];
-  if (typeof userOpts.featureName !== 'string' || userOpts.featureName.trim() === '') {
-    invalidFields.push('featureName must be a non-empty string');
-  }
-  if (typeof userOpts.moduleName !== 'string' || userOpts.moduleName.trim() === '') {
-    invalidFields.push('moduleName must be a non-empty string');
-  }
-  if (invalidFields.length > 0) {
-    throw new Error(`Invalid options: ${invalidFields.join('; ')}`);
+  if (
+    typeof userOpts !== 'object' ||
+    typeof userOpts.featureName !== 'string' ||
+    typeof userOpts.moduleName !== 'string'
+  ) {
+    throw new Error('Invalid options');
   }
 
   const opts = Object.assign({}, defaultOpts, userOpts);
@@ -96,6 +99,7 @@ export function openmrsComponentDecorator<T>(userOpts: ComponentDecoratorOptions
         super(props);
         this.state = {
           caughtError: null,
+          caughtErrorInfo: null,
           config: {
             moduleName: opts.moduleName,
             featureName: opts.featureName,
@@ -104,7 +108,7 @@ export function openmrsComponentDecorator<T>(userOpts: ComponentDecoratorOptions
         };
       }
 
-      componentDidCatch(err: Error & { extra?: Record<string, unknown> }, info: ErrorInfo) {
+      componentDidCatch(err: any, info: ErrorInfo) {
         if (info && info.componentStack) {
           err.extra = Object.assign(err.extra || {}, {
             componentStack: info.componentStack,
@@ -119,17 +123,14 @@ export function openmrsComponentDecorator<T>(userOpts: ComponentDecoratorOptions
 
         this.setState({
           caughtError: err,
+          caughtErrorInfo: info,
         });
       }
 
       render() {
         if (this.state.caughtError) {
           // TO-DO have a UX designed for when a catastrophic error occurs
-          return (
-            <div role="alert" aria-live="assertive" aria-atomic="true">
-              An error has occurred. Please try reloading the page.
-            </div>
-          );
+          return <div>An error has occurred. Please try reloading the page.</div>;
         } else {
           const content = (
             <Suspense fallback={null}>

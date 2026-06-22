@@ -1,7 +1,7 @@
 /** @module @category Navigation */
 
 import { interpolateUrl, navigate, type TemplateParams } from '@openmrs/esm-navigation';
-import { type AnchorHTMLAttributes, type MouseEvent, type PropsWithChildren, useEffect } from 'react';
+import React, { type AnchorHTMLAttributes, type MouseEvent, type PropsWithChildren, useEffect } from 'react';
 
 function handleClick(
   event: MouseEvent,
@@ -52,27 +52,23 @@ export function ConfigurableLink({
   children,
   ...otherProps
 }: PropsWithChildren<ConfigurableLinkProps>) {
-  const { className, ...anchorProps } = otherProps;
-  const linkClassName = typeof className === 'string' ? className : undefined;
-
   useEffect(() => {
-    if (anchorProps.href) {
+    if (otherProps.href) {
       console.warn(
-        `ConfigurableLink does not support the href prop. Use the 'to' prop instead. The provided href value is '${anchorProps.href}'`,
+        `ConfigurableLink does not support the href prop. Use the 'to' prop instead. The provided href value is '${otherProps.href}'`,
       );
     }
-    if (anchorProps.onClick) {
+    if (otherProps.onClick) {
       console.warn(
         `ConfigurableLink does not support the onClick prop. Use the 'onBeforeNavigate' prop instead. The 'to' prop of the offending link is ${to}`,
       );
     }
-  }, [to, anchorProps.onClick, anchorProps.href]);
+  }, [to, otherProps.onClick, otherProps.href]);
   return (
     <a
       onClick={(event) => handleClick(event, to, templateParams, onBeforeNavigate)}
       href={interpolateUrl(to, templateParams)}
-      className={linkClassName}
-      {...anchorProps}
+      {...otherProps}
     >
       {children}
     </a>

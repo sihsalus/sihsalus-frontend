@@ -1,31 +1,7 @@
 import { act, renderHook, waitFor } from '@testing-library/react';
 import { describe, expect, it } from 'vitest';
-import { type OpenMRSPaginatedResponse, useOpenmrsPagination } from './useOpenmrsPagination';
-
-// returns an sequentially increasing int array of specified length starting at the specified start integer.
-// biome-ignore lint/suspicious/noExportsInTest: Shared test helpers are reused by useOpenmrsInfinite.test.ts.
-export function getIntArray(start: number, length: number) {
-  return new Array(length).fill(0).map((_, i) => start + i);
-}
-
-// This function mocks the return value of a server-side paginated API.
-// It returns a slice (page) of the array of integers [0...totalCount-1],
-// with the page defined  by the limit and startIndex in the url params.
-// biome-ignore lint/suspicious/noExportsInTest: Shared test helpers are reused by useOpenmrsInfinite.test.ts.
-export async function getTestData(url: string, totalCount: number): Promise<OpenMRSPaginatedResponse<number>> {
-  const urlUrl = new URL(url, window.location.toString());
-  const limit = Number.parseInt(urlUrl.searchParams.get('limit') ?? '50', 10);
-  const startIndex = Number.parseInt(urlUrl.searchParams.get('startIndex') ?? '0', 10);
-
-  const length = Math.max(0, Math.min(totalCount - startIndex, limit));
-  const results = new Array(length).fill(0).map((_, i) => i + startIndex);
-  const hasNext = startIndex + limit < totalCount;
-  if (hasNext) {
-    urlUrl.searchParams.set('startIndex', startIndex + limit + '');
-  }
-  const links = hasNext ? [{ rel: 'next', uri: urlUrl.toString() }] : [];
-  return { results, links, totalCount } as OpenMRSPaginatedResponse<number>;
-}
+import { getIntArray, getTestData } from './pagination-test-helpers';
+import { useOpenmrsPagination } from './useOpenmrsPagination';
 
 describe('useOpenmrsPagination', () => {
   it('should not fetch anything if url is null', async () => {

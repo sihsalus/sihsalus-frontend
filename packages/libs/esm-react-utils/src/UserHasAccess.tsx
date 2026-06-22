@@ -1,7 +1,7 @@
 /** @module @category API */
-import { userHasAccess } from '@openmrs/esm-api';
-import React from 'react';
-import { useSession } from './useSession';
+import type { LoggedInUser } from '@openmrs/esm-api';
+import { getCurrentUser, userHasAccess } from '@openmrs/esm-api';
+import React, { useEffect, useState } from 'react';
 
 export interface UserHasAccessProps {
   privilege: string | string[];
@@ -20,8 +20,6 @@ export interface UserHasAccessProps {
  * a separate permission check might be needed.
  *
  * This can also be used to hide components when the current user is not logged in.
- * Session loading is delegated to `useSession`, so this component does not render
- * an unauthorized fallback before the current user's privileges are loaded.
  *
  * @example
  * ```ts
@@ -40,8 +38,14 @@ export interface UserHasAccessProps {
  *   privileges.
  */
 export const UserHasAccess: React.FC<UserHasAccessProps> = ({ privilege, fallback, children }) => {
-  const session = useSession();
-  const user = session.user;
+  const [user, setUser] = useState<LoggedInUser | null>(null);
+
+  useEffect(() => {
+    const subscription = getCurrentUser({
+      includeAuthStatus: false,
+    }).subscribe(setUser);
+    return () => subscription.unsubscribe();
+  }, []);
 
   if (user && userHasAccess(privilege, user)) {
     return <>{children}</>;

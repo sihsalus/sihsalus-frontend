@@ -69,8 +69,6 @@ interface Encounter {
   voided?: boolean;
 }
 
-type QueueWithLocation = Queue & { location?: { uuid?: string } };
-
 interface MappedEncounter extends Omit<Encounter, 'encounterType' | 'provider'> {
   encounterType: string;
   provider: string;

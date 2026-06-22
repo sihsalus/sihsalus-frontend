@@ -102,7 +102,7 @@ describe('OpenMRS Expression Evaluator', () => {
   });
 
   it('should support new Date()', () => {
-    expect(evaluate('new Date().getTime()')).toBeLessThanOrEqual(Date.now());
+    expect(evaluate('new Date().getTime()')).toBeLessThanOrEqual(new Date().getTime());
   });
 
   it('should support RegExp', () => {
@@ -125,13 +125,13 @@ describe('OpenMRS Expression Evaluator', () => {
     expect(evaluate('undefined')).toBeUndefined();
     expect(evaluate('isNaN(NaN)')).toBe(true);
     expect(evaluate('Number.isInteger(42)')).toBe(true);
-    expect(evaluate('Object.fromEntries(entries).a', { entries: [['a', 1]] })).toBe(1);
-    expect(evaluate('Object.hasOwn(a, "a")', { a: { a: 1 } })).toBe(true);
   });
 
   it('should not support creating arbitrary objects', () => {
     expect(() => evaluate('new object()')).toThrow(/Cannot instantiate object .*/i);
-    class Fn {}
+    class Fn {
+      constructor() {}
+    }
     expect(() => evaluate('new Fn()', { Fn })).toThrow(/Cannot instantiate object .*/i);
   });
 

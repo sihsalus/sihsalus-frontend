@@ -1,12 +1,11 @@
-import { vi } from 'vitest';
 import { coreTranslations } from './src/translations';
 
-export const getCoreTranslation = vi.fn(
+export const getCoreTranslation = jest.fn(
   (key: string, defaultText?: string, options?: Record<string | number | symbol, unknown>) =>
     interpolate(coreTranslations[key] ?? defaultText, options),
 );
 
-export const translateFrom = vi.fn(
+export const translateFrom = jest.fn(
   (moduleName: string, key: string, fallback?: string, options?: Record<string | number | symbol, unknown>) => {
     if (moduleName === 'core') {
       return interpolate(coreTranslations[key] ?? fallback, options);

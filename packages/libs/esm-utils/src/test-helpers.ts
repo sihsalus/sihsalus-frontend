@@ -13,7 +13,7 @@
 export function getDefaultsFromConfigSchema<T = Record<string, any>>(
   schema: Record<string | number | symbol, unknown>,
 ): T {
-  const tmp: Record<string | number | symbol, unknown> = {};
+  const tmp = {};
   for (const k of Object.keys(schema)) {
     if (
       isOrdinaryObject(schema[k]) &&

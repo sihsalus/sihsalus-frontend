@@ -1,4 +1,4 @@
-import { describe, expect, it, vi } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { createStore } from 'zustand/vanilla';
 import { createGlobalStore, getGlobalStore, registerGlobalStore, subscribeTo } from './state';
 
@@ -86,7 +86,7 @@ describe('createGlobalStore', () => {
     const storeName = getUniqueStoreName();
 
     // Create initial store
-    const _store1 = createGlobalStore(storeName, { value: 1 });
+    const store1 = createGlobalStore(storeName, { value: 1 });
 
     // Get it (which should mark it as not active when using getGlobalStore on non-existent)
     // Actually, we need to manually deactivate it by creating through getGlobalStore first
@@ -212,7 +212,7 @@ describe('registerGlobalStore', () => {
     const storeName = getUniqueStoreName();
 
     // Create inactive store via getGlobalStore
-    const _inactiveStore = getGlobalStore(storeName, { value: 0 });
+    const inactiveStore = getGlobalStore(storeName, { value: 0 });
 
     // Register a new store with same name
     const newStore = createStore(() => ({ value: 99 }));

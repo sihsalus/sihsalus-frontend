@@ -39,14 +39,6 @@ export function makeUrl(path: string) {
   return window.openmrsBase + path;
 }
 
-function hasRequestHeader(headers: FetchHeaders | undefined, headerName: string) {
-  const normalizedHeaderName = headerName.toLowerCase();
-
-  return Object.entries(headers ?? {}).some(
-    ([name, value]) => name.toLowerCase() === normalizedHeaderName && value !== null && value !== '',
-  );
-}
-
 /**
  * The openmrsFetch function is a wrapper around the
  * [browser's built-in fetch function](https://developer.mozilla.org/en-US/docs/Web/API/Fetch_API/Using_Fetch),
@@ -163,103 +155,96 @@ export function openmrsFetch<T = any>(path: string, fetchInit: FetchConfig = {})
    */
   const requestStacktrace = Error();
 
-  const handleOkResponse = (response: FetchResponse<T>, followRedirects: boolean): Promise<FetchResponse<T>> => {
-    if (response.status === 204) {
-      if (followRedirects && response.headers.has('location')) {
-        const location = response.headers.get('location');
-        if (location) {
-          navigate({ to: location });
-        }
-      }
-      /* HTTP 204 - No Content
-       * We should not try to download the empty response as json. Instead,
-       * we return null since there is no response body.
-       */
-      response.data = null as unknown as T;
-      return Promise.resolve(response);
-    }
-    // HTTP 200s - The request succeeded
-    return response
-      .clone()
-      .text()
-      .then((responseText) => {
-        try {
-          if (responseText) {
-            response.data = JSON.parse(responseText);
-          }
-        } catch (_err) {
-          // Server didn't respond with json
-        }
-        return response;
-      });
-  };
-
-  const handleErrorResponse = (
-    response: FetchResponse<T>,
-    redirectAuthFailure: EsmApiConfigObject['redirectAuthFailure'],
-  ): Promise<FetchResponse<T>> => {
-    /* HTTP response status is not in 200s. Usually this will mean
-     * either HTTP 400s (bad request from browser) or HTTP 500s (server error)
-     * Our goal is to come up with best possible stacktrace and error message
-     * to help developers understand the problem and debug
-     */
-    const isExplicitSessionLoginAttempt =
-      url === makeUrl(sessionEndpoint) &&
-      response.status === 401 &&
-      hasRequestHeader(fetchInit.headers, 'Authorization');
-
-    if (
-      (url === makeUrl(sessionEndpoint) && response.status === 403) ||
-      (!isExplicitSessionLoginAttempt &&
-        redirectAuthFailure.enabled &&
-        redirectAuthFailure.errors.includes(response.status))
-    ) {
-      clearHistory();
-      // by default, redirect to the url specified in the config.
-      // If blank, use the location header from the response.
-      // If that is also blank, use the default redirect url.
-      const location = redirectAuthFailure.url || response.headers.get('location') || defaultRedirectAuthFailureUrl;
-      navigate({ to: location });
-      /* We sometimes don't really want this promise to resolve since there's no response data,
-       * nor do we want it to reject because that would trigger error handling. We instead
-       * want it to remain in pending status while the navigation occurs.
-       */
-      return redirectAuthFailure.resolvePromise
-        ? (Promise.resolve() as unknown as Promise<FetchResponse<T>>)
-        : new Promise<FetchResponse<T>>(() => {});
-    }
-    // Attempt to download a response body, if it has one
-    return response
-      .clone()
-      .text()
-      .then(
-        (responseText) => {
-          let responseBody = responseText;
-          try {
-            responseBody = JSON.parse(responseText);
-          } catch (_err) {
-            // Server didn't respond with json, so just go with the response text string
-          }
-          /* Make the fetch promise go into "rejected" status, with the best
-           * possible stacktrace and error message.
-           */
-          throw new OpenmrsFetchError(url, response, responseBody, requestStacktrace);
-        },
-        (_err) => {
-          /* We weren't able to download a response body for this error.
-           * Time to just give the best possible stacktrace and error message.
-           */
-          throw new OpenmrsFetchError(url, response, null, requestStacktrace);
-        },
-      );
-  };
-
   return window.fetch(url, fetchInit as RequestInit).then(async (r) => {
     const response = r as FetchResponse<T>;
     const { redirectAuthFailure, followRedirects } = await getConfig<EsmApiConfigObject>('@openmrs/esm-api');
-    return response.ok
-      ? handleOkResponse(response, followRedirects)
-      : handleErrorResponse(response, redirectAuthFailure);
+    if (response.ok) {
+      if (response.status === 204) {
+        if (followRedirects && response.headers.has('location')) {
+          const location = response.headers.get('location');
+          if (location) {
+            navigate({ to: location });
+          }
+        }
+
+        /* HTTP 204 - No Content
+         * We should not try to download the empty response as json. Instead,
+         * we return null since there is no response body.
+         */
+        response.data = null as unknown as T;
+        return response;
+      } else {
+        // HTTP 200s - The request succeeded
+        return response
+          .clone()
+          .text()
+          .then((responseText) => {
+            try {
+              if (responseText) {
+                response.data = JSON.parse(responseText);
+              }
+            } catch (err) {
+              // Server didn't respond with json
+            }
+            return response;
+          });
+      }
+    } else {
+      /* HTTP response status is not in 200s. Usually this will mean
+       * either HTTP 400s (bad request from browser) or HTTP 500s (server error)
+       * Our goal is to come up with best possible stacktrace and error message
+       * to help developers understand the problem and debug
+       */
+
+      /*
+       * Redirect to given url when redirect on auth failure is enabled
+       */
+      if (
+        (url === makeUrl(sessionEndpoint) && response.status === 403) ||
+        (redirectAuthFailure.enabled && redirectAuthFailure.errors.includes(response.status))
+      ) {
+        clearHistory();
+        // by default, redirect to the url specified in the config.
+        // If blank, use the location header from the response.
+        // If that is also blank, use the default redirect url.
+        const location = redirectAuthFailure.url || response.headers.get('location') || defaultRedirectAuthFailureUrl;
+        navigate({ to: location });
+
+        /* We sometimes don't really want this promise to resolve since there's no response data,
+         * nor do we want it to reject because that would trigger error handling. We instead
+         * want it to remain in pending status while the navigation occurs.
+         */
+        return redirectAuthFailure.resolvePromise
+          ? (Promise.resolve() as unknown as Promise<FetchResponse>)
+          : new Promise<FetchResponse>(() => {});
+      } else {
+        // Attempt to download a response body, if it has one
+        return response
+          .clone()
+          .text()
+          .then(
+            (responseText) => {
+              let responseBody = responseText;
+              try {
+                responseBody = JSON.parse(responseText);
+              } catch (err) {
+                // Server didn't respond with json, so just go with the response text string
+              }
+
+              /* Make the fetch promise go into "rejected" status, with the best
+               * possible stacktrace and error message.
+               */
+              throw new OpenmrsFetchError(url, response, responseBody, requestStacktrace);
+            },
+            (err) => {
+              /* We weren't able to download a response body for this error.
+               * Time to just give the best possible stacktrace and error message.
+               */
+              throw new OpenmrsFetchError(url, response, null, requestStacktrace);
+            },
+          );
+      }
+    }
   });
 }
 

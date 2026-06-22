@@ -91,6 +91,9 @@ export function getVisitStore() {
  * import { setCurrentVisit } from '@openmrs/esm-framework';
  * setCurrentVisit('patient-uuid', 'visit-uuid');
  * ```
+ *
+ * @deprecated "current visit" is not well defined outside of the patient chart.
+ * Use `visitContext` in the patient chart instead.
  */
 export function setCurrentVisit(patientUuid: string, visitUuid: string) {
   getVisitStore().setState({ patientUuid, manuallySetVisitUuid: visitUuid });
@@ -107,7 +110,7 @@ function setVisitSessionStorage(value: VisitStoreState) {
 function getVisitSessionStorage(): VisitStoreState | null {
   try {
     return JSON.parse(sessionStorage.getItem('openmrs:visitStoreState') || 'null');
-  } catch (_e) {
+  } catch (e) {
     return null;
   }
 }

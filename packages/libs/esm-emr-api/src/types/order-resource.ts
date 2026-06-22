@@ -13,7 +13,7 @@ export type FulfillerStatus =
 
 export type OrderAction = 'DISCONTINUE' | 'NEW' | 'RENEW' | 'REVISE';
 
-export type OrderUrgency = string;
+export type OrderUrgency = 'ON_SCHEDULED_DATE' | 'ROUTINE' | 'STAT';
 
 export interface Order extends OpenmrsResource {
   uuid: string;

@@ -140,10 +140,10 @@ export async function getDynamicOfflineDataEntriesFor<T extends DynamicOfflineDa
   userId: string,
   type?: string,
 ): Promise<Array<T>> {
+  const filter = type ? { type, users: userId } : { users: userId };
   const db = new OfflineDb();
-  const collection = db.dynamicOfflineData.where('users').equals(userId);
-
-  return (await (type ? collection.and((entry) => entry.type === type) : collection)
+  return (await db.dynamicOfflineData
+    .where(filter)
     .toArray()
     .catch(Dexie.errnames.DatabaseClosed, () => [])) as Array<T>;
 }
@@ -216,10 +216,11 @@ export async function removeDynamicOfflineDataFor(userId: string, type: string, 
     .get({
       type,
       identifier,
+      users: userId,
     })
     .catch(Dexie.errnames.DatabaseClosed, () => undefined);
 
-  if (existingEntry?.users.includes(userId)) {
+  if (existingEntry) {
     if (existingEntry.users.length > 1) {
       await db.dynamicOfflineData
         .update(existingEntry.id!, {

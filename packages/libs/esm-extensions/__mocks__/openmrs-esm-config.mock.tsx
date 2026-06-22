@@ -1,3 +1,1 @@
-import { vi } from 'vitest';
-
-export const getExtensionSlotConfigs = vi.fn().mockResolvedValue({});
+export const getExtensionSlotConfigs = jest.fn().mockResolvedValue({});

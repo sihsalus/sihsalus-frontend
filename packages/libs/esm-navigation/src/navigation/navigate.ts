@@ -15,20 +15,8 @@ export interface NavigateOptions {
   templateParams?: TemplateParams;
 }
 
-function getSameOriginNavigationTarget(to: string, templateParams?: TemplateParams): string {
-  const interpolatedTarget = interpolateUrl(to, templateParams);
-  const targetUrl = new URL(interpolatedTarget, window.location.origin);
-
-  if (targetUrl.origin !== window.location.origin) {
-    throw new Error(`Refusing to navigate to an external URL: ${targetUrl.origin}`);
-  }
-
-  return `${targetUrl.pathname}${targetUrl.search}${targetUrl.hash}`;
-}
-
 /**
- * Calls `location.assign` for same-origin non-SPA paths and [navigateToUrl](https://single-spa.js.org/docs/api/#navigatetourl) for SPA paths.
- * Cross-origin targets are rejected.
+ * Calls `location.assign` for non-SPA paths and [navigateToUrl](https://single-spa.js.org/docs/api/#navigatetourl) for SPA paths
  *
  * #### Example usage:
  * ```js
@@ -43,10 +31,13 @@ function getSameOriginNavigationTarget(to: string, templateParams?: TemplatePara
  * ```js
  * @example
  * navigate({ to: "/some/path" }); // => window.location.assign("/some/path")
+ * navigate({ to: "https://single-spa.js.org/" }); // => window.location.assign("https://single-spa.js.org/")
  * navigate({ to: "${openmrsBase}/some/path" }); // => window.location.assign("/openmrs/some/path")
  * navigate({ to: "/openmrs/spa/foo/page" }); // => navigateToUrl("/openmrs/spa/foo/page")
  * navigate({ to: "${openmrsSpaBase}/bar/page" }); // => navigateToUrl("/openmrs/spa/bar/page")
  * navigate({ to: "/${openmrsSpaBase}/baz/page" }) // => navigateToUrl("/openmrs/spa/baz/page")
+ * navigate({ to: "https://o3.openmrs.org/${openmrsSpaBase}/qux/page" }); // => navigateToUrl("/openmrs/spa/qux/page")
+ *   if `window.location.origin` == "https://o3.openmrs.org", else will use window.location.assign
  * ```
  *
  * @param to The target path or URL. Supports templating with 'openmrsBase', 'openmrsSpaBase',
@@ -58,7 +49,7 @@ function getSameOriginNavigationTarget(to: string, templateParams?: TemplatePara
  */
 export function navigate({ to, templateParams }: NavigateOptions): void {
   const openmrsSpaBase = trimTrailingSlash(window.getOpenmrsSpaBase());
-  const target = getSameOriginNavigationTarget(to, templateParams);
+  const target = interpolateUrl(to, templateParams).replace(window.location.origin, '');
   const isSpaPath = target.startsWith(openmrsSpaBase);
 
   if (isSpaPath) {

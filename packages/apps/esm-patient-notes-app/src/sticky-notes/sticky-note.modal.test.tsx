@@ -1,6 +1,7 @@
 import { showSnackbar, useConfig } from '@openmrs/esm-framework';
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
+
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { type ConfigObject } from '../config-schema';
 import StickyNoteModal from './sticky-note.modal';

@@ -2,7 +2,7 @@ import { showModal, useConfig, useOnClickOutside } from '@openmrs/esm-framework'
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import React from 'react';
-import { beforeEach, describe, expect, it, type Mock, test, vi } from 'vitest';
+import { beforeEach, describe, expect, it, type Mock, vi } from 'vitest';
 import { type ConfigObject } from '../config-schema';
 import { useStickyNote } from './sticky-note.resource';
 import { mockPatientUuid, mockStickyNote } from './sticky-note.test-utils';

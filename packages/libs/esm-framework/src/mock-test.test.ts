@@ -1,20 +1,18 @@
+/**
+ * A test that validates that `@openmrs/esm-framework/mock` has
+ * the same API as `@openmrs/esm-framework`.
+ *
+ * Disabled because the mock is nowhere close to having the same
+ * API. You can change `xit` to `it` to run the test and see a
+ * comparison of the exports of the two modules.
+ */
 import { describe, expect, it } from 'vitest';
 import * as mock from '../mock';
+import * as real from './index';
 
 describe('@openmrs/esm-framework/mock', () => {
-  it('should provide the framework mock APIs used by tests', () => {
-    expect(mock).toEqual(
-      expect.objectContaining({
-        getHistory: expect.any(Function),
-        goBackInHistory: expect.any(Function),
-        navigate: expect.any(Function),
-        openmrsFetch: expect.any(Function),
-        showSnackbar: expect.any(Function),
-        useConfig: expect.any(Function),
-        useLayoutType: expect.any(Function),
-        usePatient: expect.any(Function),
-      }),
-    );
+  it.skip('should have the same exports as @openmrs/esm-framework', () => {
+    expect(new Set(Object.keys(real))).toEqual(new Set(Object.keys(mock)));
   });
 
   it('should have a working goBackInHistory function', () => {

@@ -1,3 +1,1 @@
-import { vi } from 'vitest';
-
-export const navigateToUrl = vi.fn();
+export const navigateToUrl = jest.fn();

@@ -1,0 +1,20 @@
+{
+  "$schema": "https://json.schemastore.org/tsconfig.json",
+  "compilerOptions": {
+    "esModuleInterop": true,
+    "module": "ESNext",
+    "target": "es2020",
+    "allowSyntheticDefaultImports": true,
+    "jsx": "react-jsx",
+    "strictNullChecks": true,
+    "moduleResolution": "bundler",
+    "declaration": true,
+    "declarationMap": true,
+    "types": ["node", "fhir", "vitest/globals"],
+    "noImplicitAny": false,
+    "noUncheckedIndexedAccess": false,
+    "useUnknownInCatchVariables": false,
+    "lib": ["dom", "es2022"],
+    "skipLibCheck": true
+  }
+}

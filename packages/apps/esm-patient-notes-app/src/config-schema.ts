@@ -15,8 +15,12 @@ export const configSchema = {
   prestacionalConceptSourceName: {
     _type: Type.String,
     _default: 'Codigos Prestacionales,Códigos Prestacionales',
-    _description:
-      'Comma-separated OpenMRS concept source names for SIHSALUS prestacional codes imported from OCL',
+    _description: 'Comma-separated OpenMRS concept source names for SIHSALUS prestacional codes imported from OCL',
+  },
+  stickyNoteConceptUuid: {
+    _type: Type.ConceptUuid,
+    _default: '165095AAAAAAAAAAAAAAAAAAAAAAAAAAAAAA',
+    _description: 'The concept UUID for storing sticky notes as observations',
   },
   visitNoteConfig: notesConfigSchema,
 };
@@ -25,5 +29,6 @@ export interface ConfigObject {
   diagnosisConceptClass: string;
   isPrimaryDiagnosisRequired: boolean;
   prestacionalConceptSourceName: string;
+  stickyNoteConceptUuid: string;
   visitNoteConfig: VisitNoteConfigObject;
 }

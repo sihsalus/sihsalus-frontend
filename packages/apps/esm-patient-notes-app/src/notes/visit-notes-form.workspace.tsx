@@ -348,7 +348,10 @@ const VisitNotesForm: React.FC<PatientWorkspace2DefinitionProps<VisitNotesFormPr
   );
 
   useEffect(() => {
-    const existingCodigoPrestacional = getEncounterObsConceptValue(codigoPrestacionalConceptUuid, 'codigo-prestacional');
+    const existingCodigoPrestacional = getEncounterObsConceptValue(
+      codigoPrestacionalConceptUuid,
+      'codigo-prestacional',
+    );
     if (isEditing && existingCodigoPrestacional) {
       setSelectedCodigoPrestacional(existingCodigoPrestacional);
     }
@@ -723,6 +726,9 @@ const VisitNotesForm: React.FC<PatientWorkspace2DefinitionProps<VisitNotesFormPr
         ],
         encounterType: encounterTypeUuid,
         obs: obsPayload,
+        // Only attach the visit when creating a note. On edit, omitting `visit`
+        // leaves the encounter's existing visit untouched.
+        ...(!isEditing && visitUuid && { visit: visitUuid }),
       };
 
       const abortController = new AbortController();
@@ -849,6 +855,7 @@ const VisitNotesForm: React.FC<PatientWorkspace2DefinitionProps<VisitNotesFormPr
       soapPlanConceptUuid,
       soapSubjectiveConceptUuid,
       t,
+      visitUuid,
     ],
   );
 
@@ -1421,11 +1428,7 @@ function PrestacionalSearch({
         <ul className={styles.diagnosisList}>
           {searchResults.map((prestacional) => (
             <li className={styles.diagnosis} key={prestacional.uuid}>
-              <button
-                type="button"
-                className={styles.diagnosis}
-                onClick={() => onAddPrestacional(prestacional)}
-              >
+              <button type="button" className={styles.diagnosis} onClick={() => onAddPrestacional(prestacional)}>
                 {prestacional.display}
               </button>
             </li>

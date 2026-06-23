@@ -51,11 +51,28 @@ interface LabOrderBasketPanelProps extends OrderTypeConfig {
   launchAddLabOrder?: (orderTypeUuid: string, order?: OrderBasketItem) => void;
 }
 
+const priorityOrder: Record<string, number> = {
+  'e724bdb6-2c75-4b6f-a00c-d43f2c372974': 1, // Emergencia
+  'b96959db-2106-4ce7-b39b-6fcb2ca88cda': 2, // Urgente
+  '427a595a-a5ee-4ba7-bcb7-2503248efb31': 3, // Urgencia menor
+  'bf3a08c6-cbe6-4f00-8e06-5f5437790b85': 4, // Rutina
+  '65cf194e-05a7-4832-ba6d-9b7c9940a7c2': 5, // Programado
+};
+
 function LabOrderBasketPanel({ orderTypeUuid, label, icon, launchAddLabOrder }: LabOrderBasketPanelProps) {
   const { t } = useTranslation();
   const { orderType, isLoadingOrderType } = useOrderType(orderTypeUuid);
   const config = useConfig<ConfigObject>();
   const { orders: orderConfig, priorityConfigs } = config;
+
+  const sortedPriorityConfigs = useMemo(() => {
+    if (!priorityConfigs) return [];
+    return [...priorityConfigs].sort((a, b) => {
+      const orderA = priorityOrder[a.conceptUuid] ?? 99;
+      const orderB = priorityOrder[b.conceptUuid] ?? 99;
+      return orderA - orderB;
+    });
+  }, [priorityConfigs]);
   const prepareTestOrderPostData = useCallback(
     (order: TestOrderBasketItem, patientUuid: string, encounterUuid: string | null) =>
       prepTestOrderPostData(order, patientUuid, encounterUuid, orderConfig.careSettingUuid),
@@ -248,7 +265,7 @@ function LabOrderBasketPanel({ orderTypeUuid, label, icon, launchAddLabOrder }: 
               onChange={handlePriorityChange}
               size="sm"
             >
-              {priorityConfigs?.map((option) => (
+              {sortedPriorityConfigs.map((option) => (
                 <SelectItem key={option.conceptUuid} text={option.label} value={option.conceptUuid} />
               ))}
             </Select>

@@ -408,3 +408,47 @@ export function previewInstance(orthancInstanceUID: string, studyId: number, abo
     signal: abortController.signal,
   });
 }
+
+/**
+ *
+ * @param status The new status that should be set for the procedure step.
+ * @param stepId The UID of the procedure step whose status should be updated.
+ */
+export async function updateProcedureStepStatus(status: string, stepId: number, abortController: AbortController) {
+  const updateStepStatusUrl = `${worklistUrl}/updateprocedurestepstatus`;
+  const formData = new FormData();
+  formData.append('status', status);
+  formData.append('stepId', stepId.toString());
+
+  const response = await openmrsFetch(updateStepStatusUrl, {
+    method: 'POST',
+    signal: abortController.signal,
+    body: formData,
+  });
+
+  if (!response.ok) {
+    throw new Error((await response.text()) || 'Update procedure step status failed');
+  }
+}
+
+/**
+ *
+ * @param linkStatus The new link status that should be set for the study.
+ * @param studyId The UID of the study whose link status should be updated.
+ */
+export async function updateStudyLinkStatus(linkStatus: number, studyId: number, abortController: AbortController) {
+  const updateLinkingUrl = `${imagingUrl}/updatestudyLinkStatus`;
+  const formData = new FormData();
+  formData.append('studyId', studyId.toString());
+  formData.append('linkStatus', linkStatus.toString());
+
+  const response = await openmrsFetch(updateLinkingUrl, {
+    method: 'POST',
+    signal: abortController.signal,
+    body: formData,
+  });
+
+  if (!response.ok) {
+    throw new Error((await response.text()) || 'Update study linking status failed');
+  }
+}

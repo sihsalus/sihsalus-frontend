@@ -8,7 +8,7 @@ export function renderLoadingSpinner(target: HTMLElement) {
     const refs = Array.from(frag.childNodes);
     target.appendChild(frag);
     return () => {
-      refs.forEach((child: ChildNode) => {
+      refs.forEach((child) => {
         child.remove();
       });
     };

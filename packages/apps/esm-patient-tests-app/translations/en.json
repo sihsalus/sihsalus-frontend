@@ -1,8 +1,10 @@
 {
   "add": "Add",
+  "addAllToBasket": "Agregar todos",
   "additionalInstructions": "Additional instructions",
   "addLabOrderWorkspaceTitle": "Add lab order",
   "addOrderableForOrderType": "Add {{orderTypeDisplay}}",
+  "allLabTests": "All lab tests",
   "back": "Back",
   "backToOrderBasket": "Back to order basket",
   "backToTimeline": "Back to timeline",
@@ -29,6 +31,7 @@
   "hideResultsTable": "Hide results table",
   "individualTests": "Individual tests",
   "labOrders": "Lab orders",
+  "labSetLabel": "Lab Set",
   "male": "Male",
   "moreResultsAvailable": "More results available",
   "noPanelsFound": "No panels found",
@@ -113,6 +116,8 @@
   "unknown": "Unknown",
   "usingADifferentTerm": "using a different term",
   "value": "Value",
+  "selectAll": "Select all",
+  "deselectAll": "Deselect all",
   "view": "View",
   "viewTimeline": "View timeline"
 }

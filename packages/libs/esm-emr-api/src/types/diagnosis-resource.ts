@@ -1,8 +1,9 @@
-import { type Concept, type ConceptClass, type OpenmrsResource, type OpenmrsResourceStrict } from '@openmrs/esm-api';
+import { type Concept, type ConceptClass, type OpenmrsResource } from '@openmrs/esm-api';
 import { type Encounter } from './encounter-resource';
 import { type Patient } from './patient-resource';
 
-export interface Diagnosis extends OpenmrsResourceStrict {
+// TODO: make this extends OpenmrsResourceStrict
+export interface Diagnosis extends OpenmrsResource {
   diagnosis?: {
     coded?: {
       uuid: string;

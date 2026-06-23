@@ -11,6 +11,7 @@ import {
 } from '@openmrs/esm-framework';
 import React, { useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
+import { useSWRConfig } from 'swr';
 import { type PharmacyConfig } from '../config-schema';
 import { saveMedicationDispense, useReasonForPauseValueSet } from '../medication-dispense/medication-dispense.resource';
 import { updateMedicationRequestFulfillerStatus } from '../medication-request/medication-request.resource';
@@ -31,6 +32,7 @@ const PauseDispenseForm: React.FC<Workspace2DefinitionProps<PauseDispenseFormPro
   closeWorkspace,
 }) => {
   const { t } = useTranslation();
+  const { mutate } = useSWRConfig();
   const config = useConfig<PharmacyConfig>();
   const { patient, isLoading } = usePatient(patientUuid);
 
@@ -84,7 +86,7 @@ const PauseDispenseForm: React.FC<Workspace2DefinitionProps<PauseDispenseFormPro
         })
         .then((response) => {
           if (response.ok) {
-            revalidate(encounterUuid);
+            revalidate(mutate, encounterUuid);
             showSnackbar({
               kind: 'success',
               title: t(

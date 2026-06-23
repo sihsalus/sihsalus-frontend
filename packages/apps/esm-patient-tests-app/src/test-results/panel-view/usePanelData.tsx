@@ -9,7 +9,11 @@ import {
   type FhirResponse,
   type ObsRecord,
 } from '../../types';
-
+import {
+  assessValue,
+  extractObservationInterpretation,
+  extractObservationReferenceRanges,
+} from '../loadPatientTestData/helpers';
 import { extractMetaInformation, getConceptUuid, isLabConcept } from './helper';
 
 export function useObservations() {
@@ -120,8 +124,31 @@ export default function usePanelData() {
         const value = getObservationValue(observation);
 
         // is a singe test
-        const meta = conceptData[conceptUuid];
-        const interpretation = meta?.getInterpretation(value);
+        const conceptMeta = conceptData[conceptUuid];
+
+        // Extraer rangos a nivel de observación
+        const obsRanges = extractObservationReferenceRanges(observation as any);
+        const hasObsRanges =
+          obsRanges &&
+          (obsRanges.lowNormal !== undefined || obsRanges.hiNormal !== undefined || obsRanges.range !== undefined);
+
+        const meta = hasObsRanges
+          ? {
+              ...conceptMeta,
+              ...obsRanges,
+              range:
+                obsRanges.range ??
+                (obsRanges.lowNormal !== undefined && obsRanges.hiNormal !== undefined
+                  ? `${obsRanges.lowNormal} – ${obsRanges.hiNormal}`
+                  : conceptMeta?.range),
+            }
+          : (conceptMeta as any);
+
+        // Determinar interpretación prefiriendo la del servidor FHIR
+        let interpretation = extractObservationInterpretation(observation as any);
+        if (!interpretation && meta) {
+          interpretation = assessValue(meta as any)(value);
+        }
 
         const name = observation?.code.coding[0].display;
         return {
@@ -129,7 +156,7 @@ export default function usePanelData() {
           conceptUuid,
           value,
           meta,
-          interpretation,
+          interpretation: interpretation as any,
           name,
           relatedObs: [],
         };

@@ -3,7 +3,6 @@ import classNames from 'classnames';
 import { forwardRef, useId, useMemo } from 'react';
 import {
   Button,
-  DateInput,
   type DateRange,
   DateRangePicker,
   type DateRangePickerProps,
@@ -14,6 +13,7 @@ import {
 } from 'react-aria-components';
 import { CalendarPopover } from './calendar-popover.component';
 import { DatePickerIcon } from './date-picker-icon.component';
+import { DatePickerInput } from './date-picker-input.component';
 import { DateSegment } from './date-segment.component';
 import styles from './datepicker.module.scss';
 import { DEFAULT_MIN_DATE_FLOOR } from './defaults';
@@ -113,14 +113,11 @@ export const OpenmrsDateRangePicker = /*#__PURE__*/ forwardRef<HTMLDivElement, O
 
       return (
         onChangeRaw ??
-        ((range: DateValue | null) => {
-          if (range) {
-            const typedRange = range as unknown as DateRange;
-            onChange?.([internationalizedDateToDate(typedRange.start), internationalizedDateToDate(typedRange.end)]);
-          } else {
-            onChange?.([null, null]);
-          }
-        })
+        ((range: DateRange | null) =>
+          onChange?.([
+            range ? internationalizedDateToDate(range.start) : null,
+            range ? internationalizedDateToDate(range.end) : null,
+          ]))
       );
     }, [onChangeRaw, onChange]);
 
@@ -143,7 +140,7 @@ export const OpenmrsDateRangePicker = /*#__PURE__*/ forwardRef<HTMLDivElement, O
               ref={ref}
               isDisabled={isDisabled}
               {...dateRangePickerProps}
-              onChange={innerOnChange as DateRangePickerProps<DateValue>['onChange']}
+              onChange={innerOnChange}
             >
               <div className="cds--date-picker-container">
                 {hasVisibleLabel && (
@@ -160,7 +157,7 @@ export const OpenmrsDateRangePicker = /*#__PURE__*/ forwardRef<HTMLDivElement, O
                       [styles.inputsWrapperLg]: size === 'lg',
                     })}
                   >
-                    <DateInput
+                    <DatePickerInput
                       className={classNames(
                         'cds--date-picker-input__wrapper',
                         styles.startInput,
@@ -169,13 +166,13 @@ export const OpenmrsDateRangePicker = /*#__PURE__*/ forwardRef<HTMLDivElement, O
                       slot="start"
                     >
                       {(segment) => <DateSegment className={styles.inputSegment} segment={segment} />}
-                    </DateInput>
+                    </DatePickerInput>
                     <div className={styles.separator}>
                       <span aria-hidden="true" data-readonly>
                         –
                       </span>
                     </div>
-                    <DateInput
+                    <DatePickerInput
                       className={classNames(
                         'cds--date-picker-input__wrapper',
                         styles.endInput,
@@ -184,7 +181,7 @@ export const OpenmrsDateRangePicker = /*#__PURE__*/ forwardRef<HTMLDivElement, O
                       slot="end"
                     >
                       {(segment) => <DateSegment className={styles.inputSegment} segment={segment} />}
-                    </DateInput>
+                    </DatePickerInput>
                   </div>
                   <Button
                     className={classNames(styles.flatButton, {

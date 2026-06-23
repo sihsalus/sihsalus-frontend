@@ -1,4 +1,5 @@
-import { type FormatDateOptions, formatDate, type OpenmrsResource } from '@openmrs/esm-framework/src/internal';
+import { type OpenmrsResource } from '@openmrs/esm-framework/src/internal';
+import { type FormatDateOptions, formatDate } from '@openmrs/esm-utils';
 import dayjs from 'dayjs';
 import {
   type AttachmentFieldValue,

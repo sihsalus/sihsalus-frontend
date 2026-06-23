@@ -14,6 +14,7 @@ import { type FieldError, FormProvider, useForm } from 'react-hook-form';
 import { useTranslation } from 'react-i18next';
 import { type ConfigObject } from '../../config-schema';
 import { today } from '../../constants';
+import { type StockItemInventory } from '../../core/api/types/stockItem/StockItemInventory';
 import { type StockOperationDTO } from '../../core/api/types/stockOperation/StockOperationDTO';
 import {
   OperationType,
@@ -21,7 +22,6 @@ import {
   type StockOperationType,
   StockOperationTypeIsStockIssue,
 } from '../../core/api/types/stockOperation/StockOperationType';
-import { type StockItemInventory } from '../../core/api/types/stockItem/StockItemInventory';
 import { type TabItem } from '../../core/components/tabs/types';
 import { otherUser, pick } from '../../core/utils/utils';
 import { useStockOperationAndItems } from '../stock-operations.resource';
@@ -115,7 +115,11 @@ const StockOperationForm: React.FC<StockOperationFormProps> = ({
   const [itemsFormProps, setItemFormProps] = useState<StockItemFormProps>();
 
   useEffect(() => {
-    if (!stockRequisitionUuid || !_stockOperation?.uuid || initializedFromRequisition.current === stockRequisitionUuid) {
+    if (
+      !stockRequisitionUuid ||
+      !_stockOperation?.uuid ||
+      initializedFromRequisition.current === stockRequisitionUuid
+    ) {
       return;
     }
 

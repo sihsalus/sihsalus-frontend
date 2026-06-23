@@ -1,5 +1,6 @@
 import { getGlobalStore } from '@openmrs/esm-state/mock';
 import { vi } from 'vitest';
+import { type WorkspaceGroupRegistration, type WorkspaceRegistration } from '.';
 
 export const attach = vi.fn();
 export const detach = vi.fn();

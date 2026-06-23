@@ -3,7 +3,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 
 import { getReportesSqlApiPath, getReportesSqlResourcePath } from './config';
 import { getIndicadores, previewSql } from './indicadores';
-import { calcularAhora, getResultados } from './resultados';
+import { calcularAhora, getResultados, recalcularAnio } from './resultados';
 
 vi.mock('./config');
 
@@ -131,6 +131,91 @@ describe('calcularAhora routing', () => {
     const fetchOptions = mockedOpenmrsFetch.mock.calls[0][1];
     expect(fetchOptions).toBeDefined();
     expect(fetchOptions?.method).toBe('POST');
+  });
+
+  it('propagates the backend error instead of returning a mock response on failure', async () => {
+    mockResourcePath('/services/reportes-sql');
+    const fetchError = new Error('Backend unavailable');
+    mockedOpenmrsFetch.mockRejectedValue(fetchError);
+
+    await expect(calcularAhora()).rejects.toBe(fetchError);
+  });
+});
+
+describe('recalcularAnio routing', () => {
+  afterEach(() => {
+    vi.clearAllMocks();
+  });
+
+  it('calls openmrsFetch with /services/reportes-sql/resultados/recalcular-anio', async () => {
+    mockResourcePath('/services/reportes-sql');
+    mockedOpenmrsFetch.mockResolvedValue({
+      data: {
+        anio: 2026,
+        indicador_id: null,
+        meses_procesados: 12,
+        indicadores_considerados: 2,
+        recalculados: 24,
+        errores: [],
+        total: 24,
+      },
+    } as any);
+
+    await recalcularAnio({ anio: 2026 });
+
+    const calledUrl = mockedOpenmrsFetch.mock.calls[0][0] as string;
+    expect(calledUrl).toContain('/services/reportes-sql/resultados/recalcular-anio');
+  });
+
+  it('uses POST method and sends JSON body with anio', async () => {
+    mockResourcePath('/services/reportes-sql');
+    mockedOpenmrsFetch.mockResolvedValue({
+      data: {
+        anio: 2026,
+        indicador_id: null,
+        meses_procesados: 12,
+        indicadores_considerados: 0,
+        recalculados: 0,
+        errores: [],
+        total: 0,
+      },
+    } as any);
+
+    await recalcularAnio({ anio: 2026 });
+
+    const fetchOptions = mockedOpenmrsFetch.mock.calls[0][1];
+    expect(fetchOptions).toBeDefined();
+    expect(fetchOptions?.method).toBe('POST');
+    expect((fetchOptions?.headers as Record<string, string>)['Content-Type']).toBe('application/json');
+    expect(fetchOptions?.body).toEqual({ anio: 2026 });
+  });
+
+  it('includes indicador_id in body when provided', async () => {
+    mockResourcePath('/services/reportes-sql');
+    mockedOpenmrsFetch.mockResolvedValue({
+      data: {
+        anio: 2025,
+        indicador_id: 'ind-001',
+        meses_procesados: 12,
+        indicadores_considerados: 1,
+        recalculados: 12,
+        errores: [],
+        total: 12,
+      },
+    } as any);
+
+    await recalcularAnio({ anio: 2025, indicador_id: 'ind-001' });
+
+    const fetchOptions = mockedOpenmrsFetch.mock.calls[0][1];
+    expect(fetchOptions?.body).toEqual({ anio: 2025, indicador_id: 'ind-001' });
+  });
+
+  it('propagates the backend error instead of returning a mock response on failure', async () => {
+    mockResourcePath('/services/reportes-sql');
+    const fetchError = new Error('Backend unavailable');
+    mockedOpenmrsFetch.mockRejectedValue(fetchError);
+
+    await expect(recalcularAnio({ anio: 2026 })).rejects.toBe(fetchError);
   });
 });
 

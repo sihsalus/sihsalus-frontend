@@ -10,10 +10,11 @@ import {
   TableHeader,
   TableRow,
 } from '@carbon/react';
-import { useLayoutType } from '@openmrs/esm-framework';
+import { openmrsFetch, useLayoutType } from '@openmrs/esm-framework';
 import { type Order } from '@openmrs/esm-patient-common-lib';
 import React, { useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
+import useSWR from 'swr';
 
 import { useLabEncounter, useOrderConceptByUuid } from '../lab-results/lab-results.resource';
 
@@ -23,11 +24,47 @@ interface GeneralOrderProps {
   order: Order;
 }
 
+const hasNormalRange = (concept: any) =>
+  concept?.hiNormal !== null &&
+  concept?.hiNormal !== undefined &&
+  concept?.hiNormal !== '' &&
+  concept?.lowNormal !== null &&
+  concept?.lowNormal !== undefined &&
+  concept?.lowNormal !== '';
+
+const extractRangesFromFhirObs = (fhirObs: any) => {
+  const referenceRanges = fhirObs?.referenceRange;
+  if (!referenceRanges?.length) return {};
+
+  const result: any = {};
+  for (const ref of referenceRanges) {
+    const code = ref.type?.coding?.[0]?.code?.toLowerCase();
+    const system = ref.type?.coding?.[0]?.system;
+
+    if (
+      (system === 'http://terminology.hl7.org/CodeSystem/referencerange-meaning' && code === 'normal') ||
+      code === 'normal' ||
+      (!code && referenceRanges.length === 1)
+    ) {
+      const low = ref.low?.value;
+      const high = ref.high?.value;
+      if (typeof low === 'number') result.lowNormal = low;
+      if (typeof high === 'number') result.hiNormal = high;
+    }
+  }
+  return result;
+};
+
 const GeneralOrderTable: React.FC<GeneralOrderProps> = ({ order }) => {
   const { t } = useTranslation();
   const isTablet = useLayoutType() === 'tablet';
   const { concept, isLoading: isLoadingConcept } = useOrderConceptByUuid(order.concept.uuid);
   const { encounter, isLoading: isLoadingResult } = useLabEncounter(order.encounter.uuid);
+
+  const { data: fhirObsBundle } = useSWR<any>(
+    order.encounter.uuid ? `/ws/fhir2/R4/Observation?encounter=Encounter/${order.encounter.uuid}&_count=100` : null,
+    openmrsFetch,
+  );
 
   const tableHeaders: Array<{ key: string; header: string }> = [
     {
@@ -48,42 +85,56 @@ const GeneralOrderTable: React.FC<GeneralOrderProps> = ({ order }) => {
 
   const obs = useMemo(() => {
     if (encounter && concept) {
-      return encounter.obs?.find((obs) => obs.concept.uuid === concept.uuid);
+      return (
+        encounter.obs?.find((obs) => obs.order?.uuid === order.uuid) ||
+        encounter.obs?.find((obs) => obs.concept.uuid === concept.uuid)
+      );
     }
-  }, [concept, encounter]);
+  }, [concept, encounter, order.uuid]);
 
   const rows = useMemo(() => {
+    const findFhirObs = (obsUuid: string) =>
+      fhirObsBundle?.data?.entry?.find((e: any) => e.resource?.id === obsUuid)?.resource;
+
     if (concept && concept.setMembers.length > 0) {
-      return concept?.setMembers.map((memberConcept) => ({
-        id: memberConcept.uuid,
-        orderName: <div className={styles.type}>{memberConcept.display}</div>,
-        instructions: '--',
-        result: isLoadingResult ? (
-          <SkeletonText />
-        ) : (
-          (obs?.groupMembers?.find((obs) => obs.concept.uuid === memberConcept.uuid)?.value.display ?? '--')
-        ),
-        normalRange:
-          memberConcept.hiNormal && memberConcept.lowNormal
-            ? `${memberConcept.lowNormal} - ${memberConcept.hiNormal}`
-            : 'N/A',
-        referenceNumber: order?.accessionNumber,
-      }));
+      return concept?.setMembers.map((memberConcept) => {
+        const memberObs = obs?.groupMembers?.find((o) => o.concept.uuid === memberConcept.uuid);
+        const fhirObs = memberObs ? findFhirObs(memberObs.uuid) : null;
+        const fhirRanges = extractRangesFromFhirObs(fhirObs);
+
+        const low = fhirRanges.lowNormal ?? memberConcept.lowNormal;
+        const high = fhirRanges.hiNormal ?? memberConcept.hiNormal;
+
+        return {
+          id: memberConcept.uuid,
+          orderName: <div className={styles.type}>{memberConcept.display}</div>,
+          instructions: '--',
+          result: isLoadingResult ? <SkeletonText /> : (memberObs?.value.display ?? '--'),
+          normalRange: hasNormalRange({ lowNormal: low, hiNormal: high }) ? `${low} - ${high}` : 'N/A',
+          referenceNumber: order?.accessionNumber,
+        };
+      });
     } else if (concept && concept.setMembers.length === 0) {
+      const fhirObs = obs ? findFhirObs(obs.uuid) : null;
+      const fhirRanges = extractRangesFromFhirObs(fhirObs);
+
+      const low = fhirRanges.lowNormal ?? concept.lowNormal;
+      const high = fhirRanges.hiNormal ?? concept.hiNormal;
+
       return [
         {
           id: concept.uuid,
           orderName: <div className={styles.type}>{concept.display}</div>,
           instructions: order?.instructions ?? '--',
           result: isLoadingResult ? <SkeletonText /> : (obs?.value.display ?? '--'),
-          normalRange: concept.hiNormal && concept.lowNormal ? `${concept.lowNormal} - ${concept.hiNormal}` : 'N/A',
+          normalRange: hasNormalRange({ lowNormal: low, hiNormal: high }) ? `${low} - ${high}` : 'N/A',
           referenceNumber: order?.accessionNumber,
         },
       ];
     } else {
       return [];
     }
-  }, [concept, isLoadingResult, obs?.groupMembers, obs?.value.display, order?.accessionNumber, order?.instructions]);
+  }, [concept, isLoadingResult, obs, order?.accessionNumber, order?.instructions, fhirObsBundle]);
 
   return (
     <div className={styles.order}>

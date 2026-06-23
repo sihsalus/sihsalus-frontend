@@ -8,6 +8,7 @@
   "appointmentCancelled": "Agendamento cancelada",
   "appointmentCancelledSuccessfully": "Agendamento cancelado com sucesso",
   "appointmentCheckedIn": "Check-in da Consulta Realizado",
+  "appointmentCheckedInAfterVisitStarted": "A visita foi iniciada e o check-in da consulta foi realizado",
   "appointmentColor": "Cor da consulta",
   "appointmentConflict": "Conflito de Agendamento",
   "appointmentEdited": "Agendamento editado",

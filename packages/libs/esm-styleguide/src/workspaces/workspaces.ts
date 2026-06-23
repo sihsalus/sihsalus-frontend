@@ -85,7 +85,7 @@ export interface WorkspaceWindowSizeProviderProps {
 
 export interface WorkspaceWindowSizeContext {
   windowSize: WorkspaceWindowSize;
-  updateWindowSize?(value: WorkspaceWindowState): void;
+  updateWindowSize?(value: WorkspaceWindowState): any;
   active: boolean;
 }
 
@@ -112,7 +112,7 @@ export interface WorkspaceStoreState {
 }
 
 export interface OpenWorkspace extends WorkspaceRegistration, DefaultWorkspaceProps {
-  additionalProps: Record<string, unknown>;
+  additionalProps: object;
   currentWorkspaceGroup?: string;
 }
 
@@ -185,12 +185,12 @@ function closeWorkspaceGroup(groupName: string, onWorkspaceCloseup?: () => void)
 }
 
 interface LaunchWorkspaceGroupArg {
-  state: Record<PropertyKey, unknown>;
+  state: Record<string | symbol | number, any>;
   onWorkspaceGroupLaunch?(): void;
   workspaceGroupCleanup?(): void;
   workspaceToLaunch?: {
     name: string;
-    additionalProps?: Record<PropertyKey, unknown>;
+    additionalProps?: Record<string | symbol | number, any>;
   };
 }
 
@@ -248,10 +248,10 @@ export function launchWorkspaceGroup(groupName: string, args: LaunchWorkspaceGro
 
 function promptBeforeLaunchingWorkspace(
   workspace: OpenWorkspace,
-  newWorkspaceDetails: { name: string; additionalProps?: Record<string, unknown> },
+  newWorkspaceDetails: { name: string; additionalProps?: object },
 ) {
   const { name, additionalProps } = newWorkspaceDetails;
-  getWorkspaceRegistration(name);
+  const _newWorkspaceRegistration = getWorkspaceRegistration(name);
 
   const proceed = () => {
     closeWorkspace(workspace.name, {
@@ -304,7 +304,7 @@ function promptBeforeLaunchingWorkspace(
  * https://openmrs.atlassian.net/wiki/spaces/docs/pages/615677981/Workspace+v2+Migration+Guide
  */
 export function launchWorkspace<
-  T extends DefaultWorkspaceProps | Record<string, unknown> = DefaultWorkspaceProps & Record<string, unknown>,
+  T extends DefaultWorkspaceProps | object = DefaultWorkspaceProps & { [key: string]: any },
 >(name: string, additionalProps?: Omit<T, keyof DefaultWorkspaceProps> & { workspaceTitle?: string }) {
   const store = getWorkspaceStore();
   const workspace = getWorkspaceRegistration(name);
@@ -414,7 +414,7 @@ export function navigateAndLaunchWorkspace({
   targetUrl: string;
   contextKey: string;
   workspaceName: string;
-  additionalProps?: Record<string, unknown>;
+  additionalProps?: object;
 }) {
   changeWorkspaceContext(contextKey);
   launchWorkspace(workspaceName, additionalProps);
@@ -457,6 +457,7 @@ export function closeWorkspace(name: string, options: CloseWorkspaceOptions = {}
 
   const updateStoreWithClosedWorkspace = () => {
     const state = store.getState();
+    const _workspaceToBeClosed = state.openWorkspaces.find((w) => w.name === name);
     const newOpenWorkspaces = state.openWorkspaces.filter((w) => w.name !== name);
 
     const workspaceGroupName = store.getState().workspaceGroup?.name;
@@ -666,12 +667,8 @@ export function showWorkspacePrompts(
   store.setState((state) => ({ ...state, prompt }));
 }
 
-function getWorkspaceTitle(workspace: WorkspaceRegistration, additionalProps?: Record<string, unknown>) {
-  const workspaceTitle = additionalProps?.['workspaceTitle'];
-  if (typeof workspaceTitle === 'string') {
-    return workspaceTitle;
-  }
-  return workspace.title;
+function getWorkspaceTitle(workspace: WorkspaceRegistration, additionalProps?: { workspaceTitle?: string }) {
+  return additionalProps?.workspaceTitle ?? workspace.title;
 }
 
 export function resetWorkspaceStore() {

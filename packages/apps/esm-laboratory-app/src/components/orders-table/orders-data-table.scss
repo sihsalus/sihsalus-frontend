@@ -1,6 +1,6 @@
-@use '@carbon/colors';
-@use '@carbon/layout';
-@use '@carbon/type';
+@use "@carbon/colors";
+@use "@carbon/layout";
+@use "@carbon/type";
 
 .tableContainer {
   border: 1px solid colors.$gray-20;
@@ -24,7 +24,8 @@
   }
 
   :global(.cds--table-toolbar) {
-    position: static;
+    position: relative;
+    z-index: 10;
   }
 
   :global(.cds--overflow-menu) {
@@ -49,7 +50,7 @@
 
   & p {
     padding-right: layout.$spacing-03;
-    @include type.type-style('body-01');
+    @include type.type-style("body-01");
     color: colors.$gray-70;
   }
 
@@ -90,7 +91,7 @@
 }
 
 .content {
-  @include type.type-style('heading-compact-02');
+  @include type.type-style("heading-compact-02");
   color: colors.$gray-70;
   margin-bottom: layout.$spacing-03;
 }
@@ -100,7 +101,7 @@
 }
 
 .emptyStateHelperText {
-  @include type.type-style('helper-text-02');
+  @include type.type-style("helper-text-02");
 }
 
 .hiddenRow {

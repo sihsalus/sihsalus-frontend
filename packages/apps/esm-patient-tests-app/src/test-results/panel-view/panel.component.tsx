@@ -75,16 +75,20 @@ const LabSetPanel: React.FC<LabSetPanelProps> = ({ panel, observations, activePa
             id: test.id,
             testName: test.name,
             value: {
-              content: <span>{`${test.value} ${test.meta?.units}`}</span>,
+              content: <span>{test.meta?.units ? `${test.value} ${test.meta.units}` : test.value}</span>,
             },
             interpretation: test.interpretation,
-            range: test.meta.range ? `${test.meta?.range} ${test.meta?.units}` : '--',
+            range: test.meta.range
+              ? test.meta.units
+                ? `${test.meta.range} ${test.meta.units}`
+                : test.meta.range
+              : '--',
           }))
         : observations.map((test) => ({
             id: test.id,
             testName: test.name,
             value: {
-              content: <span>{`${test.value} ${test.meta?.units ?? ''}`}</span>,
+              content: <span>{test.meta?.units ? `${test.value} ${test.meta.units}` : test.value}</span>,
             },
             interpretation: test.interpretation,
           })),
@@ -104,8 +108,7 @@ const LabSetPanel: React.FC<LabSetPanelProps> = ({ panel, observations, activePa
             {formatDate(date, {
               mode: 'wide',
               time: false,
-            })}{' '}
-            &bull; {`${date.getHours().toString().padStart(2, '0')}:${date.getMinutes().toString().padStart(2, '0')}`}
+            })}
           </p>
         </div>
         <DataTable rows={rowsData} headers={headers}>

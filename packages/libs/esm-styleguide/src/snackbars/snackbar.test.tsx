@@ -7,11 +7,7 @@ const mockCloseSnackbar = vi.fn();
 
 describe('Snackbar component', () => {
   beforeAll(() => vi.useFakeTimers({ shouldAdvanceTime: true }));
-  afterEach(() => {
-    act(() => {
-      vi.runAllTimers();
-    });
-  });
+  afterEach(vi.runAllTimers);
   afterAll(vi.useRealTimers);
 
   it('renders a snackbar notification', () => {

@@ -12,11 +12,13 @@ import { mockLocations, mockMetrics, mockServiceTypes, mockSession } from 'test-
 import { type ConfigObject, configSchema } from '../config-schema';
 
 import ClinicMetrics from './clinic-metrics.component';
+import { useAverageWaitTime } from './clinic-metrics.resource';
 
 const mockOpenmrsFetch = vi.mocked(openmrsFetch);
 const mockUseConfig = vi.mocked(useConfig<ConfigObject>);
 const mockUseLocations = vi.mocked(useLocations);
 const mockUseSession = vi.mocked(useSession);
+const mockUseAverageWaitTime = vi.mocked(useAverageWaitTime);
 
 vi.mock('./queue-metrics.resource', async () => ({
   ...(await vi.importActual('./queue-metrics.resource')),
@@ -68,5 +70,8 @@ describe('Clinic metrics', () => {
     expect(screen.getByText(/minutes/i)).toBeInTheDocument();
     expect(screen.getByRole('button', { name: /call display/i })).toBeInTheDocument();
     expect(screen.getByText(/69/i)).toBeInTheDocument();
+    expect(mockUseAverageWaitTime.mock.lastCall?.[1]).toBe(
+      getDefaultsFromConfigSchema(configSchema).concepts.defaultStatusConceptUuid,
+    );
   });
 });

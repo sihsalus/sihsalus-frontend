@@ -1,7 +1,7 @@
-@use '@carbon/colors';
-@use '@carbon/layout';
-@use '@carbon/type';
-@use '@openmrs/esm-styleguide/src/vars' as *;
+@use "@carbon/colors";
+@use "@carbon/layout";
+@use "@carbon/type";
+@use "@openmrs/esm-styleguide/src/vars" as *;
 
 .buttonSection {
   display: flex;
@@ -82,7 +82,7 @@
 }
 
 .pill {
-  @include type.type-style('label-01');
+  @include type.type-style("label-01");
   display: inline-block;
   background-color: colors.$gray-20;
   border-radius: layout.$spacing-03;
@@ -97,40 +97,62 @@
 .priorityPill {
   @extend .pill;
 
-  &[data-urgency='ROUTINE'] {
-    background-color: colors.$green-20;
+  &[data-urgency-color="red"] {
+    background-color: colors.$red-20;
+    color: colors.$red-80;
   }
 
-  &[data-urgency='ON SCHEDULED_DATE'] {
-    background-color: colors.$red-20;
+  &[data-urgency-color="orange"] {
+    background-color: colors.$orange-20;
+    color: colors.$orange-80;
+  }
+
+  &[data-urgency-color="yellow"] {
+    background-color: colors.$yellow-20;
+    color: colors.$yellow-80;
+  }
+
+  &[data-urgency-color="green"] {
+    background-color: colors.$green-20;
+    color: colors.$green-80;
+  }
+
+  &[data-urgency-color="blue"] {
+    background-color: colors.$blue-20;
+    color: colors.$blue-80;
+  }
+
+  &[data-urgency-color="gray"] {
+    background-color: colors.$gray-20;
+    color: colors.$gray-80;
   }
 }
 
 .statusPill {
   @extend .pill;
 
-  &[data-status='RECEIVED'] {
+  &[data-status="RECEIVED"] {
     background-color: colors.$blue-20;
   }
 
-  &[data-status='IN PROGRESS'] {
+  &[data-status="IN PROGRESS"] {
     background-color: colors.$cyan-20;
   }
 
-  &[data-status='ON HOLD'] {
+  &[data-status="ON HOLD"] {
     background-color: colors.$teal-20;
   }
 
-  &[data-status='EXCEPTION'] {
+  &[data-status="EXCEPTION"] {
     background-color: colors.$magenta-20;
   }
 
-  &[data-status='COMPLETED'] {
+  &[data-status="COMPLETED"] {
     background-color: colors.$green-20;
   }
 
-  &[data-status='DECLINED'],
-  &[data-status='Order not picked'] {
+  &[data-status="DECLINED"],
+  &[data-status="Order not picked"] {
     background-color: colors.$red-20;
   }
 }

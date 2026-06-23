@@ -13,7 +13,7 @@ import {
   TableRow,
   Tile,
 } from '@carbon/react';
-import { AddIcon, formatDate, parseDate, useLayoutType, useSession, userHasAccess } from '@openmrs/esm-framework';
+import { AddIcon, formatDate, parseDate, useLayoutType, userHasAccess, useSession } from '@openmrs/esm-framework';
 import {
   CardHeader,
   EmptyState,
@@ -282,7 +282,13 @@ function ConditionsDetailedTable({ patient, section = 'antecedents' }: Condition
       </div>
     );
   }
-  return <EmptyState displayText={displayText} headerTitle={headerTitle} launchForm={canEdit ? launchConditionsForm : undefined} />;
+  return (
+    <EmptyState
+      displayText={displayText}
+      headerTitle={headerTitle}
+      launchForm={canEdit ? launchConditionsForm : undefined}
+    />
+  );
 }
 
 function ConditionsDetailedSummary({ patient }: ConditionsDetailedSummaryProps) {

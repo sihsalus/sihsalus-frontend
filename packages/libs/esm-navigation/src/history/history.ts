@@ -25,23 +25,21 @@ export function setupHistory() {
     addToHistory(document.referrer);
   }
 
-  const onRoutingEvent: EventListener = (event) => {
-    const evt = event as CustomEvent;
+  window.addEventListener('single-spa:routing-event', (evt: Event) => {
+    const event = evt as CustomEvent;
     const history = getHistory();
-    if (evt.detail.originalEvent?.singleSpaTrigger === 'replaceState') {
+    if (event.detail.originalEvent?.singleSpaTrigger === 'replaceState') {
       // handle redirect
       history[history.length - 1] = window.location.href;
       sessionStorage.setItem(historyKey, JSON.stringify(history));
-    } else if (!evt.detail.originalEvent?.singleSpa && history.includes(window.location.href)) {
+    } else if (!event.detail.originalEvent?.singleSpa && history.includes(window.location.href)) {
       // handle back button (as best we can tell whether it was used or not)
       goBackInHistory({ toUrl: window.location.href });
     } else if (history[history.length - 1] !== window.location.href) {
       // handle normal navigation
       addToHistory(window.location.href);
     }
-  };
-
-  window.addEventListener('single-spa:routing-event', onRoutingEvent);
+  });
 }
 
 /**

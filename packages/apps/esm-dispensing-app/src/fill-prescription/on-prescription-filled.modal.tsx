@@ -2,6 +2,7 @@ import { Button, ModalBody, ModalFooter, ModalHeader } from '@carbon/react';
 import { getPatientName, showSnackbar, useConfig, useSession } from '@openmrs/esm-framework';
 import React from 'react';
 import { Trans, useTranslation } from 'react-i18next';
+import { useSWRConfig } from 'swr';
 import MedicationEvent from '../components/medication-event.component';
 import { type PharmacyConfig } from '../config-schema';
 import {
@@ -48,6 +49,7 @@ const OnPrescriptionFilledModal: React.FC<OnPrescriptionFilledModalProps> = ({ p
   const providers = useProviders(dispenserProviderRoles);
   const { medicationRequestBundles } = usePrescriptionDetails(encounterUuid);
   const { t } = useTranslation();
+  const { mutate } = useSWRConfig();
   const [isSubmitting, setIsSubmitting] = React.useState(false);
 
   const onConfirm = async () => {
@@ -100,7 +102,7 @@ const OnPrescriptionFilledModal: React.FC<OnPrescriptionFilledModalProps> = ({ p
 
       close();
     } finally {
-      revalidate(encounterUuid);
+      revalidate(mutate, encounterUuid);
       setIsSubmitting(false);
     }
   };
@@ -113,8 +115,8 @@ const OnPrescriptionFilledModal: React.FC<OnPrescriptionFilledModalProps> = ({ p
       <ModalBody>
         <p className={styles.modalDescription}>
           <Trans i18nKey="dispenseAllPrescriptionsConfirmation">
-            Would you like to mark prescriptions ordered for <strong>{{ patientName } as any}</strong> as dispensed?
-            Orders with no refills will be marked as completed.
+            Would you like to mark prescriptions ordered for <strong>{{ patientName } as unknown as string}</strong> as
+            dispensed? Orders with no refills will be marked as completed.
           </Trans>
         </p>
         {medicationRequestBundles.map((bundle) => (

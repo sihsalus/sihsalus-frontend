@@ -1,6 +1,6 @@
 import { createGlobalStore, fhirBaseUrl, parseDate, useStore } from '@openmrs/esm-framework';
 import dayjs from 'dayjs';
-import { mutate } from 'swr';
+import { type useSWRConfig } from 'swr';
 import {
   OPENMRS_FHIR_EXT_DISPENSE_RECORDED,
   OPENMRS_FHIR_EXT_MEDICINE,
@@ -23,6 +23,8 @@ import {
   MedicationRequestStatus,
   type Quantity,
 } from './types';
+
+type ScopedMutator = ReturnType<typeof useSWRConfig>['mutate'];
 
 const unitsDontMatchErrorMessage =
   "Misconfiguration, please contact your System Administrator:  Can't calculate quantity dispensed if units don't match. Likely issue: allowModifyingPrescription and restrictTotalQuantityDispensed configuration parameters both set to true. " +
@@ -590,10 +592,16 @@ export function isMostRecentMedicationDispense(
 
 /**
  * Revalidated (reloads) both the prescription associated with the encounter uuid,
- * and the entire prescription table
+ * and the entire prescription table.
+ *
+ * The mutator must come from useSWRConfig() in the calling component. OpenMRS wraps
+ * microfrontends in an SWRConfig with a custom cache provider, so the global SWR
+ * mutator cannot reliably see app-local cached prescription keys.
+ *
+ * @param mutate cache-bound mutator from useSWRConfig()
  * @param encounterUuid
  */
-export async function revalidate(encounterUuid: string) {
+export async function revalidate(mutate: ScopedMutator, encounterUuid: string) {
   await mutate(
     (key) =>
       typeof key === 'string' &&

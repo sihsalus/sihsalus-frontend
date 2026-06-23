@@ -39,7 +39,7 @@
     "@carbon/react": "^1.83.0",
     "@sihsalus/esm-rbac": "workspace:*",
     "lodash-es": "^4.17.21",
-    "swr": "^2.2.5"
+    "swr": "2.2.5"
   },
   "peerDependencies": {
     "@openmrs/esm-framework": "*",

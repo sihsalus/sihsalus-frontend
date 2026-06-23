@@ -20,16 +20,4 @@ export const clearCurrentUser = vi.fn();
 export const refetchCurrentUser = vi.fn();
 export const setUserLanguage = vi.fn();
 export const setUserProperties = vi.fn();
-export const userHasAccess = vi.fn(
-  (
-    requiredPrivilege: string | Array<string> | undefined,
-    user?: { privileges?: Array<{ display?: string; name?: string }> } | null,
-  ) => {
-    if (!requiredPrivilege) {
-      return true;
-    }
-    const userPrivileges = (user?.privileges ?? []).map((privilege) => privilege?.display ?? privilege?.name);
-    const required = Array.isArray(requiredPrivilege) ? requiredPrivilege : [requiredPrivilege];
-    return required.every((privilege) => userPrivileges.includes(privilege));
-  },
-);
+export const userHasAccess = vi.fn();

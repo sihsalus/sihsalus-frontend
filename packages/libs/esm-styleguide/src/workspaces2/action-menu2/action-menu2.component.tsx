@@ -1,5 +1,3 @@
-/** @module @category Workspace */
-
 import { IconButton } from '@carbon/react';
 import { type WorkspaceGroupDefinition2 } from '@openmrs/esm-globals';
 import { ComponentContext, ExtensionSlot, isDesktop, useLayoutType } from '@openmrs/esm-react-utils';

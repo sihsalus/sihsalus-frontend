@@ -25,7 +25,8 @@ async function fetchOutOfStockDrugs() {
         `${restBaseUrl}/stockmanagement/stockiteminventory?v=${ResourceRepresentation.Default}&totalCount=true&startIndex=0&limit=1000&stockItemUuid=${stockItem.uuid}&groupBy=${LocationStockItem}`,
       );
 
-      const quantity = inventoryResponse.data.results?.reduce((total, item) => total + Number(item.quantity ?? 0), 0) ?? 0;
+      const quantity =
+        inventoryResponse.data.results?.reduce((total, item) => total + Number(item.quantity ?? 0), 0) ?? 0;
       return {
         stockItem,
         quantity,

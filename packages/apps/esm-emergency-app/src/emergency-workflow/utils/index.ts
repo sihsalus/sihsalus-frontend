@@ -2,11 +2,28 @@
  * Emergency Workflow Utilities
  *
  * Utility functions for the emergency workflow:
- * - Priority calculation based on vital signs
- * - Validation helpers
- * - Format helpers
+ * - Priority calculation based on vital signs (NEWS2 → Peruvian triage priority)
+ * - Triage completeness validation
  */
 
-// TODO: Export utility functions as they are implemented
-// export { calculatePriorityFromVitals } from './priority-calculator';
-// export { validateTriageComplete } from './triage-validator';
+export {
+  type Acvpu,
+  calculateTriagePriority,
+  type RiskBand,
+  scoreConsciousness,
+  scoreHeartRate,
+  scoreOxygenSaturation,
+  scoreRespiratoryRate,
+  scoreSystolicBp,
+  scoreTemperature,
+  type TriagePriority,
+  type TriagePriorityResult,
+  type TriageVitals,
+  toRiskBand,
+} from './priority-calculator';
+export {
+  REQUIRED_TRIAGE_VITALS,
+  type RequiredTriageVital,
+  type TriageValidationResult,
+  validateTriageComplete,
+} from './triage-validator';

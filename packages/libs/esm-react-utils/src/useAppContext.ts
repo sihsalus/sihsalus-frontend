@@ -1,6 +1,6 @@
 /** @module @category Context */
 
-import { subscribeToContext } from '@openmrs/esm-context';
+import { getContext, subscribeToContext } from '@openmrs/esm-context';
 import { shallowEqual } from '@openmrs/esm-utils';
 import { useEffect, useState } from 'react';
 
@@ -23,6 +23,10 @@ import { useEffect, useState } from 'react';
  *
  * @typeParam T The type of the value stored in the namespace
  * @param namespace The namespace to load properties from
+ * @returns The current value registered under `namespace`, or `undefined` when the namespace has not
+ * yet been registered, was unregistered (e.g. the owning component unmounted), or is a blank string.
+ * Consumers should handle the `undefined` case explicitly rather than defaulting to `{}`, since an
+ * empty-object default can mask a genuinely missing namespace and hide bugs.
  */
 export function useAppContext<T extends NonNullable<object> = NonNullable<object>>(
   namespace: string,
@@ -49,29 +53,51 @@ export function useAppContext<T extends NonNullable<object> = NonNullable<object
  * @typeParam U The return type of this hook which is mostly relevant when using a selector
  * @param namespace The namespace to load properties from
  * @param selector An optional function which extracts the relevant part of the state
+ * @returns The selected value, or `undefined` when the namespace has not yet been registered, was
+ * unregistered (e.g. the owning component unmounted), or is a blank string. Consumers should handle
+ * the `undefined` case explicitly rather than defaulting to `{}`, since an empty-object default can
+ * mask a genuinely missing namespace and hide bugs.
  */
 export function useAppContext<T extends NonNullable<object> = NonNullable<object>, U = T>(
   namespace: string,
-  selector?: (state: Readonly<T> | null) => Readonly<U>,
+  selector: (state: Readonly<T> | null) => Readonly<U>,
+): Readonly<U> | undefined;
+
+export function useAppContext<T extends NonNullable<object> = NonNullable<object>, U = T>(
+  namespace: string,
+  selector: (state: Readonly<T> | null) => Readonly<U> = (state) => (state ?? {}) as Readonly<U>,
 ): Readonly<U> | undefined {
-  const [value, setValue] = useState<Readonly<U>>();
+  const [value, setValue] = useState<Readonly<U> | undefined>(() => {
+    if (isBlankNamespace(namespace)) {
+      return undefined;
+    }
+    const current = getContext<T>(namespace);
+    if (current === null) {
+      return undefined;
+    }
+    return selector ? selector(current) : (current as unknown as Readonly<U>);
+  });
 
   useEffect(() => {
-    if (namespace === null || typeof namespace === 'undefined' || namespace.replace(' ', '') === '') {
+    if (isBlankNamespace(namespace)) {
       throw new Error(`The namespace supplied to useAppContext must be a non-empty string, but was "${namespace}".`);
     }
   }, [namespace]);
 
   useEffect(() => {
     return subscribeToContext<T>(namespace, (state) => {
-      const newValue = selector
-        ? selector(state ?? null)
-        : state === null
-          ? undefined
-          : (state as unknown as Readonly<U>);
-      setValue((currentValue) => (shallowEqual(currentValue, newValue) ? currentValue : newValue));
+      if (state == null) {
+        setValue(undefined);
+        return;
+      }
+      const newValue = selector ? selector(state) : (state as unknown as Readonly<U>);
+      setValue((prev) => (shallowEqual(prev, newValue) ? prev : newValue));
     });
   }, [namespace, selector]);
 
   return value;
+}
+
+function isBlankNamespace(namespace: unknown): boolean {
+  return typeof namespace !== 'string' || namespace.trim().length === 0;
 }

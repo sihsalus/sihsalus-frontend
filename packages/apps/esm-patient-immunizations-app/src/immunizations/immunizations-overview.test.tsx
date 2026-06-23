@@ -3,6 +3,7 @@ import {
   useConfig,
   useFhirFetchAll,
   useOpenmrsFetchAll,
+  userHasAccess,
   useSession,
 } from '@openmrs/esm-framework';
 import { screen } from '@testing-library/react';
@@ -27,6 +28,7 @@ const mockUseFhirFetchAll = useFhirFetchAll as vi.Mock;
 const mockUseOpenmrsFetchAll = useOpenmrsFetchAll as vi.Mock;
 const mockUseConfig = vi.mocked(useConfig<ImmunizationConfigObject>);
 const mockUseSession = vi.mocked(useSession);
+const mockUserHasAccess = vi.mocked(userHasAccess);
 const immunizationConfig = getDefaultsFromConfigSchema(configSchema) as ImmunizationConfigObject;
 
 const sessionWithEditPrivilege = {
@@ -44,6 +46,7 @@ const sessionWithoutPrivileges = {
 describe('ImmunizationOverview', () => {
   beforeEach(() => {
     mockUseSession.mockReturnValue(sessionWithEditPrivilege);
+    mockUserHasAccess.mockReturnValue(true);
     mockUseConfig.mockReturnValue(immunizationConfig);
     mockUseOpenmrsFetchAll.mockReturnValue({
       data: [],
@@ -178,6 +181,7 @@ describe('ImmunizationOverview', () => {
 
   it('does not offer to record immunizations when the user lacks the edit privilege', async () => {
     mockUseSession.mockReturnValue(sessionWithoutPrivileges);
+    mockUserHasAccess.mockReturnValue(false);
     mockUseFhirFetchAll.mockReturnValue({ data: [] });
 
     renderWithSwr(<ImmunizationsOverview {...testProps} />);

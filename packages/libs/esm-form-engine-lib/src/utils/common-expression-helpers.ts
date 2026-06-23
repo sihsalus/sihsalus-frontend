@@ -3,7 +3,7 @@ import customParseFormat from 'dayjs/plugin/customParseFormat';
 
 dayjs.extend(customParseFormat);
 
-import { formatDate, parseDate } from '@openmrs/esm-framework/src/internal';
+import { formatDate, parseDate } from '@openmrs/esm-utils';
 import filter from 'lodash-es/filter';
 import findIndex from 'lodash-es/findIndex';
 import first from 'lodash-es/first';

@@ -1,6 +1,6 @@
 {
   "name": "@openmrs/esm-state",
-  "version": "9.0.3-pre.4728",
+  "version": "10.0.0",
   "license": "MPL-2.0",
   "description": "Frontend stores & state management for OpenMRS",
   "type": "module",
@@ -18,7 +18,7 @@
     },
     "./mock": {
       "import": "./mock.ts",
-      "require": "./mock-vitest.ts"
+      "require": "./mock-jest.ts"
     }
   },
   "source": true,
@@ -29,7 +29,7 @@
     "build": "rimraf dist && concurrently \"swc --strip-leading-paths src -d dist\" \"tsc --project tsconfig.build.json\"",
     "build:development": "rimraf dist && concurrently \"swc --strip-leading-paths src -d dist\" \"tsc --project tsconfig.build.json\"",
     "typescript": "tsc --project tsconfig.build.json",
-    "lint": "node ../../tooling/scripts/run-biome.js lint ."
+    "lint": "node ../../tooling/scripts/run-biome.js lint src"
   },
   "keywords": [
     "openmrs",
@@ -57,22 +57,19 @@
     "zustand": "^4.5.5"
   },
   "peerDependencies": {
-    "@openmrs/esm-globals": "9.x",
-    "@openmrs/esm-utils": "9.x"
+    "@openmrs/esm-globals": "workspace:^",
+    "@openmrs/esm-utils": "workspace:^"
   },
   "devDependencies": {
     "@openmrs/esm-globals": "workspace:*",
     "@openmrs/esm-utils": "workspace:*",
     "@swc/cli": "0.8.1",
     "@swc/core": "1.15.21",
-    "@types/fhir": "0.0.31",
-    "@types/node": "^22.10.7",
     "@vitest/coverage-v8": "^4.1.2",
     "concurrently": "^9.2.1",
     "cross-env": "^10.1.0",
     "rimraf": "^6.1.3",
     "typescript": "6.0.3",
-    "vitest": "^4.1.7"
-  },
-  "stableVersion": "9.0.2"
+    "vitest": "^4.1.2"
+  }
 }

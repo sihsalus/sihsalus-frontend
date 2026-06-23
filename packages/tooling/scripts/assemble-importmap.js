@@ -14,6 +14,7 @@ const hostSharedWorkspacePackages = [
   '@openmrs/esm-framework',
   '@openmrs/esm-styleguide',
   '@openmrs/esm-config',
+  '@openmrs/esm-context',
   '@openmrs/esm-extensions',
   '@openmrs/esm-navigation',
   '@openmrs/esm-offline',

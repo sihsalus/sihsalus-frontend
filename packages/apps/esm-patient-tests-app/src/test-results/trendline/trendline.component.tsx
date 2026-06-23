@@ -8,6 +8,7 @@ import { useTranslation } from 'react-i18next';
 
 import { testResultsBasePath } from '../helpers';
 import CommonDataTable from '../overview/common-datatable.component';
+import usePanelData from '../panel-view/usePanelData';
 
 import RangeSelector from './range-selector.component';
 import styles from './trendline.scss';
@@ -28,7 +29,8 @@ enum TickRotations {
 
 interface TrendlineProps {
   patientUuid: string;
-  conceptUuid: string;
+  conceptUuid?: string;
+  conceptUuids?: string[];
   basePath: string;
   hideTrendlineHeader?: boolean;
   showBackToTimelineButton?: boolean;
@@ -65,22 +67,165 @@ const TrendlineHeader = ({ patientUuid, title, referenceRange, isValidating, sho
 const Trendline: React.FC<TrendlineProps> = ({
   patientUuid,
   conceptUuid,
+  conceptUuids,
   hideTrendlineHeader = false,
   showBackToTimelineButton = false,
 }) => {
-  const { trendlineData, isLoading, isValidating } = useObstreeData(patientUuid, conceptUuid);
   const { t } = useTranslation();
-  const { obs, display: chartTitle, hiNormal, lowNormal, units: leftAxisTitle, range: referenceRange } = trendlineData;
-  const bottomAxisTitle = t('date', 'Date');
+  const { groupedObservations, isLoading: panelDataIsLoading } = usePanelData();
+  const {
+    trendlineData,
+    isLoading: obstreeIsLoading,
+    isValidating: obstreeIsValidating,
+  } = useObstreeData(patientUuid, conceptUuid || '');
+
   const [range, setRange] = useState<[Date, Date]>();
   const [showResultsTable, setShowResultsTable] = useState(false);
 
+  const targetUuids = useMemo(() => {
+    return conceptUuids || (conceptUuid ? [conceptUuid] : []);
+  }, [conceptUuids, conceptUuid]);
+
+  const hasObservationsInPanelData = useMemo(() => {
+    return targetUuids.some((uuid) => groupedObservations[uuid]?.length > 0);
+  }, [targetUuids, groupedObservations]);
+
+  const isLoading = hasObservationsInPanelData ? panelDataIsLoading : obstreeIsLoading;
+  const isValidating = hasObservationsInPanelData ? false : obstreeIsValidating;
+
+  const { chartData, tableData, leftAxisTitle, chartTitleText, referenceRange } = useMemo(() => {
+    const cData: Array<{
+      date: Date;
+      value: number;
+      group: string;
+      min?: number;
+      max?: number;
+    }> = [];
+
+    const tData: Array<{
+      id: string;
+      dateTime: string;
+      testName: string;
+      value:
+        | number
+        | {
+            value: number;
+            interpretation: OBSERVATION_INTERPRETATION;
+          };
+    }> = [];
+
+    let units = '';
+    let title = '';
+    let refRange = '';
+
+    if (hasObservationsInPanelData) {
+      targetUuids.forEach((uuid) => {
+        const obsList = groupedObservations[uuid] || [];
+        if (obsList.length > 0) {
+          const firstObs = obsList[0];
+          const hiNormal = firstObs.meta?.hiNormal;
+          const lowNormal = firstObs.meta?.lowNormal;
+          if (!units && firstObs.meta?.units) {
+            units = firstObs.meta.units;
+          }
+          if (!title) {
+            title = firstObs.name;
+          }
+          if (!refRange && firstObs.meta?.range) {
+            refRange = firstObs.meta.range;
+          }
+
+          obsList.forEach((obs, idx) => {
+            const dateObj = obs.issued ? new Date(obs.issued) : new Date(obs.effectiveDateTime);
+            const val = parseFloat(obs.value);
+            if (!Number.isNaN(val)) {
+              const rangeBounds =
+                hiNormal !== undefined && lowNormal !== undefined
+                  ? {
+                      max: parseFloat(hiNormal as any),
+                      min: parseFloat(lowNormal as any),
+                    }
+                  : {};
+
+              cData.push({
+                date: dateObj,
+                value: val,
+                group: obs.name || title,
+                ...rangeBounds,
+              });
+
+              const formattedDate = formatDate(dateObj, { mode: 'wide', time: true }) || dateObj.toLocaleString();
+
+              tData.push({
+                id: `${uuid}-${idx}`,
+                dateTime: formattedDate,
+                testName: obs.name || title,
+                value: {
+                  value: val,
+                  interpretation: obs.interpretation,
+                },
+              });
+            }
+          });
+        }
+      });
+
+      if (targetUuids.length > 1) {
+        title = t('multipleTests', 'Multiple tests');
+        refRange = ''; // Multiple reference ranges, so leave header range empty
+      }
+    } else {
+      const fallbackObs = trendlineData?.obs || [];
+      fallbackObs.forEach((obs, idx) => {
+        const rangeBounds =
+          trendlineData.hiNormal !== undefined && trendlineData.lowNormal !== undefined
+            ? {
+                max: trendlineData.hiNormal,
+                min: trendlineData.lowNormal,
+              }
+            : {};
+
+        cData.push({
+          date: new Date(Date.parse(obs.obsDatetime)),
+          value: parseFloat(obs.value),
+          group: trendlineData.display,
+          ...rangeBounds,
+        });
+
+        const dateObj = new Date(Date.parse(obs.obsDatetime));
+        const formattedDate = formatDate(dateObj, { mode: 'wide', time: true }) || dateObj.toLocaleString();
+
+        tData.push({
+          id: `${idx}`,
+          dateTime: formattedDate,
+          testName: trendlineData.display,
+          value: {
+            value: parseFloat(obs.value),
+            interpretation: obs.interpretation,
+          },
+        });
+      });
+      units = trendlineData.units || '';
+      title = trendlineData.display || '';
+      refRange = trendlineData.range || '';
+    }
+
+    return {
+      chartData: cData,
+      tableData: tData,
+      leftAxisTitle: units,
+      chartTitleText: title,
+      referenceRange: refRange,
+    };
+  }, [hasObservationsInPanelData, targetUuids, groupedObservations, trendlineData, t]);
+
   const [upperRange, lowerRange] = useMemo(() => {
-    if (obs.length === 0) {
+    if (chartData.length === 0) {
       return [new Date(), new Date()];
     }
-    return [new Date(), new Date(Date.parse(obs[obs.length - 1].obsDatetime))];
-  }, [obs]);
+    const sorted = [...chartData].sort((a, b) => a.date.getTime() - b.date.getTime());
+    return [sorted[sorted.length - 1].date, sorted[0].date];
+  }, [chartData]);
 
   const setLowerRange = useCallback(
     (selectedLowerRange: Date) => {
@@ -92,59 +237,13 @@ const Trendline: React.FC<TrendlineProps> = ({
   /**
    * reorder svg element to bring line in front of the area
    */
+  // biome-ignore lint/correctness/useExhaustiveDependencies: chartData triggers SVG reorder after chart re-render
   useLayoutEffect(() => {
     const graph = document.querySelector('g.cds--cc--area')?.parentElement;
-    if (obs && obs.length && graph) {
+    if (graph && graph.children && graph.children.length > 3) {
       graph.insertBefore(graph.children[3], graph.childNodes[2]);
     }
-  }, [obs]);
-
-  const data: Array<{
-    date: Date;
-    value: number;
-    group: string;
-    min?: number;
-    max?: number;
-  }> = [];
-
-  const tableData: Array<{
-    id: string;
-    dateTime: string;
-    value:
-      | number
-      | {
-          value: number;
-          interpretation: OBSERVATION_INTERPRETATION;
-        };
-  }> = [];
-
-  const dataset = chartTitle;
-
-  obs.forEach((obs, idx) => {
-    const range =
-      hiNormal && lowNormal
-        ? {
-            max: hiNormal,
-            min: lowNormal,
-          }
-        : {};
-
-    data.push({
-      date: new Date(Date.parse(obs.obsDatetime)),
-      value: parseFloat(obs.value),
-      group: chartTitle,
-      ...range,
-    });
-
-    tableData.push({
-      id: `${idx}`,
-      dateTime: obs.obsDatetime,
-      value: {
-        value: parseFloat(obs.value),
-        interpretation: obs.interpretation,
-      },
-    });
-  });
+  }, [chartData]);
 
   const chartOptions = useMemo(
     () => ({
@@ -154,12 +253,11 @@ const Trendline: React.FC<TrendlineProps> = ({
       },
       axes: {
         bottom: {
-          title: bottomAxisTitle,
+          title: t('date', 'Date'),
           mapsTo: 'date',
           scaleType: ScaleTypes.TIME,
           ticks: {
             rotation: TickRotations.ALWAYS,
-            // formatter: x => x.toLocaleDateString("en-US", TableDateFormatOption)
           },
           domain: range,
         },
@@ -171,48 +269,64 @@ const Trendline: React.FC<TrendlineProps> = ({
         },
       },
       height: '20.125rem',
-
       color: {
-        scale: {
-          [chartTitle]: '#6929c4',
-        },
+        scale:
+          targetUuids.length === 1
+            ? {
+                [chartTitleText]: '#6929c4',
+              }
+            : undefined,
       },
       points: {
         radius: 4,
         enabled: true,
       },
       legend: {
-        enabled: false,
+        enabled: targetUuids.length > 1,
       },
       tooltip: {
-        customHTML: ([{ date, value }]) =>
-          `<div class="cds--tooltip cds--tooltip--shown" style="min-width: max-content; font-weight:600">${value} ${leftAxisTitle}<br>
-          <span style="color: #c6c6c6; font-size: 0.75rem; font-weight:400">${formatDate(date)}</span></div>`,
+        customHTML: (tooltipData) => {
+          if (!tooltipData || tooltipData.length === 0) return '';
+          const { group, value, date } = tooltipData[0];
+          const formattedDate =
+            formatDate(new Date(date), { mode: 'wide', time: true }) || new Date(date).toLocaleString();
+          return `<div class="cds--tooltip cds--tooltip--shown" style="min-width: max-content; font-weight:600">
+            <strong>${group}</strong><br/>
+            ${value} ${leftAxisTitle}<br/>
+            <span style="color: #c6c6c6; font-size: 0.75rem; font-weight:400">${formattedDate}</span>
+          </div>`;
+        },
       },
     }),
-    [bottomAxisTitle, leftAxisTitle, range, chartTitle],
+    [leftAxisTitle, range, chartTitleText, targetUuids, t],
   );
 
-  const tableHeaderData = useMemo(
-    () => [
+  const tableHeaderData = useMemo(() => {
+    const headers = [
       {
         header: t('dateTime', 'Date and time'),
         key: 'dateTime',
       },
-      {
-        header: `${t('value', 'Value')} (${leftAxisTitle})`,
-        key: 'value',
-      },
-    ],
-    [leftAxisTitle, t],
-  );
+    ];
+    if (targetUuids.length > 1) {
+      headers.push({
+        header: t('testName', 'Test name'),
+        key: 'testName',
+      });
+    }
+    headers.push({
+      header: `${t('value', 'Value')} (${leftAxisTitle || ''})`,
+      key: 'value',
+    });
+    return headers;
+  }, [leftAxisTitle, t, targetUuids]);
 
   if (isLoading) {
     return <SkeletonText />;
   }
 
-  if (obs.length === 0) {
-    return <EmptyState displayText={t('observationsDisplayText', 'observations')} headerTitle={chartTitle} />;
+  if (chartData.length === 0) {
+    return <EmptyState displayText={t('observationsDisplayText', 'observations')} headerTitle={chartTitleText} />;
   }
 
   return (
@@ -222,13 +336,13 @@ const Trendline: React.FC<TrendlineProps> = ({
           showBackToTimelineButton={showBackToTimelineButton}
           isValidating={isValidating}
           patientUuid={patientUuid}
-          title={dataset}
+          title={chartTitleText}
           referenceRange={referenceRange}
         />
       )}
       <TrendLineBackground>
         <RangeSelector setLowerRange={setLowerRange} upperRange={upperRange} />
-        <LineChart data={data} options={chartOptions} />
+        <LineChart data={chartData} options={chartOptions} />
       </TrendLineBackground>
 
       {showResultsTable ? (

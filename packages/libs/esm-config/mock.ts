@@ -1,7 +1,6 @@
 import { createGlobalStore } from '@openmrs/esm-state/mock';
 import { getDefaultsFromConfigSchema } from '@openmrs/esm-utils';
 import { vi } from 'vitest';
-import { type ConfigSchema } from './src/types';
 
 export { validator, validators } from './src/index';
 
@@ -21,17 +20,15 @@ export enum Type {
   UUID = 'UUID',
 }
 
-export let configSchema: ConfigSchema = {}; // NOSONAR
+export let configSchema = {};
 
-export const getConfig = vi.fn(() =>
-  Promise.resolve(getDefaultsFromConfigSchema(configSchema as unknown as Record<PropertyKey, unknown>)),
-);
+export const getConfig = vi.fn(() => Promise.resolve(getDefaultsFromConfigSchema(configSchema)));
 
-export function defineConfigSchema(_moduleName: string, schema: ConfigSchema) {
+export function defineConfigSchema(moduleName, schema) {
   configSchema = schema;
 }
 
-export function defineExtensionConfigSchema(_extensionName: string, schema: ConfigSchema) {
+export function defineExtensionConfigSchema(extensionName, schema) {
   configSchema = schema;
 }
 

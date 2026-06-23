@@ -11,6 +11,7 @@ import {
 } from '@openmrs/esm-framework';
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
+import { useSWRConfig } from 'swr';
 import { type PharmacyConfig } from '../config-schema';
 import { saveMedicationDispense } from '../medication-dispense/medication-dispense.resource';
 import { updateMedicationRequestFulfillerStatus } from '../medication-request/medication-request.resource';
@@ -62,6 +63,7 @@ const DispenseForm: React.FC<Workspace2DefinitionProps<DispenseFormProps, {}, {}
   closeWorkspace,
 }) => {
   const { t } = useTranslation();
+  const { mutate } = useSWRConfig();
   const { patient, isLoading } = usePatient(patientUuid);
   const config = useConfig<PharmacyConfig>();
 
@@ -226,7 +228,7 @@ const DispenseForm: React.FC<Workspace2DefinitionProps<DispenseFormProps, {}, {}
             });
           }
           if (status === 201 || status === 200) {
-            revalidate(encounterUuid);
+            revalidate(mutate, encounterUuid);
             showSnackbar({
               kind: 'success',
               subtitle: t('medicationListUpdated', 'Medication dispense list has been updated.'),

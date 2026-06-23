@@ -1,4 +1,4 @@
-import { getIndicadorById, resolveOrdenesMock, updateIndicadorMock } from './indicators-data';
+import { getIndicadorById, recalcularAnioMock, resolveOrdenesMock, updateIndicadorMock } from './indicators-data';
 
 describe('resolveOrdenesMock', () => {
   it('returns correct Record for known UUIDs', () => {
@@ -94,5 +94,38 @@ describe('updateIndicadorMock', () => {
         activo: false,
       }),
     ).toThrow('Indicador no encontrado');
+  });
+});
+
+describe('recalcularAnioMock', () => {
+  it('returns 12 processed months for each active indicator when no indicador_id is provided', () => {
+    const result = recalcularAnioMock({ anio: 2026 });
+
+    // ind-003 is inactive in seed data; ind-001 and ind-002 are active => 2 indicators
+    expect(result.anio).toBe(2026);
+    expect(result.indicador_id).toBeNull();
+    expect(result.meses_procesados).toBe(12);
+    expect(result.indicadores_considerados).toBe(2);
+    expect(result.recalculados).toBe(2 * 12);
+    expect(result.total).toBe(2 * 12);
+    expect(result.errores).toEqual([]);
+  });
+
+  it('scopes to a single indicator when indicador_id is provided', () => {
+    const result = recalcularAnioMock({ anio: 2026, indicador_id: 'ind-001' });
+
+    expect(result.indicador_id).toBe('ind-001');
+    expect(result.indicadores_considerados).toBe(1);
+    expect(result.recalculados).toBe(12);
+    expect(result.total).toBe(12);
+  });
+
+  it('produces an empty batch when the indicator id is unknown', () => {
+    const result = recalcularAnioMock({ anio: 2026, indicador_id: 'does-not-exist' });
+
+    expect(result.indicadores_considerados).toBe(0);
+    expect(result.recalculados).toBe(0);
+    expect(result.total).toBe(0);
+    expect(result.errores).toEqual([]);
   });
 });

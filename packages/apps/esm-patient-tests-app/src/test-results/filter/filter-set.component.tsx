@@ -74,6 +74,14 @@ const FilterNodeParent = ({ root, itemNumber }: filterNodeParentProps): React.JS
   if (!root.subSets) return;
 
   const filterParent = root.subSets.map((node, key) => {
+    if (!node.subSets?.length) {
+      return (
+        <div key={key}>
+          <FilterLeaf leaf={node} />
+        </div>
+      );
+    }
+
     return (
       <div key={key}>
         <FilterNode

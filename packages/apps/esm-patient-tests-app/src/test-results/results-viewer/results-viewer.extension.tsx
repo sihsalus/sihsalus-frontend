@@ -45,7 +45,7 @@ const RoutedResultsViewer: React.FC<ResultsViewerProps> = ({ basePath, patientUu
 
   if (roots?.length) {
     return (
-      <FilterProvider roots={!isLoading ? roots : []}>
+      <FilterProvider roots={!isLoading ? roots : []} isLoading={isLoading}>
         <ResultsViewer patientUuid={patientUuid} basePath={basePath} loading={isLoading} />
       </FilterProvider>
     );

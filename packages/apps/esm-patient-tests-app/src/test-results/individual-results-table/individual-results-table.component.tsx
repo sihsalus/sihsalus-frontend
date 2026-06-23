@@ -143,7 +143,7 @@ const IndividualResultsTable: React.FC<IndividualResultsTableProps> = ({ isLoadi
             <div className={styles.cardTitle}>
               <h4 className={styles.resultType}>{headerTitle}</h4>
               <div className={styles.displayFlex}>
-                <span className={styles.date}>{formatDate(parseDate(subRows.date), { mode: 'standard' })}</span>
+                <span className={styles.date}>{formatDate(parseDate(subRows.date), { mode: 'standard', time: false })}</span>
                 <Button
                   className={styles.viewTimeline}
                   iconDescription="view timeline"

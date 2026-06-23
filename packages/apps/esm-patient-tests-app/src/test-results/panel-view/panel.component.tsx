@@ -104,8 +104,7 @@ const LabSetPanel: React.FC<LabSetPanelProps> = ({ panel, observations, activePa
             {formatDate(date, {
               mode: 'wide',
               time: false,
-            })}{' '}
-            &bull; {`${date.getHours().toString().padStart(2, '0')}:${date.getMinutes().toString().padStart(2, '0')}`}
+            })}
           </p>
         </div>
         <DataTable rows={rowsData} headers={headers}>

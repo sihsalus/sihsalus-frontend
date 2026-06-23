@@ -113,6 +113,8 @@
   "unknown": "Unknown",
   "usingADifferentTerm": "using a different term",
   "value": "Value",
+  "selectAll": "Select all",
+  "deselectAll": "Deselect all",
   "view": "View",
   "viewTimeline": "View timeline"
 }

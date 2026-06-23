@@ -18,6 +18,7 @@ import React, { type ComponentProps, useCallback, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import { type GroupedObservation } from '../../types';
+import usePanelData from '../panel-view/usePanelData';
 
 import styles from './individual-results-table.scss';
 
@@ -59,6 +60,15 @@ const IndividualResultsTable: React.FC<IndividualResultsTableProps> = ({ isLoadi
   const layout = useLayoutType();
   const patientUuid = getPatientUuidFromStore();
   const isDesktop = layout === 'small-desktop' || layout === 'large-desktop';
+  const { panels } = usePanelData();
+
+  const groupConceptUuid = useMemo(() => {
+    return (
+      panels?.find((p) =>
+        p.relatedObs?.some((obs) => obs.conceptUuid === subRows.entries[0]?.conceptUuid),
+      )?.conceptUuid || subRows.entries[0]?.conceptUuid
+    );
+  }, [panels, subRows.entries]);
 
   const headerTitle = t(title);
 
@@ -97,24 +107,20 @@ const IndividualResultsTable: React.FC<IndividualResultsTableProps> = ({ isLoadi
           id: `${i}-${index}`,
           testName: (
             <span className={styles['trendline-link']}>
-              {!isString ? (
-                <span
-                  className={styles['trendline-link-view']}
-                  onClick={() => launchResultsDialog(row.display, row.conceptUuid)}
-                  onKeyDown={(event) => {
-                    if (event.key === 'Enter' || event.key === ' ') {
-                      event.preventDefault();
-                      launchResultsDialog(row.display, row.conceptUuid);
-                    }
-                  }}
-                  role="button"
-                  tabIndex={0}
-                >
-                  {row.display}
-                </span>
-              ) : (
-                <span className={styles.trendlineLink}>{row.display}</span>
-              )}
+              <span
+                className={styles['trendline-link-view']}
+                onClick={() => launchResultsDialog(row.display, row.conceptUuid)}
+                onKeyDown={(event) => {
+                  if (event.key === 'Enter' || event.key === ' ') {
+                    event.preventDefault();
+                    launchResultsDialog(row.display, row.conceptUuid);
+                  }
+                }}
+                role="button"
+                tabIndex={0}
+              >
+                {row.display}
+              </span>
             </span>
           ),
           value: {
@@ -143,7 +149,7 @@ const IndividualResultsTable: React.FC<IndividualResultsTableProps> = ({ isLoadi
                   iconDescription="view timeline"
                   kind="ghost"
                   renderIcon={(props: ComponentProps<typeof ArrowRightIcon>) => <ArrowRightIcon size={16} {...props} />}
-                  onClick={() => launchResultsDialog(headerTitle, subRows[0]?.conceptUuid)}
+                  onClick={() => launchResultsDialog(headerTitle, groupConceptUuid)}
                   size="sm"
                 >
                   {t('viewTimeline', 'View timeline')}

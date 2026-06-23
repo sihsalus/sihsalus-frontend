@@ -115,6 +115,8 @@
   "unknown": "Desconocido",
   "usingADifferentTerm": "utilizando un término diferente",
   "value": "Valor",
+  "selectAll": "Seleccionar todo",
+  "deselectAll": "Deseccionar todo",
   "view": "Ver",
   "viewTimeline": "Ver calendario"
 }

@@ -183,6 +183,7 @@ const OrdersDataTable: React.FC<OrdersDataTableProps> = (props) => {
           fulfillerComment: order.fulfillerComment,
           display: order.display,
           conceptUuid: order.concept?.uuid,
+          scheduledDate: order.scheduledDate,
         };
       })
     );
@@ -238,8 +239,20 @@ const OrdersDataTable: React.FC<OrdersDataTableProps> = (props) => {
           }
 
           // Sort individual orders by priority (highest priority first)
-          flattenedLabOrdersForPatient.sort((a, b) => getPriorityRank(a.urgency) - getPriorityRank(b.urgency));
-          labOrdersForPatient.sort((a, b) => getPriorityRank(a.urgency) - getPriorityRank(b.urgency));
+          // For orders with the same priority, if they are "Programado" (rank 5), sort by scheduledDate ascending (closest to furthest).
+          const sortOrders = (a: any, b: any) => {
+            const rankA = getPriorityRank(a.urgency);
+            const rankB = getPriorityRank(b.urgency);
+            if (rankA === rankB && rankA === 5) {
+              const timeA = a.scheduledDate ? new Date(a.scheduledDate).getTime() : Number.MAX_VALUE;
+              const timeB = b.scheduledDate ? new Date(b.scheduledDate).getTime() : Number.MAX_VALUE;
+              return timeA - timeB;
+            }
+            return rankA - rankB;
+          };
+
+          flattenedLabOrdersForPatient.sort(sortOrders);
+          labOrdersForPatient.sort(sortOrders);
 
           const patient = labOrdersForPatient[0]?.patient;
           return {

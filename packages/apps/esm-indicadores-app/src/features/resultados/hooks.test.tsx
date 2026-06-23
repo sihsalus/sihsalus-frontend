@@ -1,15 +1,19 @@
-import { renderHook } from '@testing-library/react';
+import { renderHook, waitFor } from '@testing-library/react';
+import React from 'react';
 import type { ScopedMutator } from 'swr';
-import { useSWRConfig } from 'swr';
+import { SWRConfig, useSWRConfig } from 'swr';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
-import { calcularAhora, recalcularAnio } from '../../api/resultados';
-import { useCalcularAhora, useRecalcularAnio } from './hooks';
+import { calcularAhora, getResultados, getResultadosSeries, recalcularAnio } from '../../api/resultados';
+import type { GetResultadosParams, GetSeriesParams } from '../../api/types';
+import { useCalcularAhora, useRecalcularAnio, useResultados, useResultadosSeries } from './hooks';
 
 vi.mock('../../api/resultados', async () => ({
   ...(await vi.importActual('../../api/resultados')),
   calcularAhora: vi.fn(),
   recalcularAnio: vi.fn(),
+  getResultados: vi.fn(),
+  getResultadosSeries: vi.fn(),
 }));
 
 vi.mock('swr', async () => {
@@ -20,9 +24,19 @@ vi.mock('swr', async () => {
   };
 });
 
+// Mocked handles for mutation hook tests
 const mockedUseSWRConfig = vi.mocked(useSWRConfig);
 const mockedCalcularAhora = vi.mocked(calcularAhora);
 const mockedRecalcularAnio = vi.mocked(recalcularAnio);
+
+// Mocked handles for fetching hook tests
+const mockGetResultados = vi.mocked(getResultados);
+const mockGetResultadosSeries = vi.mocked(getResultadosSeries);
+
+// Wrapper that provides an isolated SWR cache for the fetching hook tests
+const swrWrapper = ({ children }: { children: React.ReactNode }) => (
+  <SWRConfig value={{ dedupingInterval: 0, provider: () => new Map() }}>{children}</SWRConfig>
+);
 
 type KeyMatcher = (key: unknown) => boolean | Promise<boolean>;
 
@@ -68,6 +82,20 @@ function expectInvalidatesResultadosKeys(matcher: KeyMatcher | null) {
   expect(isInvalidated(null)).toBe(false);
   expect(isInvalidated(undefined)).toBe(false);
 }
+
+const resultadosParams = {
+  page: 0,
+  size: 20,
+  indicador_id: 'ind-001',
+  periodo_inicio: '2026-01-01',
+  periodo_fin: '2026-01-31',
+} satisfies GetResultadosParams;
+
+const seriesParams = {
+  indicador_id: 'ind-001',
+  anio: 2026,
+  granularity: 'mensual',
+} satisfies GetSeriesParams;
 
 describe('useCalcularAhora', () => {
   beforeEach(() => {
@@ -151,5 +179,87 @@ describe('useRecalcularAnio', () => {
 
     expect(mockedRecalcularAnio).toHaveBeenCalledWith({ anio: 2025, indicador_id: 'ind-001' });
     expectInvalidatesResultadosKeys(capture.matcher);
+  });
+});
+
+describe('resultados hooks', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
+  it('loads resultados and returns loading state correctly', async () => {
+    mockGetResultados.mockResolvedValue({
+      items: [],
+      total: 0,
+      page: 0,
+      size: 20,
+      pages: 0,
+    });
+
+    const { result } = renderHook(() => useResultados(resultadosParams), {
+      wrapper: swrWrapper,
+    });
+
+    await waitFor(() => {
+      expect(result.current.error).toBeUndefined();
+    });
+
+    expect(result.current.data?.items).toEqual([]);
+    expect(result.current.isLoading).toBe(false);
+  });
+
+  it('returns an error when resultados request fails', async () => {
+    mockGetResultados.mockRejectedValue(new Error('Falla'));
+
+    const { result } = renderHook(() => useResultados(resultadosParams), {
+      wrapper: swrWrapper,
+    });
+
+    await waitFor(() => {
+      expect(result.current.isError).toBe(true);
+    });
+
+    expect(result.current.data).toBeUndefined();
+  });
+
+  it('loads resultados series when params are provided', async () => {
+    mockGetResultadosSeries.mockResolvedValue({
+      items: [
+        {
+          periodo_label: '2026-01',
+          valor: 10,
+          meses_disponibles: 1,
+          anio: 2026,
+          mes_referencia: '2026-01',
+        },
+      ],
+      indicador_id: 'ind-001',
+      anio: 2026,
+      granularity: 'mensual',
+    });
+
+    const { result } = renderHook(() => useResultadosSeries(seriesParams), {
+      wrapper: swrWrapper,
+    });
+
+    await waitFor(() => {
+      expect(result.current.error).toBeUndefined();
+    });
+
+    expect(result.current.data?.items).toHaveLength(1);
+    expect(result.current.isLoading).toBe(false);
+  });
+
+  it('does not call resultados series API when params are null', () => {
+    mockGetResultadosSeries.mockResolvedValue({
+      items: [],
+      indicador_id: 'ind-001',
+      anio: 2026,
+      granularity: 'mensual',
+    });
+
+    renderHook(() => useResultadosSeries(null), { wrapper: swrWrapper });
+
+    expect(mockGetResultadosSeries).not.toHaveBeenCalled();
   });
 });

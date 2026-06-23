@@ -160,7 +160,9 @@ function TestTypeSearchResults({
   const { testTypes, isLoading, error } = useTestTypes(searchTerm, orderableConceptSets);
 
   const session = useSession();
-  const { orders: orderConfig } = useConfig<ConfigObject>();
+  const config = useConfig<ConfigObject>();
+  const orderConfig = config.orders;
+  const priorityConfigs = config.priorityConfigs;
   const prepareTestOrderPostData = useCallback(
     (order: TestOrderBasketItem, patientUuid: string, encounterUuid: string | null) =>
       prepTestOrderPostData(order, patientUuid, encounterUuid, orderConfig.careSettingUuid),
@@ -186,15 +188,20 @@ function TestTypeSearchResults({
 
     if (testsToAdd.length === 0) return;
 
+    const priorityUuid = localStorage.getItem('sihsalus-lab-order-basket-priority') || 'e724bdb6-2c75-4b6f-a00c-d43f2c372974';
+    const selectedPriority = priorityConfigs?.find((p) => p.conceptUuid === priorityUuid);
+
     const newLabOrders = testsToAdd.map((testType) => {
       const labOrder = createLabOrder(testType);
-      labOrder.isOrderIncomplete = true;
+      labOrder.urgency = priorityUuid;
+      labOrder.urgencyCode = selectedPriority?.urgency ?? 'STAT';
+      labOrder.isOrderIncomplete = selectedPriority?.requiresScheduledDate ? !labOrder.scheduledDate : false;
       return labOrder;
     });
 
     setOrders([...orders, ...newLabOrders]);
     cancelOrder();
-  }, [testTypes, orders, setOrders, createLabOrder, cancelOrder]);
+  }, [testTypes, orders, setOrders, createLabOrder, cancelOrder, priorityConfigs]);
 
   const resultsContainerRef = useRef<HTMLDivElement>(null);
 
@@ -344,7 +351,9 @@ const TestTypeSearchResultItem: React.FC<TestTypeSearchResultItemProps> = ({
   const { t } = useTranslation();
   const isTablet = useLayoutType() === 'tablet';
   const session = useSession();
-  const { orders: orderConfig } = useConfig<ConfigObject>();
+  const config = useConfig<ConfigObject>();
+  const orderConfig = config.orders;
+  const priorityConfigs = config.priorityConfigs;
   const prepareTestOrderPostData = useCallback(
     (order: TestOrderBasketItem, patientUuid: string, encounterUuid: string | null) =>
       prepTestOrderPostData(order, patientUuid, encounterUuid, orderConfig.careSettingUuid),
@@ -366,10 +375,17 @@ const TestTypeSearchResultItem: React.FC<TestTypeSearchResultItemProps> = ({
 
   const addToBasket = useCallback(() => {
     const labOrder = createLabOrder(testType);
-    labOrder.isOrderIncomplete = true;
+    
+    const priorityUuid = localStorage.getItem('sihsalus-lab-order-basket-priority') || 'e724bdb6-2c75-4b6f-a00c-d43f2c372974';
+    const selectedPriority = priorityConfigs?.find((p) => p.conceptUuid === priorityUuid);
+    
+    labOrder.urgency = priorityUuid;
+    labOrder.urgencyCode = selectedPriority?.urgency ?? 'STAT';
+    labOrder.isOrderIncomplete = selectedPriority?.requiresScheduledDate ? !labOrder.scheduledDate : false;
+
     setOrders([...orders, labOrder]);
     returnToOrderBasket();
-  }, [orders, setOrders, createLabOrder, returnToOrderBasket, testType]);
+  }, [orders, setOrders, createLabOrder, returnToOrderBasket, testType, priorityConfigs]);
 
   const removeFromBasket = useCallback(() => {
     setOrders(orders.filter((order) => order.testType.conceptUuid !== testType.conceptUuid));

@@ -2,7 +2,7 @@ import { AccordionSkeleton, Button, DataTableSkeleton, Layer } from '@carbon/rea
 import { TreeViewAltIcon, useLayoutType } from '@openmrs/esm-framework';
 import { EmptyState } from '@openmrs/esm-patient-common-lib';
 import classNames from 'classnames';
-import React, { useContext, useState } from 'react';
+import React, { useContext, useState, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import { type GroupedObservation, type viewOpts } from '../../types';
@@ -30,33 +30,45 @@ const GroupedPanelsTables: React.FC<{ className: string; loadingPanelData: boole
 }) => {
   const { t } = useTranslation();
   const { checkboxes, someChecked, tableData } = useContext(FilterContext);
-  const selectedCheckboxes = Object.keys(checkboxes).filter((key) => checkboxes[key]);
 
-  if (!tableData?.length) {
+  const filteredTableData = useMemo(() => {
+    if (!tableData?.length) return [];
+    if (!someChecked) return tableData;
+
+    return tableData
+      .map((group) => {
+        const filteredEntries = group.entries.filter((entry) => checkboxes[entry.flatName]);
+        return {
+          ...group,
+          entries: filteredEntries,
+        };
+      })
+      .filter((group) => group.entries.length > 0);
+  }, [tableData, checkboxes, someChecked]);
+
+  if (!filteredTableData.length) {
     return <EmptyState displayText={t('data', 'data')} headerTitle={t('dataTimelineText', 'Data timeline')} />;
   }
 
   return (
     <Layer className={className}>
-      {tableData
-        ?.filter((row) => !someChecked || selectedCheckboxes.some((selectedKey) => row.flatName.includes(selectedKey)))
-        .map((subRows: GroupedObservation, index) => {
-          return subRows.entries?.length > 0 ? (
-            <div
-              key={index}
-              className={classNames({
-                [styles.border]: subRows?.entries.length,
-              })}
-            >
-              <IndividualResultsTable
-                isLoading={loadingPanelData}
-                subRows={subRows}
-                index={index}
-                title={subRows.key}
-              />
-            </div>
-          ) : null;
-        })}
+      {filteredTableData.map((subRows: GroupedObservation, index) => {
+        return (
+          <div
+            key={index}
+            className={classNames({
+              [styles.border]: subRows.entries.length,
+            })}
+          >
+            <IndividualResultsTable
+              isLoading={loadingPanelData}
+              subRows={subRows}
+              index={index}
+              title={subRows.key}
+            />
+          </div>
+        );
+      })}
     </Layer>
   );
 };

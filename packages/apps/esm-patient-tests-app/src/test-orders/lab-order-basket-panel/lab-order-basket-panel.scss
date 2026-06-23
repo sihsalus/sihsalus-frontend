@@ -83,3 +83,12 @@
     fill: black;
   }
 }
+
+.prioritySelectorContainer {
+  padding: 0 layout.$spacing-05 layout.$spacing-05 layout.$spacing-05;
+}
+
+.bulkDatePickerWrapper {
+  margin-top: layout.$spacing-03;
+  padding: 0 layout.$spacing-05 layout.$spacing-05 layout.$spacing-05;
+}

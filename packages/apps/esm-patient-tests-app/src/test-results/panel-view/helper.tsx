@@ -34,19 +34,19 @@ export const getConceptUuid = (obs: FHIRObservationResource) => obs?.code.coding
 export const getClass = (interpretation: OBSERVATION_INTERPRETATION) => {
   switch (interpretation) {
     case 'OFF_SCALE_HIGH':
-      return styles['off-scale-high'];
+      return styles['off-scale-high'] || styles['offScaleHigh'];
 
     case 'CRITICALLY_HIGH':
-      return styles['critically-high'];
+      return styles['critically-high'] || styles['criticallyHigh'];
 
     case 'HIGH':
       return styles['high'];
 
     case 'OFF_SCALE_LOW':
-      return styles['off-scale-low'];
+      return styles['off-scale-low'] || styles['offScaleLow'];
 
     case 'CRITICALLY_LOW':
-      return styles['critically-low'];
+      return styles['critically-low'] || styles['criticallyLow'];
 
     case 'LOW':
       return styles['low'];
@@ -67,34 +67,78 @@ export function exist(...args: unknown[]): boolean {
   return true;
 }
 
-export const assessValue: (any) => (value: string) => OBSERVATION_INTERPRETATION =
+export const parseNumber = (val: any): number | undefined => {
+  if (typeof val === 'number') {
+    return val;
+  }
+  if (typeof val === 'string') {
+    const parsed = Number.parseFloat(val.replace(',', '.'));
+    return Number.isNaN(parsed) ? undefined : parsed;
+  }
+  return undefined;
+};
+
+export const extractRangesFromRangeStr = (rangeStr: string): { lowNormal?: number; hiNormal?: number } => {
+  if (!rangeStr) return {};
+  const match = rangeStr.match(/(-?\d+(?:[.,]\d+)?)\s*[-–—]\s*(-?\d+(?:[.,]\d+)?)/);
+  if (match) {
+    const low = parseNumber(match[1]);
+    const high = parseNumber(match[2]);
+    return { lowNormal: low, hiNormal: high };
+  }
+  const lessThanMatch = rangeStr.match(/<\s*(-?\d+(?:[.,]\d+)?)/);
+  if (lessThanMatch) {
+    return { hiNormal: parseNumber(lessThanMatch[1]) };
+  }
+  const greaterThanMatch = rangeStr.match(/>\s*(-?\d+(?:[.,]\d+)?)/);
+  if (greaterThanMatch) {
+    return { lowNormal: parseNumber(greaterThanMatch[1]) };
+  }
+  return {};
+};
+
+export const assessValue: (meta: any) => (value: string) => OBSERVATION_INTERPRETATION =
   (meta) =>
   (value: string): observationInterpretation => {
-    const valueQuantity = Number.parseFloat(value);
-    if (Number.isNaN(valueQuantity)) {
+    const valueQuantity = parseNumber(value);
+    if (valueQuantity === undefined) {
       return observationInterpretation.NORMAL;
     }
-    if (exist(meta.hiAbsolute) && valueQuantity > meta.hiAbsolute) {
+
+    let lowNormal = parseNumber(meta.lowNormal);
+    let hiNormal = parseNumber(meta.hiNormal);
+
+    if (lowNormal === undefined && hiNormal === undefined && meta.range) {
+      const extracted = extractRangesFromRangeStr(meta.range);
+      lowNormal = extracted.lowNormal;
+      hiNormal = extracted.hiNormal;
+    }
+
+    const hiAbsolute = parseNumber(meta.hiAbsolute);
+    if (hiAbsolute !== undefined && valueQuantity > hiAbsolute) {
       return observationInterpretation.OFF_SCALE_HIGH;
     }
 
-    if (exist(meta.hiCritical) && valueQuantity > meta.hiCritical) {
+    const hiCritical = parseNumber(meta.hiCritical);
+    if (hiCritical !== undefined && valueQuantity > hiCritical) {
       return observationInterpretation.CRITICALLY_HIGH;
     }
 
-    if (exist(meta.hiNormal) && valueQuantity > meta.hiNormal) {
+    if (hiNormal !== undefined && valueQuantity > hiNormal) {
       return observationInterpretation.HIGH;
     }
 
-    if (exist(meta.lowAbsolute) && valueQuantity < meta.lowAbsolute) {
+    const lowAbsolute = parseNumber(meta.lowAbsolute);
+    if (lowAbsolute !== undefined && valueQuantity < lowAbsolute) {
       return observationInterpretation.OFF_SCALE_LOW;
     }
 
-    if (exist(meta.lowCritical) && valueQuantity < meta.lowCritical) {
+    const lowCritical = parseNumber(meta.lowCritical);
+    if (lowCritical !== undefined && valueQuantity < lowCritical) {
       return observationInterpretation.CRITICALLY_LOW;
     }
 
-    if (exist(meta.lowNormal) && valueQuantity < meta.lowNormal) {
+    if (lowNormal !== undefined && valueQuantity < lowNormal) {
       return observationInterpretation.LOW;
     }
 

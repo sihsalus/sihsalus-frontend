@@ -70,10 +70,22 @@ const FilterNodeParent = ({ root, itemNumber }: filterNodeParentProps): React.JS
   const { t } = useTranslation();
   const tablet = useLayoutType() === 'tablet';
   const [expandAll, setExpandAll] = useState<boolean | undefined>(undefined);
+  const { checkboxes, parents, updateParent } = useContext(FilterContext);
 
   if (!root.subSets) return;
 
+  const affectedLeaves = parents[root.flatName] ?? [];
+  const allChecked = affectedLeaves.length > 0 && affectedLeaves.every((leaf) => checkboxes[leaf]);
+
   const filterParent = root.subSets.map((node, key) => {
+    if (!node.subSets?.length) {
+      return (
+        <div key={key}>
+          <FilterLeaf leaf={node} />
+        </div>
+      );
+    }
+
     return (
       <div key={key}>
         <FilterNode
@@ -89,14 +101,25 @@ const FilterNodeParent = ({ root, itemNumber }: filterNodeParentProps): React.JS
     <div>
       <div className={classNames(styles.treeNodeHeader, { [styles.treeNodeHeaderTablet]: tablet })}>
         <h5>{t(root.display)}</h5>
-        <Button
-          className={styles.button}
-          kind="ghost"
-          size={tablet ? 'md' : 'sm'}
-          onClick={() => setExpandAll((prevValue) => !prevValue)}
-        >
-          <span>{t(!expandAll ? `Expand all` : `Collapse all`)}</span>
-        </Button>
+        <div style={{ display: 'flex', gap: '0.25rem' }}>
+          <Button
+            className={styles.button}
+            kind="ghost"
+            size={tablet ? 'md' : 'sm'}
+            onClick={() => updateParent(root.flatName)}
+            disabled={!root.hasData}
+          >
+            <span>{t(allChecked ? 'deselectAll' : 'selectAll', allChecked ? 'Deselect all' : 'Select all')}</span>
+          </Button>
+          <Button
+            className={styles.button}
+            kind="ghost"
+            size={tablet ? 'md' : 'sm'}
+            onClick={() => setExpandAll((prevValue) => !prevValue)}
+          >
+            <span>{t(!expandAll ? `Expand all` : `Collapse all`)}</span>
+          </Button>
+        </div>
       </div>
       {filterParent}
     </div>

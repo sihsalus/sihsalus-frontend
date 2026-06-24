@@ -1,6 +1,5 @@
 import { showSnackbar } from '@openmrs/esm-framework';
 import { fireEvent, render, screen, waitFor } from '@testing-library/react';
-import React from 'react';
 import { updateProcedureStepStatus } from '../../api';
 import UpdateProcedureStepStatusModal from './update-procedureStep-status.modal';
 

@@ -39,7 +39,7 @@ export const CalendarPopover = /*#__PURE__*/ forwardRef<HTMLDivElement, Calendar
   ref,
 ) {
   const isRange = variant === 'range';
-  const CalendarComponent = isRange ? RangeCalendar : Calendar;
+  const CalendarComponent = (isRange ? RangeCalendar : Calendar) as typeof Calendar;
 
   // RangeCalendar needs explicit min/max values and a className;
   // Calendar inherits these from its parent DatePicker context.

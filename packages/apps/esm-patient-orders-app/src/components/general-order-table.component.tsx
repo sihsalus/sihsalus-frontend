@@ -76,6 +76,14 @@ const GeneralOrderTable: React.FC<GeneralOrderProps> = ({ order }) => {
       header: t('instructions', 'Instructions'),
     },
     {
+      key: 'result',
+      header: t('result', 'Result'),
+    },
+    {
+      key: 'normalRange',
+      header: t('normalRange', 'Normal range'),
+    },
+    {
       key: 'referenceNumber',
       header: t('referenceNumberTableHeader', '{{orderType}} reference number', {
         orderType: order?.orderType?.display,

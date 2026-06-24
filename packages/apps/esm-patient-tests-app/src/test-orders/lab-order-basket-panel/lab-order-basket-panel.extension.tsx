@@ -58,6 +58,7 @@ const priorityOrder: Record<string, number> = {
   'bf3a08c6-cbe6-4f00-8e06-5f5437790b85': 4, // Rutina
   '65cf194e-05a7-4832-ba6d-9b7c9940a7c2': 5, // Programado
 };
+const priorityStorageKey = 'sihsalus-lab-order-basket-priority';
 
 function LabOrderBasketPanel({ orderTypeUuid, label, icon, launchAddLabOrder }: LabOrderBasketPanelProps) {
   const { t } = useTranslation();
@@ -83,7 +84,12 @@ function LabOrderBasketPanel({ orderTypeUuid, label, icon, launchAddLabOrder }: 
   const [isExpanded, setIsExpanded] = useState(orders.length > 0);
 
   const [selectedPriorityUuid, setSelectedPriorityUuid] = useState<string>(() => {
-    return localStorage.getItem('sihsalus-lab-order-basket-priority') || 'e724bdb6-2c75-4b6f-a00c-d43f2c372974';
+    const savedPriorityUuid = localStorage.getItem(priorityStorageKey);
+    return (
+      sortedPriorityConfigs.find((priority) => priority.conceptUuid === savedPriorityUuid)?.conceptUuid ??
+      sortedPriorityConfigs[0]?.conceptUuid ??
+      ''
+    );
   });
 
   const [bulkScheduledDate, setBulkScheduledDate] = useState<Date | null>(null);
@@ -94,7 +100,7 @@ function LabOrderBasketPanel({ orderTypeUuid, label, icon, launchAddLabOrder }: 
   const handlePriorityChange = (event: React.ChangeEvent<HTMLSelectElement>) => {
     const newPriorityUuid = event.target.value;
     setSelectedPriorityUuid(newPriorityUuid);
-    localStorage.setItem('sihsalus-lab-order-basket-priority', newPriorityUuid);
+    localStorage.setItem(priorityStorageKey, newPriorityUuid);
 
     const priority = priorityConfigs?.find((p) => p.conceptUuid === newPriorityUuid);
     const newUrgencyCode = priority?.urgency ?? 'STAT';
@@ -131,6 +137,18 @@ function LabOrderBasketPanel({ orderTypeUuid, label, icon, launchAddLabOrder }: 
   };
 
   useEffect(() => {
+    if (!sortedPriorityConfigs.length) {
+      return;
+    }
+
+    const selectedPriorityIsValid = sortedPriorityConfigs.some((priority) => priority.conceptUuid === selectedPriorityUuid);
+    if (!selectedPriorityIsValid) {
+      const fallbackPriorityUuid = sortedPriorityConfigs[0].conceptUuid;
+      setSelectedPriorityUuid(fallbackPriorityUuid);
+      localStorage.setItem(priorityStorageKey, fallbackPriorityUuid);
+      return;
+    }
+
     const hasEmptyUrgency = orders.some((order) => !order.urgency);
     if (hasEmptyUrgency) {
       const selectedPriority = priorityConfigs?.find((p) => p.conceptUuid === selectedPriorityUuid);
@@ -152,7 +170,7 @@ function LabOrderBasketPanel({ orderTypeUuid, label, icon, launchAddLabOrder }: 
       });
       setOrders(updatedOrders);
     }
-  }, [orders, selectedPriorityUuid, priorityConfigs, setOrders, bulkScheduledDate]);
+  }, [orders, selectedPriorityUuid, priorityConfigs, setOrders, bulkScheduledDate, sortedPriorityConfigs]);
 
   const {
     incompleteOrderBasketItems,

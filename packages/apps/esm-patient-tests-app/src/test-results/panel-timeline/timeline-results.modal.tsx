@@ -72,11 +72,7 @@ const TimelineResultsModal: React.FC<TimelineResultsModalProps> = ({ closeDelete
                 {t('nonNumericResults', 'Non-Numeric Results')}
               </h5>
             )}
-            <HistoricalTable
-              conceptUuids={nonNumericUuids}
-              groupedObservations={groupedObservations}
-              title={title}
-            />
+            <HistoricalTable conceptUuids={nonNumericUuids} groupedObservations={groupedObservations} />
           </div>
         )}
       </ModalBody>

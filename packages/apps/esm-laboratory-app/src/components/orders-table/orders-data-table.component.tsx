@@ -21,7 +21,17 @@ import {
   TableToolbarSearch,
   Tile,
 } from '@carbon/react';
-import { ExtensionSlot, formatDate, parseDate, showModal, useConfig, usePagination, openmrsFetch, restBaseUrl } from '@openmrs/esm-framework';
+import {
+  ExtensionSlot,
+  formatDate,
+  type OrderUrgency,
+  parseDate,
+  showModal,
+  useConfig,
+  usePagination,
+  openmrsFetch,
+  restBaseUrl,
+} from '@openmrs/esm-framework';
 import React, { useCallback, useMemo, useState } from 'react';
 import useSWR from 'swr';
 import { useTranslation } from 'react-i18next';
@@ -177,7 +187,7 @@ const OrdersDataTable: React.FC<OrdersDataTableProps> = (props) => {
           orderNumber: order.orderNumber,
           dateActivated: formatDate(parseDate(order.dateActivated)),
           fulfillerStatus: order.fulfillerStatus,
-          urgency: order.urgency,
+          urgency: order.urgency as OrderUrgency,
           orderer: order.orderer?.display,
           instructions: order.instructions,
           fulfillerComment: order.fulfillerComment,

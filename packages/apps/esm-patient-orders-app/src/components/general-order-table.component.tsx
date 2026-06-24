@@ -10,7 +10,7 @@ import {
   TableHeader,
   TableRow,
 } from '@carbon/react';
-import { useLayoutType, openmrsFetch } from '@openmrs/esm-framework';
+import { openmrsFetch, useLayoutType } from '@openmrs/esm-framework';
 import { type Order } from '@openmrs/esm-patient-common-lib';
 import React, { useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -93,7 +93,8 @@ const GeneralOrderTable: React.FC<GeneralOrderProps> = ({ order }) => {
   }, [concept, encounter, order.uuid]);
 
   const rows = useMemo(() => {
-    const findFhirObs = (obsUuid: string) => fhirObsBundle?.data?.entry?.find((e: any) => e.resource?.id === obsUuid)?.resource;
+    const findFhirObs = (obsUuid: string) =>
+      fhirObsBundle?.data?.entry?.find((e: any) => e.resource?.id === obsUuid)?.resource;
 
     if (concept && concept.setMembers.length > 0) {
       return concept?.setMembers.map((memberConcept) => {
@@ -108,14 +109,8 @@ const GeneralOrderTable: React.FC<GeneralOrderProps> = ({ order }) => {
           id: memberConcept.uuid,
           orderName: <div className={styles.type}>{memberConcept.display}</div>,
           instructions: '--',
-          result: isLoadingResult ? (
-            <SkeletonText />
-          ) : (
-            (memberObs?.value.display ?? '--')
-          ),
-          normalRange: hasNormalRange({ lowNormal: low, hiNormal: high })
-            ? `${low} - ${high}`
-            : 'N/A',
+          result: isLoadingResult ? <SkeletonText /> : (memberObs?.value.display ?? '--'),
+          normalRange: hasNormalRange({ lowNormal: low, hiNormal: high }) ? `${low} - ${high}` : 'N/A',
           referenceNumber: order?.accessionNumber,
         };
       });

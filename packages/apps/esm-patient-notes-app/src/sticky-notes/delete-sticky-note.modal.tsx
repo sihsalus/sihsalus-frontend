@@ -1,6 +1,6 @@
 import { Button, InlineLoading, ModalBody, ModalFooter, ModalHeader } from '@carbon/react';
 import { getCoreTranslation, showSnackbar } from '@openmrs/esm-framework';
-import React, { useCallback, useState } from 'react';
+import { useCallback, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { deleteStickyNote } from './sticky-note.resource';
 

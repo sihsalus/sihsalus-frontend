@@ -229,7 +229,7 @@ const AppointmentsForm: React.FC<
       closeWorkspace?: (options?: {
         closeWindow?: boolean;
         discardUnsavedChanges?: boolean;
-      }) => void | Promise<boolean>;
+      }) => undefined | Promise<boolean>;
       promptBeforeClosing?: (testFcn: () => boolean) => void;
     }
 > = (props) => {
@@ -725,8 +725,8 @@ const AppointmentsForm: React.FC<
                   >
                     <SelectItem text={t('chooseAppointmentType', 'Choose appointment type')} value="" />
                     {mappedAppointmentTypes?.length > 0 &&
-                      mappedAppointmentTypes.map((appointmentType, index) => (
-                        <SelectItem key={index} text={appointmentType} value={appointmentType}>
+                      mappedAppointmentTypes.map((appointmentType) => (
+                        <SelectItem key={appointmentType} text={appointmentType} value={appointmentType}>
                           {appointmentType}
                         </SelectItem>
                       ))}
@@ -970,8 +970,8 @@ const AppointmentsForm: React.FC<
                     >
                       <SelectItem text={t('selectAppointmentStatus', 'Select status')} value="" />
                       {appointmentStatuses?.length > 0 &&
-                        appointmentStatuses.map((appointmentStatus, index) => (
-                          <SelectItem key={index} text={appointmentStatus} value={appointmentStatus}>
+                        appointmentStatuses.map((appointmentStatus) => (
+                          <SelectItem key={appointmentStatus} text={appointmentStatus} value={appointmentStatus}>
                             {appointmentStatus}
                           </SelectItem>
                         ))}

@@ -21,12 +21,7 @@ import { useTranslation } from 'react-i18next';
 import type { BatchCalcularNowResponse, Granularity, RecalcularAnioResponse } from '../api/types';
 import PaginationBar from '../components/PaginationBar';
 import { notifyError, notifySuccess, useIndicadores } from '../features/indicadores/hooks';
-import {
-  useCalcularAhora,
-  useRecalcularAnio,
-  useResultados,
-  useResultadosSeries,
-} from '../features/resultados/hooks';
+import { useCalcularAhora, useRecalcularAnio, useResultados, useResultadosSeries } from '../features/resultados/hooks';
 import styles from '../indicators-dashboard.module.scss';
 
 type SummaryState =
@@ -101,13 +96,9 @@ const ResultadosPage: React.FC = () => {
         count: result.calculados,
       });
       if (isTotalFailure) {
-        notifyError(
-          `${baseMessage} (${t('recalcPartialErrors', '{{count}} con error', { count: failed })})`,
-        );
+        notifyError(`${baseMessage} (${t('recalcPartialErrors', '{{count}} con error', { count: failed })})`);
       } else if (failed > 0) {
-        notifySuccess(
-          `${baseMessage} (${t('recalcPartialErrors', '{{count}} con error', { count: failed })})`,
-        );
+        notifySuccess(`${baseMessage} (${t('recalcPartialErrors', '{{count}} con error', { count: failed })})`);
       } else {
         notifySuccess(baseMessage);
       }
@@ -171,7 +162,9 @@ const ResultadosPage: React.FC = () => {
         notifySuccess(baseMessage);
       }
     } catch (recalcError) {
-      notifyError(recalcError instanceof Error ? recalcError.message : t('recalcFailed', 'No se pudo recalcular el año'));
+      notifyError(
+        recalcError instanceof Error ? recalcError.message : t('recalcFailed', 'No se pudo recalcular el año'),
+      );
     } finally {
       setRecalcularRunning(false);
     }
@@ -299,10 +292,7 @@ const ResultadosPage: React.FC = () => {
         <div>
           <h2>{t('results', 'Resultados')}</h2>
           <p className={styles.subtitle}>
-            {t(
-              'resultsSubtitle',
-              'Consulta resultados calculados y ejecutá el cálculo manual del lote.',
-            )}
+            {t('resultsSubtitle', 'Consulta resultados calculados y ejecutá el cálculo manual del lote.')}
           </p>
         </div>
         <div className={styles.headerActions}>
@@ -405,8 +395,8 @@ const ResultadosPage: React.FC = () => {
                   </TableRow>
                 </TableHead>
                 <TableBody>
-                  {seriesData.items.map((item, idx) => (
-                    <TableRow key={`${item.periodo_label}-${idx}`}>
+                  {seriesData.items.map((item) => (
+                    <TableRow key={item.periodo_label}>
                       <TableCell>{item.periodo_label}</TableCell>
                       <TableCell>{item.valor}</TableCell>
                       <TableCell>{item.meses_disponibles}</TableCell>
@@ -477,7 +467,11 @@ const ResultadosPage: React.FC = () => {
         open={isRecalcModalOpen}
         modalHeading={t('recalculateYear', 'Recalcular año')}
         primaryButtonText={
-          isRecalcularRunning ? <InlineLoading description={t('recalculating', 'Recalculando...')} /> : t('confirm', 'Confirmar')
+          isRecalcularRunning ? (
+            <InlineLoading description={t('recalculating', 'Recalculando...')} />
+          ) : (
+            t('confirm', 'Confirmar')
+          )
         }
         primaryButtonDisabled={isRecalcularRunning}
         secondaryButtonText={t('cancel', 'Cancelar')}
@@ -513,11 +507,9 @@ const ResultadosPage: React.FC = () => {
         />
         {filters.indicador_id ? (
           <p style={{ marginTop: '0.75rem', color: '#525252', fontSize: '0.875rem' }}>
-            {t(
-              'recalcModalScopeHint',
-              'Se recalculará solo el indicador seleccionado: {{nombre}}.',
-              { nombre: indicadoresData?.items.find((i) => i.id === filters.indicador_id)?.nombre ?? filters.indicador_id },
-            )}
+            {t('recalcModalScopeHint', 'Se recalculará solo el indicador seleccionado: {{nombre}}.', {
+              nombre: indicadoresData?.items.find((i) => i.id === filters.indicador_id)?.nombre ?? filters.indicador_id,
+            })}
           </p>
         ) : null}
       </Modal>

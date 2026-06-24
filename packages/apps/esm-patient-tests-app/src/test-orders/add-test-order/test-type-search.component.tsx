@@ -188,7 +188,8 @@ function TestTypeSearchResults({
 
     if (testsToAdd.length === 0) return;
 
-    const priorityUuid = localStorage.getItem('sihsalus-lab-order-basket-priority') || 'e724bdb6-2c75-4b6f-a00c-d43f2c372974';
+    const priorityUuid =
+      localStorage.getItem('sihsalus-lab-order-basket-priority') || 'e724bdb6-2c75-4b6f-a00c-d43f2c372974';
     const selectedPriority = priorityConfigs?.find((p) => p.conceptUuid === priorityUuid);
 
     const newLabOrders = testsToAdd.map((testType) => {
@@ -375,10 +376,11 @@ const TestTypeSearchResultItem: React.FC<TestTypeSearchResultItemProps> = ({
 
   const addToBasket = useCallback(() => {
     const labOrder = createLabOrder(testType);
-    
-    const priorityUuid = localStorage.getItem('sihsalus-lab-order-basket-priority') || 'e724bdb6-2c75-4b6f-a00c-d43f2c372974';
+
+    const priorityUuid =
+      localStorage.getItem('sihsalus-lab-order-basket-priority') || 'e724bdb6-2c75-4b6f-a00c-d43f2c372974';
     const selectedPriority = priorityConfigs?.find((p) => p.conceptUuid === priorityUuid);
-    
+
     labOrder.urgency = priorityUuid;
     labOrder.urgencyCode = selectedPriority?.urgency ?? 'STAT';
     labOrder.isOrderIncomplete = selectedPriority?.requiresScheduledDate ? !labOrder.scheduledDate : false;

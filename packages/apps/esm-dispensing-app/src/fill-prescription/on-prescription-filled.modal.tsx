@@ -115,8 +115,8 @@ const OnPrescriptionFilledModal: React.FC<OnPrescriptionFilledModalProps> = ({ p
       <ModalBody>
         <p className={styles.modalDescription}>
           <Trans i18nKey="dispenseAllPrescriptionsConfirmation">
-            Would you like to mark prescriptions ordered for <strong>{{ patientName } as unknown as string}</strong> as
-            dispensed? Orders with no refills will be marked as completed.
+            Would you like to mark prescriptions ordered for <strong>{{ patientName } as any}</strong> as dispensed?
+            Orders with no refills will be marked as completed.
           </Trans>
         </p>
         {medicationRequestBundles.map((bundle) => (

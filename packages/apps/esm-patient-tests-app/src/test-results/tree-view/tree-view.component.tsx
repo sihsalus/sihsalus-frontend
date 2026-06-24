@@ -2,7 +2,7 @@ import { AccordionSkeleton, Button, DataTableSkeleton, Layer } from '@carbon/rea
 import { TreeViewAltIcon, useLayoutType } from '@openmrs/esm-framework';
 import { EmptyState } from '@openmrs/esm-patient-common-lib';
 import classNames from 'classnames';
-import React, { useContext, useMemo, useState } from 'react';
+import React, { useContext, useState, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import { type GroupedObservation, type viewOpts } from '../../types';
@@ -60,7 +60,12 @@ const GroupedPanelsTables: React.FC<{ className: string; loadingPanelData: boole
               [styles.border]: subRows.entries.length,
             })}
           >
-            <IndividualResultsTable isLoading={loadingPanelData} subRows={subRows} index={index} title={subRows.key} />
+            <IndividualResultsTable
+              isLoading={loadingPanelData}
+              subRows={subRows}
+              index={index}
+              title={subRows.key}
+            />
           </div>
         );
       })}

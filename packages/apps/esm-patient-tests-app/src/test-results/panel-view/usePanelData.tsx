@@ -9,12 +9,13 @@ import {
   type FhirResponse,
   type ObsRecord,
 } from '../../types';
+
+import { extractMetaInformation, getConceptUuid, isLabConcept } from './helper';
 import {
   assessValue,
   extractObservationInterpretation,
   extractObservationReferenceRanges,
 } from '../loadPatientTestData/helpers';
-import { extractMetaInformation, getConceptUuid, isLabConcept } from './helper';
 
 export function useObservations() {
   const { patientUuid } = usePatient();
@@ -128,19 +129,21 @@ export default function usePanelData() {
 
         // Extraer rangos a nivel de observación
         const obsRanges = extractObservationReferenceRanges(observation as any);
-        const hasObsRanges =
-          obsRanges &&
-          (obsRanges.lowNormal !== undefined || obsRanges.hiNormal !== undefined || obsRanges.range !== undefined);
+        const hasObsRanges = obsRanges && (
+          obsRanges.lowNormal !== undefined || 
+          obsRanges.hiNormal !== undefined || 
+          obsRanges.range !== undefined
+        );
 
         const meta = hasObsRanges
           ? {
               ...conceptMeta,
               ...obsRanges,
-              range:
-                obsRanges.range ??
-                (obsRanges.lowNormal !== undefined && obsRanges.hiNormal !== undefined
+              range: obsRanges.range ?? (
+                (obsRanges.lowNormal !== undefined && obsRanges.hiNormal !== undefined)
                   ? `${obsRanges.lowNormal} – ${obsRanges.hiNormal}`
-                  : conceptMeta?.range),
+                  : conceptMeta?.range
+              ),
             }
           : (conceptMeta as any);
 

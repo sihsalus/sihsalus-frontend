@@ -3,8 +3,8 @@ import React, { useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import { basePath } from '../../constants';
-import usePanelData from '../panel-view/usePanelData';
 import Trendline from '../trendline/trendline.component';
+import usePanelData from '../panel-view/usePanelData';
 import HistoricalTable from './historical-table.component';
 
 interface TimelineResultsModalProps {
@@ -14,19 +14,16 @@ interface TimelineResultsModalProps {
   title: string;
 }
 
-const TimelineResultsModal: React.FC<TimelineResultsModalProps> = ({
-  closeDeleteModal,
-  patientUuid,
-  testUuid,
-  title,
-}) => {
+const TimelineResultsModal: React.FC<TimelineResultsModalProps> = ({ closeDeleteModal, patientUuid, testUuid, title }) => {
   const { t } = useTranslation();
   const { panels, groupedObservations } = usePanelData();
 
   const { numericUuids, nonNumericUuids } = useMemo(() => {
     // Find if the testUuid is a panel/group
     const panel = panels.find((p) => p.conceptUuid === testUuid);
-    const conceptUuids = panel?.relatedObs?.length ? panel.relatedObs.map((obs) => obs.conceptUuid) : [testUuid];
+    const conceptUuids = panel?.relatedObs?.length
+      ? panel.relatedObs.map((obs) => obs.conceptUuid)
+      : [testUuid];
 
     const numeric: string[] = [];
     const nonNumeric: string[] = [];
@@ -75,7 +72,11 @@ const TimelineResultsModal: React.FC<TimelineResultsModalProps> = ({
                 {t('nonNumericResults', 'Non-Numeric Results')}
               </h5>
             )}
-            <HistoricalTable conceptUuids={nonNumericUuids} groupedObservations={groupedObservations} title={title} />
+            <HistoricalTable
+              conceptUuids={nonNumericUuids}
+              groupedObservations={groupedObservations}
+              title={title}
+            />
           </div>
         )}
       </ModalBody>

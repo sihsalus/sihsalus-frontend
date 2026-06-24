@@ -65,7 +65,10 @@ const ListOrderDetails: React.FC<ListOrdersDetailsProps> = ({ groupedOrders }) =
   return (
     <div>
       {originalOrders.map((order) => {
-        const { urgency, cleanInstructions } = extractPriorityFromInstructions(order.instructions, order.urgency);
+        const { urgency, cleanInstructions } = extractPriorityFromInstructions(
+          order.instructions,
+          order.urgency,
+        );
 
         return (
           <div key={order.orderNumber} className={styles.orderDetailsContainer}>
@@ -76,10 +79,10 @@ const ListOrderDetails: React.FC<ListOrdersDetailsProps> = ({ groupedOrders }) =
                   value={
                     <div className={styles.priorityPill} data-urgency-color={getPriorityColor(urgency)}>
                       {getOrderUrgencyDisplay(urgency, t)}
-                      {(urgency?.toUpperCase() === '65CF194E-05A7-4832-BA6D-9B7C9940A7C2' ||
-                        urgency?.toUpperCase() === 'ON_SCHEDULED_DATE') &&
-                        order.scheduledDate &&
-                        ` (${formatDate(parseDate(order.scheduledDate))})`}
+                      {(urgency?.toUpperCase() === '65CF194E-05A7-4832-BA6D-9B7C9940A7C2' || 
+                        urgency?.toUpperCase() === 'ON_SCHEDULED_DATE') && order.scheduledDate && (
+                        ` (${formatDate(parseDate(order.scheduledDate))})`
+                      )}
                     </div>
                   }
                 />

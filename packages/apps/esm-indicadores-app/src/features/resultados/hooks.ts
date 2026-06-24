@@ -65,14 +65,11 @@ export function useCalcularAhora() {
 export function useRecalcularAnio() {
   const { mutate } = useSWRConfig();
 
-  const run = useCallback(
-    async (params: RecalcularAnioParams): Promise<RecalcularAnioResponse> => {
-      const result = await recalcularAnio(params);
-      await mutate((key) => isResultadosKey(key) || isResultadosSeriesKey(key));
-      return result;
-    },
-    [mutate],
-  );
+  const run = useCallback(async (params: RecalcularAnioParams): Promise<RecalcularAnioResponse> => {
+    const result = await recalcularAnio(params);
+    await mutate((key) => isResultadosKey(key) || isResultadosSeriesKey(key));
+    return result;
+  }, [mutate]);
 
   return { recalcularAnio: run };
 }

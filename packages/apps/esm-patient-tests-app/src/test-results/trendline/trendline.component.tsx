@@ -73,11 +73,10 @@ const Trendline: React.FC<TrendlineProps> = ({
 }) => {
   const { t } = useTranslation();
   const { groupedObservations, isLoading: panelDataIsLoading } = usePanelData();
-  const {
-    trendlineData,
-    isLoading: obstreeIsLoading,
-    isValidating: obstreeIsValidating,
-  } = useObstreeData(patientUuid, conceptUuid || '');
+  const { trendlineData, isLoading: obstreeIsLoading, isValidating: obstreeIsValidating } = useObstreeData(
+    patientUuid,
+    conceptUuid || '',
+  );
 
   const [range, setRange] = useState<[Date, Date]>();
   const [showResultsTable, setShowResultsTable] = useState(false);
@@ -237,7 +236,7 @@ const Trendline: React.FC<TrendlineProps> = ({
   /**
    * reorder svg element to bring line in front of the area
    */
-  // biome-ignore lint/correctness/useExhaustiveDependencies: chartData triggers SVG reorder after chart re-render
+  // biome-ignore lint/correctness/useExhaustiveDependencies: chartData changes cause Carbon Charts to regenerate the SVG nodes this effect reorders.
   useLayoutEffect(() => {
     const graph = document.querySelector('g.cds--cc--area')?.parentElement;
     if (graph && graph.children && graph.children.length > 3) {

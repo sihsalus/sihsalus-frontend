@@ -56,7 +56,7 @@ export const configSchema = {
     },
     bodyMassIndexUuid: {
       _type: Type.ConceptUuid,
-      _default: '5b877648-ae50-4d45-ad36-0196042baa1a',
+      _default: '1342AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA',
     },
     vitalSignsConceptSetUuid: {
       _type: Type.ConceptUuid,

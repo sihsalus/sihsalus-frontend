@@ -25,11 +25,6 @@ vi.mock('../grouped-timeline', async () => ({
   useGetManyObstreeData: vi.fn(),
 }));
 
-const mockUsePanelData = vi.fn();
-vi.mock('../panel-view/usePanelData', () => ({
-  default: (...args: any[]) => mockUsePanelData(...args),
-}));
-
 const mockProps = {
   patientUuid: 'test-patient-uuid',
   basePath: '/test-base-path',
@@ -66,12 +61,6 @@ const renderTreeViewWrapperWithMockContext = (contextValue = mockFilterContext) 
 
 describe('TreeViewWrapper', () => {
   beforeEach(() => {
-    mockUsePanelData.mockReturnValue({
-      panels: [],
-      isLoading: true,
-      groupedObservations: {},
-      conceptData: {},
-    });
     mockUseLayoutType.mockReturnValue('small-desktop');
 
     mockUsePatient.mockReturnValue({
@@ -107,12 +96,6 @@ describe('TreeViewWrapper', () => {
   });
 
   it('renders an empty state view when there is no data', () => {
-    mockUsePanelData.mockReturnValue({
-      panels: [],
-      isLoading: false,
-      groupedObservations: {},
-      conceptData: {},
-    });
     mockUseGetManyObstreeData.mockReturnValue({
       roots: [],
       isLoading: false,
@@ -121,17 +104,11 @@ describe('TreeViewWrapper', () => {
 
     render(<TreeViewWrapper {...mockProps} />);
 
-    expect(screen.getByRole('heading', { name: /data timeline/i })).toBeInTheDocument();
-    expect(screen.getByText(/there are no data to display for this patient/i)).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: /test results/i })).toBeInTheDocument();
+    expect(screen.getByText(/there are no test results data to display for this patient/i)).toBeInTheDocument();
   });
 
-  it('renders an empty state when an error occurs in the data source', () => {
-    mockUsePanelData.mockReturnValue({
-      panels: [],
-      isLoading: false,
-      groupedObservations: {},
-      conceptData: {},
-    });
+  it('renders an error state when there is an error', () => {
     const mockError = new Error('Test error');
     mockUseGetManyObstreeData.mockReturnValue({
       roots: [],
@@ -141,7 +118,12 @@ describe('TreeViewWrapper', () => {
 
     render(<TreeViewWrapper {...mockProps} />);
 
-    expect(screen.getByRole('heading', { name: /data timeline/i })).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: /data load error/i })).toBeInTheDocument();
+    expect(
+      screen.getByText(
+        /sorry, there was a problem displaying this information. you can try to reload this page, or contact the site administrator and quote the error code above./i,
+      ),
+    ).toBeInTheDocument();
   });
 
   it('renders the tree view when test data is successfully fetched', async () => {

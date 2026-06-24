@@ -45,17 +45,13 @@ const CronDatePicker: React.FC<CronDatePickerProps> = ({ value, onChange }) => {
       <DatePicker
         datePickerType="single"
         value={valueInternal}
+        invalid={validationState.invalid}
+        invalidText={t(validationState.invalidText)}
         onChange={([selectedDate]) => {
           setValueInternal(selectedDate);
         }}
       >
-        <DatePickerInput
-          id="cronDatePicker"
-          labelText=""
-          hideLabel
-          invalid={validationState.invalid}
-          invalidText={t(validationState.invalidText)}
-        />
+        <DatePickerInput id="cronDatePicker" labelText="" hideLabel />
       </DatePicker>
       {validationState.invalid && (
         <span className={styles.dangerLabel01}>{validationState.invalidText && t(validationState.invalidText)}</span>

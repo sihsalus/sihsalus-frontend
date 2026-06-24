@@ -21,9 +21,9 @@ const priorityLabels: Record<string, string> = {
   '427A595A-A5EE-4BA7-BCB7-2503248EFB31': 'Urgencia menor',
   'BF3A08C6-CBE6-4F00-8E06-5F5437790B85': 'Rutina',
   '65CF194E-05A7-4832-BA6D-9B7C9940A7C2': 'Programado',
-  STAT: 'Urgente',
-  ROUTINE: 'Rutina',
-  ON_SCHEDULED_DATE: 'Programado',
+  'STAT': 'Urgente',
+  'ROUTINE': 'Rutina',
+  'ON_SCHEDULED_DATE': 'Programado',
 };
 
 export function getOrderUrgencyDisplay(urgency: string | undefined, t: TFunction): string {

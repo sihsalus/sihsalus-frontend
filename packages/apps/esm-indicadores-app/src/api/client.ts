@@ -1,4 +1,4 @@
-import { type FetchConfig, type FetchResponse, openmrsFetch } from '@openmrs/esm-framework';
+import { openmrsFetch, type FetchConfig, type FetchResponse } from '@openmrs/esm-framework';
 
 import { activateMockMode, resetMockMode } from './mock-mode';
 

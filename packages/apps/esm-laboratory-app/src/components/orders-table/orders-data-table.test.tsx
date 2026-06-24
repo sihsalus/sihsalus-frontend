@@ -180,13 +180,13 @@ describe('OrdersDataTable', () => {
     expect(orderDetailsTable1).toHaveTextContent('Dr. John Doe');
     expect(orderDetailsTable1).toHaveTextContent('01-Jan-2021');
     expect(orderDetailsTable1).toHaveTextContent('Received');
-    expect(orderDetailsTable1).toHaveTextContent('Rutina');
+    expect(orderDetailsTable1).toHaveTextContent('Routine');
     expect(orderDetailsTable2).toHaveTextContent('Guitar Inspection');
     expect(orderDetailsTable2).toHaveTextContent('Give it a strum');
     expect(orderDetailsTable2).toHaveTextContent('Dr. John Doe');
     expect(orderDetailsTable2).toHaveTextContent('01-Jan-2021');
     expect(orderDetailsTable2).toHaveTextContent('Received');
-    expect(orderDetailsTable2).toHaveTextContent('Rutina');
+    expect(orderDetailsTable2).toHaveTextContent('Routine');
   });
 
   it('should show patient identifier if it is configured', () => {

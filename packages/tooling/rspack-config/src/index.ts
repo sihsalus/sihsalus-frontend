@@ -204,7 +204,6 @@ export default (env: Record<string, string>, argv: Record<string, string> = {}) 
       publicPath: 'auto',
       path: resolve(root, outDir),
       hashFunction: 'xxhash64',
-      chunkFilename: '[id].[contenthash:8].js',
     },
     module: {
       rules: [
@@ -218,11 +217,6 @@ export default (env: Record<string, string>, argv: Record<string, string> = {}) 
                 parser: {
                   syntax: 'typescript',
                   tsx: true,
-                },
-                transform: {
-                  react: {
-                    runtime: 'automatic',
-                  },
                 },
               },
             },

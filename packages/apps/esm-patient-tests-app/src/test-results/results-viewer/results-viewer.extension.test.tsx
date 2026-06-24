@@ -4,15 +4,26 @@ import userEvent from '@testing-library/user-event';
 import { mockResults } from 'test-utils';
 
 import { type ConfigObject, configSchema } from '../../config-schema';
-import RoutedResultsViewer from './results-viewer.extension';
+import TreeViewWrapper from '../tree-view/tree-view-wrapper.component';
 
 const mockUseConfig = vi.mocked(useConfig<ConfigObject>);
 const mockUseGetManyObstreeData = vi.fn();
 
-vi.mock('react-router-dom', async () => ({
-  ...(await vi.importActual('react-router-dom')),
-  useParams: vi.fn(() => ({})),
-}));
+mockUseConfig.mockReturnValue({
+  ...getDefaultsFromConfigSchema(configSchema),
+  resultsViewerConcepts: [
+    {
+      conceptUuid: '9a6f10d6-7fc5-4fb7-9428-24ef7b8d01f7',
+      defaultOpen: false,
+    },
+  ],
+  orders: {
+    labOrderTypeUuid: '52a447d3-a64a-11e3-9aeb-50e549534c5e',
+    labOrderableConcepts: ['1748a953-d12e-4be1-914c-f6b096c6cdef'],
+  },
+  additionalTestOrderTypes: [],
+  labTestsWithOrderReasons: [],
+});
 
 vi.mock('../grouped-timeline', async () => ({
   ...(await vi.importActual('../grouped-timeline')),
@@ -22,6 +33,9 @@ vi.mock('../grouped-timeline', async () => ({
 const testProps = {
   basePath: '/spa/patient/some-uuid/chart/Results',
   patientUuid: 'some-uuid',
+  testUuid: 'some-uuid',
+  expanded: false,
+  type: 'some-type',
 };
 
 mockUseConfig.mockReturnValue({
@@ -43,7 +57,7 @@ describe('ResultsViewer', () => {
       isLoading: false,
       error: null,
     });
-    render(<RoutedResultsViewer {...testProps} />);
+    render(<TreeViewWrapper {...testProps} />);
 
     const testResultsText = screen.getByRole('heading', { name: /test results/i });
     expect(testResultsText).toBeInTheDocument();
@@ -57,7 +71,7 @@ describe('ResultsViewer', () => {
       isLoading: false,
       error: new Error('An error occurred'),
     });
-    render(<RoutedResultsViewer {...testProps} />);
+    render(<TreeViewWrapper {...testProps} />);
 
     const testResultsText = screen.getByRole('heading', { name: /data load error/i });
     expect(testResultsText).toBeInTheDocument();
@@ -74,7 +88,7 @@ describe('ResultsViewer', () => {
       isLoading: false,
       error: null,
     });
-    render(<RoutedResultsViewer {...testProps} />);
+    render(<TreeViewWrapper {...testProps} />);
 
     expect(screen.getAllByText(/complete blood count/i)).toHaveLength(2);
     expect(screen.getAllByText(/hematocrit/i)).toHaveLength(2);

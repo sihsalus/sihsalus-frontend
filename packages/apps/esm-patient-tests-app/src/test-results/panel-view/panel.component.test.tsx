@@ -113,6 +113,7 @@ describe('LabSetPanel', () => {
     expect(screen.getByRole('table')).toBeInTheDocument();
     expect(screen.getByRole('heading', { name: /complete blood count/i })).toBeInTheDocument();
     expect(screen.getByText(/01 — Jan — 2024/i)).toBeInTheDocument();
+    expect(screen.getByText(/\d{2}:\d{2}/i)).toBeInTheDocument();
     expect(screen.getByRole('columnheader', { name: /test name/i })).toBeInTheDocument();
     expect(screen.getByRole('columnheader', { name: /value/i })).toBeInTheDocument();
     expect(screen.getByRole('columnheader', { name: /reference range/i })).toBeInTheDocument();

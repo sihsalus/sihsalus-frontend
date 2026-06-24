@@ -46,6 +46,6 @@ describe('IndividualResultsTable', () => {
     expect(screen.getByText(/test name/i)).toBeInTheDocument();
     expect(screen.getByText(/reference range/i)).toBeInTheDocument();
     expect(screen.getByRole('button', { name: /view timeline/i })).toBeInTheDocument();
-    expect(screen.getByRole('row', { name: /hiv viral load 45 copies\/ml --/i })).toBeInTheDocument();
+    expect(screen.getByRole('row', { name: /hiv viral load 45 copies\/ml -- copies\/ml/i })).toBeInTheDocument();
   });
 });

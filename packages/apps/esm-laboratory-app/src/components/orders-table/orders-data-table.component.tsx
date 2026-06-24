@@ -21,20 +21,10 @@ import {
   TableToolbarSearch,
   Tile,
 } from '@carbon/react';
-import {
-  ExtensionSlot,
-  formatDate,
-  type OrderUrgency,
-  openmrsFetch,
-  parseDate,
-  restBaseUrl,
-  showModal,
-  useConfig,
-  usePagination,
-} from '@openmrs/esm-framework';
+import { ExtensionSlot, formatDate, parseDate, showModal, useConfig, usePagination, openmrsFetch, restBaseUrl } from '@openmrs/esm-framework';
 import React, { useCallback, useMemo, useState } from 'react';
-import { useTranslation } from 'react-i18next';
 import useSWR from 'swr';
+import { useTranslation } from 'react-i18next';
 import { type Config } from '../../config-schema';
 import { useLabOrders } from '../../laboratory.resource';
 import { type FlattenedOrder, type FulfillerStatus, type Order } from '../../types';
@@ -129,15 +119,15 @@ const OrdersDataTable: React.FC<OrdersDataTableProps> = (props) => {
   const { labTableColumns, patientIdIdentifierTypeUuid, resultsViewerConcepts } = useConfig<Config>();
 
   const fetchLabsets = useCallback((urls: Array<string>) => {
-    return Promise.all(urls.map((url) => openmrsFetch<any>(url).then((res) => res.data)));
+    return Promise.all(
+      urls.map((url) => openmrsFetch<any>(url).then((res) => res.data)),
+    );
   }, []);
 
   const conceptUrls = useMemo(() => {
-    return (
-      resultsViewerConcepts?.map(
-        (c) => `${restBaseUrl}/concept/${c.conceptUuid}?v=custom:(uuid,display,setMembers:(uuid,display))`,
-      ) || []
-    );
+    return resultsViewerConcepts?.map(
+      (c) => `${restBaseUrl}/concept/${c.conceptUuid}?v=custom:(uuid,display,setMembers:(uuid,display))`
+    ) || [];
   }, [resultsViewerConcepts]);
 
   const { data: fetchedLabsets } = useSWR<
@@ -165,7 +155,10 @@ const OrdersDataTable: React.FC<OrdersDataTableProps> = (props) => {
   const parsedLabOrders = useMemo(() => {
     return (
       labOrders?.map((order) => {
-        const { urgency, cleanInstructions } = extractPriorityFromInstructions(order.instructions, order.urgency);
+        const { urgency, cleanInstructions } = extractPriorityFromInstructions(
+          order.instructions,
+          order.urgency,
+        );
         return {
           ...order,
           urgency,
@@ -176,51 +169,53 @@ const OrdersDataTable: React.FC<OrdersDataTableProps> = (props) => {
   }, [labOrders]);
 
   const flattenedLabOrders: Array<FlattenedOrder> = useMemo(() => {
-    return parsedLabOrders.map((order) => {
-      return {
-        id: order.uuid,
-        patientUuid: order.patient.uuid,
-        orderNumber: order.orderNumber,
-        dateActivated: formatDate(parseDate(order.dateActivated)),
-        fulfillerStatus: order.fulfillerStatus,
-        urgency: order.urgency as OrderUrgency,
-        orderer: order.orderer?.display,
-        instructions: order.instructions,
-        fulfillerComment: order.fulfillerComment,
-        display: order.display,
-        conceptUuid: order.concept?.uuid,
-        scheduledDate: order.scheduledDate,
-      };
-    });
+    return (
+      parsedLabOrders.map((order) => {
+        return {
+          id: order.uuid,
+          patientUuid: order.patient.uuid,
+          orderNumber: order.orderNumber,
+          dateActivated: formatDate(parseDate(order.dateActivated)),
+          fulfillerStatus: order.fulfillerStatus,
+          urgency: order.urgency,
+          orderer: order.orderer?.display,
+          instructions: order.instructions,
+          fulfillerComment: order.fulfillerComment,
+          display: order.display,
+          conceptUuid: order.concept?.uuid,
+          scheduledDate: order.scheduledDate,
+        };
+      })
+    );
   }, [parsedLabOrders]);
 
   const groupedOrdersByPatient = useMemo(() => {
     if (parsedLabOrders && parsedLabOrders.length > 0) {
       const patientUuids = [...new Set(parsedLabOrders.map((order) => order.patient.uuid))];
 
-      return (
-        patientUuids
-          .map((patientUuid) => {
-            let labOrdersForPatient = parsedLabOrders.filter((order) => order.patient.uuid === patientUuid);
-            let flattenedLabOrdersForPatient = flattenedLabOrders.filter((order) => order.patientUuid === patientUuid);
+      return patientUuids
+        .map((patientUuid) => {
+          let labOrdersForPatient = parsedLabOrders.filter((order) => order.patient.uuid === patientUuid);
+          let flattenedLabOrdersForPatient = flattenedLabOrders.filter((order) => order.patientUuid === patientUuid);
 
-            // Apply labset filter to individual orders if set
-            if (selectedLabsetUuid && fetchedLabsets) {
-              const currentLabset = fetchedLabsets.find((set) => set.uuid === selectedLabsetUuid);
-              const memberUuids = currentLabset?.setMembers?.map((m) => m.uuid) || [];
+          // Apply labset filter to individual orders if set
+          if (selectedLabsetUuid && fetchedLabsets) {
+            const currentLabset = fetchedLabsets.find((set) => set.uuid === selectedLabsetUuid);
+            const memberUuids = currentLabset?.setMembers?.map((m) => m.uuid) || [];
 
-              labOrdersForPatient = labOrdersForPatient.filter(
-                (order) => order.concept?.uuid === selectedLabsetUuid || memberUuids.includes(order.concept?.uuid),
-              );
-              flattenedLabOrdersForPatient = flattenedLabOrdersForPatient.filter(
-                (order) => order.conceptUuid === selectedLabsetUuid || memberUuids.includes(order.conceptUuid),
-              );
-            }
+            labOrdersForPatient = labOrdersForPatient.filter(
+              (order) => order.concept?.uuid === selectedLabsetUuid || memberUuids.includes(order.concept?.uuid),
+            );
+            flattenedLabOrdersForPatient = flattenedLabOrdersForPatient.filter(
+              (order) => order.conceptUuid === selectedLabsetUuid || memberUuids.includes(order.conceptUuid),
+            );
+          }
 
-            // Apply priority filter to individual orders if set
-            if (priorityFilter) {
-              const filterNorm = priorityFilter.toUpperCase();
-              labOrdersForPatient = labOrdersForPatient.filter((order) => {
+          // Apply priority filter to individual orders if set
+          if (priorityFilter) {
+            const filterNorm = priorityFilter.toUpperCase();
+            labOrdersForPatient = labOrdersForPatient.filter(
+              (order) => {
                 const normUrgency = order.urgency?.toUpperCase();
                 return (
                   normUrgency === filterNorm ||
@@ -228,71 +223,66 @@ const OrdersDataTable: React.FC<OrdersDataTableProps> = (props) => {
                   (filterNorm === 'BF3A08C6-CBE6-4F00-8E06-5F5437790B85' && normUrgency === 'ROUTINE') ||
                   (filterNorm === '65CF194E-05A7-4832-BA6D-9B7C9940A7C2' && normUrgency === 'ON_SCHEDULED_DATE')
                 );
-              });
-              flattenedLabOrdersForPatient = flattenedLabOrdersForPatient.filter((order) => {
-                const normUrgency = order.urgency?.toUpperCase();
-                return (
-                  normUrgency === filterNorm ||
-                  (filterNorm === 'B96959DB-2106-4CE7-B39B-6FCB2CA88CDA' && normUrgency === 'STAT') ||
-                  (filterNorm === 'BF3A08C6-CBE6-4F00-8E06-5F5437790B85' && normUrgency === 'ROUTINE') ||
-                  (filterNorm === '65CF194E-05A7-4832-BA6D-9B7C9940A7C2' && normUrgency === 'ON_SCHEDULED_DATE')
-                );
-              });
-            }
-
-            // Sort individual orders by priority (highest priority first)
-            // For orders with the same priority, if they are "Programado" (rank 5), sort by scheduledDate ascending (closest to furthest).
-            const sortOrders = (a: any, b: any) => {
-              const rankA = getPriorityRank(a.urgency);
-              const rankB = getPriorityRank(b.urgency);
-              if (rankA === rankB && rankA === 5) {
-                const timeA = a.scheduledDate ? new Date(a.scheduledDate).getTime() : Number.MAX_VALUE;
-                const timeB = b.scheduledDate ? new Date(b.scheduledDate).getTime() : Number.MAX_VALUE;
-                return timeA - timeB;
               }
-              return rankA - rankB;
-            };
+            );
+            flattenedLabOrdersForPatient = flattenedLabOrdersForPatient.filter(
+              (order) => {
+                const normUrgency = order.urgency?.toUpperCase();
+                return (
+                  normUrgency === filterNorm ||
+                  (filterNorm === 'B96959DB-2106-4CE7-B39B-6FCB2CA88CDA' && normUrgency === 'STAT') ||
+                  (filterNorm === 'BF3A08C6-CBE6-4F00-8E06-5F5437790B85' && normUrgency === 'ROUTINE') ||
+                  (filterNorm === '65CF194E-05A7-4832-BA6D-9B7C9940A7C2' && normUrgency === 'ON_SCHEDULED_DATE')
+                );
+              }
+            );
+          }
 
-            flattenedLabOrdersForPatient.sort(sortOrders);
-            labOrdersForPatient.sort(sortOrders);
-
-            const patient = labOrdersForPatient[0]?.patient;
-            return {
-              patientId: patient?.identifiers?.find(
-                (identifier) =>
-                  identifier.preferred &&
-                  !identifier.voided &&
-                  identifier.identifierType.uuid === patientIdIdentifierTypeUuid,
-              )?.identifier,
-              patientUuid: patientUuid,
-              patientName: patient?.person?.display,
-              patientAge: patient?.person?.age,
-              patientDob: patient?.person?.birthdate ? formatDate(parseDate(patient.person.birthdate)) : undefined,
-              patientSex: patient?.person?.gender,
-              totalOrders: flattenedLabOrdersForPatient.length,
-              orders: flattenedLabOrdersForPatient,
-              originalOrders: labOrdersForPatient,
-            };
-          })
-          .filter((group) => group.orders.length > 0)
-          // Sort patient groups by the highest priority order they have (lowest rank number first)
-          .sort((a, b) => {
-            const rankA = Math.min(...a.orders.map((o) => getPriorityRank(o.urgency)));
-            const rankB = Math.min(...b.orders.map((o) => getPriorityRank(o.urgency)));
+          // Sort individual orders by priority (highest priority first)
+          // For orders with the same priority, if they are "Programado" (rank 5), sort by scheduledDate ascending (closest to furthest).
+          const sortOrders = (a: any, b: any) => {
+            const rankA = getPriorityRank(a.urgency);
+            const rankB = getPriorityRank(b.urgency);
+            if (rankA === rankB && rankA === 5) {
+              const timeA = a.scheduledDate ? new Date(a.scheduledDate).getTime() : Number.MAX_VALUE;
+              const timeB = b.scheduledDate ? new Date(b.scheduledDate).getTime() : Number.MAX_VALUE;
+              return timeA - timeB;
+            }
             return rankA - rankB;
-          })
-      );
+          };
+
+          flattenedLabOrdersForPatient.sort(sortOrders);
+          labOrdersForPatient.sort(sortOrders);
+
+          const patient = labOrdersForPatient[0]?.patient;
+          return {
+            patientId: patient?.identifiers?.find(
+              (identifier) =>
+                identifier.preferred &&
+                !identifier.voided &&
+                identifier.identifierType.uuid === patientIdIdentifierTypeUuid,
+            )?.identifier,
+            patientUuid: patientUuid,
+            patientName: patient?.person?.display,
+            patientAge: patient?.person?.age,
+            patientDob: patient?.person?.birthdate ? formatDate(parseDate(patient.person.birthdate)) : undefined,
+            patientSex: patient?.person?.gender,
+            totalOrders: flattenedLabOrdersForPatient.length,
+            orders: flattenedLabOrdersForPatient,
+            originalOrders: labOrdersForPatient,
+          };
+        })
+        .filter((group) => group.orders.length > 0)
+        // Sort patient groups by the highest priority order they have (lowest rank number first)
+        .sort((a, b) => {
+          const rankA = Math.min(...a.orders.map((o) => getPriorityRank(o.urgency)));
+          const rankB = Math.min(...b.orders.map((o) => getPriorityRank(o.urgency)));
+          return rankA - rankB;
+        });
     } else {
       return [];
     }
-  }, [
-    flattenedLabOrders,
-    parsedLabOrders,
-    patientIdIdentifierTypeUuid,
-    priorityFilter,
-    selectedLabsetUuid,
-    fetchedLabsets,
-  ]);
+  }, [flattenedLabOrders, parsedLabOrders, patientIdIdentifierTypeUuid, priorityFilter, selectedLabsetUuid, fetchedLabsets]);
 
   const searchResults = useMemo(() => {
     if (searchString && searchString.trim() !== '') {

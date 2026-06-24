@@ -200,14 +200,11 @@ describe('AddLabOrder', () => {
     const cd4AddToBasketButton = screen.getByRole('button', { name: /add to basket/i });
     await user.click(cd4AddToBasketButton);
 
-    const defaultPriority = configSchema.priorityConfigs._default[0];
     await waitFor(() => {
       expect(hookResult.current.orders).toEqual([
         {
           ...createEmptyLabOrder(mockTestTypes[0], mockSessionDataResponse.data.currentProvider.uuid),
-          urgency: defaultPriority.conceptUuid,
-          urgencyCode: defaultPriority.urgency,
-          isOrderIncomplete: false,
+          isOrderIncomplete: true,
         },
       ]);
     });

@@ -16,8 +16,8 @@ import type {
   PaginatedResponse,
   RecalcularAnioParams,
   RecalcularAnioResponse,
-  SerieRow,
   SeriesResponse,
+  SerieRow,
 } from '../api/types';
 
 const nowIso = () => new Date().toISOString();

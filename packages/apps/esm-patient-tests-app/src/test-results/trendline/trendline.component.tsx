@@ -236,6 +236,7 @@ const Trendline: React.FC<TrendlineProps> = ({
   /**
    * reorder svg element to bring line in front of the area
    */
+  // biome-ignore lint/correctness/useExhaustiveDependencies: chartData changes cause Carbon Charts to regenerate the SVG nodes this effect reorders.
   useLayoutEffect(() => {
     const graph = document.querySelector('g.cds--cc--area')?.parentElement;
     if (graph && graph.children && graph.children.length > 3) {

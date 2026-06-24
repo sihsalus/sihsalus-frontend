@@ -1,6 +1,5 @@
 import { showSnackbar } from '@openmrs/esm-framework';
 import { fireEvent, render, screen, waitFor } from '@testing-library/react';
-import React from 'react';
 import { updateStudyLinkStatus, useStudiesByPatient } from '../../api';
 import LinkingStudyModal from './link-study-confirmation.modal';
 
@@ -15,7 +14,7 @@ vi.mock('../../api', () => ({
 }));
 
 vi.mock('react-i18next', () => ({
-  useTranslation: () => ({ t: (key: string, fallback: string) => fallback }),
+  useTranslation: () => ({ t: (_key: string, fallback: string) => fallback }),
 }));
 
 describe('LinkingStudyModal', () => {

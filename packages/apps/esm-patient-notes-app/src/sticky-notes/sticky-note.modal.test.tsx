@@ -1,7 +1,6 @@
 import { showSnackbar, useConfig } from '@openmrs/esm-framework';
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import React from 'react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { type ConfigObject } from '../config-schema';
 import StickyNoteModal from './sticky-note.modal';
@@ -65,7 +64,7 @@ describe('StickyNoteModal', () => {
 
   it('creates a new sticky note and shows a success snackbar', async () => {
     const user = userEvent.setup();
-    mockCreateStickyNote.mockResolvedValue({} as any);
+    mockCreateStickyNote.mockResolvedValue({} as Awaited<ReturnType<typeof createStickyNote>>);
 
     render(<StickyNoteModal {...defaultProps} />);
 
@@ -79,7 +78,7 @@ describe('StickyNoteModal', () => {
 
   it('prefills the textarea in edit mode and updates on save', async () => {
     const user = userEvent.setup();
-    mockUpdateStickyNote.mockResolvedValue({} as any);
+    mockUpdateStickyNote.mockResolvedValue({} as Awaited<ReturnType<typeof updateStickyNote>>);
 
     render(<StickyNoteModal {...defaultProps} existingNote={mockStickyNote} />);
 

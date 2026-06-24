@@ -1,4 +1,5 @@
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@carbon/react';
+import { formatDate, parseDate } from '@openmrs/esm-framework';
 import React from 'react';
 import { useTranslation } from 'react-i18next';
 
@@ -7,7 +8,6 @@ import { type ObsRecord } from '../../types';
 interface HistoricalTableProps {
   conceptUuids: string[];
   groupedObservations: Record<string, Array<ObsRecord>>;
-  title: string;
 }
 
 const HistoricalTable: React.FC<HistoricalTableProps> = ({ conceptUuids, groupedObservations }) => {
@@ -18,7 +18,7 @@ const HistoricalTable: React.FC<HistoricalTableProps> = ({ conceptUuids, grouped
       id: obs.id ?? `${uuid}-${obs.effectiveDateTime}`,
       name: obs.name ?? uuid,
       value: obs.value,
-      date: obs.effectiveDateTime ? new Date(obs.effectiveDateTime).toLocaleDateString() : '--',
+      date: obs.effectiveDateTime ? formatDate(parseDate(obs.effectiveDateTime)) : '--',
     })),
   );
 

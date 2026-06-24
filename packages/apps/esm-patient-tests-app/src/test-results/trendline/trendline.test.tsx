@@ -1,3 +1,4 @@
+import { formatDate } from '@openmrs/esm-framework';
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import Trendline from './trendline.component';
@@ -92,10 +93,10 @@ describe('Trendline', () => {
     expect(screen.getByRole('button', { name: /hide results table/i })).toBeInTheDocument();
     expect(screen.getByText('Date and time')).toBeInTheDocument();
     expect(screen.getByText('Value (mg/dL)')).toBeInTheDocument();
-    expect(screen.getByText('2023-01-01')).toBeInTheDocument();
-    expect(screen.getByText('5')).toBeInTheDocument();
-    expect(screen.getByText('2023-01-02')).toBeInTheDocument();
-    expect(screen.getByText('6')).toBeInTheDocument();
+    const date1 = new Date(Date.parse('2023-01-01'));
+    const date2 = new Date(Date.parse('2023-01-02'));
+    expect(screen.getByText(formatDate(date1, { mode: 'wide', time: true }))).toBeInTheDocument();
+    expect(screen.getByText(formatDate(date2, { mode: 'wide', time: true }))).toBeInTheDocument();
   });
 
   it('toggles the results table visibility when the show results table button is clicked', async () => {

@@ -171,3 +171,4 @@ export function useFuasByPatient(patientUuid: string | null | undefined) {
 }
 
 export default useFuaRequests;
+

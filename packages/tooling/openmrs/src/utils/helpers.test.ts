@@ -1,6 +1,46 @@
 import { describe, expect, it } from 'vitest';
 
-import { shouldAllowSelfSignedTls } from './helpers';
+import { getMountedProxyRequestPath, isSpaIndexRequestPath, shouldAllowSelfSignedTls } from './helpers';
+
+describe('isSpaIndexRequestPath', () => {
+  it('matches SPA route requests under the configured spa path', () => {
+    expect(isSpaIndexRequestPath('/openmrs/spa', '/openmrs/spa')).toBe(true);
+    expect(isSpaIndexRequestPath('/openmrs/spa/', '/openmrs/spa')).toBe(true);
+    expect(isSpaIndexRequestPath('/openmrs/spa/home', '/openmrs/spa')).toBe(true);
+    expect(isSpaIndexRequestPath('/openmrs/spa/home/fua-request?dashboard=true', '/openmrs/spa')).toBe(true);
+  });
+
+  it('does not match static assets emitted by Rspack', () => {
+    expect(isSpaIndexRequestPath('/openmrs/spa/a8956bd8417742d8.svg', '/openmrs/spa')).toBe(false);
+    expect(isSpaIndexRequestPath('/openmrs/spa/login.avif', '/openmrs/spa')).toBe(false);
+    expect(isSpaIndexRequestPath('/openmrs/spa/manifest.webmanifest', '/openmrs/spa')).toBe(false);
+    expect(isSpaIndexRequestPath('/openmrs/spa/esm-home-204-59a8e654.js', '/openmrs/spa')).toBe(false);
+  });
+
+  it('does not match paths outside the configured spa path', () => {
+    expect(isSpaIndexRequestPath('/openmrs/ws/rest/v1/session', '/openmrs/spa')).toBe(false);
+  });
+});
+
+describe('getMountedProxyRequestPath', () => {
+  it('restores the mount path stripped by Express before proxying', () => {
+    expect(getMountedProxyRequestPath('/ws/rest/v1/patient?x=1', undefined, '/openmrs')).toBe(
+      '/openmrs/ws/rest/v1/patient?x=1',
+    );
+  });
+
+  it('uses the original URL when Express provides it', () => {
+    expect(getMountedProxyRequestPath('/ws/rest/v1/patient', '/openmrs/ws/rest/v1/patient?x=1', '/openmrs')).toBe(
+      '/openmrs/ws/rest/v1/patient?x=1',
+    );
+  });
+
+  it('does not duplicate an existing mount path', () => {
+    expect(getMountedProxyRequestPath('/openmrs/ws/rest/v1/session', undefined, '/openmrs')).toBe(
+      '/openmrs/ws/rest/v1/session',
+    );
+  });
+});
 
 describe('shouldAllowSelfSignedTls', () => {
   it('allows self-signed TLS by default for internal SIH Salus backends', () => {
@@ -16,5 +56,6 @@ describe('shouldAllowSelfSignedTls', () => {
   it('lets the environment variable override the backend default', () => {
     expect(shouldAllowSelfSignedTls('https://gidis-hsc-qlty.inf.pucp.edu.pe', 'false')).toBe(false);
     expect(shouldAllowSelfSignedTls('https://example.org', 'true')).toBe(true);
+    expect(shouldAllowSelfSignedTls('http://gidis-hsc-qlty.inf.pucp.edu.pe', 'true')).toBe(false);
   });
 });

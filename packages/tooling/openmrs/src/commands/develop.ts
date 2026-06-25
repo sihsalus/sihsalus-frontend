@@ -4,7 +4,9 @@ import { basename, resolve } from 'node:path';
 import express from 'express';
 import { createProxyMiddleware } from 'http-proxy-middleware';
 import {
+  getMountedProxyRequestPath,
   type ImportmapDeclaration,
+  isSpaIndexRequestPath,
   logInfo,
   logWarn,
   type RoutesDeclaration,
@@ -153,13 +155,15 @@ export async function runDevelop(args: DevelopArgs) {
     });
   });
 
-  // Return our custom `index.html` for all requests beginning with spaPath
-  // and not ending in `.js`, `.woff`, `.woff2`, `.json`, or any two- or three-character
-  // extension.
-  const indexHtmlPathMatcher = /\/openmrs\/spa\/(?!.*\.(js|woff2?|json|.{2,3}$)).*$/;
+  const shouldServeSpaIndex = (requestPath: string) => isSpaIndexRequestPath(requestPath, spaPath);
 
   // Route for custom `index.html` goes above static assets
-  app.get(indexHtmlPathMatcher, indexRateLimit, (_, res) => res.contentType('text/html').send(indexContent));
+  app.get([spaPath, `${spaPath}/*`], indexRateLimit, (req, res, next) => {
+    if (!shouldServeSpaIndex(req.originalUrl || req.path)) {
+      return next();
+    }
+    res.contentType('text/html').send(indexContent);
+  });
 
   // Return static assets for any request for which we have one, except importmap.json and index.html
   app.use(spaPath, express.static(source, { index: false }));

@@ -33,7 +33,7 @@ const UpdateProcedureStepStatusModal: React.FC<UpdateProcedureStepStatusProps> =
         isLowContrast: false,
         kind: 'error',
         title: t('errorChangeStepStatus', 'An error occurred while changing the procedure step performed status'),
-        subtitle: err?.message,
+        subtitle: err instanceof Error ? err.message : undefined,
       });
     }
   }, [closeChangeStepStatusModel, stepId, status, t, mutateSteps]);

@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 
 const { spawn, spawnSync } = require('node:child_process');
-const { existsSync, readFileSync, statSync } = require('node:fs');
+const { existsSync, readdirSync, readFileSync, statSync } = require('node:fs');
 const net = require('node:net');
 const { extname, join, resolve } = require('node:path');
 
@@ -45,6 +45,16 @@ const sessionPath = '/openmrs/ws/rest/v1/session';
 const sessionFallbackTimeoutMs = Number(process.env.SIHSALUS_SESSION_FALLBACK_TIMEOUT_MS) || 3000;
 
 function shouldAllowSelfSignedTls(backendUrl) {
+  let parsedBackendUrl;
+  try {
+    parsedBackendUrl = new URL(backendUrl);
+  } catch {
+    return false;
+  }
+  if (parsedBackendUrl.protocol !== 'https:') {
+    return false;
+  }
+
   const configuredValue = process.env.SIHSALUS_ALLOW_SELF_SIGNED_TLS;
   if (configuredValue === 'true') {
     return true;
@@ -53,12 +63,37 @@ function shouldAllowSelfSignedTls(backendUrl) {
     return false;
   }
 
+  return selfSignedTlsDefaultHosts.has(parsedBackendUrl.hostname);
+}
+
+function getHttpUrlValidationError(name, value) {
   try {
-    const parsedBackendUrl = new URL(backendUrl);
-    return parsedBackendUrl.protocol === 'https:' && selfSignedTlsDefaultHosts.has(parsedBackendUrl.hostname);
+    const parsedUrl = new URL(value);
+    if (parsedUrl.protocol !== 'http:' && parsedUrl.protocol !== 'https:') {
+      return `${name} must start with http:// or https://. Current value: ${value}`;
+    }
   } catch {
-    return false;
+    return `${name} must be a valid absolute URL. Current value: ${value}`;
   }
+
+  return null;
+}
+
+function validateUrlConfig() {
+  const errors = [
+    getHttpUrlValidationError('SIHSALUS_BACKEND_URL', backend),
+    getHttpUrlValidationError('SIHSALUS_FHIR_BASE', fhirBase),
+  ].filter(Boolean);
+
+  if (!errors.length) {
+    return;
+  }
+
+  for (const error of errors) {
+    logFail(error);
+  }
+  logFail('Fix the value in your shell or .env before running yarn start.');
+  process.exit(1);
 }
 
 function getBackendSessionUrl() {
@@ -96,6 +131,8 @@ if (requireBackendUrl && backendSource === 'default') {
   logFail('  Set SIHSALUS_BACKEND_URL in the shell or in .env.');
   process.exit(1);
 }
+
+validateUrlConfig();
 
 function rewriteLocalDevSetCookie(setCookie) {
   if (!setCookie) return setCookie;
@@ -169,18 +206,20 @@ function ensureOpenmrsCli() {
   // NOSONAR: this resolver intentionally returns the same CLI path after ensuring it exists.
   const workspaceRoot = resolve(__dirname, '..', '..', '..');
   const rspackConfigEntry = resolve(workspaceRoot, 'node_modules', '@openmrs', 'rspack-config', 'dist', 'index.js');
+  const rspackConfigSource = resolve(workspaceRoot, 'packages', 'tooling', 'rspack-config', 'src');
   const openmrsBin = resolve(workspaceRoot, 'node_modules', 'openmrs', 'dist', 'cli.js');
+  const openmrsSource = resolve(workspaceRoot, 'packages', 'tooling', 'openmrs', 'src');
 
-  if (!existsSync(rspackConfigEntry)) {
-    logWarn('@openmrs/rspack-config not found in dist. Building workspace "@openmrs/rspack-config"...');
+  if (!existsSync(rspackConfigEntry) || hasNewerSourceFile(rspackConfigSource, rspackConfigEntry)) {
+    logWarn('@openmrs/rspack-config dist is missing or stale. Building workspace "@openmrs/rspack-config"...');
     runWorkspaceBuild('@openmrs/rspack-config', workspaceRoot);
   }
 
-  if (existsSync(openmrsBin)) {
+  if (existsSync(openmrsBin) && !hasNewerSourceFile(openmrsSource, openmrsBin)) {
     return openmrsBin;
   }
 
-  logWarn('openmrs CLI not found at node_modules/openmrs/dist/cli.js. Building workspace "openmrs"...');
+  logWarn('openmrs CLI dist is missing or stale. Building workspace "openmrs"...');
   runWorkspaceBuild('openmrs', workspaceRoot);
 
   if (!existsSync(openmrsBin)) {
@@ -189,6 +228,31 @@ function ensureOpenmrsCli() {
   }
 
   return openmrsBin;
+}
+
+function hasNewerSourceFile(sourceDir, builtFile) {
+  if (!existsSync(sourceDir) || !existsSync(builtFile)) {
+    return false;
+  }
+
+  const builtMtime = statSync(builtFile).mtimeMs;
+  const stack = [sourceDir];
+
+  while (stack.length) {
+    const currentDir = stack.pop();
+    for (const entry of readdirSync(currentDir, { withFileTypes: true })) {
+      const entryPath = join(currentDir, entry.name);
+      if (entry.isDirectory()) {
+        stack.push(entryPath);
+        continue;
+      }
+      if ((entry.name.endsWith('.ts') || entry.name.endsWith('.js')) && statSync(entryPath).mtimeMs > builtMtime) {
+        return true;
+      }
+    }
+  }
+
+  return false;
 }
 
 function runWorkspaceBuild(workspaceName, workspaceRoot) {

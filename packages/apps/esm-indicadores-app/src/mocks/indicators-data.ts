@@ -18,6 +18,7 @@ import type {
   RecalcularAnioResponse,
   SeriesResponse,
   SerieRow,
+  SeriesResponse,
 } from '../api/types';
 
 const nowIso = () => new Date().toISOString();

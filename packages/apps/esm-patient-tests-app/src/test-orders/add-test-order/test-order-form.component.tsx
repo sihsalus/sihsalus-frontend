@@ -42,6 +42,14 @@ export interface LabOrderFormProps extends DefaultPatientWorkspaceProps {
   returnToOrderBasketOnClose?: boolean;
 }
 
+const priorityOrder: Record<string, number> = {
+  'e724bdb6-2c75-4b6f-a00c-d43f2c372974': 1, // Emergencia
+  'b96959db-2106-4ce7-b39b-6fcb2ca88cda': 2, // Urgente
+  '427a595a-a5ee-4ba7-bcb7-2503248efb31': 3, // Urgencia menor
+  'bf3a08c6-cbe6-4f00-8e06-5f5437790b85': 4, // Rutina
+  '65cf194e-05a7-4832-ba6d-9b7c9940a7c2': 5, // Programado
+};
+
 // Designs:
 //   https://app.zeplin.io/project/60d5947dd636aebbd63dce4c/screen/640b06c440ee3f7af8747620
 //   https://app.zeplin.io/project/60d5947dd636aebbd63dce4c/screen/640b06d286e0aa7b0316db4a
@@ -59,6 +67,15 @@ export function LabOrderForm({
   const session = useSession();
   const config = useConfig<ConfigObject>();
   const { priorityConfigs } = config;
+
+  const sortedPriorityConfigs = useMemo(() => {
+    if (!priorityConfigs) return [];
+    return [...priorityConfigs].sort((a, b) => {
+      const orderA = priorityOrder[a.conceptUuid] ?? 99;
+      const orderB = priorityOrder[b.conceptUuid] ?? 99;
+      return orderA - orderB;
+    });
+  }, [priorityConfigs]);
   const prepareTestOrderPostData = useCallback(
     (order: TestOrderBasketItem, patientUuid: string, encounterUuid: string | null) =>
       prepTestOrderPostData(order, patientUuid, encounterUuid, config.orders.careSettingUuid),
@@ -274,7 +291,7 @@ export function LabOrderForm({
                     invalidText={fieldState?.error?.message}
                     labelText={t('priority', 'Priority')}
                   >
-                    {priorityConfigs?.map((option) => (
+                    {sortedPriorityConfigs.map((option) => (
                       <SelectItem key={option.conceptUuid} value={option.conceptUuid} text={option.label} />
                     ))}
                   </Select>

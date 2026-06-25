@@ -4,7 +4,7 @@ import { basename, resolve } from 'node:path';
 import express from 'express';
 import { createProxyMiddleware } from 'http-proxy-middleware';
 
-import { logInfo, logWarn, removeTrailingSlash, shouldAllowSelfSignedTls } from '../utils';
+import { isSpaIndexRequestPath, logInfo, logWarn, removeTrailingSlash, shouldAllowSelfSignedTls } from '../utils';
 
 const upstreamSpaUrl = 'https://dev3.openmrs.org/openmrs/spa';
 const backendFetchTimeoutMs = Number(process.env.SIHSALUS_BACKEND_FETCH_TIMEOUT_MS) || 5000;
@@ -231,9 +231,15 @@ export async function runStart(args: StartArgs) {
     res.contentType('application/json').send(routesJson);
   });
 
+  const shouldServeSpaIndex = (requestPath: string) => isSpaIndexRequestPath(requestPath, spaPath);
+
   // Serve rewritten index.html for SPA routes (before static assets)
-  const indexHtmlPathMatcher = /\/openmrs\/spa\/(?!.*\.(js|woff2?|json|css|.{2,3}$)).*$/;
-  expressApp.get(indexHtmlPathMatcher, (_, res) => res.contentType('text/html').send(indexContent));
+  expressApp.get([spaPath, `${spaPath}/*`], (req, res, next) => {
+    if (!shouldServeSpaIndex(req.originalUrl || req.path)) {
+      return next();
+    }
+    res.contentType('text/html').send(indexContent);
+  });
 
   // Serve local module dist directories (auto-discovered from packages/apps/)
   for (const distDir of discovery.distDirs) {

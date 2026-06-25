@@ -1,8 +1,8 @@
 import { act, fireEvent, screen } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
 import { renderWithSwr } from 'test-utils';
+import type { SeriesResponse } from '../api/types';
 import ResultadosPage from './ResultadosPage';
-import type { SerieRow, SeriesResponse } from '../api/types';
 
 vi.mock('../features/indicadores/hooks', async () => ({
   ...(await vi.importActual('../features/indicadores/hooks')),

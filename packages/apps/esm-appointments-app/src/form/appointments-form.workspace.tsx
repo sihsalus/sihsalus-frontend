@@ -970,8 +970,8 @@ const AppointmentsForm: React.FC<
                     >
                       <SelectItem text={t('selectAppointmentStatus', 'Select status')} value="" />
                       {appointmentStatuses?.length > 0 &&
-                        appointmentStatuses.map((appointmentStatus, index) => (
-                          <SelectItem key={index} text={appointmentStatus} value={appointmentStatus}>
+                        appointmentStatuses.map((appointmentStatus) => (
+                          <SelectItem key={appointmentStatus} text={appointmentStatus} value={appointmentStatus}>
                             {appointmentStatus}
                           </SelectItem>
                         ))}

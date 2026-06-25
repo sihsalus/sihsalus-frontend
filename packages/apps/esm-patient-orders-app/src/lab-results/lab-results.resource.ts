@@ -134,7 +134,12 @@ export function useCompletedLabResults(order: Order) {
     isLoading: isLoadingObs,
     error: isErrorObs,
     mutate: mutateObs,
-  } = useObservation(encounter?.obs.find((obs) => obs?.concept?.uuid === order?.concept?.uuid)?.uuid ?? '');
+  } = useObservation(
+    (
+      encounter?.obs.find((obs) => obs?.order?.uuid === order?.uuid) ||
+      encounter?.obs.find((obs) => obs?.concept?.uuid === order?.concept?.uuid)
+    )?.uuid ?? '',
+  );
 
   return {
     isLoading: isLoadingEncounter || isLoadingObs,

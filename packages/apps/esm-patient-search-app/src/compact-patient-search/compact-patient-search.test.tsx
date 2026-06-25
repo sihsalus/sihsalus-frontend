@@ -1,4 +1,4 @@
-import { getDefaultsFromConfigSchema, navigate, useConfig, useSession } from '@openmrs/esm-framework';
+import { getDefaultsFromConfigSchema, navigate, useConfig, useDebounce, useSession } from '@openmrs/esm-framework';
 import { screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { mockSession, renderWithRouter } from 'test-utils';
@@ -8,12 +8,14 @@ import { configSchema, type PatientSearchConfig } from '../config-schema';
 import CompactPatientSearchComponent from './compact-patient-search.component';
 
 const mockUseConfig = vi.mocked(useConfig<PatientSearchConfig>);
+const mockUseDebounce = vi.mocked(useDebounce);
 const mockUseSession = vi.mocked(useSession);
 const mockNavigate = vi.mocked(navigate);
 
 describe('CompactPatientSearchComponent', () => {
   beforeEach(() => {
     mockUseConfig.mockReturnValue(getDefaultsFromConfigSchema(configSchema));
+    mockUseDebounce.mockImplementation((value) => value);
     mockUseSession.mockReturnValue(mockSession.data);
   });
 
@@ -69,5 +71,23 @@ describe('CompactPatientSearchComponent', () => {
     await user.click(searchButton);
 
     expect(mockNavigate).toHaveBeenCalledWith({ to: expect.stringMatching(/.*\/search\?query=John/) });
+  });
+
+  it('navigates using the submitted search term even before the debounced value catches up', async () => {
+    const user = userEvent.setup();
+    mockUseDebounce.mockReturnValue('');
+
+    renderWithRouter(CompactPatientSearchComponent, {
+      isSearchPage: true,
+      initialSearchTerm: '',
+      shouldNavigateToPatientSearchPage: true,
+    });
+
+    const searchbox = screen.getByRole('searchbox');
+
+    await user.type(searchbox, '80526377');
+    await user.keyboard('{Enter}');
+
+    expect(mockNavigate).toHaveBeenCalledWith({ to: expect.stringMatching(/.*\/search\?query=80526377/) });
   });
 });

@@ -1,0 +1,210 @@
+import { openmrsFetch, restBaseUrl } from '@openmrs/esm-framework';
+import { renderHook, waitFor } from '@testing-library/react';
+import React from 'react';
+import { SWRConfig } from 'swr';
+import { getAppointmentStatus, usePatientAppointments } from './patient-appointments.resource';
+
+const mockOpenmrsFetch = vi.mocked(openmrsFetch);
+const mockFetchResponse = (data: Array<unknown>) => ({ data }) as Awaited<ReturnType<typeof openmrsFetch>>;
+
+const wrapper = ({ children }: { children: React.ReactNode }) => (
+  <SWRConfig
+    value={{
+      dedupingInterval: 0,
+      provider: () => new Map(),
+      revalidateOnFocus: false,
+      shouldRetryOnError: false,
+    }}
+  >
+    {children}
+  </SWRConfig>
+);
+
+describe('usePatientAppointments', () => {
+  let abortController: AbortController;
+
+  beforeEach(() => {
+    abortController = new AbortController();
+    mockOpenmrsFetch.mockReset();
+    mockOpenmrsFetch.mockResolvedValue(mockFetchResponse([]));
+  });
+
+  it('fetches separately when both patientUuid and startDate change', async () => {
+    const pastDate = new Date('2020-01-01').getTime();
+    mockOpenmrsFetch
+      .mockResolvedValueOnce(mockFetchResponse([]))
+      .mockResolvedValueOnce(mockFetchResponse([{ status: 'Scheduled', startDateTime: pastDate }]));
+
+    const { rerender, result } = renderHook(
+      ({ patientUuid, startDate }) => usePatientAppointments(patientUuid, startDate, abortController),
+      {
+        wrapper,
+        initialProps: {
+          patientUuid: 'patient-1',
+          startDate: '2026-04-01',
+        },
+      },
+    );
+
+    await waitFor(() => expect(mockOpenmrsFetch).toHaveBeenCalledTimes(1));
+    expect(mockOpenmrsFetch).toHaveBeenNthCalledWith(
+      1,
+      `${restBaseUrl}/appointments/search`,
+      expect.objectContaining({
+        method: 'POST',
+        body: expect.objectContaining({
+          patientUuid: 'patient-1',
+          startDate: '2026-04-01',
+        }),
+      }),
+    );
+    await waitFor(() => expect(result.current.data?.pastAppointments).toHaveLength(0));
+
+    rerender({ patientUuid: 'patient-2', startDate: '2026-04-02' });
+
+    await waitFor(() => expect(mockOpenmrsFetch).toHaveBeenCalledTimes(2));
+    expect(mockOpenmrsFetch).toHaveBeenNthCalledWith(
+      2,
+      `${restBaseUrl}/appointments/search`,
+      expect.objectContaining({
+        method: 'POST',
+        body: expect.objectContaining({
+          patientUuid: 'patient-2',
+          startDate: '2026-04-02',
+        }),
+      }),
+    );
+    // Data must reflect patient-2's response, not patient-1's cached empty data
+    await waitFor(() => expect(result.current.data?.pastAppointments).toHaveLength(1));
+  });
+
+  it('triggers a new fetch and returns fresh data when only patientUuid changes', async () => {
+    // patient-1 returns empty; patient-2 returns one past appointment
+    const pastDate = new Date('2020-01-01').getTime();
+    mockOpenmrsFetch
+      .mockResolvedValueOnce(mockFetchResponse([]))
+      .mockResolvedValueOnce(mockFetchResponse([{ status: 'Scheduled', startDateTime: pastDate }]));
+
+    const { rerender, result } = renderHook(
+      ({ patientUuid, startDate }) => usePatientAppointments(patientUuid, startDate, abortController),
+      {
+        wrapper,
+        initialProps: { patientUuid: 'patient-1', startDate: '2026-04-01' },
+      },
+    );
+
+    await waitFor(() => expect(mockOpenmrsFetch).toHaveBeenCalledTimes(1));
+    // patient-1 has no past appointments
+    await waitFor(() => expect(result.current.data?.pastAppointments).toHaveLength(0));
+
+    // Change only the patient - startDate remains '2026-04-01'
+    rerender({ patientUuid: 'patient-2', startDate: '2026-04-01' });
+
+    await waitFor(() => expect(mockOpenmrsFetch).toHaveBeenCalledTimes(2));
+    expect(mockOpenmrsFetch).toHaveBeenNthCalledWith(
+      2,
+      `${restBaseUrl}/appointments/search`,
+      expect.objectContaining({
+        body: expect.objectContaining({ patientUuid: 'patient-2', startDate: '2026-04-01' }),
+      }),
+    );
+    // Result must reflect patient-2's data, not patient-1's cached empty data
+    await waitFor(() => expect(result.current.data?.pastAppointments).toHaveLength(1));
+  });
+
+  it('triggers a new fetch when only startDate changes', async () => {
+    const pastDate = new Date('2020-01-01').getTime();
+    mockOpenmrsFetch
+      .mockResolvedValueOnce(mockFetchResponse([]))
+      .mockResolvedValueOnce(mockFetchResponse([{ status: 'Scheduled', startDateTime: pastDate }]));
+
+    const { rerender, result } = renderHook(
+      ({ patientUuid, startDate }) => usePatientAppointments(patientUuid, startDate, abortController),
+      {
+        wrapper,
+        initialProps: { patientUuid: 'patient-1', startDate: '2026-04-01' },
+      },
+    );
+
+    await waitFor(() => expect(mockOpenmrsFetch).toHaveBeenCalledTimes(1));
+    expect(mockOpenmrsFetch).toHaveBeenNthCalledWith(
+      1,
+      `${restBaseUrl}/appointments/search`,
+      expect.objectContaining({
+        body: expect.objectContaining({ patientUuid: 'patient-1', startDate: '2026-04-01' }),
+      }),
+    );
+    await waitFor(() => expect(result.current.data?.pastAppointments).toHaveLength(0));
+
+    // Change only the startDate - patientUuid remains 'patient-1'
+    rerender({ patientUuid: 'patient-1', startDate: '2026-04-15' });
+
+    await waitFor(() => expect(mockOpenmrsFetch).toHaveBeenCalledTimes(2));
+    expect(mockOpenmrsFetch).toHaveBeenNthCalledWith(
+      2,
+      `${restBaseUrl}/appointments/search`,
+      expect.objectContaining({
+        body: expect.objectContaining({ patientUuid: 'patient-1', startDate: '2026-04-15' }),
+      }),
+    );
+    // Data must reflect the new date's response, not the first date's cached data
+    await waitFor(() => expect(result.current.data?.pastAppointments).toHaveLength(1));
+  });
+
+  it('places an appointment occurring later today in todaysAppointments only', async () => {
+    const laterToday = new Date().setHours(23, 0, 0, 0);
+    mockOpenmrsFetch.mockResolvedValueOnce(
+      mockFetchResponse([{ uuid: 'later-today', status: 'Scheduled', startDateTime: laterToday }]),
+    );
+
+    const { result } = renderHook(() => usePatientAppointments('patient-1', '2026-04-01', abortController), {
+      wrapper,
+    });
+
+    await waitFor(() => expect(result.current.data?.todaysAppointments).toHaveLength(1));
+    expect(result.current.data?.upcomingAppointments).toHaveLength(0);
+  });
+
+  it('places an appointment on a future day in upcomingAppointments', async () => {
+    const futureDate = new Date(new Date().setDate(new Date().getDate() + 2)).getTime();
+    mockOpenmrsFetch.mockResolvedValueOnce(
+      mockFetchResponse([{ uuid: 'future', status: 'Scheduled', startDateTime: futureDate }]),
+    );
+
+    const { result } = renderHook(() => usePatientAppointments('patient-1', '2026-04-01', abortController), {
+      wrapper,
+    });
+
+    await waitFor(() => expect(result.current.data?.upcomingAppointments).toHaveLength(1));
+    expect(result.current.data?.todaysAppointments).toHaveLength(0);
+  });
+
+  it('does not fetch again when patientUuid and startDate are unchanged (cache hit)', async () => {
+    const { rerender } = renderHook(
+      ({ patientUuid, startDate }) => usePatientAppointments(patientUuid, startDate, abortController),
+      {
+        wrapper,
+        initialProps: { patientUuid: 'patient-1', startDate: '2026-04-01' },
+      },
+    );
+
+    await waitFor(() => expect(mockOpenmrsFetch).toHaveBeenCalledTimes(1));
+
+    // Rerender with identical inputs - SWR key is unchanged, must serve from cache
+    rerender({ patientUuid: 'patient-1', startDate: '2026-04-01' });
+
+    // Flush pending microtasks then assert no second fetch was triggered
+    await waitFor(() => {});
+    expect(mockOpenmrsFetch).toHaveBeenCalledTimes(1);
+  });
+
+  it('gets the current appointment status by uuid', async () => {
+    mockOpenmrsFetch.mockResolvedValueOnce({ data: { status: 'CheckedIn' } } as Awaited<
+      ReturnType<typeof openmrsFetch>
+    >);
+
+    await expect(getAppointmentStatus('appointment-uuid')).resolves.toBe('CheckedIn');
+
+    expect(mockOpenmrsFetch).toHaveBeenCalledWith(`${restBaseUrl}/appointment?uuid=appointment-uuid`);
+  });
+});

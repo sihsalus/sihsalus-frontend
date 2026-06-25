@@ -1,13 +1,12 @@
 import { Button, ContentSwitcher, DataTableSkeleton, InlineLoading, Layer, Switch, Tile } from '@carbon/react';
 import { Add } from '@carbon/react/icons';
-import { launchWorkspace2, useLayoutType, useSession, userHasAccess } from '@openmrs/esm-framework';
+import { launchWorkspace2, useLayoutType, userHasAccess, useSession } from '@openmrs/esm-framework';
 import { CardHeader, EmptyDataIllustration, ErrorState, launchPatientWorkspace } from '@openmrs/esm-patient-common-lib';
 import dayjs from 'dayjs';
 import React, { useContext, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-
-import PatientAppointmentContext, { PatientAppointmentContextTypes } from '../hooks/patientAppointmentContext';
 import { chartAppointmentsEditPrivilege } from '../constants';
+import PatientAppointmentContext, { PatientAppointmentContextTypes } from '../hooks/patientAppointmentContext';
 import { usePatientAppointments } from './patient-appointments.resource';
 import styles from './patient-appointments-base.scss';
 import PatientAppointmentsTable from './patient-appointments-table.component';
@@ -32,7 +31,7 @@ const PatientAppointmentsBase: React.FC<PatientAppointmentsBaseProps> = ({ patie
   const [switchedView, setSwitchedView] = useState(false);
 
   const [contentSwitcherValue, setContentSwitcherValue] = useState(0);
-  const startDate = dayjs(new Date().toISOString()).subtract(6, 'month').toISOString();
+  const [startDate] = useState(() => dayjs(new Date().toISOString()).subtract(6, 'month').toISOString());
   const {
     data: appointmentsData,
     error,

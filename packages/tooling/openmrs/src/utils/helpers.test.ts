@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { isSpaIndexRequestPath, shouldAllowSelfSignedTls } from './helpers';
+import { getMountedProxyRequestPath, isSpaIndexRequestPath, shouldAllowSelfSignedTls } from './helpers';
 
 describe('isSpaIndexRequestPath', () => {
   it('matches SPA route requests under the configured spa path', () => {
@@ -19,6 +19,26 @@ describe('isSpaIndexRequestPath', () => {
 
   it('does not match paths outside the configured spa path', () => {
     expect(isSpaIndexRequestPath('/openmrs/ws/rest/v1/session', '/openmrs/spa')).toBe(false);
+  });
+});
+
+describe('getMountedProxyRequestPath', () => {
+  it('restores the mount path stripped by Express before proxying', () => {
+    expect(getMountedProxyRequestPath('/ws/rest/v1/patient?x=1', undefined, '/openmrs')).toBe(
+      '/openmrs/ws/rest/v1/patient?x=1',
+    );
+  });
+
+  it('uses the original URL when Express provides it', () => {
+    expect(getMountedProxyRequestPath('/ws/rest/v1/patient', '/openmrs/ws/rest/v1/patient?x=1', '/openmrs')).toBe(
+      '/openmrs/ws/rest/v1/patient?x=1',
+    );
+  });
+
+  it('does not duplicate an existing mount path', () => {
+    expect(getMountedProxyRequestPath('/openmrs/ws/rest/v1/session', undefined, '/openmrs')).toBe(
+      '/openmrs/ws/rest/v1/session',
+    );
   });
 });
 

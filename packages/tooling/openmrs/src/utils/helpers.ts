@@ -32,6 +32,23 @@ export function isSpaIndexRequestPath(requestPath: string, spaPath: string): boo
   return !lastSegment.includes('.');
 }
 
+export function getMountedProxyRequestPath(path: string, originalUrl: string | undefined, mountPath: string): string {
+  const normalizedMountPath = removeTrailingSlash(mountPath);
+  const hasMountPath = (value: string) =>
+    value === normalizedMountPath ||
+    value.startsWith(`${normalizedMountPath}/`) ||
+    value.startsWith(`${normalizedMountPath}?`);
+
+  if (originalUrl && hasMountPath(originalUrl)) {
+    return originalUrl;
+  }
+  if (hasMountPath(path)) {
+    return path;
+  }
+
+  return `${normalizedMountPath}${path.startsWith('/') ? path : `/${path}`}`;
+}
+
 export function contentHash(obj: object) {
   return createHash('sha1').update(JSON.stringify(obj)).digest('hex');
 }

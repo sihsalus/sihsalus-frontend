@@ -4,6 +4,7 @@ import { basename, resolve } from 'node:path';
 import express from 'express';
 import { createProxyMiddleware } from 'http-proxy-middleware';
 import {
+  getMountedProxyRequestPath,
   type ImportmapDeclaration,
   isSpaIndexRequestPath,
   logInfo,
@@ -175,9 +176,15 @@ export async function runDevelop(args: DevelopArgs) {
     apiRateLimit,
     createProxyMiddleware({
       pathFilter: (path, req) => {
-        const requestPath = typeof req.originalUrl === 'string' ? req.originalUrl : path;
-        return new RegExp(`${apiUrl}/.*`).test(requestPath) && !shouldServeSpaIndex(requestPath);
+        const requestPath = getMountedProxyRequestPath(
+          path,
+          typeof req.originalUrl === 'string' ? req.originalUrl : undefined,
+          apiUrl,
+        );
+        return !shouldServeSpaIndex(requestPath);
       },
+      pathRewrite: (path, req) =>
+        getMountedProxyRequestPath(path, typeof req.originalUrl === 'string' ? req.originalUrl : undefined, apiUrl),
       target: backend,
       changeOrigin: true,
       secure: !allowSelfSignedTls,

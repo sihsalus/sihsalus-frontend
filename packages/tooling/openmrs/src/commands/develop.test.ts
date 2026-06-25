@@ -1,4 +1,6 @@
+import { spawnSync } from 'node:child_process';
 import { readFileSync } from 'node:fs';
+import { fileURLToPath } from 'node:url';
 import { describe, expect, it, vi } from 'vitest';
 
 import { createInMemoryRateLimit, readRateLimitEnv } from './develop-rate-limit';
@@ -92,5 +94,22 @@ describe('start-dev rate limit defaults', () => {
 
     expect(startDevScript).toContain("max: readRateLimitEnv('SIHSALUS_SPA_RATE_LIMIT_MAX', 0)");
     expect(startDevScript).toContain('if (windowMs <= 0 || max <= 0)');
+  });
+});
+
+describe('start-dev URL validation', () => {
+  it('fails before startup when the backend URL does not use HTTP or HTTPS', () => {
+    const startDevScript = fileURLToPath(new URL('../../../scripts/start-dev.js', import.meta.url));
+    const result = spawnSync(process.execPath, [startDevScript], {
+      encoding: 'utf8',
+      env: {
+        ...process.env,
+        SIHSALUS_BACKEND_URL: 'httpw://gidis-hsc-qtly.inf.pucp.edu.pe',
+        SIHSALUS_FHIR_BASE: 'https://gidis-hsc-qlty.inf.pucp.edu.pe/openmrs/ws/fhir2/R4',
+      },
+    });
+
+    expect(result.status).toBe(1);
+    expect(result.stderr).toContain('SIHSALUS_BACKEND_URL must start with http:// or https://');
   });
 });

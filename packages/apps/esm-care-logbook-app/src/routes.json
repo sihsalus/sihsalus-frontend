@@ -18,14 +18,14 @@
         "slot": "admission-dashboard-slot",
         "title": "admissionReportByUps"
       },
-      "privileges": "app:care-logbook",
+      "privileges": "app:adt",
       "order": 20
     },
     {
       "component": "careLogbookHomeDashboard",
       "name": "care-logbook-home-dashboard",
       "slot": "admission-dashboard-slot",
-      "privileges": "app:care-logbook",
+      "privileges": "app:adt",
       "online": true,
       "offline": false
     },

@@ -1,10 +1,10 @@
 import { OverflowMenuItem } from '@carbon/react';
 import { navigate } from '@openmrs/esm-framework';
 import { RequirePrivilege } from '@sihsalus/esm-rbac';
-import React, { useCallback } from 'react';
+import { useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
 
-import { basePath, careLogbookEditPrivilege, moduleName } from '../constants';
+import { admissionPrivilege, basePath, moduleName } from '../constants';
 
 interface CareLogbookMergePatientsMenuItemProps {
   closeMenu?: () => void;
@@ -18,7 +18,7 @@ export default function CareLogbookMergePatientsMenuItem({ closeMenu }: CareLogb
   );
 
   return (
-    <RequirePrivilege privilege={careLogbookEditPrivilege} hideUnauthorized>
+    <RequirePrivilege privilege={admissionPrivilege} hideUnauthorized>
       <OverflowMenuItem
         itemText={t('mergeDuplicatePatients', 'Fusionar historias duplicadas')}
         onClick={openMergePatients}

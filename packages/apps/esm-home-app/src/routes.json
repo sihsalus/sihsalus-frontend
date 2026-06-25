@@ -16,7 +16,6 @@
       "name": "home-app-menu-item",
       "slot": "app-menu-item-slot",
       "component": "homeAppMenuItem",
-      "privileges": "app:home",
       "order": 0,
       "online": true,
       "offline": true
@@ -32,7 +31,6 @@
       "name": "global-home-nav-link",
       "slot": "global-nav-menu-slot",
       "component": "globalHomeNavLink",
-      "privileges": "app:home",
       "order": -100,
       "online": true,
       "offline": true
@@ -41,7 +39,6 @@
       "name": "home-widget-db-link",
       "slot": "homepage-dashboard-slot",
       "component": "homeWidgetDbLink",
-      "privileges": "app:home",
       "meta": {
         "name": "home",
         "slot": "home-dashboard-slot",

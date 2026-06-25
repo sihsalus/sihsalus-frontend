@@ -1,5 +1,4 @@
-import { ChevronDownIcon, ChevronUpIcon, useStore } from '@openmrs/esm-framework';
-import { RequirePrivilege } from '@sihsalus/esm-rbac';
+import { ChevronDownIcon, ChevronUpIcon, UserHasAccess, useStore } from '@openmrs/esm-framework';
 import React from 'react';
 import { useTranslation } from 'react-i18next';
 
@@ -11,7 +10,7 @@ const GlobalImplementerToolsButton: React.FC = () => {
   const { t } = useTranslation();
 
   return (
-    <RequirePrivilege privilege={['O3 Implementer Tools', 'app:topnav.implementerTools']} hideUnauthorized>
+    <UserHasAccess privilege="O3 Implementer Tools">
       <div className={styles.chevronImplementerToolsButton} data-testid="globalImplementerToolsButton">
         <button
           type="button"
@@ -22,7 +21,7 @@ const GlobalImplementerToolsButton: React.FC = () => {
           {isOpen ? <ChevronDownIcon size={16} /> : <ChevronUpIcon size={16} />}
         </button>
       </div>
-    </RequirePrivilege>
+    </UserHasAccess>
   );
 };
 

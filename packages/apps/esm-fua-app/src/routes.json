@@ -6,13 +6,11 @@
   "pages": [
     {
       "component": "root",
-      "route": "fua-request",
-      "privileges": "app:fua"
+      "route": "fua-request"
     },
     {
       "component": "fuaViewerPage",
-      "route": "fua-viewer",
-      "privileges": "app:fua"
+      "route": "fua-viewer"
     }
   ],
   "extensions": [
@@ -20,13 +18,13 @@
       "name": "fua-dashboard",
       "slot": "fua-dashboard-slot",
       "component": "root",
-      "privileges": "app:fua"
+      "privileges": "Read Fua"
     },
     {
       "name": "fua-dashboard-link",
       "slot": "homepage-dashboard-slot",
       "component": "fuaDashboardLink",
-      "privileges": "app:fua",
+      "privileges": "Read Fua",
       "meta": {
         "name": "fua-request",
         "slot": "fua-dashboard-slot",
@@ -38,7 +36,7 @@
       "name": "all-fua-requests-tile",
       "component": "allFuaRequestsTile",
       "slot": "fua-tiles-slot",
-      "privileges": "app:fua",
+      "privileges": "Read Fua",
       "order": 2,
       "meta": {
         "name": "allFuasRequestsTileSlot",
@@ -49,7 +47,7 @@
       "name": "in-progress-fua-requests-tile",
       "component": "inProgressFuaRequestsTile",
       "slot": "fua-tiles-slot",
-      "privileges": "app:fua",
+      "privileges": "Read Fua",
       "order": 0,
       "meta": {
         "name": "inProgressTileSlot",
@@ -60,7 +58,7 @@
       "name": "completed-fua-requests-tile",
       "component": "completedFuaRequestsTile",
       "slot": "fua-tiles-slot",
-      "privileges": "app:fua",
+      "privileges": "Read Fua",
       "order": 1,
       "meta": {
         "name": "completedTileSlot",
@@ -71,7 +69,7 @@
       "name": "enviado-fua-requests-tile",
       "component": "enviadoFuaRequestsTile",
       "slot": "fua-tiles-slot",
-      "privileges": "app:fua",
+      "privileges": "Read Fua",
       "order": 3,
       "meta": {
         "name": "enviadoTileSlot",
@@ -82,7 +80,7 @@
       "name": "all-fua-requests-panel",
       "component": "allFuaRequestsTable",
       "slot": "fua-panels-slot",
-      "privileges": "app:fua",
+      "privileges": "Read Fua",
       "order": 2,
       "meta": {
         "name": "allFuasPanel",
@@ -93,7 +91,7 @@
       "name": "in-progress-fua-requests-panel",
       "component": "inProgressFuaRequestsTable",
       "slot": "fua-panels-slot",
-      "privileges": "app:fua",
+      "privileges": "Read Fua",
       "order": 0,
       "meta": {
         "name": "inProgressPanel",
@@ -104,7 +102,7 @@
       "name": "completed-fua-requests-panel",
       "component": "completedFuaRequestsTable",
       "slot": "fua-panels-slot",
-      "privileges": "app:fua",
+      "privileges": "Read Fua",
       "order": 1,
       "meta": {
         "name": "completedPanel",
@@ -115,7 +113,7 @@
       "name": "envio-fuas-panel",
       "component": "envioFuasTable",
       "slot": "fua-panels-slot",
-      "privileges": "app:fua",
+      "privileges": "Read Fua",
       "order": 3,
       "meta": {
         "name": "envioFuasPanel",
@@ -127,14 +125,12 @@
     {
       "name": "fua-encounter-workspace",
       "component": "fuaEncounterWorkspace",
-      "window": "patient-chart-fua",
-      "privileges": "app:fua.edit"
+      "window": "patient-chart-fua"
     },
     {
       "name": "fua-viewer-workspace",
       "component": "fuaViewerWorkspace",
-      "window": "patient-chart-fua",
-      "privileges": "app:fua"
+      "window": "patient-chart-fua"
     }
   ],
   "workspaceWindows2": [
@@ -149,18 +145,15 @@
   "modals": [
     {
       "name": "change-fua-status-modal",
-      "component": "changeFuaStatusModal",
-      "privileges": "app:fua.edit"
+      "component": "changeFuaStatusModal"
     },
     {
       "name": "cancel-fua-modal",
-      "component": "cancelFuaModal",
-      "privileges": "app:fua.edit"
+      "component": "cancelFuaModal"
     },
     {
       "name": "fua-historial-modal",
-      "component": "fuaHistorialModal",
-      "privileges": "app:fua"
+      "component": "fuaHistorialModal"
     }
   ]
 }

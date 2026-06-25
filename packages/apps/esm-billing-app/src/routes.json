@@ -7,8 +7,7 @@
   "pages": [
     {
       "component": "billableServicesHome",
-      "route": "billable-services",
-      "privileges": "app:billing"
+      "route": "billable-services"
     }
   ],
   "extensions": [
@@ -88,18 +87,15 @@
   "modals": [
     {
       "name": "add-cash-point-modal",
-      "component": "addCashPointModal",
-      "privileges": "app:billing.edit"
+      "component": "addCashPointModal"
     },
     {
       "name": "payment-mode-form-modal",
-      "component": "paymentModeFormModal",
-      "privileges": "app:billing.edit"
+      "component": "paymentModeFormModal"
     },
     {
       "name": "delete-payment-mode-modal",
-      "component": "deletePaymentModeModal",
-      "privileges": "app:billing.edit"
+      "component": "deletePaymentModeModal"
     },
     {
       "name": "edit-bill-item-modal",
@@ -113,8 +109,7 @@
     },
     {
       "name": "require-billing-modal",
-      "component": "requirePaymentModal",
-      "privileges": "app:billing.edit"
+      "component": "requirePaymentModal"
     },
     {
       "name": "delete-line-item-confirmation-modal",
@@ -132,8 +127,7 @@
     {
       "name": "billable-service-form",
       "component": "billableServiceFormWorkspace",
-      "window": "billable-service-form-window",
-      "privileges": "app:billing.edit"
+      "window": "billable-service-form-window"
     }
   ],
   "workspaceWindows2": [

@@ -725,8 +725,8 @@ const AppointmentsForm: React.FC<
                   >
                     <SelectItem text={t('chooseAppointmentType', 'Choose appointment type')} value="" />
                     {mappedAppointmentTypes?.length > 0 &&
-                      mappedAppointmentTypes.map((appointmentType, index) => (
-                        <SelectItem key={index} text={appointmentType} value={appointmentType}>
+                      mappedAppointmentTypes.map((appointmentType) => (
+                        <SelectItem key={appointmentType} text={appointmentType} value={appointmentType}>
                           {appointmentType}
                         </SelectItem>
                       ))}

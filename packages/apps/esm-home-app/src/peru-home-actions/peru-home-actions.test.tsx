@@ -55,7 +55,7 @@ describe('PeruHomeActions', () => {
       expect.objectContaining({ privilege: 'app:dispensing', hideUnauthorized: true }),
     );
     expect(mockRequirePrivilege).toHaveBeenCalledWith(
-      expect.objectContaining({ privilege: 'app:fua', hideUnauthorized: true }),
+      expect.objectContaining({ privilege: 'Read Fua', hideUnauthorized: true }),
     );
   });
 
@@ -94,7 +94,7 @@ describe('PeruHomeActions', () => {
   });
 
   it('shows patient search and FUA for a FUA user', () => {
-    const fuaPrivileges = new Set(['Get Patients', 'app:fua']);
+    const fuaPrivileges = new Set(['Get Patients', 'Read Fua']);
     mockRequirePrivilege.mockImplementation(({ children, privilege }) => {
       const privileges = Array.isArray(privilege) ? privilege : [privilege];
       return privileges.some((item) => fuaPrivileges.has(item)) ? <>{children}</> : null;

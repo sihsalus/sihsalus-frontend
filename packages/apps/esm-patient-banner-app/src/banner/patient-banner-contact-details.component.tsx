@@ -1,6 +1,5 @@
 import { InlineLoading } from '@carbon/react';
 import {
-  ageAsDuration,
   ConfigurableLink,
   type CoreTranslationKey,
   formatDate,
@@ -9,6 +8,7 @@ import {
   useConfig,
   usePatient,
 } from '@openmrs/esm-framework';
+import { ageAsDuration } from '@openmrs/esm-utils';
 import classNames from 'classnames';
 import React, { useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -167,6 +167,7 @@ const Address: React.FC<{ patientId: string }> = ({ patientId }) => {
   const { patient, isLoading } = usePatient(patientId);
   const address = patient?.address?.find((entry) => entry.use === 'home');
   const getAddressKey = (url: string) => url.split('#')[1];
+  const hiddenAddressExtensionFields = new Set(['address13', 'address14', 'address15']);
   const showLoading = useBoundedLoading(isLoading);
 
   if (showLoading) {
@@ -182,16 +183,18 @@ const Address: React.FC<{ patientId: string }> = ({ patientId }) => {
             .filter(([key]) => key !== 'id' && key !== 'use')
             .map(([key, value]) =>
               key === 'extension' ? (
-                address.extension?.[0]?.extension?.map((addressExtension) => (
-                  <DetailItem
-                    key={`address-${key}-${addressExtension.url}`}
-                    label={getCoreTranslation(
-                      getAddressKey(addressExtension.url) as CoreTranslationKey,
-                      getAddressKey(addressExtension.url) as CoreTranslationKey,
-                    )}
-                    value={addressExtension.valueString}
-                  />
-                ))
+                address.extension?.[0]?.extension
+                  ?.filter((addressExtension) => !hiddenAddressExtensionFields.has(getAddressKey(addressExtension.url)))
+                  .map((addressExtension) => (
+                    <DetailItem
+                      key={`address-${key}-${addressExtension.url}`}
+                      label={getCoreTranslation(
+                        getAddressKey(addressExtension.url) as CoreTranslationKey,
+                        getAddressKey(addressExtension.url) as CoreTranslationKey,
+                      )}
+                      value={addressExtension.valueString}
+                    />
+                  ))
               ) : (
                 <DetailItem
                   key={`address-${key}`}
@@ -413,7 +416,10 @@ const Relationships: React.FC<{ patientId: string }> = ({ patientId }) => {
                   {relationship.display}
                 </ConfigurableLink>
                 <span className={styles.relationshipMeta}>
-                  <RelationshipMetaItem label={t('relationship', 'Relationship')} value={relationship.relationshipType} />
+                  <RelationshipMetaItem
+                    label={t('relationship', 'Relationship')}
+                    value={relationship.relationshipType}
+                  />
                   <RelationshipMetaItem label="DNI" value={relationship.dni} />
                   <RelationshipMetaItem
                     label={t('age', 'Age')}

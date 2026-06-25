@@ -6,7 +6,16 @@ import { mockedAddressOptions, mockedAddressTemplate, mockedOrderedFields } from
 
 import { esmPatientRegistrationSchema, type RegistrationConfig } from '../../../../config-schema';
 import { type Resources, ResourcesContext } from '../../../../offline.resources';
-import { useAddressHierarchy, useOrderedAddressHierarchyLevels } from '../address-hierarchy.resource';
+import {
+  addressUbigeoField,
+  addressUbigeoPathField,
+  addressUbigeoPathSeparator,
+} from '../../../patient-registration-utils';
+import {
+  type AddressHierarchySearchResult,
+  useAddressHierarchy,
+  useOrderedAddressHierarchyLevels,
+} from '../address-hierarchy.resource';
 import AddressSearchComponent from '../address-search.component';
 
 type AddressSearchProps = React.ComponentProps<typeof AddressSearchComponent>;
@@ -57,6 +66,34 @@ async function renderAddressHierarchy(addressTemplate = mockedAddressTemplate, p
 }
 
 const setFieldValue = vi.fn();
+const separator = ' > ';
+
+function buildAddressSearchResult(
+  address: string,
+  userGeneratedId?: string,
+  addressFields: Array<{ name: string }> = allFields,
+): AddressHierarchySearchResult {
+  const values = address.split(separator);
+  const segments = values.map((name, index) => ({
+    addressField: addressFields[index]?.name,
+    name,
+    userGeneratedId: index === values.length - 1 ? userGeneratedId : undefined,
+  }));
+
+  return {
+    display: address,
+    fieldValues: Object.fromEntries(
+      segments
+        .filter((segment) => !!segment.addressField)
+        .map((segment) => [segment.addressField as string, segment.name]),
+    ),
+    searchText: `${address} ${userGeneratedId ?? ''}`.toLowerCase(),
+    segments,
+    userGeneratedId,
+  };
+}
+
+const mockedAddressSearchResults = mockedAddressOptions.map((address) => buildAddressSearchResult(address));
 
 describe('Testing address search bar', () => {
   beforeEach(() => {
@@ -107,7 +144,7 @@ describe('Testing address search bar', () => {
     const user = userEvent.setup();
 
     mockUseAddressHierarchy.mockReturnValue({
-      addresses: mockedAddressOptions,
+      addresses: mockedAddressSearchResults,
       error: null,
       isLoading: false,
     });
@@ -115,29 +152,38 @@ describe('Testing address search bar', () => {
     renderAddressHierarchy();
 
     const searchString = 'nea';
-    const separator = ' > ';
-    const options: Set<string> = new Set();
+    const options = new Map<string, AddressHierarchySearchResult>();
 
-    mockedAddressOptions.forEach((address) => {
-      const values = address.split(separator);
-      values.forEach((val, index) => {
-        if (val.toLowerCase().includes(searchString.toLowerCase())) {
-          options.add(values.slice(0, index + 1).join(separator));
+    mockedAddressSearchResults.forEach((address) => {
+      address.segments.forEach((segment, index) => {
+        if (segment.name.toLowerCase().includes(searchString.toLowerCase())) {
+          const segments = address.segments.slice(0, index + 1);
+          const display = segments.map((currentSegment) => currentSegment.name).join(separator);
+          options.set(display, {
+            display,
+            fieldValues: Object.fromEntries(
+              segments
+                .filter((currentSegment) => !!currentSegment.addressField)
+                .map((currentSegment) => [currentSegment.addressField as string, currentSegment.name]),
+            ),
+            searchText: display.toLowerCase(),
+            segments,
+            userGeneratedId: segments[segments.length - 1]?.userGeneratedId,
+          });
         }
       });
     });
 
-    const addressOptions = [...options];
+    const addressOptions = [...options.values()];
     await user.type(screen.getByRole('searchbox'), searchString);
 
     for (const address of addressOptions) {
-      const optionElement = await screen.findByText(address);
+      const optionElement = await screen.findByText(address.display);
       expect(optionElement).toBeInTheDocument();
       await user.click(optionElement);
-      const values = address.split(separator);
       await waitFor(() => {
-        allFields.forEach(({ name }, index) => {
-          expect(setFieldValue).toHaveBeenCalledWith(`address.${name}`, values?.[index] ?? '', false);
+        allFields.forEach(({ name }) => {
+          expect(setFieldValue).toHaveBeenCalledWith(`address.${name}`, address.fieldValues[name] ?? '', false);
         });
       });
       await user.type(screen.getByRole('searchbox'), searchString);
@@ -153,7 +199,7 @@ describe('Testing address search bar', () => {
     ];
 
     mockUseAddressHierarchy.mockReturnValue({
-      addresses: ['Peru > Huancavelica'],
+      addresses: [buildAddressSearchResult('Peru > Huancavelica', undefined, addressLayout)],
       error: null,
       isLoading: false,
     });
@@ -166,6 +212,31 @@ describe('Testing address search bar', () => {
     await waitFor(() => {
       expect(setFieldValue).toHaveBeenCalledWith('birthAddress.country', 'Peru', false);
       expect(setFieldValue).toHaveBeenCalledWith('birthAddress.address1', '', false);
+    });
+  });
+
+  it('stores the selected UBIGEO code and selected path behind the address fields', async () => {
+    const user = userEvent.setup();
+    const selectedAddress = 'PERU > UCAYALI > ATALAYA > RAYMONDI > AGUAJAL';
+
+    mockUseAddressHierarchy.mockReturnValue({
+      addresses: [buildAddressSearchResult(selectedAddress, '2502010191')],
+      error: null,
+      isLoading: false,
+    });
+
+    renderAddressHierarchy();
+
+    await user.type(screen.getByRole('searchbox'), '2502010191');
+    await user.click(await screen.findByRole('button', { name: `${selectedAddress} (2502010191)` }));
+
+    await waitFor(() => {
+      expect(setFieldValue).toHaveBeenCalledWith(`address.${addressUbigeoField}`, '2502010191', false);
+      expect(setFieldValue).toHaveBeenCalledWith(
+        `address.${addressUbigeoPathField}`,
+        selectedAddress.split(separator).join(addressUbigeoPathSeparator),
+        false,
+      );
     });
   });
 });

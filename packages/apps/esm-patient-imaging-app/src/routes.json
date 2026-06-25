@@ -42,6 +42,21 @@
       "privileges": "app:clinical.chart.imaging.edit"
     },
     {
+      "name": "study-unlink-confirmation-dialog",
+      "component": "studyUnlinkConfirmationDialog",
+      "privileges": "app:clinical.chart.imaging.edit"
+    },
+    {
+      "name": "link-study-confirmation-dialog",
+      "component": "linkStudyConfirmationDialog",
+      "privileges": "app:clinical.chart.imaging.edit"
+    },
+    {
+      "name": "update-procedureStep-status-dialog",
+      "component": "rejectProcedureStepDialog",
+      "privileges": "app:clinical.chart.imaging.edit"
+    },
+    {
       "name": "series-delete-confirmation-dialog",
       "component": "seriesDeleteConfirmationDialog",
       "privileges": "app:clinical.chart.imaging.edit"

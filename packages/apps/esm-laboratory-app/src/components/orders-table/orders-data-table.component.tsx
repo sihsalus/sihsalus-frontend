@@ -21,13 +21,25 @@ import {
   TableToolbarSearch,
   Tile,
 } from '@carbon/react';
-import { ExtensionSlot, formatDate, parseDate, showModal, useConfig, usePagination } from '@openmrs/esm-framework';
+import {
+  ExtensionSlot,
+  formatDate,
+  type OrderUrgency,
+  parseDate,
+  showModal,
+  useConfig,
+  usePagination,
+  openmrsFetch,
+  restBaseUrl,
+} from '@openmrs/esm-framework';
 import React, { useCallback, useMemo, useState } from 'react';
+import useSWR from 'swr';
 import { useTranslation } from 'react-i18next';
 import { type Config } from '../../config-schema';
 import { useLabOrders } from '../../laboratory.resource';
 import { type FlattenedOrder, type FulfillerStatus, type Order } from '../../types';
 import { getFulfillerStatusDisplay } from '../../utils/order-display';
+import { extractPriorityFromInstructions } from '../../utils/priority-parser';
 import ListOrderDetails from './list-order-details.component';
 import styles from './orders-data-table.scss';
 import { OrdersDateRangePicker } from './orders-date-range-picker.component';
@@ -86,11 +98,62 @@ export interface OrdersDataTableProps {
   excludeCanceledAndDiscontinuedOrders?: boolean;
 }
 
+const getPriorityRank = (urgency: string | undefined): number => {
+  if (!urgency) return 6;
+  const norm = urgency.toUpperCase();
+  switch (norm) {
+    case 'E724BDB6-2C75-4B6F-A00C-D43F2C372974': // Emergencia
+      return 1;
+    case 'B96959DB-2106-4CE7-B39B-6FCB2CA88CDA': // Urgente
+    case 'STAT':
+      return 2;
+    case '427A595A-A5EE-4BA7-BCB7-2503248EFB31': // Urgencia menor
+      return 3;
+    case 'BF3A08C6-CBE6-4F00-8E06-5F5437790B85': // Rutina / No urgente
+    case 'ROUTINE':
+      return 4;
+    case '65CF194E-05A7-4832-BA6D-9B7C9940A7C2': // Programado
+    case 'ON_SCHEDULED_DATE':
+      return 5;
+    default:
+      return 6;
+  }
+};
+
 const OrdersDataTable: React.FC<OrdersDataTableProps> = (props) => {
   const { t } = useTranslation();
   const [filter, setFilter] = useState<FulfillerStatus>(null);
+  const [priorityFilter, setPriorityFilter] = useState<string | null>(null);
+  const [selectedLabsetUuid, setSelectedLabsetUuid] = useState<string | null>(null);
   const [searchString, setSearchString] = useState('');
-  const { labTableColumns, patientIdIdentifierTypeUuid } = useConfig<Config>();
+  const { labTableColumns, patientIdIdentifierTypeUuid, resultsViewerConcepts } = useConfig<Config>();
+
+  const fetchLabsets = useCallback((urls: Array<string>) => {
+    return Promise.all(
+      urls.map((url) => openmrsFetch<any>(url).then((res) => res.data)),
+    );
+  }, []);
+
+  const conceptUrls = useMemo(() => {
+    return resultsViewerConcepts?.map(
+      (c) => `${restBaseUrl}/concept/${c.conceptUuid}?v=custom:(uuid,display,setMembers:(uuid,display))`
+    ) || [];
+  }, [resultsViewerConcepts]);
+
+  const { data: fetchedLabsets } = useSWR<
+    Array<{ uuid: string; display: string; setMembers: Array<{ uuid: string; display: string }> }>,
+    Error
+  >(conceptUrls.length ? conceptUrls : null, fetchLabsets);
+
+  const labsetOptions = useMemo(() => {
+    const options = [{ value: null, display: t('all', 'All') }];
+    if (fetchedLabsets) {
+      fetchedLabsets.forEach((set) => {
+        options.push({ value: set.uuid, display: set.display });
+      });
+    }
+    return options;
+  }, [fetchedLabsets, t]);
 
   const { labOrders, isLoading } = useLabOrders({
     status: props.useFilter ? filter : props.fulfillerStatus,
@@ -99,54 +162,137 @@ const OrdersDataTable: React.FC<OrdersDataTableProps> = (props) => {
     includePatientId: labTableColumns.includes('patientId'),
   });
 
-  const flattenedLabOrders: Array<FlattenedOrder> = useMemo(() => {
+  const parsedLabOrders = useMemo(() => {
     return (
       labOrders?.map((order) => {
+        const { urgency, cleanInstructions } = extractPriorityFromInstructions(
+          order.instructions,
+          order.urgency,
+        );
+        return {
+          ...order,
+          urgency,
+          instructions: cleanInstructions,
+        };
+      }) ?? []
+    );
+  }, [labOrders]);
+
+  const flattenedLabOrders: Array<FlattenedOrder> = useMemo(() => {
+    return (
+      parsedLabOrders.map((order) => {
         return {
           id: order.uuid,
           patientUuid: order.patient.uuid,
           orderNumber: order.orderNumber,
           dateActivated: formatDate(parseDate(order.dateActivated)),
           fulfillerStatus: order.fulfillerStatus,
-          urgency: order.urgency,
+          urgency: order.urgency as OrderUrgency,
           orderer: order.orderer?.display,
           instructions: order.instructions,
           fulfillerComment: order.fulfillerComment,
           display: order.display,
+          conceptUuid: order.concept?.uuid,
+          scheduledDate: order.scheduledDate,
         };
-      }) ?? []
+      })
     );
-  }, [labOrders]);
+  }, [parsedLabOrders]);
 
   const groupedOrdersByPatient = useMemo(() => {
-    if (labOrders && labOrders.length > 0) {
-      const patientUuids = [...new Set(labOrders.map((order) => order.patient.uuid))];
+    if (parsedLabOrders && parsedLabOrders.length > 0) {
+      const patientUuids = [...new Set(parsedLabOrders.map((order) => order.patient.uuid))];
 
-      return patientUuids.map((patientUuid) => {
-        const labOrdersForPatient = labOrders.filter((order) => order.patient.uuid === patientUuid);
-        const patient = labOrdersForPatient[0]?.patient;
-        const flattenedLabOrdersForPatient = flattenedLabOrders.filter((order) => order.patientUuid === patientUuid);
-        return {
-          patientId: patient?.identifiers?.find(
-            (identifier) =>
-              identifier.preferred &&
-              !identifier.voided &&
-              identifier.identifierType.uuid === patientIdIdentifierTypeUuid,
-          )?.identifier,
-          patientUuid: patientUuid,
-          patientName: patient?.person?.display,
-          patientAge: patient?.person?.age,
-          patientDob: patient?.person?.birthdate ? formatDate(parseDate(patient.person.birthdate)) : undefined,
-          patientSex: patient?.person?.gender,
-          totalOrders: flattenedLabOrdersForPatient.length,
-          orders: flattenedLabOrdersForPatient,
-          originalOrders: labOrdersForPatient,
-        };
-      });
+      return patientUuids
+        .map((patientUuid) => {
+          let labOrdersForPatient = parsedLabOrders.filter((order) => order.patient.uuid === patientUuid);
+          let flattenedLabOrdersForPatient = flattenedLabOrders.filter((order) => order.patientUuid === patientUuid);
+
+          // Apply labset filter to individual orders if set
+          if (selectedLabsetUuid && fetchedLabsets) {
+            const currentLabset = fetchedLabsets.find((set) => set.uuid === selectedLabsetUuid);
+            const memberUuids = currentLabset?.setMembers?.map((m) => m.uuid) || [];
+
+            labOrdersForPatient = labOrdersForPatient.filter(
+              (order) => order.concept?.uuid === selectedLabsetUuid || memberUuids.includes(order.concept?.uuid),
+            );
+            flattenedLabOrdersForPatient = flattenedLabOrdersForPatient.filter(
+              (order) => order.conceptUuid === selectedLabsetUuid || memberUuids.includes(order.conceptUuid),
+            );
+          }
+
+          // Apply priority filter to individual orders if set
+          if (priorityFilter) {
+            const filterNorm = priorityFilter.toUpperCase();
+            labOrdersForPatient = labOrdersForPatient.filter(
+              (order) => {
+                const normUrgency = order.urgency?.toUpperCase();
+                return (
+                  normUrgency === filterNorm ||
+                  (filterNorm === 'B96959DB-2106-4CE7-B39B-6FCB2CA88CDA' && normUrgency === 'STAT') ||
+                  (filterNorm === 'BF3A08C6-CBE6-4F00-8E06-5F5437790B85' && normUrgency === 'ROUTINE') ||
+                  (filterNorm === '65CF194E-05A7-4832-BA6D-9B7C9940A7C2' && normUrgency === 'ON_SCHEDULED_DATE')
+                );
+              }
+            );
+            flattenedLabOrdersForPatient = flattenedLabOrdersForPatient.filter(
+              (order) => {
+                const normUrgency = order.urgency?.toUpperCase();
+                return (
+                  normUrgency === filterNorm ||
+                  (filterNorm === 'B96959DB-2106-4CE7-B39B-6FCB2CA88CDA' && normUrgency === 'STAT') ||
+                  (filterNorm === 'BF3A08C6-CBE6-4F00-8E06-5F5437790B85' && normUrgency === 'ROUTINE') ||
+                  (filterNorm === '65CF194E-05A7-4832-BA6D-9B7C9940A7C2' && normUrgency === 'ON_SCHEDULED_DATE')
+                );
+              }
+            );
+          }
+
+          // Sort individual orders by priority (highest priority first)
+          // For orders with the same priority, if they are "Programado" (rank 5), sort by scheduledDate ascending (closest to furthest).
+          const sortOrders = (a: any, b: any) => {
+            const rankA = getPriorityRank(a.urgency);
+            const rankB = getPriorityRank(b.urgency);
+            if (rankA === rankB && rankA === 5) {
+              const timeA = a.scheduledDate ? new Date(a.scheduledDate).getTime() : Number.MAX_VALUE;
+              const timeB = b.scheduledDate ? new Date(b.scheduledDate).getTime() : Number.MAX_VALUE;
+              return timeA - timeB;
+            }
+            return rankA - rankB;
+          };
+
+          flattenedLabOrdersForPatient.sort(sortOrders);
+          labOrdersForPatient.sort(sortOrders);
+
+          const patient = labOrdersForPatient[0]?.patient;
+          return {
+            patientId: patient?.identifiers?.find(
+              (identifier) =>
+                identifier.preferred &&
+                !identifier.voided &&
+                identifier.identifierType.uuid === patientIdIdentifierTypeUuid,
+            )?.identifier,
+            patientUuid: patientUuid,
+            patientName: patient?.person?.display,
+            patientAge: patient?.person?.age,
+            patientDob: patient?.person?.birthdate ? formatDate(parseDate(patient.person.birthdate)) : undefined,
+            patientSex: patient?.person?.gender,
+            totalOrders: flattenedLabOrdersForPatient.length,
+            orders: flattenedLabOrdersForPatient,
+            originalOrders: labOrdersForPatient,
+          };
+        })
+        .filter((group) => group.orders.length > 0)
+        // Sort patient groups by the highest priority order they have (lowest rank number first)
+        .sort((a, b) => {
+          const rankA = Math.min(...a.orders.map((o) => getPriorityRank(o.urgency)));
+          const rankB = Math.min(...b.orders.map((o) => getPriorityRank(o.urgency)));
+          return rankA - rankB;
+        });
     } else {
       return [];
     }
-  }, [flattenedLabOrders, labOrders, patientIdIdentifierTypeUuid]);
+  }, [flattenedLabOrders, parsedLabOrders, patientIdIdentifierTypeUuid, priorityFilter, selectedLabsetUuid, fetchedLabsets]);
 
   const searchResults = useMemo(() => {
     if (searchString && searchString.trim() !== '') {
@@ -171,6 +317,15 @@ const OrdersDataTable: React.FC<OrdersDataTableProps> = (props) => {
     { value: 'EXCEPTION', display: getFulfillerStatusDisplay('EXCEPTION', t) },
     { value: 'ON_HOLD', display: getFulfillerStatusDisplay('ON_HOLD', t) },
     { value: 'DECLINED', display: getFulfillerStatusDisplay('DECLINED', t) },
+  ];
+
+  const priorityOptions = [
+    { value: null, display: t('all', 'All') },
+    { value: 'e724bdb6-2c75-4b6f-a00c-d43f2c372974', display: t('emergency', 'Emergencia') },
+    { value: 'b96959db-2106-4ce7-b39b-6fcb2ca88cda', display: t('urgent', 'Urgente') },
+    { value: '427a595a-a5ee-4ba7-bcb7-2503248efb31', display: t('minorUrgency', 'Urgencia menor') },
+    { value: 'bf3a08c6-cbe6-4f00-8e06-5f5437790b85', display: t('routine', 'Rutina') },
+    { value: '65cf194e-05a7-4832-ba6d-9b7c9940a7c2', display: t('scheduled', 'Programado') },
   ];
 
   const columns = useMemo(() => {
@@ -272,6 +427,30 @@ const OrdersDataTable: React.FC<OrdersDataTableProps> = (props) => {
                     type="inline"
                   />
                 )}
+                <Dropdown
+                  id="orderPriorityFilter"
+                  initialSelectedItem={
+                    priorityFilter ? priorityOptions.find((p) => p.value === priorityFilter) : priorityOptions[0]
+                  }
+                  items={priorityOptions}
+                  itemToString={(item) => item?.display}
+                  label=""
+                  onChange={({ selectedItem }) => setPriorityFilter(selectedItem?.value)}
+                  titleText={t('filterOrdersByPriority', 'Filter orders by priority') + ':'}
+                  type="inline"
+                />
+                <Dropdown
+                  id="orderLabsetFilter"
+                  initialSelectedItem={
+                    selectedLabsetUuid ? labsetOptions.find((l) => l.value === selectedLabsetUuid) : labsetOptions[0]
+                  }
+                  items={labsetOptions}
+                  itemToString={(item) => item?.display}
+                  label=""
+                  onChange={({ selectedItem }) => setSelectedLabsetUuid(selectedItem?.value)}
+                  titleText={t('filterOrdersByLabset', 'Filter by lab set') + ':'}
+                  type="inline"
+                />
                 <OrdersDateRangePicker />
               </Layer>
               <Layer className={styles.toolbarItem}>

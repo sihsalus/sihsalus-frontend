@@ -1,12 +1,7 @@
-import { useConfig } from '@openmrs/esm-framework';
-import { EmptyState, ErrorState } from '@openmrs/esm-patient-common-lib';
-import React from 'react';
-import { useTranslation } from 'react-i18next';
+import React, { useContext } from 'react';
 
-import { type ConfigObject } from '../../config-schema';
 import { type viewOpts } from '../../types';
-import { FilterProvider } from '../filter/filter-context';
-import { useGetManyObstreeData } from '../grouped-timeline';
+import { FilterContext } from '../filter/filter-context';
 
 import TreeView from './tree-view.component';
 
@@ -20,27 +15,9 @@ interface TreeViewWrapperProps {
 }
 
 const TreeViewWrapper: React.FC<TreeViewWrapperProps> = (props) => {
-  const { t } = useTranslation();
-  const config = useConfig<ConfigObject>();
-  const conceptUuids = config?.resultsViewerConcepts?.map((c) => c.conceptUuid) ?? [];
-  const { roots, isLoading, error } = useGetManyObstreeData(conceptUuids);
+  const { isLoading } = useContext(FilterContext);
 
-  if (error) return <ErrorState error={error} headerTitle={t('dataLoadError', 'Data load error')} />;
-
-  if (roots?.length) {
-    return (
-      <FilterProvider roots={!isLoading ? roots : []}>
-        <TreeView {...props} isLoading={isLoading} />
-      </FilterProvider>
-    );
-  }
-
-  return (
-    <EmptyState
-      headerTitle={t('testResults_title', 'Test Results')}
-      displayText={t('testResultsData', 'Test results data')}
-    />
-  );
+  return <TreeView {...props} isLoading={isLoading} />;
 };
 
 export default TreeViewWrapper;

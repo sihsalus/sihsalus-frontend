@@ -122,7 +122,7 @@ const FilterProvider = ({ roots, isLoading = false, children }: FilterProviderPr
 
     flattenedObs.forEach((curr: MappedObservation) => {
       const flatNameParts = curr.flatName.split('-');
-      const groupKey = flatNameParts.length > 1 ? flatNameParts[1].trim() : flatNameParts[0].trim();
+      const groupKey = flatNameParts[0].trim();
       const dateKey = new Date(curr.obsDatetime).toISOString().split('T')[0];
 
       const compositeKey = `${groupKey}__${dateKey}`;

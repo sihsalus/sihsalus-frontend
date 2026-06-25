@@ -90,6 +90,13 @@ export function prepTestOrderPostData(
   encounterUuid: string | null,
   configuredCareSettingUuid: string,
 ): TestOrderPost {
+  let instructions = order.instructions || '';
+  // Remove any existing priorityUuid markup from instructions if it's there
+  instructions = instructions.replace(/\s*\|\|priorityUuid:[a-fA-F0-9-]+\|\|/g, '').trim();
+  if (order.urgency) {
+    instructions = `${instructions} ||priorityUuid:${order.urgency}||`.trim();
+  }
+
   if (order.action === 'NEW' || order.action === 'RENEW') {
     return {
       action: 'NEW',
@@ -99,7 +106,7 @@ export function prepTestOrderPostData(
       orderer: order.orderer,
       encounter: encounterUuid,
       concept: order.testType.conceptUuid,
-      instructions: order.instructions,
+      instructions: instructions,
       orderReason: order.orderReason,
       accessionNumber: order.accessionNumber,
       urgency: order.urgencyCode ?? order.urgency,
@@ -114,7 +121,7 @@ export function prepTestOrderPostData(
       orderer: order.orderer,
       encounter: encounterUuid,
       concept: order.testType.conceptUuid,
-      instructions: order.instructions,
+      instructions: instructions,
       orderReason: order.orderReason,
       previousOrder: order.previousOrder,
       accessionNumber: order.accessionNumber,

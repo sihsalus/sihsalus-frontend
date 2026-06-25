@@ -41,6 +41,7 @@
     "access": "public"
   },
   "dependencies": {
+    "@openmrs/esm-utils": "workspace:*",
     "@sihsalus/esm-rbac": "workspace:*",
     "swr": "^2.3.6"
   },

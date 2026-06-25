@@ -34,14 +34,16 @@ La persistencia sigue separada:
 
 - La residencia se guarda en `person.addresses` como dirección preferida (`preferred: true`) usando la plantilla de dirección activa del backend.
 - El lugar de nacimiento se guarda como una segunda dirección no preferida (`preferred: false`) dentro de `person.addresses`.
+- Cuando el usuario selecciona una entrada del Address Hierarchy, el `userGeneratedId` del último nivel seleccionado se guarda por detrás como UBIGEO en `address14`. El path validado seleccionado se guarda en `address13` con separador técnico `|` (`PERU|UCAYALI|ATALAYA|RAYMONDI|AGUAJAL`) para detectar cambios manuales sin depender del texto visible. Estos campos no deben agregarse al template visible de dirección en `sihsalus-content`.
 - La dirección de nacimiento se identifica con la marca interna `address15 = SIHSALUS_BIRTH_ADDRESS`. `address15` no debe agregarse al template visible de dirección en `sihsalus-content`; se usa solo para distinguir el tipo de dirección al hidratar edición/FHIR.
-- No hay fallback textual de `Lugar de Nacimiento`. Ese `PersonAttributeType` debe estar retirado en `sihsalus-content`; si se necesita un código administrativo, usar un atributo separado como `UBIGEO de Nacimiento`.
+- No hay fallback textual de `Lugar de Nacimiento`. Ese `PersonAttributeType` debe estar retirado en `sihsalus-content`.
 - El teléfono/celular se guarda como atributo de persona `14d4f066-15f5-102d-96e4-000c29c2a5d7` y también se mapea a `telecom` en el modelo FHIR/offline.
 
 Validaciones locales:
 
 - El teléfono es opcional, pero si se ingresa debe tener formato telefónico. Se bloquean letras y notación científica como `e100`.
 - El lugar de nacimiento estructurado es opcional y reutiliza la jerarquía de direcciones del backend. No aplica defaults automáticos de residencia para evitar guardar un nacimiento falso cuando el usuario no completa la subsección.
+- La búsqueda rápida de dirección permite buscar por texto y por UBIGEO. Para códigos UBIGEO usa `userGeneratedIdForParent` del módulo Address Hierarchy y soporta códigos puros (`2502010191`) o tokens de importación (`AGUAJAL%2502010191`).
 - Las validaciones se aplican en el input y en el schema global de submit para cubrir flujo online, offline y tests.
 
 Validación contra backend:

@@ -53,25 +53,42 @@ describe('address hierarchy quick search', () => {
           {
             uuid: 'region-uuid',
             name: 'HUANCAVELICA',
+            userGeneratedId: '09',
             parent: {
               uuid: 'country-uuid',
               name: 'PERU',
+              userGeneratedId: '00',
             },
           },
           {
             uuid: 'region-uuid',
             name: 'HUANCAVELICA',
+            userGeneratedId: '09',
             parent: {
               uuid: 'country-uuid',
               name: 'PERU',
+              userGeneratedId: '00',
             },
           },
         ],
       });
 
-    await expect(fetchAddressHierarchyQuickSearch('PER', ' > ', ['country', 'address1'])).resolves.toEqual([
-      'PERU',
-      'PERU > HUANCAVELICA',
+    await expect(fetchAddressHierarchyQuickSearch('PER', ' > ', ['country', 'address1'])).resolves.toMatchObject([
+      {
+        display: 'PERU',
+        fieldValues: {
+          country: 'PERU',
+        },
+        userGeneratedId: undefined,
+      },
+      {
+        display: 'PERU > HUANCAVELICA',
+        fieldValues: {
+          country: 'PERU',
+          address1: 'HUANCAVELICA',
+        },
+        userGeneratedId: '09',
+      },
     ]);
 
     expect(mockOpenmrsFetch).toHaveBeenNthCalledWith(
@@ -81,6 +98,106 @@ describe('address hierarchy quick search', () => {
     expect(mockOpenmrsFetch).toHaveBeenNthCalledWith(
       2,
       '/module/addresshierarchy/ajax/getPossibleAddressHierarchyEntriesWithParents.form?addressField=address1&limit=20&searchString=PER&parentUuid=',
+    );
+  });
+
+  it('searches by UBIGEO code using the parent generated id and stores the matching code in the result', async () => {
+    mockOpenmrsFetch
+      .mockResolvedValueOnce({
+        data: [],
+      })
+      .mockResolvedValueOnce({
+        data: [],
+      })
+      .mockResolvedValueOnce({
+        data: [],
+      })
+      .mockResolvedValueOnce({
+        data: [],
+      })
+      .mockResolvedValueOnce({
+        data: [],
+      })
+      .mockResolvedValueOnce({
+        data: [
+          {
+            uuid: 'wrong-center-uuid',
+            name: '9 HERMANOS',
+            userGeneratedId: '2502010190',
+            parent: {
+              uuid: 'district-uuid',
+              name: 'RAYMONDI',
+              userGeneratedId: '250201',
+              parent: {
+                uuid: 'province-uuid',
+                name: 'ATALAYA',
+                userGeneratedId: '2502',
+                parent: {
+                  uuid: 'region-uuid',
+                  name: 'UCAYALI',
+                  userGeneratedId: '25',
+                  parent: {
+                    uuid: 'country-uuid',
+                    name: 'PERU',
+                    userGeneratedId: '00',
+                  },
+                },
+              },
+            },
+          },
+          {
+            uuid: 'center-uuid',
+            name: 'AGUAJAL',
+            userGeneratedId: '2502010191',
+            parent: {
+              uuid: 'district-uuid',
+              name: 'RAYMONDI',
+              userGeneratedId: '250201',
+              parent: {
+                uuid: 'province-uuid',
+                name: 'ATALAYA',
+                userGeneratedId: '2502',
+                parent: {
+                  uuid: 'region-uuid',
+                  name: 'UCAYALI',
+                  userGeneratedId: '25',
+                  parent: {
+                    uuid: 'country-uuid',
+                    name: 'PERU',
+                    userGeneratedId: '00',
+                  },
+                },
+              },
+            },
+          },
+        ],
+      });
+
+    await expect(
+      fetchAddressHierarchyQuickSearch('AGUAJAL%2502010191', ' > ', [
+        'country',
+        'address1',
+        'stateProvince',
+        'countyDistrict',
+        'cityVillage',
+      ]),
+    ).resolves.toMatchObject([
+      {
+        display: 'PERU > UCAYALI > ATALAYA > RAYMONDI > AGUAJAL',
+        fieldValues: {
+          country: 'PERU',
+          address1: 'UCAYALI',
+          stateProvince: 'ATALAYA',
+          countyDistrict: 'RAYMONDI',
+          cityVillage: 'AGUAJAL',
+        },
+        userGeneratedId: '2502010191',
+      },
+    ]);
+
+    expect(mockOpenmrsFetch).toHaveBeenNthCalledWith(
+      6,
+      '/module/addresshierarchy/ajax/getPossibleAddressHierarchyEntriesWithParents.form?addressField=cityVillage&limit=1000&searchString=%25&parentUuid=&userGeneratedIdForParent=250201',
     );
   });
 

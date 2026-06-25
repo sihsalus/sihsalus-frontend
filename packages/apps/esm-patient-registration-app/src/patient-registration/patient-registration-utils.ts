@@ -13,6 +13,9 @@ import {
 } from './patient-registration.types';
 
 const familyName2ExtensionUrl = 'http://openmrs.org/fhir/StructureDefinition/patient-family-name2';
+export const addressUbigeoField: AddressProperties = 'address14';
+export const addressUbigeoPathField: AddressProperties = 'address13';
+export const addressUbigeoPathSeparator = '|';
 export const birthAddressMarkerField: AddressProperties = 'address15';
 export const birthAddressMarker = 'SIHSALUS_BIRTH_ADDRESS';
 
@@ -106,9 +109,9 @@ function findElementValueInXmlDoc(fieldName: string, elementSelector: string, do
 }
 
 export function scrollIntoView(viewId: string) {
-  document.getElementById(viewId).scrollIntoView({
+  document.getElementById(viewId)?.scrollIntoView({
     behavior: 'smooth',
-    block: 'center',
+    block: 'start',
     inline: 'center',
   });
 }
@@ -262,7 +265,7 @@ type IdentifierMap = { [identifierFieldName: string]: PatientIdentifierValue };
 export const filterOutUndefinedPatientIdentifiers = (patientIdentifiers: IdentifierMap): IdentifierMap =>
   Object.fromEntries(
     Object.entries(patientIdentifiers).filter(
-      ([key, value]) =>
+      ([_key, value]) =>
         (value.autoGeneration && value.selectedSource.autoGenerationOption.manualEntryEnabled) ||
         value.identifierValue !== undefined,
     ),

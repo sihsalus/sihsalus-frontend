@@ -6,6 +6,11 @@ import { moduleName } from '../../../constants';
 import { ResourcesContext } from '../../../offline.resources';
 import { Input } from '../../input/basic-input/input/input.component';
 import { PatientRegistrationContext } from '../../patient-registration-context';
+import {
+  addressUbigeoField,
+  addressUbigeoPathField,
+  addressUbigeoPathSeparator,
+} from '../../patient-registration-utils';
 import styles from '../field.scss';
 import { useOrderedAddressHierarchyLevels } from './address-hierarchy.resource';
 import AddressHierarchyLevels from './address-hierarchy-levels.component';
@@ -15,6 +20,17 @@ import { type AddressFieldDefinition } from './address-types';
 const peruAddressDefaults = {
   country: 'Perú',
 };
+
+function getStoredUbigeoPathSegments(storedUbigeoPath: string) {
+  const path = storedUbigeoPath.includes(addressUbigeoPathSeparator)
+    ? storedUbigeoPath
+    : storedUbigeoPath.replaceAll('&gt;', '>').replaceAll(' > ', addressUbigeoPathSeparator);
+
+  return path
+    .split(addressUbigeoPathSeparator)
+    .map((segment) => segment.trim())
+    .filter(Boolean);
+}
 
 interface AddressComponentProps {
   applyDefaults?: boolean;
@@ -128,6 +144,31 @@ export const AddressComponent: React.FC<AddressComponentProps> = ({
         (orderMap[existingField2.name] ?? Number.MAX_SAFE_INTEGER),
     );
   }, [isLoadingFieldOrder, errorFetchingFieldOrder, orderedFields, addressFields]);
+
+  useEffect(() => {
+    const storedUbigeo = addressValues[addressUbigeoField];
+    const storedUbigeoPath = addressValues[addressUbigeoPathField];
+
+    if (!storedUbigeo && !storedUbigeoPath) {
+      return;
+    }
+
+    if (!storedUbigeoPath || !orderedAddressFields.length) {
+      return;
+    }
+
+    const storedPathSegments = getStoredUbigeoPathSegments(storedUbigeoPath);
+    const currentPath = orderedAddressFields
+      .slice(0, storedPathSegments.length)
+      .map((field) => addressValues[field.name])
+      .filter(Boolean)
+      .join(addressUbigeoPathSeparator);
+
+    if (currentPath !== storedPathSegments.join(addressUbigeoPathSeparator)) {
+      setFieldValue(`${fieldPrefix}.${addressUbigeoField}`, '', false);
+      setFieldValue(`${fieldPrefix}.${addressUbigeoPathField}`, '', false);
+    }
+  }, [addressValues, fieldPrefix, orderedAddressFields, setFieldValue]);
 
   if (isAddressTemplateLoading) {
     return (

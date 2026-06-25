@@ -56,7 +56,7 @@ function renderAttributes(attributes: PersonAttribute[] = []) {
     .filter((a) => a.attributeType?.display)
     .map((attr, i) => ({
       key: i,
-      label: attr.attributeType!.display!,
+      label: attr.attributeType?.display ?? '',
       value: getAttributeValue(attr.value),
     }));
 }

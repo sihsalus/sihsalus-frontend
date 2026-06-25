@@ -30,7 +30,11 @@ describe('fetchPrestacionalConceptsByName', () => {
               },
             ],
           },
-          { uuid: 'other-set', display: 'Otro catalogo', setMembers: [{ uuid: 'other-001', display: 'Consulta extra' }] },
+          {
+            uuid: 'other-set',
+            display: 'Otro catalogo',
+            setMembers: [{ uuid: 'other-001', display: 'Consulta extra' }],
+          },
         ],
       },
     } as Awaited<ReturnType<typeof openmrsFetch>>);

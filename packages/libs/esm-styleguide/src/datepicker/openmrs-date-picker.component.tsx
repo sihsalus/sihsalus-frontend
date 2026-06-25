@@ -1,4 +1,4 @@
-import { type CalendarDate, type DateValue } from '@internationalized/date';
+import { type DateValue } from '@internationalized/date';
 import classNames from 'classnames';
 import React, { forwardRef, useId, useMemo } from 'react';
 import { Button, DatePicker, type DatePickerProps, FieldError, Group, Label, Provider } from 'react-aria-components';
@@ -96,14 +96,7 @@ export const OpenmrsDatePicker = /*#__PURE__*/ forwardRef<HTMLDivElement, Openmr
         );
       }
       return (
-        onChangeRaw ??
-        ((value: DateValue | null) => {
-          if (value) {
-            rawOnChange?.(internationalizedDateToDate(value as CalendarDate));
-          } else {
-            rawOnChange?.(null);
-          }
-        })
+        onChangeRaw ?? ((value: DateValue | null) => rawOnChange?.(value ? internationalizedDateToDate(value) : null))
       );
     }, [onChangeRaw, rawOnChange]);
 
@@ -124,7 +117,7 @@ export const OpenmrsDatePicker = /*#__PURE__*/ forwardRef<HTMLDivElement, Openmr
               value={value}
               shouldForceLeadingZeros={intlLocale.language === 'en' ? true : undefined}
               {...datePickerProps}
-              onChange={onChange as DatePickerProps<DateValue>['onChange']}
+              onChange={onChange}
             >
               <div className="cds--date-picker-container">
                 {hasVisibleLabel && (

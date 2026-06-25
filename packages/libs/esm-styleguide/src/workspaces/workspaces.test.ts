@@ -685,6 +685,7 @@ describe('workspace system', () => {
 
       expect(workspaceStore.getState().openWorkspaces.length).toBe(1);
 
+      const _transferPatientWorkspace = workspaceStore.getState().openWorkspaces[0];
       expect(workspaceGroupStore?.getState()?.['foo']).toBe(true);
       expect(workspaceGroupStore?.getState()?.['bar']).toBe(false);
     });

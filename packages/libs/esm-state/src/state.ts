@@ -11,23 +11,13 @@ interface StoreEntity {
   active: boolean;
 }
 
-const availableStoresKey = Symbol.for('openmrs.esm-state.availableStores');
-const globalScope = globalThis as typeof globalThis & {
-  [availableStoresKey]?: Record<string, StoreEntity>;
-};
-let availableStores: Record<string, StoreEntity>;
-if (globalScope[availableStoresKey]) {
-  availableStores = globalScope[availableStoresKey];
-} else {
-  availableStores = {};
-  globalScope[availableStoresKey] = availableStores;
-}
+const availableStores: Record<string, StoreEntity> = {};
 
 // spaEnv isn't available immediately. Wait a bit before making stores available
 // on window in development mode.
 globalThis.setTimeout?.(() => {
   if (typeof window !== 'undefined' && window.spaEnv === 'development') {
-    (window as unknown as { stores: typeof availableStores }).stores = availableStores;
+    window['stores'] = availableStores;
   }
 }, 1000);
 
@@ -144,7 +134,7 @@ type SubscribeToArgs<T, U> = [StoreApi<T>, (state: T) => void] | [StoreApi<T>, (
  * @returns An unsubscribe function to stop listening for changes.
  *
  */
-export function subscribeTo<T, _U = T>(store: StoreApi<T>, handle: (state: T) => void): () => void;
+export function subscribeTo<T, U = T>(store: StoreApi<T>, handle: (state: T) => void): () => void;
 export function subscribeTo<T, U>(
   store: StoreApi<T>,
   select: (state: T) => U,

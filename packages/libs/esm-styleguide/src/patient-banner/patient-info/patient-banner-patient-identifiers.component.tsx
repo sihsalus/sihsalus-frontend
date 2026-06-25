@@ -17,14 +17,11 @@ interface PatientBannerPatientIdentifiersProps {
   showIdentifierLabel: boolean;
 }
 
-const dniIdentifierTypeUuid = '550e8400-e29b-41d4-a716-446655440001';
-const dniValuePattern = /^\d{8}$/;
-
 function PrimaryIdentifier({ showIdentifierLabel, type, value }: IdentifiersProps) {
   return (
     <span className={styles.primaryIdentifier}>
       <Tag className={styles.tag} type="gray">
-        {showIdentifierLabel && type?.text && <span className={styles.label}>{type.text}:&nbsp;</span>}
+        {showIdentifierLabel && type?.text && <span className={styles.label}>{type.text}: </span>}
         <span className={styles.value}>{value}</span>
       </Tag>
     </span>
@@ -34,25 +31,9 @@ function PrimaryIdentifier({ showIdentifierLabel, type, value }: IdentifiersProp
 function SecondaryIdentifier({ showIdentifierLabel, type, value }: IdentifiersProps) {
   return (
     <FormLabel className={styles.secondaryIdentifier} id={`patient-banner-identifier-${value}`}>
-      {showIdentifierLabel && type?.text && <span className={styles.label}>{type.text}:&nbsp;</span>}
+      {showIdentifierLabel && <span className={styles.label}>{type?.text}: </span>}
       <span className={styles.value}>{value}</span>
     </FormLabel>
-  );
-}
-
-function isDniIdentifier(identifier: fhir.Identifier) {
-  const type = identifier.type;
-  const typeText = type?.text?.trim().toLowerCase();
-  const coding = type?.coding?.[0];
-  const codingCode = coding?.code?.trim().toLowerCase();
-  const codingDisplay = coding?.display?.trim().toLowerCase();
-
-  return (
-    typeText === 'dni' ||
-    codingDisplay === 'dni' ||
-    codingCode === 'dni' ||
-    coding?.code === dniIdentifierTypeUuid ||
-    Boolean(identifier.value && dniValuePattern.test(identifier.value))
   );
 }
 
@@ -68,30 +49,22 @@ export function PatientBannerPatientIdentifiers({
       const code = identifier.type?.coding?.[0]?.code;
       return code && !excludePatientIdentifierCodeTypes?.uuids.includes(code);
     }) ?? [];
-  const hasDniIdentifier = filteredIdentifiers.some(isDniIdentifier);
 
   return (
     <>
       {filteredIdentifiers?.length
-        ? filteredIdentifiers.map((identifier, index) => {
-            const { value, type } = identifier;
-            const isDni = isDniIdentifier(identifier);
-            const isPrimaryIdentifier = type?.coding?.[0]?.code === primaryIdentifierCode;
-            const shouldHighlightIdentifier = isDni || (isPrimaryIdentifier && !hasDniIdentifier);
-
-            return (
-              <React.Fragment key={value}>
-                <span className={styles.identifier}>
-                  {shouldHighlightIdentifier ? (
-                    <PrimaryIdentifier showIdentifierLabel={showIdentifierLabel} type={type} value={value} />
-                  ) : (
-                    <SecondaryIdentifier showIdentifierLabel={showIdentifierLabel} type={type} value={value} />
-                  )}
-                </span>
-                {index < filteredIdentifiers.length - 1 && <span className={styles.separator}>&middot;</span>}
-              </React.Fragment>
-            );
-          })
+        ? filteredIdentifiers.map(({ value, type }, index) => (
+            <React.Fragment key={value}>
+              <span className={styles.identifier}>
+                {type?.coding?.[0]?.code === primaryIdentifierCode ? (
+                  <PrimaryIdentifier showIdentifierLabel={showIdentifierLabel} type={type} value={value} />
+                ) : (
+                  <SecondaryIdentifier showIdentifierLabel={showIdentifierLabel} type={type} value={value} />
+                )}
+              </span>
+              {index < filteredIdentifiers.length - 1 && <span className={styles.separator}>&middot;</span>}
+            </React.Fragment>
+          ))
         : ''}
     </>
   );

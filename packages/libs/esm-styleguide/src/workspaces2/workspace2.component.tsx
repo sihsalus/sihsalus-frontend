@@ -1,5 +1,6 @@
 import { Header, HeaderGlobalAction, HeaderGlobalBar, HeaderName } from '@carbon/react';
 import { DownToBottom, Maximize, Minimize } from '@carbon/react/icons';
+import { getOpenedWindowIndexByWorkspace } from '@openmrs/esm-extensions';
 import { isDesktop, useLayoutType } from '@openmrs/esm-react-utils';
 import { getCoreTranslation } from '@openmrs/esm-translations';
 import classNames from 'classnames';
@@ -14,9 +15,6 @@ interface Workspace2Props {
   hasUnsavedChanges?: boolean;
 }
 
-/**
- * @experimental
- */
 export interface Workspace2DefinitionProps<
   WorkspaceProps extends object = object,
   WindowProps extends object = object,
@@ -49,9 +47,6 @@ export interface Workspace2DefinitionProps<
   showActionMenu: boolean;
 }
 
-/**
- * @experimental
- */
 export type Workspace2Definition<
   WorkspaceProps extends object,
   WindowProps extends object,
@@ -63,7 +58,6 @@ export type Workspace2Definition<
  * its children as content within a workspace. When creating a workspace
  * component, `<Workspace2>` should be the top-level component returned,
  * wrapping all of the workspace content.
- * @experimental
  */
 export const Workspace2: React.FC<Workspace2Props> = ({ title, children, hasUnsavedChanges = false }) => {
   const layout = useLayoutType();
@@ -82,9 +76,7 @@ export const Workspace2: React.FC<Workspace2Props> = ({ title, children, hasUnsa
   } = useWorkspace2Store();
   const { workspaceName, isRootWorkspace, closeWorkspace, showActionMenu } = useWorkspace2Context();
 
-  const openedWindowIndex = openedWindows.findIndex((window) =>
-    window.openedWorkspaces.some((workspace) => workspace.workspaceName === workspaceName),
-  );
+  const openedWindowIndex = getOpenedWindowIndexByWorkspace(workspaceName);
 
   const openedWindow = openedWindows[openedWindowIndex];
   const openedWorkspace = openedWindow?.openedWorkspaces.find((workspace) => workspace.workspaceName === workspaceName);

@@ -36,7 +36,6 @@
  * Telling Webpack to use `/a/b/c`? If the Webpack config is symlinked
  * from `/d/e/`, then it *might* in *some cases* try to import `/d/e/c`.
  */
-
 import { existsSync, statSync } from 'node:fs';
 import { basename, dirname, resolve } from 'node:path';
 import rspack, {
@@ -44,12 +43,12 @@ import rspack, {
   container,
   DefinePlugin,
   type ModuleOptions,
-  type Plugin,
   type RspackOptionsNormalized as RspackConfiguration,
   type RuleSetRule,
 } from '@rspack/core';
 import { CleanWebpackPlugin } from 'clean-webpack-plugin';
-import { merge, mergeWith } from 'lodash';
+// eslint-disable-next-line no-restricted-imports
+import { isArray, merge, mergeWith } from 'lodash';
 import { inc } from 'semver';
 import { TsCheckerRspackPlugin } from 'ts-checker-rspack-plugin';
 import { BundleAnalyzerPlugin } from 'webpack-bundle-analyzer';
@@ -59,120 +58,32 @@ type OpenmrsRspackConfig = Omit<Partial<RspackConfiguration>, 'module'> & {
   module: ModuleOptions;
 };
 
-type AppPackageJson = {
-  name: string;
-  version: string;
-  peerDependencies?: Record<string, string>;
-  browser?: string;
-  main?: string;
-  types?: string;
-};
-
-type NormalizedPackageJson = {
-  name: string;
-  version: string;
-  peerDependencies: Record<string, string>;
-  browser?: string;
-  main: string;
-  types: string;
-};
-
 type SharedDependencyConfig = {
   requiredVersion: string | false;
   strictVersion: boolean;
   singleton: boolean;
-  import: string | false;
-  packageName?: string;
+  import: string;
   shareKey: string;
-  shareScope: 'default';
+  shareScope: string;
   version?: string;
 };
-
-type VersionedPackageJson = {
-  version?: string;
-};
-
-const alwaysHostSharedDependencies = new Set([
-  '@carbon/react',
-  '@openmrs/esm-framework',
-  '@openmrs/esm-framework/src/internal',
-  'single-spa',
-]);
-
-// These packages are re-exported by @openmrs/esm-framework/src/internal in the app shell.
-// Sharing them by their own package names fails because the shell does not publish those
-// names in the share scope; bundling them locally creates duplicate global stores.
-const frameworkInternalSharedDependencies = new Set([
-  '@openmrs/esm-config',
-  '@openmrs/esm-extensions',
-  '@openmrs/esm-navigation',
-  '@openmrs/esm-offline',
-  '@openmrs/esm-react-utils',
-  '@openmrs/esm-state',
-  '@openmrs/esm-styleguide',
-]);
 
 const production = 'production';
-const { ModuleFederationPluginV1: ModuleFederationPlugin } = container;
+const { ModuleFederationPlugin } = container;
+
 function getFrameworkVersion() {
   try {
-    const frameworkPkgUnknown: unknown = require('@openmrs/esm-framework/package.json');
-    const frameworkPkg = frameworkPkgUnknown as VersionedPackageJson;
-    const version = typeof frameworkPkg.version === 'string' ? frameworkPkg.version : undefined;
-
-    if (!version) {
-      return '5.x';
-    }
-
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
+    const { version } = require('@openmrs/esm-framework/package.json');
     return `^${version}`;
   } catch {
     return '5.x';
   }
 }
 
-function getInstalledVersion(depName: string): string | undefined {
-  const packageName = getPackageNameForDependency(depName);
-
-  try {
-    const resolvedEntry = require.resolve(depName);
-    let currentDir = dirname(resolvedEntry);
-
-    while (currentDir !== dirname(currentDir)) {
-      const candidate = resolve(currentDir, 'package.json');
-
-      if (existsSync(candidate)) {
-        // eslint-disable-next-line @typescript-eslint/no-require-imports
-        const pkgUnknown: unknown = require(candidate);
-        const pkg = pkgUnknown as VersionedPackageJson & { name?: string };
-
-        if (pkg.name === packageName && typeof pkg.version === 'string') {
-          return pkg.version;
-        }
-      }
-
-      currentDir = dirname(currentDir);
-    }
-  } catch {
-    // Fall back to package root probing below.
-  }
-
-  try {
-    // eslint-disable-next-line @typescript-eslint/no-require-imports
-    const pkgUnknown: unknown = require(resolve(process.cwd(), 'node_modules', packageName, 'package.json'));
-    const pkg = pkgUnknown as VersionedPackageJson;
-    return typeof pkg.version === 'string' ? pkg.version : undefined;
-  } catch {
-    return undefined;
-  }
-}
-
-function getPackageNameForDependency(depName: string): string {
-  return depName.startsWith('@') ? depName.split('/').slice(0, 2).join('/') : depName.split('/')[0];
-}
-
 function makeIdent(name: string): string {
   if (name.includes('/')) {
-    name = name.slice(name.indexOf('/') + 1);
+    name = name.slice(name.indexOf('/'));
   }
   if (name.endsWith('-app')) {
     name = name.slice(0, -4);
@@ -180,30 +91,10 @@ function makeIdent(name: string): string {
   return name;
 }
 
-function mergeFunction(objValue: unknown, srcValue: unknown) {
-  if (Array.isArray(objValue)) {
-    const target = objValue as unknown[];
-    return target.concat(srcValue);
+function mergeFunction(objValue: any, srcValue: any) {
+  if (isArray(objValue)) {
+    return objValue.concat(srcValue);
   }
-}
-
-function getPackageJson(root: string): NormalizedPackageJson {
-  const appPkgUnknown: unknown = require(resolve(root, 'package.json'));
-  const appPkg = (appPkgUnknown ?? {}) as AppPackageJson;
-
-  const name = typeof appPkg.name === 'string' ? appPkg.name : 'openmrs-app';
-  const version = typeof appPkg.version === 'string' ? appPkg.version : '0.0.0';
-  const main = typeof appPkg.main === 'string' ? appPkg.main : 'src/index.ts';
-  const types = typeof appPkg.types === 'string' ? appPkg.types : main;
-
-  return {
-    name,
-    version,
-    main,
-    types,
-    browser: appPkg.browser,
-    peerDependencies: appPkg.peerDependencies ?? {},
-  };
 }
 
 function slugify(name: string) {
@@ -272,9 +163,12 @@ export const optimizationConfig: Partial<OpenmrsRspackConfig['optimization']> = 
 
 export default (env: Record<string, string>, argv: Record<string, string> = {}) => {
   const root = process.cwd();
-  const { name, version, peerDependencies, browser, main, types } = getPackageJson(root);
+  // eslint-disable-next-line @typescript-eslint/no-require-imports
+  const { name, version, peerDependencies, browser, main, types } = require(resolve(root, 'package.json'));
   // this typing is provably incorrect, but actually works
   const mode = (argv.mode || process.env.NODE_ENV || 'development') as OpenmrsRspackConfig['mode'];
+  const devServerPort = argv.port ? Number(argv.port) : undefined;
+  const devServerHost = argv.host || 'localhost';
   const filename = basename(browser || main);
   const outDir = dirname(browser || main);
   const srcFile = resolve(root, browser ? main : types);
@@ -296,7 +190,6 @@ export default (env: Record<string, string>, argv: Record<string, string> = {}) 
     loader: require.resolve('css-loader'),
     options: {
       modules: {
-        namedExport: false,
         localIdentName: `${ident}__[name]__[local]___[hash:base64:5]`,
       },
     },
@@ -311,30 +204,30 @@ export default (env: Record<string, string>, argv: Record<string, string> = {}) 
       publicPath: 'auto',
       path: resolve(root, outDir),
       hashFunction: 'xxhash64',
-      filename: `${ident}-[name]-[contenthash:8].js`,
-      chunkFilename: `${ident}-[name]-[contenthash:8].js`,
+      // Prevent chunk filename collisions across independently built microfrontends.
+      chunkFilename: '[id].[contenthash:8].js',
     },
     module: {
       rules: [
         merge(
           {
             test: /\.m?(js|ts|tsx)$/,
-            exclude: (path: string) =>
-              path.includes('node_modules') && !path.includes('@openmrs') && !path.includes('@sihsalus'),
-            loader: require.resolve('swc-loader'),
+            exclude: /node_modules/,
+            loader: 'builtin:swc-loader',
             options: {
               jsc: {
                 parser: {
                   syntax: 'typescript',
                   tsx: true,
                 },
+                // Ensure TSX uses the React 17+ automatic runtime so shared chunks
+                // don't fail when a component omits a default React import.
                 transform: {
                   react: {
                     runtime: 'automatic',
                     development: mode !== production,
                   },
                 },
-                target: 'es2020',
               },
             },
           },
@@ -358,7 +251,7 @@ export default (env: Record<string, string>, argv: Record<string, string> = {}) 
                 options: {
                   api: 'modern-compiler',
                   implementation: require.resolve('sass-embedded'),
-                  sassOptions: { quietDeps: true, loadPaths: [resolve(root, '..', '..', '..', 'node_modules')] },
+                  sassOptions: { quietDeps: true },
                 },
               },
             ],
@@ -367,25 +260,22 @@ export default (env: Record<string, string>, argv: Record<string, string> = {}) 
         ),
         merge(
           {
-            test: /\.(png|jpe?g|gif|svg)$/i,
+            test: /\.(png|jpe?g|gif)$/i,
             type: 'asset/resource',
           },
           assetRuleConfig,
         ),
+        {
+          test: /\.svg$/i,
+          type: 'asset/source',
+        },
       ],
     },
     mode,
-    devtool: mode === production ? false : 'source-map',
-    stats: mode === production ? 'normal' : 'errors-warnings',
-    infrastructureLogging: {
-      level: 'warn',
-    },
+    devtool: mode === production ? 'hidden-nosources-source-map' : 'source-map',
     devServer: {
       headers: {
         'Access-Control-Allow-Origin': '*',
-      },
-      devMiddleware: {
-        writeToDisk: true,
       },
       static: [resolve(root, outDir)],
     },
@@ -406,98 +296,52 @@ export default (env: Record<string, string>, argv: Record<string, string> = {}) 
           maxAsyncRequests: 3,
           maxInitialRequests: 1,
         },
-        minimizer: [
-          new rspack.SwcJsMinimizerRspackPlugin(),
-          new rspack.LightningCssMinimizerRspackPlugin({
-            minimizerOptions: {
-              targets: ['last 2 Chrome versions', 'Firefox ESR', 'last 2 Safari versions'],
-            },
-          }),
-        ],
+        minimizer: [new rspack.SwcJsMinimizerRspackPlugin(), new rspack.LightningCssMinimizerRspackPlugin()],
       },
       optimizationConfig,
     ),
     plugins: [
-      mode !== production &&
-        new TsCheckerRspackPlugin({
-          issue: {
-            exclude: [(issue) => issue.file?.includes('node_modules') ?? false],
-          },
-        }),
+      new TsCheckerRspackPlugin(),
       new CleanWebpackPlugin(),
-      new (BundleAnalyzerPlugin as unknown as new (options: { analyzerMode: 'server' | 'disabled' }) => Plugin)({
+      new BundleAnalyzerPlugin({
         analyzerMode: env && env.analyze ? 'server' : 'disabled',
       }),
       new DefinePlugin({
         'process.env.FRAMEWORK_VERSION': JSON.stringify(frameworkVersion),
       }),
-      new rspack.ProvidePlugin({
-        React: 'react',
-      }),
       new ModuleFederationPlugin({
         // Look in the `esm-dynamic-loading` framework package for an explanation of how modules
         // get loaded into the application.
-        name: slugify(name),
+        name,
         library: { type: 'var', name: slugify(name) },
         filename,
         exposes: {
           './start': srcFile,
         },
-        shared: [
-          ...new Set([
-            ...Object.keys(peerDependencies),
-            ...alwaysHostSharedDependencies,
-            ...frameworkInternalSharedDependencies,
-            '@openmrs/esm-framework/src/internal',
-          ]),
-        ].reduce<Record<string, SharedDependencyConfig>>((obj, depName) => {
-          const isProvidedByFrameworkInternal = frameworkInternalSharedDependencies.has(depName);
-          const versionSpec = isProvidedByFrameworkInternal
-            ? (peerDependencies['@openmrs/esm-framework'] ?? false)
-            : (peerDependencies[depName] ?? false);
-
-          if (typeof versionSpec === 'string' && versionSpec.startsWith('workspace:')) {
-            const msg =
-              `[rspack-config] Invalid workspace protocol in peerDependencies: ` +
-              `"${depName}": "${versionSpec}" (package: ${name}). ` +
-              `Workspace protocols are not valid at runtime and will break Module Federation shared modules. ` +
-              `Replace "workspace:*" with "*" or an explicit semver range in ${name}/package.json.`;
-            console.error(msg);
-            throw new Error(msg);
-          }
-
+        shared: [...Object.keys(peerDependencies), '@openmrs/esm-framework/src/internal'].reduce<
+          Record<string, SharedDependencyConfig>
+        >((obj, depName) => {
           if (depName === 'swr') {
             // SWR is annoying with Module Federation
             // See: https://github.com/webpack/webpack/issues/16125 and https://github.com/vercel/swr/issues/2356
-            // Must match the app-shell host config which shares as 'swr/_internal'
-            obj['swr/_internal'] = {
+            obj['swr/'] = {
               requiredVersion: peerDependencies['swr'] ?? false,
               strictVersion: false,
               singleton: true,
-              import: 'swr/_internal',
-              shareKey: 'swr/_internal',
+              import: 'swr/',
+              shareKey: 'swr/',
               shareScope: 'default',
-              version: (require('swr/package.json') as VersionedPackageJson).version,
+              // eslint-disable-next-line @typescript-eslint/no-require-imports
+              version: require('swr/package.json').version,
             };
           } else {
-            const sharedHostDependency = isProvidedByFrameworkInternal
-              ? '@openmrs/esm-framework/src/internal'
-              : depName;
-            const installedVersion = getInstalledVersion(sharedHostDependency);
-            const packageName = getPackageNameForDependency(depName);
             obj[depName] = {
-              requiredVersion: versionSpec,
+              requiredVersion: peerDependencies[depName] ?? false,
               strictVersion: false,
               singleton: true,
-              import: alwaysHostSharedDependencies.has(depName) || isProvidedByFrameworkInternal ? false : depName,
-              ...(isProvidedByFrameworkInternal
-                ? { packageName: '@openmrs/esm-framework' }
-                : depName !== packageName
-                  ? { packageName }
-                  : {}),
-              shareKey: sharedHostDependency,
+              import: depName,
+              shareKey: depName,
               shareScope: 'default',
-              version: installedVersion,
             };
           }
 
@@ -512,41 +356,39 @@ export default (env: Record<string, string>, argv: Record<string, string> = {}) 
               transform: {
                 transformer: (content) =>
                   JSON.stringify(
-                    Object.assign({}, JSON.parse(content.toString()) as Record<string, unknown>, {
-                      version: mode === production ? version : (inc(version, 'prerelease', 'local') ?? version),
+                    Object.assign({}, JSON.parse(content.toString()), {
+                      version: mode === production ? version : inc(version, 'prerelease', 'local'),
                     }),
                   ),
               },
             },
           ],
         }),
-      new (
-        StatsWriterPlugin as unknown as new (options: {
-          filename: string;
-          stats: { all: boolean; chunks: boolean };
-        }) => Plugin
-      )({
+      new StatsWriterPlugin({
         filename: `${filename}.buildmanifest.json`,
         stats: {
           all: false,
           chunks: true,
         },
       }),
-    ].filter((plugin): plugin is Exclude<typeof plugin, false> => Boolean(plugin)),
+    ].filter(Boolean),
     resolve: {
       extensions: ['.tsx', '.ts', '.jsx', '.js', '.scss', '.json'],
-      extensionAlias: {
-        '.js': ['.ts', '.tsx', '.js'],
-        '.jsx': ['.tsx', '.jsx'],
-      },
       alias: {
+        '@openmrs/esm-framework': '@openmrs/esm-framework/src/internal',
         'lodash.debounce': 'lodash-es/debounce',
         'lodash.findlast': 'lodash-es/findLast',
         'lodash.omit': 'lodash-es/omit',
         'lodash.throttle': 'lodash-es/throttle',
       },
-      tsConfig: existsSync(resolve(root, 'tsconfig.json')) ? resolve(root, 'tsconfig.json') : undefined,
     },
+    ...(devServerPort !== undefined && {
+      lazyCompilation: {
+        imports: true,
+        entries: false,
+        serverUrl: `http://${devServerHost}:${devServerPort}`,
+      },
+    }),
     ...overrides,
   };
   return mergeWith(baseConfig, additionalConfig, mergeFunction);

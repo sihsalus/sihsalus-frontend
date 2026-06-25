@@ -144,7 +144,7 @@ function computeExtensionConfigs(
   extensionState: ConfigExtensionStore,
   tempConfigState: TemporaryConfigStore,
 ) {
-  const configs: Record<string, Record<string, ConfigStore>> = {};
+  const configs = {};
   // We assume that the module schema has already been defined, since the extension
   // it contains is mounted.
   for (const extension of extensionState.mountedExtensions) {
@@ -160,7 +160,7 @@ function computeExtensionConfigs(
     if (!configs[extension.slotName]) {
       configs[extension.slotName] = {};
     }
-    configs[extension.slotName][extension.extensionId] = { config, loaded: true, translationOverridesLoaded: true };
+    configs[extension.slotName][extension.extensionId] = { config, loaded: true };
   }
   const extensionsConfigStore = getExtensionsConfigStore();
   const oldState = extensionsConfigStore.getState();
@@ -308,11 +308,6 @@ export function provide(config: Config, sourceName = 'provided') {
  * @param moduleName The name of the module for which to look up the config
  */
 export function getConfig<T = Record<string, any>>(moduleName: string): Promise<T> {
-  const state = configInternalStore.getState();
-  if (!state.schemas[moduleName]) {
-    return Promise.reject(new Error(`No config schema has been defined for ${moduleName}`));
-  }
-
   return new Promise<T>((resolve) => {
     const store = getConfigStore(moduleName);
     function update(state: ConfigStore) {
@@ -452,7 +447,7 @@ function getImplementerToolsConfig(
   configState: ConfigInternalStore,
   tempConfigState: TemporaryConfigStore,
 ): Record<string, Config> {
-  let result = getSchemaWithValuesAndSources(cloneDeep(configState.schemas) as Config);
+  let result = getSchemaWithValuesAndSources(cloneDeep(configState.schemas));
   const configsAndSources = [
     ...configState.providedConfigs.map((c) => [c.config, c.source]),
     [tempConfigState.config, 'temporary config'],
@@ -463,11 +458,11 @@ function getImplementerToolsConfig(
   return result;
 }
 
-function getSchemaWithValuesAndSources(schema: Config): Config {
+function getSchemaWithValuesAndSources(schema) {
   if (Object.hasOwn(schema, '_default')) {
     return { ...schema, _value: schema._default, _source: 'default' };
   } else if (isOrdinaryObject(schema)) {
-    return Object.keys(schema).reduce<Config>((obj, key) => {
+    return Object.keys(schema).reduce((obj, key) => {
       obj[key] = getSchemaWithValuesAndSources(schema[key]);
       return obj;
     }, {});
@@ -479,7 +474,7 @@ function getSchemaWithValuesAndSources(schema: Config): Config {
 
 function createValuesAndSourcesTree(config: ConfigObject, source: string) {
   if (isOrdinaryObject(config)) {
-    return Object.keys(config).reduce<Config>((obj, key) => {
+    return Object.keys(config).reduce((obj, key) => {
       obj[key] = createValuesAndSourcesTree(config[key], source);
       return obj;
     }, {});
@@ -494,7 +489,7 @@ function getExtensionSlotConfigs(
 ): Record<string, ExtensionSlotConfig> {
   const allConfigs = mergeConfigs(getProvidedConfigs(configState, tempConfigState));
   const slotConfigPerModule: Record<string, Record<string, ExtensionSlotConfig>> = Object.keys(allConfigs).reduce(
-    (obj: Record<string, Record<string, ExtensionSlotConfig>>, key) => {
+    (obj, key) => {
       if (allConfigs[key]?.extensionSlots) {
         obj[key] = allConfigs[key]?.extensionSlots;
       }
@@ -503,7 +498,7 @@ function getExtensionSlotConfigs(
     {},
   );
   validateAllExtensionSlotConfigs(slotConfigPerModule);
-  const slotConfigs = Object.keys(slotConfigPerModule).reduce<Record<string, ExtensionSlotConfig>>((obj, key) => {
+  const slotConfigs = Object.keys(slotConfigPerModule).reduce((obj, key) => {
     obj = { ...obj, ...slotConfigPerModule[key] };
     return obj;
   }, {});
@@ -551,36 +546,6 @@ function getProvidedConfigs(configState: ConfigInternalStore, tempConfigState: T
   return [...configState.providedConfigs.map((c) => c.config), tempConfigState.config];
 }
 
-function validateReservedConfigKeys(moduleName: string, thisKeyPath: string, updateMessage: string) {
-  if (thisKeyPath === 'Display conditions') {
-    console.error(
-      `${moduleName} declares a configuration option called "Display conditions"; the "Display conditions" option is a reserved name. ${updateMessage}`,
-    );
-  }
-  if (thisKeyPath === 'Translation overrides') {
-    console.error(
-      `${moduleName} declares a configuration option called "Translation overrides"; the "Translation overrides" option is a reserved name. ${updateMessage}`,
-    );
-  }
-}
-
-function validateSchemaPartValidators(
-  moduleName: string,
-  thisKeyPath: string,
-  validators: Array<unknown>,
-  updateMessage: string,
-) {
-  for (const v of validators) {
-    if (typeof v !== 'function') {
-      console.error(
-        `${moduleName} has invalid validator for key '${thisKeyPath}' ${updateMessage}.` +
-          `\n\nIf you're the maintainer: validators must be functions that return either ` +
-          `undefined or an error string. Received ${v}.`,
-      );
-    }
-  }
-}
-
 /**
  * Validates the config schema for a module. Since problems identified here are programming errors
  * that hopefully will be caught during development, this function logs errors to the console directly;
@@ -593,7 +558,17 @@ function validateConfigSchema(moduleName: string, schema: ConfigSchema, keyPath 
     const thisKeyPath = keyPath + (keyPath && '.') + key;
     const schemaPart = schema[key] as ConfigSchema;
 
-    validateReservedConfigKeys(moduleName, thisKeyPath, updateMessage);
+    if (thisKeyPath === 'Display conditions') {
+      console.error(
+        `${moduleName} declares a configuration option called "Display conditions"; the "Display conditions" option is a reserved name. ${updateMessage}`,
+      );
+    }
+
+    if (thisKeyPath === 'Translation overrides') {
+      console.error(
+        `${moduleName} declares a configuration option called "Translation overrides"; the "Translation overrides" option is a reserved name. ${updateMessage}`,
+      );
+    }
 
     if (!isOrdinaryObject(schemaPart)) {
       console.error(`${moduleName} has bad config schema definition for key '${thisKeyPath}'. ${updateMessage}`);
@@ -611,10 +586,18 @@ function validateConfigSchema(moduleName: string, schema: ConfigSchema, keyPath 
     }
 
     if (schemaPart._validators) {
-      validateSchemaPartValidators(moduleName, thisKeyPath, schemaPart._validators as Array<unknown>, updateMessage);
+      for (const validator of schemaPart._validators) {
+        if (typeof validator !== 'function') {
+          console.error(
+            `${moduleName} has invalid validator for key '${thisKeyPath}' ${updateMessage}.` +
+              `\n\nIf you're the maintainer: validators must be functions that return either ` +
+              `undefined or an error string. Received ${validator}.`,
+          );
+        }
+      }
     }
 
-    const valueType = schemaPart._type as Type | undefined;
+    const valueType = schemaPart._type;
     if (valueType && !Object.values(Type).includes(valueType)) {
       console.error(
         `${moduleName} has invalid type for key '${thisKeyPath}' ${updateMessage}.` +
@@ -749,23 +732,6 @@ function validateArrayStructure(arraySchema: ConfigSchema, value: ConfigObject, 
   }
 }
 
-function runValidatorsForObjectChildren(schema: ConfigSchema, config: ConfigObject, keyPath: string) {
-  for (const key of Object.keys(config)) {
-    const value = config[key];
-    const thisKeyPath = keyPath + '.' + key;
-    const childSchema =
-      schema._type === Type.Object && schema._elements ? schema._elements : (schema[key] as ConfigSchema);
-    runAllValidatorsInConfigTree(childSchema, value, thisKeyPath);
-  }
-}
-
-function runValidatorsForArrayChildren(elementsSchema: ConfigSchema, config: ConfigObject, keyPath: string) {
-  const arr = config as unknown as Array<ConfigObject>;
-  for (let i = 0; i < arr.length; i++) {
-    runAllValidatorsInConfigTree(elementsSchema, arr[i], `${keyPath}[${i}]`);
-  }
-}
-
 /**
  * Run all the validators in the config tree. This should be run
  * on the config object after it has been filled in with all the defaults, since
@@ -773,16 +739,27 @@ function runValidatorsForArrayChildren(elementsSchema: ConfigSchema, config: Con
  */
 function runAllValidatorsInConfigTree(schema: ConfigSchema, config: ConfigObject, keyPath = '') {
   // If `!schema`, there should have been a structural validation error printed already.
-  if (!schema) {
-    return;
-  }
-  if (config !== schema._default) {
-    runValidators(keyPath, schema._validators, config);
-  }
-  if (isOrdinaryObject(config)) {
-    runValidatorsForObjectChildren(schema, config, keyPath);
-  } else if (Array.isArray(config) && schema._elements) {
-    runValidatorsForArrayChildren(schema._elements, config as unknown as ConfigObject, keyPath);
+  if (schema) {
+    if (config !== schema._default) {
+      runValidators(keyPath, schema._validators, config);
+    }
+
+    if (isOrdinaryObject(config)) {
+      for (const key of Object.keys(config)) {
+        const value = config[key];
+        const thisKeyPath = keyPath + '.' + key;
+        const schemaPart = schema[key] as ConfigSchema;
+        if (schema._type === Type.Object && schema._elements) {
+          runAllValidatorsInConfigTree(schema._elements, value, thisKeyPath);
+        } else {
+          runAllValidatorsInConfigTree(schemaPart, value, thisKeyPath);
+        }
+      }
+    } else if (Array.isArray(config) && schema._elements) {
+      for (let i = 0; i < config.length; i++) {
+        runAllValidatorsInConfigTree(schema._elements, config[i], `${keyPath}[${i}]`);
+      }
+    }
   }
 }
 
@@ -837,22 +814,8 @@ function runValidators(keyPath: string, validators: Array<Function> | undefined,
   return returnValue;
 }
 
-function applyElementDefaults(config: Config, key: string, configPart: Config, schemaPart: ConfigSchema) {
-  const elements = schemaPart._elements;
-  if (!configPart || !hasObjectSchema(elements)) {
-    return;
-  }
-  if (schemaPart._type === Type.Array && Array.isArray(configPart)) {
-    config[key] = (configPart as Array<Config>).map((conf) => setDefaults(elements, conf));
-  } else if (schemaPart._type === Type.Object) {
-    for (const objectKey of Object.keys(configPart)) {
-      (configPart as Config)[objectKey] = setDefaults(elements, (configPart as Config)[objectKey]);
-    }
-  }
-}
-
 // Recursively fill in the config with values from the schema.
-const setDefaults = (schema: ConfigSchema, inputConfig: Config): Config => {
+const setDefaults = (schema: ConfigSchema, inputConfig: Config) => {
   const config = structuredClone(inputConfig);
 
   if (!schema) {
@@ -874,8 +837,20 @@ const setDefaults = (schema: ConfigSchema, inputConfig: Config): Config => {
       if (!Object.hasOwn(config, key)) {
         (config[key] as any) = schemaPart['_default'];
       }
+
       // We also check if it is an object or array with object elements, in which case we recurse
-      applyElementDefaults(config, key, configPart, schemaPart);
+      const elements = schemaPart._elements;
+
+      if (configPart && hasObjectSchema(elements)) {
+        if (schemaPart._type === Type.Array && Array.isArray(configPart)) {
+          const configWithDefaults = configPart.map((conf: Config) => setDefaults(elements, conf));
+          config[key] = configWithDefaults;
+        } else if (schemaPart._type === Type.Object) {
+          for (const objectKey of Object.keys(configPart)) {
+            configPart[objectKey] = setDefaults(elements, configPart[objectKey]);
+          }
+        }
+      }
     } else if (isOrdinaryObject(schemaPart)) {
       // Since schemaPart has no property "_type", if it's an ordinary object
       // (unlike, importantly, the validators array), we assume it is a parent config property.
@@ -898,7 +873,7 @@ function hasObjectSchema(elementsSchema: unknown): elementsSchema is ConfigSchem
   );
 }
 
-function isOrdinaryObject(value: unknown): value is Config {
+function isOrdinaryObject(value) {
   return typeof value === 'object' && !Array.isArray(value) && value !== null;
 }
 /** Keep track of which validation errors we have displayed. Each one should only be displayed once. */

@@ -2,7 +2,6 @@
   "abnormalValue": "Abnormal value",
   "actionableNotification": "Actionable notification",
   "actions": "Actions",
-  "additionalDetails": "Additional details",
   "address": "Address",
   "address1": "Address line 1",
   "address2": "Address line 2",
@@ -49,9 +48,6 @@
   "minimize": "Minimize",
   "noResultsToDisplay": "No results to display",
   "notAvailable": "Not available",
-  "offlineSetupErrorTitle": "Offline setup unavailable",
-  "offlineSetupGenericError": "Offline mode could not be enabled. You can still sign in and work online. If this continues, contact support and share the technical detail: {{message}}",
-  "offlineSetupMissingBrowserCapabilities": "Offline setup unavailable. Offline mode could not be enabled because this browser or browsing context does not allow Service Workers. You can still sign in and work online. To use offline mode, open SIH Salus over HTTPS or localhost, use a compatible browser, and avoid private browsing or browser policies that block Service Workers.",
   "openAnyway": "Open Anyway",
   "other": "Other",
   "paginationItemsCount": "{{pageItemsCount}} / {{totalItems}} items",
@@ -89,8 +85,6 @@
   "unsavedChangesInWorkspace": "There may be unsaved changes in \"{{workspaceName}}\". Please save them before opening another workspace.",
   "unsavedChangesTitleText": "Unsaved changes",
   "workspaceHeader": "Workspace header",
-  "year": "year",
   "yearAbbreviation": "yr",
-  "years": "years",
   "yearsAbbreviation": "yrs"
 }

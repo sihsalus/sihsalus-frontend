@@ -1,9 +1,12 @@
+import { getDefaultsFromConfigSchema, useConfig } from '@openmrs/esm-framework';
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { mockDrugSearchResultApiData } from 'test-utils';
+import { type ConfigObject, configSchema } from '../../config-schema';
 import { type DrugSearchResult, useDrugSearch, useDrugTemplates } from './drug-search.resource';
 import DrugSearchComboBox from './drug-search-combobox.component';
 
+const mockUseConfig = vi.mocked(useConfig<ConfigObject>);
 const mockUseDrugSearch = vi.mocked(useDrugSearch);
 const mockUseDrugTemplates = vi.mocked(useDrugTemplates);
 
@@ -30,6 +33,10 @@ const drugWithoutDosageForm: DrugSearchResult = {
 describe('DrugSearchComboBox', () => {
   beforeEach(() => {
     mockSetSelectedDrugItem.mockClear();
+    mockUseConfig.mockReturnValue({
+      ...(getDefaultsFromConfigSchema(configSchema) as ConfigObject),
+      minimumCharacterLengthForDrugSearch: 3,
+    });
 
     mockUseDrugSearch.mockImplementation(() => ({
       isLoading: false,
@@ -94,6 +101,15 @@ describe('DrugSearchComboBox', () => {
         unit: null,
       }),
     );
+  });
+
+  it('does not search while the typed value is below the configured minimum length', async () => {
+    const user = userEvent.setup();
+
+    renderDrugSearchComboBox();
+    await user.type(screen.getByRole('combobox'), 'as');
+
+    expect(mockUseDrugSearch).not.toHaveBeenCalledWith('as');
   });
 });
 

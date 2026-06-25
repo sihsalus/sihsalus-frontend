@@ -48,12 +48,18 @@ const getGender = (gender: string) => {
   }
 };
 
-const PatientBanner: React.FC<PatientBannerProps> = ({ patient, patientUuid, hideActionsOverflow }) => {
+const PatientBanner: React.FC<PatientBannerProps> = ({
+  patient,
+  patientUuid,
+  hideActionsOverflow: hideActionsOverflowProp,
+}) => {
   const layout = useLayoutType();
   const isTablet = layout === 'tablet';
   const { currentVisit } = useVisit(patientUuid);
   const { nonNavigationSelectPatientAction } = useContext(PatientSearchContext);
   const patientSearchContext2 = usePatientSearchContext2();
+  const hideActionsOverflow = hideActionsOverflowProp ?? Boolean(patientSearchContext2?.onPatientSelected);
+
   const patientName = patient.person.personName.display;
   const isDeceased = !!patient.person.deathDate;
 

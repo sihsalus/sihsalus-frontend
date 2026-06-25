@@ -1,7 +1,7 @@
 import { Layer, Tile } from '@carbon/react';
+import { useLayoutType } from '@openmrs/esm-react-utils';
 import { getCoreTranslation } from '@openmrs/esm-translations';
 import React from 'react';
-import { CardHeader } from '../cards';
 import styles from './error-state.module.scss';
 
 export interface ErrorStateProps {
@@ -12,10 +12,14 @@ export interface ErrorStateProps {
 }
 
 export const ErrorState: React.FC<ErrorStateProps> = ({ error, headerTitle }) => {
+  const isTablet = useLayoutType() === 'tablet';
+
   return (
     <Layer>
       <Tile className={styles.tile}>
-        <CardHeader title={headerTitle} />
+        <div className={isTablet ? styles.tabletHeading : styles.desktopHeading}>
+          <h4>{headerTitle}</h4>
+        </div>
         <p className={styles.errorMessage}>
           {getCoreTranslation('error', 'Error')} {`${error?.response?.status}: `}
           {error?.response?.statusText}

@@ -121,6 +121,8 @@ describe('Field', () => {
   let ContextWrapper;
 
   beforeEach(() => {
+    mockReportError.mockImplementation(() => undefined);
+
     ContextWrapper = ({ children }) => (
       <ResourcesContext.Provider value={mockResourcesContextValue}>
         <Formik initialValues={{}} onSubmit={vi.fn()}>

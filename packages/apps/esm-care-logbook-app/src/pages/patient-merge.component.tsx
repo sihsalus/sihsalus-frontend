@@ -27,6 +27,7 @@ interface MergeCandidate {
   id: string;
   uuid: string;
   identifier: string;
+  documentType: string;
   documentNumber: string;
   givenName: string;
   middleName?: string;
@@ -45,6 +46,7 @@ const mockCandidates: Array<MergeCandidate> = [
     id: '16',
     uuid: 'patient-armando',
     identifier: '10000KP',
+    documentType: 'DNI',
     documentNumber: '74815352',
     givenName: 'ARMANDO',
     familyName: 'MENDOZA',
@@ -60,6 +62,7 @@ const mockCandidates: Array<MergeCandidate> = [
     id: '15',
     uuid: 'patient-alvaro',
     identifier: '10000JT',
+    documentType: 'DNI',
     documentNumber: '80526375',
     givenName: 'ALVARO',
     familyName: 'MENDOZA',
@@ -298,7 +301,9 @@ export default function PatientMerge() {
               <h3>{getPatientName(primaryPatient)}</h3>
               <dl>
                 <dt>{t('patientIdentifiers', 'Identificadores del paciente')}</dt>
-                <dd>{primaryPatient.documentNumber} DNI</dd>
+                <dd>
+                  {primaryPatient.documentType}: {primaryPatient.documentNumber}
+                </dd>
                 <dd>{primaryPatient.identifier} N° Historia Clinica</dd>
                 <dt>{t('patientAddress', 'Direccion de paciente')}</dt>
                 <dd>{primaryPatient.address}</dd>

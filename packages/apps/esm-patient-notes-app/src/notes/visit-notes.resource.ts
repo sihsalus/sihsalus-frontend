@@ -165,7 +165,12 @@ export function fetchPrestacionalConceptsByName(searchTerm: string, conceptSourc
 }
 
 function normalizeConceptSourceName(sourceName?: string | null) {
-  return sourceName?.trim().toLowerCase().replace(/[^a-z0-9]/g, '') ?? '';
+  return (
+    sourceName
+      ?.trim()
+      .toLowerCase()
+      .replace(/[^a-z0-9]/g, '') ?? ''
+  );
 }
 
 function normalizeSearchText(value?: string | null) {

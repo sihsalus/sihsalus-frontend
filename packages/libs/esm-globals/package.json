@@ -1,6 +1,6 @@
 {
   "name": "@openmrs/esm-globals",
-  "version": "9.0.3-pre.4728",
+  "version": "10.0.0",
   "license": "MPL-2.0",
   "type": "module",
   "module": "dist/index.js",
@@ -23,7 +23,7 @@
     "test:watch": "cross-env TZ=UTC vitest watch --passWithNoTests",
     "coverage": "cross-env TZ=UTC vitest run --coverage --passWithNoTests",
     "typescript": "tsc --project tsconfig.build.json",
-    "lint": "node ../../tooling/scripts/run-biome.js lint ."
+    "lint": "node ../../tooling/scripts/run-biome.js lint src"
   },
   "keywords": [
     "openmrs",
@@ -55,13 +55,10 @@
   "devDependencies": {
     "@swc/cli": "0.8.1",
     "@swc/core": "1.15.21",
-    "@types/fhir": "0.0.31",
-    "@types/node": "^22.10.7",
     "concurrently": "^9.2.1",
     "rimraf": "^6.1.3",
     "single-spa": "^6.0.3",
     "typescript": "6.0.3",
-    "vitest": "^4.1.7"
-  },
-  "stableVersion": "9.0.2"
+    "vitest": "^4.1.2"
+  }
 }

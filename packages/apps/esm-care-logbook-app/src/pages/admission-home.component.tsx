@@ -17,6 +17,7 @@ import {
 } from '@carbon/react';
 import { Download, Launch } from '@carbon/react/icons';
 import {
+  ageAsDuration,
   ConfigurableLink,
   PageHeader,
   PageHeaderContent,
@@ -24,7 +25,6 @@ import {
   useConfig,
 } from '@openmrs/esm-framework';
 import { AppErrorBoundary, RequirePrivilege } from '@sihsalus/esm-rbac';
-import type { ComponentType, PropsWithChildren, ThHTMLAttributes } from 'react';
 import { useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
@@ -33,13 +33,22 @@ import { useAdmissions } from '../resources/admissions.resource';
 import styles from './admission-home.scss';
 
 const EXCEL_CSV_PREAMBLE = '\uFEFFsep=,\r\n';
-const SpanningTableHeader = TableHeader as unknown as ComponentType<
-  PropsWithChildren<ThHTMLAttributes<HTMLTableCellElement>>
->;
+const twoRowHeaderProps = { rowSpan: 2 };
 
 interface AdmissionConfig {
   admissionReportPageSize?: number;
 }
+
+interface AgeLabels {
+  month: string;
+  months: string;
+  week: string;
+  weeks: string;
+  year: string;
+  years: string;
+}
+
+type AgeDuration = Partial<Record<'years' | 'months' | 'weeks' | 'days', number>>;
 
 function formatDate(value?: string) {
   if (!value) return '';
@@ -57,20 +66,6 @@ function parseDate(value?: string) {
   return Number.isNaN(parsedDate.getTime()) ? null : parsedDate;
 }
 
-function calculateAge(birthDate?: string, referenceDate?: string) {
-  const birth = parseDate(birthDate);
-  if (!birth) return '';
-
-  const reference = parseDate(referenceDate) ?? new Date();
-  let age = reference.getFullYear() - birth.getFullYear();
-  const monthDiff = reference.getMonth() - birth.getMonth();
-  if (monthDiff < 0 || (monthDiff === 0 && reference.getDate() < birth.getDate())) {
-    age -= 1;
-  }
-
-  return age >= 0 ? `${age}` : '';
-}
-
 function matchesGender(gender: string, expected: 'male' | 'female') {
   const normalizedGender = gender.trim().toLocaleLowerCase();
 
@@ -79,8 +74,54 @@ function matchesGender(gender: string, expected: 'male' | 'female') {
     : ['f', 'female', 'femenino'].includes(normalizedGender);
 }
 
-function getAgeForGender(gender: string, expected: 'male' | 'female', birthDate?: string, referenceDate?: string) {
-  return matchesGender(gender, expected) ? calculateAge(birthDate, referenceDate) : '';
+function getDurationValue(duration: AgeDuration, unit: keyof AgeDuration) {
+  const value = duration[unit];
+
+  return typeof value === 'number' && value >= 0 ? value : null;
+}
+
+function formatAgeUnit(value: number, singularLabel: string, pluralLabel: string) {
+  return `${value} ${value === 1 ? singularLabel : pluralLabel}`;
+}
+
+function formatAgeWithUnit(birthDate: string | undefined, referenceDate: string | undefined, labels: AgeLabels) {
+  const duration = birthDate ? (ageAsDuration(birthDate, referenceDate ?? new Date()) as AgeDuration | null) : null;
+
+  if (!duration) {
+    return '';
+  }
+
+  const years = getDurationValue(duration, 'years');
+  if (years && years > 0) {
+    return formatAgeUnit(years, labels.year, labels.years);
+  }
+
+  const months = getDurationValue(duration, 'months');
+  if (months && months > 0) {
+    return formatAgeUnit(months, labels.month, labels.months);
+  }
+
+  const weeks = getDurationValue(duration, 'weeks');
+  if (weeks && weeks > 0) {
+    return formatAgeUnit(weeks, labels.week, labels.weeks);
+  }
+
+  const days = getDurationValue(duration, 'days');
+  if (days && days > 0) {
+    return formatAgeUnit(Math.ceil(days / 7), labels.week, labels.weeks);
+  }
+
+  return formatAgeUnit(0, labels.week, labels.weeks);
+}
+
+function getAgeForGender(
+  gender: string,
+  expected: 'male' | 'female',
+  birthDate: string | undefined,
+  referenceDate: string | undefined,
+  labels: AgeLabels,
+) {
+  return matchesGender(gender, expected) ? formatAgeWithUnit(birthDate, referenceDate, labels) : '';
 }
 
 function escapeCsvValue(value: string) {
@@ -93,6 +134,17 @@ export default function AdmissionHome() {
   const { admissions, error, isLoading } = useAdmissions(config.admissionReportPageSize ?? 50);
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
+  const ageLabels = useMemo(
+    () => ({
+      month: t('ageMonth', 'mes'),
+      months: t('ageMonths', 'meses'),
+      week: t('ageWeek', 'semana'),
+      weeks: t('ageWeeks', 'semanas'),
+      year: t('ageYear', 'año'),
+      years: t('ageYears', 'años'),
+    }),
+    [t],
+  );
 
   const availableStatuses = useMemo(
     () => Array.from(new Set(admissions.map((admission) => admission.status).filter(Boolean))).sort(),
@@ -108,6 +160,7 @@ export default function AdmissionHome() {
         [
           admission.patientName,
           admission.medicalRecordNumber,
+          admission.documentType,
           admission.documentNumber,
           admission.identificationStatus,
           admission.communicationCondition,
@@ -146,7 +199,8 @@ export default function AdmissionHome() {
     const headers = [
       t('date', 'Fecha'),
       t('medicalRecordNumber', 'HCE / código temporal'),
-      t('documentNumber', 'DNI'),
+      t('documentType', 'Tipo doc.'),
+      t('documentNumber', 'N° documento'),
       t('identificationStatus', 'Estado identificación'),
       t('responsiblePerson', 'Responsable'),
       t('birthDateShort', 'F. Nac.'),
@@ -162,6 +216,7 @@ export default function AdmissionHome() {
     const rows = filteredAdmissions.map((admission, index) => [
       formatDate(admission.startDatetime),
       admission.medicalRecordNumber,
+      admission.documentType || t('pending', 'Pendiente'),
       admission.documentNumber || t('pending', 'Pendiente'),
       admission.identificationStatus,
       [admission.responsibleName, admission.responsibleRelationship].filter(Boolean).join(' - '),
@@ -169,8 +224,8 @@ export default function AdmissionHome() {
       admission.hasSis,
       admission.patientName,
       admission.address,
-      getAgeForGender(admission.gender, 'male', admission.birthDate, admission.startDatetime),
-      getAgeForGender(admission.gender, 'female', admission.birthDate, admission.startDatetime),
+      getAgeForGender(admission.gender, 'male', admission.birthDate, admission.startDatetime, ageLabels),
+      getAgeForGender(admission.gender, 'female', admission.birthDate, admission.startDatetime, ageLabels),
       admission.service,
       String(index + 1),
       admission.communicationCondition,
@@ -250,9 +305,12 @@ export default function AdmissionHome() {
                 id="admission-report-search"
                 labelText={t(
                   'searchAdmissions',
-                  'Buscar por paciente, DNI, HCE, código temporal, seguro, responsable, servicio o ubicación',
+                  'Buscar por paciente, documento, HCE, código temporal, seguro, responsable, servicio o ubicación',
                 )}
-                placeholder={t('searchAdmissionsPlaceholder', 'Paciente, DNI, HCE, seguro, responsable, servicio...')}
+                placeholder={t(
+                  'searchAdmissionsPlaceholder',
+                  'Paciente, documento, HCE, seguro, responsable, servicio...',
+                )}
                 value={searchTerm}
                 onChange={(event) => setSearchTerm(event.target.value)}
               />
@@ -292,6 +350,7 @@ export default function AdmissionHome() {
                   <colgroup>
                     <col className={styles.dateColumn} />
                     <col className={styles.identifierColumn} />
+                    <col className={styles.documentTypeColumn} />
                     <col className={styles.identifierColumn} />
                     <col className={styles.statusColumn} />
                     <col className={styles.responsibleColumn} />
@@ -307,25 +366,26 @@ export default function AdmissionHome() {
                   </colgroup>
                   <TableHead>
                     <TableRow>
-                      <SpanningTableHeader rowSpan={2}>{t('date', 'Fecha')}</SpanningTableHeader>
-                      <SpanningTableHeader rowSpan={2}>
+                      <TableHeader {...twoRowHeaderProps}>{t('date', 'Fecha')}</TableHeader>
+                      <TableHeader {...twoRowHeaderProps}>
                         {t('medicalRecordNumber', 'HCE / código temporal')}
-                      </SpanningTableHeader>
-                      <SpanningTableHeader rowSpan={2}>{t('documentNumber', 'DNI')}</SpanningTableHeader>
-                      <SpanningTableHeader rowSpan={2}>
+                      </TableHeader>
+                      <TableHeader {...twoRowHeaderProps}>{t('documentType', 'Tipo doc.')}</TableHeader>
+                      <TableHeader {...twoRowHeaderProps}>{t('documentNumber', 'N° documento')}</TableHeader>
+                      <TableHeader {...twoRowHeaderProps}>
                         {t('identificationStatus', 'Estado identificación')}
-                      </SpanningTableHeader>
-                      <SpanningTableHeader rowSpan={2}>{t('responsiblePerson', 'Responsable')}</SpanningTableHeader>
-                      <SpanningTableHeader rowSpan={2}>{t('birthDateShort', 'F. Nac.')}</SpanningTableHeader>
-                      <SpanningTableHeader rowSpan={2}>{t('hasSis', 'Tiene SIS')}</SpanningTableHeader>
-                      <SpanningTableHeader rowSpan={2}>{t('fullName', 'Nombres y apellidos')}</SpanningTableHeader>
-                      <SpanningTableHeader rowSpan={2}>{t('address', 'Dirección')}</SpanningTableHeader>
-                      <SpanningTableHeader colSpan={2}>{t('age', 'Edad')}</SpanningTableHeader>
-                      <SpanningTableHeader rowSpan={2}>{t('service', 'Servicio')}</SpanningTableHeader>
-                      <SpanningTableHeader rowSpan={2}>{t('orderNumber', 'Número de orden')}</SpanningTableHeader>
-                      <SpanningTableHeader rowSpan={2}>
+                      </TableHeader>
+                      <TableHeader {...twoRowHeaderProps}>{t('responsiblePerson', 'Responsable')}</TableHeader>
+                      <TableHeader {...twoRowHeaderProps}>{t('birthDateShort', 'F. Nac.')}</TableHeader>
+                      <TableHeader {...twoRowHeaderProps}>{t('hasSis', 'Tiene SIS')}</TableHeader>
+                      <TableHeader {...twoRowHeaderProps}>{t('fullName', 'Nombres y apellidos')}</TableHeader>
+                      <TableHeader {...twoRowHeaderProps}>{t('address', 'Dirección')}</TableHeader>
+                      <TableHeader colSpan={2}>{t('age', 'Edad')}</TableHeader>
+                      <TableHeader {...twoRowHeaderProps}>{t('service', 'Servicio')}</TableHeader>
+                      <TableHeader {...twoRowHeaderProps}>{t('orderNumber', 'Número de orden')}</TableHeader>
+                      <TableHeader {...twoRowHeaderProps}>
                         {t('communicationCondition', 'Condición comunicación')}
-                      </SpanningTableHeader>
+                      </TableHeader>
                     </TableRow>
                     <TableRow>
                       <TableHeader>{t('maleInitial', 'M')}</TableHeader>
@@ -337,6 +397,7 @@ export default function AdmissionHome() {
                       <TableRow key={admission.uuid}>
                         <TableCell>{formatDate(admission.startDatetime)}</TableCell>
                         <TableCell>{admission.medicalRecordNumber}</TableCell>
+                        <TableCell>{admission.documentType || t('pending', 'Pendiente')}</TableCell>
                         <TableCell>{admission.documentNumber || t('pending', 'Pendiente')}</TableCell>
                         <TableCell>{admission.identificationStatus}</TableCell>
                         <TableCell>
@@ -358,10 +419,22 @@ export default function AdmissionHome() {
                         </TableCell>
                         <TableCell>{admission.address}</TableCell>
                         <TableCell>
-                          {getAgeForGender(admission.gender, 'male', admission.birthDate, admission.startDatetime)}
+                          {getAgeForGender(
+                            admission.gender,
+                            'male',
+                            admission.birthDate,
+                            admission.startDatetime,
+                            ageLabels,
+                          )}
                         </TableCell>
                         <TableCell>
-                          {getAgeForGender(admission.gender, 'female', admission.birthDate, admission.startDatetime)}
+                          {getAgeForGender(
+                            admission.gender,
+                            'female',
+                            admission.birthDate,
+                            admission.startDatetime,
+                            ageLabels,
+                          )}
                         </TableCell>
                         <TableCell>{admission.service}</TableCell>
                         <TableCell>{index + 1}</TableCell>

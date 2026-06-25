@@ -19,7 +19,7 @@ export function useWorkspaceGroupStore(workspaceGroupName?: string) {
     if (currentWorkspaceGroupName !== workspaceGroupName) {
       setCurrentWorkspaceGroupName(workspaceGroupName);
     }
-  }, [workspaceGroupName]);
+  }, [workspaceGroupName, currentWorkspaceGroupName]);
 
   useEffect(() => {
     const store = getWorkspaceGroupStore(currentWorkspaceGroupName);

@@ -4,10 +4,9 @@ import { dispatchToastShown, type ImportMap } from '@openmrs/esm-globals';
 import { getCoreTranslation } from '@openmrs/esm-translations';
 import { getCurrentPageMap, getImportMapOverrideMap, resetImportMapOverrides } from './import-maps';
 
-type WebpackShareScopes = Record<
-  string,
-  Record<string, { loaded?: 1; get: () => Promise<unknown>; from: string; eager: boolean }>
->;
+type WebpackShareScope = Record<string, { loaded?: 1; get: () => Promise<unknown>; from: string; eager: boolean }>;
+
+declare const __webpack_share_scopes__: Record<string, WebpackShareScope>;
 
 /**
  * @internal
@@ -68,14 +67,14 @@ export async function importDynamic<T = any>(
 
   const jsPackageSlug = slugify(jsPackage);
 
-  const container = (window as unknown as Record<string, unknown>)[jsPackageSlug] as unknown;
+  const container = window[jsPackageSlug] as unknown;
   if (!isFederatedModule(container)) {
     const error = `The global variable ${jsPackageSlug} does not refer to a federated module`;
     console.error(error);
     throw new Error(error);
   }
 
-  container.init(getWebpackShareScopes().default);
+  container.init(__webpack_share_scopes__.default);
 
   const factory = await container.get(share);
   const module = factory();
@@ -130,7 +129,7 @@ export async function preloadImport(jsPackage: string, importMap?: ImportMap) {
 
   const jsPackageSlug = slugify(jsPackage);
 
-  if (!(window as unknown as Record<string, unknown>)[jsPackageSlug]) {
+  if (!window[jsPackageSlug]) {
     const activeImportMap = importMap ?? (await getCurrentImportMap());
     if (!Object.hasOwn(activeImportMap.imports, jsPackage)) {
       const error = `Could not find the package ${jsPackage} defined in the current importmap`;
@@ -145,7 +144,7 @@ export async function preloadImport(jsPackage: string, importMap?: ImportMap) {
 
     const isOverridden = jsPackage in getImportMapOverrideMap().imports;
     try {
-      return await new Promise<null>((resolve, reject: (reason?: unknown) => void) => {
+      return await new Promise<unknown>((resolve, reject) => {
         loadScript(url, resolve, reject);
       });
     } catch (err: any) {
@@ -168,9 +167,11 @@ export async function preloadImport(jsPackage: string, importMap?: ImportMap) {
         });
       }
 
-      throw err;
+      return Promise.reject(err);
     }
   }
+
+  return Promise.resolve();
 }
 
 /**
@@ -185,12 +186,8 @@ export async function getCurrentImportMap() {
 }
 
 interface FederatedModule {
-  init: (scope: WebpackShareScopes['default']) => void;
+  init: (scope: typeof __webpack_share_scopes__.default) => void;
   get: (_export: string) => Promise<() => unknown>;
-}
-
-function getWebpackShareScopes() {
-  return (globalThis as typeof globalThis & { __webpack_share_scopes__: WebpackShareScopes }).__webpack_share_scopes__;
 }
 
 function isFederatedModule(a: unknown): a is FederatedModule {
@@ -214,15 +211,13 @@ const OPENMRS_SCRIPT_LOADING = Symbol('__openmrs_script_loading');
  */
 function loadScript(
   url: string,
-  resolve: (value: null | PromiseLike<null>) => void,
-  reject: (reason?: unknown) => void,
+  resolve: (value: unknown | PromiseLike<unknown>) => void,
+  reject: (reason?: any) => void,
 ) {
-  const globalLoadingState = window as unknown as Record<PropertyKey, Set<string> | undefined>;
   const scriptElement = document.head.querySelector(`script[src="${url}"]`);
-  let scriptLoading = globalLoadingState[OPENMRS_SCRIPT_LOADING];
+  let scriptLoading: Set<string> = window[OPENMRS_SCRIPT_LOADING];
   if (!scriptLoading) {
-    scriptLoading = new Set<string>();
-    globalLoadingState[OPENMRS_SCRIPT_LOADING] = scriptLoading;
+    scriptLoading = window[OPENMRS_SCRIPT_LOADING] = new Set([]);
   }
 
   if (!scriptElement) {
@@ -239,7 +234,7 @@ function loadScript(
       );
     }, 5_000); // 5 seconds; this is arbitrary
 
-    let loadFn: () => void, errFn: EventListener, finishScriptLoading: () => void;
+    let loadFn: () => void, errFn: (ev: Event) => void, finishScriptLoading: () => void;
 
     finishScriptLoading = () => {
       clearTimeout(loadTimeout);
@@ -259,12 +254,12 @@ function loadScript(
       resolve(null);
     };
 
-    errFn = (event: Event) => {
-      const ev = event as ErrorEvent;
+    errFn = (ev: Event) => {
+      const errorEvent = ev as ErrorEvent;
       finishScriptLoading();
       const msg = `Failed to load script from ${url}`;
-      console.error(msg, ev);
-      reject(ev.message ?? msg);
+      console.error(msg, errorEvent);
+      reject(errorEvent.message ?? msg);
     };
 
     element.addEventListener('load', loadFn);
@@ -273,7 +268,7 @@ function loadScript(
     document.head.appendChild(element);
   } else {
     if (scriptLoading.has(url)) {
-      let loadFn: () => void, errFn: EventListener, finishScriptLoading: () => void;
+      let loadFn: () => void, errFn: (ev: Event) => void, finishScriptLoading: () => void;
 
       finishScriptLoading = () => {
         if (loadFn) {
@@ -291,10 +286,10 @@ function loadScript(
       };
 
       // this errFn does not log anything
-      errFn = (event: Event) => {
-        const ev = event as ErrorEvent;
+      errFn = (ev: Event) => {
+        const errorEvent = ev as ErrorEvent;
         finishScriptLoading();
-        reject(ev.message);
+        reject(errorEvent.message);
       };
 
       scriptElement.addEventListener('load', loadFn);

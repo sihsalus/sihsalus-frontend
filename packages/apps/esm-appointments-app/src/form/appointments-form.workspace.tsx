@@ -56,9 +56,9 @@ import {
 } from '../constants';
 import SelectedDateContext from '../hooks/selectedDateContext';
 import { useProviders } from '../hooks/useProviders';
-import type { Appointment, AppointmentPayload, RecurringPattern } from '../types';
+import { type Appointment, AppointmentKind, type AppointmentPayload, type RecurringPattern } from '../types';
 import Workload from '../workload/workload.component';
-
+//TO DO FIX THIS SHIT
 import {
   checkAppointmentConflict,
   saveAppointment,
@@ -127,6 +127,40 @@ const time12HourFormatRegexPattern = '^(1[0-2]|0?[1-9]):[0-5][0-9]$';
 const isValidTime = (timeStr: string) => timeStr.match(new RegExp(time12HourFormatRegexPattern));
 
 const isSuccessfulAppointmentResponse = (status?: number) => status >= 200 && status < 300 && status !== 204;
+
+const normalizeAppointmentKind = (appointmentType: string): AppointmentKind => {
+  const normalizedType = appointmentType.trim().toLowerCase();
+
+  const legacyMappings: Record<string, AppointmentKind> = {
+    scheduled: AppointmentKind.SCHEDULED,
+    walkin: AppointmentKind.WALKIN,
+    'walk in': AppointmentKind.WALKIN,
+    'walk-in': AppointmentKind.WALKIN,
+    virtual: AppointmentKind.VIRTUAL,
+    nuevo: AppointmentKind.SCHEDULED,
+    continuador: AppointmentKind.SCHEDULED,
+    reingresante: AppointmentKind.SCHEDULED,
+  };
+
+  const directMappings = {
+    [AppointmentKind.SCHEDULED.toLowerCase()]: AppointmentKind.SCHEDULED,
+    [AppointmentKind.WALKIN.toLowerCase()]: AppointmentKind.WALKIN,
+    [AppointmentKind.VIRTUAL.toLowerCase()]: AppointmentKind.VIRTUAL,
+  };
+
+  return directMappings[normalizedType] ?? legacyMappings[normalizedType] ?? AppointmentKind.SCHEDULED;
+};
+
+const getAppointmentTypeFromKind = (
+  appointmentKind: string | undefined,
+  appointmentTypes: Array<string> = [],
+): string => {
+  if (!appointmentKind) {
+    return '';
+  }
+
+  return appointmentTypes.find((type) => normalizeAppointmentKind(type) === appointmentKind) ?? '';
+};
 
 const getErrorMessage = (error: unknown, fallback: string) => {
   if (error instanceof Error) {
@@ -217,6 +251,7 @@ const AppointmentsForm: React.FC<
   const { selectedDate } = useContext(SelectedDateContext);
   const { data: services, isLoading } = useAppointmentService();
   const { appointmentStatuses, appointmentTypes, allowAllDayAppointments } = useConfig<ConfigObject>();
+  const mappedAppointmentTypes = appointmentTypes ?? [];
   const title =
     workspaceTitle ??
     (context === 'editing'
@@ -347,7 +382,7 @@ const AppointmentsForm: React.FC<
         '', // assumes only a single previously-scheduled provider with state "ACCEPTED", if multiple, just takes the first
       appointmentNote: appointment?.comments || '',
       appointmentStatus: appointment?.status || '',
-      appointmentType: appointment?.appointmentKind || '',
+      appointmentType: getAppointmentTypeFromKind(appointment?.appointmentKind, mappedAppointmentTypes),
       selectedService: appointment?.service?.name || '',
       recurringPatternType: defaultRecurringPatternType,
       recurringPatternPeriod: defaultRecurringPatternPeriod,
@@ -374,7 +409,10 @@ const AppointmentsForm: React.FC<
   } = useController({ name: 'appointmentDateTime.startDate', control });
   const {
     field: { ref: endDateRef },
-  } = useController({ name: 'appointmentDateTime.recurringPatternEndDate', control });
+  } = useController({
+    name: 'appointmentDateTime.recurringPatternEndDate',
+    control,
+  });
 
   // Manually call ref callback from 'react-hook-form' with the element(s) we want to be focused
   useEffect(() => {
@@ -537,7 +575,7 @@ const AppointmentsForm: React.FC<
       : startDateTime.add(duration ?? 0, 'minutes');
 
     return {
-      appointmentKind: selectedAppointmentType,
+      appointmentKind: normalizeAppointmentKind(selectedAppointmentType),
       status: appointmentStatus,
       serviceUuid: serviceUuid,
       startDateTime: startDateTime.format(),
@@ -675,7 +713,7 @@ const AppointmentsForm: React.FC<
                 control={control}
                 render={({ field: { onBlur, onChange, value, ref } }) => (
                   <Select
-                    disabled={!appointmentTypes?.length}
+                    disabled={!mappedAppointmentTypes?.length}
                     id="appointmentType"
                     invalid={!!errors?.appointmentType}
                     invalidText={errors?.appointmentType?.message}
@@ -686,8 +724,8 @@ const AppointmentsForm: React.FC<
                     value={value}
                   >
                     <SelectItem text={t('chooseAppointmentType', 'Choose appointment type')} value="" />
-                    {appointmentTypes?.length > 0 &&
-                      appointmentTypes.map((appointmentType, index) => (
+                    {mappedAppointmentTypes?.length > 0 &&
+                      mappedAppointmentTypes.map((appointmentType, index) => (
                         <SelectItem key={index} text={appointmentType} value={appointmentType}>
                           {appointmentType}
                         </SelectItem>
@@ -778,7 +816,12 @@ const AppointmentsForm: React.FC<
                           invalidText={t('invalidNumber', 'Number is not valid')}
                           size="md"
                           value={value}
-                          onKeyDown={preventInvalidIntegerKey({ integer: true, max: 356, min: 1, nonNegative: true })}
+                          onKeyDown={preventInvalidIntegerKey({
+                            integer: true,
+                            max: 356,
+                            min: 1,
+                            nonNegative: true,
+                          })}
                           onPaste={preventInvalidIntegerPaste({
                             integer: true,
                             max: 356,
@@ -788,7 +831,12 @@ const AppointmentsForm: React.FC<
                           onBlur={onBlur}
                           onChange={(_event, { value: nextValue }) => {
                             onChange(
-                              getIntegerValue(nextValue, { integer: true, max: 356, min: 1, nonNegative: true }),
+                              getIntegerValue(nextValue, {
+                                integer: true,
+                                max: 356,
+                                min: 1,
+                                nonNegative: true,
+                              }),
                             );
                           }}
                         />
@@ -1074,13 +1122,28 @@ function TimeAndDuration({ t, watch: _watch, control, services: _services, error
               max={1440}
               min={0}
               onBlur={onBlur}
-              onKeyDown={preventInvalidIntegerKey({ integer: true, max: 1440, min: 0, nonNegative: true })}
-              onPaste={preventInvalidIntegerPaste({ integer: true, max: 1440, min: 0, nonNegative: true })}
+              onKeyDown={preventInvalidIntegerKey({
+                integer: true,
+                max: 1440,
+                min: 0,
+                nonNegative: true,
+              })}
+              onPaste={preventInvalidIntegerPaste({
+                integer: true,
+                max: 1440,
+                min: 0,
+                nonNegative: true,
+              })}
               onChange={(_event, { value: nextValue }) =>
                 onChange(
                   nextValue === '' || nextValue === undefined
                     ? null
-                    : getIntegerValue(nextValue, { integer: true, max: 1440, min: 0, nonNegative: true }),
+                    : getIntegerValue(nextValue, {
+                        integer: true,
+                        max: 1440,
+                        min: 0,
+                        nonNegative: true,
+                      }),
                 )
               }
               ref={ref}

@@ -34,11 +34,14 @@ export function useDatepickerContext(): DatepickerContext {
 
   const locale = useMemo(() => {
     let loc = getLocale();
+    const baseLocale = loc.split('-')[0];
     if (preferredDateLocaleMap[loc]) {
       loc = preferredDateLocaleMap[loc];
+    } else if (baseLocale && preferredDateLocaleMap[baseLocale]) {
+      loc = preferredDateLocaleMap[baseLocale];
     }
     return loc;
-  }, [window.i18next.language]);
+  }, [preferredDateLocaleMap]);
 
   const calendar = useMemo(() => {
     const cal = getDefaultCalendar(locale);

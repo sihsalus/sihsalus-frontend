@@ -27,8 +27,8 @@ import {
   parseDate,
   useConfig,
   useLayoutType,
-  useSession,
   userHasAccess,
+  useSession,
 } from '@openmrs/esm-framework';
 import { PatientChartPagination } from '@openmrs/esm-patient-common-lib';
 import React, { useCallback, useMemo, useState } from 'react';
@@ -212,7 +212,13 @@ const ProceduresDetailedSummary = ({ patient }: ProceduresDetailedSummaryProps) 
     );
   }
 
-  return <EmptyCard displayText={displayText} headerTitle={headerTitle} launchForm={canEdit ? launchProceduresForm : undefined} />;
+  return (
+    <EmptyCard
+      displayText={displayText}
+      headerTitle={headerTitle}
+      launchForm={canEdit ? launchProceduresForm : undefined}
+    />
+  );
 };
 
 export default ProceduresDetailedSummary;

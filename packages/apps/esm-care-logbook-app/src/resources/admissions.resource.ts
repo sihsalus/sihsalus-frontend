@@ -4,6 +4,7 @@ import useSWR from 'swr';
 
 interface Identifier {
   identifier?: string;
+  preferred?: boolean;
   identifierType?: {
     display?: string;
   };
@@ -78,6 +79,7 @@ export interface AdmissionRow {
   startDatetime?: string;
   patientName: string;
   medicalRecordNumber: string;
+  documentType: string;
   documentNumber: string;
   identificationStatus: string;
   communicationCondition: string;
@@ -101,14 +103,40 @@ function getMedicalRecordNumber(identifiers: Identifier[] = []) {
   return preferred?.identifier ?? '';
 }
 
-function getDocumentNumber(identifiers: Identifier[] = []) {
-  const preferred = identifiers.find((identifier) =>
-    /dni|\bce\b|carn[eé].*extranjer|pasaporte|pass|documento|certificado de nacido vivo|cnv|\bdie\b/i.test(
-      identifier.identifierType?.display ?? '',
-    ),
-  );
+const identityDocumentTypePatterns = [
+  /dni|documento nacional de identidad/i,
+  /\bce\b|carn[eé].*extranjer/i,
+  /\bdie\b|documento de identidad extranjero/i,
+  /pasaporte|\bpass\b/i,
+  /\bcnv\b|certificado de nacido vivo/i,
+  /documento/i,
+];
 
-  return preferred?.identifier ?? '';
+function getIdentityDocumentTypePriority(display?: string) {
+  const priority = identityDocumentTypePatterns.findIndex((pattern) => pattern.test(display ?? ''));
+
+  return priority === -1 ? Number.POSITIVE_INFINITY : priority;
+}
+
+function getDocumentIdentifier(identifiers: Identifier[] = []) {
+  const candidates = identifiers
+    .map((identifier, index) => ({
+      identifier,
+      index,
+      priority: getIdentityDocumentTypePriority(identifier.identifierType?.display),
+    }))
+    .filter(
+      ({ identifier, priority }) => priority < Number.POSITIVE_INFINITY && Boolean(identifier.identifier?.trim()),
+    );
+
+  const selected =
+    candidates.find((candidate) => candidate.identifier.preferred) ??
+    candidates.sort((left, right) => left.priority - right.priority || left.index - right.index)[0];
+
+  return {
+    type: selected?.identifier.identifierType?.display?.trim() ?? '',
+    number: selected?.identifier.identifier?.trim() ?? '',
+  };
 }
 
 function getAttributeValue(attributes: VisitPersonAttribute[] = [], pattern: RegExp) {
@@ -252,6 +280,7 @@ function mapVisitToAdmission(visit: Visit, relationships: VisitRelationship[] = 
   const attributes = person?.attributes ?? [];
   const patientUuid = visit.patient?.uuid ?? '';
   const responsibleRelationship = getResponsibleRelationship(patientUuid, relationships);
+  const documentIdentifier = getDocumentIdentifier(identifiers);
   const fallbackResponsibleName = getAttributeValue(
     attributes,
     /nombre del acompa[nñ]ante|responsable|companion name/i,
@@ -264,7 +293,8 @@ function mapVisitToAdmission(visit: Visit, relationships: VisitRelationship[] = 
     startDatetime: visit.startDatetime,
     patientName: person?.display ?? visit.patient?.display ?? '',
     medicalRecordNumber: getMedicalRecordNumber(identifiers),
-    documentNumber: getDocumentNumber(identifiers),
+    documentType: documentIdentifier.type,
+    documentNumber: documentIdentifier.number,
     identificationStatus: getIdentificationStatus(attributes),
     communicationCondition: getCommunicationCondition(attributes),
     responsibleName: responsibleRelationship.name || fallbackResponsibleName,
@@ -287,7 +317,7 @@ function mapVisitToAdmission(visit: Visit, relationships: VisitRelationship[] = 
 }
 
 const visitRepresentation =
-  'custom:(uuid,startDatetime,stopDatetime,patient:(uuid,display,identifiers:(identifier,identifierType:(display)),person:(display,birthdate,gender,addresses:(preferred,address1,cityVillage,stateProvince),attributes:(attributeType:(display),value))),visitType:(display),location:(display))';
+  'custom:(uuid,startDatetime,stopDatetime,patient:(uuid,display,identifiers:(identifier,preferred,identifierType:(display)),person:(display,birthdate,gender,addresses:(preferred,address1,cityVillage,stateProvince),attributes:(attributeType:(display),value))),visitType:(display),location:(display))';
 
 const relationshipRepresentation =
   'custom:(display,uuid,personA:(uuid,display),personB:(uuid,display),relationshipType:(uuid,display,description,aIsToB,bIsToA))';

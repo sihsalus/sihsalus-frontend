@@ -105,7 +105,7 @@
 
 .table {
   width: 100%;
-  min-width: 110rem;
+  min-width: 116rem;
   table-layout: fixed;
 }
 
@@ -127,6 +127,10 @@
 }
 
 .identifierColumn {
+  width: 8rem;
+}
+
+.documentTypeColumn {
   width: 6rem;
 }
 
@@ -151,7 +155,7 @@
 }
 
 .ageColumn {
-  width: 5rem;
+  width: 7rem;
 }
 
 .serviceColumn {
@@ -166,9 +170,9 @@
   width: 12rem;
 }
 
-.table td:nth-child(10),
 .table td:nth-child(11),
-.table td:nth-child(13) {
+.table td:nth-child(12),
+.table td:nth-child(14) {
   text-align: center;
 }
 

@@ -1,100 +1,94 @@
 {
   "name": "@openmrs/esm-styleguide",
-  "version": "9.0.2",
+  "version": "10.0.0",
   "license": "MPL-2.0",
-  "description": "OpenMRS Styleguide — vendored fork with local patches",
-  "browser": "dist/openmrs-esm-styleguide.js",
-  "main": "src/index.ts",
-  "source": true,
-  "types": "dist/internal.d.ts",
+  "description": "The styleguide for OpenMRS SPA",
+  "module": "dist/internal.js",
+  "types": "dist/public.d.ts",
   "exports": {
     ".": {
       "types": "./dist/internal.d.ts",
-      "default": "./src/internal.ts"
+      "default": "./dist/internal.js"
     },
     "./src/internal": {
       "types": "./dist/internal.d.ts",
-      "default": "./src/internal.ts"
+      "default": "./dist/internal.js"
     },
-    "./dist/openmrs-esm-styleguide.css": {
-      "default": "./dist/openmrs-esm-styleguide.css"
+    "./src/public": {
+      "types": "./dist/public.d.ts",
+      "default": "./dist/public.js"
+    },
+    "./src/index": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
     },
     "./styles": {
       "sass": "./dist/_all.scss",
       "default": "./dist/_all.scss"
-    },
-    "./src/public": {
-      "types": "./dist/public.d.ts",
-      "default": "./src/public.ts"
-    },
-    "./src/index": {
-      "types": "./dist/index.d.ts",
-      "default": "./src/index.ts"
     },
     "./src/vars": {
       "sass": "./src/_vars.scss"
     },
     "./mock": {
       "import": "./mock.tsx",
-      "require": "./mock-vitest.tsx"
+      "require": "./mock-jest.tsx"
     }
   },
+  "source": true,
   "scripts": {
-    "build": "rspack build -c rspack.config.cjs && tsc -p tsconfig.build.json",
     "test": "cross-env TZ=UTC vitest run --passWithNoTests",
-    "test:watch": "cross-env TZ=UTC vitest watch --passWithNoTests",
+    "test:watch": "cross-env TZ=UTC vitest watch",
     "coverage": "cross-env TZ=UTC vitest run --coverage --passWithNoTests",
-    "typescript": "tsc --noEmit && tsc -p tsconfig.build.json",
-    "lint": "node ../../tooling/scripts/run-biome.js lint ."
+    "build": "rimraf dist && concurrently \"swc --strip-leading-paths --copy-files src -d dist && svgo -rf dist --quiet\" \"tsc --project tsconfig.build.json\"",
+    "build:development": "rimraf dist && concurrently \"swc --strip-leading-paths --copy-files src -d dist\" \"tsc --project tsconfig.build.json\"",
+    "lint": "node ../../tooling/scripts/run-biome.js lint src"
+  },
+  "keywords": [
+    "openmrs",
+    "microfrontends",
+    "styleguide"
+  ],
+  "directories": {
+    "lib": "dist",
+    "src": "src"
+  },
+  "browserslist": [
+    "extends browserslist-config-openmrs"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/openmrs/openmrs-esm-core.git"
+  },
+  "bugs": {
+    "url": "https://github.com/openmrs/openmrs-esm-core/issues"
+  },
+  "homepage": "https://github.com/openmrs/openmrs-esm-core#readme",
+  "publishConfig": {
+    "access": "public"
   },
   "dependencies": {
     "@carbon/charts": "^1.27.0",
     "@carbon/react": "^1.92.1",
     "@internationalized/date": "^3.8.0",
-    "@openmrs/esm-extensions": "workspace:*",
-    "@openmrs/esm-routes": "workspace:*",
-    "@react-aria/datepicker": "^3.16.1",
     "@react-aria/utils": "^3.28.2",
-    "@react-stately/datepicker": "^3.16.1",
     "d3": "^7.8.0",
     "geopattern": "^1.2.3",
     "lodash-es": "^4.17.21",
     "react-aria-components": "^1.7.1"
   },
-  "devDependencies": {
-    "@openmrs/esm-api": "workspace:*",
-    "@openmrs/esm-config": "workspace:*",
-    "@openmrs/esm-emr-api": "workspace:*",
-    "@openmrs/esm-error-handling": "workspace:*",
-    "@openmrs/esm-globals": "workspace:*",
-    "@openmrs/esm-navigation": "workspace:*",
-    "@openmrs/esm-react-utils": "workspace:*",
-    "@openmrs/esm-state": "workspace:*",
-    "@openmrs/esm-translations": "workspace:*",
-    "@openmrs/esm-utils": "workspace:*",
-    "@rspack/cli": "1.7.11",
-    "@rspack/core": "1.7.11",
-    "clean-webpack-plugin": "4.0.0",
-    "css-loader": "7.1.4",
-    "sass-embedded": "1.89.0",
-    "sass-loader": "16.0.5",
-    "swc-loader": "0.2.7",
-    "typescript": "6.0.3",
-    "webpack-bundle-analyzer": "4.10.2"
-  },
   "peerDependencies": {
-    "@openmrs/esm-api": "9.x",
-    "@openmrs/esm-config": "9.x",
-    "@openmrs/esm-emr-api": "9.x",
-    "@openmrs/esm-error-handling": "9.x",
-    "@openmrs/esm-extensions": "9.x",
-    "@openmrs/esm-globals": "9.x",
-    "@openmrs/esm-navigation": "9.x",
-    "@openmrs/esm-react-utils": "9.x",
-    "@openmrs/esm-routes": "9.x",
-    "@openmrs/esm-state": "9.x",
-    "@openmrs/esm-translations": "9.x",
-    "@openmrs/esm-utils": "9.x",
+    "@openmrs/esm-api": "workspace:^",
+    "@openmrs/esm-config": "workspace:^",
+    "@openmrs/esm-emr-api": "workspace:^",
+    "@openmrs/esm-error-handling": "workspace:^",
+    "@openmrs/esm-extensions": "workspace:^",
+    "@openmrs/esm-globals": "workspace:^",
+    "@openmrs/esm-navigation": "workspace:^",
+    "@openmrs/esm-react-utils": "workspace:^",
+    "@openmrs/esm-routes": "workspace:^",
+    "@openmrs/esm-state": "workspace:^",
+    "@openmrs/esm-translations": "workspace:^",
+    "@openmrs/esm-utils": "workspace:^",
     "dayjs": "1.x",
     "i18next": "25.x",
     "react": "18.x",
@@ -102,5 +96,35 @@
     "react-i18next": "16.x",
     "rxjs": "6.x",
     "swr": "2.x"
+  },
+  "devDependencies": {
+    "@openmrs/esm-api": "workspace:*",
+    "@openmrs/esm-config": "workspace:*",
+    "@openmrs/esm-emr-api": "workspace:*",
+    "@openmrs/esm-error-handling": "workspace:*",
+    "@openmrs/esm-extensions": "workspace:*",
+    "@openmrs/esm-globals": "workspace:*",
+    "@openmrs/esm-navigation": "workspace:*",
+    "@openmrs/esm-react-utils": "workspace:*",
+    "@openmrs/esm-routes": "workspace:*",
+    "@openmrs/esm-state": "workspace:*",
+    "@openmrs/esm-translations": "workspace:*",
+    "@openmrs/esm-utils": "workspace:*",
+    "@swc/cli": "0.8.1",
+    "@swc/core": "1.15.21",
+    "@types/geopattern": "^1.2.9",
+    "@vitest/coverage-v8": "^4.1.2",
+    "concurrently": "^9.2.1",
+    "cross-env": "^10.1.0",
+    "happy-dom": "^20.6.0",
+    "i18next": "^25.5.3",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
+    "rimraf": "^6.1.3",
+    "rxjs": "^6.5.3",
+    "svgo": "^3.3.2",
+    "swr": "2.2.5",
+    "typescript": "6.0.3",
+    "vitest": "^4.1.2"
   }
 }

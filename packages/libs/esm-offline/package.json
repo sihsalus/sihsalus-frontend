@@ -1,6 +1,6 @@
 {
   "name": "@openmrs/esm-offline",
-  "version": "9.0.3-pre.4728",
+  "version": "10.0.0",
   "license": "MPL-2.0",
   "description": "Helper utilities for OpenMRS",
   "type": "module",
@@ -24,7 +24,7 @@
     "build": "rimraf dist && concurrently \"swc --strip-leading-paths src -d dist\" \"tsc --project tsconfig.build.json\"",
     "build:development": "rimraf dist && concurrently \"swc --strip-leading-paths src -d dist\" \"tsc --project tsconfig.build.json\"",
     "typescript": "tsc --project tsconfig.build.json",
-    "lint": "node ../../tooling/scripts/run-biome.js lint ."
+    "lint": "node ../../tooling/scripts/run-biome.js lint src"
   },
   "keywords": [
     "openmrs",
@@ -49,41 +49,31 @@
     "access": "public"
   },
   "peerDependencies": {
-    "@openmrs/esm-api": "9.x",
-    "@openmrs/esm-globals": "9.x",
-    "@openmrs/esm-state": "9.x",
+    "@openmrs/esm-api": "workspace:^",
+    "@openmrs/esm-globals": "workspace:^",
+    "@openmrs/esm-state": "workspace:^",
     "rxjs": "6.x"
   },
   "dependencies": {
     "dexie": "^3.0.3",
     "lodash-es": "^4.17.21",
-    "uuid": "^14.0.0",
+    "uuid": "^9.0.1",
     "workbox-window": "^6.1.5"
   },
   "devDependencies": {
     "@openmrs/esm-api": "workspace:*",
-    "@openmrs/esm-config": "workspace:*",
-    "@openmrs/esm-error-handling": "workspace:*",
     "@openmrs/esm-globals": "workspace:*",
-    "@openmrs/esm-navigation": "workspace:*",
     "@openmrs/esm-state": "workspace:*",
-    "@openmrs/esm-utils": "workspace:*",
     "@swc/cli": "0.8.1",
     "@swc/core": "1.15.21",
-    "@types/fhir": "0.0.31",
-    "@types/node": "^22.10.7",
     "@types/uuid": "^9.0.1",
     "@vitest/coverage-v8": "^4.1.2",
     "concurrently": "^9.2.1",
     "cross-env": "^10.1.0",
-    "dayjs": "^1.11.13",
     "happy-dom": "^20.6.0",
-    "i18next": "^25.7.2",
     "rimraf": "^6.1.3",
     "rxjs": "^6.5.3",
-    "single-spa": "^6.0.3",
     "typescript": "6.0.3",
-    "vitest": "^4.1.7"
-  },
-  "stableVersion": "9.0.2"
+    "vitest": "^4.1.2"
+  }
 }

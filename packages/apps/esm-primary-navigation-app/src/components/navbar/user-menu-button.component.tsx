@@ -1,5 +1,6 @@
 import { HeaderGlobalAction } from '@carbon/react';
 import { CloseIcon, UserAvatarIcon, useAssignedExtensions, useOnClickOutside } from '@openmrs/esm-framework';
+import { RequirePrivilege } from '@sihsalus/esm-rbac';
 import classNames from 'classnames';
 import React, { useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -20,24 +21,26 @@ const UserMenuButton: React.FC<MenuButtonProps> = ({ isActivePanel, togglePanel,
 
   return (
     showUserMenu && (
-      <div ref={userMenuRef} className={styles.panelWrapper}>
-        <HeaderGlobalAction
-          aria-label={t('userMenuTooltip', 'My Account')}
-          aria-labelledby="Users Avatar Icon"
-          className={classNames({
-            [styles.headerGlobalBarButton]: isActivePanel('userMenu'),
-            [styles.activePanel]: !isActivePanel('userMenu'),
-          })}
-          data-tutorial-target="user-settings"
-          isActive={isActivePanel('userMenu')}
-          onClick={() => {
-            togglePanel('userMenu');
-          }}
-        >
-          {isActivePanel('userMenu') ? <CloseIcon size={20} /> : <UserAvatarIcon size={20} />}
-        </HeaderGlobalAction>
-        <UserMenuPanel expanded={isActivePanel('userMenu')} hidePanel={hidePanel('userMenu')} />
-      </div>
+      <RequirePrivilege privilege="app:topnav.userMenu" hideUnauthorized>
+        <div ref={userMenuRef} className={styles.panelWrapper}>
+          <HeaderGlobalAction
+            aria-label={t('userMenuTooltip', 'My Account')}
+            aria-labelledby="Users Avatar Icon"
+            className={classNames({
+              [styles.headerGlobalBarButton]: isActivePanel('userMenu'),
+              [styles.activePanel]: !isActivePanel('userMenu'),
+            })}
+            data-tutorial-target="user-settings"
+            isActive={isActivePanel('userMenu')}
+            onClick={() => {
+              togglePanel('userMenu');
+            }}
+          >
+            {isActivePanel('userMenu') ? <CloseIcon size={20} /> : <UserAvatarIcon size={20} />}
+          </HeaderGlobalAction>
+          <UserMenuPanel expanded={isActivePanel('userMenu')} hidePanel={hidePanel('userMenu')} />
+        </div>
+      </RequirePrivilege>
     )
   );
 };

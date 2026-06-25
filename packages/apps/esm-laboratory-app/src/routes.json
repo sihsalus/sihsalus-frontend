@@ -6,7 +6,8 @@
   "pages": [
     {
       "component": "root",
-      "route": "laboratory"
+      "route": "laboratory",
+      "privileges": "app:laboratory"
     }
   ],
   "extensions": [
@@ -30,15 +31,18 @@
     },
     {
       "name": "pickup-lab-request-modal",
-      "component": "pickupLabRequestModal"
+      "component": "pickupLabRequestModal",
+      "privileges": "app:laboratory.edit"
     },
     {
       "name": "approval-lab-results-modal",
-      "component": "approvalLabResultsModal"
+      "component": "approvalLabResultsModal",
+      "privileges": "app:laboratory.edit"
     },
     {
       "name": "reject-lab-request-modal",
-      "component": "rejectLabRequestModal"
+      "component": "rejectLabRequestModal",
+      "privileges": "app:laboratory.edit"
     },
     {
       "name": "all-lab-requests-table",
@@ -129,64 +133,76 @@
     {
       "name": "pick-lab-request-action",
       "component": "pickupLabRequestAction",
-      "slot": "tests-ordered-actions-slot"
+      "slot": "tests-ordered-actions-slot",
+      "privileges": "app:laboratory.edit"
     },
     {
       "name": "approve-lab-results-tests-ordered-action",
       "component": "approveLabResultsAction",
-      "slot": "approved-ordered-actions-slot"
+      "slot": "approved-ordered-actions-slot",
+      "privileges": "app:laboratory.edit"
     },
     {
       "name": "amend-lab-results-tests-ordered-action",
       "component": "amendLabResultsAction",
-      "slot": "amended-ordered-actions-slot"
+      "slot": "amended-ordered-actions-slot",
+      "privileges": "app:laboratory.edit"
     },
     {
       "name": "reject-lab-request-tests-ordered-action",
       "component": "rejectLabRequestAction",
-      "slot": "rejected-ordered-actions-slot"
+      "slot": "rejected-ordered-actions-slot",
+      "privileges": "app:laboratory.edit"
     },
     {
       "name": "reject-lab-request-worklist-action",
       "component": "rejectLabRequestAction",
-      "slot": "inprogress-tests-actions-slot"
+      "slot": "inprogress-tests-actions-slot",
+      "privileges": "app:laboratory.edit"
     },
     {
       "name": "add-lab-request-results-action",
       "component": "addLabRequestResultsAction",
-      "slot": "inprogress-tests-actions-slot"
+      "slot": "inprogress-tests-actions-slot",
+      "privileges": "app:laboratory.edit"
     }
   ],
   "workspaces2": [
     {
       "name": "lab-app-test-results-form-workspace",
       "component": "@sihsalus/esm-patient-orders-app#testResultsFormWorkspace",
-      "window": "labs-app-test-results-window"
+      "window": "labs-app-test-results-window",
+      "privileges": "app:laboratory.edit"
     },
     {
       "name": "lab-app-test-results-add-lab-order-workspace",
       "component": "@sihsalus/esm-patient-tests-app#addLabOrderWorkspace",
-      "window": "labs-app-test-results-window"
+      "window": "labs-app-test-results-window",
+      "privileges": "app:laboratory.edit"
     },
     {
       "name": "add-test-order-patient-search-workspace",
       "component": "@sihsalus/esm-patient-search-app#patientSearchWorkspace",
-      "window": "add-test-order-window"
+      "window": "add-test-order-window",
+      "privileges": "app:laboratory.edit"
     },
     {
       "name": "add-test-order-start-visit-workspace",
       "component": "@sihsalus/esm-patient-chart-app#startVisitWorkspace",
-      "window": "add-test-order-window"
+      "window": "add-test-order-window",
+      "privileges": "app:laboratory.edit"
     },
     {
       "name": "add-test-order-basket-workspace",
       "component": "@sihsalus/esm-patient-orders-app#orderBasketWorkspace",
-      "window": "add-test-order-window"
+      "window": "add-test-order-window",
+      "privileges": "app:laboratory.edit"
     },
     {
       "name": "add-test-order-basket-add-lab-order-workspace",
       "component": "@sihsalus/esm-patient-tests-app#addLabOrderWorkspace",
-      "window": "add-test-order-window"
+      "window": "add-test-order-window",
+      "privileges": "app:laboratory.edit"
     }
   ],
   "workspaceWindows2": [

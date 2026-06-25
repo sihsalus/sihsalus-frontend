@@ -2,10 +2,10 @@ import { HeaderGlobalAction } from '@carbon/react';
 import { Merge } from '@carbon/react/icons';
 import { navigate } from '@openmrs/esm-framework';
 import { RequirePrivilege } from '@sihsalus/esm-rbac';
-import { useCallback } from 'react';
+import React, { useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
 
-import { admissionPrivilege, basePath, moduleName } from '../constants';
+import { basePath, careLogbookEditPrivilege, moduleName } from '../constants';
 import styles from './links.scss';
 
 export default function CareLogbookMergePatientsAction() {
@@ -16,7 +16,7 @@ export default function CareLogbookMergePatientsAction() {
   );
 
   return (
-    <RequirePrivilege privilege={admissionPrivilege} hideUnauthorized>
+    <RequirePrivilege privilege={[careLogbookEditPrivilege, 'app:topnav.mergePatients']} hideUnauthorized>
       <HeaderGlobalAction
         aria-label={t('mergeDuplicatePatients', 'Fusionar historias clínicas duplicadas')}
         aria-labelledby={t('mergeDuplicatePatients', 'Fusionar historias clínicas duplicadas')}

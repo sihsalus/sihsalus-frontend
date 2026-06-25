@@ -8,6 +8,7 @@
     {
       "component": "root",
       "route": "emergency",
+      "privileges": "app:emergency",
       "online": true,
       "offline": false
     }
@@ -18,6 +19,7 @@
       "title": "newEmergencyPatient",
       "component": "emergencyWorkflowWorkspace",
       "type": "form",
+      "privileges": "app:emergency.edit",
       "preferredWindowSize": "wider"
     },
     {
@@ -25,29 +27,35 @@
       "title": "emergencyAttention",
       "component": "attentionFormWorkspace",
       "type": "clinical-form",
+      "privileges": "app:emergency.edit",
       "preferredWindowSize": "wider"
     }
   ],
   "modals": [
     {
       "name": "emergency-serve-patient-modal",
-      "component": "servePatientModal"
+      "component": "servePatientModal",
+      "privileges": "app:emergency.edit"
     },
     {
       "name": "emergency-remove-queue-entry-modal",
-      "component": "removeQueueEntryModal"
+      "component": "removeQueueEntryModal",
+      "privileges": "app:emergency.edit"
     },
     {
       "name": "emergency-transition-queue-entry-modal",
-      "component": "transitionQueueEntryModal"
+      "component": "transitionQueueEntryModal",
+      "privileges": "app:emergency.edit"
     },
     {
       "name": "emergency-move-queue-entry-modal",
-      "component": "moveQueueEntryModal"
+      "component": "moveQueueEntryModal",
+      "privileges": "app:emergency.edit"
     },
     {
       "name": "emergency-clear-queue-entries-modal",
-      "component": "clearQueueEntriesModal"
+      "component": "clearQueueEntriesModal",
+      "privileges": "app:emergency.edit"
     }
   ],
   "extensions": [

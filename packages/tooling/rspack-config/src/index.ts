@@ -222,6 +222,7 @@ export default (env: Record<string, string>, argv: Record<string, string> = {}) 
                 transform: {
                   react: {
                     runtime: 'automatic',
+                    development: mode !== production,
                   },
                 },
               },

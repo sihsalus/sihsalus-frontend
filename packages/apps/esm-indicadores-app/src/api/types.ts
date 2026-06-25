@@ -154,6 +154,28 @@ export interface BatchCalcularNowResponse {
   total: number;
 }
 
+export interface ErrorRecalculo {
+  indicador_id: string;
+  indicador_nombre: string;
+  mes: string;
+  error: string;
+}
+
+export interface RecalcularAnioParams {
+  anio: number;
+  indicador_id?: string;
+}
+
+export interface RecalcularAnioResponse {
+  anio: number;
+  indicador_id: string | null;
+  meses_procesados: number;
+  indicadores_considerados: number;
+  recalculados: number;
+  errores: Array<ErrorRecalculo>;
+  total: number;
+}
+
 export interface ResultadosFilters {
   indicador_id?: string;
   periodo_inicio?: string;

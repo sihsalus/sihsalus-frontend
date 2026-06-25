@@ -93,6 +93,10 @@
   flex-wrap: wrap;
 }
 
+.filterSwitches {
+  margin-top: 0.25rem;
+}
+
 .empty {
   text-align: center;
   padding: 2rem;
@@ -104,10 +108,12 @@
   display: flex;
   flex-direction: column;
   gap: 1.25rem;
+  width: 100%;
 }
 
 .formPageShell {
   max-width: 72rem;
+  width: 100%;
 }
 
 .formPageIntro {
@@ -125,10 +131,12 @@
   border: 1px solid #e0e0e0;
   background: #ffffff;
   padding: 1.25rem;
+  display: grid;
+  gap: 1rem;
 }
 
 .sectionHeader {
-  margin-bottom: 1rem;
+  margin-bottom: 0;
 }
 
 .sectionHint {
@@ -149,6 +157,7 @@
 .filtersPanel {
   display: grid;
   gap: 1rem;
+  align-items: start;
 }
 
 .formGrid,
@@ -160,11 +169,24 @@
   grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
 }
 
+.formGrid > :first-child {
+  grid-column: 1 / -1;
+}
+
+.formGrid > .searchSelector,
+.formColumns > .searchSelector {
+  grid-column: 1 / -1;
+}
+
 .populationLayout {
   display: grid;
   gap: 1rem;
-  grid-template-columns: minmax(220px, 280px) minmax(0, 1fr);
+  grid-template-columns: minmax(0, 1fr);
   align-items: start;
+}
+
+.populationLayout > :first-child {
+  max-width: 20rem;
 }
 
 .ageBlock {
@@ -174,9 +196,9 @@
 }
 
 .ageBlockHeader {
-  display: flex;
-  justify-content: space-between;
-  align-items: baseline;
+  display: grid;
+  grid-template-columns: minmax(8rem, max-content) minmax(0, 1fr);
+  align-items: start;
   gap: 1rem;
   margin-bottom: 0.75rem;
 }
@@ -324,6 +346,25 @@
 .paginationSummary {
   color: #525252;
   font-size: 0.875rem;
+}
+
+.failedList {
+  margin: 0.5rem 0 0;
+  padding-left: 1.25rem;
+  font-size: 0.8125rem;
+  line-height: 1.4;
+  max-height: 8rem;
+  overflow-y: auto;
+
+  li {
+    margin: 0.125rem 0;
+  }
+}
+
+.summaryBlock {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
 }
 
 @media (max-width: 672px) {

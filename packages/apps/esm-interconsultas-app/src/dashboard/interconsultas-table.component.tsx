@@ -52,7 +52,7 @@ interface InterconsultasTableProps {
 const InterconsultasTable: React.FC<InterconsultasTableProps> = ({ filter }) => {
   const { t } = useTranslation();
   const session = useSession();
-  const canEdit = userHasAccess('app:interconsultas.edit', session?.user);
+  const canEdit = userHasAccess('app:clinical.chart.interconsultations.edit', session?.user);
   const { interconsultas, isLoading, error } = useInterconsultas(filter);
   const [searchString, setSearchString] = useState('');
   const [serviceFilter, setServiceFilter] = useState<string>('');

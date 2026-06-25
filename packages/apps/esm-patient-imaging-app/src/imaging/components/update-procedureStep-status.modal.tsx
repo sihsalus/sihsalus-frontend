@@ -28,7 +28,7 @@ const UpdateProcedureStepStatusModal: React.FC<UpdateProcedureStepStatusProps> =
         kind: 'success',
         title: t('changeStepStatus', 'The performed status of procedure step is changed'),
       });
-    } catch (err: any) {
+    } catch (err: unknown) {
       showSnackbar({
         isLowContrast: false,
         kind: 'error',

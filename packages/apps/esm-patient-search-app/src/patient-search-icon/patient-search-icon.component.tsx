@@ -1,7 +1,6 @@
 import { HeaderGlobalAction } from '@carbon/react';
 import { Close, Search } from '@carbon/react/icons';
 import { isDesktop, navigate, useLayoutType, useOnClickOutside } from '@openmrs/esm-framework';
-import { RequirePrivilege } from '@sihsalus/esm-rbac';
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useParams, useSearchParams } from 'react-router-dom';
@@ -72,49 +71,47 @@ const PatientSearchLaunch: React.FC<PatientSearchLaunchProps> = () => {
   }, [showSearchInput, isSearchPage]);
 
   return (
-    <RequirePrivilege privilege={['Get Patients', 'app:topnav.patientSearch']} hideUnauthorized>
-      <div className={styles.patientSearchIconWrapper} ref={ref}>
-        {showSearchInput ? (
-          <>
-            {isDesktop(layout) ? (
-              /* CompactPatientSearchComponent provides the search context */
-              <CompactPatientSearchComponent
-                isSearchPage={isSearchPage}
-                initialSearchTerm={initialSearchTerm}
-                shouldNavigateToPatientSearchPage
-                onPatientSelect={resetToInitialState}
-              />
-            ) : (
-              <PatientSearchOverlay
-                onClose={closePatientSearch}
-                query={initialSearchTerm}
-                patientClickSideEffect={closePatientSearch}
-              />
-            )}
-            <div className={styles.closeButton}>
-              <HeaderGlobalAction
-                aria-label={t('closeSearch', 'Close Search Panel')}
-                className={styles.activeSearchIconButton}
-                data-testid="closeSearchIcon"
-                onClick={closePatientSearch}
-              >
-                <Close size={20} />
-              </HeaderGlobalAction>
-            </div>
-          </>
-        ) : (
-          <div data-testid="searchPatientIcon">
+    <div className={styles.patientSearchIconWrapper} ref={ref}>
+      {showSearchInput ? (
+        <>
+          {isDesktop(layout) ? (
+            /* CompactPatientSearchComponent provides the search context */
+            <CompactPatientSearchComponent
+              isSearchPage={isSearchPage}
+              initialSearchTerm={initialSearchTerm}
+              shouldNavigateToPatientSearchPage
+              onPatientSelect={resetToInitialState}
+            />
+          ) : (
+            <PatientSearchOverlay
+              onClose={closePatientSearch}
+              query={initialSearchTerm}
+              patientClickSideEffect={closePatientSearch}
+            />
+          )}
+          <div className={styles.closeButton}>
             <HeaderGlobalAction
-              aria-label={t('searchPatient', 'Search patient')}
-              className={styles.searchIconButton}
-              onClick={handleShowSearchInput}
+              aria-label={t('closeSearch', 'Close Search Panel')}
+              className={styles.activeSearchIconButton}
+              data-testid="closeSearchIcon"
+              onClick={closePatientSearch}
             >
-              <Search size={20} />
+              <Close size={20} />
             </HeaderGlobalAction>
           </div>
-        )}
-      </div>
-    </RequirePrivilege>
+        </>
+      ) : (
+        <div data-testid="searchPatientIcon">
+          <HeaderGlobalAction
+            aria-label={t('searchPatient', 'Search patient')}
+            className={styles.searchIconButton}
+            onClick={handleShowSearchInput}
+          >
+            <Search size={20} />
+          </HeaderGlobalAction>
+        </div>
+      )}
+    </div>
   );
 };
 

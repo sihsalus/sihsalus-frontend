@@ -13,7 +13,7 @@ import {
   TableRow,
 } from '@carbon/react';
 import { showSnackbar, useLayoutType } from '@openmrs/esm-framework';
-import React, { useCallback } from 'react';
+import React, { useCallback, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { updateStudyLinkStatus, useStudiesByPatient } from '../../api';
 import styles from './details-table.scss';

@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { type StockOperationFilter, useStockOperations } from './stock-operations.resource';
 
@@ -7,7 +7,6 @@ export function useStockOperationPages(filter: StockOperationFilter) {
   const [currentPage, setCurrentPage] = useState(1);
   const [currentPageSize, setPageSize] = useState(10);
   const filterKey = JSON.stringify(filter);
-  const previousFilterKey = useRef(filterKey);
 
   const paginatedFilter = useMemo(
     () => ({
@@ -69,18 +68,16 @@ export function useStockOperationPages(filter: StockOperationFilter) {
     [t],
   );
 
+  // biome-ignore lint/correctness/useExhaustiveDependencies: filterKey changes must reset pagination.
   useEffect(() => {
-    if (previousFilterKey.current !== filterKey) {
-      previousFilterKey.current = filterKey;
-      setCurrentPage(1);
-    }
+    setCurrentPage(1);
   }, [filterKey]);
 
   useEffect(() => {
-    if (!isLoading && currentPage > 1 && stockOperations.length === 0 && (items.totalCount ?? 0) > 0) {
+    if (!isLoading && currentPage > 1 && (items?.results?.length ?? 0) === 0 && (items?.totalCount ?? 0) > 0) {
       setCurrentPage(1);
     }
-  }, [currentPage, isLoading, items.totalCount, stockOperations.length]);
+  }, [currentPage, isLoading, items]);
 
   return {
     items: stockOperations,

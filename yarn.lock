@@ -4294,7 +4294,6 @@ __metadata:
     "@openmrs/esm-state": "workspace:*"
     "@swc/cli": "npm:0.8.1"
     "@swc/core": "npm:1.15.21"
-    "@types/uuid": "npm:^9.0.1"
     "@vitest/coverage-v8": "npm:^4.1.2"
     concurrently: "npm:^9.2.1"
     cross-env: "npm:^10.1.0"
@@ -4304,7 +4303,7 @@ __metadata:
     rimraf: "npm:^6.1.3"
     rxjs: "npm:^6.5.3"
     typescript: "npm:6.0.3"
-    uuid: "npm:^9.0.1"
+    uuid: "npm:^14.0.0"
     vitest: "npm:^4.1.2"
     workbox-window: "npm:^6.1.5"
   peerDependencies:
@@ -11162,7 +11161,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@types/uuid@npm:^9.0.1, @types/uuid@npm:^9.0.4":
+"@types/uuid@npm:^9.0.4":
   version: 9.0.8
   resolution: "@types/uuid@npm:9.0.8"
   checksum: 10c0/b411b93054cb1d4361919579ef3508a1f12bf15b5fdd97337d3d351bece6c921b52b6daeef89b62340fd73fd60da407878432a1af777f40648cbe53a01723489

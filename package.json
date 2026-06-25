@@ -129,7 +129,6 @@
     "lodash-es": "4.18.1",
     "uuid": "14.0.0",
     "uuid@npm:^8.3.2": "npm:14.0.0",
-    "uuid@npm:^9.0.1": "npm:14.0.0",
     "phin@npm:^2.9.1": "npm:3.7.1",
     "brace-expansion@npm:^1.1.7": "npm:1.1.15",
     "brace-expansion@npm:^2.0.1": "npm:2.1.1",

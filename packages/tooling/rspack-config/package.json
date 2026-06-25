@@ -39,7 +39,7 @@
     "lodash": "4.17.21",
     "sass-embedded": "1.89.2",
     "sass-loader": "16.0.5",
-    "style-loader": "3.3.4",
+    "style-loader": "4.0.0",
     "swc-loader": "0.2.7",
     "ts-checker-rspack-plugin": "1.1.4",
     "webpack-bundle-analyzer": "4.10.2",

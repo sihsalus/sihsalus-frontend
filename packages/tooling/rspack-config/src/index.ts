@@ -219,6 +219,8 @@ export default (env: Record<string, string>, argv: Record<string, string> = {}) 
                   syntax: 'typescript',
                   tsx: true,
                 },
+                // Ensure TSX uses the React 17+ automatic runtime so shared chunks
+                // don't fail when a component omits a default React import.
                 transform: {
                   react: {
                     runtime: 'automatic',

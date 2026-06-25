@@ -87,6 +87,7 @@
   "paginationPageRange": "of {{total}} pages",
   "paginationPageSelect": "Page of {{total}} pages",
   "patient": "Patient",
+  "patientFuasWorkspaceTitle": "Patient FUAs",
   "popupBlocked": "The browser blocked the new tab",
   "possibleCauses": "Possible causes",
   "previousPage": "Previous page",
@@ -118,6 +119,7 @@
   "uuid": "UUID",
   "verifyServer": "Verify that the server is running",
   "viewFua": "View FUA",
+  "viewPatientFuas": "View patient FUAs",
   "viewHistory": "View history",
   "visits": "Visits"
 }

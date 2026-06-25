@@ -13,6 +13,7 @@ import styles from './fua-patient-widget.scss';
 
 interface FuaPatientWidgetProps {
   patientUuid: string;
+  maxItems?: number | null;
 }
 
 const ESTADO_TAG: Record<string, 'blue' | 'cyan' | 'gray' | 'green' | 'magenta' | 'red'> = {
@@ -24,9 +25,10 @@ const ESTADO_TAG: Record<string, 'blue' | 'cyan' | 'gray' | 'green' | 'magenta' 
   Cancelado: 'magenta',
 };
 
-const FuaPatientWidgetContent: React.FC<FuaPatientWidgetProps> = ({ patientUuid }) => {
+const FuaPatientWidgetContent: React.FC<FuaPatientWidgetProps> = ({ patientUuid, maxItems = 5 }) => {
   const { t } = useTranslation();
   const { fuaOrders, isLoading, isError } = useFuasByPatient(patientUuid);
+  const visibleFuaOrders = maxItems == null ? fuaOrders : fuaOrders.slice(0, maxItems);
 
   if (isLoading) {
     return <DataTableSkeleton showHeader={false} showToolbar={false} rowCount={3} columnCount={3} />;
@@ -51,7 +53,7 @@ const FuaPatientWidgetContent: React.FC<FuaPatientWidgetProps> = ({ patientUuid 
   return (
     <div className={styles.widgetContainer}>
       <ul className={styles.fuaList}>
-        {fuaOrders.slice(0, 5).map((fua) => (
+        {visibleFuaOrders.map((fua) => (
           <li key={fua.uuid} className={styles.fuaItem}>
             <div className={styles.fuaItemMain}>
               <span className={styles.fuaItemName}>{fua.numeroFua ?? fua.name}</span>

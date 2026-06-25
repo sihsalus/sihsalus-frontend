@@ -131,6 +131,11 @@
       "name": "fua-viewer-workspace",
       "component": "fuaViewerWorkspace",
       "window": "patient-chart-fua"
+    },
+    {
+      "name": "patient-fuas-workspace",
+      "component": "patientFuasWorkspace",
+      "window": "patient-chart-fua"
     }
   ],
   "workspaceWindows2": [

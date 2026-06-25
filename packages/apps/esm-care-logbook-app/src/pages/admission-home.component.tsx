@@ -17,13 +17,13 @@ import {
 } from '@carbon/react';
 import { Download, Launch } from '@carbon/react/icons';
 import {
-  ageAsDuration,
   ConfigurableLink,
   PageHeader,
   PageHeaderContent,
   RegistrationPictogram,
   useConfig,
 } from '@openmrs/esm-framework';
+import { ageAsDuration } from '@openmrs/esm-utils';
 import { AppErrorBoundary, RequirePrivilege } from '@sihsalus/esm-rbac';
 import { useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';

@@ -12,7 +12,6 @@ import { PatientBannerContactDetails } from './patient-banner-contact-details.co
 
 vi.mock('@openmrs/esm-framework', async () => ({
   ...((await vi.importActual('@openmrs/esm-framework')) as object),
-  ageAsDuration: (await vi.importActual<typeof import('@openmrs/esm-utils')>('@openmrs/esm-utils')).ageAsDuration,
   ConfigurableLink: ({ children, to }: PropsWithChildren<{ to: string }>) => <a href={to}>{children}</a>,
   useConfig: vi.fn(),
   usePatient: vi.fn(),

@@ -1,6 +1,5 @@
 import { InlineLoading } from '@carbon/react';
 import {
-  ageAsDuration,
   ConfigurableLink,
   type CoreTranslationKey,
   formatDate,
@@ -9,6 +8,7 @@ import {
   useConfig,
   usePatient,
 } from '@openmrs/esm-framework';
+import { ageAsDuration } from '@openmrs/esm-utils';
 import classNames from 'classnames';
 import React, { useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';

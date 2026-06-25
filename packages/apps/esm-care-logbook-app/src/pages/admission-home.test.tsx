@@ -1,5 +1,6 @@
 import { useConfig } from '@openmrs/esm-framework';
 import { fireEvent, render, screen } from '@testing-library/react';
+import { type PropsWithChildren } from 'react';
 import { BrowserRouter } from 'react-router-dom';
 
 import { type AdmissionRow, useAdmissions } from '../resources/admissions.resource';
@@ -7,7 +8,10 @@ import AdmissionHome from './admission-home.component';
 
 vi.mock('@openmrs/esm-framework', async () => ({
   ...(await vi.importActual('@openmrs/esm-framework')),
-  ageAsDuration: (await vi.importActual<typeof import('@openmrs/esm-utils')>('@openmrs/esm-utils')).ageAsDuration,
+  ConfigurableLink: ({ children, to }: PropsWithChildren<{ to: string }>) => <a href={to}>{children}</a>,
+  PageHeader: ({ children }: PropsWithChildren) => <header>{children}</header>,
+  PageHeaderContent: ({ children }: PropsWithChildren) => <div>{children}</div>,
+  RegistrationPictogram: () => <span />,
   useConfig: vi.fn(),
 }));
 

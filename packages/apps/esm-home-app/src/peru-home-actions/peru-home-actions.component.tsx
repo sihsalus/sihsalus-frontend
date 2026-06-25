@@ -26,7 +26,7 @@ const appointmentsPrivilege = 'app:appointments';
 const serviceQueuesPrivilege = 'app:service-queues';
 const laboratoryPrivilege = 'app:laboratory';
 const dispensingPrivilege = 'app:dispensing';
-const fuaReadPrivilege = 'app:fua';
+const fuaReadPrivilege = 'Read Fua';
 
 // t('searchPatient', 'Search patient')
 // t('searchPatientDescription', 'Find an existing patient record')

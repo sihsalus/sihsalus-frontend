@@ -49,12 +49,12 @@
     {
       "name": "remove-queue-entry",
       "component": "removeQueueEntry",
-      "privileges": "app:service-queues"
+      "privileges": "app:service-queues.edit"
     },
     {
       "name": "clear-all-queue-entries",
       "component": "clearAllQueueEntries",
-      "privileges": "app:service-queues"
+      "privileges": "app:service-queues.edit"
     },
     {
       "name": "previous-visit-summary-widget",
@@ -66,13 +66,13 @@
       "name": "active-visits-row-actions",
       "component": "activeVisitsRowActions",
       "slot": "queue-table-serve-patient-slot",
-      "privileges": "app:service-queues"
+      "privileges": "app:service-queues.edit"
     },
     {
       "name": "visit-form-queue-fields",
       "component": "visitFormQueueFields",
       "slot": "visit-form-bottom-slot",
-      "privileges": "app:service-queues"
+      "privileges": "app:service-queues.edit"
     },
     {
       "name": "queue-patient-info-queue-entry-status",
@@ -84,39 +84,48 @@
   "modals": [
     {
       "name": "add-provider-to-room-modal",
-      "component": "addProviderToRoomModal"
+      "component": "addProviderToRoomModal",
+      "privileges": "app:service-queues.edit"
     },
     {
       "name": "edit-queue-entry-modal",
-      "component": "editQueueEntryModal"
+      "component": "editQueueEntryModal",
+      "privileges": "app:service-queues.edit"
     },
     {
       "name": "edit-queue-entry-status-modal",
-      "component": "editQueueEntryStatusModal"
+      "component": "editQueueEntryStatusModal",
+      "privileges": "app:service-queues.edit"
     },
     {
       "name": "end-queue-entry-modal",
-      "component": "endQueueEntryModal"
+      "component": "endQueueEntryModal",
+      "privileges": "app:service-queues.edit"
     },
     {
       "name": "transition-patient-to-latest-queue-modal",
-      "component": "transitionPatientToLatestQueue"
+      "component": "transitionPatientToLatestQueue",
+      "privileges": "app:service-queues.edit"
     },
     {
       "name": "transition-queue-entry-modal",
-      "component": "transitionQueueEntryModal"
+      "component": "transitionQueueEntryModal",
+      "privileges": "app:service-queues.edit"
     },
     {
       "name": "transition-queue-entry-status-modal",
-      "component": "transitionQueueEntryStatusModal"
+      "component": "transitionQueueEntryStatusModal",
+      "privileges": "app:service-queues.edit"
     },
     {
       "name": "undo-transition-queue-entry-modal",
-      "component": "undoTransitionQueueEntryModal"
+      "component": "undoTransitionQueueEntryModal",
+      "privileges": "app:service-queues.edit"
     },
     {
       "name": "void-queue-entry-modal",
-      "component": "voidQueueEntryModal"
+      "component": "voidQueueEntryModal",
+      "privileges": "app:service-queues.edit"
     }
   ],
   "workspaces": [
@@ -125,28 +134,28 @@
       "title": "addNewQueueService",
       "component": "addNewQueueServiceWorkspace",
       "type": "service-queues",
-      "privileges": "app:service-queues"
+      "privileges": "app:service-queues.edit"
     },
     {
       "name": "service-queues-room-workspace",
       "title": "addNewQueueServiceRoom",
       "component": "addNewQueueServiceRoomWorkspace",
       "type": "service-queues",
-      "privileges": "app:service-queues"
+      "privileges": "app:service-queues.edit"
     },
     {
       "name": "service-queues-linelist-filter",
       "title": "filter",
       "component": "queueLinelistFilterWorkspace",
       "type": "service-queues",
-      "privileges": "app:service-queues"
+      "privileges": "app:service-queues.edit"
     },
     {
       "name": "create-queue-entry-workspace",
       "title": "addPatientToQueue",
       "component": "createQueueEntryWorkspace",
       "type": "service-queues",
-      "privileges": "app:service-queues",
+      "privileges": "app:service-queues.edit",
       "width": "wider"
     }
   ],
@@ -155,13 +164,13 @@
       "name": "service-queues-patient-vitals-workspace",
       "component": "@sihsalus/esm-patient-vitals-app#vitalsBiometricsFormWorkspace",
       "window": "service-queues-patient-vitals",
-      "privileges": "app:service-queues"
+      "privileges": "app:service-queues.edit"
     },
     {
       "name": "service-queues-visit-notes-workspace",
       "component": "@sihsalus/esm-patient-notes-app#visitNotesFormWorkspace",
       "window": "service-queues-visit-note",
-      "privileges": "app:service-queues"
+      "privileges": "app:service-queues.edit"
     }
   ],
   "workspaceWindows2": [

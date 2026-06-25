@@ -8,6 +8,7 @@
     {
       "component": "dispensing",
       "route": "dispensing",
+      "privileges": "app:dispensing",
       "online": true,
       "offline": true
     }
@@ -58,54 +59,70 @@
     {
       "name": "dispense-action-button",
       "slot": "prescription-action-button-slot",
-      "component": "dispenseActionButton"
+      "component": "dispenseActionButton",
+      "privileges": "app:dispensing.edit"
     },
     {
       "name": "pause-action-button",
       "slot": "prescription-action-button-slot",
-      "component": "pauseActionButton"
+      "component": "pauseActionButton",
+      "privileges": "app:dispensing.edit"
     },
     {
       "name": "close-action-button",
       "slot": "prescription-action-button-slot",
-      "component": "closeActionButton"
+      "component": "closeActionButton",
+      "privileges": "app:dispensing.edit"
     }
   ],
   "workspaces2": [
     {
       "name": "close-dispense-workspace",
       "component": "closeDispenseWorkspace",
-      "window": "dispensing-window"
+      "window": "dispensing-window",
+      "privileges": "app:dispensing.edit"
     },
     {
       "name": "pause-dispense-workspace",
       "component": "pauseDispenseWorkspace",
-      "window": "dispensing-window"
+      "window": "dispensing-window",
+      "privileges": "app:dispensing.edit"
     },
     {
       "name": "dispense-workspace",
       "component": "dispenseWorkspace",
-      "window": "dispensing-window"
+      "window": "dispensing-window",
+      "privileges": "app:dispensing.edit"
     },
     {
       "name": "dispensing-patient-search-workspace",
       "component": "@sihsalus/esm-patient-search-app#patientSearchWorkspace2",
-      "window": "fill-prescription-window"
+      "window": "fill-prescription-window",
+      "privileges": "app:dispensing.edit"
     },
     {
       "name": "dispensing-start-visit-workspace",
       "component": "@sihsalus/esm-patient-chart-app#startVisitWorkspace",
-      "window": "fill-prescription-window"
+      "window": "fill-prescription-window",
+      "privileges": "app:dispensing.edit"
     },
     {
       "name": "dispensing-order-basket-workspace",
       "component": "@sihsalus/esm-patient-orders-app#orderBasketWorkspace",
-      "window": "fill-prescription-window"
+      "window": "fill-prescription-window",
+      "privileges": "app:dispensing.edit"
     },
     {
       "name": "dispensing-order-basket-add-drug-order-workspace",
       "component": "@sihsalus/esm-patient-medications-app#exportedAddDrugOrderWorkspace",
-      "window": "fill-prescription-window"
+      "window": "fill-prescription-window",
+      "privileges": "app:dispensing.edit"
+    },
+    {
+      "name": "dispensing-order-basket-add-allergy-workspace",
+      "component": "@sihsalus/esm-patient-allergies-app#exportedAllergyFormWorkspace",
+      "window": "fill-prescription-window",
+      "privileges": "app:dispensing.edit"
     }
   ],
   "workspaceWindows2": [
@@ -131,15 +148,18 @@
     },
     {
       "name": "delete-confirm-modal",
-      "component": "deleteConfirmModal"
+      "component": "deleteConfirmModal",
+      "privileges": "app:dispensing.edit"
     },
     {
       "name": "duplicate-dispense-modal",
-      "component": "duplicateDispenseModal"
+      "component": "duplicateDispenseModal",
+      "privileges": "app:dispensing.edit"
     },
     {
       "name": "on-prescription-filled-modal",
-      "component": "onPrescriptionFilledModal"
+      "component": "onPrescriptionFilledModal",
+      "privileges": "app:dispensing.edit"
     }
   ]
 }

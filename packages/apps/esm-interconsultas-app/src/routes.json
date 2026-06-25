@@ -61,22 +61,22 @@
     {
       "name": "receive-interconsulta-modal",
       "component": "receiveInterconsultaModal",
-      "privileges": "app:clinical.chart.interconsultations.edit"
+      "privileges": "app:interconsultas.edit"
     },
     {
       "name": "pickup-interconsulta-modal",
       "component": "pickupInterconsultaModal",
-      "privileges": "app:clinical.chart.interconsultations.edit"
+      "privileges": "app:interconsultas.edit"
     },
     {
       "name": "reject-interconsulta-modal",
       "component": "rejectInterconsultaModal",
-      "privileges": "app:clinical.chart.interconsultations.edit"
+      "privileges": "app:interconsultas.edit"
     },
     {
       "name": "respond-interconsulta-modal",
       "component": "respondInterconsultaModal",
-      "privileges": "app:clinical.chart.interconsultations.edit"
+      "privileges": "app:interconsultas.edit"
     },
     {
       "name": "interconsulta-detail-modal",

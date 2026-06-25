@@ -1,6 +1,7 @@
 import { HeaderGlobalAction } from '@carbon/react';
 import { UserFollow } from '@carbon/react/icons';
 import { navigate } from '@openmrs/esm-framework';
+import { RequirePrivilege } from '@sihsalus/esm-rbac';
 import React from 'react';
 import { useTranslation } from 'react-i18next';
 
@@ -15,13 +16,15 @@ export default function Root() {
   );
 
   return (
-    <HeaderGlobalAction
-      aria-label={t('addPatient', 'Add patient')}
-      aria-labelledby={t('addPatient', 'Add patient')}
-      onClick={addPatient}
-      className={styles.slotStyles}
-    >
-      <UserFollow size={20} />
-    </HeaderGlobalAction>
+    <RequirePrivilege privilege={['app:adt', 'app:topnav.registerPatient']} hideUnauthorized>
+      <HeaderGlobalAction
+        aria-label={t('addPatient', 'Add patient')}
+        aria-labelledby={t('addPatient', 'Add patient')}
+        onClick={addPatient}
+        className={styles.slotStyles}
+      >
+        <UserFollow size={20} />
+      </HeaderGlobalAction>
+    </RequirePrivilege>
   );
 }

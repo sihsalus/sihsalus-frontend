@@ -1,8 +1,9 @@
 import { Dropdown } from '@carbon/react';
-import { isDesktop, useLayoutType } from '@openmrs/esm-framework';
+import { isDesktop, useConfig, useLayoutType } from '@openmrs/esm-framework';
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
+import { type ConfigObject } from '../config-schema';
 import { updateSelectedService, useSelectedQueueLocationUuid, useSelectedService } from '../helpers/helpers';
 import { useQueueEntries } from '../hooks/useQueueEntries';
 import useQueueServices from '../hooks/useQueueService';
@@ -26,6 +27,9 @@ function ClinicMetrics() {
   const layout = useLayoutType();
   const currentQueueLocation = useSelectedQueueLocationUuid();
   const currentService = useSelectedService();
+  const {
+    concepts: { defaultStatusConceptUuid },
+  } = useConfig<ConfigObject>();
 
   const { services } = useQueueServices();
   const { serviceCount } = useServiceMetricsCount(currentService?.serviceUuid, currentQueueLocation);
@@ -41,7 +45,7 @@ function ClinicMetrics() {
   });
 
   const { activeVisitsCount, isLoading: loading } = useActiveVisits();
-  const { waitTime } = useAverageWaitTime(currentService?.serviceUuid, '');
+  const { waitTime } = useAverageWaitTime(currentService?.serviceUuid, defaultStatusConceptUuid);
 
   const defaultServiceItem: Service = {
     display: `${t('all', 'All')}`,

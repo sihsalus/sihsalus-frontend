@@ -28,7 +28,7 @@ export function usePatientAppointments(patientUuid: string, startDate: string, a
     });
 
   const { data, error, isLoading, isValidating, mutate } = useSWR<AppointmentsFetchResponse, Error>(
-    appointmentsSearchUrl,
+    patientUuid ? [appointmentsSearchUrl, patientUuid, startDate] : null,
     fetcher,
   );
 
@@ -46,7 +46,8 @@ export function usePatientAppointments(patientUuid: string, startDate: string, a
     .slice()
     .sort((a, b) => (a.startDateTime > b.startDateTime ? 1 : -1))
     ?.filter(({ status }) => status !== 'Cancelled')
-    ?.filter(({ startDateTime }) => dayjs(new Date(startDateTime).toISOString()).isAfter(new Date()));
+    // Upcoming means future days. Appointments later today belong only to todaysAppointments.
+    ?.filter(({ startDateTime }) => dayjs(new Date(startDateTime).toISOString()).isAfter(dayjs().endOf('day')));
 
   const todaysAppointments = appointments
     .slice()
@@ -74,4 +75,10 @@ export const changeAppointmentStatus = async (toStatus: string, appointmentUuid:
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
   });
+};
+
+export const getAppointmentStatus = async (appointmentUuid: string) => {
+  const url = `${restBaseUrl}/appointment?uuid=${appointmentUuid}`;
+  const { data } = await openmrsFetch<{ status?: string }>(url);
+  return data?.status;
 };

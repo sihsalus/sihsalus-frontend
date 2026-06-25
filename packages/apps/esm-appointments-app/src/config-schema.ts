@@ -18,8 +18,8 @@ export const configSchema = {
   appointmentTypes: {
     _type: Type.Array,
     _description:
-      'Configurable appointment types. MINSA/HIS uses patient entry condition: Nuevo, Continuador, Reingresante',
-    _default: ['Nuevo', 'Continuador', 'Reingresante'],
+      'Configurable appointment types for rendering. Values are sent to the backend as appointment kinds (Scheduled, WalkIn, Virtual).',
+    _default: ['Scheduled', 'WalkIn', 'Virtual'],
   },
   checkInButton: {
     enabled: {

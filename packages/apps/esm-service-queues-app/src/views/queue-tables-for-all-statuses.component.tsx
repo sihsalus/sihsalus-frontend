@@ -1,7 +1,7 @@
 import { InlineNotification, Search, SkeletonText } from '@carbon/react';
 import { Add } from '@carbon/react/icons';
 import { ExtensionSlot, isDesktop, launchWorkspace, showToast, useLayoutType } from '@openmrs/esm-framework';
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import { useQueueEntries } from '../hooks/useQueueEntries';
@@ -146,13 +146,15 @@ function QueueTableForQueueAndStatus({
   const columns = useColumns(queue.uuid, statusUuid);
   const { t } = useTranslation();
 
-  if (!columns) {
-    showToast({
-      title: t('invalidtableConfig', 'Invalid table configuration'),
-      kind: 'warning',
-      description: 'No table columns defined by queue ' + queue.uuid + ' and status ' + statusUuid,
-    });
-  }
+  useEffect(() => {
+    if (!columns) {
+      showToast({
+        title: t('invalidtableConfig', 'Invalid table configuration'),
+        kind: 'warning',
+        description: 'No table columns defined by queue ' + queue.uuid + ' and status ' + statusUuid,
+      });
+    }
+  }, [columns, queue.uuid, statusUuid, t]);
 
   // filters queue entries based on which status table we want to show and search term inputted by user
   const filterQueueEntries = (queueEntries: QueueEntry[], searchTerm: string, statusUuid: string) => {

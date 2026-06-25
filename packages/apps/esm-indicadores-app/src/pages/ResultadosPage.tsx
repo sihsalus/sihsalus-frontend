@@ -175,59 +175,6 @@ const ResultadosPage: React.FC = () => {
     } finally {
       setRecalcularRunning(false);
     }
-    const { result, anio } = summary;
-    const hasErrors = result.errores.length > 0;
-    // Mirrors handleRecalcularConfirm: total failure means 0 recalculated
-    // with at least one error on a non-empty batch. Do NOT require
-    // `errores.length >= total` since the backend may report fewer
-    // errors than the total attempted (months × indicators).
-    const isTotalFailure = result.recalculados === 0 && hasErrors && result.total > 0;
-    const kind: 'success' | 'warning' | 'error' = isTotalFailure ? 'error' : hasErrors ? 'warning' : 'success';
-    const subtitle = isTotalFailure
-      ? t('recalcSummaryRecalcTotalError', '{{anio}}: {{recalculados}} recalculados, todos con error', {
-          anio,
-          recalculados: result.recalculados,
-        })
-      : hasErrors
-        ? t('recalcSummaryRecalcPartial', '{{anio}}: {{recalculados}} recalculados, {{errores}} con error', {
-            anio,
-            recalculados: result.recalculados,
-            errores: result.errores.length,
-          })
-        : t('recalcSummaryRecalcOk', '{{anio}}: {{recalculados}} recalculados correctamente', {
-            anio,
-            recalculados: result.recalculados,
-          });
-    return (
-      <div className={styles.summaryBlock}>
-        <InlineNotification
-          kind={kind}
-          lowContrast
-          hideCloseButton={false}
-          onCloseButtonClick={() => setSummary(null)}
-          title={
-            isTotalFailure
-              ? t('recalcSummaryRecalcErrorTitle', 'Recálculo anual con errores')
-              : t('recalcSummaryRecalcTitle', 'Recálculo anual finalizado')
-          }
-          subtitle={subtitle}
-        />
-        {hasErrors ? (
-          <ul className={styles.failedList} aria-label={t('recalcSummaryFailedAria', 'Indicadores con error')}>
-            {result.errores.map((err) => (
-              <li key={`${err.indicador_id}-${err.mes}`}>
-                <strong>{err.indicador_nombre}</strong>
-                {' ('}
-                {err.indicador_id}
-                {err.mes ? `, ${err.mes}` : ''}
-                {'): '}
-                {err.error}
-              </li>
-            ))}
-          </ul>
-        ) : null}
-      </div>
-    );
   };
 
   const renderSummary = () => {

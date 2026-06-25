@@ -1,7 +1,7 @@
 import { render, screen } from '@testing-library/react';
 import type { ReactNode } from 'react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { fuaManagePrivilege } from './constant';
+import { fuaReadPrivilege } from './constant';
 import FuaEncounterAction from './fua-encounter-action.component';
 
 type RequirePrivilegeProps = {
@@ -11,12 +11,15 @@ type RequirePrivilegeProps = {
 };
 
 const mockRequirePrivilege = vi.hoisted(() => vi.fn((_props: RequirePrivilegeProps): ReactNode => null));
-const mockUseStartVisitIfNeeded = vi.hoisted(() => vi.fn(() => vi.fn(async () => true)));
-const mockUseVisitOrOfflineVisit = vi.hoisted(() =>
+const mockActionMenuButton2 = vi.hoisted(() =>
+  vi.fn(({ label }: { label: ReactNode; workspaceToLaunch: unknown }) => <button type="button">{label}</button>),
+);
+const mockUsePatientChartStore = vi.hoisted(() =>
   vi.fn(() => ({
-    currentVisit: { uuid: 'visit-uuid' },
-    activeVisit: null,
-    mutate: vi.fn(),
+    patientUuid: 'store-patient-uuid',
+    patient: null,
+    visitContext: null,
+    mutateVisitContext: vi.fn(),
   })),
 );
 
@@ -26,15 +29,11 @@ vi.mock('@sihsalus/esm-rbac', () => ({
 
 vi.mock('@openmrs/esm-framework', async () => ({
   ...(await vi.importActual('@openmrs/esm-framework')),
-  openmrsFetch: vi.fn(),
-  restBaseUrl: '/ws/rest/v1',
-  showSnackbar: vi.fn(),
-  useLayoutType: vi.fn(() => 'desktop'),
+  ActionMenuButton2: mockActionMenuButton2,
 }));
 
 vi.mock('@openmrs/esm-patient-common-lib', () => ({
-  useStartVisitIfNeeded: mockUseStartVisitIfNeeded,
-  useVisitOrOfflineVisit: mockUseVisitOrOfflineVisit,
+  usePatientChartStore: mockUsePatientChartStore,
 }));
 
 vi.mock('react-i18next', () => ({
@@ -45,8 +44,8 @@ vi.mock('react-i18next', () => ({
 
 describe('FuaEncounterAction', () => {
   beforeEach(() => {
-    mockUseStartVisitIfNeeded.mockClear();
-    mockUseVisitOrOfflineVisit.mockClear();
+    mockActionMenuButton2.mockClear();
+    mockUsePatientChartStore.mockClear();
     mockRequirePrivilege.mockImplementation(({ children }) => <>{children}</>);
   });
 
@@ -58,7 +57,7 @@ describe('FuaEncounterAction', () => {
   };
   const patient = { id: 'patient-uuid' } as fhir.Patient;
 
-  it('protects FUA creation with the manage privilege', () => {
+  it('protects patient FUA viewing with the read privilege', () => {
     render(
       <FuaEncounterAction
         groupProps={{
@@ -72,15 +71,26 @@ describe('FuaEncounterAction', () => {
 
     expect(mockRequirePrivilege).toHaveBeenCalledWith(
       expect.objectContaining({
-        privilege: fuaManagePrivilege,
+        privilege: fuaReadPrivilege,
         hideUnauthorized: true,
         children: expect.anything(),
       }),
     );
-    expect(screen.getByRole('button', { name: /crear fua/i })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /ver fuas del paciente/i })).toBeInTheDocument();
+    expect(mockActionMenuButton2).toHaveBeenCalledWith(
+      expect.objectContaining({
+        label: 'Ver FUAs del paciente',
+        workspaceToLaunch: expect.objectContaining({
+          workspaceName: 'patient-fuas-workspace',
+          workspaceProps: { patientUuid: 'patient-uuid' },
+          groupProps: expect.objectContaining({ patientUuid: 'patient-uuid' }),
+        }),
+      }),
+      {},
+    );
   });
 
-  it('hides the create action when access is denied', () => {
+  it('hides the patient FUA action when access is denied', () => {
     mockRequirePrivilege.mockImplementation(() => null);
 
     render(
@@ -94,8 +104,7 @@ describe('FuaEncounterAction', () => {
       />,
     );
 
-    expect(screen.queryByRole('button', { name: /crear fua/i })).not.toBeInTheDocument();
-    expect(mockUseStartVisitIfNeeded).not.toHaveBeenCalled();
-    expect(mockUseVisitOrOfflineVisit).not.toHaveBeenCalled();
+    expect(screen.queryByRole('button', { name: /ver fuas del paciente/i })).not.toBeInTheDocument();
+    expect(mockUsePatientChartStore).not.toHaveBeenCalled();
   });
 });

@@ -11,7 +11,7 @@ import {
   TableHeader,
   TableRow,
 } from '@carbon/react';
-import { AddIcon, useLayoutType, usePagination, useSession, userHasAccess } from '@openmrs/esm-framework';
+import { AddIcon, useLayoutType, usePagination, userHasAccess, useSession } from '@openmrs/esm-framework';
 import {
   CardHeader,
   EmptyState,
@@ -135,7 +135,13 @@ const AllergiesOverview: React.FC<AllergiesOverviewProps> = ({ patient }) => {
       </div>
     );
   }
-  return <EmptyState displayText={displayText} headerTitle={headerTitle} launchForm={canEdit ? launchAllergiesForm : undefined} />;
+  return (
+    <EmptyState
+      displayText={displayText}
+      headerTitle={headerTitle}
+      launchForm={canEdit ? launchAllergiesForm : undefined}
+    />
+  );
 };
 
 export default AllergiesOverview;

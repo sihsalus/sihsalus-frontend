@@ -42,6 +42,15 @@ export const configSchema = {
     _default: 300,
     _validators: [validator((v: unknown) => typeof v === 'number' && v > 0, 'Must be greater than zero')],
   },
+  minimumCharacterLengthForDrugSearch: {
+    _type: Type.Number,
+    _validators: [
+      validator((v: unknown) => typeof v === 'number' && Number.isInteger(v) && v >= 1, 'Must be a positive integer'),
+    ],
+    _description:
+      'The minimum number of characters that must be entered in the drug search input before the search is performed.',
+    _default: 2,
+  },
   requireIndication: {
     _type: Type.Boolean,
     _description: 'Whether to require an indication when placing a medication order',
@@ -79,6 +88,7 @@ export interface ConfigObject {
   careSettingUuid: string;
   showPrintButton: boolean;
   debounceDelayInMs: number;
+  minimumCharacterLengthForDrugSearch: number;
   requireIndication: boolean;
   durationUnitsDaysMap: Record<string, number>;
   drugCategoryConceptSets: Array<string>;

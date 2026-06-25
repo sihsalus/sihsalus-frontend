@@ -68,9 +68,9 @@
     "react-router-dom": "^6.15.0",
     "semver": "^7.5.4",
     "swr": "^2.2.4",
-    "turbo": "^2.9.14",
+    "turbo": "^2.10.0",
     "typescript": "6.0.3",
-    "vitest": "^4.1.7"
+    "vitest": "^4.1.9"
   },
   "dependencies": {
     "dotenv": "^16.4.7",

@@ -67,6 +67,6 @@
     "react-i18next": "^16.0.0",
     "react-router-dom": "^6.11.2",
     "typescript": "6.0.3",
-    "vitest": "^4.1.7"
+    "vitest": "^4.1.9"
   }
 }

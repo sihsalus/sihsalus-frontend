@@ -176,15 +176,9 @@ export async function runDevelop(args: DevelopArgs) {
     apiRateLimit,
     createProxyMiddleware({
       pathFilter: (path, req) => {
-        const requestPath = getMountedProxyRequestPath(
-          path,
-          typeof req.originalUrl === 'string' ? req.originalUrl : undefined,
-          apiUrl,
-        );
-        return !shouldServeSpaIndex(requestPath);
+        const requestPath = typeof req.originalUrl === 'string' ? req.originalUrl : path;
+        return new RegExp(`${apiUrl}/.*`).test(requestPath) && !indexHtmlPathMatcher.test(requestPath);
       },
-      pathRewrite: (path, req) =>
-        getMountedProxyRequestPath(path, typeof req.originalUrl === 'string' ? req.originalUrl : undefined, apiUrl),
       target: backend,
       changeOrigin: true,
       secure: !allowSelfSignedTls,

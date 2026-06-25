@@ -1,5 +1,6 @@
 import { HeaderGlobalAction } from '@carbon/react';
-import { CloseIcon, ToolsIcon, UserHasAccess, useStore } from '@openmrs/esm-framework';
+import { CloseIcon, ToolsIcon, useStore } from '@openmrs/esm-framework';
+import { RequirePrivilege } from '@sihsalus/esm-rbac';
 import React from 'react';
 import { useTranslation } from 'react-i18next';
 
@@ -11,7 +12,7 @@ const ImplementerToolsButton: React.FC = () => {
   const { isOpen } = useStore(implementerToolsStore);
 
   return (
-    <UserHasAccess privilege="O3 Implementer Tools">
+    <RequirePrivilege privilege={['O3 Implementer Tools', 'app:topnav.implementerTools']} hideUnauthorized>
       <HeaderGlobalAction
         aria-label={t('implementerTools', 'Implementer Tools')}
         aria-labelledby="Implementer Tools"
@@ -20,7 +21,7 @@ const ImplementerToolsButton: React.FC = () => {
       >
         {isOpen ? <CloseIcon size={20} /> : <ToolsIcon size={20} />}
       </HeaderGlobalAction>
-    </UserHasAccess>
+    </RequirePrivilege>
   );
 };
 

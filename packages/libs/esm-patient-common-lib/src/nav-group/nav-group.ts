@@ -12,7 +12,13 @@ const navGroupStore = getOrCreateGlobalSingleton<StoreApi<NavGroupStore>>('nav-g
 
 export function registerNavGroup(slotName: string): void {
   const store = navGroupStore.getState();
-  navGroupStore.setState({ navGroups: [slotName, ...store.navGroups] });
+  const navGroups = Array.isArray(store.navGroups) ? store.navGroups : [];
+
+  if (navGroups.includes(slotName)) {
+    return;
+  }
+
+  navGroupStore.setState({ navGroups: [slotName, ...navGroups] });
 }
 
 export const useNavGroups = createUseStore(navGroupStore);

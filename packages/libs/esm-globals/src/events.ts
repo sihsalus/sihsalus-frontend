@@ -31,7 +31,7 @@ export function subscribeConnectivity(cb: (ev: ConnectivityChangedEvent) => void
 }
 
 // eslint-disable-next-line @typescript-eslint/no-empty-object-type
-export interface PrecacheStaticDependenciesEvent {}
+export type PrecacheStaticDependenciesEvent = {}
 
 const precacheStaticDependenciesEventName = 'openmrs:precache-static-dependencies';
 

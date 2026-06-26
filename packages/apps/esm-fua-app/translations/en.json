@@ -121,7 +121,7 @@
   "uuid": "UUID",
   "verifyServer": "Verify that the server is running",
   "viewFua": "View FUA",
-  "viewPatientFuas": "View patient FUAs",
   "viewHistory": "View history",
+  "viewPatientFuas": "View patient FUAs",
   "visits": "Visits"
 }

@@ -1,5 +1,12 @@
 import { Button, Select, SelectItem, Tile } from '@carbon/react';
-import { AddIcon, ChevronDownIcon, ChevronUpIcon, MaybeIcon, OpenmrsDatePicker, useConfig } from '@openmrs/esm-framework';
+import {
+  AddIcon,
+  ChevronDownIcon,
+  ChevronUpIcon,
+  MaybeIcon,
+  OpenmrsDatePicker,
+  useConfig,
+} from '@openmrs/esm-framework';
 import { type OrderBasketItem, useOrderBasket, useOrderType } from '@openmrs/esm-patient-common-lib';
 import classNames from 'classnames';
 import { type ComponentProps, useCallback, useEffect, useMemo, useState } from 'react';
@@ -141,7 +148,9 @@ function LabOrderBasketPanel({ orderTypeUuid, label, icon, launchAddLabOrder }: 
       return;
     }
 
-    const selectedPriorityIsValid = sortedPriorityConfigs.some((priority) => priority.conceptUuid === selectedPriorityUuid);
+    const selectedPriorityIsValid = sortedPriorityConfigs.some(
+      (priority) => priority.conceptUuid === selectedPriorityUuid,
+    );
     if (!selectedPriorityIsValid) {
       const fallbackPriorityUuid = sortedPriorityConfigs[0].conceptUuid;
       setSelectedPriorityUuid(fallbackPriorityUuid);

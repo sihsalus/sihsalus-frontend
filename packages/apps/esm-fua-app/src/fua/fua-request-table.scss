@@ -1,6 +1,6 @@
-@use '@carbon/colors';
-@use '@carbon/layout';
-@use '@carbon/type';
+@use "@carbon/colors";
+@use "@carbon/layout";
+@use "@carbon/type";
 
 .tableContainer {
   border: 1px solid colors.$gray-20;
@@ -55,7 +55,7 @@
 
   & p {
     padding-right: layout.$spacing-03;
-    @include type.type-style('body-01');
+    @include type.type-style("body-01");
     color: colors.$gray-70;
   }
 
@@ -77,12 +77,12 @@
 }
 
 .tableHeader {
-  @include type.type-style('heading-compact-01');
+  @include type.type-style("heading-compact-01");
   color: var(--cds-text-primary);
 }
 
 .tableCell {
-  @include type.type-style('body-compact-01');
+  @include type.type-style("body-compact-01");
   color: var(--cds-text-primary);
 }
 
@@ -110,13 +110,13 @@
 }
 
 .content {
-  @include type.type-style('heading-compact-02');
+  @include type.type-style("heading-compact-02");
   color: colors.$gray-70;
   margin-bottom: layout.$spacing-03;
 }
 
 .emptyStateHelperText {
-  @include type.type-style('helper-text-02');
+  @include type.type-style("helper-text-02");
 }
 
 .pagination {
@@ -128,6 +128,11 @@
   display: flex;
   align-items: center;
   gap: layout.$spacing-01;
+}
+
+.downloadingAction {
+  color: var(--cds-icon-disabled);
+  opacity: 0.55;
 }
 
 @media (max-width: 672px) {

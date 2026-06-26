@@ -761,6 +761,7 @@ const VitalsAndBiometricsForm: React.FC<VitalsBiometricsWorkspaceProps> = (props
                   {
                     name: t('respirationRate', 'Respiration rate'),
                     type: 'number',
+                    integer: true,
                     min: concepts.respiratoryRateRange?.lowAbsolute,
                     max: concepts.respiratoryRateRange?.highAbsolute,
                     id: 'respiratoryRate',
@@ -789,6 +790,7 @@ const VitalsAndBiometricsForm: React.FC<VitalsBiometricsWorkspaceProps> = (props
                   {
                     name: t('oxygenSaturation', 'Oxygen saturation'),
                     type: 'number',
+                    integer: true,
                     min: concepts.oxygenSaturationRange?.lowAbsolute,
                     max: concepts.oxygenSaturationRange?.highAbsolute,
                     id: 'oxygenSaturation',

@@ -129,11 +129,9 @@ export default function usePanelData() {
 
         // Extraer rangos a nivel de observación
         const obsRanges = extractObservationReferenceRanges(observation as any);
-        const hasObsRanges = obsRanges && (
-          obsRanges.lowNormal !== undefined || 
-          obsRanges.hiNormal !== undefined || 
-          obsRanges.range !== undefined
-        );
+        const hasObsRanges =
+          obsRanges &&
+          (obsRanges.lowNormal !== undefined || obsRanges.hiNormal !== undefined || obsRanges.range !== undefined);
 
         const meta = hasObsRanges
           ? {

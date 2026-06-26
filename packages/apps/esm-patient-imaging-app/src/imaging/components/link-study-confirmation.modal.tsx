@@ -13,7 +13,7 @@ import {
   TableRow,
 } from '@carbon/react';
 import { showSnackbar, useLayoutType } from '@openmrs/esm-framework';
-import React, { useCallback, useState } from 'react';
+import React, { useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
 import { updateStudyLinkStatus, useStudiesByPatient } from '../../api';
 import styles from './details-table.scss';
@@ -53,12 +53,13 @@ const LinkingStudyModal: React.FC<LinkStudyModalProps> = ({
             ? t('linkStudyConfirm', 'Study link is confirmed')
             : t('linkStudyChanged', 'Study link is changed'),
       });
-    } catch (err: any) {
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : undefined;
       showSnackbar({
         isLowContrast: false,
         kind: 'error',
         title: t('errorStudyLinking', 'An error occured while linking image study'),
-        subtitle: err?.message,
+        subtitle: message,
       });
     }
   }, [closeLinkingStudyModal, linkStatus, studyId, mutate, t]);

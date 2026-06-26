@@ -18,7 +18,7 @@ const UnlinkStudyModal: React.FC<UnlinkStudyModalProps> = ({ closeUnlinkModal, s
   const handleUnlink = useCallback(async () => {
     setIsDeleting(true);
     assignStudy(studyId, patientUuid, false, new AbortController())
-      .then((response) => {
+      .then(() => {
         mutate();
         closeUnlinkModal();
         showSnackbar({

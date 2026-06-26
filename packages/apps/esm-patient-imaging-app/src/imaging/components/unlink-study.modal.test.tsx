@@ -1,13 +1,12 @@
 import { showSnackbar } from '@openmrs/esm-framework';
 import { fireEvent, render, screen, waitFor } from '@testing-library/react';
-import React from 'react';
 import { assignStudy, useStudiesByPatient } from '../../api';
 import UnlinkStudyModal from './unlink-study.modal';
 
 // Mock translation
 vi.mock('react-i18next', () => ({
   useTranslation: () => ({
-    t: (str: string, fallback: string) => fallback,
+    t: (_str: string, fallback: string) => fallback,
   }),
 }));
 

@@ -713,37 +713,37 @@ describe('Util Tests', () => {
       expect(
         computeNewFulfillerStatusAfterDelete(medicationDispenseCompleteMostRecent, medicationRequestBundle, false),
       ).toBe(MedicationRequestFulfillerStatus.declined);
-    }),
-      test('should return on-hold if deleting most recent medication dispense next most recent status on-hold', () => {
-        const medicationRequestBundle: MedicationRequestBundle = {
-          request: medicationRequest,
-          dispenses: [medicationDispenseCompleteMostRecent, medicationDispenseOnHold, medicationDispenseCompleteOldest],
-        };
+    });
+    test('should return on-hold if deleting most recent medication dispense next most recent status on-hold', () => {
+      const medicationRequestBundle: MedicationRequestBundle = {
+        request: medicationRequest,
+        dispenses: [medicationDispenseCompleteMostRecent, medicationDispenseOnHold, medicationDispenseCompleteOldest],
+      };
 
-        expect(
-          computeNewFulfillerStatusAfterDelete(medicationDispenseCompleteMostRecent, medicationRequestBundle, false),
-        ).toBe(MedicationRequestFulfillerStatus.on_hold);
-      }),
-      test('should return null if deleting only medication dispense', () => {
-        const medicationRequestBundle: MedicationRequestBundle = {
-          request: medicationRequest,
-          dispenses: [medicationDispenseCompleteMostRecent],
-        };
+      expect(
+        computeNewFulfillerStatusAfterDelete(medicationDispenseCompleteMostRecent, medicationRequestBundle, false),
+      ).toBe(MedicationRequestFulfillerStatus.on_hold);
+    });
+    test('should return null if deleting only medication dispense', () => {
+      const medicationRequestBundle: MedicationRequestBundle = {
+        request: medicationRequest,
+        dispenses: [medicationDispenseCompleteMostRecent],
+      };
 
-        expect(
-          computeNewFulfillerStatusAfterDelete(medicationDispenseCompleteMostRecent, medicationRequestBundle, false),
-        ).toBeNull();
-      }),
-      test('should return current fulfiller status if not most recent medication dispense and deleted dispense does not have status of completed', () => {
-        const medicationRequestBundle: MedicationRequestBundle = {
-          request: medicationRequest,
-          dispenses: [medicationDispenseDeclined, medicationDispenseOnHold, medicationDispenseCompleteMostRecent],
-        };
+      expect(
+        computeNewFulfillerStatusAfterDelete(medicationDispenseCompleteMostRecent, medicationRequestBundle, false),
+      ).toBeNull();
+    });
+    test('should return current fulfiller status if not most recent medication dispense and deleted dispense does not have status of completed', () => {
+      const medicationRequestBundle: MedicationRequestBundle = {
+        request: medicationRequest,
+        dispenses: [medicationDispenseDeclined, medicationDispenseOnHold, medicationDispenseCompleteMostRecent],
+      };
 
-        expect(computeNewFulfillerStatusAfterDelete(medicationDispenseOnHold, medicationRequestBundle, false)).toBe(
-          MedicationRequestFulfillerStatus.completed,
-        );
-      });
+      expect(computeNewFulfillerStatusAfterDelete(medicationDispenseOnHold, medicationRequestBundle, false)).toBe(
+        MedicationRequestFulfillerStatus.completed,
+      );
+    });
     test('should return null if deleting a dispense with status completed', () => {
       const medicationRequestBundle: MedicationRequestBundle = {
         request: medicationRequest,

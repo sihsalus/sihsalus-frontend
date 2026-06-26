@@ -11,7 +11,7 @@ export const configSchema = {
     _default: 5,
   },
   conditionConceptClassUuid: {
-    _type: Type.ConceptUuid,
+    _type: Type.UUID,
     _description: 'Concept class UUID for condition concepts',
     _default: '8d4918b0-c2cc-11de-8d13-0010c6dffd0f',
   },
@@ -434,12 +434,12 @@ export const configSchema = {
     profilaxisOcularUuid: {
       _type: Type.ConceptUuid,
       _description: 'Profilaxis ocular',
-      _default: '10c23f60-3310-4674-9e2e-bc3aa9aecced',
+      _default: '4868c047-6eb3-4ed0-bfdd-3dde303a0e0c',
     },
     administraciNDeVitaminaKUuid: {
       _type: Type.ConceptUuid,
       _description: 'Administración de Vitamina k',
-      _default: '5da8b9b1-f566-411f-b50b-f634ed6321c0',
+      _default: 'b696bb6f-dfe4-4a05-8309-3864d2d015f5',
     },
     administraciNDeVitaminaKDe05MgUuid: {
       _type: Type.ConceptUuid,
@@ -797,9 +797,9 @@ export const configSchema = {
     _description: 'Configuración de clasificación de riesgo obstétrico',
     _default: {
       classificationConceptUuid: '6b38e548-6cbb-456a-ae5d-51eecba16651',
-      highRiskConceptUuid: '735bfdaa-7005-4dae-90c8-0b45d3f71208',
-      lowRiskConceptUuid: '7be08cd5-d237-445b-b218-42450cfb4874',
-      veryHighRiskConceptUuid: 'f01af67b-322c-4067-b77f-fe0c92148ed1',
+      highRiskConceptUuid: '42fb3768-988c-4793-a0ee-aeee1dad1c73',
+      lowRiskConceptUuid: '5e3ec0eb-9aff-487b-8356-7971f0a08e27',
+      veryHighRiskConceptUuid: '3cfa8293-9bfb-4eca-92ed-9c3be0ffc8b2',
       riskFactorsConceptUuid: '601c996b-1edb-4406-948a-2ba4cc26789a',
     },
     classificationConceptUuid: {
@@ -810,17 +810,17 @@ export const configSchema = {
     highRiskConceptUuid: {
       _type: Type.ConceptUuid,
       _description: 'Concept UUID para "Riesgo Sanitario Alto" — OCL: #3622',
-      _default: '735bfdaa-7005-4dae-90c8-0b45d3f71208',
+      _default: '42fb3768-988c-4793-a0ee-aeee1dad1c73',
     },
     lowRiskConceptUuid: {
       _type: Type.ConceptUuid,
       _description: 'Concept UUID para "Riesgo Sanitario Mínimo" — OCL: #3620',
-      _default: '7be08cd5-d237-445b-b218-42450cfb4874',
+      _default: '5e3ec0eb-9aff-487b-8356-7971f0a08e27',
     },
     veryHighRiskConceptUuid: {
       _type: Type.ConceptUuid,
       _description: 'Concept UUID para "Riesgo Sanitario Muy Alto" — OCL: #3623',
-      _default: 'f01af67b-322c-4067-b77f-fe0c92148ed1',
+      _default: '3cfa8293-9bfb-4eca-92ed-9c3be0ffc8b2',
     },
     riskFactorsConceptUuid: {
       _type: Type.ConceptUuid,

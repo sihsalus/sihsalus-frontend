@@ -1,10 +1,11 @@
-import { openmrsFetch, useSession } from '@openmrs/esm-framework';
+import { openmrsFetch, userHasAccess, useSession } from '@openmrs/esm-framework';
 import { act, renderHook } from '@testing-library/react';
 import { mockSession } from 'test-utils';
 
 import { isForbiddenUserPropertiesError, useRecentlyViewedPatients } from './patient-search.resource';
 
 const mockOpenmrsFetch = vi.mocked(openmrsFetch);
+const mockUserHasAccess = vi.mocked(userHasAccess);
 const mockUseSession = vi.mocked(useSession);
 
 describe('patient search resource', () => {
@@ -29,6 +30,7 @@ describe('patient search resource', () => {
         },
       },
     });
+    mockUserHasAccess.mockReturnValue(true);
   });
 
   it('reads recently viewed patients from the current session without fetching the user resource', () => {
@@ -84,6 +86,7 @@ describe('patient search resource', () => {
         },
       },
     });
+    mockUserHasAccess.mockReturnValue(false);
     const { result } = renderHook(() => useRecentlyViewedPatients(true));
 
     await act(async () => {

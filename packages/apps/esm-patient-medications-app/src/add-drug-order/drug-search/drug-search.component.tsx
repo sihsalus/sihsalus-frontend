@@ -34,8 +34,10 @@ export default function DrugSearch({
 }: DrugSearchProps) {
   const { t } = useTranslation();
   const isTablet = useLayoutType() === 'tablet';
-  const { debounceDelayInMs, daysDurationUnit } = useConfig<ConfigObject>();
-  const debouncedSearchTerm = useDebounce(searchTerm, debounceDelayInMs ?? 300);
+  const { debounceDelayInMs, daysDurationUnit, minimumCharacterLengthForDrugSearch } = useConfig<ConfigObject>();
+  const searchableSearchTerm =
+    searchTerm.trim().length >= (minimumCharacterLengthForDrugSearch ?? 2) ? searchTerm.trim() : '';
+  const debouncedSearchTerm = useDebounce(searchableSearchTerm, debounceDelayInMs ?? 300);
   const searchInputRef = useRef(null);
 
   const handleSearchTermChange = useCallback(

@@ -3,7 +3,12 @@ import { useFormikContext } from 'formik';
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { moduleName } from '../../../constants';
-import { useAddressHierarchy } from './address-hierarchy.resource';
+import {
+  addressUbigeoField,
+  addressUbigeoPathField,
+  addressUbigeoPathSeparator,
+} from '../../patient-registration-utils';
+import { type AddressHierarchySearchResult, useAddressHierarchy } from './address-hierarchy.resource';
 import styles from './address-search.scss';
 import { type AddressFieldDefinition } from './address-types';
 
@@ -40,17 +45,37 @@ const AddressSearchComponent: React.FC<AddressSearchComponentProps> = ({
   const addressFields = useMemo(() => addressLayout.map(({ name }) => name), [addressLayout]);
   const { addresses, isLoading, error } = useAddressHierarchy(searchQuery, separator, addressFields);
 
-  const addressOptions: Array<string> = useMemo(() => {
-    const options: Set<string> = new Set();
+  const addressOptions: Array<AddressHierarchySearchResult> = useMemo(() => {
+    const options = new Map<string, AddressHierarchySearchResult>();
     addresses.forEach((address) => {
-      const values = address.split(separator);
-      values.forEach((val, index) => {
-        if (val.toLowerCase().includes(searchQuery.toLowerCase())) {
-          options.add(values.slice(0, index + 1).join(separator));
+      address.segments.forEach((segment, index) => {
+        const segmentSearchText = `${segment.name} ${segment.userGeneratedId ?? ''}`.toLowerCase();
+
+        if (segmentSearchText.includes(searchQuery.toLowerCase())) {
+          const segments = address.segments.slice(0, index + 1);
+          const display = segments.map((currentSegment) => currentSegment.name).join(separator);
+          const fieldValues = Object.fromEntries(
+            segments
+              .filter((currentSegment) => !!currentSegment.addressField)
+              .map((currentSegment) => [currentSegment.addressField as string, currentSegment.name]),
+          );
+          const userGeneratedId = segments[segments.length - 1]?.userGeneratedId;
+          const searchText = `${display} ${segments
+            .map((currentSegment) => currentSegment.userGeneratedId)
+            .filter(Boolean)
+            .join(' ')}`.toLowerCase();
+
+          options.set(`${userGeneratedId ?? ''}:${display}`, {
+            display,
+            fieldValues,
+            searchText,
+            segments,
+            userGeneratedId,
+          });
         }
       });
     });
-    return [...options];
+    return [...options.values()];
   }, [addresses, searchQuery]);
 
   const { setFieldValue } = useFormikContext();
@@ -59,12 +84,17 @@ const AddressSearchComponent: React.FC<AddressSearchComponentProps> = ({
     setSearchString(e.target.value);
   };
 
-  const handleChange = (address) => {
+  const handleChange = (address: AddressHierarchySearchResult) => {
     if (address) {
-      const values = address.split(separator);
-      addressLayout.forEach(({ name }, index) => {
-        setFieldValue(`${fieldPrefix}.${name}`, values?.[index] ?? '', false);
+      addressLayout.forEach(({ name }) => {
+        setFieldValue(`${fieldPrefix}.${name}`, address.fieldValues[name] ?? '', false);
       });
+      setFieldValue(`${fieldPrefix}.${addressUbigeoField}`, address.userGeneratedId ?? '', false);
+      setFieldValue(
+        `${fieldPrefix}.${addressUbigeoPathField}`,
+        address.segments.map((segment) => segment.name).join(addressUbigeoPathSeparator),
+        false,
+      );
       setSearchString('');
       setDebouncedSearchString('');
     }
@@ -109,9 +139,10 @@ const AddressSearchComponent: React.FC<AddressSearchComponentProps> = ({
             <li className={styles.noResults}>{t('errorFetchingAddresses', 'Error fetching address results')}</li>
           ) : addressOptions.length > 0 ? (
             addressOptions.map((address) => (
-              <li key={address}>
+              <li key={`${address.userGeneratedId ?? ''}:${address.display}`}>
                 <button type="button" className={styles.suggestionButton} onClick={() => handleChange(address)}>
-                  {address}
+                  {address.display}
+                  {address.userGeneratedId ? ` (${address.userGeneratedId})` : ''}
                 </button>
               </li>
             ))

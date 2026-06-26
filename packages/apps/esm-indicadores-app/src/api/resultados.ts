@@ -1,5 +1,5 @@
-import { calcularAhoraMock, getSeriesMock, listResultados } from '../mocks/indicators-data';
-import { fetchJson, withMockFallback } from './client';
+import { getSeriesMock, listResultados } from '../mocks/indicators-data';
+import { fetchJson, mutateJson, toJsonBody, withMockFallback } from './client';
 import { getReportesSqlApiPath } from './config';
 import type {
   BatchCalcularNowResponse,
@@ -7,6 +7,8 @@ import type {
   GetSeriesParams,
   IndicadorResultado,
   PaginatedResponse,
+  RecalcularAnioParams,
+  RecalcularAnioResponse,
   SeriesResponse,
 } from './types';
 
@@ -39,10 +41,15 @@ export async function getResultados(params: GetResultadosParams): Promise<Pagina
 
 export async function calcularAhora(): Promise<BatchCalcularNowResponse> {
   const reportesSqlBase = await getReportesSqlApiPath();
-  return withMockFallback(
-    () => fetchJson<BatchCalcularNowResponse>(`${reportesSqlBase}/resultados/calcular-ahora`, { method: 'POST' }),
-    () => calcularAhoraMock(),
-  );
+  return mutateJson<BatchCalcularNowResponse>(`${reportesSqlBase}/resultados/calcular-ahora`, { method: 'POST' });
+}
+
+export async function recalcularAnio(params: RecalcularAnioParams): Promise<RecalcularAnioResponse> {
+  const reportesSqlBase = await getReportesSqlApiPath();
+  return mutateJson<RecalcularAnioResponse>(`${reportesSqlBase}/resultados/recalcular-anio`, {
+    method: 'POST',
+    ...toJsonBody(params),
+  });
 }
 
 export async function getResultadosSeries(params: GetSeriesParams): Promise<SeriesResponse> {

@@ -91,6 +91,7 @@
   "paginationPageRange": "de {{total}} páginas",
   "paginationPageSelect": "Página de {{total}} páginas",
   "patient": "Paciente",
+  "patientFuasWorkspaceTitle": "FUAs del paciente",
   "popupBlocked": "El navegador bloqueó la nueva pestaña",
   "possibleCauses": "Posibles causas",
   "previousPage": "Página anterior",
@@ -122,6 +123,7 @@
   "uuid": "UUID",
   "verifyServer": "Verifique que el servidor esté funcionando",
   "viewFua": "Ver FUA",
+  "viewPatientFuas": "Ver FUAs del paciente",
   "viewHistory": "Ver historial",
   "visits": "Visitas"
 }

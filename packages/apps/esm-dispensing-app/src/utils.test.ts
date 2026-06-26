@@ -1,4 +1,6 @@
+import { fhirBaseUrl } from '@openmrs/esm-framework';
 import dayjs from 'dayjs';
+import { PRESCRIPTION_DETAILS_ENDPOINT, PRESCRIPTIONS_TABLE_ENDPOINT } from './constants';
 import {
   type Coding,
   type DosageInstruction,
@@ -40,6 +42,7 @@ import {
   getQuantityUnitsMatch,
   getRefillsAllowed,
   isMostRecentMedicationDispense,
+  revalidate,
 } from './utils';
 
 describe('Util Tests', () => {
@@ -710,37 +713,37 @@ describe('Util Tests', () => {
       expect(
         computeNewFulfillerStatusAfterDelete(medicationDispenseCompleteMostRecent, medicationRequestBundle, false),
       ).toBe(MedicationRequestFulfillerStatus.declined);
-    }),
-      test('should return on-hold if deleting most recent medication dispense next most recent status on-hold', () => {
-        const medicationRequestBundle: MedicationRequestBundle = {
-          request: medicationRequest,
-          dispenses: [medicationDispenseCompleteMostRecent, medicationDispenseOnHold, medicationDispenseCompleteOldest],
-        };
+    });
+    test('should return on-hold if deleting most recent medication dispense next most recent status on-hold', () => {
+      const medicationRequestBundle: MedicationRequestBundle = {
+        request: medicationRequest,
+        dispenses: [medicationDispenseCompleteMostRecent, medicationDispenseOnHold, medicationDispenseCompleteOldest],
+      };
 
-        expect(
-          computeNewFulfillerStatusAfterDelete(medicationDispenseCompleteMostRecent, medicationRequestBundle, false),
-        ).toBe(MedicationRequestFulfillerStatus.on_hold);
-      }),
-      test('should return null if deleting only medication dispense', () => {
-        const medicationRequestBundle: MedicationRequestBundle = {
-          request: medicationRequest,
-          dispenses: [medicationDispenseCompleteMostRecent],
-        };
+      expect(
+        computeNewFulfillerStatusAfterDelete(medicationDispenseCompleteMostRecent, medicationRequestBundle, false),
+      ).toBe(MedicationRequestFulfillerStatus.on_hold);
+    });
+    test('should return null if deleting only medication dispense', () => {
+      const medicationRequestBundle: MedicationRequestBundle = {
+        request: medicationRequest,
+        dispenses: [medicationDispenseCompleteMostRecent],
+      };
 
-        expect(
-          computeNewFulfillerStatusAfterDelete(medicationDispenseCompleteMostRecent, medicationRequestBundle, false),
-        ).toBeNull();
-      }),
-      test('should return current fulfiller status if not most recent medication dispense and deleted dispense does not have status of completed', () => {
-        const medicationRequestBundle: MedicationRequestBundle = {
-          request: medicationRequest,
-          dispenses: [medicationDispenseDeclined, medicationDispenseOnHold, medicationDispenseCompleteMostRecent],
-        };
+      expect(
+        computeNewFulfillerStatusAfterDelete(medicationDispenseCompleteMostRecent, medicationRequestBundle, false),
+      ).toBeNull();
+    });
+    test('should return current fulfiller status if not most recent medication dispense and deleted dispense does not have status of completed', () => {
+      const medicationRequestBundle: MedicationRequestBundle = {
+        request: medicationRequest,
+        dispenses: [medicationDispenseDeclined, medicationDispenseOnHold, medicationDispenseCompleteMostRecent],
+      };
 
-        expect(computeNewFulfillerStatusAfterDelete(medicationDispenseOnHold, medicationRequestBundle, false)).toBe(
-          MedicationRequestFulfillerStatus.completed,
-        );
-      });
+      expect(computeNewFulfillerStatusAfterDelete(medicationDispenseOnHold, medicationRequestBundle, false)).toBe(
+        MedicationRequestFulfillerStatus.completed,
+      );
+    });
     test('should return null if deleting a dispense with status completed', () => {
       const medicationRequestBundle: MedicationRequestBundle = {
         request: medicationRequest,
@@ -2971,6 +2974,22 @@ describe('Util Tests', () => {
         ],
       } as DosageInstruction;
       expect(calculateIsFreeTextDosage(dosageInstruction)).toBe(true);
+    });
+  });
+
+  describe('revalidate', () => {
+    test('uses the caller-provided SWR mutator for prescription keys', async () => {
+      const mutate = vi.fn().mockResolvedValue(undefined);
+
+      await revalidate(mutate as never, 'encounter-uuid');
+
+      expect(mutate).toHaveBeenCalledWith(expect.any(Function));
+      const keyFilter = mutate.mock.calls[0][0] as (key: unknown) => boolean;
+
+      expect(keyFilter(`${fhirBaseUrl}/${PRESCRIPTIONS_TABLE_ENDPOINT}?location=pharmacy`)).toBe(true);
+      expect(keyFilter(`${fhirBaseUrl}/${PRESCRIPTION_DETAILS_ENDPOINT}?encounter=encounter-uuid`)).toBe(true);
+      expect(keyFilter(`${fhirBaseUrl}/${PRESCRIPTION_DETAILS_ENDPOINT}?encounter=other-encounter`)).toBe(false);
+      expect(keyFilter(['/not-a-string'])).toBe(false);
     });
   });
 });

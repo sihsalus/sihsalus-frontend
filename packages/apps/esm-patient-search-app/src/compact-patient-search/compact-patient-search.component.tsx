@@ -148,17 +148,19 @@ const CompactPatientSearchComponent: React.FC<CompactPatientSearchProps> = ({
   }, [fetchError, errorFetchingUserProperties, t]);
 
   const handleSubmit = useCallback(
-    (debouncedSearchTerm) => {
-      if (shouldNavigateToPatientSearchPage && hasSearchTerm) {
+    (submittedSearchTerm: string) => {
+      const normalizedSearchTerm = submittedSearchTerm?.trim();
+
+      if (shouldNavigateToPatientSearchPage && normalizedSearchTerm) {
         if (!isSearchPage) {
           globalThis.sessionStorage.setItem('searchReturnUrl', globalThis.location.pathname);
         }
         navigate({
-          to: `${globalThis.spaBase}/search?query=${encodeURIComponent(debouncedSearchTerm)}`,
+          to: `${globalThis.spaBase}/search?query=${encodeURIComponent(normalizedSearchTerm)}`,
         });
       }
     },
-    [isSearchPage, shouldNavigateToPatientSearchPage, hasSearchTerm],
+    [isSearchPage, shouldNavigateToPatientSearchPage],
   );
 
   const handleClear = useCallback(() => {

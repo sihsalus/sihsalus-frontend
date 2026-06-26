@@ -12,7 +12,10 @@ const RootComponent: React.FC = () => {
 
   return (
     <AppErrorBoundary appName="esm-appointments-app">
-      <RequirePrivilege privilege={appointmentsPrivilege} description="Necesita permisos de citas para acceder a esta seccion.">
+      <RequirePrivilege
+        privilege={appointmentsPrivilege}
+        description="Necesita permisos de citas para acceder a esta seccion."
+      >
         <main>
           <BrowserRouter basename={appointmentsBasename}>
             <Routes>

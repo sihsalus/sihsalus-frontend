@@ -1,5 +1,6 @@
 import { useConfig } from '@openmrs/esm-framework';
 import { fireEvent, render, screen } from '@testing-library/react';
+import { type PropsWithChildren } from 'react';
 import { BrowserRouter } from 'react-router-dom';
 
 import { type AdmissionRow, useAdmissions } from '../resources/admissions.resource';
@@ -7,6 +8,10 @@ import AdmissionHome from './admission-home.component';
 
 vi.mock('@openmrs/esm-framework', async () => ({
   ...(await vi.importActual('@openmrs/esm-framework')),
+  ConfigurableLink: ({ children, to }: PropsWithChildren<{ to: string }>) => <a href={to}>{children}</a>,
+  PageHeader: ({ children }: PropsWithChildren) => <header>{children}</header>,
+  PageHeaderContent: ({ children }: PropsWithChildren) => <div>{children}</div>,
+  RegistrationPictogram: () => <span />,
   useConfig: vi.fn(),
 }));
 
@@ -41,6 +46,7 @@ function createAdmission(overrides: Partial<AdmissionRow>): AdmissionRow {
     startDatetime: '2026-05-09T08:30:00.000-0500',
     patientName: 'Ada Lovelace',
     medicalRecordNumber: 'HC-99',
+    documentType: 'DNI',
     documentNumber: '12345678',
     identificationStatus: 'Confirmado',
     communicationCondition: 'Puede comunicarse',
@@ -88,7 +94,8 @@ describe('AdmissionHome', () => {
           startDatetime: '2026-05-09T10:00:00.000-0500',
           patientName: 'Grace Hopper',
           medicalRecordNumber: 'HC-100',
-          documentNumber: '87654321',
+          documentType: 'CE',
+          documentNumber: 'CE-876543',
           birthDate: '1985-03-02',
           hasSis: 'No',
           address: 'Jr. Amazonas 45, Iquitos, Loreto',
@@ -108,7 +115,8 @@ describe('AdmissionHome', () => {
     for (const header of [
       'Fecha',
       'HCE / código temporal',
-      'DNI',
+      'Tipo doc.',
+      'N° documento',
       'Estado identificación',
       'Responsable',
       'F. Nac.',
@@ -126,6 +134,8 @@ describe('AdmissionHome', () => {
     }
     expect(screen.getByRole('cell', { name: 'Ada Lovelace' })).toBeInTheDocument();
     expect(screen.getByRole('cell', { name: 'HC-99' })).toBeInTheDocument();
+    expect(screen.getByRole('cell', { name: 'CE' })).toBeInTheDocument();
+    expect(screen.getByRole('cell', { name: 'CE-876543' })).toBeInTheDocument();
     expect(screen.getByRole('cell', { name: '12345678' })).toBeInTheDocument();
     expect(screen.getAllByRole('cell', { name: 'Confirmado' })[0]).toBeInTheDocument();
     expect(screen.getAllByRole('cell', { name: 'Charles Babbage - Familiar' })[0]).toBeInTheDocument();
@@ -142,6 +152,39 @@ describe('AdmissionHome', () => {
       '/openmrs/spa/admission/merge',
     );
     expect(mockUseAdmissions).toHaveBeenCalledWith(75);
+  });
+
+  it('renders age with year, month, and week units in the gender age columns', () => {
+    mockUseAdmissions.mockReturnValue({
+      admissions: [
+        createAdmission({
+          uuid: 'visit-years',
+          gender: 'F',
+          birthDate: '1990-06-18',
+          startDatetime: '2026-06-18T08:30:00.000-0500',
+        }),
+        createAdmission({
+          uuid: 'visit-months',
+          gender: 'M',
+          birthDate: '2025-06-16',
+          startDatetime: '2026-06-18T08:30:00.000-0500',
+        }),
+        createAdmission({
+          uuid: 'visit-weeks',
+          gender: 'M',
+          birthDate: '2026-05-28',
+          startDatetime: '2026-06-18T08:30:00.000-0500',
+        }),
+      ],
+      error: undefined,
+      isLoading: false,
+    });
+
+    renderAdmissionHome();
+
+    expect(screen.getByRole('cell', { name: '36 años' })).toBeInTheDocument();
+    expect(screen.getByRole('cell', { name: '12 meses' })).toBeInTheDocument();
+    expect(screen.getByRole('cell', { name: '3 semanas' })).toBeInTheDocument();
   });
 
   it('filters the report by search text and status', () => {
@@ -235,6 +278,7 @@ describe('AdmissionHome', () => {
           patientUuid: 'patient-1',
           patientName: 'María Peña Ñaupari',
           medicalRecordNumber: 'TEMP-001',
+          documentType: '',
           documentNumber: '',
           identificationStatus: 'Confirmado',
           communicationCondition: 'Sí comunica',
@@ -262,11 +306,14 @@ describe('AdmissionHome', () => {
 
     expect(csv.startsWith('\uFEFFsep=,\r\n')).toBe(true);
     expect(csv).toContain('"HCE / código temporal"');
+    expect(csv).toContain('"Tipo doc."');
+    expect(csv).toContain('"N° documento"');
     expect(csv).toContain('"Estado identificación"');
     expect(csv).toContain('"Condición comunicación"');
     expect(csv).toContain('"María Peña Ñaupari"');
     expect(csv).toContain('"Sí comunica"');
     expect(csv).toContain('"Jr. Unión 123, Huánuco"');
+    expect(csv).toContain('"6 años"');
     expect(csv).not.toContain('Ã');
     expect(revokeObjectURL).toHaveBeenCalledWith('blob:atenciones');
   });

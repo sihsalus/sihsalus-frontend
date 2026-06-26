@@ -55,7 +55,7 @@ export function useTestTypes(
           const normalizedSearch = searchTerm.toLocaleLowerCase();
           const displayMatches = c.display?.toLocaleLowerCase().includes(normalizedSearch);
           const synonymMatches = c.names?.some((name: any) =>
-            name.display.toLocaleLowerCase().includes(normalizedSearch)
+            name.display.toLocaleLowerCase().includes(normalizedSearch),
           );
           return displayMatches || synonymMatches;
         })
@@ -75,5 +75,3 @@ export function useTestTypes(
 
   return results;
 }
-
-

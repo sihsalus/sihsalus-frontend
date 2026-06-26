@@ -166,34 +166,78 @@ export function exist(...args: unknown[]): boolean {
   return true;
 }
 
+export const parseNumber = (val: any): number | undefined => {
+  if (typeof val === 'number') {
+    return val;
+  }
+  if (typeof val === 'string') {
+    const parsed = Number.parseFloat(val.replace(',', '.'));
+    return Number.isNaN(parsed) ? undefined : parsed;
+  }
+  return undefined;
+};
+
+export const extractRangesFromRangeStr = (rangeStr: string): { lowNormal?: number; hiNormal?: number } => {
+  if (!rangeStr) return {};
+  const match = rangeStr.match(/(-?\d+(?:[.,]\d+)?)\s*[-–—]\s*(-?\d+(?:[.,]\d+)?)/);
+  if (match) {
+    const low = parseNumber(match[1]);
+    const high = parseNumber(match[2]);
+    return { lowNormal: low, hiNormal: high };
+  }
+  const lessThanMatch = rangeStr.match(/<\s*(-?\d+(?:[.,]\d+)?)/);
+  if (lessThanMatch) {
+    return { hiNormal: parseNumber(lessThanMatch[1]) };
+  }
+  const greaterThanMatch = rangeStr.match(/>\s*(-?\d+(?:[.,]\d+)?)/);
+  if (greaterThanMatch) {
+    return { lowNormal: parseNumber(greaterThanMatch[1]) };
+  }
+  return {};
+};
+
 export const assessValue =
   (meta: ObsMetaInfo) =>
   (value: string): OBSERVATION_INTERPRETATION => {
-    if (Number.isNaN(Number.parseFloat(value))) {
+    const numericValue = parseNumber(value);
+    if (numericValue === undefined) {
       return 'NORMAL';
     }
-    const numericValue = Number.parseFloat(value);
-    if (typeof meta.hiAbsolute === 'number' && numericValue > meta.hiAbsolute) {
+
+    let lowNormal = parseNumber(meta.lowNormal);
+    let hiNormal = parseNumber(meta.hiNormal);
+
+    if (lowNormal === undefined && hiNormal === undefined && meta.range) {
+      const extracted = extractRangesFromRangeStr(meta.range);
+      lowNormal = extracted.lowNormal;
+      hiNormal = extracted.hiNormal;
+    }
+
+    const hiAbsolute = parseNumber(meta.hiAbsolute);
+    if (hiAbsolute !== undefined && numericValue > hiAbsolute) {
       return 'OFF_SCALE_HIGH';
     }
 
-    if (typeof meta.hiCritical === 'number' && numericValue > meta.hiCritical) {
+    const hiCritical = parseNumber(meta.hiCritical);
+    if (hiCritical !== undefined && numericValue > hiCritical) {
       return 'CRITICALLY_HIGH';
     }
 
-    if (typeof meta.hiNormal === 'number' && numericValue > meta.hiNormal) {
+    if (hiNormal !== undefined && numericValue > hiNormal) {
       return 'HIGH';
     }
 
-    if (typeof meta.lowAbsolute === 'number' && numericValue < meta.lowAbsolute) {
+    const lowAbsolute = parseNumber(meta.lowAbsolute);
+    if (lowAbsolute !== undefined && numericValue < lowAbsolute) {
       return 'OFF_SCALE_LOW';
     }
 
-    if (typeof meta.lowCritical === 'number' && numericValue < meta.lowCritical) {
+    const lowCritical = parseNumber(meta.lowCritical);
+    if (lowCritical !== undefined && numericValue < lowCritical) {
       return 'CRITICALLY_LOW';
     }
 
-    if (typeof meta.lowNormal === 'number' && numericValue < meta.lowNormal) {
+    if (lowNormal !== undefined && numericValue < lowNormal) {
       return 'LOW';
     }
 
@@ -213,6 +257,7 @@ type ObservationReferenceRange = {
       code?: string;
     }>;
   };
+  text?: string;
 };
 
 type ObservationInterpretation = {
@@ -283,6 +328,11 @@ export function extractObservationReferenceRanges(observation: ObservationWithFh
     const code = normalizeDisplayValue(coding?.code);
     const low = referenceRange.low?.value;
     const high = referenceRange.high?.value;
+
+    if (referenceRange.text) {
+      ranges.range = referenceRange.text;
+      hasRangeValue = true;
+    }
 
     if (system === 'http://terminology.hl7.org/CodeSystem/referencerange-meaning' && code === 'normal') {
       if (typeof low === 'number') {

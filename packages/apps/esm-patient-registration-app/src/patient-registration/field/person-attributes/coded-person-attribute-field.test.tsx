@@ -34,6 +34,7 @@ describe('CodedPersonAttributeField', () => {
   let consoleSpy: MockInstance;
 
   beforeEach(() => {
+    mockReportError.mockImplementation(() => undefined);
     mockUseConceptAnswers.mockReturnValue({
       data: conceptAnswers,
       isLoading: false,

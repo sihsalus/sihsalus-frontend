@@ -8,6 +8,7 @@
   "appointmentCancelled": "Rendez-vous annulé",
   "appointmentCancelledSuccessfully": "Rendez-vous annulé avec succès",
   "appointmentCheckedIn": "Appointment Checked In",
+  "appointmentCheckedInAfterVisitStarted": "The visit was started and the appointment was checked in",
   "appointmentColor": "Couleur du rendez-vous",
   "appointmentConflict": "Conflit du rendez-vous",
   "appointmentEdited": "Rendez-vous modifié",

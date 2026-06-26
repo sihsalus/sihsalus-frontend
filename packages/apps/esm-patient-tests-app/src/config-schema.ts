@@ -146,9 +146,9 @@ export const configSchema = {
       'Priority options for test orders, mapped to concept UUIDs. Replaces the hardcoded ROUTINE/STAT/ON_SCHEDULED_DATE values.',
     _default: [
       {
-        conceptUuid: 'bf3a08c6-cbe6-4f00-8e06-5f5437790b85', // No Urgente
-        label: 'Rutina',
-        urgency: 'ROUTINE',
+        conceptUuid: 'e724bdb6-2c75-4b6f-a00c-d43f2c372974', // Emergencia
+        label: 'Emergencia',
+        urgency: 'STAT',
         requiresScheduledDate: false,
       },
       {
@@ -158,9 +158,15 @@ export const configSchema = {
         requiresScheduledDate: false,
       },
       {
-        conceptUuid: 'e724bdb6-2c75-4b6f-a00c-d43f2c372974', // Emergencia
-        label: 'Emergencia',
-        urgency: 'STAT',
+        conceptUuid: '427a595a-a5ee-4ba7-bcb7-2503248efb31', // Urgencia menor
+        label: 'Urgencia menor',
+        urgency: 'ROUTINE',
+        requiresScheduledDate: false,
+      },
+      {
+        conceptUuid: 'bf3a08c6-cbe6-4f00-8e06-5f5437790b85', // No Urgente
+        label: 'Rutina',
+        urgency: 'ROUTINE',
         requiresScheduledDate: false,
       },
       {

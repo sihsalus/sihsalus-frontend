@@ -4,6 +4,7 @@ import {
   launchWorkspace2,
   parseDate,
   useConfig,
+  userHasAccess,
   useSession,
   type VisitReturnType,
 } from '@openmrs/esm-framework';
@@ -32,6 +33,7 @@ const mockUseConfig = vi.mocked(useConfig<ImmunizationConfigObject>);
 const mockUsePatientChartStore = vi.mocked(usePatientChartStore);
 const mockUseVisitOrOfflineVisit = vi.mocked(useVisitOrOfflineVisit);
 const mockUseSession = vi.mocked(useSession);
+const mockUserHasAccess = vi.mocked(userHasAccess);
 
 const sessionWithEditPrivilege = {
   authenticated: true,
@@ -95,6 +97,7 @@ describe('ImmunizationsDetailedSummary', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     mockUseSession.mockReturnValue(sessionWithEditPrivilege);
+    mockUserHasAccess.mockReturnValue(true);
     mockUseConfig.mockReturnValue({
       immunizationConceptSet: 'CIEL:984',
       fhirConceptMappings: {
@@ -479,6 +482,7 @@ describe('ImmunizationsDetailedSummary', () => {
 
   it('hides every add action when the user lacks the edit privilege', async () => {
     mockUseSession.mockReturnValue(sessionWithoutEditPrivilege);
+    mockUserHasAccess.mockReturnValue(false);
     mockUseImmunizations.mockReturnValue({
       data: mockImmunizationData,
       isLoading: false,

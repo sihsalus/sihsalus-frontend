@@ -45,14 +45,27 @@ const augmentObstreeData = (node: ObsTreeNode, prefix: string | undefined): ObsT
     outData.range = `${outData.lowNormal} – ${outData.hiNormal}`;
   }
   if (outData?.obs?.length) {
-    const assess = assessValue(outData);
-    outData.obs = outData.obs.map((ob) => ({
-      ...ob,
-      interpretation: assess(ob.value),
-      range: exist((ob as ObservationData & ObsTreeNode).hiNormal, (ob as ObservationData & ObsTreeNode).lowNormal)
-        ? `${(ob as ObservationData & ObsTreeNode).lowNormal} – ${(ob as ObservationData & ObsTreeNode).hiNormal}`
-        : outData.range,
-    }));
+    outData.obs = outData.obs.map((ob) => {
+      const obRange = exist((ob as any).hiNormal, (ob as any).lowNormal)
+        ? `${(ob as any).lowNormal} – ${(ob as any).hiNormal}`
+        : ((ob as any).range ?? outData.range);
+      const obMeta = {
+        ...outData,
+        lowNormal: (ob as any).lowNormal ?? outData.lowNormal,
+        hiNormal: (ob as any).hiNormal ?? outData.hiNormal,
+        lowCritical: (ob as any).lowCritical ?? outData.lowCritical,
+        hiCritical: (ob as any).hiCritical ?? outData.hiCritical,
+        lowAbsolute: (ob as any).lowAbsolute ?? outData.lowAbsolute,
+        hiAbsolute: (ob as any).hiAbsolute ?? outData.hiAbsolute,
+        range: obRange,
+      };
+      const assess = assessValue(obMeta);
+      return {
+        ...ob,
+        interpretation: assess(ob.value),
+        range: obRange,
+      };
+    });
     outData.hasData = true;
   }
 

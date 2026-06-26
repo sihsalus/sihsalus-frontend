@@ -97,6 +97,9 @@ export const fuaViewerWorkspace = getAsyncLifecycle(() => import('./workspaces/f
 // t('createFuaWorkspaceTitle', 'Crear FUA')
 export const fuaEncounterWorkspace = getAsyncLifecycle(() => import('./workspaces/fua-encounter.workspace'), options);
 
+// t('patientFuasWorkspaceTitle', 'FUAs del paciente')
+export const patientFuasWorkspace = getAsyncLifecycle(() => import('./workspaces/patient-fuas.workspace'), options);
+
 // ================================================================================
 // PATIENT CHART ACTION MENU
 // ================================================================================

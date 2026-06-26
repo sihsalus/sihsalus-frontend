@@ -71,6 +71,8 @@ interface FuaActionsCellProps {
   fuaRequest: FuaRequest;
   onView: (fuaRequest: FuaRequest) => void;
   onViewHistory: (fuaRequest: FuaRequest) => void;
+  onDownload: (fuaRequest: FuaRequest) => void;
+  isDownloading: boolean;
   onChangeStatus: (fuaRequest: FuaRequest) => void;
   onResend: (fuaRequest: FuaRequest) => void;
   onCancel: (fuaRequest: FuaRequest) => void;
@@ -81,12 +83,14 @@ const FuaActionsCell: React.FC<FuaActionsCellProps> = ({
   fuaRequest,
   onView,
   onViewHistory,
+  onDownload,
+  isDownloading,
   onChangeStatus,
   onResend,
   onCancel,
   t,
 }) => (
-  <div>
+  <div className={styles.actionsCell}>
     <Button
       kind="ghost"
       size="sm"
@@ -103,6 +107,17 @@ const FuaActionsCell: React.FC<FuaActionsCellProps> = ({
       iconDescription={t('viewHistory', 'Ver historial')}
       hasIconOnly
       onClick={() => onViewHistory(fuaRequest)}
+      tooltipPosition="left"
+    />
+    <Button
+      kind="ghost"
+      size="sm"
+      renderIcon={Download}
+      iconDescription={t('downloadFua', 'Descargar FUA')}
+      hasIconOnly
+      className={isDownloading ? styles.downloadingAction : undefined}
+      disabled={isDownloading}
+      onClick={() => onDownload(fuaRequest)}
       tooltipPosition="left"
     />
     <RequirePrivilege privilege={fuaUpdatePrivilege} hideUnauthorized>
@@ -146,6 +161,7 @@ const FuaRequestTable: React.FC<FuaRequestTableProps> = ({ statusFilter = 'all' 
   });
 
   const [searchString, setSearchString] = useState('');
+  const [downloadingVisitUuids, setDownloadingVisitUuids] = useState<ReadonlySet<string>>(new Set());
 
   const filteredData = useMemo(() => {
     if (!fuaOrders) return [];
@@ -208,6 +224,56 @@ const FuaRequestTable: React.FC<FuaRequestTableProps> = ({ statusFilter = 'all' 
           kind: 'error',
           title: t('errorLoadingFua', 'Error al cargar FUA'),
           subtitle: errorMessage,
+        });
+      }
+    },
+    [t],
+  );
+
+  const handleDownloadFua = useCallback(
+    async (fuaRequest: FuaRequest) => {
+      if (!fuaRequest.visitUuid) {
+        showSnackbar({
+          kind: 'error',
+          title: t('errorDownloadingFua', 'Error al descargar FUA'),
+          subtitle: t('missingVisitUuid', 'No se encontro el identificador de visita para este FUA'),
+        });
+        return;
+      }
+
+      setDownloadingVisitUuids((current) => new Set(current).add(fuaRequest.visitUuid));
+
+      try {
+        const response = await openmrsFetch(
+          `${ModuleFuaRestURL}/generatePDF/${encodeURIComponent(fuaRequest.visitUuid)}`,
+          {
+            method: 'POST',
+            headers: {
+              Accept: 'application/pdf',
+            },
+          },
+        );
+        const blob = await response.blob();
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = `FUA-${fuaRequest.numeroFua || fuaRequest.visitUuid}.pdf`;
+        document.body.appendChild(link);
+        link.click();
+        link.remove();
+        URL.revokeObjectURL(url);
+      } catch (error) {
+        const errorMessage = error instanceof Error ? error.message : t('unknownError', 'Error desconocido');
+        showSnackbar({
+          kind: 'error',
+          title: t('errorDownloadingFua', 'Error al descargar FUA'),
+          subtitle: errorMessage,
+        });
+      } finally {
+        setDownloadingVisitUuids((current) => {
+          const next = new Set(current);
+          next.delete(fuaRequest.visitUuid);
+          return next;
         });
       }
     },
@@ -368,6 +434,10 @@ const FuaRequestTable: React.FC<FuaRequestTableProps> = ({ statusFilter = 'all' 
                               fuaRequest={fuaRequest}
                               onView={handleViewFua}
                               onViewHistory={handleViewHistorial}
+                              onDownload={handleDownloadFua}
+                              isDownloading={Boolean(
+                                fuaRequest.visitUuid && downloadingVisitUuids.has(fuaRequest.visitUuid),
+                              )}
                               onChangeStatus={handleChangeStatus}
                               onResend={handleReenviar}
                               onCancel={handleCancelFua}

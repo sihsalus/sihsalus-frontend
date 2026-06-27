@@ -630,6 +630,14 @@ function patchIndexHtml() {
     html = html.replace(/configUrls:\s*\[[^\]]*\]/, `configUrls: [${configUrlsJs}]`);
   }
 
+  // Service workers are only available in secure contexts. Keep offline enabled
+  // for HTTPS/localhost, but avoid startup errors on HTTP deployments and
+  // browsers where service workers are disabled.
+  html = html.replace(
+    /\boffline:\s*true\b/g,
+    "offline: globalThis.isSecureContext === true && 'serviceWorker' in navigator",
+  );
+
   // 3. General substitution — $VAR and ${VAR} forms
   //    Process longest names first to avoid partial matches (e.g. $SPA_PATH vs $SPA_PATH_X)
   const envsubst = (str) =>

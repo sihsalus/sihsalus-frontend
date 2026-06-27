@@ -91,7 +91,9 @@ export function startupApp() {
   globalScope[startupKey] = true;
 
   defineConfigSchema(moduleName, {});
-  setupOffline();
+  if (globalThis.offlineEnabled) {
+    setupOffline();
+  }
   setupSynchronizingOfflineActionsNotifications();
 
   registerBreadcrumbs([

@@ -5,7 +5,7 @@ export interface ExtractedPriority {
 
 export const extractPriorityFromInstructions = (
   instructions: string | undefined,
-  defaultUrgency: string
+  defaultUrgency: string,
 ): ExtractedPriority => {
   if (!instructions) {
     return { urgency: defaultUrgency, cleanInstructions: '' };

@@ -123,7 +123,7 @@
   "uuid": "UUID",
   "verifyServer": "Verifique que el servidor esté funcionando",
   "viewFua": "Ver FUA",
-  "viewPatientFuas": "Ver FUAs del paciente",
   "viewHistory": "Ver historial",
+  "viewPatientFuas": "Ver FUAs del paciente",
   "visits": "Visitas"
 }

@@ -60,12 +60,7 @@ const GroupedPanelsTables: React.FC<{ className: string; loadingPanelData: boole
               [styles.border]: subRows.entries.length,
             })}
           >
-            <IndividualResultsTable
-              isLoading={loadingPanelData}
-              subRows={subRows}
-              index={index}
-              title={subRows.key}
-            />
+            <IndividualResultsTable isLoading={loadingPanelData} subRows={subRows} index={index} title={subRows.key} />
           </div>
         );
       })}

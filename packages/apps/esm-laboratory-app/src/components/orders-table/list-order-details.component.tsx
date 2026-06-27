@@ -65,10 +65,7 @@ const ListOrderDetails: React.FC<ListOrdersDetailsProps> = ({ groupedOrders }) =
   return (
     <div>
       {originalOrders.map((order) => {
-        const { urgency, cleanInstructions } = extractPriorityFromInstructions(
-          order.instructions,
-          order.urgency,
-        );
+        const { urgency, cleanInstructions } = extractPriorityFromInstructions(order.instructions, order.urgency);
 
         return (
           <div key={order.orderNumber} className={styles.orderDetailsContainer}>

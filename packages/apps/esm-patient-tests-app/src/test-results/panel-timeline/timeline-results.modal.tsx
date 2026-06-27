@@ -14,16 +14,19 @@ interface TimelineResultsModalProps {
   title: string;
 }
 
-const TimelineResultsModal: React.FC<TimelineResultsModalProps> = ({ closeDeleteModal, patientUuid, testUuid, title }) => {
+const TimelineResultsModal: React.FC<TimelineResultsModalProps> = ({
+  closeDeleteModal,
+  patientUuid,
+  testUuid,
+  title,
+}) => {
   const { t } = useTranslation();
   const { panels, groupedObservations } = usePanelData();
 
   const { numericUuids, nonNumericUuids } = useMemo(() => {
     // Find if the testUuid is a panel/group
     const panel = panels.find((p) => p.conceptUuid === testUuid);
-    const conceptUuids = panel?.relatedObs?.length
-      ? panel.relatedObs.map((obs) => obs.conceptUuid)
-      : [testUuid];
+    const conceptUuids = panel?.relatedObs?.length ? panel.relatedObs.map((obs) => obs.conceptUuid) : [testUuid];
 
     const numeric: string[] = [];
     const nonNumeric: string[] = [];

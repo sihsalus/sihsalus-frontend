@@ -137,11 +137,11 @@ export default function usePanelData() {
           ? {
               ...conceptMeta,
               ...obsRanges,
-              range: obsRanges.range ?? (
-                (obsRanges.lowNormal !== undefined && obsRanges.hiNormal !== undefined)
+              range:
+                obsRanges.range ??
+                (obsRanges.lowNormal !== undefined && obsRanges.hiNormal !== undefined
                   ? `${obsRanges.lowNormal} – ${obsRanges.hiNormal}`
-                  : conceptMeta?.range
-              ),
+                  : conceptMeta?.range),
             }
           : (conceptMeta as any);
 

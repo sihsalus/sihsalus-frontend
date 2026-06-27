@@ -69,7 +69,9 @@ const TestOrder: React.FC<TestOrderProps> = ({ testOrder }) => {
   const { encounter, isLoading: isLoadingResult } = useLabEncounter(testOrder.encounter.uuid);
 
   const { data: fhirObsBundle } = useSWR<any>(
-    testOrder.encounter.uuid ? `/ws/fhir2/R4/Observation?encounter=Encounter/${testOrder.encounter.uuid}&_count=100` : null,
+    testOrder.encounter.uuid
+      ? `/ws/fhir2/R4/Observation?encounter=Encounter/${testOrder.encounter.uuid}&_count=100`
+      : null,
     openmrsFetch,
   );
 
@@ -98,7 +100,8 @@ const TestOrder: React.FC<TestOrderProps> = ({ testOrder }) => {
   }, [concept, encounter, testOrder.uuid]);
 
   const testRows = useMemo(() => {
-    const findFhirObs = (obsUuid: string) => fhirObsBundle?.data?.entry?.find((e: any) => e.resource?.id === obsUuid)?.resource;
+    const findFhirObs = (obsUuid: string) =>
+      fhirObsBundle?.data?.entry?.find((e: any) => e.resource?.id === obsUuid)?.resource;
 
     if (concept && concept.setMembers.length > 0) {
       return concept?.setMembers.map((memberConcept) => {
@@ -112,14 +115,8 @@ const TestOrder: React.FC<TestOrderProps> = ({ testOrder }) => {
         return {
           id: memberConcept.uuid,
           testType: <div className={styles.testType}>{memberConcept.display}</div>,
-          result: isLoadingResult ? (
-            <SkeletonText />
-          ) : (
-            getObservationValueDisplay(memberObs?.value) ?? '--'
-          ),
-          normalRange: hasNormalRange({ lowNormal: low, hiNormal: high })
-            ? `${low} - ${high}`
-            : 'N/A',
+          result: isLoadingResult ? <SkeletonText /> : (getObservationValueDisplay(memberObs?.value) ?? '--'),
+          normalRange: hasNormalRange({ lowNormal: low, hiNormal: high }) ? `${low} - ${high}` : 'N/A',
         };
       });
     } else if (concept && concept.setMembers.length === 0) {
@@ -133,11 +130,7 @@ const TestOrder: React.FC<TestOrderProps> = ({ testOrder }) => {
         {
           id: concept.uuid,
           testType: <div className={styles.testType}>{concept.display}</div>,
-          result: isLoadingResult ? (
-            <SkeletonText />
-          ) : (
-            getObservationValueDisplay(testResultObs?.value) ?? '--'
-          ),
+          result: isLoadingResult ? <SkeletonText /> : (getObservationValueDisplay(testResultObs?.value) ?? '--'),
           normalRange: hasNormalRange({ lowNormal: low, hiNormal: high }) ? `${low} - ${high}` : 'N/A',
         },
       ];

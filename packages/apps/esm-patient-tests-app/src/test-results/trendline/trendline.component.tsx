@@ -73,10 +73,11 @@ const Trendline: React.FC<TrendlineProps> = ({
 }) => {
   const { t } = useTranslation();
   const { groupedObservations, isLoading: panelDataIsLoading } = usePanelData();
-  const { trendlineData, isLoading: obstreeIsLoading, isValidating: obstreeIsValidating } = useObstreeData(
-    patientUuid,
-    conceptUuid || '',
-  );
+  const {
+    trendlineData,
+    isLoading: obstreeIsLoading,
+    isValidating: obstreeIsValidating,
+  } = useObstreeData(patientUuid, conceptUuid || '');
 
   const [range, setRange] = useState<[Date, Date]>();
   const [showResultsTable, setShowResultsTable] = useState(false);

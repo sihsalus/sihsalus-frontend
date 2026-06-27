@@ -66,7 +66,9 @@ export function startupApp() {
     },
   ]);
 
-  setupOffline();
+  if (globalThis.offlineEnabled) {
+    setupOffline();
+  }
 }
 
 export const root = getAsyncLifecycle(() => import('./root.component'), options);

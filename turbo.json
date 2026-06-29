@@ -2,6 +2,7 @@
   "$schema": "https://turbo.build/schema.json",
   "ui": "stream",
   "concurrency": "50%",
+  "globalPassThroughEnv": ["IBM_TELEMETRY_DISABLED", "TURBO_TELEMETRY_DISABLED", "DO_NOT_TRACK"],
   "tasks": {
     "build": {
       "dependsOn": ["^build"],

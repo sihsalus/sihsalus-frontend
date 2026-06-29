@@ -15,7 +15,10 @@ COPY packages/ ./packages/
 # Some apps import shared illustrations and other static assets at build time.
 COPY assets/ ./assets/
 
-ENV CI=true
+ENV CI=true \
+    IBM_TELEMETRY_DISABLED=true \
+    TURBO_TELEMETRY_DISABLED=1 \
+    DO_NOT_TRACK=1
 RUN --mount=type=cache,target=/root/.yarn/berry/cache \
     yarn install --immutable
 
@@ -32,7 +35,10 @@ WORKDIR /app
 
 RUN rm -rf /usr/local/lib/node_modules/npm /usr/local/bin/npm /usr/local/bin/npx
 
-ENV NODE_ENV=production
+ENV NODE_ENV=production \
+    IBM_TELEMETRY_DISABLED=true \
+    TURBO_TELEMETRY_DISABLED=1 \
+    DO_NOT_TRACK=1
 ENV SPA_OUTPUT_DIR=/spa
 
 # Build provenance — supplied by CI (--build-arg) and promoted to env so the
@@ -60,7 +66,10 @@ WORKDIR /app
 
 RUN rm -rf /usr/local/lib/node_modules/npm /usr/local/bin/npm /usr/local/bin/npx
 
-ENV NODE_ENV=production
+ENV NODE_ENV=production \
+    IBM_TELEMETRY_DISABLED=true \
+    TURBO_TELEMETRY_DISABLED=1 \
+    DO_NOT_TRACK=1
 ENV SPA_OUTPUT_DIR=/spa
 
 # Build provenance — supplied by CI (--build-arg) and promoted to env so the

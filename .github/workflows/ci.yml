@@ -76,13 +76,17 @@ jobs:
       - name: Quality Scope
         run: |
           if [ "${{ github.event_name }}" = "pull_request" ]; then
-            echo "Running changed-workspace verification against origin/${{ github.base_ref }}" >> "$GITHUB_STEP_SUMMARY"
-            echo "- mode: changed workspaces" >> "$GITHUB_STEP_SUMMARY"
-            echo "- base: origin/${{ github.base_ref }}" >> "$GITHUB_STEP_SUMMARY"
-            echo "- head: ${{ github.sha }}" >> "$GITHUB_STEP_SUMMARY"
+            {
+              echo "Running changed-workspace verification against origin/${{ github.base_ref }}"
+              echo "- mode: changed workspaces"
+              echo "- base: origin/${{ github.base_ref }}"
+              echo "- head: ${{ github.sha }}"
+            } >> "$GITHUB_STEP_SUMMARY"
           else
-            echo "Running full monorepo verification on push to main" >> "$GITHUB_STEP_SUMMARY"
-            echo "- mode: full verify" >> "$GITHUB_STEP_SUMMARY"
+            {
+              echo "Running full monorepo verification on push to main"
+              echo "- mode: full verify"
+            } >> "$GITHUB_STEP_SUMMARY"
           fi
 
       - name: Verify Changed Workspaces

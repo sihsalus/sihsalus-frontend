@@ -116,28 +116,11 @@ jobs:
       - name: Build
         run: yarn build
 
-  assemble:
-    runs-on: ubuntu-latest
-    timeout-minutes: 30
-    permissions:
-      contents: read
-    needs: build
-    steps:
-      - uses: actions/checkout@v6
-        with:
-          fetch-depth: 0
-
-      - uses: ./.github/actions/setup-node-env
-
-      - name: Turbo Cache
-        uses: actions/cache@v5
-        with:
-          path: .turbo
-          key: turbo-${{ runner.os }}-${{ github.sha }}
-          restore-keys: turbo-${{ runner.os }}-
-
+      # `yarn build` above already built the apps, so assemble only packages
+      # the importmap and validates the artifact — no rebuild. (package:spa
+      # would re-run `turbo run build` on the apps; `yarn assemble` skips it.)
       - name: Assemble and validate SPA artifact
-        run: yarn package:spa
+        run: yarn assemble
 
   security-audit:
     runs-on: ubuntu-latest

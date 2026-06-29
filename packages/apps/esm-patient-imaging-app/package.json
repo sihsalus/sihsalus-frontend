@@ -42,7 +42,7 @@
     "url": "https://github.com/sadrezhao/openmrs-esm-patient-imaging-app/issues"
   },
   "dependencies": {
-    "@hookform/resolvers": "^3.x",
+    "@hookform/resolvers": "^5.x",
     "@internationalized/date": "^3.x",
     "lodash-es": "^4.17.21",
     "open": "^8.4.0",

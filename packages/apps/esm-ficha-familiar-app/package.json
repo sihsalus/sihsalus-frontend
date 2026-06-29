@@ -38,7 +38,7 @@
     "url": "https://github.com/sihsalus/sihsalus-esm-modules/issues"
   },
   "dependencies": {
-    "@hookform/resolvers": "^3.3.1",
+    "@hookform/resolvers": "^5.4.0",
     "@openmrs/esm-utils": "workspace:*",
     "lodash-es": "^4.17.21",
     "zod": "^3.24.1"

@@ -41,7 +41,7 @@
   },
   "dependencies": {
     "@carbon/react": "^1.92.1",
-    "@hookform/resolvers": "^3.3.0",
+    "@hookform/resolvers": "^5.4.0",
     "@playwright/test": "^1.58.2",
     "@sihsalus/esm-rbac": "workspace:*",
     "dotenv": "^17.3.1",

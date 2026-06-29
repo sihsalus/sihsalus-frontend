@@ -79,7 +79,7 @@
     "rxjs": "^6.5.3",
     "timezone-mock": "^1.4.2",
     "typescript": "6.0.3",
-    "vitest": "^4.1.7"
+    "vitest": "^4.1.9"
   },
   "stableVersion": "9.0.2"
 }

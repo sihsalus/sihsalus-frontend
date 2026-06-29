@@ -1,0 +1,39 @@
+name: Setup Node & Yarn
+description: >
+  Sets up Node and Corepack, restores the Yarn cache and installs dependencies
+  with an immutable lockfile. Assumes the repository is already checked out
+  (a local composite action cannot check out the repo it lives in).
+
+inputs:
+  node-version:
+    description: Node.js version to install
+    required: false
+    default: '24'
+
+runs:
+  using: composite
+  steps:
+    - name: Setup Node
+      uses: actions/setup-node@v6
+      with:
+        node-version: ${{ inputs.node-version }}
+
+    - name: Enable Corepack
+      shell: bash
+      run: corepack enable
+
+    - name: Get yarn cache directory
+      id: yarn-cache
+      shell: bash
+      run: echo "dir=$(yarn config get cacheFolder)" >> "$GITHUB_OUTPUT"
+
+    - name: Restore Yarn cache
+      uses: actions/cache@v5
+      with:
+        path: ${{ steps.yarn-cache.outputs.dir }}
+        key: yarn-${{ hashFiles('yarn.lock') }}
+        restore-keys: yarn-
+
+    - name: Install dependencies
+      shell: bash
+      run: HUSKY=0 yarn install --immutable

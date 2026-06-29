@@ -27,16 +27,7 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Setup Node
-        uses: actions/setup-node@v6
-        with:
-          node-version: 24
-
-      - name: Enable Corepack
-        run: corepack enable
-
-      - name: Install dependencies
-        run: HUSKY=0 yarn install --immutable
+      - uses: ./.github/actions/setup-node-env
 
       - name: Verify app build before multiarch image build
         run: yarn build:apps

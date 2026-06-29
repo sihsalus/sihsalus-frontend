@@ -12,6 +12,11 @@ concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: false
 
+env:
+  IBM_TELEMETRY_DISABLED: 'true'
+  TURBO_TELEMETRY_DISABLED: '1'
+  DO_NOT_TRACK: '1'
+
 jobs:
   build-and-push:
     runs-on: ubuntu-latest

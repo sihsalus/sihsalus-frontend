@@ -45,7 +45,7 @@
     "@hookform/resolvers": "^3.x",
     "@internationalized/date": "^3.x",
     "lodash-es": "^4.17.21",
-    "open": "^8.4.0",
+    "open": "^11.0.0",
     "react-hook-form": "^7.x",
     "react-is": "^19.1.0",
     "zod": "^3.x"

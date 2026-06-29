@@ -57,7 +57,7 @@
   "dependencies": {
     "dexie": "^3.0.3",
     "lodash-es": "^4.17.21",
-    "uuid": "^14.0.0",
+    "uuid": "^14.0.1",
     "workbox-window": "^6.1.5"
   },
   "devDependencies": {
@@ -69,14 +69,14 @@
     "@openmrs/esm-state": "workspace:*",
     "@openmrs/esm-utils": "workspace:*",
     "@swc/cli": "0.8.1",
-    "@swc/core": "1.15.21",
-    "@types/fhir": "0.0.31",
+    "@swc/core": "1.15.43",
+    "@types/fhir": "0.0.44",
     "@types/node": "^22.10.7",
     "@types/uuid": "^9.0.1",
     "@vitest/coverage-v8": "^4.1.2",
     "concurrently": "^9.2.1",
     "cross-env": "^10.1.0",
-    "dayjs": "^1.11.13",
+    "dayjs": "^1.11.21",
     "happy-dom": "^20.6.0",
     "i18next": "^25.7.2",
     "rimraf": "^6.1.3",

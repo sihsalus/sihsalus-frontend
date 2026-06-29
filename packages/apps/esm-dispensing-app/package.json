@@ -43,7 +43,7 @@
     "url": "https://github.com/openmrs/openmrs-esm-dispensing/issues"
   },
   "dependencies": {
-    "@carbon/react": "^1.83.0",
+    "@carbon/react": "^1.110.0",
     "@openmrs/esm-utils": "workspace:*",
     "@sihsalus/esm-rbac": "workspace:*",
     "classnames": "^2.5.1",
@@ -60,11 +60,11 @@
   },
   "devDependencies": {
     "@openmrs/esm-framework": "workspace:*",
-    "@playwright/test": "^1.52.0",
-    "@swc/core": "1.15.21",
+    "@playwright/test": "^1.61.1",
+    "@swc/core": "1.15.43",
     "@types/react": "^18.3.21",
     "@types/react-dom": "^18.3.0",
-    "dayjs": "^1.11.13",
+    "dayjs": "^1.11.21",
     "dotenv": "^16.3.1",
     "i18next": "^25.0.0",
     "i18next-parser": "^9.3.0",
@@ -74,7 +74,7 @@
     "react-i18next": "^16.0.0",
     "react-router-dom": "^6.3.0",
     "rxjs": "^6.6.7",
-    "swr": "^2.2.5",
+    "swr": "^2.4.2",
     "turbo": "^2.9.14",
     "typescript": "6.0.3",
     "vitest": "^4.1.7"

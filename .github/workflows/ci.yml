@@ -16,6 +16,38 @@ env:
   DO_NOT_TRACK: '1'
 
 jobs:
+  # Repo-wide safety nets that the per-workspace `turbo` tasks in `quality`
+  # do not reach. Independent of build/test, so it runs in parallel.
+  lint:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+
+      - uses: ./.github/actions/setup-node-env
+
+      # Regression guard: every workspace must define a `lint` script, else
+      # `turbo run lint` silently skips it (how esm-styleguide hid 14 errors).
+      - name: Validate Lint Coverage
+        run: yarn validate:lint-coverage
+
+      # Safety net: lints the whole repo (incl. non-workspace files like
+      # packages/tooling/scripts and root configs) that per-package turbo
+      # lint does not reach. Fails on lint errors only, not warnings.
+      - name: Lint Full Repo
+        run: yarn lint:all
+
+      # e2e is not a workspace, so `turbo run typescript` never typechecks it.
+      # Enforce the root suite (e2e/tests), which is type-clean. The modular
+      # suites (e2e/<module>) carry ~196 pre-existing type errors and are not
+      # yet in scope — see docs/e2e-testing.md.
+      - name: Typecheck E2E (root suite)
+        run: yarn typecheck:e2e
+
   quality:
     runs-on: ubuntu-latest
     timeout-minutes: 45
@@ -60,24 +92,6 @@ jobs:
       - name: Verify Full Monorepo
         if: github.event_name == 'push'
         run: yarn verify
-
-      # Regression guard: every workspace must define a `lint` script, else
-      # `turbo run lint` silently skips it (how esm-styleguide hid 14 errors).
-      - name: Validate Lint Coverage
-        run: yarn validate:lint-coverage
-
-      # Safety net: lints the whole repo (incl. non-workspace files like
-      # packages/tooling/scripts and root configs) that per-package turbo
-      # lint does not reach. Fails on lint errors only, not warnings.
-      - name: Lint Full Repo
-        run: yarn lint:all
-
-      # e2e is not a workspace, so `turbo run typescript` never typechecks it.
-      # Enforce the root suite (e2e/tests), which is type-clean. The modular
-      # suites (e2e/<module>) carry ~196 pre-existing type errors and are not
-      # yet in scope — see docs/e2e-testing.md.
-      - name: Typecheck E2E (root suite)
-        run: yarn typecheck:e2e
 
   build:
     runs-on: ubuntu-latest
@@ -130,7 +144,6 @@ jobs:
     timeout-minutes: 20
     permissions:
       contents: read
-    needs: quality
     steps:
       - uses: actions/checkout@v6
         with:

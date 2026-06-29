@@ -32,6 +32,14 @@ updates:
       - dependency-name: "@openmrs/esm-offline"
       - dependency-name: "workbox-window"
     groups:
+      # Security updates — keep safe minor/patch remediations together.
+      security-patches:
+        applies-to: security-updates
+        patterns:
+          - "*"
+        update-types:
+          - "minor"
+          - "patch"
       # Build/test tooling — low risk, group minor+patch into one PR
       tooling:
         patterns:

@@ -99,6 +99,14 @@ function getAddressExtensions(address: PatientAddress) {
   return extension.length ? [{ url: addressExtensionUrl, extension }] : undefined;
 }
 
+function getPersonAttributeValue(patient: Partial<Patient>, attributeTypeUuid?: string) {
+  if (!attributeTypeUuid) {
+    return undefined;
+  }
+
+  return patient.person?.attributes?.find((attribute) => attribute.attributeType === attributeTypeUuid)?.value;
+}
+
 export type SavePatientForm = (
   isNewPatient: boolean,
   values: FormValues,
@@ -523,12 +531,26 @@ export class FormManager {
     // https://github.com/openmrs/openmrs-module-fhir/blob/669b3c52220bb9abc622f815f4dc0d8523687a57/api/src/main/java/org/openmrs/module/fhir/api/util/FHIRPatientUtil.java#L36
     // https://github.com/openmrs/openmrs-esm-patient-management/blob/94e6f637fb37cf4984163c355c5981ea6b8ca38c/packages/esm-patient-search-app/src/patient-search-result/patient-search-result.component.tsx#L21
     // Update as required.
+    const fieldDefinitions = config?.fieldDefinitions ?? [];
     const phoneAttributeTypeUuid = config?.fieldConfigurations?.phone?.personAttributeUuid;
-    const phoneAttribute = patient.person?.attributes?.find(
-      (attribute) =>
-        !!attribute.value &&
-        (attribute.attributeType === phoneAttributeTypeUuid || attribute.attributeType === 'Telephone Number'),
-    );
+    const mobilePhoneAttributeTypeUuid = fieldDefinitions.find((field) => field.id === 'mobilePhone')?.uuid;
+    const emailAttributeTypeUuid = fieldDefinitions.find((field) => field.id === 'email')?.uuid;
+    const phoneAttributeValue =
+      getPersonAttributeValue(patient, phoneAttributeTypeUuid) ??
+      patient.person?.attributes?.find(
+        (attribute) =>
+          !!attribute.value &&
+          (attribute.attributeType === phoneAttributeTypeUuid || attribute.attributeType === 'Telephone Number'),
+      )?.value;
+    const mobilePhoneAttributeValue = getPersonAttributeValue(patient, mobilePhoneAttributeTypeUuid);
+    const emailAttributeValue = getPersonAttributeValue(patient, emailAttributeTypeUuid);
+    const telecom = [
+      phoneAttributeValue ? { system: 'phone' as const, use: 'home' as const, value: phoneAttributeValue } : null,
+      mobilePhoneAttributeValue
+        ? { system: 'phone' as const, use: 'mobile' as const, value: mobilePhoneAttributeValue }
+        : null,
+      emailAttributeValue ? { system: 'email' as const, value: emailAttributeValue } : null,
+    ].filter(Boolean);
 
     return {
       id: patient.uuid,
@@ -552,15 +574,7 @@ export class FormManager {
         use: address.preferred === false ? 'old' : 'home',
         extension: getAddressExtensions(address),
       })),
-      telecom: phoneAttribute
-        ? [
-            {
-              system: 'phone',
-              use: 'mobile',
-              value: phoneAttribute.value,
-            },
-          ]
-        : undefined,
+      telecom: telecom.length ? telecom : undefined,
     };
   }
 }

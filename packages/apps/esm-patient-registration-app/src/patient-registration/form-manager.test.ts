@@ -15,6 +15,7 @@ import {
   getEffectiveRegistrationConfig,
   peruEmailAttributeTypeUuid,
   peruInsuranceCodeAttributeTypeUuid,
+  peruMobilePhoneAttributeTypeUuid,
   peruPhoneAttributeTypeUuid,
 } from './peru-registration-config';
 
@@ -242,7 +243,7 @@ describe('FormManager', () => {
   });
 
   describe('mapPatientToFhirPatient', () => {
-    it('maps the configured phone person attribute to FHIR telecom', () => {
+    it('maps configured contact attributes to FHIR telecom for the local patient summary', () => {
       const config = getPeruRegistrationConfig();
       const patient = FormManager.getPatientToCreate(
         true,
@@ -252,7 +253,9 @@ describe('FormManager', () => {
           gender: 'female',
           birthdate: '1990-05-14',
           attributes: {
-            [peruPhoneAttributeTypeUuid]: '999888777',
+            [peruPhoneAttributeTypeUuid]: '012345678',
+            [peruMobilePhoneAttributeTypeUuid]: '987654321',
+            [peruEmailAttributeTypeUuid]: 'juan.perez@example.org',
           },
         },
         {},
@@ -264,8 +267,17 @@ describe('FormManager', () => {
       expect(FormManager.mapPatientToFhirPatient(patient, config).telecom).toEqual([
         {
           system: 'phone',
+          use: 'home',
+          value: '012345678',
+        },
+        {
+          system: 'phone',
           use: 'mobile',
-          value: '999888777',
+          value: '987654321',
+        },
+        {
+          system: 'email',
+          value: 'juan.perez@example.org',
         },
       ]);
     });

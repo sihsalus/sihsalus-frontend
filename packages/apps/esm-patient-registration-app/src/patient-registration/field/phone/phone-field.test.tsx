@@ -18,7 +18,7 @@ function getRenderedFieldDefinition() {
 
 describe('PhoneField', () => {
   beforeEach(() => {
-    mockUseConfig.mockReturnValue(getDefaultsFromConfigSchema(esmPatientRegistrationSchema));
+    mockUseConfig.mockReturnValue(getDefaultsFromConfigSchema(esmPatientRegistrationSchema) as RegistrationConfig);
   });
 
   it('uses the Peru default phone placeholder', () => {

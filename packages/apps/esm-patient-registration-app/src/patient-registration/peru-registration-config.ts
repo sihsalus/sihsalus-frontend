@@ -43,6 +43,7 @@ const minorResponsibleRelationshipTypes = [
   '8d91a210-c2cc-11de-8d13-0010c6dffd0f/aIsToB', // Padre
   '057de23f-3d9c-4314-9391-4452970739c6/aIsToB', // Apoderado
 ];
+const companionRelationshipType = '3501ac02-0fb0-4ced-8a3e-f578f0ff5276/aIsToB'; // Acompañante
 
 const peruSectionDefinitions: Array<SectionDefinition> = [
   {
@@ -456,6 +457,7 @@ export function getEffectiveRegistrationConfig(config: RegistrationConfig): Regi
     relationshipOptions: {
       ...config.relationshipOptions,
       minorResponsibleRelationshipTypes,
+      companionRelationshipType,
     },
     defaultPatientIdentifierTypes,
   };

@@ -88,6 +88,7 @@ export interface RegistrationConfig {
   };
   relationshipOptions?: {
     minorResponsibleRelationshipTypes?: Array<string>;
+    companionRelationshipType?: string;
   };
   links: {
     submitButton: string;
@@ -445,6 +446,12 @@ export const esmPatientRegistrationSchema = {
       _elements: {
         _type: Type.String,
       },
+    },
+    companionRelationshipType: {
+      _type: Type.String,
+      _default: '',
+      _description:
+        'Relationship type UUID/direction created in addition to the family link when a related person is marked as the patient companion.',
     },
   },
   links: {

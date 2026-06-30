@@ -203,7 +203,11 @@ export class FormManager {
 
     if (savePatientResponse.ok) {
       savePatientTransactionManager.patientSaved = true;
-      await this.saveRelationships(values.relationships, savePatientResponse);
+      await this.saveRelationships(
+        values.relationships,
+        savePatientResponse,
+        config.relationshipOptions?.companionRelationshipType,
+      );
 
       await this.saveObservations(values.obs, savePatientResponse, currentLocation, currentUser, config);
 
@@ -240,33 +244,56 @@ export class FormManager {
     return savePatientResponse.data.uuid;
   };
 
-  static async saveRelationships(relationships: Array<RelationshipValue>, savePatientResponse: FetchResponse) {
-    return Promise.all(
-      relationships
-        .filter((m) => m.relationshipType)
-        .filter((relationship) => !!relationship.action)
-        .map(({ relatedPersonUuid, relationshipType, uuid: relationshipUuid, action }) => {
-          const [type, direction] = relationshipType.split('/');
-          const thisPatientUuid = savePatientResponse.data.uuid;
-          const isAToB = direction === 'aIsToB';
-          const relationshipToSave = {
-            personA: isAToB ? relatedPersonUuid : thisPatientUuid,
-            personB: isAToB ? thisPatientUuid : relatedPersonUuid,
-            relationshipType: type,
-          };
+  static async saveRelationships(
+    relationships: Array<RelationshipValue>,
+    savePatientResponse: FetchResponse,
+    companionRelationshipType?: string,
+  ) {
+    const thisPatientUuid = savePatientResponse.data.uuid;
+    const operations: Array<Promise<unknown>> = [];
 
-          switch (action) {
-            case 'ADD':
-              return saveRelationship(relationshipToSave);
-            case 'UPDATE':
-              return updateRelationship(relationshipUuid, relationshipToSave);
-            case 'DELETE':
-              return deleteRelationship(relationshipUuid);
-            default:
-              return Promise.resolve(undefined);
-          }
-        }),
-    );
+    relationships
+      .filter((m) => m.relationshipType)
+      .filter((relationship) => !!relationship.action)
+      .forEach(({ relatedPersonUuid, relationshipType, uuid: relationshipUuid, action, isCompanion }) => {
+        const [type, direction] = relationshipType.split('/');
+        const isAToB = direction === 'aIsToB';
+        const relationshipToSave = {
+          personA: isAToB ? relatedPersonUuid : thisPatientUuid,
+          personB: isAToB ? thisPatientUuid : relatedPersonUuid,
+          relationshipType: type,
+        };
+
+        switch (action) {
+          case 'ADD':
+            operations.push(saveRelationship(relationshipToSave));
+            break;
+          case 'UPDATE':
+            operations.push(updateRelationship(relationshipUuid, relationshipToSave));
+            break;
+          case 'DELETE':
+            operations.push(deleteRelationship(relationshipUuid));
+            break;
+          default:
+            break;
+        }
+
+        // When the related person is marked as the patient's companion, also
+        // create the configured Acompañante relationship (creation flow only).
+        if (isCompanion && action === 'ADD' && companionRelationshipType) {
+          const [companionType, companionDirection] = companionRelationshipType.split('/');
+          const companionIsAToB = companionDirection === 'aIsToB';
+          operations.push(
+            saveRelationship({
+              personA: companionIsAToB ? relatedPersonUuid : thisPatientUuid,
+              personB: companionIsAToB ? thisPatientUuid : relatedPersonUuid,
+              relationshipType: companionType,
+            }),
+          );
+        }
+      });
+
+    return Promise.all(operations);
   }
 
   static async saveObservations(

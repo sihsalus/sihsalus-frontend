@@ -1,5 +1,6 @@
 import {
   Button,
+  Checkbox,
   ContentSwitcher,
   InlineLoading,
   InlineNotification,
@@ -420,6 +421,12 @@ const RelationshipView: React.FC<RelationshipViewProps> = ({
           </Select>
         </Layer>
       </div>
+      <Checkbox
+        id={`relationships[${index}].isCompanion`}
+        labelText={t('isCompanionLabel', 'Is the patient companion')}
+        checked={!!relationship.isCompanion}
+        onChange={(_event, { checked }) => setFieldValue(`relationships[${index}].isCompanion`, checked)}
+      />
       {requiresRelatedPerson ? (
         <div className={styles.personEntry}>
           <ContentSwitcher

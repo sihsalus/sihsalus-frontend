@@ -162,6 +162,11 @@ export interface RelationshipValue {
    */
   initialrelationshipTypeValue?: string;
   uuid?: string;
+  /**
+   * When true, also creates a companion (Acompañante) relationship for the
+   * same related person on registration.
+   */
+  isCompanion?: boolean;
 }
 
 export interface FormValues {

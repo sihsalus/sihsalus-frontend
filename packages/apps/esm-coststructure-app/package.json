@@ -78,8 +78,8 @@
     "react-i18next": "^16.0.0",
     "react-router-dom": "^6.14.1",
     "rxjs": "^6.6.7",
-    "turbo": "^2.9.14",
+    "turbo": "^2.10.2",
     "typescript": "6.0.3",
-    "vitest": "^4.1.7"
+    "vitest": "^4.1.9"
   }
 }

@@ -3975,7 +3975,7 @@ __metadata:
     rimraf: "npm:^6.1.3"
     rxjs: "npm:^6.5.3"
     typescript: "npm:6.0.3"
-    vitest: "npm:^4.1.7"
+    vitest: "npm:^4.1.9"
   peerDependencies:
     "@openmrs/esm-config": 9.x
     "@openmrs/esm-error-handling": 9.x
@@ -4076,7 +4076,7 @@ __metadata:
     rimraf: "npm:^6.1.3"
     single-spa: "npm:^6.0.3"
     typescript: "npm:6.0.3"
-    vitest: "npm:^4.1.7"
+    vitest: "npm:^4.1.9"
   peerDependencies:
     "@openmrs/esm-globals": 9.x
     "@openmrs/esm-state": 9.x
@@ -4112,7 +4112,7 @@ __metadata:
     jsdom: "npm:^29.0.2"
     rimraf: "npm:^6.1.3"
     typescript: "npm:6.0.3"
-    vitest: "npm:^4.1.7"
+    vitest: "npm:^4.1.9"
     vitest-fetch-mock: "npm:^0.4.5"
   peerDependencies:
     "@openmrs/esm-globals": 9.x
@@ -4139,7 +4139,7 @@ __metadata:
     rimraf: "npm:^6.1.3"
     rxjs: "npm:^6.5.3"
     typescript: "npm:6.0.3"
-    vitest: "npm:^4.1.7"
+    vitest: "npm:^4.1.9"
   peerDependencies:
     "@openmrs/esm-api": 9.x
     "@openmrs/esm-offline": 9.x
@@ -4161,7 +4161,7 @@ __metadata:
     happy-dom: "npm:^20.6.0"
     rimraf: "npm:^6.1.3"
     typescript: "npm:6.0.3"
-    vitest: "npm:^4.1.7"
+    vitest: "npm:^4.1.9"
   peerDependencies:
     "@openmrs/esm-globals": 9.x
   languageName: unknown
@@ -4187,7 +4187,7 @@ __metadata:
     jsep: "npm:^1.4.0"
     rimraf: "npm:^6.1.3"
     typescript: "npm:6.0.3"
-    vitest: "npm:^4.1.7"
+    vitest: "npm:^4.1.9"
   languageName: unknown
   linkType: soft
 
@@ -4215,7 +4215,7 @@ __metadata:
     rimraf: "npm:^6.1.3"
     single-spa: "npm:^6.0.3"
     typescript: "npm:6.0.3"
-    vitest: "npm:^4.1.7"
+    vitest: "npm:^4.1.9"
   peerDependencies:
     "@openmrs/esm-api": 9.x
     "@openmrs/esm-config": 9.x
@@ -4261,7 +4261,7 @@ __metadata:
     openmrs: "workspace:*"
     react-error-boundary: "npm:^4.0.13"
     typescript: "npm:6.0.3"
-    vitest: "npm:^4.1.7"
+    vitest: "npm:^4.1.9"
   peerDependencies:
     "@openmrs/esm-framework": "*"
     "@openmrs/esm-patient-common-lib": "*"
@@ -4311,7 +4311,7 @@ __metadata:
     typedoc-plugin-markdown: "npm:^4.6.3"
     typedoc-plugin-no-inherit: "npm:^1.6.1"
     typescript: "npm:6.0.3"
-    vitest: "npm:^4.1.7"
+    vitest: "npm:^4.1.9"
   peerDependencies:
     dayjs: 1.x
     i18next: 25.x
@@ -4336,7 +4336,7 @@ __metadata:
     rimraf: "npm:^6.1.3"
     single-spa: "npm:^6.0.3"
     typescript: "npm:6.0.3"
-    vitest: "npm:^4.1.7"
+    vitest: "npm:^4.1.9"
   peerDependencies:
     single-spa: 6.x
   languageName: unknown
@@ -4361,7 +4361,7 @@ __metadata:
     path-to-regexp: "npm:^8.3.0"
     rimraf: "npm:^6.1.3"
     typescript: "npm:6.0.3"
-    vitest: "npm:^4.1.7"
+    vitest: "npm:^4.1.9"
   peerDependencies:
     "@openmrs/esm-state": 9.x
   languageName: unknown
@@ -4396,7 +4396,7 @@ __metadata:
     single-spa: "npm:^6.0.3"
     typescript: "npm:6.0.3"
     uuid: "npm:^14.0.0"
-    vitest: "npm:^4.1.7"
+    vitest: "npm:^4.1.9"
     workbox-window: "npm:^6.1.5"
   peerDependencies:
     "@openmrs/esm-api": 9.x
@@ -4418,7 +4418,7 @@ __metadata:
     lodash-es: "npm:^4.17.23"
     typescript: "npm:6.0.3"
     uuid: "npm:^14.0.0"
-    vitest: "npm:^4.1.7"
+    vitest: "npm:^4.1.9"
   peerDependencies:
     "@openmrs/esm-extensions": "*"
     "@openmrs/esm-framework": "*"
@@ -4463,7 +4463,7 @@ __metadata:
     single-spa-react: "npm:^6.0.2"
     swr: "npm:2.2.5"
     typescript: "npm:6.0.3"
-    vitest: "npm:^4.1.7"
+    vitest: "npm:^4.1.9"
   peerDependencies:
     "@openmrs/esm-api": 9.x
     "@openmrs/esm-config": 9.x
@@ -4507,7 +4507,7 @@ __metadata:
     rimraf: "npm:^6.1.3"
     single-spa: "npm:^6.0.3"
     typescript: "npm:6.0.3"
-    vitest: "npm:^4.1.7"
+    vitest: "npm:^4.1.9"
     vitest-fetch-mock: "npm:^0.4.5"
   peerDependencies:
     "@openmrs/esm-config": 9.x
@@ -4535,7 +4535,7 @@ __metadata:
     cross-env: "npm:^10.1.0"
     rimraf: "npm:^6.1.3"
     typescript: "npm:6.0.3"
-    vitest: "npm:^4.1.7"
+    vitest: "npm:^4.1.9"
     zustand: "npm:^4.5.5"
   peerDependencies:
     "@openmrs/esm-globals": 9.x
@@ -4644,7 +4644,7 @@ __metadata:
     semver: "npm:^7.7.3"
     timezone-mock: "npm:^1.4.2"
     typescript: "npm:6.0.3"
-    vitest: "npm:^4.1.7"
+    vitest: "npm:^4.1.9"
   peerDependencies:
     "@openmrs/esm-globals": 9.x
     dayjs: 1.x
@@ -7665,7 +7665,7 @@ __metadata:
     lodash-es: "npm:^4.17.15"
     openmrs: "npm:*"
     typescript: "npm:6.0.3"
-    vitest: "npm:^4.1.7"
+    vitest: "npm:^4.1.9"
   peerDependencies:
     "@openmrs/esm-framework": "*"
     dayjs: 1.x
@@ -7693,7 +7693,7 @@ __metadata:
     openmrs: "workspace:*"
     react-hook-form: "npm:^7.54.0"
     typescript: "npm:6.0.3"
-    vitest: "npm:^4.1.7"
+    vitest: "npm:^4.1.9"
     yup: "npm:^0.32.11"
     zod: "npm:^3.24.1"
   peerDependencies:
@@ -7739,7 +7739,7 @@ __metadata:
     single-spa: "npm:^6.0.3"
     swr: "npm:^2.4.1"
     typescript: "npm:6.0.3"
-    vitest: "npm:^4.1.7"
+    vitest: "npm:^4.1.9"
     zod: "npm:^3.24.1"
   peerDependencies:
     "@carbon/colors": 11.x
@@ -7766,7 +7766,7 @@ __metadata:
     "@openmrs/esm-framework": "workspace:*"
     react: "npm:^18.3.1"
     typescript: "npm:6.0.3"
-    vitest: "npm:^4.1.7"
+    vitest: "npm:^4.1.9"
   peerDependencies:
     "@openmrs/esm-framework": "workspace:*"
     react: ">=18.0.0"
@@ -7786,7 +7786,7 @@ __metadata:
     openmrs: "npm:*"
     react-hook-form: "npm:^7.54.0"
     typescript: "npm:6.0.3"
-    vitest: "npm:^4.1.7"
+    vitest: "npm:^4.1.9"
     zod: "npm:^3.24.1"
   peerDependencies:
     "@openmrs/esm-framework": "*"
@@ -7836,9 +7836,9 @@ __metadata:
     rxjs: "npm:^6.6.7"
     sass: "npm:^1.70.0"
     swr: "npm:^2.2.4"
-    turbo: "npm:^2.9.14"
+    turbo: "npm:^2.10.2"
     typescript: "npm:6.0.3"
-    vitest: "npm:^4.1.7"
+    vitest: "npm:^4.1.9"
     zod: "npm:^3.22.4"
   peerDependencies:
     "@openmrs/esm-framework": "*"
@@ -7873,7 +7873,7 @@ __metadata:
     rxjs: "npm:^6.6.7"
     swr: "npm:^2.3.6"
     typescript: "npm:6.0.3"
-    vitest: "npm:^4.1.7"
+    vitest: "npm:^4.1.9"
   peerDependencies:
     "@carbon/react": 1.x
     "@openmrs/esm-framework": "*"
@@ -7910,9 +7910,9 @@ __metadata:
     react-dom: "npm:^18.3.1"
     react-hook-form: "npm:^7.56.1"
     react-i18next: "npm:^16.0.0"
-    turbo: "npm:^2.9.14"
+    turbo: "npm:^2.10.2"
     typescript: "npm:6.0.3"
-    vitest: "npm:^4.1.7"
+    vitest: "npm:^4.1.9"
     zod: "npm:^3.24.3"
   peerDependencies:
     "@openmrs/esm-framework": "*"
@@ -7949,9 +7949,9 @@ __metadata:
     react-router-dom: "npm:^6.14.1"
     rxjs: "npm:^6.6.7"
     swr: "npm:^2.3.6"
-    turbo: "npm:^2.9.14"
+    turbo: "npm:^2.10.2"
     typescript: "npm:6.0.3"
-    vitest: "npm:^4.1.7"
+    vitest: "npm:^4.1.9"
     zod: "npm:^4.1.12"
   peerDependencies:
     "@carbon/react": 1.x
@@ -7998,7 +7998,7 @@ __metadata:
     single-spa: "npm:^6.0.3"
     swr: "npm:^2.4.1"
     typescript: "npm:6.0.3"
-    vitest: "npm:^4.1.7"
+    vitest: "npm:^4.1.9"
     zod: "npm:^3.24.1"
   peerDependencies:
     "@carbon/colors": 11.x
@@ -8031,7 +8031,7 @@ __metadata:
     react-dom: "npm:^18.3.1"
     react-i18next: "npm:^16.0.0"
     typescript: "npm:6.0.3"
-    vitest: "npm:^4.1.7"
+    vitest: "npm:^4.1.9"
   peerDependencies:
     "@carbon/react": 1.x
     "@openmrs/esm-framework": "*"
@@ -8067,9 +8067,9 @@ __metadata:
     react-to-print: "npm:^2.14.13"
     rxjs: "npm:^6.6.7"
     swr: "npm:^2.2.5"
-    turbo: "npm:^2.9.14"
+    turbo: "npm:^2.10.2"
     typescript: "npm:6.0.3"
-    vitest: "npm:^4.1.7"
+    vitest: "npm:^4.1.9"
   peerDependencies:
     "@openmrs/esm-framework": "*"
     dayjs: 1.x
@@ -8089,7 +8089,7 @@ __metadata:
     "@rspack/cli": "npm:1.7.11"
     openmrs: "workspace:*"
     typescript: "npm:6.0.3"
-    vitest: "npm:^4.1.7"
+    vitest: "npm:^4.1.9"
   peerDependencies:
     "@carbon/colors": 1.x
     "@carbon/layout": 1.x
@@ -8124,7 +8124,7 @@ __metadata:
     react-hook-form: "npm:^7.51.0"
     swr: "npm:^2.3.6"
     typescript: "npm:6.0.3"
-    vitest: "npm:^4.1.7"
+    vitest: "npm:^4.1.9"
     zod: "npm:^3.22.0"
   peerDependencies:
     "@openmrs/esm-framework": "*"
@@ -8163,10 +8163,10 @@ __metadata:
     react-router-dom: "npm:^6.15.0"
     semver: "npm:^7.5.4"
     swr: "npm:^2.2.4"
-    turbo: "npm:^2.9.14"
+    turbo: "npm:^2.10.2"
     typescript: "npm:6.0.3"
     uuid: "npm:^14.0.0"
-    vitest: "npm:^4.1.7"
+    vitest: "npm:^4.1.9"
   peerDependencies:
     "@carbon/react": 1.x
     "@openmrs/esm-framework": "*"
@@ -8208,7 +8208,7 @@ __metadata:
     single-spa: "npm:^6.0.3"
     swr: "npm:^2.4.1"
     typescript: "npm:6.0.3"
-    vitest: "npm:^4.1.7"
+    vitest: "npm:^4.1.9"
     zod: "npm:^3.24.1"
   peerDependencies:
     "@carbon/react": 1.x
@@ -8257,9 +8257,9 @@ __metadata:
     react-mde: "npm:^11.5.0"
     rxjs: "npm:^6.6.7"
     sass: "npm:^1.67.0"
-    turbo: "npm:^2.9.14"
+    turbo: "npm:^2.10.2"
     typescript: "npm:6.0.3"
-    vitest: "npm:^4.1.7"
+    vitest: "npm:^4.1.9"
   peerDependencies:
     "@openmrs/esm-framework": "*"
     dayjs: 1.x
@@ -8306,9 +8306,9 @@ __metadata:
     rimraf: "npm:^5.0.0"
     sass: "npm:^1.77.2"
     swr: "npm:^2.2.5"
-    turbo: "npm:^2.9.14"
+    turbo: "npm:^2.10.2"
     typescript: "npm:6.0.3"
-    vitest: "npm:^4.1.7"
+    vitest: "npm:^4.1.9"
   peerDependencies:
     "@openmrs/esm-framework": "workspace:*"
     "@openmrs/esm-styleguide": "workspace:*"
@@ -8333,7 +8333,7 @@ __metadata:
     openmrs: "workspace:*"
     react-error-boundary: "npm:^4.0.13"
     typescript: "npm:6.0.3"
-    vitest: "npm:^4.1.7"
+    vitest: "npm:^4.1.9"
   peerDependencies:
     "@openmrs/esm-framework": "*"
     "@openmrs/esm-patient-common-lib": "*"
@@ -8358,7 +8358,7 @@ __metadata:
     lodash-es: "npm:^4.17.21"
     openmrs: "workspace:*"
     typescript: "npm:6.0.3"
-    vitest: "npm:^4.1.7"
+    vitest: "npm:^4.1.9"
   peerDependencies:
     "@carbon/react": 1.x
     "@openmrs/esm-framework": "*"
@@ -8385,7 +8385,7 @@ __metadata:
     lodash-es: "npm:^4.17.23"
     openmrs: "workspace:*"
     typescript: "npm:6.0.3"
-    vitest: "npm:^4.1.7"
+    vitest: "npm:^4.1.9"
   peerDependencies:
     "@openmrs/esm-framework": "*"
     "@openmrs/esm-patient-common-lib": "*"
@@ -8411,7 +8411,7 @@ __metadata:
     react-dom: "npm:^18.3.1"
     react-i18next: "npm:^16.0.0"
     typescript: "npm:6.0.3"
-    vitest: "npm:^4.1.7"
+    vitest: "npm:^4.1.9"
   peerDependencies:
     "@carbon/react": 1.x
     "@openmrs/esm-framework": "*"
@@ -8431,7 +8431,7 @@ __metadata:
     i18next-parser: "npm:^9.3.0"
     openmrs: "npm:*"
     typescript: "npm:6.0.3"
-    vitest: "npm:^4.1.7"
+    vitest: "npm:^4.1.9"
   peerDependencies:
     "@openmrs/esm-framework": "*"
     react: 18.x
@@ -8457,7 +8457,7 @@ __metadata:
     rxjs: "npm:^6.5.3"
     swr: "npm:2.2.5"
     typescript: "npm:6.0.3"
-    vitest: "npm:^4.1.7"
+    vitest: "npm:^4.1.9"
   peerDependencies:
     "@carbon/react": 1.x
     "@openmrs/esm-framework": "*"
@@ -8490,7 +8490,7 @@ __metadata:
     rxjs: "npm:^6.6.7"
     swr: "npm:^2.3.6"
     typescript: "npm:6.0.3"
-    vitest: "npm:^4.1.7"
+    vitest: "npm:^4.1.9"
   peerDependencies:
     "@carbon/react": 1.x
     "@openmrs/esm-framework": "*"
@@ -8511,7 +8511,7 @@ __metadata:
     "@sihsalus/esm-rbac": "workspace:*"
     openmrs: "workspace:*"
     typescript: "npm:6.0.3"
-    vitest: "npm:^4.1.7"
+    vitest: "npm:^4.1.9"
   peerDependencies:
     "@carbon/colors": 11.x
     "@carbon/layout": 11.x
@@ -8551,7 +8551,7 @@ __metadata:
     react-i18next: "npm:^16.0.0"
     react-router-dom: "npm:^6.11.2"
     typescript: "npm:6.0.3"
-    vitest: "npm:^4.1.7"
+    vitest: "npm:^4.1.9"
   peerDependencies:
     "@openmrs/esm-framework": "*"
     dayjs: 1.x
@@ -8578,7 +8578,7 @@ __metadata:
     rxjs: "npm:^6.5.3"
     swr: "npm:2.2.5"
     typescript: "npm:6.0.3"
-    vitest: "npm:^4.1.7"
+    vitest: "npm:^4.1.9"
     zod: "npm:^3.23.8"
   peerDependencies:
     "@carbon/react": 1.x
@@ -8604,7 +8604,7 @@ __metadata:
     openmrs: "workspace:*"
     react-konva: "npm:^19.0.5"
     typescript: "npm:6.0.3"
-    vitest: "npm:^4.1.7"
+    vitest: "npm:^4.1.9"
     zustand: "npm:^4.5.5"
   peerDependencies:
     "@openmrs/esm-framework": "*"
@@ -8633,7 +8633,7 @@ __metadata:
     rxjs: "npm:^6.5.3"
     swr: "npm:2.2.5"
     typescript: "npm:6.0.3"
-    vitest: "npm:^4.1.7"
+    vitest: "npm:^4.1.9"
   peerDependencies:
     "@carbon/react": 1.x
     "@openmrs/esm-framework": "*"
@@ -8656,7 +8656,7 @@ __metadata:
     openmrs: "npm:*"
     swr: "npm:^2.2.5"
     typescript: "npm:6.0.3"
-    vitest: "npm:^4.1.7"
+    vitest: "npm:^4.1.9"
   peerDependencies:
     "@openmrs/esm-framework": "*"
     dayjs: 1.x
@@ -8679,7 +8679,7 @@ __metadata:
     lodash-es: "npm:^4.17.23"
     openmrs: "workspace:*"
     typescript: "npm:6.0.3"
-    vitest: "npm:^4.1.7"
+    vitest: "npm:^4.1.9"
   peerDependencies:
     "@openmrs/esm-framework": "*"
     "@openmrs/esm-patient-common-lib": "*"
@@ -8705,7 +8705,7 @@ __metadata:
     openmrs: "workspace:*"
     react-grid-gallery: "npm:^0.5.6"
     typescript: "npm:6.0.3"
-    vitest: "npm:^4.1.7"
+    vitest: "npm:^4.1.9"
   peerDependencies:
     "@openmrs/esm-framework": "*"
     "@openmrs/esm-patient-common-lib": "*"
@@ -8731,7 +8731,7 @@ __metadata:
     react-barcode: "npm:^1.5.3"
     react-to-print: "npm:^3.1.1"
     typescript: "npm:6.0.3"
-    vitest: "npm:^4.1.7"
+    vitest: "npm:^4.1.9"
   peerDependencies:
     "@openmrs/esm-framework": "*"
     "@openmrs/esm-patient-common-lib": "*"
@@ -8759,7 +8759,7 @@ __metadata:
     openmrs: "workspace:*"
     typescript: "npm:6.0.3"
     uuid: "npm:^14.0.0"
-    vitest: "npm:^4.1.7"
+    vitest: "npm:^4.1.9"
   peerDependencies:
     "@carbon/react": 1.x
     "@openmrs/esm-extensions": "*"
@@ -8788,7 +8788,7 @@ __metadata:
     lodash-es: "npm:^4.17.23"
     openmrs: "workspace:*"
     typescript: "npm:6.0.3"
-    vitest: "npm:^4.1.7"
+    vitest: "npm:^4.1.9"
   peerDependencies:
     "@openmrs/esm-framework": "*"
     "@openmrs/esm-patient-common-lib": "*"
@@ -8810,7 +8810,7 @@ __metadata:
     "@rspack/cli": "npm:1.7.11"
     openmrs: "workspace:*"
     typescript: "npm:6.0.3"
-    vitest: "npm:^4.1.7"
+    vitest: "npm:^4.1.9"
   peerDependencies:
     "@openmrs/esm-framework": "*"
     "@openmrs/esm-patient-common-lib": "*"
@@ -8835,7 +8835,7 @@ __metadata:
     lodash-es: "npm:^4.17.23"
     openmrs: "workspace:*"
     typescript: "npm:6.0.3"
-    vitest: "npm:^4.1.7"
+    vitest: "npm:^4.1.9"
   peerDependencies:
     "@openmrs/esm-framework": "*"
     "@openmrs/esm-patient-common-lib": "*"
@@ -8881,9 +8881,9 @@ __metadata:
     swc-loader: "npm:^0.2.3"
     swr: "npm:^2.x"
     ts-node: "npm:^10.9.2"
-    turbo: "npm:^2.9.14"
+    turbo: "npm:^2.10.2"
     typescript: "npm:6.0.3"
-    vitest: "npm:^4.1.7"
+    vitest: "npm:^4.1.9"
     zod: "npm:^3.x"
   peerDependencies:
     "@carbon/react": 1.x
@@ -8911,7 +8911,7 @@ __metadata:
     openmrs: "workspace:*"
     react-hook-form: "npm:^7.46.2"
     typescript: "npm:6.0.3"
-    vitest: "npm:^4.1.7"
+    vitest: "npm:^4.1.9"
     zod: "npm:^3.23.8"
   peerDependencies:
     "@openmrs/esm-framework": "*"
@@ -8933,7 +8933,7 @@ __metadata:
     "@rspack/cli": "npm:1.7.11"
     openmrs: "workspace:*"
     typescript: "npm:6.0.3"
-    vitest: "npm:^4.1.7"
+    vitest: "npm:^4.1.9"
   peerDependencies:
     "@openmrs/esm-framework": "*"
     react: 18.x
@@ -8955,7 +8955,7 @@ __metadata:
     lodash-es: "npm:^4.17.15"
     openmrs: "npm:*"
     typescript: "npm:6.0.3"
-    vitest: "npm:^4.1.7"
+    vitest: "npm:^4.1.9"
   peerDependencies:
     "@openmrs/esm-framework": "*"
     react: 18.x
@@ -8974,7 +8974,7 @@ __metadata:
     "@rspack/cli": "npm:1.7.11"
     openmrs: "workspace:*"
     typescript: "npm:6.0.3"
-    vitest: "npm:^4.1.7"
+    vitest: "npm:^4.1.9"
   peerDependencies:
     "@openmrs/esm-framework": "*"
     "@openmrs/esm-patient-common-lib": "*"
@@ -8998,7 +8998,7 @@ __metadata:
     lodash-es: "npm:^4.17.21"
     openmrs: "workspace:*"
     typescript: "npm:6.0.3"
-    vitest: "npm:^4.1.7"
+    vitest: "npm:^4.1.9"
   peerDependencies:
     "@openmrs/esm-framework": "*"
     "@openmrs/esm-patient-common-lib": "*"
@@ -9021,7 +9021,7 @@ __metadata:
     lodash-es: "npm:^4.17.23"
     openmrs: "workspace:*"
     typescript: "npm:6.0.3"
-    vitest: "npm:^4.1.7"
+    vitest: "npm:^4.1.9"
   peerDependencies:
     "@openmrs/esm-framework": "*"
     "@openmrs/esm-patient-common-lib": "*"
@@ -9045,7 +9045,7 @@ __metadata:
     lodash-es: "npm:^4.17.21"
     openmrs: "workspace:*"
     typescript: "npm:6.0.3"
-    vitest: "npm:^4.1.7"
+    vitest: "npm:^4.1.9"
   peerDependencies:
     "@openmrs/esm-framework": "*"
     "@openmrs/esm-patient-common-lib": "*"
@@ -9070,7 +9070,7 @@ __metadata:
     openmrs: "workspace:*"
     react-hook-form: "npm:^7.46.2"
     typescript: "npm:6.0.3"
-    vitest: "npm:^4.1.7"
+    vitest: "npm:^4.1.9"
     zod: "npm:^3.23.8"
   peerDependencies:
     "@openmrs/esm-framework": "*"
@@ -9094,7 +9094,7 @@ __metadata:
     lodash-es: "npm:^4.17.23"
     openmrs: "workspace:*"
     typescript: "npm:6.0.3"
-    vitest: "npm:^4.1.7"
+    vitest: "npm:^4.1.9"
   peerDependencies:
     "@openmrs/esm-framework": "*"
     "@openmrs/esm-patient-common-lib": "*"
@@ -9126,7 +9126,7 @@ __metadata:
     openmrs: "npm:*"
     typescript: "npm:6.0.3"
     uuid: "npm:^14.0.0"
-    vitest: "npm:^4.1.7"
+    vitest: "npm:^4.1.9"
     yup: "npm:^0.29.1"
   peerDependencies:
     "@openmrs/esm-framework": "*"
@@ -9152,7 +9152,7 @@ __metadata:
     openmrs: "npm:*"
     react-hook-form: "npm:^7.54.0"
     typescript: "npm:6.0.3"
-    vitest: "npm:^4.1.7"
+    vitest: "npm:^4.1.9"
   peerDependencies:
     "@openmrs/esm-framework": "*"
     react: ^18.3.1
@@ -9173,7 +9173,7 @@ __metadata:
     openmrs: "workspace:*"
     react-hook-form: "npm:^7.46.2"
     typescript: "npm:6.0.3"
-    vitest: "npm:^4.1.7"
+    vitest: "npm:^4.1.9"
     zod: "npm:^3.23.8"
   peerDependencies:
     "@openmrs/esm-framework": "*"
@@ -9201,7 +9201,7 @@ __metadata:
     lodash-es: "npm:^4.17.21"
     openmrs: "workspace:*"
     typescript: "npm:6.0.3"
-    vitest: "npm:^4.1.7"
+    vitest: "npm:^4.1.9"
   peerDependencies:
     "@openmrs/esm-framework": "*"
     "@openmrs/esm-patient-common-lib": "*"
@@ -9226,7 +9226,7 @@ __metadata:
     lodash-es: "npm:^4.17.23"
     openmrs: "workspace:*"
     typescript: "npm:6.0.3"
-    vitest: "npm:^4.1.7"
+    vitest: "npm:^4.1.9"
   peerDependencies:
     "@openmrs/esm-framework": "*"
     "@openmrs/esm-patient-common-lib": "*"
@@ -9254,7 +9254,7 @@ __metadata:
     react-router-dom: "npm:^6.3.0"
     rxjs: "npm:^6.5.3"
     typescript: "npm:6.0.3"
-    vitest: "npm:^4.1.7"
+    vitest: "npm:^4.1.9"
   peerDependencies:
     "@carbon/react": 1.x
     "@openmrs/esm-framework": "*"
@@ -9285,7 +9285,7 @@ __metadata:
     sass: "npm:^1.98.0"
     swr: "npm:^2.4.1"
     typescript: "npm:6.0.3"
-    vitest: "npm:^4.1.7"
+    vitest: "npm:^4.1.9"
   peerDependencies:
     "@carbon/react": 1.x
     "@carbon/styles": 1.x
@@ -9307,7 +9307,7 @@ __metadata:
     "@sihsalus/esm-audit-logger": "workspace:*"
     react: "npm:^18.3.1"
     typescript: "npm:6.0.3"
-    vitest: "npm:^4.1.7"
+    vitest: "npm:^4.1.9"
   peerDependencies:
     "@carbon/react": ">=1.0.0"
     "@openmrs/esm-framework": "workspace:*"
@@ -9324,7 +9324,7 @@ __metadata:
     "@rspack/core": "npm:1.7.11"
     openmrs: "workspace:*"
     typescript: "npm:6.0.3"
-    vitest: "npm:^4.1.7"
+    vitest: "npm:^4.1.9"
   peerDependencies:
     "@carbon/colors": 11.x
     "@carbon/layout": 11.x
@@ -9352,7 +9352,7 @@ __metadata:
     lodash-es: "npm:^4.17.21"
     openmrs: "npm:*"
     typescript: "npm:6.0.3"
-    vitest: "npm:^4.1.7"
+    vitest: "npm:^4.1.9"
   peerDependencies:
     "@openmrs/esm-framework": "*"
     dayjs: 1.x
@@ -9396,7 +9396,7 @@ __metadata:
     single-spa: "npm:^6.0.3"
     swr: "npm:^2.4.1"
     typescript: "npm:6.0.3"
-    vitest: "npm:^4.1.7"
+    vitest: "npm:^4.1.9"
     zod: "npm:^3.24.1"
   peerDependencies:
     "@carbon/colors": 11.x
@@ -9425,7 +9425,7 @@ __metadata:
     lodash-es: "npm:^4.17.21"
     openmrs: "workspace:*"
     typescript: "npm:6.0.3"
-    vitest: "npm:^4.1.7"
+    vitest: "npm:^4.1.9"
   peerDependencies:
     "@carbon/react": 1.x
     "@carbon/styles": 1.x
@@ -9455,7 +9455,7 @@ __metadata:
     openmrs: "npm:*"
     react-hook-form: "npm:^7.54.0"
     typescript: "npm:6.0.3"
-    vitest: "npm:^4.1.7"
+    vitest: "npm:^4.1.9"
     zod: "npm:^3.24.1"
   peerDependencies:
     "@openmrs/esm-framework": "*"
@@ -9476,7 +9476,7 @@ __metadata:
     dayjs: "npm:1.x"
     openmrs: "workspace:*"
     typescript: "npm:6.0.3"
-    vitest: "npm:^4.1.7"
+    vitest: "npm:^4.1.9"
   peerDependencies:
     "@openmrs/esm-framework": "*"
     react: 18.x
@@ -9518,9 +9518,9 @@ __metadata:
     rxjs: "npm:^6.6.7"
     swc-loader: "npm:^0.2.3"
     swr: "npm:^2.2.4"
-    turbo: "npm:^2.9.14"
+    turbo: "npm:^2.10.2"
     typescript: "npm:6.0.3"
-    vitest: "npm:^4.1.7"
+    vitest: "npm:^4.1.9"
     yup: "npm:^1.2.0"
     zod: "npm:^3.22.2"
   peerDependencies:
@@ -9544,7 +9544,7 @@ __metadata:
     openmrs: "npm:*"
     swr: "npm:^2.2.5"
     typescript: "npm:6.0.3"
-    vitest: "npm:^4.1.7"
+    vitest: "npm:^4.1.9"
   peerDependencies:
     "@openmrs/esm-framework": "*"
     dayjs: 1.x
@@ -9572,7 +9572,7 @@ __metadata:
     react-router-dom: "npm:^6.30.2"
     sass: "npm:^1.98.0"
     typescript: "npm:6.0.3"
-    vitest: "npm:^4.1.7"
+    vitest: "npm:^4.1.9"
   peerDependencies:
     "@carbon/react": 1.x
     "@carbon/styles": 1.x
@@ -9602,7 +9602,7 @@ __metadata:
     sass: "npm:^1.98.0"
     swr: "npm:^2.4.1"
     typescript: "npm:6.0.3"
-    vitest: "npm:^4.1.7"
+    vitest: "npm:^4.1.9"
   peerDependencies:
     "@carbon/react": 1.x
     "@carbon/styles": 1.x
@@ -9642,9 +9642,9 @@ __metadata:
     react-router-dom: "npm:^6.14.1"
     rxjs: "npm:^6.6.7"
     swc-loader: "npm:^0.2.3"
-    turbo: "npm:^2.9.14"
+    turbo: "npm:^2.10.2"
     typescript: "npm:6.0.3"
-    vitest: "npm:^4.1.7"
+    vitest: "npm:^4.1.9"
   peerDependencies:
     "@openmrs/esm-framework": "*"
     dayjs: 1.x
@@ -9668,7 +9668,7 @@ __metadata:
     openmrs: "npm:*"
     react-hook-form: "npm:^7.54.0"
     typescript: "npm:6.0.3"
-    vitest: "npm:^4.1.7"
+    vitest: "npm:^4.1.9"
     zod: "npm:^3.24.1"
   peerDependencies:
     "@openmrs/esm-framework": "*"
@@ -9708,14 +9708,14 @@ __metadata:
     knip: "npm:^6.14.0"
     lint-staged: "npm:^16.0.0"
     openmrs: "workspace:*"
-    prettier: "npm:^3.8.1"
+    prettier: "npm:^3.9.4"
     react: "npm:^18.3.1"
     react-doctor: "npm:^0.1.6"
     react-dom: "npm:^18.3.1"
     swc-loader: "npm:0.2.7"
-    turbo: "npm:2.9.16"
+    turbo: "npm:2.10.2"
     typescript: "npm:6.0.3"
-    vitest: "npm:4.1.7"
+    vitest: "npm:4.1.9"
   languageName: unknown
   linkType: soft
 
@@ -10278,44 +10278,44 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@turbo/darwin-64@npm:2.9.16":
-  version: 2.9.16
-  resolution: "@turbo/darwin-64@npm:2.9.16"
+"@turbo/darwin-64@npm:2.10.2":
+  version: 2.10.2
+  resolution: "@turbo/darwin-64@npm:2.10.2"
   conditions: os=darwin & cpu=x64
   languageName: node
   linkType: hard
 
-"@turbo/darwin-arm64@npm:2.9.16":
-  version: 2.9.16
-  resolution: "@turbo/darwin-arm64@npm:2.9.16"
+"@turbo/darwin-arm64@npm:2.10.2":
+  version: 2.10.2
+  resolution: "@turbo/darwin-arm64@npm:2.10.2"
   conditions: os=darwin & cpu=arm64
   languageName: node
   linkType: hard
 
-"@turbo/linux-64@npm:2.9.16":
-  version: 2.9.16
-  resolution: "@turbo/linux-64@npm:2.9.16"
+"@turbo/linux-64@npm:2.10.2":
+  version: 2.10.2
+  resolution: "@turbo/linux-64@npm:2.10.2"
   conditions: os=linux & cpu=x64
   languageName: node
   linkType: hard
 
-"@turbo/linux-arm64@npm:2.9.16":
-  version: 2.9.16
-  resolution: "@turbo/linux-arm64@npm:2.9.16"
+"@turbo/linux-arm64@npm:2.10.2":
+  version: 2.10.2
+  resolution: "@turbo/linux-arm64@npm:2.10.2"
   conditions: os=linux & cpu=arm64
   languageName: node
   linkType: hard
 
-"@turbo/windows-64@npm:2.9.16":
-  version: 2.9.16
-  resolution: "@turbo/windows-64@npm:2.9.16"
+"@turbo/windows-64@npm:2.10.2":
+  version: 2.10.2
+  resolution: "@turbo/windows-64@npm:2.10.2"
   conditions: os=win32 & cpu=x64
   languageName: node
   linkType: hard
 
-"@turbo/windows-arm64@npm:2.9.16":
-  version: 2.9.16
-  resolution: "@turbo/windows-arm64@npm:2.9.16"
+"@turbo/windows-arm64@npm:2.10.2":
+  version: 2.10.2
+  resolution: "@turbo/windows-arm64@npm:2.10.2"
   conditions: os=win32 & cpu=arm64
   languageName: node
   linkType: hard
@@ -11409,25 +11409,25 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@vitest/expect@npm:4.1.7":
-  version: 4.1.7
-  resolution: "@vitest/expect@npm:4.1.7"
+"@vitest/expect@npm:4.1.9":
+  version: 4.1.9
+  resolution: "@vitest/expect@npm:4.1.9"
   dependencies:
     "@standard-schema/spec": "npm:^1.1.0"
     "@types/chai": "npm:^5.2.2"
-    "@vitest/spy": "npm:4.1.7"
-    "@vitest/utils": "npm:4.1.7"
+    "@vitest/spy": "npm:4.1.9"
+    "@vitest/utils": "npm:4.1.9"
     chai: "npm:^6.2.2"
     tinyrainbow: "npm:^3.1.0"
-  checksum: 10c0/1a72387c6d3cac1e12cd4df382e666d96560b38001ea0133f1e0a22825f71ccf1640ccce13244296b0054c15cf04442f3adbd67dfc57fe542bd35a46cd805487
+  checksum: 10c0/243bacaed2cba5e0ea4ec7465662fcec465a358a0e06381e337fac49426aa67a73b104fbb9d65d8bccadfba8f70e27f57ffb897aacfa140f579a556367357875
   languageName: node
   linkType: hard
 
-"@vitest/mocker@npm:4.1.7":
-  version: 4.1.7
-  resolution: "@vitest/mocker@npm:4.1.7"
+"@vitest/mocker@npm:4.1.9":
+  version: 4.1.9
+  resolution: "@vitest/mocker@npm:4.1.9"
   dependencies:
-    "@vitest/spy": "npm:4.1.7"
+    "@vitest/spy": "npm:4.1.9"
     estree-walker: "npm:^3.0.3"
     magic-string: "npm:^0.30.21"
   peerDependencies:
@@ -11438,7 +11438,7 @@ __metadata:
       optional: true
     vite:
       optional: true
-  checksum: 10c0/e03dbbba435543e3cfa5e034ba8ade371de5e398255f75366ebc370ff8dd78d45f7d7cc9daa76eb1d399b31e659e47d3cbb710566e64ceeeba3f99b418e4b955
+  checksum: 10c0/707353b7435bbfd441cc754e4ee7bc5921b70d07b051c6e414b6bbe4ca369154702b0ddeb603389469fe87ca1983e002eb2d55044582661f54a1945dd27e5c82
   languageName: node
   linkType: hard
 
@@ -11460,41 +11460,41 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@vitest/pretty-format@npm:4.1.7":
-  version: 4.1.7
-  resolution: "@vitest/pretty-format@npm:4.1.7"
+"@vitest/pretty-format@npm:4.1.9":
+  version: 4.1.9
+  resolution: "@vitest/pretty-format@npm:4.1.9"
   dependencies:
     tinyrainbow: "npm:^3.1.0"
-  checksum: 10c0/49ef801171708e3a92214e8720efbedbd6e0e6baf17971aaf4feb7422e5c9eba82262c24a9e6dd4d41a31fae77bd31d5b37cf140d13e0ac4ce29a7457bdc692f
+  checksum: 10c0/5b96295f25ab885616230ad1355fc82f490bebb39cc707688d7c8969c08270d7e076ed8a10af4e762ed57145193c6061a1f549f136f0ded344f8db0c2b3fb3de
   languageName: node
   linkType: hard
 
-"@vitest/runner@npm:4.1.7":
-  version: 4.1.7
-  resolution: "@vitest/runner@npm:4.1.7"
+"@vitest/runner@npm:4.1.9":
+  version: 4.1.9
+  resolution: "@vitest/runner@npm:4.1.9"
   dependencies:
-    "@vitest/utils": "npm:4.1.7"
+    "@vitest/utils": "npm:4.1.9"
     pathe: "npm:^2.0.3"
-  checksum: 10c0/63474c6fc088d75b5d7fe735195504f923c694b83a22eb9caa53d6486c923974304c2e3ef4d5bcd808d88082174f38434be320fc4fe649a8cf33f0459a0576e3
+  checksum: 10c0/d206b4891a64b1f55c346f832b0a7b489108094d8ae34438d3b53e78be7b45b139fa95ffa027c98c357bd532268ee573168de1943235b7eed32a9236ed5978bb
   languageName: node
   linkType: hard
 
-"@vitest/snapshot@npm:4.1.7":
-  version: 4.1.7
-  resolution: "@vitest/snapshot@npm:4.1.7"
+"@vitest/snapshot@npm:4.1.9":
+  version: 4.1.9
+  resolution: "@vitest/snapshot@npm:4.1.9"
   dependencies:
-    "@vitest/pretty-format": "npm:4.1.7"
-    "@vitest/utils": "npm:4.1.7"
+    "@vitest/pretty-format": "npm:4.1.9"
+    "@vitest/utils": "npm:4.1.9"
     magic-string: "npm:^0.30.21"
     pathe: "npm:^2.0.3"
-  checksum: 10c0/6fa49c4242a4acc0557ee6a20552db41f4f4c9d2d4c05993181c3f5f19e66579e08f63d34f792b79400547ab791ef500a9955b77390c381e45c3bb8e33717793
+  checksum: 10c0/c3099df12ad1f9c1e180441856c9eb82f1990f87ff16aafedd6fa19978eaff20bc59220b692a99fcc822daef86eab256ba3dadb49544b7bd625b57c49cd9d995
   languageName: node
   linkType: hard
 
-"@vitest/spy@npm:4.1.7":
-  version: 4.1.7
-  resolution: "@vitest/spy@npm:4.1.7"
-  checksum: 10c0/be2a95d5c5c438b57c9b33cef1289fb02659214754b5e946cb4b8183e2b5089e49e3fda6ca05981f3ea9872b207595db109e25072668c0a671203f69fddbbe99
+"@vitest/spy@npm:4.1.9":
+  version: 4.1.9
+  resolution: "@vitest/spy@npm:4.1.9"
+  checksum: 10c0/e51f328f55b76e8ba66e5e18f183484a8dc0a092685b101112d3e9fb8e989ddca162c98ddf00254476502c25bc05c4ec1e277fd6ad8bfc702464c08f6b5dd115
   languageName: node
   linkType: hard
 
@@ -11537,14 +11537,14 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@vitest/utils@npm:4.1.7":
-  version: 4.1.7
-  resolution: "@vitest/utils@npm:4.1.7"
+"@vitest/utils@npm:4.1.9":
+  version: 4.1.9
+  resolution: "@vitest/utils@npm:4.1.9"
   dependencies:
-    "@vitest/pretty-format": "npm:4.1.7"
+    "@vitest/pretty-format": "npm:4.1.9"
     convert-source-map: "npm:^2.0.0"
     tinyrainbow: "npm:^3.1.0"
-  checksum: 10c0/aa0079d8923506300527dc23ff68cf090ffcb2c6a9549e598ae22ba0eb8a6bb4448b10724b38bc6b077f9957333302a857d791ad2f7abd807bb6263c9a218833
+  checksum: 10c0/d55506c077fd72c091eb66f02926f0abf72801c87a085f565698289562f47befa114ae2c680ab8736dfe46abab0cfd6b8031f2ac519bafeb37578aa6e5ad03c5
   languageName: node
   linkType: hard
 
@@ -20508,7 +20508,7 @@ __metadata:
     semver: "npm:^7.7.3"
     tar: "npm:^7.5.3"
     typescript: "npm:6.0.3"
-    vitest: "npm:^4.1.7"
+    vitest: "npm:^4.1.9"
     yargs: "npm:^17.6.2"
   bin:
     openmrs: ./dist/cli.js
@@ -21346,12 +21346,12 @@ __metadata:
   languageName: node
   linkType: hard
 
-"prettier@npm:^3.8.1":
-  version: 3.8.3
-  resolution: "prettier@npm:3.8.3"
+"prettier@npm:^3.9.4":
+  version: 3.9.4
+  resolution: "prettier@npm:3.9.4"
   bin:
     prettier: bin/prettier.cjs
-  checksum: 10c0/754816fd7593eb80f6376d7476d463e832c38a12f32775a82683adb6e35b772b1f484d65f19401507b983a8c8a7cd5a4a9f12006bd56491e8f35503473f77473
+  checksum: 10c0/dc6ec13d692745c6b7e7bf39beda9eb1b3b76c619118319bce393928c392264b1273337c75f80499695e165affefc7b3a9d2ebb18983af0a8f4dfbb2f45f6ff3
   languageName: node
   linkType: hard
 
@@ -24807,16 +24807,16 @@ __metadata:
   languageName: node
   linkType: hard
 
-"turbo@npm:2.9.16":
-  version: 2.9.16
-  resolution: "turbo@npm:2.9.16"
+"turbo@npm:2.10.2, turbo@npm:^2.10.2":
+  version: 2.10.2
+  resolution: "turbo@npm:2.10.2"
   dependencies:
-    "@turbo/darwin-64": "npm:2.9.16"
-    "@turbo/darwin-arm64": "npm:2.9.16"
-    "@turbo/linux-64": "npm:2.9.16"
-    "@turbo/linux-arm64": "npm:2.9.16"
-    "@turbo/windows-64": "npm:2.9.16"
-    "@turbo/windows-arm64": "npm:2.9.16"
+    "@turbo/darwin-64": "npm:2.10.2"
+    "@turbo/darwin-arm64": "npm:2.10.2"
+    "@turbo/linux-64": "npm:2.10.2"
+    "@turbo/linux-arm64": "npm:2.10.2"
+    "@turbo/windows-64": "npm:2.10.2"
+    "@turbo/windows-arm64": "npm:2.10.2"
   dependenciesMeta:
     "@turbo/darwin-64":
       optional: true
@@ -24832,7 +24832,7 @@ __metadata:
       optional: true
   bin:
     turbo: bin/turbo
-  checksum: 10c0/490dd844ca4bd3adbe016b9828a74a8bcf83bd4bf3efbdddc06b79efc3c5f10f76d812c5194151cc1ab438c07fde6fb6a0898d8e34994355f4793aca242f9ac1
+  checksum: 10c0/e462a0c83b206a1e467c3111805307ef781b8036ed0643207abed69a68746b40ac7e7d83a9e4c9ac3897267208c4ff3823febfd0b4843109b763a1a3ef313935
   languageName: node
   linkType: hard
 
@@ -25560,17 +25560,17 @@ __metadata:
   languageName: node
   linkType: hard
 
-"vitest@npm:4.1.7, vitest@npm:^4.1.7":
-  version: 4.1.7
-  resolution: "vitest@npm:4.1.7"
+"vitest@npm:4.1.9, vitest@npm:^4.1.9":
+  version: 4.1.9
+  resolution: "vitest@npm:4.1.9"
   dependencies:
-    "@vitest/expect": "npm:4.1.7"
-    "@vitest/mocker": "npm:4.1.7"
-    "@vitest/pretty-format": "npm:4.1.7"
-    "@vitest/runner": "npm:4.1.7"
-    "@vitest/snapshot": "npm:4.1.7"
-    "@vitest/spy": "npm:4.1.7"
-    "@vitest/utils": "npm:4.1.7"
+    "@vitest/expect": "npm:4.1.9"
+    "@vitest/mocker": "npm:4.1.9"
+    "@vitest/pretty-format": "npm:4.1.9"
+    "@vitest/runner": "npm:4.1.9"
+    "@vitest/snapshot": "npm:4.1.9"
+    "@vitest/spy": "npm:4.1.9"
+    "@vitest/utils": "npm:4.1.9"
     es-module-lexer: "npm:^2.0.0"
     expect-type: "npm:^1.3.0"
     magic-string: "npm:^0.30.21"
@@ -25588,12 +25588,12 @@ __metadata:
     "@edge-runtime/vm": "*"
     "@opentelemetry/api": ^1.9.0
     "@types/node": ^20.0.0 || ^22.0.0 || >=24.0.0
-    "@vitest/browser-playwright": 4.1.7
-    "@vitest/browser-preview": 4.1.7
-    "@vitest/browser-webdriverio": 4.1.7
-    "@vitest/coverage-istanbul": 4.1.7
-    "@vitest/coverage-v8": 4.1.7
-    "@vitest/ui": 4.1.7
+    "@vitest/browser-playwright": 4.1.9
+    "@vitest/browser-preview": 4.1.9
+    "@vitest/browser-webdriverio": 4.1.9
+    "@vitest/coverage-istanbul": 4.1.9
+    "@vitest/coverage-v8": 4.1.9
+    "@vitest/ui": 4.1.9
     happy-dom: "*"
     jsdom: "*"
     vite: ^6.0.0 || ^7.0.0 || ^8.0.0
@@ -25623,8 +25623,8 @@ __metadata:
     vite:
       optional: false
   bin:
-    vitest: vitest.mjs
-  checksum: 10c0/5328eab211161bdb854159154b02d7b2beab0cf1e26a1c13f6a64b0f1402029d41f19987cf60684051c09a6925030285195ecbe57271c2033e1d4f7a666590d0
+    vitest: ./vitest.mjs
+  checksum: 10c0/1ac80ef4991be82822a52aea48415f1bc64ddf8fd88ee24c172ec368f1d480fefacbde622c3c951982f7961a1d07313e18deaafc774d29e42ad6f6ffa63334a7
   languageName: node
   linkType: hard
 

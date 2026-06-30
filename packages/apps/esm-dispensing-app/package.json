@@ -75,9 +75,9 @@
     "react-router-dom": "^6.3.0",
     "rxjs": "^6.6.7",
     "swr": "^2.2.5",
-    "turbo": "^2.9.14",
+    "turbo": "^2.10.2",
     "typescript": "6.0.3",
-    "vitest": "^4.1.7"
+    "vitest": "^4.1.9"
   },
   "packageManager": "yarn@4.10.3"
 }

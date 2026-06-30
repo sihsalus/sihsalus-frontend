@@ -315,6 +315,23 @@ describe('Identifiers', () => {
     expect(screen.queryByText('Pasaporte')).not.toBeInTheDocument();
   });
 
+  it('shows auto-generated identifiers last', async () => {
+    renderIdentifiersWithState({
+      numeroDeHistoriaClinica: {
+        ...buildIdentifier(clinicalHistoryIdentifierType, 'auto-generated'),
+        autoGeneration: true,
+      },
+      dni: buildIdentifier(dniIdentifierType),
+    });
+
+    await waitFor(() => expect(screen.getByText('DNI')).toBeInTheDocument());
+
+    expect(screen.getAllByTestId('identifier-label').map((label) => label.textContent)).toEqual([
+      'DNI',
+      'Nº de Historia Clínica',
+    ]);
+  });
+
   it('keeps DNI and Carnet de Extranjeria mutually exclusive in the identifier configuration panel', async () => {
     const user = userEvent.setup();
     renderIdentifiersWithState({

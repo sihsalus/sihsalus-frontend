@@ -37,7 +37,7 @@
     "@pnpm/npm-conf": "^2.1.0",
     "@rspack/cli": "1.7.11",
     "@rspack/core": "1.7.11",
-    "@rspack/dev-server": "1.2.1",
+    "@rspack/dev-server": "2.1.0",
     "@swc/core": "1.15.21",
     "chalk": "^4.1.2",
     "glob": "^7.1.3",

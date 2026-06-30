@@ -255,7 +255,7 @@ export class FormManager {
     relationships
       .filter((m) => m.relationshipType)
       .filter((relationship) => !!relationship.action)
-      .forEach(({ relatedPersonUuid, relationshipType, uuid: relationshipUuid, action, isCompanion }) => {
+      .forEach(({ relatedPersonUuid, relationshipType, uuid: relationshipUuid, action, isCompanion, companionRelationshipUuid }) => {
         const [type, direction] = relationshipType.split('/');
         const isAToB = direction === 'aIsToB';
         const relationshipToSave = {
@@ -278,18 +278,25 @@ export class FormManager {
             break;
         }
 
-        // When the related person is marked as the patient's companion, also
-        // create the configured Acompañante relationship (creation flow only).
-        if (isCompanion && action === 'ADD' && companionRelationshipType) {
+        // Companion (Acompañante) relationship: create it when the checkbox is
+        // ticked and none exists yet; delete it when unticked (or the whole row
+        // is removed) and one was previously saved.
+        if (companionRelationshipType) {
           const [companionType, companionDirection] = companionRelationshipType.split('/');
           const companionIsAToB = companionDirection === 'aIsToB';
-          operations.push(
-            saveRelationship({
-              personA: companionIsAToB ? relatedPersonUuid : thisPatientUuid,
-              personB: companionIsAToB ? thisPatientUuid : relatedPersonUuid,
-              relationshipType: companionType,
-            }),
-          );
+          const wantsCompanion = !!isCompanion && action !== 'DELETE';
+
+          if (wantsCompanion && !companionRelationshipUuid) {
+            operations.push(
+              saveRelationship({
+                personA: companionIsAToB ? relatedPersonUuid : thisPatientUuid,
+                personB: companionIsAToB ? thisPatientUuid : relatedPersonUuid,
+                relationshipType: companionType,
+              }),
+            );
+          } else if (!wantsCompanion && companionRelationshipUuid) {
+            operations.push(deleteRelationship(companionRelationshipUuid));
+          }
         }
       });
 

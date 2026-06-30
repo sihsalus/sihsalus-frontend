@@ -32,7 +32,7 @@ describe('PhoneField', () => {
   });
 
   it('uses a configured phone placeholder when provided', () => {
-    const defaultConfig = getDefaultsFromConfigSchema(esmPatientRegistrationSchema);
+    const defaultConfig = getDefaultsFromConfigSchema(esmPatientRegistrationSchema) as RegistrationConfig;
 
     mockUseConfig.mockReturnValue({
       ...defaultConfig,

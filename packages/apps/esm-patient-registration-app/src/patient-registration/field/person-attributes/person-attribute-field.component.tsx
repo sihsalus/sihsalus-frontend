@@ -66,6 +66,7 @@ export function PersonAttributeField({ fieldDefinition }: PersonAttributeFieldPr
             personAttributeType={personAttributeType}
             validationRegex={fieldDefinition.validation?.matches ?? ''}
             label={fieldDefinition.label}
+            placeholder={fieldDefinition.placeholder}
             required={fieldDefinition.validation?.required ?? false}
             id={fieldDefinition?.id}
             readOnly={readOnly}

@@ -32,6 +32,8 @@ const peruDemographicsFieldOrder = ['name', 'dob', 'gender', 'nationality'];
 const peruContactFieldOrder = ['address', 'birthAddress', 'phone', 'mobilePhone', 'email'];
 const peruPhoneValidationRegex = '^\\+?[0-9]{6,19}$';
 const peruEmailValidationRegex = '^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$';
+const peruPhonePlaceholder = '012345678';
+const peruMobilePhonePlaceholder = '987654321';
 const minorResponsibleRelationshipTypes = [
   '8d91a210-c2cc-11de-8d13-0010c6dffdff/aIsToB',
   '8d91a210-c2cc-11de-8d13-0010c6dffd0f/aIsToB',
@@ -82,6 +84,7 @@ const peruFieldDefinitions: Array<FieldDefinition> = [
     type: 'person attribute',
     uuid: peruMobilePhoneAttributeTypeUuid,
     label: 'Celular',
+    placeholder: peruMobilePhonePlaceholder,
     showHeading: false,
     validation: { required: false, matches: peruPhoneValidationRegex },
   },
@@ -439,6 +442,7 @@ export function getEffectiveRegistrationConfig(config: RegistrationConfig): Regi
       phone: {
         ...phoneFieldConfiguration,
         personAttributeUuid: phoneFieldConfiguration.personAttributeUuid || peruPhoneAttributeTypeUuid,
+        placeholder: phoneFieldConfiguration.placeholder || peruPhonePlaceholder,
         validation: {
           required: phoneFieldConfiguration.validation?.required ?? false,
           matches: phoneFieldConfiguration.validation?.matches || peruPhoneValidationRegex,

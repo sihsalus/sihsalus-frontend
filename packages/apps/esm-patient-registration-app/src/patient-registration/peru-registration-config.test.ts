@@ -131,10 +131,12 @@ describe('getEffectiveRegistrationConfig', () => {
     expect(config.sectionDefinitions.find((section) => section.id === 'identityLookup')?.fields).toContain('sisLookup');
     expect(config.sectionDefinitions.find((section) => section.id === 'insurance')?.fields).not.toContain('sisLookup');
     expect(config.fieldConfigurations.phone.personAttributeUuid).toBe(peruPhoneAttributeTypeUuid);
+    expect(config.fieldConfigurations.phone.placeholder).toBe('012345678');
     expect(config.fieldConfigurations.phone.validation?.matches).toBe('^\\+?[0-9]{6,19}$');
     expect(config.sectionDefinitions.find((section) => section.id === 'contact')?.fields).toContain('birthAddress');
     expect(config.sectionDefinitions.find((section) => section.id === 'contact')?.fields).toContain('email');
     expect(config.sectionDefinitions.find((section) => section.id === 'contact')?.fields).not.toContain('birthplace');
+    expect(fieldsById.mobilePhone.placeholder).toBe('987654321');
     expect(fieldsById.email).toMatchObject({
       id: 'email',
       type: 'person attribute',

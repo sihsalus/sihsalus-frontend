@@ -38,11 +38,11 @@
     "url": "https://github.com/sihsalus/sihsalus-esm-modules/issues"
   },
   "dependencies": {
-    "@carbon/react": "^1.83.0",
+    "@carbon/react": "^1.110.0",
     "@hookform/resolvers": "^3.3.1",
     "@openmrs/esm-utils": "workspace:*",
     "@sihsalus/esm-rbac": "workspace:*",
-    "react-hook-form": "^7.46.2",
+    "react-hook-form": "^7.80.0",
     "zod": "^3.23.8"
   },
   "peerDependencies": {

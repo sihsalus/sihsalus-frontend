@@ -39,10 +39,10 @@
     "url": "https://github.com/openmrs/openmrs-esm-laboratory/issues"
   },
   "dependencies": {
-    "@carbon/react": "^1.83.0",
+    "@carbon/react": "^1.110.0",
     "@sihsalus/esm-rbac": "workspace:*",
     "lodash-es": "^4.17.21",
-    "react-hook-form": "^7.52.1"
+    "react-hook-form": "^7.80.0"
   },
   "peerDependencies": {
     "@openmrs/esm-framework": "*",
@@ -53,12 +53,12 @@
   },
   "devDependencies": {
     "@openmrs/esm-framework": "workspace:*",
-    "@playwright/test": "^1.52.0",
+    "@playwright/test": "^1.61.1",
     "@swc/cli": "0.8.1",
-    "@swc/core": "1.15.21",
+    "@swc/core": "1.15.43",
     "@types/react": "^18.3.21",
     "@types/react-dom": "^18.3.0",
-    "dayjs": "^1.11.11",
+    "dayjs": "^1.11.21",
     "file-saver": "^2.0.5",
     "i18next-parser": "^9.3.0",
     "openmrs": "*",

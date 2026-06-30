@@ -139,7 +139,7 @@ describe('getEffectiveRegistrationConfig', () => {
       id: 'email',
       type: 'person attribute',
       uuid: peruEmailAttributeTypeUuid,
-      label: 'Correo Electrónico',
+      label: 'Correo electrónico',
       validation: { required: false, matches: '^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$' },
     });
     expect(fieldsById.birthplace).toBeUndefined();

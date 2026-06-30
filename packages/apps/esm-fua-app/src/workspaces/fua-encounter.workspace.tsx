@@ -37,6 +37,19 @@ interface FuaPatientOrder {
   visitUuid?: string | null;
 }
 
+function normalizeFuaPatientOrders(payload: unknown): Array<FuaPatientOrder> {
+  if (Array.isArray(payload)) {
+    return payload;
+  }
+
+  if (payload && typeof payload === 'object' && 'results' in payload) {
+    const results = (payload as { results?: unknown }).results;
+    return Array.isArray(results) ? results : [];
+  }
+
+  return [];
+}
+
 const FuaEncounterWorkspaceContent: React.FC<FuaEncounterWorkspaceProps> = (props) => {
   const { t } = useTranslation();
   const config = useConfig<Config>();
@@ -71,7 +84,7 @@ const FuaEncounterWorkspaceContent: React.FC<FuaEncounterWorkspaceProps> = (prop
         const fuaResponse = await openmrsFetch<Array<FuaPatientOrder>>(
           `${config.fuaApiBasePath}/patient/${patientUuid}`,
         );
-        const fuaOrders = fuaResponse?.data ?? [];
+        const fuaOrders = normalizeFuaPatientOrders(fuaResponse?.data);
         const matchingFua =
           fuaOrders.find((fua) => fua.visitUuid === effectiveVisitUuid) ??
           fuaOrders.find((fua) => fua.uuid === encounterUuid);

@@ -29,7 +29,7 @@
       "component": "addPatientLink",
       "name": "add-patient-action",
       "slot": "top-nav-actions-slot",
-      "privileges": "app:adt",
+      "privileges": ["app:adt", "app:topnav.registerPatient"],
       "online": true,
       "offline": true
     },

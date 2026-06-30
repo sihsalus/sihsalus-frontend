@@ -46,6 +46,19 @@ export interface UseFuaRequestsParams {
   excludeCanceled: boolean;
 }
 
+function normalizeFuaRequestsPayload(payload: unknown): Array<FuaRequest> {
+  if (Array.isArray(payload)) {
+    return payload;
+  }
+
+  if (payload && typeof payload === 'object' && 'results' in payload) {
+    const results = (payload as { results?: unknown }).results;
+    return Array.isArray(results) ? results : [];
+  }
+
+  return [];
+}
+
 // Maps frontend status keys to the Spanish nombres stored in fua_estado table
 const STATUS_NOMBRE_MAP: Record<string, string> = {
   IN_PROGRESS: 'En Proceso',
@@ -101,7 +114,7 @@ export function useFuaRequests(params: Partial<UseFuaRequestsParams> = useFuaReq
 
   const { data, error, mutate, isLoading, isValidating } = useSWR<{ data: Array<FuaRequest> }>(url, openmrsFetch);
 
-  const allOrders = data?.data ?? [];
+  const allOrders = normalizeFuaRequestsPayload(data?.data);
 
   // newOrdersOnly: only FUAs without an assigned estado (just generated)
   const filteredOrders = allOrders.filter(
@@ -163,7 +176,7 @@ export function useFuasByPatient(patientUuid: string | null | undefined) {
   const url = patientUuid ? `${ModuleFuaRestURL}/patient/${patientUuid}` : null;
   const { data, error, mutate, isLoading } = useSWR<{ data: Array<FuaRequest> }>(url, openmrsFetch);
   return {
-    fuaOrders: data?.data ?? [],
+    fuaOrders: normalizeFuaRequestsPayload(data?.data),
     isLoading,
     isError: error,
     mutate,

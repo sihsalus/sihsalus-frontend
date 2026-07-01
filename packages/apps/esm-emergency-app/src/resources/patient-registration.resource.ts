@@ -19,7 +19,7 @@ export interface EmergencyPatientPayload {
         birthdateEstimated: boolean;
         attributes: Array<{
           attributeType: string;
-          value: string;
+          value: string | { uuid: string };
         }>;
         addresses: Array<Record<string, string>>;
         dead: boolean;

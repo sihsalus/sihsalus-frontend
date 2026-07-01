@@ -79,6 +79,7 @@ export interface RegistrationConfig {
     };
     phone: {
       personAttributeUuid: string;
+      placeholder?: string;
       validation?: {
         required: boolean;
         matches?: string;
@@ -87,6 +88,7 @@ export interface RegistrationConfig {
   };
   relationshipOptions?: {
     minorResponsibleRelationshipTypes?: Array<string>;
+    companionRelationshipType?: string;
   };
   links: {
     submitButton: string;
@@ -420,6 +422,11 @@ export const esmPatientRegistrationSchema = {
         _default: '14d4f066-15f5-102d-96e4-000c29c2a5d7',
         _description: 'The UUID of the phone number person attribute type',
       },
+      placeholder: {
+        _type: Type.String,
+        _default: '',
+        _description: 'Placeholder that will appear in the phone input.',
+      },
       validation: {
         required: { _type: Type.Boolean, _default: false },
         matches: {
@@ -439,6 +446,12 @@ export const esmPatientRegistrationSchema = {
       _elements: {
         _type: Type.String,
       },
+    },
+    companionRelationshipType: {
+      _type: Type.String,
+      _default: '',
+      _description:
+        'Relationship type UUID/direction created in addition to the family link when a related person is marked as the patient companion.',
     },
   },
   links: {

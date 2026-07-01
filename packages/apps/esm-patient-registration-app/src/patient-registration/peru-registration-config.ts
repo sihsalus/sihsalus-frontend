@@ -30,13 +30,20 @@ const peruResponsiblePersonSection = 'responsiblePerson';
 const peruIdentityLookupFieldOrder = ['id', 'reniecLookup', 'sisLookup'];
 const peruDemographicsFieldOrder = ['name', 'dob', 'gender', 'nationality'];
 const peruContactFieldOrder = ['address', 'birthAddress', 'phone', 'mobilePhone', 'email'];
-const peruPhoneValidationRegex = '^\\+?[0-9]{6,19}$';
+const peruLandlinePhoneValidationRegex = '^(?:(?:\\+51)?[1-8][0-9]{7}|0[1-8][0-9]{7})$';
+const peruMobilePhoneValidationRegex = '^(?:\\+51)?9[0-9]{8}$';
 const peruEmailValidationRegex = '^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$';
+const peruPhonePlaceholder = '012345678';
+const peruMobilePhonePlaceholder = '987654321';
+// UUID/direction values must match the relationship types defined in
+// sihsalus-content (configuration/backend_configuration/relationshiptypes).
+// Keep these in sync when those UUIDs change.
 const minorResponsibleRelationshipTypes = [
-  '8d91a210-c2cc-11de-8d13-0010c6dffdff/aIsToB',
-  '8d91a210-c2cc-11de-8d13-0010c6dffd0f/aIsToB',
-  '057de23f-3d9c-4314-9391-4452970739c6/aIsToB',
+  'e6be4def-dbc8-462a-8714-53da66903cb8/aIsToB', // Madre
+  '8d91a210-c2cc-11de-8d13-0010c6dffd0f/aIsToB', // Padre
+  '057de23f-3d9c-4314-9391-4452970739c6/aIsToB', // Apoderado
 ];
+const companionRelationshipType = '3501ac02-0fb0-4ced-8a3e-f578f0ff5276/aIsToB'; // Acompañante
 
 const peruSectionDefinitions: Array<SectionDefinition> = [
   {
@@ -81,15 +88,16 @@ const peruFieldDefinitions: Array<FieldDefinition> = [
     id: 'mobilePhone',
     type: 'person attribute',
     uuid: peruMobilePhoneAttributeTypeUuid,
-    label: 'Número de Celular',
+    label: 'Celular',
+    placeholder: peruMobilePhonePlaceholder,
     showHeading: false,
-    validation: { required: false, matches: peruPhoneValidationRegex },
+    validation: { required: false, matches: peruMobilePhoneValidationRegex },
   },
   {
     id: 'email',
     type: 'person attribute',
     uuid: peruEmailAttributeTypeUuid,
-    label: 'Correo Electrónico',
+    label: 'Correo electrónico',
     showHeading: false,
     validation: { required: false, matches: peruEmailValidationRegex },
   },
@@ -439,15 +447,17 @@ export function getEffectiveRegistrationConfig(config: RegistrationConfig): Regi
       phone: {
         ...phoneFieldConfiguration,
         personAttributeUuid: phoneFieldConfiguration.personAttributeUuid || peruPhoneAttributeTypeUuid,
+        placeholder: phoneFieldConfiguration.placeholder || peruPhonePlaceholder,
         validation: {
           required: phoneFieldConfiguration.validation?.required ?? false,
-          matches: phoneFieldConfiguration.validation?.matches || peruPhoneValidationRegex,
+          matches: phoneFieldConfiguration.validation?.matches || peruLandlinePhoneValidationRegex,
         },
       },
     },
     relationshipOptions: {
       ...config.relationshipOptions,
       minorResponsibleRelationshipTypes,
+      companionRelationshipType,
     },
     defaultPatientIdentifierTypes,
   };

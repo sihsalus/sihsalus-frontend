@@ -2,6 +2,7 @@ import { createAttachment, openmrsFetch, restBaseUrl, type UploadedFile } from '
 import dayjs from 'dayjs';
 
 import {
+  type AttributeValue,
   type Encounter,
   type Patient,
   type PatientAddress,
@@ -21,6 +22,8 @@ export interface SavePersonPayload {
   gender: string;
   birthdate?: string;
   birthdateEstimated?: boolean;
+  addresses?: Array<PatientAddress>;
+  attributes?: Array<AttributeValue>;
 }
 
 export interface PersonRegistrationCopyData {

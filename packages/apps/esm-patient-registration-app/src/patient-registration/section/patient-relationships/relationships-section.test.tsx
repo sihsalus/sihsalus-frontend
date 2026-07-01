@@ -118,6 +118,11 @@ describe('RelationshipsSection', () => {
       data: { uuid: 'created-person-uuid', display: 'María Quispe' },
     } as Awaited<ReturnType<typeof savePerson>>);
     mockUseConfig.mockReturnValue({
+      fieldConfigurations: {
+        phone: {
+          personAttributeUuid: '14d4f066-15f5-102d-96e4-000c29c2a5d7',
+        },
+      },
       relationshipOptions: {
         minorResponsibleRelationshipTypes: ['057de23f-3d9c-4314-9391-4452970739c6/aIsToB'],
       },
@@ -479,6 +484,8 @@ describe('RelationshipsSection', () => {
     await user.type(screen.getByRole('textbox', { name: /^family name/i }), 'Quispe');
     await user.selectOptions(screen.getByRole('combobox', { name: /sex/i }), 'female');
     await user.type(screen.getByRole('textbox', { name: /approximate age/i }), '35');
+    await user.type(screen.getByRole('textbox', { name: /phone or mobile phone/i }), '987 654-321');
+    await user.type(screen.getByRole('textbox', { name: /address/i }), 'Av. Peru 123');
     await user.click(screen.getByRole('button', { name: /register and link to patient/i }));
 
     await waitFor(() => expect(mockSavePerson).toHaveBeenCalledTimes(1));
@@ -496,6 +503,8 @@ describe('RelationshipsSection', () => {
       gender: 'F',
       birthdate: `${new Date().getFullYear() - 35}-01-01`,
       birthdateEstimated: true,
+      attributes: [{ attributeType: '14d4f066-15f5-102d-96e4-000c29c2a5d7', value: '987654321' }],
+      addresses: [{ address1: 'Av. Peru 123', preferred: true }],
     });
     expect(setFieldValue).toHaveBeenCalledWith('relationships[0].relatedPersonUuid', 'created-person-uuid');
     expect(setFieldValue).toHaveBeenCalledWith('relationships[0].relatedPersonName', 'María Quispe');

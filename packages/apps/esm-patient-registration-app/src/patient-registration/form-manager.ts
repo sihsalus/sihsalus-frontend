@@ -99,6 +99,14 @@ function getAddressExtensions(address: PatientAddress) {
   return extension.length ? [{ url: addressExtensionUrl, extension }] : undefined;
 }
 
+function getPersonAttributeValue(patient: Partial<Patient>, attributeTypeUuid?: string) {
+  if (!attributeTypeUuid) {
+    return undefined;
+  }
+
+  return patient.person?.attributes?.find((attribute) => attribute.attributeType === attributeTypeUuid)?.value;
+}
+
 export type SavePatientForm = (
   isNewPatient: boolean,
   values: FormValues,
@@ -195,7 +203,11 @@ export class FormManager {
 
     if (savePatientResponse.ok) {
       savePatientTransactionManager.patientSaved = true;
-      await this.saveRelationships(values.relationships, savePatientResponse);
+      await this.saveRelationships(
+        values.relationships,
+        savePatientResponse,
+        config.relationshipOptions?.companionRelationshipType,
+      );
 
       await this.saveObservations(values.obs, savePatientResponse, currentLocation, currentUser, config);
 
@@ -232,33 +244,63 @@ export class FormManager {
     return savePatientResponse.data.uuid;
   };
 
-  static async saveRelationships(relationships: Array<RelationshipValue>, savePatientResponse: FetchResponse) {
-    return Promise.all(
-      relationships
-        .filter((m) => m.relationshipType)
-        .filter((relationship) => !!relationship.action)
-        .map(({ relatedPersonUuid, relationshipType, uuid: relationshipUuid, action }) => {
-          const [type, direction] = relationshipType.split('/');
-          const thisPatientUuid = savePatientResponse.data.uuid;
-          const isAToB = direction === 'aIsToB';
-          const relationshipToSave = {
-            personA: isAToB ? relatedPersonUuid : thisPatientUuid,
-            personB: isAToB ? thisPatientUuid : relatedPersonUuid,
-            relationshipType: type,
-          };
+  static async saveRelationships(
+    relationships: Array<RelationshipValue>,
+    savePatientResponse: FetchResponse,
+    companionRelationshipType?: string,
+  ) {
+    const thisPatientUuid = savePatientResponse.data.uuid;
+    const operations: Array<Promise<unknown>> = [];
 
-          switch (action) {
-            case 'ADD':
-              return saveRelationship(relationshipToSave);
-            case 'UPDATE':
-              return updateRelationship(relationshipUuid, relationshipToSave);
-            case 'DELETE':
-              return deleteRelationship(relationshipUuid);
-            default:
-              return Promise.resolve(undefined);
+    relationships
+      .filter((m) => m.relationshipType)
+      .filter((relationship) => !!relationship.action)
+      .forEach(({ relatedPersonUuid, relationshipType, uuid: relationshipUuid, action, isCompanion, companionRelationshipUuid }) => {
+        const [type, direction] = relationshipType.split('/');
+        const isAToB = direction === 'aIsToB';
+        const relationshipToSave = {
+          personA: isAToB ? relatedPersonUuid : thisPatientUuid,
+          personB: isAToB ? thisPatientUuid : relatedPersonUuid,
+          relationshipType: type,
+        };
+
+        switch (action) {
+          case 'ADD':
+            operations.push(saveRelationship(relationshipToSave));
+            break;
+          case 'UPDATE':
+            operations.push(updateRelationship(relationshipUuid, relationshipToSave));
+            break;
+          case 'DELETE':
+            operations.push(deleteRelationship(relationshipUuid));
+            break;
+          default:
+            break;
+        }
+
+        // Companion (Acompañante) relationship: create it when the checkbox is
+        // ticked and none exists yet; delete it when unticked (or the whole row
+        // is removed) and one was previously saved.
+        if (companionRelationshipType) {
+          const [companionType, companionDirection] = companionRelationshipType.split('/');
+          const companionIsAToB = companionDirection === 'aIsToB';
+          const wantsCompanion = !!isCompanion && action !== 'DELETE';
+
+          if (wantsCompanion && !companionRelationshipUuid) {
+            operations.push(
+              saveRelationship({
+                personA: companionIsAToB ? relatedPersonUuid : thisPatientUuid,
+                personB: companionIsAToB ? thisPatientUuid : relatedPersonUuid,
+                relationshipType: companionType,
+              }),
+            );
+          } else if (!wantsCompanion && companionRelationshipUuid) {
+            operations.push(deleteRelationship(companionRelationshipUuid));
           }
-        }),
-    );
+        }
+      });
+
+    return Promise.all(operations);
   }
 
   static async saveObservations(
@@ -523,12 +565,26 @@ export class FormManager {
     // https://github.com/openmrs/openmrs-module-fhir/blob/669b3c52220bb9abc622f815f4dc0d8523687a57/api/src/main/java/org/openmrs/module/fhir/api/util/FHIRPatientUtil.java#L36
     // https://github.com/openmrs/openmrs-esm-patient-management/blob/94e6f637fb37cf4984163c355c5981ea6b8ca38c/packages/esm-patient-search-app/src/patient-search-result/patient-search-result.component.tsx#L21
     // Update as required.
+    const fieldDefinitions = config?.fieldDefinitions ?? [];
     const phoneAttributeTypeUuid = config?.fieldConfigurations?.phone?.personAttributeUuid;
-    const phoneAttribute = patient.person?.attributes?.find(
-      (attribute) =>
-        !!attribute.value &&
-        (attribute.attributeType === phoneAttributeTypeUuid || attribute.attributeType === 'Telephone Number'),
-    );
+    const mobilePhoneAttributeTypeUuid = fieldDefinitions.find((field) => field.id === 'mobilePhone')?.uuid;
+    const emailAttributeTypeUuid = fieldDefinitions.find((field) => field.id === 'email')?.uuid;
+    const phoneAttributeValue =
+      getPersonAttributeValue(patient, phoneAttributeTypeUuid) ??
+      patient.person?.attributes?.find(
+        (attribute) =>
+          !!attribute.value &&
+          (attribute.attributeType === phoneAttributeTypeUuid || attribute.attributeType === 'Telephone Number'),
+      )?.value;
+    const mobilePhoneAttributeValue = getPersonAttributeValue(patient, mobilePhoneAttributeTypeUuid);
+    const emailAttributeValue = getPersonAttributeValue(patient, emailAttributeTypeUuid);
+    const telecom = [
+      phoneAttributeValue ? { system: 'phone' as const, use: 'home' as const, value: phoneAttributeValue } : null,
+      mobilePhoneAttributeValue
+        ? { system: 'phone' as const, use: 'mobile' as const, value: mobilePhoneAttributeValue }
+        : null,
+      emailAttributeValue ? { system: 'email' as const, value: emailAttributeValue } : null,
+    ].filter(Boolean);
 
     return {
       id: patient.uuid,
@@ -552,15 +608,7 @@ export class FormManager {
         use: address.preferred === false ? 'old' : 'home',
         extension: getAddressExtensions(address),
       })),
-      telecom: phoneAttribute
-        ? [
-            {
-              system: 'phone',
-              use: 'mobile',
-              value: phoneAttribute.value,
-            },
-          ]
-        : undefined,
+      telecom: telecom.length ? telecom : undefined,
     };
   }
 }

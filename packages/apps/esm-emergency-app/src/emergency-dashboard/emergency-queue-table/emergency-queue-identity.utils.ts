@@ -1,12 +1,79 @@
 import { type EmergencyQueueEntry } from '../../resources/emergency.resource';
+import type { Config } from '../../config-schema';
 
-function getAttributeValue(queueEntry: EmergencyQueueEntry, pattern: RegExp) {
+const IDENTIFICATION_STATUS_LABELS: Record<string, string> = {
+  pending: 'Pendiente',
+  partial: 'Parcial',
+  confirmed: 'Confirmado',
+  merged: 'Fusionado',
+};
+
+type IdentificationAttributeValue = string | { uuid?: string; display?: string } | undefined;
+type IdentificationStatusCode = keyof typeof IDENTIFICATION_STATUS_LABELS;
+
+function getStatusByConceptUuid(
+  config: Pick<Config['patientRegistration'], 'identificationStatusConcepts'>,
+  conceptUuid: string,
+): IdentificationStatusCode | null {
+  const normalizedConceptUuid = conceptUuid.toLocaleLowerCase();
+  const conceptMap: Record<string, IdentificationStatusCode> = {};
+
+  if (config.identificationStatusConcepts.pendingUuid) {
+    conceptMap[config.identificationStatusConcepts.pendingUuid.toLocaleLowerCase()] = 'pending';
+  }
+  if (config.identificationStatusConcepts.partialUuid) {
+    conceptMap[config.identificationStatusConcepts.partialUuid.toLocaleLowerCase()] = 'partial';
+  }
+  if (config.identificationStatusConcepts.confirmedUuid) {
+    conceptMap[config.identificationStatusConcepts.confirmedUuid.toLocaleLowerCase()] = 'confirmed';
+  }
+  if (config.identificationStatusConcepts.mergedUuid) {
+    conceptMap[config.identificationStatusConcepts.mergedUuid.toLocaleLowerCase()] = 'merged';
+  }
+
+  return conceptMap[normalizedConceptUuid] ?? null;
+}
+
+function getPersonAttributeValue(queueEntry: EmergencyQueueEntry, pattern: RegExp) {
   const attribute = queueEntry.patient.person?.attributes?.find((attribute) =>
     pattern.test(attribute.attributeType?.display ?? ''),
   );
-  const value = attribute?.value;
+  return attribute?.value;
+}
 
-  return typeof value === 'string' ? value : (value?.display ?? '');
+function getAttributeValue(queueEntry: EmergencyQueueEntry, pattern: RegExp) {
+  const value = getPersonAttributeValue(queueEntry, pattern);
+
+  if (typeof value === 'string') {
+    return value;
+  }
+
+  return value?.display ?? value?.uuid ?? '';
+}
+
+function getPersonAttributeConceptUuid(
+  config: Pick<Config['patientRegistration'], 'identificationStatusConcepts'> | undefined,
+  rawValue: IdentificationAttributeValue,
+) {
+  if (!config) {
+    return '';
+  }
+
+  if (typeof rawValue === 'string') {
+    const statusCode = getStatusByConceptUuid(config, rawValue);
+    return statusCode ? IDENTIFICATION_STATUS_LABELS[statusCode] : '';
+  }
+
+  if (!rawValue?.uuid) {
+    return '';
+  }
+
+  const conceptCode = getStatusByConceptUuid(config, rawValue.uuid);
+  if (!conceptCode) {
+    return '';
+  }
+
+  return IDENTIFICATION_STATUS_LABELS[conceptCode];
 }
 
 function getIdentifierValue(queueEntry: EmergencyQueueEntry, pattern: RegExp) {
@@ -27,17 +94,22 @@ export function getQueueEntryDocumentNumber(queueEntry: EmergencyQueueEntry) {
   );
 }
 
-export function getQueueEntryIdentificationStatus(queueEntry: EmergencyQueueEntry) {
+export function getQueueEntryIdentificationStatus(
+  queueEntry: EmergencyQueueEntry,
+  patientRegistrationConfig?: Pick<Config['patientRegistration'], 'identificationStatusConcepts'>,
+) {
   const configuredStatus = getAttributeValue(queueEntry, /estado.*identificaci[oó]n|identification status/i);
-  if (configuredStatus) {
-    const statusLabels: Record<string, string> = {
-      pending: 'Pendiente',
-      partial: 'Parcial',
-      confirmed: 'Confirmado',
-      merged: 'Fusionado',
-    };
+  const configuredStatusValue = getPersonAttributeValue(queueEntry, /estado.*identificaci[oó]n|identification status/i);
+  const configuredStatusByUuid = patientRegistrationConfig
+    ? getPersonAttributeConceptUuid(patientRegistrationConfig, configuredStatusValue)
+    : '';
+  if (configuredStatusByUuid) {
+    return configuredStatusByUuid;
+  }
 
-    return statusLabels[configuredStatus.trim().toLocaleLowerCase()] ?? configuredStatus;
+  if (configuredStatus) {
+    const normalizedStatus = configuredStatus.trim().toLocaleLowerCase();
+    return IDENTIFICATION_STATUS_LABELS[normalizedStatus] ?? configuredStatus;
   }
 
   const unknownPatient = getAttributeValue(queueEntry, /paciente no identificado|unidentified patient/i);

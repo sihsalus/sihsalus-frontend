@@ -5,6 +5,7 @@ import {
   getQueueEntryMedicalRecordNumber,
   getQueueEntryResponsibleName,
 } from './emergency-queue-identity.utils';
+import type { Config } from '../../config-schema';
 
 function createQueueEntry(overrides: Partial<EmergencyQueueEntry> = {}): EmergencyQueueEntry {
   return {
@@ -41,6 +42,16 @@ function createQueueEntry(overrides: Partial<EmergencyQueueEntry> = {}): Emergen
   };
 }
 
+function createConceptConfig(overrides: Partial<Config['patientRegistration']['identificationStatusConcepts']> = {}) {
+  return {
+    pendingUuid: null,
+    partialUuid: null,
+    confirmedUuid: null,
+    mergedUuid: null,
+    ...overrides,
+  };
+}
+
 describe('emergency queue identity utils', () => {
   it('uses HCE as operational identifier and does not invent a document number', () => {
     const queueEntry = createQueueEntry();
@@ -54,5 +65,38 @@ describe('emergency queue identity utils', () => {
 
     expect(getQueueEntryIdentificationStatus(queueEntry)).toBe('Pendiente');
     expect(getQueueEntryResponsibleName(queueEntry)).toBe('SAMU Loreto');
+  });
+
+  it('resolves pending status when backend returns the identification status concept UUID', () => {
+    const conceptUuid = '11111111-1111-1111-1111-111111111111';
+    const queueEntry = createQueueEntry({
+      patient: {
+        ...createQueueEntry().patient,
+        person: {
+          ...createQueueEntry().patient.person,
+          attributes: [{ attributeType: { display: 'Estado de Identificación' }, value: { uuid: conceptUuid } }],
+        },
+      },
+    });
+    expect(
+      getQueueEntryIdentificationStatus(queueEntry, {
+        identificationStatusConcepts: createConceptConfig({
+          pendingUuid: conceptUuid,
+        }),
+      }),
+    ).toBe('Pendiente');
+  });
+
+  it('keeps literal string codes and maps them to labels when concept UUID mapping is not configured', () => {
+    const queueEntry = createQueueEntry({
+      patient: {
+        ...createQueueEntry().patient,
+        person: {
+          ...createQueueEntry().patient.person,
+          attributes: [{ attributeType: { display: 'Estado de Identificación' }, value: 'confirmed' }],
+        },
+      },
+    });
+    expect(getQueueEntryIdentificationStatus(queueEntry)).toBe('Confirmado');
   });
 });

@@ -70,7 +70,7 @@ const EmergencyQueueTable: React.FC<EmergencyQueueTableProps> = ({ queueUuid }) 
   const pageSizes = [10, 20, 30, 40, 50];
   const responsiveSize = isDesktop(layout) ? 'sm' : 'lg';
 
-  const columns = useEmergencyQueueColumns();
+  const columns = useEmergencyQueueColumns(config.patientRegistration);
 
   // Extract unique statuses from queue entries
   const availableStatuses = useMemo(() => {
@@ -110,8 +110,10 @@ const EmergencyQueueTable: React.FC<EmergencyQueueTableProps> = ({ queueUuid }) 
   }, [queueEntries]);
 
   const availableIdentificationStatuses = useMemo(() => {
-    return Array.from(new Set(queueEntries.map(getQueueEntryIdentificationStatus).filter(Boolean))).sort();
-  }, [queueEntries]);
+    return Array.from(
+      new Set(queueEntries.map((entry) => getQueueEntryIdentificationStatus(entry, config.patientRegistration)).filter(Boolean)),
+    ).sort();
+  }, [queueEntries, config.patientRegistration]);
 
   // Static wait time range options aligned with Norma Técnica thresholds
   const waitTimeRangeOptions = useMemo(
@@ -157,7 +159,7 @@ const EmergencyQueueTable: React.FC<EmergencyQueueTableProps> = ({ queueUuid }) 
     }
 
     if (selectedIdentificationStatus) {
-      entries = entries.filter((entry) => getQueueEntryIdentificationStatus(entry) === selectedIdentificationStatus);
+      entries = entries.filter((entry) => getQueueEntryIdentificationStatus(entry, config.patientRegistration) === selectedIdentificationStatus);
     }
 
     if (selectedWaitTimeRange) {
@@ -198,6 +200,7 @@ const EmergencyQueueTable: React.FC<EmergencyQueueTableProps> = ({ queueUuid }) 
     selectedWaitTimeRange,
     searchTerm,
     columns,
+    config.patientRegistration,
   ]);
 
   // Derive sortWeight from priority UUID (API sortWeight may be unreliable/undefined)

@@ -1,5 +1,6 @@
 import {
   Button,
+  Checkbox,
   ContentSwitcher,
   InlineLoading,
   InlineNotification,
@@ -70,6 +71,8 @@ const initialResponsiblePersonValues: ResponsiblePersonFormValues = {
   familyName2: '',
   gender: '',
   estimatedAge: '',
+  phone: '',
+  address: '',
   relationshipType: '',
 };
 
@@ -164,6 +167,13 @@ function isMinorPersonSearchResult(person?: PersonSearchResult | null) {
   return typeof age === 'number' && age < 18;
 }
 
+function sanitizePhoneInput(value: string) {
+  const startsWithPlus = value.startsWith('+');
+  const digits = value.replace(/\D/g, '');
+
+  return `${startsWithPlus ? '+' : ''}${digits}`.slice(0, 20);
+}
+
 const RelationshipView: React.FC<RelationshipViewProps> = ({
   relationship,
   index,
@@ -190,6 +200,7 @@ const RelationshipView: React.FC<RelationshipViewProps> = ({
   const genderOptions = config?.fieldConfigurations?.gender ?? defaultGenderOptions;
   const minorResponsibleRelationshipTypes =
     effectiveConfig?.relationshipOptions?.minorResponsibleRelationshipTypes ?? [];
+  const responsiblePersonPhoneAttributeUuid = effectiveConfig?.fieldConfigurations?.phone?.personAttributeUuid;
 
   const personFormValues = useMemo(
     () => ({
@@ -288,7 +299,7 @@ const RelationshipView: React.FC<RelationshipViewProps> = ({
     (field: ResponsiblePersonField) => (event: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
       setNewPersonValues((currentValues) => ({
         ...currentValues,
-        [field]: event.target.value,
+        [field]: field === 'phone' ? sanitizePhoneInput(event.target.value) : event.target.value,
       }));
     },
     [],
@@ -312,6 +323,8 @@ const RelationshipView: React.FC<RelationshipViewProps> = ({
       familyName2: true,
       gender: true,
       estimatedAge: true,
+      phone: true,
+      address: true,
       relationshipType: true,
     });
   }, []);
@@ -333,7 +346,11 @@ const RelationshipView: React.FC<RelationshipViewProps> = ({
 
     setIsSavingPerson(true);
     try {
-      const response = await savePerson(buildResponsiblePersonPayload(personFormValues));
+      const response = await savePerson(
+        buildResponsiblePersonPayload(personFormValues, {
+          phoneAttributeTypeUuid: responsiblePersonPhoneAttributeUuid,
+        }),
+      );
       const personUuid = response?.data?.uuid;
 
       if (!personUuid) {
@@ -357,7 +374,15 @@ const RelationshipView: React.FC<RelationshipViewProps> = ({
     } finally {
       setIsSavingPerson(false);
     }
-  }, [index, markAllNewPersonFieldsTouched, personFormValues, requiresAdultResponsible, setFieldValue, t]);
+  }, [
+    index,
+    markAllNewPersonFieldsTouched,
+    personFormValues,
+    requiresAdultResponsible,
+    responsiblePersonPhoneAttributeUuid,
+    setFieldValue,
+    t,
+  ]);
 
   return relationship.action !== 'DELETE' ? (
     <div className={styles.relationship}>
@@ -396,6 +421,12 @@ const RelationshipView: React.FC<RelationshipViewProps> = ({
           </Select>
         </Layer>
       </div>
+      <Checkbox
+        id={`relationships[${index}].isCompanion`}
+        labelText={t('isCompanionLabel', 'Is the patient companion')}
+        checked={!!relationship.isCompanion}
+        onChange={(_event, { checked }) => setFieldValue(`relationships[${index}].isCompanion`, checked)}
+      />
       {requiresRelatedPerson ? (
         <div className={styles.personEntry}>
           <ContentSwitcher
@@ -523,6 +554,30 @@ const RelationshipView: React.FC<RelationshipViewProps> = ({
                     invalid={!!getFieldError('estimatedAge', personFormErrors)}
                     invalidText={getFieldError('estimatedAge', personFormErrors)}
                     required={requiresAdultResponsible}
+                  />
+                </Layer>
+                <Layer>
+                  <TextInput
+                    id={`relationships[${index}].newPerson.phone`}
+                    labelText={t('responsiblePhone', 'Phone or mobile phone (optional)')}
+                    value={newPersonValues.phone}
+                    inputMode="tel"
+                    maxLength={20}
+                    helperText={t('phoneHelperText', 'Enter digits only. Use +51 when including the country code.')}
+                    onChange={handleNewPersonFieldChange('phone')}
+                    onBlur={markNewPersonFieldTouched('phone')}
+                    invalid={!!getFieldError('phone', personFormErrors)}
+                    invalidText={getFieldError('phone', personFormErrors)}
+                  />
+                </Layer>
+                <Layer>
+                  <TextInput
+                    id={`relationships[${index}].newPerson.address`}
+                    labelText={t('responsibleAddress', 'Address (optional)')}
+                    value={newPersonValues.address}
+                    maxLength={255}
+                    onChange={handleNewPersonFieldChange('address')}
+                    onBlur={markNewPersonFieldTouched('address')}
                   />
                 </Layer>
               </div>

@@ -107,6 +107,8 @@ const peruFieldDefinitions: Array<FieldDefinition> = [
     uuid: '9b3df0a1-0c58-4f55-9868-9c38f1db1007',
     label: 'Nacionalidad',
     showHeading: false,
+    answerConceptSetUuid: '7869ef7a-be6c-4108-9ee5-9cc7470e0b2d',
+    searchable: true,
   },
   {
     id: 'civilStatus',
@@ -140,6 +142,8 @@ const peruFieldDefinitions: Array<FieldDefinition> = [
     uuid: '8d872150-c2cc-11de-8d13-0010c6dffd0f',
     label: 'Idioma nativo',
     showHeading: false,
+    answerConceptSetUuid: 'e103e272-b021-5573-b95b-26121fe8810d',
+    searchable: true,
   },
   {
     id: 'occupation',
@@ -147,6 +151,8 @@ const peruFieldDefinitions: Array<FieldDefinition> = [
     uuid: '8d871afc-c2cc-11de-8d13-0010c6dffd0f',
     label: 'Ocupación',
     showHeading: false,
+    answerConceptSetUuid: 'c6eb629e-35a3-48c1-a9fe-a19cfd81bd72',
+    searchable: true,
   },
   {
     id: 'educationLevel',

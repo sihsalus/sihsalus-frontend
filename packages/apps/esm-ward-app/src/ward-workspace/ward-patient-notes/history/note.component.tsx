@@ -16,10 +16,13 @@ import {
   showSnackbar,
   useEmrConfiguration,
   useLayoutType,
+  useSession,
+  userHasAccess,
 } from '@openmrs/esm-framework';
 import dayjs from 'dayjs';
 import React, { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
+import { wardEditPrivilege } from '../../../constant';
 import { editPatientNote } from '../notes.resource';
 import { type PatientNote } from '../types';
 import styles from './styles.scss';
@@ -59,8 +62,10 @@ const InPatientNote: React.FC<InPatientNoteProps> = ({ note, mutatePatientNotes,
   const [editedNote, setEditedNote] = useState(note.encounterNote);
   const isTablet = !isDesktop(useLayoutType());
   const [isSaving, setIsSaving] = useState(false);
+  const session = useSession();
   const { emrConfiguration } = useEmrConfiguration();
   const isInpatientNoteEncounter = note.encounterTypeUuid === emrConfiguration?.inpatientNoteEncounterType?.uuid;
+  const canEdit = userHasAccess(wardEditPrivilege, session?.user);
 
   useEffect(() => {
     promptBeforeClosing(editMode);
@@ -94,9 +99,9 @@ const InPatientNote: React.FC<InPatientNoteProps> = ({ note, mutatePatientNotes,
     <div className={styles.noteTile}>
       <Stack gap={4}>
         <div className={styles.noteHeader}>
-          {isInpatientNoteEncounter && (
+          {isInpatientNoteEncounter && (canEdit || note.isEdited) && (
             <OverflowMenu className={styles.overflowMenu} flipped>
-              {!editMode && note.obsUuid && (
+              {canEdit && !editMode && note.obsUuid && (
                 <OverflowMenuItem
                   aria-label={getCoreTranslation('edit')}
                   id={'edit note-' + note.encounterUuid}
@@ -122,20 +127,22 @@ const InPatientNote: React.FC<InPatientNoteProps> = ({ note, mutatePatientNotes,
                   }}
                 />
               )}
-              <OverflowMenuItem
-                aria-label={getCoreTranslation('delete')}
-                id={'delete-note-' + note.encounterUuid}
-                isDelete
-                className={styles.menuItem}
-                itemText={getCoreTranslation('delete')}
-                onClick={() => {
-                  const dispose = showModal('delete-note-modal', {
-                    close: () => dispose(),
-                    encounterUuid: note.encounterUuid,
-                    onDelete: () => mutatePatientNotes(),
-                  });
-                }}
-              />
+              {canEdit && (
+                <OverflowMenuItem
+                  aria-label={getCoreTranslation('delete')}
+                  id={'delete-note-' + note.encounterUuid}
+                  isDelete
+                  className={styles.menuItem}
+                  itemText={getCoreTranslation('delete')}
+                  onClick={() => {
+                    const dispose = showModal('delete-note-modal', {
+                      close: () => dispose(),
+                      encounterUuid: note.encounterUuid,
+                      onDelete: () => mutatePatientNotes(),
+                    });
+                  }}
+                />
+              )}
             </OverflowMenu>
           )}
         </div>

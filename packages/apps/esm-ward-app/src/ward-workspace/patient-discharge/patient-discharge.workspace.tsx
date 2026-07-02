@@ -1,8 +1,17 @@
 import { Button, ButtonSet, InlineNotification } from '@carbon/react';
 import { Exit } from '@carbon/react/icons';
-import { closeWorkspaceGroup2, ExtensionSlot, showSnackbar, useAppContext, Workspace2 } from '@openmrs/esm-framework';
+import {
+  closeWorkspaceGroup2,
+  ExtensionSlot,
+  showSnackbar,
+  useAppContext,
+  useSession,
+  userHasAccess,
+  Workspace2,
+} from '@openmrs/esm-framework';
 import { useCallback, useState } from 'react';
 import { useTranslation } from 'react-i18next';
+import { wardEditPrivilege } from '../../constant';
 import { type WardPatientWorkspaceDefinition, type WardViewContext } from '../../types';
 import { removePatientFromBed, useCreateEncounter } from '../../ward.resource';
 import WardPatientWorkspaceBanner from '../patient-banner/patient-banner.component';
@@ -14,9 +23,11 @@ export default function PatientDischargeWorkspace({
 }: WardPatientWorkspaceDefinition) {
   const { t } = useTranslation();
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const session = useSession();
   const { createEncounter, emrConfiguration, isLoadingEmrConfiguration, errorFetchingEmrConfiguration } =
     useCreateEncounter();
   const { wardPatientGroupDetails } = useAppContext<WardViewContext>('ward-view-context') ?? {};
+  const canEdit = userHasAccess(wardEditPrivilege, session?.user);
 
   const submitDischarge = useCallback(() => {
     setIsSubmitting(true);
@@ -84,19 +95,21 @@ export default function PatientDischargeWorkspace({
             )}
           </div>
           <ExtensionSlot name="ward-patient-discharge-slot" />
-          <ButtonSet className={styles.buttonSet}>
-            <Button
-              size="sm"
-              kind="ghost"
-              renderIcon={(props) => <Exit size={16} {...props} />}
-              disabled={
-                isLoadingEmrConfiguration || isSubmitting || errorFetchingEmrConfiguration || !wardPatient?.patient
-              }
-              onClick={submitDischarge}
-            >
-              {t('proceedWithPatientDischarge', 'Proceed with patient discharge')}
-            </Button>
-          </ButtonSet>
+          {canEdit && (
+            <ButtonSet className={styles.buttonSet}>
+              <Button
+                size="sm"
+                kind="ghost"
+                renderIcon={(props) => <Exit size={16} {...props} />}
+                disabled={
+                  isLoadingEmrConfiguration || isSubmitting || errorFetchingEmrConfiguration || !wardPatient?.patient
+                }
+                onClick={submitDischarge}
+              >
+                {t('proceedWithPatientDischarge', 'Proceed with patient discharge')}
+              </Button>
+            </ButtonSet>
+          )}
         </div>
       </div>
     </Workspace2>

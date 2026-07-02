@@ -2,7 +2,6 @@ import { Button, Checkbox, InlineLoading } from '@carbon/react';
 import {
   getCoreTranslation,
   LocationPicker,
-  navigate,
   setSessionLocation,
   useConfig,
   useConnectivity,
@@ -14,6 +13,7 @@ import { type Location, useLocation, useSearchParams } from 'react-router-dom';
 
 import type { ConfigSchema } from '../config-schema';
 import type { LoginReferrer } from '../login/login.component';
+import { buildSpaNavigationTarget, hardNavigate } from '../navigation';
 
 import { useDefaultLocation, useLocationCount } from './location-picker.resource';
 import styles from './location-picker.scss';
@@ -76,13 +76,13 @@ const LocationPickerView: React.FC<LocationPickerProps> = ({ hideWelcomeMessage,
       updateDefaultLocation(locationUuid, saveUserPreference);
       sessionDefined.then(() => {
         if (referrer && !['/', '/login', '/login/location'].includes(referrer)) {
-          navigate({ to: '${openmrsSpaBase}' + referrer });
+          hardNavigate(buildSpaNavigationTarget(referrer));
           return;
         }
         if (returnToUrl && returnToUrl !== '/') {
-          navigate({ to: returnToUrl });
+          hardNavigate(returnToUrl.startsWith('/') ? buildSpaNavigationTarget(returnToUrl) : returnToUrl);
         } else {
-          navigate({ to: config.links.loginSuccess });
+          hardNavigate(config.links.loginSuccess);
         }
       });
     },

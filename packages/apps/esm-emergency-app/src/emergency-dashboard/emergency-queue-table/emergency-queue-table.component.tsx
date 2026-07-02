@@ -27,11 +27,14 @@ import {
   useConfig,
   useLayoutType,
   usePagination,
+  useSession,
+  userHasAccess,
 } from '@openmrs/esm-framework';
 import dayjs from 'dayjs';
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { type Config } from '../../config-schema';
+import { emergencyEditPrivilege } from '../../constants';
 import { emergencyWorkflowWorkspace } from '../../emergency-workflow/constants';
 import { usePriorityConfig } from '../../hooks/usePriorityConfig';
 import { type EmergencyQueueEntry, useEmergencyQueueEntries } from '../../resources/emergency.resource';
@@ -53,6 +56,7 @@ const EmergencyQueueTable: React.FC<EmergencyQueueTableProps> = ({ queueUuid }) 
   const { t } = useTranslation();
   const layout = useLayoutType();
   const config = useConfig<Config>();
+  const session = useSession();
   const { getPriorityByUuid } = usePriorityConfig();
   const { queueEntries, isLoading, error, isValidating } = useEmergencyQueueEntries(
     undefined,
@@ -69,6 +73,7 @@ const EmergencyQueueTable: React.FC<EmergencyQueueTableProps> = ({ queueUuid }) 
   const [currentPageSize, setPageSize] = useState(10);
   const pageSizes = [10, 20, 30, 40, 50];
   const responsiveSize = isDesktop(layout) ? 'sm' : 'lg';
+  const canEdit = userHasAccess(emergencyEditPrivilege, session?.user);
 
   const columns = useEmergencyQueueColumns(config.patientRegistration);
 
@@ -283,18 +288,20 @@ const EmergencyQueueTable: React.FC<EmergencyQueueTableProps> = ({ queueUuid }) 
             <h4>{t('patientsCurrentlyInQueue', 'Patients currently in queue')}</h4>
           </div>
           <div className={styles.headerButtons}>
-            <Button
-              kind="secondary"
-              renderIcon={(props) => <Add size={16} {...props} />}
-              size={isDesktop(layout) ? 'sm' : 'lg'}
-              onClick={() => {
-                launchWorkspace(emergencyWorkflowWorkspace, {
-                  workspaceTitle: t('newEmergencyPatient', 'New Emergency Patient'),
-                });
-              }}
-            >
-              {t('newEmergencyPatient', 'New Emergency Patient')}
-            </Button>
+            {canEdit && (
+              <Button
+                kind="secondary"
+                renderIcon={(props) => <Add size={16} {...props} />}
+                size={isDesktop(layout) ? 'sm' : 'lg'}
+                onClick={() => {
+                  launchWorkspace(emergencyWorkflowWorkspace, {
+                    workspaceTitle: t('newEmergencyPatient', 'New Emergency Patient'),
+                  });
+                }}
+              >
+                {t('newEmergencyPatient', 'New Emergency Patient')}
+              </Button>
+            )}
           </div>
         </div>
         <DataTable
@@ -316,7 +323,7 @@ const EmergencyQueueTable: React.FC<EmergencyQueueTableProps> = ({ queueUuid }) 
                   )}
                   <TableToolbar {...getToolbarProps()}>
                     <TableToolbarContent className={styles.toolbarContent}>
-                      {queueEntries.length > 0 && (
+                      {canEdit && queueEntries.length > 0 && (
                         <Button
                           className={styles.clearQueueButton}
                           kind="ghost"

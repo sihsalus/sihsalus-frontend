@@ -1,6 +1,6 @@
 import { Layer, Tab, TabList, TabPanel, TabPanels, Tabs } from '@carbon/react';
 import { ExtensionSlot } from '@openmrs/esm-framework';
-import { Activity, Catalog, DocumentMultiple_01, ListChecked } from '@carbon/react/icons';
+import { Activity, ArrowRight, Catalog, DocumentMultiple_01, ListChecked } from '@carbon/react/icons';
 import React from 'react';
 import { useTranslation } from 'react-i18next';
 import Anamnesis from './anamnesis.component';
@@ -8,6 +8,7 @@ import styles from './consulta-externa-dashboard.scss';
 import DiagnosticoClasificado from './diagnostico-clasificado.component';
 import NotasSoap from './notas-soap.component';
 import PlanTratamiento from './plan-tratamiento.component';
+import ReferenciaContraReferencia from './referencia-contrarreferencia.component';
 
 interface ConsultaExternaDashboardProps {
   patientUuid: string;
@@ -26,6 +27,7 @@ const ConsultaExternaDashboard: React.FC<ConsultaExternaDashboardProps> = ({ pat
             <Tab renderIcon={Catalog}>{t('diagnosisClassification', 'Diagnóstico')}</Tab>
             <Tab renderIcon={DocumentMultiple_01}>{t('soapNotes', 'Notas SOAP')}</Tab>
             <Tab renderIcon={ListChecked}>{t('treatmentPlan', 'Plan de Tratamiento')}</Tab>
+            <Tab renderIcon={ArrowRight}>{t('referralCounterReferral', 'Referencia / Contrarreferencia')}</Tab>
           </TabList>
 
           <TabPanels>
@@ -45,6 +47,9 @@ const ConsultaExternaDashboard: React.FC<ConsultaExternaDashboardProps> = ({ pat
             </TabPanel>
             <TabPanel>
               <PlanTratamiento patientUuid={patientUuid} />
+            </TabPanel>
+            <TabPanel>
+              <ReferenciaContraReferencia patientUuid={patientUuid} />
             </TabPanel>
           </TabPanels>
         </Tabs>

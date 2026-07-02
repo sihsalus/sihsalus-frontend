@@ -18,14 +18,14 @@
         "slot": "admission-dashboard-slot",
         "title": "admissionReportByUps"
       },
-      "privileges": "app:adt",
+      "privileges": "app:care-logbook",
       "order": 20
     },
     {
       "component": "careLogbookHomeDashboard",
       "name": "care-logbook-home-dashboard",
       "slot": "admission-dashboard-slot",
-      "privileges": "app:adt",
+      "privileges": "app:care-logbook",
       "online": true,
       "offline": false
     },
@@ -33,6 +33,7 @@
       "component": "careLogbookMergePatientsAction",
       "name": "care-logbook-merge-patients-action",
       "slot": "top-nav-actions-slot",
+      "privileges": ["app:care-logbook.edit", "app:topnav.mergePatients"],
       "online": true,
       "offline": false
     },
@@ -40,6 +41,7 @@
       "component": "careLogbookMergePatientsMenuItem",
       "name": "care-logbook-merge-patients-menu-item",
       "slot": "patient-actions-slot",
+      "privileges": "app:care-logbook.edit",
       "online": true,
       "offline": false
     }

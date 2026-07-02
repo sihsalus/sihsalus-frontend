@@ -4,7 +4,7 @@ import { RequirePrivilege } from '@sihsalus/esm-rbac';
 import classNames from 'classnames';
 import { useTranslation } from 'react-i18next';
 
-import { admissionPrivilege, moduleName } from '../constants';
+import { careLogbookPrivilege, moduleName } from '../constants';
 
 export default function CareLogbookDashboardLink() {
   const { t } = useTranslation(moduleName);
@@ -15,7 +15,7 @@ export default function CareLogbookDashboardLink() {
     globalThis.location.pathname.includes(dashboardPath) || globalThis.location.pathname.includes('/admission');
 
   return (
-    <RequirePrivilege privilege={admissionPrivilege} hideUnauthorized>
+    <RequirePrivilege privilege={careLogbookPrivilege} hideUnauthorized>
       <ConfigurableLink
         aria-label={t('admissions', 'Libro de Atenciones')}
         className={classNames('cds--side-nav__link', { 'active-left-nav-link': isActive })}

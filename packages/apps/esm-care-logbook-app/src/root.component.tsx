@@ -2,7 +2,7 @@ import { useLeftNav } from '@openmrs/esm-framework';
 import { AppErrorBoundary, RequirePrivilege } from '@sihsalus/esm-rbac';
 import { BrowserRouter, Route, Routes } from 'react-router-dom';
 
-import { admissionPrivilege, basePath } from './constants';
+import { basePath, careLogbookPrivilege } from './constants';
 import AdmissionHome from './pages/admission-home.component';
 import PatientMerge from './pages/patient-merge.component';
 import PatientAdmissionDetail from './patient/patient-admission-detail.component';
@@ -17,7 +17,7 @@ export default function Root() {
 
   return (
     <AppErrorBoundary appName="esm-care-logbook-app">
-      <RequirePrivilege privilege={admissionPrivilege}>
+      <RequirePrivilege privilege={careLogbookPrivilege}>
         <div className={styles.root}>
           <BrowserRouter
             basename={`${globalThis.getOpenmrsSpaBase().slice(0, -1)}${basePath}`}

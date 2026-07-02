@@ -57,6 +57,7 @@ import {
   fetchDiagnosisConceptsByName,
   fetchPrestacionalConceptsByName,
   getCertaintyForTipo,
+  legacyProceduresConceptUuids,
   parseTipoDxObs,
   savePatientDiagnosis,
   saveVisitNote,
@@ -277,6 +278,15 @@ const VisitNotesForm: React.FC<PatientWorkspace2DefinitionProps<VisitNotesFormPr
     },
     [getEncounterObs],
   );
+  const getEncounterProceduresValue = useCallback(
+    () =>
+      getEncounterObsValue(proceduresConceptUuid, 'procedures') ||
+      getEncounterObsValue(legacyProceduresConceptUuids.textWithProceduresPath, 'procedures') ||
+      getEncounterObsValue(legacyProceduresConceptUuids.procedure, 'procedures') ||
+      getEncounterObsValue(proceduresConceptUuid) ||
+      getEncounterObsValue(legacyProceduresConceptUuids.procedure),
+    [getEncounterObsValue, proceduresConceptUuid],
+  );
 
   const customResolver = useCallback(
     async (data, context, options) => {
@@ -327,7 +337,7 @@ const VisitNotesForm: React.FC<PatientWorkspace2DefinitionProps<VisitNotesFormPr
       assessment: isEditing ? getEncounterObsValue(soapAssessmentConceptUuid) : '',
       plan: isEditing ? getEncounterObsValue(soapPlanConceptUuid, 'soap-plan') : '',
       auxiliaryExams: isEditing ? getEncounterObsValue(labOrdersConceptUuid) : '',
-      procedures: isEditing ? getEncounterObsValue(proceduresConceptUuid, 'procedures') : '',
+      procedures: isEditing ? getEncounterProceduresValue() : '',
       prescriptions: isEditing ? getEncounterObsValue(prescriptionsConceptUuid) : '',
       referral: isEditing ? getEncounterObsValue(referralConceptUuid) : '',
       nextAppointment: isEditing ? getEncounterObsValue(nextAppointmentConceptUuid) : '',

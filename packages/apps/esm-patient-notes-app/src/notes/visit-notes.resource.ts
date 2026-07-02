@@ -88,6 +88,18 @@ interface RestProvider {
   };
 }
 
+/**
+ * Concepts under which older visit notes stored the procedures text. `procedure`
+ * (1651) is a dedicated legacy concept, safe to read with or without a form field
+ * path. `textWithProceduresPath` (162169, free-text consult note) is shared with the
+ * SOAP plan, so it must ONLY be read with the 'procedures' form field path — without
+ * it the SOAP plan text would bleed into the procedures field.
+ */
+export const legacyProceduresConceptUuids = {
+  procedure: '1651AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA',
+  textWithProceduresPath: '162169AAAAAAAAAAAAAAAAAAAAAAAAAAAAAA',
+} as const;
+
 export function useVisitNotes(patientUuid: string): UseVisitNotes {
   const {
     visitNoteConfig: { encounterNoteTextConceptUuid, visitDiagnosesConceptUuid },
@@ -316,6 +328,12 @@ export function useVisitNoteClinicalContext(patientUuid: string, visitUuid?: str
   const getLatestStructuredText = (conceptUuid: string, formFieldPath: string) =>
     getLatest(conceptUuid, formFieldPath) ??
     (conceptUuid !== visitNoteConfig.encounterNoteTextConceptUuid ? getLatest(conceptUuid) : undefined);
+  const getLatestProceduresText = () =>
+    getLatest(visitNoteConfig.proceduresConceptUuid, 'procedures') ??
+    getLatest(legacyProceduresConceptUuids.textWithProceduresPath, 'procedures') ??
+    getLatest(legacyProceduresConceptUuids.procedure, 'procedures') ??
+    getLatest(visitNoteConfig.proceduresConceptUuid) ??
+    getLatest(legacyProceduresConceptUuids.procedure);
 
   const clinicalContext: VisitNoteClinicalContext = {
     codigoPrestacional: getLatest(visitNoteConfig.codigoPrestacionalConceptUuid, 'codigo-prestacional'),
@@ -329,7 +347,7 @@ export function useVisitNoteClinicalContext(patientUuid: string, visitUuid?: str
     assessment: getLatest(visitNoteConfig.soapAssessmentConceptUuid),
     plan: getLatestStructuredText(visitNoteConfig.soapPlanConceptUuid, 'soap-plan'),
     auxiliaryExams: getLatest(visitNoteConfig.labOrdersConceptUuid),
-    procedures: getLatestStructuredText(visitNoteConfig.proceduresConceptUuid, 'procedures'),
+    procedures: getLatestProceduresText(),
     prescriptions: getLatest(visitNoteConfig.prescriptionsConceptUuid),
     referral: getLatest(visitNoteConfig.referralConceptUuid),
     nextAppointment: getLatest(visitNoteConfig.nextAppointmentConceptUuid),

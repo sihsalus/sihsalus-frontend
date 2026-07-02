@@ -1,4 +1,5 @@
 import { Layer, Tab, TabList, TabPanel, TabPanels, Tabs, Tile } from '@carbon/react';
+import { ExtensionSlot } from '@openmrs/esm-framework';
 import { Activity, Catalog, DocumentMultiple_01, ListChecked } from '@carbon/react/icons';
 import React from 'react';
 import { useTranslation } from 'react-i18next';
@@ -8,7 +9,6 @@ import DiagnosticoClasificado from './diagnostico-clasificado.component';
 import MotivoConsulta from './motivo-consulta.component';
 import NotasSoap from './notas-soap.component';
 import PlanTratamiento from './plan-tratamiento.component';
-import TriageSummary from './triage-summary.component';
 
 interface ConsultaExternaDashboardProps {
   patientUuid: string;
@@ -40,7 +40,7 @@ const ConsultaExternaDashboard: React.FC<ConsultaExternaDashboardProps> = ({ pat
           <TabPanels>
             <TabPanel>
               <div className={styles.combinedPanel}>
-                <TriageSummary patientUuid={patientUuid} />
+                <ExtensionSlot name="consulta-externa-vitals-summary-slot" state={{ patientUuid }} />
                 <MotivoConsulta patientUuid={patientUuid} />
               </div>
             </TabPanel>

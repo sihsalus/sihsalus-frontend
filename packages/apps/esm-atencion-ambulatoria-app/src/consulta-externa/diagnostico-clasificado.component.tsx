@@ -34,8 +34,8 @@ const DiagnosticoClasificado: React.FC<DiagnosticoClasificadoProps> = ({ patient
     { key: 'date', header: t('date', 'Fecha') },
     { key: 'diagnosis', header: t('diagnosis', 'Diagnóstico') },
     { key: 'cie10', header: t('cie10Code', 'CIE-10') },
+    { key: 'priority', header: t('diagnosisPriority', 'Prioridad') },
     { key: 'certainty', header: t('certainty', 'Tipo') },
-    { key: 'occurrence', header: t('occurrence', 'Ocurrencia') },
   ];
 
   const rows = diagnoses.map((dx) => ({
@@ -43,24 +43,28 @@ const DiagnosticoClasificado: React.FC<DiagnosticoClasificadoProps> = ({ patient
     date: formatDate(new Date(dx.encounterDatetime)),
     diagnosis: dx.display,
     cie10: dx.cie10Code || '—',
+    priority:
+      dx.rank === 1 ? (
+        <Tag type="red" size="sm">
+          {t('primaryDiagnosis', 'Diagnóstico primario')}
+        </Tag>
+      ) : (
+        <Tag type="blue" size="sm">
+          {t('secondaryDiagnosis', 'Diagnóstico secundario')}
+        </Tag>
+      ),
     certainty:
-      dx.certainty === 'CONFIRMED' ? (
+      dx.tipoNts === 'D' ? (
         <Tag type="green" size="sm">
-          {t('definitive', 'Definitivo')}
+          {t('diagnosisTypeDefinitivo', 'Definitivo')}
+        </Tag>
+      ) : dx.tipoNts === 'R' ? (
+        <Tag type="purple" size="sm">
+          {t('diagnosisTypeRepetitivo', 'Repetitivo')}
         </Tag>
       ) : (
         <Tag type="red" size="sm">
-          {t('presumptive', 'Presuntivo')}
-        </Tag>
-      ),
-    occurrence:
-      dx.occurrence === 'NEW' ? (
-        <Tag type="blue" size="sm">
-          {t('new', 'Nuevo')}
-        </Tag>
-      ) : (
-        <Tag type="purple" size="sm">
-          {t('repeat', 'Repetido')}
+          {t('diagnosisTypePresuntivo', 'Presuntivo')}
         </Tag>
       ),
   }));

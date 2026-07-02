@@ -7,9 +7,12 @@ import {
   PageHeaderContent,
   ServiceQueuesPictogram,
   useLayoutType,
+  useSession,
+  userHasAccess,
 } from '@openmrs/esm-framework';
 import React from 'react';
 import { useTranslation } from 'react-i18next';
+import { emergencyEditPrivilege } from '../../constants';
 import { emergencyWorkflowWorkspace } from '../../emergency-workflow/constants';
 import styles from './emergency-header.scss';
 
@@ -26,7 +29,9 @@ interface EmergencyHeaderProps {
 const EmergencyHeader: React.FC<EmergencyHeaderProps> = ({ queueFilter }) => {
   const { t } = useTranslation();
   const layout = useLayoutType();
+  const session = useSession();
   const responsiveSize = isDesktop(layout) ? 'sm' : 'md';
+  const canEdit = userHasAccess(emergencyEditPrivilege, session?.user);
 
   const handleNewPatientClick = () => {
     launchWorkspace(emergencyWorkflowWorkspace, {
@@ -42,15 +47,17 @@ const EmergencyHeader: React.FC<EmergencyHeaderProps> = ({ queueFilter }) => {
       />
       <div className={styles.headerActions}>
         {queueFilter}
-        <Button
-          kind="primary"
-          renderIcon={(props) => <Add size={16} {...props} />}
-          onClick={handleNewPatientClick}
-          size={responsiveSize}
-          className={styles.newPatientButton}
-        >
-          {t('newEmergencyPatient', 'New Emergency Patient')}
-        </Button>
+        {canEdit && (
+          <Button
+            kind="primary"
+            renderIcon={(props) => <Add size={16} {...props} />}
+            onClick={handleNewPatientClick}
+            size={responsiveSize}
+            className={styles.newPatientButton}
+          >
+            {t('newEmergencyPatient', 'New Emergency Patient')}
+          </Button>
+        )}
       </div>
     </PageHeader>
   );

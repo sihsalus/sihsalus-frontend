@@ -1,4 +1,4 @@
-import { getDefaultsFromConfigSchema, showSnackbar, useConfig } from '@openmrs/esm-framework';
+import { getDefaultsFromConfigSchema, showSnackbar, useConfig, useSession, userHasAccess } from '@openmrs/esm-framework';
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { emrConfigurationMock, mockInpatientRequestAlice, mockPatientAlice } from '__mocks__';
@@ -43,6 +43,8 @@ vi.mock('../../hooks/useEmrConfiguration', () => ({ default: vi.fn() }));
 const mockedUseEmrConfiguration = vi.mocked(useEmrConfiguration);
 const mockedUsePatientNotes = vi.mocked(usePatientNotes);
 const mockUseConfig = vi.mocked(useConfig<WardConfigObject>);
+const mockUseSession = vi.mocked(useSession);
+const mockUserHasAccess = vi.mocked(userHasAccess);
 
 mockedUseEmrConfiguration.mockReturnValue({
   emrConfiguration: emrConfigurationMock,
@@ -59,6 +61,12 @@ describe('<WardPatientNotesWorkspace>', () => {
     isLoadingPatientNotes: false,
     mutatePatientNotes: vi.fn(),
   });
+  mockUseSession.mockReturnValue({
+    user: { uuid: 'user-1' },
+    currentProvider: { uuid: 'provider-1' },
+    sessionLocation: { uuid: 'location-1' },
+  } as ReturnType<typeof useSession>);
+  mockUserHasAccess.mockReturnValue(true);
 
   test('renders the visit notes form with all the relevant fields and values', () => {
     renderWardPatientNotesForm();
@@ -73,11 +81,11 @@ describe('<WardPatientNotesWorkspace>', () => {
       encounterProviders: expect.arrayContaining([
         {
           encounterRole: emrConfigurationMock?.clinicianEncounterRole?.uuid,
-          provider: undefined,
+          provider: 'provider-1',
         },
       ]),
       encounterType: emrConfigurationMock?.inpatientNoteEncounterType?.uuid,
-      location: undefined,
+      location: 'location-1',
       obs: expect.arrayContaining([
         {
           concept: {
@@ -88,6 +96,7 @@ describe('<WardPatientNotesWorkspace>', () => {
         },
       ]),
       patient: mockPatientAlice.uuid,
+      visit: mockWardPatientAlice.visit.uuid,
     };
 
     mockCreatePatientNote.mockResolvedValue({

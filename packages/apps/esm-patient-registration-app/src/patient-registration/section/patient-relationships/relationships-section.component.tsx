@@ -199,6 +199,11 @@ const RelationshipView: React.FC<RelationshipViewProps> = ({
   const minorResponsibleRelationshipTypes =
     effectiveConfig?.relationshipOptions?.minorResponsibleRelationshipTypes ?? [];
   const responsiblePersonPhoneAttributeUuid = effectiveConfig?.fieldConfigurations?.phone?.personAttributeUuid;
+  const companionRelationshipTypeUuid = effectiveConfig?.relationshipOptions?.companionRelationshipType?.split('/')[0];
+  // When the main relationship already IS Acompañante, the checkbox would only create a
+  // duplicate Acompañante relationship for the same person, so it is hidden.
+  const relationshipTypeIsCompanion =
+    !!companionRelationshipTypeUuid && relationship.relationshipType?.split('/')[0] === companionRelationshipTypeUuid;
 
   const personFormValues = useMemo(
     () => ({
@@ -226,11 +231,14 @@ const RelationshipView: React.FC<RelationshipViewProps> = ({
       setFieldValue(field, value);
       setNewPersonValues((currentValues) => ({ ...currentValues, relationshipType: value }));
       setTouchedFields((currentFields) => ({ ...currentFields, relationshipType: true }));
+      if (companionRelationshipTypeUuid && value.split('/')[0] === companionRelationshipTypeUuid) {
+        setFieldValue(`relationships[${index}].isCompanion`, false);
+      }
       if (!relationship?.action) {
         setFieldValue(`relationships[${index}].action`, 'UPDATE');
       }
     },
-    [index, relationship?.action, setFieldValue],
+    [companionRelationshipTypeUuid, index, relationship?.action, setFieldValue],
   );
 
   const handleSuggestionSelected = useCallback(
@@ -372,35 +380,40 @@ const RelationshipView: React.FC<RelationshipViewProps> = ({
           <TrashCan size={16} className={styles.trashCan} />
         </Button>
       </div>
-      <div className={styles.selectRelationshipType}>
-        <Layer>
-          <Select
-            id={`relationships[${index}].relationshipType`}
-            labelText={t('relationshipToPatient', 'Relationship to patient')}
-            onChange={handleRelationshipTypeChange}
-            onBlur={markNewPersonFieldTouched('relationshipType')}
-            name={`relationships[${index}].relationshipType`}
-            defaultValue={relationship?.relationshipType ?? 'placeholder-item'}
-            invalid={!!getFieldError('relationshipType', personFormErrors)}
-            invalidText={getFieldError('relationshipType', personFormErrors)}
-          >
-            <SelectItem disabled hidden value="placeholder-item" text={t('selectAnOption', 'Select an option')} />
-            {displayRelationshipTypes.map((relationshipType) => (
-              <SelectItem
-                text={relationshipType.display}
-                value={`${relationshipType.uuid}/${relationshipType.direction}`}
-                key={`relationship-${relationshipType.uuid}-${relationshipType.direction}`}
-              />
-            ))}
-          </Select>
-        </Layer>
+      <div className={styles.relationshipTypeRow}>
+        <div className={styles.selectRelationshipType}>
+          <Layer>
+            <Select
+              id={`relationships[${index}].relationshipType`}
+              labelText={t('relationshipToPatient', 'Relationship to patient')}
+              onChange={handleRelationshipTypeChange}
+              onBlur={markNewPersonFieldTouched('relationshipType')}
+              name={`relationships[${index}].relationshipType`}
+              defaultValue={relationship?.relationshipType ?? 'placeholder-item'}
+              invalid={!!getFieldError('relationshipType', personFormErrors)}
+              invalidText={getFieldError('relationshipType', personFormErrors)}
+            >
+              <SelectItem disabled hidden value="placeholder-item" text={t('selectAnOption', 'Select an option')} />
+              {displayRelationshipTypes.map((relationshipType) => (
+                <SelectItem
+                  text={relationshipType.display}
+                  value={`${relationshipType.uuid}/${relationshipType.direction}`}
+                  key={`relationship-${relationshipType.uuid}-${relationshipType.direction}`}
+                />
+              ))}
+            </Select>
+          </Layer>
+        </div>
+        {!relationshipTypeIsCompanion ? (
+          <Checkbox
+            className={styles.companionCheckbox}
+            id={`relationships[${index}].isCompanion`}
+            labelText={t('isCompanionLabel', 'Is the patient companion')}
+            checked={!!relationship.isCompanion}
+            onChange={(_event, { checked }) => setFieldValue(`relationships[${index}].isCompanion`, checked)}
+          />
+        ) : null}
       </div>
-      <Checkbox
-        id={`relationships[${index}].isCompanion`}
-        labelText={t('isCompanionLabel', 'Is the patient companion')}
-        checked={!!relationship.isCompanion}
-        onChange={(_event, { checked }) => setFieldValue(`relationships[${index}].isCompanion`, checked)}
-      />
       {requiresRelatedPerson ? (
         <div className={styles.personEntry}>
           <ContentSwitcher

@@ -8,12 +8,13 @@ export interface DiagnosisEntry {
   encounterDatetime: string;
   cie10Code: string | null;
   rank: number;
-  /** Tipo según NTS-139: P (Presuntivo), D (Definitivo), R (Repetido) */
+  /** Tipo según NTS-139: P (Presuntivo), D (Definitivo), R (Repetitivo) */
   tipoNts: 'P' | 'D' | 'R';
 }
 
 const TIPO_DX_FORM_FIELD_NAMESPACE = 'visit-notes';
 const TIPO_DX_FIELD_PREFIX = 'tipo-dx-';
+type TipoNts = DiagnosisEntry['tipoNts'];
 
 interface ConceptMapping {
   display?: string;
@@ -21,7 +22,7 @@ interface ConceptMapping {
 
 interface EncounterObs {
   concept: { uuid: string };
-  value?: { uuid?: string } | string;
+  value?: { uuid?: string; display?: string; name?: string } | string;
   formFieldNamespace?: string;
   formFieldPath?: string;
 }
@@ -33,6 +34,7 @@ interface EncounterDiagnosis {
     coded?: { uuid?: string; display: string; mappings?: ConceptMapping[] };
     nonCoded?: string;
   };
+  certainty?: string;
   rank: number;
 }
 
@@ -41,6 +43,48 @@ interface Encounter {
   encounterDatetime: string;
   diagnoses: EncounterDiagnosis[];
   obs: EncounterObs[];
+}
+
+function getTipoDxDisplay(value: EncounterObs['value']): string | null {
+  if (typeof value === 'string') {
+    return value;
+  }
+
+  return value?.display ?? value?.name ?? null;
+}
+
+function getTipoNtsFromValue(value: EncounterObs['value'], concepts: ConfigObject['concepts']): TipoNts | undefined {
+  const valueUuid = typeof value === 'object' && value !== null ? value.uuid : typeof value === 'string' ? value : null;
+  if (valueUuid === concepts.definitiveDiagnosisTypeUuid) {
+    return 'D';
+  }
+  if (valueUuid === concepts.repeatDiagnosisTypeUuid) {
+    return 'R';
+  }
+
+  const display = getTipoDxDisplay(value)?.toLocaleLowerCase();
+  if (display?.includes('definit')) {
+    return 'D';
+  }
+  if (display?.includes('repetit')) {
+    return 'R';
+  }
+  if (display?.includes('presunt')) {
+    return 'P';
+  }
+
+  return undefined;
+}
+
+function getTipoNtsFromCertainty(certainty?: string): TipoNts | undefined {
+  if (certainty === 'CONFIRMED') {
+    return 'D';
+  }
+  if (certainty === 'PROVISIONAL') {
+    return 'P';
+  }
+
+  return undefined;
 }
 
 export function useDiagnosisHistory(patientUuid: string, encounterTypeUuid: string) {
@@ -56,8 +100,8 @@ export function useDiagnosisHistory(patientUuid: string, encounterTypeUuid: stri
   const { data, error, isLoading, mutate } = useSWR<{ data: { results: Encounter[] } }>(url, openmrsFetch);
 
   const diagnoses: DiagnosisEntry[] = (data?.data?.results ?? []).flatMap((encounter) => {
-    // Build a map: codedUuid → tipoAnswerUuid from visit-notes tipo OBS
-    const tipoMap: Record<string, string> = {};
+    // Mirrors patient-notes: one obs links the MINSA P/D/R type to each coded diagnosis.
+    const tipoMap: Record<string, EncounterObs['value']> = {};
     (encounter.obs ?? []).forEach((obs) => {
       if (
         obs.concept?.uuid === concepts.diagnosisTypeConceptUuid &&
@@ -66,13 +110,7 @@ export function useDiagnosisHistory(patientUuid: string, encounterTypeUuid: stri
         obs.formFieldPath.startsWith(TIPO_DX_FIELD_PREFIX)
       ) {
         const codedUuid = obs.formFieldPath.slice(TIPO_DX_FIELD_PREFIX.length);
-        const valueUuid =
-          typeof obs.value === 'object' && obs.value !== null
-            ? obs.value.uuid
-            : obs.value != null
-              ? String(obs.value)
-              : undefined;
-        if (codedUuid && valueUuid) tipoMap[codedUuid] = valueUuid;
+        if (codedUuid && obs.value != null) tipoMap[codedUuid] = obs.value;
       }
     });
 
@@ -82,14 +120,7 @@ export function useDiagnosisHistory(patientUuid: string, encounterTypeUuid: stri
       const cie10Code = cie10Mapping?.display?.split(': ')?.[1] ?? null;
 
       const codedUuid = dx.diagnosis?.coded?.uuid ?? '';
-      const tipoUuid = tipoMap[codedUuid];
-
-      let tipoNts: 'P' | 'D' | 'R' = 'P';
-      if (tipoUuid === concepts.definitiveDiagnosisTypeUuid) {
-        tipoNts = 'D';
-      } else if (tipoUuid === concepts.repeatDiagnosisTypeUuid) {
-        tipoNts = 'R';
-      }
+      const tipoNts = getTipoNtsFromValue(tipoMap[codedUuid], concepts) ?? getTipoNtsFromCertainty(dx.certainty) ?? 'P';
 
       return {
         uuid: dx.uuid,

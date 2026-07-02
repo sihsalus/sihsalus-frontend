@@ -56,15 +56,15 @@ const DiagnosticoClasificado: React.FC<DiagnosticoClasificadoProps> = ({ patient
     certainty:
       dx.tipoNts === 'D' ? (
         <Tag type="green" size="sm">
-          {t('definitive', 'Definitivo')}
+          {t('diagnosisTypeDefinitivo', 'Definitivo')}
         </Tag>
       ) : dx.tipoNts === 'R' ? (
         <Tag type="purple" size="sm">
-          {t('repeat', 'Repetido')}
+          {t('diagnosisTypeRepetitivo', 'Repetitivo')}
         </Tag>
       ) : (
         <Tag type="red" size="sm">
-          {t('presumptive', 'Presuntivo')}
+          {t('diagnosisTypePresuntivo', 'Presuntivo')}
         </Tag>
       ),
   }));

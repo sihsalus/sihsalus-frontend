@@ -81,7 +81,12 @@ export function useTreatmentPlan(patientUuid: string, encounterTypeUuid: string,
         getObsValue(encounter.obs, [concepts?.proceduresUuid, visitNotesConceptUuids.proceduresUuid], 'procedures') ??
         getObsValue(
           encounter.obs,
-          [concepts?.proceduresUuid, visitNotesConceptUuids.legacyProceduresUuid, visitNotesConceptUuids.legacyProceduresTextUuid],
+          [visitNotesConceptUuids.legacyProceduresTextUuid, visitNotesConceptUuids.legacyProceduresUuid],
+          'procedures',
+        ) ??
+        getObsValue(
+          encounter.obs,
+          [concepts?.proceduresUuid, visitNotesConceptUuids.legacyProceduresUuid],
           null,
         ),
       prescriptions: getObsValue(encounter.obs, [concepts?.prescriptionsUuid, visitNotesConceptUuids.prescriptionsUuid]),

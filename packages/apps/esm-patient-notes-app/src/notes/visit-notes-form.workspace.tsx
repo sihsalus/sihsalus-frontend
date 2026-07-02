@@ -180,6 +180,11 @@ export interface VisitNotesFormProps {
   formContext: 'creating' | 'editing';
 }
 
+const legacyProceduresConceptUuids = {
+  procedure: '1651AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA',
+  textWithProceduresPath: '162169AAAAAAAAAAAAAAAAAAAAAAAAAAAAAA',
+} as const;
+
 const VisitNotesForm: React.FC<PatientWorkspace2DefinitionProps<VisitNotesFormProps, {}>> = ({
   closeWorkspace,
   workspaceProps: { formContext, encounter },
@@ -277,6 +282,15 @@ const VisitNotesForm: React.FC<PatientWorkspace2DefinitionProps<VisitNotesFormPr
     },
     [getEncounterObs],
   );
+  const getEncounterProceduresValue = useCallback(
+    () =>
+      getEncounterObsValue(proceduresConceptUuid, 'procedures') ||
+      getEncounterObsValue(legacyProceduresConceptUuids.textWithProceduresPath, 'procedures') ||
+      getEncounterObsValue(legacyProceduresConceptUuids.procedure, 'procedures') ||
+      getEncounterObsValue(proceduresConceptUuid) ||
+      getEncounterObsValue(legacyProceduresConceptUuids.procedure),
+    [getEncounterObsValue, proceduresConceptUuid],
+  );
 
   const customResolver = useCallback(
     async (data, context, options) => {
@@ -327,7 +341,7 @@ const VisitNotesForm: React.FC<PatientWorkspace2DefinitionProps<VisitNotesFormPr
       assessment: isEditing ? getEncounterObsValue(soapAssessmentConceptUuid) : '',
       plan: isEditing ? getEncounterObsValue(soapPlanConceptUuid, 'soap-plan') : '',
       auxiliaryExams: isEditing ? getEncounterObsValue(labOrdersConceptUuid) : '',
-      procedures: isEditing ? getEncounterObsValue(proceduresConceptUuid, 'procedures') : '',
+      procedures: isEditing ? getEncounterProceduresValue() : '',
       prescriptions: isEditing ? getEncounterObsValue(prescriptionsConceptUuid) : '',
       referral: isEditing ? getEncounterObsValue(referralConceptUuid) : '',
       nextAppointment: isEditing ? getEncounterObsValue(nextAppointmentConceptUuid) : '',

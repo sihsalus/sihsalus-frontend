@@ -1,4 +1,4 @@
-import { getDefaultsFromConfigSchema, launchWorkspace2, useConfig } from '@openmrs/esm-framework';
+import { getDefaultsFromConfigSchema, launchWorkspace2, useConfig, useSession, userHasAccess } from '@openmrs/esm-framework';
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { type Config, configSchema } from '../../../config-schema';
@@ -8,6 +8,8 @@ import { EmergencyQueueActionsCell } from './emergency-queue-actions-cell.compon
 
 const mockLaunchWorkspace2 = vi.mocked(launchWorkspace2);
 const mockUseConfig = vi.mocked(useConfig<Config>);
+const mockUseSession = vi.mocked(useSession);
+const mockUserHasAccess = vi.mocked(userHasAccess);
 
 const triageEncounterTypeUuid = 'triage-encounter-type-uuid';
 const triageQueueUuid = 'triage-queue-uuid';
@@ -58,6 +60,8 @@ describe('EmergencyQueueActionsCell', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     mockUseConfig.mockReturnValue(config);
+    mockUseSession.mockReturnValue({ user: { uuid: 'user-1' } } as ReturnType<typeof useSession>);
+    mockUserHasAccess.mockReturnValue(true);
   });
 
   it('opens the shared vitals workspace with the triage encounter type override', async () => {

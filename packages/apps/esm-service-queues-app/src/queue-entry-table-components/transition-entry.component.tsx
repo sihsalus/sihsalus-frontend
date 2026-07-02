@@ -1,12 +1,13 @@
 import { Button } from '@carbon/react';
 import { Notification } from '@carbon/react/icons';
-import { restBaseUrl, showModal, showNotification } from '@openmrs/esm-framework';
+import { restBaseUrl, showModal, showNotification, useSession, userHasAccess } from '@openmrs/esm-framework';
 import classNames from 'classnames';
 import React, { useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
 import { mutate } from 'swr';
 
 import { type MappedVisitQueueEntry, serveQueueEntry } from '../active-visits/active-visits-table.resource';
+import { serviceQueuesEditPrivilege } from '../constants';
 
 import styles from './transition-entry.scss';
 
@@ -16,6 +17,8 @@ interface TransitionMenuProps {
 
 const TransitionMenu: React.FC<TransitionMenuProps> = ({ queueEntry }) => {
   const { t } = useTranslation();
+  const session = useSession();
+  const canEdit = userHasAccess(serviceQueuesEditPrivilege, session?.user);
 
   const launchTransitionPriorityModal = useCallback(() => {
     serveQueueEntry(queueEntry?.queue.name, queueEntry?.visitQueueNumber, 'calling').then(
@@ -38,6 +41,10 @@ const TransitionMenu: React.FC<TransitionMenuProps> = ({ queueEntry }) => {
       queueEntry,
     });
   }, [queueEntry, t]);
+
+  if (!canEdit) {
+    return null;
+  }
 
   return (
     <Button

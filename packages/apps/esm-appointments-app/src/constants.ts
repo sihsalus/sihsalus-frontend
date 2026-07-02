@@ -4,6 +4,7 @@ export const spaHomePage = `${globalThis.spaBase}/home`;
 export const omrsDateFormat = 'YYYY-MM-DDTHH:mm:ss.SSSZZ';
 export const appointmentLocationTagName = 'Appointment Location';
 export const appointmentsPrivilege = 'app:appointments';
+export const appointmentsEditPrivilege = 'app:appointments.edit';
 export const chartAppointmentsReadPrivilege = 'app:clinical.chart.appointments';
 export const chartAppointmentsEditPrivilege = 'app:clinical.chart.appointments.edit';
 

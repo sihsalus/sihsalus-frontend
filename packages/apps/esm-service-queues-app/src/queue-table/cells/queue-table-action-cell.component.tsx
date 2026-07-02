@@ -1,7 +1,8 @@
 import { Button, OverflowMenu, OverflowMenuItem } from '@carbon/react';
-import { isDesktop, showModal, useLayoutType } from '@openmrs/esm-framework';
+import { isDesktop, showModal, useLayoutType, useSession, userHasAccess } from '@openmrs/esm-framework';
 import { useTranslation } from 'react-i18next';
 
+import { serviceQueuesEditPrivilege } from '../../constants';
 import { type QueueTableCellComponentProps, type QueueTableColumnFunction } from '../../types';
 
 import styles from './queue-table-action-cell.scss';
@@ -9,6 +10,12 @@ import styles from './queue-table-action-cell.scss';
 export function QueueTableActionCell({ queueEntry }: QueueTableCellComponentProps) {
   const { t } = useTranslation();
   const layout = useLayoutType();
+  const session = useSession();
+  const canEdit = userHasAccess(serviceQueuesEditPrivilege, session?.user);
+
+  if (!canEdit) {
+    return null;
+  }
 
   return (
     <div className={styles.actionsCell}>

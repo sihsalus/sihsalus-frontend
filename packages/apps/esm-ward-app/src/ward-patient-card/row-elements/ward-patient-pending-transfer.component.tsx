@@ -1,8 +1,9 @@
 import { IconButton } from '@carbon/react';
 import { Movement } from '@carbon/react/icons';
-import { CloseOutlineIcon, launchWorkspace2 } from '@openmrs/esm-framework';
+import { CloseOutlineIcon, launchWorkspace2, useSession, userHasAccess } from '@openmrs/esm-framework';
 import React, { useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
+import { wardEditPrivilege } from '../../constant';
 import { type WardPatient } from '../../types';
 import styles from '../ward-patient-card.scss';
 
@@ -12,6 +13,8 @@ export interface WardPatientTransferProps {
 
 const WardPatientPendingTransfer: React.FC<WardPatientTransferProps> = ({ wardPatient }) => {
   const { t } = useTranslation();
+  const session = useSession();
+  const canEdit = userHasAccess(wardEditPrivilege, session?.user);
 
   const { dispositionType, dispositionLocation } = wardPatient.inpatientRequest ?? {};
   const message = useMemo(() => {
@@ -44,15 +47,17 @@ const WardPatientPendingTransfer: React.FC<WardPatientTransferProps> = ({ wardPa
     <div className={styles.wardPatientCardDispositionTypeContainer}>
       <Movement className={styles.movementIcon} size={24} />
       {message}
-      <IconButton
-        label={t('cancel', 'Cancel')}
-        kind={'secondary'}
-        className={styles.cancelTransferRequestButton}
-        size={'sm'}
-        onClick={launchCancelAdmissionForm}
-      >
-        <CloseOutlineIcon />
-      </IconButton>
+      {canEdit && (
+        <IconButton
+          label={t('cancel', 'Cancel')}
+          kind={'secondary'}
+          className={styles.cancelTransferRequestButton}
+          size={'sm'}
+          onClick={launchCancelAdmissionForm}
+        >
+          <CloseOutlineIcon />
+        </IconButton>
+      )}
     </div>
   );
 };

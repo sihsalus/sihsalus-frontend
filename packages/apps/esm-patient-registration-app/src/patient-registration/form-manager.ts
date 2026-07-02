@@ -19,14 +19,32 @@ import {
   deleteRelationship,
   generateIdentifier,
   getDatetime,
+  promotePersonToPatient,
   saveEncounter,
   savePatient,
   savePatientPhoto,
   savePatientPhotoAsAttachment,
+  savePerson,
   saveRelationship,
   updatePatientIdentifier,
   updateRelationship,
 } from './patient-registration.resource';
+import { fetchPersonForPromotion, isPersonAlreadyPatient } from './identity/identity-search.resource';
+import {
+  identityVerificationSourceConceptUuids,
+  identityVerificationStatusConceptUuids,
+  personIdentityVerificationSourceAttributeTypeUuid,
+  personIdentityVerificationStatusAttributeTypeUuid,
+  personIdentityVerifiedAtAttributeTypeUuid,
+} from './identity/identity-documents';
+import { verifyIdentityForPromotion } from './identity/identity-verification.resource';
+import {
+  buildDocumentIdentifierForPromotion,
+  getPersonDocument,
+  getPreferredAddress,
+  getPreferredName,
+} from './identity/promotion';
+import { buildResponsiblePersonPayload } from './section/patient-relationships/responsible-person.utils';
 import {
   type AddressProperties,
   type AttributeValue,
@@ -133,6 +151,20 @@ export class FormManager {
     currentUser,
     config,
   ) => {
+    if (values.personUuidToPromote) {
+      // Promotion needs the live backend: the already-a-patient pre-check and duplicate
+      // detection cannot run offline, and a queued promotion could collide with another
+      // operator promoting the same person.
+      throw {
+        responseBody: {
+          error: {
+            message:
+              'La promoción de una persona existente a paciente no está disponible sin conexión. Conéctese e intente nuevamente.',
+          },
+        },
+      };
+    }
+
     const syncItem: PatientRegistration = {
       fhirPatient: FormManager.mapPatientToFhirPatient(
         FormManager.getPatientToCreate(isNewPatient, values, patientUuidMap, initialAddressFieldValues, [], config),
@@ -175,6 +207,14 @@ export class FormManager {
     savePatientTransactionManager,
     _abortController,
   ) => {
+    const personUuidToPromote = isNewPatient ? values.personUuidToPromote : undefined;
+
+    if (personUuidToPromote && values.patientUuid !== personUuidToPromote) {
+      // The whole point of promotion is reusing the person's identity: never let a
+      // stray client-generated UUID replace it.
+      values = { ...values, patientUuid: personUuidToPromote };
+    }
+
     const patientIdentifiers: Array<PatientIdentifier> = await FormManager.savePatientIdentifiers(
       isNewPatient,
       values.patientUuid,
@@ -183,14 +223,38 @@ export class FormManager {
       currentLocation,
     );
 
+    let effectivePatientUuidMap = patientUuidMap;
+    let promotionAttributes: Array<AttributeValue> = [];
+
+    if (personUuidToPromote) {
+      const promotion = await FormManager.promoteExistingPerson(
+        personUuidToPromote,
+        patientIdentifiers,
+        currentLocation,
+        savePatientTransactionManager.patientSaved,
+      );
+      savePatientTransactionManager.patientSaved = true;
+      // Reuse the person's existing preferred name/address rows in the follow-up
+      // demographic update so it edits them instead of appending duplicates.
+      effectivePatientUuidMap = { ...patientUuidMap, ...promotion.patientUuidMap };
+      promotionAttributes = promotion.verificationAttributes;
+    }
+
     const createdPatient = FormManager.getPatientToCreate(
       isNewPatient,
       values,
-      patientUuidMap,
+      effectivePatientUuidMap,
       initialAddressFieldValues,
       patientIdentifiers,
       config,
     );
+
+    if (personUuidToPromote) {
+      // Identifiers were already created by the promotion call; re-sending them on the
+      // demographic update would duplicate them.
+      delete (createdPatient as Partial<Patient>).identifiers;
+      createdPatient.person.attributes = [...createdPatient.person.attributes, ...promotionAttributes];
+    }
 
     FormManager.getDeletedNames(values.patientUuid, patientUuidMap).forEach(async (name) => {
       await deletePersonName(name.nameUuid, name.personUuid);
@@ -203,11 +267,10 @@ export class FormManager {
 
     if (savePatientResponse.ok) {
       savePatientTransactionManager.patientSaved = true;
-      await this.saveRelationships(
-        values.relationships,
-        savePatientResponse,
-        config.relationshipOptions?.companionRelationshipType,
-      );
+      await this.saveRelationships(values.relationships, savePatientResponse, {
+        companionRelationshipType: config.relationshipOptions?.companionRelationshipType,
+        phoneAttributeTypeUuid: config.fieldConfigurations?.phone?.personAttributeUuid,
+      });
 
       await this.saveObservations(values.obs, savePatientResponse, currentLocation, currentUser, config);
 
@@ -244,63 +307,188 @@ export class FormManager {
     return savePatientResponse.data.uuid;
   };
 
+  /**
+   * Converts an existing person into a patient via `POST /patient` with the person
+   * UUID as a string, keeping that same UUID on the resulting patient.
+   *
+   * The backend accepts a second promotion of the same person and silently appends
+   * duplicate identifiers, so this always re-checks patient existence right before
+   * promoting (unless the promotion already succeeded within this submit transaction).
+   */
+  static async promoteExistingPerson(
+    personUuid: string,
+    patientIdentifiers: Array<PatientIdentifier>,
+    currentLocation: string,
+    alreadyPromotedInSession: boolean,
+  ): Promise<{ patientUuidMap: PatientUuidMapType; verificationAttributes: Array<AttributeValue> }> {
+    if (!alreadyPromotedInSession && (await isPersonAlreadyPatient(personUuid))) {
+      throw {
+        responseBody: {
+          error: {
+            message:
+              'Esta persona ya está registrada como paciente (posiblemente otro usuario la promovió). Búsquela en el buscador de pacientes en lugar de registrarla de nuevo.',
+          },
+        },
+      };
+    }
+
+    const person = await fetchPersonForPromotion(personUuid);
+    const verificationAttributes: Array<AttributeValue> = [];
+    const { documentTypeConceptUuid, documentNumber } = getPersonDocument(person);
+
+    if (documentTypeConceptUuid && documentNumber) {
+      // Identity verification hook. The identitylookup OMOD is not deployed yet, so the
+      // outcome is 'unavailable'/'not-applicable' today; once it is deployed, verified
+      // promotions will persist their verification state without further changes here.
+      try {
+        const outcome = await verifyIdentityForPromotion({
+          documentTypeConceptUuid,
+          documentNumber,
+          givenName: getPreferredName(person)?.givenName,
+          familyName: getPreferredName(person)?.familyName,
+          familyName2: getPreferredName(person)?.familyName2,
+          birthdate: person.birthdate,
+        });
+
+        if (outcome.status === 'verified') {
+          verificationAttributes.push(
+            {
+              attributeType: personIdentityVerificationStatusAttributeTypeUuid,
+              value: identityVerificationStatusConceptUuids.verifiedByReniec,
+            },
+            {
+              attributeType: personIdentityVerificationSourceAttributeTypeUuid,
+              value: identityVerificationSourceConceptUuids.reniec,
+            },
+            { attributeType: personIdentityVerifiedAtAttributeTypeUuid, value: outcome.verifiedAt },
+          );
+        } else if (outcome.status === 'mismatch') {
+          throw {
+            responseBody: {
+              error: {
+                message: `Los datos de la persona no coinciden con la fuente de verificación: ${outcome.observation}. Resuelva la discrepancia antes de promover.`,
+              },
+            },
+          };
+        }
+      } catch (error) {
+        if (typeof error === 'object' && error !== null && 'responseBody' in error) {
+          throw error;
+        }
+        // Verification unavailability must never block registration (doc: "no bloquear
+        // ante caídas"); the identity simply stays unverified.
+        console.warn('Identity verification is unavailable; continuing with promotion.', error);
+      }
+    }
+
+    if (!alreadyPromotedInSession) {
+      const identifiers = [...patientIdentifiers];
+      const documentIdentifier = buildDocumentIdentifierForPromotion(person, identifiers, currentLocation);
+
+      if (documentIdentifier) {
+        identifiers.push(documentIdentifier);
+      }
+
+      await promotePersonToPatient(personUuid, identifiers);
+    }
+
+    return {
+      patientUuidMap: {
+        preferredNameUuid: getPreferredName(person)?.uuid,
+        preferredAddressUuid: getPreferredAddress(person)?.uuid,
+      },
+      verificationAttributes,
+    };
+  }
+
   static async saveRelationships(
     relationships: Array<RelationshipValue>,
     savePatientResponse: FetchResponse,
-    companionRelationshipType?: string,
+    options: { companionRelationshipType?: string; phoneAttributeTypeUuid?: string } = {},
   ) {
     const thisPatientUuid = savePatientResponse.data.uuid;
-    const operations: Array<Promise<unknown>> = [];
 
-    relationships
+    const operations = relationships
       .filter((m) => m.relationshipType)
       .filter((relationship) => !!relationship.action)
-      .forEach(({ relatedPersonUuid, relationshipType, uuid: relationshipUuid, action, isCompanion, companionRelationshipUuid }) => {
-        const [type, direction] = relationshipType.split('/');
-        const isAToB = direction === 'aIsToB';
-        const relationshipToSave = {
-          personA: isAToB ? relatedPersonUuid : thisPatientUuid,
-          personB: isAToB ? thisPatientUuid : relatedPersonUuid,
-          relationshipType: type,
-        };
-
-        switch (action) {
-          case 'ADD':
-            operations.push(saveRelationship(relationshipToSave));
-            break;
-          case 'UPDATE':
-            operations.push(updateRelationship(relationshipUuid, relationshipToSave));
-            break;
-          case 'DELETE':
-            operations.push(deleteRelationship(relationshipUuid));
-            break;
-          default:
-            break;
-        }
-
-        // Companion (Acompañante) relationship: create it when the checkbox is
-        // ticked and none exists yet; delete it when unticked (or the whole row
-        // is removed) and one was previously saved.
-        if (companionRelationshipType) {
-          const [companionType, companionDirection] = companionRelationshipType.split('/');
-          const companionIsAToB = companionDirection === 'aIsToB';
-          const wantsCompanion = !!isCompanion && action !== 'DELETE';
-
-          if (wantsCompanion && !companionRelationshipUuid) {
-            operations.push(
-              saveRelationship({
-                personA: companionIsAToB ? relatedPersonUuid : thisPatientUuid,
-                personB: companionIsAToB ? thisPatientUuid : relatedPersonUuid,
-                relationshipType: companionType,
-              }),
-            );
-          } else if (!wantsCompanion && companionRelationshipUuid) {
-            operations.push(deleteRelationship(companionRelationshipUuid));
-          }
-        }
-      });
+      .map((relationship) => FormManager.saveRelationshipForRow(relationship, thisPatientUuid, options));
 
     return Promise.all(operations);
+  }
+
+  static async saveRelationshipForRow(
+    relationship: RelationshipValue,
+    thisPatientUuid: string,
+    options: { companionRelationshipType?: string; phoneAttributeTypeUuid?: string },
+  ) {
+    const { relationshipType, uuid: relationshipUuid, action, isCompanion, companionRelationshipUuid } = relationship;
+    let { relatedPersonUuid } = relationship;
+
+    // Pending responsible person: created here, right before its relationship, so an
+    // abandoned registration never leaves an orphaned person in the database.
+    if (!relatedPersonUuid && action === 'ADD' && relationship.newPerson) {
+      const savePersonResponse = await savePerson(
+        buildResponsiblePersonPayload(relationship.newPerson, {
+          phoneAttributeTypeUuid: options.phoneAttributeTypeUuid,
+        }),
+      );
+      relatedPersonUuid = savePersonResponse?.data?.uuid;
+
+      if (!relatedPersonUuid) {
+        throw new Error('The backend did not return a person UUID for the new responsible person');
+      }
+    }
+
+    if (!relatedPersonUuid && action !== 'DELETE') {
+      return;
+    }
+
+    const [type, direction] = relationshipType.split('/');
+    const isAToB = direction === 'aIsToB';
+    const relationshipToSave = {
+      personA: isAToB ? relatedPersonUuid : thisPatientUuid,
+      personB: isAToB ? thisPatientUuid : relatedPersonUuid,
+      relationshipType: type,
+    };
+
+    const rowOperations: Array<Promise<unknown>> = [];
+
+    switch (action) {
+      case 'ADD':
+        rowOperations.push(saveRelationship(relationshipToSave));
+        break;
+      case 'UPDATE':
+        rowOperations.push(updateRelationship(relationshipUuid, relationshipToSave));
+        break;
+      case 'DELETE':
+        rowOperations.push(deleteRelationship(relationshipUuid));
+        break;
+      default:
+        break;
+    }
+
+    // Companion (Acompañante) relationship: create it when the checkbox is
+    // ticked and none exists yet; delete it when unticked (or the whole row
+    // is removed) and one was previously saved.
+    if (options.companionRelationshipType) {
+      const [companionType, companionDirection] = options.companionRelationshipType.split('/');
+      const companionIsAToB = companionDirection === 'aIsToB';
+      const wantsCompanion = !!isCompanion && action !== 'DELETE';
+
+      if (wantsCompanion && !companionRelationshipUuid) {
+        rowOperations.push(
+          saveRelationship({
+            personA: companionIsAToB ? relatedPersonUuid : thisPatientUuid,
+            personB: companionIsAToB ? thisPatientUuid : relatedPersonUuid,
+            relationshipType: companionType,
+          }),
+        );
+      } else if (!wantsCompanion && companionRelationshipUuid) {
+        rowOperations.push(deleteRelationship(companionRelationshipUuid));
+      }
+    }
+
+    return Promise.all(rowOperations);
   }
 
   static async saveObservations(

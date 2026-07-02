@@ -3,6 +3,13 @@ import userEvent from '@testing-library/user-event';
 import { Form, Formik } from 'formik';
 import type React from 'react';
 
+import {
+  identityVerificationSourceConceptUuids,
+  identityVerificationStatusConceptUuids,
+  personIdentityVerificationSourceAttributeTypeUuid,
+  personIdentityVerificationStatusAttributeTypeUuid,
+} from '../../identity/identity-documents';
+import { fetchPersonForPromotion, searchLocalIdentityByDocument } from '../../identity/identity-search.resource';
 import { type FormValues } from '../../patient-registration.types';
 import { PatientRegistrationContext, type PatientRegistrationContextProps } from '../../patient-registration-context';
 import {
@@ -12,8 +19,16 @@ import {
   peruInsuranceAccreditationStatusAttributeTypeUuid,
   peruInsuranceCodeAttributeTypeUuid,
 } from '../../peru-registration-config';
-import { ReniecLookupField } from './reniec-lookup-field.component';
+import { IdentityLookupField } from './identity-lookup-field.component';
 import { SisLookupField } from './sis-lookup-field.component';
+
+vi.mock('../../identity/identity-search.resource', () => ({
+  searchLocalIdentityByDocument: vi.fn(),
+  fetchPersonForPromotion: vi.fn(),
+}));
+
+const mockSearchLocalIdentityByDocument = vi.mocked(searchLocalIdentityByDocument);
+const mockFetchPersonForPromotion = vi.mocked(fetchPersonForPromotion);
 
 function buildFormValues(identifierValue = '12345678') {
   return {
@@ -89,12 +104,77 @@ function renderLookup(component: React.ReactNode, values: FormValues = buildForm
   return { setFieldTouched, setFieldValue };
 }
 
-describe('ReniecLookupField', () => {
-  it('loads mock RENIEC data into the registration form', async () => {
-    const user = userEvent.setup();
-    const { setFieldTouched, setFieldValue } = renderLookup(<ReniecLookupField />);
+const lookupButtonName = /buscar en base local y reniec/i;
 
-    await user.click(screen.getByRole('button', { name: /buscar en reniec/i }));
+describe('IdentityLookupField', () => {
+  beforeEach(() => {
+    mockSearchLocalIdentityByDocument.mockResolvedValue([]);
+  });
+
+  it('warns and offers opening the patient when the document belongs to an existing patient', async () => {
+    const user = userEvent.setup();
+    mockSearchLocalIdentityByDocument.mockResolvedValue([
+      {
+        kind: 'patient',
+        uuid: 'patient-uuid',
+        display: 'Maria Quispe',
+        identifier: '12345678',
+        identifierTypeUuid: peruDniPatientIdentifierTypeUuid,
+      },
+    ]);
+    const { setFieldValue } = renderLookup(<IdentityLookupField />);
+
+    await user.click(screen.getByRole('button', { name: lookupButtonName }));
+
+    await waitFor(() =>
+      expect(screen.getByText(/ya existe un paciente con este documento/i)).toBeInTheDocument(),
+    );
+    expect(screen.getByRole('button', { name: /abrir paciente existente/i })).toBeInTheDocument();
+    expect(setFieldValue).not.toHaveBeenCalled();
+  });
+
+  it('offers promotion and hydrates the form when the document belongs to a non-patient person', async () => {
+    const user = userEvent.setup();
+    mockSearchLocalIdentityByDocument.mockResolvedValue([
+      {
+        kind: 'person',
+        uuid: 'person-uuid',
+        display: 'Rosa Flores',
+        documentNumber: '12345678',
+      },
+    ]);
+    mockFetchPersonForPromotion.mockResolvedValue({
+      uuid: 'person-uuid',
+      display: 'Rosa Flores',
+      gender: 'F',
+      birthdate: '1986-01-01',
+      birthdateEstimated: false,
+      names: [{ uuid: 'name-uuid', preferred: true, givenName: 'Rosa', familyName: 'Flores' }],
+      addresses: [],
+      attributes: [],
+    });
+    const { setFieldValue } = renderLookup(<IdentityLookupField />);
+
+    await user.click(screen.getByRole('button', { name: lookupButtonName }));
+
+    await waitFor(() =>
+      expect(screen.getByText(/existe una persona registrada \(no paciente\)/i)).toBeInTheDocument(),
+    );
+
+    await user.click(screen.getByRole('button', { name: /registrar como paciente/i }));
+
+    await waitFor(() => expect(setFieldValue).toHaveBeenCalledWith('patientUuid', 'person-uuid', false));
+    expect(setFieldValue).toHaveBeenCalledWith('personUuidToPromote', 'person-uuid', false);
+    expect(setFieldValue).toHaveBeenCalledWith('givenName', 'Rosa', false);
+    expect(setFieldValue).toHaveBeenCalledWith('familyName', 'Flores', false);
+    expect(setFieldValue).toHaveBeenCalledWith('gender', 'female', false);
+  });
+
+  it('falls back to RENIEC and marks the identity as verified when there are no local matches', async () => {
+    const user = userEvent.setup();
+    const { setFieldTouched, setFieldValue } = renderLookup(<IdentityLookupField />);
+
+    await user.click(screen.getByRole('button', { name: lookupButtonName }));
 
     await waitFor(() => expect(setFieldValue).toHaveBeenCalledWith('givenName', 'Juan', false));
 
@@ -102,9 +182,16 @@ describe('ReniecLookupField', () => {
     expect(setFieldValue).toHaveBeenCalledWith('familyName', 'Perez', false);
     expect(setFieldValue).toHaveBeenCalledWith('familyName2', 'Garcia', false);
     expect(setFieldValue).toHaveBeenCalledWith('gender', 'male', false);
-    expect(setFieldValue).toHaveBeenCalledWith('birthdateEstimated', false, false);
-    expect(setFieldValue).toHaveBeenCalledWith('yearsEstimated', 0, false);
-    expect(setFieldValue).toHaveBeenCalledWith('monthsEstimated', '', false);
+    expect(setFieldValue).toHaveBeenCalledWith(
+      `attributes.${personIdentityVerificationStatusAttributeTypeUuid}`,
+      identityVerificationStatusConceptUuids.verifiedByReniec,
+      false,
+    );
+    expect(setFieldValue).toHaveBeenCalledWith(
+      `attributes.${personIdentityVerificationSourceAttributeTypeUuid}`,
+      identityVerificationSourceConceptUuids.reniec,
+      false,
+    );
     expect(setFieldTouched).toHaveBeenCalledWith('givenName', true, false);
     expect(screen.getByText('Datos RENIEC cargados')).toBeInTheDocument();
 
@@ -112,23 +199,26 @@ describe('ReniecLookupField', () => {
     expect(birthdateCall?.[1]).toEqual(new Date(1990, 4, 14));
   });
 
-  it('validates the DNI before searching RENIEC', async () => {
+  it('validates the document number before searching', async () => {
     const user = userEvent.setup();
-    const { setFieldValue } = renderLookup(<ReniecLookupField />, buildFormValues('123'));
+    const { setFieldValue } = renderLookup(<IdentityLookupField />, buildFormValues('123'));
 
-    await user.click(screen.getByRole('button', { name: /buscar en reniec/i }));
+    await user.click(screen.getByRole('button', { name: lookupButtonName }));
 
-    expect(screen.getByText('El DNI debe tener 8 dígitos')).toBeInTheDocument();
+    expect(screen.getByText(/no tiene el formato esperado/i)).toBeInTheDocument();
+    expect(mockSearchLocalIdentityByDocument).not.toHaveBeenCalled();
     expect(setFieldValue).not.toHaveBeenCalled();
   });
 
-  it('does not modify the form when the RENIEC mock has no matching DNI', async () => {
+  it('asks for manual registration when there are no local matches and RENIEC has no data', async () => {
     const user = userEvent.setup();
-    const { setFieldValue } = renderLookup(<ReniecLookupField />, buildFormValues('11111111'));
+    const { setFieldValue } = renderLookup(<IdentityLookupField />, buildFormValues('11111111'));
 
-    await user.click(screen.getByRole('button', { name: /buscar en reniec/i }));
+    await user.click(screen.getByRole('button', { name: lookupButtonName }));
 
-    await waitFor(() => expect(screen.getByText('No se encontraron datos RENIEC')).toBeInTheDocument());
+    await waitFor(() =>
+      expect(screen.getByText(/sin coincidencias locales ni datos reniec/i)).toBeInTheDocument(),
+    );
     expect(setFieldValue).not.toHaveBeenCalled();
   });
 });

@@ -1,20 +1,11 @@
+import type { NewResponsiblePersonValues } from '../../patient-registration.types';
 import { patientFamilyNameMaxLength, patientGivenNameMaxLength } from '../../patient-name-limits';
 
 const personNameRegex = /^\p{L}[\p{L}\p{M}'.\- ]*$/u;
 const estimatedAgeRegex = /^(?:[0-9]|[1-9][0-9]|1[01][0-9]|120)$/;
 const peruContactPhoneRegex = /^(?:(?:\+51)?9[0-9]{8}|(?:\+51)?[1-8][0-9]{7}|0[1-8][0-9]{7})$/;
 
-export interface ResponsiblePersonFormValues {
-  givenName: string;
-  middleName: string;
-  familyName: string;
-  familyName2: string;
-  gender: string;
-  estimatedAge: string;
-  phone: string;
-  address: string;
-  relationshipType: string;
-}
+export type ResponsiblePersonFormValues = NewResponsiblePersonValues;
 
 export type ResponsiblePersonValidationErrors = Partial<Record<keyof ResponsiblePersonFormValues, string>>;
 

@@ -1,8 +1,34 @@
 # Responsable, identidad documental y promoción a paciente
 
-Estado: propuesta de diseño y matriz de pruebas  
+Estado: implementación inicial (sección 0 + mecanismo de promoción + responsable al submit)  
 Dominio: admisión, registro de pacientes, responsable/acompañante, identidad civil  
-Fecha: 2026-06-30
+Fecha: 2026-06-30 (diseño), 2026-07-02 (implementación inicial)
+
+## Estado de implementación (2026-07-02)
+
+Implementado en `esm-patient-registration-app`:
+
+- `identity/identity-documents.ts`: UUIDs de los `PersonAttributeType` documentales ya cargados en `sihsalus-content` y verificados contra el backend (tipo de documento `6f5c0b8a…`, número `c0d1a2b3…`, estado `a7e3f8c1…`, fuente `e2a9c7b1…`, fecha `4a9e2c7f…`, observación `d3e5b4d9…`), conceptos de tipo documental, estados y fuentes de verificación, mapeo tipo documental → `PatientIdentifierType` con el mismo regex del identificador, y normalización de números.
+- `identity/identity-search.resource.ts`: búsqueda local por documento — paciente por identificador exacto y persona por atributo documental searchable (verificado que `GET /person?q=<número>` matchea el atributo) — más `isPersonAlreadyPatient` y `fetchPersonForPromotion`.
+- `identity/promotion.ts`: hidratación del formulario con una persona existente (mismo UUID, sin `v4()` nuevo) y mapeo del documento primario a identificador durante la promoción, sin duplicar tipos ya presentes en el payload.
+- `identity/identity-verification.resource.ts`: hook de verificación listo pero inactivo; el OMOD identitylookup aún no está desplegado, por lo que hoy devuelve `unavailable`/`not-applicable` y la identidad queda no verificada. Cuando exista el endpoint, la promoción persistirá estado/fuente/fecha de verificación sin más cambios en el flujo.
+- Sección 0 (`identity-lookup-field.component.tsx`): la acción ahora es `Buscar/validar identidad` y resuelve en orden: paciente local (ofrece abrir el paciente y evita el duplicado), persona local no paciente (ofrece `Registrar como paciente`, que precarga el formulario en modo promoción), y recién entonces RENIEC (mock actual) solo para DNI. Deshabilitada offline.
+- Modo promoción en `form-manager.ts` (`promoteExistingPerson`): pre-check de "ya es paciente", `POST /patient` con `person: "<uuid>"` string + identificadores (incluida la HC autogenerada por IdGen y el documento primario mapeado), y actualización demográfica posterior reutilizando los UUID de nombre/dirección preferidos para no duplicar filas. Bloqueado offline. Entrada adicional por URL: `patient-registration?promotePerson=<personUuid>`.
+- Responsable sin huérfanos: la `Person` del responsable nuevo ya no se crea al hacer clic; queda pendiente en la fila de relación (`newPerson`) y se crea al enviar el formulario, inmediatamente antes de su `Relationship`.
+
+Hallazgos verificados contra el backend (100.120.80.60, 2026-07-02):
+
+- `POST /patient` con `person` como string promueve conservando el UUID (`patient.uuid == person.uuid`).
+- `N° Historia Clínica` es identificador obligatorio: toda promoción debe incluir HC; existe fuente IdGen (`Generator for SIHSALUS`) con dígito verificador.
+- El backend NO rechaza promover a alguien que ya es paciente: un segundo `POST /patient` agrega identificadores duplicados en silencio. El pre-check en frontend es obligatorio (caso P-007).
+- La búsqueda `GET /person?q=<número>` sí matchea el atributo searchable `Código de Documento de Identidad`.
+
+Pendiente (sin cambios respecto al diseño):
+
+- OMOD identitylookup (RENIEC real) y bloqueo de edición de datos validados.
+- Fase 2: etiquetado de tipo de entidad (paciente/persona/proveedor) en la búsqueda de responsable.
+- Múltiples documentos activos por persona (requiere diseño adicional).
+- SIS real y estados de acreditación desde SETISIS.
 
 ## Resumen ejecutivo
 
@@ -31,12 +57,11 @@ El app de registro ya tiene una separación relevante:
 
 - El buscador global de pacientes usa `GET /ws/rest/v1/patient?q=...`. Por eso solo debe mostrar pacientes.
 - El buscador de responsable dentro de admisión usa `GET /patient?q=...` y `GET /person?q=...`. Por eso puede encontrar pacientes, personas no pacientes, proveedores y potencialmente usuarios/staff si el backend los indexa como personas.
-- El responsable nuevo se crea hoy con `POST /person`.
-- La relación se guarda con `POST /relationship`.
+- El responsable nuevo se registra en el formulario y su `Person` se crea al enviar el registro (`POST /person` seguido de `POST /relationship`), nunca antes, para no dejar personas huérfanas.
 - El paciente nuevo se crea con `POST /patient`.
-- El flujo actual de paciente nuevo genera un `uuid` nuevo, por lo que todavía no soporta promocionar una `Person` existente desde la UI principal.
+- El formulario ahora soporta promoción: cuando la sección 0 encuentra una `Person` no paciente (o se abre con `?promotePerson=<uuid>`), el submit reutiliza ese UUID con `POST /patient` + `person: "<uuid>"` en lugar de generar uno nuevo.
 
-Este documento describe cómo cerrar esa brecha sin romper la semántica de OpenMRS.
+Este documento describe el diseño completo; ver `Estado de implementación` arriba para lo ya construido.
 
 ## Glosario
 
@@ -54,7 +79,7 @@ Este documento describe cómo cerrar esa brecha sin romper la semántica de Open
 ## Principios de diseño
 
 1. No crear pacientes falsos.
-   Una persona no debe entrar al universo de pacientes solo por acompañar a otra persona.
+   Una persona no debe entrar al universo de pacientes solo por acompañar a otra persona. Los pacientes se cargan temporalmente desde un csv en otro modulo. Pero evantualmente desde reniec.
 
 2. No perder identidad humana.
    Si un responsable luego se atiende, debe reutilizarse la misma persona, no crear un duplicado.
@@ -63,13 +88,13 @@ Este documento describe cómo cerrar esa brecha sin romper la semántica de Open
    Nombre, teléfono, dirección o edad no bastan para convertir una persona en paciente sin confirmación humana.
 
 4. Documentos civiles pueden ser múltiples.
-   Una persona puede tener DNI, CE, pasaporte u otros documentos en momentos distintos o simultáneamente.
+   ¿Una persona puede tener DNI, CE, pasaporte u otros documentos en momentos distintos o simultáneamente?
 
 5. RENIEC verifica DNI, no identidad universal.
-   RENIEC debe reforzar decisiones para DNI peruano, pero no resolver CE, pasaporte, personas sin documento o documentos vencidos.
+   RENIEC debe reforzar decisiones para DNI peruano, pero no resolver CE, pasaporte, personas sin documento o documentos vencidos. Una vez validado, los datos del paciente no deberian poder editarse salvo algun privilegio especial.
 
-6. El buscador debe distinguir el tipo de entidad.
-   Resultado paciente, persona no paciente, proveedor/staff y posible duplicado deben verse distinto.
+6. El buscador de la pantalla de registro debe distinguir el tipo de entidad.
+   Resultado persona que es paciente, persona que no es paciente, persona que es proveedor/staff.
 
 7. Staff y proveedores son `Person`.
    Doctores, enfermeros, usuarios y proveedores pueden aparecer en búsqueda de personas. No deben convertirse accidentalmente en pacientes.
@@ -218,6 +243,15 @@ es frágil porque:
 
 En `/Users/duvet05/Downloads/sihsalus-content/configuration/backend_configuration/personattributetypes/personattributetypes.csv` no existen hoy atributos de persona para documento civil. Los atributos existentes cubren teléfono, celular, email, filiación administrativa, seguro, historia clínica, no identificado, responsable de emergencia, estado de identificación, PNS, etc.
 
+Existe metadata documental para profesionales en `/Users/duvet05/Downloads/sihsalus-content/configuration/backend_configuration/attributetypes/attribute_types.csv`, pero son atributos de `Provider`:
+
+- `Tipo de Documento de Identidad`;
+- `Número de Documento de Identidad`;
+- `País Emisor del Documento`;
+- nombres, apellidos, fecha de nacimiento y sexo del profesional.
+
+Eso sirve para RENHICE/proveedores, no para responsables ni personas generales. No debe reutilizarse como si fuera identidad civil de `Person`; si un doctor aparece en búsqueda de responsables, su documento de provider puede ayudar a etiquetar o comparar, pero el flujo de responsable/promoción necesita `PersonAttributeType` propio.
+
 En cambio, `/Users/duvet05/Downloads/sihsalus-content/configuration/backend_configuration/patientidentifiertypes/patientidentifiertypes.csv` ya tiene tipos de identificador de paciente para:
 
 - `DNI`, con regex `^[0-9]{8}$` y unicidad `UNIQUE`;
@@ -234,21 +268,21 @@ Para el alcance inmediato, agregar en `sihsalus-content` atributos de persona pa
 
 1. `Tipo de documento de identidad`
    - `Format`: `org.openmrs.Concept`
-   - `Foreign`: set de conceptos de tipos de documento (`DNI`, `CE`, `PASS`, `DIE`, `CNV`, `SIN DOCUMENTO` si se decide)
+   - `Foreign`: set de conceptos de tipos de documento (`DNI`, `CE`, `PASS`, `DIE`, `CNV`, `SIN DOCUMENTO` si se decide). Validar en OCL que el concepto exista y dejarlo configurable. revisar el concept set.
    - `Searchable`: `true` si la búsqueda por atributo codificado funciona correctamente en el backend instalado.
 
-2. `Número de documento de identidad`
+2. `Número/codigo de documento de identidad`
    - `Format`: `java.lang.String`
    - `Searchable`: `true`
    - Se guarda normalizado: sin espacios ni guiones, mayúsculas para documentos alfanuméricos.
 
 3. `Estado de verificación de identidad`
    - Preferible `Format`: `org.openmrs.Concept`
-   - Valores sugeridos: `No verificado`, `Validado por RENIEC`, `Validado localmente`, `Conflicto`, `No aplica`.
+   - Valores sugeridos: `No verificado`, `Validado`.
 
-4. `Fuente de verificación de identidad`
+4. `Ente de verificación de identidad`
    - Opcional, `Format`: `org.openmrs.Concept` o `java.lang.String`
-   - Valores: `RENIEC`, `SIS`, `Operador`, `Carga CSV`, `Migraciones`, `Desconocido`.
+   - Valores: `RENIEC`, `MANUAL`, `Carga Masiva`, `MIGRACIONES`, `Sin fuente`.
 
 5. `Fecha/hora de verificación de identidad`
    - Opcional, `Format`: `java.lang.String` con ISO 8601.
@@ -266,7 +300,7 @@ Ventajas:
 
 Limitaciones:
 
-- `PersonAttributeType` no trae columna de regex ni validator como `PatientIdentifierType`;
+- `PersonAttributeType` no trae columna de regex ni validator como `PatientIdentifierType`; pero se puede usar el PatientIdentifierType como fuente de verdad para el regex creo.
 - la validación de formato para `PersonAttribute` debe vivir en frontend, servicio backend propio o proceso de importación;
 - no garantiza unicidad a nivel base de datos;
 - con solo un par `tipo + número`, no representa múltiples documentos activos;
@@ -505,7 +539,7 @@ Debe buscar en tres capas:
 
 1. Documento fuerte:
    - paciente por identificador;
-   - persona por atributo documental;
+   - persona por `Tipo de documento de identidad` + `Número de documento de identidad`;
    - RENIEC si DNI.
 2. Coincidencia media:
    - nombre + fecha nacimiento;
@@ -656,7 +690,7 @@ Resultado esperado:
 
 1. Registrar documento tipo CE.
 2. No consultar RENIEC.
-3. Buscar duplicados locales por atributo `foreignResidentCardNumber`.
+3. Buscar duplicados locales por `Tipo de documento de identidad = CE` + `Número de documento de identidad`.
 4. Crear o seleccionar persona.
 5. Si luego se atiende, mapear CE a `PatientIdentifier` tipo CE.
 
@@ -664,7 +698,7 @@ Resultado esperado:
 
 - CE no se pierde;
 - no se fuerza DNI;
-- si tiene también pasaporte, ambos pueden coexistir si se usan atributos por tipo.
+- si el proyecto exige registrar CE y pasaporte simultáneamente, se requiere diseño adicional fuera del alcance inmediato.
 
 ### UC-07: Responsable con más de un documento
 
@@ -676,9 +710,10 @@ Ejemplo:
 
 Resultado esperado:
 
-- no usar `documentType/documentNumber`;
-- guardar cada número en atributo específico;
-- al promover, crear múltiples identificadores si aplica y elegir uno preferido según configuración.
+- el modelo inmediato solo guarda un documento primario;
+- no intentar guardar varios documentos repitiendo el mismo par de atributos;
+- para múltiples documentos activos, definir antes una entidad documental o atributos separados por tipo;
+- al promover, crear el identificador del documento primario y resolver documentos adicionales con una regla explícita.
 
 ### UC-08: Doctor existente seleccionado como responsable
 
@@ -766,8 +801,8 @@ Resultado esperado:
 | ID | Caso | Precondición | Acción | Resultado esperado |
 | --- | --- | --- | --- | --- |
 | R-001 | Responsable nuevo sin doc | Paciente menor | Crear responsable | Crea `Person`, no `Patient` |
-| R-002 | Responsable nuevo con DNI | RENIEC disponible | Consultar y crear | Crea `Person` con DNI attribute verificado |
-| R-003 | Responsable nuevo con CE | CE no existe localmente | Crear | Crea `Person` con CE attribute |
+| R-002 | Responsable nuevo con DNI | RENIEC disponible | Consultar y crear | Crea `Person` con tipo documento DNI, número y estado verificado |
+| R-003 | Responsable nuevo con CE | CE no existe localmente | Crear | Crea `Person` con tipo documento CE, número y estado no verificado/validado localmente |
 | R-004 | Responsable ya paciente | Existe paciente | Seleccionar | Relación al `person.uuid` existente |
 | R-005 | Responsable ya persona | Existe persona no paciente | Seleccionar | Relación al `person.uuid` existente |
 | R-006 | Responsable menor para menor | Persona tiene edad < 18 | Seleccionar | Bloquea o advierte según regla |
@@ -781,9 +816,9 @@ Resultado esperado:
 | ID | Caso | Precondición | Acción | Resultado esperado |
 | --- | --- | --- | --- | --- |
 | P-001 | Promoción básica | Existe `Person` no paciente | Promover con HC | Crea `Patient` mismo UUID |
-| P-002 | Promoción con DNI | Person tiene `dniNumber` | Promover | Crea DNI `PatientIdentifier` |
-| P-003 | Promoción con CE | Person tiene CE | Promover | Crea CE `PatientIdentifier` |
-| P-004 | Promoción con múltiples docs | Person tiene DNI y pasaporte | Promover | Crea identificadores configurados |
+| P-002 | Promoción con DNI | Person tiene tipo documento DNI y número | Promover | Crea DNI `PatientIdentifier` |
+| P-003 | Promoción con CE | Person tiene tipo documento CE y número | Promover | Crea CE `PatientIdentifier` |
+| P-004 | Promoción con documento primario | Person tiene documento primario no duplicado | Promover | Crea el `PatientIdentifier` configurado para ese tipo |
 | P-005 | Promoción sin doc | Person sin documento | Promover | Crea HC o temporal |
 | P-006 | Promoción de provider | Person es provider | Promover con confirmación | Conserva provider y crea patient |
 | P-007 | Promoción concurrente | Dos usuarios promueven mismo person | Guardar ambos | Uno gana, otro recibe conflicto/ya paciente |
@@ -837,14 +872,14 @@ Resultado esperado:
 1. `fetchPerson` deduplica paciente y persona por `person.uuid`.
 2. `fetchPerson` preserva `uuid` de persona, no `patient.uuid` si el paciente trae `person.uuid`.
 3. `buildResponsiblePersonPayload` no incluye identificadores de paciente.
-4. `buildResponsiblePersonPayload` permite atributos documentales separados por tipo si se implementan.
+4. `buildResponsiblePersonPayload` permite `Tipo de documento de identidad`, `Número de documento de identidad` y estado/fuente de verificación si están configurados.
 5. Validación bloquea responsable menor cuando el paciente menor requiere adulto.
 6. Validación no exige DNI/CE para responsable.
 7. Validación permite CE/pasaporte con reglas configurables.
 8. Promoción arma payload con `person: existingPersonUuid`, no `person: { uuid: ... }` si se usa el modo recomendado REST.
 9. Promoción no genera nuevo `v4()` cuando viene de persona existente.
-10. Promoción mapea `dniNumber` a identifier type DNI.
-11. Promoción mapea `foreignResidentCardNumber` a identifier type CE.
+10. Promoción mapea tipo documental `DNI` a identifier type DNI.
+11. Promoción mapea tipo documental `CE` a identifier type CE.
 12. Promoción no crea identificadores duplicados si la persona ya fue promovida.
 
 ### Integration tests con mock backend
@@ -1112,13 +1147,30 @@ Acciones:
 
 ### Fase 3: documentos de responsable
 
-- Definir atributos configurables:
-  - `responsibleDniAttributeTypeUuid`;
-  - `responsibleForeignResidentCardAttributeTypeUuid`;
-  - `responsiblePassportAttributeTypeUuid`.
+- Agregar en `sihsalus-content/configuration/backend_configuration/personattributetypes/personattributetypes.csv` atributos de persona:
+  - `Tipo de documento de identidad`, `org.openmrs.Concept`, searchable;
+  - `Número de documento de identidad`, `java.lang.String`, searchable;
+  - `Estado de verificación de identidad`, preferible `org.openmrs.Concept`;
+  - `Fuente de verificación de identidad`, opcional;
+  - `Fecha/hora de verificación de identidad`, opcional.
+- Definir el set de conceptos de tipo documental y mapear cada respuesta a `PatientIdentifierType`:
+  - DNI -> `550e8400-e29b-41d4-a716-446655440001`;
+  - CE -> `550e8400-e29b-41d4-a716-446655440002`;
+  - PASS -> `550e8400-e29b-41d4-a716-446655440003`;
+  - DIE -> `8d793bee-c2cc-11de-8d13-0010c6dffd0f`;
+  - CNV -> `8d79403a-c2cc-11de-8d13-0010c6dffd0f`.
+- Definir configuración frontend:
+  - `personDocumentTypeAttributeTypeUuid`;
+  - `personDocumentNumberAttributeTypeUuid`;
+  - `personIdentityVerificationStatusAttributeTypeUuid`;
+  - `personIdentityVerificationSourceAttributeTypeUuid`;
+  - `personIdentityVerifiedAtAttributeTypeUuid`;
+  - mapping `documentTypeConceptUuid -> patientIdentifierTypeUuid`;
+  - mapping `documentTypeConceptUuid -> validationRegex`.
 - Validar formato por tipo.
 - Buscar duplicados por atributo si OpenMRS lo soporta bien con `searchable`.
-- No usar par `documentType/documentNumber` como persistencia primaria.
+- Reconocer limitación: `PersonAttributeType` no tiene validator/regex en el CSV actual; si se necesita enforcement fuerte antes de promoción, debe existir endpoint/importador backend que valide.
+- No guardar documentos de responsable como `PatientIdentifier` hasta que esa persona se convierta en paciente.
 
 ### Fase 4: promoción
 
@@ -1139,6 +1191,19 @@ Acciones:
 - Integrar con búsqueda local antes de crear.
 - No bloquear ante caídas.
 
+## Módulos a revisar antes de implementar
+
+El cambio no debe quedarse solo en la pantalla visual de admisión. Hay que revisar:
+
+- `esm-patient-registration-app`: sección 0, responsable, payload `Person`, promoción, validaciones, RENIEC/SIS, importación CSV.
+- `esm-patient-search-app`: debe seguir mostrando solo pacientes; no debe empezar a listar responsables no atendidos.
+- `esm-care-logbook-app`: búsquedas por documento/MRN/responsable en admisión y merge de historias duplicadas.
+- `esm-ficha-familiar-app`: contactos y relaciones pueden crear personas; debe evitar duplicar una persona ya encontrada por documento.
+- `esm-user-onboarding-app` y provider/admin: profesionales usan `Provider` attributes, no `PersonAttributeType`; si se busca por documento, hay que decidir si se espeja o solo se etiqueta.
+- `esm-patient-banner-app`, `esm-generic-patient-widgets-app`, `esm-ward-app`, `esm-dispensing-app`: consumen o imprimen identificadores del paciente; no deben esperar documentos de responsable como `PatientIdentifier`.
+- `esm-offline-tools-app` y `packages/libs/esm-offline`: offline puede registrar datos manuales, pero no debe validar RENIEC ni promover personas.
+- reportes/exportaciones: distinguir paciente con identificador formal de persona responsable con atributo documental.
+
 ## Criterios de aceptación
 
 1. Un responsable nuevo sin atención se guarda como `Person`, no como `Patient`.
@@ -1152,8 +1217,8 @@ Acciones:
 9. RENIEC nunca crea ni promociona automáticamente.
 10. SIS no marca identidad como verificada por RENIEC.
 11. CE y pasaporte no dependen de RENIEC.
-12. Una persona puede tener más de un documento civil.
-13. No se guarda `documentType/documentNumber` como par frágil si se necesita soportar múltiples documentos.
+12. El alcance inmediato soporta un documento primario por persona para búsqueda/promoción.
+13. Si se requiere múltiples documentos civiles activos, se debe diseñar una entidad documental o atributos separados por tipo antes de implementarlo.
 14. Offline no permite promoción.
 15. Los tests cubren duplicados, provider/person y RENIEC/SIS no disponibles.
 
@@ -1166,6 +1231,8 @@ Mantener el modelo OpenMRS:
 - `Patient` solo cuando hay atención clínica.
 - Promoción explícita para convertir `Person` existente en `Patient`.
 
-Implementar atributos documentales separados por tipo como solución intermedia para DNI/CE/pasaporte en responsables no pacientes. No usar `documentType` + `documentNumber` salvo como estado transitorio de UI.
+Implementar en `sihsalus-content` atributos de persona para tipo de documento, número de documento y estado/fuente de verificación. Esa es la solución intermedia correcta para responsable no paciente: permite búsqueda local y promoción sin convertir acompañantes en pacientes.
+
+No asumir que esos atributos tendrán regex garantizado por OpenMRS. La validación fuerte ya existe en `PatientIdentifierType`; para `PersonAttribute` se necesita validación en frontend y, si el dato entra por CSV/webservice, validación en backend/importador.
 
 Tratar providers/doctores/users como casos especiales de `Person`: visibles, etiquetados, seleccionables con confirmación, y promocionables solo bajo acción explícita.

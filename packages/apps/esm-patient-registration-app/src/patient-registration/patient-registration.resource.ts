@@ -75,6 +75,27 @@ export function savePatient(patient: Patient | null, updatePatientUuid?: string)
   });
 }
 
+/**
+ * Promotes an existing person to patient. `person` must be the person UUID as a plain
+ * string — sending a nested `person: { uuid }` object would make the backend try to
+ * create a brand-new person. The promoted patient keeps the same UUID as the person.
+ */
+export function promotePersonToPatient(personUuid: string, identifiers: Array<PatientIdentifier>) {
+  const abortController = new AbortController();
+
+  return openmrsFetch(`${restBaseUrl}/patient`, {
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    method: 'POST',
+    body: {
+      person: personUuid,
+      identifiers,
+    },
+    signal: abortController.signal,
+  });
+}
+
 export function saveEncounter(encounter: Encounter) {
   const abortController = new AbortController();
 

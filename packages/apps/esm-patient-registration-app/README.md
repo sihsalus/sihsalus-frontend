@@ -20,7 +20,19 @@ Modelo de persistencia:
 - El responsable se registra como `Person` de OpenMRS y se vincula al paciente con `Relationship`.
 - No se crea `Patient`, identificador ni historia clínica para el responsable solo por acompañar o representar al paciente.
 - La sección Perú `Acompañante o responsable` no muestra ni valida los atributos textuales históricos `Nombre/Edad/Parentesco del acompañante`; el flujo operativo usa solo la relación estructurada.
-- Para evitar personas huérfanas, el frontend exige seleccionar el tipo de relación antes de crear una nueva persona responsable.
+- Para evitar personas huérfanas, el frontend exige seleccionar el tipo de relación y crea la `Person` del responsable recién al enviar el registro, junto con su `Relationship`.
+
+Identidad documental y promoción (implementado):
+
+- `sihsalus-content` ya define los `PersonAttributeType` de documento civil (tipo, número, estado/fuente/fecha de verificación); los UUIDs viven en `src/patient-registration/identity/identity-documents.ts`.
+- La sección 0 (`Buscar/validar identidad`) busca primero en base local: paciente por `PatientIdentifier` y persona por atributo documental; RENIEC (mock hasta que se despliegue el OMOD identitylookup) solo aplica a DNI y solo si no hay coincidencias locales.
+- Si el documento pertenece a una `Person` no paciente, el formulario ofrece `Registrar como paciente`: la promoción reutiliza el mismo UUID (`POST /patient` con `person: "<uuid>"`), crea la HC autogenerada y convierte el documento primario en `PatientIdentifier`. También se puede entrar con `patient-registration?promotePerson=<uuid>`.
+- El frontend verifica antes de promover que la persona no sea ya paciente: el backend acepta promociones repetidas y duplica identificadores en silencio.
+- La promoción está bloqueada offline.
+- Al validar por RENIEC, bloquear edición en UI de documento y datos demográficos salvo corrección autorizada (pendiente del OMOD).
+- No guardar documentos de responsables como `PatientIdentifier` hasta que sean pacientes.
+
+Para el análisis completo de identidad documental, RENIEC/SIS, promoción de `Person` a `Patient`, búsqueda de responsables y casos de proveedores/doctores como `Person`, ver [responsible-person-identity-and-promotion.md](./docs/responsible-person-identity-and-promotion.md).
 
 ## Identificadores temporales
 

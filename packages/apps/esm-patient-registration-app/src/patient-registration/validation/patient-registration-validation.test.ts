@@ -39,7 +39,7 @@ describe('Patient registration validation', () => {
       },
       relationshipOptions: {
         minorResponsibleRelationshipTypes: [
-          '8d91a210-c2cc-11de-8d13-0010c6dffdff/aIsToB',
+          'e6be4def-dbc8-462a-8714-53da66903cb8/aIsToB',
           '8d91a210-c2cc-11de-8d13-0010c6dffd0f/aIsToB',
           '057de23f-3d9c-4314-9391-4452970739c6/aIsToB',
         ],
@@ -464,7 +464,7 @@ describe('Patient registration validation', () => {
         {
           action: 'ADD',
           relatedPersonUuid: '11524ae7-3ef6-4ab6-aff6-804ffc58704a',
-          relationshipType: '8d91a210-c2cc-11de-8d13-0010c6dffdff/aIsToB',
+          relationshipType: 'e6be4def-dbc8-462a-8714-53da66903cb8/aIsToB',
         },
       ],
     };
@@ -480,7 +480,7 @@ describe('Patient registration validation', () => {
         {
           action: 'ADD',
           relatedPersonUuid: '11524ae7-3ef6-4ab6-aff6-804ffc58704a',
-          relationshipType: '8d91a210-c2cc-11de-8d13-0010c6dffdff/bIsToA',
+          relationshipType: 'e6be4def-dbc8-462a-8714-53da66903cb8/bIsToA',
         },
       ],
     };

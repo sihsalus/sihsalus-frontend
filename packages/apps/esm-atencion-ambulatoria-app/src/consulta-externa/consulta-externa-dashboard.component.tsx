@@ -1,14 +1,13 @@
 import { Layer, Tab, TabList, TabPanel, TabPanels, Tabs, Tile } from '@carbon/react';
+import { ExtensionSlot } from '@openmrs/esm-framework';
 import { Activity, Catalog, DocumentMultiple_01, ListChecked } from '@carbon/react/icons';
 import React from 'react';
 import { useTranslation } from 'react-i18next';
 import Anamnesis from './anamnesis.component';
 import styles from './consulta-externa-dashboard.scss';
 import DiagnosticoClasificado from './diagnostico-clasificado.component';
-import MotivoConsulta from './motivo-consulta.component';
 import NotasSoap from './notas-soap.component';
 import PlanTratamiento from './plan-tratamiento.component';
-import TriageSummary from './triage-summary.component';
 
 interface ConsultaExternaDashboardProps {
   patientUuid: string;
@@ -30,7 +29,7 @@ const ConsultaExternaDashboard: React.FC<ConsultaExternaDashboardProps> = ({ pat
       <Layer className={styles.tabsContainer}>
         <Tabs>
           <TabList contained activation="manual" aria-label={t('consultaExternaTabs', 'Consulta Externa tabs')}>
-            <Tab renderIcon={Activity}>{t('triageAndChiefComplaint', 'Triaje y Motivo de Consulta')}</Tab>
+            <Tab renderIcon={Activity}>{t('triageAndChiefComplaint', 'Triajes previos')}</Tab>
             <Tab renderIcon={DocumentMultiple_01}>{t('anamnesis', 'Anamnesis')}</Tab>
             <Tab renderIcon={Catalog}>{t('diagnosisClassification', 'Diagnóstico')}</Tab>
             <Tab renderIcon={DocumentMultiple_01}>{t('soapNotes', 'Notas SOAP')}</Tab>
@@ -40,8 +39,7 @@ const ConsultaExternaDashboard: React.FC<ConsultaExternaDashboardProps> = ({ pat
           <TabPanels>
             <TabPanel>
               <div className={styles.combinedPanel}>
-                <TriageSummary patientUuid={patientUuid} />
-                <MotivoConsulta patientUuid={patientUuid} />
+                <ExtensionSlot name="consulta-externa-vitals-summary-slot" state={{ patientUuid }} />
               </div>
             </TabPanel>
             <TabPanel>

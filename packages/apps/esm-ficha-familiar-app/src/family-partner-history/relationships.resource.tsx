@@ -28,7 +28,15 @@ interface ExtractedRelationship {
   relationshipType: string;
   relationshipTypeDisplay: string;
   relationshipTypeUUID: string;
-  patientUuid: string;
+  /** Whether the relative is a Patient (has a clinical record) or only a Person. */
+  isPatient: boolean;
+  /**
+   * UUID usable against patient-only APIs. Null when the relative is a plain Person —
+   * their uuid must never be sent to patient endpoints as if it were a patient's.
+   */
+  patientUuid: string | null;
+  /** Consanguinity degree from the relationship type weight (0 = no consanguinity). */
+  consanguinityDegree: number;
 }
 
 export interface Relationship {
@@ -41,6 +49,7 @@ export interface Relationship {
     display: string;
     aIsToB: string;
     bIsToA: string;
+    weight?: number | null;
   };
 }
 interface Person {
@@ -49,6 +58,7 @@ interface Person {
   dead: boolean;
   display: string;
   causeOfDeath: string;
+  isPatient?: boolean;
 }
 
 type FHIRResourceResponse = {
@@ -133,8 +143,10 @@ export const useMappedRelationshipTypes = () => {
 };
 
 export function usePatientRelationships(patientUuid: string) {
+  // `isPatient` distinguishes a Patient from a plain Person; the relationship type
+  // `weight` carries the consanguinity degree (sihsalus-content convention).
   const customRepresentation =
-    'custom:(display,uuid,personA:(uuid,age,display,dead,causeOfDeath),personB:(uuid,age,display,dead,causeOfDeath),relationshipType:(uuid,display,description,aIsToB,bIsToA))';
+    'custom:(display,uuid,personA:(uuid,age,display,dead,causeOfDeath,isPatient),personB:(uuid,age,display,dead,causeOfDeath,isPatient),relationshipType:(uuid,display,description,aIsToB,bIsToA,weight))';
 
   const relationshipsUrl = patientUuid
     ? `/ws/rest/v1/relationship?person=${patientUuid}&v=${customRepresentation}`
@@ -165,37 +177,28 @@ function extractRelationshipData(
   patientIdentifier: string,
   relationships: Array<Relationship>,
 ): Array<ExtractedRelationship> {
-  const relationshipsData = [];
+  const relationshipsData: Array<ExtractedRelationship> = [];
   for (const r of relationships) {
-    if (patientIdentifier === r.personA.uuid) {
-      relationshipsData.push({
-        uuid: r.uuid,
-        name: extractName(r.personB.display),
-        display: r.personB.display,
-        relativeAge: r.personB.age,
-        dead: r.personB.dead,
-        causeOfDeath: r.personB.causeOfDeath,
-        relativeUuid: r.personB.uuid,
-        relationshipType: r.relationshipType.bIsToA,
-        relationshipTypeDisplay: r.relationshipType.display,
-        relationshipTypeUUID: r.relationshipType.uuid,
-        patientUuid: r.personB.uuid,
-      });
-    } else {
-      relationshipsData.push({
-        uuid: r.uuid,
-        name: extractName(r.personA.display),
-        display: r.personA.display,
-        relativeAge: r.personA.age,
-        causeOfDeath: r.personA.causeOfDeath,
-        relativeUuid: r.personA.uuid,
-        dead: r.personA.dead,
-        relationshipType: r.relationshipType.aIsToB,
-        relationshipTypeDisplay: r.relationshipType.display,
-        relationshipTypeUUID: r.relationshipType.uuid,
-        patientUuid: r.personA.uuid,
-      });
-    }
+    const relative = patientIdentifier === r.personA.uuid ? r.personB : r.personA;
+    const relativeIsPatient = !!relative.isPatient;
+
+    relationshipsData.push({
+      uuid: r.uuid,
+      name: extractName(relative.display),
+      display: relative.display,
+      relativeAge: relative.age,
+      dead: relative.dead,
+      causeOfDeath: relative.causeOfDeath,
+      relativeUuid: relative.uuid,
+      relationshipType:
+        patientIdentifier === r.personA.uuid ? r.relationshipType.bIsToA : r.relationshipType.aIsToB,
+      relationshipTypeDisplay: r.relationshipType.display,
+      relationshipTypeUUID: r.relationshipType.uuid,
+      isPatient: relativeIsPatient,
+      // Only a real Patient uuid may be used against patient endpoints.
+      patientUuid: relativeIsPatient ? relative.uuid : null,
+      consanguinityDegree: r.relationshipType.weight ?? 0,
+    });
   }
   return relationshipsData;
 }

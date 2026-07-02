@@ -12,6 +12,7 @@ import {
 } from '@openmrs/esm-framework';
 import classNames from 'classnames';
 import { Form, Formik, type FormikErrors, type FormikHelpers } from 'formik';
+import set from 'lodash-es/set';
 import React, { useContext, useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useLocation, useParams } from 'react-router-dom';
@@ -19,6 +20,8 @@ import { useLocation, useParams } from 'react-router-dom';
 import { builtInSections, type RegistrationConfig, type SectionDefinition } from '../config-schema';
 import { moduleName } from '../constants';
 import { ResourcesContext } from '../offline.resources';
+import { fetchPersonForPromotion } from './identity/identity-search.resource';
+import { applyPersonToRegistrationForm } from './identity/promotion';
 import BeforeSavePrompt from './before-save-prompt';
 import { type SavePatientForm, SavePatientTransactionManager } from './form-manager';
 import { DummyDataInput } from './input/dummy-data/dummy-data-input.component';
@@ -106,6 +109,63 @@ export const PatientRegistration: React.FC<PatientRegistrationProps> = ({ savePa
     });
     Object.assign(initialFormValues, initialFormValuesState);
   }, [initialFormValuesState]);
+
+  // Entry point for promoting an existing person from outside the form: opening
+  // `patient-registration?promotePerson=<personUuid>` hydrates the form with that
+  // person so submitting promotes them (same UUID) instead of creating a new patient.
+  const handledPromotePersonUuid = useRef<string | null>(null);
+  useEffect(() => {
+    const promotePersonUuid = new URLSearchParams(search).get('promotePerson');
+
+    if (!promotePersonUuid || inEditMode || handledPromotePersonUuid.current === promotePersonUuid) {
+      return;
+    }
+
+    if (isOffline) {
+      showSnackbar({
+        title: t('promotionOfflineTitle', 'Promoción no disponible'),
+        subtitle: t(
+          'promotionOfflineSubtitle',
+          'La promoción de una persona existente a paciente requiere conexión.',
+        ),
+        kind: 'warning',
+      });
+      return;
+    }
+
+    handledPromotePersonUuid.current = promotePersonUuid;
+    let cancelled = false;
+
+    fetchPersonForPromotion(promotePersonUuid)
+      .then((person) => {
+        if (cancelled) {
+          return;
+        }
+
+        setInitialFormValues((currentValues) => {
+          const nextValues = {
+            ...currentValues,
+            address: { ...currentValues.address },
+            attributes: { ...currentValues.attributes },
+          };
+          applyPersonToRegistrationForm(person, (field, value) => set(nextValues, field, value), () => {});
+          return nextValues;
+        });
+      })
+      .catch((error) => {
+        console.error('Could not load the person to promote', error);
+        handledPromotePersonUuid.current = null;
+        showSnackbar({
+          title: t('promotionLoadErrorTitle', 'No se pudo cargar la persona a promover'),
+          subtitle: t('promotionLoadErrorSubtitle', 'Verifique que la persona exista e intente nuevamente.'),
+          kind: 'error',
+        });
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [search, inEditMode, isOffline, setInitialFormValues, t]);
 
   const sections: Array<SectionDefinition> = useMemo(() => {
     return config.sections

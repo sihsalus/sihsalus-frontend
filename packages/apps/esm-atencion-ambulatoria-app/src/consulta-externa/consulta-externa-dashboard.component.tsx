@@ -6,7 +6,6 @@ import { useTranslation } from 'react-i18next';
 import Anamnesis from './anamnesis.component';
 import styles from './consulta-externa-dashboard.scss';
 import DiagnosticoClasificado from './diagnostico-clasificado.component';
-import MotivoConsulta from './motivo-consulta.component';
 import NotasSoap from './notas-soap.component';
 import PlanTratamiento from './plan-tratamiento.component';
 
@@ -30,7 +29,7 @@ const ConsultaExternaDashboard: React.FC<ConsultaExternaDashboardProps> = ({ pat
       <Layer className={styles.tabsContainer}>
         <Tabs>
           <TabList contained activation="manual" aria-label={t('consultaExternaTabs', 'Consulta Externa tabs')}>
-            <Tab renderIcon={Activity}>{t('triageAndChiefComplaint', 'Triaje y Motivo de Consulta')}</Tab>
+            <Tab renderIcon={Activity}>{t('triageAndChiefComplaint', 'Triajes previos')}</Tab>
             <Tab renderIcon={DocumentMultiple_01}>{t('anamnesis', 'Anamnesis')}</Tab>
             <Tab renderIcon={Catalog}>{t('diagnosisClassification', 'Diagnóstico')}</Tab>
             <Tab renderIcon={DocumentMultiple_01}>{t('soapNotes', 'Notas SOAP')}</Tab>
@@ -41,7 +40,6 @@ const ConsultaExternaDashboard: React.FC<ConsultaExternaDashboardProps> = ({ pat
             <TabPanel>
               <div className={styles.combinedPanel}>
                 <ExtensionSlot name="consulta-externa-vitals-summary-slot" state={{ patientUuid }} />
-                <MotivoConsulta patientUuid={patientUuid} />
               </div>
             </TabPanel>
             <TabPanel>

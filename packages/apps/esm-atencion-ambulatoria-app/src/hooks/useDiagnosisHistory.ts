@@ -7,11 +7,13 @@ export interface DiagnosisEntry {
   display: string;
   encounterDatetime: string;
   cie10Code: string | null;
-  certainty: 'CONFIRMED' | 'PROVISIONAL';
-  occurrence: 'NEW' | 'REPEAT';
+  rank: number;
   /** Tipo según NTS-139: P (Presuntivo), D (Definitivo), R (Repetido) */
   tipoNts: 'P' | 'D' | 'R';
 }
+
+const TIPO_DX_FORM_FIELD_NAMESPACE = 'visit-notes';
+const TIPO_DX_FIELD_PREFIX = 'tipo-dx-';
 
 interface ConceptMapping {
   display?: string;
@@ -31,7 +33,6 @@ interface EncounterDiagnosis {
     coded?: { uuid?: string; display: string; mappings?: ConceptMapping[] };
     nonCoded?: string;
   };
-  certainty: string;
   rank: number;
 }
 
@@ -49,7 +50,7 @@ export function useDiagnosisHistory(patientUuid: string, encounterTypeUuid: stri
       ? `${restBaseUrl}/encounter?patient=${patientUuid}&encounterType=${encounterTypeUuid}` +
         `&v=custom:(uuid,encounterDatetime,` +
         `diagnoses:(uuid,display,diagnosis:(coded:(uuid,display,mappings:(display))),certainty,rank),` +
-        `obs:(concept:(uuid),value:(uuid),formFieldNamespace,formFieldPath))&limit=20`
+        `obs:(concept:(uuid),value:(uuid,display),formFieldNamespace,formFieldPath))&limit=20`
       : null;
 
   const { data, error, isLoading, mutate } = useSWR<{ data: { results: Encounter[] } }>(url, openmrsFetch);
@@ -60,12 +61,17 @@ export function useDiagnosisHistory(patientUuid: string, encounterTypeUuid: stri
     (encounter.obs ?? []).forEach((obs) => {
       if (
         obs.concept?.uuid === concepts.diagnosisTypeConceptUuid &&
-        obs.formFieldNamespace === 'visit-notes' &&
+        obs.formFieldNamespace === TIPO_DX_FORM_FIELD_NAMESPACE &&
         typeof obs.formFieldPath === 'string' &&
-        obs.formFieldPath.startsWith('tipo-dx-')
+        obs.formFieldPath.startsWith(TIPO_DX_FIELD_PREFIX)
       ) {
-        const codedUuid = obs.formFieldPath.replace('tipo-dx-', '');
-        const valueUuid = typeof obs.value === 'object' && obs.value !== null ? obs.value.uuid : undefined;
+        const codedUuid = obs.formFieldPath.slice(TIPO_DX_FIELD_PREFIX.length);
+        const valueUuid =
+          typeof obs.value === 'object' && obs.value !== null
+            ? obs.value.uuid
+            : obs.value != null
+              ? String(obs.value)
+              : undefined;
         if (codedUuid && valueUuid) tipoMap[codedUuid] = valueUuid;
       }
     });
@@ -87,11 +93,10 @@ export function useDiagnosisHistory(patientUuid: string, encounterTypeUuid: stri
 
       return {
         uuid: dx.uuid,
-        display: dx.diagnosis?.coded?.display ?? dx.display ?? '',
+        display: dx.diagnosis?.coded?.display ?? dx.diagnosis?.nonCoded ?? dx.display ?? '',
         encounterDatetime: encounter.encounterDatetime,
         cie10Code,
-        certainty: dx.certainty === 'CONFIRMED' ? 'CONFIRMED' : 'PROVISIONAL',
-        occurrence: tipoNts === 'R' ? 'REPEAT' : 'NEW',
+        rank: dx.rank,
         tipoNts,
       };
     });

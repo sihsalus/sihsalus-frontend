@@ -17,7 +17,7 @@ export const defaultVisitNoteClinicalConceptUuids = {
   soapAssessmentConceptUuid: '160533AAAAAAAAAAAAAAAAAAAAAAAAAAAAAA',
   soapPlanConceptUuid: '162169AAAAAAAAAAAAAAAAAAAAAAAAAAAAAA',
   labOrdersConceptUuid: '01fe9e3c-7150-42ca-87db-8813fa630129',
-  proceduresConceptUuid: '162169AAAAAAAAAAAAAAAAAAAAAAAAAAAAAA',
+  proceduresConceptUuid: 'f0000206-0000-4000-8000-000000000206',
   prescriptionsConceptUuid: '1e9c5e02-b09f-41c6-83aa-dfed81bd0df5',
   referralConceptUuid: '3f573194-bade-46bc-b5fd-59c36f5f697a',
   nextAppointmentConceptUuid: '47ce3ee6-ee9f-4037-901b-2a6381c4b340',
@@ -122,7 +122,7 @@ export default {
   proceduresConceptUuid: {
     _type: Type.ConceptUuid,
     _default: defaultVisitNoteClinicalConceptUuids.proceduresConceptUuid,
-    _description: 'Procedures concept used by outpatient forms',
+    _description: 'Procedures CPMS text concept used by outpatient forms',
   },
   prescriptionsConceptUuid: {
     _type: Type.ConceptUuid,

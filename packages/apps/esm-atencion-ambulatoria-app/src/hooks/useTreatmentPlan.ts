@@ -30,7 +30,10 @@ interface Encounter {
 
 const visitNotesConceptUuids = {
   labOrdersUuid: '01fe9e3c-7150-42ca-87db-8813fa630129',
-  proceduresUuid: '162169AAAAAAAAAAAAAAAAAAAAAAAAAAAAAA',
+  proceduresUuid: 'f0000206-0000-4000-8000-000000000206',
+  legacyProceduresUuid: '1651AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA',
+  legacyProceduresTextUuid: '162169AAAAAAAAAAAAAAAAAAAAAAAAAAAAAA',
+  soapPlanUuid: '162169AAAAAAAAAAAAAAAAAAAAAAAAAAAAAA',
   prescriptionsUuid: '1e9c5e02-b09f-41c6-83aa-dfed81bd0df5',
   referralUuid: '3f573194-bade-46bc-b5fd-59c36f5f697a',
   nextAppointmentUuid: '47ce3ee6-ee9f-4037-901b-2a6381c4b340',
@@ -75,11 +78,15 @@ export function useTreatmentPlan(patientUuid: string, encounterTypeUuid: string,
       provider: encounter.encounterProviders?.[0]?.display?.split(' - ')?.[0] ?? null,
       labOrders: getObsValue(encounter.obs, [concepts?.labOrdersUuid, visitNotesConceptUuids.labOrdersUuid]),
       procedures:
-        getObsValue(encounter.obs, [visitNotesConceptUuids.proceduresUuid], 'procedures') ??
-        getObsValue(encounter.obs, [concepts?.proceduresUuid], null),
+        getObsValue(encounter.obs, [concepts?.proceduresUuid, visitNotesConceptUuids.proceduresUuid], 'procedures') ??
+        getObsValue(
+          encounter.obs,
+          [concepts?.proceduresUuid, visitNotesConceptUuids.legacyProceduresUuid, visitNotesConceptUuids.legacyProceduresTextUuid],
+          null,
+        ),
       prescriptions: getObsValue(encounter.obs, [concepts?.prescriptionsUuid, visitNotesConceptUuids.prescriptionsUuid]),
       therapeuticIndications:
-        getObsValue(encounter.obs, [visitNotesConceptUuids.proceduresUuid], 'soap-plan') ??
+        getObsValue(encounter.obs, [visitNotesConceptUuids.soapPlanUuid], 'soap-plan') ??
         getObsValue(encounter.obs, [concepts?.therapeuticIndicationsUuid], null),
       referral: getObsValue(encounter.obs, [concepts?.referralUuid, visitNotesConceptUuids.referralUuid]),
       nextAppointment: getObsValue(encounter.obs, [concepts?.nextAppointmentUuid, visitNotesConceptUuids.nextAppointmentUuid]),

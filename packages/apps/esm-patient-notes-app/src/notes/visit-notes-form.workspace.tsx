@@ -57,6 +57,7 @@ import {
   fetchDiagnosisConceptsByName,
   fetchPrestacionalConceptsByName,
   getCertaintyForTipo,
+  legacyProceduresConceptUuids,
   parseTipoDxObs,
   savePatientDiagnosis,
   saveVisitNote,
@@ -179,11 +180,6 @@ export interface VisitNotesFormProps {
   encounter?: EditableVisitNoteEncounter;
   formContext: 'creating' | 'editing';
 }
-
-const legacyProceduresConceptUuids = {
-  procedure: '1651AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA',
-  textWithProceduresPath: '162169AAAAAAAAAAAAAAAAAAAAAAAAAAAAAA',
-} as const;
 
 const VisitNotesForm: React.FC<PatientWorkspace2DefinitionProps<VisitNotesFormProps, {}>> = ({
   closeWorkspace,

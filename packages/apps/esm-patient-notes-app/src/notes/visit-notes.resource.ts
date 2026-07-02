@@ -88,7 +88,14 @@ interface RestProvider {
   };
 }
 
-const legacyProceduresConceptUuids = {
+/**
+ * Concepts under which older visit notes stored the procedures text. `procedure`
+ * (1651) is a dedicated legacy concept, safe to read with or without a form field
+ * path. `textWithProceduresPath` (162169, free-text consult note) is shared with the
+ * SOAP plan, so it must ONLY be read with the 'procedures' form field path — without
+ * it the SOAP plan text would bleed into the procedures field.
+ */
+export const legacyProceduresConceptUuids = {
   procedure: '1651AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA',
   textWithProceduresPath: '162169AAAAAAAAAAAAAAAAAAAAAAAAAAAAAA',
 } as const;

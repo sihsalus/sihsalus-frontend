@@ -1,4 +1,4 @@
-import { Layer, Tab, TabList, TabPanel, TabPanels, Tabs, Tile } from '@carbon/react';
+import { Layer, Tab, TabList, TabPanel, TabPanels, Tabs } from '@carbon/react';
 import { ExtensionSlot } from '@openmrs/esm-framework';
 import { Activity, Catalog, DocumentMultiple_01, ListChecked } from '@carbon/react/icons';
 import React from 'react';
@@ -18,14 +18,6 @@ const ConsultaExternaDashboard: React.FC<ConsultaExternaDashboardProps> = ({ pat
 
   return (
     <div>
-      <Layer>
-        <Tile>
-          <div className={styles.desktopHeading}>
-            <h4>{t('consultaExterna', 'Consulta Externa')}</h4>
-          </div>
-        </Tile>
-      </Layer>
-
       <Layer className={styles.tabsContainer}>
         <Tabs>
           <TabList contained activation="manual" aria-label={t('consultaExternaTabs', 'Consulta Externa tabs')}>

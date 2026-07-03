@@ -17,7 +17,7 @@ import { FormManager } from './patient-registration/form-manager';
 import { PatientRegistration } from './patient-registration/patient-registration.component';
 import styles from './root.scss';
 
-const admissionPrivilege = 'app:adt';
+const registerPatientPrivilege = 'app:topnav.registerPatient';
 
 export default function Root() {
   const isOnline = useConnectivity();
@@ -45,8 +45,8 @@ export default function Root() {
   return (
     <AppErrorBoundary appName="esm-patient-registration-app">
       <RequirePrivilege
-        privilege={admissionPrivilege}
-        description="Necesita permisos de admision para registrar o editar pacientes."
+        privilege={registerPatientPrivilege}
+        description="Necesita permisos para acceder al flujo de registro de pacientes."
       >
         <main className={classNames('omrs-main-content', styles.root)}>
           <Grid className={styles.grid}>

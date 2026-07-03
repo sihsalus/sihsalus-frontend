@@ -94,7 +94,7 @@
   "temperatureAbbreviated": "Temp",
   "unexpectedError": "Ocurrió un error inesperado. Por favor, inténtelo de nuevo.",
   "unknown": "Desconocido",
-  "validationInputError": "El valor debe estar entre {{min}} y {{max}}",
+  "validationInputError": "Debe estar entre {{min}} y {{max}}",
   "viewNormalRanges": "Ver rangos normales",
   "vital": "Vital",
   "vitals": "Signos Vitales",

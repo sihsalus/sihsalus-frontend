@@ -86,6 +86,7 @@ export const iconIds = [
   'omrs-icon-table-of-contents',
   'omrs-icon-table',
   'omrs-icon-time',
+  'omrs-icon-tooth',
   'omrs-icon-tools',
   'omrs-icon-translate',
   'omrs-icon-trash-can',
@@ -737,6 +738,14 @@ export const TableIcon = memo(
 export const TimeIcon = memo(
   forwardRef<SVGSVGElement, IconProps>(function TimeIcon(props, ref) {
     return <Icon ref={ref} icon="omrs-icon-time" iconProps={props} />;
+  }),
+);
+
+/**
+ */
+export const ToothIcon = memo(
+  forwardRef<SVGSVGElement, IconProps>(function ToothIcon(props, ref) {
+    return <Icon ref={ref} icon="omrs-icon-tooth" iconProps={props} />;
   }),
 );
 

@@ -389,8 +389,8 @@ export const configSchema = {
     },
     proceduresUuid: {
       _type: Type.ConceptUuid,
-      _description: 'Procedures performed concept (CPMS)',
-      _default: '1651AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA',
+      _description: 'Procedures CPMS text concept used by outpatient forms',
+      _default: 'f0000206-0000-4000-8000-000000000206',
     },
     prescriptionsUuid: {
       _type: Type.ConceptUuid,

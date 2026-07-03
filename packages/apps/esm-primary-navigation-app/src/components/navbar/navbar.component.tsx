@@ -20,6 +20,7 @@ import styles from './navbar.scss';
 
 const HeaderItems: React.FC = () => {
   const config = useConfig();
+  const session = useSession();
   const [activeHeaderPanel, setActiveHeaderPanel] = useState<string>(null);
   const [isSideMenuExpanded, setIsSideMenuExpanded] = useState(true);
   const layout = useLayoutType();
@@ -54,6 +55,8 @@ const HeaderItems: React.FC = () => {
   );
 
   const showHamburger = useMemo(() => mode !== 'hidden' && navMenuItems.length > 0, [navMenuItems.length, mode]);
+  const sessionKey =
+    session?.authenticated && session?.sessionId ? `${session.sessionId}:${session.user?.uuid ?? 'unknown'}` : 'anonymous';
 
   useEffect(() => {
     if (!isFixedSideNav) {
@@ -114,7 +117,7 @@ const HeaderItems: React.FC = () => {
             state={{ isActivePanel, togglePanel, hidePanel }}
             className={styles.topNavActionsSlot}
           />
-          <SideMenuPanel hidePanel={hidePanel('sideMenu')} expanded={isActivePanel('sideMenu')} />
+          <SideMenuPanel key={sessionKey} hidePanel={hidePanel('sideMenu')} expanded={isActivePanel('sideMenu')} />
           <NotificationsMenuPanel expanded={isActivePanel('notificationsMenu')} />
         </HeaderGlobalBar>
       </Header>
@@ -125,10 +128,12 @@ const HeaderItems: React.FC = () => {
 const Navbar: React.FC = () => {
   const session = useSession();
   const openmrsSpaBase = window['getOpenmrsSpaBase']();
+  const sessionKey =
+    session?.authenticated && session?.sessionId ? `${session.sessionId}:${session.user?.uuid ?? 'unknown'}` : 'anonymous';
 
   if (session?.user?.person) {
     return session.sessionLocation ? (
-      <HeaderContainer render={HeaderItems}></HeaderContainer>
+      <HeaderContainer key={sessionKey} render={HeaderItems}></HeaderContainer>
     ) : (
       <Navigate
         to={`/login/location`}

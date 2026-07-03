@@ -1,6 +1,6 @@
 import { InlineNotification, Search, SkeletonText } from '@carbon/react';
 import { Add } from '@carbon/react/icons';
-import { ExtensionSlot, isDesktop, launchWorkspace, showToast, useLayoutType } from '@openmrs/esm-framework';
+import { ExtensionSlot, isDesktop, launchWorkspace, showToast, useLayoutType, useSession, userHasAccess } from '@openmrs/esm-framework';
 import React, { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
@@ -11,6 +11,7 @@ import QueueTable from '../queue-table/queue-table.component';
 import styles from '../queue-table/queue-table.scss';
 import { QueueTableByStatusSkeleton } from '../queue-table/queue-table-by-status-skeleton.component';
 import QueueTableMetrics from '../queue-table/queue-table-metrics.component';
+import { serviceQueuesEditPrivilege } from '../constants';
 import type { Concept, Queue, QueueEntry } from '../types';
 
 interface QueueTablesForAllStatusesProps {
@@ -28,6 +29,8 @@ const QueueTablesForAllStatuses: React.FC<QueueTablesForAllStatusesProps> = ({
 }) => {
   const layout = useLayoutType();
   const { t } = useTranslation();
+  const session = useSession();
+  const canEdit = userHasAccess(serviceQueuesEditPrivilege, session?.user);
 
   const [searchTerm, setSearchTerm] = useState('');
 
@@ -48,24 +51,26 @@ const QueueTablesForAllStatuses: React.FC<QueueTablesForAllStatusesProps> = ({
         showLocationDropdown={false}
         actions={
           <div className={styles.headerButtons}>
-            <ExtensionSlot
-              name="patient-search-button-slot"
-              state={{
-                buttonText: t('addPatientToQueue', 'Add patient to queue'),
-                overlayHeader: t('addPatientToQueue', 'Add patient to queue'),
-                buttonProps: {
-                  kind: 'secondary',
-                  renderIcon: (props) => <Add size={16} {...props} />,
-                  size: isDesktop(layout) ? 'sm' : 'lg',
-                },
-                selectPatientAction: (selectedPatientUuid) => {
-                  launchWorkspace('create-queue-entry-workspace', {
-                    selectedPatientUuid,
-                    currentServiceQueueUuid: selectedQueue.uuid,
-                  });
-                },
-              }}
-            />
+            {canEdit ? (
+              <ExtensionSlot
+                name="patient-search-button-slot"
+                state={{
+                  buttonText: t('addPatientToQueue', 'Add patient to queue'),
+                  overlayHeader: t('addPatientToQueue', 'Add patient to queue'),
+                  buttonProps: {
+                    kind: 'secondary',
+                    renderIcon: (props) => <Add size={16} {...props} />,
+                    size: isDesktop(layout) ? 'sm' : 'lg',
+                  },
+                  selectPatientAction: (selectedPatientUuid) => {
+                    launchWorkspace('create-queue-entry-workspace', {
+                      selectedPatientUuid,
+                      currentServiceQueueUuid: selectedQueue.uuid,
+                    });
+                  },
+                }}
+              />
+            ) : null}
             <div className={styles.filterSearch}>
               <Search
                 labelText=""

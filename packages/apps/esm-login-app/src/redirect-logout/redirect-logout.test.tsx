@@ -1,7 +1,6 @@
 import {
   clearCurrentUser,
   type FetchResponse,
-  navigate,
   openmrsFetch,
   refetchCurrentUser,
   restBaseUrl,
@@ -16,18 +15,25 @@ import { mutate } from 'swr';
 
 import RedirectLogout from './redirect-logout.component';
 
+vi.mock('../navigation', () => ({
+  hardNavigate: vi.fn(),
+}));
+
+import { hardNavigate } from '../navigation';
+
 vi.mock('swr', () => ({
   mutate: vi.fn(),
 }));
 
 const mockClearCurrentUser = vi.mocked(clearCurrentUser);
-const mockNavigate = vi.mocked(navigate);
+const mockHardNavigate = vi.mocked(hardNavigate);
 const mockOpenmrsFetch = vi.mocked(openmrsFetch);
 const mockRefetchCurrentUser = vi.mocked(refetchCurrentUser);
 const mockSetUserLanguage = vi.mocked(setUserLanguage);
 const mockUseConfig = vi.mocked(useConfig);
 const mockUseConnectivity = vi.mocked(useConnectivity);
 const mockUseSession = vi.mocked(useSession);
+const openmrsSpaBasePlaceholder = '$' + '{openmrsSpaBase}';
 
 describe('RedirectLogout', () => {
   beforeEach(() => {
@@ -42,7 +48,7 @@ describe('RedirectLogout', () => {
     mockUseConfig.mockReturnValue({
       provider: {
         type: '',
-        logoutUrl: '${openmrsSpaBase}/logout',
+        logoutUrl: `${openmrsSpaBasePlaceholder}/logout`,
       },
     });
 
@@ -65,7 +71,7 @@ describe('RedirectLogout', () => {
       authenticated: false,
       sessionId: '',
     });
-    expect(mockNavigate).toHaveBeenCalledWith({ to: '${openmrsSpaBase}/login' });
+    expect(mockHardNavigate).toHaveBeenCalledWith(`${openmrsSpaBasePlaceholder}/login`);
   });
 
   it('should redirect to the configured logout URL if the provider is `oauth2`', async () => {
@@ -91,7 +97,7 @@ describe('RedirectLogout', () => {
       authenticated: false,
       sessionId: '',
     });
-    expect(mockNavigate).toHaveBeenCalledWith({ to: '/openmrs/oauth2logout' });
+    expect(mockHardNavigate).toHaveBeenCalledWith('/openmrs/oauth2logout');
   });
 
   it('should redirect to login if the session is already unauthenticated', async () => {
@@ -101,7 +107,7 @@ describe('RedirectLogout', () => {
 
     render(<RedirectLogout />);
 
-    expect(mockNavigate).toHaveBeenCalledWith({ to: '${openmrsSpaBase}/login' });
+    expect(mockHardNavigate).toHaveBeenCalledWith(`${openmrsSpaBasePlaceholder}/login`);
   });
 
   it('should redirect to login if the application is offline', async () => {
@@ -109,7 +115,7 @@ describe('RedirectLogout', () => {
 
     render(<RedirectLogout />);
 
-    expect(mockNavigate).toHaveBeenCalledWith({ to: '${openmrsSpaBase}/login' });
+    expect(mockHardNavigate).toHaveBeenCalledWith(`${openmrsSpaBasePlaceholder}/login`);
   });
 
   it('should handle logout failure gracefully', async () => {
@@ -151,7 +157,7 @@ describe('RedirectLogout', () => {
     rerender(<RedirectLogout />);
 
     await waitFor(() => {
-      expect(mockNavigate).toHaveBeenCalledWith({ to: '${openmrsSpaBase}/login' });
+      expect(mockHardNavigate).toHaveBeenCalledWith(`${openmrsSpaBasePlaceholder}/login`);
     });
   });
 
@@ -168,6 +174,6 @@ describe('RedirectLogout', () => {
 
     render(<RedirectLogout />);
 
-    expect(mockNavigate).toHaveBeenCalledWith({ to: '/openmrs/oauth2logout' });
+    expect(mockHardNavigate).toHaveBeenCalledWith('/openmrs/oauth2logout');
   });
 });

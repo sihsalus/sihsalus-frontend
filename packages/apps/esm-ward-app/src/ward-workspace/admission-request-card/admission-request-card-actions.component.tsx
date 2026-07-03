@@ -1,7 +1,8 @@
 import { Button } from '@carbon/react';
-import { closeWorkspaceGroup2, useLayoutType, useWorkspace2Context } from '@openmrs/esm-framework';
+import { closeWorkspaceGroup2, useLayoutType, useSession, userHasAccess, useWorkspace2Context } from '@openmrs/esm-framework';
 import React from 'react';
 import { useTranslation } from 'react-i18next';
+import { wardEditPrivilege } from '../../constant';
 import type { WardPatient } from '../../types';
 import AdmitPatientButton from '../admit-patient-button.component';
 import styles from './admission-request-card.scss';
@@ -16,8 +17,10 @@ const AdmissionRequestCardActions: React.FC<AdmissionRequestCardActionsProps> = 
   relatedTransferPatients,
 }) => {
   const { t } = useTranslation();
+  const session = useSession();
   const responsiveSize = useLayoutType() === 'tablet' ? 'lg' : 'md';
   const { closeWorkspace, launchChildWorkspace } = useWorkspace2Context();
+  const canEdit = userHasAccess(wardEditPrivilege, session?.user);
 
   const launchPatientTransferForm = () => {
     launchChildWorkspace('transfer-elsewhere-workspace', { wardPatient, relatedTransferPatients });
@@ -28,6 +31,10 @@ const AdmissionRequestCardActions: React.FC<AdmissionRequestCardActionsProps> = 
   };
 
   const isTransfer = wardPatient.inpatientRequest.dispositionType === 'TRANSFER';
+
+  if (!canEdit) {
+    return null;
+  }
 
   return (
     <div className={styles.admissionRequestActionBar}>

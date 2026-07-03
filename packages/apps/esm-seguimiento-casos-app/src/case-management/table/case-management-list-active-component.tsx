@@ -15,12 +15,13 @@ import {
   Tag,
   Tile,
 } from '@carbon/react';
-import { ConfigurableLink, isDesktop, launchWorkspace, useLayoutType, useSession } from '@openmrs/esm-framework';
+import { ConfigurableLink, isDesktop, launchWorkspace, useLayoutType, useSession, userHasAccess } from '@openmrs/esm-framework';
 import { CardHeader, EmptyDataIllustration } from '@openmrs/esm-patient-common-lib';
 import React, { useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import { extractNameString, uppercaseText } from '../../utils/expression-helper';
+import { caseMonitoringEditPrivilege } from '../../utils/constants';
 import { useActivecases } from '../workspace/case-management.resource';
 
 import styles from './case-management-list.scss';
@@ -39,6 +40,7 @@ const CaseManagementListActive: React.FC<CaseManagementListActiveProps> = ({ set
   const responsiveSize = isDesktop(layout) ? 'lg' : 'sm';
   const { user } = useSession();
   const caseManagerPersonUuid = user?.person.uuid;
+  const canEdit = userHasAccess(caseMonitoringEditPrivilege, user);
 
   const { data: activeCasesData } = useActivecases(caseManagerPersonUuid);
 
@@ -86,7 +88,7 @@ const CaseManagementListActive: React.FC<CaseManagementListActiveProps> = ({ set
         {t('enrolled', 'Enrolled')}
       </Tag>
     ),
-    actions: (
+    actions: canEdit ? (
       <OverflowMenu size="md">
         <OverflowMenuItem
           isDelete
@@ -95,7 +97,7 @@ const CaseManagementListActive: React.FC<CaseManagementListActiveProps> = ({ set
           onClick={() => handleDiscontinueACase(caseData.uuid)}
         />
       </OverflowMenu>
-    ),
+    ) : null,
   }));
 
   const handleDiscontinueACase = async (relationshipUuid: string) => {

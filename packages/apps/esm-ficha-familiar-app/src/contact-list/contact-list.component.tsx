@@ -15,11 +15,12 @@ import {
   Tile,
 } from '@carbon/react';
 import { Add, Edit, TrashCan } from '@carbon/react/icons';
-import { ConfigurableLink, ErrorState, isDesktop, useLayoutType, usePagination } from '@openmrs/esm-framework';
+import { ErrorState, isDesktop, useLayoutType, usePagination } from '@openmrs/esm-framework';
 import { CardHeader, EmptyDataIllustration, usePaginationInfo } from '@openmrs/esm-patient-common-lib';
 import React, { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
+import RelativeNameCell from '../components/relative-name-cell.component';
 import useContacts from '../hooks/useContacts';
 import { deleteRelationship } from '../relationships/relationship.resources';
 import { launchFichaFamiliarWorkspace } from '../workspace-utils';
@@ -159,12 +160,13 @@ const ContactList: React.FC<ContactListProps> = ({ patientUuid }) => {
         id: `${relation.uuid}`,
         startDate: relation.startDate ?? '--',
         name: (
-          <ConfigurableLink
-            style={{ textDecoration: 'none' }}
-            to={globalThis.getOpenmrsSpaBase() + `patient/${relation.relativeUuid}/chart/Patient Summary`}
-          >
-            {relation.name}
-          </ConfigurableLink>
+          <RelativeNameCell
+            name={relation.name}
+            isPatient={relation.isPatient}
+            patientUuid={relation.patientUuid}
+            relativeUuid={relation.relativeUuid}
+            dead={relation.dead}
+          />
         ),
         contactCreated: translateContactValue(relation.personContactCreated ?? 'No'),
         relation: relation?.relationshipType,
@@ -172,10 +174,12 @@ const ContactList: React.FC<ContactListProps> = ({ patientUuid }) => {
         sex: translateGender(relation.gender),
         alive: relation?.dead ? t('dead', 'Dead') : t('alive', 'Alive'),
         contact: relation.contact ?? '--',
-        hivStatus: (
+        hivStatus: relation.isPatient ? (
           <SensitiveDataReveal>
             <HIVStatus relativeUuid={relation.relativeUuid} />
           </SensitiveDataReveal>
+        ) : (
+          '--'
         ),
         baseLineivStatus: relation.baselineHIVStatus ? (
           <SensitiveDataReveal>{translateContactValue(relation.baselineHIVStatus)}</SensitiveDataReveal>

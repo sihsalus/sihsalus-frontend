@@ -58,6 +58,7 @@ import {
   fetchPrestacionalConceptsByName,
   getCertaintyForTipo,
   legacyProceduresConceptUuids,
+  legacyStructuredVisitNoteConceptUuids,
   parseTipoDxObs,
   savePatientDiagnosis,
   saveVisitNote,
@@ -203,6 +204,7 @@ const VisitNotesForm: React.FC<PatientWorkspace2DefinitionProps<VisitNotesFormPr
     codigoPrestacionalConceptUuid,
     chiefComplaintConceptUuid,
     illnessDurationConceptUuid,
+    anamnesisConceptUuid,
     biologicalFunctionsConceptUuid,
     soapSubjectiveConceptUuid,
     soapObjectiveConceptUuid,
@@ -287,6 +289,29 @@ const VisitNotesForm: React.FC<PatientWorkspace2DefinitionProps<VisitNotesFormPr
       getEncounterObsValue(legacyProceduresConceptUuids.procedure),
     [getEncounterObsValue, proceduresConceptUuid],
   );
+  const getEncounterCodigoPrestacionalValue = useCallback(
+    () =>
+      getEncounterObsConceptValue(codigoPrestacionalConceptUuid, 'codigo-prestacional')?.display ||
+      getEncounterObsValue(codigoPrestacionalConceptUuid, 'codigo-prestacional') ||
+      getEncounterObsValue(legacyStructuredVisitNoteConceptUuids.sharedTextWithFormFieldPath, 'codigo-prestacional'),
+    [codigoPrestacionalConceptUuid, getEncounterObsConceptValue, getEncounterObsValue],
+  );
+  const getEncounterBiologicalFunctionsValue = useCallback(
+    () =>
+      getEncounterObsValue(biologicalFunctionsConceptUuid, 'biological-functions') ||
+      getEncounterObsValue(legacyStructuredVisitNoteConceptUuids.anamnesisText, 'biological-functions'),
+    [biologicalFunctionsConceptUuid, getEncounterObsValue],
+  );
+  const getEncounterSubjectiveValue = useCallback(
+    () => getEncounterObsValue(soapSubjectiveConceptUuid) || getEncounterObsValue(anamnesisConceptUuid),
+    [anamnesisConceptUuid, getEncounterObsValue, soapSubjectiveConceptUuid],
+  );
+  const getEncounterPlanValue = useCallback(
+    () =>
+      getEncounterObsValue(soapPlanConceptUuid, 'soap-plan') ||
+      getEncounterObsValue(legacyStructuredVisitNoteConceptUuids.sharedTextWithFormFieldPath, 'soap-plan'),
+    [getEncounterObsValue, soapPlanConceptUuid],
+  );
 
   const customResolver = useCallback(
     async (data, context, options) => {
@@ -323,19 +348,14 @@ const VisitNotesForm: React.FC<PatientWorkspace2DefinitionProps<VisitNotesFormPr
     defaultValues: {
       primaryDiagnosisSearch: '',
       noteDate: isEditing ? new Date(encounter.rawDatetime) : new Date(),
-      codigoPrestacional: isEditing
-        ? (getEncounterObsConceptValue(codigoPrestacionalConceptUuid, 'codigo-prestacional')?.display ??
-          getEncounterObsValue(codigoPrestacionalConceptUuid, 'codigo-prestacional'))
-        : '',
+      codigoPrestacional: isEditing ? getEncounterCodigoPrestacionalValue() : '',
       chiefComplaint: isEditing ? getEncounterObsValue(chiefComplaintConceptUuid) : '',
       illnessDuration: isEditing ? getEncounterObsValue(illnessDurationConceptUuid) : '',
-      biologicalFunctions: isEditing
-        ? getEncounterObsValue(biologicalFunctionsConceptUuid, 'biological-functions')
-        : '',
-      subjective: isEditing ? getEncounterObsValue(soapSubjectiveConceptUuid) : '',
+      biologicalFunctions: isEditing ? getEncounterBiologicalFunctionsValue() : '',
+      subjective: isEditing ? getEncounterSubjectiveValue() : '',
       objective: isEditing ? getEncounterObsValue(soapObjectiveConceptUuid) : '',
       assessment: isEditing ? getEncounterObsValue(soapAssessmentConceptUuid) : '',
-      plan: isEditing ? getEncounterObsValue(soapPlanConceptUuid, 'soap-plan') : '',
+      plan: isEditing ? getEncounterPlanValue() : '',
       auxiliaryExams: isEditing ? getEncounterObsValue(labOrdersConceptUuid) : '',
       procedures: isEditing ? getEncounterProceduresValue() : '',
       prescriptions: isEditing ? getEncounterObsValue(prescriptionsConceptUuid) : '',

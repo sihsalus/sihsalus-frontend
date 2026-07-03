@@ -23,10 +23,17 @@ Hallazgos verificados contra el backend (100.120.80.60, 2026-07-02):
 - El backend NO rechaza promover a alguien que ya es paciente: un segundo `POST /patient` agrega identificadores duplicados en silencio. El pre-check en frontend es obligatorio (caso P-007).
 - La búsqueda `GET /person?q=<número>` sí matchea el atributo searchable `Código de Documento de Identidad`.
 
+Implementado en `esm-ficha-familiar-app` (2026-07-02):
+
+- Los hooks de relaciones (`useContacts`, `usePatientRelationships`) piden `isPatient` en la representación custom (soportado por el backend, verificado) y ya no asignan el uuid de la persona como `patientUuid` a ciegas: `patientUuid` es `null` cuando el familiar es solo `Person`.
+- Las tablas de ficha familiar enlazan al chart solo cuando el familiar es paciente; una `Person` sin historia se muestra con la etiqueta `Sin historia clínica` y no genera consultas a endpoints de paciente (FHIR Observation, programas VIH).
+- El `weight` del tipo de relación se usa como grado de consanguinidad (convención sihsalus-content: 1=padre/madre, 2=hermano/abuelo, 3=tío/bisabuelo, 4=primo, 0=sin consanguinidad): columna propia, orden por grado, y filtro familia = `weight >= 1` o tipo listado en config (afinidad/adoptivos).
+- Los familiares que son solo `Person` (vivos) muestran la acción `Registrar como paciente`, que abre el registro en modo promoción (`patient-registration?promotePerson=<uuid>`) reutilizando su registro.
+
 Pendiente (sin cambios respecto al diseño):
 
 - OMOD identitylookup (RENIEC real) y bloqueo de edición de datos validados.
-- Fase 2: etiquetado de tipo de entidad (paciente/persona/proveedor) en la búsqueda de responsable.
+- Fase 2: etiquetado de tipo de entidad (paciente/persona/proveedor) en la búsqueda de responsable del registro.
 - Múltiples documentos activos por persona (requiere diseño adicional).
 - SIS real y estados de acreditación desde SETISIS.
 

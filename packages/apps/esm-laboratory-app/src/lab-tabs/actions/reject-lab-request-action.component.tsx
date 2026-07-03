@@ -1,7 +1,8 @@
 import { Button } from '@carbon/react';
-import { type Order, showModal } from '@openmrs/esm-framework';
+import { type Order, showModal, useSession, userHasAccess } from '@openmrs/esm-framework';
 import React, { useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
+import { laboratoryEditPrivilege } from '../../constants';
 import styles from './actions.scss';
 
 interface RejectLabRequestActionProps {
@@ -10,6 +11,8 @@ interface RejectLabRequestActionProps {
 
 const RejectLabRequestAction: React.FC<RejectLabRequestActionProps> = ({ order }) => {
   const { t } = useTranslation();
+  const session = useSession();
+  const canEdit = userHasAccess(laboratoryEditPrivilege, session?.user);
   const unsupportedStatuses = ['COMPLETED', 'DECLINED'];
 
   const launchRejectLabRequestModal = useCallback(() => {
@@ -18,6 +21,10 @@ const RejectLabRequestAction: React.FC<RejectLabRequestActionProps> = ({ order }
       order,
     });
   }, [order]);
+
+  if (!canEdit) {
+    return null;
+  }
 
   return (
     <Button

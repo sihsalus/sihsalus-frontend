@@ -72,11 +72,13 @@ interface RelationshipType {
   direction: 'aIsToB' | 'bIsToA';
 }
 
-export const useCodedConceptObservations = (patientUuid: string, conceptUuid: string) => {
+export const useCodedConceptObservations = (patientUuid: string | null, conceptUuid: string) => {
   const url = `/ws/fhir2/R4/Observation?subject:Patient=${patientUuid}&code=${conceptUuid}&_summary=data&_sort=-date&_count=100`;
 
+  // Observations are a patient-only resource: skip the query entirely when the person
+  // has no patient record (patientUuid is null for plain Persons).
   const { data, isLoading, error, mutate, isValidating } = useSWR<{ data: FHIRResourceResponse }>(
-    conceptUuid ? url : null,
+    patientUuid && conceptUuid ? url : null,
     openmrsFetch,
   );
 

@@ -27,11 +27,14 @@ import {
   useConfig,
   useLayoutType,
   usePagination,
+  useSession,
+  userHasAccess,
 } from '@openmrs/esm-framework';
 import classNames from 'classnames';
 import React, { useCallback, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { type BillingConfig } from '../config-schema';
+import { billingEditPrivilege } from '../constants';
 import { type BillableService } from '../types';
 import { useBillableServices } from './billable-service.resource';
 import styles from './billable-services.scss';
@@ -48,6 +51,8 @@ const BillableServices = () => {
   const { t } = useTranslation();
   const { billableServices, isLoading, isValidating, error, mutate } = useBillableServices();
   const layout = useLayoutType();
+  const session = useSession();
+  const canEdit = userHasAccess(billingEditPrivilege, session?.user);
   const { pageSize: configuredPageSize } = useConfig<BillingConfig>();
   const [searchString, setSearchString] = useState('');
   const responsiveSize = isDesktop(layout) ? 'lg' : 'sm';
@@ -153,7 +158,7 @@ const BillableServices = () => {
       <EmptyCard
         displayText={t('billableServices__lower', 'billable services')}
         headerTitle={t('billableService', 'Billable service')}
-        launchForm={launchBillableServiceForm}
+        launchForm={canEdit ? launchBillableServiceForm : undefined}
       />
     );
   }
@@ -166,6 +171,7 @@ const BillableServices = () => {
         layout={layout}
         responsiveSize={responsiveSize}
         t={t}
+        canEdit={canEdit}
       />
       <DataTable
         isSortable
@@ -200,13 +206,15 @@ const BillableServices = () => {
                         <TableCell key={cell.id}>{cell.value}</TableCell>
                       ))}
                       <TableCell className="cds--table-column-menu">
-                        <OverflowMenu size="lg" flipped>
-                          <OverflowMenuItem
-                            className={styles.menuItem}
-                            itemText={t('editBillableService', 'Edit billable service')}
-                            onClick={() => handleEditService(results.find((service) => service.uuid === row.id))}
-                          />
-                        </OverflowMenu>
+                        {canEdit ? (
+                          <OverflowMenu size="lg" flipped>
+                            <OverflowMenuItem
+                              className={styles.menuItem}
+                              itemText={t('editBillableService', 'Edit billable service')}
+                              onClick={() => handleEditService(results.find((service) => service.uuid === row.id))}
+                            />
+                          </OverflowMenu>
+                        ) : null}
                       </TableCell>
                     </TableRow>
                   );
@@ -252,7 +260,14 @@ const BillableServices = () => {
   );
 };
 
-function FilterableTableHeader({ layout, handleSearch, isValidating, responsiveSize, t }: FilterableTableHeaderProps) {
+function FilterableTableHeader({
+  layout,
+  handleSearch,
+  isValidating,
+  responsiveSize,
+  t,
+  canEdit,
+}: FilterableTableHeaderProps & { canEdit: boolean }) {
   return (
     <>
       <div className={styles.headerContainer}>
@@ -275,17 +290,19 @@ function FilterableTableHeader({ layout, handleSearch, isValidating, responsiveS
           onChange={handleSearch}
           size={responsiveSize}
         />
-        <Button
-          size={responsiveSize}
-          kind="primary"
-          renderIcon={(props) => <ArrowRight size={16} {...props} />}
-          onClick={() => {
-            launchWorkspace2('billable-service-form', {});
-          }}
-          iconDescription={t('addNewBillableService', 'Add new billable service')}
-        >
-          {t('addNewService', 'Add new service')}
-        </Button>
+        {canEdit ? (
+          <Button
+            size={responsiveSize}
+            kind="primary"
+            renderIcon={(props) => <ArrowRight size={16} {...props} />}
+            onClick={() => {
+              launchWorkspace2('billable-service-form', {});
+            }}
+            iconDescription={t('addNewBillableService', 'Add new billable service')}
+          >
+            {t('addNewService', 'Add new service')}
+          </Button>
+        ) : null}
       </div>
     </>
   );

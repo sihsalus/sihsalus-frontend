@@ -15,6 +15,7 @@ import { useLocation, useNavigate } from 'react-router-dom';
 
 import { type ConfigSchema } from '../config-schema';
 import Logo from '../logo.component';
+import { buildSpaNavigationTarget, hardNavigate } from '../navigation';
 
 import { LanguageSwitcher } from './language-switcher.component';
 import styles from './login.module.scss';
@@ -240,13 +241,13 @@ const Login: React.FC = () => {
             let to = loginLinks?.loginSuccess || '/home';
             if (location?.state?.referrer) {
               if (location.state.referrer.startsWith('/')) {
-                to = `${globalThis.spaBase}${location.state.referrer}`;
+                to = buildSpaNavigationTarget(location.state.referrer);
               } else {
                 to = location.state.referrer;
               }
             }
 
-            openmrsNavigate({ to });
+            hardNavigate(to);
           } else {
             navigate('/login/location');
           }

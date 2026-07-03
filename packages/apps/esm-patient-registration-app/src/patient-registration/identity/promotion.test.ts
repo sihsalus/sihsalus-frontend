@@ -150,7 +150,22 @@ describe('applyPersonToRegistrationForm', () => {
     expect(setFieldValue).toHaveBeenCalledWith('address.address1', 'Jr. Principal 123', false);
 
     const birthdateCall = setFieldValue.mock.calls.find(([field]) => field === 'birthdate');
-    expect(birthdateCall?.[1]).toEqual(new Date('1986-01-01'));
+    // Local date, not UTC: parsing the ISO datetime directly would shift the day back
+    // in timezones behind UTC (Peru).
+    expect(birthdateCall?.[1]).toEqual(new Date(1986, 0, 1));
+  });
+
+  it('parses UTC birthdate datetimes without shifting the calendar day', () => {
+    const setFieldValue = vi.fn();
+
+    applyPersonToRegistrationForm(
+      buildPerson({ birthdate: '1986-01-01T00:00:00.000+0000' }),
+      setFieldValue,
+      vi.fn(),
+    );
+
+    const birthdateCall = setFieldValue.mock.calls.find(([field]) => field === 'birthdate');
+    expect(birthdateCall?.[1]).toEqual(new Date(1986, 0, 1));
   });
 
   it('derives the estimated age fields for persons with estimated birthdate', () => {

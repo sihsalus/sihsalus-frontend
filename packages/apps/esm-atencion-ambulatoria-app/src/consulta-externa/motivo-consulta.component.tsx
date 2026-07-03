@@ -27,7 +27,11 @@ interface MotivoConsultaProps {
 const MotivoConsulta: React.FC<MotivoConsultaProps> = ({ patientUuid }) => {
   const { t } = useTranslation();
   const config = useConfig<ConfigObject>();
-  const { complaints, isLoading } = useChiefComplaint(patientUuid, config.concepts?.chiefComplaintUuid);
+  const { complaints, isLoading } = useChiefComplaint(
+    patientUuid,
+    config.encounterTypes?.externalConsultation,
+    config.concepts?.chiefComplaintUuid,
+  );
 
   const headers = [
     { key: 'date', header: t('date', 'Fecha') },

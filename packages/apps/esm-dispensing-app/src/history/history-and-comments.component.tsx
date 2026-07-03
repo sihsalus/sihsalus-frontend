@@ -16,6 +16,7 @@ import { useSWRConfig } from 'swr';
 import MedicationEvent from '../components/medication-event.component';
 import { type PharmacyConfig } from '../config-schema';
 import {
+  dispensingEditPrivilege,
   PRIVILEGE_DELETE_DISPENSE,
   PRIVILEGE_DELETE_DISPENSE_THIS_PROVIDER_ONLY,
   PRIVILEGE_EDIT_DISPENSE,
@@ -144,10 +145,14 @@ const MedicationDispenseActionMenu: React.FC<MedicationDispenseActionMenuProps> 
   const session = useSession();
   const config = useConfig<PharmacyConfig>();
   const userCanEdit = (session: Session): boolean =>
-    session?.user && userHasAccess(PRIVILEGE_EDIT_DISPENSE, session.user);
+    Boolean(
+      session?.user &&
+        userHasAccess(dispensingEditPrivilege, session.user) &&
+        userHasAccess(PRIVILEGE_EDIT_DISPENSE, session.user),
+    );
 
   const userCanDelete = (session: Session, medicationDispense: MedicationDispense): boolean => {
-    if (session?.user) {
+    if (session?.user && userHasAccess(dispensingEditPrivilege, session.user)) {
       if (userHasAccess(PRIVILEGE_DELETE_DISPENSE, session.user)) {
         return true;
       } else if (

@@ -1,15 +1,16 @@
-import { navigate, setUserLanguage, useConfig, useConnectivity, useSession } from '@openmrs/esm-framework';
+import { setUserLanguage, useConfig, useConnectivity, useSession } from '@openmrs/esm-framework';
 import { clearHistory } from '@openmrs/esm-framework/src/internal';
 import { useEffect } from 'react';
 
 import { type ConfigSchema } from '../config-schema';
+import { hardNavigate } from '../navigation';
 
 import { performLogout } from './logout.resource';
 
+const openmrsSpaBasePlaceholder = '$' + '{openmrsSpaBase}';
+
 function redirectAfterLogout(config: ConfigSchema) {
-  navigate({
-    to: config.provider.type === 'oauth2' ? config.provider.logoutUrl : '${openmrsSpaBase}/login',
-  });
+  hardNavigate(config.provider.type === 'oauth2' ? config.provider.logoutUrl : `${openmrsSpaBasePlaceholder}/login`);
 }
 
 const RedirectLogout: React.FC = () => {

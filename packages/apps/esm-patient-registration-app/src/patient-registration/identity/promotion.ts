@@ -17,6 +17,16 @@ const genderCodeToFormValue: Record<string, string> = {
   U: 'unknown',
 };
 
+/**
+ * REST returns birthdate as an ISO datetime in UTC (e.g. `1986-01-01T00:00:00.000+0000`).
+ * Parsing that with `new Date(...)` shifts the calendar day back in timezones behind
+ * UTC (Peru is UTC-5), so only the date part is used to build a local date.
+ */
+function parseBirthdateAsLocalDate(birthdate: string) {
+  const [year, month, day] = birthdate.slice(0, 10).split('-').map(Number);
+  return new Date(year, month - 1, day);
+}
+
 type SetFieldValue = (field: string, value: unknown, shouldValidate?: boolean) => void;
 type SetFieldTouched = (field: string, isTouched?: boolean, shouldValidate?: boolean) => void;
 
@@ -71,7 +81,7 @@ export function applyPersonToRegistrationForm(
     ['familyName', preferredName?.familyName ?? ''],
     ['familyName2', preferredName?.familyName2 ?? ''],
     ['gender', genderCodeToFormValue[person.gender ?? ''] ?? ''],
-    ['birthdate', person.birthdate ? new Date(person.birthdate) : null],
+    ['birthdate', person.birthdate ? parseBirthdateAsLocalDate(person.birthdate) : null],
     ['birthdateEstimated', birthdateEstimated],
     ['yearsEstimated', yearsEstimated],
     ['monthsEstimated', monthsEstimated],

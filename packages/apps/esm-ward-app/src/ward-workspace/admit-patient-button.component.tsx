@@ -5,10 +5,13 @@ import {
   useAppContext,
   useFeatureFlag,
   useLayoutType,
+  useSession,
+  userHasAccess,
   useWorkspace2Context,
 } from '@openmrs/esm-framework';
 import React, { useState } from 'react';
 import { useTranslation } from 'react-i18next';
+import { wardEditPrivilege } from '../constant';
 import useWardLocation from '../hooks/useWardLocation';
 import type { DispositionType, WardPatient, WardViewContext } from '../types';
 import { useAdmitPatient } from '../ward.resource';
@@ -37,10 +40,12 @@ const AdmitPatientButton: React.FC<AdmitPatientButtonProps> = ({
   const { t } = useTranslation();
   const { location } = useWardLocation();
   const responsiveSize = useLayoutType() === 'tablet' ? 'lg' : 'md';
+  const session = useSession();
   const { wardPatientGroupDetails } = useAppContext<WardViewContext>('ward-view-context') ?? {};
   const { admitPatient, isLoadingEmrConfiguration, errorFetchingEmrConfiguration } = useAdmitPatient();
   const [isAdmitting, setIsAdmitting] = useState(false);
   const { launchChildWorkspace } = useWorkspace2Context();
+  const canEdit = userHasAccess(wardEditPrivilege, session?.user);
 
   const launchPatientAdmissionForm = () =>
     launchChildWorkspace('admit-patient-form-workspace', { wardPatient, relatedTransferPatients });
@@ -112,6 +117,11 @@ const AdmitPatientButton: React.FC<AdmitPatientButtonProps> = ({
   };
 
   const disabledButton = isLoadingEmrConfiguration || errorFetchingEmrConfiguration || disabled || isAdmitting;
+
+  if (!canEdit) {
+    return null;
+  }
+
   return (
     <Button kind="ghost" renderIcon={ArrowRightIcon} size={responsiveSize} disabled={disabledButton} onClick={onAdmit}>
       {dispositionType === 'ADMIT' || disabledButton

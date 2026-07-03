@@ -4,14 +4,29 @@ export const configSchema = {
   // Relationship type lists
   familyRelationshipsTypeList: {
     _type: Type.Array,
-    _description: 'List of family relationship type UUIDs',
+    _description:
+      'Family relationship type UUIDs. Any relationship type whose weight (consanguinity degree in ' +
+      'sihsalus-content) is >= 1 counts as family automatically; this list covers non-consanguineous ' +
+      'family (spouses, step/adoptive relatives) and acts as fallback when weights are not loaded. ' +
+      'UUIDs must match sihsalus-content relationshiptypes.csv.',
     _default: [
-      { uuid: '8d91a210-c2cc-11de-8d13-0010c6dffdff', display: 'Madre' },
+      // Consanguíneos (cubiertos también por weight >= 1; se listan por robustez)
+      { uuid: 'e6be4def-dbc8-462a-8714-53da66903cb8', display: 'Madre' },
       { uuid: '8d91a210-c2cc-11de-8d13-0010c6dffd0f', display: 'Padre' },
       { uuid: '8d91a01c-c2cc-11de-8d13-0010c6dffd0f', display: 'Hermano' },
       { uuid: '5c2f978d-3b7d-493c-9e8f-cb3d1c0b6a55', display: 'Abuelo' },
-      { uuid: '8d91a3dc-c2cc-11de-8d13-0010c6dffd0f', display: 'Tío' },
-      { uuid: '8d91a3dc-c2cc-11de-8d13-0010c6dffd00', display: 'Sobrino' },
+      { uuid: 'ea373db3-5902-4307-9258-f35b79f8c8a0', display: 'Tío' },
+      { uuid: '88db8237-ce55-4dec-99f8-ad8854735ba7', display: 'Primo' },
+      { uuid: 'ee7ab8d4-1c75-47c1-8339-047a85e1880b', display: 'Bisabuelo' },
+      // Familia sin consanguinidad (weight 0): cónyuges, afinidad y adopción
+      { uuid: '6b1c5e8f-32f7-41b3-bc2a-8b3e97a6d937', display: 'Esposo' },
+      { uuid: 'c964be38-ffda-45ec-ab8c-2dcdfafdd1a8', display: 'Pareja' },
+      { uuid: 'fd6b17aa-a0cc-464d-b6cd-b4dd15f2893e', display: 'Padrastro' },
+      { uuid: '9cf7e2ca-b3ea-4f8d-ac26-bcccbec509b2', display: 'Madrastra' },
+      { uuid: '5d542bc2-78eb-4f02-8207-d1d7309b7215', display: 'Padre adoptivo' },
+      { uuid: '18e663df-4587-486a-abd6-e4f440dcb731', display: 'Madre adoptiva' },
+      { uuid: '488f6542-fa00-473f-91a8-39abe5472fc3', display: 'Yerno' },
+      { uuid: 'f29a285e-aff3-40e6-976e-f244a1e83536', display: 'Nuera' },
     ],
   },
 
@@ -20,7 +35,7 @@ export const configSchema = {
     _description: 'List of Partner relationships (PNS - Partner Notification Service)',
     _default: [
       { uuid: '6b1c5e8f-32f7-41b3-bc2a-8b3e97a6d937', display: 'Esposo', sexual: true },
-      { uuid: '1e3f4a5b-6789-4cde-9101-abcdef123457', display: 'Pareja', sexual: true },
+      { uuid: 'c964be38-ffda-45ec-ab8c-2dcdfafdd1a8', display: 'Pareja', sexual: true },
       { uuid: 'a2b5c9f8-0d2a-4bdf-8d9b-6f3b2d1e5a2f', display: 'Otro' },
     ],
   },
@@ -131,7 +146,7 @@ export const configSchema = {
       preferedPnsAproach: '98c0a958-515e-4dec-a771-7a4cb9aa5492',
       livingWithContact: '1a951a91-231f-4a3a-9a22-e396fa93455c',
       contactipvOutcome: '81a8b164-befa-4cac-8978-da059082297c',
-      dataConsent: '49ff9334-9d9-47d0-a236-72c0c9d4dea9',
+      dataConsent: '49ff9334-09d9-47d0-a236-72c0c9d4dea9',
     },
   },
 

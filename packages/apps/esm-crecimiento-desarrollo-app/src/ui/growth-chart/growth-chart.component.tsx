@@ -80,6 +80,7 @@ const GrowthChart: React.FC<GrowthChartProps> = ({
 
   const memoizedChartData = useMemo(() => rawChartData, []);
   const { chartDataForGender } = useChartDataForGender(gender, memoizedChartData);
+  const currentDate = useMemo(() => new Date(), []);
 
   const categories: GrowthChartCategoryItem[] = useMemo(
     () =>
@@ -129,8 +130,8 @@ const GrowthChart: React.FC<GrowthChartProps> = ({
     [categories],
   );
 
-  const childAgeInWeeks = useMemo(() => differenceInWeeks(new Date(), dateOfBirth), [dateOfBirth]);
-  const childAgeInMonths = useMemo(() => differenceInMonths(new Date(), dateOfBirth), [dateOfBirth]);
+  const childAgeInWeeks = useMemo(() => differenceInWeeks(currentDate, dateOfBirth), [currentDate, dateOfBirth]);
+  const childAgeInMonths = useMemo(() => differenceInMonths(currentDate, dateOfBirth), [currentDate, dateOfBirth]);
 
   const { selectedDataset } = useAppropriateChartData(
     chartDataForGender,
@@ -211,9 +212,16 @@ const GrowthChart: React.FC<GrowthChartProps> = ({
 
   const hasPatientMeasurements = measurementPlotData.length > 0;
   const latestMeasurement = useMemo(() => {
-    return measurementPlotData
-      .filter((entry) => entry.eventDate && !Number.isNaN(entry.eventDate.getTime()))
-      .sort((left, right) => (right.eventDate?.getTime() ?? 0) - (left.eventDate?.getTime() ?? 0))[0];
+    return measurementPlotData.reduce<GrowthChartPoint | undefined>((latest, entry) => {
+      const entryTime = entry.eventDate?.getTime();
+      const latestTime = latest?.eventDate?.getTime();
+
+      if (entryTime === undefined || Number.isNaN(entryTime)) {
+        return latest;
+      }
+
+      return latestTime === undefined || Number.isNaN(latestTime) || entryTime > latestTime ? entry : latest;
+    }, undefined);
   }, [measurementPlotData]);
 
   const latestInterpretation = useMemo(() => {
@@ -324,7 +332,7 @@ const GrowthChart: React.FC<GrowthChartProps> = ({
               {gender === GenderCodes.CGC_Female ? t('female', 'Femenino') : t('male', 'Masculino')}
             </Tag>
             <Tag type="gray" className={classNames('ml-2', styles.datasetTag)}>
-              {age(dateOfBirth, new Date())}
+              {age(dateOfBirth, currentDate)}
             </Tag>
             <Tag type="teal" className={styles.datasetTag}>
               {datasetMetadata.range.start}-{datasetMetadata.range.end} {rangeUnitLabel}

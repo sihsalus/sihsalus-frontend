@@ -19,6 +19,10 @@ import { chartData as rawChartData } from './data-sets/WhoStandardDataSets/Chart
 import styles from './growth-chart.scss';
 import { buildGrowthChartOptions } from './growth-chart-options';
 import {
+  formatZScore,
+  getGrowthChartInterpretation,
+  type GrowthChartInterpretationCode,
+  type GrowthChartInterpretationSeverity,
   type GrowthChartPoint,
   getMeasurementXValue,
   isMeasurementUsableForDataset,
@@ -212,6 +216,20 @@ const GrowthChart: React.FC<GrowthChartProps> = ({
       .sort((left, right) => (right.eventDate?.getTime() ?? 0) - (left.eventDate?.getTime() ?? 0))[0];
   }, [measurementPlotData]);
 
+  const latestInterpretation = useMemo(() => {
+    if (!latestMeasurement) {
+      return null;
+    }
+
+    return getGrowthChartInterpretation({
+      category: selectedCategoryKey,
+      xValue: latestMeasurement.date,
+      measurementValue: latestMeasurement.value,
+      zScoreDatasetValues: dataSetEntry?.zScoreDatasetValues ?? [],
+      startIndex,
+    });
+  }, [dataSetEntry?.zScoreDatasetValues, latestMeasurement, selectedCategoryKey, startIndex]);
+
   const data = useMemo(() => [...chartLineData, ...measurementPlotData], [chartLineData, measurementPlotData]);
   const colorScale = useMemo<Record<string, string>>(() => {
     const dataGroups = new Set(data.map((entry) => entry.group));
@@ -311,6 +329,11 @@ const GrowthChart: React.FC<GrowthChartProps> = ({
             <Tag type="teal" className={styles.datasetTag}>
               {datasetMetadata.range.start}-{datasetMetadata.range.end} {rangeUnitLabel}
             </Tag>
+            {latestInterpretation ? (
+              <Tag type={getInterpretationTagType(latestInterpretation.severity)} className={styles.datasetTag}>
+                {t('latestZScore', 'Z-score')} {formatZScore(latestInterpretation.zScore)}
+              </Tag>
+            ) : null}
           </div>
           <div className={styles.summaryText}>
             <span>{t('whoGrowthReference', 'Estándares OMS de crecimiento infantil')}</span>
@@ -322,6 +345,11 @@ const GrowthChart: React.FC<GrowthChartProps> = ({
             {latestMeasurement ? (
               <span>
                 {t('latestMeasurementDate', 'Última medición')}: {latestMeasurement.eventDate?.toLocaleDateString()}
+              </span>
+            ) : null}
+            {latestInterpretation ? (
+              <span>
+                {t('growthInterpretation', 'Interpretación referencial')}: {translateInterpretationCode(latestInterpretation.code, t)}
               </span>
             ) : null}
           </div>
@@ -399,6 +427,54 @@ function translateAxisLabel(label: string, t: TFunction) {
       return t('headCircumferenceCmAxisLabel', 'Perímetro cefálico (cm)');
     default:
       return label;
+  }
+}
+
+function getInterpretationTagType(severity: GrowthChartInterpretationSeverity): 'red' | 'warm-gray' | 'green' {
+  switch (severity) {
+    case 'critical':
+      return 'red';
+    case 'warning':
+      return 'warm-gray';
+    default:
+      return 'green';
+  }
+}
+
+function translateInterpretationCode(code: GrowthChartInterpretationCode, t: TFunction) {
+  switch (code) {
+    case 'veryLowWeight':
+      return t('growthInterpretationVeryLowWeight', 'Peso muy bajo para la edad');
+    case 'lowWeight':
+      return t('growthInterpretationLowWeight', 'Bajo peso para la edad');
+    case 'highWeight':
+      return t('growthInterpretationHighWeight', 'Peso alto para la edad');
+    case 'veryHighWeight':
+      return t('growthInterpretationVeryHighWeight', 'Peso muy alto para la edad');
+    case 'severeWasting':
+      return t('growthInterpretationSevereWasting', 'Desnutrición aguda severa');
+    case 'moderateWasting':
+      return t('growthInterpretationModerateWasting', 'Desnutrición aguda moderada');
+    case 'overweight':
+      return t('growthInterpretationOverweight', 'Sobrepeso');
+    case 'obesity':
+      return t('growthInterpretationObesity', 'Obesidad');
+    case 'veryShortStature':
+      return t('growthInterpretationVeryShortStature', 'Talla muy baja para la edad');
+    case 'shortStature':
+      return t('growthInterpretationShortStature', 'Talla baja para la edad');
+    case 'tallStature':
+      return t('growthInterpretationTallStature', 'Talla alta para la edad');
+    case 'veryLowHeadCircumference':
+      return t('growthInterpretationVeryLowHeadCircumference', 'Perímetro cefálico muy bajo para la edad');
+    case 'lowHeadCircumference':
+      return t('growthInterpretationLowHeadCircumference', 'Perímetro cefálico bajo para la edad');
+    case 'highHeadCircumference':
+      return t('growthInterpretationHighHeadCircumference', 'Perímetro cefálico alto para la edad');
+    case 'veryHighHeadCircumference':
+      return t('growthInterpretationVeryHighHeadCircumference', 'Perímetro cefálico muy alto para la edad');
+    default:
+      return t('growthInterpretationNormal', 'Dentro del rango esperado');
   }
 }
 

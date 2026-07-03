@@ -248,18 +248,20 @@ es frágil porque:
 
 ### Estado actual de `sihsalus-content`
 
-En `/Users/duvet05/Downloads/sihsalus-content/configuration/backend_configuration/personattributetypes/personattributetypes.csv` no existen hoy atributos de persona para documento civil. Los atributos existentes cubren teléfono, celular, email, filiación administrativa, seguro, historia clínica, no identificado, responsable de emergencia, estado de identificación, PNS, etc.
+En `/Users/duvet05/Downloads/sihsalus-content/configuration/backend_configuration/personattributetypes/personattributetypes.csv` ya existen atributos de persona para documento civil primario y verificación de identidad:
 
-Existe metadata documental para profesionales en `/Users/duvet05/Downloads/sihsalus-content/configuration/backend_configuration/attributetypes/attribute_types.csv`, pero son atributos de `Provider`:
+- `Tipo de Documento de Identidad` (`6f5c0b8a-9e91-4d41-9a8c-8b0f3c2e7a11`), `Format=org.openmrs.Concept`, `Foreign=0ee5c6c4-16d0-5952-b3b3-d3a098e184fa`, `Searchable=true`;
+- `Código de Documento de Identidad` (`c0d1a2b3-4e5f-4a6b-9c7d-8e9f0a1b2c3d`), `Format=java.lang.String`, `Searchable=true`;
+- `Estado de Verificación de Identidad` (`a7e3f8c1-2d4b-4f9a-8c6e-1b2d3f4a5c6e`), `Format=org.openmrs.Concept`;
+- `Fuente de Verificación de Identidad` (`e2a9c7b1-5d6f-4c8a-9b3e-7f1d2a0c6e5b`), `Format=org.openmrs.Concept`;
+- `Fecha y Hora de Verificación de Identidad` (`4a9e2c7f-6d1b-4b8a-9f3e-2c5d7a0b1e6f`), `Format=java.lang.String`;
+- `Observación de Verificación de Identidad` (`d3e5b4d9-93c2-461e-822e-3cecd64b1842`), `Format=java.lang.String`.
 
-- `Tipo de Documento de Identidad`;
-- `Número de Documento de Identidad`;
-- `País Emisor del Documento`;
-- nombres, apellidos, fecha de nacimiento y sexo del profesional.
+El set `Tipo de Documento de Identidad` ya mapea `DNI`, `CE`, `PASS`, `DIE`, `CNV` y `Sin Documento` en OCL. Los sets de estado y fuente también están en OCL mediante mappings `CONCEPT-SET`.
 
-Eso sirve para RENHICE/proveedores, no para responsables ni personas generales. No debe reutilizarse como si fuera identidad civil de `Person`; si un doctor aparece en búsqueda de responsables, su documento de provider puede ayudar a etiquetar o comparar, pero el flujo de responsable/promoción necesita `PersonAttributeType` propio.
+También existe metadata documental para profesionales en `/Users/duvet05/Downloads/sihsalus-content/configuration/backend_configuration/attributetypes/attribute_types.csv`, pero son atributos de `Provider`. Eso sirve para RENHICE/proveedores, no reemplaza la identidad civil de `Person`; si un doctor aparece en búsqueda de responsables, su documento de provider puede ayudar a etiquetar o comparar, pero el flujo de responsable/promoción debe usar los `PersonAttributeType` documentales.
 
-En cambio, `/Users/duvet05/Downloads/sihsalus-content/configuration/backend_configuration/patientidentifiertypes/patientidentifiertypes.csv` ya tiene tipos de identificador de paciente para:
+En `/Users/duvet05/Downloads/sihsalus-content/configuration/backend_configuration/patientidentifiertypes/patientidentifiertypes.csv` existen tipos de identificador de paciente para:
 
 - `DNI`, con regex `^[0-9]{8}$` y unicidad `UNIQUE`;
 - `CE`, con regex `^[A-Za-z0-9]{6,12}$` y unicidad `UNIQUE`;
@@ -267,32 +269,32 @@ En cambio, `/Users/duvet05/Downloads/sihsalus-content/configuration/backend_conf
 - `DIE`, sin validación específica y `NON_UNIQUE`;
 - `CNV`, con regex `^[0-9]{12}$` y unicidad `UNIQUE`.
 
-Eso significa que la validación fuerte por regex ya existe para `PatientIdentifierType`, pero no para datos de documento guardados como `PersonAttribute`.
+Eso significa que la validación fuerte por regex existe para `PatientIdentifierType`. Como `PersonAttributeType` no tiene columna de regex ni validator, el frontend y cualquier importador/capa backend propia deben reutilizar esas mismas reglas antes de guardar documento civil como atributo de persona.
 
-### Recomendación pragmática ajustada
+### Recomendación pragmática vigente
 
-Para el alcance inmediato, agregar en `sihsalus-content` atributos de persona para el documento primario de admisión/responsable:
+Mantener para el alcance inmediato el modelo de documento primario de admisión/responsable ya cargado en `sihsalus-content`:
 
-1. `Tipo de documento de identidad`
-   - `Format`: `org.openmrs.Concept`
-   - `Foreign`: set de conceptos de tipos de documento (`DNI`, `CE`, `PASS`, `DIE`, `CNV`, `SIN DOCUMENTO` si se decide). Validar en OCL que el concepto exista y dejarlo configurable. revisar el concept set.
-   - `Searchable`: `true` si la búsqueda por atributo codificado funciona correctamente en el backend instalado.
+1. `Tipo de Documento de Identidad`
+   - `Format`: `org.openmrs.Concept`.
+   - `Foreign`: set de conceptos de tipos de documento (`DNI`, `CE`, `PASS`, `DIE`, `CNV`, `SIN DOCUMENTO`).
+   - `Searchable`: `true`.
 
-2. `Número/codigo de documento de identidad`
-   - `Format`: `java.lang.String`
-   - `Searchable`: `true`
+2. `Código de Documento de Identidad`
+   - `Format`: `java.lang.String`.
+   - `Searchable`: `true`.
    - Se guarda normalizado: sin espacios ni guiones, mayúsculas para documentos alfanuméricos.
 
-3. `Estado de verificación de identidad`
-   - Preferible `Format`: `org.openmrs.Concept`
-   - Valores sugeridos: `No verificado`, `Validado`.
+3. `Estado de Verificación de Identidad`
+   - `Format`: `org.openmrs.Concept`.
+   - Valores actuales: `No verificado`, `Validado por RENIEC`, `Validado manualmente`, `En conflicto`, `Sin documento`.
 
-4. `Ente de verificación de identidad`
-   - Opcional, `Format`: `org.openmrs.Concept` o `java.lang.String`
-   - Valores: `RENIEC`, `MANUAL`, `Carga Masiva`, `MIGRACIONES`, `Sin fuente`.
+4. `Fuente de Verificación de Identidad`
+   - `Format`: `org.openmrs.Concept`.
+   - Valores actuales: `RENIEC`, `Migraciones`, `Documento físico`, `Carga masiva`, `Declaración verbal`, `Manual`, `Sin fuente`.
 
-5. `Fecha/hora de verificación de identidad`
-   - Opcional, `Format`: `java.lang.String` con ISO 8601.
+5. `Fecha y Hora de Verificación de Identidad` y `Observación de Verificación de Identidad`
+   - Soportan auditoría mínima de cuándo y cómo se verificó o corrigió el dato.
 
 Este modelo es deliberadamente de "documento primario registrado en admisión", no un repositorio completo de todos los documentos civiles de la persona.
 
@@ -301,13 +303,13 @@ Ventajas:
 - encaja con Initializer actual de `personattributetypes.csv`;
 - permite usar conceptos para mapear tipo documental;
 - permite buscar localmente por número de documento;
-- permite saber si el dato vino de RENIEC o de carga CSV/manual;
+- permite saber si el dato vino de RENIEC, Migraciones, carga CSV o registro manual;
 - permite bloquear edición en UI cuando el dato está validado por RENIEC;
 - permite mapear al `PatientIdentifierType` correcto durante promoción.
 
 Limitaciones:
 
-- `PersonAttributeType` no trae columna de regex ni validator como `PatientIdentifierType`; pero se puede usar el PatientIdentifierType como fuente de verdad para el regex creo.
+- `PersonAttributeType` no trae columna de regex ni validator como `PatientIdentifierType`;
 - la validación de formato para `PersonAttribute` debe vivir en frontend, servicio backend propio o proceso de importación;
 - no garantiza unicidad a nivel base de datos;
 - con solo un par `tipo + número`, no representa múltiples documentos activos;

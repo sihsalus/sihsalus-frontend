@@ -55,12 +55,12 @@ describe('Patient registration root', () => {
     mockRequirePrivilege.mockImplementation(({ children }) => <>{children}</>);
   });
 
-  it('protects patient registration with the admission privilege', async () => {
+  it('protects patient registration with the register patient frontend privilege', async () => {
     const { default: Root } = await import('./root.component');
 
     render(<Root />);
 
-    expect(mockRequirePrivilege).toHaveBeenCalledWith(expect.objectContaining({ privilege: 'app:adt' }));
+    expect(mockRequirePrivilege).toHaveBeenCalledWith(expect.objectContaining({ privilege: 'app:topnav.registerPatient' }));
     expect(screen.getByText('Patient registration page')).toBeInTheDocument();
   }, 15000);
 

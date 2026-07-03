@@ -41,29 +41,21 @@ export const configSchema = {
         },
         personAttributes: [
           {
-            attributeTypeUuid: '8b56eac7-5c76-4b9c-8c6f-1deab8d3fc47',
-            stringAnswerOptions: [
-              {
-                label: 'Sí',
-                value: 'true',
-              },
-              {
-                label: 'No',
-                value: 'false',
-              },
-            ],
+            attributeTypeUuid: '6f5c0b8a-9e91-4d41-9a8c-8b0f3c2e7a11',
+            answerConceptSetUuid: '0ee5c6c4-16d0-5952-b3b3-d3a098e184fa',
           },
           {
-            attributeTypeUuid: '4697d0e6-5b24-416b-aee6-708cd9a3a1db',
-            placeholder: 'Nombre del responsable o acompañante',
-            disallowNumbers: true,
+            attributeTypeUuid: 'c0d1a2b3-4e5f-4a6b-9c7d-8e9f0a1b2c3d',
+            placeholder: 'DNI, CE, pasaporte u otro documento',
           },
           {
-            attributeTypeUuid: 'a180fa5f-c44e-4490-a981-d7196b70c6ac',
-            placeholder: 'Parentesco o vínculo con el paciente',
-            disallowNumbers: true,
+            attributeTypeUuid: 'a7e3f8c1-2d4b-4f9a-8c6e-1b2d3f4a5c6e',
+            answerConceptSetUuid: 'eae30f8f-02f7-497a-a9e6-5b6516301a6d',
           },
-          // TODO: Enable identification status once the content package deploys that attribute type.
+          {
+            attributeTypeUuid: '787f1ea9-1792-45e5-9076-699b1a0638cb',
+            answerConceptSetUuid: 'e47c3ef7-c7e2-4d35-b2fa-934df43df2a5',
+          },
         ],
       },
       gender: {
@@ -186,7 +178,7 @@ export const configSchema = {
       // Telephone Number attribute type UUID
       '14d4f066-15f5-102d-96e4-000c29c2a5d7',
       // Email attribute type UUID
-      'e3d177ee-04ad-11ed-828d-0242ac1e0002',
+      '4bdf3a33-2f63-11f0-8ab4-1a7535b1b3e8',
     ],
   },
   defaultIdentifierTypes: {

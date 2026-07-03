@@ -14,6 +14,16 @@ import {
 } from './person-attributes.resource';
 import styles from './search-field.scss';
 
+export function isMissingPersonAttributeTypeError(error: unknown) {
+  const responseStatus =
+    typeof error === 'object' && error
+      ? ((error as { response?: { status?: number }; status?: number }).response?.status ??
+        (error as { status?: number }).status)
+      : undefined;
+
+  return responseStatus === 404 || (error instanceof Error && /\b404\b/.test(error.message));
+}
+
 export function sanitizePersonAttributeText(value: string, disallowNumbers?: boolean) {
   const text = Array.from(value)
     .filter((char) => {
@@ -41,6 +51,10 @@ export function PersonAttributeField({ field, control, isTablet }: PersonAttribu
   const { data: personAttributeType, isLoading, error } = usePersonAttributeType(field.attributeTypeUuid || '');
 
   const formatField = useMemo(() => {
+    if (!field.attributeTypeUuid) {
+      return null;
+    }
+
     if (!personAttributeType || isLoading) {
       return <TextInputSkeleton />;
     }
@@ -109,6 +123,10 @@ export function PersonAttributeField({ field, control, isTablet }: PersonAttribu
   }, [personAttributeType, isLoading, field, control, t, isTablet]);
 
   if (error) {
+    if (isMissingPersonAttributeTypeError(error)) {
+      return null;
+    }
+
     return (
       <InlineNotification kind="error" title={t('error', 'Error')}>
         {t('errorLoadingAttribute', 'Error loading attribute type {{attributeUuid}}', {
@@ -216,7 +234,7 @@ const ConceptAttributeField: React.FC<ConceptAttributeFieldProps> = ({
           itemToString={(item: OpenmrsResource) => item?.display}
           selectedItem={items.sort((a, b) => a.display.localeCompare(b.display)).find((item) => item.uuid === value)}
           onChange={({ selectedItem }) => onChange(selectedItem?.uuid)}
-          placeholder={t('selectOption', 'Select an option')}
+          placeholder={field.placeholder ?? t('selectOption', 'Select an option')}
           size={isTablet ? 'lg' : 'md'}
         />
       )}

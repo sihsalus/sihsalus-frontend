@@ -142,7 +142,7 @@ const peruFieldDefinitions: Array<FieldDefinition> = [
     uuid: '8d872150-c2cc-11de-8d13-0010c6dffd0f',
     label: 'Idioma nativo',
     showHeading: false,
-    answerConceptSetUuid: 'e103e272-b021-5573-b95b-26121fe8810d',
+    answerConceptSetUuid: '52f75b05-9a74-57b3-baeb-d2d300b62b09',
     searchable: true,
   },
   {
@@ -151,7 +151,7 @@ const peruFieldDefinitions: Array<FieldDefinition> = [
     uuid: '8d871afc-c2cc-11de-8d13-0010c6dffd0f',
     label: 'Ocupación',
     showHeading: false,
-    answerConceptSetUuid: 'c6eb629e-35a3-48c1-a9fe-a19cfd81bd72',
+    answerConceptSetUuid: 'd1c52a69-46b2-5c1e-ab88-5d5e6d2c8b49',
     searchable: true,
   },
   {

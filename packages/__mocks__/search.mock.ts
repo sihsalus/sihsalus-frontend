@@ -77,17 +77,40 @@ export const mockAdvancedSearchResults = [
     },
     attributes: [
       {
-        value: 'true',
+        value: {
+          uuid: 'f859ef8a-a7ca-5f74-b775-e19be71f5ba8',
+          display: 'Documento Nacional de Identidad (DNI)',
+        },
         attributeType: {
-          uuid: '8b56eac7-5c76-4b9c-8c6f-1deab8d3fc47',
-          display: 'Paciente No Identificado',
+          uuid: '6f5c0b8a-9e91-4d41-9a8c-8b0f3c2e7a11',
+          display: 'Tipo de Documento de Identidad',
         },
       },
       {
-        value: 'SAMU Loreto',
+        value: '12345678',
         attributeType: {
-          uuid: '4697d0e6-5b24-416b-aee6-708cd9a3a1db',
-          display: 'Nombre del Acompañante',
+          uuid: 'c0d1a2b3-4e5f-4a6b-9c7d-8e9f0a1b2c3d',
+          display: 'Código de Documento de Identidad',
+        },
+      },
+      {
+        value: {
+          uuid: '01c97f73-9e7d-420c-bd08-3ba82e8cc825',
+          display: 'Validado por RENIEC',
+        },
+        attributeType: {
+          uuid: 'a7e3f8c1-2d4b-4f9a-8c6e-1b2d3f4a5c6e',
+          display: 'Estado de Verificación de Identidad',
+        },
+      },
+      {
+        value: {
+          uuid: '9e42f0f1-d989-4604-902e-8a33f474f01e',
+          display: 'Identificación confirmada',
+        },
+        attributeType: {
+          uuid: '787f1ea9-1792-45e5-9076-699b1a0638cb',
+          display: 'Estado de Identificación en Admisión',
         },
       },
     ],
@@ -134,27 +157,40 @@ export const mockAdvancedSearchResults = [
     },
     attributes: [
       {
-        value: 'Familiar',
+        value: {
+          uuid: 'a0dd88f1-d1b6-4829-8a89-c7849b7c9a59',
+          display: 'Carné de Extranjería',
+        },
         attributeType: {
-          uuid: 'a180fa5f-c44e-4490-a981-d7196b70c6ac',
-          display: 'Parentesco del Acompañante',
+          uuid: '6f5c0b8a-9e91-4d41-9a8c-8b0f3c2e7a11',
+          display: 'Tipo de Documento de Identidad',
+        },
+      },
+      {
+        value: '87654321',
+        attributeType: {
+          uuid: 'c0d1a2b3-4e5f-4a6b-9c7d-8e9f0a1b2c3d',
+          display: 'Código de Documento de Identidad',
         },
       },
       {
         value: {
-          uuid: '1ce1b7d4-c865-4178-82b0-5932e51503d6',
-          display: 'Community Outreach',
-          links: [
-            {
-              rel: 'self',
-              uri: 'http://dev3.openmrs.org/openmrs/ws/rest/v1/location/1ce1b7d4-c865-4178-82b0-5932e51503d6',
-              resourceAlias: 'location',
-            },
-          ],
+          uuid: '4ff1586e-2186-4820-bc98-2535ddfbcb33',
+          display: 'No verificado',
         },
         attributeType: {
-          uuid: '8d87236c-c2cc-11de-8d13-0010c6dffd0f',
-          display: 'Health Center',
+          uuid: 'a7e3f8c1-2d4b-4f9a-8c6e-1b2d3f4a5c6e',
+          display: 'Estado de Verificación de Identidad',
+        },
+      },
+      {
+        value: {
+          uuid: 'bdb57e2a-d8fd-4e2b-8622-1ba60dcd3024',
+          display: 'No identificado',
+        },
+        attributeType: {
+          uuid: '787f1ea9-1792-45e5-9076-699b1a0638cb',
+          display: 'Estado de Identificación en Admisión',
         },
       },
     ],

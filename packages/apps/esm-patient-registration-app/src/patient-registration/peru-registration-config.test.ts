@@ -115,6 +115,8 @@ describe('getEffectiveRegistrationConfig', () => {
       label: 'Divorciado(a)',
     });
     expect(fieldsById.civilStatus.customConceptAnswers?.map((answer) => answer.label)).not.toContain('Divorced');
+    expect(fieldsById.nativeLanguage.answerConceptSetUuid).toBe('52f75b05-9a74-57b3-baeb-d2d300b62b09');
+    expect(fieldsById.occupation.answerConceptSetUuid).toBe('d1c52a69-46b2-5c1e-ab88-5d5e6d2c8b49');
     expect(fieldsById.insuranceType.customConceptAnswers?.map((answer) => answer.label)).toEqual([
       'SIS Gratuito',
       'SIS Emprendedor',

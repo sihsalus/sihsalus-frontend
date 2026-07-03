@@ -540,7 +540,7 @@
   "vaccine": "Vacuna",
   "vaccineRequired": "Debe seleccionar una vacuna",
   "validationError": "Error de validación",
-  "validationInputError": "El valor debe estar entre {{min}} y {{max}}",
+  "validationInputError": "Debe estar entre {{min}} y {{max}}",
   "value": "Valor",
   "viewSelector": "Select view type",
   "vitaminKAdmin": "Administración de vitamina K",

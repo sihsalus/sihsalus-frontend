@@ -13,13 +13,15 @@ import {
   Tile,
 } from '@carbon/react';
 import { Add, Edit, TrashCan } from '@carbon/react/icons';
-import { ConfigurableLink, isDesktop, useConfig, useLayoutType, usePagination } from '@openmrs/esm-framework';
+import { isDesktop, useConfig, useLayoutType, usePagination } from '@openmrs/esm-framework';
 import { CardHeader, EmptyDataIllustration, ErrorState, usePaginationInfo } from '@openmrs/esm-patient-common-lib';
 import React, { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
+import RelativeNameCell from '../components/relative-name-cell.component';
 import type { ConfigObject } from '../config-schema';
 import { deleteRelationship } from '../relationships/relationship.resources';
+import { isFamilyRelationship, sortByConsanguinityDegree } from '../utils';
 import { launchFichaFamiliarWorkspace } from '../workspace-utils';
 
 import ConceptObservations from './concept-obs.component';
@@ -44,7 +46,9 @@ const FamilyHistory: React.FC<FamilyHistoryProps> = ({ patientUuid }) => {
   const { relationships, error, isLoading, isValidating } = usePatientRelationships(patientUuid);
 
   const familyRelationshipTypeUUIDs = new Set(familyRelationshipsTypeList.map((type) => type.uuid));
-  const familyRelationships = relationships.filter((r) => familyRelationshipTypeUUIDs.has(r.relationshipTypeUUID));
+  const familyRelationships = sortByConsanguinityDegree(
+    relationships.filter((r) => isFamilyRelationship(r, familyRelationshipTypeUUIDs)),
+  );
 
   const headerTitle = t('familyContacts', 'Family contacts');
   const { results, totalPages, currentPage, goTo } = usePagination(familyRelationships, pageSize);
@@ -58,6 +62,10 @@ const FamilyHistory: React.FC<FamilyHistoryProps> = ({ patientUuid }) => {
     {
       header: t('relationToPatient', 'Relation with Patient'),
       key: 'relation',
+    },
+    {
+      header: t('consanguinityDegree', 'Grado de consanguinidad'),
+      key: 'consanguinityDegree',
     },
     {
       header: t('age', 'Age'),
@@ -99,14 +107,17 @@ const FamilyHistory: React.FC<FamilyHistoryProps> = ({ patientUuid }) => {
       return {
         id: `${relation.uuid}`,
         name: (
-          <ConfigurableLink
-            style={{ textDecoration: 'none' }}
-            to={globalThis.getOpenmrsSpaBase() + `patient/${relation.relativeUuid}/chart/Patient Summary`}
-          >
-            {relation.name}
-          </ConfigurableLink>
+          <RelativeNameCell
+            name={relation.name}
+            isPatient={relation.isPatient}
+            patientUuid={relation.patientUuid}
+            relativeUuid={relation.relativeUuid}
+            dead={relation.dead}
+          />
         ),
         relation: relation?.relationshipType,
+        consanguinityDegree:
+          relation.consanguinityDegree >= 1 ? `${relation.consanguinityDegree}°` : t('noConsanguinity', 'Sin consanguinidad'),
         age: relation?.relativeAge ?? '--',
         alive: relation?.dead ? t('dead', 'Dead') : t('alive', 'Alive'),
         causeOfDeath: (

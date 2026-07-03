@@ -107,12 +107,12 @@ export const configSchema = {
       atencionPrenatal: 'OBST-003-ATENCIÓN PRENATAL',
 
       // CRED Forms
-      atencionImmediataNewborn: '33b6449b-3fc6-3ec1-be3f-0bd29146315f',
-      breastfeedingObservation: '46624035-79b7-3025-abfc-b02249f16e77',
-      newbornNeuroEval: '87745826-b5ac-3366-b17f-5c7335c39006',
+      atencionImmediataNewborn: '(Página 5) ATENCIÓN INMEDIATA DEL RECIÉN NACIDO',
+      breastfeedingObservation: '(Página 8) Ficha de Observación del Amamantamiento de la Consejería en Lactancia Materna',
+      newbornNeuroEval: '(Página 6) EVALUACIÓN CÉFALO-CAUDAL Y NEUROLÓGICO DEL RECIÉN NACIDO',
       roomingIn: '(Página 10) Alojamiento Conjunto',
-      birthDetails: '8db0f1dc-c191-3468-854c-6c6c41ef6198',
-      pregnancyDetails: '307e2887-9902-3ab2-83d9-f3e48ef7bdb2',
+      birthDetails: '(CRED) Detalles de Nacimiento',
+      pregnancyDetails: '(CRED) Embarazo y Parto',
 
       // EEDP Forms
       eedp2Months: 'Página (30, 31, 32 y 33) EEDP (2 meses)',
@@ -188,6 +188,8 @@ export const configSchema = {
       homeVisitFollowupForm: 'CRED-023-VISITA DOMICILIARIA Y SEGUIMIENTO',
       referralInterconsultationForm: 'CRED-024-INTERCONSULTA DERIVACIÓN REFERENCIA',
       schoolHealthCounselingForm: 'CRED-025-CONSEJERÍA ESCOLAR Y LONCHERA SALUDABLE',
+      huancaNeurodevelopmentForm: 'CRED-026-HUANCA TEST VIGILANCIA NEURODESARROLLO',
+      expectedSkillsBehaviorsForm: 'CRED-027-LISTA HABILIDADES Y CONDUCTAS ESPERADAS',
       adverseReactionForm: 'INMU-002-REPORTE ESAVI',
     },
   },
@@ -1814,6 +1816,8 @@ export interface ConfigObject {
     homeVisitFollowupForm: string;
     referralInterconsultationForm: string;
     schoolHealthCounselingForm: string;
+    huancaNeurodevelopmentForm: string;
+    expectedSkillsBehaviorsForm: string;
     adverseReactionForm: string;
   };
   adverseReactionReporting: {

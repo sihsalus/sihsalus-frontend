@@ -13,11 +13,46 @@ export interface GrowthChartPoint {
   isPatientMeasurement?: boolean;
 }
 
+export type GrowthChartInterpretationCode =
+  | 'normal'
+  | 'veryLowWeight'
+  | 'lowWeight'
+  | 'highWeight'
+  | 'veryHighWeight'
+  | 'severeWasting'
+  | 'moderateWasting'
+  | 'overweight'
+  | 'obesity'
+  | 'veryShortStature'
+  | 'shortStature'
+  | 'tallStature'
+  | 'veryLowHeadCircumference'
+  | 'lowHeadCircumference'
+  | 'highHeadCircumference'
+  | 'veryHighHeadCircumference';
+
+export type GrowthChartInterpretationSeverity = 'normal' | 'warning' | 'critical';
+
+export interface GrowthChartInterpretation {
+  zScore: number;
+  code: GrowthChartInterpretationCode;
+  severity: GrowthChartInterpretationSeverity;
+}
+
 const MS_PER_DAY = 1000 * 60 * 60 * 24;
 const DAYS_PER_MONTH = 30.44;
 const RANGE_TOLERANCE = 0.001;
 
 const measurementAxisLabels = Object.values(MeasurementTypeCodesLabel) as string[];
+const zScoreReferencePoints = [
+  { key: 'SD3neg', zScore: -3 },
+  { key: 'SD2neg', zScore: -2 },
+  { key: 'SD1neg', zScore: -1 },
+  { key: 'SD0', zScore: 0 },
+  { key: 'SD1', zScore: 1 },
+  { key: 'SD2', zScore: 2 },
+  { key: 'SD3', zScore: 3 },
+];
 
 export function selectDatasetForCategory(
   chartDataForGender: ChartData,
@@ -128,6 +163,42 @@ export function isWeightForLengthHeightCategory(category: keyof typeof CategoryC
   return category === CategoryCodes.wflh_b || category === CategoryCodes.wflh_g;
 }
 
+export function getGrowthChartInterpretation({
+  category,
+  xValue,
+  measurementValue,
+  zScoreDatasetValues,
+  startIndex,
+}: {
+  category: keyof typeof CategoryCodes;
+  xValue: number;
+  measurementValue: number;
+  zScoreDatasetValues: Array<Record<string, number>>;
+  startIndex: number;
+}): GrowthChartInterpretation | null {
+  const referenceRow = getInterpolatedZScoreReferenceRow(zScoreDatasetValues, xValue, startIndex);
+  if (!referenceRow) {
+    return null;
+  }
+
+  const zScore = estimateZScore(measurementValue, referenceRow);
+  if (zScore === null) {
+    return null;
+  }
+
+  const code = getInterpretationCode(category, zScore);
+  return {
+    zScore,
+    code,
+    severity: getInterpretationSeverity(code),
+  };
+}
+
+export function formatZScore(zScore: number) {
+  const roundedValue = Number(zScore.toFixed(1));
+  return (roundedValue > 0 ? '+' : '') + roundedValue.toFixed(1);
+}
+
 function selectMeasurementAxisDataset(
   datasetEntries: Array<[string, ChartData[string]['datasets'][string]]>,
   childAgeInMonths: number,
@@ -163,4 +234,145 @@ function getAgeValues(date: Date | string, dateOfBirth: Date) {
 
 function isWithinRange(value: number, range: { start: number; end: number }) {
   return value >= range.start - RANGE_TOLERANCE && value <= range.end + RANGE_TOLERANCE;
+}
+
+function getInterpolatedZScoreReferenceRow(
+  zScoreDatasetValues: Array<Record<string, number>>,
+  xValue: number,
+  startIndex: number,
+) {
+  if (!zScoreDatasetValues.length) {
+    return null;
+  }
+
+  const position = xValue - startIndex;
+  const lowerIndex = Math.floor(position);
+  const upperIndex = Math.ceil(position);
+
+  if (lowerIndex < 0 || upperIndex >= zScoreDatasetValues.length) {
+    return null;
+  }
+
+  const lowerRow = zScoreDatasetValues[lowerIndex];
+  const upperRow = zScoreDatasetValues[upperIndex];
+  const ratio = upperIndex === lowerIndex ? 0 : position - lowerIndex;
+  const interpolatedRow: Record<string, number> = {};
+
+  zScoreReferencePoints.forEach(({ key }) => {
+    const lowerValue = toFiniteNumber(lowerRow[key]);
+    const upperValue = toFiniteNumber(upperRow[key]);
+
+    if (lowerValue !== null && upperValue !== null) {
+      interpolatedRow[key] = lowerValue + (upperValue - lowerValue) * ratio;
+    }
+  });
+
+  return Object.keys(interpolatedRow).length ? interpolatedRow : null;
+}
+
+function estimateZScore(measurementValue: number, referenceRow: Record<string, number>) {
+  const referencePoints = zScoreReferencePoints
+    .map(({ key, zScore }) => {
+      const value = toFiniteNumber(referenceRow[key]);
+      return value === null ? null : { value, zScore };
+    })
+    .filter((point): point is { value: number; zScore: number } => point !== null)
+    .sort((left, right) => left.value - right.value);
+
+  if (referencePoints.length < 2) {
+    return null;
+  }
+
+  const exactPoint = referencePoints.find((point) => Math.abs(point.value - measurementValue) <= RANGE_TOLERANCE);
+  if (exactPoint) {
+    return exactPoint.zScore;
+  }
+
+  if (measurementValue < referencePoints[0].value) {
+    return interpolateZScore(referencePoints[0], referencePoints[1], measurementValue);
+  }
+
+  const lastIndex = referencePoints.length - 1;
+  if (measurementValue > referencePoints[lastIndex].value) {
+    return interpolateZScore(referencePoints[lastIndex - 1], referencePoints[lastIndex], measurementValue);
+  }
+
+  for (let index = 0; index < referencePoints.length - 1; index++) {
+    const lowerPoint = referencePoints[index];
+    const upperPoint = referencePoints[index + 1];
+
+    if (measurementValue >= lowerPoint.value && measurementValue <= upperPoint.value) {
+      return interpolateZScore(lowerPoint, upperPoint, measurementValue);
+    }
+  }
+
+  return null;
+}
+
+function interpolateZScore(
+  lowerPoint: { value: number; zScore: number },
+  upperPoint: { value: number; zScore: number },
+  measurementValue: number,
+) {
+  if (Math.abs(upperPoint.value - lowerPoint.value) <= RANGE_TOLERANCE) {
+    return lowerPoint.zScore;
+  }
+
+  const ratio = (measurementValue - lowerPoint.value) / (upperPoint.value - lowerPoint.value);
+  return lowerPoint.zScore + (upperPoint.zScore - lowerPoint.zScore) * ratio;
+}
+
+function getInterpretationCode(
+  category: keyof typeof CategoryCodes,
+  zScore: number,
+): GrowthChartInterpretationCode {
+  if (isWeightForLengthHeightCategory(category)) {
+    if (zScore <= -3) return 'severeWasting';
+    if (zScore < -2) return 'moderateWasting';
+    if (zScore >= 3) return 'obesity';
+    if (zScore > 2) return 'overweight';
+    return 'normal';
+  }
+
+  if (category === CategoryCodes.wfa_b || category === CategoryCodes.wfa_g) {
+    if (zScore <= -3) return 'veryLowWeight';
+    if (zScore < -2) return 'lowWeight';
+    if (zScore >= 3) return 'veryHighWeight';
+    if (zScore > 2) return 'highWeight';
+    return 'normal';
+  }
+
+  if (category === CategoryCodes.lhfa_b || category === CategoryCodes.lhfa_g) {
+    if (zScore <= -3) return 'veryShortStature';
+    if (zScore < -2) return 'shortStature';
+    if (zScore > 2) return 'tallStature';
+    return 'normal';
+  }
+
+  if (category === CategoryCodes.hcfa_b || category === CategoryCodes.hcfa_g) {
+    if (zScore <= -3) return 'veryLowHeadCircumference';
+    if (zScore < -2) return 'lowHeadCircumference';
+    if (zScore >= 3) return 'veryHighHeadCircumference';
+    if (zScore > 2) return 'highHeadCircumference';
+  }
+
+  return 'normal';
+}
+
+function getInterpretationSeverity(code: GrowthChartInterpretationCode): GrowthChartInterpretationSeverity {
+  switch (code) {
+    case 'normal':
+      return 'normal';
+    case 'lowWeight':
+    case 'highWeight':
+    case 'moderateWasting':
+    case 'overweight':
+    case 'shortStature':
+    case 'tallStature':
+    case 'lowHeadCircumference':
+    case 'highHeadCircumference':
+      return 'warning';
+    default:
+      return 'critical';
+  }
 }

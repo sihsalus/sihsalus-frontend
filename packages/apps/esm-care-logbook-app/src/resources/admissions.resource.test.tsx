@@ -145,6 +145,44 @@ describe('admissions resources', () => {
     });
   });
 
+  it('uses person identity document attributes when no patient document identifier exists', async () => {
+    mockOpenmrsFetch.mockResolvedValueOnce({
+      data: {
+        results: [
+          {
+            uuid: 'visit-person-document-attributes',
+            patient: {
+              uuid: 'patient-person-document-attributes',
+              identifiers: [{ identifier: '100002W', identifierType: { display: 'N° Historia Clínica' } }],
+              person: {
+                display: 'Paciente con Documento en Persona',
+                attributes: [
+                  { attributeType: { display: 'Tipo de Documento de Identidad' }, value: { display: 'DNI' } },
+                  { attributeType: { display: 'Código de Documento de Identidad' }, value: '12345678' },
+                  { attributeType: { display: 'Estado de Verificación de Identidad' }, value: 'validado_reniec' },
+                ],
+              },
+            },
+          },
+        ],
+      },
+    } as Awaited<ReturnType<typeof openmrsFetch>>);
+
+    const { result } = renderHook(() => useAdmissions(10), { wrapper });
+
+    await waitFor(() => expect(result.current.admissions).toHaveLength(1));
+    expect(result.current.admissions[0]).toMatchObject({
+      medicalRecordNumber: '100002W',
+      documentType: 'DNI',
+      documentNumber: '12345678',
+      identificationStatus: 'Validado por RENIEC',
+    });
+    expect(result.current.admissions[0].searchText).toEqual(
+      expect.stringContaining('Código de Documento de Identidad'),
+    );
+    expect(result.current.admissions[0].searchText).toEqual(expect.stringContaining('12345678'));
+  });
+
   it('indexes temporal, insurance, and structured responsible relationship data for admission searches', async () => {
     mockOpenmrsFetch.mockImplementation((url) => {
       const requestUrl = String(url);

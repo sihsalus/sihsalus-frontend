@@ -207,6 +207,31 @@ test('typing in the diagnosis search input triggers a search', async () => {
   expect(screen.getByText(/No diagnosis selected — Enter a diagnosis below/i)).toBeInTheDocument();
 });
 
+test('formats CIE-10 diagnosis search results and selected tags for readability', async () => {
+  const user = userEvent.setup();
+
+  mockFetchDiagnosisConceptsByName.mockResolvedValue([
+    {
+      uuid: 'cie10-f155',
+      display: 'TRASTORNOS MENTALES Y DEL COMPORTAMIENTO DEBIDOS AL USO DE OTROS ESTIMULANTES INCLUIDA (F155)',
+    },
+  ]);
+
+  renderVisitNotesForm();
+
+  const searchBox = screen.getByPlaceholderText('Choose a primary diagnosis');
+  await user.type(searchBox, 'f');
+
+  const formattedDiagnosis =
+    'F155 - Trastornos mentales y del comportamiento debidos al uso de otros estimulantes incluida';
+  const diagnosisOption = await screen.findByRole('button', { name: formattedDiagnosis });
+  expect(diagnosisOption).toBeInTheDocument();
+
+  await user.click(diagnosisOption);
+
+  expect(screen.getByTitle(formattedDiagnosis)).toBeInTheDocument();
+});
+
 test('renders an error message when no matching diagnoses are found', async () => {
   const user = userEvent.setup();
   mockFetchDiagnosisConceptsByName.mockResolvedValue([]);

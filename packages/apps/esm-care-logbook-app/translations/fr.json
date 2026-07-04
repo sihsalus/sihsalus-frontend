@@ -41,6 +41,8 @@
   "noAdmissionsFound": "Aucune prise en charge recente trouvee.",
   "noUpcomingAppointments": "Aucun rendez-vous a venir enregistre.",
   "noVisitHistory": "Aucun historique de prise en charge enregistre.",
+  "openingLegacyMergePatients": "Ouverture du flux legacy OpenMRS",
+  "openingLegacyMergePatientsHint": "La fusion reelle des patients s'execute hors du shell SPA afin d'utiliser l'ecran administratif OpenMRS.",
   "openLegacyMergePatients": "Ouvrir la fusion de patients",
   "patient": "Patient",
   "patientLoadError": "Impossible de charger le patient",

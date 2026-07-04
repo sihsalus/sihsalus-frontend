@@ -17,6 +17,11 @@ const sharedAppTestAliases = Object.fromEntries(
   Object.entries(sharedTestAliases).map(([key, value]) => [key, `../../${value}`]),
 );
 
+const workspaceBaseAliases: Record<string, string> = {
+  '@openmrs/esm-framework/src/internal': './test-utils/stubs/esm-framework-internal.mock.tsx',
+  '@openmrs/esm-framework': './test-utils/stubs/esm-framework.mock.tsx',
+};
+
 const appBaseAliases: Record<string, string> = {
   '@openmrs/esm-framework': '@openmrs/esm-framework/mock',
   '@openmrs/esm-translations': '@openmrs/esm-translations/mock',
@@ -73,7 +78,10 @@ export function defineWorkspaceVitestConfig(config: VitestConfigLike = {}) {
       {
         plugins: [plainScssPlugin],
         resolve: {
-          alias: createVitestAliases(packagesRoot, sharedWorkspaceTestAliases),
+          alias: createVitestAliases(packagesRoot, {
+            ...sharedWorkspaceTestAliases,
+            ...workspaceBaseAliases,
+          }),
         },
         test: {
           environment: 'happy-dom',

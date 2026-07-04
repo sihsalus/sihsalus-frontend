@@ -72,7 +72,7 @@ const plainScssPlugin = {
   },
 };
 
-export function defineWorkspaceVitestConfig(config: VitestConfigLike = {}) {
+function defineBaseVitestConfig(baseAliases: AliasMap, config: VitestConfigLike = {}) {
   return defineConfig(
     mergeConfig(
       {
@@ -80,7 +80,7 @@ export function defineWorkspaceVitestConfig(config: VitestConfigLike = {}) {
         resolve: {
           alias: createVitestAliases(packagesRoot, {
             ...sharedWorkspaceTestAliases,
-            ...workspaceBaseAliases,
+            ...baseAliases,
           }),
         },
         test: {
@@ -100,6 +100,14 @@ export function defineWorkspaceVitestConfig(config: VitestConfigLike = {}) {
   );
 }
 
+// Workspace (library) tests resolve `@openmrs/esm-framework` and its `/src/internal`
+// entrypoint to local stubs. App tests must NOT inherit these stubs: they rely on the
+// real `@openmrs/esm-framework/mock` and the framework's internal stores, so
+// `defineAppVitestConfig` deliberately passes no base framework aliases (see below).
+export function defineWorkspaceVitestConfig(config: VitestConfigLike = {}) {
+  return defineBaseVitestConfig(workspaceBaseAliases, config);
+}
+
 export { aliasPresets };
 
 export function defineAppVitestConfig(
@@ -113,22 +121,25 @@ export function defineAppVitestConfig(
   const { aliases = {}, extraAliases = [], test = {} } = options;
   const { setupFiles, ...restTest } = test;
 
-  return defineWorkspaceVitestConfig({
-    resolve: {
-      alias: [
-        ...extraAliases,
-        ...createVitestAliases(rootDir, {
-          ...sharedAppTestAliases,
-          ...appBaseAliases,
-          ...aliases,
-        }),
-      ],
+  return defineBaseVitestConfig(
+    {},
+    {
+      resolve: {
+        alias: [
+          ...extraAliases,
+          ...createVitestAliases(rootDir, {
+            ...sharedAppTestAliases,
+            ...appBaseAliases,
+            ...aliases,
+          }),
+        ],
+      },
+      test: {
+        ...restTest,
+        setupFiles: normalizeAppSetupFiles(setupFiles),
+      },
     },
-    test: {
-      ...restTest,
-      setupFiles: normalizeAppSetupFiles(setupFiles),
-    },
-  });
+  );
 }
 
 export function defineWorkspaceVitestConfigWithSetup(config: VitestConfigLike = {}) {

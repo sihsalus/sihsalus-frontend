@@ -14,7 +14,10 @@ type VitestConfigLike = {
     test?: TestOptions;
     [key: string]: unknown;
 };
-export declare function defineWorkspaceVitestConfig(config?: VitestConfigLike): UserConfig;
+type WorkspaceVitestOptions = {
+    frameworkStubs?: boolean;
+};
+export declare function defineWorkspaceVitestConfig(config?: VitestConfigLike, options?: WorkspaceVitestOptions): UserConfig;
 export { aliasPresets };
 export declare function defineAppVitestConfig(rootDir: string, options?: {
     aliases?: AliasMap;
@@ -24,5 +27,5 @@ export declare function defineAppVitestConfig(rootDir: string, options?: {
     }>;
     test?: VitestConfigLike['test'];
 }): UserConfig;
-export declare function defineWorkspaceVitestConfigWithSetup(config?: VitestConfigLike): UserConfig;
+export declare function defineWorkspaceVitestConfigWithSetup(config?: VitestConfigLike, options?: WorkspaceVitestOptions): UserConfig;
 //# sourceMappingURL=vitest-config.d.ts.map

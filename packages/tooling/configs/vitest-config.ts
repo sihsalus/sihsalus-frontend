@@ -100,12 +100,18 @@ function defineBaseVitestConfig(baseAliases: AliasMap, config: VitestConfigLike 
   );
 }
 
-// Workspace (library) tests resolve `@openmrs/esm-framework` and its `/src/internal`
-// entrypoint to local stubs. App tests must NOT inherit these stubs: they rely on the
-// real `@openmrs/esm-framework/mock` and the framework's internal stores, so
-// `defineAppVitestConfig` deliberately passes no base framework aliases (see below).
-export function defineWorkspaceVitestConfig(config: VitestConfigLike = {}) {
-  return defineBaseVitestConfig(workspaceBaseAliases, config);
+type WorkspaceVitestOptions = {
+  // Opt in to resolving `@openmrs/esm-framework` and its `/src/internal` entrypoint to
+  // the local stubs in `test-utils/stubs`. This is only appropriate for libraries whose
+  // tests are written against those stubs (e.g. esm-form-engine-lib). Most workspace libs
+  // and every app rely on the real `@openmrs/esm-framework` package / `/mock` and its
+  // internal stores, so the stubs are OFF by default to avoid shadowing exports the real
+  // module provides (parseDate, createUseStore, useStoreWithActions, ...).
+  frameworkStubs?: boolean;
+};
+
+export function defineWorkspaceVitestConfig(config: VitestConfigLike = {}, options: WorkspaceVitestOptions = {}) {
+  return defineBaseVitestConfig(options.frameworkStubs ? workspaceBaseAliases : {}, config);
 }
 
 export { aliasPresets };
@@ -142,14 +148,20 @@ export function defineAppVitestConfig(
   );
 }
 
-export function defineWorkspaceVitestConfigWithSetup(config: VitestConfigLike = {}) {
+export function defineWorkspaceVitestConfigWithSetup(
+  config: VitestConfigLike = {},
+  options: WorkspaceVitestOptions = {},
+) {
   const { test = {}, ...rest } = config;
   const { setupFiles, ...restTest } = test as TestOptions;
-  return defineWorkspaceVitestConfig({
-    ...rest,
-    test: {
-      ...restTest,
-      setupFiles: normalizeWorkspaceSetupFiles(setupFiles),
+  return defineWorkspaceVitestConfig(
+    {
+      ...rest,
+      test: {
+        ...restTest,
+        setupFiles: normalizeWorkspaceSetupFiles(setupFiles),
+      },
     },
-  });
+    options,
+  );
 }

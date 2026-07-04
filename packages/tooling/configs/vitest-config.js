@@ -75,12 +75,13 @@ function defineBaseVitestConfig(baseAliases, config = {}) {
     ),
   );
 }
-// Workspace (library) tests resolve `@openmrs/esm-framework` and its `/src/internal`
-// entrypoint to local stubs. App tests must NOT inherit these stubs: they rely on the
-// real `@openmrs/esm-framework/mock` and the framework's internal stores, so
-// `defineAppVitestConfig` deliberately passes no base framework aliases (see below).
-export function defineWorkspaceVitestConfig(config = {}) {
-  return defineBaseVitestConfig(workspaceBaseAliases, config);
+// Only libraries whose tests are written against the local stubs (e.g. esm-form-engine-lib)
+// should opt in via `{ frameworkStubs: true }`. Most workspace libs and every app rely on
+// the real `@openmrs/esm-framework` package / `/mock` and its internal stores, so the stubs
+// are OFF by default to avoid shadowing exports the real module provides (parseDate,
+// createUseStore, useStoreWithActions, ...).
+export function defineWorkspaceVitestConfig(config = {}, options = {}) {
+  return defineBaseVitestConfig(options.frameworkStubs ? workspaceBaseAliases : {}, config);
 }
 export { aliasPresets };
 export function defineAppVitestConfig(rootDir, options = {}) {
@@ -106,15 +107,18 @@ export function defineAppVitestConfig(rootDir, options = {}) {
     },
   );
 }
-export function defineWorkspaceVitestConfigWithSetup(config = {}) {
+export function defineWorkspaceVitestConfigWithSetup(config = {}, options = {}) {
   const { test = {}, ...rest } = config;
   const { setupFiles, ...restTest } = test;
-  return defineWorkspaceVitestConfig({
-    ...rest,
-    test: {
-      ...restTest,
-      setupFiles: normalizeWorkspaceSetupFiles(setupFiles),
+  return defineWorkspaceVitestConfig(
+    {
+      ...rest,
+      test: {
+        ...restTest,
+        setupFiles: normalizeWorkspaceSetupFiles(setupFiles),
+      },
     },
-  });
+    options,
+  );
 }
 //# sourceMappingURL=vitest-config.js.map

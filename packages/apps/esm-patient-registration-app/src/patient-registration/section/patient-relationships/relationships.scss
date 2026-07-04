@@ -21,6 +21,24 @@
   margin-bottom: layout.$spacing-05;
 }
 
+.relationshipTypeRow {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  column-gap: layout.$spacing-05;
+  margin-bottom: layout.$spacing-05;
+
+  .selectRelationshipType {
+    flex: 1 1 18rem;
+    margin-bottom: 0;
+  }
+}
+
+.companionCheckbox {
+  // Aligns the checkbox with the select input line, next to its label row.
+  margin-bottom: layout.$spacing-03;
+}
+
 .personEntrySwitcher {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));

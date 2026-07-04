@@ -12,6 +12,7 @@ export interface TextPersonAttributeFieldProps {
   personAttributeType: PersonAttributeTypeResponse;
   validationRegex?: string;
   label?: string;
+  placeholder?: string;
   required?: boolean;
   readOnly?: boolean;
 }
@@ -21,6 +22,7 @@ export function TextPersonAttributeField({
   personAttributeType,
   validationRegex,
   label,
+  placeholder,
   required,
   readOnly,
 }: TextPersonAttributeFieldProps) {
@@ -86,7 +88,7 @@ export function TextPersonAttributeField({
               onKeyDown={handleKeyDown}
               type={isPhoneField ? 'tel' : 'text'}
               inputMode={isPhoneField ? 'tel' : undefined}
-              placeholder={isPhoneField ? '+51900000000' : undefined}
+              placeholder={placeholder}
               maxLength={isPhoneField ? 20 : undefined}
               helperText={isPhoneField ? t('phoneHelperText', 'Use digits, spaces or hyphens') : undefined}
               required={required}

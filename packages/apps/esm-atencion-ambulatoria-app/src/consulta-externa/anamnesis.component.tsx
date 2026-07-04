@@ -8,6 +8,7 @@ import type { ConfigObject } from '../config-schema';
 import { useAnamnesis } from '../hooks/useAnamnesis';
 import { patientFormEntryWorkspace } from '../utils/constants';
 import styles from './consulta-externa-dashboard.scss';
+import MotivoConsulta from './motivo-consulta.component';
 
 interface AnamnesisProps {
   patientUuid: string;
@@ -43,6 +44,7 @@ const Anamnesis: React.FC<AnamnesisProps> = ({ patientUuid }) => {
           {t('addAnamnesis', 'Registrar Anamnesis')}
         </Button>
       </div>
+      <MotivoConsulta patientUuid={patientUuid} />
 
       {anamnesisEntries.length === 0 ? (
         <div className={styles.emptyState}>

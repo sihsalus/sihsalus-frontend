@@ -264,7 +264,20 @@ describe('PersonAttributeField', () => {
   });
 
   describe('Error Handling', () => {
-    it('shows an error notification when loading attribute type fails', () => {
+    it('hides missing optional attribute filters when the backend returns 404', () => {
+      mockUsePersonAttributeType.mockReturnValue({
+        data: null,
+        isLoading: false,
+        error: Object.assign(new Error('Not Found'), { response: { status: 404 } }),
+      });
+
+      const { container } = render(<PersonAttributeField {...defaultProps} />);
+
+      expect(container).toBeEmptyDOMElement();
+      expect(screen.queryByText('Error loading attribute type test-uuid')).not.toBeInTheDocument();
+    });
+
+    it('shows an error notification when loading attribute type fails for a non-404 reason', () => {
       mockUsePersonAttributeType.mockReturnValue({
         data: null,
         isLoading: false,

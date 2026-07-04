@@ -1,4 +1,4 @@
-import { useAppContext, useVisit, useWorkspace2Context } from '@openmrs/esm-framework';
+import { useAppContext, useSession, userHasAccess, useVisit, useWorkspace2Context } from '@openmrs/esm-framework';
 import { screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import {
@@ -21,6 +21,8 @@ import { useAdmitPatient } from '../../ward.resource';
 import CreateAdmissionEncounterWorkspace from './create-admission-encounter.workspace';
 
 vi.mocked(useAppContext<WardViewContext>).mockReturnValue(mockWardViewContext);
+const mockUseSession = vi.mocked(useSession);
+const mockUserHasAccess = vi.mocked(userHasAccess);
 const mockUseWorkspace2Context = vi.mocked(useWorkspace2Context);
 mockUseWorkspace2Context.mockReturnValue({
   closeWorkspace: vi.fn(),
@@ -58,6 +60,12 @@ mockedUseWardLocation.mockReturnValue({
   errorFetchingLocation: null,
   invalidLocation: false,
 });
+mockUseSession.mockReturnValue({
+  user: { uuid: 'user-1' },
+  currentProvider: { uuid: 'provider-1' },
+  sessionLocation: mockLocationInpatientWard,
+} as ReturnType<typeof useSession>);
+mockUserHasAccess.mockReturnValue(true);
 
 vi.mock('../../hooks/useRestPatient', () => ({ default: vi.fn() }));
 const _mockUseRestPatient = vi.mocked(useRestPatient).mockReturnValue({

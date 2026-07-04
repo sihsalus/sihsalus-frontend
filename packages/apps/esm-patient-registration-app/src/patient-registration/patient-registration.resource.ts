@@ -2,6 +2,7 @@ import { createAttachment, openmrsFetch, restBaseUrl, type UploadedFile } from '
 import dayjs from 'dayjs';
 
 import {
+  type AttributeValue,
   type Encounter,
   type Patient,
   type PatientAddress,
@@ -21,6 +22,8 @@ export interface SavePersonPayload {
   gender: string;
   birthdate?: string;
   birthdateEstimated?: boolean;
+  addresses?: Array<PatientAddress>;
+  attributes?: Array<AttributeValue>;
 }
 
 export interface PersonRegistrationCopyData {
@@ -68,6 +71,27 @@ export function savePatient(patient: Patient | null, updatePatientUuid?: string)
     },
     method: 'POST',
     body: patient,
+    signal: abortController.signal,
+  });
+}
+
+/**
+ * Promotes an existing person to patient. `person` must be the person UUID as a plain
+ * string — sending a nested `person: { uuid }` object would make the backend try to
+ * create a brand-new person. The promoted patient keeps the same UUID as the person.
+ */
+export function promotePersonToPatient(personUuid: string, identifiers: Array<PatientIdentifier>) {
+  const abortController = new AbortController();
+
+  return openmrsFetch(`${restBaseUrl}/patient`, {
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    method: 'POST',
+    body: {
+      person: personUuid,
+      identifiers,
+    },
     signal: abortController.signal,
   });
 }

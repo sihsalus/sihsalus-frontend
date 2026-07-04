@@ -1,9 +1,14 @@
-import { ActionMenuButton2, EventsIcon } from '@openmrs/esm-framework';
+import { ActionMenuButton2, EventsIcon, useSession, userHasAccess } from '@openmrs/esm-framework';
 import { type ComponentProps } from 'react';
 import { useTranslation } from 'react-i18next';
 
 function PatientListsActionButton() {
   const { t } = useTranslation();
+  const session = useSession();
+
+  if (!userHasAccess('app:patient-lists.edit', session?.user)) {
+    return null;
+  }
 
   return (
     <ActionMenuButton2

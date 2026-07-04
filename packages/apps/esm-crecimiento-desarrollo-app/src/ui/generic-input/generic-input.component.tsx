@@ -1,20 +1,20 @@
-import { FormLabel, NumberInput, TextArea } from '@carbon/react';
-import { Warning } from '@carbon/react/icons';
-import { ResponsiveWrapper, useLayoutType } from '@openmrs/esm-framework';
+import { FormLabel, NumberInput, TextArea } from "@carbon/react";
+import { Warning } from "@carbon/react/icons";
+import { ResponsiveWrapper, useLayoutType } from "@openmrs/esm-framework";
 import {
   shouldPreventPlainNumberKey,
   shouldPreventPlainNumberPaste,
   validatePlainNumberInput,
-} from '@openmrs/esm-utils';
-import classNames from 'classnames';
-import React, { Fragment, useId, useState } from 'react';
-import type { Control, Path } from 'react-hook-form';
-import { Controller } from 'react-hook-form';
-import { useTranslation } from 'react-i18next';
-import styles from './generic-input.scss';
+} from "@openmrs/esm-utils";
+import classNames from "classnames";
+import React, { Fragment, useId, useState } from "react";
+import type { Control, Path } from "react-hook-form";
+import { Controller } from "react-hook-form";
+import { useTranslation } from "react-i18next";
+import styles from "./generic-input.scss";
 
-type FieldTypes = 'number' | 'textarea';
-type AbnormalValue = 'critically_low' | 'critically_high' | 'high' | 'low';
+type FieldTypes = "number" | "textarea";
+type AbnormalValue = "critically_low" | "critically_high" | "high" | "low";
 
 interface FormData {
   [key: string]: number | string | undefined;
@@ -59,26 +59,36 @@ const GenericInput = <T extends FormData>({
 }: GenericInputProps<T>): JSX.Element => {
   const { t } = useTranslation();
   const fieldId = useId();
-  const isTablet = useLayoutType() === 'tablet';
+  const isTablet = useLayoutType() === "tablet";
   const [invalid, setInvalid] = useState(false);
   const [isFocused, setIsFocused] = useState(false);
 
-  const abnormalValues: AbnormalValue[] = ['critically_low', 'critically_high', 'high', 'low'];
-  const hasAbnormalValue = !isFocused && interpretation && abnormalValues.includes(interpretation as AbnormalValue);
+  const abnormalValues: AbnormalValue[] = [
+    "critically_low",
+    "critically_high",
+    "high",
+    "low",
+  ];
+  const hasAbnormalValue =
+    !isFocused &&
+    interpretation &&
+    abnormalValues.includes(interpretation as AbnormalValue);
 
   function checkValidity(
     value: string,
     onChange: (value: number | undefined) => void,
     field: (typeof fieldProperties)[0],
   ): void {
-    if (field.type === 'number' || !field.type) {
-      const nonNegative = field.nonNegative ?? (typeof field.min === 'number' && field.min >= 0);
-      const { isInvalid, isInvalidFormat, parsedValue } = validatePlainNumberInput(value, {
-        integer: field.integer,
-        max: field.max,
-        min: field.min,
-        nonNegative,
-      });
+    if (field.type === "number" || !field.type) {
+      const nonNegative =
+        field.nonNegative ?? (typeof field.min === "number" && field.min >= 0);
+      const { isInvalid, isInvalidFormat, parsedValue } =
+        validatePlainNumberInput(value, {
+          integer: field.integer,
+          max: field.max,
+          min: field.min,
+          nonNegative,
+        });
       setInvalid(isInvalid);
 
       if (!isInvalidFormat) {
@@ -89,14 +99,23 @@ const GenericInput = <T extends FormData>({
     }
   }
 
-  function preventInvalidNumberKey(event: React.KeyboardEvent<HTMLInputElement>, field: (typeof fieldProperties)[0]) {
+  function preventInvalidNumberKey(
+    event: React.KeyboardEvent<HTMLInputElement>,
+    field: (typeof fieldProperties)[0],
+  ) {
     if (event.ctrlKey || event.metaKey || event.altKey) {
       return;
     }
 
-    const nonNegative = field.nonNegative ?? (typeof field.min === 'number' && field.min >= 0);
+    const nonNegative =
+      field.nonNegative ?? (typeof field.min === "number" && field.min >= 0);
 
-    if (shouldPreventPlainNumberKey(event.key, { integer: field.integer, nonNegative })) {
+    if (
+      shouldPreventPlainNumberKey(event.key, {
+        integer: field.integer,
+        nonNegative,
+      })
+    ) {
       event.preventDefault();
     }
   }
@@ -105,8 +124,9 @@ const GenericInput = <T extends FormData>({
     event: React.ClipboardEvent<HTMLInputElement>,
     field: (typeof fieldProperties)[0],
   ) {
-    const pastedValue = event.clipboardData.getData('text');
-    const nonNegative = field.nonNegative ?? (typeof field.min === 'number' && field.min >= 0);
+    const pastedValue = event.clipboardData.getData("text");
+    const nonNegative =
+      field.nonNegative ?? (typeof field.min === "number" && field.min >= 0);
     if (
       shouldPreventPlainNumberPaste(pastedValue, {
         integer: field.integer,
@@ -132,7 +152,7 @@ const GenericInput = <T extends FormData>({
   });
 
   const inputClasses = classNames(styles.inputContainer, {
-    [styles['critical-value']]: hasAbnormalValue,
+    [styles["critical-value"]]: hasAbnormalValue,
     [styles.focused]: isFocused,
     [styles.readonly]: readOnly,
     [styles.invalidInput]: showInvalidInputError,
@@ -144,7 +164,10 @@ const GenericInput = <T extends FormData>({
         <section className={styles.labelContainer}>
           <span className={styles.label}>{label}</span>
           {hasAbnormalValue && (
-            <span className={styles[interpretation.replace('_', '-')]} title={t('abnormalValue', 'Valor anormal')} />
+            <span
+              className={styles[interpretation.replace("_", "-")]}
+              title={t("abnormalValue", "Valor anormal")}
+            />
           )}
           {showInvalidInputError && (
             <span className={styles.invalidInputIcon}>
@@ -156,7 +179,7 @@ const GenericInput = <T extends FormData>({
         <section className={inputClasses} style={fieldStyles}>
           <div
             className={classNames({
-              [styles.centered]: !isTablet || unitSymbol === 'mmHg',
+              [styles.centered]: !isTablet || unitSymbol === "mmHg",
             })}
           >
             {fieldProperties.map((fieldProperty) => (
@@ -166,12 +189,18 @@ const GenericInput = <T extends FormData>({
                     name={fieldProperty.id as Path<T>}
                     control={control}
                     render={({ field: { onChange, ref, value } }) => {
-                      if (fieldProperty.type === 'number' || !fieldProperty.type) {
+                      if (
+                        fieldProperty.type === "number" ||
+                        !fieldProperty.type
+                      ) {
                         return (
                           <NumberInput
                             allowEmpty
-                            className={classNames(styles.numberInput, fieldProperty.className)}
-                            defaultValue={''}
+                            className={classNames(
+                              styles.numberInput,
+                              fieldProperty.className,
+                            )}
+                            defaultValue={""}
                             disableWheel
                             hideSteppers
                             id={`${fieldId}-${fieldProperty.id}`}
@@ -179,22 +208,32 @@ const GenericInput = <T extends FormData>({
                             min={fieldProperty.min ?? undefined}
                             name={fieldProperty.name}
                             onBlur={() => handleFocusChange(false)}
-                            onChange={(event) => checkValidity(event.currentTarget.value, onChange, fieldProperty)}
+                            onChange={(event) =>
+                              checkValidity(
+                                event.currentTarget.value,
+                                onChange,
+                                fieldProperty,
+                              )
+                            }
                             onFocus={() => handleFocusChange(true)}
-                            onKeyDown={(event) => preventInvalidNumberKey(event, fieldProperty)}
-                            onPaste={(event) => preventInvalidNumberPaste(event, fieldProperty)}
+                            onKeyDown={(event) =>
+                              preventInvalidNumberKey(event, fieldProperty)
+                            }
+                            onPaste={(event) =>
+                              preventInvalidNumberPaste(event, fieldProperty)
+                            }
                             placeholder={placeholder} // Usar el prop directamente
                             readOnly={readOnly}
                             ref={ref}
                             style={fieldStyles}
                             step={fieldProperty.integer ? 1 : 0.1}
                             title={fieldProperty.name}
-                            value={value !== undefined ? (value as number) : ''}
+                            value={value !== undefined ? (value as number) : ""}
                           />
                         );
                       }
 
-                      if (fieldProperty.type === 'textarea') {
+                      if (fieldProperty.type === "textarea") {
                         return (
                           <TextArea
                             className={styles.textarea}
@@ -203,7 +242,13 @@ const GenericInput = <T extends FormData>({
                             maxCount={100}
                             name={fieldProperty.name}
                             onBlur={() => handleFocusChange(false)}
-                            onChange={(event) => checkValidity(event.currentTarget.value, onChange, fieldProperty)}
+                            onChange={(event) =>
+                              checkValidity(
+                                event.currentTarget.value,
+                                onChange,
+                                fieldProperty,
+                              )
+                            }
                             onFocus={() => handleFocusChange(true)}
                             placeholder={placeholder} // Usar el prop directamente
                             readOnly={readOnly}
@@ -211,7 +256,7 @@ const GenericInput = <T extends FormData>({
                             rows={2}
                             style={fieldStyles}
                             title={fieldProperty.name}
-                            value={value !== undefined ? (value as string) : ''}
+                            value={value !== undefined ? (value as string) : ""}
                           />
                         );
                       }
@@ -230,7 +275,7 @@ const GenericInput = <T extends FormData>({
 
       {showInvalidInputError && (
         <FormLabel className={styles.invalidInputError}>
-          {t('validationInputError', `El valor debe estar entre {{min}} y {{max}}`, {
+          {t("validationInputError", `Debe estar entre {{min}} y {{max}}`, {
             min: fieldProperties[0].min,
             max: fieldProperties[0].max,
           })}

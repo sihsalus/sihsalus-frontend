@@ -56,6 +56,8 @@ function extractAttributeData(person: Person, config: ConfigObject) {
 }
 
 function getContact(relationship: Relationship, config: ConfigObject, person: 'personA' | 'personB') {
+  const isPatient = !!relationship[person].isPatient;
+
   return {
     ...extractAttributeData(relationship[person], config),
     uuid: relationship.uuid,
@@ -65,8 +67,13 @@ function getContact(relationship: Relationship, config: ConfigObject, person: 'p
     dead: relationship[person].dead,
     causeOfDeath: relationship[person].causeOfDeath,
     relativeUuid: relationship[person].uuid,
-    relationshipType: relationship.relationshipType.bIsToA,
-    patientUuid: relationship[person].uuid,
+    relationshipType:
+      person === 'personB' ? relationship.relationshipType.bIsToA : relationship.relationshipType.aIsToB,
+    isPatient,
+    // Only a real Patient uuid may be used against patient endpoints; a plain Person
+    // has no clinical record and its uuid must not be treated as a patient's.
+    patientUuid: isPatient ? relationship[person].uuid : null,
+    consanguinityDegree: relationship.relationshipType.weight ?? 0,
     gender: relationship[person].gender,
     startDate: !relationship.startDate ? null : formatDate(parseDate(relationship.startDate)),
     age: relationship[person].age,
@@ -90,8 +97,11 @@ function extractContactData(
 }
 
 const useContacts = (patientUuid: string) => {
+  // `isPatient` distinguishes a Patient (clinical record) from a plain Person, and the
+  // relationship type `weight` carries the consanguinity degree — both verified as
+  // supported by the REST custom representation on the SIHSALUS backend.
   const customeRepresentation =
-    'custom:(display,uuid,personA:(uuid,age,display,dead,causeOfDeath,gender,attributes:(uuid,display,value,attributeType:(uuid,display))),personB:(uuid,age,display,dead,causeOfDeath,gender,attributes:(uuid,display,value,attributeType:(uuid,display))),relationshipType:(uuid,display,description,aIsToB,bIsToA),startDate)';
+    'custom:(display,uuid,personA:(uuid,age,display,dead,causeOfDeath,gender,isPatient,attributes:(uuid,display,value,attributeType:(uuid,display))),personB:(uuid,age,display,dead,causeOfDeath,gender,isPatient,attributes:(uuid,display,value,attributeType:(uuid,display))),relationshipType:(uuid,display,description,aIsToB,bIsToA,weight),startDate)';
   const url = `/ws/rest/v1/relationship?v=${customeRepresentation}&person=${patientUuid}`;
   const config = useConfig<ConfigObject>();
   const { data, error, isLoading, isValidating, mutate } = useSWR<{ data: { results: Relationship[] } }, Error>(

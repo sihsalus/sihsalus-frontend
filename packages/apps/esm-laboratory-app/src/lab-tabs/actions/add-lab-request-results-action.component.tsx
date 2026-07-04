@@ -1,9 +1,10 @@
 import { Button } from '@carbon/react';
-import { AddIcon, launchWorkspace2, type Order, restBaseUrl, useConfig } from '@openmrs/esm-framework';
+import { AddIcon, launchWorkspace2, type Order, restBaseUrl, useConfig, useSession, userHasAccess } from '@openmrs/esm-framework';
 import React from 'react';
 import { useTranslation } from 'react-i18next';
 import { mutate } from 'swr';
 import { type Config } from '../../config-schema';
+import { laboratoryEditPrivilege } from '../../constants';
 import styles from './actions.scss';
 
 interface AddLabRequestResultsActionProps {
@@ -16,6 +17,8 @@ const labAppTestResultsAddLabOrderWorkspaceName = 'lab-app-test-results-add-lab-
 const AddLabRequestResultsAction: React.FC<AddLabRequestResultsActionProps> = ({ order }) => {
   const { t } = useTranslation();
   const { laboratoryOrderTypeUuid } = useConfig<Config>();
+  const session = useSession();
+  const canEdit = userHasAccess(laboratoryEditPrivilege, session?.user);
 
   const invalidateLabOrders = () => {
     mutate(
@@ -40,6 +43,10 @@ const AddLabRequestResultsAction: React.FC<AddLabRequestResultsActionProps> = ({
       },
     );
   };
+
+  if (!canEdit) {
+    return null;
+  }
 
   return (
     <Button

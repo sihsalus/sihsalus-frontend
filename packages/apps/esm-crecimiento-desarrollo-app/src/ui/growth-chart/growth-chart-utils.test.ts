@@ -1,5 +1,11 @@
 import { CategoryCodes, type ChartData, DataSetLabels, MeasurementTypeCodesLabel, TimeUnitCodes } from './data-sets';
-import { getMeasurementXValue, isMeasurementUsableForDataset, selectDatasetForCategory } from './growth-chart-utils';
+import {
+  formatZScore,
+  getGrowthChartInterpretation,
+  getMeasurementXValue,
+  isMeasurementUsableForDataset,
+  selectDatasetForCategory,
+} from './growth-chart-utils';
 
 const chartData = {
   [CategoryCodes.wflh_b]: {
@@ -112,6 +118,50 @@ describe('growth-chart-utils', () => {
         dateOfBirth,
       ),
     ).toBe(52.5);
+  });
+
+  it('estimates z-score by interpolating between reference rows and z-score bands', () => {
+    const interpretation = getGrowthChartInterpretation({
+      category: CategoryCodes.wfa_b,
+      xValue: 0.5,
+      measurementValue: 16,
+      startIndex: 0,
+      zScoreDatasetValues: [
+        { SD3neg: 4, SD2neg: 6, SD1neg: 8, SD0: 10, SD1: 12, SD2: 14, SD3: 16 },
+        { SD3neg: 14, SD2neg: 16, SD1neg: 18, SD0: 20, SD1: 22, SD2: 24, SD3: 26 },
+      ],
+    });
+
+    expect(interpretation?.zScore).toBeCloseTo(0.5);
+    expect(interpretation?.code).toBe('normal');
+    expect(interpretation?.severity).toBe('normal');
+    expect(formatZScore(interpretation?.zScore ?? 0)).toBe('+0.5');
+  });
+
+  it('classifies severe wasting for weight-for-length/height charts', () => {
+    const interpretation = getGrowthChartInterpretation({
+      category: CategoryCodes.wflh_b,
+      xValue: 45,
+      measurementValue: 1.8,
+      startIndex: 45,
+      zScoreDatasetValues: [{ SD3neg: 2, SD2neg: 3, SD1neg: 4, SD0: 5, SD1: 6, SD2: 7, SD3: 8 }],
+    });
+
+    expect(interpretation?.zScore).toBeLessThan(-3);
+    expect(interpretation?.code).toBe('severeWasting');
+    expect(interpretation?.severity).toBe('critical');
+  });
+
+  it('returns null when no z-score reference row is available', () => {
+    expect(
+      getGrowthChartInterpretation({
+        category: CategoryCodes.wfa_b,
+        xValue: 0,
+        measurementValue: 10,
+        startIndex: 0,
+        zScoreDatasetValues: [],
+      }),
+    ).toBeNull();
   });
 
   it('filters measurements outside the selected dataset range or age band', () => {

@@ -1,5 +1,7 @@
+import { getDefaultsFromConfigSchema, useConfig, useSession, userHasAccess } from '@openmrs/esm-framework';
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
+import { type BillingConfig, configSchema } from '../config-schema';
 import { useBillableServices } from './billable-service.resource';
 import BillableServices from './billable-services.component';
 
@@ -9,6 +11,18 @@ vi.mock('./billable-service.resource', () => ({
 
 describe('BillableService', () => {
   const mockedUseBillableServices = useBillableServices as vi.Mock;
+  const mockUseConfig = vi.mocked(useConfig<BillingConfig>);
+  const mockUseSession = vi.mocked(useSession);
+  const mockUserHasAccess = vi.mocked(userHasAccess);
+
+  beforeEach(() => {
+    mockUseConfig.mockReturnValue({
+      ...getDefaultsFromConfigSchema(configSchema),
+      pageSize: 10,
+    });
+    mockUseSession.mockReturnValue({ user: { uuid: 'user-1' } } as ReturnType<typeof useSession>);
+    mockUserHasAccess.mockReturnValue(true);
+  });
 
   it('renders an empty state when there are no billable services', () => {
     mockedUseBillableServices.mockReturnValue({

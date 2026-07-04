@@ -499,6 +499,32 @@ export const configSchema = {
       _description:
         'UUID opcional del person attribute type para estado de identificación: pending, partial, confirmed, merged.',
     },
+    identificationStatusConcepts: {
+      pendingUuid: {
+        _type: Type.ConceptUuid,
+        _default: null,
+        _description:
+          'UUID opcional del concepto que representa estado de identificación = pendiente (si el person attribute type es Coded).',
+      },
+      partialUuid: {
+        _type: Type.ConceptUuid,
+        _default: null,
+        _description:
+          'UUID opcional del concepto que representa estado de identificación = parcial (si el person attribute type es Coded).',
+      },
+      confirmedUuid: {
+        _type: Type.ConceptUuid,
+        _default: null,
+        _description:
+          'UUID opcional del concepto que representa estado de identificación = confirmado (si el person attribute type es Coded).',
+      },
+      mergedUuid: {
+        _type: Type.ConceptUuid,
+        _default: null,
+        _description:
+          'UUID opcional del concepto que representa estado de identificación = fusionado (si el person attribute type es Coded).',
+      },
+    },
     administrativeNotesVisitAttributeTypeUuid: {
       _type: Type.UUID,
       _default: '6ffc9f6b-a9fb-434e-9b2d-4a2591cc16b3',
@@ -622,6 +648,12 @@ export interface Config {
     responsibleTypeAttributeTypeUuid: string | null;
     communicationConditionAttributeTypeUuid: string | null;
     identificationStatusAttributeTypeUuid: string | null;
+    identificationStatusConcepts: {
+      pendingUuid: string | null;
+      partialUuid: string | null;
+      confirmedUuid: string | null;
+      mergedUuid: string | null;
+    };
     administrativeNotesVisitAttributeTypeUuid: string | null;
     insuranceTypeConcepts: {
       sisGratuitoUuid: string;

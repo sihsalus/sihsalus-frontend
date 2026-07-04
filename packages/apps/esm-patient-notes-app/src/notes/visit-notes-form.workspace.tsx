@@ -57,6 +57,8 @@ import {
   fetchDiagnosisConceptsByName,
   fetchPrestacionalConceptsByName,
   getCertaintyForTipo,
+  legacyProceduresConceptUuids,
+  legacyStructuredVisitNoteConceptUuids,
   parseTipoDxObs,
   savePatientDiagnosis,
   saveVisitNote,
@@ -147,6 +149,69 @@ interface PrestacionalSearchProps {
   value: string;
 }
 
+interface SelectedDiagnosisProps {
+  diagnosis: Diagnosis;
+  kind: 'primary' | 'secondary';
+  onRemove: () => void;
+  t: TFunction;
+}
+
+const cie10DisplayPattern = /^(?<name>.+?)\s*\((?<code>[A-Z][0-9][A-Z0-9.]{1,5})\)\s*$/i;
+
+function isMostlyUpperCase(value: string) {
+  const letters: Array<string> = value.match(/\p{L}/gu) ?? [];
+  if (!letters.length) {
+    return false;
+  }
+
+  const upperCaseLetters = letters.filter((letter) => letter === letter.toLocaleUpperCase('es-PE'));
+  return upperCaseLetters.length / letters.length > 0.8;
+}
+
+function toReadableDiagnosisName(value: string) {
+  const normalizedValue = value.trim().replace(/\s+/g, ' ');
+
+  if (!isMostlyUpperCase(normalizedValue)) {
+    return normalizedValue.replace(/\b[ivxlcdm]+\b/gi, (romanNumber) => romanNumber.toLocaleUpperCase('es-PE'));
+  }
+
+  return normalizedValue
+    .toLocaleLowerCase('es-PE')
+    .split(' ')
+    .map((word, index) => {
+      const normalizedWord = word.replace(/[^\p{L}]/gu, '');
+
+      if (/^[ivxlcdm]+$/i.test(normalizedWord)) {
+        return word.toLocaleUpperCase('es-PE');
+      }
+
+      return index === 0 ? word.replace(/^\p{L}/u, (letter) => letter.toLocaleUpperCase('es-PE')) : word;
+    })
+    .join(' ');
+}
+
+function getConceptMappingCode(concept: Concept) {
+  const mappings = concept.conceptMappings ?? concept.mappings ?? [];
+  const cie10Mapping = mappings.find((mapping) => {
+    const sourceName =
+      mapping.conceptReferenceTerm?.conceptSource?.name ?? mapping.conceptReferenceTerm?.conceptSource?.display ?? '';
+    return /icd[-\s]?10|cie[-\s]?10/i.test(sourceName);
+  });
+
+  return cie10Mapping?.conceptReferenceTerm?.code;
+}
+
+function formatDiagnosisDisplay(conceptOrDiagnosis: Concept | Diagnosis) {
+  const display = conceptOrDiagnosis.display?.trim() ?? '';
+  const codeFromMapping = 'uuid' in conceptOrDiagnosis ? getConceptMappingCode(conceptOrDiagnosis) : undefined;
+  const match = display.match(cie10DisplayPattern);
+  const code = codeFromMapping ?? match?.groups?.code;
+  const rawName = match?.groups?.name ?? display;
+  const readableName = toReadableDiagnosisName(rawName);
+
+  return code ? `${code.toLocaleUpperCase('es-PE')} - ${readableName}` : readableName;
+}
+
 const createSchema = (_t: TFunction) => {
   return z.object({
     noteDate: z.date(),
@@ -202,6 +267,7 @@ const VisitNotesForm: React.FC<PatientWorkspace2DefinitionProps<VisitNotesFormPr
     codigoPrestacionalConceptUuid,
     chiefComplaintConceptUuid,
     illnessDurationConceptUuid,
+    anamnesisConceptUuid,
     biologicalFunctionsConceptUuid,
     soapSubjectiveConceptUuid,
     soapObjectiveConceptUuid,
@@ -277,6 +343,38 @@ const VisitNotesForm: React.FC<PatientWorkspace2DefinitionProps<VisitNotesFormPr
     },
     [getEncounterObs],
   );
+  const getEncounterProceduresValue = useCallback(
+    () =>
+      getEncounterObsValue(proceduresConceptUuid, 'procedures') ||
+      getEncounterObsValue(legacyProceduresConceptUuids.textWithProceduresPath, 'procedures') ||
+      getEncounterObsValue(legacyProceduresConceptUuids.procedure, 'procedures') ||
+      getEncounterObsValue(proceduresConceptUuid) ||
+      getEncounterObsValue(legacyProceduresConceptUuids.procedure),
+    [getEncounterObsValue, proceduresConceptUuid],
+  );
+  const getEncounterCodigoPrestacionalValue = useCallback(
+    () =>
+      getEncounterObsConceptValue(codigoPrestacionalConceptUuid, 'codigo-prestacional')?.display ||
+      getEncounterObsValue(codigoPrestacionalConceptUuid, 'codigo-prestacional') ||
+      getEncounterObsValue(legacyStructuredVisitNoteConceptUuids.sharedTextWithFormFieldPath, 'codigo-prestacional'),
+    [codigoPrestacionalConceptUuid, getEncounterObsConceptValue, getEncounterObsValue],
+  );
+  const getEncounterBiologicalFunctionsValue = useCallback(
+    () =>
+      getEncounterObsValue(biologicalFunctionsConceptUuid, 'biological-functions') ||
+      getEncounterObsValue(legacyStructuredVisitNoteConceptUuids.anamnesisText, 'biological-functions'),
+    [biologicalFunctionsConceptUuid, getEncounterObsValue],
+  );
+  const getEncounterSubjectiveValue = useCallback(
+    () => getEncounterObsValue(soapSubjectiveConceptUuid) || getEncounterObsValue(anamnesisConceptUuid),
+    [anamnesisConceptUuid, getEncounterObsValue, soapSubjectiveConceptUuid],
+  );
+  const getEncounterPlanValue = useCallback(
+    () =>
+      getEncounterObsValue(soapPlanConceptUuid, 'soap-plan') ||
+      getEncounterObsValue(legacyStructuredVisitNoteConceptUuids.sharedTextWithFormFieldPath, 'soap-plan'),
+    [getEncounterObsValue, soapPlanConceptUuid],
+  );
 
   const customResolver = useCallback(
     async (data, context, options) => {
@@ -313,21 +411,16 @@ const VisitNotesForm: React.FC<PatientWorkspace2DefinitionProps<VisitNotesFormPr
     defaultValues: {
       primaryDiagnosisSearch: '',
       noteDate: isEditing ? new Date(encounter.rawDatetime) : new Date(),
-      codigoPrestacional: isEditing
-        ? (getEncounterObsConceptValue(codigoPrestacionalConceptUuid, 'codigo-prestacional')?.display ??
-          getEncounterObsValue(codigoPrestacionalConceptUuid, 'codigo-prestacional'))
-        : '',
+      codigoPrestacional: isEditing ? getEncounterCodigoPrestacionalValue() : '',
       chiefComplaint: isEditing ? getEncounterObsValue(chiefComplaintConceptUuid) : '',
       illnessDuration: isEditing ? getEncounterObsValue(illnessDurationConceptUuid) : '',
-      biologicalFunctions: isEditing
-        ? getEncounterObsValue(biologicalFunctionsConceptUuid, 'biological-functions')
-        : '',
-      subjective: isEditing ? getEncounterObsValue(soapSubjectiveConceptUuid) : '',
+      biologicalFunctions: isEditing ? getEncounterBiologicalFunctionsValue() : '',
+      subjective: isEditing ? getEncounterSubjectiveValue() : '',
       objective: isEditing ? getEncounterObsValue(soapObjectiveConceptUuid) : '',
       assessment: isEditing ? getEncounterObsValue(soapAssessmentConceptUuid) : '',
-      plan: isEditing ? getEncounterObsValue(soapPlanConceptUuid, 'soap-plan') : '',
+      plan: isEditing ? getEncounterPlanValue() : '',
       auxiliaryExams: isEditing ? getEncounterObsValue(labOrdersConceptUuid) : '',
-      procedures: isEditing ? getEncounterObsValue(proceduresConceptUuid, 'procedures') : '',
+      procedures: isEditing ? getEncounterProceduresValue() : '',
       prescriptions: isEditing ? getEncounterObsValue(prescriptionsConceptUuid) : '',
       referral: isEditing ? getEncounterObsValue(referralConceptUuid) : '',
       nextAppointment: isEditing ? getEncounterObsValue(nextAppointmentConceptUuid) : '',
@@ -929,14 +1022,11 @@ const VisitNotesForm: React.FC<PatientWorkspace2DefinitionProps<VisitNotesFormPr
               {selectedPrimaryDiagnoses?.length > 0 &&
                 selectedPrimaryDiagnoses.map((diagnosis, index) => (
                   <div key={index} className={styles.diagnosisRow}>
-                    <DismissibleTag
-                      className={styles.tag}
-                      dismissTooltipLabel={t('clearFilter', 'Clear filter')}
-                      onClose={() => handleRemoveDiagnosis(diagnosis, 'primaryInputSearch')}
-                      tagTitle={diagnosis.display}
-                      text={diagnosis.display}
-                      title={t('clearFilter', 'Clear filter')}
-                      type="red"
+                    <SelectedDiagnosis
+                      diagnosis={diagnosis}
+                      kind="primary"
+                      onRemove={() => handleRemoveDiagnosis(diagnosis, 'primaryInputSearch')}
+                      t={t}
                     />
                     <div className={styles.tipoSelector}>
                       <RadioButtonGroup
@@ -971,14 +1061,11 @@ const VisitNotesForm: React.FC<PatientWorkspace2DefinitionProps<VisitNotesFormPr
               {selectedSecondaryDiagnoses?.length > 0 &&
                 selectedSecondaryDiagnoses.map((diagnosis, index) => (
                   <div key={index} className={styles.diagnosisRow}>
-                    <DismissibleTag
-                      className={styles.tag}
-                      dismissTooltipLabel={t('clearFilter', 'Clear filter')}
-                      onClose={() => handleRemoveDiagnosis(diagnosis, 'secondaryInputSearch')}
-                      tagTitle={diagnosis.display}
-                      text={diagnosis.display}
-                      title={t('clearFilter', 'Clear filter')}
-                      type="blue"
+                    <SelectedDiagnosis
+                      diagnosis={diagnosis}
+                      kind="secondary"
+                      onRemove={() => handleRemoveDiagnosis(diagnosis, 'secondaryInputSearch')}
+                      t={t}
                     />
                     <div className={styles.tipoSelector}>
                       <RadioButtonGroup
@@ -1107,25 +1194,29 @@ const VisitNotesForm: React.FC<PatientWorkspace2DefinitionProps<VisitNotesFormPr
                   value={codigoPrestacionalSearchValue}
                 />
                 {selectedCodigoPrestacional ? (
-                  <DismissibleTag
-                    className={styles.tag}
-                    dismissTooltipLabel={t('clearFilter', 'Clear filter')}
-                    onClose={handleRemovePrestacional}
-                    tagTitle={selectedCodigoPrestacional.display}
-                    text={selectedCodigoPrestacional.display}
-                    title={t('clearFilter', 'Clear filter')}
-                    type="cyan"
-                  />
+                  <div className={styles.prestacionalTagContainer}>
+                    <DismissibleTag
+                      className={styles.tag}
+                      dismissTooltipLabel={t('clearFilter', 'Clear filter')}
+                      onClose={handleRemovePrestacional}
+                      tagTitle={selectedCodigoPrestacional.display}
+                      text={selectedCodigoPrestacional.display}
+                      title={t('clearFilter', 'Clear filter')}
+                      type="cyan"
+                    />
+                  </div>
                 ) : watch('codigoPrestacional') && !codigoPrestacionalSearchValue ? (
-                  <DismissibleTag
-                    className={styles.tag}
-                    dismissTooltipLabel={t('clearFilter', 'Clear filter')}
-                    onClose={handleRemovePrestacional}
-                    tagTitle={watch('codigoPrestacional')}
-                    text={watch('codigoPrestacional')}
-                    title={t('clearFilter', 'Clear filter')}
-                    type="gray"
-                  />
+                  <div className={styles.prestacionalTagContainer}>
+                    <DismissibleTag
+                      className={styles.tag}
+                      dismissTooltipLabel={t('clearFilter', 'Clear filter')}
+                      onClose={handleRemovePrestacional}
+                      tagTitle={watch('codigoPrestacional')}
+                      text={watch('codigoPrestacional')}
+                      title={t('clearFilter', 'Clear filter')}
+                      type="gray"
+                    />
+                  </div>
                 ) : null}
               </Column>
             </Row>
@@ -1344,6 +1435,31 @@ function VisitNoteTextAreaRow({
   );
 }
 
+function SelectedDiagnosis({ diagnosis, kind, onRemove, t }: SelectedDiagnosisProps) {
+  const formattedDiagnosis = formatDiagnosisDisplay(diagnosis);
+
+  return (
+    <div
+      className={classnames(styles.selectedDiagnosis, {
+        [styles.selectedPrimaryDiagnosis]: kind === 'primary',
+        [styles.selectedSecondaryDiagnosis]: kind === 'secondary',
+      })}
+      title={formattedDiagnosis}
+    >
+      <span className={styles.selectedDiagnosisText}>{formattedDiagnosis}</span>
+      <button
+        type="button"
+        className={styles.removeDiagnosisButton}
+        onClick={onRemove}
+        aria-label={t('clearFilter', 'Clear filter')}
+        title={t('clearFilter', 'Clear filter')}
+      >
+        <CloseFilled size={16} />
+      </button>
+    </div>
+  );
+}
+
 function DiagnosisSearch({
   name,
   control,
@@ -1428,8 +1544,12 @@ function PrestacionalSearch({
         <ul className={styles.diagnosisList}>
           {searchResults.map((prestacional) => (
             <li className={styles.diagnosis} key={prestacional.uuid}>
-              <button type="button" className={styles.diagnosis} onClick={() => onAddPrestacional(prestacional)}>
-                {prestacional.display}
+              <button
+                type="button"
+                className={classnames(styles.diagnosisButton, styles.diagnosisButtonSingle)}
+                onClick={() => onAddPrestacional(prestacional)}
+              >
+                <span className={styles.diagnosisName}>{prestacional.display}</span>
               </button>
             </li>
           ))}
@@ -1480,10 +1600,26 @@ function DiagnosesDisplay({
       <ul className={styles.diagnosisList}>
         {searchResults.map((diagnosis, index) => {
           if (isDiagnosisNotSelected(diagnosis)) {
+            const formattedDiagnosis = formatDiagnosisDisplay(diagnosis);
+            const [code, ...nameParts] = formattedDiagnosis.split(' - ');
+            const diagnosisName = nameParts.join(' - ');
+
             return (
               <li className={styles.diagnosis} key={index}>
-                <button type="button" className={styles.diagnosis} onClick={() => onAddDiagnosis(diagnosis, fieldName)}>
-                  {diagnosis.display}
+                <button
+                  type="button"
+                  className={styles.diagnosisButton}
+                  onClick={() => onAddDiagnosis(diagnosis, fieldName)}
+                >
+                  {diagnosisName ? (
+                    <>
+                      <span className={styles.diagnosisCode}>{code}</span>
+                      <span className={styles.diagnosisSeparator}>-</span>
+                      <span className={styles.diagnosisName}>{diagnosisName}</span>
+                    </>
+                  ) : (
+                    <span className={styles.diagnosisName}>{formattedDiagnosis}</span>
+                  )}
                 </button>
               </li>
             );

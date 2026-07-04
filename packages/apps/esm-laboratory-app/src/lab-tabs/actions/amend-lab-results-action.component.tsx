@@ -1,7 +1,8 @@
 import { Button } from '@carbon/react';
-import { type Order, showModal } from '@openmrs/esm-framework';
+import { type Order, showModal, useSession, userHasAccess } from '@openmrs/esm-framework';
 import React from 'react';
 import { useTranslation } from 'react-i18next';
+import { laboratoryEditPrivilege } from '../../constants';
 import styles from './actions.scss';
 
 interface AmendLabResultsActionMenuProps {
@@ -11,6 +12,8 @@ interface AmendLabResultsActionMenuProps {
 
 const AmendLabResultsAction: React.FC<AmendLabResultsActionMenuProps> = ({ order, orders }) => {
   const { t } = useTranslation();
+  const session = useSession();
+  const canEdit = userHasAccess(laboratoryEditPrivilege, session?.user);
   const unsupportedStatuses = ['DECLINED', 'IN_PROGRESS', 'NEW'];
 
   const handleLaunchModal = () => {
@@ -23,6 +26,10 @@ const AmendLabResultsAction: React.FC<AmendLabResultsActionMenuProps> = ({ order
       orders: editableOrders,
     });
   };
+
+  if (!canEdit) {
+    return null;
+  }
 
   return (
     <Button

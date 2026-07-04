@@ -1,7 +1,7 @@
 import {
   Button,
+  Checkbox,
   ContentSwitcher,
-  InlineLoading,
   InlineNotification,
   Layer,
   NotificationActionButton,
@@ -21,7 +21,7 @@ import { moduleName } from '../../../constants';
 import { ResourcesContext } from '../../../offline.resources';
 import { Autosuggest } from '../../input/custom-input/autosuggest/autosuggest.component';
 import { patientFamilyNameMaxLength, patientGivenNameMaxLength } from '../../patient-name-limits';
-import { fetchPerson, type PersonSearchResult, savePerson } from '../../patient-registration.resource';
+import { fetchPerson, type PersonSearchResult } from '../../patient-registration.resource';
 import { type FormValues, type RelationshipValue } from '../../patient-registration.types';
 import { PatientRegistrationContext } from '../../patient-registration-context';
 import { getEffectiveRegistrationConfig } from '../../peru-registration-config';
@@ -70,6 +70,8 @@ const initialResponsiblePersonValues: ResponsiblePersonFormValues = {
   familyName2: '',
   gender: '',
   estimatedAge: '',
+  phone: '',
+  address: '',
   relationshipType: '',
 };
 
@@ -164,6 +166,13 @@ function isMinorPersonSearchResult(person?: PersonSearchResult | null) {
   return typeof age === 'number' && age < 18;
 }
 
+function sanitizePhoneInput(value: string) {
+  const startsWithPlus = value.startsWith('+');
+  const digits = value.replace(/\D/g, '');
+
+  return `${startsWithPlus ? '+' : ''}${digits}`.slice(0, 20);
+}
+
 const RelationshipView: React.FC<RelationshipViewProps> = ({
   relationship,
   index,
@@ -183,13 +192,18 @@ const RelationshipView: React.FC<RelationshipViewProps> = ({
     relationshipType: relationship.relationshipType ?? '',
   });
   const [touchedFields, setTouchedFields] = useState<Partial<Record<ResponsiblePersonField, boolean>>>({});
-  const [createPersonError, setCreatePersonError] = useState<string | null>(null);
-  const [isSavingPerson, setIsSavingPerson] = useState(false);
   const newRelationship = !relationship.uuid;
-  const requiresRelatedPerson = newRelationship && !relationship.relatedPersonUuid;
+  const requiresRelatedPerson = newRelationship && !relationship.relatedPersonUuid && !relationship.newPerson;
+  const isPendingNewPerson = !relationship.relatedPersonUuid && !!relationship.newPerson;
   const genderOptions = config?.fieldConfigurations?.gender ?? defaultGenderOptions;
   const minorResponsibleRelationshipTypes =
     effectiveConfig?.relationshipOptions?.minorResponsibleRelationshipTypes ?? [];
+  const responsiblePersonPhoneAttributeUuid = effectiveConfig?.fieldConfigurations?.phone?.personAttributeUuid;
+  const companionRelationshipTypeUuid = effectiveConfig?.relationshipOptions?.companionRelationshipType?.split('/')[0];
+  // When the main relationship already IS Acompañante, the checkbox would only create a
+  // duplicate Acompañante relationship for the same person, so it is hidden.
+  const relationshipTypeIsCompanion =
+    !!companionRelationshipTypeUuid && relationship.relationshipType?.split('/')[0] === companionRelationshipTypeUuid;
 
   const personFormValues = useMemo(
     () => ({
@@ -217,11 +231,14 @@ const RelationshipView: React.FC<RelationshipViewProps> = ({
       setFieldValue(field, value);
       setNewPersonValues((currentValues) => ({ ...currentValues, relationshipType: value }));
       setTouchedFields((currentFields) => ({ ...currentFields, relationshipType: true }));
+      if (companionRelationshipTypeUuid && value.split('/')[0] === companionRelationshipTypeUuid) {
+        setFieldValue(`relationships[${index}].isCompanion`, false);
+      }
       if (!relationship?.action) {
         setFieldValue(`relationships[${index}].action`, 'UPDATE');
       }
     },
-    [index, relationship?.action, setFieldValue],
+    [companionRelationshipTypeUuid, index, relationship?.action, setFieldValue],
   );
 
   const handleSuggestionSelected = useCallback(
@@ -280,7 +297,6 @@ const RelationshipView: React.FC<RelationshipViewProps> = ({
   }, [index, setFieldValue, relationship]);
 
   const handlePersonEntryModeChange = useCallback((event) => {
-    setCreatePersonError(null);
     setPersonEntryMode(event.name as PersonEntryMode);
   }, []);
 
@@ -288,7 +304,7 @@ const RelationshipView: React.FC<RelationshipViewProps> = ({
     (field: ResponsiblePersonField) => (event: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
       setNewPersonValues((currentValues) => ({
         ...currentValues,
-        [field]: event.target.value,
+        [field]: field === 'phone' ? sanitizePhoneInput(event.target.value) : event.target.value,
       }));
     },
     [],
@@ -312,6 +328,8 @@ const RelationshipView: React.FC<RelationshipViewProps> = ({
       familyName2: true,
       gender: true,
       estimatedAge: true,
+      phone: true,
+      address: true,
       relationshipType: true,
     });
   }, []);
@@ -322,8 +340,10 @@ const RelationshipView: React.FC<RelationshipViewProps> = ({
     [t, touchedFields],
   );
 
-  const handleCreatePerson = useCallback(async () => {
-    setCreatePersonError(null);
+  // The person is NOT created here: it is stored on the relationship row and persisted
+  // at form submit, right before its relationship, so abandoning the registration never
+  // leaves an orphaned person in the database.
+  const handleConfirmNewPerson = useCallback(() => {
     const errors = validateResponsiblePersonForm(personFormValues, { requireAdult: requiresAdultResponsible });
 
     if (hasResponsiblePersonFormErrors(errors)) {
@@ -331,33 +351,20 @@ const RelationshipView: React.FC<RelationshipViewProps> = ({
       return;
     }
 
-    setIsSavingPerson(true);
-    try {
-      const response = await savePerson(buildResponsiblePersonPayload(personFormValues));
-      const personUuid = response?.data?.uuid;
+    setFieldValue(`relationships[${index}].newPerson`, personFormValues);
+    setFieldValue(`relationships[${index}].relatedPersonName`, getResponsiblePersonDisplayName(personFormValues));
+    setFieldValue(`relationships[${index}].relationshipType`, personFormValues.relationshipType);
+    setFieldValue(`relationships[${index}].action`, 'ADD');
+  }, [index, markAllNewPersonFieldsTouched, personFormValues, requiresAdultResponsible, setFieldValue]);
 
-      if (!personUuid) {
-        throw new Error('The backend did not return a person UUID');
-      }
-
-      setFieldValue(`relationships[${index}].relatedPersonUuid`, personUuid);
-      setFieldValue(
-        `relationships[${index}].relatedPersonName`,
-        response.data.display ?? getResponsiblePersonDisplayName(personFormValues),
-      );
-      setFieldValue(`relationships[${index}].relationshipType`, personFormValues.relationshipType);
-      setFieldValue(`relationships[${index}].action`, 'ADD');
-    } catch (error) {
-      console.error('Error creating responsible person', error);
-      setCreatePersonError(
-        error instanceof Error
-          ? error.message
-          : t('createResponsiblePersonError', 'Could not create responsible person'),
-      );
-    } finally {
-      setIsSavingPerson(false);
+  const handleEditPendingPerson = useCallback(() => {
+    if (relationship.newPerson) {
+      setNewPersonValues(relationship.newPerson);
     }
-  }, [index, markAllNewPersonFieldsTouched, personFormValues, requiresAdultResponsible, setFieldValue, t]);
+    setFieldValue(`relationships[${index}].newPerson`, undefined);
+    setFieldValue(`relationships[${index}].relatedPersonName`, '');
+    setPersonEntryMode('create');
+  }, [index, relationship.newPerson, setFieldValue]);
 
   return relationship.action !== 'DELETE' ? (
     <div className={styles.relationship}>
@@ -373,28 +380,39 @@ const RelationshipView: React.FC<RelationshipViewProps> = ({
           <TrashCan size={16} className={styles.trashCan} />
         </Button>
       </div>
-      <div className={styles.selectRelationshipType}>
-        <Layer>
-          <Select
-            id={`relationships[${index}].relationshipType`}
-            labelText={t('relationshipToPatient', 'Relationship to patient')}
-            onChange={handleRelationshipTypeChange}
-            onBlur={markNewPersonFieldTouched('relationshipType')}
-            name={`relationships[${index}].relationshipType`}
-            defaultValue={relationship?.relationshipType ?? 'placeholder-item'}
-            invalid={!!getFieldError('relationshipType', personFormErrors)}
-            invalidText={getFieldError('relationshipType', personFormErrors)}
-          >
-            <SelectItem disabled hidden value="placeholder-item" text={t('selectAnOption', 'Select an option')} />
-            {displayRelationshipTypes.map((relationshipType) => (
-              <SelectItem
-                text={relationshipType.display}
-                value={`${relationshipType.uuid}/${relationshipType.direction}`}
-                key={`relationship-${relationshipType.uuid}-${relationshipType.direction}`}
-              />
-            ))}
-          </Select>
-        </Layer>
+      <div className={styles.relationshipTypeRow}>
+        <div className={styles.selectRelationshipType}>
+          <Layer>
+            <Select
+              id={`relationships[${index}].relationshipType`}
+              labelText={t('relationshipToPatient', 'Relationship to patient')}
+              onChange={handleRelationshipTypeChange}
+              onBlur={markNewPersonFieldTouched('relationshipType')}
+              name={`relationships[${index}].relationshipType`}
+              defaultValue={relationship?.relationshipType ?? 'placeholder-item'}
+              invalid={!!getFieldError('relationshipType', personFormErrors)}
+              invalidText={getFieldError('relationshipType', personFormErrors)}
+            >
+              <SelectItem disabled hidden value="placeholder-item" text={t('selectAnOption', 'Select an option')} />
+              {displayRelationshipTypes.map((relationshipType) => (
+                <SelectItem
+                  text={relationshipType.display}
+                  value={`${relationshipType.uuid}/${relationshipType.direction}`}
+                  key={`relationship-${relationshipType.uuid}-${relationshipType.direction}`}
+                />
+              ))}
+            </Select>
+          </Layer>
+        </div>
+        {!relationshipTypeIsCompanion ? (
+          <Checkbox
+            className={styles.companionCheckbox}
+            id={`relationships[${index}].isCompanion`}
+            labelText={t('isCompanionLabel', 'Is the patient companion')}
+            checked={!!relationship.isCompanion}
+            onChange={(_event, { checked }) => setFieldValue(`relationships[${index}].isCompanion`, checked)}
+          />
+        ) : null}
       </div>
       {requiresRelatedPerson ? (
         <div className={styles.personEntry}>
@@ -427,14 +445,6 @@ const RelationshipView: React.FC<RelationshipViewProps> = ({
             </div>
           ) : (
             <div className={styles.responsiblePersonForm}>
-              {createPersonError ? (
-                <InlineNotification
-                  kind="error"
-                  lowContrast
-                  title={t('createResponsiblePersonErrorTitle', 'Could not create responsible person')}
-                  subtitle={createPersonError}
-                />
-              ) : null}
               <div className={styles.responsiblePersonGrid}>
                 <Layer>
                   <TextInput
@@ -525,14 +535,35 @@ const RelationshipView: React.FC<RelationshipViewProps> = ({
                     required={requiresAdultResponsible}
                   />
                 </Layer>
+                <Layer>
+                  <TextInput
+                    id={`relationships[${index}].newPerson.phone`}
+                    labelText={t('responsiblePhone', 'Phone or mobile phone (optional)')}
+                    value={newPersonValues.phone}
+                    inputMode="tel"
+                    maxLength={20}
+                    helperText={t('phoneHelperText', 'Enter digits only. Use +51 when including the country code.')}
+                    onChange={handleNewPersonFieldChange('phone')}
+                    onBlur={markNewPersonFieldTouched('phone')}
+                    invalid={!!getFieldError('phone', personFormErrors)}
+                    invalidText={getFieldError('phone', personFormErrors)}
+                  />
+                </Layer>
+                <Layer>
+                  <TextInput
+                    id={`relationships[${index}].newPerson.address`}
+                    labelText={t('responsibleAddress', 'Address (optional)')}
+                    value={newPersonValues.address}
+                    maxLength={255}
+                    onChange={handleNewPersonFieldChange('address')}
+                    onBlur={markNewPersonFieldTouched('address')}
+                  />
+                </Layer>
               </div>
               <div className={styles.createPersonActions}>
-                <Button type="button" kind="tertiary" size="md" onClick={handleCreatePerson} disabled={isSavingPerson}>
-                  {t('createResponsiblePersonAction', 'Register and link to patient')}
+                <Button type="button" kind="tertiary" size="md" onClick={handleConfirmNewPerson}>
+                  {t('confirmResponsiblePersonAction', 'Add person (saved on registration)')}
                 </Button>
-                {isSavingPerson ? (
-                  <InlineLoading description={t('creatingResponsiblePerson', 'Creating person...')} />
-                ) : null}
               </div>
             </div>
           )}
@@ -543,6 +574,16 @@ const RelationshipView: React.FC<RelationshipViewProps> = ({
           <p className={styles.bodyShort02}>
             {relationship.relatedPersonName ?? t('selectedPerson', 'Selected person')}
           </p>
+          {isPendingNewPerson ? (
+            <>
+              <p className={styles.labelText}>
+                {t('pendingResponsiblePersonNote', 'New person. Will be created when the registration is saved.')}
+              </p>
+              <Button type="button" kind="ghost" size="sm" onClick={handleEditPendingPerson}>
+                {t('editPendingResponsiblePerson', 'Edit person details')}
+              </Button>
+            </>
+          ) : null}
         </div>
       )}
     </div>

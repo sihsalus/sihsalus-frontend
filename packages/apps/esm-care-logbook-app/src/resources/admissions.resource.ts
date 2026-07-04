@@ -118,7 +118,20 @@ function getIdentityDocumentTypePriority(display?: string) {
   return priority === -1 ? Number.POSITIVE_INFINITY : priority;
 }
 
-function getDocumentIdentifier(identifiers: Identifier[] = []) {
+const identityDocumentTypeAttributePattern =
+  /tipo.*documento.*identidad|identity.*document.*type|document.*type.*identity/i;
+const identityDocumentNumberAttributePattern =
+  /(c[oó]digo|n[uú]mero).*documento.*identidad|identity.*document.*(code|number)|document.*identity.*(code|number)/i;
+const identityVerificationStatusAttributePattern = /estado.*verificaci[oó]n.*identidad|identity.*verification.*status/i;
+
+function getDocumentIdentifierFromAttributes(attributes: VisitPersonAttribute[] = []) {
+  return {
+    type: getAttributeValue(attributes, identityDocumentTypeAttributePattern).trim(),
+    number: getAttributeValue(attributes, identityDocumentNumberAttributePattern).trim(),
+  };
+}
+
+function getDocumentIdentifier(identifiers: Identifier[] = [], attributes: VisitPersonAttribute[] = []) {
   const candidates = identifiers
     .map((identifier, index) => ({
       identifier,
@@ -133,10 +146,14 @@ function getDocumentIdentifier(identifiers: Identifier[] = []) {
     candidates.find((candidate) => candidate.identifier.preferred) ??
     candidates.sort((left, right) => left.priority - right.priority || left.index - right.index)[0];
 
-  return {
-    type: selected?.identifier.identifierType?.display?.trim() ?? '',
-    number: selected?.identifier.identifier?.trim() ?? '',
-  };
+  if (selected?.identifier.identifier) {
+    return {
+      type: selected.identifier.identifierType?.display?.trim() ?? '',
+      number: selected.identifier.identifier.trim(),
+    };
+  }
+
+  return getDocumentIdentifierFromAttributes(attributes);
 }
 
 function getAttributeValue(attributes: VisitPersonAttribute[] = [], pattern: RegExp) {
@@ -167,6 +184,11 @@ function getIdentificationStatus(attributes: VisitPersonAttribute[] = []) {
     return mapIdentificationStatus(configuredStatus);
   }
 
+  const verificationStatus = getAttributeValue(attributes, identityVerificationStatusAttributePattern);
+  if (verificationStatus) {
+    return mapIdentificationStatus(verificationStatus);
+  }
+
   const unknownPatient = getAttributeValue(attributes, /paciente no identificado|unidentified patient/i);
   return /^true$/i.test(unknownPatient) ? 'Pendiente' : 'Confirmado';
 }
@@ -178,6 +200,17 @@ function mapIdentificationStatus(status: string) {
     partial: 'Parcial',
     confirmed: 'Confirmado',
     merged: 'Fusionado',
+    unverified: 'No verificado',
+    no_verificado: 'No verificado',
+    verified_reniec: 'Validado por RENIEC',
+    validado_reniec: 'Validado por RENIEC',
+    validado_por_reniec: 'Validado por RENIEC',
+    verified_local: 'Validado localmente',
+    validado_localmente: 'Validado localmente',
+    conflict: 'Conflicto',
+    conflicto: 'Conflicto',
+    not_applicable: 'No aplica',
+    no_aplica: 'No aplica',
   };
 
   return statusLabels[normalizedStatus] ?? status;
@@ -280,7 +313,7 @@ function mapVisitToAdmission(visit: Visit, relationships: VisitRelationship[] = 
   const attributes = person?.attributes ?? [];
   const patientUuid = visit.patient?.uuid ?? '';
   const responsibleRelationship = getResponsibleRelationship(patientUuid, relationships);
-  const documentIdentifier = getDocumentIdentifier(identifiers);
+  const documentIdentifier = getDocumentIdentifier(identifiers, attributes);
   const fallbackResponsibleName = getAttributeValue(
     attributes,
     /nombre del acompa[nñ]ante|responsable|companion name/i,

@@ -7,6 +7,7 @@ import { getValidationSchema } from './patient-registration-validation';
 
 const mockGetConfig = vi.mocked(getConfig);
 const phoneAttributeUuid = '14d4f066-15f5-102d-96e4-000c29c2a5d7';
+const mobilePhoneAttributeUuid = 'fee4e8ef-aef8-4bb9-8ed0-7ded6055c61f';
 const emailAttributeUuid = '4bdf3a33-2f63-11f0-8ab4-1a7535b1b3e8';
 
 describe('Patient registration validation', () => {
@@ -38,7 +39,7 @@ describe('Patient registration validation', () => {
       },
       relationshipOptions: {
         minorResponsibleRelationshipTypes: [
-          '8d91a210-c2cc-11de-8d13-0010c6dffdff/aIsToB',
+          'e6be4def-dbc8-462a-8714-53da66903cb8/aIsToB',
           '8d91a210-c2cc-11de-8d13-0010c6dffd0f/aIsToB',
           '057de23f-3d9c-4314-9391-4452970739c6/aIsToB',
         ],
@@ -51,7 +52,17 @@ describe('Patient registration validation', () => {
           showHeading: false,
           validation: {
             required: false,
-            matches: '^\\+?[0-9][0-9\\s().-]{5,19}$',
+            matches: '^(?:(?:\\+51)?[1-8][0-9]{7}|0[1-8][0-9]{7})$',
+          },
+        },
+        {
+          id: 'mobilePhone',
+          type: 'person attribute',
+          uuid: mobilePhoneAttributeUuid,
+          showHeading: false,
+          validation: {
+            required: false,
+            matches: '^(?:\\+51)?9[0-9]{8}$',
           },
         },
         {
@@ -204,7 +215,8 @@ describe('Patient registration validation', () => {
       ...validFormValues,
       attributes: {
         [emailAttributeUuid]: 'john.doe@example.org',
-        [phoneAttributeUuid]: '999 888 777',
+        [phoneAttributeUuid]: '012345678',
+        [mobilePhoneAttributeUuid]: '999888777',
       },
     };
 
@@ -213,11 +225,11 @@ describe('Patient registration validation', () => {
     expect(validationError).toBeFalsy();
   });
 
-  it('should allow phone contact attributes with an international prefix', async () => {
+  it('should allow mobile phone contact attributes with an international prefix', async () => {
     const validValues = {
       ...validFormValues,
       attributes: {
-        [phoneAttributeUuid]: '+51900000000',
+        [mobilePhoneAttributeUuid]: '+51900000000',
       },
     };
 
@@ -244,6 +256,19 @@ describe('Patient registration validation', () => {
       ...validFormValues,
       attributes: {
         [phoneAttributeUuid]: 'e100',
+      },
+    };
+
+    const validationError = await validateFormValues(invalidFormValues);
+
+    expect(validationError.errors).toContain('invalidInput');
+  });
+
+  it('should reject a mobile number in the landline phone field', async () => {
+    const invalidFormValues = {
+      ...validFormValues,
+      attributes: {
+        [phoneAttributeUuid]: '999888777',
       },
     };
 
@@ -439,7 +464,7 @@ describe('Patient registration validation', () => {
         {
           action: 'ADD',
           relatedPersonUuid: '11524ae7-3ef6-4ab6-aff6-804ffc58704a',
-          relationshipType: '8d91a210-c2cc-11de-8d13-0010c6dffdff/aIsToB',
+          relationshipType: 'e6be4def-dbc8-462a-8714-53da66903cb8/aIsToB',
         },
       ],
     };
@@ -455,7 +480,7 @@ describe('Patient registration validation', () => {
         {
           action: 'ADD',
           relatedPersonUuid: '11524ae7-3ef6-4ab6-aff6-804ffc58704a',
-          relationshipType: '8d91a210-c2cc-11de-8d13-0010c6dffdff/bIsToA',
+          relationshipType: 'e6be4def-dbc8-462a-8714-53da66903cb8/bIsToA',
         },
       ],
     };

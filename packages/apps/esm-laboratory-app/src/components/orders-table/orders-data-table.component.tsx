@@ -31,11 +31,14 @@ import {
   usePagination,
   openmrsFetch,
   restBaseUrl,
+  useSession,
+  userHasAccess,
 } from '@openmrs/esm-framework';
 import React, { useCallback, useMemo, useState } from 'react';
 import useSWR from 'swr';
 import { useTranslation } from 'react-i18next';
 import { type Config } from '../../config-schema';
+import { laboratoryEditPrivilege } from '../../constants';
 import { useLabOrders } from '../../laboratory.resource';
 import { type FlattenedOrder, type FulfillerStatus, type Order } from '../../types';
 import { getFulfillerStatusDisplay } from '../../utils/order-display';
@@ -120,16 +123,34 @@ const getPriorityRank = (urgency: string | undefined): number => {
   }
 };
 
+interface LabsetMember {
+  uuid: string;
+  display: string;
+}
+
+interface LabsetResponse {
+  uuid: string;
+  display: string;
+  setMembers: Array<LabsetMember>;
+}
+
+interface PrioritizedOrderLike {
+  urgency?: string;
+  scheduledDate?: string;
+}
+
 const OrdersDataTable: React.FC<OrdersDataTableProps> = (props) => {
   const { t } = useTranslation();
   const [filter, setFilter] = useState<FulfillerStatus>(null);
   const [priorityFilter, setPriorityFilter] = useState<string | null>(null);
   const [selectedLabsetUuid, setSelectedLabsetUuid] = useState<string | null>(null);
   const [searchString, setSearchString] = useState('');
+  const session = useSession();
+  const canEdit = userHasAccess(laboratoryEditPrivilege, session?.user);
   const { labTableColumns, patientIdIdentifierTypeUuid, resultsViewerConcepts } = useConfig<Config>();
 
   const fetchLabsets = useCallback((urls: Array<string>) => {
-    return Promise.all(urls.map((url) => openmrsFetch<any>(url).then((res) => res.data)));
+    return Promise.all(urls.map((url) => openmrsFetch<LabsetResponse>(url).then((res) => res.data)));
   }, []);
 
   const conceptUrls = useMemo(() => {
@@ -140,10 +161,7 @@ const OrdersDataTable: React.FC<OrdersDataTableProps> = (props) => {
     );
   }, [resultsViewerConcepts]);
 
-  const { data: fetchedLabsets } = useSWR<
-    Array<{ uuid: string; display: string; setMembers: Array<{ uuid: string; display: string }> }>,
-    Error
-  >(conceptUrls.length ? conceptUrls : null, fetchLabsets);
+  const { data: fetchedLabsets } = useSWR<Array<LabsetResponse>, Error>(conceptUrls.length ? conceptUrls : null, fetchLabsets);
 
   const labsetOptions = useMemo(() => {
     const options = [{ value: null, display: t('all', 'All') }];
@@ -242,7 +260,7 @@ const OrdersDataTable: React.FC<OrdersDataTableProps> = (props) => {
 
             // Sort individual orders by priority (highest priority first)
             // For orders with the same priority, if they are "Programado" (rank 5), sort by scheduledDate ascending (closest to furthest).
-            const sortOrders = (a: any, b: any) => {
+            const sortOrders = (a: PrioritizedOrderLike, b: PrioritizedOrderLike) => {
               const rankA = getPriorityRank(a.urgency);
               const rankB = getPriorityRank(b.urgency);
               if (rankA === rankB && rankA === 5) {
@@ -386,11 +404,13 @@ const OrdersDataTable: React.FC<OrdersDataTableProps> = (props) => {
               // Without tabIndex={0} here, the overflow menu incorrectly sets initial focus to the second item instead of the first.
               tabIndex={0}
             />
-            <OverflowMenuItem
-              className={styles.menuitem}
-              itemText={t('editResults', 'Edit results')}
-              onClick={() => handleLaunchModal(groupedOrder.originalOrders)}
-            />
+            {canEdit ? (
+              <OverflowMenuItem
+                className={styles.menuitem}
+                itemText={t('editResults', 'Edit results')}
+                onClick={() => handleLaunchModal(groupedOrder.originalOrders)}
+              />
+            ) : null}
             <OverflowMenuItem
               className={styles.menuitem}
               itemText={t('printTestResults', 'Print test results')}
@@ -400,7 +420,7 @@ const OrdersDataTable: React.FC<OrdersDataTableProps> = (props) => {
         </div>
       ) : null,
     }));
-  }, [handleLaunchModal, handlePrintModal, paginatedLabOrders, t]);
+  }, [canEdit, handleLaunchModal, handlePrintModal, paginatedLabOrders, t]);
 
   if (isLoading) {
     return <DataTableSkeleton role="progressbar" showHeader={false} showToolbar={false} />;

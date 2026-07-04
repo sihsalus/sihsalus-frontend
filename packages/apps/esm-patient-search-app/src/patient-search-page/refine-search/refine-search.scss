@@ -12,6 +12,11 @@
 .field {
   margin-bottom: layout.$spacing-05;
 
+  &:empty {
+    display: none;
+    margin-bottom: 0;
+  }
+
   input {
     min-width: unset !important;
   }

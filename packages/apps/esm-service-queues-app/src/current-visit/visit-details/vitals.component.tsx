@@ -1,11 +1,11 @@
 import { Button, Tile } from '@carbon/react';
 import { ArrowRight, CircleFilled } from '@carbon/react/icons';
-import { launchWorkspace2, useConfig, usePatient, type Visit } from '@openmrs/esm-framework';
+import { launchWorkspace2, useConfig, usePatient, useSession, userHasAccess, type Visit } from '@openmrs/esm-framework';
 import classNames from 'classnames';
 import React from 'react';
 import { useTranslation } from 'react-i18next';
 import { type ConfigObject } from '../../config-schema';
-import { serviceQueuesPatientVitalsWorkspace } from '../../constants';
+import { serviceQueuesEditPrivilege, serviceQueuesPatientVitalsWorkspace } from '../../constants';
 import { type PatientVitals } from '../../types/index';
 import { assessValue, calculateBMI, getReferenceRangesForConcept } from '../current-visit.resource';
 import { useVitalsConceptMetadata } from '../hooks/useVitalsConceptMetadata';
@@ -23,6 +23,8 @@ const Vitals: React.FC<VitalsComponentProps> = ({ vitals, patientUuid, visitType
   const { t } = useTranslation();
   const config = useConfig<ConfigObject>();
   const { patient } = usePatient(patientUuid);
+  const session = useSession();
+  const canEdit = userHasAccess(serviceQueuesEditPrivilege, session?.user);
   const { data: conceptUnits, conceptMetadata } = useVitalsConceptMetadata();
 
   const vitalsToDisplay = vitals.reduce(
@@ -148,22 +150,24 @@ const Vitals: React.FC<VitalsComponentProps> = ({ vitals, patientUuid, visitType
               <p className={styles.emptyText}>
                 {t('vitalsNotRecordedForVisit', 'Vitals has not been recorded for this patient for this visit')}
               </p>
-              <Button
-                size="sm"
-                kind="ghost"
-                disabled={!patient}
-                renderIcon={(props) => <ArrowRight size={16} {...props} />}
-                onClick={() =>
-                  launchWorkspace2(serviceQueuesPatientVitalsWorkspace, {
-                    patient,
-                    patientUuid,
-                    visitContext: visit,
-                  })
-                }
-                iconDescription={t('vitalsForm', 'Vitals form')}
-              >
-                {t('vitalsForm', 'Vitals form')}
-              </Button>
+              {canEdit ? (
+                <Button
+                  size="sm"
+                  kind="ghost"
+                  disabled={!patient}
+                  renderIcon={(props) => <ArrowRight size={16} {...props} />}
+                  onClick={() =>
+                    launchWorkspace2(serviceQueuesPatientVitalsWorkspace, {
+                      patient,
+                      patientUuid,
+                      visitContext: visit,
+                    })
+                  }
+                  iconDescription={t('vitalsForm', 'Vitals form')}
+                >
+                  {t('vitalsForm', 'Vitals form')}
+                </Button>
+              ) : null}
             </div>
           ) : (
             <p className={classNames(styles.bodyLong01, styles.text02)}>{t('noVitalsFound', 'No vitals found')}</p>

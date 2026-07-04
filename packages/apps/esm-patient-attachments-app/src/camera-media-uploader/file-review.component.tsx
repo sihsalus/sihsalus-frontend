@@ -1,7 +1,7 @@
 import { Button, Form, ModalBody, ModalFooter, ModalHeader, Stack, TextArea, TextInput } from '@carbon/react';
 import { DocumentPdf, DocumentUnknown } from '@carbon/react/icons';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { getCoreTranslation, type UploadedFile, UserHasAccess } from '@openmrs/esm-framework';
+import { getCoreTranslation, type UploadedFile } from '@openmrs/esm-framework';
 import { useAllowedFileExtensions } from '@openmrs/esm-patient-common-lib';
 import React, { type SyntheticEvent, useCallback, useContext, useState } from 'react';
 import { Controller, type SubmitHandler, useForm } from 'react-hook-form';
@@ -219,14 +219,12 @@ const FilePreview: React.FC<FilePreviewProps> = ({
         </div>
       </ModalBody>
       <ModalFooter>
-        <UserHasAccess privilege="Create Attachments">
-          <Button kind="secondary" onClick={handleCancelUpload} size="lg">
-            {getCoreTranslation('cancel')}
-          </Button>
-          <Button type="submit" size="lg">
-            {title || t('addAttachment', 'Add attachment')}
-          </Button>
-        </UserHasAccess>
+        <Button kind="secondary" onClick={handleCancelUpload} size="lg">
+          {getCoreTranslation('cancel')}
+        </Button>
+        <Button type="submit" size="lg">
+          {title || t('addAttachment', 'Add attachment')}
+        </Button>
       </ModalFooter>
     </Form>
   );

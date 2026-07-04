@@ -27,11 +27,7 @@ export interface EmergencyQueueEntry {
         attributeType?: {
           display?: string;
         };
-        value?:
-          | string
-          | {
-              display?: string;
-            };
+        value?: string | { display?: string; uuid?: string };
       }>;
     };
     identifiers?: Array<{

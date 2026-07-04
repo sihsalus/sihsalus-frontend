@@ -1,7 +1,8 @@
 import { Button } from '@carbon/react';
-import { launchWorkspace2, type Session } from '@openmrs/esm-framework';
+import { launchWorkspace2, userHasAccess, type Session } from '@openmrs/esm-framework';
 import React from 'react';
 import { useTranslation } from 'react-i18next';
+import { dispensingEditPrivilege } from '../../constants';
 import { initiateMedicationDispenseBody } from '../../medication-dispense/medication-dispense.resource';
 import { type MedicationRequestBundle, type Provider } from '../../types';
 
@@ -44,6 +45,10 @@ const DispenseActionButton: React.FC<DispenseActionButtonProps> = ({
   };
 
   if (!dispensable) {
+    return null;
+  }
+
+  if (!session?.user || !userHasAccess(dispensingEditPrivilege, session.user)) {
     return null;
   }
 

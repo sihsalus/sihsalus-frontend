@@ -88,6 +88,23 @@ interface RestProvider {
   };
 }
 
+export const legacyStructuredVisitNoteConceptUuids = {
+  anamnesisText: defaultVisitNoteClinicalConceptUuids.anamnesisConceptUuid,
+  sharedTextWithFormFieldPath: '162169AAAAAAAAAAAAAAAAAAAAAAAAAAAAAA',
+} as const;
+
+/**
+ * Concepts under which older visit notes stored the procedures text. `procedure`
+ * (1651) is a dedicated legacy concept, safe to read with or without a form field
+ * path. `textWithProceduresPath` (162169, free-text consult note) is shared with the
+ * SOAP plan, so it must ONLY be read with the 'procedures' form field path - without
+ * it the SOAP plan text would bleed into the procedures field.
+ */
+export const legacyProceduresConceptUuids = {
+  procedure: '1651AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA',
+  textWithProceduresPath: legacyStructuredVisitNoteConceptUuids.sharedTextWithFormFieldPath,
+} as const;
+
 export function useVisitNotes(patientUuid: string): UseVisitNotes {
   const {
     visitNoteConfig: { encounterNoteTextConceptUuid, visitDiagnosesConceptUuid },
@@ -313,23 +330,37 @@ export function useVisitNoteClinicalContext(patientUuid: string, visitUuid?: str
   );
   const getLatest = (conceptUuid: string, formFieldPath?: string) =>
     getLatestObsValue(encounters, conceptUuid, formFieldPath);
-  const getLatestStructuredText = (conceptUuid: string, formFieldPath: string) =>
+  const getLatestStructuredText = (conceptUuid: string, formFieldPath: string, legacyConceptUuid?: string) =>
     getLatest(conceptUuid, formFieldPath) ??
+    (legacyConceptUuid ? getLatest(legacyConceptUuid, formFieldPath) : undefined) ??
     (conceptUuid !== visitNoteConfig.encounterNoteTextConceptUuid ? getLatest(conceptUuid) : undefined);
+  const getLatestProceduresText = () =>
+    getLatest(visitNoteConfig.proceduresConceptUuid, 'procedures') ??
+    getLatest(legacyProceduresConceptUuids.textWithProceduresPath, 'procedures') ??
+    getLatest(legacyProceduresConceptUuids.procedure, 'procedures') ??
+    getLatest(visitNoteConfig.proceduresConceptUuid) ??
+    getLatest(legacyProceduresConceptUuids.procedure);
 
   const clinicalContext: VisitNoteClinicalContext = {
-    codigoPrestacional: getLatest(visitNoteConfig.codigoPrestacionalConceptUuid, 'codigo-prestacional'),
+    codigoPrestacional:
+      getLatest(visitNoteConfig.codigoPrestacionalConceptUuid, 'codigo-prestacional') ??
+      getLatest(legacyStructuredVisitNoteConceptUuids.sharedTextWithFormFieldPath, 'codigo-prestacional'),
     chiefComplaint: getLatest(visitNoteConfig.chiefComplaintConceptUuid),
     illnessDuration: getLatest(visitNoteConfig.illnessDurationConceptUuid),
     biologicalFunctions:
       getLatest(visitNoteConfig.biologicalFunctionsConceptUuid, 'biological-functions') ??
+      getLatest(legacyStructuredVisitNoteConceptUuids.anamnesisText, 'biological-functions') ??
       buildBiologicalFunctionsSummary(encounters, visitNoteConfig),
     subjective: getLatest(visitNoteConfig.soapSubjectiveConceptUuid) ?? getLatest(visitNoteConfig.anamnesisConceptUuid),
     objective: getLatest(visitNoteConfig.soapObjectiveConceptUuid),
     assessment: getLatest(visitNoteConfig.soapAssessmentConceptUuid),
-    plan: getLatestStructuredText(visitNoteConfig.soapPlanConceptUuid, 'soap-plan'),
+    plan: getLatestStructuredText(
+      visitNoteConfig.soapPlanConceptUuid,
+      'soap-plan',
+      legacyStructuredVisitNoteConceptUuids.sharedTextWithFormFieldPath,
+    ),
     auxiliaryExams: getLatest(visitNoteConfig.labOrdersConceptUuid),
-    procedures: getLatestStructuredText(visitNoteConfig.proceduresConceptUuid, 'procedures'),
+    procedures: getLatestProceduresText(),
     prescriptions: getLatest(visitNoteConfig.prescriptionsConceptUuid),
     referral: getLatest(visitNoteConfig.referralConceptUuid),
     nextAppointment: getLatest(visitNoteConfig.nextAppointmentConceptUuid),

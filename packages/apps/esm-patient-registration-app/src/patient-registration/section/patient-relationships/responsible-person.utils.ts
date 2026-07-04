@@ -1,17 +1,11 @@
+import type { NewResponsiblePersonValues } from '../../patient-registration.types';
 import { patientFamilyNameMaxLength, patientGivenNameMaxLength } from '../../patient-name-limits';
 
 const personNameRegex = /^\p{L}[\p{L}\p{M}'.\- ]*$/u;
 const estimatedAgeRegex = /^(?:[0-9]|[1-9][0-9]|1[01][0-9]|120)$/;
+const peruContactPhoneRegex = /^(?:(?:\+51)?9[0-9]{8}|(?:\+51)?[1-8][0-9]{7}|0[1-8][0-9]{7})$/;
 
-export interface ResponsiblePersonFormValues {
-  givenName: string;
-  middleName: string;
-  familyName: string;
-  familyName2: string;
-  gender: string;
-  estimatedAge: string;
-  relationshipType: string;
-}
+export type ResponsiblePersonFormValues = NewResponsiblePersonValues;
 
 export type ResponsiblePersonValidationErrors = Partial<Record<keyof ResponsiblePersonFormValues, string>>;
 
@@ -109,6 +103,10 @@ export function validateResponsiblePersonForm(
     errors.estimatedAge = 'responsiblePersonMustBeAdult';
   }
 
+  if (values.phone.trim() && !peruContactPhoneRegex.test(values.phone.trim())) {
+    errors.phone = 'phoneInvalid';
+  }
+
   if (!values.relationshipType?.trim()) {
     errors.relationshipType = 'relationshipTypeRequired';
   }
@@ -127,8 +125,13 @@ export function getResponsiblePersonDisplayName(values: ResponsiblePersonFormVal
     .join(' ');
 }
 
-export function buildResponsiblePersonPayload(values: ResponsiblePersonFormValues) {
+export function buildResponsiblePersonPayload(
+  values: ResponsiblePersonFormValues,
+  options: { phoneAttributeTypeUuid?: string } = {},
+) {
   const estimatedAge = values.estimatedAge.trim();
+  const phone = values.phone.trim();
+  const address = values.address.trim();
   const birthYear = estimatedAge ? new Date().getFullYear() - Number(estimatedAge) : undefined;
 
   return {
@@ -146,6 +149,26 @@ export function buildResponsiblePersonPayload(values: ResponsiblePersonFormValue
       ? {
           birthdate: `${birthYear}-01-01`,
           birthdateEstimated: true,
+        }
+      : {}),
+    ...(phone && options.phoneAttributeTypeUuid
+      ? {
+          attributes: [
+            {
+              attributeType: options.phoneAttributeTypeUuid,
+              value: phone,
+            },
+          ],
+        }
+      : {}),
+    ...(address
+      ? {
+          addresses: [
+            {
+              address1: address,
+              preferred: true,
+            },
+          ],
         }
       : {}),
   };

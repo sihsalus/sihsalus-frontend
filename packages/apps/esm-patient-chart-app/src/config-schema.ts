@@ -78,6 +78,11 @@ export const esmPatientChartSchema = {
       'An array of concept UUIDs. If an observation has a concept UUID that matches any of the ones in this array, it will be hidden from the observations list in the Encounters summary table.',
     _default: [],
   },
+  companionRelationshipTypeUuid: {
+    _type: Type.UUID,
+    _description: 'UUID of the Acompañante relationship type, used to list the patient companions on the start visit form.',
+    _default: '3501ac02-0fb0-4ced-8a3e-f578f0ff5276',
+  },
   offlineVisitTypeUuid: {
     _type: Type.UUID,
     _description: 'The UUID of the visit type to be used for the automatically created offline visits.',

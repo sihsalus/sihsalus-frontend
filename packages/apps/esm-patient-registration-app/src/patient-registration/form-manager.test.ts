@@ -1,8 +1,20 @@
-import { getDefaultsFromConfigSchema } from '@openmrs/esm-framework';
+import { getConfig, getDefaultsFromConfigSchema, type Session } from '@openmrs/esm-framework';
 
 import { esmPatientRegistrationSchema, type RegistrationConfig } from '../config-schema';
-import { FormManager } from './form-manager';
-import { generateIdentifier } from './patient-registration.resource';
+import { FormManager, SavePatientTransactionManager } from './form-manager';
+import {
+  documentTypeConceptUuids,
+  personDocumentNumberAttributeTypeUuid,
+  personDocumentTypeAttributeTypeUuid,
+} from './identity/identity-documents';
+import { fetchPersonForPromotion, isPersonAlreadyPatient } from './identity/identity-search.resource';
+import {
+  generateIdentifier,
+  promotePersonToPatient,
+  savePatient,
+  savePerson,
+  saveRelationship,
+} from './patient-registration.resource';
 import { type FormValues } from './patient-registration.types';
 import {
   addressUbigeoField,
@@ -15,15 +27,31 @@ import {
   getEffectiveRegistrationConfig,
   peruEmailAttributeTypeUuid,
   peruInsuranceCodeAttributeTypeUuid,
+  peruMobilePhoneAttributeTypeUuid,
   peruPhoneAttributeTypeUuid,
 } from './peru-registration-config';
 
 vi.mock('./patient-registration.resource', async () => ({
   ...(await vi.importActual('./patient-registration.resource')),
   generateIdentifier: vi.fn(),
+  promotePersonToPatient: vi.fn(),
+  savePatient: vi.fn(),
+  savePerson: vi.fn(),
+  saveRelationship: vi.fn(),
+}));
+
+vi.mock('./identity/identity-search.resource', () => ({
+  fetchPersonForPromotion: vi.fn(),
+  isPersonAlreadyPatient: vi.fn(),
 }));
 
 const mockGenerateIdentifier = generateIdentifier as vi.Mock;
+const mockPromotePersonToPatient = vi.mocked(promotePersonToPatient);
+const mockSavePatient = vi.mocked(savePatient);
+const mockSavePerson = vi.mocked(savePerson);
+const mockSaveRelationship = vi.mocked(saveRelationship);
+const mockFetchPersonForPromotion = vi.mocked(fetchPersonForPromotion);
+const mockIsPersonAlreadyPatient = vi.mocked(isPersonAlreadyPatient);
 
 const formValues: FormValues = {
   patientUuid: '',
@@ -241,8 +269,255 @@ describe('FormManager', () => {
     });
   });
 
+  describe('promotion of an existing person to patient', () => {
+    const personUuid = '11111111-2222-3333-4444-555555555555';
+
+    function buildPromotionFormValues(): FormValues {
+      return {
+        ...formValues,
+        patientUuid: personUuid,
+        personUuidToPromote: personUuid,
+        givenName: 'Rosa',
+        familyName: 'Flores',
+        familyName2: 'Diaz',
+        gender: 'female',
+        birthdate: new Date(1986, 0, 1),
+        identifiers: {
+          foo: {
+            ...formValues.identifiers.foo,
+            autoGeneration: false,
+            identifierUuid: undefined,
+          },
+        },
+      };
+    }
+
+    function buildPromotionPerson() {
+      return {
+        uuid: personUuid,
+        display: 'Rosa Flores',
+        gender: 'F',
+        birthdate: '1986-01-01',
+        birthdateEstimated: false,
+        names: [{ uuid: 'existing-name-uuid', preferred: true, givenName: 'Rosa', familyName: 'Flores' }],
+        addresses: [{ uuid: 'existing-address-uuid', preferred: true, address1: 'Jr. Principal 123' }],
+        attributes: [
+          {
+            uuid: 'attr-doc-type',
+            value: { uuid: documentTypeConceptUuids.dni, display: 'DNI' },
+            attributeType: { uuid: personDocumentTypeAttributeTypeUuid, format: 'org.openmrs.Concept' },
+          },
+          {
+            uuid: 'attr-doc-number',
+            value: '99887766',
+            attributeType: { uuid: personDocumentNumberAttributeTypeUuid, format: 'java.lang.String' },
+          },
+        ],
+      };
+    }
+
+    async function runPromotion(values = buildPromotionFormValues()) {
+      const config = getPeruRegistrationConfig();
+      return FormManager.savePatientFormOnline(
+        true,
+        values,
+        {},
+        {},
+        null,
+        'location-1',
+        {},
+        {} as Session,
+        config,
+        new SavePatientTransactionManager(),
+      );
+    }
+
+    beforeEach(() => {
+      vi.clearAllMocks();
+      if (vi.isMockFunction(getConfig)) {
+        vi.mocked(getConfig).mockResolvedValue({} as never);
+      }
+      mockIsPersonAlreadyPatient.mockResolvedValue(false);
+      mockFetchPersonForPromotion.mockResolvedValue(buildPromotionPerson());
+      mockPromotePersonToPatient.mockResolvedValue({ ok: true, data: { uuid: personUuid } } as never);
+      mockSavePatient.mockResolvedValue({ ok: true, data: { uuid: personUuid } } as never);
+    });
+
+    it('promotes with the person uuid as a plain string and keeps the same uuid end to end', async () => {
+      const result = await runPromotion();
+
+      expect(mockIsPersonAlreadyPatient).toHaveBeenCalledWith(personUuid);
+      expect(mockPromotePersonToPatient).toHaveBeenCalledTimes(1);
+
+      const [promotedPersonUuid, identifiers] = mockPromotePersonToPatient.mock.calls[0];
+      expect(promotedPersonUuid).toBe(personUuid);
+      expect(identifiers).toEqual(
+        expect.arrayContaining([expect.objectContaining({ identifier: 'foo', identifierType: 'identifierType' })]),
+      );
+      expect(result).toBe(personUuid);
+    });
+
+    it('maps the person document attributes to a patient identifier without duplicating types', async () => {
+      await runPromotion();
+
+      const [, identifiers] = mockPromotePersonToPatient.mock.calls[0];
+      expect(identifiers).toEqual(
+        expect.arrayContaining([
+          expect.objectContaining({
+            identifier: '99887766',
+            identifierType: '550e8400-e29b-41d4-a716-446655440001',
+          }),
+        ]),
+      );
+
+      const dniIdentifiers = identifiers.filter(
+        (identifier) => identifier.identifierType === '550e8400-e29b-41d4-a716-446655440001',
+      );
+      expect(dniIdentifiers).toHaveLength(1);
+    });
+
+    it('updates demographics with a follow-up call that reuses existing name/address rows and sends no identifiers', async () => {
+      await runPromotion();
+
+      expect(mockSavePatient).toHaveBeenCalledTimes(1);
+      const [updatePayload, updateUuid] = mockSavePatient.mock.calls[0];
+
+      expect(updateUuid).toBe(personUuid);
+      expect(updatePayload.identifiers).toBeUndefined();
+      expect(updatePayload.person.uuid).toBe(personUuid);
+      expect(updatePayload.person.names[0].uuid).toBe('existing-name-uuid');
+      expect(updatePayload.person.addresses[0].uuid).toBe('existing-address-uuid');
+    });
+
+    it('refuses to promote when the person is already a patient', async () => {
+      mockIsPersonAlreadyPatient.mockResolvedValue(true);
+
+      await expect(runPromotion()).rejects.toMatchObject({
+        responseBody: { error: { message: expect.stringContaining('ya está registrada como paciente') } },
+      });
+      expect(mockPromotePersonToPatient).not.toHaveBeenCalled();
+      expect(mockSavePatient).not.toHaveBeenCalled();
+    });
+
+    it('blocks promotion offline', async () => {
+      await expect(
+        FormManager.savePatientFormOffline(
+          true,
+          buildPromotionFormValues(),
+          {},
+          {},
+          null,
+          'location-1',
+          {},
+          {} as Session,
+          getPeruRegistrationConfig(),
+          new SavePatientTransactionManager(),
+        ),
+      ).rejects.toMatchObject({
+        responseBody: { error: { message: expect.stringContaining('no está disponible sin conexión') } },
+      });
+    });
+  });
+
+  describe('saveRelationships with a pending responsible person', () => {
+    beforeEach(() => {
+      vi.clearAllMocks();
+      mockSavePerson.mockResolvedValue({ ok: true, data: { uuid: 'created-person-uuid' } } as never);
+      mockSaveRelationship.mockResolvedValue({ ok: true } as never);
+    });
+
+    it('creates the person right before its relationship at submit time', async () => {
+      await FormManager.saveRelationships(
+        [
+          {
+            action: 'ADD',
+            relatedPersonUuid: '',
+            relationshipType: 'rel-type-uuid/aIsToB',
+            newPerson: {
+              givenName: 'María',
+              middleName: '',
+              familyName: 'Quispe',
+              familyName2: '',
+              gender: 'female',
+              estimatedAge: '35',
+              phone: '987654321',
+              address: 'Av. Peru 123',
+              relationshipType: 'rel-type-uuid/aIsToB',
+            },
+          },
+        ],
+        { data: { uuid: 'patient-uuid' } } as never,
+        { phoneAttributeTypeUuid: 'phone-attr-uuid' },
+      );
+
+      expect(mockSavePerson).toHaveBeenCalledTimes(1);
+      expect(mockSavePerson).toHaveBeenCalledWith(
+        expect.objectContaining({
+          names: [
+            expect.objectContaining({
+              givenName: 'María',
+              familyName: 'Quispe',
+              preferred: true,
+            }),
+          ],
+          gender: 'F',
+          attributes: [{ attributeType: 'phone-attr-uuid', value: '987654321' }],
+        }),
+      );
+      expect(mockSaveRelationship).toHaveBeenCalledWith({
+        personA: 'created-person-uuid',
+        personB: 'patient-uuid',
+        relationshipType: 'rel-type-uuid',
+      });
+    });
+
+    it('creates the companion relationship for the newly created person too', async () => {
+      await FormManager.saveRelationships(
+        [
+          {
+            action: 'ADD',
+            relatedPersonUuid: '',
+            relationshipType: 'rel-type-uuid/aIsToB',
+            isCompanion: true,
+            newPerson: {
+              givenName: 'María',
+              middleName: '',
+              familyName: 'Quispe',
+              familyName2: '',
+              gender: 'female',
+              estimatedAge: '',
+              phone: '',
+              address: '',
+              relationshipType: 'rel-type-uuid/aIsToB',
+            },
+          },
+        ],
+        { data: { uuid: 'patient-uuid' } } as never,
+        { companionRelationshipType: 'companion-type-uuid/aIsToB' },
+      );
+
+      expect(mockSavePerson).toHaveBeenCalledTimes(1);
+      expect(mockSaveRelationship).toHaveBeenCalledWith({
+        personA: 'created-person-uuid',
+        personB: 'patient-uuid',
+        relationshipType: 'companion-type-uuid',
+      });
+    });
+
+    it('does not attempt to create a relationship when no person is selected nor pending', async () => {
+      await FormManager.saveRelationships(
+        [{ action: 'ADD', relatedPersonUuid: '', relationshipType: 'rel-type-uuid/aIsToB' }],
+        { data: { uuid: 'patient-uuid' } } as never,
+        {},
+      );
+
+      expect(mockSavePerson).not.toHaveBeenCalled();
+      expect(mockSaveRelationship).not.toHaveBeenCalled();
+    });
+  });
+
   describe('mapPatientToFhirPatient', () => {
-    it('maps the configured phone person attribute to FHIR telecom', () => {
+    it('maps configured contact attributes to FHIR telecom for the local patient summary', () => {
       const config = getPeruRegistrationConfig();
       const patient = FormManager.getPatientToCreate(
         true,
@@ -252,7 +527,9 @@ describe('FormManager', () => {
           gender: 'female',
           birthdate: '1990-05-14',
           attributes: {
-            [peruPhoneAttributeTypeUuid]: '999888777',
+            [peruPhoneAttributeTypeUuid]: '012345678',
+            [peruMobilePhoneAttributeTypeUuid]: '987654321',
+            [peruEmailAttributeTypeUuid]: 'juan.perez@example.org',
           },
         },
         {},
@@ -264,8 +541,17 @@ describe('FormManager', () => {
       expect(FormManager.mapPatientToFhirPatient(patient, config).telecom).toEqual([
         {
           system: 'phone',
+          use: 'home',
+          value: '012345678',
+        },
+        {
+          system: 'phone',
           use: 'mobile',
-          value: '999888777',
+          value: '987654321',
+        },
+        {
+          system: 'email',
+          value: 'juan.perez@example.org',
         },
       ]);
     });

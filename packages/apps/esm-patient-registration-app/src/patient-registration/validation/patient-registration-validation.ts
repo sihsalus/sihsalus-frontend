@@ -81,6 +81,15 @@ export function isMinorPatient(values: Pick<FormValues, 'birthdate' | 'birthdate
   return dayjs().diff(dayjs(values.birthdate), 'year') < 18;
 }
 
+/**
+ * A relationship row points to a person either because an existing person was selected
+ * (`relatedPersonUuid`) or because a new responsible person is pending creation at
+ * submit time (`newPerson`, created together with its relationship to avoid orphans).
+ */
+export function hasRelatedPerson(relationship: RelationshipValue) {
+  return !!relationship.relatedPersonUuid || (relationship.action === 'ADD' && !!relationship.newPerson);
+}
+
 export function hasResponsibleRelationship(
   relationships: Array<RelationshipValue> | undefined,
   minorResponsibleRelationshipTypes: Array<string> = [],
@@ -89,7 +98,7 @@ export function hasResponsibleRelationship(
     relationships?.some(
       (relationship) =>
         relationship.action !== 'DELETE' &&
-        !!relationship.relatedPersonUuid &&
+        hasRelatedPerson(relationship) &&
         !!relationship.relationshipType &&
         minorResponsibleRelationshipTypes.includes(relationship.relationshipType),
     ) ?? false
@@ -106,7 +115,7 @@ function hasActiveRelationship(relationships: Array<RelationshipValue> | undefin
   return (
     relationships?.some(
       (relationship) =>
-        relationship.action !== 'DELETE' && !!relationship.relatedPersonUuid && !!relationship.relationshipType,
+        relationship.action !== 'DELETE' && hasRelatedPerson(relationship) && !!relationship.relationshipType,
     ) ?? false
   );
 }
@@ -296,10 +305,16 @@ export function getValidationSchema(
     ),
     relationships: Yup.array()
       .of(
-        Yup.object().shape({
-          relatedPersonUuid: Yup.string().required(),
-          relationshipType: Yup.string().required(),
-        }),
+        Yup.object()
+          .shape({
+            relatedPersonUuid: Yup.string(),
+            relationshipType: Yup.string().required(),
+          })
+          .test(
+            'related-person-selected-or-pending',
+            t('relationshipPersonMustExist', 'Family member or companion must be an existing person'),
+            (relationship) => hasRelatedPerson(relationship as RelationshipValue),
+          ),
       )
       .test(
         'responsible-relationship-required-for-minors',

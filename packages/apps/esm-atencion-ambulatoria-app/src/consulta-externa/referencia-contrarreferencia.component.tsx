@@ -32,7 +32,9 @@ const ReferenciaContraReferencia: React.FC<ReferenciaContraReferenciaProps> = ({
   const { entries, isLoading, error } = useReferralCounterReferral(
     patientUuid,
     config.encounterTypes?.referralCounterReferral,
+    config.encounterTypes?.externalConsultation,
     {
+      referralUuid: config.concepts?.referralUuid,
       referralTypeUuid: config.concepts?.referralTypeUuid,
       referralReasonUuid: config.concepts?.referralReasonUuid,
       referralDestinationUuid: config.concepts?.referralDestinationUuid,
@@ -75,7 +77,12 @@ const ReferenciaContraReferencia: React.FC<ReferenciaContraReferenciaProps> = ({
 
       {!error && entries.length === 0 && (
         <div className={styles.emptyState}>
-          <p>{t('noReferralData', 'No hay referencias ni contrarreferencias registradas para este paciente.')}</p>
+          <p>
+            {t(
+              'noReferralData',
+              'No hay referencias, contrarreferencias ni órdenes de interconsulta registradas para este paciente.',
+            )}
+          </p>
         </div>
       )}
 
@@ -98,6 +105,11 @@ const ReferenciaContraReferencia: React.FC<ReferenciaContraReferenciaProps> = ({
                         {t('counterReferralReceived', 'Contrarreferencia recibida')}
                       </Tag>
                     )}
+                    {entry.source === 'interconsultationOrder' && (
+                      <Tag type="purple" size="sm" style={{ marginLeft: '0.5rem' }}>
+                        {t('interconsultationOrder', 'Orden de interconsulta')}
+                      </Tag>
+                    )}
                   </span>
                 }
               >
@@ -109,6 +121,16 @@ const ReferenciaContraReferencia: React.FC<ReferenciaContraReferenciaProps> = ({
                     </StructuredListRow>
                   </StructuredListHead>
                   <StructuredListBody>
+                    {entry.interconsultationOrder && (
+                      <StructuredListRow>
+                        <StructuredListCell>
+                          <Tag type="purple" size="sm">
+                            {t('interconsultationOrder', 'Orden de interconsulta')}
+                          </Tag>
+                        </StructuredListCell>
+                        <StructuredListCell>{entry.interconsultationOrder}</StructuredListCell>
+                      </StructuredListRow>
+                    )}
                     {entry.referralType && (
                       <StructuredListRow>
                         <StructuredListCell>
@@ -152,7 +174,8 @@ const ReferenciaContraReferencia: React.FC<ReferenciaContraReferenciaProps> = ({
                     {!entry.referralType &&
                       !entry.referralDestination &&
                       !entry.referralReason &&
-                      !entry.counterReferralResponse && (
+                      !entry.counterReferralResponse &&
+                      !entry.interconsultationOrder && (
                         <StructuredListRow>
                           <StructuredListCell>
                             {t(

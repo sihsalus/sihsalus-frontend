@@ -25,14 +25,13 @@
       "name": "capture-photo-widget",
       "component": "capturePhotoWidget",
       "slot": "capture-patient-photo-slot",
-      "privileges": "app:clinical.chart.attachments.edit"
+      "privileges": "app:topnav.registerPatient"
     }
   ],
   "modals": [
     {
       "name": "capture-photo-modal",
-      "component": "capturePhotoModal",
-      "privileges": "app:clinical.chart.attachments.edit"
+      "component": "capturePhotoModal"
     },
     {
       "name": "delete-attachment-modal",

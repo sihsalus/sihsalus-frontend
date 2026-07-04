@@ -36,7 +36,7 @@ describe('CRED form launcher resources', () => {
 
   it('uses the neonatal fallback when config does not provide the form key', () => {
     expect(getCREDFormIdentifier(undefined, 'birthDetails', neonatalFormFallbacks.birthDetails)).toBe(
-      '8db0f1dc-c191-3468-854c-6c6c41ef6198',
+      '(CRED) Detalles de Nacimiento',
     );
   });
 
@@ -54,6 +54,16 @@ describe('CRED form launcher resources', () => {
         wellChildControlFormFallbacks.stimulationFollowupForm,
       ),
     ).toBe('CRED-004-SEGUIMIENTO DEL DESARROLLO');
+  });
+
+  it('includes the CRED-026 Huanca test fallback from content', () => {
+    expect(
+      getCREDFormIdentifier(
+        undefined,
+        'huancaNeurodevelopmentForm',
+        wellChildControlFormFallbacks.huancaNeurodevelopmentForm,
+      ),
+    ).toBe('CRED-026-HUANCA TEST VIGILANCIA NEURODESARROLLO');
   });
 
   it('prefers the configured form identifier over the fallback', () => {

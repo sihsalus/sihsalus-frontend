@@ -1,5 +1,6 @@
 import { useTranslation } from 'react-i18next';
 import { type EmergencyQueueEntry } from '../../resources/emergency.resource';
+import type { Config } from '../../config-schema';
 import { EmergencyQueueActionsCell } from './cells/emergency-queue-actions-cell.component';
 import { EmergencyQueueIdentificationStatusCell } from './cells/emergency-queue-identification-status-cell.component';
 import { EmergencyQueueIdentifierCell } from './cells/emergency-queue-identifier-cell.component';
@@ -24,7 +25,7 @@ export interface EmergencyQueueTableColumn {
   getFilterableValue?: (queueEntry: EmergencyQueueEntry) => string | null;
 }
 
-export function useEmergencyQueueColumns(): EmergencyQueueTableColumn[] {
+export function useEmergencyQueueColumns(patientRegistration?: Config['patientRegistration']): EmergencyQueueTableColumn[] {
   const { t } = useTranslation();
 
   return [
@@ -45,7 +46,7 @@ export function useEmergencyQueueColumns(): EmergencyQueueTableColumn[] {
       key: 'identificationStatus',
       header: t('identificationStatus', 'Identificación'),
       CellComponent: EmergencyQueueIdentificationStatusCell,
-      getFilterableValue: getQueueEntryIdentificationStatus,
+      getFilterableValue: (queueEntry) => getQueueEntryIdentificationStatus(queueEntry, patientRegistration),
     },
     {
       key: 'responsible',

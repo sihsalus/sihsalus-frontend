@@ -41,6 +41,22 @@ describe('TextPersonAttributeField', () => {
     expect(screen.getByRole('textbox', { name: /referred by \(optional\)/i })).toBeInTheDocument();
   });
 
+  it('uses the configured placeholder', () => {
+    render(
+      <Formik initialValues={{}} onSubmit={() => {}}>
+        <Form>
+          <TextPersonAttributeField
+            id="phone"
+            personAttributeType={mockPersonAttributeType}
+            placeholder="012345678"
+          />
+        </Form>
+      </Formik>,
+    );
+
+    expect(screen.getByPlaceholderText('012345678')).toBeInTheDocument();
+  });
+
   it('validates the input with the provided validationRegex', async () => {
     const user = userEvent.setup();
     const validationRegex = '^[A-Z]+$'; // Accepts only uppercase letters

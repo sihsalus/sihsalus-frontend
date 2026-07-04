@@ -1,4 +1,4 @@
-import { useAppContext, useWorkspace2Context, type Workspace2DefinitionProps } from '@openmrs/esm-framework';
+import { useAppContext, useSession, userHasAccess, useWorkspace2Context, type Workspace2DefinitionProps } from '@openmrs/esm-framework';
 import { screen } from '@testing-library/react';
 import { renderWithSwr } from 'test-utils';
 import { mockWardViewContext } from '../../../mock';
@@ -8,6 +8,8 @@ import DefaultWardPendingPatients from '../../ward-view/default-ward/default-war
 import AdmissionRequestsWorkspace, { type AdmissionRequestsWorkspaceProps } from './admission-requests.workspace';
 
 vi.mocked(useAppContext<WardViewContext>).mockReturnValue(mockWardViewContext);
+const mockUseSession = vi.mocked(useSession);
+const mockUserHasAccess = vi.mocked(userHasAccess);
 const mockUseWorkspace2Context = vi.mocked(useWorkspace2Context);
 
 vi.mock('../../hooks/useEmrConfiguration', () => ({ default: vi.fn() }));
@@ -47,6 +49,8 @@ describe('Admission Requests Workspace', () => {
       },
       mutateEmrConfiguration: vi.fn(),
     });
+    mockUseSession.mockReturnValue({ user: { uuid: 'user-1' } } as ReturnType<typeof useSession>);
+    mockUserHasAccess.mockReturnValue(true);
     mockUseWorkspace2Context.mockReturnValue({
       closeWorkspace: vi.fn(),
       launchChildWorkspace: vi.fn(),

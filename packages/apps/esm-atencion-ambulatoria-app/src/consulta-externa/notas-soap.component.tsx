@@ -38,15 +38,15 @@ const NotasSoap: React.FC<NotasSoapProps> = ({ patientUuid }) => {
   return (
     <div className={styles.widgetContainer}>
       <div className={styles.tableHeader}>
-        <span className={styles.tableHeaderTitle}>{t('soapNotesHistory', 'Historial de Notas SOAP')}</span>
+        <span className={styles.tableHeaderTitle}>{t('soapNotesHistory', 'Historial de examen físico / SOAP')}</span>
         <Button kind="ghost" size="sm" renderIcon={Add} onClick={handleLaunchForm}>
-          {t('addSoapNote', 'Registrar Nota SOAP')}
+          {t('addSoapNote', 'Registrar examen físico / SOAP')}
         </Button>
       </div>
 
       {soapEntries.length === 0 ? (
         <div className={styles.emptyState}>
-          <p>{t('noSoapData', 'No hay notas SOAP registradas para este paciente.')}</p>
+          <p>{t('noSoapData', 'No hay registros de examen físico / SOAP para este paciente.')}</p>
         </div>
       ) : (
         <Accordion>

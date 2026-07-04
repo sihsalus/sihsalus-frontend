@@ -115,6 +115,8 @@ describe('getEffectiveRegistrationConfig', () => {
       label: 'Divorciado(a)',
     });
     expect(fieldsById.civilStatus.customConceptAnswers?.map((answer) => answer.label)).not.toContain('Divorced');
+    expect(fieldsById.nativeLanguage.answerConceptSetUuid).toBe('52f75b05-9a74-57b3-baeb-d2d300b62b09');
+    expect(fieldsById.occupation.answerConceptSetUuid).toBe('d1c52a69-46b2-5c1e-ab88-5d5e6d2c8b49');
     expect(fieldsById.insuranceType.customConceptAnswers?.map((answer) => answer.label)).toEqual([
       'SIS Gratuito',
       'SIS Emprendedor',
@@ -131,15 +133,18 @@ describe('getEffectiveRegistrationConfig', () => {
     expect(config.sectionDefinitions.find((section) => section.id === 'identityLookup')?.fields).toContain('sisLookup');
     expect(config.sectionDefinitions.find((section) => section.id === 'insurance')?.fields).not.toContain('sisLookup');
     expect(config.fieldConfigurations.phone.personAttributeUuid).toBe(peruPhoneAttributeTypeUuid);
-    expect(config.fieldConfigurations.phone.validation?.matches).toBe('^\\+?[0-9]{6,19}$');
+    expect(config.fieldConfigurations.phone.placeholder).toBe('012345678');
+    expect(config.fieldConfigurations.phone.validation?.matches).toBe('^(?:(?:\\+51)?[1-8][0-9]{7}|0[1-8][0-9]{7})$');
     expect(config.sectionDefinitions.find((section) => section.id === 'contact')?.fields).toContain('birthAddress');
     expect(config.sectionDefinitions.find((section) => section.id === 'contact')?.fields).toContain('email');
     expect(config.sectionDefinitions.find((section) => section.id === 'contact')?.fields).not.toContain('birthplace');
+    expect(fieldsById.mobilePhone.placeholder).toBe('987654321');
+    expect(fieldsById.mobilePhone.validation?.matches).toBe('^(?:\\+51)?9[0-9]{8}$');
     expect(fieldsById.email).toMatchObject({
       id: 'email',
       type: 'person attribute',
       uuid: peruEmailAttributeTypeUuid,
-      label: 'Correo Electrónico',
+      label: 'Correo electrónico',
       validation: { required: false, matches: '^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$' },
     });
     expect(fieldsById.birthplace).toBeUndefined();

@@ -146,6 +146,14 @@ export const wellChildControlFormFallbacks = {
     display: 'CRED-025-CONSEJERÍA ESCOLAR Y LONCHERA SALUDABLE',
     identifier: 'CRED-025-CONSEJERÍA ESCOLAR Y LONCHERA SALUDABLE',
   },
+  huancaNeurodevelopmentForm: {
+    display: 'CRED-026-HUANCA TEST VIGILANCIA NEURODESARROLLO',
+    identifier: 'CRED-026-HUANCA TEST VIGILANCIA NEURODESARROLLO',
+  },
+  expectedSkillsBehaviorsForm: {
+    display: 'CRED-027-LISTA HABILIDADES Y CONDUCTAS ESPERADAS',
+    identifier: 'CRED-027-LISTA HABILIDADES Y CONDUCTAS ESPERADAS',
+  },
   tepsi: {
     display: '(Página 34, 35 y 36) TEPSI',
     identifier: '(Página 34, 35 y 36) TEPSI',
@@ -159,15 +167,15 @@ export const wellChildControlFormFallbacks = {
 export const neonatalFormFallbacks = {
   atencionImmediataNewborn: {
     display: '(Página 5) ATENCIÓN INMEDIATA DEL RECIÉN NACIDO',
-    identifier: '33b6449b-3fc6-3ec1-be3f-0bd29146315f',
+    identifier: '(Página 5) ATENCIÓN INMEDIATA DEL RECIÉN NACIDO',
   },
   newbornNeuroEval: {
     display: '(Página 6) EVALUACIÓN CÉFALO-CAUDAL Y NEUROLÓGICO DEL RECIÉN NACIDO',
-    identifier: '87745826-b5ac-3366-b17f-5c7335c39006',
+    identifier: '(Página 6) EVALUACIÓN CÉFALO-CAUDAL Y NEUROLÓGICO DEL RECIÉN NACIDO',
   },
   breastfeedingObservation: {
     display: '(Página 8) Ficha de Observación del Amamantamiento de la Consejería en Lactancia Materna',
-    identifier: '46624035-79b7-3025-abfc-b02249f16e77',
+    identifier: '(Página 8) Ficha de Observación del Amamantamiento de la Consejería en Lactancia Materna',
   },
   roomingIn: {
     display: '(Página 10) Alojamiento Conjunto',
@@ -175,11 +183,11 @@ export const neonatalFormFallbacks = {
   },
   birthDetails: {
     display: '(CRED) Detalles de Nacimiento',
-    identifier: '8db0f1dc-c191-3468-854c-6c6c41ef6198',
+    identifier: '(CRED) Detalles de Nacimiento',
   },
   pregnancyDetails: {
     display: '(CRED) Embarazo y Parto',
-    identifier: '307e2887-9902-3ab2-83d9-f3e48ef7bdb2',
+    identifier: '(CRED) Embarazo y Parto',
   },
 } as const satisfies Partial<Record<CREDFormKey, CREDFormFallback>>;
 

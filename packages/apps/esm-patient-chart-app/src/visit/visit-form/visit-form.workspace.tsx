@@ -59,6 +59,7 @@ import { canStartVisit } from '../visit-access';
 import { invalidateUseVisits, useInfiniteVisits } from '../visits-widget/visit.resource';
 
 import BaseVisitType from './base-visit-type.component';
+import CompanionList from './companion-list.component';
 import LocationSelector from './location-selector.component';
 import { MemoizedRecommendedVisitType } from './recommended-visit-type.component';
 import VisitAttributeTypeFields from './visit-attribute-type.component';
@@ -775,6 +776,9 @@ const StartVisitForm: React.FC<StartVisitFormProps> = (props) => {
 
             {/* This field lets the user select a location for the visit. The location is required for the visit to be saved. Defaults to the active session location */}
             <LocationSelector control={control} />
+
+            {/* Lists the patient's companions (Acompañante relationships). */}
+            <CompanionList patientUuid={patientUuid} />
 
             {/* Lists available program types. This feature is dependent on the `showRecommendedVisitTypeTab` config being set
           to true. */}

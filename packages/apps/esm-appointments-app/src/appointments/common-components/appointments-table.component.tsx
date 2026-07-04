@@ -29,6 +29,8 @@ import {
   useConfig,
   useLayoutType,
   usePagination,
+  useSession,
+  userHasAccess,
 } from '@openmrs/esm-framework';
 import dayjs from 'dayjs';
 import isToday from 'dayjs/plugin/isToday';
@@ -37,6 +39,7 @@ import React, { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import { type ConfigObject } from '../../config-schema';
+import { appointmentsEditPrivilege } from '../../constants';
 import { EmptyState } from '../../empty-state/empty-state.component';
 import { exportAppointmentsToSpreadsheet } from '../../helpers/excel';
 import { useTodaysVisits } from '../../hooks/useTodaysVisits';
@@ -69,6 +72,8 @@ const AppointmentsTable: React.FC<AppointmentsTableProps> = ({
   const searchResults = useAppointmentSearchResults(appointments, searchString);
   const { results, goTo, currentPage } = usePagination(searchResults, pageSize);
   const { customPatientChartUrl, patientIdentifierType } = useConfig<ConfigObject>();
+  const session = useSession();
+  const canEdit = userHasAccess(appointmentsEditPrivilege, session?.user);
   const { visits } = useTodaysVisits();
   const layout = useLayoutType();
   const responsiveSize = isDesktop(layout) ? 'sm' : 'lg';
@@ -154,7 +159,7 @@ const AppointmentsTable: React.FC<AppointmentsTableProps> = ({
       <EmptyState
         headerTitle={appointmentSectionTitle}
         displayText={emptyDisplayText}
-        launchForm={() => launchWorkspace2('appointments-patient-search-workspace')}
+        launchForm={canEdit ? () => launchWorkspace2('appointments-patient-search-workspace') : undefined}
       />
     );
   }
@@ -249,7 +254,7 @@ const AppointmentsTable: React.FC<AppointmentsTableProps> = ({
                                 <TableCell key={cell.id}>{cell.value?.content ?? cell.value}</TableCell>
                               ))}
                               <TableCell className="cds--table-column-menu">
-                                {isFutureAppointment || (isTodayAppointment && !hasActiveVisitToday) ? (
+                                {canEdit && (isFutureAppointment || (isTodayAppointment && !hasActiveVisitToday)) ? (
                                   <OverflowMenu
                                     align="left"
                                     aria-label={t('actions', 'Actions')}

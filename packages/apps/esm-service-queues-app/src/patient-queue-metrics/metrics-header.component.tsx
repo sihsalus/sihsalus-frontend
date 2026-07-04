@@ -7,11 +7,12 @@ import {
   UserHasAccess,
   useLayoutType,
   useSession,
+  userHasAccess,
 } from '@openmrs/esm-framework';
 import { useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
 
-import { serviceQueuesBasePath } from '../constants';
+import { serviceQueuesBasePath, serviceQueuesEditPrivilege } from '../constants';
 
 import styles from './metrics-header.scss';
 
@@ -23,6 +24,7 @@ const MetricsHeader = () => {
   const metricsTitle = t('clinicMetrics', 'Clinic metrics');
   const queueScreenText = t('queueScreen', 'Call display');
   const providerUuid = currentUserSession?.currentProvider?.uuid;
+  const canEdit = userHasAccess(serviceQueuesEditPrivilege, currentUserSession?.user);
 
   const launchAddProviderToRoomModal = useCallback(() => {
     const dispose = showModal('add-provider-to-room-modal', {
@@ -46,17 +48,21 @@ const MetricsHeader = () => {
         size={isDesktop(layout) ? 'sm' : 'lg'}
         tooltipAlignment="left"
       >
-        <UserHasAccess privilege="Emr: View Legacy Interface">
-          <MenuItem
-            label={t('addNewService', 'Add new service')}
-            onClick={() => launchWorkspace('service-queues-service-form')}
-          />
-          <MenuItem
-            label={t('addNewServiceRoom', 'Add new service room')}
-            onClick={() => launchWorkspace('service-queues-room-workspace')}
-          />
-        </UserHasAccess>
-        <MenuItem label={t('addProviderQueueRoom', 'Add provider queue room')} onClick={launchAddProviderToRoomModal} />
+        {canEdit ? (
+          <UserHasAccess privilege="Emr: View Legacy Interface">
+            <MenuItem
+              label={t('addNewService', 'Add new service')}
+              onClick={() => launchWorkspace('service-queues-service-form')}
+            />
+            <MenuItem
+              label={t('addNewServiceRoom', 'Add new service room')}
+              onClick={() => launchWorkspace('service-queues-room-workspace')}
+            />
+          </UserHasAccess>
+        ) : null}
+        {canEdit ? (
+          <MenuItem label={t('addProviderQueueRoom', 'Add provider queue room')} onClick={launchAddProviderToRoomModal} />
+        ) : null}
       </ComboButton>
     </div>
   );

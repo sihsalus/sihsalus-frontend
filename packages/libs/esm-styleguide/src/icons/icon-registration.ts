@@ -81,6 +81,7 @@ import syringe from './svgs/syringe.svg';
 import table from './svgs/table.svg';
 import tableOfContents from './svgs/table-of-contents.svg';
 import time from './svgs/time.svg';
+import tooth from './svgs/tooth.svg';
 import tools from './svgs/tools.svg';
 import translate from './svgs/translate.svg';
 import trashCan from './svgs/trash-can.svg';
@@ -173,6 +174,7 @@ export function setupIcons() {
   addIconSvg('omrs-icon-table-of-contents', tableOfContents);
   addIconSvg('omrs-icon-table', table);
   addIconSvg('omrs-icon-time', time);
+  addIconSvg('omrs-icon-tooth', tooth);
   addIconSvg('omrs-icon-tools', tools);
   addIconSvg('omrs-icon-translate', translate);
   addIconSvg('omrs-icon-trash-can', trashCan);

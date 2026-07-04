@@ -1,4 +1,4 @@
-import { useConfig, useLeftNav } from '@openmrs/esm-framework';
+import { useConfig, useLeftNav, useSession } from '@openmrs/esm-framework';
 import { AppErrorBoundary } from '@sihsalus/esm-rbac';
 import React from 'react';
 import { BrowserRouter, Route, Routes } from 'react-router-dom';
@@ -30,7 +30,10 @@ function getLeftNavMode(config: unknown): HomeConfig['leftNavMode'] {
 const Root: React.FC = () => {
   const spaBasePath = getSpaBasePath();
   const config = useConfig();
+  const session = useSession();
   const leftNavMode = getLeftNavMode(config);
+  const sessionKey =
+    session?.authenticated && session?.sessionId ? `${session.sessionId}:${session.user?.uuid ?? 'unknown'}` : 'anonymous';
   useLeftNav({
     name: 'homepage-dashboard-slot',
     basePath: spaBasePath,
@@ -40,7 +43,7 @@ const Root: React.FC = () => {
   return (
     <AppErrorBoundary appName="esm-home-app">
       <main className="omrs-main-content">
-        <BrowserRouter basename={spaBasePath}>
+        <BrowserRouter basename={spaBasePath} key={sessionKey}>
           <Routes>
             <Route path="/home" element={<DefaultDashboardRedirect />} />
             <Route path="/home/:dashboard/*" element={<DashboardContainer />} />

@@ -1,5 +1,6 @@
-import { ExtensionSlot, useConfig } from '@openmrs/esm-framework';
+import { ExtensionSlot, useConfig, userHasAccess } from '@openmrs/esm-framework';
 import { render } from '@testing-library/react';
+import type { Session } from '@openmrs/esm-framework';
 import { MedicationDispenseStatus, type MedicationRequest, MedicationRequestStatus } from '../types';
 import { computeMedicationRequestStatus, getMostRecentMedicationDispenseStatus } from '../utils';
 import ActionButtons from './action-buttons.component';
@@ -9,8 +10,14 @@ import PauseActionButton from './prescription-actions/pause-action-button.compon
 
 const mockedUseConfig = vi.mocked(useConfig);
 const mockedExtensionSlot = vi.mocked(ExtensionSlot);
+const mockedUserHasAccess = vi.mocked(userHasAccess);
 const mockPatientUuid = '558494fe-5850-4b34-a3bf-06550334ba4a';
 const mockEncounterUuid = '7aee7123-9e50-4f72-a636-895d77a63e98';
+const mockSession = {
+  user: {
+    uuid: 'user-1',
+  },
+} as Session;
 
 const medicationRequest: MedicationRequest = {
   resourceType: 'MedicationRequest',
@@ -121,13 +128,14 @@ const prescriptionActionsState = {
   patientUuid: mockPatientUuid,
   encounterUuid: mockEncounterUuid,
   medicationRequestBundle: { request: medicationRequest, dispenses: [] },
-  session: undefined,
+  session: mockSession,
   providers: [],
   disabled: false,
 };
 
 describe('Action Buttons Component tests', () => {
   beforeEach(() => {
+    mockedUserHasAccess.mockReturnValue(true);
     mockedUseConfig.mockReturnValue({
       medicationRequestExpirationPeriodInDays: 90,
       actionButtons: {

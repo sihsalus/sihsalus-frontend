@@ -66,6 +66,9 @@ interface PatientSearchRegistrationProps {
 
 const defaultNationalityCountryCode = 'PE';
 const ageInputConstraints = { integer: true, max: 130, min: 0, nonNegative: true };
+
+type PersonAttributeValue = string | { uuid: string };
+
 const nationalityOptions = [
   { code: 'PE', label: 'Perú' },
   { code: 'CO', label: 'Colombia' },
@@ -118,13 +121,28 @@ function formatGenderLabel(gender?: string) {
 }
 
 function addOptionalAttribute(
-  attributes: Array<{ attributeType: string; value: string }>,
+  attributes: Array<{ attributeType: string; value: PersonAttributeValue }>,
   attributeTypeUuid: string | null | undefined,
-  value: string | undefined,
+  value: PersonAttributeValue | undefined,
 ) {
   if (attributeTypeUuid && value) {
     attributes.push({ attributeType: attributeTypeUuid, value });
   }
+}
+
+function getIdentificationStatusAttributeValue(
+  config: Pick<Config['patientRegistration'], 'identificationStatusConcepts'>,
+  identificationStatus: string,
+) {
+  const statusConceptUuid =
+    {
+      pending: config.identificationStatusConcepts.pendingUuid,
+      partial: config.identificationStatusConcepts.partialUuid,
+      confirmed: config.identificationStatusConcepts.confirmedUuid,
+      merged: config.identificationStatusConcepts.mergedUuid,
+    }[identificationStatus];
+
+  return statusConceptUuid ?? identificationStatus;
 }
 
 function preventInvalidAgeKey(event: React.KeyboardEvent<HTMLInputElement>) {
@@ -389,7 +407,7 @@ const PatientSearchRegistration: React.FC<PatientSearchRegistrationProps> = ({ o
         }
 
         // 5. Build person attributes
-        const attributes: Array<{ attributeType: string; value: string }> = [];
+        const attributes: Array<{ attributeType: string; value: PersonAttributeValue }> = [];
         if (data.isUnknown) {
           attributes.push({
             attributeType: config.patientRegistration.unknownPatientAttributeTypeUuid,
@@ -440,7 +458,9 @@ const PatientSearchRegistration: React.FC<PatientSearchRegistrationProps> = ({ o
         addOptionalAttribute(
           attributes,
           config.patientRegistration.identificationStatusAttributeTypeUuid,
-          data.identificationStatus,
+          data.identificationStatus
+            ? getIdentificationStatusAttributeValue(config.patientRegistration, data.identificationStatus)
+            : undefined,
         );
         addOptionalAttribute(
           attributes,

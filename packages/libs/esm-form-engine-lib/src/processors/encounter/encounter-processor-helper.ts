@@ -42,7 +42,7 @@ import { DefaultValueValidator } from '../../validators/default-value-validator'
 
 export async function prepareEncounter(
   context: FormContextProps,
-  encounterDate: Date,
+  encounterDate: Date | undefined,
   encounterRole: string,
   encounterProvider: string,
   location: string,
@@ -73,7 +73,9 @@ export async function prepareEncounter(
       ];
     }
     // TODO: Question: Should we be editing the location, form and visit here?
-    encounterForSubmission.encounterDatetime = encounterDate;
+    if (encounterDate) {
+      encounterForSubmission.encounterDatetime = encounterDate;
+    }
     encounterForSubmission.location = location;
     encounterForSubmission.form = {
       uuid: formJson.uuid,
@@ -87,7 +89,6 @@ export async function prepareEncounter(
   } else {
     encounterForSubmission = {
       patient: patient.id,
-      encounterDatetime: encounterDate,
       location: location,
       encounterType: formJson.encounterType,
       encounterProviders: [
@@ -104,6 +105,9 @@ export async function prepareEncounter(
       orders: ordersForSubmission,
       diagnoses: diagnosesForSubmission,
     };
+    if (encounterDate) {
+      encounterForSubmission.encounterDatetime = encounterDate;
+    }
   }
   if (context.handleEncounterCreate) {
     const updatedEncounter = await context.handleEncounterCreate(encounterForSubmission);
@@ -272,10 +276,18 @@ export function saveAttachments(
 export function getMutableSessionProps(context: FormContextProps): {
   encounterRole?: string;
   encounterProvider: string;
-  encounterDate: Date;
+  encounterDate?: Date;
   encounterLocation: string;
 } {
-  const { formFields, location, currentProvider, customDependencies, domainObjectValue: encounter } = context;
+  const {
+    formFields,
+    location,
+    currentProvider,
+    customDependencies,
+    domainObjectValue: encounter,
+    sessionDate,
+    visit,
+  } = context;
   const defaultEncounterRole = isPlainObject(customDependencies.defaultEncounterRole)
     ? customDependencies.defaultEncounterRole
     : undefined;
@@ -285,10 +297,19 @@ export function getMutableSessionProps(context: FormContextProps): {
   const encounterDateValue = formFields.find((field) => field.type === 'encounterDatetime')?.meta.submission?.newValue;
   const encounterLocationValue = formFields.find((field) => field.type === 'encounterLocation')?.meta.submission
     ?.newValue;
+  const existingEncounterDatetime =
+    encounter && isDateValue(encounter.encounterDatetime)
+      ? encounter.encounterDatetime
+      : typeof encounter?.encounterDatetime === 'string'
+        ? new Date(encounter.encounterDatetime)
+        : undefined;
+  const defaultEncounterDate = visit?.stopDatetime ? sessionDate : undefined;
   return {
     encounterRole: isStringValue(encounterRoleValue) ? encounterRoleValue : getResourceUuid(defaultEncounterRole),
     encounterProvider: isStringValue(encounterProviderValue) ? encounterProviderValue : currentProvider.uuid,
-    encounterDate: isDateValue(encounterDateValue) ? encounterDateValue : new Date(),
+    encounterDate: isDateValue(encounterDateValue)
+      ? encounterDateValue
+      : (existingEncounterDatetime ?? defaultEncounterDate),
     encounterLocation: isStringValue(encounterLocationValue)
       ? encounterLocationValue
       : (getResourceUuid(encounter?.location) ?? location.uuid),

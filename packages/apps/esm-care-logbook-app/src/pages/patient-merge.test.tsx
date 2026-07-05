@@ -1,40 +1,34 @@
-import { fireEvent, render, screen } from '@testing-library/react';
+import { render, screen } from '@testing-library/react';
+import { navigate } from '@openmrs/esm-framework';
 
-import PatientMerge from './patient-merge.component';
+import PatientMerge, { getLegacyPatientMergeUrl } from './patient-merge.component';
+
+vi.mock('@openmrs/esm-framework', () => ({
+  navigate: vi.fn(),
+}));
+
+const mockNavigate = vi.mocked(navigate);
 
 describe('PatientMerge', () => {
   beforeEach(() => {
     globalThis.openmrsBase = '/openmrs';
+    mockNavigate.mockClear();
   });
 
-  it('renders the duplicate patient merge workflow mockup', () => {
+  it('redirects the SPA route to the legacy OpenMRS duplicate patient search page', () => {
     render(<PatientMerge />);
 
     expect(screen.getByRole('heading', { name: /fusionar historias clínicas duplicadas/i })).toBeInTheDocument();
     expect(screen.getByText(/dos historias clínicas pertenezcan al mismo paciente/i)).toBeInTheDocument();
-    expect(screen.queryByRole('link', { name: /abrir fusión de pacientes/i })).not.toBeInTheDocument();
-    expect(screen.getAllByRole('button', { name: /buscar/i })).toHaveLength(2);
+    expect(mockNavigate).toHaveBeenCalledWith({ to: '/openmrs/admin/patients/findDuplicatePatients.htm' });
+    expect(screen.getByRole('link', { name: /abrir fusión de pacientes/i })).toHaveAttribute(
+      'href',
+      '/openmrs/admin/patients/findDuplicatePatients.htm',
+    );
+    expect(screen.queryByRole('button', { name: /buscar/i })).not.toBeInTheDocument();
   });
 
-  it('shows candidates, lets the user select a pair, and opens the review step', () => {
-    render(<PatientMerge />);
-
-    fireEvent.click(screen.getAllByRole('button', { name: /buscar/i })[1]);
-
-    expect(screen.getByRole('heading', { name: /pacientes devueltos/i })).toBeInTheDocument();
-    expect(screen.getByRole('cell', { name: '10000KP' })).toBeInTheDocument();
-    expect(screen.getByRole('cell', { name: '10000JT' })).toBeInTheDocument();
-
-    fireEvent.click(screen.getByLabelText('Seleccionar paciente', { selector: '#merge-patient-16' }));
-    fireEvent.click(screen.getByLabelText('Seleccionar paciente', { selector: '#merge-patient-15' }));
-    fireEvent.click(screen.getByRole('button', { name: /continuar/i }));
-
-    expect(screen.getByText(/revise la combinacion con cuidado/i)).toBeInTheDocument();
-    expect(screen.getByRole('radio', { name: /armando mendoza - 10000kp/i })).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: /fusionar historias/i })).toBeDisabled();
-
-    fireEvent.click(screen.getByRole('radio', { name: /armando mendoza - 10000kp/i }));
-
-    expect(screen.getByRole('button', { name: /fusionar historias/i })).toBeEnabled();
+  it('normalizes OpenMRS base paths before building the legacy merge URL', () => {
+    expect(getLegacyPatientMergeUrl('/openmrs/')).toBe('/openmrs/admin/patients/findDuplicatePatients.htm');
   });
 });

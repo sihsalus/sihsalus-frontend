@@ -41,6 +41,8 @@
   "noAdmissionsFound": "Nenhum atendimento recente encontrado.",
   "noUpcomingAppointments": "Nenhuma consulta futura registrada.",
   "noVisitHistory": "Nenhum historico de atendimento registrado.",
+  "openingLegacyMergePatients": "Abrindo o fluxo legado do OpenMRS",
+  "openingLegacyMergePatientsHint": "A mesclagem real de pacientes roda fora do shell SPA para usar a tela administrativa do OpenMRS.",
   "openLegacyMergePatients": "Abrir mesclagem de pacientes",
   "patient": "Paciente",
   "patientLoadError": "Nao foi possivel carregar o paciente",

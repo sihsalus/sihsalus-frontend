@@ -123,7 +123,7 @@
 .section,
 .detailCard,
 .infoTile,
-.sqlTile {
+.sqlBlock {
   margin-top: 1rem;
 }
 
@@ -324,6 +324,117 @@
   gap: 1rem;
 }
 
+.detailGrid {
+  display: grid;
+  gap: 1rem;
+  grid-template-columns: minmax(0, 2fr) minmax(0, 1fr);
+  align-items: start;
+}
+
+.detailMain,
+.detailAside {
+  min-width: 0;
+}
+
+.versionMeta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.25rem 0.75rem;
+  margin-top: 0.5rem;
+  margin-bottom: 1rem;
+  font-size: 0.875rem;
+  color: #525252;
+}
+
+.versionMeta strong {
+  color: #161616;
+  font-weight: 600;
+}
+
+.historyList {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.historyItem {
+  border: 1px solid #e0e0e0;
+  background: #fafafa;
+}
+
+.historyDetails {
+  width: 100%;
+}
+
+.historyDetails[open] {
+  background: #ffffff;
+}
+
+.historySummary {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+  padding: 0.625rem 0.875rem;
+  cursor: pointer;
+  list-style: none;
+  user-select: none;
+  transition: background-color 0.12s ease;
+}
+
+.historySummary::-webkit-details-marker {
+  display: none;
+}
+
+.historySummary::before {
+  content: '\25B8';
+  display: inline-block;
+  margin-right: 0.5rem;
+  color: #525252;
+  font-size: 0.75rem;
+  transition: transform 0.12s ease;
+}
+
+.historyDetails[open] .historySummary::before {
+  transform: rotate(90deg);
+}
+
+.historySummary:hover,
+.historySummary:focus-visible {
+  background: #f0f0f0;
+  outline: none;
+}
+
+.historySummary:focus-visible {
+  box-shadow: inset 0 0 0 2px #0f62fe;
+}
+
+.historyItemTitle {
+  font-weight: 600;
+  color: #161616;
+  font-size: 0.875rem;
+}
+
+.historyItemDate {
+  font-size: 0.8125rem;
+  color: #525252;
+}
+
+.historyDetailsBody {
+  padding: 0.75rem 0.875rem 1rem;
+  border-top: 1px solid #e0e0e0;
+}
+
+.sqlBlock {
+  border: 1px solid #e0e0e0;
+  background: #f4f4f4;
+  padding: 0.75rem 1rem;
+}
+
 .fieldGroup {
   display: flex;
   flex-direction: column;
@@ -365,6 +476,12 @@
   display: flex;
   flex-direction: column;
   gap: 0.25rem;
+}
+
+@media (max-width: 800px) {
+  .detailGrid {
+    grid-template-columns: minmax(0, 1fr);
+  }
 }
 
 @media (max-width: 672px) {

@@ -1,4 +1,4 @@
-import { Accordion, AccordionItem, Button, Tag, Tile } from '@carbon/react';
+import { Button, Tag, Tile } from '@carbon/react';
 import React, { useMemo, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import type { DefinicionIndicadorForm } from '../api/types';
@@ -14,6 +14,8 @@ import {
 } from '../features/indicadores/hooks';
 import { parseDefinicion } from '../features/indicadores/parseDefinicion';
 import styles from '../indicators-dashboard.module.scss';
+
+const formatVersionDate = (iso: string) => new Date(iso).toLocaleString('es-PE');
 
 const IndicadorDetailPage: React.FC = () => {
   const { id = '' } = useParams();
@@ -102,32 +104,50 @@ const IndicadorDetailPage: React.FC = () => {
             </Tile>
           ) : null}
 
-          {latestVersion ? (
-            <Tile className={styles.section}>
-              <h3 className={styles.sectionTitle}>Definición actual</h3>
-              <DefinicionView definicion={latestVersion.definicion} />
-              <SQLPreviewSection
-                indicadorId={data.id}
-                versionId={latestVersion.id}
-                versionNum={latestVersion.version}
-              />
-            </Tile>
-          ) : null}
+          <div className={styles.detailGrid}>
+            <div className={styles.detailMain}>
+              {latestVersion ? (
+                <Tile className={styles.detailCard}>
+                  <h3 className={styles.sectionTitle}>Definición actual</h3>
+                  <div className={styles.versionMeta}>
+                    <span>
+                      <strong>Versión:</strong> #{latestVersion.version}
+                    </span>
+                    <span>
+                      <strong>Creado:</strong> {formatVersionDate(latestVersion.creado_en)}
+                    </span>
+                  </div>
+                  <DefinicionView definicion={latestVersion.definicion} />
+                  <SQLPreviewSection
+                    indicadorId={data.id}
+                    versionId={latestVersion.id}
+                    versionNum={latestVersion.version}
+                  />
+                </Tile>
+              ) : null}
+            </div>
 
-          <Tile className={styles.section}>
-            <h3 className={styles.sectionTitle}>Historial de versiones</h3>
-            <Accordion>
-              {data.versiones.map((version) => (
-                <AccordionItem
-                  key={version.id}
-                  title={`Versión #${version.version} - ${new Date(version.creado_en).toLocaleString('es-PE')}`}
-                >
-                  <DefinicionView definicion={version.definicion} />
-                  <SQLPreviewSection indicadorId={data.id} versionId={version.id} versionNum={version.version} />
-                </AccordionItem>
-              ))}
-            </Accordion>
-          </Tile>
+            <aside className={styles.detailAside}>
+              <h3 className={styles.sectionTitle}>Historial de versiones</h3>
+              <ol className={styles.historyList} aria-label="Versiones del indicador">
+                {data.versiones.map((version) => (
+                  <li key={version.id} className={styles.historyItem}>
+                    <details className={styles.historyDetails}>
+                      <summary className={styles.historySummary}>
+                        <span className={styles.historyItemTitle}>Versión #{version.version}</span>
+                        <span className={styles.historyItemDate}>
+                          <time dateTime={version.creado_en}>{formatVersionDate(version.creado_en)}</time>
+                        </span>
+                      </summary>
+                      <div className={styles.historyDetailsBody}>
+                        <DefinicionView definicion={version.definicion} />
+                      </div>
+                    </details>
+                  </li>
+                ))}
+              </ol>
+            </aside>
+          </div>
         </div>
       ) : null}
     </div>

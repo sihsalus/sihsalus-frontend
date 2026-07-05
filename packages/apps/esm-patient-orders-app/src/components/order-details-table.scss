@@ -31,6 +31,7 @@
 
 .dropdownContainer {
   min-width: max-content;
+  margin-right: layout.$spacing-05;
 
   :global(.cds--dropdown__wrapper--inline) {
     grid-gap: 0 0.5rem;

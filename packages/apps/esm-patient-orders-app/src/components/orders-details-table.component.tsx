@@ -40,6 +40,8 @@ import {
   usePatient,
   userHasAccess,
   useSession,
+  openmrsFetch,
+  restBaseUrl,
 } from '@openmrs/esm-framework';
 import {
   CardHeader,
@@ -60,6 +62,7 @@ import { capitalize, lowerCase } from 'lodash-es';
 import React, { type ReactNode, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useReactToPrint } from 'react-to-print';
+import useSWR from 'swr';
 
 import type { ConfigObject } from '../config-schema';
 import PrintComponent from '../print/print.component';
@@ -90,6 +93,48 @@ const getPriorityColor = (urgency: string | undefined): string => {
     default:
       return 'gray';
   }
+};
+
+const resultsViewerConcepts = [
+  '24305e8e-f3dc-4ac6-bf87-e4f11f3b970e', // Hemograma completo
+  '7e750f3a-8d5c-45b1-8e94-ebf850208e35', // Examen completo de orina
+  'df144cc2-6718-4005-9881-f39eafd73315', // Examen de heces (panel)
+  '339febfd-699e-4a26-927f-1f9a7780bb5e', // Panel de Química del Suero
+  '241eb982-1fdd-4183-a2b5-763f5ce2d528',
+  '1bcb541a-55e8-4c5d-83fb-d121a9d54d9d',
+  '654b11a8-a326-45c9-885e-2fae6143404a',
+  '968c8a41-ab1b-426c-86ee-761b88c26e40',
+  'ef0a9d25-658b-466b-9b7e-4571673b28b0',
+  '7969c932-60db-4a38-8723-2f3a5bba8c16',
+  'bb3af485-89b6-4c04-848c-8d024a6b4a7a',
+];
+
+interface LabsetMember {
+  uuid: string;
+  display: string;
+  setMembers?: Array<LabsetMember>;
+}
+
+interface LabsetResponse {
+  uuid: string;
+  display: string;
+  setMembers: Array<LabsetMember>;
+}
+
+const getMemberUuids = (labset: LabsetResponse | LabsetMember): Array<string> => {
+  const uuids: Array<string> = [];
+  const recurse = (member: LabsetResponse | LabsetMember) => {
+    if (member.uuid) {
+      uuids.push(member.uuid);
+    }
+    if (member.setMembers) {
+      member.setMembers.forEach(recurse);
+    }
+  };
+  if (labset.setMembers) {
+    labset.setMembers.forEach(recurse);
+  }
+  return uuids;
 };
 
 interface OrderDetailsProps {
@@ -149,6 +194,47 @@ const OrderDetailsTable: React.FC<OrderDetailsProps> = ({ patientUuid, showAddBu
   const [selectedOrderTypeUuid, setSelectedOrderTypeUuid] = useState<string | null>(null);
   const [selectedFromDate, setSelectedFromDate] = useState<string | null>(null);
   const [selectedToDate, setSelectedToDate] = useState<string | null>(null);
+  const [priorityFilter, setPriorityFilter] = useState<string | null>(null);
+  const [selectedLabsetUuid, setSelectedLabsetUuid] = useState<string | null>(null);
+
+  const fetchLabsets = useCallback((urls: Array<string>) => {
+    return Promise.all(urls.map((url) => openmrsFetch<LabsetResponse>(url).then((res) => res.data)));
+  }, []);
+
+  const conceptUrls = useMemo(() => {
+    return (
+      resultsViewerConcepts?.map(
+        (c) =>
+          `${restBaseUrl}/concept/${c}?v=custom:(uuid,display,setMembers:(uuid,display,setMembers:(uuid,display,setMembers:(uuid,display))))`,
+      ) || []
+    );
+  }, []);
+
+  const { data: fetchedLabsets } = useSWR<Array<LabsetResponse>, Error>(
+    conceptUrls.length ? conceptUrls : null,
+    fetchLabsets,
+  );
+
+  const labsetOptions = useMemo(() => {
+    const options = [{ value: null, display: t('all', 'All') }];
+    if (fetchedLabsets) {
+      fetchedLabsets.forEach((set) => {
+        options.push({ value: set.uuid, display: set.display });
+      });
+    }
+    return options;
+  }, [fetchedLabsets, t]);
+
+  const priorityFilterOptions = useMemo(() => {
+    return [
+      { uuid: null, label: t('all', 'All') },
+      ...(priorityConfigs?.map((p) => ({
+        uuid: p.conceptUuid,
+        label: p.label,
+      })) ?? []),
+    ];
+  }, [priorityConfigs, t]);
+
   const selectedOrderName = orderTypes?.find((x) => x.uuid === selectedOrderTypeUuid)?.name;
   const {
     data: allOrders,
@@ -229,9 +315,40 @@ const OrderDetailsTable: React.FC<OrderDetailsProps> = ({ patientUuid, showAddBu
     });
   }
 
+  const filteredOrders = useMemo(() => {
+    let result = allOrders ?? [];
+
+    // Filtrado por prioridad
+    if (priorityFilter) {
+      const filterNorm = priorityFilter.toUpperCase();
+      result = result.filter((order) => {
+        const priorityMatch = order.instructions?.match(/\|\|priorityUuid:([a-fA-F0-9-]+)\|\|/);
+        const normUrgency = (priorityMatch ? priorityMatch[1] : order.urgency)?.toUpperCase();
+        return (
+          normUrgency === filterNorm ||
+          (filterNorm === 'B96959DB-2106-4CE7-B39B-6FCB2CA88CDA' && normUrgency === 'STAT') ||
+          (filterNorm === 'BF3A08C6-CBE6-4F00-8E06-5F5437790B85' && normUrgency === 'ROUTINE') ||
+          (filterNorm === '65CF194E-05A7-4832-BA6D-9B7C9940A7C2' && normUrgency === 'ON_SCHEDULED_DATE')
+        );
+      });
+    }
+
+    // Filtrado por grupo de pruebas
+    if (selectedLabsetUuid && fetchedLabsets) {
+      const currentLabset = fetchedLabsets.find((set) => set.uuid === selectedLabsetUuid);
+      const memberUuids = currentLabset ? getMemberUuids(currentLabset) : [];
+
+      result = result.filter(
+        (order) => order.concept?.uuid === selectedLabsetUuid || memberUuids.includes(order.concept?.uuid),
+      );
+    }
+
+    return result;
+  }, [allOrders, priorityFilter, selectedLabsetUuid, fetchedLabsets]);
+
   const tableRows = useMemo(
     () =>
-      allOrders?.map((order) => {
+      filteredOrders.map((order) => {
         const priorityMatch = order.instructions?.match(/\|\|priorityUuid:([a-fA-F0-9-]+)\|\|/);
         const parsedUrgency = priorityMatch ? priorityMatch[1] : order.urgency;
         const selectedPriority = priorityConfigs?.find((p) => p.conceptUuid === parsedUrgency);
@@ -256,6 +373,10 @@ const OrderDetailsTable: React.FC<OrderDetailsProps> = ({ patientUuid, showAddBu
           priority: (
             <div className={styles.priorityPill} data-urgency-color={getPriorityColor(parsedUrgency)}>
               {priorityLabel}
+              {(parsedUrgency?.toUpperCase() === '65CF194E-05A7-4832-BA6D-9B7C9940A7C2' ||
+                parsedUrgency?.toUpperCase() === 'ON_SCHEDULED_DATE') &&
+                order.scheduledDate &&
+                ` (${formatDate(new Date(order.scheduledDate))})`}
             </div>
           ),
           orderedBy: order.orderer?.display,
@@ -277,7 +398,7 @@ const OrderDetailsTable: React.FC<OrderDetailsProps> = ({ patientUuid, showAddBu
           ),
         };
       }) ?? [],
-    [allOrders, t, priorityConfigs],
+    [filteredOrders, t, priorityConfigs],
   );
 
   const { results: paginatedOrders, goTo, currentPage } = usePagination(tableRows, defaultPageSize);
@@ -390,6 +511,34 @@ const OrderDetailsTable: React.FC<OrderDetailsProps> = ({ patientUuid, showAddBu
             }}
             selectedItem={orderTypesToDisplay.find((x) => x.uuid === selectedOrderTypeUuid) ?? orderTypesToDisplay[0]}
             titleText={t('selectOrderType', 'Select order type') + ':'}
+            type="inline"
+          />
+        </div>
+        <div className={styles.dropdownContainer}>
+          <Dropdown
+            id="priorityDropdown"
+            items={priorityFilterOptions}
+            itemToString={(option: { uuid: string | null; label: string }) => option?.label}
+            label={t('all', 'All')}
+            onChange={({ selectedItem }) => {
+              setPriorityFilter(selectedItem?.uuid || null);
+            }}
+            selectedItem={priorityFilterOptions.find((x) => x.uuid === priorityFilter) ?? priorityFilterOptions[0]}
+            titleText={t('filterOrdersByPriority', 'Filtrar órdenes por prioridad:')}
+            type="inline"
+          />
+        </div>
+        <div className={styles.dropdownContainer}>
+          <Dropdown
+            id="labsetDropdown"
+            items={labsetOptions}
+            itemToString={(option: { value: string | null; display: string }) => option?.display}
+            label={t('all', 'All')}
+            onChange={({ selectedItem }) => {
+              setSelectedLabsetUuid(selectedItem?.value || null);
+            }}
+            selectedItem={labsetOptions.find((x) => x.value === selectedLabsetUuid) ?? labsetOptions[0]}
+            titleText={t('filterByTestGroup', 'Filtrar por grupo de pruebas:')}
             type="inline"
           />
         </div>

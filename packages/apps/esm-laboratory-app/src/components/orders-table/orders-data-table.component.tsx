@@ -126,6 +126,7 @@ const getPriorityRank = (urgency: string | undefined): number => {
 interface LabsetMember {
   uuid: string;
   display: string;
+  setMembers?: Array<LabsetMember>;
 }
 
 interface LabsetResponse {
@@ -133,6 +134,22 @@ interface LabsetResponse {
   display: string;
   setMembers: Array<LabsetMember>;
 }
+
+const getMemberUuids = (labset: LabsetResponse | LabsetMember): Array<string> => {
+  const uuids: Array<string> = [];
+  const recurse = (member: LabsetResponse | LabsetMember) => {
+    if (member.uuid) {
+      uuids.push(member.uuid);
+    }
+    if (member.setMembers) {
+      member.setMembers.forEach(recurse);
+    }
+  };
+  if (labset.setMembers) {
+    labset.setMembers.forEach(recurse);
+  }
+  return uuids;
+};
 
 interface PrioritizedOrderLike {
   urgency?: string;
@@ -156,7 +173,8 @@ const OrdersDataTable: React.FC<OrdersDataTableProps> = (props) => {
   const conceptUrls = useMemo(() => {
     return (
       resultsViewerConcepts?.map(
-        (c) => `${restBaseUrl}/concept/${c.conceptUuid}?v=custom:(uuid,display,setMembers:(uuid,display))`,
+        (c) =>
+          `${restBaseUrl}/concept/${c.conceptUuid}?v=custom:(uuid,display,setMembers:(uuid,display,setMembers:(uuid,display,setMembers:(uuid,display))))`,
       ) || []
     );
   }, [resultsViewerConcepts]);
@@ -225,7 +243,7 @@ const OrdersDataTable: React.FC<OrdersDataTableProps> = (props) => {
             // Apply labset filter to individual orders if set
             if (selectedLabsetUuid && fetchedLabsets) {
               const currentLabset = fetchedLabsets.find((set) => set.uuid === selectedLabsetUuid);
-              const memberUuids = currentLabset?.setMembers?.map((m) => m.uuid) || [];
+              const memberUuids = currentLabset ? getMemberUuids(currentLabset) : [];
 
               labOrdersForPatient = labOrdersForPatient.filter(
                 (order) => order.concept?.uuid === selectedLabsetUuid || memberUuids.includes(order.concept?.uuid),

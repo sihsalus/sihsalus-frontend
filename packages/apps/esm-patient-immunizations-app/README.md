@@ -34,7 +34,7 @@ Contratos de frontend:
 
 TODO content/backend:
 
-- Corregir en backend QLTY el `501 Not Implemented` de `GET /openmrs/ws/fhir2/R4/Immunization?patient=<uuid>`. El frontend usa fallback Ampath/REST cuando esta habilitado, pero la solucion real es habilitar/actualizar FHIR2 Immunization y sus mappings de contenido.
+- QLTY 2026-07-04: `GET /openmrs/ws/fhir2/R4/Immunization?patient=<synthetic-empty-uuid>` responde `200` con Bundle vacio. Mantener el fallback Ampath/REST, pero ya no tratar el `501` como bloqueo activo para esa consulta.
 - Validar en el content reference application que `CIEL:1421` exista como mapping unico para FHIR2 `Immunization`.
 - Validar que `CIEL:984` resuelva al set local correcto de vacunas, o sobreescribir `immunizationConceptSet` en config con el mapping/UUID local.
 - Confirmar que las vacunas configuradas como respuestas del set local existan como conceptos activos y con mappings estables.
@@ -43,11 +43,11 @@ TODO content/backend:
 TODO QA/QLTY:
 
 - Probar formulario por formulario en QLTY: abrir, completar campos obligatorios, guardar, recargar, editar si aplica y confirmar que FHIR2/widgets leen los datos persistidos.
-- Reprobar el endpoint FHIR2 `Immunization` en QLTY después de corregir `CIEL:1421`; debe responder bundle vacío o con recursos, no `501`.
+- Mantener healthcheck de FHIR2 `Immunization` en QLTY; debe responder bundle vacio o con recursos, no `501`, antes y despues de los cambios de content.
 - Probar el flujo end-to-end de vacunación: abrir formulario, registrar vacuna, guardar, recargar y confirmar lectura por FHIR2.
 - Probar un paciente sin inmunizaciones, un paciente con esquema parcial y un paciente con dosis fuera de ventana de edad para validar advertencias MINSA.
 - Confirmar permisos de usuario para crear y editar inmunizaciones en QLTY.
-- Volver a incluir la pantalla de vacunación infantil en los GIFs CRED cuando el backend deje de responder `501`.
+- Volver a incluir la pantalla de vacunación infantil en los GIFs CRED cuando el save/read real este validado en QLTY.
 
 TODO i18n/UI:
 

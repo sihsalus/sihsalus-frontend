@@ -1,4 +1,11 @@
-import { type FetchResponse, openmrsFetch, showSnackbar, updateVisit, useVisit, type Visit } from '@openmrs/esm-framework';
+import {
+  type FetchResponse,
+  openmrsFetch,
+  showSnackbar,
+  updateVisit,
+  useVisit,
+  type Visit,
+} from '@openmrs/esm-framework';
 import { launchPatientWorkspace } from '@openmrs/esm-patient-common-lib';
 import { act, render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
@@ -85,7 +92,9 @@ describe('End visit dialog', () => {
 
     await user.click(screen.getByRole('button', { name: /finalizar consulta y generar fua/i }));
 
-    await waitFor(() => expect(updateVisit).toHaveBeenCalledWith(mockCurrentVisit.uuid, endVisitPayload, expect.anything()));
+    await waitFor(() =>
+      expect(updateVisit).toHaveBeenCalledWith(mockCurrentVisit.uuid, endVisitPayload, expect.anything()),
+    );
     expect(screen.getAllByText(/generando fua/i).length).toBeGreaterThan(0);
     expect(screen.getByRole('button', { name: /cancel/i })).toBeDisabled();
 
@@ -167,12 +176,16 @@ describe('End visit dialog', () => {
 
     await user.click(screen.getByRole('button', { name: /finalizar consulta y generar fua/i }));
 
-    await waitFor(() => expect(updateVisit).toHaveBeenCalledWith(mockCurrentVisit.uuid, endVisitPayload, expect.anything()));
-    await waitFor(() => expect(mockShowSnackbar).toHaveBeenCalledWith({
-      subtitle: 'Internal error message',
-      kind: 'error',
-      title: 'Error ending visit or generating FUA',
-      isLowContrast: false,
-    }));
+    await waitFor(() =>
+      expect(updateVisit).toHaveBeenCalledWith(mockCurrentVisit.uuid, endVisitPayload, expect.anything()),
+    );
+    await waitFor(() =>
+      expect(mockShowSnackbar).toHaveBeenCalledWith({
+        subtitle: 'Internal error message',
+        kind: 'error',
+        title: 'Error ending visit or generating FUA',
+        isLowContrast: false,
+      }),
+    );
   });
 });

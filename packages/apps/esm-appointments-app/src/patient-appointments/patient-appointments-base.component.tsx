@@ -5,7 +5,7 @@ import { CardHeader, EmptyDataIllustration, ErrorState, launchPatientWorkspace }
 import dayjs from 'dayjs';
 import React, { useContext, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { chartAppointmentsEditPrivilege } from '../constants';
+import { appointmentsEditPrivilege, chartAppointmentsEditPrivilege } from '../constants';
 import PatientAppointmentContext, { PatientAppointmentContextTypes } from '../hooks/patientAppointmentContext';
 import { usePatientAppointments } from './patient-appointments.resource';
 import styles from './patient-appointments-base.scss';
@@ -24,10 +24,15 @@ enum AppointmentTypes {
 const PatientAppointmentsBase: React.FC<PatientAppointmentsBaseProps> = ({ patientUuid }) => {
   const { t } = useTranslation();
   const session = useSession();
-  const canEdit = userHasAccess(chartAppointmentsEditPrivilege, session?.user);
   const headerTitle = t('appointments', 'Appointments');
   const isTablet = useLayoutType() === 'tablet';
   const patientAppointmentContext = useContext(PatientAppointmentContext);
+  const canEdit = userHasAccess(
+    patientAppointmentContext === PatientAppointmentContextTypes.PATIENT_CHART
+      ? chartAppointmentsEditPrivilege
+      : appointmentsEditPrivilege,
+    session?.user,
+  );
   const [switchedView, setSwitchedView] = useState(false);
 
   const [contentSwitcherValue, setContentSwitcherValue] = useState(0);

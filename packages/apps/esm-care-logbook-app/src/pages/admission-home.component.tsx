@@ -24,11 +24,12 @@ import {
   RegistrationPictogram,
   useConfig,
 } from '@openmrs/esm-framework';
+import { ageAsDuration } from '@openmrs/esm-utils';
 import { AppErrorBoundary, RequirePrivilege } from '@sihsalus/esm-rbac';
 import { useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
-import { admissionPrivilege, moduleName } from '../constants';
+import { careLogbookPrivilege, moduleName } from '../constants';
 import { useAdmissions } from '../resources/admissions.resource';
 import styles from './admission-home.scss';
 
@@ -244,7 +245,7 @@ export default function AdmissionHome() {
 
   return (
     <AppErrorBoundary appName="esm-care-logbook-app">
-      <RequirePrivilege privilege={admissionPrivilege}>
+      <RequirePrivilege privilege={careLogbookPrivilege}>
         <main className={styles.page}>
           <h1 className={styles.visuallyHidden}>{t('admissionReportByUps', 'Libro de Atenciones')}</h1>
           <PageHeader className={styles.header}>

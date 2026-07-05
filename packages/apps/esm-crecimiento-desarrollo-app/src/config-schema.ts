@@ -107,12 +107,12 @@ export const configSchema = {
       atencionPrenatal: 'OBST-003-ATENCIÓN PRENATAL',
 
       // CRED Forms
-      atencionImmediataNewborn: '33b6449b-3fc6-3ec1-be3f-0bd29146315f',
-      breastfeedingObservation: '46624035-79b7-3025-abfc-b02249f16e77',
-      newbornNeuroEval: '87745826-b5ac-3366-b17f-5c7335c39006',
+      atencionImmediataNewborn: '(Página 5) ATENCIÓN INMEDIATA DEL RECIÉN NACIDO',
+      breastfeedingObservation: '(Página 8) Ficha de Observación del Amamantamiento de la Consejería en Lactancia Materna',
+      newbornNeuroEval: '(Página 6) EVALUACIÓN CÉFALO-CAUDAL Y NEUROLÓGICO DEL RECIÉN NACIDO',
       roomingIn: '(Página 10) Alojamiento Conjunto',
-      birthDetails: '8db0f1dc-c191-3468-854c-6c6c41ef6198',
-      pregnancyDetails: '307e2887-9902-3ab2-83d9-f3e48ef7bdb2',
+      birthDetails: '(CRED) Detalles de Nacimiento',
+      pregnancyDetails: '(CRED) Embarazo y Parto',
 
       // EEDP Forms
       eedp2Months: 'Página (30, 31, 32 y 33) EEDP (2 meses)',
@@ -188,6 +188,8 @@ export const configSchema = {
       homeVisitFollowupForm: 'CRED-023-VISITA DOMICILIARIA Y SEGUIMIENTO',
       referralInterconsultationForm: 'CRED-024-INTERCONSULTA DERIVACIÓN REFERENCIA',
       schoolHealthCounselingForm: 'CRED-025-CONSEJERÍA ESCOLAR Y LONCHERA SALUDABLE',
+      huancaNeurodevelopmentForm: 'CRED-026-HUANCA TEST VIGILANCIA NEURODESARROLLO',
+      expectedSkillsBehaviorsForm: 'CRED-027-LISTA HABILIDADES Y CONDUCTAS ESPERADAS',
       adverseReactionForm: 'INMU-002-REPORTE ESAVI',
     },
   },
@@ -346,15 +348,15 @@ export const configSchema = {
       cordClampingUuid: 'b7f5376f-b025-4da5-80e2-bb20065a1b30',
       skinToSkinContactUuid: '3bbebee4-ccc8-4a01-a5e8-14f9222a6827',
       oxygenSupportUuid: '06e7e25f-23c5-4035-800a-d86f598d50cf',
-      vitaminKAdminUuid: '5da8b9b1-f566-411f-b50b-f634ed6321c0',
-      heartRateUuid: 'c6f1da2a-0163-407c-9fe1-649fc2dca5a4',
-      respiratoryRateUuid: 'aeecf295-048b-4c40-a6a0-c3a7db169466',
-      oxygenSaturationUuid: '4dc51434-3f62-483c-b4db-441eae51f0a3',
-      bodyTemperatureUuid: '89c9c0bf-e746-4f8d-8d04-b2d2ad9826eb',
+      vitaminKAdminUuid: 'b696bb6f-dfe4-4a05-8309-3864d2d015f5',
+      heartRateUuid: '5087AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA',
+      respiratoryRateUuid: '5242AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA',
+      oxygenSaturationUuid: '5092AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA',
+      bodyTemperatureUuid: '5088AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA',
       apgar1MinUuid: 'a2010a1f-d7ca-4d6f-9255-f53da4fa5c3f',
       apgar5MinUuid: '0f3be2f6-986f-4928-8761-b531044c1f36',
       apgar10MinUuid: 'f621e8d3-2c34-48fc-95c1-50ad0606ed68',
-      weightUuid: '5cacede4-c947-4092-9df4-24287a7f13ae',
+      weightUuid: '5089AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA',
       heightUuid: '3f85a289-bcb4-4d67-8053-7c8415e09aef',
       headCircumferenceUuid: 'c4d39248-c896-433a-bc69-e24d04b7f0e5',
       chestCircumferenceUuid: '911eb398-e7de-4270-af63-e4c615ec22a9',
@@ -583,7 +585,7 @@ export const configSchema = {
     administraciNDeVitaminaKUuid: {
       _type: Type.ConceptUuid,
       _description: 'Administración de Vitamina k',
-      _default: '5da8b9b1-f566-411f-b50b-f634ed6321c0',
+      _default: 'b696bb6f-dfe4-4a05-8309-3864d2d015f5',
     },
     administraciNDeVitaminaKDe05MgUuid: {
       _type: Type.ConceptUuid,
@@ -1814,6 +1816,8 @@ export interface ConfigObject {
     homeVisitFollowupForm: string;
     referralInterconsultationForm: string;
     schoolHealthCounselingForm: string;
+    huancaNeurodevelopmentForm: string;
+    expectedSkillsBehaviorsForm: string;
     adverseReactionForm: string;
   };
   adverseReactionReporting: {

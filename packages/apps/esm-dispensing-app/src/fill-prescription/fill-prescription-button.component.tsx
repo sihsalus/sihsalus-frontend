@@ -8,20 +8,27 @@ import {
   restBaseUrl,
   showModal,
   showSnackbar,
-  UserHasAccess,
   useLayoutType,
+  useSession,
+  userHasAccess,
   type Visit,
   type Workspace2DefinitionProps,
 } from '@openmrs/esm-framework';
 import React from 'react';
 import { useTranslation } from 'react-i18next';
-import { PRIVILEGE_CREATE_DISPENSE } from '../constants';
+import { dispensingEditPrivilege, PRIVILEGE_CREATE_DISPENSE } from '../constants';
 import styles from './fill-prescription-button.scss';
 
 const FillPrescriptionButton: React.FC<{}> = () => {
   const isTablet = useLayoutType() === 'tablet';
   const responsiveSize = isTablet ? 'lg' : 'md';
   const { t } = useTranslation();
+  const session = useSession();
+  const canEdit = Boolean(
+    session?.user &&
+      userHasAccess(dispensingEditPrivilege, session.user) &&
+      userHasAccess(PRIVILEGE_CREATE_DISPENSE, session.user),
+  );
 
   const launchSearchWorkspace = () => {
     launchWorkspace2(
@@ -46,6 +53,7 @@ const FillPrescriptionButton: React.FC<{}> = () => {
                   patient: patient,
                   visitContext: activeVisit,
                   drugOrderWorkspaceName: 'dispensing-order-basket-add-drug-order-workspace',
+                  allergyFormWorkspaceName: 'dispensing-order-basket-add-allergy-workspace',
                   onOrderBasketSubmitted: (encounterUuid: string, _: Array<Order>) => {
                     showModal('on-prescription-filled-modal', {
                       patient,
@@ -73,8 +81,11 @@ const FillPrescriptionButton: React.FC<{}> = () => {
     );
   };
 
+  if (!canEdit) {
+    return null;
+  }
+
   return (
-    <UserHasAccess privilege={PRIVILEGE_CREATE_DISPENSE}>
       <div className={styles.buttonContainer}>
         <Button
           kind="primary"
@@ -85,7 +96,6 @@ const FillPrescriptionButton: React.FC<{}> = () => {
           {t('fillPrescription', 'Fill prescription')}
         </Button>
       </div>
-    </UserHasAccess>
   );
 };
 

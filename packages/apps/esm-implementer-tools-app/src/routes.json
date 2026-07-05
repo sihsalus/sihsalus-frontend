@@ -15,6 +15,7 @@
       "name": "implementer-tools-button",
       "slot": "top-nav-actions-slot",
       "component": "implementerToolsButton",
+      "privileges": "app:topnav.implementerTools",
       "order": 20
     }
   ]

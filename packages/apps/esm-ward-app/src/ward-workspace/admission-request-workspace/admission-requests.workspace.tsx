@@ -1,8 +1,9 @@
 import { Button, InlineNotification } from '@carbon/react';
 import { Add } from '@carbon/react/icons';
-import { useAppContext, Workspace2, type Workspace2DefinitionProps } from '@openmrs/esm-framework';
+import { useAppContext, useSession, userHasAccess, Workspace2, type Workspace2DefinitionProps } from '@openmrs/esm-framework';
 import React, { type ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
+import { wardEditPrivilege } from '../../constant';
 import useEmrConfiguration from '../../hooks/useEmrConfiguration';
 import { type WardViewContext } from '../../types';
 import AdmissionRequestsEmptyState from './admission-requests-empty-state.component';
@@ -17,9 +18,11 @@ const AdmissionRequestsWorkspace: React.FC<Workspace2DefinitionProps<AdmissionRe
   launchChildWorkspace,
 }) => {
   const { t } = useTranslation();
+  const session = useSession();
   const { errorFetchingEmrConfiguration } = useEmrConfiguration();
   const { wardPatientGroupDetails } = useAppContext<WardViewContext>('ward-view-context') ?? {};
   const { inpatientRequests, isLoading } = wardPatientGroupDetails?.inpatientRequestResponse ?? {};
+  const canEdit = userHasAccess(wardEditPrivilege, session?.user);
 
   const handleAddPatient = () => {
     launchChildWorkspace('ward-app-patient-search-workspace', {
@@ -58,11 +61,13 @@ const AdmissionRequestsWorkspace: React.FC<Workspace2DefinitionProps<AdmissionRe
           (inpatientRequests?.length === 0 ? (
             <AdmissionRequestsEmptyState />
           ) : (
-            <div className={styles.addPatientToWardButtonContainer}>
-              <Button renderIcon={Add} kind="ghost" onClick={handleAddPatient}>
-                {t('addPatientToWard', 'Add patient to ward')}
-              </Button>
-            </div>
+            canEdit && (
+              <div className={styles.addPatientToWardButtonContainer}>
+                <Button renderIcon={Add} kind="ghost" onClick={handleAddPatient}>
+                  {t('addPatientToWard', 'Add patient to ward')}
+                </Button>
+              </div>
+            )
           ))}
         <div className={styles.content}>{wardPendingPatients}</div>
       </div>

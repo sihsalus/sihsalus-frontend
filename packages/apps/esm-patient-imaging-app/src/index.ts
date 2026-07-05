@@ -77,6 +77,21 @@ export const instancePreviewDialog = getAsyncLifecycle(
   options,
 );
 
+export const studyUnlinkConfirmationDialog = getAsyncLifecycle(
+  () => import('./imaging/components/unlink-study.modal'),
+  options,
+);
+
+export const linkStudyConfirmationDialog = getAsyncLifecycle(
+  () => import('./imaging/components/link-study-confirmation.modal'),
+  options,
+);
+
+export const rejectProcedureStepDialog = getAsyncLifecycle(
+  () => import('./imaging/components/update-procedureStep-status.modal'),
+  options,
+);
+
 export const imagingDetailedSummary = getSyncLifecycle(ImagingDetailedSummaryComponent, options);
 
 export function createErrorHandler() {

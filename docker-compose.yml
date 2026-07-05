@@ -10,6 +10,9 @@ services:
       - "8080:8080"
       - "8081-8090:8081-8090"
     environment:
+      - IBM_TELEMETRY_DISABLED=true
+      - TURBO_TELEMETRY_DISABLED=1
+      - DO_NOT_TRACK=1
       - SIHSALUS_BACKEND_URL=${SIHSALUS_BACKEND_URL:-http://gidis-hsc-dev.inf.pucp.edu.pe}
       - SIHSALUS_AUTH_MODE=openmrs
       - SIHSALUS_INTERNAL_CLI_PORT=8081

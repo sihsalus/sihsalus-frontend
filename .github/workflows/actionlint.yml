@@ -1,0 +1,32 @@
+name: Actionlint
+
+# Lints workflow files (and shellchecks their `run:` steps via the runner's
+# preinstalled shellcheck). Only runs when something under .github changes.
+on:
+  push:
+    branches: [main]
+    paths: ['.github/**']
+  pull_request:
+    branches: [main]
+    paths: ['.github/**']
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  actionlint:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v7
+
+      # Pinned to a release tag (not main) so both the installer script and the
+      # binary are reproducible. The version arg is passed without the `v`.
+      - name: Download actionlint
+        run: bash <(curl -sS https://raw.githubusercontent.com/rhysd/actionlint/v1.7.12/scripts/download-actionlint.bash) 1.7.12
+
+      - name: Run actionlint
+        run: ./actionlint -color

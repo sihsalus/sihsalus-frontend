@@ -1,23 +1,23 @@
 import { Type } from '@openmrs/esm-framework';
 
 export const defaultVisitNoteClinicalConceptUuids = {
-  codigoPrestacionalConceptUuid: '162169AAAAAAAAAAAAAAAAAAAAAAAAAAAAAA',
+  codigoPrestacionalConceptUuid: 'e82d45de-8696-42f8-99bc-337a750a7102',
   chiefComplaintConceptUuid: '71b58cff-879b-4358-98d5-2165434d4324',
   illnessDurationConceptUuid: '577876b1-0b6e-4c57-b4c3-7af969a1d501',
   anamnesisConceptUuid: '6d99603e-ae9d-4838-8a09-ba75e27ff1e9',
-  biologicalFunctionsConceptUuid: '6d99603e-ae9d-4838-8a09-ba75e27ff1e9',
+  biologicalFunctionsConceptUuid: '9011adf4-2b9f-4ecb-a44c-cb5642e4e015',
   appetiteConceptUuid: 'f0000182-0000-4000-8000-000000000182',
   thirstConceptUuid: 'f0000183-0000-4000-8000-000000000183',
   sleepConceptUuid: 'f0000184-0000-4000-8000-000000000184',
   moodConceptUuid: 'f0000185-0000-4000-8000-000000000185',
   urineConceptUuid: 'f0000186-0000-4000-8000-000000000186',
   bowelMovementsConceptUuid: 'f0000187-0000-4000-8000-000000000187',
-  soapSubjectiveConceptUuid: '6d99603e-ae9d-4838-8a09-ba75e27ff1e9',
+  soapSubjectiveConceptUuid: 'f0000202-0000-4000-8000-000000000202',
   soapObjectiveConceptUuid: '160532AAAAAAAAAAAAAAAAAAAAAAAAAAAAAA',
   soapAssessmentConceptUuid: '160533AAAAAAAAAAAAAAAAAAAAAAAAAAAAAA',
-  soapPlanConceptUuid: '162169AAAAAAAAAAAAAAAAAAAAAAAAAAAAAA',
+  soapPlanConceptUuid: 'f0000201-0000-4000-8000-000000000201',
   labOrdersConceptUuid: '01fe9e3c-7150-42ca-87db-8813fa630129',
-  proceduresConceptUuid: '162169AAAAAAAAAAAAAAAAAAAAAAAAAAAAAA',
+  proceduresConceptUuid: 'f0000206-0000-4000-8000-000000000206',
   prescriptionsConceptUuid: '1e9c5e02-b09f-41c6-83aa-dfed81bd0df5',
   referralConceptUuid: '3f573194-bade-46bc-b5fd-59c36f5f697a',
   nextAppointmentConceptUuid: '47ce3ee6-ee9f-4037-901b-2a6381c4b340',
@@ -122,7 +122,7 @@ export default {
   proceduresConceptUuid: {
     _type: Type.ConceptUuid,
     _default: defaultVisitNoteClinicalConceptUuids.proceduresConceptUuid,
-    _description: 'Procedures concept used by outpatient forms',
+    _description: 'Procedures CPMS text concept used by outpatient forms',
   },
   prescriptionsConceptUuid: {
     _type: Type.ConceptUuid,

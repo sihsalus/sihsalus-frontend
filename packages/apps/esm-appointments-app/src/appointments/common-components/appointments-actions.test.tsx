@@ -1,15 +1,19 @@
-import { getDefaultsFromConfigSchema, useConfig } from '@openmrs/esm-framework';
+import { getDefaultsFromConfigSchema, launchWorkspace, useConfig, useSession, userHasAccess } from '@openmrs/esm-framework';
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { type ConfigObject, configSchema } from '../../config-schema';
 import { useTodaysVisits } from '../../hooks/useTodaysVisits';
-import { changeAppointmentStatus } from '../../patient-appointments/patient-appointments.resource';
+import {
+  changeAppointmentStatus,
+  getAppointmentStatus,
+} from '../../patient-appointments/patient-appointments.resource';
 import { type Appointment, AppointmentKind, AppointmentStatus } from '../../types';
 
 import AppointmentActions from './appointments-actions.component';
 
 vi.mock('../../patient-appointments/patient-appointments.resource', () => ({
   changeAppointmentStatus: vi.fn(),
+  getAppointmentStatus: vi.fn(),
 }));
 
 vi.mock('../../form/appointments-form.resource', () => ({
@@ -17,6 +21,10 @@ vi.mock('../../form/appointments-form.resource', () => ({
 }));
 
 const mockChangeAppointmentStatus = vi.mocked(changeAppointmentStatus);
+const mockGetAppointmentStatus = vi.mocked(getAppointmentStatus);
+const mockLaunchWorkspace = vi.mocked(launchWorkspace);
+const mockUseSession = vi.mocked(useSession);
+const mockUserHasAccess = vi.mocked(userHasAccess);
 
 const appointment: Appointment = {
   uuid: '7cd38a6d-377e-491b-8284-b04cf8b8c6d8',
@@ -79,6 +87,12 @@ vi.mock('../../hooks/useTodaysVisits', async () => ({
 }));
 
 describe('AppointmentActions', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    mockUseSession.mockReturnValue({ user: { uuid: 'user-1' } } as ReturnType<typeof useSession>);
+    mockUserHasAccess.mockReturnValue(true);
+  });
+
   afterAll(() => {
     vi.useRealTimers();
   });
@@ -268,6 +282,89 @@ describe('AppointmentActions', () => {
     await userEvent.click(btn);
 
     expect(mockChangeAppointmentStatus).toHaveBeenCalledWith('CheckedIn', appointment.uuid);
+  });
+
+  it('launches the start visit workspace without checking in immediately when no active visit exists', async () => {
+    appointment.status = AppointmentStatus.SCHEDULED;
+
+    mockUseConfig.mockReturnValue({
+      ...getDefaultsFromConfigSchema(configSchema),
+      checkInButton: { enabled: true, showIfActiveVisit: false, customUrl: '' },
+    });
+
+    mockUseTodaysVisits.mockReturnValue({
+      visits: [],
+      mutateVisit: vi.fn(),
+      error: null,
+      isLoading: false,
+    });
+
+    render(<AppointmentActions {...defaultProps} />);
+
+    await userEvent.click(screen.getByRole('button', { name: /check in/i }));
+
+    expect(mockLaunchWorkspace).toHaveBeenCalledWith(
+      'start-visit-workspace-form',
+      expect.objectContaining({
+        patientUuid: appointment.patient.uuid,
+        openedFrom: 'appointments-check-in',
+        onVisitStarted: expect.any(Function),
+      }),
+    );
+    expect(mockChangeAppointmentStatus).not.toHaveBeenCalled();
+  });
+
+  it('checks in the appointment after the start visit workspace creates a visit', async () => {
+    appointment.status = AppointmentStatus.SCHEDULED;
+
+    mockUseConfig.mockReturnValue({
+      ...getDefaultsFromConfigSchema(configSchema),
+      checkInButton: { enabled: true, showIfActiveVisit: false, customUrl: '' },
+    });
+
+    mockUseTodaysVisits.mockReturnValue({
+      visits: [],
+      mutateVisit: vi.fn(),
+      error: null,
+      isLoading: false,
+    });
+    mockGetAppointmentStatus.mockResolvedValue(AppointmentStatus.SCHEDULED);
+    mockChangeAppointmentStatus.mockResolvedValue({ data: {} } as Awaited<ReturnType<typeof changeAppointmentStatus>>);
+
+    render(<AppointmentActions {...defaultProps} />);
+
+    await userEvent.click(screen.getByRole('button', { name: /check in/i }));
+    const launchOptions = mockLaunchWorkspace.mock.calls[0][1] as { onVisitStarted: () => Promise<void> };
+    await launchOptions.onVisitStarted();
+
+    expect(mockGetAppointmentStatus).toHaveBeenCalledWith(appointment.uuid);
+    expect(mockChangeAppointmentStatus).toHaveBeenCalledWith(AppointmentStatus.CHECKEDIN, appointment.uuid);
+  });
+
+  it('does not check in again after the start visit workspace if appointment is already checked in', async () => {
+    appointment.status = AppointmentStatus.SCHEDULED;
+
+    mockUseConfig.mockReturnValue({
+      ...getDefaultsFromConfigSchema(configSchema),
+      checkInButton: { enabled: true, showIfActiveVisit: false, customUrl: '' },
+    });
+
+    mockUseTodaysVisits.mockReturnValue({
+      visits: [],
+      mutateVisit: vi.fn(),
+      error: null,
+      isLoading: false,
+    });
+    mockGetAppointmentStatus.mockResolvedValue(AppointmentStatus.CHECKEDIN);
+
+    render(<AppointmentActions {...defaultProps} />);
+
+    await userEvent.click(screen.getByRole('button', { name: /check in/i }));
+    const launchOptions = mockLaunchWorkspace.mock.calls[0][1] as { onVisitStarted: () => Promise<void> };
+    await launchOptions.onVisitStarted();
+
+    expect(mockGetAppointmentStatus).toHaveBeenCalledWith(appointment.uuid);
+    expect(mockChangeAppointmentStatus).not.toHaveBeenCalled();
   });
 
   // commenting these tests out as this functionality is not implemented yet so not sure how they would have ever passed?

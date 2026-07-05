@@ -15,7 +15,9 @@ const options = {
 export const importTranslation = require.context('../translations', false, /.json$/, 'lazy');
 
 export function startupApp() {
-  setupOffline();
+  if (globalThis.offlineEnabled) {
+    setupOffline();
+  }
   defineConfigSchema(moduleName, configSchema);
 }
 

@@ -59,6 +59,7 @@ import { canStartVisit } from '../visit-access';
 import { invalidateUseVisits, useInfiniteVisits } from '../visits-widget/visit.resource';
 
 import BaseVisitType from './base-visit-type.component';
+import CompanionList from './companion-list.component';
 import LocationSelector from './location-selector.component';
 import { MemoizedRecommendedVisitType } from './recommended-visit-type.component';
 import VisitAttributeTypeFields from './visit-attribute-type.component';
@@ -87,6 +88,7 @@ interface StartVisitFormWorkspaceProps {
   openedFrom: string;
   showPatientHeader?: boolean;
   showVisitEndDateTimeFields?: boolean;
+  onVisitStarted?: (visit: Visit) => void | Promise<void>;
   visitToEdit?: Visit;
   workspaceTitle?: string;
 }
@@ -111,6 +113,7 @@ const StartVisitForm: React.FC<StartVisitFormProps> = (props) => {
   const {
     showPatientHeader = false,
     showVisitEndDateTimeFields,
+    onVisitStarted,
     visitToEdit,
     openedFrom,
     workspaceTitle,
@@ -154,6 +157,7 @@ const StartVisitForm: React.FC<StartVisitFormProps> = (props) => {
   const { mutateVisits: mutateInfiniteVisits } = useInfiniteVisits(patientUuid);
   const allVisitTypes = useConditionalVisitTypes();
   const { attributes: personAttributesForVisitDefaults } = usePersonAttributesForVisitDefaults(patientUuid);
+  const [isVisitSaved, setIsVisitSaved] = useState(false);
 
   const [errorFetchingResources, setErrorFetchingResources] = useState<{
     blockSavingForm: boolean;
@@ -342,8 +346,8 @@ const StartVisitForm: React.FC<StartVisitFormProps> = (props) => {
   }, [defaultValues, reset]);
 
   useEffect(() => {
-    promptBeforeClosing(() => isDirty);
-  }, [isDirty, promptBeforeClosing]);
+    promptBeforeClosing(() => isDirty && !isVisitSaved);
+  }, [isDirty, isVisitSaved, promptBeforeClosing]);
 
   const [maxVisitStartDatetime, initialMinVisitStopDatetime] = useMemo(() => {
     const now = Date.now();
@@ -612,6 +616,7 @@ const StartVisitForm: React.FC<StartVisitFormProps> = (props) => {
             // now that visit is created / updated, we run post-submit actions
             // to update visit attributes or any other OnVisitCreatedOrUpdated actions
             const visit = response.data;
+            setIsVisitSaved(true);
 
             // handleVisitAttributes already has code to show error snackbar when attribute fails to update
             // no need for catch block here
@@ -633,8 +638,12 @@ const StartVisitForm: React.FC<StartVisitFormProps> = (props) => {
             const onVisitCreatedOrUpdatedRequests = [...visitFormCallbacks.values()].map((callbacks) =>
               callbacks.onVisitCreatedOrUpdated(visit),
             );
+            const onVisitStartedRequest =
+              !visitToEdit && onVisitStarted ? Promise.resolve(onVisitStarted(visit)) : null;
 
-            return Promise.all([visitAttributesRequest, ...onVisitCreatedOrUpdatedRequests]);
+            return Promise.all(
+              [visitAttributesRequest, ...onVisitCreatedOrUpdatedRequests, onVisitStartedRequest].filter(Boolean),
+            );
           })
           .then(() => {
             closeCurrentWorkspace({ ignoreChanges: true });
@@ -655,6 +664,7 @@ const StartVisitForm: React.FC<StartVisitFormProps> = (props) => {
           payload.startDatetime,
         ).then(
           () => {
+            setIsVisitSaved(true);
             mutateCurrentVisit();
             closeCurrentWorkspace({ ignoreChanges: true });
             showSnackbar({
@@ -689,6 +699,7 @@ const StartVisitForm: React.FC<StartVisitFormProps> = (props) => {
       isOnline,
       mutateCurrentVisit,
       mutateInfiniteVisits,
+      onVisitStarted,
       visitFormCallbacks,
       patientUuid,
       t,
@@ -765,6 +776,9 @@ const StartVisitForm: React.FC<StartVisitFormProps> = (props) => {
 
             {/* This field lets the user select a location for the visit. The location is required for the visit to be saved. Defaults to the active session location */}
             <LocationSelector control={control} />
+
+            {/* Lists the patient's companions (Acompañante relationships). */}
+            <CompanionList patientUuid={patientUuid} />
 
             {/* Lists available program types. This feature is dependent on the `showRecommendedVisitTypeTab` config being set
           to true. */}
@@ -917,7 +931,7 @@ const StartVisitForm: React.FC<StartVisitFormProps> = (props) => {
           workspaceTitle ??
           (visitToEdit ? t('editVisitDetails', 'Edit visit details') : t('startVisitWorkspaceTitle', 'Start visit'))
         }
-        hasUnsavedChanges={isDirty}
+        hasUnsavedChanges={isDirty && !isVisitSaved}
       >
         {content}
       </Workspace2>

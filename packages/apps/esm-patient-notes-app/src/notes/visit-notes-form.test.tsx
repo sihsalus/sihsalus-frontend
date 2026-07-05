@@ -47,10 +47,14 @@ const defaultProps: PatientWorkspace2DefinitionProps<VisitNotesFormProps, {}> = 
   showActionMenu: true,
 };
 
-function renderVisitNotesForm(workspaceProps: Partial<VisitNotesFormProps> = {}) {
+function renderVisitNotesForm(
+  workspaceProps: Partial<VisitNotesFormProps> = {},
+  groupProps: Partial<typeof defaultProps.groupProps> = {},
+) {
   const props = {
     ...defaultProps,
     workspaceProps: { ...defaultProps.workspaceProps, ...workspaceProps },
+    groupProps: { ...defaultProps.groupProps, ...groupProps },
   };
   render(<VisitNotesForm {...props} />);
 }
@@ -203,6 +207,31 @@ test('typing in the diagnosis search input triggers a search', async () => {
   expect(screen.getByText(/No diagnosis selected — Enter a diagnosis below/i)).toBeInTheDocument();
 });
 
+test('formats CIE-10 diagnosis search results and selected tags for readability', async () => {
+  const user = userEvent.setup();
+
+  mockFetchDiagnosisConceptsByName.mockResolvedValue([
+    {
+      uuid: 'cie10-f155',
+      display: 'TRASTORNOS MENTALES Y DEL COMPORTAMIENTO DEBIDOS AL USO DE OTROS ESTIMULANTES INCLUIDA (F155)',
+    },
+  ]);
+
+  renderVisitNotesForm();
+
+  const searchBox = screen.getByPlaceholderText('Choose a primary diagnosis');
+  await user.type(searchBox, 'f');
+
+  const formattedDiagnosis =
+    'F155 - Trastornos mentales y del comportamiento debidos al uso de otros estimulantes incluida';
+  const diagnosisOption = await screen.findByRole('button', { name: formattedDiagnosis });
+  expect(diagnosisOption).toBeInTheDocument();
+
+  await user.click(diagnosisOption);
+
+  expect(screen.getByTitle(formattedDiagnosis)).toBeInTheDocument();
+});
+
 test('renders an error message when no matching diagnoses are found', async () => {
   const user = userEvent.setup();
   mockFetchDiagnosisConceptsByName.mockResolvedValue([]);
@@ -219,9 +248,7 @@ test('renders an error message when no matching diagnoses are found', async () =
 test('searches and saves one selected codigo prestacional concept', async () => {
   const user = userEvent.setup();
 
-  mockUseConfig.mockReturnValue(
-    getMockConfig({ prestacionalConceptSourceName: 'Codigos Prestacionales' }),
-  );
+  mockUseConfig.mockReturnValue(getMockConfig({ prestacionalConceptSourceName: 'Codigos Prestacionales' }));
   mockFetchDiagnosisConceptsByName.mockResolvedValue(diagnosisSearchResponse.results);
   mockFetchPrestacionalConceptsByName.mockResolvedValue([
     { uuid: 'prestacional-001', display: '001 - Consulta externa' },
@@ -306,6 +333,7 @@ test('renders a success snackbar upon successfully recording a visit note', asyn
     ]),
     patient: mockPatient.id,
     encounterDatetime: undefined,
+    visit: 'active-visit-uuid',
   };
 
   mockSaveVisitNote.mockResolvedValueOnce({
@@ -314,7 +342,7 @@ test('renders a success snackbar upon successfully recording a visit note', asyn
   } as Awaited<ReturnType<typeof saveVisitNote>>);
   mockFetchDiagnosisConceptsByName.mockResolvedValue(diagnosisSearchResponse.results);
 
-  renderVisitNotesForm();
+  renderVisitNotesForm({}, { visitContext: { uuid: 'active-visit-uuid' } as never });
 
   const chiefComplaint = screen.getByRole('textbox', { name: /Chief complaint/i });
   const clinicalNote = screen.getByRole('textbox', { name: /Additional notes/i });
@@ -511,6 +539,7 @@ test('updates existing visit note when in edit mode', async () => {
     mockEncounter.id,
     expect.objectContaining(updatePayload),
   );
+  expect(mockUpdateVisitNote.mock.calls[0][2]).not.toHaveProperty('visit');
 });
 
 test('handles existing diagnoses correctly when in edit mode', async () => {

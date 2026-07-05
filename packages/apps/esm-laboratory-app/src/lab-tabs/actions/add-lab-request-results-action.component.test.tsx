@@ -4,6 +4,8 @@ import {
   type Order,
   type Patient,
   useConfig,
+  useSession,
+  userHasAccess,
 } from '@openmrs/esm-framework';
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
@@ -12,6 +14,8 @@ import AddLabRequestResultsAction from './add-lab-request-results-action.compone
 
 const mockLaunchWorkspace2 = vi.mocked(launchWorkspace2);
 const mockUseConfig = vi.mocked(useConfig<Config>);
+const mockUseSession = vi.mocked(useSession);
+const mockUserHasAccess = vi.mocked(userHasAccess);
 
 const mockOrder = {
   patient: {
@@ -34,6 +38,8 @@ describe('AddLabRequestResultsAction', () => {
       ...getDefaultsFromConfigSchema(configSchema),
       laboratoryOrderTypeUuid: 'lab-order-type-uuid',
     });
+    mockUseSession.mockReturnValue({ user: { uuid: 'user-1' } } as ReturnType<typeof useSession>);
+    mockUserHasAccess.mockReturnValue(true);
   });
 
   it('opens the results workspace with the same-window lab-order workspace configured', async () => {

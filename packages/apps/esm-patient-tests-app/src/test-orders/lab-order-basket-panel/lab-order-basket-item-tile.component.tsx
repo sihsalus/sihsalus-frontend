@@ -1,9 +1,10 @@
 import { ClickableTile, IconButton, Tile } from '@carbon/react';
-import { TrashCanIcon, useLayoutType, WarningIcon } from '@openmrs/esm-framework';
+import { formatDate, parseDate, TrashCanIcon, useConfig, useLayoutType, WarningIcon } from '@openmrs/esm-framework';
 import classNames from 'classnames';
 import { useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 
+import type { ConfigObject } from '../../config-schema';
 import type { TestOrderBasketItem } from '../../types';
 
 import styles from './lab-order-basket-item-tile.scss';
@@ -31,6 +32,7 @@ export function LabOrderBasketItemTile({ orderBasketItem, onItemClick, onRemoveC
       <div className={styles.orderBasketItemTile}>
         <div className={styles.clipTextWithEllipsis}>
           <OrderActionLabel orderBasketItem={orderBasketItem} />
+          <OrderPriorityLabel orderBasketItem={orderBasketItem} />
           <br />
           <span className={styles.name}>{orderBasketItem.testType?.label}</span>
           <span className={styles.label01}>
@@ -138,4 +140,34 @@ function OrderActionLabel({ orderBasketItem }: { orderBasketItem: TestOrderBaske
     default:
       return <></>;
   }
+}
+
+function OrderPriorityLabel({ orderBasketItem }: { orderBasketItem: TestOrderBasketItem }) {
+  const { t } = useTranslation();
+  const config = useConfig<ConfigObject>();
+
+  if (!orderBasketItem.urgency) {
+    return null;
+  }
+
+  const priorityConfig = config.priorityConfigs?.find((p) => p.conceptUuid === orderBasketItem.urgency);
+  const priorityLabel = priorityConfig
+    ? t(priorityConfig.label, { defaultValue: priorityConfig.label })
+    : orderBasketItem.urgencyCode;
+
+  const hasScheduledDate = priorityConfig?.requiresScheduledDate && orderBasketItem.scheduledDate;
+  const dateStr = hasScheduledDate
+    ? ` (${formatDate(
+        typeof orderBasketItem.scheduledDate === 'string'
+          ? parseDate(orderBasketItem.scheduledDate)
+          : orderBasketItem.scheduledDate,
+      )})`
+    : '';
+
+  return (
+    <span className={styles.priorityLabel} role="status">
+      {priorityLabel}
+      {dateStr}
+    </span>
+  );
 }

@@ -1,10 +1,10 @@
 import { Button, Tag } from '@carbon/react';
 import { ArrowRight } from '@carbon/react/icons';
-import { launchWorkspace2, usePatient } from '@openmrs/esm-framework';
+import { launchWorkspace2, usePatient, useSession, userHasAccess } from '@openmrs/esm-framework';
 import React from 'react';
 import { useTranslation } from 'react-i18next';
 
-import { serviceQueuesVisitNotesWorkspace } from '../../constants';
+import { serviceQueuesEditPrivilege, serviceQueuesVisitNotesWorkspace } from '../../constants';
 import { type DiagnosisItem, type Note } from '../../types/index';
 
 import styles from './triage-note.scss';
@@ -18,6 +18,8 @@ interface VisitNoteProps {
 const VisitNote: React.FC<VisitNoteProps> = ({ notes, patientUuid, diagnoses }) => {
   const { t } = useTranslation();
   const { patient } = usePatient(patientUuid);
+  const session = useSession();
+  const canEdit = userHasAccess(serviceQueuesEditPrivilege, session?.user);
 
   return (
     <div>
@@ -43,21 +45,23 @@ const VisitNote: React.FC<VisitNoteProps> = ({ notes, patientUuid, diagnoses }) 
           <p className={styles.emptyText}>
             {t('visitFormNotCompleted', 'Visit form has not been completed for this visit')}
           </p>
-          <Button
-            size="sm"
-            kind="ghost"
-            disabled={!patient}
-            renderIcon={(props) => <ArrowRight size={16} {...props} />}
-            onClick={() =>
-              launchWorkspace2(serviceQueuesVisitNotesWorkspace, { formContext: 'creating' }, null, {
-                patient,
-                patientUuid,
-              })
-            }
-            iconDescription={t('visitNoteForm', 'Visit note form')}
-          >
-            {t('visitNoteForm', 'Visit note form')}
-          </Button>
+          {canEdit ? (
+            <Button
+              size="sm"
+              kind="ghost"
+              disabled={!patient}
+              renderIcon={(props) => <ArrowRight size={16} {...props} />}
+              onClick={() =>
+                launchWorkspace2(serviceQueuesVisitNotesWorkspace, { formContext: 'creating' }, null, {
+                  patient,
+                  patientUuid,
+                })
+              }
+              iconDescription={t('visitNoteForm', 'Visit note form')}
+            >
+              {t('visitNoteForm', 'Visit note form')}
+            </Button>
+          ) : null}
         </div>
       )}
     </div>

@@ -118,6 +118,11 @@ describe('RelationshipsSection', () => {
       data: { uuid: 'created-person-uuid', display: 'María Quispe' },
     } as Awaited<ReturnType<typeof savePerson>>);
     mockUseConfig.mockReturnValue({
+      fieldConfigurations: {
+        phone: {
+          personAttributeUuid: '14d4f066-15f5-102d-96e4-000c29c2a5d7',
+        },
+      },
       relationshipOptions: {
         minorResponsibleRelationshipTypes: ['057de23f-3d9c-4314-9391-4452970739c6/aIsToB'],
       },
@@ -445,7 +450,7 @@ describe('RelationshipsSection', () => {
     expect(setFieldValue.mock.calls[0][1]).toMatchObject([{ relatedPersonUuid: '', action: 'ADD' }]);
   });
 
-  it('creates a new OpenMRS person and assigns it to the relationship row', async () => {
+  it('stores the new responsible person on the relationship row without creating it before submit', async () => {
     const user = userEvent.setup();
     const setFieldValue = vi.fn();
     mockResourcesContextValue = {
@@ -479,25 +484,27 @@ describe('RelationshipsSection', () => {
     await user.type(screen.getByRole('textbox', { name: /^family name/i }), 'Quispe');
     await user.selectOptions(screen.getByRole('combobox', { name: /sex/i }), 'female');
     await user.type(screen.getByRole('textbox', { name: /approximate age/i }), '35');
-    await user.click(screen.getByRole('button', { name: /register and link to patient/i }));
+    await user.type(screen.getByRole('textbox', { name: /phone or mobile phone/i }), '987 654-321');
+    await user.type(screen.getByRole('textbox', { name: /address/i }), 'Av. Peru 123');
+    await user.click(screen.getByRole('button', { name: /add person \(saved on registration\)/i }));
 
-    await waitFor(() => expect(mockSavePerson).toHaveBeenCalledTimes(1));
+    // The person must NOT be created here: it is persisted at form submit, right before
+    // its relationship, so abandoning the registration leaves no orphaned person.
+    expect(mockSavePerson).not.toHaveBeenCalled();
 
-    expect(mockSavePerson).toHaveBeenCalledWith({
-      names: [
-        {
-          givenName: 'María',
-          middleName: undefined,
-          familyName: 'Quispe',
-          familyName2: undefined,
-          preferred: true,
-        },
-      ],
-      gender: 'F',
-      birthdate: `${new Date().getFullYear() - 35}-01-01`,
-      birthdateEstimated: true,
-    });
-    expect(setFieldValue).toHaveBeenCalledWith('relationships[0].relatedPersonUuid', 'created-person-uuid');
+    await waitFor(() =>
+      expect(setFieldValue).toHaveBeenCalledWith('relationships[0].newPerson', {
+        givenName: 'María',
+        middleName: '',
+        familyName: 'Quispe',
+        familyName2: '',
+        gender: 'female',
+        estimatedAge: '35',
+        phone: '987654321',
+        address: 'Av. Peru 123',
+        relationshipType: '057de23f-3d9c-4314-9391-4452970739c6/aIsToB',
+      }),
+    );
     expect(setFieldValue).toHaveBeenCalledWith('relationships[0].relatedPersonName', 'María Quispe');
     expect(setFieldValue).toHaveBeenCalledWith(
       'relationships[0].relationshipType',
@@ -534,7 +541,7 @@ describe('RelationshipsSection', () => {
     await user.type(screen.getByRole('textbox', { name: /^family name/i }), 'Quispe');
     await user.selectOptions(screen.getByRole('combobox', { name: /sex/i }), 'male');
     await user.type(screen.getByRole('textbox', { name: /^approximate age$/i }), '16');
-    await user.click(screen.getByRole('button', { name: /register and link to patient/i }));
+    await user.click(screen.getByRole('button', { name: /add person \(saved on registration\)/i }));
 
     expect(mockSavePerson).not.toHaveBeenCalled();
     await waitFor(() =>
@@ -567,7 +574,7 @@ describe('RelationshipsSection', () => {
     );
 
     await user.click(screen.getByRole('tab', { name: /register new person/i }));
-    await user.click(screen.getByRole('button', { name: /register and link to patient/i }));
+    await user.click(screen.getByRole('button', { name: /add person \(saved on registration\)/i }));
 
     expect(mockSavePerson).not.toHaveBeenCalled();
     await waitFor(() =>

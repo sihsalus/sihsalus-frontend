@@ -1,8 +1,9 @@
 import { Button, Tag } from '@carbon/react';
-import { isDesktop, showModal, useLayoutType } from '@openmrs/esm-framework';
+import { isDesktop, showModal, useLayoutType, useSession, userHasAccess } from '@openmrs/esm-framework';
 import React from 'react';
 import { useTranslation } from 'react-i18next';
 
+import { serviceQueuesEditPrivilege } from '../constants';
 import { useQueueEntries } from '../hooks/useQueueEntries';
 
 import styles from './patient-banner-queue-entry-status.scss';
@@ -23,6 +24,8 @@ const PatientBannerQueueEntryStatus: React.FC<PatientBannerQueueEntryStatusProps
   const queueEntry = queueEntries?.[0];
   const { t } = useTranslation();
   const isPatientChart = renderedFrom === 'patient-chart';
+  const session = useSession();
+  const canEdit = userHasAccess(serviceQueuesEditPrivilege, session?.user);
   if (!isPatientChart || !queueEntry) {
     return <></>;
   }
@@ -39,18 +42,20 @@ const PatientBannerQueueEntryStatus: React.FC<PatientBannerQueueEntryStatusProps
       >
         {mappedPriority}
       </Tag>
-      <Button
-        kind="ghost"
-        size={isDesktop(layout) ? 'sm' : 'lg'}
-        onClick={() => {
-          const dispose = showModal('transition-queue-entry-modal', {
-            closeModal: () => dispose(),
-            queueEntry,
-          });
-        }}
-      >
-        {t('change', 'Change')}
-      </Button>
+      {canEdit ? (
+        <Button
+          kind="ghost"
+          size={isDesktop(layout) ? 'sm' : 'lg'}
+          onClick={() => {
+            const dispose = showModal('transition-queue-entry-modal', {
+              closeModal: () => dispose(),
+              queueEntry,
+            });
+          }}
+        >
+          {t('change', 'Change')}
+        </Button>
+      ) : null}
     </div>
   );
 };

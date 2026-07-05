@@ -11,6 +11,7 @@ export function PhoneField() {
     id: 'phone',
     type: 'person attribute',
     uuid: config.fieldConfigurations.phone.personAttributeUuid,
+    placeholder: config.fieldConfigurations.phone.placeholder,
     validation: config.fieldConfigurations.phone.validation,
     showHeading: false,
   };

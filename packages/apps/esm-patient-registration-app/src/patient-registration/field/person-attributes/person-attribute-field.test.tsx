@@ -77,6 +77,18 @@ describe('PersonAttributeField', () => {
     expect(input.type).toBe('text');
   });
 
+  it('passes the configured placeholder to text inputs', () => {
+    render(
+      <Formik initialValues={{}} onSubmit={() => {}}>
+        <Form>
+          <PersonAttributeField fieldDefinition={{ ...fieldDefinition, placeholder: '012345678' }} />
+        </Form>
+      </Formik>,
+    );
+
+    expect(screen.getByPlaceholderText('012345678')).toBeInTheDocument();
+  });
+
   it('should not show heading if showHeading is false', () => {
     fieldDefinition = {
       ...fieldDefinition,

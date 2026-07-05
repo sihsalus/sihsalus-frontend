@@ -22,9 +22,9 @@ La búsqueda avanzada debe priorizar datos que sirven para confirmar identidad o
 - nombre,
 - sexo,
 - fecha de nacimiento o edad aproximada,
-- marcador `Paciente No Identificado`,
-- nombre del responsable o acompañante,
-- parentesco/vínculo del responsable.
+- tipo y código de documento civil,
+- estado de verificación de identidad,
+- estado de identificación en admisión.
 
 `zipcode`, `postcode`, código postal y teléfono no se muestran como filtros avanzados por defecto. Son datos débiles para admisión/emergencia: pueden faltar, estar desactualizados, pertenecer a un responsable o generar falsos positivos. Solo deben habilitarse por configuración local si hay un caso administrativo específico.
 
@@ -40,8 +40,9 @@ El filtro de atributos textuales usa coincidencia parcial para facilitar búsque
 
 | Uso | Person attribute type |
 | --- | --- |
-| Paciente no identificado | `Paciente No Identificado` |
-| Responsable/acompañante | `Nombre del Acompañante` |
-| Vínculo del responsable | `Parentesco del Acompañante` |
+| Tipo de documento civil | `Tipo de Documento de Identidad` |
+| Código de documento civil | `Código de Documento de Identidad` |
+| Estado de verificación civil | `Estado de Verificación de Identidad` |
+| Estado administrativo de identificación | `Estado de Identificación en Admisión` |
 
-El filtro `Estado de identificación` queda pendiente hasta que el attribute type correspondiente exista en el backend objetivo.
+Si alguno de estos person attribute types no existe en el backend objetivo, el filtro se oculta para no bloquear ni ensuciar la búsqueda.

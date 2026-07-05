@@ -13,6 +13,8 @@ const validResponsiblePerson: ResponsiblePersonFormValues = {
   familyName2: 'Quispe',
   gender: 'female',
   estimatedAge: '35',
+  phone: '',
+  address: '',
   relationshipType: '057de23f-3d9c-4314-9391-4452970739c6/aIsToB',
 };
 
@@ -34,6 +36,23 @@ describe('responsible person utilities', () => {
       gender: 'F',
       birthdate: `${expectedBirthYear}-01-01`,
       birthdateEstimated: true,
+    });
+    expect(payload).not.toHaveProperty('identifiers');
+  });
+
+  it('adds optional phone and address to the OpenMRS Person payload', () => {
+    const payload = buildResponsiblePersonPayload(
+      {
+        ...validResponsiblePerson,
+        phone: '987654321',
+        address: 'Av. Peru 123',
+      },
+      { phoneAttributeTypeUuid: 'phone-attribute-uuid' },
+    );
+
+    expect(payload).toMatchObject({
+      attributes: [{ attributeType: 'phone-attribute-uuid', value: '987654321' }],
+      addresses: [{ address1: 'Av. Peru 123', preferred: true }],
     });
     expect(payload).not.toHaveProperty('identifiers');
   });
@@ -91,6 +110,10 @@ describe('responsible person utilities', () => {
     expect(validateResponsiblePersonForm({ ...validResponsiblePerson, estimatedAge: '121' }).estimatedAge).toBe(
       'estimatedAgeInvalid',
     );
+  });
+
+  it('rejects invalid responsible person phone numbers', () => {
+    expect(validateResponsiblePersonForm({ ...validResponsiblePerson, phone: 'e100' }).phone).toBe('phoneInvalid');
   });
 
   it('requires an adult age when the related person must be responsible for a minor', () => {

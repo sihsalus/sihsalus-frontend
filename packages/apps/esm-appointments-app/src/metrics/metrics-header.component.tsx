@@ -1,12 +1,12 @@
 import { Button } from '@carbon/react';
 import { Calendar, Hospital } from '@carbon/react/icons';
-import { ExtensionSlot, isDesktop, launchWorkspace2, navigate, useLayoutType } from '@openmrs/esm-framework';
+import { ExtensionSlot, isDesktop, launchWorkspace2, navigate, useLayoutType, useSession, userHasAccess } from '@openmrs/esm-framework';
 import dayjs from 'dayjs';
 import isToday from 'dayjs/plugin/isToday';
 import React, { useContext } from 'react';
 import { useTranslation } from 'react-i18next';
 
-import { spaHomePage } from '../constants';
+import { appointmentsEditPrivilege, spaHomePage } from '../constants';
 import SelectedDateContext from '../hooks/selectedDateContext';
 
 import styles from './metrics-header.scss';
@@ -17,6 +17,8 @@ const MetricsHeader: React.FC = () => {
   const { t } = useTranslation();
   const { selectedDate } = useContext(SelectedDateContext);
   const layout = useLayoutType();
+  const session = useSession();
+  const canEdit = userHasAccess(appointmentsEditPrivilege, session?.user);
   const responsiveSize = isDesktop(layout) ? 'sm' : 'md';
 
   const launchCreateAppointmentForm = (patientUuid) => {
@@ -43,19 +45,21 @@ const MetricsHeader: React.FC = () => {
         >
           {t('appointmentsCalendar', 'Appointments calendar')}
         </Button>
-        <ExtensionSlot
-          name="patient-search-button-slot"
-          state={{
-            selectPatientAction: launchCreateAppointmentForm,
-            buttonText: t('createNewAppointment', 'Create new appointment'),
-            overlayHeader: t('createNewAppointment', 'Create new appointment'),
-            buttonProps: {
-              kind: 'primary',
-              renderIcon: (props) => <Hospital size={32} {...props} />,
-              size: responsiveSize,
-            },
-          }}
-        />
+        {canEdit ? (
+          <ExtensionSlot
+            name="patient-search-button-slot"
+            state={{
+              selectPatientAction: launchCreateAppointmentForm,
+              buttonText: t('createNewAppointment', 'Create new appointment'),
+              overlayHeader: t('createNewAppointment', 'Create new appointment'),
+              buttonProps: {
+                kind: 'primary',
+                renderIcon: (props) => <Hospital size={32} {...props} />,
+                size: responsiveSize,
+              },
+            }}
+          />
+        ) : null}
       </div>
     </div>
   );

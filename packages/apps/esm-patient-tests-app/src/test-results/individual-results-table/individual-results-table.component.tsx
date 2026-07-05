@@ -18,6 +18,7 @@ import React, { type ComponentProps, useCallback, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import { type GroupedObservation } from '../../types';
+import usePanelData from '../panel-view/usePanelData';
 
 import styles from './individual-results-table.scss';
 
@@ -31,19 +32,19 @@ interface IndividualResultsTableProps {
 const getClasses = (interpretation: OBSERVATION_INTERPRETATION) => {
   switch (interpretation) {
     case 'OFF_SCALE_HIGH':
-      return styles['off-scale-high'];
+      return styles['off-scale-high'] || styles['offScaleHigh'];
 
     case 'CRITICALLY_HIGH':
-      return styles['critically-high'];
+      return styles['critically-high'] || styles['criticallyHigh'];
 
     case 'HIGH':
       return styles['high'];
 
     case 'OFF_SCALE_LOW':
-      return styles['off-scale-low'];
+      return styles['off-scale-low'] || styles['offScaleLow'];
 
     case 'CRITICALLY_LOW':
-      return styles['critically-low'];
+      return styles['critically-low'] || styles['criticallyLow'];
 
     case 'LOW':
       return styles['low'];
@@ -59,6 +60,14 @@ const IndividualResultsTable: React.FC<IndividualResultsTableProps> = ({ isLoadi
   const layout = useLayoutType();
   const patientUuid = getPatientUuidFromStore();
   const isDesktop = layout === 'small-desktop' || layout === 'large-desktop';
+  const { panels } = usePanelData();
+
+  const groupConceptUuid = useMemo(() => {
+    return (
+      panels?.find((p) => p.relatedObs?.some((obs) => obs.conceptUuid === subRows.entries[0]?.conceptUuid))
+        ?.conceptUuid || subRows.entries[0]?.conceptUuid
+    );
+  }, [panels, subRows.entries]);
 
   const headerTitle = t(title);
 
@@ -97,31 +106,27 @@ const IndividualResultsTable: React.FC<IndividualResultsTableProps> = ({ isLoadi
           id: `${i}-${index}`,
           testName: (
             <span className={styles['trendline-link']}>
-              {!isString ? (
-                <span
-                  className={styles['trendline-link-view']}
-                  onClick={() => launchResultsDialog(row.display, row.conceptUuid)}
-                  onKeyDown={(event) => {
-                    if (event.key === 'Enter' || event.key === ' ') {
-                      event.preventDefault();
-                      launchResultsDialog(row.display, row.conceptUuid);
-                    }
-                  }}
-                  role="button"
-                  tabIndex={0}
-                >
-                  {row.display}
-                </span>
-              ) : (
-                <span className={styles.trendlineLink}>{row.display}</span>
-              )}
+              <span
+                className={styles['trendline-link-view']}
+                onClick={() => launchResultsDialog(row.display, row.conceptUuid)}
+                onKeyDown={(event) => {
+                  if (event.key === 'Enter' || event.key === ' ') {
+                    event.preventDefault();
+                    launchResultsDialog(row.display, row.conceptUuid);
+                  }
+                }}
+                role="button"
+                tabIndex={0}
+              >
+                {row.display}
+              </span>
             </span>
           ),
           value: {
             value: `${row.value} ${row.units ?? ''}`,
             interpretation: row?.interpretation,
           },
-          referenceRange: `${range || '--'} ${units || '--'}`,
+          referenceRange: range ? (units ? `${range} ${units}` : range) : '--',
         };
       }),
     [index, subRows, launchResultsDialog],
@@ -137,13 +142,15 @@ const IndividualResultsTable: React.FC<IndividualResultsTableProps> = ({ isLoadi
             <div className={styles.cardTitle}>
               <h4 className={styles.resultType}>{headerTitle}</h4>
               <div className={styles.displayFlex}>
-                <span className={styles.date}>{formatDate(parseDate(subRows.date), { mode: 'standard' })}</span>
+                <span className={styles.date}>
+                  {formatDate(parseDate(subRows.date), { mode: 'standard', time: false })}
+                </span>
                 <Button
                   className={styles.viewTimeline}
                   iconDescription="view timeline"
                   kind="ghost"
                   renderIcon={(props: ComponentProps<typeof ArrowRightIcon>) => <ArrowRightIcon size={16} {...props} />}
-                  onClick={() => launchResultsDialog(headerTitle, subRows[0]?.conceptUuid)}
+                  onClick={() => launchResultsDialog(headerTitle, groupConceptUuid)}
                   size="sm"
                 >
                   {t('viewTimeline', 'View timeline')}

@@ -7,6 +7,7 @@ import {
   translateFrom,
   useConfig,
   useSession,
+  userHasAccess,
   Workspace2,
 } from '@openmrs/esm-framework';
 import React, { useCallback, useState } from 'react';
@@ -14,7 +15,7 @@ import { Controller, useForm } from 'react-hook-form';
 import { useTranslation } from 'react-i18next';
 import { z } from 'zod';
 import { type WardConfigObject } from '../../config-schema';
-import { moduleName } from '../../constant';
+import { moduleName, wardEditPrivilege } from '../../constant';
 import useEmrConfiguration from '../../hooks/useEmrConfiguration';
 import { type EncounterPayload, type WardPatientWorkspaceDefinition } from '../../types';
 import WardPatientWorkspaceBanner from '../patient-banner/patient-banner.component';
@@ -41,6 +42,7 @@ const WardPatientNotesWorkspace: React.FC<WardPatientWorkspaceDefinition> = ({
   const config = useConfig<WardConfigObject>();
   const { t } = useTranslation();
   const session = useSession();
+  const canEdit = userHasAccess(wardEditPrivilege, session?.user);
 
   const { patientNotes, mutatePatientNotes, isLoadingPatientNotes, errorFetchingPatientNotes } = usePatientNotes(
     patientUuid,
@@ -152,49 +154,51 @@ const WardPatientNotesWorkspace: React.FC<WardPatientWorkspaceDefinition> = ({
             />
           </div>
         )}
-        <Stack className={styles.formContainer} gap={4}>
-          <Row className={styles.row}>
-            <Column sm={1}>
-              <span className={styles.columnLabel}>{t('note', 'Note')}</span>
-            </Column>
-            <Column sm={3}>
-              <Controller
-                name="wardClinicalNote"
-                control={control}
-                render={({ field: { onChange, onBlur, value } }) => (
-                  <ResponsiveWrapper>
-                    <TextArea
-                      id="additionalNote"
-                      invalid={!!errors.wardClinicalNote}
-                      invalidText={errors.wardClinicalNote?.message}
-                      labelText={t('clinicalNoteLabel', 'Write your notes')}
-                      onBlur={onBlur}
-                      onChange={(event) => {
-                        onChange(event);
-                      }}
-                      placeholder={t('wardClinicalNotePlaceholder', 'Write any notes here')}
-                      rows={6}
-                      value={value}
-                    />
-                  </ResponsiveWrapper>
-                )}
-              />
-            </Column>
-          </Row>
+        {canEdit && (
+          <Stack className={styles.formContainer} gap={4}>
+            <Row className={styles.row}>
+              <Column sm={1}>
+                <span className={styles.columnLabel}>{t('note', 'Note')}</span>
+              </Column>
+              <Column sm={3}>
+                <Controller
+                  name="wardClinicalNote"
+                  control={control}
+                  render={({ field: { onChange, onBlur, value } }) => (
+                    <ResponsiveWrapper>
+                      <TextArea
+                        id="additionalNote"
+                        invalid={!!errors.wardClinicalNote}
+                        invalidText={errors.wardClinicalNote?.message}
+                        labelText={t('clinicalNoteLabel', 'Write your notes')}
+                        onBlur={onBlur}
+                        onChange={(event) => {
+                          onChange(event);
+                        }}
+                        placeholder={t('wardClinicalNotePlaceholder', 'Write any notes here')}
+                        rows={6}
+                        value={value}
+                      />
+                    </ResponsiveWrapper>
+                  )}
+                />
+              </Column>
+            </Row>
 
-          <Button
-            className={styles.saveButton}
-            disabled={isSubmitting || isLoadingEmrConfiguration || errorFetchingEmrConfiguration}
-            kind="primary"
-            type="submit"
-          >
-            {isSubmitting ? (
-              <InlineLoading description={t('saving', 'Saving...')} />
-            ) : (
-              <span>{getCoreTranslation('save')}</span>
-            )}
-          </Button>
-        </Stack>
+            <Button
+              className={styles.saveButton}
+              disabled={isSubmitting || isLoadingEmrConfiguration || errorFetchingEmrConfiguration}
+              kind="primary"
+              type="submit"
+            >
+              {isSubmitting ? (
+                <InlineLoading description={t('saving', 'Saving...')} />
+              ) : (
+                <span>{getCoreTranslation('save')}</span>
+              )}
+            </Button>
+          </Stack>
+        )}
       </Form>
 
       <PatientNotesHistory

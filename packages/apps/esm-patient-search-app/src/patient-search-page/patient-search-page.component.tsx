@@ -9,7 +9,7 @@ import { getPatientSearchReturnUrl } from '../search-return-url';
 import AdvancedPatientSearchComponent from './advanced-patient-search.component';
 import styles from './patient-search-page.scss';
 
-interface PatientSearchPageComponentProps {}
+type PatientSearchPageComponentProps = {}
 
 const PatientSearchPageComponent: React.FC<PatientSearchPageComponentProps> = () => {
   const [searchParams] = useSearchParams();

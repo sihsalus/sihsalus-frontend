@@ -162,6 +162,34 @@ export interface RelationshipValue {
    */
   initialrelationshipTypeValue?: string;
   uuid?: string;
+  /**
+   * When true, also creates a companion (Acompañante) relationship for the
+   * same related person on registration.
+   */
+  isCompanion?: boolean;
+  /**
+   * UUID of the existing companion (Acompañante) relationship, if any, so it
+   * can be deleted when the companion checkbox is unticked while editing.
+   */
+  companionRelationshipUuid?: string;
+  /**
+   * Pending responsible person to create at form submit. The person is created right
+   * before its relationship so that abandoning the registration never leaves an
+   * orphaned person without a relationship in the database.
+   */
+  newPerson?: NewResponsiblePersonValues;
+}
+
+export interface NewResponsiblePersonValues {
+  givenName: string;
+  middleName: string;
+  familyName: string;
+  familyName2: string;
+  gender: string;
+  estimatedAge: string;
+  phone: string;
+  address: string;
+  relationshipType: string;
 }
 
 export interface FormValues {
@@ -200,6 +228,12 @@ export interface FormValues {
     [conceptUuid: string]: string;
   };
   patientUuid: string;
+  /**
+   * When set, submitting the form promotes this existing person to patient instead of
+   * creating a new one. `patientUuid` must hold the same UUID so the promoted patient
+   * keeps the person's identity.
+   */
+  personUuidToPromote?: string;
   relationships: Array<RelationshipValue>;
   telephoneNumber: string;
   yearsEstimated: number;

@@ -1,6 +1,6 @@
 import { Button } from '@carbon/react';
 import { TaskComplete } from '@carbon/react/icons';
-import { navigate, showModal, useConfig } from '@openmrs/esm-framework';
+import { navigate, showModal, useConfig, useSession, userHasAccess } from '@openmrs/esm-framework';
 import dayjs from 'dayjs';
 import isToday from 'dayjs/plugin/isToday';
 import utc from 'dayjs/plugin/utc';
@@ -8,6 +8,7 @@ import React from 'react';
 import { useTranslation } from 'react-i18next';
 
 import { type ConfigObject } from '../../config-schema';
+import { appointmentsEditPrivilege } from '../../constants';
 import { useTodaysVisits } from '../../hooks/useTodaysVisits';
 import { type Appointment, AppointmentStatus } from '../../types';
 
@@ -24,6 +25,8 @@ interface AppointmentsActionsProps {
 const AppointmentsActions: React.FC<AppointmentsActionsProps> = ({ appointment }) => {
   const { t } = useTranslation();
   const { checkInButton, checkOutButton } = useConfig<ConfigObject>();
+  const session = useSession();
+  const canEdit = userHasAccess(appointmentsEditPrivilege, session?.user);
   const { visits, mutateVisit } = useTodaysVisits(); // TODO doesn't work if visit didn't start today? what about inpatient?
 
   const patientUuid = appointment.patient.uuid;
@@ -75,16 +78,21 @@ const AppointmentsActions: React.FC<AppointmentsActionsProps> = ({ appointment }
           </Button>
         );
 
-      case checkOutButton.enabled && isCheckedIn:
+      case canEdit && checkOutButton.enabled && isCheckedIn:
         return (
           <Button onClick={handleCheckout} kind="danger--tertiary" size="sm">
             {t('checkOut', 'Check out')}
           </Button>
         );
 
-      case checkInButton.enabled && (!hasActiveVisitToday || checkInButton.showIfActiveVisit) && isTodaysAppointment:
+      case canEdit && checkInButton.enabled && (!hasActiveVisitToday || checkInButton.showIfActiveVisit) && isTodaysAppointment:
         return (
-          <CheckInButton patientUuid={patientUuid} appointment={appointment} hasActiveVisit={hasActiveVisitToday} />
+          <CheckInButton
+            patientUuid={patientUuid}
+            appointment={appointment}
+            hasActiveVisit={hasActiveVisitToday}
+            mutateVisits={mutateVisit}
+          />
         );
 
       default:

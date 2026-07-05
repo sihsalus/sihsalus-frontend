@@ -5,6 +5,9 @@ import {
   InlineNotification,
   Modal,
   NumberInput,
+  InlineNotification,
+  Modal,
+  NumberInput,
   Select,
   SelectItem,
   Switch,
@@ -17,6 +20,8 @@ import {
   Tile,
 } from '@carbon/react';
 import React, { useMemo, useState } from 'react';
+import { useTranslation } from 'react-i18next';
+import type { BatchCalcularNowResponse, Granularity, RecalcularAnioResponse } from '../api/types';
 import { useTranslation } from 'react-i18next';
 import type { BatchCalcularNowResponse, Granularity, RecalcularAnioResponse } from '../api/types';
 import PaginationBar from '../components/PaginationBar';
@@ -36,12 +41,26 @@ type SummaryState =
 
 const currentYear = () => new Date().getFullYear();
 
+type SummaryState =
+  | { kind: 'calcular'; result: BatchCalcularNowResponse }
+  | { kind: 'recalcular'; result: RecalcularAnioResponse; anio: number }
+  | null;
+
+const currentYear = () => new Date().getFullYear();
+
 const ResultadosPage: React.FC = () => {
+  const { t } = useTranslation();
   const { t } = useTranslation();
   const [page, setPage] = useState(1);
   const [filters, setFilters] = useState({ indicador_id: '', periodo_inicio: '', periodo_fin: '' });
   const [granularity, setGranularity] = useState<Granularity>('mensual');
   const [viewMode, setViewMode] = useState<'historical' | 'series'>('series');
+  const [isCalcularRunning, setCalcularRunning] = useState(false);
+  const [isRecalcularRunning, setRecalcularRunning] = useState(false);
+  const [summary, setSummary] = useState<SummaryState>(null);
+  const [isRecalcModalOpen, setRecalcModalOpen] = useState(false);
+  const [recalcAnio, setRecalcAnio] = useState<number>(currentYear());
+  const [recalcAnioError, setRecalcAnioError] = useState<string | null>(null);
   const [isCalcularRunning, setCalcularRunning] = useState(false);
   const [isRecalcularRunning, setRecalcularRunning] = useState(false);
   const [summary, setSummary] = useState<SummaryState>(null);
@@ -72,6 +91,7 @@ const ResultadosPage: React.FC = () => {
         ? {
             indicador_id: filters.indicador_id,
             anio: currentYear(),
+            anio: currentYear(),
             granularity,
           }
         : null,
@@ -84,8 +104,12 @@ const ResultadosPage: React.FC = () => {
   const { recalcularAnio } = useRecalcularAnio();
 
   const anyActionRunning = isCalcularRunning || isRecalcularRunning;
+  const { recalcularAnio } = useRecalcularAnio();
+
+  const anyActionRunning = isCalcularRunning || isRecalcularRunning;
 
   const handleCalcular = async () => {
+    setCalcularRunning(true);
     setCalcularRunning(true);
     try {
       const result = await calcularAhora();
@@ -321,9 +345,12 @@ const ResultadosPage: React.FC = () => {
 
       {renderSummary()}
 
+      {renderSummary()}
+
       <div className={styles.filtersPanel}>
         <Select
           id="resultado-indicador"
+          labelText={t('indicator', 'Indicador')}
           labelText={t('indicator', 'Indicador')}
           value={filters.indicador_id}
           onChange={(event) => {
@@ -332,11 +359,13 @@ const ResultadosPage: React.FC = () => {
           }}
         >
           <SelectItem value="" text={t('allIndicators', 'Todos los indicadores')} />
+          <SelectItem value="" text={t('allIndicators', 'Todos los indicadores')} />
           {(indicadoresData?.items ?? []).map((indicador) => (
             <SelectItem key={indicador.id} value={indicador.id} text={indicador.nombre} />
           ))}
         </Select>
         <label className={styles.fieldGroup}>
+          <span>{t('from', 'Desde')}</span>
           <span>{t('from', 'Desde')}</span>
           <input
             className={styles.nativeInput}
@@ -349,6 +378,7 @@ const ResultadosPage: React.FC = () => {
           />
         </label>
         <label className={styles.fieldGroup}>
+          <span>{t('to', 'Hasta')}</span>
           <span>{t('to', 'Hasta')}</span>
           <input
             className={styles.nativeInput}
@@ -370,11 +400,14 @@ const ResultadosPage: React.FC = () => {
         >
           <Switch name="series" text={t('timeSeries', 'Series temporales')} />
           <Switch name="historical" text={t('historical', 'Histórico')} />
+          <Switch name="series" text={t('timeSeries', 'Series temporales')} />
+          <Switch name="historical" text={t('historical', 'Histórico')} />
         </ContentSwitcher>
 
         {viewMode === 'series' && filters.indicador_id ? (
           <Select
             id="granularity"
+            labelText={t('granularity', 'Granularidad')}
             labelText={t('granularity', 'Granularidad')}
             value={granularity}
             onChange={(event) => setGranularity(event.target.value as Granularity)}
@@ -384,10 +417,15 @@ const ResultadosPage: React.FC = () => {
             <SelectItem value="trimestral" text={t('quarterly', 'Trimestral')} />
             <SelectItem value="semestral" text={t('semiannual', 'Semestral')} />
             <SelectItem value="anual" text={t('annual', 'Anual')} />
+            <SelectItem value="mensual" text={t('monthly', 'Mensual')} />
+            <SelectItem value="trimestral" text={t('quarterly', 'Trimestral')} />
+            <SelectItem value="semestral" text={t('semiannual', 'Semestral')} />
+            <SelectItem value="anual" text={t('annual', 'Anual')} />
           </Select>
         ) : null}
       </div>
 
+      {isLoading ? <InlineLoading description={t('loadingResults', 'Cargando resultados...')} /> : null}
       {isLoading ? <InlineLoading description={t('loadingResults', 'Cargando resultados...')} /> : null}
       {error ? <div className={styles.errorBanner}>{error.message}</div> : null}
 
@@ -399,6 +437,9 @@ const ResultadosPage: React.FC = () => {
               <Table aria-label={`Serie temporal — ${granularity}`}>
                 <TableHead>
                   <TableRow>
+                    <TableHeader>{t('period', 'Periodo')}</TableHeader>
+                    <TableHeader>{t('value', 'Valor')}</TableHeader>
+                    <TableHeader>{t('monthsAvailable', 'Meses disponibles')}</TableHeader>
                     <TableHeader>{t('period', 'Periodo')}</TableHeader>
                     <TableHeader>{t('value', 'Valor')}</TableHeader>
                     <TableHeader>{t('monthsAvailable', 'Meses disponibles')}</TableHeader>
@@ -419,8 +460,14 @@ const ResultadosPage: React.FC = () => {
             <Tile className={styles.empty}>
               {t('noSeriesData', 'No hay datos de serie para el indicador y año seleccionados.')}
             </Tile>
+            <Tile className={styles.empty}>
+              {t('noSeriesData', 'No hay datos de serie para el indicador y año seleccionados.')}
+            </Tile>
           )
         ) : (
+          <Tile className={styles.empty}>
+            {t('selectIndicatorForSeries', 'Seleccioná un indicador para ver su serie temporal.')}
+          </Tile>
           <Tile className={styles.empty}>
             {t('selectIndicatorForSeries', 'Seleccioná un indicador para ver su serie temporal.')}
           </Tile>
@@ -441,6 +488,12 @@ const ResultadosPage: React.FC = () => {
                     <TableHeader>{t('value', 'Valor')}</TableHeader>
                     <TableHeader>{t('canonical', 'Canónico')}</TableHeader>
                     <TableHeader>{t('calculatedAtFull', 'Calculado en')}</TableHeader>
+                    <TableHeader>{t('indicator', 'Indicador')}</TableHeader>
+                    <TableHeader>{t('version', 'Versión')}</TableHeader>
+                    <TableHeader>{t('period', 'Periodo')}</TableHeader>
+                    <TableHeader>{t('value', 'Valor')}</TableHeader>
+                    <TableHeader>{t('canonical', 'Canónico')}</TableHeader>
+                    <TableHeader>{t('calculatedAtFull', 'Calculado en')}</TableHeader>
                   </TableRow>
                 </TableHead>
                 <TableBody>
@@ -452,6 +505,7 @@ const ResultadosPage: React.FC = () => {
                         {item.periodo_inicio} - {item.periodo_fin}
                       </TableCell>
                       <TableCell>{item.valor}</TableCell>
+                      <TableCell>{item.es_canonico ? t('yes', 'Sí') : t('no', 'No')}</TableCell>
                       <TableCell>{item.es_canonico ? t('yes', 'Sí') : t('no', 'No')}</TableCell>
                       <TableCell>{new Date(item.calculado_en).toLocaleString('es-PE')}</TableCell>
                     </TableRow>
@@ -469,6 +523,7 @@ const ResultadosPage: React.FC = () => {
             />
           </>
         ) : (
+          <Tile className={styles.empty}>{t('noResults', 'No hay resultados para los filtros seleccionados.')}</Tile>
           <Tile className={styles.empty}>{t('noResults', 'No hay resultados para los filtros seleccionados.')}</Tile>
         )
       ) : null}

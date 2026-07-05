@@ -1,6 +1,5 @@
-import { useSession } from '@openmrs/esm-framework';
+import { userHasAccess, useSession } from '@openmrs/esm-framework';
 import { render, screen } from '@testing-library/react';
-import React from 'react';
 
 import { credNeonatalEditPrivilege } from '../../constants';
 import GrowthChartOverview from './growth-chart-overview.component';
@@ -12,6 +11,7 @@ vi.mock('./hooks/useBiometrics', () => ({
 
 const mockUseBiometrics = vi.mocked(useBiometrics);
 const mockUseSession = vi.mocked(useSession);
+const mockUserHasAccess = vi.mocked(userHasAccess);
 
 const sessionWithEditPrivilege = {
   authenticated: true,
@@ -37,13 +37,16 @@ describe('GrowthChartOverview', () => {
       isLoading: false,
       error: null,
     } as unknown as ReturnType<typeof useBiometrics>);
+    mockUserHasAccess.mockReturnValue(false);
   });
 
   it('offers to record data when the user has the neonatal edit privilege', () => {
     mockUseSession.mockReturnValue(sessionWithEditPrivilege);
+    mockUserHasAccess.mockReturnValue(true);
 
     render(<GrowthChartOverview patient={patient} patientUuid="patient-1" />);
 
+    expect(mockUserHasAccess).toHaveBeenCalledWith(credNeonatalEditPrivilege, sessionWithEditPrivilege.user);
     expect(screen.getByRole('button', { name: /record/i })).toBeInTheDocument();
   });
 

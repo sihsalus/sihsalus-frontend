@@ -2,9 +2,9 @@
  * Context-aware action buttons for each row in the emergency queue table.
  *
  * Primary button changes based on patient state:
- * - Waiting in any queue → "Atender" (serve)
- * - In service in Triage Queue → "Triaje"
- * - In service in Attention Queue → "Atención de emergencia"
+ * - Waiting in any queue -> "Atender" (serve)
+ * - In service in Triage Queue -> "Triaje"
+ * - In service in Attention Queue -> "Atencion de emergencia"
  *
  * Overflow menu includes secondary actions: move, transition, edit, print, remove.
  * Shows "Completar triaje" when patient is in Attention Queue without a triage encounter.
@@ -21,11 +21,13 @@ import {
   showSnackbar,
   useConfig,
   useLayoutType,
+  useSession,
+  userHasAccess,
 } from '@openmrs/esm-framework';
 import React, { useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
 import { type Config } from '../../../config-schema';
-import { MODALS, WORKSPACES } from '../../../constants';
+import { emergencyEditPrivilege, MODALS, WORKSPACES } from '../../../constants';
 import { useEmergencyConfig } from '../../../hooks/usePriorityConfig';
 import styles from './emergency-queue-actions-cell.scss';
 import { type EmergencyQueueTableCellProps } from './emergency-queue-name-cell.component';
@@ -34,7 +36,9 @@ export const EmergencyQueueActionsCell: React.FC<EmergencyQueueTableCellProps> =
   const { t } = useTranslation();
   const layout = useLayoutType();
   const config = useConfig<Config>();
+  const session = useSession();
   const { queueStatuses, emergencyTriageQueueUuid } = useEmergencyConfig();
+  const canEdit = userHasAccess(emergencyEditPrivilege, session?.user);
 
   const isWaiting = queueEntry?.status?.uuid === queueStatuses.waiting;
   const isInService = queueEntry?.status?.uuid === queueStatuses.inService;
@@ -114,7 +118,7 @@ export const EmergencyQueueActionsCell: React.FC<EmergencyQueueTableCellProps> =
       showSnackbar({
         title: t('printStickerError', 'Error al imprimir sticker'),
         kind: 'error',
-        subtitle: t('printStickerNoPatient', 'No se encontró el UUID del paciente'),
+        subtitle: t('printStickerNoPatient', 'No se encontro el UUID del paciente'),
       });
       return;
     }
@@ -124,20 +128,20 @@ export const EmergencyQueueActionsCell: React.FC<EmergencyQueueTableCellProps> =
 
   return (
     <div className={styles.actionsCell}>
-      {/* Primary action — context-aware based on patient status */}
-      {isWaiting && (
+      {/* Primary action - context-aware based on patient status */}
+      {canEdit && isWaiting && (
         <Button kind="ghost" size={isDesktop(layout) ? 'sm' : 'lg'} onClick={handleServePatient}>
           {t('serve', 'Atender')}
         </Button>
       )}
-      {isInService && isInTriageQueue && (
+      {canEdit && isInService && isInTriageQueue && (
         <Button kind="ghost" size={isDesktop(layout) ? 'sm' : 'lg'} onClick={handleOpenTriage}>
           {t('triage', 'Triaje')}
         </Button>
       )}
-      {isInService && !isInTriageQueue && (
+      {canEdit && isInService && !isInTriageQueue && (
         <Button kind="ghost" size={isDesktop(layout) ? 'sm' : 'lg'} onClick={handleOpenAttention}>
-          {t('emergencyAttention', 'Atención de emergencia')}
+          {t('emergencyAttention', 'Atencion de emergencia')}
         </Button>
       )}
       {/* Secondary actions */}
@@ -147,29 +151,31 @@ export const EmergencyQueueActionsCell: React.FC<EmergencyQueueTableCellProps> =
         align="left"
         flipped
       >
-        {!isInTriageQueue && (
+        {canEdit && !isInTriageQueue && (
           <OverflowMenuItem
-            itemText={t('emergencyAttention', 'Atención de emergencia')}
+            itemText={t('emergencyAttention', 'Atencion de emergencia')}
             onClick={handleOpenAttention}
           />
         )}
-        {isTriagePending && (
+        {canEdit && isTriagePending && (
           <OverflowMenuItem itemText={t('completeTriage', 'Completar triaje')} onClick={handleOpenTriage} />
         )}
         <OverflowMenuItem itemText={t('viewChart', 'Ver ficha')} onClick={handleGoToChart} />
-        <OverflowMenuItem itemText={t('moveToQueue', 'Mover a cola')} onClick={handleMoveToQueue} />
-        <OverflowMenuItem itemText={t('transition', 'Transición')} onClick={handleTransition} />
-        <OverflowMenuItem itemText={t('editEntry', 'Editar entrada')} onClick={handleEditEntry} />
+        {canEdit && <OverflowMenuItem itemText={t('moveToQueue', 'Mover a cola')} onClick={handleMoveToQueue} />}
+        {canEdit && <OverflowMenuItem itemText={t('transition', 'Transicion')} onClick={handleTransition} />}
+        {canEdit && <OverflowMenuItem itemText={t('editEntry', 'Editar entrada')} onClick={handleEditEntry} />}
         <OverflowMenuItem itemText={t('printSticker', 'Imprimir sticker')} onClick={handlePrintSticker} />
-        <OverflowMenuItem
-          itemText={t('removeFromQueue', 'Eliminar de cola')}
-          onClick={handleRemoveFromQueue}
-          isDelete
-          hasDivider
-        />
-        {hasPreviousEntry && (
+        {canEdit && (
           <OverflowMenuItem
-            itemText={t('undoTransition', 'Deshacer transición')}
+            itemText={t('removeFromQueue', 'Eliminar de cola')}
+            onClick={handleRemoveFromQueue}
+            isDelete
+            hasDivider
+          />
+        )}
+        {canEdit && hasPreviousEntry && (
+          <OverflowMenuItem
+            itemText={t('undoTransition', 'Deshacer transicion')}
             onClick={handleUndoTransition}
             isDelete
           />

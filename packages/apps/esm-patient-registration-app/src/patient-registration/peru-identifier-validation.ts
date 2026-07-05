@@ -1,10 +1,10 @@
+import type { FetchedPatientIdentifierType, PatientIdentifierValue } from './patient-registration.types';
 import {
   peruCarnetExtranjeriaPatientIdentifierTypeUuid,
   peruDiePatientIdentifierTypeUuid,
   peruDniPatientIdentifierTypeUuid,
   peruPassportPatientIdentifierTypeUuid,
 } from './peru-registration-config';
-import type { FetchedPatientIdentifierType, PatientIdentifierValue } from './patient-registration.types';
 
 export interface PeruIdentifierRule {
   pattern: RegExp;
@@ -46,27 +46,31 @@ export function getPeruIdentifierRule(
 
   if (uuid === peruCarnetExtranjeriaPatientIdentifierTypeUuid || name === 'CE' || name.includes('EXTRANJERIA')) {
     return {
-      pattern: /^\d{9}$/,
-      maxLength: 9,
-      inputMode: 'numeric',
-      sanitize: (value) => value.replace(/\D/g, '').slice(0, 9),
+      pattern: /^[A-Z0-9]{6,12}$/i,
+      maxLength: 12,
+      inputMode: 'text',
+      sanitize: (value) =>
+        value
+          .replace(/[^a-zA-Z0-9]/g, '')
+          .toUpperCase()
+          .slice(0, 12),
       messageKey: 'ceIdentifierInvalid',
-      message: 'CE must have 9 digits',
+      message: 'CE must have 6 to 12 letters or numbers',
       helperKey: 'ceIdentifierHelperText',
-      helper: '9 digits',
+      helper: '6 to 12 letters or numbers',
     };
   }
 
   if (name === 'CNV' || name.includes('CERTIFICADO DE NACIDO VIVO')) {
     return {
-      pattern: /^\d{10}$/,
-      maxLength: 10,
+      pattern: /^\d{12}$/,
+      maxLength: 12,
       inputMode: 'numeric',
-      sanitize: (value) => value.replace(/\D/g, '').slice(0, 10),
+      sanitize: (value) => value.replace(/\D/g, '').slice(0, 12),
       messageKey: 'cnvIdentifierInvalid',
-      message: 'CNV must have 10 digits',
+      message: 'CNV must have 12 digits',
       helperKey: 'cnvIdentifierHelperText',
-      helper: '10 digits',
+      helper: '12 digits',
     };
   }
 
@@ -75,7 +79,11 @@ export function getPeruIdentifierRule(
       pattern: /^[A-Z0-9]{9,12}$/i,
       maxLength: 12,
       inputMode: 'text',
-      sanitize: (value) => value.replace(/[^a-zA-Z0-9]/g, '').toUpperCase().slice(0, 12),
+      sanitize: (value) =>
+        value
+          .replace(/[^a-zA-Z0-9]/g, '')
+          .toUpperCase()
+          .slice(0, 12),
       messageKey: 'dieIdentifierInvalid',
       message: 'DIE must have 9 to 12 letters or numbers',
       helperKey: 'dieIdentifierHelperText',
@@ -85,14 +93,18 @@ export function getPeruIdentifierRule(
 
   if (uuid === peruPassportPatientIdentifierTypeUuid || name === 'PASS' || name.includes('PASAPORTE')) {
     return {
-      pattern: /^[A-Z0-9]{6,12}$/i,
-      maxLength: 12,
+      pattern: /^[A-Z0-9]{6,9}$/i,
+      maxLength: 9,
       inputMode: 'text',
-      sanitize: (value) => value.replace(/[^a-zA-Z0-9]/g, '').toUpperCase().slice(0, 12),
+      sanitize: (value) =>
+        value
+          .replace(/[^a-zA-Z0-9]/g, '')
+          .toUpperCase()
+          .slice(0, 9),
       messageKey: 'passportIdentifierInvalid',
-      message: 'Passport must have 6 to 12 letters or numbers',
+      message: 'Passport must have 6 to 9 letters or numbers',
       helperKey: 'passportIdentifierHelperText',
-      helper: '6 to 12 letters or numbers',
+      helper: '6 to 9 letters or numbers',
     };
   }
 

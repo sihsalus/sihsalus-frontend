@@ -1,8 +1,8 @@
 import { act, fireEvent, screen } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
 import { renderWithSwr } from 'test-utils';
+import type { SeriesResponse } from '../api/types';
 import ResultadosPage from './ResultadosPage';
-import type { SerieRow, SeriesResponse } from '../api/types';
 
 vi.mock('../features/indicadores/hooks', async () => ({
   ...(await vi.importActual('../features/indicadores/hooks')),
@@ -16,6 +16,7 @@ vi.mock('../features/resultados/hooks', async () => ({
   useResultados: vi.fn(),
   useResultadosSeries: vi.fn(),
   useCalcularAhora: vi.fn(),
+  useRecalcularAnio: vi.fn(),
   useRecalcularAnio: vi.fn(),
 }));
 
@@ -31,6 +32,7 @@ const mockUseIndicadores = vi.mocked(useIndicadores);
 const mockUseResultados = vi.mocked(useResultados);
 const mockUseResultadosSeries = vi.mocked(useResultadosSeries);
 const mockUseCalcularAhora = vi.mocked(useCalcularAhora);
+const mockUseRecalcularAnio = vi.mocked(useRecalcularAnio);
 const mockUseRecalcularAnio = vi.mocked(useRecalcularAnio);
 
 const indicadores = {
@@ -94,6 +96,18 @@ describe('ResultadosPage series granularity', () => {
 
     mockUseCalcularAhora.mockReturnValue({
       calcularAhora: vi.fn().mockResolvedValue({ calculados: 0, errores: [], total: 0 }),
+    });
+
+    mockUseRecalcularAnio.mockReturnValue({
+      recalcularAnio: vi.fn().mockResolvedValue({
+        anio: 2026,
+        indicador_id: null,
+        meses_procesados: 12,
+        indicadores_considerados: 0,
+        recalculados: 0,
+        errores: [],
+        total: 0,
+      }),
     });
 
     mockUseRecalcularAnio.mockReturnValue({

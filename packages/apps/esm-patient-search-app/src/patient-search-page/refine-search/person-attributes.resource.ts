@@ -102,7 +102,7 @@ export function usePersonAttributeType(personAttributeTypeUuid: string): {
   error: Error | undefined;
 } {
   const { data, error, isLoading } = useSWRImmutable<FetchResponse<PersonAttributeTypeResponse>>(
-    `${restBaseUrl}/personattributetype/${personAttributeTypeUuid}`,
+    personAttributeTypeUuid ? `${restBaseUrl}/personattributetype/${personAttributeTypeUuid}` : null,
     openmrsFetch,
   );
 

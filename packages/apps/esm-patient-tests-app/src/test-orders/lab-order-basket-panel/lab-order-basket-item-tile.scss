@@ -91,3 +91,11 @@
 .additionalInfoContainer:not(:has(div:not(:empty))) {
   padding: 0;
 }
+
+.priorityLabel {
+  @extend .label;
+  background-color: colors.$blue-10;
+  color: colors.$blue-70;
+  padding: 0 layout.$spacing-02;
+  margin-left: layout.$spacing-03;
+}

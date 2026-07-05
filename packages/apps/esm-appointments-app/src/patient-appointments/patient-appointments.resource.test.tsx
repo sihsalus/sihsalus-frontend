@@ -2,7 +2,7 @@ import { openmrsFetch, restBaseUrl } from '@openmrs/esm-framework';
 import { renderHook, waitFor } from '@testing-library/react';
 import React from 'react';
 import { SWRConfig } from 'swr';
-import { usePatientAppointments } from './patient-appointments.resource';
+import { getAppointmentStatus, usePatientAppointments } from './patient-appointments.resource';
 
 const mockOpenmrsFetch = vi.mocked(openmrsFetch);
 const mockFetchResponse = (data: Array<unknown>) => ({ data }) as Awaited<ReturnType<typeof openmrsFetch>>;
@@ -151,6 +151,34 @@ describe('usePatientAppointments', () => {
     await waitFor(() => expect(result.current.data?.pastAppointments).toHaveLength(1));
   });
 
+  it('places an appointment occurring later today in todaysAppointments only', async () => {
+    const laterToday = new Date().setHours(23, 0, 0, 0);
+    mockOpenmrsFetch.mockResolvedValueOnce(
+      mockFetchResponse([{ uuid: 'later-today', status: 'Scheduled', startDateTime: laterToday }]),
+    );
+
+    const { result } = renderHook(() => usePatientAppointments('patient-1', '2026-04-01', abortController), {
+      wrapper,
+    });
+
+    await waitFor(() => expect(result.current.data?.todaysAppointments).toHaveLength(1));
+    expect(result.current.data?.upcomingAppointments).toHaveLength(0);
+  });
+
+  it('places an appointment on a future day in upcomingAppointments', async () => {
+    const futureDate = new Date(new Date().setDate(new Date().getDate() + 2)).getTime();
+    mockOpenmrsFetch.mockResolvedValueOnce(
+      mockFetchResponse([{ uuid: 'future', status: 'Scheduled', startDateTime: futureDate }]),
+    );
+
+    const { result } = renderHook(() => usePatientAppointments('patient-1', '2026-04-01', abortController), {
+      wrapper,
+    });
+
+    await waitFor(() => expect(result.current.data?.upcomingAppointments).toHaveLength(1));
+    expect(result.current.data?.todaysAppointments).toHaveLength(0);
+  });
+
   it('does not fetch again when patientUuid and startDate are unchanged (cache hit)', async () => {
     const { rerender } = renderHook(
       ({ patientUuid, startDate }) => usePatientAppointments(patientUuid, startDate, abortController),
@@ -168,5 +196,15 @@ describe('usePatientAppointments', () => {
     // Flush pending microtasks then assert no second fetch was triggered
     await waitFor(() => {});
     expect(mockOpenmrsFetch).toHaveBeenCalledTimes(1);
+  });
+
+  it('gets the current appointment status by uuid', async () => {
+    mockOpenmrsFetch.mockResolvedValueOnce({ data: { status: 'CheckedIn' } } as Awaited<
+      ReturnType<typeof openmrsFetch>
+    >);
+
+    await expect(getAppointmentStatus('appointment-uuid')).resolves.toBe('CheckedIn');
+
+    expect(mockOpenmrsFetch).toHaveBeenCalledWith(`${restBaseUrl}/appointment?uuid=appointment-uuid`);
   });
 });

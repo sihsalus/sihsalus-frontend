@@ -531,6 +531,32 @@ describe('Visit form', () => {
     });
   });
 
+  it('reports no unsaved changes after a successful save while post-save callbacks are pending', async () => {
+    const user = userEvent.setup();
+    let resolveCallback = () => {};
+    const pendingCallback = new Promise<void>((resolve) => {
+      resolveCallback = resolve;
+    });
+    mockOnVisitCreatedOrUpdatedCallback.mockReturnValueOnce(pendingCallback);
+
+    renderVisitForm();
+
+    await selectVisitType(user);
+    const locationPicker = screen.getByRole('combobox', {
+      name: /Select a location/i,
+    });
+    await user.selectOptions(locationPicker, 'Inpatient Ward');
+    await user.click(screen.getByRole('button', { name: /Start visit/i }));
+
+    await waitFor(() => expect(mockSaveVisit).toHaveBeenCalledTimes(1));
+    await waitFor(() => {
+      const lastPromptPredicate = mockPromptBeforeClosing.mock.lastCall?.[0] as (() => boolean) | undefined;
+      expect(lastPromptPredicate?.()).toBe(false);
+    });
+
+    resolveCallback();
+  });
+
   it('starts a new visit with attributes upon successful submission of the form', async () => {
     const user = userEvent.setup();
 

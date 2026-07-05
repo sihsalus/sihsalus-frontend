@@ -1,8 +1,9 @@
 import { ComboBox } from '@carbon/react';
-import { useDebounce, type Visit } from '@openmrs/esm-framework';
+import { useConfig, useDebounce, type Visit } from '@openmrs/esm-framework';
 import { type DrugOrderBasketItem } from '@openmrs/esm-patient-common-lib';
 import { useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
+import { type ConfigObject } from '../../config-schema';
 import { translateCarbonWithId } from '../carbon-translation';
 import { getTemplateOrderBasketItem, useDrugSearch, useDrugTemplates } from './drug-search.resource';
 
@@ -24,8 +25,11 @@ const DrugSearchComboBox: React.FC<DrugSearchComboBoxProps> = ({
   visit,
 }) => {
   const { t } = useTranslation();
+  const { minimumCharacterLengthForDrugSearch } = useConfig<ConfigObject>();
   const [drugSearchTerm, setDrugSearchTerm] = useState('');
-  const debouncedDrugSearchTerm = useDebounce(drugSearchTerm);
+  const searchableDrugSearchTerm =
+    drugSearchTerm.trim().length >= (minimumCharacterLengthForDrugSearch ?? 2) ? drugSearchTerm.trim() : '';
+  const debouncedDrugSearchTerm = useDebounce(searchableDrugSearchTerm);
   const { drugs } = useDrugSearch(debouncedDrugSearchTerm);
   const { templateByDrugUuid } = useDrugTemplates(drugs);
   const drugItemTemplateOptions: Array<DrugOrderBasketItem> = useMemo(() => {

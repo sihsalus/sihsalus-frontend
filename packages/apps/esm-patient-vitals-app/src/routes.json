@@ -16,6 +16,16 @@
       "order": 1
     },
     {
+      "name": "consulta-externa-vitals-overview-widget",
+      "component": "vitalsSummary",
+      "slot": "consulta-externa-vitals-summary-slot",
+      "privileges": "app:clinical.chart.vitals",
+      "meta": {
+        "fullWidth": true
+      },
+      "order": 0
+    },
+    {
       "name": "vitals-details-widget",
       "component": "vitalsMain",
       "slot": "patient-chart-vitals-biometrics-dashboard-slot",

@@ -31,13 +31,30 @@ const getObservationValueDisplay = (value: any): string | number => {
   return value;
 };
 
-const hasNormalRange = (concept: any) =>
-  concept?.hiNormal !== null &&
-  concept?.hiNormal !== undefined &&
-  concept?.hiNormal !== '' &&
-  concept?.lowNormal !== null &&
-  concept?.lowNormal !== undefined &&
-  concept?.lowNormal !== '';
+const formatReferenceRange = (concept: any, fhirRanges?: any) => {
+  const isNumeric = concept?.datatype?.hl7Abbreviation === 'NM' || concept?.datatype?.display === 'Numeric';
+  if (!isNumeric) {
+    return 'N/A';
+  }
+
+  const low = fhirRanges?.lowNormal ?? concept?.lowNormal ?? concept?.lowAbsolute;
+  const high = fhirRanges?.hiNormal ?? concept?.hiNormal ?? concept?.hiAbsolute;
+  const units = fhirRanges?.units ?? concept?.units;
+  const displayUnit = units ? ` ${units}` : '';
+
+  const hasLower = low !== null && low !== undefined && low !== '';
+  const hasUpper = high !== null && high !== undefined && high !== '';
+
+  if (hasLower && hasUpper) {
+    return `${low} - ${high}${displayUnit}`;
+  } else if (hasUpper) {
+    return `<= ${high}${displayUnit}`;
+  } else if (hasLower) {
+    return `>= ${low}${displayUnit}`;
+  }
+
+  return units ? displayUnit.trim() : 'N/A';
+};
 
 const extractRangesFromFhirObs = (fhirObs: any) => {
   const referenceRanges = fhirObs?.referenceRange;
@@ -92,10 +109,7 @@ const TestOrder: React.FC<TestOrderProps> = ({ testOrder }) => {
 
   const testResultObs = useMemo(() => {
     if (encounter && concept) {
-      return (
-        encounter.obs?.find((obs) => obs.order?.uuid === testOrder.uuid) ||
-        encounter.obs?.find((obs) => obs.concept.uuid === concept.uuid)
-      );
+      return encounter.obs?.find((obs) => obs.order?.uuid === testOrder.uuid);
     }
   }, [concept, encounter, testOrder.uuid]);
 
@@ -116,22 +130,19 @@ const TestOrder: React.FC<TestOrderProps> = ({ testOrder }) => {
           id: memberConcept.uuid,
           testType: <div className={styles.testType}>{memberConcept.display}</div>,
           result: isLoadingResult ? <SkeletonText /> : (getObservationValueDisplay(memberObs?.value) ?? '--'),
-          normalRange: hasNormalRange({ lowNormal: low, hiNormal: high }) ? `${low} - ${high}` : 'N/A',
+          normalRange: formatReferenceRange(memberConcept, fhirRanges),
         };
       });
     } else if (concept && concept.setMembers.length === 0) {
       const fhirObs = testResultObs ? findFhirObs(testResultObs.uuid) : null;
       const fhirRanges = extractRangesFromFhirObs(fhirObs);
 
-      const low = fhirRanges.lowNormal ?? concept.lowNormal;
-      const high = fhirRanges.hiNormal ?? concept.hiNormal;
-
       return [
         {
           id: concept.uuid,
           testType: <div className={styles.testType}>{concept.display}</div>,
           result: isLoadingResult ? <SkeletonText /> : (getObservationValueDisplay(testResultObs?.value) ?? '--'),
-          normalRange: hasNormalRange({ lowNormal: low, hiNormal: high }) ? `${low} - ${high}` : 'N/A',
+          normalRange: formatReferenceRange(concept, fhirRanges),
         },
       ];
     } else {

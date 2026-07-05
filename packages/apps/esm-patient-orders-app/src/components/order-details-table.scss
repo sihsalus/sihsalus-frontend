@@ -48,12 +48,34 @@
   padding: layout.$spacing-01;
   text-align: center;
 
-  &[data-urgency='routine'] {
-    background-color: colors.$green-20;
+  &[data-urgency-color='red'] {
+    background-color: colors.$red-20;
+    color: colors.$red-80;
   }
 
-  &[data-urgency='urgent'] {
-    background-color: colors.$red-20;
+  &[data-urgency-color='orange'] {
+    background-color: colors.$orange-20;
+    color: colors.$orange-80;
+  }
+
+  &[data-urgency-color='yellow'] {
+    background-color: colors.$yellow-20;
+    color: colors.$yellow-80;
+  }
+
+  &[data-urgency-color='green'] {
+    background-color: colors.$green-20;
+    color: colors.$green-80;
+  }
+
+  &[data-urgency-color='blue'] {
+    background-color: colors.$blue-20;
+    color: colors.$blue-80;
+  }
+
+  &[data-urgency-color='gray'] {
+    background-color: colors.$gray-20;
+    color: colors.$gray-80;
   }
 }
 

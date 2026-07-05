@@ -24,13 +24,30 @@ interface GeneralOrderProps {
   order: Order;
 }
 
-const hasNormalRange = (concept: any) =>
-  concept?.hiNormal !== null &&
-  concept?.hiNormal !== undefined &&
-  concept?.hiNormal !== '' &&
-  concept?.lowNormal !== null &&
-  concept?.lowNormal !== undefined &&
-  concept?.lowNormal !== '';
+const formatReferenceRange = (concept: any, fhirRanges?: any) => {
+  const isNumeric = concept?.datatype?.hl7Abbreviation === 'NM' || concept?.datatype?.display === 'Numeric';
+  if (!isNumeric) {
+    return 'N/A';
+  }
+
+  const low = fhirRanges?.lowNormal ?? concept?.lowNormal ?? concept?.lowAbsolute;
+  const high = fhirRanges?.hiNormal ?? concept?.hiNormal ?? concept?.hiAbsolute;
+  const units = fhirRanges?.units ?? concept?.units;
+  const displayUnit = units ? ` ${units}` : '';
+
+  const hasLower = low !== null && low !== undefined && low !== '';
+  const hasUpper = high !== null && high !== undefined && high !== '';
+
+  if (hasLower && hasUpper) {
+    return `${low} - ${high}${displayUnit}`;
+  } else if (hasUpper) {
+    return `<= ${high}${displayUnit}`;
+  } else if (hasLower) {
+    return `>= ${low}${displayUnit}`;
+  }
+
+  return units ? displayUnit.trim() : 'N/A';
+};
 
 const extractRangesFromFhirObs = (fhirObs: any) => {
   const referenceRanges = fhirObs?.referenceRange;
@@ -93,16 +110,17 @@ const GeneralOrderTable: React.FC<GeneralOrderProps> = ({ order }) => {
 
   const obs = useMemo(() => {
     if (encounter && concept) {
-      return (
-        encounter.obs?.find((obs) => obs.order?.uuid === order.uuid) ||
-        encounter.obs?.find((obs) => obs.concept.uuid === concept.uuid)
-      );
+      return encounter.obs?.find((obs) => obs.order?.uuid === order.uuid);
     }
   }, [concept, encounter, order.uuid]);
 
   const rows = useMemo(() => {
     const findFhirObs = (obsUuid: string) =>
       fhirObsBundle?.data?.entry?.find((e: any) => e.resource?.id === obsUuid)?.resource;
+
+    const cleanInstructions = order?.instructions
+      ? order.instructions.replace(/\s*\|\|priorityUuid:[a-fA-F0-9-]+\|\|/g, '').trim()
+      : '';
 
     if (concept && concept.setMembers.length > 0) {
       return concept?.setMembers.map((memberConcept) => {
@@ -118,7 +136,7 @@ const GeneralOrderTable: React.FC<GeneralOrderProps> = ({ order }) => {
           orderName: <div className={styles.type}>{memberConcept.display}</div>,
           instructions: '--',
           result: isLoadingResult ? <SkeletonText /> : (memberObs?.value.display ?? '--'),
-          normalRange: hasNormalRange({ lowNormal: low, hiNormal: high }) ? `${low} - ${high}` : 'N/A',
+          normalRange: formatReferenceRange(memberConcept, fhirRanges),
           referenceNumber: order?.accessionNumber,
         };
       });
@@ -126,16 +144,13 @@ const GeneralOrderTable: React.FC<GeneralOrderProps> = ({ order }) => {
       const fhirObs = obs ? findFhirObs(obs.uuid) : null;
       const fhirRanges = extractRangesFromFhirObs(fhirObs);
 
-      const low = fhirRanges.lowNormal ?? concept.lowNormal;
-      const high = fhirRanges.hiNormal ?? concept.hiNormal;
-
       return [
         {
           id: concept.uuid,
           orderName: <div className={styles.type}>{concept.display}</div>,
-          instructions: order?.instructions ?? '--',
+          instructions: cleanInstructions || '--',
           result: isLoadingResult ? <SkeletonText /> : (obs?.value.display ?? '--'),
-          normalRange: hasNormalRange({ lowNormal: low, hiNormal: high }) ? `${low} - ${high}` : 'N/A',
+          normalRange: formatReferenceRange(concept, fhirRanges),
           referenceNumber: order?.accessionNumber,
         },
       ];

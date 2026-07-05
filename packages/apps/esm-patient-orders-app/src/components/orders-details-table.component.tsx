@@ -70,6 +70,28 @@ import MedicationRecord from './medication-record.component';
 import styles from './order-details-table.scss';
 import TestOrder from './test-order.component';
 
+const getPriorityColor = (urgency: string | undefined): string => {
+  if (!urgency) return 'gray';
+  const normUrgency = urgency.toUpperCase();
+  switch (normUrgency) {
+    case 'E724BDB6-2C75-4B6F-A00C-D43F2C372974': // Emergencia
+      return 'red';
+    case 'B96959DB-2106-4CE7-B39B-6FCB2CA88CDA': // Urgente
+    case 'STAT':
+      return 'orange';
+    case '427A595A-A5EE-4BA7-BCB7-2503248EFB31': // Urgencia menor
+      return 'yellow';
+    case 'BF3A08C6-CBE6-4F00-8E06-5F5437790B85': // Rutina / No urgente
+    case 'ROUTINE':
+      return 'green';
+    case '65CF194E-05A7-4832-BA6D-9B7C9940A7C2': // Programado
+    case 'ON_SCHEDULED_DATE':
+      return 'blue';
+    default:
+      return 'gray';
+  }
+};
+
 interface OrderDetailsProps {
   patientUuid: string;
   showAddButton?: boolean;
@@ -209,46 +231,52 @@ const OrderDetailsTable: React.FC<OrderDetailsProps> = ({ patientUuid, showAddBu
 
   const tableRows = useMemo(
     () =>
-      allOrders?.map((order) => ({
-        id: order.uuid,
-        dateActivated: order.dateActivated,
-        orderNumber: order.orderNumber,
-        dateOfOrder: <div className={styles.singleLineText}>{formatDate(new Date(order.dateActivated))}</div>,
-        orderType: capitalize(order.orderType?.display ?? '-'),
-        dosage:
-          order.type === 'drugorder' ? (
-            <div className={styles.singleLineText}>{`${t('indication', 'Indication').toUpperCase()}
-            ${order.orderReasonNonCoded} ${'-'} ${t('quantity', 'Quantity').toUpperCase()} ${order.quantity} ${
-              order?.quantityUnits?.display
-            } `}</div>
+      allOrders?.map((order) => {
+        const priorityMatch = order.instructions?.match(/\|\|priorityUuid:([a-fA-F0-9-]+)\|\|/);
+        const parsedUrgency = priorityMatch ? priorityMatch[1] : order.urgency;
+        const selectedPriority = priorityConfigs?.find((p) => p.conceptUuid === parsedUrgency);
+        const priorityLabel = selectedPriority?.label ?? t(order.urgency, capitalize(order.urgency.replace('_', ' ')));
+
+        return {
+          id: order.uuid,
+          dateActivated: order.dateActivated,
+          orderNumber: order.orderNumber,
+          dateOfOrder: <div className={styles.singleLineText}>{formatDate(new Date(order.dateActivated))}</div>,
+          orderType: capitalize(order.orderType?.display ?? '-'),
+          dosage:
+            order.type === 'drugorder' ? (
+              <div className={styles.singleLineText}>{`${t('indication', 'Indication').toUpperCase()}
+              ${order.orderReasonNonCoded} ${'-'} ${t('quantity', 'Quantity').toUpperCase()} ${order.quantity} ${
+                order?.quantityUnits?.display
+              } `}</div>
+            ) : (
+              '--'
+            ),
+          order: order.display,
+          priority: (
+            <div className={styles.priorityPill} data-urgency-color={getPriorityColor(parsedUrgency)}>
+              {priorityLabel}
+            </div>
+          ),
+          orderedBy: order.orderer?.display,
+          status: order.fulfillerStatus ? (
+            <div className={styles.statusPill} data-status={lowerCase(order.fulfillerStatus.replace('_', ' '))}>
+              {
+                // t('RECEIVED', 'Received')
+                // t('IN_PROGRESS', 'In progress')
+                // t('EXCEPTION', 'Exception')
+                // t('ON_HOLD', 'On hold')
+                // t('DECLINED', 'Declined')
+                // t('COMPLETED', 'Completed')
+                // t('DISCONTINUED', 'Discontinued')
+              }
+              {t(order.fulfillerStatus, capitalize(order.fulfillerStatus.replace('_', ' ')))}
+            </div>
           ) : (
             '--'
           ),
-        order: order.display,
-        priority: (
-          <div className={styles.priorityPill} data-priority={lowerCase(order.urgency)}>
-            {priorityConfigs?.find((p) => p.conceptUuid === order.urgency)?.label ??
-              t(order.urgency, capitalize(order.urgency.replace('_', ' ')))}
-          </div>
-        ),
-        orderedBy: order.orderer?.display,
-        status: order.fulfillerStatus ? (
-          <div className={styles.statusPill} data-status={lowerCase(order.fulfillerStatus.replace('_', ' '))}>
-            {
-              // t('RECEIVED', 'Received')
-              // t('IN_PROGRESS', 'In progress')
-              // t('EXCEPTION', 'Exception')
-              // t('ON_HOLD', 'On hold')
-              // t('DECLINED', 'Declined')
-              // t('COMPLETED', 'Completed')
-              // t('DISCONTINUED', 'Discontinued')
-            }
-            {t(order.fulfillerStatus, capitalize(order.fulfillerStatus.replace('_', ' ')))}
-          </div>
-        ) : (
-          '--'
-        ),
-      })) ?? [],
+        };
+      }) ?? [],
     [allOrders, t, priorityConfigs],
   );
 

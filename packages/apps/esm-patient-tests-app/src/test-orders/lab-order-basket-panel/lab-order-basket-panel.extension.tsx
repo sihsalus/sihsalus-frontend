@@ -1,4 +1,4 @@
-import { Button, Select, SelectItem, Tile } from '@carbon/react';
+import { Button, Checkbox, Select, SelectItem, Tile } from '@carbon/react';
 import {
   AddIcon,
   ChevronDownIcon,
@@ -89,6 +89,83 @@ function LabOrderBasketPanel({ orderTypeUuid, label, icon, launchAddLabOrder }: 
 
   const { orders, setOrders } = useOrderBasket<TestOrderBasketItem>(orderTypeUuid, prepareTestOrderPostData);
   const [isExpanded, setIsExpanded] = useState(orders.length > 0);
+
+  const HOSPITALIZED_TEXT = 'paciente hospitalizado';
+  const REGIONAL_TEXT = 'solo para ser enviado a hospital regional';
+
+  // Inicializar checkboxes basándose en los items que ya están en la canasta
+  const [isHospitalized, setIsHospitalized] = useState(() => {
+    return orders.some((order) => (order.instructions || '').toLowerCase().includes(HOSPITALIZED_TEXT));
+  });
+
+  const [isRegional, setIsRegional] = useState(() => {
+    return orders.some((order) => (order.instructions || '').toLowerCase().includes(REGIONAL_TEXT));
+  });
+
+  const handleHospitalizedChange = (checked: boolean) => {
+    setIsHospitalized(checked);
+    if (checked) {
+      setIsRegional(false);
+    }
+  };
+
+  const handleRegionalChange = (checked: boolean) => {
+    setIsRegional(checked);
+    if (checked) {
+      setIsHospitalized(false);
+    }
+  };
+
+  // Sincronizar el texto de las instrucciones de las órdenes en la canasta
+  useEffect(() => {
+    let needsUpdate = false;
+    const newOrders = orders.map((order) => {
+      let nextInstructions = order.instructions || '';
+      const hasHosp = nextInstructions.toLowerCase().includes(HOSPITALIZED_TEXT);
+      const hasReg = nextInstructions.toLowerCase().includes(REGIONAL_TEXT);
+
+      // Lógica para "Paciente hospitalizado"
+      if (isHospitalized && !hasHosp) {
+        nextInstructions = nextInstructions
+          ? `${nextInstructions}\n${HOSPITALIZED_TEXT}`
+          : HOSPITALIZED_TEXT;
+        needsUpdate = true;
+      } else if (!isHospitalized && hasHosp) {
+        nextInstructions = nextInstructions
+          .split('\n')
+          .filter((line) => line.trim().toLowerCase() !== HOSPITALIZED_TEXT)
+          .join('\n');
+        needsUpdate = true;
+      }
+
+      // Lógica para "Solo para ser enviado a hospital regional"
+      const hasRegAfterHosp = nextInstructions.toLowerCase().includes(REGIONAL_TEXT);
+      if (isRegional && !hasRegAfterHosp) {
+        nextInstructions = nextInstructions
+          ? `${nextInstructions}\n${REGIONAL_TEXT}`
+          : REGIONAL_TEXT;
+        needsUpdate = true;
+      } else if (!isRegional && hasRegAfterHosp) {
+        nextInstructions = nextInstructions
+          .split('\n')
+          .filter((line) => line.trim().toLowerCase() !== REGIONAL_TEXT)
+          .join('\n');
+        needsUpdate = true;
+      }
+
+      if (needsUpdate) {
+        return {
+          ...order,
+          instructions: nextInstructions,
+        };
+      }
+      return order;
+    });
+
+    if (needsUpdate) {
+      setOrders(newOrders);
+    }
+  }, [orders, isHospitalized, isRegional, setOrders]);
 
   const [selectedPriorityUuid, setSelectedPriorityUuid] = useState<string>(() => {
     const savedPriorityUuid = localStorage.getItem(priorityStorageKey);
@@ -308,6 +385,20 @@ function LabOrderBasketPanel({ orderTypeUuid, label, icon, launchAddLabOrder }: 
               />
             </div>
           )}
+          <div className={styles.checkboxesContainer}>
+            <Checkbox
+              id="hospitalized-patient-checkbox"
+              labelText={t('hospitalizedPatient', 'Paciente hospitalizado')}
+              checked={isHospitalized}
+              onChange={(_, { checked }) => handleHospitalizedChange(checked)}
+            />
+            <Checkbox
+              id="regional-hospital-checkbox"
+              labelText={t('onlyRegionalHospital', 'Solo para ser enviado a hospital regional')}
+              checked={isRegional}
+              onChange={(_, { checked }) => handleRegionalChange(checked)}
+            />
+          </div>
           {incompleteOrderBasketItems.length > 0 &&
             incompleteOrderBasketItems.map((order) => (
               <LabOrderBasketItemTile

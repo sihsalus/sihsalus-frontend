@@ -196,6 +196,17 @@ const OrderDetailsTable: React.FC<OrderDetailsProps> = ({ patientUuid, showAddBu
   const [selectedToDate, setSelectedToDate] = useState<string | null>(null);
   const [priorityFilter, setPriorityFilter] = useState<string | null>(null);
   const [selectedLabsetUuid, setSelectedLabsetUuid] = useState<string | null>(null);
+  const [statusFilter, setStatusFilter] = useState<string | null>(null);
+
+  const statusFilterOptions = useMemo(() => {
+    return [
+      { value: null, label: t('all', 'All') },
+      { value: 'PENDING', label: t('PENDING', 'Pending') },
+      { value: 'COMPLETED', label: t('COMPLETED', 'Completado') },
+      { value: 'DECLINED', label: t('DECLINED', 'Rechazado') },
+      { value: 'IN_PROGRESS', label: t('IN_PROGRESS', 'En progreso') },
+    ];
+  }, [t]);
 
   const fetchLabsets = useCallback((urls: Array<string>) => {
     return Promise.all(urls.map((url) => openmrsFetch<LabsetResponse>(url).then((res) => res.data)));
@@ -353,8 +364,16 @@ const OrderDetailsTable: React.FC<OrderDetailsProps> = ({ patientUuid, showAddBu
       );
     }
 
+    // Filtrado por estado
+    if (statusFilter) {
+      result = result.filter((order) => {
+        const orderStatus = order.fulfillerStatus ? order.fulfillerStatus.toUpperCase() : 'PENDING';
+        return orderStatus === statusFilter;
+      });
+    }
+
     return result;
-  }, [allOrders, priorityFilter, selectedLabsetUuid, fetchedLabsets, selectedFromDate, selectedToDate]);
+  }, [allOrders, priorityFilter, selectedLabsetUuid, fetchedLabsets, selectedFromDate, selectedToDate, statusFilter]);
 
   const tableRows = useMemo(
     () =>
@@ -396,7 +415,7 @@ const OrderDetailsTable: React.FC<OrderDetailsProps> = ({ patientUuid, showAddBu
               data-status={order.fulfillerStatus ? lowerCase(order.fulfillerStatus.replace('_', ' ')) : 'pending'}
             >
               {order.fulfillerStatus ? (
-                t(order.fulfillerStatus, capitalize(order.fulfillerStatus.replace('_', ' ')))
+                t(order.fulfillerStatus.toUpperCase(), capitalize(order.fulfillerStatus.replace('_', ' ')))
               ) : (
                 t('PENDING', 'Pending')
               )}
@@ -408,6 +427,17 @@ const OrderDetailsTable: React.FC<OrderDetailsProps> = ({ patientUuid, showAddBu
   );
 
   const { results: paginatedOrders, goTo, currentPage } = usePagination(tableRows, defaultPageSize);
+
+  useEffect(() => {
+    goTo(1);
+  }, [
+    selectedOrderTypeUuid,
+    selectedFromDate,
+    selectedToDate,
+    priorityFilter,
+    selectedLabsetUuid,
+    statusFilter,
+  ]);
 
   const patientDetails = useMemo(() => {
     const getGender = (gender: string): string => {
@@ -549,6 +579,20 @@ const OrderDetailsTable: React.FC<OrderDetailsProps> = ({ patientUuid, showAddBu
             }}
             selectedItem={labsetOptions.find((x) => x.value === selectedLabsetUuid) ?? labsetOptions[0]}
             titleText={t('filterByTestGroup', 'Filtrar por grupo de pruebas:')}
+            type="inline"
+          />
+        </div>
+        <div className={styles.dropdownContainer}>
+          <Dropdown
+            id="statusDropdown"
+            items={statusFilterOptions}
+            itemToString={(option: { value: string | null; label: string }) => option?.label}
+            label={t('all', 'All')}
+            onChange={({ selectedItem }) => {
+              setStatusFilter(selectedItem?.value || null);
+            }}
+            selectedItem={statusFilterOptions.find((x) => x.value === statusFilter) ?? statusFilterOptions[0]}
+            titleText={t('filterOrdersByStatus', 'Filtrar órdenes por estado:')}
             type="inline"
           />
         </div>

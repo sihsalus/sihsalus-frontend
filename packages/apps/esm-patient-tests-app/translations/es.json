@@ -31,6 +31,8 @@
   "goToDrugOrderForm": "Formulario de orden",
   "hideResultsTable": "Ocultar tabla de resultados",
   "individualTests": "Pruebas individuales",
+  "hospitalizedPatient": "Paciente hospitalizado",
+  "onlyRegionalHospital": "Solo para ser enviado a hospital regional",
   "labOrders": "Órdenes de laboratorio",
   "labSetLabel": "Grupo de pruebas",
   "male": "Masculino",

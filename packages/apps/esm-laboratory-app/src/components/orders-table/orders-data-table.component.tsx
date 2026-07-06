@@ -34,7 +34,7 @@ import {
   useSession,
   userHasAccess,
 } from '@openmrs/esm-framework';
-import React, { useCallback, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import useSWR from 'swr';
 import { useTranslation } from 'react-i18next';
 import { type Config } from '../../config-schema';
@@ -161,7 +161,17 @@ const OrdersDataTable: React.FC<OrdersDataTableProps> = (props) => {
   const [filter, setFilter] = useState<FulfillerStatus>(null);
   const [priorityFilter, setPriorityFilter] = useState<string | null>(null);
   const [selectedLabsetUuid, setSelectedLabsetUuid] = useState<string | null>(null);
+  const [instructionsFilter, setInstructionsFilter] = useState<string | null>(null);
   const [searchString, setSearchString] = useState('');
+
+  const instructionsFilterOptions = useMemo(() => {
+    return [
+      { value: null, display: t('all', 'All') },
+      { value: 'HOSPITALIZED', display: t('hospitalizedPatient', 'Paciente hospitalizado') },
+      { value: 'REGIONAL', display: t('onlyRegionalHospital', 'Solo para ser enviado a hospital regional') },
+      { value: 'OTHER', display: t('otherInstructions', 'Otro') },
+    ];
+  }, [t]);
   const session = useSession();
   const canEdit = userHasAccess(laboratoryEditPrivilege, session?.user);
   const { labTableColumns, patientIdIdentifierTypeUuid, resultsViewerConcepts } = useConfig<Config>();
@@ -276,6 +286,29 @@ const OrdersDataTable: React.FC<OrdersDataTableProps> = (props) => {
               });
             }
 
+            // Apply instructions filter to individual orders if set
+            if (instructionsFilter) {
+              const filterHosp = 'paciente hospitalizado';
+              const filterReg = 'solo para ser enviado a hospital regional';
+
+              const matchInstruction = (instructions: string | undefined) => {
+                const norm = (instructions || '').toLowerCase();
+                if (instructionsFilter === 'HOSPITALIZED') {
+                  return norm.includes(filterHosp);
+                }
+                if (instructionsFilter === 'REGIONAL') {
+                  return norm.includes(filterReg);
+                }
+                if (instructionsFilter === 'OTHER') {
+                  return !norm.includes(filterHosp) && !norm.includes(filterReg);
+                }
+                return true;
+              };
+
+              labOrdersForPatient = labOrdersForPatient.filter((order) => matchInstruction(order.instructions));
+              flattenedLabOrdersForPatient = flattenedLabOrdersForPatient.filter((order) => matchInstruction(order.instructions));
+            }
+
             // Sort individual orders by priority (highest priority first)
             // For orders with the same priority, if they are "Programado" (rank 5), sort by scheduledDate ascending (closest to furthest).
             const sortOrders = (a: PrioritizedOrderLike, b: PrioritizedOrderLike) => {
@@ -328,6 +361,7 @@ const OrdersDataTable: React.FC<OrdersDataTableProps> = (props) => {
     priorityFilter,
     selectedLabsetUuid,
     fetchedLabsets,
+    instructionsFilter,
   ]);
 
   const searchResults = useMemo(() => {
@@ -386,6 +420,10 @@ const OrdersDataTable: React.FC<OrdersDataTableProps> = (props) => {
   const pageSizes = [10, 20, 30, 40, 50];
   const [currentPageSize, setPageSize] = useState(10);
   const { goTo, results: paginatedLabOrders, currentPage } = usePagination(searchResults, currentPageSize);
+
+  useEffect(() => {
+    goTo(1);
+  }, [filter, priorityFilter, selectedLabsetUuid, instructionsFilter, searchString]);
 
   const handleOrderStatusChange = ({ selectedItem }: { selectedItem: { value: FulfillerStatus; display: string } }) =>
     setFilter(selectedItem.value);
@@ -487,6 +525,18 @@ const OrdersDataTable: React.FC<OrdersDataTableProps> = (props) => {
                   label=""
                   onChange={({ selectedItem }) => setSelectedLabsetUuid(selectedItem?.value)}
                   titleText={t('filterOrdersByLabset', 'Filter by lab set') + ':'}
+                  type="inline"
+                />
+                <Dropdown
+                  id="orderInstructionsFilter"
+                  initialSelectedItem={
+                    instructionsFilter ? instructionsFilterOptions.find((i) => i.value === instructionsFilter) : instructionsFilterOptions[0]
+                  }
+                  items={instructionsFilterOptions}
+                  itemToString={(item) => item?.display}
+                  label=""
+                  onChange={({ selectedItem }) => setInstructionsFilter(selectedItem?.value)}
+                  titleText={t('filterByInstructions', 'Filter by instructions') + ':'}
                   type="inline"
                 />
                 <OrdersDateRangePicker />

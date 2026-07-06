@@ -36,12 +36,26 @@ function extractDisplayValue(data: {
   return obs.value != null ? String(obs.value) : null;
 }
 
+function isDevelopmentRisk(value: string | null): boolean {
+  if (!value) {
+    return false;
+  }
+
+  const normalizedValue = value.toLowerCase();
+  return (
+    normalizedValue.includes('riesgo') ||
+    normalizedValue.includes('retraso') ||
+    normalizedValue.includes('risk') ||
+    normalizedValue.includes('delay')
+  );
+}
+
 /**
  * Hook para seguimiento del desarrollo (EEDP/TEPSI):
  * - Subtests coordinación y motricidad TEPSI
  * - Indicador de falta de estimulación
  *
- * Usa: config.earlyStimulation.tepsiCoordinationConceptUuid, tepsiMotorConceptUuid, stimulationLackConceptUuid
+ * Usa: config.earlyStimulation.tepsiCoordinationConceptUuid, tepsiMotorConceptUuid y clasificación CRED-004
  */
 export function useStimulationFollowup(patientUuid: string): StimulationFollowupResult {
   const config = useConfig<ConfigObject>();
@@ -67,15 +81,8 @@ export function useStimulationFollowup(patientUuid: string): StimulationFollowup
   const result = useMemo(() => {
     const coordinationResult = extractDisplayValue(coordData);
     const motorResult = extractDisplayValue(motorData);
-
-    const lackObs = lackData?.results?.[0];
-    const lackVal = lackObs?.value;
-    const hasStimulationLack =
-      lackVal != null &&
-      ((typeof lackVal === 'object' && lackVal?.display?.toLowerCase() === 'sí') ||
-        String(lackVal).toLowerCase() === 'sí' ||
-        String(lackVal).toLowerCase() === 'si' ||
-        String(lackVal).toLowerCase() === 'yes');
+    const developmentClassification = extractDisplayValue(lackData);
+    const hasStimulationLack = isDevelopmentRisk(developmentClassification);
 
     let lastEvaluationResult: string | null = null;
     if (coordinationResult || motorResult) {
@@ -84,9 +91,15 @@ export function useStimulationFollowup(patientUuid: string): StimulationFollowup
         motorResult ? `Motor: ${motorResult}` : null,
       ].filter(Boolean);
       lastEvaluationResult = parts.join(' | ');
+    } else if (developmentClassification) {
+      lastEvaluationResult = developmentClassification;
     }
 
-    const dates = [coordData?.results?.[0]?.obsDatetime, motorData?.results?.[0]?.obsDatetime].filter(Boolean);
+    const dates = [
+      coordData?.results?.[0]?.obsDatetime,
+      motorData?.results?.[0]?.obsDatetime,
+      lackData?.results?.[0]?.obsDatetime,
+    ].filter(Boolean);
     const lastEvaluationDate = dates.length > 0 ? dayjs(dates[0]).format('DD/MM/YYYY') : null;
 
     return { lastEvaluationResult, lastEvaluationDate, coordinationResult, motorResult, hasStimulationLack };

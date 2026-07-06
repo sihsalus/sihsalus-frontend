@@ -26,7 +26,7 @@ const NutritionFollowup: React.FC<NutritionFollowupProps> = ({ patientUuid }) =>
   const { t } = useTranslation();
   const session = useSession();
   const canEdit = userHasAccess(credNutritionEditPrivilege, session?.user);
-  const { mmnStatus, ironStatus, counselingCount, lastFollowupDate, isLoading, error } =
+  const { mmnStatus, ironStatus, nutritionCounseling, lastFollowupDate, isLoading, error } =
     useNutritionFollowup(patientUuid);
   const { launchForm: handleAdd, isLoading: isFormLoading } = useCREDFormLauncher('nutritionFollowupForm');
   const headerTitle = t('cnFollowUpTitle', 'Seguimiento nutricional');
@@ -77,11 +77,11 @@ const NutritionFollowup: React.FC<NutritionFollowupProps> = ({ patientUuid }) =>
             </StructuredListRow>
             <StructuredListRow>
               <StructuredListCell className={styles.label}>
-                {t('cnCounselingCount', 'Sesiones de Consejería')}
+                {t('cnNutritionCounseling', 'Consejería nutricional')}
               </StructuredListCell>
               <StructuredListCell className={styles.value}>
-                {counselingCount != null ? (
-                  counselingCount
+                {nutritionCounseling != null ? (
+                  nutritionCounseling
                 ) : (
                   <span className={styles.noData}>{t('noData', 'Sin datos')}</span>
                 )}

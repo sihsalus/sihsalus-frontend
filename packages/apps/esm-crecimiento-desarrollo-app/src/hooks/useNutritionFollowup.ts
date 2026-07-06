@@ -8,7 +8,7 @@ import type { ConfigObject } from '../config-schema';
 interface NutritionFollowupResult {
   mmnStatus: string | null;
   ironStatus: string | null;
-  counselingCount: number | null;
+  nutritionCounseling: string | null;
   lastFollowupDate: string | null;
   isLoading: boolean;
   error: Error | null;
@@ -38,12 +38,12 @@ function extractDisplayValue(data: Record<string, unknown> | undefined | null): 
 
 /**
  * Hook para seguimiento nutricional infantil:
- * - ¿Recibiendo MMN? (Coded)
- * - ¿Tomando suplemento de hierro? (Coded)
- * - Número de consejería nutricional (Numeric)
+ * - Cantidad de MMN recibidos
+ * - Cantidad de suplemento de hierro recibido
+ * - Consejería nutricional brindada
  * - Última fecha de seguimiento
  *
- * Usa: config.childNutrition.mmnReceivingConceptUuid, ironReceivingConceptUuid, nutritionCounselingCountConceptUuid
+ * Usa: config.childNutrition.mmnReceivingConceptUuid, ironReceivingConceptUuid, nutritionCounselingConceptUuid
  */
 export function useNutritionFollowup(patientUuid: string): NutritionFollowupResult {
   const config = useConfig<ConfigObject>();
@@ -58,8 +58,8 @@ export function useNutritionFollowup(patientUuid: string): NutritionFollowupResu
     [patientUuid, cn?.ironReceivingConceptUuid],
   );
   const counselingUrl = useMemo(
-    () => buildObsUrl(patientUuid, cn?.nutritionCounselingCountConceptUuid),
-    [patientUuid, cn?.nutritionCounselingCountConceptUuid],
+    () => buildObsUrl(patientUuid, cn?.nutritionCounselingConceptUuid),
+    [patientUuid, cn?.nutritionCounselingConceptUuid],
   );
 
   const { data: mmnData, isLoading: mmnLoading, error: mmnError } = useSWR(mmnUrl, fetcher);
@@ -69,14 +69,7 @@ export function useNutritionFollowup(patientUuid: string): NutritionFollowupResu
   const result = useMemo(() => {
     const mmnStatus = extractDisplayValue(mmnData);
     const ironStatus = extractDisplayValue(ironData);
-
-    const counselingObs = counselingData?.results?.[0];
-    const counselingCount =
-      counselingObs?.value != null
-        ? typeof counselingObs.value === 'number'
-          ? counselingObs.value
-          : parseFloat(counselingObs.value)
-        : null;
+    const nutritionCounseling = extractDisplayValue(counselingData);
 
     const dates = [
       mmnData?.results?.[0]?.obsDatetime,
@@ -88,7 +81,7 @@ export function useNutritionFollowup(patientUuid: string): NutritionFollowupResu
     return {
       mmnStatus,
       ironStatus,
-      counselingCount: counselingCount != null && !Number.isNaN(counselingCount) ? counselingCount : null,
+      nutritionCounseling,
       lastFollowupDate,
     };
   }, [mmnData, ironData, counselingData]);

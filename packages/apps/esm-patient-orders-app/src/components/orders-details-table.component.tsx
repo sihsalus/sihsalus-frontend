@@ -241,7 +241,7 @@ const OrderDetailsTable: React.FC<OrderDetailsProps> = ({ patientUuid, showAddBu
     error: error,
     isLoading,
     isValidating,
-  } = usePatientOrders(patientUuid, 'ACTIVE', selectedOrderTypeUuid, selectedFromDate, selectedToDate, careSettingUuid);
+  } = usePatientOrders(patientUuid, 'any', selectedOrderTypeUuid, selectedFromDate, selectedToDate, careSettingUuid);
 
   // launch respective order basket based on order type
   const openOrderForm = useCallback(
@@ -318,6 +318,16 @@ const OrderDetailsTable: React.FC<OrderDetailsProps> = ({ patientUuid, showAddBu
   const filteredOrders = useMemo(() => {
     let result = allOrders ?? [];
 
+    // Filtrado por fecha (cliente-side) para evitar desfases de zona horaria
+    if (selectedFromDate) {
+      const fromTime = new Date(selectedFromDate).getTime();
+      result = result.filter((order) => new Date(order.dateActivated).getTime() >= fromTime);
+    }
+    if (selectedToDate) {
+      const toTime = new Date(selectedToDate).getTime();
+      result = result.filter((order) => new Date(order.dateActivated).getTime() <= toTime);
+    }
+
     // Filtrado por prioridad
     if (priorityFilter) {
       const filterNorm = priorityFilter.toUpperCase();
@@ -344,7 +354,7 @@ const OrderDetailsTable: React.FC<OrderDetailsProps> = ({ patientUuid, showAddBu
     }
 
     return result;
-  }, [allOrders, priorityFilter, selectedLabsetUuid, fetchedLabsets]);
+  }, [allOrders, priorityFilter, selectedLabsetUuid, fetchedLabsets, selectedFromDate, selectedToDate]);
 
   const tableRows = useMemo(
     () =>
@@ -380,21 +390,17 @@ const OrderDetailsTable: React.FC<OrderDetailsProps> = ({ patientUuid, showAddBu
             </div>
           ),
           orderedBy: order.orderer?.display,
-          status: order.fulfillerStatus ? (
-            <div className={styles.statusPill} data-status={lowerCase(order.fulfillerStatus.replace('_', ' '))}>
-              {
-                // t('RECEIVED', 'Received')
-                // t('IN_PROGRESS', 'In progress')
-                // t('EXCEPTION', 'Exception')
-                // t('ON_HOLD', 'On hold')
-                // t('DECLINED', 'Declined')
-                // t('COMPLETED', 'Completed')
-                // t('DISCONTINUED', 'Discontinued')
-              }
-              {t(order.fulfillerStatus, capitalize(order.fulfillerStatus.replace('_', ' ')))}
+          status: (
+            <div
+              className={styles.statusPill}
+              data-status={order.fulfillerStatus ? lowerCase(order.fulfillerStatus.replace('_', ' ')) : 'pending'}
+            >
+              {order.fulfillerStatus ? (
+                t(order.fulfillerStatus, capitalize(order.fulfillerStatus.replace('_', ' ')))
+              ) : (
+                t('PENDING', 'Pending')
+              )}
             </div>
-          ) : (
-            '--'
           ),
         };
       }) ?? [],
@@ -471,20 +477,24 @@ const OrderDetailsTable: React.FC<OrderDetailsProps> = ({ patientUuid, showAddBu
     [orderTypes, t],
   );
 
-  const handleDateFilterChange = ([startDate, endDate]: Array<Date | undefined>) => {
+  const handleDateFilterChange = (dates: Array<Date | undefined>) => {
+    const startDate = dates[0];
+    const endDate = dates[1];
+
     if (startDate) {
-      const isoStartDate = startDate.toISOString();
-      setSelectedFromDate(isoStartDate);
-      if (selectedToDate && new Date(selectedToDate) < startDate) {
-        setSelectedToDate(isoStartDate);
-      }
+      const localStart = new Date(startDate);
+      localStart.setHours(0, 0, 0, 0);
+      setSelectedFromDate(localStart.toISOString());
+    } else {
+      setSelectedFromDate(null);
     }
+
     if (endDate) {
-      const isoEndDate = endDate.toISOString();
-      setSelectedToDate(isoEndDate);
-      if (selectedFromDate && new Date(selectedFromDate) > endDate) {
-        setSelectedFromDate(isoEndDate);
-      }
+      const localEnd = new Date(endDate);
+      localEnd.setHours(23, 59, 59, 999);
+      setSelectedToDate(localEnd.toISOString());
+    } else {
+      setSelectedToDate(null);
     }
   };
 

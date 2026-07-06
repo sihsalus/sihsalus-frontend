@@ -60,6 +60,7 @@
   "orderActionRevise": "Modify",
   "orderBasket": "Order basket",
   "orderBasketWorkspaceTitle": "Order basket",
+  "PENDING": "Pending",
   "orderCancellation": "Order cancellation",
   "orderCancelled": "Order cancelled",
   "orderCompleted": "Placed orders",

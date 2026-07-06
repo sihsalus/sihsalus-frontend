@@ -123,7 +123,7 @@ export const configSchema = {
       eedp15Months: 'Página (30, 31, 32 y 33) EEDP (15 meses)',
       eedp18Months: 'Página (30, 31, 32 y 33) EEDP (18 meses)',
       eedp21Months: 'Página (30, 31, 32 y 33) EEDP (21 meses)',
-      tepsi: '(Página 34, 35 y 36) TEPSI',
+      tepsi: '1fe2f9e8-a9b1-34d2-94ce-b897ca2e16cc',
 
       // Assessment Forms
       riskInterview0to30: '(Página 19) PRIMERA ENTREVISTA EN BUSCA DE FACTORES DE RIESGO (0 - 30 meses)',
@@ -781,7 +781,7 @@ export const configSchema = {
     _type: Type.Object,
     _description: 'Configuración de suplementación MMN y prenatal',
     _default: {
-      mmnConceptUuid: 'd80c3551-2a6c-49ac-a541-0b17957f9657',
+      mmnConceptUuid: 'c2010002-0000-4000-8000-000000000002',
       mmnTotalTarget: 360,
       ironConceptUuid: '03a4f101-bf46-4923-97a1-759d926dee00',
       folicAcidConceptUuid: '7418c3a3-4c2a-4943-91db-ae2b561d6ded',
@@ -789,8 +789,8 @@ export const configSchema = {
     },
     mmnConceptUuid: {
       _type: Type.ConceptUuid,
-      _description: 'Concept UUID de multimicronutrientes entregados — OCL: Administración Micronutriente #3162',
-      _default: 'd80c3551-2a6c-49ac-a541-0b17957f9657',
+      _description: 'Concept UUID de cantidad de multimicronutrientes entregados en CRED-002',
+      _default: 'c2010002-0000-4000-8000-000000000002',
     },
     mmnTotalTarget: {
       _type: Type.Number,

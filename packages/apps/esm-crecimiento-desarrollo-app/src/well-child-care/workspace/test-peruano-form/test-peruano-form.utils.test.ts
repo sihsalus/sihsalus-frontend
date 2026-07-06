@@ -47,7 +47,7 @@ describe('Test Peruano form utilities', () => {
     expect(payload).toMatchObject({
       patient: 'patient-uuid',
       location: 'location-uuid',
-      form: '6de41002-6b38-4fdc-9551-c78642256040',
+      form: 'c35213c3-bb95-340d-99a5-006f1e79068a',
       encounterType: 'a990eabc-3405-419f-bfb1-96ca2d8279b8',
     });
     expect(payload.obs).toEqual(

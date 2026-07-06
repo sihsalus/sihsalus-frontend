@@ -18,13 +18,38 @@ const fetcher = async (url: string) => {
   return response?.data;
 };
 
+type ObsValue = { uuid?: string; display?: string } | string | number | boolean | null | undefined;
+
+function getObsValueDisplay(value: ObsValue): string | null {
+  if (typeof value === 'object' && value?.display) {
+    return value.display;
+  }
+  return value != null ? String(value) : null;
+}
+
+function isBreastfeedingAnswer(value: ObsValue, breastfeedingAnswerConceptUuid: string | undefined): boolean {
+  if (!value) {
+    return false;
+  }
+
+  if (typeof value === 'object') {
+    if (breastfeedingAnswerConceptUuid && value.uuid === breastfeedingAnswerConceptUuid) {
+      return true;
+    }
+
+    return Boolean(value.display?.toLowerCase().includes('lactancia materna'));
+  }
+
+  return String(value).toLowerCase().includes('lactancia materna');
+}
+
 /**
  * Hook para evaluación de alimentación infantil:
  * - Tipo de alimentación (evaluación general)
  * - ¿Recibe lactancia materna?
  * - Última fecha de evaluación
  *
- * Usa: config.childNutrition.feedingAssessmentConceptUuid, breastfeedingConceptUuid
+ * Usa: config.childNutrition.feedingAssessmentConceptUuid, breastfeedingAnswerConceptUuid
  */
 export function useFeedingAssessment(patientUuid: string): FeedingAssessmentResult {
   const config = useConfig<ConfigObject>();
@@ -35,48 +60,28 @@ export function useFeedingAssessment(patientUuid: string): FeedingAssessmentResu
     return `${restBaseUrl}/obs?patient=${patientUuid}&concept=${cn.feedingAssessmentConceptUuid}&v=custom:(uuid,value,obsDatetime,display)&limit=1&sort=desc`;
   }, [patientUuid, cn?.feedingAssessmentConceptUuid]);
 
-  const bfUrl = useMemo(() => {
-    if (!patientUuid || !cn?.breastfeedingConceptUuid) return null;
-    return `${restBaseUrl}/obs?patient=${patientUuid}&concept=${cn.breastfeedingConceptUuid}&v=custom:(uuid,value,obsDatetime,display)&limit=1&sort=desc`;
-  }, [patientUuid, cn?.breastfeedingConceptUuid]);
-
   const { data: feedingData, isLoading: feedingLoading, error: feedingError } = useSWR(feedingUrl, fetcher);
-  const { data: bfData, isLoading: bfLoading, error: bfError } = useSWR(bfUrl, fetcher);
 
   const result = useMemo(() => {
     const feedingObs = feedingData?.results?.[0];
-    const bfObs = bfData?.results?.[0];
 
     let feedingType: string | null = null;
     if (feedingObs) {
-      feedingType =
-        typeof feedingObs.value === 'object' && feedingObs.value?.display
-          ? feedingObs.value.display
-          : feedingObs.value != null
-            ? String(feedingObs.value)
-            : null;
+      feedingType = getObsValueDisplay(feedingObs.value);
     }
 
-    const lastAssessmentDate = feedingObs?.obsDatetime
-      ? dayjs(feedingObs.obsDatetime).format('DD/MM/YYYY')
-      : bfObs?.obsDatetime
-        ? dayjs(bfObs.obsDatetime).format('DD/MM/YYYY')
-        : null;
-
-    let isBreastfeeding: boolean | null = null;
-    if (bfObs) {
-      const val =
-        typeof bfObs.value === 'object' && bfObs.value?.display ? bfObs.value.display : String(bfObs.value ?? '');
-      isBreastfeeding = val.toLowerCase() === 'sí' || val.toLowerCase() === 'si' || val.toLowerCase() === 'yes';
-    }
+    const lastAssessmentDate = feedingObs?.obsDatetime ? dayjs(feedingObs.obsDatetime).format('DD/MM/YYYY') : null;
+    const isBreastfeeding = feedingObs
+      ? isBreastfeedingAnswer(feedingObs.value, cn?.breastfeedingAnswerConceptUuid)
+      : null;
 
     return { feedingType, lastAssessmentDate, isBreastfeeding };
-  }, [feedingData, bfData]);
+  }, [feedingData, cn?.breastfeedingAnswerConceptUuid]);
 
   return {
     ...result,
-    isLoading: feedingLoading || bfLoading,
-    error: feedingError || bfError,
+    isLoading: feedingLoading,
+    error: feedingError,
   };
 }
 

@@ -107,13 +107,7 @@ test.describe('Peru admission accreditation checks', () => {
     await page.goto('admission/merge', { waitUntil: 'domcontentloaded' });
 
     await expect(page).not.toHaveURL(/\/login/);
-    await expect(
-      page.getByRole('heading', { name: /Fusionar historias clínicas duplicadas|Merge duplicate patient/i }),
-    ).toBeVisible();
-    await expect(page.getByRole('link', { name: /Abrir fusión de pacientes|Open patient merge/i })).toHaveAttribute(
-      'href',
-      /\/openmrs\/admin\/patients\/mergePatients\.form$/,
-    );
+    await expect(page).toHaveURL(/\/openmrs\/admin\/patients\/findDuplicatePatients\.htm$/);
   });
 
   test('admission report by UPS exposes the required columns', async ({ page }) => {

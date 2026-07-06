@@ -71,10 +71,16 @@ Este microfrontend espera que el backend (OMOD FUA) exponga endpoints compatible
 
 Consulta la documentación del OMOD para detalles de parámetros y autenticación.
 
+## Estado QLTY 2026-07-04
+
+- QLTY tiene el OMOD FUA instalado y levantado como `fua` `1.0.80`.
+- `GET /ws/module/fua/estado/list` y `GET /ws/module/fua/solicitudes` respondieron una excepcion de privilegios: `Read Fua Privilege` es requerido para lectura.
+- La presencia del OMOD no alcanza para considerar listo el flujo FUA; falta seed/alineamiento de privilegios backend y guards frontend por rol.
+
 ## TODO backend/integración
 
-- Confirmar que el backend actualizado instala el OMOD FUA antes de habilitar la app en el import map.
-- Probar `GET /ws/module/fua/solicitudes` y `GET /ws/module/fua/estado/list` contra la VM nueva.
+- Mantener validacion de version/estado del OMOD FUA antes de habilitar la app en el import map.
+- Seedear y probar privilegios de lectura/escritura FUA, empezando por `Read Fua Privilege`, contra usuarios reales de QLTY.
 - Probar generación/render de FUA con `POST /ws/module/fua/visitInfo/{visitUuid}/generator/{format}` usando una consulta real.
 - Definir comportamiento cuando el OMOD no esté disponible: ocultar link, mostrar error de integración o usar feature flag.
 

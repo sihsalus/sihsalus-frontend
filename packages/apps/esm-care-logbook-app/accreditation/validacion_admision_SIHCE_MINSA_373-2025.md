@@ -16,7 +16,7 @@ Fuente de requisitos: [`requerimientos_admision_SIHCE_MINSA_373-2025.csv`](reque
 - Se agregaron como identificadores visibles por defecto: DNI, CE, pasaporte y documento de identidad extranjero.
 - Se agrego `Nacionalidad` como dato de filiacion condicionado a identificadores extranjeros con valor (CE, pasaporte o documento extranjero), para reforzar continuidad manual ante no disponibilidad de consulta a Migraciones.
 - Se agrego modulo separado `@sihsalus/esm-care-logbook-app` para concentrar evidencia funcional del perfil de admision normativa; su nombre visible de producto es `Libro de Atenciones`.
-- Se movio la entrada SPA de fusion de historias duplicadas a `/admission/merge`, usando el flujo legacy de OpenMRS `mergePatients.form`.
+- Se movio la entrada SPA de fusion de historias duplicadas a `/admission/merge`, usando el buscador legacy de OpenMRS `findDuplicatePatients.htm`; ese flujo abre `mergePatients.form` para comparar y fusionar los pacientes seleccionados.
 - Se agrego vista/reporte `/admission` (`Libro de Atenciones`) de atenciones por UPS/servicio con fecha, hora, paciente, HC, ubicacion y estado.
 - En `/admission/patient/:uuid` se agrego seccion `Programacion de turnos`: lista turnos proximos del paciente y abre el workspace real `appointments-form-workspace` para consultar disponibilidad, seleccionar cupo y registrar citas con prestadores.
 - Se agrego extension de identificacion minima del paciente para pantallas clinicas que exponen `patient-info-slot`: nombre, HC/documento, edad/nacimiento/sexo y servicio/ubicacion activa.
@@ -62,7 +62,7 @@ Fuente de requisitos: [`requerimientos_admision_SIHCE_MINSA_373-2025.csv`](reque
 | N1.ADM.02.03 | Cumple | Permite multiples identificadores configurables y seleccionables por tipo. |
 | N1.ADM.02.04 | Parcial | Hay autogeneracion de identificadores por IdGen. Falta confirmar que el identificador generado sea el codigo estandar MINSA/RENHICE de usuario de salud. |
 | N1.ADM.02.05 | Cumple | Identificadores se guardan junto con el paciente y cada visita/cola referencia `patientUuid`; el backend conserva el vinculo con atenciones. |
-| N1.ADM.02.06 | Cumple proyectado | Se movio la fusion de historias duplicadas al modulo de Libro de Atenciones (`/admission/merge`) usando el flujo legacy de OpenMRS (`/admin/patients/mergePatients.form`). OpenMRS core soporta `PatientService.mergePatients`. |
+| N1.ADM.02.06 | Cumple proyectado | Se movio la fusion de historias duplicadas al modulo de Libro de Atenciones (`/admission/merge`) usando el buscador legacy de OpenMRS (`/admin/patients/findDuplicatePatients.htm`), que abre `/admin/patients/mergePatients.form` para ejecutar la fusion. OpenMRS core soporta `PatientService.mergePatients`. |
 | N1.ADM.02.07 | Cumple | Busqueda y pantallas de cola usan identificadores/UUID de paciente para recuperar partes del registro. |
 | N1.ADM.02.08 | Cumple proyectado | Se agrego atributo de persona `Estado de historia clinica` con valores activa, pasiva y eliminada. |
 | N1.ADM.03.01 | Parcial | Datos demograficos/personales se guardan en `patient.person`; la separacion fisica respecto a datos clinicos depende del modelo OpenMRS/backend, no esta demostrada en frontend. |

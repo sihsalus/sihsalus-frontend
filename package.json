@@ -37,6 +37,7 @@
     "document": "node node_modules/turbo/bin/turbo run document",
     "knip": "knip",
     "react-doctor": "react-doctor",
+    "sihsalus:doctor": "node packages/tooling/scripts/sihsalus-doctor.js",
     "clean": "node packages/tooling/scripts/clean-monorepo.js",
     "prepare": "husky"
   },

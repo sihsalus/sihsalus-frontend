@@ -104,14 +104,14 @@ export const TEST_PERUANO_AREAS: Array<TestPeruanoAreaDefinition> = [
 
 export const defaultTestPeruanoPersistence: TestPeruanoPersistenceConfig = {
   encounterTypeUuid: 'a990eabc-3405-419f-bfb1-96ca2d8279b8',
-  formUuid: '6de41002-6b38-4fdc-9551-c78642256040',
+  formUuid: 'c35213c3-bb95-340d-99a5-006f1e79068a',
   concepts: {
     ageMonthsUuid: '1410AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA',
     instrumentUuid: 'c4010001-0000-4000-8000-000000000001',
     instrumentTestPeruanoAnswerUuid: 'c4010013-0000-4000-8000-000000000013',
     classificationUuid: 'c4010002-0000-4000-8000-000000000002',
     classificationAnswers: {
-      normal: '1115AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA',
+      normal: '118fe066-b4a0-4978-b5b0-bb4ed7f4b80a',
       riesgo: 'c4010021-0000-4000-8000-000000000021',
       retraso: 'c4010022-0000-4000-8000-000000000022',
     },
@@ -123,7 +123,7 @@ export const defaultTestPeruanoPersistence: TestPeruanoPersistenceConfig = {
       no: '488b58ff-64f5-4f8a-8979-fa79940b1594',
     },
     planUuid: 'c4010006-0000-4000-8000-000000000006',
-    observationsUuid: '161011AAAAAAAAAAAAAAAAAAAAAAAAAAAAAA',
+    observationsUuid: '643c7023-c2f4-4796-9920-a2ed0f79ba35',
   },
 };
 

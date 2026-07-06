@@ -57,6 +57,12 @@
   align-items: center;
 }
 
+.orderWarningText {
+  color: colors.$orange-70;
+  display: flex;
+  align-items: center;
+}
+
 .name {
   @include type.type-style('heading-compact-01');
   color: black;

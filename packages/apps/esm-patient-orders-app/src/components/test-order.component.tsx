@@ -81,6 +81,28 @@ const extractRangesFromFhirObs = (fhirObs: any) => {
 
 const TestOrder: React.FC<TestOrderProps> = ({ testOrder }) => {
   const { t } = useTranslation();
+
+  if (testOrder.fulfillerStatus?.toUpperCase() === 'DECLINED') {
+    const cleanInstructions = testOrder.instructions
+      ? testOrder.instructions.replace(/\s*\|\|priorityUuid:[a-fA-F0-9-]+\|\|/g, '').trim()
+      : '';
+
+    return (
+      <div className={styles.declinedOrderDetails}>
+        <div className={styles.detailRow}>
+          <span className={styles.detailLabel}>{t('instructions', 'Instructions')}:</span>
+          <span className={styles.detailValue}>
+            {cleanInstructions || t('NoInstructionLeft', 'No instructions are provided.')}
+          </span>
+        </div>
+        <div className={styles.detailRow}>
+          <span className={styles.detailLabel}>{t('reasonForDecline', 'Reason for decline')}:</span>
+          <span className={styles.detailValue}>{testOrder.fulfillerComment || '--'}</span>
+        </div>
+      </div>
+    );
+  }
+
   const isTablet = useLayoutType() === 'tablet';
   const { concept, isLoading: isLoadingTestConcepts } = useOrderConceptByUuid(testOrder.concept.uuid);
   const { encounter, isLoading: isLoadingResult } = useLabEncounter(testOrder.encounter.uuid);

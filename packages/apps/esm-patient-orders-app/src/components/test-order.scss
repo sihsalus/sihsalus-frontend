@@ -16,3 +16,30 @@
 .testType {
   color: colors.$blue-60;
 }
+
+.declinedOrderDetails {
+  padding: layout.$spacing-05;
+  background-color: colors.$gray-10;
+  border: 1px solid colors.$gray-20;
+  border-bottom: none;
+  display: flex;
+  flex-direction: column;
+  gap: layout.$spacing-04;
+}
+
+.detailRow {
+  display: flex;
+  flex-direction: row;
+  align-items: flex-start;
+  gap: layout.$spacing-03;
+}
+
+.detailLabel {
+  font-weight: 600;
+  min-width: 180px;
+  color: colors.$gray-80;
+}
+
+.detailValue {
+  color: colors.$gray-100;
+}

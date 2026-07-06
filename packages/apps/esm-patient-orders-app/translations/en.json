@@ -89,6 +89,8 @@
   "priorityRequired": "Priority is required",
   "quantity": "Quantity",
   "reasonForCancellation": "Reason for cancellation",
+  "reasonForDecline": "Reason for decline",
+  "NoInstructionLeft": "No instructions are provided.",
   "reasonForCancellationRequired": "Reason for cancellation is required",
   "referenceNumber": "Reference number",
   "referenceNumberTableHeader": "{{orderType}} reference number",

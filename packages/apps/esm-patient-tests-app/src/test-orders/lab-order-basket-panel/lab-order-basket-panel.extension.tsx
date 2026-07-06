@@ -9,7 +9,7 @@ import {
 } from '@openmrs/esm-framework';
 import { type OrderBasketItem, useOrderBasket, useOrderType } from '@openmrs/esm-patient-common-lib';
 import classNames from 'classnames';
-import { type ComponentProps, useCallback, useEffect, useMemo, useState } from 'react';
+import { type ComponentProps, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import type { ConfigObject } from '../../config-schema';
@@ -106,6 +106,21 @@ function LabOrderBasketPanel({ orderTypeUuid, label, icon, launchAddLabOrder }: 
     setIsHospitalized(checked);
     if (checked) {
       setIsRegional(false);
+      // Restablecer todas las órdenes para que tengan ÚNICAMENTE el texto "paciente hospitalizado"
+      const newOrders = orders.map((order) => {
+        return { ...order, instructions: HOSPITALIZED_TEXT };
+      });
+      setOrders(newOrders);
+    } else {
+      // Remover únicamente HOSPITALIZED_TEXT de todas las órdenes
+      const newOrders = orders.map((order) => {
+        const nextInstructions = (order.instructions || '')
+          .split('\n')
+          .filter((line) => line.trim().toLowerCase() !== HOSPITALIZED_TEXT)
+          .join('\n');
+        return { ...order, instructions: nextInstructions };
+      });
+      setOrders(newOrders);
     }
   };
 
@@ -113,57 +128,67 @@ function LabOrderBasketPanel({ orderTypeUuid, label, icon, launchAddLabOrder }: 
     setIsRegional(checked);
     if (checked) {
       setIsHospitalized(false);
-    }
-  };
-
-  // Sincronizar el texto de las instrucciones de las órdenes en la canasta
-  useEffect(() => {
-    let needsUpdate = false;
-    const newOrders = orders.map((order) => {
-      let nextInstructions = order.instructions || '';
-      const hasHosp = nextInstructions.toLowerCase().includes(HOSPITALIZED_TEXT);
-      const hasReg = nextInstructions.toLowerCase().includes(REGIONAL_TEXT);
-
-      // Lógica para "Paciente hospitalizado"
-      if (isHospitalized && !hasHosp) {
-        nextInstructions = nextInstructions
-          ? `${nextInstructions}\n${HOSPITALIZED_TEXT}`
-          : HOSPITALIZED_TEXT;
-        needsUpdate = true;
-      } else if (!isHospitalized && hasHosp) {
-        nextInstructions = nextInstructions
-          .split('\n')
-          .filter((line) => line.trim().toLowerCase() !== HOSPITALIZED_TEXT)
-          .join('\n');
-        needsUpdate = true;
-      }
-
-      // Lógica para "Solo para ser enviado a hospital regional"
-      const hasRegAfterHosp = nextInstructions.toLowerCase().includes(REGIONAL_TEXT);
-      if (isRegional && !hasRegAfterHosp) {
-        nextInstructions = nextInstructions
-          ? `${nextInstructions}\n${REGIONAL_TEXT}`
-          : REGIONAL_TEXT;
-        needsUpdate = true;
-      } else if (!isRegional && hasRegAfterHosp) {
-        nextInstructions = nextInstructions
+      // Restablecer todas las órdenes para que tengan ÚNICAMENTE el texto "solo para ser enviado a hospital regional"
+      const newOrders = orders.map((order) => {
+        return { ...order, instructions: REGIONAL_TEXT };
+      });
+      setOrders(newOrders);
+    } else {
+      // Remover únicamente REGIONAL_TEXT de todas las órdenes
+      const newOrders = orders.map((order) => {
+        const nextInstructions = (order.instructions || '')
           .split('\n')
           .filter((line) => line.trim().toLowerCase() !== REGIONAL_TEXT)
           .join('\n');
-        needsUpdate = true;
-      }
+        return { ...order, instructions: nextInstructions };
+      });
+      setOrders(newOrders);
+    }
+  };
+
+  const prevOrdersRef = useRef<Array<any>>(orders);
+
+  // Sincronizar el texto de las instrucciones de las órdenes en la canasta
+  useEffect(() => {
+    const prevOrders = prevOrdersRef.current;
+    prevOrdersRef.current = orders;
+
+    // Detectar si se ha agregado una nueva orden a la canasta
+    const addedOrders = orders.filter(
+      (order) => !prevOrders.some((prev) => prev.testType?.conceptUuid === order.testType?.conceptUuid),
+    );
+
+    if (addedOrders.length > 0) {
+      let needsUpdate = false;
+      const newOrders = orders.map((order) => {
+        const isNew = addedOrders.some(
+          (added) => added.testType?.conceptUuid === order.testType?.conceptUuid,
+        );
+        if (isNew) {
+          let nextInstructions = order.instructions || '';
+          if (isHospitalized && !nextInstructions.toLowerCase().includes(HOSPITALIZED_TEXT)) {
+            nextInstructions = nextInstructions
+              ? `${nextInstructions}\n${HOSPITALIZED_TEXT}`
+              : HOSPITALIZED_TEXT;
+            needsUpdate = true;
+          }
+          if (isRegional && !nextInstructions.toLowerCase().includes(REGIONAL_TEXT)) {
+            nextInstructions = nextInstructions
+              ? `${nextInstructions}\n${REGIONAL_TEXT}`
+              : REGIONAL_TEXT;
+            needsUpdate = true;
+          }
+          return {
+            ...order,
+            instructions: nextInstructions,
+          };
+        }
+        return order;
+      });
 
       if (needsUpdate) {
-        return {
-          ...order,
-          instructions: nextInstructions,
-        };
+        setOrders(newOrders);
       }
-      return order;
-    });
-
-    if (needsUpdate) {
-      setOrders(newOrders);
     }
   }, [orders, isHospitalized, isRegional, setOrders]);
 

@@ -55,7 +55,9 @@ export function useLabOrders(params: Partial<UseLabOrdersParams> = useLabOrdersD
   }>(`${url}`, openmrsFetch);
 
   const filteredOrders = data?.data?.results?.filter(
-    (order) => !newOrdersOnly || (order?.action === 'NEW' && order?.fulfillerStatus === null),
+    (order) =>
+      !newOrdersOnly ||
+      ((order?.action === 'NEW' || order?.action === 'REVISE') && order?.fulfillerStatus === null),
   );
   return {
     labOrders: filteredOrders ?? [],

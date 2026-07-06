@@ -439,7 +439,17 @@ describe('LabResultsForm', () => {
     expect(updateOrderResult).toHaveBeenCalledWith(
       'order-uuid',
       'encounter-uuid',
-      { obs: [{ concept: { uuid: 'concept-uuid' }, order: { uuid: 'order-uuid' }, status: 'FINAL', value: '100' }] },
+      {
+        obs: [
+          {
+            concept: { uuid: 'concept-uuid' },
+            order: { uuid: 'order-uuid' },
+            status: 'FINAL',
+            value: '100',
+            obsDatetime: expect.any(String),
+          },
+        ],
+      },
       { fulfillerComment: 'Test Results Entered', fulfillerStatus: 'COMPLETED' },
       {
         action: 'DISCONTINUE',
@@ -526,6 +536,7 @@ describe('LabResultsForm', () => {
             order: {
               uuid: 'order-uuid',
             },
+            obsDatetime: expect.any(String),
             groupMembers: [
               {
                 concept: {
@@ -536,6 +547,7 @@ describe('LabResultsForm', () => {
                 order: {
                   uuid: 'order-uuid',
                 },
+                obsDatetime: expect.any(String),
               },
             ],
           },
@@ -633,6 +645,7 @@ describe('LabResultsForm', () => {
             order: {
               uuid: 'order-uuid',
             },
+            obsDatetime: expect.any(String),
             groupMembers: [
               {
                 concept: {
@@ -643,6 +656,7 @@ describe('LabResultsForm', () => {
                 order: {
                   uuid: 'order-uuid',
                 },
+                obsDatetime: expect.any(String),
               },
               {
                 concept: {
@@ -653,6 +667,7 @@ describe('LabResultsForm', () => {
                 order: {
                   uuid: 'order-uuid',
                 },
+                obsDatetime: expect.any(String),
               },
             ],
           },

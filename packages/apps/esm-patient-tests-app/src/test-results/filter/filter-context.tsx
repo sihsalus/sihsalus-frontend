@@ -107,14 +107,20 @@ const FilterProvider = ({ roots, isLoading = false, children }: FilterProviderPr
     for (const key in state.tests) {
       const test = state.tests[key] as TestResult;
       if (test.obs && Array.isArray(test.obs)) {
-        test.obs.forEach((obs) => {
+        // Ordenar observaciones por fecha descendente (la más reciente primero)
+        const sortedObs = [...test.obs].sort(
+          (a, b) => new Date(b.obsDatetime).getTime() - new Date(a.obsDatetime).getTime(),
+        );
+        // Conservar únicamente la observación más reciente de cada examen
+        if (sortedObs.length > 0) {
+          const obs = sortedObs[0];
           const flattenedEntry = {
             ...obs,
             key: key,
             ...test,
           };
           flattenedObs.push(flattenedEntry);
-        });
+        }
       }
     }
 
@@ -123,16 +129,21 @@ const FilterProvider = ({ roots, isLoading = false, children }: FilterProviderPr
     flattenedObs.forEach((curr: MappedObservation) => {
       const flatNameParts = curr.flatName.split('-');
       const groupKey = flatNameParts[0].trim();
-      const dateKey = new Date(curr.obsDatetime).toISOString().split('T')[0];
 
-      const compositeKey = `${groupKey}__${dateKey}`;
+      // Agrupar por nombre del panel únicamente
+      const compositeKey = groupKey;
       if (!groupedObs[compositeKey]) {
         groupedObs[compositeKey] = {
           key: groupKey,
-          date: dateKey,
+          date: curr.obsDatetime,
           flatName: curr.flatName,
           entries: [],
         };
+      } else {
+        // Actualizar la fecha del panel con la fecha de la prueba más reciente
+        if (new Date(curr.obsDatetime).getTime() > new Date(groupedObs[compositeKey].date).getTime()) {
+          groupedObs[compositeKey].date = curr.obsDatetime;
+        }
       }
 
       groupedObs[compositeKey].entries.push(curr);

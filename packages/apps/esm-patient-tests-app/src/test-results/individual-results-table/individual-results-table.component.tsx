@@ -11,10 +11,11 @@ import {
   TableHeader,
   TableRow,
 } from '@carbon/react';
-import { ArrowRightIcon, formatDate, parseDate, showModal, useLayoutType } from '@openmrs/esm-framework';
+import { formatDate, parseDate, showModal, useLayoutType } from '@openmrs/esm-framework';
+import dayjs from 'dayjs';
 import { getPatientUuidFromStore, type OBSERVATION_INTERPRETATION } from '@openmrs/esm-patient-common-lib';
 import classNames from 'classnames';
-import React, { type ComponentProps, useCallback, useMemo } from 'react';
+import React, { useCallback, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import { type GroupedObservation } from '../../types';
@@ -143,18 +144,17 @@ const IndividualResultsTable: React.FC<IndividualResultsTableProps> = ({ isLoadi
               <h4 className={styles.resultType}>{headerTitle}</h4>
               <div className={styles.displayFlex}>
                 <span className={styles.date}>
-                  {formatDate(parseDate(subRows.date), { mode: 'standard', time: false })}
+                  {(() => {
+                    const parsed = parseDate(subRows.date);
+                    const isToday = dayjs(parsed).isSame(dayjs(), 'day');
+                    const mainDate = formatDate(parsed, { mode: 'standard', time: false });
+                    if (isToday) {
+                      const absoluteDate = formatDate(parsed, { mode: 'standard', time: false, noToday: true });
+                      return `${mainDate} (${absoluteDate})`;
+                    }
+                    return mainDate;
+                  })()}
                 </span>
-                <Button
-                  className={styles.viewTimeline}
-                  iconDescription="view timeline"
-                  kind="ghost"
-                  renderIcon={(props: ComponentProps<typeof ArrowRightIcon>) => <ArrowRightIcon size={16} {...props} />}
-                  onClick={() => launchResultsDialog(headerTitle, groupConceptUuid)}
-                  size="sm"
-                >
-                  {t('viewTimeline', 'View timeline')}
-                </Button>
               </div>
             </div>
             <Table className={styles.table} {...getTableProps()} size={isDesktop ? 'md' : 'sm'}>

@@ -235,19 +235,23 @@ function createGroupMember(member: LabOrderConcept, order: Order, values: Record
   if (value === null || value === undefined) {
     return null;
   }
+  const obsDatetime = new Date().toISOString();
   return {
     concept: { uuid: member.uuid },
     value: value,
     status: status,
     order: { uuid: order.uuid },
+    obsDatetime,
   };
 }
 
 function createObservation(order: Order, groupMembers = null, value = null, status: string) {
+  const obsDatetime = new Date().toISOString();
   return {
     concept: { uuid: order.concept.uuid },
     status: status,
     order: { uuid: order.uuid },
+    obsDatetime,
     ...(groupMembers && groupMembers.length > 0 && { groupMembers }),
     ...(value !== null && value !== undefined && { value }),
   };

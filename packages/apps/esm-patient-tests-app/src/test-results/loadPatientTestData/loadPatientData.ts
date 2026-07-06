@@ -10,6 +10,7 @@ import { uniq } from 'lodash-es';
 
 import {
   addUserDataToCache,
+  extractObservationReferenceRanges,
   extractMetaInformation,
   getEntryConceptClassUuid,
   getUserDataFromCache,
@@ -36,7 +37,23 @@ function parseSingleObsData(
       });
     } else {
       // is a single test
-      entry.meta = metaInfomation[entry.conceptClass];
+      const conceptMeta = metaInfomation[entry.conceptClass];
+      const obsRanges = extractObservationReferenceRanges(entry as any);
+      const hasObsRanges =
+        obsRanges &&
+        (obsRanges.lowNormal !== undefined || obsRanges.hiNormal !== undefined || obsRanges.range !== undefined);
+
+      entry.meta = hasObsRanges
+        ? {
+            ...conceptMeta,
+            ...obsRanges,
+            range:
+              obsRanges.range ??
+              (obsRanges.lowNormal !== undefined && obsRanges.hiNormal !== undefined
+                ? `${obsRanges.lowNormal} – ${obsRanges.hiNormal}`
+                : conceptMeta?.range),
+          }
+        : conceptMeta;
     }
 
     if (entry.valueQuantity) {

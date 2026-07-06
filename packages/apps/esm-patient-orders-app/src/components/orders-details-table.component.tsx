@@ -62,7 +62,7 @@ import { capitalize, lowerCase } from 'lodash-es';
 import React, { type ReactNode, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useReactToPrint } from 'react-to-print';
-import useSWR from 'swr';
+import useSWR, { useSWRConfig } from 'swr';
 
 import type { ConfigObject } from '../config-schema';
 import PrintComponent from '../print/print.component';
@@ -854,9 +854,29 @@ function OrderBasketItemActions({
   responsiveSize,
 }: OrderBasketItemActionsProps) {
   const { t } = useTranslation();
+  const { mutate } = useSWRConfig();
+  const launchCancelOrder = useLaunchWorkspaceRequiringVisit('patient-orders-form-workspace');
   const { orders, setOrders } = useOrderBasket<MutableOrderBasketItem>(orderItem.orderType.uuid);
-  const alreadyInBasket = orders.some((x) => x.uuid === orderItem.uuid);
+
+  const mutateOrders = useCallback(() => {
+    const patientUuid = orderItem.patient?.uuid;
+    if (patientUuid) {
+      mutate((key) => typeof key === 'string' && key.startsWith(`${restBaseUrl}/order?patient=${patientUuid}`));
+    }
+  }, [mutate, orderItem.patient?.uuid]);
+
   const handleModifyClick = useCallback(() => {
+    void openmrsFetch(`${restBaseUrl}/order/${orderItem.uuid}/fulfillerdetails/`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: {
+        fulfillerStatus: 'DECLINED',
+        fulfillerComment: 'Modificado por el médico',
+      },
+    }).then(() => mutateOrders());
+
     if (orderItem.type === 'drugorder') {
       void getDrugOrderByUuid(orderItem.uuid)
         .then((res) => {
@@ -877,33 +897,22 @@ function OrderBasketItemActions({
       setOrders([...orders, order]);
       openOrderForm();
     }
-  }, [orderItem, openOrderForm, orders, setOrders]);
+  }, [orderItem, openOrderForm, orders, setOrders, mutateOrders]);
 
   const handleAddResultsClick = useCallback(() => {
     launchPatientWorkspace('test-results-form-workspace', { order: orderItem });
   }, [orderItem]);
 
   const handleCancelClick = useCallback(() => {
-    if (orderItem.type === 'drugorder') {
-      void getDrugOrderByUuid(orderItem.uuid)
-        .then((res) => {
-          const medicationOrder = res.data;
-          setOrders([...orders, buildMedicationOrder(medicationOrder, 'DISCONTINUE')]);
-          openOrderBasket();
-        })
-        .catch((error) => {
-          console.error('Error discontinuing drug order: ', error);
-        });
-    } else if (orderItem.type === 'testorder') {
-      const labItem = buildLabOrder(orderItem, 'DISCONTINUE');
-      setOrders([...orders, labItem]);
-      openOrderBasket();
-    } else {
-      const order = buildGeneralOrder(orderItem, 'DISCONTINUE');
-      setOrders([...orders, order]);
-      openOrderBasket();
-    }
-  }, [orderItem, setOrders, orders, openOrderBasket]);
+    launchCancelOrder({ order: orderItem });
+  }, [orderItem, launchCancelOrder]);
+
+  const isPending = !orderItem.fulfillerStatus || orderItem.fulfillerStatus.toUpperCase() === 'PENDING';
+  if (!isPending) {
+    return null;
+  }
+
+  const alreadyInBasket = orders.some((x) => x.uuid === orderItem.uuid);
 
   if (!canEditOrders && !(orderItem?.type === 'testorder' && canEditResults)) {
     return null;

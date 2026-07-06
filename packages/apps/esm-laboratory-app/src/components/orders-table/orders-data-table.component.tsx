@@ -421,6 +421,7 @@ const OrdersDataTable: React.FC<OrdersDataTableProps> = (props) => {
   const [currentPageSize, setPageSize] = useState(10);
   const { goTo, results: paginatedLabOrders, currentPage } = usePagination(searchResults, currentPageSize);
 
+  // biome-ignore lint/correctness/useExhaustiveDependencies: reset page to 1 when filters change
   useEffect(() => {
     goTo(1);
   }, [filter, priorityFilter, selectedLabsetUuid, instructionsFilter, searchString]);

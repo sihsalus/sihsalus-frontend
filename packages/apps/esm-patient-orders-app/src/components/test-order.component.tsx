@@ -24,6 +24,7 @@ interface TestOrderProps {
   testOrder: Order;
 }
 
+// biome-ignore lint/suspicious/noExplicitAny: generic value display mapping
 const getObservationValueDisplay = (value: any): string | number => {
   if (value && typeof value === 'object') {
     return value.display || '';
@@ -31,6 +32,7 @@ const getObservationValueDisplay = (value: any): string | number => {
   return value;
 };
 
+// biome-ignore lint/suspicious/noExplicitAny: third-party OpenMRS concept datatype representation
 const formatReferenceRange = (concept: any, fhirRanges?: any) => {
   const isNumeric = concept?.datatype?.hl7Abbreviation === 'NM' || concept?.datatype?.display === 'Numeric';
   if (!isNumeric) {
@@ -56,10 +58,12 @@ const formatReferenceRange = (concept: any, fhirRanges?: any) => {
   return units ? displayUnit.trim() : 'N/A';
 };
 
+// biome-ignore lint/suspicious/noExplicitAny: third-party FHIR Observation reference ranges representation
 const extractRangesFromFhirObs = (fhirObs: any) => {
   const referenceRanges = fhirObs?.referenceRange;
   if (!referenceRanges?.length) return {};
 
+  // biome-ignore lint/suspicious/noExplicitAny: dynamic object mapping
   const result: any = {};
   for (const ref of referenceRanges) {
     const code = ref.type?.coding?.[0]?.code?.toLowerCase();
@@ -81,6 +85,60 @@ const extractRangesFromFhirObs = (fhirObs: any) => {
 
 const TestOrder: React.FC<TestOrderProps> = ({ testOrder }) => {
   const { t } = useTranslation();
+  const isTablet = useLayoutType() === 'tablet';
+  const { concept, isLoading: isLoadingTestConcepts } = useOrderConceptByUuid(testOrder.concept.uuid);
+  const { encounter, isLoading: isLoadingResult } = useLabEncounter(testOrder.encounter.uuid);
+
+  // biome-ignore lint/suspicious/noExplicitAny: third-party FHIR Observation bundle representation
+  const { data: fhirObsBundle } = useSWR<any>(
+    testOrder.encounter.uuid
+      ? `/ws/fhir2/R4/Observation?encounter=Encounter/${testOrder.encounter.uuid}&_count=100`
+      : null,
+    openmrsFetch,
+  );
+
+  const testResultObs = useMemo(() => {
+    if (encounter && concept) {
+      return encounter.obs?.find((obs) => obs.order?.uuid === testOrder.uuid);
+    }
+  }, [concept, encounter, testOrder.uuid]);
+
+  const testRows = useMemo(() => {
+    const findFhirObs = (obsUuid: string) =>
+      fhirObsBundle?.data?.entry?.find(
+        // biome-ignore lint/suspicious/noExplicitAny: Entry representation
+        (e: any) => e.resource?.id === obsUuid,
+      )?.resource;
+
+    if (concept && concept.setMembers && concept.setMembers.length > 0) {
+      return concept?.setMembers.map((memberConcept) => {
+        const memberObs = testResultObs?.groupMembers?.find((obs) => obs.concept.uuid === memberConcept.uuid);
+        const fhirObs = memberObs ? findFhirObs(memberObs.uuid) : null;
+        const fhirRanges = extractRangesFromFhirObs(fhirObs);
+
+        return {
+          id: memberConcept.uuid,
+          testType: <div className={styles.testType}>{memberConcept.display}</div>,
+          result: isLoadingResult ? <SkeletonText /> : (getObservationValueDisplay(memberObs?.value) ?? '--'),
+          normalRange: formatReferenceRange(memberConcept, fhirRanges),
+        };
+      });
+    } else if (concept && (!concept.setMembers || concept.setMembers.length === 0)) {
+      const fhirObs = testResultObs ? findFhirObs(testResultObs.uuid) : null;
+      const fhirRanges = extractRangesFromFhirObs(fhirObs);
+
+      return [
+        {
+          id: concept.uuid,
+          testType: <div className={styles.testType}>{concept.display}</div>,
+          result: isLoadingResult ? <SkeletonText /> : (getObservationValueDisplay(testResultObs?.value) ?? '--'),
+          normalRange: formatReferenceRange(concept, fhirRanges),
+        },
+      ];
+    } else {
+      return [];
+    }
+  }, [concept, isLoadingResult, testResultObs, fhirObsBundle]);
 
   if (testOrder.fulfillerStatus?.toUpperCase() === 'DECLINED') {
     const cleanInstructions = testOrder.instructions
@@ -103,17 +161,6 @@ const TestOrder: React.FC<TestOrderProps> = ({ testOrder }) => {
     );
   }
 
-  const isTablet = useLayoutType() === 'tablet';
-  const { concept, isLoading: isLoadingTestConcepts } = useOrderConceptByUuid(testOrder.concept.uuid);
-  const { encounter, isLoading: isLoadingResult } = useLabEncounter(testOrder.encounter.uuid);
-
-  const { data: fhirObsBundle } = useSWR<any>(
-    testOrder.encounter.uuid
-      ? `/ws/fhir2/R4/Observation?encounter=Encounter/${testOrder.encounter.uuid}&_count=100`
-      : null,
-    openmrsFetch,
-  );
-
   const tableHeaders: Array<{ key: string; header: string }> = [
     {
       key: 'testType',
@@ -128,49 +175,6 @@ const TestOrder: React.FC<TestOrderProps> = ({ testOrder }) => {
       header: t('normalRange', 'Normal range'),
     },
   ];
-
-  const testResultObs = useMemo(() => {
-    if (encounter && concept) {
-      return encounter.obs?.find((obs) => obs.order?.uuid === testOrder.uuid);
-    }
-  }, [concept, encounter, testOrder.uuid]);
-
-  const testRows = useMemo(() => {
-    const findFhirObs = (obsUuid: string) =>
-      fhirObsBundle?.data?.entry?.find((e: any) => e.resource?.id === obsUuid)?.resource;
-
-    if (concept && concept.setMembers.length > 0) {
-      return concept?.setMembers.map((memberConcept) => {
-        const memberObs = testResultObs?.groupMembers?.find((obs) => obs.concept.uuid === memberConcept.uuid);
-        const fhirObs = memberObs ? findFhirObs(memberObs.uuid) : null;
-        const fhirRanges = extractRangesFromFhirObs(fhirObs);
-
-        const low = fhirRanges.lowNormal ?? memberConcept.lowNormal;
-        const high = fhirRanges.hiNormal ?? memberConcept.hiNormal;
-
-        return {
-          id: memberConcept.uuid,
-          testType: <div className={styles.testType}>{memberConcept.display}</div>,
-          result: isLoadingResult ? <SkeletonText /> : (getObservationValueDisplay(memberObs?.value) ?? '--'),
-          normalRange: formatReferenceRange(memberConcept, fhirRanges),
-        };
-      });
-    } else if (concept && concept.setMembers.length === 0) {
-      const fhirObs = testResultObs ? findFhirObs(testResultObs.uuid) : null;
-      const fhirRanges = extractRangesFromFhirObs(fhirObs);
-
-      return [
-        {
-          id: concept.uuid,
-          testType: <div className={styles.testType}>{concept.display}</div>,
-          result: isLoadingResult ? <SkeletonText /> : (getObservationValueDisplay(testResultObs?.value) ?? '--'),
-          normalRange: formatReferenceRange(concept, fhirRanges),
-        },
-      ];
-    } else {
-      return [];
-    }
-  }, [concept, isLoadingResult, testResultObs, fhirObsBundle]);
 
   return (
     <div className={styles.testOrder}>

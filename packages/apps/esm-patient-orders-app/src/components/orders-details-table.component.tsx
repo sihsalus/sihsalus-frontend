@@ -428,6 +428,7 @@ const OrderDetailsTable: React.FC<OrderDetailsProps> = ({ patientUuid, showAddBu
 
   const { results: paginatedOrders, goTo, currentPage } = usePagination(tableRows, defaultPageSize);
 
+  // biome-ignore lint/correctness/useExhaustiveDependencies: reset page to 1 when filters change
   useEffect(() => {
     goTo(1);
   }, [
@@ -849,7 +850,7 @@ function OrderBasketItemActions({
   canEditOrders,
   canEditResults,
   orderItem,
-  openOrderBasket,
+  openOrderBasket: _openOrderBasket,
   openOrderForm,
   responsiveSize,
 }: OrderBasketItemActionsProps) {

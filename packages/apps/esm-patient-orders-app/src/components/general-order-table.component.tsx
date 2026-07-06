@@ -24,6 +24,7 @@ interface GeneralOrderProps {
   order: Order;
 }
 
+// biome-ignore lint/suspicious/noExplicitAny: third-party OpenMRS REST API representation
 const formatReferenceRange = (concept: any, fhirRanges?: any) => {
   const isNumeric = concept?.datatype?.hl7Abbreviation === 'NM' || concept?.datatype?.display === 'Numeric';
   if (!isNumeric) {
@@ -49,10 +50,12 @@ const formatReferenceRange = (concept: any, fhirRanges?: any) => {
   return units ? displayUnit.trim() : 'N/A';
 };
 
+// biome-ignore lint/suspicious/noExplicitAny: third-party FHIR Observation representation
 const extractRangesFromFhirObs = (fhirObs: any) => {
   const referenceRanges = fhirObs?.referenceRange;
   if (!referenceRanges?.length) return {};
 
+  // biome-ignore lint/suspicious/noExplicitAny: dynamic reference mapping
   const result: any = {};
   for (const ref of referenceRanges) {
     const code = ref.type?.coding?.[0]?.code?.toLowerCase();
@@ -78,6 +81,7 @@ const GeneralOrderTable: React.FC<GeneralOrderProps> = ({ order }) => {
   const { concept, isLoading: isLoadingConcept } = useOrderConceptByUuid(order.concept.uuid);
   const { encounter, isLoading: isLoadingResult } = useLabEncounter(order.encounter.uuid);
 
+  // biome-ignore lint/suspicious/noExplicitAny: third-party FHIR Observation bundle
   const { data: fhirObsBundle } = useSWR<any>(
     order.encounter.uuid ? `/ws/fhir2/R4/Observation?encounter=Encounter/${order.encounter.uuid}&_count=100` : null,
     openmrsFetch,
@@ -116,20 +120,21 @@ const GeneralOrderTable: React.FC<GeneralOrderProps> = ({ order }) => {
 
   const rows = useMemo(() => {
     const findFhirObs = (obsUuid: string) =>
-      fhirObsBundle?.data?.entry?.find((e: any) => e.resource?.id === obsUuid)?.resource;
+      fhirObsBundle?.data?.entry?.find(
+        // biome-ignore lint/suspicious/noExplicitAny: Entry representation
+        (e: any) => e.resource?.id === obsUuid,
+      )?.resource;
 
     const cleanInstructions = order?.instructions
       ? order.instructions.replace(/\s*\|\|priorityUuid:[a-fA-F0-9-]+\|\|/g, '').trim()
       : '';
 
-    if (concept && concept.setMembers.length > 0) {
+    if (concept && concept.setMembers && concept.setMembers.length > 0) {
       return concept?.setMembers.map((memberConcept) => {
         const memberObs = obs?.groupMembers?.find((o) => o.concept.uuid === memberConcept.uuid);
         const fhirObs = memberObs ? findFhirObs(memberObs.uuid) : null;
         const fhirRanges = extractRangesFromFhirObs(fhirObs);
 
-        const low = fhirRanges.lowNormal ?? memberConcept.lowNormal;
-        const high = fhirRanges.hiNormal ?? memberConcept.hiNormal;
 
         return {
           id: memberConcept.uuid,
@@ -140,7 +145,7 @@ const GeneralOrderTable: React.FC<GeneralOrderProps> = ({ order }) => {
           referenceNumber: order?.accessionNumber,
         };
       });
-    } else if (concept && concept.setMembers.length === 0) {
+    } else if (concept && (!concept.setMembers || concept.setMembers.length === 0)) {
       const fhirObs = obs ? findFhirObs(obs.uuid) : null;
       const fhirRanges = extractRangesFromFhirObs(fhirObs);
 

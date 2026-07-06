@@ -12,6 +12,7 @@ import {
   TableRow,
 } from '@carbon/react';
 import { ArrowRightIcon, formatDate, parseDate, showModal, useLayoutType } from '@openmrs/esm-framework';
+import dayjs from 'dayjs';
 import { getPatientUuidFromStore, type OBSERVATION_INTERPRETATION } from '@openmrs/esm-patient-common-lib';
 import classNames from 'classnames';
 import React, { type ComponentProps, useCallback, useMemo } from 'react';
@@ -143,7 +144,16 @@ const IndividualResultsTable: React.FC<IndividualResultsTableProps> = ({ isLoadi
               <h4 className={styles.resultType}>{headerTitle}</h4>
               <div className={styles.displayFlex}>
                 <span className={styles.date}>
-                  {formatDate(parseDate(subRows.date), { mode: 'standard', time: false })}
+                  {(() => {
+                    const parsed = parseDate(subRows.date);
+                    const isToday = dayjs(parsed).isSame(dayjs(), 'day');
+                    const mainDate = formatDate(parsed, { mode: 'standard', time: false });
+                    if (isToday) {
+                      const absoluteDate = formatDate(parsed, { mode: 'standard', time: false, noToday: true });
+                      return `${mainDate} (${absoluteDate})`;
+                    }
+                    return mainDate;
+                  })()}
                 </span>
                 <Button
                   className={styles.viewTimeline}

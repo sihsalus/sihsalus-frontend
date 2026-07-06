@@ -67,6 +67,10 @@ export interface FHIRObservationResource {
   hasMember?: Array<{
     reference: string;
   }>;
+  performer?: Array<{
+    reference: string;
+    display: string;
+  }>;
 }
 
 export interface Concept {

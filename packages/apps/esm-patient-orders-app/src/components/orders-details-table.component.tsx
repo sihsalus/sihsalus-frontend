@@ -937,19 +937,6 @@ function OrderBasketItemActions({
             onClick={handleModifyClick}
           />
         )}
-        {orderItem?.type === 'testorder' && canEditResults && (
-          <OverflowMenuItem
-            className={styles.menuItem}
-            disabled={alreadyInBasket}
-            id="reorder"
-            itemText={
-              orderItem.fulfillerStatus === 'COMPLETED'
-                ? t('editResults', 'Edit results')
-                : t('addResults', 'Add results')
-            }
-            onClick={handleAddResultsClick}
-          />
-        )}
         {canEditOrders && (
           <OverflowMenuItem
             className={styles.menuItem}

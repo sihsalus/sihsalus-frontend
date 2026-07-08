@@ -1,6 +1,15 @@
 import { Button } from '@carbon/react';
 import { Calendar, Hospital } from '@carbon/react/icons';
-import { ExtensionSlot, isDesktop, launchWorkspace2, navigate, useLayoutType, useSession, userHasAccess } from '@openmrs/esm-framework';
+import {
+  closeWorkspace,
+  ExtensionSlot,
+  isDesktop,
+  launchWorkspace2,
+  navigate,
+  useLayoutType,
+  useSession,
+  userHasAccess,
+} from '@openmrs/esm-framework';
 import dayjs from 'dayjs';
 import isToday from 'dayjs/plugin/isToday';
 import React, { useContext } from 'react';
@@ -28,6 +37,7 @@ const MetricsHeader: React.FC = () => {
       mutate: () => {}, // TODO get this to mutate properly
     };
 
+    closeWorkspace('patient-search-workspace', { ignoreChanges: true });
     launchWorkspace2('appointments-form-workspace', { ...props });
   };
 

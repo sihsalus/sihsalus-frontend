@@ -401,6 +401,10 @@ export interface QueueRoom {
   display: string;
   name: string;
   description: string;
+  queue?: {
+    uuid: string;
+    display: string;
+  };
 }
 
 export interface ProvidersQueueRoom {
@@ -453,6 +457,8 @@ export interface Queue {
   description: string;
   location: Location;
   service: Concept;
+  priorityConceptSet?: Concept;
+  statusConceptSet?: Concept;
   allowedPriorities: Array<Concept>;
   allowedStatuses: Array<Concept>;
 }

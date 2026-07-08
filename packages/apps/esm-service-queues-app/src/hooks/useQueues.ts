@@ -6,7 +6,7 @@ import { type Queue } from '../types';
 
 export function useQueues(locationUuid?: string) {
   const customRepresentation =
-    'custom:(uuid,display,name,description,service:(uuid,display),allowedPriorities:(uuid,display),allowedStatuses:(uuid,display),location:(uuid,display))';
+    'custom:(uuid,display,name,description,service:(uuid,display),priorityConceptSet:(uuid,display),statusConceptSet:(uuid,display),allowedPriorities:(uuid,display),allowedStatuses:(uuid,display),location:(uuid,display))';
   const apiUrl = `${restBaseUrl}/queue?v=${customRepresentation}` + (locationUuid ? `&location=${locationUuid}` : '');
 
   const { data, ...rest } = useSWRImmutable<{ data: { results: Array<Queue> } }, Error>(apiUrl, openmrsFetch);

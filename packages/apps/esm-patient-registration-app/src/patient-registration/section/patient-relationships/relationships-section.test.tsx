@@ -382,6 +382,7 @@ describe('RelationshipsSection', () => {
       '42ae5ce0-d64b-11ea-9064-5adc43bbdd24',
     );
     expect(setFieldValue).toHaveBeenCalledWith('relationships[0].relatedPersonName', 'Person 1');
+    expect(setFieldValue).toHaveBeenCalledWith('relationships[0].relatedPersonAge', 35);
   });
 
   it('rejects selecting an underage existing person as the responsible person for a minor patient', async () => {
@@ -418,6 +419,7 @@ describe('RelationshipsSection', () => {
     expect(setFieldValue).not.toHaveBeenCalledWith('relationships[0].relatedPersonUuid', 'minor-person-uuid');
     expect(setFieldValue).toHaveBeenCalledWith('relationships[0].relatedPersonUuid', '');
     expect(setFieldValue).toHaveBeenCalledWith('relationships[0].relatedPersonName', '');
+    expect(setFieldValue).toHaveBeenCalledWith('relationships[0].relatedPersonAge', undefined);
   });
 
   it('seeds one empty relationship row for sections that request a default responsible person form', async () => {
@@ -547,6 +549,36 @@ describe('RelationshipsSection', () => {
     await waitFor(() =>
       expect(screen.getByRole('textbox', { name: /^approximate age$/i })).toHaveAttribute('aria-invalid', 'true'),
     );
+  });
+
+  it('filters non-numeric characters from the new responsible person approximate age', async () => {
+    const user = userEvent.setup();
+    mockResourcesContextValue = {
+      ...mockResourcesContextValue,
+      relationshipTypes: relationshipTypes,
+    };
+
+    render(
+      <ResourcesContext.Provider value={mockResourcesContextValue}>
+        <Formik
+          initialValues={{
+            relationships: [{ action: 'ADD', relatedPersonUuid: '' }],
+          }}
+          onSubmit={null}
+        >
+          <Form>
+            <PatientRegistrationContext.Provider value={initialContextValues}>
+              <RelationshipsSection />
+            </PatientRegistrationContext.Provider>
+          </Form>
+        </Formik>
+      </ResourcesContext.Provider>,
+    );
+
+    await user.click(screen.getByRole('tab', { name: /register new person/i }));
+    await user.type(screen.getByRole('textbox', { name: /approximate age/i }), 'abc12');
+
+    expect(screen.getByRole('textbox', { name: /approximate age/i })).toHaveValue('12');
   });
 
   it('does not create a person until the minimum responsible person data is valid', async () => {

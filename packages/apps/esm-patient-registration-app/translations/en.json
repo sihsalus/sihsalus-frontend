@@ -270,6 +270,7 @@
   "responsibleGivenName": "First name",
   "responsibleMiddleName": "Middle name (optional)",
   "responsiblePersonMustBeAdult": "Responsible person must be an adult",
+  "responsiblePersonMustBeAdultHelpText": "A minor cannot be assigned as the responsible person for another minor.",
   "responsiblePersonSection": "Companion or responsible person",
   "responsiblePhone": "Phone or mobile phone (optional)",
   "responsibleRelationshipRequiredForMinor": "For minors, record a responsible family member, guardian, or legal representative.",

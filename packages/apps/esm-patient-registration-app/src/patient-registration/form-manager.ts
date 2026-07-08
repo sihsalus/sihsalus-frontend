@@ -125,6 +125,16 @@ function getPersonAttributeValue(patient: Partial<Patient>, attributeTypeUuid?: 
   return patient.person?.attributes?.find((attribute) => attribute.attributeType === attributeTypeUuid)?.value;
 }
 
+function isValidAttributeTypeKey(attributeType: string) {
+  const normalizedAttributeType = attributeType?.trim();
+  return (
+    !!normalizedAttributeType &&
+    normalizedAttributeType !== 'undefined' &&
+    normalizedAttributeType !== 'null' &&
+    normalizedAttributeType !== 'attributeType'
+  );
+}
+
 export type SavePatientForm = (
   isNewPatient: boolean,
   values: FormValues,
@@ -697,7 +707,7 @@ export class FormManager {
     const attributes: Array<AttributeValue> = [];
     if (values.attributes) {
       Object.entries(values.attributes)
-        .filter(([, value]) => !!value)
+        .filter(([key, value]) => isValidAttributeTypeKey(key) && !!value)
         .forEach(([key, value]) => {
           attributes.push({
             attributeType: key,
@@ -707,7 +717,7 @@ export class FormManager {
 
       if (!isNewPatient && values.patientUuid) {
         Object.entries(values.attributes)
-          .filter(([, value]) => !value)
+          .filter(([key, value]) => isValidAttributeTypeKey(key) && !value)
           .forEach(async ([key]) => {
             const attributeUuid = patientUuidMap[`attribute.${key}`];
             await openmrsFetch(`${restBaseUrl}/person/${values.patientUuid}/attribute/${attributeUuid}`, {

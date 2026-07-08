@@ -113,7 +113,7 @@ describe('AdmissionHome', () => {
 
     expect(screen.getByRole('heading', { name: /libro de atenciones/i })).toBeInTheDocument();
     for (const header of [
-      'Fecha',
+      'Fecha y hora',
       'HCE / código temporal',
       'Tipo doc.',
       'N° documento',
@@ -124,14 +124,15 @@ describe('AdmissionHome', () => {
       'Nombres y apellidos',
       'Dirección',
       'Edad',
-      'M',
-      'F',
+      'Sexo',
       'Servicio',
       'Número de orden',
       'Condición comunicación',
     ]) {
       expect(screen.getByRole('columnheader', { name: header })).toBeInTheDocument();
     }
+    expect(screen.queryByRole('columnheader', { name: 'M' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('columnheader', { name: 'F' })).not.toBeInTheDocument();
     expect(screen.getByRole('cell', { name: 'Ada Lovelace' })).toBeInTheDocument();
     expect(screen.getByRole('cell', { name: 'HC-99' })).toBeInTheDocument();
     expect(screen.getByRole('cell', { name: 'CE' })).toBeInTheDocument();
@@ -141,6 +142,8 @@ describe('AdmissionHome', () => {
     expect(screen.getAllByRole('cell', { name: 'Charles Babbage - Familiar' })[0]).toBeInTheDocument();
     expect(screen.getByRole('cell', { name: 'Sí' })).toBeInTheDocument();
     expect(screen.getByRole('cell', { name: 'Av. Peru 123, Lima, Lima' })).toBeInTheDocument();
+    expect(screen.getByText(/9\/05\/26, 8:30/)).toBeInTheDocument();
+    expect(screen.getAllByRole('cell', { name: 'F' })[0]).toBeInTheDocument();
     expect(screen.getByRole('cell', { name: 'Consulta externa' })).toBeInTheDocument();
     expect(screen.getByRole('cell', { name: '1' })).toBeInTheDocument();
     expect(getMetricValue('Atenciones registradas')).toHaveTextContent('2');
@@ -154,7 +157,7 @@ describe('AdmissionHome', () => {
     expect(mockUseAdmissions).toHaveBeenCalledWith(75);
   });
 
-  it('renders age with year, month, and week units in the gender age columns', () => {
+  it('renders age with year, month, and week units in a single age column', () => {
     mockUseAdmissions.mockReturnValue({
       admissions: [
         createAdmission({
@@ -305,14 +308,17 @@ describe('AdmissionHome', () => {
     const csv = await blob.text();
 
     expect(csv.startsWith('\uFEFFsep=,\r\n')).toBe(true);
+    expect(csv).toContain('"Fecha y hora"');
     expect(csv).toContain('"HCE / código temporal"');
     expect(csv).toContain('"Tipo doc."');
     expect(csv).toContain('"N° documento"');
     expect(csv).toContain('"Estado identificación"');
     expect(csv).toContain('"Condición comunicación"');
+    expect(csv).toContain('"Sexo"');
     expect(csv).toContain('"María Peña Ñaupari"');
     expect(csv).toContain('"Sí comunica"');
     expect(csv).toContain('"Jr. Unión 123, Huánuco"');
+    expect(csv).toContain('"F"');
     expect(csv).toContain('"6 años"');
     expect(csv).not.toContain('Ã');
     expect(revokeObjectURL).toHaveBeenCalledWith('blob:atenciones');

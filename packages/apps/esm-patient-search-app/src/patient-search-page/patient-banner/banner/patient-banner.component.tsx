@@ -55,7 +55,8 @@ const PatientBanner: React.FC<PatientBannerProps> = ({
 }) => {
   const layout = useLayoutType();
   const isTablet = layout === 'tablet';
-  const { currentVisit } = useVisit(patientUuid);
+  const { activeVisit, currentVisit } = useVisit(patientUuid);
+  const effectiveVisit = currentVisit ?? activeVisit;
   const { nonNavigationSelectPatientAction } = useContext(PatientSearchContext);
   const patientSearchContext2 = usePatientSearchContext2();
   const hideActionsOverflow = hideActionsOverflowProp ?? Boolean(patientSearchContext2?.onPatientSelected);
@@ -189,7 +190,7 @@ const PatientBanner: React.FC<PatientBannerProps> = ({
                 patientUuid={patientUuid}
               />
             ) : null}
-            {!isDeceased && !currentVisit && (
+            {!isDeceased && !effectiveVisit && (
               <ExtensionSlot name={startVisitButtonSlotName} state={startVisitButtonSlotState} />
             )}
           </div>

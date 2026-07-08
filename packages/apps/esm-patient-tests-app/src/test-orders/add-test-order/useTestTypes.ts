@@ -8,6 +8,15 @@ export interface TestType {
   groupLabel?: string;
 }
 
+const normalizeText = (str: string) => {
+  if (!str) return '';
+  return str
+    .normalize('NFD')
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .toLowerCase();
+};
+
 // Función recursiva para aplanar conjuntos de conceptos anidados a nivel de hojas y registrar etiquetas de grupo
 function flattenConcepts(concept: any, parentSetLabel?: string): Array<any> {
   if (concept.setMembers && concept.setMembers.length > 0) {
@@ -52,11 +61,9 @@ export function useTestTypes(
     // Filtrar localmente según el término de búsqueda
     const filtered = searchTerm
       ? sorted.filter((c) => {
-          const normalizedSearch = searchTerm.toLocaleLowerCase();
-          const displayMatches = c.display?.toLocaleLowerCase().includes(normalizedSearch);
-          const synonymMatches = c.names?.some((name: any) =>
-            name.display.toLocaleLowerCase().includes(normalizedSearch),
-          );
+          const normalizedSearch = normalizeText(searchTerm);
+          const displayMatches = normalizeText(c.display).includes(normalizedSearch);
+          const synonymMatches = c.names?.some((name: any) => normalizeText(name.display).includes(normalizedSearch));
           return displayMatches || synonymMatches;
         })
       : sorted;

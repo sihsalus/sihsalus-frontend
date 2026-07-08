@@ -1,0 +1,16 @@
+@use '@carbon/layout';
+@use '@openmrs/esm-styleguide/src/vars' as *;
+
+.widgetCard {
+  background-color: $ui-02;
+  border: 1px solid $ui-03;
+  width: 100%;
+}
+
+.backgroundDataFetchingIndicator {
+  align-items: center;
+  display: flex;
+  flex: 1 1 0%;
+  justify-content: end;
+  margin-right: layout.$spacing-05;
+}

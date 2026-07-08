@@ -1104,7 +1104,9 @@ const VisitNotesForm: React.FC<PatientWorkspace2DefinitionProps<VisitNotesFormPr
             <Row className={styles.row}>
               <Column sm={1}>
                 <span className={styles.columnLabel}>
-                  {t('primaryDiagnosisRequiredLabel', '*Diagnóstico principal (Obligatorio)')}
+                  <RequiredFieldLabel
+                    label={t('primaryDiagnosisRequiredLabel', 'Diagnóstico principal (Obligatorio)')}
+                  />
                 </span>
               </Column>
               <Column sm={3}>
@@ -1179,7 +1181,9 @@ const VisitNotesForm: React.FC<PatientWorkspace2DefinitionProps<VisitNotesFormPr
             <Row className={styles.row}>
               <Column sm={1}>
                 <span className={styles.columnLabel}>
-                  {t('codigoPrestacionalRequiredLabel', '*Código Prestacional (Obligatorio)')}
+                  <RequiredFieldLabel
+                    label={t('codigoPrestacionalRequiredLabel', 'Código Prestacional (Obligatorio)')}
+                  />
                 </span>
               </Column>
               <Column sm={3}>
@@ -1573,6 +1577,19 @@ function PrestacionalSearch({
           subtitle={t('errorFetchingConcepts', 'There was a problem fetching concepts') + '.'}
         />
       ) : null}
+    </>
+  );
+}
+
+function RequiredFieldLabel({ label }: { label: string }) {
+  const { t } = useTranslation();
+
+  return (
+    <>
+      {label}
+      <span title={t('required', 'Required')} className={styles.required}>
+        *
+      </span>
     </>
   );
 }

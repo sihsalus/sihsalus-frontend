@@ -119,6 +119,8 @@ Repository discipline and workspace ownership expectations should stay close to 
 
 ### TODO RBAC, auditoria y permisos
 
+Estado QLTY actualizado el 2026-07-04: ver [QLTY frontend hardening audit](docs/audits/2026-07-04-qlty-frontend-hardening.md).
+
 - Definir una matriz transversal de permisos por modulo y flujo, usando [@sihsalus/esm-rbac](packages/libs/esm-rbac/README.md) como punto de integracion frontend.
 - Agregar guards de RBAC en rutas, extensiones, botones, workspaces y modales de los modulos clinicos y administrativos.
 - Definir privilegios backend/content para lectura, creacion, edicion, eliminacion y acciones especiales por modulo.
@@ -134,13 +136,13 @@ Repository discipline and workspace ownership expectations should stay close to 
 - Identificar configs con `_default: ''` que representan conceptos, forms, encounter types o endpoints obligatorios, y convertirlos en defaults reales o feature flags.
 - Validar que cada app SIHSALUS custom tenga README propio con limites funcionales, dependencias backend/content, permisos y eventos auditables.
 - Agregar owners reales y warning budget a los workspaces custom prioritarios: atencion ambulatoria, CRED, salud materna, vacunacion, orders, dispensing, FUA, indicadores, ward, emergency, stock y billing.
-- Validar en QLTY el fallback del formulario de vacunas: con `ampathFormPersistence.enabled=true`, FHIR2 `Immunization` puede responder `501` sin romper la UI ni bloquear guardado nuevo; el pendiente backend sigue siendo habilitar FHIR2/content/mappings para lectura FHIR completa.
+- Validar en QLTY el flujo end-to-end de vacunas: FHIR2 `Immunization` ya responde `200` para una busqueda vacia validada el 2026-07-04, pero falta probar guardado/recarga con paciente real, content y permisos.
 - Corregir el formulario de visita/consulta: revisar apertura del workspace, dependencia de visita activa, guardado de `visit`/`encounter`, validaciones obligatorias y manejo de errores backend.
 - Corregir/ocultar campos semisoportados del formulario de inicio de visita en QLTY: el endpoint de tipos recomendados `/etl-latest/etl/patient/...` responde `404`; mantener `showRecommendedVisitTypeTab=false` o implementar backend/config real antes de mostrar `Program` y `Recommended`.
 - Revisar si `Upcoming appointments` y campos de cola (`Queue location`, `Service`, `Priority`) deben mostrarse en inicio de visita para QLTY; los endpoints responden, pero el flujo debe validarse con datos reales y sin crear entradas huerfanas.
 - Revisar Consulta Externa / Atencion ambulatoria end-to-end: entrada desde home, busqueda de paciente, inicio de consulta, cola, formularios clinicos, guardado de encounter, ordenes y mensajes de error.
 - Auditar formularios clinicos con el mismo patron de riesgo (vacunacion, visita/consulta, CRED, salud materna, procedimientos y FUA) para detectar `501`, workspace no registrado, rutas rotas, payloads incompletos y mensajes de error sin traducir.
-- Desplegar en QLTY los conceptos/content de Glasgow para triaje de emergencia y repetir smoke real de guardado de signos vitales; actualmente QLTY responde `404` para los UUIDs `glasgowEyeOpeningUuid`, `glasgowVerbalResponseUuid`, `glasgowMotorResponseUuid` y `glasgowTotalUuid`.
+- Repetir smoke real de guardado de signos vitales/Glasgow en QLTY; los UUIDs `glasgowEyeOpeningUuid`, `glasgowVerbalResponseUuid`, `glasgowMotorResponseUuid` y `glasgowTotalUuid` ya resuelven `200` desde el 2026-07-04.
 - Validar nuevo content package.
 - Revisar cambios RBAC doctor.
 
@@ -289,6 +291,7 @@ Crea un archivo `.env` en la raíz del repo (ver [.env.template](.env.template))
 | `SIHSALUS_AUTH_MODE`             | `openmrs`                              | Modo de auth: `openmrs` (básico) o `keycloak` (OIDC)                   |
 | `SIHSALUS_ALLOW_SELF_SIGNED_TLS` | `true` para DEV/QLTY internos; `false` para otros backends | Activa TLS "insecure" para backends internos con certificados auto-firmados en desarrollo. Usa `false` para forzar validación estricta |
 | `SIHSALUS_FHIR_BASE`             | *(derivado del backend)*               | URL base de FHIR R4                                                    |
+| `SIHSALUS_PUBLIC_SPA_URL`        | *(opcional)*                           | URL pública absoluta del SPA para Open Graph/Twitter previews          |
 | `SPA_PATH`                       | `/openmrs/spa`                         | Base path para los assets del SPA                                      |
 | `API_URL`                        | `/openmrs`                             | Base path de la API de OpenMRS                                         |
 

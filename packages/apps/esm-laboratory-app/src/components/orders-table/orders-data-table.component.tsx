@@ -25,18 +25,18 @@ import {
   ExtensionSlot,
   formatDate,
   type OrderUrgency,
+  openmrsFetch,
   parseDate,
+  restBaseUrl,
   showModal,
   useConfig,
   usePagination,
-  openmrsFetch,
-  restBaseUrl,
-  useSession,
   userHasAccess,
+  useSession,
 } from '@openmrs/esm-framework';
-import React, { useCallback, useMemo, useState } from 'react';
-import useSWR from 'swr';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
+import useSWR from 'swr';
 import { type Config } from '../../config-schema';
 import { laboratoryEditPrivilege } from '../../constants';
 import { useLabOrders } from '../../laboratory.resource';
@@ -126,6 +126,7 @@ const getPriorityRank = (urgency: string | undefined): number => {
 interface LabsetMember {
   uuid: string;
   display: string;
+  setMembers?: Array<LabsetMember>;
 }
 
 interface LabsetResponse {
@@ -133,6 +134,22 @@ interface LabsetResponse {
   display: string;
   setMembers: Array<LabsetMember>;
 }
+
+const getMemberUuids = (labset: LabsetResponse | LabsetMember): Array<string> => {
+  const uuids: Array<string> = [];
+  const recurse = (member: LabsetResponse | LabsetMember) => {
+    if (member.uuid) {
+      uuids.push(member.uuid);
+    }
+    if (member.setMembers) {
+      member.setMembers.forEach(recurse);
+    }
+  };
+  if (labset.setMembers) {
+    labset.setMembers.forEach(recurse);
+  }
+  return uuids;
+};
 
 interface PrioritizedOrderLike {
   urgency?: string;
@@ -144,7 +161,17 @@ const OrdersDataTable: React.FC<OrdersDataTableProps> = (props) => {
   const [filter, setFilter] = useState<FulfillerStatus>(null);
   const [priorityFilter, setPriorityFilter] = useState<string | null>(null);
   const [selectedLabsetUuid, setSelectedLabsetUuid] = useState<string | null>(null);
+  const [instructionsFilter, setInstructionsFilter] = useState<string | null>(null);
   const [searchString, setSearchString] = useState('');
+
+  const instructionsFilterOptions = useMemo(() => {
+    return [
+      { value: null, display: t('all', 'All') },
+      { value: 'HOSPITALIZED', display: t('hospitalizedPatient', 'Paciente hospitalizado') },
+      { value: 'REGIONAL', display: t('onlyRegionalHospital', 'Solo para ser enviado a hospital regional') },
+      { value: 'OTHER', display: t('otherInstructions', 'Otro') },
+    ];
+  }, [t]);
   const session = useSession();
   const canEdit = userHasAccess(laboratoryEditPrivilege, session?.user);
   const { labTableColumns, patientIdIdentifierTypeUuid, resultsViewerConcepts } = useConfig<Config>();
@@ -156,12 +183,16 @@ const OrdersDataTable: React.FC<OrdersDataTableProps> = (props) => {
   const conceptUrls = useMemo(() => {
     return (
       resultsViewerConcepts?.map(
-        (c) => `${restBaseUrl}/concept/${c.conceptUuid}?v=custom:(uuid,display,setMembers:(uuid,display))`,
+        (c) =>
+          `${restBaseUrl}/concept/${c.conceptUuid}?v=custom:(uuid,display,setMembers:(uuid,display,setMembers:(uuid,display,setMembers:(uuid,display))))`,
       ) || []
     );
   }, [resultsViewerConcepts]);
 
-  const { data: fetchedLabsets } = useSWR<Array<LabsetResponse>, Error>(conceptUrls.length ? conceptUrls : null, fetchLabsets);
+  const { data: fetchedLabsets } = useSWR<Array<LabsetResponse>, Error>(
+    conceptUrls.length ? conceptUrls : null,
+    fetchLabsets,
+  );
 
   const labsetOptions = useMemo(() => {
     const options = [{ value: null, display: t('all', 'All') }];
@@ -225,7 +256,7 @@ const OrdersDataTable: React.FC<OrdersDataTableProps> = (props) => {
             // Apply labset filter to individual orders if set
             if (selectedLabsetUuid && fetchedLabsets) {
               const currentLabset = fetchedLabsets.find((set) => set.uuid === selectedLabsetUuid);
-              const memberUuids = currentLabset?.setMembers?.map((m) => m.uuid) || [];
+              const memberUuids = currentLabset ? getMemberUuids(currentLabset) : [];
 
               labOrdersForPatient = labOrdersForPatient.filter(
                 (order) => order.concept?.uuid === selectedLabsetUuid || memberUuids.includes(order.concept?.uuid),
@@ -256,6 +287,31 @@ const OrdersDataTable: React.FC<OrdersDataTableProps> = (props) => {
                   (filterNorm === '65CF194E-05A7-4832-BA6D-9B7C9940A7C2' && normUrgency === 'ON_SCHEDULED_DATE')
                 );
               });
+            }
+
+            // Apply instructions filter to individual orders if set
+            if (instructionsFilter) {
+              const filterHosp = 'paciente hospitalizado';
+              const filterReg = 'solo para ser enviado a hospital regional';
+
+              const matchInstruction = (instructions: string | undefined) => {
+                const norm = (instructions || '').toLowerCase();
+                if (instructionsFilter === 'HOSPITALIZED') {
+                  return norm.includes(filterHosp);
+                }
+                if (instructionsFilter === 'REGIONAL') {
+                  return norm.includes(filterReg);
+                }
+                if (instructionsFilter === 'OTHER') {
+                  return !norm.includes(filterHosp) && !norm.includes(filterReg);
+                }
+                return true;
+              };
+
+              labOrdersForPatient = labOrdersForPatient.filter((order) => matchInstruction(order.instructions));
+              flattenedLabOrdersForPatient = flattenedLabOrdersForPatient.filter((order) =>
+                matchInstruction(order.instructions),
+              );
             }
 
             // Sort individual orders by priority (highest priority first)
@@ -310,6 +366,7 @@ const OrdersDataTable: React.FC<OrdersDataTableProps> = (props) => {
     priorityFilter,
     selectedLabsetUuid,
     fetchedLabsets,
+    instructionsFilter,
   ]);
 
   const searchResults = useMemo(() => {
@@ -368,6 +425,11 @@ const OrdersDataTable: React.FC<OrdersDataTableProps> = (props) => {
   const pageSizes = [10, 20, 30, 40, 50];
   const [currentPageSize, setPageSize] = useState(10);
   const { goTo, results: paginatedLabOrders, currentPage } = usePagination(searchResults, currentPageSize);
+
+  // biome-ignore lint/correctness/useExhaustiveDependencies: reset page to 1 when filters change
+  useEffect(() => {
+    goTo(1);
+  }, [filter, priorityFilter, selectedLabsetUuid, instructionsFilter, searchString]);
 
   const handleOrderStatusChange = ({ selectedItem }: { selectedItem: { value: FulfillerStatus; display: string } }) =>
     setFilter(selectedItem.value);
@@ -469,6 +531,20 @@ const OrdersDataTable: React.FC<OrdersDataTableProps> = (props) => {
                   label=""
                   onChange={({ selectedItem }) => setSelectedLabsetUuid(selectedItem?.value)}
                   titleText={t('filterOrdersByLabset', 'Filter by lab set') + ':'}
+                  type="inline"
+                />
+                <Dropdown
+                  id="orderInstructionsFilter"
+                  initialSelectedItem={
+                    instructionsFilter
+                      ? instructionsFilterOptions.find((i) => i.value === instructionsFilter)
+                      : instructionsFilterOptions[0]
+                  }
+                  items={instructionsFilterOptions}
+                  itemToString={(item) => item?.display}
+                  label=""
+                  onChange={({ selectedItem }) => setInstructionsFilter(selectedItem?.value)}
+                  titleText={t('filterByInstructions', 'Filter by instructions') + ':'}
                   type="inline"
                 />
                 <OrdersDateRangePicker />

@@ -6,12 +6,6 @@
   },
   "extensions": [
     {
-      "name": "maternal-health-forms-action-button",
-      "slot": "patient-actions-slot",
-      "component": "maternalHealthFormsActionButton",
-      "privileges": "app:clinical.chart.prenatalCare.edit"
-    },
-    {
       "name": "labour-and-delivery-dashboard",
       "slot": "patient-chart-labour-and-delivery-dashboard-slot",
       "component": "labourAndDelivery",

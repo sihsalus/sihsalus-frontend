@@ -1,15 +1,18 @@
 import { openmrsFetch, useConfig } from '@openmrs/esm-framework';
+import { useMemo } from 'react';
 import useSWR from 'swr';
 
 import type { OdontogramConfig } from '../config-schema';
 import { getAmpathOdontogramFormUuid } from '../odontogram/ampath-form-odontogram-config';
 import {
   getOdontogramDataFromEncounter,
+  getOdontogramRecordTypeFromEncounter,
   getParentBaseEncounterUuidFromEncounter,
   type OdontogramEncounter,
 } from '../odontogram/ampath-form-odontogram-mapper';
+import type { OdontogramData } from '../odontogram/types/odontogram';
 import { getEncountersByTypeUrl } from '../odontogram.resource';
-import type { OdontogramBaseGroup, OdontogramRecord } from '../types/odontogram-record';
+import type { OdontogramBaseGroup, OdontogramRecord, OdontogramRecordType } from '../types/odontogram-record';
 
 interface EncounterResponse {
   results: Array<OdontogramEncounter>;
@@ -60,6 +63,46 @@ function groupByBase(bases: OdontogramRecord[], attentions: OdontogramRecord[]):
   return groups;
 }
 
+function hasMatchingRecordType(
+  encounter: OdontogramEncounter,
+  config: OdontogramConfig,
+  recordType: OdontogramRecordType,
+): boolean {
+  const oppositeFallback = recordType === 'base' ? 'attention' : 'base';
+  return getOdontogramRecordTypeFromEncounter(encounter, config, oppositeFallback) === recordType;
+}
+
+export function buildOdontogramRecords(
+  encounters: OdontogramEncounter[],
+  config: OdontogramConfig,
+  recordType: OdontogramRecordType,
+): OdontogramRecord[] {
+  const recordsWithData: Array<{ encounter: OdontogramEncounter; data: OdontogramData }> = [...encounters]
+    .sort((a, b) => a.encounterDatetime.localeCompare(b.encounterDatetime))
+    .flatMap((encounter) => {
+      const data = getOdontogramDataFromEncounter(encounter, config);
+
+      if (!data || !hasMatchingRecordType(encounter, config, recordType)) {
+        return [];
+      }
+
+      return [{ encounter, data }];
+    });
+
+  return recordsWithData.map(({ encounter, data }, index) => ({
+    encounterUuid: encounter.uuid,
+    type: recordType,
+    date: encounter.encounterDatetime,
+    label:
+      recordType === 'base'
+        ? formatBaseLabel(encounter.encounterDatetime, index, recordsWithData.length)
+        : formatAttentionLabel(encounter.encounterDatetime),
+    data,
+    parentBaseEncounterUuid:
+      recordType === 'attention' ? getParentBaseEncounterUuidFromEncounter(encounter, config) : undefined,
+  }));
+}
+
 /**
  * Fetches the full odontogram history for a patient and returns it as
  * grouped base→attentions pairs, sorted oldest-first.
@@ -97,30 +140,19 @@ export function useOdontogramHistory(patientUuid: string | null) {
     mutate: mutateAttentions,
   } = useSWR<{ data: EncounterResponse }>(attentionUrl, openmrsFetch, swrOptions);
 
-  const sortedBases = (baseData?.data?.results ?? []).sort((a, b) =>
-    a.encounterDatetime.localeCompare(b.encounterDatetime),
+  const baseResults = baseData?.data?.results;
+  const attentionResults = attentionData?.data?.results;
+
+  const baseRecords = useMemo(() => buildOdontogramRecords(baseResults ?? [], config, 'base'), [baseResults, config]);
+  const attentionRecords = useMemo(
+    () => buildOdontogramRecords(attentionResults ?? [], config, 'attention'),
+    [attentionResults, config],
   );
 
-  const baseRecords: OdontogramRecord[] = sortedBases.map((enc, idx) => ({
-    encounterUuid: enc.uuid,
-    type: 'base',
-    date: enc.encounterDatetime,
-    label: formatBaseLabel(enc.encounterDatetime, idx, sortedBases.length),
-    data: getOdontogramDataFromEncounter(enc, config),
-  }));
-
-  const attentionRecords: OdontogramRecord[] = (attentionData?.data?.results ?? [])
-    .sort((a, b) => a.encounterDatetime.localeCompare(b.encounterDatetime))
-    .map((enc) => ({
-      encounterUuid: enc.uuid,
-      type: 'attention',
-      date: enc.encounterDatetime,
-      label: formatAttentionLabel(enc.encounterDatetime),
-      data: getOdontogramDataFromEncounter(enc, config),
-      parentBaseEncounterUuid: getParentBaseEncounterUuidFromEncounter(enc, config),
-    }));
-
-  const groups: OdontogramBaseGroup[] = baseRecords.length > 0 ? groupByBase(baseRecords, attentionRecords) : [];
+  const groups: OdontogramBaseGroup[] = useMemo(
+    () => (baseRecords.length > 0 ? groupByBase(baseRecords, attentionRecords) : []),
+    [baseRecords, attentionRecords],
+  );
 
   const mutate = () => Promise.all([mutateBase(), mutateAttentions()]);
 

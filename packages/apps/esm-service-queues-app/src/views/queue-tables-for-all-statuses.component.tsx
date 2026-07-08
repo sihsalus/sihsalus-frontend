@@ -1,9 +1,17 @@
 import { InlineNotification, Search, SkeletonText } from '@carbon/react';
 import { Add } from '@carbon/react/icons';
-import { ExtensionSlot, isDesktop, launchWorkspace, showToast, useLayoutType, useSession, userHasAccess } from '@openmrs/esm-framework';
+import {
+  ExtensionSlot,
+  isDesktop,
+  launchWorkspace,
+  showToast,
+  useLayoutType,
+  userHasAccess,
+  useSession,
+} from '@openmrs/esm-framework';
 import React, { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-
+import { serviceQueuesEditPrivilege } from '../constants';
 import { useQueueEntries } from '../hooks/useQueueEntries';
 import PatientQueueHeader from '../patient-queue-header/patient-queue-header.component';
 import { useColumns } from '../queue-table/cells/columns.resource';
@@ -11,7 +19,6 @@ import QueueTable from '../queue-table/queue-table.component';
 import styles from '../queue-table/queue-table.scss';
 import { QueueTableByStatusSkeleton } from '../queue-table/queue-table-by-status-skeleton.component';
 import QueueTableMetrics from '../queue-table/queue-table-metrics.component';
-import { serviceQueuesEditPrivilege } from '../constants';
 import type { Concept, Queue, QueueEntry } from '../types';
 
 interface QueueTablesForAllStatusesProps {

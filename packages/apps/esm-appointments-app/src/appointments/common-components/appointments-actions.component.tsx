@@ -1,6 +1,6 @@
 import { Button } from '@carbon/react';
 import { TaskComplete } from '@carbon/react/icons';
-import { navigate, showModal, useConfig, useSession, userHasAccess } from '@openmrs/esm-framework';
+import { navigate, showModal, useConfig, userHasAccess, useSession } from '@openmrs/esm-framework';
 import dayjs from 'dayjs';
 import isToday from 'dayjs/plugin/isToday';
 import utc from 'dayjs/plugin/utc';
@@ -85,7 +85,10 @@ const AppointmentsActions: React.FC<AppointmentsActionsProps> = ({ appointment }
           </Button>
         );
 
-      case canEdit && checkInButton.enabled && (!hasActiveVisitToday || checkInButton.showIfActiveVisit) && isTodaysAppointment:
+      case canEdit &&
+        checkInButton.enabled &&
+        (!hasActiveVisitToday || checkInButton.showIfActiveVisit) &&
+        isTodaysAppointment:
         return (
           <CheckInButton
             patientUuid={patientUuid}

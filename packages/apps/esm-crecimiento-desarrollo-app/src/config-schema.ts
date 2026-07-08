@@ -93,8 +93,8 @@ export const configSchema = {
     _description: 'List of form identifiers. Values can be UUIDs or published OpenMRS form names.',
     _default: {
       // Maternal Forms
-      prenatal: 'e8f98494-af35-4bb8-9fc7-c409c8fed843',
-      postNatal: '72aa78e0-ee4b-47c3-9073-26f3b9ecc4a7',
+      prenatal: 'OBST-003-ATENCIÓN PRENATAL',
+      postNatal: 'OBST-009-CONTROL DE PUERPERIO',
       maternalHistory: 'OBST-001-ANTECEDENTES',
       deliveryOrAbortion: 'OBST-005-PARTO O ABORTO',
       SummaryOfLaborAndPostpartum: 'HOSP-007-RESUMEN DE PARTO-POSTPARTO',
@@ -102,13 +102,14 @@ export const configSchema = {
       prenatalCare: 'OBST-002-EMBARAZO ACTUAL',
       immediatePostpartumPeriod: 'OBST-006-PUERPERIO INMEDIATO',
       postpartumControl: 'OBST-009-CONTROL DE PUERPERIO',
-      labourAndDelivery: '496c7cc3-0eea-4e84-a04c-2292949e2f7f',
+      labourAndDelivery: 'OBST-005-PARTO O ABORTO',
 
       atencionPrenatal: 'OBST-003-ATENCIÓN PRENATAL',
 
       // CRED Forms
       atencionImmediataNewborn: '(Página 5) ATENCIÓN INMEDIATA DEL RECIÉN NACIDO',
-      breastfeedingObservation: '(Página 8) Ficha de Observación del Amamantamiento de la Consejería en Lactancia Materna',
+      breastfeedingObservation:
+        '(Página 8) Ficha de Observación del Amamantamiento de la Consejería en Lactancia Materna',
       newbornNeuroEval: '(Página 6) EVALUACIÓN CÉFALO-CAUDAL Y NEUROLÓGICO DEL RECIÉN NACIDO',
       roomingIn: '(Página 10) Alojamiento Conjunto',
       birthDetails: '(CRED) Detalles de Nacimiento',
@@ -122,7 +123,7 @@ export const configSchema = {
       eedp15Months: 'Página (30, 31, 32 y 33) EEDP (15 meses)',
       eedp18Months: 'Página (30, 31, 32 y 33) EEDP (18 meses)',
       eedp21Months: 'Página (30, 31, 32 y 33) EEDP (21 meses)',
-      tepsi: '(Página 34, 35 y 36) TEPSI',
+      tepsi: '1fe2f9e8-a9b1-34d2-94ce-b897ca2e16cc',
 
       // Assessment Forms
       riskInterview0to30: '(Página 19) PRIMERA ENTREVISTA EN BUSCA DE FACTORES DE RIESGO (0 - 30 meses)',
@@ -135,13 +136,6 @@ export const configSchema = {
       medicalOrders: '(Página 13) Órdenes Médicas',
       medicalProgressNote: '(Página 14) Nota de Evolución Médica',
       epicrisis: '(Página 16) Epicrisis',
-      clinicalEncounterFormUuid: 'e958f902-64df-4819-afd4-7fb061f59308',
-
-      // HIV/HTS Forms
-      defaulterTracingFormUuid: 'a1a62d1e-2def-11e9-b210-d663bd873d93',
-      htsScreening: '04295648-7606-11e8-adc0-fa7ae01bbebc',
-      htsInitialTest: '402dc5d7-46da-42d4-b2be-f43ea4ad87b0',
-      htsRetest: 'b08471f6-0892-4bf7-ab2b-bf79797b8ea4',
 
       // Hospital Forms
       puerperiumLab: '(Página 4 y 5) Puerperio - Laboratorio',
@@ -211,22 +205,11 @@ export const configSchema = {
 
   partography: {
     _type: Type.Object,
-    _description: 'Configuración de partograma: encounter, formulario y concepto de progreso usado por CRED',
+    _description: 'Configuración mínima del partograma publicado en hospitalización/obstetricia',
     _default: {
       encounterTypeUuid: 'b212032f-9903-4696-ab31-173d432d1d3d',
-      formUuid: 'd4c4dcfa-5c7b-4727-a7a6-f79a3b2c2735',
-      progressConceptUuid: '160116AAAAAAAAAAAAAAAAAAAAAAAAAAAAAA',
-      concepts: {
-        obsDateUiid: '',
-        timeRecordedUuid: '163286AAAAAAAAAAAAAAAAAAAAAAAAAAAAAA',
-        fetalHeartRateUuid: '1440AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA',
-        cervicalDilationUiid: '162261AAAAAAAAAAAAAAAAAAAAAAAAAAAAAA',
-        cervicalDilationUuid: '162261AAAAAAAAAAAAAAAAAAAAAAAAAAAAAA',
-        descentOfHead: '1810AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA',
-        descentOfHeadUuid: '1810AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA',
-        contractionFrequencyUuid: '163749AAAAAAAAAAAAAAAAAAAAAAAAAAAAAA',
-        contractionDurationUuid: '163750AAAAAAAAAAAAAAAAAAAAAAAAAAAAAA',
-      },
+      formUuid: '7c441319-2e9d-3911-aa4b-2a4c71373a6f',
+      progressConceptUuid: '56fdb8b4-4f2a-45f6-b720-7b76786c1ad1',
     },
     encounterTypeUuid: {
       _type: Type.UUID,
@@ -236,27 +219,12 @@ export const configSchema = {
     formUuid: {
       _type: Type.UUID,
       _description: 'Form UUID del partograma',
-      _default: 'd4c4dcfa-5c7b-4727-a7a6-f79a3b2c2735',
+      _default: '7c441319-2e9d-3911-aa4b-2a4c71373a6f',
     },
     progressConceptUuid: {
       _type: Type.ConceptUuid,
-      _description: 'Concept UUID del grupo de observaciones de progreso del partograma',
-      _default: '160116AAAAAAAAAAAAAAAAAAAAAAAAAAAAAA',
-    },
-    concepts: {
-      _type: Type.Object,
-      _description: 'Conceptos clínicos que componen los datos del partograma',
-      _default: {
-        obsDateUiid: '',
-        timeRecordedUuid: '163286AAAAAAAAAAAAAAAAAAAAAAAAAAAAAA',
-        fetalHeartRateUuid: '1440AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA',
-        cervicalDilationUiid: '162261AAAAAAAAAAAAAAAAAAAAAAAAAAAAAA',
-        cervicalDilationUuid: '162261AAAAAAAAAAAAAAAAAAAAAAAAAAAAAA',
-        descentOfHead: '1810AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA',
-        descentOfHeadUuid: '1810AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA',
-        contractionFrequencyUuid: '163749AAAAAAAAAAAAAAAAAAAAAAAAAAAAAA',
-        contractionDurationUuid: '163750AAAAAAAAAAAAAAAAAAAAAAAAAAAAAA',
-      },
+      _description: 'Concept UUID principal publicado en HOSP-006-PARTOGRAMA',
+      _default: '56fdb8b4-4f2a-45f6-b720-7b76786c1ad1',
     },
   },
 
@@ -813,7 +781,7 @@ export const configSchema = {
     _type: Type.Object,
     _description: 'Configuración de suplementación MMN y prenatal',
     _default: {
-      mmnConceptUuid: 'd80c3551-2a6c-49ac-a541-0b17957f9657',
+      mmnConceptUuid: 'c2010002-0000-4000-8000-000000000002',
       mmnTotalTarget: 360,
       ironConceptUuid: '03a4f101-bf46-4923-97a1-759d926dee00',
       folicAcidConceptUuid: '7418c3a3-4c2a-4943-91db-ae2b561d6ded',
@@ -821,8 +789,8 @@ export const configSchema = {
     },
     mmnConceptUuid: {
       _type: Type.ConceptUuid,
-      _description: 'Concept UUID de multimicronutrientes entregados — OCL: Administración Micronutriente #3162',
-      _default: 'd80c3551-2a6c-49ac-a541-0b17957f9657',
+      _description: 'Concept UUID de cantidad de multimicronutrientes entregados en CRED-002',
+      _default: 'c2010002-0000-4000-8000-000000000002',
     },
     mmnTotalTarget: {
       _type: Type.Number,
@@ -981,60 +949,54 @@ export const configSchema = {
     _type: Type.Object,
     _description: 'Concepts para evaluación y seguimiento nutricional infantil',
     _default: {
-      weightForAgeConceptUuid: '44ca0b9e-d453-473d-80fc-cc5c6c97c4e1',
-      heightForAgeConceptUuid: 'f0a86915-09a2-4e1f-a9a3-bb870cea6b80',
-      weightForHeightConceptUuid: '58c5581a-cc71-473e-b3a6-cd1c393b7d54',
-      heightPercentileConceptUuid: 'd37c8f1a-4a7d-4066-835f-253c80ad3fc7',
+      nutritionClassificationConceptUuid: 'f0000009-0000-4000-8000-000000000009',
+      weightConceptUuid: '5089AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA',
+      heightConceptUuid: '5090AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA',
       feedingAssessmentConceptUuid: '6d411bf5-4391-4f4b-8ec6-7f789be9a237',
-      breastfeedingConceptUuid: '0c1098a3-d445-4968-9f68-6b687500246e',
-      mmnReceivingConceptUuid: '5ab754bf-9332-4f4a-abac-c0a00f398381',
-      ironReceivingConceptUuid: 'e336f84a-5593-47f9-af88-2d8f2c79bfc2',
-      nutritionCounselingCountConceptUuid: '8231f0af-cbd8-4b93-9708-d88175b81325',
+      breastfeedingAnswerConceptUuid: '90dc11d9-7af3-49ed-81be-979c3da72649',
+      mmnReceivingConceptUuid: 'c2010002-0000-4000-8000-000000000002',
+      ironReceivingConceptUuid: 'c2010003-0000-4000-8000-000000000003',
+      nutritionCounselingConceptUuid: 'c2010004-0000-4000-8000-000000000004',
     },
-    weightForAgeConceptUuid: {
+    nutritionClassificationConceptUuid: {
       _type: Type.ConceptUuid,
-      _description: 'Concept UUID de Peso/Edad (P/E) — OCL: Peso Edad #3171',
-      _default: '44ca0b9e-d453-473d-80fc-cc5c6c97c4e1',
+      _description: 'Concept UUID de clasificación nutricional actual en CRED-006/CRED-008',
+      _default: 'f0000009-0000-4000-8000-000000000009',
     },
-    heightForAgeConceptUuid: {
+    weightConceptUuid: {
       _type: Type.ConceptUuid,
-      _description: 'Concept UUID de Talla/Edad (T/E) — OCL: Talla Edad #3172',
-      _default: 'f0a86915-09a2-4e1f-a9a3-bb870cea6b80',
+      _description: 'Concept UUID de peso registrado en CRED-006/CRED-015',
+      _default: '5089AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA',
     },
-    weightForHeightConceptUuid: {
+    heightConceptUuid: {
       _type: Type.ConceptUuid,
-      _description: 'Concept UUID de Peso/Talla (P/T) — OCL: Peso Talla #3173',
-      _default: '58c5581a-cc71-473e-b3a6-cd1c393b7d54',
-    },
-    heightPercentileConceptUuid: {
-      _type: Type.ConceptUuid,
-      _description: 'Concept UUID de Percentilo de talla — OCL: #1223 (Numeric)',
-      _default: 'd37c8f1a-4a7d-4066-835f-253c80ad3fc7',
+      _description: 'Concept UUID de talla registrada en CRED-006/CRED-015',
+      _default: '5090AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA',
     },
     feedingAssessmentConceptUuid: {
       _type: Type.ConceptUuid,
       _description: 'Concept UUID de evaluación de alimentación del niño — OCL: #2279 (Coded, 17 Q-AND-A)',
       _default: '6d411bf5-4391-4f4b-8ec6-7f789be9a237',
     },
-    breastfeedingConceptUuid: {
+    breastfeedingAnswerConceptUuid: {
       _type: Type.ConceptUuid,
-      _description: 'Concept UUID de ¿Recibe lactancia materna? — OCL: #1815 (Coded)',
-      _default: '0c1098a3-d445-4968-9f68-6b687500246e',
+      _description: 'Answer concept UUID de lactancia materna dentro de la evaluación de alimentación',
+      _default: '90dc11d9-7af3-49ed-81be-979c3da72649',
     },
     mmnReceivingConceptUuid: {
       _type: Type.ConceptUuid,
-      _description: 'Concept UUID de ¿Recibiendo MMN? — OCL: #1812 (Coded)',
-      _default: '5ab754bf-9332-4f4a-abac-c0a00f398381',
+      _description: 'Concept UUID de cantidad de micronutrientes recibidos en CRED-002',
+      _default: 'c2010002-0000-4000-8000-000000000002',
     },
     ironReceivingConceptUuid: {
       _type: Type.ConceptUuid,
-      _description: 'Concept UUID de ¿Tomando suplemento de hierro? — OCL: #1808 (Coded)',
-      _default: 'e336f84a-5593-47f9-af88-2d8f2c79bfc2',
+      _description: 'Concept UUID de cantidad de hierro recibida en CRED-002',
+      _default: 'c2010003-0000-4000-8000-000000000003',
     },
-    nutritionCounselingCountConceptUuid: {
+    nutritionCounselingConceptUuid: {
       _type: Type.ConceptUuid,
-      _description: 'Concept UUID de número de consejería nutricional — OCL: #4194 (Numeric)',
-      _default: '8231f0af-cbd8-4b93-9708-d88175b81325',
+      _description: 'Concept UUID de consejería nutricional brindada en CRED-002',
+      _default: 'c2010004-0000-4000-8000-000000000004',
     },
   },
 
@@ -1044,14 +1006,14 @@ export const configSchema = {
     _description: 'Configuración del Test Peruano de Desarrollo Infantil',
     _default: {
       encounterTypeUuid: 'a990eabc-3405-419f-bfb1-96ca2d8279b8', // Control de Niño Sano — NTS 102
-      formUuid: '6de41002-6b38-4fdc-9551-c78642256040',
+      formUuid: 'c35213c3-bb95-340d-99a5-006f1e79068a',
       concepts: {
         ageMonthsUuid: '1410AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA',
         instrumentUuid: 'c4010001-0000-4000-8000-000000000001',
         instrumentTestPeruanoAnswerUuid: 'c4010013-0000-4000-8000-000000000013',
         classificationUuid: 'c4010002-0000-4000-8000-000000000002',
         classificationAnswers: {
-          normal: '1115AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA',
+          normal: '118fe066-b4a0-4978-b5b0-bb4ed7f4b80a',
           riesgo: 'c4010021-0000-4000-8000-000000000021',
           retraso: 'c4010022-0000-4000-8000-000000000022',
         },
@@ -1063,7 +1025,7 @@ export const configSchema = {
           no: '488b58ff-64f5-4f8a-8979-fa79940b1594',
         },
         planUuid: 'c4010006-0000-4000-8000-000000000006',
-        observationsUuid: '161011AAAAAAAAAAAAAAAAAAAAAAAAAAAAAA',
+        observationsUuid: '643c7023-c2f4-4796-9920-a2ed0f79ba35',
       },
     },
     encounterTypeUuid: {
@@ -1075,7 +1037,7 @@ export const configSchema = {
     formUuid: {
       _type: Type.UUID,
       _description: 'Form UUID de CRED-004 Seguimiento del Desarrollo usado para persistir el perfil gráfico.',
-      _default: '6de41002-6b38-4fdc-9551-c78642256040',
+      _default: 'c35213c3-bb95-340d-99a5-006f1e79068a',
     },
     concepts: {
       _type: Type.Object,
@@ -1089,16 +1051,16 @@ export const configSchema = {
     _type: Type.Object,
     _description: 'Concepts para estimulación temprana y seguimiento del desarrollo',
     _default: {
-      developmentEvalConceptUuid: 'eb31eed5-5070-4d59-90b0-eb1d0e810d31',
+      developmentEvalConceptUuid: 'c3010007-0000-4000-8000-000000000007',
       tepsiCoordinationConceptUuid: 'ecc332d2-6ca1-4238-ac14-d0de521bdb11',
       tepsiMotorConceptUuid: '7aec4f14-e2fb-4489-bcc5-50c7bf609a5b',
-      stimulationLackConceptUuid: '861b53cc-e5ea-433c-9417-a8d4a6aeda26',
-      counselingConceptUuid: 'de5570f2-70f4-42ee-97c1-def5ca8333df',
+      stimulationLackConceptUuid: 'c4010002-0000-4000-8000-000000000002',
+      counselingConceptUuid: 'c5010001-0000-4000-8000-000000000001',
     },
     developmentEvalConceptUuid: {
       _type: Type.ConceptUuid,
-      _description: 'Concept UUID de evaluación de desarrollo — OCL: Evaluación de Desarrollo #3648',
-      _default: 'eb31eed5-5070-4d59-90b0-eb1d0e810d31',
+      _description: 'Concept UUID de actividades realizadas en CRED-003 sesión de estimulación temprana',
+      _default: 'c3010007-0000-4000-8000-000000000007',
     },
     tepsiCoordinationConceptUuid: {
       _type: Type.ConceptUuid,
@@ -1112,13 +1074,13 @@ export const configSchema = {
     },
     stimulationLackConceptUuid: {
       _type: Type.ConceptUuid,
-      _description: 'Concept UUID de falta de estimulación del desarrollo — OCL: #1991 (Coded)',
-      _default: '861b53cc-e5ea-433c-9417-a8d4a6aeda26',
+      _description: 'Concept UUID de clasificación del desarrollo en CRED-004; riesgo/retraso indican alerta',
+      _default: 'c4010002-0000-4000-8000-000000000002',
     },
     counselingConceptUuid: {
       _type: Type.ConceptUuid,
-      _description: 'Concept UUID de orientación y consejería — OCL: #2032 (Coded)',
-      _default: 'de5570f2-70f4-42ee-97c1-def5ca8333df',
+      _description: 'Concept UUID de tema de consejería en CRED-005',
+      _default: 'c5010001-0000-4000-8000-000000000001',
     },
   },
 
@@ -1644,17 +1606,6 @@ export interface PartographyConfigObject {
   encounterTypeUuid: string;
   formUuid: string;
   progressConceptUuid: string;
-  concepts: {
-    obsDateUiid: string;
-    timeRecordedUuid: string;
-    fetalHeartRateUuid: string;
-    cervicalDilationUiid: string;
-    cervicalDilationUuid?: string;
-    descentOfHead: string;
-    descentOfHeadUuid?: string;
-    contractionFrequencyUuid?: string;
-    contractionDurationUuid?: string;
-  };
 }
 
 export interface PartograpyComponents {
@@ -1739,7 +1690,7 @@ export interface ConfigObject {
   CRED: Record<string, string>;
   formsList: {
     prenatal: string;
-    postnatal: string;
+    postNatal: string;
     labourAndDelivery: string;
     atencionPrenatal: string;
     atencionImmediataNewborn: string;
@@ -1750,11 +1701,6 @@ export interface ConfigObject {
     prenatalCare: string;
     immediatePostpartumPeriod: string;
     postpartumControl: string;
-    defaulterTracingFormUuid: string;
-    htsScreening: string;
-    htsInitialTest: string;
-    htsRetest: string;
-    clinicalEncounterFormUuid: string;
     breastfeedingObservation: string;
     eedp12Months: string;
     tepsi: string;
@@ -1898,15 +1844,14 @@ export interface ConfigObject {
     defaultAppointmentDurationMins: number;
   };
   childNutrition: {
-    weightForAgeConceptUuid: string;
-    heightForAgeConceptUuid: string;
-    weightForHeightConceptUuid: string;
-    heightPercentileConceptUuid: string;
+    nutritionClassificationConceptUuid: string;
+    weightConceptUuid: string;
+    heightConceptUuid: string;
     feedingAssessmentConceptUuid: string;
-    breastfeedingConceptUuid: string;
+    breastfeedingAnswerConceptUuid: string;
     mmnReceivingConceptUuid: string;
     ironReceivingConceptUuid: string;
-    nutritionCounselingCountConceptUuid: string;
+    nutritionCounselingConceptUuid: string;
   };
   earlyStimulation: {
     developmentEvalConceptUuid: string;

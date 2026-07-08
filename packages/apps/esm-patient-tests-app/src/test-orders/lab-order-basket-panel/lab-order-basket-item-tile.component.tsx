@@ -1,7 +1,16 @@
 import { ClickableTile, IconButton, Tile } from '@carbon/react';
-import { formatDate, parseDate, TrashCanIcon, useConfig, useLayoutType, WarningIcon } from '@openmrs/esm-framework';
+import {
+  formatDate,
+  parseDate,
+  TrashCanIcon,
+  useConfig,
+  useLayoutType,
+  usePatient,
+  WarningIcon,
+} from '@openmrs/esm-framework';
+import { usePatientOrders } from '@openmrs/esm-patient-common-lib';
 import classNames from 'classnames';
-import { useRef } from 'react';
+import { useMemo, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import type { ConfigObject } from '../../config-schema';
@@ -18,6 +27,29 @@ export interface OrderBasketItemTileProps {
 export function LabOrderBasketItemTile({ orderBasketItem, onItemClick, onRemoveClick }: OrderBasketItemTileProps) {
   const { t } = useTranslation();
   const isTablet = useLayoutType() === 'tablet';
+  const { patientUuid } = usePatient();
+  const config = useConfig<ConfigObject>();
+
+  const { data: existingOrders } = usePatientOrders(
+    patientUuid,
+    'any',
+    null,
+    null,
+    null,
+    config.orders.careSettingUuid,
+  );
+
+  const hasRecentOrder = useMemo(() => {
+    if (!existingOrders || !orderBasketItem.testType?.conceptUuid) return false;
+    const now = Date.now();
+    const oneHourAgo = now - 60 * 60 * 1000;
+    return existingOrders.some(
+      (existing) =>
+        existing.concept?.uuid === orderBasketItem.testType.conceptUuid &&
+        new Date(existing.dateActivated).getTime() >= oneHourAgo &&
+        existing.action !== 'DISCONTINUE',
+    );
+  }, [existingOrders, orderBasketItem.testType?.conceptUuid]);
 
   // This here is really dirty, but required.
   // If the ref's value is false, we won't react to the ClickableTile's handleClick function.
@@ -35,6 +67,20 @@ export function LabOrderBasketItemTile({ orderBasketItem, onItemClick, onRemoveC
           <OrderPriorityLabel orderBasketItem={orderBasketItem} />
           <br />
           <span className={styles.name}>{orderBasketItem.testType?.label}</span>
+          {hasRecentOrder && (
+            <>
+              <br />
+              <span className={styles.orderWarningText}>
+                <WarningIcon size={16} />
+                &nbsp;
+                <span className={styles.label01}>
+                  {t('recentOrderWarning', 'La orden {{orderName}} fue realizada recientemente', {
+                    orderName: orderBasketItem.testType?.label,
+                  })}
+                </span>
+              </span>
+            </>
+          )}
           <span className={styles.label01}>
             {!!orderBasketItem.orderError && (
               <>

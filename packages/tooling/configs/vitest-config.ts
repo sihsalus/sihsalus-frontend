@@ -17,6 +17,11 @@ const sharedAppTestAliases = Object.fromEntries(
   Object.entries(sharedTestAliases).map(([key, value]) => [key, `../../${value}`]),
 );
 
+const workspaceBaseAliases: Record<string, string> = {
+  '@openmrs/esm-framework/src/internal': './test-utils/stubs/esm-framework-internal.mock.tsx',
+  '@openmrs/esm-framework': './test-utils/stubs/esm-framework.mock.tsx',
+};
+
 const appBaseAliases: Record<string, string> = {
   '@openmrs/esm-framework': '@openmrs/esm-framework/mock',
   '@openmrs/esm-translations': '@openmrs/esm-translations/mock',
@@ -67,13 +72,16 @@ const plainScssPlugin = {
   },
 };
 
-export function defineWorkspaceVitestConfig(config: VitestConfigLike = {}) {
+function defineBaseVitestConfig(baseAliases: AliasMap, config: VitestConfigLike = {}) {
   return defineConfig(
     mergeConfig(
       {
         plugins: [plainScssPlugin],
         resolve: {
-          alias: createVitestAliases(packagesRoot, sharedWorkspaceTestAliases),
+          alias: createVitestAliases(packagesRoot, {
+            ...sharedWorkspaceTestAliases,
+            ...baseAliases,
+          }),
         },
         test: {
           environment: 'happy-dom',
@@ -92,6 +100,20 @@ export function defineWorkspaceVitestConfig(config: VitestConfigLike = {}) {
   );
 }
 
+type WorkspaceVitestOptions = {
+  // Opt in to resolving `@openmrs/esm-framework` and its `/src/internal` entrypoint to
+  // the local stubs in `test-utils/stubs`. This is only appropriate for libraries whose
+  // tests are written against those stubs (e.g. esm-form-engine-lib). Most workspace libs
+  // and every app rely on the real `@openmrs/esm-framework` package / `/mock` and its
+  // internal stores, so the stubs are OFF by default to avoid shadowing exports the real
+  // module provides (parseDate, createUseStore, useStoreWithActions, ...).
+  frameworkStubs?: boolean;
+};
+
+export function defineWorkspaceVitestConfig(config: VitestConfigLike = {}, options: WorkspaceVitestOptions = {}) {
+  return defineBaseVitestConfig(options.frameworkStubs ? workspaceBaseAliases : {}, config);
+}
+
 export { aliasPresets };
 
 export function defineAppVitestConfig(
@@ -105,32 +127,41 @@ export function defineAppVitestConfig(
   const { aliases = {}, extraAliases = [], test = {} } = options;
   const { setupFiles, ...restTest } = test;
 
-  return defineWorkspaceVitestConfig({
-    resolve: {
-      alias: [
-        ...extraAliases,
-        ...createVitestAliases(rootDir, {
-          ...sharedAppTestAliases,
-          ...appBaseAliases,
-          ...aliases,
-        }),
-      ],
+  return defineBaseVitestConfig(
+    {},
+    {
+      resolve: {
+        alias: [
+          ...extraAliases,
+          ...createVitestAliases(rootDir, {
+            ...sharedAppTestAliases,
+            ...appBaseAliases,
+            ...aliases,
+          }),
+        ],
+      },
+      test: {
+        ...restTest,
+        setupFiles: normalizeAppSetupFiles(setupFiles),
+      },
     },
-    test: {
-      ...restTest,
-      setupFiles: normalizeAppSetupFiles(setupFiles),
-    },
-  });
+  );
 }
 
-export function defineWorkspaceVitestConfigWithSetup(config: VitestConfigLike = {}) {
+export function defineWorkspaceVitestConfigWithSetup(
+  config: VitestConfigLike = {},
+  options: WorkspaceVitestOptions = {},
+) {
   const { test = {}, ...rest } = config;
   const { setupFiles, ...restTest } = test as TestOptions;
-  return defineWorkspaceVitestConfig({
-    ...rest,
-    test: {
-      ...restTest,
-      setupFiles: normalizeWorkspaceSetupFiles(setupFiles),
+  return defineWorkspaceVitestConfig(
+    {
+      ...rest,
+      test: {
+        ...restTest,
+        setupFiles: normalizeWorkspaceSetupFiles(setupFiles),
+      },
     },
-  });
+    options,
+  );
 }

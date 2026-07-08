@@ -33,7 +33,9 @@ import {
   getCoreTranslation,
   getLocale,
   getPatientName,
+  openmrsFetch,
   PrinterIcon,
+  restBaseUrl,
   useConfig,
   useLayoutType,
   usePagination,
@@ -60,6 +62,7 @@ import { capitalize, lowerCase } from 'lodash-es';
 import React, { type ReactNode, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useReactToPrint } from 'react-to-print';
+import useSWR, { useSWRConfig } from 'swr';
 
 import type { ConfigObject } from '../config-schema';
 import PrintComponent from '../print/print.component';
@@ -69,6 +72,70 @@ import GeneralOrderTable from './general-order-table.component';
 import MedicationRecord from './medication-record.component';
 import styles from './order-details-table.scss';
 import TestOrder from './test-order.component';
+
+const getPriorityColor = (urgency: string | undefined): string => {
+  if (!urgency) return 'gray';
+  const normUrgency = urgency.toUpperCase();
+  switch (normUrgency) {
+    case 'E724BDB6-2C75-4B6F-A00C-D43F2C372974': // Emergencia
+      return 'red';
+    case 'B96959DB-2106-4CE7-B39B-6FCB2CA88CDA': // Urgente
+    case 'STAT':
+      return 'orange';
+    case '427A595A-A5EE-4BA7-BCB7-2503248EFB31': // Urgencia menor
+      return 'yellow';
+    case 'BF3A08C6-CBE6-4F00-8E06-5F5437790B85': // Rutina / No urgente
+    case 'ROUTINE':
+      return 'green';
+    case '65CF194E-05A7-4832-BA6D-9B7C9940A7C2': // Programado
+    case 'ON_SCHEDULED_DATE':
+      return 'blue';
+    default:
+      return 'gray';
+  }
+};
+
+const resultsViewerConcepts = [
+  '24305e8e-f3dc-4ac6-bf87-e4f11f3b970e', // Hemograma completo
+  '7e750f3a-8d5c-45b1-8e94-ebf850208e35', // Examen completo de orina
+  'df144cc2-6718-4005-9881-f39eafd73315', // Examen de heces (panel)
+  '339febfd-699e-4a26-927f-1f9a7780bb5e', // Panel de Química del Suero
+  '241eb982-1fdd-4183-a2b5-763f5ce2d528',
+  '1bcb541a-55e8-4c5d-83fb-d121a9d54d9d',
+  '654b11a8-a326-45c9-885e-2fae6143404a',
+  '968c8a41-ab1b-426c-86ee-761b88c26e40',
+  'ef0a9d25-658b-466b-9b7e-4571673b28b0',
+  '7969c932-60db-4a38-8723-2f3a5bba8c16',
+  'bb3af485-89b6-4c04-848c-8d024a6b4a7a',
+];
+
+interface LabsetMember {
+  uuid: string;
+  display: string;
+  setMembers?: Array<LabsetMember>;
+}
+
+interface LabsetResponse {
+  uuid: string;
+  display: string;
+  setMembers: Array<LabsetMember>;
+}
+
+const getMemberUuids = (labset: LabsetResponse | LabsetMember): Array<string> => {
+  const uuids: Array<string> = [];
+  const recurse = (member: LabsetResponse | LabsetMember) => {
+    if (member.uuid) {
+      uuids.push(member.uuid);
+    }
+    if (member.setMembers) {
+      member.setMembers.forEach(recurse);
+    }
+  };
+  if (labset.setMembers) {
+    labset.setMembers.forEach(recurse);
+  }
+  return uuids;
+};
 
 interface OrderDetailsProps {
   patientUuid: string;
@@ -127,13 +194,65 @@ const OrderDetailsTable: React.FC<OrderDetailsProps> = ({ patientUuid, showAddBu
   const [selectedOrderTypeUuid, setSelectedOrderTypeUuid] = useState<string | null>(null);
   const [selectedFromDate, setSelectedFromDate] = useState<string | null>(null);
   const [selectedToDate, setSelectedToDate] = useState<string | null>(null);
+  const [priorityFilter, setPriorityFilter] = useState<string | null>(null);
+  const [selectedLabsetUuid, setSelectedLabsetUuid] = useState<string | null>(null);
+  const [statusFilter, setStatusFilter] = useState<string | null>(null);
+
+  const statusFilterOptions = useMemo(() => {
+    return [
+      { value: null, label: t('all', 'All') },
+      { value: 'PENDING', label: t('PENDING', 'Pending') },
+      { value: 'COMPLETED', label: t('COMPLETED', 'Completado') },
+      { value: 'DECLINED', label: t('DECLINED', 'Rechazado') },
+      { value: 'IN_PROGRESS', label: t('IN_PROGRESS', 'En progreso') },
+    ];
+  }, [t]);
+
+  const fetchLabsets = useCallback((urls: Array<string>) => {
+    return Promise.all(urls.map((url) => openmrsFetch<LabsetResponse>(url).then((res) => res.data)));
+  }, []);
+
+  const conceptUrls = useMemo(() => {
+    return (
+      resultsViewerConcepts?.map(
+        (c) =>
+          `${restBaseUrl}/concept/${c}?v=custom:(uuid,display,setMembers:(uuid,display,setMembers:(uuid,display,setMembers:(uuid,display))))`,
+      ) || []
+    );
+  }, []);
+
+  const { data: fetchedLabsets } = useSWR<Array<LabsetResponse>, Error>(
+    conceptUrls.length ? conceptUrls : null,
+    fetchLabsets,
+  );
+
+  const labsetOptions = useMemo(() => {
+    const options = [{ value: null, display: t('all', 'All') }];
+    if (fetchedLabsets) {
+      fetchedLabsets.forEach((set) => {
+        options.push({ value: set.uuid, display: set.display });
+      });
+    }
+    return options;
+  }, [fetchedLabsets, t]);
+
+  const priorityFilterOptions = useMemo(() => {
+    return [
+      { uuid: null, label: t('all', 'All') },
+      ...(priorityConfigs?.map((p) => ({
+        uuid: p.conceptUuid,
+        label: p.label,
+      })) ?? []),
+    ];
+  }, [priorityConfigs, t]);
+
   const selectedOrderName = orderTypes?.find((x) => x.uuid === selectedOrderTypeUuid)?.name;
   const {
     data: allOrders,
     error: error,
     isLoading,
     isValidating,
-  } = usePatientOrders(patientUuid, 'ACTIVE', selectedOrderTypeUuid, selectedFromDate, selectedToDate, careSettingUuid);
+  } = usePatientOrders(patientUuid, 'any', selectedOrderTypeUuid, selectedFromDate, selectedToDate, careSettingUuid);
 
   // launch respective order basket based on order type
   const openOrderForm = useCallback(
@@ -207,52 +326,110 @@ const OrderDetailsTable: React.FC<OrderDetailsProps> = ({ patientUuid, showAddBu
     });
   }
 
+  const filteredOrders = useMemo(() => {
+    let result = allOrders ?? [];
+
+    // Filtrado por fecha (cliente-side) para evitar desfases de zona horaria
+    if (selectedFromDate) {
+      const fromTime = new Date(selectedFromDate).getTime();
+      result = result.filter((order) => new Date(order.dateActivated).getTime() >= fromTime);
+    }
+    if (selectedToDate) {
+      const toTime = new Date(selectedToDate).getTime();
+      result = result.filter((order) => new Date(order.dateActivated).getTime() <= toTime);
+    }
+
+    // Filtrado por prioridad
+    if (priorityFilter) {
+      const filterNorm = priorityFilter.toUpperCase();
+      result = result.filter((order) => {
+        const priorityMatch = order.instructions?.match(/\|\|priorityUuid:([a-fA-F0-9-]+)\|\|/);
+        const normUrgency = (priorityMatch ? priorityMatch[1] : order.urgency)?.toUpperCase();
+        return (
+          normUrgency === filterNorm ||
+          (filterNorm === 'B96959DB-2106-4CE7-B39B-6FCB2CA88CDA' && normUrgency === 'STAT') ||
+          (filterNorm === 'BF3A08C6-CBE6-4F00-8E06-5F5437790B85' && normUrgency === 'ROUTINE') ||
+          (filterNorm === '65CF194E-05A7-4832-BA6D-9B7C9940A7C2' && normUrgency === 'ON_SCHEDULED_DATE')
+        );
+      });
+    }
+
+    // Filtrado por grupo de pruebas
+    if (selectedLabsetUuid && fetchedLabsets) {
+      const currentLabset = fetchedLabsets.find((set) => set.uuid === selectedLabsetUuid);
+      const memberUuids = currentLabset ? getMemberUuids(currentLabset) : [];
+
+      result = result.filter(
+        (order) => order.concept?.uuid === selectedLabsetUuid || memberUuids.includes(order.concept?.uuid),
+      );
+    }
+
+    // Filtrado por estado
+    if (statusFilter) {
+      result = result.filter((order) => {
+        const orderStatus = order.fulfillerStatus ? order.fulfillerStatus.toUpperCase() : 'PENDING';
+        return orderStatus === statusFilter;
+      });
+    }
+
+    return result;
+  }, [allOrders, priorityFilter, selectedLabsetUuid, fetchedLabsets, selectedFromDate, selectedToDate, statusFilter]);
+
   const tableRows = useMemo(
     () =>
-      allOrders?.map((order) => ({
-        id: order.uuid,
-        dateActivated: order.dateActivated,
-        orderNumber: order.orderNumber,
-        dateOfOrder: <div className={styles.singleLineText}>{formatDate(new Date(order.dateActivated))}</div>,
-        orderType: capitalize(order.orderType?.display ?? '-'),
-        dosage:
-          order.type === 'drugorder' ? (
-            <div className={styles.singleLineText}>{`${t('indication', 'Indication').toUpperCase()}
-            ${order.orderReasonNonCoded} ${'-'} ${t('quantity', 'Quantity').toUpperCase()} ${order.quantity} ${
-              order?.quantityUnits?.display
-            } `}</div>
-          ) : (
-            '--'
+      filteredOrders.map((order) => {
+        const priorityMatch = order.instructions?.match(/\|\|priorityUuid:([a-fA-F0-9-]+)\|\|/);
+        const parsedUrgency = priorityMatch ? priorityMatch[1] : order.urgency;
+        const selectedPriority = priorityConfigs?.find((p) => p.conceptUuid === parsedUrgency);
+        const priorityLabel = selectedPriority?.label ?? t(order.urgency, capitalize(order.urgency.replace('_', ' ')));
+
+        return {
+          id: order.uuid,
+          dateActivated: order.dateActivated,
+          orderNumber: order.orderNumber,
+          dateOfOrder: <div className={styles.singleLineText}>{formatDate(new Date(order.dateActivated))}</div>,
+          orderType: capitalize(order.orderType?.display ?? '-'),
+          dosage:
+            order.type === 'drugorder' ? (
+              <div className={styles.singleLineText}>{`${t('indication', 'Indication').toUpperCase()}
+              ${order.orderReasonNonCoded} ${'-'} ${t('quantity', 'Quantity').toUpperCase()} ${order.quantity} ${
+                order?.quantityUnits?.display
+              } `}</div>
+            ) : (
+              '--'
+            ),
+          order: order.display,
+          priority: (
+            <div className={styles.priorityPill} data-urgency-color={getPriorityColor(parsedUrgency)}>
+              {priorityLabel}
+              {(parsedUrgency?.toUpperCase() === '65CF194E-05A7-4832-BA6D-9B7C9940A7C2' ||
+                parsedUrgency?.toUpperCase() === 'ON_SCHEDULED_DATE') &&
+                order.scheduledDate &&
+                ` (${formatDate(new Date(order.scheduledDate))})`}
+            </div>
           ),
-        order: order.display,
-        priority: (
-          <div className={styles.priorityPill} data-priority={lowerCase(order.urgency)}>
-            {priorityConfigs?.find((p) => p.conceptUuid === order.urgency)?.label ??
-              t(order.urgency, capitalize(order.urgency.replace('_', ' ')))}
-          </div>
-        ),
-        orderedBy: order.orderer?.display,
-        status: order.fulfillerStatus ? (
-          <div className={styles.statusPill} data-status={lowerCase(order.fulfillerStatus.replace('_', ' '))}>
-            {
-              // t('RECEIVED', 'Received')
-              // t('IN_PROGRESS', 'In progress')
-              // t('EXCEPTION', 'Exception')
-              // t('ON_HOLD', 'On hold')
-              // t('DECLINED', 'Declined')
-              // t('COMPLETED', 'Completed')
-              // t('DISCONTINUED', 'Discontinued')
-            }
-            {t(order.fulfillerStatus, capitalize(order.fulfillerStatus.replace('_', ' ')))}
-          </div>
-        ) : (
-          '--'
-        ),
-      })) ?? [],
-    [allOrders, t, priorityConfigs],
+          orderedBy: order.orderer?.display,
+          status: (
+            <div
+              className={styles.statusPill}
+              data-status={order.fulfillerStatus ? lowerCase(order.fulfillerStatus.replace('_', ' ')) : 'pending'}
+            >
+              {order.fulfillerStatus
+                ? t(order.fulfillerStatus.toUpperCase(), capitalize(order.fulfillerStatus.replace('_', ' ')))
+                : t('PENDING', 'Pending')}
+            </div>
+          ),
+        };
+      }) ?? [],
+    [filteredOrders, t, priorityConfigs],
   );
 
   const { results: paginatedOrders, goTo, currentPage } = usePagination(tableRows, defaultPageSize);
+
+  // biome-ignore lint/correctness/useExhaustiveDependencies: reset page to 1 when filters change
+  useEffect(() => {
+    goTo(1);
+  }, [selectedOrderTypeUuid, selectedFromDate, selectedToDate, priorityFilter, selectedLabsetUuid, statusFilter]);
 
   const patientDetails = useMemo(() => {
     const getGender = (gender: string): string => {
@@ -322,20 +499,24 @@ const OrderDetailsTable: React.FC<OrderDetailsProps> = ({ patientUuid, showAddBu
     [orderTypes, t],
   );
 
-  const handleDateFilterChange = ([startDate, endDate]: Array<Date | undefined>) => {
+  const handleDateFilterChange = (dates: Array<Date | undefined>) => {
+    const startDate = dates[0];
+    const endDate = dates[1];
+
     if (startDate) {
-      const isoStartDate = startDate.toISOString();
-      setSelectedFromDate(isoStartDate);
-      if (selectedToDate && new Date(selectedToDate) < startDate) {
-        setSelectedToDate(isoStartDate);
-      }
+      const localStart = new Date(startDate);
+      localStart.setHours(0, 0, 0, 0);
+      setSelectedFromDate(localStart.toISOString());
+    } else {
+      setSelectedFromDate(null);
     }
+
     if (endDate) {
-      const isoEndDate = endDate.toISOString();
-      setSelectedToDate(isoEndDate);
-      if (selectedFromDate && new Date(selectedFromDate) > endDate) {
-        setSelectedFromDate(isoEndDate);
-      }
+      const localEnd = new Date(endDate);
+      localEnd.setHours(23, 59, 59, 999);
+      setSelectedToDate(localEnd.toISOString());
+    } else {
+      setSelectedToDate(null);
     }
   };
 
@@ -362,6 +543,48 @@ const OrderDetailsTable: React.FC<OrderDetailsProps> = ({ patientUuid, showAddBu
             }}
             selectedItem={orderTypesToDisplay.find((x) => x.uuid === selectedOrderTypeUuid) ?? orderTypesToDisplay[0]}
             titleText={t('selectOrderType', 'Select order type') + ':'}
+            type="inline"
+          />
+        </div>
+        <div className={styles.dropdownContainer}>
+          <Dropdown
+            id="priorityDropdown"
+            items={priorityFilterOptions}
+            itemToString={(option: { uuid: string | null; label: string }) => option?.label}
+            label={t('all', 'All')}
+            onChange={({ selectedItem }) => {
+              setPriorityFilter(selectedItem?.uuid || null);
+            }}
+            selectedItem={priorityFilterOptions.find((x) => x.uuid === priorityFilter) ?? priorityFilterOptions[0]}
+            titleText={t('filterOrdersByPriority', 'Filtrar órdenes por prioridad:')}
+            type="inline"
+          />
+        </div>
+        <div className={styles.dropdownContainer}>
+          <Dropdown
+            id="labsetDropdown"
+            items={labsetOptions}
+            itemToString={(option: { value: string | null; display: string }) => option?.display}
+            label={t('all', 'All')}
+            onChange={({ selectedItem }) => {
+              setSelectedLabsetUuid(selectedItem?.value || null);
+            }}
+            selectedItem={labsetOptions.find((x) => x.value === selectedLabsetUuid) ?? labsetOptions[0]}
+            titleText={t('filterByTestGroup', 'Filtrar por grupo de pruebas:')}
+            type="inline"
+          />
+        </div>
+        <div className={styles.dropdownContainer}>
+          <Dropdown
+            id="statusDropdown"
+            items={statusFilterOptions}
+            itemToString={(option: { value: string | null; label: string }) => option?.label}
+            label={t('all', 'All')}
+            onChange={({ selectedItem }) => {
+              setStatusFilter(selectedItem?.value || null);
+            }}
+            selectedItem={statusFilterOptions.find((x) => x.value === statusFilter) ?? statusFilterOptions[0]}
+            titleText={t('filterOrdersByStatus', 'Filtrar órdenes por estado:')}
             type="inline"
           />
         </div>
@@ -618,14 +841,34 @@ function OrderBasketItemActions({
   canEditOrders,
   canEditResults,
   orderItem,
-  openOrderBasket,
+  openOrderBasket: _openOrderBasket,
   openOrderForm,
   responsiveSize,
 }: OrderBasketItemActionsProps) {
   const { t } = useTranslation();
+  const { mutate } = useSWRConfig();
+  const launchCancelOrder = useLaunchWorkspaceRequiringVisit('patient-orders-form-workspace');
   const { orders, setOrders } = useOrderBasket<MutableOrderBasketItem>(orderItem.orderType.uuid);
-  const alreadyInBasket = orders.some((x) => x.uuid === orderItem.uuid);
+
+  const mutateOrders = useCallback(() => {
+    const patientUuid = orderItem.patient?.uuid;
+    if (patientUuid) {
+      mutate((key) => typeof key === 'string' && key.startsWith(`${restBaseUrl}/order?patient=${patientUuid}`));
+    }
+  }, [mutate, orderItem.patient?.uuid]);
+
   const handleModifyClick = useCallback(() => {
+    void openmrsFetch(`${restBaseUrl}/order/${orderItem.uuid}/fulfillerdetails/`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: {
+        fulfillerStatus: 'DECLINED',
+        fulfillerComment: 'Modificado por el médico',
+      },
+    }).then(() => mutateOrders());
+
     if (orderItem.type === 'drugorder') {
       void getDrugOrderByUuid(orderItem.uuid)
         .then((res) => {
@@ -646,33 +889,22 @@ function OrderBasketItemActions({
       setOrders([...orders, order]);
       openOrderForm();
     }
-  }, [orderItem, openOrderForm, orders, setOrders]);
+  }, [orderItem, openOrderForm, orders, setOrders, mutateOrders]);
 
   const handleAddResultsClick = useCallback(() => {
     launchPatientWorkspace('test-results-form-workspace', { order: orderItem });
   }, [orderItem]);
 
   const handleCancelClick = useCallback(() => {
-    if (orderItem.type === 'drugorder') {
-      void getDrugOrderByUuid(orderItem.uuid)
-        .then((res) => {
-          const medicationOrder = res.data;
-          setOrders([...orders, buildMedicationOrder(medicationOrder, 'DISCONTINUE')]);
-          openOrderBasket();
-        })
-        .catch((error) => {
-          console.error('Error discontinuing drug order: ', error);
-        });
-    } else if (orderItem.type === 'testorder') {
-      const labItem = buildLabOrder(orderItem, 'DISCONTINUE');
-      setOrders([...orders, labItem]);
-      openOrderBasket();
-    } else {
-      const order = buildGeneralOrder(orderItem, 'DISCONTINUE');
-      setOrders([...orders, order]);
-      openOrderBasket();
-    }
-  }, [orderItem, setOrders, orders, openOrderBasket]);
+    launchCancelOrder({ order: orderItem });
+  }, [orderItem, launchCancelOrder]);
+
+  const isPending = !orderItem.fulfillerStatus || orderItem.fulfillerStatus.toUpperCase() === 'PENDING';
+  if (!isPending) {
+    return null;
+  }
+
+  const alreadyInBasket = orders.some((x) => x.uuid === orderItem.uuid);
 
   if (!canEditOrders && !(orderItem?.type === 'testorder' && canEditResults)) {
     return null;
@@ -694,19 +926,6 @@ function OrderBasketItemActions({
             id="modify"
             itemText={t('modifyOrder', 'Modify order')}
             onClick={handleModifyClick}
-          />
-        )}
-        {orderItem?.type === 'testorder' && canEditResults && (
-          <OverflowMenuItem
-            className={styles.menuItem}
-            disabled={alreadyInBasket}
-            id="reorder"
-            itemText={
-              orderItem.fulfillerStatus === 'COMPLETED'
-                ? t('editResults', 'Edit results')
-                : t('addResults', 'Add results')
-            }
-            onClick={handleAddResultsClick}
           />
         )}
         {canEditOrders && (

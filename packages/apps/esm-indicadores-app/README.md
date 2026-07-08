@@ -23,6 +23,13 @@ Terminología de dominio: visita = consulta, encounter = atención, appointment 
 - El módulo valida `reportesSqlApiPath` (`/services/reportes-sql` por defecto). Si la respuesta falla, entra en **modo demo** y usa la vista mock del front.
 - Mantener el botón del módulo en el menú (`app-menu-item-slot`) para acceso sin depender del backend.
 
+Estado QLTY 2026-07-04:
+
+- `frontend.json` despliega `reportesSqlApiPath` como `http://127.0.0.1:8000`.
+- Esa URL absoluta apunta al localhost del navegador, no al host QLTY, salvo que QA levante un backend local en la misma maquina cliente.
+- La ruta publica `/services/reportes-sql/health` responde `404` y `/openmrs/services/reportes-sql/health` responde `502`.
+- QLTY debe asumirse en modo demo hasta que `reportesSqlApiPath` apunte a un backend alcanzable por el navegador y el gateway.
+
 ## Backend local FastAPI
 
 - El frontend espera el backend reportes-sql con estas rutas base:

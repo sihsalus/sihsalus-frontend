@@ -126,9 +126,7 @@ describe('IdentityLookupField', () => {
 
     await user.click(screen.getByRole('button', { name: lookupButtonName }));
 
-    await waitFor(() =>
-      expect(screen.getByText(/ya existe un paciente con este documento/i)).toBeInTheDocument(),
-    );
+    await waitFor(() => expect(screen.getByText(/ya existe un paciente con este documento/i)).toBeInTheDocument());
     expect(screen.getByRole('button', { name: /abrir paciente existente/i })).toBeInTheDocument();
     expect(setFieldValue).not.toHaveBeenCalled();
   });
@@ -157,9 +155,7 @@ describe('IdentityLookupField', () => {
 
     await user.click(screen.getByRole('button', { name: lookupButtonName }));
 
-    await waitFor(() =>
-      expect(screen.getByText(/existe una persona registrada \(no paciente\)/i)).toBeInTheDocument(),
-    );
+    await waitFor(() => expect(screen.getByText(/existe una persona registrada \(no paciente\)/i)).toBeInTheDocument());
 
     await user.click(screen.getByRole('button', { name: /registrar como paciente/i }));
 
@@ -216,9 +212,7 @@ describe('IdentityLookupField', () => {
 
     await user.click(screen.getByRole('button', { name: lookupButtonName }));
 
-    await waitFor(() =>
-      expect(screen.getByText(/sin coincidencias locales ni datos reniec/i)).toBeInTheDocument(),
-    );
+    await waitFor(() => expect(screen.getByText(/sin coincidencias locales ni datos reniec/i)).toBeInTheDocument());
     expect(setFieldValue).not.toHaveBeenCalled();
   });
 });

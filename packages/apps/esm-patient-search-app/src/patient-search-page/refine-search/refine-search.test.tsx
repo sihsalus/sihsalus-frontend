@@ -4,7 +4,11 @@ import userEvent from '@testing-library/user-event';
 
 import { configSchema, type PatientSearchConfig } from '../../config-schema';
 
-import { useAttributeConceptAnswers, useConfiguredAnswerConcepts, usePersonAttributeType } from './person-attributes.resource';
+import {
+  useAttributeConceptAnswers,
+  useConfiguredAnswerConcepts,
+  usePersonAttributeType,
+} from './person-attributes.resource';
 import RefineSearch from './refine-search.component';
 
 const mockUseConfig = vi.mocked(useConfig);

@@ -192,8 +192,7 @@ function extractRelationshipData(
       dead: relative.dead,
       causeOfDeath: relative.causeOfDeath,
       relativeUuid: relative.uuid,
-      relationshipType:
-        patientIdentifier === r.personA.uuid ? r.relationshipType.bIsToA : r.relationshipType.aIsToB,
+      relationshipType: patientIdentifier === r.personA.uuid ? r.relationshipType.bIsToA : r.relationshipType.aIsToB,
       relationshipTypeDisplay: r.relationshipType.display,
       relationshipTypeUUID: r.relationshipType.uuid,
       isPatient: relativeIsPatient,

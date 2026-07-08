@@ -43,6 +43,11 @@ Recurso base: **Order** con order type `Interconsulta` (`f3c2e4b6-8b5a-11e5-8e9b
 
 Todos los UUIDs son configurables vía `config-schema.ts`.
 
+La distribución SIHSALUS configura explícitamente:
+
+- `interconsultaOrderTypeUuid`: `f3c2e4b6-8b5a-11e5-8e9b-12345678901b`
+- `orderableConceptSets`: `4bf3f465-ac91-44fa-9b1f-173daf0c89a0` (`Tipo de Servicio`)
+
 ## Ruteo por servicio destino
 
 La interconsulta es **intra-establecimiento** (entre servicios/especialidades del mismo EESS), por lo que el ruteo normativo es por **servicio destino = `order.concept`**. La bandeja permite además filtrar por location origen. La referencia inter-establecimiento (NTS 018-MINSA referencia/contrarreferencia) es un flujo distinto y queda fuera de este módulo (ver `esm-atencion-ambulatoria-app` → CE-8).

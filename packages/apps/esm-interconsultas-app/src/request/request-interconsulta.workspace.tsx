@@ -22,8 +22,13 @@ import {
 import React, { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import type { ConfigObject } from '../config-schema';
-import { createInterconsulta, useDestinationServices, useInvalidateInterconsultas } from '../interconsultas.resource';
-import type { OrderableService } from '../types';
+import {
+  createInterconsulta,
+  useAvailableProviders,
+  useDestinationServices,
+  useInvalidateInterconsultas,
+} from '../interconsultas.resource';
+import type { OpenmrsRef, OrderableService } from '../types';
 import styles from './request-interconsulta.scss';
 
 export interface RequestInterconsultaWorkspaceProps {
@@ -54,18 +59,22 @@ const RequestInterconsultaWorkspace: React.FC<RequestInterconsultaWorkspaceProps
   const invalidateInterconsultas = useInvalidateInterconsultas();
 
   const [searchTerm, setSearchTerm] = useState('');
+  const [providerSearchTerm, setProviderSearchTerm] = useState('');
+  const [selectedProvider, setSelectedProvider] = useState<OpenmrsRef | null>(null);
   const [service, setService] = useState<OrderableService | null>(null);
   const [urgency, setUrgency] = useState<Urgency>('ROUTINE');
   const [scheduledDate, setScheduledDate] = useState<Date | null>(null);
   const [motivo, setMotivo] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
 
+  const hasSessionProvider = Boolean(session?.currentProvider?.uuid);
   const { services, isLoading: isLoadingServices } = useDestinationServices(searchTerm);
+  const { providers, isLoading: isLoadingProviders } = useAvailableProviders(providerSearchTerm, !hasSessionProvider);
 
-  const isDirty = Boolean(service || motivo.trim());
+  const isDirty = Boolean(selectedProvider || service || motivo.trim());
   promptBeforeClosing?.(() => isDirty);
 
-  const providerUuid = session?.currentProvider?.uuid;
+  const providerUuid = session?.currentProvider?.uuid ?? selectedProvider?.uuid;
   const locationUuid = currentVisit?.location?.uuid ?? session?.sessionLocation?.uuid;
   const canSubmit =
     Boolean(patientUuid && providerUuid && locationUuid && service && motivo.trim()) &&
@@ -125,6 +134,18 @@ const RequestInterconsultaWorkspace: React.FC<RequestInterconsultaWorkspaceProps
               'noActiveVisitSubtitle',
               'La solicitud se registrará fuera de una visita. Se recomienda iniciar la visita primero.',
             )}
+          />
+        )}
+        {!hasSessionProvider && (
+          <ComboBox
+            id="interconsulta-provider"
+            items={providers}
+            itemToString={(item: OpenmrsRef | null) => item?.display ?? ''}
+            onChange={({ selectedItem }: { selectedItem: OpenmrsRef | null }) => setSelectedProvider(selectedItem)}
+            onInputChange={(input: string) => setProviderSearchTerm(input ?? '')}
+            placeholder={t('searchProvider', 'Buscar profesional...')}
+            titleText={t('requestedBy', 'Solicitante')}
+            helperText={isLoadingProviders ? t('loading', 'Cargando...') : t('providerRequired', 'Requerido')}
           />
         )}
         <ComboBox

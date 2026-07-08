@@ -1,6 +1,6 @@
 import { Dropdown } from '@carbon/react';
 import { isDesktop, useConfig, useLayoutType } from '@openmrs/esm-framework';
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { type ConfigObject } from '../../config-schema';
 import { useQueueEntries } from '../../hooks/useQueueEntries';

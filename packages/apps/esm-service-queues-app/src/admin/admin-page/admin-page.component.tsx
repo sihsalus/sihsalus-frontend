@@ -14,7 +14,7 @@ import {
 } from '@carbon/react';
 import { Add } from '@carbon/react/icons';
 import { EmptyCardIllustration, ErrorState, launchWorkspace2, useLayoutType } from '@openmrs/esm-framework';
-import React, { useCallback, useMemo } from 'react';
+import { useCallback, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useQueueRooms, useQueuesMutable } from '../queue-admin.resource';
 import styles from './admin-page.scss';

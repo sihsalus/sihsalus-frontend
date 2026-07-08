@@ -1,6 +1,5 @@
-import React from 'react';
-import { useTranslation } from 'react-i18next';
 import { ConfigurableLink } from '@openmrs/esm-framework';
+import { useTranslation } from 'react-i18next';
 import { spaBasePath } from '../constants';
 
 const QueueScreenLink = () => {

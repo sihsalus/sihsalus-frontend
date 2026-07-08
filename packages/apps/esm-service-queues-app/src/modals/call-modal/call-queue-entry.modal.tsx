@@ -45,19 +45,17 @@ const CallQueueEntryModal: React.FC<CallQueueEntryModalProps> = ({ closeModal, q
       mappedQueueEntry.sortWeight,
     ).then(
       () => {
-        serveQueueEntry(mappedQueueEntry.queue.name, mappedQueueEntry.visitQueueNumber, 'serving').then(
-          ({ status }) => {
-            showSnackbar({
-              isLowContrast: true,
-              title: t('success', 'Success'),
-              kind: 'success',
-              subtitle: t('patientAttendingService', 'Patient attending service'),
-            });
-            closeModal();
-            mutateQueueEntries();
-            navigate({ to: `\${openmrsSpaBase}/patient/${mappedQueueEntry.patientUuid}/chart` });
-          },
-        );
+        serveQueueEntry(mappedQueueEntry.queue.name, mappedQueueEntry.visitQueueNumber, 'serving').then(() => {
+          showSnackbar({
+            isLowContrast: true,
+            title: t('success', 'Success'),
+            kind: 'success',
+            subtitle: t('patientAttendingService', 'Patient attending service'),
+          });
+          closeModal();
+          mutateQueueEntries();
+          navigate({ to: `\${openmrsSpaBase}/patient/${mappedQueueEntry.patientUuid}/chart` });
+        });
       },
       (error) => {
         showSnackbar({

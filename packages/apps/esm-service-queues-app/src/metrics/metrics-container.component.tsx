@@ -1,5 +1,4 @@
 import { ExtensionSlot } from '@openmrs/esm-framework';
-import React from 'react';
 import styles from './metrics-container.scss';
 
 export interface Service {

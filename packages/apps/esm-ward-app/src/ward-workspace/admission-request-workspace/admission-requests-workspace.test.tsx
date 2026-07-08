@@ -1,4 +1,10 @@
-import { useAppContext, useSession, userHasAccess, useWorkspace2Context, type Workspace2DefinitionProps } from '@openmrs/esm-framework';
+import {
+  useAppContext,
+  userHasAccess,
+  useSession,
+  useWorkspace2Context,
+  type Workspace2DefinitionProps,
+} from '@openmrs/esm-framework';
 import { screen } from '@testing-library/react';
 import { renderWithSwr } from 'test-utils';
 import { mockWardViewContext } from '../../../mock';

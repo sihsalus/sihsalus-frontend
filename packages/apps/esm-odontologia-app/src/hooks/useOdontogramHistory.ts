@@ -143,10 +143,7 @@ export function useOdontogramHistory(patientUuid: string | null) {
   const baseResults = baseData?.data?.results;
   const attentionResults = attentionData?.data?.results;
 
-  const baseRecords = useMemo(
-    () => buildOdontogramRecords(baseResults ?? [], config, 'base'),
-    [baseResults, config],
-  );
+  const baseRecords = useMemo(() => buildOdontogramRecords(baseResults ?? [], config, 'base'), [baseResults, config]);
   const attentionRecords = useMemo(
     () => buildOdontogramRecords(attentionResults ?? [], config, 'attention'),
     [attentionResults, config],

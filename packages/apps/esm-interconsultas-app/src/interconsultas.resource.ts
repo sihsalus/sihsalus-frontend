@@ -334,8 +334,7 @@ export function useDestinationServices(searchTerm: string) {
 
 export function useAvailableProviders(searchTerm: string, enabled = true) {
   const url = enabled
-    ? `${restBaseUrl}/provider?q=${encodeURIComponent(searchTerm.trim())}` +
-      '&v=custom:(uuid,display,retired)&limit=25'
+    ? `${restBaseUrl}/provider?q=${encodeURIComponent(searchTerm.trim())}` + '&v=custom:(uuid,display,retired)&limit=25'
     : null;
 
   const { data, error, isLoading } = useSWR<{
@@ -373,7 +372,9 @@ export function getDestinationServicesFromConceptResults(
 
 export function getAvailableProvidersFromResults(results: Array<OpenmrsRef & { retired?: boolean }>) {
   return results
-    .filter((provider) => provider.uuid && provider.display && !provider.retired && !/^UNKNOWN\b/i.test(provider.display))
+    .filter(
+      (provider) => provider.uuid && provider.display && !provider.retired && !/^UNKNOWN\b/i.test(provider.display),
+    )
     .map(({ uuid, display }) => ({ uuid, display }))
     .sort((a, b) => (a.display ?? '').localeCompare(b.display ?? ''));
 }

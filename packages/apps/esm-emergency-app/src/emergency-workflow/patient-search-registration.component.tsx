@@ -134,13 +134,12 @@ function getIdentificationStatusAttributeValue(
   config: Pick<Config['patientRegistration'], 'identificationStatusConcepts'>,
   identificationStatus: string,
 ) {
-  const statusConceptUuid =
-    {
-      pending: config.identificationStatusConcepts.pendingUuid,
-      partial: config.identificationStatusConcepts.partialUuid,
-      confirmed: config.identificationStatusConcepts.confirmedUuid,
-      merged: config.identificationStatusConcepts.mergedUuid,
-    }[identificationStatus];
+  const statusConceptUuid = {
+    pending: config.identificationStatusConcepts.pendingUuid,
+    partial: config.identificationStatusConcepts.partialUuid,
+    confirmed: config.identificationStatusConcepts.confirmedUuid,
+    merged: config.identificationStatusConcepts.mergedUuid,
+  }[identificationStatus];
 
   return statusConceptUuid ?? identificationStatus;
 }

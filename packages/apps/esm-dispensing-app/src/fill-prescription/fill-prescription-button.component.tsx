@@ -9,8 +9,8 @@ import {
   showModal,
   showSnackbar,
   useLayoutType,
-  useSession,
   userHasAccess,
+  useSession,
   type Visit,
   type Workspace2DefinitionProps,
 } from '@openmrs/esm-framework';
@@ -86,16 +86,16 @@ const FillPrescriptionButton: React.FC<{}> = () => {
   }
 
   return (
-      <div className={styles.buttonContainer}>
-        <Button
-          kind="primary"
-          renderIcon={(props) => <AddIcon size={16} {...props} />}
-          size={responsiveSize}
-          onClick={launchSearchWorkspace}
-        >
-          {t('fillPrescription', 'Fill prescription')}
-        </Button>
-      </div>
+    <div className={styles.buttonContainer}>
+      <Button
+        kind="primary"
+        renderIcon={(props) => <AddIcon size={16} {...props} />}
+        size={responsiveSize}
+        onClick={launchSearchWorkspace}
+      >
+        {t('fillPrescription', 'Fill prescription')}
+      </Button>
+    </div>
   );
 };
 

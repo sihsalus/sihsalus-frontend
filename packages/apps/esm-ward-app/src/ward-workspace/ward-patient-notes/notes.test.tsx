@@ -1,4 +1,10 @@
-import { getDefaultsFromConfigSchema, showSnackbar, useConfig, useSession, userHasAccess } from '@openmrs/esm-framework';
+import {
+  getDefaultsFromConfigSchema,
+  showSnackbar,
+  useConfig,
+  userHasAccess,
+  useSession,
+} from '@openmrs/esm-framework';
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { emrConfigurationMock, mockInpatientRequestAlice, mockPatientAlice } from '__mocks__';

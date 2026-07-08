@@ -27,8 +27,8 @@ import {
   useConfig,
   useLayoutType,
   usePagination,
-  useSession,
   userHasAccess,
+  useSession,
 } from '@openmrs/esm-framework';
 import dayjs from 'dayjs';
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
@@ -116,7 +116,11 @@ const EmergencyQueueTable: React.FC<EmergencyQueueTableProps> = ({ queueUuid }) 
 
   const availableIdentificationStatuses = useMemo(() => {
     return Array.from(
-      new Set(queueEntries.map((entry) => getQueueEntryIdentificationStatus(entry, config.patientRegistration)).filter(Boolean)),
+      new Set(
+        queueEntries
+          .map((entry) => getQueueEntryIdentificationStatus(entry, config.patientRegistration))
+          .filter(Boolean),
+      ),
     ).sort();
   }, [queueEntries, config.patientRegistration]);
 
@@ -164,7 +168,10 @@ const EmergencyQueueTable: React.FC<EmergencyQueueTableProps> = ({ queueUuid }) 
     }
 
     if (selectedIdentificationStatus) {
-      entries = entries.filter((entry) => getQueueEntryIdentificationStatus(entry, config.patientRegistration) === selectedIdentificationStatus);
+      entries = entries.filter(
+        (entry) =>
+          getQueueEntryIdentificationStatus(entry, config.patientRegistration) === selectedIdentificationStatus,
+      );
     }
 
     if (selectedWaitTimeRange) {

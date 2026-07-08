@@ -117,7 +117,9 @@ const FamilyHistory: React.FC<FamilyHistoryProps> = ({ patientUuid }) => {
         ),
         relation: relation?.relationshipType,
         consanguinityDegree:
-          relation.consanguinityDegree >= 1 ? `${relation.consanguinityDegree}°` : t('noConsanguinity', 'Sin consanguinidad'),
+          relation.consanguinityDegree >= 1
+            ? `${relation.consanguinityDegree}°`
+            : t('noConsanguinity', 'Sin consanguinidad'),
         age: relation?.relativeAge ?? '--',
         alive: relation?.dead ? t('dead', 'Dead') : t('alive', 'Alive'),
         causeOfDeath: (

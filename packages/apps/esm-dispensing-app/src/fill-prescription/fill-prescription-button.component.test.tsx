@@ -28,8 +28,8 @@ vi.mock('react-i18next', () => ({
 describe('FillPrescriptionButton', () => {
   beforeEach(() => {
     mockUseSession.mockReturnValue({ user: { uuid: 'user-1' } });
-    mockUserHasAccess.mockImplementation((privilege) =>
-      privilege === dispensingEditPrivilege || privilege === PRIVILEGE_CREATE_DISPENSE,
+    mockUserHasAccess.mockImplementation(
+      (privilege) => privilege === dispensingEditPrivilege || privilege === PRIVILEGE_CREATE_DISPENSE,
     );
   });
 

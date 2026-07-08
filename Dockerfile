@@ -27,7 +27,8 @@ RUN --mount=type=cache,target=/app/node_modules/.cache \
 
 # Stage 2: Init container image
 # Runs at deployment time: assembles built modules into SPA_OUTPUT_DIR,
-# patches index.html with env vars (SPA_PATH, API_URL, SPA_CONFIG_URLS, SPA_DEFAULT_LOCALE),
+# patches index.html with env vars (SPA_PATH, API_URL, SPA_CONFIG_URLS, SPA_DEFAULT_LOCALE,
+# SIHSALUS_PUBLIC_SPA_URL),
 # and copies config files. The infra repo mounts a shared volume at SPA_OUTPUT_DIR;
 # a stock nginx serves from it — no runtime substitution needed.
 FROM node:24-alpine AS init
@@ -40,6 +41,7 @@ ENV NODE_ENV=production \
     TURBO_TELEMETRY_DISABLED=1 \
     DO_NOT_TRACK=1
 ENV SPA_OUTPUT_DIR=/spa
+ENV SIHSALUS_PUBLIC_SPA_URL=
 
 # Build provenance — supplied by CI (--build-arg) and promoted to env so the
 # assemble step (run as CMD at container start) can stamp build-info.json.
@@ -71,6 +73,7 @@ ENV NODE_ENV=production \
     TURBO_TELEMETRY_DISABLED=1 \
     DO_NOT_TRACK=1
 ENV SPA_OUTPUT_DIR=/spa
+ENV SIHSALUS_PUBLIC_SPA_URL=
 
 # Build provenance — supplied by CI (--build-arg) and promoted to env so the
 # assemble step (run as CMD at container start) can stamp build-info.json.
@@ -102,6 +105,7 @@ ENV API_URL=/openmrs
 ENV SPA_PATH=/openmrs/spa
 ENV SPA_CONFIG_URLS=/openmrs/spa/frontend.json
 ENV SPA_DEFAULT_LOCALE=es
+ENV SIHSALUS_PUBLIC_SPA_URL=
 
 # Build provenance — assemble runs here at build time, so env is enough.
 ARG APP_VERSION=""

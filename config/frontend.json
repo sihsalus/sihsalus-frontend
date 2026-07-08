@@ -24,6 +24,17 @@
       "bodyMassIndexUuid": "5b877648-ae50-4d45-ad36-0196042baa1a"
     }
   },
+  "@sihsalus/esm-interconsultas-app": {
+    "interconsultaOrderTypeUuid": "f3c2e4b6-8b5a-11e5-8e9b-12345678901b",
+    "careSettingUuid": "6f0c9a92-6f24-11e3-af88-005056821db0",
+    "requestEncounterTypeUuid": "e4834799-7f43-4552-a6f3-2656880ca52f",
+    "clinicianEncounterRoleUuid": "240b26f9-dd88-4172-823d-4a8bfeb7841f",
+    "orderableConceptSets": ["4bf3f465-ac91-44fa-9b1f-173daf0c89a0"],
+    "concepts": {
+      "respuestaConceptUuid": "f0000174-0000-4000-8000-000000000174",
+      "recomendacionesConceptUuid": ""
+    }
+  },
   "@sihsalus/esm-odontologia-app": {
     "dentalFormUuid": "afcb3a21-d3a2-390e-966f-1cbcdc9b7c25",
     "ampathFormPersistence": {

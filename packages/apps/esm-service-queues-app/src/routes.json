@@ -150,6 +150,10 @@
       "component": "callQueueEntryModal"
     },
     {
+      "name": "clear-all-queue-entries-modal",
+      "component": "clearAllQueueEntriesModal"
+    },
+    {
       "name": "move-queue-entry-modal",
       "component": "moveQueueEntryModal"
     },

@@ -27,7 +27,8 @@ export interface PatientSearchContext2Props {
   ): void;
   launchChildWorkspace: Workspace2DefinitionProps['launchChildWorkspace'];
   closeWorkspace: Workspace2DefinitionProps['closeWorkspace'];
-  startVisitWorkspaceName: string;
+  startVisitWorkspaceName?: string;
+  startVisitWorkspaceProps?: object;
 }
 
 export const PatientSearchContext2 = createContext<PatientSearchContext2Props>(null);

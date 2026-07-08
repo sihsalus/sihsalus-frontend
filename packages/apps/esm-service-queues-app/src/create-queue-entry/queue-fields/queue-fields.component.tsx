@@ -21,13 +21,15 @@ import { postQueueEntry } from './queue-fields.resource';
 import styles from './queue-fields.scss';
 
 export interface QueueFieldsProps {
+  currentServiceQueueUuid?: string;
+  onQueueEntryAdded?: () => void | Promise<void>;
   setOnSubmit(onSubmit: (visit: Visit) => Promise<any>);
 }
 
 /**
  * This component contains form fields for starting a patient's queue entry.
  */
-const QueueFields: React.FC<QueueFieldsProps> = ({ setOnSubmit }) => {
+const QueueFields: React.FC<QueueFieldsProps> = ({ currentServiceQueueUuid, onQueueEntryAdded, setOnSubmit }) => {
   const { t } = useTranslation();
   const { queueLocations, isLoading: isLoadingQueueLocations } = useQueueLocations();
   const { sessionLocation } = useSession();
@@ -38,7 +40,8 @@ const QueueFields: React.FC<QueueFieldsProps> = ({ setOnSubmit }) => {
   const [selectedQueueLocation, setSelectedQueueLocation] = useState(queueLocations[0]?.id);
   const { queues, isLoading: isLoadingQueues } = useQueues(selectedQueueLocation);
   const [selectedService, setSelectedService] = useState('');
-  const { currentServiceQueueUuid } = useContext(AddPatientToQueueContext);
+  const { currentServiceQueueUuid: contextServiceQueueUuid } = useContext(AddPatientToQueueContext);
+  const selectedServiceQueueUuid = currentServiceQueueUuid ?? contextServiceQueueUuid;
   const [priority, setPriority] = useState(defaultPriorityConceptUuid);
   const priorities = queues.find((q) => q.uuid === selectedService)?.allowedPriorities ?? [];
   const { mutateQueueEntries } = useMutateQueueEntries();
@@ -67,6 +70,7 @@ const QueueFields: React.FC<QueueFieldsProps> = ({ setOnSubmit }) => {
               subtitle: t('queueEntryAddedSuccessfully', 'Queue entry added successfully'),
             });
             memoMutateQueueEntries();
+            return onQueueEntryAdded?.();
           })
           .catch((error) => {
             showSnackbar({
@@ -89,6 +93,7 @@ const QueueFields: React.FC<QueueFieldsProps> = ({ setOnSubmit }) => {
       defaultStatusConceptUuid,
       visitQueueNumberAttributeUuid,
       memoMutateQueueEntries,
+      onQueueEntryAdded,
       t,
     ],
   );
@@ -98,10 +103,10 @@ const QueueFields: React.FC<QueueFieldsProps> = ({ setOnSubmit }) => {
   }, [onSubmit, setOnSubmit]);
 
   useEffect(() => {
-    if (currentServiceQueueUuid) {
-      setSelectedService(currentServiceQueueUuid);
+    if (selectedServiceQueueUuid) {
+      setSelectedService(selectedServiceQueueUuid);
     }
-  }, [currentServiceQueueUuid]);
+  }, [selectedServiceQueueUuid]);
 
   useEffect(() => {
     if (queueLocations.map((l) => l.id).includes(sessionLocation.uuid)) {

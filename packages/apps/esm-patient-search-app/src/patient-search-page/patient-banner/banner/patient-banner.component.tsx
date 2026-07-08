@@ -136,6 +136,25 @@ const PatientBanner: React.FC<PatientBannerProps> = ({
   );
   const selectPatientAction =
     nonNavigationSelectPatientAction || patientSearchContext2?.onPatientSelected ? handleSelectPatient : undefined;
+  const startVisitButtonSlotName = patientSearchContext2?.startVisitWorkspaceName
+    ? 'start-visit-button-slot2'
+    : 'start-visit-button-slot';
+  const startVisitButtonSlotState = patientSearchContext2?.startVisitWorkspaceName
+    ? {
+        patient: fhirMappedPatient,
+        patientUuid,
+        launchChildWorkspace: patientSearchContext2.launchChildWorkspace,
+        startVisitWorkspaceName: patientSearchContext2.startVisitWorkspaceName,
+        startVisitWorkspaceProps: {
+          ...patientSearchContext2.startVisitWorkspaceProps,
+          onQueueEntryAdded: () => {
+            void patientSearchContext2.closeWorkspace({ closeWindow: true, discardUnsavedChanges: true });
+          },
+        },
+      }
+    : {
+        patientUuid,
+      };
 
   return (
     <>
@@ -171,12 +190,7 @@ const PatientBanner: React.FC<PatientBannerProps> = ({
               />
             ) : null}
             {!isDeceased && !currentVisit && (
-              <ExtensionSlot
-                name="start-visit-button-slot"
-                state={{
-                  patientUuid,
-                }}
-              />
+              <ExtensionSlot name={startVisitButtonSlotName} state={startVisitButtonSlotState} />
             )}
           </div>
         </div>

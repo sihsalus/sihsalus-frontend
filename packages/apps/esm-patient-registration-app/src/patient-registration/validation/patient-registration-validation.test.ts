@@ -472,6 +472,56 @@ describe('Patient registration validation', () => {
     expect(validationError).toBeFalsy();
   });
 
+  it('should not allow a minor patient with an underage responsible relationship', async () => {
+    const minorWithUnderageResponsible = {
+      ...validFormValues,
+      birthdate: dayjs().subtract(10, 'years').toDate(),
+      relationships: [
+        {
+          action: 'ADD',
+          relatedPersonUuid: '11524ae7-3ef6-4ab6-aff6-804ffc58704a',
+          relatedPersonAge: 16,
+          relationshipType: 'e6be4def-dbc8-462a-8714-53da66903cb8/aIsToB',
+        },
+      ],
+    };
+
+    const validationError = await validateFormValues(minorWithUnderageResponsible);
+
+    expect(validationError.errors).toContain('responsiblePersonMustBeAdult');
+    expect(validationError.errors).not.toContain('responsibleRelationshipRequiredForMinor');
+  });
+
+  it('should not allow a minor patient with a pending underage responsible person', async () => {
+    const minorWithPendingUnderageResponsible = {
+      ...validFormValues,
+      birthdate: dayjs().subtract(10, 'years').toDate(),
+      relationships: [
+        {
+          action: 'ADD',
+          relatedPersonUuid: '',
+          relationshipType: 'e6be4def-dbc8-462a-8714-53da66903cb8/aIsToB',
+          newPerson: {
+            givenName: 'Luis',
+            middleName: '',
+            familyName: 'Quispe',
+            familyName2: '',
+            gender: 'male',
+            estimatedAge: '16',
+            phone: '',
+            address: '',
+            relationshipType: 'e6be4def-dbc8-462a-8714-53da66903cb8/aIsToB',
+          },
+        },
+      ],
+    };
+
+    const validationError = await validateFormValues(minorWithPendingUnderageResponsible);
+
+    expect(validationError.errors).toContain('responsiblePersonMustBeAdult');
+    expect(validationError.errors).not.toContain('responsibleRelationshipRequiredForMinor');
+  });
+
   it('should not allow a minor patient with a non-responsible relationship only', async () => {
     const minorWithNonResponsibleRelationship = {
       ...validFormValues,

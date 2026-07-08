@@ -24,15 +24,28 @@
       "bodyMassIndexUuid": "5b877648-ae50-4d45-ad36-0196042baa1a"
     }
   },
-  "@sihsalus/esm-cred-app": {
-    "supplementation": {
-      "mmnConceptUuid": "c2010002-0000-4000-8000-000000000002"
-    },
-    "formsList": {
-      "tepsi": "1fe2f9e8-a9b1-34d2-94ce-b897ca2e16cc"
-    },
-    "testPeruano": {
-      "formUuid": "951fbbab-6eb2-3d74-8a09-8ac55d8bddc4"
+  "@sihsalus/esm-interconsultas-app": {
+    "interconsultaOrderTypeUuid": "f3c2e4b6-8b5a-11e5-8e9b-12345678901b",
+    "careSettingUuid": "6f0c9a92-6f24-11e3-af88-005056821db0",
+    "requestEncounterTypeUuid": "e4834799-7f43-4552-a6f3-2656880ca52f",
+    "clinicianEncounterRoleUuid": "240b26f9-dd88-4172-823d-4a8bfeb7841f",
+    "orderableConceptSets": ["4bf3f465-ac91-44fa-9b1f-173daf0c89a0"],
+    "concepts": {
+      "respuestaConceptUuid": "f0000174-0000-4000-8000-000000000174",
+      "recomendacionesConceptUuid": ""
+    }
+  },
+  "@sihsalus/esm-odontologia-app": {
+    "dentalFormUuid": "afcb3a21-d3a2-390e-966f-1cbcdc9b7c25",
+    "ampathFormPersistence": {
+      "formUuid": "1d4ca5a3-79d9-3380-8974-e87af3105631",
+      "baseFormUuid": "1d4ca5a3-79d9-3380-8974-e87af3105631",
+      "attentionFormUuid": "a48b004b-526e-32b5-8965-7dc4ffcb52f1",
+      "concepts": {
+        "snapshot": "c1130000-0000-4000-8000-000000000101",
+        "recordType": "c1130000-0000-4000-8000-000000000102",
+        "parentBaseEncounterUuid": "c1130000-0000-4000-8000-000000000103"
+      }
     }
   }
 }

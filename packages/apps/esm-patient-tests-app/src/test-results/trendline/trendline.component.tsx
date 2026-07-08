@@ -106,6 +106,7 @@ const Trendline: React.FC<TrendlineProps> = ({
       id: string;
       dateTime: string;
       testName: string;
+      registeredBy: string;
       value:
         | number
         | {
@@ -160,6 +161,7 @@ const Trendline: React.FC<TrendlineProps> = ({
                 id: `${uuid}-${idx}`,
                 dateTime: formattedDate,
                 testName: obs.name || title,
+                registeredBy: obs.performer?.[0]?.display ?? '--',
                 value: {
                   value: val,
                   interpretation: obs.interpretation,
@@ -199,6 +201,7 @@ const Trendline: React.FC<TrendlineProps> = ({
           id: `${idx}`,
           dateTime: formattedDate,
           testName: trendlineData.display,
+          registeredBy: '--',
           value: {
             value: parseFloat(obs.value),
             interpretation: obs.interpretation,
@@ -317,6 +320,10 @@ const Trendline: React.FC<TrendlineProps> = ({
     headers.push({
       header: `${t('value', 'Value')} (${leftAxisTitle || ''})`,
       key: 'value',
+    });
+    headers.push({
+      header: t('registeredBy', 'Registered by'),
+      key: 'registeredBy',
     });
     return headers;
   }, [leftAxisTitle, t, targetUuids]);

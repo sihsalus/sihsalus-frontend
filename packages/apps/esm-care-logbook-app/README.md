@@ -7,7 +7,7 @@ Tambien concentra evidencia funcional del perfil `N1.ADM` de la acreditacion SIH
 ## Funcionalidad
 
 - Registro/listado de atenciones por UPSS/servicio en `/admission`.
-- Fusion de historias clinicas duplicadas en `/admission/merge`, delegando al flujo legacy de OpenMRS `mergePatients.form`.
+- Fusion de historias clinicas duplicadas en `/admission/merge`, delegando al flujo legacy de OpenMRS `findDuplicatePatients.htm`, que luego abre `mergePatients.form` para comparar y fusionar los pacientes seleccionados.
 - Programacion de turnos desde `/admission/patient/:uuid`, mostrando turnos proximos y abriendo el workspace real de Appointments para registrar citas con prestadores.
 - Resumen de identificacion minima del paciente para pantallas clinicas que consumen `patient-info-slot`.
 - Accesos desde menu de aplicaciones, dashboard de inicio y acciones superiores.

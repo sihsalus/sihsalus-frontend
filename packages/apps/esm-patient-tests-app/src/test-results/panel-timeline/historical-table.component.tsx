@@ -18,7 +18,8 @@ const HistoricalTable: React.FC<HistoricalTableProps> = ({ conceptUuids, grouped
       id: obs.id ?? `${uuid}-${obs.effectiveDateTime}`,
       name: obs.name ?? uuid,
       value: obs.value,
-      date: obs.effectiveDateTime ? formatDate(parseDate(obs.effectiveDateTime)) : '--',
+      date: obs.effectiveDateTime ? formatDate(parseDate(obs.effectiveDateTime), { time: true }) : '--',
+      registeredBy: obs.performer?.[0]?.display ?? '--',
     })),
   );
 
@@ -32,7 +33,8 @@ const HistoricalTable: React.FC<HistoricalTableProps> = ({ conceptUuids, grouped
         <TableRow>
           <TableHeader>{t('test', 'Test')}</TableHeader>
           <TableHeader>{t('value', 'Value')}</TableHeader>
-          <TableHeader>{t('date', 'Date')}</TableHeader>
+          <TableHeader>{t('dateTime', 'Date and time')}</TableHeader>
+          <TableHeader>{t('registeredBy', 'Registered by')}</TableHeader>
         </TableRow>
       </TableHead>
       <TableBody>
@@ -41,6 +43,7 @@ const HistoricalTable: React.FC<HistoricalTableProps> = ({ conceptUuids, grouped
             <TableCell>{row.name}</TableCell>
             <TableCell>{row.value}</TableCell>
             <TableCell>{row.date}</TableCell>
+            <TableCell>{row.registeredBy}</TableCell>
           </TableRow>
         ))}
       </TableBody>

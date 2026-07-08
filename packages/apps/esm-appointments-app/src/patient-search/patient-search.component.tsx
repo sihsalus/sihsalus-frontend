@@ -3,18 +3,13 @@ import React from 'react';
 
 import styles from './patient-search.scss';
 
-const PatientSearch: React.FC<Partial<Workspace2DefinitionProps<object, object>>> = ({ launchChildWorkspace }) => {
-  const launchCreateAppointmentForm = (patient) => {
+const PatientSearch: React.FC<Partial<Workspace2DefinitionProps<object, object>>> = () => {
+  const launchCreateAppointmentForm = (patientUuid: string) => {
     const props = {
-      patientUuid: patient.uuid,
+      patientUuid,
       context: 'creating',
       mutate: () => {}, // TODO get this to mutate properly
     };
-
-    if (launchChildWorkspace) {
-      launchChildWorkspace('appointments-form-workspace', { ...props });
-      return;
-    }
 
     launchWorkspace2('appointments-form-workspace', { ...props });
   };

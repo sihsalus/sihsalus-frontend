@@ -81,6 +81,19 @@ export function isMinorPatient(values: Pick<FormValues, 'birthdate' | 'birthdate
   return dayjs().diff(dayjs(values.birthdate), 'year') < 18;
 }
 
+function getAgeFromBirthdate(birthdate?: string) {
+  if (!birthdate) {
+    return undefined;
+  }
+
+  const parsedBirthdate = dayjs(birthdate);
+  if (!parsedBirthdate.isValid()) {
+    return undefined;
+  }
+
+  return dayjs().diff(parsedBirthdate, 'year');
+}
+
 /**
  * A relationship row points to a person either because an existing person was selected
  * (`relatedPersonUuid`) or because a new responsible person is pending creation at
@@ -100,7 +113,40 @@ export function hasResponsibleRelationship(
         relationship.action !== 'DELETE' &&
         hasRelatedPerson(relationship) &&
         !!relationship.relationshipType &&
-        minorResponsibleRelationshipTypes.includes(relationship.relationshipType),
+        minorResponsibleRelationshipTypes.includes(relationship.relationshipType) &&
+        !isUnderageResponsibleRelationship(relationship, minorResponsibleRelationshipTypes),
+    ) ?? false
+  );
+}
+
+export function isUnderageResponsibleRelationship(
+  relationship: RelationshipValue,
+  minorResponsibleRelationshipTypes: Array<string> = [],
+) {
+  if (
+    relationship.action === 'DELETE' ||
+    !relationship.relationshipType ||
+    !minorResponsibleRelationshipTypes.includes(relationship.relationshipType)
+  ) {
+    return false;
+  }
+
+  const newPersonAge = relationship.newPerson?.estimatedAge?.trim();
+  if (newPersonAge) {
+    return Number(newPersonAge) < 18;
+  }
+
+  const relatedPersonAge = relationship.relatedPersonAge ?? getAgeFromBirthdate(relationship.relatedPersonBirthdate);
+  return typeof relatedPersonAge === 'number' && relatedPersonAge < 18;
+}
+
+export function hasUnderageResponsibleRelationship(
+  relationships: Array<RelationshipValue> | undefined,
+  minorResponsibleRelationshipTypes: Array<string> = [],
+) {
+  return (
+    relationships?.some((relationship) =>
+      isUnderageResponsibleRelationship(relationship, minorResponsibleRelationshipTypes),
     ) ?? false
   );
 }
@@ -317,6 +363,17 @@ export function getValidationSchema(
           ),
       )
       .test(
+        'responsible-relationship-must-be-adult',
+        t('responsiblePersonMustBeAdult', 'Responsible person must be an adult'),
+        function (relationships?: Array<RelationshipValue>) {
+          const values = this.parent as FormValues;
+          return (
+            !isMinorPatient(values) ||
+            !hasUnderageResponsibleRelationship(relationships, config.relationshipOptions?.minorResponsibleRelationshipTypes)
+          );
+        },
+      )
+      .test(
         'responsible-relationship-required-for-minors',
         t(
           'responsibleRelationshipRequiredForMinor',
@@ -326,6 +383,7 @@ export function getValidationSchema(
           const values = this.parent as FormValues;
           return (
             !isMinorPatient(values) ||
+            hasUnderageResponsibleRelationship(relationships, config.relationshipOptions?.minorResponsibleRelationshipTypes) ||
             hasResponsibleRelationship(relationships, config.relationshipOptions?.minorResponsibleRelationshipTypes)
           );
         },

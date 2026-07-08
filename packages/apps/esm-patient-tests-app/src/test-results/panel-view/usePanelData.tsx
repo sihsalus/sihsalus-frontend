@@ -1,5 +1,6 @@
 import { type FetchResponse, openmrsFetch, restBaseUrl, usePatient } from '@openmrs/esm-framework';
 import { useCallback, useEffect, useMemo } from 'react';
+import useSWR from 'swr';
 import useSWRInfinite from 'swr/infinite';
 
 import {
@@ -101,6 +102,17 @@ function useConcepts(conceptUuids: Array<string>) {
 export default function usePanelData() {
   const { observations: fhirObservations, conceptUuids, isLoading: isLoadingObservations } = useObservations();
   const { concepts } = useConcepts(conceptUuids);
+  const { patientUuid } = usePatient();
+
+  const { data: usersData } = useSWR<FetchResponse<{ results: Array<any> }>>(
+    `${restBaseUrl}/user?v=custom:(username,systemId,person:(display))&limit=100`,
+    openmrsFetch,
+  );
+
+  const { data: restObsData } = useSWR<FetchResponse<{ results: Array<any> }>>(
+    patientUuid ? `${restBaseUrl}/obs?patient=${patientUuid}&v=custom:(uuid,auditInfo:(creator:(display)))&limit=200` : null,
+    openmrsFetch,
+  );
 
   const conceptData: Record<string, ConceptMeta> = useMemo(
     () =>
@@ -117,6 +129,38 @@ export default function usePanelData() {
         : {},
     [concepts],
   );
+
+  const userMap = useMemo(() => {
+    const map = new Map<string, string>();
+    if (usersData?.data?.results) {
+      usersData.data.results.forEach((user: any) => {
+        const realName = user.person?.display?.replace(/\s+/g, ' ').trim() || '';
+        if (realName) {
+          if (user.username) {
+            map.set(user.username.toLowerCase(), realName);
+          }
+          if (user.systemId) {
+            map.set(user.systemId.toLowerCase(), realName);
+          }
+        }
+      });
+    }
+    return map;
+  }, [usersData]);
+
+  const creatorMap = useMemo(() => {
+    const map = new Map<string, string>();
+    if (restObsData?.data?.results) {
+      restObsData.data.results.forEach((obs: any) => {
+        if (obs.uuid && obs.auditInfo?.creator?.display) {
+          const creatorDisplay = obs.auditInfo.creator.display;
+          const realName = userMap.get(creatorDisplay.toLowerCase()) || creatorDisplay;
+          map.set(obs.uuid, realName);
+        }
+      });
+    }
+    return map;
+  }, [restObsData, userMap]);
 
   const observations: Array<ObsRecord> = useMemo(
     () =>
@@ -152,6 +196,13 @@ export default function usePanelData() {
         }
 
         const name = observation?.code.coding[0].display;
+        let performerName = observation.performer?.[0]?.display;
+        if (!performerName && creatorMap.has(observation.id)) {
+          performerName = creatorMap.get(observation.id);
+        }
+        const performer = performerName
+          ? [{ reference: '', display: performerName }]
+          : observation.performer;
         return {
           ...observation,
           conceptUuid,
@@ -159,10 +210,11 @@ export default function usePanelData() {
           meta,
           interpretation: interpretation as any,
           name,
+          performer,
           relatedObs: [],
         };
       }),
-    [fhirObservations, conceptData],
+    [fhirObservations, conceptData, creatorMap],
   );
 
   const groupedObservations: Record<string, Array<ObsRecord>> = useMemo(() => {

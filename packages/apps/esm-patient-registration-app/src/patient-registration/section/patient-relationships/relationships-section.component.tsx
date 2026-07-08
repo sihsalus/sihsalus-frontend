@@ -25,11 +25,14 @@ import { fetchPerson, type PersonSearchResult } from '../../patient-registration
 import { type FormValues, type RelationshipValue } from '../../patient-registration.types';
 import { PatientRegistrationContext } from '../../patient-registration-context';
 import { getEffectiveRegistrationConfig } from '../../peru-registration-config';
-import { hasResponsibleRelationship, isMinorPatient } from '../../validation/patient-registration-validation';
+import {
+  hasResponsibleRelationship,
+  hasUnderageResponsibleRelationship,
+  isMinorPatient,
+} from '../../validation/patient-registration-validation';
 import sectionStyles from '../section.scss';
 import styles from './relationships.scss';
 import {
-  buildResponsiblePersonPayload,
   getResponsiblePersonDisplayName,
   hasResponsiblePersonFormErrors,
   type ResponsiblePersonFormValues,
@@ -173,6 +176,10 @@ function sanitizePhoneInput(value: string) {
   return `${startsWithPlus ? '+' : ''}${digits}`.slice(0, 20);
 }
 
+function sanitizeEstimatedAgeInput(value: string) {
+  return value.replace(/\D/g, '').slice(0, 3);
+}
+
 const RelationshipView: React.FC<RelationshipViewProps> = ({
   relationship,
   index,
@@ -198,7 +205,6 @@ const RelationshipView: React.FC<RelationshipViewProps> = ({
   const genderOptions = config?.fieldConfigurations?.gender ?? defaultGenderOptions;
   const minorResponsibleRelationshipTypes =
     effectiveConfig?.relationshipOptions?.minorResponsibleRelationshipTypes ?? [];
-  const responsiblePersonPhoneAttributeUuid = effectiveConfig?.fieldConfigurations?.phone?.personAttributeUuid;
   const companionRelationshipTypeUuid = effectiveConfig?.relationshipOptions?.companionRelationshipType?.split('/')[0];
   // When the main relationship already IS Acompañante, the checkbox would only create a
   // duplicate Acompañante relationship for the same person, so it is hidden.
@@ -244,14 +250,19 @@ const RelationshipView: React.FC<RelationshipViewProps> = ({
   const handleSuggestionSelected = useCallback(
     (field: string, selectedSuggestion?: string, selectedPerson?: unknown) => {
       const selectedPersonResult = selectedPerson as PersonSearchResult | undefined;
+      const selectedPersonAge = getPersonSearchResultAge(selectedPersonResult);
       setSelectedExistingPerson(selectedPersonResult ?? null);
-      const selectedPersonIsUnderage = requiresAdultResponsible && isMinorPersonSearchResult(selectedPersonResult);
+      const selectedPersonIsUnderage =
+        requiresAdultResponsible && typeof selectedPersonAge === 'number' && selectedPersonAge < 18;
 
       if (selectedPersonIsUnderage) {
         setIsInvalid(true);
         setSelectedPersonInvalidText(t('responsibleExistingPersonMustBeAdult', 'Responsible person must be an adult'));
         setFieldValue(field, '');
         setFieldValue(`relationships[${index}].relatedPersonName`, '');
+        setFieldValue(`relationships[${index}].relatedPersonAge`, undefined);
+        setFieldValue(`relationships[${index}].relatedPersonBirthdate`, undefined);
+        setFieldValue(`relationships[${index}].relatedPersonBirthdateEstimated`, undefined);
         return;
       }
 
@@ -261,6 +272,15 @@ const RelationshipView: React.FC<RelationshipViewProps> = ({
       setFieldValue(
         `relationships[${index}].relatedPersonName`,
         selectedSuggestion ? getPersonSearchResultDisplay(selectedPersonResult) : '',
+      );
+      setFieldValue(`relationships[${index}].relatedPersonAge`, selectedPersonAge);
+      setFieldValue(
+        `relationships[${index}].relatedPersonBirthdate`,
+        selectedPersonResult?.person?.birthdate ?? selectedPersonResult?.birthdate,
+      );
+      setFieldValue(
+        `relationships[${index}].relatedPersonBirthdateEstimated`,
+        selectedPersonResult?.person?.birthdateEstimated ?? selectedPersonResult?.birthdateEstimated,
       );
     },
     [index, requiresAdultResponsible, setFieldValue, t],
@@ -272,6 +292,9 @@ const RelationshipView: React.FC<RelationshipViewProps> = ({
       setSelectedPersonInvalidText(t('responsibleExistingPersonMustBeAdult', 'Responsible person must be an adult'));
       setFieldValue(`relationships[${index}].relatedPersonUuid`, '');
       setFieldValue(`relationships[${index}].relatedPersonName`, '');
+      setFieldValue(`relationships[${index}].relatedPersonAge`, undefined);
+      setFieldValue(`relationships[${index}].relatedPersonBirthdate`, undefined);
+      setFieldValue(`relationships[${index}].relatedPersonBirthdateEstimated`, undefined);
     }
   }, [index, requiresAdultResponsible, selectedExistingPerson, setFieldValue, t]);
 
@@ -304,7 +327,12 @@ const RelationshipView: React.FC<RelationshipViewProps> = ({
     (field: ResponsiblePersonField) => (event: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
       setNewPersonValues((currentValues) => ({
         ...currentValues,
-        [field]: field === 'phone' ? sanitizePhoneInput(event.target.value) : event.target.value,
+        [field]:
+          field === 'phone'
+            ? sanitizePhoneInput(event.target.value)
+            : field === 'estimatedAge'
+              ? sanitizeEstimatedAgeInput(event.target.value)
+              : event.target.value,
       }));
     },
     [],
@@ -708,7 +736,18 @@ export const RelationshipsSection: React.FC<RelationshipsSectionProps> = ({ defa
         }) => (
           <div>
             {requiresResponsibleRelationship &&
-            !hasResponsibleRelationship(relationships, minorResponsibleRelationshipTypes) ? (
+            hasUnderageResponsibleRelationship(relationships, minorResponsibleRelationshipTypes) ? (
+              <InlineNotification
+                kind="error"
+                lowContrast
+                title={t('responsiblePersonMustBeAdult', 'Responsible person must be an adult')}
+                subtitle={t(
+                  'responsiblePersonMustBeAdultHelpText',
+                  'A minor cannot be assigned as the responsible person for another minor.',
+                )}
+              />
+            ) : requiresResponsibleRelationship &&
+              !hasResponsibleRelationship(relationships, minorResponsibleRelationshipTypes) ? (
               <InlineNotification
                 kind="warning"
                 lowContrast

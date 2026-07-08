@@ -242,11 +242,47 @@ export const PatientRegistration: React.FC<PatientRegistrationProps> = ({ savePa
     }
   };
 
+  const getErrorMessages = (errors: FormikErrors<FormValues>) => {
+    const messages = new Set<string>();
+
+    const collectMessages = (value: unknown, fallbackKey?: string) => {
+      if (!value) {
+        return;
+      }
+      if (typeof value === 'string') {
+        messages.add(t(value, value));
+        return;
+      }
+      if (Array.isArray(value)) {
+        value.forEach((item) => {
+          collectMessages(item, fallbackKey);
+        });
+        return;
+      }
+      if (typeof value === 'object') {
+        Object.entries(value).forEach(([key, nestedValue]) => {
+          collectMessages(nestedValue, key);
+        });
+        return;
+      }
+      if (fallbackKey) {
+        messages.add(t(`${fallbackKey}LabelText`, fallbackKey));
+      }
+    };
+
+    Object.entries(errors).forEach(([key, value]) => {
+      collectMessages(value, key);
+    });
+    return [...messages];
+  };
+
   const getDescription = (errors: FormikErrors<FormValues>) => {
+    const errorMessages = getErrorMessages(errors);
+
     return (
       <ul style={{ listStyle: 'inside' }}>
-        {Object.keys(errors).map((error) => (
-          <li key={error}>{t(`${error}LabelText`, error)}</li>
+        {errorMessages.map((error) => (
+          <li key={error}>{error}</li>
         ))}
       </ul>
     );

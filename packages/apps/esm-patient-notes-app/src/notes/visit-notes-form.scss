@@ -12,8 +12,12 @@
   color: colors.$gray-70;
 }
 
+.required {
+  color: colors.$red-60;
+  margin-left: layout.$spacing-01;
+}
+
 .diagnosis {
-  padding: layout.$spacing-04;
   border-top: 0.0625rem solid colors.$gray-20;
 }
 
@@ -36,10 +40,109 @@
   background-color: colors.$gray-20;
 }
 
+.diagnosisButton {
+  @include type.type-style("body-compact-01");
+  display: grid;
+  grid-template-columns: minmax(3.5rem, max-content) max-content 1fr;
+  gap: layout.$spacing-03;
+  align-items: start;
+  width: 100%;
+  padding: layout.$spacing-04;
+  border: 0;
+  background: transparent;
+  color: colors.$gray-90;
+  cursor: pointer;
+  text-align: left;
+}
+
+.diagnosisButtonSingle {
+  grid-template-columns: 1fr;
+}
+
+.diagnosisButton:focus {
+  outline: 2px solid colors.$blue-60;
+  outline-offset: -2px;
+}
+
+.diagnosisCode {
+  @include type.type-style("code-01");
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 3.5rem;
+  padding: layout.$spacing-02 layout.$spacing-03;
+  background-color: colors.$blue-10;
+  color: colors.$blue-70;
+  font-weight: 600;
+}
+
+.diagnosisName {
+  line-height: 1.35;
+}
+
+.diagnosisSeparator {
+  color: colors.$gray-60;
+  line-height: 1.35;
+}
+
+.selectedDiagnosis {
+  @include type.type-style("body-compact-01");
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: layout.$spacing-03;
+  width: 100%;
+  padding: layout.$spacing-03 layout.$spacing-04;
+  border-left: 0.25rem solid colors.$gray-50;
+  background-color: colors.$gray-10;
+  color: colors.$gray-90;
+}
+
+.selectedPrimaryDiagnosis {
+  border-left-color: colors.$red-50;
+  background-color: colors.$red-10;
+}
+
+.selectedSecondaryDiagnosis {
+  border-left-color: colors.$blue-50;
+  background-color: colors.$blue-10;
+}
+
+.selectedDiagnosisText {
+  flex: 1;
+  line-height: 1.35;
+  white-space: normal;
+  overflow-wrap: anywhere;
+}
+
+.removeDiagnosisButton {
+  display: inline-flex;
+  flex: 0 0 auto;
+  align-items: center;
+  justify-content: center;
+  width: layout.$spacing-07;
+  height: layout.$spacing-07;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: colors.$gray-70;
+  cursor: pointer;
+}
+
+.removeDiagnosisButton:hover {
+  background-color: colors.$gray-20;
+  color: colors.$gray-100;
+}
+
+.removeDiagnosisButton:focus {
+  outline: 2px solid colors.$blue-60;
+  outline-offset: -2px;
+}
+
 .diagnosesText {
   @include type.type-style("body-compact-01");
   color: colors.$gray-70;
-  margin-bottom: layout.$spacing-05;
+  margin-bottom: layout.$spacing-06;
 }
 
 .emptyResults {
@@ -195,7 +298,7 @@
   }
 
   .diagnosis {
-    padding: layout.$spacing-05 layout.$spacing-04;
+    padding: 0;
   }
 
   .skeleton {
@@ -212,12 +315,17 @@
   margin-left: 0;
 }
 
+.prestacionalTagContainer {
+  margin-top: layout.$spacing-03;
+}
+
 .diagnosisRow {
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   flex-wrap: wrap;
-  gap: layout.$spacing-03;
-  padding: layout.$spacing-02 0;
+  column-gap: layout.$spacing-03;
+  row-gap: layout.$spacing-04;
+  padding: layout.$spacing-03 0 layout.$spacing-05;
   border-bottom: 1px solid colors.$gray-20;
 
   &:last-child {
@@ -226,8 +334,11 @@
 }
 
 .tipoSelector {
+  width: 100%;
+
   :global(.cds--radio-button-group) {
-    gap: 0;
+    column-gap: layout.$spacing-05;
+    row-gap: layout.$spacing-03;
   }
 
   :global(.cds--radio-button__label) {

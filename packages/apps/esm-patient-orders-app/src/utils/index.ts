@@ -70,14 +70,19 @@ export function buildMedicationOrder(order: Order, action?: OrderAction) {
  * Builds lab order object from the given order object
  */
 export function buildLabOrder(order: Order, action?: OrderAction) {
+  const priorityMatch = order.instructions?.match(/\|\|priorityUuid:([a-fA-F0-9-]+)\|\|/);
+  const cleanInstructions = order.instructions
+    ? order.instructions.replace(/\s*\|\|priorityUuid:[a-fA-F0-9-]+\|\|/g, '').trim()
+    : '';
+
   return {
     action: action,
     display: order.display,
     previousOrder: action !== 'NEW' ? order.uuid : null,
     orderer: order.orderer.uuid,
     careSetting: order.careSetting.uuid,
-    instructions: order.instructions,
-    urgency: order.urgency,
+    instructions: cleanInstructions,
+    urgency: priorityMatch ? priorityMatch[1] : order.urgency,
     accessionNumber: order.accessionNumber,
     testType: {
       label: order.concept.display,
@@ -95,14 +100,19 @@ export function buildLabOrder(order: Order, action?: OrderAction) {
  * Builds general order object from the given order object
  */
 export function buildGeneralOrder(order: Order, action?: OrderAction): OrderBasketItem {
+  const priorityMatch = order.instructions?.match(/\|\|priorityUuid:([a-fA-F0-9-]+)\|\|/);
+  const cleanInstructions = order.instructions
+    ? order.instructions.replace(/\s*\|\|priorityUuid:[a-fA-F0-9-]+\|\|/g, '').trim()
+    : '';
+
   return {
     action: action,
     display: order.display,
     previousOrder: action !== 'NEW' ? order.uuid : null,
     orderer: order.orderer.uuid,
     careSetting: order.careSetting.uuid,
-    instructions: order.instructions,
-    urgency: order.urgency,
+    instructions: cleanInstructions,
+    urgency: priorityMatch ? priorityMatch[1] : order.urgency,
     accessionNumber: order.accessionNumber,
     concept: order.concept,
     orderNumber: order.orderNumber,

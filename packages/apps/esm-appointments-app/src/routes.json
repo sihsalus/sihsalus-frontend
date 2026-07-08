@@ -137,7 +137,8 @@
   "workspaceWindows2": [
     {
       "name": "appointments-window",
-      "group": "appointments-group"
+      "group": "appointments-group",
+      "width": "wider"
     }
   ],
   "workspaces2": [

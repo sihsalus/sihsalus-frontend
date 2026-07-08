@@ -6,9 +6,9 @@ import useSWR from 'swr';
 import type { ConfigObject } from '../config-schema';
 
 interface NutritionalAssessmentResult {
-  weightForAge: string | null;
-  heightForAge: string | null;
-  weightForHeight: string | null;
+  nutritionClassification: string | null;
+  weight: string | null;
+  height: string | null;
   lastMeasurementDate: string | null;
   isLoading: boolean;
   error: Error | null;
@@ -43,47 +43,53 @@ function extractObsDate(data: { results?: Array<{ obsDatetime?: string }> }): st
 
 /**
  * Hook para evaluación nutricional infantil (NTS 137):
- * - Peso/Edad (P/E), Talla/Edad (T/E), Peso/Talla (P/T)
+ * - Clasificación nutricional, peso y talla
  * - Última fecha de medición
  *
- * Usa: config.childNutrition.weightForAgeConceptUuid, heightForAgeConceptUuid, weightForHeightConceptUuid
+ * Usa: config.childNutrition.nutritionClassificationConceptUuid, weightConceptUuid, heightConceptUuid
  */
 export function useNutritionalAssessment(patientUuid: string): NutritionalAssessmentResult {
   const config = useConfig<ConfigObject>();
   const cn = config.childNutrition;
 
-  const peUrl = useMemo(
-    () => buildObsUrl(patientUuid, cn?.weightForAgeConceptUuid),
-    [patientUuid, cn?.weightForAgeConceptUuid],
+  const classificationUrl = useMemo(
+    () => buildObsUrl(patientUuid, cn?.nutritionClassificationConceptUuid),
+    [patientUuid, cn?.nutritionClassificationConceptUuid],
   );
-  const teUrl = useMemo(
-    () => buildObsUrl(patientUuid, cn?.heightForAgeConceptUuid),
-    [patientUuid, cn?.heightForAgeConceptUuid],
+  const weightUrl = useMemo(
+    () => buildObsUrl(patientUuid, cn?.weightConceptUuid),
+    [patientUuid, cn?.weightConceptUuid],
   );
-  const ptUrl = useMemo(
-    () => buildObsUrl(patientUuid, cn?.weightForHeightConceptUuid),
-    [patientUuid, cn?.weightForHeightConceptUuid],
+  const heightUrl = useMemo(
+    () => buildObsUrl(patientUuid, cn?.heightConceptUuid),
+    [patientUuid, cn?.heightConceptUuid],
   );
 
-  const { data: peData, isLoading: peLoading, error: peError } = useSWR(peUrl, fetcher);
-  const { data: teData, isLoading: teLoading, error: teError } = useSWR(teUrl, fetcher);
-  const { data: ptData, isLoading: ptLoading, error: ptError } = useSWR(ptUrl, fetcher);
+  const {
+    data: classificationData,
+    isLoading: classificationLoading,
+    error: classificationError,
+  } = useSWR(classificationUrl, fetcher);
+  const { data: weightData, isLoading: weightLoading, error: weightError } = useSWR(weightUrl, fetcher);
+  const { data: heightData, isLoading: heightLoading, error: heightError } = useSWR(heightUrl, fetcher);
 
   const result = useMemo(() => {
-    const weightForAge = extractObsValue(peData);
-    const heightForAge = extractObsValue(teData);
-    const weightForHeight = extractObsValue(ptData);
+    const nutritionClassification = extractObsValue(classificationData);
+    const weight = extractObsValue(weightData);
+    const height = extractObsValue(heightData);
 
-    const dates = [extractObsDate(peData), extractObsDate(teData), extractObsDate(ptData)].filter(Boolean);
+    const dates = [extractObsDate(classificationData), extractObsDate(weightData), extractObsDate(heightData)].filter(
+      Boolean,
+    );
     const lastMeasurementDate = dates.length > 0 ? dates[0] : null;
 
-    return { weightForAge, heightForAge, weightForHeight, lastMeasurementDate };
-  }, [peData, teData, ptData]);
+    return { nutritionClassification, weight, height, lastMeasurementDate };
+  }, [classificationData, weightData, heightData]);
 
   return {
     ...result,
-    isLoading: peLoading || teLoading || ptLoading,
-    error: peError || teError || ptError,
+    isLoading: classificationLoading || weightLoading || heightLoading,
+    error: classificationError || weightError || heightError,
   };
 }
 

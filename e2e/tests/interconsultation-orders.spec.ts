@@ -4,8 +4,10 @@ import { getOpenmrsRestBaseUrl, shouldIgnoreHTTPSErrors } from '../utils/e2e-url
 
 const INTERCONSULTATION_ORDER_TYPE_UUID = 'f3c2e4b6-8b5a-11e5-8e9b-12345678901b';
 const CARE_SETTING_UUID = '6f0c9a92-6f24-11e3-af88-005056821db0';
-const ORDER_ENCOUNTER_TYPE_UUID = '39da3525-afe4-45ff-8977-c53b7b359158';
+const REQUEST_ENCOUNTER_TYPE_UUID = 'e4834799-7f43-4552-a6f3-2656880ca52f';
+const FALLBACK_ENCOUNTER_TYPE_UUID = '39da3525-afe4-45ff-8977-c53b7b359158';
 const ENCOUNTER_ROLE_UUID = '240b26f9-dd88-4172-823d-4a8bfeb7841f';
+const DESTINATION_SERVICE_CONCEPT_SET_UUID = '4bf3f465-ac91-44fa-9b1f-173daf0c89a0';
 const IDENTIFIER_SOURCE_UUID = '8549f706-7e85-4c1d-9424-217d50a2988b';
 const IDENTIFIER_TYPE_UUID = '05a29f94-c0ed-11e2-94be-8c13b969e334';
 
@@ -95,18 +97,41 @@ async function getDefaultVisitType(api: APIRequestContext) {
 }
 
 async function getAdminProvider(api: APIRequestContext) {
-  const response = await api.get('provider?q=admin');
-  const payload = await expectOk<OpenmrsSearchResponse<OpenmrsResource>>(
-    response,
-    'Expected admin provider to be available',
-  );
-  const provider = payload.results?.[0];
+  const sessionResponse = await api.get('session?v=custom:(currentProvider:(uuid,display))');
+  if (sessionResponse.ok()) {
+    const session = (await sessionResponse.json()) as { currentProvider?: OpenmrsResource | null };
+    if (session.currentProvider?.uuid) {
+      return session.currentProvider;
+    }
+  }
 
-  expect(provider?.uuid, 'Expected admin provider').toBeTruthy();
+  const response = await api.get('provider?v=custom:(uuid,display,retired)&limit=25');
+  const payload = await expectOk<OpenmrsSearchResponse<OpenmrsResource & { retired?: boolean }>>(
+    response,
+    'Expected provider to be available',
+  );
+  const provider =
+    payload.results?.find((candidate) => !candidate.retired && !/^UNKNOWN\b/i.test(candidate.display ?? '')) ??
+    payload.results?.find((candidate) => candidate.uuid);
+
+  expect(provider?.uuid, 'Expected provider').toBeTruthy();
   return provider!;
 }
 
 async function getInterconsultationConcept(api: APIRequestContext) {
+  const setResponse = await api.get(
+    `concept/${DESTINATION_SERVICE_CONCEPT_SET_UUID}?v=custom:(uuid,display,setMembers:(uuid,display))`,
+  );
+  if (setResponse.ok()) {
+    const set = (await setResponse.json()) as { setMembers?: Array<OpenmrsResource> };
+    const configuredService =
+      set.setMembers?.find((candidate) => candidate.display === 'Consulta Ambulatoria') ??
+      set.setMembers?.find((candidate) => candidate.uuid);
+    if (configuredService?.uuid) {
+      return configuredService;
+    }
+  }
+
   const response = await api.get(
     'concept?q=interconsulta&v=custom:(uuid,display,datatype:(uuid,display),conceptClass:(uuid,display))&limit=20',
   );
@@ -120,6 +145,11 @@ async function getInterconsultationConcept(api: APIRequestContext) {
 
   expect(concept?.uuid, 'Expected at least one interconsultation concept').toBeTruthy();
   return concept!;
+}
+
+async function getRequestEncounterType(api: APIRequestContext) {
+  const response = await api.get(`encountertype/${REQUEST_ENCOUNTER_TYPE_UUID}`);
+  return response.ok() ? REQUEST_ENCOUNTER_TYPE_UUID : FALLBACK_ENCOUNTER_TYPE_UUID;
 }
 
 async function createPatient(api: APIRequestContext, locationUuid: string) {
@@ -222,11 +252,12 @@ test('creates an interconsultation order and picks it up through fulfiller statu
   const created: CreatedState = {};
 
   try {
-    const [location, visitType, provider, concept] = await Promise.all([
+    const [location, visitType, provider, concept, encounterTypeUuid] = await Promise.all([
       getDefaultLocation(api),
       getDefaultVisitType(api),
       getAdminProvider(api),
       getInterconsultationConcept(api),
+      getRequestEncounterType(api),
     ]);
 
     const patient = await createPatient(api, location.uuid);
@@ -256,7 +287,7 @@ test('creates an interconsultation order and picks it up through fulfiller statu
           },
         ],
         location: location.uuid,
-        encounterType: ORDER_ENCOUNTER_TYPE_UUID,
+        encounterType: encounterTypeUuid,
       },
     });
     const encounter = await expectOk<OpenmrsResource>(

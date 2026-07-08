@@ -26,12 +26,12 @@ const NutritionalAssessment: React.FC<NutritionalAssessmentProps> = ({ patientUu
   const { t } = useTranslation();
   const session = useSession();
   const canEdit = userHasAccess(credNutritionEditPrivilege, session?.user);
-  const { weightForAge, heightForAge, weightForHeight, lastMeasurementDate, isLoading, error } =
+  const { nutritionClassification, weight, height, lastMeasurementDate, isLoading, error } =
     useNutritionalAssessment(patientUuid);
   const { launchForm: handleAdd, isLoading: isFormLoading } = useCREDFormLauncher('nutritionalAssessmentForm');
   const headerTitle = t('cnAssessmentTitle', 'Estado nutricional');
 
-  const hasData = weightForAge || heightForAge || weightForHeight;
+  const hasData = nutritionClassification || weight || height;
 
   if (isLoading) {
     return <DataTableSkeleton size="sm" rowCount={4} columnCount={2} />;
@@ -45,7 +45,7 @@ const NutritionalAssessment: React.FC<NutritionalAssessmentProps> = ({ patientUu
     <div className={styles.widgetCard}>
       <CardHeader title={headerTitle}>
         <Tag type={hasData ? 'green' : 'gray'} size="sm">
-          {hasData ? (weightForAge ?? t('noData', 'Sin datos')) : t('noData', 'Sin datos')}
+          {hasData ? (nutritionClassification ?? t('withData', 'Con datos')) : t('noData', 'Sin datos')}
         </Tag>
         {canEdit && (
           <Button
@@ -64,25 +64,23 @@ const NutritionalAssessment: React.FC<NutritionalAssessmentProps> = ({ patientUu
         <StructuredListWrapper isCondensed>
           <StructuredListBody>
             <StructuredListRow>
-              <StructuredListCell className={styles.label}>{t('cnWeightForAge', 'Peso/Edad (P/E)')}</StructuredListCell>
+              <StructuredListCell className={styles.label}>
+                {t('cnNutritionClassification', 'Clasificación nutricional')}
+              </StructuredListCell>
               <StructuredListCell className={styles.value}>
-                {weightForAge ?? <span className={styles.noData}>{t('noData', 'Sin datos')}</span>}
+                {nutritionClassification ?? <span className={styles.noData}>{t('noData', 'Sin datos')}</span>}
               </StructuredListCell>
             </StructuredListRow>
             <StructuredListRow>
-              <StructuredListCell className={styles.label}>
-                {t('cnHeightForAge', 'Talla/Edad (T/E)')}
-              </StructuredListCell>
+              <StructuredListCell className={styles.label}>{t('cnWeight', 'Peso')}</StructuredListCell>
               <StructuredListCell className={styles.value}>
-                {heightForAge ?? <span className={styles.noData}>{t('noData', 'Sin datos')}</span>}
+                {weight ?? <span className={styles.noData}>{t('noData', 'Sin datos')}</span>}
               </StructuredListCell>
             </StructuredListRow>
             <StructuredListRow>
-              <StructuredListCell className={styles.label}>
-                {t('cnWeightForHeight', 'Peso/Talla (P/T)')}
-              </StructuredListCell>
+              <StructuredListCell className={styles.label}>{t('cnHeight', 'Talla')}</StructuredListCell>
               <StructuredListCell className={styles.value}>
-                {weightForHeight ?? <span className={styles.noData}>{t('noData', 'Sin datos')}</span>}
+                {height ?? <span className={styles.noData}>{t('noData', 'Sin datos')}</span>}
               </StructuredListCell>
             </StructuredListRow>
             <StructuredListRow>

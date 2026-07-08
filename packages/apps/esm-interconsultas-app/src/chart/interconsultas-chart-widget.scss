@@ -1,31 +1,14 @@
-@use "@carbon/layout";
+@use '@carbon/layout';
+@use '@openmrs/esm-styleguide/src/vars' as *;
 
-.widgetContainer {
-  background-color: var(--cds-layer, #ffffff);
-  border: 1px solid var(--cds-border-subtle, #e0e0e0);
+.widgetCard {
+  background-color: $ui-02;
+  border: 1px solid $ui-03;
   width: 100%;
-}
-
-.widgetHeader {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: layout.$spacing-04 layout.$spacing-05;
-  border-bottom: 1px solid var(--cds-border-subtle, #e0e0e0);
-}
-
-.widgetTitle {
-  font-size: 1rem;
-  font-weight: 600;
 }
 
 .accordionTitle {
   font-size: 0.875rem;
-}
-
-.emptyState {
-  text-align: center;
-  margin: layout.$spacing-05;
 }
 
 .detailList {

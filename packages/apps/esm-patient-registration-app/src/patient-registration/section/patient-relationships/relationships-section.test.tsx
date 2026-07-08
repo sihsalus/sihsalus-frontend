@@ -316,6 +316,42 @@ describe('RelationshipsSection', () => {
     expect(screen.getByRole('searchbox', { name: /full name/i })).toBeInTheDocument();
   });
 
+  it('shows an inline error when an existing person is required but none is selected', async () => {
+    const user = userEvent.setup();
+    mockResourcesContextValue = {
+      ...mockResourcesContextValue,
+      relationshipTypes: relationshipTypes,
+    };
+    const formValues = {
+      relationships: [
+        {
+          action: 'ADD',
+          relatedPersonUuid: '',
+          relationshipType: '057de23f-3d9c-4314-9391-4452970739c6/aIsToB',
+        },
+      ],
+    } as FormValues;
+
+    render(
+      <ResourcesContext.Provider value={mockResourcesContextValue}>
+        <Formik initialValues={formValues} onSubmit={vi.fn()}>
+          <Form>
+            <PatientRegistrationContext.Provider value={{ ...initialContextValues, values: formValues }}>
+              <RelationshipsSection />
+              <button type="submit">Register patient</button>
+            </PatientRegistrationContext.Provider>
+          </Form>
+        </Formik>
+      </ResourcesContext.Provider>,
+    );
+
+    await user.click(screen.getByRole('button', { name: /register patient/i }));
+
+    expect(await screen.findByText('Select an existing person')).toBeInTheDocument();
+    expect(screen.getByRole('tab', { name: /search existing person/i })).toHaveAttribute('aria-selected', 'true');
+    expect(screen.getByRole('tab', { name: /register new person/i })).toHaveAttribute('aria-selected', 'false');
+  });
+
   it('limits responsible person name inputs when creating a new person', async () => {
     const user = userEvent.setup();
     mockResourcesContextValue = {

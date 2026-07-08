@@ -267,6 +267,7 @@
   "responsibleEstimatedAge": "Approximate age (optional)",
   "responsibleEstimatedAgeRequired": "Enter the responsible person's approximate age",
   "responsibleEstimatedAgeRequiredLabel": "Approximate age",
+  "responsibleExistingPersonRequired": "Select an existing person",
   "responsibleExistingPersonMustBeAdult": "Responsible person must be an adult",
   "responsibleFamilyName": "Family name",
   "responsibleFamilyName2": "Second family name (optional)",

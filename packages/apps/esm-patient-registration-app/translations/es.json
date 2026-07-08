@@ -269,6 +269,7 @@
   "responsibleEstimatedAge": "Edad aproximada (opcional)",
   "responsibleEstimatedAgeRequired": "Ingrese la edad aproximada del familiar responsable",
   "responsibleEstimatedAgeRequiredLabel": "Edad aproximada",
+  "responsibleExistingPersonRequired": "Debe seleccionar una persona existente",
   "responsibleExistingPersonMustBeAdult": "El responsable del paciente debe ser mayor de edad",
   "responsibleFamilyName": "Apellido paterno",
   "responsibleFamilyName2": "Apellido materno (opcional)",

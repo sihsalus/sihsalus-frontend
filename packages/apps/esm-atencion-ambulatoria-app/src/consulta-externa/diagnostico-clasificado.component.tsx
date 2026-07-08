@@ -1,7 +1,5 @@
 import {
-  Button,
   DataTable,
-  InlineLoading,
   Table,
   TableBody,
   TableCell,
@@ -11,7 +9,6 @@ import {
   TableRow,
   Tag,
 } from '@carbon/react';
-import { Add } from '@carbon/react/icons';
 import { formatDate, useConfig } from '@openmrs/esm-framework';
 import { launchPatientWorkspace } from '@openmrs/esm-patient-common-lib';
 import React from 'react';
@@ -19,7 +16,7 @@ import { useTranslation } from 'react-i18next';
 import type { ConfigObject } from '../config-schema';
 import { useDiagnosisHistory } from '../hooks/useDiagnosisHistory';
 import { patientFormEntryWorkspace } from '../utils/constants';
-import styles from './consulta-externa-dashboard.scss';
+import ClinicalHistoryCard from './clinical-history-card.component';
 
 interface DiagnosticoClasificadoProps {
   patientUuid: string;
@@ -28,7 +25,7 @@ interface DiagnosticoClasificadoProps {
 const DiagnosticoClasificado: React.FC<DiagnosticoClasificadoProps> = ({ patientUuid }) => {
   const { t } = useTranslation();
   const config = useConfig<ConfigObject>();
-  const { diagnoses, isLoading } = useDiagnosisHistory(patientUuid, config.encounterTypes?.externalConsultation);
+  const { diagnoses, isLoading, error } = useDiagnosisHistory(patientUuid, config.encounterTypes?.externalConsultation);
 
   const headers = [
     { key: 'date', header: t('date', 'Fecha') },
@@ -78,52 +75,43 @@ const DiagnosticoClasificado: React.FC<DiagnosticoClasificadoProps> = ({ patient
     });
   };
 
-  if (isLoading) {
-    return <InlineLoading description={t('loading', 'Cargando...')} />;
-  }
-
   return (
-    <div className={styles.widgetContainer}>
-      <div className={styles.tableHeader}>
-        <span className={styles.tableHeaderTitle}>{t('diagnosisHistory', 'Historial de Diagnósticos')}</span>
-        <Button kind="ghost" size="sm" renderIcon={Add} onClick={handleLaunchForm}>
-          {t('addDiagnosis', 'Registrar Diagnóstico')}
-        </Button>
-      </div>
-
-      {rows.length === 0 ? (
-        <div className={styles.emptyState}>
-          <p>{t('noDiagnosisData', 'No hay diagnósticos registrados para este paciente.')}</p>
-        </div>
-      ) : (
-        <DataTable rows={rows} headers={headers} size="sm">
-          {({ rows: tableRows, headers: tableHeaders, getTableProps, getHeaderProps, getRowProps }) => (
-            <TableContainer>
-              <Table {...getTableProps()} aria-label={t('diagnosisHistory', 'Historial de Diagnósticos')}>
-                <TableHead>
-                  <TableRow>
-                    {tableHeaders.map((header) => (
-                      <TableHeader key={header.key} {...getHeaderProps({ header })}>
-                        {header.header}
-                      </TableHeader>
+    <ClinicalHistoryCard
+      title={t('diagnosisHistory', 'Historial de Diagnósticos')}
+      actionLabel={t('addDiagnosis', 'Registrar Diagnóstico')}
+      empty={rows.length === 0}
+      emptyMessage={t('noDiagnosisData', 'No hay diagnósticos registrados para este paciente.')}
+      error={error}
+      isLoading={isLoading}
+      onAction={handleLaunchForm}
+    >
+      <DataTable rows={rows} headers={headers} size="sm">
+        {({ rows: tableRows, headers: tableHeaders, getTableProps, getHeaderProps, getRowProps }) => (
+          <TableContainer>
+            <Table {...getTableProps()} aria-label={t('diagnosisHistory', 'Historial de Diagnósticos')}>
+              <TableHead>
+                <TableRow>
+                  {tableHeaders.map((header) => (
+                    <TableHeader key={header.key} {...getHeaderProps({ header })}>
+                      {header.header}
+                    </TableHeader>
+                  ))}
+                </TableRow>
+              </TableHead>
+              <TableBody>
+                {tableRows.map((row) => (
+                  <TableRow key={row.id} {...getRowProps({ row })}>
+                    {row.cells.map((cell) => (
+                      <TableCell key={cell.id}>{cell.value}</TableCell>
                     ))}
                   </TableRow>
-                </TableHead>
-                <TableBody>
-                  {tableRows.map((row) => (
-                    <TableRow key={row.id} {...getRowProps({ row })}>
-                      {row.cells.map((cell) => (
-                        <TableCell key={cell.id}>{cell.value}</TableCell>
-                      ))}
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            </TableContainer>
-          )}
-        </DataTable>
-      )}
-    </div>
+                ))}
+              </TableBody>
+            </Table>
+          </TableContainer>
+        )}
+      </DataTable>
+    </ClinicalHistoryCard>
   );
 };
 

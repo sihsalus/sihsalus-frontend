@@ -14,7 +14,6 @@ import ContraceptiveMethods from './maternal-and-child-health/components/family-
 import FpCounseling from './maternal-and-child-health/components/family-planning/fp-counseling/fp-counseling.component';
 import FpFollowup from './maternal-and-child-health/components/family-planning/fp-followup/fp-followup.component';
 import DeliveryOrAbortionTable from './maternal-and-child-health/components/labour-delivery/deliveryOrAbortion.component';
-import MaternalHealthFormsActionButton from './maternal-and-child-health/components/maternal-health-forms-action-button.component';
 import SummaryOfLaborAndPostpartumTable from './maternal-and-child-health/components/labour-delivery/summaryOfLaborAndPostpartum.component';
 import ImmediatePostpartumTable from './maternal-and-child-health/components/postnatal-care/immediatePostpartum.component';
 import PostpartumTrackingWidget from './maternal-and-child-health/components/postnatal-care/postpartum-tracking.component';
@@ -91,7 +90,6 @@ export const prenatalCare = getSyncLifecycle(PrenatalCare, options);
 export const familyPlanning = getSyncLifecycle(FamilyPlanning, options);
 export const cancerPrevention = getSyncLifecycle(CancerPrevention, options);
 export const maternalHealthFormsSelectorWorkspace = getSyncLifecycle(MaternalHealthFormsSelectorWorkspace, options);
-export const maternalHealthFormsActionButton = getSyncLifecycle(MaternalHealthFormsActionButton, options);
 
 // Labour & Delivery Components
 export const deliveryOrAbortionTable = getSyncLifecycle(DeliveryOrAbortionTable, options);

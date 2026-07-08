@@ -4,13 +4,11 @@ import {
   Button,
   DataTableSkeleton,
   InlineLoading,
-  InlineNotification,
   Tag,
-  Tile,
 } from '@carbon/react';
 import { Add } from '@carbon/react/icons';
 import { formatDate, formatDatetime, parseDate } from '@openmrs/esm-framework';
-import { useLaunchWorkspaceRequiringVisit } from '@openmrs/esm-patient-common-lib';
+import { CardHeader, EmptyState, ErrorState, useLaunchWorkspaceRequiringVisit } from '@openmrs/esm-patient-common-lib';
 import React from 'react';
 import { useTranslation } from 'react-i18next';
 import { deriveStatus, useInterconsultaResponse, usePatientInterconsultas } from '../interconsultas.resource';
@@ -31,42 +29,38 @@ const InterconsultasChartWidget: React.FC<InterconsultasChartWidgetProps> = ({ p
   const { t } = useTranslation();
   const { interconsultas, isLoading, error } = usePatientInterconsultas(patientUuid);
   const launchRequestWorkspace = useLaunchWorkspaceRequiringVisit('request-interconsulta-workspace');
+  const headerTitle = t('interconsultas', 'Interconsultas');
+  const displayText = t('interconsultationsLower', 'interconsultations');
 
   if (isLoading) {
-    return <DataTableSkeleton role="progressbar" showHeader={false} showToolbar={false} rowCount={3} />;
+    return <DataTableSkeleton role="progressbar" showHeader={false} showToolbar={false} rowCount={3} zebra />;
+  }
+
+  if (error) {
+    return <ErrorState error={error} headerTitle={headerTitle} />;
+  }
+
+  if (!interconsultas.length) {
+    return <EmptyState displayText={displayText} headerTitle={headerTitle} launchForm={launchRequestWorkspace} />;
   }
 
   return (
-    <div className={styles.widgetContainer}>
-      <div className={styles.widgetHeader}>
-        <h4 className={styles.widgetTitle}>{t('interconsultas', 'Interconsultas')}</h4>
-        <Button kind="ghost" size="sm" renderIcon={Add} onClick={() => launchRequestWorkspace()}>
+    <div className={styles.widgetCard}>
+      <CardHeader title={headerTitle}>
+        <Button
+          kind="ghost"
+          renderIcon={Add}
+          iconDescription={t('requestInterconsulta', 'Solicitar interconsulta')}
+          onClick={() => launchRequestWorkspace()}
+        >
           {t('requestInterconsulta', 'Solicitar interconsulta')}
         </Button>
-      </div>
-
-      {error && (
-        <InlineNotification
-          kind="error"
-          lowContrast
-          title={t('error', 'Error')}
-          subtitle={t('errorLoadingInterconsultas', 'No se pudieron cargar las interconsultas.')}
-        />
-      )}
-
-      {!error && interconsultas.length === 0 && (
-        <Tile className={styles.emptyState}>
-          <p>{t('noPatientInterconsultas', 'El paciente no tiene interconsultas registradas.')}</p>
-        </Tile>
-      )}
-
-      {interconsultas.length > 0 && (
-        <Accordion>
-          {interconsultas.map((order) => (
-            <InterconsultaAccordionItem key={order.uuid} order={order} />
-          ))}
-        </Accordion>
-      )}
+      </CardHeader>
+      <Accordion>
+        {interconsultas.map((order) => (
+          <InterconsultaAccordionItem key={order.uuid} order={order} />
+        ))}
+      </Accordion>
     </div>
   );
 };

@@ -53,7 +53,9 @@ const OdontogramWorkspace: React.FC<OdontogramWorkspaceProps> = ({
             ? t('odontogramBaseSavedSubtitle', 'Base odontogram findings have been saved.')
             : t('odontogramAttentionSavedSubtitle', 'Attention odontogram solutions have been saved.'),
       });
-      resetData();
+      if (!encounterUuid) {
+        resetData();
+      }
       closeWorkspace();
     } catch (err) {
       showSnackbar({

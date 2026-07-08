@@ -205,6 +205,33 @@ describe('FormManager', () => {
       );
     });
 
+    it('drops person attributes without a valid attribute type key', () => {
+      const patient = FormManager.getPatientToCreate(
+        true,
+        {
+          ...formValues,
+          patientUuid: 'patient-uuid',
+          gender: 'male',
+          birthdate: '1990-05-14',
+          attributes: {
+            [peruEmailAttributeTypeUuid]: 'juan.perez@example.org',
+            '': 'blank-key',
+            undefined: 'undefined-key',
+            null: 'null-key',
+            attributeType: 'wrong-shape-key',
+          },
+        },
+        {},
+        {},
+        [],
+        getPeruRegistrationConfig(),
+      );
+
+      expect(patient.person.attributes).toEqual([
+        { attributeType: peruEmailAttributeTypeUuid, value: 'juan.perez@example.org' },
+      ]);
+    });
+
     it('does not create a birthplace address when the structured birthplace is empty', () => {
       const config = getPeruRegistrationConfig();
       const patient = FormManager.getPatientToCreate(

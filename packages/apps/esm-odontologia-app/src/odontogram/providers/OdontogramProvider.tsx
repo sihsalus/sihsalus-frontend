@@ -45,6 +45,7 @@ import type {
   ToothPosition,
 } from '../types/odontogram';
 import { computeToothAnnotations } from '../utils/computeToothAnnotations';
+import { generateOdontogramId } from '../utils/generateOdontogramId';
 
 // =============================================================================
 // CONSTANTS
@@ -88,7 +89,7 @@ export function useOdontogramContext(): OdontogramContextValue {
 // =============================================================================
 
 function generateId(): string {
-  return crypto.randomUUID();
+  return generateOdontogramId();
 }
 
 /** Devuelve la posición de un diente dado su ID y la config */

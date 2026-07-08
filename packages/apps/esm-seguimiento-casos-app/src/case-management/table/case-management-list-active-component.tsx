@@ -15,13 +15,19 @@ import {
   Tag,
   Tile,
 } from '@carbon/react';
-import { ConfigurableLink, isDesktop, launchWorkspace, useLayoutType, useSession, userHasAccess } from '@openmrs/esm-framework';
+import {
+  ConfigurableLink,
+  isDesktop,
+  launchWorkspace,
+  useLayoutType,
+  userHasAccess,
+  useSession,
+} from '@openmrs/esm-framework';
 import { CardHeader, EmptyDataIllustration } from '@openmrs/esm-patient-common-lib';
 import React, { useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-
-import { extractNameString, uppercaseText } from '../../utils/expression-helper';
 import { caseMonitoringEditPrivilege } from '../../utils/constants';
+import { extractNameString, uppercaseText } from '../../utils/expression-helper';
 import { useActivecases } from '../workspace/case-management.resource';
 
 import styles from './case-management-list.scss';

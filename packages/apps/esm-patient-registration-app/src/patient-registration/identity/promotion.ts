@@ -70,8 +70,7 @@ export function applyPersonToRegistrationForm(
   const birthdateEstimated = !!person.birthdateEstimated;
   const yearsEstimated =
     birthdateEstimated && person.birthdate ? Math.floor(dayjs().diff(person.birthdate, 'month') / 12) : 0;
-  const monthsEstimated =
-    birthdateEstimated && person.birthdate ? dayjs().diff(person.birthdate, 'month') % 12 : 0;
+  const monthsEstimated = birthdateEstimated && person.birthdate ? dayjs().diff(person.birthdate, 'month') % 12 : 0;
 
   const fieldValues: Array<[string, unknown]> = [
     ['patientUuid', person.uuid],

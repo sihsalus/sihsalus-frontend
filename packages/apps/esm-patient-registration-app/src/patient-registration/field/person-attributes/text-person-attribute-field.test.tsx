@@ -45,11 +45,7 @@ describe('TextPersonAttributeField', () => {
     render(
       <Formik initialValues={{}} onSubmit={() => {}}>
         <Form>
-          <TextPersonAttributeField
-            id="phone"
-            personAttributeType={mockPersonAttributeType}
-            placeholder="012345678"
-          />
+          <TextPersonAttributeField id="phone" personAttributeType={mockPersonAttributeType} placeholder="012345678" />
         </Form>
       </Formik>,
     );

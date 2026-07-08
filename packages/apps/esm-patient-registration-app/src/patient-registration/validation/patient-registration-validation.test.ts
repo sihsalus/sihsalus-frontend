@@ -9,6 +9,7 @@ const mockGetConfig = vi.mocked(getConfig);
 const phoneAttributeUuid = '14d4f066-15f5-102d-96e4-000c29c2a5d7';
 const mobilePhoneAttributeUuid = 'fee4e8ef-aef8-4bb9-8ed0-7ded6055c61f';
 const emailAttributeUuid = '4bdf3a33-2f63-11f0-8ab4-1a7535b1b3e8';
+const insuranceAccreditationCheckedAtAttributeUuid = '9b3df0a1-0c58-4f55-9868-9c38f1db1006';
 
 describe('Patient registration validation', () => {
   beforeEach(() => {
@@ -74,6 +75,14 @@ describe('Patient registration validation', () => {
             required: false,
             matches: '^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$',
           },
+        },
+        {
+          id: 'insuranceAccreditationCheckedAt',
+          type: 'person attribute',
+          uuid: insuranceAccreditationCheckedAtAttributeUuid,
+          inputType: 'date',
+          allowFutureDates: false,
+          showHeading: false,
         },
       ],
     });
@@ -410,6 +419,41 @@ describe('Patient registration validation', () => {
     };
     const validationError = await validateFormValues(invalidFormValues);
     expect(validationError.errors).toContain('birthdayNotOver140YearsAgo');
+  });
+
+  it('should throw an error when insurance accreditation date is before date of birth', async () => {
+    const invalidFormValues = {
+      ...validFormValues,
+      birthdate: new Date(1990, 0, 1),
+      attributes: {
+        [insuranceAccreditationCheckedAtAttributeUuid]: '1989-12-31',
+      },
+    };
+    const validationError = await validateFormValues(invalidFormValues);
+    expect(validationError.errors).toContain('insuranceAccreditationDateBeforeBirthdate');
+  });
+
+  it('should allow insurance accreditation date on date of birth', async () => {
+    const validFormValuesWithInsuranceAccreditation = {
+      ...validFormValues,
+      birthdate: new Date(1990, 0, 1),
+      attributes: {
+        [insuranceAccreditationCheckedAtAttributeUuid]: '1990-01-01',
+      },
+    };
+    const validationError = await validateFormValues(validFormValuesWithInsuranceAccreditation);
+    expect(validationError).toBeFalsy();
+  });
+
+  it('should throw an error when insurance accreditation date is in the future', async () => {
+    const invalidFormValues = {
+      ...validFormValues,
+      attributes: {
+        [insuranceAccreditationCheckedAtAttributeUuid]: dayjs().add(1, 'day').format('YYYY-MM-DD'),
+      },
+    };
+    const validationError = await validateFormValues(invalidFormValues);
+    expect(validationError.errors).toContain('dateCannotBeInFuture');
   });
 
   it('should require a responsible relationship when the patient is a minor', async () => {

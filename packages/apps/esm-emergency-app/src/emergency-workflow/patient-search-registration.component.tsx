@@ -62,7 +62,11 @@ import { usePatientSearch } from './usePatientSearch';
 // ============================================================================
 
 interface PatientSearchRegistrationProps {
-  onPatientQueued: (patientUuid: string, patientData: SearchedPatient, priorityLevel: InitialPriority) => void;
+  onPatientQueued: (
+    patientUuid: string,
+    patientData: SearchedPatient,
+    priorityLevel: InitialPriority,
+  ) => Promise<void> | void;
 }
 
 const defaultNationalityCountryCode = 'PE';
@@ -590,7 +594,7 @@ const PatientSearchRegistration: React.FC<PatientSearchRegistrationProps> = ({ o
     if (!readyPatient || !initialPriority) return;
     setIsSubmitting(true);
     try {
-      onPatientQueued(readyPatient.uuid, readyPatient, initialPriority);
+      await onPatientQueued(readyPatient.uuid, readyPatient, initialPriority);
     } finally {
       setIsSubmitting(false);
     }
@@ -1243,6 +1247,8 @@ const PatientSearchRegistration: React.FC<PatientSearchRegistrationProps> = ({ o
             >
               {isSubmitting ? (
                 <InlineLoading description={t('sending', 'Enviando...')} />
+              ) : initialPriority === 'emergency' ? (
+                t('sendToImmediateAttention', 'Enviar a atención inmediata')
               ) : (
                 t('sendToTriageQueue', 'Enviar a cola de triaje')
               )}

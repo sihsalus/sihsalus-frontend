@@ -1,6 +1,8 @@
 import {
   Button,
   Checkbox,
+  InlineLoading,
+  InlineNotification,
   ModalBody,
   ModalFooter,
   ModalHeader,
@@ -15,11 +17,11 @@ import {
 } from '@carbon/react';
 import { OpenmrsDatePicker, showSnackbar } from '@openmrs/esm-framework';
 import dayjs from 'dayjs';
-import React, { useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useSWRConfig } from 'swr';
 import { useEmergencyConfig, usePriorityConfig } from '../hooks/usePriorityConfig';
-import { type EmergencyQueueEntry, transitionEmergencyQueueEntry } from '../resources/emergency.resource';
+import { type EmergencyQueueEntry, transitionEmergencyQueueEntry, useQueues } from '../resources/emergency.resource';
 import styles from './transition-queue-entry.modal.scss';
 
 type AmPm = 'AM' | 'PM';
@@ -33,17 +35,41 @@ const TransitionQueueEntryModal: React.FC<TransitionQueueEntryModalProps> = ({ q
   const { t } = useTranslation();
   const { mutate } = useSWRConfig();
   const { queueStatuses } = useEmergencyConfig();
-  const { priorityConfigs } = usePriorityConfig();
+  const { getPriorityByUuid } = usePriorityConfig();
+  const { queues, isLoading: isLoadingQueues } = useQueues();
 
   const patientName = queueEntry.patient.person?.display || queueEntry.patient.display;
 
-  const statusOptions = useMemo(
+  const defaultStatusOptions = useMemo(
     () => [
       { uuid: queueStatuses.waiting, label: t('statusWaiting', 'Esperando') },
       { uuid: queueStatuses.inService, label: t('statusInService', 'Atendiéndose') },
       { uuid: queueStatuses.finishedService, label: t('statusFinished', 'Servicio Finalizado') },
     ],
     [queueStatuses, t],
+  );
+  const currentQueueObj = useMemo(
+    () => queues.find((queue) => queue.uuid === queueEntry.queue?.uuid),
+    [queueEntry.queue?.uuid, queues],
+  );
+  const statusOptions = useMemo(
+    () =>
+      currentQueueObj?.allowedStatuses?.length
+        ? currentQueueObj.allowedStatuses.map((status) => ({ uuid: status.uuid, label: status.display }))
+        : defaultStatusOptions,
+    [currentQueueObj?.allowedStatuses, defaultStatusOptions],
+  );
+  const priorityOptions = useMemo(
+    () =>
+      (currentQueueObj?.allowedPriorities ?? []).map((priority) => {
+        const priorityConfig = getPriorityByUuid(priority.uuid);
+        return {
+          uuid: priority.uuid,
+          label: priorityConfig?.label ?? priority.display,
+          color: priorityConfig?.color,
+        };
+      }),
+    [currentQueueObj?.allowedPriorities, getPriorityByUuid],
   );
 
   const now = new Date();
@@ -57,6 +83,38 @@ const TransitionQueueEntryModal: React.FC<TransitionQueueEntryModalProps> = ({ q
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const isUnchanged = selectedStatus === queueEntry.status?.uuid && selectedPriority === queueEntry.priority?.uuid;
+  const canSubmit = Boolean(
+    selectedStatus && selectedPriority && priorityOptions.length && !isLoadingQueues && !isSubmitting && !isUnchanged,
+  );
+
+  useEffect(() => {
+    if (!currentQueueObj) {
+      return;
+    }
+
+    if (statusOptions.length && !statusOptions.some((status) => status.uuid === selectedStatus)) {
+      const currentStatus = statusOptions.find((status) => status.uuid === queueEntry.status?.uuid);
+      setSelectedStatus((currentStatus ?? statusOptions[0]).uuid);
+    }
+
+    if (!priorityOptions.length) {
+      setSelectedPriority('');
+      return;
+    }
+
+    if (!priorityOptions.some((priority) => priority.uuid === selectedPriority)) {
+      const currentPriority = priorityOptions.find((priority) => priority.uuid === queueEntry.priority?.uuid);
+      setSelectedPriority((currentPriority ?? priorityOptions[0]).uuid);
+    }
+  }, [
+    currentQueueObj,
+    priorityOptions,
+    queueEntry.priority?.uuid,
+    queueEntry.status?.uuid,
+    selectedPriority,
+    selectedStatus,
+    statusOptions,
+  ]);
 
   const getPriorityTagProps = (color?: string) => {
     if (color === 'red') return { type: 'red' as const, className: styles.boldTag };
@@ -154,28 +212,43 @@ const TransitionQueueEntryModal: React.FC<TransitionQueueEntryModalProps> = ({ q
             {/* Priority section */}
             <section>
               <div className={styles.sectionTitle}>{t('priority', 'Prioridad')}</div>
-              <RadioButtonGroup
-                className={styles.radioButtonGroup}
-                name="priority"
-                valueSelected={selectedPriority}
-                orientation="horizontal"
-                onChange={(uuid: string) => setSelectedPriority(uuid)}
-              >
-                {priorityConfigs.map((priority) => {
-                  const tagProps = getPriorityTagProps(priority.color);
-                  return (
-                    <RadioButton
-                      key={priority.conceptUuid}
-                      labelText={
-                        <Tag type={tagProps.type} size="sm" className={tagProps.className}>
-                          {priority.label}
-                        </Tag>
-                      }
-                      value={priority.conceptUuid}
-                    />
-                  );
-                })}
-              </RadioButtonGroup>
+              {isLoadingQueues ? (
+                <InlineLoading description={t('loading', 'Cargando...')} />
+              ) : priorityOptions.length ? (
+                <RadioButtonGroup
+                  className={styles.radioButtonGroup}
+                  name="priority"
+                  valueSelected={selectedPriority}
+                  orientation="horizontal"
+                  onChange={(uuid: string) => setSelectedPriority(uuid)}
+                >
+                  {priorityOptions.map((priority) => {
+                    const tagProps = getPriorityTagProps(priority.color);
+                    return (
+                      <RadioButton
+                        key={priority.uuid}
+                        labelText={
+                          <Tag type={tagProps.type} size="sm" className={tagProps.className}>
+                            {priority.label}
+                          </Tag>
+                        }
+                        value={priority.uuid}
+                      />
+                    );
+                  })}
+                </RadioButtonGroup>
+              ) : (
+                <InlineNotification
+                  kind="error"
+                  lowContrast
+                  hideCloseButton
+                  title={t('noPrioritiesAvailable', 'No hay prioridades disponibles')}
+                  subtitle={t(
+                    'selectedQueueHasNoAllowedPriorities',
+                    'La cola seleccionada no tiene prioridades permitidas configuradas.',
+                  )}
+                />
+              )}
             </section>
 
             {/* Comment section */}
@@ -234,7 +307,7 @@ const TransitionQueueEntryModal: React.FC<TransitionQueueEntryModalProps> = ({ q
         <Button kind="secondary" onClick={closeModal} disabled={isSubmitting}>
           {t('cancel', 'Cancelar')}
         </Button>
-        <Button kind="primary" onClick={handleSubmit} disabled={isSubmitting || isUnchanged}>
+        <Button kind="primary" onClick={handleSubmit} disabled={!canSubmit}>
           {isSubmitting ? t('transitioning', 'Transicionando...') : t('transition', 'Transición')}
         </Button>
       </ModalFooter>

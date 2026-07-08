@@ -29,6 +29,11 @@ const AdminPage = () => {
 
   const { queues, isLoading: isLoadingQueues, error: queuesError } = useQueuesMutable();
   const { queueRooms, isLoading: isLoadingQueueRooms, error: queueRoomsError } = useQueueRooms();
+  const queuesById = useMemo(() => new Map(queues?.map((queue) => [queue.uuid, queue]) ?? []), [queues]);
+  const queueRoomsById = useMemo(
+    () => new Map(queueRooms?.map((queueRoom) => [queueRoom.uuid, queueRoom]) ?? []),
+    [queueRooms],
+  );
 
   const queueTableHeaders = [
     {
@@ -132,16 +137,20 @@ const AdminPage = () => {
                       </TableRow>
                     </TableHead>
                     <TableBody>
-                      {rows.map((row, i) => (
-                        <TableRow key={row.id}>
-                          {row.cells.map((cell) => (
-                            <TableCell key={cell.id}>{cell.value}</TableCell>
-                          ))}
-                          <TableCell className="cds--table-column-menu">
-                            <QueueActionMenu queue={queues[i]} />
-                          </TableCell>
-                        </TableRow>
-                      ))}
+                      {rows.map((row) => {
+                        const queue = queuesById.get(row.id);
+
+                        return (
+                          <TableRow key={row.id}>
+                            {row.cells.map((cell) => (
+                              <TableCell key={cell.id}>{cell.value}</TableCell>
+                            ))}
+                            <TableCell className="cds--table-column-menu">
+                              {queue ? <QueueActionMenu queue={queue} /> : null}
+                            </TableCell>
+                          </TableRow>
+                        );
+                      })}
                     </TableBody>
                   </Table>
                 </TableContainer>
@@ -192,16 +201,20 @@ const AdminPage = () => {
                       </TableRow>
                     </TableHead>
                     <TableBody>
-                      {rows.map((row, i) => (
-                        <TableRow key={row.id}>
-                          {row.cells.map((cell) => (
-                            <TableCell key={cell.id}>{cell.value}</TableCell>
-                          ))}
-                          <TableCell className="cds--table-column-menu">
-                            <QueueRoomActionMenu queueRoom={queueRooms[i]} />
-                          </TableCell>
-                        </TableRow>
-                      ))}
+                      {rows.map((row) => {
+                        const queueRoom = queueRoomsById.get(row.id);
+
+                        return (
+                          <TableRow key={row.id}>
+                            {row.cells.map((cell) => (
+                              <TableCell key={cell.id}>{cell.value}</TableCell>
+                            ))}
+                            <TableCell className="cds--table-column-menu">
+                              {queueRoom ? <QueueRoomActionMenu queueRoom={queueRoom} /> : null}
+                            </TableCell>
+                          </TableRow>
+                        );
+                      })}
                     </TableBody>
                   </Table>
                 </TableContainer>

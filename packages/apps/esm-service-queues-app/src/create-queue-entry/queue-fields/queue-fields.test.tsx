@@ -6,7 +6,7 @@ import {
   useSession,
   type Visit,
 } from '@openmrs/esm-framework';
-import { render, screen } from '@testing-library/react';
+import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { mockSession, mockVisitAlice } from 'test-utils';
 
@@ -58,8 +58,8 @@ describe('QueueFields', () => {
 
   it('renders the form fields and returns the set values', async () => {
     const user = userEvent.setup();
-    let onSubmit: ((visit: Visit) => Promise<any>) | undefined;
-    const setOnSubmit = (callback: (visit: Visit) => Promise<any>) => {
+    let onSubmit: ((visit: Visit) => Promise<unknown>) | undefined;
+    const setOnSubmit = (callback: (visit: Visit) => Promise<unknown>) => {
       onSubmit = callback;
     };
     render(<QueueFields setOnSubmit={setOnSubmit} />);
@@ -74,15 +74,19 @@ describe('QueueFields', () => {
 
     expect(screen.getByText('Priority')).toBeInTheDocument();
     expect(screen.getByText('High')).toBeInTheDocument();
+    await waitFor(() => expect(screen.getByLabelText('High')).toBeChecked());
 
     expect(onSubmit).toBeDefined();
-    await onSubmit!(mockVisitAlice);
+    if (!onSubmit) {
+      throw new Error('onSubmit callback was not set');
+    }
+    await onSubmit(mockVisitAlice);
     expect(mockPostQueueEntry).toHaveBeenCalledWith(
       mockVisitAlice.uuid,
       queueUuid, // queueUuid
       mockVisitAlice.patient.uuid,
-      'bf3a08c6-cbe6-4f00-8e06-5f5437790b85', // priority
-      '51ae5e4d-b72b-4912-bf31-a17efb690aeb', // status
+      '197852c7-5fd4-4b33-89cc-7bae6848c65a', // priority
+      '176052c7-5fd4-4b33-89cc-7bae6848c65a', // status
       0, // sortWeight
       '1', // locationUuid
       null, // visitQueueNumberAttributeUuid

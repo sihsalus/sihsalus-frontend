@@ -20,6 +20,8 @@ interface PatientQueueHeaderProps {
   actions?: React.ReactNode;
 }
 
+type QueueLocationOption = { id?: string; name?: string };
+
 const PatientQueueHeader: React.FC<PatientQueueHeaderProps> = ({
   title,
   showFilters,
@@ -49,7 +51,11 @@ const PatientQueueHeader: React.FC<PatientQueueHeaderProps> = ({
   }, [queues, t]);
 
   const handleQueueLocationChange = useCallback(
-    ({ selectedItem }) => {
+    ({ selectedItem }: OnChangeData<QueueLocationOption>) => {
+      if (!selectedItem?.id) {
+        return;
+      }
+
       if (selectedItem.id === 'all') {
         updateSelectedQueueLocationUuid(null);
         updateSelectedQueueLocationName(null);
@@ -77,18 +83,18 @@ const PatientQueueHeader: React.FC<PatientQueueHeaderProps> = ({
   );
 
   useEffect(() => {
-    if (!isLoading && !error && !selectedQueueLocationUuid) {
-      if (queueLocations.length === 1) {
-        handleQueueLocationChange({ selectedItem: queueLocations[0] });
-      }
-      if (queueLocations.some((location) => location.id === userSession?.sessionLocation?.uuid)) {
-        handleQueueLocationChange({
-          selectedItem: {
-            id: userSession?.sessionLocation?.uuid,
-            name: userSession?.sessionLocation?.display,
-          },
-        });
-      }
+    if (isLoading || error || selectedQueueLocationUuid) {
+      return;
+    }
+
+    if (queueLocations.length === 1) {
+      handleQueueLocationChange({ selectedItem: queueLocations[0] });
+      return;
+    }
+
+    const sessionQueueLocation = queueLocations.find((location) => location.id === userSession?.sessionLocation?.uuid);
+    if (sessionQueueLocation) {
+      handleQueueLocationChange({ selectedItem: sessionQueueLocation });
     }
   }, [
     selectedQueueLocationUuid,
@@ -96,7 +102,6 @@ const PatientQueueHeader: React.FC<PatientQueueHeaderProps> = ({
     handleQueueLocationChange,
     isLoading,
     queueLocations,
-    userSession?.sessionLocation?.display,
     userSession?.sessionLocation?.uuid,
   ]);
 
@@ -129,7 +134,7 @@ const PatientQueueHeader: React.FC<PatientQueueHeaderProps> = ({
               items={
                 queueLocations.length !== 1 ? [{ id: 'all', name: t('all', 'All') }, ...queueLocations] : queueLocations
               }
-              itemToString={(item: { name: string } | null) => (item ? item.name : '')}
+              itemToString={(item: QueueLocationOption | null) => item?.name ?? ''}
               titleText={t('location', 'Location')}
               type="inline"
               onChange={handleQueueLocationChange}

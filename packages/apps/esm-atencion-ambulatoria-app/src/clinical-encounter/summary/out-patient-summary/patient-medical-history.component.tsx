@@ -1,9 +1,8 @@
 import {
   Button,
   DataTable,
+  DataTableSkeleton,
   InlineLoading,
-  OverflowMenu,
-  OverflowMenuItem,
   Table,
   TableBody,
   TableCell,
@@ -28,6 +27,7 @@ import { mutate } from 'swr';
 import type { ConfigObject } from '../../../config-schema';
 import type { OpenmrsEncounter } from '../../../types';
 import { patientFormEntryWorkspace } from '../../../utils/constants';
+import styles from './patient-history.scss';
 
 interface OutPatientMedicalHistoryProps {
   patientUuid: string;
@@ -42,6 +42,7 @@ const OutPatientMedicalHistory: React.FC<OutPatientMedicalHistoryProps> = ({
   encounters,
   isLoading,
   error,
+  isValidating,
 }) => {
   const { t } = useTranslation();
   const {
@@ -90,14 +91,14 @@ const OutPatientMedicalHistory: React.FC<OutPatientMedicalHistoryProps> = ({
       header: t('finalDiagnosis', 'Final Diagnosis'),
     },
   ];
-  const tableRows = encounters
-    ?.map((encounter) => {
+  const tableRows = (encounters ?? [])
+    .map((encounter) => {
       const allFieldsNull = () => {
         return (
           getObsFromEncounter(encounter, concepts.surgicalHistoryUuid) === '--' &&
           getObsFromEncounter(encounter, concepts.bloodTransfusionUuid) === '--' &&
           getObsFromEncounter(encounter, concepts.accidentTraumaUuid) === '--' &&
-          encounter.diagnoses.length === 0 &&
+          !encounter.diagnoses?.length &&
           encounter.encounterDatetime !== null
         );
       };
@@ -110,48 +111,35 @@ const OutPatientMedicalHistory: React.FC<OutPatientMedicalHistoryProps> = ({
         surgicalHistory: getObsFromEncounter(encounter, concepts.surgicalHistoryUuid),
         bloodTransfusion: getObsFromEncounter(encounter, concepts.bloodTransfusionUuid),
         accidentOrTrauma: getObsFromEncounter(encounter, concepts.accidentTraumaUuid),
-        finalDiagnosis: encounter.diagnoses.length > 0 ? encounter.diagnoses[0].diagnosis.coded.display : '--',
-        actions: (
-          <OverflowMenu aria-label={t('actions', 'Actions')} flipped={false}>
-            <OverflowMenuItem
-              onClick={() => handleOpenOrEditClinicalEncounterForm(encounter.uuid)}
-              itemText={t('edit', 'Edit')}
-            />
-            <OverflowMenuItem itemText={t('delete', 'Delete')} isDelete />
-          </OverflowMenu>
-        ),
+        finalDiagnosis: encounter.diagnoses?.length ? encounter.diagnoses[0].diagnosis.coded.display : '--',
       };
     })
     .filter((row) => row !== null);
   if (isLoading) {
-    return (
-      <InlineLoading
-        status="active"
-        iconDescription={t('loading', 'Loading...')}
-        description={t('loadingData', 'Loading data')}
-      />
-    );
+    return <DataTableSkeleton role="progressbar" size="sm" zebra />;
   }
   if (error) {
-    return <ErrorState error={error} headerTitle={t('medicalHistory', 'Medical History')} />;
+    return <ErrorState error={error} headerTitle={headerTitle} />;
   }
-  if (encounters.length === 0) {
+  if (tableRows.length === 0) {
     return (
       <EmptyState
-        displayText={t('clinicalEncounter', 'Clinical Encounter')}
-        headerTitle={t('medicalHistory', 'Medical History')}
+        displayText={t('medicalHistory', 'Medical History')}
+        headerTitle={headerTitle}
         launchForm={handleOpenOrEditClinicalEncounterForm}
       />
     );
   }
   return (
-    <>
+    <div className={styles.widgetCard} role="region" aria-label={headerTitle}>
       <CardHeader title={headerTitle}>
+        <div className={styles.backgroundDataFetchingIndicator}>
+          <span>{isValidating ? <InlineLoading /> : null}</span>
+        </div>
         <Button
-          size="md"
           kind="ghost"
           onClick={() => handleOpenOrEditClinicalEncounterForm()}
-          renderIcon={(props) => <Add size={24} {...props} />}
+          renderIcon={Add}
           iconDescription={t('add', 'Add')}
         >
           {t('add', 'Add')}
@@ -161,14 +149,15 @@ const OutPatientMedicalHistory: React.FC<OutPatientMedicalHistoryProps> = ({
         size="sm"
         rows={tableRows}
         headers={tableHeader}
+        useZebraStyles
         render={({ rows, headers, getHeaderProps, getRowProps, getTableProps, getTableContainerProps }) => (
           <TableContainer {...getTableContainerProps()}>
             <Table size="sm" {...getTableProps()} aria-label={t('medicalHistory', 'Medical History')}>
               <TableHead>
                 <TableRow>
-                  {headers.map((header, i) => (
+                  {headers.map((header) => (
                     <TableHeader
-                      key={i}
+                      key={header.key}
                       {...getHeaderProps({
                         header,
                       })}
@@ -196,7 +185,7 @@ const OutPatientMedicalHistory: React.FC<OutPatientMedicalHistoryProps> = ({
           </TableContainer>
         )}
       />
-    </>
+    </div>
   );
 };
 export default OutPatientMedicalHistory;

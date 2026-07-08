@@ -78,6 +78,9 @@ const OrderCancellationForm: React.FC<OrderCancellationFormProps> = (props) => {
   } = useForm<CancelOrderFormData>({
     mode: 'all',
     resolver: zodResolver(cancelOrderSchema),
+    defaultValues: {
+      cancellationDate: new Date(),
+    },
   });
 
   function onError(err: FieldErrors<CancelOrderFormData>) {

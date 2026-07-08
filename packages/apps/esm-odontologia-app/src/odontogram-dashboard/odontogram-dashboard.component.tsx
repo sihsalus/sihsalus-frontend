@@ -1,4 +1,4 @@
-import { Add, Information } from '@carbon/icons-react';
+import { Add, Edit, Information } from '@carbon/icons-react';
 import {
   IconButton,
   Select,
@@ -69,9 +69,10 @@ interface RecordSelectorProps {
   selectedEncounterUuid: string | null;
   onSelect: (record: OdontogramRecord, parentBase: OdontogramRecord) => void;
   onAdd: () => void;
+  onEdit: (record: OdontogramRecord, parentBase: OdontogramRecord) => void;
 }
 
-const RecordSelector: React.FC<RecordSelectorProps> = ({ groups, selectedEncounterUuid, onSelect, onAdd }) => {
+const RecordSelector: React.FC<RecordSelectorProps> = ({ groups, selectedEncounterUuid, onSelect, onAdd, onEdit }) => {
   const { t } = useTranslation();
   const session = useSession();
   const canEdit = userHasAccess('app:clinical.chart.dentistry.edit', session?.user);
@@ -118,6 +119,7 @@ const RecordSelector: React.FC<RecordSelectorProps> = ({ groups, selectedEncount
   };
 
   const defaultValue = selectedEncounterUuid ?? groups[0]?.base?.encounterUuid ?? '';
+  const selectedEntry = recordMap.get(defaultValue);
 
   return (
     <div className={styles.selectorRow}>
@@ -151,15 +153,27 @@ const RecordSelector: React.FC<RecordSelectorProps> = ({ groups, selectedEncount
       </Tooltip>
 
       {canEdit ? (
-        <IconButton
-          kind="ghost"
-          size="sm"
-          label={t('addAttention', 'New attention')}
-          onClick={onAdd}
-          data-testid="add-attention-btn"
-        >
-          <Add />
-        </IconButton>
+        <>
+          <IconButton
+            kind="ghost"
+            size="sm"
+            label={t('editOdontogram', 'Edit odontogram')}
+            onClick={() => selectedEntry && onEdit(selectedEntry.record, selectedEntry.parentBase)}
+            disabled={!selectedEntry?.record.data}
+            data-testid="edit-odontogram-btn"
+          >
+            <Edit />
+          </IconButton>
+          <IconButton
+            kind="ghost"
+            size="sm"
+            label={t('addAttention', 'New attention')}
+            onClick={onAdd}
+            data-testid="add-attention-btn"
+          >
+            <Add />
+          </IconButton>
+        </>
       ) : null}
     </div>
   );
@@ -249,6 +263,26 @@ const OdontogramDashboard: React.FC<OdontogramDashboardProps> = ({ patientUuid, 
     [setSelectedEncounterUuid, setActiveBaseEncounterUuid],
   );
 
+  const handleEditRecord = useCallback(
+    (record: OdontogramRecord, parentBase: OdontogramRecord) => {
+      if (!record.data) {
+        return;
+      }
+
+      setData(record.data);
+      setWorkspaceMode(record.type);
+      setSelectedEncounterUuid(record.encounterUuid);
+      setActiveBaseEncounterUuid(parentBase.encounterUuid);
+      launchWorkspace('odontologia-odontogram-form-workspace', {
+        patientUuid,
+        workspaceMode: record.type,
+        encounterUuid: record.encounterUuid,
+        baseEncounterUuid: parentBase.encounterUuid,
+      });
+    },
+    [patientUuid, setData, setWorkspaceMode, setSelectedEncounterUuid, setActiveBaseEncounterUuid],
+  );
+
   // ------ Render ------
 
   if (isLoading) {
@@ -272,6 +306,7 @@ const OdontogramDashboard: React.FC<OdontogramDashboardProps> = ({ patientUuid, 
             selectedEncounterUuid={selectedEncounterUuid}
             onSelect={handleSelectRecord}
             onAdd={handleAddClick}
+            onEdit={handleEditRecord}
           />
         </div>
       ) : (
@@ -281,6 +316,7 @@ const OdontogramDashboard: React.FC<OdontogramDashboardProps> = ({ patientUuid, 
             selectedEncounterUuid={selectedEncounterUuid}
             onSelect={handleSelectRecord}
             onAdd={handleAddClick}
+            onEdit={handleEditRecord}
           />
         </CardHeader>
       )}

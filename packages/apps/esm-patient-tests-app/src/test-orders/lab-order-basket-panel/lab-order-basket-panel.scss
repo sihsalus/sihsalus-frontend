@@ -92,3 +92,10 @@
   margin-top: layout.$spacing-03;
   padding: 0 layout.$spacing-05 layout.$spacing-05 layout.$spacing-05;
 }
+
+.checkboxesContainer {
+  padding: 0 layout.$spacing-05 layout.$spacing-05 layout.$spacing-05;
+  display: flex;
+  flex-direction: column;
+  gap: layout.$spacing-03;
+}

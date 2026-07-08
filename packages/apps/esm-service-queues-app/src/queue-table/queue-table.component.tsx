@@ -190,9 +190,20 @@ function QueueTable({
             <Pagination
               forwardText={t('nextPage', 'Next page')}
               backwardText={t('previousPage', 'Previous page')}
+              itemRangeText={(min, max, total) =>
+                t('itemRange', '{{min}}-{{max}} of {{total}} items', { min, max, total })
+              }
+              itemsPerPageText={t('itemsPerPage', 'Items per page:')}
               page={currentPage}
+              pageNumberText={t('pageNumber', 'Page Number')}
+              pageRangeText={(_current, total) =>
+                total === 1
+                  ? t('pageRangeSingular', 'of {{total}} page', { total })
+                  : t('pageRangePlural', 'of {{total}} pages', { total })
+              }
               pageSize={currentPageSize}
               pageSizes={pageSizes}
+              pageText={(page) => t('pageText', 'page {{page}}', { page })}
               totalItems={queueEntries?.length}
               onChange={({ pageSize, page }) => {
                 if (pageSize !== currentPageSize) {

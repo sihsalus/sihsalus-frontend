@@ -26,6 +26,8 @@ describe('Home Component', () => {
     // Assert that the expected components are rendered
     expect(screen.getByTestId('patient-queue-header')).toBeInTheDocument();
     expect(screen.getByTestId('clinic-metrics')).toBeInTheDocument();
+    expect(document.querySelector('[data-standard-metrics-container]')).toBeInTheDocument();
+    expect(document.querySelector('[data-standard-queue-table-container]')).toBeInTheDocument();
 
     window.history.pushState({}, '', originalPathname || '/');
   });

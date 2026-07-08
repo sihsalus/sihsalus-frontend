@@ -1,9 +1,8 @@
 import {
   Button,
   DataTable,
+  DataTableSkeleton,
   InlineLoading,
-  OverflowMenu,
-  OverflowMenuItem,
   Table,
   TableBody,
   TableCell,
@@ -28,6 +27,7 @@ import { mutate } from 'swr';
 import type { ConfigObject } from '../../../config-schema';
 import type { OpenmrsEncounter } from '../../../types';
 import { patientFormEntryWorkspace } from '../../../utils/constants';
+import styles from './patient-history.scss';
 
 interface OutPatientSocialHistoryProps {
   patientUuid: string;
@@ -43,7 +43,7 @@ const OutPatientSocialHistory: React.FC<OutPatientSocialHistoryProps> = ({
   encounters,
   isLoading,
   error,
-  isValidating: _isValidating,
+  isValidating,
 }) => {
   const { t } = useTranslation();
   const {
@@ -98,8 +98,8 @@ const OutPatientSocialHistory: React.FC<OutPatientSocialHistoryProps> = ({
       header: t('otherSubstanceAbuse', 'Other Substance Abuse'),
     },
   ];
-  const tableRows = encounters
-    ?.map((encounter) => {
+  const tableRows = (encounters ?? [])
+    .map((encounter) => {
       const allFieldsNull = () => {
         return (
           getObsFromEncounter(encounter, concepts.alcoholUseUuid) === '--' &&
@@ -121,47 +121,34 @@ const OutPatientSocialHistory: React.FC<OutPatientSocialHistoryProps> = ({
         smoking: getObsFromEncounter(encounter, concepts.smokingUuid),
         smokingDuration: getObsFromEncounter(encounter, concepts.smokingDurationUuid),
         otherSubstanceAbuse: getObsFromEncounter(encounter, concepts.otherSubstanceAbuseUuid),
-        actions: (
-          <OverflowMenu aria-label={t('actions', 'Actions')} flipped={false}>
-            <OverflowMenuItem
-              onClick={() => handleOpenOrEditClinicalEncounterForm(encounter.uuid)}
-              itemText={t('edit', 'Edit')}
-            />
-            <OverflowMenuItem itemText={t('delete', 'Delete')} isDelete />
-          </OverflowMenu>
-        ),
       };
     })
     .filter((row) => row !== null);
   if (isLoading) {
-    return (
-      <InlineLoading
-        status="active"
-        iconDescription={t('loading', 'Loading...')}
-        description={t('loadingData', 'Loading data')}
-      />
-    );
+    return <DataTableSkeleton role="progressbar" size="sm" zebra />;
   }
   if (error) {
-    return <ErrorState error={error} headerTitle={t('socialHistory', 'Social History')} />;
+    return <ErrorState error={error} headerTitle={headerTitle} />;
   }
-  if (encounters.length === 0) {
+  if (tableRows.length === 0) {
     return (
       <EmptyState
-        displayText={t('clinicalEncounter', 'Clinical Encounter')}
-        headerTitle={t('socialHistory', 'Social History')}
+        displayText={t('socialHistory', 'Social History')}
+        headerTitle={headerTitle}
         launchForm={handleOpenOrEditClinicalEncounterForm}
       />
     );
   }
   return (
-    <>
+    <div className={styles.widgetCard} role="region" aria-label={headerTitle}>
       <CardHeader title={headerTitle}>
+        <div className={styles.backgroundDataFetchingIndicator}>
+          <span>{isValidating ? <InlineLoading /> : null}</span>
+        </div>
         <Button
-          size="md"
           kind="ghost"
           onClick={() => handleOpenOrEditClinicalEncounterForm()}
-          renderIcon={(props) => <Add size={24} {...props} />}
+          renderIcon={Add}
           iconDescription={t('add', 'Add')}
         >
           {t('add', 'Add')}
@@ -171,14 +158,15 @@ const OutPatientSocialHistory: React.FC<OutPatientSocialHistoryProps> = ({
         size="sm"
         rows={tableRows}
         headers={tableHeader}
+        useZebraStyles
         render={({ rows, headers, getHeaderProps, getRowProps, getTableProps, getTableContainerProps }) => (
           <TableContainer {...getTableContainerProps()}>
             <Table size="sm" {...getTableProps()} aria-label={t('socialHistory', 'Social History')}>
               <TableHead>
                 <TableRow>
-                  {headers.map((header, i) => (
+                  {headers.map((header) => (
                     <TableHeader
-                      key={i}
+                      key={header.key}
                       {...getHeaderProps({
                         header,
                       })}
@@ -206,7 +194,7 @@ const OutPatientSocialHistory: React.FC<OutPatientSocialHistoryProps> = ({
           </TableContainer>
         )}
       />
-    </>
+    </div>
   );
 };
 export default OutPatientSocialHistory;

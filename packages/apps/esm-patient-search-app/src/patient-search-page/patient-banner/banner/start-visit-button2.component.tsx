@@ -7,6 +7,7 @@ interface StartVisitButtonProps {
   patientUuid: string;
   patient: fhir.Patient;
   startVisitWorkspaceName: string;
+  startVisitWorkspaceProps?: object;
   launchChildWorkspace: Workspace2DefinitionProps['launchChildWorkspace'];
 }
 
@@ -17,6 +18,7 @@ const StartVisitButton2 = ({
   patientUuid,
   patient,
   startVisitWorkspaceName,
+  startVisitWorkspaceProps,
   launchChildWorkspace,
 }: StartVisitButtonProps) => {
   const { t } = useTranslation();
@@ -25,6 +27,7 @@ const StartVisitButton2 = ({
     try {
       await launchChildWorkspace(startVisitWorkspaceName, {
         openedFrom: 'patient-search-results',
+        ...startVisitWorkspaceProps,
         patient,
         patientUuid,
       });
@@ -38,7 +41,7 @@ const StartVisitButton2 = ({
         subtitle: error.message ?? t('errorStartingVisitDescription', 'An error occurred while starting the visit'),
       });
     }
-  }, [patientUuid, t, launchChildWorkspace, patient, startVisitWorkspaceName]);
+  }, [patientUuid, t, launchChildWorkspace, patient, startVisitWorkspaceName, startVisitWorkspaceProps]);
 
   return (
     <Button aria-label={t('startVisit', 'Start visit')} kind="primary" onClick={handleStartVisit}>

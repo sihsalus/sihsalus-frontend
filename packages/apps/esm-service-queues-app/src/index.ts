@@ -15,6 +15,16 @@ const options = {
 
 export const root = getAsyncLifecycle(() => import('./root.component'), options);
 
+export const queueScreen = getAsyncLifecycle(() => import('./queue-screen/queue-screen.component'), {
+  featureName: 'queue-screen',
+  moduleName,
+});
+
+export const queueScreenLink = getAsyncLifecycle(() => import('./queue-screen/queue-screen-link.extension'), {
+  featureName: 'queue-screen-link',
+  moduleName,
+});
+
 export const queueTableByStatusMenu = getAsyncLifecycle(
   () => import('./queue-table/queue-table-by-status-menu.component'),
   options,
@@ -36,6 +46,34 @@ export const serviceQueuesDashboardLink = getSyncLifecycle(createDashboardLink(d
 
 export const homeDashboard = getAsyncLifecycle(() => import('./home.component'), options);
 
+export const metricsCardCheckedInPatients = getAsyncLifecycle(
+  () => import('./metrics/metrics-cards/checked-in-patients.extension'),
+  options,
+);
+
+export const metricsCardWaitingPatients = getAsyncLifecycle(
+  () => import('./metrics/metrics-cards/waiting-patients.extension'),
+  options,
+);
+
+export const metricsCardAverageWaitTime = getAsyncLifecycle(
+  () => import('./metrics/metrics-cards/average-wait-time.extension'),
+  options,
+);
+
+export const adminPageCardLink = getAsyncLifecycle(
+  () => import('./admin/admin-page-card-link/admin-page-card-link.extension'),
+  {
+    featureName: 'admin-page-card-link',
+    moduleName,
+  },
+);
+
+export const serviceQueuesAdminPage = getAsyncLifecycle(() => import('./admin/admin-page/admin-page.component'), {
+  featureName: 'service-queues-admin-page',
+  moduleName,
+});
+
 export const editQueueEntryStatusModal = getAsyncLifecycle(() => import('./active-visits/change-status.modal'), {
   featureName: 'edit queue status',
   moduleName,
@@ -51,6 +89,14 @@ export const removeQueueEntry = getAsyncLifecycle(
 
 export const clearAllQueueEntries = getAsyncLifecycle(
   () => import('./clear-queue-entries-modal/clear-queue-entries.modal'),
+  {
+    featureName: 'clear all queue entries and end visits',
+    moduleName,
+  },
+);
+
+export const clearAllQueueEntriesModal = getAsyncLifecycle(
+  () => import('./modals/clear-queue-entries-modal/clear-queue-entries.modal'),
   {
     featureName: 'clear all queue entries and end visits',
     moduleName,
@@ -75,24 +121,61 @@ export const addProviderToRoomModal = getAsyncLifecycle(
   },
 );
 
-export const transitionQueueEntryModal = getAsyncLifecycle(
-  () => import('./queue-table/queue-entry-actions/transition-queue-entry.modal'),
+export const callQueueEntryModal = getAsyncLifecycle(() => import('./modals/call-modal/call-queue-entry.modal'), {
+  featureName: 'call queue entry',
+  moduleName,
+});
+
+export const moveQueueEntryModal = getAsyncLifecycle(() => import('./modals/move-queue-entry.modal'), {
+  featureName: 'move queue entry',
+  moduleName,
+});
+
+export const deleteQueueEntryModal = getAsyncLifecycle(() => import('./modals/delete-queue-entry.modal'), {
+  featureName: 'delete queue entry of a patient',
+  moduleName,
+});
+
+export const removeQueueEntryModal = getAsyncLifecycle(() => import('./modals/remove-queue-entry.modal'), {
+  featureName: 'remove queue entry of a patient',
+  moduleName,
+});
+
+export const addOrMoveModal = getAsyncLifecycle(() => import('./modals/add-or-move-modal/add-or-move.modal'), {
+  featureName: 'add or move modal',
+  moduleName,
+});
+
+export const transitionOverflowMenuItem = getAsyncLifecycle(
+  () => import('./add-or-move-button/add-or-move-overflow-menu-item.extension'),
   {
-    featureName: 'transfer patient to a different queue',
+    featureName: 'add or move overflow menu item',
     moduleName,
   },
 );
 
-export const editQueueEntryModal = getAsyncLifecycle(
-  () => import('./queue-table/queue-entry-actions/edit-queue-entry.modal'),
-  {
-    featureName: 'edit queue entry of a patient',
-    moduleName,
-  },
-);
+export const deleteQueueModal = getAsyncLifecycle(() => import('./admin/modals/delete-queue.modal'), {
+  featureName: 'delete-queue-modal',
+  moduleName,
+});
+
+export const deleteQueueRoomModal = getAsyncLifecycle(() => import('./admin/modals/delete-queue-room.modal'), {
+  featureName: 'delete-queue-room-modal',
+  moduleName,
+});
+
+export const transitionQueueEntryModal = getAsyncLifecycle(() => import('./modals/transition-queue-entry.modal'), {
+  featureName: 'transfer patient to a different queue',
+  moduleName,
+});
+
+export const editQueueEntryModal = getAsyncLifecycle(() => import('./modals/edit-queue-entry.modal'), {
+  featureName: 'edit queue entry of a patient',
+  moduleName,
+});
 
 export const undoTransitionQueueEntryModal = getAsyncLifecycle(
-  () => import('./queue-table/queue-entry-actions/undo-transition-queue-entry.modal'),
+  () => import('./modals/undo-transition-queue-entry.modal'),
   {
     featureName: 'undo queue entry transiion of a patient',
     moduleName,
@@ -123,6 +206,11 @@ export const addNewQueueServiceWorkspace = getAsyncLifecycle(
     moduleName,
   },
 );
+
+export const addNewQueueWorkspace = getAsyncLifecycle(() => import('./admin/queues/queue-form.workspace'), {
+  featureName: 'service-queues-queue-form',
+  moduleName,
+});
 export const transitionPatientToLatestQueue = getAsyncLifecycle(
   () => import('./transition-latest-queue-entry/transition-latest-queue-entry.component'),
   {
@@ -140,6 +228,14 @@ export const addNewQueueServiceRoomWorkspace = getAsyncLifecycle(
   },
 );
 
+export const addNewQueueServiceRoomWorkspace2 = getAsyncLifecycle(
+  () => import('./admin/queue-rooms/queue-room-form.workspace'),
+  {
+    featureName: 'service-queues-queue-room-form',
+    moduleName,
+  },
+);
+
 export const visitFormQueueFields = getAsyncLifecycle(
   () => import('./create-queue-entry/queue-fields/visit-form-queue-fields.extension'),
   options,
@@ -147,6 +243,14 @@ export const visitFormQueueFields = getAsyncLifecycle(
 
 export const createQueueEntryWorkspace = getAsyncLifecycle(
   () => import('./create-queue-entry/create-queue-entry.workspace'),
+  {
+    featureName: 'create-queue-entry-workspace',
+    moduleName,
+  },
+);
+
+export const createQueueEntryWorkspace2 = getAsyncLifecycle(
+  () => import('./create-queue-entry/create-queue-entry.workspace2'),
   {
     featureName: 'create-queue-entry-workspace',
     moduleName,

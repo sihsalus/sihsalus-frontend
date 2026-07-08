@@ -12,9 +12,9 @@ interface MetricsCardProps {
   value: number | string;
   headerLabel: string;
   children?: React.ReactNode;
-  service?: string;
-  serviceUuid?: string;
-  locationUuid?: string;
+  service?: string | null;
+  serviceUuid?: string | null;
+  locationUuid?: string | null;
 }
 
 const MetricsCard: React.FC<MetricsCardProps> = ({

@@ -41,9 +41,64 @@
       "offline": true
     },
     {
+      "name": "queue-screen-link",
+      "component": "queueScreenLink",
+      "slot": "app-menu-slot",
+      "privileges": "app:service-queues",
+      "online": true,
+      "offline": true
+    },
+    {
+      "name": "admin-service-queues-card-link",
+      "component": "adminPageCardLink",
+      "slot": "system-admin-page-card-link-slot",
+      "privileges": "app:service-queues",
+      "online": true,
+      "offline": true
+    },
+    {
       "component": "root",
       "name": "service-queues-dashboard",
       "slot": "service-queues-dashboard-slot",
+      "privileges": "app:service-queues"
+    },
+    {
+      "component": "serviceQueuesAdminPage",
+      "name": "service-queues-admin",
+      "slot": "service-queues-admin-page-slot",
+      "privileges": "app:service-queues"
+    },
+    {
+      "component": "queueScreen",
+      "name": "queue-screen",
+      "slot": "queue-screen-slot",
+      "privileges": "app:service-queues"
+    },
+    {
+      "name": "metrics-card-checked-in-patients",
+      "component": "metricsCardCheckedInPatients",
+      "slot": "service-queues-metrics-slot",
+      "privileges": "app:service-queues",
+      "order": 1
+    },
+    {
+      "name": "metrics-card-waiting-patients",
+      "component": "metricsCardWaitingPatients",
+      "slot": "service-queues-metrics-slot",
+      "privileges": "app:service-queues",
+      "order": 2
+    },
+    {
+      "name": "metrics-card-average-wait-time",
+      "component": "metricsCardAverageWaitTime",
+      "slot": "service-queues-metrics-slot",
+      "privileges": "app:service-queues",
+      "order": 3
+    },
+    {
+      "name": "transition-overflow-menu-item",
+      "component": "transitionOverflowMenuItem",
+      "slot": "transition-overflow-menu-item-slot",
       "privileges": "app:service-queues"
     },
     {
@@ -91,6 +146,34 @@
       "component": "editQueueEntryModal"
     },
     {
+      "name": "call-queue-entry-modal",
+      "component": "callQueueEntryModal"
+    },
+    {
+      "name": "clear-all-queue-entries-modal",
+      "component": "clearAllQueueEntriesModal"
+    },
+    {
+      "name": "move-queue-entry-modal",
+      "component": "moveQueueEntryModal"
+    },
+    {
+      "name": "remove-queue-entry-modal",
+      "component": "removeQueueEntryModal"
+    },
+    {
+      "name": "delete-queue-entry-modal",
+      "component": "deleteQueueEntryModal"
+    },
+    {
+      "name": "delete-queue-modal",
+      "component": "deleteQueueModal"
+    },
+    {
+      "name": "delete-queue-room-modal",
+      "component": "deleteQueueRoomModal"
+    },
+    {
       "name": "edit-queue-entry-status-modal",
       "component": "editQueueEntryStatusModal"
     },
@@ -100,7 +183,7 @@
     },
     {
       "name": "transition-patient-to-latest-queue-modal",
-      "component": "transitionPatientToLatestQueue"
+      "component": "addOrMoveModal"
     },
     {
       "name": "transition-queue-entry-modal",
@@ -162,9 +245,51 @@
       "component": "@sihsalus/esm-patient-notes-app#visitNotesFormWorkspace",
       "window": "service-queues-visit-note",
       "privileges": "app:service-queues"
+    },
+    {
+      "name": "queue-patient-search-workspace",
+      "component": "@sihsalus/esm-patient-search-app#patientSearchWorkspace2",
+      "window": "add-queue-entry",
+      "privileges": "app:service-queues"
+    },
+    {
+      "name": "queue-patient-search-add-to-queue-workspace",
+      "component": "createQueueEntryWorkspace2",
+      "window": "add-queue-entry",
+      "privileges": "app:service-queues"
+    },
+    {
+      "name": "queue-patient-search-start-visit-workspace",
+      "component": "@sihsalus/esm-patient-chart-app#startVisitWorkspace",
+      "window": "add-queue-entry",
+      "privileges": "app:service-queues"
+    },
+    {
+      "name": "service-queues-service-form",
+      "component": "addNewQueueWorkspace",
+      "window": "add-queue",
+      "privileges": "app:service-queues"
+    },
+    {
+      "name": "service-queues-room-workspace",
+      "component": "addNewQueueServiceRoomWorkspace2",
+      "window": "add-queue-room",
+      "privileges": "app:service-queues"
     }
   ],
   "workspaceWindows2": [
+    {
+      "name": "add-queue-entry",
+      "group": "service-queues"
+    },
+    {
+      "name": "add-queue",
+      "group": "service-queues"
+    },
+    {
+      "name": "add-queue-room",
+      "group": "service-queues"
+    },
     {
       "name": "service-queues-patient-vitals",
       "group": "service-queues"

@@ -55,7 +55,8 @@ const PatientBanner: React.FC<PatientBannerProps> = ({
 }) => {
   const layout = useLayoutType();
   const isTablet = layout === 'tablet';
-  const { currentVisit } = useVisit(patientUuid);
+  const { activeVisit, currentVisit } = useVisit(patientUuid);
+  const effectiveVisit = currentVisit ?? activeVisit;
   const { nonNavigationSelectPatientAction } = useContext(PatientSearchContext);
   const patientSearchContext2 = usePatientSearchContext2();
   const hideActionsOverflow = hideActionsOverflowProp ?? Boolean(patientSearchContext2?.onPatientSelected);
@@ -136,6 +137,25 @@ const PatientBanner: React.FC<PatientBannerProps> = ({
   );
   const selectPatientAction =
     nonNavigationSelectPatientAction || patientSearchContext2?.onPatientSelected ? handleSelectPatient : undefined;
+  const startVisitButtonSlotName = patientSearchContext2?.startVisitWorkspaceName
+    ? 'start-visit-button-slot2'
+    : 'start-visit-button-slot';
+  const startVisitButtonSlotState = patientSearchContext2?.startVisitWorkspaceName
+    ? {
+        patient: fhirMappedPatient,
+        patientUuid,
+        launchChildWorkspace: patientSearchContext2.launchChildWorkspace,
+        startVisitWorkspaceName: patientSearchContext2.startVisitWorkspaceName,
+        startVisitWorkspaceProps: {
+          ...patientSearchContext2.startVisitWorkspaceProps,
+          onQueueEntryAdded: () => {
+            void patientSearchContext2.closeWorkspace({ closeWindow: true, discardUnsavedChanges: true });
+          },
+        },
+      }
+    : {
+        patientUuid,
+      };
 
   return (
     <>
@@ -170,13 +190,8 @@ const PatientBanner: React.FC<PatientBannerProps> = ({
                 patientUuid={patientUuid}
               />
             ) : null}
-            {!isDeceased && !currentVisit && (
-              <ExtensionSlot
-                name="start-visit-button-slot"
-                state={{
-                  patientUuid,
-                }}
-              />
+            {!isDeceased && !effectiveVisit && (
+              <ExtensionSlot name={startVisitButtonSlotName} state={startVisitButtonSlotState} />
             )}
           </div>
         </div>

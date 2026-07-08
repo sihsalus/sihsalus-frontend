@@ -24,15 +24,17 @@
       "bodyMassIndexUuid": "5b877648-ae50-4d45-ad36-0196042baa1a"
     }
   },
-  "@sihsalus/esm-cred-app": {
-    "supplementation": {
-      "mmnConceptUuid": "c2010002-0000-4000-8000-000000000002"
-    },
-    "formsList": {
-      "tepsi": "1fe2f9e8-a9b1-34d2-94ce-b897ca2e16cc"
-    },
-    "testPeruano": {
-      "formUuid": "c35213c3-bb95-340d-99a5-006f1e79068a"
+  "@sihsalus/esm-odontologia-app": {
+    "dentalFormUuid": "afcb3a21-d3a2-390e-966f-1cbcdc9b7c25",
+    "ampathFormPersistence": {
+      "formUuid": "1d4ca5a3-79d9-3380-8974-e87af3105631",
+      "baseFormUuid": "1d4ca5a3-79d9-3380-8974-e87af3105631",
+      "attentionFormUuid": "a48b004b-526e-32b5-8965-7dc4ffcb52f1",
+      "concepts": {
+        "snapshot": "c1130000-0000-4000-8000-000000000101",
+        "recordType": "c1130000-0000-4000-8000-000000000102",
+        "parentBaseEncounterUuid": "c1130000-0000-4000-8000-000000000103"
+      }
     }
   }
 }

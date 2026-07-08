@@ -488,11 +488,7 @@ function copyAssets() {
 // Injects SPA_PATH, API_URL, SPA_CONFIG_URLS, SPA_DEFAULT_LOCALE, IMPORTMAP_URL
 // so nginx serves a fully-resolved index.html with no runtime substitution needed.
 function escapeHtmlAttribute(value) {
-  return String(value)
-    .replace(/&/g, '&amp;')
-    .replace(/"/g, '&quot;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;');
+  return String(value).replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
 }
 
 function joinUrl(baseUrl, pathSegment) {

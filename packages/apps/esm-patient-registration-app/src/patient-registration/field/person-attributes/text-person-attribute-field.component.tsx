@@ -1,6 +1,6 @@
 import classNames from 'classnames';
 import { Field } from 'formik';
-import { type ChangeEvent, type KeyboardEvent, useCallback } from 'react';
+import { type ChangeEvent, type ClipboardEvent, type KeyboardEvent, useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
 import { moduleName } from '../../../constants';
 import { Input } from '../../input/basic-input/input/input.component';
@@ -60,7 +60,25 @@ export function TextPersonAttributeField({
           const handleChange = (event: ChangeEvent<HTMLInputElement>) => {
             setFieldValue(fieldName, isPhoneField ? sanitizePhoneInput(event.target.value) : event.target.value);
           };
+          const handlePaste = (event: ClipboardEvent<HTMLInputElement>) => {
+            if (!isPhoneField) {
+              return;
+            }
+
+            event.preventDefault();
+            const input = event.currentTarget;
+            const selectionStart = input.selectionStart ?? input.value.length;
+            const selectionEnd = input.selectionEnd ?? selectionStart;
+            const pastedValue = event.clipboardData.getData('text');
+            const nextValue = `${input.value.slice(0, selectionStart)}${pastedValue}${input.value.slice(selectionEnd)}`;
+
+            setFieldValue(fieldName, sanitizePhoneInput(nextValue));
+          };
           const handleKeyDown = (event: KeyboardEvent<HTMLInputElement>) => {
+            if (event.metaKey || event.ctrlKey) {
+              return;
+            }
+
             if (!isPhoneField || event.key.length !== 1) {
               return;
             }
@@ -86,6 +104,7 @@ export function TextPersonAttributeField({
               {...field}
               onChange={handleChange}
               onKeyDown={handleKeyDown}
+              onPaste={handlePaste}
               type={isPhoneField ? 'tel' : 'text'}
               inputMode={isPhoneField ? 'tel' : undefined}
               placeholder={placeholder}

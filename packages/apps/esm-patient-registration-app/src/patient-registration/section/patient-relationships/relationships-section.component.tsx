@@ -26,6 +26,7 @@ import { type FormValues, type RelationshipValue } from '../../patient-registrat
 import { PatientRegistrationContext } from '../../patient-registration-context';
 import { getEffectiveRegistrationConfig } from '../../peru-registration-config';
 import {
+  hasRelatedPerson,
   hasResponsibleRelationship,
   hasUnderageResponsibleRelationship,
   isMinorPatient,
@@ -50,6 +51,7 @@ interface RelationshipViewProps {
   relationship: RelationshipValue;
   index: number;
   displayRelationshipTypes: RelationshipType[];
+  showMissingPersonSelectionError?: boolean;
   remove: <T>(index: number) => T;
 }
 
@@ -184,6 +186,7 @@ const RelationshipView: React.FC<RelationshipViewProps> = ({
   relationship,
   index,
   displayRelationshipTypes,
+  showMissingPersonSelectionError = false,
   remove,
 }) => {
   const { t } = useTranslation(moduleName);
@@ -201,6 +204,8 @@ const RelationshipView: React.FC<RelationshipViewProps> = ({
   const [touchedFields, setTouchedFields] = useState<Partial<Record<ResponsiblePersonField, boolean>>>({});
   const newRelationship = !relationship.uuid;
   const requiresRelatedPerson = newRelationship && !relationship.relatedPersonUuid && !relationship.newPerson;
+  const showMissingExistingPersonError =
+    personEntryMode === 'search' && requiresRelatedPerson && showMissingPersonSelectionError;
   const isPendingNewPerson = !relationship.relatedPersonUuid && !!relationship.newPerson;
   const genderOptions = config?.fieldConfigurations?.gender ?? defaultGenderOptions;
   const minorResponsibleRelationshipTypes =
@@ -461,10 +466,12 @@ const RelationshipView: React.FC<RelationshipViewProps> = ({
                 placeholder={t('relativeNamePlaceholder', 'Firstname Familyname')}
                 defaultValue={relationship.relatedPersonName}
                 onSuggestionSelected={handleSuggestionSelected}
-                invalid={isInvalid}
+                invalid={isInvalid || showMissingExistingPersonError}
                 invalidText={
-                  selectedPersonInvalidText ??
-                  t('relationshipPersonMustExist', 'Family member or companion must be an existing person')
+                  showMissingExistingPersonError
+                    ? t('responsibleExistingPersonRequired', 'Select an existing person')
+                    : (selectedPersonInvalidText ??
+                      t('relationshipPersonMustExist', 'Family member or companion must be an existing person'))
                 }
                 getSearchResults={searchPerson}
                 getDisplayValue={(item) => getPersonSearchResultDisplay(item)}
@@ -731,6 +738,7 @@ export const RelationshipsSection: React.FC<RelationshipsSectionProps> = ({ defa
           push,
           remove,
           form: {
+            submitCount,
             values: { relationships },
           },
         }) => (
@@ -765,6 +773,9 @@ export const RelationshipsSection: React.FC<RelationshipsSectionProps> = ({ defa
                       relationship={relationship}
                       index={index}
                       displayRelationshipTypes={visibleRelationshipTypes}
+                      showMissingPersonSelectionError={
+                        submitCount > 0 && !!relationship.relationshipType && !hasRelatedPerson(relationship)
+                      }
                       remove={remove}
                     />
                   </div>

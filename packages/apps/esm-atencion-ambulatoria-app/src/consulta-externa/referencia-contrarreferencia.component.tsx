@@ -1,9 +1,6 @@
 import {
   Accordion,
   AccordionItem,
-  Button,
-  InlineLoading,
-  InlineNotification,
   StructuredListBody,
   StructuredListCell,
   StructuredListHead,
@@ -11,7 +8,6 @@ import {
   StructuredListWrapper,
   Tag,
 } from '@carbon/react';
-import { Add } from '@carbon/react/icons';
 import { formatDate, useConfig } from '@openmrs/esm-framework';
 import { launchPatientWorkspace } from '@openmrs/esm-patient-common-lib';
 import React from 'react';
@@ -19,7 +15,7 @@ import { useTranslation } from 'react-i18next';
 import type { ConfigObject } from '../config-schema';
 import { useReferralCounterReferral } from '../hooks/useReferralCounterReferral';
 import { patientFormEntryWorkspace } from '../utils/constants';
-import styles from './consulta-externa-dashboard.scss';
+import ClinicalHistoryCard from './clinical-history-card.component';
 
 interface ReferenciaContraReferenciaProps {
   patientUuid: string;
@@ -51,149 +47,122 @@ const ReferenciaContraReferencia: React.FC<ReferenciaContraReferenciaProps> = ({
     });
   };
 
-  if (isLoading) {
-    return <InlineLoading description={t('loading', 'Cargando...')} />;
-  }
-
   return (
-    <div className={styles.widgetContainer}>
-      <div className={styles.tableHeader}>
-        <span className={styles.tableHeaderTitle}>
-          {t('referralHistory', 'Historial de Referencias y Contrarreferencias')}
-        </span>
-        <Button kind="ghost" size="sm" renderIcon={Add} onClick={handleLaunchForm}>
-          {t('addReferral', 'Registrar Referencia')}
-        </Button>
-      </div>
-
-      {error && (
-        <InlineNotification
-          kind="error"
-          lowContrast
-          title={t('error', 'Error')}
-          subtitle={t('errorLoadingReferrals', 'No se pudieron cargar las referencias.')}
-        />
+    <ClinicalHistoryCard
+      title={t('referralHistory', 'Historial de Referencias y Contrarreferencias')}
+      actionLabel={t('addReferral', 'Registrar Referencia')}
+      empty={entries.length === 0}
+      emptyMessage={t(
+        'noReferralData',
+        'No hay referencias, contrarreferencias ni órdenes de interconsulta registradas para este paciente.',
       )}
-
-      {!error && entries.length === 0 && (
-        <div className={styles.emptyState}>
-          <p>
-            {t(
-              'noReferralData',
-              'No hay referencias, contrarreferencias ni órdenes de interconsulta registradas para este paciente.',
-            )}
-          </p>
-        </div>
-      )}
-
-      {entries.length > 0 && (
-        <Accordion>
-          {entries.map((entry) => {
-            const hasCounterReferral = Boolean(entry.counterReferralResponse);
-            return (
-              <AccordionItem
-                key={entry.uuid}
-                title={
-                  <span>
-                    {formatDate(new Date(entry.encounterDatetime))}
-                    {' — '}
-                    <Tag type="outline" size="sm">
-                      {entry.provider ?? t('unknownProvider', 'Proveedor desconocido')}
+      error={error}
+      isLoading={isLoading}
+      onAction={handleLaunchForm}
+    >
+      <Accordion>
+        {entries.map((entry) => {
+          const hasCounterReferral = Boolean(entry.counterReferralResponse);
+          return (
+            <AccordionItem
+              key={entry.uuid}
+              title={
+                <span>
+                  {formatDate(new Date(entry.encounterDatetime))}
+                  {' — '}
+                  <Tag type="outline" size="sm">
+                    {entry.provider ?? t('unknownProvider', 'Proveedor desconocido')}
+                  </Tag>
+                  {hasCounterReferral && (
+                    <Tag type="green" size="sm" style={{ marginLeft: '0.5rem' }}>
+                      {t('counterReferralReceived', 'Contrarreferencia recibida')}
                     </Tag>
-                    {hasCounterReferral && (
-                      <Tag type="green" size="sm" style={{ marginLeft: '0.5rem' }}>
-                        {t('counterReferralReceived', 'Contrarreferencia recibida')}
-                      </Tag>
-                    )}
-                    {entry.source === 'interconsultationOrder' && (
-                      <Tag type="purple" size="sm" style={{ marginLeft: '0.5rem' }}>
-                        {t('interconsultationOrder', 'Orden de interconsulta')}
-                      </Tag>
-                    )}
-                  </span>
-                }
-              >
-                <StructuredListWrapper isCondensed>
-                  <StructuredListHead>
-                    <StructuredListRow head>
-                      <StructuredListCell head>{t('field', 'Campo')}</StructuredListCell>
-                      <StructuredListCell head>{t('value', 'Valor')}</StructuredListCell>
+                  )}
+                  {entry.source === 'interconsultationOrder' && (
+                    <Tag type="purple" size="sm" style={{ marginLeft: '0.5rem' }}>
+                      {t('interconsultationOrder', 'Orden de interconsulta')}
+                    </Tag>
+                  )}
+                </span>
+              }
+            >
+              <StructuredListWrapper isCondensed>
+                <StructuredListHead>
+                  <StructuredListRow head>
+                    <StructuredListCell head>{t('field', 'Campo')}</StructuredListCell>
+                    <StructuredListCell head>{t('value', 'Valor')}</StructuredListCell>
+                  </StructuredListRow>
+                </StructuredListHead>
+                <StructuredListBody>
+                  {entry.interconsultationOrder && (
+                    <StructuredListRow>
+                      <StructuredListCell>
+                        <Tag type="purple" size="sm">
+                          {t('interconsultationOrder', 'Orden de interconsulta')}
+                        </Tag>
+                      </StructuredListCell>
+                      <StructuredListCell>{entry.interconsultationOrder}</StructuredListCell>
                     </StructuredListRow>
-                  </StructuredListHead>
-                  <StructuredListBody>
-                    {entry.interconsultationOrder && (
+                  )}
+                  {entry.referralType && (
+                    <StructuredListRow>
+                      <StructuredListCell>
+                        <Tag type="magenta" size="sm">
+                          {t('referralType', 'Tipo de Referencia')}
+                        </Tag>
+                      </StructuredListCell>
+                      <StructuredListCell>{entry.referralType}</StructuredListCell>
+                    </StructuredListRow>
+                  )}
+                  {entry.referralDestination && (
+                    <StructuredListRow>
+                      <StructuredListCell>
+                        <Tag type="blue" size="sm">
+                          {t('referralDestination', 'Establecimiento Destino')}
+                        </Tag>
+                      </StructuredListCell>
+                      <StructuredListCell>{entry.referralDestination}</StructuredListCell>
+                    </StructuredListRow>
+                  )}
+                  {entry.referralReason && (
+                    <StructuredListRow>
+                      <StructuredListCell>
+                        <Tag type="cyan" size="sm">
+                          {t('referralReason', 'Motivo de Referencia')}
+                        </Tag>
+                      </StructuredListCell>
+                      <StructuredListCell>{entry.referralReason}</StructuredListCell>
+                    </StructuredListRow>
+                  )}
+                  {entry.counterReferralResponse && (
+                    <StructuredListRow>
+                      <StructuredListCell>
+                        <Tag type="green" size="sm">
+                          {t('counterReferralResponse', 'Respuesta Contrarreferencia')}
+                        </Tag>
+                      </StructuredListCell>
+                      <StructuredListCell>{entry.counterReferralResponse}</StructuredListCell>
+                    </StructuredListRow>
+                  )}
+                  {!entry.referralType &&
+                    !entry.referralDestination &&
+                    !entry.referralReason &&
+                    !entry.counterReferralResponse &&
+                    !entry.interconsultationOrder && (
                       <StructuredListRow>
                         <StructuredListCell>
-                          <Tag type="purple" size="sm">
-                            {t('interconsultationOrder', 'Orden de interconsulta')}
-                          </Tag>
+                          {t('referralFormPending', 'Datos pendientes — formulario de referencia no configurado aún.')}
                         </StructuredListCell>
-                        <StructuredListCell>{entry.interconsultationOrder}</StructuredListCell>
+                        <StructuredListCell>—</StructuredListCell>
                       </StructuredListRow>
                     )}
-                    {entry.referralType && (
-                      <StructuredListRow>
-                        <StructuredListCell>
-                          <Tag type="magenta" size="sm">
-                            {t('referralType', 'Tipo de Referencia')}
-                          </Tag>
-                        </StructuredListCell>
-                        <StructuredListCell>{entry.referralType}</StructuredListCell>
-                      </StructuredListRow>
-                    )}
-                    {entry.referralDestination && (
-                      <StructuredListRow>
-                        <StructuredListCell>
-                          <Tag type="blue" size="sm">
-                            {t('referralDestination', 'Establecimiento Destino')}
-                          </Tag>
-                        </StructuredListCell>
-                        <StructuredListCell>{entry.referralDestination}</StructuredListCell>
-                      </StructuredListRow>
-                    )}
-                    {entry.referralReason && (
-                      <StructuredListRow>
-                        <StructuredListCell>
-                          <Tag type="cyan" size="sm">
-                            {t('referralReason', 'Motivo de Referencia')}
-                          </Tag>
-                        </StructuredListCell>
-                        <StructuredListCell>{entry.referralReason}</StructuredListCell>
-                      </StructuredListRow>
-                    )}
-                    {entry.counterReferralResponse && (
-                      <StructuredListRow>
-                        <StructuredListCell>
-                          <Tag type="green" size="sm">
-                            {t('counterReferralResponse', 'Respuesta Contrarreferencia')}
-                          </Tag>
-                        </StructuredListCell>
-                        <StructuredListCell>{entry.counterReferralResponse}</StructuredListCell>
-                      </StructuredListRow>
-                    )}
-                    {!entry.referralType &&
-                      !entry.referralDestination &&
-                      !entry.referralReason &&
-                      !entry.counterReferralResponse &&
-                      !entry.interconsultationOrder && (
-                        <StructuredListRow>
-                          <StructuredListCell>
-                            {t(
-                              'referralFormPending',
-                              'Datos pendientes — formulario de referencia no configurado aún.',
-                            )}
-                          </StructuredListCell>
-                          <StructuredListCell>—</StructuredListCell>
-                        </StructuredListRow>
-                      )}
-                  </StructuredListBody>
-                </StructuredListWrapper>
-              </AccordionItem>
-            );
-          })}
-        </Accordion>
-      )}
-    </div>
+                </StructuredListBody>
+              </StructuredListWrapper>
+            </AccordionItem>
+          );
+        })}
+      </Accordion>
+    </ClinicalHistoryCard>
   );
 };
 

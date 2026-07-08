@@ -33,7 +33,7 @@ import { useTranslation } from 'react-i18next';
 
 import { type ConfigObject } from '../config-schema';
 import { getGender } from '../helpers/functions';
-import { updateSelectedAppointmentStatus, useSelectedAppointmentStatus } from '../helpers/helpers';
+import { updateSelectedAppointmentStatus, useServiceQueuesStore } from '../store/store';
 import { useAppointments } from './queue-linelist.resource';
 import styles from './queue-linelist-base-table.scss';
 
@@ -57,7 +57,7 @@ type FilterProps = {
 const AppointmentsTable: React.FC = () => {
   const { t } = useTranslation();
   const { appointmentStatuses } = useConfig<ConfigObject>();
-  const currentAppointmentStatus = useSelectedAppointmentStatus();
+  const { selectedAppointmentStatus: currentAppointmentStatus } = useServiceQueuesStore();
   const { appointmentQueueEntries, isLoading } = useAppointments();
   const [filteredRows, setFilteredRows] = useState(appointmentQueueEntries);
   const { results, currentPage, goTo } = usePagination(filteredRows ?? [], 20);

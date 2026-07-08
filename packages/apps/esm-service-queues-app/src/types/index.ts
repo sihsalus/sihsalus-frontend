@@ -482,10 +482,10 @@ export interface QueueEntry {
 }
 
 export interface QueueEntrySearchCriteria {
-  queue?: Array<string> | string;
-  location?: Array<string> | string;
-  service?: Array<string> | string;
-  status?: Array<string> | string;
+  queue?: Array<string> | string | null;
+  location?: Array<string> | string | null;
+  service?: Array<string> | string | null;
+  status?: Array<string> | string | null;
   isEnded: boolean;
   patient?: string;
 }

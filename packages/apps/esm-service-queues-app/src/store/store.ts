@@ -1,6 +1,6 @@
 import { createGlobalStore, useStore } from '@openmrs/esm-framework';
 
-export function updateValueInSessionStorage(key: string, value: string) {
+export function updateValueInSessionStorage(key: string, value: string | null | undefined) {
   if (value === undefined || value === null) {
     sessionStorage.removeItem(key);
   } else {
@@ -13,12 +13,15 @@ export function getValueFromSessionStorage(key: string): string | null {
 }
 
 export interface ServiceQueuesState {
-  selectedQueueLocationName?: string;
-  selectedQueueLocationUuid?: string;
-  selectedServiceUuid?: string;
-  selectedServiceDisplay?: string;
-  selectedQueueStatusUuid?: string;
-  selectedQueueStatusDisplay: string;
+  selectedQueueLocationName?: string | null;
+  selectedQueueLocationUuid?: string | null;
+  selectedServiceUuid?: string | null;
+  selectedServiceDisplay?: string | null;
+  selectedQueueStatusUuid?: string | null;
+  selectedQueueStatusDisplay?: string | null;
+  selectedAppointmentStatus: string;
+  selectedQueueRoomTimestamp: Date;
+  isPermanentProviderQueueRoom: boolean;
 }
 
 const initialServiceQueuesState: ServiceQueuesState = {
@@ -28,11 +31,14 @@ const initialServiceQueuesState: ServiceQueuesState = {
   selectedServiceDisplay: getValueFromSessionStorage('queueServiceDisplay'),
   selectedQueueStatusUuid: getValueFromSessionStorage('queueStatusUuid'),
   selectedQueueStatusDisplay: getValueFromSessionStorage('queueStatusDisplay'),
+  selectedAppointmentStatus: '',
+  selectedQueueRoomTimestamp: new Date(),
+  isPermanentProviderQueueRoom: getValueFromSessionStorage('isPermanentProviderQueueRoom') === 'true',
 };
 
 const serviceQueuesStore = createGlobalStore<ServiceQueuesState>('serviceQueues', initialServiceQueuesState);
 
-export const updateSelectedService = (currentServiceUuid: string, currentServiceDisplay: string) => {
+export const updateSelectedService = (currentServiceUuid: string | null | undefined, currentServiceDisplay: string) => {
   updateValueInSessionStorage('queueServiceUuid', currentServiceUuid);
   updateValueInSessionStorage('queueServiceDisplay', currentServiceDisplay);
   serviceQueuesStore.setState({
@@ -41,23 +47,39 @@ export const updateSelectedService = (currentServiceUuid: string, currentService
   });
 };
 
-export const updateSelectedQueueLocationName = (currentLocationName: string) => {
+export const updateSelectedQueueLocationName = (currentLocationName: string | null | undefined) => {
   updateValueInSessionStorage('queueLocationName', currentLocationName);
   serviceQueuesStore.setState({ selectedQueueLocationName: currentLocationName });
 };
 
-export const updateSelectedQueueLocationUuid = (currentLocationUuid: string) => {
+export const updateSelectedQueueLocationUuid = (currentLocationUuid: string | null | undefined) => {
   updateValueInSessionStorage('queueLocationUuid', currentLocationUuid);
   serviceQueuesStore.setState({ selectedQueueLocationUuid: currentLocationUuid });
 };
 
-export const updateSelectedQueueStatus = (currentQueueStatusUuid: string, currentQueueStatusDisplay: string) => {
+export const updateSelectedQueueStatus = (
+  currentQueueStatusUuid: string | null | undefined,
+  currentQueueStatusDisplay: string | null | undefined,
+) => {
   updateValueInSessionStorage('queueStatusUuid', currentQueueStatusUuid);
   updateValueInSessionStorage('queueStatusDisplay', currentQueueStatusDisplay);
   serviceQueuesStore.setState({
     selectedQueueStatusUuid: currentQueueStatusUuid,
     selectedQueueStatusDisplay: currentQueueStatusDisplay,
   });
+};
+
+export const updateSelectedAppointmentStatus = (selectedAppointmentStatus: string) => {
+  serviceQueuesStore.setState({ selectedAppointmentStatus });
+};
+
+export const updateSelectedQueueRoomTimestamp = (selectedQueueRoomTimestamp: Date) => {
+  serviceQueuesStore.setState({ selectedQueueRoomTimestamp });
+};
+
+export const updateIsPermanentProviderQueueRoom = (isPermanentProviderQueueRoom: boolean) => {
+  updateValueInSessionStorage('isPermanentProviderQueueRoom', String(isPermanentProviderQueueRoom));
+  serviceQueuesStore.setState({ isPermanentProviderQueueRoom });
 };
 
 export function useServiceQueuesStore() {

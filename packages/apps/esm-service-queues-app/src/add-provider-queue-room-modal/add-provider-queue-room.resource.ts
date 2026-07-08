@@ -3,7 +3,7 @@ import useSWR from 'swr';
 
 import { type ProvidersQueueRoom, type QueueRoom } from '../types';
 
-export function useQueueRooms(location: string, queueUuid: string) {
+export function useQueueRooms(location?: string | null, queueUuid?: string | null) {
   const apiUrl = queueUuid
     ? `${restBaseUrl}/queueroom?location=${location}&queue=${queueUuid}`
     : `${restBaseUrl}/queueroom?location=${location}`;

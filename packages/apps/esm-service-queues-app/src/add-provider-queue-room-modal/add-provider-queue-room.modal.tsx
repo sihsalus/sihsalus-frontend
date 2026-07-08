@@ -21,17 +21,15 @@ import { useTranslation } from 'react-i18next';
 import { z } from 'zod';
 
 import { useQueueLocations } from '../create-queue-entry/hooks/useQueueLocations';
+import useQueueServices from '../hooks/useQueueService';
 import {
-  updatedSelectedQueueRoomTimestamp,
   updateIsPermanentProviderQueueRoom,
   updateSelectedQueueLocationName,
   updateSelectedQueueLocationUuid,
+  updateSelectedQueueRoomTimestamp,
   updateSelectedService,
-  useIsPermanentProviderQueueRoom,
-  useSelectedQueueLocationUuid,
-  useSelectedService,
-} from '../helpers/helpers';
-import useQueueServices from '../hooks/useQueueService';
+  useServiceQueuesStore,
+} from '../store/store';
 
 import {
   addProviderToQueueRoom,
@@ -69,9 +67,8 @@ type ProviderQueueRoomData = z.infer<ReturnType<typeof createProviderQueueRoomSc
 const AddProviderQueueRoomModal: React.FC<AddProviderQueueRoomModalProps> = ({ closeModal, providerUuid }) => {
   const { t } = useTranslation();
   const { providerRoom, mutate } = useProvidersQueueRoom(providerUuid);
-  const isPermanentProviderQueueRoom = useIsPermanentProviderQueueRoom() ?? false;
-  const currentLocationUuid = useSelectedQueueLocationUuid();
-  const currentService = useSelectedService();
+  const { isPermanentProviderQueueRoom, selectedQueueLocationUuid, selectedServiceDisplay, selectedServiceUuid } =
+    useServiceQueuesStore();
 
   const {
     control,
@@ -82,15 +79,15 @@ const AddProviderQueueRoomModal: React.FC<AddProviderQueueRoomModalProps> = ({ c
     mode: 'all',
     resolver: zodResolver(createProviderQueueRoomSchema(t)),
     defaultValues: {
-      queueLocationUuid: currentLocationUuid ?? '',
+      queueLocationUuid: selectedQueueLocationUuid ?? '',
       queueProviderMapUuid: providerRoom?.[0]?.uuid ?? '',
       queueRoomUuid: providerRoom?.[0]?.queueRoom?.uuid ?? '',
-      currentIsPermanentProviderQueueRoom: Boolean(isPermanentProviderQueueRoom),
+      currentIsPermanentProviderQueueRoom: isPermanentProviderQueueRoom,
     },
   });
 
   const { queueLocations } = useQueueLocations();
-  const { rooms, error: errorFetchingQueueRooms } = useQueueRooms(currentLocationUuid, currentService?.serviceUuid);
+  const { rooms, error: errorFetchingQueueRooms } = useQueueRooms(selectedQueueLocationUuid, selectedServiceUuid);
   const { services } = useQueueServices();
 
   const handleServiceChange = useCallback(({ selectedItem }) => {
@@ -98,9 +95,9 @@ const AddProviderQueueRoomModal: React.FC<AddProviderQueueRoomModalProps> = ({ c
       return;
     }
 
-    localStorage.setItem('queueServiceName', selectedItem.name);
+    localStorage.setItem('queueServiceName', selectedItem.display);
     localStorage.setItem('queueService', selectedItem.uuid);
-    updateSelectedService(selectedItem.uuid, selectedItem.name);
+    updateSelectedService(selectedItem.uuid, selectedItem.display);
   }, []);
 
   const handleQueueLocationChange = useCallback(
@@ -146,7 +143,7 @@ const AddProviderQueueRoomModal: React.FC<AddProviderQueueRoomModalProps> = ({ c
 
         const timestamp = new Date().toString();
         localStorage.setItem('lastUpdatedQueueRoomTimestamp', timestamp);
-        updatedSelectedQueueRoomTimestamp(new Date());
+        updateSelectedQueueRoomTimestamp(new Date());
         await mutate();
         closeModal();
       } catch (error) {
@@ -180,7 +177,7 @@ const AddProviderQueueRoomModal: React.FC<AddProviderQueueRoomModalProps> = ({ c
                     {...field}
                     aria-label={t('queueLocation', 'Queue location')}
                     id="queueLocation"
-                    initialSelectedItem={queueLocations?.find((location) => location.id === currentLocationUuid)}
+                    initialSelectedItem={queueLocations?.find((location) => location.id === selectedQueueLocationUuid)}
                     invalid={!!errors.queueLocationUuid}
                     invalidText={errors.queueLocationUuid?.message}
                     items={queueLocations ?? []}
@@ -208,10 +205,15 @@ const AddProviderQueueRoomModal: React.FC<AddProviderQueueRoomModalProps> = ({ c
                     {...field}
                     aria-label={t('queueService', 'Queue service')}
                     id="queueService"
-                    initialSelectedItem={{
-                      display: currentService?.serviceDisplay,
-                      uuid: currentService?.serviceUuid,
-                    }}
+                    initialSelectedItem={
+                      services?.find((service) => service.uuid === selectedServiceUuid) ??
+                      (selectedServiceUuid
+                        ? {
+                            display: selectedServiceDisplay,
+                            uuid: selectedServiceUuid,
+                          }
+                        : undefined)
+                    }
                     itemToString={(item) => item?.display ?? ''}
                     items={services ?? []}
                     label={t('queueService', 'Queue service')}

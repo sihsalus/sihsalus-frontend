@@ -6,11 +6,6 @@ import Home from './home.component';
 
 const mockUseConfig = vi.mocked(useConfig<ConfigObject>);
 
-vi.mock('./helpers/helpers', async () => ({
-  ...(await vi.importActual('./helpers/helpers')),
-  useSelectedQueueLocationName: vi.fn(() => 'Test Location'),
-}));
-
 mockUseConfig.mockReturnValue({
   ...getDefaultsFromConfigSchema(configSchema),
   visitQueueNumberAttributeUuid: 'c61ce16f-272a-41e7-9924-4c555d0932c5',

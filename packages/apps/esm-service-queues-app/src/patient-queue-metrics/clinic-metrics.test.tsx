@@ -39,11 +39,6 @@ vi.mock('./clinic-metrics.resource', async () => ({
   useAverageWaitTime: vi.fn().mockReturnValue({ waitTime: mockMetrics.waitTime }),
 }));
 
-vi.mock('../helpers/helpers', async () => ({
-  ...(await vi.importActual('../helpers/helpers')),
-  useSelectedServiceName: vi.fn().mockReturnValue('All'),
-}));
-
 describe('Clinic metrics', () => {
   beforeEach(() => {
     mockUseConfig.mockReturnValue({

@@ -4,7 +4,7 @@ import useSWRImmutable from 'swr/immutable';
 
 import { type Queue } from '../types';
 
-export function useQueues(locationUuid?: string) {
+export function useQueues(locationUuid?: string | null) {
   const customRepresentation =
     'custom:(uuid,display,name,description,service:(uuid,display),priorityConceptSet:(uuid,display),statusConceptSet:(uuid,display),allowedPriorities:(uuid,display),allowedStatuses:(uuid,display),location:(uuid,display))';
   const apiUrl = `${restBaseUrl}/queue?v=${customRepresentation}` + (locationUuid ? `&location=${locationUuid}` : '');

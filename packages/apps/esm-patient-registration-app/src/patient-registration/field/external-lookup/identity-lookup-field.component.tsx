@@ -54,7 +54,10 @@ export function applyReniecIdentityToForm(
     ['yearsEstimated', 0],
     ['monthsEstimated', ''],
     ['gender', identity.gender],
-    [`attributes.${personIdentityVerificationStatusAttributeTypeUuid}`, identityVerificationStatusConceptUuids.verifiedByReniec],
+    [
+      `attributes.${personIdentityVerificationStatusAttributeTypeUuid}`,
+      identityVerificationStatusConceptUuids.verifiedByReniec,
+    ],
     [`attributes.${personIdentityVerificationSourceAttributeTypeUuid}`, identityVerificationSourceConceptUuids.reniec],
     [`attributes.${personIdentityVerifiedAtAttributeTypeUuid}`, new Date().toISOString()],
   ];
@@ -75,8 +78,7 @@ export function applyReniecIdentityToForm(
  */
 export const IdentityLookupField = () => {
   const { t } = useTranslation(moduleName);
-  const { identifierTypes, values, setFieldValue, setFieldTouched, isOffline } =
-    useContext(PatientRegistrationContext);
+  const { identifierTypes, values, setFieldValue, setFieldTouched, isOffline } = useContext(PatientRegistrationContext);
   const [isLoading, setIsLoading] = useState(false);
   const [isActivatingPromotion, setIsActivatingPromotion] = useState(false);
   const [status, setStatus] = useState<LookupStatus | null>(null);
@@ -130,10 +132,7 @@ export const IdentityLookupField = () => {
         setPatientMatch(foundPatient);
         setStatus({
           kind: 'warning',
-          title: t(
-            'identityLookupPatientExists',
-            'Ya existe un paciente con este documento. No lo registre de nuevo.',
-          ),
+          title: t('identityLookupPatientExists', 'Ya existe un paciente con este documento. No lo registre de nuevo.'),
         });
         return;
       }
@@ -233,9 +232,7 @@ export const IdentityLookupField = () => {
   return (
     <div className={styles.externalLookup}>
       <div className={styles.externalLookupHeader}>
-        <h4 className={styles.productiveHeading02Light}>
-          {t('identityLookupTitle', 'Buscar/validar identidad')}
-        </h4>
+        <h4 className={styles.productiveHeading02Light}>{t('identityLookupTitle', 'Buscar/validar identidad')}</h4>
         {documentValue ? (
           <span className={styles.externalLookupDocument}>
             {documentName} {documentValue}
@@ -243,13 +240,7 @@ export const IdentityLookupField = () => {
         ) : null}
       </div>
       <div className={styles.externalLookupAction}>
-        <Button
-          kind="tertiary"
-          size="sm"
-          renderIcon={Search}
-          onClick={handleLookup}
-          disabled={isLoading || isOffline}
-        >
+        <Button kind="tertiary" size="sm" renderIcon={Search} onClick={handleLookup} disabled={isLoading || isOffline}>
           {t('identityLookupButton', 'Buscar en base local y RENIEC')}
         </Button>
         {isLoading ? <InlineLoading description={t('identityLookupLoading', 'Buscando identidad')} /> : null}

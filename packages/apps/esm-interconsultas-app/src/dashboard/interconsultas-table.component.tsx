@@ -37,6 +37,7 @@ import { getStatusDisplay, getStatusTagType, getUrgencyDisplay } from '../utils/
 import styles from './interconsultas-table.scss';
 
 const pageSizes = [10, 20, 30, 40, 50];
+const editPrivileges = ['app:clinical.chart.interconsultations.edit', 'app:interconsultas.edit'];
 
 interface FilterOption {
   uuid: string;
@@ -52,7 +53,7 @@ interface InterconsultasTableProps {
 const InterconsultasTable: React.FC<InterconsultasTableProps> = ({ filter }) => {
   const { t } = useTranslation();
   const session = useSession();
-  const canEdit = userHasAccess('app:interconsultas.edit', session?.user);
+  const canEdit = editPrivileges.some((privilege) => userHasAccess(privilege, session?.user));
   const { interconsultas, isLoading, error } = useInterconsultas(filter);
   const [searchString, setSearchString] = useState('');
   const [serviceFilter, setServiceFilter] = useState<string>('');

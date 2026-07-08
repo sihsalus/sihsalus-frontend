@@ -12,6 +12,11 @@
   color: colors.$gray-70;
 }
 
+.required {
+  color: colors.$red-60;
+  margin-left: layout.$spacing-01;
+}
+
 .diagnosis {
   border-top: 0.0625rem solid colors.$gray-20;
 }

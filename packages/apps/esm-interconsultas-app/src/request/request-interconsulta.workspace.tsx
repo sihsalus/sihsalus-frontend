@@ -18,19 +18,27 @@ import {
   useLayoutType,
   useSession,
   useVisit,
+  Workspace2,
+  type Workspace2DefinitionProps,
 } from '@openmrs/esm-framework';
 import React, { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import type { ConfigObject } from '../config-schema';
-import { createInterconsulta, useDestinationServices, useInvalidateInterconsultas } from '../interconsultas.resource';
-import type { OrderableService } from '../types';
+import {
+  createInterconsulta,
+  useAvailableProviders,
+  useDestinationServices,
+  useInvalidateInterconsultas,
+} from '../interconsultas.resource';
+import type { OpenmrsRef, OrderableService } from '../types';
 import styles from './request-interconsulta.scss';
 
 export interface RequestInterconsultaWorkspaceProps {
   patientUuid?: string;
-  closeWorkspace(options?: { ignoreChanges?: boolean }): void;
-  promptBeforeClosing?: (testFcn: () => boolean) => void;
 }
+
+type RequestInterconsultaWorkspaceComponentProps = RequestInterconsultaWorkspaceProps &
+  Partial<Workspace2DefinitionProps<RequestInterconsultaWorkspaceProps, object>>;
 
 type Urgency = 'ROUTINE' | 'STAT' | 'ON_SCHEDULED_DATE';
 
@@ -40,12 +48,11 @@ type Urgency = 'ROUTINE' | 'STAT' | 'ON_SCHEDULED_DATE';
  * prioridad, motivo, fecha programada); paciente, visita, profesional y
  * location salen de la sesión y la visita activa.
  */
-const RequestInterconsultaWorkspace: React.FC<RequestInterconsultaWorkspaceProps> = ({
-  patientUuid,
-  closeWorkspace,
-  promptBeforeClosing,
-}) => {
+const RequestInterconsultaWorkspace: React.FC<RequestInterconsultaWorkspaceComponentProps> = (props) => {
   const { t } = useTranslation();
+  const workspaceProps = props.workspaceProps ?? {};
+  const patientUuid = props.patientUuid ?? workspaceProps.patientUuid;
+  const closeWorkspace = props.closeWorkspace ?? (() => Promise.resolve(true));
   const isTablet = useLayoutType() === 'tablet';
   const session = useSession();
   const config = useConfig<ConfigObject>();
@@ -54,18 +61,21 @@ const RequestInterconsultaWorkspace: React.FC<RequestInterconsultaWorkspaceProps
   const invalidateInterconsultas = useInvalidateInterconsultas();
 
   const [searchTerm, setSearchTerm] = useState('');
+  const [providerSearchTerm, setProviderSearchTerm] = useState('');
+  const [selectedProvider, setSelectedProvider] = useState<OpenmrsRef | null>(null);
   const [service, setService] = useState<OrderableService | null>(null);
   const [urgency, setUrgency] = useState<Urgency>('ROUTINE');
   const [scheduledDate, setScheduledDate] = useState<Date | null>(null);
   const [motivo, setMotivo] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
 
+  const hasSessionProvider = Boolean(session?.currentProvider?.uuid);
   const { services, isLoading: isLoadingServices } = useDestinationServices(searchTerm);
+  const { providers, isLoading: isLoadingProviders } = useAvailableProviders(providerSearchTerm, !hasSessionProvider);
 
-  const isDirty = Boolean(service || motivo.trim());
-  promptBeforeClosing?.(() => isDirty);
+  const isDirty = Boolean(selectedProvider || service || motivo.trim());
 
-  const providerUuid = session?.currentProvider?.uuid;
+  const providerUuid = session?.currentProvider?.uuid ?? selectedProvider?.uuid;
   const locationUuid = currentVisit?.location?.uuid ?? session?.sessionLocation?.uuid;
   const canSubmit =
     Boolean(patientUuid && providerUuid && locationUuid && service && motivo.trim()) &&
@@ -100,7 +110,7 @@ const RequestInterconsultaWorkspace: React.FC<RequestInterconsultaWorkspaceProps
         title: t('interconsultaCreated', 'Interconsulta solicitada'),
         subtitle: service.display,
       });
-      closeWorkspace({ ignoreChanges: true });
+      void closeWorkspace({ discardUnsavedChanges: true });
     } catch (error) {
       showSnackbar({
         kind: 'error',
@@ -113,78 +123,92 @@ const RequestInterconsultaWorkspace: React.FC<RequestInterconsultaWorkspaceProps
   };
 
   return (
-    <Form className={styles.form} onSubmit={handleSubmit}>
-      <Stack gap={5} className={styles.formContent}>
-        {!currentVisit && (
-          <InlineNotification
-            kind="warning"
-            lowContrast
-            hideCloseButton
-            title={t('noActiveVisit', 'Sin visita activa')}
-            subtitle={t(
-              'noActiveVisitSubtitle',
-              'La solicitud se registrará fuera de una visita. Se recomienda iniciar la visita primero.',
-            )}
-          />
-        )}
-        <ComboBox
-          id="interconsulta-service"
-          items={services}
-          itemToString={(item: OrderableService | null) => item?.display ?? ''}
-          onChange={({ selectedItem }: { selectedItem: OrderableService | null }) => setService(selectedItem)}
-          onInputChange={(input: string) => setSearchTerm(input ?? '')}
-          placeholder={t('searchService', 'Buscar servicio o especialidad...')}
-          titleText={t('destinationService', 'Servicio destino')}
-          helperText={
-            isLoadingServices ? t('loading', 'Cargando...') : t('destinationServiceHelper', 'Mínimo 2 caracteres')
-          }
-        />
-        <RadioButtonGroup
-          legendText={t('priority', 'Prioridad')}
-          name="interconsulta-urgency"
-          orientation="vertical"
-          valueSelected={urgency}
-          onChange={(value: Urgency) => setUrgency(value)}
-        >
-          <RadioButton id="urgency-routine" labelText={t('urgencyRoutine', 'Rutina')} value="ROUTINE" />
-          <RadioButton id="urgency-stat" labelText={t('urgencyStat', 'Urgente')} value="STAT" />
-          <RadioButton
-            id="urgency-scheduled"
-            labelText={t('urgencyScheduled', 'Programada')}
-            value="ON_SCHEDULED_DATE"
-          />
-        </RadioButtonGroup>
-        {urgency === 'ON_SCHEDULED_DATE' && (
-          <DatePicker
-            datePickerType="single"
-            minDate={new Date()}
-            onChange={(dates: Array<Date>) => setScheduledDate(dates?.[0] ?? null)}
-          >
-            <DatePickerInput
-              id="interconsulta-scheduled-date"
-              labelText={t('scheduledDate', 'Fecha programada')}
-              placeholder="dd/mm/aaaa"
+    <Workspace2 title={t('requestInterconsulta', 'Solicitar interconsulta')} hasUnsavedChanges={isDirty}>
+      <Form className={styles.form} onSubmit={handleSubmit}>
+        <Stack gap={5} className={styles.formContent}>
+          {!currentVisit && (
+            <InlineNotification
+              kind="warning"
+              lowContrast
+              hideCloseButton
+              title={t('noActiveVisit', 'Sin visita activa')}
+              subtitle={t(
+                'noActiveVisitSubtitle',
+                'La solicitud se registrará fuera de una visita. Se recomienda iniciar la visita primero.',
+              )}
             />
-          </DatePicker>
-        )}
-        <TextArea
-          id="interconsulta-motivo"
-          labelText={t('reasonForRequest', 'Motivo')}
-          helperText={t('reasonHelper', 'Motivo clínico de la interconsulta. No repita datos del paciente.')}
-          onChange={(event: React.ChangeEvent<HTMLTextAreaElement>) => setMotivo(event.target.value)}
-          rows={4}
-          value={motivo}
-        />
-      </Stack>
-      <ButtonSet className={isTablet ? `${styles.buttonSet} ${styles.tabletButtonSet}` : styles.buttonSet}>
-        <Button className={styles.button} kind="secondary" onClick={() => closeWorkspace()}>
-          {t('cancel', 'Cancelar')}
-        </Button>
-        <Button className={styles.button} kind="primary" type="submit" disabled={!canSubmit}>
-          {t('requestInterconsulta', 'Solicitar interconsulta')}
-        </Button>
-      </ButtonSet>
-    </Form>
+          )}
+          {!hasSessionProvider && (
+            <ComboBox
+              id="interconsulta-provider"
+              items={providers}
+              itemToString={(item: OpenmrsRef | null) => item?.display ?? ''}
+              onChange={({ selectedItem }: { selectedItem: OpenmrsRef | null }) => setSelectedProvider(selectedItem)}
+              onInputChange={(input: string) => setProviderSearchTerm(input ?? '')}
+              placeholder={t('searchProvider', 'Buscar profesional...')}
+              titleText={t('requestedBy', 'Solicitante')}
+              helperText={isLoadingProviders ? t('loading', 'Cargando...') : t('providerRequired', 'Requerido')}
+            />
+          )}
+          <ComboBox
+            id="interconsulta-service"
+            items={services}
+            itemToString={(item: OrderableService | null) => item?.display ?? ''}
+            onChange={({ selectedItem }: { selectedItem: OrderableService | null }) => setService(selectedItem)}
+            onInputChange={(input: string) => setSearchTerm(input ?? '')}
+            placeholder={t('searchService', 'Buscar servicio o especialidad...')}
+            titleText={t('destinationService', 'Servicio destino')}
+            helperText={
+              isLoadingServices ? t('loading', 'Cargando...') : t('destinationServiceHelper', 'Mínimo 2 caracteres')
+            }
+          />
+          <RadioButtonGroup
+            legendText={t('priority', 'Prioridad')}
+            name="interconsulta-urgency"
+            orientation="vertical"
+            valueSelected={urgency}
+            onChange={(value: Urgency) => setUrgency(value)}
+          >
+            <RadioButton id="urgency-routine" labelText={t('urgencyRoutine', 'Rutina')} value="ROUTINE" />
+            <RadioButton id="urgency-stat" labelText={t('urgencyStat', 'Urgente')} value="STAT" />
+            <RadioButton
+              id="urgency-scheduled"
+              labelText={t('urgencyScheduled', 'Programada')}
+              value="ON_SCHEDULED_DATE"
+            />
+          </RadioButtonGroup>
+          {urgency === 'ON_SCHEDULED_DATE' && (
+            <DatePicker
+              datePickerType="single"
+              minDate={new Date()}
+              onChange={(dates: Array<Date>) => setScheduledDate(dates?.[0] ?? null)}
+            >
+              <DatePickerInput
+                id="interconsulta-scheduled-date"
+                labelText={t('scheduledDate', 'Fecha programada')}
+                placeholder="dd/mm/aaaa"
+              />
+            </DatePicker>
+          )}
+          <TextArea
+            id="interconsulta-motivo"
+            labelText={t('reasonForRequest', 'Motivo')}
+            helperText={t('reasonHelper', 'Motivo clínico de la interconsulta. No repita datos del paciente.')}
+            onChange={(event: React.ChangeEvent<HTMLTextAreaElement>) => setMotivo(event.target.value)}
+            rows={4}
+            value={motivo}
+          />
+        </Stack>
+        <ButtonSet className={isTablet ? `${styles.buttonSet} ${styles.tabletButtonSet}` : styles.buttonSet}>
+          <Button className={styles.button} kind="secondary" onClick={() => closeWorkspace()}>
+            {t('cancel', 'Cancelar')}
+          </Button>
+          <Button className={styles.button} kind="primary" type="submit" disabled={!canSubmit}>
+            {t('requestInterconsulta', 'Solicitar interconsulta')}
+          </Button>
+        </ButtonSet>
+      </Form>
+    </Workspace2>
   );
 };
 

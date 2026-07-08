@@ -161,21 +161,15 @@ function LabOrderBasketPanel({ orderTypeUuid, label, icon, launchAddLabOrder }: 
     if (addedOrders.length > 0) {
       let needsUpdate = false;
       const newOrders = orders.map((order) => {
-        const isNew = addedOrders.some(
-          (added) => added.testType?.conceptUuid === order.testType?.conceptUuid,
-        );
+        const isNew = addedOrders.some((added) => added.testType?.conceptUuid === order.testType?.conceptUuid);
         if (isNew) {
           let nextInstructions = order.instructions || '';
           if (isHospitalized && !nextInstructions.toLowerCase().includes(HOSPITALIZED_TEXT)) {
-            nextInstructions = nextInstructions
-              ? `${nextInstructions}\n${HOSPITALIZED_TEXT}`
-              : HOSPITALIZED_TEXT;
+            nextInstructions = nextInstructions ? `${nextInstructions}\n${HOSPITALIZED_TEXT}` : HOSPITALIZED_TEXT;
             needsUpdate = true;
           }
           if (isRegional && !nextInstructions.toLowerCase().includes(REGIONAL_TEXT)) {
-            nextInstructions = nextInstructions
-              ? `${nextInstructions}\n${REGIONAL_TEXT}`
-              : REGIONAL_TEXT;
+            nextInstructions = nextInstructions ? `${nextInstructions}\n${REGIONAL_TEXT}` : REGIONAL_TEXT;
             needsUpdate = true;
           }
           return {

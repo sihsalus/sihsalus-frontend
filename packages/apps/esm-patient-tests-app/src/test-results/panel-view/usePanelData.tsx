@@ -10,13 +10,12 @@ import {
   type FhirResponse,
   type ObsRecord,
 } from '../../types';
-
-import { extractMetaInformation, getConceptUuid, isLabConcept } from './helper';
 import {
   assessValue,
   extractObservationInterpretation,
   extractObservationReferenceRanges,
 } from '../loadPatientTestData/helpers';
+import { extractMetaInformation, getConceptUuid, isLabConcept } from './helper';
 
 export function useObservations() {
   const { patientUuid } = usePatient();
@@ -110,7 +109,9 @@ export default function usePanelData() {
   );
 
   const { data: restObsData } = useSWR<FetchResponse<{ results: Array<any> }>>(
-    patientUuid ? `${restBaseUrl}/obs?patient=${patientUuid}&v=custom:(uuid,auditInfo:(creator:(display)))&limit=200` : null,
+    patientUuid
+      ? `${restBaseUrl}/obs?patient=${patientUuid}&v=custom:(uuid,auditInfo:(creator:(display)))&limit=200`
+      : null,
     openmrsFetch,
   );
 
@@ -200,9 +201,7 @@ export default function usePanelData() {
         if (!performerName && creatorMap.has(observation.id)) {
           performerName = creatorMap.get(observation.id);
         }
-        const performer = performerName
-          ? [{ reference: '', display: performerName }]
-          : observation.performer;
+        const performer = performerName ? [{ reference: '', display: performerName }] : observation.performer;
         return {
           ...observation,
           conceptUuid,

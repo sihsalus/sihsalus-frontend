@@ -33,15 +33,15 @@ import {
   getCoreTranslation,
   getLocale,
   getPatientName,
+  openmrsFetch,
   PrinterIcon,
+  restBaseUrl,
   useConfig,
   useLayoutType,
   usePagination,
   usePatient,
   userHasAccess,
   useSession,
-  openmrsFetch,
-  restBaseUrl,
 } from '@openmrs/esm-framework';
 import {
   CardHeader,
@@ -414,11 +414,9 @@ const OrderDetailsTable: React.FC<OrderDetailsProps> = ({ patientUuid, showAddBu
               className={styles.statusPill}
               data-status={order.fulfillerStatus ? lowerCase(order.fulfillerStatus.replace('_', ' ')) : 'pending'}
             >
-              {order.fulfillerStatus ? (
-                t(order.fulfillerStatus.toUpperCase(), capitalize(order.fulfillerStatus.replace('_', ' ')))
-              ) : (
-                t('PENDING', 'Pending')
-              )}
+              {order.fulfillerStatus
+                ? t(order.fulfillerStatus.toUpperCase(), capitalize(order.fulfillerStatus.replace('_', ' ')))
+                : t('PENDING', 'Pending')}
             </div>
           ),
         };
@@ -431,14 +429,7 @@ const OrderDetailsTable: React.FC<OrderDetailsProps> = ({ patientUuid, showAddBu
   // biome-ignore lint/correctness/useExhaustiveDependencies: reset page to 1 when filters change
   useEffect(() => {
     goTo(1);
-  }, [
-    selectedOrderTypeUuid,
-    selectedFromDate,
-    selectedToDate,
-    priorityFilter,
-    selectedLabsetUuid,
-    statusFilter,
-  ]);
+  }, [selectedOrderTypeUuid, selectedFromDate, selectedToDate, priorityFilter, selectedLabsetUuid, statusFilter]);
 
   const patientDetails = useMemo(() => {
     const getGender = (gender: string): string => {

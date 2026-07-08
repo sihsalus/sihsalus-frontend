@@ -1,9 +1,6 @@
 import { openmrsFetch, restBaseUrl } from '@openmrs/esm-framework';
 
-import {
-  personDocumentNumberAttributeTypeUuid,
-  personDocumentTypeAttributeTypeUuid,
-} from './identity-documents';
+import { personDocumentNumberAttributeTypeUuid, personDocumentTypeAttributeTypeUuid } from './identity-documents';
 
 export interface LocalPatientIdentityMatch {
   kind: 'patient';
@@ -137,7 +134,11 @@ export async function isPersonAlreadyPatient(personUuid: string): Promise<boolea
     const response = await openmrsFetch(`${restBaseUrl}/patient/${personUuid}?v=custom:(uuid)`);
     return response.ok;
   } catch (error) {
-    if (typeof error === 'object' && error !== null && (error as { response?: { status?: number } }).response?.status === 404) {
+    if (
+      typeof error === 'object' &&
+      error !== null &&
+      (error as { response?: { status?: number } }).response?.status === 404
+    ) {
       return false;
     }
 
@@ -185,10 +186,9 @@ export async function fetchPersonForPromotion(
     'countyDistrict,postalCode,country),' +
     'attributes:(uuid,value,attributeType:(uuid,format)))';
 
-  const response = await openmrsFetch<PersonForPromotion>(
-    `${restBaseUrl}/person/${personUuid}?v=${representation}`,
-    { signal: abortController?.signal },
-  );
+  const response = await openmrsFetch<PersonForPromotion>(`${restBaseUrl}/person/${personUuid}?v=${representation}`, {
+    signal: abortController?.signal,
+  });
 
   return response.data;
 }

@@ -29,8 +29,9 @@ import {
 } from '@carbon/react';
 import { CheckmarkFilled, SendFilled, User, UserFollow } from '@carbon/react/icons';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { getPreferredIdentifier, OpenmrsDatePicker, showSnackbar, useConfig } from '@openmrs/esm-framework';
+import { OpenmrsDatePicker, showSnackbar, useConfig } from '@openmrs/esm-framework';
 import {
+  getPreferredIdentifier,
   shouldPreventPlainNumberKey,
   shouldPreventPlainNumberPaste,
   validatePlainNumberInput,
@@ -633,7 +634,8 @@ const PatientSearchRegistration: React.FC<PatientSearchRegistrationProps> = ({ o
                   {t('registerNewPatient', 'Registrar nuevo paciente')}
                 </Button>
                 <Button
-                  kind="danger--tertiary"
+                  className={styles.unidentifiedPatientButton}
+                  kind="tertiary"
                   renderIcon={UserFollow}
                   onClick={() => handleOpenRegistrationForm(true)}
                   size="sm"

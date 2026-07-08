@@ -7,7 +7,8 @@
  */
 
 import { Button, ModalBody, ModalFooter, ModalHeader, Tag } from '@carbon/react';
-import { getPreferredIdentifier, launchWorkspace, launchWorkspace2, showSnackbar } from '@openmrs/esm-framework';
+import { launchWorkspace, launchWorkspace2, showSnackbar } from '@openmrs/esm-framework';
+import { getPreferredIdentifier } from '@openmrs/esm-utils';
 import React, { useCallback, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useSWRConfig } from 'swr';

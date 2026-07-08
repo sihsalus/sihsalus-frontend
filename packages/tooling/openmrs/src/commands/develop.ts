@@ -170,30 +170,30 @@ export async function runDevelop(args: DevelopArgs) {
   app.use(
     apiUrl,
     apiRateLimit,
-    createProxyMiddleware(
-      (path, req) => {
+    createProxyMiddleware({
+      pathFilter: (path, req) => {
         const requestPath = typeof req.originalUrl === 'string' ? req.originalUrl : path;
         return new RegExp(`${apiUrl}/.*`).test(requestPath) && !indexHtmlPathMatcher.test(requestPath);
       },
-      {
-        target: backend,
-        changeOrigin: true,
-        secure: !allowSelfSignedTls,
-        onProxyReq(proxyReq) {
+      target: backend,
+      changeOrigin: true,
+      secure: !allowSelfSignedTls,
+      on: {
+        proxyReq(proxyReq) {
           if (addCookie) {
             const origCookie = proxyReq.getHeader('cookie');
             const newCookie = `${origCookie};${addCookie}`;
             proxyReq.setHeader('cookie', newCookie);
           }
         },
-        onProxyRes(proxyRes) {
+        proxyRes(proxyRes) {
           const setCookie = proxyRes.headers['set-cookie'];
           if (setCookie) {
             proxyRes.headers['set-cookie'] = rewriteLocalDevSetCookie(setCookie);
           }
         },
       },
-    ),
+    }),
   );
 
   app.listen(port, host, () => {

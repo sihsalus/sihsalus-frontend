@@ -5,9 +5,6 @@ import {
   InlineNotification,
   Modal,
   NumberInput,
-  InlineNotification,
-  Modal,
-  NumberInput,
   Select,
   SelectItem,
   Switch,
@@ -22,24 +19,10 @@ import {
 import React, { useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import type { BatchCalcularNowResponse, Granularity, RecalcularAnioResponse } from '../api/types';
-import { useTranslation } from 'react-i18next';
-import type { BatchCalcularNowResponse, Granularity, RecalcularAnioResponse } from '../api/types';
 import PaginationBar from '../components/PaginationBar';
 import { notifyError, notifySuccess, useIndicadores } from '../features/indicadores/hooks';
-import {
-  useCalcularAhora,
-  useRecalcularAnio,
-  useResultados,
-  useResultadosSeries,
-} from '../features/resultados/hooks';
+import { useCalcularAhora, useRecalcularAnio, useResultados, useResultadosSeries } from '../features/resultados/hooks';
 import styles from '../indicators-dashboard.module.scss';
-
-type SummaryState =
-  | { kind: 'calcular'; result: BatchCalcularNowResponse }
-  | { kind: 'recalcular'; result: RecalcularAnioResponse; anio: number }
-  | null;
-
-const currentYear = () => new Date().getFullYear();
 
 type SummaryState =
   | { kind: 'calcular'; result: BatchCalcularNowResponse }
@@ -50,17 +33,10 @@ const currentYear = () => new Date().getFullYear();
 
 const ResultadosPage: React.FC = () => {
   const { t } = useTranslation();
-  const { t } = useTranslation();
   const [page, setPage] = useState(1);
   const [filters, setFilters] = useState({ indicador_id: '', periodo_inicio: '', periodo_fin: '' });
   const [granularity, setGranularity] = useState<Granularity>('mensual');
   const [viewMode, setViewMode] = useState<'historical' | 'series'>('series');
-  const [isCalcularRunning, setCalcularRunning] = useState(false);
-  const [isRecalcularRunning, setRecalcularRunning] = useState(false);
-  const [summary, setSummary] = useState<SummaryState>(null);
-  const [isRecalcModalOpen, setRecalcModalOpen] = useState(false);
-  const [recalcAnio, setRecalcAnio] = useState<number>(currentYear());
-  const [recalcAnioError, setRecalcAnioError] = useState<string | null>(null);
   const [isCalcularRunning, setCalcularRunning] = useState(false);
   const [isRecalcularRunning, setRecalcularRunning] = useState(false);
   const [summary, setSummary] = useState<SummaryState>(null);
@@ -91,7 +67,6 @@ const ResultadosPage: React.FC = () => {
         ? {
             indicador_id: filters.indicador_id,
             anio: currentYear(),
-            anio: currentYear(),
             granularity,
           }
         : null,
@@ -104,12 +79,8 @@ const ResultadosPage: React.FC = () => {
   const { recalcularAnio } = useRecalcularAnio();
 
   const anyActionRunning = isCalcularRunning || isRecalcularRunning;
-  const { recalcularAnio } = useRecalcularAnio();
-
-  const anyActionRunning = isCalcularRunning || isRecalcularRunning;
 
   const handleCalcular = async () => {
-    setCalcularRunning(true);
     setCalcularRunning(true);
     try {
       const result = await calcularAhora();
@@ -125,13 +96,9 @@ const ResultadosPage: React.FC = () => {
         count: result.calculados,
       });
       if (isTotalFailure) {
-        notifyError(
-          `${baseMessage} (${t('recalcPartialErrors', '{{count}} con error', { count: failed })})`,
-        );
+        notifyError(`${baseMessage} (${t('recalcPartialErrors', '{{count}} con error', { count: failed })})`);
       } else if (failed > 0) {
-        notifySuccess(
-          `${baseMessage} (${t('recalcPartialErrors', '{{count}} con error', { count: failed })})`,
-        );
+        notifySuccess(`${baseMessage} (${t('recalcPartialErrors', '{{count}} con error', { count: failed })})`);
       } else {
         notifySuccess(baseMessage);
       }
@@ -195,7 +162,9 @@ const ResultadosPage: React.FC = () => {
         notifySuccess(baseMessage);
       }
     } catch (recalcError) {
-      notifyError(recalcError instanceof Error ? recalcError.message : t('recalcFailed', 'No se pudo recalcular el año'));
+      notifyError(
+        recalcError instanceof Error ? recalcError.message : t('recalcFailed', 'No se pudo recalcular el año'),
+      );
     } finally {
       setRecalcularRunning(false);
     }
@@ -323,10 +292,7 @@ const ResultadosPage: React.FC = () => {
         <div>
           <h2>{t('results', 'Resultados')}</h2>
           <p className={styles.subtitle}>
-            {t(
-              'resultsSubtitle',
-              'Consulta resultados calculados y ejecutá el cálculo manual del lote.',
-            )}
+            {t('resultsSubtitle', 'Consulta resultados calculados y ejecutá el cálculo manual del lote.')}
           </p>
         </div>
         <div className={styles.headerActions}>
@@ -345,12 +311,9 @@ const ResultadosPage: React.FC = () => {
 
       {renderSummary()}
 
-      {renderSummary()}
-
       <div className={styles.filtersPanel}>
         <Select
           id="resultado-indicador"
-          labelText={t('indicator', 'Indicador')}
           labelText={t('indicator', 'Indicador')}
           value={filters.indicador_id}
           onChange={(event) => {
@@ -359,13 +322,11 @@ const ResultadosPage: React.FC = () => {
           }}
         >
           <SelectItem value="" text={t('allIndicators', 'Todos los indicadores')} />
-          <SelectItem value="" text={t('allIndicators', 'Todos los indicadores')} />
           {(indicadoresData?.items ?? []).map((indicador) => (
             <SelectItem key={indicador.id} value={indicador.id} text={indicador.nombre} />
           ))}
         </Select>
         <label className={styles.fieldGroup}>
-          <span>{t('from', 'Desde')}</span>
           <span>{t('from', 'Desde')}</span>
           <input
             className={styles.nativeInput}
@@ -378,7 +339,6 @@ const ResultadosPage: React.FC = () => {
           />
         </label>
         <label className={styles.fieldGroup}>
-          <span>{t('to', 'Hasta')}</span>
           <span>{t('to', 'Hasta')}</span>
           <input
             className={styles.nativeInput}
@@ -400,14 +360,11 @@ const ResultadosPage: React.FC = () => {
         >
           <Switch name="series" text={t('timeSeries', 'Series temporales')} />
           <Switch name="historical" text={t('historical', 'Histórico')} />
-          <Switch name="series" text={t('timeSeries', 'Series temporales')} />
-          <Switch name="historical" text={t('historical', 'Histórico')} />
         </ContentSwitcher>
 
         {viewMode === 'series' && filters.indicador_id ? (
           <Select
             id="granularity"
-            labelText={t('granularity', 'Granularidad')}
             labelText={t('granularity', 'Granularidad')}
             value={granularity}
             onChange={(event) => setGranularity(event.target.value as Granularity)}
@@ -417,15 +374,10 @@ const ResultadosPage: React.FC = () => {
             <SelectItem value="trimestral" text={t('quarterly', 'Trimestral')} />
             <SelectItem value="semestral" text={t('semiannual', 'Semestral')} />
             <SelectItem value="anual" text={t('annual', 'Anual')} />
-            <SelectItem value="mensual" text={t('monthly', 'Mensual')} />
-            <SelectItem value="trimestral" text={t('quarterly', 'Trimestral')} />
-            <SelectItem value="semestral" text={t('semiannual', 'Semestral')} />
-            <SelectItem value="anual" text={t('annual', 'Anual')} />
           </Select>
         ) : null}
       </div>
 
-      {isLoading ? <InlineLoading description={t('loadingResults', 'Cargando resultados...')} /> : null}
       {isLoading ? <InlineLoading description={t('loadingResults', 'Cargando resultados...')} /> : null}
       {error ? <div className={styles.errorBanner}>{error.message}</div> : null}
 
@@ -437,9 +389,6 @@ const ResultadosPage: React.FC = () => {
               <Table aria-label={`Serie temporal — ${granularity}`}>
                 <TableHead>
                   <TableRow>
-                    <TableHeader>{t('period', 'Periodo')}</TableHeader>
-                    <TableHeader>{t('value', 'Valor')}</TableHeader>
-                    <TableHeader>{t('monthsAvailable', 'Meses disponibles')}</TableHeader>
                     <TableHeader>{t('period', 'Periodo')}</TableHeader>
                     <TableHeader>{t('value', 'Valor')}</TableHeader>
                     <TableHeader>{t('monthsAvailable', 'Meses disponibles')}</TableHeader>
@@ -460,14 +409,8 @@ const ResultadosPage: React.FC = () => {
             <Tile className={styles.empty}>
               {t('noSeriesData', 'No hay datos de serie para el indicador y año seleccionados.')}
             </Tile>
-            <Tile className={styles.empty}>
-              {t('noSeriesData', 'No hay datos de serie para el indicador y año seleccionados.')}
-            </Tile>
           )
         ) : (
-          <Tile className={styles.empty}>
-            {t('selectIndicatorForSeries', 'Seleccioná un indicador para ver su serie temporal.')}
-          </Tile>
           <Tile className={styles.empty}>
             {t('selectIndicatorForSeries', 'Seleccioná un indicador para ver su serie temporal.')}
           </Tile>
@@ -488,12 +431,6 @@ const ResultadosPage: React.FC = () => {
                     <TableHeader>{t('value', 'Valor')}</TableHeader>
                     <TableHeader>{t('canonical', 'Canónico')}</TableHeader>
                     <TableHeader>{t('calculatedAtFull', 'Calculado en')}</TableHeader>
-                    <TableHeader>{t('indicator', 'Indicador')}</TableHeader>
-                    <TableHeader>{t('version', 'Versión')}</TableHeader>
-                    <TableHeader>{t('period', 'Periodo')}</TableHeader>
-                    <TableHeader>{t('value', 'Valor')}</TableHeader>
-                    <TableHeader>{t('canonical', 'Canónico')}</TableHeader>
-                    <TableHeader>{t('calculatedAtFull', 'Calculado en')}</TableHeader>
                   </TableRow>
                 </TableHead>
                 <TableBody>
@@ -505,7 +442,6 @@ const ResultadosPage: React.FC = () => {
                         {item.periodo_inicio} - {item.periodo_fin}
                       </TableCell>
                       <TableCell>{item.valor}</TableCell>
-                      <TableCell>{item.es_canonico ? t('yes', 'Sí') : t('no', 'No')}</TableCell>
                       <TableCell>{item.es_canonico ? t('yes', 'Sí') : t('no', 'No')}</TableCell>
                       <TableCell>{new Date(item.calculado_en).toLocaleString('es-PE')}</TableCell>
                     </TableRow>
@@ -524,7 +460,6 @@ const ResultadosPage: React.FC = () => {
           </>
         ) : (
           <Tile className={styles.empty}>{t('noResults', 'No hay resultados para los filtros seleccionados.')}</Tile>
-          <Tile className={styles.empty}>{t('noResults', 'No hay resultados para los filtros seleccionados.')}</Tile>
         )
       ) : null}
 
@@ -532,7 +467,11 @@ const ResultadosPage: React.FC = () => {
         open={isRecalcModalOpen}
         modalHeading={t('recalculateYear', 'Recalcular año')}
         primaryButtonText={
-          isRecalcularRunning ? <InlineLoading description={t('recalculating', 'Recalculando...')} /> : t('confirm', 'Confirmar')
+          isRecalcularRunning ? (
+            <InlineLoading description={t('recalculating', 'Recalculando...')} />
+          ) : (
+            t('confirm', 'Confirmar')
+          )
         }
         primaryButtonDisabled={isRecalcularRunning}
         secondaryButtonText={t('cancel', 'Cancelar')}
@@ -568,11 +507,9 @@ const ResultadosPage: React.FC = () => {
         />
         {filters.indicador_id ? (
           <p style={{ marginTop: '0.75rem', color: '#525252', fontSize: '0.875rem' }}>
-            {t(
-              'recalcModalScopeHint',
-              'Se recalculará solo el indicador seleccionado: {{nombre}}.',
-              { nombre: indicadoresData?.items.find((i) => i.id === filters.indicador_id)?.nombre ?? filters.indicador_id },
-            )}
+            {t('recalcModalScopeHint', 'Se recalculará solo el indicador seleccionado: {{nombre}}.', {
+              nombre: indicadoresData?.items.find((i) => i.id === filters.indicador_id)?.nombre ?? filters.indicador_id,
+            })}
           </p>
         ) : null}
       </Modal>

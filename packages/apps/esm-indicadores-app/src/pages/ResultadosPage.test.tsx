@@ -17,7 +17,6 @@ vi.mock('../features/resultados/hooks', async () => ({
   useResultadosSeries: vi.fn(),
   useCalcularAhora: vi.fn(),
   useRecalcularAnio: vi.fn(),
-  useRecalcularAnio: vi.fn(),
 }));
 
 import { useIndicadores, notifyError, notifySuccess } from '../features/indicadores/hooks';
@@ -32,7 +31,6 @@ const mockUseIndicadores = vi.mocked(useIndicadores);
 const mockUseResultados = vi.mocked(useResultados);
 const mockUseResultadosSeries = vi.mocked(useResultadosSeries);
 const mockUseCalcularAhora = vi.mocked(useCalcularAhora);
-const mockUseRecalcularAnio = vi.mocked(useRecalcularAnio);
 const mockUseRecalcularAnio = vi.mocked(useRecalcularAnio);
 
 const indicadores = {

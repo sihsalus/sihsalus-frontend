@@ -84,13 +84,18 @@
       "privileges": "app:clinical.chart.interconsultations"
     }
   ],
-  "workspaces": [
+  "workspaces2": [
     {
       "name": "request-interconsulta-workspace",
       "component": "requestInterconsultaWorkspace",
-      "privileges": "app:clinical.chart.interconsultations.edit",
-      "title": "requestInterconsulta",
-      "type": "form",
+      "window": "request-interconsulta-window",
+      "privileges": "app:clinical.chart.interconsultations.edit"
+    }
+  ],
+  "workspaceWindows2": [
+    {
+      "name": "request-interconsulta-window",
+      "group": "patient-chart",
       "width": "wider"
     }
   ]

@@ -9,6 +9,7 @@ import styles from './indicators-dashboard.module.scss';
 import IndicadorDetailPage from './pages/IndicadorDetailPage';
 import IndicadoresPage from './pages/IndicadoresPage';
 import IndicadorFormPage from './pages/IndicadorFormPage';
+import MetasPage from './pages/MetasPage';
 import ResultadosPage from './pages/ResultadosPage';
 
 const trimTrailingSlash = (path: string) => path.replace(/\/+$/, '');
@@ -37,6 +38,9 @@ const RootComponent: React.FC = () => {
               <NavLink to="/results" className={({ isActive }) => (isActive ? styles.navTabActive : styles.navTab)}>
                 Resultados
               </NavLink>
+              <NavLink to="/metas" className={({ isActive }) => (isActive ? styles.navTabActive : styles.navTab)}>
+                Metas
+              </NavLink>
             </nav>
           </div>
 
@@ -55,6 +59,7 @@ const RootComponent: React.FC = () => {
             <Route path="/:id/edit" element={<IndicadorFormPage mode="edit" />} />
             <Route path="/:id" element={<IndicadorDetailPage />} />
             <Route path="/results" element={<ResultadosPage />} />
+            <Route path="/metas" element={<MetasPage />} />
           </Routes>
         </div>
       </BrowserRouter>

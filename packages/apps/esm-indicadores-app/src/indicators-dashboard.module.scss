@@ -507,6 +507,48 @@
 
   .ageBlockHeader {
     flex-direction: column;
-    align-items: flex-start;
   }
+}
+
+/* Meta Progress Card */
+.metaProgressCard {
+  margin-bottom: 1rem;
+  padding: 1rem;
+}
+
+.metaProgressHeader {
+  display: flex;
+  gap: 2rem;
+  margin-bottom: 0.75rem;
+}
+
+.metaProgressLabel {
+  display: block;
+  font-size: 0.75rem;
+  color: #525252;
+  margin-bottom: 0.25rem;
+}
+
+.metaProgressValue {
+  font-size: 1.25rem;
+  font-weight: 600;
+}
+
+.metaProgressBarTrack {
+  height: 0.5rem;
+  background-color: #e0e0e0;
+  border-radius: 0.25rem;
+  overflow: hidden;
+}
+
+.metaProgressBar {
+  height: 100%;
+  background-color: #0f62fe;
+  border-radius: 0.25rem;
+  transition: width 0.3s ease;
+}
+
+/* Metas Table */
+.metasTable {
+  margin-top: 1rem;
 }

@@ -19,6 +19,7 @@ import {
 import React, { useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import type { BatchCalcularNowResponse, Granularity, RecalcularAnioResponse } from '../api/types';
+import MetaProgressCard from '../components/MetaProgressCard';
 import PaginationBar from '../components/PaginationBar';
 import { notifyError, notifySuccess, useIndicadores } from '../features/indicadores/hooks';
 import { useCalcularAhora, useRecalcularAnio, useResultados, useResultadosSeries } from '../features/resultados/hooks';
@@ -68,6 +69,7 @@ const ResultadosPage: React.FC = () => {
             indicador_id: filters.indicador_id,
             anio: currentYear(),
             granularity,
+            include_meta: true,
           }
         : null,
     [filters.indicador_id, granularity],
@@ -380,6 +382,20 @@ const ResultadosPage: React.FC = () => {
 
       {isLoading ? <InlineLoading description={t('loadingResults', 'Cargando resultados...')} /> : null}
       {error ? <div className={styles.errorBanner}>{error.message}</div> : null}
+
+      {/* ── Meta progress card (series view only) ── */}
+      {!isLoading && !error && viewMode === 'series' && filters.indicador_id && seriesData?.items.length ? (
+        (() => {
+          // Find first row with a non-null meta
+          const metaRow = seriesData.items.find((item) => item.meta != null);
+          if (metaRow?.meta == null) {
+            return null;
+          }
+          // Calculate accumulated value from all rows
+          const accumulatedValue = seriesData.items.reduce((sum, item) => sum + (item.valor ?? 0), 0);
+          return <MetaProgressCard meta={metaRow.meta} currentValue={accumulatedValue} />;
+        })()
+      ) : null}
 
       {/* ── Series view ── */}
       {!isLoading && !error && viewMode === 'series' ? (

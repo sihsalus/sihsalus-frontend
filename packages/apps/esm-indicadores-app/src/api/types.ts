@@ -127,6 +127,7 @@ export interface SerieRow {
   mes_referencia?: string;
   trimestre?: number;
   semestre?: number;
+  meta?: number | null;
 }
 
 export interface SeriesResponse {
@@ -140,6 +141,21 @@ export interface GetSeriesParams {
   indicador_id: string;
   anio?: number;
   granularity?: Granularity;
+  include_meta?: boolean;
+}
+
+export interface IndicadorMeta {
+  id: string;
+  indicador_version_id: string;
+  anio: number;
+  valor_meta: number;
+  creado_en: string;
+}
+
+export interface IndicadorMetaCreatePayload {
+  indicador_version_id: string;
+  anio: number;
+  valor_meta: number;
 }
 
 export interface ErrorCalculo {

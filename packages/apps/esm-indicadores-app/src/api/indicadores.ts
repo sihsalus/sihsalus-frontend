@@ -57,11 +57,11 @@ function mapConceptToOrden(concept: OpenmrsConcept): OrdenOption {
   };
 }
 
-export async function getIndicadores(page: number, size: number): Promise<PaginatedResponse<Indicador>> {
+export async function getIndicadores(page: number, size: number): Promise<PaginatedResponse<IndicadorDetail>> {
   const indicadoresPath = await getReportesSqlResourcePath('indicadores');
   const url = ensureQuery(`${indicadoresPath}/`, { page, size });
   return withMockFallback(
-    () => fetchJson<PaginatedResponse<Indicador>>(url),
+    () => fetchJson<PaginatedResponse<IndicadorDetail>>(url),
     () => listIndicadores(page, size),
   );
 }

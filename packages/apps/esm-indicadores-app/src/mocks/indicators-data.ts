@@ -7,6 +7,8 @@ import type {
   Indicador,
   IndicadorCreatePayload,
   IndicadorDetail,
+  IndicadorMeta,
+  IndicadorMetaCreatePayload,
   IndicadorResultado,
   IndicadorSQLPreview,
   IndicadorUpdatePayload,
@@ -148,6 +150,48 @@ let resultados: Array<IndicadorResultado> = [
   },
 ];
 
+let metas: Array<IndicadorMeta> = [];
+
+export function getAllMetasMock(): Array<IndicadorMeta> {
+  return metas;
+}
+
+export function getMetaMock(indicador_version_id: string, anio: number): IndicadorMeta {
+  const meta = metas.find((item) => item.indicador_version_id === indicador_version_id && item.anio === anio);
+  if (!meta) {
+    throw new Error('Meta no encontrada');
+  }
+  return meta;
+}
+
+export function upsertMetaMock(payload: IndicadorMetaCreatePayload): IndicadorMeta {
+  const existingIndex = metas.findIndex(
+    (item) => item.indicador_version_id === payload.indicador_version_id && item.anio === payload.anio,
+  );
+
+  if (existingIndex >= 0) {
+    const updated: IndicadorMeta = { ...metas[existingIndex], valor_meta: payload.valor_meta };
+    metas = [...metas.slice(0, existingIndex), updated, ...metas.slice(existingIndex + 1)];
+    return updated;
+  }
+
+  const created: IndicadorMeta = {
+    id: uid('meta'),
+    ...payload,
+    creado_en: nowIso(),
+  };
+  metas = [created, ...metas];
+  return created;
+}
+
+export function deleteMetaMock(indicador_version_id: string, anio: number) {
+  metas = metas.filter((item) => !(item.indicador_version_id === indicador_version_id && item.anio === anio));
+}
+
+export function resetMetasMock() {
+  metas = [];
+}
+
 function toPaginatedResponse<T>(items: Array<T>, page: number, size: number): PaginatedResponse<T> {
   const start = (page - 1) * size;
   const pagedItems = items.slice(start, start + size);
@@ -194,9 +238,8 @@ function definitionToSql(definicion: DefinicionIndicadorForm) {
   };
 }
 
-export function listIndicadores(page: number, size: number): PaginatedResponse<Indicador> {
-  const items = indicadores.map(({ versiones: _versiones, ...indicador }) => indicador);
-  return toPaginatedResponse(items, page, size);
+export function listIndicadores(page: number, size: number): PaginatedResponse<IndicadorDetail> {
+  return toPaginatedResponse(indicadores, page, size);
 }
 
 export function getIndicadorById(id: string): IndicadorDetail {

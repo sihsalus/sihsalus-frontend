@@ -494,6 +494,29 @@ describe('Visit form', () => {
     expect(await screen.findByText(/start time cannot be in the future/i)).toBeInTheDocument();
   });
 
+  it('shows a friendly error when AM/PM is missing from the visit start time', async () => {
+    const user = userEvent.setup();
+
+    renderVisitForm();
+
+    const timeInput = screen.getByRole('textbox', { name: /time/i });
+    const amPmSelect = screen.getByRole('combobox', { name: /time format/i });
+    const locationPicker = screen.getByRole('combobox', {
+      name: /select a location/i,
+    });
+
+    fireEvent.change(timeInput, { target: { value: '0800' } });
+    fireEvent.blur(timeInput);
+    fireEvent.change(amPmSelect, { target: { value: '' } });
+    await user.selectOptions(locationPicker, 'Inpatient Ward');
+    await selectVisitType(user);
+    await user.click(screen.getByRole('button', { name: /start visit/i }));
+
+    expect(await screen.findByText(/select AM or PM/i)).toBeInTheDocument();
+    expect(screen.queryByText(/invalid enum value/i)).not.toBeInTheDocument();
+    expect(mockSaveVisit).not.toHaveBeenCalled();
+  });
+
   it('starts a new visit upon successful submission of the form', async () => {
     const user = userEvent.setup();
 

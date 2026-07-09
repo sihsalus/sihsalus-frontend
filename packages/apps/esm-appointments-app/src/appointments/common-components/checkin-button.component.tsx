@@ -1,5 +1,5 @@
 import { Button } from '@carbon/react';
-import { launchWorkspace, navigate, showSnackbar, useConfig } from '@openmrs/esm-framework';
+import { launchWorkspace2, navigate, showSnackbar, useConfig } from '@openmrs/esm-framework';
 import dayjs from 'dayjs';
 import isToday from 'dayjs/plugin/isToday';
 import utc from 'dayjs/plugin/utc';
@@ -16,6 +16,8 @@ import { type Appointment, AppointmentStatus } from '../../types';
 
 dayjs.extend(utc);
 dayjs.extend(isToday);
+
+const appointmentsStartVisitWorkspace = 'appointments-start-visit-workspace';
 
 interface CheckInButtonProps {
   patientUuid: string;
@@ -74,7 +76,7 @@ const CheckInButton: React.FC<CheckInButtonProps> = ({ appointment, patientUuid,
                 return;
               }
 
-              launchWorkspace('start-visit-workspace-form', {
+              launchWorkspace2(appointmentsStartVisitWorkspace, {
                 patientUuid: patientUuid,
                 showPatientHeader: true,
                 openedFrom: 'appointments-check-in',

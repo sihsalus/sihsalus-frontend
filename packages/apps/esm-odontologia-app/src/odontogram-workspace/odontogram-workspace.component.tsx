@@ -15,6 +15,10 @@ interface OdontogramWorkspaceProps extends DefaultWorkspaceProps {
   encounterUuid?: string;
   /** Passed by the dashboard when launching the workspace */
   workspaceMode?: OdontogramRecordType;
+  /** Parent base encounter the attention will be linked to. */
+  baseEncounterUuid?: string | null;
+  /** Called after a successful save so the launcher can refresh its data. */
+  onSaved?: () => void;
 }
 
 // Labels are provided via i18n — these are English fallbacks only
@@ -27,6 +31,8 @@ const OdontogramWorkspace: React.FC<OdontogramWorkspaceProps> = ({
   patientUuid,
   encounterUuid,
   workspaceMode = 'base',
+  baseEncounterUuid,
+  onSaved,
   closeWorkspace,
 }) => {
   const { t } = useTranslation();
@@ -34,13 +40,17 @@ const OdontogramWorkspace: React.FC<OdontogramWorkspaceProps> = ({
   const setPatient = useOdontogramDataStore((s) => s.setPatient);
   const resetData = useOdontogramDataStore((s) => s.resetData);
   const setWorkspaceMode = useOdontogramDataStore((s) => s.setWorkspaceMode);
+  const setActiveBaseEncounterUuid = useOdontogramDataStore((s) => s.setActiveBaseEncounterUuid);
   const data = useOdontogramDataStore((s) => s.data);
   const setData = useOdontogramDataStore((s) => s.setData);
 
   useEffect(() => {
     setPatient(patientUuid);
     setWorkspaceMode(workspaceMode);
-  }, [patientUuid, workspaceMode, setPatient, setWorkspaceMode]);
+    if (baseEncounterUuid) {
+      setActiveBaseEncounterUuid(baseEncounterUuid);
+    }
+  }, [patientUuid, workspaceMode, baseEncounterUuid, setPatient, setWorkspaceMode, setActiveBaseEncounterUuid]);
 
   const handleSave = async () => {
     try {
@@ -53,6 +63,7 @@ const OdontogramWorkspace: React.FC<OdontogramWorkspaceProps> = ({
             ? t('odontogramBaseSavedSubtitle', 'Base odontogram findings have been saved.')
             : t('odontogramAttentionSavedSubtitle', 'Attention odontogram solutions have been saved.'),
       });
+      onSaved?.();
       if (!encounterUuid) {
         resetData();
       }

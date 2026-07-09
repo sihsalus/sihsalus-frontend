@@ -26,6 +26,8 @@ export interface OdontogramRecord {
   data?: OdontogramData | null;
   /** Explicit parent base when the attention record was created from a base odontogram. */
   parentBaseEncounterUuid?: string | null;
+  /** Display name of the responsible professional (first encounter provider), if any. */
+  provider?: string | null;
 }
 
 /**

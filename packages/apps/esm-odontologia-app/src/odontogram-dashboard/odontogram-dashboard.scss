@@ -1,18 +1,98 @@
-// Dashboard wrapper
 .dashboardWrapper {
   display: flex;
   flex-direction: column;
 }
 
-.canvasWrapper {
-  overflow-x: auto;
-  padding: 0 1rem 1rem;
+.headerActions {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
 }
 
-.embeddedToolbar {
+// Plain button wrapper for the info tooltip trigger
+.infoButton {
   display: flex;
-  justify-content: flex-end;
-  padding: 1rem 1rem 0.5rem;
+  align-items: center;
+  justify-content: center;
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 0.25rem;
+  color: var(--cds-icon-secondary, #525252);
+
+  &:hover {
+    color: var(--cds-icon-primary, #161616);
+  }
+}
+
+// Master-detail
+.masterDetail {
+  display: grid;
+  grid-template-columns: minmax(220px, 280px) 1fr;
+  align-items: stretch;
+  min-height: 320px;
+}
+
+.master {
+  border-right: 1px solid var(--cds-border-subtle, #e0e0e0);
+  max-height: 560px;
+  overflow-y: auto;
+}
+
+.detail {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.detailHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+  padding: 0.75rem 1rem;
+  border-bottom: 1px solid var(--cds-border-subtle, #e0e0e0);
+}
+
+.detailInfo {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  min-width: 0;
+}
+
+.detailMeta {
+  font-size: 0.8125rem;
+  color: var(--cds-text-secondary, #525252);
+}
+
+.detailActions {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+// Medium, calm preview: capped width so the diagram scales down proportionally
+.preview {
+  padding: 1rem;
+  overflow-x: auto;
+
+  :global(.adult-odontogram-container) {
+    max-width: 760px;
+  }
+}
+
+// Large view modal
+.modalCanvas {
+  padding: 0.5rem 0 1rem;
+}
+
+.viewModal {
+  :global(.cds--modal-container) {
+    width: 95vw;
+    max-width: 1280px;
+  }
 }
 
 // Skeleton
@@ -33,29 +113,15 @@
   border-radius: 4px;
 }
 
-// Record selector row (shown in the CardHeader actions slot)
-.selectorRow {
-  display: flex;
-  align-items: center;
-  gap: 0.25rem;
-}
+// Responsive: stack list above the preview on narrow screens
+@media (max-width: 42rem) {
+  .masterDetail {
+    grid-template-columns: 1fr;
+  }
 
-.recordSelect {
-  min-width: 220px;
-}
-
-// Plain button wrapper for the info tooltip trigger
-.infoButton {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background: none;
-  border: none;
-  cursor: pointer;
-  padding: 0.25rem;
-  color: var(--cds-icon-secondary, #525252);
-
-  &:hover {
-    color: var(--cds-icon-primary, #161616);
+  .master {
+    border-right: none;
+    border-bottom: 1px solid var(--cds-border-subtle, #e0e0e0);
+    max-height: 240px;
   }
 }

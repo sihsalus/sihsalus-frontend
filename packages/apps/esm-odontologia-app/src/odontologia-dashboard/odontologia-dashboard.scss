@@ -1,7 +1,7 @@
 .page {
   display: flex;
   flex-direction: column;
-  gap: 2rem;
+  gap: 1.5rem;
   padding-block: 1rem 1.5rem;
 }
 
@@ -10,28 +10,4 @@
   border-radius: 0.25rem;
   background: var(--cds-layer, #ffffff);
   overflow: hidden;
-}
-
-.sectionHeader {
-  padding: 1rem 1rem 0.5rem;
-  border-bottom: 1px solid var(--omrs-color-bg-low-contrast, #e0e0e0);
-  background: var(--cds-layer-accent, #f4f4f4);
-}
-
-.sectionTitle {
-  margin: 0;
-  font-size: 1rem;
-  font-weight: 600;
-  line-height: 1.4;
-}
-
-.sectionDescription {
-  margin: 0.25rem 0 0;
-  font-size: 0.875rem;
-  color: var(--cds-text-secondary, #525252);
-  line-height: 1.5;
-}
-
-.sectionBody {
-  padding-bottom: 0.5rem;
 }

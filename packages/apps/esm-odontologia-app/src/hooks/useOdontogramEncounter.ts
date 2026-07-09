@@ -2,8 +2,8 @@ import { useConfig } from '@openmrs/esm-framework';
 import { useState } from 'react';
 
 import type { OdontogramConfig } from '../config-schema';
-import { mapToAmpathOdontogramEncounterPayload } from '../odontogram/ampath-form-odontogram-mapper';
-import { saveEncounter, updateEncounter } from '../odontogram.resource';
+import { applyExistingObsUuids, mapToAmpathOdontogramEncounterPayload } from '../odontogram/ampath-form-odontogram-mapper';
+import { fetchEncounterObs, saveEncounter, updateEncounter } from '../odontogram.resource';
 import useOdontogramDataStore from '../store/odontogramDataStore';
 
 interface SaveOdontogramParams {
@@ -42,7 +42,16 @@ export function useOdontogramEncounter() {
         patientUuid,
         recordType: workspaceMode,
       });
-      const response = encounterUuid ? await updateEncounter(encounterUuid, payload) : await saveEncounter(payload);
+
+      let response: { data: unknown };
+      if (encounterUuid) {
+        // Reuse the existing obs uuids so the update edits values in place
+        // instead of appending duplicate obs for the same concepts.
+        const existingObs = await fetchEncounterObs(encounterUuid);
+        response = await updateEncounter(encounterUuid, applyExistingObsUuids(payload, existingObs));
+      } else {
+        response = await saveEncounter(payload);
+      }
 
       return response.data;
     } catch (err) {

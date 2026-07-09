@@ -8,6 +8,7 @@ import {
   getOdontogramDataFromEncounter,
   getOdontogramRecordTypeFromEncounter,
   getParentBaseEncounterUuidFromEncounter,
+  getProviderNameFromEncounter,
   type OdontogramEncounter,
 } from '../odontogram/ampath-form-odontogram-mapper';
 import type { OdontogramData } from '../odontogram/types/odontogram';
@@ -100,6 +101,7 @@ export function buildOdontogramRecords(
     data,
     parentBaseEncounterUuid:
       recordType === 'attention' ? getParentBaseEncounterUuidFromEncounter(encounter, config) : undefined,
+    provider: getProviderNameFromEncounter(encounter),
   }));
 }
 

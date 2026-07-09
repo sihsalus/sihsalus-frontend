@@ -73,17 +73,17 @@
     "@types/fhir": "0.0.31",
     "@types/node": "^22.10.7",
     "@types/uuid": "^9.0.1",
-    "@vitest/coverage-v8": "^4.1.2",
+    "@vitest/coverage-v8": "^4.1.10",
     "concurrently": "^9.2.1",
     "cross-env": "^10.1.0",
     "dayjs": "^1.11.13",
-    "happy-dom": "^20.6.0",
+    "happy-dom": "^20.10.6",
     "i18next": "^25.7.2",
     "rimraf": "^6.1.3",
     "rxjs": "^6.5.3",
     "single-spa": "^6.0.3",
     "typescript": "6.0.3",
-    "vitest": "^4.1.7"
+    "vitest": "^4.1.10"
   },
   "stableVersion": "9.0.2"
 }

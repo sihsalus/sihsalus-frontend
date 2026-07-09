@@ -6,6 +6,7 @@ import { useTranslation } from 'react-i18next';
 import { useOdontogramEncounter } from '../hooks/useOdontogramEncounter';
 import OdontogramCanvas from '../odontogram/components/Odontogram';
 import { adultConfig } from '../odontogram/config/adultConfig';
+import { createEmptyOdontogramData, type OdontogramData } from '../odontogram/types/odontogram';
 import useOdontogramDataStore from '../store/odontogramDataStore';
 import type { OdontogramRecordType } from '../types/odontogram-record';
 import styles from './odontogram-workspace.scss';
@@ -15,18 +16,30 @@ interface OdontogramWorkspaceProps extends DefaultWorkspaceProps {
   encounterUuid?: string;
   /** Passed by the dashboard when launching the workspace */
   workspaceMode?: OdontogramRecordType;
+  /** Parent base encounter the attention will be linked to. */
+  baseEncounterUuid?: string | null;
+  /** Snapshot the editor should start from (empty when creating a new record). */
+  initialData?: OdontogramData;
+  /** Opens the same panel in read-only mode (used by "Ver en grande"). */
+  readOnly?: boolean;
+  /** Called after a successful save so the launcher can refresh its data. */
+  onSaved?: () => void;
 }
 
 // Labels are provided via i18n — these are English fallbacks only
 const modeTagI18nKeys: Record<OdontogramRecordType, { type: 'blue' | 'teal'; key: string; fallback: string }> = {
-  base: { type: 'blue', key: 'baseOdontogramTag', fallback: 'Base odontogram' },
-  attention: { type: 'teal', key: 'attentionOdontogramTag', fallback: 'Attention odontogram' },
+  base: { type: 'blue', key: 'baseOdontogramTag', fallback: 'Odontograma inicial' },
+  attention: { type: 'teal', key: 'attentionOdontogramTag', fallback: 'Odontograma evolutivo' },
 };
 
 const OdontogramWorkspace: React.FC<OdontogramWorkspaceProps> = ({
   patientUuid,
   encounterUuid,
   workspaceMode = 'base',
+  baseEncounterUuid,
+  initialData,
+  readOnly = false,
+  onSaved,
   closeWorkspace,
 }) => {
   const { t } = useTranslation();
@@ -34,25 +47,45 @@ const OdontogramWorkspace: React.FC<OdontogramWorkspaceProps> = ({
   const setPatient = useOdontogramDataStore((s) => s.setPatient);
   const resetData = useOdontogramDataStore((s) => s.resetData);
   const setWorkspaceMode = useOdontogramDataStore((s) => s.setWorkspaceMode);
+  const setActiveBaseEncounterUuid = useOdontogramDataStore((s) => s.setActiveBaseEncounterUuid);
   const data = useOdontogramDataStore((s) => s.data);
   const setData = useOdontogramDataStore((s) => s.setData);
+  const formSelection = useOdontogramDataStore((s) => s.formSelection);
+  const setFormSelection = useOdontogramDataStore((s) => s.setFormSelection);
 
+  // Seed the editor with its own snapshot on mount so it never inherits the
+  // record currently previewed in the dashboard (which shares this store).
+  // All dependencies are stable for the lifetime of a single launch.
   useEffect(() => {
     setPatient(patientUuid);
     setWorkspaceMode(workspaceMode);
-  }, [patientUuid, workspaceMode, setPatient, setWorkspaceMode]);
+    setData(initialData ?? createEmptyOdontogramData(adultConfig));
+    if (baseEncounterUuid) {
+      setActiveBaseEncounterUuid(baseEncounterUuid);
+    }
+  }, [
+    patientUuid,
+    workspaceMode,
+    baseEncounterUuid,
+    initialData,
+    setPatient,
+    setWorkspaceMode,
+    setData,
+    setActiveBaseEncounterUuid,
+  ]);
 
   const handleSave = async () => {
     try {
-      await save({ patientUuid, encounterUuid });
+      await save({ patientUuid, encounterUuid, data, recordType: workspaceMode, baseEncounterUuid });
       showSnackbar({
         title: t('odontogramSaved', 'Odontogram saved'),
         kind: 'success',
         subtitle:
           workspaceMode === 'base'
-            ? t('odontogramBaseSavedSubtitle', 'Base odontogram findings have been saved.')
-            : t('odontogramAttentionSavedSubtitle', 'Attention odontogram solutions have been saved.'),
+            ? t('odontogramBaseSavedSubtitle', 'Se guardó el odontograma inicial.')
+            : t('odontogramAttentionSavedSubtitle', 'Se guardó el odontograma evolutivo.'),
       });
+      onSaved?.();
       if (!encounterUuid) {
         resetData();
       }
@@ -79,22 +112,31 @@ const OdontogramWorkspace: React.FC<OdontogramWorkspaceProps> = ({
             {t(tagMeta.key, tagMeta.fallback)}
           </Tag>
         </div>
-        <OdontogramCanvas config={adultConfig} data={data} onChange={setData} />
+        <OdontogramCanvas
+          config={adultConfig}
+          data={data}
+          onChange={setData}
+          readOnly={readOnly}
+          formSelection={readOnly ? undefined : formSelection}
+          onFormSelectionChange={readOnly ? undefined : setFormSelection}
+        />
       </div>
-      <ButtonSet className={styles.buttonSet}>
-        <Button kind="secondary" onClick={() => closeWorkspace()} data-testid="odontogram-cancel-btn">
-          {t('cancel', 'Cancel')}
-        </Button>
-        <Button kind="primary" onClick={handleSave} disabled={isSaving} data-testid="odontogram-save-btn">
-          {isSaving ? (
-            <InlineLoading description={t('saving', 'Saving...')} />
-          ) : workspaceMode === 'base' ? (
-            t('saveBase', 'Save base')
-          ) : (
-            t('saveAttention', 'Save attention')
-          )}
-        </Button>
-      </ButtonSet>
+      {readOnly ? (
+        <ButtonSet className={styles.buttonSet}>
+          <Button kind="secondary" onClick={() => closeWorkspace()} data-testid="odontogram-close-btn">
+            {t('close', 'Cerrar')}
+          </Button>
+        </ButtonSet>
+      ) : (
+        <ButtonSet className={styles.buttonSet}>
+          <Button kind="secondary" onClick={() => closeWorkspace()} data-testid="odontogram-back-btn">
+            {t('back', 'Volver')}
+          </Button>
+          <Button kind="primary" onClick={handleSave} disabled={isSaving} data-testid="odontogram-save-btn">
+            {isSaving ? <InlineLoading description={t('saving', 'Saving...')} /> : t('save', 'Guardar')}
+          </Button>
+        </ButtonSet>
+      )}
     </div>
   );
 };

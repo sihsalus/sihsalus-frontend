@@ -1,5 +1,6 @@
 import { render, screen } from '@testing-library/react';
 import React, { Component } from 'react';
+import useSWR from 'swr';
 import { describe, expect, it, vi } from 'vitest';
 import { ComponentContext } from './ComponentContext';
 import { openmrsComponentDecorator } from './openmrsComponentDecorator';
@@ -32,6 +33,27 @@ describe('openmrs-component-decorator', () => {
   it('provides ComponentContext', () => {
     const DecoratedComp = openmrsComponentDecorator(opts)(CompWithConfig);
     render(<DecoratedComp />);
+  });
+
+  it('keeps SWR available to mounted components when another decorated component unmounts', () => {
+    const consoleError = vi.spyOn(console, 'error').mockImplementation(() => {});
+    const FirstDecoratedComp = openmrsComponentDecorator({ ...opts, featureName: 'First' })(CompWithSwr);
+    const SecondDecoratedComp = openmrsComponentDecorator({ ...opts, featureName: 'Second' })(CompWithSwr);
+    const { rerender } = render(
+      <>
+        <FirstDecoratedComp label="first" />
+        <SecondDecoratedComp label="second" />
+      </>,
+    );
+
+    expect(screen.getByText('second: shared-value')).toBeInTheDocument();
+
+    rerender(<SecondDecoratedComp label="second" />);
+    rerender(<SecondDecoratedComp label="second-after-unmount" />);
+
+    expect(screen.queryByRole('alert')).not.toBeInTheDocument();
+    expect(screen.getByText('second-after-unmount: shared-value')).toBeInTheDocument();
+    consoleError.mockRestore();
   });
 
   it('throws a specific error when options are invalid', () => {
@@ -71,6 +93,19 @@ const CompThatThrows = function () {
 function CompWithConfig() {
   const { moduleName } = React.useContext(ComponentContext);
   return <div>{moduleName}</div>;
+}
+
+function CompWithSwr({ label }: { label: string }) {
+  const { data } = useSWR('openmrs-component-decorator-shared-key', () => 'shared-value', {
+    fallbackData: 'shared-value',
+    revalidateOnMount: false,
+  });
+
+  return (
+    <div>
+      {label}: {data}
+    </div>
+  );
 }
 
 class UnsafeComponent extends Component<Record<string, never>, Record<string, never>> {

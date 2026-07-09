@@ -8,6 +8,7 @@ import { type VisitFormData } from './visit-form.resource';
 import {
   normalizeVisitProvenance,
   sanitizeVisitProvenance,
+  visitProvenanceMaxLength,
   useVisitProvenanceAddressOptions,
 } from './visit-provenance.resource';
 
@@ -140,6 +141,7 @@ const VisitProvenanceField: React.FC<VisitProvenanceFieldProps> = ({
         invalid={invalid}
         invalidText={invalidText}
         labelText={labelText}
+        maxLength={visitProvenanceMaxLength}
         onBlur={handleBlur}
         onChange={handleChange}
         onFocus={() => setShowOptions(true)}

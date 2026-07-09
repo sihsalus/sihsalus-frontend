@@ -2,7 +2,7 @@ import { act, cleanup, fireEvent, screen } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
 import { renderWithSwr } from 'test-utils';
 import type { IndicadorMeta } from '../api/types';
-import { notifyError, notifySuccess } from '../features/indicadores/hooks';
+import { notifyError } from '../features/indicadores/hooks';
 import { useDeleteMeta, useMetas, useUpsertMeta } from '../features/metas/hooks';
 import MetasPage from './MetasPage';
 

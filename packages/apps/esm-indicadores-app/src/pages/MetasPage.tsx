@@ -23,7 +23,7 @@ import styles from '../indicators-dashboard.module.scss';
 
 const MetasPage: React.FC = () => {
   const { t } = useTranslation();
-  const { data: metas, isLoading, error, refetch } = useMetas();
+  const { data: metas, isLoading, error } = useMetas();
   const { upsertMeta } = useUpsertMeta();
   const { deleteMeta } = useDeleteMeta();
 

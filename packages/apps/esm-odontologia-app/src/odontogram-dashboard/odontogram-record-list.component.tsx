@@ -63,8 +63,9 @@ const OdontogramRecordList: React.FC<OdontogramRecordListProps> = ({
               {attentionsNewestFirst.length === 0 ? (
                 <p className={styles.emptyHint}>{t('noEvolutivesShort', 'Sin odontogramas evolutivos')}</p>
               ) : (
-                attentionsNewestFirst.map(({ record, number }) => {
+                attentionsNewestFirst.map(({ record, number }, idx) => {
                   const selected = record.encounterUuid === selectedEncounterUuid;
+                  const isCurrentEvolutive = isVigente && idx === 0;
                   return (
                     <button
                       key={record.encounterUuid}
@@ -73,7 +74,14 @@ const OdontogramRecordList: React.FC<OdontogramRecordListProps> = ({
                       aria-current={selected}
                       onClick={() => onSelectAttention(record, group.base)}
                     >
-                      <span className={styles.rowTitle}>{`${t('evolutiveShort', 'Evolutivo')} ${number}`}</span>
+                      <span className={styles.rowTitleLine}>
+                        <span className={styles.rowTitle}>{`${t('evolutiveShort', 'Evolutivo')} ${number}`}</span>
+                        {isCurrentEvolutive ? (
+                          <Tag type="teal" size="sm" className={styles.vigenteTag}>
+                            {t('current', 'Vigente')}
+                          </Tag>
+                        ) : null}
+                      </span>
                       <span className={styles.rowMeta}>{fullDateTime(record.date)}</span>
                     </button>
                   );

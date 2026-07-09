@@ -45,8 +45,7 @@
       "title": "odontogramWorkspaceTitle",
       "width": "extra-wide",
       "canMaximize": true,
-      "canHide": true,
-      "preferredWindowSize": "maximized"
+      "canHide": true
     }
   ]
 }

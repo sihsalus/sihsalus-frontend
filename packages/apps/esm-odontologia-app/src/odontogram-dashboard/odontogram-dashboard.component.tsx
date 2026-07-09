@@ -148,9 +148,10 @@ const OdontogramDashboard: React.FC<OdontogramDashboardProps> = ({ patientUuid }
       patientUuid,
       workspaceMode: 'base',
       initialData: createEmptyOdontogramData(adultConfig),
+      workspaceTitle: t('newInitialOdontogram', 'Nuevo odontograma inicial'),
       onSaved: mutate,
     });
-  }, [patientUuid, mutate]);
+  }, [patientUuid, mutate, t]);
 
   const handleSelectBase = useCallback(
     (base: OdontogramRecord) => {
@@ -175,10 +176,11 @@ const OdontogramDashboard: React.FC<OdontogramDashboardProps> = ({ patientUuid }
         workspaceMode: 'attention',
         baseEncounterUuid: base.encounterUuid,
         initialData: createEmptyOdontogramData(adultConfig),
+        workspaceTitle: t('newEvolutive', 'Nuevo odontograma evolutivo'),
         onSaved: mutate,
       });
     },
-    [patientUuid, mutate],
+    [patientUuid, mutate, t],
   );
 
   const handleEditRecord = useCallback(() => {
@@ -191,9 +193,13 @@ const OdontogramDashboard: React.FC<OdontogramDashboardProps> = ({ patientUuid }
       encounterUuid: selectedRecord.encounterUuid,
       baseEncounterUuid: activeBase.encounterUuid,
       initialData: selectedRecord.data,
+      workspaceTitle:
+        selectedRecord.type === 'base'
+          ? t('editInitialOdontogram', 'Editar odontograma inicial')
+          : t('editEvolutiveOdontogram', 'Editar odontograma evolutivo'),
       onSaved: mutate,
     });
-  }, [selectedRecord, activeBase, patientUuid, mutate]);
+  }, [selectedRecord, activeBase, patientUuid, mutate, t]);
 
   const handleDeleteRecord = useCallback(() => {
     if (!selectedRecord || !activeBase) {

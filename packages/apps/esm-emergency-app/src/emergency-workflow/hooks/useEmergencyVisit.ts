@@ -49,12 +49,14 @@ export function useEmergencyVisit() {
 
         const visits = response.data.results;
 
-        // Buscar visita activa de tipo emergencia
-        const activeEmergencyVisit = visits.find(
-          (visit: VisitResponse) => visit.visitType?.uuid === config.emergencyVisitTypeUuid && !visit.stopDatetime, // Visita aún activa
+        const activeVisits = visits.filter((visit: VisitResponse) => !visit.stopDatetime);
+
+        // Prefer an active emergency visit, but reuse any active visit to avoid overlapping visits.
+        const activeEmergencyVisit = activeVisits.find(
+          (visit: VisitResponse) => visit.visitType?.uuid === config.emergencyVisitTypeUuid,
         );
 
-        return activeEmergencyVisit || null;
+        return activeEmergencyVisit || activeVisits[0] || null;
       } catch {
         return null;
       }

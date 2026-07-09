@@ -7,11 +7,13 @@
  */
 
 import { Button, ModalBody, ModalFooter, ModalHeader, Tag } from '@carbon/react';
-import { getPreferredIdentifier, launchWorkspace, launchWorkspace2, showSnackbar } from '@openmrs/esm-framework';
+import { launchWorkspace, launchWorkspace2, showSnackbar } from '@openmrs/esm-framework';
+import { getPreferredIdentifier } from '@openmrs/esm-utils';
 import React, { useCallback, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useSWRConfig } from 'swr';
 import { WORKSPACES } from '../constants';
+import { useTriageVitalsSavedHandler } from '../emergency-workflow/hooks/useTriageVitalsSavedHandler';
 import { useEmergencyConfig } from '../hooks/usePriorityConfig';
 import { type EmergencyQueueEntry, updateEmergencyQueueEntry } from '../resources/emergency.resource';
 import styles from './serve-patient.modal.scss';
@@ -26,6 +28,7 @@ const ServePatientModal: React.FC<ServePatientModalProps> = ({ queueEntry, close
   const { queueStatuses, emergencyTriageQueueUuid, triageEncounter } = useEmergencyConfig();
   const { mutate } = useSWRConfig();
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const handleTriageVitalsSaved = useTriageVitalsSavedHandler(queueEntry);
 
   const isTriageQueue = queueEntry.queue?.uuid === emergencyTriageQueueUuid;
 
@@ -56,7 +59,11 @@ const ServePatientModal: React.FC<ServePatientModalProps> = ({ queueEntry, close
             // In triage queue: capture vitals with the shared vitals workspace
             launchWorkspace2(
               WORKSPACES.TRIAGE_VITALS_FORM,
-              { encounterTypeUuid: triageEncounter.encounterTypeUuid, profile: 'emergency-triage' },
+              {
+                encounterTypeUuid: triageEncounter.encounterTypeUuid,
+                onVitalsSaved: handleTriageVitalsSaved,
+                profile: 'emergency-triage',
+              },
               null,
               { patientUuid: queueEntry.patient.uuid },
             );
@@ -76,7 +83,16 @@ const ServePatientModal: React.FC<ServePatientModalProps> = ({ queueEntry, close
       .finally(() => {
         setIsSubmitting(false);
       });
-  }, [queueEntry, queueStatuses.inService, isTriageQueue, mutate, closeModal, t, triageEncounter.encounterTypeUuid]);
+  }, [
+    queueEntry,
+    queueStatuses.inService,
+    isTriageQueue,
+    mutate,
+    closeModal,
+    t,
+    triageEncounter.encounterTypeUuid,
+    handleTriageVitalsSaved,
+  ]);
 
   return (
     <div>

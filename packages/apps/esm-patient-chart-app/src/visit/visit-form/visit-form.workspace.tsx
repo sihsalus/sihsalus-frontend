@@ -89,6 +89,9 @@ interface StartVisitFormWorkspaceProps {
   showPatientHeader?: boolean;
   showVisitEndDateTimeFields?: boolean;
   onVisitStarted?: (visit: Visit) => void | Promise<void>;
+  onQueueEntryAdded?: () => void | Promise<void>;
+  patientUuid?: string;
+  currentServiceQueueUuid?: string;
   visitToEdit?: Visit;
   workspaceTitle?: string;
 }
@@ -114,11 +117,15 @@ const StartVisitForm: React.FC<StartVisitFormProps> = (props) => {
     showPatientHeader = false,
     showVisitEndDateTimeFields,
     onVisitStarted,
+    onQueueEntryAdded,
+    currentServiceQueueUuid,
     visitToEdit,
     openedFrom,
     workspaceTitle,
   } = workspaceProps;
-  const initialPatientUuid = isWorkspace2 ? props.groupProps.patientUuid : props.patientUuid;
+  const initialPatientUuid = isWorkspace2
+    ? (props.groupProps?.patientUuid ?? workspaceProps.patientUuid)
+    : props.patientUuid;
   const closeCurrentWorkspace = useCallback(
     (options?: { ignoreChanges?: boolean }) => {
       if (isWorkspace2Props(props)) {
@@ -767,6 +774,8 @@ const StartVisitForm: React.FC<StartVisitFormProps> = (props) => {
                   <VisitFormExtensionSlot
                     name="visit-form-top-slot"
                     patientUuid={patientUuid}
+                    currentServiceQueueUuid={currentServiceQueueUuid}
+                    onQueueEntryAdded={onQueueEntryAdded}
                     visitFormOpenedFrom={openedFrom}
                     setVisitFormCallbacks={setVisitFormCallbacks}
                   />
@@ -884,6 +893,8 @@ const StartVisitForm: React.FC<StartVisitFormProps> = (props) => {
                 <VisitFormExtensionSlot
                   name="visit-form-bottom-slot"
                   patientUuid={patientUuid}
+                  currentServiceQueueUuid={currentServiceQueueUuid}
+                  onQueueEntryAdded={onQueueEntryAdded}
                   visitFormOpenedFrom={openedFrom}
                   setVisitFormCallbacks={setVisitFormCallbacks}
                 />
@@ -944,6 +955,8 @@ const StartVisitForm: React.FC<StartVisitFormProps> = (props) => {
 interface VisitFormExtensionSlotProps {
   name: string;
   patientUuid: string;
+  currentServiceQueueUuid?: string;
+  onQueueEntryAdded?: () => void | Promise<void>;
   visitFormOpenedFrom: string;
   setVisitFormCallbacks: React.Dispatch<React.SetStateAction<Map<string, VisitFormCallbacks>>>;
 }
@@ -962,10 +975,12 @@ type VisitFormExtensionState = {
 
   visitFormOpenedFrom: string;
   patientChartConfig: ChartConfig;
+  currentServiceQueueUuid?: string;
+  onQueueEntryAdded?: () => void | Promise<void>;
 };
 
 const VisitFormExtensionSlot: React.FC<VisitFormExtensionSlotProps> = React.memo(
-  ({ name, patientUuid, visitFormOpenedFrom, setVisitFormCallbacks }) => {
+  ({ name, patientUuid, currentServiceQueueUuid, onQueueEntryAdded, visitFormOpenedFrom, setVisitFormCallbacks }) => {
     const config = useConfig<ChartConfig>();
 
     return (
@@ -980,6 +995,8 @@ const VisitFormExtensionSlot: React.FC<VisitFormExtensionSlotProps> = React.memo
             },
             visitFormOpenedFrom,
             patientChartConfig: config,
+            currentServiceQueueUuid,
+            onQueueEntryAdded,
           };
           return <Extension state={state} />;
         }}

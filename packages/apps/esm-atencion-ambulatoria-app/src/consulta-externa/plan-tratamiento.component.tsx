@@ -1,8 +1,6 @@
 import {
   Accordion,
   AccordionItem,
-  Button,
-  InlineLoading,
   StructuredListBody,
   StructuredListCell,
   StructuredListHead,
@@ -10,7 +8,6 @@ import {
   StructuredListWrapper,
   Tag,
 } from '@carbon/react';
-import { Add } from '@carbon/react/icons';
 import { formatDate, useConfig } from '@openmrs/esm-framework';
 import { launchPatientWorkspace } from '@openmrs/esm-patient-common-lib';
 import React from 'react';
@@ -18,7 +15,7 @@ import { useTranslation } from 'react-i18next';
 import type { ConfigObject } from '../config-schema';
 import { useTreatmentPlan } from '../hooks/useTreatmentPlan';
 import { patientFormEntryWorkspace } from '../utils/constants';
-import styles from './consulta-externa-dashboard.scss';
+import ClinicalHistoryCard from './clinical-history-card.component';
 
 interface PlanTratamientoProps {
   patientUuid: string;
@@ -27,7 +24,7 @@ interface PlanTratamientoProps {
 const PlanTratamiento: React.FC<PlanTratamientoProps> = ({ patientUuid }) => {
   const { t } = useTranslation();
   const config = useConfig<ConfigObject>();
-  const { treatmentPlans, isLoading } = useTreatmentPlan(
+  const { treatmentPlans, isLoading, error } = useTreatmentPlan(
     patientUuid,
     config.encounterTypes?.externalConsultation,
     config.concepts,
@@ -41,10 +38,6 @@ const PlanTratamiento: React.FC<PlanTratamientoProps> = ({ patientUuid }) => {
       },
     });
   };
-
-  if (isLoading) {
-    return <InlineLoading description={t('loading', 'Cargando...')} />;
-  }
 
   const sections = [
     { key: 'labOrders', label: t('labOrders', 'Exámenes Auxiliares'), tagType: 'blue' as const },
@@ -60,64 +53,57 @@ const PlanTratamiento: React.FC<PlanTratamientoProps> = ({ patientUuid }) => {
   ];
 
   return (
-    <div className={styles.widgetContainer}>
-      <div className={styles.tableHeader}>
-        <span className={styles.tableHeaderTitle}>
-          {t('treatmentPlanHistory', 'Historial de Planes de Tratamiento')}
-        </span>
-        <Button kind="ghost" size="sm" renderIcon={Add} onClick={handleLaunchForm}>
-          {t('addTreatmentPlan', 'Registrar Plan')}
-        </Button>
-      </div>
-
-      {treatmentPlans.length === 0 ? (
-        <div className={styles.emptyState}>
-          <p>{t('noTreatmentPlanData', 'No hay planes de tratamiento registrados para este paciente.')}</p>
-        </div>
-      ) : (
-        <Accordion>
-          {treatmentPlans.map((plan) => (
-            <AccordionItem
-              key={plan.encounterUuid}
-              title={
-                <span>
-                  {formatDate(new Date(plan.encounterDatetime))}
-                  {' — '}
-                  <Tag type="outline" size="sm">
-                    {plan.provider || t('unknownProvider', 'Proveedor desconocido')}
-                  </Tag>
-                </span>
-              }
-            >
-              <StructuredListWrapper isCondensed>
-                <StructuredListHead>
-                  <StructuredListRow head>
-                    <StructuredListCell head>{t('section', 'Sección')}</StructuredListCell>
-                    <StructuredListCell head>{t('details', 'Detalles')}</StructuredListCell>
-                  </StructuredListRow>
-                </StructuredListHead>
-                <StructuredListBody>
-                  {sections.map(({ key, label, tagType }) => {
-                    const value = plan[key as keyof typeof plan];
-                    if (!value) return null;
-                    return (
-                      <StructuredListRow key={key}>
-                        <StructuredListCell>
-                          <Tag type={tagType} size="sm">
-                            {label}
-                          </Tag>
-                        </StructuredListCell>
-                        <StructuredListCell>{value}</StructuredListCell>
-                      </StructuredListRow>
-                    );
-                  })}
-                </StructuredListBody>
-              </StructuredListWrapper>
-            </AccordionItem>
-          ))}
-        </Accordion>
-      )}
-    </div>
+    <ClinicalHistoryCard
+      title={t('treatmentPlanHistory', 'Historial de Planes de Tratamiento')}
+      actionLabel={t('addTreatmentPlan', 'Registrar Plan')}
+      empty={treatmentPlans.length === 0}
+      emptyMessage={t('noTreatmentPlanData', 'No hay planes de tratamiento registrados para este paciente.')}
+      error={error}
+      isLoading={isLoading}
+      onAction={handleLaunchForm}
+    >
+      <Accordion>
+        {treatmentPlans.map((plan) => (
+          <AccordionItem
+            key={plan.encounterUuid}
+            title={
+              <span>
+                {formatDate(new Date(plan.encounterDatetime))}
+                {' — '}
+                <Tag type="outline" size="sm">
+                  {plan.provider || t('unknownProvider', 'Proveedor desconocido')}
+                </Tag>
+              </span>
+            }
+          >
+            <StructuredListWrapper isCondensed>
+              <StructuredListHead>
+                <StructuredListRow head>
+                  <StructuredListCell head>{t('section', 'Sección')}</StructuredListCell>
+                  <StructuredListCell head>{t('details', 'Detalles')}</StructuredListCell>
+                </StructuredListRow>
+              </StructuredListHead>
+              <StructuredListBody>
+                {sections.map(({ key, label, tagType }) => {
+                  const value = plan[key as keyof typeof plan];
+                  if (!value) return null;
+                  return (
+                    <StructuredListRow key={key}>
+                      <StructuredListCell>
+                        <Tag type={tagType} size="sm">
+                          {label}
+                        </Tag>
+                      </StructuredListCell>
+                      <StructuredListCell>{value}</StructuredListCell>
+                    </StructuredListRow>
+                  );
+                })}
+              </StructuredListBody>
+            </StructuredListWrapper>
+          </AccordionItem>
+        ))}
+      </Accordion>
+    </ClinicalHistoryCard>
   );
 };
 

@@ -24,9 +24,7 @@ function buildPerson(overrides: Partial<PersonForPromotion> = {}): PersonForProm
     gender: 'F',
     birthdate: '1986-01-01',
     birthdateEstimated: false,
-    names: [
-      { uuid: 'name-1', preferred: true, givenName: 'Rosa', middleName: 'Elena', familyName: 'Flores' },
-    ],
+    names: [{ uuid: 'name-1', preferred: true, givenName: 'Rosa', middleName: 'Elena', familyName: 'Flores' }],
     addresses: [{ uuid: 'address-1', preferred: true, address1: 'Jr. Principal 123' }],
     attributes: [
       {
@@ -158,11 +156,7 @@ describe('applyPersonToRegistrationForm', () => {
   it('parses UTC birthdate datetimes without shifting the calendar day', () => {
     const setFieldValue = vi.fn();
 
-    applyPersonToRegistrationForm(
-      buildPerson({ birthdate: '1986-01-01T00:00:00.000+0000' }),
-      setFieldValue,
-      vi.fn(),
-    );
+    applyPersonToRegistrationForm(buildPerson({ birthdate: '1986-01-01T00:00:00.000+0000' }), setFieldValue, vi.fn());
 
     const birthdateCall = setFieldValue.mock.calls.find(([field]) => field === 'birthdate');
     expect(birthdateCall?.[1]).toEqual(new Date(1986, 0, 1));

@@ -20,10 +20,10 @@ import styles from './growth-chart.scss';
 import { buildGrowthChartOptions } from './growth-chart-options';
 import {
   formatZScore,
-  getGrowthChartInterpretation,
   type GrowthChartInterpretationCode,
   type GrowthChartInterpretationSeverity,
   type GrowthChartPoint,
+  getGrowthChartInterpretation,
   getMeasurementXValue,
   isMeasurementUsableForDataset,
   isWeightForLengthHeightCategory,
@@ -357,7 +357,8 @@ const GrowthChart: React.FC<GrowthChartProps> = ({
             ) : null}
             {latestInterpretation ? (
               <span>
-                {t('growthInterpretation', 'Interpretación referencial')}: {translateInterpretationCode(latestInterpretation.code, t)}
+                {t('growthInterpretation', 'Interpretación referencial')}:{' '}
+                {translateInterpretationCode(latestInterpretation.code, t)}
               </span>
             ) : null}
           </div>

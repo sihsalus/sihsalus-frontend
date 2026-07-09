@@ -46,10 +46,20 @@ const AttentionFormWorkspace: React.FC<AttentionFormWorkspaceProps> = ({ queueEn
       setIsSubmitting(true);
       try {
         const { attentionEncounter, emergencyLocationUuid } = config;
+        const visitUuid = queueEntry.visit?.uuid;
+
+        if (!visitUuid) {
+          showSnackbar({
+            title: t('errorSavingAttention', 'Error al guardar atención'),
+            subtitle: t('noVisitFound', 'No se encontró una consulta activa para este paciente'),
+            kind: 'error',
+          });
+          return;
+        }
 
         await createAttentionEncounter({
           patientUuid: queueEntry.patient.uuid,
-          visitUuid: queueEntry.visit?.uuid,
+          visitUuid,
           encounterTypeUuid: attentionEncounter.encounterTypeUuid,
           locationUuid: emergencyLocationUuid,
           observations: [

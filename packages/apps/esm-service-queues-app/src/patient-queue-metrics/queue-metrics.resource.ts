@@ -4,7 +4,7 @@ import useSWR from 'swr';
 import { startOfDay } from '../constants';
 import { type Appointment } from '../types';
 
-export function useServiceMetricsCount(service: string, location: string) {
+export function useServiceMetricsCount(service?: string | null, location?: string | null) {
   const status = 'Waiting';
   const apiUrl =
     `${restBaseUrl}/queue-entry-metrics?status=${status}&isEnded=false` +

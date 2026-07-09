@@ -30,6 +30,39 @@
   padding: layout.$spacing-05 0;
 }
 
+.widgetCard {
+  background-color: $ui-02;
+  border: 1px solid $ui-03;
+}
+
+.historyHeaderActionItems {
+  align-items: center;
+  display: flex;
+  flex: 1 1 0%;
+  gap: layout.$spacing-03;
+  justify-content: flex-end;
+}
+
+.cardBody {
+  background-color: $ui-01;
+}
+
+.cardEmptyState {
+  align-items: center;
+  background-color: $ui-01;
+  display: flex;
+  justify-content: center;
+  min-height: 8rem;
+  padding: layout.$spacing-06;
+  text-align: center;
+
+  p {
+    @include type.type-style("body-compact-01");
+    color: $text-02;
+    margin: 0;
+  }
+}
+
 .combinedPanel {
   display: flex;
   flex-direction: column;

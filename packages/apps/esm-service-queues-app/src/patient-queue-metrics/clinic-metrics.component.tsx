@@ -1,12 +1,11 @@
 import { Dropdown } from '@carbon/react';
 import { isDesktop, useConfig, useLayoutType } from '@openmrs/esm-framework';
-import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import { type ConfigObject } from '../config-schema';
-import { updateSelectedService, useSelectedQueueLocationUuid, useSelectedService } from '../helpers/helpers';
 import { useQueueEntries } from '../hooks/useQueueEntries';
 import useQueueServices from '../hooks/useQueueService';
+import { updateSelectedService, useServiceQueuesStore } from '../store/store';
 import { type Concept } from '../types';
 
 import { useActiveVisits, useAverageWaitTime } from './clinic-metrics.resource';
@@ -25,27 +24,23 @@ type ServiceListItem = Service | Concept;
 function ClinicMetrics() {
   const { t } = useTranslation();
   const layout = useLayoutType();
-  const currentQueueLocation = useSelectedQueueLocationUuid();
-  const currentService = useSelectedService();
+  const { selectedQueueLocationUuid, selectedServiceDisplay, selectedServiceUuid } = useServiceQueuesStore();
   const {
     concepts: { defaultStatusConceptUuid },
   } = useConfig<ConfigObject>();
 
   const { services } = useQueueServices();
-  const { serviceCount } = useServiceMetricsCount(currentService?.serviceUuid, currentQueueLocation);
-
-  const [initialSelectedItem, setInitialSelectItem] = useState(() => {
-    return !currentService?.serviceDisplay || !currentService?.serviceUuid;
-  });
+  const { serviceCount } = useServiceMetricsCount(selectedServiceUuid, selectedQueueLocationUuid);
+  const isAllServicesSelected = !selectedServiceUuid;
 
   const { totalCount } = useQueueEntries({
-    service: currentService?.serviceUuid,
-    location: currentQueueLocation,
+    service: selectedServiceUuid,
+    location: selectedQueueLocationUuid,
     isEnded: false,
   });
 
   const { activeVisitsCount, isLoading: loading } = useActiveVisits();
-  const { waitTime } = useAverageWaitTime(currentService?.serviceUuid, defaultStatusConceptUuid);
+  const { waitTime } = useAverageWaitTime(selectedServiceUuid, defaultStatusConceptUuid);
 
   const defaultServiceItem: Service = {
     display: `${t('all', 'All')}`,
@@ -54,12 +49,7 @@ function ClinicMetrics() {
   const serviceItems: ServiceListItem[] = [defaultServiceItem, ...(services ?? [])];
 
   const handleServiceChange = ({ selectedItem }) => {
-    updateSelectedService(selectedItem.uuid, selectedItem.display);
-    if (selectedItem.uuid === undefined) {
-      setInitialSelectItem(true);
-    } else {
-      setInitialSelectItem(false);
-    }
+    updateSelectedService(selectedItem?.uuid, selectedItem?.display ?? t('all', 'All'));
   };
 
   return (
@@ -75,10 +65,10 @@ function ClinicMetrics() {
         <MetricsCard
           headerLabel=""
           label={t('patients', 'Patients')}
-          locationUuid={currentQueueLocation}
-          service={currentService?.serviceDisplay}
-          serviceUuid={currentService?.serviceUuid}
-          value={initialSelectedItem ? (totalCount ?? '--') : serviceCount}
+          locationUuid={selectedQueueLocationUuid}
+          service={selectedServiceDisplay}
+          serviceUuid={selectedServiceUuid}
+          value={isAllServicesSelected ? (totalCount ?? '--') : serviceCount}
         >
           <Dropdown
             id="inline"

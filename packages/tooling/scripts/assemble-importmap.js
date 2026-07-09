@@ -487,6 +487,14 @@ function copyAssets() {
 // ── Phase 7: Patch index.html — port of startup.sh envsubst logic ─────
 // Injects SPA_PATH, API_URL, SPA_CONFIG_URLS, SPA_DEFAULT_LOCALE, IMPORTMAP_URL
 // so nginx serves a fully-resolved index.html with no runtime substitution needed.
+function escapeHtmlAttribute(value) {
+  return String(value).replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+}
+
+function joinUrl(baseUrl, pathSegment) {
+  return `${baseUrl.replace(/\/+$/, '')}/${pathSegment.replace(/^\/+/, '')}`;
+}
+
 function patchIndexHtml() {
   const indexPath = path.join(outDir, 'index.html');
   if (!fs.existsSync(indexPath)) {
@@ -501,8 +509,41 @@ function patchIndexHtml() {
   const apiUrl = process.env.API_URL || '/openmrs';
   const defaultLocale = process.env.SPA_DEFAULT_LOCALE || 'es';
   const rawConfigUrls = (process.env.SPA_CONFIG_URLS || `${spaPath}/frontend.json`).trim();
+  const publicSpaUrl = (
+    process.env.SIHSALUS_PUBLIC_SPA_URL ||
+    process.env.SIHSALUS_PUBLIC_URL ||
+    process.env.PUBLIC_URL ||
+    ''
+  )
+    .trim()
+    .replace(/\/+$/, '');
+  const socialPreviewBaseUrl = publicSpaUrl || spaPath;
+  const socialPreviewTitle = 'SIH.SALUS';
+  const socialPreviewDescription = 'Sistema de información en salud';
+  const socialPreviewImageUrl = joinUrl(socialPreviewBaseUrl, 'sihsalus-share.png');
+  const socialPreviewTags = `<!-- SIHSALUS social preview -->
+<meta name="description" content="${escapeHtmlAttribute(socialPreviewDescription)}">
+<meta property="og:site_name" content="${escapeHtmlAttribute(socialPreviewTitle)}">
+<meta property="og:title" content="${escapeHtmlAttribute(socialPreviewTitle)}">
+<meta property="og:description" content="${escapeHtmlAttribute(socialPreviewDescription)}">
+<meta property="og:type" content="website">
+<meta property="og:url" content="${escapeHtmlAttribute(socialPreviewBaseUrl)}">
+<meta property="og:image" content="${escapeHtmlAttribute(socialPreviewImageUrl)}">
+<meta property="og:image:type" content="image/png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:image:alt" content="${escapeHtmlAttribute(socialPreviewTitle)}">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="${escapeHtmlAttribute(socialPreviewTitle)}">
+<meta name="twitter:description" content="${escapeHtmlAttribute(socialPreviewDescription)}">
+<meta name="twitter:image" content="${escapeHtmlAttribute(socialPreviewImageUrl)}">
+<!-- /SIHSALUS social preview -->`;
 
   let html = fs.readFileSync(indexPath, 'utf8');
+
+  html = html.replace(/<title>[\s\S]*?<\/title>/i, `<title>${socialPreviewTitle}</title>`);
+  html = html.replace(/<!-- SIHSALUS social preview -->[\s\S]*?<!-- \/SIHSALUS social preview -->\s*/g, '');
+  html = html.replace('</head>', `${socialPreviewTags}</head>`);
 
   const sihsalusErrorUiScript = `<script>
 (function () {

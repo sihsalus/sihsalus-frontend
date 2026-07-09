@@ -401,6 +401,10 @@ export interface QueueRoom {
   display: string;
   name: string;
   description: string;
+  queue?: {
+    uuid: string;
+    display: string;
+  };
 }
 
 export interface ProvidersQueueRoom {
@@ -453,6 +457,8 @@ export interface Queue {
   description: string;
   location: Location;
   service: Concept;
+  priorityConceptSet?: Concept;
+  statusConceptSet?: Concept;
   allowedPriorities: Array<Concept>;
   allowedStatuses: Array<Concept>;
 }
@@ -476,10 +482,10 @@ export interface QueueEntry {
 }
 
 export interface QueueEntrySearchCriteria {
-  queue?: Array<string> | string;
-  location?: Array<string> | string;
-  service?: Array<string> | string;
-  status?: Array<string> | string;
+  queue?: Array<string> | string | null;
+  location?: Array<string> | string | null;
+  service?: Array<string> | string | null;
+  status?: Array<string> | string | null;
   isEnded: boolean;
   patient?: string;
 }

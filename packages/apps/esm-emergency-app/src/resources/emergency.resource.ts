@@ -5,7 +5,7 @@ import useSWR from 'swr';
 import useSWRImmutable from 'swr/immutable';
 import { type Config } from '../config-schema';
 import { omrsDateFormat } from '../constants';
-import { useServiceQueuesLocationAndName } from '../utils/service-queues-integration';
+import { useServiceQueuesFilters } from '../utils/service-queues-integration';
 
 /**
  * Represents a single patient entry in an emergency queue.
@@ -51,6 +51,10 @@ export interface EmergencyQueueEntry {
   queue: {
     uuid: string;
     display: string;
+    location?: {
+      uuid: string;
+      display: string;
+    };
   };
   visit?: {
     uuid: string;
@@ -101,6 +105,7 @@ interface EmergencyQueue {
 }
 
 function useEmergencyQueues(locationUuid?: string) {
+  const config = useConfig<Config>();
   const queueUrl = useMemo(() => {
     if (!locationUuid) {
       return null;
@@ -117,6 +122,7 @@ function useEmergencyQueues(locationUuid?: string) {
   const { data, error, isLoading } = useSWR<{ data: { results: Array<EmergencyQueue> } }, Error>(
     queueUrl,
     openmrsFetch,
+    { refreshInterval: config.autoRefreshInterval },
   );
 
   return {
@@ -141,19 +147,11 @@ export function useEmergencyQueueEntries(
   locationUuid?: string,
   queueUuid?: string,
 ) {
-  // If no locationUuid provided, try to get it from service-queues store
-  // This allows automatic integration when used within service-queues-app
-  const { locationUuid: serviceQueuesLocation } = useServiceQueuesLocationAndName();
+  // If no explicit filters are provided, try to get them from the service-queues store.
+  // This keeps the emergency table aligned with the standard service-queues header.
+  const serviceQueuesFilters = useServiceQueuesFilters();
   const config = useConfig<Config>();
 
-  // Priority: explicit param > service-queues store > config emergency location (standalone fallback)
-  const actualLocationUuid = useMemo(
-    () => locationUuid ?? serviceQueuesLocation ?? config?.upssEmergencyLocationUuid ?? config?.emergencyLocationUuid,
-    [locationUuid, serviceQueuesLocation, config?.upssEmergencyLocationUuid, config?.emergencyLocationUuid],
-  );
-
-  // Only use status from store if explicitly provided and not undefined/null/empty/'all'
-  // Validate that statusUuid is a valid UUID format before using it
   const isValidUuid = useCallback((uuid?: string): boolean => {
     if (!uuid || uuid === 'all' || uuid === '') return false;
     // Basic UUID format validation (8-4-4-4-12 hex digits)
@@ -161,18 +159,40 @@ export function useEmergencyQueueEntries(
     return uuidRegex.test(uuid);
   }, []);
 
+  const resolveStoreBackedUuid = useCallback(
+    (explicitUuid: string | undefined, storeUuid: string | undefined) => {
+      if (explicitUuid !== undefined) {
+        return isValidUuid(explicitUuid) ? explicitUuid : undefined;
+      }
+
+      return isValidUuid(storeUuid) ? storeUuid : undefined;
+    },
+    [isValidUuid],
+  );
+
+  // Priority: explicit param > service-queues store > config emergency location (standalone fallback)
+  const actualLocationUuid = useMemo(
+    () =>
+      locationUuid ??
+      serviceQueuesFilters.locationUuid ??
+      config?.upssEmergencyLocationUuid ??
+      config?.emergencyLocationUuid,
+    [
+      locationUuid,
+      serviceQueuesFilters.locationUuid,
+      config?.upssEmergencyLocationUuid,
+      config?.emergencyLocationUuid,
+    ],
+  );
+
+  const actualServiceUuid = useMemo(
+    () => resolveStoreBackedUuid(serviceUuid, serviceQueuesFilters.serviceUuid),
+    [resolveStoreBackedUuid, serviceQueuesFilters.serviceUuid, serviceUuid],
+  );
+
   const actualStatusUuid = useMemo(() => {
-    // If statusUuid is explicitly provided, use it (but validate)
-    if (statusUuid && isValidUuid(statusUuid)) {
-      return statusUuid;
-    }
-    // IMPORTANT: Do NOT use statusUUID from service-queues store for emergency queries
-    // The statusUUIDs in service-queues store may reference concepts that don't exist
-    // in the emergency context (e.g., '51ae5e4d-b72b-4912-bf31-a17efb690aeb').
-    // Emergency queries should NOT filter by status unless explicitly provided.
-    // This avoids 500 errors when the concept doesn't exist in the backend.
-    return undefined;
-  }, [statusUuid, isValidUuid]);
+    return resolveStoreBackedUuid(statusUuid, serviceQueuesFilters.statusUuid);
+  }, [resolveStoreBackedUuid, serviceQueuesFilters.statusUuid, statusUuid]);
 
   const { queues: availableQueues, isLoading: isLoadingQueues } = useEmergencyQueues(actualLocationUuid);
   const actualQueueUuid = useMemo(() => {
@@ -187,10 +207,10 @@ export function useEmergencyQueueEntries(
 
   // Custom representation - same as Service Queues for full compatibility
   const customRepresentation =
-    'custom:(uuid,display,queue,status,patient:(uuid,display,person:(uuid,display,gender,age,birthdate,attributes:(attributeType:(display),value)),identifiers:(uuid,display,identifier,identifierType)),visit:(uuid,display,startDatetime,encounters:(uuid,display,diagnoses,encounterDatetime,encounterType,obs,encounterProviders,voided),attributes:(uuid,display,value,attributeType)),priority,priorityComment,sortWeight,startedAt,endedAt,locationWaitingFor,queueComingFrom,providerWaitingFor,previousQueueEntry)';
+    'custom:(uuid,display,queue:(uuid,display,location:(uuid,display)),status,patient:(uuid,display,person:(uuid,display,gender,age,birthdate,attributes:(attributeType:(display),value)),identifiers:(uuid,display,identifier,identifierType)),visit:(uuid,display,startDatetime,encounters:(uuid,display,diagnoses,encounterDatetime,encounterType,obs,encounterProviders,voided),attributes:(uuid,display,value,attributeType)),priority,priorityComment,sortWeight,startedAt,endedAt,locationWaitingFor,queueComingFrom,providerWaitingFor,previousQueueEntry)';
 
   const searchCriteria = {
-    service: serviceUuid,
+    service: actualServiceUuid,
     isEnded: false,
     status: actualStatusUuid,
     location: actualLocationUuid,
@@ -219,14 +239,24 @@ export function useEmergencyQueueEntries(
     }
 
     let key = actualLocationUuid ? `${url}&_location=${actualLocationUuid}` : url;
+    if (actualServiceUuid) key += `&_service=${actualServiceUuid}`;
+    if (actualStatusUuid) key += `&_status=${actualStatusUuid}`;
     if (actualQueueUuid) key += `&_queue=${actualQueueUuid}`;
     return key;
-  }, [url, actualLocationUuid, actualQueueUuid, shouldWaitForQueueValidation, shouldSkipMissingQueue]);
+  }, [
+    url,
+    actualLocationUuid,
+    actualServiceUuid,
+    actualStatusUuid,
+    actualQueueUuid,
+    shouldWaitForQueueValidation,
+    shouldSkipMissingQueue,
+  ]);
 
   const { data, error, isLoading, isValidating, mutate } = useSWR<
     { data: { results: Array<EmergencyQueueEntry>; totalCount: number } },
     Error
-  >(swrKey, openmrsFetch);
+  >(swrKey, openmrsFetch, { refreshInterval: config.autoRefreshInterval });
 
   return {
     queueEntries: shouldSkipMissingQueue ? [] : data?.data?.results || [],
@@ -394,6 +424,13 @@ export function useAverageWaitTimeByPriority(serviceUuid?: string, locationUuid?
     priorityIV: waitTimesByPriority.priorityIV.length
       ? Math.round(waitTimesByPriority.priorityIV.reduce((a, b) => a + b, 0) / waitTimesByPriority.priorityIV.length)
       : null,
+    overall: queueEntries.length
+      ? Math.round(
+          queueEntries
+            .map((entry) => now.diff(dayjs(entry.startedAt), 'minute'))
+            .reduce((total, waitTime) => total + waitTime, 0) / queueEntries.length,
+        )
+      : null,
   };
 
   return {
@@ -519,12 +556,11 @@ export async function createTriageEncounter(
 
 /**
  * Transition a patient from triage queue to attention queue
- * 1. Ends the current queue entry (triage queue)
- * 2. Creates a new queue entry in the attention queue with assigned priority
+ * using the Queue Module transition endpoint.
  *
  * @param currentQueueEntryUuid - UUID of the current queue entry to end
- * @param patientUuid - UUID of the patient
- * @param visitUuid - UUID of the visit
+ * @param _patientUuid - UUID of the patient, kept for backward-compatible call sites
+ * @param _visitUuid - UUID of the visit, kept for backward-compatible call sites
  * @param priorityUuid - UUID of the assigned priority (I-IV)
  * @param attentionQueueUuid - UUID of the attention queue
  * @param waitingStatusUuid - UUID of the "waiting" status
@@ -532,25 +568,19 @@ export async function createTriageEncounter(
  */
 export async function transitionToAttentionQueue(
   currentQueueEntryUuid: string,
-  patientUuid: string,
-  visitUuid: string,
+  _patientUuid: string,
+  _visitUuid: string,
   priorityUuid: string,
   attentionQueueUuid: string,
   waitingStatusUuid: string,
-  sortWeight: number,
+  _sortWeight: number,
 ) {
-  // Step 1: End the current queue entry in triage queue
-  await endEmergencyQueueEntry(currentQueueEntryUuid);
-
-  // Step 2: Create new entry in attention queue with assigned priority
-  return createEmergencyQueueEntry(
-    patientUuid,
-    visitUuid,
-    priorityUuid,
-    waitingStatusUuid,
-    attentionQueueUuid,
-    sortWeight,
-  );
+  return transitionEmergencyQueueEntry({
+    queueEntryToTransition: currentQueueEntryUuid,
+    newQueue: attentionQueueUuid,
+    newPriority: priorityUuid,
+    newStatus: waitingStatusUuid,
+  });
 }
 
 export async function endEmergencyQueueEntry(queueEntryUuid: string) {

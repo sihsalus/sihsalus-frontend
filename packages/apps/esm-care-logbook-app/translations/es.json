@@ -32,6 +32,7 @@
   "continue": "Continuar",
   "currentPreferredRecord": "Historia que puede conservarse",
   "date": "Fecha",
+  "dateTime": "Fecha y hora",
   "documentNumber": "N° documento",
   "documentType": "Tipo doc.",
   "exportCsv": "Exportar CSV",

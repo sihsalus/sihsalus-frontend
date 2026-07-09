@@ -1,6 +1,7 @@
 import { AppErrorBoundary, RequirePrivilege } from '@sihsalus/esm-rbac';
 import React from 'react';
 import { BrowserRouter, Route, Routes } from 'react-router-dom';
+import AdminPage from './admin/admin-page/admin-page.component';
 import { serviceQueuesBasePath, serviceQueuesPrivilege } from './constants';
 import Home from './home.component';
 import ServicesTable from './queue-patient-linelists/queue-services-table.component';
@@ -19,6 +20,7 @@ const Root: React.FC = () => {
           <BrowserRouter basename={serviceQueuesBasePath}>
             <Routes>
               <Route path="/" element={<Home />} />
+              <Route path="/admin" element={<AdminPage />} />
               <Route path="/queue-table-by-status/:queueUuid" element={<QueueTableByStatusView />} />
               <Route path="/queue-table-by-status/:queueUuid/:statusUuid" element={<QueueTableByStatusView />} />
               <Route path="/screen" element={<QueueScreen />} />

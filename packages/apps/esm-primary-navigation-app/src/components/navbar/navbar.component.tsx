@@ -56,7 +56,9 @@ const HeaderItems: React.FC = () => {
 
   const showHamburger = useMemo(() => mode !== 'hidden' && navMenuItems.length > 0, [navMenuItems.length, mode]);
   const sessionKey =
-    session?.authenticated && session?.sessionId ? `${session.sessionId}:${session.user?.uuid ?? 'unknown'}` : 'anonymous';
+    session?.authenticated && session?.sessionId
+      ? `${session.sessionId}:${session.user?.uuid ?? 'unknown'}`
+      : 'anonymous';
 
   useEffect(() => {
     if (!isFixedSideNav) {
@@ -129,7 +131,9 @@ const Navbar: React.FC = () => {
   const session = useSession();
   const openmrsSpaBase = window['getOpenmrsSpaBase']();
   const sessionKey =
-    session?.authenticated && session?.sessionId ? `${session.sessionId}:${session.user?.uuid ?? 'unknown'}` : 'anonymous';
+    session?.authenticated && session?.sessionId
+      ? `${session.sessionId}:${session.user?.uuid ?? 'unknown'}`
+      : 'anonymous';
 
   if (session?.user?.person) {
     return session.sessionLocation ? (

@@ -32,6 +32,18 @@
   margin-top: spacing.$spacing-04;
 }
 
+.unidentifiedPatientButton {
+  color: theme.$support-error;
+  border-color: theme.$support-error;
+
+  &:hover,
+  &:focus {
+    color: theme.$text-on-color;
+    background-color: theme.$support-error;
+    border-color: theme.$support-error;
+  }
+}
+
 // Search Results
 .resultsSection {
   margin-top: spacing.$spacing-05;

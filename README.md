@@ -291,6 +291,7 @@ Crea un archivo `.env` en la raíz del repo (ver [.env.template](.env.template))
 | `SIHSALUS_AUTH_MODE`             | `openmrs`                              | Modo de auth: `openmrs` (básico) o `keycloak` (OIDC)                   |
 | `SIHSALUS_ALLOW_SELF_SIGNED_TLS` | `true` para DEV/QLTY internos; `false` para otros backends | Activa TLS "insecure" para backends internos con certificados auto-firmados en desarrollo. Usa `false` para forzar validación estricta |
 | `SIHSALUS_FHIR_BASE`             | *(derivado del backend)*               | URL base de FHIR R4                                                    |
+| `SIHSALUS_PUBLIC_SPA_URL`        | *(opcional)*                           | URL pública absoluta del SPA para Open Graph/Twitter previews          |
 | `SPA_PATH`                       | `/openmrs/spa`                         | Base path para los assets del SPA                                      |
 | `API_URL`                        | `/openmrs`                             | Base path de la API de OpenMRS                                         |
 

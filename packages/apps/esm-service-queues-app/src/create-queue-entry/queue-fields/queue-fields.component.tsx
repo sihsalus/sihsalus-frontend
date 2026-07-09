@@ -8,7 +8,7 @@ import {
   SelectSkeleton,
 } from '@carbon/react';
 import { ResponsiveWrapper, showSnackbar, useConfig, useSession, type Visit } from '@openmrs/esm-framework';
-import React, { useCallback, useContext, useEffect, useState } from 'react';
+import React, { useCallback, useContext, useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import { type ConfigObject } from '../../config-schema';
@@ -21,13 +21,15 @@ import { postQueueEntry } from './queue-fields.resource';
 import styles from './queue-fields.scss';
 
 export interface QueueFieldsProps {
-  setOnSubmit(onSubmit: (visit: Visit) => Promise<any>);
+  currentServiceQueueUuid?: string;
+  onQueueEntryAdded?: () => void | Promise<void>;
+  setOnSubmit(onSubmit: (visit: Visit) => Promise<unknown>);
 }
 
 /**
  * This component contains form fields for starting a patient's queue entry.
  */
-const QueueFields: React.FC<QueueFieldsProps> = ({ setOnSubmit }) => {
+const QueueFields: React.FC<QueueFieldsProps> = ({ currentServiceQueueUuid, onQueueEntryAdded, setOnSubmit }) => {
   const { t } = useTranslation();
   const { queueLocations, isLoading: isLoadingQueueLocations } = useQueueLocations();
   const { sessionLocation } = useSession();
@@ -35,12 +37,16 @@ const QueueFields: React.FC<QueueFieldsProps> = ({ setOnSubmit }) => {
     visitQueueNumberAttributeUuid,
     concepts: { defaultStatusConceptUuid, defaultPriorityConceptUuid, emergencyPriorityConceptUuid },
   } = useConfig<ConfigObject>();
-  const [selectedQueueLocation, setSelectedQueueLocation] = useState(queueLocations[0]?.id);
+  const [selectedQueueLocation, setSelectedQueueLocation] = useState('');
   const { queues, isLoading: isLoadingQueues } = useQueues(selectedQueueLocation);
   const [selectedService, setSelectedService] = useState('');
-  const { currentServiceQueueUuid } = useContext(AddPatientToQueueContext);
-  const [priority, setPriority] = useState(defaultPriorityConceptUuid);
-  const priorities = queues.find((q) => q.uuid === selectedService)?.allowedPriorities ?? [];
+  const { currentServiceQueueUuid: contextServiceQueueUuid } = useContext(AddPatientToQueueContext);
+  const selectedServiceQueueUuid = currentServiceQueueUuid ?? contextServiceQueueUuid;
+  const selectedQueue = useMemo(() => queues.find((q) => q.uuid === selectedService), [queues, selectedService]);
+  const priorities = selectedQueue?.allowedPriorities ?? [];
+  const statuses = selectedQueue?.allowedStatuses ?? [];
+  const [priority, setPriority] = useState('');
+  const [status, setStatus] = useState('');
   const { mutateQueueEntries } = useMutateQueueEntries();
   const memoMutateQueueEntries = useCallback(mutateQueueEntries, [mutateQueueEntries]);
 
@@ -48,13 +54,13 @@ const QueueFields: React.FC<QueueFieldsProps> = ({ setOnSubmit }) => {
 
   const onSubmit = useCallback(
     (visit: Visit) => {
-      if (selectedQueueLocation && selectedService && priority) {
+      if (selectedQueueLocation && selectedService && priority && status) {
         return postQueueEntry(
           visit.uuid,
           selectedService,
           visit.patient.uuid,
           priority,
-          defaultStatusConceptUuid,
+          status,
           sortWeight,
           selectedQueueLocation,
           visitQueueNumberAttributeUuid,
@@ -67,6 +73,7 @@ const QueueFields: React.FC<QueueFieldsProps> = ({ setOnSubmit }) => {
               subtitle: t('queueEntryAddedSuccessfully', 'Queue entry added successfully'),
             });
             memoMutateQueueEntries();
+            return onQueueEntryAdded?.();
           })
           .catch((error) => {
             showSnackbar({
@@ -85,10 +92,11 @@ const QueueFields: React.FC<QueueFieldsProps> = ({ setOnSubmit }) => {
       selectedQueueLocation,
       selectedService,
       priority,
+      status,
       sortWeight,
-      defaultStatusConceptUuid,
       visitQueueNumberAttributeUuid,
       memoMutateQueueEntries,
+      onQueueEntryAdded,
       t,
     ],
   );
@@ -98,16 +106,40 @@ const QueueFields: React.FC<QueueFieldsProps> = ({ setOnSubmit }) => {
   }, [onSubmit, setOnSubmit]);
 
   useEffect(() => {
-    if (currentServiceQueueUuid) {
-      setSelectedService(currentServiceQueueUuid);
+    if (selectedServiceQueueUuid) {
+      setSelectedService(selectedServiceQueueUuid);
     }
-  }, [currentServiceQueueUuid]);
+  }, [selectedServiceQueueUuid]);
 
   useEffect(() => {
-    if (queueLocations.map((l) => l.id).includes(sessionLocation.uuid)) {
-      setSelectedQueueLocation(sessionLocation.uuid);
+    if (selectedQueueLocation) {
+      return;
     }
-  }, [queueLocations, sessionLocation.uuid]);
+
+    const defaultLocation =
+      queueLocations.find((location) => location.id === sessionLocation.uuid) ?? queueLocations[0];
+    setSelectedQueueLocation(defaultLocation?.id ?? '');
+  }, [queueLocations, selectedQueueLocation, sessionLocation.uuid]);
+
+  useEffect(() => {
+    const nextPriority = priorities.some((allowedPriority) => allowedPriority.uuid === defaultPriorityConceptUuid)
+      ? defaultPriorityConceptUuid
+      : (priorities[0]?.uuid ?? '');
+
+    setPriority((currentPriority) =>
+      priorities.some((allowedPriority) => allowedPriority.uuid === currentPriority) ? currentPriority : nextPriority,
+    );
+  }, [defaultPriorityConceptUuid, priorities]);
+
+  useEffect(() => {
+    const nextStatus = statuses.some((allowedStatus) => allowedStatus.uuid === defaultStatusConceptUuid)
+      ? defaultStatusConceptUuid
+      : (statuses[0]?.uuid ?? '');
+
+    setStatus((currentStatus) =>
+      statuses.some((allowedStatus) => allowedStatus.uuid === currentStatus) ? currentStatus : nextStatus,
+    );
+  }, [defaultStatusConceptUuid, statuses]);
 
   return (
     <div>
@@ -200,7 +232,7 @@ const QueueFields: React.FC<QueueFieldsProps> = ({ setOnSubmit }) => {
               className={styles.radioButtonWrapper}
               name="priority"
               id="priority"
-              defaultSelected={defaultPriorityConceptUuid}
+              valueSelected={priority}
               onChange={(uuid) => setPriority(String(uuid))}
             >
               {priorities.map(({ uuid, display }) => (
@@ -208,6 +240,23 @@ const QueueFields: React.FC<QueueFieldsProps> = ({ setOnSubmit }) => {
               ))}
             </RadioButtonGroup>
           ) : null}
+        </section>
+      ) : null}
+
+      {selectedService && !isLoadingQueues && !statuses.length ? (
+        <section className={styles.section}>
+          <div className={styles.sectionTitle}>{t('status', 'Status')}</div>
+          <InlineNotification
+            className={styles.inlineNotification}
+            kind={'error'}
+            lowContrast
+            title={t('noStatusesForServiceTitle', 'No statuses available')}
+          >
+            {t(
+              'noStatusesForService',
+              'The selected service does not have any allowed statuses. This is an error in configuration. Please contact your system administrator.',
+            )}
+          </InlineNotification>
         </section>
       ) : null}
     </div>

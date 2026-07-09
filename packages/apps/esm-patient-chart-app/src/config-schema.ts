@@ -80,7 +80,8 @@ export const esmPatientChartSchema = {
   },
   companionRelationshipTypeUuid: {
     _type: Type.UUID,
-    _description: 'UUID of the Acompañante relationship type, used to list the patient companions on the start visit form.',
+    _description:
+      'UUID of the Acompañante relationship type, used to list the patient companions on the start visit form.',
     _default: '3501ac02-0fb0-4ced-8a3e-f578f0ff5276',
   },
   offlineVisitTypeUuid: {

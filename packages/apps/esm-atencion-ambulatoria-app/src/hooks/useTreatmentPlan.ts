@@ -84,17 +84,19 @@ export function useTreatmentPlan(patientUuid: string, encounterTypeUuid: string,
           [visitNotesConceptUuids.legacyProceduresTextUuid, visitNotesConceptUuids.legacyProceduresUuid],
           'procedures',
         ) ??
-        getObsValue(
-          encounter.obs,
-          [concepts?.proceduresUuid, visitNotesConceptUuids.legacyProceduresUuid],
-          null,
-        ),
-      prescriptions: getObsValue(encounter.obs, [concepts?.prescriptionsUuid, visitNotesConceptUuids.prescriptionsUuid]),
+        getObsValue(encounter.obs, [concepts?.proceduresUuid, visitNotesConceptUuids.legacyProceduresUuid], null),
+      prescriptions: getObsValue(encounter.obs, [
+        concepts?.prescriptionsUuid,
+        visitNotesConceptUuids.prescriptionsUuid,
+      ]),
       therapeuticIndications:
         getObsValue(encounter.obs, [visitNotesConceptUuids.soapPlanUuid], 'soap-plan') ??
         getObsValue(encounter.obs, [concepts?.therapeuticIndicationsUuid], null),
       referral: getObsValue(encounter.obs, [concepts?.referralUuid, visitNotesConceptUuids.referralUuid]),
-      nextAppointment: getObsValue(encounter.obs, [concepts?.nextAppointmentUuid, visitNotesConceptUuids.nextAppointmentUuid]),
+      nextAppointment: getObsValue(encounter.obs, [
+        concepts?.nextAppointmentUuid,
+        visitNotesConceptUuids.nextAppointmentUuid,
+      ]),
     }))
     .filter(
       (entry) =>

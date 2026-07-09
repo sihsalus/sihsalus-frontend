@@ -33,7 +33,7 @@ import { useTranslation } from 'react-i18next';
 
 import { type ConfigObject } from '../config-schema';
 import { getGender } from '../helpers/functions';
-import { updateSelectedAppointmentStatus, useSelectedAppointmentStatus } from '../helpers/helpers';
+import { updateSelectedAppointmentStatus, useServiceQueuesStore } from '../store/store';
 import { useAppointments } from './queue-linelist.resource';
 import styles from './queue-linelist-base-table.scss';
 
@@ -57,7 +57,7 @@ type FilterProps = {
 const AppointmentsTable: React.FC = () => {
   const { t } = useTranslation();
   const { appointmentStatuses } = useConfig<ConfigObject>();
-  const currentAppointmentStatus = useSelectedAppointmentStatus();
+  const { selectedAppointmentStatus: currentAppointmentStatus } = useServiceQueuesStore();
   const { appointmentQueueEntries, isLoading } = useAppointments();
   const [filteredRows, setFilteredRows] = useState(appointmentQueueEntries);
   const { results, currentPage, goTo } = usePagination(filteredRows ?? [], 20);
@@ -304,11 +304,19 @@ const AppointmentsTable: React.FC = () => {
       </DataTable>
 
       <Pagination
-        backwardText="Previous page"
-        forwardText="Next page"
+        backwardText={t('previousPage', 'Previous page')}
+        forwardText={t('nextPage', 'Next page')}
+        itemRangeText={(min, max, total) => t('itemRange', '{{min}}-{{max}} of {{total}} items', { min, max, total })}
+        itemsPerPageText={t('itemsPerPage', 'Items per page:')}
         page={currentPage}
-        pageNumberText="Page Number"
+        pageNumberText={t('pageNumber', 'Page Number')}
+        pageRangeText={(_current, total) =>
+          total === 1
+            ? t('pageRangeSingular', 'of {{total}} page', { total })
+            : t('pageRangePlural', 'of {{total}} pages', { total })
+        }
         pageSize={100}
+        pageText={(page) => t('pageText', 'page {{page}}', { page })}
         onChange={({ page }) => goTo(page)}
         pageSizes={pageSizes?.length > 0 ? pageSizes : [100]}
         totalItems={appointmentQueueEntries?.length ?? 0}

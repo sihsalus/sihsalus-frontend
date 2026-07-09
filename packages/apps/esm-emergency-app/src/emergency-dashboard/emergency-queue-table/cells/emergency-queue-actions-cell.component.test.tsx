@@ -1,4 +1,10 @@
-import { getDefaultsFromConfigSchema, launchWorkspace2, useConfig, useSession, userHasAccess } from '@openmrs/esm-framework';
+import {
+  getDefaultsFromConfigSchema,
+  launchWorkspace2,
+  useConfig,
+  userHasAccess,
+  useSession,
+} from '@openmrs/esm-framework';
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { type Config, configSchema } from '../../../config-schema';
@@ -73,7 +79,11 @@ describe('EmergencyQueueActionsCell', () => {
 
     expect(mockLaunchWorkspace2).toHaveBeenCalledWith(
       WORKSPACES.TRIAGE_VITALS_FORM,
-      { encounterTypeUuid: triageEncounterTypeUuid },
+      expect.objectContaining({
+        encounterTypeUuid: triageEncounterTypeUuid,
+        onVitalsSaved: expect.any(Function),
+        profile: 'emergency-triage',
+      }),
       null,
       { patientUuid: queueEntry.patient.uuid },
     );

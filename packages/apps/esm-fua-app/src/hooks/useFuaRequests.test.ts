@@ -216,4 +216,3 @@ describe('useFuasByPatient', () => {
     expect(mockUseSWR).toHaveBeenCalledWith(null, openmrsFetch);
   });
 });
-

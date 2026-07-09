@@ -2,7 +2,7 @@ import dayjs from 'dayjs';
 import mapValues from 'lodash-es/mapValues';
 import * as Yup from 'yup';
 
-import { type RegistrationConfig } from '../../config-schema';
+import { type FieldDefinition, type RegistrationConfig } from '../../config-schema';
 import { patientFamilyNameMaxLength, patientGivenNameMaxLength } from '../patient-name-limits';
 import { getDatetime } from '../patient-registration.resource';
 import {
@@ -28,6 +28,44 @@ const nameInvalidCharactersMessage = t(
 const nameTooShortMessage = t('nameTooShort', 'Name must be at least 2 characters long');
 const givenNameTooLongMessage = t('givenNameTooLong', 'Name must be 150 characters or fewer');
 const familyNameTooLongMessage = t('familyNameTooLong', 'Family name must be 100 characters or fewer');
+const insuranceAccreditationCheckedAtFieldId = 'insuranceAccreditationCheckedAt';
+const insuranceAccreditationDateBeforeBirthdateMessage = t(
+  'insuranceAccreditationDateBeforeBirthdate',
+  'Insurance accreditation date cannot be before date of birth',
+);
+
+function parseDateOnly(value: unknown) {
+  if (!value) {
+    return undefined;
+  }
+
+  if (value instanceof Date) {
+    const parsedDate = dayjs(value);
+    return parsedDate.isValid() ? parsedDate.startOf('day') : undefined;
+  }
+
+  if (typeof value !== 'string') {
+    return undefined;
+  }
+
+  const dateOnlyMatch = /^(\d{4})-(\d{2})-(\d{2})$/.exec(value);
+  if (dateOnlyMatch) {
+    const [, yearValue, monthValue, dayValue] = dateOnlyMatch;
+    const year = Number(yearValue);
+    const month = Number(monthValue);
+    const day = Number(dayValue);
+    const parsedDate = new Date(year, month - 1, day);
+
+    if (parsedDate.getFullYear() !== year || parsedDate.getMonth() !== month - 1 || parsedDate.getDate() !== day) {
+      return undefined;
+    }
+
+    return dayjs(parsedDate).startOf('day');
+  }
+
+  const parsedDate = dayjs(value);
+  return parsedDate.isValid() ? parsedDate.startOf('day') : undefined;
+}
 
 function buildIdentifierFormatRegex(format?: string): RegExp | undefined {
   if (!format) {
@@ -43,7 +81,10 @@ function buildIdentifierFormatRegex(format?: string): RegExp | undefined {
 function buildPersonAttributeValidationSchema(config: RegistrationConfig) {
   const attributeSchemas = Object.fromEntries(
     (config.fieldDefinitions ?? [])
-      .filter((field) => field.type === 'person attribute' && !!field.uuid && !!field.validation)
+      .filter(
+        (field) =>
+          field.type === 'person attribute' && !!field.uuid && (!!field.validation || field.inputType === 'date'),
+      )
       .map((field) => {
         const formatRegex = buildIdentifierFormatRegex(field.validation?.matches);
         let schema = Yup.string().nullable();
@@ -62,11 +103,40 @@ function buildPersonAttributeValidationSchema(config: RegistrationConfig) {
           });
         }
 
+        if (field.inputType === 'date') {
+          schema = schema
+            .test(
+              'person-attribute-date',
+              t('invalidDate', 'Invalid date'),
+              (value) => !value || !!parseDateOnly(value),
+            )
+            .test(
+              'person-attribute-date-not-in-future',
+              t('dateCannotBeInFuture', 'Date cannot be in future'),
+              (value) => {
+                const parsedDate = parseDateOnly(value);
+                return field.allowFutureDates !== false || !parsedDate || !parsedDate.isAfter(dayjs(), 'day');
+              },
+            )
+            .test('person-attribute-date-not-in-past', t('dateCannotBeInPast', 'Date cannot be in past'), (value) => {
+              const parsedDate = parseDateOnly(value);
+              return field.allowPastDates !== false || !parsedDate || !parsedDate.isBefore(dayjs(), 'day');
+            });
+        }
+
         return [field.uuid, schema];
       }),
   );
 
   return Yup.object(attributeSchemas);
+}
+
+function getPersonAttributeFieldUuid(config: RegistrationConfig, fieldId: string) {
+  return config.fieldDefinitions?.find((field) => field.type === 'person attribute' && field.id === fieldId)?.uuid;
+}
+
+function getAttributeValue(values: FormValues | undefined, attributeTypeUuid: FieldDefinition['uuid'] | undefined) {
+  return attributeTypeUuid ? values?.attributes?.[attributeTypeUuid] : undefined;
 }
 
 export function isMinorPatient(values: Pick<FormValues, 'birthdate' | 'birthdateEstimated' | 'yearsEstimated'>) {
@@ -79,6 +149,19 @@ export function isMinorPatient(values: Pick<FormValues, 'birthdate' | 'birthdate
   }
 
   return dayjs().diff(dayjs(values.birthdate), 'year') < 18;
+}
+
+function getAgeFromBirthdate(birthdate?: string) {
+  if (!birthdate) {
+    return undefined;
+  }
+
+  const parsedBirthdate = dayjs(birthdate);
+  if (!parsedBirthdate.isValid()) {
+    return undefined;
+  }
+
+  return dayjs().diff(parsedBirthdate, 'year');
 }
 
 /**
@@ -100,7 +183,40 @@ export function hasResponsibleRelationship(
         relationship.action !== 'DELETE' &&
         hasRelatedPerson(relationship) &&
         !!relationship.relationshipType &&
-        minorResponsibleRelationshipTypes.includes(relationship.relationshipType),
+        minorResponsibleRelationshipTypes.includes(relationship.relationshipType) &&
+        !isUnderageResponsibleRelationship(relationship, minorResponsibleRelationshipTypes),
+    ) ?? false
+  );
+}
+
+export function isUnderageResponsibleRelationship(
+  relationship: RelationshipValue,
+  minorResponsibleRelationshipTypes: Array<string> = [],
+) {
+  if (
+    relationship.action === 'DELETE' ||
+    !relationship.relationshipType ||
+    !minorResponsibleRelationshipTypes.includes(relationship.relationshipType)
+  ) {
+    return false;
+  }
+
+  const newPersonAge = relationship.newPerson?.estimatedAge?.trim();
+  if (newPersonAge) {
+    return Number(newPersonAge) < 18;
+  }
+
+  const relatedPersonAge = relationship.relatedPersonAge ?? getAgeFromBirthdate(relationship.relatedPersonBirthdate);
+  return typeof relatedPersonAge === 'number' && relatedPersonAge < 18;
+}
+
+export function hasUnderageResponsibleRelationship(
+  relationships: Array<RelationshipValue> | undefined,
+  minorResponsibleRelationshipTypes: Array<string> = [],
+) {
+  return (
+    relationships?.some((relationship) =>
+      isUnderageResponsibleRelationship(relationship, minorResponsibleRelationshipTypes),
     ) ?? false
   );
 }
@@ -124,6 +240,11 @@ export function getValidationSchema(
   config: RegistrationConfig,
   identifierTypes: Array<FetchedPatientIdentifierType> = [],
 ) {
+  const insuranceAccreditationCheckedAtAttributeUuid = getPersonAttributeFieldUuid(
+    config,
+    insuranceAccreditationCheckedAtFieldId,
+  );
+
   return Yup.object({
     givenName: Yup.string()
       .required(t('givenNameRequired', 'Given name is required'))
@@ -317,6 +438,20 @@ export function getValidationSchema(
           ),
       )
       .test(
+        'responsible-relationship-must-be-adult',
+        t('responsiblePersonMustBeAdult', 'Responsible person must be an adult'),
+        function (relationships?: Array<RelationshipValue>) {
+          const values = this.parent as FormValues;
+          return (
+            !isMinorPatient(values) ||
+            !hasUnderageResponsibleRelationship(
+              relationships,
+              config.relationshipOptions?.minorResponsibleRelationshipTypes,
+            )
+          );
+        },
+      )
+      .test(
         'responsible-relationship-required-for-minors',
         t(
           'responsibleRelationshipRequiredForMinor',
@@ -326,6 +461,10 @@ export function getValidationSchema(
           const values = this.parent as FormValues;
           return (
             !isMinorPatient(values) ||
+            hasUnderageResponsibleRelationship(
+              relationships,
+              config.relationshipOptions?.minorResponsibleRelationshipTypes,
+            ) ||
             hasResponsibleRelationship(relationships, config.relationshipOptions?.minorResponsibleRelationshipTypes)
           );
         },
@@ -341,5 +480,28 @@ export function getValidationSchema(
           return !isUnidentifiedPatient(values, config) || hasActiveRelationship(relationships);
         },
       ),
-  });
+  }).test(
+    'insurance-accreditation-date-after-birthdate',
+    insuranceAccreditationDateBeforeBirthdateMessage,
+    function (values) {
+      const formValues = values as unknown as FormValues | undefined;
+      const insuranceAccreditationCheckedAt = parseDateOnly(
+        getAttributeValue(formValues, insuranceAccreditationCheckedAtAttributeUuid),
+      );
+      const birthdate = parseDateOnly(formValues?.birthdate);
+
+      if (
+        !insuranceAccreditationCheckedAt ||
+        !birthdate ||
+        !insuranceAccreditationCheckedAt.isBefore(birthdate, 'day')
+      ) {
+        return true;
+      }
+
+      return this.createError({
+        path: `attributes.${insuranceAccreditationCheckedAtAttributeUuid}`,
+        message: insuranceAccreditationDateBeforeBirthdateMessage,
+      });
+    },
+  );
 }

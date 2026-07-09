@@ -1,5 +1,11 @@
 import { Button } from '@carbon/react';
-import { closeWorkspaceGroup2, useLayoutType, useSession, userHasAccess, useWorkspace2Context } from '@openmrs/esm-framework';
+import {
+  closeWorkspaceGroup2,
+  useLayoutType,
+  userHasAccess,
+  useSession,
+  useWorkspace2Context,
+} from '@openmrs/esm-framework';
 import React from 'react';
 import { useTranslation } from 'react-i18next';
 import { wardEditPrivilege } from '../../constant';

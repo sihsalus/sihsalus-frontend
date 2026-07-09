@@ -3,7 +3,8 @@
  * with the most relevant identity document (DNI preferred, HCE fallback).
  */
 
-import { ConfigurableLink, getPreferredIdentifier } from '@openmrs/esm-framework';
+import { ConfigurableLink } from '@openmrs/esm-framework';
+import { getPreferredIdentifier } from '@openmrs/esm-utils';
 import { type EmergencyQueueEntry } from '../../../resources/emergency.resource';
 
 /** Shared props interface for all emergency queue table cell components. */

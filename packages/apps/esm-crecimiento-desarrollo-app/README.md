@@ -22,14 +22,15 @@ Terminología de dominio: visita = consulta, encounter = atención, appointment 
 
 ## TODO content/backend
 
-- Validar los UUIDs de CRED Controls. `consultationTime`, `controlNumber` y `attendedAge` comparten el mismo UUID por copy-paste y deben apuntar a conceptos distintos.
-- Definir el concept set real para `CRED.perinatalConceptSetUuid`; actualmente queda vacío y marcado pendiente de OCL.
-- Validar en content/QLTY los UUIDs sintéticos usados por Test Peruano (`c401...`) y ESAVI (`f000...`). El frontend ya tiene defaults, pero pueden fallar si el paquete de contenido no los instala.
-- Confirmar que el guardado de reacción adversa ESAVI tenga en content el encounter type `vaccinationAdministration`, el form `adverseReactionForm` y los conceptos configurados en `adverseReactionReporting`.
-- Validar que los formularios placeholder de `formsList` existan en backend antes de exponerlos en el selector CRED: EDI/TEA/salud mental (`c109...` a `c111...`) y formularios normativos (`c212...` a `c225...`). Para Nutrición Infantil, usar el UUID real del Form cargado en OpenMRS, no el `uuid` interno del JSON Ampath (`c106...` a `c108...`).
+- Usar siempre `external_id` de OCL como UUID de OpenMRS. El campo `uuid` de OCL es interno/versionado y no debe entrar en config frontend.
+- Crear en content un concepto numérico específico para `controlNumber`; DEV/OCL no tiene un concepto inequívoco de número de control CRED, por eso queda vacío.
+- Normalizar `attendedAge` antes de configurarlo: DEV/OCL tiene `Edad del niño (meses)` (`1410AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA`), pero el workspace hoy maneja labels textuales; solo debe persistirse si el valor enviado queda en meses numéricos.
+- Crear/asignar privilegios OpenMRS para `app:cred.*`; en DEV no existen y solo el rol `System Developer` pasa los guards por bypass.
 - Configurar `credScheduling.appointmentServiceUuid` con el servicio real de citas CRED; si queda vacío, la generación de citas debe permanecer oculta o mostrar error claro.
 - Corregir edición vs creación en widgets que abren form engine con `encounterUuid: ''`; varios resúmenes todavía crean registros nuevos en vez de editar el encounter existente.
 - Revisar `useCreateCarePlanAppointments`: hoy queda como helper TODO para planes de cuidado (madre gestante, CRED y vacunación), pero no está integrado como contrato estable.
+
+Validado en DEV/OCL: `CRED-001` a `CRED-027`, `INMU-002-REPORTE ESAVI`, encounter type `vaccinationAdministration`, `consultationTime` = `Hora` (`2c67cd3d-407c-4f4d-bdf7-0f32b42ccfb4`), `CRED.perinatalConceptSetUuid` = `Antecedentes de Riesgo Perinatal` (`9dce2946-9fda-4d62-b68e-d62711801189`), psicoprofilaxis/riesgo obstétrico/causa probable de muerte usan `external_id` existentes, y los conceptos de Test Peruano/ESAVI configurados existen, están publicados/no retirados cuando aplica, y son consultables por REST.
 
 ## TODO QA/QLTY
 

@@ -30,19 +30,29 @@ const getAttributeValue = (attributeType, value) => {
 const VisitAttributeTags: React.FC<VisitAttributeTagsProps> = ({ patientUuid }) => {
   const { currentVisit } = useVisitOrOfflineVisit(patientUuid);
   const { visitAttributeTypes } = useConfig<ChartConfig>();
+  const visibleVisitAttributeTypes = new Set(
+    (visitAttributeTypes ?? [])
+      .filter(({ displayInThePatientBanner }) => displayInThePatientBanner)
+      .map(({ uuid }) => uuid),
+  );
+
+  if (currentVisit?.voided || !Array.isArray(currentVisit?.attributes)) {
+    return null;
+  }
 
   return (
     <>
-      {currentVisit?.attributes
-        ?.filter(
-          (attribute) =>
-            visitAttributeTypes.find(({ uuid }) => attribute?.attributeType?.uuid === uuid)?.displayInThePatientBanner,
-        )
-        .map((attribute) => (
-          <Tag key={attribute?.attributeType?.uuid} type="gray">
-            {getAttributeValue(attribute?.attributeType, attribute?.value)}
-          </Tag>
-        ))}
+      {currentVisit.attributes
+        .filter((attribute) => visibleVisitAttributeTypes.has(attribute?.attributeType?.uuid))
+        .map((attribute) => {
+          const value = getAttributeValue(attribute?.attributeType, attribute?.value);
+
+          return value !== null && value !== undefined && value !== '' ? (
+            <Tag key={attribute?.uuid ?? attribute?.attributeType?.uuid} type="gray">
+              {String(value)}
+            </Tag>
+          ) : null;
+        })}
     </>
   );
 };

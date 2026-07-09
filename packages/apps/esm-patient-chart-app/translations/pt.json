@@ -176,6 +176,7 @@
   "visitRestoredSuccessfully": "{{visit}} restaurada com sucesso",
   "visits": "visitas",
   "Visits": "Visitas",
+  "visitStartDateCannotBeBeforeBirthDate": "A data de início da visita não pode ser anterior à data de nascimento do paciente",
   "visitStartDatetime": "Data e hora de início da visita",
   "visitStarted": "Visita iniciada",
   "visitStartedSuccessfully": "{{visit}} iniciada com sucesso",

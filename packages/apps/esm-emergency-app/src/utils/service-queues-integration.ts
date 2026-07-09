@@ -97,3 +97,48 @@ export function useServiceQueuesLocationAndName(): {
     locationName: selectedQueueLocationName || undefined,
   };
 }
+
+/**
+ * Hook to get the active filters selected in service-queues.
+ *
+ * Emergency components use this when they are rendered inside service-queues so
+ * the standard header filters remain authoritative.
+ */
+export function useServiceQueuesFilters(): {
+  locationUuid?: string;
+  locationName?: string;
+  serviceUuid?: string;
+  statusUuid?: string;
+} {
+  const store: StoreApi<
+    Pick<
+      ServiceQueuesStore,
+      'selectedQueueLocationUuid' | 'selectedQueueLocationName' | 'selectedServiceUuid' | 'selectedQueueStatusUuid'
+    >
+  > = getServiceQueuesStore() ?? {
+    getState: () => ({
+      selectedQueueLocationUuid: undefined,
+      selectedQueueLocationName: undefined,
+      selectedServiceUuid: undefined,
+      selectedQueueStatusUuid: undefined,
+    }),
+    setState: () => undefined,
+    getInitialState: () => ({
+      selectedQueueLocationUuid: undefined,
+      selectedQueueLocationName: undefined,
+      selectedServiceUuid: undefined,
+      selectedQueueStatusUuid: undefined,
+    }),
+    subscribe: () => () => undefined,
+    destroy: () => undefined,
+  };
+
+  const { selectedQueueLocationUuid, selectedQueueLocationName, selectedServiceUuid, selectedQueueStatusUuid } =
+    useStore(store);
+  return {
+    locationUuid: selectedQueueLocationUuid || undefined,
+    locationName: selectedQueueLocationName || undefined,
+    serviceUuid: selectedServiceUuid || undefined,
+    statusUuid: selectedQueueStatusUuid || undefined,
+  };
+}

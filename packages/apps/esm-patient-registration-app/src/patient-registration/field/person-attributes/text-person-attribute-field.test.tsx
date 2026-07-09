@@ -1,4 +1,4 @@
-import { render, screen } from '@testing-library/react';
+import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { Form, Formik } from 'formik';
 
@@ -45,16 +45,67 @@ describe('TextPersonAttributeField', () => {
     render(
       <Formik initialValues={{}} onSubmit={() => {}}>
         <Form>
-          <TextPersonAttributeField
-            id="phone"
-            personAttributeType={mockPersonAttributeType}
-            placeholder="012345678"
-          />
+          <TextPersonAttributeField id="phone" personAttributeType={mockPersonAttributeType} placeholder="012345678" />
         </Form>
       </Formik>,
     );
 
     expect(screen.getByPlaceholderText('012345678')).toBeInTheDocument();
+  });
+
+  it('allows phone field clipboard shortcuts and blocks plain invalid keystrokes', () => {
+    render(
+      <Formik initialValues={{}} onSubmit={() => {}}>
+        <Form>
+          <TextPersonAttributeField id="mobilePhone" personAttributeType={mockPersonAttributeType} />
+        </Form>
+      </Formik>,
+    );
+
+    const textbox = screen.getByRole('textbox', { name: /referred by \(optional\)/i });
+
+    expect(fireEvent.keyDown(textbox, { key: 'v', metaKey: true })).toBe(true);
+    expect(fireEvent.keyDown(textbox, { key: 'v', ctrlKey: true })).toBe(true);
+    expect(fireEvent.keyDown(textbox, { key: 'e' })).toBe(false);
+  });
+
+  it('sanitizes pasted phone values', async () => {
+    render(
+      <Formik initialValues={{}} onSubmit={() => {}}>
+        <Form>
+          <TextPersonAttributeField
+            id="mobilePhone"
+            personAttributeType={mockPersonAttributeType}
+            validationRegex="^(?:\\+51)?9[0-9]{8}$"
+          />
+        </Form>
+      </Formik>,
+    );
+
+    const textbox = screen.getByRole('textbox', { name: /referred by \(optional\)/i });
+    fireEvent.paste(textbox, { clipboardData: { getData: () => '+51 918-273-645' } });
+
+    await waitFor(() => expect(textbox).toHaveValue('+51918273645'));
+  });
+
+  it('keeps regex validation for pasted phone values', async () => {
+    render(
+      <Formik initialValues={{}} onSubmit={() => {}}>
+        <Form>
+          <TextPersonAttributeField
+            id="phone"
+            personAttributeType={mockPersonAttributeType}
+            validationRegex="^(?:(?:\\+51)?[1-8][0-9]{7}|0[1-8][0-9]{7})$"
+          />
+        </Form>
+      </Formik>,
+    );
+
+    const textbox = screen.getByRole('textbox', { name: /referred by \(optional\)/i });
+    fireEvent.paste(textbox, { clipboardData: { getData: () => '999888777' } });
+    fireEvent.blur(textbox);
+
+    await waitFor(() => expect(screen.getByText(/invalid input/i)).toBeInTheDocument());
   });
 
   it('validates the input with the provided validationRegex', async () => {

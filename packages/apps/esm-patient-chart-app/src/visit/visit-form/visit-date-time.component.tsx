@@ -1,13 +1,16 @@
 import { DatePicker, DatePickerInput, SelectItem, TimePicker, TimePickerSelect } from '@carbon/react';
 import { ResponsiveWrapper } from '@openmrs/esm-framework';
-import { type amPm } from '@openmrs/esm-patient-common-lib';
 import classNames from 'classnames';
 import dayjs from 'dayjs';
 import React from 'react';
 import { Controller, useFormContext } from 'react-hook-form';
 import { useTranslation } from 'react-i18next';
-
-import { type VisitFormData } from './visit-form.resource';
+import {
+  normalizeVisitTimeFormatInput,
+  normalizeVisitTimeInput,
+  sanitizeVisitTimeInput,
+  type VisitFormData,
+} from './visit-form.resource';
 import styles from './visit-form.scss';
 
 interface VisitDateTimeFieldProps {
@@ -83,10 +86,13 @@ const VisitDateTimeField: React.FC<VisitDateTimeFieldProps> = ({
                   invalid={Boolean(errors[timeFieldName])}
                   invalidText={errors[timeFieldName]?.message}
                   labelText={t('time', 'Time')}
-                  onBlur={onBlur}
-                  onChange={(event) => onChange(event.target.value as amPm)}
+                  onBlur={(event) => {
+                    onChange(normalizeVisitTimeInput(event.target.value));
+                    onBlur();
+                  }}
+                  onChange={(event) => onChange(sanitizeVisitTimeInput(event.target.value))}
                   pattern="^(0[1-9]|1[0-2]):([0-5][0-9])$"
-                  value={value}
+                  value={value ?? ''}
                 >
                   <Controller
                     name={timeFormatFieldName}
@@ -98,10 +104,9 @@ const VisitDateTimeField: React.FC<VisitDateTimeFieldProps> = ({
                           [styles.timePickerSelectError]: errors[timeFormatFieldName],
                         })}
                         id={`${timeFormatFieldName}Input`}
-                        onChange={(event) => onChange(event.target.value as amPm)}
-                        value={value}
+                        onChange={(event) => onChange(normalizeVisitTimeFormatInput(event.target.value))}
+                        value={normalizeVisitTimeFormatInput(value) ?? ''}
                       >
-                        <SelectItem value="" text="" />
                         <SelectItem value="AM" text="AM" />
                         <SelectItem value="PM" text="PM" />
                       </TimePickerSelect>

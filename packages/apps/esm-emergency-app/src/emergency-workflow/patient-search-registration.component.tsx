@@ -29,8 +29,9 @@ import {
 } from '@carbon/react';
 import { CheckmarkFilled, SendFilled, User, UserFollow } from '@carbon/react/icons';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { getPreferredIdentifier, OpenmrsDatePicker, showSnackbar, useConfig } from '@openmrs/esm-framework';
+import { OpenmrsDatePicker, showSnackbar, useConfig } from '@openmrs/esm-framework';
 import {
+  getPreferredIdentifier,
   shouldPreventPlainNumberKey,
   shouldPreventPlainNumberPaste,
   validatePlainNumberInput,
@@ -61,7 +62,11 @@ import { usePatientSearch } from './usePatientSearch';
 // ============================================================================
 
 interface PatientSearchRegistrationProps {
-  onPatientQueued: (patientUuid: string, patientData: SearchedPatient, priorityLevel: InitialPriority) => void;
+  onPatientQueued: (
+    patientUuid: string,
+    patientData: SearchedPatient,
+    priorityLevel: InitialPriority,
+  ) => Promise<void> | void;
 }
 
 const defaultNationalityCountryCode = 'PE';
@@ -134,13 +139,12 @@ function getIdentificationStatusAttributeValue(
   config: Pick<Config['patientRegistration'], 'identificationStatusConcepts'>,
   identificationStatus: string,
 ) {
-  const statusConceptUuid =
-    {
-      pending: config.identificationStatusConcepts.pendingUuid,
-      partial: config.identificationStatusConcepts.partialUuid,
-      confirmed: config.identificationStatusConcepts.confirmedUuid,
-      merged: config.identificationStatusConcepts.mergedUuid,
-    }[identificationStatus];
+  const statusConceptUuid = {
+    pending: config.identificationStatusConcepts.pendingUuid,
+    partial: config.identificationStatusConcepts.partialUuid,
+    confirmed: config.identificationStatusConcepts.confirmedUuid,
+    merged: config.identificationStatusConcepts.mergedUuid,
+  }[identificationStatus];
 
   return statusConceptUuid ?? identificationStatus;
 }
@@ -590,7 +594,7 @@ const PatientSearchRegistration: React.FC<PatientSearchRegistrationProps> = ({ o
     if (!readyPatient || !initialPriority) return;
     setIsSubmitting(true);
     try {
-      onPatientQueued(readyPatient.uuid, readyPatient, initialPriority);
+      await onPatientQueued(readyPatient.uuid, readyPatient, initialPriority);
     } finally {
       setIsSubmitting(false);
     }
@@ -634,7 +638,8 @@ const PatientSearchRegistration: React.FC<PatientSearchRegistrationProps> = ({ o
                   {t('registerNewPatient', 'Registrar nuevo paciente')}
                 </Button>
                 <Button
-                  kind="danger--tertiary"
+                  className={styles.unidentifiedPatientButton}
+                  kind="tertiary"
                   renderIcon={UserFollow}
                   onClick={() => handleOpenRegistrationForm(true)}
                   size="sm"
@@ -1242,6 +1247,8 @@ const PatientSearchRegistration: React.FC<PatientSearchRegistrationProps> = ({ o
             >
               {isSubmitting ? (
                 <InlineLoading description={t('sending', 'Enviando...')} />
+              ) : initialPriority === 'emergency' ? (
+                t('sendToImmediateAttention', 'Enviar a atención inmediata')
               ) : (
                 t('sendToTriageQueue', 'Enviar a cola de triaje')
               )}

@@ -322,10 +322,7 @@ function interpolateZScore(
   return lowerPoint.zScore + (upperPoint.zScore - lowerPoint.zScore) * ratio;
 }
 
-function getInterpretationCode(
-  category: keyof typeof CategoryCodes,
-  zScore: number,
-): GrowthChartInterpretationCode {
+function getInterpretationCode(category: keyof typeof CategoryCodes, zScore: number): GrowthChartInterpretationCode {
   if (isWeightForLengthHeightCategory(category)) {
     if (zScore <= -3) return 'severeWasting';
     if (zScore < -2) return 'moderateWasting';

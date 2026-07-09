@@ -1,6 +1,12 @@
 import { Button, InlineNotification } from '@carbon/react';
 import { Add } from '@carbon/react/icons';
-import { useAppContext, useSession, userHasAccess, Workspace2, type Workspace2DefinitionProps } from '@openmrs/esm-framework';
+import {
+  useAppContext,
+  userHasAccess,
+  useSession,
+  Workspace2,
+  type Workspace2DefinitionProps,
+} from '@openmrs/esm-framework';
 import React, { type ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
 import { wardEditPrivilege } from '../../constant';

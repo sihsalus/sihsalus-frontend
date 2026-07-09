@@ -1,7 +1,5 @@
 import {
-  Button,
   DataTable,
-  InlineLoading,
   Table,
   TableBody,
   TableCell,
@@ -10,7 +8,6 @@ import {
   TableHeader,
   TableRow,
 } from '@carbon/react';
-import { Add } from '@carbon/react/icons';
 import { formatDate, useConfig } from '@openmrs/esm-framework';
 import { launchPatientWorkspace } from '@openmrs/esm-patient-common-lib';
 import React from 'react';
@@ -18,7 +15,7 @@ import { useTranslation } from 'react-i18next';
 import type { ConfigObject } from '../config-schema';
 import { useChiefComplaint } from '../hooks/useChiefComplaint';
 import { patientFormEntryWorkspace } from '../utils/constants';
-import styles from './consulta-externa-dashboard.scss';
+import ClinicalHistoryCard from './clinical-history-card.component';
 
 interface MotivoConsultaProps {
   patientUuid: string;
@@ -27,7 +24,7 @@ interface MotivoConsultaProps {
 const MotivoConsulta: React.FC<MotivoConsultaProps> = ({ patientUuid }) => {
   const { t } = useTranslation();
   const config = useConfig<ConfigObject>();
-  const { complaints, isLoading } = useChiefComplaint(
+  const { complaints, isLoading, error } = useChiefComplaint(
     patientUuid,
     config.encounterTypes?.externalConsultation,
     config.concepts?.chiefComplaintUuid,
@@ -53,54 +50,43 @@ const MotivoConsulta: React.FC<MotivoConsultaProps> = ({ patientUuid }) => {
     });
   };
 
-  if (isLoading) {
-    return <InlineLoading description={t('loading', 'Cargando...')} />;
-  }
-
   return (
-    <div className={styles.widgetContainer}>
-      <div className={styles.tableHeader}>
-        <span className={styles.tableHeaderTitle}>
-          {t('chiefComplaintHistory', 'Historial de Motivos de Consulta')}
-        </span>
-        <Button kind="ghost" size="sm" renderIcon={Add} onClick={handleLaunchForm}>
-          {t('addChiefComplaint', 'Registrar Motivo')}
-        </Button>
-      </div>
-
-      {rows.length === 0 ? (
-        <div className={styles.emptyState}>
-          <p>{t('noChiefComplaintData', 'No hay motivos de consulta registrados para este paciente.')}</p>
-        </div>
-      ) : (
-        <DataTable rows={rows} headers={headers} size="sm">
-          {({ rows: tableRows, headers: tableHeaders, getTableProps, getHeaderProps, getRowProps }) => (
-            <TableContainer>
-              <Table {...getTableProps()} aria-label={t('chiefComplaintHistory', 'Historial de Motivos de Consulta')}>
-                <TableHead>
-                  <TableRow>
-                    {tableHeaders.map((header) => (
-                      <TableHeader key={header.key} {...getHeaderProps({ header })}>
-                        {header.header}
-                      </TableHeader>
+    <ClinicalHistoryCard
+      title={t('chiefComplaintHistory', 'Historial de Motivos de Consulta')}
+      actionLabel={t('addChiefComplaint', 'Registrar Motivo')}
+      empty={rows.length === 0}
+      emptyMessage={t('noChiefComplaintData', 'No hay motivos de consulta registrados para este paciente.')}
+      error={error}
+      isLoading={isLoading}
+      onAction={handleLaunchForm}
+    >
+      <DataTable rows={rows} headers={headers} size="sm">
+        {({ rows: tableRows, headers: tableHeaders, getTableProps, getHeaderProps, getRowProps }) => (
+          <TableContainer>
+            <Table {...getTableProps()} aria-label={t('chiefComplaintHistory', 'Historial de Motivos de Consulta')}>
+              <TableHead>
+                <TableRow>
+                  {tableHeaders.map((header) => (
+                    <TableHeader key={header.key} {...getHeaderProps({ header })}>
+                      {header.header}
+                    </TableHeader>
+                  ))}
+                </TableRow>
+              </TableHead>
+              <TableBody>
+                {tableRows.map((row) => (
+                  <TableRow key={row.id} {...getRowProps({ row })}>
+                    {row.cells.map((cell) => (
+                      <TableCell key={cell.id}>{cell.value}</TableCell>
                     ))}
                   </TableRow>
-                </TableHead>
-                <TableBody>
-                  {tableRows.map((row) => (
-                    <TableRow key={row.id} {...getRowProps({ row })}>
-                      {row.cells.map((cell) => (
-                        <TableCell key={cell.id}>{cell.value}</TableCell>
-                      ))}
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            </TableContainer>
-          )}
-        </DataTable>
-      )}
-    </div>
+                ))}
+              </TableBody>
+            </Table>
+          </TableContainer>
+        )}
+      </DataTable>
+    </ClinicalHistoryCard>
   );
 };
 

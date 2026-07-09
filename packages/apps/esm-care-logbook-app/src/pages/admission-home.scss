@@ -105,7 +105,7 @@
 
 .table {
   width: 100%;
-  min-width: 116rem;
+  min-width: 117rem;
   table-layout: fixed;
 }
 
@@ -123,7 +123,7 @@
 }
 
 .dateColumn {
-  width: 6rem;
+  width: 9rem;
 }
 
 .identifierColumn {
@@ -152,6 +152,10 @@
 
 .addressColumn {
   width: 12rem;
+}
+
+.sexColumn {
+  width: 5rem;
 }
 
 .ageColumn {

@@ -23,6 +23,10 @@ vi.mock('./queue-service.resource', () => ({
       { uuid: '5f017eb0-b035-4acd-b284-da45f5067502', display: 'Concept 2' },
     ],
   }),
+  useQueueConceptSets: () => ({
+    priorityConceptSet: { uuid: '8f017eb0-b035-4acd-b284-da45f5067502', display: 'Priorities' },
+    statusConceptSet: { uuid: '9f017eb0-b035-4acd-b284-da45f5067502', display: 'Statuses' },
+  }),
   saveQueue: vi.fn(() => Promise.resolve({ status: 201 })),
 }));
 
@@ -38,7 +42,7 @@ vi.mock('../create-queue-entry/hooks/useQueueLocations', () => ({
 describe('QueueServiceForm', () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    mockSaveQueue.mockResolvedValue({ status: 201 } as any);
+    mockSaveQueue.mockResolvedValue({ status: 201 } as Awaited<ReturnType<typeof saveQueue>>);
     mockUseLayoutType.mockReturnValue('tablet');
   });
 
@@ -53,6 +57,12 @@ describe('QueueServiceForm', () => {
     const locationSelect = screen.getByRole('combobox', {
       name: /select a location/i,
     });
+    const priorityConceptSetSelect = screen.getByRole('combobox', {
+      name: /priority concept set/i,
+    });
+    const statusConceptSetSelect = screen.getByRole('combobox', {
+      name: /status concept set/i,
+    });
     const cancelButton = screen.getByRole('button', { name: /cancel/i });
     const saveButton = screen.getByRole('button', { name: /save/i });
     expect(cancelButton).toBeInTheDocument();
@@ -61,6 +71,8 @@ describe('QueueServiceForm', () => {
     expect(queueNameInput).not.toBeInvalid();
     expect(serviceTypeSelect).toBeInTheDocument();
     expect(serviceTypeSelect).not.toBeInvalid();
+    expect(priorityConceptSetSelect).toHaveValue('8f017eb0-b035-4acd-b284-da45f5067502');
+    expect(statusConceptSetSelect).toHaveValue('9f017eb0-b035-4acd-b284-da45f5067502');
 
     await user.click(saveButton);
     expect(queueNameInput).toBeInvalid();
@@ -100,6 +112,8 @@ describe('QueueServiceForm', () => {
     expect(mockSaveQueue).toHaveBeenCalledWith(
       'Test Queue',
       '6f017eb0-b035-4acd-b284-da45f5067502',
+      '8f017eb0-b035-4acd-b284-da45f5067502',
+      '9f017eb0-b035-4acd-b284-da45f5067502',
       '',
       '34567eb0-b035-4acd-b284-da45f5067502',
     );

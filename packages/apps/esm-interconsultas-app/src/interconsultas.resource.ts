@@ -8,6 +8,7 @@ import type {
   InterconsultaResponseObs,
   InterconsultaStatus,
   InterconsultaTrayFilter,
+  OpenmrsRef,
   OrderableService,
 } from './types';
 
@@ -17,6 +18,7 @@ export const ORDER_CUSTOM_REP =
   'orderer:(uuid,display),encounter:(uuid,location:(uuid,display),visit:(uuid)))';
 
 const FULFILLER_COMMENT_MAX_LENGTH = 1024;
+const ORDER_QUERY_LIMIT = 100;
 
 /**
  * Deriva el estado normativo de la interconsulta a partir de la orden.
@@ -62,7 +64,7 @@ export function matchesTrayFilter(order: InterconsultaOrder, filter: Interconsul
 }
 
 export function interconsultaOrdersUrl(orderTypeUuid: string, patientUuid?: string): string {
-  const base = `${restBaseUrl}/order?orderTypes=${orderTypeUuid}&v=${ORDER_CUSTOM_REP}`;
+  const base = `${restBaseUrl}/order?orderTypes=${orderTypeUuid}&v=${ORDER_CUSTOM_REP}&limit=${ORDER_QUERY_LIMIT}`;
   return patientUuid ? `${base}&patient=${patientUuid}` : base;
 }
 
@@ -251,7 +253,7 @@ export async function createInterconsulta(payload: CreateInterconsultaPayload, a
     throw new Error(`No se pudo crear el encuentro de la interconsulta (${encounterResponse.status})`);
   }
 
-  return openmrsFetch<InterconsultaOrder>(`${restBaseUrl}/order`, {
+  const orderResponse = await openmrsFetch<InterconsultaOrder>(`${restBaseUrl}/order`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     signal: abortController?.signal,
@@ -271,6 +273,12 @@ export async function createInterconsulta(payload: CreateInterconsultaPayload, a
         : {}),
     },
   });
+
+  if (!orderResponse.ok) {
+    throw new Error(`No se pudo crear la orden de interconsulta (${orderResponse.status})`);
+  }
+
+  return orderResponse;
 }
 
 /**
@@ -318,13 +326,55 @@ export function useDestinationServices(searchTerm: string) {
 
   const services = useMemo(() => {
     const results = data?.data?.results ?? [];
-    if (!hasSets) {
-      return results.map(({ uuid, display }) => ({ uuid, display }));
-    }
-    const members = results.flatMap((set) => set.setMembers ?? []);
-    const lowerTerm = searchTerm?.trim().toLowerCase();
-    return lowerTerm ? members.filter((member) => member.display?.toLowerCase().includes(lowerTerm)) : members;
+    return getDestinationServicesFromConceptResults(results, hasSets, searchTerm);
   }, [data, hasSets, searchTerm]);
 
   return { services, isLoading, error };
+}
+
+export function useAvailableProviders(searchTerm: string, enabled = true) {
+  const url = enabled
+    ? `${restBaseUrl}/provider?q=${encodeURIComponent(searchTerm.trim())}` + '&v=custom:(uuid,display,retired)&limit=25'
+    : null;
+
+  const { data, error, isLoading } = useSWR<{
+    data: { results: Array<OpenmrsRef & { retired?: boolean }> };
+  }>(url, openmrsFetch);
+
+  const providers = useMemo(() => getAvailableProvidersFromResults(data?.data?.results ?? []), [data]);
+
+  return { providers, isLoading, error };
+}
+
+export function getDestinationServicesFromConceptResults(
+  results: Array<OrderableService & { setMembers?: Array<OrderableService> }>,
+  hasSets: boolean,
+  searchTerm: string,
+) {
+  const lowerTerm = searchTerm?.trim().toLowerCase();
+  const sourceServices = hasSets ? results.flatMap((set) => set.setMembers ?? []) : results;
+  const servicesByUuid = new Map<string, OrderableService>();
+
+  for (const service of sourceServices) {
+    if (!service.uuid || !service.display) {
+      continue;
+    }
+    if (lowerTerm && !service.display.toLowerCase().includes(lowerTerm)) {
+      continue;
+    }
+    if (!servicesByUuid.has(service.uuid)) {
+      servicesByUuid.set(service.uuid, { uuid: service.uuid, display: service.display });
+    }
+  }
+
+  return [...servicesByUuid.values()].sort((a, b) => a.display.localeCompare(b.display));
+}
+
+export function getAvailableProvidersFromResults(results: Array<OpenmrsRef & { retired?: boolean }>) {
+  return results
+    .filter(
+      (provider) => provider.uuid && provider.display && !provider.retired && !/^UNKNOWN\b/i.test(provider.display),
+    )
+    .map(({ uuid, display }) => ({ uuid, display }))
+    .sort((a, b) => (a.display ?? '').localeCompare(b.display ?? ''));
 }

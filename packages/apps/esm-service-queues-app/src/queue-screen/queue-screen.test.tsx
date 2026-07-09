@@ -9,11 +9,6 @@ vi.mock('./useActiveTickets', () => ({
   useActiveTickets: vi.fn(),
 }));
 
-vi.mock('../helpers/helpers', () => ({
-  useSelectedQueueLocationName: vi.fn().mockReturnValue('Room A'),
-  useSelectedQueueLocationUuid: vi.fn().mockReturnValue(''),
-}));
-
 describe('QueueScreen component', () => {
   test('renders loading skeleton when data is loading', () => {
     mockUseActiveTickets.mockReturnValue({ isLoading: true, activeTickets: [], error: undefined, mutate: vi.fn() });

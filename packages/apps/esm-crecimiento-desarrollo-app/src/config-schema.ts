@@ -123,7 +123,7 @@ export const configSchema = {
       eedp15Months: 'Página (30, 31, 32 y 33) EEDP (15 meses)',
       eedp18Months: 'Página (30, 31, 32 y 33) EEDP (18 meses)',
       eedp21Months: 'Página (30, 31, 32 y 33) EEDP (21 meses)',
-      tepsi: '(Página 34, 35 y 36) TEPSI',
+      tepsi: '1fe2f9e8-a9b1-34d2-94ce-b897ca2e16cc',
 
       // Assessment Forms
       riskInterview0to30: '(Página 19) PRIMERA ENTREVISTA EN BUSCA DE FACTORES DE RIESGO (0 - 30 meses)',
@@ -375,8 +375,8 @@ export const configSchema = {
     probableCauseOfDeathConceptUuid: {
       _type: Type.ConceptUuid,
       _description:
-        'Probable cause of death for a given patient determined from interviewing a family member or other non-medical personnel',
-      _default: '1599AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA',
+        'Causa probable de muerte registrada como texto a partir de entrevista o información no médica',
+      _default: 'e71d57a1-435b-5cd6-a24f-7cc77e0f65a0',
     },
     problemListConceptUuid: {
       _type: Type.ConceptUuid,
@@ -463,21 +463,17 @@ export const configSchema = {
     },
 
     // CRED Controls
-    // TODO: verify distinct concept UUIDs for each field — currently all three share the same UUID (copy-paste error)
+    // Use OCL external_id/OpenMRS UUIDs here. The OCL uuid field is internal/versioned.
+    // Do not point these values at newbornVitalSignsConceptSetUuid: that UUID is a ConvSet, not a field concept.
     consultationTime: {
       _type: Type.ConceptUuid,
       _description: 'Hora de consulta CRED',
-      _default: 'a855816a-8bc2-43c8-9cf7-80090dabc47d', // TODO: verify distinct concept UUID
+      _default: '2c67cd3d-407c-4f4d-bdf7-0f32b42ccfb4',
     },
     controlNumber: {
       _type: Type.ConceptUuid,
-      _description: 'Número de control CRED',
-      _default: 'a855816a-8bc2-43c8-9cf7-80090dabc47d', // TODO: verify distinct concept UUID
-    },
-    attendedAge: {
-      _type: Type.ConceptUuid,
-      _description: 'Edad atendida en el control CRED',
-      _default: 'a855816a-8bc2-43c8-9cf7-80090dabc47d', // TODO: verify distinct concept UUID
+      _description: 'Número de control CRED; vacío hasta publicar/importar el concepto en content',
+      _default: '',
     },
   },
 
@@ -540,8 +536,8 @@ export const configSchema = {
     // Concept Sets
     perinatalConceptSetUuid: {
       _type: Type.ConceptUuid,
-      _description: 'Concept set para el seguimiento del niño sano',
-      _default: '', // TODO: set real concept set UUID from OCL
+      _description: 'Concept set para antecedentes/riesgo perinatal en CRED',
+      _default: '9dce2946-9fda-4d62-b68e-d62711801189',
     },
 
     // Newborn Care Procedures
@@ -781,7 +777,7 @@ export const configSchema = {
     _type: Type.Object,
     _description: 'Configuración de suplementación MMN y prenatal',
     _default: {
-      mmnConceptUuid: 'd80c3551-2a6c-49ac-a541-0b17957f9657',
+      mmnConceptUuid: 'c2010002-0000-4000-8000-000000000002',
       mmnTotalTarget: 360,
       ironConceptUuid: '03a4f101-bf46-4923-97a1-759d926dee00',
       folicAcidConceptUuid: '7418c3a3-4c2a-4943-91db-ae2b561d6ded',
@@ -789,8 +785,8 @@ export const configSchema = {
     },
     mmnConceptUuid: {
       _type: Type.ConceptUuid,
-      _description: 'Concept UUID de multimicronutrientes entregados — OCL: Administración Micronutriente #3162',
-      _default: 'd80c3551-2a6c-49ac-a541-0b17957f9657',
+      _description: 'Concept UUID de cantidad de multimicronutrientes entregados en CRED-002',
+      _default: 'c2010002-0000-4000-8000-000000000002',
     },
     mmnTotalTarget: {
       _type: Type.Number,
@@ -885,7 +881,7 @@ export const configSchema = {
     _description: 'Configuración de psicoprofilaxis obstétrica',
     _default: {
       encounterTypeUuid: '3cde4d44-72f8-4aeb-9025-7a8906a56ae8',
-      conceptUuid: '400ebbfe-bdb6-42b8-a783-226e027e2e05',
+      conceptUuid: 'b6927730-62ef-47a0-80d1-b1926ccea1b8',
       totalSessionsRequired: 6,
     },
     encounterTypeUuid: {
@@ -895,8 +891,8 @@ export const configSchema = {
     },
     conceptUuid: {
       _type: Type.ConceptUuid,
-      _description: 'Concept UUID de psicoprofilaxis obstétrica — OCL: Psicoprofilaxis #1598',
-      _default: '400ebbfe-bdb6-42b8-a783-226e027e2e05',
+      _description: 'Concept UUID de psicoprofilaxis obstétrica',
+      _default: 'b6927730-62ef-47a0-80d1-b1926ccea1b8',
     },
     totalSessionsRequired: {
       _type: Type.Number,
@@ -911,9 +907,9 @@ export const configSchema = {
     _description: 'Configuración de clasificación de riesgo obstétrico',
     _default: {
       classificationConceptUuid: '6b38e548-6cbb-456a-ae5d-51eecba16651',
-      highRiskConceptUuid: '735bfdaa-7005-4dae-90c8-0b45d3f71208',
-      lowRiskConceptUuid: '7be08cd5-d237-445b-b218-42450cfb4874',
-      veryHighRiskConceptUuid: 'f01af67b-322c-4067-b77f-fe0c92148ed1',
+      highRiskConceptUuid: '42fb3768-988c-4793-a0ee-aeee1dad1c73',
+      lowRiskConceptUuid: '5e3ec0eb-9aff-487b-8356-7971f0a08e27',
+      veryHighRiskConceptUuid: '3cfa8293-9bfb-4eca-92ed-9c3be0ffc8b2',
       riskFactorsConceptUuid: '601c996b-1edb-4406-948a-2ba4cc26789a',
     },
     classificationConceptUuid: {
@@ -923,18 +919,18 @@ export const configSchema = {
     },
     highRiskConceptUuid: {
       _type: Type.ConceptUuid,
-      _description: 'Concept UUID para "Riesgo Sanitario Alto" — OCL: #3622',
-      _default: '735bfdaa-7005-4dae-90c8-0b45d3f71208',
+      _description: 'Concept UUID para "Riesgo Sanitario Alto"',
+      _default: '42fb3768-988c-4793-a0ee-aeee1dad1c73',
     },
     lowRiskConceptUuid: {
       _type: Type.ConceptUuid,
-      _description: 'Concept UUID para "Riesgo Sanitario Mínimo" — OCL: #3620',
-      _default: '7be08cd5-d237-445b-b218-42450cfb4874',
+      _description: 'Concept UUID para "Riesgo Sanitario Mínimo"',
+      _default: '5e3ec0eb-9aff-487b-8356-7971f0a08e27',
     },
     veryHighRiskConceptUuid: {
       _type: Type.ConceptUuid,
-      _description: 'Concept UUID para "Riesgo Sanitario Muy Alto" — OCL: #3623',
-      _default: 'f01af67b-322c-4067-b77f-fe0c92148ed1',
+      _description: 'Concept UUID para "Riesgo Sanitario Muy Alto"',
+      _default: '3cfa8293-9bfb-4eca-92ed-9c3be0ffc8b2',
     },
     riskFactorsConceptUuid: {
       _type: Type.ConceptUuid,
@@ -1230,7 +1226,7 @@ export const configSchema = {
     legendConceptSet: {
       _type: Type.ConceptUuid,
       _description: 'UUID of the concept set used for legend items',
-      _default: '', // TODO: set real legend concept set UUID
+      _default: '',
     },
   },
 

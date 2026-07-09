@@ -316,6 +316,42 @@ describe('RelationshipsSection', () => {
     expect(screen.getByRole('searchbox', { name: /full name/i })).toBeInTheDocument();
   });
 
+  it('shows an inline error when an existing person is required but none is selected', async () => {
+    const user = userEvent.setup();
+    mockResourcesContextValue = {
+      ...mockResourcesContextValue,
+      relationshipTypes: relationshipTypes,
+    };
+    const formValues = {
+      relationships: [
+        {
+          action: 'ADD',
+          relatedPersonUuid: '',
+          relationshipType: '057de23f-3d9c-4314-9391-4452970739c6/aIsToB',
+        },
+      ],
+    } as FormValues;
+
+    render(
+      <ResourcesContext.Provider value={mockResourcesContextValue}>
+        <Formik initialValues={formValues} onSubmit={vi.fn()}>
+          <Form>
+            <PatientRegistrationContext.Provider value={{ ...initialContextValues, values: formValues }}>
+              <RelationshipsSection />
+              <button type="submit">Register patient</button>
+            </PatientRegistrationContext.Provider>
+          </Form>
+        </Formik>
+      </ResourcesContext.Provider>,
+    );
+
+    await user.click(screen.getByRole('button', { name: /register patient/i }));
+
+    expect(await screen.findByText('Select an existing person')).toBeInTheDocument();
+    expect(screen.getByRole('tab', { name: /search existing person/i })).toHaveAttribute('aria-selected', 'true');
+    expect(screen.getByRole('tab', { name: /register new person/i })).toHaveAttribute('aria-selected', 'false');
+  });
+
   it('limits responsible person name inputs when creating a new person', async () => {
     const user = userEvent.setup();
     mockResourcesContextValue = {
@@ -382,6 +418,7 @@ describe('RelationshipsSection', () => {
       '42ae5ce0-d64b-11ea-9064-5adc43bbdd24',
     );
     expect(setFieldValue).toHaveBeenCalledWith('relationships[0].relatedPersonName', 'Person 1');
+    expect(setFieldValue).toHaveBeenCalledWith('relationships[0].relatedPersonAge', 35);
   });
 
   it('rejects selecting an underage existing person as the responsible person for a minor patient', async () => {
@@ -418,6 +455,7 @@ describe('RelationshipsSection', () => {
     expect(setFieldValue).not.toHaveBeenCalledWith('relationships[0].relatedPersonUuid', 'minor-person-uuid');
     expect(setFieldValue).toHaveBeenCalledWith('relationships[0].relatedPersonUuid', '');
     expect(setFieldValue).toHaveBeenCalledWith('relationships[0].relatedPersonName', '');
+    expect(setFieldValue).toHaveBeenCalledWith('relationships[0].relatedPersonAge', undefined);
   });
 
   it('seeds one empty relationship row for sections that request a default responsible person form', async () => {
@@ -547,6 +585,36 @@ describe('RelationshipsSection', () => {
     await waitFor(() =>
       expect(screen.getByRole('textbox', { name: /^approximate age$/i })).toHaveAttribute('aria-invalid', 'true'),
     );
+  });
+
+  it('filters non-numeric characters from the new responsible person approximate age', async () => {
+    const user = userEvent.setup();
+    mockResourcesContextValue = {
+      ...mockResourcesContextValue,
+      relationshipTypes: relationshipTypes,
+    };
+
+    render(
+      <ResourcesContext.Provider value={mockResourcesContextValue}>
+        <Formik
+          initialValues={{
+            relationships: [{ action: 'ADD', relatedPersonUuid: '' }],
+          }}
+          onSubmit={null}
+        >
+          <Form>
+            <PatientRegistrationContext.Provider value={initialContextValues}>
+              <RelationshipsSection />
+            </PatientRegistrationContext.Provider>
+          </Form>
+        </Formik>
+      </ResourcesContext.Provider>,
+    );
+
+    await user.click(screen.getByRole('tab', { name: /register new person/i }));
+    await user.type(screen.getByRole('textbox', { name: /approximate age/i }), 'abc12');
+
+    expect(screen.getByRole('textbox', { name: /approximate age/i })).toHaveValue('12');
   });
 
   it('does not create a person until the minimum responsible person data is valid', async () => {

@@ -6,11 +6,6 @@ import Home from './home.component';
 
 const mockUseConfig = vi.mocked(useConfig<ConfigObject>);
 
-vi.mock('./helpers/helpers', async () => ({
-  ...(await vi.importActual('./helpers/helpers')),
-  useSelectedQueueLocationName: vi.fn(() => 'Test Location'),
-}));
-
 mockUseConfig.mockReturnValue({
   ...getDefaultsFromConfigSchema(configSchema),
   visitQueueNumberAttributeUuid: 'c61ce16f-272a-41e7-9924-4c555d0932c5',
@@ -26,6 +21,8 @@ describe('Home Component', () => {
     // Assert that the expected components are rendered
     expect(screen.getByTestId('patient-queue-header')).toBeInTheDocument();
     expect(screen.getByTestId('clinic-metrics')).toBeInTheDocument();
+    expect(document.querySelector('[data-standard-metrics-container]')).toBeInTheDocument();
+    expect(document.querySelector('[data-standard-queue-table-container]')).toBeInTheDocument();
 
     window.history.pushState({}, '', originalPathname || '/');
   });

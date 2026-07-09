@@ -63,9 +63,7 @@ export function useTestTypes(
       ? sorted.filter((c) => {
           const normalizedSearch = normalizeText(searchTerm);
           const displayMatches = normalizeText(c.display).includes(normalizedSearch);
-          const synonymMatches = c.names?.some((name: any) =>
-            normalizeText(name.display).includes(normalizedSearch),
-          );
+          const synonymMatches = c.names?.some((name: any) => normalizeText(name.display).includes(normalizedSearch));
           return displayMatches || synonymMatches;
         })
       : sorted;

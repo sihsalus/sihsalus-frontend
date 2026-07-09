@@ -1,11 +1,4 @@
-import {
-  Accordion,
-  AccordionItem,
-  Button,
-  DataTableSkeleton,
-  InlineLoading,
-  Tag,
-} from '@carbon/react';
+import { Accordion, AccordionItem, Button, DataTableSkeleton, InlineLoading, Tag } from '@carbon/react';
 import { Add } from '@carbon/react/icons';
 import { formatDate, formatDatetime, parseDate } from '@openmrs/esm-framework';
 import { CardHeader, EmptyState, ErrorState, useLaunchWorkspaceRequiringVisit } from '@openmrs/esm-patient-common-lib';

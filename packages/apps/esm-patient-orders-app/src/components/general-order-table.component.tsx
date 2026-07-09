@@ -10,7 +10,7 @@ import {
   TableHeader,
   TableRow,
 } from '@carbon/react';
-import { useLayoutType, openmrsFetch } from '@openmrs/esm-framework';
+import { openmrsFetch, useLayoutType } from '@openmrs/esm-framework';
 import { type Order } from '@openmrs/esm-patient-common-lib';
 import React, { useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -134,7 +134,6 @@ const GeneralOrderTable: React.FC<GeneralOrderProps> = ({ order }) => {
         const memberObs = obs?.groupMembers?.find((o) => o.concept.uuid === memberConcept.uuid);
         const fhirObs = memberObs ? findFhirObs(memberObs.uuid) : null;
         const fhirRanges = extractRangesFromFhirObs(fhirObs);
-
 
         return {
           id: memberConcept.uuid,

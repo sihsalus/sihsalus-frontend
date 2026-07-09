@@ -25,18 +25,18 @@ import {
   ExtensionSlot,
   formatDate,
   type OrderUrgency,
+  openmrsFetch,
   parseDate,
+  restBaseUrl,
   showModal,
   useConfig,
   usePagination,
-  openmrsFetch,
-  restBaseUrl,
-  useSession,
   userHasAccess,
+  useSession,
 } from '@openmrs/esm-framework';
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
-import useSWR from 'swr';
 import { useTranslation } from 'react-i18next';
+import useSWR from 'swr';
 import { type Config } from '../../config-schema';
 import { laboratoryEditPrivilege } from '../../constants';
 import { useLabOrders } from '../../laboratory.resource';
@@ -189,7 +189,10 @@ const OrdersDataTable: React.FC<OrdersDataTableProps> = (props) => {
     );
   }, [resultsViewerConcepts]);
 
-  const { data: fetchedLabsets } = useSWR<Array<LabsetResponse>, Error>(conceptUrls.length ? conceptUrls : null, fetchLabsets);
+  const { data: fetchedLabsets } = useSWR<Array<LabsetResponse>, Error>(
+    conceptUrls.length ? conceptUrls : null,
+    fetchLabsets,
+  );
 
   const labsetOptions = useMemo(() => {
     const options = [{ value: null, display: t('all', 'All') }];
@@ -306,7 +309,9 @@ const OrdersDataTable: React.FC<OrdersDataTableProps> = (props) => {
               };
 
               labOrdersForPatient = labOrdersForPatient.filter((order) => matchInstruction(order.instructions));
-              flattenedLabOrdersForPatient = flattenedLabOrdersForPatient.filter((order) => matchInstruction(order.instructions));
+              flattenedLabOrdersForPatient = flattenedLabOrdersForPatient.filter((order) =>
+                matchInstruction(order.instructions),
+              );
             }
 
             // Sort individual orders by priority (highest priority first)
@@ -531,7 +536,9 @@ const OrdersDataTable: React.FC<OrdersDataTableProps> = (props) => {
                 <Dropdown
                   id="orderInstructionsFilter"
                   initialSelectedItem={
-                    instructionsFilter ? instructionsFilterOptions.find((i) => i.value === instructionsFilter) : instructionsFilterOptions[0]
+                    instructionsFilter
+                      ? instructionsFilterOptions.find((i) => i.value === instructionsFilter)
+                      : instructionsFilterOptions[0]
                   }
                   items={instructionsFilterOptions}
                   itemToString={(item) => item?.display}

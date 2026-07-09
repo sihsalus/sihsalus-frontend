@@ -13,14 +13,14 @@ import {
 import { zodResolver } from '@hookform/resolvers/zod';
 import { type DefaultWorkspaceProps, restBaseUrl, showSnackbar } from '@openmrs/esm-framework';
 import type { TFunction } from 'i18next';
-import React from 'react';
+import React, { useEffect } from 'react';
 import { Controller, useForm } from 'react-hook-form';
 import { useTranslation } from 'react-i18next';
 import { mutate } from 'swr';
 import { z } from 'zod';
 
 import { useQueueLocations } from '../create-queue-entry/hooks/useQueueLocations';
-import { saveQueue, useServiceConcepts } from './queue-service.resource';
+import { saveQueue, useQueueConceptSets, useServiceConcepts } from './queue-service.resource';
 import styles from './queue-service-form.scss';
 
 const createQueueServiceSchema = (t: TFunction) =>
@@ -37,6 +37,18 @@ const createQueueServiceSchema = (t: TFunction) =>
       })
       .trim()
       .min(1, t('queueConceptRequired', 'Queue concept is required')),
+    priorityConceptSet: z
+      .string({
+        required_error: t('priorityConceptSetRequired', 'Priority concept set is required'),
+      })
+      .trim()
+      .min(1, t('priorityConceptSetRequired', 'Priority concept set is required')),
+    statusConceptSet: z
+      .string({
+        required_error: t('statusConceptSetRequired', 'Status concept set is required'),
+      })
+      .trim()
+      .min(1, t('statusConceptSetRequired', 'Status concept set is required')),
     userLocation: z
       .string({
         required_error: t('queueLocationRequired', 'Queue location is required'),
@@ -50,26 +62,50 @@ type QueueServiceFormData = z.infer<ReturnType<typeof createQueueServiceSchema>>
 const QueueServiceForm: React.FC<DefaultWorkspaceProps> = ({ closeWorkspace }) => {
   const { t } = useTranslation();
   const { queueConcepts } = useServiceConcepts();
+  const { priorityConceptSet, statusConceptSet } = useQueueConceptSets();
   const { queueLocations } = useQueueLocations();
 
   const QueueServiceSchema = createQueueServiceSchema(t);
 
   const {
     control,
+    getValues,
     handleSubmit,
     formState: { errors, isSubmitting },
+    setValue,
   } = useForm<QueueServiceFormData>({
     resolver: zodResolver(QueueServiceSchema),
     defaultValues: {
       queueName: '',
       queueServiceType: '',
+      priorityConceptSet: '',
+      statusConceptSet: '',
       userLocation: '',
     },
   });
 
+  useEffect(() => {
+    if (!getValues('priorityConceptSet') && priorityConceptSet?.uuid) {
+      setValue('priorityConceptSet', priorityConceptSet.uuid, { shouldValidate: true });
+    }
+  }, [getValues, priorityConceptSet?.uuid, setValue]);
+
+  useEffect(() => {
+    if (!getValues('statusConceptSet') && statusConceptSet?.uuid) {
+      setValue('statusConceptSet', statusConceptSet.uuid, { shouldValidate: true });
+    }
+  }, [getValues, setValue, statusConceptSet?.uuid]);
+
   const createQueue = async (data: QueueServiceFormData) => {
     try {
-      await saveQueue(data.queueName, data.queueServiceType, '', data.userLocation);
+      await saveQueue(
+        data.queueName,
+        data.queueServiceType,
+        data.priorityConceptSet,
+        data.statusConceptSet,
+        '',
+        data.userLocation,
+      );
 
       showSnackbar({
         title: t('queueServiceCreated', 'Queue service created'),
@@ -157,6 +193,62 @@ const QueueServiceForm: React.FC<DefaultWorkspaceProps> = ({ closeWorkspace }) =
                         {location.name}
                       </SelectItem>
                     ))}
+                </Select>
+              )}
+            />
+          </Layer>
+        </Column>
+        <Column>
+          <Layer className={styles.input}>
+            <Controller
+              name="priorityConceptSet"
+              control={control}
+              render={({ field }) => (
+                <Select
+                  {...field}
+                  labelText={t('priorityConceptSet', 'Priority concept set')}
+                  id="priorityConceptSet"
+                  invalid={!!errors?.priorityConceptSet}
+                  invalidText={errors?.priorityConceptSet?.message}
+                >
+                  <SelectItem text={t('selectPriorityConceptSet', 'Select a priority concept set')} value="" />
+                  {priorityConceptSet ? (
+                    <SelectItem
+                      key={priorityConceptSet.uuid}
+                      text={priorityConceptSet.display}
+                      value={priorityConceptSet.uuid}
+                    >
+                      {priorityConceptSet.display}
+                    </SelectItem>
+                  ) : null}
+                </Select>
+              )}
+            />
+          </Layer>
+        </Column>
+        <Column>
+          <Layer className={styles.input}>
+            <Controller
+              name="statusConceptSet"
+              control={control}
+              render={({ field }) => (
+                <Select
+                  {...field}
+                  labelText={t('statusConceptSet', 'Status concept set')}
+                  id="statusConceptSet"
+                  invalid={!!errors?.statusConceptSet}
+                  invalidText={errors?.statusConceptSet?.message}
+                >
+                  <SelectItem text={t('selectStatusConceptSet', 'Select a status concept set')} value="" />
+                  {statusConceptSet ? (
+                    <SelectItem
+                      key={statusConceptSet.uuid}
+                      text={statusConceptSet.display}
+                      value={statusConceptSet.uuid}
+                    >
+                      {statusConceptSet.display}
+                    </SelectItem>
+                  ) : null}
                 </Select>
               )}
             />

@@ -11,7 +11,7 @@ import { getPatientSearchReturnUrl } from '../search-return-url';
 
 import styles from './patient-search-icon.scss';
 
-type PatientSearchLaunchProps = {}
+type PatientSearchLaunchProps = {};
 
 const PatientSearchLaunch: React.FC<PatientSearchLaunchProps> = () => {
   const { t } = useTranslation();

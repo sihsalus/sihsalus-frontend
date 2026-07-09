@@ -1,4 +1,4 @@
-import { Button, Modal, NumberInput, Select, SelectItem } from '@carbon/react';
+import { Modal, NumberInput, Select, SelectItem } from '@carbon/react';
 import React, { useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 

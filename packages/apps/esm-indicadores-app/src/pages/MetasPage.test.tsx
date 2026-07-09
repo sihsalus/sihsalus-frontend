@@ -2,7 +2,7 @@ import { act, cleanup, fireEvent, screen } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
 import { renderWithSwr } from 'test-utils';
 import type { IndicadorDetail, IndicadorMeta } from '../api/types';
-import { notifyError, notifySuccess, useIndicadores } from '../features/indicadores/hooks';
+import { notifyError, useIndicadores } from '../features/indicadores/hooks';
 import { useDeleteMeta, useMetas, useUpsertMeta } from '../features/metas/hooks';
 import MetasPage from './MetasPage';
 
@@ -10,7 +10,6 @@ vi.mock('../features/indicadores/hooks', async () => ({
   ...(await vi.importActual('../features/indicadores/hooks')),
   useIndicadores: vi.fn(),
   notifyError: vi.fn(),
-  notifySuccess: vi.fn(),
 }));
 
 vi.mock('../features/metas/hooks', async () => ({

@@ -1,7 +1,7 @@
 import { openmrsFetch } from '@openmrs/esm-framework';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
-import { deleteMetaMock, getAllMetasMock, getMetaMock, resetMetasMock, upsertMetaMock } from '../mocks/indicators-data';
+import { getAllMetasMock, resetMetasMock, upsertMetaMock } from '../mocks/indicators-data';
 import { deleteMeta, getAllMetas, getMeta, upsertMeta } from './metas';
 
 const mockedOpenmrsFetch = vi.mocked(openmrsFetch);
@@ -77,7 +77,7 @@ describe('metas API', () => {
       const result = await upsertMeta(payload);
 
       expect(result).toEqual(backendMeta);
-      const [url, init] = mockedOpenmrsFetch.mock.calls[0];
+      const [, init] = mockedOpenmrsFetch.mock.calls[0];
       expect(init?.method).toBe('PUT');
       expect((init?.body as any).valor_meta).toBe(1500);
     });

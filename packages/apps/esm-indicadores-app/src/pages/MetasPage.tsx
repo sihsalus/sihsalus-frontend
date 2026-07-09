@@ -38,7 +38,7 @@ function buildVersionMap(indicators: Array<IndicadorDetail>): Map<string, Versio
 
 const MetasPage: React.FC = () => {
   const { t } = useTranslation();
-  const { data: metas, isLoading, error, refetch } = useMetas();
+  const { data: metas, isLoading, error } = useMetas();
   const { data: indicadoresData } = useIndicadores(1, 100);
   const { upsertMeta } = useUpsertMeta();
   const { deleteMeta } = useDeleteMeta();

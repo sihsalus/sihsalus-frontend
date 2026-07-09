@@ -60,6 +60,7 @@
   "genderLabelText": "Sexo",
   "genderRequired": "Género é obrigatório",
   "genderUnspecified": "Género não especificado",
+  "fieldRequired": "O campo é obrigatório",
   "givenNameLabelText": "Primeiro Nome",
   "givenNameRequired": "Primeiro nome é obrigatório",
   "identifierValueRequired": "O valor do identificador ó obrigatório",

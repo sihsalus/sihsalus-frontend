@@ -116,19 +116,13 @@ function TextObsField({ concept, validationRegex, label, required }: TextObsFiel
   const fieldName = `obs.${concept.uuid}`;
   return (
     <div className={classNames(styles.customField, styles.halfWidthInDesktopView)}>
-      <Field name={fieldName} validate={validateInput}>
-        {({ field, form: { touched, errors }, meta }) => {
-          return (
-            <Input
-              id={fieldName}
-              labelText={label ?? concept.display}
-              required={required}
-              invalid={errors[fieldName] && touched[fieldName]}
-              {...field}
-            />
-          );
-        }}
-      </Field>
+      <Input
+        id={fieldName}
+        name={fieldName}
+        labelText={label ?? concept.display}
+        required={required}
+        validate={validateInput}
+      />
     </div>
   );
 }
@@ -154,33 +148,27 @@ function NumericObsField({ concept, label, required }: NumericObsFieldProps) {
 
   return (
     <div className={classNames(styles.customField, styles.halfWidthInDesktopView)}>
-      <Field name={fieldName} validate={validateNumericInput}>
-        {({ field, form: { touched, errors }, meta }) => {
-          return (
-            <Input
-              id={fieldName}
-              labelText={label ?? concept.display}
-              required={required}
-              invalid={errors[fieldName] && touched[fieldName]}
-              type="number"
-              onKeyDown={(event) => {
-                if (event.ctrlKey || event.metaKey || event.altKey) {
-                  return;
-                }
-                if (shouldPreventPlainNumberKey(event.key)) {
-                  event.preventDefault();
-                }
-              }}
-              onPaste={(event) => {
-                if (shouldPreventPlainNumberPaste(event.clipboardData.getData('text'))) {
-                  event.preventDefault();
-                }
-              }}
-              {...field}
-            />
-          );
+      <Input
+        id={fieldName}
+        name={fieldName}
+        labelText={label ?? concept.display}
+        required={required}
+        validate={validateNumericInput}
+        type="number"
+        onKeyDown={(event) => {
+          if (event.ctrlKey || event.metaKey || event.altKey) {
+            return;
+          }
+          if (shouldPreventPlainNumberKey(event.key)) {
+            event.preventDefault();
+          }
         }}
-      </Field>
+        onPaste={(event) => {
+          if (shouldPreventPlainNumberPaste(event.clipboardData.getData('text'))) {
+            event.preventDefault();
+          }
+        }}
+      />
     </div>
   );
 }
@@ -208,7 +196,7 @@ function DateObsField({ concept, label, required, allowPastDates, allowFutureDat
     <Layer>
       <div className={styles.dobField}>
         <Field name={fieldName}>
-          {({ field, form: { touched, errors }, meta }) => {
+          {({ field, meta }) => {
             return (
               <>
                 <OpenmrsDatePicker
@@ -217,8 +205,8 @@ function DateObsField({ concept, label, required, allowPastDates, allowFutureDat
                   isRequired={required}
                   onChange={onDateChange}
                   labelText={label ?? concept.display}
-                  isInvalid={errors[fieldName] && touched[fieldName]}
-                  invalidText={t(meta.error)}
+                  isInvalid={!!(meta.touched && meta.error)}
+                  invalidText={meta.error ? t(meta.error) : undefined}
                   value={field.value}
                   minDate={!pastDatesAllowed ? new Date() : undefined}
                   maxDate={!futureDatesAllowed ? new Date() : undefined}
@@ -262,7 +250,7 @@ function CodedObsField({ concept, answerConceptSetUuid, label, required, customC
     <div className={classNames(styles.customField, styles.halfWidthInDesktopView)}>
       {!isLoadingConceptAnswers ? (
         <Field name={fieldName}>
-          {({ field, form: { touched, errors }, meta }) => {
+          {({ field, meta }) => {
             return (
               <Layer>
                 <Select
@@ -270,7 +258,8 @@ function CodedObsField({ concept, answerConceptSetUuid, label, required, customC
                   name={fieldName}
                   labelText={label ?? concept?.display}
                   required={required}
-                  invalid={errors[fieldName] && touched[fieldName]}
+                  invalid={!!(meta.touched && meta.error)}
+                  invalidText={meta.error ? t(meta.error) : undefined}
                   {...field}
                 >
                   <SelectItem

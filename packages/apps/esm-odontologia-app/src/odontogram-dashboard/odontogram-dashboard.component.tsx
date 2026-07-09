@@ -1,5 +1,5 @@
-import { Add, Edit, Information, Maximize, TrashCan } from '@carbon/icons-react';
-import { Button, IconButton, Modal, SkeletonPlaceholder, SkeletonText, Tag, Tooltip } from '@carbon/react';
+import { Edit, Information, Maximize, TrashCan } from '@carbon/icons-react';
+import { Button, IconButton, SkeletonPlaceholder, SkeletonText, Tag, Tooltip } from '@carbon/react';
 import {
   formatDate,
   launchWorkspace,
@@ -8,8 +8,7 @@ import {
   useSession,
   userHasAccess,
 } from '@openmrs/esm-framework';
-import { CardHeader } from '@openmrs/esm-patient-common-lib';
-import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { countSolutions } from './count-solutions';
 import OdontogramRecordList from './odontogram-record-list.component';
@@ -66,8 +65,6 @@ const OdontogramDashboard: React.FC<OdontogramDashboardProps> = ({ patientUuid }
   const { groups, baseRecords, isLoading, error, mutate } = useOdontogramHistory(patientUuid);
   const hasBase = baseRecords.length > 0;
   const vigenteBaseUuid = hasBase ? baseRecords[baseRecords.length - 1].encounterUuid : null;
-
-  const [isExpanded, setIsExpanded] = useState(false);
 
   const activeGroup = useMemo(() => {
     if (!groups.length) {
@@ -201,6 +198,23 @@ const OdontogramDashboard: React.FC<OdontogramDashboardProps> = ({ patientUuid }
     });
   }, [selectedRecord, activeBase, patientUuid, mutate, t]);
 
+  const handleViewLarge = useCallback(() => {
+    if (!selectedRecord) {
+      return;
+    }
+    const title =
+      selectedRecord.type === 'base'
+        ? t('initialOdontogram', 'Odontograma inicial')
+        : `${t('evolutiveOdontogram', 'Odontograma evolutivo')} ${selectedAttentionNumber ?? ''}`.trim();
+    launchWorkspace(WORKSPACE_NAME, {
+      patientUuid,
+      workspaceMode: selectedRecord.type,
+      initialData: selectedRecord.data ?? createEmptyOdontogramData(adultConfig),
+      readOnly: true,
+      workspaceTitle: title,
+    });
+  }, [selectedRecord, selectedAttentionNumber, patientUuid, t]);
+
   const handleDeleteRecord = useCallback(() => {
     if (!selectedRecord || !activeBase) {
       return;
@@ -260,32 +274,26 @@ const OdontogramDashboard: React.FC<OdontogramDashboardProps> = ({ patientUuid }
 
   return (
     <div className={styles.dashboardWrapper}>
-      <CardHeader title={t('odontogram', 'Odontograma')}>
-        <div className={styles.headerActions}>
-          <Tooltip
-            align="bottom-right"
-            label={t(
-              'baseOdontogramTooltip',
-              'El odontograma inicial es el diagnóstico odontológico del periodo (normalmente al inicio del año): registra el estado de todas las piezas dentales y se conserva como referencia. Las soluciones se registran después en cada odontograma evolutivo.',
-            )}
-            enterDelayMs={100}
-            leaveDelayMs={150}
+      <div className={styles.cardHeader}>
+        <h4 className={styles.cardTitle}>{t('attentions', 'Atenciones')}</h4>
+        <Tooltip
+          align="bottom-left"
+          label={t(
+            'attentionsInfoTooltip',
+            'El odontograma inicial es un diagnóstico completo de todas las piezas dentales que se realiza al inicio del periodo y se conserva como referencia. A partir de él, cada visita registra en un odontograma evolutivo los tratamientos y soluciones que se van aplicando.',
+          )}
+          enterDelayMs={100}
+          leaveDelayMs={150}
+        >
+          <button
+            className={styles.infoButton}
+            type="button"
+            aria-label={t('odontogramInfo', 'Información del odontograma')}
           >
-            <button
-              className={styles.infoButton}
-              type="button"
-              aria-label={t('odontogramInfo', 'Información del odontograma')}
-            >
-              <Information size={16} />
-            </button>
-          </Tooltip>
-          {canEdit ? (
-            <Button kind="ghost" size="sm" renderIcon={Add} onClick={launchNewBase} data-testid="add-base-btn">
-              {t('newInitialOdontogram', 'Nuevo odontograma inicial')}
-            </Button>
-          ) : null}
-        </div>
-      </CardHeader>
+            <Information size={16} />
+          </button>
+        </Tooltip>
+      </div>
 
       <div className={styles.masterDetail}>
         <aside className={styles.master}>
@@ -294,6 +302,7 @@ const OdontogramDashboard: React.FC<OdontogramDashboardProps> = ({ patientUuid }
             vigenteBaseUuid={vigenteBaseUuid}
             selectedEncounterUuid={selectedEncounterUuid}
             canEdit={canEdit}
+            onAddBase={launchNewBase}
             onSelectBase={handleSelectBase}
             onSelectAttention={handleSelectAttention}
             onAddAttention={handleAddAttention}
@@ -312,8 +321,9 @@ const OdontogramDashboard: React.FC<OdontogramDashboardProps> = ({ patientUuid }
               <IconButton
                 kind="ghost"
                 size="sm"
+                align="left"
                 label={t('viewLarge', 'Ver en grande')}
-                onClick={() => setIsExpanded(true)}
+                onClick={handleViewLarge}
                 data-testid="expand-odontogram-btn"
               >
                 <Maximize />
@@ -342,23 +352,6 @@ const OdontogramDashboard: React.FC<OdontogramDashboardProps> = ({ patientUuid }
           </div>
         </section>
       </div>
-
-      {isExpanded ? (
-        <Modal
-          open
-          passiveModal
-          isFullWidth
-          size="lg"
-          className={styles.viewModal}
-          modalHeading={`${detailLabel}${detailMeta ? ` · ${detailMeta}` : ''}`}
-          modalLabel={t('odontogram', 'Odontograma')}
-          onRequestClose={() => setIsExpanded(false)}
-        >
-          <div className={styles.modalCanvas}>
-            <OdontogramCanvas config={adultConfig} data={previewData} onChange={noop} readOnly />
-          </div>
-        </Modal>
-      ) : null}
     </div>
   );
 };

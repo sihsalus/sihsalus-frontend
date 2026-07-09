@@ -20,6 +20,8 @@ interface OdontogramWorkspaceProps extends DefaultWorkspaceProps {
   baseEncounterUuid?: string | null;
   /** Snapshot the editor should start from (empty when creating a new record). */
   initialData?: OdontogramData;
+  /** Opens the same panel in read-only mode (used by "Ver en grande"). */
+  readOnly?: boolean;
   /** Called after a successful save so the launcher can refresh its data. */
   onSaved?: () => void;
 }
@@ -36,6 +38,7 @@ const OdontogramWorkspace: React.FC<OdontogramWorkspaceProps> = ({
   workspaceMode = 'base',
   baseEncounterUuid,
   initialData,
+  readOnly = false,
   onSaved,
   closeWorkspace,
 }) => {
@@ -107,22 +110,24 @@ const OdontogramWorkspace: React.FC<OdontogramWorkspaceProps> = ({
             {t(tagMeta.key, tagMeta.fallback)}
           </Tag>
         </div>
-        <OdontogramCanvas config={adultConfig} data={data} onChange={setData} />
+        <OdontogramCanvas config={adultConfig} data={data} onChange={setData} readOnly={readOnly} />
       </div>
-      <ButtonSet className={styles.buttonSet}>
-        <Button kind="secondary" onClick={() => closeWorkspace()} data-testid="odontogram-cancel-btn">
-          {t('cancel', 'Cancel')}
-        </Button>
-        <Button kind="primary" onClick={handleSave} disabled={isSaving} data-testid="odontogram-save-btn">
-          {isSaving ? (
-            <InlineLoading description={t('saving', 'Saving...')} />
-          ) : workspaceMode === 'base' ? (
-            t('saveBase', 'Guardar odontograma inicial')
-          ) : (
-            t('saveAttention', 'Guardar odontograma evolutivo')
-          )}
-        </Button>
-      </ButtonSet>
+      {readOnly ? (
+        <ButtonSet className={styles.buttonSet}>
+          <Button kind="secondary" onClick={() => closeWorkspace()} data-testid="odontogram-close-btn">
+            {t('close', 'Cerrar')}
+          </Button>
+        </ButtonSet>
+      ) : (
+        <ButtonSet className={styles.buttonSet}>
+          <Button kind="secondary" onClick={() => closeWorkspace()} data-testid="odontogram-cancel-btn">
+            {t('cancel', 'Cancel')}
+          </Button>
+          <Button kind="primary" onClick={handleSave} disabled={isSaving} data-testid="odontogram-save-btn">
+            {isSaving ? <InlineLoading description={t('saving', 'Saving...')} /> : t('save', 'Guardar')}
+          </Button>
+        </ButtonSet>
+      )}
     </div>
   );
 };

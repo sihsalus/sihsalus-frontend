@@ -7,10 +7,14 @@
 .workspaceContent {
   flex: 1;
   overflow-y: auto;
+  // Extra right padding keeps the (maximized) odontogram clear of the patient
+  // chart action rail that overlays the right edge.
+  padding-inline: 1.5rem 4rem;
+  padding-block-end: 1rem;
 }
 
 .tagContainer {
-  padding: 0.75rem 1rem 0.25rem;
+  padding: 0.75rem 0 0.25rem;
 }
 
 .buttonSet {

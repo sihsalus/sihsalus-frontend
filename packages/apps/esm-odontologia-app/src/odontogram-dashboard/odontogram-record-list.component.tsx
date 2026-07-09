@@ -13,6 +13,7 @@ interface OdontogramRecordListProps {
   vigenteBaseUuid: string | null;
   selectedEncounterUuid: string | null;
   canEdit: boolean;
+  onAddBase: () => void;
   onSelectBase: (base: OdontogramRecord) => void;
   onSelectAttention: (attention: OdontogramRecord, base: OdontogramRecord) => void;
   onAddAttention: (base: OdontogramRecord) => void;
@@ -27,6 +28,7 @@ const OdontogramRecordList: React.FC<OdontogramRecordListProps> = ({
   vigenteBaseUuid,
   selectedEncounterUuid,
   canEdit,
+  onAddBase,
   onSelectBase,
   onSelectAttention,
   onAddAttention,
@@ -36,6 +38,19 @@ const OdontogramRecordList: React.FC<OdontogramRecordListProps> = ({
 
   return (
     <nav className={styles.list} aria-label={t('odontogramList', 'Lista de odontogramas')}>
+      {canEdit ? (
+        <Button
+          kind="ghost"
+          size="sm"
+          className={styles.addBaseBtn}
+          renderIcon={Add}
+          onClick={onAddBase}
+          data-testid="add-base-btn"
+        >
+          {t('newInitialOdontogram', 'Nuevo odontograma inicial')}
+        </Button>
+      ) : null}
+
       {orderedGroups.map((group) => {
         const isVigente = group.base.encounterUuid === vigenteBaseUuid;
         const baseSelected = group.base.encounterUuid === selectedEncounterUuid;
@@ -60,6 +75,19 @@ const OdontogramRecordList: React.FC<OdontogramRecordListProps> = ({
             </button>
 
             <div className={styles.attentions}>
+              {canEdit && isVigente ? (
+                <Button
+                  kind="ghost"
+                  size="sm"
+                  className={styles.addBtn}
+                  renderIcon={Add}
+                  onClick={() => onAddAttention(group.base)}
+                  data-testid="add-attention-btn"
+                >
+                  {t('newEvolutive', 'Nuevo odontograma evolutivo')}
+                </Button>
+              ) : null}
+
               {attentionsNewestFirst.length === 0 ? (
                 <p className={styles.emptyHint}>{t('noEvolutivesShort', 'Sin odontogramas evolutivos')}</p>
               ) : (
@@ -87,19 +115,6 @@ const OdontogramRecordList: React.FC<OdontogramRecordListProps> = ({
                   );
                 })
               )}
-
-              {canEdit && isVigente ? (
-                <Button
-                  kind="ghost"
-                  size="sm"
-                  className={styles.addBtn}
-                  renderIcon={Add}
-                  onClick={() => onAddAttention(group.base)}
-                  data-testid="add-attention-btn"
-                >
-                  {t('newEvolutive', 'Nuevo odontograma evolutivo')}
-                </Button>
-              ) : null}
             </div>
           </div>
         );

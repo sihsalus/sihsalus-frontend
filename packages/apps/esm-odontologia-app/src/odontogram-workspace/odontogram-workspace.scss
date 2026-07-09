@@ -14,9 +14,11 @@
 }
 
 .tagContainer {
-  padding: 0.75rem 0 0.25rem;
+  padding: 1rem 0 0.5rem;
 }
 
 .buttonSet {
   width: 100%;
+  // Left-align the (compact) buttons with the odontogram canvas above.
+  padding-inline-start: 1.5rem;
 }

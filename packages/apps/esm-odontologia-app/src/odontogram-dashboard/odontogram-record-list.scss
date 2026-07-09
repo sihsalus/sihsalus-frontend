@@ -67,6 +67,21 @@
   }
 }
 
+// Temporary "draft" card for a record being created (not yet saved).
+// Matches the regular rows; the "Borrador" tag is what marks it as a draft.
+.draftRow .rowTitle {
+  color: var(--cds-text-secondary, #525252);
+}
+
+// Compact pagination footer for the initial-odontogram pages
+.pagination {
+  display: flex;
+  justify-content: center;
+  padding-top: 0.5rem;
+  margin-top: 0.25rem;
+  border-top: 1px solid var(--cds-border-subtle, #e0e0e0);
+}
+
 .rowTitleLine {
   display: flex;
   align-items: center;

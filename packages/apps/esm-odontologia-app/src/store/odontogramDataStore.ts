@@ -1,8 +1,17 @@
 import { create } from 'zustand';
 
 import { adultConfig } from '../odontogram/config/adultConfig';
+import type { FormSelectionState } from '../odontogram/types/context';
 import { createEmptyOdontogramData, type OdontogramData } from '../odontogram/types/odontogram';
 import type { OdontogramRecordType } from '../types/odontogram-record';
+
+const EMPTY_FORM_SELECTION: FormSelectionState = {
+  selectedFindingId: null,
+  selectedColor: null,
+  selectedSuboption: null,
+  selectedDesign: null,
+  isComplete: false,
+};
 
 export type OdontogramFindingSource = 'tooth' | 'spacing' | 'legend';
 
@@ -33,7 +42,12 @@ type OdontogramDataState = {
   /** Whether the workspace is creating/editing a base or attention odontogram */
   workspaceMode: OdontogramRecordType;
   data: OdontogramData;
+  /** Shared, ephemeral form selection so the inline editor and the expanded
+   *  workspace show the same active finding/color while editing. */
+  formSelection: FormSelectionState;
   setData: (nextData: OdontogramData) => void;
+  setFormSelection: (updater: FormSelectionState | ((prev: FormSelectionState) => FormSelectionState)) => void;
+  resetFormSelection: () => void;
   setPatient: (patientUuid: string) => void;
   setSelectedEncounterUuid: (uuid: string | null) => void;
   setActiveBaseEncounterUuid: (uuid: string | null) => void;
@@ -48,7 +62,13 @@ const useOdontogramDataStore = create<OdontogramDataState>((set, get) => ({
   activeBaseEncounterUuid: null,
   workspaceMode: 'base',
   data: createEmptyOdontogramData(adultConfig),
+  formSelection: EMPTY_FORM_SELECTION,
   setData: (nextData) => set({ data: nextData }),
+  setFormSelection: (updater) =>
+    set((state) => ({
+      formSelection: typeof updater === 'function' ? updater(state.formSelection) : updater,
+    })),
+  resetFormSelection: () => set({ formSelection: EMPTY_FORM_SELECTION }),
   setPatient: (patientUuid) => {
     if (get().currentPatientUuid !== patientUuid) {
       set({

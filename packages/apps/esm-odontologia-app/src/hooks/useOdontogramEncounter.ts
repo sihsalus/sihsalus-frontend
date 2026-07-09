@@ -3,12 +3,18 @@ import { useState } from 'react';
 
 import type { OdontogramConfig } from '../config-schema';
 import { applyExistingObsUuids, mapToAmpathOdontogramEncounterPayload } from '../odontogram/ampath-form-odontogram-mapper';
+import type { OdontogramData } from '../odontogram/types/odontogram';
 import { fetchEncounterObs, saveEncounter, updateEncounter } from '../odontogram.resource';
-import useOdontogramDataStore from '../store/odontogramDataStore';
+import type { OdontogramRecordType } from '../types/odontogram-record';
 
 interface SaveOdontogramParams {
   patientUuid: string;
+  /** Present when editing an existing record; omit to create a new one. */
   encounterUuid?: string;
+  data: OdontogramData;
+  recordType: OdontogramRecordType;
+  /** Parent base encounter for evolutive (attention) records. */
+  baseEncounterUuid?: string | null;
 }
 
 export function useOdontogramEncounter() {
@@ -16,31 +22,29 @@ export function useOdontogramEncounter() {
   const [isSaving, setIsSaving] = useState(false);
   const [error, setError] = useState<Error | null>(null);
 
-  const save = async ({ patientUuid, encounterUuid }: SaveOdontogramParams) => {
+  const save = async ({ patientUuid, encounterUuid, data, recordType, baseEncounterUuid }: SaveOdontogramParams) => {
     setIsSaving(true);
     setError(null);
 
     try {
-      const { activeBaseEncounterUuid, data, workspaceMode } = useOdontogramDataStore.getState();
-
       const encounterTypeUuid =
-        workspaceMode === 'base' ? config.baseEncounterTypeUuid?.trim() : config.attentionEncounterTypeUuid?.trim();
+        recordType === 'base' ? config.baseEncounterTypeUuid?.trim() : config.attentionEncounterTypeUuid?.trim();
 
       if (!encounterTypeUuid) {
         throw new Error(
-          workspaceMode === 'base'
+          recordType === 'base'
             ? 'Missing required config: baseEncounterTypeUuid'
             : 'Missing required config: attentionEncounterTypeUuid',
         );
       }
 
       const payload = mapToAmpathOdontogramEncounterPayload({
-        activeBaseEncounterUuid,
+        activeBaseEncounterUuid: baseEncounterUuid ?? null,
         config,
         data,
         encounterTypeUuid,
         patientUuid,
-        recordType: workspaceMode,
+        recordType,
       });
 
       let response: { data: unknown };

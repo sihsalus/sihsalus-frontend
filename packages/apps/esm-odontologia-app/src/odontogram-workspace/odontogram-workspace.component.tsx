@@ -50,6 +50,8 @@ const OdontogramWorkspace: React.FC<OdontogramWorkspaceProps> = ({
   const setActiveBaseEncounterUuid = useOdontogramDataStore((s) => s.setActiveBaseEncounterUuid);
   const data = useOdontogramDataStore((s) => s.data);
   const setData = useOdontogramDataStore((s) => s.setData);
+  const formSelection = useOdontogramDataStore((s) => s.formSelection);
+  const setFormSelection = useOdontogramDataStore((s) => s.setFormSelection);
 
   // Seed the editor with its own snapshot on mount so it never inherits the
   // record currently previewed in the dashboard (which shares this store).
@@ -74,7 +76,7 @@ const OdontogramWorkspace: React.FC<OdontogramWorkspaceProps> = ({
 
   const handleSave = async () => {
     try {
-      await save({ patientUuid, encounterUuid });
+      await save({ patientUuid, encounterUuid, data, recordType: workspaceMode, baseEncounterUuid });
       showSnackbar({
         title: t('odontogramSaved', 'Odontogram saved'),
         kind: 'success',
@@ -110,7 +112,14 @@ const OdontogramWorkspace: React.FC<OdontogramWorkspaceProps> = ({
             {t(tagMeta.key, tagMeta.fallback)}
           </Tag>
         </div>
-        <OdontogramCanvas config={adultConfig} data={data} onChange={setData} readOnly={readOnly} />
+        <OdontogramCanvas
+          config={adultConfig}
+          data={data}
+          onChange={setData}
+          readOnly={readOnly}
+          formSelection={readOnly ? undefined : formSelection}
+          onFormSelectionChange={readOnly ? undefined : setFormSelection}
+        />
       </div>
       {readOnly ? (
         <ButtonSet className={styles.buttonSet}>
@@ -120,8 +129,8 @@ const OdontogramWorkspace: React.FC<OdontogramWorkspaceProps> = ({
         </ButtonSet>
       ) : (
         <ButtonSet className={styles.buttonSet}>
-          <Button kind="secondary" onClick={() => closeWorkspace()} data-testid="odontogram-cancel-btn">
-            {t('cancel', 'Cancel')}
+          <Button kind="secondary" onClick={() => closeWorkspace()} data-testid="odontogram-back-btn">
+            {t('back', 'Volver')}
           </Button>
           <Button kind="primary" onClick={handleSave} disabled={isSaving} data-testid="odontogram-save-btn">
             {isSaving ? <InlineLoading description={t('saving', 'Saving...')} /> : t('save', 'Guardar')}

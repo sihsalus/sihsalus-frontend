@@ -95,8 +95,62 @@
 
 // Preview fills the available detail width (the responsive diagram scales up)
 .preview {
-  padding: 1rem 1.5rem 1rem 1rem;
+  padding: 1.25rem 1.5rem 1rem 1rem;
   overflow-x: auto;
+}
+
+// Inline editor uses the full body width for drawing precision
+.editCanvas {
+  padding: 1.25rem 1.5rem 1rem 1rem;
+  overflow-x: auto;
+}
+
+.editButtons {
+  border-top: 1px solid var(--cds-border-subtle, #e0e0e0);
+  // Compact buttons, left-aligned to the odontogram canvas (matches its left padding).
+  padding-inline-start: 1rem;
+}
+
+// "Edit in progress" banner — contained within the panel (no right overflow)
+.editingBanner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  margin: 0.75rem 1.5rem 0 1rem;
+  padding: 0.5rem 0.5rem 0.5rem 0.875rem;
+  background: var(--cds-notification-background-info, #edf5ff);
+  border-inline-start: 3px solid var(--cds-support-info, #0043ce);
+}
+
+.editingBannerInfo {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  min-width: 0;
+}
+
+.editingBannerIcon {
+  flex: 0 0 auto;
+  color: var(--cds-support-info, #0043ce);
+}
+
+.editingBannerText {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  min-width: 0;
+}
+
+.editingBannerTitle {
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: var(--cds-text-primary, #161616);
+}
+
+.editingBannerSubtitle {
+  font-size: 0.8125rem;
+  color: var(--cds-text-secondary, #525252);
 }
 
 // Large view modal

@@ -1,5 +1,5 @@
 import { Edit, Information, Maximize, TrashCan } from '@carbon/icons-react';
-import { Button, IconButton, SkeletonPlaceholder, SkeletonText, Tag, Tooltip } from '@carbon/react';
+import { Button, ButtonSet, IconButton, InlineLoading, SkeletonPlaceholder, SkeletonText, Tag, Tooltip } from '@carbon/react';
 import {
   formatDate,
   launchWorkspace,
@@ -8,17 +8,18 @@ import {
   useSession,
   userHasAccess,
 } from '@openmrs/esm-framework';
-import React, { useCallback, useEffect, useMemo } from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { countSolutions } from './count-solutions';
 import OdontogramRecordList from './odontogram-record-list.component';
+import { useOdontogramEncounter } from '../hooks/useOdontogramEncounter';
 import { useOdontogramHistory } from '../hooks/useOdontogramHistory';
 import OdontogramCanvas from '../odontogram/components/Odontogram';
 import { adultConfig } from '../odontogram/config/adultConfig';
 import { createEmptyOdontogramData } from '../odontogram/types/odontogram';
 import { deleteEncounter } from '../odontogram.resource';
 import useOdontogramDataStore from '../store/odontogramDataStore';
-import type { OdontogramRecord } from '../types/odontogram-record';
+import type { OdontogramRecord, OdontogramRecordType } from '../types/odontogram-record';
 import DentalEmptyState from '../ui/dental-empty-state.component';
 import styles from './odontogram-dashboard.scss';
 
@@ -28,6 +29,13 @@ interface OdontogramDashboardProps {
 
 const WORKSPACE_NAME = 'odontologia-odontogram-form-workspace';
 const noop = () => {};
+
+/** Identity of the in-progress edit. Its data buffer lives in the shared store. */
+interface EditContext {
+  recordType: OdontogramRecordType;
+  encounterUuid?: string;
+  baseEncounterUuid?: string;
+}
 
 const OdontogramSkeleton: React.FC = () => (
   <div className={styles.skeletonWrapper}>
@@ -44,8 +52,8 @@ const OdontogramEmpty: React.FC<{ onGenerate?: () => void }> = ({ onGenerate }) 
   return (
     <DentalEmptyState
       title={t('odontogram', 'Odontograma')}
-      description={t('odontogramEmptyDescription', 'No hay odontograma base registrado para mostrar para este paciente.')}
-      actionLabel={t('registerBaseOdontogram', 'Registrar odontograma base')}
+      description={t('odontogramEmptyDescription', 'No hay odontograma inicial registrado para mostrar para este paciente.')}
+      actionLabel={t('registerBaseOdontogram', 'Registrar odontograma inicial')}
       onAction={onGenerate}
     />
   );
@@ -55,16 +63,39 @@ const OdontogramDashboard: React.FC<OdontogramDashboardProps> = ({ patientUuid }
   const { t } = useTranslation();
   const session = useSession();
   const canEdit = userHasAccess('app:clinical.chart.dentistry.edit', session?.user);
+  const { save, isSaving } = useOdontogramEncounter();
 
   const setPatient = useOdontogramDataStore((s) => s.setPatient);
   const setSelectedEncounterUuid = useOdontogramDataStore((s) => s.setSelectedEncounterUuid);
   const setActiveBaseEncounterUuid = useOdontogramDataStore((s) => s.setActiveBaseEncounterUuid);
+  const setWorkspaceMode = useOdontogramDataStore((s) => s.setWorkspaceMode);
   const selectedEncounterUuid = useOdontogramDataStore((s) => s.selectedEncounterUuid);
   const activeBaseEncounterUuid = useOdontogramDataStore((s) => s.activeBaseEncounterUuid);
+  // The store's `data` is the shared editing buffer (inline editor + expanded workspace).
+  const editData = useOdontogramDataStore((s) => s.data);
+  const setData = useOdontogramDataStore((s) => s.setData);
+  // Shared form selection so the active finding/color survives navigation and
+  // transfers between the inline editor and the expanded workspace.
+  const formSelection = useOdontogramDataStore((s) => s.formSelection);
+  const setFormSelection = useOdontogramDataStore((s) => s.setFormSelection);
+  const resetFormSelection = useOdontogramDataStore((s) => s.resetFormSelection);
 
   const { groups, baseRecords, isLoading, error, mutate } = useOdontogramHistory(patientUuid);
   const hasBase = baseRecords.length > 0;
   const vigenteBaseUuid = hasBase ? baseRecords[baseRecords.length - 1].encounterUuid : null;
+
+  const [editContext, setEditContext] = useState<EditContext | null>(null);
+  // Whether the body is showing the editor, or a read-only record while the edit is parked.
+  const [viewingEdit, setViewingEdit] = useState(false);
+  const isEditing = Boolean(editContext);
+  const showEditor = isEditing && viewingEdit;
+  // A brand-new (unsaved) record shows a temporary "draft" card in the list so
+  // navigation has somewhere to return to while it is being created.
+  const draft =
+    editContext && !editContext.encounterUuid
+      ? { type: editContext.recordType, baseEncounterUuid: editContext.baseEncounterUuid ?? null }
+      : null;
+  const draftActive = Boolean(draft) && viewingEdit;
 
   const activeGroup = useMemo(() => {
     if (!groups.length) {
@@ -95,26 +126,16 @@ const OdontogramDashboard: React.FC<OdontogramDashboardProps> = ({ patientUuid }
     return attentions.findIndex((record) => record.encounterUuid === selectedRecord.encounterUuid) + 1;
   }, [attentions, isViewingAttention, selectedRecord]);
 
-  // The preview reads straight from the selected record so it never collides
-  // with the workspace, which owns the shared editing buffer in the store.
   const previewData = selectedRecord?.data ?? createEmptyOdontogramData(adultConfig);
 
-  // --- Action eligibility rules ---------------------------------------------
-  // Only the CURRENT (vigente) initial odontogram can be modified. Older initial
-  // odontograms and all their evolutive odontograms are historical → read-only.
+  // --- Action eligibility (only the vigente initial can be modified) --------
   const isVigenteActive = activeBase?.encounterUuid === vigenteBaseUuid;
-
-  // Edit: only the latest evolutive odontogram of the vigente initial, or a
-  // vigente initial that has no evolutives yet (still being set up).
   const canEditSelected =
     canEdit &&
     isVigenteActive &&
     Boolean(selectedRecord) &&
     (selectedRecord?.encounterUuid === latestAttentionUuid ||
       (selectedRecord?.type === 'base' && attentions.length === 0));
-
-  // Delete: only within the vigente initial and only when the record has nothing
-  // registered (created by mistake). An initial can only be removed with no evolutives.
   const canDeleteSelected =
     canEdit &&
     isVigenteActive &&
@@ -126,7 +147,7 @@ const OdontogramDashboard: React.FC<OdontogramDashboardProps> = ({ patientUuid }
     setPatient(patientUuid);
   }, [patientUuid, setPatient]);
 
-  // Open on the most recent attention of the vigente base (fallback: base findings)
+  // Open on the most recent evolutive of the vigente initial (fallback: the initial)
   useEffect(() => {
     if (selectedEncounterUuid || !vigenteBaseUuid) {
       return;
@@ -140,82 +161,124 @@ const OdontogramDashboard: React.FC<OdontogramDashboardProps> = ({ patientUuid }
     setSelectedEncounterUuid((latestAttention ?? vigenteGroup.base).encounterUuid);
   }, [groups, vigenteBaseUuid, selectedEncounterUuid, setActiveBaseEncounterUuid, setSelectedEncounterUuid]);
 
-  const launchNewBase = useCallback(() => {
-    launchWorkspace(WORKSPACE_NAME, {
-      patientUuid,
-      workspaceMode: 'base',
-      initialData: createEmptyOdontogramData(adultConfig),
-      workspaceTitle: t('newInitialOdontogram', 'Nuevo odontograma inicial'),
-      onSaved: mutate,
-    });
-  }, [patientUuid, mutate, t]);
-
+  // --- Navigation (parks the editor without discarding the buffer) ----------
+  // Selecting the record currently being edited resumes the editor (with its
+  // in-progress buffer); selecting any other record parks it read-only.
   const handleSelectBase = useCallback(
     (base: OdontogramRecord) => {
       setActiveBaseEncounterUuid(base.encounterUuid);
       setSelectedEncounterUuid(base.encounterUuid);
+      setViewingEdit(editContext?.encounterUuid != null && editContext.encounterUuid === base.encounterUuid);
     },
-    [setActiveBaseEncounterUuid, setSelectedEncounterUuid],
+    [editContext, setActiveBaseEncounterUuid, setSelectedEncounterUuid],
   );
 
   const handleSelectAttention = useCallback(
     (attention: OdontogramRecord, base: OdontogramRecord) => {
       setActiveBaseEncounterUuid(base.encounterUuid);
       setSelectedEncounterUuid(attention.encounterUuid);
+      setViewingEdit(editContext?.encounterUuid != null && editContext.encounterUuid === attention.encounterUuid);
     },
-    [setActiveBaseEncounterUuid, setSelectedEncounterUuid],
+    [editContext, setActiveBaseEncounterUuid, setSelectedEncounterUuid],
   );
 
-  const handleAddAttention = useCallback(
+  // Return to the record being edited (re-selects it in the list) and resume.
+  const handleContinueEditing = useCallback(() => {
+    if (!editContext) {
+      return;
+    }
+    if (editContext.baseEncounterUuid) {
+      setActiveBaseEncounterUuid(editContext.baseEncounterUuid);
+    }
+    if (editContext.encounterUuid) {
+      setSelectedEncounterUuid(editContext.encounterUuid);
+    }
+    setViewingEdit(true);
+  }, [editContext, setActiveBaseEncounterUuid, setSelectedEncounterUuid]);
+
+  // --- Start editing (inline; buffer seeded into the store) -----------------
+  const startNewBase = useCallback(() => {
+    setData(createEmptyOdontogramData(adultConfig));
+    resetFormSelection();
+    setWorkspaceMode('base');
+    setEditContext({ recordType: 'base' });
+    setViewingEdit(true);
+  }, [setData, resetFormSelection, setWorkspaceMode]);
+
+  const startNewAttention = useCallback(
     (base: OdontogramRecord) => {
-      launchWorkspace(WORKSPACE_NAME, {
-        patientUuid,
-        workspaceMode: 'attention',
-        baseEncounterUuid: base.encounterUuid,
-        initialData: createEmptyOdontogramData(adultConfig),
-        workspaceTitle: t('newEvolutive', 'Nuevo odontograma evolutivo'),
-        onSaved: mutate,
-      });
+      setActiveBaseEncounterUuid(base.encounterUuid);
+      setSelectedEncounterUuid(base.encounterUuid);
+      setData(createEmptyOdontogramData(adultConfig));
+      resetFormSelection();
+      setWorkspaceMode('attention');
+      setEditContext({ recordType: 'attention', baseEncounterUuid: base.encounterUuid });
+      setViewingEdit(true);
     },
-    [patientUuid, mutate, t],
+    [setActiveBaseEncounterUuid, setSelectedEncounterUuid, setData, resetFormSelection, setWorkspaceMode],
   );
 
-  const handleEditRecord = useCallback(() => {
+  const startEditSelected = useCallback(() => {
     if (!selectedRecord?.data || !activeBase) {
       return;
     }
-    launchWorkspace(WORKSPACE_NAME, {
-      patientUuid,
-      workspaceMode: selectedRecord.type,
+    setData(selectedRecord.data);
+    resetFormSelection();
+    setWorkspaceMode(selectedRecord.type);
+    setActiveBaseEncounterUuid(activeBase.encounterUuid);
+    setEditContext({
+      recordType: selectedRecord.type,
       encounterUuid: selectedRecord.encounterUuid,
       baseEncounterUuid: activeBase.encounterUuid,
-      initialData: selectedRecord.data,
-      workspaceTitle:
-        selectedRecord.type === 'base'
-          ? t('editInitialOdontogram', 'Editar odontograma inicial')
-          : t('editEvolutiveOdontogram', 'Editar odontograma evolutivo'),
-      onSaved: mutate,
     });
-  }, [selectedRecord, activeBase, patientUuid, mutate, t]);
+    setViewingEdit(true);
+  }, [selectedRecord, activeBase, setData, resetFormSelection, setWorkspaceMode, setActiveBaseEncounterUuid]);
 
-  const handleViewLarge = useCallback(() => {
-    if (!selectedRecord) {
+  const handleSaveEdit = useCallback(async () => {
+    if (!editContext) {
       return;
     }
-    const title =
-      selectedRecord.type === 'base'
-        ? t('initialOdontogram', 'Odontograma inicial')
-        : `${t('evolutiveOdontogram', 'Odontograma evolutivo')} ${selectedAttentionNumber ?? ''}`.trim();
-    launchWorkspace(WORKSPACE_NAME, {
-      patientUuid,
-      workspaceMode: selectedRecord.type,
-      initialData: selectedRecord.data ?? createEmptyOdontogramData(adultConfig),
-      readOnly: true,
-      workspaceTitle: title,
-    });
-  }, [selectedRecord, selectedAttentionNumber, patientUuid, t]);
+    try {
+      await save({
+        patientUuid,
+        encounterUuid: editContext.encounterUuid,
+        data: editData,
+        recordType: editContext.recordType,
+        baseEncounterUuid: editContext.baseEncounterUuid,
+      });
+      showSnackbar({
+        kind: 'success',
+        title: t('odontogramSaved', 'Odontograma guardado'),
+        subtitle:
+          editContext.recordType === 'base'
+            ? t('odontogramBaseSavedSubtitle', 'Se guardó el odontograma inicial.')
+            : t('odontogramAttentionSavedSubtitle', 'Se guardó el odontograma evolutivo.'),
+      });
+      const wasNew = !editContext.encounterUuid;
+      setEditContext(null);
+      setViewingEdit(false);
+      resetFormSelection();
+      await mutate();
+      if (wasNew) {
+        setSelectedEncounterUuid(null);
+      }
+    } catch (err) {
+      showSnackbar({
+        kind: 'error',
+        title: t('odontogramSaveError', 'Error al guardar odontograma'),
+        subtitle:
+          err instanceof Error ? err.message : t('odontogramSaveErrorSubtitle', 'No se pudo guardar. Intente nuevamente.'),
+      });
+    }
+  }, [editContext, save, patientUuid, editData, t, mutate, setSelectedEncounterUuid, resetFormSelection]);
 
-  const handleDeleteRecord = useCallback(() => {
+  const handleCancelEdit = useCallback(() => {
+    setEditContext(null);
+    setViewingEdit(false);
+    resetFormSelection();
+  }, [resetFormSelection]);
+
+  const handleDeleteSelected = useCallback(() => {
     if (!selectedRecord || !activeBase) {
       return;
     }
@@ -259,7 +322,7 @@ const OdontogramDashboard: React.FC<OdontogramDashboardProps> = ({ patientUuid }
   }
 
   if (error || !hasBase || !activeBase) {
-    return <OdontogramEmpty onGenerate={canEdit ? launchNewBase : undefined} />;
+    return <OdontogramEmpty onGenerate={canEdit ? startNewBase : undefined} />;
   }
 
   const detailLabel = isViewingAttention
@@ -271,6 +334,48 @@ const OdontogramDashboard: React.FC<OdontogramDashboardProps> = ({ patientUuid }
   ]
     .filter(Boolean)
     .join(' · ');
+
+  const editTypeLabel =
+    editContext?.recordType === 'base'
+      ? t('initialOdontogram', 'Odontograma inicial')
+      : t('evolutiveOdontogram', 'Odontograma evolutivo');
+  const editLabel = editContext
+    ? `${editContext.encounterUuid ? t('editingTag', 'Editando') : t('newTag', 'Nuevo')} · ${editTypeLabel}`
+    : '';
+
+  // Expand: while editing → full-screen editable (same buffer); otherwise → read-only view.
+  const handleExpand = () => {
+    if (showEditor && editContext) {
+      launchWorkspace(WORKSPACE_NAME, {
+        patientUuid,
+        workspaceMode: editContext.recordType,
+        encounterUuid: editContext.encounterUuid,
+        baseEncounterUuid: editContext.baseEncounterUuid,
+        initialData: editData,
+        workspaceTitle: editLabel,
+        onSaved: () => {
+          const wasNew = !editContext.encounterUuid;
+          setEditContext(null);
+          setViewingEdit(false);
+          resetFormSelection();
+          mutate();
+          if (wasNew) {
+            setSelectedEncounterUuid(null);
+          }
+        },
+      });
+      return;
+    }
+    if (selectedRecord) {
+      launchWorkspace(WORKSPACE_NAME, {
+        patientUuid,
+        workspaceMode: selectedRecord.type,
+        initialData: selectedRecord.data ?? createEmptyOdontogramData(adultConfig),
+        readOnly: true,
+        workspaceTitle: detailLabel,
+      });
+    }
+  };
 
   return (
     <div className={styles.dashboardWrapper}>
@@ -302,54 +407,120 @@ const OdontogramDashboard: React.FC<OdontogramDashboardProps> = ({ patientUuid }
             vigenteBaseUuid={vigenteBaseUuid}
             selectedEncounterUuid={selectedEncounterUuid}
             canEdit={canEdit}
-            onAddBase={launchNewBase}
+            disableAdd={isEditing}
+            draft={draft}
+            draftActive={draftActive}
+            onSelectDraft={handleContinueEditing}
+            onAddBase={startNewBase}
             onSelectBase={handleSelectBase}
             onSelectAttention={handleSelectAttention}
-            onAddAttention={handleAddAttention}
+            onAddAttention={startNewAttention}
           />
         </aside>
 
         <section className={styles.detail}>
-          <div className={styles.detailHeader}>
-            <div className={styles.detailInfo}>
-              <Tag type={isViewingAttention ? 'teal' : 'blue'} size="sm">
-                {detailLabel}
-              </Tag>
-              {detailMeta ? <span className={styles.detailMeta}>{detailMeta}</span> : null}
-            </div>
-            <div className={styles.detailActions}>
-              <IconButton
-                kind="ghost"
-                size="sm"
-                align="left"
-                label={t('viewLarge', 'Ver en grande')}
-                onClick={handleViewLarge}
-                data-testid="expand-odontogram-btn"
-              >
-                <Maximize />
-              </IconButton>
-              {canEditSelected ? (
-                <Button kind="tertiary" size="sm" renderIcon={Edit} onClick={handleEditRecord} data-testid="edit-odontogram-btn">
-                  {t('edit', 'Editar')}
-                </Button>
-              ) : null}
-              {canDeleteSelected ? (
-                <Button
-                  kind="danger--tertiary"
-                  size="sm"
-                  renderIcon={TrashCan}
-                  onClick={handleDeleteRecord}
-                  data-testid="delete-odontogram-btn"
-                >
-                  {t('delete', 'Eliminar')}
-                </Button>
-              ) : null}
-            </div>
-          </div>
+          {showEditor && editContext ? (
+            <>
+              <div className={styles.detailHeader}>
+                <div className={styles.detailInfo}>
+                  <Tag type={editContext.recordType === 'attention' ? 'teal' : 'blue'} size="sm">
+                    {editLabel}
+                  </Tag>
+                </div>
+                <div className={styles.detailActions}>
+                  <IconButton
+                    kind="ghost"
+                    size="sm"
+                    align="left"
+                    label={t('editFullScreen', 'Editar en pantalla completa')}
+                    onClick={handleExpand}
+                    data-testid="expand-odontogram-btn"
+                  >
+                    <Maximize />
+                  </IconButton>
+                </div>
+              </div>
 
-          <div className={styles.preview}>
-            <OdontogramCanvas config={adultConfig} data={previewData} onChange={noop} readOnly />
-          </div>
+              <div className={styles.editCanvas}>
+                <OdontogramCanvas
+                  config={adultConfig}
+                  data={editData}
+                  onChange={setData}
+                  formSelection={formSelection}
+                  onFormSelectionChange={setFormSelection}
+                />
+              </div>
+
+              <ButtonSet className={styles.editButtons}>
+                <Button kind="secondary" size="sm" onClick={handleCancelEdit} disabled={isSaving} data-testid="cancel-edit-btn">
+                  {t('cancel', 'Cancelar')}
+                </Button>
+                <Button kind="primary" size="sm" onClick={handleSaveEdit} disabled={isSaving} data-testid="save-edit-btn">
+                  {isSaving ? <InlineLoading description={t('saving', 'Guardando...')} /> : t('save', 'Guardar')}
+                </Button>
+              </ButtonSet>
+            </>
+          ) : (
+            <>
+              {isEditing ? (
+                <div className={styles.editingBanner}>
+                  <div className={styles.editingBannerInfo}>
+                    <Information size={16} className={styles.editingBannerIcon} />
+                    <div className={styles.editingBannerText}>
+                      <span className={styles.editingBannerTitle}>
+                        {t('editingInProgress', 'Edición en progreso')}
+                      </span>
+                      <span className={styles.editingBannerSubtitle}>{editTypeLabel}</span>
+                    </div>
+                  </div>
+                  <Button kind="ghost" size="sm" onClick={handleContinueEditing} data-testid="continue-edit-btn">
+                    {t('continueEditing', 'Continuar edición')}
+                  </Button>
+                </div>
+              ) : null}
+
+              <div className={styles.detailHeader}>
+                <div className={styles.detailInfo}>
+                  <Tag type={isViewingAttention ? 'teal' : 'blue'} size="sm">
+                    {detailLabel}
+                  </Tag>
+                  {detailMeta ? <span className={styles.detailMeta}>{detailMeta}</span> : null}
+                </div>
+                <div className={styles.detailActions}>
+                  <IconButton
+                    kind="ghost"
+                    size="sm"
+                    align="left"
+                    label={t('viewLarge', 'Ver en grande')}
+                    onClick={handleExpand}
+                    data-testid="expand-odontogram-btn"
+                  >
+                    <Maximize />
+                  </IconButton>
+                  {!isEditing && canEditSelected ? (
+                    <Button kind="tertiary" size="sm" renderIcon={Edit} onClick={startEditSelected} data-testid="edit-odontogram-btn">
+                      {t('edit', 'Editar')}
+                    </Button>
+                  ) : null}
+                  {!isEditing && canDeleteSelected ? (
+                    <Button
+                      kind="danger--tertiary"
+                      size="sm"
+                      renderIcon={TrashCan}
+                      onClick={handleDeleteSelected}
+                      data-testid="delete-odontogram-btn"
+                    >
+                      {t('delete', 'Eliminar')}
+                    </Button>
+                  ) : null}
+                </div>
+              </div>
+
+              <div className={styles.preview}>
+                <OdontogramCanvas config={adultConfig} data={previewData} onChange={noop} readOnly />
+              </div>
+            </>
+          )}
         </section>
       </div>
     </div>

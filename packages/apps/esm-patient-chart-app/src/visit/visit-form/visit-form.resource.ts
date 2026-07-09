@@ -35,6 +35,55 @@ export type VisitFormData = {
   };
 };
 
+export function sanitizeVisitTimeInput(value: string) {
+  const cleanedValue = value.replace(/[^\d:]/g, '');
+
+  if (cleanedValue.includes(':')) {
+    const [rawHours = '', rawMinutes = ''] = cleanedValue.split(':');
+    return `${rawHours.slice(0, 2)}:${rawMinutes.slice(0, 2)}`;
+  }
+
+  const digits = cleanedValue.slice(0, 4);
+
+  if (digits.length === 3) {
+    return `${digits.slice(0, 1)}:${digits.slice(1)}`;
+  }
+
+  if (digits.length === 4) {
+    return `${digits.slice(0, 2)}:${digits.slice(2)}`;
+  }
+
+  return digits;
+}
+
+export function normalizeVisitTimeInput(value: string) {
+  const sanitizedValue = sanitizeVisitTimeInput(value);
+  const match = sanitizedValue.match(/^(\d{1,2}):(\d{1,2})$/);
+
+  if (!match) {
+    return sanitizedValue;
+  }
+
+  const hours = Number.parseInt(match[1], 10);
+  const minutes = Number.parseInt(match[2], 10);
+
+  if (hours < 1 || hours > 12 || minutes < 0 || minutes > 59) {
+    return sanitizedValue;
+  }
+
+  return `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}`;
+}
+
+export function normalizeVisitTimeFormatInput(value: unknown): amPm | undefined {
+  if (typeof value !== 'string') {
+    return undefined;
+  }
+
+  const normalizedValue = value.trim().toUpperCase();
+
+  return normalizedValue === 'AM' || normalizedValue === 'PM' ? normalizedValue : undefined;
+}
+
 export type PatientAddressVisitAttributeDefault = {
   visitAttributeTypeUuid: string;
   addressKind?: 'residence' | 'birth' | string;

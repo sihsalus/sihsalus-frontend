@@ -68,6 +68,8 @@ import {
   createVisitAttribute,
   deleteVisitAttribute,
   getDefaultVisitAttributesFromPatientAddress,
+  normalizeVisitTimeFormatInput,
+  normalizeVisitTimeInput,
   updateVisitAttribute,
   useConditionalVisitTypes,
   usePersonAttributesForVisitDefaults,
@@ -192,6 +194,30 @@ const StartVisitForm: React.FC<StartVisitFormProps> = (props) => {
       acc[uuid] = createVisitAttributeSchema(required);
       return acc;
     }, {});
+    const invalidTimeFormatMessage = t('invalidTimeFormat', 'Enter a valid time in hh:mm format (01:00 to 12:59)');
+    const timeFormatRequiredMessage = t('timeFormatRequired', 'Select AM or PM');
+    const timeFormatSchema = z.enum(['AM', 'PM'], {
+      errorMap: () => ({ message: timeFormatRequiredMessage }),
+    });
+    const createTimeSchema = (required: boolean) =>
+      z.preprocess(
+        (value) => {
+          if (typeof value !== 'string') {
+            return value;
+          }
+
+          const normalizedValue = normalizeVisitTimeInput(value);
+          return required ? normalizedValue : normalizedValue || undefined;
+        },
+        required
+          ? z.string().refine((value) => value.match(time12HourFormatRegex), invalidTimeFormatMessage)
+          : z
+              .string()
+              .refine((value) => value.match(time12HourFormatRegex), invalidTimeFormatMessage)
+              .optional(),
+      );
+    const createTimeFormatSchema = (required: boolean) =>
+      z.preprocess(normalizeVisitTimeFormatInput, required ? timeFormatSchema : timeFormatSchema.optional());
 
     // Validates that the start time is not in the future
     const validateStartTime = (data: z.infer<typeof visitFormSchema>) => {
@@ -215,22 +241,15 @@ const StartVisitForm: React.FC<StartVisitFormProps> = (props) => {
             firstEncounterDatetime: formatDatetime(new Date()),
           }),
         ),
-        visitStartTime: z
-          .string()
-          .refine((value) => value.match(time12HourFormatRegex), t('invalidTimeFormat', 'Invalid time format')),
-        visitStartTimeFormat: z.enum(['PM', 'AM']),
+        visitStartTime: createTimeSchema(true),
+        visitStartTimeFormat: createTimeFormatSchema(true),
         visitStopDate: displayVisitStopDateTimeFields && hadPreviousStopDateTime ? z.date() : z.date().optional(),
         visitStopTime:
-          displayVisitStopDateTimeFields && hadPreviousStopDateTime
-            ? z.string().refine((value) => value.match(time12HourFormatRegex), t('invalidTimeFormat'))
-            : z
-                .string()
-                .refine((value) => !value || value.match(time12HourFormatRegex), t('invalidTimeFormat'))
-                .optional(),
+          displayVisitStopDateTimeFields && hadPreviousStopDateTime ? createTimeSchema(true) : createTimeSchema(false),
         visitStopTimeFormat:
           displayVisitStopDateTimeFields && hadPreviousStopDateTime
-            ? z.enum(['PM', 'AM'])
-            : z.enum(['PM', 'AM']).optional(),
+            ? createTimeFormatSchema(true)
+            : createTimeFormatSchema(false),
         programType: z.string().optional(),
         visitType: z.string().refine((value) => !!value, t('visitTypeRequired', 'Visit type is required')),
         visitLocation: z.object({
@@ -269,6 +288,7 @@ const StartVisitForm: React.FC<StartVisitFormProps> = (props) => {
       visitStartDate,
       visitStartTime: dayjs(visitStartDate).format('hh:mm'),
       visitStartTimeFormat: new Date(visitStartDate).getHours() >= 12 ? 'PM' : 'AM',
+      visitStopTimeFormat: new Date().getHours() >= 12 ? 'PM' : 'AM',
       visitType: visitToEdit?.visitType?.uuid ?? emrConfiguration?.atFacilityVisitType?.uuid,
       visitLocation: visitToEdit?.location ?? defaultVisitLocation ?? {},
       visitAttributes:

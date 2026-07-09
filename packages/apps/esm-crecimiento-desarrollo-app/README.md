@@ -23,14 +23,13 @@ Terminología de dominio: visita = consulta, encounter = atención, appointment 
 ## TODO content/backend
 
 - Usar siempre `external_id` de OCL como UUID de OpenMRS. El campo `uuid` de OCL es interno/versionado y no debe entrar en config frontend.
-- Crear en content un concepto numérico específico para `controlNumber`; DEV/OCL no tiene un concepto inequívoco de número de control CRED, por eso queda vacío.
-- Normalizar `attendedAge` antes de configurarlo: DEV/OCL tiene `Edad del niño (meses)` (`1410AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA`), pero el workspace hoy maneja labels textuales; solo debe persistirse si el valor enviado queda en meses numéricos.
+- Publicar/importar en content el concepto numérico `Número de control CRED` (`ce8b07e8-712f-406a-b44d-2fa69167f5ea`) antes de configurarlo como `controlNumber`.
 - Crear/asignar privilegios OpenMRS para `app:cred.*`; en DEV no existen y solo el rol `System Developer` pasa los guards por bypass.
 - Configurar `credScheduling.appointmentServiceUuid` con el servicio real de citas CRED; si queda vacío, la generación de citas debe permanecer oculta o mostrar error claro.
 - Corregir edición vs creación en widgets que abren form engine con `encounterUuid: ''`; varios resúmenes todavía crean registros nuevos en vez de editar el encounter existente.
 - Revisar `useCreateCarePlanAppointments`: hoy queda como helper TODO para planes de cuidado (madre gestante, CRED y vacunación), pero no está integrado como contrato estable.
 
-Validado en DEV/OCL: `CRED-001` a `CRED-027`, `INMU-002-REPORTE ESAVI`, encounter type `vaccinationAdministration`, `consultationTime` = `Hora` (`2c67cd3d-407c-4f4d-bdf7-0f32b42ccfb4`), `CRED.perinatalConceptSetUuid` = `Antecedentes de Riesgo Perinatal` (`9dce2946-9fda-4d62-b68e-d62711801189`), psicoprofilaxis/riesgo obstétrico/causa probable de muerte usan `external_id` existentes, y los conceptos de Test Peruano/ESAVI configurados existen, están publicados/no retirados cuando aplica, y son consultables por REST.
+Validado en DEV/OCL: `CRED-001` a `CRED-027`, `INMU-002-REPORTE ESAVI`, encounter type `vaccinationAdministration`, `consultationTime` = `Hora` (`2c67cd3d-407c-4f4d-bdf7-0f32b42ccfb4`), `CRED.perinatalConceptSetUuid` = `Antecedentes de Riesgo Perinatal` (`9dce2946-9fda-4d62-b68e-d62711801189`), `Número de control CRED` existe en OCL pendiente de release/content, psicoprofilaxis/riesgo obstétrico/causa probable de muerte usan `external_id` existentes, y los conceptos de Test Peruano/ESAVI configurados existen, están publicados/no retirados cuando aplica, y son consultables por REST.
 
 ## TODO QA/QLTY
 

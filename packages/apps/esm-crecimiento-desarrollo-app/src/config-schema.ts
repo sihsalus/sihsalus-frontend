@@ -472,12 +472,7 @@ export const configSchema = {
     },
     controlNumber: {
       _type: Type.ConceptUuid,
-      _description: 'Número de control CRED; vacío hasta crear/validar un concepto numérico CRED específico',
-      _default: '',
-    },
-    attendedAge: {
-      _type: Type.ConceptUuid,
-      _description: 'Edad atendida en el control CRED; vacío hasta persistir edad en meses como valor numérico',
+      _description: 'Número de control CRED; vacío hasta publicar/importar el concepto en content',
       _default: '',
     },
   },

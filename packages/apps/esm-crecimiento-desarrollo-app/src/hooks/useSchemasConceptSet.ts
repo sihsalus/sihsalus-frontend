@@ -28,7 +28,10 @@ export function useSchemasConceptSet(config: LegendConfigObject): UseSchemasConc
   const conceptRepresentation =
     'custom:(uuid,display,answers:(uuid,display),conceptMappings:(conceptReferenceTerm:(conceptSource:(name),code)))';
 
-  const url = `${restBaseUrl}/concept?references=${config.legendConceptSet}&v=${conceptRepresentation}`;
+  const legendConceptSet = config.legendConceptSet?.trim();
+  const url = legendConceptSet
+    ? `${restBaseUrl}/concept?references=${legendConceptSet}&v=${conceptRepresentation}`
+    : null;
 
   const { data, error, isLoading } = useSWR<ConceptResponse, Error>(url, swrFetcher);
 

@@ -349,7 +349,7 @@ export const configSchema = {
     },
 
     // CRED Controls
-    // TODO: verify distinct concept UUIDs for each field — currently all three share the same UUID (copy-paste error)
+    // TODO: verify distinct concept UUIDs for each field; these defaults are copied from newborn vital signs.
     consultationTime: {
       _type: Type.ConceptUuid,
       _description: 'Hora de consulta CRED',
@@ -358,11 +358,6 @@ export const configSchema = {
     controlNumber: {
       _type: Type.ConceptUuid,
       _description: 'Número de control CRED',
-      _default: 'a855816a-8bc2-43c8-9cf7-80090dabc47d', // TODO: verify distinct concept UUID
-    },
-    attendedAge: {
-      _type: Type.ConceptUuid,
-      _description: 'Edad atendida en el control CRED',
       _default: 'a855816a-8bc2-43c8-9cf7-80090dabc47d', // TODO: verify distinct concept UUID
     },
   },

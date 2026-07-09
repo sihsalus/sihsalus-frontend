@@ -30,7 +30,6 @@ const createCREDControlsSchema = (t: (key: string, fallback: string) => string) 
     consultationDate: z.date({ required_error: t('consultationDateRequired', 'Fecha de atención es requerida') }),
     consultationTime: z.string().min(1, t('consultationTimeRequired', 'Hora de atención es requerida')),
     controlNumber: z.string().optional(),
-    attendedAge: z.string().optional(),
   });
 
 type CREDControlsFormType = z.infer<ReturnType<typeof createCREDControlsSchema>>;
@@ -145,8 +144,7 @@ const CREDControlsWorkspace: React.FC<DefaultPatientWorkspaceProps> = ({
       now.toLocaleTimeString('es-PE', { hour: '2-digit', minute: '2-digit', hour12: false }),
     );
     setValue('controlNumber', credControlNumber.toString());
-    setValue('attendedAge', ageGroup ? ageGroup.label : formattedAge);
-  }, [setValue, credControlNumber, ageGroup, formattedAge]);
+  }, [setValue, credControlNumber]);
 
   if (isPatientLoading || isEncountersLoading) {
     return (

@@ -11,7 +11,6 @@ interface OdontogramRecordListProps {
   /** Base groups, oldest→newest (rendered newest-first). */
   groups: OdontogramBaseGroup[];
   vigenteBaseUuid: string | null;
-  activeBaseUuid: string | null;
   selectedEncounterUuid: string | null;
   canEdit: boolean;
   onSelectBase: (base: OdontogramRecord) => void;
@@ -19,14 +18,13 @@ interface OdontogramRecordListProps {
   onAddAttention: (base: OdontogramRecord) => void;
 }
 
-function shortDate(iso: string): string {
-  return formatDate(new Date(iso), { mode: 'wide', noToday: true, time: false, year: false });
+function fullDateTime(iso: string): string {
+  return formatDate(new Date(iso), { mode: 'wide', time: true });
 }
 
 const OdontogramRecordList: React.FC<OdontogramRecordListProps> = ({
   groups,
   vigenteBaseUuid,
-  activeBaseUuid,
   selectedEncounterUuid,
   canEdit,
   onSelectBase,
@@ -40,7 +38,6 @@ const OdontogramRecordList: React.FC<OdontogramRecordListProps> = ({
     <nav className={styles.list} aria-label={t('odontogramList', 'Lista de odontogramas')}>
       {orderedGroups.map((group) => {
         const isVigente = group.base.encounterUuid === vigenteBaseUuid;
-        const isActiveGroup = group.base.encounterUuid === activeBaseUuid;
         const baseSelected = group.base.encounterUuid === selectedEncounterUuid;
         const attentionsNewestFirst = group.attentions
           .map((record, index) => ({ record, number: index + 1 }))
@@ -64,7 +61,7 @@ const OdontogramRecordList: React.FC<OdontogramRecordListProps> = ({
 
             <div className={styles.attentions}>
               {attentionsNewestFirst.length === 0 ? (
-                <p className={styles.emptyHint}>{t('noAttentionsShort', 'Sin atenciones')}</p>
+                <p className={styles.emptyHint}>{t('noEvolutivesShort', 'Sin odontogramas evolutivos')}</p>
               ) : (
                 attentionsNewestFirst.map(({ record, number }) => {
                   const selected = record.encounterUuid === selectedEncounterUuid;
@@ -76,14 +73,14 @@ const OdontogramRecordList: React.FC<OdontogramRecordListProps> = ({
                       aria-current={selected}
                       onClick={() => onSelectAttention(record, group.base)}
                     >
-                      <span className={styles.rowTitle}>{`${t('attentionLabel', 'Atención')} ${number}`}</span>
-                      <span className={styles.rowMeta}>{shortDate(record.date)}</span>
+                      <span className={styles.rowTitle}>{`${t('evolutiveShort', 'Evolutivo')} ${number}`}</span>
+                      <span className={styles.rowMeta}>{fullDateTime(record.date)}</span>
                     </button>
                   );
                 })
               )}
 
-              {canEdit && isActiveGroup ? (
+              {canEdit && isVigente ? (
                 <Button
                   kind="ghost"
                   size="sm"
@@ -92,7 +89,7 @@ const OdontogramRecordList: React.FC<OdontogramRecordListProps> = ({
                   onClick={() => onAddAttention(group.base)}
                   data-testid="add-attention-btn"
                 >
-                  {t('newAttention', 'Nueva atención')}
+                  {t('newEvolutive', 'Nuevo odontograma evolutivo')}
                 </Button>
               ) : null}
             </div>

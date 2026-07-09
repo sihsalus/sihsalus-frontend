@@ -103,18 +103,24 @@ const OdontogramDashboard: React.FC<OdontogramDashboardProps> = ({ patientUuid }
   const previewData = selectedRecord?.data ?? createEmptyOdontogramData(adultConfig);
 
   // --- Action eligibility rules ---------------------------------------------
-  // Edit: only the latest attention of the active base, or a base that has no
-  // attentions yet (still being set up). Older records stay as historical read-only.
+  // Only the CURRENT (vigente) initial odontogram can be modified. Older initial
+  // odontograms and all their evolutive odontograms are historical → read-only.
+  const isVigenteActive = activeBase?.encounterUuid === vigenteBaseUuid;
+
+  // Edit: only the latest evolutive odontogram of the vigente initial, or a
+  // vigente initial that has no evolutives yet (still being set up).
   const canEditSelected =
     canEdit &&
+    isVigenteActive &&
     Boolean(selectedRecord) &&
     (selectedRecord?.encounterUuid === latestAttentionUuid ||
       (selectedRecord?.type === 'base' && attentions.length === 0));
 
-  // Delete: only when the record has nothing registered (created by mistake).
-  // A base can only be removed if it has no attentions hanging from it.
+  // Delete: only within the vigente initial and only when the record has nothing
+  // registered (created by mistake). An initial can only be removed with no evolutives.
   const canDeleteSelected =
     canEdit &&
+    isVigenteActive &&
     Boolean(selectedRecord) &&
     countSolutions(selectedRecord?.data) === 0 &&
     (selectedRecord?.type === 'attention' || attentions.length === 0);
@@ -196,8 +202,8 @@ const OdontogramDashboard: React.FC<OdontogramDashboardProps> = ({ patientUuid }
     const record = selectedRecord;
     const encounterTypeName =
       record.type === 'base'
-        ? t('baseOdontogram', 'Odontograma base')
-        : t('attentionOdontogram', 'Odontograma de atención');
+        ? t('initialOdontogram', 'Odontograma inicial')
+        : t('evolutiveOdontogram', 'Odontograma evolutivo');
 
     const close = showModal('delete-encounter-modal', {
       close: () => close(),
@@ -237,8 +243,8 @@ const OdontogramDashboard: React.FC<OdontogramDashboardProps> = ({ patientUuid }
   }
 
   const detailLabel = isViewingAttention
-    ? `${t('attentionLabel', 'Atención')} ${selectedAttentionNumber}`
-    : t('baseFindings', 'Hallazgos base');
+    ? `${t('evolutiveOdontogram', 'Odontograma evolutivo')} ${selectedAttentionNumber}`
+    : t('initialOdontogram', 'Odontograma inicial');
   const detailMeta = [
     selectedRecord ? formatDate(new Date(selectedRecord.date), { mode: 'wide', time: true }) : null,
     selectedRecord?.provider ?? null,
@@ -254,7 +260,7 @@ const OdontogramDashboard: React.FC<OdontogramDashboardProps> = ({ patientUuid }
             align="bottom-right"
             label={t(
               'baseOdontogramTooltip',
-              'El odontograma base es el diagnóstico odontológico inicial del periodo (normalmente al inicio del año): registra el estado de todas las piezas dentales y se conserva como referencia. Las soluciones se registran después en cada odontograma de atención.',
+              'El odontograma inicial es el diagnóstico odontológico del periodo (normalmente al inicio del año): registra el estado de todas las piezas dentales y se conserva como referencia. Las soluciones se registran después en cada odontograma evolutivo.',
             )}
             enterDelayMs={100}
             leaveDelayMs={150}
@@ -269,7 +275,7 @@ const OdontogramDashboard: React.FC<OdontogramDashboardProps> = ({ patientUuid }
           </Tooltip>
           {canEdit ? (
             <Button kind="ghost" size="sm" renderIcon={Add} onClick={launchNewBase} data-testid="add-base-btn">
-              {t('newBaseOdontogram', 'Nuevo odontograma base')}
+              {t('newInitialOdontogram', 'Nuevo odontograma inicial')}
             </Button>
           ) : null}
         </div>
@@ -280,7 +286,6 @@ const OdontogramDashboard: React.FC<OdontogramDashboardProps> = ({ patientUuid }
           <OdontogramRecordList
             groups={groups}
             vigenteBaseUuid={vigenteBaseUuid}
-            activeBaseUuid={activeBase.encounterUuid}
             selectedEncounterUuid={selectedEncounterUuid}
             canEdit={canEdit}
             onSelectBase={handleSelectBase}

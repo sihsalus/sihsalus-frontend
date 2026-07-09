@@ -26,8 +26,8 @@ interface OdontogramWorkspaceProps extends DefaultWorkspaceProps {
 
 // Labels are provided via i18n — these are English fallbacks only
 const modeTagI18nKeys: Record<OdontogramRecordType, { type: 'blue' | 'teal'; key: string; fallback: string }> = {
-  base: { type: 'blue', key: 'baseOdontogramTag', fallback: 'Base odontogram' },
-  attention: { type: 'teal', key: 'attentionOdontogramTag', fallback: 'Attention odontogram' },
+  base: { type: 'blue', key: 'baseOdontogramTag', fallback: 'Odontograma inicial' },
+  attention: { type: 'teal', key: 'attentionOdontogramTag', fallback: 'Odontograma evolutivo' },
 };
 
 const OdontogramWorkspace: React.FC<OdontogramWorkspaceProps> = ({
@@ -77,8 +77,8 @@ const OdontogramWorkspace: React.FC<OdontogramWorkspaceProps> = ({
         kind: 'success',
         subtitle:
           workspaceMode === 'base'
-            ? t('odontogramBaseSavedSubtitle', 'Base odontogram findings have been saved.')
-            : t('odontogramAttentionSavedSubtitle', 'Attention odontogram solutions have been saved.'),
+            ? t('odontogramBaseSavedSubtitle', 'Se guardó el odontograma inicial.')
+            : t('odontogramAttentionSavedSubtitle', 'Se guardó el odontograma evolutivo.'),
       });
       onSaved?.();
       if (!encounterUuid) {
@@ -117,9 +117,9 @@ const OdontogramWorkspace: React.FC<OdontogramWorkspaceProps> = ({
           {isSaving ? (
             <InlineLoading description={t('saving', 'Saving...')} />
           ) : workspaceMode === 'base' ? (
-            t('saveBase', 'Save base')
+            t('saveBase', 'Guardar odontograma inicial')
           ) : (
-            t('saveAttention', 'Save attention')
+            t('saveAttention', 'Guardar odontograma evolutivo')
           )}
         </Button>
       </ButtonSet>

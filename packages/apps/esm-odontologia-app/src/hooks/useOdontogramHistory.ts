@@ -22,7 +22,7 @@ interface EncounterResponse {
 function formatBaseLabel(isoDate: string): string {
   const d = new Date(isoDate);
   const dateStr = d.toLocaleDateString('es-PE', { day: '2-digit', month: 'short', year: 'numeric' });
-  return `Odontograma base · ${dateStr}`;
+  return `Odontograma inicial · ${dateStr}`;
 }
 
 function formatAttentionLabel(isoDate: string): string {

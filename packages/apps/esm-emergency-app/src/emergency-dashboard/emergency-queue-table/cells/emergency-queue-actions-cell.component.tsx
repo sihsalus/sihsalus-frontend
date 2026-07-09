@@ -6,7 +6,7 @@
  * - In service in Triage Queue -> "Triaje"
  * - In service in Attention Queue -> "Atencion de emergencia"
  *
- * Overflow menu includes secondary actions: move, transition, edit, print, remove.
+ * Overflow menu includes secondary actions: move, transition, print, remove.
  * Shows "Completar triaje" when patient is in Attention Queue without a triage encounter.
  */
 
@@ -21,13 +21,14 @@ import {
   showSnackbar,
   useConfig,
   useLayoutType,
-  useSession,
   userHasAccess,
+  useSession,
 } from '@openmrs/esm-framework';
 import React, { useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
 import { type Config } from '../../../config-schema';
 import { emergencyEditPrivilege, MODALS, WORKSPACES } from '../../../constants';
+import { useTriageVitalsSavedHandler } from '../../../emergency-workflow/hooks/useTriageVitalsSavedHandler';
 import { useEmergencyConfig } from '../../../hooks/usePriorityConfig';
 import styles from './emergency-queue-actions-cell.scss';
 import { type EmergencyQueueTableCellProps } from './emergency-queue-name-cell.component';
@@ -39,11 +40,11 @@ export const EmergencyQueueActionsCell: React.FC<EmergencyQueueTableCellProps> =
   const session = useSession();
   const { queueStatuses, emergencyTriageQueueUuid } = useEmergencyConfig();
   const canEdit = userHasAccess(emergencyEditPrivilege, session?.user);
+  const handleTriageVitalsSaved = useTriageVitalsSavedHandler(queueEntry);
 
   const isWaiting = queueEntry?.status?.uuid === queueStatuses.waiting;
   const isInService = queueEntry?.status?.uuid === queueStatuses.inService;
   const isInTriageQueue = queueEntry?.queue?.uuid === emergencyTriageQueueUuid;
-  const hasPreviousEntry = queueEntry?.previousQueueEntry != null;
 
   // Check if patient has a triage encounter in their visit
   const triageEncounterTypeUuid = config.triageEncounter.encounterTypeUuid;
@@ -60,10 +61,19 @@ export const EmergencyQueueActionsCell: React.FC<EmergencyQueueTableCellProps> =
   }, [queueEntry]);
 
   const handleOpenTriage = useCallback(() => {
-    launchWorkspace2(WORKSPACES.TRIAGE_VITALS_FORM, { encounterTypeUuid: triageEncounterTypeUuid }, null, {
-      patientUuid: queueEntry.patient.uuid,
-    });
-  }, [queueEntry.patient.uuid, triageEncounterTypeUuid]);
+    launchWorkspace2(
+      WORKSPACES.TRIAGE_VITALS_FORM,
+      {
+        encounterTypeUuid: triageEncounterTypeUuid,
+        onVitalsSaved: handleTriageVitalsSaved,
+        profile: 'emergency-triage',
+      },
+      null,
+      {
+        patientUuid: queueEntry.patient.uuid,
+      },
+    );
+  }, [handleTriageVitalsSaved, queueEntry.patient.uuid, triageEncounterTypeUuid]);
 
   const handleOpenAttention = useCallback(() => {
     launchWorkspace(WORKSPACES.ATTENTION_FORM, {
@@ -91,22 +101,8 @@ export const EmergencyQueueActionsCell: React.FC<EmergencyQueueTableCellProps> =
     });
   }, [queueEntry]);
 
-  const handleEditEntry = useCallback(() => {
-    const dispose = showModal(MODALS.EDIT_QUEUE_ENTRY, {
-      closeModal: () => dispose(),
-      queueEntry,
-    });
-  }, [queueEntry]);
-
   const handleRemoveFromQueue = useCallback(() => {
     const dispose = showModal(MODALS.REMOVE_QUEUE_ENTRY, {
-      closeModal: () => dispose(),
-      queueEntry,
-    });
-  }, [queueEntry]);
-
-  const handleUndoTransition = useCallback(() => {
-    const dispose = showModal(MODALS.UNDO_TRANSITION, {
       closeModal: () => dispose(),
       queueEntry,
     });
@@ -163,7 +159,6 @@ export const EmergencyQueueActionsCell: React.FC<EmergencyQueueTableCellProps> =
         <OverflowMenuItem itemText={t('viewChart', 'Ver ficha')} onClick={handleGoToChart} />
         {canEdit && <OverflowMenuItem itemText={t('moveToQueue', 'Mover a cola')} onClick={handleMoveToQueue} />}
         {canEdit && <OverflowMenuItem itemText={t('transition', 'Transicion')} onClick={handleTransition} />}
-        {canEdit && <OverflowMenuItem itemText={t('editEntry', 'Editar entrada')} onClick={handleEditEntry} />}
         <OverflowMenuItem itemText={t('printSticker', 'Imprimir sticker')} onClick={handlePrintSticker} />
         {canEdit && (
           <OverflowMenuItem
@@ -171,13 +166,6 @@ export const EmergencyQueueActionsCell: React.FC<EmergencyQueueTableCellProps> =
             onClick={handleRemoveFromQueue}
             isDelete
             hasDivider
-          />
-        )}
-        {canEdit && hasPreviousEntry && (
-          <OverflowMenuItem
-            itemText={t('undoTransition', 'Deshacer transicion')}
-            onClick={handleUndoTransition}
-            isDelete
           />
         )}
       </OverflowMenu>

@@ -34,7 +34,6 @@ import { useAdmissions } from '../resources/admissions.resource';
 import styles from './admission-home.scss';
 
 const EXCEL_CSV_PREAMBLE = '\uFEFFsep=,\r\n';
-const twoRowHeaderProps = { rowSpan: 2 };
 
 interface AdmissionConfig {
   admissionReportPageSize?: number;
@@ -57,6 +56,18 @@ function formatDate(value?: string) {
   return parsedDate ? new Intl.DateTimeFormat('es-PE', { dateStyle: 'short' }).format(parsedDate) : '';
 }
 
+function formatDateTime(value?: string) {
+  if (!value) return '';
+  const parsedDate = parseDate(value);
+  return parsedDate
+    ? new Intl.DateTimeFormat('es-PE', {
+        dateStyle: 'short',
+        timeStyle: 'short',
+        timeZone: 'America/Lima',
+      }).format(parsedDate)
+    : '';
+}
+
 function parseDate(value?: string) {
   if (!value) return null;
   const dateOnlyMatch = /^(\d{4})-(\d{2})-(\d{2})$/.exec(value);
@@ -71,8 +82,20 @@ function matchesGender(gender: string, expected: 'male' | 'female') {
   const normalizedGender = gender.trim().toLocaleLowerCase();
 
   return expected === 'male'
-    ? ['m', 'male', 'masculino'].includes(normalizedGender)
-    : ['f', 'female', 'femenino'].includes(normalizedGender);
+    ? ['m', 'male', 'masculino', 'hombre'].includes(normalizedGender)
+    : ['f', 'female', 'femenino', 'mujer'].includes(normalizedGender);
+}
+
+function formatSex(gender: string, labels: { female: string; male: string }) {
+  if (matchesGender(gender, 'male')) {
+    return labels.male;
+  }
+
+  if (matchesGender(gender, 'female')) {
+    return labels.female;
+  }
+
+  return gender;
 }
 
 function getDurationValue(duration: AgeDuration, unit: keyof AgeDuration) {
@@ -115,16 +138,6 @@ function formatAgeWithUnit(birthDate: string | undefined, referenceDate: string 
   return formatAgeUnit(0, labels.week, labels.weeks);
 }
 
-function getAgeForGender(
-  gender: string,
-  expected: 'male' | 'female',
-  birthDate: string | undefined,
-  referenceDate: string | undefined,
-  labels: AgeLabels,
-) {
-  return matchesGender(gender, expected) ? formatAgeWithUnit(birthDate, referenceDate, labels) : '';
-}
-
 function escapeCsvValue(value: string) {
   return `"${value.replace(/"/g, '""')}"`;
 }
@@ -143,6 +156,13 @@ export default function AdmissionHome() {
       weeks: t('ageWeeks', 'semanas'),
       year: t('ageYear', 'año'),
       years: t('ageYears', 'años'),
+    }),
+    [t],
+  );
+  const sexLabels = useMemo(
+    () => ({
+      female: t('femaleInitial', 'F'),
+      male: t('maleInitial', 'M'),
     }),
     [t],
   );
@@ -175,6 +195,8 @@ export default function AdmissionHome() {
           admission.status,
           admission.searchText,
           formatDate(admission.startDatetime),
+          formatDateTime(admission.startDatetime),
+          formatSex(admission.gender, sexLabels),
         ]
           .join(' ')
           .toLocaleLowerCase()
@@ -184,7 +206,7 @@ export default function AdmissionHome() {
 
       return matchesSearch && matchesStatus;
     });
-  }, [admissions, searchTerm, statusFilter]);
+  }, [admissions, searchTerm, sexLabels, statusFilter]);
 
   const reportSummary = useMemo(
     () => ({
@@ -198,7 +220,7 @@ export default function AdmissionHome() {
 
   const exportFilteredAdmissions = () => {
     const headers = [
-      t('date', 'Fecha'),
+      t('dateTime', 'Fecha y hora'),
       t('medicalRecordNumber', 'HCE / código temporal'),
       t('documentType', 'Tipo doc.'),
       t('documentNumber', 'N° documento'),
@@ -208,14 +230,14 @@ export default function AdmissionHome() {
       t('hasSis', 'Tiene SIS'),
       t('fullName', 'Nombres y apellidos'),
       t('address', 'Dirección'),
-      t('maleAge', 'Edad M'),
-      t('femaleAge', 'Edad F'),
+      t('age', 'Edad'),
+      t('sex', 'Sexo'),
       t('service', 'Servicio'),
       t('orderNumber', 'Número de orden'),
       t('communicationCondition', 'Condición comunicación'),
     ];
     const rows = filteredAdmissions.map((admission, index) => [
-      formatDate(admission.startDatetime),
+      formatDateTime(admission.startDatetime),
       admission.medicalRecordNumber,
       admission.documentType || t('pending', 'Pendiente'),
       admission.documentNumber || t('pending', 'Pendiente'),
@@ -225,8 +247,8 @@ export default function AdmissionHome() {
       admission.hasSis,
       admission.patientName,
       admission.address,
-      getAgeForGender(admission.gender, 'male', admission.birthDate, admission.startDatetime, ageLabels),
-      getAgeForGender(admission.gender, 'female', admission.birthDate, admission.startDatetime, ageLabels),
+      formatAgeWithUnit(admission.birthDate, admission.startDatetime, ageLabels),
+      formatSex(admission.gender, sexLabels),
       admission.service,
       String(index + 1),
       admission.communicationCondition,
@@ -360,43 +382,34 @@ export default function AdmissionHome() {
                     <col className={styles.personColumn} />
                     <col className={styles.addressColumn} />
                     <col className={styles.ageColumn} />
-                    <col className={styles.ageColumn} />
+                    <col className={styles.sexColumn} />
                     <col className={styles.serviceColumn} />
                     <col className={styles.orderColumn} />
                     <col className={styles.communicationColumn} />
                   </colgroup>
                   <TableHead>
                     <TableRow>
-                      <TableHeader {...twoRowHeaderProps}>{t('date', 'Fecha')}</TableHeader>
-                      <TableHeader {...twoRowHeaderProps}>
-                        {t('medicalRecordNumber', 'HCE / código temporal')}
-                      </TableHeader>
-                      <TableHeader {...twoRowHeaderProps}>{t('documentType', 'Tipo doc.')}</TableHeader>
-                      <TableHeader {...twoRowHeaderProps}>{t('documentNumber', 'N° documento')}</TableHeader>
-                      <TableHeader {...twoRowHeaderProps}>
-                        {t('identificationStatus', 'Estado identificación')}
-                      </TableHeader>
-                      <TableHeader {...twoRowHeaderProps}>{t('responsiblePerson', 'Responsable')}</TableHeader>
-                      <TableHeader {...twoRowHeaderProps}>{t('birthDateShort', 'F. Nac.')}</TableHeader>
-                      <TableHeader {...twoRowHeaderProps}>{t('hasSis', 'Tiene SIS')}</TableHeader>
-                      <TableHeader {...twoRowHeaderProps}>{t('fullName', 'Nombres y apellidos')}</TableHeader>
-                      <TableHeader {...twoRowHeaderProps}>{t('address', 'Dirección')}</TableHeader>
-                      <TableHeader colSpan={2}>{t('age', 'Edad')}</TableHeader>
-                      <TableHeader {...twoRowHeaderProps}>{t('service', 'Servicio')}</TableHeader>
-                      <TableHeader {...twoRowHeaderProps}>{t('orderNumber', 'Número de orden')}</TableHeader>
-                      <TableHeader {...twoRowHeaderProps}>
-                        {t('communicationCondition', 'Condición comunicación')}
-                      </TableHeader>
-                    </TableRow>
-                    <TableRow>
-                      <TableHeader>{t('maleInitial', 'M')}</TableHeader>
-                      <TableHeader>{t('femaleInitial', 'F')}</TableHeader>
+                      <TableHeader>{t('dateTime', 'Fecha y hora')}</TableHeader>
+                      <TableHeader>{t('medicalRecordNumber', 'HCE / código temporal')}</TableHeader>
+                      <TableHeader>{t('documentType', 'Tipo doc.')}</TableHeader>
+                      <TableHeader>{t('documentNumber', 'N° documento')}</TableHeader>
+                      <TableHeader>{t('identificationStatus', 'Estado identificación')}</TableHeader>
+                      <TableHeader>{t('responsiblePerson', 'Responsable')}</TableHeader>
+                      <TableHeader>{t('birthDateShort', 'F. Nac.')}</TableHeader>
+                      <TableHeader>{t('hasSis', 'Tiene SIS')}</TableHeader>
+                      <TableHeader>{t('fullName', 'Nombres y apellidos')}</TableHeader>
+                      <TableHeader>{t('address', 'Dirección')}</TableHeader>
+                      <TableHeader>{t('age', 'Edad')}</TableHeader>
+                      <TableHeader>{t('sex', 'Sexo')}</TableHeader>
+                      <TableHeader>{t('service', 'Servicio')}</TableHeader>
+                      <TableHeader>{t('orderNumber', 'Número de orden')}</TableHeader>
+                      <TableHeader>{t('communicationCondition', 'Condición comunicación')}</TableHeader>
                     </TableRow>
                   </TableHead>
                   <TableBody>
                     {filteredAdmissions.map((admission, index) => (
                       <TableRow key={admission.uuid}>
-                        <TableCell>{formatDate(admission.startDatetime)}</TableCell>
+                        <TableCell>{formatDateTime(admission.startDatetime)}</TableCell>
                         <TableCell>{admission.medicalRecordNumber}</TableCell>
                         <TableCell>{admission.documentType || t('pending', 'Pendiente')}</TableCell>
                         <TableCell>{admission.documentNumber || t('pending', 'Pendiente')}</TableCell>
@@ -420,23 +433,9 @@ export default function AdmissionHome() {
                         </TableCell>
                         <TableCell>{admission.address}</TableCell>
                         <TableCell>
-                          {getAgeForGender(
-                            admission.gender,
-                            'male',
-                            admission.birthDate,
-                            admission.startDatetime,
-                            ageLabels,
-                          )}
+                          {formatAgeWithUnit(admission.birthDate, admission.startDatetime, ageLabels)}
                         </TableCell>
-                        <TableCell>
-                          {getAgeForGender(
-                            admission.gender,
-                            'female',
-                            admission.birthDate,
-                            admission.startDatetime,
-                            ageLabels,
-                          )}
-                        </TableCell>
+                        <TableCell>{formatSex(admission.gender, sexLabels)}</TableCell>
                         <TableCell>{admission.service}</TableCell>
                         <TableCell>{index + 1}</TableCell>
                         <TableCell>{admission.communicationCondition}</TableCell>

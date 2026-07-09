@@ -1,4 +1,10 @@
-import { getDefaultsFromConfigSchema, launchWorkspace, useConfig, useSession, userHasAccess } from '@openmrs/esm-framework';
+import {
+  getDefaultsFromConfigSchema,
+  launchWorkspace,
+  useConfig,
+  userHasAccess,
+  useSession,
+} from '@openmrs/esm-framework';
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { type ConfigObject, configSchema } from '../../config-schema';

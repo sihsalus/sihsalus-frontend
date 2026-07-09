@@ -20,10 +20,10 @@ import { useLocation, useParams } from 'react-router-dom';
 import { builtInSections, type RegistrationConfig, type SectionDefinition } from '../config-schema';
 import { moduleName } from '../constants';
 import { ResourcesContext } from '../offline.resources';
-import { fetchPersonForPromotion } from './identity/identity-search.resource';
-import { applyPersonToRegistrationForm } from './identity/promotion';
 import BeforeSavePrompt from './before-save-prompt';
 import { type SavePatientForm, SavePatientTransactionManager } from './form-manager';
+import { fetchPersonForPromotion } from './identity/identity-search.resource';
+import { applyPersonToRegistrationForm } from './identity/promotion';
 import { DummyDataInput } from './input/dummy-data/dummy-data-input.component';
 import styles from './patient-registration.scss';
 import { type CapturePhotoProps, type FormValues } from './patient-registration.types';
@@ -124,10 +124,7 @@ export const PatientRegistration: React.FC<PatientRegistrationProps> = ({ savePa
     if (isOffline) {
       showSnackbar({
         title: t('promotionOfflineTitle', 'Promoción no disponible'),
-        subtitle: t(
-          'promotionOfflineSubtitle',
-          'La promoción de una persona existente a paciente requiere conexión.',
-        ),
+        subtitle: t('promotionOfflineSubtitle', 'La promoción de una persona existente a paciente requiere conexión.'),
         kind: 'warning',
       });
       return;
@@ -148,7 +145,11 @@ export const PatientRegistration: React.FC<PatientRegistrationProps> = ({ savePa
             address: { ...currentValues.address },
             attributes: { ...currentValues.attributes },
           };
-          applyPersonToRegistrationForm(person, (field, value) => set(nextValues, field, value), () => {});
+          applyPersonToRegistrationForm(
+            person,
+            (field, value) => set(nextValues, field, value),
+            () => {},
+          );
           return nextValues;
         });
       })
@@ -242,11 +243,47 @@ export const PatientRegistration: React.FC<PatientRegistrationProps> = ({ savePa
     }
   };
 
+  const getErrorMessages = (errors: FormikErrors<FormValues>) => {
+    const messages = new Set<string>();
+
+    const collectMessages = (value: unknown, fallbackKey?: string) => {
+      if (!value) {
+        return;
+      }
+      if (typeof value === 'string') {
+        messages.add(t(value, value));
+        return;
+      }
+      if (Array.isArray(value)) {
+        value.forEach((item) => {
+          collectMessages(item, fallbackKey);
+        });
+        return;
+      }
+      if (typeof value === 'object') {
+        Object.entries(value).forEach(([key, nestedValue]) => {
+          collectMessages(nestedValue, key);
+        });
+        return;
+      }
+      if (fallbackKey) {
+        messages.add(t(`${fallbackKey}LabelText`, fallbackKey));
+      }
+    };
+
+    Object.entries(errors).forEach(([key, value]) => {
+      collectMessages(value, key);
+    });
+    return [...messages];
+  };
+
   const getDescription = (errors: FormikErrors<FormValues>) => {
+    const errorMessages = getErrorMessages(errors);
+
     return (
       <ul style={{ listStyle: 'inside' }}>
-        {Object.keys(errors).map((error) => (
-          <li key={error}>{t(`${error}LabelText`, error)}</li>
+        {errorMessages.map((error) => (
+          <li key={error}>{error}</li>
         ))}
       </ul>
     );

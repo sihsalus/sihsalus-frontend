@@ -44,6 +44,7 @@ const ConfirmationStep: React.FC<ConfirmationStepProps> = ({ workflowState, onRe
   const patientAge = workflowState.patientData?.person?.age;
   const patientGender = workflowState.patientData?.person?.gender;
   const patientIdentifier = workflowState.patientData?.identifiers?.[0];
+  const isDirectEmergency = workflowState.initialClassification === 'emergency';
 
   const genderLabel =
     patientGender === 'M'
@@ -69,7 +70,9 @@ const ConfirmationStep: React.FC<ConfirmationStepProps> = ({ workflowState, onRe
           />
           <ProgressStep
             label={t('confirmed', 'Confirmado')}
-            secondaryLabel={t('inTriageQueue', 'En cola de triaje')}
+            secondaryLabel={
+              isDirectEmergency ? t('attentionQueue', 'Cola de Atención') : t('inTriageQueue', 'En cola de triaje')
+            }
             current
           />
         </ProgressIndicator>
@@ -79,11 +82,19 @@ const ConfirmationStep: React.FC<ConfirmationStepProps> = ({ workflowState, onRe
           kind="success"
           lowContrast
           hideCloseButton
-          title={t('patientAddedToQueue', 'Paciente agregado a la cola de triaje')}
-          subtitle={t(
-            'patientAddedToQueueSubtitle',
-            'El paciente ha sido registrado y enviado a la cola de triaje con estado "Pendiente de Triaje".',
-          )}
+          title={
+            isDirectEmergency
+              ? t('emergencyDirectAttention', 'Paciente enviado a atención inmediata')
+              : t('patientAddedToQueue', 'Paciente agregado a la cola de triaje')
+          }
+          subtitle={
+            isDirectEmergency
+              ? t('emergencyDirectAttentionSubtitle', 'Prioridad I — El triaje se puede completar durante la atención.')
+              : t(
+                  'patientAddedToQueueSubtitle',
+                  'El paciente ha sido registrado y enviado a la cola de triaje con estado "Pendiente de Triaje".',
+                )
+          }
         />
 
         {/* Patient Summary Card */}
@@ -153,16 +164,22 @@ const ConfirmationStep: React.FC<ConfirmationStepProps> = ({ workflowState, onRe
                 <StructuredListRow>
                   <StructuredListCell>{t('queueStatus', 'Estado en cola')}</StructuredListCell>
                   <StructuredListCell>
-                    <Tag type="blue" size="md">
-                      {t('pendingTriage', 'Pendiente de Triaje')}
+                    <Tag type={isDirectEmergency ? 'red' : 'blue'} size="md">
+                      {isDirectEmergency
+                        ? t('statusInService', 'Atendiéndose')
+                        : t('pendingTriage', 'Pendiente de Triaje')}
                     </Tag>
                   </StructuredListCell>
                 </StructuredListRow>
                 <StructuredListRow>
-                  <StructuredListCell>{t('triagePriority', 'Prioridad de triaje')}</StructuredListCell>
                   <StructuredListCell>
-                    <Tag type="outline" size="md">
-                      {t('pendingTriageAssignment', 'Se asignará en triaje')}
+                    {isDirectEmergency ? t('priority', 'Prioridad') : t('triagePriority', 'Prioridad de triaje')}
+                  </StructuredListCell>
+                  <StructuredListCell>
+                    <Tag type={isDirectEmergency ? 'red' : 'outline'} size="md">
+                      {isDirectEmergency
+                        ? t('priorityI', 'Prioridad I')
+                        : t('pendingTriageAssignment', 'Se asignará en triaje')}
                     </Tag>
                   </StructuredListCell>
                 </StructuredListRow>

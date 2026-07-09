@@ -1,6 +1,7 @@
 import {
   Button,
   InlineLoading,
+  InlineNotification,
   ModalBody,
   ModalFooter,
   ModalHeader,
@@ -10,7 +11,7 @@ import {
   Tag,
 } from '@carbon/react';
 import { showSnackbar } from '@openmrs/esm-framework';
-import React, { useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useSWRConfig } from 'swr';
 import { usePriorityConfig } from '../hooks/usePriorityConfig';
@@ -25,8 +26,9 @@ interface MoveQueueEntryModalProps {
 const MoveQueueEntryModal: React.FC<MoveQueueEntryModalProps> = ({ queueEntry, closeModal }) => {
   const { t } = useTranslation();
   const { mutate } = useSWRConfig();
-  const { priorityConfigs } = usePriorityConfig();
-  const { queues, isLoading: isLoadingQueues } = useQueues();
+  const { getPriorityByUuid } = usePriorityConfig();
+  const currentQueueLocationUuid = queueEntry.queue?.location?.uuid ?? queueEntry.locationWaitingFor?.uuid;
+  const { queues, isLoading: isLoadingQueues } = useQueues(currentQueueLocationUuid);
 
   const patientName = queueEntry.patient.person?.display || queueEntry.patient.display;
   const currentQueueUuid = queueEntry.queue?.uuid;
@@ -35,9 +37,61 @@ const MoveQueueEntryModal: React.FC<MoveQueueEntryModalProps> = ({ queueEntry, c
   const [selectedPriority, setSelectedPriority] = useState(queueEntry.priority?.uuid || '');
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const isUnchanged = selectedQueue === currentQueueUuid && selectedPriority === queueEntry.priority?.uuid;
-
   const selectedQueueObj = useMemo(() => queues.find((q) => q.uuid === selectedQueue), [queues, selectedQueue]);
+  const priorityOptions = useMemo(
+    () =>
+      (selectedQueueObj?.allowedPriorities ?? []).map((priority) => {
+        const priorityConfig = getPriorityByUuid(priority.uuid);
+        return {
+          uuid: priority.uuid,
+          label: priorityConfig?.label ?? priority.display,
+          color: priorityConfig?.color,
+        };
+      }),
+    [getPriorityByUuid, selectedQueueObj?.allowedPriorities],
+  );
+  const resolvedStatusUuid = useMemo(() => {
+    const allowedStatuses = selectedQueueObj?.allowedStatuses ?? [];
+    const currentStatusUuid = queueEntry.status?.uuid;
+
+    if (!allowedStatuses.length) {
+      return currentStatusUuid;
+    }
+
+    return allowedStatuses.some((status) => status.uuid === currentStatusUuid)
+      ? currentStatusUuid
+      : allowedStatuses[0].uuid;
+  }, [queueEntry.status?.uuid, selectedQueueObj?.allowedStatuses]);
+
+  const isUnchanged =
+    selectedQueue === currentQueueUuid &&
+    selectedPriority === queueEntry.priority?.uuid &&
+    resolvedStatusUuid === queueEntry.status?.uuid;
+  const canSubmit = Boolean(
+    selectedQueue &&
+      selectedPriority &&
+      resolvedStatusUuid &&
+      priorityOptions.length &&
+      !isLoadingQueues &&
+      !isSubmitting &&
+      !isUnchanged,
+  );
+
+  useEffect(() => {
+    if (!selectedQueueObj) {
+      return;
+    }
+
+    if (!priorityOptions.length) {
+      setSelectedPriority('');
+      return;
+    }
+
+    if (!priorityOptions.some((priority) => priority.uuid === selectedPriority)) {
+      const currentPriority = priorityOptions.find((priority) => priority.uuid === queueEntry.priority?.uuid);
+      setSelectedPriority((currentPriority ?? priorityOptions[0]).uuid);
+    }
+  }, [priorityOptions, queueEntry.priority?.uuid, selectedPriority, selectedQueueObj]);
 
   const getPriorityTagProps = (color?: string) => {
     if (color === 'red') return { type: 'red' as const, className: styles.boldTag };
@@ -54,7 +108,7 @@ const MoveQueueEntryModal: React.FC<MoveQueueEntryModalProps> = ({ queueEntry, c
         queueEntryToTransition: queueEntry.uuid,
         newQueue: selectedQueue,
         newPriority: selectedPriority,
-        newStatus: queueEntry.status?.uuid,
+        newStatus: resolvedStatusUuid,
       });
 
       showSnackbar({
@@ -119,28 +173,43 @@ const MoveQueueEntryModal: React.FC<MoveQueueEntryModalProps> = ({ queueEntry, c
             {/* Priority picker */}
             <section>
               <div className={styles.sectionTitle}>{t('priority', 'Prioridad')}</div>
-              <RadioButtonGroup
-                className={styles.radioButtonGroup}
-                name="priority"
-                valueSelected={selectedPriority}
-                orientation="horizontal"
-                onChange={(uuid: string) => setSelectedPriority(uuid)}
-              >
-                {priorityConfigs.map((priority) => {
-                  const tagProps = getPriorityTagProps(priority.color);
-                  return (
-                    <RadioButton
-                      key={priority.conceptUuid}
-                      labelText={
-                        <Tag type={tagProps.type} size="sm" className={tagProps.className}>
-                          {priority.label}
-                        </Tag>
-                      }
-                      value={priority.conceptUuid}
-                    />
-                  );
-                })}
-              </RadioButtonGroup>
+              {isLoadingQueues ? (
+                <InlineLoading description={t('loading', 'Cargando...')} />
+              ) : priorityOptions.length ? (
+                <RadioButtonGroup
+                  className={styles.radioButtonGroup}
+                  name="priority"
+                  valueSelected={selectedPriority}
+                  orientation="horizontal"
+                  onChange={(uuid: string) => setSelectedPriority(uuid)}
+                >
+                  {priorityOptions.map((priority) => {
+                    const tagProps = getPriorityTagProps(priority.color);
+                    return (
+                      <RadioButton
+                        key={priority.uuid}
+                        labelText={
+                          <Tag type={tagProps.type} size="sm" className={tagProps.className}>
+                            {priority.label}
+                          </Tag>
+                        }
+                        value={priority.uuid}
+                      />
+                    );
+                  })}
+                </RadioButtonGroup>
+              ) : (
+                <InlineNotification
+                  kind="error"
+                  lowContrast
+                  hideCloseButton
+                  title={t('noPrioritiesAvailable', 'No hay prioridades disponibles')}
+                  subtitle={t(
+                    'selectedQueueHasNoAllowedPriorities',
+                    'La cola seleccionada no tiene prioridades permitidas configuradas.',
+                  )}
+                />
+              )}
             </section>
           </Stack>
         </div>
@@ -149,7 +218,7 @@ const MoveQueueEntryModal: React.FC<MoveQueueEntryModalProps> = ({ queueEntry, c
         <Button kind="secondary" onClick={closeModal} disabled={isSubmitting}>
           {t('cancel', 'Cancelar')}
         </Button>
-        <Button kind="primary" onClick={handleSubmit} disabled={isSubmitting || isUnchanged}>
+        <Button kind="primary" onClick={handleSubmit} disabled={!canSubmit}>
           {isSubmitting ? t('moving', 'Moviendo...') : t('move', 'Mover')}
         </Button>
       </ModalFooter>

@@ -60,7 +60,9 @@ describe('Patient registration root', () => {
 
     render(<Root />);
 
-    expect(mockRequirePrivilege).toHaveBeenCalledWith(expect.objectContaining({ privilege: 'app:topnav.registerPatient' }));
+    expect(mockRequirePrivilege).toHaveBeenCalledWith(
+      expect.objectContaining({ privilege: 'app:topnav.registerPatient' }),
+    );
     expect(screen.getByText('Patient registration page')).toBeInTheDocument();
   }, 15000);
 

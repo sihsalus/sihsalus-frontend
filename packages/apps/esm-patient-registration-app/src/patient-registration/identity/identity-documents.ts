@@ -103,9 +103,7 @@ export function getDocumentTypeDefinitionByConcept(documentTypeConceptUuid?: str
     return undefined;
   }
 
-  return documentTypeDefinitions.find(
-    (definition) => definition.documentTypeConceptUuid === documentTypeConceptUuid,
-  );
+  return documentTypeDefinitions.find((definition) => definition.documentTypeConceptUuid === documentTypeConceptUuid);
 }
 
 export function getDocumentTypeDefinitionByIdentifierType(patientIdentifierTypeUuid?: string) {

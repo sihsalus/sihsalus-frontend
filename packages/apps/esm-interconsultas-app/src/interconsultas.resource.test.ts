@@ -2,6 +2,8 @@ import { describe, expect, it } from 'vitest';
 import {
   buildResponseObsPayload,
   deriveStatus,
+  getAvailableProvidersFromResults,
+  getDestinationServicesFromConceptResults,
   interconsultaOrdersUrl,
   matchesTrayFilter,
 } from './interconsultas.resource';
@@ -142,10 +144,61 @@ describe('interconsultaOrdersUrl', () => {
     const url = interconsultaOrdersUrl('order-type-uuid');
     expect(url).toContain('/order?orderTypes=order-type-uuid');
     expect(url).toContain('v=custom:');
+    expect(url).toContain('&limit=100');
     expect(url).not.toContain('patient=');
   });
 
   it('agrega el filtro de paciente cuando se pide', () => {
     expect(interconsultaOrdersUrl('order-type-uuid', 'patient-uuid')).toContain('&patient=patient-uuid');
+  });
+});
+
+describe('getDestinationServicesFromConceptResults', () => {
+  it('usa miembros de concept sets configurados, filtrados y sin duplicados', () => {
+    const services = getDestinationServicesFromConceptResults(
+      [
+        {
+          uuid: 'set-uuid',
+          display: 'Tipo de Servicio',
+          setMembers: [
+            { uuid: 'lab-uuid', display: 'Laboratorio Clínico' },
+            { uuid: 'consulta-uuid', display: 'Consulta Ambulatoria' },
+            { uuid: 'lab-uuid', display: 'Laboratorio Clínico' },
+          ],
+        },
+      ],
+      true,
+      'lab',
+    );
+
+    expect(services).toEqual([{ uuid: 'lab-uuid', display: 'Laboratorio Clínico' }]);
+  });
+
+  it('usa búsqueda libre de concepts cuando no hay sets configurados', () => {
+    const services = getDestinationServicesFromConceptResults(
+      [
+        { uuid: 'odontologia-uuid', display: 'Odontología' },
+        { uuid: 'cardiologia-uuid', display: 'Cardiología' },
+      ],
+      false,
+      '',
+    );
+
+    expect(services).toEqual([
+      { uuid: 'cardiologia-uuid', display: 'Cardiología' },
+      { uuid: 'odontologia-uuid', display: 'Odontología' },
+    ]);
+  });
+});
+
+describe('getAvailableProvidersFromResults', () => {
+  it('excluye providers retirados y UNKNOWN', () => {
+    expect(
+      getAvailableProvidersFromResults([
+        { uuid: 'unknown-provider', display: 'UNKNOWN - Unknown Provider' },
+        { uuid: 'retired-provider', display: 'Retired Provider', retired: true },
+        { uuid: 'provider-uuid', display: 'Axel Mendoza' },
+      ]),
+    ).toEqual([{ uuid: 'provider-uuid', display: 'Axel Mendoza' }]);
   });
 });

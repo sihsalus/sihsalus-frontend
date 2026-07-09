@@ -146,6 +146,9 @@ export interface Encounter {
 export interface RelationshipValue {
   clientId?: string;
   relatedPersonName?: string;
+  relatedPersonAge?: number;
+  relatedPersonBirthdate?: string;
+  relatedPersonBirthdateEstimated?: boolean;
   relatedPersonUuid: string;
   relation?: string;
   relationshipType: string;

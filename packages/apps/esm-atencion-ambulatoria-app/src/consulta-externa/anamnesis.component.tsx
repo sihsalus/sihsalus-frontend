@@ -1,5 +1,4 @@
-import { Accordion, AccordionItem, Button, InlineLoading, Tag } from '@carbon/react';
-import { Add } from '@carbon/react/icons';
+import { Accordion, AccordionItem, Tag } from '@carbon/react';
 import { formatDate, useConfig } from '@openmrs/esm-framework';
 import { launchPatientWorkspace } from '@openmrs/esm-patient-common-lib';
 import React from 'react';
@@ -7,6 +6,7 @@ import { useTranslation } from 'react-i18next';
 import type { ConfigObject } from '../config-schema';
 import { useAnamnesis } from '../hooks/useAnamnesis';
 import { patientFormEntryWorkspace } from '../utils/constants';
+import ClinicalHistoryCard from './clinical-history-card.component';
 import styles from './consulta-externa-dashboard.scss';
 import MotivoConsulta from './motivo-consulta.component';
 
@@ -17,7 +17,7 @@ interface AnamnesisProps {
 const Anamnesis: React.FC<AnamnesisProps> = ({ patientUuid }) => {
   const { t } = useTranslation();
   const config = useConfig<ConfigObject>();
-  const { anamnesisEntries, isLoading } = useAnamnesis(
+  const { anamnesisEntries, isLoading, error } = useAnamnesis(
     patientUuid,
     config.encounterTypes?.externalConsultation,
     config.concepts,
@@ -32,25 +32,18 @@ const Anamnesis: React.FC<AnamnesisProps> = ({ patientUuid }) => {
     });
   };
 
-  if (isLoading) {
-    return <InlineLoading description={t('loading', 'Cargando...')} />;
-  }
-
   return (
-    <div className={styles.widgetContainer}>
-      <div className={styles.tableHeader}>
-        <span className={styles.tableHeaderTitle}>{t('anamnesisHistory', 'Historial de Anamnesis')}</span>
-        <Button kind="ghost" size="sm" renderIcon={Add} onClick={handleLaunchForm}>
-          {t('addAnamnesis', 'Registrar Anamnesis')}
-        </Button>
-      </div>
+    <div className={styles.combinedPanel}>
       <MotivoConsulta patientUuid={patientUuid} />
-
-      {anamnesisEntries.length === 0 ? (
-        <div className={styles.emptyState}>
-          <p>{t('noAnamnesisData', 'No hay anamnesis registrada para este paciente.')}</p>
-        </div>
-      ) : (
+      <ClinicalHistoryCard
+        title={t('anamnesisHistory', 'Historial de Anamnesis')}
+        actionLabel={t('addAnamnesis', 'Registrar Anamnesis')}
+        empty={anamnesisEntries.length === 0}
+        emptyMessage={t('noAnamnesisData', 'No hay anamnesis registrada para este paciente.')}
+        error={error}
+        isLoading={isLoading}
+        onAction={handleLaunchForm}
+      >
         <Accordion>
           {anamnesisEntries.map((entry) => (
             <AccordionItem
@@ -110,7 +103,7 @@ const Anamnesis: React.FC<AnamnesisProps> = ({ patientUuid }) => {
             </AccordionItem>
           ))}
         </Accordion>
-      )}
+      </ClinicalHistoryCard>
     </div>
   );
 };

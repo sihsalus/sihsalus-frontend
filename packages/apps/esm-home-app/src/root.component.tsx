@@ -33,7 +33,9 @@ const Root: React.FC = () => {
   const session = useSession();
   const leftNavMode = getLeftNavMode(config);
   const sessionKey =
-    session?.authenticated && session?.sessionId ? `${session.sessionId}:${session.user?.uuid ?? 'unknown'}` : 'anonymous';
+    session?.authenticated && session?.sessionId
+      ? `${session.sessionId}:${session.user?.uuid ?? 'unknown'}`
+      : 'anonymous';
   useLeftNav({
     name: 'homepage-dashboard-slot',
     basePath: spaBasePath,

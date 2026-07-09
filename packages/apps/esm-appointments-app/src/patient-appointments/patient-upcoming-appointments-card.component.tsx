@@ -1,5 +1,4 @@
 import {
-  InlineLoading,
   InlineNotification,
   RadioButton,
   StructuredListBody,
@@ -103,7 +102,7 @@ const PatientUpcomingAppointmentsCard: React.FC<PatientUpcomingAppointmentsProps
     setSelectedAppointment(appointment);
   };
 
-  if (!patientChartConfig.showUpcomingAppointments) {
+  if (!patientChartConfig?.showUpcomingAppointments) {
     return <></>;
   }
 
@@ -111,11 +110,7 @@ const PatientUpcomingAppointmentsCard: React.FC<PatientUpcomingAppointmentsProps
     return <ErrorState headerTitle={headerTitle} error={error} />;
   }
   if (isLoading) {
-    return (
-      <span>
-        <InlineLoading />
-      </span>
-    );
+    return null;
   }
 
   if (appointments.length) {
@@ -134,8 +129,8 @@ const PatientUpcomingAppointmentsCard: React.FC<PatientUpcomingAppointmentsProps
             </StructuredListRow>
           </StructuredListHead>
           <StructuredListBody>
-            {appointments.map((appointment, index) => (
-              <StructuredListRow key={index} className={styles.structuredList}>
+            {appointments.map((appointment) => (
+              <StructuredListRow key={appointment.uuid} className={styles.structuredList}>
                 <StructuredListCell>
                   {formatDate(parseDate(String(appointment.startDateTime)), {
                     mode: 'wide',
@@ -146,7 +141,7 @@ const PatientUpcomingAppointmentsCard: React.FC<PatientUpcomingAppointmentsProps
                   <RadioButton
                     className={styles.radioButton}
                     labelText=""
-                    id={`radio-${index}`}
+                    id={`radio-${appointment.uuid}`}
                     name="appointmentRadio"
                     value={appointment.uuid}
                     checked={selectedAppointment === appointment}

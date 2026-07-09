@@ -31,21 +31,11 @@ const AvgWaitTimeCard: React.FC<{ queueUuid?: string }> = ({ queueUuid }) => {
     return `${hours}h ${mins}${t('minutes', 'min')}`;
   };
 
-  // Calculate overall average
-  const allWaitTimes = [averages.priorityI, averages.priorityII, averages.priorityIII, averages.priorityIV].filter(
-    (time): time is number => time !== null,
-  );
-
-  const overallAverage =
-    allWaitTimes.length > 0
-      ? Math.round(allWaitTimes.reduce((sum, time) => sum + time, 0) / allWaitTimes.length)
-      : null;
-
   return (
     <MetricsCard>
       <MetricsCardHeader title={t('avgWaitTime', 'Tiempo prom. espera')} icon={<Timer size={24} />} />
       <MetricsCardBody>
-        <MetricsCardItem label={t('time', 'Tiempo')} value={formatWaitTime(overallAverage)} />
+        <MetricsCardItem label={t('time', 'Tiempo')} value={formatWaitTime(averages.overall)} />
       </MetricsCardBody>
     </MetricsCard>
   );

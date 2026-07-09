@@ -6,8 +6,8 @@ import {
   showModal,
   UserHasAccess,
   useLayoutType,
-  useSession,
   userHasAccess,
+  useSession,
 } from '@openmrs/esm-framework';
 import { useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -61,7 +61,10 @@ const MetricsHeader = () => {
           </UserHasAccess>
         ) : null}
         {canEdit ? (
-          <MenuItem label={t('addProviderQueueRoom', 'Add provider queue room')} onClick={launchAddProviderToRoomModal} />
+          <MenuItem
+            label={t('addProviderQueueRoom', 'Add provider queue room')}
+            onClick={launchAddProviderToRoomModal}
+          />
         ) : null}
       </ComboButton>
     </div>

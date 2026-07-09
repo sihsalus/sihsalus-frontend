@@ -15,7 +15,7 @@ describe('metas API', () => {
   describe('getAllMetas', () => {
     it('returns metas from the backend when available', async () => {
       const backendMetas = [
-        { id: 'meta-1', indicador_version_id: 'ver-001-1', anio: 2026, valor_meta: 1000, creado_en: '2026-01-01' },
+        { id: 'meta-1', indicador_version_id: 'ver-001-1', anio: 2026, valor_meta: 1000, creado_en: '2026-01-01', indicador_nombre: 'Control prenatal', version_numero: 1 },
       ];
       mockedOpenmrsFetch.mockResolvedValue({ data: backendMetas } as any);
 
@@ -41,7 +41,7 @@ describe('metas API', () => {
 
   describe('getMeta', () => {
     it('returns a single meta from the backend when available', async () => {
-      const backendMeta = { id: 'meta-1', indicador_version_id: 'ver-001-1', anio: 2026, valor_meta: 1000, creado_en: '2026-01-01' };
+      const backendMeta = { id: 'meta-1', indicador_version_id: 'ver-001-1', anio: 2026, valor_meta: 1000, creado_en: '2026-01-01', indicador_nombre: 'Control prenatal', version_numero: 1 };
       mockedOpenmrsFetch.mockResolvedValue({ data: backendMeta } as any);
 
       const result = await getMeta('ver-001-1', 2026);
@@ -71,7 +71,7 @@ describe('metas API', () => {
   describe('upsertMeta', () => {
     it('sends a PUT request and returns the created meta on success', async () => {
       const payload = { indicador_version_id: 'ver-001-1', anio: 2026, valor_meta: 1500 };
-      const backendMeta = { id: 'meta-1', ...payload, creado_en: '2026-01-01' };
+      const backendMeta = { id: 'meta-1', ...payload, creado_en: '2026-01-01', indicador_nombre: 'Control prenatal', version_numero: 1 };
       mockedOpenmrsFetch.mockResolvedValue({ data: backendMeta } as any);
 
       const result = await upsertMeta(payload);

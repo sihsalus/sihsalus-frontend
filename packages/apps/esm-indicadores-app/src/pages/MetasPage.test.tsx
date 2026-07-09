@@ -1,14 +1,13 @@
 import { act, cleanup, fireEvent, screen } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
 import { renderWithSwr } from 'test-utils';
-import type { IndicadorDetail, IndicadorMeta } from '../api/types';
-import { notifyError, useIndicadores } from '../features/indicadores/hooks';
+import type { IndicadorMeta } from '../api/types';
+import { notifyError, notifySuccess } from '../features/indicadores/hooks';
 import { useDeleteMeta, useMetas, useUpsertMeta } from '../features/metas/hooks';
 import MetasPage from './MetasPage';
 
 vi.mock('../features/indicadores/hooks', async () => ({
   ...(await vi.importActual('../features/indicadores/hooks')),
-  useIndicadores: vi.fn(),
   notifyError: vi.fn(),
 }));
 
@@ -19,26 +18,12 @@ vi.mock('../features/metas/hooks', async () => ({
   useDeleteMeta: vi.fn(),
 }));
 
-const mockUseIndicadores = vi.mocked(useIndicadores);
 const mockUseMetas = vi.mocked(useMetas);
 const mockUseUpsertMeta = vi.mocked(useUpsertMeta);
 const mockUseDeleteMeta = vi.mocked(useDeleteMeta);
 
-const indicadores: Array<IndicadorDetail> = [
-  {
-    id: 'ind-001',
-    nombre: 'Control prenatal',
-    descripcion: null,
-    activo: true,
-    creado_en: '2026-01-01',
-    versiones: [
-      { id: 'ver-001-1', indicador_id: 'ind-001', version: 1, definicion: { tipo: 'conteo_atenciones', evento: null }, creado_en: '2026-01-01' },
-    ],
-  },
-];
-
 const sampleMetas: Array<IndicadorMeta> = [
-  { id: 'meta-1', indicador_version_id: 'ver-001-1', anio: 2026, valor_meta: 1500, creado_en: '2026-01-01' },
+  { id: 'meta-1', indicador_version_id: 'ver-001-1', anio: 2026, valor_meta: 1500, creado_en: '2026-01-01', indicador_nombre: 'Control prenatal', version_numero: 1 },
 ];
 
 function renderPage() {
@@ -53,14 +38,6 @@ describe('MetasPage', () => {
   beforeEach(() => {
     cleanup();
     vi.clearAllMocks();
-
-    mockUseIndicadores.mockReturnValue({
-      data: { items: indicadores, total: 1, page: 1, size: 100, pages: 1 },
-      error: undefined,
-      isLoading: false,
-      isError: false,
-      refetch: vi.fn(),
-    } as never);
 
     mockUseUpsertMeta.mockReturnValue({ upsertMeta: vi.fn().mockResolvedValue(undefined) });
     mockUseDeleteMeta.mockReturnValue({ deleteMeta: vi.fn().mockResolvedValue(undefined) });
@@ -153,7 +130,7 @@ describe('MetasPage', () => {
     const deleteButtons = screen.getAllByRole('button', { name: /Eliminar/i });
     const tableDeleteButton = deleteButtons.find((button) => !button.classList.contains('cds--btn--danger'));
     expect(tableDeleteButton).toBeDefined();
-    
+
     await act(async () => {
       fireEvent.click(tableDeleteButton!);
     });
@@ -187,7 +164,7 @@ describe('MetasPage', () => {
     // Find the delete button in the table (not the modal one)
     const deleteButtons = screen.getAllByRole('button', { name: /Eliminar/i });
     const tableDeleteButton = deleteButtons.find((button) => !button.classList.contains('cds--btn--danger'));
-    
+
     await act(async () => {
       fireEvent.click(tableDeleteButton!);
     });

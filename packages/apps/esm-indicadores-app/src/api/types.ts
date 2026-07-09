@@ -3,12 +3,6 @@ export type TipoDiagnostico = 'definitivo' | 'presuntivo';
 export type Sexo = 'M' | 'F';
 
 /**
- * @deprecated `periodo` is no longer part of the indicator definition.
- * Kept only for backward compat with legacy data that may still reference it.
- */
-export type PeriodoIndicador = 'mes_actual' | 'trimestre_actual' | 'semestre_actual' | 'anual_actual';
-
-/**
  * Granularity for time-series rollup queries.
  */
 export type Granularity = 'mensual' | 'trimestral' | 'semestral' | 'anual';
@@ -150,6 +144,8 @@ export interface IndicadorMeta {
   anio: number;
   valor_meta: number;
   creado_en: string;
+  indicador_nombre: string;
+  version_numero: number;
 }
 
 export interface IndicadorMetaCreatePayload {

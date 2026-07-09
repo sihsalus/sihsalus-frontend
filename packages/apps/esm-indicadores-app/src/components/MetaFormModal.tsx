@@ -1,12 +1,12 @@
-import { Modal, NumberInput, Select, SelectItem } from '@carbon/react';
+import { ComboBox, Modal, NumberInput, Select, SelectItem } from '@carbon/react';
 import React, { useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import type { IndicadorDetail, IndicadorMeta, IndicadorMetaCreatePayload } from '../api/types';
+import { useIndicadores } from '../features/indicadores/hooks';
 
 interface MetaFormModalProps {
   isOpen: boolean;
-  indicators: Array<IndicadorDetail>;
   initialMeta?: IndicadorMeta | null;
   isSubmitting?: boolean;
   onClose: () => void;
@@ -25,20 +25,21 @@ function findVersionIndicator(indicators: Array<IndicadorDetail>, versionId?: st
 
 const MetaFormModal: React.FC<MetaFormModalProps> = ({
   isOpen,
-  indicators,
   initialMeta,
   isSubmitting,
   onClose,
   onSubmit,
 }) => {
   const { t } = useTranslation();
+  const { data: indicadoresData } = useIndicadores(1, 1000);
+  const indicators = indicadoresData?.items ?? [];
 
   const initialIndicator = useMemo(
     () => findVersionIndicator(indicators, initialMeta?.indicador_version_id),
     [indicators, initialMeta?.indicador_version_id],
   );
 
-  const [selectedIndicatorId, setSelectedIndicatorId] = useState<string>(initialIndicator?.id ?? '');
+  const [selectedIndicator, setSelectedIndicator] = useState<IndicadorDetail | null>(initialIndicator ?? null);
   const [selectedVersionId, setSelectedVersionId] = useState<string>(initialMeta?.indicador_version_id ?? '');
   const [anio, setAnio] = useState<number | ''>(initialMeta?.anio ?? '');
   const [valorMeta, setValorMeta] = useState<number | ''>(initialMeta?.valor_meta ?? '');
@@ -49,31 +50,26 @@ const MetaFormModal: React.FC<MetaFormModalProps> = ({
       return;
     }
     const indicator = findVersionIndicator(indicators, initialMeta?.indicador_version_id);
-    setSelectedIndicatorId(indicator?.id ?? '');
+    setSelectedIndicator(indicator ?? null);
     setSelectedVersionId(initialMeta?.indicador_version_id ?? '');
     setAnio(initialMeta?.anio ?? '');
     setValorMeta(initialMeta?.valor_meta ?? '');
     setValidationError(null);
   }, [isOpen, indicators, initialMeta]);
 
-  const selectedIndicator = useMemo(
-    () => indicators.find((indicator) => indicator.id === selectedIndicatorId),
-    [indicators, selectedIndicatorId],
-  );
-
   const versiones = selectedIndicator?.versiones ?? [];
 
   useEffect(() => {
-    if (selectedIndicatorId && selectedVersionId) {
+    if (selectedIndicator && selectedVersionId) {
       const stillAvailable = versiones.some((version) => version.id === selectedVersionId);
       if (!stillAvailable) {
         setSelectedVersionId('');
       }
     }
-  }, [selectedIndicatorId, selectedVersionId, versiones]);
+  }, [selectedIndicator, selectedVersionId, versiones]);
 
   const validate = (): string | null => {
-    if (!selectedIndicatorId) {
+    if (!selectedIndicator) {
       return t('metaValidationIndicator', 'Seleccioná un indicador.');
     }
     if (!selectedVersionId) {
@@ -128,25 +124,26 @@ const MetaFormModal: React.FC<MetaFormModalProps> = ({
           </div>
         ) : null}
 
-        <Select
+        <ComboBox
           id="meta-indicador"
-          labelText={t('indicator', 'Indicador')}
-          value={selectedIndicatorId}
-          onChange={(event) => setSelectedIndicatorId(event.target.value)}
+          titleText={t('indicator', 'Indicador')}
+          items={indicators}
+          itemToString={(item?: IndicadorDetail) => item?.nombre ?? ''}
+          selectedItem={selectedIndicator}
+          onChange={(data: { selectedItem: IndicadorDetail | null | undefined }) => {
+            setSelectedIndicator(data.selectedItem ?? null);
+            setSelectedVersionId('');
+          }}
+          placeholder={t('selectIndicator', 'Seleccioná un indicador')}
           disabled={isSubmitting}
-        >
-          <SelectItem value="" text={t('selectIndicator', 'Seleccioná un indicador')} />
-          {indicators.map((indicator) => (
-            <SelectItem key={indicator.id} value={indicator.id} text={indicator.nombre} />
-          ))}
-        </Select>
+        />
 
         <Select
           id="meta-version"
           labelText={t('version', 'Versión')}
           value={selectedVersionId}
           onChange={(event) => setSelectedVersionId(event.target.value)}
-          disabled={!selectedIndicatorId || isSubmitting}
+          disabled={!selectedIndicator || isSubmitting}
         >
           <SelectItem value="" text={t('selectVersion', 'Seleccioná una versión')} />
           {versiones.map((version) => (

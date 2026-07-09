@@ -59,6 +59,8 @@ const sampleMeta = {
   anio: 2026,
   valor_meta: 1000,
   creado_en: '2026-01-01',
+  indicador_nombre: 'Control prenatal',
+  version_numero: 1,
 };
 
 describe('useMetas', () => {

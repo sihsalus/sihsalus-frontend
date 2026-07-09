@@ -15,31 +15,15 @@ import {
 import React, { useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
-import type { IndicadorDetail, IndicadorMeta } from '../api/types';
+import type { IndicadorMeta } from '../api/types';
 import MetaFormModal from '../components/MetaFormModal';
-import { notifyError, notifySuccess, useIndicadores } from '../features/indicadores/hooks';
+import { notifyError, notifySuccess } from '../features/indicadores/hooks';
 import { useDeleteMeta, useMetas, useUpsertMeta } from '../features/metas/hooks';
 import styles from '../indicators-dashboard.module.scss';
 
-interface VersionInfo {
-  nombre: string;
-  version: number;
-}
-
-function buildVersionMap(indicators: Array<IndicadorDetail>): Map<string, VersionInfo> {
-  const map = new Map<string, VersionInfo>();
-  for (const indicator of indicators) {
-    for (const version of indicator.versiones) {
-      map.set(version.id, { nombre: indicator.nombre, version: version.version });
-    }
-  }
-  return map;
-}
-
 const MetasPage: React.FC = () => {
   const { t } = useTranslation();
-  const { data: metas, isLoading, error } = useMetas();
-  const { data: indicadoresData } = useIndicadores(1, 100);
+  const { data: metas, isLoading, error, refetch } = useMetas();
   const { upsertMeta } = useUpsertMeta();
   const { deleteMeta } = useDeleteMeta();
 
@@ -47,11 +31,6 @@ const MetasPage: React.FC = () => {
   const [editingMeta, setEditingMeta] = useState<IndicadorMeta | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<{ indicador_version_id: string; anio: number } | null>(null);
   const [isSubmitting, setSubmitting] = useState(false);
-
-  const versionMap = useMemo(
-    () => buildVersionMap(indicadoresData?.items ?? []),
-    [indicadoresData?.items],
-  );
 
   const headers = [
     { key: 'indicador', header: t('indicator', 'Indicador') },
@@ -62,17 +41,14 @@ const MetasPage: React.FC = () => {
   ];
 
   const rows = useMemo(() => {
-    return (metas ?? []).map((meta) => {
-      const info = versionMap.get(meta.indicador_version_id);
-      return {
-        id: meta.id,
-        indicador: info?.nombre ?? '-',
-        version: info?.version ?? '-',
-        anio: meta.anio,
-        valor_meta: meta.valor_meta,
-      };
-    });
-  }, [metas, versionMap]);
+    return (metas ?? []).map((meta) => ({
+      id: meta.id,
+      indicador: meta.indicador_nombre,
+      version: meta.version_numero,
+      anio: meta.anio,
+      valor_meta: meta.valor_meta,
+    }));
+  }, [metas]);
 
   const handleOpenCreate = () => {
     setEditingMeta(null);
@@ -204,7 +180,6 @@ const MetasPage: React.FC = () => {
       {isModalOpen ? (
         <MetaFormModal
           isOpen
-          indicators={indicadoresData?.items ?? []}
           initialMeta={editingMeta}
           isSubmitting={isSubmitting}
           onClose={handleCloseModal}

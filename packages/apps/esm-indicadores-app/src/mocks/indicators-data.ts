@@ -179,6 +179,8 @@ export function upsertMetaMock(payload: IndicadorMetaCreatePayload): IndicadorMe
     id: uid('meta'),
     ...payload,
     creado_en: nowIso(),
+    indicador_nombre: '',
+    version_numero: 0,
   };
   metas = [created, ...metas];
   return created;

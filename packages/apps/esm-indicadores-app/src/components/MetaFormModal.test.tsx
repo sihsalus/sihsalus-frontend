@@ -1,6 +1,14 @@
 import { act, fireEvent, render, screen } from '@testing-library/react';
 import type { IndicadorDetail, IndicadorMeta } from '../api/types';
+import { useIndicadores } from '../features/indicadores/hooks';
 import MetaFormModal from './MetaFormModal';
+
+vi.mock('../features/indicadores/hooks', async () => ({
+  ...(await vi.importActual('../features/indicadores/hooks')),
+  useIndicadores: vi.fn(),
+}));
+
+const mockUseIndicadores = vi.mocked(useIndicadores);
 
 const indicadores: Array<IndicadorDetail> = [
   {
@@ -32,13 +40,14 @@ const existingMeta: IndicadorMeta = {
   anio: 2025,
   valor_meta: 1200,
   creado_en: '2026-01-01',
+  indicador_nombre: 'Control prenatal',
+  version_numero: 2,
 };
 
 function renderModal(props: Partial<React.ComponentProps<typeof MetaFormModal>> = {}) {
   return render(
     <MetaFormModal
       isOpen
-      indicators={indicadores}
       onClose={vi.fn()}
       onSubmit={vi.fn().mockResolvedValue(undefined)}
       {...props}
@@ -46,14 +55,36 @@ function renderModal(props: Partial<React.ComponentProps<typeof MetaFormModal>> 
   );
 }
 
+/** The ComboBox input is tricky to query via role/label in jsdom due to Carbon internals. */
+function getIndicatorInput(container: HTMLElement) {
+  const input = container.querySelector('#meta-indicador');
+  if (!input) throw new Error('Indicator ComboBox input not found');
+  return input as HTMLInputElement;
+}
+
 describe('MetaFormModal', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    mockUseIndicadores.mockReturnValue({
+      data: { items: indicadores, total: 2, page: 1, size: 1000, pages: 1 },
+      error: undefined,
+      isLoading: false,
+      isError: false,
+      refetch: vi.fn(),
+    } as never);
+  });
+
   it('submits the payload after selecting indicator, version, year and value', async () => {
     const onSubmit = vi.fn().mockResolvedValue(undefined);
-    renderModal({ onSubmit });
+    const { container } = renderModal({ onSubmit });
 
-    const indicatorSelect = screen.getByLabelText('Indicador');
+    // ComboBox: type to filter, then click the matching option
+    const indicatorInput = getIndicatorInput(container);
     await act(async () => {
-      fireEvent.change(indicatorSelect, { target: { value: 'ind-001' } });
+      fireEvent.input(indicatorInput, { target: { value: 'Control' } });
+    });
+    await act(async () => {
+      fireEvent.click(screen.getByText('Control prenatal'));
     });
 
     const versionSelect = screen.getByLabelText('Versión');
@@ -85,21 +116,25 @@ describe('MetaFormModal', () => {
   });
 
   it('pre-fills the form when editing an existing meta', () => {
-    renderModal({ initialMeta: existingMeta });
+    const { container } = renderModal({ initialMeta: existingMeta });
 
     expect((screen.getByLabelText('Año') as HTMLInputElement).value).toBe('2025');
     expect((screen.getByLabelText('Valor de la meta') as HTMLInputElement).value).toBe('1200');
     expect((screen.getByLabelText('Versión') as HTMLSelectElement).value).toBe('ver-001-2');
-    expect((screen.getByLabelText('Indicador') as HTMLSelectElement).value).toBe('ind-001');
+    // ComboBox shows the selected item's display text
+    expect(getIndicatorInput(container)).toHaveValue('Control prenatal');
   });
 
   it('shows a validation error when the year is out of range', async () => {
     const onSubmit = vi.fn().mockResolvedValue(undefined);
-    renderModal({ onSubmit });
+    const { container } = renderModal({ onSubmit });
 
-    const indicatorSelect = screen.getByLabelText('Indicador');
+    const indicatorInput = getIndicatorInput(container);
     await act(async () => {
-      fireEvent.change(indicatorSelect, { target: { value: 'ind-001' } });
+      fireEvent.input(indicatorInput, { target: { value: 'Control' } });
+    });
+    await act(async () => {
+      fireEvent.click(screen.getByText('Control prenatal'));
     });
 
     const versionSelect = screen.getByLabelText('Versión');
@@ -128,11 +163,14 @@ describe('MetaFormModal', () => {
 
   it('shows a validation error when the value is negative', async () => {
     const onSubmit = vi.fn().mockResolvedValue(undefined);
-    renderModal({ onSubmit });
+    const { container } = renderModal({ onSubmit });
 
-    const indicatorSelect = screen.getByLabelText('Indicador');
+    const indicatorInput = getIndicatorInput(container);
     await act(async () => {
-      fireEvent.change(indicatorSelect, { target: { value: 'ind-002' } });
+      fireEvent.input(indicatorInput, { target: { value: 'Anemia' } });
+    });
+    await act(async () => {
+      fireEvent.click(screen.getByText('Anemia'));
     });
 
     const versionSelect = screen.getByLabelText('Versión');

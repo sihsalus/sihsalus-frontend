@@ -330,7 +330,7 @@ const EmergencyQueueTable: React.FC<EmergencyQueueTableProps> = ({ queueUuid }) 
                   )}
                   <TableToolbar {...getToolbarProps()}>
                     <TableToolbarContent className={styles.toolbarContent}>
-                      {canEdit && queueEntries.length > 0 && (
+                      {canEdit && filteredQueueEntries.length > 0 && (
                         <Button
                           className={styles.clearQueueButton}
                           kind="ghost"
@@ -338,7 +338,7 @@ const EmergencyQueueTable: React.FC<EmergencyQueueTableProps> = ({ queueUuid }) 
                           onClick={() => {
                             const dispose = showModal('emergency-clear-queue-entries-modal', {
                               closeModal: () => dispose(),
-                              queueEntries,
+                              queueEntries: filteredQueueEntries,
                             });
                           }}
                         >

@@ -27,7 +27,8 @@ const MoveQueueEntryModal: React.FC<MoveQueueEntryModalProps> = ({ queueEntry, c
   const { t } = useTranslation();
   const { mutate } = useSWRConfig();
   const { getPriorityByUuid } = usePriorityConfig();
-  const { queues, isLoading: isLoadingQueues } = useQueues();
+  const currentQueueLocationUuid = queueEntry.queue?.location?.uuid ?? queueEntry.locationWaitingFor?.uuid;
+  const { queues, isLoading: isLoadingQueues } = useQueues(currentQueueLocationUuid);
 
   const patientName = queueEntry.patient.person?.display || queueEntry.patient.display;
   const currentQueueUuid = queueEntry.queue?.uuid;

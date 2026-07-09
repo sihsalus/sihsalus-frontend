@@ -28,6 +28,7 @@ import React, { useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
 import { type Config } from '../../../config-schema';
 import { emergencyEditPrivilege, MODALS, WORKSPACES } from '../../../constants';
+import { useTriageVitalsSavedHandler } from '../../../emergency-workflow/hooks/useTriageVitalsSavedHandler';
 import { useEmergencyConfig } from '../../../hooks/usePriorityConfig';
 import styles from './emergency-queue-actions-cell.scss';
 import { type EmergencyQueueTableCellProps } from './emergency-queue-name-cell.component';
@@ -39,6 +40,7 @@ export const EmergencyQueueActionsCell: React.FC<EmergencyQueueTableCellProps> =
   const session = useSession();
   const { queueStatuses, emergencyTriageQueueUuid } = useEmergencyConfig();
   const canEdit = userHasAccess(emergencyEditPrivilege, session?.user);
+  const handleTriageVitalsSaved = useTriageVitalsSavedHandler(queueEntry);
 
   const isWaiting = queueEntry?.status?.uuid === queueStatuses.waiting;
   const isInService = queueEntry?.status?.uuid === queueStatuses.inService;
@@ -61,13 +63,17 @@ export const EmergencyQueueActionsCell: React.FC<EmergencyQueueTableCellProps> =
   const handleOpenTriage = useCallback(() => {
     launchWorkspace2(
       WORKSPACES.TRIAGE_VITALS_FORM,
-      { encounterTypeUuid: triageEncounterTypeUuid, profile: 'emergency-triage' },
+      {
+        encounterTypeUuid: triageEncounterTypeUuid,
+        onVitalsSaved: handleTriageVitalsSaved,
+        profile: 'emergency-triage',
+      },
       null,
       {
         patientUuid: queueEntry.patient.uuid,
       },
     );
-  }, [queueEntry.patient.uuid, triageEncounterTypeUuid]);
+  }, [handleTriageVitalsSaved, queueEntry.patient.uuid, triageEncounterTypeUuid]);
 
   const handleOpenAttention = useCallback(() => {
     launchWorkspace(WORKSPACES.ATTENTION_FORM, {

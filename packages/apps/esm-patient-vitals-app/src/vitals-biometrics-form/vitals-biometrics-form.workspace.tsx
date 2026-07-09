@@ -154,8 +154,16 @@ const VitalsAndBiometricFormSchema = z
 
 export type VitalsBiometricsFormData = z.infer<typeof VitalsAndBiometricFormSchema>;
 
+export interface VitalsBiometricsSavedPayload {
+  encounterTypeUuid: string;
+  formData: VitalsBiometricsFormData;
+  patientUuid: string;
+  visitUuid: string;
+}
+
 interface VitalsBiometricsWorkspaceOverrides extends ConditionalFieldOverrides {
   encounterTypeUuid?: string;
+  onVitalsSaved?: (payload: VitalsBiometricsSavedPayload) => Promise<void> | void;
   profile?: VitalsBiometricsWorkspaceProfile;
 }
 
@@ -462,8 +470,14 @@ const VitalsAndBiometricsForm: React.FC<VitalsBiometricsWorkspaceProps> = (props
           locationUuid,
           currentVisit.uuid,
         )
-          .then((response) => {
+          .then(async (response) => {
             if (response.status === 201 || response.status === 200) {
+              await workspaceOverrides.onVitalsSaved?.({
+                encounterTypeUuid,
+                formData,
+                patientUuid,
+                visitUuid: currentVisit.uuid,
+              });
               invalidateCachedVitalsAndBiometrics();
               void closeCurrentWorkspaceWithSavedChanges();
               showSnackbar({
@@ -501,6 +515,7 @@ const VitalsAndBiometricsForm: React.FC<VitalsBiometricsWorkspaceProps> = (props
       patientUuid,
       session?.sessionLocation?.uuid,
       t,
+      workspaceOverrides,
     ],
   );
 

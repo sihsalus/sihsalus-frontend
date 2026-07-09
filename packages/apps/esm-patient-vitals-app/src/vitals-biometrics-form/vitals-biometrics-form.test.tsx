@@ -44,7 +44,11 @@ const testProps = {
 };
 
 const testWorkspace2Props: PatientWorkspace2DefinitionProps<
-  { encounterTypeUuid?: string; profile?: 'default' | 'emergency-triage' },
+  {
+    encounterTypeUuid?: string;
+    onVitalsSaved?: (payload: { formData: Record<string, number>; patientUuid: string; visitUuid: string }) => void;
+    profile?: 'default' | 'emergency-triage';
+  },
   object
 > = {
   closeWorkspace: vi.fn(),
@@ -192,6 +196,7 @@ describe('VitalsBiometricsForm', () => {
 
   it('renders a success snackbar upon clicking the save button', async () => {
     const user = userEvent.setup();
+    const onVitalsSaved = vi.fn();
 
     const response = {
       statusText: 'created',
@@ -201,7 +206,7 @@ describe('VitalsBiometricsForm', () => {
 
     mockSavePatientVitals.mockResolvedValue(response);
 
-    render(<VitalsAndBiometricsForm {...testProps} />);
+    render(<VitalsAndBiometricsForm {...testProps} onVitalsSaved={onVitalsSaved} />);
 
     const heightInput = screen.getByRole('spinbutton', { name: /height/i });
     const weightInput = screen.getByRole('spinbutton', { name: /weight/i });
@@ -242,7 +247,7 @@ describe('VitalsBiometricsForm', () => {
 
     await user.click(saveButton);
 
-    expect(mockSavePatientVitals).toHaveBeenCalledTimes(1);
+    await waitFor(() => expect(mockSavePatientVitals).toHaveBeenCalledTimes(1));
     expect(mockSavePatientVitals).toHaveBeenCalledWith(
       mockVitalsConfig.vitals.encounterTypeUuid,
       mockVitalsConfig.concepts,
@@ -263,6 +268,20 @@ describe('VitalsBiometricsForm', () => {
       'test-visit-uuid',
     );
 
+    expect(onVitalsSaved).toHaveBeenCalledWith({
+      encounterTypeUuid: mockVitalsConfig.vitals.encounterTypeUuid,
+      formData: expect.objectContaining({
+        height: heightValue,
+        oxygenSaturation: oxygenSaturationValue,
+        pulse: pulseValue,
+        respiratoryRate: respiratoryRateValue,
+        systolicBloodPressure: systolicBloodPressureValue,
+        temperature: temperatureValue,
+        weight: weightValue,
+      }),
+      patientUuid: mockPatient.id,
+      visitUuid: 'test-visit-uuid',
+    });
     expect(mockShowSnackbar).toHaveBeenCalledTimes(1);
     expect(mockShowSnackbar).toHaveBeenCalledWith(
       expect.objectContaining({

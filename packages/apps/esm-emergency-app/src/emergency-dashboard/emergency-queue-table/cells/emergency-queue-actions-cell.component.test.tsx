@@ -79,7 +79,11 @@ describe('EmergencyQueueActionsCell', () => {
 
     expect(mockLaunchWorkspace2).toHaveBeenCalledWith(
       WORKSPACES.TRIAGE_VITALS_FORM,
-      { encounterTypeUuid: triageEncounterTypeUuid },
+      expect.objectContaining({
+        encounterTypeUuid: triageEncounterTypeUuid,
+        onVitalsSaved: expect.any(Function),
+        profile: 'emergency-triage',
+      }),
       null,
       { patientUuid: queueEntry.patient.uuid },
     );

@@ -204,6 +204,7 @@
   "visitRestoredSuccessfully": "{{visit}} restored successfully",
   "visits": "visits",
   "Visits": "Visits",
+  "visitStartDateCannotBeBeforeBirthDate": "Visit start date cannot be before the patient's birth date",
   "visitStartDatetime": "Visit start date and time",
   "visitStarted": "Visit started",
   "visitStartedSuccessfully": "{{visit}} started successfully",

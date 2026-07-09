@@ -180,6 +180,27 @@ const StartVisitForm: React.FC<StartVisitFormProps> = (props) => {
     [visitToEdit?.uuid, showVisitEndDateTimeFields],
   );
 
+  const patientWithOpenmrsBirthdate = patient as
+    | {
+        birthdate?: string;
+        person?: {
+          birthdate?: string;
+        };
+      }
+    | undefined;
+  const patientBirthDateValue =
+    patient?.birthDate ?? patientWithOpenmrsBirthdate?.birthdate ?? patientWithOpenmrsBirthdate?.person?.birthdate;
+
+  const patientBirthDate = useMemo(() => {
+    if (!patientBirthDateValue) {
+      return null;
+    }
+
+    const birthDateValue = patientBirthDateValue.match(/^\d{4}-\d{2}-\d{2}/)?.[0] ?? patientBirthDateValue;
+    const birthDate = dayjs(birthDateValue);
+    return birthDate.isValid() ? birthDate.startOf('day') : null;
+  }, [patientBirthDateValue]);
+
   const visitFormSchema = useMemo(() => {
     const createVisitAttributeSchema = (required: boolean) =>
       required
@@ -230,17 +251,23 @@ const StartVisitForm: React.FC<StartVisitFormProps> = (props) => {
 
     return z
       .object({
-        visitStartDate: z.date().refine(
-          (value) => {
-            const today = dayjs();
-            const startDate = dayjs(value);
+        visitStartDate: z
+          .date()
+          .refine(
+            (value) => {
+              const today = dayjs();
+              const startDate = dayjs(value);
 
-            return startDate.isSameOrBefore(today, 'day');
-          },
-          t('invalidVisitStartDate', 'Start date needs to be on or before {{firstEncounterDatetime}}', {
-            firstEncounterDatetime: formatDatetime(new Date()),
-          }),
-        ),
+              return startDate.isSameOrBefore(today, 'day');
+            },
+            t('invalidVisitStartDate', 'Start date needs to be on or before {{firstEncounterDatetime}}', {
+              firstEncounterDatetime: formatDatetime(new Date()),
+            }),
+          )
+          .refine(
+            (value) => !patientBirthDate || !dayjs(value).isBefore(patientBirthDate, 'day'),
+            t('visitStartDateCannotBeBeforeBirthDate', "Visit start date cannot be before the patient's birth date"),
+          ),
         visitStartTime: createTimeSchema(true),
         visitStartTimeFormat: createTimeFormatSchema(true),
         visitStopDate: displayVisitStopDateTimeFields && hadPreviousStopDateTime ? z.date() : z.date().optional(),
@@ -278,7 +305,7 @@ const StartVisitForm: React.FC<StartVisitFormProps> = (props) => {
           path: ['visitStopTimeFormat'],
         },
       );
-  }, [config.visitAttributeTypes, visitToEdit?.stopDatetime, t, displayVisitStopDateTimeFields]);
+  }, [config.visitAttributeTypes, patientBirthDate, visitToEdit?.stopDatetime, t, displayVisitStopDateTimeFields]);
 
   const defaultValues = useMemo(() => {
     const visitStartDate = visitToEdit?.startDatetime ? new Date(visitToEdit?.startDatetime) : new Date();
@@ -771,6 +798,7 @@ const StartVisitForm: React.FC<StartVisitFormProps> = (props) => {
             <VisitDateTimeField
               dateFieldName="visitStartDate"
               maxDate={maxVisitStartDatetime}
+              minDate={patientBirthDate?.valueOf()}
               timeFieldName="visitStartTime"
               timeFormatFieldName="visitStartTimeFormat"
               visitDatetimeLabel={t('visitStartDatetime', 'Visit start date and time')}

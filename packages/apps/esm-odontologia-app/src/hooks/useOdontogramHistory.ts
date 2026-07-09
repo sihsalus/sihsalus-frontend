@@ -19,11 +19,10 @@ interface EncounterResponse {
   results: Array<OdontogramEncounter>;
 }
 
-function formatBaseLabel(isoDate: string, index: number, total: number): string {
+function formatBaseLabel(isoDate: string): string {
   const d = new Date(isoDate);
   const dateStr = d.toLocaleDateString('es-PE', { day: '2-digit', month: 'short', year: 'numeric' });
-  // If only one base ever, keep it simple
-  return total === 1 ? 'Odontograma base' : `Base ${index + 1} – ${dateStr}`;
+  return `Odontograma base · ${dateStr}`;
 }
 
 function formatAttentionLabel(isoDate: string): string {
@@ -90,14 +89,12 @@ export function buildOdontogramRecords(
       return [{ encounter, data }];
     });
 
-  return recordsWithData.map(({ encounter, data }, index) => ({
+  return recordsWithData.map(({ encounter, data }) => ({
     encounterUuid: encounter.uuid,
     type: recordType,
     date: encounter.encounterDatetime,
     label:
-      recordType === 'base'
-        ? formatBaseLabel(encounter.encounterDatetime, index, recordsWithData.length)
-        : formatAttentionLabel(encounter.encounterDatetime),
+      recordType === 'base' ? formatBaseLabel(encounter.encounterDatetime) : formatAttentionLabel(encounter.encounterDatetime),
     data,
     parentBaseEncounterUuid:
       recordType === 'attention' ? getParentBaseEncounterUuidFromEncounter(encounter, config) : undefined,

@@ -4,7 +4,6 @@ import { formatDate } from '@openmrs/esm-framework';
 import React from 'react';
 import { useTranslation } from 'react-i18next';
 
-import type { OdontogramData } from '../odontogram/types/odontogram';
 import type { OdontogramBaseGroup, OdontogramRecord } from '../types/odontogram-record';
 import styles from './odontogram-record-list.scss';
 
@@ -18,19 +17,6 @@ interface OdontogramRecordListProps {
   onSelectBase: (base: OdontogramRecord) => void;
   onSelectAttention: (attention: OdontogramRecord, base: OdontogramRecord) => void;
   onAddAttention: (base: OdontogramRecord) => void;
-}
-
-function countSolutions(data?: OdontogramData | null): number {
-  if (!data) {
-    return 0;
-  }
-  const teeth = data.teeth.reduce((sum, tooth) => sum + tooth.findings.length, 0);
-  const spacing = Object.values(data.spacingFindings ?? {}).reduce(
-    (sum, spaces) => sum + spaces.reduce((s, sp) => s + sp.findings.length, 0),
-    0,
-  );
-  const legend = (data.legendSpaces ?? []).reduce((sum, sp) => sum + sp.findings.length, 0);
-  return teeth + spacing + legend;
 }
 
 function shortDate(iso: string): string {
@@ -91,10 +77,7 @@ const OdontogramRecordList: React.FC<OdontogramRecordListProps> = ({
                       onClick={() => onSelectAttention(record, group.base)}
                     >
                       <span className={styles.rowTitle}>{`${t('attentionLabel', 'Atención')} ${number}`}</span>
-                      <span className={styles.rowMeta}>
-                        {t('solutionsCount', '{{count}} sol.', { count: countSolutions(record.data) })} ·{' '}
-                        {shortDate(record.date)}
-                      </span>
+                      <span className={styles.rowMeta}>{shortDate(record.date)}</span>
                     </button>
                   );
                 })

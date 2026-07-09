@@ -11,7 +11,7 @@
   "baseFindings": "Hallazgos base",
   "baseLabel": "Base",
   "baseOdontogram": "Odontograma base",
-  "baseOdontogramTooltip": "El odontograma base registra los hallazgos clínicos y se conserva como referencia. Las atenciones registran las soluciones aplicadas.",
+  "baseOdontogramTooltip": "El odontograma base es el diagnóstico odontológico inicial del periodo (normalmente al inicio del año): registra el estado de todas las piezas dentales y se conserva como referencia. Las soluciones se registran después en cada odontograma de atención.",
   "black": "Negro",
   "blue": "Azul",
   "cancel": "Cancelar",

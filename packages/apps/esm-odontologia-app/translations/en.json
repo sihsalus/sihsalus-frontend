@@ -11,7 +11,7 @@
   "baseFindings": "Base findings",
   "baseLabel": "Base",
   "baseOdontogram": "Base odontogram",
-  "baseOdontogramTooltip": "Base odontogram: records clinical findings. Kept as reference and not modified with each consultation.",
+  "baseOdontogramTooltip": "The base odontogram is the initial dental assessment for the period (usually at the start of the year): it charts the state of every tooth and is kept as a reference. Solutions are recorded afterwards in each attention odontogram.",
   "black": "Negro",
   "blue": "Azul",
   "cancel": "Cancel",

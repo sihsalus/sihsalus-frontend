@@ -6,6 +6,7 @@ import { useTranslation } from 'react-i18next';
 import { useOdontogramEncounter } from '../hooks/useOdontogramEncounter';
 import OdontogramCanvas from '../odontogram/components/Odontogram';
 import { adultConfig } from '../odontogram/config/adultConfig';
+import { createEmptyOdontogramData, type OdontogramData } from '../odontogram/types/odontogram';
 import useOdontogramDataStore from '../store/odontogramDataStore';
 import type { OdontogramRecordType } from '../types/odontogram-record';
 import styles from './odontogram-workspace.scss';
@@ -17,6 +18,8 @@ interface OdontogramWorkspaceProps extends DefaultWorkspaceProps {
   workspaceMode?: OdontogramRecordType;
   /** Parent base encounter the attention will be linked to. */
   baseEncounterUuid?: string | null;
+  /** Snapshot the editor should start from (empty when creating a new record). */
+  initialData?: OdontogramData;
   /** Called after a successful save so the launcher can refresh its data. */
   onSaved?: () => void;
 }
@@ -32,6 +35,7 @@ const OdontogramWorkspace: React.FC<OdontogramWorkspaceProps> = ({
   encounterUuid,
   workspaceMode = 'base',
   baseEncounterUuid,
+  initialData,
   onSaved,
   closeWorkspace,
 }) => {
@@ -44,13 +48,26 @@ const OdontogramWorkspace: React.FC<OdontogramWorkspaceProps> = ({
   const data = useOdontogramDataStore((s) => s.data);
   const setData = useOdontogramDataStore((s) => s.setData);
 
+  // Seed the editor with its own snapshot on mount so it never inherits the
+  // record currently previewed in the dashboard (which shares this store).
+  // All dependencies are stable for the lifetime of a single launch.
   useEffect(() => {
     setPatient(patientUuid);
     setWorkspaceMode(workspaceMode);
+    setData(initialData ?? createEmptyOdontogramData(adultConfig));
     if (baseEncounterUuid) {
       setActiveBaseEncounterUuid(baseEncounterUuid);
     }
-  }, [patientUuid, workspaceMode, baseEncounterUuid, setPatient, setWorkspaceMode, setActiveBaseEncounterUuid]);
+  }, [
+    patientUuid,
+    workspaceMode,
+    baseEncounterUuid,
+    initialData,
+    setPatient,
+    setWorkspaceMode,
+    setData,
+    setActiveBaseEncounterUuid,
+  ]);
 
   const handleSave = async () => {
     try {

@@ -11,6 +11,7 @@ import {
 import { CardHeader } from '@openmrs/esm-patient-common-lib';
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
+import { countSolutions } from './count-solutions';
 import OdontogramRecordList from './odontogram-record-list.component';
 import { useOdontogramHistory } from '../hooks/useOdontogramHistory';
 import OdontogramCanvas from '../odontogram/components/Odontogram';
@@ -27,6 +28,7 @@ interface OdontogramDashboardProps {
 }
 
 const WORKSPACE_NAME = 'odontologia-odontogram-form-workspace';
+const noop = () => {};
 
 const OdontogramSkeleton: React.FC = () => (
   <div className={styles.skeletonWrapper}>
@@ -55,10 +57,7 @@ const OdontogramDashboard: React.FC<OdontogramDashboardProps> = ({ patientUuid }
   const session = useSession();
   const canEdit = userHasAccess('app:clinical.chart.dentistry.edit', session?.user);
 
-  const data = useOdontogramDataStore((s) => s.data);
-  const setData = useOdontogramDataStore((s) => s.setData);
   const setPatient = useOdontogramDataStore((s) => s.setPatient);
-  const setWorkspaceMode = useOdontogramDataStore((s) => s.setWorkspaceMode);
   const setSelectedEncounterUuid = useOdontogramDataStore((s) => s.setSelectedEncounterUuid);
   const setActiveBaseEncounterUuid = useOdontogramDataStore((s) => s.setActiveBaseEncounterUuid);
   const selectedEncounterUuid = useOdontogramDataStore((s) => s.selectedEncounterUuid);
@@ -79,6 +78,7 @@ const OdontogramDashboard: React.FC<OdontogramDashboardProps> = ({ patientUuid }
 
   const activeBase = activeGroup?.base ?? null;
   const attentions = activeGroup?.attentions ?? [];
+  const latestAttentionUuid = attentions.length ? attentions[attentions.length - 1].encounterUuid : null;
 
   const selectedRecord = useMemo(() => {
     if (!activeGroup) {
@@ -98,6 +98,27 @@ const OdontogramDashboard: React.FC<OdontogramDashboardProps> = ({ patientUuid }
     return attentions.findIndex((record) => record.encounterUuid === selectedRecord.encounterUuid) + 1;
   }, [attentions, isViewingAttention, selectedRecord]);
 
+  // The preview reads straight from the selected record so it never collides
+  // with the workspace, which owns the shared editing buffer in the store.
+  const previewData = selectedRecord?.data ?? createEmptyOdontogramData(adultConfig);
+
+  // --- Action eligibility rules ---------------------------------------------
+  // Edit: only the latest attention of the active base, or a base that has no
+  // attentions yet (still being set up). Older records stay as historical read-only.
+  const canEditSelected =
+    canEdit &&
+    Boolean(selectedRecord) &&
+    (selectedRecord?.encounterUuid === latestAttentionUuid ||
+      (selectedRecord?.type === 'base' && attentions.length === 0));
+
+  // Delete: only when the record has nothing registered (created by mistake).
+  // A base can only be removed if it has no attentions hanging from it.
+  const canDeleteSelected =
+    canEdit &&
+    Boolean(selectedRecord) &&
+    countSolutions(selectedRecord?.data) === 0 &&
+    (selectedRecord?.type === 'attention' || attentions.length === 0);
+
   useEffect(() => {
     setPatient(patientUuid);
   }, [patientUuid, setPatient]);
@@ -116,17 +137,14 @@ const OdontogramDashboard: React.FC<OdontogramDashboardProps> = ({ patientUuid }
     setSelectedEncounterUuid((latestAttention ?? vigenteGroup.base).encounterUuid);
   }, [groups, vigenteBaseUuid, selectedEncounterUuid, setActiveBaseEncounterUuid, setSelectedEncounterUuid]);
 
-  useEffect(() => {
-    if (selectedRecord?.data) {
-      setData(selectedRecord.data);
-    }
-  }, [selectedRecord, setData]);
-
   const launchNewBase = useCallback(() => {
-    setData(createEmptyOdontogramData(adultConfig));
-    setWorkspaceMode('base');
-    launchWorkspace(WORKSPACE_NAME, { patientUuid, workspaceMode: 'base', onSaved: mutate });
-  }, [patientUuid, setData, setWorkspaceMode, mutate]);
+    launchWorkspace(WORKSPACE_NAME, {
+      patientUuid,
+      workspaceMode: 'base',
+      initialData: createEmptyOdontogramData(adultConfig),
+      onSaved: mutate,
+    });
+  }, [patientUuid, mutate]);
 
   const handleSelectBase = useCallback(
     (base: OdontogramRecord) => {
@@ -146,41 +164,44 @@ const OdontogramDashboard: React.FC<OdontogramDashboardProps> = ({ patientUuid }
 
   const handleAddAttention = useCallback(
     (base: OdontogramRecord) => {
-      setData(createEmptyOdontogramData(adultConfig));
-      setWorkspaceMode('attention');
       launchWorkspace(WORKSPACE_NAME, {
         patientUuid,
         workspaceMode: 'attention',
         baseEncounterUuid: base.encounterUuid,
+        initialData: createEmptyOdontogramData(adultConfig),
         onSaved: mutate,
       });
     },
-    [patientUuid, setData, setWorkspaceMode, mutate],
+    [patientUuid, mutate],
   );
 
   const handleEditRecord = useCallback(() => {
     if (!selectedRecord?.data || !activeBase) {
       return;
     }
-    setData(selectedRecord.data);
-    setWorkspaceMode(selectedRecord.type);
     launchWorkspace(WORKSPACE_NAME, {
       patientUuid,
       workspaceMode: selectedRecord.type,
       encounterUuid: selectedRecord.encounterUuid,
       baseEncounterUuid: activeBase.encounterUuid,
+      initialData: selectedRecord.data,
       onSaved: mutate,
     });
-  }, [selectedRecord, activeBase, patientUuid, setData, setWorkspaceMode, mutate]);
+  }, [selectedRecord, activeBase, patientUuid, mutate]);
 
   const handleDeleteRecord = useCallback(() => {
     if (!selectedRecord || !activeBase) {
       return;
     }
     const record = selectedRecord;
+    const encounterTypeName =
+      record.type === 'base'
+        ? t('baseOdontogram', 'Odontograma base')
+        : t('attentionOdontogram', 'Odontograma de atención');
+
     const close = showModal('delete-encounter-modal', {
       close: () => close(),
-      encounterTypeName: t('attentionOdontogram', 'Odontograma de atención'),
+      encounterTypeName,
       onConfirmation: () => {
         const abortController = new AbortController();
         deleteEncounter(record.encounterUuid, abortController)
@@ -233,7 +254,7 @@ const OdontogramDashboard: React.FC<OdontogramDashboardProps> = ({ patientUuid }
             align="bottom-right"
             label={t(
               'baseOdontogramTooltip',
-              'El odontograma base registra los hallazgos clínicos y se conserva como referencia. Las atenciones registran las soluciones aplicadas.',
+              'El odontograma base es el diagnóstico odontológico inicial del periodo (normalmente al inicio del año): registra el estado de todas las piezas dentales y se conserva como referencia. Las soluciones se registran después en cada odontograma de atención.',
             )}
             enterDelayMs={100}
             leaveDelayMs={150}
@@ -286,12 +307,12 @@ const OdontogramDashboard: React.FC<OdontogramDashboardProps> = ({ patientUuid }
               >
                 <Maximize />
               </IconButton>
-              {canEdit ? (
+              {canEditSelected ? (
                 <Button kind="tertiary" size="sm" renderIcon={Edit} onClick={handleEditRecord} data-testid="edit-odontogram-btn">
                   {t('edit', 'Editar')}
                 </Button>
               ) : null}
-              {canEdit && isViewingAttention ? (
+              {canDeleteSelected ? (
                 <Button
                   kind="danger--tertiary"
                   size="sm"
@@ -306,7 +327,7 @@ const OdontogramDashboard: React.FC<OdontogramDashboardProps> = ({ patientUuid }
           </div>
 
           <div className={styles.preview}>
-            <OdontogramCanvas config={adultConfig} data={data} onChange={setData} readOnly />
+            <OdontogramCanvas config={adultConfig} data={previewData} onChange={noop} readOnly />
           </div>
         </section>
       </div>
@@ -323,7 +344,7 @@ const OdontogramDashboard: React.FC<OdontogramDashboardProps> = ({ patientUuid }
           onRequestClose={() => setIsExpanded(false)}
         >
           <div className={styles.modalCanvas}>
-            <OdontogramCanvas config={adultConfig} data={data} onChange={setData} readOnly />
+            <OdontogramCanvas config={adultConfig} data={previewData} onChange={noop} readOnly />
           </div>
         </Modal>
       ) : null}

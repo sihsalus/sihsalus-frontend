@@ -1,7 +1,33 @@
-import { getDefaultVisitAttributesFromPatientAddress } from './visit-form.resource';
+import {
+  getDefaultVisitAttributesFromPatientAddress,
+  normalizeVisitTimeFormatInput,
+  normalizeVisitTimeInput,
+  sanitizeVisitTimeInput,
+} from './visit-form.resource';
 
 const provenanceVisitAttributeTypeUuid = '9b640334-69e7-49a8-bc8d-1a379742f2f1';
 const addressExtensionUrl = 'http://openmrs.org/fhir/StructureDefinition/address';
+
+describe('visit time helpers', () => {
+  it('removes non-time characters from the time input', () => {
+    expect(sanitizeVisitTimeInput('ww')).toBe('');
+    expect(sanitizeVisitTimeInput('ww930')).toBe('9:30');
+    expect(sanitizeVisitTimeInput('12:3x4')).toBe('12:34');
+  });
+
+  it('normalizes valid time input to hh:mm', () => {
+    expect(normalizeVisitTimeInput('9:3')).toBe('09:03');
+    expect(normalizeVisitTimeInput('930')).toBe('09:30');
+    expect(normalizeVisitTimeInput('13:00')).toBe('13:00');
+  });
+
+  it('normalizes AM/PM input and rejects invalid values', () => {
+    expect(normalizeVisitTimeFormatInput(' pm ')).toBe('PM');
+    expect(normalizeVisitTimeFormatInput('am')).toBe('AM');
+    expect(normalizeVisitTimeFormatInput('')).toBeUndefined();
+    expect(normalizeVisitTimeFormatInput('xx')).toBeUndefined();
+  });
+});
 
 function openmrsAddressExtension(field: string, value: string) {
   return {

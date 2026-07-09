@@ -10,6 +10,12 @@
   max-width: calc(1260px + 2rem);
 }
 
+/* While editing the fields use a white field; read-only keeps the darker
+   (disabled) background so it clearly reads as non-editable. */
+.editable :global(.cds--text-area) {
+  background-color: var(--cds-field-02, #ffffff);
+}
+
 .labelRow {
   display: inline-flex;
   align-items: center;

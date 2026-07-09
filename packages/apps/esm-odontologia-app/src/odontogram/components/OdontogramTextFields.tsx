@@ -76,7 +76,7 @@ const OdontogramTextFields: React.FC<OdontogramTextFieldsProps> = ({ data, onCha
 
   return (
     <>
-      <div className={styles.container}>
+      <div className={`${styles.container} ${readOnly ? '' : styles.editable}`}>
         <TextArea
           id="odon-especificaciones"
           labelText={renderLabel(t('specifications', 'Especificaciones'), 'especificaciones')}

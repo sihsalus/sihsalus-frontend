@@ -18,6 +18,7 @@ import ResponsiveOdontogramWrapper from './ResponsiveOdontogramWrapper';
 import TeethArch from './TeethArch';
 import './AdultOdontogram.css';
 
+import type { FormSelectionState } from '../types/context';
 import type { OdontogramConfig, OdontogramData } from '../types/odontogram';
 
 export interface OdontogramProps {
@@ -33,11 +34,31 @@ export interface OdontogramProps {
   title?: string;
   /** Optional description */
   description?: string;
+  /** Optionally control the ephemeral form selection so it can be shared across
+   *  instances (e.g. inline editor ↔ expanded workspace). */
+  formSelection?: FormSelectionState;
+  onFormSelectionChange?: (updater: FormSelectionState | ((prev: FormSelectionState) => FormSelectionState)) => void;
 }
 
-const Odontogram: React.FC<OdontogramProps> = ({ config, data, onChange, readOnly = false, title, description }) => {
+const Odontogram: React.FC<OdontogramProps> = ({
+  config,
+  data,
+  onChange,
+  readOnly = false,
+  title,
+  description,
+  formSelection,
+  onFormSelectionChange,
+}) => {
   return (
-    <OdontogramProvider config={config} data={data} onChange={onChange} readOnly={readOnly}>
+    <OdontogramProvider
+      config={config}
+      data={data}
+      onChange={onChange}
+      readOnly={readOnly}
+      formSelection={formSelection}
+      onFormSelectionChange={onFormSelectionChange}
+    >
       <div className="adult-odontogram-container">
         {(title || description) && (
           <div className="odontogram-header">

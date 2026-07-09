@@ -1,6 +1,7 @@
 import { getDefaultsFromConfigSchema } from '@openmrs/esm-framework';
 import { configSchema, type OdontogramConfig } from '../config-schema';
 import {
+  applyExistingObsUuids,
   getOdontogramDataFromEncounter,
   getOdontogramRecordTypeFromEncounter,
   getParentBaseEncounterUuidFromEncounter,
@@ -87,5 +88,48 @@ describe('AMPATH odontogram form mapper', () => {
     expect(getOdontogramRecordTypeFromEncounter(encounter, config, 'base')).toBe('attention');
     expect(getParentBaseEncounterUuidFromEncounter(encounter, config)).toBe('base-encounter');
     expect(getOdontogramDataFromEncounter(encounter, config)).toEqual(data);
+  });
+
+  describe('applyExistingObsUuids', () => {
+    const basePayload = {
+      patient: 'patient-uuid',
+      encounterType: config.baseEncounterTypeUuid,
+      form: config.ampathFormPersistence.baseFormUuid,
+      encounterDatetime: '2026-05-28T10:30:00.000Z',
+      obs: [
+        { concept: config.ampathFormPersistence.concepts.snapshot, value: '{"teeth":[]}' },
+        { concept: config.ampathFormPersistence.concepts.recordType, value: 'base' },
+      ],
+    };
+
+    it('reuses the existing obs uuid per concept so updates edit in place', () => {
+      const result = applyExistingObsUuids(basePayload, [
+        { uuid: 'obs-snapshot', concept: { uuid: config.ampathFormPersistence.concepts.snapshot } },
+        { uuid: 'obs-record-type', concept: { uuid: config.ampathFormPersistence.concepts.recordType } },
+      ]);
+
+      expect(result.obs).toEqual([
+        { uuid: 'obs-snapshot', concept: config.ampathFormPersistence.concepts.snapshot, value: '{"teeth":[]}' },
+        { uuid: 'obs-record-type', concept: config.ampathFormPersistence.concepts.recordType, value: 'base' },
+      ]);
+    });
+
+    it('reuses the first obs uuid when a concept has duplicates and leaves unmatched entries untouched', () => {
+      const result = applyExistingObsUuids(basePayload, [
+        { uuid: 'obs-snapshot-old', concept: { uuid: config.ampathFormPersistence.concepts.snapshot } },
+        { uuid: 'obs-snapshot-new', concept: { uuid: config.ampathFormPersistence.concepts.snapshot } },
+      ]);
+
+      expect(result.obs[0]).toEqual({
+        uuid: 'obs-snapshot-old',
+        concept: config.ampathFormPersistence.concepts.snapshot,
+        value: '{"teeth":[]}',
+      });
+      // recordType had no existing obs → stays without a uuid (created fresh)
+      expect(result.obs[1]).toEqual({
+        concept: config.ampathFormPersistence.concepts.recordType,
+        value: 'base',
+      });
+    });
   });
 });

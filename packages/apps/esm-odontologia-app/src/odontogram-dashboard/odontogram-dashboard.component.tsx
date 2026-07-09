@@ -1,34 +1,41 @@
-import { Add, Edit, Information } from '@carbon/icons-react';
+import { Edit, Information, Maximize, TrashCan } from '@carbon/icons-react';
+import { Button, ButtonSet, IconButton, InlineLoading, SkeletonPlaceholder, SkeletonText, Tag, Tooltip } from '@carbon/react';
 import {
-  IconButton,
-  Select,
-  SelectItem,
-  SelectItemGroup,
-  SkeletonPlaceholder,
-  SkeletonText,
-  Tooltip,
-} from '@carbon/react';
-import { launchWorkspace, useSession, userHasAccess } from '@openmrs/esm-framework';
-import { CardHeader } from '@openmrs/esm-patient-common-lib';
-import React, { useCallback, useEffect, useMemo } from 'react';
+  formatDate,
+  launchWorkspace,
+  showModal,
+  showSnackbar,
+  useSession,
+  userHasAccess,
+} from '@openmrs/esm-framework';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
+import { countSolutions } from './count-solutions';
+import OdontogramRecordList from './odontogram-record-list.component';
+import { useOdontogramEncounter } from '../hooks/useOdontogramEncounter';
 import { useOdontogramHistory } from '../hooks/useOdontogramHistory';
 import OdontogramCanvas from '../odontogram/components/Odontogram';
 import { adultConfig } from '../odontogram/config/adultConfig';
 import { createEmptyOdontogramData } from '../odontogram/types/odontogram';
+import { deleteEncounter } from '../odontogram.resource';
 import useOdontogramDataStore from '../store/odontogramDataStore';
-import type { OdontogramBaseGroup, OdontogramRecord } from '../types/odontogram-record';
+import type { OdontogramRecord, OdontogramRecordType } from '../types/odontogram-record';
 import DentalEmptyState from '../ui/dental-empty-state.component';
 import styles from './odontogram-dashboard.scss';
 
 interface OdontogramDashboardProps {
   patientUuid: string;
-  embedded?: boolean;
 }
 
-// ---------------------------------------------------------------------------
-// Skeleton
-// ---------------------------------------------------------------------------
+const WORKSPACE_NAME = 'odontologia-odontogram-form-workspace';
+const noop = () => {};
+
+/** Identity of the in-progress edit. Its data buffer lives in the shared store. */
+interface EditContext {
+  recordType: OdontogramRecordType;
+  encounterUuid?: string;
+  baseEncounterUuid?: string;
+}
 
 const OdontogramSkeleton: React.FC = () => (
   <div className={styles.skeletonWrapper}>
@@ -40,288 +47,481 @@ const OdontogramSkeleton: React.FC = () => (
   </div>
 );
 
-// ---------------------------------------------------------------------------
-// Empty state
-// ---------------------------------------------------------------------------
-
-const OdontogramEmpty: React.FC<{ onGenerate: () => void }> = ({ onGenerate }) => {
+const OdontogramEmpty: React.FC<{ onGenerate?: () => void }> = ({ onGenerate }) => {
   const { t } = useTranslation();
-
   return (
     <DentalEmptyState
       title={t('odontogram', 'Odontograma')}
-      description={t(
-        'odontogramEmptyDescription',
-        'No hay odontograma base registrado para mostrar para este paciente.',
-      )}
-      actionLabel={t('registerBaseOdontogram', 'Registrar odontograma base')}
+      description={t('odontogramEmptyDescription', 'No hay odontograma inicial registrado para mostrar para este paciente.')}
+      actionLabel={t('registerBaseOdontogram', 'Registrar odontograma inicial')}
       onAction={onGenerate}
     />
   );
 };
 
-// ---------------------------------------------------------------------------
-// Record selector (top-right of CardHeader)
-// ---------------------------------------------------------------------------
-
-interface RecordSelectorProps {
-  groups: OdontogramBaseGroup[];
-  selectedEncounterUuid: string | null;
-  onSelect: (record: OdontogramRecord, parentBase: OdontogramRecord) => void;
-  onAdd: () => void;
-  onEdit: (record: OdontogramRecord, parentBase: OdontogramRecord) => void;
-}
-
-const RecordSelector: React.FC<RecordSelectorProps> = ({ groups, selectedEncounterUuid, onSelect, onAdd, onEdit }) => {
+const OdontogramDashboard: React.FC<OdontogramDashboardProps> = ({ patientUuid }) => {
   const { t } = useTranslation();
   const session = useSession();
   const canEdit = userHasAccess('app:clinical.chart.dentistry.edit', session?.user);
+  const { save, isSaving } = useOdontogramEncounter();
 
-  // Resolve which record is currently selected to build the tooltip text
-  const selectedRecord = useMemo(() => {
-    for (const g of groups) {
-      if (g.base.encounterUuid === selectedEncounterUuid) return g.base;
-      for (const a of g.attentions) {
-        if (a.encounterUuid === selectedEncounterUuid) return a;
-      }
-    }
-    return groups[0]?.base ?? null;
-  }, [groups, selectedEncounterUuid]);
-
-  const tooltipLabel =
-    selectedRecord?.type === 'base'
-      ? t(
-          'baseOdontogramTooltip',
-          'Base odontogram: records clinical findings. Kept as reference and not modified with each consultation.',
-        )
-      : t(
-          'attentionOdontogramTooltip',
-          'Attention odontogram: records solutions or interventions performed during this consultation.',
-        );
-
-  // Build the value→(record, parentBase) lookup so onChange can resolve both
-  const recordMap = useMemo(() => {
-    const map = new Map<string, { record: OdontogramRecord; parentBase: OdontogramRecord }>();
-    for (const g of groups) {
-      map.set(g.base.encounterUuid, { record: g.base, parentBase: g.base });
-      g.attentions.forEach((a) => {
-        map.set(a.encounterUuid, { record: a, parentBase: g.base });
-      });
-    }
-    return map;
-  }, [groups]);
-
-  const handleChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
-    const entry = recordMap.get(e.target.value);
-    if (entry) {
-      onSelect(entry.record, entry.parentBase);
-    }
-  };
-
-  const defaultValue = selectedEncounterUuid ?? groups[0]?.base?.encounterUuid ?? '';
-  const selectedEntry = recordMap.get(defaultValue);
-
-  return (
-    <div className={styles.selectorRow}>
-      <Select
-        id="odontogram-record-selector"
-        labelText=""
-        hideLabel
-        size="sm"
-        value={defaultValue}
-        onChange={handleChange}
-        className={styles.recordSelect}
-      >
-        {groups.map((g) => (
-          <SelectItemGroup key={g.base.encounterUuid} label={g.base.label}>
-            <SelectItem value={g.base.encounterUuid} text={t('baseLabel', 'Base')} />
-            {g.attentions.map((a, aIdx) => (
-              <SelectItem
-                key={a.encounterUuid}
-                value={a.encounterUuid}
-                text={`${t('attentionLabel', 'Atención')} ${aIdx + 1}`}
-              />
-            ))}
-          </SelectItemGroup>
-        ))}
-      </Select>
-
-      <Tooltip align="bottom-right" label={tooltipLabel} enterDelayMs={100} leaveDelayMs={150}>
-        <button className={styles.infoButton} type="button" aria-label={t('odontogramInfo', 'Odontogram info')}>
-          <Information size={16} />
-        </button>
-      </Tooltip>
-
-      {canEdit ? (
-        <>
-          <IconButton
-            kind="ghost"
-            size="sm"
-            label={t('editOdontogram', 'Edit odontogram')}
-            onClick={() => selectedEntry && onEdit(selectedEntry.record, selectedEntry.parentBase)}
-            disabled={!selectedEntry?.record.data}
-            data-testid="edit-odontogram-btn"
-          >
-            <Edit />
-          </IconButton>
-          <IconButton
-            kind="ghost"
-            size="sm"
-            label={t('addAttention', 'New attention')}
-            onClick={onAdd}
-            data-testid="add-attention-btn"
-          >
-            <Add />
-          </IconButton>
-        </>
-      ) : null}
-    </div>
-  );
-};
-
-// ---------------------------------------------------------------------------
-// Dashboard
-// ---------------------------------------------------------------------------
-
-const OdontogramDashboard: React.FC<OdontogramDashboardProps> = ({ patientUuid, embedded = false }) => {
-  const { t } = useTranslation();
-  const data = useOdontogramDataStore((s) => s.data);
-  const setData = useOdontogramDataStore((s) => s.setData);
   const setPatient = useOdontogramDataStore((s) => s.setPatient);
-  const setWorkspaceMode = useOdontogramDataStore((s) => s.setWorkspaceMode);
   const setSelectedEncounterUuid = useOdontogramDataStore((s) => s.setSelectedEncounterUuid);
   const setActiveBaseEncounterUuid = useOdontogramDataStore((s) => s.setActiveBaseEncounterUuid);
+  const setWorkspaceMode = useOdontogramDataStore((s) => s.setWorkspaceMode);
   const selectedEncounterUuid = useOdontogramDataStore((s) => s.selectedEncounterUuid);
   const activeBaseEncounterUuid = useOdontogramDataStore((s) => s.activeBaseEncounterUuid);
+  // The store's `data` is the shared editing buffer (inline editor + expanded workspace).
+  const editData = useOdontogramDataStore((s) => s.data);
+  const setData = useOdontogramDataStore((s) => s.setData);
+  // Shared form selection so the active finding/color survives navigation and
+  // transfers between the inline editor and the expanded workspace.
+  const formSelection = useOdontogramDataStore((s) => s.formSelection);
+  const setFormSelection = useOdontogramDataStore((s) => s.setFormSelection);
+  const resetFormSelection = useOdontogramDataStore((s) => s.resetFormSelection);
 
-  const { groups, baseRecords, isLoading, error, mutate: _mutate } = useOdontogramHistory(patientUuid);
+  const { groups, baseRecords, isLoading, error, mutate } = useOdontogramHistory(patientUuid);
   const hasBase = baseRecords.length > 0;
+  const vigenteBaseUuid = hasBase ? baseRecords[baseRecords.length - 1].encounterUuid : null;
+
+  const [editContext, setEditContext] = useState<EditContext | null>(null);
+  // Whether the body is showing the editor, or a read-only record while the edit is parked.
+  const [viewingEdit, setViewingEdit] = useState(false);
+  const isEditing = Boolean(editContext);
+  const showEditor = isEditing && viewingEdit;
+  // A brand-new (unsaved) record shows a temporary "draft" card in the list so
+  // navigation has somewhere to return to while it is being created.
+  const draft =
+    editContext && !editContext.encounterUuid
+      ? { type: editContext.recordType, baseEncounterUuid: editContext.baseEncounterUuid ?? null }
+      : null;
+  const draftActive = Boolean(draft) && viewingEdit;
+
+  const activeGroup = useMemo(() => {
+    if (!groups.length) {
+      return null;
+    }
+    return groups.find((group) => group.base.encounterUuid === activeBaseEncounterUuid) ?? groups[groups.length - 1];
+  }, [groups, activeBaseEncounterUuid]);
+
+  const activeBase = activeGroup?.base ?? null;
+  const attentions = activeGroup?.attentions ?? [];
+  const latestAttentionUuid = attentions.length ? attentions[attentions.length - 1].encounterUuid : null;
 
   const selectedRecord = useMemo(() => {
-    for (const group of groups) {
-      if (group.base.encounterUuid === selectedEncounterUuid) {
-        return group.base;
-      }
-
-      const attention = group.attentions.find((record) => record.encounterUuid === selectedEncounterUuid);
-      if (attention) {
-        return attention;
-      }
+    if (!activeGroup) {
+      return null;
     }
+    if (activeGroup.base.encounterUuid === selectedEncounterUuid) {
+      return activeGroup.base;
+    }
+    return activeGroup.attentions.find((record) => record.encounterUuid === selectedEncounterUuid) ?? activeGroup.base;
+  }, [activeGroup, selectedEncounterUuid]);
 
-    return groups[0]?.base ?? null;
-  }, [groups, selectedEncounterUuid]);
+  const isViewingAttention = selectedRecord?.type === 'attention';
+  const selectedAttentionNumber = useMemo(() => {
+    if (!isViewingAttention || !selectedRecord) {
+      return null;
+    }
+    return attentions.findIndex((record) => record.encounterUuid === selectedRecord.encounterUuid) + 1;
+  }, [attentions, isViewingAttention, selectedRecord]);
 
-  // Sync patient into store
+  const previewData = selectedRecord?.data ?? createEmptyOdontogramData(adultConfig);
+
+  // --- Action eligibility (only the vigente initial can be modified) --------
+  const isVigenteActive = activeBase?.encounterUuid === vigenteBaseUuid;
+  const canEditSelected =
+    canEdit &&
+    isVigenteActive &&
+    Boolean(selectedRecord) &&
+    (selectedRecord?.encounterUuid === latestAttentionUuid ||
+      (selectedRecord?.type === 'base' && attentions.length === 0));
+  const canDeleteSelected =
+    canEdit &&
+    isVigenteActive &&
+    Boolean(selectedRecord) &&
+    countSolutions(selectedRecord?.data) === 0 &&
+    (selectedRecord?.type === 'attention' || attentions.length === 0);
+
   useEffect(() => {
     setPatient(patientUuid);
   }, [patientUuid, setPatient]);
 
-  // Auto-select the most recent base when history loads for the first time
+  // Open on the most recent evolutive of the vigente initial (fallback: the initial)
   useEffect(() => {
-    if (!selectedEncounterUuid && hasBase) {
-      const mostRecentBase = baseRecords[baseRecords.length - 1];
-      setSelectedEncounterUuid(mostRecentBase.encounterUuid);
-      setActiveBaseEncounterUuid(mostRecentBase.encounterUuid);
+    if (selectedEncounterUuid || !vigenteBaseUuid) {
+      return;
     }
-  }, [hasBase, baseRecords, selectedEncounterUuid, setSelectedEncounterUuid, setActiveBaseEncounterUuid]);
-
-  useEffect(() => {
-    if (selectedRecord?.data) {
-      setData(selectedRecord.data);
+    const vigenteGroup = groups.find((group) => group.base.encounterUuid === vigenteBaseUuid);
+    if (!vigenteGroup) {
+      return;
     }
-  }, [selectedRecord, setData]);
+    const latestAttention = vigenteGroup.attentions[vigenteGroup.attentions.length - 1];
+    setActiveBaseEncounterUuid(vigenteBaseUuid);
+    setSelectedEncounterUuid((latestAttention ?? vigenteGroup.base).encounterUuid);
+  }, [groups, vigenteBaseUuid, selectedEncounterUuid, setActiveBaseEncounterUuid, setSelectedEncounterUuid]);
 
-  const handleGenerateBase = useCallback(() => {
+  // --- Navigation (parks the editor without discarding the buffer) ----------
+  // Selecting the record currently being edited resumes the editor (with its
+  // in-progress buffer); selecting any other record parks it read-only.
+  const handleSelectBase = useCallback(
+    (base: OdontogramRecord) => {
+      setActiveBaseEncounterUuid(base.encounterUuid);
+      setSelectedEncounterUuid(base.encounterUuid);
+      setViewingEdit(editContext?.encounterUuid != null && editContext.encounterUuid === base.encounterUuid);
+    },
+    [editContext, setActiveBaseEncounterUuid, setSelectedEncounterUuid],
+  );
+
+  const handleSelectAttention = useCallback(
+    (attention: OdontogramRecord, base: OdontogramRecord) => {
+      setActiveBaseEncounterUuid(base.encounterUuid);
+      setSelectedEncounterUuid(attention.encounterUuid);
+      setViewingEdit(editContext?.encounterUuid != null && editContext.encounterUuid === attention.encounterUuid);
+    },
+    [editContext, setActiveBaseEncounterUuid, setSelectedEncounterUuid],
+  );
+
+  // Return to the record being edited (re-selects it in the list) and resume.
+  const handleContinueEditing = useCallback(() => {
+    if (!editContext) {
+      return;
+    }
+    if (editContext.baseEncounterUuid) {
+      setActiveBaseEncounterUuid(editContext.baseEncounterUuid);
+    }
+    if (editContext.encounterUuid) {
+      setSelectedEncounterUuid(editContext.encounterUuid);
+    }
+    setViewingEdit(true);
+  }, [editContext, setActiveBaseEncounterUuid, setSelectedEncounterUuid]);
+
+  // --- Start editing (inline; buffer seeded into the store) -----------------
+  const startNewBase = useCallback(() => {
     setData(createEmptyOdontogramData(adultConfig));
+    resetFormSelection();
     setWorkspaceMode('base');
-    launchWorkspace('odontologia-odontogram-form-workspace', { patientUuid, workspaceMode: 'base' });
-  }, [patientUuid, setData, setWorkspaceMode]);
+    setEditContext({ recordType: 'base' });
+    setViewingEdit(true);
+  }, [setData, resetFormSelection, setWorkspaceMode]);
 
-  const handleAddClick = useCallback(() => {
-    if (!hasBase) {
-      // No base yet → create one
+  const startNewAttention = useCallback(
+    (base: OdontogramRecord) => {
+      setActiveBaseEncounterUuid(base.encounterUuid);
+      setSelectedEncounterUuid(base.encounterUuid);
       setData(createEmptyOdontogramData(adultConfig));
-      setWorkspaceMode('base');
-      launchWorkspace('odontologia-odontogram-form-workspace', { patientUuid, workspaceMode: 'base' });
-    } else {
-      // Base exists → create an attention linked to the active base
+      resetFormSelection();
       setWorkspaceMode('attention');
-      launchWorkspace('odontologia-odontogram-form-workspace', {
+      setEditContext({ recordType: 'attention', baseEncounterUuid: base.encounterUuid });
+      setViewingEdit(true);
+    },
+    [setActiveBaseEncounterUuid, setSelectedEncounterUuid, setData, resetFormSelection, setWorkspaceMode],
+  );
+
+  const startEditSelected = useCallback(() => {
+    if (!selectedRecord?.data || !activeBase) {
+      return;
+    }
+    setData(selectedRecord.data);
+    resetFormSelection();
+    setWorkspaceMode(selectedRecord.type);
+    setActiveBaseEncounterUuid(activeBase.encounterUuid);
+    setEditContext({
+      recordType: selectedRecord.type,
+      encounterUuid: selectedRecord.encounterUuid,
+      baseEncounterUuid: activeBase.encounterUuid,
+    });
+    setViewingEdit(true);
+  }, [selectedRecord, activeBase, setData, resetFormSelection, setWorkspaceMode, setActiveBaseEncounterUuid]);
+
+  const handleSaveEdit = useCallback(async () => {
+    if (!editContext) {
+      return;
+    }
+    try {
+      await save({
         patientUuid,
-        workspaceMode: 'attention',
-        baseEncounterUuid: activeBaseEncounterUuid,
+        encounterUuid: editContext.encounterUuid,
+        data: editData,
+        recordType: editContext.recordType,
+        baseEncounterUuid: editContext.baseEncounterUuid,
+      });
+      showSnackbar({
+        kind: 'success',
+        title: t('odontogramSaved', 'Odontograma guardado'),
+        subtitle:
+          editContext.recordType === 'base'
+            ? t('odontogramBaseSavedSubtitle', 'Se guardó el odontograma inicial.')
+            : t('odontogramAttentionSavedSubtitle', 'Se guardó el odontograma evolutivo.'),
+      });
+      const wasNew = !editContext.encounterUuid;
+      setEditContext(null);
+      setViewingEdit(false);
+      resetFormSelection();
+      await mutate();
+      if (wasNew) {
+        setSelectedEncounterUuid(null);
+      }
+    } catch (err) {
+      showSnackbar({
+        kind: 'error',
+        title: t('odontogramSaveError', 'Error al guardar odontograma'),
+        subtitle:
+          err instanceof Error ? err.message : t('odontogramSaveErrorSubtitle', 'No se pudo guardar. Intente nuevamente.'),
       });
     }
-  }, [hasBase, patientUuid, activeBaseEncounterUuid, setData, setWorkspaceMode]);
+  }, [editContext, save, patientUuid, editData, t, mutate, setSelectedEncounterUuid, resetFormSelection]);
 
-  const handleSelectRecord = useCallback(
-    (record: OdontogramRecord, parentBase: OdontogramRecord) => {
-      setSelectedEncounterUuid(record.encounterUuid);
-      setActiveBaseEncounterUuid(parentBase.encounterUuid);
-    },
-    [setSelectedEncounterUuid, setActiveBaseEncounterUuid],
-  );
+  const handleCancelEdit = useCallback(() => {
+    setEditContext(null);
+    setViewingEdit(false);
+    resetFormSelection();
+  }, [resetFormSelection]);
 
-  const handleEditRecord = useCallback(
-    (record: OdontogramRecord, parentBase: OdontogramRecord) => {
-      if (!record.data) {
-        return;
-      }
+  const handleDeleteSelected = useCallback(() => {
+    if (!selectedRecord || !activeBase) {
+      return;
+    }
+    const record = selectedRecord;
+    const encounterTypeName =
+      record.type === 'base'
+        ? t('initialOdontogram', 'Odontograma inicial')
+        : t('evolutiveOdontogram', 'Odontograma evolutivo');
 
-      setData(record.data);
-      setWorkspaceMode(record.type);
-      setSelectedEncounterUuid(record.encounterUuid);
-      setActiveBaseEncounterUuid(parentBase.encounterUuid);
-      launchWorkspace('odontologia-odontogram-form-workspace', {
-        patientUuid,
-        workspaceMode: record.type,
-        encounterUuid: record.encounterUuid,
-        baseEncounterUuid: parentBase.encounterUuid,
-      });
-    },
-    [patientUuid, setData, setWorkspaceMode, setSelectedEncounterUuid, setActiveBaseEncounterUuid],
-  );
-
-  // ------ Render ------
+    const close = showModal('delete-encounter-modal', {
+      close: () => close(),
+      encounterTypeName,
+      onConfirmation: () => {
+        const abortController = new AbortController();
+        deleteEncounter(record.encounterUuid, abortController)
+          .then(() => {
+            setSelectedEncounterUuid(activeBase.encounterUuid);
+            mutate();
+            showSnackbar({
+              isLowContrast: true,
+              kind: 'success',
+              title: t('odontogramDeleted', 'Odontograma eliminado'),
+              subtitle: t('odontogramDeletedSubtitle', 'El odontograma fue eliminado correctamente.'),
+            });
+          })
+          .catch(() => {
+            showSnackbar({
+              isLowContrast: false,
+              kind: 'error',
+              title: t('error', 'Error'),
+              subtitle: t('odontogramDeleteError', 'No se pudo eliminar el odontograma.'),
+            });
+          });
+        close();
+      },
+    });
+  }, [selectedRecord, activeBase, t, setSelectedEncounterUuid, mutate]);
 
   if (isLoading) {
     return <OdontogramSkeleton />;
   }
 
-  if (error) {
-    return <OdontogramEmpty onGenerate={handleGenerateBase} />;
+  if (error || !hasBase || !activeBase) {
+    return <OdontogramEmpty onGenerate={canEdit ? startNewBase : undefined} />;
   }
 
-  if (!hasBase) {
-    return <OdontogramEmpty onGenerate={handleGenerateBase} />;
-  }
+  const detailLabel = isViewingAttention
+    ? `${t('evolutiveOdontogram', 'Odontograma evolutivo')} ${selectedAttentionNumber}`
+    : t('initialOdontogram', 'Odontograma inicial');
+  const detailMeta = [
+    selectedRecord ? formatDate(new Date(selectedRecord.date), { mode: 'wide', time: true }) : null,
+    selectedRecord?.provider ?? null,
+  ]
+    .filter(Boolean)
+    .join(' · ');
+
+  const editTypeLabel =
+    editContext?.recordType === 'base'
+      ? t('initialOdontogram', 'Odontograma inicial')
+      : t('evolutiveOdontogram', 'Odontograma evolutivo');
+  const editLabel = editContext
+    ? `${editContext.encounterUuid ? t('editingTag', 'Editando') : t('newTag', 'Nuevo')} · ${editTypeLabel}`
+    : '';
+
+  // Expand: while editing → full-screen editable (same buffer); otherwise → read-only view.
+  const handleExpand = () => {
+    if (showEditor && editContext) {
+      launchWorkspace(WORKSPACE_NAME, {
+        patientUuid,
+        workspaceMode: editContext.recordType,
+        encounterUuid: editContext.encounterUuid,
+        baseEncounterUuid: editContext.baseEncounterUuid,
+        initialData: editData,
+        workspaceTitle: editLabel,
+        onSaved: () => {
+          const wasNew = !editContext.encounterUuid;
+          setEditContext(null);
+          setViewingEdit(false);
+          resetFormSelection();
+          mutate();
+          if (wasNew) {
+            setSelectedEncounterUuid(null);
+          }
+        },
+      });
+      return;
+    }
+    if (selectedRecord) {
+      launchWorkspace(WORKSPACE_NAME, {
+        patientUuid,
+        workspaceMode: selectedRecord.type,
+        initialData: selectedRecord.data ?? createEmptyOdontogramData(adultConfig),
+        readOnly: true,
+        workspaceTitle: detailLabel,
+      });
+    }
+  };
 
   return (
     <div className={styles.dashboardWrapper}>
-      {embedded ? (
-        <div className={styles.embeddedToolbar}>
-          <RecordSelector
+      <div className={styles.cardHeader}>
+        <h4 className={styles.cardTitle}>{t('attentions', 'Atenciones')}</h4>
+        <Tooltip
+          align="bottom-left"
+          label={t(
+            'attentionsInfoTooltip',
+            'El odontograma inicial es un diagnóstico completo de todas las piezas dentales que se realiza al inicio del periodo y se conserva como referencia. A partir de él, cada visita registra en un odontograma evolutivo los tratamientos y soluciones que se van aplicando.',
+          )}
+          enterDelayMs={100}
+          leaveDelayMs={150}
+        >
+          <button
+            className={styles.infoButton}
+            type="button"
+            aria-label={t('odontogramInfo', 'Información del odontograma')}
+          >
+            <Information size={16} />
+          </button>
+        </Tooltip>
+      </div>
+
+      <div className={styles.masterDetail}>
+        <aside className={styles.master}>
+          <OdontogramRecordList
             groups={groups}
+            vigenteBaseUuid={vigenteBaseUuid}
             selectedEncounterUuid={selectedEncounterUuid}
-            onSelect={handleSelectRecord}
-            onAdd={handleAddClick}
-            onEdit={handleEditRecord}
+            canEdit={canEdit}
+            disableAdd={isEditing}
+            draft={draft}
+            draftActive={draftActive}
+            onSelectDraft={handleContinueEditing}
+            onAddBase={startNewBase}
+            onSelectBase={handleSelectBase}
+            onSelectAttention={handleSelectAttention}
+            onAddAttention={startNewAttention}
           />
-        </div>
-      ) : (
-        <CardHeader title={t('odontogram', 'Odontograma')}>
-          <RecordSelector
-            groups={groups}
-            selectedEncounterUuid={selectedEncounterUuid}
-            onSelect={handleSelectRecord}
-            onAdd={handleAddClick}
-            onEdit={handleEditRecord}
-          />
-        </CardHeader>
-      )}
-      <div className={styles.canvasWrapper}>
-        <OdontogramCanvas config={adultConfig} data={data} onChange={setData} readOnly />
+        </aside>
+
+        <section className={styles.detail}>
+          {showEditor && editContext ? (
+            <>
+              <div className={styles.detailHeader}>
+                <div className={styles.detailInfo}>
+                  <Tag type={editContext.recordType === 'attention' ? 'teal' : 'blue'} size="sm">
+                    {editLabel}
+                  </Tag>
+                </div>
+                <div className={styles.detailActions}>
+                  <IconButton
+                    kind="ghost"
+                    size="sm"
+                    align="left"
+                    label={t('editFullScreen', 'Editar en pantalla completa')}
+                    onClick={handleExpand}
+                    data-testid="expand-odontogram-btn"
+                  >
+                    <Maximize />
+                  </IconButton>
+                </div>
+              </div>
+
+              <div className={styles.editCanvas}>
+                <OdontogramCanvas
+                  config={adultConfig}
+                  data={editData}
+                  onChange={setData}
+                  formSelection={formSelection}
+                  onFormSelectionChange={setFormSelection}
+                />
+              </div>
+
+              <ButtonSet className={styles.editButtons}>
+                <Button kind="secondary" size="sm" onClick={handleCancelEdit} disabled={isSaving} data-testid="cancel-edit-btn">
+                  {t('cancel', 'Cancelar')}
+                </Button>
+                <Button kind="primary" size="sm" onClick={handleSaveEdit} disabled={isSaving} data-testid="save-edit-btn">
+                  {isSaving ? <InlineLoading description={t('saving', 'Guardando...')} /> : t('save', 'Guardar')}
+                </Button>
+              </ButtonSet>
+            </>
+          ) : (
+            <>
+              {isEditing ? (
+                <div className={styles.editingBanner}>
+                  <div className={styles.editingBannerInfo}>
+                    <Information size={16} className={styles.editingBannerIcon} />
+                    <div className={styles.editingBannerText}>
+                      <span className={styles.editingBannerTitle}>
+                        {t('editingInProgress', 'Edición en progreso')}
+                      </span>
+                      <span className={styles.editingBannerSubtitle}>{editTypeLabel}</span>
+                    </div>
+                  </div>
+                  <Button kind="ghost" size="sm" onClick={handleContinueEditing} data-testid="continue-edit-btn">
+                    {t('continueEditing', 'Continuar edición')}
+                  </Button>
+                </div>
+              ) : null}
+
+              <div className={styles.detailHeader}>
+                <div className={styles.detailInfo}>
+                  <Tag type={isViewingAttention ? 'teal' : 'blue'} size="sm">
+                    {detailLabel}
+                  </Tag>
+                  {detailMeta ? <span className={styles.detailMeta}>{detailMeta}</span> : null}
+                </div>
+                <div className={styles.detailActions}>
+                  <IconButton
+                    kind="ghost"
+                    size="sm"
+                    align="left"
+                    label={t('viewLarge', 'Ver en grande')}
+                    onClick={handleExpand}
+                    data-testid="expand-odontogram-btn"
+                  >
+                    <Maximize />
+                  </IconButton>
+                  {!isEditing && canEditSelected ? (
+                    <Button kind="tertiary" size="sm" renderIcon={Edit} onClick={startEditSelected} data-testid="edit-odontogram-btn">
+                      {t('edit', 'Editar')}
+                    </Button>
+                  ) : null}
+                  {!isEditing && canDeleteSelected ? (
+                    <Button
+                      kind="danger--tertiary"
+                      size="sm"
+                      renderIcon={TrashCan}
+                      onClick={handleDeleteSelected}
+                      data-testid="delete-odontogram-btn"
+                    >
+                      {t('delete', 'Eliminar')}
+                    </Button>
+                  ) : null}
+                </div>
+              </div>
+
+              <div className={styles.preview}>
+                <OdontogramCanvas config={adultConfig} data={previewData} onChange={noop} readOnly />
+              </div>
+            </>
+          )}
+        </section>
       </div>
     </div>
   );

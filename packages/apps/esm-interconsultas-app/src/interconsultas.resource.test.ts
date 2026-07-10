@@ -7,6 +7,7 @@ import {
   interconsultaOrdersUrl,
   matchesTrayFilter,
 } from './interconsultas.resource';
+import { expectKnownGap } from './test-utils/expect-known-gap';
 import type { InterconsultaOrder } from './types';
 
 function makeOrder(overrides: Partial<InterconsultaOrder> = {}): InterconsultaOrder {
@@ -151,6 +152,12 @@ describe('interconsultaOrdersUrl', () => {
   it('agrega el filtro de paciente cuando se pide', () => {
     expect(interconsultaOrdersUrl('order-type-uuid', 'patient-uuid')).toContain('&patient=patient-uuid');
   });
+
+  it('[AC-06][brecha] no limita silenciosamente la bandeja global a 100 órdenes', async () => {
+    await expectKnownGap(() => {
+      expect(interconsultaOrdersUrl('order-type-uuid')).not.toContain('&limit=100');
+    });
+  });
 });
 
 describe('getDestinationServicesFromConceptResults', () => {
@@ -188,6 +195,43 @@ describe('getDestinationServicesFromConceptResults', () => {
       { uuid: 'cardiologia-uuid', display: 'Cardiología' },
       { uuid: 'odontologia-uuid', display: 'Odontología' },
     ]);
+  });
+
+  it('[AC-02][brecha] encuentra servicios aunque el usuario omita tildes', async () => {
+    await expectKnownGap(() => {
+      const services = getDestinationServicesFromConceptResults(
+        [
+          {
+            uuid: 'set-uuid',
+            display: 'Servicios destino',
+            setMembers: [{ uuid: 'odontologia-uuid', display: 'Odontología General' }],
+          },
+        ],
+        true,
+        'odontologia',
+      );
+
+      expect(services).toEqual([{ uuid: 'odontologia-uuid', display: 'Odontología General' }]);
+    });
+  });
+
+  it('[AC-02][brecha] excluye servicios retirados del catálogo de destinos', async () => {
+    await expectKnownGap(() => {
+      const results = [
+        {
+          uuid: 'set-uuid',
+          display: 'Servicios destino',
+          setMembers: [
+            { uuid: 'active-uuid', display: 'Cardiología', retired: false },
+            { uuid: 'retired-uuid', display: 'Servicio retirado', retired: true },
+          ],
+        },
+      ];
+
+      expect(getDestinationServicesFromConceptResults(results, true, '')).toEqual([
+        { uuid: 'active-uuid', display: 'Cardiología' },
+      ]);
+    });
   });
 });
 

@@ -3,6 +3,7 @@ import React, { useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
 import { moduleName } from '../../../constants';
 import ComboInput from '../../input/combo-input/combo-input.component';
+import { validateRequiredField } from '../../validation/required-field-validation';
 import { useAddressEntries, useAddressEntryFetchConfig } from './address-hierarchy.resource';
 import { type AddressFieldDefinition } from './address-types';
 
@@ -18,7 +19,11 @@ interface AddressHierarchyLevelsProps {
 
 const AddressComboBox: React.FC<AddressComboBoxProps> = ({ attribute, fieldPrefix = 'address' }) => {
   const { t } = useTranslation(moduleName);
-  const [field, meta, { setValue }] = useField(`${fieldPrefix}.${attribute.name}`);
+  const fieldName = `${fieldPrefix}.${attribute.name}`;
+  const [field, meta, { setValue }] = useField({
+    name: fieldName,
+    validate: attribute.required ? validateRequiredField : undefined,
+  });
   const { fetchEntriesForField, searchString, updateChildElements } = useAddressEntryFetchConfig(
     attribute.name,
     fieldPrefix,
@@ -52,12 +57,14 @@ const AddressComboBox: React.FC<AddressComboBoxProps> = ({ attribute, fieldPrefi
       error={errorFetchingAddressEntries}
       isLoading={isLoadingAddressEntries}
       handleSelection={handleSelection}
-      name={`${fieldPrefix}.${attribute.name}`}
+      name={fieldName}
       fieldProps={{
         ...field,
-        id: `${fieldPrefix}.${attribute.name}`,
+        id: fieldName,
         labelText: label,
         required: attribute?.required,
+        invalid: !!(meta.touched && meta.error),
+        invalidText: meta.error ? t(meta.error) : undefined,
       }}
       handleInputChange={handleInputChange}
     />

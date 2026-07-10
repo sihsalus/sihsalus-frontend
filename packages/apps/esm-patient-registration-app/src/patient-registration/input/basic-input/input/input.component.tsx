@@ -126,10 +126,12 @@ export interface TextInputProps
 
 interface InputProps extends TextInputProps {
   checkWarning?(value: string): string;
+  name: string;
+  validate?(value: unknown): string | undefined;
 }
 
-export const Input: React.FC<InputProps> = ({ checkWarning, ...props }) => {
-  const [field, meta] = useField(props.name);
+export const Input: React.FC<InputProps> = ({ checkWarning, validate, ...props }) => {
+  const [field, meta] = useField({ name: props.name, validate });
   const { t } = useTranslation(moduleName);
 
   /*

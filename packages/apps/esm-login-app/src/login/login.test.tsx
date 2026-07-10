@@ -129,11 +129,37 @@ describe('Login', () => {
     const continueButton = screen.getByRole('button', { name: /Continue/i });
     await user.click(continueButton);
     expect(screen.getByRole('textbox', { name: /username/i })).toHaveFocus();
+    expect(screen.getByText('A valid value is required')).toBeInTheDocument();
     await user.type(screen.getByRole('textbox', { name: /username/i }), 'yoshi');
     await user.click(continueButton);
     await screen.findByLabelText(/^password$/i);
     await user.type(screen.getByLabelText(/^password$/i), 'no-tax-fraud');
     expect(screen.getByLabelText(/^password$/i)).toHaveFocus();
+  });
+
+  it('shows an inline error when the password is empty', async () => {
+    const user = userEvent.setup();
+    const { container } = renderWithRouter(Login, {}, { route: '/login' });
+
+    await user.type(screen.getByRole('textbox', { name: /username/i }), 'yoshi');
+    await user.click(screen.getByRole('button', { name: /Continue/i }));
+    await user.click(screen.getByRole('button', { name: /log in/i }));
+
+    expect(screen.getByLabelText(/^password$/i)).toHaveFocus();
+    expect(screen.getByText('A valid value is required')).toBeInTheDocument();
+    expect(container.querySelector('form')).toHaveAttribute('novalidate');
+    expect(mockLogin).not.toHaveBeenCalled();
+  });
+
+  it('shows an inline error when the recovery username is empty', async () => {
+    const user = userEvent.setup();
+    renderWithRouter(Login, {}, { route: '/login' });
+
+    await user.click(screen.getByRole('button', { name: /forgot your password/i }));
+    await user.click(screen.getByRole('button', { name: /request password recovery/i }));
+
+    expect(screen.getByRole('textbox', { name: /username/i })).toHaveFocus();
+    expect(screen.getByText('A valid value is required')).toBeInTheDocument();
   });
 
   it('makes an API request when you submit the form', async () => {

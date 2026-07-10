@@ -84,6 +84,35 @@ describe('Subscription component', () => {
     expect(mockShowSnackbar).toHaveBeenCalledTimes(1);
   });
 
+  it('shows inline errors instead of native validation messages', async () => {
+    const user = userEvent.setup();
+    mockOpenmrsFetch.mockReturnValueOnce({ data: { results: [] } });
+    const { container } = renderWithSwr(<Subscription />);
+    await waitForLoadingToFinish();
+
+    await user.click(screen.getByRole('button', { name: 'Save changes' }));
+
+    expect(screen.getAllByText('Field is required')).toHaveLength(2);
+    expect(screen.getByLabelText('Subscription URL')).toHaveAttribute('aria-invalid', 'true');
+    expect(screen.getByLabelText('Token')).toHaveAttribute('aria-invalid', 'true');
+    expect(container.querySelector('form')).toHaveAttribute('novalidate');
+    expect(mockUpdateSubscription).not.toHaveBeenCalled();
+  });
+
+  it('shows an inline error for an invalid subscription URL', async () => {
+    const user = userEvent.setup();
+    mockOpenmrsFetch.mockReturnValueOnce({ data: { results: [] } });
+    renderWithSwr(<Subscription />);
+    await waitForLoadingToFinish();
+
+    await user.type(screen.getByLabelText('Subscription URL'), 'not-a-url');
+    await user.type(screen.getByLabelText('Token'), 'token123');
+    await user.click(screen.getByRole('button', { name: 'Save changes' }));
+
+    expect(screen.getByText('Enter a valid URL')).toBeInTheDocument();
+    expect(mockUpdateSubscription).not.toHaveBeenCalled();
+  });
+
   it('allows changing the saved subscription', async () => {
     const user = userEvent.setup();
     mockOpenmrsFetch.mockReturnValueOnce({ data: { results: [mockSubscription] } });

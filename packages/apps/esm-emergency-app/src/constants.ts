@@ -9,8 +9,8 @@
 
 /** OpenMRS module identifier — must match the `name` field in package.json */
 export const moduleName = '@sihsalus/esm-emergency-app';
-export const emergencyPrivilege = 'app:emergency';
-export const emergencyEditPrivilege = 'app:emergency.edit';
+export const emergencyPrivilege = 'app:home.emergencia';
+export const emergencyEditPrivilege = 'app:home.emergencia.editar';
 
 /** Short name used as default featureName in getAsyncLifecycle options */
 export const emergency = 'emergency';

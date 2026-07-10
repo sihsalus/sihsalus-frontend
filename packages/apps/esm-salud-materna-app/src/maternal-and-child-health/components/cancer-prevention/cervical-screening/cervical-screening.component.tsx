@@ -4,6 +4,7 @@ import React from 'react';
 import { useTranslation } from 'react-i18next';
 
 import type { ConfigObject } from '../../../../config-schema';
+import { cancerPreventionEditPrivilege } from '../../../../constants';
 import ConfiguredFormButton from '../../configured-form-button.component';
 import styles from './cervical-screening.scss';
 
@@ -58,6 +59,7 @@ const CervicalScreening: React.FC<CervicalScreeningProps> = ({ patientUuid: _pat
       </div>
       <ConfiguredFormButton
         formUuid={config.formsList.cervicalCancerScreeningForm}
+        editPrivilege={cancerPreventionEditPrivilege}
         label={t('registerCervicalScreening', 'Registrar tamizaje')}
       />
     </Tile>

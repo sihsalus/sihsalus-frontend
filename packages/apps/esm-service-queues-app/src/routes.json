@@ -10,7 +10,7 @@
       "name": "outpatient-side-nav-ext",
       "component": "outpatientSideNav",
       "slot": "outpatient-sidebar-slot",
-      "privileges": "app:service-queues",
+      "privileges": "app:home.colasAtencion",
       "online": true,
       "offline": true
     },
@@ -23,7 +23,7 @@
         "slot": "service-queues-dashboard-slot",
         "title": "serviceQueues"
       },
-      "privileges": "app:service-queues",
+      "privileges": "app:home.colasAtencion",
       "online": true,
       "offline": true,
       "order": 10
@@ -36,7 +36,7 @@
         "slot": "service-queues-dashboard-slot",
         "title": "serviceQueues"
       },
-      "privileges": "app:service-queues",
+      "privileges": "app:home.colasAtencion",
       "online": true,
       "offline": true
     },
@@ -44,7 +44,7 @@
       "name": "queue-screen-link",
       "component": "queueScreenLink",
       "slot": "app-menu-slot",
-      "privileges": "app:service-queues",
+      "privileges": "app:home.colasAtencion",
       "online": true,
       "offline": true
     },
@@ -52,7 +52,7 @@
       "name": "admin-service-queues-card-link",
       "component": "adminPageCardLink",
       "slot": "system-admin-page-card-link-slot",
-      "privileges": "app:service-queues",
+      "privileges": "app:home.colasAtencion",
       "online": true,
       "offline": true
     },
@@ -60,146 +60,162 @@
       "component": "root",
       "name": "service-queues-dashboard",
       "slot": "service-queues-dashboard-slot",
-      "privileges": "app:service-queues"
+      "privileges": "app:home.colasAtencion"
     },
     {
       "component": "serviceQueuesAdminPage",
       "name": "service-queues-admin",
       "slot": "service-queues-admin-page-slot",
-      "privileges": "app:service-queues"
+      "privileges": "app:home.colasAtencion"
     },
     {
       "component": "queueScreen",
       "name": "queue-screen",
       "slot": "queue-screen-slot",
-      "privileges": "app:service-queues"
+      "privileges": "app:home.colasAtencion"
     },
     {
       "name": "metrics-card-checked-in-patients",
       "component": "metricsCardCheckedInPatients",
       "slot": "service-queues-metrics-slot",
-      "privileges": "app:service-queues",
+      "privileges": "app:home.colasAtencion",
       "order": 1
     },
     {
       "name": "metrics-card-waiting-patients",
       "component": "metricsCardWaitingPatients",
       "slot": "service-queues-metrics-slot",
-      "privileges": "app:service-queues",
+      "privileges": "app:home.colasAtencion",
       "order": 2
     },
     {
       "name": "metrics-card-average-wait-time",
       "component": "metricsCardAverageWaitTime",
       "slot": "service-queues-metrics-slot",
-      "privileges": "app:service-queues",
+      "privileges": "app:home.colasAtencion",
       "order": 3
     },
     {
       "name": "transition-overflow-menu-item",
       "component": "transitionOverflowMenuItem",
       "slot": "transition-overflow-menu-item-slot",
-      "privileges": "app:service-queues"
+      "privileges": "app:home.colasAtencion.editar"
     },
     {
       "name": "remove-queue-entry",
       "component": "removeQueueEntry",
-      "privileges": "app:service-queues"
+      "privileges": "app:home.colasAtencion.editar"
     },
     {
       "name": "clear-all-queue-entries",
       "component": "clearAllQueueEntries",
-      "privileges": "app:service-queues"
+      "privileges": "app:home.colasAtencion.editar"
     },
     {
       "name": "previous-visit-summary-widget",
       "component": "pastVisitSummary",
       "slot": "previous-visit-summary-slot",
-      "privileges": "app:service-queues"
+      "privileges": "app:home.colasAtencion"
     },
     {
       "name": "active-visits-row-actions",
       "component": "activeVisitsRowActions",
       "slot": "queue-table-serve-patient-slot",
-      "privileges": "app:service-queues"
+      "privileges": "app:home.colasAtencion.editar"
     },
     {
       "name": "visit-form-queue-fields",
       "component": "visitFormQueueFields",
       "slot": "visit-form-bottom-slot",
-      "privileges": "app:service-queues"
+      "privileges": "app:home.colasAtencion.editar"
     },
     {
       "name": "queue-patient-info-queue-entry-status",
       "component": "patientBannerQueueEntryStatus",
       "slot": "patient-banner-tags-slot",
-      "privileges": "app:service-queues"
+      "privileges": "app:home.colasAtencion"
     }
   ],
   "modals": [
     {
       "name": "add-provider-to-room-modal",
-      "component": "addProviderToRoomModal"
+      "component": "addProviderToRoomModal",
+      "privileges": "app:home.colasAtencion.editar"
     },
     {
       "name": "edit-queue-entry-modal",
-      "component": "editQueueEntryModal"
+      "component": "editQueueEntryModal",
+      "privileges": "app:home.colasAtencion.editar"
     },
     {
       "name": "call-queue-entry-modal",
-      "component": "callQueueEntryModal"
+      "component": "callQueueEntryModal",
+      "privileges": "app:home.colasAtencion.editar"
     },
     {
       "name": "clear-all-queue-entries-modal",
-      "component": "clearAllQueueEntriesModal"
+      "component": "clearAllQueueEntriesModal",
+      "privileges": "app:home.colasAtencion.editar"
     },
     {
       "name": "move-queue-entry-modal",
-      "component": "moveQueueEntryModal"
+      "component": "moveQueueEntryModal",
+      "privileges": "app:home.colasAtencion.editar"
     },
     {
       "name": "remove-queue-entry-modal",
-      "component": "removeQueueEntryModal"
+      "component": "removeQueueEntryModal",
+      "privileges": "app:home.colasAtencion.editar"
     },
     {
       "name": "delete-queue-entry-modal",
-      "component": "deleteQueueEntryModal"
+      "component": "deleteQueueEntryModal",
+      "privileges": "app:home.colasAtencion.editar"
     },
     {
       "name": "delete-queue-modal",
-      "component": "deleteQueueModal"
+      "component": "deleteQueueModal",
+      "privileges": "app:home.colasAtencion.editar"
     },
     {
       "name": "delete-queue-room-modal",
-      "component": "deleteQueueRoomModal"
+      "component": "deleteQueueRoomModal",
+      "privileges": "app:home.colasAtencion.editar"
     },
     {
       "name": "edit-queue-entry-status-modal",
-      "component": "editQueueEntryStatusModal"
+      "component": "editQueueEntryStatusModal",
+      "privileges": "app:home.colasAtencion.editar"
     },
     {
       "name": "end-queue-entry-modal",
-      "component": "endQueueEntryModal"
+      "component": "endQueueEntryModal",
+      "privileges": "app:home.colasAtencion.editar"
     },
     {
       "name": "transition-patient-to-latest-queue-modal",
-      "component": "addOrMoveModal"
+      "component": "addOrMoveModal",
+      "privileges": "app:home.colasAtencion.editar"
     },
     {
       "name": "transition-queue-entry-modal",
-      "component": "transitionQueueEntryModal"
+      "component": "transitionQueueEntryModal",
+      "privileges": "app:home.colasAtencion.editar"
     },
     {
       "name": "transition-queue-entry-status-modal",
-      "component": "transitionQueueEntryStatusModal"
+      "component": "transitionQueueEntryStatusModal",
+      "privileges": "app:home.colasAtencion.editar"
     },
     {
       "name": "undo-transition-queue-entry-modal",
-      "component": "undoTransitionQueueEntryModal"
+      "component": "undoTransitionQueueEntryModal",
+      "privileges": "app:home.colasAtencion.editar"
     },
     {
       "name": "void-queue-entry-modal",
-      "component": "voidQueueEntryModal"
+      "component": "voidQueueEntryModal",
+      "privileges": "app:home.colasAtencion.editar"
     }
   ],
   "workspaces": [
@@ -208,28 +224,28 @@
       "title": "addNewQueueService",
       "component": "addNewQueueServiceWorkspace",
       "type": "service-queues",
-      "privileges": "app:service-queues"
+      "privileges": "app:home.colasAtencion.editar"
     },
     {
       "name": "service-queues-room-workspace",
       "title": "addNewQueueServiceRoom",
       "component": "addNewQueueServiceRoomWorkspace",
       "type": "service-queues",
-      "privileges": "app:service-queues"
+      "privileges": "app:home.colasAtencion.editar"
     },
     {
       "name": "service-queues-linelist-filter",
       "title": "filter",
       "component": "queueLinelistFilterWorkspace",
       "type": "service-queues",
-      "privileges": "app:service-queues"
+      "privileges": "app:home.colasAtencion"
     },
     {
       "name": "create-queue-entry-workspace",
       "title": "addPatientToQueue",
       "component": "createQueueEntryWorkspace",
       "type": "service-queues",
-      "privileges": "app:service-queues",
+      "privileges": "app:home.colasAtencion.editar",
       "width": "wider"
     }
   ],
@@ -238,43 +254,43 @@
       "name": "service-queues-patient-vitals-workspace",
       "component": "@sihsalus/esm-patient-vitals-app#vitalsBiometricsFormWorkspace",
       "window": "service-queues-patient-vitals",
-      "privileges": "app:service-queues"
+      "privileges": "app:home.colasAtencion.editar"
     },
     {
       "name": "service-queues-visit-notes-workspace",
       "component": "@sihsalus/esm-patient-notes-app#visitNotesFormWorkspace",
       "window": "service-queues-visit-note",
-      "privileges": "app:service-queues"
+      "privileges": "app:home.colasAtencion.editar"
     },
     {
       "name": "queue-patient-search-workspace",
       "component": "@sihsalus/esm-patient-search-app#patientSearchWorkspace2",
       "window": "add-queue-entry",
-      "privileges": "app:service-queues"
+      "privileges": "app:home.colasAtencion.editar"
     },
     {
       "name": "queue-patient-search-add-to-queue-workspace",
       "component": "createQueueEntryWorkspace2",
       "window": "add-queue-entry",
-      "privileges": "app:service-queues"
+      "privileges": "app:home.colasAtencion.editar"
     },
     {
       "name": "queue-patient-search-start-visit-workspace",
       "component": "@sihsalus/esm-patient-chart-app#startVisitWorkspace",
       "window": "add-queue-entry",
-      "privileges": "app:service-queues"
+      "privileges": "app:home.colasAtencion.editar"
     },
     {
       "name": "service-queues-service-form",
       "component": "addNewQueueWorkspace",
       "window": "add-queue",
-      "privileges": "app:service-queues"
+      "privileges": "app:home.colasAtencion.editar"
     },
     {
       "name": "service-queues-room-workspace",
       "component": "addNewQueueServiceRoomWorkspace2",
       "window": "add-queue-room",
-      "privileges": "app:service-queues"
+      "privileges": "app:home.colasAtencion.editar"
     }
   ],
   "workspaceWindows2": [

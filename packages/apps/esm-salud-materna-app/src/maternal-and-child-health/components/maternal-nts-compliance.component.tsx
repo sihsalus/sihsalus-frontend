@@ -3,8 +3,10 @@ import { Launch } from '@carbon/react/icons';
 import { launchWorkspace2, openmrsFetch, restBaseUrl, useConfig } from '@openmrs/esm-framework';
 import React, { useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
+import { RequirePrivilege } from '@sihsalus/esm-rbac';
 import useSWR from 'swr';
 import type { ConfigObject } from '../../config-schema';
+import { prenatalCareEditPrivilege } from '../../constants';
 import { useCurrentPregnancy } from '../../hooks/useCurrentPregnancy';
 import { isWithinPregnancyEpisode } from '../../utils/pregnancy-episode-utils';
 import styles from './maternal-nts-compliance.scss';
@@ -359,9 +361,11 @@ const MaternalNtsCompliance: React.FC<{ patientUuid: string }> = ({ patientUuid 
             )}
           </p>
         </div>
-        <Button kind="tertiary" size="sm" renderIcon={Launch} onClick={openFormsWorkspace}>
-          {t('openForms', 'Abrir formularios')}
-        </Button>
+        <RequirePrivilege privilege={prenatalCareEditPrivilege} hideUnauthorized>
+          <Button kind="tertiary" size="sm" renderIcon={Launch} onClick={openFormsWorkspace}>
+            {t('openForms', 'Abrir formularios')}
+          </Button>
+        </RequirePrivilege>
       </div>
 
       {isPregnancyLoading || isLoading ? (

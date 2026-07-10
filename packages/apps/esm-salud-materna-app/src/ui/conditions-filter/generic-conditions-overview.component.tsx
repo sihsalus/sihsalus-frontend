@@ -22,6 +22,8 @@ import {
   useConfig,
   useLayoutType,
   usePagination,
+  userHasAccess,
+  useSession,
 } from '@openmrs/esm-framework';
 import { CardHeader, EmptyState, ErrorState, PatientChartPagination } from '@openmrs/esm-patient-common-lib';
 import classNames from 'classnames';
@@ -29,6 +31,7 @@ import React, { type ComponentProps, useCallback, useMemo, useState } from 'reac
 import { useTranslation } from 'react-i18next';
 
 import type { ConfigObject } from '../../config-schema';
+import { prenatalCareEditPrivilege } from '../../constants';
 import { type Condition, useConditionsFromConceptSet, useConditionsSorting } from './conditions.resource';
 import { ConditionsActionMenu } from './conditions-action-menu.component';
 import styles from './conditions-overview.scss';
@@ -54,6 +57,7 @@ interface GenericConditionsOverviewProps {
   workspaceFormId?: string;
   enableAdd?: boolean;
   urlPath?: string;
+  editPrivilege?: string | string[];
 }
 
 const renderHeaderLabel = (header: React.ReactNode): React.ReactNode =>
@@ -68,6 +72,7 @@ const GenericConditionsOverview: React.FC<GenericConditionsOverviewProps> = ({
   workspaceFormId = 'maternal-health-conditions-filter-form-workspace',
   enableAdd = true,
   urlPath = 'Conditions',
+  editPrivilege = prenatalCareEditPrivilege,
 }) => {
   const { conditionPageSize } = useConfig<ConfigObject>();
   const { t } = useTranslation();
@@ -78,6 +83,9 @@ const GenericConditionsOverview: React.FC<GenericConditionsOverviewProps> = ({
   const layout = useLayoutType();
   const isDesktop = isDesktopLayout(layout);
   const isTablet = !isDesktop;
+  const session = useSession();
+  const canEdit = userHasAccess(editPrivilege, session?.user);
+  const canShowEditActions = enableAdd && canEdit;
 
   const { conditions, error, isLoading, isValidating } = useConditionsFromConceptSet(patientUuid, conceptSetUuid);
   const [filter, setFilter] = useState<'All' | 'Active' | 'Inactive'>('Active');
@@ -168,7 +176,7 @@ const GenericConditionsOverview: React.FC<GenericConditionsOverviewProps> = ({
                 size={isTablet ? 'lg' : 'sm'}
               />
             </div>
-            {enableAdd && (
+            {canShowEditActions && (
               <>
                 <div className={styles.divider}>|</div>
                 <Button
@@ -211,7 +219,7 @@ const GenericConditionsOverview: React.FC<GenericConditionsOverviewProps> = ({
                           {renderHeaderLabel(header.header)}
                         </TableHeader>
                       ))}
-                      <TableHeader aria-label={t('actions', 'Actions')} />
+                      {canEdit ? <TableHeader aria-label={t('actions', 'Actions')} /> : null}
                     </TableRow>
                   </TableHead>
                   <TableBody>
@@ -220,9 +228,11 @@ const GenericConditionsOverview: React.FC<GenericConditionsOverviewProps> = ({
                         {row.cells.map((cell) => (
                           <TableCell key={cell.id}>{cell.value?.content ?? cell.value}</TableCell>
                         ))}
-                        <TableCell className="cds--table-column-menu">
-                          <ConditionsActionMenu condition={paginatedConditions[index]} patientUuid={patientUuid} />
-                        </TableCell>
+                        {canEdit ? (
+                          <TableCell className="cds--table-column-menu">
+                            <ConditionsActionMenu condition={paginatedConditions[index]} patientUuid={patientUuid} />
+                          </TableCell>
+                        ) : null}
                       </TableRow>
                     ))}
                   </TableBody>
@@ -254,7 +264,13 @@ const GenericConditionsOverview: React.FC<GenericConditionsOverviewProps> = ({
       </div>
     );
   }
-  return <EmptyState displayText={displayText} headerTitle={headerTitle} launchForm={launchConditionsForm} />;
+  return (
+    <EmptyState
+      displayText={displayText}
+      headerTitle={headerTitle}
+      launchForm={canShowEditActions ? launchConditionsForm : undefined}
+    />
+  );
 };
 
 export default GenericConditionsOverview;

@@ -20,7 +20,7 @@ type LineItemActionMenuProps = {
 const LineItemActionMenu: React.FC<LineItemActionMenuProps> = ({ bill, item, onMutate }) => {
   const layout = useLayoutType();
   const session = useSession();
-  const canEdit = userHasAccess('app:clinical.chart.billing.edit', session?.user);
+  const canEdit = userHasAccess('app:hoja.clinica.facturacion.editar', session?.user);
 
   const handleEditLineItem = useCallback(() => {
     const dispose = showModal('edit-bill-line-item-modal', {

@@ -4,6 +4,7 @@ import React from 'react';
 import { useTranslation } from 'react-i18next';
 
 import type { ConfigObject } from '../../../../config-schema';
+import { familyPlanningEditPrivilege } from '../../../../constants';
 import ConfiguredFormButton from '../../configured-form-button.component';
 import styles from './fp-followup.scss';
 
@@ -53,6 +54,7 @@ const FpFollowup: React.FC<FpFollowupProps> = ({ patientUuid: _patientUuid }) =>
       </div>
       <ConfiguredFormButton
         formUuid={config.formsList.familyPlanningFollowupForm}
+        editPrivilege={familyPlanningEditPrivilege}
         label={t('registerFpFollowup', 'Registrar seguimiento')}
       />
     </Tile>

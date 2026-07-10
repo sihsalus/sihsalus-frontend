@@ -4,8 +4,10 @@ import { AddIcon, launchWorkspace2, useConfig, useLayoutType } from '@openmrs/es
 import { CardHeader, EmptyState, ErrorState } from '@openmrs/esm-patient-common-lib';
 import React, { useCallback, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
+import { RequirePrivilege } from '@sihsalus/esm-rbac';
 
 import type { ConfigObject } from '../../config-schema';
+import { prenatalCareEditPrivilege } from '../../constants';
 import { usePrenatalAntecedents, usePrenatalConceptMetadata } from '../../hooks/usePrenatalAntecedents';
 
 import styles from './obstetric-history-base.scss';
@@ -102,17 +104,19 @@ const ObstetricHistoryBase: React.FC<ObstetricHistoryBaseProps> = ({ patientUuid
               <IconSwitch name="tableView" text={t('tableView', 'Table view')} />
               <IconSwitch name="chartView" text={t('chartView', 'Chart view')} />
             </ContentSwitcher>
-            <>
-              <span className={styles.divider}>|</span>
-              <Button
-                kind="ghost"
-                renderIcon={(props) => <AddIcon size={16} {...props} />}
-                iconDescription={t('addObstetricData', 'Agregar datos obstétricos')}
-                onClick={launchObstetricForm}
-              >
-                {t('update', 'Actualizar')}
-              </Button>
-            </>
+            <RequirePrivilege privilege={prenatalCareEditPrivilege} hideUnauthorized>
+              <>
+                <span className={styles.divider}>|</span>
+                <Button
+                  kind="ghost"
+                  renderIcon={(props) => <AddIcon size={16} {...props} />}
+                  iconDescription={t('addObstetricData', 'Agregar datos obstétricos')}
+                  onClick={launchObstetricForm}
+                >
+                  {t('update', 'Actualizar')}
+                </Button>
+              </>
+            </RequirePrivilege>
           </div>
         </CardHeader>
 
@@ -130,7 +134,14 @@ const ObstetricHistoryBase: React.FC<ObstetricHistoryBaseProps> = ({ patientUuid
     );
   }
 
-  return <EmptyState displayText={displayText} headerTitle={headerTitle} launchForm={launchObstetricForm} />;
+  return (
+    <RequirePrivilege
+      privilege={prenatalCareEditPrivilege}
+      fallback={<EmptyState displayText={displayText} headerTitle={headerTitle} />}
+    >
+      <EmptyState displayText={displayText} headerTitle={headerTitle} launchForm={launchObstetricForm} />
+    </RequirePrivilege>
+  );
 };
 
 export default ObstetricHistoryBase;

@@ -336,11 +336,11 @@ describe('Visit form', () => {
     vi.clearAllMocks();
     mockUseSession.mockReturnValue({
       user: {
-        privileges: [{ display: 'app:adt' }],
+        privileges: [{ display: 'app:home.admision' }],
       },
       sessionLocation: mockLocations.data.results[0],
     } as ReturnType<typeof useSession>);
-    mockUserHasAccess.mockImplementation((privilege) => privilege === 'app:adt');
+    mockUserHasAccess.mockImplementation((privilege) => privilege === 'app:home.admision');
     mockExtensionSlot.mockImplementation(({ children }): React.JSX.Element => {
       if (typeof children === 'function') {
         return (

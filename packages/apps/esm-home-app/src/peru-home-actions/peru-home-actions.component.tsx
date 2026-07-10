@@ -20,13 +20,13 @@ type Action = {
   toneClass: string;
 };
 
-const admissionPrivilege = 'app:adt';
+const admissionPrivilege = 'app:home.admision';
 const patientSearchPrivilege = 'Get Patients';
-const appointmentsPrivilege = 'app:appointments';
-const serviceQueuesPrivilege = 'app:service-queues';
-const laboratoryPrivilege = 'app:laboratory';
-const dispensingPrivilege = 'app:dispensing';
-const fuaReadPrivilege = 'app:fua';
+const appointmentsPrivilege = 'app:home.citas';
+const serviceQueuesPrivilege = 'app:home.colasAtencion';
+const laboratoryPrivilege = 'app:home.laboratorio';
+const dispensingPrivilege = 'app:home.farmacia';
+const fuaReadPrivilege = 'app:home.fua';
 
 // t('searchPatient', 'Search patient')
 // t('searchPatientDescription', 'Find an existing patient record')

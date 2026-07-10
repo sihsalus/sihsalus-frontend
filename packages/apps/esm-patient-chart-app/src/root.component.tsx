@@ -1,9 +1,19 @@
+import { navigate } from '@openmrs/esm-framework';
 import { AppErrorBoundary, RequirePrivilege } from '@sihsalus/esm-rbac';
+import { useEffect } from 'react';
 import { BrowserRouter, Route, Routes } from 'react-router-dom';
 
 import { basePath, clinicalChartPrivilege, dashboardPath, spaRoot } from './constants';
 import PatientChart from './patient-chart/patient-chart.component';
 import styles from './root.scss';
+
+function RedirectToHome() {
+  useEffect(() => {
+    navigate({ to: `${globalThis.spaBase}/home/home` });
+  }, []);
+
+  return null;
+}
 
 export default function Root() {
   return (
@@ -11,6 +21,7 @@ export default function Root() {
       <RequirePrivilege
         privilege={clinicalChartPrivilege}
         description="Necesita el privilegio de historia clinica para acceder al chart del paciente."
+        fallback={<RedirectToHome />}
       >
         <div className={styles.patientChartWrapper}>
           <BrowserRouter basename={spaRoot}>

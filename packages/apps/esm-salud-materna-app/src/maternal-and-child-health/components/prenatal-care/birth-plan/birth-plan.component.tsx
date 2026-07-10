@@ -3,7 +3,9 @@ import { Add, CheckmarkFilled, Edit, WarningFilled } from '@carbon/react/icons';
 import { launchWorkspace2, useConfig } from '@openmrs/esm-framework';
 import React, { useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
+import { RequirePrivilege } from '@sihsalus/esm-rbac';
 import type { ConfigObject } from '../../../../config-schema';
+import { prenatalCareEditPrivilege } from '../../../../constants';
 import { useBirthPlan } from '../../../../hooks/useBirthPlan';
 import { formEntryWorkspace } from '../../../../types';
 
@@ -48,15 +50,17 @@ const BirthPlan: React.FC<BirthPlanProps> = ({ patientUuid }) => {
           <Tag type={hasBirthPlan ? 'green' : 'red'} size="sm">
             {hasBirthPlan ? t('elaborated', 'Elaborado') : t('pending', 'Pending')}
           </Tag>
-          <Button
-            kind="ghost"
-            size="sm"
-            renderIcon={hasBirthPlan ? Edit : Add}
-            onClick={handleLaunchBirthPlanForm}
-            iconDescription={hasBirthPlan ? t('editBirthPlan', 'Editar plan') : t('createBirthPlan', 'Crear plan')}
-          >
-            {hasBirthPlan ? t('edit', 'Edit') : t('create', 'Crear')}
-          </Button>
+          <RequirePrivilege privilege={prenatalCareEditPrivilege} hideUnauthorized>
+            <Button
+              kind="ghost"
+              size="sm"
+              renderIcon={hasBirthPlan ? Edit : Add}
+              onClick={handleLaunchBirthPlanForm}
+              iconDescription={hasBirthPlan ? t('editBirthPlan', 'Editar plan') : t('createBirthPlan', 'Crear plan')}
+            >
+              {hasBirthPlan ? t('edit', 'Edit') : t('create', 'Crear')}
+            </Button>
+          </RequirePrivilege>
         </div>
       </div>
       <div className={styles.content}>

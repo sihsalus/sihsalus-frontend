@@ -24,7 +24,7 @@ Terminología de dominio: visita = consulta, encounter = atención, appointment 
 
 - Usar siempre `external_id` de OCL como UUID de OpenMRS. El campo `uuid` de OCL es interno/versionado y no debe entrar en config frontend.
 - Publicar/importar en content el concepto numérico `Número de control CRED` (`ce8b07e8-712f-406a-b44d-2fa69167f5ea`) antes de configurarlo como `controlNumber`.
-- Crear/asignar privilegios OpenMRS para `app:cred.*`; en DEV no existen y solo el rol `System Developer` pasa los guards por bypass.
+- Crear/asignar privilegios OpenMRS para `app:hoja.clinica.cred.*`; en DEV no existen y solo el rol `System Developer` pasa los guards por bypass.
 - Configurar `credScheduling.appointmentServiceUuid` con el servicio real de citas CRED; si queda vacío, la generación de citas debe permanecer oculta o mostrar error claro.
 - Corregir edición vs creación en widgets que abren form engine con `encounterUuid: ''`; varios resúmenes todavía crean registros nuevos en vez de editar el encounter existente.
 - Revisar `useCreateCarePlanAppointments`: hoy queda como helper TODO para planes de cuidado (madre gestante, CRED y vacunación), pero no está integrado como contrato estable.

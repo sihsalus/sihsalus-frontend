@@ -16,7 +16,7 @@ const patientFormEntryWorkspace = 'patient-form-entry-workspace';
 const PhysicalTherapyDashboard: React.FC<PhysicalTherapyDashboardProps> = ({ patientUuid }) => {
   const { t } = useTranslation();
   const session = useSession();
-  const canEdit = userHasAccess('app:clinical.chart.physicalTherapy.edit', session?.user);
+  const canEdit = userHasAccess('app:hoja.clinica.terapiaFisica.editar', session?.user);
   const { encounterTypeUuid, formUuid } = useConfig<ConfigObject>();
   const { encounters, isLoading, error, mutate } = useEncounters(encounterTypeUuid, formUuid, patientUuid);
   const clinicalFormTitle = t('terapiaFisica', 'Terapia Física');

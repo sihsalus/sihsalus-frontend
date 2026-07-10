@@ -67,7 +67,7 @@
       "online": true,
       "offline": true,
       "slot": "top-nav-app-menu-slot",
-      "privileges": "app:topnav.moduleSwitcher"
+      "privileges": "app:opciones.selectorModulos"
     }
   ],
   "modals": [

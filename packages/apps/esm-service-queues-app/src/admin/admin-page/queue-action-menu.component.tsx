@@ -2,6 +2,8 @@ import { Layer, OverflowMenu, OverflowMenuItem } from '@carbon/react';
 import { launchWorkspace2, showModal, useLayoutType } from '@openmrs/esm-framework';
 import React, { useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
+import { RequirePrivilege } from '@sihsalus/esm-rbac';
+import { serviceQueuesEditPrivilege } from '../../constants';
 import type { Queue } from '../../types';
 import styles from './admin-page.scss';
 
@@ -25,17 +27,19 @@ const QueueActionMenu: React.FC<QueueActionMenuProps> = ({ queue }) => {
   }, [queue]);
 
   return (
-    <Layer>
-      <OverflowMenu aria-label={t('actions', 'Actions')} size={isTablet ? 'lg' : 'sm'} flipped align="left">
-        <OverflowMenuItem className={styles.menuitem} itemText={t('edit', 'Edit')} onClick={handleEditQueue} />
-        <OverflowMenuItem
-          className={styles.menuitem}
-          isDelete
-          itemText={t('delete', 'Delete')}
-          onClick={handleDeleteQueue}
-        />
-      </OverflowMenu>
-    </Layer>
+    <RequirePrivilege privilege={serviceQueuesEditPrivilege} hideUnauthorized>
+      <Layer>
+        <OverflowMenu aria-label={t('actions', 'Actions')} size={isTablet ? 'lg' : 'sm'} flipped align="left">
+          <OverflowMenuItem className={styles.menuitem} itemText={t('edit', 'Edit')} onClick={handleEditQueue} />
+          <OverflowMenuItem
+            className={styles.menuitem}
+            isDelete
+            itemText={t('delete', 'Delete')}
+            onClick={handleDeleteQueue}
+          />
+        </OverflowMenu>
+      </Layer>
+    </RequirePrivilege>
   );
 };
 

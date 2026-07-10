@@ -25,14 +25,14 @@
         "slot": "ward-dashboard-slot",
         "title": "Hospitalization"
       },
-      "privileges": "app:ward",
+      "privileges": "app:home.hospitalizacion",
       "order": 60
     },
     {
       "component": "root",
       "name": "ward-dashboard",
       "slot": "ward-dashboard-slot",
-      "privileges": "app:ward"
+      "privileges": "app:home.hospitalizacion"
     },
     {
       "component": "wardView",

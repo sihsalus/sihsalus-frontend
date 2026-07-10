@@ -3,7 +3,9 @@ import { TrashCan } from '@carbon/react/icons';
 import { isDesktop, showModal, useLayoutType } from '@openmrs/esm-framework';
 import React, { useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
+import { RequirePrivilege } from '@sihsalus/esm-rbac';
 
+import { serviceQueuesEditPrivilege } from '../constants';
 import { type QueueEntry } from '../types';
 
 interface ClearQueueEntriesProps {
@@ -29,15 +31,17 @@ const ClearQueueEntries: React.FC<ClearQueueEntriesProps> = ({ queueEntries }) =
   }, [queueEntries]);
 
   return (
-    <Button
-      size={isDesktop(layout) ? 'sm' : 'lg'}
-      kind="danger--tertiary"
-      renderIcon={(props) => <TrashCan size={16} {...props} />}
-      onClick={launchClearAllQueueEntriesModal}
-      iconDescription={t('clearQueue', 'Clear queue')}
-    >
-      {t('clearQueue', 'Clear queue')}
-    </Button>
+    <RequirePrivilege privilege={serviceQueuesEditPrivilege} hideUnauthorized>
+      <Button
+        size={isDesktop(layout) ? 'sm' : 'lg'}
+        kind="danger--tertiary"
+        renderIcon={(props) => <TrashCan size={16} {...props} />}
+        onClick={launchClearAllQueueEntriesModal}
+        iconDescription={t('clearQueue', 'Clear queue')}
+      >
+        {t('clearQueue', 'Clear queue')}
+      </Button>
+    </RequirePrivilege>
   );
 };
 

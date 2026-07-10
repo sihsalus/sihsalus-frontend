@@ -45,7 +45,7 @@ interface BillHistoryProps {
 const BillHistory: React.FC<BillHistoryProps> = ({ patientUuid }) => {
   const { t } = useTranslation();
   const session = useSession();
-  const canEdit = userHasAccess('app:clinical.chart.billing.edit', session?.user);
+  const canEdit = userHasAccess('app:hoja.clinica.facturacion.editar', session?.user);
   const { bills, error, isLoading, isValidating, mutate } = useBills(patientUuid);
   const { paginated, goTo, results, currentPage } = usePagination(bills);
   const { pageSize, defaultCurrency } = useConfig();

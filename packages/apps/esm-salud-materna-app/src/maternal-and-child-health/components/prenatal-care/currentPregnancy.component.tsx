@@ -3,6 +3,7 @@ import React from 'react';
 import { useTranslation } from 'react-i18next';
 
 import type { ConfigObject } from '../../../config-schema';
+import { prenatalCareEditPrivilege } from '../../../constants';
 import PatientObservationGroupTable from '../../../ui/patient-observation-group-table/patient-observation-group-table.component';
 
 interface CurrentPregnancyProps {
@@ -23,6 +24,7 @@ const CurrentPregnancy: React.FC<CurrentPregnancyProps> = ({ patientUuid }) => {
       displayText={displayText}
       encounterType={config.encounterTypes.prenatalControl}
       formUuid={config.formsList.currentPregnancy}
+      editPrivilege={prenatalCareEditPrivilege}
       formWorkspace={formWorkspace}
     />
   );

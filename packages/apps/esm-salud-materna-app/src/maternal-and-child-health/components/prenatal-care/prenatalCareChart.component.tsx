@@ -2,6 +2,7 @@ import { useConfig } from '@openmrs/esm-framework';
 import React from 'react';
 import { useTranslation } from 'react-i18next';
 import type { ConfigObject } from '../../../config-schema';
+import { prenatalCareEditPrivilege } from '../../../constants';
 import { usePrenatalCare } from '../../../hooks/usePrenatalCare';
 import CareSummaryTable from '../../../ui/care-summary-table/care-summary-table.component';
 
@@ -36,6 +37,7 @@ const PrenatalCareChart: React.FC<{ patientUuid: string }> = ({ patientUuid }) =
       title={t('CuidadoPrenatal', 'Cuidado Prenatal')}
       emptyStateText={t('noDataAvailableDescription', 'No data available')}
       formUuid={config.formsList.atencionPrenatal}
+      editPrivilege={prenatalCareEditPrivilege}
       useEncountersHook={usePrenatalCare}
       rowDefinitions={rowDefinitions}
     />

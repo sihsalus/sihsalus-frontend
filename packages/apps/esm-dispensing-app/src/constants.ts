@@ -1,8 +1,8 @@
 export const spaRoot = window['getOpenmrsSpaBase'];
 export const basePath = '/dispensing';
 export const spaBasePath = `${globalThis.spaBase}${basePath}`;
-export const dispensingPrivilege = 'app:dispensing';
-export const dispensingEditPrivilege = 'app:dispensing.edit';
+export const dispensingPrivilege = 'app:home.farmacia';
+export const dispensingEditPrivilege = 'app:home.farmacia.editar';
 
 // defined in FHIR 2 module
 export const OPENMRS_FHIR_PREFIX = 'http://fhir.openmrs.org';

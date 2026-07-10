@@ -18,7 +18,7 @@
       "name": "charts-summary-dashboard",
       "component": "patientSummaryDashboardLink",
       "slot": "patient-chart-dashboard-slot",
-      "privileges": "app:clinical.chart.summary",
+      "privileges": "app:hoja.clinica.resumen",
       "order": 0,
       "meta": {
         "slot": "patient-chart-summary-dashboard-slot",
@@ -37,7 +37,7 @@
       "name": "start-visit-button",
       "component": "startVisitActionButton",
       "slot": "patient-actions-slot",
-      "privileges": "app:clinical.chart",
+      "privileges": "app:hoja.clinica",
       "online": true,
       "offline": true
     },
@@ -51,7 +51,7 @@
       "name": "stop-visit-button",
       "component": "stopVisitActionButton",
       "slot": "patient-actions-slot",
-      "privileges": "app:clinical.chart.visits.edit",
+      "privileges": "app:hoja.clinica.visitas.editar",
       "online": true,
       "offline": true
     },
@@ -59,7 +59,7 @@
       "name": "mark-alive-button",
       "slot": "patient-actions-slot",
       "component": "markPatientAliveActionButton",
-      "privileges": "app:clinical.chart.visits.edit",
+      "privileges": "app:hoja.clinica.visitas.editar",
       "online": true,
       "offline": true
     },
@@ -67,7 +67,7 @@
       "name": "stop-visit-button-patient-search",
       "slot": "patient-search-actions-slot",
       "component": "stopVisitPatientSearchActionButton",
-      "privileges": "app:clinical.chart.visits.edit",
+      "privileges": "app:hoja.clinica.visitas.editar",
       "online": true,
       "offline": true
     },
@@ -75,7 +75,7 @@
       "name": "cancel-visit-button",
       "slot": "patient-actions-slot",
       "component": "cancelVisitActionButton",
-      "privileges": "app:clinical.chart.visits.edit",
+      "privileges": "app:hoja.clinica.visitas.editar",
       "online": true,
       "offline": true
     },
@@ -83,7 +83,7 @@
       "name": "cancel-visit-button",
       "slot": "patient-search-actions-slot",
       "component": "cancelVisitPatientSearchActionButton",
-      "privileges": "app:clinical.chart.visits.edit",
+      "privileges": "app:hoja.clinica.visitas.editar",
       "online": true,
       "offline": true
     },
@@ -91,7 +91,7 @@
       "name": "mark-patient-deceased-button",
       "slot": "patient-actions-slot",
       "component": "markPatientDeceasedActionButton",
-      "privileges": "app:clinical.chart.visits.edit",
+      "privileges": "app:hoja.clinica.visitas.editar",
       "online": true,
       "offline": true
     },
@@ -100,7 +100,7 @@
       "slot": "patient-actions-slot",
       "component": "addPastVisitActionButton",
       "featureFlag": "rde",
-      "privileges": "app:clinical.chart.visits.edit",
+      "privileges": "app:hoja.clinica.visitas.editar",
       "online": true,
       "offline": true
     },
@@ -109,7 +109,7 @@
       "slot": "patient-search-actions-slot",
       "component": "addPastVisitPatientSearchActionButton",
       "featureFlag": "rde",
-      "privileges": "app:clinical.chart.visits.edit",
+      "privileges": "app:hoja.clinica.visitas.editar",
       "online": true,
       "offline": true
     },
@@ -117,7 +117,7 @@
       "name": "encounters-summary-dashboard",
       "slot": "patient-chart-dashboard-slot",
       "component": "encountersSummaryDashboardLink",
-      "privileges": "app:clinical.chart.visits",
+      "privileges": "app:hoja.clinica.visitas",
       "meta": {
         "slot": "patient-chart-encounters-dashboard-slot",
         "path": "Visits",
@@ -131,7 +131,7 @@
       "name": "past-visits-detail-overview",
       "slot": "patient-chart-encounters-dashboard-slot",
       "component": "pastVisitsDetailOverview",
-      "privileges": "app:clinical.chart.visits",
+      "privileges": "app:hoja.clinica.visitas",
       "order": 1,
       "meta": {
         "title": "Visits",
@@ -143,7 +143,7 @@
     {
       "name": "past-visits-overview",
       "component": "pastVisitsOverview",
-      "privileges": "app:clinical.chart.visits",
+      "privileges": "app:hoja.clinica.visitas",
       "meta": {
         "title": "Edit or load a past visit",
         "view": "visits"
@@ -173,7 +173,7 @@
       "name": "start-visit-button-patient-search",
       "slot": "start-visit-button-slot",
       "component": "startVisitPatientSearchActionButton",
-      "privileges": "app:clinical.chart",
+      "privileges": "app:hoja.clinica",
       "online": true,
       "offline": true
     },
@@ -197,7 +197,7 @@
       "name": "edit-visit-action-button",
       "slot": "visit-detail-overview-actions",
       "component": "editVisitDetailsActionButton",
-      "privileges": "app:clinical.chart.visits.edit",
+      "privileges": "app:hoja.clinica.visitas.editar",
       "online": true,
       "offline": true,
       "order": 0
@@ -206,7 +206,7 @@
       "name": "delete-visit-action-button",
       "slot": "visit-detail-overview-actions",
       "component": "deleteVisitActionButton",
-      "privileges": "app:clinical.chart.visits.edit",
+      "privileges": "app:hoja.clinica.visitas.editar",
       "online": true,
       "offline": true,
       "order": 1
@@ -215,7 +215,7 @@
       "name": "active-visit-action-button",
       "slot": "active-visit-actions",
       "component": "activeVisitActionsComponent",
-      "privileges": "app:clinical.chart.visits.edit",
+      "privileges": "app:hoja.clinica.visitas.editar",
       "online": true,
       "offline": true,
       "order": 1
@@ -225,37 +225,37 @@
     {
       "name": "cancel-visit-dialog",
       "component": "cancelVisitModal",
-      "privileges": "app:clinical.chart.visits.edit"
+      "privileges": "app:hoja.clinica.visitas.editar"
     },
     {
       "name": "delete-encounter-modal",
       "component": "deleteEncounterModal",
-      "privileges": "app:clinical.chart.visits.edit"
+      "privileges": "app:hoja.clinica.visitas.editar"
     },
     {
       "name": "delete-visit-dialog",
       "component": "deleteVisitModal",
-      "privileges": "app:clinical.chart.visits.edit"
+      "privileges": "app:hoja.clinica.visitas.editar"
     },
     {
       "name": "end-visit-dialog",
       "component": "endVisitModal",
-      "privileges": "app:clinical.chart.visits.edit"
+      "privileges": "app:hoja.clinica.visitas.editar"
     },
     {
       "name": "mark-patient-alive-modal",
       "component": "markPatientAliveModal",
-      "privileges": "app:clinical.chart.visits.edit"
+      "privileges": "app:hoja.clinica.visitas.editar"
     },
     {
       "name": "modify-visit-date-dialog",
       "component": "modifyVisitDateModal",
-      "privileges": "app:clinical.chart.visits.edit"
+      "privileges": "app:hoja.clinica.visitas.editar"
     },
     {
       "name": "start-visit-dialog",
       "component": "startVisitModal",
-      "privileges": "app:clinical.chart"
+      "privileges": "app:hoja.clinica"
     }
   ],
   "pages": [
@@ -271,13 +271,13 @@
       "name": "start-visit-workspace-form",
       "component": "startVisitWorkspace",
       "window": "start-visit-workspace-window",
-      "privileges": "app:clinical.chart"
+      "privileges": "app:hoja.clinica"
     },
     {
       "name": "mark-patient-deceased-workspace-form",
       "component": "markPatientDeceasedForm",
       "window": "mark-patient-deceased-workspace-window",
-      "privileges": "app:clinical.chart.visits.edit"
+      "privileges": "app:hoja.clinica.visitas.editar"
     }
   ],
   "workspaceWindows2": [

@@ -9,7 +9,7 @@
       "name": "vitals-overview-widget",
       "component": "vitalsSummary",
       "slot": "patient-chart-summary-dashboard-slot",
-      "privileges": "app:clinical.chart.vitals",
+      "privileges": "app:hoja.clinica.signosVitales",
       "meta": {
         "fullWidth": true
       },
@@ -19,7 +19,7 @@
       "name": "consulta-externa-vitals-overview-widget",
       "component": "vitalsSummary",
       "slot": "consulta-externa-vitals-summary-slot",
-      "privileges": "app:clinical.chart.vitals",
+      "privileges": "app:hoja.clinica.signosVitales",
       "meta": {
         "fullWidth": true
       },
@@ -29,7 +29,7 @@
       "name": "vitals-details-widget",
       "component": "vitalsMain",
       "slot": "patient-chart-vitals-biometrics-dashboard-slot",
-      "privileges": "app:clinical.chart.vitals",
+      "privileges": "app:hoja.clinica.signosVitales",
       "meta": {
         "title": "Vitals",
         "view": "vitals",
@@ -46,7 +46,7 @@
       "name": "biometrics-overview-widget",
       "component": "biometricsOverview",
       "slot": "patient-chart-summary-dashboard-slot",
-      "privileges": "app:clinical.chart.vitals",
+      "privileges": "app:hoja.clinica.signosVitales",
       "meta": {
         "fullWidth": false
       },
@@ -56,7 +56,7 @@
       "name": "biometrics-details-widget",
       "component": "biometricsDetailedSummary",
       "slot": "patient-chart-vitals-biometrics-dashboard-slot",
-      "privileges": "app:clinical.chart.vitals",
+      "privileges": "app:hoja.clinica.signosVitales",
       "meta": {
         "view": "biometrics",
         "title": "Biometrics",
@@ -67,7 +67,7 @@
       "name": "results-summary-dashboard",
       "component": "vitalsAndBiometricsDashboardLink",
       "slot": "patient-chart-dashboard-slot",
-      "privileges": "app:clinical.chart.vitals",
+      "privileges": "app:hoja.clinica.signosVitales",
       "order": 2,
       "meta": {
         "slot": "patient-chart-vitals-biometrics-dashboard-slot",
@@ -87,7 +87,7 @@
       "name": "patient-vitals-biometrics-form-workspace",
       "component": "vitalsBiometricsFormWorkspace",
       "window": "patient-vitals-biometrics-form-window",
-      "privileges": "app:clinical.chart.vitals.edit"
+      "privileges": "app:hoja.clinica.signosVitales.editar"
     }
   ],
   "workspaceWindows2": [

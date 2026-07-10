@@ -78,7 +78,7 @@ const getSectionCopy = (section: ConditionSection, t: TFunction) => {
 function ConditionsDetailedTable({ patient, section = 'antecedents' }: ConditionsDetailedSummaryProps) {
   const { t } = useTranslation();
   const session = useSession();
-  const canEdit = userHasAccess('app:clinical.chart.conditions.edit', session?.user);
+  const canEdit = userHasAccess('app:hoja.clinica.condiciones.editar', session?.user);
   const sectionCopy = getSectionCopy(section, t);
   const displayText = sectionCopy.displayText;
   const headerTitle = sectionCopy.headerTitle;

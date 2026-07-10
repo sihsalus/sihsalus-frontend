@@ -10,7 +10,7 @@
       "name": "imaging-details-widget",
       "component": "imagingDetailedSummary",
       "slot": "patient-chart-imaging-dashboard-slot",
-      "privileges": "app:clinical.chart.imaging",
+      "privileges": "app:hoja.clinica.imagenes",
       "online": true,
       "offline": true,
       "meta": {
@@ -21,7 +21,7 @@
       "name": "imaging-summary-dashboard",
       "component": "imagingDashboardLink",
       "slot": "patient-chart-dashboard-slot",
-      "privileges": "app:clinical.chart.imaging",
+      "privileges": "app:hoja.clinica.imagenes",
       "online": true,
       "offline": true,
       "order": 23,
@@ -39,42 +39,42 @@
     {
       "name": "study-delete-confirmation-dialog",
       "component": "studyDeleteConfirmationDialog",
-      "privileges": "app:clinical.chart.imaging.edit"
+      "privileges": "app:hoja.clinica.imagenes.editar"
     },
     {
       "name": "study-unlink-confirmation-dialog",
       "component": "studyUnlinkConfirmationDialog",
-      "privileges": "app:clinical.chart.imaging.edit"
+      "privileges": "app:hoja.clinica.imagenes.editar"
     },
     {
       "name": "link-study-confirmation-dialog",
       "component": "linkStudyConfirmationDialog",
-      "privileges": "app:clinical.chart.imaging.edit"
+      "privileges": "app:hoja.clinica.imagenes.editar"
     },
     {
       "name": "update-procedureStep-status-dialog",
       "component": "rejectProcedureStepDialog",
-      "privileges": "app:clinical.chart.imaging.edit"
+      "privileges": "app:hoja.clinica.imagenes.editar"
     },
     {
       "name": "series-delete-confirmation-dialog",
       "component": "seriesDeleteConfirmationDialog",
-      "privileges": "app:clinical.chart.imaging.edit"
+      "privileges": "app:hoja.clinica.imagenes.editar"
     },
     {
       "name": "request-delete-confirmation-dialog",
       "component": "requestDeleteConfirmationDialog",
-      "privileges": "app:clinical.chart.imaging.edit"
+      "privileges": "app:hoja.clinica.imagenes.editar"
     },
     {
       "name": "procedureStep-delete-confirmation-dialog",
       "component": "procedureSteptDeleteConfirmationDialog",
-      "privileges": "app:clinical.chart.imaging.edit"
+      "privileges": "app:hoja.clinica.imagenes.editar"
     },
     {
       "name": "instance-preview-dialog",
       "component": "instancePreviewDialog",
-      "privileges": "app:clinical.chart.imaging"
+      "privileges": "app:hoja.clinica.imagenes"
     }
   ],
 
@@ -84,21 +84,21 @@
       "title": "Upload study",
       "component": "uploadStudiesFormWorkspace",
       "type": "form",
-      "privileges": "app:clinical.chart.imaging.edit"
+      "privileges": "app:hoja.clinica.imagenes.editar"
     },
     {
       "name": "link-studies-form-workspace",
       "title": "Link studies",
       "component": "linkStudiesFormWorkspace",
       "type": "form",
-      "privileges": "app:clinical.chart.imaging.edit"
+      "privileges": "app:hoja.clinica.imagenes.editar"
     },
     {
       "name": "assign-studies-form-workspace",
       "title": "Assign studies",
       "component": "assignStudiesFormWorkspace",
       "type": "form",
-      "privileges": "app:clinical.chart.imaging.edit",
+      "privileges": "app:hoja.clinica.imagenes.editar",
       "canMaximize": true,
       "preferredWindowSize": "maximized"
     },
@@ -107,7 +107,7 @@
       "title": "Add request",
       "component": "addNewRequestWorkspace",
       "type": "form",
-      "privileges": "app:clinical.chart.imaging.edit",
+      "privileges": "app:hoja.clinica.imagenes.editar",
       "canMaximize": true
     },
     {
@@ -115,7 +115,7 @@
       "title": "Add procedure step",
       "component": "addNewProcedureStepWorkspace",
       "type": "form",
-      "privileges": "app:clinical.chart.imaging.edit",
+      "privileges": "app:hoja.clinica.imagenes.editar",
       "canMaximize": true
     }
   ]

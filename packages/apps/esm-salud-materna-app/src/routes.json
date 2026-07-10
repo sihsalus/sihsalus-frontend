@@ -9,13 +9,13 @@
       "name": "labour-and-delivery-dashboard",
       "slot": "patient-chart-labour-and-delivery-dashboard-slot",
       "component": "labourAndDelivery",
-      "privileges": "app:clinical.chart.labourDelivery"
+      "privileges": "app:hoja.clinica.partoPuerperio"
     },
     {
       "name": "labour-and-delivery-dashboard-link",
       "component": "labourAndDeliveryLink",
       "slot": "maternal-and-child-health-slot",
-      "privileges": "app:clinical.chart.labourDelivery",
+      "privileges": "app:hoja.clinica.partoPuerperio",
       "meta": {
         "columns": 1,
         "columnSpan": 1,
@@ -46,7 +46,7 @@
       "name": "maternal-and-child-health-dashboard-group-link",
       "component": "maternalAndChildHealthSideNavGroup",
       "slot": "patient-chart-dashboard-slot",
-      "privileges": "app:clinical.chart.prenatalCare",
+      "privileges": "app:hoja.clinica.controlPrenatal",
       "meta": {
         "slot": "maternal-and-child-health-slot",
         "isFolder": true
@@ -56,13 +56,13 @@
       "name": "family-planning-dashboard",
       "slot": "patient-chart-family-planning-dashboard-slot",
       "component": "familyPlanning",
-      "privileges": "app:clinical.chart.familyPlanning"
+      "privileges": "app:hoja.clinica.planificacionFamiliar"
     },
     {
       "name": "family-planning-dashboard-link",
       "component": "familyPlanningLink",
       "slot": "maternal-and-child-health-slot",
-      "privileges": "app:clinical.chart.familyPlanning",
+      "privileges": "app:hoja.clinica.planificacionFamiliar",
       "meta": {
         "columns": 1,
         "columnSpan": 1,
@@ -75,13 +75,13 @@
       "name": "cancer-prevention-dashboard",
       "slot": "patient-chart-cancer-prevention-dashboard-slot",
       "component": "cancerPrevention",
-      "privileges": "app:clinical.chart.cancerPrevention"
+      "privileges": "app:hoja.clinica.prevencionCancer"
     },
     {
       "name": "cancer-prevention-dashboard-link",
       "component": "cancerPreventionLink",
       "slot": "maternal-and-child-health-slot",
-      "privileges": "app:clinical.chart.cancerPrevention",
+      "privileges": "app:hoja.clinica.prevencionCancer",
       "meta": {
         "columns": 1,
         "columnSpan": 1,
@@ -106,13 +106,13 @@
       "name": "postnatal-care-dashboard",
       "slot": "patient-chart-postnatal-care-dashboard-slot",
       "component": "postnatalCare",
-      "privileges": "app:clinical.chart.postnatalCare"
+      "privileges": "app:hoja.clinica.atencionPostnatal"
     },
     {
       "name": "postnatal-care-dashboard-link",
       "component": "postnatalCareLink",
       "slot": "maternal-and-child-health-slot",
-      "privileges": "app:clinical.chart.postnatalCare",
+      "privileges": "app:hoja.clinica.atencionPostnatal",
       "meta": {
         "columns": 1,
         "columnSpan": 1,
@@ -143,13 +143,13 @@
       "name": "prenatal-care-dashboard",
       "slot": "patient-chart-prenatal-care-dashboard-slot",
       "component": "prenatalCare",
-      "privileges": "app:clinical.chart.prenatalCare"
+      "privileges": "app:hoja.clinica.controlPrenatal"
     },
     {
       "name": "prenatal-care-dashboard-link",
       "component": "prenatalCareLink",
       "slot": "maternal-and-child-health-slot",
-      "privileges": "app:clinical.chart.prenatalCare",
+      "privileges": "app:hoja.clinica.controlPrenatal",
       "meta": {
         "columns": 1,
         "columnSpan": 1,
@@ -240,7 +240,7 @@
       "name": "prenatal-care-dashboard-route",
       "component": "hiddenDashboardMarker",
       "slot": "patient-chart-dashboard-slot",
-      "privileges": "app:clinical.chart.prenatalCare",
+      "privileges": "app:hoja.clinica.controlPrenatal",
       "meta": {
         "slot": "patient-chart-prenatal-care-dashboard-slot",
         "path": "prenatal-care-dashboard",
@@ -254,7 +254,7 @@
       "name": "labour-and-delivery-dashboard-route",
       "component": "hiddenDashboardMarker",
       "slot": "patient-chart-dashboard-slot",
-      "privileges": "app:clinical.chart.labourDelivery",
+      "privileges": "app:hoja.clinica.partoPuerperio",
       "meta": {
         "slot": "patient-chart-labour-and-delivery-dashboard-slot",
         "path": "labour-and-delivery-dashboard",
@@ -268,7 +268,7 @@
       "name": "postnatal-care-dashboard-route",
       "component": "hiddenDashboardMarker",
       "slot": "patient-chart-dashboard-slot",
-      "privileges": "app:clinical.chart.postnatalCare",
+      "privileges": "app:hoja.clinica.atencionPostnatal",
       "meta": {
         "slot": "patient-chart-postnatal-care-dashboard-slot",
         "path": "postnatal-care-dashboard",
@@ -282,7 +282,7 @@
       "name": "family-planning-dashboard-route",
       "component": "hiddenDashboardMarker",
       "slot": "patient-chart-dashboard-slot",
-      "privileges": "app:clinical.chart.familyPlanning",
+      "privileges": "app:hoja.clinica.planificacionFamiliar",
       "meta": {
         "slot": "patient-chart-family-planning-dashboard-slot",
         "path": "family-planning-dashboard",
@@ -296,7 +296,7 @@
       "name": "cancer-prevention-dashboard-route",
       "component": "hiddenDashboardMarker",
       "slot": "patient-chart-dashboard-slot",
-      "privileges": "app:clinical.chart.cancerPrevention",
+      "privileges": "app:hoja.clinica.prevencionCancer",
       "meta": {
         "slot": "patient-chart-cancer-prevention-dashboard-slot",
         "path": "cancer-prevention-dashboard",
@@ -311,28 +311,28 @@
     {
       "name": "condition-delete-confirmation-dialog",
       "component": "conditionFilterDeleteConfirmationDialog",
-      "privileges": "app:clinical.chart.prenatalCare.edit"
+      "privileges": "app:hoja.clinica.controlPrenatal.editar"
     }
   ],
   "workspaces": [
     {
       "name": "conditions-filter-form-workspace",
       "component": "conditionsFilterWorkspace",
-      "privileges": "app:clinical.chart.prenatalCare.edit",
+      "privileges": "app:hoja.clinica.controlPrenatal.editar",
       "title": "Agregar Condición",
       "type": "form"
     },
     {
       "name": "maternal-conditions-form-workspace",
       "component": "conditionsFilterWorkspace",
-      "privileges": "app:clinical.chart.prenatalCare.edit",
+      "privileges": "app:hoja.clinica.controlPrenatal.editar",
       "title": "Agregar Condición",
       "type": "form"
     },
     {
       "name": "maternal-health-forms-selector-workspace",
       "component": "maternalHealthFormsSelectorWorkspace",
-      "privileges": "app:clinical.chart.prenatalCare.edit",
+      "privileges": "app:hoja.clinica.controlPrenatal.editar",
       "title": "Formularios de Salud Materna",
       "type": "form"
     }
@@ -341,19 +341,19 @@
     {
       "name": "maternal-health-forms-selector-workspace",
       "component": "maternalHealthFormsSelectorWorkspace",
-      "privileges": "app:clinical.chart.prenatalCare.edit",
+      "privileges": "app:hoja.clinica.controlPrenatal.editar",
       "window": "patient-chart-maternal-health-forms"
     },
     {
       "name": "maternal-health-conditions-filter-form-workspace",
       "component": "conditionsFilterWorkspace",
-      "privileges": "app:clinical.chart.prenatalCare.edit",
+      "privileges": "app:hoja.clinica.controlPrenatal.editar",
       "window": "patient-chart-maternal-health-forms"
     },
     {
       "name": "maternal-health-maternal-conditions-form-workspace",
       "component": "conditionsFilterWorkspace",
-      "privileges": "app:clinical.chart.prenatalCare.edit",
+      "privileges": "app:hoja.clinica.controlPrenatal.editar",
       "window": "patient-chart-maternal-health-forms"
     }
   ],

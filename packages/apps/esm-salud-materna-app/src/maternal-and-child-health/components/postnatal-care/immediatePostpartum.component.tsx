@@ -2,6 +2,7 @@ import { useConfig } from '@openmrs/esm-framework';
 import React from 'react';
 import { useTranslation } from 'react-i18next';
 import type { ConfigObject } from '../../../config-schema';
+import { postnatalCareEditPrivilege } from '../../../constants';
 import { useInmmediatePostpartumPeriod } from '../../../hooks/useInmmediatePostpartum';
 import CareSummaryTable from '../../../ui/care-summary-table/care-summary-table.component';
 
@@ -44,6 +45,7 @@ const ImmediatePostpartumTable: React.FC<{ patientUuid: string }> = ({ patientUu
       title={t('puerperioInmediato', 'Puerperio Inmediato')}
       emptyStateText={t('noDataAvailableDescription', 'No data available')}
       formUuid={config.formsList.immediatePostpartumPeriod}
+      editPrivilege={postnatalCareEditPrivilege}
       useEncountersHook={useInmmediatePostpartumPeriod}
       rowDefinitions={rowDefinitions}
       customHeaderTransform={customHeaderTransform}

@@ -41,7 +41,7 @@ const ProceduresOverview: React.FC<ProceduresOverviewProps> = ({ patientUuid }) 
   const { overviewPageSize } = useConfig<ConfigObject>();
   const { t } = useTranslation();
   const session = useSession();
-  const canEdit = userHasAccess('app:clinical.chart.procedures.edit', session?.user);
+  const canEdit = userHasAccess('app:hoja.clinica.procedimientos.editar', session?.user);
   const launchProceduresForm = useCallback(
     () => launchWorkspace2('procedures-form-workspace', { formContext: 'creating' }),
     [],

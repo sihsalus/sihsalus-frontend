@@ -6,7 +6,9 @@ import dayjs from 'dayjs';
 import { CardHeader, EmptyState, ErrorState } from '@openmrs/esm-patient-common-lib';
 import React, { useCallback, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
+import { RequirePrivilege } from '@sihsalus/esm-rbac';
 import type { ConfigObject } from '../../config-schema';
+import { prenatalCareEditPrivilege } from '../../constants';
 import { usePrenatalMeasurements } from '../../hooks/usePrenatalMeasurements';
 import { formEntryWorkspace } from '../../types';
 import { getSafePatientName } from '../../utils/utils';
@@ -69,14 +71,16 @@ const AlturaCuelloOverview: React.FC<AlturaCuelloOverviewProps> = ({ patient, pa
         <CardHeader title={headerTitle}>
           {isLoading && <InlineLoading description={t('refreshing', 'Refreshing...')} status="active" />}
           {launchForm && (
-            <Button
-              kind="ghost"
-              renderIcon={(props) => <Add size={16} {...props} />}
-              onClick={launchForm}
-              aria-label={t('addMeasurement', 'Agregar medición')}
-            >
-              {t('add', 'Add')}
-            </Button>
+            <RequirePrivilege privilege={prenatalCareEditPrivilege} hideUnauthorized>
+              <Button
+                kind="ghost"
+                renderIcon={(props) => <Add size={16} {...props} />}
+                onClick={launchForm}
+                aria-label={t('addMeasurement', 'Agregar medición')}
+              >
+                {t('add', 'Add')}
+              </Button>
+            </RequirePrivilege>
           )}
         </CardHeader>
 
@@ -89,7 +93,14 @@ const AlturaCuelloOverview: React.FC<AlturaCuelloOverviewProps> = ({ patient, pa
     );
   }
 
-  return <EmptyState displayText={displayText} headerTitle={headerTitle} launchForm={launchForm} />;
+  return (
+    <RequirePrivilege
+      privilege={prenatalCareEditPrivilege}
+      fallback={<EmptyState displayText={displayText} headerTitle={headerTitle} />}
+    >
+      <EmptyState displayText={displayText} headerTitle={headerTitle} launchForm={launchForm} />
+    </RequirePrivilege>
+  );
 };
 
 export default AlturaCuelloOverview;

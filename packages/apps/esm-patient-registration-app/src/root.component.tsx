@@ -17,7 +17,7 @@ import { FormManager } from './patient-registration/form-manager';
 import { PatientRegistration } from './patient-registration/patient-registration.component';
 import styles from './root.scss';
 
-const registerPatientPrivilege = 'app:topnav.registerPatient';
+const registerPatientPrivilege = 'app:opciones.registrarPaciente';
 
 export default function Root() {
   const isOnline = useConnectivity();

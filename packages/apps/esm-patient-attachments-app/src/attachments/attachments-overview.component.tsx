@@ -40,8 +40,8 @@ const AttachmentsOverview: React.FC<AttachmentsOverviewProps> = ({ patientUuid }
   const isTablet = useLayoutType() === 'tablet';
   const { t } = useTranslation(moduleName);
   const session = useSession();
-  const canRead = userHasAccess('app:clinical.chart.attachments', session?.user);
-  const canEdit = userHasAccess('app:clinical.chart.attachments.edit', session?.user);
+  const canRead = userHasAccess('app:hoja.clinica.adjuntos', session?.user);
+  const canEdit = userHasAccess('app:hoja.clinica.adjuntos.editar', session?.user);
   const { data, mutate, isValidating, isLoading } = useAttachments(patientUuid, true);
   const { allowedFileExtensions } = useAllowedFileExtensions();
 

@@ -16,7 +16,7 @@ const patientFormEntryWorkspace = 'patient-form-entry-workspace';
 const PsychologyDashboard: React.FC<PsychologyDashboardProps> = ({ patientUuid }) => {
   const { t } = useTranslation();
   const session = useSession();
-  const canEdit = userHasAccess('app:clinical.chart.psychology.edit', session?.user);
+  const canEdit = userHasAccess('app:hoja.clinica.psicologia.editar', session?.user);
   const { encounterTypeUuid, formUuid } = useConfig<ConfigObject>();
   const { encounters, isLoading, error, mutate } = useEncounters(encounterTypeUuid, formUuid, patientUuid);
   const clinicalFormTitle = t('psicologia', 'Psicología');

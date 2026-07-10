@@ -173,8 +173,8 @@ function getCellContent(value: ReactNode) {
 const OrderDetailsTable: React.FC<OrderDetailsProps> = ({ patientUuid, showAddButton, showPrintButton, title }) => {
   const { t } = useTranslation();
   const session = useSession();
-  const canEditOrders = userHasAccess('app:clinical.chart.orders.edit', session?.user);
-  const canEditResults = userHasAccess('app:clinical.chart.results.edit', session?.user);
+  const canEditOrders = userHasAccess('app:hoja.clinica.ordenes.editar', session?.user);
+  const canEditResults = userHasAccess('app:hoja.clinica.resultados.editar', session?.user);
   const locale = getLocale() ?? 'en';
   const defaultPageSize = 10;
   const headerTitle = t('orders', 'Orders');

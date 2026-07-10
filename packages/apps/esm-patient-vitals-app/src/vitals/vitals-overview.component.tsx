@@ -37,7 +37,7 @@ interface VitalsOverviewProps {
 const VitalsOverview: React.FC<VitalsOverviewProps> = ({ patientUuid, pageSize, urlLabel, pageUrl, patient }) => {
   const { t } = useTranslation();
   const session = useSession();
-  const canEdit = userHasAccess('app:clinical.chart.vitals.edit', session?.user);
+  const canEdit = userHasAccess('app:hoja.clinica.signosVitales.editar', session?.user);
   const config = useConfig<ConfigObject>();
   const headerTitle = t('vitals', 'Vitals');
   const [chartView, setChartView] = useState(false);

@@ -277,14 +277,16 @@ describe('PersonAttributeField', () => {
       expect(screen.queryByText('Error loading attribute type test-uuid')).not.toBeInTheDocument();
     });
 
-    it('shows an error notification when loading attribute type fails for a non-404 reason', () => {
+    it('hides optional attribute filters when loading the attribute type fails', () => {
       mockUsePersonAttributeType.mockReturnValue({
         data: null,
         isLoading: false,
         error: new Error('Failed to load attribute type'),
       });
-      render(<PersonAttributeField {...defaultProps} />);
-      expect(screen.getByText('Error loading attribute type test-uuid')).toBeInTheDocument();
+      const { container } = render(<PersonAttributeField {...defaultProps} />);
+
+      expect(container).toBeEmptyDOMElement();
+      expect(screen.queryByText('Error loading attribute type test-uuid')).not.toBeInTheDocument();
     });
   });
 

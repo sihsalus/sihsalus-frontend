@@ -1,8 +1,8 @@
-import { Button, Layer } from '@carbon/react';
+import { Button, Layer, TextInput } from '@carbon/react';
 import { useConfig, useLayoutType } from '@openmrs/esm-framework';
 import classNames from 'classnames';
-import React, { useCallback, useMemo, useState } from 'react';
-import { useForm } from 'react-hook-form';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import { Controller, useForm } from 'react-hook-form';
 import { useTranslation } from 'react-i18next';
 
 import {
@@ -11,11 +11,13 @@ import {
   type PersonAttributeFieldConfig,
 } from '../../config-schema';
 import { type AdvancedPatientSearchState, type SearchFieldConfig, type SearchFieldType } from '../../types';
+import { identityDocumentNumberAttributeUuid } from './person-attribute-field.component';
 import styles from './refine-search.scss';
 import { RefineSearchTablet } from './refine-search-tablet.component';
 import { SearchField } from './search-field.component';
 
 export const initialFilters: AdvancedPatientSearchState = {
+  query: '',
   gender: 'any',
   dateOfBirth: 0,
   monthOfBirth: 0,
@@ -28,10 +30,18 @@ export const initialFilters: AdvancedPatientSearchState = {
 interface RefineSearchProps {
   inTabletOrOverlay: boolean;
   setFilters: React.Dispatch<React.SetStateAction<AdvancedPatientSearchState>>;
+  setSearchQuery?: (query: string) => void;
   filtersApplied: number;
+  searchQuery?: string;
 }
 
-const RefineSearch: React.FC<RefineSearchProps> = ({ setFilters, inTabletOrOverlay, filtersApplied }) => {
+const RefineSearch: React.FC<RefineSearchProps> = ({
+  setFilters,
+  setSearchQuery,
+  inTabletOrOverlay,
+  filtersApplied,
+  searchQuery = '',
+}) => {
   const [showRefineSearchDialog, setShowRefineSearchDialog] = useState(false);
   const { t } = useTranslation();
   const isTablet = useLayoutType() === 'tablet';
@@ -41,9 +51,11 @@ const RefineSearch: React.FC<RefineSearchProps> = ({ setFilters, inTabletOrOverl
     control,
     handleSubmit,
     reset,
+    setValue,
     formState: _formState,
   } = useForm<AdvancedPatientSearchState>({
     defaultValues: {
+      query: searchQuery,
       gender: 'any',
       dateOfBirth: 0,
       monthOfBirth: 0,
@@ -54,18 +66,26 @@ const RefineSearch: React.FC<RefineSearchProps> = ({ setFilters, inTabletOrOverl
     },
   });
 
+  useEffect(() => {
+    setValue('query', searchQuery);
+  }, [searchQuery, setValue]);
+
   const onSubmit = useCallback(
     (data: AdvancedPatientSearchState) => {
+      const query = data.query.trim() || data.attributes?.[identityDocumentNumberAttributeUuid]?.trim() || '';
+      setSearchQuery?.(query);
       setFilters(data);
       setShowRefineSearchDialog(false);
     },
-    [setFilters],
+    [setFilters, setSearchQuery],
   );
   const handleResetFields = useCallback(() => {
-    reset({ ...initialFilters, attributes: {} });
-    setFilters(initialFilters);
+    const resetFilters = { ...initialFilters, attributes: {} };
+    reset(resetFilters);
+    setFilters(resetFilters);
+    setSearchQuery?.('');
     setShowRefineSearchDialog(false);
-  }, [reset, setFilters]);
+  }, [reset, setFilters, setSearchQuery]);
 
   const toggleShowRefineSearchDialog = useCallback(() => {
     setShowRefineSearchDialog((prevState) => !prevState);
@@ -117,11 +137,30 @@ const RefineSearch: React.FC<RefineSearchProps> = ({ setFilters, inTabletOrOverl
 
   return (
     <form onSubmit={handleSubmit(onSubmit)} className={styles.refineSearchContainer} data-openmrs-role="Refine Search">
-      <h2 className={styles.productiveHeading02}>{t('refineSearch', 'Refine search')}</h2>
+      <h2 className={styles.productiveHeading02}>{t('patientSearch', 'Búsqueda de paciente')}</h2>
+      <Layer>
+        <div className={styles.field}>
+          <Controller
+            name="query"
+            control={control}
+            render={({ field: { onChange, value } }) => (
+              <TextInput
+                id="patient-search-query"
+                labelText={t('patientSearchCriteria', 'Apellidos y nombres o documento de identidad')}
+                onChange={(event: React.ChangeEvent<HTMLInputElement>) => onChange(event.currentTarget.value)}
+                placeholder={t('patientSearchCriteriaPlaceholder', 'Ingrese apellidos, nombres, DNI, CE o pasaporte')}
+                size={isTablet ? 'lg' : 'md'}
+                value={value ?? ''}
+              />
+            )}
+          />
+        </div>
+      </Layer>
+      <h3 className={styles.sectionHeading}>{t('refineSearch', 'Refine search')}</h3>
       {renderSearchFields}
       <hr className={classNames(styles.field, styles.horizontalDivider)} />
       <Button type="submit" kind="primary" size="md" className={classNames(styles.field, styles.button)}>
-        {t('apply', 'Apply')}{' '}
+        {t('search', 'Search')}{' '}
         {filtersApplied
           ? `(${t('countOfFiltersApplied', '{{count}} filters applied', { count: filtersApplied })})`
           : null}

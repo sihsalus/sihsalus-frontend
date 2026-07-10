@@ -97,6 +97,7 @@ export interface PatientSearchResponse {
 }
 
 export interface AdvancedPatientSearchState {
+  query: string;
   gender: 'any' | 'male' | 'female' | 'other' | 'unknown';
   dateOfBirth: number;
   monthOfBirth: number;

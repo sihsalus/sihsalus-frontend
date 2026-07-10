@@ -54,8 +54,9 @@ const PatientSearchLaunch: React.FC<PatientSearchLaunchProps> = () => {
   }, []);
 
   useEffect(() => {
-    // Search input should always be open when we direct to the search page.
-    setShowSearchInput(isSearchPage);
+    if (isSearchPage) {
+      setShowSearchInput(false);
+    }
   }, [isSearchPage]);
 
   useEffect(() => {

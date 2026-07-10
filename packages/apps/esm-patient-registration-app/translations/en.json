@@ -154,6 +154,7 @@
   "familyNameTooLong": "Family name must be 100 characters or fewer",
   "female": "Female",
   "fieldRequired": "Field is required",
+  "fieldWithErrors": "The following field has errors:",
   "fieldsWithErrors": "The following fields have errors: ",
   "filiationSection": "Filiation data",
   "fullNameLabelText": "Full Name",

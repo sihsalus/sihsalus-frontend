@@ -32,9 +32,23 @@ const selfSignedTlsDefaultHosts = new Set(['gidis-hsc-dev.inf.pucp.edu.pe', 'gid
 const allowSelfSignedTls = shouldAllowSelfSignedTls(backend);
 let selfSignedBackendDispatcher;
 
-// SIHSALUS_DEV_APPS=esm-login-app,esm-home-app  → hot-reload those apps
-// Unset → serve pre-assembled importmap (no recompilation, just shell + proxy)
-const devAppsEnv = process.env.SIHSALUS_DEV_APPS;
+// SIHSALUS_DEV_APPS=esm-login-app,esm-home-app -> hot-reload those apps.
+// Unset -> hot-reload the main apps edited during daily frontend work.
+// SIHSALUS_DEV_APPS=none -> serve pre-assembled importmap (no recompilation, just shell + proxy).
+const defaultDevApps = [
+  'esm-login-app',
+  'esm-patient-chart-app',
+  'esm-patient-registration-app',
+  'esm-patient-search-app',
+  'esm-primary-navigation-app',
+];
+
+const devAppsEnv =
+  process.env.SIHSALUS_DEV_APPS && process.env.SIHSALUS_DEV_APPS.toLowerCase() !== 'none'
+    ? process.env.SIHSALUS_DEV_APPS
+    : process.env.SIHSALUS_DEV_APPS?.toLowerCase() === 'none'
+      ? undefined
+      : defaultDevApps.join(',');
 
 const assembledImportmap = resolve(__dirname, '..', '..', '..', 'dist', 'spa', 'importmap.json');
 const assembledRoutes = resolve(__dirname, '..', '..', '..', 'dist', 'spa', 'routes.registry.json');

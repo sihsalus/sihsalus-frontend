@@ -7,6 +7,10 @@ import { type AdvancedPatientSearchState } from '../types';
 
 import styles from './advanced-patient-search.scss';
 import PatientSearchComponent from './patient-search-lg.component';
+import {
+  identityDocumentAttributeUuids,
+  identityDocumentNumberAttributeUuid,
+} from './refine-search/person-attribute-field.component';
 import RefineSearch, { initialFilters } from './refine-search/refine-search.component';
 
 interface AdvancedPatientSearchProps {
@@ -21,10 +25,16 @@ const AdvancedPatientSearchComponent: React.FC<AdvancedPatientSearchProps> = ({
   inTabletOrOverlay,
 }) => {
   const [filters, setFilters] = useState<AdvancedPatientSearchState>(initialFilters);
+  const [activeQuery, setActiveQuery] = useState(query);
+
+  useEffect(() => {
+    setActiveQuery(query);
+  }, [query]);
+
   const filtersApplied = useMemo(() => {
     let count = 0;
     Object.entries(filters).forEach(([key, value]) => {
-      if (key !== 'attributes' && value !== initialFilters[key]) {
+      if (key !== 'attributes' && key !== 'query' && value !== initialFilters[key]) {
         count++;
       }
     });
@@ -42,7 +52,7 @@ const AdvancedPatientSearchComponent: React.FC<AdvancedPatientSearchProps> = ({
     hasMore,
     isLoading,
     fetchError,
-  } = useInfinitePatientSearch(query, false, !!query, 50);
+  } = useInfinitePatientSearch(activeQuery, false, !!activeQuery, 50);
 
   useEffect(() => {
     if (searchResults?.length === currentPage * 50 && hasMore) {
@@ -52,6 +62,10 @@ const AdvancedPatientSearchComponent: React.FC<AdvancedPatientSearchProps> = ({
 
   const filteredResults = useMemo(() => {
     if (searchResults && filtersApplied) {
+      const identityDocumentSearchQuery = filters.attributes?.[identityDocumentNumberAttributeUuid]?.trim() ?? '';
+      const shouldSkipIdentityDocumentAttributeFilters =
+        !!identityDocumentSearchQuery && activeQuery === identityDocumentSearchQuery;
+
       return searchResults.filter((patient) => {
         // Gender filter
         if (filters.gender !== 'any') {
@@ -106,6 +120,12 @@ const AdvancedPatientSearchComponent: React.FC<AdvancedPatientSearchProps> = ({
         if (Object.keys(filters.attributes).length) {
           for (const [attributeUuid, value] of Object.entries(filters.attributes)) {
             if (value === '') continue;
+            if (
+              shouldSkipIdentityDocumentAttributeFilters &&
+              identityDocumentAttributeUuids.includes(attributeUuid as (typeof identityDocumentAttributeUuids)[number])
+            ) {
+              continue;
+            }
 
             const matchingAttribute = patient.attributes.find((attr) => attr.attributeType.uuid === attributeUuid);
 
@@ -132,7 +152,7 @@ const AdvancedPatientSearchComponent: React.FC<AdvancedPatientSearchProps> = ({
     }
 
     return searchResults;
-  }, [filtersApplied, filters, searchResults]);
+  }, [activeQuery, filtersApplied, filters, searchResults]);
 
   return (
     <div
@@ -143,7 +163,13 @@ const AdvancedPatientSearchComponent: React.FC<AdvancedPatientSearchProps> = ({
     >
       {!inTabletOrOverlay && (
         <div className={styles.refineSearchDesktop}>
-          <RefineSearch filtersApplied={filtersApplied} setFilters={setFilters} inTabletOrOverlay={inTabletOrOverlay} />
+          <RefineSearch
+            filtersApplied={filtersApplied}
+            searchQuery={activeQuery}
+            setFilters={setFilters}
+            setSearchQuery={setActiveQuery}
+            inTabletOrOverlay={inTabletOrOverlay}
+          />
         </div>
       )}
       <div
@@ -153,7 +179,7 @@ const AdvancedPatientSearchComponent: React.FC<AdvancedPatientSearchProps> = ({
         })}
       >
         <PatientSearchComponent
-          query={query}
+          query={activeQuery}
           stickyPagination={stickyPagination}
           inTabletOrOverlay={inTabletOrOverlay}
           isLoading={isLoading}
@@ -162,7 +188,13 @@ const AdvancedPatientSearchComponent: React.FC<AdvancedPatientSearchProps> = ({
         />
       </div>
       {inTabletOrOverlay && (
-        <RefineSearch filtersApplied={filtersApplied} setFilters={setFilters} inTabletOrOverlay={inTabletOrOverlay} />
+        <RefineSearch
+          filtersApplied={filtersApplied}
+          searchQuery={activeQuery}
+          setFilters={setFilters}
+          setSearchQuery={setActiveQuery}
+          inTabletOrOverlay={inTabletOrOverlay}
+        />
       )}
     </div>
   );

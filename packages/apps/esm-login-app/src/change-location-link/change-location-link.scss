@@ -15,8 +15,14 @@
 
 .currentLocationText {
   overflow: hidden;
-  padding-inline: layout.$spacing-04;
+  padding-inline-start: layout.$spacing-02;
+  padding-inline-end: layout.$spacing-04;
   text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.locationLabel {
+  padding-inline-start: layout.$spacing-03;
   white-space: nowrap;
 }
 
@@ -27,6 +33,7 @@
     padding-inline: layout.$spacing-04 !important;
   }
 
+  .locationLabel,
   .currentLocationText {
     display: none;
   }

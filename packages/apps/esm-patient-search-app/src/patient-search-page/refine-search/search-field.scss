@@ -14,10 +14,18 @@
   display: grid;
   grid-template-columns: 1fr 1fr 1.25fr;
   grid-gap: layout.$spacing-03;
+  align-items: end;
 
   input {
     min-width: unset !important;
     padding-right: layout.$spacing-02 !important;
+  }
+
+  :global(.cds--label) {
+    min-height: layout.$spacing-07;
+    line-height: 1.25;
+    display: flex;
+    align-items: flex-end;
   }
 }
 

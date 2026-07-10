@@ -1,5 +1,6 @@
 import { ComboBox, InlineLoading, InlineNotification, TextInput, TextInputSkeleton } from '@carbon/react';
 import { type OpenmrsResource } from '@openmrs/esm-framework';
+import type { TFunction } from 'i18next';
 import React, { useMemo, useRef, useState } from 'react';
 import { type Control, Controller } from 'react-hook-form';
 import { useTranslation } from 'react-i18next';
@@ -13,6 +14,21 @@ import {
   usePersonAttributeType,
 } from './person-attributes.resource';
 import styles from './search-field.scss';
+
+export const identityDocumentTypeAttributeUuid = '6f5c0b8a-9e91-4d41-9a8c-8b0f3c2e7a11';
+export const identityDocumentNumberAttributeUuid = 'c0d1a2b3-4e5f-4a6b-9c7d-8e9f0a1b2c3d';
+export const identityDocumentAttributeUuids = [
+  identityDocumentTypeAttributeUuid,
+  identityDocumentNumberAttributeUuid,
+] as const;
+
+function getPersonAttributeDisplayLabel(attributeDisplay: string, attributeTypeUuid: string | undefined, t: TFunction) {
+  if (attributeTypeUuid === identityDocumentNumberAttributeUuid) {
+    return t('identityDocumentNumber', 'Número de Documento de Identidad');
+  }
+
+  return t(attributeDisplay);
+}
 
 export function isMissingPersonAttributeTypeError(error: unknown) {
   const responseStatus =
@@ -61,6 +77,8 @@ export function PersonAttributeField({ field, control, isTablet }: PersonAttribu
 
     switch (personAttributeType.format) {
       case 'java.lang.String':
+        const labelText = getPersonAttributeDisplayLabel(personAttributeType.display, field.attributeTypeUuid, t);
+
         if (field.stringAnswerOptions?.length) {
           return (
             <StringAttributeOptionsField
@@ -80,7 +98,7 @@ export function PersonAttributeField({ field, control, isTablet }: PersonAttribu
             render={({ field: { onChange, value } }) => (
               <TextInput
                 id={field.name}
-                labelText={t(personAttributeType.display)}
+                labelText={labelText}
                 value={value || ''}
                 onChange={(e) => onChange(sanitizePersonAttributeText(e.target.value, field.disallowNumbers))}
                 placeholder={field.placeholder}
@@ -123,17 +141,7 @@ export function PersonAttributeField({ field, control, isTablet }: PersonAttribu
   }, [personAttributeType, isLoading, field, control, t, isTablet]);
 
   if (error) {
-    if (isMissingPersonAttributeTypeError(error)) {
-      return null;
-    }
-
-    return (
-      <InlineNotification kind="error" title={t('error', 'Error')}>
-        {t('errorLoadingAttribute', 'Error loading attribute type {{attributeUuid}}', {
-          attributeUuid: field.attributeTypeUuid,
-        })}
-      </InlineNotification>
-    );
+    return null;
   }
 
   return formatField;

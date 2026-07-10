@@ -70,10 +70,10 @@ describe('Patient chart root', () => {
         kind: 'info',
         isLowContrast: true,
         title: 'Acceso restringido',
-        subtitle: 'No tiene permisos para acceder a la historia clínica. Fue redirigido al inicio.',
+        subtitle: 'No tiene permisos para acceder a la historia clínica. Fue redirigido a la búsqueda de pacientes.',
       });
       expect(mockNavigate).toHaveBeenCalledTimes(1);
-      expect(mockNavigate).toHaveBeenCalledWith({ to: '/openmrs/spa/home/home' });
+      expect(mockNavigate).toHaveBeenCalledWith({ to: '/openmrs/spa/search' });
     });
     expect(mockShowSnackbar.mock.invocationCallOrder[0]).toBeLessThan(mockNavigate.mock.invocationCallOrder[0]);
   });

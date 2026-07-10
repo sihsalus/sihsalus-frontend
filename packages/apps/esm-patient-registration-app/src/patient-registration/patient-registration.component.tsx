@@ -11,7 +11,7 @@ import {
   usePatientPhoto,
 } from '@openmrs/esm-framework';
 import classNames from 'classnames';
-import { Form, Formik, type FormikErrors, type FormikHelpers } from 'formik';
+import { Form, Formik, type FormikErrors, type FormikHelpers, type FormikTouched } from 'formik';
 import set from 'lodash-es/set';
 import React, { useContext, useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -245,36 +245,100 @@ export const PatientRegistration: React.FC<PatientRegistrationProps> = ({ savePa
 
   const getErrorMessages = (errors: FormikErrors<FormValues>) => {
     const messages = new Set<string>();
+    const defaultFieldLabels: Record<string, string> = {
+      birthdate: 'Date of birth',
+      familyName: 'Family name',
+      familyName2: 'Second family name',
+      gender: 'Gender',
+      givenName: 'First name',
+      identifiers: 'Identification data',
+    };
+    const defaultErrorMessages: Record<string, string> = {
+      birthdayRequired: 'Birthday is required',
+      familyNameRequired: 'Family name is required',
+      familyName2Required: 'Second family name is required',
+      fieldRequired: 'Field is required',
+      genderRequired: 'Gender is required',
+      givenNameRequired: 'First name is required',
+      identifierValueRequired: 'Identifier value is required',
+    };
 
-    const collectMessages = (value: unknown, fallbackKey?: string) => {
+    const translateWithFallback = (key: string, defaultValue: string) => {
+      const translatedText = t(key, defaultValue);
+      return translatedText === key ? defaultValue : translatedText;
+    };
+
+    const getFieldLabel = (path: Array<string>) => {
+      const [section, field] = path;
+
+      if (!section) {
+        return translateWithFallback('fieldRequired', 'Field is required');
+      }
+
+      if (section === 'identifiers') {
+        return translateWithFallback('idFieldLabelText', defaultFieldLabels.identifiers);
+      }
+
+      if (field) {
+        const labelKey = `${field}LabelText`;
+        const translatedLabel = translateWithFallback(labelKey, defaultFieldLabels[field] ?? field);
+
+        if (translatedLabel !== field || defaultFieldLabels[field]) {
+          return translatedLabel;
+        }
+      }
+
+      const defaultFieldLabel = defaultFieldLabels[section];
+      const fieldLabel = translateWithFallback(`${section}LabelText`, defaultFieldLabel ?? section);
+
+      if (fieldLabel !== section || defaultFieldLabel) {
+        return fieldLabel;
+      }
+
+      return translateWithFallback(`${section}Section`, section);
+    };
+
+    const collectMessages = (value: unknown, path: Array<string> = []) => {
       if (!value) {
         return;
       }
       if (typeof value === 'string') {
-        messages.add(t(value, value));
+        const fieldLabel = getFieldLabel(path);
+        const errorMessage = translateWithFallback(value, defaultErrorMessages[value] ?? value);
+        messages.add(`${fieldLabel}: ${errorMessage}`);
         return;
       }
       if (Array.isArray(value)) {
-        value.forEach((item) => {
-          collectMessages(item, fallbackKey);
+        value.forEach((item, index) => {
+          collectMessages(item, [...path, String(index)]);
         });
         return;
       }
       if (typeof value === 'object') {
         Object.entries(value).forEach(([key, nestedValue]) => {
-          collectMessages(nestedValue, key);
+          collectMessages(nestedValue, [...path, key]);
         });
-        return;
-      }
-      if (fallbackKey) {
-        messages.add(t(`${fallbackKey}LabelText`, fallbackKey));
       }
     };
 
     Object.entries(errors).forEach(([key, value]) => {
-      collectMessages(value, key);
+      collectMessages(value, [key]);
     });
     return [...messages];
+  };
+
+  const getTouchedFields = (errors: unknown): FormikTouched<FormValues> | boolean => {
+    if (!errors || typeof errors !== 'object') {
+      return true;
+    }
+
+    if (Array.isArray(errors)) {
+      return errors.map((error) => getTouchedFields(error)) as unknown as FormikTouched<FormValues>;
+    }
+
+    return Object.fromEntries(
+      Object.entries(errors).map(([key, value]) => [key, getTouchedFields(value)]),
+    ) as FormikTouched<FormValues>;
   };
 
   const getDescription = (errors: FormikErrors<FormValues>) => {
@@ -290,11 +354,16 @@ export const PatientRegistration: React.FC<PatientRegistrationProps> = ({ savePa
   };
 
   const displayErrors = (errors: FormikErrors<FormValues>) => {
-    if (errors && typeof errors === 'object' && !!Object.keys(errors).length) {
+    const errorCount = getErrorMessages(errors).length;
+
+    if (errors && typeof errors === 'object' && errorCount) {
       showSnackbar({
         isLowContrast: true,
         kind: 'warning',
-        title: t('fieldsWithErrors', 'The following fields have errors:'),
+        title:
+          errorCount === 1
+            ? t('fieldWithErrors', 'The following field has errors:')
+            : t('fieldsWithErrors', 'The following fields have errors:'),
         subtitle: <>{getDescription(errors)}</>,
       });
     }
@@ -308,12 +377,24 @@ export const PatientRegistration: React.FC<PatientRegistrationProps> = ({ savePa
       onSubmit={onFormSubmit}
     >
       {(props) => {
+        const handleRegisterPatient = async () => {
+          const errors = await props.validateForm();
+
+          if (errors && typeof errors === 'object' && !!Object.keys(errors).length) {
+            props.setTouched(getTouchedFields(errors) as FormikTouched<FormValues>, false);
+            displayErrors(errors);
+            return;
+          }
+
+          props.submitForm();
+        };
+
         const renderActionButtons = () => (
           <>
             <Button
               className={styles.submitButton}
-              type="submit"
-              onClick={() => props.validateForm().then((errors) => displayErrors(errors))}
+              type="button"
+              onClick={handleRegisterPatient}
               // Current session and identifiers are required for patient registration.
               // If currentSession or identifierTypes are not available, then the
               // user should be blocked to register the patient.

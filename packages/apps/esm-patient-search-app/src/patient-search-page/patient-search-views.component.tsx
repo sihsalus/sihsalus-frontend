@@ -1,4 +1,6 @@
-import { Layer, Tile } from '@carbon/react';
+import { Button, Layer, Tile } from '@carbon/react';
+import { UserFollow } from '@carbon/react/icons';
+import { navigate, UserHasAccess } from '@openmrs/esm-framework';
 import React from 'react';
 import { useTranslation } from 'react-i18next';
 
@@ -14,6 +16,10 @@ interface PatientSearchResultsProps {
 
 export const EmptyState: React.FC = () => {
   const { t } = useTranslation();
+  const goToPatientRegistration = React.useCallback(() => {
+    navigate({ to: `${globalThis.getOpenmrsSpaBase()}patient-registration` });
+  }, []);
+
   return (
     <Layer>
       <Tile className={styles.emptySearchResultsTile}>
@@ -24,6 +30,16 @@ export const EmptyState: React.FC = () => {
         <p className={styles.actionText}>
           <span>{t('trySearchWithPatientUniqueID', "Try to search again using the patient's unique ID number")}</span>
         </p>
+        <UserHasAccess privilege="app:opciones.registrarPaciente">
+          <Button
+            className={styles.addPatientButton}
+            kind="primary"
+            renderIcon={UserFollow}
+            onClick={goToPatientRegistration}
+          >
+            {t('addPatient', 'Agregar paciente')}
+          </Button>
+        </UserHasAccess>
       </Tile>
     </Layer>
   );

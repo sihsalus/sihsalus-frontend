@@ -161,7 +161,7 @@ const QuestionModalContent: React.FC<QuestionModalProps> = ({
         closeModal={closeModal}
         title={formFieldProp ? t('editQuestion', 'Edit question') : t('createNewQuestion', 'Create a new question')}
       />
-      <Form className={styles.form} onSubmit={(event: React.SyntheticEvent) => event.preventDefault()}>
+      <Form className={styles.form} onSubmit={(event: React.SyntheticEvent) => event.preventDefault()} noValidate>
         <ModalBody>
           <FormGroup legendText="">
             <Stack gap={5}>

@@ -118,10 +118,13 @@ const Login: React.FC = () => {
   const [errorMessage, setErrorMessage] = useState('');
   const [isLoggingIn, setIsLoggingIn] = useState(false);
   const [password, setPassword] = useState('');
+  const [passwordInvalid, setPasswordInvalid] = useState(false);
   const [activeView, setActiveView] = useState<LoginView>('login');
   const [recoveryIdentifier, setRecoveryIdentifier] = useState('');
+  const [recoveryIdentifierInvalid, setRecoveryIdentifierInvalid] = useState(false);
   const [recoverySubmitted, setRecoverySubmitted] = useState(false);
   const [username, setUsername] = useState('');
+  const [usernameInvalid, setUsernameInvalid] = useState(false);
   const [showPasswordField, setShowPasswordField] = useState(false);
   const passwordInputRef = useRef<HTMLInputElement>(null);
   const recoveryInputRef = useRef<HTMLInputElement>(null);
@@ -162,6 +165,9 @@ const Login: React.FC = () => {
 
   const continueLogin = useCallback(() => {
     const currentUsername = usernameInputRef.current?.value?.trim();
+    const isInvalid = !currentUsername;
+    setUsernameInvalid(isInvalid);
+
     if (currentUsername) {
       // If credentials were autofilled, input onChange might not have been called
       setUsername(currentUsername);
@@ -171,22 +177,37 @@ const Login: React.FC = () => {
     }
   }, []);
 
-  const changeUsername = useCallback((evt: React.ChangeEvent<HTMLInputElement>) => setUsername(evt.target.value), []);
-  const changePassword = useCallback((evt: React.ChangeEvent<HTMLInputElement>) => setPassword(evt.target.value), []);
+  const changeUsername = useCallback((evt: React.ChangeEvent<HTMLInputElement>) => {
+    setUsername(evt.target.value);
+    if (evt.target.value.trim()) {
+      setUsernameInvalid(false);
+    }
+  }, []);
+  const changePassword = useCallback((evt: React.ChangeEvent<HTMLInputElement>) => {
+    setPassword(evt.target.value);
+    if (evt.target.value.trim()) {
+      setPasswordInvalid(false);
+    }
+  }, []);
   const changeRecoveryIdentifier = useCallback((evt: React.ChangeEvent<HTMLInputElement>) => {
     setRecoveryIdentifier(evt.target.value);
+    if (evt.target.value.trim()) {
+      setRecoveryIdentifierInvalid(false);
+    }
     setRecoverySubmitted(false);
   }, []);
 
   const openPasswordRecovery = useCallback(() => {
     setErrorMessage('');
     setRecoveryIdentifier(username.trim());
+    setRecoveryIdentifierInvalid(false);
     setRecoverySubmitted(false);
     setActiveView('passwordRecovery');
   }, [username]);
 
   const returnToLogin = useCallback(() => {
     setActiveView('login');
+    setRecoveryIdentifierInvalid(false);
     setRecoverySubmitted(false);
     setTimeout(() => usernameInputRef.current?.focus(), 0);
   }, []);
@@ -217,15 +238,24 @@ const Login: React.FC = () => {
       evt.stopPropagation();
 
       // If credentials were autofilled, input onChange might not have been called
-      const currentUsername = usernameInputRef.current?.value?.trim() || username;
+      const currentUsername = (usernameInputRef.current?.value || username).trim();
       const currentPassword = passwordInputRef.current?.value || password;
+      const isUsernameInvalid = !currentUsername;
+
+      setUsernameInvalid(isUsernameInvalid);
+      if (isUsernameInvalid) {
+        usernameInputRef.current?.focus();
+        return false;
+      }
 
       if (showPasswordOnSeparateScreen && !showPasswordField) {
         continueLogin();
         return false;
       }
 
-      if (!currentPassword || !currentPassword.trim()) {
+      const isPasswordInvalid = !currentPassword || !currentPassword.trim();
+      setPasswordInvalid(isPasswordInvalid);
+      if (isPasswordInvalid) {
         passwordInputRef.current?.focus();
         return false;
       }
@@ -255,6 +285,8 @@ const Login: React.FC = () => {
           setErrorMessage(getLoginErrorKey({ session }));
           setUsername('');
           setPassword('');
+          setUsernameInvalid(false);
+          setPasswordInvalid(false);
           if (showPasswordOnSeparateScreen) {
             setShowPasswordField(false);
           }
@@ -265,6 +297,8 @@ const Login: React.FC = () => {
         setErrorMessage(getLoginErrorKey(error));
         setUsername('');
         setPassword('');
+        setUsernameInvalid(false);
+        setPasswordInvalid(false);
         if (showPasswordOnSeparateScreen) {
           setShowPasswordField(false);
         }
@@ -288,7 +322,9 @@ const Login: React.FC = () => {
     (evt: React.FormEvent<HTMLFormElement>) => {
       evt.preventDefault();
 
-      if (!recoveryIdentifier.trim()) {
+      const isInvalid = !recoveryIdentifier.trim();
+      setRecoveryIdentifierInvalid(isInvalid);
+      if (isInvalid) {
         recoveryInputRef.current?.focus();
         return;
       }
@@ -330,7 +366,7 @@ const Login: React.FC = () => {
                 <Logo t={t} />
               </div>
               {activeView === 'login' ? (
-                <form onSubmit={handleSubmit}>
+                <form onSubmit={handleSubmit} noValidate>
                   <div className={styles.inputGroup}>
                     <TextInput
                       id="username"
@@ -342,6 +378,8 @@ const Login: React.FC = () => {
                       onChange={changeUsername}
                       ref={usernameInputRef}
                       required
+                      invalid={usernameInvalid}
+                      invalidText={t('validValueRequired', 'A valid value is required')}
                       autoFocus
                     />
                     {showPasswordOnSeparateScreen ? (
@@ -355,6 +393,7 @@ const Login: React.FC = () => {
                             onChange={changePassword}
                             ref={passwordInputRef}
                             required
+                            invalid={showPasswordField && passwordInvalid}
                             value={password}
                             showPasswordLabel={t('showPassword', 'Show password')}
                             invalidText={t('validValueRequired', 'A valid value is required')}
@@ -405,6 +444,7 @@ const Login: React.FC = () => {
                           onChange={changePassword}
                           ref={passwordInputRef}
                           required
+                          invalid={passwordInvalid}
                           value={password}
                           showPasswordLabel={t('showPassword', 'Show password')}
                           invalidText={t('validValueRequired', 'A valid value is required')}
@@ -449,7 +489,7 @@ const Login: React.FC = () => {
                   )}
                 </form>
               ) : (
-                <form className={styles.recoveryForm} onSubmit={handleRecoverySubmit}>
+                <form className={styles.recoveryForm} onSubmit={handleRecoverySubmit} noValidate>
                   <div className={styles.recoveryHeader}>
                     <h2 className={styles.recoveryTitle}>{t('recoverPassword', 'Recover password')}</h2>
                     <p className={styles.recoveryDescription}>
@@ -470,6 +510,8 @@ const Login: React.FC = () => {
                       onChange={changeRecoveryIdentifier}
                       ref={recoveryInputRef}
                       required
+                      invalid={recoveryIdentifierInvalid}
+                      invalidText={t('validValueRequired', 'A valid value is required')}
                     />
                     <Button
                       type="submit"

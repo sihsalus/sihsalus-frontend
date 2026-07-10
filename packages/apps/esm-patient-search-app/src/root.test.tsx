@@ -45,7 +45,7 @@ describe('PatientSearchRootComponent', () => {
     expect(screen.getByRole('tab', { name: /female/i })).toBeInTheDocument();
     expect(screen.getByRole('tab', { name: /other/i })).toBeInTheDocument();
     expect(screen.getByRole('tab', { name: /unknown/i })).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: /apply/i })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /^search$/i })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: /reset fields/i })).toBeInTheDocument();
   });
 });

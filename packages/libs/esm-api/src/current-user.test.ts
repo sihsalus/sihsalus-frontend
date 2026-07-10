@@ -117,8 +117,77 @@ describe('userHasAccess', () => {
     expect(userHasAccess('Manage Users', mockSuperUser)).toBe(true);
   });
 
+  it('recognizes the SIHSALUS role that inherits System Developer access', () => {
+    const userWithInheritedSuperUserRole = {
+      privileges: [],
+      roles: [createRole('Application: Has Super User Privileges')],
+    };
+
+    expect(userHasAccess('app:hoja.clinica', userWithInheritedSuperUserRole)).toBe(true);
+  });
+
+  it('recognizes System Developer by its stable role name when the display is localized', () => {
+    const userWithLocalizedSuperUserRole = {
+      privileges: [],
+      roles: [
+        {
+          ...createRole('System Developer'),
+          display: 'Desarrollador del sistema',
+        },
+      ],
+    };
+
+    expect(userHasAccess('app:hoja.clinica', userWithLocalizedSuperUserRole)).toBe(true);
+  });
+
+  it('does not treat a non-superuser system administration role as clinical access', () => {
+    const systemAdministrator = {
+      privileges: [],
+      roles: [createRole('Organizational: System Administrator')],
+    };
+
+    expect(userHasAccess('app:hoja.clinica', systemAdministrator)).toBe(false);
+  });
+
   it('should be case-sensitive for privilege names', () => {
     expect(userHasAccess('view patients', mockUser)).toBe(false);
+  });
+
+  it('accepts a legacy privilege when the frontend requires its renamed equivalent', () => {
+    const userWithLegacyChartAccess = {
+      privileges: [createPrivilege('app:clinical.chart')],
+      roles: [createRole('Clinician')],
+    };
+
+    expect(userHasAccess('app:hoja.clinica', userWithLegacyChartAccess)).toBe(true);
+  });
+
+  it('accepts a renamed privilege when an extension still requires its legacy equivalent', () => {
+    const userWithRenamedChartAccess = {
+      privileges: [createPrivilege('app:hoja.clinica.consultaExterna')],
+      roles: [createRole('Clinician')],
+    };
+
+    expect(userHasAccess('app:clinical.chart.consultaExterna', userWithRenamedChartAccess)).toBe(true);
+  });
+
+  it('does not infer parent privileges from a child privilege', () => {
+    const userWithChartSummaryOnly = {
+      privileges: [createPrivilege('app:clinical.chart.summary')],
+      roles: [createRole('Clinician')],
+    };
+
+    expect(userHasAccess('app:hoja.clinica', userWithChartSummaryOnly)).toBe(false);
+  });
+
+  it('does not grant chart access from the legacy admission privilege', () => {
+    const admissionUser = {
+      privileges: [createPrivilege('app:adt')],
+      roles: [createRole('Admision')],
+    };
+
+    expect(userHasAccess('app:home.admision', admissionUser)).toBe(true);
+    expect(userHasAccess('app:hoja.clinica', admissionUser)).toBe(false);
   });
 
   it('should handle empty privilege array', () => {

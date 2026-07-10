@@ -36,4 +36,18 @@ describe('anamnesis domain helpers', () => {
   it('returns null for missing concept values', () => {
     expect(getAnamnesisObsValue([{ concept: { uuid: 'other' }, value: 'x' }], 'chief')).toBeNull();
   });
+
+  it('keeps encounters that only contain a chief complaint', () => {
+    const entry = mapEncounterToAnamnesisEntry(
+      {
+        uuid: 'chief-complaint-only',
+        encounterDatetime: '2026-07-09T10:00:00.000Z',
+        obs: [{ concept: { uuid: 'chief' }, value: 'Dolor de cabeza' }],
+      },
+      { chiefComplaintUuid: 'chief' },
+    );
+
+    expect(entry.chiefComplaint).toBe('Dolor de cabeza');
+    expect(hasAnamnesisData(entry)).toBe(true);
+  });
 });

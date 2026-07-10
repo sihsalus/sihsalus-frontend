@@ -3,7 +3,6 @@ export { default as PatientAppointmentContext, PatientAppointmentContextTypes } 
 export { default as SelectedDateContext } from './selectedDateContext';
 
 // ── Clinical encounter hooks ─────────────────────────────────────────────────
-export { useChiefComplaint } from './useChiefComplaint';
 export { clinicalEncounterRepresentation, useClinicalEncounter } from './useClinicalEncounter';
 export { useDiagnosisHistory } from './useDiagnosisHistory';
 export { encounterRepresentation, type OpenmrsResource, useEncounterRows } from './useEncounterRows';

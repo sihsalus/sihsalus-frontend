@@ -8,7 +8,7 @@ import {
   TableHeader,
   TableRow,
 } from '@carbon/react';
-import { formatDate, useConfig } from '@openmrs/esm-framework';
+import { formatDate, useConfig, useLayoutType } from '@openmrs/esm-framework';
 import { launchPatientWorkspace } from '@openmrs/esm-patient-common-lib';
 import React from 'react';
 import { useTranslation } from 'react-i18next';
@@ -24,7 +24,8 @@ interface MotivoConsultaProps {
 const MotivoConsulta: React.FC<MotivoConsultaProps> = ({ patientUuid }) => {
   const { t } = useTranslation();
   const config = useConfig<ConfigObject>();
-  const { complaints, isLoading, error } = useChiefComplaint(
+  const isTablet = useLayoutType() === 'tablet';
+  const { complaints, isLoading, isValidating, error, mutate } = useChiefComplaint(
     patientUuid,
     config.encounterTypes?.externalConsultation,
     config.concepts?.chiefComplaintUuid,
@@ -43,6 +44,7 @@ const MotivoConsulta: React.FC<MotivoConsultaProps> = ({ patientUuid }) => {
 
   const handleLaunchForm = () => {
     launchPatientWorkspace(patientFormEntryWorkspace, {
+      mutateForm: mutate,
       formInfo: {
         patientUuid,
         formUuid: config.formsList?.anamnesisForm ?? config.formsList?.consultaExternaForm,
@@ -55,12 +57,14 @@ const MotivoConsulta: React.FC<MotivoConsultaProps> = ({ patientUuid }) => {
       title={t('chiefComplaintHistory', 'Historial de Motivos de Consulta')}
       actionLabel={t('addChiefComplaint', 'Registrar Motivo')}
       empty={rows.length === 0}
-      emptyMessage={t('noChiefComplaintData', 'No hay motivos de consulta registrados para este paciente.')}
+      emptyDisplayText={t('chiefComplaints', 'motivos de consulta')}
       error={error}
       isLoading={isLoading}
+      isValidating={isValidating}
       onAction={handleLaunchForm}
+      skeletonHeaders={headers}
     >
-      <DataTable rows={rows} headers={headers} size="sm">
+      <DataTable rows={rows} headers={headers} size={isTablet ? 'lg' : 'sm'}>
         {({ rows: tableRows, headers: tableHeaders, getTableProps, getHeaderProps, getRowProps }) => (
           <TableContainer>
             <Table {...getTableProps()} aria-label={t('chiefComplaintHistory', 'Historial de Motivos de Consulta')}>

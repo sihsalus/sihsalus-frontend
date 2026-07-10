@@ -97,7 +97,10 @@ export function useDiagnosisHistory(patientUuid: string, encounterTypeUuid: stri
         `obs:(concept:(uuid),value:(uuid,display),formFieldNamespace,formFieldPath))&limit=20`
       : null;
 
-  const { data, error, isLoading, mutate } = useSWR<{ data: { results: Encounter[] } }>(url, openmrsFetch);
+  const { data, error, isLoading, isValidating, mutate } = useSWR<{ data: { results: Encounter[] } }>(
+    url,
+    openmrsFetch,
+  );
 
   const diagnoses: DiagnosisEntry[] = (data?.data?.results ?? []).flatMap((encounter) => {
     // Mirrors patient-notes: one obs links the MINSA P/D/R type to each coded diagnosis.
@@ -136,6 +139,7 @@ export function useDiagnosisHistory(patientUuid: string, encounterTypeUuid: stri
   return {
     diagnoses,
     isLoading,
+    isValidating,
     error,
     mutate,
   };

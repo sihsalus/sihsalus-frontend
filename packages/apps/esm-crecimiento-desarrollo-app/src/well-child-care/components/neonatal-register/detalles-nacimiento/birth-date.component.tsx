@@ -20,7 +20,8 @@ const BirthDataTable: React.FC<BirthDataProps> = ({ patientUuid }) => {
   const headerTitle = t('birthData', 'Datos del Nacimiento');
   const { encounter, isLoading, error, mutate } = useLatestValidEncounter(
     patientUuid,
-    config.encounterTypes.antecedentesPerinatales, // Asegúrate de tener este tipo de encounter configurado
+    config.encounterTypes.antecedentesPerinatales,
+    config.formsList.birthDetails,
   );
   const { launchForm } = useCREDFormLauncher('birthDetails');
 
@@ -33,8 +34,8 @@ const BirthDataTable: React.FC<BirthDataProps> = ({ patientUuid }) => {
   }, [encounter]);
 
   const handleLaunchForm = React.useCallback(() => {
-    launchForm(encounter?.uuid || '');
-  }, [encounter?.uuid, launchForm]);
+    launchForm(encounter?.uuid || '', () => void mutate());
+  }, [encounter?.uuid, launchForm, mutate]);
 
   const dataHook = () => {
     return {

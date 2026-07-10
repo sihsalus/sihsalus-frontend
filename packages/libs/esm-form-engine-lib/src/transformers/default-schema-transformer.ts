@@ -9,7 +9,7 @@ import {
 import { isTrue } from '../utils/boolean-utils';
 import { hasRendering, isDateValue, isPlainObject, isStringValue } from '../utils/common-utils';
 
-export type RenderTypeExtended = 'multiCheckbox' | 'numeric' | RenderType;
+export type RenderTypeExtended = 'datatime' | 'multiCheckbox' | 'numeric' | 'time' | RenderType;
 
 export const DefaultFormSchemaTransformer: FormSchemaTransformer = {
   transform: (form: FormSchema, preFilledQuestions?: PreFilledQuestions) => {
@@ -208,6 +208,11 @@ function transformByRendering(question: FormField): FormField {
     case 'datetime':
       question.datePickerFormat = question.datePickerFormat ?? 'both';
       break;
+    case 'time':
+    case 'datatime':
+      question.questionOptions.rendering = 'datetime';
+      question.datePickerFormat = 'timer';
+      break;
     case 'workspace-launcher':
       question.type = 'control';
       break;
@@ -347,11 +352,17 @@ function handlePreFilledQuestions(form: FormSchema, preFilledQuestions: PreFille
     form?.pages.forEach((page) => {
       page.sections.forEach((section) => {
         section.questions.forEach((question) => {
-          if (question.id === preFilledQnId) {
+          if (
+            question.id === preFilledQnId ||
+            (preFilledQnId === 'encounterDatetime' && question.type === 'encounterDatetime')
+          ) {
             question.questionOptions.defaultValue = preFilledValue;
           } else if (Array.isArray(question?.questions) && question.questions.length > 0) {
             question.questions.forEach((question) => {
-              if (question.id === preFilledQnId) {
+              if (
+                question.id === preFilledQnId ||
+                (preFilledQnId === 'encounterDatetime' && question.type === 'encounterDatetime')
+              ) {
                 question.questionOptions.defaultValue = preFilledValue;
               }
             });

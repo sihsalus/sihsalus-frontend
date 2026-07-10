@@ -24,7 +24,7 @@ vi.mock('@openmrs/esm-patient-common-lib', async () => {
         <span>backWorkspace:{String(backWorkspace)}</span>
         <span>forms:{availableForms.length}</span>
         {availableForms.map(({ form }) => (
-          <button key={form.uuid} type="button" onClick={() => onFormLaunch(form, 'encounter-uuid')}>
+          <button key={form.uuid} type="button" onClick={() => onFormLaunch(form, 'encounter-uuid', vi.fn())}>
             {form.display}
           </button>
         ))}
@@ -32,6 +32,10 @@ vi.mock('@openmrs/esm-patient-common-lib', async () => {
     )),
   };
 });
+
+vi.mock('../../hooks/useCurrentPregnancy', () => ({
+  useCurrentPregnancy: vi.fn(() => ({ pregnancyStartDate: '2026-01-01' })),
+}));
 
 describe('MaternalHealthFormsSelectorWorkspace', () => {
   beforeEach(() => {
@@ -74,6 +78,7 @@ describe('MaternalHealthFormsSelectorWorkspace', () => {
     expect(mockLaunchWorkspace2).toHaveBeenCalledWith(formEntryWorkspace, {
       form: { uuid: 'current-pregnancy-form-uuid' },
       encounterUuid: 'encounter-uuid',
+      handlePostResponse: expect.any(Function),
     });
   });
 });

@@ -5,7 +5,7 @@ import { useMemo } from 'react';
 import { type CREDScheduledControl, generateCREDSchedule } from '../utils/cred-schedule-rules';
 
 import useAppointmentsCRED from './useAppointmentsCRED';
-import useEncountersCRED from './useEncountersCRED';
+import useEncountersCRED, { type CREDEncounter } from './useEncountersCRED';
 
 export type ControlStatus = 'completed' | 'scheduled' | 'overdue' | 'pending' | 'future';
 
@@ -27,24 +27,30 @@ export interface UseCREDScheduleResult {
   error: Error | null;
 }
 
+type DatedCREDEncounter = CREDEncounter & { encounterDatetime: string };
+
+function hasEncounterDatetime(encounter: CREDEncounter): encounter is DatedCREDEncounter {
+  return Boolean(encounter.encounterDatetime);
+}
+
 /**
  * Closest-match: asigna cada encounter al control cuya targetDate esté más cerca.
  * Greedy, de izquierda a derecha en la lista de encounters ordenados por fecha.
  */
 function matchEncountersToControls(
   schedule: CREDScheduledControl[],
-  encounters: Array<{ uuid: string; encounterDatetime?: string }>,
+  encounters: CREDEncounter[],
 ): Map<number, { uuid: string; date: Date }> {
   const matched = new Map<number, { uuid: string; date: Date }>();
   const assignedControls = new Set<number>();
 
-  const validEncounters = encounters.filter((e) => e.encounterDatetime);
+  const validEncounters = encounters.filter(hasEncounterDatetime);
   const sortedEncounters = [...validEncounters].sort(
-    (a, b) => new Date(a.encounterDatetime!).getTime() - new Date(b.encounterDatetime!).getTime(),
+    (a, b) => new Date(a.encounterDatetime).getTime() - new Date(b.encounterDatetime).getTime(),
   );
 
   for (const enc of sortedEncounters) {
-    const encDate = new Date(enc.encounterDatetime!);
+    const encDate = new Date(enc.encounterDatetime);
     let bestControl: CREDScheduledControl | null = null;
     let bestDistance = Infinity;
 
@@ -65,6 +71,28 @@ function matchEncountersToControls(
   }
 
   return matched;
+}
+
+/**
+ * A single CRED control may produce several form encounters. Encounters saved in the
+ * same visit and local calendar day belong to one clinical control.
+ */
+export function groupCREDControlEncounters(encounters: CREDEncounter[]): CREDEncounter[] {
+  const groups = new Map<string, CREDEncounter>();
+
+  encounters
+    .filter(hasEncounterDatetime)
+    .sort((first, second) => new Date(first.encounterDatetime).getTime() - new Date(second.encounterDatetime).getTime())
+    .forEach((encounter) => {
+      const encounterDay = dayjs(encounter.encounterDatetime).format('YYYY-MM-DD');
+      const sessionKey = `${encounter.visit?.uuid ?? 'no-visit'}:${encounterDay}`;
+
+      if (!groups.has(sessionKey)) {
+        groups.set(sessionKey, encounter);
+      }
+    });
+
+  return Array.from(groups.values());
 }
 
 /**
@@ -98,7 +126,10 @@ function matchAppointmentsToControls(
     }
 
     if (bestControl) {
-      matched.set(bestControl.controlNumber, { uuid: appt.uuid, date: apptDate });
+      matched.set(bestControl.controlNumber, {
+        uuid: appt.uuid,
+        date: apptDate,
+      });
       assignedControls.add(bestControl.controlNumber);
     }
   }
@@ -107,15 +138,15 @@ function matchAppointmentsToControls(
 }
 
 export function useCREDSchedule(patientUuid: string): UseCREDScheduleResult {
-  const { patient, isLoading: isPatientLoading } = usePatient(patientUuid);
-  const { encounters, isLoading: isEncountersLoading } = useEncountersCRED(patientUuid);
-  const { appointments, isLoading: isAppointmentsLoading } = useAppointmentsCRED(patientUuid);
+  const { patient, isLoading: isPatientLoading, error: patientError } = usePatient(patientUuid);
+  const { encounters, isLoading: isEncountersLoading, error: encountersError } = useEncountersCRED(patientUuid);
+  const { appointments, isLoading: isAppointmentsLoading, error: appointmentsError } = useAppointmentsCRED(patientUuid);
 
   // Only block on patient loading; encounters/appointments errors are non-fatal
   // (the schedule can render from birthDate alone)
   const isLoading =
     isPatientLoading || (isEncountersLoading && !encounters) || (isAppointmentsLoading && !appointments);
-  const error: Error | null = null;
+  const error = (patientError ?? encountersError ?? appointmentsError ?? null) as Error | null;
 
   const controls = useMemo<CREDControlWithStatus[]>(() => {
     if (!patient?.birthDate) return [];
@@ -124,7 +155,7 @@ export function useCREDSchedule(patientUuid: string): UseCREDScheduleResult {
     const today = dayjs();
 
     // Match encounters to controls (closest-match greedy)
-    const encounterMatches = matchEncountersToControls(schedule, encounters ?? []);
+    const encounterMatches = matchEncountersToControls(schedule, groupCREDControlEncounters(encounters ?? []));
 
     // Match appointments to remaining controls
     const completedControlNumbers = new Set(encounterMatches.keys());

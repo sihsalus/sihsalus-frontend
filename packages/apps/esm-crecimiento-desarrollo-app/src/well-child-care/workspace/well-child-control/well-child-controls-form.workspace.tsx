@@ -18,6 +18,7 @@ import { z } from 'zod';
 import type { ConfigObject } from '../../../config-schema';
 import { credCourseLifeEditPrivilege } from '../../../constants';
 import { useAgeGroups } from '../../../hooks/useAgeGroups';
+import { groupCREDControlEncounters } from '../../../hooks/useCREDSchedule';
 import { useCREDFormsForAgeGroup } from '../../../hooks/useCREDFormsForAgeGroup';
 import useCREDEncounters from '../../../hooks/useEncountersCRED';
 import { type DefaultPatientWorkspaceProps } from '../../../types';
@@ -27,12 +28,30 @@ import styles from './well-child-controls-form.scss';
 
 const createCREDControlsSchema = (t: (key: string, fallback: string) => string) =>
   z.object({
-    consultationDate: z.date({ required_error: t('consultationDateRequired', 'Fecha de atención es requerida') }),
-    consultationTime: z.string().min(1, t('consultationTimeRequired', 'Hora de atención es requerida')),
+    visitStartDate: z.date({
+      required_error: t('consultationDateRequired', 'Fecha de atención es requerida'),
+    }),
+    visitStartTime: z
+      .string()
+      .regex(/^(0[1-9]|1[0-2]):([0-5][0-9])$/, t('consultationTimeRequired', 'Hora de atención es requerida')),
+    visitStartTimeFormat: z.enum(['AM', 'PM']),
     controlNumber: z.string().optional(),
   });
 
 type CREDControlsFormType = z.infer<ReturnType<typeof createCREDControlsSchema>>;
+
+export function getConsultationDatetime({
+  visitStartDate,
+  visitStartTime,
+  visitStartTimeFormat,
+}: Pick<CREDControlsFormType, 'visitStartDate' | 'visitStartTime' | 'visitStartTimeFormat'>): Date {
+  const [rawHour, minute] = visitStartTime.split(':').map(Number);
+  const hour = (rawHour % 12) + (visitStartTimeFormat === 'PM' ? 12 : 0);
+  const consultationDatetime = new Date(visitStartDate);
+
+  consultationDatetime.setHours(hour, minute, 0, 0);
+  return consultationDatetime;
+}
 
 const CREDControlsWorkspace: React.FC<DefaultPatientWorkspaceProps> = ({
   closeWorkspace,
@@ -48,7 +67,7 @@ const CREDControlsWorkspace: React.FC<DefaultPatientWorkspaceProps> = ({
   const { activeVisit, currentVisit } = useVisit(patientUuid);
   const visit = currentVisit ?? activeVisit;
   const { encounters: rawEncounters, isLoading: isEncountersLoading } = useCREDEncounters(patientUuid);
-  const encounters = useMemo(() => rawEncounters ?? [], [rawEncounters]);
+  const encounters = useMemo(() => groupCREDControlEncounters(rawEncounters ?? []), [rawEncounters]);
   const { getAgeGroupForForms } = useAgeGroups();
   const selectedControl = workspaceProps?.control;
 
@@ -56,25 +75,28 @@ const CREDControlsWorkspace: React.FC<DefaultPatientWorkspaceProps> = ({
 
   const {
     control,
-    watch,
     formState: { isSubmitting },
+    handleSubmit,
     register,
     setValue,
   } = useForm<CREDControlsFormType>({
     mode: 'all',
     resolver: zodResolver(CREDControlsSchema),
     defaultValues: {
-      consultationDate: new Date(),
-      consultationTime: new Date().toLocaleTimeString('es-PE', {
-        hour: '2-digit',
-        minute: '2-digit',
-        hour12: false,
-      }),
+      visitStartDate: new Date(),
+      visitStartTime: new Date()
+        .toLocaleTimeString('en-US', {
+          hour: '2-digit',
+          minute: '2-digit',
+          hour12: true,
+        })
+        .split(' ')[0],
+      visitStartTimeFormat: new Date().getHours() >= 12 ? 'PM' : 'AM',
     },
   });
 
   const credControlNumber = useMemo(
-    () => selectedControl?.controlNumber ?? (encounters ? encounters.length + 1 : 1),
+    () => selectedControl?.controlNumber ?? Math.min(encounters.length + 1, 27),
     [encounters, selectedControl?.controlNumber],
   );
 
@@ -92,57 +114,62 @@ const CREDControlsWorkspace: React.FC<DefaultPatientWorkspaceProps> = ({
 
   const allAvailableForms = useCREDFormsForAgeGroup(config, patient?.birthDate, selectedControl?.targetDate);
 
-  const handleStartControl = useCallback(() => {
-    const consultationData = watch();
-    if (!consultationData.consultationDate || !consultationData.consultationTime || !visit) {
-      setShowErrorNotification(true);
-      return;
-    }
+  const handleStartControl = useCallback(
+    (consultationData: CREDControlsFormType) => {
+      if (!consultationData.visitStartDate || !consultationData.visitStartTime || !visit) {
+        setShowErrorNotification(true);
+        return;
+      }
+      const consultationDatetime = getConsultationDatetime(consultationData);
 
-    sessionStorage.setItem(
-      'credConsultationData',
-      JSON.stringify({
-        ...consultationData,
+      if (consultationDatetime > new Date()) {
+        setShowErrorNotification(true);
+        return;
+      }
+      setShowErrorNotification(false);
+
+      launchWorkspace2('forms-selector-workspace', {
+        availableForms: allAvailableForms,
         patientUuid,
-        visitUuid: visit.uuid,
-        controlNumber: credControlNumber,
         patientAge: formattedAge,
-      }),
-    );
-
-    launchWorkspace2('forms-selector-workspace', {
-      availableForms: allAvailableForms,
+        patientBirthDate: patient?.birthDate,
+        controlTargetDate: selectedControl?.targetDate ? new Date(selectedControl.targetDate).toISOString() : undefined,
+        controlNumber: credControlNumber,
+        consultationDatetime: consultationDatetime.toISOString(),
+        title: t('credFormsSelection', 'Selección de Formularios Crecimiento y Desarrollo'),
+        subtitle: t(
+          'credFormsInstructions',
+          'Seleccione los formularios que desea completar para este control Crecimiento y Desarrollo.',
+        ),
+        backWorkspace: 'wellchild-control-form',
+      });
+    },
+    [
       patientUuid,
-      patientAge: formattedAge,
-      patientBirthDate: patient?.birthDate,
-      controlTargetDate: selectedControl?.targetDate ? new Date(selectedControl.targetDate).toISOString() : undefined,
-      controlNumber: credControlNumber,
-      title: t('credFormsSelection', 'Selección de Formularios Crecimiento y Desarrollo'),
-      subtitle: t(
-        'credFormsInstructions',
-        'Seleccione los formularios que desea completar para este control Crecimiento y Desarrollo.',
-      ),
-      backWorkspace: 'wellchild-control-form',
-    });
-  }, [
-    watch,
-    patientUuid,
-    visit,
-    allAvailableForms,
-    formattedAge,
-    patient?.birthDate,
-    selectedControl?.targetDate,
-    credControlNumber,
-    t,
-  ]);
+      visit,
+      allAvailableForms,
+      formattedAge,
+      patient?.birthDate,
+      selectedControl?.targetDate,
+      credControlNumber,
+      t,
+    ],
+  );
 
   useEffect(() => {
     const now = new Date();
-    setValue('consultationDate', now);
+    setValue('visitStartDate', now);
     setValue(
-      'consultationTime',
-      now.toLocaleTimeString('es-PE', { hour: '2-digit', minute: '2-digit', hour12: false }),
+      'visitStartTime',
+      now
+        .toLocaleTimeString('en-US', {
+          hour: '2-digit',
+          minute: '2-digit',
+          hour12: true,
+        })
+        .split(' ')[0],
     );
+    setValue('visitStartTimeFormat', now.getHours() >= 12 ? 'PM' : 'AM');
     setValue('controlNumber', credControlNumber.toString());
   }, [setValue, credControlNumber]);
 
@@ -156,7 +183,7 @@ const CREDControlsWorkspace: React.FC<DefaultPatientWorkspaceProps> = ({
 
   return (
     <RequirePrivilege privilege={credCourseLifeEditPrivilege}>
-      <Form className={styles.form}>
+      <Form className={styles.form} onSubmit={handleSubmit(handleStartControl, () => setShowErrorNotification(true))}>
         <div className={styles.grid}>
           <EncounterDateTimeSection
             control={control}
@@ -246,13 +273,7 @@ const CREDControlsWorkspace: React.FC<DefaultPatientWorkspaceProps> = ({
           <Button className={styles.button} kind="secondary" onClick={() => closeWorkspace()}>
             {t('discard', 'Discard')}
           </Button>
-          <Button
-            className={styles.button}
-            kind="primary"
-            onClick={handleStartControl}
-            disabled={!visit || isSubmitting}
-            type="button"
-          >
+          <Button className={styles.button} kind="primary" disabled={!visit || isSubmitting} type="submit">
             {t('startControl', 'Empezar Control')}
           </Button>
         </ButtonSet>

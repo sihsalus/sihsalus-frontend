@@ -65,6 +65,7 @@ describe('Partograph', () => {
     expect(mockLaunchWorkspace2).toHaveBeenCalledWith(formEntryWorkspace, {
       form: { uuid: partographyConfig.formUuid },
       encounterUuid: '',
+      handlePostResponse: expect.any(Function),
     });
   });
 

@@ -1,4 +1,4 @@
-import { openmrsFetch, restBaseUrl, useConfig } from '@openmrs/esm-framework';
+import { openmrsFetch, restBaseUrl, useConfig, usePatient } from '@openmrs/esm-framework';
 import dayjs from 'dayjs';
 import { useMemo } from 'react';
 import useSWR from 'swr';
@@ -26,6 +26,7 @@ interface AnemiaScreeningResult {
  */
 export function useAnemiaScreening(patientUuid: string): AnemiaScreeningResult {
   const config = useConfig<ConfigObject>();
+  const { patient, isLoading: isPatientLoading, error: patientError } = usePatient(patientUuid);
   const conceptUuid = config.anemiaScreening?.hemoglobinaConceptUuid;
   const threshold = config.anemiaScreening?.anemiaThreshold ?? 11.0;
 
@@ -34,7 +35,12 @@ export function useAnemiaScreening(patientUuid: string): AnemiaScreeningResult {
     return `${restBaseUrl}/obs?patient=${patientUuid}&concept=${conceptUuid}&v=custom:(uuid,value,obsDatetime)&limit=1&sort=desc`;
   }, [patientUuid, conceptUuid]);
 
-  const { data, isLoading, error, mutate } = useSWR(url, async (fetchUrl: string) => {
+  const {
+    data,
+    isLoading: isObservationLoading,
+    error: observationError,
+    mutate,
+  } = useSWR(url, async (fetchUrl: string) => {
     const response = await openmrsFetch(fetchUrl);
     return response?.data;
   });
@@ -42,25 +48,43 @@ export function useAnemiaScreening(patientUuid: string): AnemiaScreeningResult {
   const result = useMemo(() => {
     const obs = data?.results?.[0];
     if (!obs) {
-      return { lastHb: null, lastDate: null, isAnemic: false, nextDueDate: null };
+      return {
+        lastHb: null,
+        lastDate: null,
+        isAnemic: false,
+        nextDueDate: null,
+      };
     }
 
     const hbValue = typeof obs.value === 'number' ? obs.value : parseFloat(obs.value);
     const obsDate = obs.obsDatetime ? dayjs(obs.obsDatetime).format('DD/MM/YYYY') : null;
     const isAnemic = !Number.isNaN(hbValue) && hbValue < threshold;
 
-    // Calcular próximo tamizaje: 6 meses después del último
-    const nextDueDate = obs.obsDatetime ? dayjs(obs.obsDatetime).add(6, 'months').format('DD/MM/YYYY') : null;
+    const intervalMonths = getAnemiaScreeningIntervalMonths(patient?.birthDate, obs.obsDatetime);
+    const nextDueDate = obs.obsDatetime
+      ? dayjs(obs.obsDatetime).add(intervalMonths, 'months').format('DD/MM/YYYY')
+      : null;
 
-    return { lastHb: Number.isNaN(hbValue) ? null : hbValue, lastDate: obsDate, isAnemic, nextDueDate };
-  }, [data, threshold]);
+    return {
+      lastHb: Number.isNaN(hbValue) ? null : hbValue,
+      lastDate: obsDate,
+      isAnemic,
+      nextDueDate,
+    };
+  }, [data, patient?.birthDate, threshold]);
 
   return {
     ...result,
-    isLoading,
-    error,
+    isLoading: isPatientLoading || isObservationLoading,
+    error: (patientError ?? observationError ?? null) as Error | null,
     mutate,
   };
+}
+
+export function getAnemiaScreeningIntervalMonths(birthDate?: string, screeningDate?: string): 6 | 12 {
+  if (!birthDate || !screeningDate) return 6;
+
+  return dayjs(screeningDate).diff(dayjs(birthDate), 'year', true) >= 2 ? 12 : 6;
 }
 
 export default useAnemiaScreening;

@@ -21,7 +21,8 @@ interface BirthPlanProps {
 const BirthPlan: React.FC<BirthPlanProps> = ({ patientUuid }) => {
   const { t } = useTranslation();
   const config = useConfig<ConfigObject>();
-  const { hasBirthPlan, planDate, referenceHospital, encounterUuid, isLoading, error } = useBirthPlan(patientUuid);
+  const { hasBirthPlan, planDate, referenceHospital, encounterUuid, isLoading, error, mutate } =
+    useBirthPlan(patientUuid);
 
   const handleLaunchBirthPlanForm = useCallback(() => {
     const formUuid = config.birthPlan?.formUuid || config.formsList?.birthPlanForm;
@@ -33,8 +34,9 @@ const BirthPlan: React.FC<BirthPlanProps> = ({ patientUuid }) => {
     launchWorkspace2(formEntryWorkspace, {
       form: { uuid: formUuid },
       encounterUuid: encounterUuid ?? '',
+      handlePostResponse: mutate,
     });
-  }, [config, encounterUuid]);
+  }, [config, encounterUuid, mutate]);
 
   if (isLoading) return <Tile className={styles.card}>{t('loading', 'Loading...')}</Tile>;
 

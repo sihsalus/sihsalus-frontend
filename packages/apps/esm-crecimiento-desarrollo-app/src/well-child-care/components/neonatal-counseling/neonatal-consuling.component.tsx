@@ -21,6 +21,7 @@ const NeonatalCounseling: React.FC<NeonatalCounselingProps> = ({ patientUuid }) 
   const { encounter, isLoading, error, mutate } = useLatestValidEncounter(
     patientUuid,
     config.encounterTypes.consejeriaMaterna,
+    config.formsList.breastfeedingObservation,
   );
   const { launchForm } = useCREDFormLauncher('breastfeedingObservation');
 
@@ -45,8 +46,7 @@ const NeonatalCounseling: React.FC<NeonatalCounselingProps> = ({ patientUuid }) 
   }, [encounter]);
 
   const handleLaunchForm = React.useCallback(() => {
-    launchForm(encounter?.uuid || '');
-    setTimeout(() => mutate(), 1000); // Forzar revalidación
+    launchForm(encounter?.uuid || '', () => void mutate());
   }, [encounter?.uuid, launchForm, mutate]);
 
   const dataHook = () => ({

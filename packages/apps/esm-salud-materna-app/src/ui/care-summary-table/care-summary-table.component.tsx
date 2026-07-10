@@ -151,9 +151,6 @@ const CareSummaryTable: React.FC<CareSummaryTableProps> = ({
           });
         }
       }
-      if (mutate) {
-        setTimeout(() => mutate(), 1000);
-      }
     } catch (err) {
       console.error('Failed to launch form:', err);
     }

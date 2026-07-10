@@ -127,13 +127,6 @@
       "privileges": "app:cred.antecedentes"
     },
     {
-      "name": "prenatal-history-widget",
-      "component": "prenatalHistory",
-      "slot": "neonatal-perinatal-slot",
-      "order": 2,
-      "privileges": "app:cred.neonatal"
-    },
-    {
       "name": "labour-history-chart",
       "component": "neonatalRegisterChart",
       "slot": "neonatal-perinatal-slot",
@@ -431,13 +424,6 @@
       "privileges": "app:cred.cursoVida.edit"
     },
     {
-      "name": "perinatal-register-form",
-      "component": "perinatalRegisterworkspace",
-      "title": "Registro Perinatal",
-      "type": "form",
-      "privileges": "app:cred.neonatal.edit"
-    },
-    {
       "name": "wellchild-control-form",
       "component": "wellchildControlsworkspace",
       "title": "Control de Niño Sano",
@@ -482,12 +468,6 @@
       "component": "formsSelectorWorkspace",
       "window": "patient-chart-well-child-care-forms",
       "privileges": "app:cred.cursoVida.edit"
-    },
-    {
-      "name": "perinatal-register-form",
-      "component": "perinatalRegisterworkspace",
-      "window": "patient-chart-well-child-care-forms",
-      "privileges": "app:cred.neonatal.edit"
     },
     {
       "name": "wellchild-control-form",

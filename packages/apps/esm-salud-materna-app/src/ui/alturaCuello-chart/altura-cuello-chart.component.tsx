@@ -58,21 +58,6 @@ const alturaUterinaPercentiles = [
   { semana: 40, p10: 31.0, p50: 33.0, p90: 35.0 },
 ];
 
-// Datos de percentiles para longitud cervical
-const longitudCervicalPercentiles = [
-  { semana: 16, p10: 30.0, p50: 40.0, p90: 50.0 },
-  { semana: 18, p10: 28.0, p50: 38.0, p90: 48.0 },
-  { semana: 20, p10: 26.0, p50: 36.0, p90: 46.0 },
-  { semana: 22, p10: 24.0, p50: 34.0, p90: 44.0 },
-  { semana: 24, p10: 22.0, p50: 32.0, p90: 42.0 },
-  { semana: 26, p10: 20.0, p50: 30.0, p90: 40.0 },
-  { semana: 28, p10: 18.0, p50: 28.0, p90: 38.0 },
-  { semana: 30, p10: 16.0, p50: 26.0, p90: 36.0 },
-  { semana: 32, p10: 14.0, p50: 24.0, p90: 34.0 },
-  { semana: 34, p10: 12.0, p50: 22.0, p90: 32.0 },
-  { semana: 36, p10: 10.0, p50: 20.0, p90: 30.0 },
-];
-
 const AlturaCuelloChart: React.FC<AlturaCuelloChartProps> = ({ measurementData, patientName, gestationalWeeks }) => {
   const { t } = useTranslation();
 
@@ -84,11 +69,6 @@ const AlturaCuelloChart: React.FC<AlturaCuelloChartProps> = ({ measurementData, 
         title: t('uterineHeight', 'Uterine height'),
         value: 'altura_uterina',
       },
-      {
-        id: 'longitud_cervical',
-        title: t('cervicalLength', 'Longitud Cervical'),
-        value: 'longitud_cervical',
-      },
     ],
     [t],
   );
@@ -98,8 +78,8 @@ const AlturaCuelloChart: React.FC<AlturaCuelloChartProps> = ({ measurementData, 
 
   // Seleccionar dataset según la categoría
   const referenceData = useMemo(() => {
-    return selectedCategory.value === 'altura_uterina' ? alturaUterinaPercentiles : longitudCervicalPercentiles;
-  }, [selectedCategory.value]);
+    return alturaUterinaPercentiles;
+  }, []);
 
   // Preparar datos de líneas de referencia
   const chartLineData = useMemo(() => {
@@ -114,9 +94,17 @@ const AlturaCuelloChart: React.FC<AlturaCuelloChartProps> = ({ measurementData, 
         // Z-scores (simulados para el ejemplo)
         const mean = row.p50;
         const sd = (row.p90 - row.p10) / 3.28; // Aproximación
-        lineData.push({ group: '-2 SD', date: row.semana, value: mean - 2 * sd });
+        lineData.push({
+          group: '-2 SD',
+          date: row.semana,
+          value: mean - 2 * sd,
+        });
         lineData.push({ group: 'Media', date: row.semana, value: mean });
-        lineData.push({ group: '+2 SD', date: row.semana, value: mean + 2 * sd });
+        lineData.push({
+          group: '+2 SD',
+          date: row.semana,
+          value: mean + 2 * sd,
+        });
       }
     });
 

@@ -21,6 +21,7 @@ const AlojamientoConjunto: React.FC<AlojamientoConjuntoProps> = ({ patientUuid }
   const { encounter, isLoading, error, mutate } = useLatestValidEncounter(
     patientUuid,
     config.encounterTypes.alojamientoConjunto,
+    config.formsList.roomingIn,
   );
   const { launchForm } = useCREDFormLauncher('roomingIn');
 
@@ -35,8 +36,8 @@ const AlojamientoConjunto: React.FC<AlojamientoConjuntoProps> = ({ patientUuid }
   }, [encounter]);
 
   const handleLaunchForm = React.useCallback(() => {
-    launchForm(encounter?.uuid || '');
-  }, [encounter?.uuid, launchForm]);
+    launchForm(encounter?.uuid || '', () => void mutate());
+  }, [encounter?.uuid, launchForm, mutate]);
 
   const dataHook = React.useCallback(() => {
     return {

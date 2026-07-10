@@ -1,10 +1,13 @@
-import { openmrsFetch, restBaseUrl } from '@openmrs/esm-framework';
+import { openmrsFetch, restBaseUrl, useConfig } from '@openmrs/esm-framework';
 import dayjs from 'dayjs';
 import useSWR from 'swr';
 
 import type { AppointmentsFetchResponse } from '../types';
+import type { ConfigObject } from '../config-schema';
 
 export default function useAppointmentsCRED(patientUuid: string) {
+  const config = useConfig<ConfigObject>();
+  const appointmentServiceUuid = config.credScheduling?.appointmentServiceUuid;
   const startDate = dayjs().startOf('day').toISOString();
   const { data, isLoading, error } = useSWR<AppointmentsFetchResponse, Error>(
     patientUuid ? [`${restBaseUrl}/appointments/search`, patientUuid, startDate] : null,
@@ -22,7 +25,9 @@ export default function useAppointmentsCRED(patientUuid: string) {
   );
 
   return {
-    appointments: data?.data ?? [],
+    appointments: appointmentServiceUuid
+      ? (data?.data ?? []).filter((appointment) => appointment.service?.uuid === appointmentServiceUuid)
+      : [],
     isLoading,
     error,
   };

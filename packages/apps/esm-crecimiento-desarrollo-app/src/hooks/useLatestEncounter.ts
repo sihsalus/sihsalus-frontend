@@ -1,12 +1,13 @@
 import { type FetchResponse, openmrsFetch, restBaseUrl } from '@openmrs/esm-framework';
 import pickBy from 'lodash-es/pickBy';
+import { useMemo } from 'react';
 import useSWR, { type KeyedMutator } from 'swr';
 
 import type { OpenmrsEncounter } from '../types';
 
 const latestEncounterRepresentation =
   'custom:(uuid,encounterDatetime,encounterType:(uuid,display),location:(uuid,display),patient:(uuid,display),' +
-  'obs:(uuid,obsDatetime,concept:(uuid,display),value:(uuid,display,name:(uuid,name)),groupMembers:(uuid,concept:(uuid,display),value:(uuid,display))),form:(uuid,name))';
+  'obs:(uuid,obsDatetime,concept:(uuid,display),value:(uuid,display,name:(uuid,name)),groupMembers:(uuid,concept:(uuid,display),value:(uuid,display))),form:(uuid,name,display))';
 
 interface UseLatestEncounterResponse {
   encounter: OpenmrsEncounter | undefined;
@@ -15,15 +16,18 @@ interface UseLatestEncounterResponse {
   mutate: KeyedMutator<FetchResponse<{ results: OpenmrsEncounter[] }>>;
 }
 
-export const useLatestValidEncounter = (patientUuid: string, encounterTypeUuid: string): UseLatestEncounterResponse => {
+export const useLatestValidEncounter = (
+  patientUuid: string,
+  encounterTypeUuid: string,
+  formIdentifier?: string,
+): UseLatestEncounterResponse => {
   const params = new URLSearchParams(
     pickBy(
       {
         patient: patientUuid,
         encounterType: encounterTypeUuid,
         v: latestEncounterRepresentation,
-        _sort: '-encounterDatetime',
-        _count: '1',
+        limit: '100',
       },
       (value) => value,
     ),
@@ -55,8 +59,23 @@ export const useLatestValidEncounter = (patientUuid: string, encounterTypeUuid: 
   // Set final error: custom error if URL is null, otherwise use SWR error (or null if undefined)
   const finalError = !url ? new Error('patientUuid and encounterTypeUuid are required') : swrError || null;
 
+  const encounter = useMemo(() => {
+    const normalizedFormIdentifier = formIdentifier?.trim().toLocaleLowerCase();
+    const encounters = normalizedFormIdentifier
+      ? (data?.data?.results ?? []).filter((candidate) =>
+          [candidate.form?.uuid, candidate.form?.name, candidate.form?.display]
+            .filter(Boolean)
+            .some((value) => value?.trim().toLocaleLowerCase() === normalizedFormIdentifier),
+        )
+      : (data?.data?.results ?? []);
+
+    return encounters.sort(
+      (first, second) => new Date(second.encounterDatetime).getTime() - new Date(first.encounterDatetime).getTime(),
+    )[0];
+  }, [data?.data?.results, formIdentifier]);
+
   return {
-    encounter: data?.data?.results?.[0],
+    encounter,
     isLoading,
     error: finalError,
     mutate,

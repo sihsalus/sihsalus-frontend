@@ -4,6 +4,9 @@ import useSWR from 'swr';
 
 import type { ConfigObject } from '../config-schema';
 import type { OpenmrsEncounter } from '../types';
+import { isWithinPregnancyEpisode } from '../utils/pregnancy-episode-utils';
+
+import { useCurrentPregnancy } from './useCurrentPregnancy';
 
 const partographEncounterRepresentation =
   'custom:(uuid,encounterDatetime,form:(uuid,name,display),obs:(uuid,obsDatetime,voided,' +
@@ -19,6 +22,7 @@ export type PartogramProgram = {
 };
 export function usePartograph(patientUuid: string) {
   const { partography } = useConfig<ConfigObject>();
+  const { pregnancyStartDate, isLoading: isPregnancyLoading, error: pregnancyError } = useCurrentPregnancy(patientUuid);
   const url =
     patientUuid && partography?.encounterTypeUuid
       ? `${restBaseUrl}/encounter?encounterType=${partography.encounterTypeUuid}&patient=${patientUuid}&v=${partographEncounterRepresentation}`
@@ -30,7 +34,11 @@ export function usePartograph(patientUuid: string) {
   );
   const results = data?.data ? data?.data?.results : [];
   const sortedResults = results
-    .filter((encounter) => formMatches(encounter.form, partography?.formUuid))
+    .filter(
+      (encounter) =>
+        formMatches(encounter.form, partography?.formUuid) &&
+        isWithinPregnancyEpisode(encounter.encounterDatetime, pregnancyStartDate),
+    )
     .slice()
     .sort((a, b) => {
       const dateA = new Date(a.encounterDatetime).getTime();
@@ -49,9 +57,9 @@ export function usePartograph(patientUuid: string) {
     });
   return {
     encounters: flattedObs as Array<OpenmrsEncounter>,
-    isLoading,
+    isLoading: isPregnancyLoading || isLoading,
     isValidating,
-    error,
+    error: pregnancyError ?? error ?? null,
     mutate,
   };
 }

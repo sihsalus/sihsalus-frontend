@@ -1,8 +1,16 @@
-// hooks/usePrenatalMeasurements.ts
-import { openmrsFetch, useConfig } from '@openmrs/esm-framework';
+import { openmrsFetch, restBaseUrl, useConfig } from '@openmrs/esm-framework';
+import { useMemo } from 'react';
 import useSWR from 'swr';
 
 import type { ConfigObject } from '../config-schema';
+import {
+  encounterMatchesForm,
+  flattenMaternalObservations,
+  isWithinPregnancyEpisode,
+  type MaternalEncounter,
+} from '../utils/pregnancy-episode-utils';
+
+import { useCurrentPregnancy } from './useCurrentPregnancy';
 
 interface PrenatalMeasurement {
   uuid: string;
@@ -13,119 +21,77 @@ interface PrenatalMeasurement {
   encounterUuid: string;
 }
 
-interface ObsResponse {
-  results: Array<{
-    uuid: string;
-    obsDatetime: string;
-    value: number;
-    concept: {
-      uuid: string;
-      display: string;
-    };
-    encounter: {
-      uuid: string;
-    };
-  }>;
+interface EncounterResponse {
+  results: MaternalEncounter[];
 }
+
+const representation =
+  'custom:(uuid,encounterDatetime,form:(uuid,name,display),obs:(uuid,concept:(uuid),value,groupMembers:(uuid,concept:(uuid),value,groupMembers:(uuid,concept:(uuid),value))))';
+
+const toNumber = (value: unknown): number | undefined => {
+  const parsed = typeof value === 'number' ? value : Number.parseFloat(String(value));
+  return Number.isFinite(parsed) ? parsed : undefined;
+};
 
 export function usePrenatalMeasurements(patientUuid: string) {
   const config = useConfig<ConfigObject>();
+  const { pregnancyStartDate, isLoading: isPregnancyLoading, error: pregnancyError } = useCurrentPregnancy(patientUuid);
+  const encounterTypeUuid = config.encounterTypes.prenatalControl;
+  const prenatalFormIdentifier = config.formsList.atencionPrenatal;
+  const url =
+    patientUuid && encounterTypeUuid
+      ? `${restBaseUrl}/encounter?patient=${patientUuid}&encounterType=${encounterTypeUuid}&v=${representation}&limit=100`
+      : null;
 
-  // Conceptos para mediciones prenatales
-  const measurementConcepts = [
-    config.concepts?.uterineHeight,
-    config.concepts?.cervicalLength,
-    config.concepts?.gestationalAge,
-  ]
-    .filter(Boolean)
-    .join(',');
+  const { data, error, isLoading, mutate } = useSWR<EncounterResponse, Error>(url, async (fetchUrl) => {
+    const response = await openmrsFetch<EncounterResponse>(fetchUrl);
+    return response.data;
+  });
 
-  const { data, error, isLoading, mutate } = useSWR(
-    patientUuid && measurementConcepts ? `prenatal-measurements-${patientUuid}` : null,
-    () => fetchPrenatalMeasurements(patientUuid, measurementConcepts, config),
-  );
+  const measurements = useMemo<PrenatalMeasurement[]>(() => {
+    if (!pregnancyStartDate) return [];
+
+    const { gestationalAgeConceptUuid, uterineHeightConceptUuid, cervicalLengthConceptUuid } =
+      config.prenatalMeasurements;
+
+    return (data?.results ?? [])
+      .filter(
+        (encounter) =>
+          encounterMatchesForm(encounter, prenatalFormIdentifier) &&
+          isWithinPregnancyEpisode(encounter.encounterDatetime, pregnancyStartDate),
+      )
+      .map((encounter) => {
+        const valuesByConcept = new Map(
+          flattenMaternalObservations(encounter.obs).map((observation) => [
+            observation.concept?.uuid,
+            observation.value,
+          ]),
+        );
+
+        return {
+          uuid: encounter.uuid,
+          date: encounter.encounterDatetime,
+          gestationalWeek: toNumber(valuesByConcept.get(gestationalAgeConceptUuid)) ?? 0,
+          uterineHeight: toNumber(valuesByConcept.get(uterineHeightConceptUuid)),
+          cervicalLength: cervicalLengthConceptUuid
+            ? toNumber(valuesByConcept.get(cervicalLengthConceptUuid))
+            : undefined,
+          encounterUuid: encounter.uuid,
+        };
+      })
+      .filter(
+        (measurement) =>
+          measurement.gestationalWeek > 0 &&
+          (measurement.uterineHeight !== undefined || measurement.cervicalLength !== undefined),
+      )
+      .sort((first, second) => new Date(second.date).getTime() - new Date(first.date).getTime());
+  }, [config.prenatalMeasurements, data?.results, pregnancyStartDate, prenatalFormIdentifier]);
 
   return {
-    data,
-    error,
-    isLoading,
+    data: measurements,
+    pregnancyStartDate,
+    error: pregnancyError ?? error ?? null,
+    isLoading: isPregnancyLoading || isLoading,
     mutate,
   };
-}
-
-async function fetchPrenatalMeasurements(
-  patientUuid: string,
-  conceptUuids: string,
-  config: ConfigObject,
-): Promise<PrenatalMeasurement[]> {
-  // Buscar observaciones de mediciones prenatales
-  const encounterTypes = [config.encounterTypes?.prenatalControl].filter(Boolean).join(',');
-
-  const url = `/ws/rest/v1/obs?patient=${patientUuid}&concept=${conceptUuids}&encounterType=${encounterTypes}&v=custom:(uuid,obsDatetime,value,concept:(uuid,display),encounter:(uuid))&limit=100`;
-
-  const response = await openmrsFetch(url);
-
-  if (!response.ok) {
-    throw new Error('Failed to fetch prenatal measurements');
-  }
-
-  const obsData: ObsResponse = await response.json();
-
-  // Agrupar observaciones por encounter
-  const encounterGroups = new Map<
-    string,
-    { uuid: string; date: string; encounterUuid: string; observations: Map<string, number> }
-  >();
-
-  obsData.results.forEach((obs) => {
-    const encounterUuid = obs.encounter.uuid;
-    const conceptUuid = obs.concept.uuid;
-
-    if (!encounterGroups.has(encounterUuid)) {
-      encounterGroups.set(encounterUuid, {
-        uuid: obs.uuid,
-        date: obs.obsDatetime,
-        encounterUuid: encounterUuid,
-        observations: new Map(),
-      });
-    }
-
-    encounterGroups.get(encounterUuid).observations.set(conceptUuid, obs.value);
-  });
-
-  // Convertir a array de mediciones
-  const measurements: PrenatalMeasurement[] = [];
-
-  encounterGroups.forEach((encounter) => {
-    const obs = encounter.observations;
-
-    // Calcular semana gestacional
-    const gestationalAge = obs.get(config.concepts?.gestationalAge);
-    const gestationalWeek = gestationalAge ? Math.floor(gestationalAge / 7) : 0;
-
-    // Solo incluir si tiene al menos una medición válida
-    const uterineHeight = obs.get(config.concepts?.uterineHeight);
-    const cervicalLength = obs.get(config.concepts?.cervicalLength);
-
-    if (uterineHeight || cervicalLength || gestationalWeek > 0) {
-      measurements.push({
-        uuid: encounter.uuid,
-        date: encounter.date,
-        gestationalWeek,
-        uterineHeight,
-        cervicalLength,
-        encounterUuid: encounter.encounterUuid,
-      });
-    }
-  });
-
-  // Ordenar por fecha (más reciente primero)
-  return measurements.slice().sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
-}
-
-// Función para invalidar caché
-export async function invalidatePrenatalMeasurements(_patientUuid: string, mutate: () => Promise<void>) {
-  if (mutate) {
-    await mutate();
-  }
 }

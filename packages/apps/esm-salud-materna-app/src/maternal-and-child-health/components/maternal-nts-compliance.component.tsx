@@ -5,6 +5,8 @@ import React, { useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import useSWR from 'swr';
 import type { ConfigObject } from '../../config-schema';
+import { useCurrentPregnancy } from '../../hooks/useCurrentPregnancy';
+import { isWithinPregnancyEpisode } from '../../utils/pregnancy-episode-utils';
 import styles from './maternal-nts-compliance.scss';
 
 type FormKey = keyof ConfigObject['formsList'];
@@ -215,7 +217,11 @@ const requirements: Array<Requirement> = [
 const statusMeta: Record<RequirementStatus, { labelKey: string; label: string; tagType: 'green' | 'red' | 'gray' }> = {
   completed: { labelKey: 'completed', label: 'Completo', tagType: 'green' },
   pending: { labelKey: 'pending', label: 'Pendiente', tagType: 'red' },
-  notConfigured: { labelKey: 'notConfigured', label: 'Sin soporte', tagType: 'gray' },
+  notConfigured: {
+    labelKey: 'notConfigured',
+    label: 'Sin soporte',
+    tagType: 'gray',
+  },
 };
 
 const normalize = (value?: string | null) => value?.trim().toLowerCase() ?? '';
@@ -225,7 +231,11 @@ const formatDate = (date?: string) => {
     return null;
   }
 
-  return new Intl.DateTimeFormat('es-PE', { day: '2-digit', month: 'short', year: 'numeric' }).format(new Date(date));
+  return new Intl.DateTimeFormat('es-PE', {
+    day: '2-digit',
+    month: 'short',
+    year: 'numeric',
+  }).format(new Date(date));
 };
 
 function useMaternalEncounters(patientUuid: string) {
@@ -242,6 +252,7 @@ const MaternalNtsCompliance: React.FC<{ patientUuid: string }> = ({ patientUuid 
   const { t } = useTranslation();
   const config = useConfig<ConfigObject>();
   const { data, error, isLoading } = useMaternalEncounters(patientUuid);
+  const { pregnancyStartDate, error: pregnancyError, isLoading: isPregnancyLoading } = useCurrentPregnancy(patientUuid);
 
   const translatedRequirements = useMemo<Array<Requirement>>(
     () =>
@@ -258,7 +269,14 @@ const MaternalNtsCompliance: React.FC<{ patientUuid: string }> = ({ patientUuid 
   const completedForms = useMemo(() => {
     const forms = new Map<string, string>();
 
-    for (const encounter of data?.results ?? []) {
+    const currentPregnancyEncounters = (data?.results ?? [])
+      .filter((encounter) => isWithinPregnancyEpisode(encounter.encounterDatetime, pregnancyStartDate))
+      .sort(
+        (first, second) =>
+          new Date(second.encounterDatetime ?? 0).getTime() - new Date(first.encounterDatetime ?? 0).getTime(),
+      );
+
+    for (const encounter of currentPregnancyEncounters) {
       const completedDate = encounter.encounterDatetime;
       for (const value of [encounter.form?.uuid, encounter.form?.name, encounter.form?.display]) {
         const key = normalize(value);
@@ -269,7 +287,7 @@ const MaternalNtsCompliance: React.FC<{ patientUuid: string }> = ({ patientUuid 
     }
 
     return forms;
-  }, [data?.results]);
+  }, [data?.results, pregnancyStartDate]);
 
   const requirementViewModels = useMemo<Array<RequirementViewModel>>(() => {
     return translatedRequirements.map((requirement) => {
@@ -311,7 +329,7 @@ const MaternalNtsCompliance: React.FC<{ patientUuid: string }> = ({ patientUuid 
     launchWorkspace2(maternalHealthFormsWorkspace, { patientUuid });
   };
 
-  if (error) {
+  if (pregnancyError || error) {
     return (
       <Tile className={styles.complianceCard}>
         <div className={styles.headerRow}>
@@ -346,7 +364,7 @@ const MaternalNtsCompliance: React.FC<{ patientUuid: string }> = ({ patientUuid 
         </Button>
       </div>
 
-      {isLoading ? (
+      {isPregnancyLoading || isLoading ? (
         <InlineLoading description={t('loadingMaternalNtsGaps', 'Cargando brechas NTS...')} />
       ) : (
         <>

@@ -3,6 +3,9 @@ import { useMemo } from 'react';
 import useSWR from 'swr';
 
 import type { ConfigObject } from '../config-schema';
+import { isWithinPregnancyEpisode } from '../utils/pregnancy-episode-utils';
+
+import { useCurrentPregnancy } from './useCurrentPregnancy';
 
 interface SupplementItem {
   name: string;
@@ -30,6 +33,7 @@ interface PrenatalSupplementationResult {
  */
 export function usePrenatalSupplementation(patientUuid: string): PrenatalSupplementationResult {
   const config = useConfig<ConfigObject>();
+  const { pregnancyStartDate, isLoading: isPregnancyLoading, error: pregnancyError } = useCurrentPregnancy(patientUuid);
 
   const supplementDefs = useMemo(() => {
     const defs: Array<{ name: string; uuid: string; total: number }> = [];
@@ -86,7 +90,9 @@ export function usePrenatalSupplementation(patientUuid: string): PrenatalSupplem
     }
 
     const supplements: SupplementItem[] = supplementDefs.map((def, idx) => {
-      const observations = data[idx]?.results ?? [];
+      const observations = (data[idx]?.results ?? []).filter((obs: { obsDatetime?: string }) =>
+        isWithinPregnancyEpisode(obs.obsDatetime, pregnancyStartDate),
+      );
       const delivered = observations.reduce((sum: number, obs: { value?: number | string }) => {
         const val = typeof obs.value === 'number' ? obs.value : Number.parseFloat(obs.value);
         return sum + (Number.isNaN(val) ? 0 : val);
@@ -108,12 +114,12 @@ export function usePrenatalSupplementation(patientUuid: string): PrenatalSupplem
       supplements.length > 0 ? supplements.reduce((sum, s) => sum + s.percentage, 0) / supplements.length : 0;
 
     return { supplements, overallPercentage };
-  }, [data, supplementDefs]);
+  }, [data, pregnancyStartDate, supplementDefs]);
 
   return {
     ...result,
-    isLoading,
-    error,
+    isLoading: isPregnancyLoading || isLoading,
+    error: pregnancyError ?? error ?? null,
     mutate,
   };
 }

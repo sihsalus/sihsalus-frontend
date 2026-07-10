@@ -12,7 +12,16 @@ const sourceTypeToRestParam: Record<Exclude<ConceptSourceType, 'any'>, string> =
   'Answer to': 'answerTo',
 };
 
-const buildConceptSearchUrl = (query: string, source: ConceptSource): string => {
+export const buildConceptSourceUrl = (source: ConceptSource): string | null => {
+  if (!source.uuid || source.sourceType === 'any') {
+    return null;
+  }
+
+  const resource = source.sourceType === 'Concept class' ? 'conceptclass' : 'concept';
+  return `${restBaseUrl}/${resource}/${source.uuid}?v=custom:(uuid)`;
+};
+
+export const buildConceptSearchUrl = (query: string, source: ConceptSource): string => {
   const params = new URLSearchParams({ v: 'custom:(uuid,display)' });
   if (query) {
     params.set('name', query);
@@ -26,21 +35,35 @@ const buildConceptSearchUrl = (query: string, source: ConceptSource): string => 
 
 export const useProcedureTypes = () => {
   const url = `${restBaseUrl}/proceduretype?v=full`;
-  const { data, isLoading } = useSWR<{ data: ProcedureTypeApiResponse }, Error>(url, openmrsFetch);
-  return { procedureTypes: data?.data?.results ?? [], isLoading };
+  const { data, error, isLoading } = useSWR<{ data: ProcedureTypeApiResponse }, Error>(url, openmrsFetch);
+  return { procedureTypes: data?.data?.results ?? [], isLoading, error };
 };
 
 export const useConceptSearch = (query: string, source: ConceptSource) => {
   const hasSourceFilter = Boolean(source.uuid) && source.sourceType !== 'any';
-  const url = query || hasSourceFilter ? buildConceptSearchUrl(query, source) : null;
-  const { data, error, isLoading } = useSWR<{ data: { results: ConceptReference[] } }, Error>(url, openmrsFetch);
+  const sourceUrl = buildConceptSourceUrl(source);
+  const {
+    data: sourceData,
+    error: sourceError,
+    isLoading: isLoadingSource,
+  } = useSWR<{ data: { uuid: string } }, Error>(sourceUrl, openmrsFetch);
+  const isSourceReady = !sourceUrl || Boolean(sourceData?.data?.uuid);
+  const searchUrl = isSourceReady && (query || hasSourceFilter) ? buildConceptSearchUrl(query, source) : null;
+  const { data, error, isLoading } = useSWR<{ data: { results: ConceptReference[] } }, Error>(
+    searchUrl,
+    openmrsFetch,
+  );
 
   const results = data?.data?.results ?? [];
 
   // TODO: RESTWS-1035: Currently the API returns duplicated results, remove the following once the bug is fixed
   const uniqueSearchResults = Array.from(new Map(results.map((concept) => [concept.uuid, concept])).values());
 
-  return { searchResults: uniqueSearchResults, isSearching: isLoading, error };
+  return {
+    searchResults: uniqueSearchResults,
+    isSearching: isLoadingSource || isLoading,
+    error: sourceError ?? error,
+  };
 };
 
 export const saveProcedure = async (payload: RawProcedure) => {

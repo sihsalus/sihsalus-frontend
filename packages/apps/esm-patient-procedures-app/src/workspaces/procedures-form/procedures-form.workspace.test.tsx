@@ -171,7 +171,7 @@ const parseDateInputValue = (value: string) => {
 };
 
 beforeEach(() => {
-  mockUseProcedureTypes.mockReturnValue({ procedureTypes: mockProcedureTypes, isLoading: false });
+  mockUseProcedureTypes.mockReturnValue({ procedureTypes: mockProcedureTypes, isLoading: false, error: undefined });
   mockUseConceptSearch.mockReturnValue({ searchResults: [], isSearching: false, error: undefined });
   mockOpenmrsFetch.mockResolvedValue({ data: { results: [] } } as FetchResponse);
   mockUpdateProcedure.mockReset();
@@ -303,10 +303,24 @@ describe('ProceduresForm', () => {
   });
 
   it('shows a loading indicator for procedure types while loading', () => {
-    mockUseProcedureTypes.mockReturnValue({ procedureTypes: [], isLoading: true });
+    mockUseProcedureTypes.mockReturnValue({ procedureTypes: [], isLoading: true, error: undefined });
     renderProceduresForm();
 
     expect(screen.getAllByText(/loading/i).length).toBeGreaterThan(0);
+  });
+
+  it('shows an error when procedure types cannot be loaded', () => {
+    mockUseProcedureTypes.mockReturnValue({ procedureTypes: [], isLoading: false, error: new Error('Network error') });
+    renderProceduresForm();
+
+    expect(screen.getByText(/could not load procedure types/i)).toBeInTheDocument();
+  });
+
+  it('shows a configuration error when the backend has no procedure types', () => {
+    mockUseProcedureTypes.mockReturnValue({ procedureTypes: [], isLoading: false, error: undefined });
+    renderProceduresForm();
+
+    expect(screen.getByText(/no procedure types are configured/i)).toBeInTheDocument();
   });
 
   it('calls saveProcedure with the correct payload on submission', async () => {
@@ -751,7 +765,7 @@ describe('ProceduresForm', () => {
 
     const startGroup = screen.getByRole('group', { name: /start date and time/i });
     const startDateInput = within(startGroup).getByLabelText(/^date$/i);
-    const today = new Date().toISOString().split('T')[0];
+    const today = formatDateInputValue(new Date());
 
     expect(startDateInput).toHaveAttribute('data-max-date', today);
   });
@@ -904,6 +918,14 @@ describe('ProceduresForm', () => {
     const statusGroup = screen.getByRole('group', { name: /^status/i });
     expect(within(statusGroup).getByRole('combobox')).toBeInTheDocument();
     expect(screen.getByText(/could not load status options/i)).toBeInTheDocument();
+  });
+
+  it('shows a configuration error when the status concept has no coded answers', () => {
+    mockUseConceptSearch.mockReturnValue({ searchResults: [], isSearching: false, error: undefined });
+
+    renderProceduresForm();
+
+    expect(screen.getByText(/no procedure status options are configured/i)).toBeInTheDocument();
   });
 
   it('still renders the duration unit ComboBox alongside the error message when duration unit options fail', () => {

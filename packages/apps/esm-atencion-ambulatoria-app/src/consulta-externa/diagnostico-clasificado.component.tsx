@@ -26,13 +26,13 @@ const DiagnosticoClasificado: React.FC<DiagnosticoClasificadoProps> = ({ patient
   const { t } = useTranslation();
   const config = useConfig<ConfigObject>();
   const isTablet = useLayoutType() === 'tablet';
-  const { diagnoses, isLoading, isValidating, error, mutate } = useDiagnosisHistory(
+  const { diagnoses, isLoading, isValidating, error, mutate, pagination } = useDiagnosisHistory(
     patientUuid,
     config.encounterTypes?.externalConsultation,
   );
 
   const headers = [
-    { key: 'date', header: t('date', 'Fecha') },
+    { key: 'date', header: t('dateAndTime', 'Fecha y hora') },
     { key: 'diagnosis', header: t('diagnosis', 'Diagnóstico') },
     { key: 'cie10', header: t('cie10Code', 'CIE-10') },
     { key: 'priority', header: t('diagnosisPriority', 'Prioridad') },
@@ -41,7 +41,7 @@ const DiagnosticoClasificado: React.FC<DiagnosticoClasificadoProps> = ({ patient
 
   const rows = diagnoses.map((dx) => ({
     id: dx.uuid,
-    date: formatDate(new Date(dx.encounterDatetime)),
+    date: formatDate(new Date(dx.encounterDatetime), { time: true }),
     diagnosis: dx.display,
     cie10: dx.cie10Code || '—',
     priority:
@@ -90,6 +90,7 @@ const DiagnosticoClasificado: React.FC<DiagnosticoClasificadoProps> = ({ patient
       isLoading={isLoading}
       isValidating={isValidating}
       onAction={handleLaunchForm}
+      pagination={pagination}
       skeletonHeaders={headers}
     >
       <DataTable rows={rows} headers={headers} size={isTablet ? 'lg' : 'sm'}>

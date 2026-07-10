@@ -4,12 +4,20 @@ import {
   DataTableSkeleton,
   type DataTableSkeletonProps,
   InlineLoading,
+  PaginationNav,
 } from '@carbon/react';
 import { Add } from '@carbon/react/icons';
 import { useLayoutType } from '@openmrs/esm-framework';
 import { CardHeader, EmptyState, ErrorState } from '@openmrs/esm-patient-common-lib';
 import React from 'react';
+import { useTranslation } from 'react-i18next';
 import styles from './consulta-externa-dashboard.scss';
+
+interface ClinicalHistoryPagination {
+  currentPage: number;
+  totalPages: number;
+  onPageChange: (page: number) => void;
+}
 
 interface ClinicalHistoryCardProps {
   title: string;
@@ -22,6 +30,7 @@ interface ClinicalHistoryCardProps {
   isValidating?: boolean;
   loadingVariant?: 'accordion' | 'table';
   onAction?: () => void;
+  pagination?: ClinicalHistoryPagination;
   skeletonHeaders?: DataTableSkeletonProps['headers'];
 }
 
@@ -36,9 +45,12 @@ const ClinicalHistoryCard: React.FC<ClinicalHistoryCardProps> = ({
   isValidating,
   loadingVariant = 'table',
   onAction,
+  pagination,
   skeletonHeaders,
 }) => {
+  const { t } = useTranslation();
   const isTablet = useLayoutType() === 'tablet';
+  const hasPagination = pagination && pagination.totalPages > 1;
 
   if (isLoading) {
     return (
@@ -71,7 +83,7 @@ const ClinicalHistoryCard: React.FC<ClinicalHistoryCardProps> = ({
     return <ErrorState error={error} headerTitle={title} />;
   }
 
-  if (empty) {
+  if (empty && !hasPagination) {
     return <EmptyState displayText={emptyDisplayText} headerTitle={title} launchForm={onAction} />;
   }
 
@@ -87,7 +99,29 @@ const ClinicalHistoryCard: React.FC<ClinicalHistoryCardProps> = ({
           ) : null}
         </div>
       </CardHeader>
-      <div className={styles.cardBody}>{children}</div>
+      <div className={styles.cardBody}>
+        {empty ? (
+          <p className={styles.emptyPage} role="status">
+            {t('noClinicalHistoryOnThisPage', 'No hay {{displayText}} en esta página.', {
+              displayText: emptyDisplayText,
+            })}
+          </p>
+        ) : (
+          children
+        )}
+      </div>
+      {hasPagination ? (
+        <div className={styles.pagination}>
+          <PaginationNav
+            aria-label={t('clinicalHistoryPagination', 'Páginas de {{title}}', { title })}
+            itemsShown={5}
+            onChange={(page) => pagination.onPageChange(page + 1)}
+            page={pagination.currentPage - 1}
+            size="sm"
+            totalItems={pagination.totalPages}
+          />
+        </div>
+      ) : null}
     </div>
   );
 };

@@ -24,7 +24,7 @@ interface PlanTratamientoProps {
 const PlanTratamiento: React.FC<PlanTratamientoProps> = ({ patientUuid }) => {
   const { t } = useTranslation();
   const config = useConfig<ConfigObject>();
-  const { treatmentPlans, isLoading, isValidating, error, mutate } = useTreatmentPlan(
+  const { treatmentPlans, isLoading, isValidating, error, mutate, pagination } = useTreatmentPlan(
     patientUuid,
     config.encounterTypes?.externalConsultation,
     config.concepts,
@@ -64,6 +64,7 @@ const PlanTratamiento: React.FC<PlanTratamientoProps> = ({ patientUuid }) => {
       isValidating={isValidating}
       loadingVariant="accordion"
       onAction={handleLaunchForm}
+      pagination={pagination}
     >
       <Accordion>
         {treatmentPlans.map((plan) => (
@@ -71,7 +72,7 @@ const PlanTratamiento: React.FC<PlanTratamientoProps> = ({ patientUuid }) => {
             key={plan.encounterUuid}
             title={
               <span>
-                {formatDate(new Date(plan.encounterDatetime))}
+                {formatDate(new Date(plan.encounterDatetime), { time: true })}
                 {' — '}
                 <Tag type="outline" size="sm">
                   {plan.provider || t('unknownProvider', 'Proveedor desconocido')}

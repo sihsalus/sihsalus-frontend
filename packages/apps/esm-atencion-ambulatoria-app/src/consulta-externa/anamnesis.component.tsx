@@ -16,7 +16,7 @@ interface AnamnesisProps {
 const Anamnesis: React.FC<AnamnesisProps> = ({ patientUuid }) => {
   const { t } = useTranslation();
   const config = useConfig<ConfigObject>();
-  const { anamnesisEntries, isLoading, isValidating, error, mutate } = useAnamnesis(
+  const { anamnesisEntries, isLoading, isValidating, error, mutate, pagination } = useAnamnesis(
     patientUuid,
     config.encounterTypes?.externalConsultation,
     config.concepts,
@@ -43,6 +43,7 @@ const Anamnesis: React.FC<AnamnesisProps> = ({ patientUuid }) => {
       isValidating={isValidating}
       loadingVariant="accordion"
       onAction={handleLaunchForm}
+      pagination={pagination}
     >
       <Accordion>
         {anamnesisEntries.map((entry) => (
@@ -50,7 +51,7 @@ const Anamnesis: React.FC<AnamnesisProps> = ({ patientUuid }) => {
             key={entry.encounterUuid}
             title={
               <span>
-                {formatDate(new Date(entry.encounterDatetime))}
+                {formatDate(new Date(entry.encounterDatetime), { time: true })}
                 {' — '}
                 <Tag type="outline" size="sm">
                   {entry.provider || t('unknownProvider', 'Proveedor desconocido')}

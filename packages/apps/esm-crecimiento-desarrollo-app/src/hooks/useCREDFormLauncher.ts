@@ -253,7 +253,7 @@ export function useCREDFormLauncher(formKey: CREDFormKey, fallback = credFormFal
   );
 
   const launchForm = useCallback(
-    (encounterUuid = '') => {
+    (encounterUuid = '', handlePostResponse?: () => void) => {
       if (!formIdentifier) {
         showSnackbar({
           kind: 'warning',
@@ -278,6 +278,7 @@ export function useCREDFormLauncher(formKey: CREDFormKey, fallback = credFormFal
       launchWorkspace2(formEntryWorkspace, {
         form,
         encounterUuid,
+        handlePostResponse,
       });
     },
     [error, form, formIdentifier, t],

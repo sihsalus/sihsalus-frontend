@@ -25,7 +25,7 @@ const GrowthChartOverview: React.FC<GrowthChartProps> = ({ patient, patientUuid 
   const { t } = useTranslation();
   const headerTitle = t('growthChart', 'Evaluación del Crecimiento y Desarrollo');
   const displayText = t('relatedData', 'datos de crecimiento y desarrollo');
-  const formWorkspace = 'newborn-anthropometric-form';
+  const formWorkspace = 'patient-vitals-biometrics-form-workspace';
   const session = useSession();
   const canEdit = userHasAccess(credNeonatalEditPrivilege, session?.user);
 

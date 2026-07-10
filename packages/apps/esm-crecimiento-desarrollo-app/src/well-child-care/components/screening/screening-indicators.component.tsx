@@ -12,14 +12,13 @@ import {
   Tag,
 } from '@carbon/react';
 import { Add, CheckmarkFilled, Time } from '@carbon/react/icons';
-import { launchWorkspace2, useConfig, userHasAccess, useSession } from '@openmrs/esm-framework';
-import { CardHeader, EmptyState, ErrorState } from '@openmrs/esm-patient-common-lib';
+import { userHasAccess, useSession } from '@openmrs/esm-framework';
+import { CardHeader, ErrorState, useLaunchWorkspaceRequiringVisit } from '@openmrs/esm-patient-common-lib';
 import React, { useCallback, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
-import type { ConfigObject } from '../../../config-schema';
-import { credNutritionEditPrivilege } from '../../../constants';
+import { credCourseLifeEditPrivilege } from '../../../constants';
+import { useCREDSchedule } from '../../../hooks/useCREDSchedule';
 import { useScreeningIndicators } from '../../../hooks/useScreeningIndicators';
-import { formEntryWorkspace } from '../../../types';
 
 import styles from './screening-indicators.scss';
 
@@ -30,22 +29,19 @@ interface ScreeningIndicatorsProps {
 const ScreeningIndicators: React.FC<ScreeningIndicatorsProps> = ({ patientUuid }) => {
   const { t } = useTranslation();
   const session = useSession();
-  const canEdit = userHasAccess(credNutritionEditPrivilege, session?.user);
-  const config = useConfig<ConfigObject>();
+  const canEdit = userHasAccess(credCourseLifeEditPrivilege, session?.user);
+  const { nextDueControl } = useCREDSchedule(patientUuid);
+  const launchControlWorkspace = useLaunchWorkspaceRequiringVisit<{ control: typeof nextDueControl }>(
+    patientUuid,
+    'wellchild-control-form',
+  );
   const { screenings, completedCount, totalRequired, isLoading, error } = useScreeningIndicators(patientUuid);
   const headerTitle = t('screeningIndicators', 'Tamizajes Obligatorios');
 
-  const handleAdd = useCallback(() => {
-    const formUuid = config.formsList.screeningIndicatorsForm;
-    if (!formUuid) {
-      console.warn('Form UUID not configured for screeningIndicatorsForm');
-      return;
-    }
-    launchWorkspace2(formEntryWorkspace, {
-      form: { uuid: formUuid },
-      encounterUuid: '',
-    });
-  }, [config.formsList.screeningIndicatorsForm]);
+  const handleAdd = useCallback(
+    () => launchControlWorkspace({ control: nextDueControl }),
+    [launchControlWorkspace, nextDueControl],
+  );
 
   const tableHeaders = useMemo(
     () => [
@@ -77,12 +73,6 @@ const ScreeningIndicators: React.FC<ScreeningIndicatorsProps> = ({ patientUuid }
 
   if (error) {
     return <ErrorState error={error} headerTitle={headerTitle} />;
-  }
-
-  if (screenings.length === 0) {
-    return (
-      <EmptyState displayText={t('noScreeningData', 'Sin datos de tamizaje registrados')} headerTitle={headerTitle} />
-    );
   }
 
   return (

@@ -20,7 +20,8 @@ const PregnancyBirthTable: React.FC<PregnancyBirthProps> = ({ patientUuid }) => 
   const headerTitle = t('pregnancyBirth', 'Pregnancy and birth');
   const { encounter, isLoading, error, mutate } = useLatestValidEncounter(
     patientUuid,
-    config.encounterTypes.antecedentesPerinatales, // Asegúrate de tener este tipo de encounter configurado
+    config.encounterTypes.antecedentesPerinatales,
+    config.formsList.pregnancyDetails,
   );
   const { launchForm } = useCREDFormLauncher('pregnancyDetails');
 
@@ -33,8 +34,8 @@ const PregnancyBirthTable: React.FC<PregnancyBirthProps> = ({ patientUuid }) => 
   }, [encounter]);
 
   const handleLaunchForm = React.useCallback(() => {
-    launchForm(encounter?.uuid || '');
-  }, [encounter?.uuid, launchForm]);
+    launchForm(encounter?.uuid || '', () => void mutate());
+  }, [encounter?.uuid, launchForm, mutate]);
 
   const dataHook = () => {
     return {

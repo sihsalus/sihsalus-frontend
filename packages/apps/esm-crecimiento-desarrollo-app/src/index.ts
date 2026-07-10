@@ -39,7 +39,6 @@ import NeonatalEvaluation from './well-child-care/components/neonatal-evaluation
 import PregnancyBirthTable from './well-child-care/components/neonatal-register/detalles-embarazo/pregnancy-table.component';
 import BirthDataTable from './well-child-care/components/neonatal-register/detalles-nacimiento/birth-date.component';
 import LabourHistory from './well-child-care/components/neonatal-register/labour-history/labour-history.component';
-import PrenatalAntecedents from './well-child-care/components/neonatal-register/prenatal-history/prenatal-history.component';
 import NewbornBalanceOverview from './well-child-care/components/newborn-monitoring/newborn balance/balance-overview.component';
 import NewbornBiometricsBase from './well-child-care/components/newborn-monitoring/newborn biometrics/biometrics-base.component';
 import ScreeningIndicators from './well-child-care/components/screening/screening-indicators.component';
@@ -136,9 +135,6 @@ export const screeningIndicators = getSyncLifecycle(ScreeningIndicators, options
 // Development Evaluation Overview
 export const developmentOverview = getSyncLifecycle(DevelopmentOverview, options);
 
-// Prenatal History (Obstetric Formula — used in neonatal register)
-export const prenatalHistory = getSyncLifecycle(PrenatalAntecedents, options);
-
 // CRED Form Action Button
 export const credFormActionButton = getSyncLifecycle(CREDFormActionButton, options);
 
@@ -166,10 +162,6 @@ export const growthChart = getAsyncLifecycle(
 );
 export const monthlyAppointmentFilterCalendar = getAsyncLifecycle(
   () => import('./ui/appointment-filter-calendar/appointment-filter-calendar'),
-  options,
-);
-export const perinatalRegisterworkspace = getAsyncLifecycle(
-  () => import('./well-child-care/workspace/perinatal-register/perinatal-register-form.workspace'),
   options,
 );
 export const wellchildControlsworkspace = getAsyncLifecycle(

@@ -374,8 +374,7 @@ export const configSchema = {
     // Problem and Death Concepts
     probableCauseOfDeathConceptUuid: {
       _type: Type.ConceptUuid,
-      _description:
-        'Causa probable de muerte registrada como texto a partir de entrevista o información no médica',
+      _description: 'Causa probable de muerte registrada como texto a partir de entrevista o información no médica',
       _default: 'e71d57a1-435b-5cd6-a24f-7cc77e0f65a0',
     },
     problemListConceptUuid: {
@@ -993,52 +992,6 @@ export const configSchema = {
       _type: Type.ConceptUuid,
       _description: 'Concept UUID de consejería nutricional brindada en CRED-002',
       _default: 'c2010004-0000-4000-8000-000000000004',
-    },
-  },
-
-  // 10G-2. TEST PERUANO DE DESARROLLO (TPD — MINSA)
-  testPeruano: {
-    _type: Type.Object,
-    _description: 'Configuración del Test Peruano de Desarrollo Infantil',
-    _default: {
-      encounterTypeUuid: 'a990eabc-3405-419f-bfb1-96ca2d8279b8', // Control de Niño Sano — NTS 102
-      formUuid: 'c35213c3-bb95-340d-99a5-006f1e79068a',
-      concepts: {
-        ageMonthsUuid: '1410AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA',
-        instrumentUuid: 'c4010001-0000-4000-8000-000000000001',
-        instrumentTestPeruanoAnswerUuid: 'c4010013-0000-4000-8000-000000000013',
-        classificationUuid: 'c4010002-0000-4000-8000-000000000002',
-        classificationAnswers: {
-          normal: '118fe066-b4a0-4978-b5b0-bb4ed7f4b80a',
-          riesgo: 'c4010021-0000-4000-8000-000000000021',
-          retraso: 'c4010022-0000-4000-8000-000000000022',
-        },
-        totalScoreUuid: 'c4010003-0000-4000-8000-000000000003',
-        snapshotUuid: 'c4010004-0000-4000-8000-000000000004',
-        referralUuid: 'c4010005-0000-4000-8000-000000000005',
-        referralAnswers: {
-          yes: 'cf82933b-3f3f-45e7-a5ab-5d31aaee3da3',
-          no: '488b58ff-64f5-4f8a-8979-fa79940b1594',
-        },
-        planUuid: 'c4010006-0000-4000-8000-000000000006',
-        observationsUuid: '643c7023-c2f4-4796-9920-a2ed0f79ba35',
-      },
-    },
-    encounterTypeUuid: {
-      _type: Type.UUID,
-      _description:
-        'Encounter type UUID para el Test Peruano de Desarrollo. Por defecto usa Control de Niño Sano (NTS 102).',
-      _default: 'a990eabc-3405-419f-bfb1-96ca2d8279b8',
-    },
-    formUuid: {
-      _type: Type.UUID,
-      _description: 'Form UUID de CRED-004 Seguimiento del Desarrollo usado para persistir el perfil gráfico.',
-      _default: 'c35213c3-bb95-340d-99a5-006f1e79068a',
-    },
-    concepts: {
-      _type: Type.Object,
-      _description: 'Conceptos usados para persistir el perfil gráfico del Test Peruano en CRED-004.',
-      _default: {},
     },
   },
 
@@ -1855,29 +1808,5 @@ export interface ConfigObject {
     tepsiMotorConceptUuid: string;
     stimulationLackConceptUuid: string;
     counselingConceptUuid: string;
-  };
-  testPeruano: {
-    encounterTypeUuid: string;
-    formUuid: string;
-    concepts: {
-      ageMonthsUuid: string;
-      instrumentUuid: string;
-      instrumentTestPeruanoAnswerUuid: string;
-      classificationUuid: string;
-      classificationAnswers: {
-        normal: string;
-        riesgo: string;
-        retraso: string;
-      };
-      totalScoreUuid: string;
-      snapshotUuid: string;
-      referralUuid: string;
-      referralAnswers: {
-        yes: string;
-        no: string;
-      };
-      planUuid: string;
-      observationsUuid: string;
-    };
   };
 }

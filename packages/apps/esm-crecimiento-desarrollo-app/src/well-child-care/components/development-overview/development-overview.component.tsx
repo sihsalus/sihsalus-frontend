@@ -1,9 +1,8 @@
 import { Button, Tile } from '@carbon/react';
-import { Education, Growth } from '@carbon/react/icons';
-import { launchWorkspace2, useConfig, userHasAccess, useSession } from '@openmrs/esm-framework';
+import { Education } from '@carbon/react/icons';
+import { userHasAccess, useSession } from '@openmrs/esm-framework';
 import React from 'react';
 import { useTranslation } from 'react-i18next';
-import type { ConfigObject } from '../../../config-schema';
 import { credEarlyStimulationEditPrivilege } from '../../../constants';
 import { useCREDFormLauncher } from '../../../hooks/useCREDFormLauncher';
 
@@ -14,20 +13,13 @@ interface DevelopmentOverviewProps {
 }
 
 /**
- * Resumen de evaluaciones de desarrollo (TEPSI y Test Peruano).
- * Muestra botones para lanzar los formularios workspace de cada test.
+ * Resumen de evaluaciones de desarrollo disponibles para uso clínico.
  */
-const DevelopmentOverview: React.FC<DevelopmentOverviewProps> = ({ patientUuid }) => {
+const DevelopmentOverview: React.FC<DevelopmentOverviewProps> = () => {
   const { t } = useTranslation();
-  const config = useConfig<ConfigObject>();
   const session = useSession();
   const canEdit = userHasAccess(credEarlyStimulationEditPrivilege, session?.user);
   const { launchForm: handleLaunchTepsi, isLoading: isTepsiFormLoading } = useCREDFormLauncher('tepsi');
-  const isTestPeruanoConfigured = Boolean(config.testPeruano?.formUuid && config.testPeruano?.concepts?.snapshotUuid);
-
-  const handleLaunchTestPeruano = () => {
-    launchWorkspace2('test-peruano-form', { patientUuid });
-  };
 
   return (
     <Tile className={styles.card}>
@@ -51,24 +43,6 @@ const DevelopmentOverview: React.FC<DevelopmentOverviewProps> = ({ patientUuid }
             disabled={isTepsiFormLoading || !canEdit}
           >
             {t('startTepsi', 'Realizar TEPSI')}
-          </Button>
-        </div>
-
-        <div className={styles.testCard}>
-          <div className={styles.testInfo}>
-            <h6>{t('testPeruanoTitle', 'Test Peruano de Desarrollo Infantil')}</h6>
-            <p className={styles.description}>
-              {t('testPeruanoDescription', 'Evaluación del desarrollo infantil adaptada al contexto peruano')}
-            </p>
-          </div>
-          <Button
-            kind="tertiary"
-            size="sm"
-            renderIcon={Growth}
-            onClick={handleLaunchTestPeruano}
-            disabled={!isTestPeruanoConfigured || !canEdit}
-          >
-            {t('startTestPeruano', 'Realizar Test Peruano')}
           </Button>
         </div>
       </div>

@@ -310,6 +310,13 @@
       "privileges": "app:hoja.clinica.cred.estimulacionTemprana"
     },
     {
+      "name": "tped-reference-widget",
+      "component": "tpedReferenceWidget",
+      "slot": "cred-development-slot",
+      "order": 2,
+      "privileges": "app:hoja.clinica.cred.estimulacionTemprana"
+    },
+    {
       "name": "well-child-care-dashboard-route",
       "component": "hiddenDashboardMarker",
       "slot": "patient-chart-dashboard-slot",
@@ -429,13 +436,6 @@
       "title": "Control de Niño Sano",
       "type": "form",
       "privileges": "app:hoja.clinica.cred.cursoVida.editar"
-    },
-    {
-      "name": "test-peruano-form",
-      "component": "testPeruanoFormWorkspace",
-      "title": "Test Peruano de Desarrollo",
-      "type": "form",
-      "privileges": "app:hoja.clinica.cred.estimulacionTemprana.editar"
     }
   ],
   "workspaces2": [
@@ -474,12 +474,6 @@
       "component": "wellchildControlsworkspace",
       "window": "patient-chart-well-child-care-forms",
       "privileges": "app:hoja.clinica.cred.cursoVida.editar"
-    },
-    {
-      "name": "test-peruano-form",
-      "component": "testPeruanoFormWorkspace",
-      "window": "patient-chart-well-child-care-forms",
-      "privileges": "app:hoja.clinica.cred.estimulacionTemprana.editar"
     }
   ],
   "workspaceWindows2": [

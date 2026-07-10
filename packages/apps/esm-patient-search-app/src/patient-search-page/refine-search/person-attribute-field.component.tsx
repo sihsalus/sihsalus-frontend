@@ -76,7 +76,7 @@ export function PersonAttributeField({ field, control, isTablet }: PersonAttribu
     }
 
     switch (personAttributeType.format) {
-      case 'java.lang.String':
+      case 'java.lang.String': {
         const labelText = getPersonAttributeDisplayLabel(personAttributeType.display, field.attributeTypeUuid, t);
 
         if (field.stringAnswerOptions?.length) {
@@ -108,6 +108,7 @@ export function PersonAttributeField({ field, control, isTablet }: PersonAttribu
             )}
           />
         );
+      }
 
       case 'org.openmrs.Concept':
         return (

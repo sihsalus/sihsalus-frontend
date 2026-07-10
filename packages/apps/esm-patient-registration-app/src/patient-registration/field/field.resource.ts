@@ -1,8 +1,35 @@
 import { type FetchResponse, openmrsFetch, restBaseUrl, showSnackbar } from '@openmrs/esm-framework';
-import { useMemo } from 'react';
+import { useEffect, useMemo } from 'react';
 import useSWRImmutable from 'swr/immutable';
 
 import { type ConceptAnswers, type ConceptResponse } from '../patient-registration.types';
+
+function getErrorStatus(error: unknown) {
+  return typeof error === 'object' && error
+    ? ((error as { response?: { status?: number }; status?: number }).response?.status ??
+        (error as { status?: number }).status)
+    : undefined;
+}
+
+export function isForbiddenConceptError(error: unknown) {
+  return getErrorStatus(error) === 403 || (error instanceof Error && /\b403\b/.test(error.message));
+}
+
+export function isMissingConceptError(error: unknown) {
+  return getErrorStatus(error) === 404 || (error instanceof Error && /\b404\b/.test(error.message));
+}
+
+function useConceptErrorSnackbar(error: Error | undefined) {
+  useEffect(() => {
+    if (error && !isForbiddenConceptError(error)) {
+      showSnackbar({
+        title: error.name,
+        subtitle: error.message,
+        kind: 'error',
+      });
+    }
+  }, [error]);
+}
 
 export function useConcept(conceptUuid: string): { data: ConceptResponse; isLoading: boolean } {
   const shouldFetch = typeof conceptUuid === 'string' && conceptUuid !== '';
@@ -10,13 +37,7 @@ export function useConcept(conceptUuid: string): { data: ConceptResponse; isLoad
     shouldFetch ? `${restBaseUrl}/concept/${conceptUuid}` : null,
     openmrsFetch,
   );
-  if (error) {
-    showSnackbar({
-      title: error.name,
-      subtitle: error.message,
-      kind: 'error',
-    });
-  }
+  useConceptErrorSnackbar(error);
   const results = useMemo(() => ({ data: data?.data, isLoading }), [data, isLoading]);
   return results;
 }
@@ -24,7 +45,7 @@ export function useConcept(conceptUuid: string): { data: ConceptResponse; isLoad
 export function useConceptAnswers(conceptUuid: string): {
   data: Array<ConceptAnswers>;
   isLoading: boolean;
-  error: Error;
+  error: Error | undefined;
 } {
   const shouldFetch = typeof conceptUuid === 'string' && conceptUuid !== '';
   const { data, error, isLoading } = useSWRImmutable<FetchResponse<ConceptResponse>, Error>(
@@ -33,16 +54,10 @@ export function useConceptAnswers(conceptUuid: string): {
       : null,
     openmrsFetch,
   );
-  if (error) {
-    showSnackbar({
-      title: error.name,
-      subtitle: error.message,
-      kind: 'error',
-    });
-  }
+  useConceptErrorSnackbar(error);
   const results = useMemo(
     () => ({
-      data: data?.data ? (data.data.answers?.length ? data.data.answers : (data.data.setMembers ?? [])) : undefined,
+      data: data?.data ? (data.data.answers?.length ? data.data.answers : (data.data.setMembers ?? [])) : [],
       isLoading,
       error,
     }),

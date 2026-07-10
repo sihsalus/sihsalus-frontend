@@ -1,3 +1,4 @@
+import { useSession } from '@openmrs/esm-framework';
 import { render, screen, waitFor } from '@testing-library/react';
 import { Form, Formik } from 'formik';
 
@@ -20,6 +21,7 @@ vi.mock('../field.resource', async () => ({
 
 const mockUsePersonAttributeType = vi.mocked(usePersonAttributeType);
 const mockUseConceptAnswers = vi.mocked(useConceptAnswers);
+const mockUseSession = vi.mocked(useSession);
 
 const mockPersonAttributeType = {
   format: 'java.lang.String',
@@ -47,6 +49,13 @@ let fieldDefinition: FieldDefinition = { ...baseFieldDefinition };
 describe('PersonAttributeField', () => {
   beforeEach(() => {
     fieldDefinition = { ...baseFieldDefinition };
+    mockUseSession.mockReturnValue({
+      authenticated: true,
+      sessionId: 'session-id',
+      user: {
+        privileges: [{ display: 'Get Concepts', name: 'Get Concepts' }],
+      },
+    } as ReturnType<typeof useSession>);
     mockUsePersonAttributeType.mockReturnValue({
       data: mockPersonAttributeType,
       isLoading: false,

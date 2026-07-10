@@ -93,7 +93,7 @@ export const configSchema = {
   // 2. FORMS CONFIGURATION
   formsList: {
     _type: Type.Object,
-    _description: 'List of form UUIDs',
+    _description: 'List of form UUIDs or names',
     _default: {
       // Clinical Forms
       nursingAssessment: '(Página 11 y 12) Valoración de Enfermería',
@@ -110,7 +110,7 @@ export const configSchema = {
 
       // Consulta Externa Forms
       consultaExternaForm: 'e375206e-186b-3357-9cbf-fdae409f7949',
-      anamnesisForm: 'dea96c94-fe4f-3671-98b9-324fb374b558',
+      anamnesisForm: 'CE-ANAM-001-ANAMNESIS',
       soapNoteForm: 'e375206e-186b-3357-9cbf-fdae409f7949',
       referralForm: 'a7379846-a7f9-3fc9-9c8f-f95973fd4c88',
 

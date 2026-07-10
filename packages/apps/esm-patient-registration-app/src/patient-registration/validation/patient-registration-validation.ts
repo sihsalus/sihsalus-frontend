@@ -11,6 +11,7 @@ import {
   type RelationshipValue,
 } from '../patient-registration.types';
 import { getPeruIdentifierRule } from '../peru-identifier-validation';
+import { validateRequiredField } from './required-field-validation';
 
 const t = (key: string, _value: string) => key;
 
@@ -131,6 +132,27 @@ function buildPersonAttributeValidationSchema(config: RegistrationConfig) {
   return Yup.object(attributeSchemas);
 }
 
+function buildRegistrationObsValidationSchema(config: RegistrationConfig) {
+  const obsSchemas = Object.fromEntries(
+    (config.fieldDefinitions ?? [])
+      .filter((field) => field.type === 'obs' && !!field.uuid && field.validation?.required)
+      .map((field) => [
+        field.uuid,
+        Yup.mixed().test('required', t('fieldRequired', 'Field is required'), (value) => !validateRequiredField(value)),
+      ]),
+  );
+
+  return Yup.object(obsSchemas);
+}
+
+function buildCustomAddressValidationSchema(config: RegistrationConfig) {
+  return Object.fromEntries(
+    (config.fieldDefinitions ?? [])
+      .filter((field) => field.type === 'address' && field.validation?.required)
+      .map((field) => [field.id, Yup.string().required(t('fieldRequired', 'Field is required'))]),
+  );
+}
+
 function getPersonAttributeFieldUuid(config: RegistrationConfig, fieldId: string) {
   return config.fieldDefinitions?.find((field) => field.type === 'person attribute' && field.id === fieldId)?.uuid;
 }
@@ -246,6 +268,7 @@ export function getValidationSchema(
   );
 
   return Yup.object({
+    ...buildCustomAddressValidationSchema(config),
     givenName: Yup.string()
       .required(t('givenNameRequired', 'Given name is required'))
       .min(2, nameTooShortMessage)
@@ -388,6 +411,7 @@ export function getValidationSchema(
     }),
     email: Yup.string().optional().email(t('invalidEmail', 'Invalid email')),
     attributes: buildPersonAttributeValidationSchema(config),
+    obs: buildRegistrationObsValidationSchema(config),
     identifiers: Yup.lazy((obj: FormValues['identifiers']) =>
       Yup.object(
         mapValues(obj, (identifier, fieldName) => {

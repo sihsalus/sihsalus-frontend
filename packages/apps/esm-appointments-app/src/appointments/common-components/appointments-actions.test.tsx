@@ -1,6 +1,6 @@
 import {
   getDefaultsFromConfigSchema,
-  launchWorkspace,
+  launchWorkspace2,
   useConfig,
   userHasAccess,
   useSession,
@@ -28,7 +28,7 @@ vi.mock('../../form/appointments-form.resource', () => ({
 
 const mockChangeAppointmentStatus = vi.mocked(changeAppointmentStatus);
 const mockGetAppointmentStatus = vi.mocked(getAppointmentStatus);
-const mockLaunchWorkspace = vi.mocked(launchWorkspace);
+const mockLaunchWorkspace2 = vi.mocked(launchWorkspace2);
 const mockUseSession = vi.mocked(useSession);
 const mockUserHasAccess = vi.mocked(userHasAccess);
 
@@ -309,8 +309,8 @@ describe('AppointmentActions', () => {
 
     await userEvent.click(screen.getByRole('button', { name: /check in/i }));
 
-    expect(mockLaunchWorkspace).toHaveBeenCalledWith(
-      'start-visit-workspace-form',
+    expect(mockLaunchWorkspace2).toHaveBeenCalledWith(
+      'appointments-start-visit-workspace',
       expect.objectContaining({
         patientUuid: appointment.patient.uuid,
         openedFrom: 'appointments-check-in',
@@ -340,7 +340,7 @@ describe('AppointmentActions', () => {
     render(<AppointmentActions {...defaultProps} />);
 
     await userEvent.click(screen.getByRole('button', { name: /check in/i }));
-    const launchOptions = mockLaunchWorkspace.mock.calls[0][1] as { onVisitStarted: () => Promise<void> };
+    const launchOptions = mockLaunchWorkspace2.mock.calls[0][1] as { onVisitStarted: () => Promise<void> };
     await launchOptions.onVisitStarted();
 
     expect(mockGetAppointmentStatus).toHaveBeenCalledWith(appointment.uuid);
@@ -366,7 +366,7 @@ describe('AppointmentActions', () => {
     render(<AppointmentActions {...defaultProps} />);
 
     await userEvent.click(screen.getByRole('button', { name: /check in/i }));
-    const launchOptions = mockLaunchWorkspace.mock.calls[0][1] as { onVisitStarted: () => Promise<void> };
+    const launchOptions = mockLaunchWorkspace2.mock.calls[0][1] as { onVisitStarted: () => Promise<void> };
     await launchOptions.onVisitStarted();
 
     expect(mockGetAppointmentStatus).toHaveBeenCalledWith(appointment.uuid);

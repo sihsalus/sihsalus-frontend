@@ -60,6 +60,7 @@
   "genderLabelText": "Sexe",
   "genderRequired": "Le genre est requis",
   "genderUnspecified": "Genre non précisé",
+  "fieldRequired": "Champ obligatoire",
   "givenNameLabelText": "Prénom",
   "givenNameRequired": "Le prénom est requis",
   "identifierValueRequired": "L'identifiant est requis",

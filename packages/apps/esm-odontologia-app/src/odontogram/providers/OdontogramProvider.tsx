@@ -108,6 +108,11 @@ interface OdontogramProviderProps {
   data: OdontogramData;
   onChange?: (data: OdontogramData) => void;
   readOnly?: boolean;
+  /** Optionally lift the ephemeral form selection so multiple editable instances
+   *  (e.g. an inline editor and its expanded workspace) stay in sync. When both
+   *  props are omitted the selection stays internal (default behaviour). */
+  formSelection?: FormSelectionState;
+  onFormSelectionChange?: (updater: FormSelectionState | ((prev: FormSelectionState) => FormSelectionState)) => void;
   children: React.ReactNode;
 }
 
@@ -116,14 +121,24 @@ export function OdontogramProvider({
   data,
   onChange,
   readOnly: readOnlyProp,
+  formSelection: controlledFormSelection,
+  onFormSelectionChange,
   children,
 }: OdontogramProviderProps) {
   const readOnly = readOnlyProp ?? !onChange;
 
   // ---------------------------------------------------------------------------
-  // Estado UI efímero — NO se persiste
+  // Estado UI efímero — NO se persiste.
+  // Controlled when the parent supplies formSelection + onFormSelectionChange,
+  // otherwise falls back to local state (backward compatible).
   // ---------------------------------------------------------------------------
-  const [formSelection, setFormSelection] = useState<FormSelectionState>(EMPTY_FORM_SELECTION);
+  const [internalFormSelection, setInternalFormSelection] = useState<FormSelectionState>(EMPTY_FORM_SELECTION);
+  const formSelection = controlledFormSelection ?? internalFormSelection;
+  const setFormSelection = useCallback(
+    (updater: FormSelectionState | ((prev: FormSelectionState) => FormSelectionState)) =>
+      (onFormSelectionChange ?? setInternalFormSelection)(updater),
+    [onFormSelectionChange],
+  );
 
   // ---------------------------------------------------------------------------
   // Toast: delegate to the project-wide Carbon snackbar provided by
@@ -144,7 +159,7 @@ export function OdontogramProvider({
     if (readOnly) {
       setFormSelection(EMPTY_FORM_SELECTION);
     }
-  }, [readOnly]);
+  }, [readOnly, setFormSelection]);
 
   // ---------------------------------------------------------------------------
   // Helpers de consulta (memoizados)
@@ -211,7 +226,7 @@ export function OdontogramProvider({
         isComplete: autoIsComplete,
       });
     },
-    [findingOptionMap],
+    [findingOptionMap, setFormSelection],
   );
 
   const selectColor = useCallback(
@@ -233,7 +248,7 @@ export function OdontogramProvider({
         };
       });
     },
-    [findingOptionMap],
+    [findingOptionMap, setFormSelection],
   );
 
   const selectSuboption = useCallback(
@@ -262,12 +277,15 @@ export function OdontogramProvider({
         };
       });
     },
-    [findingOptionMap],
+    [findingOptionMap, setFormSelection],
   );
 
-  const selectDesign = useCallback((design: FindingDesign | null) => {
-    setFormSelection((prev) => ({ ...prev, selectedDesign: design }));
-  }, []);
+  const selectDesign = useCallback(
+    (design: FindingDesign | null) => {
+      setFormSelection((prev) => ({ ...prev, selectedDesign: design }));
+    },
+    [setFormSelection],
+  );
 
   const resetSelection = useCallback(() => {
     setFormSelection({
@@ -277,7 +295,7 @@ export function OdontogramProvider({
       selectedDesign: null,
       isComplete: false,
     });
-  }, []);
+  }, [setFormSelection]);
 
   // ---------------------------------------------------------------------------
   // Tooth Actions

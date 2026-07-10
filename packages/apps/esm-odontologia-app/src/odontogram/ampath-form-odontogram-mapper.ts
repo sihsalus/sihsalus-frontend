@@ -14,12 +14,24 @@ export interface OdontogramObs {
   value?: ObsValue;
 }
 
+export interface OdontogramEncounterProvider {
+  uuid?: string;
+  provider?: {
+    uuid?: string;
+    person?: {
+      uuid?: string;
+      display?: string;
+    };
+  };
+}
+
 export interface OdontogramEncounter {
   uuid: string;
   encounterDatetime: string;
   encounterType?: {
     uuid?: string;
   };
+  encounterProviders?: Array<OdontogramEncounterProvider>;
   obs?: Array<OdontogramObs>;
 }
 
@@ -29,6 +41,8 @@ export interface OdontogramEncounterPayload {
   form: string;
   encounterDatetime: string;
   obs: Array<{
+    /** Existing obs uuid — present only on updates so OpenMRS edits in place. */
+    uuid?: string;
     concept: string;
     value: string;
   }>;
@@ -108,6 +122,38 @@ export function getParentBaseEncounterUuidFromEncounter(
   const value = getTextValue(getObsByConcept(encounter, persistence.concepts.parentBaseEncounterUuid)?.value);
 
   return value || null;
+}
+
+/**
+ * Attaches the uuid of the current obs to each payload entry that targets the
+ * same concept, so updating an encounter edits its obs in place instead of
+ * appending a duplicate obs. The first obs per concept is reused, matching how
+ * {@link getObsByConcept} reads values back.
+ */
+export function applyExistingObsUuids(
+  payload: OdontogramEncounterPayload,
+  existingObs: Array<OdontogramObs>,
+): OdontogramEncounterPayload {
+  const uuidByConcept = new Map<string, string>();
+
+  for (const obs of existingObs) {
+    const conceptUuid = obs.concept?.uuid;
+    if (conceptUuid && obs.uuid && !uuidByConcept.has(conceptUuid)) {
+      uuidByConcept.set(conceptUuid, obs.uuid);
+    }
+  }
+
+  return {
+    ...payload,
+    obs: payload.obs.map((entry) => {
+      const existingUuid = uuidByConcept.get(entry.concept);
+      return existingUuid ? { uuid: existingUuid, ...entry } : entry;
+    }),
+  };
+}
+
+export function getProviderNameFromEncounter(encounter: OdontogramEncounter): string | null {
+  return encounter.encounterProviders?.[0]?.provider?.person?.display ?? null;
 }
 
 export function getOdontogramDataFromEncounter(

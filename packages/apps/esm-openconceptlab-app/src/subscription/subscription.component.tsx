@@ -23,6 +23,15 @@ import { extractOclErrorMessage, isAbortError, isVersionDefinedInUrl } from '../
 import { deleteSubscription, updateSubscription, useSubscription } from './subscription.resource';
 import styles from './subscription.scss';
 
+function isValidUrl(value: string) {
+  try {
+    const url = new URL(value);
+    return url.protocol === 'http:' || url.protocol === 'https:';
+  } catch {
+    return false;
+  }
+}
+
 const Subscription: React.FC = () => {
   const { t } = useTranslation();
   const { mutate } = useSWRConfig();
@@ -31,6 +40,7 @@ const Subscription: React.FC = () => {
   const [isSubscribedToSnapshot, setIsSubscribedToSnapshot] = useState(false);
   const [validationType, setValidationType] = useState<'NONE' | 'FULL'>('FULL');
   const [isSnapshotOptionDisabled, setIsSnapshotOptionDisabled] = useState(false);
+  const [validationAttempted, setValidationAttempted] = useState(false);
 
   const { data: subscription, isLoading, error } = useSubscription();
 
@@ -41,6 +51,7 @@ const Subscription: React.FC = () => {
       setIsSubscribedToSnapshot(subscription?.subscribedToSnapshot || false);
       setValidationType(subscription?.validationType || 'FULL');
       setIsSnapshotOptionDisabled(subscription ? isVersionDefinedInUrl(subscription.url) : false);
+      setValidationAttempted(false);
     }
   }, [isLoading, error, subscription]);
 
@@ -72,10 +83,22 @@ const Subscription: React.FC = () => {
     [],
   );
 
+  const subscriptionUrlError = !subscriptionUrl.trim()
+    ? t('fieldRequired', 'Field is required')
+    : !isValidUrl(subscriptionUrl)
+      ? t('invalidUrl', 'Enter a valid URL')
+      : undefined;
+  const tokenError = !token.trim() ? t('fieldRequired', 'Field is required') : undefined;
+
   const handleSubmit = useCallback(
     async (evt: React.FormEvent<HTMLFormElement>) => {
       evt.preventDefault();
       evt.stopPropagation();
+      setValidationAttempted(true);
+
+      if (subscriptionUrlError || tokenError) {
+        return;
+      }
 
       if (isSnapshotOptionDisabled && isSubscribedToSnapshot) {
         showSnackbar({
@@ -132,7 +155,18 @@ const Subscription: React.FC = () => {
         abortController.abort();
       }
     },
-    [subscriptionUrl, token, validationType, isSubscribedToSnapshot, isSnapshotOptionDisabled, subscription, t, mutate],
+    [
+      subscriptionUrl,
+      subscriptionUrlError,
+      token,
+      tokenError,
+      validationType,
+      isSubscribedToSnapshot,
+      isSnapshotOptionDisabled,
+      subscription,
+      t,
+      mutate,
+    ],
   );
 
   const handleCancel = useCallback(() => {
@@ -141,6 +175,7 @@ const Subscription: React.FC = () => {
     setIsSubscribedToSnapshot(subscription?.subscribedToSnapshot || false);
     setValidationType(subscription?.validationType || 'FULL');
     setIsSnapshotOptionDisabled(subscription ? isVersionDefinedInUrl(subscription.url) : false);
+    setValidationAttempted(false);
 
     showSnackbar({
       title: t('changesCancelled', 'Changes cancelled'),
@@ -165,6 +200,7 @@ const Subscription: React.FC = () => {
           setIsSubscribedToSnapshot(false);
           setValidationType('FULL');
           setIsSnapshotOptionDisabled(false);
+          setValidationAttempted(false);
           showSnackbar({
             title: t('unsubscribed', 'Unsubscribed'),
             kind: 'success',
@@ -226,7 +262,7 @@ const Subscription: React.FC = () => {
   return (
     <Grid className={styles.grid}>
       <Column sm={4} md={8} lg={10}>
-        <Form onSubmit={(evt) => void handleSubmit(evt)}>
+        <Form onSubmit={(evt) => void handleSubmit(evt)} noValidate>
           <h3 className={styles.productiveHeading03}>{t('setupSubscription', 'Setup Subscription')}</h3>
           <Stack gap={5}>
             <Layer>
@@ -238,6 +274,8 @@ const Subscription: React.FC = () => {
                 value={subscriptionUrl}
                 onChange={handleChangeSubscriptionUrl}
                 required
+                invalid={validationAttempted && !!subscriptionUrlError}
+                invalidText={subscriptionUrlError}
               />
             </Layer>
             <Layer>
@@ -249,6 +287,8 @@ const Subscription: React.FC = () => {
                 value={token}
                 onChange={handleChangeToken}
                 required
+                invalid={validationAttempted && !!tokenError}
+                invalidText={tokenError}
               />
             </Layer>
             <FormGroup legendText={t('advancedOptions', 'Advanced Options')} className={styles.formGroup}>

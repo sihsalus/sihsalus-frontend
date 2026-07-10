@@ -3,7 +3,7 @@ import { type ComponentConfig, type ExtensionData } from '@openmrs/esm-extension
 import type {} from '@openmrs/esm-globals';
 import React, { type ComponentType, type ErrorInfo, Suspense } from 'react';
 import { I18nextProvider } from 'react-i18next';
-import { type Cache, SWRConfig, type SWRConfiguration } from 'swr';
+import { SWRConfig, type SWRConfiguration } from 'swr';
 import { ComponentContext } from './ComponentContext';
 
 const defaultOpts = {
@@ -11,8 +11,6 @@ const defaultOpts = {
   throwErrorsToConsole: true,
   disableTranslations: false,
 };
-
-const swrCache: Cache = new Map();
 
 // Read more about the available config options here: https://swr.vercel.app/docs/api#configuration
 const defaultSwrConfig: SWRConfiguration = {
@@ -46,7 +44,6 @@ const defaultSwrConfig: SWRConfiguration = {
 
     return true;
   },
-  provider: () => swrCache,
 };
 
 export interface ComponentDecoratorOptions {

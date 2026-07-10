@@ -150,6 +150,40 @@ describe('Patient registration validation', () => {
     expect(validationError.errors).toContain('familyNameRequired');
   });
 
+  it('should require configurable obs and address fields', async () => {
+    const config = (await getConfig('@openmrs/esm-patient-registration-app')) as unknown as RegistrationConfig;
+    mockGetConfig.mockResolvedValueOnce({
+      ...config,
+      fieldDefinitions: [
+        ...(config.fieldDefinitions ?? []),
+        {
+          id: 'requiredObs',
+          type: 'obs',
+          uuid: 'required-obs-uuid',
+          validation: { required: true },
+        },
+        {
+          id: 'requiredAddressField',
+          type: 'address',
+          validation: { required: true },
+        },
+      ],
+    });
+
+    const validationError = await validateFormValues({
+      ...validFormValues,
+      obs: { 'required-obs-uuid': '' },
+      requiredAddressField: '',
+    });
+
+    expect(validationError.inner).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ path: 'obs.required-obs-uuid', message: 'fieldRequired' }),
+        expect.objectContaining({ path: 'requiredAddressField', message: 'fieldRequired' }),
+      ]),
+    );
+  });
+
   it('should reject names shorter than 2 characters', async () => {
     const invalidFormValues = {
       ...validFormValues,

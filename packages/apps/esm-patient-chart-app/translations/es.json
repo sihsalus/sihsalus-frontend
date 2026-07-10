@@ -206,6 +206,7 @@
   "visitRestoredSuccessfully": "{{visit}} restaurada exitosamente",
   "visits": "consultas",
   "Visits": "Consultas",
+  "visitStartDateCannotBeBeforeBirthDate": "La fecha de inicio de la consulta no puede ser anterior a la fecha de nacimiento del paciente",
   "visitStartDatetime": "Fecha y hora de inicio de la consulta",
   "visitStarted": "Consulta iniciada",
   "visitStartedSuccessfully": "Consulta {{visit}} iniciada con éxito",

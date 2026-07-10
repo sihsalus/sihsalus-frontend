@@ -11,6 +11,7 @@ import {
   addressUbigeoPathField,
   addressUbigeoPathSeparator,
 } from '../../patient-registration-utils';
+import { validateRequiredField } from '../../validation/required-field-validation';
 import styles from '../field.scss';
 import { useOrderedAddressHierarchyLevels } from './address-hierarchy.resource';
 import AddressHierarchyLevels from './address-hierarchy-levels.component';
@@ -208,6 +209,7 @@ export const AddressComponent: React.FC<AddressComponentProps> = ({
             id={`${fieldPrefix}.${attributes.name}`}
             value={selected}
             required={attributes.required}
+            validate={attributes.required ? validateRequiredField : undefined}
           />
         ))}
       </AddressComponentContainer>
@@ -256,6 +258,7 @@ export const AddressComponent: React.FC<AddressComponentProps> = ({
             id={`${fieldPrefix}.${attributes.name}`}
             value={selected}
             required={attributes.required}
+            validate={attributes.required ? validateRequiredField : undefined}
           />
         ))
       )}

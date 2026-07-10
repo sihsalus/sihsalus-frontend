@@ -494,6 +494,26 @@ describe('Visit form', () => {
     expect(await screen.findByText(/start time cannot be in the future/i)).toBeInTheDocument();
   });
 
+  it('displays an error message when the visit start date is before the patient birth date', async () => {
+    const user = userEvent.setup();
+
+    renderVisitForm();
+
+    const dateInput = screen.getByRole('textbox', { name: /date/i });
+    const locationPicker = screen.getByRole('combobox', {
+      name: /select a location/i,
+    });
+    const dateBeforeBirthDate = '02/04/1986';
+
+    fireEvent.change(dateInput, { target: { value: dateBeforeBirthDate } });
+    await user.selectOptions(locationPicker, 'Inpatient Ward');
+    await selectVisitType(user);
+    await user.click(screen.getByRole('button', { name: /start visit/i }));
+
+    expect(await screen.findByText(/start date cannot be before the patient's birth date/i)).toBeInTheDocument();
+    expect(mockSaveVisit).not.toHaveBeenCalled();
+  });
+
   it('shows a friendly error when AM/PM is missing from the visit start time', async () => {
     const user = userEvent.setup();
 

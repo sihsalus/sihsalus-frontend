@@ -5,6 +5,7 @@ import useSWRImmutable from 'swr/immutable';
 const provenanceAddressFields = ['cityVillage', 'countyDistrict', 'stateProvince', 'address1', 'country'];
 const invalidProvenanceCharacterRegex = /[^\p{L}\s,]/gu;
 const repeatedWhitespaceRegex = /\s{2,}/g;
+export const visitProvenanceMaxLength = 1025;
 
 interface AddressHierarchyEntry {
   name: string;
@@ -27,7 +28,10 @@ export function sanitizeVisitProvenance(value: string) {
     })
     .join('');
 
-  return text.replace(invalidProvenanceCharacterRegex, '').replace(repeatedWhitespaceRegex, ' ');
+  return text
+    .replace(invalidProvenanceCharacterRegex, '')
+    .replace(repeatedWhitespaceRegex, ' ')
+    .slice(0, visitProvenanceMaxLength);
 }
 
 export function normalizeVisitProvenance(value: string) {
@@ -35,7 +39,8 @@ export function normalizeVisitProvenance(value: string) {
     .split(',')
     .map((segment) => segment.trim())
     .filter(Boolean)
-    .join(', ');
+    .join(', ')
+    .slice(0, visitProvenanceMaxLength);
 }
 
 export function buildAddressHierarchyPath(entry: AddressHierarchyEntry, separator: string) {

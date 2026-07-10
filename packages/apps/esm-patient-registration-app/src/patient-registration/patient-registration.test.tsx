@@ -323,6 +323,7 @@ describe('Registering a new patient', () => {
 
     expect(screen.getByRole('button', { name: /register patient/i })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: /cancel/i })).toBeInTheDocument();
+    expect(document.querySelector('form')).toHaveAttribute('novalidate');
   });
 
   it('saves the patient without extra info', async () => {

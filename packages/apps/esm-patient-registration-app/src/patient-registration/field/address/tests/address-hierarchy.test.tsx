@@ -1,5 +1,5 @@
 import { getDefaultsFromConfigSchema, useConfig } from '@openmrs/esm-framework';
-import { render, screen, waitFor } from '@testing-library/react';
+import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { Form, Formik } from 'formik';
 import { mockedAddressTemplate, mockedOrderedFields, mockOpenmrsId, mockPatient, mockSession } from 'test-utils';
 
@@ -556,7 +556,7 @@ describe('Address hierarchy', () => {
     });
   });
 
-  it('uses required fields from address hierarchy when the address template does not define required elements', () => {
+  it('uses required fields from address hierarchy and displays their inline validation error', async () => {
     mockUseConfig.mockReturnValue({
       ...getDefaultsFromConfigSchema(esmPatientRegistrationSchema),
       fieldConfigurations: {
@@ -589,6 +589,42 @@ describe('Address hierarchy', () => {
     expect(screen.queryByLabelText('Country (optional)')).not.toBeInTheDocument();
     expect(screen.queryByLabelText('Province (optional)')).not.toBeInTheDocument();
     expect(screen.getByLabelText('Village (optional)')).not.toBeRequired();
+
+    fireEvent.blur(screen.getByLabelText('Country'));
+
+    expect(await screen.findByText('fieldRequired')).toBeInTheDocument();
+  });
+
+  it('displays inline validation errors for required address hierarchy comboboxes', async () => {
+    mockUseConfig.mockReturnValue({
+      ...getDefaultsFromConfigSchema(esmPatientRegistrationSchema),
+      fieldConfigurations: {
+        address: {
+          useAddressHierarchy: {
+            enabled: true,
+            useQuickSearch: false,
+            searchAddressByLevel: true,
+          },
+        },
+      } as RegistrationConfig['fieldConfigurations'],
+    });
+
+    mockUseOrderedAddressHierarchyLevels.mockReturnValue({
+      orderedFields: mockedOrderedFields,
+      requiredFields: new Set(['country']),
+      isLoadingFieldOrder: false,
+      errorFetchingFieldOrder: undefined,
+    });
+
+    mockResourcesContextValue.addressTemplate = {
+      ...mockedAddressTemplate,
+      requiredElements: null,
+    };
+
+    renderAddressHierarchy(initialContextValues);
+    fireEvent.blur(screen.getByLabelText('Country'));
+
+    expect(await screen.findByText('fieldRequired')).toBeInTheDocument();
   });
 
   it('renders combobox fields when address hierarchy is enabled and searchAddressByLevel is set to true', () => {

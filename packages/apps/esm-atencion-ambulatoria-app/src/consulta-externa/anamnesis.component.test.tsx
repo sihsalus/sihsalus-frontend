@@ -22,6 +22,11 @@ vi.mock('@openmrs/esm-patient-common-lib', async () => {
 const mockUseAnamnesis = vi.mocked(useAnamnesis);
 const mockLaunchPatientWorkspace = vi.mocked(launchPatientWorkspace);
 const mockUseConfig = vi.mocked(useConfig);
+const pagination = {
+  currentPage: 1,
+  totalPages: 1,
+  onPageChange: vi.fn(),
+};
 
 describe('Anamnesis', () => {
   beforeEach(() => {
@@ -48,6 +53,7 @@ describe('Anamnesis', () => {
       isValidating: false,
       error: undefined,
       mutate: vi.fn(),
+      pagination,
     });
 
     render(<Anamnesis patientUuid="patient-uuid" />);
@@ -84,6 +90,7 @@ describe('Anamnesis', () => {
       isValidating: false,
       error: undefined,
       mutate,
+      pagination,
     });
 
     render(<Anamnesis patientUuid="patient-uuid" />);
@@ -91,6 +98,7 @@ describe('Anamnesis', () => {
     expect(screen.getByText('Dolor abdominal')).toBeInTheDocument();
     expect(screen.getByText('Dolor posterior a ingesta de alimentos.')).toBeInTheDocument();
     expect(screen.getByText(/Disminuido/)).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /Dra\. Perez/ })).toHaveTextContent(/\d{1,2}:\d{2}/);
 
     await user.click(screen.getByRole('button', { name: 'Registrar Anamnesis' }));
 

@@ -47,6 +47,22 @@
   background-color: $ui-01;
 }
 
+.emptyPage {
+  @include type.type-style("body-compact-01");
+  color: $text-02;
+  padding: layout.$spacing-07 layout.$spacing-05;
+  text-align: center;
+}
+
+.pagination {
+  align-items: center;
+  background-color: $ui-01;
+  border-top: 1px solid $ui-03;
+  display: flex;
+  justify-content: center;
+  padding: layout.$spacing-03 layout.$spacing-05;
+}
+
 .combinedPanel {
   display: flex;
   flex-direction: column;

@@ -25,7 +25,7 @@ const ReferenciaContraReferencia: React.FC<ReferenciaContraReferenciaProps> = ({
   const { t } = useTranslation();
   const config = useConfig<ConfigObject>();
 
-  const { entries, isLoading, isValidating, error, mutate } = useReferralCounterReferral(
+  const { entries, isLoading, isValidating, error, mutate, pagination } = useReferralCounterReferral(
     patientUuid,
     config.encounterTypes?.referralCounterReferral,
     config.encounterTypes?.externalConsultation,
@@ -59,6 +59,7 @@ const ReferenciaContraReferencia: React.FC<ReferenciaContraReferenciaProps> = ({
       isValidating={isValidating}
       loadingVariant="accordion"
       onAction={handleLaunchForm}
+      pagination={pagination}
     >
       <Accordion>
         {entries.map((entry) => {
@@ -68,7 +69,7 @@ const ReferenciaContraReferencia: React.FC<ReferenciaContraReferenciaProps> = ({
               key={entry.uuid}
               title={
                 <span>
-                  {formatDate(new Date(entry.encounterDatetime))}
+                  {formatDate(new Date(entry.encounterDatetime), { time: true })}
                   {' — '}
                   <Tag type="outline" size="sm">
                     {entry.provider ?? t('unknownProvider', 'Proveedor desconocido')}

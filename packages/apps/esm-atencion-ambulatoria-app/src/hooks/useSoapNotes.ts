@@ -1,5 +1,5 @@
-import { openmrsFetch, restBaseUrl } from '@openmrs/esm-framework';
-import useSWR from 'swr';
+import { restBaseUrl } from '@openmrs/esm-framework';
+import { useClinicalHistoryPagination } from './useClinicalHistoryPagination';
 
 interface SoapEntry {
   encounterUuid: string;
@@ -28,13 +28,10 @@ interface Encounter {
 export function useSoapNotes(patientUuid: string, encounterTypeUuid: string, concepts: Record<string, string>) {
   const url =
     patientUuid && encounterTypeUuid
-      ? `${restBaseUrl}/encounter?patient=${patientUuid}&encounterType=${encounterTypeUuid}&v=custom:(uuid,encounterDatetime,encounterProviders:(display),obs:(uuid,concept:(uuid,display),value,display))&limit=20`
+      ? `${restBaseUrl}/encounter?patient=${patientUuid}&encounterType=${encounterTypeUuid}&order=desc&v=custom:(uuid,encounterDatetime,encounterProviders:(display),obs:(uuid,concept:(uuid,display),value,display))`
       : null;
 
-  const { data, error, isLoading, isValidating, mutate } = useSWR<{ data: { results: Encounter[] } }>(
-    url,
-    openmrsFetch,
-  );
+  const { data, error, isLoading, isValidating, mutate, pagination } = useClinicalHistoryPagination<Encounter>(url);
 
   const subjectiveUuid = concepts?.soapSubjectiveUuid;
   const objectiveUuid = concepts?.soapObjectiveUuid;
@@ -48,7 +45,7 @@ export function useSoapNotes(patientUuid: string, encounterTypeUuid: string, con
     return typeof match.value === 'string' ? match.value : (match.value?.display ?? null);
   };
 
-  const soapEntries: SoapEntry[] = (data?.data?.results ?? [])
+  const soapEntries: SoapEntry[] = data
     .map((encounter) => ({
       encounterUuid: encounter.uuid,
       encounterDatetime: encounter.encounterDatetime,
@@ -66,5 +63,6 @@ export function useSoapNotes(patientUuid: string, encounterTypeUuid: string, con
     isValidating,
     error,
     mutate,
+    pagination,
   };
 }

@@ -93,4 +93,18 @@ describe('ClinicalHistoryCard', () => {
     await user.click(within(card).getByRole('button', { name: 'Registrar dato' }));
     expect(onAction).toHaveBeenCalledOnce();
   });
+
+  it('keeps pagination available when the current page has no section data', async () => {
+    const user = userEvent.setup();
+    const onPageChange = vi.fn();
+
+    render(
+      <ClinicalHistoryCard {...defaultProps} empty pagination={{ currentPage: 1, totalPages: 3, onPageChange }} />,
+    );
+
+    expect(screen.queryByTestId('empty-state')).not.toBeInTheDocument();
+    expect(screen.getByRole('status')).toHaveTextContent(/registros clínicos/);
+    await user.click(screen.getByRole('button', { name: 'Page 2' }));
+    expect(onPageChange).toHaveBeenCalledWith(2);
+  });
 });

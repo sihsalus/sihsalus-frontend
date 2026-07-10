@@ -41,14 +41,14 @@ const Financiador: React.FC<FinanciadorProps> = ({ patientUuid }) => {
   const { insuranceEntries, isLoading } = useInsuranceProvider(patientUuid, config.concepts?.insuranceProviderUuid);
 
   const headers = [
-    { key: 'date', header: t('date', 'Fecha') },
+    { key: 'date', header: t('dateAndTime', 'Fecha y hora') },
     { key: 'provider', header: t('insuranceProvider', 'Financiador') },
     { key: 'encounter', header: t('encounterType', 'Tipo de Encuentro') },
   ];
 
   const rows = insuranceEntries.map((entry) => ({
     id: entry.uuid,
-    date: formatDate(new Date(entry.obsDatetime)),
+    date: formatDate(new Date(entry.obsDatetime), { time: true }),
     provider: (
       <Tag type={insuranceTagType[entry.display] || 'gray'} size="sm">
         {entry.display}

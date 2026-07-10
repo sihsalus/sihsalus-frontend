@@ -46,20 +46,30 @@ describe('Anamnesis', () => {
     });
   });
 
-  it('renders empty state when the patient has no anamnesis entries', () => {
+  it('renders the standard empty state and launches anamnesis registration', async () => {
+    const user = userEvent.setup();
+    const mutate = vi.fn();
     mockUseAnamnesis.mockReturnValue({
       anamnesisEntries: [],
       isLoading: false,
       isValidating: false,
       error: undefined,
-      mutate: vi.fn(),
+      mutate,
       pagination,
     });
 
     render(<Anamnesis patientUuid="patient-uuid" />);
 
     expect(screen.getByText('Historial de Anamnesis')).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: /(?:Record|Registrar) anamnesis/i })).toBeInTheDocument();
+    await user.click(screen.getByRole('button', { name: /(?:Record|Registrar) anamnesis/i }));
+
+    expect(mockLaunchPatientWorkspace).toHaveBeenCalledWith(patientFormEntryWorkspace, {
+      mutateForm: mutate,
+      formInfo: {
+        patientUuid: 'patient-uuid',
+        formUuid: 'CE-ANAM-001-ANAMNESIS',
+      },
+    });
   });
 
   it('renders anamnesis data and launches the split anamnesis form', async () => {

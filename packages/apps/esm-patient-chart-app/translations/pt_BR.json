@@ -14,6 +14,8 @@
   "causeOfDeath": "Causa da morte",
   "causeOfDeath_lower": "conceitos de causa de morte configurados no sistema",
   "causeOfDeathIsRequired": "Selecione a causa da morte",
+  "chartAccessDeniedMessage": "Você não tem permissão para acessar o prontuário do paciente. Foi redirecionado para a página inicial.",
+  "chartAccessDeniedTitle": "Acesso restrito",
   "checkFilters": "Verifique os filtros acima",
   "close": "Fechar",
   "confirm": "Confirmar",

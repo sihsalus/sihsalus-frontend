@@ -86,7 +86,7 @@ const FormsTable = ({
                           <Link
                             style={{ cursor: 'pointer' }}
                             onClick={() => {
-                              handleFormOpen(tableRows[i].form, '');
+                              handleFormOpen(tableRows[i].form, tableRows[i].encounterUuid ?? '');
                             }}
                             role="presentation"
                             className={styles.formName}

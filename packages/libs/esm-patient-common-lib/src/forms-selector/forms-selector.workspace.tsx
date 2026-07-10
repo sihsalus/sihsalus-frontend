@@ -9,7 +9,7 @@ import styles from './forms-selector.scss';
 import type { CompletedFormInfo, Form as FormSchema } from './types';
 
 // Generic type for form launch function
-export type FormLaunchHandler = (form: FormSchema, encounterUuid: string) => void;
+export type FormLaunchHandler = (form: FormSchema, encounterUuid: string, onFormSubmitted: () => void) => void;
 
 export interface FormsSelectorWorkspaceAdditionalProps {
   availableForms: Array<CompletedFormInfo>;
@@ -57,9 +57,9 @@ export default function FormsSelectorWorkspace({
 
   const handleFormOpen = useCallback(
     (form: FormSchema, encounterUuid: string) => {
-      setCompletedForms((prev) => new Set(prev).add(form.uuid));
-
-      onFormLaunch(form, encounterUuid);
+      onFormLaunch(form, encounterUuid, () => {
+        setCompletedForms((prev) => new Set(prev).add(form.uuid));
+      });
     },
     [onFormLaunch],
   );

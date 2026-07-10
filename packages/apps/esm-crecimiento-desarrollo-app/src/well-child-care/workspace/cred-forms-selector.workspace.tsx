@@ -15,6 +15,7 @@ import type { ConfigObject } from '../../config-schema';
 import { credCourseLifeEditPrivilege } from '../../constants';
 import { resolveCREDForm } from '../../hooks/useCREDFormLauncher';
 import { useCREDFormsForAgeGroup } from '../../hooks/useCREDFormsForAgeGroup';
+import useEncountersCRED, { encounterMatchesFormIdentifier } from '../../hooks/useEncountersCRED';
 import { type DefaultPatientWorkspaceProps, formEntryWorkspace } from '../../types';
 
 interface CREDFormsSelectorWorkspaceProps extends DefaultPatientWorkspaceProps {
@@ -23,6 +24,7 @@ interface CREDFormsSelectorWorkspaceProps extends DefaultPatientWorkspaceProps {
   patientBirthDate?: string;
   controlNumber?: number;
   controlTargetDate?: string;
+  consultationDatetime?: string;
   title?: string;
   subtitle?: string;
   backWorkspace?: string | null;
@@ -44,6 +46,7 @@ const CREDFormsSelectorWorkspace: React.FC<CREDFormsSelectorWorkspaceProps> = (p
   const patientBirthDate = props.patientBirthDate ?? workspaceProps.patientBirthDate;
   const controlNumber = props.controlNumber ?? workspaceProps.controlNumber ?? 0;
   const controlTargetDate = props.controlTargetDate ?? workspaceProps.controlTargetDate;
+  const consultationDatetime = props.consultationDatetime ?? workspaceProps.consultationDatetime;
   const title =
     props.title ?? workspaceProps.title ?? t('credFormsSelection', 'Selección de Formularios Crecimiento y Desarrollo');
   const subtitle =
@@ -59,6 +62,7 @@ const CREDFormsSelectorWorkspace: React.FC<CREDFormsSelectorWorkspaceProps> = (p
       : (workspaceProps.backWorkspace ?? 'wellchild-control-form');
   const patientUuid = props.patientUuid ?? workspaceProps.patientUuid ?? '';
   const { patient } = usePatient(patientUuid);
+  const { encounters, mutate: mutateCREDEncounters } = useEncountersCRED(patientUuid);
   const fallbackAvailableForms = useCREDFormsForAgeGroup(
     config,
     patientBirthDate ?? patient?.birthDate,
@@ -71,6 +75,32 @@ const CREDFormsSelectorWorkspace: React.FC<CREDFormsSelectorWorkspaceProps> = (p
         userHasAccess(formInfo.requiredPrivilege ?? credCourseLifeEditPrivilege, session?.user),
       ),
     [availableForms, session?.user],
+  );
+  const formsWithHistory = useMemo(
+    () =>
+      filteredAvailableForms.map((formInfo) => {
+        const associatedEncounters = (encounters ?? [])
+          .filter(
+            (encounter) => encounter.encounterDatetime && encounterMatchesFormIdentifier(encounter, formInfo.form.uuid),
+          )
+          .sort(
+            (first, second) =>
+              new Date(second.encounterDatetime ?? 0).getTime() - new Date(first.encounterDatetime ?? 0).getTime(),
+          )
+          .map((encounter) => ({
+            uuid: encounter.uuid,
+            encounterDatetime: encounter.encounterDatetime ?? '',
+          }));
+
+        return {
+          ...formInfo,
+          associatedEncounters,
+          lastCompletedDate: associatedEncounters[0]?.encounterDatetime
+            ? new Date(associatedEncounters[0].encounterDatetime)
+            : undefined,
+        };
+      }),
+    [encounters, filteredAvailableForms],
   );
   const closeWorkspace = (options?: { onWorkspaceClose?: () => void }) => {
     void props.closeWorkspace({ discardUnsavedChanges: true }).then(() => {
@@ -88,13 +118,15 @@ const CREDFormsSelectorWorkspace: React.FC<CREDFormsSelectorWorkspaceProps> = (p
   const setTitle = props.setTitle ?? (() => {});
 
   const launchForm = useCallback(
-    async (form: Form, encounterUuid: string) => {
+    async (form: Form, encounterUuid: string, onFormSubmitted: () => void) => {
       try {
         const resolvedForm = await resolveCREDForm(form.uuid, form.display ?? form.name ?? form.uuid);
 
         launchWorkspace2(formEntryWorkspace, {
           form: resolvedForm,
           encounterUuid,
+          handlePostResponse: onFormSubmitted,
+          preFilledQuestions: consultationDatetime ? { encounterDatetime: new Date(consultationDatetime) } : undefined,
         });
       } catch {
         showSnackbar({
@@ -107,13 +139,16 @@ const CREDFormsSelectorWorkspace: React.FC<CREDFormsSelectorWorkspaceProps> = (p
         });
       }
     },
-    [t],
+    [consultationDatetime, t],
   );
+  const handleComplete = useCallback(() => {
+    void mutateCREDEncounters();
+  }, [mutateCREDEncounters]);
 
   return (
     <RequirePrivilege privilege={credCourseLifeEditPrivilege}>
       <FormsSelectorWorkspace
-        availableForms={filteredAvailableForms}
+        availableForms={formsWithHistory}
         patientAge={patientAge}
         controlNumber={controlNumber}
         patientUuid={patientUuid}
@@ -122,6 +157,7 @@ const CREDFormsSelectorWorkspace: React.FC<CREDFormsSelectorWorkspaceProps> = (p
         subtitle={subtitle}
         backWorkspace={backWorkspace}
         onFormLaunch={launchForm}
+        onComplete={handleComplete}
         promptBeforeClosing={promptBeforeClosing}
         closeWorkspaceWithSavedChanges={closeWorkspaceWithSavedChanges}
         setTitle={setTitle}

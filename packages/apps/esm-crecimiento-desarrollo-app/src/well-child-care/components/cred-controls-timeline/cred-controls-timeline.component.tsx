@@ -28,7 +28,10 @@ const CredAgeGroups: React.FC<CredAgeGroupsProps> = ({ patientUuid }) => {
     if (!patient?.birthDate) return { inDays: 0, inMonths: 0 };
     const birthDate = dayjs(patient.birthDate);
     const today = dayjs();
-    return { inDays: today.diff(birthDate, 'days'), inMonths: today.diff(birthDate, 'months') };
+    return {
+      inDays: today.diff(birthDate, 'days'),
+      inMonths: today.diff(birthDate, 'months'),
+    };
   }, [patient]);
 
   const currentAgeGroup = useMemo(() => {
@@ -68,11 +71,19 @@ const CredAgeGroups: React.FC<CredAgeGroupsProps> = ({ patientUuid }) => {
   }, [controls, ageGroupsCRED]);
 
   const handleAgeGroupClick = (group) => {
+    const control = controls.find(
+      (candidate) =>
+        candidate.ageGroupLabel === group.label && candidate.status !== 'completed' && candidate.status !== 'scheduled',
+    );
+
+    if (!control) return;
+
     setSelectedAgeGroup(group);
     launchWorkspace2('wellchild-control-form', {
       workspaceTitle: `${t('ageGroupDetails', 'Control Crecimiento y Desarrollo - Grupo Etario')} - ${translateCredAgeGroupLabel(t, group.label)}`,
       patientUuid,
       ageGroup: group,
+      control,
       type: 'ageGroup',
     });
   };
@@ -93,6 +104,10 @@ const CredAgeGroups: React.FC<CredAgeGroupsProps> = ({ patientUuid }) => {
           const isSelected = selectedAgeGroup?.label === group.label;
           const allCompleted = summary && summary.total > 0 && summary.completed === summary.total;
           const hasOverdue = summary && summary.overdue > 0;
+          const hasAvailableControl = controls.some(
+            (control) =>
+              control.ageGroupLabel === group.label && control.status !== 'completed' && control.status !== 'scheduled',
+          );
 
           return (
             <Tile
@@ -104,7 +119,7 @@ const CredAgeGroups: React.FC<CredAgeGroupsProps> = ({ patientUuid }) => {
                 [styles.groupCompleted]: allCompleted,
                 [styles.groupOverdue]: hasOverdue,
               })}
-              onClick={canEdit ? () => handleAgeGroupClick(group) : undefined}
+              onClick={canEdit && hasAvailableControl ? () => handleAgeGroupClick(group) : undefined}
             >
               <strong>{translateCredAgeGroupLabel(t, group.label)}</strong>
               {group.sublabel && <div>{translateCredAgeGroupSublabel(t, group.sublabel)}</div>}
@@ -115,7 +130,9 @@ const CredAgeGroups: React.FC<CredAgeGroupsProps> = ({ patientUuid }) => {
               )}
               {hasOverdue && (
                 <div className={styles.overdueIndicator}>
-                  {t('overdueShort', '{{count}} venc.', { count: summary.overdue })}
+                  {t('overdueShort', '{{count}} venc.', {
+                    count: summary.overdue,
+                  })}
                 </div>
               )}
             </Tile>

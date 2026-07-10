@@ -1,4 +1,3 @@
-@use '@carbon/colors';
 @use '@carbon/layout';
 @use '@openmrs/esm-styleguide/src/vars' as *;
 
@@ -6,20 +5,12 @@
   border: 1px solid $ui-03;
 }
 
-.iconSuccess {
-  fill: $support-02;
+.iconRecorded {
+  fill: $text-02;
 }
 
 .iconPending {
   fill: $text-03;
-}
-
-.rowCompleted {
-  background-color: colors.$green-10 !important;
-}
-
-.rowPending {
-  background-color: colors.$yellow-10 !important;
 }
 
 // Responsive: allow horizontal scroll on small screens

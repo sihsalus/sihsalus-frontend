@@ -32,7 +32,7 @@ describe('cred-label-translations', () => {
   });
 
   it('translates generated CRED control labels to Spanish', () => {
-    expect(translateCredControlLabel(t, 'RN - 7 a 14 días')).toBe('Recién nacido - 7 a 14 días');
+    expect(translateCredControlLabel(t, 'RN - 7 a 13 días')).toBe('Recién nacido - 7 a 13 días');
     expect(translateCredControlLabel(t, '1 mes')).toBe('1 mes');
     expect(translateCredControlLabel(t, '5 años')).toBe('5 años');
   });

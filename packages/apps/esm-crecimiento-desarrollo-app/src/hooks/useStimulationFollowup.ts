@@ -51,9 +51,8 @@ function isDevelopmentRisk(value: string | null): boolean {
 }
 
 /**
- * Hook para seguimiento del desarrollo (EEDP/TEPSI):
- * - Subtests coordinación y motricidad TEPSI
- * - Indicador de falta de estimulación
+ * Hook de lectura histórica para seguimientos EEDP/TEPSI previos a NTS 238.
+ * Las evaluaciones vigentes se lanzan desde DevelopmentOverview (Huanca, EDI y habilidades).
  *
  * Usa: config.earlyStimulation.tepsiCoordinationConceptUuid, tepsiMotorConceptUuid y clasificación CRED-004
  */

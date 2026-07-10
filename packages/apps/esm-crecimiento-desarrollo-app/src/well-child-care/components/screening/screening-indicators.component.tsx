@@ -11,7 +11,7 @@ import {
   TableRow,
   Tag,
 } from '@carbon/react';
-import { Add, CheckmarkFilled, Time } from '@carbon/react/icons';
+import { Add, Document, Time } from '@carbon/react/icons';
 import { userHasAccess, useSession } from '@openmrs/esm-framework';
 import { CardHeader, ErrorState, useLaunchWorkspaceRequiringVisit } from '@openmrs/esm-patient-common-lib';
 import React, { useCallback, useMemo } from 'react';
@@ -36,7 +36,7 @@ const ScreeningIndicators: React.FC<ScreeningIndicatorsProps> = ({ patientUuid }
     'wellchild-control-form',
   );
   const { screenings, completedCount, totalRequired, isLoading, error } = useScreeningIndicators(patientUuid);
-  const headerTitle = t('screeningIndicators', 'Tamizajes Obligatorios');
+  const headerTitle = t('screeningIndicators', 'Historial de tamizajes');
 
   const handleAdd = useCallback(
     () => launchControlWorkspace({ control: nextDueControl }),
@@ -57,7 +57,7 @@ const ScreeningIndicators: React.FC<ScreeningIndicatorsProps> = ({ patientUuid }
       screenings.map((screening, idx) => ({
         id: `screening-${idx}`,
         status: screening.completed ? (
-          <CheckmarkFilled size={16} className={styles.iconSuccess} />
+          <Document size={16} className={styles.iconRecorded} />
         ) : (
           <Time size={16} className={styles.iconPending} />
         ),
@@ -78,8 +78,11 @@ const ScreeningIndicators: React.FC<ScreeningIndicatorsProps> = ({ patientUuid }
   return (
     <div className={styles.widgetCard}>
       <CardHeader title={headerTitle}>
-        <Tag type={completedCount === totalRequired ? 'green' : 'gray'} size="sm">
-          {completedCount}/{totalRequired}
+        <Tag type="gray" size="sm">
+          {t('screeningTypesRecorded', '{{completed}}/{{total}} tipos con registro', {
+            completed: completedCount,
+            total: totalRequired,
+          })}
         </Tag>
         {canEdit && (
           <Button kind="ghost" size="sm" renderIcon={Add} onClick={handleAdd} iconDescription={t('add', 'Add')}>
@@ -101,17 +104,13 @@ const ScreeningIndicators: React.FC<ScreeningIndicatorsProps> = ({ patientUuid }
                 </TableRow>
               </TableHead>
               <TableBody>
-                {rows.map((row) => {
-                  const idx = parseInt(row.id.replace('screening-', ''), 10);
-                  const isCompleted = screenings[idx]?.completed;
-                  return (
-                    <TableRow key={row.id} className={isCompleted ? styles.rowCompleted : styles.rowPending}>
-                      {row.cells.map((cell) => (
-                        <TableCell key={cell.id}>{cell.value}</TableCell>
-                      ))}
-                    </TableRow>
-                  );
-                })}
+                {rows.map((row) => (
+                  <TableRow key={row.id}>
+                    {row.cells.map((cell) => (
+                      <TableCell key={cell.id}>{cell.value}</TableCell>
+                    ))}
+                  </TableRow>
+                ))}
               </TableBody>
             </Table>
           </TableContainer>

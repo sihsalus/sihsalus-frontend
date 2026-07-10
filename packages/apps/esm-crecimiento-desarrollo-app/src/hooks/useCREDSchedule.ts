@@ -181,9 +181,12 @@ export function useCREDSchedule(patientUuid: string): UseCREDScheduleResult {
         status = 'completed';
       } else if (appointment) {
         status = 'scheduled';
-      } else if (today.isAfter(dayjs(control.targetDate))) {
+      } else if (today.isAfter(dayjs(control.dueEndDate), 'day')) {
         status = 'overdue';
-      } else if (today.isSame(dayjs(control.targetDate), 'day')) {
+      } else if (
+        today.isSame(dayjs(control.targetDate), 'day') ||
+        today.isAfter(dayjs(control.targetDate), 'day')
+      ) {
         status = 'pending';
       } else {
         status = 'future';
@@ -200,10 +203,15 @@ export function useCREDSchedule(patientUuid: string): UseCREDScheduleResult {
     });
   }, [patient?.birthDate, encounters, appointments]);
 
-  const nextDueControl = useMemo(
-    () => controls.find((c) => c.status === 'overdue' || c.status === 'pending') ?? null,
-    [controls],
-  );
+  const nextDueControl = useMemo(() => {
+    const pending = controls.find((control) => control.status === 'pending');
+    if (pending) return pending;
+
+    const overdue = controls.filter((control) => control.status === 'overdue');
+    if (overdue.length > 0) return overdue.at(-1) ?? null;
+
+    return controls.find((control) => control.status === 'future') ?? null;
+  }, [controls]);
 
   const overdueControls = useMemo(() => controls.filter((c) => c.status === 'overdue'), [controls]);
 

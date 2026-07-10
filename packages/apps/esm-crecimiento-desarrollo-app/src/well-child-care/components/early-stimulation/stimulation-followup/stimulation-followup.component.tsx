@@ -39,8 +39,12 @@ const StimulationFollowup: React.FC<StimulationFollowupProps> = ({ patientUuid }
     return <ErrorState error={error} headerTitle={headerTitle} />;
   }
 
-  const riskLabel = hasStimulationLack ? t('esRisk', 'Riesgo') : lastEvaluationResult ? t('esNormal', 'Normal') : null;
-  const riskTagType = hasStimulationLack ? 'red' : lastEvaluationResult ? 'green' : 'gray';
+  const riskLabel = hasStimulationLack
+    ? t('esRisk', 'Riesgo')
+    : lastEvaluationResult
+      ? t('resultRecorded', 'Con registro')
+      : null;
+  const riskTagType = hasStimulationLack ? 'red' : 'gray';
 
   return (
     <div className={styles.widgetCard}>
@@ -88,8 +92,8 @@ const StimulationFollowup: React.FC<StimulationFollowupProps> = ({ patientUuid }
                     {t('esRisk', 'Riesgo')}
                   </Tag>
                 ) : lastEvaluationResult ? (
-                  <Tag type="green" size="sm">
-                    {t('esNormal', 'Normal')}
+                  <Tag type="gray" size="sm">
+                    {t('resultRecorded', 'Con registro')}
                   </Tag>
                 ) : (
                   <span className={styles.noData}>{t('noData', 'Sin datos')}</span>

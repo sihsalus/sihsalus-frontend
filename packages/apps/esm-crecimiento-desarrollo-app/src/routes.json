@@ -9,13 +9,13 @@
       "name": "growth-chart-overview-widget",
       "component": "growthChart",
       "slot": "patient-chart-summary-dashboard-slot",
-      "privileges": "app:cred.neonatal"
+      "privileges": "app:hoja.clinica.cred.neonatal"
     },
     {
       "name": "child-immunization-schedule",
       "component": "childImmunizationScheduleLink",
       "slot": "well-child-care-slot",
-      "privileges": "app:cred.immunization",
+      "privileges": "app:hoja.clinica.cred.inmunizaciones",
       "meta": {
         "columns": 1,
         "columnSpan": 1,
@@ -28,68 +28,68 @@
       "name": "child-immunization-schedule-dashboard",
       "slot": "patient-chart-child-immunization-schedule-dashboard-slot",
       "component": "childImmunizationSchedule",
-      "privileges": "app:cred.immunization"
+      "privileges": "app:hoja.clinica.cred.inmunizaciones"
     },
     {
       "name": "cred-checkouts",
       "component": "credCheckouts",
       "slot": "cred-schedule-slot",
       "order": 2,
-      "privileges": "app:cred.wellChild"
+      "privileges": "app:hoja.clinica.cred.ninoSano"
     },
     {
       "name": "cred-controls-timeline",
       "component": "credControls",
       "slot": "cred-schedule-slot",
       "order": 1,
-      "privileges": "app:cred.wellChild"
+      "privileges": "app:hoja.clinica.cred.ninoSano"
     },
     {
       "name": "cred-matrix",
       "component": "credControlsMatrix",
       "slot": "cred-following-slot",
       "order": 3,
-      "privileges": "app:cred.wellChild"
+      "privileges": "app:hoja.clinica.cred.ninoSano"
     },
     {
       "name": "anemia-screening-widget",
       "component": "anemiaScreening",
       "slot": "cred-following-slot",
       "order": 4,
-      "privileges": "app:cred.nutrition"
+      "privileges": "app:hoja.clinica.cred.nutricion"
     },
     {
       "name": "supplementation-tracker-widget",
       "component": "supplementationTracker",
       "slot": "cred-following-slot",
       "order": 5,
-      "privileges": "app:cred.nutrition"
+      "privileges": "app:hoja.clinica.cred.nutricion"
     },
     {
       "name": "screening-indicators-widget",
       "component": "screeningIndicators",
       "slot": "cred-following-slot",
       "order": 6,
-      "privileges": "app:cred.nutrition"
+      "privileges": "app:hoja.clinica.cred.nutricion"
     },
     {
       "name": "neonatal-attention-chart",
       "component": "neonatalAttentionChart",
       "slot": "neonatal-attention-slot",
       "order": 1,
-      "privileges": "app:cred.neonatal"
+      "privileges": "app:hoja.clinica.cred.neonatal"
     },
     {
       "name": "neonatal-care-dashboard",
       "slot": "patient-chart-neonatal-care-dashboard-slot",
       "component": "neonatalCare",
-      "privileges": "app:cred.neonatal"
+      "privileges": "app:hoja.clinica.cred.neonatal"
     },
     {
       "name": "neonatal-care-dashboard-link",
       "component": "neonatalCareLink",
       "slot": "well-child-care-slot",
-      "privileges": "app:cred.neonatal",
+      "privileges": "app:hoja.clinica.cred.neonatal",
       "meta": {
         "columns": 1,
         "columnSpan": 1,
@@ -103,88 +103,88 @@
       "component": "neonatalCounselingChart",
       "slot": "neonatal-counseling-slot",
       "order": 1,
-      "privileges": "app:cred.neonatal"
+      "privileges": "app:hoja.clinica.cred.neonatal"
     },
     {
       "name": "neonatal-alojamiento-conjunto-chart",
       "component": "alojamientoConjunto",
       "slot": "neonatal-alojamiento-conjunto-slot",
       "order": 1,
-      "privileges": "app:cred.neonatal"
+      "privileges": "app:hoja.clinica.cred.neonatal"
     },
     {
       "name": "neonatal-evaluation-chart",
       "component": "neonatalEvaluationChart",
       "slot": "neonatal-evaluation-slot",
       "order": 1,
-      "privileges": "app:cred.neonatal"
+      "privileges": "app:hoja.clinica.cred.neonatal"
     },
     {
       "name": "prenatal-antecedents-history",
       "component": "childMedicalHistory",
       "slot": "neonatal-perinatal-slot",
       "order": 1,
-      "privileges": "app:cred.antecedentes"
+      "privileges": "app:hoja.clinica.cred.antecedentes"
     },
     {
       "name": "labour-history-chart",
       "component": "neonatalRegisterChart",
       "slot": "neonatal-perinatal-slot",
       "order": 3,
-      "privileges": "app:cred.neonatal"
+      "privileges": "app:hoja.clinica.cred.neonatal"
     },
     {
       "name": "detalles-nacimiento-chart",
       "component": "neonatalRegisterBirth",
       "slot": "neonatal-perinatal-slot",
       "order": 4,
-      "privileges": "app:cred.neonatal"
+      "privileges": "app:hoja.clinica.cred.neonatal"
     },
     {
       "name": "pregnancy-details-chart",
       "component": "pregnancyDetails",
       "slot": "neonatal-perinatal-slot",
       "order": 5,
-      "privileges": "app:cred.neonatal"
+      "privileges": "app:hoja.clinica.cred.neonatal"
     },
     {
       "name": "grow-chart",
       "component": "growthChart",
       "slot": "neonatal-vitals-slot",
       "order": 4,
-      "privileges": "app:cred.neonatal"
+      "privileges": "app:hoja.clinica.cred.neonatal"
     },
     {
       "name": "newborn-balance-overview-chart",
       "component": "newbornBalanceOverviewChart",
       "slot": "neonatal-vitals-slot",
       "order": 2,
-      "privileges": "app:cred.neonatal"
+      "privileges": "app:hoja.clinica.cred.neonatal"
     },
     {
       "name": "newborn-biometrics-base-chart",
       "component": "newbornBiometricsBaseChart",
       "slot": "neonatal-vitals-slot",
       "order": 3,
-      "privileges": "app:cred.neonatal"
+      "privileges": "app:hoja.clinica.cred.neonatal"
     },
     {
       "name": "vaccination-appointment",
       "component": "vaccinationAppointment",
       "slot": "vaccination-appointment-slot",
-      "privileges": "app:cred.immunization"
+      "privileges": "app:hoja.clinica.cred.inmunizaciones"
     },
     {
       "name": "vaccination-schedule",
       "component": "vaccinationSchedule",
       "slot": "vaccination-schedule-slot",
-      "privileges": "app:cred.immunization"
+      "privileges": "app:hoja.clinica.cred.inmunizaciones"
     },
     {
       "name": "well-child-care",
       "component": "wellChildCareLink",
       "slot": "well-child-care-slot",
-      "privileges": "app:cred.wellChild",
+      "privileges": "app:hoja.clinica.cred.ninoSano",
       "meta": {
         "columns": 1,
         "columnSpan": 1,
@@ -197,13 +197,13 @@
       "name": "well-child-care-dashboard",
       "slot": "patient-chart-well-child-care-dashboard-slot",
       "component": "wellChildCare",
-      "privileges": "app:cred.wellChild"
+      "privileges": "app:hoja.clinica.cred.ninoSano"
     },
     {
       "name": "well-child-care-dashboard-group-link",
       "component": "wellChildCareSideNavGroup",
       "slot": "patient-chart-dashboard-slot",
-      "privileges": "app:cred.cursoVida",
+      "privileges": "app:hoja.clinica.cred.cursoVida",
       "meta": {
         "slot": "well-child-care-slot",
         "isFolder": true
@@ -213,13 +213,13 @@
       "name": "early-stimulation-dashboard",
       "slot": "patient-chart-early-stimulation-dashboard-slot",
       "component": "earlyStimulation",
-      "privileges": "app:cred.earlyStim"
+      "privileges": "app:hoja.clinica.cred.estimulacionTemprana"
     },
     {
       "name": "early-stimulation-dashboard-link",
       "component": "earlyStimulationLink",
       "slot": "well-child-care-slot",
-      "privileges": "app:cred.earlyStim",
+      "privileges": "app:hoja.clinica.cred.estimulacionTemprana",
       "meta": {
         "columns": 1,
         "columnSpan": 1,
@@ -232,13 +232,13 @@
       "name": "child-nutrition-dashboard",
       "slot": "patient-chart-child-nutrition-dashboard-slot",
       "component": "childNutrition",
-      "privileges": "app:cred.nutrition"
+      "privileges": "app:hoja.clinica.cred.nutricion"
     },
     {
       "name": "child-nutrition-dashboard-link",
       "component": "childNutritionLink",
       "slot": "well-child-care-slot",
-      "privileges": "app:cred.nutrition",
+      "privileges": "app:hoja.clinica.cred.nutricion",
       "meta": {
         "columns": 1,
         "columnSpan": 1,
@@ -252,68 +252,68 @@
       "component": "nutritionalAssessment",
       "slot": "child-nutrition-assessment-slot",
       "order": 1,
-      "privileges": "app:cred.nutrition"
+      "privileges": "app:hoja.clinica.cred.nutricion"
     },
     {
       "name": "feeding-counseling-widget",
       "component": "feedingCounseling",
       "slot": "child-nutrition-counseling-slot",
       "order": 1,
-      "privileges": "app:cred.nutrition"
+      "privileges": "app:hoja.clinica.cred.nutricion"
     },
     {
       "name": "nutrition-followup-widget",
       "component": "nutritionFollowup",
       "slot": "child-nutrition-followup-slot",
       "order": 1,
-      "privileges": "app:cred.nutrition"
+      "privileges": "app:hoja.clinica.cred.nutricion"
     },
     {
       "name": "stimulation-sessions-widget",
       "component": "stimulationSessions",
       "slot": "early-stimulation-sessions-slot",
       "order": 1,
-      "privileges": "app:cred.earlyStim"
+      "privileges": "app:hoja.clinica.cred.estimulacionTemprana"
     },
     {
       "name": "stimulation-followup-widget",
       "component": "stimulationFollowup",
       "slot": "early-stimulation-followup-slot",
       "order": 1,
-      "privileges": "app:cred.earlyStim"
+      "privileges": "app:hoja.clinica.cred.estimulacionTemprana"
     },
     {
       "name": "stimulation-counseling-widget",
       "component": "stimulationCounseling",
       "slot": "early-stimulation-counseling-slot",
       "order": 1,
-      "privileges": "app:cred.earlyStim"
+      "privileges": "app:hoja.clinica.cred.estimulacionTemprana"
     },
     {
       "name": "cred-form-action-button",
       "component": "credFormActionButton",
       "slot": "action-menu-items-slot",
       "order": 1,
-      "privileges": "app:cred.cursoVida.edit"
+      "privileges": "app:hoja.clinica.cred.cursoVida.editar"
     },
     {
       "name": "antecedentes-patologicos-overview",
       "component": "antecedentesPatologicos",
       "slot": "additional-health-services-slot",
-      "privileges": "app:cred.antecedentes"
+      "privileges": "app:hoja.clinica.cred.antecedentes"
     },
     {
       "name": "development-overview-widget",
       "component": "developmentOverview",
       "slot": "cred-development-slot",
       "order": 1,
-      "privileges": "app:cred.earlyStim"
+      "privileges": "app:hoja.clinica.cred.estimulacionTemprana"
     },
     {
       "name": "well-child-care-dashboard-route",
       "component": "hiddenDashboardMarker",
       "slot": "patient-chart-dashboard-slot",
-      "privileges": "app:cred.wellChild",
+      "privileges": "app:hoja.clinica.cred.ninoSano",
       "meta": {
         "slot": "patient-chart-well-child-care-dashboard-slot",
         "path": "well-child-care-dashboard",
@@ -327,7 +327,7 @@
       "name": "neonatal-care-dashboard-route",
       "component": "hiddenDashboardMarker",
       "slot": "patient-chart-dashboard-slot",
-      "privileges": "app:cred.neonatal",
+      "privileges": "app:hoja.clinica.cred.neonatal",
       "meta": {
         "slot": "patient-chart-neonatal-care-dashboard-slot",
         "path": "neonatal-care-dashboard",
@@ -341,7 +341,7 @@
       "name": "child-immunization-schedule-dashboard-route",
       "component": "hiddenDashboardMarker",
       "slot": "patient-chart-dashboard-slot",
-      "privileges": "app:cred.immunization",
+      "privileges": "app:hoja.clinica.cred.inmunizaciones",
       "meta": {
         "slot": "patient-chart-child-immunization-schedule-dashboard-slot",
         "path": "child-immunization-schedule-dashboard",
@@ -355,7 +355,7 @@
       "name": "early-stimulation-dashboard-route",
       "component": "hiddenDashboardMarker",
       "slot": "patient-chart-dashboard-slot",
-      "privileges": "app:cred.earlyStim",
+      "privileges": "app:hoja.clinica.cred.estimulacionTemprana",
       "meta": {
         "slot": "patient-chart-early-stimulation-dashboard-slot",
         "path": "early-stimulation-dashboard",
@@ -369,7 +369,7 @@
       "name": "child-nutrition-dashboard-route",
       "component": "hiddenDashboardMarker",
       "slot": "patient-chart-dashboard-slot",
-      "privileges": "app:cred.nutrition",
+      "privileges": "app:hoja.clinica.cred.nutricion",
       "meta": {
         "slot": "patient-chart-child-nutrition-dashboard-slot",
         "path": "child-nutrition-dashboard",
@@ -384,7 +384,7 @@
     {
       "name": "condition-delete-confirmation-dialog",
       "component": "conditionFilterDeleteConfirmationDialog",
-      "privileges": "app:cred.antecedentes.edit"
+      "privileges": "app:hoja.clinica.cred.antecedentes.editar"
     }
   ],
   "workspaces": [
@@ -393,49 +393,49 @@
       "component": "adverseReactionFormWorkspace",
       "title": "Reacción Adversa",
       "type": "form",
-      "privileges": "app:cred.immunization.edit"
+      "privileges": "app:hoja.clinica.cred.inmunizaciones.editar"
     },
     {
       "name": "antecedentes-patologicos-form-workspace",
       "component": "antecedentesPatologicosFormWorkspace",
       "title": "Antecedentes Patológicos",
       "type": "form",
-      "privileges": "app:cred.antecedentes.edit"
+      "privileges": "app:hoja.clinica.cred.antecedentes.editar"
     },
     {
       "name": "conditions-filter-form-workspace",
       "component": "conditionsFilterWorkspace",
       "title": "Agregar Condición",
       "type": "form",
-      "privileges": "app:cred.antecedentes.edit"
+      "privileges": "app:hoja.clinica.cred.antecedentes.editar"
     },
     {
       "name": "maternal-conditions-form-workspace",
       "component": "conditionsFilterWorkspace",
       "title": "Agregar Condición",
       "type": "form",
-      "privileges": "app:cred.antecedentes.edit"
+      "privileges": "app:hoja.clinica.cred.antecedentes.editar"
     },
     {
       "name": "forms-selector-workspace",
       "component": "formsSelectorWorkspace",
       "title": "Selección de Formularios",
       "type": "form",
-      "privileges": "app:cred.cursoVida.edit"
+      "privileges": "app:hoja.clinica.cred.cursoVida.editar"
     },
     {
       "name": "wellchild-control-form",
       "component": "wellchildControlsworkspace",
       "title": "Control de Niño Sano",
       "type": "form",
-      "privileges": "app:cred.cursoVida.edit"
+      "privileges": "app:hoja.clinica.cred.cursoVida.editar"
     },
     {
       "name": "test-peruano-form",
       "component": "testPeruanoFormWorkspace",
       "title": "Test Peruano de Desarrollo",
       "type": "form",
-      "privileges": "app:cred.earlyStim.edit"
+      "privileges": "app:hoja.clinica.cred.estimulacionTemprana.editar"
     }
   ],
   "workspaces2": [
@@ -443,43 +443,43 @@
       "name": "adverse-reaction-form-workspace",
       "component": "adverseReactionFormWorkspace",
       "window": "patient-chart-well-child-care-forms",
-      "privileges": "app:cred.immunization.edit"
+      "privileges": "app:hoja.clinica.cred.inmunizaciones.editar"
     },
     {
       "name": "antecedentes-patologicos-form-workspace",
       "component": "antecedentesPatologicosFormWorkspace",
       "window": "patient-chart-well-child-care-forms",
-      "privileges": "app:cred.antecedentes.edit"
+      "privileges": "app:hoja.clinica.cred.antecedentes.editar"
     },
     {
       "name": "conditions-filter-form-workspace",
       "component": "conditionsFilterWorkspace",
       "window": "patient-chart-well-child-care-forms",
-      "privileges": "app:cred.antecedentes.edit"
+      "privileges": "app:hoja.clinica.cred.antecedentes.editar"
     },
     {
       "name": "maternal-conditions-form-workspace",
       "component": "conditionsFilterWorkspace",
       "window": "patient-chart-well-child-care-forms",
-      "privileges": "app:cred.antecedentes.edit"
+      "privileges": "app:hoja.clinica.cred.antecedentes.editar"
     },
     {
       "name": "forms-selector-workspace",
       "component": "formsSelectorWorkspace",
       "window": "patient-chart-well-child-care-forms",
-      "privileges": "app:cred.cursoVida.edit"
+      "privileges": "app:hoja.clinica.cred.cursoVida.editar"
     },
     {
       "name": "wellchild-control-form",
       "component": "wellchildControlsworkspace",
       "window": "patient-chart-well-child-care-forms",
-      "privileges": "app:cred.cursoVida.edit"
+      "privileges": "app:hoja.clinica.cred.cursoVida.editar"
     },
     {
       "name": "test-peruano-form",
       "component": "testPeruanoFormWorkspace",
       "window": "patient-chart-well-child-care-forms",
-      "privileges": "app:cred.earlyStim.edit"
+      "privileges": "app:hoja.clinica.cred.estimulacionTemprana.editar"
     }
   ],
   "workspaceWindows2": [

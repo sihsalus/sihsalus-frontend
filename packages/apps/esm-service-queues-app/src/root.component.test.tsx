@@ -1,6 +1,7 @@
 import { render, screen } from '@testing-library/react';
 import type { ReactNode } from 'react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
+import Root from './root.component';
 
 type RequirePrivilegeProps = {
   privilege: string | string[];
@@ -42,19 +43,15 @@ describe('Service queues root', () => {
     window.history.pushState({}, 'Service queues', '/openmrs/spa/home/service-queues');
   });
 
-  it('protects direct queues access with the service queues privilege', async () => {
-    const { default: Root } = await import('./root.component');
-
+  it('protects direct queues access with the service queues privilege', () => {
     render(<Root />);
 
-    expect(mockRequirePrivilege).toHaveBeenCalledWith(expect.objectContaining({ privilege: 'app:service-queues' }));
+    expect(mockRequirePrivilege).toHaveBeenCalledWith(expect.objectContaining({ privilege: 'app:home.colasAtencion' }));
     expect(screen.getByText('Service queues home')).toBeInTheDocument();
   });
 
-  it('does not render the queues home when the privilege guard blocks access', async () => {
+  it('does not render the queues home when the privilege guard blocks access', () => {
     mockRequirePrivilege.mockImplementation(() => null);
-    const { default: Root } = await import('./root.component');
-
     render(<Root />);
 
     expect(screen.queryByText('Service queues home')).not.toBeInTheDocument();

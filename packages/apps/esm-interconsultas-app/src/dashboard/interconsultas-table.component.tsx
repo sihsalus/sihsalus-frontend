@@ -37,7 +37,7 @@ import { getStatusDisplay, getStatusTagType, getUrgencyDisplay } from '../utils/
 import styles from './interconsultas-table.scss';
 
 const pageSizes = [10, 20, 30, 40, 50];
-const editPrivileges = ['app:clinical.chart.interconsultations.edit', 'app:interconsultas.edit'];
+const editPrivileges = ['app:hoja.clinica.interconsultas.editar', 'app:home.interconsultas.editar'];
 
 interface FilterOption {
   uuid: string;

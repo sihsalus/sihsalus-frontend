@@ -4,6 +4,7 @@ import React from 'react';
 import { useTranslation } from 'react-i18next';
 
 import type { ConfigObject } from '../../../../config-schema';
+import { familyPlanningEditPrivilege } from '../../../../constants';
 import ConfiguredFormButton from '../../configured-form-button.component';
 import styles from './contraceptive-methods.scss';
 
@@ -53,6 +54,7 @@ const ContraceptiveMethods: React.FC<ContraceptiveMethodsProps> = ({ patientUuid
       </div>
       <ConfiguredFormButton
         formUuid={config.formsList.familyPlanningCounselingForm}
+        editPrivilege={familyPlanningEditPrivilege}
         label={t('registerContraceptiveMethod', 'Registrar método')}
       />
     </Tile>

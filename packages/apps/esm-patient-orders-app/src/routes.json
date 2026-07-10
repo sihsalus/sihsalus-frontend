@@ -39,7 +39,7 @@
       "name": "patient-orders-summary-dashboard",
       "component": "ordersDashboardLink",
       "slot": "patient-chart-dashboard-slot",
-      "privileges": "app:clinical.chart.orders",
+      "privileges": "app:hoja.clinica.ordenes",
       "meta": {
         "slot": "patient-chart-orders-dashboard-slot",
         "path": "Orders",
@@ -51,7 +51,7 @@
       "name": "patient-orders-dashboard",
       "component": "ordersDashboard",
       "slot": "patient-chart-orders-dashboard-slot",
-      "privileges": "app:clinical.chart.orders",
+      "privileges": "app:hoja.clinica.ordenes",
       "meta": {
         "fullWidth": false
       }
@@ -62,43 +62,43 @@
       "name": "order-basket",
       "component": "orderBasketWorkspace",
       "window": "patient-chart-orders",
-      "privileges": "app:clinical.chart.orders.edit"
+      "privileges": "app:hoja.clinica.ordenes.editar"
     },
     {
       "name": "orderable-concept-workspace",
       "component": "orderableConceptSearch",
       "window": "patient-chart-orders",
-      "privileges": "app:clinical.chart.orders.edit"
+      "privileges": "app:hoja.clinica.ordenes.editar"
     },
     {
       "name": "patient-orders-form-workspace",
       "component": "patientOrdersFormWorkspace",
       "window": "patient-chart-orders",
-      "privileges": "app:clinical.chart.orders.edit"
+      "privileges": "app:hoja.clinica.ordenes.editar"
     },
     {
       "name": "test-results-form-workspace",
       "component": "testResultsFormWorkspace",
       "window": "patient-chart-orders",
-      "privileges": "app:clinical.chart.results.edit"
+      "privileges": "app:hoja.clinica.resultados.editar"
     },
     {
       "name": "add-radiology-order",
       "component": "orderableConceptSearch",
       "window": "patient-chart-orders",
-      "privileges": "app:clinical.chart.orders.edit"
+      "privileges": "app:hoja.clinica.ordenes.editar"
     },
     {
       "name": "add-immunization-order",
       "component": "orderableConceptSearch",
       "window": "patient-chart-orders",
-      "privileges": "app:clinical.chart.orders.edit"
+      "privileges": "app:hoja.clinica.ordenes.editar"
     },
     {
       "name": "add-referral-order",
       "component": "orderableConceptSearch",
       "window": "patient-chart-orders",
-      "privileges": "app:clinical.chart.orders.edit"
+      "privileges": "app:hoja.clinica.ordenes.editar"
     }
   ],
   "workspaceWindows2": [

@@ -9,7 +9,7 @@
       "name": "allergy-tile",
       "component": "allergiesTile",
       "slot": "patient-details-header-slot",
-      "privileges": "app:clinical.chart.allergies",
+      "privileges": "app:hoja.clinica.alergias",
       "online": true,
       "offline": true,
       "order": 3
@@ -18,13 +18,13 @@
       "name": "allergies-list",
       "component": "allergiesList",
       "slot": "allergy-list-pills-slot",
-      "privileges": "app:clinical.chart.allergies"
+      "privileges": "app:hoja.clinica.alergias"
     },
     {
       "name": "allergies-details-widget",
       "component": "allergiesDetailedSummary",
       "slot": "patient-chart-allergies-dashboard-slot",
-      "privileges": "app:clinical.chart.allergies",
+      "privileges": "app:hoja.clinica.alergias",
       "online": true,
       "offline": true
     },
@@ -32,7 +32,7 @@
       "name": "allergies-summary-dashboard",
       "component": "allergiesDashboardLink",
       "slot": "patient-chart-dashboard-slot",
-      "privileges": "app:clinical.chart.allergies",
+      "privileges": "app:hoja.clinica.alergias",
       "online": true,
       "offline": true,
       "order": 6,
@@ -46,7 +46,7 @@
     {
       "name": "delete-allergy-modal",
       "component": "deleteAllergyModal",
-      "privileges": "app:clinical.chart.allergies.edit"
+      "privileges": "app:hoja.clinica.alergias.editar"
     }
   ],
   "workspaces2": [
@@ -54,7 +54,7 @@
       "name": "patient-allergy-form-workspace",
       "component": "allergyFormWorkspace",
       "window": "patient-allergy-form-window",
-      "privileges": "app:clinical.chart.allergies.edit"
+      "privileges": "app:hoja.clinica.alergias.editar"
     }
   ],
   "workspaceWindows2": [

@@ -21,7 +21,7 @@ describe('<div/>', () => {
   test('renders dispening without error', () => {
     render(<Dispensing />);
 
-    expect(mockRequirePrivilege).toHaveBeenCalledWith(expect.objectContaining({ privilege: 'app:dispensing' }));
+    expect(mockRequirePrivilege).toHaveBeenCalledWith(expect.objectContaining({ privilege: 'app:home.farmacia' }));
   });
 
   test('does not render the dashboard slot when the privilege guard blocks access', () => {
@@ -29,6 +29,6 @@ describe('<div/>', () => {
 
     render(<Dispensing />);
 
-    expect(mockRequirePrivilege).toHaveBeenCalledWith(expect.objectContaining({ privilege: 'app:dispensing' }));
+    expect(mockRequirePrivilege).toHaveBeenCalledWith(expect.objectContaining({ privilege: 'app:home.farmacia' }));
   });
 });

@@ -30,7 +30,7 @@ describe('Laboratory root', () => {
   it('protects direct route access with the laboratory privilege', () => {
     render(<Root />);
 
-    expect(mockRequirePrivilege).toHaveBeenCalledWith(expect.objectContaining({ privilege: 'app:laboratory' }));
+    expect(mockRequirePrivilege).toHaveBeenCalledWith(expect.objectContaining({ privilege: 'app:home.laboratorio' }));
     expect(screen.getByText('Laboratory dashboard')).toBeInTheDocument();
   });
 

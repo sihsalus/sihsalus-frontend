@@ -1096,7 +1096,7 @@ const StartVisitFormGuard: React.FC<StartVisitFormProps> = (props) => {
   if (!canStartVisit(user)) {
     return (
       <UnauthorizedState
-        privilege={['app:adt', 'app:clinical.chart.visits.edit']}
+        privilege={['app:home.admision', 'app:hoja.clinica.visitas.editar']}
         description="Necesita permisos de admisión o edición de visitas para iniciar una consulta."
       />
     );

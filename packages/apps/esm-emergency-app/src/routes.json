@@ -60,7 +60,7 @@
         "slot": "emergency-dashboard-slot",
         "title": "emergencyDepartment"
       },
-      "privileges": "app:emergency",
+      "privileges": "app:home.emergencia",
       "order": 15,
       "online": true,
       "offline": false
@@ -69,7 +69,7 @@
       "name": "emergency-dashboard",
       "component": "emergencyDashboard",
       "slot": "emergency-dashboard-slot",
-      "privileges": "app:emergency",
+      "privileges": "app:home.emergencia",
       "online": true,
       "offline": false
     },

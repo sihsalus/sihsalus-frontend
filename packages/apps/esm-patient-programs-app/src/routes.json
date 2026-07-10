@@ -7,7 +7,7 @@
     {
       "name": "programs-overview-widget",
       "component": "programsOverview",
-      "privileges": "app:clinical.chart.programs",
+      "privileges": "app:hoja.clinica.programas",
       "meta": {
         "fullWidth": false
       },
@@ -17,14 +17,14 @@
       "name": "programs-details-widget",
       "slot": "patient-chart-programs-dashboard-slot",
       "component": "programsDetailedSummary",
-      "privileges": "app:clinical.chart.programs",
+      "privileges": "app:hoja.clinica.programas",
       "order": 6
     },
     {
       "name": "programs-summary-dashboard",
       "slot": "patient-chart-dashboard-slot",
       "component": "programsDashboardLink",
-      "privileges": "app:clinical.chart.programs",
+      "privileges": "app:hoja.clinica.programas",
       "meta": {
         "slot": "patient-chart-programs-dashboard-slot",
         "path": "Programs"
@@ -38,7 +38,7 @@
       "name": "programs-form-workspace",
       "component": "programsFormWorkspace",
       "window": "programs-form-window",
-      "privileges": "app:clinical.chart.programs.edit"
+      "privileges": "app:hoja.clinica.programas.editar"
     }
   ],
   "workspaceWindows2": [
@@ -51,7 +51,7 @@
     {
       "name": "program-delete-confirmation-modal",
       "component": "deleteProgramConfirmationModal",
-      "privileges": "app:clinical.chart.programs.edit"
+      "privileges": "app:hoja.clinica.programas.editar"
     }
   ]
 }

@@ -2,6 +2,8 @@ import { Button } from '@carbon/react';
 import { isDesktop, showModal, useLayoutType } from '@openmrs/esm-framework';
 import React, { useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
+import { RequirePrivilege } from '@sihsalus/esm-rbac';
+import { serviceQueuesEditPrivilege } from '../../constants';
 import { type QueueEntry } from '../../types';
 import styles from './clear-queue-entries.scss';
 
@@ -22,15 +24,17 @@ const ClearQueueEntries: React.FC<ClearQueueEntriesProps> = ({ queueEntries }) =
   }, [queueEntries]);
 
   return (
-    <Button
-      className={styles.clearQueueButton}
-      size={isDesktop(layout) ? 'sm' : 'lg'}
-      kind="ghost"
-      onClick={launchClearAllQueueEntriesModal}
-      iconDescription={t('clearQueueEntries', 'Clear queue entries')}
-    >
-      {t('clearQueueEntries', 'Clear queue entries')}
-    </Button>
+    <RequirePrivilege privilege={serviceQueuesEditPrivilege} hideUnauthorized>
+      <Button
+        className={styles.clearQueueButton}
+        size={isDesktop(layout) ? 'sm' : 'lg'}
+        kind="ghost"
+        onClick={launchClearAllQueueEntriesModal}
+        iconDescription={t('clearQueueEntries', 'Clear queue entries')}
+      >
+        {t('clearQueueEntries', 'Clear queue entries')}
+      </Button>
+    </RequirePrivilege>
   );
 };
 

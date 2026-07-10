@@ -18,6 +18,7 @@ import { AddIcon, formatDate, isDesktop, launchWorkspace2, useLayoutType } from 
 import { CardHeader, EmptyState, ErrorState } from '@openmrs/esm-patient-common-lib';
 import React, { useCallback, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
+import { RequirePrivilege } from '@sihsalus/esm-rbac';
 import { useFilteredEncounter } from '../../hooks/useFilteredEncounter';
 import { formEntryWorkspace } from '../../types';
 
@@ -32,6 +33,7 @@ interface PatientObservationGroupTableProps {
   displayText: string;
   encounterType: string;
   formUuid: string;
+  editPrivilege: string;
   formWorkspace?: string;
 }
 
@@ -69,6 +71,7 @@ const PatientObservationGroupTable: React.FC<PatientObservationGroupTableProps> 
   displayText,
   encounterType,
   formUuid,
+  editPrivilege,
   formWorkspace,
 }) => {
   const { t } = useTranslation();
@@ -169,7 +172,14 @@ const PatientObservationGroupTable: React.FC<PatientObservationGroupTableProps> 
   }
 
   if (!isLoading && observationGroups.length === 0) {
-    return <EmptyState headerTitle={headerTitle} displayText={displayText} launchForm={launchForm} />;
+    return (
+      <RequirePrivilege
+        privilege={editPrivilege}
+        fallback={<EmptyState headerTitle={headerTitle} displayText={displayText} />}
+      >
+        <EmptyState headerTitle={headerTitle} displayText={displayText} launchForm={launchForm} />
+      </RequirePrivilege>
+    );
   }
 
   return (
@@ -177,14 +187,16 @@ const PatientObservationGroupTable: React.FC<PatientObservationGroupTableProps> 
       <CardHeader title={headerTitle}>
         {isLoading && <InlineLoading description={t('refreshing', 'Refreshing...')} status="active" />}
         {formWorkspace && (
-          <Button
-            kind="ghost"
-            renderIcon={(props) => <AddIcon size={16} {...props} />}
-            onClick={launchForm}
-            aria-label={t('add', 'Add')}
-          >
-            {t('edit', 'Edit')}
-          </Button>
+          <RequirePrivilege privilege={editPrivilege} hideUnauthorized>
+            <Button
+              kind="ghost"
+              renderIcon={(props) => <AddIcon size={16} {...props} />}
+              onClick={launchForm}
+              aria-label={t('add', 'Add')}
+            >
+              {t('edit', 'Edit')}
+            </Button>
+          </RequirePrivilege>
         )}
       </CardHeader>
 

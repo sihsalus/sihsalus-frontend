@@ -9,7 +9,7 @@
       "name": "test-results-summary-dashboard",
       "component": "testResultsDashboardLink",
       "slot": "patient-chart-dashboard-slot",
-      "privileges": "app:clinical.chart.results",
+      "privileges": "app:hoja.clinica.resultados",
       "meta": {
         "slot": "patient-chart-test-results-dashboard-slot",
         "path": "Results",
@@ -27,7 +27,7 @@
       "name": "results-viewer",
       "slots": ["patient-chart-results-viewer-slot", "patient-chart-test-results-dashboard-slot"],
       "component": "resultsViewer",
-      "privileges": "app:clinical.chart.results"
+      "privileges": "app:hoja.clinica.resultados"
     },
     {
       "name": "lab-order-panel",
@@ -40,12 +40,12 @@
     {
       "name": "timeline-results-modal",
       "component": "timelineResultsModal",
-      "privileges": "app:clinical.chart.results"
+      "privileges": "app:hoja.clinica.resultados"
     },
     {
       "name": "print-modal",
       "component": "printModal",
-      "privileges": "app:clinical.chart.results"
+      "privileges": "app:hoja.clinica.resultados"
     }
   ],
   "workspaces2": [
@@ -54,7 +54,7 @@
       "type": "order",
       "component": "addLabOrderWorkspace",
       "window": "patient-chart-orders",
-      "privileges": "app:clinical.chart.orders.edit"
+      "privileges": "app:hoja.clinica.ordenes.editar"
     }
   ],
   "workspaces": [
@@ -63,7 +63,7 @@
       "type": "order",
       "component": "addLabOrderWorkspace",
       "title": "addLabOrderWorkspaceTitle",
-      "privileges": "app:clinical.chart.orders.edit"
+      "privileges": "app:hoja.clinica.ordenes.editar"
     }
   ]
 }

@@ -13,11 +13,20 @@ import {
   TableRow,
   Tile,
 } from '@carbon/react';
-import { AddIcon, formatDate, launchWorkspace2, parseDate, useLayoutType } from '@openmrs/esm-framework';
+import {
+  AddIcon,
+  formatDate,
+  launchWorkspace2,
+  parseDate,
+  useLayoutType,
+  userHasAccess,
+  useSession,
+} from '@openmrs/esm-framework';
 import { CardHeader, EmptyState, ErrorState } from '@openmrs/esm-patient-common-lib';
 import classNames from 'classnames';
 import React, { type ComponentProps, useCallback, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
+import { prenatalCareEditPrivilege } from '../../constants';
 import { type ConditionTableHeader, useConditions, useConditionsSorting } from './conditions.resource';
 import { ConditionsActionMenu } from './conditions-action-menu.component';
 import styles from './conditions-detailed-summary.scss';
@@ -35,6 +44,8 @@ function ConditionsDetailedSummary({ patient }) {
   const layout = useLayoutType();
   const isTablet = layout === 'tablet';
   const isDesktop = layout === 'small-desktop' || layout === 'large-desktop';
+  const session = useSession();
+  const canEdit = userHasAccess(prenatalCareEditPrivilege, session?.user);
 
   const { conditions, error, isLoading, isValidating } = useConditions(patient.id);
 
@@ -120,15 +131,19 @@ function ConditionsDetailedSummary({ patient }) {
                 size={isTablet ? 'lg' : 'sm'}
               />
             </div>
-            <div className={styles.divider}>|</div>
-            <Button
-              kind="ghost"
-              renderIcon={(props: ComponentProps<typeof AddIcon>) => <AddIcon size={16} {...props} />}
-              iconDescription="Add conditions"
-              onClick={launchConditionsForm}
-            >
-              {t('add', 'Add')}
-            </Button>
+            {canEdit && (
+              <>
+                <div className={styles.divider}>|</div>
+                <Button
+                  kind="ghost"
+                  renderIcon={(props: ComponentProps<typeof AddIcon>) => <AddIcon size={16} {...props} />}
+                  iconDescription="Add conditions"
+                  onClick={launchConditionsForm}
+                >
+                  {t('add', 'Add')}
+                </Button>
+              </>
+            )}
           </div>
         </CardHeader>
         <DataTable
@@ -158,7 +173,7 @@ function ConditionsDetailedSummary({ patient }) {
                           {renderHeaderLabel(header.header)}
                         </TableHeader>
                       ))}
-                      <TableHeader />
+                      {canEdit ? <TableHeader /> : null}
                     </TableRow>
                   </TableHead>
                   <TableBody>
@@ -167,9 +182,11 @@ function ConditionsDetailedSummary({ patient }) {
                         {row.cells.map((cell) => (
                           <TableCell key={cell.id}>{cell.value?.content ?? cell.value}</TableCell>
                         ))}
-                        <TableCell className="cds--table-column-menu">
-                          <ConditionsActionMenu patientUuid={patient.id} condition={sortedRows[index]} />
-                        </TableCell>
+                        {canEdit ? (
+                          <TableCell className="cds--table-column-menu">
+                            <ConditionsActionMenu patientUuid={patient.id} condition={sortedRows[index]} />
+                          </TableCell>
+                        ) : null}
                       </TableRow>
                     ))}
                   </TableBody>
@@ -192,7 +209,13 @@ function ConditionsDetailedSummary({ patient }) {
       </div>
     );
   }
-  return <EmptyState displayText={displayText} headerTitle={headerTitle} launchForm={launchConditionsForm} />;
+  return (
+    <EmptyState
+      displayText={displayText}
+      headerTitle={headerTitle}
+      launchForm={canEdit ? launchConditionsForm : undefined}
+    />
+  );
 }
 
 export default ConditionsDetailedSummary;

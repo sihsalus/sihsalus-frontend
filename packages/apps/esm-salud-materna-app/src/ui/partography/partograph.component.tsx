@@ -18,7 +18,9 @@ import { CardHeader, EmptyDataIllustration, EmptyState, ErrorState } from '@open
 import dayjs from 'dayjs';
 import React, { useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
+import { RequirePrivilege } from '@sihsalus/esm-rbac';
 import type { ConfigObject } from '../../config-schema';
+import { labourDeliveryEditPrivilege } from '../../constants';
 import { usePartograph } from '../../hooks/usePartograph';
 import { formEntryWorkspace } from '../../types';
 
@@ -170,9 +172,11 @@ const Partograph: React.FC<PartographyProps> = ({ patientUuid }) => {
           <p className={styles.content}>
             {t('noPartographData', 'No hay datos de partograma para mostrar en esta paciente.')}
           </p>
-          <Button onClick={handleAddHistory} renderIcon={Add} kind="ghost">
-            {t('recordLabourDetails', 'Registrar datos del trabajo de parto')}
-          </Button>
+          <RequirePrivilege privilege={labourDeliveryEditPrivilege} hideUnauthorized>
+            <Button onClick={handleAddHistory} renderIcon={Add} kind="ghost">
+              {t('recordLabourDetails', 'Registrar datos del trabajo de parto')}
+            </Button>
+          </RequirePrivilege>
         </Tile>
       </Layer>
     );
@@ -210,14 +214,16 @@ const Partograph: React.FC<PartographyProps> = ({ patientUuid }) => {
                   </div>
                   <span className={styles.divider}>|</span>
 
-                  <Button
-                    kind="ghost"
-                    renderIcon={(props) => <Add {...props} size={16} />}
-                    iconDescription={t('recordLabourDetails', 'Registrar datos del trabajo de parto')}
-                    onClick={handleAddHistory}
-                  >
-                    {t('add', 'Agregar')}
-                  </Button>
+                  <RequirePrivilege privilege={labourDeliveryEditPrivilege} hideUnauthorized>
+                    <Button
+                      kind="ghost"
+                      renderIcon={(props) => <Add {...props} size={16} />}
+                      iconDescription={t('recordLabourDetails', 'Registrar datos del trabajo de parto')}
+                      onClick={handleAddHistory}
+                    >
+                      {t('add', 'Agregar')}
+                    </Button>
+                  </RequirePrivilege>
                 </div>
               </CardHeader>
               {chartView ? (

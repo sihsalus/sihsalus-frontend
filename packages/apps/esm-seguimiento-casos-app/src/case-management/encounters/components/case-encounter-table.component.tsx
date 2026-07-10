@@ -12,12 +12,13 @@ import {
   TableHeader,
   TableRow,
 } from '@carbon/react';
-import { formatDate } from '@openmrs/esm-framework';
+import { formatDate, userHasAccess, useSession } from '@openmrs/esm-framework';
 import capitalize from 'lodash-es/capitalize';
 import React from 'react';
 import { useTranslation } from 'react-i18next';
 
 import type { Observation } from '../../../types';
+import { chartCaseMonitoringEditPrivilege } from '../../../utils/constants';
 import EncounterObservations from './encounter-observations/encounter-observations.component';
 
 interface CaseEncounterTableEncounter {
@@ -43,6 +44,8 @@ type CaseEncounterTableProps = {
 
 const CaseEncounterTable: React.FC<CaseEncounterTableProps> = ({ encounters, onEdit, onDelete, headers, rows }) => {
   const { t } = useTranslation();
+  const session = useSession();
+  const canEdit = userHasAccess(chartCaseMonitoringEditPrivilege, session?.user);
 
   function formatProviderName(display?: string) {
     return display ? display.split('-')[0].trim() : '--';
@@ -90,12 +93,16 @@ const CaseEncounterTable: React.FC<CaseEncounterTableProps> = ({ encounters, onE
                   </TableExpandRow>
                   <TableExpandedRow colSpan={headers.length + 1} {...getExpandedRowProps({ row })}>
                     <EncounterObservations observations={encounters[index].obs ?? []} />
-                    <Button onClick={() => onEdit(row.id)} kind="primary" size="sm">
-                      {t('edit', 'Edit')}
-                    </Button>
-                    <Button onClick={() => onDelete(row.id)} kind="danger" size="sm">
-                      {t('delete', 'Delete')}
-                    </Button>
+                    {canEdit ? (
+                      <>
+                        <Button onClick={() => onEdit(row.id)} kind="primary" size="sm">
+                          {t('edit', 'Edit')}
+                        </Button>
+                        <Button onClick={() => onDelete(row.id)} kind="danger" size="sm">
+                          {t('delete', 'Delete')}
+                        </Button>
+                      </>
+                    ) : null}
                   </TableExpandedRow>
                 </React.Fragment>
               ))}

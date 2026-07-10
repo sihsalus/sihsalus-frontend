@@ -9,7 +9,7 @@
       "name": "conditions-overview-widget",
       "slot": "patient-chart-summary-dashboard-slot",
       "component": "conditionsOverview",
-      "privileges": "app:clinical.chart.conditions",
+      "privileges": "app:hoja.clinica.condiciones",
       "order": 3,
       "meta": {
         "fullWidth": false
@@ -19,7 +19,7 @@
       "name": "active-problems-overview-widget",
       "slot": "patient-chart-summary-dashboard-slot",
       "component": "activeProblemsOverview",
-      "privileges": "app:clinical.chart.conditions",
+      "privileges": "app:hoja.clinica.condiciones",
       "order": 4,
       "meta": {
         "fullWidth": false
@@ -29,7 +29,7 @@
       "name": "past-diagnoses-overview-widget",
       "slot": "patient-chart-summary-dashboard-slot",
       "component": "pastDiagnosesOverview",
-      "privileges": "app:clinical.chart.conditions",
+      "privileges": "app:hoja.clinica.condiciones",
       "order": 5,
       "meta": {
         "fullWidth": false
@@ -39,7 +39,7 @@
       "name": "conditions-details-widget",
       "slot": "patient-chart-conditions-dashboard-slot",
       "component": "conditionsDetailedSummary",
-      "privileges": "app:clinical.chart.conditions",
+      "privileges": "app:hoja.clinica.condiciones",
       "meta": {
         "fullWidth": false
       }
@@ -48,7 +48,7 @@
       "name": "conditions-summary-dashboard",
       "component": "conditionsDashboardLink",
       "slot": "patient-chart-dashboard-slot",
-      "privileges": "app:clinical.chart.conditions",
+      "privileges": "app:hoja.clinica.condiciones",
       "order": 7,
       "meta": {
         "slot": "patient-chart-conditions-dashboard-slot",
@@ -62,7 +62,7 @@
     {
       "name": "condition-delete-confirmation-dialog",
       "component": "conditionDeleteConfirmationDialog",
-      "privileges": "app:clinical.chart.conditions.edit"
+      "privileges": "app:hoja.clinica.condiciones.editar"
     }
   ],
   "workspaces2": [
@@ -70,19 +70,19 @@
       "name": "conditions-form-workspace",
       "component": "conditionsFormWorkspace",
       "window": "conditions-form-window",
-      "privileges": "app:clinical.chart.conditions.edit"
+      "privileges": "app:hoja.clinica.condiciones.editar"
     },
     {
       "name": "active-problem-form-workspace",
       "component": "conditionsFormWorkspace",
       "window": "conditions-form-window",
-      "privileges": "app:clinical.chart.conditions.edit"
+      "privileges": "app:hoja.clinica.condiciones.editar"
     },
     {
       "name": "past-diagnosis-form-workspace",
       "component": "conditionsFormWorkspace",
       "window": "conditions-form-window",
-      "privileges": "app:clinical.chart.conditions.edit"
+      "privileges": "app:hoja.clinica.condiciones.editar"
     }
   ],
   "workspaceWindows2": [

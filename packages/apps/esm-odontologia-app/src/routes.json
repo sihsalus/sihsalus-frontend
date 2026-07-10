@@ -7,14 +7,14 @@
     {
       "component": "root",
       "route": "odontologia",
-      "privileges": "app:clinical.chart.dentistry"
+      "privileges": "app:hoja.clinica.odontologia"
     }
   ],
   "extensions": [
     {
       "name": "odontologia-dashboard-link",
       "component": "odontologiaDashboardLink",
-      "privileges": "app:clinical.chart.dentistry",
+      "privileges": "app:hoja.clinica.odontologia",
       "slot": "patient-chart-dashboard-slot",
       "order": 12,
       "meta": {
@@ -29,7 +29,7 @@
     {
       "name": "odontologia-dashboard",
       "component": "odontologiaDashboard",
-      "privileges": "app:clinical.chart.dentistry",
+      "privileges": "app:hoja.clinica.odontologia",
       "slot": "patient-chart-odontologia-slot",
       "order": 0,
       "online": true,
@@ -40,7 +40,7 @@
     {
       "name": "odontologia-odontogram-form-workspace",
       "component": "odontologiaOdontogramWorkspace",
-      "privileges": "app:clinical.chart.dentistry.edit",
+      "privileges": "app:hoja.clinica.odontologia.editar",
       "type": "clinical-form",
       "title": "odontogramWorkspaceTitle",
       "width": "extra-wide",

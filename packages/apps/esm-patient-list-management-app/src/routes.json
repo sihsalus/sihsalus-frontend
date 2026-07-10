@@ -14,14 +14,14 @@
         "slot": "patient-lists-dashboard-slot",
         "title": "Patient lists"
       },
-      "privileges": "app:patient-lists",
+      "privileges": "app:home.listasPacientes",
       "order": 80
     },
     {
       "component": "root",
       "name": "patient-lists-dashboard",
       "slot": "patient-lists-dashboard-slot",
-      "privileges": "app:patient-lists"
+      "privileges": "app:home.listasPacientes"
     },
     {
       "name": "list-details-table",

@@ -15,7 +15,7 @@
       "name": "patient-search-icon",
       "component": "patientSearchIcon",
       "slot": "top-nav-actions-slot",
-      "privileges": ["Get Patients", "app:topnav.patientSearch"],
+      "privileges": ["Get Patients", "app:opciones.busquedaPaciente"],
       "order": 0
     },
     {

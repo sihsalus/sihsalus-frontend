@@ -14,7 +14,7 @@
       "name": "interconsultas-dashboard",
       "slot": "interconsultas-dashboard-slot",
       "component": "root",
-      "privileges": "app:interconsultas"
+      "privileges": "app:home.interconsultas"
     },
     {
       "name": "interconsultas-dashboard-link",
@@ -25,13 +25,13 @@
         "slot": "interconsultas-dashboard-slot",
         "title": "Interconsultas"
       },
-      "privileges": "app:interconsultas",
+      "privileges": "app:home.interconsultas",
       "order": 16
     },
     {
       "name": "interconsultas-chart-dashboard-link",
       "component": "interconsultasChartDashboardLink",
-      "privileges": "app:clinical.chart.interconsultations",
+      "privileges": "app:hoja.clinica.interconsultas",
       "slot": "patient-chart-dashboard-slot",
       "order": 14,
       "meta": {
@@ -46,14 +46,14 @@
     {
       "name": "interconsultas-chart-widget",
       "component": "interconsultasChartWidget",
-      "privileges": "app:clinical.chart.interconsultations",
+      "privileges": "app:hoja.clinica.interconsultas",
       "slot": "patient-chart-interconsultas-slot",
       "order": 0
     },
     {
       "name": "request-interconsulta-action-button",
       "component": "requestInterconsultaActionButton",
-      "privileges": "app:clinical.chart.interconsultations.edit",
+      "privileges": "app:hoja.clinica.interconsultas.editar",
       "slot": "patient-actions-slot"
     }
   ],
@@ -61,27 +61,27 @@
     {
       "name": "receive-interconsulta-modal",
       "component": "receiveInterconsultaModal",
-      "privileges": "app:clinical.chart.interconsultations.edit"
+      "privileges": "app:hoja.clinica.interconsultas.editar"
     },
     {
       "name": "pickup-interconsulta-modal",
       "component": "pickupInterconsultaModal",
-      "privileges": "app:clinical.chart.interconsultations.edit"
+      "privileges": "app:hoja.clinica.interconsultas.editar"
     },
     {
       "name": "reject-interconsulta-modal",
       "component": "rejectInterconsultaModal",
-      "privileges": "app:clinical.chart.interconsultations.edit"
+      "privileges": "app:hoja.clinica.interconsultas.editar"
     },
     {
       "name": "respond-interconsulta-modal",
       "component": "respondInterconsultaModal",
-      "privileges": "app:clinical.chart.interconsultations.edit"
+      "privileges": "app:hoja.clinica.interconsultas.editar"
     },
     {
       "name": "interconsulta-detail-modal",
       "component": "interconsultaDetailModal",
-      "privileges": "app:clinical.chart.interconsultations"
+      "privileges": "app:hoja.clinica.interconsultas"
     }
   ],
   "workspaces2": [
@@ -89,7 +89,7 @@
       "name": "request-interconsulta-workspace",
       "component": "requestInterconsultaWorkspace",
       "window": "request-interconsulta-window",
-      "privileges": "app:clinical.chart.interconsultations.edit"
+      "privileges": "app:hoja.clinica.interconsultas.editar"
     }
   ],
   "workspaceWindows2": [

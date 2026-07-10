@@ -9,7 +9,7 @@
       "name": "procedures-form-workspace",
       "component": "proceduresFormWorkspace",
       "window": "procedures-form-window",
-      "privileges": "app:clinical.chart.procedures.edit"
+      "privileges": "app:hoja.clinica.procedimientos.editar"
     }
   ],
   "workspaceWindows2": [
@@ -24,7 +24,7 @@
       "name": "clinical-procedures-overview-widget",
       "slot": "patient-chart-summary-dashboard-slot",
       "component": "proceduresOverview",
-      "privileges": "app:clinical.chart.procedures",
+      "privileges": "app:hoja.clinica.procedimientos",
       "order": 6,
       "meta": { "fullWidth": false }
     },
@@ -32,14 +32,14 @@
       "name": "clinical-procedures-details-widget",
       "slot": "patient-chart-clinical-procedures-dashboard-slot",
       "component": "proceduresDetailedSummary",
-      "privileges": "app:clinical.chart.procedures",
+      "privileges": "app:hoja.clinica.procedimientos",
       "meta": { "fullWidth": false }
     },
     {
       "name": "clinical-procedures-summary-dashboard",
       "component": "proceduresDashboardLink",
       "slot": "patient-chart-dashboard-slot",
-      "privileges": "app:clinical.chart.procedures",
+      "privileges": "app:hoja.clinica.procedimientos",
       "order": 8,
       "meta": {
         "slot": "patient-chart-clinical-procedures-dashboard-slot",
@@ -51,7 +51,7 @@
     {
       "name": "procedure-delete-confirmation-dialog",
       "component": "procedureDeleteConfirmationDialog",
-      "privileges": "app:clinical.chart.procedures.edit"
+      "privileges": "app:hoja.clinica.procedimientos.editar"
     }
   ]
 }

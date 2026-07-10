@@ -1,10 +1,24 @@
-import { launchWorkspace2, openmrsFetch, restBaseUrl, useConfig } from '@openmrs/esm-framework';
+import {
+  launchWorkspace2,
+  openmrsFetch,
+  restBaseUrl,
+  useConfig,
+  userHasAccess,
+  useSession,
+} from '@openmrs/esm-framework';
 import type { CompletedFormInfo, Form } from '@openmrs/esm-patient-common-lib';
 import { FormsSelectorWorkspace } from '@openmrs/esm-patient-common-lib';
 import React, { useCallback, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import useSWR from 'swr';
 import type { ConfigObject } from '../../config-schema';
+import {
+  cancerPreventionEditPrivilege,
+  familyPlanningEditPrivilege,
+  labourDeliveryEditPrivilege,
+  postnatalCareEditPrivilege,
+  prenatalCareEditPrivilege,
+} from '../../constants';
 import { useCurrentPregnancy } from '../../hooks/useCurrentPregnancy';
 import { type DefaultPatientWorkspaceProps, formEntryWorkspace } from '../../types';
 import {
@@ -17,7 +31,7 @@ interface EncounterResponse {
   results: MaternalEncounter[];
 }
 
-const maternalFormKeys: Array<keyof ConfigObject['formsList']> = [
+const maternalFormKeys = [
   'maternalHistory',
   'currentPregnancy',
   'atencionPrenatal',
@@ -42,7 +56,9 @@ const maternalFormKeys: Array<keyof ConfigObject['formsList']> = [
   'familyPlanningFollowupForm',
   'cervicalCancerScreeningForm',
   'breastCancerScreeningForm',
-];
+] as const satisfies ReadonlyArray<keyof ConfigObject['formsList']>;
+
+type MaternalFormKey = (typeof maternalFormKeys)[number];
 
 const formLabels: Partial<Record<keyof ConfigObject['formsList'], string>> = {
   maternalHistory: 'Antecedentes obstétricos',
@@ -71,9 +87,37 @@ const formLabels: Partial<Record<keyof ConfigObject['formsList'], string>> = {
   breastCancerScreeningForm: 'Tamizaje de mama',
 };
 
+const formEditPrivileges: Record<MaternalFormKey, string> = {
+  maternalHistory: prenatalCareEditPrivilege,
+  currentPregnancy: prenatalCareEditPrivilege,
+  atencionPrenatal: prenatalCareEditPrivilege,
+  prenatalSupplementationForm: prenatalCareEditPrivilege,
+  screeningIndicatorsForm: prenatalCareEditPrivilege,
+  psychoprophylaxisForm: prenatalCareEditPrivilege,
+  birthPlanForm: prenatalCareEditPrivilege,
+  adolescentPregnancyCareForm: prenatalCareEditPrivilege,
+  perinatalMentalHealthForm: prenatalCareEditPrivilege,
+  maternalViolenceScreeningForm: prenatalCareEditPrivilege,
+  deliveryOrAbortion: labourDeliveryEditPrivilege,
+  SummaryOfLaborAndPostpartum: labourDeliveryEditPrivilege,
+  obstetricMonitor: labourDeliveryEditPrivilege,
+  obstetricsServiceForm: labourDeliveryEditPrivilege,
+  obstetricReferralForm: labourDeliveryEditPrivilege,
+  culturalBirthPreferencesForm: labourDeliveryEditPrivilege,
+  immediatePostpartumPeriod: postnatalCareEditPrivilege,
+  postpartumControl: postnatalCareEditPrivilege,
+  maternalDischargeForm: postnatalCareEditPrivilege,
+  maternalReadmissionForm: postnatalCareEditPrivilege,
+  familyPlanningCounselingForm: familyPlanningEditPrivilege,
+  familyPlanningFollowupForm: familyPlanningEditPrivilege,
+  cervicalCancerScreeningForm: cancerPreventionEditPrivilege,
+  breastCancerScreeningForm: cancerPreventionEditPrivilege,
+};
+
 const MaternalHealthFormsSelectorWorkspace: React.FC<DefaultPatientWorkspaceProps> = (props) => {
   const { t } = useTranslation();
   const config = useConfig<ConfigObject>();
+  const session = useSession();
   const workspaceProps = props.workspaceProps ?? {};
   const patientUuid = (props.patientUuid ?? workspaceProps.patientUuid ?? '') as string;
   const { pregnancyStartDate } = useCurrentPregnancy(patientUuid);
@@ -105,7 +149,7 @@ const MaternalHealthFormsSelectorWorkspace: React.FC<DefaultPatientWorkspaceProp
   const availableForms = useMemo<Array<CompletedFormInfo>>(() => {
     return maternalFormKeys.reduce<Array<CompletedFormInfo>>((forms, formKey) => {
       const formUuid = config.formsList[formKey];
-      if (!formUuid) {
+      if (!formUuid || !userHasAccess(formEditPrivileges[formKey], session?.user)) {
         return forms;
       }
 
@@ -125,7 +169,7 @@ const MaternalHealthFormsSelectorWorkspace: React.FC<DefaultPatientWorkspaceProp
 
       return forms;
     }, []);
-  }, [config.formsList]);
+  }, [config.formsList, session?.user]);
   const formsWithHistory = useMemo<Array<CompletedFormInfo>>(
     () =>
       availableForms.map((formInfo) => {

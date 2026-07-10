@@ -62,7 +62,7 @@ const OdontogramEmpty: React.FC<{ onGenerate?: () => void }> = ({ onGenerate }) 
 const OdontogramDashboard: React.FC<OdontogramDashboardProps> = ({ patientUuid }) => {
   const { t } = useTranslation();
   const session = useSession();
-  const canEdit = userHasAccess('app:clinical.chart.dentistry.edit', session?.user);
+  const canEdit = userHasAccess('app:hoja.clinica.odontologia.editar', session?.user);
   const { save, isSaving } = useOdontogramEncounter();
 
   const setPatient = useOdontogramDataStore((s) => s.setPatient);

@@ -17,7 +17,7 @@
       "name": "consulta-externa-dashboard-link",
       "component": "consultaExternaDashboardLink",
       "slot": "patient-chart-dashboard-slot",
-      "privileges": "app:clinical.chart.consultaExterna",
+      "privileges": "app:hoja.clinica.consultaExterna",
       "order": 9,
       "meta": {
         "columns": 1,
@@ -33,7 +33,7 @@
       "name": "consulta-externa-dashboard",
       "slot": "patient-chart-consulta-externa-slot",
       "component": "consultaExternaDashboard",
-      "privileges": "app:clinical.chart.consultaExterna",
+      "privileges": "app:hoja.clinica.consultaExterna",
       "order": 0,
       "online": true,
       "offline": false
@@ -42,7 +42,7 @@
       "name": "social-history-dashboard",
       "slot": "patient-chart-social-history-dashboard-slot",
       "component": "inPatientClinicalEncounter",
-      "privileges": "app:clinical.chart.socialHistory",
+      "privileges": "app:hoja.clinica.historiaSocial",
       "order": 0,
       "online": true,
       "offline": false
@@ -51,7 +51,7 @@
       "name": "social-history-dashboard-link",
       "component": "socialHistoryDashboardLink",
       "slot": "patient-chart-dashboard-slot",
-      "privileges": "app:clinical.chart.socialHistory",
+      "privileges": "app:hoja.clinica.historiaSocial",
       "order": 10,
       "meta": {
         "columns": 1,
@@ -68,7 +68,7 @@
     {
       "name": "condition-delete-confirmation-dialog",
       "component": "conditionFilterDeleteConfirmationDialog",
-      "privileges": "app:clinical.chart.socialHistory.edit"
+      "privileges": "app:hoja.clinica.historiaSocial.editar"
     }
   ],
   "workspaces": [
@@ -77,12 +77,12 @@
       "component": "conditionsFilterWorkspace",
       "title": "Antecedentes",
       "type": "form",
-      "privileges": "app:clinical.chart.socialHistory.edit"
+      "privileges": "app:hoja.clinica.historiaSocial.editar"
     },
     {
       "name": "forms-selector-workspace",
       "component": "formsSelectorWorkspace",
-      "privileges": "app:clinical.chart.consultaExterna.edit",
+      "privileges": "app:hoja.clinica.consultaExterna.editar",
       "title": "Selección de Formularios",
       "type": "form"
     }

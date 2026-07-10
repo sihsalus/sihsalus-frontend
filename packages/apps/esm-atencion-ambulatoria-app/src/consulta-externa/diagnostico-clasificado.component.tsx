@@ -9,7 +9,7 @@ import {
   TableRow,
   Tag,
 } from '@carbon/react';
-import { formatDate, useConfig } from '@openmrs/esm-framework';
+import { formatDate, useConfig, useLayoutType } from '@openmrs/esm-framework';
 import { launchPatientWorkspace } from '@openmrs/esm-patient-common-lib';
 import React from 'react';
 import { useTranslation } from 'react-i18next';
@@ -25,7 +25,11 @@ interface DiagnosticoClasificadoProps {
 const DiagnosticoClasificado: React.FC<DiagnosticoClasificadoProps> = ({ patientUuid }) => {
   const { t } = useTranslation();
   const config = useConfig<ConfigObject>();
-  const { diagnoses, isLoading, error } = useDiagnosisHistory(patientUuid, config.encounterTypes?.externalConsultation);
+  const isTablet = useLayoutType() === 'tablet';
+  const { diagnoses, isLoading, isValidating, error, mutate } = useDiagnosisHistory(
+    patientUuid,
+    config.encounterTypes?.externalConsultation,
+  );
 
   const headers = [
     { key: 'date', header: t('date', 'Fecha') },
@@ -68,6 +72,7 @@ const DiagnosticoClasificado: React.FC<DiagnosticoClasificadoProps> = ({ patient
 
   const handleLaunchForm = () => {
     launchPatientWorkspace(patientFormEntryWorkspace, {
+      mutateForm: mutate,
       formInfo: {
         patientUuid,
         formUuid: config.formsList?.consultaExternaForm,
@@ -80,12 +85,14 @@ const DiagnosticoClasificado: React.FC<DiagnosticoClasificadoProps> = ({ patient
       title={t('diagnosisHistory', 'Historial de Diagnósticos')}
       actionLabel={t('addDiagnosis', 'Registrar Diagnóstico')}
       empty={rows.length === 0}
-      emptyMessage={t('noDiagnosisData', 'No hay diagnósticos registrados para este paciente.')}
+      emptyDisplayText={t('diagnoses', 'diagnósticos')}
       error={error}
       isLoading={isLoading}
+      isValidating={isValidating}
       onAction={handleLaunchForm}
+      skeletonHeaders={headers}
     >
-      <DataTable rows={rows} headers={headers} size="sm">
+      <DataTable rows={rows} headers={headers} size={isTablet ? 'lg' : 'sm'}>
         {({ rows: tableRows, headers: tableHeaders, getTableProps, getHeaderProps, getRowProps }) => (
           <TableContainer>
             <Table {...getTableProps()} aria-label={t('diagnosisHistory', 'Historial de Diagnósticos')}>

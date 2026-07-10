@@ -33,7 +33,10 @@ export function useChiefComplaint(patientUuid: string, encounterTypeUuid: string
         `&v=custom:(uuid,encounterDatetime,obs:(uuid,display,obsDatetime,concept:(uuid),value))&limit=20`
       : null;
 
-  const { data, error, isLoading, mutate } = useSWR<{ data: { results: Encounter[] } }>(url, openmrsFetch);
+  const { data, error, isLoading, isValidating, mutate } = useSWR<{ data: { results: Encounter[] } }>(
+    url,
+    openmrsFetch,
+  );
 
   const complaints =
     data?.data?.results.flatMap((encounter) =>
@@ -50,6 +53,7 @@ export function useChiefComplaint(patientUuid: string, encounterTypeUuid: string
   return {
     complaints,
     isLoading,
+    isValidating,
     error,
     mutate,
   };

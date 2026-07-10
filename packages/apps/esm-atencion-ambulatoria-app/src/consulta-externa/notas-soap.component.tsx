@@ -16,7 +16,7 @@ interface NotasSoapProps {
 const NotasSoap: React.FC<NotasSoapProps> = ({ patientUuid }) => {
   const { t } = useTranslation();
   const config = useConfig<ConfigObject>();
-  const { soapEntries, isLoading, error } = useSoapNotes(
+  const { soapEntries, isLoading, isValidating, error, mutate } = useSoapNotes(
     patientUuid,
     config.encounterTypes?.externalConsultation,
     config.concepts,
@@ -24,6 +24,7 @@ const NotasSoap: React.FC<NotasSoapProps> = ({ patientUuid }) => {
 
   const handleLaunchForm = () => {
     launchPatientWorkspace(patientFormEntryWorkspace, {
+      mutateForm: mutate,
       formInfo: {
         patientUuid,
         formUuid: config.formsList?.soapNoteForm ?? config.formsList?.consultaExternaForm,
@@ -36,9 +37,11 @@ const NotasSoap: React.FC<NotasSoapProps> = ({ patientUuid }) => {
       title={t('soapNotesHistory', 'Historial de examen físico / SOAP')}
       actionLabel={t('addSoapNote', 'Registrar examen físico / SOAP')}
       empty={soapEntries.length === 0}
-      emptyMessage={t('noSoapData', 'No hay registros de examen físico / SOAP para este paciente.')}
+      emptyDisplayText={t('physicalExamAndSoapNotes', 'registros de examen físico / SOAP')}
       error={error}
       isLoading={isLoading}
+      isValidating={isValidating}
+      loadingVariant="accordion"
       onAction={handleLaunchForm}
     >
       <Accordion>

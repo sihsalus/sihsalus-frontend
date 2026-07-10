@@ -80,12 +80,14 @@ export function useReferralCounterReferral(
     data: referralData,
     error: referralError,
     isLoading: isLoadingReferrals,
+    isValidating: isValidatingReferrals,
     mutate: mutateReferrals,
   } = useSWR<{ data: { results: Encounter[] } }>(referralCounterReferralUrl, openmrsFetch);
   const {
     data: orderData,
     error: orderError,
     isLoading: isLoadingOrders,
+    isValidating: isValidatingOrders,
     mutate: mutateOrders,
   } = useSWR<{ data: { results: Encounter[] } }>(interconsultationOrdersUrl, openmrsFetch);
 
@@ -134,6 +136,7 @@ export function useReferralCounterReferral(
   return {
     entries,
     isLoading: isLoadingReferrals || isLoadingOrders,
+    isValidating: isValidatingReferrals || isValidatingOrders,
     error: referralError || orderError,
     mutate: () => {
       void mutateReferrals();

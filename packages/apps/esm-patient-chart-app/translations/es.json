@@ -20,6 +20,8 @@
   "causeOfDeath": "Causa de muerte",
   "causeOfDeath_lower": "conceptos de causa de muerte configurados en el sistema",
   "causeOfDeathIsRequired": "Por favor, seleccione la causa de muerte",
+  "chartAccessDeniedMessage": "No tiene permisos para acceder a la historia clínica. Fue redirigido al inicio.",
+  "chartAccessDeniedTitle": "Acceso restringido",
   "checkFilters": "Revisar los filtros anteriores",
   "codigoPrestacional": "Código Prestacional",
   "companions": "Acompañantes",

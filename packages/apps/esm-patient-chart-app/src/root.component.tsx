@@ -1,6 +1,7 @@
-import { navigate } from '@openmrs/esm-framework';
+import { navigate, showSnackbar } from '@openmrs/esm-framework';
 import { AppErrorBoundary, RequirePrivilege } from '@sihsalus/esm-rbac';
-import { useEffect } from 'react';
+import { useEffect, useRef } from 'react';
+import { useTranslation } from 'react-i18next';
 import { BrowserRouter, Route, Routes } from 'react-router-dom';
 
 import { basePath, clinicalChartPrivilege, dashboardPath, spaRoot } from './constants';
@@ -8,9 +9,26 @@ import PatientChart from './patient-chart/patient-chart.component';
 import styles from './root.scss';
 
 function RedirectToHome() {
+  const { t } = useTranslation();
+  const hasRedirected = useRef(false);
+
   useEffect(() => {
+    if (hasRedirected.current) {
+      return;
+    }
+
+    hasRedirected.current = true;
+    showSnackbar({
+      kind: 'info',
+      isLowContrast: true,
+      title: t('chartAccessDeniedTitle', 'Acceso restringido'),
+      subtitle: t(
+        'chartAccessDeniedMessage',
+        'No tiene permisos para acceder a la historia clínica. Fue redirigido al inicio.',
+      ),
+    });
     navigate({ to: `${globalThis.spaBase}/home/home` });
-  }, []);
+  }, [t]);
 
   return null;
 }

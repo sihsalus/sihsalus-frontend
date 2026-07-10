@@ -20,6 +20,8 @@
   "causeOfDeath": "Cause of death",
   "causeOfDeath_lower": "cause of death concepts configured in the system",
   "causeOfDeathIsRequired": "Please select the cause of death",
+  "chartAccessDeniedMessage": "You do not have permission to access the patient chart. You were redirected to the home page.",
+  "chartAccessDeniedTitle": "Access restricted",
   "checkFilters": "Check the filters above",
   "codigoPrestacional": "Codigo Prestacional",
   "companions": "Companions",

@@ -13,7 +13,10 @@ export function useAnamnesis(patientUuid: string, encounterTypeUuid: string, con
       ? `${restBaseUrl}/encounter?patient=${patientUuid}&encounterType=${encounterTypeUuid}&v=custom:(uuid,encounterDatetime,encounterProviders:(display),obs:(uuid,concept:(uuid,display),value,display))&limit=20`
       : null;
 
-  const { data, error, isLoading, mutate } = useSWR<{ data: { results: AnamnesisEncounter[] } }>(url, openmrsFetch);
+  const { data, error, isLoading, isValidating, mutate } = useSWR<{ data: { results: AnamnesisEncounter[] } }>(
+    url,
+    openmrsFetch,
+  );
 
   // Anamnesis is a clinical subdomain of the encounter. We derive it from
   // encounter obs so specialty forms can contribute without a separate app.
@@ -24,6 +27,7 @@ export function useAnamnesis(patientUuid: string, encounterTypeUuid: string, con
   return {
     anamnesisEntries,
     isLoading,
+    isValidating,
     error,
     mutate,
   };

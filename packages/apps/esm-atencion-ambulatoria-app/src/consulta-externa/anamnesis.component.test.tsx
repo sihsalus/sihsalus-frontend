@@ -45,6 +45,7 @@ describe('Anamnesis', () => {
     mockUseAnamnesis.mockReturnValue({
       anamnesisEntries: [],
       isLoading: false,
+      isValidating: false,
       error: undefined,
       mutate: vi.fn(),
     });
@@ -52,11 +53,12 @@ describe('Anamnesis', () => {
     render(<Anamnesis patientUuid="patient-uuid" />);
 
     expect(screen.getByText('Historial de Anamnesis')).toBeInTheDocument();
-    expect(screen.getByText('No hay anamnesis registrada para este paciente.')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /(?:Record|Registrar) anamnesis/i })).toBeInTheDocument();
   });
 
   it('renders anamnesis data and launches the split anamnesis form', async () => {
     const user = userEvent.setup();
+    const mutate = vi.fn();
     mockUseAnamnesis.mockReturnValue({
       anamnesisEntries: [
         {
@@ -79,8 +81,9 @@ describe('Anamnesis', () => {
         },
       ],
       isLoading: false,
+      isValidating: false,
       error: undefined,
-      mutate: vi.fn(),
+      mutate,
     });
 
     render(<Anamnesis patientUuid="patient-uuid" />);
@@ -92,6 +95,7 @@ describe('Anamnesis', () => {
     await user.click(screen.getByRole('button', { name: 'Registrar Anamnesis' }));
 
     expect(mockLaunchPatientWorkspace).toHaveBeenCalledWith(patientFormEntryWorkspace, {
+      mutateForm: mutate,
       formInfo: {
         patientUuid: 'patient-uuid',
         formUuid: 'CE-ANAM-001-ANAMNESIS',

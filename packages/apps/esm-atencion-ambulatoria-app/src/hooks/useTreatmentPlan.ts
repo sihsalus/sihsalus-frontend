@@ -49,7 +49,10 @@ export function useTreatmentPlan(patientUuid: string, encounterTypeUuid: string,
       ? `${restBaseUrl}/encounter?patient=${patientUuid}&encounterType=${encounterTypeUuid}&v=custom:(uuid,encounterDatetime,encounterProviders:(display),obs:(uuid,concept:(uuid,display),value,display,formFieldPath))&limit=20`
       : null;
 
-  const { data, error, isLoading, mutate } = useSWR<{ data: { results: Encounter[] } }>(url, openmrsFetch);
+  const { data, error, isLoading, isValidating, mutate } = useSWR<{ data: { results: Encounter[] } }>(
+    url,
+    openmrsFetch,
+  );
 
   const getObsValue = (
     obs: Obs[] | undefined,
@@ -111,6 +114,7 @@ export function useTreatmentPlan(patientUuid: string, encounterTypeUuid: string,
   return {
     treatmentPlans,
     isLoading,
+    isValidating,
     error,
     mutate,
   };

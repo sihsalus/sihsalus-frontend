@@ -31,7 +31,10 @@ export function useSoapNotes(patientUuid: string, encounterTypeUuid: string, con
       ? `${restBaseUrl}/encounter?patient=${patientUuid}&encounterType=${encounterTypeUuid}&v=custom:(uuid,encounterDatetime,encounterProviders:(display),obs:(uuid,concept:(uuid,display),value,display))&limit=20`
       : null;
 
-  const { data, error, isLoading, mutate } = useSWR<{ data: { results: Encounter[] } }>(url, openmrsFetch);
+  const { data, error, isLoading, isValidating, mutate } = useSWR<{ data: { results: Encounter[] } }>(
+    url,
+    openmrsFetch,
+  );
 
   const subjectiveUuid = concepts?.soapSubjectiveUuid;
   const objectiveUuid = concepts?.soapObjectiveUuid;
@@ -60,6 +63,7 @@ export function useSoapNotes(patientUuid: string, encounterTypeUuid: string, con
   return {
     soapEntries,
     isLoading,
+    isValidating,
     error,
     mutate,
   };

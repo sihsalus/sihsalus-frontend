@@ -25,7 +25,7 @@ const ReferenciaContraReferencia: React.FC<ReferenciaContraReferenciaProps> = ({
   const { t } = useTranslation();
   const config = useConfig<ConfigObject>();
 
-  const { entries, isLoading, error } = useReferralCounterReferral(
+  const { entries, isLoading, isValidating, error, mutate } = useReferralCounterReferral(
     patientUuid,
     config.encounterTypes?.referralCounterReferral,
     config.encounterTypes?.externalConsultation,
@@ -40,6 +40,7 @@ const ReferenciaContraReferencia: React.FC<ReferenciaContraReferenciaProps> = ({
 
   const handleLaunchForm = () => {
     launchPatientWorkspace(patientFormEntryWorkspace, {
+      mutateForm: mutate,
       formInfo: {
         patientUuid,
         formUuid: config.formsList?.referralForm,
@@ -52,12 +53,11 @@ const ReferenciaContraReferencia: React.FC<ReferenciaContraReferenciaProps> = ({
       title={t('referralHistory', 'Historial de Referencias y Contrarreferencias')}
       actionLabel={t('addReferral', 'Registrar Referencia')}
       empty={entries.length === 0}
-      emptyMessage={t(
-        'noReferralData',
-        'No hay referencias, contrarreferencias ni órdenes de interconsulta registradas para este paciente.',
-      )}
+      emptyDisplayText={t('referralsAndCounterReferrals', 'referencias y contrarreferencias')}
       error={error}
       isLoading={isLoading}
+      isValidating={isValidating}
+      loadingVariant="accordion"
       onAction={handleLaunchForm}
     >
       <Accordion>

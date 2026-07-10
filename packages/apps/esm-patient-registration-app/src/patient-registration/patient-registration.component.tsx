@@ -342,7 +342,7 @@ export const PatientRegistration: React.FC<PatientRegistrationProps> = ({ savePa
         );
 
         return (
-          <Form className={styles.form}>
+          <Form className={styles.form} noValidate>
             <BeforeSavePrompt when={Object.keys(props.touched).length > 0} redirect={target} />
             <div className={styles.formContainer}>
               <div>

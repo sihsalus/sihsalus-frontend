@@ -17,7 +17,7 @@ interface AnamnesisProps {
 const Anamnesis: React.FC<AnamnesisProps> = ({ patientUuid }) => {
   const { t } = useTranslation();
   const config = useConfig<ConfigObject>();
-  const { anamnesisEntries, isLoading, error } = useAnamnesis(
+  const { anamnesisEntries, isLoading, isValidating, error, mutate } = useAnamnesis(
     patientUuid,
     config.encounterTypes?.externalConsultation,
     config.concepts,
@@ -25,6 +25,7 @@ const Anamnesis: React.FC<AnamnesisProps> = ({ patientUuid }) => {
 
   const handleLaunchForm = () => {
     launchPatientWorkspace(patientFormEntryWorkspace, {
+      mutateForm: mutate,
       formInfo: {
         patientUuid,
         formUuid: config.formsList?.anamnesisForm ?? config.formsList?.consultaExternaForm,
@@ -39,9 +40,11 @@ const Anamnesis: React.FC<AnamnesisProps> = ({ patientUuid }) => {
         title={t('anamnesisHistory', 'Historial de Anamnesis')}
         actionLabel={t('addAnamnesis', 'Registrar Anamnesis')}
         empty={anamnesisEntries.length === 0}
-        emptyMessage={t('noAnamnesisData', 'No hay anamnesis registrada para este paciente.')}
+        emptyDisplayText={t('anamnesis', 'anamnesis')}
         error={error}
         isLoading={isLoading}
+        isValidating={isValidating}
+        loadingVariant="accordion"
         onAction={handleLaunchForm}
       >
         <Accordion>

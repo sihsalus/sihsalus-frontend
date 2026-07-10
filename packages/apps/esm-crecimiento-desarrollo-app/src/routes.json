@@ -9,7 +9,7 @@
       "name": "growth-chart-overview-widget",
       "component": "growthChart",
       "slot": "patient-chart-summary-dashboard-slot",
-      "privileges": "app:hoja.clinica.cred.neonatal"
+      "privileges": "app:hoja.clinica.cred.ninoSano"
     },
     {
       "name": "child-immunization-schedule",

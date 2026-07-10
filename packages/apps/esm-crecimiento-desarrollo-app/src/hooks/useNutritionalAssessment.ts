@@ -42,7 +42,7 @@ function extractObsDate(data: { results?: Array<{ obsDatetime?: string }> }): st
 }
 
 /**
- * Hook para evaluación nutricional infantil (NTS 137):
+ * Hook para consultar el último registro de evaluación nutricional infantil (NTS 238):
  * - Clasificación nutricional, peso y talla
  * - Última fecha de medición
  *

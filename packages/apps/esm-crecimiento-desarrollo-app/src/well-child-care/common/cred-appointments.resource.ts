@@ -28,6 +28,14 @@ export async function createCREDAppointments(
     const startDate = dayjs(control.targetDate).hour(8).minute(0).second(0);
     const endDate = startDate.add(durationMins, 'minute');
 
+    if (!startDate.isAfter(dayjs())) {
+      errors.push({
+        controlNumber: control.controlNumber,
+        error: new Error('No se puede crear una cita CRED en una fecha pasada.'),
+      });
+      continue;
+    }
+
     const payload: AppointmentPayload = {
       patientUuid,
       serviceUuid,

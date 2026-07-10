@@ -14,16 +14,20 @@ import {
 
 function getConfiguredAgeGroupFromBirthDate(birthDate: string | Date, groups: AgeGroup[]): AgeGroup | null {
   const ageInDays = calculateAgeInDays(birthDate);
+  const dayGroup = getAgeGroupInDays(ageInDays, groups);
+  if (dayGroup) return dayGroup;
 
-  if (ageInDays <= 28) {
-    return getAgeGroupInDays(ageInDays, groups);
-  }
-
-  const ageInMonths = Math.max(1, calculateAgeInMonths(birthDate));
-  return getAgeGroup(
+  const ageInMonths = calculateAgeInMonths(birthDate);
+  const monthGroup = getAgeGroup(
     ageInMonths,
     groups.filter((group) => group.minMonths !== undefined && group.maxMonths !== undefined),
   );
+
+  if (monthGroup) return monthGroup;
+
+  return ageInDays >= 360 && ageInMonths < 12
+    ? (groups.find((group) => group.minDays === 270 && group.maxDays === 359) ?? null)
+    : null;
 }
 
 /**

@@ -44,7 +44,7 @@ const NutritionalAssessment: React.FC<NutritionalAssessmentProps> = ({ patientUu
   return (
     <div className={styles.widgetCard}>
       <CardHeader title={headerTitle}>
-        <Tag type={hasData ? 'green' : 'gray'} size="sm">
+        <Tag type="gray" size="sm">
           {hasData ? (nutritionClassification ?? t('withData', 'Con datos')) : t('noData', 'Sin datos')}
         </Tag>
         {canEdit && (

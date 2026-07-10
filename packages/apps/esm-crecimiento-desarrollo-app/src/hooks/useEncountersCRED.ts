@@ -21,6 +21,51 @@ interface UseEncountersResponse {
 
 const normalizeIdentifier = (identifier: string | undefined) => identifier?.trim().toLocaleLowerCase() ?? '';
 
+const CRED_HISTORY_FORM_KEYS = [
+  'newbornNeuroEval',
+  'breastfeedingObservation',
+  'nursingAssessment',
+  'riskInterview0to30',
+  'childFeeding0to5',
+  'childFeeding6to42',
+  'childAbuseScreening',
+  'anemiaScreeningForm',
+  'supplementationForm',
+  'nutritionalAssessmentForm',
+  'feedingCounselingForm',
+  'nutritionFollowupForm',
+  'stimulationSessionForm',
+  'stimulationFollowupForm',
+  'stimulationCounselingForm',
+  'eedp2Months',
+  'eedp5Months',
+  'eedp8Months',
+  'eedp12Months',
+  'eedp15Months',
+  'eedp18Months',
+  'eedp21Months',
+  'tepsi',
+  'ediDevelopmentForm',
+  'autismScreeningForm',
+  'childMentalHealthForm',
+  'parasitosisScreeningForm',
+  'vitaminAAdministrationForm',
+  'physicalExamForm',
+  'growthNutritionEvaluationForm',
+  'oralHealthInspectionForm',
+  'visualScreeningForm',
+  'hearingScreeningForm',
+  'cancerWarningSignsForm',
+  'metalsExposureScreeningForm',
+  'violenceDisciplineScreeningForm',
+  'credCounselingAgreementForm',
+  'homeVisitFollowupForm',
+  'referralInterconsultationForm',
+  'schoolHealthCounselingForm',
+  'huancaNeurodevelopmentForm',
+  'expectedSkillsBehaviorsForm',
+] as const satisfies ReadonlyArray<keyof ConfigObject['formsList']>;
+
 export function encounterMatchesFormIdentifier(encounter: CREDEncounter, identifier: string | undefined): boolean {
   const normalizedIdentifier = normalizeIdentifier(identifier);
   if (!encounter.form || !normalizedIdentifier) return false;
@@ -37,10 +82,13 @@ export function getConfiguredCREDFormIdentifiers(config: ConfigObject): Set<stri
       ? configuredGroups
       : configSchema.CREDFormsByAgeGroup._default;
   const defaultForms = configSchema.formsList._default;
+  const configuredFormKeys = new Set([
+    ...groups.flatMap((group) => group.forms ?? []),
+    ...CRED_HISTORY_FORM_KEYS,
+  ]);
 
   return new Set(
-    groups
-      .flatMap((group) => group.forms ?? [])
+    Array.from(configuredFormKeys)
       .map((formKey) => config.formsList?.[formKey] ?? defaultForms[formKey])
       .filter((identifier): identifier is string => Boolean(identifier))
       .map(normalizeIdentifier),

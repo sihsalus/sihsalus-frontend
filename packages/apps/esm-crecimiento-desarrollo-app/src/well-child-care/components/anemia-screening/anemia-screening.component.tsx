@@ -7,7 +7,7 @@ import {
   StructuredListWrapper,
   Tag,
 } from '@carbon/react';
-import { Add, CheckmarkFilled, WarningFilled } from '@carbon/react/icons';
+import { Add } from '@carbon/react/icons';
 import { userHasAccess, useSession } from '@openmrs/esm-framework';
 import { CardHeader, ErrorState } from '@openmrs/esm-patient-common-lib';
 import React from 'react';
@@ -26,7 +26,7 @@ const AnemiaScreening: React.FC<AnemiaScreeningProps> = ({ patientUuid }) => {
   const { t } = useTranslation();
   const session = useSession();
   const canEdit = userHasAccess(credNutritionEditPrivilege, session?.user);
-  const { lastHb, lastDate, isAnemic, nextDueDate, isLoading, error } = useAnemiaScreening(patientUuid);
+  const { lastHb, lastDate, nextDueDate, isLoading, error } = useAnemiaScreening(patientUuid);
   const { launchForm: handleAdd, isLoading: isFormLoading } = useCREDFormLauncher('anemiaScreeningForm');
   const headerTitle = t('anemiaScreening', 'Tamizaje de Anemia');
 
@@ -42,8 +42,8 @@ const AnemiaScreening: React.FC<AnemiaScreeningProps> = ({ patientUuid }) => {
     <div className={styles.widgetCard}>
       <CardHeader title={headerTitle}>
         {lastHb !== null && (
-          <Tag type={isAnemic ? 'red' : 'green'} size="sm" renderIcon={isAnemic ? WarningFilled : CheckmarkFilled}>
-            {isAnemic ? t('anemic', 'Anemia') : t('normal', 'Normal')}
+          <Tag type="gray" size="sm">
+            {t('resultRecorded', 'Resultado registrado')}
           </Tag>
         )}
         {canEdit && (
@@ -66,12 +66,20 @@ const AnemiaScreening: React.FC<AnemiaScreeningProps> = ({ patientUuid }) => {
               <StructuredListCell className={styles.label}>{t('lastHb', 'Última Hb')}</StructuredListCell>
               <StructuredListCell className={styles.value}>
                 {lastHb !== null ? (
-                  <span className={isAnemic ? styles.anemic : styles.normalValue}>{lastHb} g/dL</span>
+                  <span>{lastHb} g/dL</span>
                 ) : (
                   <span className={styles.noData}>{t('noData', 'Sin datos')}</span>
                 )}
               </StructuredListCell>
             </StructuredListRow>
+            {lastHb !== null && (
+              <StructuredListRow>
+                <StructuredListCell className={styles.label}>{t('interpretation', 'Interpretación')}</StructuredListCell>
+                <StructuredListCell className={styles.value}>
+                  {t('hbRequiresAgeAndAltitude', 'Requiere corte por edad y corrección por altitud')}
+                </StructuredListCell>
+              </StructuredListRow>
+            )}
             <StructuredListRow>
               <StructuredListCell className={styles.label}>{t('lastDate', 'Fecha')}</StructuredListCell>
               <StructuredListCell className={styles.value}>

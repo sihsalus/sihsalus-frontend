@@ -17,13 +17,13 @@ import { resolveCREDForm } from '../../hooks/useCREDFormLauncher';
 import { useCREDFormsForAgeGroup } from '../../hooks/useCREDFormsForAgeGroup';
 import useEncountersCRED, { encounterMatchesFormIdentifier } from '../../hooks/useEncountersCRED';
 import { type DefaultPatientWorkspaceProps, formEntryWorkspace } from '../../types';
+import { buildNewCREDFormWorkspaceProps } from '../../utils/cred-form-launch-utils';
 
 interface CREDFormsSelectorWorkspaceProps extends DefaultPatientWorkspaceProps {
   availableForms?: Array<CompletedFormInfo>;
   patientAge?: string;
   patientBirthDate?: string;
   controlNumber?: number;
-  controlTargetDate?: string;
   consultationDatetime?: string;
   title?: string;
   subtitle?: string;
@@ -45,7 +45,6 @@ const CREDFormsSelectorWorkspace: React.FC<CREDFormsSelectorWorkspaceProps> = (p
   const patientAge = props.patientAge ?? workspaceProps.patientAge ?? '';
   const patientBirthDate = props.patientBirthDate ?? workspaceProps.patientBirthDate;
   const controlNumber = props.controlNumber ?? workspaceProps.controlNumber ?? 0;
-  const controlTargetDate = props.controlTargetDate ?? workspaceProps.controlTargetDate;
   const consultationDatetime = props.consultationDatetime ?? workspaceProps.consultationDatetime;
   const title =
     props.title ?? workspaceProps.title ?? t('credFormsSelection', 'Selección de Formularios Crecimiento y Desarrollo');
@@ -66,7 +65,7 @@ const CREDFormsSelectorWorkspace: React.FC<CREDFormsSelectorWorkspaceProps> = (p
   const fallbackAvailableForms = useCREDFormsForAgeGroup(
     config,
     patientBirthDate ?? patient?.birthDate,
-    controlTargetDate,
+    consultationDatetime,
   );
   const availableForms = providedAvailableForms.length > 0 ? providedAvailableForms : fallbackAvailableForms;
   const filteredAvailableForms = useMemo(
@@ -118,16 +117,14 @@ const CREDFormsSelectorWorkspace: React.FC<CREDFormsSelectorWorkspaceProps> = (p
   const setTitle = props.setTitle ?? (() => {});
 
   const launchForm = useCallback(
-    async (form: Form, encounterUuid: string, onFormSubmitted: () => void) => {
+    async (form: Form, _encounterUuid: string, onFormSubmitted: () => void) => {
       try {
         const resolvedForm = await resolveCREDForm(form.uuid, form.display ?? form.name ?? form.uuid);
 
-        launchWorkspace2(formEntryWorkspace, {
-          form: resolvedForm,
-          encounterUuid,
-          handlePostResponse: onFormSubmitted,
-          preFilledQuestions: consultationDatetime ? { encounterDatetime: new Date(consultationDatetime) } : undefined,
-        });
+        launchWorkspace2(
+          formEntryWorkspace,
+          buildNewCREDFormWorkspaceProps(resolvedForm, consultationDatetime, onFormSubmitted),
+        );
       } catch {
         showSnackbar({
           kind: 'error',

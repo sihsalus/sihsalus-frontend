@@ -1,6 +1,6 @@
 # CRED NTS 238 gap analysis
 
-Fecha de revision: 2026-05-18
+Fecha de revision: 2026-07-10
 
 Fuente normativa principal:
 
@@ -17,33 +17,37 @@ El modulo `esm-crecimiento-desarrollo-app` ya tiene buena base de UI y configura
 
 | Area | Estado | Brecha |
 |---|---|---|
-| Calendario CRED | Parcial | El codigo estaba basado en NTS 137 y 33 controles. NTS 238 programa 27 controles: 3 RN, 7 menores de 1 anio, 4 de 1 anio, 2 por anio de 2 a 4 anios, y 1 anual de 5 a 11 anios. |
-| Cobertura por edad | Parcial | La UI muestra hasta 11 anios, pero el calendario tenia un control de 12 anios que excede la norma. |
-| Selector de formularios | Riesgoso | `formsList` contiene strings, pero `useCREDFormsForAgeGroup` los trataba como objetos `Form`. Esto puede generar objetos invalidos. |
-| Actividades por edad cronologica | Parcial | Hay formularios por grupo etario, pero no existe matriz normativa completa por control/edad. |
-| Valoracion | Parcial | Hay antropometria, desarrollo y algunos antecedentes, pero faltan formularios estructurados para riesgo/proteccion, examen fisico integral, salud oral, vision, audicion, exposicion a metales, sospecha de cancer y violencia/disciplina. |
-| Desarrollo infantil | Parcial | Hay Test Peruano, EEDP/TEPSI y placeholder EDI. La norma prioriza EDI y vigilancia por edad cronologica. |
-| TEA | Parcial bajo | Existe `autismScreeningForm`, pero falta integracion obligatoria a los 24 meses y por riesgo. |
-| Salud mental y psicosocial | Parcial bajo | Existe `childMentalHealthForm`, pero falta cubrir PHQ-9, AUDIT-C, violencia a madre de menor de 5 anios y listas pediatricas segun edad. |
+| Calendario CRED | Implementado | 27 edades ideales con meses calendario, ventanas neonatales y limite de 11 anos. |
+| Cobertura por edad | Implementado en frontend | Las actividades se seleccionan por edad cronologica en la fecha real de atencion. |
+| Selector de formularios | Implementado | Construye formularios validos y siempre abre un encuentro nuevo; el historial no se edita desde un control nuevo. |
+| Actividades por edad cronologica | Implementado en frontend | La matriz central incluye cortes e instrumentos del Anexo 18. Persisten brechas en el contenido de varios formularios. |
+| Valoracion | Parcial | Existen formularios para examen, crecimiento, salud oral, vision, audicion, metales, cancer y violencia; falta validar profundidad y persistencia en DEV. |
+| Desarrollo infantil | Parcial por contenido | La UI vigente usa Huanca, EDI y habilidades. CRED-009, 026 y 027 solo registran resumen, no el instrumento completo. |
+| TEA | Parcial por contenido | Se ofrece M-CHAT a los 24 meses y por riesgo de 18 a 30; CRED-010 no contiene las 20 preguntas ni el seguimiento R/F. |
+| Salud mental y psicosocial | Parcial por contenido | La periodicidad esta en la matriz y CRED-011 identifica el instrumento principal, puntaje, resultado y violencia; faltan grupos repetibles e items oficiales. |
 | Intervencion y consejeria | Parcial | Hay consejeria, pero falta registrar acuerdos, compromisos, practicas priorizadas y seguimiento. |
 | Seguimiento | Bajo | Falta modelo para seguimiento fijo, visita domiciliaria, ATD priorizada, referencia/interconsulta y continuidad por hallazgos. |
 
-## Plan de implementacion
+## Estado de implementacion
 
 Estado actual del plan:
 
-1. Calendario CRED NTS 238: implementado en `cred-schedule-rules.ts` y cubierto por `cred-schedule-rules.test.ts`.
-2. Selector de formularios CRED: corregido en `useCREDFormsForAgeGroup`, que construye objetos `Form` validos desde keys de `formsList`.
-3. `formsList` y `CREDFormsByAgeGroup`: ampliados con placeholders normativos configurables; falta validar que esos forms existan en content/QLTY.
-4. Pendiente: conectar formularios reales del backend para los placeholders normativos antes de exponerlos como flujo productivo.
-5. Pendiente: crear una matriz normativa central reutilizable que no solo liste formularios, sino actividades obligatorias por edad.
-6. Pendiente: agregar reglas de seguimiento: malnutricion, anemia, rezago/riesgo de desarrollo, TEA, violencia, prematuridad, bajo peso y ausencia a citas.
+1. Calendario CRED NTS 238: implementado con 27 controles, meses calendario y ventanas de vencimiento.
+2. Selector de formularios: usa edad cronologica en la fecha real de atencion y siempre crea un encuentro nuevo.
+3. Numero real de control: se calcula por controles registrados, no por la edad ideal seleccionada.
+4. Matriz central del Anexo 18: implementada en `cred-nts238-form-groups.ts` con EDI, Huanca, M-CHAT y habilidades.
+5. Citas: solo se generan para fechas futuras; el recurso rechaza fechas historicas.
+6. Seguridad clinica: anemia y desarrollo ya no se clasifican como normal con reglas incompletas; las curvas 0-5 no se muestran en escolares.
+7. Contenido 1.16.3: corrige los resumenes CRED prioritarios y conserva como pendiente la digitalizacion item por item y la validacion E2E contra DEV.
 
 ## No cubierto aun
 
-- Validacion real contra formularios existentes en QLTY.
-- Creacion de formularios backend faltantes.
+- Validacion real de formularios y guardado contra DEV/QLTY; DEV no estuvo accesible el 2026-07-10.
+- Digitalizacion item por item de EDI, M-CHAT-R/F, salud mental, Huanca y habilidades, ademas de retirar las referencias textuales legadas de CRED-003 y CRED-005.
 - Reglas automaticas de derivacion/interconsulta.
 - Visita domiciliaria y seguimiento movil.
 - Registro estructurado de acuerdos de consejeria y compromisos familiares.
-- Matriz clinica completa del Anexo 18.
+- Curvas OMS 5-19 para IMC/edad y talla/edad.
+
+El detalle actualizado y los criterios de liberacion estan en
+`docs/clinical/cred/NTS-238-AUDIT.md`.

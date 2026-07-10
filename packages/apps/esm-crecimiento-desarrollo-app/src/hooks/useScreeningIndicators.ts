@@ -56,7 +56,7 @@ const screeningDefinitions = [
   translationKey: string;
 }>;
 
-/** Returns the latest completion of each mandatory child screening form. */
+/** Returns the latest known record for each screening category. */
 export function useScreeningIndicators(patientUuid: string): ScreeningIndicatorsResult {
   const config = useConfig<ConfigObject>();
   const { encounters, isLoading, error, mutate } = useEncountersCRED(patientUuid);

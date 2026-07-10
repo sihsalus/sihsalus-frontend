@@ -1,5 +1,7 @@
 import { Type } from '@openmrs/esm-framework';
 
+import { CRED_NTS238_FORM_GROUPS } from './utils/cred-nts238-form-groups';
+
 // ===============================
 // MAIN CONFIGURATION SCHEMA
 // ===============================
@@ -56,7 +58,7 @@ export const configSchema = {
       psicoprofilaxis: '3cde4d44-72f8-4aeb-9025-7a8906a56ae8',
 
       // Child Health
-      healthyChildControl: 'a990eabc-3405-419f-bfb1-96ca2d8279b8', // Control de Niño Sano — NTS 102
+      healthyChildControl: 'a990eabc-3405-419f-bfb1-96ca2d8279b8', // Control CRED — NTS 238
       atencionInmediata: '83c8d2d0-4758-43b5-bba7-04aac5c08a07',
       cefaloCaudal: 'e0a6cba3-fa9c-4bf0-90b7-9d4d48401d1c',
       consejeriaMaterna: 'f90ac51d-bc0b-4551-a6f2-358e1a47751f',
@@ -115,7 +117,7 @@ export const configSchema = {
       birthDetails: '(CRED) Detalles de Nacimiento',
       pregnancyDetails: '(CRED) Embarazo y Parto',
 
-      // EEDP Forms
+      // Legacy development forms retained only to resolve historical encounters; not routed by NTS 238.
       eedp2Months: 'Página (30, 31, 32 y 33) EEDP (2 meses)',
       eedp5Months: 'Página (30, 31, 32 y 33) EEDP (5 meses)',
       eedp8Months: 'Página (30, 31, 32 y 33) EEDP (8 meses)',
@@ -751,23 +753,17 @@ export const configSchema = {
     // (Truncated for brevity - the remaining CRED concepts would follow the same organization)
   },
 
-  // 10A. TAMIZAJE DE ANEMIA (NTS 238)
+  // 10A. TAMIZAJE DE ANEMIA (NTS 213 y RM 429-2024)
   anemiaScreening: {
     _type: Type.Object,
-    _description: 'Configuración del tamizaje de anemia según NTS 238',
+    _description: 'Configuración del tamizaje de anemia según NTS 213 y RM 429-2024',
     _default: {
       hemoglobinaConceptUuid: '0ffe780c-a3ee-4c9c-b4dd-bf2e0f79dc7f',
-      anemiaThreshold: 11.0,
     },
     hemoglobinaConceptUuid: {
       _type: Type.ConceptUuid,
       _description: 'Concept UUID para valor de hemoglobina (g/dL) — OCL: Hemoglobina #655',
       _default: '0ffe780c-a3ee-4c9c-b4dd-bf2e0f79dc7f',
-    },
-    anemiaThreshold: {
-      _type: Type.Number,
-      _description: 'Umbral para considerar anemia (g/dL). NTS 238: < 11.0',
-      _default: 11.0,
     },
   },
 
@@ -939,7 +935,7 @@ export const configSchema = {
     },
   },
 
-  // 10G. NUTRICIÓN INFANTIL (NTS 137)
+  // 10G. NUTRICIÓN INFANTIL (NTS 238)
   childNutrition: {
     _type: Type.Object,
     _description: 'Concepts para evaluación y seguimiento nutricional infantil',
@@ -1013,12 +1009,12 @@ export const configSchema = {
     },
     tepsiCoordinationConceptUuid: {
       _type: Type.ConceptUuid,
-      _description: 'Concept UUID de subtests coordinación TEPSI — OCL: #2195 (Coded)',
+      _description: 'Concept UUID legado de coordinación TEPSI, solo para lectura histórica — OCL: #2195 (Coded)',
       _default: 'ecc332d2-6ca1-4238-ac14-d0de521bdb11',
     },
     tepsiMotorConceptUuid: {
       _type: Type.ConceptUuid,
-      _description: 'Concept UUID de subtests motricidad TEPSI — OCL: #2196 (Coded)',
+      _description: 'Concept UUID legado de motricidad TEPSI, solo para lectura histórica — OCL: #2196 (Coded)',
       _default: '7aec4f14-e2fb-4489-bcc5-50c7bf609a5b',
     },
     stimulationLackConceptUuid: {
@@ -1039,20 +1035,20 @@ export const configSchema = {
     _description: 'Configuración de grupos etarios para CRED',
     _default: [
       { label: 'RN - 3 a 6d', sublabel: 'CONTROL 1 (3 A 6 DÍAS)', minDays: 0, maxDays: 6, neonatalControl: 1 },
-      { label: 'RN - 7 a 14d', sublabel: 'CONTROL 2 (7 A 13 DÍAS)', minDays: 7, maxDays: 13, neonatalControl: 2 },
+      { label: 'RN - 7 a 13d', sublabel: 'CONTROL 2 (7 A 13 DÍAS)', minDays: 7, maxDays: 13, neonatalControl: 2 },
       { label: 'RN - 14 a 21d', sublabel: 'CONTROL 3 (14 A 21 DÍAS)', minDays: 14, maxDays: 28, neonatalControl: 3 },
-      { label: '0 AÑOS', sublabel: '1 A 11 MESES', minMonths: 1, maxMonths: 11 },
-      { label: '1 AÑO', sublabel: '12 A 23 MESES', minMonths: 12, maxMonths: 23 },
-      { label: '2 AÑOS', sublabel: '24 A 35 MESES', minMonths: 24, maxMonths: 35 },
-      { label: '3 AÑOS', sublabel: '36 A 47 MESES', minMonths: 36, maxMonths: 47 },
-      { label: '4 AÑOS', sublabel: '48 A 59 MESES', minMonths: 48, maxMonths: 59 },
-      { label: '5 AÑOS', minMonths: 60, maxMonths: 71 },
-      { label: '6 AÑOS', minMonths: 72, maxMonths: 83 },
-      { label: '7 AÑOS', minMonths: 84, maxMonths: 95 },
-      { label: '8 AÑOS', minMonths: 96, maxMonths: 107 },
-      { label: '9 AÑOS', minMonths: 108, maxMonths: 119 },
-      { label: '10 AÑOS', minMonths: 120, maxMonths: 131 },
-      { label: '11 AÑOS', minMonths: 132, maxMonths: 143 },
+      { label: '0 AÑOS', sublabel: '1 A 11 MESES', minMonths: 1, maxMonths: 12 },
+      { label: '1 AÑO', sublabel: '12 A 23 MESES', minMonths: 12, maxMonths: 24 },
+      { label: '2 AÑOS', sublabel: '24 A 35 MESES', minMonths: 24, maxMonths: 36 },
+      { label: '3 AÑOS', sublabel: '36 A 47 MESES', minMonths: 36, maxMonths: 48 },
+      { label: '4 AÑOS', sublabel: '48 A 59 MESES', minMonths: 48, maxMonths: 60 },
+      { label: '5 AÑOS', minMonths: 60, maxMonths: 72 },
+      { label: '6 AÑOS', minMonths: 72, maxMonths: 84 },
+      { label: '7 AÑOS', minMonths: 84, maxMonths: 96 },
+      { label: '8 AÑOS', minMonths: 96, maxMonths: 108 },
+      { label: '9 AÑOS', minMonths: 108, maxMonths: 120 },
+      { label: '10 AÑOS', minMonths: 120, maxMonths: 132 },
+      { label: '11 AÑOS', minMonths: 132, maxMonths: 144 },
     ],
     _elements: {
       _type: Type.Object,
@@ -1187,339 +1183,7 @@ export const configSchema = {
   CREDFormsByAgeGroup: {
     _type: Type.Array,
     _description: 'Configuración de formularios CRED por grupo etario',
-    _default: [
-      {
-        label: 'RN - 3 a 6 días (Control 1)',
-        minDays: 0,
-        maxDays: 6,
-        neonatalControl: 1,
-        forms: [
-          'atencionImmediataNewborn',
-          'newbornNeuroEval',
-          'breastfeedingObservation',
-          'roomingIn',
-          'riskInterview0to30',
-          'physicalExamForm',
-          'oralHealthInspectionForm',
-          'cancerWarningSignsForm',
-          'metalsExposureScreeningForm',
-          'violenceDisciplineScreeningForm',
-          'credCounselingAgreementForm',
-          'homeVisitFollowupForm',
-        ],
-      },
-      {
-        label: 'RN - 7 a 14 días (Control 2)',
-        minDays: 7,
-        maxDays: 13,
-        neonatalControl: 2,
-        forms: [
-          'nursingAssessment',
-          'breastfeedingObservation',
-          'riskInterview0to30',
-          'physicalExamForm',
-          'oralHealthInspectionForm',
-          'cancerWarningSignsForm',
-          'metalsExposureScreeningForm',
-          'violenceDisciplineScreeningForm',
-          'credCounselingAgreementForm',
-        ],
-      },
-      {
-        label: 'RN - 14 a 21 días (Control 3)',
-        minDays: 14,
-        maxDays: 28,
-        neonatalControl: 3,
-        forms: [
-          'nursingAssessment',
-          'breastfeedingObservation',
-          'riskInterview0to30',
-          'physicalExamForm',
-          'oralHealthInspectionForm',
-          'cancerWarningSignsForm',
-          'metalsExposureScreeningForm',
-          'violenceDisciplineScreeningForm',
-          'credCounselingAgreementForm',
-        ],
-      },
-      {
-        label: '1 MES',
-        minMonths: 1,
-        maxMonths: 2,
-        forms: [
-          'nursingAssessment',
-          'riskInterview0to30',
-          'physicalExamForm',
-          'growthNutritionEvaluationForm',
-          'breastfeedingObservation',
-          'childMentalHealthForm',
-          'violenceDisciplineScreeningForm',
-          'credCounselingAgreementForm',
-        ],
-      },
-      {
-        label: '2 MESES',
-        minMonths: 2,
-        maxMonths: 3,
-        forms: [
-          'nursingAssessment',
-          'riskInterview0to30',
-          'physicalExamForm',
-          'growthNutritionEvaluationForm',
-          'childFeeding0to5',
-          'stimulationFollowupForm',
-          'stimulationCounselingForm',
-          'credCounselingAgreementForm',
-        ],
-      },
-      {
-        label: '3 MESES',
-        minMonths: 3,
-        maxMonths: 4,
-        forms: [
-          'nursingAssessment',
-          'riskInterview0to30',
-          'physicalExamForm',
-          'growthNutritionEvaluationForm',
-          'childFeeding0to5',
-          'stimulationFollowupForm',
-          'stimulationCounselingForm',
-          'credCounselingAgreementForm',
-        ],
-      },
-      {
-        label: '4 MESES',
-        minMonths: 4,
-        maxMonths: 6,
-        forms: [
-          'nursingAssessment',
-          'riskInterview0to30',
-          'physicalExamForm',
-          'growthNutritionEvaluationForm',
-          'childFeeding0to5',
-          'stimulationFollowupForm',
-          'stimulationCounselingForm',
-          'credCounselingAgreementForm',
-        ],
-      },
-      {
-        label: '6 MESES',
-        minMonths: 6,
-        maxMonths: 7,
-        forms: [
-          'nursingAssessment',
-          'riskInterview0to30',
-          'physicalExamForm',
-          'growthNutritionEvaluationForm',
-          'childFeeding6to42',
-          'anemiaScreeningForm',
-          'supplementationForm',
-          'ediDevelopmentForm',
-          'stimulationCounselingForm',
-          'credCounselingAgreementForm',
-        ],
-      },
-      {
-        label: '7 MESES',
-        minMonths: 7,
-        maxMonths: 9,
-        forms: [
-          'nursingAssessment',
-          'riskInterview0to30',
-          'physicalExamForm',
-          'growthNutritionEvaluationForm',
-          'childFeeding6to42',
-          'supplementationForm',
-          'stimulationFollowupForm',
-          'stimulationCounselingForm',
-          'credCounselingAgreementForm',
-        ],
-      },
-      {
-        label: '9 MESES',
-        minMonths: 9,
-        maxMonths: 12,
-        forms: [
-          'nursingAssessment',
-          'riskInterview0to30',
-          'physicalExamForm',
-          'growthNutritionEvaluationForm',
-          'childFeeding6to42',
-          'anemiaScreeningForm',
-          'supplementationForm',
-          'ediDevelopmentForm',
-          'stimulationCounselingForm',
-          'credCounselingAgreementForm',
-        ],
-      },
-      {
-        label: '12 MESES',
-        minMonths: 12,
-        maxMonths: 15,
-        forms: [
-          'nursingAssessment',
-          'riskInterview0to30',
-          'physicalExamForm',
-          'growthNutritionEvaluationForm',
-          'childFeeding6to42',
-          'childMentalHealthForm',
-          'violenceDisciplineScreeningForm',
-          'parasitosisScreeningForm',
-          'vitaminAAdministrationForm',
-          'stimulationFollowupForm',
-          'credCounselingAgreementForm',
-        ],
-      },
-      {
-        label: '15 MESES',
-        minMonths: 15,
-        maxMonths: 18,
-        forms: [
-          'nursingAssessment',
-          'physicalExamForm',
-          'growthNutritionEvaluationForm',
-          'childFeeding6to42',
-          'supplementationForm',
-          'vitaminAAdministrationForm',
-          'stimulationFollowupForm',
-          'credCounselingAgreementForm',
-        ],
-      },
-      {
-        label: '18 MESES',
-        minMonths: 18,
-        maxMonths: 21,
-        forms: [
-          'nursingAssessment',
-          'physicalExamForm',
-          'growthNutritionEvaluationForm',
-          'childFeeding6to42',
-          'anemiaScreeningForm',
-          'supplementationForm',
-          'ediDevelopmentForm',
-          'stimulationCounselingForm',
-          'credCounselingAgreementForm',
-        ],
-      },
-      {
-        label: '21 MESES',
-        minMonths: 21,
-        maxMonths: 24,
-        forms: [
-          'nursingAssessment',
-          'physicalExamForm',
-          'growthNutritionEvaluationForm',
-          'childFeeding6to42',
-          'supplementationForm',
-          'stimulationFollowupForm',
-          'stimulationCounselingForm',
-          'credCounselingAgreementForm',
-        ],
-      },
-      {
-        label: '24 MESES',
-        minMonths: 24,
-        maxMonths: 30,
-        forms: [
-          'nursingAssessment',
-          'physicalExamForm',
-          'growthNutritionEvaluationForm',
-          'childFeeding6to42',
-          'childMentalHealthForm',
-          'autismScreeningForm',
-          'violenceDisciplineScreeningForm',
-          'parasitosisScreeningForm',
-          'vitaminAAdministrationForm',
-          'stimulationFollowupForm',
-          'credCounselingAgreementForm',
-        ],
-      },
-      {
-        label: '30 MESES',
-        minMonths: 30,
-        maxMonths: 36,
-        forms: [
-          'nursingAssessment',
-          'physicalExamForm',
-          'growthNutritionEvaluationForm',
-          'childFeeding6to42',
-          'ediDevelopmentForm',
-          'stimulationCounselingForm',
-          'credCounselingAgreementForm',
-        ],
-      },
-      {
-        label: '3 AÑOS',
-        minMonths: 36,
-        maxMonths: 48,
-        forms: [
-          'nursingAssessment',
-          'physicalExamForm',
-          'growthNutritionEvaluationForm',
-          'childMentalHealthForm',
-          'violenceDisciplineScreeningForm',
-          'parasitosisScreeningForm',
-          'vitaminAAdministrationForm',
-          'visualScreeningForm',
-          'hearingScreeningForm',
-          'stimulationFollowupForm',
-          'credCounselingAgreementForm',
-        ],
-      },
-      {
-        label: '4 AÑOS',
-        minMonths: 48,
-        maxMonths: 60,
-        forms: [
-          'nursingAssessment',
-          'physicalExamForm',
-          'growthNutritionEvaluationForm',
-          'childMentalHealthForm',
-          'violenceDisciplineScreeningForm',
-          'parasitosisScreeningForm',
-          'vitaminAAdministrationForm',
-          'visualScreeningForm',
-          'hearingScreeningForm',
-          'stimulationFollowupForm',
-          'credCounselingAgreementForm',
-        ],
-      },
-      {
-        label: '5 AÑOS',
-        minMonths: 60,
-        maxMonths: 72,
-        forms: [
-          'nursingAssessment',
-          'physicalExamForm',
-          'growthNutritionEvaluationForm',
-          'ediDevelopmentForm',
-          'childMentalHealthForm',
-          'violenceDisciplineScreeningForm',
-          'parasitosisScreeningForm',
-          'visualScreeningForm',
-          'hearingScreeningForm',
-          'schoolHealthCounselingForm',
-          'credCounselingAgreementForm',
-        ],
-      },
-      {
-        label: '6 A 11 AÑOS',
-        minMonths: 72,
-        maxMonths: 144,
-        forms: [
-          'nursingAssessment',
-          'physicalExamForm',
-          'growthNutritionEvaluationForm',
-          'childMentalHealthForm',
-          'parasitosisScreeningForm',
-          'visualScreeningForm',
-          'hearingScreeningForm',
-          'schoolHealthCounselingForm',
-          'credCounselingAgreementForm',
-          'referralInterconsultationForm',
-        ],
-      },
-    ],
+    _default: CRED_NTS238_FORM_GROUPS,
     _elements: {
       _type: Type.Object,
       label: { _type: Type.String },
@@ -1754,7 +1418,6 @@ export interface ConfigObject {
   // Fase 1 — Config sections normativos
   anemiaScreening: {
     hemoglobinaConceptUuid: string;
-    anemiaThreshold: number;
   };
   supplementation: {
     mmnConceptUuid: string;

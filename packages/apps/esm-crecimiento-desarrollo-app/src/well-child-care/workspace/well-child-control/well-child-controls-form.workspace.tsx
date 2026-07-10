@@ -69,8 +69,6 @@ const CREDControlsWorkspace: React.FC<DefaultPatientWorkspaceProps> = ({
   const { encounters: rawEncounters, isLoading: isEncountersLoading } = useCREDEncounters(patientUuid);
   const encounters = useMemo(() => groupCREDControlEncounters(rawEncounters ?? []), [rawEncounters]);
   const { getAgeGroupForForms } = useAgeGroups();
-  const selectedControl = workspaceProps?.control;
-
   const [showErrorNotification, setShowErrorNotification] = useState(false);
 
   const {
@@ -79,6 +77,7 @@ const CREDControlsWorkspace: React.FC<DefaultPatientWorkspaceProps> = ({
     handleSubmit,
     register,
     setValue,
+    watch,
   } = useForm<CREDControlsFormType>({
     mode: 'all',
     resolver: zodResolver(CREDControlsSchema),
@@ -95,10 +94,7 @@ const CREDControlsWorkspace: React.FC<DefaultPatientWorkspaceProps> = ({
     },
   });
 
-  const credControlNumber = useMemo(
-    () => selectedControl?.controlNumber ?? Math.min(encounters.length + 1, 27),
-    [encounters, selectedControl?.controlNumber],
-  );
+  const credControlNumber = useMemo(() => Math.min(encounters.length + 1, 27), [encounters.length]);
 
   const ageGroup = useMemo(() => {
     if (!patient?.birthDate) return null;
@@ -112,7 +108,8 @@ const CREDControlsWorkspace: React.FC<DefaultPatientWorkspaceProps> = ({
 
   const formattedAge = useMemo(() => (patient?.birthDate ? age(patient.birthDate) : ''), [patient?.birthDate]);
 
-  const allAvailableForms = useCREDFormsForAgeGroup(config, patient?.birthDate, selectedControl?.targetDate);
+  const consultationDate = watch('visitStartDate');
+  const allAvailableForms = useCREDFormsForAgeGroup(config, patient?.birthDate, consultationDate);
 
   const handleStartControl = useCallback(
     (consultationData: CREDControlsFormType) => {
@@ -133,7 +130,6 @@ const CREDControlsWorkspace: React.FC<DefaultPatientWorkspaceProps> = ({
         patientUuid,
         patientAge: formattedAge,
         patientBirthDate: patient?.birthDate,
-        controlTargetDate: selectedControl?.targetDate ? new Date(selectedControl.targetDate).toISOString() : undefined,
         controlNumber: credControlNumber,
         consultationDatetime: consultationDatetime.toISOString(),
         title: t('credFormsSelection', 'Selección de Formularios Crecimiento y Desarrollo'),
@@ -150,7 +146,6 @@ const CREDControlsWorkspace: React.FC<DefaultPatientWorkspaceProps> = ({
       allAvailableForms,
       formattedAge,
       patient?.birthDate,
-      selectedControl?.targetDate,
       credControlNumber,
       t,
     ],

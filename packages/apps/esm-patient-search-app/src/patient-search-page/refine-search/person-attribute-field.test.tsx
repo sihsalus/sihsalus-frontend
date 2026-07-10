@@ -229,6 +229,31 @@ describe('PersonAttributeField', () => {
       expect(screen.getByText('concept-answer-1')).toBeInTheDocument();
       expect(screen.getByText('concept-answer-2')).toBeInTheDocument();
     });
+
+    it('hides the optional concept filter when the user lacks permission to load its answers', () => {
+      mockUseAttributeConceptAnswers.mockReturnValue({
+        conceptAnswers: [],
+        isLoadingConceptAnswers: false,
+        errorFetchingConceptAnswers: Object.assign(new Error('Forbidden'), { response: { status: 403 } }),
+      });
+
+      const { container } = render(<PersonAttributeField {...defaultProps} />);
+
+      expect(container).toBeEmptyDOMElement();
+      expect(screen.queryByText('Error loading concept attribute answers')).not.toBeInTheDocument();
+    });
+
+    it('keeps the error notification for failures other than missing permissions', () => {
+      mockUseAttributeConceptAnswers.mockReturnValue({
+        conceptAnswers: [],
+        isLoadingConceptAnswers: false,
+        errorFetchingConceptAnswers: new Error('Server error'),
+      });
+
+      render(<PersonAttributeField {...defaultProps} />);
+
+      expect(screen.getByText('Error loading concept attribute answers')).toBeInTheDocument();
+    });
   });
 
   describe('Location Attribute Type', () => {

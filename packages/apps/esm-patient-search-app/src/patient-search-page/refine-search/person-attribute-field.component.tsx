@@ -31,13 +31,20 @@ function getPersonAttributeDisplayLabel(attributeDisplay: string, attributeTypeU
 }
 
 export function isMissingPersonAttributeTypeError(error: unknown) {
-  const responseStatus =
-    typeof error === 'object' && error
-      ? ((error as { response?: { status?: number }; status?: number }).response?.status ??
-        (error as { status?: number }).status)
-      : undefined;
+  const responseStatus = getErrorStatus(error);
 
   return responseStatus === 404 || (error instanceof Error && /\b404\b/.test(error.message));
+}
+
+function getErrorStatus(error: unknown) {
+  return typeof error === 'object' && error
+    ? ((error as { response?: { status?: number }; status?: number }).response?.status ??
+        (error as { status?: number }).status)
+    : undefined;
+}
+
+function isForbiddenError(error: unknown) {
+  return getErrorStatus(error) === 403 || (error instanceof Error && /\b403\b/.test(error.message));
 }
 
 export function sanitizePersonAttributeText(value: string, disallowNumbers?: boolean) {
@@ -223,6 +230,10 @@ const ConceptAttributeField: React.FC<ConceptAttributeFieldProps> = ({
   }
 
   if (errorFetchingConceptAnswers) {
+    if (isForbiddenError(errorFetchingConceptAnswers)) {
+      return null;
+    }
+
     return (
       <InlineNotification kind="error" title={t('error', 'Error')}>
         {t('errorLoadingConceptAttributeAnswers', 'Error loading concept attribute answers')}

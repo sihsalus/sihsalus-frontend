@@ -46,8 +46,8 @@ describe('RequirePrivilege', () => {
     );
 
     expect(screen.queryByText('Protected content')).toBeNull();
-    expect(screen.getByText('Access Denied')).toBeTruthy();
-    expect(screen.getByText('You need the "Read Fua" privilege to access this section.')).toBeTruthy();
+    expect(screen.getByText('Acceso denegado')).toBeTruthy();
+    expect(screen.getByText('Necesita el privilegio "Read Fua" para acceder a esta sección.')).toBeTruthy();
   });
 
   it('can hide unauthorized content completely', () => {
@@ -60,6 +60,6 @@ describe('RequirePrivilege', () => {
     );
 
     expect(screen.queryByText('Protected content')).toBeNull();
-    expect(screen.queryByText('Access Denied')).toBeNull();
+    expect(screen.queryByText('Acceso denegado')).toBeNull();
   });
 });

@@ -1,6 +1,6 @@
 import { navigate, showSnackbar } from '@openmrs/esm-framework';
 import { AppErrorBoundary, RequirePrivilege } from '@sihsalus/esm-rbac';
-import { useEffect, useRef } from 'react';
+import { useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { BrowserRouter, Route, Routes } from 'react-router-dom';
 
@@ -8,26 +8,29 @@ import { basePath, clinicalChartPrivilege, dashboardPath, spaRoot } from './cons
 import PatientChart from './patient-chart/patient-chart.component';
 import styles from './root.scss';
 
+let lastAccessDeniedRedirectAt = 0;
+
 function RedirectToHome() {
   const { t } = useTranslation();
-  const hasRedirected = useRef(false);
 
   useEffect(() => {
-    if (hasRedirected.current) {
+    const now = Date.now();
+
+    if (now - lastAccessDeniedRedirectAt < 1000) {
       return;
     }
 
-    hasRedirected.current = true;
+    lastAccessDeniedRedirectAt = now;
     showSnackbar({
       kind: 'info',
       isLowContrast: true,
       title: t('chartAccessDeniedTitle', 'Acceso restringido'),
       subtitle: t(
         'chartAccessDeniedMessage',
-        'No tiene permisos para acceder a la historia clínica. Fue redirigido al inicio.',
+        'No tiene permisos para acceder a la historia clínica. Fue redirigido a la búsqueda de pacientes.',
       ),
     });
-    navigate({ to: `${globalThis.spaBase}/home/home` });
+    navigate({ to: `${globalThis.spaBase}/search` });
   }, [t]);
 
   return null;
@@ -38,7 +41,7 @@ export default function Root() {
     <AppErrorBoundary appName="esm-patient-chart-app">
       <RequirePrivilege
         privilege={clinicalChartPrivilege}
-        description="Necesita el privilegio de historia clinica para acceder al chart del paciente."
+        description="Necesita el privilegio de historia clínica para acceder a la historia clínica del paciente."
         fallback={<RedirectToHome />}
       >
         <div className={styles.patientChartWrapper}>

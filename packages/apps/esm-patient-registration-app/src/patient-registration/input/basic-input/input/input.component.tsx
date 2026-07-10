@@ -165,14 +165,16 @@ export const Input: React.FC<InputProps> = ({ checkWarning, validate, ...props }
     return undefined;
   }, [checkWarning, invalidText, value, t]);
 
-  const labelText = props.required ? props.labelText : `${props.labelText} (${t('optional', 'optional')})`;
+  const { required, ...textInputProps } = props;
+  const labelText = required ? props.labelText : `${props.labelText} (${t('optional', 'optional')})`;
 
   return (
     <div style={{ marginBottom: '1rem' }}>
       <Layer>
         <TextInput
           {...field}
-          {...props}
+          {...textInputProps}
+          aria-required={required || undefined}
           labelText={labelText}
           invalid={!!(meta.touched && meta.error)}
           invalidText={invalidText}

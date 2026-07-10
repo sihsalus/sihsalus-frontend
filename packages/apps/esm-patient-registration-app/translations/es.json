@@ -156,6 +156,7 @@
   "familyNameTooLong": "El apellido debe tener 100 caracteres o menos",
   "female": "Femenino",
   "fieldRequired": "El campo es obligatorio",
+  "fieldWithErrors": "El siguiente campo tiene errores:",
   "fieldsWithErrors": "Los siguientes campos tienen errores:",
   "filiationSection": "Datos de filiación",
   "fullNameLabelText": "Nombre completo",

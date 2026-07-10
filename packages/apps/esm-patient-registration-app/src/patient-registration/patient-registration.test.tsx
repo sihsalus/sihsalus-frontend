@@ -7,6 +7,7 @@ import {
 } from '@openmrs/esm-framework';
 import { fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
+import { isValidElement, type ReactNode } from 'react';
 import { BrowserRouter as Router, useParams } from 'react-router-dom';
 import { mockedAddressTemplate, mockIdentifierTypes, mockOpenmrsId, mockPatient } from 'test-utils';
 
@@ -248,6 +249,26 @@ const Wrapper = ({ children }) => (
   </ResourcesContext.Provider>
 );
 
+const getReactText = (node: ReactNode): string => {
+  if (!node) {
+    return '';
+  }
+
+  if (typeof node === 'string' || typeof node === 'number') {
+    return `${node}`;
+  }
+
+  if (Array.isArray(node)) {
+    return node.map(getReactText).join(' ');
+  }
+
+  if (isValidElement<{ children?: ReactNode }>(node)) {
+    return getReactText(node.props.children);
+  }
+
+  return '';
+};
+
 beforeEach(() => {
   mockResourcesContextValue.addressTemplate = mockedAddressTemplate as AddressTemplate;
   mockResourcesContextValue.addressTemplateError = undefined;
@@ -312,6 +333,8 @@ describe('Registering a new patient', () => {
     expect(contactSection).toBeInTheDocument();
     expect(screen.getByText(/jump to/i)).toBeInTheDocument();
     expect(within(demographicSection).getByLabelText(/first name/i)).toBeInTheDocument();
+    expect(within(demographicSection).getByLabelText(/first name/i)).not.toHaveAttribute('required');
+    expect(within(demographicSection).getByLabelText(/first name/i)).toHaveAttribute('aria-required', 'true');
     expect(within(demographicSection).getByLabelText(/middle name \(optional\)/i)).toBeInTheDocument();
     expect(within(demographicSection).getByLabelText(/^family name$/i)).toBeInTheDocument();
     expect(within(demographicSection).getByRole('textbox', { name: /date of birth/i })).toBeInTheDocument();
@@ -322,6 +345,7 @@ describe('Registering a new patient', () => {
     expect(within(contactSection).getByRole('heading', { name: /address/i })).toBeInTheDocument();
 
     expect(screen.getByRole('button', { name: /register patient/i })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /register patient/i })).toHaveAttribute('type', 'button');
     expect(screen.getByRole('button', { name: /cancel/i })).toBeInTheDocument();
     expect(document.querySelector('form')).toHaveAttribute('novalidate');
   });
@@ -380,6 +404,19 @@ describe('Registering a new patient', () => {
     await user.click(screen.getByRole('button', { name: /register patient/i }));
 
     expect(mockSavePatientForm).not.toHaveBeenCalled();
+    await waitFor(() => {
+      expect(mockShowSnackbar).toHaveBeenCalledWith(
+        expect.objectContaining({
+          kind: 'warning',
+          title: 'The following fields have errors:',
+        }),
+      );
+    });
+    const warningSnackbar = mockShowSnackbar.mock.calls.find(([snackbar]) => snackbar.kind === 'warning')?.[0];
+    const warningText = getReactText(warningSnackbar?.subtitle);
+
+    expect(warningText).toContain('First name: First name is required');
+    expect(warningText).not.toContain('relationships');
   });
 
   it('renders and saves registration obs', async () => {

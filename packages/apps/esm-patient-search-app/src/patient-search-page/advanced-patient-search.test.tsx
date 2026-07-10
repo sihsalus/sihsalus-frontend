@@ -1,5 +1,5 @@
 import { getDefaultsFromConfigSchema, useConfig } from '@openmrs/esm-framework';
-import { render, screen, within } from '@testing-library/react';
+import { render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import React from 'react';
 import { mockAdvancedSearchResults } from 'test-utils';
@@ -148,7 +148,7 @@ describe('AdvancedPatientSearchComponent', () => {
 
     expect(screen.queryByLabelText(/postcode/i)).not.toBeInTheDocument();
     expect(screen.queryByText(/telephone|tel[eé]fono|phone/i)).not.toBeInTheDocument();
-    expect(screen.getByLabelText(/código de documento de identidad/i)).toBeInTheDocument();
+    expect(screen.getByLabelText(/número de documento de identidad/i)).toBeInTheDocument();
   });
 
   describe('Filtering', () => {
@@ -156,7 +156,7 @@ describe('AdvancedPatientSearchComponent', () => {
       renderComponent();
 
       await user.click(screen.getByRole('tab', { name: /female/i }));
-      await user.click(screen.getByRole('button', { name: /apply/i }));
+      await user.click(screen.getByRole('button', { name: /search/i }));
 
       expect(screen.getByText(/0 search result/)).toBeInTheDocument();
     });
@@ -167,7 +167,7 @@ describe('AdvancedPatientSearchComponent', () => {
       // Set age filter
       const ageInput = screen.getByRole('spinbutton', { name: /age/i });
       await user.type(ageInput, '30');
-      await user.click(screen.getByRole('button', { name: /apply/i }));
+      await user.click(screen.getByRole('button', { name: /search/i }));
 
       const patientBanners = screen.getAllByRole('banner');
       expect(patientBanners).toHaveLength(1);
@@ -177,13 +177,24 @@ describe('AdvancedPatientSearchComponent', () => {
     it('filters by person attribute correctly', async () => {
       renderComponent();
 
-      const documentCodeInput = screen.getByLabelText(/código de documento de identidad/i);
+      const documentCodeInput = screen.getByLabelText(/número de documento de identidad/i);
       await user.type(documentCodeInput, '12345678');
-      await user.click(screen.getByRole('button', { name: /apply/i }));
+      await user.click(screen.getByRole('button', { name: /search/i }));
 
       const patientBanners = screen.getAllByRole('banner');
       expect(patientBanners).toHaveLength(1);
       expect(within(patientBanners[0]).getByText(/Joshua Johnson/)).toBeInTheDocument();
+    });
+
+    it('searches by identity document number entered in refine search when query is empty', async () => {
+      renderComponent({ query: '' });
+
+      await user.type(screen.getByLabelText(/número de documento de identidad/i), '10000001');
+      await user.click(screen.getByRole('button', { name: /search/i }));
+
+      await waitFor(() => {
+        expect(mockUseInfinitePatientSearch).toHaveBeenLastCalledWith('10000001', false, true, 50);
+      });
     });
 
     it('combines multiple filters correctly', async () => {
@@ -193,7 +204,7 @@ describe('AdvancedPatientSearchComponent', () => {
       await user.click(screen.getByRole('tab', { name: /any/i }));
       const ageInput = screen.getByRole('spinbutton', { name: /age/i });
       await user.type(ageInput, '5');
-      await user.click(screen.getByRole('button', { name: /apply/i }));
+      await user.click(screen.getByRole('button', { name: /search/i }));
 
       const patientBanners = screen.getAllByRole('banner');
       expect(patientBanners).toHaveLength(1);
@@ -205,7 +216,7 @@ describe('AdvancedPatientSearchComponent', () => {
 
       // Set a filter
       await user.click(screen.getByRole('tab', { name: /female/i }));
-      await user.click(screen.getByRole('button', { name: /apply/i }));
+      await user.click(screen.getByRole('button', { name: /search/i }));
 
       // Reset filters
       await user.click(screen.getByRole('button', { name: /reset fields/i }));

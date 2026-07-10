@@ -29,10 +29,10 @@ describe('PatientSearchPageComponent', () => {
   it('should render advanced search component on desktop layout', () => {
     render(<PatientSearchPageComponent />);
 
-    const applyBtn = screen.getByRole('button', { name: /apply/i });
+    const searchBtn = screen.getByRole('button', { name: /^search$/i });
     const resetBtn = screen.getByRole('button', { name: /reset/i });
 
-    expect(applyBtn).toBeInTheDocument();
+    expect(searchBtn).toBeInTheDocument();
     expect(resetBtn).toBeInTheDocument();
   });
 

@@ -2,11 +2,16 @@
 @use "@carbon/type";
 
 .refineSearchContainer {
-  min-width: 19rem;
+  min-width: 22rem;
 
   h2 {
     margin: layout.$spacing-03 0;
   }
+}
+
+.sectionHeading {
+  @include type.type-style("heading-compact-01");
+  margin: layout.$spacing-06 0 layout.$spacing-03;
 }
 
 .field {

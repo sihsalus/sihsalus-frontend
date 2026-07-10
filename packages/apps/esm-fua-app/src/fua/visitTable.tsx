@@ -21,11 +21,18 @@ import {
 import { Add, Renew } from '@carbon/react/icons';
 import { showSnackbar, usePagination } from '@openmrs/esm-framework';
 import { RequirePrivilege } from '@sihsalus/esm-rbac';
+import type { TFunction } from 'i18next';
 import React, { useCallback, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import { fuaManagePrivilege } from '../constant';
-import { generateFuaFromVisit, generateFuasFromVisits, useVisits, type VisitSummary } from '../hooks/useVisit';
+import {
+  FuaGenerationError,
+  generateFuaFromVisit,
+  generateFuasFromVisits,
+  useVisits,
+  type VisitSummary,
+} from '../hooks/useVisit';
 
 import styles from './fua-request-table.scss';
 
@@ -45,6 +52,42 @@ function getPatientName(visit: VisitSummary) {
 
 function getArea(visit: VisitSummary) {
   return visit.location?.display?.trim() || 'N/A';
+}
+
+function getFuaGenerationErrorMessage(error: unknown, t: TFunction) {
+  if (!(error instanceof FuaGenerationError)) {
+    return t('errorGeneratingFua', 'Ocurrió un error al generar el FUA');
+  }
+
+  if (error.status === 401 || error.status === 403) {
+    return t(
+      'fuaGenerationAuthorizationError',
+      'El servidor rechazó la generación del FUA. Su sesión permanece activa; inténtelo nuevamente o contacte al administrador.',
+    );
+  }
+
+  if ([400, 404, 409, 422].includes(error.status ?? 0)) {
+    return t(
+      'fuaGenerationDataError',
+      'No se pudo generar el FUA con la información actual de la consulta. Revise los datos e inténtelo nuevamente.',
+    );
+  }
+
+  if (error.status === null || error.status === 0) {
+    return t(
+      'fuaGenerationNetworkError',
+      'No se pudo conectar con el servicio de generación FUA. Inténtelo nuevamente.',
+    );
+  }
+
+  if (error.status >= 500) {
+    return t(
+      'fuaGenerationServerError',
+      'El servicio de generación FUA no está disponible temporalmente. Inténtelo nuevamente o contacte al administrador.',
+    );
+  }
+
+  return t('errorGeneratingFua', 'Ocurrió un error al generar el FUA');
 }
 
 const VisitTable: React.FC = () => {
@@ -111,9 +154,8 @@ const VisitTable: React.FC = () => {
       } catch (error) {
         showSnackbar({
           kind: 'error',
-          title: t('error', 'Error'),
-          subtitle:
-            error instanceof Error ? error.message : t('errorGeneratingFua', 'Ocurrio un error al generar el FUA'),
+          title: t('errorGeneratingFua', 'Ocurrió un error al generar el FUA'),
+          subtitle: getFuaGenerationErrorMessage(error, t),
         });
       } finally {
         setGeneratingVisitUuid(null);

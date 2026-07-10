@@ -3,6 +3,9 @@ import { useMemo } from 'react';
 import useSWR from 'swr';
 
 import type { ConfigObject } from '../config-schema';
+import { encounterMatchesForm, isWithinPregnancyEpisode } from '../utils/pregnancy-episode-utils';
+
+import { useCurrentPregnancy } from './useCurrentPregnancy';
 
 type Obs = {
   uuid: string;
@@ -29,10 +32,16 @@ const richRepresentation =
 
 export const usePostpartumControlTable = (
   patientUuid: string,
-): { prenatalEncounters: ObsEncounter[]; error: Error | null; isValidating: boolean; mutate: () => void } => {
+): {
+  prenatalEncounters: ObsEncounter[];
+  error: Error | null;
+  isValidating: boolean;
+  mutate: () => void;
+} => {
   const config = useConfig<ConfigObject>();
   const encounterType = config.encounterTypes.postnatalControl;
   const formName = config.formsList.postpartumControl;
+  const { pregnancyStartDate, isLoading: isPregnancyLoading, error: pregnancyError } = useCurrentPregnancy(patientUuid);
 
   const url = useMemo(() => {
     if (!patientUuid || !encounterType) return null;
@@ -47,9 +56,18 @@ export const usePostpartumControlTable = (
   const prenatalEncounters = useMemo(() => {
     if (!data?.results) return [];
     return data.results
-      .filter((enc) => enc?.form?.uuid === formName || enc?.form?.display === formName)
+      .filter(
+        (encounter) =>
+          encounterMatchesForm(encounter, formName) &&
+          isWithinPregnancyEpisode(encounter.encounterDatetime, pregnancyStartDate),
+      )
       .sort((a, b) => new Date(a.encounterDatetime).getTime() - new Date(b.encounterDatetime).getTime());
-  }, [data, formName]);
+  }, [data, formName, pregnancyStartDate]);
 
-  return { prenatalEncounters, error, isValidating, mutate };
+  return {
+    prenatalEncounters,
+    error: pregnancyError ?? error ?? null,
+    isValidating: isPregnancyLoading || isValidating,
+    mutate,
+  };
 };

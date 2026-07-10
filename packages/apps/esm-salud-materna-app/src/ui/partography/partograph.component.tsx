@@ -12,7 +12,7 @@ import {
   TableRow,
   Tile,
 } from '@carbon/react';
-import { Add, ChartLineSmooth } from '@carbon/react/icons';
+import { Add, ChartLineSmooth, Table as TableIcon } from '@carbon/react/icons';
 import { formatDate, isDesktop, launchWorkspace2, parseDate, useConfig, useLayoutType } from '@openmrs/esm-framework';
 import { CardHeader, EmptyDataIllustration, EmptyState, ErrorState } from '@openmrs/esm-patient-common-lib';
 import dayjs from 'dayjs';
@@ -43,7 +43,7 @@ const Partograph: React.FC<PartographyProps> = ({ patientUuid }) => {
   const descentOfHeadAnswerLabels = partography.descentOfHeadAnswerLabels;
   const layout = useLayoutType();
   const [chartView, setChartView] = React.useState<boolean>(false);
-  const { encounters = [], isLoading, isValidating, error } = usePartograph(patientUuid);
+  const { encounters = [], isLoading, isValidating, error, mutate } = usePartograph(patientUuid);
   const headerTitle = t('partograph', 'Partograph');
   const displayText = t('partographData', 'Vital Components');
   const headers = [
@@ -147,6 +147,7 @@ const Partograph: React.FC<PartographyProps> = ({ patientUuid }) => {
     launchWorkspace2(formEntryWorkspace, {
       form: { uuid: partography.formUuid },
       encounterUuid: '',
+      handlePostResponse: () => void mutate(),
     });
   };
 
@@ -193,7 +194,7 @@ const Partograph: React.FC<PartographyProps> = ({ patientUuid }) => {
                       size="sm"
                       kind={chartView ? 'ghost' : 'tertiary'}
                       hasIconOnly
-                      renderIcon={(props) => <Table {...props} size={16} />}
+                      renderIcon={(props) => <TableIcon {...props} size={16} />}
                       iconDescription={t('tableView', 'Table view')}
                       onClick={() => setChartView(false)}
                     />
@@ -222,44 +223,39 @@ const Partograph: React.FC<PartographyProps> = ({ patientUuid }) => {
               {chartView ? (
                 <PartographChart partographRecords={partographRecords} />
               ) : (
-                <DataTable
-                  useZebraStyles
-                  headers={headers}
-                  rows={tableRows}
-                  size="sm"
-                  render={({ rows, headers, getHeaderProps, getTableProps, getTableContainerProps }) => {
-                    return (
-                      <TableContainer {...getTableContainerProps()}>
-                        <Table {...getTableProps()}>
-                          <TableHead>
-                            <TableRow>
-                              {headers.map((header) => (
-                                <TableHeader
-                                  key={header.key}
-                                  {...getHeaderProps({
-                                    header,
-                                    isSortable: header.isSortable,
-                                  })}
-                                >
+                <DataTable useZebraStyles headers={headers} rows={tableRows} size="sm">
+                  {({ rows, headers, getHeaderProps, getTableProps, getTableContainerProps }) => (
+                    <TableContainer {...getTableContainerProps()}>
+                      <Table {...getTableProps()}>
+                        <TableHead>
+                          <TableRow>
+                            {headers.map((header) => {
+                              const { key, ...headerProps } = getHeaderProps({
+                                header,
+                                isSortable: header.isSortable,
+                              });
+
+                              return (
+                                <TableHeader key={key ?? header.key} {...headerProps}>
                                   {renderHeaderLabel(header.header)}
                                 </TableHeader>
+                              );
+                            })}
+                          </TableRow>
+                        </TableHead>
+                        <TableBody>
+                          {rows.map((row) => (
+                            <TableRow key={row.id}>
+                              {row.cells.map((cell) => (
+                                <TableCell key={cell.id}>{cell.value ?? '--'}</TableCell>
                               ))}
                             </TableRow>
-                          </TableHead>
-                          <TableBody>
-                            {rows.map((row) => (
-                              <TableRow key={row.id}>
-                                {row.cells.map((cell) => (
-                                  <TableCell key={cell.id}>{cell.value ?? '--'}</TableCell>
-                                ))}
-                              </TableRow>
-                            ))}
-                          </TableBody>
-                        </Table>
-                      </TableContainer>
-                    );
-                  }}
-                />
+                          ))}
+                        </TableBody>
+                      </Table>
+                    </TableContainer>
+                  )}
+                </DataTable>
               )}
             </div>
           );

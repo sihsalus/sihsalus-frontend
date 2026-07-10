@@ -1,10 +1,21 @@
-import { launchWorkspace2, useConfig } from '@openmrs/esm-framework';
+import { launchWorkspace2, openmrsFetch, restBaseUrl, useConfig } from '@openmrs/esm-framework';
 import type { CompletedFormInfo, Form } from '@openmrs/esm-patient-common-lib';
 import { FormsSelectorWorkspace } from '@openmrs/esm-patient-common-lib';
 import React, { useCallback, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
+import useSWR from 'swr';
 import type { ConfigObject } from '../../config-schema';
+import { useCurrentPregnancy } from '../../hooks/useCurrentPregnancy';
 import { type DefaultPatientWorkspaceProps, formEntryWorkspace } from '../../types';
+import {
+  encounterMatchesForm,
+  isWithinPregnancyEpisode,
+  type MaternalEncounter,
+} from '../../utils/pregnancy-episode-utils';
+
+interface EncounterResponse {
+  results: MaternalEncounter[];
+}
 
 const maternalFormKeys: Array<keyof ConfigObject['formsList']> = [
   'maternalHistory',
@@ -65,6 +76,17 @@ const MaternalHealthFormsSelectorWorkspace: React.FC<DefaultPatientWorkspaceProp
   const config = useConfig<ConfigObject>();
   const workspaceProps = props.workspaceProps ?? {};
   const patientUuid = (props.patientUuid ?? workspaceProps.patientUuid ?? '') as string;
+  const { pregnancyStartDate } = useCurrentPregnancy(patientUuid);
+  const encounterUrl = patientUuid
+    ? `${restBaseUrl}/encounter?patient=${patientUuid}&limit=100&v=custom:(uuid,encounterDatetime,form:(uuid,name,display))`
+    : null;
+  const { data: encounterData, mutate: mutateMaternalEncounters } = useSWR<EncounterResponse, Error>(
+    encounterUrl,
+    async (url) => {
+      const response = await openmrsFetch<EncounterResponse>(url);
+      return response.data;
+    },
+  );
   const closeWorkspace = (options?: { onWorkspaceClose?: () => void }) => {
     void props.closeWorkspace({ discardUnsavedChanges: true }).then(() => {
       options?.onWorkspaceClose?.();
@@ -104,17 +126,52 @@ const MaternalHealthFormsSelectorWorkspace: React.FC<DefaultPatientWorkspaceProp
       return forms;
     }, []);
   }, [config.formsList]);
+  const formsWithHistory = useMemo<Array<CompletedFormInfo>>(
+    () =>
+      availableForms.map((formInfo) => {
+        const matchingEncounters = (encounterData?.results ?? [])
+          .filter(
+            (encounter) =>
+              encounterMatchesForm(encounter, formInfo.form.uuid) &&
+              isWithinPregnancyEpisode(encounter.encounterDatetime, pregnancyStartDate),
+          )
+          .sort(
+            (first, second) =>
+              new Date(second.encounterDatetime).getTime() - new Date(first.encounterDatetime).getTime(),
+          );
+        const associatedEncounters = matchingEncounters.map((encounter) => ({
+          uuid: encounter.uuid,
+          encounterDatetime: encounter.encounterDatetime,
+        }));
 
-  const launchForm = useCallback((form: Form, encounterUuid: string) => {
-    launchWorkspace2(formEntryWorkspace, {
-      form: { uuid: form.uuid },
-      encounterUuid,
-    });
-  }, []);
+        return {
+          ...formInfo,
+          associatedEncounters,
+          lastCompletedDate: associatedEncounters[0]?.encounterDatetime
+            ? new Date(associatedEncounters[0].encounterDatetime)
+            : undefined,
+        };
+      }),
+    [availableForms, encounterData?.results, pregnancyStartDate],
+  );
+
+  const launchForm = useCallback(
+    (form: Form, encounterUuid: string, onFormSubmitted: () => void) => {
+      launchWorkspace2(formEntryWorkspace, {
+        form: { uuid: form.uuid },
+        encounterUuid,
+        handlePostResponse: () => {
+          onFormSubmitted();
+          void mutateMaternalEncounters();
+        },
+      });
+    },
+    [mutateMaternalEncounters],
+  );
 
   return (
     <FormsSelectorWorkspace
-      availableForms={availableForms}
+      availableForms={formsWithHistory}
       patientAge=""
       controlNumber={0}
       patientUuid={patientUuid}

@@ -88,10 +88,8 @@ const PatientObservationGroupTable: React.FC<PatientObservationGroupTableProps> 
         launchWorkspace2(formEntryWorkspace, {
           form: { uuid: formWorkspace },
           encounterUuid: '',
+          handlePostResponse: () => void mutate(),
         });
-      }
-      if (mutate) {
-        setTimeout(() => mutate(), 1000);
       }
     } catch (err) {
       console.error('Failed to launch form:', err);
@@ -114,7 +112,7 @@ const PatientObservationGroupTable: React.FC<PatientObservationGroupTableProps> 
       .filter((obs) => Array.isArray(obs.groupMembers) && obs.groupMembers.length > 0)
       .map((obs, index) => {
         const { category: title } = parseDisplay(obs.display);
-        const rows = obs.groupMembers!.map((member, idx) => {
+        const rows = (obs.groupMembers ?? []).map((member, idx) => {
           const { category, value } = parseDisplay(member.display);
           return {
             id: `row-${member.uuid || idx}`,
@@ -136,7 +134,11 @@ const PatientObservationGroupTable: React.FC<PatientObservationGroupTableProps> 
 
   // Configuración de columnas para la tabla principal
   const columns = [
-    { key: 'title', header: t('observationGroup', 'Grupo de Observación'), CellComponent: GroupTitleCell },
+    {
+      key: 'title',
+      header: t('observationGroup', 'Grupo de Observación'),
+      CellComponent: GroupTitleCell,
+    },
     { key: 'date', header: t('date', 'Date'), CellComponent: GroupDateCell },
     { key: 'actions', header: '', CellComponent: GroupActionsCell },
   ];

@@ -1,10 +1,12 @@
 // altura-cuello-overview.component.tsx
 import { Button, DataTableSkeleton, InlineLoading } from '@carbon/react';
 import { Add } from '@carbon/react/icons';
-import { launchWorkspace2 } from '@openmrs/esm-framework';
+import { launchWorkspace2, useConfig } from '@openmrs/esm-framework';
+import dayjs from 'dayjs';
 import { CardHeader, EmptyState, ErrorState } from '@openmrs/esm-patient-common-lib';
 import React, { useCallback, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
+import type { ConfigObject } from '../../config-schema';
 import { usePrenatalMeasurements } from '../../hooks/usePrenatalMeasurements';
 import { formEntryWorkspace } from '../../types';
 import { getSafePatientName } from '../../utils/utils';
@@ -19,38 +21,26 @@ interface AlturaCuelloOverviewProps {
 
 const AlturaCuelloOverview: React.FC<AlturaCuelloOverviewProps> = ({ patient, patientUuid }) => {
   const { t } = useTranslation();
+  const config = useConfig<ConfigObject>();
 
   const headerTitle = t('obstetricalCharts', 'Obstetrical Charts');
   const displayText = t('noMeasurementDataAvailable', 'No hay datos de mediciones disponibles');
   //const formWorkspace = config.formsList?.prenatalCare || 'prenatal-measurements-form';
 
-  const launchForm = useCallback(() => {
-    launchWorkspace2(formEntryWorkspace, {
-      form: { uuid: 'OBST-003-ATENCIÓN PRENATAL' },
-    });
-  }, []);
-
   const patientName = getSafePatientName(patient);
 
-  // Calcular semanas gestacionales actuales
-  const gestationalWeeks = useMemo(() => {
-    // Esta lógica dependerá de cómo manejen las fechas en su sistema
-    // Por ejemplo, basado en la fecha de última menstruación (FUM)
-    const lastMenstrualPeriod = patient?.extension?.find((ext) => ext.url === 'last-menstrual-period')?.valueDate;
-
-    if (lastMenstrualPeriod) {
-      const fumDate = new Date(lastMenstrualPeriod);
-      const today = new Date();
-      const diffTime = Math.abs(today.getTime() - fumDate.getTime());
-      const diffWeeks = Math.floor(diffTime / (1000 * 60 * 60 * 24 * 7));
-      return diffWeeks;
-    }
-
-    return undefined;
-  }, [patient]);
-
   // Hook para obtener datos de mediciones prenatales
-  const { data, isLoading, error } = usePrenatalMeasurements(patientUuid);
+  const { data, pregnancyStartDate, isLoading, error, mutate } = usePrenatalMeasurements(patientUuid);
+  const launchForm = useCallback(() => {
+    launchWorkspace2(formEntryWorkspace, {
+      form: { uuid: config.formsList.atencionPrenatal },
+      handlePostResponse: () => void mutate(),
+    });
+  }, [config.formsList.atencionPrenatal, mutate]);
+  const gestationalWeeks = useMemo(
+    () => (pregnancyStartDate ? dayjs().diff(dayjs(pregnancyStartDate), 'week') : undefined),
+    [pregnancyStartDate],
+  );
 
   // Transformar datos para el componente de gráfico
   const measurementData = useMemo(() => {
@@ -59,7 +49,7 @@ const AlturaCuelloOverview: React.FC<AlturaCuelloOverviewProps> = ({ patient, pa
     return data
       .map((measurement) => ({
         semana: measurement.gestationalWeek || 0,
-        altura: measurement.uterineHeight || measurement.cervicalLength || 0,
+        altura: measurement.uterineHeight || 0,
         fecha: measurement.date,
       }))
       .filter((item) => item.semana > 0 && item.altura > 0);

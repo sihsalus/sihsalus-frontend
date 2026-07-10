@@ -43,7 +43,7 @@ const PostpartumControlTable: React.FC<ProgramsDetailedSummaryProps> = ({ patien
   const isTablet = layout === 'tablet';
   const headerTitle = t('controlPuerperio', 'Control Puerperio');
   const config = useConfig() as ConfigObject;
-  const { prenatalEncounters, isValidating } = usePostpartumControlTable(patientUuid);
+  const { prenatalEncounters, isValidating, mutate } = usePostpartumControlTable(patientUuid);
 
   const formPrenatalUuid = config.formsList.postpartumControl;
 
@@ -51,6 +51,7 @@ const PostpartumControlTable: React.FC<ProgramsDetailedSummaryProps> = ({ patien
     launchWorkspace2(formEntryWorkspace, {
       form: { uuid: formPrenatalUuid },
       encounterUuid: '',
+      handlePostResponse: mutate,
     });
   };
 

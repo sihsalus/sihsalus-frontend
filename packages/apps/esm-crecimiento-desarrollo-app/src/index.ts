@@ -43,6 +43,7 @@ import NewbornBalanceOverview from './well-child-care/components/newborn-monitor
 import NewbornBiometricsBase from './well-child-care/components/newborn-monitoring/newborn biometrics/biometrics-base.component';
 import ScreeningIndicators from './well-child-care/components/screening/screening-indicators.component';
 import SupplementationTracker from './well-child-care/components/supplementation/supplementation-tracker.component';
+import TpedReferenceWidget from './well-child-care/components/test-peruano/tped-reference-widget.component';
 import VaccinationSchedule from './well-child-care/components/vaccination-schema-widget/vaccinationSchedule.component';
 import { EarlyStimulation } from './well-child-care/early-stimulation.component';
 import { NeonatalCare } from './well-child-care/neonatal-care.component';
@@ -134,6 +135,7 @@ export const screeningIndicators = getSyncLifecycle(ScreeningIndicators, options
 
 // Development Evaluation Overview
 export const developmentOverview = getSyncLifecycle(DevelopmentOverview, options);
+export const tpedReferenceWidget = getSyncLifecycle(TpedReferenceWidget, options);
 
 // CRED Form Action Button
 export const credFormActionButton = getSyncLifecycle(CREDFormActionButton, options);
@@ -189,7 +191,3 @@ export const antecedentesPatologicosFormWorkspace = getAsyncLifecycle(
   options,
 );
 export const formsSelectorWorkspace = getSyncLifecycle(CREDFormsSelectorWorkspace, options);
-export const testPeruanoFormWorkspace = getAsyncLifecycle(
-  () => import('./well-child-care/workspace/test-peruano-form/test-peruano-form.component'),
-  options,
-);

@@ -29,7 +29,11 @@ Terminología de dominio: visita = consulta, encounter = atención, appointment 
 - Corregir edición vs creación en widgets que abren form engine con `encounterUuid: ''`; varios resúmenes todavía crean registros nuevos en vez de editar el encounter existente.
 - Revisar `useCreateCarePlanAppointments`: hoy queda como helper TODO para planes de cuidado (madre gestante, CRED y vacunación), pero no está integrado como contrato estable.
 
-Validado en DEV/OCL: `CRED-001` a `CRED-027`, `INMU-002-REPORTE ESAVI`, encounter type `vaccinationAdministration`, `consultationTime` = `Hora` (`2c67cd3d-407c-4f4d-bdf7-0f32b42ccfb4`), `CRED.perinatalConceptSetUuid` = `Antecedentes de Riesgo Perinatal` (`9dce2946-9fda-4d62-b68e-d62711801189`), `Número de control CRED` existe en OCL pendiente de release/content, psicoprofilaxis/riesgo obstétrico/causa probable de muerte usan `external_id` existentes, y los conceptos de Test Peruano/ESAVI configurados existen, están publicados/no retirados cuando aplica, y son consultables por REST.
+Validado en DEV/OCL: `CRED-001` a `CRED-027`, `INMU-002-REPORTE ESAVI`, encounter type `vaccinationAdministration`, `consultationTime` = `Hora` (`2c67cd3d-407c-4f4d-bdf7-0f32b42ccfb4`), `CRED.perinatalConceptSetUuid` = `Antecedentes de Riesgo Perinatal` (`9dce2946-9fda-4d62-b68e-d62711801189`), `Número de control CRED` existe en OCL pendiente de release/content, y psicoprofilaxis/riesgo obstétrico/causa probable de muerte usan `external_id` existentes. El TPED histórico tiene una definición frontend versionada de 88 hitos, pero su mapeo individual de conceptos sigue pendiente; ver `docs/clinical/test-peruano/CONCEPT-AUDIT.md`.
+
+El componente `tped-reference-widget` muestra la matriz historica y el detalle de hitos en
+la pestana Desarrollo. Es solo de consulta: no persiste observaciones, puntajes ni
+clasificaciones.
 
 ## TODO QA/QLTY
 

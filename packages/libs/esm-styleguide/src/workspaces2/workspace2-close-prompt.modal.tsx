@@ -32,7 +32,7 @@ const Workspace2ClosePromptModal: React.FC<WorkspaceUnsavedChangesModal> = ({
         <Button kind="secondary" onClick={onCancel}>
           {getCoreTranslation('cancel', 'Cancel')}
         </Button>
-        <Button kind="danger" onClick={onConfirm}>
+        <Button dangerDescription={`${getCoreTranslation('danger', 'Danger')}: `} kind="danger" onClick={onConfirm}>
           {getCoreTranslation('discardChanges', 'Discard changes')}
         </Button>
       </ModalFooter>

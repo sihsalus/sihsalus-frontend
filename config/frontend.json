@@ -24,6 +24,11 @@
       "bodyMassIndexUuid": "5b877648-ae50-4d45-ad36-0196042baa1a"
     }
   },
+  "@sihsalus/esm-patient-procedures-app": {
+    "statusConceptUuid": "f0d47b45-8303-4cdc-a9f2-c37135a3700f",
+    "statusConceptSourceType": "Answer to",
+    "durationUnitConceptSourceType": "Concept set"
+  },
   "@sihsalus/esm-interconsultas-app": {
     "interconsultaOrderTypeUuid": "f3c2e4b6-8b5a-11e5-8e9b-12345678901b",
     "careSettingUuid": "6f0c9a92-6f24-11e3-af88-005056821db0",

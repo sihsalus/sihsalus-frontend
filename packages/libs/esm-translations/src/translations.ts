@@ -62,6 +62,7 @@ export const coreTranslations = {
   confirm: 'Confirm',
   contactAdministratorIfIssuePersists: 'Contact your system administrator if the problem persists.',
   contactDetails: 'Contact details',
+  danger: 'Danger',
   delete: 'Delete',
   discardChanges: 'Discard changes',
   edit: 'Edit',

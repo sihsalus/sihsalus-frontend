@@ -14,12 +14,14 @@ export interface Relationship {
     age: number;
     display: string;
     birthdate: string;
+    birthdateEstimated?: boolean;
     uuid: string;
   };
   personB: {
     age: number;
     display: string;
     birthdate: string;
+    birthdateEstimated?: boolean;
     uuid: string;
   };
   relationshipType: {
@@ -34,8 +36,61 @@ interface RelationshipsResponse {
   results: Array<Relationship>;
 }
 
+export function mapPatientRelationships(
+  results: Array<Relationship> | undefined,
+  patientUuid: string,
+  companionTypeUuid?: string,
+): Array<RelationshipValue> {
+  const mapped = (Array.isArray(results) ? results : []).map((relationship) => {
+    const isPersonA = relationship.personA.uuid === patientUuid;
+    const relatedPerson = isPersonA ? relationship.personB : relationship.personA;
+    const direction = isPersonA ? 'bIsToA' : 'aIsToB';
+    return {
+      relatedPersonName: relatedPerson.display,
+      relatedPersonUuid: relatedPerson.uuid,
+      relatedPersonAge: relatedPerson.age,
+      relatedPersonBirthdate: relatedPerson.birthdate,
+      relatedPersonBirthdateEstimated: relatedPerson.birthdateEstimated,
+      relation: isPersonA ? relationship.relationshipType.bIsToA : relationship.relationshipType.aIsToB,
+      relationshipType: `${relationship.relationshipType.uuid}/${direction}`,
+      initialrelationshipTypeValue: `${relationship.relationshipType.uuid}/${direction}`,
+      uuid: relationship.uuid,
+      typeUuid: relationship.relationshipType.uuid,
+    };
+  });
+
+  if (!companionTypeUuid) {
+    return mapped.map(({ typeUuid: _typeUuid, ...relationship }) => relationship);
+  }
+
+  const companions = mapped.filter((relationship) => relationship.typeUuid === companionTypeUuid);
+  const regularRelationships = mapped.filter((relationship) => relationship.typeUuid !== companionTypeUuid);
+  const consumedCompanionUuids = new Set<string>();
+  const foldedRelationships: Array<RelationshipValue> = regularRelationships.map(
+    ({ typeUuid: _typeUuid, ...relationship }) => {
+      const companion = companions.find(
+        (candidate) =>
+          candidate.relatedPersonUuid === relationship.relatedPersonUuid && !consumedCompanionUuids.has(candidate.uuid),
+      );
+
+      if (!companion) {
+        return relationship;
+      }
+
+      consumedCompanionUuids.add(companion.uuid);
+      return { ...relationship, isCompanion: true, companionRelationshipUuid: companion.uuid };
+    },
+  );
+  const standaloneCompanions = companions
+    .filter((companion) => !consumedCompanionUuids.has(companion.uuid))
+    .map(({ typeUuid: _typeUuid, ...companion }) => companion);
+
+  return [...foldedRelationships, ...standaloneCompanions];
+}
+
 export function useInitialPatientRelationships(patientUuid: string): {
   data: Array<RelationshipValue>;
+  error?: Error;
   isLoading: boolean;
 } {
   const shouldFetch = !!patientUuid;
@@ -48,32 +103,8 @@ export function useInitialPatientRelationships(patientUuid: string): {
   );
 
   const result = useMemo(() => {
-    const mapped = (Array.isArray(data?.data?.results) ? data.data.results : []).map((r) => {
-      const isPersonA = r.personA.uuid === patientUuid;
-      const direction = isPersonA ? 'bIsToA' : 'aIsToB';
-      return {
-        relatedPersonName: isPersonA ? r.personB.display : r.personA.display,
-        relatedPersonUuid: isPersonA ? r.personB.uuid : r.personA.uuid,
-        relation: isPersonA ? r.relationshipType.bIsToA : r.relationshipType.aIsToB,
-        relationshipType: `${r.relationshipType.uuid}/${direction}`,
-        initialrelationshipTypeValue: `${r.relationshipType.uuid}/${direction}`,
-        uuid: r.uuid,
-        typeUuid: r.relationshipType.uuid,
-      };
-    });
-
-    // Fold the persisted primary-responsible relationship into the person's family
-    // link so editing keeps one row and restores the principal selection.
-    const companions = companionTypeUuid ? mapped.filter((m) => m.typeUuid === companionTypeUuid) : [];
-    const relationships: Array<RelationshipValue> = mapped
-      .filter((m) => !companionTypeUuid || m.typeUuid !== companionTypeUuid)
-      .map(({ typeUuid: _typeUuid, ...rel }) => {
-        const companion = companions.find((c) => c.relatedPersonUuid === rel.relatedPersonUuid);
-        return companion ? { ...rel, isCompanion: true, companionRelationshipUuid: companion.uuid } : rel;
-      });
-
     return {
-      data: relationships,
+      data: mapPatientRelationships(data?.data?.results, patientUuid, companionTypeUuid),
       error,
       isLoading,
     };

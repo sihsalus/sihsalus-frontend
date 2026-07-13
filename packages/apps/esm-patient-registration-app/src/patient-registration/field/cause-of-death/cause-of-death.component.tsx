@@ -53,14 +53,15 @@ export const CauseOfDeathField: React.FC = () => {
       ) : (
         <>
           <Field name="deathCause">
-            {({ field, form: { touched, errors }, meta }) => {
+            {({ field, form: { touched, errors } }) => {
+              const error = typeof errors.deathCause === 'string' ? errors.deathCause : undefined;
               return (
                 <Layer>
                   <Select
                     {...field}
                     id="deathCause"
-                    invalid={errors.deathCause && touched.deathCause}
-                    invalidText={errors.deathCause?.message}
+                    invalid={!!error && !!touched.deathCause}
+                    invalidText={error ? t(error, error) : undefined}
                     labelText={t('causeOfDeathInputLabel', 'Cause of Death')}
                     name="deathCause"
                     required={required}
@@ -77,14 +78,16 @@ export const CauseOfDeathField: React.FC = () => {
           {deathCause.value === freeTextFieldConceptUuid && (
             <div className={styles.nonCodedCauseOfDeath}>
               <Field name="nonCodedCauseOfDeath">
-                {({ field, form: { touched, errors }, meta }) => {
+                {({ field, form: { touched, errors } }) => {
+                  const error =
+                    typeof errors.nonCodedCauseOfDeath === 'string' ? errors.nonCodedCauseOfDeath : undefined;
                   return (
                     <Layer>
                       <TextInput
                         {...field}
                         id="nonCodedCauseOfDeath"
-                        invalid={errors?.nonCodedCauseOfDeath && touched.nonCodedCauseOfDeath}
-                        invalidText={errors?.nonCodedCauseOfDeath?.message}
+                        invalid={!!error && !!touched.nonCodedCauseOfDeath}
+                        invalidText={error ? t(error, error) : undefined}
                         labelText={t('nonCodedCauseOfDeath', 'Non-coded cause of death')}
                         placeholder={t('enterNonCodedCauseOfDeath', 'Enter non-coded cause of death')}
                       />

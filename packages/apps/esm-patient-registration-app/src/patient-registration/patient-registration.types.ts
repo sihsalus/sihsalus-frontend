@@ -15,6 +15,7 @@ interface NameValue {
 
 export interface AttributeValue {
   attributeType: string;
+  uuid?: string;
   value: string;
 }
 
@@ -243,6 +244,7 @@ export interface FormValues {
 }
 
 export interface PatientUuidMapType {
+  [attributeKey: `attribute.${string}`]: string | undefined;
   additionalNameUuid?: string;
   birthAddressUuid?: string;
   preferredNameUuid?: string;

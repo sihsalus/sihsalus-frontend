@@ -1,8 +1,10 @@
 import { ContentSwitcher, NumberInput, Switch, TextInput } from '@carbon/react';
 import {
+  getEarliestPatientBirthYear,
+  getLocalCalendarDate,
+  normalizePatientAgeRange,
   shouldPreventPlainNumberKey,
   shouldPreventPlainNumberPaste,
-  validatePlainNumberInput,
 } from '@openmrs/esm-utils';
 import classNames from 'classnames';
 import React from 'react';
@@ -14,37 +16,13 @@ import { type AdvancedPatientSearchState, type SearchFieldConfig } from '../../t
 import { PersonAttributeField } from './person-attribute-field.component';
 import styles from './search-field.scss';
 
-export function isValidIntegerInput(value: string | number, max?: number, maxLength?: number, min = 0) {
-  const stringValue = String(value);
-  if (!stringValue) {
-    return true;
+export function getOptionalIntegerInputValue(value: string | number) {
+  if (value === '' || (typeof value === 'number' && Number.isNaN(value))) {
+    return null;
   }
 
-  if (maxLength && stringValue.length > maxLength) {
-    return false;
-  }
-
-  return !validatePlainNumberInput(stringValue, {
-    integer: true,
-    max,
-    min,
-    nonNegative: min >= 0,
-  }).isInvalid;
+  return Number(value);
 }
-
-export const getIntegerInputValue = (
-  currentValue: string | number,
-  nextValue: string | number,
-  max?: number,
-  maxLength?: number,
-  min = 0,
-) => {
-  if (!isValidIntegerInput(nextValue, max, maxLength, min)) {
-    return typeof currentValue === 'number' ? currentValue : Number(currentValue) || 0;
-  }
-
-  return nextValue === '' ? 0 : Number(nextValue);
-};
 
 const preventInvalidIntegerKey = (event: React.KeyboardEvent<HTMLInputElement>) => {
   if (event.ctrlKey || event.metaKey || event.altKey) {
@@ -56,19 +34,12 @@ const preventInvalidIntegerKey = (event: React.KeyboardEvent<HTMLInputElement>) 
   }
 };
 
-const preventInvalidIntegerPaste =
-  (max?: number, maxLength?: number, min = 0) =>
-  (event: React.ClipboardEvent<HTMLInputElement>) => {
-    const text = event.clipboardData.getData('text');
-    if (maxLength && text.length > maxLength) {
-      event.preventDefault();
-      return;
-    }
-
-    if (shouldPreventPlainNumberPaste(text, { integer: true, max, min, nonNegative: min >= 0 })) {
-      event.preventDefault();
-    }
-  };
+const preventInvalidIntegerPaste = (min: number, max: number) => (event: React.ClipboardEvent<HTMLInputElement>) => {
+  const text = event.clipboardData.getData('text');
+  if (shouldPreventPlainNumberPaste(text, { integer: true, max, min, nonNegative: true })) {
+    event.preventDefault();
+  }
+};
 
 interface SearchFieldProps {
   field: SearchFieldConfig;
@@ -125,19 +96,19 @@ export const SearchField: React.FC<SearchFieldProps> = ({ field, control, inTabl
           <Controller
             name="dateOfBirth"
             control={control}
-            render={({ field: { onChange, value } }) => (
+            render={({ field: { onChange, value }, fieldState: { error } }) => (
               <NumberInput
                 id="dateOfBirth"
                 placeholder="DD"
-                value={value || ''}
-                onChange={(_event, { value: inputValue }) =>
-                  onChange(getIntegerInputValue(value, inputValue, 31, 2, 1))
-                }
+                value={value ?? ''}
+                onChange={(_event, { value: inputValue }) => onChange(getOptionalIntegerInputValue(inputValue))}
                 onKeyDown={preventInvalidIntegerKey}
-                onPaste={preventInvalidIntegerPaste(31, 2, 1)}
+                onPaste={preventInvalidIntegerPaste(1, 31)}
                 className={styles.dobField}
                 type="number"
                 label={t('dayOfBirth', 'Day of Birth')}
+                invalid={!!error}
+                invalidText={error?.message}
                 min={1}
                 max={31}
                 allowEmpty
@@ -149,19 +120,19 @@ export const SearchField: React.FC<SearchFieldProps> = ({ field, control, inTabl
           <Controller
             name="monthOfBirth"
             control={control}
-            render={({ field: { onChange, value } }) => (
+            render={({ field: { onChange, value }, fieldState: { error } }) => (
               <NumberInput
                 id="monthOfBirth"
                 placeholder="MM"
-                value={value || ''}
-                onChange={(_event, { value: inputValue }) =>
-                  onChange(getIntegerInputValue(value, inputValue, 12, 2, 1))
-                }
+                value={value ?? ''}
+                onChange={(_event, { value: inputValue }) => onChange(getOptionalIntegerInputValue(inputValue))}
                 onKeyDown={preventInvalidIntegerKey}
-                onPaste={preventInvalidIntegerPaste(12, 2, 1)}
+                onPaste={preventInvalidIntegerPaste(1, 12)}
                 className={styles.dobField}
                 type="number"
                 label={t('monthOfBirth', 'Month of Birth')}
+                invalid={!!error}
+                invalidText={error?.message}
                 min={1}
                 max={12}
                 allowEmpty
@@ -173,51 +144,57 @@ export const SearchField: React.FC<SearchFieldProps> = ({ field, control, inTabl
           <Controller
             name="yearOfBirth"
             control={control}
-            render={({ field: { onChange, value } }) => (
-              <NumberInput
-                id="yearOfBirth"
-                placeholder="YYYY"
-                value={value || ''}
-                onChange={(_event, { value: inputValue }) =>
-                  onChange(getIntegerInputValue(value, inputValue, new Date().getFullYear(), 4, 1800))
-                }
-                onKeyDown={preventInvalidIntegerKey}
-                onPaste={preventInvalidIntegerPaste(new Date().getFullYear(), 4, 1800)}
-                className={styles.dobField}
-                type="number"
-                label={t('yearOfBirth', 'Year of Birth')}
-                allowEmpty
-                hideSteppers
-                min={1800}
-                max={new Date().getFullYear()}
-                size={isTablet ? 'lg' : 'md'}
-              />
-            )}
+            render={({ field: { onChange, value }, fieldState: { error } }) => {
+              const referenceDate = getLocalCalendarDate();
+              const currentYear = referenceDate.year;
+              const earliestBirthYear = getEarliestPatientBirthYear(referenceDate);
+
+              return (
+                <NumberInput
+                  id="yearOfBirth"
+                  placeholder="YYYY"
+                  value={value ?? ''}
+                  onChange={(_event, { value: inputValue }) => onChange(getOptionalIntegerInputValue(inputValue))}
+                  onKeyDown={preventInvalidIntegerKey}
+                  onPaste={preventInvalidIntegerPaste(earliestBirthYear, currentYear)}
+                  className={styles.dobField}
+                  type="number"
+                  label={t('yearOfBirth', 'Year of Birth')}
+                  invalid={!!error}
+                  invalidText={error?.message}
+                  allowEmpty
+                  hideSteppers
+                  min={earliestBirthYear}
+                  max={currentYear}
+                  size={isTablet ? 'lg' : 'md'}
+                />
+              );
+            }}
           />
         </div>
       );
 
-    case 'age':
+    case 'age': {
+      const { minimumAge: minAge, maximumAge: maxAge } = normalizePatientAgeRange(field.min, field.max);
+
       return (
         <div className={classNames({ [styles.fieldTabletOrOverlay]: inTabletOrOverlay })}>
           <Controller
             name="age"
             control={control}
-            render={({ field: { onChange, value } }) => (
+            render={({ field: { onChange, value }, fieldState: { error } }) => (
               <NumberInput
                 id={field.name}
-                value={value >= 0 ? value : ''}
-                onChange={(_event, { value: inputValue }) => {
-                  onChange(
-                    inputValue === '' ? -1 : getIntegerInputValue(value, inputValue, field.max, 3, field.min ?? 0),
-                  );
-                }}
+                value={value ?? ''}
+                onChange={(_event, { value: inputValue }) => onChange(getOptionalIntegerInputValue(inputValue))}
                 onKeyDown={preventInvalidIntegerKey}
-                onPaste={preventInvalidIntegerPaste(field.max, 3, field.min ?? 0)}
+                onPaste={preventInvalidIntegerPaste(minAge, maxAge)}
                 type="number"
                 label={t('age', 'Age')}
-                min={field.min}
-                max={field.max}
+                invalid={!!error}
+                invalidText={error?.message}
+                min={minAge}
+                max={maxAge}
                 allowEmpty
                 hideSteppers
                 size={isTablet ? 'lg' : 'md'}
@@ -227,6 +204,7 @@ export const SearchField: React.FC<SearchFieldProps> = ({ field, control, inTabl
           />
         </div>
       );
+    }
 
     case 'postcode':
       return (

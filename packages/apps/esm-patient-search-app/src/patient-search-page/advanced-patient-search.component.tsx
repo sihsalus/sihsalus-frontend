@@ -1,4 +1,5 @@
 import type { OpenmrsResource } from '@openmrs/esm-framework';
+import { parsePatientBirthdate } from '@openmrs/esm-utils';
 import classNames from 'classnames';
 import React, { useEffect, useMemo, useState } from 'react';
 
@@ -77,24 +78,16 @@ const AdvancedPatientSearchComponent: React.FC<AdvancedPatientSearchProps> = ({
           }
         }
 
-        // Date of birth filters
-        if (filters.dateOfBirth) {
-          const dayOfBirth = Number(patient.person.birthdate?.slice(8, 10));
-          if (dayOfBirth !== filters.dateOfBirth) {
-            return false;
-          }
-        }
-
-        if (filters.monthOfBirth) {
-          const monthOfBirth = Number(patient.person.birthdate?.slice(5, 7));
-          if (monthOfBirth !== filters.monthOfBirth) {
-            return false;
-          }
-        }
-
-        if (filters.yearOfBirth) {
-          const yearOfBirth = Number(patient.person.birthdate?.slice(0, 4));
-          if (yearOfBirth !== filters.yearOfBirth) {
+        // A birthdate is a calendar date. Parsing it as a JS Date shifts UTC-midnight
+        // values to the previous day in Peru and other time zones west of UTC.
+        if (filters.dateOfBirth != null || filters.monthOfBirth != null || filters.yearOfBirth != null) {
+          const birthdate = parsePatientBirthdate(patient.person.birthdate);
+          if (
+            !birthdate ||
+            (filters.dateOfBirth != null && birthdate.day !== filters.dateOfBirth) ||
+            (filters.monthOfBirth != null && birthdate.month !== filters.monthOfBirth) ||
+            (filters.yearOfBirth != null && birthdate.year !== filters.yearOfBirth)
+          ) {
             return false;
           }
         }
@@ -107,7 +100,7 @@ const AdvancedPatientSearchComponent: React.FC<AdvancedPatientSearchProps> = ({
         }
 
         // Age filter
-        if (filters.age >= 0) {
+        if (filters.age != null) {
           if (Number(patient.person.age) !== Number(filters.age)) {
             return false;
           }
@@ -118,10 +111,7 @@ const AdvancedPatientSearchComponent: React.FC<AdvancedPatientSearchProps> = ({
           for (const [attributeUuid, value] of Object.entries(filters.attributes)) {
             const normalizedFilterValue = value?.trim().toLowerCase();
             if (!normalizedFilterValue) continue;
-            if (
-              shouldSkipIdentityDocumentAttributeFilters &&
-              attributeUuid === identityDocumentNumberAttributeUuid
-            ) {
+            if (shouldSkipIdentityDocumentAttributeFilters && attributeUuid === identityDocumentNumberAttributeUuid) {
               continue;
             }
 
@@ -138,7 +128,7 @@ const AdvancedPatientSearchComponent: React.FC<AdvancedPatientSearchProps> = ({
               ? normalizedPatientAttributeValue === normalizedFilterValue
               : attributeUuid === identityDocumentNumberAttributeUuid
                 ? normalizedPatientAttributeValue.trim() === normalizedFilterValue
-              : normalizedPatientAttributeValue.includes(normalizedFilterValue);
+                : normalizedPatientAttributeValue.includes(normalizedFilterValue);
 
             if (!matchesAttributeValue) {
               return false;

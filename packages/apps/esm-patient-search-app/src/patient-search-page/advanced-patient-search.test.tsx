@@ -174,7 +174,29 @@ describe('AdvancedPatientSearchComponent', () => {
       expect(within(patientBanners[0]).getByText(/Joseph Davis/i)).toBeInTheDocument();
     });
 
-    it('filters by the complete date of birth without timezone shifts', async () => {
+    it('filters newborns by age zero instead of treating zero as an empty filter', async () => {
+      const newbornResults = [
+        {
+          ...mockAdvancedSearchResults[0],
+          person: { ...mockAdvancedSearchResults[0].person, age: 0 },
+        },
+        mockAdvancedSearchResults[1],
+      ];
+      mockUseInfinitePatientSearch.mockReturnValue({
+        ...mockSearchResults,
+        data: newbornResults as unknown as PatientSearchResponse['data'],
+      });
+      renderComponent();
+
+      await user.type(screen.getByRole('spinbutton', { name: /age/i }), '0');
+      await user.click(screen.getByRole('button', { name: /search/i }));
+
+      const patientBanners = screen.getAllByRole('banner');
+      expect(patientBanners).toHaveLength(1);
+      expect(within(patientBanners[0]).getByText(/Joshua Johnson/i)).toBeInTheDocument();
+    });
+
+    it('filters OpenMRS UTC-midnight birthdates as calendar dates in the Peru timezone', async () => {
       renderComponent();
 
       await user.type(screen.getByRole('spinbutton', { name: /day of birth/i }), '25');

@@ -9,10 +9,19 @@ const validKnownPatient = {
   identificationStatus: 'confirmed',
   isUnknown: false,
 };
+const peruNationalityConceptUuid = 'e0370dea-d480-4721-a438-97a77d6c3349';
 
 describe('quickRegistrationSchema', () => {
   it('accepts a known communicative patient without a responsible party', () => {
     expect(() => quickRegistrationSchema.parse(validKnownPatient)).not.toThrow();
+  });
+
+  it('accepts concept UUIDs and rejects legacy country codes for nationality', () => {
+    expect(
+      quickRegistrationSchema.safeParse({ ...validKnownPatient, nationality: peruNationalityConceptUuid }).success,
+    ).toBe(true);
+    expect(quickRegistrationSchema.safeParse({ ...validKnownPatient, nationality: 'PE' }).success).toBe(false);
+    expect(quickRegistrationSchema.safeParse({ ...validKnownPatient, nationality: 'OTHER' }).success).toBe(false);
   });
 
   it('requires communication condition and responsible party for unidentified patients', () => {
@@ -84,6 +93,31 @@ describe('quickRegistrationSchema', () => {
           companionAge,
         }).success,
       ).toBe(false);
+    }
+  });
+
+  it('uses the OpenMRS patient age limit and keeps age zero valid', () => {
+    for (const yearsEstimated of [0, 140]) {
+      const result = quickRegistrationSchema.safeParse({ ...validKnownPatient, yearsEstimated });
+      expect(result.success).toBe(true);
+      if (result.success) {
+        expect(result.data.yearsEstimated).toBe(yearsEstimated);
+      }
+    }
+
+    expect(quickRegistrationSchema.safeParse({ ...validKnownPatient, yearsEstimated: 141 }).success).toBe(false);
+  });
+
+  it('validates exact birthdates using the OpenMRS calendar boundary', () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date(2026, 6, 13, 12));
+
+    try {
+      expect(quickRegistrationSchema.safeParse({ ...validKnownPatient, birthdate: '1886-07-13' }).success).toBe(true);
+      expect(quickRegistrationSchema.safeParse({ ...validKnownPatient, birthdate: '1886-07-12' }).success).toBe(false);
+      expect(quickRegistrationSchema.safeParse({ ...validKnownPatient, birthdate: '2026-07-14' }).success).toBe(false);
+    } finally {
+      vi.useRealTimers();
     }
   });
 });

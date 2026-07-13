@@ -1,5 +1,15 @@
 import { ContentSwitcher, Layer, Switch, TextInput } from '@carbon/react';
 import { OpenmrsDatePicker, useConfig } from '@openmrs/esm-framework';
+import {
+  calendarDateToLocalDate,
+  compareCalendarDates,
+  getDaysInCalendarMonth,
+  getLocalCalendarDate,
+  getOldestAllowedPatientBirthdate,
+  MAX_PATIENT_AGE_MONTHS_REMAINDER,
+  MAX_PATIENT_AGE_YEARS,
+  subtractCalendarAge,
+} from '@openmrs/esm-utils';
 import { useField } from 'formik';
 import React, { type ChangeEvent, useCallback, useContext } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -14,21 +24,61 @@ import {
 } from '../../utils/plain-number-input';
 import styles from '../field.scss';
 
-const calcBirthdate = (yearDelta, monthDelta, dateOfBirth) => {
+export const calcBirthdate = (
+  yearDelta: string | number,
+  monthDelta: string | number,
+  dateOfBirth: RegistrationConfig['fieldConfigurations']['dateOfBirth'],
+  referenceDate = new Date(),
+) => {
   const { enabled, month, dayOfMonth } = dateOfBirth.useEstimatedDateOfBirth;
-  const startDate = new Date();
-  const resultMonth = new Date(startDate.getFullYear() - yearDelta, startDate.getMonth() - monthDelta, 1);
-  const daysInResultMonth = new Date(resultMonth.getFullYear(), resultMonth.getMonth() + 1, 0).getDate();
-  const resultDate = new Date(
-    resultMonth.getFullYear(),
-    resultMonth.getMonth(),
-    Math.min(startDate.getDate(), daysInResultMonth),
-  );
-  return enabled ? new Date(resultDate.getFullYear(), month, dayOfMonth) : resultDate;
+  const years = Number(yearDelta);
+  const months = Number(monthDelta);
+  const referenceCalendarDate = getLocalCalendarDate(referenceDate);
+  let estimatedBirthdate = subtractCalendarAge(referenceCalendarDate, years, months);
+
+  if (!estimatedBirthdate) {
+    return null;
+  }
+
+  const configuredMonth = month + 1;
+  if (
+    enabled &&
+    Number.isInteger(configuredMonth) &&
+    configuredMonth >= 1 &&
+    configuredMonth <= 12 &&
+    Number.isInteger(dayOfMonth) &&
+    dayOfMonth >= 1
+  ) {
+    estimatedBirthdate = {
+      year: estimatedBirthdate.year,
+      month: configuredMonth,
+      day: Math.min(dayOfMonth, getDaysInCalendarMonth(estimatedBirthdate.year, configuredMonth)),
+    };
+  }
+
+  // A configured proxy date must still remain inside OpenMRS' accepted window.
+  const oldestAllowedBirthdate = getOldestAllowedPatientBirthdate(referenceCalendarDate);
+  if (oldestAllowedBirthdate && compareCalendarDates(estimatedBirthdate, oldestAllowedBirthdate) < 0) {
+    estimatedBirthdate = oldestAllowedBirthdate;
+  } else if (compareCalendarDates(estimatedBirthdate, referenceCalendarDate) > 0) {
+    estimatedBirthdate = referenceCalendarDate;
+  }
+
+  return calendarDateToLocalDate(estimatedBirthdate);
 };
 
-const estimatedYearsConstraints = { integer: true, max: 139, min: 0, nonNegative: true };
-const estimatedMonthsConstraints = { integer: true, min: 0, nonNegative: true };
+const estimatedYearsConstraints = {
+  integer: true,
+  max: MAX_PATIENT_AGE_YEARS,
+  min: 0,
+  nonNegative: true,
+};
+const estimatedMonthsConstraints = {
+  integer: true,
+  max: MAX_PATIENT_AGE_MONTHS_REMAINDER,
+  min: 0,
+  nonNegative: true,
+};
 
 const preventInvalidEstimatedAgeKey =
   (constraints: typeof estimatedYearsConstraints | typeof estimatedMonthsConstraints) =>
@@ -62,16 +112,21 @@ export const DobField: React.FC = () => {
   const [monthsEstimated, monthsEstimateMeta] = useField('monthsEstimated');
   const { setFieldValue, setFieldTouched } = useContext(PatientRegistrationContext);
   const today = new Date();
+  const oldestAllowedBirthdate = getOldestAllowedPatientBirthdate(getLocalCalendarDate(today));
+  const minimumBirthdate = oldestAllowedBirthdate
+    ? (calendarDateToLocalDate(oldestAllowedBirthdate) ?? undefined)
+    : undefined;
 
   const onToggle = useCallback(
     (e: { name?: string | number }) => {
-      setFieldValue('birthdateEstimated', e.name === 'unknown');
-      setFieldValue('birthdate', '');
+      const birthdateEstimated = e.name === 'unknown';
+      setFieldValue('birthdateEstimated', birthdateEstimated);
+      setFieldValue('birthdate', birthdateEstimated ? calcBirthdate(0, 0, dateOfBirth) : '');
       setFieldValue('yearsEstimated', 0);
       setFieldValue('monthsEstimated', '');
       setFieldTouched('birthdateEstimated', true, false);
     },
-    [setFieldTouched, setFieldValue],
+    [dateOfBirth, setFieldTouched, setFieldValue],
   );
 
   const onDateChange = useCallback(
@@ -152,6 +207,7 @@ export const DobField: React.FC = () => {
               {...birthdate}
               onChange={onDateChange}
               onBlur={() => setFieldTouched('birthdate', true, false)}
+              minDate={minimumBirthdate}
               maxDate={today}
               isRequired
               labelText={t('dateOfBirthLabelText', 'Date of birth')}
@@ -176,6 +232,7 @@ export const DobField: React.FC = () => {
                 invalidText={yearsEstimateMeta.error && t(yearsEstimateMeta.error)}
                 value={yearsEstimated.value}
                 min={0}
+                max={estimatedYearsConstraints.max}
                 required
                 onBlur={(e) => {
                   yearsEstimated.onBlur(e);
@@ -198,6 +255,7 @@ export const DobField: React.FC = () => {
                 invalidText={monthsEstimateMeta.error && t(monthsEstimateMeta.error)}
                 value={monthsEstimated.value}
                 min={0}
+                max={estimatedMonthsConstraints.max}
                 required={!yearsEstimateMeta.value}
                 onBlur={(e) => {
                   monthsEstimated.onBlur(e);

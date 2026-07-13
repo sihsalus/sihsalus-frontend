@@ -1,5 +1,6 @@
 const fs = require('node:fs');
 const path = require('node:path');
+const crypto = require('node:crypto');
 const { execFileSync } = require('node:child_process');
 const chalk = require('chalk');
 
@@ -318,15 +319,17 @@ function copyAppShell() {
     shellDist = path.join(path.dirname(require.resolve('@openmrs/esm-app-shell/package.json')), 'dist');
   } catch {
     logWarn('@openmrs/esm-app-shell not found — SPA will have no shell');
-    return;
+    return new Set();
   }
 
   if (fs.existsSync(shellDist)) {
     fs.cpSync(shellDist, outDir, { recursive: true, force: false });
     logInfo('OK app-shell dist copied');
     stripRootCssSourceMapComments();
-    patchAppShellRuntime();
+    return patchAppShellRuntime();
   }
+
+  return new Set();
 }
 
 function stripRootCssSourceMapComments() {
@@ -370,19 +373,60 @@ function patchAppShellRuntime() {
     'o',
   )}.\`),r;`;
   const duplicateSlotNoop = 'if(o&&o!=e)return r;';
+  const offlineSetupTechnicalError = 'title:"Offline Setup Error",description:e.message';
+  const offlineSetupSafeError =
+    'title:document.documentElement.lang.toLowerCase().startsWith("es")?"Modo sin conexión no disponible":"Offline setup unavailable",description:document.documentElement.lang.toLowerCase().startsWith("es")?"No se pudo activar el modo sin conexión. Puede iniciar sesión y trabajar en línea. Si el problema continúa, contacte a soporte.":"Offline mode could not be enabled. You can still sign in and work online. If this continues, contact support."';
+  const globalUnexpectedTechnicalError =
+    'description:e??"Oops! An unexpected error occurred.",kind:"error",title:"Error"';
+  const globalUnexpectedSafeError =
+    'description:document.documentElement.lang.toLowerCase().startsWith("es")?"Ocurrió un error inesperado.":"An unexpected error occurred.",kind:"error",title:"Error"';
+  const globalRejectionTechnicalError =
+    'description:e.reason??"Oops! An unhandled promise rejection occurred.",kind:"error",title:"Error"';
+  const globalRejectionSafeError =
+    'description:document.documentElement.lang.toLowerCase().startsWith("es")?"Ocurrió un error inesperado.":"An unexpected error occurred.",kind:"error",title:"Error"';
+  const fatalTechnicalError = 'r.textContent=(null==e?void 0:e.message)||"No additional information available."';
+  const fatalSafeError =
+    'r.textContent=document.documentElement.lang.toLowerCase().startsWith("es")?"No se pudo iniciar la aplicación. Intente recargar la página o contacte a soporte.":"The application could not start. Try reloading the page or contact support."';
 
   const patches = [
     {
       name: 'extension parcel lifecycle timeout',
       search: extensionParcelMount,
       replacement: extensionParcelMountWithTimeouts,
+      required: false,
     },
     {
       name: 'duplicate extension slot warning',
       search: duplicateSlotWarning,
       replacement: duplicateSlotNoop,
+      required: false,
+    },
+    {
+      name: 'offline setup user-facing error',
+      search: offlineSetupTechnicalError,
+      replacement: offlineSetupSafeError,
+      required: true,
+    },
+    {
+      name: 'global unexpected error message',
+      search: globalUnexpectedTechnicalError,
+      replacement: globalUnexpectedSafeError,
+      required: true,
+    },
+    {
+      name: 'global rejected promise message',
+      search: globalRejectionTechnicalError,
+      replacement: globalRejectionSafeError,
+      required: true,
+    },
+    {
+      name: 'fatal startup error message',
+      search: fatalTechnicalError,
+      replacement: fatalSafeError,
+      required: true,
     },
   ];
+  const patchedJsFiles = new Set();
 
   for (const patch of patches) {
     let applied = 0;
@@ -394,15 +438,97 @@ function patchAppShellRuntime() {
       }
 
       fs.writeFileSync(jsFile, source.split(patch.search).join(patch.replacement));
+      patchedJsFiles.add(jsFile);
       applied++;
     }
 
     if (applied > 0) {
       logInfo(`OK patched app-shell ${patch.name} (${applied} file${applied === 1 ? '' : 's'})`);
+    } else if (patch.required) {
+      throw new Error(`Required app-shell ${patch.name} patch was not applied`);
     } else {
       logWarn(`app-shell ${patch.name} patch not applied; expected runtime pattern was not found`);
     }
   }
+
+  return patchedJsFiles;
+}
+
+function parseWorkboxPrecacheEntries(serviceWorker) {
+  const entryPattern =
+    /\{\s*['"]revision['"]\s*:\s*(?:null|['"][^'"]*['"])\s*,\s*['"]url['"]\s*:\s*['"]([^'"]+)['"]\s*\}/g;
+
+  return [...serviceWorker.matchAll(entryPattern)].map((match) => ({
+    raw: match[0],
+    url: match[1],
+  }));
+}
+
+function getPrecacheFileName(url) {
+  return path.posix.basename(url.split(/[?#]/, 1)[0]);
+}
+
+function revisionAssembledPrecacheFiles(patchedJsFiles) {
+  const serviceWorkerPath = path.join(outDir, 'service-worker.js');
+  const manifestPath = path.join(outDir, 'app-shell-runtime-patches.json');
+
+  if (!fs.existsSync(serviceWorkerPath)) {
+    throw new Error('Cannot revision assembled files because service-worker.js is missing');
+  }
+
+  let serviceWorker = fs.readFileSync(serviceWorkerPath, 'utf8');
+  const requiredFiles = ['index.html', 'favicon.ico', 'routes.registry.json', 'importmap.json', 'frontend.json'];
+  const files = [...new Set([...requiredFiles, ...[...patchedJsFiles].map((file) => path.basename(file)).sort()])];
+
+  for (const file of files) {
+    if (!fs.existsSync(path.join(outDir, file))) {
+      throw new Error(`Cannot revision missing assembled file: ${file}`);
+    }
+  }
+
+  let entries = parseWorkboxPrecacheEntries(serviceWorker);
+  if (entries.length === 0) {
+    throw new Error('Cannot find the Workbox precache manifest in service-worker.js');
+  }
+
+  const missingFiles = files.filter((file) => !entries.some((entry) => getPrecacheFileName(entry.url) === file));
+  if (missingFiles.length > 0) {
+    const anchor = entries[0].raw;
+    const additions = missingFiles.map((file) => JSON.stringify({ revision: null, url: file })).join(',');
+    serviceWorker = serviceWorker.replace(anchor, `${anchor},${additions}`);
+    entries = parseWorkboxPrecacheEntries(serviceWorker);
+  }
+
+  const revisions = files.map((file) => {
+    const matchingEntries = entries.filter((entry) => getPrecacheFileName(entry.url) === file);
+    if (matchingEntries.length !== 1) {
+      throw new Error(`Expected exactly one Workbox precache entry for ${file}, found ${matchingEntries.length}`);
+    }
+
+    const contents = fs.readFileSync(path.join(outDir, file));
+    const sha256 = crypto.createHash('sha256').update(contents).digest('hex');
+    const revision = `sihsalus-${sha256.slice(0, 16)}`;
+    const { raw } = matchingEntries[0];
+    const url = file;
+    serviceWorker = serviceWorker.replace(raw, JSON.stringify({ revision, url }));
+
+    return { file, url, revision, sha256 };
+  });
+
+  const remainingEntries = parseWorkboxPrecacheEntries(serviceWorker);
+  for (const { file, revision, url } of revisions) {
+    const matchingEntries = remainingEntries.filter((entry) => entry.url === url && entry.raw.includes(revision));
+    if (matchingEntries.length !== 1) {
+      throw new Error(`Failed to revision Workbox precache entry for ${file}`);
+    }
+  }
+
+  fs.writeFileSync(serviceWorkerPath, serviceWorker);
+  fs.writeFileSync(
+    manifestPath,
+    `${JSON.stringify({ schemaVersion: 1, algorithm: 'sha256', files: revisions }, null, 2)}\n`,
+  );
+  logInfo(`OK revisioned ${revisions.length} assembled precache file${revisions.length === 1 ? '' : 's'}`);
 }
 
 // ── Phase 4: Write importmap.json and routes ──────────────────────────
@@ -508,6 +634,7 @@ function patchIndexHtml() {
   const spaPath = process.env.SPA_PATH || '/openmrs/spa';
   const apiUrl = process.env.API_URL || '/openmrs';
   const defaultLocale = process.env.SPA_DEFAULT_LOCALE || 'es';
+  const isSpanish = defaultLocale.toLowerCase().startsWith('es');
   const rawConfigUrls = (process.env.SPA_CONFIG_URLS || `${spaPath}/frontend.json`).trim();
   const publicSpaUrl = (
     process.env.SIHSALUS_PUBLIC_SPA_URL ||
@@ -541,6 +668,45 @@ function patchIndexHtml() {
 
   let html = fs.readFileSync(indexPath, 'utf8');
 
+  const fatalCopy = isSpanish
+    ? {
+        title: 'Error de la aplicación',
+        summary: 'No se pudo iniciar la aplicación. Intente recargar la página.',
+        support: 'Si el problema continúa, contacte al administrador del sistema.',
+        reload: 'Recargar',
+        detail: 'Detalle del error',
+        copied: 'Copiado',
+      }
+    : {
+        title: 'Application error',
+        summary: 'The application could not start. Try reloading the page.',
+        support: 'If the problem continues, contact your system administrator.',
+        reload: 'Reload',
+        detail: 'Error detail',
+        copied: 'Copied',
+      };
+
+  html = html.replace(
+    /<html\s+lang="[^"]*"\s+data-default-lang="[^"]*"/i,
+    `<html lang="${escapeHtmlAttribute(defaultLocale)}" data-default-lang="${escapeHtmlAttribute(defaultLocale)}"`,
+  );
+  html = html
+    .replace(/<h1>(?:Application Error|Error de la aplicación)<\/h1>/, `<h1>${fatalCopy.title}</h1>`)
+    .replace(
+      /<p>(?:Something went wrong\. Please try reloading\.|No se pudo iniciar la aplicación\. Intente recargar la página\.)<\/p>/,
+      `<p>${fatalCopy.summary}</p>`,
+    )
+    .replace(
+      /<p>(?:Contact your system administrator if the problem persists\.|Si el problema continúa, contacte al administrador del sistema\.)<\/p>/,
+      `<p>${fatalCopy.support}</p>`,
+    )
+    .replace(/(onclick="location\.reload\(\)">)(?:Reload|Recargar)(<\/button>)/, `$1${fatalCopy.reload}$2`)
+    .replace(/aria-label="(?:Code Snippet Text|Detalle del error)"/, `aria-label="${fatalCopy.detail}"`)
+    .replace(
+      /(<span class="cds--assistive-text cds--copy-btn__feedback">)(?:Copied!|Copiado)(<\/span>)/,
+      `$1${fatalCopy.copied}$2`,
+    );
+
   html = html.replace(/<title>[\s\S]*?<\/title>/i, `<title>${socialPreviewTitle}</title>`);
   html = html.replace(/<!-- SIHSALUS social preview -->[\s\S]*?<!-- \/SIHSALUS social preview -->\s*/g, '');
   html = html.replace('</head>', `${socialPreviewTags}</head>`);
@@ -566,15 +732,21 @@ function patchIndexHtml() {
     );
   }
 
+  function isSpanishLocale() {
+    return document.documentElement.lang.toLowerCase().indexOf('es') === 0;
+  }
+
   function showMicrofrontendLoadError(error) {
     console.error('[sihsalus] Microfrontend load failure:', error);
     window.dispatchEvent(
       new CustomEvent('openmrs:toast-shown', {
         detail: {
           kind: 'error',
-          title: 'No se pudo cargar la página',
+          title: isSpanishLocale() ? 'No se pudo cargar la página' : 'The page could not be loaded',
           description:
-            'No se pudo cargar un módulo de la aplicación. Recarga la página. Si el problema continúa, contacta a soporte.',
+            isSpanishLocale()
+              ? 'No se pudo cargar un módulo de la aplicación. Recargue la página. Si el problema continúa, contacte a soporte.'
+              : 'An application module could not be loaded. Reload the page. If the problem continues, contact support.',
         },
       }),
     );
@@ -749,12 +921,13 @@ function writeBuildInfo() {
 // ── Main ──────────────────────────────────────────────────────────────
 (async () => {
   await downloadNpmModules();
-  copyAppShell();
+  const patchedAppShellFiles = copyAppShell();
   writeOutputs();
   copyConfigFiles();
   copyAssets();
   patchIndexHtml();
   writeBuildInfo();
+  revisionAssembledPrecacheFiles(patchedAppShellFiles);
   logInfo('Done! dist/spa/ is self-contained.');
 })().catch((err) => {
   logFail(err.message);

@@ -1,8 +1,9 @@
 import { getDocumentTypeDefinitionByIdentifierType } from '../../identity/identity-documents';
 import type { PatientIdentifierType, PatientIdentifierValue } from '../../patient-registration.types';
+import { peruDniPattern } from '../../peru-identifier-validation';
 import { peruDniPatientIdentifierTypeUuid } from '../../peru-registration-config';
 
-export const dniPattern = /^\d{8}$/;
+export const dniPattern = peruDniPattern;
 
 /**
  * First identifier field holding a civil document number (DNI, CE, passport, DIE, CNV),

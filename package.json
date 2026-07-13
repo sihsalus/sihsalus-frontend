@@ -28,6 +28,8 @@
     "format": "biome format --write .",
     "lint": "node node_modules/turbo/bin/turbo run lint",
     "lint:all": "biome lint .",
+    "test:error-exposure-guard": "node --test packages/tooling/scripts/validate-error-exposure.test.js",
+    "validate:error-exposure": "node packages/tooling/scripts/validate-error-exposure.js",
     "validate:lint-coverage": "node packages/tooling/scripts/validate-lint-coverage.js",
     "typecheck": "node node_modules/turbo/bin/turbo run typescript",
     "typecheck:e2e": "tsc -p e2e/tsconfig.json",

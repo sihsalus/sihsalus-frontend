@@ -1,6 +1,6 @@
-import { showToast, useConfig } from '@openmrs/esm-framework';
+import { logError, showToast, useConfig } from '@openmrs/esm-framework';
 import type { TFunction } from 'i18next';
-import { useMemo } from 'react';
+import { useEffect, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import {
@@ -74,17 +74,23 @@ export function useColumns(queue: string, status: string): QueueTableColumn[] {
     [tableDefinitions, queue, status],
   );
 
-  const columns = tableDefinition?.columns?.map((columnId) => {
-    const column = columnsMap.get(columnId);
-    if (!column) {
+  const invalidColumnIds = useMemo(
+    () => tableDefinition?.columns?.filter((columnId) => !columnsMap.has(columnId)) ?? [],
+    [columnsMap, tableDefinition?.columns],
+  );
+
+  useEffect(() => {
+    invalidColumnIds.forEach((columnId) => {
+      logError(new Error(`Unknown queue table column id: ${columnId}`), 'Resolve queue table columns');
       showToast({
         title: t('invalidColumnConfig', 'Invalid column config'),
         kind: 'warning',
-        description: 'Unknown column id: ' + columnId,
+        description: t('queueTableConfigurationMissing', 'No table configuration is available for this queue.'),
       });
-    }
-    return column;
-  });
+    });
+  }, [invalidColumnIds, t]);
+
+  const columns = tableDefinition?.columns?.map((columnId) => columnsMap.get(columnId));
   return columns.filter(Boolean) as QueueTableColumn[];
 }
 

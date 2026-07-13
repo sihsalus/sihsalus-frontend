@@ -164,16 +164,22 @@ describe('applyPersonToRegistrationForm', () => {
 
   it('derives the estimated age fields for persons with estimated birthdate', () => {
     const setFieldValue = vi.fn();
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date(2026, 6, 13, 12));
 
-    applyPersonToRegistrationForm(
-      buildPerson({ birthdate: '1990-01-01', birthdateEstimated: true }),
-      setFieldValue,
-      vi.fn(),
-    );
+    try {
+      applyPersonToRegistrationForm(
+        buildPerson({ birthdate: '1990-06-14T00:00:00.000+0000', birthdateEstimated: true }),
+        setFieldValue,
+        vi.fn(),
+      );
 
-    expect(setFieldValue).toHaveBeenCalledWith('birthdateEstimated', true, false);
-    const yearsCall = setFieldValue.mock.calls.find(([field]) => field === 'yearsEstimated');
-    expect(yearsCall?.[1]).toBeGreaterThan(30);
+      expect(setFieldValue).toHaveBeenCalledWith('birthdateEstimated', true, false);
+      expect(setFieldValue).toHaveBeenCalledWith('yearsEstimated', 36, false);
+      expect(setFieldValue).toHaveBeenCalledWith('monthsEstimated', 0, false);
+    } finally {
+      vi.useRealTimers();
+    }
   });
 });
 

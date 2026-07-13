@@ -4,7 +4,7 @@ import React, { type ReactNode, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useMutateQueueEntries } from '../hooks/useQueueEntries';
 import { type QueueEntry } from '../types';
-import { getErrorMessage, isAlreadyEndedQueueEntryError } from './queue-entry-error.utils';
+import { getUserFacingQueueErrorMessage, isAlreadyEndedQueueEntryError } from './queue-entry-error.utils';
 
 interface QueueEntryUndoActionsModalProps {
   queueEntry: QueueEntry;
@@ -80,7 +80,11 @@ export const QueueEntryConfirmActionModal: React.FC<QueueEntryUndoActionsModalPr
           showSnackbar({
             title: submitFailureTitle,
             kind: 'error',
-            subtitle: getErrorMessage(error) || t('unknownError', 'An unknown error occurred'),
+            subtitle: getUserFacingQueueErrorMessage(
+              error,
+              t('queueEntryActionErrorMessage', 'The queue action could not be completed. Please try again.'),
+              'Confirm queue entry action',
+            ),
           });
         }
       })

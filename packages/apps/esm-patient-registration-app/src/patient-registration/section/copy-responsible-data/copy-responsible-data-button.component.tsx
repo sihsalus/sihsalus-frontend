@@ -1,4 +1,4 @@
-import { Button, InlineLoading, InlineNotification } from '@carbon/react';
+import { Button, InlineLoading, InlineNotification, Select, SelectItem } from '@carbon/react';
 import { Copy } from '@carbon/react/icons';
 import { useConfig } from '@openmrs/esm-framework';
 import { useContext, useMemo, useState } from 'react';
@@ -89,20 +89,26 @@ export function CopyResponsibleDataButton({ mode }: CopyResponsibleDataButtonPro
   const config = getEffectiveRegistrationConfig(configuredConfig);
   const registrationContext = useContext(PatientRegistrationContext);
   const [status, setStatus] = useState<'idle' | 'copying' | 'success' | 'warning' | 'error'>('idle');
+  const [selectedResponsiblePersonUuid, setSelectedResponsiblePersonUuid] = useState('');
   const isMinor = registrationContext?.values ? isMinorPatient(registrationContext.values) : false;
 
-  const responsiblePersonUuid = useMemo(() => {
+  const responsibleRelationships = useMemo(() => {
     const relationships = registrationContext?.values?.relationships ?? [];
-    const activeRelationships = relationships.filter(
-      (relationship) => relationship.action !== 'DELETE' && !!relationship.relatedPersonUuid,
-    );
-    const responsibleRelationship =
-      activeRelationships.find((relationship) =>
+    return relationships.filter(
+      (relationship) =>
+        relationship.action !== 'DELETE' &&
+        !!relationship.relatedPersonUuid &&
         config.relationshipOptions?.minorResponsibleRelationshipTypes?.includes(relationship.relationshipType),
-      ) ?? activeRelationships[0];
-
-    return responsibleRelationship?.relatedPersonUuid ?? '';
+    );
   }, [config.relationshipOptions?.minorResponsibleRelationshipTypes, registrationContext?.values?.relationships]);
+  const responsiblePersonUuid =
+    responsibleRelationships.length === 1
+      ? responsibleRelationships[0].relatedPersonUuid
+      : responsibleRelationships.some(
+            (relationship) => relationship.relatedPersonUuid === selectedResponsiblePersonUuid,
+          )
+        ? selectedResponsiblePersonUuid
+        : '';
 
   const copyAddress = (fieldPrefix: 'address' | 'birthAddress', address?: PatientAddress) => {
     let copied = 0;
@@ -181,6 +187,26 @@ export function CopyResponsibleDataButton({ mode }: CopyResponsibleDataButtonPro
 
   return (
     <div className={styles.copyAction}>
+      {responsibleRelationships.length > 1 ? (
+        <Select
+          id={`copy-responsible-source-${mode}`}
+          labelText={t('copyResponsibleData.sourceLabel', 'Responsable de origen')}
+          value={selectedResponsiblePersonUuid}
+          onChange={(event) => {
+            setSelectedResponsiblePersonUuid(event.target.value);
+            setStatus('idle');
+          }}
+        >
+          <SelectItem value="" text={t('copyResponsibleData.sourcePlaceholder', 'Seleccione un responsable')} />
+          {responsibleRelationships.map((relationship) => (
+            <SelectItem
+              key={relationship.relatedPersonUuid}
+              value={relationship.relatedPersonUuid}
+              text={relationship.relatedPersonName ?? relationship.relatedPersonUuid}
+            />
+          ))}
+        </Select>
+      ) : null}
       <Button type="button" kind="tertiary" size="sm" renderIcon={Copy} onClick={handleCopy} disabled={disabled}>
         {t(`copyResponsibleData.${mode}.button`, statusText.button)}
       </Button>

@@ -8,12 +8,14 @@
       "name": "active-visits-widget",
       "slot": "homepage-widgets-slot",
       "component": "activeVisits",
-      "order": 0
+      "order": 0,
+      "privileges": "app:hoja.clinica"
     },
     {
       "name": "visit-summary-widget",
       "slot": "visit-summary-slot",
-      "component": "visitDetail"
+      "component": "visitDetail",
+      "privileges": "app:hoja.clinica"
     },
     {
       "name": "active-visits-tile",

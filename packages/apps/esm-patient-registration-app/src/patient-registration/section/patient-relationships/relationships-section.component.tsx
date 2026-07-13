@@ -13,12 +13,20 @@ import {
 } from '@carbon/react';
 import { TrashCan } from '@carbon/react/icons';
 import { useConfig } from '@openmrs/esm-framework';
-import { FieldArray } from 'formik';
+import {
+  calculatePatientAge,
+  MAX_PATIENT_AGE_YEARS,
+  parsePatientBirthdate,
+  shouldPreventPlainNumberKey,
+  shouldPreventPlainNumberPaste,
+} from '@openmrs/esm-utils';
+import { FieldArray, useField } from 'formik';
 import React, { useCallback, useContext, useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { type RegistrationConfig } from '../../../config-schema';
 import { moduleName } from '../../../constants';
 import { ResourcesContext } from '../../../offline.resources';
+import fieldStyles from '../../field/field.scss';
 import { Autosuggest } from '../../input/custom-input/autosuggest/autosuggest.component';
 import { patientFamilyNameMaxLength, patientGivenNameMaxLength } from '../../patient-name-limits';
 import { fetchPerson, type PersonSearchResult } from '../../patient-registration.resource';
@@ -30,6 +38,7 @@ import {
   hasMultiplePrimaryResponsiblePersons,
   hasRelatedPerson,
   hasResponsibleRelationship,
+  hasResponsibleRelationshipWithUnknownAge,
   hasUnderageResponsibleRelationship,
   isMinorPatient,
 } from '../../validation/patient-registration-validation';
@@ -54,6 +63,7 @@ interface RelationshipViewProps {
   relationship: RelationshipValue;
   index: number;
   displayRelationshipTypes: RelationshipType[];
+  showValidationErrors?: boolean;
   showMissingPersonSelectionError?: boolean;
   remove: <T>(index: number) => T;
 }
@@ -119,6 +129,13 @@ const relationshipPriority: Record<string, number> = {
   other: 1000,
 };
 
+const responsibleAgeInputConstraints = {
+  integer: true,
+  max: MAX_PATIENT_AGE_YEARS,
+  min: 0,
+  nonNegative: true,
+};
+
 const initialResponsiblePersonValues: ResponsiblePersonFormValues = {
   givenName: '',
   middleName: '',
@@ -146,6 +163,15 @@ function getRelationshipKey(relationship: RelationshipValue) {
   );
 }
 
+function hasIncompleteRelationship(relationships: Array<RelationshipValue> | undefined) {
+  return (
+    relationships?.some(
+      (relationship) =>
+        relationship.action !== 'DELETE' && (!relationship.relationshipType || !hasRelatedPerson(relationship)),
+    ) ?? false
+  );
+}
+
 function normalizeRelationshipLabel(label: string) {
   return label
     .trim()
@@ -157,11 +183,15 @@ function normalizeRelationshipLabel(label: string) {
 function getRelationshipLabelKey(label: string) {
   const normalizedLabel = normalizeRelationshipLabel(label);
 
-  if (['aunt/uncle', 'tia', 'tio', 'tio/a'].includes(normalizedLabel)) {
+  if (['aunt/uncle', 'aunt / uncle', 'aunt or uncle', 'tia', 'tio', 'tio/a'].includes(normalizedLabel)) {
     return 'aunt-uncle';
   }
 
-  if (['niece/nephew', 'sobrina', 'sobrino', 'sobrino/a'].includes(normalizedLabel)) {
+  if (
+    ['niece', 'nephew', 'niece/nephew', 'nephew/niece', 'nephew / niece', 'sobrina', 'sobrino', 'sobrino/a'].includes(
+      normalizedLabel,
+    )
+  ) {
     return 'niece-nephew';
   }
 
@@ -221,37 +251,38 @@ function getDisplayRelationshipTypes(
 }
 
 function getLocalizedRelationshipLabel(label: string, t: ReturnType<typeof useTranslation>['t']) {
-  switch (normalizeRelationshipLabel(label)) {
-    case 'aunt/uncle':
-      return t('relationshipAuntUncle', 'Aunt/Uncle');
-    case 'niece/nephew':
-      return t('relationshipNieceNephew', 'Niece/Nephew');
-    default:
-      return label;
+  const normalizedLabel = normalizeRelationshipLabel(label);
+
+  if (['aunt/uncle', 'aunt / uncle', 'aunt or uncle'].includes(normalizedLabel)) {
+    return t('relationshipAuntUncleLabel', 'Aunt/Uncle');
   }
+
+  if (['niece', 'nephew', 'niece/nephew', 'nephew/niece', 'nephew / niece'].includes(normalizedLabel)) {
+    return t('relationshipNephewNieceLabel', 'Niece/Nephew');
+  }
+
+  return label;
 }
 
 function getAgeFromBirthdate(birthdate?: string) {
-  if (!birthdate) {
-    return undefined;
+  const parsedBirthdate = birthdate ? parsePatientBirthdate(birthdate) : null;
+  return parsedBirthdate ? (calculatePatientAge(parsedBirthdate) ?? undefined) : undefined;
+}
+
+function preventInvalidResponsibleAgeKey(event: React.KeyboardEvent<HTMLInputElement>) {
+  if (event.ctrlKey || event.metaKey || event.altKey) {
+    return;
   }
 
-  const birthdateValue = new Date(birthdate);
-  if (Number.isNaN(birthdateValue.getTime())) {
-    return undefined;
+  if (shouldPreventPlainNumberKey(event.key, responsibleAgeInputConstraints)) {
+    event.preventDefault();
   }
+}
 
-  const today = new Date();
-  let age = today.getFullYear() - birthdateValue.getFullYear();
-  const hasHadBirthdayThisYear =
-    today.getMonth() > birthdateValue.getMonth() ||
-    (today.getMonth() === birthdateValue.getMonth() && today.getDate() >= birthdateValue.getDate());
-
-  if (!hasHadBirthdayThisYear) {
-    age -= 1;
+function preventInvalidResponsibleAgePaste(event: React.ClipboardEvent<HTMLInputElement>) {
+  if (shouldPreventPlainNumberPaste(event.clipboardData.getData('text'), responsibleAgeInputConstraints)) {
+    event.preventDefault();
   }
-
-  return age;
 }
 
 function getPersonSearchResultAge(person?: PersonSearchResult | null) {
@@ -286,6 +317,7 @@ const RelationshipView: React.FC<RelationshipViewProps> = ({
   relationship,
   index,
   displayRelationshipTypes,
+  showValidationErrors = false,
   showMissingPersonSelectionError = false,
   remove,
 }) => {
@@ -351,10 +383,15 @@ const RelationshipView: React.FC<RelationshipViewProps> = ({
       setSelectedExistingPerson(selectedPersonResult ?? null);
       const selectedPersonIsUnderage =
         requiresAdultResponsible && typeof selectedPersonAge === 'number' && selectedPersonAge < 18;
+      const selectedPersonAgeIsUnknown = requiresAdultResponsible && typeof selectedPersonAge !== 'number';
 
-      if (selectedPersonIsUnderage) {
+      if (selectedPersonIsUnderage || selectedPersonAgeIsUnknown) {
         setIsInvalid(true);
-        setSelectedPersonInvalidText(t('responsibleExistingPersonMustBeAdult', 'Responsible person must be an adult'));
+        setSelectedPersonInvalidText(
+          selectedPersonAgeIsUnknown
+            ? t('responsiblePersonAgeUnknown', 'The responsible person must have a known age or date of birth')
+            : t('responsibleExistingPersonMustBeAdult', 'Responsible person must be an adult'),
+        );
         setFieldValue(field, '');
         setFieldValue(`relationships[${index}].relatedPersonName`, '');
         setFieldValue(`relationships[${index}].relatedPersonAge`, undefined);
@@ -461,8 +498,8 @@ const RelationshipView: React.FC<RelationshipViewProps> = ({
 
   const getFieldError = useCallback(
     (field: ResponsiblePersonField, errors: ResponsiblePersonValidationErrors) =>
-      touchedFields[field] && errors[field] ? t(errors[field], errors[field]) : undefined,
-    [t, touchedFields],
+      (showValidationErrors || touchedFields[field]) && errors[field] ? t(errors[field], errors[field]) : undefined,
+    [showValidationErrors, t, touchedFields],
   );
 
   // The person is NOT created here: it is stored on the relationship row and persisted
@@ -638,14 +675,17 @@ const RelationshipView: React.FC<RelationshipViewProps> = ({
                 <Layer>
                   <TextInput
                     id={`relationships[${index}].newPerson.estimatedAge`}
+                    type="number"
                     labelText={
                       requiresAdultResponsible
                         ? t('responsibleEstimatedAgeRequiredLabel', 'Approximate age')
                         : t('responsibleEstimatedAge', 'Approximate age (optional)')
                     }
                     value={newPersonValues.estimatedAge}
-                    inputMode="numeric"
-                    maxLength={3}
+                    min={requiresAdultResponsible ? 18 : 0}
+                    max={MAX_PATIENT_AGE_YEARS}
+                    onKeyDown={preventInvalidResponsibleAgeKey}
+                    onPaste={preventInvalidResponsibleAgePaste}
                     onChange={handleNewPersonFieldChange('estimatedAge')}
                     onBlur={markNewPersonFieldTouched('estimatedAge')}
                     invalid={!!getFieldError('estimatedAge', personFormErrors)}
@@ -680,7 +720,7 @@ const RelationshipView: React.FC<RelationshipViewProps> = ({
               </div>
               <div className={styles.createPersonActions}>
                 <Button type="button" kind="tertiary" size="md" onClick={handleConfirmNewPerson}>
-                  {t('confirmResponsiblePersonAction', 'Add person (saved on registration)')}
+                  {t('confirmResponsiblePersonAction', 'Save companion or responsible person')}
                 </Button>
               </div>
             </div>
@@ -694,11 +734,9 @@ const RelationshipView: React.FC<RelationshipViewProps> = ({
           </p>
           {isPendingNewPerson ? (
             <>
-              <p className={styles.labelText}>
-                {t('pendingResponsiblePersonNote', 'New person. Will be created when the registration is saved.')}
-              </p>
+              <p className={styles.labelText}>{t('pendingResponsiblePersonNote', 'Will be saved with the patient.')}</p>
               <Button type="button" kind="ghost" size="sm" onClick={handleEditPendingPerson}>
-                {t('editPendingResponsiblePerson', 'Edit person details')}
+                {t('editPendingResponsiblePerson', 'Edit companion or responsible person')}
               </Button>
             </>
           ) : null}
@@ -805,11 +843,40 @@ export const RelationshipsSection: React.FC<RelationshipsSectionProps> = ({ defa
   const config = configuredConfig?.sections ? getEffectiveRegistrationConfig(configuredConfig) : configuredConfig;
   const [displayRelationshipTypes, setDisplayRelationshipTypes] = useState<RelationshipType[]>([]);
   const [hasSeededDefaultRelationship, setHasSeededDefaultRelationship] = useState(false);
+  const [, relationshipsMeta] = useField<Array<RelationshipValue>>('relationships');
   const { t } = useTranslation(moduleName);
   const requiresResponsibleRelationship = isMinorPatient(values);
   const minorResponsibleRelationshipTypes = config?.relationshipOptions?.minorResponsibleRelationshipTypes ?? [];
   const companionRelationshipTypeUuid = config?.relationshipOptions?.companionRelationshipType?.split('/')[0];
   const hasRelationshipTypes = !!relationshipTypeResults?.length;
+  const hasUnderageResponsible = hasUnderageResponsibleRelationship(
+    values.relationships,
+    minorResponsibleRelationshipTypes,
+  );
+  const hasAdultResponsible = hasResponsibleRelationship(values.relationships, minorResponsibleRelationshipTypes);
+  const hasResponsibleWithUnknownAge = hasResponsibleRelationshipWithUnknownAge(
+    values.relationships,
+    minorResponsibleRelationshipTypes,
+  );
+  const unknownResponsibleAgeError =
+    relationshipsMeta.touched && requiresResponsibleRelationship && hasResponsibleWithUnknownAge
+      ? t('responsiblePersonAgeUnknown', 'The responsible person must have a known age or date of birth')
+      : null;
+  const missingResponsibleRelationshipError =
+    relationshipsMeta.touched &&
+    requiresResponsibleRelationship &&
+    !hasUnderageResponsible &&
+    !hasResponsibleWithUnknownAge &&
+    !hasAdultResponsible
+      ? t(
+          'responsibleRelationshipRequiredForMinor',
+          'For minors, record a responsible family member, guardian, or legal representative.',
+        )
+      : null;
+  const relationshipError =
+    unknownResponsibleAgeError ??
+    missingResponsibleRelationshipError ??
+    (relationshipsMeta.touched && typeof relationshipsMeta.error === 'string' ? relationshipsMeta.error : null);
   const visibleRelationshipTypes = useMemo(
     () =>
       getDisplayRelationshipTypes(
@@ -914,6 +981,11 @@ export const RelationshipsSection: React.FC<RelationshipsSectionProps> = ({ defa
                 <h3>{t('patientFamilyLinksSection', 'Patient family links')}</h3>
                 <p>{t('patientFamilyLinksHelpText', 'Add the family members linked to the patient.')}</p>
               </div>
+              {relationshipError ? (
+                <div className={`${fieldStyles.fieldError} ${styles.sectionError}`} role="alert">
+                  {relationshipError}
+                </div>
+              ) : null}
               {hasMultipleFatherRelationships(relationships) ? (
                 <InlineNotification
                   kind="error"
@@ -933,7 +1005,8 @@ export const RelationshipsSection: React.FC<RelationshipsSectionProps> = ({ defa
                   )}
                 />
               ) : requiresResponsibleRelationship &&
-                !hasResponsibleRelationship(relationships, minorResponsibleRelationshipTypes) ? (
+                !hasResponsibleRelationship(relationships, minorResponsibleRelationshipTypes) &&
+                !relationshipsMeta.touched ? (
                 <InlineNotification
                   kind="warning"
                   lowContrast
@@ -951,8 +1024,9 @@ export const RelationshipsSection: React.FC<RelationshipsSectionProps> = ({ defa
                         relationship={relationship}
                         index={index}
                         displayRelationshipTypes={visibleRelationshipTypes}
+                        showValidationErrors={submitCount > 0 || !!relationshipsMeta.touched}
                         showMissingPersonSelectionError={
-                          submitCount > 0 && !!relationship.relationshipType && !hasRelatedPerson(relationship)
+                          (submitCount > 0 || !!relationshipsMeta.touched) && !hasRelatedPerson(relationship)
                         }
                         remove={remove}
                       />
@@ -962,6 +1036,7 @@ export const RelationshipsSection: React.FC<RelationshipsSectionProps> = ({ defa
               <div className={styles.actions}>
                 <Button
                   kind="ghost"
+                  disabled={hasIncompleteRelationship(relationships)}
                   onClick={() =>
                     push({
                       clientId: getRelationshipClientId(),

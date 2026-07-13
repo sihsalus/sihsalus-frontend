@@ -21,7 +21,8 @@ const validResponsiblePerson: ResponsiblePersonFormValues = {
 describe('responsible person utilities', () => {
   it('builds an OpenMRS Person payload without creating a Patient identifier', () => {
     const payload = buildResponsiblePersonPayload(validResponsiblePerson);
-    const expectedBirthYear = new Date().getFullYear() - 35;
+    const today = new Date();
+    const expectedBirthdate = `${today.getFullYear() - 35}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
 
     expect(payload).toEqual({
       names: [
@@ -34,7 +35,7 @@ describe('responsible person utilities', () => {
         },
       ],
       gender: 'F',
-      birthdate: `${expectedBirthYear}-01-01`,
+      birthdate: expectedBirthdate,
       birthdateEstimated: true,
     });
     expect(payload).not.toHaveProperty('identifiers');
@@ -107,9 +108,12 @@ describe('responsible person utilities', () => {
     expect(validateResponsiblePersonForm({ ...validResponsiblePerson, estimatedAge: 'e100' }).estimatedAge).toBe(
       'estimatedAgeInvalid',
     );
-    expect(validateResponsiblePersonForm({ ...validResponsiblePerson, estimatedAge: '121' }).estimatedAge).toBe(
+    expect(validateResponsiblePersonForm({ ...validResponsiblePerson, estimatedAge: '141' }).estimatedAge).toBe(
       'estimatedAgeInvalid',
     );
+    expect(
+      validateResponsiblePersonForm({ ...validResponsiblePerson, estimatedAge: '140' }).estimatedAge,
+    ).toBeUndefined();
   });
 
   it('rejects invalid responsible person phone numbers', () => {

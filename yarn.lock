@@ -4022,7 +4022,7 @@ __metadata:
 
 "@openmrs/esm-app-shell@patch:@openmrs/esm-app-shell@npm%3A9.0.2#./.yarn/patches/openmrs-esm-app-shell-npm-9.0.2-form-stack-sharing.patch::locator=%40sihsalus%2Fsihsalus-esm%40workspace%3A.":
   version: 9.0.2
-  resolution: "@openmrs/esm-app-shell@patch:@openmrs/esm-app-shell@npm%3A9.0.2#./.yarn/patches/openmrs-esm-app-shell-npm-9.0.2-form-stack-sharing.patch::version=9.0.2&hash=2104cd&locator=%40sihsalus%2Fsihsalus-esm%40workspace%3A."
+  resolution: "@openmrs/esm-app-shell@patch:@openmrs/esm-app-shell@npm%3A9.0.2#./.yarn/patches/openmrs-esm-app-shell-npm-9.0.2-form-stack-sharing.patch::version=9.0.2&hash=e475e7&locator=%40sihsalus%2Fsihsalus-esm%40workspace%3A."
   dependencies:
     "@carbon/react": "npm:^1.92.1"
     "@internationalized/date": "npm:^3.8.0"
@@ -4052,7 +4052,7 @@ __metadata:
     workbox-strategies: "npm:^6.1.5"
     workbox-webpack-plugin: "npm:^6.1.5"
     workbox-window: "npm:^6.1.5"
-  checksum: 10c0/4667a8e9a198721769428c17e9e9beece4d2a8eb935c39f27863bb714707cbdbcf0cbcf141551e48d40be3999100ae8f0fe5738fa79cc4baf82c1d5d55e391b6
+  checksum: 10c0/2b1b33946465d0d9c7550f4ad4ea5b875673b93a6743e92ef3a302939c142fdf4c1c8aa6d3ce83d0b86695591726a37bcb2dcbf3afcfa35e73da258fac7e9f08
   languageName: node
   linkType: hard
 
@@ -4443,6 +4443,7 @@ __metadata:
     "@openmrs/esm-globals": "workspace:*"
     "@openmrs/esm-navigation": "workspace:*"
     "@openmrs/esm-state": "workspace:*"
+    "@openmrs/esm-translations": "workspace:*"
     "@openmrs/esm-utils": "workspace:*"
     "@swc/cli": "npm:0.8.1"
     "@swc/core": "npm:1.15.21"
@@ -4475,6 +4476,7 @@ __metadata:
     "@openmrs/esm-globals": 9.x
     "@openmrs/esm-navigation": 9.x
     "@openmrs/esm-state": 9.x
+    "@openmrs/esm-translations": 9.x
     "@openmrs/esm-utils": 9.x
     dayjs: 1.x
     i18next: 25.x
@@ -9143,6 +9145,7 @@ __metadata:
   resolution: "@sihsalus/esm-patient-search-app@workspace:packages/apps/esm-patient-search-app"
   dependencies:
     "@carbon/react": "npm:^1.71.0"
+    "@hookform/resolvers": "npm:^3.9.1"
     "@openmrs/esm-utils": "workspace:*"
     "@rspack/cli": "npm:1.7.11"
     "@sihsalus/esm-rbac": "workspace:*"
@@ -9153,6 +9156,7 @@ __metadata:
     react-hook-form: "npm:^7.54.0"
     typescript: "npm:6.0.3"
     vitest: "npm:^4.1.7"
+    zod: "npm:^3.24.1"
   peerDependencies:
     "@openmrs/esm-framework": "*"
     react: ^18.3.1

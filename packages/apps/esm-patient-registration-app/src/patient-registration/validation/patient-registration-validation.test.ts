@@ -2,14 +2,16 @@ import { getConfig } from '@openmrs/esm-framework';
 import dayjs from 'dayjs';
 
 import { type RegistrationConfig } from '../../config-schema';
+import { peruNationalityConceptUuid } from '../peru-registration-config';
 
-import { getValidationSchema } from './patient-registration-validation';
+import { getValidationSchema, isMinorPatient } from './patient-registration-validation';
 
 const mockGetConfig = vi.mocked(getConfig);
 const phoneAttributeUuid = '14d4f066-15f5-102d-96e4-000c29c2a5d7';
 const mobilePhoneAttributeUuid = 'fee4e8ef-aef8-4bb9-8ed0-7ded6055c61f';
 const emailAttributeUuid = '4bdf3a33-2f63-11f0-8ab4-1a7535b1b3e8';
 const insuranceAccreditationCheckedAtAttributeUuid = '9b3df0a1-0c58-4f55-9868-9c38f1db1006';
+const nationalityAttributeUuid = '9b3df0a1-0c58-4f55-9868-9c38f1db1007';
 
 describe('Patient registration validation', () => {
   beforeEach(() => {
@@ -83,6 +85,16 @@ describe('Patient registration validation', () => {
           inputType: 'date',
           allowFutureDates: false,
           showHeading: false,
+        },
+        {
+          id: 'nationality',
+          type: 'person attribute',
+          uuid: nationalityAttributeUuid,
+          showHeading: false,
+          validation: {
+            required: false,
+            matches: '^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$',
+          },
         },
       ],
     });
@@ -268,6 +280,21 @@ describe('Patient registration validation', () => {
     expect(validationError).toBeFalsy();
   });
 
+  it('should accept a nationality concept UUID and reject legacy ISO country codes', async () => {
+    expect(
+      await validateFormValues({
+        ...validFormValues,
+        attributes: { [nationalityAttributeUuid]: peruNationalityConceptUuid },
+      }),
+    ).toBeFalsy();
+
+    const validationError = await validateFormValues({
+      ...validFormValues,
+      attributes: { [nationalityAttributeUuid]: 'PE' },
+    });
+    expect(validationError).toBeTruthy();
+  });
+
   it('should allow mobile phone contact attributes with an international prefix', async () => {
     const validValues = {
       ...validFormValues,
@@ -446,6 +473,13 @@ describe('Patient registration validation', () => {
     expect(validationError.errors).toContain('birthdayNotInTheFuture');
   });
 
+  it('should reject impossible or non-canonical birthdates after Yup casting', async () => {
+    for (const birthdate of ['2025-02-29', '2026-04-31', '2026-7-1']) {
+      const validationError = await validateFormValues({ ...validFormValues, birthdate });
+      expect(validationError.errors).toContain('birthdayInvalid');
+    }
+  });
+
   it('should throw an error when date of birth is more than 140 years ago', async () => {
     const invalidFormValues = {
       ...validFormValues,
@@ -453,6 +487,20 @@ describe('Patient registration validation', () => {
     };
     const validationError = await validateFormValues(invalidFormValues);
     expect(validationError.errors).toContain('birthdayNotOver140YearsAgo');
+  });
+
+  it('should use an exact calendar-day boundary for the OpenMRS 140-year limit', async () => {
+    const boundaryFormValues = {
+      ...validFormValues,
+      birthdate: dayjs().subtract(140, 'years').startOf('day').toDate(),
+    };
+    const beforeBoundaryFormValues = {
+      ...validFormValues,
+      birthdate: dayjs().subtract(140, 'years').subtract(1, 'day').startOf('day').toDate(),
+    };
+
+    expect(await validateFormValues(boundaryFormValues)).toBeFalsy();
+    expect((await validateFormValues(beforeBoundaryFormValues)).errors).toContain('birthdayNotOver140YearsAgo');
   });
 
   it('should throw an error when insurance accreditation date is before date of birth', async () => {
@@ -500,6 +548,30 @@ describe('Patient registration validation', () => {
     expect(validationError.errors).toContain('responsibleRelationshipRequiredForMinor');
   });
 
+  it('calculates majority age from the recorded calendar day without a UTC shift', () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date(2026, 6, 13, 12));
+
+    try {
+      expect(
+        isMinorPatient({
+          birthdate: '2008-07-13T00:00:00.000+0000',
+          birthdateEstimated: false,
+          yearsEstimated: 0,
+        }),
+      ).toBe(false);
+      expect(
+        isMinorPatient({
+          birthdate: '2008-07-14T00:00:00.000+0000',
+          birthdateEstimated: false,
+          yearsEstimated: 0,
+        }),
+      ).toBe(true);
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
   it('should require a responsible party when the patient is unidentified', async () => {
     const invalidFormValues = {
       ...validFormValues,
@@ -543,6 +615,7 @@ describe('Patient registration validation', () => {
           action: 'ADD',
           isCompanion: true,
           relatedPersonUuid: '11524ae7-3ef6-4ab6-aff6-804ffc58704a',
+          relatedPersonAge: 30,
           relationshipType: 'e6be4def-dbc8-462a-8714-53da66903cb8/aIsToB',
         },
       ],
@@ -619,6 +692,26 @@ describe('Patient registration validation', () => {
     const validationError = await validateFormValues(invalidFormValues);
 
     expect(validationError.errors).toContain('patientCanOnlyHaveOnePrimaryResponsible');
+  });
+
+  it('does not assume that a responsible person with unknown age is an adult', async () => {
+    const minorWithUnknownResponsibleAge = {
+      ...validFormValues,
+      birthdate: dayjs().subtract(10, 'years').toDate(),
+      relationships: [
+        {
+          action: 'ADD',
+          isCompanion: true,
+          relatedPersonUuid: '11524ae7-3ef6-4ab6-aff6-804ffc58704a',
+          relationshipType: 'e6be4def-dbc8-462a-8714-53da66903cb8/aIsToB',
+        },
+      ],
+    };
+
+    const validationError = await validateFormValues(minorWithUnknownResponsibleAge);
+
+    expect(validationError.errors).toContain('responsiblePersonAgeUnknown');
+    expect(validationError.errors).not.toContain('responsibleRelationshipRequiredForMinor');
   });
 
   it('should not allow a minor patient with an underage responsible relationship', async () => {
@@ -739,6 +832,24 @@ describe('Patient registration validation', () => {
     expect(validationError.errors).toContain('negativeMonths');
   });
 
+  it('requires estimated age months to be a whole value between 0 and 11', async () => {
+    const tooManyMonths = await validateFormValues({
+      ...validFormValues,
+      birthdateEstimated: true,
+      yearsEstimated: 20,
+      monthsEstimated: 12,
+    });
+    const fractionalMonths = await validateFormValues({
+      ...validFormValues,
+      birthdateEstimated: true,
+      yearsEstimated: 20,
+      monthsEstimated: 1.5,
+    });
+
+    expect(tooManyMonths.errors).toContain('estimatedMonthsInvalid');
+    expect(fractionalMonths.errors).toContain('estimatedMonthsInvalid');
+  });
+
   it('should throw an error when yearsEstimated is more than 140', async () => {
     const invalidFormValues = {
       ...validFormValues,
@@ -749,6 +860,71 @@ describe('Patient registration validation', () => {
     expect(validationError.errors).toContain('nonsensicalYears');
   });
 
+  it('should require estimated years and months to be whole numbers', async () => {
+    const decimalYearsError = await validateFormValues({
+      ...validFormValues,
+      birthdateEstimated: true,
+      yearsEstimated: 12.5,
+      monthsEstimated: 0,
+    });
+    const decimalMonthsError = await validateFormValues({
+      ...validFormValues,
+      birthdateEstimated: true,
+      yearsEstimated: 12,
+      monthsEstimated: 1.5,
+    });
+
+    expect(decimalYearsError.errors).toContain('estimatedYearsMustBeInteger');
+    expect(decimalMonthsError.errors).toContain('estimatedMonthsInvalid');
+  });
+
+  it('should reject exponent and signed notation in estimated age fields', async () => {
+    for (const yearsEstimated of ['1e2', '+12']) {
+      const validationError = await validateFormValues({
+        ...validFormValues,
+        birthdateEstimated: true,
+        yearsEstimated,
+        monthsEstimated: 0,
+      });
+      expect(validationError.errors).toContain('estimatedAgeInvalid');
+    }
+
+    for (const monthsEstimated of ['1e1', '+1']) {
+      const validationError = await validateFormValues({
+        ...validFormValues,
+        birthdateEstimated: true,
+        yearsEstimated: 12,
+        monthsEstimated,
+      });
+      expect(validationError.errors).toContain('estimatedMonthsInvalid');
+    }
+  });
+
+  it('should keep the estimated month remainder and total age inside the OpenMRS limit', async () => {
+    const twelveMonthsError = await validateFormValues({
+      ...validFormValues,
+      birthdateEstimated: true,
+      yearsEstimated: 12,
+      monthsEstimated: 12,
+    });
+    const overMaximumError = await validateFormValues({
+      ...validFormValues,
+      birthdateEstimated: true,
+      yearsEstimated: 140,
+      monthsEstimated: 1,
+    });
+    const boundaryResult = await validateFormValues({
+      ...validFormValues,
+      birthdateEstimated: true,
+      yearsEstimated: 140,
+      monthsEstimated: 0,
+    });
+
+    expect(twelveMonthsError.errors).toContain('estimatedMonthsInvalid');
+    expect(overMaximumError.errors).toContain('estimatedAgeOverMaximum');
+    expect(boundaryResult).toBeFalsy();
+  });
+
   it('should throw an error when deathDate is in future', async () => {
     const invalidFormValues = {
       ...validFormValues,
@@ -756,5 +932,21 @@ describe('Patient registration validation', () => {
     };
     const validationError = await validateFormValues(invalidFormValues);
     expect(validationError.errors).toContain('deathDateInFuture');
+  });
+
+  it('allows birth and death on the same calendar day', async () => {
+    await expect(
+      getValidationSchema(
+        (await getConfig('@openmrs/esm-patient-registration-app')) as unknown as RegistrationConfig,
+      ).validate({
+        ...validFormValues,
+        birthdate: new Date('1990-01-01T00:00:00'),
+        isDead: true,
+        deathDate: new Date('1990-01-01T00:00:00'),
+        deathTime: '01:00',
+        deathTimeFormat: 'AM',
+        deathCause: 'cause-concept-uuid',
+      }),
+    ).resolves.toBeDefined();
   });
 });

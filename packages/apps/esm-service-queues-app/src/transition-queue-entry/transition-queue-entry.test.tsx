@@ -1,5 +1,11 @@
-import { getDefaultsFromConfigSchema, navigate, useConfig } from '@openmrs/esm-framework';
-import { render, screen } from '@testing-library/react';
+import {
+  getDefaultsFromConfigSchema,
+  getUserFacingErrorMessage,
+  navigate,
+  showSnackbar,
+  useConfig,
+} from '@openmrs/esm-framework';
+import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 
 import {
@@ -13,6 +19,10 @@ import TransitionQueueEntryModal from './transition-queue-entry.modal';
 import { requeueQueueEntry } from './transition-queue-entry.resource';
 
 const mockNavigate = vi.mocked(navigate);
+const mockGetUserFacingErrorMessage = vi.mocked(getUserFacingErrorMessage);
+const mockServeQueueEntry = vi.mocked(serveQueueEntry);
+const mockShowSnackbar = vi.mocked(showSnackbar);
+const mockUpdateQueueEntry = vi.mocked(updateQueueEntry);
 const mockUseConfig = vi.mocked(useConfig<ConfigObject>);
 
 vi.mock('../active-visits/active-visits-table.resource', () => ({
@@ -49,6 +59,8 @@ describe('TransitionQueueEntryModal', () => {
   } as unknown as MappedVisitQueueEntry;
 
   beforeEach(() => {
+    mockServeQueueEntry.mockResolvedValue({ status: 200 } as Awaited<ReturnType<typeof serveQueueEntry>>);
+    mockUpdateQueueEntry.mockResolvedValue({ status: 201 } as Awaited<ReturnType<typeof updateQueueEntry>>);
     mockUseConfig.mockReturnValue({
       ...getDefaultsFromConfigSchema(configSchema),
       concepts: {
@@ -85,8 +97,40 @@ describe('TransitionQueueEntryModal', () => {
 
     await user.click(screen.getByText('Serve'));
 
-    expect(updateQueueEntry).toHaveBeenCalled();
-    expect(mockNavigate).toHaveBeenCalled();
-    expect(serveQueueEntry).toHaveBeenCalled();
+    expect(mockUpdateQueueEntry).toHaveBeenCalled();
+    await waitFor(() => expect(mockNavigate).toHaveBeenCalled());
+    expect(mockServeQueueEntry).toHaveBeenCalled();
+  });
+
+  it('awaits the screen update and handles its rejection with one safe error', async () => {
+    const user = userEvent.setup();
+    const closeModal = vi.fn();
+    const technicalError = new Error('SQL constraint queue_screen_idx failed');
+    mockServeQueueEntry.mockRejectedValueOnce(technicalError);
+
+    render(<TransitionQueueEntryModal queueEntry={queueEntry} closeModal={closeModal} />);
+
+    await user.click(screen.getByText('Serve'));
+
+    await waitFor(() => {
+      expect(mockShowSnackbar).toHaveBeenCalledTimes(1);
+    });
+    expect(mockShowSnackbar).toHaveBeenCalledWith({
+      title: 'Error updating queue entry',
+      kind: 'error',
+      isLowContrast: false,
+      subtitle: 'The queue action could not be completed. Please try again.',
+    });
+    expect(mockGetUserFacingErrorMessage).toHaveBeenCalledOnce();
+    expect(mockGetUserFacingErrorMessage).toHaveBeenCalledWith(
+      technicalError,
+      'The queue action could not be completed. Please try again.',
+      { logContext: 'Serve queue entry' },
+    );
+    expect(mockShowSnackbar).not.toHaveBeenCalledWith(
+      expect.objectContaining({ subtitle: expect.stringMatching(/sql constraint/i) }),
+    );
+    expect(closeModal).not.toHaveBeenCalled();
+    expect(mockNavigate).not.toHaveBeenCalled();
   });
 });

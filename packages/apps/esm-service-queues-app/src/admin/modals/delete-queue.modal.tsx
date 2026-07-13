@@ -1,5 +1,5 @@
 import { Button, InlineLoading, ModalBody, ModalFooter, ModalHeader } from '@carbon/react';
-import { showSnackbar } from '@openmrs/esm-framework';
+import { getUserFacingErrorMessage, showSnackbar } from '@openmrs/esm-framework';
 import React, { useCallback, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useSWRConfig } from 'swr';
@@ -31,7 +31,11 @@ const DeleteQueueModal: React.FC<DeleteQueueModalProps> = ({ closeModal, queue }
       showSnackbar({
         kind: 'error',
         title: t('errorDeletingQueue', 'Error deleting queue'),
-        subtitle: error?.responseBody?.message || error?.message,
+        subtitle: getUserFacingErrorMessage(
+          error,
+          t('queueOperationErrorMessage', 'The queue operation could not be completed. Please try again.'),
+          { logContext: 'Delete queue' },
+        ),
       });
     } finally {
       setIsDeleting(false);

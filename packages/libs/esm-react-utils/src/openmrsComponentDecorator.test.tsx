@@ -1,9 +1,22 @@
+import { logError } from '@openmrs/esm-error-handling';
+import { getCoreTranslation } from '@openmrs/esm-translations';
 import { render, screen } from '@testing-library/react';
 import React, { Component } from 'react';
 import useSWR from 'swr';
-import { describe, expect, it, vi } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { ComponentContext } from './ComponentContext';
 import { openmrsComponentDecorator } from './openmrsComponentDecorator';
+
+vi.mock('@openmrs/esm-error-handling', () => ({
+  logError: vi.fn(),
+}));
+
+vi.mock('@openmrs/esm-translations', () => ({
+  getCoreTranslation: vi.fn(() => 'No se pudo mostrar esta información. Intente recargar la página.'),
+}));
+
+const mockGetCoreTranslation = vi.mocked(getCoreTranslation);
+const mockLogError = vi.mocked(logError);
 
 describe('openmrs-component-decorator', () => {
   const opts = {
@@ -11,6 +24,11 @@ describe('openmrs-component-decorator', () => {
     throwErrorsToConsole: false,
     moduleName: 'test',
   };
+
+  beforeEach(() => {
+    vi.clearAllMocks();
+    mockGetCoreTranslation.mockReturnValue('No se pudo mostrar esta información. Intente recargar la página.');
+  });
 
   it('renders a component', async () => {
     const DecoratedComp = openmrsComponentDecorator(opts)(CompThatWorks);
@@ -23,10 +41,26 @@ describe('openmrs-component-decorator', () => {
     const consoleError = vi.spyOn(console, 'error').mockImplementation(() => {});
     const DecoratedComp = openmrsComponentDecorator(opts)(CompThatThrows);
     render(<DecoratedComp />);
-    expect(screen.getByRole('alert')).toHaveTextContent('An error has occurred. Please try reloading the page.');
+    expect(screen.getByRole('alert')).toHaveTextContent(
+      'No se pudo mostrar esta información. Intente recargar la página.',
+    );
+    expect(mockGetCoreTranslation).toHaveBeenCalledWith('errorLoadingInformation');
+    expect(mockLogError).not.toHaveBeenCalled();
     expect(consoleError).toHaveBeenCalledWith(
       expect.stringContaining('The above error occurred in the <CompThatThrows> component'),
     );
+    consoleError.mockRestore();
+  });
+
+  it('logs a caught technical error without throwing it to the global handler', () => {
+    const consoleError = vi.spyOn(console, 'error').mockImplementation(() => {});
+    const DecoratedComp = openmrsComponentDecorator({ ...opts, throwErrorsToConsole: true })(CompThatThrows);
+
+    render(<DecoratedComp />);
+
+    expect(mockLogError).toHaveBeenCalledOnce();
+    expect(mockLogError).toHaveBeenCalledWith(expect.any(Error), 'Component error (test/Test)');
+    expect(screen.getByRole('alert')).toBeInTheDocument();
     consoleError.mockRestore();
   });
 

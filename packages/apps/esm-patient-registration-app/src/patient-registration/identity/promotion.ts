@@ -1,4 +1,9 @@
-import dayjs from 'dayjs';
+import {
+  calculatePatientAgeInMonths,
+  calendarDateToLocalDate,
+  MAX_PATIENT_AGE_YEARS,
+  parsePatientBirthdate,
+} from '@openmrs/esm-utils';
 
 import { type PatientIdentifier } from '../patient-registration.types';
 import {
@@ -23,8 +28,8 @@ const genderCodeToFormValue: Record<string, string> = {
  * UTC (Peru is UTC-5), so only the date part is used to build a local date.
  */
 function parseBirthdateAsLocalDate(birthdate: string) {
-  const [year, month, day] = birthdate.slice(0, 10).split('-').map(Number);
-  return new Date(year, month - 1, day);
+  const parsedBirthdate = parsePatientBirthdate(birthdate);
+  return parsedBirthdate ? calendarDateToLocalDate(parsedBirthdate) : null;
 }
 
 type SetFieldValue = (field: string, value: unknown, shouldValidate?: boolean) => void;
@@ -68,9 +73,12 @@ export function applyPersonToRegistrationForm(
 ) {
   const preferredName = getPreferredName(person);
   const birthdateEstimated = !!person.birthdateEstimated;
-  const yearsEstimated =
-    birthdateEstimated && person.birthdate ? Math.floor(dayjs().diff(person.birthdate, 'month') / 12) : 0;
-  const monthsEstimated = birthdateEstimated && person.birthdate ? dayjs().diff(person.birthdate, 'month') % 12 : 0;
+  const estimatedBirthdate = birthdateEstimated && person.birthdate ? parsePatientBirthdate(person.birthdate) : null;
+  const calculatedAgeInMonths = estimatedBirthdate ? calculatePatientAgeInMonths(estimatedBirthdate) : null;
+  const estimatedAgeInMonths =
+    calculatedAgeInMonths != null ? Math.min(calculatedAgeInMonths, MAX_PATIENT_AGE_YEARS * 12) : null;
+  const yearsEstimated = estimatedAgeInMonths != null ? Math.floor(estimatedAgeInMonths / 12) : 0;
+  const monthsEstimated = estimatedAgeInMonths != null ? estimatedAgeInMonths % 12 : 0;
 
   const fieldValues: Array<[string, unknown]> = [
     ['patientUuid', person.uuid],

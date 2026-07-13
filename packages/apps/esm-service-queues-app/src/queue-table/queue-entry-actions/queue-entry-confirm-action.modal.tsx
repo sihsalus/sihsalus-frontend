@@ -1,5 +1,5 @@
 import { Button, ModalBody, ModalFooter, ModalHeader, Stack } from '@carbon/react';
-import { type FetchResponse, showSnackbar } from '@openmrs/esm-framework';
+import { type FetchResponse, getUserFacingErrorMessage, showSnackbar } from '@openmrs/esm-framework';
 import React, { type ReactNode, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
@@ -70,7 +70,11 @@ export const QueueEntryConfirmActionModal: React.FC<QueueEntryUndoActionsModalPr
         showSnackbar({
           title: submitFailureTitle,
           kind: 'error',
-          subtitle: error?.message,
+          subtitle: getUserFacingErrorMessage(
+            error,
+            t('queueEntryActionErrorMessage', 'The queue action could not be completed. Please try again.'),
+            { logContext: 'Confirm legacy queue entry action' },
+          ),
         });
       })
       .finally(() => {

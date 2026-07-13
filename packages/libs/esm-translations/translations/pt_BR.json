@@ -45,7 +45,7 @@
   "minimize": "Minimizar",
   "noResultsToDisplay": "No results to display",
   "offlineSetupErrorTitle": "Modo offline indisponível",
-  "offlineSetupGenericError": "Não foi possível ativar o modo offline. Você ainda pode entrar e trabalhar online. Se o problema continuar, contate o suporte e compartilhe o detalhe técnico: {{message}}",
+  "offlineSetupGenericError": "Não foi possível ativar o modo offline. Você ainda pode entrar e trabalhar online. Se o problema continuar, contate o suporte.",
   "offlineSetupMissingBrowserCapabilities": "Modo offline indisponível. Não foi possível ativar porque este navegador ou contexto de navegação não permite Service Workers. Você ainda pode entrar e trabalhar online. Para usar o modo offline, abra o SIH Salus por HTTPS ou localhost, use um navegador compatível e evite navegação privada ou políticas do navegador que bloqueiem Service Workers.",
   "openAnyway": "Abrir de qualquer forma",
   "other": "Outros",

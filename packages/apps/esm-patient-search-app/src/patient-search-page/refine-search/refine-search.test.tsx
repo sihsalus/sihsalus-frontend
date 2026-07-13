@@ -115,6 +115,14 @@ describe('RefineSearch', () => {
     expect(screen.getByText('Estado de Identificación en Admisión')).toBeInTheDocument();
   });
 
+  it('passes the configured age limits to the rendered input', () => {
+    renderComponent();
+
+    const ageInput = screen.getByRole('spinbutton', { name: /age/i });
+    expect(ageInput).toHaveAttribute('min', '0');
+    expect(ageInput).toHaveAttribute('max', '140');
+  });
+
   it('shows number of filters applied in Search button when filters are active', () => {
     renderComponent({ filtersApplied: 2 });
 
@@ -245,17 +253,35 @@ describe('RefineSearch', () => {
       );
     });
 
-    it('validates date of birth inputs', async () => {
+    it('rejects out-of-range date of birth and age values', async () => {
       renderComponent();
 
       const dayInput = screen.getByRole('spinbutton', { name: /day of birth/i });
       const monthInput = screen.getByRole('spinbutton', { name: /month of birth/i });
+      const yearInput = screen.getByRole('spinbutton', { name: /year of birth/i });
+      const ageInput = screen.getByRole('spinbutton', { name: /age/i });
 
       await user.type(dayInput, '32');
-      expect(dayInput).toHaveAttribute('max', '31');
-
       await user.type(monthInput, '13');
-      expect(monthInput).toHaveAttribute('max', '12');
+      await user.type(yearInput, '100000');
+      await user.type(ageInput, '141');
+
+      expect(dayInput).toHaveValue(3);
+      expect(monthInput).toHaveValue(1);
+      expect(yearInput).not.toHaveValue(100000);
+      expect(yearInput).toHaveAttribute('aria-invalid', 'true');
+      expect(ageInput).toHaveValue(14);
+    });
+
+    it('does not submit an impossible date of birth', async () => {
+      renderComponent();
+
+      await user.type(screen.getByRole('spinbutton', { name: /day of birth/i }), '31');
+      await user.type(screen.getByRole('spinbutton', { name: /month of birth/i }), '02');
+      await user.click(screen.getByRole('button', { name: /search/i }));
+
+      expect(mockSetFilters).not.toHaveBeenCalled();
+      expect(screen.getByText('Enter a valid date of birth')).toBeInTheDocument();
     });
   });
 });

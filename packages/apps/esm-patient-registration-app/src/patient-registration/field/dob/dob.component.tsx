@@ -27,7 +27,7 @@ const calcBirthdate = (yearDelta, monthDelta, dateOfBirth) => {
   return enabled ? new Date(resultDate.getFullYear(), month, dayOfMonth) : resultDate;
 };
 
-const estimatedYearsConstraints = { integer: true, max: 139, min: 0, nonNegative: true };
+const estimatedYearsConstraints = { integer: true, max: 140, min: 0, nonNegative: true };
 const estimatedMonthsConstraints = { integer: true, min: 0, nonNegative: true };
 
 const preventInvalidEstimatedAgeKey =
@@ -176,6 +176,7 @@ export const DobField: React.FC = () => {
                 invalidText={yearsEstimateMeta.error && t(yearsEstimateMeta.error)}
                 value={yearsEstimated.value}
                 min={0}
+                max={estimatedYearsConstraints.max}
                 required
                 onBlur={(e) => {
                   yearsEstimated.onBlur(e);

@@ -114,6 +114,7 @@ describe('Dob', () => {
     );
 
     const yearsInput = screen.getByRole('spinbutton', { name: /estimated age in years/i });
+    expect(yearsInput).toHaveAttribute('max', '140');
     for (const key of ['e', 'E', '+', '-', '.', ',']) {
       expect(fireEvent.keyDown(yearsInput, { key })).toBe(false);
     }
@@ -128,5 +129,12 @@ describe('Dob', () => {
 
     fireEvent.change(yearsInput, { target: { value: '12' } });
     expect(setFieldValue).toHaveBeenCalledWith('yearsEstimated', 12);
+
+    fireEvent.change(yearsInput, { target: { value: '140' } });
+    expect(setFieldValue).toHaveBeenCalledWith('yearsEstimated', 140);
+
+    setFieldValue.mockClear();
+    fireEvent.change(yearsInput, { target: { value: '141' } });
+    expect(setFieldValue).not.toHaveBeenCalledWith('yearsEstimated', expect.any(Number));
   });
 });

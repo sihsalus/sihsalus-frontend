@@ -1,4 +1,5 @@
 import { Button, Layer, TextInput } from '@carbon/react';
+import { zodResolver } from '@hookform/resolvers/zod';
 import { useConfig, useLayoutType } from '@openmrs/esm-framework';
 import classNames from 'classnames';
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
@@ -14,6 +15,7 @@ import { type AdvancedPatientSearchState, type SearchFieldConfig, type SearchFie
 import { identityDocumentNumberAttributeUuid } from './person-attribute-field.component';
 import styles from './refine-search.scss';
 import { RefineSearchTablet } from './refine-search-tablet.component';
+import { createRefineSearchSchema, MAX_PATIENT_AGE, MIN_PATIENT_AGE } from './refine-search.validation';
 import { SearchField } from './search-field.component';
 
 export const initialFilters: AdvancedPatientSearchState = {
@@ -46,6 +48,12 @@ const RefineSearch: React.FC<RefineSearchProps> = ({
   const { t } = useTranslation();
   const isTablet = useLayoutType() === 'tablet';
   const config = useConfig<PatientSearchConfig>();
+  const minimumAge = config.search.searchFilterFields.age.min ?? MIN_PATIENT_AGE;
+  const maximumAge = config.search.searchFilterFields.age.max ?? MAX_PATIENT_AGE;
+  const validationSchema = useMemo(
+    () => createRefineSearchSchema(t, minimumAge, maximumAge),
+    [maximumAge, minimumAge, t],
+  );
 
   const {
     control,
@@ -54,6 +62,7 @@ const RefineSearch: React.FC<RefineSearchProps> = ({
     setValue,
     formState: _formState,
   } = useForm<AdvancedPatientSearchState>({
+    resolver: zodResolver(validationSchema),
     defaultValues: {
       query: searchQuery,
       gender: 'any',
@@ -96,9 +105,12 @@ const RefineSearch: React.FC<RefineSearchProps> = ({
 
     Object.entries(config.search.searchFilterFields).forEach(([fieldName, fieldConfig]) => {
       if (fieldName !== 'personAttributes' && (fieldConfig as BuiltInFieldConfig).enabled) {
+        const { min, max } = fieldConfig as BuiltInFieldConfig;
         fields.push({
           name: fieldName,
           type: fieldName as SearchFieldType,
+          min,
+          max,
         });
       }
     });

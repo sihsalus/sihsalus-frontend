@@ -158,8 +158,17 @@ describe('SearchField', () => {
       expect(dayInput).toHaveAttribute('max', '31');
       expect(monthInput).toHaveAttribute('min', '1');
       expect(monthInput).toHaveAttribute('max', '12');
-      expect(yearInput).toHaveAttribute('min', '1800');
+      expect(yearInput).toHaveAttribute('min', (new Date().getFullYear() - 140).toString());
       expect(yearInput).toHaveAttribute('max', new Date().getFullYear().toString());
+    });
+
+    it('sanitizes an out-of-range input event from a numeric mobile keyboard', () => {
+      render(<SearchField field={dobField} {...defaultProps} />);
+
+      const monthInput = screen.getByLabelText('Month of Birth');
+      fireEvent.input(monthInput, { target: { value: '13' } });
+
+      expect(monthInput).toHaveValue(null);
     });
   });
 
@@ -179,6 +188,14 @@ describe('SearchField', () => {
       expect(ageInput).toHaveAttribute('type', 'number');
       expect(ageInput).toHaveAttribute('min', '0');
       expect(ageInput).toHaveAttribute('max', '120');
+    });
+
+    it('uses safe age limits when configuration omits them', () => {
+      render(<SearchField field={{ name: 'age', type: 'age' }} {...defaultProps} />);
+
+      const ageInput = screen.getByLabelText('Age');
+      expect(ageInput).toHaveAttribute('min', '0');
+      expect(ageInput).toHaveAttribute('max', '140');
     });
   });
 

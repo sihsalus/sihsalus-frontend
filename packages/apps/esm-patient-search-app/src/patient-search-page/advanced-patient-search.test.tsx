@@ -202,7 +202,7 @@ describe('AdvancedPatientSearchComponent', () => {
     it('matches document numbers exactly when refining a name search', async () => {
       renderComponent();
 
-      await user.type(screen.getByLabelText(/nÃºmero de documento de identidad/i), '1234');
+      await user.type(screen.getByLabelText(/^N.mero de Documento de Identidad$/i), '1234');
       await user.click(screen.getByRole('button', { name: /search/i }));
 
       expect(screen.getByText(/0 search result/)).toBeInTheDocument();

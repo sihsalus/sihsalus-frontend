@@ -7,6 +7,8 @@ import {
 } from '@openmrs/esm-utils';
 import { z } from 'zod';
 
+import { isNationalityConceptUuid } from './patient-nationality';
+
 export const communicationConditionOptions = [
   { value: 'communicates', label: 'Puede comunicarse' },
   { value: 'unconscious', label: 'Inconsciente' },
@@ -85,6 +87,11 @@ const optionalAgeString = optionalTrimmedString.refine(
   'Edad debe ser un número entero válido',
 );
 
+const optionalNationalityConceptUuid = optionalTrimmedString.refine(
+  (value) => !value || isNationalityConceptUuid(value),
+  'Seleccione una nacionalidad válida del catálogo',
+);
+
 export const quickRegistrationSchema = z
   .object({
     // Identificación
@@ -96,7 +103,7 @@ export const quickRegistrationSchema = z
     birthdate: optionalTrimmedString,
     identifierType: optionalTrimmedString,
     identifier: optionalTrimmedString,
-    nationality: optionalTrimmedString,
+    nationality: optionalNationalityConceptUuid,
     isUnknown: z.boolean().optional(),
     arrivalDateTime: z.string().trim().min(1, 'Fecha y hora de ingreso es requerida'),
     communicationCondition: optionalTrimmedString,

@@ -9,10 +9,19 @@ const validKnownPatient = {
   identificationStatus: 'confirmed',
   isUnknown: false,
 };
+const peruNationalityConceptUuid = 'e0370dea-d480-4721-a438-97a77d6c3349';
 
 describe('quickRegistrationSchema', () => {
   it('accepts a known communicative patient without a responsible party', () => {
     expect(() => quickRegistrationSchema.parse(validKnownPatient)).not.toThrow();
+  });
+
+  it('accepts concept UUIDs and rejects legacy country codes for nationality', () => {
+    expect(
+      quickRegistrationSchema.safeParse({ ...validKnownPatient, nationality: peruNationalityConceptUuid }).success,
+    ).toBe(true);
+    expect(quickRegistrationSchema.safeParse({ ...validKnownPatient, nationality: 'PE' }).success).toBe(false);
+    expect(quickRegistrationSchema.safeParse({ ...validKnownPatient, nationality: 'OTHER' }).success).toBe(false);
   });
 
   it('requires communication condition and responsible party for unidentified patients', () => {

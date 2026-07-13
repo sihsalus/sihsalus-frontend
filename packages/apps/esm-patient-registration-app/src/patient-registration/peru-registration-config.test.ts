@@ -6,6 +6,9 @@ import {
   peruDniPatientIdentifierTypeUuid,
   peruEmailAttributeTypeUuid,
   peruForeignPatientIdentifierTypeUuids,
+  peruNationalityAttributeTypeUuid,
+  peruNationalityConceptSetUuid,
+  peruNationalityConceptUuid,
   peruPhoneAttributeTypeUuid,
 } from './peru-registration-config';
 
@@ -38,9 +41,14 @@ describe('getEffectiveRegistrationConfig', () => {
     expect(nationality).toMatchObject({
       id: 'nationality',
       type: 'person attribute',
-      uuid: '9b3df0a1-0c58-4f55-9868-9c38f1db1007',
+      uuid: peruNationalityAttributeTypeUuid,
       label: 'Nacionalidad',
+      answerConceptSetUuid: peruNationalityConceptSetUuid,
+      searchable: true,
     });
+    expect(nationality?.validation?.matches).toBeTruthy();
+    expect(new RegExp(nationality?.validation?.matches ?? '').test(peruNationalityConceptUuid)).toBe(true);
+    expect(new RegExp(nationality?.validation?.matches ?? '').test('PE')).toBe(false);
   });
 
   it('keeps CE, passport, and foreign document as foreign identifier triggers', () => {

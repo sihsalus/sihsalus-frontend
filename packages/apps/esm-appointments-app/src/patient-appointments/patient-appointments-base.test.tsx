@@ -59,9 +59,7 @@ describe('AppointmentsOverview', () => {
 
     expect(await screen.findByRole('heading', { name: /appointments/i })).toBeInTheDocument();
     expect(
-      screen.getByText(
-        'Sorry, there was a problem displaying this information. You can try to reload this page, or contact the site administrator and quote the error code above.',
-      ),
+      screen.getByText('There was a problem displaying this information. Try reloading the page or contact support.'),
     ).toBeInTheDocument();
   });
 

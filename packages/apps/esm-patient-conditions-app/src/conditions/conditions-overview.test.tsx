@@ -74,8 +74,8 @@ describe('ConditionsOverview', () => {
     render(<ConditionsOverview patientUuid={mockPatient.id} />);
 
     expect(screen.queryByRole('table')).not.toBeInTheDocument();
-    expect(screen.getByText(/Error 401: Unauthorized/i)).toBeInTheDocument();
-    expect(screen.getByText(/Sorry, there was a problem displaying this information./i)).toBeInTheDocument();
+    expect(screen.queryByText(/Error 401: Unauthorized/i)).not.toBeInTheDocument();
+    expect(screen.getByText(/there was a problem displaying this information/i)).toBeInTheDocument();
   });
 
   it("renders an overview of the patient's antecedents when present", async () => {

@@ -382,7 +382,8 @@ describe('RelationshipsSection', () => {
     expect(screen.getByRole('textbox', { name: /middle name/i })).toHaveAttribute('maxLength', '150');
     expect(screen.getByRole('textbox', { name: /^family name$/i })).toHaveAttribute('maxLength', '100');
     expect(screen.getByRole('textbox', { name: /second family name/i })).toHaveAttribute('maxLength', '100');
-    expect(screen.getByRole('textbox', { name: /approximate age/i })).toHaveAttribute('maxLength', '3');
+    expect(screen.getByRole('spinbutton', { name: /approximate age/i })).toHaveAttribute('min', '0');
+    expect(screen.getByRole('spinbutton', { name: /approximate age/i })).toHaveAttribute('max', '140');
   });
 
   it('keeps the selected existing person name after search selection', async () => {
@@ -521,7 +522,7 @@ describe('RelationshipsSection', () => {
     await user.type(screen.getByRole('textbox', { name: /first name/i }), 'María');
     await user.type(screen.getByRole('textbox', { name: /^family name/i }), 'Quispe');
     await user.selectOptions(screen.getByRole('combobox', { name: /sex/i }), 'female');
-    await user.type(screen.getByRole('textbox', { name: /approximate age/i }), '35');
+    await user.type(screen.getByRole('spinbutton', { name: /approximate age/i }), '35');
     await user.type(screen.getByRole('textbox', { name: /phone or mobile phone/i }), '987 654-321');
     await user.type(screen.getByRole('textbox', { name: /address/i }), 'Av. Peru 123');
     await user.click(screen.getByRole('button', { name: /add person \(saved on registration\)/i }));
@@ -578,12 +579,14 @@ describe('RelationshipsSection', () => {
     await user.type(screen.getByRole('textbox', { name: /first name/i }), 'Luis');
     await user.type(screen.getByRole('textbox', { name: /^family name/i }), 'Quispe');
     await user.selectOptions(screen.getByRole('combobox', { name: /sex/i }), 'male');
-    await user.type(screen.getByRole('textbox', { name: /^approximate age$/i }), '16');
+    const estimatedAgeInput = screen.getByRole('spinbutton', { name: /^approximate age$/i });
+    expect(estimatedAgeInput).toHaveAttribute('min', '18');
+    await user.type(estimatedAgeInput, '16');
     await user.click(screen.getByRole('button', { name: /add person \(saved on registration\)/i }));
 
     expect(mockSavePerson).not.toHaveBeenCalled();
     await waitFor(() =>
-      expect(screen.getByRole('textbox', { name: /^approximate age$/i })).toHaveAttribute('aria-invalid', 'true'),
+      expect(screen.getByRole('spinbutton', { name: /^approximate age$/i })).toHaveAttribute('aria-invalid', 'true'),
     );
   });
 
@@ -612,9 +615,9 @@ describe('RelationshipsSection', () => {
     );
 
     await user.click(screen.getByRole('tab', { name: /register new person/i }));
-    await user.type(screen.getByRole('textbox', { name: /approximate age/i }), 'abc12');
+    await user.type(screen.getByRole('spinbutton', { name: /approximate age/i }), 'abc12');
 
-    expect(screen.getByRole('textbox', { name: /approximate age/i })).toHaveValue('12');
+    expect(screen.getByRole('spinbutton', { name: /approximate age/i })).toHaveValue(12);
   });
 
   it('does not create a person until the minimum responsible person data is valid', async () => {

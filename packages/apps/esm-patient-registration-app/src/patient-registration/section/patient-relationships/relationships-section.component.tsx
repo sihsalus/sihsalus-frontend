@@ -13,6 +13,13 @@ import {
 } from '@carbon/react';
 import { TrashCan } from '@carbon/react/icons';
 import { useConfig } from '@openmrs/esm-framework';
+import {
+  calculatePatientAge,
+  MAX_PATIENT_AGE_YEARS,
+  parsePatientBirthdate,
+  shouldPreventPlainNumberKey,
+  shouldPreventPlainNumberPaste,
+} from '@openmrs/esm-utils';
 import { FieldArray } from 'formik';
 import React, { useCallback, useContext, useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -67,6 +74,12 @@ const defaultGenderOptions: Array<GenderOption> = [
 ];
 
 const invalidMinorResponsibleRelationshipLabels = new Set(['child', 'grandchild', 'hijo', 'nieto']);
+const responsibleAgeInputConstraints = {
+  integer: true,
+  max: MAX_PATIENT_AGE_YEARS,
+  min: 0,
+  nonNegative: true,
+};
 
 const initialResponsiblePersonValues: ResponsiblePersonFormValues = {
   givenName: '',
@@ -132,26 +145,24 @@ function getDisplayRelationshipTypes(relationshipTypes: Array<RelationshipType>,
 }
 
 function getAgeFromBirthdate(birthdate?: string) {
-  if (!birthdate) {
-    return undefined;
+  const parsedBirthdate = birthdate ? parsePatientBirthdate(birthdate) : null;
+  return parsedBirthdate ? (calculatePatientAge(parsedBirthdate) ?? undefined) : undefined;
+}
+
+function preventInvalidResponsibleAgeKey(event: React.KeyboardEvent<HTMLInputElement>) {
+  if (event.ctrlKey || event.metaKey || event.altKey) {
+    return;
   }
 
-  const birthdateValue = new Date(birthdate);
-  if (Number.isNaN(birthdateValue.getTime())) {
-    return undefined;
+  if (shouldPreventPlainNumberKey(event.key, responsibleAgeInputConstraints)) {
+    event.preventDefault();
   }
+}
 
-  const today = new Date();
-  let age = today.getFullYear() - birthdateValue.getFullYear();
-  const hasHadBirthdayThisYear =
-    today.getMonth() > birthdateValue.getMonth() ||
-    (today.getMonth() === birthdateValue.getMonth() && today.getDate() >= birthdateValue.getDate());
-
-  if (!hasHadBirthdayThisYear) {
-    age -= 1;
+function preventInvalidResponsibleAgePaste(event: React.ClipboardEvent<HTMLInputElement>) {
+  if (shouldPreventPlainNumberPaste(event.clipboardData.getData('text'), responsibleAgeInputConstraints)) {
+    event.preventDefault();
   }
-
-  return age;
 }
 
 function getPersonSearchResultAge(person?: PersonSearchResult | null) {
@@ -555,14 +566,17 @@ const RelationshipView: React.FC<RelationshipViewProps> = ({
                 <Layer>
                   <TextInput
                     id={`relationships[${index}].newPerson.estimatedAge`}
+                    type="number"
                     labelText={
                       requiresAdultResponsible
                         ? t('responsibleEstimatedAgeRequiredLabel', 'Approximate age')
                         : t('responsibleEstimatedAge', 'Approximate age (optional)')
                     }
                     value={newPersonValues.estimatedAge}
-                    inputMode="numeric"
-                    maxLength={3}
+                    min={requiresAdultResponsible ? 18 : 0}
+                    max={MAX_PATIENT_AGE_YEARS}
+                    onKeyDown={preventInvalidResponsibleAgeKey}
+                    onPaste={preventInvalidResponsibleAgePaste}
                     onChange={handleNewPersonFieldChange('estimatedAge')}
                     onBlur={markNewPersonFieldTouched('estimatedAge')}
                     invalid={!!getFieldError('estimatedAge', personFormErrors)}

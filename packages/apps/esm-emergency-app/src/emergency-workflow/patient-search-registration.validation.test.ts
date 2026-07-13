@@ -86,4 +86,29 @@ describe('quickRegistrationSchema', () => {
       ).toBe(false);
     }
   });
+
+  it('uses the OpenMRS patient age limit and keeps age zero valid', () => {
+    for (const yearsEstimated of [0, 140]) {
+      const result = quickRegistrationSchema.safeParse({ ...validKnownPatient, yearsEstimated });
+      expect(result.success).toBe(true);
+      if (result.success) {
+        expect(result.data.yearsEstimated).toBe(yearsEstimated);
+      }
+    }
+
+    expect(quickRegistrationSchema.safeParse({ ...validKnownPatient, yearsEstimated: 141 }).success).toBe(false);
+  });
+
+  it('validates exact birthdates using the OpenMRS calendar boundary', () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date(2026, 6, 13, 12));
+
+    try {
+      expect(quickRegistrationSchema.safeParse({ ...validKnownPatient, birthdate: '1886-07-13' }).success).toBe(true);
+      expect(quickRegistrationSchema.safeParse({ ...validKnownPatient, birthdate: '1886-07-12' }).success).toBe(false);
+      expect(quickRegistrationSchema.safeParse({ ...validKnownPatient, birthdate: '2026-07-14' }).success).toBe(false);
+    } finally {
+      vi.useRealTimers();
+    }
+  });
 });

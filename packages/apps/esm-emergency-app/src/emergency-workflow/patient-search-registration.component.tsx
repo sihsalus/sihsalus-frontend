@@ -31,7 +31,13 @@ import { CheckmarkFilled, SendFilled, User, UserFollow } from '@carbon/react/ico
 import { zodResolver } from '@hookform/resolvers/zod';
 import { OpenmrsDatePicker, showSnackbar, useConfig } from '@openmrs/esm-framework';
 import {
+  calendarDateToLocalDate,
+  estimatePatientBirthdateFromAge,
+  getLocalCalendarDate,
+  getOldestAllowedPatientBirthdate,
   getPreferredIdentifier,
+  MAX_PATIENT_AGE_YEARS,
+  parsePatientBirthdate,
   shouldPreventPlainNumberKey,
   shouldPreventPlainNumberPaste,
   validatePlainNumberInput,
@@ -70,7 +76,7 @@ interface PatientSearchRegistrationProps {
 }
 
 const defaultNationalityCountryCode = 'PE';
-const ageInputConstraints = { integer: true, max: 130, min: 0, nonNegative: true };
+const ageInputConstraints = { integer: true, max: MAX_PATIENT_AGE_YEARS, min: 0, nonNegative: true };
 
 type PersonAttributeValue = string | { uuid: string };
 
@@ -163,6 +169,11 @@ function preventInvalidAgePaste(event: React.ClipboardEvent<HTMLInputElement>) {
   if (shouldPreventPlainNumberPaste(event.clipboardData.getData('text'), ageInputConstraints)) {
     event.preventDefault();
   }
+}
+
+function getBirthdatePickerValue(value?: string) {
+  const birthdate = value ? parsePatientBirthdate(value) : null;
+  return birthdate ? (calendarDateToLocalDate(birthdate) ?? undefined) : undefined;
 }
 
 // ============================================================================
@@ -380,9 +391,8 @@ const PatientSearchRegistration: React.FC<PatientSearchRegistrationProps> = ({ o
         if (data.birthdate) {
           calculatedBirthdate = data.birthdate;
           birthdateEstimated = false;
-        } else if (data.yearsEstimated && data.yearsEstimated > 0) {
-          const birthYear = new Date().getFullYear() - data.yearsEstimated;
-          calculatedBirthdate = `${birthYear}-07-01`;
+        } else if (data.yearsEstimated != null) {
+          calculatedBirthdate = estimatePatientBirthdateFromAge(data.yearsEstimated) ?? undefined;
         }
 
         // 4. Construir array de identifiers
@@ -535,7 +545,7 @@ const PatientSearchRegistration: React.FC<PatientSearchRegistrationProps> = ({ o
           display: savedPatient.display || displayName,
           identifiers: savedPatientIdentifiers.length > 0 ? savedPatientIdentifiers : fallbackIdentifiers,
           person: {
-            age: data.yearsEstimated || undefined,
+            age: data.yearsEstimated ?? undefined,
             gender: data.gender,
             birthdate: calculatedBirthdate,
             birthdateEstimated,
@@ -603,6 +613,12 @@ const PatientSearchRegistration: React.FC<PatientSearchRegistrationProps> = ({ o
   // ============================================================================
   // RENDER
   // ============================================================================
+
+  const maximumBirthdate = new Date();
+  const oldestAllowedBirthdate = getOldestAllowedPatientBirthdate(getLocalCalendarDate(maximumBirthdate));
+  const minimumBirthdate = oldestAllowedBirthdate
+    ? (calendarDateToLocalDate(oldestAllowedBirthdate) ?? undefined)
+    : undefined;
 
   return (
     <div className={styles.container}>
@@ -880,8 +896,9 @@ const PatientSearchRegistration: React.FC<PatientSearchRegistrationProps> = ({ o
                                   <OpenmrsDatePicker
                                     id="birthdate"
                                     labelText={t('birthdate', 'Fecha nac.')}
-                                    maxDate={new Date()}
-                                    value={field.value ? new Date(field.value) : undefined}
+                                    minDate={minimumBirthdate}
+                                    maxDate={maximumBirthdate}
+                                    value={getBirthdatePickerValue(field.value)}
                                     onChange={(date: Date) => {
                                       field.onChange(dayjs(date).format('YYYY-MM-DD'));
                                     }}
@@ -1003,11 +1020,13 @@ const PatientSearchRegistration: React.FC<PatientSearchRegistrationProps> = ({ o
                               disabled={isRegistering}
                               onKeyDown={preventInvalidAgeKey}
                               onPaste={preventInvalidAgePaste}
+                              min={ageInputConstraints.min}
+                              max={ageInputConstraints.max}
                               {...register('yearsEstimated', {
                                 setValueAs: (value) =>
                                   value === ''
                                     ? undefined
-                                    : validatePlainNumberInput(value, ageInputConstraints).parsedValue,
+                                    : (validatePlainNumberInput(value, ageInputConstraints).parsedValue ?? value),
                               })}
                             />
                           </div>
@@ -1144,6 +1163,8 @@ const PatientSearchRegistration: React.FC<PatientSearchRegistrationProps> = ({ o
                               invalidText={errors.companionAge?.message}
                               onKeyDown={preventInvalidAgeKey}
                               onPaste={preventInvalidAgePaste}
+                              min={ageInputConstraints.min}
+                              max={ageInputConstraints.max}
                               {...register('companionAge')}
                             />
                             <TextInput

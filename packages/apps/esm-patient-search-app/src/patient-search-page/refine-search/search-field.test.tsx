@@ -5,7 +5,7 @@ import { renderWithSwr } from 'test-utils';
 import { type AdvancedPatientSearchState, type SearchFieldConfig } from '../../types';
 
 import { usePersonAttributeType } from './person-attributes.resource';
-import { getIntegerInputValue, isValidIntegerInput, SearchField } from './search-field.component';
+import { getOptionalIntegerInputValue, SearchField } from './search-field.component';
 
 vi.mock('./person-attributes.resource', async () => ({
   usePersonAttributeType: vi.fn(),
@@ -67,22 +67,10 @@ describe('SearchField', () => {
   });
 
   describe('Integer input guards', () => {
-    it('rejects scientific notation and decimal values', () => {
-      expect(isValidIntegerInput('232.3e1231', 130, 3)).toBe(false);
-      expect(isValidIntegerInput('1e2', 130, 3)).toBe(false);
-      expect(isValidIntegerInput('12.5', 130, 3)).toBe(false);
-      expect(isValidIntegerInput('+12', 130, 3)).toBe(false);
-      expect(isValidIntegerInput('-12', 130, 3)).toBe(false);
-      expect(isValidIntegerInput('12,5', 130, 3)).toBe(false);
-      expect(isValidIntegerInput('0', 31, 2, 1)).toBe(false);
-    });
-
-    it('keeps the current value when the next value is invalid', () => {
-      expect(getIntegerInputValue(23, '232', 130, 3)).toBe(23);
-      expect(getIntegerInputValue(23, '2e3', 130, 3)).toBe(23);
-      expect(getIntegerInputValue(23, '+2', 130, 3)).toBe(23);
-      expect(getIntegerInputValue(23, '-2', 130, 3)).toBe(23);
-      expect(getIntegerInputValue(23, '', 130, 3)).toBe(0);
+    it('keeps zero distinct from an empty optional input', () => {
+      expect(getOptionalIntegerInputValue('')).toBeNull();
+      expect(getOptionalIntegerInputValue('0')).toBe(0);
+      expect(getOptionalIntegerInputValue('23')).toBe(23);
     });
 
     it('prevents invalid age keystrokes and paste payloads in the rendered input', () => {
@@ -107,6 +95,12 @@ describe('SearchField', () => {
           clipboardData: { getData: () => '1e2' },
         }),
       ).toBe(false);
+    });
+
+    it('allows a valid numeric prefix when the configured minimum has two digits', () => {
+      render(<SearchField field={{ name: 'age', type: 'age', min: 18, max: 65 }} {...defaultProps} />);
+
+      expect(fireEvent.keyDown(screen.getByRole('spinbutton', { name: /age/i }), { key: '2' })).toBe(true);
     });
   });
 
@@ -162,13 +156,11 @@ describe('SearchField', () => {
       expect(yearInput).toHaveAttribute('max', new Date().getFullYear().toString());
     });
 
-    it('sanitizes an out-of-range input event from a numeric mobile keyboard', () => {
+    it('prevents an out-of-range pasted month', () => {
       render(<SearchField field={dobField} {...defaultProps} />);
 
       const monthInput = screen.getByLabelText('Month of Birth');
-      fireEvent.input(monthInput, { target: { value: '13' } });
-
-      expect(monthInput).toHaveValue(null);
+      expect(fireEvent.paste(monthInput, { clipboardData: { getData: () => '13' } })).toBe(false);
     });
   });
 
@@ -192,6 +184,14 @@ describe('SearchField', () => {
 
     it('uses safe age limits when configuration omits them', () => {
       render(<SearchField field={{ name: 'age', type: 'age' }} {...defaultProps} />);
+
+      const ageInput = screen.getByLabelText('Age');
+      expect(ageInput).toHaveAttribute('min', '0');
+      expect(ageInput).toHaveAttribute('max', '140');
+    });
+
+    it('does not allow configuration to widen the OpenMRS age limit', () => {
+      render(<SearchField field={{ name: 'age', type: 'age', min: -1, max: 100000 }} {...defaultProps} />);
 
       const ageInput = screen.getByLabelText('Age');
       expect(ageInput).toHaveAttribute('min', '0');

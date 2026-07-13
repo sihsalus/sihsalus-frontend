@@ -7,6 +7,7 @@ import {
   useConfig,
   usePatient,
 } from '@openmrs/esm-framework';
+import { calculatePatientAgeInMonths, isValidCalendarDate, MAX_PATIENT_AGE_YEARS } from '@openmrs/esm-utils';
 import dayjs from 'dayjs';
 import camelCase from 'lodash-es/camelCase';
 import { type Dispatch, type SetStateAction, useEffect, useMemo, useState } from 'react';
@@ -39,6 +40,20 @@ interface DeathInfoResults {
   dead: boolean;
   deathDate: string;
   causeOfDeathNonCoded: string | null;
+}
+
+function parsePartialFhirBirthdate(birthdate: string) {
+  const match = /^(\d{4})(?:-(\d{2}))?(?:-(\d{2}))?$/.exec(birthdate);
+  if (!match) {
+    return null;
+  }
+
+  const parsedBirthdate = {
+    year: Number(match[1]),
+    month: match[2] ? Number(match[2]) : 1,
+    day: match[3] ? Number(match[3]) : 1,
+  };
+  return isValidCalendarDate(parsedBirthdate) ? parsedBirthdate : null;
 }
 
 export function useInitialFormValues(patientUuid: string): [FormValues, Dispatch<SetStateAction<FormValues>>] {
@@ -85,9 +100,13 @@ export function useInitialFormValues(patientUuid: string): [FormValues, Dispatch
         const birthdateEstimated = !/^\d{4}-\d{2}-\d{2}$/.test(patientToEdit.birthDate);
         // Please refer: https://github.com/openmrs/openmrs-esm-patient-management/pull/697#issuecomment-1562706118
         const estimatedMonthsAvailable = patientToEdit.birthDate.split('-').length > 1;
-        const yearsEstimated = birthdateEstimated ? Math.floor(dayjs().diff(patientToEdit.birthDate, 'month') / 12) : 0;
+        const estimatedBirthdate = birthdateEstimated ? parsePartialFhirBirthdate(patientToEdit.birthDate) : null;
+        const calculatedAgeInMonths = estimatedBirthdate ? calculatePatientAgeInMonths(estimatedBirthdate) : null;
+        const estimatedAgeInMonths =
+          calculatedAgeInMonths != null ? Math.min(calculatedAgeInMonths, MAX_PATIENT_AGE_YEARS * 12) : null;
+        const yearsEstimated = estimatedAgeInMonths != null ? Math.floor(estimatedAgeInMonths / 12) : 0;
         const monthsEstimated =
-          birthdateEstimated && estimatedMonthsAvailable ? dayjs().diff(patientToEdit.birthDate, 'month') % 12 : 0;
+          estimatedMonthsAvailable && estimatedAgeInMonths != null ? estimatedAgeInMonths % 12 : 0;
 
         setInitialFormValues({
           ...initialFormValues,

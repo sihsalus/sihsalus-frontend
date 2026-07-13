@@ -138,11 +138,11 @@ describe('RefineSearch', () => {
     expect(mockSetFilters).toHaveBeenCalledWith({
       query: '',
       gender: 'any',
-      dateOfBirth: 0,
-      monthOfBirth: 0,
-      yearOfBirth: 0,
+      dateOfBirth: null,
+      monthOfBirth: null,
+      yearOfBirth: null,
       postcode: '',
-      age: 0,
+      age: null,
       attributes: {},
     });
   });
@@ -158,9 +158,9 @@ describe('RefineSearch', () => {
       expect.objectContaining({
         query: '',
         gender: 'any',
-        dateOfBirth: 0,
-        monthOfBirth: 0,
-        yearOfBirth: 0,
+        dateOfBirth: null,
+        monthOfBirth: null,
+        yearOfBirth: null,
         postcode: '',
         attributes: {
           '6f5c0b8a-9e91-4d41-9a8c-8b0f3c2e7a11': '',
@@ -265,12 +265,14 @@ describe('RefineSearch', () => {
       await user.type(monthInput, '13');
       await user.type(yearInput, '100000');
       await user.type(ageInput, '141');
+      await user.click(screen.getByRole('button', { name: /search/i }));
 
-      expect(dayInput).toHaveValue(3);
-      expect(monthInput).toHaveValue(1);
-      expect(yearInput).not.toHaveValue(100000);
+      expect(dayInput).toHaveValue(32);
+      expect(monthInput).toHaveValue(13);
+      expect(yearInput).toHaveValue(100000);
+      expect(ageInput).toHaveValue(141);
+      expect(mockSetFilters).not.toHaveBeenCalled();
       expect(yearInput).toHaveAttribute('aria-invalid', 'true');
-      expect(ageInput).toHaveValue(14);
     });
 
     it('does not submit an impossible date of birth', async () => {
@@ -281,7 +283,7 @@ describe('RefineSearch', () => {
       await user.click(screen.getByRole('button', { name: /search/i }));
 
       expect(mockSetFilters).not.toHaveBeenCalled();
-      expect(screen.getByText('Enter a valid date of birth')).toBeInTheDocument();
+      expect(screen.getByRole('spinbutton', { name: /day of birth/i })).toHaveAttribute('aria-invalid', 'true');
     });
   });
 });

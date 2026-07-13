@@ -28,6 +28,8 @@ import {
   peruEmailAttributeTypeUuid,
   peruInsuranceCodeAttributeTypeUuid,
   peruMobilePhoneAttributeTypeUuid,
+  peruNationalityAttributeTypeUuid,
+  peruNationalityConceptUuid,
   peruPhoneAttributeTypeUuid,
 } from './peru-registration-config';
 
@@ -157,6 +159,7 @@ describe('FormManager', () => {
           [peruEmailAttributeTypeUuid]: 'juan.perez@example.org',
           [peruPhoneAttributeTypeUuid]: '999888777',
           [peruInsuranceCodeAttributeTypeUuid]: 'SIS-12345678',
+          [peruNationalityAttributeTypeUuid]: peruNationalityConceptUuid,
         },
         address: {
           country: 'PERU',
@@ -201,6 +204,7 @@ describe('FormManager', () => {
           { attributeType: peruEmailAttributeTypeUuid, value: 'juan.perez@example.org' },
           { attributeType: peruPhoneAttributeTypeUuid, value: '999888777' },
           { attributeType: peruInsuranceCodeAttributeTypeUuid, value: 'SIS-12345678' },
+          { attributeType: peruNationalityAttributeTypeUuid, value: peruNationalityConceptUuid },
         ]),
       );
     });

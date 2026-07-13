@@ -2,6 +2,7 @@ import { getConfig } from '@openmrs/esm-framework';
 import dayjs from 'dayjs';
 
 import { type RegistrationConfig } from '../../config-schema';
+import { peruNationalityConceptUuid } from '../peru-registration-config';
 
 import { getValidationSchema, isMinorPatient } from './patient-registration-validation';
 
@@ -10,6 +11,7 @@ const phoneAttributeUuid = '14d4f066-15f5-102d-96e4-000c29c2a5d7';
 const mobilePhoneAttributeUuid = 'fee4e8ef-aef8-4bb9-8ed0-7ded6055c61f';
 const emailAttributeUuid = '4bdf3a33-2f63-11f0-8ab4-1a7535b1b3e8';
 const insuranceAccreditationCheckedAtAttributeUuid = '9b3df0a1-0c58-4f55-9868-9c38f1db1006';
+const nationalityAttributeUuid = '9b3df0a1-0c58-4f55-9868-9c38f1db1007';
 
 describe('Patient registration validation', () => {
   beforeEach(() => {
@@ -83,6 +85,16 @@ describe('Patient registration validation', () => {
           inputType: 'date',
           allowFutureDates: false,
           showHeading: false,
+        },
+        {
+          id: 'nationality',
+          type: 'person attribute',
+          uuid: nationalityAttributeUuid,
+          showHeading: false,
+          validation: {
+            required: false,
+            matches: '^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$',
+          },
         },
       ],
     });
@@ -266,6 +278,21 @@ describe('Patient registration validation', () => {
     const validationError = await validateFormValues(validValues);
 
     expect(validationError).toBeFalsy();
+  });
+
+  it('should accept a nationality concept UUID and reject legacy ISO country codes', async () => {
+    expect(
+      await validateFormValues({
+        ...validFormValues,
+        attributes: { [nationalityAttributeUuid]: peruNationalityConceptUuid },
+      }),
+    ).toBeFalsy();
+
+    const validationError = await validateFormValues({
+      ...validFormValues,
+      attributes: { [nationalityAttributeUuid]: 'PE' },
+    });
+    expect(validationError).toBeTruthy();
   });
 
   it('should allow mobile phone contact attributes with an international prefix', async () => {

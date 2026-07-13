@@ -13,6 +13,9 @@ export const peruInsuranceAccreditationInactiveConceptUuid = '9b3df0a1-0c58-4f55
 export const peruPhoneAttributeTypeUuid = '14d4f066-15f5-102d-96e4-000c29c2a5d7';
 export const peruMobilePhoneAttributeTypeUuid = 'fee4e8ef-aef8-4bb9-8ed0-7ded6055c61f';
 export const peruEmailAttributeTypeUuid = '4bdf3a33-2f63-11f0-8ab4-1a7535b1b3e8';
+export const peruNationalityAttributeTypeUuid = '9b3df0a1-0c58-4f55-9868-9c38f1db1007';
+export const peruNationalityConceptSetUuid = '7869ef7a-be6c-4108-9ee5-9cc7470e0b2d';
+export const peruNationalityConceptUuid = 'e0370dea-d480-4721-a438-97a77d6c3349';
 
 const peruDefaultPatientIdentifierTypeUuids = [
   peruDniPatientIdentifierTypeUuid, // DNI
@@ -33,6 +36,7 @@ const peruContactFieldOrder = ['address', 'birthAddress', 'phone', 'mobilePhone'
 const peruLandlinePhoneValidationRegex = '^(?:(?:\\+51)?[1-8][0-9]{7}|0[1-8][0-9]{7})$';
 const peruMobilePhoneValidationRegex = '^(?:\\+51)?9[0-9]{8}$';
 const peruEmailValidationRegex = '^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$';
+const conceptUuidValidationRegex = '^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$';
 const peruPhonePlaceholder = '012345678';
 const peruMobilePhonePlaceholder = '987654321';
 // UUID/direction values must match the relationship types defined in
@@ -104,11 +108,12 @@ const peruFieldDefinitions: Array<FieldDefinition> = [
   {
     id: 'nationality',
     type: 'person attribute',
-    uuid: '9b3df0a1-0c58-4f55-9868-9c38f1db1007',
+    uuid: peruNationalityAttributeTypeUuid,
     label: 'Nacionalidad',
     showHeading: false,
-    answerConceptSetUuid: '7869ef7a-be6c-4108-9ee5-9cc7470e0b2d',
+    answerConceptSetUuid: peruNationalityConceptSetUuid,
     searchable: true,
+    validation: { required: false, matches: conceptUuidValidationRegex },
   },
   {
     id: 'civilStatus',

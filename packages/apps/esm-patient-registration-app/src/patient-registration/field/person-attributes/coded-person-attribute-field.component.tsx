@@ -1,7 +1,7 @@
 import { ComboBox, Layer, Select, SelectItem } from '@carbon/react';
 import { reportError, useSession, userHasAccess } from '@openmrs/esm-framework';
 import classNames from 'classnames';
-import { Field } from 'formik';
+import { Field, getIn } from 'formik';
 import { useEffect, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { moduleName } from '../../../constants';
@@ -20,6 +20,7 @@ export interface CodedPersonAttributeFieldProps {
   required: boolean;
   searchable?: boolean;
   readOnly?: boolean;
+  enforceAnswerSetMembership?: boolean;
 }
 
 export function CodedPersonAttributeField({
@@ -31,6 +32,7 @@ export function CodedPersonAttributeField({
   required,
   searchable,
   readOnly,
+  enforceAnswerSetMembership = false,
 }: CodedPersonAttributeFieldProps) {
   const { user } = useSession();
   const hasCustomConceptAnswers = customConceptAnswers.length > 0;
@@ -43,15 +45,10 @@ export function CodedPersonAttributeField({
   } = useConceptAnswers(shouldLoadConceptAnswers ? answerConceptSetUuid : '');
 
   const isMissingAnswerSet = !answerConceptSetUuid && !hasCustomConceptAnswers;
-  const isInvalidAnswerSet =
-    !hasCustomConceptAnswers && canGetConcepts && isMissingConceptError(conceptAnswersError);
+  const isInvalidAnswerSet = !hasCustomConceptAnswers && canGetConcepts && isMissingConceptError(conceptAnswersError);
   const isEmptyAnswerSet =
-    shouldLoadConceptAnswers &&
-    !isLoadingConceptAnswers &&
-    !conceptAnswersError &&
-    conceptAnswers?.length === 0;
-  const cannotLoadConceptAnswers =
-    !hasCustomConceptAnswers && (!canGetConcepts || Boolean(conceptAnswersError));
+    shouldLoadConceptAnswers && !isLoadingConceptAnswers && !conceptAnswersError && conceptAnswers?.length === 0;
+  const cannotLoadConceptAnswers = !hasCustomConceptAnswers && (!canGetConcepts || Boolean(conceptAnswersError));
 
   const answers = useMemo(
     () =>
@@ -67,6 +64,15 @@ export function CodedPersonAttributeField({
   const fieldName = `attributes.${personAttributeType.uuid}`;
   const displayLabel = label ?? personAttributeType?.display;
   const labelText = required ? displayLabel : `${displayLabel} (${t('optional', 'optional')})`;
+  const validateAnswerSetMembership = (value: unknown) => {
+    if (!enforceAnswerSetMembership || !value || isLoadingConceptAnswers) {
+      return undefined;
+    }
+
+    return typeof value === 'string' && answers.some((answer) => answer.uuid === value)
+      ? undefined
+      : t('selectValidConceptAnswer', 'Select a valid option from the configured catalog');
+  };
 
   useEffect(() => {
     if (isMissingAnswerSet) {
@@ -119,10 +125,11 @@ export function CodedPersonAttributeField({
     >
       {!isLoadingConceptAnswers ? (
         <Layer>
-          <Field name={fieldName}>
+          <Field name={fieldName} validate={validateAnswerSetMembership}>
             {({ field, form: { setFieldValue, touched, errors } }) => {
               const selectedAnswer = answers.find((answer) => answer.uuid === field.value) ?? null;
-              const invalid = Boolean(errors[fieldName] && touched[fieldName]);
+              const errorMessage = getIn(errors, fieldName);
+              const invalid = Boolean(errorMessage && getIn(touched, fieldName));
 
               if (searchable) {
                 return (
@@ -134,6 +141,7 @@ export function CodedPersonAttributeField({
                     titleText={labelText}
                     placeholder={t('searchSelectAnOption', 'Search and select an option')}
                     invalid={invalid}
+                    invalidText={typeof errorMessage === 'string' ? errorMessage : undefined}
                     disabled={readOnly}
                     onChange={({ selectedItem }) => {
                       setFieldValue(fieldName, selectedItem?.uuid ?? '');
@@ -148,6 +156,7 @@ export function CodedPersonAttributeField({
                   name={`person-attribute-${personAttributeType.uuid}`}
                   labelText={labelText}
                   invalid={invalid}
+                  invalidText={typeof errorMessage === 'string' ? errorMessage : undefined}
                   required={required}
                   disabled={readOnly}
                   {...field}

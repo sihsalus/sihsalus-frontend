@@ -1,5 +1,6 @@
 import { reportError, useSession } from '@openmrs/esm-framework';
 import { render, screen, waitFor } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
 import { Form, Formik } from 'formik';
 import type { MockInstance } from 'vitest';
 
@@ -240,6 +241,33 @@ describe('CodedPersonAttributeField', () => {
     expect(screen.getByText('Local answer')).toBeInTheDocument();
     expect(mockUseConceptAnswers).toHaveBeenCalledWith('');
     expect(mockReportError).not.toHaveBeenCalled();
+  });
+
+  it('blocks values that are not members of the configured answer set when requested', async () => {
+    const user = userEvent.setup();
+    const handleSubmit = vi.fn();
+
+    render(
+      <Formik initialValues={{ attributes: { [personAttributeType.uuid]: 'PE' } }} onSubmit={handleSubmit}>
+        <Form>
+          <CodedPersonAttributeField
+            id="attributeId"
+            personAttributeType={personAttributeType}
+            answerConceptSetUuid={answerConceptSetUuid}
+            label={personAttributeType.display}
+            customConceptAnswers={[]}
+            required={false}
+            enforceAnswerSetMembership
+          />
+          <button type="submit">Save</button>
+        </Form>
+      </Formik>,
+    );
+
+    await user.click(screen.getByRole('button', { name: 'Save' }));
+
+    await waitFor(() => expect(handleSubmit).not.toHaveBeenCalled());
+    expect(screen.getByText('Select a valid option from the configured catalog')).toBeInTheDocument();
   });
 
   it('does not report a forbidden concept response as an invalid answer set', () => {

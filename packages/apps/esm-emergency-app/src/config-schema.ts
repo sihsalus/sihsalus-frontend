@@ -454,7 +454,17 @@ export const configSchema = {
     nationalityAttributeTypeUuid: {
       _type: Type.UUID,
       _default: '9b3df0a1-0c58-4f55-9868-9c38f1db1007',
-      _description: 'UUID del person attribute type Nacionalidad / país del documento',
+      _description: 'UUID del person attribute type País de Nacionalidad (Coded → Concept)',
+    },
+    nationalityConceptSetUuid: {
+      _type: Type.ConceptUuid,
+      _default: '7869ef7a-be6c-4108-9ee5-9cc7470e0b2d',
+      _description: 'UUID del conjunto de conceptos que contiene las nacionalidades permitidas',
+    },
+    peruNationalityConceptUuid: {
+      _type: Type.ConceptUuid,
+      _default: 'e0370dea-d480-4721-a438-97a77d6c3349',
+      _description: 'UUID del concepto Perú usado cuando un DNI válido confirma nacionalidad peruana',
     },
     insuranceTypeAttributeTypeUuid: {
       _type: Type.UUID,
@@ -640,6 +650,8 @@ export interface Config {
     openMrsIdIdentifierTypeUuid: string;
     unknownPatientAttributeTypeUuid: string;
     nationalityAttributeTypeUuid: string;
+    nationalityConceptSetUuid: string;
+    peruNationalityConceptUuid: string;
     insuranceTypeAttributeTypeUuid: string;
     insuranceCodeAttributeTypeUuid: string;
     companionNameAttributeTypeUuid: string;

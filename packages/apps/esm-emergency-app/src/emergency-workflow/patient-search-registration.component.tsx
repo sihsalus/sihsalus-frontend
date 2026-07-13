@@ -49,7 +49,11 @@ import { useTranslation } from 'react-i18next';
 import type { Config } from '../config-schema';
 import { generateIdentifier, saveEmergencyPatient } from '../resources/patient-registration.resource';
 import InitialPrioritySelector, { type InitialPriority } from './components/initial-priority-selector.component';
+import { NationalityConceptField } from './components/nationality-concept-field.component';
 import styles from './patient-search-registration.component.scss';
+import { useNationalityConceptAnswers } from './patient-nationality.resource';
+import { getAutomaticNationalityUpdate, isCompletedPeruDni } from './patient-nationality';
+import { buildEmergencyPatientAttributes } from './patient-registration-attributes';
 import {
   communicationConditionLabels,
   communicationConditionOptions,
@@ -75,23 +79,7 @@ interface PatientSearchRegistrationProps {
   ) => Promise<void> | void;
 }
 
-const defaultNationalityCountryCode = 'PE';
 const ageInputConstraints = { integer: true, max: MAX_PATIENT_AGE_YEARS, min: 0, nonNegative: true };
-
-type PersonAttributeValue = string | { uuid: string };
-
-const nationalityOptions = [
-  { code: 'PE', label: 'Perú' },
-  { code: 'CO', label: 'Colombia' },
-  { code: 'EC', label: 'Ecuador' },
-  { code: 'BR', label: 'Brasil' },
-  { code: 'BO', label: 'Bolivia' },
-  { code: 'CL', label: 'Chile' },
-  { code: 'VE', label: 'Venezuela' },
-  { code: 'AR', label: 'Argentina' },
-  { code: 'US', label: 'Estados Unidos' },
-  { code: 'OTHER', label: 'Otro país' },
-];
 
 interface RegistrationSubmitError {
   status?: number;
@@ -131,30 +119,6 @@ function formatGenderLabel(gender?: string) {
   }
 }
 
-function addOptionalAttribute(
-  attributes: Array<{ attributeType: string; value: PersonAttributeValue }>,
-  attributeTypeUuid: string | null | undefined,
-  value: PersonAttributeValue | undefined,
-) {
-  if (attributeTypeUuid && value) {
-    attributes.push({ attributeType: attributeTypeUuid, value });
-  }
-}
-
-function getIdentificationStatusAttributeValue(
-  config: Pick<Config['patientRegistration'], 'identificationStatusConcepts'>,
-  identificationStatus: string,
-) {
-  const statusConceptUuid = {
-    pending: config.identificationStatusConcepts.pendingUuid,
-    partial: config.identificationStatusConcepts.partialUuid,
-    confirmed: config.identificationStatusConcepts.confirmedUuid,
-    merged: config.identificationStatusConcepts.mergedUuid,
-  }[identificationStatus];
-
-  return statusConceptUuid ?? identificationStatus;
-}
-
 function preventInvalidAgeKey(event: React.KeyboardEvent<HTMLInputElement>) {
   if (event.ctrlKey || event.metaKey || event.altKey) {
     return;
@@ -183,6 +147,15 @@ function getBirthdatePickerValue(value?: string) {
 const PatientSearchRegistration: React.FC<PatientSearchRegistrationProps> = ({ onPatientQueued }) => {
   const { t } = useTranslation();
   const config = useConfig<Config>();
+  const {
+    data: nationalityOptions,
+    error: nationalityOptionsError,
+    isLoading: isLoadingNationalityOptions,
+  } = useNationalityConceptAnswers(config.patientRegistration.nationalityConceptSetUuid);
+  const allowedNationalityConceptUuids = useMemo(
+    () => (nationalityOptions ? new Set(nationalityOptions.map((option) => option.uuid)) : undefined),
+    [nationalityOptions],
+  );
 
   // Search state
   const [searchTerm, setSearchTerm] = useState('');
@@ -234,12 +207,13 @@ const PatientSearchRegistration: React.FC<PatientSearchRegistrationProps> = ({ o
     reset,
     setValue,
     control,
+    watch,
   } = useForm<QuickRegistrationFormData>({
     resolver: zodResolver(quickRegistrationSchema),
     defaultValues: {
       isUnknown: false,
       identifierType: config.patientRegistration.defaultIdentifierTypeUuid,
-      nationality: defaultNationalityCountryCode,
+      nationality: '',
       arrivalDateTime: dayjs().format('YYYY-MM-DDTHH:mm'),
       communicationCondition: 'communicates',
       identificationStatus: 'confirmed',
@@ -249,6 +223,40 @@ const PatientSearchRegistration: React.FC<PatientSearchRegistrationProps> = ({ o
       address: '',
     },
   });
+  const selectedIdentifierType = watch('identifierType');
+  const identifierValue = watch('identifier');
+  const nationalityValue = watch('nationality');
+  const nationalityWasAutoAssigned = useRef(false);
+  const hasCompletedDni =
+    !isPatientUnknown &&
+    selectedIdentifierType === config.patientRegistration.defaultIdentifierTypeUuid &&
+    isCompletedPeruDni(identifierValue);
+  const canAutomaticallyAssignPeru =
+    hasCompletedDni && allowedNationalityConceptUuids?.has(config.patientRegistration.peruNationalityConceptUuid);
+  const shouldLockNationalityToPeru =
+    Boolean(canAutomaticallyAssignPeru) &&
+    (!nationalityValue || nationalityValue === config.patientRegistration.peruNationalityConceptUuid);
+
+  useEffect(() => {
+    const update = getAutomaticNationalityUpdate({
+      currentNationality: nationalityValue,
+      hasCompletedDni: Boolean(canAutomaticallyAssignPeru),
+      isUnknown: isPatientUnknown,
+      peruConceptUuid: config.patientRegistration.peruNationalityConceptUuid,
+      wasAutoAssigned: nationalityWasAutoAssigned.current,
+    });
+
+    nationalityWasAutoAssigned.current = update.wasAutoAssigned;
+    if (update.shouldUpdate) {
+      setValue('nationality', update.nationality, { shouldDirty: true, shouldValidate: true });
+    }
+  }, [
+    config.patientRegistration.peruNationalityConceptUuid,
+    canAutomaticallyAssignPeru,
+    isPatientUnknown,
+    nationalityValue,
+    setValue,
+  ]);
 
   // Infinite scroll observer
   const observer = useRef<IntersectionObserver | null>(null);
@@ -302,6 +310,7 @@ const PatientSearchRegistration: React.FC<PatientSearchRegistrationProps> = ({ o
 
   const handleOpenRegistrationForm = useCallback(
     (unknownPatient = false) => {
+      nationalityWasAutoAssigned.current = false;
       setSelectedPatient(null);
       setRegisteredPatient(null);
       setShowRegistrationForm(true);
@@ -312,7 +321,7 @@ const PatientSearchRegistration: React.FC<PatientSearchRegistrationProps> = ({ o
         familyName: unknownPatient ? 'DESCONOCIDO' : '',
         familyName2: '',
         identifierType: config.patientRegistration.defaultIdentifierTypeUuid,
-        nationality: defaultNationalityCountryCode,
+        nationality: '',
         arrivalDateTime: dayjs().format('YYYY-MM-DDTHH:mm'),
         communicationCondition: unknownPatient ? '' : 'communicates',
         identificationStatus: unknownPatient ? 'pending' : 'confirmed',
@@ -350,11 +359,13 @@ const PatientSearchRegistration: React.FC<PatientSearchRegistrationProps> = ({ o
         setValue('communicationCondition', 'communicates');
         setValue('identificationStatus', 'confirmed');
       } else {
+        nationalityWasAutoAssigned.current = false;
         setIsPatientUnknown(true);
         setValue('isUnknown', true);
         setValue('givenName', 'DESCONOCIDO');
         setValue('familyName', 'DESCONOCIDO');
         setValue('familyName2', '');
+        setValue('nationality', '', { shouldDirty: true, shouldValidate: true });
         setValue('communicationCondition', '');
         setValue('identificationStatus', 'pending');
       }
@@ -370,6 +381,13 @@ const PatientSearchRegistration: React.FC<PatientSearchRegistrationProps> = ({ o
     async (data: QuickRegistrationFormData) => {
       setIsRegistering(true);
       try {
+        // Validate and build attributes before consuming an identifier from idgen.
+        const attributes = buildEmergencyPatientAttributes(
+          data,
+          config.patientRegistration,
+          allowedNationalityConceptUuids,
+        );
+
         // 1. Generar OpenMRS ID vía idgen (needed early for unknown patient name)
         const idGenResponse = await generateIdentifier(config.patientRegistration.identifierSourceUuid);
         const openmrsId = idGenResponse.data.identifier;
@@ -419,68 +437,6 @@ const PatientSearchRegistration: React.FC<PatientSearchRegistrationProps> = ({ o
             preferred: false,
           });
         }
-
-        // 5. Build person attributes
-        const attributes: Array<{ attributeType: string; value: PersonAttributeValue }> = [];
-        if (data.isUnknown) {
-          attributes.push({
-            attributeType: config.patientRegistration.unknownPatientAttributeTypeUuid,
-            value: 'true',
-          });
-        }
-        if (data.insuranceType) {
-          attributes.push({
-            attributeType: config.patientRegistration.insuranceTypeAttributeTypeUuid,
-            value: data.insuranceType,
-          });
-        }
-        if (data.nationality) {
-          attributes.push({
-            attributeType: config.patientRegistration.nationalityAttributeTypeUuid,
-            value: data.nationality,
-          });
-        }
-        if (data.insuranceCode) {
-          attributes.push({
-            attributeType: config.patientRegistration.insuranceCodeAttributeTypeUuid,
-            value: data.insuranceCode,
-          });
-        }
-        if (data.companionName) {
-          attributes.push({
-            attributeType: config.patientRegistration.companionNameAttributeTypeUuid,
-            value: data.companionName,
-          });
-        }
-        if (data.companionAge) {
-          attributes.push({
-            attributeType: config.patientRegistration.companionAgeAttributeTypeUuid,
-            value: data.companionAge,
-          });
-        }
-        if (data.companionRelationship) {
-          attributes.push({
-            attributeType: config.patientRegistration.companionRelationshipAttributeTypeUuid,
-            value: data.companionRelationship,
-          });
-        }
-        addOptionalAttribute(
-          attributes,
-          config.patientRegistration.communicationConditionAttributeTypeUuid,
-          data.communicationCondition,
-        );
-        addOptionalAttribute(
-          attributes,
-          config.patientRegistration.identificationStatusAttributeTypeUuid,
-          data.identificationStatus
-            ? getIdentificationStatusAttributeValue(config.patientRegistration, data.identificationStatus)
-            : undefined,
-        );
-        addOptionalAttribute(
-          attributes,
-          config.patientRegistration.responsibleTypeAttributeTypeUuid,
-          data.responsibleType,
-        );
 
         // 6. Build address
         const addressObj: Record<string, string> = {
@@ -593,7 +549,7 @@ const PatientSearchRegistration: React.FC<PatientSearchRegistrationProps> = ({ o
         setIsRegistering(false);
       }
     },
-    [t, config, identityDocumentTypes],
+    [t, config, identityDocumentTypes, allowedNationalityConceptUuids],
   );
 
   // ============================================================================
@@ -940,15 +896,7 @@ const PatientSearchRegistration: React.FC<PatientSearchRegistrationProps> = ({ o
                                     disabled={isRegistering}
                                     value={field.value || config.patientRegistration.defaultIdentifierTypeUuid}
                                     onChange={(event) => {
-                                      const nextIdentifierType = event.target.value;
-                                      field.onChange(nextIdentifierType);
-                                      if (
-                                        nextIdentifierType === config.patientRegistration.defaultIdentifierTypeUuid ||
-                                        nextIdentifierType ===
-                                          config.patientRegistration.liveBirthCertificateIdentifierTypeUuid
-                                      ) {
-                                        setValue('nationality', defaultNationalityCountryCode);
-                                      }
+                                      field.onChange(event.target.value);
                                     }}
                                   >
                                     {identityDocumentTypes.map((type) => (
@@ -971,17 +919,18 @@ const PatientSearchRegistration: React.FC<PatientSearchRegistrationProps> = ({ o
                               name="nationality"
                               control={control}
                               render={({ field }) => (
-                                <Select
-                                  id="nationality"
-                                  labelText={t('nationality', 'Nacionalidad / país del documento')}
-                                  disabled={isRegistering}
-                                  value={field.value || defaultNationalityCountryCode}
-                                  onChange={(event) => field.onChange(event.target.value)}
-                                >
-                                  {nationalityOptions.map((country) => (
-                                    <SelectItem key={country.code} value={country.code} text={country.label} />
-                                  ))}
-                                </Select>
+                                <NationalityConceptField
+                                  value={field.value}
+                                  options={nationalityOptions}
+                                  isLoading={isLoadingNationalityOptions}
+                                  error={nationalityOptionsError}
+                                  invalidText={errors.nationality?.message}
+                                  disabled={isRegistering || shouldLockNationalityToPeru}
+                                  onChange={(conceptUuid) => {
+                                    nationalityWasAutoAssigned.current = false;
+                                    field.onChange(conceptUuid);
+                                  }}
+                                />
                               )}
                             />
                           </fieldset>

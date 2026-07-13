@@ -120,13 +120,26 @@ const renamedPrivilegePairs = [
   ['app:opciones.selectorModulos', 'app:topnav.moduleSwitcher'],
 ] as const;
 
-const privilegeAliases = new Map<string, string>();
+const privilegeAliases = new Map<string, Set<string>>();
+
+function registerAlias(privilege: string, equivalent: string) {
+  const existing = privilegeAliases.get(privilege);
+  if (existing) {
+    existing.add(equivalent);
+  } else {
+    privilegeAliases.set(privilege, new Set([equivalent]));
+  }
+}
 
 for (const [currentPrivilege, legacyPrivilege] of renamedPrivilegePairs) {
-  privilegeAliases.set(currentPrivilege, legacyPrivilege);
-  privilegeAliases.set(legacyPrivilege, currentPrivilege);
+  registerAlias(currentPrivilege, legacyPrivilege);
+  registerAlias(legacyPrivilege, currentPrivilege);
 }
 
 export function privilegesAreEquivalent(requiredPrivilege: string, grantedPrivilege: string): boolean {
-  return requiredPrivilege === grantedPrivilege || privilegeAliases.get(requiredPrivilege) === grantedPrivilege;
+  if (requiredPrivilege === grantedPrivilege) {
+    return true;
+  }
+
+  return privilegeAliases.get(requiredPrivilege)?.has(grantedPrivilege) ?? false;
 }

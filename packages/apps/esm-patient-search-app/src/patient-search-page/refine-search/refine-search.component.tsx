@@ -2,7 +2,7 @@ import { Button, Layer, TextInput } from '@carbon/react';
 import { useConfig, useLayoutType } from '@openmrs/esm-framework';
 import classNames from 'classnames';
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
-import { Controller, useForm } from 'react-hook-form';
+import { Controller, useForm, useWatch } from 'react-hook-form';
 import { useTranslation } from 'react-i18next';
 
 import {
@@ -23,7 +23,7 @@ export const initialFilters: AdvancedPatientSearchState = {
   monthOfBirth: 0,
   yearOfBirth: 0,
   postcode: '',
-  age: 0,
+  age: -1,
   attributes: {},
 };
 
@@ -52,7 +52,6 @@ const RefineSearch: React.FC<RefineSearchProps> = ({
     handleSubmit,
     reset,
     setValue,
-    formState: _formState,
   } = useForm<AdvancedPatientSearchState>({
     defaultValues: {
       query: searchQuery,
@@ -60,11 +59,18 @@ const RefineSearch: React.FC<RefineSearchProps> = ({
       dateOfBirth: 0,
       monthOfBirth: 0,
       yearOfBirth: 0,
-      age: 0,
+      age: -1,
       postcode: '',
       attributes: {},
     },
   });
+
+  const queryValue = useWatch({ control, name: 'query' });
+  const documentNumberValue = useWatch({
+    control,
+    name: `attributes.${identityDocumentNumberAttributeUuid}`,
+  });
+  const hasPrimarySearchCriterion = Boolean(queryValue?.trim() || documentNumberValue?.trim());
 
   useEffect(() => {
     setValue('query', searchQuery);
@@ -72,9 +78,22 @@ const RefineSearch: React.FC<RefineSearchProps> = ({
 
   const onSubmit = useCallback(
     (data: AdvancedPatientSearchState) => {
-      const query = data.query.trim() || data.attributes?.[identityDocumentNumberAttributeUuid]?.trim() || '';
+      const normalizedAttributes = Object.fromEntries(
+        Object.entries(data.attributes ?? {}).map(([key, value]) => [key, String(value ?? '').trim()]),
+      );
+      const normalizedData = {
+        ...data,
+        query: data.query.trim(),
+        attributes: normalizedAttributes,
+      };
+      const query = normalizedData.query || normalizedAttributes[identityDocumentNumberAttributeUuid] || '';
+
+      if (!query) {
+        return;
+      }
+
       setSearchQuery?.(query);
-      setFilters(data);
+      setFilters(normalizedData);
       setShowRefineSearchDialog(false);
     },
     [setFilters, setSearchQuery],
@@ -131,6 +150,7 @@ const RefineSearch: React.FC<RefineSearchProps> = ({
         onResetFields={handleResetFields}
         onToggleDialog={toggleShowRefineSearchDialog}
         onSubmit={handleSubmit(onSubmit)}
+        canSubmit={hasPrimarySearchCriterion}
       />
     );
   }
@@ -159,13 +179,20 @@ const RefineSearch: React.FC<RefineSearchProps> = ({
       <h3 className={styles.sectionHeading}>{t('refineSearch', 'Refine search')}</h3>
       {renderSearchFields}
       <hr className={classNames(styles.field, styles.horizontalDivider)} />
-      <Button type="submit" kind="primary" size="md" className={classNames(styles.field, styles.button)}>
+      <Button
+        type="submit"
+        kind="primary"
+        size="md"
+        disabled={!hasPrimarySearchCriterion}
+        className={classNames(styles.field, styles.button)}
+      >
         {t('search', 'Search')}{' '}
         {filtersApplied
           ? `(${t('countOfFiltersApplied', '{{count}} filters applied', { count: filtersApplied })})`
           : null}
       </Button>
       <Button
+        type="button"
         kind="secondary"
         size="md"
         onClick={handleResetFields}

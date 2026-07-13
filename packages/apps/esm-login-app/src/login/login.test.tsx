@@ -11,6 +11,7 @@ import userEvent from '@testing-library/user-event';
 import { Route, Routes } from 'react-router-dom';
 import { mockConfig } from '../../../../test-utils/mocks/login-config.mock';
 import renderWithRouter from '../test-helpers/render-with-router';
+import { hardNavigate } from '../navigation';
 
 import Login from './login.component';
 
@@ -19,6 +20,12 @@ const mockLogin = vi.mocked(refetchCurrentUser);
 const mockUseConfig = vi.mocked(useConfig);
 const mockUseConnectivity = vi.mocked(useConnectivity);
 const mockUseSession = vi.mocked(useSession);
+const mockHardNavigate = vi.mocked(hardNavigate);
+
+vi.mock('../navigation', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('../navigation')>()),
+  hardNavigate: vi.fn(),
+}));
 
 const mockBuildInfo = { version: '1.2.3', gitSha: 'abc1234', buildTime: '2026-06-04T00:00:00Z' };
 const openmrsSpaBasePlaceholder = '$' + '{openmrsSpaBase}';
@@ -238,6 +245,29 @@ describe('Login', () => {
     await user.click(screen.getByRole('button', { name: /log in/i }));
 
     expect(await screen.findByText('Location select page')).toBeInTheDocument();
+  });
+
+  it('sends admission users directly home without selecting a location', async () => {
+    mockLogin.mockResolvedValue({
+      session: {
+        authenticated: true,
+        user: {
+          roles: [{ display: 'Admisión' }],
+          privileges: [{ display: 'app:home.admision' }],
+        },
+      },
+    } as SessionStore);
+
+    renderWithRouter(LoginRoutes, {}, { route: '/login' });
+    const user = userEvent.setup();
+
+    await user.type(screen.getByRole('textbox', { name: /Username/i }), 'admision');
+    await user.click(screen.getByRole('button', { name: /Continue/i }));
+    await user.type(await screen.findByLabelText(/^password$/i), 'secret');
+    await user.click(screen.getByRole('button', { name: /log in/i }));
+
+    await waitFor(() => expect(mockHardNavigate).toHaveBeenCalledWith(mockConfig.links.loginSuccess));
+    expect(screen.queryByText('Location select page')).not.toBeInTheDocument();
   });
 
   it('should render the both the username and password fields when the showPasswordOnSeparateScreen config is false', async () => {

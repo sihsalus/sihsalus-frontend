@@ -206,10 +206,12 @@ export const SearchField: React.FC<SearchFieldProps> = ({ field, control, inTabl
             render={({ field: { onChange, value } }) => (
               <NumberInput
                 id={field.name}
-                value={value || ''}
-                onChange={(_event, { value: inputValue }) =>
-                  onChange(getIntegerInputValue(value, inputValue, field.max, 3, field.min ?? 0))
-                }
+                value={value >= 0 ? value : ''}
+                onChange={(_event, { value: inputValue }) => {
+                  onChange(
+                    inputValue === '' ? -1 : getIntegerInputValue(value, inputValue, field.max, 3, field.min ?? 0),
+                  );
+                }}
                 onKeyDown={preventInvalidIntegerKey}
                 onPaste={preventInvalidIntegerPaste(field.max, 3, field.min ?? 0)}
                 type="number"

@@ -253,7 +253,7 @@ const ConceptAttributeField: React.FC<ConceptAttributeFieldProps> = ({
           items={items}
           itemToString={(item: OpenmrsResource) => item?.display}
           selectedItem={items.sort((a, b) => a.display.localeCompare(b.display)).find((item) => item.uuid === value)}
-          onChange={({ selectedItem }) => onChange(selectedItem?.uuid)}
+          onChange={({ selectedItem }) => onChange(selectedItem?.uuid ?? '')}
           placeholder={field.placeholder ?? t('selectOption', 'Select an option')}
           size={isTablet ? 'lg' : 'md'}
         />

@@ -9,6 +9,7 @@ import {
   useConnectivity,
   useSession,
 } from '@openmrs/esm-framework';
+import { isAdmissionUser } from '@sihsalus/esm-rbac';
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useLocation, useNavigate } from 'react-router-dom';
@@ -267,7 +268,9 @@ const Login: React.FC = () => {
         const authenticated = sessionStore?.session?.authenticated;
 
         if (authenticated) {
-          if (session.sessionLocation) {
+          if (isAdmissionUser(session.user)) {
+            hardNavigate(loginLinks?.loginSuccess || '/home');
+          } else if (session.sessionLocation) {
             let to = loginLinks?.loginSuccess || '/home';
             if (location?.state?.referrer) {
               if (location.state.referrer.startsWith('/')) {

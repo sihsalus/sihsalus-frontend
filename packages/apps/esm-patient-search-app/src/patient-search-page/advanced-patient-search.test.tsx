@@ -174,6 +174,19 @@ describe('AdvancedPatientSearchComponent', () => {
       expect(within(patientBanners[0]).getByText(/Joseph Davis/i)).toBeInTheDocument();
     });
 
+    it('filters by the complete date of birth without timezone shifts', async () => {
+      renderComponent();
+
+      await user.type(screen.getByRole('spinbutton', { name: /day of birth/i }), '25');
+      await user.type(screen.getByRole('spinbutton', { name: /month of birth/i }), '09');
+      await user.type(screen.getByRole('spinbutton', { name: /year of birth/i }), '2019');
+      await user.click(screen.getByRole('button', { name: /search/i }));
+
+      const patientBanners = screen.getAllByRole('banner');
+      expect(patientBanners).toHaveLength(1);
+      expect(within(patientBanners[0]).getByText(/Joshua Johnson/i)).toBeInTheDocument();
+    });
+
     it('filters by person attribute correctly', async () => {
       renderComponent();
 
@@ -184,6 +197,15 @@ describe('AdvancedPatientSearchComponent', () => {
       const patientBanners = screen.getAllByRole('banner');
       expect(patientBanners).toHaveLength(1);
       expect(within(patientBanners[0]).getByText(/Joshua Johnson/)).toBeInTheDocument();
+    });
+
+    it('matches document numbers exactly when refining a name search', async () => {
+      renderComponent();
+
+      await user.type(screen.getByLabelText(/nÃºmero de documento de identidad/i), '1234');
+      await user.click(screen.getByRole('button', { name: /search/i }));
+
+      expect(screen.getByText(/0 search result/)).toBeInTheDocument();
     });
 
     it('searches by identity document number entered in refine search when query is empty', async () => {

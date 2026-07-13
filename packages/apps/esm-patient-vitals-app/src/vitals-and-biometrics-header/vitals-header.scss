@@ -7,12 +7,15 @@
   background-color: $openmrs-background-grey;
   padding: layout.$spacing-03 layout.$spacing-05 layout.$spacing-05;
   border-bottom: 1px solid $ui-03;
+  min-width: 0;
 }
 
 .vitalsHeader {
   display: flex;
   justify-content: space-between;
-  align-items: center;
+  align-items: flex-start;
+  flex-wrap: wrap;
+  gap: layout.$spacing-03 layout.$spacing-05;
   min-height: layout.$spacing-07;
   outline: none;
   pointer-events: visibleFill;
@@ -40,9 +43,11 @@
 
 .headerItems {
   display: flex;
-  align-items: baseline;
+  align-items: center;
   flex-flow: row wrap;
   gap: layout.$spacing-02 layout.$spacing-04;
+  flex: 1 1 18rem;
+  min-width: 0;
 }
 
 .heading {
@@ -52,22 +57,17 @@
 
 .rowContainer {
   width: 100%;
+  margin-top: layout.$spacing-02;
+  overflow: hidden;
 }
 
 .row {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  max-width: 100vw;
-}
-
-:global(.omrs-breakpoint-lt-desktop),
-.workspaceOpen {
-  .row {
-    display: grid;
-    grid-template-columns: repeat(4, minmax(0, 1fr));
-    column-gap: layout.$spacing-11;
-  }
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(8.5rem, 100%), 1fr));
+  gap: layout.$spacing-03 layout.$spacing-05;
+  align-items: stretch;
+  inline-size: 100%;
+  min-width: 0;
 }
 
 .loading {
@@ -95,7 +95,10 @@
 .buttonContainer {
   display: flex;
   align-items: center;
-  justify-content: right;
+  justify-content: flex-end;
+  gap: layout.$spacing-02;
+  flex: 0 1 auto;
+  min-width: 0;
 }
 
 .recordVitalsButton {

@@ -1,3 +1,4 @@
+import { getLocalCalendarDate, validatePatientBirthdate } from '@openmrs/esm-utils';
 import type { Workbook } from 'exceljs';
 import { v4 } from 'uuid';
 
@@ -496,7 +497,7 @@ function getDemographicDuplicateKey(row: ParsedPatientImportRow) {
   return normalizeForDuplicate(`${givenName} ${middleName} ${familyName} ${familyName2} ${birthdate} ${gender}`);
 }
 
-function normalizeDate(value: string) {
+export function normalizeDate(value: string) {
   const trimmed = value.trim();
   const match = /^(\d{1,2})\/(\d{1,2})\/(\d{4})$/.exec(trimmed);
 
@@ -507,18 +508,7 @@ function normalizeDate(value: string) {
   const day = Number(match[1]);
   const month = Number(match[2]);
   const year = Number(match[3]);
-  const date = new Date(Date.UTC(year, month - 1, day));
-  const today = new Date();
-
-  if (date.getUTCFullYear() !== year || date.getUTCMonth() !== month - 1 || date.getUTCDate() !== day) {
-    return '';
-  }
-
-  if (date > today) {
-    return '';
-  }
-
-  if (today.getUTCFullYear() - year > 140) {
+  if (validatePatientBirthdate({ year, month, day }, getLocalCalendarDate()) !== 'valid') {
     return '';
   }
 

@@ -1,5 +1,7 @@
 import { Button, Layer, TextInput } from '@carbon/react';
+import { zodResolver } from '@hookform/resolvers/zod';
 import { useConfig, useLayoutType } from '@openmrs/esm-framework';
+import { normalizePatientAgeRange } from '@openmrs/esm-utils';
 import classNames from 'classnames';
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { Controller, useForm } from 'react-hook-form';
@@ -14,16 +16,17 @@ import { type AdvancedPatientSearchState, type SearchFieldConfig, type SearchFie
 import { identityDocumentNumberAttributeUuid } from './person-attribute-field.component';
 import styles from './refine-search.scss';
 import { RefineSearchTablet } from './refine-search-tablet.component';
+import { createRefineSearchSchema } from './refine-search.validation';
 import { SearchField } from './search-field.component';
 
 export const initialFilters: AdvancedPatientSearchState = {
   query: '',
   gender: 'any',
-  dateOfBirth: 0,
-  monthOfBirth: 0,
-  yearOfBirth: 0,
+  dateOfBirth: null,
+  monthOfBirth: null,
+  yearOfBirth: null,
   postcode: '',
-  age: 0,
+  age: null,
   attributes: {},
 };
 
@@ -46,6 +49,14 @@ const RefineSearch: React.FC<RefineSearchProps> = ({
   const { t } = useTranslation();
   const isTablet = useLayoutType() === 'tablet';
   const config = useConfig<PatientSearchConfig>();
+  const { minimumAge, maximumAge } = normalizePatientAgeRange(
+    config.search.searchFilterFields.age.min,
+    config.search.searchFilterFields.age.max,
+  );
+  const validationSchema = useMemo(
+    () => createRefineSearchSchema(t, minimumAge, maximumAge),
+    [maximumAge, minimumAge, t],
+  );
 
   const {
     control,
@@ -54,13 +65,15 @@ const RefineSearch: React.FC<RefineSearchProps> = ({
     setValue,
     formState: _formState,
   } = useForm<AdvancedPatientSearchState>({
+    resolver: zodResolver(validationSchema),
+    mode: 'onBlur',
     defaultValues: {
       query: searchQuery,
       gender: 'any',
-      dateOfBirth: 0,
-      monthOfBirth: 0,
-      yearOfBirth: 0,
-      age: 0,
+      dateOfBirth: null,
+      monthOfBirth: null,
+      yearOfBirth: null,
+      age: null,
       postcode: '',
       attributes: {},
     },
@@ -96,9 +109,12 @@ const RefineSearch: React.FC<RefineSearchProps> = ({
 
     Object.entries(config.search.searchFilterFields).forEach(([fieldName, fieldConfig]) => {
       if (fieldName !== 'personAttributes' && (fieldConfig as BuiltInFieldConfig).enabled) {
+        const { min, max } = fieldConfig as BuiltInFieldConfig;
         fields.push({
           name: fieldName,
           type: fieldName as SearchFieldType,
+          min,
+          max,
         });
       }
     });

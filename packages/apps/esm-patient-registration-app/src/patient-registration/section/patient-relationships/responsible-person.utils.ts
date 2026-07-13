@@ -1,7 +1,7 @@
+import { estimatePatientBirthdateFromAge, MAX_PATIENT_AGE_YEARS, validatePlainNumberInput } from '@openmrs/esm-utils';
 import type { NewResponsiblePersonValues } from '../../patient-registration.types';
 import { patientFamilyNameMaxLength, patientGivenNameMaxLength, patientNamePattern } from '../../patient-name-limits';
 
-const estimatedAgeRegex = /^(?:[0-9]|[1-9][0-9]|1[01][0-9]|120)$/;
 const peruContactPhoneRegex = /^(?:(?:\+51)?9[0-9]{8}|(?:\+51)?[1-8][0-9]{7}|0[1-8][0-9]{7})$/;
 
 export type ResponsiblePersonFormValues = NewResponsiblePersonValues;
@@ -94,7 +94,15 @@ export function validateResponsiblePersonForm(
     errors.gender = 'genderRequired';
   }
 
-  if (estimatedAge && !estimatedAgeRegex.test(estimatedAge)) {
+  if (
+    estimatedAge &&
+    validatePlainNumberInput(estimatedAge, {
+      integer: true,
+      max: MAX_PATIENT_AGE_YEARS,
+      min: 0,
+      nonNegative: true,
+    }).isInvalid
+  ) {
     errors.estimatedAge = 'estimatedAgeInvalid';
   } else if (options.requireAdult && !estimatedAge) {
     errors.estimatedAge = 'responsibleEstimatedAgeRequired';
@@ -131,7 +139,7 @@ export function buildResponsiblePersonPayload(
   const estimatedAge = values.estimatedAge.trim();
   const phone = values.phone.trim();
   const address = values.address.trim();
-  const birthYear = estimatedAge ? new Date().getFullYear() - Number(estimatedAge) : undefined;
+  const estimatedBirthdate = estimatedAge ? estimatePatientBirthdateFromAge(Number(estimatedAge)) : null;
 
   return {
     names: [
@@ -144,9 +152,9 @@ export function buildResponsiblePersonPayload(
       },
     ],
     gender: genderToOpenmrsCode[values.gender],
-    ...(birthYear
+    ...(estimatedBirthdate
       ? {
-          birthdate: `${birthYear}-01-01`,
+          birthdate: estimatedBirthdate,
           birthdateEstimated: true,
         }
       : {}),

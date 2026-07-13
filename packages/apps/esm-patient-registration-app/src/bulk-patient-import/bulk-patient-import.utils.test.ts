@@ -1,9 +1,11 @@
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+
 import { searchLocalIdentityByDocument } from '../patient-registration/identity/identity-search.resource';
 import { savePatient } from '../patient-registration/patient-registration.resource';
 import { peruDniPatientIdentifierTypeUuid } from '../patient-registration/peru-registration-config';
 import type { PatientIdentifierType } from '../patient-registration/patient-registration.types';
 import type { SantaClotildeHeader } from './bulk-patient-import.types';
-import { createPatientFromImportRow, normalizeAndValidateImportRow } from './bulk-patient-import.utils';
+import { createPatientFromImportRow, normalizeAndValidateImportRow, normalizeDate } from './bulk-patient-import.utils';
 
 vi.mock('../patient-registration/identity/identity-search.resource', () => ({
   searchLocalIdentityByDocument: vi.fn(),
@@ -114,5 +116,27 @@ describe('bulk patient import safety checks', () => {
       'same-import-attempt-uuid',
     );
     expect(mockSavePatient).not.toHaveBeenCalled();
+  });
+});
+
+describe('bulk patient import birthdates', () => {
+  beforeEach(() => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date(2026, 6, 13, 12));
+  });
+
+  afterEach(() => {
+    vi.useRealTimers();
+  });
+
+  it.each([
+    ['13/07/1886', '1886-07-13'],
+    ['29/02/2024', '2024-02-29'],
+  ])('normalizes valid birthdate %s', (input, expected) => {
+    expect(normalizeDate(input)).toBe(expected);
+  });
+
+  it.each(['12/07/1886', '14/07/2026', '31/04/2020', '01/01/100000'])('rejects invalid birthdate %s', (input) => {
+    expect(normalizeDate(input)).toBe('');
   });
 });

@@ -1,3 +1,13 @@
+import {
+  calendarDateToLocalDate,
+  calculatePatientAge,
+  getLocalCalendarDate,
+  MAX_PATIENT_AGE_MONTHS_REMAINDER,
+  MAX_PATIENT_AGE_YEARS,
+  parsePatientBirthdate,
+  validatePatientBirthdate,
+  validatePlainNumberInput,
+} from '@openmrs/esm-utils';
 import dayjs from 'dayjs';
 import mapValues from 'lodash-es/mapValues';
 import * as Yup from 'yup';
@@ -66,6 +76,48 @@ function parseDateOnly(value: unknown) {
 
   const parsedDate = dayjs(value);
   return parsedDate.isValid() ? parsedDate.startOf('day') : undefined;
+}
+
+function getPatientBirthdateParts(value: unknown) {
+  if (value instanceof Date) {
+    return Number.isNaN(value.getTime()) ? null : getLocalCalendarDate(value);
+  }
+
+  return typeof value === 'string' ? parsePatientBirthdate(value) : null;
+}
+
+function getBirthdateValidation(value: Date | undefined, originalValue: unknown) {
+  if (!value) {
+    return 'invalid';
+  }
+
+  const birthdate = getPatientBirthdateParts(typeof originalValue === 'string' ? originalValue : value);
+  return birthdate ? validatePatientBirthdate(birthdate) : 'invalid';
+}
+
+function getOriginalValidationValue(context: object) {
+  return (context as { originalValue?: unknown }).originalValue;
+}
+
+function transformPlainInteger(value: unknown, originalValue: unknown) {
+  if (originalValue === '' || originalValue === null || originalValue === undefined) {
+    return undefined;
+  }
+
+  return validatePlainNumberInput(String(originalValue)).isInvalidFormat ? Number.NaN : value;
+}
+
+function transformPatientBirthdate(value: unknown, originalValue: unknown) {
+  if (originalValue === '' || originalValue === null || originalValue === undefined) {
+    return undefined;
+  }
+
+  if (typeof originalValue === 'string') {
+    const birthdate = parsePatientBirthdate(originalValue);
+    return birthdate ? calendarDateToLocalDate(birthdate) : new Date(Number.NaN);
+  }
+
+  return value;
 }
 
 function buildIdentifierFormatRegex(format?: string): RegExp | undefined {
@@ -170,20 +222,14 @@ export function isMinorPatient(values: Pick<FormValues, 'birthdate' | 'birthdate
     return false;
   }
 
-  return dayjs().diff(dayjs(values.birthdate), 'year') < 18;
+  const birthdate = getPatientBirthdateParts(values.birthdate);
+  const age = birthdate ? calculatePatientAge(birthdate) : null;
+  return age != null && age < 18;
 }
 
 function getAgeFromBirthdate(birthdate?: string) {
-  if (!birthdate) {
-    return undefined;
-  }
-
-  const parsedBirthdate = dayjs(birthdate);
-  if (!parsedBirthdate.isValid()) {
-    return undefined;
-  }
-
-  return dayjs().diff(parsedBirthdate, 'year');
+  const parsedBirthdate = birthdate ? parsePatientBirthdate(birthdate) : null;
+  return parsedBirthdate ? (calculatePatientAge(parsedBirthdate) ?? undefined) : undefined;
 }
 
 /**
@@ -371,11 +417,21 @@ export function getValidationSchema(
       is: false,
       // biome-ignore lint/suspicious/noThenProperty: Yup's conditional schema API requires the `then` property.
       then: Yup.date()
+        .transform(transformPatientBirthdate)
+        .typeError(t('birthdayInvalid', 'Enter a valid date of birth'))
         .required(t('birthdayRequired', 'Birthday is required'))
-        .max(Date(), t('birthdayNotInTheFuture', 'Birthday cannot be in future'))
-        .min(
-          dayjs().subtract(140, 'years').toDate(),
+        .test('birthdate-valid', t('birthdayInvalid', 'Enter a valid date of birth'), function (value) {
+          return !value || getBirthdateValidation(value, getOriginalValidationValue(this)) !== 'invalid';
+        })
+        .test('birthdate-not-in-future', t('birthdayNotInTheFuture', 'Birthday cannot be in future'), function (value) {
+          return getBirthdateValidation(value, getOriginalValidationValue(this)) !== 'future';
+        })
+        .test(
+          'birthdate-not-too-old',
           t('birthdayNotOver140YearsAgo', 'Birthday cannot be more than 140 years ago'),
+          function (value) {
+            return getBirthdateValidation(value, getOriginalValidationValue(this)) !== 'too-old';
+          },
         )
         .nullable(),
       otherwise: Yup.date().nullable(),
@@ -384,16 +440,36 @@ export function getValidationSchema(
       is: true,
       // biome-ignore lint/suspicious/noThenProperty: Yup's conditional schema API requires the `then` property.
       then: Yup.number()
+        .transform(transformPlainInteger)
+        .typeError(t('estimatedAgeInvalid', 'Estimated age must be a whole number between 0 and 140'))
         .required(t('yearsEstimateRequired', 'Estimated years required'))
-        .integer(t('estimatedYearsMustBeWhole', 'Estimated years must be a whole number'))
+        .integer(t('estimatedYearsMustBeInteger', 'Estimated years must be a whole number'))
         .min(0, t('negativeYears', 'Estimated years cannot be negative'))
-        .max(140, t('nonsensicalYears', 'Estimated years cannot be more than 140')),
+        .max(MAX_PATIENT_AGE_YEARS, t('nonsensicalYears', 'Estimated years cannot be more than 140')),
       otherwise: Yup.number().nullable(),
     }),
-    monthsEstimated: Yup.number()
-      .integer(t('estimatedMonthsMustBeWhole', 'Estimated months must be a whole number'))
-      .min(0, t('negativeMonths', 'Estimated months cannot be negative'))
-      .max(11, t('nonsensicalMonths', 'Estimated months cannot be more than 11')),
+    monthsEstimated: Yup.number().when('birthdateEstimated', {
+      is: true,
+      // biome-ignore lint/suspicious/noThenProperty: Yup's conditional schema API requires the `then` property.
+      then: Yup.number()
+        .transform(transformPlainInteger)
+        .typeError(t('estimatedMonthsInvalid', 'Estimated months must be a whole number between 0 and 11'))
+        .integer(t('estimatedMonthsInvalid', 'Estimated months must be a whole number between 0 and 11'))
+        .min(0, t('negativeMonths', 'Estimated months cannot be negative'))
+        .max(
+          MAX_PATIENT_AGE_MONTHS_REMAINDER,
+          t('estimatedMonthsInvalid', 'Estimated months must be a whole number between 0 and 11'),
+        )
+        .test(
+          'estimated-age-not-over-maximum',
+          t('estimatedAgeOverMaximum', 'Estimated age cannot be more than 140 years'),
+          function (months) {
+            const years = Number(this.parent.yearsEstimated);
+            return years < MAX_PATIENT_AGE_YEARS || !months;
+          },
+        ),
+      otherwise: Yup.number().nullable(),
+    }),
     isDead: Yup.boolean(),
     deathDate: Yup.date()
       .when('isDead', {

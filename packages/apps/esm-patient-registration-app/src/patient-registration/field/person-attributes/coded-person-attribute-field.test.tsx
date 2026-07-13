@@ -1,11 +1,7 @@
-import { reportError } from '@openmrs/esm-framework';
-import { render, screen, waitFor } from '@testing-library/react';
+import { render, screen } from '@testing-library/react';
 import { Form, Formik } from 'formik';
-import type { MockInstance } from 'vitest';
 
 import { useConceptAnswers } from '../field.resource';
-
-const mockReportError = vi.mocked(reportError);
 
 import { CodedPersonAttributeField } from './coded-person-attribute-field.component';
 
@@ -31,24 +27,15 @@ describe('CodedPersonAttributeField', () => {
   };
 
   const answerConceptSetUuid = '6682d17f-0777-45e4-a39b-93f77eb3531c';
-  let consoleSpy: MockInstance;
-
   beforeEach(() => {
-    mockReportError.mockImplementation(() => undefined);
     mockUseConceptAnswers.mockReturnValue({
       data: conceptAnswers,
       isLoading: false,
-      error: null,
+      error: undefined,
     });
-
-    consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
   });
 
-  afterEach(() => {
-    consoleSpy.mockRestore();
-  });
-
-  it('renders an error if there is no concept answer set provided', async () => {
+  it('renders a non-fatal inline warning if there is no concept answer set provided', () => {
     render(
       <Formik initialValues={{}} onSubmit={() => {}}>
         <Form>
@@ -64,18 +51,15 @@ describe('CodedPersonAttributeField', () => {
       </Formik>,
     );
 
-    await waitFor(() => {
-      expect(mockReportError).toHaveBeenCalledWith(
-        expect.stringMatching(/has been defined without an answer concept set UUID/i),
-      );
-    });
+    expect(screen.getByText('No se pudo cargar Referred by')).toBeInTheDocument();
+    expect(screen.getByText(/campo opcional no está disponible/i)).toBeInTheDocument();
   });
 
-  it('renders an error if the concept answer set does not have any concept answers', async () => {
+  it('renders a non-fatal inline warning if the concept answer set has no answers', () => {
     mockUseConceptAnswers.mockReturnValue({
       data: [],
       isLoading: false,
-      error: null,
+      error: undefined,
     });
 
     render(
@@ -93,9 +77,33 @@ describe('CodedPersonAttributeField', () => {
       </Formik>,
     );
 
-    await waitFor(() => {
-      expect(mockReportError).toHaveBeenCalledWith(expect.stringMatching(/does not have any concept answers/i));
+    expect(screen.getByText('No se pudo cargar Referred by')).toBeInTheDocument();
+    expect(screen.queryByLabelText('Referred by (optional)')).not.toBeInTheDocument();
+  });
+
+  it('renders a non-fatal inline warning when the concept request fails', () => {
+    mockUseConceptAnswers.mockReturnValue({
+      data: undefined,
+      isLoading: false,
+      error: new Error('403'),
     });
+
+    render(
+      <Formik initialValues={{}} onSubmit={() => {}}>
+        <Form>
+          <CodedPersonAttributeField
+            id="attributeId"
+            personAttributeType={personAttributeType}
+            answerConceptSetUuid={answerConceptSetUuid}
+            label={personAttributeType.display}
+            customConceptAnswers={[]}
+            required={false}
+          />
+        </Form>
+      </Formik>,
+    );
+
+    expect(screen.getByText('No se pudo cargar Referred by')).toBeInTheDocument();
   });
 
   it('renders the conceptAnswers as select options', () => {
@@ -126,7 +134,7 @@ describe('CodedPersonAttributeField', () => {
         { uuid: 'set-member-2', display: 'Another civil status option' },
       ],
       isLoading: false,
-      error: null,
+      error: undefined,
     });
 
     render(

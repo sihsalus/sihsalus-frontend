@@ -244,7 +244,7 @@ describe('RelationshipsSection', () => {
     expect(screen.getByLabelText(/relationships section/i)).toBeInTheDocument();
     expect(screen.getByRole('heading', { name: /family member or companion/i })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: /delete/i })).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: /add family member or companion/i })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /add family member or companion/i })).toBeDisabled();
     expect(screen.getByRole('option', { name: /mother/i })).toBeInTheDocument();
     expect(screen.getByRole('option', { name: /guardian/i })).toBeInTheDocument();
     expect(screen.getAllByRole('tab').map((tab) => tab.textContent)).toEqual([
@@ -255,6 +255,73 @@ describe('RelationshipsSection', () => {
     expect(screen.getByRole('tab', { name: /register new person/i })).toHaveAttribute('aria-selected', 'false');
     expect(screen.getByRole('searchbox', { name: /full name/i })).toBeInTheDocument();
     expect(screen.queryByRole('textbox', { name: /first name/i })).not.toBeInTheDocument();
+  });
+
+  it('allows adding another relationship after the current one is complete', () => {
+    mockResourcesContextValue = {
+      ...mockResourcesContextValue,
+      relationshipTypes: relationshipTypes,
+    };
+    const formValues = {
+      relationships: [
+        {
+          action: 'ADD',
+          relatedPersonName: 'Jane Doe',
+          relatedPersonUuid: 'related-person-uuid',
+          relationshipType: '42ae5ce0-d64b-11ea-9064-5adc43bbdd34/aIsToB',
+        },
+      ],
+    } as FormValues;
+
+    render(
+      <ResourcesContext.Provider value={mockResourcesContextValue}>
+        <Formik initialValues={formValues} onSubmit={null}>
+          <Form>
+            <PatientRegistrationContext.Provider value={{ ...initialContextValues, values: formValues }}>
+              <RelationshipsSection />
+            </PatientRegistrationContext.Provider>
+          </Form>
+        </Formik>
+      </ResourcesContext.Provider>,
+    );
+
+    expect(screen.getByRole('button', { name: /add family member or companion/i })).toBeEnabled();
+  });
+
+  it('marks an existing relationship for update when its companion status changes', async () => {
+    const user = userEvent.setup();
+    const setFieldValue = vi.fn();
+    mockResourcesContextValue = {
+      ...mockResourcesContextValue,
+      relationshipTypes: relationshipTypes,
+    };
+    const formValues = {
+      relationships: [
+        {
+          relatedPersonName: 'Jane Doe',
+          relatedPersonUuid: 'related-person-uuid',
+          relationshipType: '42ae5ce0-d64b-11ea-9064-5adc43bbdd34/aIsToB',
+          uuid: 'relationship-uuid',
+        },
+      ],
+    } as FormValues;
+
+    render(
+      <ResourcesContext.Provider value={mockResourcesContextValue}>
+        <Formik initialValues={formValues} onSubmit={null}>
+          <Form>
+            <PatientRegistrationContext.Provider value={{ ...initialContextValues, setFieldValue, values: formValues }}>
+              <RelationshipsSection />
+            </PatientRegistrationContext.Provider>
+          </Form>
+        </Formik>
+      </ResourcesContext.Provider>,
+    );
+
+    await user.click(screen.getByRole('checkbox', { name: /is the patient companion/i }));
+
+    expect(setFieldValue).toHaveBeenCalledWith('relationships[0].isCompanion', true);
+    expect(setFieldValue).toHaveBeenCalledWith('relationships[0].action', 'UPDATE');
   });
 
   it('deduplicates relationship options and hides child/grandchild options for minor patients', () => {
@@ -350,6 +417,42 @@ describe('RelationshipsSection', () => {
     expect(await screen.findByText('Select an existing person')).toBeInTheDocument();
     expect(screen.getByRole('tab', { name: /search existing person/i })).toHaveAttribute('aria-selected', 'true');
     expect(screen.getByRole('tab', { name: /register new person/i })).toHaveAttribute('aria-selected', 'false');
+  });
+
+  it('shows the required responsible person error after the seeded relationship row is touched', () => {
+    mockResourcesContextValue = {
+      ...mockResourcesContextValue,
+      relationshipTypes: relationshipTypes,
+    };
+    const formValues = {
+      ...minorPatientValues,
+      relationships: [{ action: 'ADD', relatedPersonUuid: '' }],
+    } as FormValues;
+
+    render(
+      <ResourcesContext.Provider value={mockResourcesContextValue}>
+        <Formik
+          initialValues={formValues}
+          initialErrors={{
+            relationships: [{ relationshipType: 'relationshipTypeRequired' }],
+          }}
+          initialTouched={{ relationships: [{ relationshipType: true }] }}
+          onSubmit={vi.fn()}
+        >
+          <Form>
+            <PatientRegistrationContext.Provider value={{ ...initialContextValues, values: formValues }}>
+              <RelationshipsSection />
+            </PatientRegistrationContext.Provider>
+          </Form>
+        </Formik>
+      </ResourcesContext.Provider>,
+    );
+
+    expect(screen.getByRole('alert')).toHaveTextContent(
+      'For minors, record a responsible family member, guardian, or legal representative.',
+    );
+    expect(screen.getByRole('combobox', { name: /relationship/i })).toHaveAttribute('aria-invalid', 'true');
+    expect(screen.getByText('Select an existing person')).toBeInTheDocument();
   });
 
   it('limits responsible person name inputs when creating a new person', async () => {
@@ -524,7 +627,7 @@ describe('RelationshipsSection', () => {
     await user.type(screen.getByRole('textbox', { name: /approximate age/i }), '35');
     await user.type(screen.getByRole('textbox', { name: /phone or mobile phone/i }), '987 654-321');
     await user.type(screen.getByRole('textbox', { name: /address/i }), 'Av. Peru 123');
-    await user.click(screen.getByRole('button', { name: /add person \(saved on registration\)/i }));
+    await user.click(screen.getByRole('button', { name: /save companion or responsible person/i }));
 
     // The person must NOT be created here: it is persisted at form submit, right before
     // its relationship, so abandoning the registration leaves no orphaned person.
@@ -579,7 +682,7 @@ describe('RelationshipsSection', () => {
     await user.type(screen.getByRole('textbox', { name: /^family name/i }), 'Quispe');
     await user.selectOptions(screen.getByRole('combobox', { name: /sex/i }), 'male');
     await user.type(screen.getByRole('textbox', { name: /^approximate age$/i }), '16');
-    await user.click(screen.getByRole('button', { name: /add person \(saved on registration\)/i }));
+    await user.click(screen.getByRole('button', { name: /save companion or responsible person/i }));
 
     expect(mockSavePerson).not.toHaveBeenCalled();
     await waitFor(() =>
@@ -642,7 +745,7 @@ describe('RelationshipsSection', () => {
     );
 
     await user.click(screen.getByRole('tab', { name: /register new person/i }));
-    await user.click(screen.getByRole('button', { name: /add person \(saved on registration\)/i }));
+    await user.click(screen.getByRole('button', { name: /save companion or responsible person/i }));
 
     expect(mockSavePerson).not.toHaveBeenCalled();
     await waitFor(() =>

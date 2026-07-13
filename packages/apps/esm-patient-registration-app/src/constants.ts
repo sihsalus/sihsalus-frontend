@@ -2,8 +2,8 @@ import { type OmrsOfflineHttpHeaders, omrsOfflineCachingStrategyHttpHeaderName }
 
 export const personRelationshipRepresentation =
   'custom:(display,uuid,' +
-  'personA:(age,display,birthdate,uuid),' +
-  'personB:(age,display,birthdate,uuid),' +
+  'personA:(age,display,birthdate,birthdateEstimated,uuid),' +
+  'personB:(age,display,birthdate,birthdateEstimated,uuid),' +
   'relationshipType:(uuid,display,description,aIsToB,bIsToA))';
 
 export const moduleName = '@sihsalus/esm-patient-registration-app';

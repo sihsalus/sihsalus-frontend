@@ -1,8 +1,7 @@
-import { ComboBox, Layer, Select, SelectItem } from '@carbon/react';
-import { reportError } from '@openmrs/esm-framework';
+import { ComboBox, InlineNotification, Layer, Select, SelectItem } from '@carbon/react';
 import classNames from 'classnames';
 import { Field } from 'formik';
-import { useEffect, useMemo, useState } from 'react';
+import { useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { moduleName } from '../../../constants';
 import { type PersonAttributeTypeResponse } from '../../patient-registration.types';
@@ -30,57 +29,22 @@ export function CodedPersonAttributeField({
   searchable,
   readOnly,
 }: CodedPersonAttributeFieldProps) {
-  const { data: conceptAnswers, isLoading: isLoadingConceptAnswers } = useConceptAnswers(
-    customConceptAnswers.length ? '' : answerConceptSetUuid,
-  );
+  const {
+    data: conceptAnswers,
+    error: conceptAnswersError,
+    isLoading: isLoadingConceptAnswers,
+  } = useConceptAnswers(customConceptAnswers.length ? '' : answerConceptSetUuid);
 
   const { t } = useTranslation(moduleName);
   const fieldName = `attributes.${personAttributeType.uuid}`;
-  const [error, setError] = useState(false);
   const displayLabel = label ?? personAttributeType?.display;
   const labelText = required ? displayLabel : `${displayLabel} (${t('optional', 'optional')})`;
-
-  useEffect(() => {
-    if (!answerConceptSetUuid && !customConceptAnswers.length) {
-      reportError(
-        t(
-          'codedPersonAttributeNoAnswerSet',
-          `The person attribute field '{{codedPersonAttributeFieldId}}' is of type 'coded' but has been defined without an answer concept set UUID. The 'answerConceptSetUuid' key is required.`,
-          { codedPersonAttributeFieldId: id },
-        ),
-      );
-      setError(true);
-    }
-  }, [answerConceptSetUuid, customConceptAnswers, id, t]);
-
-  useEffect(() => {
-    if (!isLoadingConceptAnswers && !customConceptAnswers.length) {
-      if (!conceptAnswers) {
-        reportError(
-          t(
-            'codedPersonAttributeAnswerSetInvalid',
-            `The coded person attribute field '{{codedPersonAttributeFieldId}}' has been defined with an invalid answer concept set UUID '{{answerConceptSetUuid}}'.`,
-            { codedPersonAttributeFieldId: id, answerConceptSetUuid },
-          ),
-        );
-        setError(true);
-      }
-
-      if (conceptAnswers?.length === 0) {
-        reportError(
-          t(
-            'codedPersonAttributeAnswerSetEmpty',
-            `The coded person attribute field '{{codedPersonAttributeFieldId}}' has been defined with an answer concept set UUID '{{answerConceptSetUuid}}' that does not have any concept answers.`,
-            {
-              codedPersonAttributeFieldId: id,
-              answerConceptSetUuid,
-            },
-          ),
-        );
-        setError(true);
-      }
-    }
-  }, [isLoadingConceptAnswers, conceptAnswers, customConceptAnswers, t, id, answerConceptSetUuid]);
+  const hasConfiguredAnswers = customConceptAnswers.length > 0;
+  const isUnavailable =
+    !hasConfiguredAnswers &&
+    (!answerConceptSetUuid ||
+      !!conceptAnswersError ||
+      (!isLoadingConceptAnswers && (!conceptAnswers || conceptAnswers.length === 0)));
 
   const answers = useMemo(() => {
     if (customConceptAnswers.length) {
@@ -94,8 +58,28 @@ export function CodedPersonAttributeField({
           .sort((a, b) => a.label.localeCompare(b.label));
   }, [customConceptAnswers, conceptAnswers, isLoadingConceptAnswers]);
 
-  if (error) {
-    return null;
+  if (isUnavailable) {
+    return (
+      <InlineNotification
+        hideCloseButton
+        kind={required ? 'error' : 'warning'}
+        lowContrast
+        title={t('codedPersonAttributeUnavailableTitle', 'No se pudo cargar {{field}}', {
+          field: displayLabel,
+        })}
+        subtitle={
+          required
+            ? t(
+                'codedPersonAttributeUnavailableRequired',
+                'Este campo obligatorio no está disponible. Contacte al administrador del sistema.',
+              )
+            : t(
+                'codedPersonAttributeUnavailableOptional',
+                'Este campo opcional no está disponible por configuración. Puede continuar con el registro.',
+              )
+        }
+      />
+    );
   }
 
   return (

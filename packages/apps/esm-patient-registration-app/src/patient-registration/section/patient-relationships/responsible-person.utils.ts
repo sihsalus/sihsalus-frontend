@@ -1,7 +1,6 @@
 import type { NewResponsiblePersonValues } from '../../patient-registration.types';
-import { patientFamilyNameMaxLength, patientGivenNameMaxLength } from '../../patient-name-limits';
+import { patientFamilyNameMaxLength, patientGivenNameMaxLength, patientNamePattern } from '../../patient-name-limits';
 
-const personNameRegex = /^\p{L}[\p{L}\p{M}'.\- ]*$/u;
 const estimatedAgeRegex = /^(?:[0-9]|[1-9][0-9]|1[01][0-9]|120)$/;
 const peruContactPhoneRegex = /^(?:(?:\+51)?9[0-9]{8}|(?:\+51)?[1-8][0-9]{7}|0[1-8][0-9]{7})$/;
 
@@ -21,7 +20,7 @@ const genderToOpenmrsCode: Record<string, string> = {
 };
 
 function isValidPersonName(value: string) {
-  return personNameRegex.test(value.trim());
+  return patientNamePattern.test(value.trim());
 }
 
 function validateRequiredName(value: string, requiredMessage: string): string | undefined {

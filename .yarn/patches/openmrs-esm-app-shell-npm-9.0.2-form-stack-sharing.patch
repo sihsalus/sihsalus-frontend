@@ -15,3 +15,59 @@ diff --git a/dependencies.json b/dependencies.json
    "@openmrs/esm-framework/src/internal",
    "rxjs",
    "single-spa",
+diff --git a/src/run.ts b/src/run.ts
+--- a/src/run.ts
++++ b/src/run.ts
+@@ -14,6 +14,7 @@ import {
+   finishRegisteringAllApps,
+   fireOpenmrsEvent,
+   getConfig,
++  getCoreTranslation,
+   getCurrentUser,
+   integrateBreakpoints,
+   interpolateUrl,
+@@ -228,3 +229,3 @@ function renderFatalErrorPage(e?: Error) {
+     if (messageContainer) {
+-      messageContainer.textContent = e?.message || 'No additional information available.';
++      messageContainer.textContent = getCoreTranslation('fatalErrorMessage');
+     }
+@@ -326,9 +327,9 @@ async function setupOffline() {
+   } catch (error) {
+     console.error('Error while setting up offline mode.', error);
+     showNotification({
+       kind: 'error',
+-      title: 'Offline Setup Error',
+-      description: error.message,
++      title: getCoreTranslation('offlineSetupErrorTitle'),
++      description: getCoreTranslation('offlineSetupGenericError'),
+     });
+   }
+ }
+diff --git a/src/index.ejs b/src/index.ejs
+--- a/src/index.ejs
++++ b/src/index.ejs
+@@ -69,18 +69,18 @@
+     </template>
+     <template id="app-error">
+       <div class="omrs-app-error">
+-        <h1>Application Error</h1>
+-        <p>Something went wrong. Please try reloading.</p>
+-        <p>Contact your system administrator if the problem persists.</p>
++        <h1>Error de la aplicación</h1>
++        <p>No se pudo iniciar la aplicación. Intente recargar la página.</p>
++        <p>Si el problema continúa, contacte al administrador del sistema.</p>
+         <div id="buttons">
+-          <button class="cds--btn cds--btn--primary" onclick="location.reload()">Reload</button>
++          <button class="cds--btn cds--btn--primary" onclick="location.reload()">Recargar</button>
+         </div>
+         <div class="cds--snippet cds--snippet--single" >
+           <div tabindex="0"  class="cds--snippet-container"
+-            aria-label="Code Snippet Text">
++            aria-label="Detalle del error">
+             <pre>
+               <code data-var="message"></code>
+             </pre>
+           </div>
+           <button data-copy-btn class="cds--copy-btn" type="button" tabindex="0" onclick="copyText(this.parentElement)">
+-            <span class="cds--assistive-text cds--copy-btn__feedback">Copied!</span>
++            <span class="cds--assistive-text cds--copy-btn__feedback">Copiado</span>

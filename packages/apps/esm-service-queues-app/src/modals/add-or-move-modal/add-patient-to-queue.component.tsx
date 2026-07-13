@@ -1,5 +1,5 @@
 import { Button, Form, ModalBody, ModalFooter, ModalHeader } from '@carbon/react';
-import { showSnackbar, type Visit } from '@openmrs/esm-framework';
+import { type Visit } from '@openmrs/esm-framework';
 import React, { useCallback, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import QueueFields from '../../create-queue-entry/queue-fields/queue-fields.component';
@@ -31,19 +31,14 @@ const AddPatientToQueueModal: React.FC<AddPatientToQueueModalProps> = ({ modalTi
           closeModal();
           mutateQueueEntries();
         })
-        ?.catch((error) => {
-          showSnackbar({
-            title: t('queueEntryError', 'Error adding patient to the queue'),
-            kind: 'error',
-            isLowContrast: false,
-            subtitle: error?.message,
-          });
-        })
+        // QueueFields owns the error notification. Consume the rejection here
+        // so the modal remains open without producing a duplicate global toast.
+        ?.catch(() => undefined)
         ?.finally(() => {
           setIsSubmitting(false);
         });
     },
-    [callback, activeVisit, closeModal, mutateQueueEntries, t],
+    [callback, activeVisit, closeModal, mutateQueueEntries],
   );
 
   return (

@@ -125,7 +125,7 @@ describe('QueueServiceForm', () => {
     });
   });
 
-  it('renders an error message when the queue service creation fails', async () => {
+  it('renders a safe error message when the queue service creation fails', async () => {
     const user = userEvent.setup();
     mockSaveQueue.mockRejectedValueOnce(new Error('Internal server error'));
     render(<QueueServiceForm {...defaultProps} />);
@@ -150,8 +150,11 @@ describe('QueueServiceForm', () => {
         isLowContrast: false,
         kind: 'error',
         title: expect.stringMatching(/error creating queue service/i),
-        subtitle: expect.stringMatching(/internal server error/i),
+        subtitle: expect.stringMatching(/queue operation could not be completed/i),
       }),
+    );
+    expect(mockShowSnackbar).not.toHaveBeenCalledWith(
+      expect.objectContaining({ subtitle: expect.stringMatching(/internal server error/i) }),
     );
   });
 });

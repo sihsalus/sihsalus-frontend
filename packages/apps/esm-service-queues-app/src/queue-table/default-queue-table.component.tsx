@@ -1,5 +1,5 @@
 import { DataTableSkeleton, Dropdown, Layer, TableToolbarSearch } from '@carbon/react';
-import { isDesktop, showSnackbar, useLayoutType } from '@openmrs/esm-framework';
+import { getUserFacingErrorMessage, isDesktop, showSnackbar, useLayoutType } from '@openmrs/esm-framework';
 import { useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useQueueEntries } from '../hooks/useQueueEntries';
@@ -52,14 +52,18 @@ function QueueTableSection() {
   const { queueEntries, isLoading, error, isValidating } = useQueueEntries(searchCriteria);
 
   useEffect(() => {
-    if (error?.message) {
+    if (error) {
       showSnackbar({
         title: t('errorLoadingQueueEntries', 'Error loading queue entries'),
         kind: 'error',
-        subtitle: error?.message,
+        subtitle: getUserFacingErrorMessage(
+          error,
+          t('queueDataLoadErrorMessage', 'Queue information could not be loaded. Please try again.'),
+          { logContext: 'Load default queue entries' },
+        ),
       });
     }
-  }, [error?.message, t]);
+  }, [error, t]);
 
   const columns = useColumns(null, null);
   useEffect(() => {
@@ -67,7 +71,7 @@ function QueueTableSection() {
       showSnackbar({
         kind: 'warning',
         title: t('notableConfig', 'No table configuration'),
-        subtitle: 'No table configuration defined for queue: null and status: null',
+        subtitle: t('queueTableConfigurationMissing', 'No table configuration is available for this queue.'),
       });
     }
   }, [columns, t]);

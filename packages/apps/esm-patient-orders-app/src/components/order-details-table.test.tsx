@@ -105,7 +105,7 @@ describe('OrderDetailsTable', () => {
     renderOrderDetailsTable();
 
     await screen.findByRole('combobox', { name: /select order type/i });
-    expect(screen.getByText(/sorry, there was a problem displaying this information/i)).toBeInTheDocument();
+    expect(screen.getByText(/there was a problem displaying this information/i)).toBeInTheDocument();
   });
 
   it('renders a tabular overview of order data when data is available', async () => {

@@ -47,8 +47,8 @@ describe('VisitDetailOverview', () => {
 
     expect(screen.queryByRole('table')).not.toBeInTheDocument();
     expect(screen.getByRole('heading', { name: /visits/i })).toBeInTheDocument();
-    expect(screen.getAllByText(/Error 401: Unauthorized/i)[0]).toBeInTheDocument();
-    expect(screen.getAllByText(/Sorry, there was a problem displaying this information/i)[0]).toBeInTheDocument();
+    expect(screen.queryAllByText(/Error 401: Unauthorized/i)).toHaveLength(0);
+    expect(screen.getAllByText(/there was a problem displaying this information/i)[0]).toBeInTheDocument();
   });
 
   it(`renders a summary of the patient's visits and encounters when data is available and showAllEncountersTab is true`, async () => {

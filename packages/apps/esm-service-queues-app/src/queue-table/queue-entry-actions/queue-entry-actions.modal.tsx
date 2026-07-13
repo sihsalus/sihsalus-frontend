@@ -16,7 +16,7 @@ import {
   TimePicker,
   TimePickerSelect,
 } from '@carbon/react';
-import { type FetchResponse, OpenmrsDatePicker, showSnackbar } from '@openmrs/esm-framework';
+import { type FetchResponse, getUserFacingErrorMessage, OpenmrsDatePicker, showSnackbar } from '@openmrs/esm-framework';
 import dayjs from 'dayjs';
 import React, { useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -164,7 +164,11 @@ export const QueueEntryActionModal: React.FC<QueueEntryActionModalProps> = ({
         showSnackbar({
           title: submitFailureTitle,
           kind: 'error',
-          subtitle: error?.message,
+          subtitle: getUserFacingErrorMessage(
+            error,
+            t('queueEntryActionErrorMessage', 'The queue action could not be completed. Please try again.'),
+            { logContext: 'Submit legacy queue entry action' },
+          ),
         });
       })
       .finally(() => {

@@ -3,6 +3,7 @@ import {
   ArrowLeftIcon,
   ErrorState,
   getPatientName,
+  getUserFacingErrorMessage,
   PatientBannerContactDetails,
   PatientBannerPatientInfo,
   PatientBannerToggleContactDetailsButton,
@@ -68,7 +69,11 @@ const CreateQueueEntryWorkspace2: React.FC<Workspace2DefinitionProps<CreateQueue
         isLowContrast: false,
         kind: 'error',
         title: t('errorAddingPatientToQueue', 'Error adding patient to queue'),
-        subtitle: launchError?.message ?? t('unexpectedError', 'An unexpected error occurred'),
+        subtitle: getUserFacingErrorMessage(
+          launchError,
+          t('queueEntryActionErrorMessage', 'The queue action could not be completed. Please try again.'),
+          { logContext: 'Launch start visit workspace from service queues' },
+        ),
       });
     });
   }, [

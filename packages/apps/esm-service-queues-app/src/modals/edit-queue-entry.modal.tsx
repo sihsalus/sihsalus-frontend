@@ -5,6 +5,7 @@ import { useTranslation } from 'react-i18next';
 import { useMutateQueueEntries } from '../hooks/useQueueEntries';
 import { useQueueEntry } from '../hooks/useQueueEntry';
 import { useQueues } from '../hooks/useQueues';
+import { useUserFacingErrorMessage } from '../hooks/useUserFacingErrorMessage';
 import { type QueueEntry } from '../types';
 import { updateQueueEntry } from './queue-entry-actions.resource';
 import QueueEntryActionModal from './queue-entry-actions-modal.component';
@@ -19,6 +20,11 @@ const EditQueueEntryModal: React.FC<EditQueueEntryModalProps> = ({ queueEntry, c
   const { t } = useTranslation();
   const { queues } = useQueues();
   const { queueEntry: freshEntry, error, isLoading } = useQueueEntry(queueEntry.uuid);
+  const errorMessage = useUserFacingErrorMessage(
+    error,
+    t('queueDataLoadErrorMessage', 'Queue information could not be loaded. Please try again.'),
+    'Load queue entry for editing',
+  );
   const { mutateQueueEntries } = useMutateQueueEntries();
   const isEnded = !isLoading && !error && (!freshEntry || Boolean(freshEntry.endedAt));
 
@@ -55,7 +61,7 @@ const EditQueueEntryModal: React.FC<EditQueueEntryModalProps> = ({ queueEntry, c
             kind="error"
             lowContrast
             title={t('errorLoadingQueueEntry', 'Error loading queue entry')}
-            subtitle={error?.message || t('unexpectedError', 'An unexpected error occurred')}
+            subtitle={errorMessage}
           />
         </ModalBody>
         <ModalFooter>

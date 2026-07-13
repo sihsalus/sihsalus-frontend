@@ -32,7 +32,11 @@ import { useQueues } from '../hooks/useQueues';
 import QueuePriority from '../queue-table/components/queue-priority.component';
 import { type Queue, type QueueEntry } from '../types';
 import styles from './queue-entry-actions.scss';
-import { getErrorMessage, isAlreadyEndedQueueEntryError, isDuplicateQueueEntryError } from './queue-entry-error.utils';
+import {
+  getUserFacingQueueErrorMessage,
+  isAlreadyEndedQueueEntryError,
+  isDuplicateQueueEntryError,
+} from './queue-entry-error.utils';
 import { type amPm, convertTime12to24 } from './time-helpers';
 
 const TIME_REGEX_12H = /^(0?[1-9]|1[0-2]):[0-5][0-9]$/;
@@ -126,15 +130,15 @@ export const QueueEntryActionModal: React.FC<QueueEntryActionModalProps> = ({
   });
   const { queues } = useQueues();
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [submissionError, setSubmissionError] = useState<{
+  const [userFacingSubmissionError, setUserFacingSubmissionError] = useState<{
     type: 'duplicate' | 'error';
-    message: string;
+    description: string;
     title?: string;
   } | null>(null);
 
   const selectedQueue = queues.find((q) => q.uuid === formState.selectedQueue);
 
-  const clearSubmissionError = () => setSubmissionError(null);
+  const clearSubmissionError = () => setUserFacingSubmissionError(null);
 
   const statuses = selectedQueue?.allowedStatuses;
   const hasNoStatusesConfigured = selectedQueue && statuses.length === 0;
@@ -223,15 +227,19 @@ export const QueueEntryActionModal: React.FC<QueueEntryActionModalProps> = ({
           mutateQueueEntries();
           closeModal();
         } else if (isDuplicateQueueEntryError(error)) {
-          setSubmissionError({
+          setUserFacingSubmissionError({
             type: 'duplicate',
-            message: t('duplicateQueueEntry', 'This patient is already in the selected queue.'),
+            description: t('duplicateQueueEntry', 'This patient is already in the selected queue.'),
             title: t('patientAlreadyInQueue', 'Patient already in queue'),
           });
         } else {
-          setSubmissionError({
+          setUserFacingSubmissionError({
             type: 'error',
-            message: getErrorMessage(error) || t('unknownError', 'An unknown error occurred'),
+            description: getUserFacingQueueErrorMessage(
+              error,
+              t('queueEntryActionErrorMessage', 'The queue action could not be completed. Please try again.'),
+              'Submit queue entry action',
+            ),
             title: submitFailureTitle,
           });
         }
@@ -468,13 +476,13 @@ export const QueueEntryActionModal: React.FC<QueueEntryActionModalProps> = ({
               )}
             </section>
 
-            {submissionError && (
+            {userFacingSubmissionError && (
               <InlineNotification
                 kind="error"
                 lowContrast={false}
-                title={submissionError.title || t('queueEntryError', 'Error updating queue entry')}
-                subtitle={submissionError.message}
-                onClose={() => setSubmissionError(null)}
+                title={userFacingSubmissionError.title || t('queueEntryError', 'Error updating queue entry')}
+                subtitle={userFacingSubmissionError.description}
+                onClose={() => setUserFacingSubmissionError(null)}
               />
             )}
           </Stack>

@@ -14,6 +14,7 @@ import {
 import { zodResolver } from '@hookform/resolvers/zod';
 import {
   getCoreTranslation,
+  getUserFacingErrorMessage,
   restBaseUrl,
   showSnackbar,
   useLayoutType,
@@ -124,7 +125,11 @@ const QueueRoomForm: React.FC<Workspace2DefinitionProps<QueueRoomWorkspaceProps>
           : t('errorCreatingQueueRoom', 'Error creating queue room'),
         kind: 'error',
         isLowContrast: false,
-        subtitle: error?.responseBody?.message || error?.message,
+        subtitle: getUserFacingErrorMessage(
+          error,
+          t('queueOperationErrorMessage', 'The queue operation could not be completed. Please try again.'),
+          { logContext: isEditMode ? 'Update queue room' : 'Create queue room' },
+        ),
       });
     }
   };

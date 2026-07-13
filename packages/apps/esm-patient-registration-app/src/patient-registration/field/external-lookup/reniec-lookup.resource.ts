@@ -30,6 +30,10 @@ const mockReniecIdentityLookup: Record<string, ReniecIdentityLookupResult> = {
 };
 
 export async function lookupReniecIdentityByDni(dni: string): Promise<ReniecIdentityLookupResult | null> {
-  // Replace this mock with the identitylookup OMOD endpoint once it is exposed.
+  // Synthetic identities must never be written in deployed environments. Keep them
+  // available only for local UI development until the identitylookup OMOD is exposed.
+  if (globalThis.spaEnv !== 'development') {
+    return null;
+  }
   return mockReniecIdentityLookup[dni] ?? null;
 }

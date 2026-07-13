@@ -21,6 +21,9 @@ const mockSisInsuranceLookup: Record<string, SisInsuranceLookupResult> = {
 };
 
 export async function lookupSisInsuranceByDni(dni: string): Promise<SisInsuranceLookupResult | null> {
-  // Replace this mock with the identitylookup OMOD endpoint once it is exposed.
+  // Synthetic accreditation must never be written in deployed environments.
+  if (globalThis.spaEnv !== 'development') {
+    return null;
+  }
   return mockSisInsuranceLookup[dni] ?? null;
 }

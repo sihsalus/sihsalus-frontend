@@ -24,7 +24,7 @@ export function startupApp() {
   registerFeatureFlag(
     externalIdentityLookupsFlag,
     'Consultas externas RENIEC/SIS',
-    'Muestra los botones de consulta a RENIEC y SIS en el formulario de registro de pacientes. Permanecen ocultos mientras esté desactivado.',
+    'Muestra la búsqueda local de identidad. RENIEC/SIS solo usarán datos reales cuando exista integración backend; los datos sintéticos se limitan al desarrollo local.',
   );
 
   registerBreadcrumbs([

@@ -9,11 +9,19 @@ import {
 } from './identity/identity-documents';
 import { fetchPersonForPromotion, isPersonAlreadyPatient } from './identity/identity-search.resource';
 import {
+  addPatientIdentifier,
+  deletePatientIdentifier,
+  deletePersonAttribute,
+  deletePersonName,
+  deleteRelationship,
   generateIdentifier,
   promotePersonToPatient,
   savePatient,
+  saveEncounter,
   savePerson,
   saveRelationship,
+  updatePatientIdentifier,
+  updateRelationship,
 } from './patient-registration.resource';
 import { type FormValues } from './patient-registration.types';
 import {
@@ -33,11 +41,19 @@ import {
 
 vi.mock('./patient-registration.resource', async () => ({
   ...(await vi.importActual('./patient-registration.resource')),
+  addPatientIdentifier: vi.fn(),
   generateIdentifier: vi.fn(),
+  deletePatientIdentifier: vi.fn(),
+  deletePersonAttribute: vi.fn(),
+  deletePersonName: vi.fn(),
+  deleteRelationship: vi.fn(),
   promotePersonToPatient: vi.fn(),
   savePatient: vi.fn(),
+  saveEncounter: vi.fn(),
   savePerson: vi.fn(),
   saveRelationship: vi.fn(),
+  updatePatientIdentifier: vi.fn(),
+  updateRelationship: vi.fn(),
 }));
 
 vi.mock('./identity/identity-search.resource', () => ({
@@ -46,10 +62,18 @@ vi.mock('./identity/identity-search.resource', () => ({
 }));
 
 const mockGenerateIdentifier = generateIdentifier as vi.Mock;
+const mockAddPatientIdentifier = vi.mocked(addPatientIdentifier);
+const mockDeletePatientIdentifier = vi.mocked(deletePatientIdentifier);
+const mockDeletePersonAttribute = vi.mocked(deletePersonAttribute);
+const mockDeletePersonName = vi.mocked(deletePersonName);
+const mockDeleteRelationship = vi.mocked(deleteRelationship);
 const mockPromotePersonToPatient = vi.mocked(promotePersonToPatient);
 const mockSavePatient = vi.mocked(savePatient);
+const mockSaveEncounter = vi.mocked(saveEncounter);
 const mockSavePerson = vi.mocked(savePerson);
 const mockSaveRelationship = vi.mocked(saveRelationship);
+const mockUpdatePatientIdentifier = vi.mocked(updatePatientIdentifier);
+const mockUpdateRelationship = vi.mocked(updateRelationship);
 const mockFetchPersonForPromotion = vi.mocked(fetchPersonForPromotion);
 const mockIsPersonAlreadyPatient = vi.mocked(isPersonAlreadyPatient);
 
@@ -113,6 +137,12 @@ function getPeruRegistrationConfig() {
 
 describe('FormManager', () => {
   describe('createIdentifiers', () => {
+    beforeEach(() => {
+      vi.clearAllMocks();
+      mockAddPatientIdentifier.mockResolvedValue({ ok: true, data: { uuid: 'added-identifier-uuid' } } as never);
+      mockUpdatePatientIdentifier.mockResolvedValue({ ok: true } as never);
+    });
+
     it('uses the uuid of a field name if it exists', async () => {
       const result = await FormManager.savePatientIdentifiers(true, undefined, formValues.identifiers, {}, 'Nyc');
       expect(result).toEqual([
@@ -127,18 +157,351 @@ describe('FormManager', () => {
     });
 
     it('should generate identifier if it has autoGeneration and manual entry disabled', async () => {
-      formValues.identifiers.foo.autoGeneration = true;
-      formValues.identifiers.foo.selectedSource.autoGenerationOption.manualEntryEnabled = false;
+      const identifiers = {
+        foo: {
+          ...formValues.identifiers.foo,
+          autoGeneration: true,
+          selectedSource: {
+            ...formValues.identifiers.foo.selectedSource,
+            autoGenerationOption: { automaticGenerationEnabled: true, manualEntryEnabled: false },
+          },
+        },
+      };
       mockGenerateIdentifier.mockResolvedValue({ data: { identifier: '10001V' } });
-      await FormManager.savePatientIdentifiers(true, undefined, formValues.identifiers, {}, 'Nyc');
+      await FormManager.savePatientIdentifiers(true, undefined, identifiers, {}, 'Nyc');
       expect(mockGenerateIdentifier.mock.calls).toHaveLength(1);
     });
 
     it('should not generate identifiers if manual entry enabled and identifier value given', async () => {
-      formValues.identifiers.foo.autoGeneration = true;
-      formValues.identifiers.foo.selectedSource.autoGenerationOption.manualEntryEnabled = true;
-      await FormManager.savePatientIdentifiers(true, undefined, formValues.identifiers, {}, 'Nyc');
+      const identifiers = {
+        foo: {
+          ...formValues.identifiers.foo,
+          autoGeneration: true,
+          selectedSource: {
+            ...formValues.identifiers.foo.selectedSource,
+            autoGenerationOption: { automaticGenerationEnabled: true, manualEntryEnabled: true },
+          },
+        },
+      };
+      await FormManager.savePatientIdentifiers(true, undefined, identifiers, {}, 'Nyc');
       expect(mockGenerateIdentifier.mock.calls).toHaveLength(0);
+    });
+
+    it('reuses an auto-generated identifier when the same transaction is retried', async () => {
+      const transaction = new SavePatientTransactionManager();
+      const identifiers = {
+        openmrsId: {
+          ...formValues.identifiers.foo,
+          autoGeneration: true,
+          identifierValue: 'auto-generated',
+          selectedSource: {
+            ...formValues.identifiers.foo.selectedSource,
+            autoGenerationOption: { automaticGenerationEnabled: true, manualEntryEnabled: false },
+          },
+        },
+      };
+      mockGenerateIdentifier.mockResolvedValue({ data: { identifier: '10001V' } });
+
+      const first = await FormManager.savePatientIdentifiers(true, 'patient-uuid', identifiers, {}, 'Nyc', transaction);
+      const second = await FormManager.savePatientIdentifiers(
+        true,
+        'patient-uuid',
+        identifiers,
+        {},
+        'Nyc',
+        transaction,
+      );
+
+      expect(first[0].identifier).toBe('10001V');
+      expect(second[0].identifier).toBe('10001V');
+      expect(mockGenerateIdentifier).toHaveBeenCalledTimes(1);
+    });
+
+    it('waits for removed identifiers and does not delete them twice on retry', async () => {
+      const transaction = new SavePatientTransactionManager();
+      mockDeletePatientIdentifier.mockResolvedValue({ ok: true } as never);
+
+      await FormManager.savePatientIdentifiers(false, 'patient-uuid', {}, formValues.identifiers, 'Nyc', transaction);
+      await FormManager.savePatientIdentifiers(false, 'patient-uuid', {}, formValues.identifiers, 'Nyc', transaction);
+
+      expect(mockDeletePatientIdentifier).toHaveBeenCalledTimes(1);
+      expect(mockDeletePatientIdentifier).toHaveBeenCalledWith('patient-uuid', 'aUuid', undefined);
+    });
+
+    it('persists each changed value when an identifier is edited again after a partial failure', async () => {
+      const transaction = new SavePatientTransactionManager();
+      const changedIdentifiers = {
+        foo: { ...formValues.identifiers.foo, identifierValue: 'changed-value' },
+      };
+
+      await FormManager.savePatientIdentifiers(
+        false,
+        'patient-uuid',
+        changedIdentifiers,
+        formValues.identifiers,
+        'Nyc',
+        transaction,
+      );
+      await FormManager.savePatientIdentifiers(
+        false,
+        'patient-uuid',
+        formValues.identifiers,
+        formValues.identifiers,
+        'Nyc',
+        transaction,
+      );
+
+      expect(mockUpdatePatientIdentifier).toHaveBeenNthCalledWith(
+        1,
+        'patient-uuid',
+        'aUuid',
+        'changed-value',
+        undefined,
+      );
+      expect(mockUpdatePatientIdentifier).toHaveBeenNthCalledWith(2, 'patient-uuid', 'aUuid', 'foo', undefined);
+    });
+
+    it('restores an identifier that was deleted earlier in the same transaction', async () => {
+      const transaction = new SavePatientTransactionManager();
+      mockDeletePatientIdentifier.mockResolvedValue({ ok: true } as never);
+
+      await FormManager.savePatientIdentifiers(false, 'patient-uuid', {}, formValues.identifiers, 'Nyc', transaction);
+      await FormManager.savePatientIdentifiers(
+        false,
+        'patient-uuid',
+        formValues.identifiers,
+        formValues.identifiers,
+        'Nyc',
+        transaction,
+      );
+
+      expect(mockAddPatientIdentifier).toHaveBeenCalledWith(
+        'patient-uuid',
+        expect.objectContaining({ identifier: 'foo', uuid: undefined }),
+        undefined,
+      );
+    });
+
+    it('deletes an identifier added earlier when it is removed before retry', async () => {
+      const transaction = new SavePatientTransactionManager();
+      const newIdentifiers = {
+        foo: { ...formValues.identifiers.foo, identifierUuid: undefined, initialValue: '' },
+      };
+      mockDeletePatientIdentifier.mockResolvedValue({ ok: true } as never);
+
+      await FormManager.savePatientIdentifiers(false, 'patient-uuid', newIdentifiers, {}, 'Nyc', transaction);
+      await FormManager.savePatientIdentifiers(false, 'patient-uuid', {}, {}, 'Nyc', transaction);
+
+      expect(mockAddPatientIdentifier).toHaveBeenCalledTimes(1);
+      expect(mockDeletePatientIdentifier).toHaveBeenCalledWith('patient-uuid', 'added-identifier-uuid', undefined);
+    });
+  });
+
+  describe('destructive edit operations', () => {
+    beforeEach(() => {
+      vi.clearAllMocks();
+    });
+
+    it('preserves an additional name unless the user explicitly removes it', () => {
+      const patientUuidMap = { additionalNameUuid: 'additional-name-uuid' };
+
+      expect(FormManager.getDeletedNames({ ...formValues, addNameInLocalLanguage: true }, patientUuidMap)).toEqual([]);
+      expect(
+        FormManager.getDeletedNames(
+          { ...formValues, patientUuid: 'patient-uuid', addNameInLocalLanguage: false },
+          patientUuidMap,
+        ),
+      ).toEqual([{ nameUuid: 'additional-name-uuid', personUuid: 'patient-uuid' }]);
+    });
+
+    it('awaits attribute deletion, propagates failures, and skips missing UUIDs', async () => {
+      const transaction = new SavePatientTransactionManager();
+      const values = {
+        ...formValues,
+        patientUuid: 'patient-uuid',
+        attributes: { 'attribute-type-uuid': '' },
+      };
+      const patientUuidMap = { 'attribute.attribute-type-uuid': 'attribute-value-uuid' };
+      mockDeletePersonAttribute.mockRejectedValueOnce(new Error('delete failed'));
+
+      await expect(
+        FormManager.deleteRemovedPatientAttributes(false, values, patientUuidMap, transaction),
+      ).rejects.toThrow('delete failed');
+      expect(transaction.deletedAttributeUuids).toEqual({});
+
+      mockDeletePersonAttribute.mockResolvedValue({ ok: true } as never);
+      await FormManager.deleteRemovedPatientAttributes(false, values, patientUuidMap, transaction);
+      await FormManager.deleteRemovedPatientAttributes(false, values, patientUuidMap, transaction);
+      await FormManager.deleteRemovedPatientAttributes(false, values, {}, transaction);
+
+      expect(mockDeletePersonAttribute).toHaveBeenCalledTimes(2);
+      expect(mockDeletePersonAttribute).toHaveBeenLastCalledWith('patient-uuid', 'attribute-value-uuid', undefined);
+    });
+
+    it('does not delete the additional name during an ordinary edit', async () => {
+      mockSavePatient.mockResolvedValue({ ok: true, data: { uuid: 'patient-uuid' } } as never);
+      mockDeletePersonName.mockResolvedValue({ ok: true } as never);
+      const values = {
+        ...formValues,
+        patientUuid: 'patient-uuid',
+        addNameInLocalLanguage: true,
+        identifiers: {},
+      };
+
+      await FormManager.savePatientFormOnline(
+        false,
+        values,
+        { additionalNameUuid: 'additional-name-uuid' },
+        {},
+        null,
+        'location-uuid',
+        {},
+        {} as Session,
+        getPeruRegistrationConfig(),
+        new SavePatientTransactionManager(),
+      );
+
+      expect(mockDeletePersonName).not.toHaveBeenCalled();
+    });
+
+    it('reuses the UUID of an existing person attribute during an edit', () => {
+      const patient = FormManager.getPatientToCreate(
+        false,
+        {
+          ...formValues,
+          attributes: { 'attribute-type-uuid': 'updated value' },
+        },
+        { 'attribute.attribute-type-uuid': 'attribute-value-uuid' },
+        {},
+        [],
+      );
+
+      expect(patient.person.attributes).toEqual([
+        {
+          attributeType: 'attribute-type-uuid',
+          uuid: 'attribute-value-uuid',
+          value: 'updated value',
+        },
+      ]);
+    });
+
+    it('blocks changed demographics after a partial save instead of creating nested duplicates', async () => {
+      const transaction = new SavePatientTransactionManager();
+      const values = {
+        ...formValues,
+        patientUuid: 'patient-uuid',
+        givenName: 'Maria',
+        gender: 'female',
+        birthdate: '1990-01-01',
+        identifiers: {},
+        relationships: [
+          {
+            action: 'ADD' as const,
+            clientId: 'relationship-row',
+            relatedPersonUuid: 'related-person-uuid',
+            relationshipType: 'relationship-type-uuid/aIsToB',
+          },
+        ],
+      };
+      mockSavePatient.mockResolvedValue({ ok: true, data: { uuid: 'patient-uuid' } } as never);
+      mockSaveRelationship.mockRejectedValueOnce(new Error('relationship failed'));
+
+      await expect(
+        FormManager.savePatientFormOnline(
+          false,
+          values,
+          {},
+          {},
+          null,
+          'location-uuid',
+          {},
+          {} as Session,
+          getPeruRegistrationConfig(),
+          transaction,
+        ),
+      ).rejects.toThrow('relationship failed');
+
+      await expect(
+        FormManager.savePatientFormOnline(
+          false,
+          { ...values, givenName: 'Mariana' },
+          {},
+          {},
+          null,
+          'location-uuid',
+          {},
+          {} as Session,
+          getPeruRegistrationConfig(),
+          transaction,
+        ),
+      ).rejects.toMatchObject({
+        responseBody: { error: { message: expect.stringContaining('guardado parcialmente') } },
+      });
+
+      expect(mockSavePatient).toHaveBeenCalledTimes(1);
+      expect(mockSaveRelationship).toHaveBeenCalledTimes(1);
+    });
+  });
+
+  describe('registration observations', () => {
+    const session = { currentProvider: { uuid: 'provider-uuid' } } as Session;
+
+    beforeEach(() => {
+      vi.clearAllMocks();
+    });
+
+    it('rejects missing encounter metadata before writing the patient', async () => {
+      const config = getPeruRegistrationConfig();
+      config.registrationObs.encounterTypeUuid = 'encounter-type-uuid';
+      config.registrationObs.encounterProviderRoleUuid = 'provider-role-uuid';
+      config.registrationObs.registrationFormUuid = null;
+
+      await expect(
+        FormManager.savePatientFormOnline(
+          true,
+          { ...formValues, patientUuid: 'patient-uuid', identifiers: {}, obs: { 'concept-uuid': 'value' } },
+          {},
+          {},
+          null,
+          'location-uuid',
+          {},
+          session,
+          config,
+          new SavePatientTransactionManager(),
+        ),
+      ).rejects.toMatchObject({
+        responseBody: { error: { message: expect.stringContaining('formulario de registro') } },
+      });
+      expect(mockSavePatient).not.toHaveBeenCalled();
+      expect(mockSaveEncounter).not.toHaveBeenCalled();
+    });
+
+    it('does not create the registration encounter twice after a later retry', async () => {
+      const config = getPeruRegistrationConfig();
+      config.registrationObs.encounterTypeUuid = 'encounter-type-uuid';
+      config.registrationObs.encounterProviderRoleUuid = 'provider-role-uuid';
+      config.registrationObs.registrationFormUuid = 'form-uuid';
+      const transaction = new SavePatientTransactionManager();
+      mockSaveEncounter.mockResolvedValue({ ok: true } as never);
+
+      await FormManager.saveObservations(
+        { 'concept-uuid': 'value' },
+        { data: { uuid: 'patient-uuid' } } as never,
+        'location-uuid',
+        session,
+        config,
+        transaction,
+      );
+      await FormManager.saveObservations(
+        { 'concept-uuid': 'value' },
+        { data: { uuid: 'patient-uuid' } } as never,
+        'location-uuid',
+        session,
+        config,
+        transaction,
+      );
+
+      expect(mockSaveEncounter).toHaveBeenCalledTimes(1);
     });
   });
 
@@ -416,6 +779,48 @@ describe('FormManager', () => {
       expect(updatePayload.person.addresses[0].uuid).toBe('existing-address-uuid');
     });
 
+    it('reuses a confirmed promotion when a later relationship save is retried', async () => {
+      const transaction = new SavePatientTransactionManager();
+      const values = {
+        ...buildPromotionFormValues(),
+        relationships: [
+          {
+            action: 'ADD' as const,
+            clientId: 'promotion-relationship-row',
+            relatedPersonUuid: 'related-person-uuid',
+            relationshipType: 'relationship-type-uuid/aIsToB',
+          },
+        ],
+      };
+      const config = getPeruRegistrationConfig();
+      mockSaveRelationship
+        .mockRejectedValueOnce(new Error('relationship failed'))
+        .mockResolvedValueOnce({ ok: true, data: { uuid: 'relationship-uuid' } } as never);
+
+      const save = () =>
+        FormManager.savePatientFormOnline(
+          true,
+          values,
+          {},
+          {},
+          null,
+          'location-1',
+          {},
+          {} as Session,
+          config,
+          transaction,
+        );
+
+      await expect(save()).rejects.toThrow('relationship failed');
+      await expect(save()).resolves.toBe(personUuid);
+
+      expect(mockIsPersonAlreadyPatient).toHaveBeenCalledTimes(1);
+      expect(mockFetchPersonForPromotion).toHaveBeenCalledTimes(1);
+      expect(mockPromotePersonToPatient).toHaveBeenCalledTimes(1);
+      expect(mockSavePatient).toHaveBeenCalledTimes(1);
+      expect(mockSaveRelationship).toHaveBeenCalledTimes(2);
+    });
+
     it('refuses to promote when the person is already a patient', async () => {
       mockIsPersonAlreadyPatient.mockResolvedValue(true);
 
@@ -449,8 +854,19 @@ describe('FormManager', () => {
   describe('saveRelationships with a pending responsible person', () => {
     beforeEach(() => {
       vi.clearAllMocks();
+      mockDeleteRelationship.mockResolvedValue({ ok: true } as never);
       mockSavePerson.mockResolvedValue({ ok: true, data: { uuid: 'created-person-uuid' } } as never);
       mockSaveRelationship.mockResolvedValue({ ok: true } as never);
+      mockUpdateRelationship.mockResolvedValue({ ok: true } as never);
+    });
+
+    it('handles registrations without a relationships collection', async () => {
+      await expect(
+        FormManager.saveRelationships(undefined, { data: { uuid: 'patient-uuid' } } as never),
+      ).resolves.toEqual([]);
+
+      expect(mockSavePerson).not.toHaveBeenCalled();
+      expect(mockSaveRelationship).not.toHaveBeenCalled();
     });
 
     it('creates the person right before its relationship at submit time', async () => {
@@ -531,19 +947,199 @@ describe('FormManager', () => {
       });
     });
 
-    it('does not attempt to create a relationship when no person is selected nor pending', async () => {
-      await FormManager.saveRelationships(
-        [{ action: 'ADD', relatedPersonUuid: '', relationshipType: 'rel-type-uuid/aIsToB' }],
-        { data: { uuid: 'patient-uuid' } } as never,
-        {},
-      );
+    it('rejects an incomplete relationship instead of silently discarding it', async () => {
+      await expect(
+        FormManager.saveRelationships(
+          [{ action: 'ADD', relatedPersonUuid: '', relationshipType: 'rel-type-uuid/aIsToB' }],
+          { data: { uuid: 'patient-uuid' } } as never,
+          {},
+        ),
+      ).rejects.toMatchObject({
+        responseBody: { error: { message: expect.stringContaining('Seleccione o registre una persona') } },
+      });
 
       expect(mockSavePerson).not.toHaveBeenCalled();
       expect(mockSaveRelationship).not.toHaveBeenCalled();
     });
+
+    it('creates the companion relationship when an existing relationship is marked as companion', async () => {
+      await FormManager.saveRelationships(
+        [
+          {
+            action: 'UPDATE',
+            isCompanion: true,
+            relatedPersonUuid: 'related-person-uuid',
+            relationshipType: 'family-type-uuid/aIsToB',
+            uuid: 'family-relationship-uuid',
+          },
+        ],
+        { data: { uuid: 'patient-uuid' } } as never,
+        { companionRelationshipType: 'companion-type-uuid/aIsToB' },
+      );
+
+      expect(mockUpdateRelationship).toHaveBeenCalledWith('family-relationship-uuid', {
+        personA: 'related-person-uuid',
+        personB: 'patient-uuid',
+        relationshipType: 'family-type-uuid',
+      });
+      expect(mockSaveRelationship).toHaveBeenCalledWith({
+        personA: 'related-person-uuid',
+        personB: 'patient-uuid',
+        relationshipType: 'companion-type-uuid',
+      });
+    });
+
+    it('deletes the companion relationship when it is unmarked', async () => {
+      await FormManager.saveRelationships(
+        [
+          {
+            action: 'UPDATE',
+            companionRelationshipUuid: 'companion-relationship-uuid',
+            isCompanion: false,
+            relatedPersonUuid: 'related-person-uuid',
+            relationshipType: 'family-type-uuid/aIsToB',
+            uuid: 'family-relationship-uuid',
+          },
+        ],
+        { data: { uuid: 'patient-uuid' } } as never,
+        { companionRelationshipType: 'companion-type-uuid/aIsToB' },
+      );
+
+      expect(mockUpdateRelationship).toHaveBeenCalledWith('family-relationship-uuid', expect.any(Object));
+      expect(mockDeleteRelationship).toHaveBeenCalledWith('companion-relationship-uuid');
+      expect(mockSaveRelationship).not.toHaveBeenCalled();
+    });
+
+    it('continues a partially saved row without recreating the person or family relationship', async () => {
+      const transaction = new SavePatientTransactionManager();
+      const relationship = {
+        clientId: 'relationship-row-1',
+        action: 'ADD' as const,
+        relatedPersonUuid: '',
+        relationshipType: 'family-type-uuid/aIsToB',
+        isCompanion: true,
+        newPerson: {
+          givenName: 'María',
+          middleName: '',
+          familyName: 'Quispe',
+          familyName2: '',
+          gender: 'female',
+          estimatedAge: '35',
+          phone: '',
+          address: '',
+          relationshipType: 'family-type-uuid/aIsToB',
+        },
+      };
+      mockSaveRelationship
+        .mockResolvedValueOnce({ ok: true, data: { uuid: 'family-relationship-uuid' } } as never)
+        .mockRejectedValueOnce(new Error('companion failed'));
+
+      await expect(
+        FormManager.saveRelationships(
+          [relationship],
+          { data: { uuid: 'patient-uuid' } } as never,
+          { companionRelationshipType: 'companion-type-uuid/aIsToB' },
+          transaction,
+        ),
+      ).rejects.toThrow('companion failed');
+
+      mockSaveRelationship.mockResolvedValueOnce({
+        ok: true,
+        data: { uuid: 'companion-relationship-uuid' },
+      } as never);
+      await FormManager.saveRelationships(
+        [relationship],
+        { data: { uuid: 'patient-uuid' } } as never,
+        { companionRelationshipType: 'companion-type-uuid/aIsToB' },
+        transaction,
+      );
+
+      expect(mockSavePerson).toHaveBeenCalledTimes(1);
+      expect(
+        mockSaveRelationship.mock.calls.filter(([payload]) => payload.relationshipType === 'family-type-uuid'),
+      ).toHaveLength(1);
+      expect(
+        mockSaveRelationship.mock.calls.filter(([payload]) => payload.relationshipType === 'companion-type-uuid'),
+      ).toHaveLength(2);
+    });
+
+    it('does not recreate the family relationship when the companion is unmarked before retry', async () => {
+      const transaction = new SavePatientTransactionManager();
+      const relationship = {
+        clientId: 'relationship-row-2',
+        action: 'ADD' as const,
+        relatedPersonUuid: 'related-person-uuid',
+        relationshipType: 'family-type-uuid/aIsToB',
+        isCompanion: true,
+      };
+      mockSaveRelationship
+        .mockResolvedValueOnce({ ok: true, data: { uuid: 'family-relationship-uuid' } } as never)
+        .mockRejectedValueOnce(new Error('companion failed'));
+
+      await expect(
+        FormManager.saveRelationships(
+          [relationship],
+          { data: { uuid: 'patient-uuid' } } as never,
+          { companionRelationshipType: 'companion-type-uuid/aIsToB' },
+          transaction,
+        ),
+      ).rejects.toThrow('companion failed');
+
+      relationship.isCompanion = false;
+      await FormManager.saveRelationships(
+        [relationship],
+        { data: { uuid: 'patient-uuid' } } as never,
+        { companionRelationshipType: 'companion-type-uuid/aIsToB' },
+        transaction,
+      );
+
+      expect(
+        mockSaveRelationship.mock.calls.filter(([payload]) => payload.relationshipType === 'family-type-uuid'),
+      ).toHaveLength(1);
+      expect(
+        mockSaveRelationship.mock.calls.filter(([payload]) => payload.relationshipType === 'companion-type-uuid'),
+      ).toHaveLength(1);
+    });
+
+    it('does not delete the same companion twice when a transaction is retried', async () => {
+      const transaction = new SavePatientTransactionManager();
+      const relationship = {
+        clientId: 'relationship-row-3',
+        action: 'UPDATE' as const,
+        companionRelationshipUuid: 'companion-relationship-uuid',
+        isCompanion: false,
+        relatedPersonUuid: 'related-person-uuid',
+        relationshipType: 'family-type-uuid/aIsToB',
+        uuid: 'family-relationship-uuid',
+      };
+
+      await FormManager.saveRelationships(
+        [relationship],
+        { data: { uuid: 'patient-uuid' } } as never,
+        { companionRelationshipType: 'companion-type-uuid/aIsToB' },
+        transaction,
+      );
+      await FormManager.saveRelationships(
+        [relationship],
+        { data: { uuid: 'patient-uuid' } } as never,
+        { companionRelationshipType: 'companion-type-uuid/aIsToB' },
+        transaction,
+      );
+
+      expect(mockUpdateRelationship).toHaveBeenCalledTimes(1);
+      expect(mockDeleteRelationship).toHaveBeenCalledTimes(1);
+    });
   });
 
   describe('mapPatientToFhirPatient', () => {
+    it('maps a sparse patient without person details', () => {
+      expect(FormManager.mapPatientToFhirPatient({ uuid: 'patient-uuid' })).toMatchObject({
+        id: 'patient-uuid',
+        address: undefined,
+        deceasedBoolean: undefined,
+      });
+    });
+
     it('maps configured contact attributes to FHIR telecom for the local patient summary', () => {
       const config = getPeruRegistrationConfig();
       const patient = FormManager.getPatientToCreate(

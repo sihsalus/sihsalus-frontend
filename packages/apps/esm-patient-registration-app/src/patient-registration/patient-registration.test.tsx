@@ -14,11 +14,13 @@ import { mockedAddressTemplate, mockIdentifierTypes, mockOpenmrsId, mockPatient 
 import { esmPatientRegistrationSchema, type RegistrationConfig } from '../config-schema';
 import { type Resources, ResourcesContext } from '../offline.resources';
 
-import { FormManager } from './form-manager';
+import { FormManager, SavePatientTransactionManager } from './form-manager';
+import { searchLocalIdentityByDocument } from './identity/identity-search.resource';
 import { PatientRegistration } from './patient-registration.component';
 import { generateIdentifier, saveEncounter, savePatient } from './patient-registration.resource';
 import type { AddressTemplate, Encounter, FormValues } from './patient-registration.types';
 import { useInitialFormValues } from './patient-registration-hooks';
+import { peruDniPatientIdentifierTypeUuid } from './peru-registration-config';
 
 const mockSaveEncounter = vi.mocked(saveEncounter);
 const mockGenerateIdentifier = vi.mocked(generateIdentifier);
@@ -28,6 +30,7 @@ const mockUseConfig = vi.mocked(useConfig<RegistrationConfig>);
 const mockUsePatient = vi.mocked(usePatient);
 const mockUseParams = useParams as vi.Mock;
 const mockUseInitialFormValues = vi.mocked(useInitialFormValues);
+const mockSearchLocalIdentityByDocument = vi.mocked(searchLocalIdentityByDocument);
 
 vi.mock('./field/field.resource', async () => ({
   useConcept: vi.fn().mockImplementation((uuid: string) => {
@@ -102,6 +105,11 @@ vi.mock('./patient-registration.resource', async () => ({
   savePatient: vi.fn(),
 }));
 
+vi.mock('./identity/identity-search.resource', async () => ({
+  ...(await vi.importActual('./identity/identity-search.resource')),
+  searchLocalIdentityByDocument: vi.fn(),
+}));
+
 vi.mock('./patient-registration-hooks', async () => ({
   ...(await vi.importActual('./patient-registration-hooks')),
   useInitialFormValues: vi.fn().mockReturnValue([{}, vi.fn()]),
@@ -115,6 +123,7 @@ const mockResourcesContextValue: Resources = {
     authenticated: true,
     sessionId: 'JSESSION',
     currentProvider: { uuid: 'provider-uuid', identifier: 'PRO-123' },
+    sessionLocation: { uuid: 'location-uuid', display: 'Test location', links: [] },
   },
   relationshipTypes: [],
   identifierTypes: mockIdentifierTypes,
@@ -226,6 +235,7 @@ configWithObs.sectionDefinitions?.push({
 });
 configWithObs.sections.push('custom');
 configWithObs.registrationObs.encounterTypeUuid = 'reg-enc-uuid';
+configWithObs.registrationObs.registrationFormUuid = 'reg-form-uuid';
 
 const fillRequiredFields = async () => {
   const user = userEvent.setup();
@@ -316,6 +326,7 @@ describe('Registering a new patient', () => {
         address: {},
       } as unknown as FormValues,
       vi.fn(),
+      { isLoading: false },
     ]);
     mockGenerateIdentifier.mockResolvedValue({ data: { identifier: '100NEW' }, ok: true } as unknown as FetchResponse);
     mockSavePatient.mockReturnValue({ data: { uuid: 'new-pt-uuid' }, ok: true });
@@ -391,7 +402,85 @@ describe('Registering a new patient', () => {
         uuid: expect.anything(),
       }),
       undefined,
+      expect.anything(),
     );
+  });
+
+  it('does not rerun duplicate detection after a patient was partially saved', async () => {
+    const user = userEvent.setup();
+    const dniType = {
+      fieldName: 'dni',
+      format: '^[0-9]{8}$',
+      isPrimary: false,
+      name: 'DNI',
+      required: false,
+      uniquenessBehavior: 'UNIQUE' as const,
+      uuid: peruDniPatientIdentifierTypeUuid,
+      identifierSources: [],
+    };
+    mockResourcesContextValue.identifierTypes = [...mockIdentifierTypes, dniType];
+    mockUseInitialFormValues.mockReturnValue([
+      {
+        patientUuid: 'new-patient-uuid',
+        givenName: '',
+        middleName: '',
+        familyName: '',
+        familyName2: '',
+        additionalGivenName: '',
+        additionalMiddleName: '',
+        additionalFamilyName: '',
+        additionalFamilyName2: '',
+        addNameInLocalLanguage: false,
+        gender: '',
+        birthdate: null,
+        yearsEstimated: 0,
+        monthsEstimated: 0,
+        birthdateEstimated: false,
+        telephoneNumber: '',
+        isDead: false,
+        deathDate: undefined,
+        deathTime: undefined,
+        deathTimeFormat: 'AM',
+        deathCause: '',
+        nonCodedCauseOfDeath: '',
+        relationships: [],
+        identifiers: {
+          dni: {
+            autoGeneration: false,
+            identifierName: 'DNI',
+            identifierTypeUuid: peruDniPatientIdentifierTypeUuid,
+            identifierValue: '12345678',
+            initialValue: '',
+            preferred: false,
+            required: false,
+            selectedSource: null,
+          },
+        },
+        address: {},
+      } as unknown as FormValues,
+      vi.fn(),
+      { isLoading: false },
+    ]);
+    mockSearchLocalIdentityByDocument.mockResolvedValue([]);
+    const savePatientForm = vi.fn(async (...args) => {
+      const transaction = args[9] as SavePatientTransactionManager;
+      if (savePatientForm.mock.calls.length === 1) {
+        transaction.patientSaved = true;
+        throw { responseBody: { error: { message: 'relationship failed' } } };
+      }
+      return 'new-patient-uuid';
+    });
+
+    render(<PatientRegistration isOffline={false} savePatientForm={savePatientForm} />, { wrapper: Wrapper });
+    await fillRequiredFields();
+    const registerButton = screen.getByRole('button', { name: /register patient/i });
+
+    await user.click(registerButton);
+    await waitFor(() => expect(savePatientForm).toHaveBeenCalledTimes(1));
+    await user.click(registerButton);
+    await waitFor(() => expect(savePatientForm).toHaveBeenCalledTimes(2));
+
+    expect(mockSearchLocalIdentityByDocument).toHaveBeenCalledTimes(1);
   });
 
   it('should not save the patient if validation fails', async () => {
@@ -452,6 +541,7 @@ describe('Registering a new patient', () => {
           { concept: 'nationality-uuid', value: 'usa' },
         ],
       }),
+      expect.anything(),
     );
   });
 
@@ -482,7 +572,8 @@ describe('Registering a new patient', () => {
     mockSaveEncounter.mockResolvedValue({} as FetchResponse);
 
     await user.click(registerPatientButton);
-    await waitFor(() => expect(mockSavePatient).toHaveBeenCalledTimes(2));
+    await waitFor(() => expect(mockSaveEncounter).toHaveBeenCalledTimes(2));
+    expect(mockSavePatient).toHaveBeenCalledTimes(1);
     expect(mockSaveEncounter).toHaveBeenCalledTimes(2);
 
     expect(mockShowSnackbar).toHaveBeenCalledWith(expect.objectContaining({ kind: 'success' }));
@@ -505,6 +596,91 @@ describe('Updating an existing patient record', () => {
     });
     mockSavePatient.mockReturnValue({ data: { uuid: 'new-pt-uuid' }, ok: true });
     mockUseParams.mockReturnValue({ patientUuid: mockPatient.uuid });
+  });
+
+  it('does not mount an editable form before all initial patient data is hydrated', () => {
+    mockUseInitialFormValues.mockReturnValue([{} as FormValues, vi.fn(), { isLoading: true }]);
+
+    render(<PatientRegistration isOffline={false} savePatientForm={vi.fn()} />, { wrapper: Wrapper });
+
+    expect(screen.getByText('Cargando datos del paciente...')).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /update patient/i })).not.toBeInTheDocument();
+  });
+
+  it('does not render values hydrated for a different patient UUID', () => {
+    mockUseInitialFormValues.mockReturnValue([
+      {} as FormValues,
+      vi.fn(),
+      { hydratedPatientUuid: 'previous-patient-uuid', isLoading: false },
+    ]);
+
+    render(<PatientRegistration isOffline={false} savePatientForm={vi.fn()} />, { wrapper: Wrapper });
+
+    expect(screen.getByText('Cargando datos del paciente...')).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /update patient/i })).not.toBeInTheDocument();
+  });
+
+  it('reopens a queued offline registration as a pending creation', async () => {
+    const user = userEvent.setup();
+    const mockSavePatientForm = vi.fn().mockResolvedValue(null);
+    const queuedValues = {
+      additionalFamilyName: '',
+      additionalFamilyName2: '',
+      additionalGivenName: '',
+      additionalMiddleName: '',
+      addNameInLocalLanguage: false,
+      address: {},
+      attributes: {},
+      birthdate: new Date(1990, 0, 1),
+      birthdateEstimated: false,
+      deathCause: '',
+      deathDate: undefined,
+      deathTime: undefined,
+      deathTimeFormat: 'AM',
+      familyName: 'Quispe',
+      familyName2: 'Flores',
+      gender: 'female',
+      givenName: 'Maria',
+      identifiers: mockOpenmrsId,
+      isDead: false,
+      middleName: '',
+      monthsEstimated: 0,
+      nonCodedCauseOfDeath: '',
+      obs: {},
+      patientUuid: mockPatient.uuid,
+      relationships: [],
+      telephoneNumber: '',
+      yearsEstimated: 0,
+    } as FormValues;
+    const queuedTransaction = new SavePatientTransactionManager();
+    queuedTransaction.generatedIdentifiers = { openMrsId: '100QUEUED' };
+
+    mockUsePatient.mockReturnValue({ isLoading: true, patient: null } as ReturnType<typeof usePatient>);
+    mockUseInitialFormValues.mockReturnValue([
+      queuedValues,
+      vi.fn(),
+      {
+        isLoading: false,
+        isNewPatient: true,
+        queuedRegistration: {
+          _patientRegistrationData: {
+            capturePhotoProps: null,
+            savePatientTransactionManager: queuedTransaction,
+          },
+        } as never,
+      },
+    ]);
+
+    render(<PatientRegistration isOffline savePatientForm={mockSavePatientForm} />, { wrapper: Wrapper });
+
+    expect(await screen.findByRole('heading', { name: /create new patient/i })).toBeInTheDocument();
+    await user.click(screen.getByRole('button', { name: /register patient/i }));
+
+    await waitFor(() => expect(mockSavePatientForm).toHaveBeenCalled());
+    expect(mockSavePatientForm.mock.calls[0][0]).toBe(true);
+    expect(mockSavePatientForm.mock.calls[0][9]).toMatchObject({
+      generatedIdentifiers: { openMrsId: '100QUEUED' },
+    });
   });
 
   it('edits patient demographics', async () => {
@@ -563,6 +739,7 @@ describe('Updating an existing patient record', () => {
         yearsEstimated: 0,
       } as FormValues,
       vi.fn(),
+      { isLoading: false },
     ]);
 
     render(<PatientRegistration isOffline={false} savePatientForm={mockSavePatientForm} />, { wrapper: Wrapper });
@@ -647,7 +824,7 @@ describe('Updating an existing patient record', () => {
       expect.anything(),
       expect.anything(),
       null,
-      '',
+      'location-uuid',
       expect.anything(),
       expect.anything(),
       expect.anything(),
@@ -689,7 +866,7 @@ describe('Updating an existing patient record', () => {
 
     mockResourcesContextValue.identifierTypes = [];
     mockResourcesContextValue.identifierTypesError = new Error('identifier types unavailable');
-    mockUseInitialFormValues.mockReturnValue([editFormValues, vi.fn()]);
+    mockUseInitialFormValues.mockReturnValue([editFormValues, vi.fn(), { isLoading: false }]);
 
     render(<PatientRegistration isOffline={false} savePatientForm={mockSavePatientForm} />, { wrapper: Wrapper });
 
@@ -706,11 +883,11 @@ describe('Updating an existing patient record', () => {
       expect.anything(),
       expect.anything(),
       null,
-      '',
+      'location-uuid',
       expect.anything(),
       expect.anything(),
       expect.anything(),
-      { patientSaved: false },
+      expect.objectContaining({ patientSaved: false }),
       expect.anything(),
     );
   });

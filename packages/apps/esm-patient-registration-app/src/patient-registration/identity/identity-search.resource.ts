@@ -6,8 +6,8 @@ export interface LocalPatientIdentityMatch {
   kind: 'patient';
   uuid: string;
   display: string;
-  identifier: string;
-  identifierTypeUuid: string;
+  identifier?: string;
+  identifierTypeUuid?: string;
 }
 
 export interface LocalPersonIdentityMatch {
@@ -19,6 +19,11 @@ export interface LocalPersonIdentityMatch {
 }
 
 export type LocalIdentityMatch = LocalPatientIdentityMatch | LocalPersonIdentityMatch;
+
+export interface LocalIdentityDocumentFilter {
+  patientIdentifierTypeUuid?: string;
+  personDocumentTypeConceptUuid?: string;
+}
 
 interface PatientIdentitySearchResult {
   uuid: string;
@@ -65,6 +70,7 @@ function getPersonDocumentAttributes(person: PersonIdentitySearchResult) {
 export async function searchLocalIdentityByDocument(
   normalizedDocumentNumber: string,
   abortController?: AbortController,
+  filter: LocalIdentityDocumentFilter = {},
 ): Promise<Array<LocalIdentityMatch>> {
   const encodedNumber = encodeURIComponent(normalizedDocumentNumber);
   const patientRepresentation =
@@ -83,10 +89,15 @@ export async function searchLocalIdentityByDocument(
   ]);
 
   const matches: Array<LocalIdentityMatch> = [];
+  const patientsByPersonUuid = new Map(
+    (patientsRes.data.results ?? []).map((patient) => [patient.person?.uuid ?? patient.uuid, patient]),
+  );
 
   for (const patient of patientsRes.data.results ?? []) {
     const exactIdentifier = patient.identifiers?.find(
-      (identifier) => identifier.identifier?.toUpperCase() === normalizedDocumentNumber.toUpperCase(),
+      (identifier) =>
+        identifier.identifier?.toUpperCase() === normalizedDocumentNumber.toUpperCase() &&
+        (!filter.patientIdentifierTypeUuid || identifier.identifierType.uuid === filter.patientIdentifierTypeUuid),
     );
 
     if (exactIdentifier) {
@@ -109,7 +120,25 @@ export async function searchLocalIdentityByDocument(
 
     const { documentNumber, documentTypeConceptUuid } = getPersonDocumentAttributes(person);
 
-    if (documentNumber?.toUpperCase() === normalizedDocumentNumber.toUpperCase()) {
+    const isCompatibleDocumentType =
+      !filter.personDocumentTypeConceptUuid ||
+      !documentTypeConceptUuid ||
+      documentTypeConceptUuid === filter.personDocumentTypeConceptUuid;
+
+    if (documentNumber?.toUpperCase() === normalizedDocumentNumber.toUpperCase() && isCompatibleDocumentType) {
+      const existingPatient = patientsByPersonUuid.get(person.uuid);
+      if (existingPatient) {
+        matches.push({
+          kind: 'patient',
+          uuid: person.uuid,
+          display: existingPatient.person?.display ?? existingPatient.display ?? person.display,
+          identifier: documentNumber,
+          identifierTypeUuid: filter.patientIdentifierTypeUuid,
+        });
+        matchedPersonUuids.add(person.uuid);
+        continue;
+      }
+
       matches.push({
         kind: 'person',
         uuid: person.uuid,
@@ -134,11 +163,13 @@ export async function isPersonAlreadyPatient(personUuid: string): Promise<boolea
     const response = await openmrsFetch(`${restBaseUrl}/patient/${personUuid}?v=custom:(uuid)`);
     return response.ok;
   } catch (error) {
-    if (
-      typeof error === 'object' &&
-      error !== null &&
-      (error as { response?: { status?: number } }).response?.status === 404
-    ) {
+    const status =
+      typeof error === 'object' && error !== null
+        ? ((error as { response?: { status?: number }; status?: number }).response?.status ??
+          (error as { status?: number }).status)
+        : undefined;
+
+    if (status === 404 || (error instanceof Error && /\b404\b/.test(error.message))) {
       return false;
     }
 

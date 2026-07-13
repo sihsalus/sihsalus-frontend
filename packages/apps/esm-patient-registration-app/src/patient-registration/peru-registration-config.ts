@@ -73,7 +73,7 @@ const peruSectionDefinitions: Array<SectionDefinition> = [
   },
   {
     id: 'responsiblePerson',
-    name: 'Acompañante o responsable',
+    name: 'Vínculos y responsable',
     fields: [],
   },
   {

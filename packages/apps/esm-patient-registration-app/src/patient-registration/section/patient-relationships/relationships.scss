@@ -34,9 +34,35 @@
   }
 }
 
-.companionCheckbox {
-  // Aligns the checkbox with the select input line, next to its label row.
-  margin-bottom: layout.$spacing-03;
+.relationshipSection + .relationshipSection {
+  border-top: 1px solid $ui-03;
+  margin-top: layout.$spacing-07;
+  padding-top: layout.$spacing-07;
+}
+
+.sectionHeading {
+  margin-bottom: layout.$spacing-05;
+
+  h3 {
+    @include type.type-style("heading-compact-02");
+    color: $ui-05;
+  }
+
+  p {
+    @include type.type-style("body-compact-01");
+    color: $text-02;
+    margin-top: layout.$spacing-02;
+  }
+}
+
+.responsibleOptions {
+  display: grid;
+  gap: layout.$spacing-04;
+}
+
+.emptyResponsibleText {
+  @include type.type-style("body-compact-01");
+  color: $text-02;
 }
 
 .personEntrySwitcher {

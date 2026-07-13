@@ -76,7 +76,11 @@ function Identifier({ identifier, highlighted }: { identifier: fhir.Identifier; 
   return (
     <span className={highlighted ? styles.highlightedIdentifier : styles.plainIdentifier}>
       {label ? <span>{label}:&nbsp;</span> : null}
-      <span className={styles.identifierValue}>{identifier.value}</span>
+      {highlighted ? (
+        <strong className={styles.identifierValue}>{identifier.value}</strong>
+      ) : (
+        <span className={styles.identifierValue}>{identifier.value}</span>
+      )}
     </span>
   );
 }

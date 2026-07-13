@@ -204,10 +204,49 @@ export function hasResponsibleRelationship(
       (relationship) =>
         relationship.action !== 'DELETE' &&
         hasRelatedPerson(relationship) &&
+        relationship.isCompanion &&
         !!relationship.relationshipType &&
         minorResponsibleRelationshipTypes.includes(relationship.relationshipType) &&
         !isUnderageResponsibleRelationship(relationship, minorResponsibleRelationshipTypes),
     ) ?? false
+  );
+}
+
+const fatherRelationshipTypeUuid = '8d91a210-c2cc-11de-8d13-0010c6dffd0f';
+
+function normalizeRelationshipLabel(value?: string) {
+  return (value ?? '')
+    .trim()
+    .toLocaleLowerCase()
+    .normalize('NFD')
+    .replace(/\p{Diacritic}/gu, '');
+}
+
+function isActiveCompleteRelationship(relationship: RelationshipValue) {
+  return relationship.action !== 'DELETE' && !!relationship.relationshipType && hasRelatedPerson(relationship);
+}
+
+export function hasMultipleFatherRelationships(relationships: Array<RelationshipValue> | undefined) {
+  const fatherRelationships =
+    relationships?.filter((relationship) => {
+      if (!isActiveCompleteRelationship(relationship)) {
+        return false;
+      }
+
+      const [relationshipTypeUuid, direction] = relationship.relationshipType.split('/');
+      return (
+        (relationshipTypeUuid === fatherRelationshipTypeUuid && direction === 'aIsToB') ||
+        ['father', 'padre'].includes(normalizeRelationshipLabel(relationship.relation))
+      );
+    }) ?? [];
+
+  return fatherRelationships.length > 1;
+}
+
+export function hasMultiplePrimaryResponsiblePersons(relationships: Array<RelationshipValue> | undefined) {
+  return (
+    (relationships?.filter((relationship) => isActiveCompleteRelationship(relationship) && relationship.isCompanion)
+      .length ?? 0) > 1
   );
 }
 
@@ -217,6 +256,7 @@ export function isUnderageResponsibleRelationship(
 ) {
   if (
     relationship.action === 'DELETE' ||
+    !relationship.isCompanion ||
     !relationship.relationshipType ||
     !minorResponsibleRelationshipTypes.includes(relationship.relationshipType)
   ) {
@@ -460,6 +500,16 @@ export function getValidationSchema(
             t('relationshipPersonMustExist', 'Family member or companion must be an existing person'),
             (relationship) => hasRelatedPerson(relationship as RelationshipValue),
           ),
+      )
+      .test(
+        'patient-has-only-one-father',
+        t('patientCanOnlyHaveOneFather', 'The patient can only have one father'),
+        (relationships?: Array<RelationshipValue>) => !hasMultipleFatherRelationships(relationships),
+      )
+      .test(
+        'patient-has-only-one-primary-responsible',
+        t('patientCanOnlyHaveOnePrimaryResponsible', 'Select only one primary responsible person'),
+        (relationships?: Array<RelationshipValue>) => !hasMultiplePrimaryResponsiblePersons(relationships),
       )
       .test(
         'responsible-relationship-must-be-adult',

@@ -62,9 +62,8 @@ export function useInitialPatientRelationships(patientUuid: string): {
       };
     });
 
-    // Fold each companion (Acompañante) relationship into the family
-    // relationship of the same person, so the person shows as a single row
-    // with the companion checkbox ticked.
+    // Fold the persisted primary-responsible relationship into the person's family
+    // link so editing keeps one row and restores the principal selection.
     const companions = companionTypeUuid ? mapped.filter((m) => m.typeUuid === companionTypeUuid) : [];
     const relationships: Array<RelationshipValue> = mapped
       .filter((m) => !companionTypeUuid || m.typeUuid !== companionTypeUuid)

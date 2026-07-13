@@ -9,11 +9,13 @@ import {
 } from './identity/identity-documents';
 import { fetchPersonForPromotion, isPersonAlreadyPatient } from './identity/identity-search.resource';
 import {
+  deleteRelationship,
   generateIdentifier,
   promotePersonToPatient,
   savePatient,
   savePerson,
   saveRelationship,
+  updateRelationship,
 } from './patient-registration.resource';
 import { type FormValues } from './patient-registration.types';
 import {
@@ -34,10 +36,12 @@ import {
 vi.mock('./patient-registration.resource', async () => ({
   ...(await vi.importActual('./patient-registration.resource')),
   generateIdentifier: vi.fn(),
+  deleteRelationship: vi.fn(),
   promotePersonToPatient: vi.fn(),
   savePatient: vi.fn(),
   savePerson: vi.fn(),
   saveRelationship: vi.fn(),
+  updateRelationship: vi.fn(),
 }));
 
 vi.mock('./identity/identity-search.resource', () => ({
@@ -50,6 +54,8 @@ const mockPromotePersonToPatient = vi.mocked(promotePersonToPatient);
 const mockSavePatient = vi.mocked(savePatient);
 const mockSavePerson = vi.mocked(savePerson);
 const mockSaveRelationship = vi.mocked(saveRelationship);
+const mockUpdateRelationship = vi.mocked(updateRelationship);
+const mockDeleteRelationship = vi.mocked(deleteRelationship);
 const mockFetchPersonForPromotion = vi.mocked(fetchPersonForPromotion);
 const mockIsPersonAlreadyPatient = vi.mocked(isPersonAlreadyPatient);
 
@@ -529,6 +535,51 @@ describe('FormManager', () => {
         personB: 'patient-uuid',
         relationshipType: 'companion-type-uuid',
       });
+    });
+
+    it('creates the primary responsible relationship when an existing family link is marked for update', async () => {
+      await FormManager.saveRelationships(
+        [
+          {
+            action: 'UPDATE',
+            isCompanion: true,
+            relatedPersonUuid: 'responsible-person-uuid',
+            relationshipType: 'family-type-uuid/aIsToB',
+            uuid: 'family-relationship-uuid',
+          },
+        ],
+        { data: { uuid: 'patient-uuid' } } as never,
+        { companionRelationshipType: 'companion-type-uuid/aIsToB' },
+      );
+
+      expect(mockUpdateRelationship).toHaveBeenCalledWith(
+        'family-relationship-uuid',
+        expect.objectContaining({ relationshipType: 'family-type-uuid' }),
+      );
+      expect(mockSaveRelationship).toHaveBeenCalledWith({
+        personA: 'responsible-person-uuid',
+        personB: 'patient-uuid',
+        relationshipType: 'companion-type-uuid',
+      });
+    });
+
+    it('deletes the primary responsible relationship when an existing person is unmarked', async () => {
+      await FormManager.saveRelationships(
+        [
+          {
+            action: 'UPDATE',
+            companionRelationshipUuid: 'companion-relationship-uuid',
+            isCompanion: false,
+            relatedPersonUuid: 'responsible-person-uuid',
+            relationshipType: 'family-type-uuid/aIsToB',
+            uuid: 'family-relationship-uuid',
+          },
+        ],
+        { data: { uuid: 'patient-uuid' } } as never,
+        { companionRelationshipType: 'companion-type-uuid/aIsToB' },
+      );
+
+      expect(mockDeleteRelationship).toHaveBeenCalledWith('companion-relationship-uuid');
     });
 
     it('does not attempt to create a relationship when no person is selected nor pending', async () => {

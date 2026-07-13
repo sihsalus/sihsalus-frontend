@@ -6,6 +6,7 @@ import {
   birthAddressMarkerField,
   filterOutUndefinedPatientIdentifiers,
   getAddressFieldValuesFromFhirPatient,
+  getFormValuesFromFhirPatient,
   getPatientUuidMapFromFhirPatient,
 } from './patient-registration-utils';
 
@@ -38,6 +39,13 @@ describe('filterOutUndefinedPatientIdentifiers', () => {
   it('should retain auto-generated identifiers with manual entry', () => {
     const filteredIdentifiers = filterOutUndefinedPatientIdentifiers(getIdentifiers(true, true));
     expect(filteredIdentifiers.OpenMRSId).toBeDefined();
+  });
+
+  it('does not throw when an incomplete auto-generated identifier has no source', () => {
+    const identifiers = getIdentifiers();
+    identifiers.OpenMRSId.selectedSource = undefined;
+
+    expect(filterOutUndefinedPatientIdentifiers(identifiers).OpenMRSId).toBeUndefined();
   });
 });
 
@@ -123,6 +131,26 @@ describe('structured patient addresses', () => {
     expect(getPatientUuidMapFromFhirPatient(patient)).toMatchObject({
       preferredAddressUuid: 'residence-address-uuid',
       birthAddressUuid: 'birth-address-uuid',
+    });
+  });
+});
+
+describe('legacy FHIR patient mapping', () => {
+  it('maps a patient with missing names, identifiers, birthdate, and telecom without throwing', () => {
+    const patient = { id: 'patient-uuid' } as fhir.Patient;
+
+    expect(getFormValuesFromFhirPatient(patient)).toMatchObject({
+      patientUuid: 'patient-uuid',
+      givenName: '',
+      familyName: '',
+      gender: '',
+      telephoneNumber: '',
+    });
+    expect(getPatientUuidMapFromFhirPatient(patient)).toEqual({
+      preferredNameUuid: undefined,
+      additionalNameUuid: undefined,
+      preferredAddressUuid: undefined,
+      birthAddressUuid: undefined,
     });
   });
 });

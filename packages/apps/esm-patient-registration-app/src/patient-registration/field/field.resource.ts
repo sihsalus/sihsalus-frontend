@@ -31,21 +31,21 @@ function useConceptErrorSnackbar(error: Error | undefined) {
   }, [error]);
 }
 
-export function useConcept(conceptUuid: string): { data: ConceptResponse; isLoading: boolean } {
+export function useConcept(conceptUuid: string): { data?: ConceptResponse; error?: Error; isLoading: boolean } {
   const shouldFetch = typeof conceptUuid === 'string' && conceptUuid !== '';
   const { data, error, isLoading } = useSWRImmutable<FetchResponse<ConceptResponse>, Error>(
     shouldFetch ? `${restBaseUrl}/concept/${conceptUuid}` : null,
     openmrsFetch,
   );
   useConceptErrorSnackbar(error);
-  const results = useMemo(() => ({ data: data?.data, isLoading }), [data, isLoading]);
+  const results = useMemo(() => ({ data: data?.data, error, isLoading }), [data, error, isLoading]);
   return results;
 }
 
 export function useConceptAnswers(conceptUuid: string): {
   data: Array<ConceptAnswers>;
   isLoading: boolean;
-  error: Error | undefined;
+  error?: Error;
 } {
   const shouldFetch = typeof conceptUuid === 'string' && conceptUuid !== '';
   const { data, error, isLoading } = useSWRImmutable<FetchResponse<ConceptResponse>, Error>(

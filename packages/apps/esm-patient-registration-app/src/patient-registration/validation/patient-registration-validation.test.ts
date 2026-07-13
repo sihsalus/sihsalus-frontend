@@ -587,12 +587,32 @@ describe('Patient registration validation', () => {
         {
           action: 'ADD',
           relatedPersonUuid: '11524ae7-3ef6-4ab6-aff6-804ffc58704a',
+          relatedPersonAge: 30,
           relationshipType: 'e6be4def-dbc8-462a-8714-53da66903cb8/aIsToB',
         },
       ],
     };
     const validationError = await validateFormValues(minorWithRelationship);
     expect(validationError).toBeFalsy();
+  });
+
+  it('does not assume that a responsible person with unknown age is an adult', async () => {
+    const minorWithUnknownResponsibleAge = {
+      ...validFormValues,
+      birthdate: dayjs().subtract(10, 'years').toDate(),
+      relationships: [
+        {
+          action: 'ADD',
+          relatedPersonUuid: '11524ae7-3ef6-4ab6-aff6-804ffc58704a',
+          relationshipType: 'e6be4def-dbc8-462a-8714-53da66903cb8/aIsToB',
+        },
+      ],
+    };
+
+    const validationError = await validateFormValues(minorWithUnknownResponsibleAge);
+
+    expect(validationError.errors).toContain('responsiblePersonAgeUnknown');
+    expect(validationError.errors).not.toContain('responsibleRelationshipRequiredForMinor');
   });
 
   it('should not allow a minor patient with an underage responsible relationship', async () => {
@@ -693,6 +713,24 @@ describe('Patient registration validation', () => {
     expect(validationError.errors).toContain('negativeMonths');
   });
 
+  it('requires estimated age months to be a whole value between 0 and 11', async () => {
+    const tooManyMonths = await validateFormValues({
+      ...validFormValues,
+      birthdateEstimated: true,
+      yearsEstimated: 20,
+      monthsEstimated: 12,
+    });
+    const fractionalMonths = await validateFormValues({
+      ...validFormValues,
+      birthdateEstimated: true,
+      yearsEstimated: 20,
+      monthsEstimated: 1.5,
+    });
+
+    expect(tooManyMonths.errors).toContain('estimatedMonthsInvalid');
+    expect(fractionalMonths.errors).toContain('estimatedMonthsInvalid');
+  });
+
   it('should throw an error when yearsEstimated is more than 140', async () => {
     const invalidFormValues = {
       ...validFormValues,
@@ -775,5 +813,21 @@ describe('Patient registration validation', () => {
     };
     const validationError = await validateFormValues(invalidFormValues);
     expect(validationError.errors).toContain('deathDateInFuture');
+  });
+
+  it('allows birth and death on the same calendar day', async () => {
+    await expect(
+      getValidationSchema(
+        (await getConfig('@openmrs/esm-patient-registration-app')) as unknown as RegistrationConfig,
+      ).validate({
+        ...validFormValues,
+        birthdate: new Date('1990-01-01T00:00:00'),
+        isDead: true,
+        deathDate: new Date('1990-01-01T00:00:00'),
+        deathTime: '01:00',
+        deathTimeFormat: 'AM',
+        deathCause: 'cause-concept-uuid',
+      }),
+    ).resolves.toBeDefined();
   });
 });

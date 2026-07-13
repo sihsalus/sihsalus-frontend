@@ -1,4 +1,4 @@
-import { ComboBox, Layer, Select, SelectItem } from '@carbon/react';
+import { ComboBox, InlineNotification, Layer, Select, SelectItem } from '@carbon/react';
 import { reportError, useSession, userHasAccess } from '@openmrs/esm-framework';
 import classNames from 'classnames';
 import { Field } from 'formik';
@@ -67,7 +67,6 @@ export function CodedPersonAttributeField({
   const fieldName = `attributes.${personAttributeType.uuid}`;
   const displayLabel = label ?? personAttributeType?.display;
   const labelText = required ? displayLabel : `${displayLabel} (${t('optional', 'optional')})`;
-
   useEffect(() => {
     if (isMissingAnswerSet) {
       reportError(
@@ -108,7 +107,27 @@ export function CodedPersonAttributeField({
   }, [answerConceptSetUuid, id, isEmptyAnswerSet, t]);
 
   if (isMissingAnswerSet || isInvalidAnswerSet || isEmptyAnswerSet || cannotLoadConceptAnswers) {
-    return null;
+    return (
+      <InlineNotification
+        hideCloseButton
+        kind={required ? 'error' : 'warning'}
+        lowContrast
+        title={t('codedPersonAttributeUnavailableTitle', 'No se pudo cargar {{field}}', {
+          field: displayLabel,
+        })}
+        subtitle={
+          required
+            ? t(
+                'codedPersonAttributeUnavailableRequired',
+                'Este campo obligatorio no está disponible. Contacte al administrador del sistema.',
+              )
+            : t(
+                'codedPersonAttributeUnavailableOptional',
+                'Este campo opcional no está disponible por configuración. Puede continuar con el registro.',
+              )
+        }
+      />
+    );
   }
 
   return (

@@ -20,7 +20,9 @@ import {
   peruInsuranceCodeAttributeTypeUuid,
 } from '../../peru-registration-config';
 import { IdentityLookupField } from './identity-lookup-field.component';
+import { lookupReniecIdentityByDni } from './reniec-lookup.resource';
 import { SisLookupField } from './sis-lookup-field.component';
+import { lookupSisInsuranceByDni } from './sis-lookup.resource';
 
 vi.mock('../../identity/identity-search.resource', () => ({
   searchLocalIdentityByDocument: vi.fn(),
@@ -105,6 +107,10 @@ function renderLookup(component: React.ReactNode, values: FormValues = buildForm
 }
 
 const lookupButtonName = /buscar en base local y reniec/i;
+
+beforeEach(() => {
+  globalThis.spaEnv = 'development';
+});
 
 describe('IdentityLookupField', () => {
   beforeEach(() => {
@@ -254,5 +260,14 @@ describe('SisLookupField', () => {
 
     expect(screen.getByText('El DNI debe tener 8 dígitos')).toBeInTheDocument();
     expect(setFieldValue).not.toHaveBeenCalled();
+  });
+});
+
+describe('synthetic external lookup data', () => {
+  it('never returns demo identities or insurance data outside local development', async () => {
+    globalThis.spaEnv = 'production';
+
+    await expect(lookupReniecIdentityByDni('12345678')).resolves.toBeNull();
+    await expect(lookupSisInsuranceByDni('12345678')).resolves.toBeNull();
   });
 });

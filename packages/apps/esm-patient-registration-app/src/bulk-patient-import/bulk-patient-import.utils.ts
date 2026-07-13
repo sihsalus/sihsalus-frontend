@@ -3,6 +3,13 @@ import type { Workbook } from 'exceljs';
 import { v4 } from 'uuid';
 
 import { generateIdentifier, savePatient } from '../patient-registration/patient-registration.resource';
+import { searchLocalIdentityByDocument } from '../patient-registration/identity/identity-search.resource';
+import { documentTypeConceptUuids } from '../patient-registration/identity/identity-documents';
+import {
+  patientFamilyNameMaxLength,
+  patientGivenNameMaxLength,
+  patientNamePattern,
+} from '../patient-registration/patient-name-limits';
 import type {
   Patient,
   PatientIdentifier,
@@ -153,7 +160,7 @@ export async function parseSantaClotildeWorkbook(file: File): Promise<Array<Pars
       return;
     }
 
-    const row = normalizeAndValidateRow(raw, rowNumber);
+    const row = normalizeAndValidateImportRow(raw, rowNumber);
     rows.push(row);
 
     if (row.normalized.dni) {
@@ -191,8 +198,30 @@ export async function createPatientFromImportRow(
   identifierTypes: Array<PatientIdentifierType>,
   locationUuid: string,
 ) {
+  row.patientUuid ??= v4();
+  const existingMatches = await searchLocalIdentityByDocument(row.normalized.dni, undefined, {
+    patientIdentifierTypeUuid: peruDniPatientIdentifierTypeUuid,
+    personDocumentTypeConceptUuid: documentTypeConceptUuids.dni,
+  });
+  const existingPatient = existingMatches.find((match) => match.kind === 'patient');
+  const existingPerson = existingMatches.find((match) => match.kind === 'person');
+
+  if (existingPatient?.uuid === row.patientUuid) {
+    return row.patientUuid;
+  }
+
+  if (existingPatient) {
+    throw new Error(`Ya existe un paciente con DNI ${row.normalized.dni}.`);
+  }
+
+  if (existingPerson) {
+    throw new Error(
+      `Ya existe una persona con DNI ${row.normalized.dni}. Regístrela mediante el flujo manual para evitar duplicados.`,
+    );
+  }
+
   const identifiers = await buildPatientIdentifiers(row, identifierTypes, locationUuid);
-  const patient = buildPatientPayload(row, identifiers);
+  const patient = buildPatientPayload(row, identifiers, row.patientUuid);
   const response = await savePatient(patient);
   return response.data.uuid as string;
 }
@@ -250,7 +279,10 @@ function readHeaderMap(row): Record<SantaClotildeHeader, number> {
   return map;
 }
 
-function normalizeAndValidateRow(raw: Record<SantaClotildeHeader, string>, rowNumber: number): ParsedPatientImportRow {
+export function normalizeAndValidateImportRow(
+  raw: Record<SantaClotildeHeader, string>,
+  rowNumber: number,
+): ParsedPatientImportRow {
   const dni = raw.DNI.trim();
   const gender = normalizeGender(raw.SEXO);
   const birthdate = normalizeDate(raw['F.N.']);
@@ -296,6 +328,15 @@ function normalizeAndValidateRow(raw: Record<SantaClotildeHeader, string>, rowNu
 
   if (!normalized.givenName) {
     errors.push('NOMBRES is required.');
+  }
+
+  validateImportedName(normalized.givenName, 'NOMBRES', patientGivenNameMaxLength, errors, true);
+  validateImportedName(normalized.middleName, 'NOMBRES', patientGivenNameMaxLength, errors, false);
+  validateImportedName(normalized.familyName, 'A.PATERNO', patientFamilyNameMaxLength, errors);
+  validateImportedName(normalized.familyName2, 'A.MATERNO', patientFamilyNameMaxLength, errors);
+
+  if (birthdate && isMinorBirthdate(birthdate)) {
+    errors.push('Los pacientes menores de edad deben registrarse manualmente junto con su responsable.');
   }
 
   if (!normalized.domicilio) {
@@ -357,9 +398,11 @@ async function buildPatientIdentifiers(
   return identifiers;
 }
 
-function buildPatientPayload(row: ParsedPatientImportRow, identifiers: Array<PatientIdentifier>): Patient {
-  const patientUuid = v4();
-
+function buildPatientPayload(
+  row: ParsedPatientImportRow,
+  identifiers: Array<PatientIdentifier>,
+  patientUuid: string,
+): Patient {
   return {
     uuid: patientUuid,
     identifiers,
@@ -389,6 +432,37 @@ function buildPatientPayload(row: ParsedPatientImportRow, identifiers: Array<Pat
       dead: false,
     },
   } as Patient;
+}
+
+function validateImportedName(
+  value: string,
+  field: string,
+  maxLength: number,
+  errors: Array<string>,
+  requireMinimumLength = true,
+) {
+  if (!value) {
+    return;
+  }
+  if (requireMinimumLength && value.length < 2) {
+    errors.push(`${field} must have at least 2 characters.`);
+  }
+  if (value.length > maxLength) {
+    errors.push(`${field} exceeds the maximum length of ${maxLength} characters.`);
+  }
+  if (!patientNamePattern.test(value)) {
+    errors.push(`${field} contains invalid characters.`);
+  }
+}
+
+function isMinorBirthdate(birthdate: string) {
+  const [year, month, day] = birthdate.split('-').map(Number);
+  const today = new Date();
+  let age = today.getFullYear() - year;
+  if (today.getMonth() + 1 < month || (today.getMonth() + 1 === month && today.getDate() < day)) {
+    age -= 1;
+  }
+  return age < 18;
 }
 
 function applyDuplicateMessages(

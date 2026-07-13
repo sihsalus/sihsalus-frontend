@@ -24,10 +24,10 @@ export interface ObsFieldProps {
 
 export function ObsField({ fieldDefinition }: ObsFieldProps) {
   const { t } = useTranslation(moduleName);
-  const { data: concept, isLoading } = useConcept(fieldDefinition.uuid);
+  const { data: concept, error, isLoading } = useConcept(fieldDefinition.uuid);
   const config = useConfig<RegistrationConfig>();
 
-  if (!config.registrationObs.encounterTypeUuid) {
+  if (!config.registrationObs?.encounterTypeUuid) {
     console.error(
       'The registration form has been configured to have obs fields, ' +
         'but no registration encounter type has been configured. Obs fields ' +
@@ -38,6 +38,17 @@ export function ObsField({ fieldDefinition }: ObsFieldProps) {
 
   if (isLoading) {
     return null;
+  }
+
+  if (error || !concept?.datatype) {
+    return (
+      <InlineNotification
+        hideCloseButton
+        kind="error"
+        title={t('obsFieldLoadError', 'No se pudo cargar el campo clínico')}
+        subtitle={fieldDefinition.label ?? fieldDefinition.id}
+      />
+    );
   }
 
   switch (concept.datatype.display) {
@@ -232,9 +243,11 @@ function CodedObsField({ concept, answerConceptSetUuid, label, required, customC
   const { t } = useTranslation(moduleName);
   const fieldName = `obs.${concept.uuid}`;
 
-  const { data: conceptAnswers, isLoading: isLoadingConceptAnswers } = useConceptAnswers(
-    customConceptAnswers.length ? '' : (answerConceptSetUuid ?? concept.uuid),
-  );
+  const {
+    data: conceptAnswers,
+    error: conceptAnswersError,
+    isLoading: isLoadingConceptAnswers,
+  } = useConceptAnswers(customConceptAnswers.length ? '' : (answerConceptSetUuid ?? concept.uuid));
 
   const answers = useMemo(
     () =>
@@ -242,9 +255,20 @@ function CodedObsField({ concept, answerConceptSetUuid, label, required, customC
         ? customConceptAnswers
         : isLoadingConceptAnswers
           ? []
-          : conceptAnswers.map((answer) => ({ ...answer, label: answer.display })),
+          : (conceptAnswers ?? []).map((answer) => ({ ...answer, label: answer.display })),
     [customConceptAnswers, conceptAnswers, isLoadingConceptAnswers],
   );
+
+  if (conceptAnswersError) {
+    return (
+      <InlineNotification
+        hideCloseButton
+        kind="error"
+        title={t('obsFieldLoadError', 'No se pudo cargar el campo clínico')}
+        subtitle={label ?? concept.display}
+      />
+    );
+  }
 
   return (
     <div className={classNames(styles.customField, styles.halfWidthInDesktopView)}>

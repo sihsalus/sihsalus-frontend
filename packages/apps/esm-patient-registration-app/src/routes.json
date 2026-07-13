@@ -60,7 +60,7 @@
       "component": "bulkPatientImportAdminCardLink",
       "name": "system-administration-patient-import-card-link",
       "slot": "system-admin-page-card-link-slot",
-      "privileges": "app:opciones.registrarPaciente",
+      "privileges": "Manage Patients",
       "online": true,
       "offline": false
     }

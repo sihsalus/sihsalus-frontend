@@ -13,7 +13,7 @@ import mapValues from 'lodash-es/mapValues';
 import * as Yup from 'yup';
 
 import { type FieldDefinition, type RegistrationConfig } from '../../config-schema';
-import { patientFamilyNameMaxLength, patientGivenNameMaxLength } from '../patient-name-limits';
+import { patientFamilyNameMaxLength, patientGivenNameMaxLength, patientNamePattern } from '../patient-name-limits';
 import { getDatetime } from '../patient-registration.resource';
 import {
   type FetchedPatientIdentifierType,
@@ -31,7 +31,7 @@ const t = (key: string, _value: string) => key;
  * and periods. This blocks digits and symbols such as `@`, `#`, `/`, etc. while still
  * supporting names like "O'Brien", "De la Cruz" or "Jean-Pierre".
  */
-const nameRegex = /^\p{L}[\p{L}\p{M}'.\- ]*$/u;
+const nameRegex = patientNamePattern;
 const nameInvalidCharactersMessage = t(
   'nameContainsInvalidCharacters',
   'Name can only contain letters, spaces, hyphens and apostrophes',
@@ -252,9 +252,30 @@ export function hasResponsibleRelationship(
         hasRelatedPerson(relationship) &&
         !!relationship.relationshipType &&
         minorResponsibleRelationshipTypes.includes(relationship.relationshipType) &&
-        !isUnderageResponsibleRelationship(relationship, minorResponsibleRelationshipTypes),
+        isAdultResponsibleRelationship(relationship, minorResponsibleRelationshipTypes),
     ) ?? false
   );
+}
+
+export function isAdultResponsibleRelationship(
+  relationship: RelationshipValue,
+  minorResponsibleRelationshipTypes: Array<string> = [],
+) {
+  if (
+    relationship.action === 'DELETE' ||
+    !relationship.relationshipType ||
+    !minorResponsibleRelationshipTypes.includes(relationship.relationshipType)
+  ) {
+    return false;
+  }
+
+  const newPersonAge = relationship.newPerson?.estimatedAge?.trim();
+  if (newPersonAge) {
+    return Number(newPersonAge) >= 18;
+  }
+
+  const relatedPersonAge = relationship.relatedPersonAge ?? getAgeFromBirthdate(relationship.relatedPersonBirthdate);
+  return typeof relatedPersonAge === 'number' && relatedPersonAge >= 18;
 }
 
 export function isUnderageResponsibleRelationship(
@@ -285,6 +306,23 @@ export function hasUnderageResponsibleRelationship(
   return (
     relationships?.some((relationship) =>
       isUnderageResponsibleRelationship(relationship, minorResponsibleRelationshipTypes),
+    ) ?? false
+  );
+}
+
+export function hasResponsibleRelationshipWithUnknownAge(
+  relationships: Array<RelationshipValue> | undefined,
+  minorResponsibleRelationshipTypes: Array<string> = [],
+) {
+  return (
+    relationships?.some(
+      (relationship) =>
+        relationship.action !== 'DELETE' &&
+        hasRelatedPerson(relationship) &&
+        !!relationship.relationshipType &&
+        minorResponsibleRelationshipTypes.includes(relationship.relationshipType) &&
+        !isAdultResponsibleRelationship(relationship, minorResponsibleRelationshipTypes) &&
+        !isUnderageResponsibleRelationship(relationship, minorResponsibleRelationshipTypes),
     ) ?? false
   );
 }
@@ -447,7 +485,7 @@ export function getValidationSchema(
         function (value) {
           const { birthdate } = this.parent;
           if (birthdate && value) {
-            return dayjs(value).isAfter(birthdate);
+            return !dayjs(value).startOf('day').isBefore(dayjs(birthdate).startOf('day'));
           }
           return true;
         },
@@ -556,6 +594,20 @@ export function getValidationSchema(
         },
       )
       .test(
+        'responsible-relationship-age-must-be-known',
+        t('responsiblePersonAgeUnknown', 'The responsible person must have a known age or date of birth'),
+        function (relationships?: Array<RelationshipValue>) {
+          const values = this.parent as FormValues;
+          return (
+            !isMinorPatient(values) ||
+            !hasResponsibleRelationshipWithUnknownAge(
+              relationships,
+              config.relationshipOptions?.minorResponsibleRelationshipTypes,
+            )
+          );
+        },
+      )
+      .test(
         'responsible-relationship-required-for-minors',
         t(
           'responsibleRelationshipRequiredForMinor',
@@ -566,6 +618,10 @@ export function getValidationSchema(
           return (
             !isMinorPatient(values) ||
             hasUnderageResponsibleRelationship(
+              relationships,
+              config.relationshipOptions?.minorResponsibleRelationshipTypes,
+            ) ||
+            hasResponsibleRelationshipWithUnknownAge(
               relationships,
               config.relationshipOptions?.minorResponsibleRelationshipTypes,
             ) ||

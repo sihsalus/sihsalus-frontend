@@ -1,5 +1,4 @@
 import { parseDate } from '@openmrs/esm-framework';
-import camelCase from 'lodash-es/camelCase';
 import * as Yup from 'yup';
 
 import {
@@ -122,31 +121,25 @@ export function cancelRegistration() {
 
 export function getFormValuesFromFhirPatient(patient: fhir.Patient) {
   const result = {} as FormValues;
-  const patientName = patient.name[0];
-  const additionalPatientName = patient.name[1];
+  const patientName = patient.name?.[0];
+  const additionalPatientName = patient.name?.[1];
 
   result.patientUuid = patient.id;
-  result.givenName = patientName?.given[0];
-  result.middleName = patientName?.given[1];
-  result.familyName = patientName?.family;
-  result.familyName2 = getFamilyName2(patientName);
-  result.addNameInLocalLanguage = additionalPatientName ? true : undefined;
-  result.additionalGivenName = additionalPatientName?.given[0];
-  result.additionalMiddleName = additionalPatientName?.given[1];
-  result.additionalFamilyName = additionalPatientName?.family;
-  result.additionalFamilyName2 = getFamilyName2(additionalPatientName);
+  result.givenName = patientName?.given?.[0] ?? '';
+  result.middleName = patientName?.given?.[1] ?? '';
+  result.familyName = patientName?.family ?? '';
+  result.familyName2 = getFamilyName2(patientName) ?? '';
+  result.addNameInLocalLanguage = !!additionalPatientName;
+  result.additionalGivenName = additionalPatientName?.given?.[0] ?? '';
+  result.additionalMiddleName = additionalPatientName?.given?.[1] ?? '';
+  result.additionalFamilyName = additionalPatientName?.family ?? '';
+  result.additionalFamilyName2 = getFamilyName2(additionalPatientName) ?? '';
 
-  result.gender = patient.gender;
+  result.gender = patient.gender ?? '';
   result.birthdate = patient.birthDate ? parseDate(patient.birthDate) : undefined;
-  result.telephoneNumber = patient.telecom ? patient.telecom[0].value : '';
+  result.telephoneNumber = patient.telecom?.find((contact) => contact.system === 'phone')?.value ?? '';
 
-  return {
-    ...result,
-    ...patient.identifier.map((identifier) => {
-      const key = camelCase(identifier.system || identifier.type.text);
-      return { [key]: identifier.value };
-    }),
-  };
+  return result;
 }
 
 function getAddressFieldValuesFromFhirAddress(address?: fhir.Address) {
@@ -165,9 +158,12 @@ function getAddressFieldValuesFromFhirAddress(address?: fhir.Address) {
           result['countyDistrict'] = address[key];
           break;
         case 'extension':
-          address[key].forEach((ext) => {
-            ext.extension.forEach((extension) => {
-              result[extension.url.split('#')[1]] = extension.valueString;
+          address[key]?.forEach((ext) => {
+            ext.extension?.forEach((extension) => {
+              const fieldName = extension.url?.split('#')[1];
+              if (fieldName) {
+                result[fieldName] = extension.valueString;
+              }
             });
           });
           break;
@@ -227,8 +223,8 @@ export function getAddressFieldValuesFromFhirPatient(
 }
 
 export function getPatientUuidMapFromFhirPatient(patient: fhir.Patient): PatientUuidMapType {
-  const patientName = patient.name[0];
-  const additionalPatientName = patient.name[1];
+  const patientName = patient.name?.[0];
+  const additionalPatientName = patient.name?.[1];
   const residenceAddress = getResidenceAddressFromFhirPatient(patient);
   const birthAddress = getBirthAddressFromFhirPatient(patient);
 
@@ -237,15 +233,11 @@ export function getPatientUuidMapFromFhirPatient(patient: fhir.Patient): Patient
     additionalNameUuid: additionalPatientName?.id,
     preferredAddressUuid: residenceAddress?.id,
     birthAddressUuid: birthAddress?.id,
-    ...patient.identifier.map((identifier) => {
-      const key = camelCase(identifier.system || identifier.type.text);
-      return { [key]: { uuid: identifier.id, value: identifier.value } };
-    }),
   };
 }
 
 export function getPatientIdentifiersFromFhirPatient(patient: fhir.Patient): Array<PatientIdentifier> {
-  return patient.identifier.map((identifier) => {
+  return (patient.identifier ?? []).map((identifier) => {
     return {
       uuid: identifier.id,
       identifier: identifier.value,
@@ -255,8 +247,9 @@ export function getPatientIdentifiersFromFhirPatient(patient: fhir.Patient): Arr
 
 export function getPhonePersonAttributeValueFromFhirPatient(patient: fhir.Patient) {
   const result = {};
-  if (patient.telecom) {
-    result['phone'] = patient.telecom[0].value;
+  const phone = patient.telecom?.find((contact) => contact.system === 'phone')?.value;
+  if (phone) {
+    result['telephoneNumber'] = phone;
   }
   return result;
 }
@@ -266,7 +259,7 @@ export const filterOutUndefinedPatientIdentifiers = (patientIdentifiers: Identif
   Object.fromEntries(
     Object.entries(patientIdentifiers).filter(
       ([_key, value]) =>
-        (value.autoGeneration && value.selectedSource.autoGenerationOption.manualEntryEnabled) ||
+        (value.autoGeneration && value.selectedSource?.autoGenerationOption?.manualEntryEnabled) ||
         value.identifierValue !== undefined,
     ),
   );

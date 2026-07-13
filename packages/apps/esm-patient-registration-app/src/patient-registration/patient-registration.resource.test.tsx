@@ -29,6 +29,7 @@ describe('savePatient', () => {
 
 describe('savePerson', () => {
   it('posts to the OpenMRS person endpoint without patient identifiers', () => {
+    const signal = new AbortController().signal;
     const person = {
       names: [
         {
@@ -40,7 +41,7 @@ describe('savePerson', () => {
       gender: 'F',
     };
 
-    savePerson(person);
+    savePerson(person, signal);
 
     expect(mockOpenmrsFetch).toHaveBeenCalledWith(`${restBaseUrl}/person`, {
       headers: {
@@ -48,7 +49,7 @@ describe('savePerson', () => {
       },
       method: 'POST',
       body: person,
-      signal: expect.any(AbortSignal),
+      signal,
     });
   });
 });

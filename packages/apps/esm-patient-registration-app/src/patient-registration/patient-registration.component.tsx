@@ -1,4 +1,4 @@
-import { Button, InlineLoading, Link } from '@carbon/react';
+import { Button, InlineLoading, InlineNotification, Link } from '@carbon/react';
 import { XAxis } from '@carbon/react/icons';
 import {
   createErrorHandler,
@@ -23,18 +23,26 @@ import { ResourcesContext } from '../offline.resources';
 import BeforeSavePrompt from './before-save-prompt';
 import { type SavePatientForm, SavePatientTransactionManager } from './form-manager';
 import { fetchPersonForPromotion } from './identity/identity-search.resource';
+import { searchLocalIdentityByDocument } from './identity/identity-search.resource';
+import { getDocumentTypeDefinitionByIdentifierType, normalizeDocumentNumber } from './identity/identity-documents';
 import { applyPersonToRegistrationForm } from './identity/promotion';
 import { DummyDataInput } from './input/dummy-data/dummy-data-input.component';
+import { getDocumentIdentifierEntry } from './field/external-lookup/dni-identifier';
 import styles from './patient-registration.scss';
 import { type CapturePhotoProps, type FormValues } from './patient-registration.types';
 import { PatientRegistrationContext } from './patient-registration-context';
-import { useInitialAddressFieldValues, useInitialFormValues, usePatientUuidMap } from './patient-registration-hooks';
+import {
+  createInitialFormValues,
+  useInitialAddressFieldValues,
+  useInitialFormValues,
+  usePatientUuidMap,
+} from './patient-registration-hooks';
 import { cancelRegistration, filterOutUndefinedPatientIdentifiers, scrollIntoView } from './patient-registration-utils';
 import { getEffectiveRegistrationConfig } from './peru-registration-config';
 import { SectionWrapper } from './section/section-wrapper.component';
 import { getValidationSchema } from './validation/patient-registration-validation';
 
-export const initialFormValues = {} as FormValues;
+export const initialFormValues = createInitialFormValues();
 
 interface RegistrationSubmitError {
   status?: number;
@@ -59,9 +67,7 @@ function isSessionExpired(error: unknown): boolean {
   const typedError = error as RegistrationSubmitError & { responseStatus?: number; message?: string };
   const status = typedError.status ?? typedError.responseStatus;
   const lowerCaseMessage = `${typedError.message ?? ''} ${typedError.responseBody?.error?.message ?? ''}`.toLowerCase();
-  return (
-    status === 401 || status === 403 || lowerCaseMessage.includes('session') || lowerCaseMessage.includes('expired')
-  );
+  return status === 401 || lowerCaseMessage.includes('session expired') || lowerCaseMessage.includes('sesión expirada');
 }
 
 export interface PatientRegistrationProps {
@@ -84,40 +90,38 @@ export const PatientRegistration: React.FC<PatientRegistrationProps> = ({ savePa
   const { isLoading: isLoadingPatientToEdit, patient: patientToEdit } = usePatient(patientUuidToEdit);
   const { t } = useTranslation(moduleName);
   const [capturePhotoProps, setCapturePhotoProps] = useState<CapturePhotoProps | null>(null);
-  const [initialFormValuesState, setInitialFormValues] = useInitialFormValues(patientUuidToEdit);
-  const [initialAddressFieldValues] = useInitialAddressFieldValues(patientUuidToEdit);
-  const [patientUuidMap] = usePatientUuidMap(patientUuidToEdit);
+  const [initialFormValuesState, setInitialFormValues, initialFormState = { isLoading: false }] =
+    useInitialFormValues(patientUuidToEdit);
+  const [initialAddressFieldValues, , initialAddressState = { isLoading: false }] =
+    useInitialAddressFieldValues(patientUuidToEdit);
+  const [patientUuidMap, , patientUuidMapState = { isLoading: false }] = usePatientUuidMap(patientUuidToEdit);
   const location = currentSession?.sessionLocation?.uuid;
   const layout = useLayoutType();
   const isDesktopLayout = isDesktop(layout);
-  const inEditMode = !isLoadingPatientToEdit && !!(uuidOfPatientToEdit && patientToEdit);
+  const hasPatientRoute = !!uuidOfPatientToEdit;
+  const isNewPatient = initialFormState.isNewPatient ?? !hasPatientRoute;
+  const inEditMode = !isNewPatient;
   const showDummyData = useMemo(
-    () => window.spaEnv === 'development' && localStorage.getItem('openmrs:devtools') === 'true' && !inEditMode,
-    [inEditMode],
+    () => window.spaEnv === 'development' && localStorage.getItem('openmrs:devtools') === 'true' && !hasPatientRoute,
+    [hasPatientRoute],
   );
   const { data: photo } = usePatientPhoto(patientToEdit?.id);
   const savePatientTransactionManager = useRef(new SavePatientTransactionManager());
+  const promotePersonUuid = useMemo(() => new URLSearchParams(search ?? '').get('promotePerson'), [search]);
+  const [isLoadingPromotion, setIsLoadingPromotion] = useState(!!promotePersonUuid && !hasPatientRoute);
   const validationSchema = getValidationSchema(config, identifierTypes);
   const areIdentifiersUnavailableForSubmit = (hasFormIdentifiers: boolean) =>
     !isOffline &&
     !(inEditMode && hasFormIdentifiers) &&
     (isLoadingIdentifierTypes || !!identifierTypesError || !identifierTypes?.length);
 
-  useEffect(() => {
-    Object.keys(initialFormValues).forEach((key) => {
-      Reflect.deleteProperty(initialFormValues, key);
-    });
-    Object.assign(initialFormValues, initialFormValuesState);
-  }, [initialFormValuesState]);
-
   // Entry point for promoting an existing person from outside the form: opening
   // `patient-registration?promotePerson=<personUuid>` hydrates the form with that
   // person so submitting promotes them (same UUID) instead of creating a new patient.
   const handledPromotePersonUuid = useRef<string | null>(null);
   useEffect(() => {
-    const promotePersonUuid = new URLSearchParams(search).get('promotePerson');
-
-    if (!promotePersonUuid || inEditMode || handledPromotePersonUuid.current === promotePersonUuid) {
+    if (!promotePersonUuid || hasPatientRoute || handledPromotePersonUuid.current === promotePersonUuid) {
+      setIsLoadingPromotion(false);
       return;
     }
 
@@ -127,10 +131,13 @@ export const PatientRegistration: React.FC<PatientRegistrationProps> = ({ savePa
         subtitle: t('promotionOfflineSubtitle', 'La promoción de una persona existente a paciente requiere conexión.'),
         kind: 'warning',
       });
+      handledPromotePersonUuid.current = promotePersonUuid;
+      setIsLoadingPromotion(false);
       return;
     }
 
     handledPromotePersonUuid.current = promotePersonUuid;
+    setIsLoadingPromotion(true);
     let cancelled = false;
 
     fetchPersonForPromotion(promotePersonUuid)
@@ -152,6 +159,7 @@ export const PatientRegistration: React.FC<PatientRegistrationProps> = ({ savePa
           );
           return nextValues;
         });
+        setIsLoadingPromotion(false);
       })
       .catch((error) => {
         console.error('Could not load the person to promote', error);
@@ -161,12 +169,28 @@ export const PatientRegistration: React.FC<PatientRegistrationProps> = ({ savePa
           subtitle: t('promotionLoadErrorSubtitle', 'Verifique que la persona exista e intente nuevamente.'),
           kind: 'error',
         });
+        setIsLoadingPromotion(false);
       });
 
     return () => {
       cancelled = true;
     };
-  }, [search, inEditMode, isOffline, setInitialFormValues, t]);
+  }, [hasPatientRoute, isOffline, promotePersonUuid, setInitialFormValues, t]);
+
+  const hydratedQueuedRegistrationUuid = useRef<string>();
+  useEffect(() => {
+    const queuedRegistration = initialFormState.queuedRegistration;
+    if (!queuedRegistration || hydratedQueuedRegistrationUuid.current === patientUuidToEdit) {
+      return;
+    }
+
+    setCapturePhotoProps(queuedRegistration._patientRegistrationData.capturePhotoProps ?? null);
+    savePatientTransactionManager.current = Object.assign(
+      new SavePatientTransactionManager(),
+      queuedRegistration._patientRegistrationData.savePatientTransactionManager,
+    );
+    hydratedQueuedRegistrationUuid.current = patientUuidToEdit;
+  }, [initialFormState.queuedRegistration, patientUuidToEdit]);
 
   const sections: Array<SectionDefinition> = useMemo(() => {
     return config.sections
@@ -184,8 +208,48 @@ export const PatientRegistration: React.FC<PatientRegistrationProps> = ({ savePa
 
     const updatedFormValues = { ...values, identifiers: filterOutUndefinedPatientIdentifiers(values.identifiers) };
     try {
-      await savePatientForm(
-        !inEditMode,
+      if (isNewPatient && !isOffline && !savePatientTransactionManager.current.patientSaved) {
+        const documentEntry = getDocumentIdentifierEntry(updatedFormValues.identifiers, identifierTypes ?? []);
+        if (documentEntry?.[1]?.identifierValue) {
+          const definition = getDocumentTypeDefinitionByIdentifierType(documentEntry[1].identifierTypeUuid);
+          const documentNumber = normalizeDocumentNumber(documentEntry[1].identifierValue, definition);
+          const identityMatches = await searchLocalIdentityByDocument(documentNumber, abortController, {
+            patientIdentifierTypeUuid: definition?.patientIdentifierTypeUuid ?? undefined,
+            personDocumentTypeConceptUuid: definition?.documentTypeConceptUuid,
+          });
+          const existingPatient = identityMatches.find((match) => match.kind === 'patient');
+          const existingPerson = identityMatches.find((match) => match.kind === 'person');
+
+          if (existingPatient) {
+            throw {
+              responseBody: {
+                error: {
+                  message: t(
+                    'duplicatePatientDocumentError',
+                    'Ya existe un paciente con este documento. Búsquelo antes de registrar uno nuevo.',
+                  ),
+                },
+              },
+            };
+          }
+
+          if (existingPerson && existingPerson.uuid !== updatedFormValues.personUuidToPromote) {
+            throw {
+              responseBody: {
+                error: {
+                  message: t(
+                    'duplicatePersonDocumentError',
+                    'Ya existe una persona con este documento. Use la opción de promover persona para evitar duplicados.',
+                  ),
+                },
+              },
+            };
+          }
+        }
+      }
+
+      const savedPatientUuid = await savePatientForm(
+        isNewPatient,
         updatedFormValues,
         patientUuidMap,
         initialAddressFieldValues,
@@ -215,7 +279,9 @@ export const PatientRegistration: React.FC<PatientRegistrationProps> = ({ savePa
       const rawAfterUrl = new URLSearchParams(search).get('afterUrl');
       // Only allow relative paths (must start with /) to prevent open redirect
       const afterUrl = rawAfterUrl && rawAfterUrl.startsWith('/') ? rawAfterUrl : null;
-      const redirectUrl = interpolateUrl(afterUrl || config.links.submitButton, { patientUuid: values.patientUuid });
+      const redirectUrl = interpolateUrl(afterUrl || config.links.submitButton, {
+        patientUuid: savedPatientUuid ?? updatedFormValues.patientUuid,
+      });
 
       setTarget(redirectUrl);
     } catch (error: unknown) {
@@ -369,13 +435,39 @@ export const PatientRegistration: React.FC<PatientRegistrationProps> = ({ savePa
     }
   };
 
+  const initialDataError = initialFormState.error ?? initialAddressState.error ?? patientUuidMapState.error;
+  const hasStaleInitialData = [initialFormState, initialAddressState, patientUuidMapState].some(
+    (state) => state.hydratedPatientUuid && state.hydratedPatientUuid !== patientUuidToEdit,
+  );
+  const isLoadingInitialData =
+    isLoadingPromotion ||
+    (hasPatientRoute &&
+      (hasStaleInitialData ||
+        (isLoadingPatientToEdit && !initialFormState.queuedRegistration) ||
+        initialFormState.isLoading ||
+        initialAddressState.isLoading ||
+        patientUuidMapState.isLoading));
+
+  if (isLoadingInitialData) {
+    return <InlineLoading description={t('loadingPatientRegistration', 'Cargando datos del paciente...')} />;
+  }
+
+  if (hasPatientRoute && initialDataError) {
+    return (
+      <InlineNotification
+        hideCloseButton
+        kind="error"
+        title={t('patientRegistrationLoadErrorTitle', 'No se pudo cargar el registro del paciente')}
+        subtitle={
+          initialDataError?.message ??
+          t('patientRegistrationLoadErrorSubtitle', 'Recargue la página o contacte al administrador del sistema.')
+        }
+      />
+    );
+  }
+
   return (
-    <Formik
-      enableReinitialize
-      initialValues={initialFormValuesState}
-      validationSchema={validationSchema}
-      onSubmit={onFormSubmit}
-    >
+    <Formik initialValues={initialFormValuesState} validationSchema={validationSchema} onSubmit={onFormSubmit}>
       {(props) => {
         const handleRegisterPatient = async () => {
           const errors = await props.validateForm();

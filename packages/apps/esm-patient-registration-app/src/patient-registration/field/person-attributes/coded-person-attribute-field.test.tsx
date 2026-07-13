@@ -1,7 +1,11 @@
-import { render, screen } from '@testing-library/react';
+import { reportError, useSession } from '@openmrs/esm-framework';
+import { render, screen, waitFor } from '@testing-library/react';
 import { Form, Formik } from 'formik';
 
 import { useConceptAnswers } from '../field.resource';
+
+const mockReportError = vi.mocked(reportError);
+const mockUseSession = vi.mocked(useSession);
 
 import { CodedPersonAttributeField } from './coded-person-attribute-field.component';
 
@@ -28,6 +32,15 @@ describe('CodedPersonAttributeField', () => {
 
   const answerConceptSetUuid = '6682d17f-0777-45e4-a39b-93f77eb3531c';
   beforeEach(() => {
+    vi.clearAllMocks();
+    mockReportError.mockImplementation(() => undefined);
+    mockUseSession.mockReturnValue({
+      authenticated: true,
+      sessionId: 'session-id',
+      user: {
+        privileges: [{ display: 'Get Concepts', name: 'Get Concepts' }],
+      },
+    } as ReturnType<typeof useSession>);
     mockUseConceptAnswers.mockReturnValue({
       data: conceptAnswers,
       isLoading: false,
@@ -186,5 +199,143 @@ describe('CodedPersonAttributeField', () => {
     expect(screen.getByText(/Special Option B/i)).toBeInTheDocument();
     expect(screen.queryByText(/Option 1/i)).not.toBeInTheDocument();
     expect(screen.queryByText(/Option 2/i)).not.toBeInTheDocument();
+  });
+
+  it('does not request remote answers and explains the unavailable optional field without Get Concepts', () => {
+    mockUseSession.mockReturnValue({
+      authenticated: true,
+      sessionId: 'session-id',
+      user: { privileges: [] },
+    } as ReturnType<typeof useSession>);
+
+    render(
+      <Formik initialValues={{}} onSubmit={() => {}}>
+        <Form>
+          <CodedPersonAttributeField
+            id="attributeId"
+            personAttributeType={personAttributeType}
+            answerConceptSetUuid={answerConceptSetUuid}
+            label={personAttributeType.display}
+            customConceptAnswers={[]}
+            required={false}
+          />
+        </Form>
+      </Formik>,
+    );
+
+    expect(screen.queryByLabelText('Referred by (optional)')).not.toBeInTheDocument();
+    expect(screen.getByText('No se pudo cargar Referred by')).toBeInTheDocument();
+    expect(screen.getByText(/campo opcional no está disponible/i)).toBeInTheDocument();
+    expect(mockUseConceptAnswers).toHaveBeenCalledWith('');
+    expect(mockReportError).not.toHaveBeenCalled();
+  });
+
+  it('shows a blocking message when a required field cannot be loaded without Get Concepts', () => {
+    mockUseSession.mockReturnValue({
+      authenticated: true,
+      sessionId: 'session-id',
+      user: { privileges: [] },
+    } as ReturnType<typeof useSession>);
+
+    render(
+      <Formik initialValues={{}} onSubmit={() => {}}>
+        <Form>
+          <CodedPersonAttributeField
+            id="attributeId"
+            personAttributeType={personAttributeType}
+            answerConceptSetUuid={answerConceptSetUuid}
+            label={personAttributeType.display}
+            customConceptAnswers={[]}
+            required
+          />
+        </Form>
+      </Formik>,
+    );
+
+    expect(screen.getByText(/campo obligatorio no está disponible/i)).toBeInTheDocument();
+    expect(mockUseConceptAnswers).toHaveBeenCalledWith('');
+    expect(mockReportError).not.toHaveBeenCalled();
+  });
+
+  it('renders locally configured answers without Get Concepts', () => {
+    mockUseSession.mockReturnValue({
+      authenticated: true,
+      sessionId: 'session-id',
+      user: { privileges: [] },
+    } as ReturnType<typeof useSession>);
+
+    render(
+      <Formik initialValues={{}} onSubmit={() => {}}>
+        <Form>
+          <CodedPersonAttributeField
+            id="attributeId"
+            personAttributeType={personAttributeType}
+            answerConceptSetUuid={answerConceptSetUuid}
+            label={personAttributeType.display}
+            customConceptAnswers={[{ uuid: 'local-answer', label: 'Local answer' }]}
+            required={false}
+          />
+        </Form>
+      </Formik>,
+    );
+
+    expect(screen.getByText('Local answer')).toBeInTheDocument();
+    expect(mockUseConceptAnswers).toHaveBeenCalledWith('');
+    expect(mockReportError).not.toHaveBeenCalled();
+  });
+
+  it('shows an inline warning without reporting a forbidden response as an invalid answer set', () => {
+    mockUseConceptAnswers.mockReturnValue({
+      data: [],
+      isLoading: false,
+      error: Object.assign(new Error('Forbidden'), { response: { status: 403 } }),
+    });
+
+    render(
+      <Formik initialValues={{}} onSubmit={() => {}}>
+        <Form>
+          <CodedPersonAttributeField
+            id="attributeId"
+            personAttributeType={personAttributeType}
+            answerConceptSetUuid={answerConceptSetUuid}
+            label={personAttributeType.display}
+            customConceptAnswers={[]}
+            required={false}
+          />
+        </Form>
+      </Formik>,
+    );
+
+    expect(screen.queryByLabelText('Referred by (optional)')).not.toBeInTheDocument();
+    expect(screen.getByText('No se pudo cargar Referred by')).toBeInTheDocument();
+    expect(mockReportError).not.toHaveBeenCalled();
+  });
+
+  it('reports a missing concept as an invalid answer set', async () => {
+    mockUseConceptAnswers.mockReturnValue({
+      data: [],
+      isLoading: false,
+      error: Object.assign(new Error('Not found'), { response: { status: 404 } }),
+    });
+
+    render(
+      <Formik initialValues={{}} onSubmit={() => {}}>
+        <Form>
+          <CodedPersonAttributeField
+            id="attributeId"
+            personAttributeType={personAttributeType}
+            answerConceptSetUuid={answerConceptSetUuid}
+            label={personAttributeType.display}
+            customConceptAnswers={[]}
+            required={false}
+          />
+        </Form>
+      </Formik>,
+    );
+
+    expect(screen.getByText('No se pudo cargar Referred by')).toBeInTheDocument();
+    await waitFor(() => {
+      expect(mockReportError).toHaveBeenCalledWith(expect.stringMatching(/invalid answer concept set UUID/i));
+    });
   });
 });

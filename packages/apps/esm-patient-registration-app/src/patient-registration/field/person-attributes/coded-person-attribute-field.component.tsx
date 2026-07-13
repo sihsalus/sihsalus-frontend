@@ -1,12 +1,15 @@
 import { ComboBox, InlineNotification, Layer, Select, SelectItem } from '@carbon/react';
+import { reportError, useSession, userHasAccess } from '@openmrs/esm-framework';
 import classNames from 'classnames';
 import { Field } from 'formik';
-import { useMemo } from 'react';
+import { useEffect, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { moduleName } from '../../../constants';
 import { type PersonAttributeTypeResponse } from '../../patient-registration.types';
-import { useConceptAnswers } from '../field.resource';
+import { isMissingConceptError, useConceptAnswers } from '../field.resource';
 import styles from './../field.scss';
+
+const getConceptsPrivilege = 'Get Concepts';
 
 export interface CodedPersonAttributeFieldProps {
   id: string;
@@ -29,36 +32,81 @@ export function CodedPersonAttributeField({
   searchable,
   readOnly,
 }: CodedPersonAttributeFieldProps) {
+  const { user } = useSession();
+  const hasCustomConceptAnswers = customConceptAnswers.length > 0;
+  const canGetConcepts = userHasAccess(getConceptsPrivilege, user);
+  const shouldLoadConceptAnswers = !hasCustomConceptAnswers && canGetConcepts && Boolean(answerConceptSetUuid);
   const {
     data: conceptAnswers,
-    error: conceptAnswersError,
     isLoading: isLoadingConceptAnswers,
-  } = useConceptAnswers(customConceptAnswers.length ? '' : answerConceptSetUuid);
+    error: conceptAnswersError,
+  } = useConceptAnswers(shouldLoadConceptAnswers ? answerConceptSetUuid : '');
+
+  const isMissingAnswerSet = !answerConceptSetUuid && !hasCustomConceptAnswers;
+  const isInvalidAnswerSet =
+    !hasCustomConceptAnswers && canGetConcepts && isMissingConceptError(conceptAnswersError);
+  const isEmptyAnswerSet =
+    shouldLoadConceptAnswers &&
+    !isLoadingConceptAnswers &&
+    !conceptAnswersError &&
+    conceptAnswers?.length === 0;
+  const cannotLoadConceptAnswers =
+    !hasCustomConceptAnswers && (!canGetConcepts || Boolean(conceptAnswersError));
+
+  const answers = useMemo(
+    () =>
+      hasCustomConceptAnswers
+        ? customConceptAnswers
+        : (conceptAnswers ?? [])
+            .map((answer) => ({ ...answer, label: answer.display }))
+            .sort((a, b) => a.label.localeCompare(b.label)),
+    [hasCustomConceptAnswers, customConceptAnswers, conceptAnswers],
+  );
 
   const { t } = useTranslation(moduleName);
   const fieldName = `attributes.${personAttributeType.uuid}`;
   const displayLabel = label ?? personAttributeType?.display;
   const labelText = required ? displayLabel : `${displayLabel} (${t('optional', 'optional')})`;
-  const hasConfiguredAnswers = customConceptAnswers.length > 0;
-  const isUnavailable =
-    !hasConfiguredAnswers &&
-    (!answerConceptSetUuid ||
-      !!conceptAnswersError ||
-      (!isLoadingConceptAnswers && (!conceptAnswers || conceptAnswers.length === 0)));
-
-  const answers = useMemo(() => {
-    if (customConceptAnswers.length) {
-      return customConceptAnswers;
+  useEffect(() => {
+    if (isMissingAnswerSet) {
+      reportError(
+        t(
+          'codedPersonAttributeNoAnswerSet',
+          `The person attribute field '{{codedPersonAttributeFieldId}}' is of type 'coded' but has been defined without an answer concept set UUID. The 'answerConceptSetUuid' key is required.`,
+          { codedPersonAttributeFieldId: id },
+        ),
+      );
     }
+  }, [id, isMissingAnswerSet, t]);
 
-    return isLoadingConceptAnswers || !conceptAnswers
-      ? []
-      : conceptAnswers
-          .map((answer) => ({ ...answer, label: answer.display }))
-          .sort((a, b) => a.label.localeCompare(b.label));
-  }, [customConceptAnswers, conceptAnswers, isLoadingConceptAnswers]);
+  useEffect(() => {
+    if (isInvalidAnswerSet) {
+      reportError(
+        t(
+          'codedPersonAttributeAnswerSetInvalid',
+          `The coded person attribute field '{{codedPersonAttributeFieldId}}' has been defined with an invalid answer concept set UUID '{{answerConceptSetUuid}}'.`,
+          { codedPersonAttributeFieldId: id, answerConceptSetUuid },
+        ),
+      );
+    }
+  }, [answerConceptSetUuid, id, isInvalidAnswerSet, t]);
 
-  if (isUnavailable) {
+  useEffect(() => {
+    if (isEmptyAnswerSet) {
+      reportError(
+        t(
+          'codedPersonAttributeAnswerSetEmpty',
+          `The coded person attribute field '{{codedPersonAttributeFieldId}}' has been defined with an answer concept set UUID '{{answerConceptSetUuid}}' that does not have any concept answers.`,
+          {
+            codedPersonAttributeFieldId: id,
+            answerConceptSetUuid,
+          },
+        ),
+      );
+    }
+  }, [answerConceptSetUuid, id, isEmptyAnswerSet, t]);
+
+  if (isMissingAnswerSet || isInvalidAnswerSet || isEmptyAnswerSet || cannotLoadConceptAnswers) {
     return (
       <InlineNotification
         hideCloseButton

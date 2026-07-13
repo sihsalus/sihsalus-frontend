@@ -121,9 +121,8 @@ export function useActiveVisits() {
     });
 
     // Add flattened observations
-    const allObs = visit.encounters.reduce((accumulator, encounter) => {
-      return [...accumulator, ...(encounter.obs || [])];
-    }, []);
+    const allEncounters = visit?.encounters ?? [];
+    const allObs = allEncounters.flatMap((encounter) => encounter?.obs ?? []);
 
     activeVisits.observations = allObs.reduce((map, obs) => {
       const key = obs.concept.uuid;

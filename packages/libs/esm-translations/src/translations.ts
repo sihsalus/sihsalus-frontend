@@ -70,8 +70,11 @@ export const coreTranslations = {
   error: 'Error',
   errorCopy:
     'Sorry, there was a problem displaying this information. You can try to reload this page, or contact the site administrator and quote the error code above.',
+  errorLoadingInformation:
+    'There was a problem displaying this information. Try reloading the page or contact support.',
   errorLoadingLoginLocations:
     'Unable to load login locations. Please try again or contact support if the problem persists.',
+  fatalErrorMessage: 'The application could not start. Try reloading the page or contact support.',
   female: 'Female',
   leftNavigation: 'Left navigation',
   loading: 'Loading',
@@ -80,7 +83,7 @@ export const coreTranslations = {
   notAvailable: 'Not available',
   offlineSetupErrorTitle: 'Offline setup unavailable',
   offlineSetupGenericError:
-    'Offline mode could not be enabled. You can still sign in and work online. If this continues, contact support and share the technical detail: {{message}}',
+    'Offline mode could not be enabled. You can still sign in and work online. If this continues, contact support.',
   offlineSetupMissingBrowserCapabilities:
     'Offline setup unavailable. Offline mode could not be enabled because this browser or browsing context does not allow Service Workers. You can still sign in and work online. To use offline mode, open SIH Salus over HTTPS or localhost, use a compatible browser, and avoid private browsing or browser policies that block Service Workers.',
   other: 'Other',

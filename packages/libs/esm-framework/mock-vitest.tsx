@@ -36,6 +36,10 @@ export const importDynamic = vi.fn();
 /* esm-error-handling */
 export const createErrorHandler = () => vi.fn().mockReturnValue(NEVER);
 
+export const getUserFacingErrorMessage = vi.fn((_error: unknown, fallback: string) => fallback);
+
+export const logError = vi.fn();
+
 export const reportError = vi.fn().mockImplementation((error) => {
   throw error;
 });

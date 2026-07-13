@@ -13,7 +13,7 @@ import {
   Stack,
 } from '@carbon/react';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { getCoreTranslation, showSnackbar } from '@openmrs/esm-framework';
+import { getCoreTranslation, getUserFacingErrorMessage, showSnackbar } from '@openmrs/esm-framework';
 import type { TFunction } from 'i18next';
 import React, { useCallback } from 'react';
 import { Controller, useForm } from 'react-hook-form';
@@ -22,6 +22,7 @@ import { z } from 'zod';
 
 import { useQueueLocations } from '../create-queue-entry/hooks/useQueueLocations';
 import useQueueServices from '../hooks/useQueueService';
+import { useUserFacingErrorMessage } from '../hooks/useUserFacingErrorMessage';
 import {
   updateIsPermanentProviderQueueRoom,
   updateSelectedQueueLocationName,
@@ -88,6 +89,11 @@ const AddProviderQueueRoomModal: React.FC<AddProviderQueueRoomModalProps> = ({ c
 
   const { queueLocations } = useQueueLocations();
   const { rooms, error: errorFetchingQueueRooms } = useQueueRooms(selectedQueueLocationUuid, selectedServiceUuid);
+  const queueRoomsErrorMessage = useUserFacingErrorMessage(
+    errorFetchingQueueRooms,
+    t('queueDataLoadErrorMessage', 'Queue information could not be loaded. Please try again.'),
+    'Load queue rooms for provider',
+  );
   const { services } = useQueueServices();
 
   const handleServiceChange = useCallback(({ selectedItem }) => {
@@ -151,7 +157,11 @@ const AddProviderQueueRoomModal: React.FC<AddProviderQueueRoomModalProps> = ({ c
           title: t('queueRoomAddFailed', 'Error adding queue room'),
           kind: 'error',
           isLowContrast: false,
-          subtitle: error?.message,
+          subtitle: getUserFacingErrorMessage(
+            error,
+            t('queueOperationErrorMessage', 'The queue operation could not be completed. Please try again.'),
+            { logContext: 'Assign provider queue room' },
+          ),
         });
       }
     },
@@ -254,7 +264,7 @@ const AddProviderQueueRoomModal: React.FC<AddProviderQueueRoomModalProps> = ({ c
                   className={styles.errorNotification}
                   kind="error"
                   onClick={() => {}}
-                  subtitle={errorFetchingQueueRooms}
+                  subtitle={queueRoomsErrorMessage}
                   title={t('errorFetchingQueueRooms', 'Error fetching queue rooms')}
                 />
               )}

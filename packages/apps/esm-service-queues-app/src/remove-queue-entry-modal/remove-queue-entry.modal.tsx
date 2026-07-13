@@ -1,5 +1,5 @@
 import { Button, ModalBody, ModalFooter, ModalHeader } from '@carbon/react';
-import { parseDate, showSnackbar, useVisit } from '@openmrs/esm-framework';
+import { getUserFacingErrorMessage, parseDate, showSnackbar, useVisit } from '@openmrs/esm-framework';
 import React, { useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
 
@@ -55,7 +55,11 @@ const RemoveQueueEntryModal: React.FC<RemoveQueueEntryModalProps> = ({ queueEntr
           title: t('removeQueueEntryError', 'Error removing queue entry'),
           kind: 'error',
           isLowContrast: false,
-          subtitle: error?.message,
+          subtitle: getUserFacingErrorMessage(
+            error,
+            t('queueEntryActionErrorMessage', 'The queue action could not be completed. Please try again.'),
+            { logContext: 'Remove queue entry' },
+          ),
         });
       });
   }, [

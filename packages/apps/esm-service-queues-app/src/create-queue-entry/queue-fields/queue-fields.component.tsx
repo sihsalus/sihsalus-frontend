@@ -7,7 +7,14 @@ import {
   SelectItem,
   SelectSkeleton,
 } from '@carbon/react';
-import { ResponsiveWrapper, showSnackbar, useConfig, useSession, type Visit } from '@openmrs/esm-framework';
+import {
+  getUserFacingErrorMessage,
+  ResponsiveWrapper,
+  showSnackbar,
+  useConfig,
+  useSession,
+  type Visit,
+} from '@openmrs/esm-framework';
 import React, { useCallback, useContext, useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
@@ -80,7 +87,11 @@ const QueueFields: React.FC<QueueFieldsProps> = ({ currentServiceQueueUuid, onQu
               title: t('queueEntryError', 'Error adding patient to the queue'),
               kind: 'error',
               isLowContrast: false,
-              subtitle: error?.message,
+              subtitle: getUserFacingErrorMessage(
+                error,
+                t('queueEntryActionErrorMessage', 'The queue action could not be completed. Please try again.'),
+                { logContext: 'Add patient to queue' },
+              ),
             });
             throw error;
           });

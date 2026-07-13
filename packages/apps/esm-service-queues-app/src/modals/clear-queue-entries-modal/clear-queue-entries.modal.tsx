@@ -1,5 +1,5 @@
 import { Button, ButtonSkeleton, ModalBody, ModalFooter, ModalHeader } from '@carbon/react';
-import { showSnackbar } from '@openmrs/esm-framework';
+import { getUserFacingErrorMessage, showSnackbar } from '@openmrs/esm-framework';
 import React, { useCallback, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useMutateQueueEntries } from '../../hooks/useQueueEntries';
@@ -35,7 +35,11 @@ const ClearQueueEntriesModal: React.FC<ClearQueueEntriesModalProps> = ({ queueEn
           title: t('errorClearingQueues', 'Error clearing queues'),
           kind: 'error',
           isLowContrast: false,
-          subtitle: error?.message,
+          subtitle: getUserFacingErrorMessage(
+            error,
+            t('queueOperationErrorMessage', 'The queue operation could not be completed. Please try again.'),
+            { logContext: 'Clear queue entries' },
+          ),
         });
         closeModal();
       },

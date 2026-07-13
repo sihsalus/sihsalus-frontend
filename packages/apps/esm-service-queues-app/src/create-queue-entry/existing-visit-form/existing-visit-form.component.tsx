@@ -39,6 +39,8 @@ const ExistingVisitForm: React.FC<ExistingVisitFormProps> = ({ visit, closeWorks
           closeWorkspace();
           mutateQueueEntries();
         })
+        // QueueFields already reports the failure and keeps this form open.
+        ?.catch(() => undefined)
         ?.finally(() => {
           setIsSubmitting(false);
         });

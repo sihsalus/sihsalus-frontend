@@ -4,6 +4,7 @@ import React, { useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useMutateQueueEntries } from '../hooks/useQueueEntries';
 import { useQueueEntry } from '../hooks/useQueueEntry';
+import { useUserFacingErrorMessage } from '../hooks/useUserFacingErrorMessage';
 import { type QueueEntry } from '../types';
 import { transitionQueueEntry } from './queue-entry-actions.resource';
 import QueueEntryActionModal from './queue-entry-actions-modal.component';
@@ -17,6 +18,11 @@ interface TransitionQueueEntryModalProps {
 const TransitionQueueEntryModal: React.FC<TransitionQueueEntryModalProps> = ({ queueEntry, closeModal }) => {
   const { t } = useTranslation();
   const { queueEntry: freshEntry, error, isLoading } = useQueueEntry(queueEntry.uuid);
+  const errorMessage = useUserFacingErrorMessage(
+    error,
+    t('queueDataLoadErrorMessage', 'Queue information could not be loaded. Please try again.'),
+    'Load queue entry for transition',
+  );
   const { mutateQueueEntries } = useMutateQueueEntries();
   const isEnded = !isLoading && !error && (!freshEntry || Boolean(freshEntry.endedAt));
 
@@ -53,7 +59,7 @@ const TransitionQueueEntryModal: React.FC<TransitionQueueEntryModalProps> = ({ q
             kind="error"
             lowContrast
             title={t('errorLoadingQueueEntry', 'Error loading queue entry')}
-            subtitle={error?.message || t('unexpectedError', 'An unexpected error occurred')}
+            subtitle={errorMessage}
           />
         </ModalBody>
         <ModalFooter>

@@ -2,6 +2,7 @@ import { DropdownSkeleton, InlineNotification } from '@carbon/react';
 import { type Visit } from '@openmrs/esm-framework';
 import React from 'react';
 import { useTranslation } from 'react-i18next';
+import { useUserFacingErrorMessage } from '../../hooks/useUserFacingErrorMessage';
 import MoveQueueEntryModal from '../move-queue-entry.modal';
 import AddPatientToQueueModal from './add-patient-to-queue.component';
 import { useLatestQueueEntry } from './useLatestQueueEntry';
@@ -15,6 +16,11 @@ const AddOrMoveModal: React.FC<AddOrMoveModalProps> = ({ closeModal, activeVisit
   const patientUuid = activeVisit?.patient?.uuid;
   const { t } = useTranslation();
   const { data: queueEntry, isLoading, error } = useLatestQueueEntry(patientUuid);
+  const errorMessage = useUserFacingErrorMessage(
+    error,
+    t('queueDataLoadErrorMessage', 'Queue information could not be loaded. Please try again.'),
+    'Load latest queue entry',
+  );
 
   if (isLoading) {
     return <DropdownSkeleton />;
@@ -25,7 +31,7 @@ const AddOrMoveModal: React.FC<AddOrMoveModalProps> = ({ closeModal, activeVisit
       <InlineNotification
         kind="error"
         title={t('errorLoadingQueueEntry', 'Error loading queue entry')}
-        subtitle={error?.message || t('unexpectedError', 'An unexpected error occurred')}
+        subtitle={errorMessage}
         lowContrast
       />
     );

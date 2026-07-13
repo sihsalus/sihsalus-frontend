@@ -1,6 +1,8 @@
 import { OpenmrsFetchError, openmrsFetch } from '@openmrs/esm-api';
+import { logError } from '@openmrs/esm-error-handling';
 import { type ComponentConfig, type ExtensionData } from '@openmrs/esm-extensions';
 import type {} from '@openmrs/esm-globals';
+import { getCoreTranslation } from '@openmrs/esm-translations';
 import React, { type ComponentType, type ErrorInfo, Suspense } from 'react';
 import { I18nextProvider } from 'react-i18next';
 import { SWRConfig, type SWRConfiguration } from 'swr';
@@ -52,6 +54,7 @@ export interface ComponentDecoratorOptions {
   disableTranslations?: boolean;
   strictMode?: boolean;
   swrConfig?: Partial<Omit<SWRConfiguration, 'fetcher'>>;
+  throwErrorsToConsole?: boolean;
 }
 
 export interface OpenmrsReactComponentProps {
@@ -109,9 +112,7 @@ export function openmrsComponentDecorator<T>(userOpts: ComponentDecoratorOptions
         }
 
         if (opts.throwErrorsToConsole) {
-          setTimeout(() => {
-            throw err;
-          });
+          logError(err, `Component error (${opts.moduleName}/${opts.featureName})`);
         }
 
         this.setState({
@@ -124,7 +125,7 @@ export function openmrsComponentDecorator<T>(userOpts: ComponentDecoratorOptions
           // TO-DO have a UX designed for when a catastrophic error occurs
           return (
             <div role="alert" aria-live="assertive" aria-atomic="true">
-              An error has occurred. Please try reloading the page.
+              {getCoreTranslation('errorLoadingInformation')}
             </div>
           );
         } else {

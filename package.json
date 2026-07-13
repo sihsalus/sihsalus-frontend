@@ -69,14 +69,14 @@
     "knip": "^6.14.0",
     "lint-staged": "^16.0.0",
     "openmrs": "workspace:*",
-    "prettier": "^3.8.1",
+    "prettier": "^3.9.5",
     "react": "^18.3.1",
     "react-doctor": "^0.1.6",
     "react-dom": "^18.3.1",
     "swc-loader": "0.2.7",
-    "turbo": "2.9.16",
+    "turbo": "2.10.5",
     "typescript": "6.0.3",
-    "vitest": "4.1.7"
+    "vitest": "4.1.10"
   },
   "lint-staged": {
     "*.{css,js,json,tsx}": "biome check --write",

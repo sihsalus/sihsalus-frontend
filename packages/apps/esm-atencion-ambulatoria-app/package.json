@@ -85,6 +85,6 @@
     "single-spa": "^6.0.3",
     "swr": "^2.4.1",
     "typescript": "6.0.3",
-    "vitest": "^4.1.7"
+    "vitest": "^4.1.10"
   }
 }

@@ -130,6 +130,16 @@ describe('RefineSearch', () => {
     expect(searchButton).toHaveTextContent('Search (2 filters applied)');
   });
 
+  it('requires a name or document number before searching', async () => {
+    renderComponent();
+
+    const searchButton = screen.getByRole('button', { name: /search/i });
+    expect(searchButton).toBeDisabled();
+
+    await user.type(screen.getByLabelText(/apellidos y nombres/i), 'Ahuanari Flores');
+    expect(searchButton).toBeEnabled();
+  });
+
   it('calls setFilters with initial state when Reset Fields is clicked', async () => {
     renderComponent();
 
@@ -150,13 +160,14 @@ describe('RefineSearch', () => {
   it('submits form with current state when Search is clicked', async () => {
     renderComponent();
 
+    await user.type(screen.getByLabelText(/apellidos y nombres/i), 'Ahuanari');
     const ageInput = screen.getByRole('spinbutton', { name: /age/i });
     await user.type(ageInput, '30');
     await user.click(screen.getByRole('button', { name: /search/i }));
 
     expect(mockSetFilters).toHaveBeenCalledWith(
       expect.objectContaining({
-        query: '',
+        query: 'Ahuanari',
         gender: 'any',
         dateOfBirth: null,
         monthOfBirth: null,
@@ -222,6 +233,7 @@ describe('RefineSearch', () => {
     it('handles gender selection correctly', async () => {
       renderComponent();
 
+      await user.type(screen.getByLabelText(/apellidos y nombres/i), 'Ahuanari');
       await user.click(screen.getByRole('tab', { name: 'Male' }));
       await user.click(screen.getByRole('button', { name: /search/i }));
 
@@ -235,6 +247,7 @@ describe('RefineSearch', () => {
     it('handles date of birth inputs correctly', async () => {
       renderComponent();
 
+      await user.type(screen.getByLabelText(/apellidos y nombres/i), 'Ahuanari');
       const dayInput = screen.getByRole('spinbutton', { name: /day of birth/i });
       const monthInput = screen.getByRole('spinbutton', { name: /month of birth/i });
       const yearInput = screen.getByRole('spinbutton', { name: /year of birth/i });

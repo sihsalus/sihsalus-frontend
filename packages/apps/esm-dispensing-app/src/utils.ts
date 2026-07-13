@@ -505,6 +505,11 @@ export function getPrescriptionTableEndpoint(
   patientSearchTerm: string,
   location: string,
 ): string {
+  const normalizedPatientSearchTerm = patientSearchTerm?.trim();
+  const encodedPatientSearchTerm = normalizedPatientSearchTerm
+    ? encodeURIComponent(normalizedPatientSearchTerm)
+    : '';
+
   if (customPrescriptionsTableEndpoint) {
     return interpolatePrescriptionEndpoint(customPrescriptionsTableEndpoint, {
       fhirBaseUrl,
@@ -513,7 +518,7 @@ export function getPrescriptionTableEndpoint(
       pageOffset,
       pageSize,
       date,
-      patientSearchTerm,
+      patientSearchTerm: encodedPatientSearchTerm,
       location,
     });
   }
@@ -525,7 +530,7 @@ export function getPrescriptionTableEndpoint(
     `&status=${status}`;
 
   const activeDateFilter = status === 'ACTIVE' ? `&date=ge${date}` : '';
-  const patientFilter = patientSearchTerm ? `&patientSearchTerm=${patientSearchTerm}` : '';
+  const patientFilter = encodedPatientSearchTerm ? `&patientSearchTerm=${encodedPatientSearchTerm}` : '';
   const locationFilter = location ? `&location=${location}` : '';
 
   return `${baseEndpoint}${activeDateFilter}${patientFilter}${locationFilter}`;

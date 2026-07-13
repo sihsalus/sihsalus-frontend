@@ -36,6 +36,10 @@
 .genderField {
   :global(.cds--content-switcher) {
     inline-size: 100%;
+
+    & + :global(.cds--content-switcher) {
+      margin-block-start: layout.$spacing-03;
+    }
   }
 
   :global(.cds--content-switcher-btn) {

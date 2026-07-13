@@ -8,10 +8,7 @@ import { type AdvancedPatientSearchState } from '../types';
 
 import styles from './advanced-patient-search.scss';
 import PatientSearchComponent from './patient-search-lg.component';
-import {
-  identityDocumentAttributeUuids,
-  identityDocumentNumberAttributeUuid,
-} from './refine-search/person-attribute-field.component';
+import { identityDocumentNumberAttributeUuid } from './refine-search/person-attribute-field.component';
 import RefineSearch, { initialFilters } from './refine-search/refine-search.component';
 
 interface AdvancedPatientSearchProps {
@@ -40,7 +37,7 @@ const AdvancedPatientSearchComponent: React.FC<AdvancedPatientSearchProps> = ({
       }
     });
 
-    const attributesWithValues = Object.entries(filters.attributes || {}).filter(([_key, value]) => value !== '');
+    const attributesWithValues = Object.entries(filters.attributes || {}).filter(([_key, value]) => value?.trim());
 
     count += attributesWithValues.length;
     return count;
@@ -97,7 +94,7 @@ const AdvancedPatientSearchComponent: React.FC<AdvancedPatientSearchProps> = ({
 
         // Postcode filter
         if (filters.postcode) {
-          if (!patient.person.addresses.some((address) => address.postalCode === filters.postcode)) {
+          if (!patient.person.addresses?.some((address) => address.postalCode === filters.postcode)) {
             return false;
           }
         }
@@ -112,15 +109,13 @@ const AdvancedPatientSearchComponent: React.FC<AdvancedPatientSearchProps> = ({
         // Person attributes filter
         if (Object.keys(filters.attributes).length) {
           for (const [attributeUuid, value] of Object.entries(filters.attributes)) {
-            if (value === '') continue;
-            if (
-              shouldSkipIdentityDocumentAttributeFilters &&
-              identityDocumentAttributeUuids.includes(attributeUuid as (typeof identityDocumentAttributeUuids)[number])
-            ) {
+            const normalizedFilterValue = value?.trim().toLowerCase();
+            if (!normalizedFilterValue) continue;
+            if (shouldSkipIdentityDocumentAttributeFilters && attributeUuid === identityDocumentNumberAttributeUuid) {
               continue;
             }
 
-            const matchingAttribute = patient.attributes.find((attr) => attr.attributeType.uuid === attributeUuid);
+            const matchingAttribute = patient.attributes?.find((attr) => attr.attributeType.uuid === attributeUuid);
 
             if (!matchingAttribute) return false;
 
@@ -129,10 +124,11 @@ const AdvancedPatientSearchComponent: React.FC<AdvancedPatientSearchProps> = ({
               ? (matchingAttribute.value as OpenmrsResource).uuid
               : String(matchingAttribute.value ?? '');
             const normalizedPatientAttributeValue = patientAttributeValue.toLowerCase();
-            const normalizedFilterValue = value.toLowerCase();
             const matchesAttributeValue = isValueObj
               ? normalizedPatientAttributeValue === normalizedFilterValue
-              : normalizedPatientAttributeValue.includes(normalizedFilterValue);
+              : attributeUuid === identityDocumentNumberAttributeUuid
+                ? normalizedPatientAttributeValue.trim() === normalizedFilterValue
+                : normalizedPatientAttributeValue.includes(normalizedFilterValue);
 
             if (!matchesAttributeValue) {
               return false;

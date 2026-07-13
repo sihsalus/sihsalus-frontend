@@ -103,6 +103,13 @@ const duplicateSpanishRelationshipTypes = {
       displayBIsToA: 'Tío',
       uuid: 'duplicate-uncle-nephew-relationship-type',
     },
+    {
+      displayAIsToB: 'Niece/Nephew',
+      aIsToB: 'Niece/Nephew',
+      bIsToA: 'Aunt/Uncle',
+      displayBIsToA: 'Aunt/Uncle',
+      uuid: 'english-uncle-nephew-relationship-type',
+    },
   ],
 };
 
@@ -242,9 +249,9 @@ describe('RelationshipsSection', () => {
     );
 
     expect(screen.getByLabelText(/relationships section/i)).toBeInTheDocument();
-    expect(screen.getByRole('heading', { name: /family member or companion/i })).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: /family link/i })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: /delete/i })).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: /add family member or companion/i })).toBeDisabled();
+    expect(screen.getByRole('button', { name: /add family link/i })).toBeDisabled();
     expect(screen.getByRole('option', { name: /mother/i })).toBeInTheDocument();
     expect(screen.getByRole('option', { name: /guardian/i })).toBeInTheDocument();
     expect(screen.getAllByRole('tab').map((tab) => tab.textContent)).toEqual([
@@ -257,10 +264,46 @@ describe('RelationshipsSection', () => {
     expect(screen.queryByRole('textbox', { name: /first name/i })).not.toBeInTheDocument();
   });
 
+  it('orders family links by weight, hides operational roles, and keeps Other last', () => {
+    mockResourcesContextValue = {
+      ...mockResourcesContextValue,
+      relationshipTypes: {
+        results: [
+          { displayAIsToB: 'Other', displayBIsToA: 'Other', uuid: 'other', weight: 999 },
+          { displayAIsToB: 'Mother', displayBIsToA: 'Mother', uuid: 'mother', weight: 20 },
+          { displayAIsToB: 'Doctor', displayBIsToA: 'Patient', uuid: 'doctor', weight: 1 },
+          { displayAIsToB: 'Aunt/Uncle', displayBIsToA: 'Aunt/Uncle', uuid: 'aunt-uncle' },
+          { displayAIsToB: 'Father', displayBIsToA: 'Father', uuid: 'father', weight: 10 },
+        ],
+      },
+    };
+
+    render(
+      <ResourcesContext.Provider value={mockResourcesContextValue}>
+        <Formik initialValues={{ relationships: [{ action: 'ADD', relatedPersonUuid: '' }] }} onSubmit={null}>
+          <Form>
+            <PatientRegistrationContext.Provider value={initialContextValues}>
+              <RelationshipsSection />
+            </PatientRegistrationContext.Provider>
+          </Form>
+        </Formik>
+      </ResourcesContext.Provider>,
+    );
+
+    const optionLabels = screen
+      .getAllByRole('option')
+      .filter((option) => !option.hasAttribute('disabled'))
+      .map((option) => option.textContent);
+
+    expect(optionLabels).toEqual(['Father', 'Mother', 'Aunt/Uncle', 'Other']);
+    expect(screen.queryByRole('option', { name: /doctor/i })).not.toBeInTheDocument();
+    expect(screen.queryByRole('option', { name: /patient/i })).not.toBeInTheDocument();
+  });
+
   it('allows adding another relationship after the current one is complete', () => {
     mockResourcesContextValue = {
       ...mockResourcesContextValue,
-      relationshipTypes: relationshipTypes,
+      relationshipTypes,
     };
     const formValues = {
       relationships: [
@@ -285,32 +328,38 @@ describe('RelationshipsSection', () => {
       </ResourcesContext.Provider>,
     );
 
-    expect(screen.getByRole('button', { name: /add family member or companion/i })).toBeEnabled();
+    expect(screen.getByRole('button', { name: /add family link/i })).toBeEnabled();
   });
 
-  it('marks an existing relationship for update when its companion status changes', async () => {
+  it('moves the primary responsible flag and marks existing relationships for update', async () => {
     const user = userEvent.setup();
     const setFieldValue = vi.fn();
-    mockResourcesContextValue = {
-      ...mockResourcesContextValue,
-      relationshipTypes: relationshipTypes,
-    };
-    const formValues = {
-      relationships: [
-        {
-          relatedPersonName: 'Jane Doe',
-          relatedPersonUuid: 'related-person-uuid',
-          relationshipType: '42ae5ce0-d64b-11ea-9064-5adc43bbdd34/aIsToB',
-          uuid: 'relationship-uuid',
-        },
-      ],
-    } as FormValues;
+    const relationships = [
+      {
+        isCompanion: true,
+        relatedPersonName: 'Maria Quispe',
+        relatedPersonUuid: 'person-one',
+        relation: 'Madre',
+        relationshipType: 'mother/aIsToB',
+        uuid: 'relationship-one',
+      },
+      {
+        relatedPersonName: 'Juan Quispe',
+        relatedPersonUuid: 'person-two',
+        relation: 'Padre',
+        relationshipType: 'father/aIsToB',
+        uuid: 'relationship-two',
+      },
+    ] as FormValues['relationships'];
+    mockResourcesContextValue = { ...mockResourcesContextValue, relationshipTypes };
 
     render(
       <ResourcesContext.Provider value={mockResourcesContextValue}>
-        <Formik initialValues={formValues} onSubmit={null}>
+        <Formik initialValues={{ relationships }} onSubmit={null}>
           <Form>
-            <PatientRegistrationContext.Provider value={{ ...initialContextValues, setFieldValue, values: formValues }}>
+            <PatientRegistrationContext.Provider
+              value={{ ...initialContextValues, setFieldValue, values: { relationships } as FormValues }}
+            >
               <RelationshipsSection />
             </PatientRegistrationContext.Provider>
           </Form>
@@ -318,10 +367,12 @@ describe('RelationshipsSection', () => {
       </ResourcesContext.Provider>,
     );
 
-    await user.click(screen.getByRole('checkbox', { name: /is the patient companion/i }));
+    await user.click(screen.getByRole('checkbox', { name: /Juan Quispe.*Padre/i }));
 
-    expect(setFieldValue).toHaveBeenCalledWith('relationships[0].isCompanion', true);
+    expect(setFieldValue).toHaveBeenCalledWith('relationships[0].isCompanion', false);
     expect(setFieldValue).toHaveBeenCalledWith('relationships[0].action', 'UPDATE');
+    expect(setFieldValue).toHaveBeenCalledWith('relationships[1].isCompanion', true);
+    expect(setFieldValue).toHaveBeenCalledWith('relationships[1].action', 'UPDATE');
   });
 
   it('deduplicates relationship options and hides child/grandchild options for minor patients', () => {

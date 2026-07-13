@@ -55,6 +55,19 @@ describe('PatientSearchLaunch', () => {
     expect(screen.queryByRole('searchbox')).not.toBeInTheDocument();
   });
 
+  it('opens the search input when the session has no location', async () => {
+    mockUseSession.mockReturnValue({
+      user: { uuid: 'admission-user-uuid' },
+      sessionLocation: null,
+    } as ReturnType<typeof useSession>);
+    const user = userEvent.setup();
+
+    render(<PatientSearchLaunch />);
+    await user.click(screen.getByRole('button', { name: /search patient/i }));
+
+    expect(screen.getByRole('searchbox')).toBeInTheDocument();
+  });
+
   it('displays search input in overlay on mobile', async () => {
     const user = userEvent.setup();
     mockIsDesktop.mockReturnValue(false);

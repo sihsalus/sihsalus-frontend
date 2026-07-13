@@ -10,7 +10,21 @@ import {
 
 import { type RegistrationConfig } from '../config-schema';
 import { patientRegistration } from '../constants';
-
+import {
+  identityVerificationSourceConceptUuids,
+  identityVerificationStatusConceptUuids,
+  personIdentityVerificationSourceAttributeTypeUuid,
+  personIdentityVerificationStatusAttributeTypeUuid,
+  personIdentityVerifiedAtAttributeTypeUuid,
+} from './identity/identity-documents';
+import { fetchPersonForPromotion, isPersonAlreadyPatient } from './identity/identity-search.resource';
+import { verifyIdentityForPromotion } from './identity/identity-verification.resource';
+import {
+  buildDocumentIdentifierForPromotion,
+  getPersonDocument,
+  getPreferredAddress,
+  getPreferredName,
+} from './identity/promotion';
 import {
   addPatientIdentifier,
   deletePersonAttribute,
@@ -29,22 +43,6 @@ import {
   updatePatientIdentifier,
   updateRelationship,
 } from './patient-registration.resource';
-import { fetchPersonForPromotion, isPersonAlreadyPatient } from './identity/identity-search.resource';
-import {
-  identityVerificationSourceConceptUuids,
-  identityVerificationStatusConceptUuids,
-  personIdentityVerificationSourceAttributeTypeUuid,
-  personIdentityVerificationStatusAttributeTypeUuid,
-  personIdentityVerifiedAtAttributeTypeUuid,
-} from './identity/identity-documents';
-import { verifyIdentityForPromotion } from './identity/identity-verification.resource';
-import {
-  buildDocumentIdentifierForPromotion,
-  getPersonDocument,
-  getPreferredAddress,
-  getPreferredName,
-} from './identity/promotion';
-import { buildResponsiblePersonPayload } from './section/patient-relationships/responsible-person.utils';
 import {
   type AddressProperties,
   type AttributeValue,
@@ -64,6 +62,7 @@ import {
   birthAddressMarker,
   birthAddressMarkerField,
 } from './patient-registration-utils';
+import { buildResponsiblePersonPayload } from './section/patient-relationships/responsible-person.utils';
 
 const familyName2ExtensionUrl = 'http://openmrs.org/fhir/StructureDefinition/patient-family-name2';
 const addressExtensionUrl = 'http://openmrs.org/fhir/StructureDefinition/address';
@@ -707,9 +706,8 @@ export class FormManager {
       state.mainSignature = mainSignature;
     }
 
-    // Companion (Acompañante) relationship: create it when the checkbox is
-    // ticked and none exists yet; delete it when unticked (or the whole row
-    // is removed) and one was previously saved.
+    // The primary responsible person is persisted through the companion relationship
+    // already consumed by downstream workflows. Create or remove it with the selection.
     if (options.companionRelationshipType) {
       const [companionType, companionDirection] = options.companionRelationshipType.split('/');
       const companionIsAToB = companionDirection === 'aIsToB';

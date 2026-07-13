@@ -613,6 +613,7 @@ describe('Patient registration validation', () => {
       relationships: [
         {
           action: 'ADD',
+          isCompanion: true,
           relatedPersonUuid: '11524ae7-3ef6-4ab6-aff6-804ffc58704a',
           relatedPersonAge: 30,
           relationshipType: 'e6be4def-dbc8-462a-8714-53da66903cb8/aIsToB',
@@ -623,6 +624,76 @@ describe('Patient registration validation', () => {
     expect(validationError).toBeFalsy();
   });
 
+  it('should reject more than one active father relationship', async () => {
+    const invalidFormValues = {
+      ...validFormValues,
+      relationships: [
+        {
+          action: 'ADD',
+          relatedPersonUuid: 'father-one-uuid',
+          relation: 'Padre',
+          relationshipType: '8d91a210-c2cc-11de-8d13-0010c6dffd0f/aIsToB',
+        },
+        {
+          action: 'ADD',
+          relatedPersonUuid: 'father-two-uuid',
+          relation: 'Father',
+          relationshipType: '8d91a210-c2cc-11de-8d13-0010c6dffd0f/aIsToB',
+        },
+      ],
+    };
+
+    const validationError = await validateFormValues(invalidFormValues);
+
+    expect(validationError.errors).toContain('patientCanOnlyHaveOneFather');
+  });
+
+  it('should ignore a deleted father when enforcing the single father rule', async () => {
+    const validRelationshipValues = {
+      ...validFormValues,
+      relationships: [
+        {
+          action: 'ADD',
+          relatedPersonUuid: 'father-one-uuid',
+          relation: 'Padre',
+          relationshipType: '8d91a210-c2cc-11de-8d13-0010c6dffd0f/aIsToB',
+        },
+        {
+          action: 'DELETE',
+          relatedPersonUuid: 'father-two-uuid',
+          relation: 'Padre',
+          relationshipType: '8d91a210-c2cc-11de-8d13-0010c6dffd0f/aIsToB',
+        },
+      ],
+    };
+
+    expect(await validateFormValues(validRelationshipValues)).toBeFalsy();
+  });
+
+  it('should reject more than one primary responsible person', async () => {
+    const invalidFormValues = {
+      ...validFormValues,
+      relationships: [
+        {
+          action: 'ADD',
+          isCompanion: true,
+          relatedPersonUuid: 'responsible-one-uuid',
+          relationshipType: 'relationship-one/aIsToB',
+        },
+        {
+          action: 'ADD',
+          isCompanion: true,
+          relatedPersonUuid: 'responsible-two-uuid',
+          relationshipType: 'relationship-two/aIsToB',
+        },
+      ],
+    };
+
+    const validationError = await validateFormValues(invalidFormValues);
+
+    expect(validationError.errors).toContain('patientCanOnlyHaveOnePrimaryResponsible');
+  });
+
   it('does not assume that a responsible person with unknown age is an adult', async () => {
     const minorWithUnknownResponsibleAge = {
       ...validFormValues,
@@ -630,6 +701,7 @@ describe('Patient registration validation', () => {
       relationships: [
         {
           action: 'ADD',
+          isCompanion: true,
           relatedPersonUuid: '11524ae7-3ef6-4ab6-aff6-804ffc58704a',
           relationshipType: 'e6be4def-dbc8-462a-8714-53da66903cb8/aIsToB',
         },
@@ -649,6 +721,7 @@ describe('Patient registration validation', () => {
       relationships: [
         {
           action: 'ADD',
+          isCompanion: true,
           relatedPersonUuid: '11524ae7-3ef6-4ab6-aff6-804ffc58704a',
           relatedPersonAge: 16,
           relationshipType: 'e6be4def-dbc8-462a-8714-53da66903cb8/aIsToB',
@@ -669,6 +742,7 @@ describe('Patient registration validation', () => {
       relationships: [
         {
           action: 'ADD',
+          isCompanion: true,
           relatedPersonUuid: '',
           relationshipType: 'e6be4def-dbc8-462a-8714-53da66903cb8/aIsToB',
           newPerson: {
@@ -705,6 +779,24 @@ describe('Patient registration validation', () => {
       ],
     };
     const validationError = await validateFormValues(minorWithNonResponsibleRelationship);
+    expect(validationError.errors).toContain('responsibleRelationshipRequiredForMinor');
+  });
+
+  it('should not treat a family link as responsible until it is marked as primary', async () => {
+    const minorWithUnmarkedMother = {
+      ...validFormValues,
+      birthdate: dayjs().subtract(10, 'years').toDate(),
+      relationships: [
+        {
+          action: 'ADD',
+          relatedPersonUuid: 'mother-person-uuid',
+          relationshipType: 'e6be4def-dbc8-462a-8714-53da66903cb8/aIsToB',
+        },
+      ],
+    };
+
+    const validationError = await validateFormValues(minorWithUnmarkedMother);
+
     expect(validationError.errors).toContain('responsibleRelationshipRequiredForMinor');
   });
 

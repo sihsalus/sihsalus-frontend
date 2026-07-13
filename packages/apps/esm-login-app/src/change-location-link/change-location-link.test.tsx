@@ -44,4 +44,21 @@ describe('ChangeLocationLink', () => {
       to: '/spa/login/location?returnToUrl=/openmrs/spa/home&update=true',
     });
   });
+
+  it('does not display the location for admission users', () => {
+    mockUseSession.mockReturnValue({
+      user: {
+        roles: [{ display: 'Admisión' }],
+        privileges: [{ display: 'app:home.admision' }],
+      },
+      sessionLocation: {
+        display: 'UPSS - CONSULTA EXTERNA',
+      },
+    } as Session);
+
+    render(<ChangeLocationLink />);
+
+    expect(screen.queryByRole('button', { name: /Change/i })).not.toBeInTheDocument();
+    expect(screen.queryByText(/UPSS - CONSULTA EXTERNA/i)).not.toBeInTheDocument();
+  });
 });

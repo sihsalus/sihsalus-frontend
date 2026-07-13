@@ -17,10 +17,6 @@ import styles from './search-field.scss';
 
 export const identityDocumentTypeAttributeUuid = '6f5c0b8a-9e91-4d41-9a8c-8b0f3c2e7a11';
 export const identityDocumentNumberAttributeUuid = 'c0d1a2b3-4e5f-4a6b-9c7d-8e9f0a1b2c3d';
-export const identityDocumentAttributeUuids = [
-  identityDocumentTypeAttributeUuid,
-  identityDocumentNumberAttributeUuid,
-] as const;
 
 function getPersonAttributeDisplayLabel(attributeDisplay: string, attributeTypeUuid: string | undefined, t: TFunction) {
   if (attributeTypeUuid === identityDocumentNumberAttributeUuid) {
@@ -253,7 +249,7 @@ const ConceptAttributeField: React.FC<ConceptAttributeFieldProps> = ({
           items={items}
           itemToString={(item: OpenmrsResource) => item?.display}
           selectedItem={items.sort((a, b) => a.display.localeCompare(b.display)).find((item) => item.uuid === value)}
-          onChange={({ selectedItem }) => onChange(selectedItem?.uuid)}
+          onChange={({ selectedItem }) => onChange(selectedItem?.uuid ?? '')}
           placeholder={field.placeholder ?? t('selectOption', 'Select an option')}
           size={isTablet ? 'lg' : 'md'}
         />

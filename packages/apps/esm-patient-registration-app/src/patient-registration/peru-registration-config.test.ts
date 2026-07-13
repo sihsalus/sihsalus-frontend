@@ -83,7 +83,7 @@ describe('getEffectiveRegistrationConfig', () => {
     expect(config.sections).not.toContain('birthplace');
     expect(responsiblePerson).toMatchObject({
       id: 'responsiblePerson',
-      name: 'Acompañante o responsable',
+      name: 'Vínculos y responsable',
       fields: [],
     });
   });

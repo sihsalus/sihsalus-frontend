@@ -1,4 +1,4 @@
-import { interpolateString, navigate, showSnackbar, useConfig, useDebounce, useSession } from '@openmrs/esm-framework';
+import { interpolateString, navigate, showSnackbar, useConfig, useDebounce } from '@openmrs/esm-framework';
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
@@ -42,11 +42,6 @@ const CompactPatientSearchComponent: React.FC<CompactPatientSearchProps> = ({
 
   const config = useConfig<PatientSearchConfig>();
   const { showRecentlySearchedPatients } = config.search;
-
-  const {
-    user: _user,
-    sessionLocation: { uuid: _currentLocation },
-  } = useSession();
 
   const patientSearchResponse = useInfinitePatientSearch(debouncedSearchTerm, config.includeDead);
   const { data: searchedPatients } = patientSearchResponse;

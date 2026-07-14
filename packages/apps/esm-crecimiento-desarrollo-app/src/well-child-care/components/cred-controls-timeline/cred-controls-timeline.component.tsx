@@ -1,11 +1,11 @@
 import { Tile } from '@carbon/react';
 import { launchWorkspace2, useConfig, usePatient, userHasAccess, useSession } from '@openmrs/esm-framework';
 import classNames from 'classnames';
-import dayjs from 'dayjs';
 import React, { useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import type { ConfigObject } from '../../../config-schema';
 import { credCourseLifeEditPrivilege } from '../../../constants';
+import { useAgeGroups } from '../../../hooks/useAgeGroups';
 import { useCREDSchedule } from '../../../hooks/useCREDSchedule';
 import { translateCredAgeGroupLabel, translateCredAgeGroupSublabel } from '../../../utils/cred-label-translations';
 
@@ -22,33 +22,12 @@ const CredAgeGroups: React.FC<CredAgeGroupsProps> = ({ patientUuid }) => {
   const canEdit = userHasAccess(credCourseLifeEditPrivilege, session?.user);
   const { patient, isLoading: isPatientLoading, error: patientError } = usePatient(patientUuid);
   const { controls } = useCREDSchedule(patientUuid);
+  const { getAgeGroupForDisplay } = useAgeGroups();
   const [selectedAgeGroup, setSelectedAgeGroup] = useState<(typeof ageGroupsCRED)[0] | null>(null);
 
-  const patientAge = useMemo(() => {
-    if (!patient?.birthDate) return { inDays: 0, inMonths: 0 };
-    const birthDate = dayjs(patient.birthDate);
-    const today = dayjs();
-    return {
-      inDays: today.diff(birthDate, 'days'),
-      inMonths: today.diff(birthDate, 'months'),
-    };
-  }, [patient]);
-
   const currentAgeGroup = useMemo(() => {
-    return ageGroupsCRED.find((group) => {
-      const inDayRange =
-        group.minDays !== undefined &&
-        group.maxDays !== undefined &&
-        patientAge.inDays >= group.minDays &&
-        patientAge.inDays <= group.maxDays;
-      const inMonthRange =
-        group.minMonths !== undefined &&
-        group.maxMonths !== undefined &&
-        patientAge.inMonths >= group.minMonths &&
-        patientAge.inMonths <= group.maxMonths;
-      return inDayRange || inMonthRange;
-    });
-  }, [patientAge, ageGroupsCRED]);
+    return patient?.birthDate ? getAgeGroupForDisplay(patient.birthDate) : null;
+  }, [getAgeGroupForDisplay, patient?.birthDate]);
 
   // Compute status summary per age group
   const groupStatusSummary = useMemo(() => {

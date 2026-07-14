@@ -33,11 +33,30 @@ function hasEncounterDatetime(encounter: CREDEncounter): encounter is DatedCREDE
   return Boolean(encounter.encounterDatetime);
 }
 
+function findUnassignedControlForDate(
+  schedule: CREDScheduledControl[],
+  date: Date,
+  assignedControls: Set<number>,
+): CREDScheduledControl | null {
+  const candidateDate = dayjs(date);
+  if (!candidateDate.isValid()) return null;
+
+  return (
+    schedule.find(
+      (control) =>
+        !assignedControls.has(control.controlNumber) &&
+        !candidateDate.isBefore(dayjs(control.targetDate), 'day') &&
+        !candidateDate.isAfter(dayjs(control.dueEndDate), 'day'),
+    ) ?? null
+  );
+}
+
 /**
- * Closest-match: asigna cada encounter al control cuya targetDate esté más cerca.
- * Greedy, de izquierda a derecha en la lista de encounters ordenados por fecha.
+ * Matches an encounter only to the configured age window in which it occurred.
+ * A second encounter in the same window remains unmatched instead of completing
+ * a future control that the child has not reached yet.
  */
-function matchEncountersToControls(
+export function matchEncountersToControls(
   schedule: CREDScheduledControl[],
   encounters: CREDEncounter[],
 ): Map<number, { uuid: string; date: Date }> {
@@ -51,22 +70,11 @@ function matchEncountersToControls(
 
   for (const enc of sortedEncounters) {
     const encDate = new Date(enc.encounterDatetime);
-    let bestControl: CREDScheduledControl | null = null;
-    let bestDistance = Infinity;
+    const matchingControl = findUnassignedControlForDate(schedule, encDate, assignedControls);
 
-    for (const control of schedule) {
-      if (assignedControls.has(control.controlNumber)) continue;
-
-      const distance = Math.abs(dayjs(encDate).diff(dayjs(control.targetDate), 'day'));
-      if (distance < bestDistance) {
-        bestDistance = distance;
-        bestControl = control;
-      }
-    }
-
-    if (bestControl) {
-      matched.set(bestControl.controlNumber, { uuid: enc.uuid, date: encDate });
-      assignedControls.add(bestControl.controlNumber);
+    if (matchingControl) {
+      matched.set(matchingControl.controlNumber, { uuid: enc.uuid, date: encDate });
+      assignedControls.add(matchingControl.controlNumber);
     }
   }
 
@@ -96,9 +104,10 @@ export function groupCREDControlEncounters(encounters: CREDEncounter[]): CREDEnc
 }
 
 /**
- * Asigna cada appointment existente al control más cercano que no tenga encounter ni appointment ya asignado.
+ * Matches appointments to their configured age window without allowing duplicate
+ * appointments in one window to occupy later controls.
  */
-function matchAppointmentsToControls(
+export function matchAppointmentsToControls(
   schedule: CREDScheduledControl[],
   appointments: Array<{ uuid: string; startDateTime: string | number }>,
   completedControls: Set<number>,
@@ -112,25 +121,14 @@ function matchAppointmentsToControls(
 
   for (const appt of sortedAppointments) {
     const apptDate = new Date(appt.startDateTime);
-    let bestControl: CREDScheduledControl | null = null;
-    let bestDistance = Infinity;
+    const matchingControl = findUnassignedControlForDate(schedule, apptDate, assignedControls);
 
-    for (const control of schedule) {
-      if (assignedControls.has(control.controlNumber)) continue;
-
-      const distance = Math.abs(dayjs(apptDate).diff(dayjs(control.targetDate), 'day'));
-      if (distance < bestDistance) {
-        bestDistance = distance;
-        bestControl = control;
-      }
-    }
-
-    if (bestControl) {
-      matched.set(bestControl.controlNumber, {
+    if (matchingControl) {
+      matched.set(matchingControl.controlNumber, {
         uuid: appt.uuid,
         date: apptDate,
       });
-      assignedControls.add(bestControl.controlNumber);
+      assignedControls.add(matchingControl.controlNumber);
     }
   }
 
@@ -154,7 +152,7 @@ export function useCREDSchedule(patientUuid: string): UseCREDScheduleResult {
     const schedule = generateCREDSchedule(patient.birthDate);
     const today = dayjs();
 
-    // Match encounters to controls (closest-match greedy)
+    // Match encounters to the age window in which each control occurred.
     const encounterMatches = matchEncountersToControls(schedule, groupCREDControlEncounters(encounters ?? []));
 
     // Match appointments to remaining controls
@@ -183,10 +181,7 @@ export function useCREDSchedule(patientUuid: string): UseCREDScheduleResult {
         status = 'scheduled';
       } else if (today.isAfter(dayjs(control.dueEndDate), 'day')) {
         status = 'overdue';
-      } else if (
-        today.isSame(dayjs(control.targetDate), 'day') ||
-        today.isAfter(dayjs(control.targetDate), 'day')
-      ) {
+      } else if (today.isSame(dayjs(control.targetDate), 'day') || today.isAfter(dayjs(control.targetDate), 'day')) {
         status = 'pending';
       } else {
         status = 'future';

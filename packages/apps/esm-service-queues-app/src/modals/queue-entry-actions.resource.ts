@@ -180,21 +180,38 @@ async function reconcileTransition(
     return null;
   }
 
-  const searchParams = new URLSearchParams({
-    visit: source.visit.uuid,
-    queueComingFrom: source.queue.uuid,
-    limit: '100',
-    v: transitionReconciliationRepresentation,
-  });
-  const response = await openmrsFetch<QueueEntrySearchResponse>(
-    `${restBaseUrl}/queue-entry?${searchParams.toString()}`,
-    { signal: abortController?.signal },
-  );
-  const matchingEntry = response.data?.results?.find((candidate) =>
-    queueEntryMatchesTransition(candidate, source, params),
-  );
+  const pageSize = 100;
+  let startIndex = 0;
+  const seenEntries = new Set<string>();
 
-  return matchingEntry ? ({ ...response, data: matchingEntry } as FetchResponse<QueueEntry>) : null;
+  while (true) {
+    const searchParams = new URLSearchParams({
+      visit: source.visit.uuid,
+      queueComingFrom: source.queue.uuid,
+      limit: String(pageSize),
+      startIndex: String(startIndex),
+      v: transitionReconciliationRepresentation,
+    });
+    const response = await openmrsFetch<QueueEntrySearchResponse>(
+      `${restBaseUrl}/queue-entry?${searchParams.toString()}`,
+      { signal: abortController?.signal },
+    );
+    const page = response.data?.results ?? [];
+    const matchingEntry = page.find((candidate) => queueEntryMatchesTransition(candidate, source, params));
+
+    if (matchingEntry) {
+      return { ...response, data: matchingEntry } as FetchResponse<QueueEntry>;
+    }
+
+    const newEntries = page.filter((entry) => !seenEntries.has(entry.uuid));
+    newEntries.forEach((entry) => {
+      seenEntries.add(entry.uuid);
+    });
+    if (page.length < pageSize || newEntries.length === 0) {
+      return null;
+    }
+    startIndex += page.length;
+  }
 }
 
 /**

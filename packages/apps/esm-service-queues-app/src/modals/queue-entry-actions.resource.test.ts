@@ -115,6 +115,53 @@ describe('transitionQueueEntry', () => {
     expect(mockOpenmrsFetch.mock.calls.some(([url]) => url === `${restBaseUrl}/queue-entry/transition`)).toBe(false);
   });
 
+  it('reconciles a retry when the requested successor is on a later page', async () => {
+    const endedSource = { ...sourceEntry, endedAt: transitionedEntry.startedAt } as QueueEntry;
+    const firstPage = Array.from(
+      { length: 100 },
+      (_, index) =>
+        ({
+          ...transitionedEntry,
+          uuid: `non-matching-entry-${index}`,
+          status: { uuid: 'another-status' },
+        }) as QueueEntry,
+    );
+    mockOpenmrsFetch
+      .mockResolvedValueOnce(response(endedSource))
+      .mockResolvedValueOnce(response({ results: firstPage }))
+      .mockResolvedValueOnce(response({ results: [transitionedEntry] }));
+
+    const result = await transitionQueueEntry(transitionParams);
+
+    expect(result.data.uuid).toBe(transitionedEntry.uuid);
+    expect(mockOpenmrsFetch.mock.calls[1][0]).toContain('startIndex=0');
+    expect(mockOpenmrsFetch.mock.calls[2][0]).toContain('startIndex=100');
+    expect(mockOpenmrsFetch).toHaveBeenCalledTimes(3);
+  });
+
+  it('stops reconciliation when the backend repeats a full page', async () => {
+    const endedSource = { ...sourceEntry, endedAt: transitionedEntry.startedAt } as QueueEntry;
+    const repeatedPage = Array.from(
+      { length: 100 },
+      (_, index) =>
+        ({
+          ...transitionedEntry,
+          uuid: `non-matching-entry-${index}`,
+          status: { uuid: 'another-status' },
+        }) as QueueEntry,
+    );
+    mockOpenmrsFetch
+      .mockResolvedValueOnce(response(endedSource))
+      .mockResolvedValueOnce(response({ results: repeatedPage }))
+      .mockResolvedValueOnce(response({ results: repeatedPage }));
+
+    await expect(transitionQueueEntry(transitionParams)).rejects.toThrow(/already ended/i);
+
+    expect(mockOpenmrsFetch.mock.calls[1][0]).toContain('startIndex=0');
+    expect(mockOpenmrsFetch.mock.calls[2][0]).toContain('startIndex=100');
+    expect(mockOpenmrsFetch).toHaveBeenCalledTimes(3);
+  });
+
   it('reconciles after a successful transition whose response was lost', async () => {
     const endedSource = { ...sourceEntry, endedAt: transitionedEntry.startedAt } as QueueEntry;
     mockOpenmrsFetch

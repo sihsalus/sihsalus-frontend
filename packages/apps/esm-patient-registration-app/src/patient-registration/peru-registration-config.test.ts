@@ -138,6 +138,8 @@ describe('getEffectiveRegistrationConfig', () => {
       { uuid: '9b3df0a1-0c58-4f55-9868-9c38f1db2021', label: 'Rh positivo' },
       { uuid: '9b3df0a1-0c58-4f55-9868-9c38f1db2022', label: 'Rh negativo' },
     ]);
+    expect(fieldsById.bloodGroup.codedInputType).toBe('radio');
+    expect(fieldsById.rhFactor.codedInputType).toBe('radio');
     expect(config.sectionDefinitions.find((section) => section.id === 'identityLookup')?.fields).toContain('sisLookup');
     expect(config.sectionDefinitions.find((section) => section.id === 'insurance')?.fields).not.toContain('sisLookup');
     expect(config.fieldConfigurations.phone.personAttributeUuid).toBe(peruPhoneAttributeTypeUuid);

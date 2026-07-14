@@ -38,12 +38,13 @@ export const Snackbar: React.FC<SnackbarProps> = ({ snackbar, closeSnackbar: rem
     isLowContrast = kind !== 'error',
     progressActionLabel,
     subtitle = '',
-    timeoutInMs = 5000,
-    autoClose = kind !== 'error',
+    timeoutInMs,
+    autoClose = true,
     title,
     id,
     ...props
   } = snackbar;
+  const effectiveTimeoutInMs = timeoutInMs ?? (kind === 'error' ? 8000 : 5000);
 
   const [actionText, setActionText] = useState(actionButtonLabel);
   const [applyAnimation, setApplyAnimation] = useState(true);
@@ -70,10 +71,10 @@ export const Snackbar: React.FC<SnackbarProps> = ({ snackbar, closeSnackbar: rem
 
   useEffect(() => {
     if (autoClose) {
-      const timeoutId = setTimeout(onCloseSnackbar, timeoutInMs);
+      const timeoutId = setTimeout(onCloseSnackbar, effectiveTimeoutInMs);
       return () => clearTimeout(timeoutId);
     }
-  }, [timeoutInMs, autoClose, onCloseSnackbar]);
+  }, [effectiveTimeoutInMs, autoClose, onCloseSnackbar]);
 
   useEffect(() => {
     setApplyAnimation(false);

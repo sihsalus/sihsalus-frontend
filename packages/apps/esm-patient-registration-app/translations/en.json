@@ -243,6 +243,7 @@
   "obsFieldUnknownDatatype": "Concept for obs field '{{fieldDefinitionId}}' has unknown datatype '{{datatypeName}}'",
   "obsFieldLoadError": "Could not load the clinical field",
   "occupationFieldLabel": "Occupation",
+  "notSpecified": "Not specified",
   "optional": "optional",
   "optionalIdentifierLabel": "{{identifierName}} (optional)",
   "other": "Other",

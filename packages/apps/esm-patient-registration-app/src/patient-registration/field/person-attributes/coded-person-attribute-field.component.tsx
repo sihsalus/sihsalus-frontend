@@ -1,5 +1,5 @@
-import { ComboBox, InlineNotification, Layer, Select, SelectItem } from '@carbon/react';
-import { reportError, useSession, userHasAccess } from '@openmrs/esm-framework';
+import { ComboBox, InlineNotification, Layer, RadioButton, RadioButtonGroup, Select, SelectItem } from '@carbon/react';
+import { reportError, userHasAccess, useSession } from '@openmrs/esm-framework';
 import classNames from 'classnames';
 import { Field, getIn } from 'formik';
 import { useEffect, useMemo } from 'react';
@@ -17,6 +17,7 @@ export interface CodedPersonAttributeFieldProps {
   answerConceptSetUuid: string;
   label?: string;
   customConceptAnswers: Array<{ uuid: string; label?: string }>;
+  codedInputType?: 'select' | 'radio';
   required: boolean;
   searchable?: boolean;
   readOnly?: boolean;
@@ -29,6 +30,7 @@ export function CodedPersonAttributeField({
   answerConceptSetUuid,
   label,
   customConceptAnswers,
+  codedInputType = 'select',
   required,
   searchable,
   readOnly,
@@ -167,6 +169,35 @@ export function CodedPersonAttributeField({
                       setFieldValue(fieldName, selectedItem?.uuid ?? '');
                     }}
                   />
+                );
+              }
+
+              if (codedInputType === 'radio') {
+                return (
+                  <RadioButtonGroup
+                    className={styles.codedRadioGroup}
+                    name={`person-attribute-${personAttributeType.uuid}`}
+                    legendText={labelText}
+                    valueSelected={field.value ?? ''}
+                    invalid={invalid}
+                    invalidText={typeof errorMessage === 'string' ? errorMessage : undefined}
+                    required={required}
+                    readOnly={readOnly}
+                    orientation="horizontal"
+                    onChange={(selectedValue) => setFieldValue(fieldName, selectedValue)}
+                  >
+                    {!required ? (
+                      <RadioButton id={`${id}-unspecified`} labelText={t('notSpecified', 'Not specified')} value="" />
+                    ) : null}
+                    {answers.map((answer) => (
+                      <RadioButton
+                        key={answer.uuid}
+                        id={`${id}-${answer.uuid}`}
+                        labelText={answer.label ?? ''}
+                        value={answer.uuid}
+                      />
+                    ))}
+                  </RadioButtonGroup>
                 );
               }
 

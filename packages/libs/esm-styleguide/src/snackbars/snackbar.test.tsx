@@ -40,6 +40,21 @@ describe('Snackbar component', () => {
     expect(screen.getByText(/error contacting lab system. please try again later/i)).toBeInTheDocument();
   });
 
+  it('automatically dismisses error notifications after eight seconds by default', async () => {
+    renderSnackbar({
+      snackbar: {
+        kind: 'error',
+        title: 'Error submitting order',
+      },
+    });
+
+    act(() => {
+      vi.advanceTimersByTime(8250);
+    });
+
+    await waitFor(() => expect(mockCloseSnackbar).toHaveBeenCalledTimes(1), { timeout: 200 });
+  });
+
   it('automatically dismisses the snackbar after a timeout if autoClose is set to true', {
     timeout: 2000,
   }, async () => {
@@ -80,7 +95,6 @@ function renderSnackbar(overrides = {}) {
   const testProps = {
     snackbar: {
       id: 1,
-      autoClose: false,
       title: 'Order submitted',
     },
     closeSnackbar: mockCloseSnackbar,

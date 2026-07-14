@@ -245,6 +245,7 @@
   "obsFieldUnknownDatatype": "El concepto para el campo de observación '{{fieldDefinitionId}}' tiene un tipo de dato desconocido '{{datatypeName}}'",
   "obsFieldLoadError": "No se pudo cargar el campo clínico",
   "occupationFieldLabel": "Ocupación",
+  "notSpecified": "No especificado",
   "optional": "opcional",
   "optionalIdentifierLabel": "{{identifierName}} (opcional)",
   "other": "Otro",

@@ -202,6 +202,54 @@ describe('CodedPersonAttributeField', () => {
     expect(screen.queryByText(/Option 2/i)).not.toBeInTheDocument();
   });
 
+  it('renders coded answers as radios, preserves the current value, and allows clearing optional fields', async () => {
+    const user = userEvent.setup();
+    const handleSubmit = vi.fn();
+
+    render(
+      <Formik initialValues={{ attributes: { [personAttributeType.uuid]: 'B' } }} onSubmit={handleSubmit}>
+        <Form>
+          <CodedPersonAttributeField
+            id="bloodGroup"
+            personAttributeType={personAttributeType}
+            answerConceptSetUuid={answerConceptSetUuid}
+            label="Grupo sanguíneo"
+            customConceptAnswers={[
+              { uuid: 'A', label: 'A' },
+              { uuid: 'B', label: 'B' },
+              { uuid: 'AB', label: 'AB' },
+              { uuid: 'O', label: 'O' },
+            ]}
+            codedInputType="radio"
+            required={false}
+          />
+          <button type="submit">Save</button>
+        </Form>
+      </Formik>,
+    );
+
+    expect(screen.getByRole('radio', { name: 'B' })).toBeChecked();
+    expect(screen.getByRole('radio', { name: 'Not specified' })).not.toBeChecked();
+
+    await user.click(screen.getByRole('radio', { name: 'A' }));
+    await user.click(screen.getByRole('button', { name: 'Save' }));
+    await waitFor(() =>
+      expect(handleSubmit).toHaveBeenLastCalledWith(
+        expect.objectContaining({ attributes: { [personAttributeType.uuid]: 'A' } }),
+        expect.anything(),
+      ),
+    );
+
+    await user.click(screen.getByRole('radio', { name: 'Not specified' }));
+    await user.click(screen.getByRole('button', { name: 'Save' }));
+    await waitFor(() =>
+      expect(handleSubmit).toHaveBeenLastCalledWith(
+        expect.objectContaining({ attributes: { [personAttributeType.uuid]: '' } }),
+        expect.anything(),
+      ),
+    );
+  });
+
   it('does not request remote answers and explains the unavailable optional field without Get Concepts', () => {
     mockUseSession.mockReturnValue({
       authenticated: true,

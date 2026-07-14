@@ -517,25 +517,25 @@ export const configSchema = {
     identificationStatusConcepts: {
       pendingUuid: {
         _type: Type.ConceptUuid,
-        _default: null,
+        _default: 'bdb57e2a-d8fd-4e2b-8622-1ba60dcd3024',
         _description:
           'UUID opcional del concepto que representa estado de identificación = pendiente (si el person attribute type es Coded).',
       },
       partialUuid: {
         _type: Type.ConceptUuid,
-        _default: null,
+        _default: '37ea79cb-9ae7-4297-8e56-8c374561c73c',
         _description:
           'UUID opcional del concepto que representa estado de identificación = parcial (si el person attribute type es Coded).',
       },
       confirmedUuid: {
         _type: Type.ConceptUuid,
-        _default: null,
+        _default: '9e42f0f1-d989-4604-902e-8a33f474f01e',
         _description:
           'UUID opcional del concepto que representa estado de identificación = confirmado (si el person attribute type es Coded).',
       },
       mergedUuid: {
         _type: Type.ConceptUuid,
-        _default: null,
+        _default: '8e9518a2-828d-4e50-a110-d964b63e51e2',
         _description:
           'UUID opcional del concepto que representa estado de identificación = fusionado (si el person attribute type es Coded).',
       },

@@ -18,6 +18,21 @@ const knownPatient: QuickRegistrationFormData = {
 };
 
 describe('buildEmergencyPatientAttributes', () => {
+  it.each([
+    ['pending', 'bdb57e2a-d8fd-4e2b-8622-1ba60dcd3024'],
+    ['partial', '37ea79cb-9ae7-4297-8e56-8c374561c73c'],
+    ['confirmed', '9e42f0f1-d989-4604-902e-8a33f474f01e'],
+    ['merged', '8e9518a2-828d-4e50-a110-d964b63e51e2'],
+  ] as const)('stores the %s identification status as its concept UUID', (identificationStatus, conceptUuid) => {
+    const attributes = buildEmergencyPatientAttributes({ ...knownPatient, identificationStatus }, config);
+
+    expect(attributes).toContainEqual({
+      attributeType: config.identificationStatusAttributeTypeUuid,
+      value: conceptUuid,
+    });
+    expect(attributes.some((attribute) => attribute.value === identificationStatus)).toBe(false);
+  });
+
   it('places the nationality concept UUID in the final person attributes payload', () => {
     const attributes = buildEmergencyPatientAttributes(
       { ...knownPatient, nationality: peruConceptUuid },

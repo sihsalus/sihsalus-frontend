@@ -38,6 +38,11 @@ describe('age-group-utils', () => {
     expect(getAgeGroup(30, ageGroups)).toBeNull();
   });
 
+  it('uses an exclusive upper month boundary between adjacent age groups', () => {
+    expect(getAgeGroup(12, ageGroups)).toEqual(ageGroups[2]);
+    expect(getAgeGroup(24, ageGroups)).toBeNull();
+  });
+
   it('finds the matching age group from days with inclusive boundaries', () => {
     expect(getAgeGroupInDays(28, ageGroups)).toEqual(ageGroups[0]);
     expect(getAgeGroupInDays(29, ageGroups)).toEqual(ageGroups[1]);

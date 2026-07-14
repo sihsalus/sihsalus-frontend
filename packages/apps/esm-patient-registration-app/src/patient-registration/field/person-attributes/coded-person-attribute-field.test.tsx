@@ -136,9 +136,31 @@ describe('CodedPersonAttributeField', () => {
       </Formik>,
     );
 
-    expect(screen.getByLabelText('Referred by (optional)')).toBeInTheDocument();
+    expect(screen.getByLabelText('Referred by (optional)')).toHaveValue('');
+    expect(screen.getByRole('option', { name: 'Select an option' })).toBeInTheDocument();
     expect(screen.getByText(/Option 1/i)).toBeInTheDocument();
     expect(screen.getByText(/Option 2/i)).toBeInTheDocument();
+  });
+
+  it('does not select the first searchable answer by default', () => {
+    render(
+      <Formik initialValues={{ attributes: {} }} onSubmit={() => {}}>
+        <Form>
+          <CodedPersonAttributeField
+            id="ethnicity"
+            personAttributeType={personAttributeType}
+            answerConceptSetUuid={answerConceptSetUuid}
+            label="Etnia"
+            customConceptAnswers={[]}
+            required={false}
+            searchable
+          />
+        </Form>
+      </Formik>,
+    );
+
+    expect(screen.getByRole('combobox', { name: /etnia/i })).toHaveValue('');
+    expect(screen.queryByDisplayValue('Option 1')).not.toBeInTheDocument();
   });
 
   it('renders set members as select options when the answer concept set is configured as a concept set', () => {

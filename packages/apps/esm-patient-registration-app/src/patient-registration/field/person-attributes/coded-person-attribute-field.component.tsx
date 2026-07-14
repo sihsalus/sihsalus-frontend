@@ -211,6 +211,7 @@ export function CodedPersonAttributeField({
                   required={required}
                   disabled={readOnly}
                   {...field}
+                  value={field.value ?? ''}
                 >
                   <SelectItem value={''} text={t('selectAnOption', 'Select an option')} />
                   {answers.map((answer) => (

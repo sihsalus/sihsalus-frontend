@@ -577,18 +577,20 @@ export function getValidationSchema(
           const identifierType = identifierTypes.find(
             (type) => type.fieldName === fieldName || type.uuid === identifier?.identifierTypeUuid,
           );
+          const identifierValueRequired = Boolean(
+            identifier?.required || config.defaultPatientIdentifierTypes?.includes(identifier?.identifierTypeUuid),
+          );
           const peruIdentifierRule = getPeruIdentifierRule(identifierType, identifier);
           const formatRegex = peruIdentifierRule?.pattern ?? buildIdentifierFormatRegex(identifierType?.format);
 
           return Yup.object({
             required: Yup.bool(),
             identifierValue: Yup.string()
-              .when('required', {
-                is: true,
-                // biome-ignore lint/suspicious/noThenProperty: Yup's conditional schema API requires the `then` property.
-                then: Yup.string().required(t('identifierValueRequired', 'Identifier value is required')),
-                otherwise: Yup.string().notRequired(),
-              })
+              .test(
+                'identifier-required',
+                t('identifierValueRequired', 'Identifier value is required'),
+                (value) => !identifierValueRequired || Boolean(value?.trim()),
+              )
               .test(
                 'identifier-format',
                 peruIdentifierRule

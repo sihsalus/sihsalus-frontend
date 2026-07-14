@@ -71,7 +71,9 @@ function isSessionExpired(error: unknown): boolean {
 
 const defaultRegistrationFieldLabels: Record<string, string> = {
   address: 'Address',
+  attributes: 'Patient information',
   birthdate: 'Date of birth',
+  dni: 'DNI',
   familyName: 'Family name',
   familyName2: 'Second family name',
   gender: 'Gender',
@@ -89,6 +91,7 @@ const registrationFieldLabelTranslationKeys: Record<string, string> = {
 export function getPatientRegistrationFieldLabel(
   path: Array<string>,
   translateWithFallback: (key: string, defaultValue: string) => string,
+  attributeFieldLabels: Record<string, string> = {},
 ) {
   const [section] = path;
   const field = [...path.slice(1)].reverse().find((pathSegment) => !/^\d+$/.test(pathSegment));
@@ -98,7 +101,21 @@ export function getPatientRegistrationFieldLabel(
   }
 
   if (section === 'identifiers') {
+    const identifierField = path[1];
+    if (identifierField && defaultRegistrationFieldLabels[identifierField]) {
+      return translateWithFallback(
+        `${identifierField}IdentifierLabelText`,
+        defaultRegistrationFieldLabels[identifierField],
+      );
+    }
     return translateWithFallback('idFieldLabelText', defaultRegistrationFieldLabels.identifiers);
+  }
+
+  if (section === 'attributes') {
+    const attributeLabel = path.slice(1).map((pathSegment) => attributeFieldLabels[pathSegment]).find(Boolean);
+    if (attributeLabel) {
+      return attributeLabel;
+    }
   }
 
   if (field) {
@@ -134,6 +151,15 @@ export const PatientRegistration: React.FC<PatientRegistrationProps> = ({ savePa
   const config = useMemo(
     () => getEffectiveRegistrationConfig(configuredRegistrationConfig),
     [configuredRegistrationConfig],
+  );
+  const attributeFieldLabels = useMemo(
+    () =>
+      Object.fromEntries(
+        (config.fieldDefinitions ?? [])
+          .filter((fieldDefinition) => fieldDefinition.type === 'person attribute' && fieldDefinition.uuid)
+          .map((fieldDefinition) => [fieldDefinition.uuid, fieldDefinition.label ?? fieldDefinition.id]),
+      ),
+    [config.fieldDefinitions],
   );
   const [target, setTarget] = useState<undefined | string>();
   const { patientUuid: uuidOfPatientToEdit } = useParams();
@@ -382,7 +408,7 @@ export const PatientRegistration: React.FC<PatientRegistrationProps> = ({ savePa
         return;
       }
       if (typeof value === 'string') {
-        const fieldLabel = getPatientRegistrationFieldLabel(path, translateWithFallback);
+        const fieldLabel = getPatientRegistrationFieldLabel(path, translateWithFallback, attributeFieldLabels);
         const errorMessage = translateWithFallback(value, defaultErrorMessages[value] ?? value);
         messages.add(`${fieldLabel}: ${errorMessage}`);
         return;
@@ -535,7 +561,7 @@ export const PatientRegistration: React.FC<PatientRegistrationProps> = ({ savePa
                 <div className={styles.stickyColumn}>
                   <h4>
                     {inEditMode
-                      ? t('editPatientDetails', 'Edit patient details')
+                      ? t('updatePatient', 'Update patient')
                       : t('createNewPatient', 'Create new patient')}
                   </h4>
                   {showDummyData && <DummyDataInput setValues={props.setValues} />}

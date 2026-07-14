@@ -486,10 +486,24 @@ describe('Registering a new patient', () => {
   it('should not save the patient if validation fails', async () => {
     const user = userEvent.setup();
     const mockSavePatientForm = vi.fn();
+    mockResourcesContextValue.identifierTypes = [
+      ...mockIdentifierTypes,
+      {
+        fieldName: 'dni',
+        format: '^[0-9]{8}$',
+        identifierSources: [],
+        isPrimary: false,
+        name: 'DNI',
+        required: false,
+        uniquenessBehavior: 'UNIQUE',
+        uuid: peruDniPatientIdentifierTypeUuid,
+      },
+    ];
 
     render(<PatientRegistration isOffline={false} savePatientForm={mockSavePatientForm} />, { wrapper: Wrapper });
 
     await screen.findByRole('heading', { name: /create new patient/i });
+    await screen.findByRole('textbox', { name: 'DNI' });
     await user.click(screen.getByRole('button', { name: /register patient/i }));
 
     expect(mockSavePatientForm).not.toHaveBeenCalled();
@@ -504,6 +518,7 @@ describe('Registering a new patient', () => {
     const warningSnackbar = mockShowSnackbar.mock.calls.find(([snackbar]) => snackbar.kind === 'warning')?.[0];
     const warningText = getReactText(warningSnackbar?.subtitle);
 
+    expect(warningText).toContain('DNI: Identifier value is required');
     expect(warningText).toContain('Date of birth: Birthday is required');
     expect(warningText).toContain('First name: First name is required');
     expect(warningText).not.toContain('birthdate:');
@@ -521,6 +536,12 @@ describe('Registering a new patient', () => {
     expect(getPatientRegistrationFieldLabel(['address'], translate)).toBe('Dirección');
     expect(getPatientRegistrationFieldLabel(['address', 'address'], translate)).toBe('Dirección');
     expect(getPatientRegistrationFieldLabel(['birthdate'], translate)).toBe('Fecha de nacimiento');
+    expect(
+      getPatientRegistrationFieldLabel(['attributes', 'email-attribute-uuid'], translate, {
+        'email-attribute-uuid': 'Correo electrónico',
+      }),
+    ).toBe('Correo electrónico');
+    expect(getPatientRegistrationFieldLabel(['identifiers', 'dni', 'identifierValue'], translate)).toBe('DNI');
     expect(getPatientRegistrationFieldLabel(['relationships', '0', 'relationshipType'], translate)).toBe(
       'Vínculo con el paciente',
     );
@@ -762,7 +783,7 @@ describe('Updating an existing patient record', () => {
 
     render(<PatientRegistration isOffline={false} savePatientForm={mockSavePatientForm} />, { wrapper: Wrapper });
 
-    await screen.findByRole('heading', { name: /edit patient details/i });
+    await screen.findByRole('heading', { name: /update patient/i });
 
     expect(screen.queryByRole('button', { name: /register patient/i })).not.toBeInTheDocument();
     expect(screen.getByRole('button', { name: /update patient/i })).toBeInTheDocument();

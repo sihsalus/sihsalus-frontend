@@ -311,6 +311,7 @@ describe('Identifiers', () => {
 
     await waitFor(() => expect(screen.getByText('DNI')).toBeInTheDocument());
 
+    expect(screen.getByRole('textbox', { name: 'DNI' })).toHaveAttribute('aria-required', 'true');
     expect(screen.queryByText('Carnet de Extranjeria')).not.toBeInTheDocument();
     expect(screen.queryByText('Pasaporte')).not.toBeInTheDocument();
   });
@@ -326,8 +327,8 @@ describe('Identifiers', () => {
 
     await waitFor(() => expect(screen.getByText('DNI')).toBeInTheDocument());
 
+    expect(screen.getByRole('textbox', { name: 'DNI' })).toBeInTheDocument();
     expect(screen.getAllByTestId('identifier-label').map((label) => label.textContent)).toEqual([
-      'DNI',
       'Nº de Historia Clínica',
     ]);
   });

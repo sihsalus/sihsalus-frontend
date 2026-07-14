@@ -1,6 +1,10 @@
 import type { ConfigObject } from '../config-schema';
 
-import { attachCREDControlNumbers, getConfiguredCREDFormIdentifiers } from './useEncountersCRED';
+import {
+  attachCREDControlNumbers,
+  findCREDFormEncounterForControl,
+  getConfiguredCREDFormIdentifiers,
+} from './useEncountersCRED';
 
 describe('getConfiguredCREDFormIdentifiers', () => {
   it('keeps legacy CRED forms in history after they leave the current age matrix', () => {
@@ -42,5 +46,34 @@ describe('attachCREDControlNumbers', () => {
     );
 
     expect(encounters).toEqual([{ uuid: 'encounter-1', controlNumber: undefined }]);
+  });
+});
+
+describe('findCREDFormEncounterForControl', () => {
+  const encounters = [
+    {
+      uuid: 'control-1-form',
+      encounterDatetime: '2026-02-10T09:00:00-05:00',
+      form: { uuid: 'cred-form' },
+      controlNumber: 1,
+    },
+    {
+      uuid: 'control-2-form',
+      encounterDatetime: '2026-07-10T09:00:00-05:00',
+      form: { uuid: 'cred-form' },
+      controlNumber: 2,
+    },
+  ];
+
+  it('selects the encounter from the current control instead of the latest historical control', () => {
+    expect(findCREDFormEncounterForControl(encounters, 'cred-form', 1)).toBe('control-1-form');
+  });
+
+  it('returns no encounter when the form has not been completed in the current control', () => {
+    expect(findCREDFormEncounterForControl(encounters, 'another-form', 1)).toBeUndefined();
+  });
+
+  it('does not resolve an encounter for an invalid control number', () => {
+    expect(findCREDFormEncounterForControl(encounters, 'cred-form', 0)).toBeUndefined();
   });
 });

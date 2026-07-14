@@ -9,15 +9,18 @@ import {
 import type { CompletedFormInfo, Form } from '@openmrs/esm-patient-common-lib';
 import { FormsSelectorWorkspace } from '@openmrs/esm-patient-common-lib';
 import { RequirePrivilege } from '@sihsalus/esm-rbac';
-import React, { useCallback, useMemo } from 'react';
+import React, { useCallback, useMemo, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 import type { ConfigObject } from '../../config-schema';
 import { credCourseLifeEditPrivilege } from '../../constants';
 import { resolveCREDForm } from '../../hooks/useCREDFormLauncher';
 import { useCREDFormsForAgeGroup } from '../../hooks/useCREDFormsForAgeGroup';
-import useEncountersCRED, { encounterMatchesFormIdentifier } from '../../hooks/useEncountersCRED';
+import useEncountersCRED, {
+  encounterMatchesFormIdentifier,
+  findCREDFormEncounterForControl,
+} from '../../hooks/useEncountersCRED';
 import { type DefaultPatientWorkspaceProps, formEntryWorkspace } from '../../types';
-import { buildNewCREDFormWorkspaceProps } from '../../utils/cred-form-launch-utils';
+import { buildCREDFormWorkspaceProps } from '../../utils/cred-form-launch-utils';
 
 interface CREDFormsSelectorWorkspaceProps extends DefaultPatientWorkspaceProps {
   availableForms?: Array<CompletedFormInfo>;
@@ -60,6 +63,7 @@ const CREDFormsSelectorWorkspace: React.FC<CREDFormsSelectorWorkspaceProps> = (p
       ? props.backWorkspace
       : (workspaceProps.backWorkspace ?? 'wellchild-control-form');
   const patientUuid = props.patientUuid ?? workspaceProps.patientUuid ?? '';
+  const submittedEncounterUuids = useRef(new Map<string, string>());
   const { patient } = usePatient(patientUuid);
   const { encounters, mutate: mutateCREDEncounters } = useEncountersCRED(patientUuid);
   const fallbackAvailableForms = useCREDFormsForAgeGroup(
@@ -117,16 +121,33 @@ const CREDFormsSelectorWorkspace: React.FC<CREDFormsSelectorWorkspaceProps> = (p
   const setTitle = props.setTitle ?? (() => {});
 
   const launchForm = useCallback(
-    async (form: Form, _encounterUuid: string, onFormSubmitted: () => void) => {
+    async (form: Form, _latestEncounterUuid: string, onFormSubmitted: () => void) => {
       try {
         const resolvedForm = await resolveCREDForm(form.uuid, form.display ?? form.name ?? form.uuid);
+        const currentControlEncounterUuid =
+          submittedEncounterUuids.current.get(form.uuid) ??
+          findCREDFormEncounterForControl(encounters ?? [], form.uuid, controlNumber) ??
+          '';
+        const handleFormSubmitted = (encounter?: { uuid?: string }) => {
+          if (encounter?.uuid) {
+            submittedEncounterUuids.current.set(form.uuid, encounter.uuid);
+          }
+          void mutateCREDEncounters();
+          onFormSubmitted();
+        };
 
         launchWorkspace2(
           formEntryWorkspace,
-          buildNewCREDFormWorkspaceProps(resolvedForm, consultationDatetime, onFormSubmitted, {
-            controlNumber,
-            controlNumberConceptUuid: config.CRED?.controlNumber,
-          }),
+          buildCREDFormWorkspaceProps(
+            resolvedForm,
+            currentControlEncounterUuid,
+            consultationDatetime,
+            handleFormSubmitted,
+            {
+              controlNumber,
+              controlNumberConceptUuid: config.CRED?.controlNumber,
+            },
+          ),
         );
       } catch {
         showSnackbar({
@@ -139,7 +160,7 @@ const CREDFormsSelectorWorkspace: React.FC<CREDFormsSelectorWorkspaceProps> = (p
         });
       }
     },
-    [config.CRED?.controlNumber, consultationDatetime, controlNumber, t],
+    [config.CRED?.controlNumber, consultationDatetime, controlNumber, encounters, mutateCREDEncounters, t],
   );
   const handleComplete = useCallback(() => {
     void mutateCREDEncounters();

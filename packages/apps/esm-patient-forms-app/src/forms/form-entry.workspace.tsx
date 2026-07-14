@@ -29,6 +29,7 @@ interface FormEntryComponentProps extends LegacyWorkspaceAdapterProps {
   additionalProps?: Record<string, unknown>;
   clinicalFormsWorkspaceName?: string;
   handlePostResponse?: (encounter: Encounter) => void;
+  handleEncounterCreate?: FormRendererProps['handleEncounterCreate'];
   hideControls?: boolean;
   hidePatientBanner?: boolean;
   preFilledQuestions?: Record<string, string>;
@@ -51,6 +52,7 @@ function LegacyFormEntryWorkspace(props: FormEntryComponentProps) {
     form,
     encounterUuid: workspaceEncounterUuid,
     additionalProps: workspaceAdditionalProps,
+    handleEncounterCreate,
   } = props;
   const {
     encounterUuid = workspaceEncounterUuid,
@@ -119,6 +121,7 @@ function LegacyFormEntryWorkspace(props: FormEntryComponentProps) {
         closeWorkspaceWithSavedChanges: handleCloseWorkspaceWithSavedChanges,
         encounterUuid: encounterUuid ?? undefined,
         formUuid: formUuid ?? '',
+        handleEncounterCreate,
         patient,
         patientUuid: patientUuid ?? '',
         setHasUnsavedChanges: handleSetHasUnsavedChanges,
@@ -139,6 +142,7 @@ function LegacyFormEntryWorkspace(props: FormEntryComponentProps) {
       patientUuid,
       visit,
       formUuid,
+      handleEncounterCreate,
     ],
   );
 
@@ -160,6 +164,7 @@ const NonWorkspace2FormEntryWorkspace: React.FC<LegacyWorkspaceProps> = (props) 
     encounterUuid,
     additionalProps,
     handlePostResponse,
+    handleEncounterCreate,
     hideControls,
     hidePatientBanner,
     preFilledQuestions,
@@ -180,6 +185,7 @@ const NonWorkspace2FormEntryWorkspace: React.FC<LegacyWorkspaceProps> = (props) 
       encounterUuid={encounterUuid}
       additionalProps={additionalProps}
       handlePostResponse={handlePostResponse}
+      handleEncounterCreate={handleEncounterCreate}
       hideControls={hideControls}
       hidePatientBanner={hidePatientBanner}
       preFilledQuestions={preFilledQuestions}
@@ -240,6 +246,7 @@ const Workspace2FormEntryWorkspace: React.FC<Workspace2FormEntryProps> = (props)
     encounterUuid,
     additionalProps,
     handlePostResponse,
+    handleEncounterCreate,
     hideControls,
     hidePatientBanner,
     preFilledQuestions,
@@ -255,6 +262,7 @@ const Workspace2FormEntryWorkspace: React.FC<Workspace2FormEntryProps> = (props)
       encounterUuid={encounterUuid}
       additionalProps={additionalProps}
       handlePostResponse={handlePostResponse}
+      handleEncounterCreate={handleEncounterCreate}
       hideControls={hideControls}
       hidePatientBanner={hidePatientBanner}
       preFilledQuestions={preFilledQuestions}

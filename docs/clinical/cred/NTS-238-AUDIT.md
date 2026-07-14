@@ -49,10 +49,10 @@ Enlaces oficiales:
 | --- | --- | --- |
 | Seleccion por edad | Implementado | La fecha real de atencion alimenta `useCREDFormsForAgeGroup`; ya no se usa la fecha ideal atrasada. |
 | Numero real de control | Implementado | Se calcula con controles registrados + 1 y se persiste en cada encuentro del control con `Número de control CRED` (`ce8b07e8-712f-406a-b44d-2fa69167f5ea`). |
-| Encuentro nuevo | Implementado | El selector muestra historial, pero lanza formularios nuevos con `encounterUuid` vacio. |
+| Encuentro nuevo / edicion | Implementado | Un control nuevo usa `encounterUuid` vacio. Al reabrir un formulario, solo se edita el encounter que coincide con el mismo formulario y `Número de control CRED`; un encounter historico de otro control nunca se reutiliza. |
 | Matriz Anexo 18 | Implementado en frontend | Matriz central `cred-nts238-form-groups.ts`, con cortes de 42 y 54 meses e instrumentos vigentes. |
-| Calendario | Implementado | 27 edades ideales con meses calendario y ventana neonatal; no usa aproximaciones de 365 dias. |
-| Citas | Implementado | Solo se programan controles futuros y el recurso rechaza fechas pasadas. |
+| Calendario | Parcial | Muestra las 27 edades ideales con meses calendario y ventana neonatal. Aun falta recalcular el siguiente intervalo desde la fecha del ultimo control real, como exige el numeral 6.3. |
+| Citas | Parcial | Solo programa fechas futuras y rechaza fechas pasadas, pero la serie todavia parte del calendario ideal por edad y no del ultimo control real. |
 | Desarrollo vigente | Implementado con limites de contenido | Huanca, EDI, M-CHAT y habilidades sustituyen el acceso TEPSI como evaluaciones vigentes. |
 | Codigo TEPSI simulado | Retirado | Se elimino el workspace sin persistencia; los identificadores legados quedan solo para lectura historica. |
 | Anemia | Parcial seguro | El formulario 1.16.3 exige edad, altitud y clasificacion ajustada; el widget muestra Hb sin inventar diagnostico. Falta calcular Hb ajustada con conceptos especificos. |
@@ -94,6 +94,8 @@ No declarar CRED como totalmente conforme hasta completar lo siguiente:
 4. Probar la recurrencia de anemia, salud mental, parasitosis y tamizajes por edad/riesgo.
 5. Incorporar referencias OMS 5-19 para IMC/edad y talla/edad antes de habilitar curvas escolares.
 6. Validar la matriz y los formularios resumidos con el responsable clinico CRED del hospital.
+7. Calcular el proximo control y las citas desde la fecha del ultimo control real, respetando
+   los intervalos minimos del numeral 6.3 y la frecuencia por grupo etario del numeral 6.4.
 
 El schema CRED duplicado en `esm-salud-materna-app` no tiene consumidores de runtime en
 ese microfrontend. Se mantiene fuera de este cambio para no ampliar el contrato publico;

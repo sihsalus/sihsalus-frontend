@@ -21,6 +21,7 @@ import {
 } from 'test-utils';
 
 import { type ConfigObject, configSchema } from '../config-schema';
+import { appointmentNoteMaxLength } from '../constants';
 import { useProviders } from '../hooks/useProviders';
 import { getAppointmentStatus } from '../patient-appointments/patient-appointments.resource';
 import { type Appointment, AppointmentKind, AppointmentStatus } from '../types';
@@ -168,6 +169,11 @@ describe('AppointmentForm', () => {
     expect(screen.getByLabelText(/select the type of appointment/i)).toBeInTheDocument();
     expect(screen.getByLabelText(/write an additional note/i)).toBeInTheDocument();
     expect(screen.getByPlaceholderText(/write any additional points here/i)).toBeInTheDocument();
+    expect(screen.getByLabelText(/write an additional note/i)).toHaveAttribute(
+      'maxlength',
+      appointmentNoteMaxLength.toString(),
+    );
+    expect(screen.getByText(`0/${appointmentNoteMaxLength}`)).toBeInTheDocument();
     expect(screen.getAllByDisplayValue(/\d{2}\/\d{2}\/\d{4}/).length).toBeGreaterThan(0);
     expect(screen.getByLabelText(/date appointment issued/i)).toBeInTheDocument();
     expect(screen.getByRole('option', { name: /mosoriot/i })).toBeInTheDocument();

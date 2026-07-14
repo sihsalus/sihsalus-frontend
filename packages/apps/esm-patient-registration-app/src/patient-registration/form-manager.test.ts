@@ -16,8 +16,8 @@ import {
   deleteRelationship,
   generateIdentifier,
   promotePersonToPatient,
-  savePatient,
   saveEncounter,
+  savePatient,
   savePerson,
   saveRelationship,
   updatePatientIdentifier,
@@ -74,8 +74,8 @@ const mockSavePatient = vi.mocked(savePatient);
 const mockSaveEncounter = vi.mocked(saveEncounter);
 const mockSavePerson = vi.mocked(savePerson);
 const mockSaveRelationship = vi.mocked(saveRelationship);
-const mockUpdatePatientIdentifier = vi.mocked(updatePatientIdentifier);
 const mockUpdateRelationship = vi.mocked(updateRelationship);
+const mockUpdatePatientIdentifier = vi.mocked(updatePatientIdentifier);
 const mockFetchPersonForPromotion = vi.mocked(fetchPersonForPromotion);
 const mockIsPersonAlreadyPatient = vi.mocked(isPersonAlreadyPatient);
 

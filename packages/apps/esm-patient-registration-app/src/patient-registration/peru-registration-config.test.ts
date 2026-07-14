@@ -83,7 +83,7 @@ describe('getEffectiveRegistrationConfig', () => {
     expect(config.sections).not.toContain('birthplace');
     expect(responsiblePerson).toMatchObject({
       id: 'responsiblePerson',
-      name: 'Acompañante o responsable',
+      name: 'Vínculos y responsable',
       fields: [],
     });
   });
@@ -125,19 +125,16 @@ describe('getEffectiveRegistrationConfig', () => {
     expect(fieldsById.civilStatus.customConceptAnswers?.map((answer) => answer.label)).not.toContain('Divorced');
     expect(fieldsById.nativeLanguage.answerConceptSetUuid).toBe('52f75b05-9a74-57b3-baeb-d2d300b62b09');
     expect(fieldsById.occupation.answerConceptSetUuid).toBe('d1c52a69-46b2-5c1e-ab88-5d5e6d2c8b49');
-    expect(fieldsById.insuranceType.customConceptAnswers?.map((answer) => answer.label)).toEqual([
-      'SIS Gratuito',
-      'SIS Emprendedor',
-      'SIS Semicontributivo',
-      'Plan de atención SIS',
-      'ESSALUD',
-      'FOSPOLI',
-      'Seguro privado',
-    ]);
+    expect(fieldsById.insuranceType.answerConceptSetUuid).toBe('6b932638-242e-49ef-8ba7-0ae87199835c');
+    expect(fieldsById.insuranceType.customConceptAnswers).toBeUndefined();
+    expect(fieldsById.insuranceType.label).toBe('Financiador');
+    expect(config.sectionDefinitions.find((section) => section.id === 'insurance')?.name).toBe('Financiador');
     expect(fieldsById.rhFactor.customConceptAnswers).toEqual([
       { uuid: '9b3df0a1-0c58-4f55-9868-9c38f1db2021', label: 'Rh positivo' },
       { uuid: '9b3df0a1-0c58-4f55-9868-9c38f1db2022', label: 'Rh negativo' },
     ]);
+    expect(fieldsById.bloodGroup.codedInputType).toBe('radio');
+    expect(fieldsById.rhFactor.codedInputType).toBe('radio');
     expect(config.sectionDefinitions.find((section) => section.id === 'identityLookup')?.fields).toContain('sisLookup');
     expect(config.sectionDefinitions.find((section) => section.id === 'insurance')?.fields).not.toContain('sisLookup');
     expect(config.fieldConfigurations.phone.personAttributeUuid).toBe(peruPhoneAttributeTypeUuid);

@@ -9019,6 +9019,7 @@ __metadata:
   dependencies:
     "@openmrs/esm-patient-common-lib": "workspace:*"
     "@rspack/cli": "npm:1.7.11"
+    "@sihsalus/esm-rbac": "workspace:*"
     html-entities: "npm:^2.5.2"
     lodash-es: "npm:^4.17.23"
     openmrs: "workspace:*"

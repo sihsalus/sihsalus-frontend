@@ -455,6 +455,40 @@ describe('Visit form', () => {
     expect(screen.getByRole('option', { name: /Inpatient Ward/i })).toBeInTheDocument();
   });
 
+  it('registers the queue admission time internally when opened from service queues', async () => {
+    const user = userEvent.setup();
+    const beforeSubmission = new Date();
+    mockUseVisitFormCallbacks.mockReturnValue([
+      new Map([
+        [
+          'queue-extension',
+          {
+            kind: 'queue-entry',
+            onBeforeVisitSave: () => true,
+            onVisitCreatedOrUpdated: vi.fn().mockResolvedValue(undefined),
+          },
+        ],
+      ]),
+      vi.fn(),
+    ]);
+
+    renderVisitForm(undefined, { openedFrom: 'service-queues-add-patient' });
+
+    expect(screen.queryByRole('textbox', { name: /Date/i })).not.toBeInTheDocument();
+    expect(screen.queryByRole('textbox', { name: /Time/i })).not.toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /Add patient to queue/i })).toBeInTheDocument();
+
+    await selectVisitType(user);
+    await user.selectOptions(screen.getByRole('combobox', { name: /Select a location/i }), 'Inpatient Ward');
+    await user.click(screen.getByRole('button', { name: /Add patient to queue/i }));
+
+    await waitFor(() => expect(mockSaveVisit).toHaveBeenCalledTimes(1));
+    const payload = mockSaveVisit.mock.calls[0][0];
+    expect(payload.startDatetime.getTime()).toBeGreaterThanOrEqual(beforeSubmission.getTime());
+    expect(payload.startDatetime.getTime()).toBeLessThanOrEqual(Date.now());
+    expect(showSnackbar).not.toHaveBeenCalledWith(expect.objectContaining({ title: 'Visit started' }));
+  });
+
   it('does not render the extra visit attributes slot by default', () => {
     renderVisitForm();
 
@@ -901,7 +935,7 @@ describe('Visit form', () => {
       }),
     );
 
-    await user.click(screen.getByRole('button', { name: /Start visit/i }));
+    await user.click(screen.getByRole('button', { name: /Add patient to queue/i }));
 
     await waitFor(() => expect(mockCloseWorkspace).toHaveBeenCalled());
     const savedPayload = mockSaveVisit.mock.calls[0][0];
@@ -1822,8 +1856,8 @@ async function selectVisitType(user: ReturnType<typeof userEvent.setup>, visitTy
   await user.click(await screen.findByText(visitType));
 }
 
-function renderVisitForm(visitToEdit?: Visit) {
-  render(React.createElement(StartVisitForm, { ...testProps, visitToEdit }));
+function renderVisitForm(visitToEdit?: Visit, overrides: Partial<typeof testProps> = {}) {
+  render(React.createElement(StartVisitForm, { ...testProps, ...overrides, visitToEdit }));
 }
 
 function hasRenderedExtensionSlot(name: string) {

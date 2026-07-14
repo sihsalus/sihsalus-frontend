@@ -2513,6 +2513,13 @@ describe('Util Tests', () => {
         '/ws/fhir2/R4/Encounter?_query=encountersWithMedicationRequests&_getpagesoffset=1&_count=10&status=ACTIVE&date=ge2020-01-01&patientSearchTerm=bob',
       );
     });
+    test('should trim and encode patient search terms', () => {
+      expect(
+        getPrescriptionTableEndpoint('', 'ACTIVE', 1, 10, '2020-01-01', '  Mar\u00eda Pe\u00f1a & Hijos  ', null),
+      ).toBe(
+        '/ws/fhir2/R4/Encounter?_query=encountersWithMedicationRequests&_getpagesoffset=1&_count=10&status=ACTIVE&date=ge2020-01-01&patientSearchTerm=Mar%C3%ADa%20Pe%C3%B1a%20%26%20Hijos',
+      );
+    });
     test('should return endpoint with date and location parameters', () => {
       expect(getPrescriptionTableEndpoint('', 'ACTIVE', 1, 10, '2020-01-01', null, '123abc')).toBe(
         '/ws/fhir2/R4/Encounter?_query=encountersWithMedicationRequests&_getpagesoffset=1&_count=10&status=ACTIVE&date=ge2020-01-01&location=123abc',

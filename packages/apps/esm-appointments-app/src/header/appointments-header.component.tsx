@@ -50,12 +50,14 @@ const AppointmentsHeader: React.FC<AppointmentHeaderProps> = ({ title, onChange 
         />
         {typeof onChange === 'function' && (
           <MultiSelect
+            className={styles.serviceTypeFilter}
             id="serviceTypeMultiSelect"
             items={serviceTypeOptions}
             itemToString={(item) => (item ? item.label : '')}
             label={t('filterAppointmentsByServiceType', 'Filter appointments by service type')}
             onChange={handleMultiSelectChange}
             type="inline"
+            useTitleInItem
           />
         )}
       </div>

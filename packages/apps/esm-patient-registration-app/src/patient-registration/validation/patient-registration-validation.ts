@@ -1,6 +1,6 @@
 import {
-  calendarDateToLocalDate,
   calculatePatientAge,
+  calendarDateToLocalDate,
   getLocalCalendarDate,
   MAX_PATIENT_AGE_MONTHS_REMAINDER,
   MAX_PATIENT_AGE_YEARS,
@@ -250,10 +250,49 @@ export function hasResponsibleRelationship(
       (relationship) =>
         relationship.action !== 'DELETE' &&
         hasRelatedPerson(relationship) &&
+        relationship.isCompanion &&
         !!relationship.relationshipType &&
         minorResponsibleRelationshipTypes.includes(relationship.relationshipType) &&
         isAdultResponsibleRelationship(relationship, minorResponsibleRelationshipTypes),
     ) ?? false
+  );
+}
+
+const fatherRelationshipTypeUuid = '8d91a210-c2cc-11de-8d13-0010c6dffd0f';
+
+function normalizeRelationshipLabel(value?: string) {
+  return (value ?? '')
+    .trim()
+    .toLocaleLowerCase()
+    .normalize('NFD')
+    .replace(/\p{Diacritic}/gu, '');
+}
+
+function isActiveCompleteRelationship(relationship: RelationshipValue) {
+  return relationship.action !== 'DELETE' && !!relationship.relationshipType && hasRelatedPerson(relationship);
+}
+
+export function hasMultipleFatherRelationships(relationships: Array<RelationshipValue> | undefined) {
+  const fatherRelationships =
+    relationships?.filter((relationship) => {
+      if (!isActiveCompleteRelationship(relationship)) {
+        return false;
+      }
+
+      const [relationshipTypeUuid, direction] = relationship.relationshipType.split('/');
+      return (
+        (relationshipTypeUuid === fatherRelationshipTypeUuid && direction === 'aIsToB') ||
+        ['father', 'padre'].includes(normalizeRelationshipLabel(relationship.relation))
+      );
+    }) ?? [];
+
+  return fatherRelationships.length > 1;
+}
+
+export function hasMultiplePrimaryResponsiblePersons(relationships: Array<RelationshipValue> | undefined) {
+  return (
+    (relationships?.filter((relationship) => isActiveCompleteRelationship(relationship) && relationship.isCompanion)
+      .length ?? 0) > 1
   );
 }
 
@@ -284,6 +323,7 @@ export function isUnderageResponsibleRelationship(
 ) {
   if (
     relationship.action === 'DELETE' ||
+    !relationship.isCompanion ||
     !relationship.relationshipType ||
     !minorResponsibleRelationshipTypes.includes(relationship.relationshipType)
   ) {
@@ -319,6 +359,7 @@ export function hasResponsibleRelationshipWithUnknownAge(
       (relationship) =>
         relationship.action !== 'DELETE' &&
         hasRelatedPerson(relationship) &&
+        relationship.isCompanion &&
         !!relationship.relationshipType &&
         minorResponsibleRelationshipTypes.includes(relationship.relationshipType) &&
         !isAdultResponsibleRelationship(relationship, minorResponsibleRelationshipTypes) &&
@@ -536,18 +577,20 @@ export function getValidationSchema(
           const identifierType = identifierTypes.find(
             (type) => type.fieldName === fieldName || type.uuid === identifier?.identifierTypeUuid,
           );
+          const identifierValueRequired = Boolean(
+            identifier?.required || config.defaultPatientIdentifierTypes?.includes(identifier?.identifierTypeUuid),
+          );
           const peruIdentifierRule = getPeruIdentifierRule(identifierType, identifier);
           const formatRegex = peruIdentifierRule?.pattern ?? buildIdentifierFormatRegex(identifierType?.format);
 
           return Yup.object({
             required: Yup.bool(),
             identifierValue: Yup.string()
-              .when('required', {
-                is: true,
-                // biome-ignore lint/suspicious/noThenProperty: Yup's conditional schema API requires the `then` property.
-                then: Yup.string().required(t('identifierValueRequired', 'Identifier value is required')),
-                otherwise: Yup.string().notRequired(),
-              })
+              .test(
+                'identifier-required',
+                t('identifierValueRequired', 'Identifier value is required'),
+                (value) => !identifierValueRequired || Boolean(value?.trim()),
+              )
               .test(
                 'identifier-format',
                 peruIdentifierRule
@@ -571,13 +614,25 @@ export function getValidationSchema(
         Yup.object()
           .shape({
             relatedPersonUuid: Yup.string(),
-            relationshipType: Yup.string().required(),
+            relationshipType: Yup.string().required(
+              t('relationshipTypeRequired', 'Select the relationship to the patient before registering the person'),
+            ),
           })
           .test(
             'related-person-selected-or-pending',
             t('relationshipPersonMustExist', 'Family member or companion must be an existing person'),
             (relationship) => hasRelatedPerson(relationship as RelationshipValue),
           ),
+      )
+      .test(
+        'patient-has-only-one-father',
+        t('patientCanOnlyHaveOneFather', 'The patient can only have one father'),
+        (relationships?: Array<RelationshipValue>) => !hasMultipleFatherRelationships(relationships),
+      )
+      .test(
+        'patient-has-only-one-primary-responsible',
+        t('patientCanOnlyHaveOnePrimaryResponsible', 'Select only one primary responsible person'),
+        (relationships?: Array<RelationshipValue>) => !hasMultiplePrimaryResponsiblePersons(relationships),
       )
       .test(
         'responsible-relationship-must-be-adult',

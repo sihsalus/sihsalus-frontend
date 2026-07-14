@@ -33,7 +33,7 @@ export const configSchema = {
           enabled: true,
         },
         age: {
-          enabled: true,
+          enabled: false,
           min: MIN_PATIENT_AGE_YEARS,
           max: MAX_PATIENT_AGE_YEARS,
         },
@@ -83,8 +83,8 @@ export const configSchema = {
         _description: 'Configuration for the age field',
         enabled: {
           _type: Type.Boolean,
-          _description: 'Optional. If true, determines whether to display the age field or not. Defaults to true',
-          _default: true,
+          _description: 'The age filter is not displayed in the SIH Salus patient search',
+          _default: false,
         },
         min: {
           _type: Type.Number,

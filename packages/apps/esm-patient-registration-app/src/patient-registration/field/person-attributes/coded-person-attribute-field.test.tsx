@@ -136,9 +136,31 @@ describe('CodedPersonAttributeField', () => {
       </Formik>,
     );
 
-    expect(screen.getByLabelText('Referred by (optional)')).toBeInTheDocument();
+    expect(screen.getByLabelText('Referred by (optional)')).toHaveValue('');
+    expect(screen.getByRole('option', { name: 'Select an option' })).toBeInTheDocument();
     expect(screen.getByText(/Option 1/i)).toBeInTheDocument();
     expect(screen.getByText(/Option 2/i)).toBeInTheDocument();
+  });
+
+  it('does not select the first searchable answer by default', () => {
+    render(
+      <Formik initialValues={{ attributes: {} }} onSubmit={() => {}}>
+        <Form>
+          <CodedPersonAttributeField
+            id="ethnicity"
+            personAttributeType={personAttributeType}
+            answerConceptSetUuid={answerConceptSetUuid}
+            label="Etnia"
+            customConceptAnswers={[]}
+            required={false}
+            searchable
+          />
+        </Form>
+      </Formik>,
+    );
+
+    expect(screen.getByRole('combobox', { name: /etnia/i })).toHaveValue('');
+    expect(screen.queryByDisplayValue('Option 1')).not.toBeInTheDocument();
   });
 
   it('renders set members as select options when the answer concept set is configured as a concept set', () => {
@@ -168,6 +190,35 @@ describe('CodedPersonAttributeField', () => {
 
     expect(screen.getByText('Civil status option')).toBeInTheDocument();
     expect(screen.getByText('Another civil status option')).toBeInTheDocument();
+  });
+
+  it('presents the database-funded private option as self-financing', () => {
+    mockUseConceptAnswers.mockReturnValue({
+      data: [
+        { uuid: 'self-funded-concept', display: 'Particular / Sin seguro' },
+        { uuid: 'public-concept', display: 'ESSALUD' },
+      ],
+      isLoading: false,
+      error: undefined,
+    });
+
+    render(
+      <Formik initialValues={{ attributes: {} }} onSubmit={() => {}}>
+        <Form>
+          <CodedPersonAttributeField
+            id="insuranceType"
+            personAttributeType={personAttributeType}
+            answerConceptSetUuid={answerConceptSetUuid}
+            label="Financiador"
+            customConceptAnswers={[]}
+            required={false}
+          />
+        </Form>
+      </Formik>,
+    );
+
+    expect(screen.getByRole('option', { name: 'Self-financing' })).toHaveValue('self-funded-concept');
+    expect(screen.queryByText('Particular / Sin seguro')).not.toBeInTheDocument();
   });
 
   it('renders customConceptAnswers as select options when they are provided', () => {
@@ -200,6 +251,54 @@ describe('CodedPersonAttributeField', () => {
     expect(screen.getByText(/Special Option B/i)).toBeInTheDocument();
     expect(screen.queryByText(/Option 1/i)).not.toBeInTheDocument();
     expect(screen.queryByText(/Option 2/i)).not.toBeInTheDocument();
+  });
+
+  it('renders coded answers as radios, preserves the current value, and allows clearing optional fields', async () => {
+    const user = userEvent.setup();
+    const handleSubmit = vi.fn();
+
+    render(
+      <Formik initialValues={{ attributes: { [personAttributeType.uuid]: 'B' } }} onSubmit={handleSubmit}>
+        <Form>
+          <CodedPersonAttributeField
+            id="bloodGroup"
+            personAttributeType={personAttributeType}
+            answerConceptSetUuid={answerConceptSetUuid}
+            label="Grupo sanguíneo"
+            customConceptAnswers={[
+              { uuid: 'A', label: 'A' },
+              { uuid: 'B', label: 'B' },
+              { uuid: 'AB', label: 'AB' },
+              { uuid: 'O', label: 'O' },
+            ]}
+            codedInputType="radio"
+            required={false}
+          />
+          <button type="submit">Save</button>
+        </Form>
+      </Formik>,
+    );
+
+    expect(screen.getByRole('radio', { name: 'B' })).toBeChecked();
+    expect(screen.getByRole('radio', { name: 'Not specified' })).not.toBeChecked();
+
+    await user.click(screen.getByRole('radio', { name: 'A' }));
+    await user.click(screen.getByRole('button', { name: 'Save' }));
+    await waitFor(() =>
+      expect(handleSubmit).toHaveBeenLastCalledWith(
+        expect.objectContaining({ attributes: { [personAttributeType.uuid]: 'A' } }),
+        expect.anything(),
+      ),
+    );
+
+    await user.click(screen.getByRole('radio', { name: 'Not specified' }));
+    await user.click(screen.getByRole('button', { name: 'Save' }));
+    await waitFor(() =>
+      expect(handleSubmit).toHaveBeenLastCalledWith(
+        expect.objectContaining({ attributes: { [personAttributeType.uuid]: '' } }),
+        expect.anything(),
+      ),
+    );
   });
 
   it('does not request remote answers and explains the unavailable optional field without Get Concepts', () => {

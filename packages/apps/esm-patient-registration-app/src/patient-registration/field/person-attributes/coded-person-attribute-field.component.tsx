@@ -1,5 +1,5 @@
-import { ComboBox, InlineNotification, Layer, Select, SelectItem } from '@carbon/react';
-import { reportError, useSession, userHasAccess } from '@openmrs/esm-framework';
+import { ComboBox, InlineNotification, Layer, RadioButton, RadioButtonGroup, Select, SelectItem } from '@carbon/react';
+import { reportError, userHasAccess, useSession } from '@openmrs/esm-framework';
 import classNames from 'classnames';
 import { Field, getIn } from 'formik';
 import { useEffect, useMemo } from 'react';
@@ -17,6 +17,7 @@ export interface CodedPersonAttributeFieldProps {
   answerConceptSetUuid: string;
   label?: string;
   customConceptAnswers: Array<{ uuid: string; label?: string }>;
+  codedInputType?: 'select' | 'radio';
   required: boolean;
   searchable?: boolean;
   readOnly?: boolean;
@@ -29,11 +30,13 @@ export function CodedPersonAttributeField({
   answerConceptSetUuid,
   label,
   customConceptAnswers,
+  codedInputType = 'select',
   required,
   searchable,
   readOnly,
   enforceAnswerSetMembership = false,
 }: CodedPersonAttributeFieldProps) {
+  const { t } = useTranslation(moduleName);
   const { user } = useSession();
   const hasCustomConceptAnswers = customConceptAnswers.length > 0;
   const canGetConcepts = userHasAccess(getConceptsPrivilege, user);
@@ -50,17 +53,22 @@ export function CodedPersonAttributeField({
     shouldLoadConceptAnswers && !isLoadingConceptAnswers && !conceptAnswersError && conceptAnswers?.length === 0;
   const cannotLoadConceptAnswers = !hasCustomConceptAnswers && (!canGetConcepts || Boolean(conceptAnswersError));
 
-  const answers = useMemo(
-    () =>
-      hasCustomConceptAnswers
-        ? customConceptAnswers
-        : (conceptAnswers ?? [])
-            .map((answer) => ({ ...answer, label: answer.display }))
-            .sort((a, b) => a.label.localeCompare(b.label)),
-    [hasCustomConceptAnswers, customConceptAnswers, conceptAnswers],
-  );
+  const answers = useMemo(() => {
+    const availableAnswers = hasCustomConceptAnswers
+      ? customConceptAnswers
+      : (conceptAnswers ?? [])
+          .map((answer) => ({ ...answer, label: answer.display }))
+          .sort((a, b) => a.label.localeCompare(b.label));
 
-  const { t } = useTranslation(moduleName);
+    return availableAnswers.map((answer) => ({
+          ...answer,
+          label:
+            id === 'insuranceType' && /^particular\s*\/\s*sin seguro$/i.test(answer.label ?? '')
+              ? t('selfFinancing', 'Self-financing')
+              : answer.label,
+        }));
+  }, [conceptAnswers, customConceptAnswers, hasCustomConceptAnswers, id, t]);
+
   const fieldName = `attributes.${personAttributeType.uuid}`;
   const displayLabel = label ?? personAttributeType?.display;
   const labelText = required ? displayLabel : `${displayLabel} (${t('optional', 'optional')})`;
@@ -170,6 +178,35 @@ export function CodedPersonAttributeField({
                 );
               }
 
+              if (codedInputType === 'radio') {
+                return (
+                  <RadioButtonGroup
+                    className={styles.codedRadioGroup}
+                    name={`person-attribute-${personAttributeType.uuid}`}
+                    legendText={labelText}
+                    valueSelected={field.value ?? ''}
+                    invalid={invalid}
+                    invalidText={typeof errorMessage === 'string' ? errorMessage : undefined}
+                    required={required}
+                    readOnly={readOnly}
+                    orientation="horizontal"
+                    onChange={(selectedValue) => setFieldValue(fieldName, selectedValue)}
+                  >
+                    {!required ? (
+                      <RadioButton id={`${id}-unspecified`} labelText={t('notSpecified', 'Not specified')} value="" />
+                    ) : null}
+                    {answers.map((answer) => (
+                      <RadioButton
+                        key={answer.uuid}
+                        id={`${id}-${answer.uuid}`}
+                        labelText={answer.label ?? ''}
+                        value={answer.uuid}
+                      />
+                    ))}
+                  </RadioButtonGroup>
+                );
+              }
+
               return (
                 <Select
                   id={id}
@@ -180,6 +217,7 @@ export function CodedPersonAttributeField({
                   required={required}
                   disabled={readOnly}
                   {...field}
+                  value={field.value ?? ''}
                 >
                   <SelectItem value={''} text={t('selectAnOption', 'Select an option')} />
                   {answers.map((answer) => (

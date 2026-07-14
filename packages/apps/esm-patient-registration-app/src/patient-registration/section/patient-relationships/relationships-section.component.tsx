@@ -21,7 +21,7 @@ import {
   shouldPreventPlainNumberPaste,
 } from '@openmrs/esm-utils';
 import { FieldArray, useField } from 'formik';
-import React, { useCallback, useContext, useEffect, useMemo, useState } from 'react';
+import React, { useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { type RegistrationConfig } from '../../../config-schema';
 import { moduleName } from '../../../constants';
@@ -34,6 +34,8 @@ import { type FormValues, type RelationshipValue } from '../../patient-registrat
 import { PatientRegistrationContext } from '../../patient-registration-context';
 import { getEffectiveRegistrationConfig } from '../../peru-registration-config';
 import {
+  hasMultipleFatherRelationships,
+  hasMultiplePrimaryResponsiblePersons,
   hasRelatedPerson,
   hasResponsibleRelationship,
   hasResponsibleRelationshipWithUnknownAge,
@@ -54,6 +56,7 @@ interface RelationshipType {
   display: string;
   uuid: string;
   direction: string;
+  weight?: number;
 }
 
 interface RelationshipViewProps {
@@ -77,15 +80,55 @@ const defaultGenderOptions: Array<GenderOption> = [
 ];
 
 const invalidMinorResponsibleRelationshipLabels = new Set(['child', 'grandchild', 'hijo', 'nieto']);
-const relationshipLabelTranslationKeys = new Map([
-  ['aunt/uncle', 'relationshipAuntUncleLabel'],
-  ['aunt / uncle', 'relationshipAuntUncleLabel'],
-  ['aunt or uncle', 'relationshipAuntUncleLabel'],
-  ['niece', 'relationshipNephewNieceLabel'],
-  ['nephew', 'relationshipNephewNieceLabel'],
-  ['nephew/niece', 'relationshipNephewNieceLabel'],
-  ['nephew / niece', 'relationshipNephewNieceLabel'],
+const nonFamilyRelationshipLabels = new Set([
+  'acompanado',
+  'acompanante',
+  'accompanied person',
+  'companion',
+  'doctor',
+  'paciente',
+  'patient',
+  'promotor de salud',
+  'comunidad',
+  'agente comunitario',
+  'apu',
 ]);
+
+const relationshipPriority: Record<string, number> = {
+  madre: 10,
+  mother: 10,
+  padre: 20,
+  father: 20,
+  apoderado: 30,
+  guardian: 30,
+  esposa: 40,
+  wife: 40,
+  esposo: 41,
+  husband: 41,
+  pareja: 42,
+  partner: 42,
+  hija: 50,
+  daughter: 50,
+  hijo: 51,
+  son: 51,
+  hermana: 60,
+  sister: 60,
+  hermano: 61,
+  brother: 61,
+  abuela: 70,
+  grandmother: 70,
+  abuelo: 71,
+  grandfather: 71,
+  'aunt/uncle': 80,
+  tia: 80,
+  tio: 80,
+  'niece/nephew': 90,
+  sobrina: 90,
+  sobrino: 90,
+  otro: 1000,
+  other: 1000,
+};
+
 const responsibleAgeInputConstraints = {
   integer: true,
   max: MAX_PATIENT_AGE_YEARS,
@@ -129,6 +172,16 @@ function hasIncompleteRelationship(relationships: Array<RelationshipValue> | und
   );
 }
 
+function isEmptyNewRelationship(relationship: RelationshipValue) {
+  return (
+    !relationship.uuid &&
+    relationship.action === 'ADD' &&
+    !relationship.relationshipType &&
+    !relationship.relatedPersonUuid &&
+    !relationship.newPerson
+  );
+}
+
 function normalizeRelationshipLabel(label: string) {
   return label
     .trim()
@@ -137,16 +190,29 @@ function normalizeRelationshipLabel(label: string) {
     .replace(/\p{Diacritic}/gu, '');
 }
 
-function translateRelationshipLabel(label: string, translate: (key: string, fallback: string) => string) {
-  const translationKey = relationshipLabelTranslationKeys.get(normalizeRelationshipLabel(label));
-  return translationKey ? translate(translationKey, label) : label;
+function getRelationshipLabelKey(label: string) {
+  const normalizedLabel = normalizeRelationshipLabel(label);
+
+  if (['aunt/uncle', 'aunt / uncle', 'aunt or uncle', 'tia', 'tio', 'tio/a'].includes(normalizedLabel)) {
+    return 'aunt-uncle';
+  }
+
+  if (
+    ['niece', 'nephew', 'niece/nephew', 'nephew/niece', 'nephew / niece', 'sobrina', 'sobrino', 'sobrino/a'].includes(
+      normalizedLabel,
+    )
+  ) {
+    return 'niece-nephew';
+  }
+
+  return normalizedLabel;
 }
 
 function getUniqueRelationshipTypes(relationshipTypes: Array<RelationshipType>) {
   const labels = new Set<string>();
 
   return relationshipTypes.filter((relationshipType) => {
-    const normalizedLabel = normalizeRelationshipLabel(relationshipType.display);
+    const normalizedLabel = getRelationshipLabelKey(relationshipType.display);
 
     if (!normalizedLabel || labels.has(normalizedLabel)) {
       return false;
@@ -157,8 +223,32 @@ function getUniqueRelationshipTypes(relationshipTypes: Array<RelationshipType>) 
   });
 }
 
-function getDisplayRelationshipTypes(relationshipTypes: Array<RelationshipType>, isMinor: boolean) {
-  const uniqueRelationshipTypes = getUniqueRelationshipTypes(relationshipTypes);
+function getRelationshipPriority(relationshipType: RelationshipType) {
+  if (typeof relationshipType.weight === 'number' && relationshipType.weight > 0) {
+    return relationshipType.weight;
+  }
+
+  return relationshipPriority[normalizeRelationshipLabel(relationshipType.display)] ?? 500;
+}
+
+function getDisplayRelationshipTypes(
+  relationshipTypes: Array<RelationshipType>,
+  isMinor: boolean,
+  companionRelationshipTypeUuid?: string,
+) {
+  const uniqueRelationshipTypes = getUniqueRelationshipTypes(relationshipTypes)
+    .filter((relationshipType) => {
+      const normalizedLabel = normalizeRelationshipLabel(relationshipType.display);
+      return (
+        relationshipType.uuid !== companionRelationshipTypeUuid &&
+        !nonFamilyRelationshipLabels.has(normalizedLabel) &&
+        !normalizedLabel.startsWith('patient (')
+      );
+    })
+    .sort((first, second) => {
+      const priorityDifference = getRelationshipPriority(first) - getRelationshipPriority(second);
+      return priorityDifference || first.display.localeCompare(second.display, 'es');
+    });
 
   if (!isMinor) {
     return uniqueRelationshipTypes;
@@ -168,6 +258,20 @@ function getDisplayRelationshipTypes(relationshipTypes: Array<RelationshipType>,
     (relationshipType) =>
       !invalidMinorResponsibleRelationshipLabels.has(normalizeRelationshipLabel(relationshipType.display)),
   );
+}
+
+function getLocalizedRelationshipLabel(label: string, t: ReturnType<typeof useTranslation>['t']) {
+  const normalizedLabel = normalizeRelationshipLabel(label);
+
+  if (['aunt/uncle', 'aunt / uncle', 'aunt or uncle'].includes(normalizedLabel)) {
+    return t('relationshipAuntUncleLabel', 'Aunt/Uncle');
+  }
+
+  if (['niece', 'nephew', 'niece/nephew', 'nephew/niece', 'nephew / niece'].includes(normalizedLabel)) {
+    return t('relationshipNephewNieceLabel', 'Niece/Nephew');
+  }
+
+  return label;
 }
 
 function getAgeFromBirthdate(birthdate?: string) {
@@ -248,12 +352,6 @@ const RelationshipView: React.FC<RelationshipViewProps> = ({
   const genderOptions = config?.fieldConfigurations?.gender ?? defaultGenderOptions;
   const minorResponsibleRelationshipTypes =
     effectiveConfig?.relationshipOptions?.minorResponsibleRelationshipTypes ?? [];
-  const companionRelationshipTypeUuid = effectiveConfig?.relationshipOptions?.companionRelationshipType?.split('/')[0];
-  // When the main relationship already IS Acompañante, the checkbox would only create a
-  // duplicate Acompañante relationship for the same person, so it is hidden.
-  const relationshipTypeIsCompanion =
-    !!companionRelationshipTypeUuid && relationship.relationshipType?.split('/')[0] === companionRelationshipTypeUuid;
-
   const personFormValues = useMemo(
     () => ({
       ...newPersonValues,
@@ -278,26 +376,14 @@ const RelationshipView: React.FC<RelationshipViewProps> = ({
       const field = target.name;
       const value = target.options[target.selectedIndex].value;
       setFieldValue(field, value);
+      setFieldValue(`relationships[${index}].relation`, target.options[target.selectedIndex].text);
       setNewPersonValues((currentValues) => ({ ...currentValues, relationshipType: value }));
       setTouchedFields((currentFields) => ({ ...currentFields, relationshipType: true }));
-      if (companionRelationshipTypeUuid && value.split('/')[0] === companionRelationshipTypeUuid) {
-        setFieldValue(`relationships[${index}].isCompanion`, false);
-      }
       if (!relationship?.action) {
         setFieldValue(`relationships[${index}].action`, 'UPDATE');
       }
     },
-    [companionRelationshipTypeUuid, index, relationship?.action, setFieldValue],
-  );
-
-  const handleCompanionChange = useCallback(
-    (_event, { checked }: { checked: boolean }) => {
-      setFieldValue(`relationships[${index}].isCompanion`, checked);
-      if (!relationship.action) {
-        setFieldValue(`relationships[${index}].action`, 'UPDATE');
-      }
-    },
-    [index, relationship.action, setFieldValue],
+    [index, relationship?.action, setFieldValue],
   );
 
   const handleSuggestionSelected = useCallback(
@@ -490,15 +576,6 @@ const RelationshipView: React.FC<RelationshipViewProps> = ({
             </Select>
           </Layer>
         </div>
-        {!relationshipTypeIsCompanion ? (
-          <Checkbox
-            className={styles.companionCheckbox}
-            id={`relationships[${index}].isCompanion`}
-            labelText={t('isCompanionLabel', 'Is the patient companion')}
-            checked={!!relationship.isCompanion}
-            onChange={handleCompanionChange}
-          />
-        ) : null}
       </div>
       {requiresRelatedPerson ? (
         <div className={styles.personEntry}>
@@ -691,6 +768,81 @@ interface RelationshipsSectionProps {
   defaultNewRelationship?: boolean;
 }
 
+interface PrimaryResponsibleSectionProps {
+  relationships?: Array<RelationshipValue>;
+  setFieldValue: (field: string, value: unknown) => void;
+}
+
+const PrimaryResponsibleSection: React.FC<PrimaryResponsibleSectionProps> = ({ relationships = [], setFieldValue }) => {
+  const { t } = useTranslation(moduleName);
+  const availableRelationships = relationships
+    .map((relationship, index) => ({ relationship, index }))
+    .filter(
+      ({ relationship }) =>
+        relationship.action !== 'DELETE' && !!relationship.relationshipType && hasRelatedPerson(relationship),
+    );
+
+  const handlePrimaryResponsibleChange = useCallback(
+    (selectedIndex: number, checked: boolean) => {
+      relationships.forEach((relationship, index) => {
+        const shouldBePrimary = checked && index === selectedIndex;
+        if (!!relationship.isCompanion === shouldBePrimary) {
+          return;
+        }
+
+        setFieldValue(`relationships[${index}].isCompanion`, shouldBePrimary);
+        if (relationship.uuid && relationship.action !== 'ADD' && relationship.action !== 'DELETE') {
+          setFieldValue(`relationships[${index}].action`, 'UPDATE');
+        }
+      });
+    },
+    [relationships, setFieldValue],
+  );
+
+  return (
+    <div className={styles.relationshipSection}>
+      <div className={styles.sectionHeading}>
+        <h3>{t('patientResponsibleSection', 'Patient responsible person')}</h3>
+        <p>{t('patientResponsibleHelpText', 'Select only one person as the primary responsible person.')}</p>
+      </div>
+      {hasMultiplePrimaryResponsiblePersons(relationships) ? (
+        <InlineNotification
+          kind="error"
+          lowContrast
+          title={t('patientCanOnlyHaveOnePrimaryResponsible', 'Select only one primary responsible person')}
+        />
+      ) : null}
+      {availableRelationships.length ? (
+        <div className={styles.responsibleOptions}>
+          {availableRelationships.map(({ relationship, index }) => {
+            const personName =
+              relationship.relatedPersonName ||
+              (relationship.newPerson ? getResponsiblePersonDisplayName(relationship.newPerson) : '');
+            const relationshipLabel = relationship.relation ? ` · ${relationship.relation}` : '';
+
+            return (
+              <Checkbox
+                key={`responsible-${getRelationshipKey(relationship)}`}
+                id={`relationships[${index}].isCompanion`}
+                labelText={`${personName}${relationshipLabel}`}
+                checked={!!relationship.isCompanion}
+                onChange={(_event, { checked }) => handlePrimaryResponsibleChange(index, checked)}
+              />
+            );
+          })}
+        </div>
+      ) : (
+        <p className={styles.emptyResponsibleText}>
+          {t(
+            'patientResponsibleEmptyText',
+            'Add a patient family link before selecting the primary responsible person.',
+          )}
+        </p>
+      )}
+    </div>
+  );
+};
+
 export const RelationshipsSection: React.FC<RelationshipsSectionProps> = ({ defaultNewRelationship = false }) => {
   const { relationshipTypes, relationshipTypesError, isLoadingRelationshipTypes } = useContext(ResourcesContext);
   const relationshipTypeResults = Array.isArray(relationshipTypes) ? [] : relationshipTypes?.results;
@@ -701,10 +853,12 @@ export const RelationshipsSection: React.FC<RelationshipsSectionProps> = ({ defa
   const config = configuredConfig?.sections ? getEffectiveRegistrationConfig(configuredConfig) : configuredConfig;
   const [displayRelationshipTypes, setDisplayRelationshipTypes] = useState<RelationshipType[]>([]);
   const [hasSeededDefaultRelationship, setHasSeededDefaultRelationship] = useState(false);
+  const previouslyRequiredResponsibleRelationship = useRef(false);
   const [, relationshipsMeta] = useField<Array<RelationshipValue>>('relationships');
   const { t } = useTranslation(moduleName);
   const requiresResponsibleRelationship = isMinorPatient(values);
   const minorResponsibleRelationshipTypes = config?.relationshipOptions?.minorResponsibleRelationshipTypes ?? [];
+  const companionRelationshipTypeUuid = config?.relationshipOptions?.companionRelationshipType?.split('/')[0];
   const hasRelationshipTypes = !!relationshipTypeResults?.length;
   const hasUnderageResponsible = hasUnderageResponsibleRelationship(
     values.relationships,
@@ -735,25 +889,30 @@ export const RelationshipsSection: React.FC<RelationshipsSectionProps> = ({ defa
     missingResponsibleRelationshipError ??
     (relationshipsMeta.touched && typeof relationshipsMeta.error === 'string' ? relationshipsMeta.error : null);
   const visibleRelationshipTypes = useMemo(
-    () => getDisplayRelationshipTypes(displayRelationshipTypes, requiresResponsibleRelationship),
-    [displayRelationshipTypes, requiresResponsibleRelationship],
+    () =>
+      getDisplayRelationshipTypes(
+        displayRelationshipTypes,
+        requiresResponsibleRelationship,
+        companionRelationshipTypeUuid,
+      ),
+    [companionRelationshipTypeUuid, displayRelationshipTypes, requiresResponsibleRelationship],
   );
 
   useEffect(() => {
     if (hasRelationshipTypes) {
       const tmp: RelationshipType[] = [];
       relationshipTypeResults.forEach((type) => {
-        const aIsToBLabel = type.displayAIsToB ? type.displayAIsToB : type.displayBIsToA;
-        const bIsToALabel = type.displayBIsToA ? type.displayBIsToA : type.displayAIsToB;
         const aIsToB = {
-          display: translateRelationshipLabel(aIsToBLabel, t),
+          display: getLocalizedRelationshipLabel(type.displayAIsToB || type.displayBIsToA || '', t),
           uuid: type.uuid,
           direction: 'aIsToB',
+          weight: type.weight,
         };
         const bIsToA = {
-          display: translateRelationshipLabel(bIsToALabel, t),
+          display: getLocalizedRelationshipLabel(type.displayBIsToA || type.displayAIsToB || '', t),
           uuid: type.uuid,
           direction: 'bIsToA',
+          weight: type.weight,
         };
         aIsToB.display === bIsToA.display
           ? tmp.push(aIsToB)
@@ -766,8 +925,26 @@ export const RelationshipsSection: React.FC<RelationshipsSectionProps> = ({ defa
   }, [hasRelationshipTypes, relationshipTypeResults, t]);
 
   useEffect(() => {
+    const wasRequired = previouslyRequiredResponsibleRelationship.current;
+    previouslyRequiredResponsibleRelationship.current = requiresResponsibleRelationship;
+
+    if (wasRequired && !requiresResponsibleRelationship && setFieldValue) {
+      const relationships = values.relationships ?? [];
+      const completedOrEditedRelationships = relationships.filter(
+        (relationship) => !isEmptyNewRelationship(relationship),
+      );
+
+      if (completedOrEditedRelationships.length !== relationships.length) {
+        setFieldValue('relationships', completedOrEditedRelationships, true);
+      }
+      setHasSeededDefaultRelationship(false);
+    }
+  }, [requiresResponsibleRelationship, setFieldValue, values.relationships]);
+
+  useEffect(() => {
     if (
       defaultNewRelationship &&
+      requiresResponsibleRelationship &&
       hasRelationshipTypes &&
       !hasSeededDefaultRelationship &&
       setFieldValue &&
@@ -786,6 +963,7 @@ export const RelationshipsSection: React.FC<RelationshipsSectionProps> = ({ defa
     defaultNewRelationship,
     hasRelationshipTypes,
     hasSeededDefaultRelationship,
+    requiresResponsibleRelationship,
     setFieldValue,
     values.relationships?.length,
   ]);
@@ -828,66 +1006,92 @@ export const RelationshipsSection: React.FC<RelationshipsSectionProps> = ({ defa
           },
         }) => (
           <div>
-            {relationshipError ? (
-              <div className={`${fieldStyles.fieldError} ${styles.sectionError}`} role="alert">
-                {relationshipError}
+            <div className={styles.relationshipSection}>
+              <div className={styles.sectionHeading}>
+                <h3>{t('patientFamilyLinksSection', 'Patient family links')}</h3>
+                <p>{t('patientFamilyLinksHelpText', 'Add the family members linked to the patient.')}</p>
               </div>
-            ) : null}
-            {requiresResponsibleRelationship &&
-            hasUnderageResponsibleRelationship(relationships, minorResponsibleRelationshipTypes) ? (
-              <InlineNotification
-                kind="error"
-                lowContrast
-                title={t('responsiblePersonMustBeAdult', 'Responsible person must be an adult')}
-                subtitle={t(
-                  'responsiblePersonMustBeAdultHelpText',
-                  'A minor cannot be assigned as the responsible person for another minor.',
-                )}
-              />
-            ) : requiresResponsibleRelationship &&
-              !hasResponsibleRelationship(relationships, minorResponsibleRelationshipTypes) &&
-              !relationshipsMeta.touched ? (
-              <InlineNotification
-                kind="warning"
-                lowContrast
-                title={t('responsibleRelationshipRequiredTitle', 'Responsible family member required')}
-                subtitle={t(
-                  'responsibleRelationshipRequiredForMinor',
-                  'For minors, record a responsible family member, guardian, or legal representative.',
-                )}
-              />
-            ) : null}
-            {relationships && relationships.length > 0
-              ? relationships.map((relationship: RelationshipValue, index) => (
-                  <div key={getRelationshipKey(relationship)} className={sectionStyles.formSection}>
-                    <RelationshipView
-                      relationship={relationship}
-                      index={index}
-                      displayRelationshipTypes={visibleRelationshipTypes}
-                      showValidationErrors={submitCount > 0 || !!relationshipsMeta.touched}
-                      showMissingPersonSelectionError={
-                        (submitCount > 0 || !!relationshipsMeta.touched) && !hasRelatedPerson(relationship)
-                      }
-                      remove={remove}
-                    />
-                  </div>
-                ))
-              : null}
-            <div className={styles.actions}>
-              <Button
-                kind="ghost"
-                disabled={hasIncompleteRelationship(relationships)}
-                onClick={() =>
-                  push({
-                    clientId: getRelationshipClientId(),
-                    relatedPersonUuid: '',
-                    action: 'ADD',
-                  })
-                }
-              >
-                {t('addRelationshipButtonText', 'Add family member or companion')}
-              </Button>
+              {relationshipError ? (
+                <div className={`${fieldStyles.fieldError} ${styles.sectionError}`} role="alert">
+                  {relationshipError}
+                </div>
+              ) : null}
+              {hasIncompleteRelationship(relationships) ? (
+                <InlineNotification
+                  kind="warning"
+                  lowContrast
+                  title={t('incompleteRelationshipTitle', 'Complete the pending family link')}
+                  subtitle={t(
+                    'incompleteRelationshipHelpText',
+                    'Select the relationship and the related person before adding another family link.',
+                  )}
+                />
+              ) : null}
+              {hasMultipleFatherRelationships(relationships) ? (
+                <InlineNotification
+                  kind="error"
+                  lowContrast
+                  title={t('patientCanOnlyHaveOneFather', 'The patient can only have one father')}
+                />
+              ) : null}
+              {requiresResponsibleRelationship &&
+              hasUnderageResponsibleRelationship(relationships, minorResponsibleRelationshipTypes) ? (
+                <InlineNotification
+                  kind="error"
+                  lowContrast
+                  title={t('responsiblePersonMustBeAdult', 'Responsible person must be an adult')}
+                  subtitle={t(
+                    'responsiblePersonMustBeAdultHelpText',
+                    'A minor cannot be assigned as the responsible person for another minor.',
+                  )}
+                />
+              ) : requiresResponsibleRelationship &&
+                !hasResponsibleRelationship(relationships, minorResponsibleRelationshipTypes) &&
+                !hasIncompleteRelationship(relationships) &&
+                !relationshipsMeta.touched ? (
+                <InlineNotification
+                  kind="warning"
+                  lowContrast
+                  title={t('responsibleRelationshipRequiredTitle', 'Responsible family member required')}
+                  subtitle={t(
+                    'responsibleRelationshipRequiredForMinor',
+                    'For minors, record a responsible family member, guardian, or legal representative.',
+                  )}
+                />
+              ) : null}
+              {relationships && relationships.length > 0
+                ? relationships.map((relationship: RelationshipValue, index) => (
+                    <div key={getRelationshipKey(relationship)} className={sectionStyles.formSection}>
+                      <RelationshipView
+                        relationship={relationship}
+                        index={index}
+                        displayRelationshipTypes={visibleRelationshipTypes}
+                        showValidationErrors={submitCount > 0 || !!relationshipsMeta.touched}
+                        showMissingPersonSelectionError={
+                          (submitCount > 0 || !!relationshipsMeta.touched) && !hasRelatedPerson(relationship)
+                        }
+                        remove={remove}
+                      />
+                    </div>
+                  ))
+                : null}
+              <div className={styles.actions}>
+                <Button
+                  kind="ghost"
+                  disabled={hasIncompleteRelationship(relationships)}
+                  onClick={() =>
+                    push({
+                      clientId: getRelationshipClientId(),
+                      relatedPersonUuid: '',
+                      action: 'ADD',
+                    })
+                  }
+                >
+                  {t('addFamilyLinkButtonText', 'Add family link')}
+                </Button>
+              </div>
             </div>
+            <PrimaryResponsibleSection relationships={relationships} setFieldValue={setFieldValue} />
           </div>
         )}
       </FieldArray>

@@ -19,6 +19,7 @@ import {
 } from '../../../../test-utils/mocks/locations.mock';
 import { mockConfig } from '../../../../test-utils/mocks/login-config.mock';
 import renderWithRouter from '../test-helpers/render-with-router';
+import { hardNavigate } from '../navigation';
 
 import { useDefaultLocation, useLocationCount } from './location-picker.resource';
 import LocationPickerView from './location-picker-view.component';
@@ -26,6 +27,11 @@ import LocationPickerView from './location-picker-view.component';
 vi.mock('./location-picker.resource', () => ({
   useDefaultLocation: vi.fn(),
   useLocationCount: vi.fn(),
+}));
+
+vi.mock('../navigation', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('../navigation')>()),
+  hardNavigate: vi.fn(),
 }));
 
 const fistLocation = {
@@ -50,6 +56,7 @@ const mockUseConnectivity = vi.mocked(useConnectivity);
 const mockShowSnackbar = vi.mocked(showSnackbar);
 const mockUseDefaultLocation = vi.mocked(useDefaultLocation);
 const mockUseLocationCount = vi.mocked(useLocationCount);
+const mockHardNavigate = vi.mocked(hardNavigate);
 
 let mockedStoredDefaultLocation: string | undefined;
 let mockedValidatedDefaultLocation: string | null;
@@ -150,6 +157,22 @@ describe('LocationPickerView', () => {
     expect(
       screen.getByText(/select your location from the list below. use the search bar to find your location/i),
     ).toBeInTheDocument();
+  });
+
+  it('redirects admission users home without rendering the location picker', async () => {
+    mockUseSession.mockReturnValue({
+      user: {
+        display: 'Admision',
+        roles: [{ display: 'Admisión' }],
+        privileges: [{ display: 'app:home.admision' }],
+        userProperties: {},
+      } as LoggedInUser,
+    } as Session);
+
+    renderWithRouter(LocationPickerView, {});
+
+    await waitFor(() => expect(mockHardNavigate).toHaveBeenCalledWith(mockConfig.links.loginSuccess));
+    expect(screen.queryByRole('button', { name: /confirm/i })).not.toBeInTheDocument();
   });
 
   it('disables the confirm button when no location is selected', () => {

@@ -39,6 +39,7 @@ import {
   type PatientWorkspace2DefinitionProps,
   useAllowedFileExtensions,
 } from '@openmrs/esm-patient-common-lib';
+import { isAdmissionUser } from '@sihsalus/esm-rbac';
 import classnames from 'classnames';
 import dayjs from 'dayjs';
 import type { TFunction } from 'i18next';
@@ -245,7 +246,7 @@ export interface VisitNotesFormProps {
   formContext: 'creating' | 'editing';
 }
 
-const VisitNotesForm: React.FC<PatientWorkspace2DefinitionProps<VisitNotesFormProps, {}>> = ({
+const VisitNotesFormContent: React.FC<PatientWorkspace2DefinitionProps<VisitNotesFormProps, {}>> = ({
   closeWorkspace,
   workspaceProps: { formContext, encounter },
   groupProps: { patientUuid, patient, visitContext },
@@ -1670,5 +1671,22 @@ function Loader() {
     </>
   );
 }
+
+const VisitNotesForm: React.FC<PatientWorkspace2DefinitionProps<VisitNotesFormProps, {}>> = (props) => {
+  const session = useSession();
+  const admissionUser = isAdmissionUser(session?.user);
+
+  useEffect(() => {
+    if (admissionUser) {
+      void props.closeWorkspace({ closeWindow: true, discardUnsavedChanges: true });
+    }
+  }, [admissionUser, props.closeWorkspace]);
+
+  if (admissionUser) {
+    return null;
+  }
+
+  return <VisitNotesFormContent {...props} />;
+};
 
 export default VisitNotesForm;

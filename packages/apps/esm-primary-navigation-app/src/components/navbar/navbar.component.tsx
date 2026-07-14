@@ -8,6 +8,7 @@ import {
   useLeftNavStore,
   useSession,
 } from '@openmrs/esm-framework';
+import { isAdmissionUser } from '@sihsalus/esm-rbac';
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { Navigate } from 'react-router-dom';
 
@@ -136,7 +137,7 @@ const Navbar: React.FC = () => {
       : 'anonymous';
 
   if (session?.user?.person) {
-    return session.sessionLocation ? (
+    return session.sessionLocation || isAdmissionUser(session.user) ? (
       <HeaderContainer key={sessionKey} render={HeaderItems}></HeaderContainer>
     ) : (
       <Navigate

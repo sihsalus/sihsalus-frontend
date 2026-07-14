@@ -1,5 +1,5 @@
 import { getDefaultsFromConfigSchema, useConfig, useLayoutType } from '@openmrs/esm-framework';
-import { render, screen } from '@testing-library/react';
+import { fireEvent, render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 
 import { configSchema, type PatientSearchConfig } from '../../config-schema';
@@ -104,10 +104,8 @@ describe('RefineSearch', () => {
     renderComponent();
 
     expect(screen.getByText('Sex')).toBeInTheDocument();
-    expect(screen.getByText('Day of Birth')).toBeInTheDocument();
-    expect(screen.getByText('Month of Birth')).toBeInTheDocument();
-    expect(screen.getByText('Year of Birth')).toBeInTheDocument();
-    expect(screen.getByLabelText('Age')).toBeInTheDocument();
+    expect(screen.getByLabelText('Date of birth')).toBeInTheDocument();
+    expect(screen.queryByLabelText('Age')).not.toBeInTheDocument();
     expect(screen.queryByLabelText('Postcode')).not.toBeInTheDocument();
     expect(screen.getByText('Tipo de Documento de Identidad')).toBeInTheDocument();
     expect(screen.getByLabelText('Número de Documento de Identidad')).toBeInTheDocument();
@@ -115,19 +113,36 @@ describe('RefineSearch', () => {
     expect(screen.getByText('Estado de Identificación en Admisión')).toBeInTheDocument();
   });
 
-  it('passes the configured age limits to the rendered input', () => {
-    renderComponent();
-
-    const ageInput = screen.getByRole('spinbutton', { name: /age/i });
-    expect(ageInput).toHaveAttribute('min', '0');
-    expect(ageInput).toHaveAttribute('max', '140');
-  });
-
   it('shows number of filters applied in Search button when filters are active', () => {
     renderComponent({ filtersApplied: 2 });
 
     const searchButton = screen.getByRole('button', { name: /search/i });
     expect(searchButton).toHaveTextContent('Search (2 filters applied)');
+  });
+
+  it('requires a name or document number before searching', async () => {
+    renderComponent();
+
+    const searchButton = screen.getByRole('button', { name: /search/i });
+    expect(searchButton).toBeDisabled();
+
+    await user.type(screen.getByLabelText(/apellidos y nombres/i), 'Ahuanari Flores');
+    expect(searchButton).toBeEnabled();
+  });
+
+  it('advertises every supported identifier and submits an Otros document unchanged', async () => {
+    renderComponent();
+
+    const searchInput = screen.getByLabelText(/apellidos y nombres/i);
+    expect(searchInput).toHaveAttribute(
+      'placeholder',
+      'Ingrese apellidos, nombres, N.° HC, DNI, CE, pasaporte, CNV, DIE, código SIS u otro documento',
+    );
+
+    await user.type(searchInput, 'LM-OTRO-2026');
+    await user.click(screen.getByRole('button', { name: /search/i }));
+
+    expect(mockSetSearchQuery).toHaveBeenCalledWith('LM-OTRO-2026');
   });
 
   it('calls setFilters with initial state when Reset Fields is clicked', async () => {
@@ -150,13 +165,12 @@ describe('RefineSearch', () => {
   it('submits form with current state when Search is clicked', async () => {
     renderComponent();
 
-    const ageInput = screen.getByRole('spinbutton', { name: /age/i });
-    await user.type(ageInput, '30');
+    await user.type(screen.getByLabelText(/apellidos y nombres/i), 'Ahuanari');
     await user.click(screen.getByRole('button', { name: /search/i }));
 
     expect(mockSetFilters).toHaveBeenCalledWith(
       expect.objectContaining({
-        query: '',
+        query: 'Ahuanari',
         gender: 'any',
         dateOfBirth: null,
         monthOfBirth: null,
@@ -168,7 +182,7 @@ describe('RefineSearch', () => {
           'a7e3f8c1-2d4b-4f9a-8c6e-1b2d3f4a5c6e': '',
           '787f1ea9-1792-45e5-9076-699b1a0638cb': '',
         },
-        age: 30,
+        age: null,
       }),
     );
   });
@@ -222,6 +236,7 @@ describe('RefineSearch', () => {
     it('handles gender selection correctly', async () => {
       renderComponent();
 
+      await user.type(screen.getByLabelText(/apellidos y nombres/i), 'Ahuanari');
       await user.click(screen.getByRole('tab', { name: 'Male' }));
       await user.click(screen.getByRole('button', { name: /search/i }));
 
@@ -235,13 +250,8 @@ describe('RefineSearch', () => {
     it('handles date of birth inputs correctly', async () => {
       renderComponent();
 
-      const dayInput = screen.getByRole('spinbutton', { name: /day of birth/i });
-      const monthInput = screen.getByRole('spinbutton', { name: /month of birth/i });
-      const yearInput = screen.getByRole('spinbutton', { name: /year of birth/i });
-
-      await user.type(dayInput, '15');
-      await user.type(monthInput, '03');
-      await user.type(yearInput, '1990');
+      await user.type(screen.getByLabelText(/apellidos y nombres/i), 'Ahuanari');
+      fireEvent.change(screen.getByLabelText('Date of birth'), { target: { value: '1990-03-15' } });
       await user.click(screen.getByRole('button', { name: /search/i }));
 
       expect(mockSetFilters).toHaveBeenCalledWith(
@@ -253,37 +263,5 @@ describe('RefineSearch', () => {
       );
     });
 
-    it('rejects out-of-range date of birth and age values', async () => {
-      renderComponent();
-
-      const dayInput = screen.getByRole('spinbutton', { name: /day of birth/i });
-      const monthInput = screen.getByRole('spinbutton', { name: /month of birth/i });
-      const yearInput = screen.getByRole('spinbutton', { name: /year of birth/i });
-      const ageInput = screen.getByRole('spinbutton', { name: /age/i });
-
-      await user.type(dayInput, '32');
-      await user.type(monthInput, '13');
-      await user.type(yearInput, '100000');
-      await user.type(ageInput, '141');
-      await user.click(screen.getByRole('button', { name: /search/i }));
-
-      expect(dayInput).toHaveValue(32);
-      expect(monthInput).toHaveValue(13);
-      expect(yearInput).toHaveValue(100000);
-      expect(ageInput).toHaveValue(141);
-      expect(mockSetFilters).not.toHaveBeenCalled();
-      expect(yearInput).toHaveAttribute('aria-invalid', 'true');
-    });
-
-    it('does not submit an impossible date of birth', async () => {
-      renderComponent();
-
-      await user.type(screen.getByRole('spinbutton', { name: /day of birth/i }), '31');
-      await user.type(screen.getByRole('spinbutton', { name: /month of birth/i }), '02');
-      await user.click(screen.getByRole('button', { name: /search/i }));
-
-      expect(mockSetFilters).not.toHaveBeenCalled();
-      expect(screen.getByRole('spinbutton', { name: /day of birth/i })).toHaveAttribute('aria-invalid', 'true');
-    });
   });
 });

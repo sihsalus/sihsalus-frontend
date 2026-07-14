@@ -7,6 +7,10 @@ import { type SearchedPatient } from '../../../types';
 
 import PatientBanner from './patient-banner.component';
 
+vi.mock('../../../sihsalus-patient-info/sihsalus-patient-info.component', () => ({
+  SihsalusPatientInfo: ({ patient }) => <span>{patient.name[0].text}</span>,
+}));
+
 const mockUseVisit = vi.mocked(useVisit);
 const mockExtensionSlot = vi.mocked(ExtensionSlot);
 

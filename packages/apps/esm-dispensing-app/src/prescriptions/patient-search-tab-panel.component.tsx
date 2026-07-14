@@ -17,21 +17,24 @@ const PatientSearchTabPanel: React.FC = () => {
           className={styles.searchBar}
           onSubmit={(e) => {
             e.preventDefault();
-            setSubmittedSearchTerm(searchTerm);
+            setSubmittedSearchTerm(searchTerm.trim());
           }}
         >
           <Search
             closeButtonLabelText={t('clearSearchInput', 'Clear search input')}
-            defaultValue={searchTerm}
-            placeholder={t('searchForPatient', 'Search for a patient by name or identifier number')}
-            labelText={t('searchForPatient', 'Search for a patient by name or identifier number')}
+            value={searchTerm}
+            placeholder={t('patientSearchPlaceholder', 'Ingrese apellidos, nombres, DNI, CE o pasaporte')}
+            labelText={t('patientSearchCriteria', 'Apellidos y nombres o documento de identidad')}
             onChange={(e) => {
               setSearchTerm(e.target.value);
             }}
-            onClear={() => setSubmittedSearchTerm('')}
+            onClear={() => {
+              setSearchTerm('');
+              setSubmittedSearchTerm('');
+            }}
             size="lg"
           />
-          <Button kind="secondary" type="submit">
+          <Button kind="secondary" type="submit" disabled={!searchTerm.trim()}>
             {t('search', 'Search')}
           </Button>
         </form>
@@ -47,7 +50,7 @@ const PatientSearchTabPanel: React.FC = () => {
             <div>
               <PatientSearchPictogram />
               <h5>{t('searchForPatientHeader', 'Search for a patient')}</h5>
-              <div>{t('searchForPatient', 'Search for a patient by name or identifier number')}</div>
+              <div>{t('patientSearchPlaceholder', 'Ingrese apellidos, nombres, DNI, CE o pasaporte')}</div>
             </div>
           </div>
         )}

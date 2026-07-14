@@ -1,9 +1,10 @@
-import { ActionMenuButton2, PenIcon } from '@openmrs/esm-framework';
+import { ActionMenuButton2, PenIcon, useSession } from '@openmrs/esm-framework';
 import {
   type PatientChartWorkspaceActionButtonProps,
   usePatientChartStore,
   useStartVisitIfNeeded,
 } from '@openmrs/esm-patient-common-lib';
+import { isAdmissionUser } from '@sihsalus/esm-rbac';
 import React, { type ComponentProps } from 'react';
 import { useTranslation } from 'react-i18next';
 
@@ -13,6 +14,7 @@ import { useTranslation } from 'react-i18next';
  */
 const VisitNoteActionButton: React.FC<PatientChartWorkspaceActionButtonProps> = ({ groupProps }) => {
   const { t } = useTranslation();
+  const session = useSession();
   const patientChartContext = usePatientChartStore();
   const patientUuid = groupProps?.patientUuid ?? patientChartContext.patientUuid;
   const patientChartGroupProps =
@@ -27,6 +29,10 @@ const VisitNoteActionButton: React.FC<PatientChartWorkspaceActionButtonProps> = 
       : null);
 
   const startVisitIfNeeded = useStartVisitIfNeeded(patientUuid ?? undefined);
+
+  if (isAdmissionUser(session?.user)) {
+    return null;
+  }
 
   return (
     <ActionMenuButton2

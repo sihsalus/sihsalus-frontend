@@ -24,6 +24,7 @@ interface RefineSearchTabletProps {
   onResetFields: () => void;
   onToggleDialog: () => void;
   onSubmit: (evt: React.FormEvent) => void;
+  canSubmit: boolean;
 }
 
 export const RefineSearchTablet: React.FC<RefineSearchTabletProps> = ({
@@ -35,6 +36,7 @@ export const RefineSearchTablet: React.FC<RefineSearchTabletProps> = ({
   onResetFields,
   onToggleDialog,
   onSubmit,
+  canSubmit,
 }) => {
   const { t } = useTranslation();
 
@@ -42,7 +44,7 @@ export const RefineSearchTablet: React.FC<RefineSearchTabletProps> = ({
     const fields: Array<SearchFieldConfig> = [];
 
     Object.entries(config.search.searchFilterFields).forEach(([fieldName, fieldConfig]) => {
-      if (fieldName !== 'personAttributes' && (fieldConfig as BuiltInFieldConfig).enabled) {
+      if (fieldName !== 'personAttributes' && fieldName !== 'age' && (fieldConfig as BuiltInFieldConfig).enabled) {
         const { min, max } = fieldConfig as BuiltInFieldConfig;
         fields.push({
           name: fieldName,
@@ -149,10 +151,10 @@ export const RefineSearchTablet: React.FC<RefineSearchTabletProps> = ({
             <form onSubmit={onSubmit}>
               {renderSearchFields}
               <div className={classNames(styles.buttonSet, styles.paddedButtons)}>
-                <Button kind="secondary" size="xl" onClick={onResetFields} className={styles.button}>
+                <Button type="button" kind="secondary" size="xl" onClick={onResetFields} className={styles.button}>
                   {t('resetFields', 'Reset fields')}
                 </Button>
-                <Button type="submit" kind="primary" size="xl" className={styles.button}>
+                <Button type="submit" kind="primary" size="xl" disabled={!canSubmit} className={styles.button}>
                   {t('apply', 'Apply')}{' '}
                   {filtersApplied
                     ? `(${t('countOfFiltersApplied', '{{count}} filters applied', { count: filtersApplied })})`

@@ -1,5 +1,6 @@
 import { HeaderGlobalAction } from '@carbon/react';
 import { LocationIcon, navigate, useSession } from '@openmrs/esm-framework';
+import { isAdmissionUser } from '@sihsalus/esm-rbac';
 import React from 'react';
 import { useTranslation } from 'react-i18next';
 
@@ -9,6 +10,10 @@ const ChangeLocationLink: React.FC = () => {
   const { t } = useTranslation();
   const session = useSession();
   const currentLocation = session?.sessionLocation?.display;
+
+  if (isAdmissionUser(session?.user)) {
+    return null;
+  }
 
   const changeLocation = () => {
     // update=true is passed as a query param for updating the location preference,

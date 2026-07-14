@@ -49,6 +49,7 @@ import { z } from 'zod';
 import { type ConfigObject } from '../config-schema';
 import {
   appointmentLocationTagName,
+  appointmentNoteMaxLength,
   dateFormat,
   datePickerFormat,
   datePickerPlaceHolder,
@@ -294,7 +295,13 @@ const AppointmentsForm: React.FC<
       provider: z.string().refine((value) => value !== '', {
         message: translateFrom(moduleName, 'providerRequired', 'Provider is required'),
       }),
-      appointmentNote: z.string(),
+      appointmentNote: z.string().max(appointmentNoteMaxLength, {
+        message: translateFrom(
+          moduleName,
+          'appointmentNoteTooLong',
+          `Appointment note cannot exceed ${appointmentNoteMaxLength} characters`,
+        ),
+      }),
       appointmentType: z.string().refine((value) => value !== '', {
         message: translateFrom(moduleName, 'appointmentTypeRequired', 'Appointment type is required'),
       }),
@@ -1076,6 +1083,8 @@ const AppointmentsForm: React.FC<
                   <TextArea
                     id="appointmentNote"
                     value={value}
+                    enableCounter
+                    maxCount={appointmentNoteMaxLength}
                     labelText={t('appointmentNoteLabel', 'Write an additional note')}
                     placeholder={t('appointmentNotePlaceholder', 'Write any additional points here')}
                     onChange={onChange}

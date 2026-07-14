@@ -103,6 +103,13 @@ const duplicateSpanishRelationshipTypes = {
       displayBIsToA: 'Tío',
       uuid: 'duplicate-uncle-nephew-relationship-type',
     },
+    {
+      displayAIsToB: 'Niece/Nephew',
+      aIsToB: 'Niece/Nephew',
+      bIsToA: 'Aunt/Uncle',
+      displayBIsToA: 'Aunt/Uncle',
+      uuid: 'english-uncle-nephew-relationship-type',
+    },
   ],
 };
 
@@ -242,9 +249,9 @@ describe('RelationshipsSection', () => {
     );
 
     expect(screen.getByLabelText(/relationships section/i)).toBeInTheDocument();
-    expect(screen.getByRole('heading', { name: /family member or companion/i })).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: /family link/i })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: /delete/i })).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: /add family member or companion/i })).toBeDisabled();
+    expect(screen.getByRole('button', { name: /add family link/i })).toBeDisabled();
     expect(screen.getByRole('option', { name: /mother/i })).toBeInTheDocument();
     expect(screen.getByRole('option', { name: /guardian/i })).toBeInTheDocument();
     expect(screen.getAllByRole('tab').map((tab) => tab.textContent)).toEqual([
@@ -257,10 +264,80 @@ describe('RelationshipsSection', () => {
     expect(screen.queryByRole('textbox', { name: /first name/i })).not.toBeInTheDocument();
   });
 
+  it('warns when a family link is incomplete and prevents adding another row', () => {
+    mockResourcesContextValue = {
+      ...mockResourcesContextValue,
+      relationshipTypes,
+    };
+    const formValues = {
+      relationships: [
+        {
+          action: 'ADD',
+          relatedPersonUuid: '',
+          relationshipType: '42ae5ce0-d64b-11ea-9064-5adc43bbdd34/aIsToB',
+        },
+      ],
+    } as FormValues;
+
+    render(
+      <ResourcesContext.Provider value={mockResourcesContextValue}>
+        <Formik initialValues={formValues} onSubmit={vi.fn()}>
+          <Form>
+            <PatientRegistrationContext.Provider value={{ ...initialContextValues, values: formValues }}>
+              <RelationshipsSection />
+            </PatientRegistrationContext.Provider>
+          </Form>
+        </Formik>
+      </ResourcesContext.Provider>,
+    );
+
+    expect(screen.getByText('Complete the pending family link')).toBeInTheDocument();
+    expect(
+      screen.getByText('Select the relationship and the related person before adding another family link.'),
+    ).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /add family link/i })).toBeDisabled();
+  });
+
+  it('orders family links by weight, hides operational roles, and keeps Other last', () => {
+    mockResourcesContextValue = {
+      ...mockResourcesContextValue,
+      relationshipTypes: {
+        results: [
+          { displayAIsToB: 'Other', displayBIsToA: 'Other', uuid: 'other', weight: 999 },
+          { displayAIsToB: 'Mother', displayBIsToA: 'Mother', uuid: 'mother', weight: 20 },
+          { displayAIsToB: 'Doctor', displayBIsToA: 'Patient', uuid: 'doctor', weight: 1 },
+          { displayAIsToB: 'Aunt/Uncle', displayBIsToA: 'Aunt/Uncle', uuid: 'aunt-uncle' },
+          { displayAIsToB: 'Father', displayBIsToA: 'Father', uuid: 'father', weight: 10 },
+        ],
+      },
+    };
+
+    render(
+      <ResourcesContext.Provider value={mockResourcesContextValue}>
+        <Formik initialValues={{ relationships: [{ action: 'ADD', relatedPersonUuid: '' }] }} onSubmit={null}>
+          <Form>
+            <PatientRegistrationContext.Provider value={initialContextValues}>
+              <RelationshipsSection />
+            </PatientRegistrationContext.Provider>
+          </Form>
+        </Formik>
+      </ResourcesContext.Provider>,
+    );
+
+    const optionLabels = screen
+      .getAllByRole('option')
+      .filter((option) => !option.hasAttribute('disabled'))
+      .map((option) => option.textContent);
+
+    expect(optionLabels).toEqual(['Father', 'Mother', 'Aunt/Uncle', 'Other']);
+    expect(screen.queryByRole('option', { name: /doctor/i })).not.toBeInTheDocument();
+    expect(screen.queryByRole('option', { name: /patient/i })).not.toBeInTheDocument();
+  });
+
   it('allows adding another relationship after the current one is complete', () => {
     mockResourcesContextValue = {
       ...mockResourcesContextValue,
-      relationshipTypes: relationshipTypes,
+      relationshipTypes,
     };
     const formValues = {
       relationships: [
@@ -285,32 +362,38 @@ describe('RelationshipsSection', () => {
       </ResourcesContext.Provider>,
     );
 
-    expect(screen.getByRole('button', { name: /add family member or companion/i })).toBeEnabled();
+    expect(screen.getByRole('button', { name: /add family link/i })).toBeEnabled();
   });
 
-  it('marks an existing relationship for update when its companion status changes', async () => {
+  it('moves the primary responsible flag and marks existing relationships for update', async () => {
     const user = userEvent.setup();
     const setFieldValue = vi.fn();
-    mockResourcesContextValue = {
-      ...mockResourcesContextValue,
-      relationshipTypes: relationshipTypes,
-    };
-    const formValues = {
-      relationships: [
-        {
-          relatedPersonName: 'Jane Doe',
-          relatedPersonUuid: 'related-person-uuid',
-          relationshipType: '42ae5ce0-d64b-11ea-9064-5adc43bbdd34/aIsToB',
-          uuid: 'relationship-uuid',
-        },
-      ],
-    } as FormValues;
+    const relationships = [
+      {
+        isCompanion: true,
+        relatedPersonName: 'Maria Quispe',
+        relatedPersonUuid: 'person-one',
+        relation: 'Madre',
+        relationshipType: 'mother/aIsToB',
+        uuid: 'relationship-one',
+      },
+      {
+        relatedPersonName: 'Juan Quispe',
+        relatedPersonUuid: 'person-two',
+        relation: 'Padre',
+        relationshipType: 'father/aIsToB',
+        uuid: 'relationship-two',
+      },
+    ] as FormValues['relationships'];
+    mockResourcesContextValue = { ...mockResourcesContextValue, relationshipTypes };
 
     render(
       <ResourcesContext.Provider value={mockResourcesContextValue}>
-        <Formik initialValues={formValues} onSubmit={null}>
+        <Formik initialValues={{ relationships }} onSubmit={null}>
           <Form>
-            <PatientRegistrationContext.Provider value={{ ...initialContextValues, setFieldValue, values: formValues }}>
+            <PatientRegistrationContext.Provider
+              value={{ ...initialContextValues, setFieldValue, values: { relationships } as FormValues }}
+            >
               <RelationshipsSection />
             </PatientRegistrationContext.Provider>
           </Form>
@@ -318,10 +401,12 @@ describe('RelationshipsSection', () => {
       </ResourcesContext.Provider>,
     );
 
-    await user.click(screen.getByRole('checkbox', { name: /is the patient companion/i }));
+    await user.click(screen.getByRole('checkbox', { name: /Juan Quispe.*Padre/i }));
 
-    expect(setFieldValue).toHaveBeenCalledWith('relationships[0].isCompanion', true);
+    expect(setFieldValue).toHaveBeenCalledWith('relationships[0].isCompanion', false);
     expect(setFieldValue).toHaveBeenCalledWith('relationships[0].action', 'UPDATE');
+    expect(setFieldValue).toHaveBeenCalledWith('relationships[1].isCompanion', true);
+    expect(setFieldValue).toHaveBeenCalledWith('relationships[1].action', 'UPDATE');
   });
 
   it('deduplicates relationship options and hides child/grandchild options for minor patients', () => {
@@ -573,13 +658,19 @@ describe('RelationshipsSection', () => {
       <ResourcesContext.Provider value={mockResourcesContextValue}>
         <Formik
           initialValues={{
+            birthdateEstimated: true,
+            yearsEstimated: 12,
             relationships: [],
           }}
           onSubmit={null}
         >
           <Form>
             <PatientRegistrationContext.Provider
-              value={{ ...initialContextValues, setFieldValue, values: { relationships: [] } as FormValues }}
+              value={{
+                ...initialContextValues,
+                setFieldValue,
+                values: { birthdateEstimated: true, yearsEstimated: 12, relationships: [] } as FormValues,
+              }}
             >
               <RelationshipsSection defaultNewRelationship />
             </PatientRegistrationContext.Provider>
@@ -590,6 +681,50 @@ describe('RelationshipsSection', () => {
 
     await waitFor(() => expect(setFieldValue).toHaveBeenCalledWith('relationships', expect.any(Array)));
     expect(setFieldValue.mock.calls[0][1]).toMatchObject([{ relatedPersonUuid: '', action: 'ADD' }]);
+  });
+
+  it('removes an untouched automatic relationship when the patient changes from minor to adult', async () => {
+    const setFieldValue = vi.fn();
+    const emptyRelationship = {
+      clientId: 'automatic-relationship',
+      action: 'ADD' as const,
+      relatedPersonUuid: '',
+    };
+    mockResourcesContextValue = {
+      ...mockResourcesContextValue,
+      relationshipTypes,
+    };
+
+    const renderSection = (values: FormValues) => (
+      <ResourcesContext.Provider value={mockResourcesContextValue}>
+        <Formik initialValues={{ relationships: values.relationships }} onSubmit={null}>
+          <Form>
+            <PatientRegistrationContext.Provider value={{ ...initialContextValues, setFieldValue, values }}>
+              <RelationshipsSection defaultNewRelationship />
+            </PatientRegistrationContext.Provider>
+          </Form>
+        </Formik>
+      </ResourcesContext.Provider>
+    );
+
+    const { rerender } = render(
+      renderSection({
+        birthdateEstimated: true,
+        yearsEstimated: 12,
+        relationships: [emptyRelationship],
+      } as FormValues),
+    );
+
+    setFieldValue.mockClear();
+    rerender(
+      renderSection({
+        birthdateEstimated: true,
+        yearsEstimated: 40,
+        relationships: [emptyRelationship],
+      } as FormValues),
+    );
+
+    await waitFor(() => expect(setFieldValue).toHaveBeenCalledWith('relationships', [], true));
   });
 
   it('stores the new responsible person on the relationship row without creating it before submit', async () => {

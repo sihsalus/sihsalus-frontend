@@ -16,7 +16,13 @@ import { type Resources, ResourcesContext } from '../offline.resources';
 
 import { FormManager, SavePatientTransactionManager } from './form-manager';
 import { searchLocalIdentityByDocument } from './identity/identity-search.resource';
-import { PatientRegistration } from './patient-registration.component';
+import {
+  getPatientRegistrationFieldLabel,
+  hasMedicalRecordArchivistRole,
+  initialFormValues,
+  PatientRegistration,
+  preserveMedicalRecordAttributes,
+} from './patient-registration.component';
 import { generateIdentifier, saveEncounter, savePatient } from './patient-registration.resource';
 import type { AddressTemplate, Encounter, FormValues } from './patient-registration.types';
 import { useInitialFormValues } from './patient-registration-hooks';
@@ -289,6 +295,33 @@ beforeEach(() => {
   mockResourcesContextValue.relationshipTypes = [];
   mockResourcesContextValue.relationshipTypesError = undefined;
   mockResourcesContextValue.isLoadingRelationshipTypes = false;
+  mockResourcesContextValue.currentSession.user = undefined;
+});
+
+describe('medical record access', () => {
+  it('recognizes the temporary archivist role regardless of accents and casing', () => {
+    expect(hasMedicalRecordArchivistRole({ roles: [{ name: 'Archivador de Historias Clínicas' }] })).toBe(true);
+    expect(hasMedicalRecordArchivistRole({ roles: [{ display: 'ARCHIVADOR DE HISTORIAS CLINICAS' }] })).toBe(true);
+    expect(hasMedicalRecordArchivistRole({ roles: [{ name: 'Admisión' }] })).toBe(false);
+    expect(hasMedicalRecordArchivistRole()).toBe(false);
+  });
+
+  it('preserves existing protected attributes and removes injected values without access', () => {
+    expect(
+      preserveMedicalRecordAttributes(
+        { status: 'changed', archiveType: 'injected', other: 'updated' },
+        { status: 'original', other: 'original' },
+        ['status', 'archiveType'],
+        false,
+      ),
+    ).toEqual({ status: 'original', other: 'updated' });
+  });
+
+  it('allows protected attributes to change with access', () => {
+    expect(preserveMedicalRecordAttributes({ status: 'changed' }, { status: 'original' }, ['status'], true)).toEqual({
+      status: 'changed',
+    });
+  });
 });
 
 describe('Registering a new patient', () => {
@@ -359,6 +392,17 @@ describe('Registering a new patient', () => {
     expect(screen.getByRole('button', { name: /register patient/i })).toHaveAttribute('type', 'button');
     expect(screen.getByRole('button', { name: /cancel/i })).toBeInTheDocument();
     expect(document.querySelector('form')).toHaveAttribute('novalidate');
+  });
+
+  it('does not show the medical record section while creating a patient, even for an archivist', async () => {
+    mockResourcesContextValue.currentSession.user = {
+      roles: [{ name: 'Archivador de Historias Clínicas' }],
+    } as never;
+
+    render(<PatientRegistration isOffline={false} savePatientForm={vi.fn()} />, { wrapper: Wrapper });
+
+    await screen.findByRole('heading', { name: /create new patient/i });
+    expect(screen.queryByText(/medical record|historia clínica/i)).not.toBeInTheDocument();
   });
 
   it('saves the patient without extra info', async () => {
@@ -486,10 +530,24 @@ describe('Registering a new patient', () => {
   it('should not save the patient if validation fails', async () => {
     const user = userEvent.setup();
     const mockSavePatientForm = vi.fn();
+    mockResourcesContextValue.identifierTypes = [
+      ...mockIdentifierTypes,
+      {
+        fieldName: 'dni',
+        format: '^[0-9]{8}$',
+        identifierSources: [],
+        isPrimary: false,
+        name: 'DNI',
+        required: false,
+        uniquenessBehavior: 'UNIQUE',
+        uuid: peruDniPatientIdentifierTypeUuid,
+      },
+    ];
 
     render(<PatientRegistration isOffline={false} savePatientForm={mockSavePatientForm} />, { wrapper: Wrapper });
 
     await screen.findByRole('heading', { name: /create new patient/i });
+    await screen.findByRole('textbox', { name: 'DNI' });
     await user.click(screen.getByRole('button', { name: /register patient/i }));
 
     expect(mockSavePatientForm).not.toHaveBeenCalled();
@@ -504,8 +562,33 @@ describe('Registering a new patient', () => {
     const warningSnackbar = mockShowSnackbar.mock.calls.find(([snackbar]) => snackbar.kind === 'warning')?.[0];
     const warningText = getReactText(warningSnackbar?.subtitle);
 
+    expect(warningText).toContain('DNI: Identifier value is required');
+    expect(warningText).toContain('Date of birth: Birthday is required');
     expect(warningText).toContain('First name: First name is required');
+    expect(warningText).not.toContain('birthdate:');
     expect(warningText).not.toContain('relationships');
+  });
+
+  it('translates technical address and birthdate paths in the validation summary', () => {
+    const spanishLabels: Record<string, string> = {
+      addressLabelText: 'Dirección',
+      dateOfBirthLabelText: 'Fecha de nacimiento',
+      relationshipToPatient: 'Vínculo con el paciente',
+    };
+    const translate = (key: string, defaultValue: string) => spanishLabels[key] ?? defaultValue;
+
+    expect(getPatientRegistrationFieldLabel(['address'], translate)).toBe('Dirección');
+    expect(getPatientRegistrationFieldLabel(['address', 'address'], translate)).toBe('Dirección');
+    expect(getPatientRegistrationFieldLabel(['birthdate'], translate)).toBe('Fecha de nacimiento');
+    expect(
+      getPatientRegistrationFieldLabel(['attributes', 'email-attribute-uuid'], translate, {
+        'email-attribute-uuid': 'Correo electrónico',
+      }),
+    ).toBe('Correo electrónico');
+    expect(getPatientRegistrationFieldLabel(['identifiers', 'dni', 'identifierValue'], translate)).toBe('DNI');
+    expect(getPatientRegistrationFieldLabel(['relationships', '0', 'relationshipType'], translate)).toBe(
+      'Vínculo con el paciente',
+    );
   });
 
   it('renders and saves registration obs', async () => {
@@ -596,6 +679,35 @@ describe('Updating an existing patient record', () => {
     });
     mockSavePatient.mockReturnValue({ data: { uuid: 'new-pt-uuid' }, ok: true });
     mockUseParams.mockReturnValue({ patientUuid: mockPatient.uuid });
+  });
+
+  it('does not show the medical record section without the archivist role', async () => {
+    mockUseInitialFormValues.mockReturnValue([
+      { ...initialFormValues, patientUuid: mockPatient.uuid },
+      vi.fn(),
+      { isLoading: false },
+    ]);
+
+    render(<PatientRegistration isOffline={false} savePatientForm={vi.fn()} />, { wrapper: Wrapper });
+
+    await screen.findByRole('button', { name: /update patient/i });
+    expect(screen.queryByText(/medical record|historia clínica/i)).not.toBeInTheDocument();
+  });
+
+  it('shows the medical record section to an archivist while editing', async () => {
+    mockResourcesContextValue.currentSession.user = {
+      roles: [{ name: 'Archivador de Historias Clínicas' }],
+    } as never;
+    mockUseInitialFormValues.mockReturnValue([
+      { ...initialFormValues, patientUuid: mockPatient.uuid },
+      vi.fn(),
+      { isLoading: false },
+    ]);
+
+    render(<PatientRegistration isOffline={false} savePatientForm={vi.fn()} />, { wrapper: Wrapper });
+
+    await screen.findByRole('button', { name: /update patient/i });
+    expect(screen.getAllByText(/medical record|historia clínica/i).length).toBeGreaterThan(0);
   });
 
   it('does not mount an editable form before all initial patient data is hydrated', () => {
@@ -744,7 +856,7 @@ describe('Updating an existing patient record', () => {
 
     render(<PatientRegistration isOffline={false} savePatientForm={mockSavePatientForm} />, { wrapper: Wrapper });
 
-    await screen.findByRole('heading', { name: /edit patient details/i });
+    await screen.findByRole('heading', { name: /update patient/i });
 
     expect(screen.queryByRole('button', { name: /register patient/i })).not.toBeInTheDocument();
     expect(screen.getByRole('button', { name: /update patient/i })).toBeInTheDocument();

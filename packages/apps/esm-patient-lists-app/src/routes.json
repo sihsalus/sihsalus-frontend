@@ -21,6 +21,7 @@
       "name": "patient-lists",
       "group": "patient-chart",
       "icon": "patientListsActionMenu",
+      "privileges": "app:home.listasPacientes.editar",
       "width": "wider",
       "order": 5
     }

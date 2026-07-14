@@ -62,6 +62,7 @@
     {
       "name": "patient-chart-clinical-forms",
       "icon": "clinicalFormActionButton",
+      "privileges": "app:hoja.clinica.formulariosClinicos",
       "order": 2,
       "width": "extra-wide",
       "group": "patient-chart",

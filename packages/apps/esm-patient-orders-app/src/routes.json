@@ -106,6 +106,7 @@
       "name": "patient-chart-orders",
       "group": "patient-chart",
       "icon": "orderBasketActionButton",
+      "privileges": "app:hoja.clinica.canastaOrdenes",
       "order": 3
     }
   ]

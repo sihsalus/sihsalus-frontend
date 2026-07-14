@@ -22,6 +22,7 @@
       "name": "task-list",
       "group": "patient-chart",
       "icon": "taskListLaunchButton",
+      "privileges": "app:hoja.clinica.listaTareas",
       "order": 3
     }
   ]

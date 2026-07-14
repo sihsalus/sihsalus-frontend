@@ -8,6 +8,7 @@
       "name": "active-visits-widget",
       "slot": "homepage-widgets-slot",
       "component": "activeVisits",
+      "privileges": "app:home.tabla.consultas.activas",
       "order": 0
     },
     {

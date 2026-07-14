@@ -211,6 +211,7 @@ export function tryRegisterWorkspaceWindows2(appName: string, workspaceWindowDef
         component: windowDef.icon,
         slot: windowDef.group,
         order: windowDef.order,
+        privileges: windowDef.privileges,
       };
       tryRegisterExtension(appName, extension);
     }

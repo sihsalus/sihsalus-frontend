@@ -30,7 +30,9 @@ describe('Patient search root', () => {
 
     render(<Root />);
 
-    expect(mockRequirePrivilege).toHaveBeenCalledWith(expect.objectContaining({ privilege: 'Get Patients' }));
+    expect(mockRequirePrivilege).toHaveBeenCalledWith(
+      expect.objectContaining({ privilege: 'app:opciones.busquedaPaciente' }),
+    );
     expect(screen.getByText('Patient search page')).toBeInTheDocument();
   });
 

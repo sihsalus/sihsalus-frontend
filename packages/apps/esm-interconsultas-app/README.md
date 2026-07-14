@@ -45,7 +45,7 @@ Recurso base: **Order** con order type `Interconsulta` (`f3c2e4b6-8b5a-11e5-8e9b
 
 Todos los UUIDs son configurables vía `config-schema.ts`.
 
-La distribución SIHSALUS configura explícitamente:
+Los defaults de la distribución SIHSALUS son:
 
 - `interconsultaOrderTypeUuid`: `f3c2e4b6-8b5a-11e5-8e9b-12345678901b`
 - `orderableConceptSets`: `4bf3f465-ac91-44fa-9b1f-173daf0c89a0` (`Tipo de Servicio`)

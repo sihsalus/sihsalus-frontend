@@ -191,6 +191,23 @@ describe('AppointmentForm', () => {
     expect(screen.getByRole('button', { name: /save and close/i })).toBeInTheDocument();
   });
 
+  it('hides all-day scheduling while keeping time and duration', async () => {
+    mockUseConfig.mockReturnValue({
+      ...getDefaultsFromConfigSchema(configSchema),
+      allowAllDayAppointments: false,
+      appointmentTypes: ['Scheduled', 'WalkIn'],
+    });
+    mockOpenmrsFetch.mockResolvedValue(mockUseAppointmentServiceData as unknown as FetchResponse);
+
+    renderWithSwr(<AppointmentForm {...defaultProps} />);
+
+    await waitForLoadingToFinish();
+
+    expect(screen.queryByLabelText(/all day/i)).not.toBeInTheDocument();
+    expect(screen.getByRole('textbox', { name: /time/i })).toBeInTheDocument();
+    expect(screen.getByRole('spinbutton', { name: /duration/i })).toBeInTheDocument();
+  });
+
   it('defaults the duration to 30 minutes for a new appointment, even after picking a service without durationMins', async () => {
     const user = userEvent.setup();
 
@@ -300,6 +317,11 @@ describe('AppointmentForm', () => {
   it('schedules an all-day appointment using the full selected day', async () => {
     const user = userEvent.setup();
 
+    mockUseConfig.mockReturnValue({
+      ...getDefaultsFromConfigSchema(configSchema),
+      allowAllDayAppointments: true,
+      appointmentTypes: ['Scheduled', 'WalkIn'],
+    });
     mockOpenmrsFetch.mockResolvedValue({
       data: mockUseAppointmentServiceData,
     } as unknown as FetchResponse);

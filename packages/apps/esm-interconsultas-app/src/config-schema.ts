@@ -29,7 +29,7 @@ export const configSchema = {
     _elements: {
       _type: Type.UUID,
     },
-    _default: [],
+    _default: ['4bf3f465-ac91-44fa-9b1f-173daf0c89a0'],
   },
   concepts: {
     respuestaConceptUuid: {

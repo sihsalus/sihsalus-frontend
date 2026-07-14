@@ -93,7 +93,7 @@ export const esmPatientChartSchema = {
     _type: Type.UUID,
     _description:
       'Visit attribute type used to persist a per-attempt idempotency token and reconcile ambiguous visit creation responses.',
-    _default: '',
+    _default: 'eb8b793b-f259-451d-9c09-53aa0ffd0d3f',
   },
   restrictByVisitLocationTag: {
     _type: Type.Boolean,

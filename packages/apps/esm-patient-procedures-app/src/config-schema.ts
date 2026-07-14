@@ -66,7 +66,7 @@ export const configSchema = {
   durationUnitConceptSourceType: {
     _type: Type.String,
     _description: sourceTypeDescription,
-    _default: 'Answer to',
+    _default: 'Concept set',
     _validators: [validators.oneOf(conceptSourceTypes)],
   },
 };

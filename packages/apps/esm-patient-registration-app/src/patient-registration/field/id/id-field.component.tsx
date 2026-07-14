@@ -14,6 +14,7 @@ import type {
   PatientIdentifierValue,
 } from '../../patient-registration.types';
 import { PatientRegistrationContext } from '../../patient-registration-context';
+import { getDocumentTypeDefinitionByIdentifierType } from '../../identity/identity-documents';
 import { getEffectiveRegistrationConfig } from '../../peru-registration-config';
 import styles from '../field.scss';
 import IdentifierSelectionOverlay from './identifier-selection-overlay.component';
@@ -66,6 +67,14 @@ export function isIdentityDocumentIdentifier(
   const identifierType = identifierTypes.find(
     (type) => type.fieldName === identifierFieldName || type.uuid === identifier?.identifierTypeUuid,
   );
+
+  const usesPeruIdentityDocuments = identifierTypes.some(
+    (type) => !!getDocumentTypeDefinitionByIdentifierType(type.uuid),
+  );
+
+  if (usesPeruIdentityDocuments && identifierType) {
+    return !!getDocumentTypeDefinitionByIdentifierType(identifierType.uuid);
+  }
 
   return identifierType ? !identifierType.isPrimary && !identifierType.required : !identifier?.required;
 }

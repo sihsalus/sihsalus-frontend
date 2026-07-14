@@ -16,7 +16,13 @@ import { type Resources, ResourcesContext } from '../offline.resources';
 
 import { FormManager, SavePatientTransactionManager } from './form-manager';
 import { searchLocalIdentityByDocument } from './identity/identity-search.resource';
-import { getPatientRegistrationFieldLabel, PatientRegistration } from './patient-registration.component';
+import {
+  getPatientRegistrationFieldLabel,
+  hasMedicalRecordArchivistRole,
+  initialFormValues,
+  PatientRegistration,
+  preserveMedicalRecordAttributes,
+} from './patient-registration.component';
 import { generateIdentifier, saveEncounter, savePatient } from './patient-registration.resource';
 import type { AddressTemplate, Encounter, FormValues } from './patient-registration.types';
 import { useInitialFormValues } from './patient-registration-hooks';
@@ -289,6 +295,33 @@ beforeEach(() => {
   mockResourcesContextValue.relationshipTypes = [];
   mockResourcesContextValue.relationshipTypesError = undefined;
   mockResourcesContextValue.isLoadingRelationshipTypes = false;
+  mockResourcesContextValue.currentSession.user = undefined;
+});
+
+describe('medical record access', () => {
+  it('recognizes the temporary archivist role regardless of accents and casing', () => {
+    expect(hasMedicalRecordArchivistRole({ roles: [{ name: 'Archivador de Historias Clínicas' }] })).toBe(true);
+    expect(hasMedicalRecordArchivistRole({ roles: [{ display: 'ARCHIVADOR DE HISTORIAS CLINICAS' }] })).toBe(true);
+    expect(hasMedicalRecordArchivistRole({ roles: [{ name: 'Admisión' }] })).toBe(false);
+    expect(hasMedicalRecordArchivistRole()).toBe(false);
+  });
+
+  it('preserves existing protected attributes and removes injected values without access', () => {
+    expect(
+      preserveMedicalRecordAttributes(
+        { status: 'changed', archiveType: 'injected', other: 'updated' },
+        { status: 'original', other: 'original' },
+        ['status', 'archiveType'],
+        false,
+      ),
+    ).toEqual({ status: 'original', other: 'updated' });
+  });
+
+  it('allows protected attributes to change with access', () => {
+    expect(preserveMedicalRecordAttributes({ status: 'changed' }, { status: 'original' }, ['status'], true)).toEqual({
+      status: 'changed',
+    });
+  });
 });
 
 describe('Registering a new patient', () => {
@@ -359,6 +392,17 @@ describe('Registering a new patient', () => {
     expect(screen.getByRole('button', { name: /register patient/i })).toHaveAttribute('type', 'button');
     expect(screen.getByRole('button', { name: /cancel/i })).toBeInTheDocument();
     expect(document.querySelector('form')).toHaveAttribute('novalidate');
+  });
+
+  it('does not show the medical record section while creating a patient, even for an archivist', async () => {
+    mockResourcesContextValue.currentSession.user = {
+      roles: [{ name: 'Archivador de Historias Clínicas' }],
+    } as never;
+
+    render(<PatientRegistration isOffline={false} savePatientForm={vi.fn()} />, { wrapper: Wrapper });
+
+    await screen.findByRole('heading', { name: /create new patient/i });
+    expect(screen.queryByText(/medical record|historia clínica/i)).not.toBeInTheDocument();
   });
 
   it('saves the patient without extra info', async () => {
@@ -635,6 +679,35 @@ describe('Updating an existing patient record', () => {
     });
     mockSavePatient.mockReturnValue({ data: { uuid: 'new-pt-uuid' }, ok: true });
     mockUseParams.mockReturnValue({ patientUuid: mockPatient.uuid });
+  });
+
+  it('does not show the medical record section without the archivist role', async () => {
+    mockUseInitialFormValues.mockReturnValue([
+      { ...initialFormValues, patientUuid: mockPatient.uuid },
+      vi.fn(),
+      { isLoading: false },
+    ]);
+
+    render(<PatientRegistration isOffline={false} savePatientForm={vi.fn()} />, { wrapper: Wrapper });
+
+    await screen.findByRole('button', { name: /update patient/i });
+    expect(screen.queryByText(/medical record|historia clínica/i)).not.toBeInTheDocument();
+  });
+
+  it('shows the medical record section to an archivist while editing', async () => {
+    mockResourcesContextValue.currentSession.user = {
+      roles: [{ name: 'Archivador de Historias Clínicas' }],
+    } as never;
+    mockUseInitialFormValues.mockReturnValue([
+      { ...initialFormValues, patientUuid: mockPatient.uuid },
+      vi.fn(),
+      { isLoading: false },
+    ]);
+
+    render(<PatientRegistration isOffline={false} savePatientForm={vi.fn()} />, { wrapper: Wrapper });
+
+    await screen.findByRole('button', { name: /update patient/i });
+    expect(screen.getAllByText(/medical record|historia clínica/i).length).toBeGreaterThan(0);
   });
 
   it('does not mount an editable form before all initial patient data is hydrated', () => {

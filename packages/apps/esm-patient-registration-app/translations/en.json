@@ -182,6 +182,8 @@
   "identifierTypesEditModeUnavailableSubtitle": "Existing identification data is shown, but identifier types are unavailable. Refresh the page before adding or changing identifiers.",
   "identifierTypesUnavailableSubtitle": "Refresh the page. If the problem continues, check that patient identifier types are configured and that your session is active.",
   "identifierTypesUnavailableTitle": "Identification data unavailable",
+  "identifierSearchNoResults": "No matching identification data found",
+  "identifierSelectionRequiresIdentityDocument": "Select at least one identity document (DNI, CE, passport, DIE, or CNV).",
   "identifierValueRequired": "Identifier value is required",
   "identityLookupButton": "Search local database and RENIEC",
   "identityLookupClearPromotion": "Clear selection",

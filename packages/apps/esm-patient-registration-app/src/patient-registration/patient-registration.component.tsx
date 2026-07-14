@@ -43,6 +43,51 @@ import { getValidationSchema } from './validation/patient-registration-validatio
 
 export const initialFormValues = createInitialFormValues();
 
+interface UserWithRoles {
+  roles?: Array<{ display?: string; name?: string }>;
+}
+
+const medicalRecordArchivistRole = 'archivador de historias clinicas';
+
+function normalizeRoleName(value?: string) {
+  return (value ?? '')
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .trim()
+    .toLowerCase();
+}
+
+export function hasMedicalRecordArchivistRole(user?: UserWithRoles | null) {
+  return (
+    user?.roles?.some((role) =>
+      [role.name, role.display].some((roleName) => normalizeRoleName(roleName) === medicalRecordArchivistRole),
+    ) ?? false
+  );
+}
+
+export function preserveMedicalRecordAttributes(
+  submittedAttributes: FormValues['attributes'],
+  initialAttributes: FormValues['attributes'],
+  medicalRecordAttributeUuids: Array<string>,
+  canEditMedicalRecord: boolean,
+) {
+  const protectedAttributes = { ...submittedAttributes };
+
+  if (canEditMedicalRecord) {
+    return protectedAttributes;
+  }
+
+  medicalRecordAttributeUuids.forEach((attributeUuid) => {
+    if (Object.hasOwn(initialAttributes ?? {}, attributeUuid)) {
+      protectedAttributes[attributeUuid] = initialAttributes?.[attributeUuid] ?? '';
+    } else {
+      delete protectedAttributes[attributeUuid];
+    }
+  });
+
+  return protectedAttributes;
+}
+
 interface RegistrationSubmitError {
   status?: number;
   message?: string;
@@ -161,6 +206,14 @@ export const PatientRegistration: React.FC<PatientRegistrationProps> = ({ savePa
       ),
     [config.fieldDefinitions],
   );
+  const medicalRecordAttributeUuids = useMemo(
+    () =>
+      config.fieldDefinitions
+        .filter((fieldDefinition) => ['medicalRecordStatus', 'medicalRecordArchiveType'].includes(fieldDefinition.id))
+        .map((fieldDefinition) => fieldDefinition.uuid)
+        .filter(Boolean),
+    [config.fieldDefinitions],
+  );
   const [target, setTarget] = useState<undefined | string>();
   const { patientUuid: uuidOfPatientToEdit } = useParams();
   const patientUuidToEdit = uuidOfPatientToEdit ?? '';
@@ -178,6 +231,7 @@ export const PatientRegistration: React.FC<PatientRegistrationProps> = ({ savePa
   const hasPatientRoute = !!uuidOfPatientToEdit;
   const isNewPatient = initialFormState.isNewPatient ?? !hasPatientRoute;
   const inEditMode = !isNewPatient;
+  const canEditMedicalRecord = inEditMode && hasMedicalRecordArchivistRole(currentSession?.user);
   const showDummyData = useMemo(
     () => window.spaEnv === 'development' && localStorage.getItem('openmrs:devtools') === 'true' && !hasPatientRoute,
     [hasPatientRoute],
@@ -276,14 +330,25 @@ export const PatientRegistration: React.FC<PatientRegistrationProps> = ({ savePa
           config.sectionDefinitions.filter((s) => s.id === sectionName)[0] ??
           builtInSections.filter((s) => s.id === sectionName)[0],
       )
-      .filter((s) => s);
-  }, [config.sections, config.sectionDefinitions]);
+      .filter((section) => section && (section.id !== 'medicalRecord' || canEditMedicalRecord));
+  }, [canEditMedicalRecord, config.sections, config.sectionDefinitions]);
 
   const onFormSubmit = async (values: FormValues, helpers: FormikHelpers<FormValues>) => {
     const abortController = new AbortController();
     helpers.setSubmitting(true);
 
-    const updatedFormValues = { ...values, identifiers: filterOutUndefinedPatientIdentifiers(values.identifiers) };
+    const submittedAttributes = preserveMedicalRecordAttributes(
+      values.attributes,
+      initialFormValuesState.attributes,
+      medicalRecordAttributeUuids,
+      canEditMedicalRecord,
+    );
+
+    const updatedFormValues = {
+      ...values,
+      attributes: submittedAttributes,
+      identifiers: filterOutUndefinedPatientIdentifiers(values.identifiers),
+    };
     try {
       if (isNewPatient && !isOffline && !savePatientTransactionManager.current.patientSaved) {
         const documentEntry = getDocumentIdentifierEntry(updatedFormValues.identifiers, identifierTypes ?? []);

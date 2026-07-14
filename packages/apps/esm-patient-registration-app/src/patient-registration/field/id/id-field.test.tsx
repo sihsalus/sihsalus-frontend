@@ -10,7 +10,7 @@ import { type Resources, ResourcesContext } from '../../../offline.resources';
 import { type AddressTemplate, type IdentifierSource } from '../../patient-registration.types';
 import { PatientRegistrationContext, type PatientRegistrationContextProps } from '../../patient-registration-context';
 
-import { Identifiers, setIdentifierSource } from './id-field.component';
+import { countIdentityDocumentIdentifiers, Identifiers, setIdentifierSource } from './id-field.component';
 
 vi.mock('../person-attributes/nationality-field.component', () => ({
   NationalityField: ({ fieldDefinition }) => <div data-testid="nationality-field">{fieldDefinition.label}</div>,
@@ -61,6 +61,43 @@ const dieIdentifierType = {
   identifierSources: [],
 };
 
+const cnvIdentifierType = {
+  name: 'CNV',
+  description: 'Certificado de Nacido Vivo',
+  fieldName: 'cnv',
+  required: false,
+  uuid: '8d79403a-c2cc-11de-8d13-0010c6dffd0f',
+  format: null,
+  isPrimary: false,
+  uniquenessBehavior: 'UNIQUE' as const,
+  identifierSources: [],
+};
+
+const sisContractIdentifierType = {
+  name: 'SIS Contrato',
+  fieldName: 'sisContrato',
+  required: false,
+  uuid: 'sis-contract-identifier-type-uuid',
+  format: null,
+  isPrimary: false,
+  uniquenessBehavior: 'UNIQUE' as const,
+  identifierSources: [],
+};
+
+const sisTemporaryIdentifierType = {
+  ...sisContractIdentifierType,
+  name: 'SIS Afiliación RN/Temporal',
+  fieldName: 'sisAfiliacionTemporal',
+  uuid: 'sis-temporary-identifier-type-uuid',
+};
+
+const sisIdnumregIdentifierType = {
+  ...sisContractIdentifierType,
+  name: 'SIS Idnumreg',
+  fieldName: 'sisIdnumreg',
+  uuid: 'sis-idnumreg-identifier-type-uuid',
+};
+
 const clinicalHistoryIdentifierType = {
   name: 'Nº de Historia Clínica',
   fieldName: 'numeroDeHistoriaClinica',
@@ -78,6 +115,10 @@ const peruIdentifierTypes = [
   carnetIdentifierType,
   passportIdentifierType,
   dieIdentifierType,
+  cnvIdentifierType,
+  sisTemporaryIdentifierType,
+  sisContractIdentifierType,
+  sisIdnumregIdentifierType,
 ];
 
 function buildIdentifier(identifierType, identifierValue = '') {
@@ -388,6 +429,81 @@ describe('Identifiers', () => {
 
     expect(screen.queryByText('DNI')).not.toBeInTheDocument();
     expect(screen.getByText('Pasaporte')).toBeInTheDocument();
+  });
+
+  it('allows switching from a foreign document back to DNI before confirming', async () => {
+    const user = userEvent.setup();
+    renderIdentifiersWithState({ dni: buildIdentifier(dniIdentifierType) });
+
+    await user.click(screen.getByRole('button', { name: 'Configure' }));
+    await user.click(screen.getByRole('checkbox', { name: 'Carnet de Extranjeria' }));
+    await user.click(screen.getByRole('checkbox', { name: 'DNI' }));
+
+    expect(screen.getByRole('checkbox', { name: 'DNI' })).toBeChecked();
+    expect(screen.getByRole('checkbox', { name: 'Carnet de Extranjeria' })).not.toBeChecked();
+  });
+
+  it('discards identifier selection changes when the overlay is cancelled', async () => {
+    const user = userEvent.setup();
+    renderIdentifiersWithState({ dni: buildIdentifier(dniIdentifierType) });
+
+    await user.click(screen.getByRole('button', { name: 'Configure' }));
+    await user.click(screen.getByRole('checkbox', { name: 'Carnet de Extranjeria' }));
+    await user.click(screen.getByRole('button', { name: 'Cancel' }));
+
+    expect(screen.queryByRole('button', { name: 'Close overlay' })).not.toBeInTheDocument();
+    expect(screen.getByText('DNI')).toBeInTheDocument();
+    expect(screen.queryByText('Carnet de Extranjeria')).not.toBeInTheDocument();
+  });
+
+  it('searches identifier names and descriptions ignoring surrounding spaces', async () => {
+    const user = userEvent.setup();
+    renderIdentifiersWithState({ dni: buildIdentifier(dniIdentifierType) });
+
+    await user.click(screen.getByRole('button', { name: 'Configure' }));
+    await user.type(screen.getByRole('searchbox', { name: 'Search identifier' }), '  PERSONAS EXTRANJERAS  ');
+
+    expect(screen.getByRole('checkbox', { name: 'Carnet de Extranjeria' })).toBeInTheDocument();
+    expect(screen.queryByRole('checkbox', { name: 'DNI' })).not.toBeInTheDocument();
+  });
+
+  it('shows an empty state when no identifier type matches the search', async () => {
+    const user = userEvent.setup();
+    renderIdentifiersWithState({ dni: buildIdentifier(dniIdentifierType) });
+
+    await user.click(screen.getByRole('button', { name: 'Configure' }));
+    await user.type(screen.getByRole('searchbox', { name: 'Search identifier' }), 'sin coincidencias');
+
+    expect(screen.getByRole('status')).toHaveTextContent('No matching identification data found');
+  });
+
+  it('accepts CNV as the only civil identity document', async () => {
+    const user = userEvent.setup();
+    renderIdentifiersWithState({ dni: buildIdentifier(dniIdentifierType) });
+
+    await user.click(screen.getByRole('button', { name: 'Configure' }));
+    await user.click(screen.getByRole('checkbox', { name: 'CNV' }));
+    await user.click(screen.getByRole('checkbox', { name: 'DNI' }));
+    await user.click(screen.getByRole('button', { name: 'Configure identifiers' }));
+
+    expect(screen.queryByText('DNI')).not.toBeInTheDocument();
+    expect(screen.getByText('CNV')).toBeInTheDocument();
+  });
+
+  it('does not count a SIS code as a civil identity document', async () => {
+    expect(
+      countIdentityDocumentIdentifiers(
+        { sisContrato: buildIdentifier(sisContractIdentifierType, 'SIS-001') },
+        peruIdentifierTypes,
+      ),
+    ).toBe(0);
+
+    const user = userEvent.setup();
+    renderIdentifiersWithState({ dni: buildIdentifier(dniIdentifierType) });
+    await user.click(screen.getByRole('button', { name: 'Configure' }));
+    await user.click(screen.getByRole('checkbox', { name: 'SIS Contrato' }));
+
+    expect(screen.getByRole('checkbox', { name: 'DNI' })).toBeDisabled();
   });
 
   it('deletes identifier inputs while keeping the configuration panel in sync', async () => {

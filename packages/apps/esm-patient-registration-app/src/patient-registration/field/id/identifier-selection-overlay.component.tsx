@@ -33,6 +33,14 @@ const exclusiveIdentifierTypeUuids: Record<string, string | Array<string>> = {
   ...Object.fromEntries(peruForeignPatientIdentifierTypeUuids.map((uuid) => [uuid, peruDniPatientIdentifierTypeUuid])),
 };
 
+function normalizeSearchValue(value?: string) {
+  return (value ?? '')
+    .trim()
+    .toLocaleLowerCase()
+    .normalize('NFD')
+    .replace(/\p{Diacritic}/gu, '');
+}
+
 function getIdentifierTypeDescription(identifierType: PatientIdentifierType) {
   const description = identifierType.description?.trim();
   if (!description) {
@@ -64,26 +72,26 @@ function removeIdentifiersByTypeUuid(
 
 const PatientIdentifierOverlay: React.FC<PatientIdentifierOverlayProps> = ({ closeOverlay, setFieldValue }) => {
   const layout = useLayoutType();
-  const { identifierTypes } = useContext(ResourcesContext);
+  const { identifierTypes = [] } = useContext(ResourcesContext);
   const { isOffline, values, initialFormValues } = useContext(PatientRegistrationContext);
-  const [unsavedIdentifierTypes, setUnsavedIdentifierTypes] = useState<FormValues['identifiers']>(values.identifiers);
+  const [unsavedIdentifierTypes, setUnsavedIdentifierTypes] = useState<FormValues['identifiers']>(
+    values.identifiers ?? {},
+  );
   const [searchString, setSearchString] = useState('');
   const { t } = useTranslation(moduleName);
 
   useEffect(() => {
-    setUnsavedIdentifierTypes(values.identifiers);
+    setUnsavedIdentifierTypes(values.identifiers ?? {});
   }, [values.identifiers]);
 
   const handleSearch = useCallback((event) => setSearchString(event?.target?.value ?? ''), []);
 
   const filteredIdentifiers = useMemo(
     () =>
-      identifierTypes?.filter((identifier) =>
-        [identifier?.name, identifier?.display, identifier?.description]
-          .filter(Boolean)
-          .join(' ')
-          .toLocaleLowerCase()
-          .includes(searchString.toLocaleLowerCase()),
+      identifierTypes.filter((identifier) =>
+        normalizeSearchValue([identifier?.name, identifier?.display, identifier?.description].filter(Boolean).join(' ')).includes(
+          normalizeSearchValue(searchString),
+        ),
       ),
     [searchString, identifierTypes],
   );
@@ -101,8 +109,8 @@ const PatientIdentifierOverlay: React.FC<PatientIdentifierOverlayProps> = ({ clo
             ...identifiersWithoutExclusiveType,
             [identifierType.fieldName]: initializeIdentifier(
               identifierType,
-              values.identifiers[identifierType.fieldName] ??
-                initialFormValues.identifiers[identifierType.fieldName] ??
+              values.identifiers?.[identifierType.fieldName] ??
+                initialFormValues.identifiers?.[identifierType.fieldName] ??
                 {},
             ),
           };
@@ -236,16 +244,24 @@ const PatientIdentifierOverlay: React.FC<PatientIdentifierOverlayProps> = ({ clo
     closeOverlay();
   }, [identifierTypes, unsavedIdentifierTypes, setFieldValue, closeOverlay]);
 
+  const hasIdentityDocument = countIdentityDocumentIdentifiers(unsavedIdentifierTypes, identifierTypes) > 0;
+
   return (
     <Overlay
       close={closeOverlay}
       header={t('configureIdentifiers', 'Configure identifiers')}
       buttonsGroup={
         <ButtonSet className={isDesktop(layout) ? styles.desktop : styles.tablet}>
-          <Button className={styles.button} kind="secondary" onClick={closeOverlay}>
+          <Button className={styles.button} kind="secondary" type="button" onClick={closeOverlay}>
             {t('cancel', 'Cancel')}
           </Button>
-          <Button className={styles.button} kind="primary" onClick={handleConfiguringIdentifiers}>
+          <Button
+            className={styles.button}
+            kind="primary"
+            type="button"
+            disabled={!hasIdentityDocument}
+            onClick={handleConfiguringIdentifiers}
+          >
             {t('configureIdentifiers', 'Configure identifiers')}
           </Button>
         </ButtonSet>
@@ -265,7 +281,23 @@ const PatientIdentifierOverlay: React.FC<PatientIdentifierOverlayProps> = ({ clo
             />
           </div>
         )}
-        <fieldset>{identifierTypeFields}</fieldset>
+        {!hasIdentityDocument ? (
+          <p className={styles.requirementMessage} role="alert">
+            {t(
+              'identifierSelectionRequiresIdentityDocument',
+              'Select at least one identity document (DNI, CE, passport, DIE, or CNV).',
+            )}
+          </p>
+        ) : null}
+        <fieldset aria-label={t('availableIdentifierTypes', 'Available identification data')}>
+          {identifierTypeFields.length ? (
+            identifierTypeFields
+          ) : (
+            <p className={styles.emptyState} role="status">
+              {t('identifierSearchNoResults', 'No matching identification data found')}
+            </p>
+          )}
+        </fieldset>
       </div>
     </Overlay>
   );

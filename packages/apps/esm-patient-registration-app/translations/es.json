@@ -184,6 +184,8 @@
   "identifierTypesEditModeUnavailableSubtitle": "Se muestran los datos de identificación existentes, pero los tipos de identificador no están disponibles. Actualiza la página antes de agregar o cambiar identificadores.",
   "identifierTypesUnavailableSubtitle": "Actualiza la página. Si el problema continúa, verifica que los tipos de identificador del paciente estén configurados y que la sesión esté activa.",
   "identifierTypesUnavailableTitle": "Datos de identificación no disponibles",
+  "identifierSearchNoResults": "No se encontraron datos de identificación coincidentes",
+  "identifierSelectionRequiresIdentityDocument": "Seleccione al menos un documento de identidad (DNI, CE, pasaporte, DIE o CNV).",
   "identifierValueRequired": "El número es obligatorio",
   "identityLookupButton": "Buscar en base local y RENIEC",
   "identityLookupClearPromotion": "Quitar selección",

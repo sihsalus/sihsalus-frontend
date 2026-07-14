@@ -3,6 +3,7 @@ import dayjs from 'dayjs';
 import { useMemo } from 'react';
 
 import { type CREDScheduledControl, generateCREDSchedule } from '../utils/cred-schedule-rules';
+import { getNextCREDControlRecommendation } from '../utils/cred-control-intervals';
 
 import useAppointmentsCRED from './useAppointmentsCRED';
 import useEncountersCRED, { type CREDEncounter } from './useEncountersCRED';
@@ -169,6 +170,7 @@ export function useCREDSchedule(patientUuid: string): UseCREDScheduleResult {
   const isLoading =
     isPatientLoading || (isEncountersLoading && !encounters) || (isAppointmentsLoading && !appointments);
   const error = (patientError ?? encountersError ?? appointmentsError ?? null) as Error | null;
+  const realControls = useMemo(() => groupCREDControlEncounters(encounters ?? []), [encounters]);
 
   const controls = useMemo<CREDControlWithStatus[]>(() => {
     if (!patient?.birthDate) return [];
@@ -177,7 +179,7 @@ export function useCREDSchedule(patientUuid: string): UseCREDScheduleResult {
     const today = dayjs();
 
     // Match encounters to the age window in which each control occurred.
-    const encounterMatches = matchEncountersToControls(schedule, groupCREDControlEncounters(encounters ?? []));
+    const encounterMatches = matchEncountersToControls(schedule, realControls);
 
     // Match appointments to remaining controls
     const completedControlNumbers = new Set(encounterMatches.keys());
@@ -220,19 +222,48 @@ export function useCREDSchedule(patientUuid: string): UseCREDScheduleResult {
         appointmentDate: appointment?.date,
       };
     });
-  }, [patient?.birthDate, encounters, appointments]);
+  }, [patient?.birthDate, realControls, appointments]);
 
   const nextDueControl = useMemo(() => {
-    const pending = controls.find((control) => control.status === 'pending');
-    if (pending) return pending;
+    if (!patient?.birthDate) return null;
 
-    const overdue = controls.filter((control) => control.status === 'overdue');
-    if (overdue.length > 0) return overdue.at(-1) ?? null;
+    const recommendation = getNextCREDControlRecommendation(
+      patient.birthDate,
+      realControls,
+      (appointments ?? []).map((appointment) => ({
+        uuid: appointment.uuid,
+        startDateTime: appointment.startDateTime,
+        status: appointment.status,
+      })),
+    );
+    if (!recommendation) return null;
 
-    return controls.find((control) => control.status === 'future') ?? null;
-  }, [controls]);
+    const schedule = generateCREDSchedule(patient.birthDate);
+    const recommendationDate = dayjs(recommendation.targetDate);
+    const scheduleContext =
+      schedule.find(
+        (control) =>
+          !recommendationDate.isBefore(dayjs(control.targetDate), 'day') &&
+          !recommendationDate.isAfter(dayjs(control.dueEndDate), 'day'),
+      ) ??
+      [...schedule].reverse().find((control) => !recommendationDate.isBefore(dayjs(control.targetDate), 'day')) ??
+      schedule[0];
 
-  const overdueControls = useMemo(() => controls.filter((c) => c.status === 'overdue'), [controls]);
+    if (!scheduleContext) return null;
+
+    return {
+      ...scheduleContext,
+      controlNumber: recommendation.controlNumber,
+      label: `Control ${recommendation.controlNumber}`,
+      targetDate: recommendation.targetDate,
+      dueEndDate: recommendation.targetDate,
+      status: recommendation.status,
+      appointmentUuid: recommendation.appointmentUuid,
+      appointmentDate: recommendation.appointmentDate,
+    };
+  }, [appointments, patient?.birthDate, realControls]);
+
+  const overdueControls = useMemo(() => controls.filter((control) => control.status === 'overdue'), [controls]);
 
   const completedCount = useMemo(() => controls.filter((c) => c.status === 'completed').length, [controls]);
 

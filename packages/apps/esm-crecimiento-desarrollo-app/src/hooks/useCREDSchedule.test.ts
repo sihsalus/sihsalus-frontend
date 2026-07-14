@@ -41,6 +41,49 @@ describe('groupCREDControlEncounters', () => {
 
     expect(controls).toHaveLength(2);
   });
+
+  it('groups forms by their persisted control number across dates and visits', () => {
+    const controls = groupCREDControlEncounters([
+      {
+        uuid: 'encounter-1',
+        encounterDatetime: '2026-07-09T09:00:00-05:00',
+        visit: { uuid: 'visit-1' },
+        controlNumber: 1,
+      },
+      {
+        uuid: 'encounter-2',
+        encounterDatetime: '2026-07-10T09:00:00-05:00',
+        visit: { uuid: 'visit-2' },
+        controlNumber: 1,
+      },
+      {
+        uuid: 'encounter-3',
+        encounterDatetime: '2026-07-10T10:00:00-05:00',
+        visit: { uuid: 'visit-2' },
+        controlNumber: 2,
+      },
+    ]);
+
+    expect(controls.map((encounter) => encounter.uuid)).toEqual(['encounter-1', 'encounter-3']);
+  });
+
+  it('associates unnumbered legacy forms with a numbered control in the same visit and day', () => {
+    const controls = groupCREDControlEncounters([
+      {
+        uuid: 'legacy-encounter',
+        encounterDatetime: '2026-07-09T09:00:00-05:00',
+        visit: { uuid: 'visit-1' },
+      },
+      {
+        uuid: 'numbered-encounter',
+        encounterDatetime: '2026-07-09T09:05:00-05:00',
+        visit: { uuid: 'visit-1' },
+        controlNumber: 1,
+      },
+    ]);
+
+    expect(controls).toHaveLength(1);
+  });
 });
 
 describe('matchEncountersToControls', () => {

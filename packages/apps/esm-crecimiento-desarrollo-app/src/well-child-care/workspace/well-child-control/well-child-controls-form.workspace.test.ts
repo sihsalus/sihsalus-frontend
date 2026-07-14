@@ -2,6 +2,7 @@ import {
   createCREDControlsSchema,
   getConsultationDatetime,
   getCREDConsultationChronologyError,
+  resolveCREDControlNumber,
 } from './well-child-controls-form.workspace';
 
 const t = (_key: string, fallback: string) => fallback;
@@ -77,5 +78,36 @@ describe('CRED consultation chronology', () => {
         ]),
       );
     }
+  });
+});
+
+describe('resolveCREDControlNumber', () => {
+  const encounters = [
+    {
+      uuid: 'control-1',
+      encounterDatetime: '2026-06-10T09:00:00-05:00',
+      visit: { uuid: 'visit-1' },
+      controlNumber: 1,
+    },
+    {
+      uuid: 'control-2',
+      encounterDatetime: '2026-07-10T09:00:00-05:00',
+      visit: { uuid: 'visit-2' },
+      controlNumber: 2,
+    },
+  ];
+
+  it('reuses the persisted number when resuming the same visit and day', () => {
+    expect(resolveCREDControlNumber(encounters, new Date('2026-07-10T15:00:00-05:00'), 'visit-2')).toBe(2);
+  });
+
+  it('starts the next control for a different visit', () => {
+    expect(resolveCREDControlNumber(encounters, new Date('2026-07-10T15:00:00-05:00'), 'visit-3')).toBe(3);
+  });
+
+  it('derives the sequence for a legacy control without a persisted number', () => {
+    const legacyEncounters = encounters.map(({ controlNumber: _controlNumber, ...encounter }) => encounter);
+
+    expect(resolveCREDControlNumber(legacyEncounters, new Date('2026-07-10T15:00:00-05:00'), 'visit-2')).toBe(2);
   });
 });

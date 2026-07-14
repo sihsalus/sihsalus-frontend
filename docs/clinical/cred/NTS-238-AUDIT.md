@@ -1,6 +1,6 @@
 # Auditoria CRED frente a NTS 238
 
-Fecha de revision: 2026-07-10
+Fecha de revision: 2026-07-14
 
 ## Fuentes normativas
 
@@ -48,7 +48,7 @@ Enlaces oficiales:
 | Area | Estado | Evidencia o limite |
 | --- | --- | --- |
 | Seleccion por edad | Implementado | La fecha real de atencion alimenta `useCREDFormsForAgeGroup`; ya no se usa la fecha ideal atrasada. |
-| Numero real de control | Implementado | Se calcula con controles registrados + 1, independientemente de la posicion ideal del calendario. |
+| Numero real de control | Implementado | Se calcula con controles registrados + 1 y se persiste en cada encuentro del control con `Número de control CRED` (`ce8b07e8-712f-406a-b44d-2fa69167f5ea`). |
 | Encuentro nuevo | Implementado | El selector muestra historial, pero lanza formularios nuevos con `encounterUuid` vacio. |
 | Matriz Anexo 18 | Implementado en frontend | Matriz central `cred-nts238-form-groups.ts`, con cortes de 42 y 54 meses e instrumentos vigentes. |
 | Calendario | Implementado | 27 edades ideales con meses calendario y ventana neonatal; no usa aproximaciones de 365 dias. |
@@ -58,7 +58,7 @@ Enlaces oficiales:
 | Anemia | Parcial seguro | El formulario 1.16.3 exige edad, altitud y clasificacion ajustada; el widget muestra Hb sin inventar diagnostico. Falta calcular Hb ajustada con conceptos especificos. |
 | Crecimiento escolar | Bloqueado de forma segura | No se reutilizan curvas OMS 0-5 en escolares; faltan IMC/edad y talla/edad 5-19. |
 | Tamizajes | Parcial seguro | El widget se presenta como historial, no como cumplimiento obligatorio por haber ocurrido alguna vez. |
-| Persistencia DEV | No verificada | El backend DEV no acepto conexion durante esta auditoria; no se ejecuto un guardado E2E. |
+| Persistencia DEV | Verificada | Se guardaron y editaron formularios CRED en un paciente sintetico; se conservaron fecha, visita, formulario y observaciones sin duplicar el encuentro editado. El concepto numerico de control y su lectura por encounter tambien se validaron. |
 
 ## Auditoria de contenido y conceptos
 

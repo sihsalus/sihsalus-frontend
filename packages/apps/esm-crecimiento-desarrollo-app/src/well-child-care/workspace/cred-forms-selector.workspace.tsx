@@ -123,7 +123,10 @@ const CREDFormsSelectorWorkspace: React.FC<CREDFormsSelectorWorkspaceProps> = (p
 
         launchWorkspace2(
           formEntryWorkspace,
-          buildNewCREDFormWorkspaceProps(resolvedForm, consultationDatetime, onFormSubmitted),
+          buildNewCREDFormWorkspaceProps(resolvedForm, consultationDatetime, onFormSubmitted, {
+            controlNumber,
+            controlNumberConceptUuid: config.CRED?.controlNumber,
+          }),
         );
       } catch {
         showSnackbar({
@@ -136,7 +139,7 @@ const CREDFormsSelectorWorkspace: React.FC<CREDFormsSelectorWorkspaceProps> = (p
         });
       }
     },
-    [consultationDatetime, t],
+    [config.CRED?.controlNumber, consultationDatetime, controlNumber, t],
   );
   const handleComplete = useCallback(() => {
     void mutateCREDEncounters();

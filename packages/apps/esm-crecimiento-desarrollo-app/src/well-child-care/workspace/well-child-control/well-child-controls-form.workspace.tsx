@@ -21,7 +21,7 @@ import { credCourseLifeEditPrivilege } from '../../../constants';
 import { useAgeGroups } from '../../../hooks/useAgeGroups';
 import { useCREDFormsForAgeGroup } from '../../../hooks/useCREDFormsForAgeGroup';
 import { groupCREDControlEncounters } from '../../../hooks/useCREDSchedule';
-import useCREDEncounters from '../../../hooks/useEncountersCRED';
+import useCREDEncounters, { type CREDEncounter } from '../../../hooks/useEncountersCRED';
 import { type DefaultPatientWorkspaceProps } from '../../../types';
 import EncounterDateTimeSection from '../../../ui/encounter-date-time/encounter-date-time.component';
 
@@ -99,6 +99,32 @@ export function getCREDConsultationChronologyError(
   return consultationDatetime > now ? 'future' : null;
 }
 
+export function resolveCREDControlNumber(
+  encounters: CREDEncounter[],
+  consultationDate: Date,
+  visitUuid?: string,
+): number {
+  const sortedEncounters = [...encounters]
+    .filter((encounter) => encounter.encounterDatetime)
+    .sort(
+      (first, second) =>
+        new Date(first.encounterDatetime ?? 0).getTime() - new Date(second.encounterDatetime ?? 0).getTime(),
+    );
+  const matchingControlIndex = sortedEncounters.findIndex(
+    (encounter) =>
+      encounter.visit?.uuid === visitUuid && dayjs(encounter.encounterDatetime).isSame(dayjs(consultationDate), 'day'),
+  );
+
+  if (matchingControlIndex >= 0) {
+    const persistedControlNumber = sortedEncounters[matchingControlIndex].controlNumber;
+    return typeof persistedControlNumber === 'number' && persistedControlNumber >= 1 && persistedControlNumber <= 27
+      ? persistedControlNumber
+      : Math.min(matchingControlIndex + 1, 27);
+  }
+
+  return Math.min(sortedEncounters.length + 1, 27);
+}
+
 const CREDControlsWorkspace: React.FC<DefaultPatientWorkspaceProps> = ({
   closeWorkspace,
   workspaceProps,
@@ -140,7 +166,11 @@ const CREDControlsWorkspace: React.FC<DefaultPatientWorkspaceProps> = ({
     },
   });
 
-  const credControlNumber = useMemo(() => Math.min(encounters.length + 1, 27), [encounters.length]);
+  const consultationDate = watch('visitStartDate');
+  const credControlNumber = useMemo(
+    () => resolveCREDControlNumber(encounters, consultationDate, visit?.uuid),
+    [consultationDate, encounters, visit?.uuid],
+  );
 
   const ageGroup = useMemo(() => {
     if (!patient?.birthDate) return null;
@@ -154,7 +184,6 @@ const CREDControlsWorkspace: React.FC<DefaultPatientWorkspaceProps> = ({
 
   const formattedAge = useMemo(() => (patient?.birthDate ? age(patient.birthDate) : ''), [patient?.birthDate]);
 
-  const consultationDate = watch('visitStartDate');
   const allAvailableForms = useCREDFormsForAgeGroup(config, patient?.birthDate, consultationDate);
 
   const handleStartControl = useCallback(
@@ -198,6 +227,9 @@ const CREDControlsWorkspace: React.FC<DefaultPatientWorkspaceProps> = ({
         .split(' ')[0],
     );
     setValue('visitStartTimeFormat', now.getHours() >= 12 ? 'PM' : 'AM');
+  }, [setValue]);
+
+  useEffect(() => {
     setValue('controlNumber', credControlNumber.toString());
   }, [setValue, credControlNumber]);
 

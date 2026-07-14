@@ -33,6 +33,15 @@ function hasEncounterDatetime(encounter: CREDEncounter): encounter is DatedCREDE
   return Boolean(encounter.encounterDatetime);
 }
 
+function hasValidControlNumber(encounter: CREDEncounter): encounter is CREDEncounter & { controlNumber: number } {
+  return (
+    typeof encounter.controlNumber === 'number' &&
+    Number.isInteger(encounter.controlNumber) &&
+    encounter.controlNumber >= 1 &&
+    encounter.controlNumber <= 27
+  );
+}
+
 function findUnassignedControlForDate(
   schedule: CREDScheduledControl[],
   date: Date,
@@ -87,18 +96,33 @@ export function matchEncountersToControls(
  */
 export function groupCREDControlEncounters(encounters: CREDEncounter[]): CREDEncounter[] {
   const groups = new Map<string, CREDEncounter>();
-
-  encounters
+  const controlNumbersBySession = new Map<string, number>();
+  const validEncounters = encounters
     .filter(hasEncounterDatetime)
-    .sort((first, second) => new Date(first.encounterDatetime).getTime() - new Date(second.encounterDatetime).getTime())
-    .forEach((encounter) => {
+    .sort(
+      (first, second) => new Date(first.encounterDatetime).getTime() - new Date(second.encounterDatetime).getTime(),
+    );
+
+  validEncounters.forEach((encounter) => {
+    if (hasValidControlNumber(encounter)) {
       const encounterDay = dayjs(encounter.encounterDatetime).format('YYYY-MM-DD');
       const sessionKey = `${encounter.visit?.uuid ?? 'no-visit'}:${encounterDay}`;
+      controlNumbersBySession.set(sessionKey, encounter.controlNumber);
+    }
+  });
 
-      if (!groups.has(sessionKey)) {
-        groups.set(sessionKey, encounter);
-      }
-    });
+  validEncounters.forEach((encounter) => {
+    const encounterDay = dayjs(encounter.encounterDatetime).format('YYYY-MM-DD');
+    const sessionKey = `${encounter.visit?.uuid ?? 'no-visit'}:${encounterDay}`;
+    const controlNumber = hasValidControlNumber(encounter)
+      ? encounter.controlNumber
+      : controlNumbersBySession.get(sessionKey);
+    const controlKey = controlNumber ? `control-number:${controlNumber}` : `session:${sessionKey}`;
+
+    if (!groups.has(controlKey)) {
+      groups.set(controlKey, controlNumber ? { ...encounter, controlNumber } : encounter);
+    }
+  });
 
   return Array.from(groups.values());
 }

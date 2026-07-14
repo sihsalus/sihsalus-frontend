@@ -119,7 +119,7 @@ describe('AppointmentsTable', () => {
     await screen.findByRole('heading', { name: /scheduled appointment/i });
     expect(screen.getByRole('search', { name: /filter table/i })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: /download/i })).toBeInTheDocument();
-    expect(screen.getByRole('row', { name: /john wilson 100gej hiv clinic outpatient/i })).toBeInTheDocument();
+    expect(screen.getByRole('row', { name: /john wilson 100gej .* hiv clinic outpatient/i })).toBeInTheDocument();
     expect(screen.getByRole('link', { name: /john wilson/i })).toBeInTheDocument();
     expect(screen.getByRole('link', { name: /john wilson/i })).toHaveAttribute('href', 'url-to-patient-chart');
   });

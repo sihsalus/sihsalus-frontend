@@ -175,14 +175,17 @@ const CREDControlsWorkspace: React.FC<DefaultPatientWorkspaceProps> = ({
   const ageGroup = useMemo(() => {
     if (!patient?.birthDate) return null;
     try {
-      return getAgeGroupForForms(patient.birthDate);
+      return getAgeGroupForForms(patient.birthDate, consultationDate);
     } catch (error) {
       console.warn('Error getting age group:', error);
       return null;
     }
-  }, [patient?.birthDate, getAgeGroupForForms]);
+  }, [consultationDate, patient?.birthDate, getAgeGroupForForms]);
 
-  const formattedAge = useMemo(() => (patient?.birthDate ? age(patient.birthDate) : ''), [patient?.birthDate]);
+  const formattedAge = useMemo(
+    () => (patient?.birthDate ? age(patient.birthDate, consultationDate) : ''),
+    [consultationDate, patient?.birthDate],
+  );
 
   const allAvailableForms = useCREDFormsForAgeGroup(config, patient?.birthDate, consultationDate);
 
@@ -284,7 +287,7 @@ const CREDControlsWorkspace: React.FC<DefaultPatientWorkspaceProps> = ({
                 value={ageGroup ? ageGroup.label : t('unknownAgeGroup', 'No determinado')}
                 readOnly
                 disabled
-                helperText={t('ageGroupHelper', '* Grupo etario basado en la edad del paciente')}
+                helperText={t('ageGroupHelper', '* Grupo etario calculado a la fecha de atención')}
               />
             </Column>
             <Tooltip

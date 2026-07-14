@@ -1,6 +1,7 @@
 import { Button, InlineLoading, InlineNotification, Tag } from '@carbon/react';
 import { Add, Calendar } from '@carbon/react/icons';
-import { launchWorkspace2, showSnackbar, useConfig, userHasAccess, useSession } from '@openmrs/esm-framework';
+import { showSnackbar, useConfig, userHasAccess, useSession } from '@openmrs/esm-framework';
+import { useLaunchWorkspaceRequiringVisit } from '@openmrs/esm-patient-common-lib';
 import dayjs from 'dayjs';
 import React, { useCallback, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -24,6 +25,12 @@ const CredCheckups: React.FC<CredCheckupsProps> = ({ patientUuid }) => {
   const canEdit = userHasAccess(credCourseLifeEditPrivilege, session?.user);
   const { controls, nextDueControl, overdueControls, completedCount, totalCount, isLoading, error } =
     useCREDSchedule(patientUuid);
+  const launchControlWorkspace = useLaunchWorkspaceRequiringVisit<{
+    workspaceTitle: string;
+    patientUuid: string;
+    control: typeof nextDueControl;
+    type: 'newControl';
+  }>(patientUuid, 'wellchild-control-form');
   const { mutateAppointments } = useMutateAppointments();
 
   const [isGenerating, setIsGenerating] = useState(false);
@@ -33,13 +40,13 @@ const CredCheckups: React.FC<CredCheckupsProps> = ({ patientUuid }) => {
   const scheduledControls = useMemo(() => controls.filter((c) => c.status === 'scheduled'), [controls]);
 
   const handleRegisterControl = useCallback(() => {
-    launchWorkspace2('wellchild-control-form', {
+    launchControlWorkspace({
       workspaceTitle: t('newCredEncounter', 'Nuevo Control Crecimiento y Desarrollo'),
       patientUuid,
       control: nextDueControl,
       type: 'newControl',
     });
-  }, [nextDueControl, patientUuid, t]);
+  }, [launchControlWorkspace, nextDueControl, patientUuid, t]);
 
   const handleGenerateAppointments = useCallback(async () => {
     const serviceUuid = config.credScheduling?.appointmentServiceUuid;

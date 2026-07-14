@@ -21,7 +21,7 @@ import {
   shouldPreventPlainNumberPaste,
 } from '@openmrs/esm-utils';
 import { FieldArray, useField } from 'formik';
-import React, { useCallback, useContext, useEffect, useMemo, useState } from 'react';
+import React, { useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { type RegistrationConfig } from '../../../config-schema';
 import { moduleName } from '../../../constants';
@@ -169,6 +169,16 @@ function hasIncompleteRelationship(relationships: Array<RelationshipValue> | und
       (relationship) =>
         relationship.action !== 'DELETE' && (!relationship.relationshipType || !hasRelatedPerson(relationship)),
     ) ?? false
+  );
+}
+
+function isEmptyNewRelationship(relationship: RelationshipValue) {
+  return (
+    !relationship.uuid &&
+    relationship.action === 'ADD' &&
+    !relationship.relationshipType &&
+    !relationship.relatedPersonUuid &&
+    !relationship.newPerson
   );
 }
 
@@ -843,6 +853,7 @@ export const RelationshipsSection: React.FC<RelationshipsSectionProps> = ({ defa
   const config = configuredConfig?.sections ? getEffectiveRegistrationConfig(configuredConfig) : configuredConfig;
   const [displayRelationshipTypes, setDisplayRelationshipTypes] = useState<RelationshipType[]>([]);
   const [hasSeededDefaultRelationship, setHasSeededDefaultRelationship] = useState(false);
+  const previouslyRequiredResponsibleRelationship = useRef(false);
   const [, relationshipsMeta] = useField<Array<RelationshipValue>>('relationships');
   const { t } = useTranslation(moduleName);
   const requiresResponsibleRelationship = isMinorPatient(values);
@@ -914,8 +925,26 @@ export const RelationshipsSection: React.FC<RelationshipsSectionProps> = ({ defa
   }, [hasRelationshipTypes, relationshipTypeResults, t]);
 
   useEffect(() => {
+    const wasRequired = previouslyRequiredResponsibleRelationship.current;
+    previouslyRequiredResponsibleRelationship.current = requiresResponsibleRelationship;
+
+    if (wasRequired && !requiresResponsibleRelationship && setFieldValue) {
+      const relationships = values.relationships ?? [];
+      const completedOrEditedRelationships = relationships.filter(
+        (relationship) => !isEmptyNewRelationship(relationship),
+      );
+
+      if (completedOrEditedRelationships.length !== relationships.length) {
+        setFieldValue('relationships', completedOrEditedRelationships, true);
+      }
+      setHasSeededDefaultRelationship(false);
+    }
+  }, [requiresResponsibleRelationship, setFieldValue, values.relationships]);
+
+  useEffect(() => {
     if (
       defaultNewRelationship &&
+      requiresResponsibleRelationship &&
       hasRelationshipTypes &&
       !hasSeededDefaultRelationship &&
       setFieldValue &&
@@ -934,6 +963,7 @@ export const RelationshipsSection: React.FC<RelationshipsSectionProps> = ({ defa
     defaultNewRelationship,
     hasRelationshipTypes,
     hasSeededDefaultRelationship,
+    requiresResponsibleRelationship,
     setFieldValue,
     values.relationships?.length,
   ]);

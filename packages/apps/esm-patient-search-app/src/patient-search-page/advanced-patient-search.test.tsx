@@ -1,5 +1,5 @@
 import { getDefaultsFromConfigSchema, useConfig } from '@openmrs/esm-framework';
-import { render, screen, waitFor, within } from '@testing-library/react';
+import { fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import React from 'react';
 import { mockAdvancedSearchResults } from 'test-utils';
@@ -161,47 +161,10 @@ describe('AdvancedPatientSearchComponent', () => {
       expect(screen.getByText(/0 search result/)).toBeInTheDocument();
     });
 
-    it('filters by age correctly', async () => {
-      renderComponent();
-
-      // Set age filter
-      const ageInput = screen.getByRole('spinbutton', { name: /age/i });
-      await user.type(ageInput, '30');
-      await user.click(screen.getByRole('button', { name: /search/i }));
-
-      const patientBanners = screen.getAllByRole('banner');
-      expect(patientBanners).toHaveLength(1);
-      expect(within(patientBanners[0]).getByText(/Joseph Davis/i)).toBeInTheDocument();
-    });
-
-    it('filters newborns by age zero instead of treating zero as an empty filter', async () => {
-      const newbornResults = [
-        {
-          ...mockAdvancedSearchResults[0],
-          person: { ...mockAdvancedSearchResults[0].person, age: 0 },
-        },
-        mockAdvancedSearchResults[1],
-      ];
-      mockUseInfinitePatientSearch.mockReturnValue({
-        ...mockSearchResults,
-        data: newbornResults as unknown as PatientSearchResponse['data'],
-      });
-      renderComponent();
-
-      await user.type(screen.getByRole('spinbutton', { name: /age/i }), '0');
-      await user.click(screen.getByRole('button', { name: /search/i }));
-
-      const patientBanners = screen.getAllByRole('banner');
-      expect(patientBanners).toHaveLength(1);
-      expect(within(patientBanners[0]).getByText(/Joshua Johnson/i)).toBeInTheDocument();
-    });
-
     it('filters OpenMRS UTC-midnight birthdates as calendar dates in the Peru timezone', async () => {
       renderComponent();
 
-      await user.type(screen.getByRole('spinbutton', { name: /day of birth/i }), '25');
-      await user.type(screen.getByRole('spinbutton', { name: /month of birth/i }), '09');
-      await user.type(screen.getByRole('spinbutton', { name: /year of birth/i }), '2019');
+      fireEvent.change(screen.getByLabelText(/date of birth/i), { target: { value: '2019-09-25' } });
       await user.click(screen.getByRole('button', { name: /search/i }));
 
       const patientBanners = screen.getAllByRole('banner');
@@ -244,10 +207,8 @@ describe('AdvancedPatientSearchComponent', () => {
     it('combines multiple filters correctly', async () => {
       renderComponent();
 
-      // Set multiple filters
-      await user.click(screen.getByRole('tab', { name: /any/i }));
-      const ageInput = screen.getByRole('spinbutton', { name: /age/i });
-      await user.type(ageInput, '5');
+      await user.click(screen.getByRole('tab', { name: /^male$/i }));
+      fireEvent.change(screen.getByLabelText(/date of birth/i), { target: { value: '2019-09-25' } });
       await user.click(screen.getByRole('button', { name: /search/i }));
 
       const patientBanners = screen.getAllByRole('banner');

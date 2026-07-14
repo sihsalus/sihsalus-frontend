@@ -1,4 +1,3 @@
-import type { OpenmrsResource } from '@openmrs/esm-framework';
 import { parsePatientBirthdate } from '@openmrs/esm-utils';
 import classNames from 'classnames';
 import React, { useEffect, useMemo, useState } from 'react';
@@ -8,6 +7,7 @@ import { type AdvancedPatientSearchState } from '../types';
 
 import styles from './advanced-patient-search.scss';
 import PatientSearchComponent from './patient-search-lg.component';
+import { matchesPersonAttributeFilter } from './person-attribute-filter';
 import { identityDocumentNumberAttributeUuid } from './refine-search/person-attribute-field.component';
 import RefineSearch, { initialFilters } from './refine-search/refine-search.component';
 
@@ -115,20 +115,17 @@ const AdvancedPatientSearchComponent: React.FC<AdvancedPatientSearchProps> = ({
               continue;
             }
 
-            const matchingAttribute = patient.attributes?.find((attr) => attr.attributeType.uuid === attributeUuid);
-
-            if (!matchingAttribute) return false;
-
-            const isValueObj = typeof matchingAttribute.value === 'object';
-            const patientAttributeValue = isValueObj
-              ? (matchingAttribute.value as OpenmrsResource).uuid
-              : String(matchingAttribute.value ?? '');
-            const normalizedPatientAttributeValue = patientAttributeValue.toLowerCase();
-            const matchesAttributeValue = isValueObj
-              ? normalizedPatientAttributeValue === normalizedFilterValue
-              : attributeUuid === identityDocumentNumberAttributeUuid
-                ? normalizedPatientAttributeValue.trim() === normalizedFilterValue
-                : normalizedPatientAttributeValue.includes(normalizedFilterValue);
+            const matchingAttributes = patient.attributes?.filter(
+              (attribute) => attribute.attributeType.uuid === attributeUuid,
+            );
+            const matchesAttributeValue = matchingAttributes?.some((attribute) =>
+              matchesPersonAttributeFilter(
+                attribute,
+                attributeUuid,
+                normalizedFilterValue,
+                attributeUuid === identityDocumentNumberAttributeUuid,
+              ),
+            );
 
             if (!matchesAttributeValue) {
               return false;

@@ -19,7 +19,8 @@ export interface SearchedPatient {
     };
   };
   attributes: Array<{
-    value: OpenmrsResource | string;
+    display?: string;
+    value: OpenmrsResource | string | null;
     attributeType: { uuid: string; display: string };
   }>;
 }

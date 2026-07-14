@@ -17,7 +17,7 @@ const patientProperties = [
   'display',
   'patientIdentifier:(uuid,identifier)',
   'person:(gender,age,birthdate,birthdateEstimated,personName:(display,givenName,middleName,familyName,familyName2),addresses,display,dead,deathDate)',
-  'attributes:(value,attributeType:(uuid,display))',
+  'attributes:(display,value,attributeType:(uuid,display))',
 ];
 
 const patientSearchCustomRepresentation = `custom:(${patientProperties.join(',')})`;

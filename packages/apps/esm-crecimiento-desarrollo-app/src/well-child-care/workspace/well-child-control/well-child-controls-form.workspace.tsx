@@ -11,6 +11,7 @@ import {
   useVisit,
 } from '@openmrs/esm-framework';
 import { RequirePrivilege } from '@sihsalus/esm-rbac';
+import dayjs from 'dayjs';
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { useTranslation } from 'react-i18next';
@@ -18,25 +19,52 @@ import { z } from 'zod';
 import type { ConfigObject } from '../../../config-schema';
 import { credCourseLifeEditPrivilege } from '../../../constants';
 import { useAgeGroups } from '../../../hooks/useAgeGroups';
-import { groupCREDControlEncounters } from '../../../hooks/useCREDSchedule';
 import { useCREDFormsForAgeGroup } from '../../../hooks/useCREDFormsForAgeGroup';
+import { groupCREDControlEncounters } from '../../../hooks/useCREDSchedule';
 import useCREDEncounters from '../../../hooks/useEncountersCRED';
 import { type DefaultPatientWorkspaceProps } from '../../../types';
 import EncounterDateTimeSection from '../../../ui/encounter-date-time/encounter-date-time.component';
 
 import styles from './well-child-controls-form.scss';
 
-const createCREDControlsSchema = (t: (key: string, fallback: string) => string) =>
-  z.object({
-    visitStartDate: z.date({
-      required_error: t('consultationDateRequired', 'Fecha de atención es requerida'),
-    }),
-    visitStartTime: z
-      .string()
-      .regex(/^(0[1-9]|1[0-2]):([0-5][0-9])$/, t('consultationTimeRequired', 'Hora de atención es requerida')),
-    visitStartTimeFormat: z.enum(['AM', 'PM']),
-    controlNumber: z.string().optional(),
-  });
+export const createCREDControlsSchema = (
+  t: (key: string, fallback: string) => string,
+  patientBirthDate?: string | Date,
+) =>
+  z
+    .object({
+      visitStartDate: z.date({
+        required_error: t('consultationDateRequired', 'Fecha de atención es requerida'),
+      }),
+      visitStartTime: z
+        .string()
+        .regex(/^(0[1-9]|1[0-2]):([0-5][0-9])$/, t('consultationTimeRequired', 'Hora de atención es requerida')),
+      visitStartTimeFormat: z.enum(['AM', 'PM']),
+      controlNumber: z.string().optional(),
+    })
+    .superRefine((data, context) => {
+      const consultationDatetime = getConsultationDatetime(data);
+      const chronologyError = getCREDConsultationChronologyError(consultationDatetime, patientBirthDate);
+
+      if (chronologyError === 'beforeBirth') {
+        context.addIssue({
+          code: z.ZodIssueCode.custom,
+          path: ['visitStartDate'],
+          message: t(
+            'credConsultationBeforeBirth',
+            'La fecha de atención no puede ser anterior a la fecha de nacimiento del paciente.',
+          ),
+        });
+      }
+
+      if (chronologyError === 'future') {
+        context.addIssue({
+          code: z.ZodIssueCode.custom,
+          path: ['visitStartTime'],
+          message: t('credConsultationInFuture', 'La fecha y hora de atención no puede estar en el futuro.'),
+        });
+      }
+    });
 
 type CREDControlsFormType = z.infer<ReturnType<typeof createCREDControlsSchema>>;
 
@@ -53,6 +81,24 @@ export function getConsultationDatetime({
   return consultationDatetime;
 }
 
+export type CREDConsultationChronologyError = 'beforeBirth' | 'future' | null;
+
+export function getCREDConsultationChronologyError(
+  consultationDatetime: Date,
+  patientBirthDate?: string | Date,
+  now = new Date(),
+): CREDConsultationChronologyError {
+  if (
+    patientBirthDate &&
+    dayjs(patientBirthDate).isValid() &&
+    dayjs(consultationDatetime).isBefore(dayjs(patientBirthDate), 'day')
+  ) {
+    return 'beforeBirth';
+  }
+
+  return consultationDatetime > now ? 'future' : null;
+}
+
 const CREDControlsWorkspace: React.FC<DefaultPatientWorkspaceProps> = ({
   closeWorkspace,
   workspaceProps,
@@ -60,10 +106,10 @@ const CREDControlsWorkspace: React.FC<DefaultPatientWorkspaceProps> = ({
 }) => {
   const patientUuid = directPatientUuid ?? workspaceProps?.patientUuid ?? '';
   const { t } = useTranslation();
-  const CREDControlsSchema = useMemo(() => createCREDControlsSchema(t), [t]);
   const isTablet = useLayoutType() === 'tablet';
   const config = useConfig<ConfigObject>();
   const { patient, isLoading: isPatientLoading } = usePatient(patientUuid);
+  const CREDControlsSchema = useMemo(() => createCREDControlsSchema(t, patient?.birthDate), [patient?.birthDate, t]);
   const { activeVisit, currentVisit } = useVisit(patientUuid);
   const visit = currentVisit ?? activeVisit;
   const { encounters: rawEncounters, isLoading: isEncountersLoading } = useCREDEncounters(patientUuid);
@@ -118,11 +164,6 @@ const CREDControlsWorkspace: React.FC<DefaultPatientWorkspaceProps> = ({
         return;
       }
       const consultationDatetime = getConsultationDatetime(consultationData);
-
-      if (consultationDatetime > new Date()) {
-        setShowErrorNotification(true);
-        return;
-      }
       setShowErrorNotification(false);
 
       launchWorkspace2('forms-selector-workspace', {
@@ -140,15 +181,7 @@ const CREDControlsWorkspace: React.FC<DefaultPatientWorkspaceProps> = ({
         backWorkspace: 'wellchild-control-form',
       });
     },
-    [
-      patientUuid,
-      visit,
-      allAvailableForms,
-      formattedAge,
-      patient?.birthDate,
-      credControlNumber,
-      t,
-    ],
+    [patientUuid, visit, allAvailableForms, formattedAge, patient?.birthDate, credControlNumber, t],
   );
 
   useEffect(() => {
@@ -180,12 +213,7 @@ const CREDControlsWorkspace: React.FC<DefaultPatientWorkspaceProps> = ({
     <RequirePrivilege privilege={credCourseLifeEditPrivilege}>
       <Form className={styles.form} onSubmit={handleSubmit(handleStartControl, () => setShowErrorNotification(true))}>
         <div className={styles.grid}>
-          <EncounterDateTimeSection
-            control={control}
-            firstEncounterDateTime={
-              encounters[0]?.encounterDatetime ? new Date(encounters[0].encounterDatetime).getTime() : undefined
-            }
-          />
+          <EncounterDateTimeSection control={control} minDate={patient?.birthDate} />
 
           <div>
             <div className={styles.sectionTitle}>{t('detailsOfLastControl', 'Detalles del Último Control')}</div>
@@ -256,10 +284,7 @@ const CREDControlsWorkspace: React.FC<DefaultPatientWorkspaceProps> = ({
               lowContrast={false}
               onClose={() => setShowErrorNotification(false)}
               title={t('error', 'Error')}
-              subtitle={t(
-                'completeRequiredFields',
-                'Por favor complete los campos requeridos (Fecha y Hora de atención).',
-              )}
+              subtitle={t('completeRequiredFields', 'Revise los campos marcados en rojo y corrija la información.')}
             />
           )}
         </div>

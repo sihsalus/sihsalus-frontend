@@ -11,7 +11,7 @@ import styles from './encounter-date-time.scss';
 
 interface EncounterDateTimeSectionProps {
   control: Control<FieldValues>;
-  firstEncounterDateTime?: number;
+  minDate?: dayjs.ConfigType;
   patientUuid?: string;
   encounterTypeUuid?: string;
   sectionTitle?: string;
@@ -37,7 +37,7 @@ interface Field {
  * The component conditionally renders the Visit start and end
  * date / time fields based on the visit status (new / ongoing / past)
  */
-const EncounterDateTimeSection: React.FC<EncounterDateTimeSectionProps> = ({ control, sectionTitle }) => {
+const EncounterDateTimeSection: React.FC<EncounterDateTimeSectionProps> = ({ control, minDate, sectionTitle }) => {
   const { t } = useTranslation();
 
   return (
@@ -49,6 +49,7 @@ const EncounterDateTimeSection: React.FC<EncounterDateTimeSectionProps> = ({ con
         dateField={{ name: 'visitStartDate', label: t('startDate', 'Start date') }}
         timeField={{ name: 'visitStartTime', label: t('startTime', 'Start time') }}
         timeFormatField={{ name: 'visitStartTimeFormat', label: t('startTimeFormat', 'Start time format') }}
+        minDate={minDate}
         maxDate={Date.now()}
         showTimeFields={true}
         control={control}

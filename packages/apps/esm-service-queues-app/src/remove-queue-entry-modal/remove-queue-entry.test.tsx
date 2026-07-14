@@ -6,8 +6,15 @@ import { type ConfigObject, configSchema } from '../config-schema';
 import { type MappedQueueEntry } from '../types';
 
 import RemoveQueueEntryModal from './remove-queue-entry.modal';
+import { useCheckedInAppointments } from './remove-queue-entry.resource';
 
 const mockUseConfig = vi.mocked(useConfig<ConfigObject>);
+const mockUseCheckedInAppointments = vi.mocked(useCheckedInAppointments);
+
+vi.mock('./remove-queue-entry.resource', async () => ({
+  ...(await vi.importActual('./remove-queue-entry.resource')),
+  useCheckedInAppointments: vi.fn(),
+}));
 
 describe('RemoveQueueEntryModal', () => {
   const queueEntry = {
@@ -21,6 +28,12 @@ describe('RemoveQueueEntryModal', () => {
     mockUseConfig.mockReturnValue({
       ...getDefaultsFromConfigSchema(configSchema),
       visitQueueNumberAttributeUuid: 'c61ce16f-272a-41e7-9924-4c555d0932c5',
+    });
+    mockUseCheckedInAppointments.mockReturnValue({
+      data: null,
+      error: undefined,
+      isLoading: false,
+      isValidating: false,
     });
   });
 
@@ -43,5 +56,21 @@ describe('RemoveQueueEntryModal', () => {
 
     await user.click(screen.getByText('Cancel'));
     expect(closeModal).toHaveBeenCalledTimes(1);
+  });
+
+  it('searches checked-in appointments from the current local day', () => {
+    const originalTimeZone = process.env.TZ;
+    process.env.TZ = 'America/Lima';
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date('2026-07-15T04:59:59.999Z'));
+
+    try {
+      render(<RemoveQueueEntryModal queueEntry={queueEntry} closeModal={vi.fn()} />);
+
+      expect(mockUseCheckedInAppointments).toHaveBeenCalledWith(queueEntry.patientUuid, '2026-07-14T05:00:00.000Z');
+    } finally {
+      vi.useRealTimers();
+      process.env.TZ = originalTimeZone;
+    }
   });
 });

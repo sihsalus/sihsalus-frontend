@@ -95,20 +95,7 @@ const ChangeStatusModal: React.FC<ChangeStatusModalProps> = ({ queueEntry, close
     const { priority, status, service } = data;
     const defaultPriority = concepts.defaultPriorityConceptUuid;
     const queuePriority = priority === '' ? defaultPriority : priority;
-    const emergencyPriorityConceptUuid = concepts.emergencyPriorityConceptUuid;
-    const sortWeight = priority === emergencyPriorityConceptUuid ? 1.0 : 0.0;
-    const endDate = new Date();
-    updateQueueEntry(
-      queueEntry?.visitUuid,
-      queueEntry?.queue?.uuid,
-      service,
-      queueEntry?.queueEntryUuid,
-      queueEntry?.patientUuid,
-      queuePriority,
-      status,
-      endDate,
-      sortWeight,
-    ).then(
+    updateQueueEntry(queueEntry?.queueEntryUuid, service, queuePriority, status).then(
       () => {
         showSnackbar({
           isLowContrast: true,

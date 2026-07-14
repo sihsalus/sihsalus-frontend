@@ -1,5 +1,6 @@
 import {
   type FetchResponse,
+  type NewVisitPayload,
   openmrsFetch,
   restBaseUrl,
   useConnectivity,
@@ -16,6 +17,103 @@ const addressExtensionUrl = 'http://openmrs.org/fhir/StructureDefinition/address
 const birthAddressMarkerField = 'address15';
 const birthAddressMarker = 'SIHSALUS_BIRTH_ADDRESS';
 const defaultAddressFieldsForVisitAttribute = ['cityVillage', 'countyDistrict', 'stateProvince', 'address1', 'country'];
+
+export const VISIT_PERSISTENCE_CORRELATION_CONFLICT = 'VISIT_PERSISTENCE_CORRELATION_CONFLICT';
+
+export interface VisitPersistenceCorrelation {
+  attributeType: string;
+  value: string;
+}
+
+interface CorrelatedVisitAttribute {
+  attributeType?: { uuid?: string };
+  value?: unknown;
+}
+
+function getAttributeValue(value: unknown) {
+  if (typeof value === 'string' || typeof value === 'number') {
+    return String(value).trim();
+  }
+
+  if (value && typeof value === 'object' && 'uuid' in value) {
+    return String((value as { uuid?: unknown }).uuid ?? '').trim();
+  }
+
+  return '';
+}
+
+/**
+ * Finds a just-created visit by an explicit, domain-unique correlation
+ * attribute. This is intentionally not a patient/time heuristic.
+ */
+export async function reconcileVisitCreation(
+  patientUuid: string,
+  payload: NewVisitPayload,
+  correlation: VisitPersistenceCorrelation,
+) {
+  const pageSize = 100;
+  const visitsByUuid = new Map<string, Visit>();
+
+  for (let startIndex = 0; ; startIndex += pageSize) {
+    const searchParams = new URLSearchParams({
+      patient: patientUuid,
+      includeInactive: 'true',
+      limit: String(pageSize),
+      startIndex: String(startIndex),
+      v: 'custom:(uuid,patient:(uuid),visitType:(uuid,display),location:(uuid,display),startDatetime,stopDatetime,attributes:(uuid,value,attributeType:(uuid)))',
+    });
+    const response = await openmrsFetch<{ results?: Array<Visit> }>(
+      `${restBaseUrl}/visit?${searchParams.toString()}`,
+    );
+    const page = response.data?.results ?? [];
+    let newVisitCount = 0;
+
+    for (const visit of page) {
+      if (!visitsByUuid.has(visit.uuid)) {
+        visitsByUuid.set(visit.uuid, visit);
+        newVisitCount += 1;
+      }
+    }
+
+    if (page.length < pageSize || newVisitCount === 0) {
+      break;
+    }
+  }
+
+  const correlatedVisits = [...visitsByUuid.values()].filter((visit) =>
+    (visit.attributes as Array<CorrelatedVisitAttribute> | undefined)?.some(
+      (attribute) =>
+        attribute.attributeType?.uuid === correlation.attributeType &&
+        getAttributeValue(attribute.value) === correlation.value,
+    ),
+  );
+
+  if (correlatedVisits.length !== 1) {
+    if (correlatedVisits.length === 0) {
+      return null;
+    }
+
+    throw Object.assign(new Error('More than one visit has the same persistence correlation.'), {
+      code: VISIT_PERSISTENCE_CORRELATION_CONFLICT,
+    });
+  }
+
+  const [visit] = correlatedVisits;
+  const requestedVisitIsStopped = Boolean(payload.stopDatetime);
+  const correlatedVisitIsStopped = Boolean(visit.stopDatetime);
+  if (
+    visit.patient?.uuid !== patientUuid ||
+    visit.location?.uuid !== payload.location ||
+    visit.visitType?.uuid !== payload.visitType ||
+    correlatedVisitIsStopped !== requestedVisitIsStopped
+  ) {
+    throw Object.assign(new Error('The correlated visit does not match the visit creation request.'), {
+      code: VISIT_PERSISTENCE_CORRELATION_CONFLICT,
+    });
+  }
+
+  return visit;
+}
 
 export type VisitFormData = {
   visitStartDate: Date;
@@ -99,6 +197,8 @@ export function useConditionalVisitTypes() {
   return visitTypesHook();
 }
 export interface VisitFormCallbacks {
+  kind?: 'queue-entry';
+  onBeforeVisitSave?: () => boolean | Promise<boolean>;
   onVisitCreatedOrUpdated: (visit: Visit) => Promise<unknown>;
 }
 
@@ -224,4 +324,19 @@ export function deleteVisitAttribute(visitUuid: string, visitAttributeUuid: stri
   return openmrsFetch(`${restBaseUrl}/visit/${visitUuid}/attribute/${visitAttributeUuid}`, {
     method: 'DELETE',
   });
+}
+
+export interface VisitAttributeSnapshot {
+  uuid: string;
+  value?: unknown;
+  attributeType?: {
+    uuid?: string;
+  };
+}
+
+export async function getVisitAttributes(visitUuid: string) {
+  const response = await openmrsFetch<{ attributes?: Array<VisitAttributeSnapshot> }>(
+    `${restBaseUrl}/visit/${visitUuid}?v=custom:(attributes:(uuid,value,attributeType:(uuid)))`,
+  );
+  return response.data?.attributes ?? [];
 }

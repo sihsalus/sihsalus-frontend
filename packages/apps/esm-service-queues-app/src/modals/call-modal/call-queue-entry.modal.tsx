@@ -32,18 +32,12 @@ const CallQueueEntryModal: React.FC<CallQueueEntryModalProps> = ({ closeModal, q
   const { mutateQueueEntries } = useMutateQueueEntries();
 
   const launchEditPriorityModal = useCallback(async () => {
-    const endedAt = new Date();
     try {
       await updateQueueEntry(
-        mappedQueueEntry.visitUuid,
-        mappedQueueEntry.queueUuid,
-        mappedQueueEntry.queueUuid,
         mappedQueueEntry.queueEntryUuid,
-        mappedQueueEntry.patientUuid,
+        mappedQueueEntry.queueUuid,
         mappedQueueEntry.priority?.uuid,
         defaultTransitionStatus,
-        endedAt,
-        mappedQueueEntry.sortWeight,
       );
       await serveQueueEntry(mappedQueueEntry.queue.name, mappedQueueEntry.visitQueueNumber, 'serving');
 
@@ -55,7 +49,7 @@ const CallQueueEntryModal: React.FC<CallQueueEntryModalProps> = ({ closeModal, q
       });
       closeModal();
       mutateQueueEntries();
-      navigate({ to: `\${openmrsSpaBase}/patient/${mappedQueueEntry.patientUuid}/chart` });
+      navigate({ to: `${globalThis.spaBase}/patient/${mappedQueueEntry.patientUuid}/chart` });
     } catch (error) {
       showSnackbar({
         title: t('queueEntryUpdateFailed', 'Error updating queue entry'),
@@ -77,9 +71,7 @@ const CallQueueEntryModal: React.FC<CallQueueEntryModalProps> = ({ closeModal, q
     mappedQueueEntry.queue.name,
     mappedQueueEntry.queueEntryUuid,
     mappedQueueEntry.queueUuid,
-    mappedQueueEntry.sortWeight,
     mappedQueueEntry.visitQueueNumber,
-    mappedQueueEntry.visitUuid,
     t,
   ]);
 

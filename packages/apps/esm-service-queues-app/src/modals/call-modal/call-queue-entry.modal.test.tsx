@@ -51,6 +51,21 @@ describe('CallQueueEntryModal', () => {
     } as ConfigObject);
   });
 
+  it('transitions atomically before opening the patient chart', async () => {
+    const user = userEvent.setup();
+    const closeModal = vi.fn();
+
+    render(<CallQueueEntryModal queueEntry={mockQueueEntryAlice} closeModal={closeModal} />);
+    await user.click(screen.getByRole('button', { name: 'Serve' }));
+
+    await waitFor(() => expect(mockNavigate).toHaveBeenCalledOnce());
+    expect(mockUpdateQueueEntry).toHaveBeenCalledOnce();
+    expect(mockServeQueueEntry).toHaveBeenCalledOnce();
+    expect(mockNavigate).toHaveBeenCalledWith({
+      to: `${globalThis.spaBase}/patient/${mockQueueEntryAlice.patient.uuid}/chart`,
+    });
+  });
+
   it('awaits the screen update and handles its rejection with one safe error', async () => {
     const user = userEvent.setup();
     const closeModal = vi.fn();

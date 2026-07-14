@@ -24,19 +24,39 @@ import { useQueues } from '../../hooks/useQueues';
 import { AddPatientToQueueContext } from '../create-queue-entry.workspace';
 import { useQueueLocations } from '../hooks/useQueueLocations';
 
-import { ACTIVE_QUEUE_ENTRY_CONFLICT, postQueueEntry } from './queue-fields.resource';
+import {
+  ACTIVE_QUEUE_ENTRY_CONFLICT,
+  ACTIVE_VISIT_QUEUE_CONFLICT,
+  MULTIPLE_ACTIVE_VISIT_QUEUE_ENTRIES,
+  postQueueEntry,
+  QUEUE_ENTRY_CREATION_UNVERIFIED,
+  QUEUE_TICKET_GENERATION_FAILED,
+} from './queue-fields.resource';
 import styles from './queue-fields.scss';
 
 export interface QueueFieldsProps {
   currentServiceQueueUuid?: string;
+  currentQueueLocationUuid?: string;
+  requestedServiceName?: string;
   onQueueEntryAdded?: () => void | Promise<void>;
-  setOnSubmit(onSubmit: (visit: Visit) => Promise<unknown>);
+  setCallbacks(callbacks: QueueFieldsCallbacks): void;
+}
+
+export interface QueueFieldsCallbacks {
+  onBeforeVisitSave: () => boolean;
+  onVisitCreatedOrUpdated: (visit: Visit) => Promise<unknown>;
 }
 
 /**
  * This component contains form fields for starting a patient's queue entry.
  */
-const QueueFields: React.FC<QueueFieldsProps> = ({ currentServiceQueueUuid, onQueueEntryAdded, setOnSubmit }) => {
+const QueueFields: React.FC<QueueFieldsProps> = ({
+  currentServiceQueueUuid,
+  currentQueueLocationUuid,
+  requestedServiceName,
+  onQueueEntryAdded,
+  setCallbacks,
+}) => {
   const { t } = useTranslation();
   const { queueLocations, isLoading: isLoadingQueueLocations } = useQueueLocations();
   const { sessionLocation } = useSession();
@@ -54,13 +74,32 @@ const QueueFields: React.FC<QueueFieldsProps> = ({ currentServiceQueueUuid, onQu
   const statuses = selectedQueue?.allowedStatuses ?? [];
   const [priority, setPriority] = useState('');
   const [status, setStatus] = useState('');
+  const [showValidationErrors, setShowValidationErrors] = useState(false);
   const { mutateQueueEntries } = useMutateQueueEntries();
   const memoMutateQueueEntries = useCallback(mutateQueueEntries, [mutateQueueEntries]);
 
   const sortWeight = priority === emergencyPriorityConceptUuid ? 1 : 0;
+  const isValid = Boolean(
+    selectedQueueLocation &&
+      selectedService &&
+      priority &&
+      status &&
+      visitQueueNumberAttributeUuid &&
+      !isLoadingQueueLocations &&
+      !isLoadingQueues,
+  );
+
+  const onBeforeVisitSave = useCallback(() => {
+    setShowValidationErrors(!isValid);
+    return isValid;
+  }, [isValid]);
 
   const onSubmit = useCallback(
     (visit: Visit) => {
+      if (!onBeforeVisitSave()) {
+        return Promise.reject(new Error('Queue fields are incomplete.'));
+      }
+
       if (selectedQueueLocation && selectedService && priority && status) {
         return postQueueEntry(
           visit.uuid,
@@ -71,7 +110,45 @@ const QueueFields: React.FC<QueueFieldsProps> = ({ currentServiceQueueUuid, onQu
           sortWeight,
           selectedQueueLocation,
           visitQueueNumberAttributeUuid,
+          visit.startDatetime,
         )
+          .catch((error) => {
+            showSnackbar({
+              title: t('queueEntryError', 'No se pudo agregar el paciente a la cola'),
+              kind: 'error',
+              isLowContrast: false,
+              subtitle: getUserFacingErrorMessage(
+                error,
+                t('queueEntryActionErrorMessage', 'No se pudo completar la acción de cola. Intente nuevamente.'),
+                {
+                  codeMessages: {
+                    [ACTIVE_QUEUE_ENTRY_CONFLICT]: t(
+                      'activeQueueEntryForAnotherVisit',
+                      'El paciente ya tiene una entrada activa en esta cola asociada a otra consulta.',
+                    ),
+                    [ACTIVE_VISIT_QUEUE_CONFLICT]: t(
+                      'activeVisitInAnotherQueue',
+                      'La consulta ya tiene una entrada activa en otra cola. Transicione o finalice esa entrada antes de seleccionar otra cola.',
+                    ),
+                    [MULTIPLE_ACTIVE_VISIT_QUEUE_ENTRIES]: t(
+                      'multipleActiveQueueEntriesForVisit',
+                      'La consulta tiene más de una entrada activa en cola. Regularice las entradas antes de continuar.',
+                    ),
+                    [QUEUE_ENTRY_CREATION_UNVERIFIED]: t(
+                      'queueEntryCreationUnverified',
+                      'No se pudo verificar la entrada activa en la cola seleccionada. Actualice la cola antes de reintentar.',
+                    ),
+                    [QUEUE_TICKET_GENERATION_FAILED]: t(
+                      'queueTicketGenerationFailed',
+                      'No se pudo generar el número de turno. Verifique la configuración antes de reintentar.',
+                    ),
+                  },
+                  logContext: 'Add patient to queue',
+                },
+              ),
+            });
+            throw error;
+          })
           .then(() => {
             showSnackbar({
               kind: 'success',
@@ -81,27 +158,6 @@ const QueueFields: React.FC<QueueFieldsProps> = ({ currentServiceQueueUuid, onQu
             });
             memoMutateQueueEntries();
             return onQueueEntryAdded?.();
-          })
-          .catch((error) => {
-            showSnackbar({
-              title: t('queueEntryError', 'Error adding patient to the queue'),
-              kind: 'error',
-              isLowContrast: false,
-              subtitle: getUserFacingErrorMessage(
-                error,
-                t('queueEntryActionErrorMessage', 'The queue action could not be completed. Please try again.'),
-                {
-                  codeMessages: {
-                    [ACTIVE_QUEUE_ENTRY_CONFLICT]: t(
-                      'activeQueueEntryForAnotherVisit',
-                      'El paciente ya tiene una entrada activa en esta cola asociada a otra consulta.',
-                    ),
-                  },
-                  logContext: 'Add patient to queue',
-                },
-              ),
-            });
-            throw error;
           });
       } else {
         return Promise.resolve();
@@ -116,13 +172,20 @@ const QueueFields: React.FC<QueueFieldsProps> = ({ currentServiceQueueUuid, onQu
       visitQueueNumberAttributeUuid,
       memoMutateQueueEntries,
       onQueueEntryAdded,
+      onBeforeVisitSave,
       t,
     ],
   );
 
   useEffect(() => {
-    setOnSubmit?.(onSubmit);
-  }, [onSubmit, setOnSubmit]);
+    setCallbacks({ onBeforeVisitSave, onVisitCreatedOrUpdated: onSubmit });
+  }, [onBeforeVisitSave, onSubmit, setCallbacks]);
+
+  useEffect(() => {
+    if (isValid) {
+      setShowValidationErrors(false);
+    }
+  }, [isValid]);
 
   useEffect(() => {
     if (selectedServiceQueueUuid) {
@@ -131,6 +194,11 @@ const QueueFields: React.FC<QueueFieldsProps> = ({ currentServiceQueueUuid, onQu
   }, [selectedServiceQueueUuid]);
 
   useEffect(() => {
+    if (currentQueueLocationUuid) {
+      setSelectedQueueLocation(currentQueueLocationUuid);
+      return;
+    }
+
     if (selectedQueueLocation) {
       return;
     }
@@ -138,7 +206,7 @@ const QueueFields: React.FC<QueueFieldsProps> = ({ currentServiceQueueUuid, onQu
     const defaultLocation =
       queueLocations.find((location) => location.id === sessionLocation.uuid) ?? queueLocations[0];
     setSelectedQueueLocation(defaultLocation?.id ?? '');
-  }, [queueLocations, selectedQueueLocation, sessionLocation.uuid]);
+  }, [currentQueueLocationUuid, queueLocations, selectedQueueLocation, sessionLocation.uuid]);
 
   useEffect(() => {
     const nextPriority = priorities.some((allowedPriority) => allowedPriority.uuid === defaultPriorityConceptUuid)
@@ -162,6 +230,15 @@ const QueueFields: React.FC<QueueFieldsProps> = ({ currentServiceQueueUuid, onQu
 
   return (
     <div>
+      {!visitQueueNumberAttributeUuid && (
+        <InlineNotification
+          className={styles.inlineNotification}
+          hideCloseButton
+          kind="error"
+          lowContrast
+          title={t('queueTicketConfigurationMissing', 'No se configuró el atributo para generar el número de turno.')}
+        />
+      )}
       <section className={styles.section}>
         <div className={styles.sectionTitle}>{t('queueLocation', 'Queue location')}</div>
         <ResponsiveWrapper>
@@ -169,9 +246,11 @@ const QueueFields: React.FC<QueueFieldsProps> = ({ currentServiceQueueUuid, onQu
             <SelectSkeleton />
           ) : (
             <Select
+              disabled={Boolean(currentQueueLocationUuid)}
               labelText={t('selectQueueLocation', 'Select a queue location')}
               id="queueLocation"
               name="queueLocation"
+              invalid={showValidationErrors && !selectedQueueLocation}
               invalidText={t('required', 'Required')}
               value={selectedQueueLocation}
               onChange={(event) => setSelectedQueueLocation(event.target.value)}
@@ -192,6 +271,17 @@ const QueueFields: React.FC<QueueFieldsProps> = ({ currentServiceQueueUuid, onQu
 
       <section className={styles.section}>
         <div className={styles.sectionTitle}>{t('service', 'Service')}</div>
+        {requestedServiceName ? (
+          <InlineNotification
+            className={styles.inlineNotification}
+            hideCloseButton
+            kind="info"
+            lowContrast
+            title={t('appointmentService', 'Servicio de la cita: {{serviceName}}', {
+              serviceName: requestedServiceName,
+            })}
+          />
+        ) : null}
         {isLoadingQueues ? (
           <SelectSkeleton />
         ) : !queues?.length ? (
@@ -204,9 +294,11 @@ const QueueFields: React.FC<QueueFieldsProps> = ({ currentServiceQueueUuid, onQu
           />
         ) : (
           <Select
+            disabled={Boolean(currentServiceQueueUuid)}
             labelText={t('selectService', 'Select a service')}
             id="service"
             name="service"
+            invalid={showValidationErrors && !selectedService}
             invalidText={t('required', 'Required')}
             value={selectedService}
             onChange={(event) => setSelectedService(event.target.value)}
@@ -251,6 +343,8 @@ const QueueFields: React.FC<QueueFieldsProps> = ({ currentServiceQueueUuid, onQu
               className={styles.radioButtonWrapper}
               name="priority"
               id="priority"
+              invalid={showValidationErrors && !priority}
+              invalidText={t('required', 'Required')}
               valueSelected={priority}
               onChange={(uuid) => setPriority(String(uuid))}
             >

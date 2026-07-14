@@ -3,7 +3,7 @@ import { getUserFacingErrorMessage, parseDate, showSnackbar, useVisit } from '@o
 import React, { useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
 
-import { startOfDay } from '../constants';
+import { getStartOfDay } from '../constants';
 import { useMutateQueueEntries } from '../hooks/useQueueEntries';
 import { type MappedQueueEntry } from '../types';
 
@@ -20,26 +20,18 @@ const RemoveQueueEntryModal: React.FC<RemoveQueueEntryModalProps> = ({ queueEntr
   const { currentVisit } = useVisit(queueEntry.patientUuid);
   const { mutateQueueEntries } = useMutateQueueEntries();
 
-  const { data: appointments } = useCheckedInAppointments(queueEntry.patientUuid, startOfDay);
+  const { data: appointments } = useCheckedInAppointments(queueEntry.patientUuid, getStartOfDay());
 
   const removeQueueEntry = useCallback(() => {
-    const endCurrentVisitPayload = {
-      location: currentVisit?.location?.uuid,
-      startDatetime: parseDate(currentVisit?.startDatetime),
-      visitType: currentVisit?.visitType?.uuid,
-      stopDatetime: new Date(),
-    };
+    const endCurrentVisitPayload = currentVisit
+      ? {
+          location: currentVisit.location?.uuid,
+          startDatetime: parseDate(currentVisit.startDatetime),
+          visitType: currentVisit.visitType?.uuid,
+        }
+      : null;
 
-    const endedAt = new Date();
-
-    endQueueEntry(
-      queueEntry.queue.uuid,
-      queueEntry.queueEntryUuid,
-      endedAt,
-      endCurrentVisitPayload,
-      queueEntry.visitUuid,
-      appointments,
-    )
+    endQueueEntry(queueEntry.queueEntryUuid, endCurrentVisitPayload, queueEntry.visitUuid, appointments)
       .then(() => {
         closeModal();
         mutateQueueEntries();
@@ -65,11 +57,8 @@ const RemoveQueueEntryModal: React.FC<RemoveQueueEntryModalProps> = ({ queueEntr
   }, [
     appointments,
     closeModal,
-    currentVisit?.location?.uuid,
-    currentVisit?.startDatetime,
-    currentVisit?.visitType?.uuid,
+    currentVisit,
     mutateQueueEntries,
-    queueEntry?.queue?.uuid,
     queueEntry?.queueEntryUuid,
     queueEntry?.visitUuid,
     t,

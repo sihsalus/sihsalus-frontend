@@ -1,48 +1,70 @@
 import { Button, ModalBody, ModalFooter, ModalHeader } from '@carbon/react';
-import { showSnackbar } from '@openmrs/esm-framework';
+import { getUserFacingErrorMessage, showSnackbar } from '@openmrs/esm-framework';
 import React, { useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { changeAppointmentStatus, usePatientAppointments } from './patient-appointments.resource';
+import { useMutateAppointments } from '../form/appointments-form.resource';
+import { canTransition } from '../helpers';
+import { AppointmentStatus } from '../types';
+import { changeAppointmentStatus, getAppointmentStatus } from './patient-appointments.resource';
 import styles from './patient-appointments-cancel.scss';
+
+const APPOINTMENT_CANCELLATION_STATUS_CONFLICT = 'APPOINTMENT_CANCELLATION_STATUS_CONFLICT';
 
 interface CancelAppointmentModalProps {
   closeCancelModal: () => void;
   appointmentUuid: string;
-  patientUuid: string;
 }
 
-const CancelAppointmentModal: React.FC<CancelAppointmentModalProps> = ({
-  closeCancelModal,
-  appointmentUuid,
-  patientUuid,
-}) => {
+const CancelAppointmentModal: React.FC<CancelAppointmentModalProps> = ({ closeCancelModal, appointmentUuid }) => {
   const { t } = useTranslation();
-  const { mutate } = usePatientAppointments(patientUuid, new Date().toUTCString(), new AbortController());
+  const { mutateAppointments } = useMutateAppointments();
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const handleCancelAppointment = async () => {
     setIsSubmitting(true);
-
-    changeAppointmentStatus('Cancelled', appointmentUuid)
-      .then(() => {
-        mutate();
-        closeCancelModal();
-        showSnackbar({
-          isLowContrast: true,
-          kind: 'success',
-          subtitle: t('appointmentCancelledSuccessfully', 'Appointment cancelled successfully'),
-          title: t('appointmentCancelled', 'Appointment cancelled'),
+    try {
+      const currentStatus = await getAppointmentStatus(appointmentUuid);
+      if (
+        currentStatus !== AppointmentStatus.CANCELLED &&
+        !canTransition(currentStatus as AppointmentStatus, AppointmentStatus.CANCELLED)
+      ) {
+        throw Object.assign(new Error('The appointment status no longer permits cancellation.'), {
+          code: APPOINTMENT_CANCELLATION_STATUS_CONFLICT,
         });
-      })
-      .catch((err) => {
-        setIsSubmitting(false);
-        showSnackbar({
-          title: t('appointmentCancelError', 'Error cancelling appointment'),
-          kind: 'error',
-          isLowContrast: true,
-          subtitle: err?.message,
-        });
+      }
+      if (currentStatus !== AppointmentStatus.CANCELLED) {
+        await changeAppointmentStatus(AppointmentStatus.CANCELLED, appointmentUuid);
+      }
+      await mutateAppointments();
+      closeCancelModal();
+      showSnackbar({
+        isLowContrast: true,
+        kind: 'success',
+        subtitle: t('appointmentCancelledSuccessfully', 'Cita cancelada correctamente.'),
+        title: t('appointmentCancelled', 'Cita cancelada'),
       });
+    } catch (error) {
+      showSnackbar({
+        title: t('appointmentCancelError', 'No se pudo cancelar la cita'),
+        kind: 'error',
+        isLowContrast: false,
+        subtitle: getUserFacingErrorMessage(
+          error,
+          t('appointmentCancellationFailed', 'No se pudo cancelar la cita. Revise su estado e intente nuevamente.'),
+          {
+            codeMessages: {
+              [APPOINTMENT_CANCELLATION_STATUS_CONFLICT]: t(
+                'appointmentCancellationStatusChanged',
+                'El estado de la cita cambió y ya no permite cancelarla. Actualice la lista.',
+              ),
+            },
+            logContext: 'Cancel appointment',
+          },
+        ),
+      });
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (

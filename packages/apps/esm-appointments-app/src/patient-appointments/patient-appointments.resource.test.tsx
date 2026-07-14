@@ -2,7 +2,13 @@ import { openmrsFetch, restBaseUrl } from '@openmrs/esm-framework';
 import { renderHook, waitFor } from '@testing-library/react';
 import React from 'react';
 import { SWRConfig } from 'swr';
-import { changeAppointmentStatus, getAppointmentStatus, usePatientAppointments } from './patient-appointments.resource';
+import {
+  APPOINTMENT_VISIT_LINK_CONFIGURATION_MISSING,
+  changeAppointmentStatus,
+  ensureAppointmentVisitLink,
+  getAppointmentStatus,
+  usePatientAppointments,
+} from './patient-appointments.resource';
 
 const mockOpenmrsFetch = vi.mocked(openmrsFetch);
 const mockFetchResponse = (data: Array<unknown>) => ({ data }) as Awaited<ReturnType<typeof openmrsFetch>>;
@@ -208,19 +214,89 @@ describe('usePatientAppointments', () => {
     expect(mockOpenmrsFetch).toHaveBeenCalledWith(`${restBaseUrl}/appointment?uuid=appointment-uuid`);
   });
 
-  it('sends an unambiguous UTC timestamp when changing status', async () => {
+  it('uses the server timestamp when changing status', async () => {
     vi.useFakeTimers();
     vi.setSystemTime(new Date('2026-07-13T15:30:00.000Z'));
+    mockOpenmrsFetch
+      .mockResolvedValueOnce({
+        data: { status: 'Scheduled' },
+        headers: new Headers({ Date: 'Tue, 14 Jul 2026 16:45:30 GMT' }),
+      } as Awaited<ReturnType<typeof openmrsFetch>>)
+      .mockResolvedValueOnce({ data: {} } as Awaited<ReturnType<typeof openmrsFetch>>);
 
     await changeAppointmentStatus('CheckedIn', 'appointment-uuid');
 
-    expect(mockOpenmrsFetch).toHaveBeenCalledWith(
+    expect(mockOpenmrsFetch).toHaveBeenNthCalledWith(1, `${restBaseUrl}/appointment?uuid=appointment-uuid`);
+    expect(mockOpenmrsFetch).toHaveBeenNthCalledWith(
+      2,
       `${restBaseUrl}/appointments/appointment-uuid/status-change`,
       expect.objectContaining({
         method: 'POST',
-        body: { toStatus: 'CheckedIn', onDate: '2026-07-13T15:30:00.000Z' },
+        body: { toStatus: 'CheckedIn', onDate: '2026-07-14T16:45:30.000Z' },
       }),
     );
     vi.useRealTimers();
+  });
+
+  it('falls back to an unambiguous client UTC timestamp when the server date is unavailable', async () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date('2026-07-13T15:30:00.250Z'));
+    mockOpenmrsFetch
+      .mockResolvedValueOnce({ data: { status: 'Scheduled' } } as Awaited<ReturnType<typeof openmrsFetch>>)
+      .mockResolvedValueOnce({ data: {} } as Awaited<ReturnType<typeof openmrsFetch>>);
+
+    await changeAppointmentStatus('CheckedIn', 'appointment-uuid');
+
+    expect(mockOpenmrsFetch).toHaveBeenNthCalledWith(
+      2,
+      `${restBaseUrl}/appointments/appointment-uuid/status-change`,
+      expect.objectContaining({
+        body: { toStatus: 'CheckedIn', onDate: '2026-07-13T15:30:00.250Z' },
+      }),
+    );
+    vi.useRealTimers();
+  });
+
+  it('reuses an existing appointment link on the visit', async () => {
+    mockOpenmrsFetch.mockResolvedValueOnce({
+      data: {
+        attributes: [
+          {
+            attributeType: { uuid: 'appointment-link-type' },
+            value: 'appointment-uuid',
+          },
+        ],
+      },
+    } as Awaited<ReturnType<typeof openmrsFetch>>);
+
+    await expect(
+      ensureAppointmentVisitLink('visit-uuid', 'appointment-uuid', 'appointment-link-type'),
+    ).resolves.toEqual({ created: false });
+    expect(mockOpenmrsFetch).toHaveBeenCalledTimes(1);
+  });
+
+  it('creates a missing appointment link on an active visit', async () => {
+    mockOpenmrsFetch
+      .mockResolvedValueOnce({ data: { attributes: [] } } as Awaited<ReturnType<typeof openmrsFetch>>)
+      .mockResolvedValueOnce({ data: { uuid: 'attribute-uuid' } } as Awaited<ReturnType<typeof openmrsFetch>>);
+
+    await expect(
+      ensureAppointmentVisitLink('visit-uuid', 'appointment-uuid', 'appointment-link-type'),
+    ).resolves.toMatchObject({ created: true });
+    expect(mockOpenmrsFetch).toHaveBeenNthCalledWith(
+      2,
+      `${restBaseUrl}/visit/visit-uuid/attribute`,
+      expect.objectContaining({
+        method: 'POST',
+        body: { attributeType: 'appointment-link-type', value: 'appointment-uuid' },
+      }),
+    );
+  });
+
+  it('fails before writing when the appointment visit link is not configured', async () => {
+    const error = await ensureAppointmentVisitLink('visit-uuid', 'appointment-uuid', '').catch((reason) => reason);
+
+    expect(error.code).toBe(APPOINTMENT_VISIT_LINK_CONFIGURATION_MISSING);
+    expect(mockOpenmrsFetch).not.toHaveBeenCalled();
   });
 });

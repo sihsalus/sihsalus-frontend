@@ -7,7 +7,7 @@ import { useQueueEntry } from '../hooks/useQueueEntry';
 import { useQueues } from '../hooks/useQueues';
 import { useUserFacingErrorMessage } from '../hooks/useUserFacingErrorMessage';
 import { type QueueEntry } from '../types';
-import { updateQueueEntry } from './queue-entry-actions.resource';
+import { updateActiveQueueEntry } from './queue-entry-actions.resource';
 import QueueEntryActionModal from './queue-entry-actions-modal.component';
 import { convertTime12to24 } from './time-helpers';
 
@@ -122,7 +122,7 @@ const EditQueueEntryModal: React.FC<EditQueueEntryModalProps> = ({ queueEntry, c
           const [hour, minute] = convertTime12to24(formState.transitionTime, formState.transitionTimeFormat);
           startAtDate.setHours(hour, minute, 0, 0);
 
-          return updateQueueEntry(queueEntry.uuid, {
+          return updateActiveQueueEntry(queueEntry.uuid, {
             status: statuses.find((s) => s.uuid === formState.selectedStatus),
             priority: priorities.find((p) => p.uuid === formState.selectedPriority),
             priorityComment: formState.priorityComment,
@@ -131,7 +131,7 @@ const EditQueueEntryModal: React.FC<EditQueueEntryModalProps> = ({ queueEntry, c
         },
         disableSubmit: () => false,
         isEdit: true,
-        showQueuePicker: true,
+        showQueuePicker: false,
         showStatusPicker: true,
       }}
     />

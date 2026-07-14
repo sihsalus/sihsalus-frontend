@@ -1,6 +1,8 @@
 {
   "$schema": "https://json.openmrs.org/routes.schema.json",
   "backendDependencies": {
+    "appointments": ">=2.1.0",
+    "queue": ">=3.0.0",
     "webservices.rest": ">=2.2.0"
   },
   "extensions": [
@@ -122,10 +124,22 @@
     {
       "name": "end-appointment-modal",
       "component": "endAppointmentModal",
-      "privileges": "app:home.citas.editar"
+      "privileges": [
+        "app:home.citas.editar",
+        "Get Visits",
+        "Edit Visits",
+        "Get Queue Entries",
+        "Get Queues",
+        "Manage Queue Entries"
+      ]
     },
     {
       "name": "cancel-appointment-modal",
+      "component": "cancelAppointmentModal",
+      "privileges": "app:home.citas.editar"
+    },
+    {
+      "name": "patient-chart-cancel-appointment-modal",
       "component": "cancelAppointmentModal",
       "privileges": "app:hoja.clinica.citas.editar"
     }
@@ -141,6 +155,11 @@
       "name": "appointments-window",
       "group": "appointments-group",
       "width": "wider"
+    },
+    {
+      "name": "patient-chart-appointments-window",
+      "group": "patient-chart",
+      "width": "wider"
     }
   ],
   "workspaces2": [
@@ -148,7 +167,13 @@
       "name": "appointments-form-workspace",
       "component": "appointmentsFormWorkspace",
       "window": "appointments-window",
-      "privileges": "app:home.citas"
+      "privileges": "app:home.citas.editar"
+    },
+    {
+      "name": "patient-chart-appointments-form-workspace",
+      "component": "appointmentsFormWorkspace",
+      "window": "patient-chart-appointments-window",
+      "privileges": "app:hoja.clinica.citas.editar"
     },
     {
       "name": "appointments-patient-search-workspace",
@@ -160,7 +185,36 @@
       "name": "appointments-start-visit-workspace",
       "component": "@sihsalus/esm-patient-chart-app#startVisitWorkspace",
       "window": "appointments-window",
-      "privileges": "app:home.citas.editar"
+      "privileges": [
+        "app:home.citas.editar",
+        "Get Patients",
+        "Get Locations",
+        "Get Visits",
+        "Add Visits",
+        "Edit Visits",
+        "Get Visit Types",
+        "Get Visit Attribute Types",
+        "Get Queue Entries",
+        "Get Queues",
+        "Manage Queue Entries"
+      ]
+    },
+    {
+      "name": "appointments-add-active-visit-to-queue-workspace",
+      "component": "@sihsalus/esm-service-queues-app#createQueueEntryWorkspace2",
+      "window": "appointments-window",
+      "privileges": [
+        "app:home.citas.editar",
+        "Get Patients",
+        "Get Locations",
+        "Get Visits",
+        "Edit Visits",
+        "Get Visit Types",
+        "Get Visit Attribute Types",
+        "Get Queue Entries",
+        "Get Queues",
+        "Manage Queue Entries"
+      ]
     }
   ]
 }

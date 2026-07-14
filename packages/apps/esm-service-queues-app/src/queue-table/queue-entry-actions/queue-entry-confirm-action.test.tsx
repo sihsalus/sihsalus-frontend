@@ -100,9 +100,16 @@ describe('EndQueueEntryModal', () => {
   });
 
   it('has an working submit button', async () => {
-    mockOpenmrsFetch.mockResolvedValue({
-      status: 200,
-    } as unknown as FetchResponse);
+    mockOpenmrsFetch
+      .mockResolvedValueOnce({
+        data: { ...queueEntry, endedAt: null },
+        headers: new Headers({ Date: 'Tue, 14 Jul 2026 13:20:00 GMT' }),
+        status: 200,
+      } as unknown as FetchResponse)
+      .mockResolvedValueOnce({
+        data: { ...queueEntry, endedAt: '2026-07-14T13:20:00.000Z' },
+        status: 200,
+      } as unknown as FetchResponse);
 
     const user = userEvent.setup();
 

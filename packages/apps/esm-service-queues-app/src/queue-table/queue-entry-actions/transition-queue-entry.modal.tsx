@@ -4,7 +4,7 @@ import { useTranslation } from 'react-i18next';
 import { type QueueEntry } from '../../types';
 
 import QueueEntryActionModal from './queue-entry-actions.modal';
-import { transitionQueueEntry } from './queue-entry-actions.resource';
+import { isQueueEntryTransitionUnchanged, transitionQueueEntry } from './queue-entry-actions.resource';
 
 interface TransitionQueueEntryModalProps {
   queueEntry: QueueEntry;
@@ -41,7 +41,10 @@ const TransitionQueueEntryModal: React.FC<TransitionQueueEntryModalProps> = ({
             newPriorityComment: formState.prioritycomment,
           }),
         disableSubmit: (queueEntry, formState) =>
-          formState.selectedQueue === queueEntry.queue.uuid && formState.selectedStatus === queueEntry.status.uuid,
+          isQueueEntryTransitionUnchanged(queueEntry, {
+            ...formState,
+            priorityComment: formState.prioritycomment,
+          }),
         isTransition: true,
       }}
     />

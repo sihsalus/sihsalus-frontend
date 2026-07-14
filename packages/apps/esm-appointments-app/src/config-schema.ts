@@ -1,4 +1,4 @@
-import { Type, validators } from '@openmrs/esm-framework';
+import { Type, validator, validators } from '@openmrs/esm-framework';
 
 const patientChartUrlPlaceholder = `\${openmrsSpaBase}/patient/\${patientUuid}/chart`;
 
@@ -11,7 +11,7 @@ export const configSchema = {
   appointmentStatuses: {
     _type: Type.Array,
     _description: 'Configurable appointment status (status of appointments)',
-    _default: ['Requested', 'WaitList', 'Scheduled', 'Arrived', 'CheckedIn', 'Completed', 'Cancelled', 'Missed'],
+    _default: ['Requested', 'Scheduled', 'CheckedIn', 'Completed', 'Cancelled', 'Missed'],
   },
   // TODO(SIHSALUS): move the MINSA appointment entry-condition catalog to a shared frontend/backend contract.
   // Frontend should only render labels; backend should own validation, persistence values, and migrations.
@@ -20,6 +20,44 @@ export const configSchema = {
     _description:
       'Configurable appointment types for rendering. Values are sent to the backend as appointment kinds (Scheduled, WalkIn, Virtual).',
     _default: ['Scheduled', 'WalkIn', 'Virtual'],
+  },
+  appointmentVisitAttributeTypeUuid: {
+    _type: Type.UUID,
+    _description: 'Visit attribute type used to persist the originating appointment UUID on an OpenMRS visit',
+    _default: '193508ab-20c6-5291-9f23-0257335eaabd',
+  },
+  appointmentQueueMappings: {
+    _type: Type.Array,
+    _description:
+      'Exact mappings from appointment service and location UUIDs to a queue and queue location. Unmapped services require manual queue selection.',
+    _default: [],
+    _elements: {
+      _validators: [
+        validator(
+          (mapping: Record<string, unknown>) =>
+            [
+              'appointmentServiceUuid',
+              'appointmentLocationUuid',
+              'queueUuid',
+              'queueLocationUuid',
+              'requiredVisitTypeUuid',
+            ].every((field) => {
+              const value = mapping?.[field];
+              return typeof value === 'string' && value.trim().length > 0;
+            }),
+          'Each appointment queue mapping must define service, appointment location, queue, queue location, and required visit type UUIDs.',
+        ),
+      ],
+      appointmentServiceUuid: { _type: Type.UUID },
+      appointmentLocationUuid: { _type: Type.UUID },
+      queueUuid: { _type: Type.UUID },
+      queueLocationUuid: { _type: Type.UUID },
+      requiredVisitTypeUuid: { _type: Type.UUID },
+      compatibleActiveVisitTypeUuids: {
+        _type: Type.Array,
+        _elements: { _type: Type.UUID },
+      },
+    },
   },
   checkInButton: {
     enabled: {
@@ -80,6 +118,15 @@ export interface ConfigObject {
   allowAllDayAppointments: boolean;
   appointmentStatuses: Array<string>;
   appointmentTypes: Array<string>;
+  appointmentVisitAttributeTypeUuid: string;
+  appointmentQueueMappings: Array<{
+    appointmentServiceUuid: string;
+    appointmentLocationUuid: string;
+    queueUuid: string;
+    queueLocationUuid: string;
+    requiredVisitTypeUuid: string;
+    compatibleActiveVisitTypeUuids?: Array<string>;
+  }>;
   checkInButton: {
     enabled: boolean;
     showIfActiveVisit: boolean;

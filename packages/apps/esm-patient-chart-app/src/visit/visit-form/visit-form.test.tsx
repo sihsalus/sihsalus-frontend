@@ -7,6 +7,7 @@ import {
   showSnackbar,
   updateVisit,
   useConfig,
+  useConnectivity,
   useLocations,
   usePatient,
   userHasAccess,
@@ -14,7 +15,8 @@ import {
   useVisitTypes,
   type Visit,
 } from '@openmrs/esm-framework';
-import { fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { createOfflineVisitForPatient } from '@openmrs/esm-patient-common-lib';
+import { act, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import dayjs from 'dayjs';
 import React from 'react';
@@ -27,6 +29,8 @@ import { useVisitAttributeType } from '../hooks/useVisitAttributeType';
 import {
   createVisitAttribute,
   deleteVisitAttribute,
+  getVisitAttributes,
+  reconcileVisitCreation,
   updateVisitAttribute,
   usePersonAttributesForVisitDefaults,
   useVisitFormCallbacks,
@@ -184,6 +188,7 @@ const mockSaveVisit = vi.mocked(saveVisit);
 const mockUpdateVisit = vi.mocked(updateVisit);
 const mockExtensionSlot = vi.mocked(ExtensionSlot);
 const mockUseConfig = vi.mocked(useConfig<ChartConfig>);
+const mockUseConnectivity = vi.mocked(useConnectivity);
 const mockUseSession = vi.mocked(useSession);
 const mockUserHasAccess = vi.mocked(userHasAccess);
 const mockUseVisitAttributeType = vi.mocked(useVisitAttributeType);
@@ -195,18 +200,23 @@ const mockFhirPatient = mockPatient as unknown as fhir.Patient;
 
 // from ./visit-form.resource
 const mockOnVisitCreatedOrUpdatedCallback = vi.fn();
-vi.mocked(useVisitFormCallbacks).mockReturnValue([
+const mockUseVisitFormCallbacks = vi.mocked(useVisitFormCallbacks);
+mockUseVisitFormCallbacks.mockReturnValue([
   new Map([['test-extension-id', { onVisitCreatedOrUpdated: mockOnVisitCreatedOrUpdatedCallback }]]), // visitFormCallbacks
   vi.fn(), // setVisitFormCallbacks
 ]);
 const mockCreateVisitAttribute = vi.mocked(createVisitAttribute).mockResolvedValue({} as unknown as FetchResponse);
 const mockUpdateVisitAttribute = vi.mocked(updateVisitAttribute).mockResolvedValue({} as unknown as FetchResponse);
 const mockDeleteVisitAttribute = vi.mocked(deleteVisitAttribute).mockResolvedValue({} as unknown as FetchResponse);
+const mockGetVisitAttributes = vi.mocked(getVisitAttributes);
+const mockReconcileVisitCreation = vi.mocked(reconcileVisitCreation);
+const mockCreateOfflineVisitForPatient = vi.mocked(createOfflineVisitForPatient);
 const mockUsePersonAttributesForVisitDefaults = vi.mocked(usePersonAttributesForVisitDefaults);
 const mockUseVisitProvenanceAddressOptions = vi.mocked(useVisitProvenanceAddressOptions);
 
 vi.mock('@openmrs/esm-patient-common-lib', async () => ({
   ...(await vi.importActual('@openmrs/esm-patient-common-lib')),
+  createOfflineVisitForPatient: vi.fn(),
   useActivePatientEnrollment: vi.fn().mockReturnValue({
     activePatientEnrollment: [],
     isLoading: false,
@@ -306,6 +316,8 @@ vi.mock('./visit-form.resource', async () => {
     createVisitAttribute: vi.fn(),
     updateVisitAttribute: vi.fn(),
     deleteVisitAttribute: vi.fn(),
+    getVisitAttributes: vi.fn(),
+    reconcileVisitCreation: vi.fn(),
   };
 });
 
@@ -334,6 +346,17 @@ mockSaveVisit.mockResolvedValue({
 describe('Visit form', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    mockUseVisitFormCallbacks.mockReturnValue([
+      new Map([['test-extension-id', { onVisitCreatedOrUpdated: mockOnVisitCreatedOrUpdatedCallback }]]),
+      vi.fn(),
+    ]);
+    mockCreateVisitAttribute.mockResolvedValue({} as unknown as FetchResponse);
+    mockUpdateVisitAttribute.mockResolvedValue({} as unknown as FetchResponse);
+    mockDeleteVisitAttribute.mockResolvedValue({} as unknown as FetchResponse);
+    mockGetVisitAttributes.mockResolvedValue([]);
+    mockReconcileVisitCreation.mockResolvedValue(null);
+    mockUseConnectivity.mockReturnValue(true);
+    mockOnVisitCreatedOrUpdatedCallback.mockResolvedValue(undefined);
     mockUseSession.mockReturnValue({
       user: {
         privileges: [{ display: 'app:home.admision' }],
@@ -574,7 +597,7 @@ describe('Visit form', () => {
     });
   });
 
-  it('reports no unsaved changes after a successful save while post-save callbacks are pending', async () => {
+  it('keeps the workspace protected while post-save callbacks are pending', async () => {
     const user = userEvent.setup();
     let resolveCallback = () => {};
     const pendingCallback = new Promise<void>((resolve) => {
@@ -594,10 +617,429 @@ describe('Visit form', () => {
     await waitFor(() => expect(mockSaveVisit).toHaveBeenCalledTimes(1));
     await waitFor(() => {
       const lastPromptPredicate = mockPromptBeforeClosing.mock.lastCall?.[0] as (() => boolean) | undefined;
-      expect(lastPromptPredicate?.()).toBe(false);
+      expect(lastPromptPredicate?.()).toBe(true);
     });
 
-    resolveCallback();
+    await act(async () => resolveCallback());
+    await waitFor(() => expect(mockCloseWorkspace).toHaveBeenCalled());
+  });
+
+  it('does not create an appointment check-in visit when the queue callback is unavailable', async () => {
+    const user = userEvent.setup();
+    mockUseVisitFormCallbacks.mockReturnValueOnce([new Map(), vi.fn()]);
+    render(React.createElement(StartVisitForm, { ...testProps, openedFrom: 'appointments-check-in' }));
+
+    await selectVisitType(user);
+    await user.selectOptions(screen.getByRole('combobox', { name: /Select a location/i }), 'Inpatient Ward');
+    await user.click(screen.getByRole('button', { name: /Start visit/i }));
+
+    expect(mockSaveVisit).not.toHaveBeenCalled();
+    expect(showSnackbar).toHaveBeenCalledWith(
+      expect.objectContaining({
+        kind: 'error',
+        title: 'No se puede registrar la cola',
+      }),
+    );
+  });
+
+  it('fails closed when appointment admission is attempted offline', async () => {
+    const user = userEvent.setup();
+    const queuePreSave = vi.fn().mockReturnValue(true);
+    const queueCallback = vi.fn();
+    mockUseConnectivity.mockReturnValue(false);
+    mockUseVisitFormCallbacks.mockReturnValue([
+      new Map([
+        [
+          'queue-extension',
+          {
+            kind: 'queue-entry',
+            onBeforeVisitSave: queuePreSave,
+            onVisitCreatedOrUpdated: queueCallback,
+          },
+        ],
+      ]),
+      vi.fn(),
+    ]);
+    render(React.createElement(StartVisitForm, { ...testProps, openedFrom: 'appointments-check-in' }));
+
+    await user.selectOptions(screen.getByRole('combobox', { name: /Select a location/i }), 'Inpatient Ward');
+    await user.click(screen.getByRole('button', { name: /Start visit/i }));
+
+    expect(mockSaveVisit).not.toHaveBeenCalled();
+    expect(mockCreateOfflineVisitForPatient).not.toHaveBeenCalled();
+    expect(queuePreSave).not.toHaveBeenCalled();
+    expect(queueCallback).not.toHaveBeenCalled();
+    expect(showSnackbar).toHaveBeenCalledWith(
+      expect.objectContaining({
+        kind: 'error',
+        title: 'No se puede registrar la atención sin conexión',
+      }),
+    );
+  });
+
+  it('continues admission with the uniquely correlated visit when the create response is lost', async () => {
+    const user = userEvent.setup();
+    const correlation = {
+      attributeType: 'appointment-visit-attribute-type',
+      value: 'appointment-uuid',
+    };
+    const requiredVisitLocation = {
+      uuid: mockLocations.data.results[1].uuid,
+      display: mockLocations.data.results[1].display ?? 'Inpatient Ward',
+    };
+    const recoveredVisit = {
+      uuid: 'recovered-visit-uuid',
+      patient: { uuid: mockPatient.id },
+      location: requiredVisitLocation,
+      visitType: { uuid: 'some-uuid2', display: 'HIV Return Visit' },
+      startDatetime: new Date().toISOString(),
+      stopDatetime: null,
+      attributes: [
+        {
+          attributeType: { uuid: correlation.attributeType },
+          value: correlation.value,
+        },
+      ],
+    } as unknown as Visit;
+    const queueCallback = vi.fn().mockResolvedValue(undefined);
+    const appointmentCallback = vi.fn().mockResolvedValue(undefined);
+    mockSaveVisit.mockRejectedValueOnce(new Error('connection closed after commit'));
+    mockReconcileVisitCreation.mockResolvedValueOnce(recoveredVisit);
+    mockUseVisitFormCallbacks.mockReturnValue([
+      new Map([
+        [
+          'queue-extension',
+          {
+            kind: 'queue-entry',
+            onBeforeVisitSave: () => true,
+            onVisitCreatedOrUpdated: queueCallback,
+          },
+        ],
+      ]),
+      vi.fn(),
+    ]);
+    render(
+      React.createElement(StartVisitForm, {
+        ...testProps,
+        additionalVisitAttributes: [correlation],
+        openedFrom: 'appointments-check-in',
+        onVisitStarted: appointmentCallback,
+        requiredVisitLocation,
+        requiredVisitTypeUuid: 'some-uuid2',
+        visitPersistenceCorrelation: correlation,
+      }),
+    );
+
+    await user.click(screen.getByRole('button', { name: /Start visit/i }));
+
+    await waitFor(() => expect(mockCloseWorkspace).toHaveBeenCalled());
+    expect(mockSaveVisit).toHaveBeenCalledTimes(1);
+    expect(mockReconcileVisitCreation).toHaveBeenCalledWith(
+      mockPatient.id,
+      expect.objectContaining({
+        attributes: [correlation],
+        location: requiredVisitLocation.uuid,
+        visitType: 'some-uuid2',
+      }),
+      correlation,
+    );
+    expect(queueCallback).toHaveBeenCalledWith(recoveredVisit);
+    expect(appointmentCallback).toHaveBeenCalledWith(recoveredVisit);
+  });
+
+  it('reconciles an unknown create result before retrying and never posts a second visit', async () => {
+    const user = userEvent.setup();
+    const correlation = {
+      attributeType: 'appointment-visit-attribute-type',
+      value: 'appointment-uuid',
+    };
+    const requiredVisitLocation = {
+      uuid: mockLocations.data.results[1].uuid,
+      display: mockLocations.data.results[1].display ?? 'Inpatient Ward',
+    };
+    const recoveredVisit = {
+      uuid: 'recovered-after-retry',
+      patient: { uuid: mockPatient.id },
+      location: requiredVisitLocation,
+      visitType: { uuid: 'some-uuid2', display: 'HIV Return Visit' },
+      startDatetime: new Date().toISOString(),
+      stopDatetime: null,
+      attributes: [],
+    } as unknown as Visit;
+    const queueCallback = vi.fn().mockResolvedValue(undefined);
+    mockSaveVisit.mockRejectedValueOnce(new Error('connection closed after commit'));
+    mockReconcileVisitCreation.mockResolvedValueOnce(null).mockResolvedValueOnce(recoveredVisit);
+    mockUseVisitFormCallbacks.mockReturnValue([
+      new Map([
+        [
+          'queue-extension',
+          {
+            kind: 'queue-entry',
+            onBeforeVisitSave: () => true,
+            onVisitCreatedOrUpdated: queueCallback,
+          },
+        ],
+      ]),
+      vi.fn(),
+    ]);
+    render(
+      React.createElement(StartVisitForm, {
+        ...testProps,
+        additionalVisitAttributes: [correlation],
+        openedFrom: 'appointments-check-in',
+        requiredVisitLocation,
+        requiredVisitTypeUuid: 'some-uuid2',
+        visitPersistenceCorrelation: correlation,
+      }),
+    );
+
+    await user.click(screen.getByRole('button', { name: /Start visit/i }));
+    const retryButton = await screen.findByRole('button', { name: /Reintentar registro|Retry registration/i });
+    expect(screen.queryByRole('combobox', { name: /Select a location/i })).not.toBeInTheDocument();
+    expect(mockSaveVisit).toHaveBeenCalledTimes(1);
+
+    await user.click(retryButton);
+
+    await waitFor(() => expect(mockCloseWorkspace).toHaveBeenCalled());
+    expect(mockReconcileVisitCreation).toHaveBeenCalledTimes(2);
+    expect(mockSaveVisit).toHaveBeenCalledTimes(1);
+    expect(queueCallback).toHaveBeenCalledWith(recoveredVisit);
+  });
+
+  it('keeps reconciling an unknown create result without posting again when the visit is still not visible', async () => {
+    const user = userEvent.setup();
+    const correlation = {
+      attributeType: 'appointment-visit-attribute-type',
+      value: 'appointment-uuid',
+    };
+    const requiredVisitLocation = {
+      uuid: mockLocations.data.results[1].uuid,
+      display: mockLocations.data.results[1].display ?? 'Inpatient Ward',
+    };
+    mockSaveVisit.mockRejectedValueOnce(Object.assign(new Error('request timed out'), { status: 408 }));
+    mockReconcileVisitCreation.mockResolvedValue(null);
+    mockUseVisitFormCallbacks.mockReturnValue([
+      new Map([
+        [
+          'queue-extension',
+          {
+            kind: 'queue-entry',
+            onBeforeVisitSave: () => true,
+            onVisitCreatedOrUpdated: vi.fn().mockResolvedValue(undefined),
+          },
+        ],
+      ]),
+      vi.fn(),
+    ]);
+    render(
+      React.createElement(StartVisitForm, {
+        ...testProps,
+        additionalVisitAttributes: [correlation],
+        openedFrom: 'appointments-check-in',
+        requiredVisitLocation,
+        requiredVisitTypeUuid: 'some-uuid2',
+        visitPersistenceCorrelation: correlation,
+      }),
+    );
+
+    await user.click(screen.getByRole('button', { name: /Start visit/i }));
+    const retryButton = await screen.findByRole('button', { name: /Reintentar registro|Retry registration/i });
+    expect(mockSaveVisit).toHaveBeenCalledTimes(1);
+
+    await user.click(retryButton);
+
+    await waitFor(() => expect(mockReconcileVisitCreation).toHaveBeenCalledTimes(2));
+    expect(mockSaveVisit).toHaveBeenCalledTimes(1);
+    expect(mockCloseWorkspace).not.toHaveBeenCalled();
+    expect(screen.getByRole('button', { name: /Reintentar registro|Retry registration/i })).toBeInTheDocument();
+    expect(mockPromptBeforeClosing.mock.calls.at(-1)?.[0]()).toBe(true);
+  });
+
+  it('uses a stable technical token to reconcile an ambiguous service queue visit creation', async () => {
+    const user = userEvent.setup();
+    const tokenAttributeType = 'visit-persistence-token-type';
+    const requiredVisitLocation = {
+      uuid: mockLocations.data.results[1].uuid,
+      display: mockLocations.data.results[1].display ?? 'Inpatient Ward',
+    };
+    const recoveredVisit = {
+      uuid: 'queue-recovered-visit',
+      patient: { uuid: mockPatient.id },
+      location: requiredVisitLocation,
+      visitType: { uuid: 'some-uuid2', display: 'HIV Return Visit' },
+      startDatetime: new Date().toISOString(),
+      stopDatetime: null,
+      attributes: [],
+    } as unknown as Visit;
+    const queueCallback = vi.fn().mockResolvedValue(undefined);
+    mockUseConfig.mockReturnValue({
+      ...getDefaultsFromConfigSchema(esmPatientChartSchema),
+      visitAttributeTypes: [],
+      visitPersistenceTokenAttributeTypeUuid: tokenAttributeType,
+    });
+    mockSaveVisit.mockRejectedValueOnce(new Error('connection closed after commit'));
+    mockReconcileVisitCreation.mockResolvedValueOnce(recoveredVisit);
+    mockUseVisitFormCallbacks.mockReturnValue([
+      new Map([
+        [
+          'queue-extension',
+          {
+            kind: 'queue-entry',
+            onBeforeVisitSave: () => true,
+            onVisitCreatedOrUpdated: queueCallback,
+          },
+        ],
+      ]),
+      vi.fn(),
+    ]);
+    render(
+      React.createElement(StartVisitForm, {
+        ...testProps,
+        openedFrom: 'service-queues-add-patient',
+        requiredVisitLocation,
+        requiredVisitTypeUuid: 'some-uuid2',
+      }),
+    );
+
+    await user.click(screen.getByRole('button', { name: /Start visit/i }));
+
+    await waitFor(() => expect(mockCloseWorkspace).toHaveBeenCalled());
+    const savedPayload = mockSaveVisit.mock.calls[0][0];
+    const token = savedPayload.attributes?.find((attribute) => attribute.attributeType === tokenAttributeType);
+    expect(token).toEqual({
+      attributeType: tokenAttributeType,
+      value: expect.stringMatching(/^[0-9a-f-]{36}$/),
+    });
+    expect(mockReconcileVisitCreation).toHaveBeenCalledWith(mockPatient.id, savedPayload, token);
+    expect(queueCallback).toHaveBeenCalledWith(recoveredVisit);
+    expect(mockSaveVisit).toHaveBeenCalledTimes(1);
+  });
+
+  it('retries a failed queue callback without creating another visit', async () => {
+    const user = userEvent.setup();
+    const queueCallback = vi
+      .fn()
+      .mockRejectedValueOnce(new Error('queue write failed'))
+      .mockResolvedValueOnce(undefined);
+    const appointmentCallback = vi.fn().mockResolvedValue(undefined);
+    mockUseVisitFormCallbacks.mockReturnValue([
+      new Map([
+        [
+          'queue-extension',
+          {
+            kind: 'queue-entry',
+            onBeforeVisitSave: () => true,
+            onVisitCreatedOrUpdated: queueCallback,
+          },
+        ],
+      ]),
+      vi.fn(),
+    ]);
+    render(
+      React.createElement(StartVisitForm, {
+        ...testProps,
+        openedFrom: 'appointments-check-in',
+        onVisitStarted: appointmentCallback,
+      }),
+    );
+
+    await selectVisitType(user);
+    await user.selectOptions(screen.getByRole('combobox', { name: /Select a location/i }), 'Inpatient Ward');
+    await user.click(screen.getByRole('button', { name: /Start visit/i }));
+
+    const retryButton = await screen.findByRole('button', { name: /Reintentar registro|Retry registration/i });
+    expect(screen.getByRole('combobox', { name: /Select a location/i })).toBeDisabled();
+    expect(mockSaveVisit).toHaveBeenCalledTimes(1);
+    expect(queueCallback).toHaveBeenCalledTimes(1);
+    expect(appointmentCallback).not.toHaveBeenCalled();
+
+    await user.click(retryButton);
+    await waitFor(() => expect(mockCloseWorkspace).toHaveBeenCalled());
+
+    expect(mockSaveVisit).toHaveBeenCalledTimes(1);
+    expect(queueCallback).toHaveBeenCalledTimes(2);
+    expect(appointmentCallback).toHaveBeenCalledTimes(1);
+    expect(queueCallback.mock.invocationCallOrder[1]).toBeLessThan(appointmentCallback.mock.invocationCallOrder[0]);
+  });
+
+  it('does not revalidate or rewrite a persisted queue entry when a later appointment callback is retried', async () => {
+    const user = userEvent.setup();
+    const queuePreSave = vi.fn().mockReturnValue(true);
+    const queueCallback = vi.fn().mockResolvedValue(undefined);
+    const appointmentCallback = vi
+      .fn()
+      .mockRejectedValueOnce(new Error('appointment status write failed'))
+      .mockResolvedValueOnce(undefined);
+    mockUseVisitFormCallbacks.mockReturnValue([
+      new Map([
+        [
+          'queue-extension',
+          {
+            kind: 'queue-entry',
+            onBeforeVisitSave: queuePreSave,
+            onVisitCreatedOrUpdated: queueCallback,
+          },
+        ],
+      ]),
+      vi.fn(),
+    ]);
+    render(
+      React.createElement(StartVisitForm, {
+        ...testProps,
+        openedFrom: 'appointments-check-in',
+        onVisitStarted: appointmentCallback,
+      }),
+    );
+
+    await selectVisitType(user);
+    await user.selectOptions(screen.getByRole('combobox', { name: /Select a location/i }), 'Inpatient Ward');
+    await user.click(screen.getByRole('button', { name: /Start visit/i }));
+
+    const retryButton = await screen.findByRole('button', { name: /Reintentar registro|Retry registration/i });
+    expect(mockSaveVisit).toHaveBeenCalledTimes(1);
+    expect(queuePreSave).toHaveBeenCalledTimes(1);
+    expect(queueCallback).toHaveBeenCalledTimes(1);
+    expect(appointmentCallback).toHaveBeenCalledTimes(1);
+
+    queuePreSave.mockReturnValue(false);
+    await user.click(retryButton);
+    await waitFor(() => expect(mockCloseWorkspace).toHaveBeenCalled());
+
+    expect(mockSaveVisit).toHaveBeenCalledTimes(1);
+    expect(queuePreSave).toHaveBeenCalledTimes(1);
+    expect(queueCallback).toHaveBeenCalledTimes(1);
+    expect(appointmentCallback).toHaveBeenCalledTimes(2);
+  });
+
+  it('persists the appointment-mapped visit location and type without allowing them to be changed', async () => {
+    const user = userEvent.setup();
+    const requiredVisitLocation = {
+      uuid: mockLocations.data.results[1].uuid,
+      display: mockLocations.data.results[1].display ?? 'Inpatient Ward',
+    };
+
+    render(
+      React.createElement(StartVisitForm, {
+        ...testProps,
+        requiredVisitLocation,
+        requiredVisitTypeUuid: 'some-uuid2',
+      }),
+    );
+
+    expect(screen.queryByRole('combobox', { name: /Select a location/i })).not.toBeInTheDocument();
+    expect(screen.getByText(requiredVisitLocation.display)).toBeInTheDocument();
+    expect(screen.getByText('HIV Return Visit')).toBeInTheDocument();
+
+    await user.click(screen.getByRole('button', { name: /Start visit/i }));
+
+    expect(mockSaveVisit).toHaveBeenCalledWith(
+      expect.objectContaining({
+        location: requiredVisitLocation.uuid,
+        patient: mockPatient.id,
+        visitType: 'some-uuid2',
+      }),
+      expect.any(Object),
+    );
   });
 
   it('starts a new visit with attributes upon successful submission of the form', async () => {
@@ -1174,7 +1616,7 @@ describe('Visit form', () => {
     expect(showSnackbar).toHaveBeenCalledWith(
       expect.objectContaining({
         kind: 'error',
-        title: 'Error starting visit',
+        title: 'No se pudo iniciar la consulta',
       }),
     );
 
@@ -1213,28 +1655,81 @@ describe('Visit form', () => {
 
     await user.click(saveButton);
 
-    expect(showSnackbar).toHaveBeenCalledTimes(3);
+    expect(showSnackbar).toHaveBeenCalledTimes(2);
     expect(showSnackbar).toHaveBeenCalledWith({
-      isLowContrast: true,
-      subtitle: expect.stringContaining('started successfully'),
-      kind: 'success',
-      title: 'Visit started',
+      isLowContrast: false,
+      subtitle: 'No se pudo guardar el atributo de la consulta. Intente nuevamente.',
+      kind: 'error',
+      title: 'No se pudo crear el atributo Punctuality',
     });
     expect(showSnackbar).toHaveBeenCalledWith({
       isLowContrast: false,
-      subtitle: undefined,
+      subtitle: 'La consulta ya fue guardada. Pulse Reintentar para completar el registro; no inicie otra consulta.',
       kind: 'error',
-      title: 'Error creating the Punctuality visit attribute',
-    });
-    expect(showSnackbar).toHaveBeenCalledWith({
-      isLowContrast: false,
-      subtitle: undefined,
-      kind: 'error',
-      title: 'Error creating the Insurance Policy Number visit attribute',
+      title: 'Consulta iniciada con acciones pendientes',
     });
 
-    expect(mockOnVisitCreatedOrUpdatedCallback).toHaveBeenCalled();
+    expect(mockOnVisitCreatedOrUpdatedCallback).not.toHaveBeenCalled();
     expect(mockCloseWorkspace).not.toHaveBeenCalled();
+  });
+
+  it('retries only the visit attribute that failed and does not create a second visit', async () => {
+    const user = userEvent.setup();
+    let insuranceAttempts = 0;
+    mockCreateVisitAttribute.mockImplementation((_visitUuid, attributeType) => {
+      if (attributeType === visitAttributes.insurancePolicyNumber.uuid && insuranceAttempts++ === 0) {
+        return Promise.reject(new Error('database detail that must only be logged'));
+      }
+      return Promise.resolve({} as unknown as FetchResponse);
+    });
+
+    renderVisitForm();
+    await selectVisitType(user);
+    await user.selectOptions(screen.getByRole('combobox', { name: /Select a location/i }), 'Inpatient Ward');
+    await user.selectOptions(screen.getByRole('combobox', { name: 'Punctuality (optional)' }), 'On time');
+    const insuranceNumberInput = screen.getByRole('textbox', { name: 'Insurance Policy Number (optional)' });
+    await user.clear(insuranceNumberInput);
+    await user.type(insuranceNumberInput, '183299');
+
+    await user.click(screen.getByRole('button', { name: /Start Visit/i }));
+    const retryButton = await screen.findByRole('button', { name: /Reintentar registro|Retry registration/i });
+    await user.click(retryButton);
+
+    await waitFor(() => expect(mockCloseWorkspace).toHaveBeenCalled());
+    expect(mockSaveVisit).toHaveBeenCalledTimes(1);
+    expect(
+      mockCreateVisitAttribute.mock.calls.filter(([, type]) => type === visitAttributes.punctuality.uuid),
+    ).toHaveLength(1);
+    expect(
+      mockCreateVisitAttribute.mock.calls.filter(([, type]) => type === visitAttributes.insurancePolicyNumber.uuid),
+    ).toHaveLength(2);
+  });
+
+  it('reconciles an attribute when the write succeeded but its response failed', async () => {
+    const user = userEvent.setup();
+    mockCreateVisitAttribute.mockRejectedValueOnce(new Error('connection closed after commit'));
+    mockGetVisitAttributes.mockResolvedValueOnce([
+      {
+        uuid: 'persisted-punctuality-attribute',
+        attributeType: { uuid: visitAttributes.punctuality.uuid },
+        value: {
+          uuid: '66cdc0a1-aa19-4676-af51-80f66d78d9eb',
+          display: 'On time',
+        },
+      },
+    ]);
+
+    renderVisitForm();
+    await selectVisitType(user);
+    await user.selectOptions(screen.getByRole('combobox', { name: /Select a location/i }), 'Inpatient Ward');
+    await user.selectOptions(screen.getByRole('combobox', { name: 'Punctuality (optional)' }), 'On time');
+    await user.click(screen.getByRole('button', { name: /Start Visit/i }));
+
+    await waitFor(() => expect(mockCloseWorkspace).toHaveBeenCalled());
+    expect(mockSaveVisit).toHaveBeenCalledTimes(1);
+    expect(mockCreateVisitAttribute).toHaveBeenCalledTimes(1);
+    expect(mockGetVisitAttributes).toHaveBeenCalledWith(visitUuid);
+    expect(mockOnVisitCreatedOrUpdatedCallback).toHaveBeenCalledTimes(1);
   });
 
   it('displays a warning modal if the user attempts to discard the visit form with unsaved changes', async () => {

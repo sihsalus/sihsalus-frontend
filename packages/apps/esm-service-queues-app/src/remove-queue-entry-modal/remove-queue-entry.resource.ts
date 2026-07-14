@@ -2,19 +2,15 @@ import { openmrsFetch, restBaseUrl, updateVisit } from '@openmrs/esm-framework';
 import dayjs from 'dayjs';
 import useSWR from 'swr';
 
-import { endPatientStatus } from '../active-visits/active-visits-table.resource';
 import { omrsDateFormat, timeZone } from '../constants';
-import { type AppointmentsFetchResponse, type EndVisitPayload } from '../types';
-
-const statusChangeTime = dayjs(new Date()).format(omrsDateFormat);
+import { endQueueEntry as endQueueEntrySafely } from '../modals/queue-entry-actions.resource';
+import { type Appointment, type AppointmentsFetchResponse, type EndVisitPayload } from '../types';
 
 export async function endQueueEntry(
-  queueUuid: string,
   queueEntryUuid: string,
-  endedAt: Date,
-  endCurrentVisitPayload: EndVisitPayload,
+  endCurrentVisitPayload: Omit<EndVisitPayload, 'stopDatetime'> | null,
   visitUuid: string,
-  appointments: any,
+  appointments: Array<Appointment> | null,
 ) {
   const abortController = new AbortController();
 
@@ -27,21 +23,15 @@ export async function endQueueEntry(
       );
     }
 
-    await endPatientStatus(queueUuid, queueEntryUuid, endedAt);
-
-    try {
-      const response = await updateVisit(visitUuid, endCurrentVisitPayload, abortController);
-      return response.status;
-    } catch (error) {
-      return error;
+    const queueEndResponse = await endQueueEntrySafely(queueEntryUuid, abortController);
+    const authoritativeEndedAt = new Date(queueEndResponse.data?.endedAt);
+    if (Number.isNaN(authoritativeEndedAt.valueOf())) {
+      throw new Error('The queue entry end response did not include an authoritative end time.');
     }
-  } else {
-    try {
-      return await endPatientStatus(queueUuid, queueEntryUuid, endedAt);
-    } catch (error) {
-      return error;
-    }
+    return updateVisit(visitUuid, { ...endCurrentVisitPayload, stopDatetime: authoritativeEndedAt }, abortController);
   }
+
+  return endQueueEntrySafely(queueEntryUuid, abortController);
 }
 
 export function useCheckedInAppointments(patientUuid: string, startDate: string) {
@@ -81,7 +71,7 @@ export function useCheckedInAppointments(patientUuid: string, startDate: string)
 export async function changeAppointmentStatus(toStatus: string, appointmentUuid: string) {
   const url = `${restBaseUrl}/appointments/${appointmentUuid}/status-change`;
   return openmrsFetch(url, {
-    body: { toStatus, onDate: statusChangeTime, timeZone: timeZone },
+    body: { toStatus, onDate: dayjs().format(omrsDateFormat), timeZone: timeZone },
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
   });

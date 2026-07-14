@@ -2,7 +2,7 @@ import { Button, Form, ModalBody, ModalFooter, ModalHeader } from '@carbon/react
 import { type Visit } from '@openmrs/esm-framework';
 import React, { useCallback, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import QueueFields from '../../create-queue-entry/queue-fields/queue-fields.component';
+import QueueFields, { type QueueFieldsCallbacks } from '../../create-queue-entry/queue-fields/queue-fields.component';
 import { useMutateQueueEntries } from '../../hooks/useQueueEntries';
 
 interface AddPatientToQueueModalProps {
@@ -16,42 +16,41 @@ const AddPatientToQueueModal: React.FC<AddPatientToQueueModalProps> = ({ modalTi
   const { mutateQueueEntries } = useMutateQueueEntries();
 
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [callback, setCallback] = useState<{
-    submitQueueEntry: (visit: Visit) => Promise<unknown>;
-  } | null>(null);
+  const [callbacks, setCallbacks] = useState<QueueFieldsCallbacks | null>(null);
 
   const handleSubmit = useCallback(
-    (event) => {
+    async (event) => {
       event.preventDefault();
+      if (!callbacks || !callbacks.onBeforeVisitSave()) {
+        return;
+      }
+
       setIsSubmitting(true);
 
-      callback
-        ?.submitQueueEntry?.(activeVisit)
-        ?.then(() => {
-          closeModal();
-          mutateQueueEntries();
-        })
-        // QueueFields owns the error notification. Consume the rejection here
-        // so the modal remains open without producing a duplicate global toast.
-        ?.catch(() => undefined)
-        ?.finally(() => {
-          setIsSubmitting(false);
-        });
+      try {
+        await callbacks.onVisitCreatedOrUpdated(activeVisit);
+        closeModal();
+        mutateQueueEntries();
+      } catch {
+        // QueueFields reports the contextual error and this modal remains open.
+      } finally {
+        setIsSubmitting(false);
+      }
     },
-    [callback, activeVisit, closeModal, mutateQueueEntries],
+    [callbacks, activeVisit, closeModal, mutateQueueEntries],
   );
 
   return (
     <Form onSubmit={handleSubmit}>
       <ModalHeader closeModal={closeModal} title={modalTitle} />
       <ModalBody>
-        <QueueFields setOnSubmit={(onSubmit) => setCallback({ submitQueueEntry: onSubmit })} />
+        <QueueFields setCallbacks={setCallbacks} />
       </ModalBody>
       <ModalFooter>
         <Button kind="secondary" onClick={closeModal}>
           {t('cancel', 'Cancel')}
         </Button>
-        <Button disabled={isSubmitting} kind="primary" type="submit">
+        <Button disabled={isSubmitting || !callbacks} kind="primary" type="submit">
           {isSubmitting
             ? t('addingPatientToQueue', 'Adding patient to queue') + '...'
             : t('addPatientToQueue', 'Add patient to queue')}

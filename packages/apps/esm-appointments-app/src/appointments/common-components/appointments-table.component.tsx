@@ -41,6 +41,7 @@ import { useTranslation } from 'react-i18next';
 import { type ConfigObject } from '../../config-schema';
 import { appointmentsEditPrivilege } from '../../constants';
 import { EmptyState } from '../../empty-state/empty-state.component';
+import { isAppointmentEditable } from '../../helpers';
 import { exportAppointmentsToSpreadsheet } from '../../helpers/excel';
 import { useTodaysVisits } from '../../hooks/useTodaysVisits';
 import { type Appointment } from '../../types';
@@ -254,7 +255,9 @@ const AppointmentsTable: React.FC<AppointmentsTableProps> = ({
                                 <TableCell key={cell.id}>{cell.value?.content ?? cell.value}</TableCell>
                               ))}
                               <TableCell className="cds--table-column-menu">
-                                {canEdit && (isFutureAppointment || (isTodayAppointment && !hasActiveVisitToday)) ? (
+                                {canEdit &&
+                                isAppointmentEditable(matchingAppointment.status) &&
+                                (isFutureAppointment || (isTodayAppointment && !hasActiveVisitToday)) ? (
                                   <OverflowMenu
                                     align="left"
                                     aria-label={t('actions', 'Actions')}

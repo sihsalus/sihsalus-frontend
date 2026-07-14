@@ -1,8 +1,10 @@
 import { Button, Layer, TextInput } from '@carbon/react';
+import { zodResolver } from '@hookform/resolvers/zod';
 import { useConfig, useLayoutType } from '@openmrs/esm-framework';
+import { normalizePatientAgeRange } from '@openmrs/esm-utils';
 import classNames from 'classnames';
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
-import { Controller, useForm } from 'react-hook-form';
+import { Controller, useForm, useWatch } from 'react-hook-form';
 import { useTranslation } from 'react-i18next';
 
 import {
@@ -13,17 +15,18 @@ import {
 import { type AdvancedPatientSearchState, type SearchFieldConfig, type SearchFieldType } from '../../types';
 import { identityDocumentNumberAttributeUuid } from './person-attribute-field.component';
 import styles from './refine-search.scss';
+import { createRefineSearchSchema } from './refine-search.validation';
 import { RefineSearchTablet } from './refine-search-tablet.component';
 import { SearchField } from './search-field.component';
 
 export const initialFilters: AdvancedPatientSearchState = {
   query: '',
   gender: 'any',
-  dateOfBirth: 0,
-  monthOfBirth: 0,
-  yearOfBirth: 0,
+  dateOfBirth: null,
+  monthOfBirth: null,
+  yearOfBirth: null,
   postcode: '',
-  age: 0,
+  age: null,
   attributes: {},
 };
 
@@ -46,25 +49,36 @@ const RefineSearch: React.FC<RefineSearchProps> = ({
   const { t } = useTranslation();
   const isTablet = useLayoutType() === 'tablet';
   const config = useConfig<PatientSearchConfig>();
+  const { minimumAge, maximumAge } = normalizePatientAgeRange(
+    config.search.searchFilterFields.age.min,
+    config.search.searchFilterFields.age.max,
+  );
+  const validationSchema = useMemo(
+    () => createRefineSearchSchema(t, minimumAge, maximumAge),
+    [maximumAge, minimumAge, t],
+  );
 
-  const {
-    control,
-    handleSubmit,
-    reset,
-    setValue,
-    formState: _formState,
-  } = useForm<AdvancedPatientSearchState>({
+  const { control, handleSubmit, reset, setValue } = useForm<AdvancedPatientSearchState>({
+    resolver: zodResolver(validationSchema),
+    mode: 'onBlur',
     defaultValues: {
       query: searchQuery,
       gender: 'any',
-      dateOfBirth: 0,
-      monthOfBirth: 0,
-      yearOfBirth: 0,
-      age: 0,
+      dateOfBirth: null,
+      monthOfBirth: null,
+      yearOfBirth: null,
+      age: null,
       postcode: '',
       attributes: {},
     },
   });
+
+  const queryValue = useWatch({ control, name: 'query' });
+  const documentNumberValue = useWatch({
+    control,
+    name: `attributes.${identityDocumentNumberAttributeUuid}`,
+  });
+  const hasPrimarySearchCriterion = Boolean(queryValue?.trim() || documentNumberValue?.trim());
 
   useEffect(() => {
     setValue('query', searchQuery);
@@ -72,9 +86,22 @@ const RefineSearch: React.FC<RefineSearchProps> = ({
 
   const onSubmit = useCallback(
     (data: AdvancedPatientSearchState) => {
-      const query = data.query.trim() || data.attributes?.[identityDocumentNumberAttributeUuid]?.trim() || '';
+      const normalizedAttributes = Object.fromEntries(
+        Object.entries(data.attributes ?? {}).map(([key, value]) => [key, String(value ?? '').trim()]),
+      );
+      const normalizedData = {
+        ...data,
+        query: data.query.trim(),
+        attributes: normalizedAttributes,
+      };
+      const query = normalizedData.query || normalizedAttributes[identityDocumentNumberAttributeUuid] || '';
+
+      if (!query) {
+        return;
+      }
+
       setSearchQuery?.(query);
-      setFilters(data);
+      setFilters(normalizedData);
       setShowRefineSearchDialog(false);
     },
     [setFilters, setSearchQuery],
@@ -95,10 +122,13 @@ const RefineSearch: React.FC<RefineSearchProps> = ({
     const fields: Array<SearchFieldConfig> = [];
 
     Object.entries(config.search.searchFilterFields).forEach(([fieldName, fieldConfig]) => {
-      if (fieldName !== 'personAttributes' && (fieldConfig as BuiltInFieldConfig).enabled) {
+      if (fieldName !== 'personAttributes' && fieldName !== 'age' && (fieldConfig as BuiltInFieldConfig).enabled) {
+        const { min, max } = fieldConfig as BuiltInFieldConfig;
         fields.push({
           name: fieldName,
           type: fieldName as SearchFieldType,
+          min,
+          max,
         });
       }
     });
@@ -131,6 +161,7 @@ const RefineSearch: React.FC<RefineSearchProps> = ({
         onResetFields={handleResetFields}
         onToggleDialog={toggleShowRefineSearchDialog}
         onSubmit={handleSubmit(onSubmit)}
+        canSubmit={hasPrimarySearchCriterion}
       />
     );
   }
@@ -148,7 +179,10 @@ const RefineSearch: React.FC<RefineSearchProps> = ({
                 id="patient-search-query"
                 labelText={t('patientSearchCriteria', 'Apellidos y nombres o documento de identidad')}
                 onChange={(event: React.ChangeEvent<HTMLInputElement>) => onChange(event.currentTarget.value)}
-                placeholder={t('patientSearchCriteriaPlaceholder', 'Ingrese apellidos, nombres, DNI, CE o pasaporte')}
+                placeholder={t(
+                  'patientSearchCriteriaPlaceholder',
+                  'Ingrese apellidos, nombres, N.° HC, DNI, CE, pasaporte, CNV, DIE, código SIS u otro documento',
+                )}
                 size={isTablet ? 'lg' : 'md'}
                 value={value ?? ''}
               />
@@ -159,13 +193,20 @@ const RefineSearch: React.FC<RefineSearchProps> = ({
       <h3 className={styles.sectionHeading}>{t('refineSearch', 'Refine search')}</h3>
       {renderSearchFields}
       <hr className={classNames(styles.field, styles.horizontalDivider)} />
-      <Button type="submit" kind="primary" size="md" className={classNames(styles.field, styles.button)}>
+      <Button
+        type="submit"
+        kind="primary"
+        size="md"
+        disabled={!hasPrimarySearchCriterion}
+        className={classNames(styles.field, styles.button)}
+      >
         {t('search', 'Search')}{' '}
         {filtersApplied
           ? `(${t('countOfFiltersApplied', '{{count}} filters applied', { count: filtersApplied })})`
           : null}
       </Button>
       <Button
+        type="button"
         kind="secondary"
         size="md"
         onClick={handleResetFields}

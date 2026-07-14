@@ -25,6 +25,7 @@ export interface FieldDefinition {
   locationTag?: string;
   answerConceptSetUuid?: string;
   customConceptAnswers?: Array<CustomConceptAnswer>;
+  codedInputType?: 'select' | 'radio';
   searchable?: boolean;
   showIf?: {
     foreignIdentifierPresent?: boolean;
@@ -262,6 +263,12 @@ export const esmPatientRegistrationSchema = {
         _description:
           'For coded questions only (obs or person attrbute). A list of custom concept answers. Overrides answers that come from the obs concept or from `answerSetConceptUuid`.',
       },
+      codedInputType: {
+        _type: Type.String,
+        _default: 'select',
+        _validators: [validators.oneOf(['select', 'radio'])],
+        _description: 'For coded person attributes only. Render the answer list as a select or radio button group.',
+      },
       searchable: {
         _type: Type.Boolean,
         _default: false,
@@ -407,12 +414,14 @@ export const esmPatientRegistrationSchema = {
         dayOfMonth: {
           _type: Type.Number,
           _description: 'The custom day of the month use on the estimated date of birth',
-          _default: 0,
+          _default: 1,
+          _validators: [validators.inRange(1, 31)],
         },
         month: {
           _type: Type.Number,
           _description: 'The custom month to use on the estimated date of birth i.e 0 = Jan & 11 = Dec',
           _default: 0,
+          _validators: [validators.inRange(0, 11)],
         },
       },
     },

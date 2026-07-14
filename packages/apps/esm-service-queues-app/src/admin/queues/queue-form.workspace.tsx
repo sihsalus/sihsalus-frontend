@@ -12,7 +12,13 @@ import {
   TextInput,
 } from '@carbon/react';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { restBaseUrl, showSnackbar, Workspace2, type Workspace2DefinitionProps } from '@openmrs/esm-framework';
+import {
+  getUserFacingErrorMessage,
+  restBaseUrl,
+  showSnackbar,
+  Workspace2,
+  type Workspace2DefinitionProps,
+} from '@openmrs/esm-framework';
 import type { TFunction } from 'i18next';
 import React, { useEffect } from 'react';
 import { Controller, useForm } from 'react-hook-form';
@@ -148,7 +154,11 @@ const QueueForm: React.FC<Workspace2DefinitionProps<QueueWorkspaceProps>> = ({ c
           : t('errorCreatingQueue', 'Error creating queue'),
         kind: 'error',
         isLowContrast: false,
-        subtitle: error?.responseBody?.message || error?.message,
+        subtitle: getUserFacingErrorMessage(
+          error,
+          t('queueOperationErrorMessage', 'The queue operation could not be completed. Please try again.'),
+          { logContext: isEditMode ? 'Update queue' : 'Create queue' },
+        ),
       });
     }
   };

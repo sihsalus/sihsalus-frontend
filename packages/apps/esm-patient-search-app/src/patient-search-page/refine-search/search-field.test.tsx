@@ -5,7 +5,7 @@ import { renderWithSwr } from 'test-utils';
 import { type AdvancedPatientSearchState, type SearchFieldConfig } from '../../types';
 
 import { usePersonAttributeType } from './person-attributes.resource';
-import { getIntegerInputValue, isValidIntegerInput, SearchField } from './search-field.component';
+import { getOptionalIntegerInputValue, SearchField } from './search-field.component';
 
 vi.mock('./person-attributes.resource', async () => ({
   usePersonAttributeType: vi.fn(),
@@ -67,22 +67,10 @@ describe('SearchField', () => {
   });
 
   describe('Integer input guards', () => {
-    it('rejects scientific notation and decimal values', () => {
-      expect(isValidIntegerInput('232.3e1231', 130, 3)).toBe(false);
-      expect(isValidIntegerInput('1e2', 130, 3)).toBe(false);
-      expect(isValidIntegerInput('12.5', 130, 3)).toBe(false);
-      expect(isValidIntegerInput('+12', 130, 3)).toBe(false);
-      expect(isValidIntegerInput('-12', 130, 3)).toBe(false);
-      expect(isValidIntegerInput('12,5', 130, 3)).toBe(false);
-      expect(isValidIntegerInput('0', 31, 2, 1)).toBe(false);
-    });
-
-    it('keeps the current value when the next value is invalid', () => {
-      expect(getIntegerInputValue(23, '232', 130, 3)).toBe(23);
-      expect(getIntegerInputValue(23, '2e3', 130, 3)).toBe(23);
-      expect(getIntegerInputValue(23, '+2', 130, 3)).toBe(23);
-      expect(getIntegerInputValue(23, '-2', 130, 3)).toBe(23);
-      expect(getIntegerInputValue(23, '', 130, 3)).toBe(0);
+    it('keeps zero distinct from an empty optional input', () => {
+      expect(getOptionalIntegerInputValue('')).toBeNull();
+      expect(getOptionalIntegerInputValue('0')).toBe(0);
+      expect(getOptionalIntegerInputValue('23')).toBe(23);
     });
 
     it('prevents invalid age keystrokes and paste payloads in the rendered input', () => {
@@ -107,6 +95,12 @@ describe('SearchField', () => {
           clipboardData: { getData: () => '1e2' },
         }),
       ).toBe(false);
+    });
+
+    it('allows a valid numeric prefix when the configured minimum has two digits', () => {
+      render(<SearchField field={{ name: 'age', type: 'age', min: 18, max: 65 }} {...defaultProps} />);
+
+      expect(fireEvent.keyDown(screen.getByRole('spinbutton', { name: /age/i }), { key: '2' })).toBe(true);
     });
   });
 
@@ -139,27 +133,13 @@ describe('SearchField', () => {
       type: 'dateOfBirth',
     };
 
-    it('renders three number inputs for day, month, and year', () => {
+    it('renders one unified date of birth field', () => {
       render(<SearchField field={dobField} {...defaultProps} />);
 
-      expect(screen.getByLabelText('Day of Birth')).toBeInTheDocument();
-      expect(screen.getByLabelText('Month of Birth')).toBeInTheDocument();
-      expect(screen.getByLabelText('Year of Birth')).toBeInTheDocument();
-    });
-
-    it('applies correct validation constraints to date inputs', () => {
-      render(<SearchField field={dobField} {...defaultProps} />);
-
-      const dayInput = screen.getByLabelText('Day of Birth');
-      const monthInput = screen.getByLabelText('Month of Birth');
-      const yearInput = screen.getByLabelText('Year of Birth');
-
-      expect(dayInput).toHaveAttribute('min', '1');
-      expect(dayInput).toHaveAttribute('max', '31');
-      expect(monthInput).toHaveAttribute('min', '1');
-      expect(monthInput).toHaveAttribute('max', '12');
-      expect(yearInput).toHaveAttribute('min', '1800');
-      expect(yearInput).toHaveAttribute('max', new Date().getFullYear().toString());
+      expect(screen.getByLabelText('Date of birth')).toBeInTheDocument();
+      expect(screen.queryByLabelText('Day of Birth')).not.toBeInTheDocument();
+      expect(screen.queryByLabelText('Month of Birth')).not.toBeInTheDocument();
+      expect(screen.queryByLabelText('Year of Birth')).not.toBeInTheDocument();
     });
   });
 
@@ -179,6 +159,22 @@ describe('SearchField', () => {
       expect(ageInput).toHaveAttribute('type', 'number');
       expect(ageInput).toHaveAttribute('min', '0');
       expect(ageInput).toHaveAttribute('max', '120');
+    });
+
+    it('uses safe age limits when configuration omits them', () => {
+      render(<SearchField field={{ name: 'age', type: 'age' }} {...defaultProps} />);
+
+      const ageInput = screen.getByLabelText('Age');
+      expect(ageInput).toHaveAttribute('min', '0');
+      expect(ageInput).toHaveAttribute('max', '140');
+    });
+
+    it('does not allow configuration to widen the OpenMRS age limit', () => {
+      render(<SearchField field={{ name: 'age', type: 'age', min: -1, max: 100000 }} {...defaultProps} />);
+
+      const ageInput = screen.getByLabelText('Age');
+      expect(ageInput).toHaveAttribute('min', '0');
+      expect(ageInput).toHaveAttribute('max', '140');
     });
   });
 

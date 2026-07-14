@@ -1,4 +1,4 @@
-import { Button, ButtonSet, Checkbox, RadioButton, RadioButtonGroup, Search } from '@carbon/react';
+import { Button, ButtonSet, Checkbox, RadioButton, Search } from '@carbon/react';
 import { isDesktop, useLayoutType } from '@openmrs/esm-framework';
 import React, { useCallback, useContext, useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -13,6 +13,7 @@ import { PatientRegistrationContext } from '../../patient-registration-context';
 import {
   peruDniPatientIdentifierTypeUuid,
   peruForeignPatientIdentifierTypeUuids,
+  peruOtherPatientIdentifierTypeUuid,
 } from '../../peru-registration-config';
 import Overlay from '../../ui-components/overlay/overlay.component';
 import {
@@ -32,6 +33,30 @@ const exclusiveIdentifierTypeUuids: Record<string, string | Array<string>> = {
   [peruDniPatientIdentifierTypeUuid]: peruForeignPatientIdentifierTypeUuids,
   ...Object.fromEntries(peruForeignPatientIdentifierTypeUuids.map((uuid) => [uuid, peruDniPatientIdentifierTypeUuid])),
 };
+
+function normalizeSearchValue(value?: string) {
+  return (value ?? '')
+    .trim()
+    .toLocaleLowerCase()
+    .normalize('NFD')
+    .replace(/\p{Diacritic}/gu, '');
+}
+
+export function isEmergencyIdentifierContext(
+  sessionLocation?: { display?: string; name?: string; uuid?: string } | null,
+  search = globalThis.location?.search ?? '',
+) {
+  const locationLabel = normalizeSearchValue(sessionLocation?.display ?? sessionLocation?.name);
+  const source = normalizeSearchValue(new URLSearchParams(search).get('source') ?? '');
+
+  return (
+    sessionLocation?.uuid === '35d2234e-129a-4c40-abb2-1ae0b2400003' ||
+    locationLabel.includes('emergencia') ||
+    locationLabel.includes('emergency') ||
+    source === 'emergency' ||
+    source === 'emergencia'
+  );
+}
 
 function getIdentifierTypeDescription(identifierType: PatientIdentifierType) {
   const description = identifierType.description?.trim();
@@ -64,28 +89,37 @@ function removeIdentifiersByTypeUuid(
 
 const PatientIdentifierOverlay: React.FC<PatientIdentifierOverlayProps> = ({ closeOverlay, setFieldValue }) => {
   const layout = useLayoutType();
-  const { identifierTypes } = useContext(ResourcesContext);
+  const { currentSession, identifierTypes = [] } = useContext(ResourcesContext);
   const { isOffline, values, initialFormValues } = useContext(PatientRegistrationContext);
-  const [unsavedIdentifierTypes, setUnsavedIdentifierTypes] = useState<FormValues['identifiers']>(values.identifiers);
+  const [unsavedIdentifierTypes, setUnsavedIdentifierTypes] = useState<FormValues['identifiers']>(
+    values.identifiers ?? {},
+  );
   const [searchString, setSearchString] = useState('');
   const { t } = useTranslation(moduleName);
+  const availableIdentifierTypes = useMemo(
+    () =>
+      identifierTypes.filter(
+        (identifierType) =>
+          identifierType.uuid !== peruOtherPatientIdentifierTypeUuid ||
+          isEmergencyIdentifierContext(currentSession?.sessionLocation),
+      ),
+    [currentSession?.sessionLocation, identifierTypes],
+  );
 
   useEffect(() => {
-    setUnsavedIdentifierTypes(values.identifiers);
+    setUnsavedIdentifierTypes(values.identifiers ?? {});
   }, [values.identifiers]);
 
   const handleSearch = useCallback((event) => setSearchString(event?.target?.value ?? ''), []);
 
   const filteredIdentifiers = useMemo(
     () =>
-      identifierTypes?.filter((identifier) =>
-        [identifier?.name, identifier?.display, identifier?.description]
-          .filter(Boolean)
-          .join(' ')
-          .toLocaleLowerCase()
-          .includes(searchString.toLocaleLowerCase()),
+      availableIdentifierTypes.filter((identifier) =>
+        normalizeSearchValue([identifier?.name, identifier?.display, identifier?.description].filter(Boolean).join(' ')).includes(
+          normalizeSearchValue(searchString),
+        ),
       ),
-    [searchString, identifierTypes],
+    [availableIdentifierTypes, searchString],
   );
 
   const handleCheckingIdentifier = useCallback(
@@ -101,8 +135,8 @@ const PatientIdentifierOverlay: React.FC<PatientIdentifierOverlayProps> = ({ clo
             ...identifiersWithoutExclusiveType,
             [identifierType.fieldName]: initializeIdentifier(
               identifierType,
-              values.identifiers[identifierType.fieldName] ??
-                initialFormValues.identifiers[identifierType.fieldName] ??
+              values.identifiers?.[identifierType.fieldName] ??
+                initialFormValues.identifiers?.[identifierType.fieldName] ??
                 {},
             ),
           };
@@ -176,7 +210,8 @@ const PatientIdentifierOverlay: React.FC<PatientIdentifierOverlayProps> = ({ clo
               disabled={isDisabled || (isOffline && isDisabledOffline)}
             />
             {patientIdentifier &&
-              identifierType?.identifierSources?.length > 0 &&
+              Array.isArray(identifierType?.identifierSources) &&
+              identifierType.identifierSources.filter(Boolean).length > 0 &&
               /*
                 This check are for the cases when there's an initialValue identifier is assigned
                 to the patient
@@ -188,30 +223,25 @@ const PatientIdentifierOverlay: React.FC<PatientIdentifierOverlayProps> = ({ clo
                 default is the first identifierSource
               */
               (!patientIdentifier.initialValue || patientIdentifier?.selectedSource) && (
-                <div className={styles.radioGroup}>
-                  <RadioButtonGroup
-                    legendText={t('source', 'Source')}
-                    name={`${identifierType?.fieldName}-identifier-sources`}
-                    defaultSelected={patientIdentifier?.selectedSource?.uuid}
-                    onChange={(sourceUuid: string) => handleSelectingIdentifierSource(identifierType, sourceUuid)}
-                    orientation="vertical"
-                  >
-                    {identifierType?.identifierSources.map((source) => (
-                      <RadioButton
-                        key={source.uuid}
-                        labelText={source.name}
-                        name={source.uuid}
-                        value={source.uuid}
-                        className={styles.radioButton}
-                        disabled={
-                          isOffline &&
-                          isUniqueIdentifierTypeForOffline(identifierType) &&
-                          source.autoGenerationOption?.manualEntryEnabled
-                        }
-                      />
-                    ))}
-                  </RadioButtonGroup>
-                </div>
+                <fieldset className={styles.radioGroup}>
+                  <legend>{t('source', 'Source')}</legend>
+                  {identifierType.identifierSources.filter(Boolean).map((source) => (
+                    <RadioButton
+                      key={source.uuid}
+                      labelText={source.name}
+                      name={source.uuid}
+                      value={source.uuid}
+                      checked={patientIdentifier?.selectedSource?.uuid === source.uuid}
+                      onChange={() => handleSelectingIdentifierSource(identifierType, source.uuid)}
+                      className={styles.radioButton}
+                      disabled={
+                        isOffline &&
+                        isUniqueIdentifierTypeForOffline(identifierType) &&
+                        source.autoGenerationOption?.manualEntryEnabled
+                      }
+                    />
+                  ))}
+                </fieldset>
               )}
           </div>
         );
@@ -236,16 +266,24 @@ const PatientIdentifierOverlay: React.FC<PatientIdentifierOverlayProps> = ({ clo
     closeOverlay();
   }, [identifierTypes, unsavedIdentifierTypes, setFieldValue, closeOverlay]);
 
+  const hasIdentityDocument = countIdentityDocumentIdentifiers(unsavedIdentifierTypes, identifierTypes) > 0;
+
   return (
     <Overlay
       close={closeOverlay}
       header={t('configureIdentifiers', 'Configure identifiers')}
       buttonsGroup={
         <ButtonSet className={isDesktop(layout) ? styles.desktop : styles.tablet}>
-          <Button className={styles.button} kind="secondary" onClick={closeOverlay}>
+          <Button className={styles.button} kind="secondary" type="button" onClick={closeOverlay}>
             {t('cancel', 'Cancel')}
           </Button>
-          <Button className={styles.button} kind="primary" onClick={handleConfiguringIdentifiers}>
+          <Button
+            className={styles.button}
+            kind="primary"
+            type="button"
+            disabled={!hasIdentityDocument}
+            onClick={handleConfiguringIdentifiers}
+          >
             {t('configureIdentifiers', 'Configure identifiers')}
           </Button>
         </ButtonSet>
@@ -255,7 +293,7 @@ const PatientIdentifierOverlay: React.FC<PatientIdentifierOverlayProps> = ({ clo
         <p className={styles.bodyLong02}>
           {t('IDInstructions', "Select the identifiers you'd like to add for this patient:")}
         </p>
-        {identifierTypes.length > 7 && (
+        {availableIdentifierTypes.length > 7 && (
           <div className={styles.space05}>
             <Search
               labelText={t('searchIdentifierPlaceholder', 'Search identifier')}
@@ -265,7 +303,23 @@ const PatientIdentifierOverlay: React.FC<PatientIdentifierOverlayProps> = ({ clo
             />
           </div>
         )}
-        <fieldset>{identifierTypeFields}</fieldset>
+        {!hasIdentityDocument ? (
+          <p className={styles.requirementMessage} role="alert">
+            {t(
+              'identifierSelectionRequiresIdentityDocument',
+              'Select at least one identity document (DNI, CE, passport, DIE, or CNV).',
+            )}
+          </p>
+        ) : null}
+        <fieldset aria-label={t('availableIdentifierTypes', 'Available identification data')}>
+          {identifierTypeFields.length ? (
+            identifierTypeFields
+          ) : (
+            <p className={styles.emptyState} role="status">
+              {t('identifierSearchNoResults', 'No matching identification data found')}
+            </p>
+          )}
+        </fieldset>
       </div>
     </Overlay>
   );

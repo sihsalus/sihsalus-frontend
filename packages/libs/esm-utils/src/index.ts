@@ -6,6 +6,7 @@ export * from './identifiers';
 export * from './is-online';
 export * from './match-locale';
 export * from './patient-helpers';
+export * from './patient-demographics';
 export * from './plain-number-input';
 export * from './retry';
 export * from './shallowEqual';

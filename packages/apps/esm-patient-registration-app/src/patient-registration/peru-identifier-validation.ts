@@ -6,6 +6,8 @@ import {
   peruPassportPatientIdentifierTypeUuid,
 } from './peru-registration-config';
 
+export const peruDniPattern = /^\d{8}$/;
+
 export interface PeruIdentifierRule {
   pattern: RegExp;
   maxLength: number;
@@ -33,7 +35,7 @@ export function getPeruIdentifierRule(
 
   if (uuid === peruDniPatientIdentifierTypeUuid || name === 'DNI') {
     return {
-      pattern: /^\d{8}$/,
+      pattern: peruDniPattern,
       maxLength: 8,
       inputMode: 'numeric',
       sanitize: (value) => value.replace(/\D/g, '').slice(0, 8),

@@ -1,4 +1,4 @@
-import { Button, InlineLoading, Link } from '@carbon/react';
+import { Button, InlineLoading, InlineNotification, Link } from '@carbon/react';
 import { XAxis } from '@carbon/react/icons';
 import {
   createErrorHandler,
@@ -21,20 +21,72 @@ import { builtInSections, type RegistrationConfig, type SectionDefinition } from
 import { moduleName } from '../constants';
 import { ResourcesContext } from '../offline.resources';
 import BeforeSavePrompt from './before-save-prompt';
+import { getDocumentIdentifierEntry } from './field/external-lookup/dni-identifier';
 import { type SavePatientForm, SavePatientTransactionManager } from './form-manager';
-import { fetchPersonForPromotion } from './identity/identity-search.resource';
+import { getDocumentTypeDefinitionByIdentifierType, normalizeDocumentNumber } from './identity/identity-documents';
+import { fetchPersonForPromotion, searchLocalIdentityByDocument } from './identity/identity-search.resource';
 import { applyPersonToRegistrationForm } from './identity/promotion';
 import { DummyDataInput } from './input/dummy-data/dummy-data-input.component';
 import styles from './patient-registration.scss';
 import { type CapturePhotoProps, type FormValues } from './patient-registration.types';
 import { PatientRegistrationContext } from './patient-registration-context';
-import { useInitialAddressFieldValues, useInitialFormValues, usePatientUuidMap } from './patient-registration-hooks';
+import {
+  createInitialFormValues,
+  useInitialAddressFieldValues,
+  useInitialFormValues,
+  usePatientUuidMap,
+} from './patient-registration-hooks';
 import { cancelRegistration, filterOutUndefinedPatientIdentifiers, scrollIntoView } from './patient-registration-utils';
 import { getEffectiveRegistrationConfig } from './peru-registration-config';
 import { SectionWrapper } from './section/section-wrapper.component';
 import { getValidationSchema } from './validation/patient-registration-validation';
 
-export const initialFormValues = {} as FormValues;
+export const initialFormValues = createInitialFormValues();
+
+interface UserWithRoles {
+  roles?: Array<{ display?: string; name?: string }>;
+}
+
+const medicalRecordArchivistRole = 'archivador de historias clinicas';
+
+function normalizeRoleName(value?: string) {
+  return (value ?? '')
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .trim()
+    .toLowerCase();
+}
+
+export function hasMedicalRecordArchivistRole(user?: UserWithRoles | null) {
+  return (
+    user?.roles?.some((role) =>
+      [role.name, role.display].some((roleName) => normalizeRoleName(roleName) === medicalRecordArchivistRole),
+    ) ?? false
+  );
+}
+
+export function preserveMedicalRecordAttributes(
+  submittedAttributes: FormValues['attributes'],
+  initialAttributes: FormValues['attributes'],
+  medicalRecordAttributeUuids: Array<string>,
+  canEditMedicalRecord: boolean,
+) {
+  const protectedAttributes = { ...submittedAttributes };
+
+  if (canEditMedicalRecord) {
+    return protectedAttributes;
+  }
+
+  medicalRecordAttributeUuids.forEach((attributeUuid) => {
+    if (Object.hasOwn(initialAttributes ?? {}, attributeUuid)) {
+      protectedAttributes[attributeUuid] = initialAttributes?.[attributeUuid] ?? '';
+    } else {
+      delete protectedAttributes[attributeUuid];
+    }
+  });
+
+  return protectedAttributes;
+}
 
 interface RegistrationSubmitError {
   status?: number;
@@ -59,9 +111,76 @@ function isSessionExpired(error: unknown): boolean {
   const typedError = error as RegistrationSubmitError & { responseStatus?: number; message?: string };
   const status = typedError.status ?? typedError.responseStatus;
   const lowerCaseMessage = `${typedError.message ?? ''} ${typedError.responseBody?.error?.message ?? ''}`.toLowerCase();
-  return (
-    status === 401 || status === 403 || lowerCaseMessage.includes('session') || lowerCaseMessage.includes('expired')
-  );
+  return status === 401 || lowerCaseMessage.includes('session expired') || lowerCaseMessage.includes('sesión expirada');
+}
+
+const defaultRegistrationFieldLabels: Record<string, string> = {
+  address: 'Address',
+  attributes: 'Patient information',
+  birthdate: 'Date of birth',
+  dni: 'DNI',
+  familyName: 'Family name',
+  familyName2: 'Second family name',
+  gender: 'Gender',
+  givenName: 'First name',
+  identifiers: 'Identification data',
+  relationshipType: 'Relationship to patient',
+};
+
+const registrationFieldLabelTranslationKeys: Record<string, string> = {
+  address: 'addressLabelText',
+  birthdate: 'dateOfBirthLabelText',
+  relationshipType: 'relationshipToPatient',
+};
+
+export function getPatientRegistrationFieldLabel(
+  path: Array<string>,
+  translateWithFallback: (key: string, defaultValue: string) => string,
+  attributeFieldLabels: Record<string, string> = {},
+) {
+  const [section] = path;
+  const field = [...path.slice(1)].reverse().find((pathSegment) => !/^\d+$/.test(pathSegment));
+
+  if (!section) {
+    return translateWithFallback('fieldRequired', 'Field is required');
+  }
+
+  if (section === 'identifiers') {
+    const identifierField = path[1];
+    if (identifierField && defaultRegistrationFieldLabels[identifierField]) {
+      return translateWithFallback(
+        `${identifierField}IdentifierLabelText`,
+        defaultRegistrationFieldLabels[identifierField],
+      );
+    }
+    return translateWithFallback('idFieldLabelText', defaultRegistrationFieldLabels.identifiers);
+  }
+
+  if (section === 'attributes') {
+    const attributeLabel = path.slice(1).map((pathSegment) => attributeFieldLabels[pathSegment]).find(Boolean);
+    if (attributeLabel) {
+      return attributeLabel;
+    }
+  }
+
+  if (field) {
+    const labelKey = registrationFieldLabelTranslationKeys[field] ?? `${field}LabelText`;
+    const translatedLabel = translateWithFallback(labelKey, defaultRegistrationFieldLabels[field] ?? field);
+
+    if (translatedLabel !== field || defaultRegistrationFieldLabels[field]) {
+      return translatedLabel;
+    }
+  }
+
+  const defaultFieldLabel = defaultRegistrationFieldLabels[section];
+  const labelKey = registrationFieldLabelTranslationKeys[section] ?? `${section}LabelText`;
+  const fieldLabel = translateWithFallback(labelKey, defaultFieldLabel ?? section);
+
+  if (fieldLabel !== section || defaultFieldLabel) {
+    return fieldLabel;
+  }
+
+  return translateWithFallback(`${section}Section`, section);
 }
 
 export interface PatientRegistrationProps {
@@ -78,46 +197,62 @@ export const PatientRegistration: React.FC<PatientRegistrationProps> = ({ savePa
     () => getEffectiveRegistrationConfig(configuredRegistrationConfig),
     [configuredRegistrationConfig],
   );
+  const attributeFieldLabels = useMemo(
+    () =>
+      Object.fromEntries(
+        (config.fieldDefinitions ?? [])
+          .filter((fieldDefinition) => fieldDefinition.type === 'person attribute' && fieldDefinition.uuid)
+          .map((fieldDefinition) => [fieldDefinition.uuid, fieldDefinition.label ?? fieldDefinition.id]),
+      ),
+    [config.fieldDefinitions],
+  );
+  const medicalRecordAttributeUuids = useMemo(
+    () =>
+      config.fieldDefinitions
+        .filter((fieldDefinition) => ['medicalRecordStatus', 'medicalRecordArchiveType'].includes(fieldDefinition.id))
+        .map((fieldDefinition) => fieldDefinition.uuid)
+        .filter(Boolean),
+    [config.fieldDefinitions],
+  );
   const [target, setTarget] = useState<undefined | string>();
   const { patientUuid: uuidOfPatientToEdit } = useParams();
   const patientUuidToEdit = uuidOfPatientToEdit ?? '';
   const { isLoading: isLoadingPatientToEdit, patient: patientToEdit } = usePatient(patientUuidToEdit);
   const { t } = useTranslation(moduleName);
   const [capturePhotoProps, setCapturePhotoProps] = useState<CapturePhotoProps | null>(null);
-  const [initialFormValuesState, setInitialFormValues] = useInitialFormValues(patientUuidToEdit);
-  const [initialAddressFieldValues] = useInitialAddressFieldValues(patientUuidToEdit);
-  const [patientUuidMap] = usePatientUuidMap(patientUuidToEdit);
+  const [initialFormValuesState, setInitialFormValues, initialFormState = { isLoading: false }] =
+    useInitialFormValues(patientUuidToEdit);
+  const [initialAddressFieldValues, , initialAddressState = { isLoading: false }] =
+    useInitialAddressFieldValues(patientUuidToEdit);
+  const [patientUuidMap, , patientUuidMapState = { isLoading: false }] = usePatientUuidMap(patientUuidToEdit);
   const location = currentSession?.sessionLocation?.uuid;
   const layout = useLayoutType();
   const isDesktopLayout = isDesktop(layout);
-  const inEditMode = !isLoadingPatientToEdit && !!(uuidOfPatientToEdit && patientToEdit);
+  const hasPatientRoute = !!uuidOfPatientToEdit;
+  const isNewPatient = initialFormState.isNewPatient ?? !hasPatientRoute;
+  const inEditMode = !isNewPatient;
+  const canEditMedicalRecord = inEditMode && hasMedicalRecordArchivistRole(currentSession?.user);
   const showDummyData = useMemo(
-    () => window.spaEnv === 'development' && localStorage.getItem('openmrs:devtools') === 'true' && !inEditMode,
-    [inEditMode],
+    () => window.spaEnv === 'development' && localStorage.getItem('openmrs:devtools') === 'true' && !hasPatientRoute,
+    [hasPatientRoute],
   );
   const { data: photo } = usePatientPhoto(patientToEdit?.id);
   const savePatientTransactionManager = useRef(new SavePatientTransactionManager());
+  const promotePersonUuid = useMemo(() => new URLSearchParams(search ?? '').get('promotePerson'), [search]);
+  const [isLoadingPromotion, setIsLoadingPromotion] = useState(!!promotePersonUuid && !hasPatientRoute);
   const validationSchema = getValidationSchema(config, identifierTypes);
   const areIdentifiersUnavailableForSubmit = (hasFormIdentifiers: boolean) =>
     !isOffline &&
     !(inEditMode && hasFormIdentifiers) &&
     (isLoadingIdentifierTypes || !!identifierTypesError || !identifierTypes?.length);
 
-  useEffect(() => {
-    Object.keys(initialFormValues).forEach((key) => {
-      Reflect.deleteProperty(initialFormValues, key);
-    });
-    Object.assign(initialFormValues, initialFormValuesState);
-  }, [initialFormValuesState]);
-
   // Entry point for promoting an existing person from outside the form: opening
   // `patient-registration?promotePerson=<personUuid>` hydrates the form with that
   // person so submitting promotes them (same UUID) instead of creating a new patient.
   const handledPromotePersonUuid = useRef<string | null>(null);
   useEffect(() => {
-    const promotePersonUuid = new URLSearchParams(search).get('promotePerson');
-
-    if (!promotePersonUuid || inEditMode || handledPromotePersonUuid.current === promotePersonUuid) {
+    if (!promotePersonUuid || hasPatientRoute || handledPromotePersonUuid.current === promotePersonUuid) {
+      setIsLoadingPromotion(false);
       return;
     }
 
@@ -127,10 +262,13 @@ export const PatientRegistration: React.FC<PatientRegistrationProps> = ({ savePa
         subtitle: t('promotionOfflineSubtitle', 'La promoción de una persona existente a paciente requiere conexión.'),
         kind: 'warning',
       });
+      handledPromotePersonUuid.current = promotePersonUuid;
+      setIsLoadingPromotion(false);
       return;
     }
 
     handledPromotePersonUuid.current = promotePersonUuid;
+    setIsLoadingPromotion(true);
     let cancelled = false;
 
     fetchPersonForPromotion(promotePersonUuid)
@@ -152,6 +290,7 @@ export const PatientRegistration: React.FC<PatientRegistrationProps> = ({ savePa
           );
           return nextValues;
         });
+        setIsLoadingPromotion(false);
       })
       .catch((error) => {
         console.error('Could not load the person to promote', error);
@@ -161,12 +300,28 @@ export const PatientRegistration: React.FC<PatientRegistrationProps> = ({ savePa
           subtitle: t('promotionLoadErrorSubtitle', 'Verifique que la persona exista e intente nuevamente.'),
           kind: 'error',
         });
+        setIsLoadingPromotion(false);
       });
 
     return () => {
       cancelled = true;
     };
-  }, [search, inEditMode, isOffline, setInitialFormValues, t]);
+  }, [hasPatientRoute, isOffline, promotePersonUuid, setInitialFormValues, t]);
+
+  const hydratedQueuedRegistrationUuid = useRef<string>();
+  useEffect(() => {
+    const queuedRegistration = initialFormState.queuedRegistration;
+    if (!queuedRegistration || hydratedQueuedRegistrationUuid.current === patientUuidToEdit) {
+      return;
+    }
+
+    setCapturePhotoProps(queuedRegistration._patientRegistrationData.capturePhotoProps ?? null);
+    savePatientTransactionManager.current = Object.assign(
+      new SavePatientTransactionManager(),
+      queuedRegistration._patientRegistrationData.savePatientTransactionManager,
+    );
+    hydratedQueuedRegistrationUuid.current = patientUuidToEdit;
+  }, [initialFormState.queuedRegistration, patientUuidToEdit]);
 
   const sections: Array<SectionDefinition> = useMemo(() => {
     return config.sections
@@ -175,17 +330,68 @@ export const PatientRegistration: React.FC<PatientRegistrationProps> = ({ savePa
           config.sectionDefinitions.filter((s) => s.id === sectionName)[0] ??
           builtInSections.filter((s) => s.id === sectionName)[0],
       )
-      .filter((s) => s);
-  }, [config.sections, config.sectionDefinitions]);
+      .filter((section) => section && (section.id !== 'medicalRecord' || canEditMedicalRecord));
+  }, [canEditMedicalRecord, config.sections, config.sectionDefinitions]);
 
   const onFormSubmit = async (values: FormValues, helpers: FormikHelpers<FormValues>) => {
     const abortController = new AbortController();
     helpers.setSubmitting(true);
 
-    const updatedFormValues = { ...values, identifiers: filterOutUndefinedPatientIdentifiers(values.identifiers) };
+    const submittedAttributes = preserveMedicalRecordAttributes(
+      values.attributes,
+      initialFormValuesState.attributes,
+      medicalRecordAttributeUuids,
+      canEditMedicalRecord,
+    );
+
+    const updatedFormValues = {
+      ...values,
+      attributes: submittedAttributes,
+      identifiers: filterOutUndefinedPatientIdentifiers(values.identifiers),
+    };
     try {
-      await savePatientForm(
-        !inEditMode,
+      if (isNewPatient && !isOffline && !savePatientTransactionManager.current.patientSaved) {
+        const documentEntry = getDocumentIdentifierEntry(updatedFormValues.identifiers, identifierTypes ?? []);
+        if (documentEntry?.[1]?.identifierValue) {
+          const definition = getDocumentTypeDefinitionByIdentifierType(documentEntry[1].identifierTypeUuid);
+          const documentNumber = normalizeDocumentNumber(documentEntry[1].identifierValue, definition);
+          const identityMatches = await searchLocalIdentityByDocument(documentNumber, abortController, {
+            patientIdentifierTypeUuid: definition?.patientIdentifierTypeUuid ?? undefined,
+            personDocumentTypeConceptUuid: definition?.documentTypeConceptUuid,
+          });
+          const existingPatient = identityMatches.find((match) => match.kind === 'patient');
+          const existingPerson = identityMatches.find((match) => match.kind === 'person');
+
+          if (existingPatient) {
+            throw {
+              responseBody: {
+                error: {
+                  message: t(
+                    'duplicatePatientDocumentError',
+                    'Ya existe un paciente con este documento. Búsquelo antes de registrar uno nuevo.',
+                  ),
+                },
+              },
+            };
+          }
+
+          if (existingPerson && existingPerson.uuid !== updatedFormValues.personUuidToPromote) {
+            throw {
+              responseBody: {
+                error: {
+                  message: t(
+                    'duplicatePersonDocumentError',
+                    'Ya existe una persona con este documento. Use la opción de promover persona para evitar duplicados.',
+                  ),
+                },
+              },
+            };
+          }
+        }
+      }
+
+      const savedPatientUuid = await savePatientForm(
+        isNewPatient,
         updatedFormValues,
         patientUuidMap,
         initialAddressFieldValues,
@@ -215,7 +421,9 @@ export const PatientRegistration: React.FC<PatientRegistrationProps> = ({ savePa
       const rawAfterUrl = new URLSearchParams(search).get('afterUrl');
       // Only allow relative paths (must start with /) to prevent open redirect
       const afterUrl = rawAfterUrl && rawAfterUrl.startsWith('/') ? rawAfterUrl : null;
-      const redirectUrl = interpolateUrl(afterUrl || config.links.submitButton, { patientUuid: values.patientUuid });
+      const redirectUrl = interpolateUrl(afterUrl || config.links.submitButton, {
+        patientUuid: savedPatientUuid ?? updatedFormValues.patientUuid,
+      });
 
       setTarget(redirectUrl);
     } catch (error: unknown) {
@@ -245,14 +453,6 @@ export const PatientRegistration: React.FC<PatientRegistrationProps> = ({ savePa
 
   const getErrorMessages = (errors: FormikErrors<FormValues>) => {
     const messages = new Set<string>();
-    const defaultFieldLabels: Record<string, string> = {
-      birthdate: 'Date of birth',
-      familyName: 'Family name',
-      familyName2: 'Second family name',
-      gender: 'Gender',
-      givenName: 'First name',
-      identifiers: 'Identification data',
-    };
     const defaultErrorMessages: Record<string, string> = {
       birthdayRequired: 'Birthday is required',
       familyNameRequired: 'Family name is required',
@@ -268,42 +468,12 @@ export const PatientRegistration: React.FC<PatientRegistrationProps> = ({ savePa
       return translatedText === key ? defaultValue : translatedText;
     };
 
-    const getFieldLabel = (path: Array<string>) => {
-      const [section, field] = path;
-
-      if (!section) {
-        return translateWithFallback('fieldRequired', 'Field is required');
-      }
-
-      if (section === 'identifiers') {
-        return translateWithFallback('idFieldLabelText', defaultFieldLabels.identifiers);
-      }
-
-      if (field) {
-        const labelKey = `${field}LabelText`;
-        const translatedLabel = translateWithFallback(labelKey, defaultFieldLabels[field] ?? field);
-
-        if (translatedLabel !== field || defaultFieldLabels[field]) {
-          return translatedLabel;
-        }
-      }
-
-      const defaultFieldLabel = defaultFieldLabels[section];
-      const fieldLabel = translateWithFallback(`${section}LabelText`, defaultFieldLabel ?? section);
-
-      if (fieldLabel !== section || defaultFieldLabel) {
-        return fieldLabel;
-      }
-
-      return translateWithFallback(`${section}Section`, section);
-    };
-
     const collectMessages = (value: unknown, path: Array<string> = []) => {
       if (!value) {
         return;
       }
       if (typeof value === 'string') {
-        const fieldLabel = getFieldLabel(path);
+        const fieldLabel = getPatientRegistrationFieldLabel(path, translateWithFallback, attributeFieldLabels);
         const errorMessage = translateWithFallback(value, defaultErrorMessages[value] ?? value);
         messages.add(`${fieldLabel}: ${errorMessage}`);
         return;
@@ -369,13 +539,39 @@ export const PatientRegistration: React.FC<PatientRegistrationProps> = ({ savePa
     }
   };
 
+  const initialDataError = initialFormState.error ?? initialAddressState.error ?? patientUuidMapState.error;
+  const hasStaleInitialData = [initialFormState, initialAddressState, patientUuidMapState].some(
+    (state) => state.hydratedPatientUuid && state.hydratedPatientUuid !== patientUuidToEdit,
+  );
+  const isLoadingInitialData =
+    isLoadingPromotion ||
+    (hasPatientRoute &&
+      (hasStaleInitialData ||
+        (isLoadingPatientToEdit && !initialFormState.queuedRegistration) ||
+        initialFormState.isLoading ||
+        initialAddressState.isLoading ||
+        patientUuidMapState.isLoading));
+
+  if (isLoadingInitialData) {
+    return <InlineLoading description={t('loadingPatientRegistration', 'Cargando datos del paciente...')} />;
+  }
+
+  if (hasPatientRoute && initialDataError) {
+    return (
+      <InlineNotification
+        hideCloseButton
+        kind="error"
+        title={t('patientRegistrationLoadErrorTitle', 'No se pudo cargar el registro del paciente')}
+        subtitle={
+          initialDataError?.message ??
+          t('patientRegistrationLoadErrorSubtitle', 'Recargue la página o contacte al administrador del sistema.')
+        }
+      />
+    );
+  }
+
   return (
-    <Formik
-      enableReinitialize
-      initialValues={initialFormValuesState}
-      validationSchema={validationSchema}
-      onSubmit={onFormSubmit}
-    >
+    <Formik initialValues={initialFormValuesState} validationSchema={validationSchema} onSubmit={onFormSubmit}>
       {(props) => {
         const handleRegisterPatient = async () => {
           const errors = await props.validateForm();
@@ -430,7 +626,7 @@ export const PatientRegistration: React.FC<PatientRegistrationProps> = ({ savePa
                 <div className={styles.stickyColumn}>
                   <h4>
                     {inEditMode
-                      ? t('editPatientDetails', 'Edit patient details')
+                      ? t('updatePatient', 'Update patient')
                       : t('createNewPatient', 'Create new patient')}
                   </h4>
                   {showDummyData && <DummyDataInput setValues={props.setValues} />}

@@ -272,6 +272,55 @@ describe('CopyResponsibleDataButton', () => {
     expect(screen.getByText('Seleccione un responsable antes de copiar datos')).toBeInTheDocument();
   });
 
+  it('does not copy from an unrelated relationship when no responsible person is selected', async () => {
+    const user = userEvent.setup();
+    renderCopyButton('insurance', {
+      ...baseValues,
+      relationships: [
+        {
+          action: 'ADD',
+          relatedPersonUuid: 'unrelated-person-uuid',
+          relationshipType: 'unrelated-type-uuid/aIsToB',
+        },
+      ],
+    });
+
+    await user.click(screen.getByRole('button', { name: /copiar seguro del responsable/i }));
+
+    expect(mockFetchPersonRegistrationCopyData).not.toHaveBeenCalled();
+    expect(screen.getByText('Seleccione un responsable antes de copiar datos')).toBeInTheDocument();
+  });
+
+  it('requires an explicit source when more than one responsible person is available', async () => {
+    const user = userEvent.setup();
+    const relationshipType = '057de23f-3d9c-4314-9391-4452970739c6/aIsToB';
+    renderCopyButton('insurance', {
+      ...baseValues,
+      relationships: [
+        {
+          action: 'ADD',
+          relatedPersonName: 'María Quispe',
+          relatedPersonUuid: 'responsible-person-uuid',
+          relationshipType,
+        },
+        {
+          action: 'ADD',
+          relatedPersonName: 'Juan Quispe',
+          relatedPersonUuid: 'second-responsible-uuid',
+          relationshipType,
+        },
+      ],
+    });
+
+    await user.click(screen.getByRole('button', { name: /copiar seguro del responsable/i }));
+    expect(mockFetchPersonRegistrationCopyData).not.toHaveBeenCalled();
+
+    await user.selectOptions(screen.getByLabelText('Responsable de origen'), 'second-responsible-uuid');
+    await user.click(screen.getByRole('button', { name: /copiar seguro del responsable/i }));
+
+    await waitFor(() => expect(mockFetchPersonRegistrationCopyData).toHaveBeenCalledWith('second-responsible-uuid'));
+  });
+
   it('does not show copy actions for adult patients', () => {
     renderCopyButton('residenceContact', { ...baseValues, birthdate: '1990-01-01' });
 

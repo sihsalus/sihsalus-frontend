@@ -279,6 +279,19 @@ describe('ObsField', () => {
     expect(screen.getByRole('option', { name: 'Mexico' })).toBeInTheDocument();
   });
 
+  it('renders a contained error when coded answers cannot be loaded', () => {
+    mockUseConceptAnswers.mockReturnValue({
+      data: undefined,
+      error: new Error('forbidden'),
+      isLoading: false,
+    });
+
+    render(<ObsField fieldDefinition={codedFieldDef} />);
+
+    expect(screen.getByText(/no se pudo cargar el campo clínico/i)).toBeInTheDocument();
+    expect(screen.queryByRole('combobox', { name: 'Nationality' })).not.toBeInTheDocument();
+  });
+
   it('select uses answerConcept for answers when it is provided', async () => {
     render(<ObsField fieldDefinition={{ ...codedFieldDef, answerConceptSetUuid: 'other-countries-uuid' }} />);
 

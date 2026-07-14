@@ -1,9 +1,19 @@
+import {
+  calculatePatientAge,
+  calendarDateToLocalDate,
+  getLocalCalendarDate,
+  MAX_PATIENT_AGE_MONTHS_REMAINDER,
+  MAX_PATIENT_AGE_YEARS,
+  parsePatientBirthdate,
+  validatePatientBirthdate,
+  validatePlainNumberInput,
+} from '@openmrs/esm-utils';
 import dayjs from 'dayjs';
 import mapValues from 'lodash-es/mapValues';
 import * as Yup from 'yup';
 
 import { type FieldDefinition, type RegistrationConfig } from '../../config-schema';
-import { patientFamilyNameMaxLength, patientGivenNameMaxLength } from '../patient-name-limits';
+import { patientFamilyNameMaxLength, patientGivenNameMaxLength, patientNamePattern } from '../patient-name-limits';
 import { getDatetime } from '../patient-registration.resource';
 import {
   type FetchedPatientIdentifierType,
@@ -21,7 +31,7 @@ const t = (key: string, _value: string) => key;
  * and periods. This blocks digits and symbols such as `@`, `#`, `/`, etc. while still
  * supporting names like "O'Brien", "De la Cruz" or "Jean-Pierre".
  */
-const nameRegex = /^\p{L}[\p{L}\p{M}'.\- ]*$/u;
+const nameRegex = patientNamePattern;
 const nameInvalidCharactersMessage = t(
   'nameContainsInvalidCharacters',
   'Name can only contain letters, spaces, hyphens and apostrophes',
@@ -66,6 +76,48 @@ function parseDateOnly(value: unknown) {
 
   const parsedDate = dayjs(value);
   return parsedDate.isValid() ? parsedDate.startOf('day') : undefined;
+}
+
+function getPatientBirthdateParts(value: unknown) {
+  if (value instanceof Date) {
+    return Number.isNaN(value.getTime()) ? null : getLocalCalendarDate(value);
+  }
+
+  return typeof value === 'string' ? parsePatientBirthdate(value) : null;
+}
+
+function getBirthdateValidation(value: Date | undefined, originalValue: unknown) {
+  if (!value) {
+    return 'invalid';
+  }
+
+  const birthdate = getPatientBirthdateParts(typeof originalValue === 'string' ? originalValue : value);
+  return birthdate ? validatePatientBirthdate(birthdate) : 'invalid';
+}
+
+function getOriginalValidationValue(context: object) {
+  return (context as { originalValue?: unknown }).originalValue;
+}
+
+function transformPlainInteger(value: unknown, originalValue: unknown) {
+  if (originalValue === '' || originalValue === null || originalValue === undefined) {
+    return undefined;
+  }
+
+  return validatePlainNumberInput(String(originalValue)).isInvalidFormat ? Number.NaN : value;
+}
+
+function transformPatientBirthdate(value: unknown, originalValue: unknown) {
+  if (originalValue === '' || originalValue === null || originalValue === undefined) {
+    return undefined;
+  }
+
+  if (typeof originalValue === 'string') {
+    const birthdate = parsePatientBirthdate(originalValue);
+    return birthdate ? calendarDateToLocalDate(birthdate) : new Date(Number.NaN);
+  }
+
+  return value;
 }
 
 function buildIdentifierFormatRegex(format?: string): RegExp | undefined {
@@ -170,20 +222,14 @@ export function isMinorPatient(values: Pick<FormValues, 'birthdate' | 'birthdate
     return false;
   }
 
-  return dayjs().diff(dayjs(values.birthdate), 'year') < 18;
+  const birthdate = getPatientBirthdateParts(values.birthdate);
+  const age = birthdate ? calculatePatientAge(birthdate) : null;
+  return age != null && age < 18;
 }
 
 function getAgeFromBirthdate(birthdate?: string) {
-  if (!birthdate) {
-    return undefined;
-  }
-
-  const parsedBirthdate = dayjs(birthdate);
-  if (!parsedBirthdate.isValid()) {
-    return undefined;
-  }
-
-  return dayjs().diff(parsedBirthdate, 'year');
+  const parsedBirthdate = birthdate ? parsePatientBirthdate(birthdate) : null;
+  return parsedBirthdate ? (calculatePatientAge(parsedBirthdate) ?? undefined) : undefined;
 }
 
 /**
@@ -204,11 +250,71 @@ export function hasResponsibleRelationship(
       (relationship) =>
         relationship.action !== 'DELETE' &&
         hasRelatedPerson(relationship) &&
+        relationship.isCompanion &&
         !!relationship.relationshipType &&
         minorResponsibleRelationshipTypes.includes(relationship.relationshipType) &&
-        !isUnderageResponsibleRelationship(relationship, minorResponsibleRelationshipTypes),
+        isAdultResponsibleRelationship(relationship, minorResponsibleRelationshipTypes),
     ) ?? false
   );
+}
+
+const fatherRelationshipTypeUuid = '8d91a210-c2cc-11de-8d13-0010c6dffd0f';
+
+function normalizeRelationshipLabel(value?: string) {
+  return (value ?? '')
+    .trim()
+    .toLocaleLowerCase()
+    .normalize('NFD')
+    .replace(/\p{Diacritic}/gu, '');
+}
+
+function isActiveCompleteRelationship(relationship: RelationshipValue) {
+  return relationship.action !== 'DELETE' && !!relationship.relationshipType && hasRelatedPerson(relationship);
+}
+
+export function hasMultipleFatherRelationships(relationships: Array<RelationshipValue> | undefined) {
+  const fatherRelationships =
+    relationships?.filter((relationship) => {
+      if (!isActiveCompleteRelationship(relationship)) {
+        return false;
+      }
+
+      const [relationshipTypeUuid, direction] = relationship.relationshipType.split('/');
+      return (
+        (relationshipTypeUuid === fatherRelationshipTypeUuid && direction === 'aIsToB') ||
+        ['father', 'padre'].includes(normalizeRelationshipLabel(relationship.relation))
+      );
+    }) ?? [];
+
+  return fatherRelationships.length > 1;
+}
+
+export function hasMultiplePrimaryResponsiblePersons(relationships: Array<RelationshipValue> | undefined) {
+  return (
+    (relationships?.filter((relationship) => isActiveCompleteRelationship(relationship) && relationship.isCompanion)
+      .length ?? 0) > 1
+  );
+}
+
+export function isAdultResponsibleRelationship(
+  relationship: RelationshipValue,
+  minorResponsibleRelationshipTypes: Array<string> = [],
+) {
+  if (
+    relationship.action === 'DELETE' ||
+    !relationship.relationshipType ||
+    !minorResponsibleRelationshipTypes.includes(relationship.relationshipType)
+  ) {
+    return false;
+  }
+
+  const newPersonAge = relationship.newPerson?.estimatedAge?.trim();
+  if (newPersonAge) {
+    return Number(newPersonAge) >= 18;
+  }
+
+  const relatedPersonAge = relationship.relatedPersonAge ?? getAgeFromBirthdate(relationship.relatedPersonBirthdate);
+  return typeof relatedPersonAge === 'number' && relatedPersonAge >= 18;
 }
 
 export function isUnderageResponsibleRelationship(
@@ -217,6 +323,7 @@ export function isUnderageResponsibleRelationship(
 ) {
   if (
     relationship.action === 'DELETE' ||
+    !relationship.isCompanion ||
     !relationship.relationshipType ||
     !minorResponsibleRelationshipTypes.includes(relationship.relationshipType)
   ) {
@@ -239,6 +346,24 @@ export function hasUnderageResponsibleRelationship(
   return (
     relationships?.some((relationship) =>
       isUnderageResponsibleRelationship(relationship, minorResponsibleRelationshipTypes),
+    ) ?? false
+  );
+}
+
+export function hasResponsibleRelationshipWithUnknownAge(
+  relationships: Array<RelationshipValue> | undefined,
+  minorResponsibleRelationshipTypes: Array<string> = [],
+) {
+  return (
+    relationships?.some(
+      (relationship) =>
+        relationship.action !== 'DELETE' &&
+        hasRelatedPerson(relationship) &&
+        relationship.isCompanion &&
+        !!relationship.relationshipType &&
+        minorResponsibleRelationshipTypes.includes(relationship.relationshipType) &&
+        !isAdultResponsibleRelationship(relationship, minorResponsibleRelationshipTypes) &&
+        !isUnderageResponsibleRelationship(relationship, minorResponsibleRelationshipTypes),
     ) ?? false
   );
 }
@@ -333,11 +458,21 @@ export function getValidationSchema(
       is: false,
       // biome-ignore lint/suspicious/noThenProperty: Yup's conditional schema API requires the `then` property.
       then: Yup.date()
+        .transform(transformPatientBirthdate)
+        .typeError(t('birthdayInvalid', 'Enter a valid date of birth'))
         .required(t('birthdayRequired', 'Birthday is required'))
-        .max(Date(), t('birthdayNotInTheFuture', 'Birthday cannot be in future'))
-        .min(
-          dayjs().subtract(140, 'years').toDate(),
+        .test('birthdate-valid', t('birthdayInvalid', 'Enter a valid date of birth'), function (value) {
+          return !value || getBirthdateValidation(value, getOriginalValidationValue(this)) !== 'invalid';
+        })
+        .test('birthdate-not-in-future', t('birthdayNotInTheFuture', 'Birthday cannot be in future'), function (value) {
+          return getBirthdateValidation(value, getOriginalValidationValue(this)) !== 'future';
+        })
+        .test(
+          'birthdate-not-too-old',
           t('birthdayNotOver140YearsAgo', 'Birthday cannot be more than 140 years ago'),
+          function (value) {
+            return getBirthdateValidation(value, getOriginalValidationValue(this)) !== 'too-old';
+          },
         )
         .nullable(),
       otherwise: Yup.date().nullable(),
@@ -346,12 +481,36 @@ export function getValidationSchema(
       is: true,
       // biome-ignore lint/suspicious/noThenProperty: Yup's conditional schema API requires the `then` property.
       then: Yup.number()
+        .transform(transformPlainInteger)
+        .typeError(t('estimatedAgeInvalid', 'Estimated age must be a whole number between 0 and 140'))
         .required(t('yearsEstimateRequired', 'Estimated years required'))
+        .integer(t('estimatedYearsMustBeInteger', 'Estimated years must be a whole number'))
         .min(0, t('negativeYears', 'Estimated years cannot be negative'))
-        .max(140, t('nonsensicalYears', 'Estimated years cannot be more than 140')),
+        .max(MAX_PATIENT_AGE_YEARS, t('nonsensicalYears', 'Estimated years cannot be more than 140')),
       otherwise: Yup.number().nullable(),
     }),
-    monthsEstimated: Yup.number().min(0, t('negativeMonths', 'Estimated months cannot be negative')),
+    monthsEstimated: Yup.number().when('birthdateEstimated', {
+      is: true,
+      // biome-ignore lint/suspicious/noThenProperty: Yup's conditional schema API requires the `then` property.
+      then: Yup.number()
+        .transform(transformPlainInteger)
+        .typeError(t('estimatedMonthsInvalid', 'Estimated months must be a whole number between 0 and 11'))
+        .integer(t('estimatedMonthsInvalid', 'Estimated months must be a whole number between 0 and 11'))
+        .min(0, t('negativeMonths', 'Estimated months cannot be negative'))
+        .max(
+          MAX_PATIENT_AGE_MONTHS_REMAINDER,
+          t('estimatedMonthsInvalid', 'Estimated months must be a whole number between 0 and 11'),
+        )
+        .test(
+          'estimated-age-not-over-maximum',
+          t('estimatedAgeOverMaximum', 'Estimated age cannot be more than 140 years'),
+          function (months) {
+            const years = Number(this.parent.yearsEstimated);
+            return years < MAX_PATIENT_AGE_YEARS || !months;
+          },
+        ),
+      otherwise: Yup.number().nullable(),
+    }),
     isDead: Yup.boolean(),
     deathDate: Yup.date()
       .when('isDead', {
@@ -367,7 +526,7 @@ export function getValidationSchema(
         function (value) {
           const { birthdate } = this.parent;
           if (birthdate && value) {
-            return dayjs(value).isAfter(birthdate);
+            return !dayjs(value).startOf('day').isBefore(dayjs(birthdate).startOf('day'));
           }
           return true;
         },
@@ -418,18 +577,20 @@ export function getValidationSchema(
           const identifierType = identifierTypes.find(
             (type) => type.fieldName === fieldName || type.uuid === identifier?.identifierTypeUuid,
           );
+          const identifierValueRequired = Boolean(
+            identifier?.required || config.defaultPatientIdentifierTypes?.includes(identifier?.identifierTypeUuid),
+          );
           const peruIdentifierRule = getPeruIdentifierRule(identifierType, identifier);
           const formatRegex = peruIdentifierRule?.pattern ?? buildIdentifierFormatRegex(identifierType?.format);
 
           return Yup.object({
             required: Yup.bool(),
             identifierValue: Yup.string()
-              .when('required', {
-                is: true,
-                // biome-ignore lint/suspicious/noThenProperty: Yup's conditional schema API requires the `then` property.
-                then: Yup.string().required(t('identifierValueRequired', 'Identifier value is required')),
-                otherwise: Yup.string().notRequired(),
-              })
+              .test(
+                'identifier-required',
+                t('identifierValueRequired', 'Identifier value is required'),
+                (value) => !identifierValueRequired || Boolean(value?.trim()),
+              )
               .test(
                 'identifier-format',
                 peruIdentifierRule
@@ -453,13 +614,25 @@ export function getValidationSchema(
         Yup.object()
           .shape({
             relatedPersonUuid: Yup.string(),
-            relationshipType: Yup.string().required(),
+            relationshipType: Yup.string().required(
+              t('relationshipTypeRequired', 'Select the relationship to the patient before registering the person'),
+            ),
           })
           .test(
             'related-person-selected-or-pending',
             t('relationshipPersonMustExist', 'Family member or companion must be an existing person'),
             (relationship) => hasRelatedPerson(relationship as RelationshipValue),
           ),
+      )
+      .test(
+        'patient-has-only-one-father',
+        t('patientCanOnlyHaveOneFather', 'The patient can only have one father'),
+        (relationships?: Array<RelationshipValue>) => !hasMultipleFatherRelationships(relationships),
+      )
+      .test(
+        'patient-has-only-one-primary-responsible',
+        t('patientCanOnlyHaveOnePrimaryResponsible', 'Select only one primary responsible person'),
+        (relationships?: Array<RelationshipValue>) => !hasMultiplePrimaryResponsiblePersons(relationships),
       )
       .test(
         'responsible-relationship-must-be-adult',
@@ -469,6 +642,20 @@ export function getValidationSchema(
           return (
             !isMinorPatient(values) ||
             !hasUnderageResponsibleRelationship(
+              relationships,
+              config.relationshipOptions?.minorResponsibleRelationshipTypes,
+            )
+          );
+        },
+      )
+      .test(
+        'responsible-relationship-age-must-be-known',
+        t('responsiblePersonAgeUnknown', 'The responsible person must have a known age or date of birth'),
+        function (relationships?: Array<RelationshipValue>) {
+          const values = this.parent as FormValues;
+          return (
+            !isMinorPatient(values) ||
+            !hasResponsibleRelationshipWithUnknownAge(
               relationships,
               config.relationshipOptions?.minorResponsibleRelationshipTypes,
             )
@@ -486,6 +673,10 @@ export function getValidationSchema(
           return (
             !isMinorPatient(values) ||
             hasUnderageResponsibleRelationship(
+              relationships,
+              config.relationshipOptions?.minorResponsibleRelationshipTypes,
+            ) ||
+            hasResponsibleRelationshipWithUnknownAge(
               relationships,
               config.relationshipOptions?.minorResponsibleRelationshipTypes,
             ) ||

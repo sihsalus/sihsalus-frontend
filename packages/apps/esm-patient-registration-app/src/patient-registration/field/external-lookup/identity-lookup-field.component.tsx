@@ -124,7 +124,10 @@ export const IdentityLookupField = () => {
     setStatus(null);
 
     try {
-      const matches = await searchLocalIdentityByDocument(normalizedNumber);
+      const matches = await searchLocalIdentityByDocument(normalizedNumber, undefined, {
+        patientIdentifierTypeUuid: definition?.patientIdentifierTypeUuid ?? undefined,
+        personDocumentTypeConceptUuid: definition?.documentTypeConceptUuid,
+      });
       const foundPatient = matches.find((match): match is LocalPatientIdentityMatch => match.kind === 'patient');
       const foundPerson = matches.find((match): match is LocalPersonIdentityMatch => match.kind === 'person');
 

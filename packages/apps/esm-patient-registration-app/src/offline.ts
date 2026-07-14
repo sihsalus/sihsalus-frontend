@@ -1,5 +1,6 @@
 import {
   fhirBaseUrl,
+  getConfig,
   makeUrl,
   messageOmrsServiceWorker,
   navigate,
@@ -9,7 +10,8 @@ import {
   setupOfflineSync,
 } from '@openmrs/esm-framework';
 
-import { patientRegistration, personRelationshipRepresentation } from './constants';
+import { type RegistrationConfig } from './config-schema';
+import { moduleName, patientRegistration, personRelationshipRepresentation } from './constants';
 import {
   fetchAddressTemplate,
   fetchAllFieldDefinitionTypes,
@@ -34,13 +36,13 @@ export function setupOffline() {
     type: 'patient',
     displayName: 'Patient registration',
     async isSynced(patientUuid) {
-      const expectedUrls = getPatientUrlsToBeCached(patientUuid);
+      const expectedUrls = await getPatientUrlsToBeCached(patientUuid);
       const cache = await caches.open('omrs-spa-cache-v1');
       const keys = (await cache.keys()).map((key) => key.url);
       return expectedUrls.every((url) => keys.includes(url));
     },
     async sync(patientUuid) {
-      const urlsToCache = getPatientUrlsToBeCached(patientUuid);
+      const urlsToCache = await getPatientUrlsToBeCached(patientUuid);
       await Promise.allSettled(
         urlsToCache.map(async (url) => {
           await messageOmrsServiceWorker({
@@ -55,13 +57,23 @@ export function setupOffline() {
   });
 }
 
-function getPatientUrlsToBeCached(patientUuid: string) {
-  return [
+export async function getPatientUrlsToBeCached(patientUuid: string) {
+  const config = await getConfig<RegistrationConfig>(moduleName);
+  const urls = [
     `${fhirBaseUrl}/Patient/${patientUuid}`,
     `${restBaseUrl}/relationship?v=${personRelationshipRepresentation}&person=${patientUuid}`,
-    `${restBaseUrl}/person/${patientUuid}/attribute`,
+    `${restBaseUrl}/person/${patientUuid}?v=custom:(uuid,display,causeOfDeath,dead,deathDate,causeOfDeathNonCoded)`,
+    `${restBaseUrl}/person/${patientUuid}/attribute?v=custom:(uuid,display,attributeType:(uuid,display,format),value)`,
     `${restBaseUrl}/patient/${patientUuid}/identifier?v=custom:(uuid,identifier,identifierType:(uuid,required,name),preferred)`,
-  ].map((url) => globalThis.location.origin + makeUrl(url));
+  ];
+
+  if (config.registrationObs?.encounterTypeUuid) {
+    urls.push(
+      `${restBaseUrl}/encounter?patient=${patientUuid}&v=custom:(encounterDatetime,obs:(concept:ref,value:ref))&encounterType=${config.registrationObs.encounterTypeUuid}`,
+    );
+  }
+
+  return urls.map((url) => globalThis.location.origin + makeUrl(url));
 }
 
 async function precacheStaticAssets() {

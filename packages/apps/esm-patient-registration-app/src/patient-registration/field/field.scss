@@ -72,6 +72,15 @@
   min-width: 0;
 }
 
+.codedRadioGroup {
+  min-block-size: layout.$spacing-09;
+
+  :global(.cds--radio-button-group) {
+    flex-wrap: wrap;
+    gap: layout.$spacing-04 layout.$spacing-06;
+  }
+}
+
 .fullWidthInDesktopView {
   width: 100%;
   grid-column: 1 / -1;
@@ -300,6 +309,7 @@
   }
 }
 
+.fieldError,
 .radioFieldError {
   color: colors.$red-60;
   display: block;

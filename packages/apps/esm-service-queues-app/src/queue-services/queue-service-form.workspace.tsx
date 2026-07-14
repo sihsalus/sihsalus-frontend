@@ -11,7 +11,12 @@ import {
   TextInput,
 } from '@carbon/react';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { type DefaultWorkspaceProps, restBaseUrl, showSnackbar } from '@openmrs/esm-framework';
+import {
+  type DefaultWorkspaceProps,
+  getUserFacingErrorMessage,
+  restBaseUrl,
+  showSnackbar,
+} from '@openmrs/esm-framework';
 import type { TFunction } from 'i18next';
 import React, { useEffect } from 'react';
 import { Controller, useForm } from 'react-hook-form';
@@ -123,7 +128,11 @@ const QueueServiceForm: React.FC<DefaultWorkspaceProps> = ({ closeWorkspace }) =
         title: t('errorCreatingQueueService', 'Error creating queue service'),
         kind: 'error',
         isLowContrast: false,
-        subtitle: error?.responseBody?.message || error?.message,
+        subtitle: getUserFacingErrorMessage(
+          error,
+          t('queueOperationErrorMessage', 'The queue operation could not be completed. Please try again.'),
+          { logContext: 'Create queue service' },
+        ),
       });
     }
   };

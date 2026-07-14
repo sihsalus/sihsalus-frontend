@@ -3,6 +3,7 @@ import { reportError } from '@openmrs/esm-error-handling';
 import { createGlobalStore } from '@openmrs/esm-state';
 import { isUndefined } from 'lodash-es';
 import { Observable } from 'rxjs';
+import { privilegesAreEquivalent } from './legacy-privilege-aliases';
 import { openmrsFetch, restBaseUrl, sessionEndpoint } from './openmrs-fetch';
 import type { FetchResponse, LoggedInUser, Privilege, Role, Session, SessionLocation } from './types';
 
@@ -174,10 +175,13 @@ sessionStore.subscribe((state: SessionStore) => {
 });
 
 function userHasPrivilege(requiredPrivilege: string | string[] | undefined, user: { privileges: Array<Privilege> }) {
+  const hasPrivilege = (privilege: string) =>
+    user.privileges.some((grantedPrivilege) => privilegesAreEquivalent(privilege, grantedPrivilege.display));
+
   if (typeof requiredPrivilege === 'string') {
-    return !isUndefined(user.privileges.find((p) => requiredPrivilege === p.display));
+    return hasPrivilege(requiredPrivilege);
   } else if (Array.isArray(requiredPrivilege)) {
-    return requiredPrivilege.every((rp) => !isUndefined(user.privileges.find((p) => rp === p.display)));
+    return requiredPrivilege.every(hasPrivilege);
   } else if (!isUndefined(requiredPrivilege)) {
     console.error(`Could not understand privileges "${requiredPrivilege}"`);
   }
@@ -185,8 +189,10 @@ function userHasPrivilege(requiredPrivilege: string | string[] | undefined, user
   return true;
 }
 
+const superUserRoles = new Set(['System Developer', 'Application: Has Super User Privileges']);
+
 function isSuperUser(user: { roles: Array<Role> }) {
-  return !isUndefined(user.roles.find((role) => role.display === 'System Developer'));
+  return user.roles.some((role) => superUserRoles.has(role.name) || superUserRoles.has(role.display));
 }
 
 /**

@@ -1,4 +1,5 @@
 import type { OpenmrsResource } from '@openmrs/esm-framework';
+import { parsePatientBirthdate } from '@openmrs/esm-utils';
 import classNames from 'classnames';
 import React, { useEffect, useMemo, useState } from 'react';
 
@@ -7,10 +8,7 @@ import { type AdvancedPatientSearchState } from '../types';
 
 import styles from './advanced-patient-search.scss';
 import PatientSearchComponent from './patient-search-lg.component';
-import {
-  identityDocumentAttributeUuids,
-  identityDocumentNumberAttributeUuid,
-} from './refine-search/person-attribute-field.component';
+import { identityDocumentNumberAttributeUuid } from './refine-search/person-attribute-field.component';
 import RefineSearch, { initialFilters } from './refine-search/refine-search.component';
 
 interface AdvancedPatientSearchProps {
@@ -39,7 +37,7 @@ const AdvancedPatientSearchComponent: React.FC<AdvancedPatientSearchProps> = ({
       }
     });
 
-    const attributesWithValues = Object.entries(filters.attributes || {}).filter(([_key, value]) => value !== '');
+    const attributesWithValues = Object.entries(filters.attributes || {}).filter(([_key, value]) => value?.trim());
 
     count += attributesWithValues.length;
     return count;
@@ -80,37 +78,29 @@ const AdvancedPatientSearchComponent: React.FC<AdvancedPatientSearchProps> = ({
           }
         }
 
-        // Date of birth filters
-        if (filters.dateOfBirth) {
-          const dayOfBirth = new Date(patient.person.birthdate).getDate();
-          if (dayOfBirth !== filters.dateOfBirth) {
-            return false;
-          }
-        }
-
-        if (filters.monthOfBirth) {
-          const monthOfBirth = new Date(patient.person.birthdate).getMonth() + 1;
-          if (monthOfBirth !== filters.monthOfBirth) {
-            return false;
-          }
-        }
-
-        if (filters.yearOfBirth) {
-          const yearOfBirth = new Date(patient.person.birthdate).getFullYear();
-          if (yearOfBirth !== filters.yearOfBirth) {
+        // A birthdate is a calendar date. Parsing it as a JS Date shifts UTC-midnight
+        // values to the previous day in Peru and other time zones west of UTC.
+        if (filters.dateOfBirth != null || filters.monthOfBirth != null || filters.yearOfBirth != null) {
+          const birthdate = parsePatientBirthdate(patient.person.birthdate);
+          if (
+            !birthdate ||
+            (filters.dateOfBirth != null && birthdate.day !== filters.dateOfBirth) ||
+            (filters.monthOfBirth != null && birthdate.month !== filters.monthOfBirth) ||
+            (filters.yearOfBirth != null && birthdate.year !== filters.yearOfBirth)
+          ) {
             return false;
           }
         }
 
         // Postcode filter
         if (filters.postcode) {
-          if (!patient.person.addresses.some((address) => address.postalCode === filters.postcode)) {
+          if (!patient.person.addresses?.some((address) => address.postalCode === filters.postcode)) {
             return false;
           }
         }
 
         // Age filter
-        if (filters.age) {
+        if (filters.age != null) {
           if (Number(patient.person.age) !== Number(filters.age)) {
             return false;
           }
@@ -119,15 +109,13 @@ const AdvancedPatientSearchComponent: React.FC<AdvancedPatientSearchProps> = ({
         // Person attributes filter
         if (Object.keys(filters.attributes).length) {
           for (const [attributeUuid, value] of Object.entries(filters.attributes)) {
-            if (value === '') continue;
-            if (
-              shouldSkipIdentityDocumentAttributeFilters &&
-              identityDocumentAttributeUuids.includes(attributeUuid as (typeof identityDocumentAttributeUuids)[number])
-            ) {
+            const normalizedFilterValue = value?.trim().toLowerCase();
+            if (!normalizedFilterValue) continue;
+            if (shouldSkipIdentityDocumentAttributeFilters && attributeUuid === identityDocumentNumberAttributeUuid) {
               continue;
             }
 
-            const matchingAttribute = patient.attributes.find((attr) => attr.attributeType.uuid === attributeUuid);
+            const matchingAttribute = patient.attributes?.find((attr) => attr.attributeType.uuid === attributeUuid);
 
             if (!matchingAttribute) return false;
 
@@ -136,10 +124,11 @@ const AdvancedPatientSearchComponent: React.FC<AdvancedPatientSearchProps> = ({
               ? (matchingAttribute.value as OpenmrsResource).uuid
               : String(matchingAttribute.value ?? '');
             const normalizedPatientAttributeValue = patientAttributeValue.toLowerCase();
-            const normalizedFilterValue = value.toLowerCase();
             const matchesAttributeValue = isValueObj
               ? normalizedPatientAttributeValue === normalizedFilterValue
-              : normalizedPatientAttributeValue.includes(normalizedFilterValue);
+              : attributeUuid === identityDocumentNumberAttributeUuid
+                ? normalizedPatientAttributeValue.trim() === normalizedFilterValue
+                : normalizedPatientAttributeValue.includes(normalizedFilterValue);
 
             if (!matchesAttributeValue) {
               return false;

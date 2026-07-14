@@ -14,7 +14,8 @@
     {
       "name": "visit-summary-widget",
       "slot": "visit-summary-slot",
-      "component": "visitDetail"
+      "component": "visitDetail",
+      "privileges": "app:hoja.clinica"
     },
     {
       "name": "active-visits-tile",

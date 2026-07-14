@@ -1,5 +1,5 @@
 import { getDefaultsFromConfigSchema, useConfig } from '@openmrs/esm-framework';
-import { render, screen, waitFor, within } from '@testing-library/react';
+import { fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import React from 'react';
 import { mockAdvancedSearchResults } from 'test-utils';
@@ -161,17 +161,15 @@ describe('AdvancedPatientSearchComponent', () => {
       expect(screen.getByText(/0 search result/)).toBeInTheDocument();
     });
 
-    it('filters by age correctly', async () => {
+    it('filters OpenMRS UTC-midnight birthdates as calendar dates in the Peru timezone', async () => {
       renderComponent();
 
-      // Set age filter
-      const ageInput = screen.getByRole('spinbutton', { name: /age/i });
-      await user.type(ageInput, '30');
+      fireEvent.change(screen.getByLabelText(/date of birth/i), { target: { value: '2019-09-25' } });
       await user.click(screen.getByRole('button', { name: /search/i }));
 
       const patientBanners = screen.getAllByRole('banner');
       expect(patientBanners).toHaveLength(1);
-      expect(within(patientBanners[0]).getByText(/Joseph Davis/i)).toBeInTheDocument();
+      expect(within(patientBanners[0]).getByText(/Joshua Johnson/i)).toBeInTheDocument();
     });
 
     it('filters by person attribute correctly', async () => {
@@ -184,6 +182,15 @@ describe('AdvancedPatientSearchComponent', () => {
       const patientBanners = screen.getAllByRole('banner');
       expect(patientBanners).toHaveLength(1);
       expect(within(patientBanners[0]).getByText(/Joshua Johnson/)).toBeInTheDocument();
+    });
+
+    it('matches document numbers exactly when refining a name search', async () => {
+      renderComponent();
+
+      await user.type(screen.getByLabelText(/^N.mero de Documento de Identidad$/i), '1234');
+      await user.click(screen.getByRole('button', { name: /search/i }));
+
+      expect(screen.getByText(/0 search result/)).toBeInTheDocument();
     });
 
     it('searches by identity document number entered in refine search when query is empty', async () => {
@@ -200,10 +207,8 @@ describe('AdvancedPatientSearchComponent', () => {
     it('combines multiple filters correctly', async () => {
       renderComponent();
 
-      // Set multiple filters
-      await user.click(screen.getByRole('tab', { name: /any/i }));
-      const ageInput = screen.getByRole('spinbutton', { name: /age/i });
-      await user.type(ageInput, '5');
+      await user.click(screen.getByRole('tab', { name: /^male$/i }));
+      fireEvent.change(screen.getByLabelText(/date of birth/i), { target: { value: '2019-09-25' } });
       await user.click(screen.getByRole('button', { name: /search/i }));
 
       const patientBanners = screen.getAllByRole('banner');

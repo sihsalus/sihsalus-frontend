@@ -63,7 +63,7 @@ describe('ResultsViewer', () => {
     expect(testResultsText).toBeInTheDocument();
     expect(
       screen.getByText(
-        /Sorry, there was a problem displaying this information. You can try to reload this page, or contact the site administrator and quote the error code above./i,
+        /there was a problem displaying this information/i,
       ),
     ).toBeInTheDocument();
   });

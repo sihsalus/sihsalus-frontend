@@ -158,6 +158,8 @@
   "saveAndClose": "Save and close",
   "saving": "Saving",
   "searchForAVisitType": "Search for a visit type",
+  "addPatientToQueue": "Add patient to queue",
+  "addingPatientToQueue": "Adding patient to queue",
   "searchForCauseOfDeath": "Search for a cause of death",
   "searching": "Searching...",
   "searchProvenance": "Search or type procedencia",

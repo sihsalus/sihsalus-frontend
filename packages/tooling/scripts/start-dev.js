@@ -36,10 +36,12 @@ let selfSignedBackendDispatcher;
 // Unset -> hot-reload the main apps edited during daily frontend work.
 // SIHSALUS_DEV_APPS=none -> serve pre-assembled importmap (no recompilation, just shell + proxy).
 const defaultDevApps = [
+  'esm-dispensing-app',
   'esm-login-app',
   'esm-patient-chart-app',
   'esm-patient-registration-app',
   'esm-patient-search-app',
+  'esm-patient-vitals-app',
   'esm-primary-navigation-app',
 ];
 

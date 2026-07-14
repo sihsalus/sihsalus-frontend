@@ -4,6 +4,7 @@ import {
   ExtensionSlot,
   isDesktop,
   launchWorkspace,
+  logError,
   showToast,
   useLayoutType,
   userHasAccess,
@@ -13,6 +14,7 @@ import React, { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { serviceQueuesEditPrivilege } from '../constants';
 import { useQueueEntries } from '../hooks/useQueueEntries';
+import { useUserFacingErrorMessage } from '../hooks/useUserFacingErrorMessage';
 import PatientQueueHeader from '../patient-queue-header/patient-queue-header.component';
 import { useColumns } from '../queue-table/cells/columns.resource';
 import QueueTable from '../queue-table/queue-table.component';
@@ -36,19 +38,18 @@ const QueueTablesForAllStatuses: React.FC<QueueTablesForAllStatusesProps> = ({
 }) => {
   const layout = useLayoutType();
   const { t } = useTranslation();
+  const errorMessage = useUserFacingErrorMessage(
+    errorFetchingQueue,
+    t('queueDataLoadErrorMessage', 'Queue information could not be loaded. Please try again.'),
+    'Load selected queue',
+  );
   const session = useSession();
   const canEdit = userHasAccess(serviceQueuesEditPrivilege, session?.user);
 
   const [searchTerm, setSearchTerm] = useState('');
 
   if (errorFetchingQueue) {
-    return (
-      <InlineNotification
-        kind="error"
-        title={t('invalidQueue', 'Invalid Queue')}
-        subtitle={errorFetchingQueue?.message}
-      />
-    );
+    return <InlineNotification kind="error" title={t('invalidQueue', 'Invalid Queue')} subtitle={errorMessage} />;
   }
 
   return (
@@ -160,10 +161,14 @@ function QueueTableForQueueAndStatus({
 
   useEffect(() => {
     if (!columns) {
+      logError(
+        new Error(`No table columns defined for queue ${queue.uuid} and status ${statusUuid}`),
+        'Resolve queue table configuration',
+      );
       showToast({
         title: t('invalidtableConfig', 'Invalid table configuration'),
         kind: 'warning',
-        description: 'No table columns defined by queue ' + queue.uuid + ' and status ' + statusUuid,
+        description: t('queueTableConfigurationMissing', 'No table configuration is available for this queue.'),
       });
     }
   }, [columns, queue.uuid, statusUuid, t]);

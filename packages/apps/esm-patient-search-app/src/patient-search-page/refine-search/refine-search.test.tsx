@@ -130,14 +130,11 @@ describe('RefineSearch', () => {
     expect(searchButton).toBeEnabled();
   });
 
-  it('advertises every supported identifier and submits an Otros document unchanged', async () => {
+  it('uses the shared patient search placeholder and submits an Otros document unchanged', async () => {
     renderComponent();
 
     const searchInput = screen.getByLabelText(/apellidos y nombres/i);
-    expect(searchInput).toHaveAttribute(
-      'placeholder',
-      'Ingrese apellidos, nombres, N.° HC, DNI, CE, pasaporte, CNV, DIE, código SIS u otro documento',
-    );
+    expect(searchInput).toHaveAttribute('placeholder', 'Search for a patient by name or identifier number');
 
     await user.type(searchInput, 'LM-OTRO-2026');
     await user.click(screen.getByRole('button', { name: /search/i }));

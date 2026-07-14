@@ -179,10 +179,7 @@ const RefineSearch: React.FC<RefineSearchProps> = ({
                 id="patient-search-query"
                 labelText={t('patientSearchCriteria', 'Apellidos y nombres o documento de identidad')}
                 onChange={(event: React.ChangeEvent<HTMLInputElement>) => onChange(event.currentTarget.value)}
-                placeholder={t(
-                  'patientSearchCriteriaPlaceholder',
-                  'Ingrese apellidos, nombres, N.° HC, DNI, CE, pasaporte, CNV, DIE, código SIS u otro documento',
-                )}
+                placeholder={t('searchForPatient', 'Search for a patient by name or identifier number')}
                 size={isTablet ? 'lg' : 'md'}
                 value={value ?? ''}
               />

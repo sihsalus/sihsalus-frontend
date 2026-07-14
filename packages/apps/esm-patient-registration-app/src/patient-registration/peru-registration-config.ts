@@ -3,6 +3,7 @@ import { type FieldDefinition, type RegistrationConfig, type SectionDefinition }
 export const peruDniPatientIdentifierTypeUuid = '550e8400-e29b-41d4-a716-446655440001';
 export const peruCarnetExtranjeriaPatientIdentifierTypeUuid = '550e8400-e29b-41d4-a716-446655440002';
 export const peruPassportPatientIdentifierTypeUuid = '550e8400-e29b-41d4-a716-446655440003';
+export const peruOtherPatientIdentifierTypeUuid = '550e8400-e29b-41d4-a716-446655440004';
 export const peruDiePatientIdentifierTypeUuid = '8d793bee-c2cc-11de-8d13-0010c6dffd0f';
 export const peruInsuranceTypeAttributeTypeUuid = '56188294-b42c-481d-a987-4b495116c580';
 export const peruInsuranceCodeAttributeTypeUuid = '374b130f-7457-476f-87b1-f182aa77c434';

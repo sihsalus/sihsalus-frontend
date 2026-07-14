@@ -426,6 +426,11 @@ export const configSchema = {
       _default: '8d79403a-c2cc-11de-8d13-0010c6dffd0f',
       _description: 'UUID del tipo de documento Certificado de Nacido Vivo',
     },
+    otherIdentifierTypeUuid: {
+      _type: Type.UUID,
+      _default: '550e8400-e29b-41d4-a716-446655440004',
+      _description: 'UUID del tipo de identificador genérico OTROS para documentos no especificados',
+    },
     defaultLocationUuid: {
       _type: Type.UUID,
       _default: '35d2234e-129a-4c40-abb2-1ae0b2400003',
@@ -644,6 +649,7 @@ export interface Config {
     passportIdentifierTypeUuid: string;
     dieIdentifierTypeUuid: string;
     liveBirthCertificateIdentifierTypeUuid: string;
+    otherIdentifierTypeUuid: string;
     defaultLocationUuid: string;
     phoneNumberAttributeTypeUuid: string;
     identifierSourceUuid: string;

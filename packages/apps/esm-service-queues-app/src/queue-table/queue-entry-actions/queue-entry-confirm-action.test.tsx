@@ -109,6 +109,14 @@ describe('EndQueueEntryModal', () => {
       .mockResolvedValueOnce({
         data: { ...queueEntry, endedAt: '2026-07-14T13:20:00.000Z' },
         status: 200,
+      } as unknown as FetchResponse)
+      .mockResolvedValueOnce({
+        data: { ...queueEntry, endedAt: '2026-07-14T13:20:00.000Z' },
+        status: 200,
+      } as unknown as FetchResponse)
+      .mockResolvedValueOnce({
+        data: { results: [] },
+        status: 200,
       } as unknown as FetchResponse);
 
     const user = userEvent.setup();

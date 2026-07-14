@@ -51,6 +51,7 @@ export interface FormSchema {
   referencedForms: Array<ReferencedForm>;
   encounterType: string;
   encounter?: string | OpenmrsEncounter;
+  defaultEncounterDatetime?: string | Date;
   allowUnspecifiedAll?: boolean;
   defaultPage?: string;
   readonly?: string | boolean;

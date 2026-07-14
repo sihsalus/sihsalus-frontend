@@ -349,6 +349,10 @@ function handleDiagnosis(question: FormField): void {
 
 function handlePreFilledQuestions(form: FormSchema, preFilledQuestions: PreFilledQuestions): void {
   Object.entries(preFilledQuestions).forEach(([preFilledQnId, preFilledValue]) => {
+    if (preFilledQnId === 'encounterDatetime' && (isDateValue(preFilledValue) || isStringValue(preFilledValue))) {
+      form.defaultEncounterDatetime = preFilledValue;
+    }
+
     form?.pages.forEach((page) => {
       page.sections.forEach((section) => {
         section.questions.forEach((question) => {

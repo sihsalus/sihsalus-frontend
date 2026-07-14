@@ -265,7 +265,7 @@ export function useCREDSchedule(patientUuid: string): UseCREDScheduleResult {
 
   const overdueControls = useMemo(() => controls.filter((control) => control.status === 'overdue'), [controls]);
 
-  const completedCount = useMemo(() => controls.filter((c) => c.status === 'completed').length, [controls]);
+  const completedCount = useMemo(() => Math.min(realControls.length, 27), [realControls]);
 
   return {
     controls,

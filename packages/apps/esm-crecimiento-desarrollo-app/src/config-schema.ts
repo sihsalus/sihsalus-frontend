@@ -1073,8 +1073,8 @@ export const configSchema = {
     },
     lookaheadCount: {
       _type: Type.Number,
-      _description: 'Cantidad de citas futuras a generar por defecto',
-      _default: 3,
+      _description: 'Compatibilidad legada: el flujo normativo genera siempre una única próxima cita',
+      _default: 1,
     },
     defaultAppointmentDurationMins: {
       _type: Type.Number,

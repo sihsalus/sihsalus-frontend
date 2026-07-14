@@ -2,6 +2,7 @@ import {
   getCREDControlsToSchedule,
   getCREDMinimumIntervalDays,
   getNextCREDControlRecommendation,
+  getNextCREDMinimumDate,
 } from './cred-control-intervals';
 
 describe('getCREDMinimumIntervalDays', () => {
@@ -93,6 +94,23 @@ describe('getNextCREDControlRecommendation', () => {
     );
   });
 
+  it('ignores appointments on or after the CRED age limit', () => {
+    const recommendation = getNextCREDControlRecommendation(
+      birthDate,
+      [{ encounterDatetime: '2036-01-01T09:00:00-05:00', controlNumber: 26 }],
+      [{ uuid: 'outside-age-limit', startDateTime: '2038-01-01T08:00:00-05:00', status: 'Scheduled' }],
+      '2036-01-02T09:00:00-05:00',
+    );
+
+    expect(recommendation).toEqual(
+      expect.objectContaining({
+        controlNumber: 27,
+        status: 'future',
+      }),
+    );
+    expect(recommendation?.appointmentUuid).toBeUndefined();
+  });
+
   it('does not recommend a second control inside the same annual age band', () => {
     const recommendation = getNextCREDControlRecommendation(
       birthDate,
@@ -114,6 +132,32 @@ describe('getNextCREDControlRecommendation', () => {
       ),
     ).toBeNull();
     expect(getNextCREDControlRecommendation(birthDate, [], [], '2038-01-01T09:00:00-05:00')).toBeNull();
+  });
+});
+
+describe('getNextCREDMinimumDate', () => {
+  const birthDate = '2026-01-01T09:00:00-05:00';
+
+  it('uses birth as the lower bound for the first real control', () => {
+    expect(getNextCREDMinimumDate(birthDate, [])).toEqual(new Date(birthDate));
+  });
+
+  it('derives the minimum from the last real control and the next age band', () => {
+    expect(
+      getNextCREDMinimumDate(birthDate, [{ encounterDatetime: '2026-07-15T09:00:00-05:00', controlNumber: 1 }]),
+    ).toEqual(new Date('2026-08-14T09:00:00-05:00'));
+  });
+
+  it('does not return a minimum after the normative control limit', () => {
+    expect(
+      getNextCREDMinimumDate(
+        birthDate,
+        Array.from({ length: 27 }, (_, index) => ({
+          encounterDatetime: new Date(2026, 0, index + 1, 9).toISOString(),
+          controlNumber: index + 1,
+        })),
+      ),
+    ).toBeNull();
   });
 });
 

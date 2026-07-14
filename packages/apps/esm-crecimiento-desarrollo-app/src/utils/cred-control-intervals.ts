@@ -29,10 +29,25 @@ interface SchedulableCREDControl {
 
 const ACTIVE_APPOINTMENT_STATUSES = new Set(['Scheduled', 'CheckedIn']);
 
-export function getCREDMinimumIntervalDays(
-  birthDate: string | Date,
-  controlDate: string | Date,
-): number | null {
+function getDatedControls(controls: CREDRealControl[]): CREDRealControl[] {
+  return controls
+    .filter((control) => control.encounterDatetime && dayjs(control.encounterDatetime).isValid())
+    .sort((first, second) => dayjs(first.encounterDatetime).valueOf() - dayjs(second.encounterDatetime).valueOf());
+}
+
+function getNextControlNumber(controls: CREDRealControl[]): number {
+  const highestPersistedNumber = controls.reduce(
+    (highest, control) =>
+      Number.isInteger(control.controlNumber) && Number(control.controlNumber) >= 1
+        ? Math.max(highest, Number(control.controlNumber))
+        : highest,
+    0,
+  );
+
+  return Math.max(controls.length, highestPersistedNumber) + 1;
+}
+
+export function getCREDMinimumIntervalDays(birthDate: string | Date, controlDate: string | Date): number | null {
   const birth = dayjs(birthDate);
   const control = dayjs(controlDate);
   if (!birth.isValid() || !control.isValid() || control.isBefore(birth)) return null;
@@ -52,6 +67,48 @@ export function getCREDMinimumIntervalDays(
   return null;
 }
 
+export function getNextCREDMinimumDate(birthDate: string | Date, controls: CREDRealControl[]): Date | null {
+  const birth = dayjs(birthDate);
+  if (!birth.isValid()) return null;
+
+  const credEnd = birth.add(144, 'month');
+  const datedControls = getDatedControls(controls);
+  if (getNextControlNumber(datedControls) > 27) return null;
+
+  const lastControl = datedControls.at(-1);
+  if (!lastControl?.encounterDatetime) return birth.toDate();
+
+  const minimumInterval = getCREDMinimumIntervalDays(birthDate, lastControl.encounterDatetime);
+  if (minimumInterval === null) return null;
+
+  const lastControlDate = dayjs(lastControl.encounterDatetime);
+  let target = lastControlDate.add(minimumInterval, 'day');
+  const schedule = generateCREDSchedule(birthDate);
+  let currentScheduleIndex = schedule.findIndex(
+    (control) =>
+      !lastControlDate.isBefore(dayjs(control.targetDate), 'day') &&
+      !lastControlDate.isAfter(dayjs(control.dueEndDate), 'day'),
+  );
+
+  if (currentScheduleIndex < 0) {
+    currentScheduleIndex = schedule.reduce(
+      (latestIndex, control, index) =>
+        !lastControlDate.isBefore(dayjs(control.targetDate), 'day') ? index : latestIndex,
+      -1,
+    );
+  }
+
+  const nextIdealControl = schedule[currentScheduleIndex + 1];
+  if (!nextIdealControl) return null;
+
+  const nextIdealDate = dayjs(nextIdealControl.targetDate);
+  if (nextIdealDate.isAfter(target)) {
+    target = nextIdealDate;
+  }
+
+  return target.isBefore(credEnd) ? target.toDate() : null;
+}
+
 export function getNextCREDControlRecommendation(
   birthDate: string | Date,
   controls: CREDRealControl[],
@@ -63,53 +120,17 @@ export function getNextCREDControlRecommendation(
   const credEnd = birth.add(144, 'month');
   if (!birth.isValid() || !current.isValid() || current.isBefore(birth) || !current.isBefore(credEnd)) return null;
 
-  const datedControls = controls
-    .filter((control) => control.encounterDatetime && dayjs(control.encounterDatetime).isValid())
-    .sort(
-      (first, second) =>
-        dayjs(first.encounterDatetime).valueOf() - dayjs(second.encounterDatetime).valueOf(),
-    );
-  const highestPersistedNumber = datedControls.reduce(
-    (highest, control) =>
-      Number.isInteger(control.controlNumber) && Number(control.controlNumber) >= 1
-        ? Math.max(highest, Number(control.controlNumber))
-        : highest,
-    0,
-  );
-  const nextControlNumber = Math.max(datedControls.length, highestPersistedNumber) + 1;
+  const datedControls = getDatedControls(controls);
+  const nextControlNumber = getNextControlNumber(datedControls);
   if (nextControlNumber > 27) return null;
 
   const lastControl = datedControls.at(-1);
   let target = birth.add(3, 'day');
 
   if (lastControl?.encounterDatetime) {
-    const minimumInterval = getCREDMinimumIntervalDays(birthDate, lastControl.encounterDatetime);
-    if (minimumInterval === null) return null;
-    const lastControlDate = dayjs(lastControl.encounterDatetime);
-    target = lastControlDate.add(minimumInterval, 'day');
-
-    const schedule = generateCREDSchedule(birthDate);
-    let currentScheduleIndex = schedule.findIndex(
-      (control) =>
-        !lastControlDate.isBefore(dayjs(control.targetDate), 'day') &&
-        !lastControlDate.isAfter(dayjs(control.dueEndDate), 'day'),
-    );
-
-    if (currentScheduleIndex < 0) {
-      currentScheduleIndex = schedule.reduce(
-        (latestIndex, control, index) =>
-          !lastControlDate.isBefore(dayjs(control.targetDate), 'day') ? index : latestIndex,
-        -1,
-      );
-    }
-
-    const nextIdealControl = schedule[currentScheduleIndex + 1];
-    if (!nextIdealControl) return null;
-
-    const nextIdealDate = dayjs(nextIdealControl.targetDate);
-    if (nextIdealDate.isAfter(target)) {
-      target = nextIdealDate;
-    }
+    const minimumDate = getNextCREDMinimumDate(birthDate, datedControls);
+    if (!minimumDate) return null;
+    target = dayjs(minimumDate);
   } else if (current.isAfter(target)) {
     target = current;
   }
@@ -121,6 +142,7 @@ export function getNextCREDControlRecommendation(
       (candidate) =>
         ACTIVE_APPOINTMENT_STATUSES.has(candidate.status) &&
         dayjs(candidate.startDateTime).isValid() &&
+        dayjs(candidate.startDateTime).isBefore(credEnd, 'day') &&
         !dayjs(candidate.startDateTime).isBefore(target, 'day'),
     )
     .sort((first, second) => dayjs(first.startDateTime).valueOf() - dayjs(second.startDateTime).valueOf())[0];

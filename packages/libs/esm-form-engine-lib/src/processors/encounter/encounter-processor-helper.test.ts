@@ -119,10 +119,43 @@ describe('getMutableSessionProps', () => {
     const submittedEncounterDate = new Date('2024-02-03T09:00:00.000Z');
     const context = createFormContext({
       formFields: [createSubmissionField('encounterDatetime', submittedEncounterDate)],
+      formJson: {
+        uuid: 'form-uuid',
+        encounterType: 'encounter-type-uuid',
+        defaultEncounterDatetime: new Date('2024-02-03T08:00:00.000Z'),
+      } as never,
       visit: { uuid: 'stopped-visit-uuid', stopDatetime: '2024-02-03T12:00:00.000Z' } as never,
     });
 
     expect(getMutableSessionProps(context).encounterDate).toBe(submittedEncounterDate);
+  });
+
+  it('uses a prefilled encounter datetime when the schema has no encounter datetime field', () => {
+    const defaultEncounterDatetime = new Date('2024-02-03T09:00:00.000Z');
+    const context = createFormContext({
+      formJson: {
+        uuid: 'form-uuid',
+        encounterType: 'encounter-type-uuid',
+        defaultEncounterDatetime,
+      } as never,
+      visit: { uuid: 'active-visit-uuid' } as never,
+    });
+
+    expect(getMutableSessionProps(context).encounterDate).toBe(defaultEncounterDatetime);
+  });
+
+  it('preserves the existing encounter datetime before a prefilled default while editing', () => {
+    const existingEncounterDatetime = '2024-02-03T07:00:00.000Z';
+    const context = createFormContext({
+      domainObjectValue: { encounterDatetime: existingEncounterDatetime } as never,
+      formJson: {
+        uuid: 'form-uuid',
+        encounterType: 'encounter-type-uuid',
+        defaultEncounterDatetime: new Date('2024-02-03T09:00:00.000Z'),
+      } as never,
+    });
+
+    expect(getMutableSessionProps(context).encounterDate).toEqual(new Date(existingEncounterDatetime));
   });
 });
 

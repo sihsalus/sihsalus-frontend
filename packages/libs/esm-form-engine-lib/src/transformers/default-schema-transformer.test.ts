@@ -43,6 +43,19 @@ describe('DefaultFormSchemaTransformer', () => {
     });
 
     expect(form.pages[0].sections[0].questions[0].questionOptions.defaultValue).toEqual(consultationDatetime);
+    expect(form.defaultEncounterDatetime).toEqual(consultationDatetime);
+  });
+
+  it('preserves a prefilled encounter datetime when the schema has no encounter datetime question', () => {
+    const consultationDatetime = new Date('2026-07-09T10:30:00.000Z');
+    const formWithoutEncounterDatetime = createForm();
+    formWithoutEncounterDatetime.pages[0].sections[0].questions = [];
+
+    const form = DefaultFormSchemaTransformer.transform(formWithoutEncounterDatetime, {
+      encounterDatetime: consultationDatetime,
+    });
+
+    expect(form.defaultEncounterDatetime).toEqual(consultationDatetime);
   });
 
   it.each(['time', 'datatime'] as const)('normalizes the %s rendering to a time-only control', (rendering) => {

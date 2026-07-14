@@ -34,7 +34,7 @@ vi.mock('../navigation', async (importOriginal) => ({
   hardNavigate: vi.fn(),
 }));
 
-const fistLocation = {
+const firstLocation = {
   uuid: 'uuid_1',
   name: 'location_1',
 };
@@ -77,7 +77,7 @@ describe('LocationPickerView', () => {
     } as Session);
 
     const urlResponseMap: Record<string, FetchResponse<unknown>> = {
-      [`/ws/fhir2/R4/Location?_id=${fistLocation.uuid}`]: validatingLocationSuccessResponse as FetchResponse<unknown>,
+      [`/ws/fhir2/R4/Location?_id=${firstLocation.uuid}`]: validatingLocationSuccessResponse as FetchResponse<unknown>,
       [`/ws/fhir2/R4/Location?_id=${invalidLocationUuid}`]: validatingLocationFailureResponse as FetchResponse<unknown>,
     };
 
@@ -189,7 +189,7 @@ describe('LocationPickerView', () => {
     const confirmButton = screen.getByRole('button', { name: /confirm/i });
     expect(confirmButton).toBeDisabled();
 
-    const location = await screen.findByRole('radio', { name: fistLocation.name });
+    const location = await screen.findByRole('radio', { name: firstLocation.name });
     await user.click(location);
 
     expect(confirmButton).toBeEnabled();
@@ -201,7 +201,7 @@ describe('LocationPickerView', () => {
 
       renderWithRouter(LocationPickerView, {});
 
-      const location = await screen.findByRole('radio', { name: fistLocation.name });
+      const location = await screen.findByRole('radio', { name: firstLocation.name });
       const checkbox = screen.getByLabelText(/remember my location for future logins/i);
       const submitButton = screen.getByRole('button', { name: /confirm/i });
 
@@ -214,11 +214,11 @@ describe('LocationPickerView', () => {
       await user.click(submitButton);
 
       await waitFor(() => {
-        expect(mockSetSessionLocation).toHaveBeenCalledWith(fistLocation.uuid, expect.anything());
+        expect(mockSetSessionLocation).toHaveBeenCalledWith(firstLocation.uuid, expect.anything());
       });
 
       expect(mockSetUserProperties).toHaveBeenCalledWith(userUuid, {
-        defaultLocation: fistLocation.uuid,
+        defaultLocation: firstLocation.uuid,
       });
 
       await waitFor(() => {
@@ -237,7 +237,7 @@ describe('LocationPickerView', () => {
 
       renderWithRouter(LocationPickerView, {});
 
-      const location = await screen.findByRole('radio', { name: fistLocation.name });
+      const location = await screen.findByRole('radio', { name: firstLocation.name });
       const checkbox = screen.getByLabelText(/remember my location for future logins/i);
       const submitButton = screen.getByRole('button', { name: /confirm/i });
 
@@ -247,7 +247,7 @@ describe('LocationPickerView', () => {
       await user.click(submitButton);
 
       await waitFor(() => {
-        expect(mockSetSessionLocation).toHaveBeenCalledWith(fistLocation.uuid, expect.anything());
+        expect(mockSetSessionLocation).toHaveBeenCalledWith(firstLocation.uuid, expect.anything());
       });
 
       expect(mockSetUserProperties).not.toHaveBeenCalled();
@@ -255,7 +255,7 @@ describe('LocationPickerView', () => {
     });
 
     it('automatically redirects when user has a valid saved location preference', async () => {
-      const validLocationUuid = fistLocation.uuid;
+      const validLocationUuid = firstLocation.uuid;
       mockUseSession.mockReturnValue({
         user: {
           display: 'Testy McTesterface',
@@ -307,12 +307,12 @@ describe('LocationPickerView', () => {
           display: 'Testy McTesterface',
           uuid: userUuid,
           userProperties: {
-            defaultLocation: fistLocation.uuid,
+            defaultLocation: firstLocation.uuid,
           },
         } as LoggedInUser,
       } as Session);
-      mockedStoredDefaultLocation = fistLocation.uuid;
-      mockedValidatedDefaultLocation = fistLocation.uuid;
+      mockedStoredDefaultLocation = firstLocation.uuid;
+      mockedValidatedDefaultLocation = firstLocation.uuid;
 
       renderWithRouter(LocationPickerView, {}, { routes: ['?update=true'] });
 
@@ -343,7 +343,7 @@ describe('LocationPickerView', () => {
       const checkbox = screen.getByLabelText(/remember my location for future logins/i);
       expect(checkbox).toBeChecked();
 
-      const location = screen.getByRole('radio', { name: fistLocation.name });
+      const location = screen.getByRole('radio', { name: firstLocation.name });
       await user.click(location);
 
       expect(mockSetSessionLocation).not.toHaveBeenCalled();
@@ -355,7 +355,7 @@ describe('LocationPickerView', () => {
       await user.click(submitButton);
 
       await waitFor(() => {
-        expect(mockSetSessionLocation).toHaveBeenCalledWith(fistLocation.uuid, expect.anything());
+        expect(mockSetSessionLocation).toHaveBeenCalledWith(firstLocation.uuid, expect.anything());
       });
 
       expect(mockSetUserProperties).toHaveBeenCalledWith(userUuid, {});
@@ -379,12 +379,12 @@ describe('LocationPickerView', () => {
           display: 'Testy McTesterface',
           uuid: userUuid,
           userProperties: {
-            defaultLocation: fistLocation.uuid,
+            defaultLocation: firstLocation.uuid,
           },
         } as LoggedInUser,
       } as Session);
-      mockedStoredDefaultLocation = fistLocation.uuid;
-      mockedValidatedDefaultLocation = fistLocation.uuid;
+      mockedStoredDefaultLocation = firstLocation.uuid;
+      mockedValidatedDefaultLocation = firstLocation.uuid;
 
       renderWithRouter(LocationPickerView, {}, { routes: ['?update=true'] });
 
@@ -424,26 +424,26 @@ describe('LocationPickerView', () => {
           display: 'Testy McTesterface',
           uuid: userUuid,
           userProperties: {
-            defaultLocation: fistLocation.uuid,
+            defaultLocation: firstLocation.uuid,
           },
         } as LoggedInUser,
       } as Session);
-      mockedStoredDefaultLocation = fistLocation.uuid;
-      mockedValidatedDefaultLocation = fistLocation.uuid;
+      mockedStoredDefaultLocation = firstLocation.uuid;
+      mockedValidatedDefaultLocation = firstLocation.uuid;
 
       renderWithRouter(LocationPickerView, {}, { routes: ['?update=true'] });
 
       const checkbox = screen.getByLabelText(/remember my location for future logins/i);
       expect(checkbox).toBeChecked();
 
-      const location = await screen.findByRole('radio', { name: fistLocation.name });
+      const location = await screen.findByRole('radio', { name: firstLocation.name });
       const submitButton = screen.getByRole('button', { name: /confirm/i });
 
       await user.click(location);
       await user.click(submitButton);
 
       await waitFor(() => {
-        expect(mockSetSessionLocation).toHaveBeenCalledWith(fistLocation.uuid, expect.anything());
+        expect(mockSetSessionLocation).toHaveBeenCalledWith(firstLocation.uuid, expect.anything());
       });
 
       expect(mockSetUserProperties).not.toHaveBeenCalled();

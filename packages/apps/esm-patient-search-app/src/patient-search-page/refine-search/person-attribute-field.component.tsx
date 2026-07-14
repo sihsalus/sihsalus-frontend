@@ -211,8 +211,10 @@ const ConceptAttributeField: React.FC<ConceptAttributeFieldProps> = ({
 
   const items = useMemo(() => {
     if (isLoadingConceptAnswers || isLoadingConfiguredAnswers) return [];
-    if (field.conceptAnswersUuids?.length) return configuredConceptAnswers || [];
-    return conceptAnswers || [];
+
+    const baseItems = field.conceptAnswersUuids?.length ? configuredConceptAnswers || [] : conceptAnswers || [];
+
+    return [...baseItems].sort((a, b) => a.display.localeCompare(b.display));
   }, [
     isLoadingConceptAnswers,
     isLoadingConfiguredAnswers,
@@ -248,7 +250,7 @@ const ConceptAttributeField: React.FC<ConceptAttributeFieldProps> = ({
           titleText={t(attributeDisplay)}
           items={items}
           itemToString={(item: OpenmrsResource) => item?.display}
-          selectedItem={items.sort((a, b) => a.display.localeCompare(b.display)).find((item) => item.uuid === value)}
+          selectedItem={items.find((item) => item.uuid === value)}
           onChange={({ selectedItem }) => onChange(selectedItem?.uuid ?? '')}
           placeholder={field.placeholder ?? t('selectOption', 'Select an option')}
           size={isTablet ? 'lg' : 'md'}

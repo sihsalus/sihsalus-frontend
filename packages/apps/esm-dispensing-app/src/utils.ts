@@ -571,7 +571,7 @@ export function getRefillsAllowed(resource: MedicationRequest | MedicationDispen
 }
 
 /**
- * Given a refernece in format "MedicationReference/uuid" or just "uuid", returns just the uuid compoennt
+ * Given a reference in format "MedicationReference/uuid" or just "uuid", returns just the uuid component
  */
 export function getUuidFromReference(reference: string): string {
   if (reference?.includes('/')) {

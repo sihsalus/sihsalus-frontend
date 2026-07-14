@@ -1,6 +1,11 @@
 import { openmrsFetch, restBaseUrl } from '@openmrs/esm-framework';
 
-import { savePatient, savePatientPhoto, savePerson } from './patient-registration.resource';
+import {
+  fetchPersonRegistrationCopyData,
+  savePatient,
+  savePatientPhoto,
+  savePerson,
+} from './patient-registration.resource';
 
 const mockOpenmrsFetch = openmrsFetch as vi.Mock;
 
@@ -51,6 +56,20 @@ describe('savePerson', () => {
       body: person,
       signal,
     });
+  });
+});
+
+describe('fetchPersonRegistrationCopyData', () => {
+  it('forwards the caller signal to the request', async () => {
+    const signal = new AbortController().signal;
+    mockOpenmrsFetch.mockResolvedValueOnce({ data: { uuid: 'responsible-person-uuid' } });
+
+    await fetchPersonRegistrationCopyData('responsible-person-uuid', signal);
+
+    expect(mockOpenmrsFetch).toHaveBeenCalledWith(
+      expect.stringContaining(`${restBaseUrl}/person/responsible-person-uuid?v=`),
+      { signal },
+    );
   });
 });
 

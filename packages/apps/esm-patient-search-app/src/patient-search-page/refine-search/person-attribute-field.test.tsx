@@ -163,6 +163,26 @@ describe('PersonAttributeField', () => {
       expect(screen.getByText('concept-answer-2')).toBeInTheDocument();
     });
 
+    it('sorts concept answers without mutating the resource data', async () => {
+      const conceptAnswers = [
+        { uuid: 'zulu-uuid', display: 'Zulu' },
+        { uuid: 'alpha-uuid', display: 'Alpha' },
+      ];
+      mockUseAttributeConceptAnswers.mockReturnValue({
+        conceptAnswers,
+        isLoadingConceptAnswers: false,
+        errorFetchingConceptAnswers: null,
+      });
+
+      render(<PersonAttributeField {...defaultProps} />);
+      await user.click(screen.getByRole('combobox'));
+
+      const alphaOption = screen.getByText('Alpha');
+      const zuluOption = screen.getByText('Zulu');
+      expect(alphaOption.compareDocumentPosition(zuluOption) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+      expect(conceptAnswers.map(({ display }) => display)).toEqual(['Zulu', 'Alpha']);
+    });
+
     it('handles custom concept answers', async () => {
       mockUsePersonAttributeType.mockReturnValue({
         data: {

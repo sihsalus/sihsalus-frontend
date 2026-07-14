@@ -262,15 +262,14 @@ export async function fetchPerson(query: string, abortController: AbortControlle
   return results;
 }
 
-export async function fetchPersonRegistrationCopyData(personUuid: string) {
-  const abortController = new AbortController();
+export async function fetchPersonRegistrationCopyData(personUuid: string, signal?: AbortSignal) {
   const representation =
     'custom:(uuid,display,addresses:(uuid,preferred,address1,address2,address3,address4,address5,address6,address7,address8,address9,address10,address11,address12,address13,address14,address15,cityVillage,stateProvince,countyDistrict,postalCode,country),attributes:(uuid,display,attributeType:(uuid,display,format),value))';
 
   const response = await openmrsFetch<PersonRegistrationCopyData>(
     `${restBaseUrl}/person/${personUuid}?v=${representation}`,
     {
-      signal: abortController.signal,
+      signal,
     },
   );
 

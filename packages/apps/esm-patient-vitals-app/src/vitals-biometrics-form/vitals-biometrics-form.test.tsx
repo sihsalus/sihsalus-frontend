@@ -132,6 +132,12 @@ const activeVisitMock = {
 describe('VitalsBiometricsForm', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    mockUseReferenceRanges.mockReturnValue({
+      ranges: new Map(),
+      isLoading: false,
+      error: undefined,
+      mutate: vi.fn(),
+    });
     mockUseVisitOrOfflineVisit.mockReturnValue(activeVisitMock);
   });
 
@@ -161,7 +167,9 @@ describe('VitalsBiometricsForm', () => {
     expect(screen.getByRole('spinbutton', { name: /height/i })).toBeInTheDocument();
     expect(screen.getByText(/bmi \(calc.\)/i)).toBeInTheDocument();
     expect(screen.getByText(/kg \/ m²/i)).toBeInTheDocument();
-    const abdominalCircumferenceInput = screen.getByRole('spinbutton', { name: /abdominal circumference/i });
+    const abdominalCircumferenceInput = screen.getByRole('spinbutton', {
+      name: /abdominal circumference/i,
+    });
     expect(abdominalCircumferenceInput).toBeInTheDocument();
     expect(abdominalCircumferenceInput.closest('section')).toHaveTextContent(/^cm$/i);
     expect(screen.getByRole('spinbutton', { name: /muac/i })).toBeInTheDocument();
@@ -175,8 +183,35 @@ describe('VitalsBiometricsForm', () => {
 
     expect(mockUseReferenceRanges).toHaveBeenCalledWith(
       mockPatient.id,
-      expect.arrayContaining([mockVitalsConfig.concepts.abdominalCircumferenceUuid]),
+      expect.arrayContaining([
+        mockVitalsConfig.concepts.abdominalCircumferenceUuid,
+        mockVitalsConfig.concepts.temperatureUuid,
+      ]),
     );
+  });
+
+  it('uses the patient-specific absolute temperature range', async () => {
+    const user = userEvent.setup();
+    mockUseReferenceRanges.mockReturnValue({
+      ranges: new Map([[mockVitalsConfig.concepts.temperatureUuid, { lowAbsolute: 35.5, hiAbsolute: 50 }]]),
+      isLoading: false,
+      error: undefined,
+      mutate: vi.fn(),
+    });
+
+    render(<VitalsAndBiometricsForm {...testProps} />);
+
+    const temperatureInput = screen.getByRole('spinbutton', {
+      name: /temperature/i,
+    });
+    expect(temperatureInput).toHaveAttribute('min', '35.5');
+    expect(temperatureInput).toHaveAttribute('max', '50');
+
+    await user.type(temperatureInput, '25');
+    await user.click(screen.getByRole('button', { name: /save and close/i }));
+
+    expect(mockSavePatientVitals).not.toHaveBeenCalled();
+    expect(screen.getByText(/some of the values entered are invalid/i)).toBeInTheDocument();
   });
 
   it("computes a patient's BMI from the given height and weight values", async () => {
@@ -222,7 +257,9 @@ describe('VitalsBiometricsForm', () => {
     const temperature = screen.getByRole('spinbutton', {
       name: /temperature/i,
     });
-    const abdominalCircumference = screen.getByRole('spinbutton', { name: /abdominal circumference/i });
+    const abdominalCircumference = screen.getByRole('spinbutton', {
+      name: /abdominal circumference/i,
+    });
     const muac = screen.getByRole('spinbutton', { name: /muac/i });
     const saveButton = screen.getByRole('button', { name: /Save and close/i });
 
@@ -378,6 +415,21 @@ describe('VitalsBiometricsForm', () => {
       'test-session-location',
       'test-visit-uuid',
     );
+  });
+
+  it('marks the five triage vital sign fields as required without marking notes or biometrics', () => {
+    render(
+      <VitalsAndBiometricsForm
+        {...testWorkspace2Props}
+        workspaceProps={{
+          profile: 'emergency-triage',
+        }}
+      />,
+    );
+
+    expect(screen.getAllByText('*')).toHaveLength(5);
+    expect(screen.getByText('Notes').parentElement).not.toHaveTextContent('*');
+    expect(screen.getByText('Weight').parentElement).not.toHaveTextContent('*');
   });
 
   it('does not submit a partial Glasgow coma scale', async () => {

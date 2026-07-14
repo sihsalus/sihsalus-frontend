@@ -188,8 +188,9 @@ const VitalsAndBiometricsForm: React.FC<VitalsBiometricsWorkspaceProps> = (props
   const patient = usePatient(patientUuid);
   const { currentVisit } = useVisitOrOfflineVisit(patientUuid);
   const { data: conceptUnits, conceptMetadata, conceptRanges, isLoading } = useVitalsConceptMetadata();
-  const biometricsConceptUuids = useMemo(
+  const referenceRangeConceptUuids = useMemo(
     () => [
+      config.concepts.temperatureUuid,
       config.concepts.weightUuid,
       config.concepts.heightUuid,
       config.concepts.midUpperArmCircumferenceUuid,
@@ -198,6 +199,7 @@ const VitalsAndBiometricsForm: React.FC<VitalsBiometricsWorkspaceProps> = (props
       config.concepts.chestCircumferenceUuid,
     ],
     [
+      config.concepts.temperatureUuid,
       config.concepts.weightUuid,
       config.concepts.heightUuid,
       config.concepts.midUpperArmCircumferenceUuid,
@@ -208,7 +210,7 @@ const VitalsAndBiometricsForm: React.FC<VitalsBiometricsWorkspaceProps> = (props
   );
   const { ranges: patientReferenceRanges, isLoading: isLoadingReferenceRanges } = useReferenceRanges(
     patientUuid,
-    biometricsConceptUuids,
+    referenceRangeConceptUuids,
   );
   const [hasInvalidVitals, setHasInvalidVitals] = useState(false);
   const [muacColorCode, setMuacColorCode] = useState('');
@@ -374,7 +376,12 @@ const VitalsAndBiometricsForm: React.FC<VitalsBiometricsWorkspaceProps> = (props
       systolicBloodPressureRange: conceptRanges.get(config.concepts.systolicBloodPressureUuid),
       oxygenSaturationRange: conceptRanges.get(config.concepts.oxygenSaturationUuid),
       respiratoryRateRange: conceptRanges.get(config.concepts.respiratoryRateUuid),
-      temperatureRange: conceptRanges.get(config.concepts.temperatureUuid),
+      temperatureRange: patientReferenceRanges.has(config.concepts.temperatureUuid)
+        ? {
+            lowAbsolute: patientReferenceRanges.get(config.concepts.temperatureUuid)?.lowAbsolute ?? null,
+            highAbsolute: patientReferenceRanges.get(config.concepts.temperatureUuid)?.hiAbsolute ?? null,
+          }
+        : conceptRanges.get(config.concepts.temperatureUuid),
       weightRange: conceptRanges.get(config.concepts.weightUuid),
       heightRange: conceptRanges.get(config.concepts.heightUuid),
       pulseRange: conceptRanges.get(config.concepts.pulseUuid),
@@ -531,9 +538,20 @@ const VitalsAndBiometricsForm: React.FC<VitalsBiometricsWorkspaceProps> = (props
         score: 3,
         label: t('glasgowEyeOpeningToSpeech', '3 - To speech'),
       },
-      { value: GLASGOW_ANSWER_UUIDS.eyeOpeningToPain, score: 2, label: t('glasgowEyeOpeningToPain', '2 - To pain') },
-      { value: GLASGOW_ANSWER_UUIDS.eyeOpeningNone, score: 1, label: t('glasgowEyeOpeningNone', '1 - None') },
-      { value: GLASGOW_ANSWER_UUIDS.eyeOpeningNotTestable, label: t('glasgowEyeOpeningNotTestable', 'Not testable') },
+      {
+        value: GLASGOW_ANSWER_UUIDS.eyeOpeningToPain,
+        score: 2,
+        label: t('glasgowEyeOpeningToPain', '2 - To pain'),
+      },
+      {
+        value: GLASGOW_ANSWER_UUIDS.eyeOpeningNone,
+        score: 1,
+        label: t('glasgowEyeOpeningNone', '1 - None'),
+      },
+      {
+        value: GLASGOW_ANSWER_UUIDS.eyeOpeningNotTestable,
+        label: t('glasgowEyeOpeningNotTestable', 'Not testable'),
+      },
     ],
     [t],
   );
@@ -560,7 +578,11 @@ const VitalsAndBiometricsForm: React.FC<VitalsBiometricsWorkspaceProps> = (props
         score: 2,
         label: t('glasgowVerbalResponseIncomprehensibleSounds', '2 - Incomprehensible sounds'),
       },
-      { value: GLASGOW_ANSWER_UUIDS.verbalResponseNone, score: 1, label: t('glasgowVerbalResponseNone', '1 - None') },
+      {
+        value: GLASGOW_ANSWER_UUIDS.verbalResponseNone,
+        score: 1,
+        label: t('glasgowVerbalResponseNone', '1 - None'),
+      },
       {
         value: GLASGOW_ANSWER_UUIDS.verbalResponseNotTestable,
         label: t('glasgowVerbalResponseNotTestable', 'Not testable'),
@@ -596,7 +618,11 @@ const VitalsAndBiometricsForm: React.FC<VitalsBiometricsWorkspaceProps> = (props
         score: 2,
         label: t('glasgowMotorResponseExtension', '2 - Extension'),
       },
-      { value: GLASGOW_ANSWER_UUIDS.motorResponseNone, score: 1, label: t('glasgowMotorResponseNone', '1 - None') },
+      {
+        value: GLASGOW_ANSWER_UUIDS.motorResponseNone,
+        score: 1,
+        label: t('glasgowMotorResponseNone', '1 - None'),
+      },
       {
         value: GLASGOW_ANSWER_UUIDS.motorResponseNotTestable,
         label: t('glasgowMotorResponseNotTestable', 'Not testable'),
@@ -678,17 +704,20 @@ const VitalsAndBiometricsForm: React.FC<VitalsBiometricsWorkspaceProps> = (props
                 ]}
                 interpretation={
                   temperature != null &&
-                  assessValue(
-                    temperature,
-                    getReferenceRangesForConcept(config.concepts.temperatureUuid, conceptMetadata),
-                  )
+                  assessValue(temperature, getPatientReferenceRange(config.concepts.temperatureUuid))
                 }
                 isValueWithinReferenceRange={
                   temperature
-                    ? isValueWithinReferenceRange(conceptMetadata, config.concepts['temperatureUuid'], temperature)
+                    ? isValueWithinReferenceRange(
+                        conceptMetadata,
+                        config.concepts.temperatureUuid,
+                        temperature,
+                        getPatientReferenceRange(config.concepts.temperatureUuid),
+                      )
                     : true
                 }
                 showErrorMessage={showErrorMessage}
+                showRequiredIndicator={workspaceProfile === 'emergency-triage'}
                 label={t('temperature', 'Temperature')}
                 unitSymbol={conceptUnits.get(config.concepts.temperatureUuid) ?? ''}
               />
@@ -740,6 +769,7 @@ const VitalsAndBiometricsForm: React.FC<VitalsBiometricsWorkspaceProps> = (props
                   )
                 }
                 showErrorMessage={showErrorMessage}
+                showRequiredIndicator={workspaceProfile === 'emergency-triage'}
                 label={t('bloodPressure', 'Blood pressure')}
                 unitSymbol={conceptUnits.get(config.concepts.systolicBloodPressureUuid) ?? ''}
               />
@@ -765,6 +795,7 @@ const VitalsAndBiometricsForm: React.FC<VitalsBiometricsWorkspaceProps> = (props
                   pulse != null && isValueWithinReferenceRange(conceptMetadata, config.concepts['pulseUuid'], pulse)
                 }
                 label={t('heartRate', 'Heart rate')}
+                showRequiredIndicator={workspaceProfile === 'emergency-triage'}
                 showErrorMessage={showErrorMessage}
                 unitSymbol={conceptUnits.get(config.concepts.pulseUuid) ?? ''}
               />
@@ -794,6 +825,7 @@ const VitalsAndBiometricsForm: React.FC<VitalsBiometricsWorkspaceProps> = (props
                   isValueWithinReferenceRange(conceptMetadata, config.concepts['respiratoryRateUuid'], respiratoryRate)
                 }
                 showErrorMessage={showErrorMessage}
+                showRequiredIndicator={workspaceProfile === 'emergency-triage'}
                 label={t('respirationRate', 'Respiration rate')}
                 unitSymbol={conceptUnits.get(config.concepts.respiratoryRateUuid) ?? ''}
               />
@@ -827,6 +859,7 @@ const VitalsAndBiometricsForm: React.FC<VitalsBiometricsWorkspaceProps> = (props
                   )
                 }
                 showErrorMessage={showErrorMessage}
+                showRequiredIndicator={workspaceProfile === 'emergency-triage'}
                 label={t('spo2', 'SpO2')}
                 unitSymbol={conceptUnits.get(config.concepts.oxygenSaturationUuid) ?? ''}
               />

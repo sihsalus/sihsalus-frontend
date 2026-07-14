@@ -181,4 +181,26 @@ describe('resolveCREDControlNumber', () => {
 
     expect(resolveCREDControlNumber(legacyEncounters, new Date('2026-07-10T15:00:00-05:00'), 'visit-2')).toBe(2);
   });
+
+  it('does not reuse control 27 for a new visit after reaching the normative maximum', () => {
+    const completedControls = Array.from({ length: 27 }, (_, index) => ({
+      uuid: `control-${index + 1}`,
+      encounterDatetime: `2026-07-${String(index + 1).padStart(2, '0')}T09:00:00-05:00`,
+      visit: { uuid: `visit-${index + 1}` },
+      controlNumber: index + 1,
+    }));
+
+    expect(resolveCREDControlNumber(completedControls, new Date('2026-08-01T09:00:00-05:00'), 'new-visit')).toBeNull();
+  });
+
+  it('allows reopening control 27 in the same visit and day', () => {
+    const completedControls = Array.from({ length: 27 }, (_, index) => ({
+      uuid: `control-${index + 1}`,
+      encounterDatetime: `2026-07-${String(index + 1).padStart(2, '0')}T09:00:00-05:00`,
+      visit: { uuid: `visit-${index + 1}` },
+      controlNumber: index + 1,
+    }));
+
+    expect(resolveCREDControlNumber(completedControls, new Date('2026-07-27T15:00:00-05:00'), 'visit-27')).toBe(27);
+  });
 });

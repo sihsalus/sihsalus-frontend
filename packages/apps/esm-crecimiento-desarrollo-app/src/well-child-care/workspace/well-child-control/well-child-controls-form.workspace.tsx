@@ -169,7 +169,7 @@ export function resolveCREDControlNumber(
   encounters: CREDEncounter[],
   consultationDate: Date,
   visitUuid?: string,
-): number {
+): number | null {
   const sortedEncounters = [...encounters]
     .filter((encounter) => encounter.encounterDatetime)
     .sort(
@@ -188,7 +188,16 @@ export function resolveCREDControlNumber(
       : Math.min(matchingControlIndex + 1, 27);
   }
 
-  return Math.min(sortedEncounters.length + 1, 27);
+  const highestPersistedControlNumber = sortedEncounters.reduce(
+    (highest, encounter) =>
+      Number.isInteger(encounter.controlNumber) && Number(encounter.controlNumber) >= 1
+        ? Math.max(highest, Number(encounter.controlNumber))
+        : highest,
+    0,
+  );
+  const nextControlNumber = Math.max(sortedEncounters.length, highestPersistedControlNumber) + 1;
+
+  return nextControlNumber <= 27 ? nextControlNumber : null;
 }
 
 const CREDControlsWorkspace: React.FC<DefaultPatientWorkspaceProps> = ({
@@ -264,7 +273,7 @@ const CREDControlsWorkspace: React.FC<DefaultPatientWorkspaceProps> = ({
 
   const handleStartControl = useCallback(
     (consultationData: CREDControlsFormType) => {
-      if (!consultationData.visitStartDate || !consultationData.visitStartTime || !visit) {
+      if (!consultationData.visitStartDate || !consultationData.visitStartTime || !visit || credControlNumber === null) {
         setShowErrorNotification(true);
         return;
       }
@@ -306,7 +315,7 @@ const CREDControlsWorkspace: React.FC<DefaultPatientWorkspaceProps> = ({
   }, [setValue]);
 
   useEffect(() => {
-    setValue('controlNumber', credControlNumber.toString());
+    setValue('controlNumber', credControlNumber?.toString() ?? '');
   }, [setValue, credControlNumber]);
 
   if (isPatientLoading || isEncountersLoading) {
@@ -343,10 +352,14 @@ const CREDControlsWorkspace: React.FC<DefaultPatientWorkspaceProps> = ({
               <TextInput
                 id="controlNumber"
                 labelText={t('controlNumber', 'Control number')}
-                value={credControlNumber.toString()}
+                value={credControlNumber?.toString() ?? t('notAvailable', 'No disponible')}
                 readOnly
                 disabled
-                helperText={t('controlNumberHelper', '* Calculado automáticamente')}
+                helperText={
+                  credControlNumber === null
+                    ? t('credControlLimitReached', '* Se alcanzó el máximo de 27 controles CRED')
+                    : t('controlNumberHelper', '* Calculado automáticamente')
+                }
                 {...register('controlNumber')}
               />
             </Column>
@@ -386,6 +399,20 @@ const CREDControlsWorkspace: React.FC<DefaultPatientWorkspaceProps> = ({
             </Tooltip>
           </div>
 
+          {credControlNumber === null && (
+            <InlineNotification
+              className={styles.errorNotification}
+              hideCloseButton
+              kind="warning"
+              lowContrast={false}
+              title={t('credControlLimitTitle', 'No se pueden registrar más controles CRED')}
+              subtitle={t(
+                'credControlLimitSubtitle',
+                'El paciente ya alcanzó el máximo normativo de 27 controles registrados.',
+              )}
+            />
+          )}
+
           {showErrorNotification && (
             <InlineNotification
               className={styles.errorNotification}
@@ -401,7 +428,12 @@ const CREDControlsWorkspace: React.FC<DefaultPatientWorkspaceProps> = ({
           <Button className={styles.button} kind="secondary" onClick={() => closeWorkspace()}>
             {t('discard', 'Discard')}
           </Button>
-          <Button className={styles.button} kind="primary" disabled={!visit || isSubmitting} type="submit">
+          <Button
+            className={styles.button}
+            kind="primary"
+            disabled={!visit || isSubmitting || credControlNumber === null}
+            type="submit"
+          >
             {t('startControl', 'Empezar Control')}
           </Button>
         </ButtonSet>

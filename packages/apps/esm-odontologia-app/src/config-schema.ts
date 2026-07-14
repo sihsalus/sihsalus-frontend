@@ -10,7 +10,7 @@ export const configSchema = {
   dentalFormUuid: {
     _type: Type.UUID,
     _description: 'UUID of the form for atención odontológica',
-    _default: '32e43fc9-6de3-48e3-aafe-3b92f167753d',
+    _default: 'afcb3a21-d3a2-390e-966f-1cbcdc9b7c25',
   },
   baseEncounterTypeUuid: {
     _type: Type.UUID,

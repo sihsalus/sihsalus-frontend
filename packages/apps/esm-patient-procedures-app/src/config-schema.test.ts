@@ -6,4 +6,9 @@ describe('procedures configuration', () => {
     expect(configSchema.statusConceptUuid._default).toBe('f0d47b45-8303-4cdc-a9f2-c37135a3700f');
     expect(configSchema.statusConceptSourceType._default).toBe('Answer to');
   });
+
+  it('uses the SIHSALUS time-unit concept set', () => {
+    expect(configSchema.durationUnitConceptUuid._default).toBe('1732AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA');
+    expect(configSchema.durationUnitConceptSourceType._default).toBe('Concept set');
+  });
 });

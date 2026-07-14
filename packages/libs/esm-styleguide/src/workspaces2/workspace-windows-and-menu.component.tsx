@@ -1,4 +1,6 @@
 import { subscribeOpenmrsEvent } from '@openmrs/esm-emr-api';
+import { userHasAccess } from '@openmrs/esm-api';
+import { useSession } from '@openmrs/esm-react-utils';
 import classNames from 'classnames';
 import { useEffect } from 'react';
 import { createRoot } from 'react-dom/client';
@@ -7,6 +9,15 @@ import ActiveWorkspaceWindow from './active-workspace-window.component';
 import { shouldCloseOnUrlChange } from './scope-utils';
 import styles from './workspace-windows-and-menu.module.scss';
 import { closeWorkspaceGroup2, useWorkspace2Store } from './workspace2';
+
+type AccessUser = Parameters<typeof userHasAccess>[1];
+
+export function canDisplayWorkspaceWindow(
+  privileges: string | Array<string> | undefined,
+  user: AccessUser | undefined,
+) {
+  return !privileges || Boolean(user && userHasAccess(privileges, user));
+}
 
 export function renderWorkspaceWindowsAndMenu(target: HTMLElement | null) {
   if (target) {
@@ -21,6 +32,7 @@ export function renderWorkspaceWindowsAndMenu(target: HTMLElement | null) {
  */
 function WorkspaceWindowsAndMenu() {
   const { openedGroup, openedWindows, registeredGroupsByName, registeredWindowsByName } = useWorkspace2Store();
+  const { user } = useSession();
 
   useEffect(() => {
     const unsubscribe = subscribeOpenmrsEvent('before-page-changed', (pageChangedEvent) => {
@@ -70,7 +82,12 @@ function WorkspaceWindowsAndMenu() {
 
   const { name: groupName } = group;
   const windowsWithIcons = Object.values(registeredWindowsByName)
-    .filter((window): window is Required<typeof window> => window.group === groupName && window.icon !== undefined)
+    .filter(
+      (window): window is Required<typeof window> =>
+        window.group === groupName &&
+        window.icon !== undefined &&
+        canDisplayWorkspaceWindow(window.privileges, user),
+    )
     .sort((a, b) => (a.order ?? Number.MAX_VALUE) - (b.order ?? Number.MAX_VALUE));
   const showActionMenu = windowsWithIcons.length > 0;
 

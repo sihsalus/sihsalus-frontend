@@ -1,4 +1,4 @@
-import { ActionMenuButton2, PenIcon, useSession } from '@openmrs/esm-framework';
+import { ActionMenuButton2, PenIcon, UserHasAccess, useSession } from '@openmrs/esm-framework';
 import {
   type PatientChartWorkspaceActionButtonProps,
   usePatientChartStore,
@@ -35,16 +35,18 @@ const VisitNoteActionButton: React.FC<PatientChartWorkspaceActionButtonProps> = 
   }
 
   return (
-    <ActionMenuButton2
-      icon={(props: ComponentProps<typeof PenIcon>) => <PenIcon {...props} />}
-      label={t('visitNote', 'Visit note')}
-      workspaceToLaunch={{
-        workspaceName: 'visit-notes-form-workspace',
-        workspaceProps: {},
-        groupProps: patientChartGroupProps,
-      }}
-      onBeforeWorkspaceLaunch={startVisitIfNeeded}
-    />
+    <UserHasAccess privilege="app:hoja.clinica.resumenConsulta">
+      <ActionMenuButton2
+        icon={(props: ComponentProps<typeof PenIcon>) => <PenIcon {...props} />}
+        label={t('visitNote', 'Visit note')}
+        workspaceToLaunch={{
+          workspaceName: 'visit-notes-form-workspace',
+          workspaceProps: {},
+          groupProps: patientChartGroupProps,
+        }}
+        onBeforeWorkspaceLaunch={startVisitIfNeeded}
+      />
+    </UserHasAccess>
   );
 };
 

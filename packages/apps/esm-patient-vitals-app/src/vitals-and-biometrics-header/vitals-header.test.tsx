@@ -1,4 +1,10 @@
-import { getDefaultsFromConfigSchema, useConfig, useWorkspaces, type WorkspacesInfo } from '@openmrs/esm-framework';
+import {
+  getDefaultsFromConfigSchema,
+  useConfig,
+  useSession,
+  useWorkspaces,
+  type WorkspacesInfo,
+} from '@openmrs/esm-framework';
 import { launchPatientWorkspace } from '@openmrs/esm-patient-common-lib';
 import { screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
@@ -12,6 +18,7 @@ import {
   mockCurrentVisit,
   mockFhirPatient,
   mockPatient,
+  mockSession,
   mockVitalsConfig,
   renderWithSwr,
   waitForLoadingToFinish,
@@ -34,6 +41,7 @@ const mockUseConfig = vi.mocked(useConfig<ConfigObject>);
 const mockLaunchPatientWorkspace = vi.mocked(launchPatientWorkspace);
 const mockUseVitalsAndBiometrics = vi.mocked(useVitalsAndBiometrics);
 const mockUseWorkspaces = vi.mocked(useWorkspaces);
+const mockUseSession = vi.mocked(useSession);
 
 mockUseWorkspaces.mockReturnValue({ workspaces: [] } as WorkspacesInfo);
 
@@ -70,6 +78,16 @@ describe('VitalsHeader', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     mockUseWorkspaces.mockReturnValue({ workspaces: [] } as WorkspacesInfo);
+    mockUseSession.mockReturnValue({
+      ...mockSession.data,
+      user: {
+        ...mockSession.data.user,
+        privileges: [
+          ...mockSession.data.user.privileges,
+          { display: 'app:hoja.clinica.signosVitales.editar' },
+        ],
+      },
+    } as never);
     mockUseConfig.mockReturnValue({
       ...getDefaultsFromConfigSchema(configSchema),
       ...mockVitalsConfig,
@@ -151,6 +169,23 @@ describe('VitalsHeader', () => {
 
     expect(mockLaunchPatientWorkspace).toHaveBeenCalledTimes(1);
     expect(mockLaunchPatientWorkspace).toHaveBeenCalledWith(patientVitalsBiometricsFormWorkspace);
+  });
+
+  it('does not offer to record vitals without the vitals edit privilege', async () => {
+    mockUseSession.mockReturnValue({
+      ...mockSession.data,
+      user: {
+        ...mockSession.data.user,
+        privileges: [{ display: 'app:hoja.clinica.signosVitales' }],
+        roles: [],
+      },
+    } as never);
+
+    renderWithSwr(<VitalsHeader {...testProps} />);
+
+    await waitForLoadingToFinish();
+
+    expect(screen.queryByRole('button', { name: /^record vitals$/i })).not.toBeInTheDocument();
   });
 
   it('displays correct overdue tag for vitals 5 days old', async () => {

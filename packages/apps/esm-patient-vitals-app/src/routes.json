@@ -40,7 +40,8 @@
     {
       "name": "patient-vitals-info",
       "component": "vitalsHeader",
-      "slot": "patient-info-slot"
+      "slot": "patient-info-slot",
+      "privileges": "app:hoja.clinica.signosVitales"
     },
     {
       "name": "biometrics-overview-widget",

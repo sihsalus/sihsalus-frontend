@@ -143,6 +143,7 @@
       "name": "patient-chart-fua",
       "group": "patient-chart",
       "icon": "fuaEncounterActionButton",
+      "privileges": "app:home.fua",
       "width": "extra-wide",
       "order": 4
     }

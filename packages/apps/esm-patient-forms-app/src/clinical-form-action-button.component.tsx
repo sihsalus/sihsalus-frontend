@@ -1,4 +1,4 @@
-import { ActionMenuButton2, DocumentIcon } from '@openmrs/esm-framework';
+import { ActionMenuButton2, DocumentIcon, UserHasAccess } from '@openmrs/esm-framework';
 import { type PatientChartWorkspaceActionButtonProps, usePatientChartStore } from '@openmrs/esm-patient-common-lib';
 import React, { type ComponentProps } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -21,15 +21,17 @@ const ClinicalFormActionButton: React.FC<PatientChartWorkspaceActionButtonProps>
         }
       : null);
   return (
-    <ActionMenuButton2
-      icon={renderDocumentIcon}
-      label={t('clinicalForms', 'Clinical forms')}
-      workspaceToLaunch={{
-        workspaceName: 'clinical-forms-workspace',
-        workspaceProps: {},
-        groupProps: patientChartGroupProps,
-      }}
-    />
+    <UserHasAccess privilege="app:hoja.clinica.formulariosClinicos">
+      <ActionMenuButton2
+        icon={renderDocumentIcon}
+        label={t('clinicalForms', 'Clinical forms')}
+        workspaceToLaunch={{
+          workspaceName: 'clinical-forms-workspace',
+          workspaceProps: {},
+          groupProps: patientChartGroupProps,
+        }}
+      />
+    </UserHasAccess>
   );
 };
 

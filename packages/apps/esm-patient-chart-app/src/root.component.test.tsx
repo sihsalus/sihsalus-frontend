@@ -2,19 +2,14 @@ import { render, screen, waitFor } from '@testing-library/react';
 import { StrictMode, type ReactNode } from 'react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
-type RequirePrivilegeProps = {
-  privilege: string | string[];
-  children?: ReactNode;
-  fallback?: ReactNode;
-};
-
-const mockRequirePrivilege = vi.hoisted(() => vi.fn((_props: RequirePrivilegeProps): ReactNode => null));
 const mockNavigate = vi.hoisted(() => vi.fn());
 const mockShowSnackbar = vi.hoisted(() => vi.fn());
+const mockUseSession = vi.hoisted(() => vi.fn());
 
 vi.mock('@openmrs/esm-framework', () => ({
   navigate: mockNavigate,
   showSnackbar: mockShowSnackbar,
+  useSession: mockUseSession,
 }));
 
 vi.mock('react-i18next', () => ({
@@ -23,7 +18,6 @@ vi.mock('react-i18next', () => ({
 
 vi.mock('@sihsalus/esm-rbac', () => ({
   AppErrorBoundary: ({ children }: { children?: ReactNode }) => <>{children}</>,
-  RequirePrivilege: (props: RequirePrivilegeProps) => mockRequirePrivilege(props),
 }));
 
 vi.mock('./patient-chart/patient-chart.component', () => ({
@@ -35,26 +29,35 @@ describe('Patient chart root', () => {
     vi.stubGlobal('spaBase', '/openmrs/spa');
     vi.stubGlobal('getOpenmrsSpaBase', () => '/openmrs/spa');
     window.history.pushState({}, 'Patient chart', '/openmrs/spa/patient/test-patient/chart');
-    mockRequirePrivilege.mockImplementation(({ children }) => <>{children}</>);
+    mockUseSession.mockReturnValue({
+      authenticated: true,
+      user: {
+        privileges: [{ name: 'app:hoja.clinica', display: 'Historia clínica' }],
+        roles: [],
+      },
+    });
     mockNavigate.mockClear();
     mockShowSnackbar.mockClear();
   });
 
-  it('protects direct chart access with the clinical chart privilege', async () => {
+  it('allows direct chart access with the clinical chart privilege', async () => {
     const { default: Root } = await import('./root.component');
 
     render(<Root />);
 
-    expect(mockRequirePrivilege).toHaveBeenCalledWith(
-      expect.objectContaining({ privilege: 'app:hoja.clinica', fallback: expect.anything() }),
-    );
     expect(screen.getByText('Patient chart')).toBeInTheDocument();
     expect(mockShowSnackbar).not.toHaveBeenCalled();
     expect(mockNavigate).not.toHaveBeenCalled();
   });
 
-  it('shows one informational message before redirecting unauthorized users to home', async () => {
-    mockRequirePrivilege.mockImplementation(({ fallback }) => <>{fallback}</>);
+  it('shows one informational message before redirecting unauthorized users to patient search', async () => {
+    mockUseSession.mockReturnValue({
+      authenticated: true,
+      user: {
+        privileges: [{ name: 'app:hoja.clinica.resumen', display: 'Resumen clínico' }],
+        roles: [],
+      },
+    });
     const { default: Root } = await import('./root.component');
 
     render(

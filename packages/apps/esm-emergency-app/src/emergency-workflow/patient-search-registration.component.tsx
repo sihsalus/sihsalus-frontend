@@ -921,6 +921,9 @@ const PatientSearchRegistration: React.FC<PatientSearchRegistrationProps> = ({ o
                                   invalidText={errors.nationality?.message}
                                   disabled={isRegistering || shouldLockNationalityToPeru}
                                   onChange={(conceptUuid) => {
+                                    if (conceptUuid === (field.value ?? '')) {
+                                      return;
+                                    }
                                     nationalityWasAutoAssigned.current = false;
                                     field.onChange(conceptUuid);
                                   }}

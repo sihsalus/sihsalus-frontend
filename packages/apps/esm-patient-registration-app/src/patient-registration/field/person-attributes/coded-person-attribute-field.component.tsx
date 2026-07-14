@@ -61,12 +61,12 @@ export function CodedPersonAttributeField({
           .sort((a, b) => a.label.localeCompare(b.label));
 
     return availableAnswers.map((answer) => ({
-          ...answer,
-          label:
-            id === 'insuranceType' && /^particular\s*\/\s*sin seguro$/i.test(answer.label ?? '')
-              ? t('selfFinancing', 'Self-financing')
-              : answer.label,
-        }));
+      ...answer,
+      label:
+        id === 'insuranceType' && /^particular\s*\/\s*sin seguro$/i.test(answer.label ?? '')
+          ? t('selfFinancing', 'Self-financing')
+          : answer.label,
+    }));
   }, [conceptAnswers, customConceptAnswers, hasCustomConceptAnswers, id, t]);
 
   const fieldName = `attributes.${personAttributeType.uuid}`;
@@ -172,7 +172,11 @@ export function CodedPersonAttributeField({
                     invalidText={typeof errorMessage === 'string' ? errorMessage : undefined}
                     disabled={readOnly}
                     onChange={({ selectedItem }) => {
-                      setFieldValue(fieldName, selectedItem?.uuid ?? '');
+                      const nextValue = selectedItem?.uuid ?? '';
+
+                      if (nextValue !== (field.value ?? '')) {
+                        setFieldValue(fieldName, nextValue);
+                      }
                     }}
                   />
                 );

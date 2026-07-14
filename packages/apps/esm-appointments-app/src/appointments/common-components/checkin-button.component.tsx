@@ -264,6 +264,7 @@ const CheckInButton: React.FC<CheckInButtonProps> = ({ appointment, patientUuid,
               try {
                 assertVisitLinkIsConfigured();
                 const requiredAppointmentLocationUuid = getAppointmentLocationUuid();
+                const requiredQueueLocationUuid = queueMapping?.queueLocationUuid ?? requiredAppointmentLocationUuid;
                 if (!(await validateAppointmentStatus())) {
                   return;
                 }
@@ -279,7 +280,7 @@ const CheckInButton: React.FC<CheckInButtonProps> = ({ appointment, patientUuid,
                   }
                   await launchWorkspace2(addActiveVisitToQueueWorkspace, {
                     activeVisit: activeVisits[0],
-                    currentQueueLocationUuid: queueMapping?.queueLocationUuid,
+                    currentQueueLocationUuid: requiredQueueLocationUuid,
                     currentServiceQueueUuid: queueMapping?.queueUuid,
                     requestedServiceName: appointment.service.name,
                     requiredVisitLocation: {
@@ -314,7 +315,7 @@ const CheckInButton: React.FC<CheckInButtonProps> = ({ appointment, patientUuid,
                     attributeType: appointmentVisitAttributeTypeUuid,
                     value: appointment.uuid,
                   },
-                  currentQueueLocationUuid: queueMapping?.queueLocationUuid,
+                  currentQueueLocationUuid: requiredQueueLocationUuid,
                   currentServiceQueueUuid: queueMapping?.queueUuid,
                   requestedServiceName: appointment.service.name,
                   requiredVisitLocation: {

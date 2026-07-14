@@ -791,6 +791,11 @@ describe('AppointmentActions', () => {
           attributeType: '193508ab-20c6-5291-9f23-0257335eaabd',
           value: appointment.uuid,
         },
+        currentQueueLocationUuid: appointment.location.uuid,
+        requiredVisitLocation: {
+          uuid: appointment.location.uuid,
+          display: appointment.location.name,
+        },
         openedFrom: 'appointments-check-in',
         onVisitStarted: expect.any(Function),
       }),

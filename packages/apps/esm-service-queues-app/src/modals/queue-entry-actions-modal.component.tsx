@@ -128,7 +128,7 @@ export const QueueEntryActionModal: React.FC<QueueEntryActionModalProps> = ({
     transitionTime: dayjs(initialTransitionDate).format('hh:mm'),
     transitionTimeFormat: dayjs(initialTransitionDate).hour() < 12 ? 'AM' : 'PM',
   });
-  const { queues } = useQueues();
+  const { queues, isLoading: isLoadingQueues, error: queuesError } = useQueues();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [userFacingSubmissionError, setUserFacingSubmissionError] = useState<{
     type: 'duplicate' | 'error';
@@ -144,6 +144,13 @@ export const QueueEntryActionModal: React.FC<QueueEntryActionModalProps> = ({
   const hasNoStatusesConfigured = selectedQueue && statuses.length === 0;
   const priorities = selectedQueue?.allowedPriorities;
   const hasNoPrioritiesConfigured = selectedQueue && priorities.length === 0;
+  const hasValidQueueConfiguration = Boolean(
+    !isLoadingQueues &&
+      !queuesError &&
+      selectedQueue &&
+      priorities?.some(({ uuid }) => uuid === formState.selectedPriority) &&
+      (!showStatusPicker || statuses?.some(({ uuid }) => uuid === formState.selectedStatus)),
+  );
 
   const setSelectedQueueUuid = (selectedQueueUuid: string) => {
     clearSubmissionError();
@@ -199,7 +206,9 @@ export const QueueEntryActionModal: React.FC<QueueEntryActionModalProps> = ({
   const submitForm = () => {
     setIsSubmitting(true);
 
-    submitAction(queueEntry, formState)
+    // Normalize synchronous validation failures into the existing async error path.
+    Promise.resolve()
+      .then(() => submitAction(queueEntry, formState))
       .then(({ status }) => {
         if (status === 200) {
           showSnackbar({
@@ -306,6 +315,14 @@ export const QueueEntryActionModal: React.FC<QueueEntryActionModalProps> = ({
         <div className={styles.queueEntryActionModalBody}>
           <Stack gap={4}>
             {modalInstruction && <p>{modalInstruction}</p>}
+            {queuesError && (
+              <InlineNotification
+                hideCloseButton
+                kind="error"
+                lowContrast
+                title={t('queueDataLoadErrorMessage', 'No se pudo cargar la información de la cola. Inténtelo de nuevo.')}
+              />
+            )}
             {showQueuePicker && (
               <section>
                 {/* Read this issue description for why we're using 8 locations as the cut off https://openmrs.atlassian.net/jira/software/c/projects/O3/issues/O3-4131 */}
@@ -497,6 +514,7 @@ export const QueueEntryActionModal: React.FC<QueueEntryActionModalProps> = ({
         <Button
           disabled={
             isSubmitting ||
+            !hasValidQueueConfiguration ||
             disableSubmit(queueEntry, formState) ||
             (isEdit && formState.modifyDefaultTransitionDateTime && timeInvalidMessage !== null)
           }

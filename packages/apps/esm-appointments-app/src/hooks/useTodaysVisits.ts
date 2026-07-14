@@ -2,7 +2,9 @@ import { openmrsFetch, restBaseUrl } from '@openmrs/esm-framework';
 import useSWR from 'swr';
 
 const activeVisitsCacheKey = 'sihsalus-active-visits-with-appointment-links';
-const activeVisitsPageSize = 200;
+// Stay within the OpenMRS REST absolute page-size default so this MFE does not
+// depend on a distro-specific `webservices.rest.maxResultsAbsolute` override.
+const activeVisitsPageSize = 100;
 const activeVisitRepresentation =
   'custom:(uuid,patient:(uuid),startDatetime,stopDatetime,attributes:(value,attributeType:(uuid)))';
 

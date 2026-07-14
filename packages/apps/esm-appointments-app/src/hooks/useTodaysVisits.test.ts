@@ -10,8 +10,8 @@ describe('getAllActiveVisits', () => {
   });
 
   it('paginates until every active visit is loaded', async () => {
-    const firstPage = Array.from({ length: 200 }, (_, index) => ({ uuid: `visit-${index}` }) as Visit);
-    const lastVisit = { uuid: 'visit-200' } as Visit;
+    const firstPage = Array.from({ length: 100 }, (_, index) => ({ uuid: `visit-${index}` }) as Visit);
+    const lastVisit = { uuid: 'visit-100' } as Visit;
     mockOpenmrsFetch
       .mockResolvedValueOnce({ data: { results: firstPage } } as unknown as FetchResponse)
       .mockResolvedValueOnce({ data: { results: [lastVisit] } } as unknown as FetchResponse);
@@ -19,7 +19,7 @@ describe('getAllActiveVisits', () => {
     await expect(getAllActiveVisits()).resolves.toEqual([...firstPage, lastVisit]);
     expect(mockOpenmrsFetch).toHaveBeenCalledTimes(2);
     expect(mockOpenmrsFetch.mock.calls[0][0]).toContain('startIndex=0');
-    expect(mockOpenmrsFetch.mock.calls[1][0]).toContain('startIndex=200');
+    expect(mockOpenmrsFetch.mock.calls[1][0]).toContain('startIndex=100');
   });
 
   it('requests only the fields required to match active visits and appointment links', async () => {
@@ -32,14 +32,14 @@ describe('getAllActiveVisits', () => {
       'custom:(uuid,patient:(uuid),startDatetime,stopDatetime,attributes:(value,attributeType:(uuid)))',
     );
     expect(requestUrl.searchParams.get('includeInactive')).toBe('false');
-    expect(requestUrl.searchParams.get('limit')).toBe('200');
+    expect(requestUrl.searchParams.get('limit')).toBe('100');
   });
 
   it('stops safely if a server ignores pagination and repeats a full page', async () => {
-    const repeatedPage = Array.from({ length: 200 }, (_, index) => ({ uuid: `visit-${index}` }) as Visit);
+    const repeatedPage = Array.from({ length: 100 }, (_, index) => ({ uuid: `visit-${index}` }) as Visit);
     mockOpenmrsFetch.mockResolvedValue({ data: { results: repeatedPage } } as unknown as FetchResponse);
 
-    await expect(getAllActiveVisits()).resolves.toHaveLength(200);
+    await expect(getAllActiveVisits()).resolves.toHaveLength(100);
     expect(mockOpenmrsFetch).toHaveBeenCalledTimes(2);
   });
 });

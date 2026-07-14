@@ -115,16 +115,20 @@ const EditQueueEntryModal: React.FC<EditQueueEntryModalProps> = ({ queueEntry, c
         submitFailureTitle: t('queueEntryEditingFailed', 'Error editing queue entry'),
         submitAction: (queueEntry, formState) => {
           const selectedQueue = queues.find((q) => q.uuid === formState.selectedQueue);
-          const statuses = selectedQueue?.allowedStatuses;
-          const priorities = selectedQueue?.allowedPriorities;
+          const status = selectedQueue?.allowedStatuses.find((item) => item.uuid === formState.selectedStatus);
+          const priority = selectedQueue?.allowedPriorities.find((item) => item.uuid === formState.selectedPriority);
+
+          if (!selectedQueue || !status || !priority) {
+            return Promise.reject(new Error('The selected queue configuration is not available.'));
+          }
 
           const startAtDate = new Date(formState.transitionDate);
           const [hour, minute] = convertTime12to24(formState.transitionTime, formState.transitionTimeFormat);
           startAtDate.setHours(hour, minute, 0, 0);
 
           return updateActiveQueueEntry(queueEntry.uuid, {
-            status: statuses.find((s) => s.uuid === formState.selectedStatus),
-            priority: priorities.find((p) => p.uuid === formState.selectedPriority),
+            status,
+            priority,
             priorityComment: formState.priorityComment,
             ...(formState.modifyDefaultTransitionDateTime ? { startedAt: startAtDate.toISOString() } : {}),
           });

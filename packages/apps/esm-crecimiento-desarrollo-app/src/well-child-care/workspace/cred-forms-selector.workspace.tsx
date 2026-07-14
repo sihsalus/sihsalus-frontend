@@ -124,13 +124,14 @@ const CREDFormsSelectorWorkspace: React.FC<CREDFormsSelectorWorkspaceProps> = (p
     async (form: Form, _latestEncounterUuid: string, onFormSubmitted: () => void) => {
       try {
         const resolvedForm = await resolveCREDForm(form.uuid, form.display ?? form.name ?? form.uuid);
+        const controlFormKey = `${patientUuid}:${controlNumber}:${form.uuid}`;
         const currentControlEncounterUuid =
-          submittedEncounterUuids.current.get(form.uuid) ??
+          submittedEncounterUuids.current.get(controlFormKey) ??
           findCREDFormEncounterForControl(encounters ?? [], form.uuid, controlNumber) ??
           '';
         const handleFormSubmitted = (encounter?: { uuid?: string }) => {
           if (encounter?.uuid) {
-            submittedEncounterUuids.current.set(form.uuid, encounter.uuid);
+            submittedEncounterUuids.current.set(controlFormKey, encounter.uuid);
           }
           void mutateCREDEncounters();
           onFormSubmitted();
@@ -160,7 +161,15 @@ const CREDFormsSelectorWorkspace: React.FC<CREDFormsSelectorWorkspaceProps> = (p
         });
       }
     },
-    [config.CRED?.controlNumber, consultationDatetime, controlNumber, encounters, mutateCREDEncounters, t],
+    [
+      config.CRED?.controlNumber,
+      consultationDatetime,
+      controlNumber,
+      encounters,
+      mutateCREDEncounters,
+      patientUuid,
+      t,
+    ],
   );
   const handleComplete = useCallback(() => {
     void mutateCREDEncounters();

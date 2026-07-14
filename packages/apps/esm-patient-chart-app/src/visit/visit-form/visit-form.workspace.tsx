@@ -1306,10 +1306,10 @@ const StartVisitForm: React.FC<StartVisitFormProps> = (props) => {
             </Stack>
           </div>
         </fieldset>
-        {/* Queue controls stay editable only while queue persistence itself still needs a retry. */}
+        {/* Preserve the queue selection used by the first persistence attempt once the visit exists. */}
         <fieldset
           className={styles.persistedVisitFields}
-          disabled={Boolean(persistedVisitPendingPostSubmit && queueEntryPersistenceCompleted)}
+          disabled={Boolean(persistedVisitPendingPostSubmit)}
         >
           <Stack gap={1} className={styles.container}>
             <section className={styles.queueSection}>

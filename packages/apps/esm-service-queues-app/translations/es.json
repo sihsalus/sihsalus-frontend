@@ -106,6 +106,7 @@
   "invalidQueue": "Cola Inválida",
   "invalidtableConfig": "Tabla de configuración inválida",
   "invalidTimeFormat": "Formato de hora inválido",
+  "lastUpdated": "Última actualización",
   "itemRange": "{{min}}-{{max}} de {{total}} elementos",
   "itemsPerPage": "Elementos por página:",
   "location": "Ubicación",

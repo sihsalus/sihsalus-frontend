@@ -315,7 +315,7 @@ export const QueueEntryActionModal: React.FC<QueueEntryActionModalProps> = ({
                     className={styles.radioButtonGroup}
                     id="queue"
                     name="queue"
-                    invalidText="Required"
+                    invalidText={t('required', 'Required')}
                     valueSelected={formState.selectedQueue}
                     orientation="vertical"
                     onChange={(uuid) => setSelectedQueueUuid(String(uuid))}

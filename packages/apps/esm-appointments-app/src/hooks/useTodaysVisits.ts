@@ -1,13 +1,24 @@
-import { openmrsFetch, restBaseUrl, type Visit } from '@openmrs/esm-framework';
+import { openmrsFetch, restBaseUrl } from '@openmrs/esm-framework';
 import useSWR from 'swr';
 
 const activeVisitsCacheKey = 'sihsalus-active-visits-with-appointment-links';
 const activeVisitsPageSize = 200;
 const activeVisitRepresentation =
-  'custom:(uuid,patient:(uuid,identifiers:(identifier,uuid),person:(age,display,gender,uuid)),visitType:(uuid,name,display),location:(uuid,name,display),startDatetime,stopDatetime,attributes:(uuid,value,attributeType:(uuid)))';
+  'custom:(uuid,patient:(uuid),startDatetime,stopDatetime,attributes:(value,attributeType:(uuid)))';
+
+interface ActiveAppointmentVisit {
+  uuid: string;
+  patient?: { uuid?: string };
+  startDatetime?: string;
+  stopDatetime?: string | null;
+  attributes?: Array<{
+    value?: unknown;
+    attributeType?: { uuid?: string };
+  }>;
+}
 
 export async function getAllActiveVisits() {
-  const visits: Array<Visit> = [];
+  const visits: Array<ActiveAppointmentVisit> = [];
   const seenVisitUuids = new Set<string>();
 
   for (let startIndex = 0; ; startIndex += activeVisitsPageSize) {
@@ -18,7 +29,9 @@ export async function getAllActiveVisits() {
       startIndex: String(startIndex),
       v: activeVisitRepresentation,
     });
-    const response = await openmrsFetch<{ results?: Array<Visit> }>(`${restBaseUrl}/visit?${searchParams.toString()}`);
+    const response = await openmrsFetch<{ results?: Array<ActiveAppointmentVisit> }>(
+      `${restBaseUrl}/visit?${searchParams.toString()}`,
+    );
     const page = response.data?.results ?? [];
     let addedVisits = 0;
 
@@ -44,7 +57,10 @@ export async function getAllActiveVisits() {
  * @returns An object containing the visits, isLoading flag, and error message.
  */
 export const useTodaysVisits = () => {
-  const { data, error, isLoading, mutate } = useSWR<Array<Visit>>(activeVisitsCacheKey, getAllActiveVisits);
+  const { data, error, isLoading, mutate } = useSWR<Array<ActiveAppointmentVisit>>(
+    activeVisitsCacheKey,
+    getAllActiveVisits,
+  );
   const visits = data ?? [];
 
   return { isLoading, visits, error, mutateVisit: mutate };

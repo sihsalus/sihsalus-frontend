@@ -344,6 +344,8 @@
       "type": "service-queues",
       "privileges": [
         "app:home.colasAtencion.editar",
+        "Edit Visits",
+        "Get Visit Attribute Types",
         "Get Queue Entries",
         "Get Queues",
         "Manage Queue Entries"
@@ -379,6 +381,8 @@
         "Get Patients",
         "Get Locations",
         "Get Visits",
+        "Edit Visits",
+        "Get Visit Attribute Types",
         "Get Queue Entries",
         "Get Queues",
         "Manage Queue Entries"

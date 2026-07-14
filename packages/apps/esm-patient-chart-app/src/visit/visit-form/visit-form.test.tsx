@@ -949,13 +949,64 @@ describe('Visit form', () => {
     expect(mockSaveVisit).toHaveBeenCalledTimes(1);
   });
 
-  it('retries a failed queue callback without creating another visit', async () => {
+  it('locks the queue selection and retries a failed queue callback without creating another visit', async () => {
     const user = userEvent.setup();
-    const queueCallback = vi
-      .fn()
-      .mockRejectedValueOnce(new Error('queue write failed'))
-      .mockResolvedValueOnce(undefined);
+    let selectedQueueLocation = 'queue-location-a';
+    let selectedQueue = 'queue-a';
+    const attemptedQueueSelections: Array<{ location: string; queue: string }> = [];
+    const queueCallback = vi.fn().mockImplementation(() => {
+      attemptedQueueSelections.push({ location: selectedQueueLocation, queue: selectedQueue });
+      return attemptedQueueSelections.length === 1
+        ? Promise.reject(new Error('queue write failed'))
+        : Promise.resolve(undefined);
+    });
     const appointmentCallback = vi.fn().mockResolvedValue(undefined);
+    mockExtensionSlot.mockImplementation(({ children, name }): React.JSX.Element => {
+      if (name === 'visit-form-bottom-slot') {
+        return (
+          <>
+            <label htmlFor="test-queue-location">Queue location</label>
+            <select
+              defaultValue={selectedQueueLocation}
+              id="test-queue-location"
+              onChange={(event) => {
+                selectedQueueLocation = event.target.value;
+              }}
+            >
+              <option value="queue-location-a">Queue location A</option>
+              <option value="queue-location-b">Queue location B</option>
+            </select>
+            <label htmlFor="test-queue">Queue service</label>
+            <select
+              defaultValue={selectedQueue}
+              id="test-queue"
+              onChange={(event) => {
+                selectedQueue = event.target.value;
+              }}
+            >
+              <option value="queue-a">Queue A</option>
+              <option value="queue-b">Queue B</option>
+            </select>
+          </>
+        );
+      }
+
+      if (typeof children === 'function') {
+        return (
+          <>
+            {children({
+              id: 'test-extension-id',
+              meta: {},
+              moduleName: '@openmrs/esm-patient-chart-app',
+              name: 'test-extension-name',
+              config: {},
+            } as AssignedExtension)}
+          </>
+        );
+      }
+
+      return <>{children ?? null}</>;
+    });
     mockUseVisitFormCallbacks.mockReturnValue([
       new Map([
         [
@@ -982,16 +1033,29 @@ describe('Visit form', () => {
     await user.click(screen.getByRole('button', { name: /Start visit/i }));
 
     const retryButton = await screen.findByRole('button', { name: /Reintentar registro|Retry registration/i });
+    const queueLocationPicker = screen.getByRole('combobox', { name: 'Queue location' });
+    const queuePicker = screen.getByRole('combobox', { name: 'Queue service' });
     expect(screen.getByRole('combobox', { name: /Select a location/i })).toBeDisabled();
+    expect(queueLocationPicker).toBeDisabled();
+    expect(queuePicker).toBeDisabled();
     expect(mockSaveVisit).toHaveBeenCalledTimes(1);
     expect(queueCallback).toHaveBeenCalledTimes(1);
     expect(appointmentCallback).not.toHaveBeenCalled();
+
+    await user.selectOptions(queueLocationPicker, 'queue-location-b');
+    await user.selectOptions(queuePicker, 'queue-b');
+    expect(queueLocationPicker).toHaveValue('queue-location-a');
+    expect(queuePicker).toHaveValue('queue-a');
 
     await user.click(retryButton);
     await waitFor(() => expect(mockCloseWorkspace).toHaveBeenCalled());
 
     expect(mockSaveVisit).toHaveBeenCalledTimes(1);
     expect(queueCallback).toHaveBeenCalledTimes(2);
+    expect(attemptedQueueSelections).toEqual([
+      { location: 'queue-location-a', queue: 'queue-a' },
+      { location: 'queue-location-a', queue: 'queue-a' },
+    ]);
     expect(appointmentCallback).toHaveBeenCalledTimes(1);
     expect(queueCallback.mock.invocationCallOrder[1]).toBeLessThan(appointmentCallback.mock.invocationCallOrder[0]);
   });

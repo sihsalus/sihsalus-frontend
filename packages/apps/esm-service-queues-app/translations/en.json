@@ -106,6 +106,7 @@
   "invalidQueue": "Invalid Queue",
   "invalidtableConfig": "Invalid table configuration",
   "invalidTimeFormat": "Invalid time format",
+  "lastUpdated": "Last updated",
   "itemRange": "{{min}}-{{max}} of {{total}} items",
   "itemsPerPage": "Items per page:",
   "location": "Location",

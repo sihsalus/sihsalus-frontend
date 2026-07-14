@@ -1,4 +1,9 @@
 import dayjs from 'dayjs';
+import timezone from 'dayjs/plugin/timezone';
+import utc from 'dayjs/plugin/utc';
+
+dayjs.extend(utc);
+dayjs.extend(timezone);
 
 const trimTrailingSlash = (path: string) => path.replace(/\/+$/, '');
 const getSpaBasePath = () =>
@@ -8,8 +13,8 @@ export const spaRoot = window['getOpenmrsSpaBase'];
 export const spaBasePath = `${getSpaBasePath()}/home`;
 export const serviceQueuesBasePath = `${spaBasePath}/service-queues`;
 export const omrsDateFormat = 'YYYY-MM-DDTHH:mm:ss.SSSZZ';
-export const getStartOfDay = () => dayjs().startOf('day').toDate().toISOString();
-export const timeZone = Intl.DateTimeFormat().resolvedOptions().timeZone;
+export const timeZone = 'America/Lima';
+export const getStartOfDay = () => dayjs().tz(timeZone).startOf('day').toISOString();
 export const serviceQueuesPrivilege = 'app:home.colasAtencion';
 export const serviceQueuesEditPrivilege = 'app:home.colasAtencion.editar';
 

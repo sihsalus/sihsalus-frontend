@@ -1,9 +1,11 @@
-const openmrsBase = process.env.OPENMRS_BASE ?? 'https://gidis-hsc-qlty.inf.pucp.edu.pe/openmrs';
+const openmrsBase = (process.env.E2E_API_BASE_URL ?? process.env.OPENMRS_BASE)?.replace(/\/$/, '');
 const username = process.env.E2E_USERNAME;
 const password = process.env.E2E_PASSWORD;
 
-if (!username || !password) {
-  throw new Error('E2E_USERNAME and E2E_PASSWORD are required to create a patient via REST.');
+if (!openmrsBase || !username || !password) {
+  throw new Error(
+    'E2E_API_BASE_URL, E2E_USERNAME and E2E_PASSWORD are required to create a synthetic patient via REST.',
+  );
 }
 
 const auth = `Basic ${Buffer.from(`${username}:${password}`).toString('base64')}`;

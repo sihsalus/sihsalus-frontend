@@ -8,6 +8,7 @@ export * from './match-locale';
 export * from './patient-helpers';
 export * from './patient-demographics';
 export * from './plain-number-input';
+export * from './peru-identity-document-validation';
 export * from './retry';
 export * from './shallowEqual';
 export * from './storage';

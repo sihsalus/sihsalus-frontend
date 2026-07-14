@@ -44,7 +44,7 @@ export const RefineSearchTablet: React.FC<RefineSearchTabletProps> = ({
     const fields: Array<SearchFieldConfig> = [];
 
     Object.entries(config.search.searchFilterFields).forEach(([fieldName, fieldConfig]) => {
-      if (fieldName !== 'personAttributes' && fieldName !== 'age' && (fieldConfig as BuiltInFieldConfig).enabled) {
+      if (fieldName !== 'personAttributes' && (fieldConfig as BuiltInFieldConfig).enabled) {
         const { min, max } = fieldConfig as BuiltInFieldConfig;
         fields.push({
           name: fieldName,

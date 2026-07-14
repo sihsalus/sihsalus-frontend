@@ -20,7 +20,8 @@ describe('Peru identifier validation', () => {
 
     expect(rule?.pattern.test('123456789012')).toBe(true);
     expect(rule?.pattern.test('1234567890')).toBe(false);
-    expect(rule?.sanitize('1234-5678-9012-99')).toBe('123456789012');
+    expect(rule?.sanitize('1234-5678-9012-99')).toBe('12345678901299');
+    expect(rule?.pattern.test(rule?.sanitize('1234-5678-9012-99') ?? '')).toBe(false);
     expect(rule?.maxLength).toBe(12);
   });
 
@@ -30,7 +31,8 @@ describe('Peru identifier validation', () => {
     expect(rule?.pattern.test('AB1234')).toBe(true);
     expect(rule?.pattern.test('AB1234567')).toBe(true);
     expect(rule?.pattern.test('AB12345678')).toBe(false);
-    expect(rule?.sanitize('ab-123456789')).toBe('AB1234567');
+    expect(rule?.sanitize('ab-123456789')).toBe('AB123456789');
+    expect(rule?.pattern.test(rule?.sanitize('ab-123456789') ?? '')).toBe(false);
     expect(rule?.maxLength).toBe(9);
   });
 });

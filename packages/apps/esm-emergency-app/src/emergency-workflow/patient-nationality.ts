@@ -103,7 +103,11 @@ export function buildNationalityAttribute({
     throw new Error('La nacionalidad seleccionada no es un concepto válido de OpenMRS.');
   }
 
-  if (allowedConceptUuids && !allowedConceptUuids.has(normalizedNationality)) {
+  if (!allowedConceptUuids) {
+    throw new Error('No se pudo verificar la nacionalidad porque el catálogo configurado no está disponible.');
+  }
+
+  if (!allowedConceptUuids.has(normalizedNationality)) {
     throw new Error('La nacionalidad seleccionada no pertenece al catálogo configurado.');
   }
 

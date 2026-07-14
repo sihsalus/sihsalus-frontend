@@ -106,7 +106,6 @@ const BirthdateSearchField: React.FC<Omit<SearchFieldProps, 'field'>> = ({ contr
     </div>
   );
 };
-
 export const SearchField: React.FC<SearchFieldProps> = ({ field, control, inTabletOrOverlay, isTablet }) => {
   const { t } = useTranslation();
 

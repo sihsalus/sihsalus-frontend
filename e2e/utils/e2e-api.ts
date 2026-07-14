@@ -17,8 +17,14 @@ type LoginOptions = {
 };
 
 export function getE2ECredentials() {
-  const username = process.env.E2E_USER_ADMIN_USERNAME ?? 'admin';
-  const password = process.env.E2E_USER_ADMIN_PASSWORD ?? 'Admin123';
+  const username = process.env.E2E_USERNAME?.trim();
+  const password = process.env.E2E_PASSWORD;
+
+  if (!username || !password) {
+    throw new Error(
+      'E2E_USERNAME and E2E_PASSWORD are required. Use a synthetic, minimum-privilege non-production account.',
+    );
+  }
 
   return {
     username,
@@ -34,7 +40,7 @@ async function getSessionLocation(requestContext: APIRequestContext, requestedUu
       return requestedUuid;
     }
 
-    console.warn('Configured E2E login location is not available; falling back to QLTY locations.');
+    throw new Error('The configured E2E login location is unavailable to the synthetic test account.');
   }
 
   const locationsRes = await requestContext.get(getOpenmrsRestUrl('location?v=default&limit=50'));
@@ -71,7 +77,7 @@ export async function loginToOpenmrsAndWriteStorageState({ locale = 'en', storag
     });
 
     if (!response.ok()) {
-      throw new Error(`Login failed (${response.status()}): ${await response.text()}`);
+      throw new Error(`E2E login failed with HTTP ${response.status()}.`);
     }
 
     await writeStorageStateForSpa(requestContext, storageStatePath);

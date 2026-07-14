@@ -1,11 +1,25 @@
-import type { WorkspaceStoreState2 } from '@openmrs/esm-extensions';
-import { describe, expect, it } from 'vitest';
-import { workspace2StoreActions } from './workspace2';
+import { getSessionStore } from '@openmrs/esm-api';
+import { type WorkspaceStoreState2, workspace2Store } from '@openmrs/esm-extensions';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { canLaunchWorkspace2, launchWorkspace2, workspace2StoreActions } from './workspace2';
+
+vi.mock('@openmrs/esm-api', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('@openmrs/esm-api')>();
+  return {
+    ...actual,
+    getSessionStore: vi.fn(),
+  };
+});
+
+const mockGetSessionStore = vi.mocked(getSessionStore);
 
 function makeState(overrides: Partial<WorkspaceStoreState2> = {}): WorkspaceStoreState2 {
   return {
     registeredGroupsByName: {},
-    registeredWindowsByName: {},
+    registeredWindowsByName: {
+      'test-window': { name: 'test-window', group: 'test-group', moduleName: 'test' },
+      'other-window': { name: 'other-window', group: 'test-group', moduleName: 'test' },
+    },
     registeredWorkspacesByName: {
       'parent-workspace': { name: 'parent-workspace', component: 'parent', window: 'test-window', moduleName: 'test' },
       'child-workspace': { name: 'child-workspace', component: 'child', window: 'test-window', moduleName: 'test' },
@@ -29,6 +43,20 @@ function makeState(overrides: Partial<WorkspaceStoreState2> = {}): WorkspaceStor
     ...overrides,
   };
 }
+
+function makeUser(...privileges: Array<string>) {
+  return {
+    privileges: privileges.map((display) => ({ uuid: `${display}-uuid`, display, name: display })),
+    roles: [],
+  };
+}
+
+beforeEach(() => {
+  mockGetSessionStore.mockReset();
+  mockGetSessionStore.mockReturnValue({
+    getState: () => ({ session: { user: undefined } }),
+  } as ReturnType<typeof getSessionStore>);
+});
 
 function makeOpenedWorkspace(name: string, hasUnsavedChanges = false) {
   return { workspaceName: name, props: {}, hasUnsavedChanges, uuid: `uuid-${name}` };
@@ -121,6 +149,25 @@ describe('openChildWorkspace', () => {
     ).toThrow('No workspace named "nonexistent-workspace" registered');
   });
 
+  it('does not mutate state when a protected child workspace is denied', () => {
+    const state = makeState({
+      openedWindows: [
+        {
+          windowName: 'test-window',
+          openedWorkspaces: [makeOpenedWorkspace('parent-workspace')],
+          props: null,
+          maximized: false,
+        },
+      ],
+    });
+    state.registeredWorkspacesByName['child-workspace'].privileges = 'Edit Clinical Forms';
+
+    const result = workspace2StoreActions.openChildWorkspace(state, 'parent-workspace', 'child-workspace', {});
+
+    expect(result).toBe(state);
+    expect(result.openedWindows[0].openedWorkspaces).toHaveLength(1);
+  });
+
   it('throws when parent workspace is not registered', () => {
     const state = makeState({
       openedWindows: [
@@ -201,5 +248,62 @@ describe('openChildWorkspace', () => {
     expect(state.openedWindows[0].openedWorkspaces).toHaveLength(2);
     expect(state.openedWindows[0].openedWorkspaces[0].workspaceName).toBe('parent-workspace');
     expect(state.openedWindows[0].openedWorkspaces[1].workspaceName).toBe('child-workspace');
+  });
+});
+
+describe('canLaunchWorkspace2', () => {
+  it('allows an unprotected workspace without requiring a loaded user', () => {
+    expect(canLaunchWorkspace2(makeState(), 'parent-workspace', undefined)).toBe(true);
+
+    const state = makeState();
+    state.registeredWorkspacesByName['parent-workspace'].privileges = [];
+    expect(canLaunchWorkspace2(state, 'parent-workspace', undefined)).toBe(true);
+  });
+
+  it('prevents a direct protected launch before mutating the store', async () => {
+    const state = makeState({
+      registeredGroupsByName: {
+        'test-group': { name: 'test-group', moduleName: 'test' },
+      },
+    });
+    state.registeredWindowsByName['test-window'].privileges = 'View Clinical Forms';
+    workspace2Store.setState(state);
+
+    await expect(launchWorkspace2('parent-workspace')).resolves.toBe(false);
+    expect(workspace2Store.getState().openedGroup).toBeNull();
+    expect(workspace2Store.getState().openedWindows).toEqual([]);
+  });
+
+  it('fails closed when a protected workspace has no loaded user', () => {
+    const state = makeState();
+    state.registeredWorkspacesByName['parent-workspace'].privileges = 'Edit Visits';
+
+    expect(canLaunchWorkspace2(state, 'parent-workspace', undefined)).toBe(false);
+  });
+
+  it('requires both window and workspace privileges', () => {
+    const state = makeState();
+    state.registeredWindowsByName['test-window'].privileges = 'View Clinical Forms';
+    state.registeredWorkspacesByName['parent-workspace'].privileges = 'Edit Clinical Forms';
+
+    expect(canLaunchWorkspace2(state, 'parent-workspace', makeUser('View Clinical Forms'))).toBe(false);
+    expect(canLaunchWorkspace2(state, 'parent-workspace', makeUser('View Clinical Forms', 'Edit Clinical Forms'))).toBe(
+      true,
+    );
+  });
+
+  it('keeps all-required semantics for privilege arrays', () => {
+    const state = makeState();
+    state.registeredWorkspacesByName['parent-workspace'].privileges = ['View Visits', 'Edit Visits'];
+
+    expect(canLaunchWorkspace2(state, 'parent-workspace', makeUser('View Visits'))).toBe(false);
+    expect(canLaunchWorkspace2(state, 'parent-workspace', makeUser('View Visits', 'Edit Visits'))).toBe(true);
+  });
+
+  it('fails closed for incomplete registrations', () => {
+    expect(canLaunchWorkspace2(makeState(), 'missing-workspace', makeUser())).toBe(false);
+
+    const state = makeState({ registeredWindowsByName: {} });
+    expect(canLaunchWorkspace2(state, 'parent-workspace', makeUser())).toBe(false);
   });
 });

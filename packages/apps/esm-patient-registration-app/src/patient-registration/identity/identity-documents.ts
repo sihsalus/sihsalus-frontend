@@ -1,3 +1,5 @@
+import { getPeruIdentityDocumentRule } from '@openmrs/esm-utils';
+
 import {
   peruCarnetExtranjeriaPatientIdentifierTypeUuid,
   peruDiePatientIdentifierTypeUuid,
@@ -59,35 +61,43 @@ export interface DocumentTypeDefinition {
 
 const cnvPatientIdentifierTypeUuid = '8d79403a-c2cc-11de-8d13-0010c6dffd0f';
 
+function getIdentityDocumentPattern(kind: Parameters<typeof getPeruIdentityDocumentRule>[0]) {
+  const rule = getPeruIdentityDocumentRule(kind);
+  if (!rule) {
+    throw new Error(`Missing canonical identity document rule for ${kind}`);
+  }
+  return rule.pattern;
+}
+
 export const documentTypeDefinitions: Array<DocumentTypeDefinition> = [
   {
     documentTypeConceptUuid: documentTypeConceptUuids.dni,
     patientIdentifierTypeUuid: peruDniPatientIdentifierTypeUuid,
-    validationRegex: /^[0-9]{8}$/,
+    validationRegex: getIdentityDocumentPattern('dni'),
     alphanumeric: false,
   },
   {
     documentTypeConceptUuid: documentTypeConceptUuids.foreignResidentCard,
     patientIdentifierTypeUuid: peruCarnetExtranjeriaPatientIdentifierTypeUuid,
-    validationRegex: /^[A-Za-z0-9]{6,12}$/,
+    validationRegex: getIdentityDocumentPattern('ce'),
     alphanumeric: true,
   },
   {
     documentTypeConceptUuid: documentTypeConceptUuids.passport,
     patientIdentifierTypeUuid: peruPassportPatientIdentifierTypeUuid,
-    validationRegex: /^[A-Za-z0-9]{6,9}$/,
+    validationRegex: getIdentityDocumentPattern('passport'),
     alphanumeric: true,
   },
   {
     documentTypeConceptUuid: documentTypeConceptUuids.foreignIdentityDocument,
     patientIdentifierTypeUuid: peruDiePatientIdentifierTypeUuid,
-    validationRegex: null,
+    validationRegex: getIdentityDocumentPattern('die'),
     alphanumeric: true,
   },
   {
     documentTypeConceptUuid: documentTypeConceptUuids.liveBirthCertificate,
     patientIdentifierTypeUuid: cnvPatientIdentifierTypeUuid,
-    validationRegex: /^[0-9]{12}$/,
+    validationRegex: getIdentityDocumentPattern('cnv'),
     alphanumeric: false,
   },
   {

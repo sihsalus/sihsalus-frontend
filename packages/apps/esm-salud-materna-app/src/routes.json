@@ -309,21 +309,21 @@
   ],
   "modals": [
     {
-      "name": "condition-delete-confirmation-dialog",
+      "name": "maternal-health-condition-delete-confirmation-dialog",
       "component": "conditionFilterDeleteConfirmationDialog",
       "privileges": "app:hoja.clinica.controlPrenatal.editar"
     }
   ],
   "workspaces": [
     {
-      "name": "conditions-filter-form-workspace",
+      "name": "maternal-health-conditions-filter-form-workspace",
       "component": "conditionsFilterWorkspace",
       "privileges": "app:hoja.clinica.controlPrenatal.editar",
       "title": "Agregar Condición",
       "type": "form"
     },
     {
-      "name": "maternal-conditions-form-workspace",
+      "name": "maternal-health-maternal-conditions-form-workspace",
       "component": "conditionsFilterWorkspace",
       "privileges": "app:hoja.clinica.controlPrenatal.editar",
       "title": "Agregar Condición",

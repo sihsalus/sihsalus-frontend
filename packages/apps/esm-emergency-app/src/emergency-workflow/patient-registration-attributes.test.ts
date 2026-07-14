@@ -6,6 +6,7 @@ import type { QuickRegistrationFormData } from './patient-search-registration.va
 
 const config = (getDefaultsFromConfigSchema(configSchema) as Config).patientRegistration;
 const peruConceptUuid = 'e0370dea-d480-4721-a438-97a77d6c3349';
+const colombiaConceptUuid = 'b4c6023d-4e90-4803-a0cf-b089994a9ba1';
 
 const knownPatient: QuickRegistrationFormData = {
   givenName: 'Ada',
@@ -47,6 +48,54 @@ describe('buildEmergencyPatientAttributes', () => {
     expect(attributes.some((attribute) => attribute.value === 'PE')).toBe(false);
   });
 
+  it('deterministically infers Peru from a complete DNI before building the payload', () => {
+    const attributes = buildEmergencyPatientAttributes(
+      {
+        ...knownPatient,
+        identifier: '12345678',
+        identifierType: config.defaultIdentifierTypeUuid,
+      },
+      config,
+      new Set([peruConceptUuid]),
+    );
+
+    expect(attributes).toContainEqual({
+      attributeType: config.nationalityAttributeTypeUuid,
+      value: peruConceptUuid,
+    });
+  });
+
+  it('fails closed before registration when a complete DNI cannot be matched to the nationality catalog', () => {
+    const patientWithDni = {
+      ...knownPatient,
+      identifier: '12345678',
+      identifierType: config.defaultIdentifierTypeUuid,
+    };
+
+    expect(() => buildEmergencyPatientAttributes(patientWithDni, config)).toThrow(/catálogo configurado/u);
+    expect(() => buildEmergencyPatientAttributes(patientWithDni, config, new Set())).toThrow(
+      /no pertenece al catálogo/u,
+    );
+  });
+
+  it('preserves an explicit nationality instead of overwriting it from DNI', () => {
+    const attributes = buildEmergencyPatientAttributes(
+      {
+        ...knownPatient,
+        identifier: '12345678',
+        identifierType: config.defaultIdentifierTypeUuid,
+        nationality: colombiaConceptUuid,
+      },
+      config,
+      new Set([peruConceptUuid, colombiaConceptUuid]),
+    );
+
+    expect(attributes).toContainEqual({
+      attributeType: config.nationalityAttributeTypeUuid,
+      value: colombiaConceptUuid,
+    });
+  });
+
   it('never puts nationality in an unidentified patient payload', () => {
     const attributes = buildEmergencyPatientAttributes(
       { ...knownPatient, isUnknown: true, nationality: peruConceptUuid },
@@ -61,9 +110,34 @@ describe('buildEmergencyPatientAttributes', () => {
     expect(attributes.some((attribute) => attribute.attributeType === config.nationalityAttributeTypeUuid)).toBe(false);
   });
 
+  it('never puts stale insurance data in an unidentified patient payload', () => {
+    const attributes = buildEmergencyPatientAttributes(
+      {
+        ...knownPatient,
+        isUnknown: true,
+        insuranceType: config.insuranceTypeConcepts.sisGratuitoUuid,
+        insuranceCode: 'SIS-STALE',
+      },
+      config,
+    );
+
+    expect(attributes.some((attribute) => attribute.attributeType === config.insuranceTypeAttributeTypeUuid)).toBe(
+      false,
+    );
+    expect(attributes.some((attribute) => attribute.attributeType === config.insuranceCodeAttributeTypeUuid)).toBe(
+      false,
+    );
+  });
+
   it('refuses a UUID that is not a member of the loaded nationality catalog', () => {
     expect(() =>
       buildEmergencyPatientAttributes({ ...knownPatient, nationality: peruConceptUuid }, config, new Set()),
     ).toThrow(/no pertenece al catálogo/u);
+  });
+
+  it('refuses to persist nationality while its catalog is unavailable', () => {
+    expect(() => buildEmergencyPatientAttributes({ ...knownPatient, nationality: peruConceptUuid }, config)).toThrow(
+      /catálogo configurado no está disponible/u,
+    );
   });
 });

@@ -52,6 +52,8 @@ export function CodedPersonAttributeField({
   const isEmptyAnswerSet =
     shouldLoadConceptAnswers && !isLoadingConceptAnswers && !conceptAnswersError && conceptAnswers?.length === 0;
   const cannotLoadConceptAnswers = !hasCustomConceptAnswers && (!canGetConcepts || Boolean(conceptAnswersError));
+  const isAnswerSetUnavailable =
+    isMissingAnswerSet || isInvalidAnswerSet || isEmptyAnswerSet || cannotLoadConceptAnswers;
 
   const answers = useMemo(() => {
     const availableAnswers = hasCustomConceptAnswers
@@ -73,8 +75,19 @@ export function CodedPersonAttributeField({
   const displayLabel = label ?? personAttributeType?.display;
   const labelText = required ? displayLabel : `${displayLabel} (${t('optional', 'optional')})`;
   const validateAnswerSetMembership = (value: unknown) => {
-    if (!enforceAnswerSetMembership || !value || isLoadingConceptAnswers) {
+    if (!enforceAnswerSetMembership || !value) {
       return undefined;
+    }
+
+    if (isLoadingConceptAnswers) {
+      return t('conceptAnswerVerificationPending', 'Wait until the configured catalog has been validated');
+    }
+
+    if (isAnswerSetUnavailable) {
+      return t(
+        'conceptAnswerVerificationUnavailable',
+        'The selected value cannot be verified against the configured catalog',
+      );
     }
 
     return typeof value === 'string' && answers.some((answer) => answer.uuid === value)
@@ -121,27 +134,36 @@ export function CodedPersonAttributeField({
     }
   }, [answerConceptSetUuid, id, isEmptyAnswerSet, t]);
 
-  if (isMissingAnswerSet || isInvalidAnswerSet || isEmptyAnswerSet || cannotLoadConceptAnswers) {
+  if (isAnswerSetUnavailable) {
     return (
-      <InlineNotification
-        hideCloseButton
-        kind={required ? 'error' : 'warning'}
-        lowContrast
-        title={t('codedPersonAttributeUnavailableTitle', 'No se pudo cargar {{field}}', {
-          field: displayLabel,
-        })}
-        subtitle={
-          required
-            ? t(
-                'codedPersonAttributeUnavailableRequired',
-                'Este campo obligatorio no está disponible. Contacte al administrador del sistema.',
-              )
-            : t(
-                'codedPersonAttributeUnavailableOptional',
-                'Este campo opcional no está disponible por configuración. Puede continuar con el registro.',
-              )
-        }
-      />
+      <Field name={fieldName} validate={validateAnswerSetMembership}>
+        {({ field }) => (
+          <InlineNotification
+            hideCloseButton
+            kind={required || (enforceAnswerSetMembership && field.value) ? 'error' : 'warning'}
+            lowContrast
+            title={t('codedPersonAttributeUnavailableTitle', 'No se pudo cargar {{field}}', {
+              field: displayLabel,
+            })}
+            subtitle={
+              enforceAnswerSetMembership && field.value
+                ? t(
+                    'codedPersonAttributeVerificationRequired',
+                    'The existing value must be verified against the configured catalog before continuing.',
+                  )
+                : required
+                  ? t(
+                      'codedPersonAttributeUnavailableRequired',
+                      'Este campo obligatorio no está disponible. Contacte al administrador del sistema.',
+                    )
+                  : t(
+                      'codedPersonAttributeUnavailableOptional',
+                      'Este campo opcional no está disponible por configuración. Puede continuar con el registro.',
+                    )
+            }
+          />
+        )}
+      </Field>
     );
   }
 
@@ -151,88 +173,94 @@ export function CodedPersonAttributeField({
         [styles.searchableCodedField]: searchable,
       })}
     >
-      {!isLoadingConceptAnswers ? (
-        <Layer>
-          <Field name={fieldName} validate={validateAnswerSetMembership}>
-            {({ field, form: { setFieldValue, touched, errors } }) => {
-              const selectedAnswer = answers.find((answer) => answer.uuid === field.value) ?? null;
-              const errorMessage = getIn(errors, fieldName);
-              const invalid = Boolean(errorMessage && getIn(touched, fieldName));
+      <Field name={fieldName} validate={validateAnswerSetMembership}>
+        {({ field, form: { setFieldValue, touched, errors } }) => {
+          if (isLoadingConceptAnswers) {
+            return null;
+          }
 
-              if (searchable) {
-                return (
-                  <ComboBox
-                    id={id}
-                    items={answers}
-                    itemToString={(answer) => answer?.label ?? ''}
-                    selectedItem={selectedAnswer}
-                    titleText={labelText}
-                    placeholder={t('searchSelectAnOption', 'Search and select an option')}
-                    invalid={invalid}
-                    invalidText={typeof errorMessage === 'string' ? errorMessage : undefined}
-                    disabled={readOnly}
-                    onChange={({ selectedItem }) => {
-                      const nextValue = selectedItem?.uuid ?? '';
+          const selectedAnswer = answers.find((answer) => answer.uuid === field.value) ?? null;
+          const errorMessage = getIn(errors, fieldName);
+          const invalid = Boolean(errorMessage && getIn(touched, fieldName));
 
-                      if (nextValue !== (field.value ?? '')) {
-                        setFieldValue(fieldName, nextValue);
-                      }
-                    }}
-                  />
-                );
-              }
-
-              if (codedInputType === 'radio') {
-                return (
-                  <RadioButtonGroup
-                    className={styles.codedRadioGroup}
-                    name={`person-attribute-${personAttributeType.uuid}`}
-                    legendText={labelText}
-                    valueSelected={field.value ?? ''}
-                    invalid={invalid}
-                    invalidText={typeof errorMessage === 'string' ? errorMessage : undefined}
-                    required={required}
-                    readOnly={readOnly}
-                    orientation="horizontal"
-                    onChange={(selectedValue) => setFieldValue(fieldName, selectedValue)}
-                  >
-                    {!required ? (
-                      <RadioButton id={`${id}-unspecified`} labelText={t('notSpecified', 'Not specified')} value="" />
-                    ) : null}
-                    {answers.map((answer) => (
-                      <RadioButton
-                        key={answer.uuid}
-                        id={`${id}-${answer.uuid}`}
-                        labelText={answer.label ?? ''}
-                        value={answer.uuid}
-                      />
-                    ))}
-                  </RadioButtonGroup>
-                );
-              }
-
-              return (
-                <Select
+          if (searchable) {
+            return (
+              <Layer>
+                <ComboBox
                   id={id}
+                  items={answers}
+                  itemToString={(answer) => answer?.label ?? ''}
+                  selectedItem={selectedAnswer}
+                  titleText={labelText}
+                  placeholder={t('searchSelectAnOption', 'Search and select an option')}
+                  invalid={invalid}
+                  invalidText={typeof errorMessage === 'string' ? errorMessage : undefined}
+                  disabled={readOnly}
+                  onChange={({ selectedItem }) => {
+                    const nextValue = selectedItem?.uuid ?? '';
+
+                    if (nextValue !== (field.value ?? '')) {
+                      setFieldValue(fieldName, nextValue);
+                    }
+                  }}
+                />
+              </Layer>
+            );
+          }
+
+          if (codedInputType === 'radio') {
+            return (
+              <Layer>
+                <RadioButtonGroup
+                  className={styles.codedRadioGroup}
                   name={`person-attribute-${personAttributeType.uuid}`}
-                  labelText={labelText}
+                  legendText={labelText}
+                  valueSelected={field.value ?? ''}
                   invalid={invalid}
                   invalidText={typeof errorMessage === 'string' ? errorMessage : undefined}
                   required={required}
-                  disabled={readOnly}
-                  {...field}
-                  value={field.value ?? ''}
+                  readOnly={readOnly}
+                  orientation="horizontal"
+                  onChange={(selectedValue) => setFieldValue(fieldName, selectedValue)}
                 >
-                  <SelectItem value={''} text={t('selectAnOption', 'Select an option')} />
+                  {!required ? (
+                    <RadioButton id={`${id}-unspecified`} labelText={t('notSpecified', 'Not specified')} value="" />
+                  ) : null}
                   {answers.map((answer) => (
-                    <SelectItem key={answer.uuid} value={answer.uuid} text={answer.label} />
+                    <RadioButton
+                      key={answer.uuid}
+                      id={`${id}-${answer.uuid}`}
+                      labelText={answer.label ?? ''}
+                      value={answer.uuid}
+                    />
                   ))}
-                </Select>
-              );
-            }}
-          </Field>
-        </Layer>
-      ) : null}
+                </RadioButtonGroup>
+              </Layer>
+            );
+          }
+
+          return (
+            <Layer>
+              <Select
+                id={id}
+                name={`person-attribute-${personAttributeType.uuid}`}
+                labelText={labelText}
+                invalid={invalid}
+                invalidText={typeof errorMessage === 'string' ? errorMessage : undefined}
+                required={required}
+                disabled={readOnly}
+                {...field}
+                value={field.value ?? ''}
+              >
+                <SelectItem value={''} text={t('selectAnOption', 'Select an option')} />
+                {answers.map((answer) => (
+                  <SelectItem key={answer.uuid} value={answer.uuid} text={answer.label} />
+                ))}
+              </Select>
+            </Layer>
+          );
+        }}
+      </Field>
     </div>
   );
 }

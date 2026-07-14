@@ -33,29 +33,34 @@
     {
       "name": "clinical-forms-workspaceExtension",
       "component": "clinicalFormsWorkspaceExtension",
-      "slot": "ward-patient-clinical-forms-workspace-slot"
+      "slot": "ward-patient-clinical-forms-workspace-slot",
+      "privileges": "app:hoja.clinica.formulariosClinicos"
     }
   ],
   "workspaces2": [
     {
       "name": "clinical-forms-workspace",
       "component": "clinicalFormsWorkspace",
-      "window": "patient-chart-clinical-forms"
+      "window": "patient-chart-clinical-forms",
+      "privileges": "app:hoja.clinica.formulariosClinicos"
     },
     {
       "name": "patient-form-entry-workspace",
       "component": "patientFormEntryWorkspace",
-      "window": "patient-chart-clinical-forms"
+      "window": "patient-chart-clinical-forms",
+      "privileges": "app:hoja.clinica.formulariosClinicos"
     },
     {
       "name": "patient-form-entry-workspace-v2",
       "component": "patientFormEntryWorkspace",
-      "window": "patient-chart-clinical-forms"
+      "window": "patient-chart-clinical-forms",
+      "privileges": "app:hoja.clinica.formulariosClinicos"
     },
     {
       "name": "patient-html-form-entry-workspace",
       "component": "patientHtmlFormEntryWorkspace",
-      "window": "patient-chart-clinical-forms"
+      "window": "patient-chart-clinical-forms",
+      "privileges": "app:hoja.clinica.formulariosClinicos"
     }
   ],
   "workspaceWindows2": [
@@ -77,7 +82,8 @@
       "type": "ward-patient-clinical-form",
       "canMaximize": true,
       "canHide": false,
-      "width": "wider"
+      "width": "wider",
+      "privileges": "app:hoja.clinica.formulariosClinicos"
     },
     {
       "name": "ward-patient-html-form-entry-workspace",
@@ -86,7 +92,8 @@
       "type": "ward-patient-clinical-form",
       "canMaximize": true,
       "canHide": false,
-      "width": "extra-wide"
+      "width": "extra-wide",
+      "privileges": "app:hoja.clinica.formulariosClinicos"
     }
   ]
 }

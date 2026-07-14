@@ -1,8 +1,6 @@
 import {
   Button,
   ButtonSet,
-  DatePicker,
-  DatePickerInput,
   Form,
   InlineNotification,
   InlineLoading,
@@ -50,12 +48,10 @@ import { z } from 'zod';
 
 import { type ConfigObject } from '../config-schema';
 import {
+  appointmentIssuedDateEditPrivilege,
   appointmentLocationTagName,
   appointmentNoteMaxLength,
-  appointmentIssuedDateEditPrivilege,
   dateFormat,
-  datePickerFormat,
-  datePickerPlaceHolder,
   moduleName,
   weekDays,
 } from '../constants';
@@ -67,6 +63,7 @@ import {
   type Appointment,
   AppointmentKind,
   type AppointmentPayload,
+  type AppointmentProviderDetails,
   AppointmentStatus,
   type RecurringPattern,
 } from '../types';
@@ -74,6 +71,7 @@ import Workload from '../workload/workload.component';
 //TO DO FIX THIS SHIT
 import {
   checkAppointmentConflict,
+  checkRecurringAppointmentConflict,
   saveAppointment,
   saveRecurringAppointments,
   useAppointmentService,
@@ -103,10 +101,10 @@ const getIntegerValue = (value: string | number, constraints: PlainNumberInputCo
   validatePlainNumberInput(value, constraints).parsedValue ?? null;
 
 function getConflictErrorMessage(
-  responseData: Record<string, unknown> | null | undefined,
+  responseData: Record<string, unknown>,
   t: (key: string, defaultValue: string) => string,
 ): string | null {
-  if (!responseData) {
+  if (Object.keys(responseData).length === 0) {
     return null;
   }
 
@@ -120,6 +118,10 @@ function getConflictErrorMessage(
   return defaultMessage;
 }
 
+function isConflictMap(responseData: unknown): responseData is Record<string, unknown> {
+  return Boolean(responseData) && typeof responseData === 'object' && !Array.isArray(responseData);
+}
+
 interface AppointmentsFormProps {
   appointment?: Appointment;
   recurringPattern?: RecurringPattern;
@@ -131,6 +133,9 @@ interface AppointmentsFormProps {
 // MINSA appointment services are configured without a default `durationMins`,
 // so new appointments fall back to this duration until the user overrides it.
 const DEFAULT_APPOINTMENT_DURATION_MINUTES = 30;
+// Frontend safety boundary until the recurring-appointments API enforces its own limit.
+// With a daily period of one, this caps a series at 366 generated appointments.
+const MAX_RECURRING_APPOINTMENT_HORIZON_DAYS = 365;
 const APPOINTMENT_EDIT_STATUS_CONFLICT = 'APPOINTMENT_EDIT_STATUS_CONFLICT';
 
 const time12HourFormatRegexPattern = '^(1[0-2]|0?[1-9]):[0-5][0-9]$';
@@ -139,12 +144,45 @@ const isValidTime = (timeStr: string) => timeStr.match(new RegExp(time12HourForm
 
 const isSuccessfulAppointmentResponse = (status?: number) => status >= 200 && status < 300 && status !== 204;
 
+function isValidDate(value: Date | undefined): value is Date {
+  return value instanceof Date && !Number.isNaN(value.getTime());
+}
+
 function resolveAppointmentIssuedDate(
   canEditIssuedDate: boolean,
   submittedDate: Date | undefined,
-  originalDate: Date,
+  originalDate: Date | undefined,
 ): Date {
-  return canEditIssuedDate && submittedDate ? submittedDate : originalDate;
+  const effectiveDate = canEditIssuedDate && isValidDate(submittedDate) ? submittedDate : originalDate;
+  if (!isValidDate(effectiveDate)) {
+    throw new Error('A trusted appointment issue date is unavailable.');
+  }
+  return effectiveDate;
+}
+
+// CANCELLED associations must never be sent back because the appointments API
+// reactivates every provider included in an update payload. REJECTED and
+// TENTATIVE associations are preserved as history, but do not count as an
+// assigned provider.
+const shouldPreserveAppointmentProvider = (provider: AppointmentProviderDetails) => provider.response !== 'CANCELLED';
+
+const isAssignedAppointmentProvider = (provider: AppointmentProviderDetails) =>
+  provider.response === 'ACCEPTED' || provider.response === 'AWAITING';
+
+export function isRecurringAppointmentHorizonAllowed(startDate: Date, endDate: Date) {
+  return (
+    dayjs(endDate).startOf('day').diff(dayjs(startDate).startOf('day'), 'day') <= MAX_RECURRING_APPOINTMENT_HORIZON_DAYS
+  );
+}
+
+export function getRecurringAppointmentPeriodValidationError(isRecurring: boolean, period: number | null) {
+  if (!isRecurring) {
+    return null;
+  }
+  if (period === null || period < 1 || period > MAX_RECURRING_APPOINTMENT_HORIZON_DAYS) {
+    return 'outOfRange';
+  }
+  return Number.isInteger(period) ? null : 'notInteger';
 }
 
 const normalizeAppointmentKind = (appointmentType: string): AppointmentKind => {
@@ -186,7 +224,9 @@ const getAppointmentTypeFromKind = (
     return '';
   }
 
-  return appointmentTypes.find((type) => normalizeAppointmentKind(type) === appointmentKind) ?? '';
+  const configuredType = appointmentTypes.find((type) => normalizeAppointmentKind(type) === appointmentKind);
+  const canonicalType = Object.values(AppointmentKind).find((kind) => kind === appointmentKind);
+  return configuredType ?? canonicalType ?? '';
 };
 
 interface AppointmentFormDefaults {
@@ -266,7 +306,33 @@ const AppointmentsForm: React.FC<
   const { selectedDate } = useContext(SelectedDateContext);
   const { data: services, isLoading } = useAppointmentService();
   const { appointmentTypes, allowAllDayAppointments } = useConfig<ConfigObject>();
+  const availableServices =
+    appointment?.service && !services?.some((service) => service.uuid === appointment.service.uuid)
+      ? [appointment.service, ...(services ?? [])]
+      : (services ?? []);
+  const preservedAppointmentProviders = appointment?.providers?.filter(shouldPreserveAppointmentProvider) ?? [];
+  const assignedAppointmentProviders = preservedAppointmentProviders.filter(isAssignedAppointmentProvider);
+  const currentPrimaryProviderUuid =
+    assignedAppointmentProviders.find((provider) => provider.response === 'ACCEPTED')?.uuid ??
+    assignedAppointmentProviders[0]?.uuid;
+  const providerOptions = [
+    ...(providers?.providers ?? []).map((provider) => ({ uuid: provider.uuid, display: provider.display })),
+    ...preservedAppointmentProviders
+      .filter(
+        (appointmentProvider) =>
+          !(providers?.providers ?? []).some((provider) => provider.uuid === appointmentProvider.uuid),
+      )
+      .map((provider) => ({
+        uuid: provider.uuid,
+        display: provider.display ?? provider.name ?? provider.uuid,
+      })),
+  ];
   const mappedAppointmentTypes = appointmentTypes ?? [];
+  const existingAppointmentType = getAppointmentTypeFromKind(appointment?.appointmentKind, mappedAppointmentTypes);
+  const appointmentTypeOptions =
+    existingAppointmentType && !mappedAppointmentTypes.includes(existingAppointmentType)
+      ? [existingAppointmentType, ...mappedAppointmentTypes]
+      : mappedAppointmentTypes;
   const title =
     workspaceTitle ??
     (context === 'editing'
@@ -277,6 +343,21 @@ const AppointmentsForm: React.FC<
   const [isAllDayAppointment, setIsAllDayAppointment] = useState(false);
   const [isSuccessful, setIsSuccessful] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  // Keep the trusted issue date stable for the lifetime of this form. Recomputing
+  // `new Date()` on every render could silently change the submitted day if a
+  // creation form remains open across midnight. Existing records fail closed
+  // when their persisted issue date is absent or invalid.
+  const [defaultDateAppointmentScheduled] = useState<Date | undefined>(() => {
+    if (context !== 'editing') {
+      return new Date();
+    }
+    if (!appointment?.dateAppointmentScheduled) {
+      return undefined;
+    }
+
+    const persistedIssueDate = new Date(appointment.dateAppointmentScheduled);
+    return isValidDate(persistedIssueDate) ? persistedIssueDate : undefined;
+  });
 
   // TODO can we clean this all up to be more consistent between using Date and dayjs?
   const {
@@ -320,8 +401,9 @@ const AppointmentsForm: React.FC<
       selectedService: z.string().refine((value) => value !== '', {
         message: translateFrom(moduleName, 'serviceRequired', 'Service is required'),
       }),
+      selectedServiceType: z.string(),
       recurringPatternType: z.enum(['DAY', 'WEEK']),
-      recurringPatternPeriod: z.number(),
+      recurringPatternPeriod: z.number().nullable(),
       recurringPatternDaysOfWeek: z.array(z.string()),
       selectedDaysOfWeekText: z.string().optional(),
       startTime: z.string().refine((value) => isValidTime(value), {
@@ -335,7 +417,32 @@ const AppointmentsForm: React.FC<
         recurringPatternEndDateText: z.string().nullable(),
       }),
       formIsRecurringAppointment: z.boolean(),
-      dateAppointmentScheduled: z.date().optional(),
+      dateAppointmentScheduled: z.date({
+        required_error: t('appointmentIssuedDateRequired', 'A valid appointment issue date is required'),
+        invalid_type_error: t('appointmentIssuedDateRequired', 'A valid appointment issue date is required'),
+      }),
+    })
+    .superRefine((formValues, context) => {
+      const periodError = getRecurringAppointmentPeriodValidationError(
+        formValues.formIsRecurringAppointment,
+        formValues.recurringPatternPeriod,
+      );
+      if (periodError === 'outOfRange') {
+        context.addIssue({
+          code: 'custom',
+          path: ['recurringPatternPeriod'],
+          message: t(
+            'recurringPeriodOutOfRange',
+            `The recurrence interval must be between 1 and ${MAX_RECURRING_APPOINTMENT_HORIZON_DAYS}`,
+          ),
+        });
+      } else if (periodError === 'notInteger') {
+        context.addIssue({
+          code: 'custom',
+          path: ['recurringPatternPeriod'],
+          message: t('recurringPeriodMustBeInteger', 'The recurrence interval must be a whole number'),
+        });
+      }
     })
     .refine(
       (formValues) => {
@@ -347,6 +454,71 @@ const AppointmentsForm: React.FC<
       {
         path: ['appointmentDateTime.recurringPatternEndDate'],
         message: t('recurringAppointmentShouldHaveEndDate', 'A recurring appointment should have an end date'),
+      },
+    )
+    .refine(
+      (formValues) => {
+        const { startDate, recurringPatternEndDate } = formValues.appointmentDateTime;
+        if (!formValues.formIsRecurringAppointment || !recurringPatternEndDate) {
+          return true;
+        }
+
+        return isRecurringAppointmentHorizonAllowed(startDate, recurringPatternEndDate);
+      },
+      {
+        path: ['appointmentDateTime.recurringPatternEndDate'],
+        message: t(
+          'recurringHorizonExceeded',
+          `A recurring series cannot extend more than ${MAX_RECURRING_APPOINTMENT_HORIZON_DAYS} days`,
+        ),
+      },
+    )
+    .refine(
+      (formValues) => {
+        if (!formValues.formIsRecurringAppointment || !formValues.appointmentDateTime.recurringPatternEndDate) {
+          return true;
+        }
+        return (
+          formValues.appointmentDateTime.recurringPatternEndDate.getTime() >=
+          formValues.appointmentDateTime.startDate.getTime()
+        );
+      },
+      {
+        path: ['appointmentDateTime.recurringPatternEndDate'],
+        message: t('recurringEndDateBeforeStart', 'The recurrence end date cannot be before the start date'),
+      },
+    )
+    .refine(
+      (formValues) =>
+        !formValues.formIsRecurringAppointment ||
+        formValues.recurringPatternType !== 'WEEK' ||
+        formValues.recurringPatternDaysOfWeek.length > 0,
+      {
+        path: ['recurringPatternDaysOfWeek'],
+        message: t('recurringWeekdayRequired', 'Select at least one day of the week'),
+      },
+    )
+    .refine(
+      (formValues) => {
+        if (!formValues.selectedServiceType) {
+          return true;
+        }
+
+        const selectedService = availableServices.find((service) => service.uuid === formValues.selectedService);
+        const isCurrentRetiredType =
+          appointment?.service.uuid === formValues.selectedService &&
+          appointment?.serviceType?.uuid === formValues.selectedServiceType;
+
+        return (
+          isCurrentRetiredType ||
+          Boolean(
+            selectedService?.serviceTypes?.some((serviceType) => serviceType.uuid === formValues.selectedServiceType),
+          )
+        );
+      },
+      {
+        path: ['selectedServiceType'],
+        message: t('invalidServiceType', 'The selected service type does not belong to this service'),
       },
     )
     .refine(
@@ -375,13 +547,19 @@ const AppointmentsForm: React.FC<
           'Date appointment issued cannot be after the appointment date',
         ),
       },
+    )
+    .refine(
+      () => canEditAppointmentIssuedDate || isValidDate(defaultDateAppointmentScheduled),
+      {
+        path: ['dateAppointmentScheduled'],
+        message: t(
+          'appointmentOriginalIssuedDateInvalid',
+          'The original appointment issue date is missing or invalid and cannot be preserved',
+        ),
+      },
     );
 
   type AppointmentFormData = z.infer<typeof appointmentsFormSchema>;
-
-  const defaultDateAppointmentScheduled = appointment?.dateAppointmentScheduled
-    ? new Date(appointment?.dateAppointmentScheduled)
-    : new Date();
 
   const {
     control,
@@ -390,19 +568,17 @@ const AppointmentsForm: React.FC<
     watch,
     handleSubmit,
     reset,
-    formState: { errors, isDirty },
+    formState: { dirtyFields, errors, isDirty },
   } = useForm<AppointmentFormData>({
     mode: 'all',
     resolver: zodResolver(appointmentsFormSchema),
     defaultValues: {
       location: appointment?.location?.uuid ?? session?.sessionLocation?.uuid ?? '',
-      provider:
-        appointment?.providers?.find((provider) => provider.response === 'ACCEPTED')?.uuid ??
-        session?.currentProvider?.uuid ??
-        '', // assumes only a single previously-scheduled provider with state "ACCEPTED", if multiple, just takes the first
+      provider: currentPrimaryProviderUuid ?? (context === 'creating' ? (session?.currentProvider?.uuid ?? '') : ''),
       appointmentNote: appointment?.comments || '',
-      appointmentType: getAppointmentTypeFromKind(appointment?.appointmentKind, mappedAppointmentTypes),
-      selectedService: appointment?.service?.name || '',
+      appointmentType: existingAppointmentType,
+      selectedService: appointment?.service?.uuid || '',
+      selectedServiceType: appointment?.serviceType?.uuid ?? '',
       recurringPatternType: defaultRecurringPatternType,
       recurringPatternPeriod: defaultRecurringPatternPeriod,
       recurringPatternDaysOfWeek: defaultRecurringPatternDaysOfWeek,
@@ -420,7 +596,24 @@ const AppointmentsForm: React.FC<
     },
   });
 
-  useEffect(() => setValue('formIsRecurringAppointment', isRecurringAppointment), [isRecurringAppointment, setValue]);
+  const selectedServiceUuid = watch('selectedService');
+  const selectedServiceDefinition = availableServices.find((service) => service.uuid === selectedServiceUuid);
+  const serviceTypeOptions = [...(selectedServiceDefinition?.serviceTypes ?? [])];
+  if (
+    appointment?.serviceType &&
+    appointment.service.uuid === selectedServiceUuid &&
+    !serviceTypeOptions.some((serviceType) => serviceType.uuid === appointment.serviceType.uuid)
+  ) {
+    serviceTypeOptions.unshift(appointment.serviceType);
+  }
+
+  useEffect(
+    () =>
+      setValue('formIsRecurringAppointment', isRecurringAppointment, {
+        shouldValidate: true,
+      }),
+    [isRecurringAppointment, setValue],
+  );
 
   // Retrive ref callback for appointmentDateTime (startDate & recurringPatternEndDate)
   const {
@@ -519,8 +712,38 @@ const AppointmentsForm: React.FC<
   // Same for creating and editing
   const handleSaveAppointment = async (data: AppointmentFormData) => {
     setIsSubmitting(true);
-    // Construct appointment payload
-    const appointmentPayload = constructAppointmentPayload(data);
+    let appointmentPayload: AppointmentPayload;
+    let recurringAppointmentPayload: {
+      appointmentRequest: AppointmentPayload;
+      recurringPattern: RecurringPattern;
+    };
+
+    try {
+      appointmentPayload = constructAppointmentPayload(data);
+      recurringAppointmentPayload = {
+        appointmentRequest: appointmentPayload,
+        recurringPattern: constructRecurringPattern(data),
+      };
+    } catch (error) {
+      setIsSubmitting(false);
+      showSnackbar({
+        title:
+          context === 'editing'
+            ? t('appointmentEditError', 'Error editing appointment')
+            : t('appointmentFormError', 'Error scheduling appointment'),
+        kind: 'error',
+        isLowContrast: false,
+        subtitle: getUserFacingErrorMessage(
+          error,
+          t(
+            'appointmentPayloadValidationFailed',
+            'No se pudieron validar los datos de la cita. Revise el registro e intente nuevamente.',
+          ),
+          { logContext: 'Construct appointment payload' },
+        ),
+      });
+      return;
+    }
 
     if (!(await validateAppointmentIsStillEditable())) {
       setIsSubmitting(false);
@@ -530,7 +753,9 @@ const AppointmentsForm: React.FC<
     // check if Duplicate Response Occurs
     let response: FetchResponse;
     try {
-      response = await checkAppointmentConflict(appointmentPayload);
+      response = isRecurringAppointment
+        ? await checkRecurringAppointmentConflict(recurringAppointmentPayload)
+        : await checkAppointmentConflict(appointmentPayload);
     } catch (error) {
       setIsSubmitting(false);
       showSnackbar({
@@ -549,14 +774,30 @@ const AppointmentsForm: React.FC<
       return;
     }
 
-    const errorMessage = getConflictErrorMessage(response?.data, t);
-
-    if (response.status === 200 && errorMessage) {
+    if (response?.status === 200 && isConflictMap(response.data)) {
+      const errorMessage = getConflictErrorMessage(response.data, t);
+      if (errorMessage) {
+        setIsSubmitting(false);
+        showSnackbar({
+          isLowContrast: true,
+          kind: 'error',
+          title: errorMessage,
+        });
+        return;
+      }
+    } else if (response?.status !== 204) {
       setIsSubmitting(false);
       showSnackbar({
-        isLowContrast: true,
+        title:
+          context === 'editing'
+            ? t('appointmentEditError', 'Error editing appointment')
+            : t('appointmentFormError', 'Error scheduling appointment'),
         kind: 'error',
-        title: errorMessage,
+        isLowContrast: false,
+        subtitle: t(
+          'appointmentConflictCheckError',
+          'No se pudieron verificar los conflictos de la cita. Intente nuevamente.',
+        ),
       });
       return;
     }
@@ -567,12 +808,6 @@ const AppointmentsForm: React.FC<
       setIsSubmitting(false);
       return;
     }
-
-    // Construct recurring pattern payload
-    const recurringAppointmentPayload = {
-      appointmentRequest: appointmentPayload,
-      recurringPattern: constructRecurringPattern(data),
-    };
 
     const abortController = new AbortController();
 
@@ -635,14 +870,34 @@ const AppointmentsForm: React.FC<
       appointmentDateTime: { startDate },
       duration,
       appointmentType: selectedAppointmentType,
+      selectedServiceType,
       location,
       provider,
       appointmentNote,
       dateAppointmentScheduled,
     } = data;
 
-    const selectedAppointmentService = services?.find((service) => service.name === selectedService);
-    const serviceUuid = selectedAppointmentService?.uuid;
+    const selectedAppointmentService = availableServices.find((service) => service.uuid === selectedService);
+    const existingProviders =
+      appointment?.providers?.filter(shouldPreserveAppointmentProvider).map((existingProvider) => ({
+        uuid: existingProvider.uuid,
+        ...(existingProvider.response ? { response: existingProvider.response } : {}),
+        ...(existingProvider.comments ? { comments: existingProvider.comments } : {}),
+        ...(existingProvider.name ? { name: existingProvider.name } : {}),
+      })) ?? [];
+    const selectedExistingProvider = existingProviders.find((existingProvider) => existingProvider.uuid === provider);
+    const selectedProviders =
+      context === 'editing' && provider === currentPrimaryProviderUuid
+        ? existingProviders
+        : [
+            ...existingProviders.filter(
+              (existingProvider) =>
+                existingProvider.uuid !== currentPrimaryProviderUuid && existingProvider.uuid !== provider,
+            ),
+            selectedExistingProvider
+              ? { ...selectedExistingProvider, response: 'ACCEPTED' as const }
+              : { uuid: provider },
+          ];
     const [hourValue, minuteValue] = startTime.split(':').map((item) => parseInt(item, 10));
     const hours = (hourValue % 12) + (timeFormat === 'PM' ? 12 : 0);
     const startDateTime = isAllDayAppointment
@@ -658,12 +913,16 @@ const AppointmentsForm: React.FC<
     );
 
     const payload: AppointmentPayload = {
-      appointmentKind: normalizeAppointmentKind(selectedAppointmentType),
-      serviceUuid: serviceUuid,
+      appointmentKind:
+        context === 'editing' && selectedAppointmentType === existingAppointmentType
+          ? appointment.appointmentKind
+          : normalizeAppointmentKind(selectedAppointmentType),
+      serviceUuid: selectedService,
+      serviceTypeUuid: selectedServiceType || undefined,
       startDateTime: startDateTime.format(),
       endDateTime: endDateTime.format(),
       locationUuid: location,
-      providers: [{ uuid: provider }],
+      providers: selectedProviders,
       patientUuid: patientUuid,
       comments: appointmentNote,
       uuid: context === 'editing' ? appointment.uuid : undefined,
@@ -686,11 +945,12 @@ const AppointmentsForm: React.FC<
     } = data;
 
     const [hours, minutes] = [23, 59];
-    const endDate = recurringPatternEndDate?.setHours(hours, minutes);
+    const endDate = recurringPatternEndDate ? new Date(recurringPatternEndDate) : null;
+    endDate?.setHours(hours, minutes);
 
     return {
       type: recurringPatternType,
-      period: recurringPatternPeriod,
+      period: recurringPatternPeriod ?? 1,
       endDate: endDate ? dayjs(endDate).format() : null,
       daysOfWeek: recurringPatternDaysOfWeek,
     };
@@ -770,20 +1030,23 @@ const AppointmentsForm: React.FC<
                     onBlur={onBlur}
                     onChange={(event) => {
                       if (context === 'creating') {
-                        const selectedServiceDuration = services?.find(
-                          (service) => service.name === event.target.value,
+                        const selectedServiceDuration = availableServices.find(
+                          (service) => service.uuid === event.target.value,
                         )?.durationMins;
                         setValue('duration', selectedServiceDuration ?? DEFAULT_APPOINTMENT_DURATION_MINUTES);
                       } else if (context === 'editing') {
-                        const previousServiceDuration = services?.find(
-                          (service) => service.name === getValues('selectedService'),
-                        )?.durationMins;
-                        const selectedServiceDuration = services?.find(
-                          (service) => service.name === event.target.value,
-                        )?.durationMins;
-                        if (selectedServiceDuration && previousServiceDuration === getValues('duration')) {
+                        const previousServiceDuration =
+                          availableServices.find((service) => service.uuid === getValues('selectedService'))
+                            ?.durationMins ?? DEFAULT_APPOINTMENT_DURATION_MINUTES;
+                        const selectedServiceDuration =
+                          availableServices.find((service) => service.uuid === event.target.value)?.durationMins ??
+                          DEFAULT_APPOINTMENT_DURATION_MINUTES;
+                        if (previousServiceDuration === getValues('duration')) {
                           setValue('duration', selectedServiceDuration);
                         }
+                      }
+                      if (event.target.value !== getValues('selectedService')) {
+                        setValue('selectedServiceType', '', { shouldDirty: true, shouldValidate: true });
                       }
                       onChange(event);
                     }}
@@ -791,17 +1054,56 @@ const AppointmentsForm: React.FC<
                     value={value}
                   >
                     <SelectItem text={t('chooseService', 'Select service')} value="" />
-                    {services?.length > 0 &&
-                      services.map((service) => (
-                        <SelectItem key={service.uuid} text={service.name} value={service.name}>
-                          {service.name}
-                        </SelectItem>
-                      ))}
+                    {availableServices.map((service) => (
+                      <SelectItem key={service.uuid} text={service.name} value={service.uuid}>
+                        {service.name}
+                      </SelectItem>
+                    ))}
                   </Select>
                 )}
               />
             </ResponsiveWrapper>
           </section>
+          {serviceTypeOptions.length > 0 && (
+            <section className={styles.formGroup}>
+              <span className={styles.heading}>{t('serviceType', 'Service type')}</span>
+              <ResponsiveWrapper>
+                <Controller
+                  name="selectedServiceType"
+                  control={control}
+                  render={({ field: { onBlur, onChange, value, ref } }) => (
+                    <Select
+                      id="serviceType"
+                      invalid={!!errors?.selectedServiceType}
+                      invalidText={errors?.selectedServiceType?.message}
+                      labelText={t('selectServiceType', 'Select a service type')}
+                      onBlur={onBlur}
+                      onChange={(event) => {
+                        const selectedServiceType = serviceTypeOptions.find(
+                          (serviceType) => serviceType.uuid === event.target.value,
+                        );
+                        if (!dirtyFields.duration) {
+                          const serviceDuration = selectedServiceDefinition?.durationMins;
+                          const nextDuration = selectedServiceType?.duration ?? serviceDuration;
+                          setValue('duration', nextDuration ?? DEFAULT_APPOINTMENT_DURATION_MINUTES);
+                        }
+                        onChange(event);
+                      }}
+                      ref={ref}
+                      value={value}
+                    >
+                      <SelectItem text={t('noServiceType', 'No service type')} value="" />
+                      {serviceTypeOptions.map((serviceType) => (
+                        <SelectItem key={serviceType.uuid} text={serviceType.name} value={serviceType.uuid}>
+                          {serviceType.name}
+                        </SelectItem>
+                      ))}
+                    </Select>
+                  )}
+                />
+              </ResponsiveWrapper>
+            </section>
+          )}
           <section className={styles.formGroup}>
             <span className={styles.heading}>{t('appointmentType_title', 'Appointment Type')}</span>
             <ResponsiveWrapper>
@@ -810,7 +1112,7 @@ const AppointmentsForm: React.FC<
                 control={control}
                 render={({ field: { onBlur, onChange, value, ref } }) => (
                   <Select
-                    disabled={!mappedAppointmentTypes?.length}
+                    disabled={!appointmentTypeOptions.length}
                     id="appointmentType"
                     invalid={!!errors?.appointmentType}
                     invalidText={errors?.appointmentType?.message}
@@ -821,8 +1123,8 @@ const AppointmentsForm: React.FC<
                     value={value}
                   >
                     <SelectItem text={t('chooseAppointmentType', 'Choose appointment type')} value="" />
-                    {mappedAppointmentTypes?.length > 0 &&
-                      mappedAppointmentTypes.map((appointmentType) => (
+                    {appointmentTypeOptions.length > 0 &&
+                      appointmentTypeOptions.map((appointmentType) => (
                         <SelectItem key={appointmentType} text={appointmentType} value={appointmentType}>
                           {appointmentType}
                         </SelectItem>
@@ -833,16 +1135,19 @@ const AppointmentsForm: React.FC<
             </ResponsiveWrapper>
           </section>
 
-          <section className={styles.formGroup}>
-            <span className={styles.heading}>{t('recurringAppointment', 'Recurring Appointment')}</span>
-            <Toggle
-              id="recurringToggle"
-              labelB={t('yes', 'Yes')}
-              labelA={t('no', 'No')}
-              labelText={t('isRecurringAppointment', 'Is this a recurring appointment?')}
-              onClick={() => setIsRecurringAppointment(!isRecurringAppointment)}
-            />
-          </section>
+          {context === 'creating' && (
+            <section className={styles.formGroup}>
+              <span className={styles.heading}>{t('recurringAppointment', 'Recurring Appointment')}</span>
+              <Toggle
+                id="recurringToggle"
+                labelB={t('yes', 'Yes')}
+                labelA={t('no', 'No')}
+                labelText={t('isRecurringAppointment', 'Is this a recurring appointment?')}
+                onToggle={setIsRecurringAppointment}
+                toggled={isRecurringAppointment}
+              />
+            </section>
+          )}
 
           <section className={styles.formGroup}>
             <span className={styles.heading}>{t('dateTime', 'Date & Time')}</span>
@@ -864,33 +1169,40 @@ const AppointmentsForm: React.FC<
                       name="appointmentDateTime"
                       control={control}
                       render={({ field: { onChange, value } }) => (
-                        <ResponsiveWrapper>
-                          <DatePicker
-                            datePickerType="range"
-                            dateFormat={datePickerFormat}
-                            value={[value.startDate, value.recurringPatternEndDate]}
-                            onChange={([startDate, endDate]) => {
+                        <div className={styles.dateTimeFields}>
+                          <OpenmrsDatePicker
+                            id="startDatePickerInput"
+                            labelText={t('startDate', 'Start date')}
+                            onChange={(startDate) => {
+                              if (!startDate) {
+                                return;
+                              }
                               onChange({
                                 startDate: new Date(startDate),
-                                recurringPatternEndDate: new Date(endDate),
-                                recurringPatternEndDateText: dayjs(new Date(endDate)).format(dateFormat),
+                                recurringPatternEndDate: value.recurringPatternEndDate,
+                                recurringPatternEndDateText: value.recurringPatternEndDateText,
                                 startDateText: dayjs(new Date(startDate)).format(dateFormat),
                               });
                             }}
-                          >
-                            <DatePickerInput
-                              id="startDatePickerInput"
-                              labelText={t('startDate', 'Start date')}
-                              style={{ width: '100%' }}
-                            />
-                            <DatePickerInput
-                              id="endDatePickerInput"
-                              labelText={t('endDate', 'End date')}
-                              style={{ width: '100%' }}
-                              placeholder={datePickerPlaceHolder}
-                            />
-                          </DatePicker>
-                        </ResponsiveWrapper>
+                            value={value.startDate}
+                          />
+                          <OpenmrsDatePicker
+                            id="endDatePickerInput"
+                            invalid={Boolean(errors.appointmentDateTime?.recurringPatternEndDate)}
+                            invalidText={errors.appointmentDateTime?.recurringPatternEndDate?.message}
+                            labelText={t('endDate', 'End date')}
+                            maxDate={dayjs(value.startDate).add(MAX_RECURRING_APPOINTMENT_HORIZON_DAYS, 'day').toDate()}
+                            minDate={value.startDate}
+                            onChange={(endDate) => {
+                              onChange({
+                                ...value,
+                                recurringPatternEndDate: endDate ? new Date(endDate) : null,
+                                recurringPatternEndDateText: endDate ? dayjs(new Date(endDate)).format(dateFormat) : '',
+                              });
+                            }}
+                            value={value.recurringPatternEndDate ?? undefined}
+                          />
+                        </div>
                       )}
                     />
                   </ResponsiveWrapper>
@@ -908,20 +1220,21 @@ const AppointmentsForm: React.FC<
                           hideSteppers
                           id="repeatNumber"
                           min={1}
-                          max={356}
+                          max={MAX_RECURRING_APPOINTMENT_HORIZON_DAYS}
+                          invalid={Boolean(errors.recurringPatternPeriod)}
                           label={t('repeatEvery', 'Repeat every')}
-                          invalidText={t('invalidNumber', 'Number is not valid')}
+                          invalidText={errors.recurringPatternPeriod?.message}
                           size="md"
                           value={value}
                           onKeyDown={preventInvalidIntegerKey({
                             integer: true,
-                            max: 356,
+                            max: MAX_RECURRING_APPOINTMENT_HORIZON_DAYS,
                             min: 1,
                             nonNegative: true,
                           })}
                           onPaste={preventInvalidIntegerPaste({
                             integer: true,
-                            max: 356,
+                            max: MAX_RECURRING_APPOINTMENT_HORIZON_DAYS,
                             min: 1,
                             nonNegative: true,
                           })}
@@ -930,7 +1243,7 @@ const AppointmentsForm: React.FC<
                             onChange(
                               getIntegerValue(nextValue, {
                                 integer: true,
-                                max: 356,
+                                max: MAX_RECURRING_APPOINTMENT_HORIZON_DAYS,
                                 min: 1,
                                 nonNegative: true,
                               }),
@@ -969,6 +1282,8 @@ const AppointmentsForm: React.FC<
                           <MultiSelect
                             className={styles.weekSelect}
                             id="daysOfWeek"
+                            invalid={Boolean(errors.recurringPatternDaysOfWeek)}
+                            invalidText={errors.recurringPatternDaysOfWeek?.message}
                             initialSelectedItems={weekDays.filter((i) =>
                               getValues('recurringPatternDaysOfWeek').includes(i.id),
                             )}
@@ -1041,7 +1356,7 @@ const AppointmentsForm: React.FC<
                 <Workload
                   appointmentDate={watch('appointmentDateTime').startDate}
                   onWorkloadDateChange={handleWorkloadDateChange}
-                  selectedService={watch('selectedService')}
+                  selectedServiceUuid={watch('selectedService')}
                 />
               </ResponsiveWrapper>
             </section>
@@ -1056,7 +1371,8 @@ const AppointmentsForm: React.FC<
                 render={({ field: { onChange, value, onBlur, ref } }) => (
                   <Select
                     id="provider"
-                    invalidText={t('required', 'Required')}
+                    invalid={Boolean(errors.provider)}
+                    invalidText={errors.provider?.message}
                     labelText={t('selectProvider', 'Select a provider')}
                     onChange={onChange}
                     onBlur={onBlur}
@@ -1064,12 +1380,11 @@ const AppointmentsForm: React.FC<
                     ref={ref}
                   >
                     <SelectItem text={t('chooseProvider', 'Choose a provider')} value="" />
-                    {providers?.providers?.length > 0 &&
-                      providers?.providers?.map((provider) => (
-                        <SelectItem key={provider.uuid} text={provider.display} value={provider.uuid}>
-                          {provider.display}
-                        </SelectItem>
-                      ))}
+                    {providerOptions.map((provider) => (
+                      <SelectItem key={provider.uuid} text={provider.display} value={provider.uuid}>
+                        {provider.display}
+                      </SelectItem>
+                    ))}
                   </Select>
                 )}
               />

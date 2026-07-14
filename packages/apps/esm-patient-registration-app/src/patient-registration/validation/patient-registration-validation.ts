@@ -20,7 +20,8 @@ import {
   type FormValues,
   type RelationshipValue,
 } from '../patient-registration.types';
-import { getPeruIdentifierRule } from '../peru-identifier-validation';
+import { getPeruIdentifierRule, peruDniPattern } from '../peru-identifier-validation';
+import { peruDniPatientIdentifierTypeUuid } from '../peru-registration-config';
 import { validateRequiredField } from './required-field-validation';
 
 const t = (key: string, _value: string) => key;
@@ -368,10 +369,31 @@ export function hasResponsibleRelationshipWithUnknownAge(
   );
 }
 
-function isUnidentifiedPatient(values: FormValues, config: RegistrationConfig) {
+function isUnidentifiedPatient(values: Pick<FormValues, 'attributes'>, config: RegistrationConfig) {
   const unidentifiedPatientAttributeTypeUuid = config.fieldConfigurations.name?.unidentifiedPatientAttributeTypeUuid;
 
   return !!unidentifiedPatientAttributeTypeUuid && values.attributes?.[unidentifiedPatientAttributeTypeUuid] === 'true';
+}
+
+export function requiresDniNationalityVerification(
+  values: Pick<FormValues, 'attributes' | 'identifiers'>,
+  config: RegistrationConfig,
+) {
+  if (isUnidentifiedPatient(values, config)) {
+    return false;
+  }
+
+  const hasCompletedDni = Object.values(values.identifiers ?? {}).some(
+    (identifier) =>
+      identifier.identifierTypeUuid === peruDniPatientIdentifierTypeUuid &&
+      peruDniPattern.test(identifier.identifierValue?.trim() ?? ''),
+  );
+  if (!hasCompletedDni) {
+    return false;
+  }
+
+  const nationalityAttributeTypeUuid = getPersonAttributeFieldUuid(config, 'nationality');
+  return !nationalityAttributeTypeUuid || !values.attributes?.[nationalityAttributeTypeUuid]?.trim();
 }
 
 function hasActiveRelationship(relationships: Array<RelationshipValue> | undefined) {
@@ -391,6 +413,7 @@ export function getValidationSchema(
     config,
     insuranceAccreditationCheckedAtFieldId,
   );
+  const nationalityAttributeTypeUuid = getPersonAttributeFieldUuid(config, 'nationality');
 
   return Yup.object({
     ...buildCustomAddressValidationSchema(config),
@@ -695,28 +718,44 @@ export function getValidationSchema(
           return !isUnidentifiedPatient(values, config) || hasActiveRelationship(relationships);
         },
       ),
-  }).test(
-    'insurance-accreditation-date-after-birthdate',
-    insuranceAccreditationDateBeforeBirthdateMessage,
-    function (values) {
-      const formValues = values as unknown as FormValues | undefined;
-      const insuranceAccreditationCheckedAt = parseDateOnly(
-        getAttributeValue(formValues, insuranceAccreditationCheckedAtAttributeUuid),
-      );
-      const birthdate = parseDateOnly(formValues?.birthdate);
+  })
+    .test(
+      'insurance-accreditation-date-after-birthdate',
+      insuranceAccreditationDateBeforeBirthdateMessage,
+      function (values) {
+        const formValues = values as unknown as FormValues | undefined;
+        const insuranceAccreditationCheckedAt = parseDateOnly(
+          getAttributeValue(formValues, insuranceAccreditationCheckedAtAttributeUuid),
+        );
+        const birthdate = parseDateOnly(formValues?.birthdate);
 
-      if (
-        !insuranceAccreditationCheckedAt ||
-        !birthdate ||
-        !insuranceAccreditationCheckedAt.isBefore(birthdate, 'day')
-      ) {
-        return true;
-      }
+        if (
+          !insuranceAccreditationCheckedAt ||
+          !birthdate ||
+          !insuranceAccreditationCheckedAt.isBefore(birthdate, 'day')
+        ) {
+          return true;
+        }
 
-      return this.createError({
-        path: `attributes.${insuranceAccreditationCheckedAtAttributeUuid}`,
-        message: insuranceAccreditationDateBeforeBirthdateMessage,
-      });
-    },
-  );
+        return this.createError({
+          path: `attributes.${insuranceAccreditationCheckedAtAttributeUuid}`,
+          message: insuranceAccreditationDateBeforeBirthdateMessage,
+        });
+      },
+    )
+    .test(
+      'complete-dni-requires-verified-nationality',
+      t('nationalityRequiredForDni', 'Nationality must be verified before registering a patient with DNI'),
+      function (values) {
+        const formValues = values as unknown as FormValues | undefined;
+        if (!formValues || !requiresDniNationalityVerification(formValues, config)) {
+          return true;
+        }
+
+        return this.createError({
+          path: nationalityAttributeTypeUuid ? `attributes.${nationalityAttributeTypeUuid}` : 'attributes',
+          message: t('nationalityRequiredForDni', 'Nationality must be verified before registering a patient with DNI'),
+        });
+      },
+    );
 }

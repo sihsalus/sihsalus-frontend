@@ -29,7 +29,7 @@ import {
 } from '@carbon/react';
 import { CheckmarkFilled, SendFilled, User, UserFollow } from '@carbon/react/icons';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { OpenmrsDatePicker, showSnackbar, useConfig } from '@openmrs/esm-framework';
+import { getUserFacingErrorMessage, OpenmrsDatePicker, showSnackbar, useConfig } from '@openmrs/esm-framework';
 import {
   calendarDateToLocalDate,
   estimatePatientBirthdateFromAge,
@@ -50,7 +50,11 @@ import type { Config } from '../config-schema';
 import { generateIdentifier, saveEmergencyPatient } from '../resources/patient-registration.resource';
 import { EmergencyNationalityField } from './components/emergency-nationality-field.component';
 import InitialPrioritySelector, { type InitialPriority } from './components/initial-priority-selector.component';
-import { getEmergencyIdentityDocumentTypes } from './emergency-identity-documents';
+import {
+  getEmergencyIdentityDocumentConfigurationError,
+  getEmergencyIdentityDocumentRule,
+  getEmergencyIdentityDocumentTypes,
+} from './emergency-identity-documents';
 import { getAutomaticNationalityUpdate, isCompletedPeruDni } from './patient-nationality';
 import { useNationalityConceptAnswers } from './patient-nationality.resource';
 import { buildEmergencyPatientAttributes } from './patient-registration-attributes';
@@ -58,10 +62,11 @@ import styles from './patient-search-registration.component.scss';
 import {
   communicationConditionLabels,
   communicationConditionOptions,
+  createQuickRegistrationSchema,
   identificationStatusLabels,
   identificationStatusOptions,
+  normalizeEmergencyRegistrationData,
   type QuickRegistrationFormData,
-  quickRegistrationSchema,
   responsibleTypeLabels,
   responsibleTypeOptions,
 } from './patient-search-registration.validation';
@@ -192,6 +197,14 @@ const PatientSearchRegistration: React.FC<PatientSearchRegistrationProps> = ({ o
     () => getEmergencyIdentityDocumentTypes(config.patientRegistration),
     [config.patientRegistration],
   );
+  const identityDocumentConfigurationError = useMemo(
+    () => getEmergencyIdentityDocumentConfigurationError(config.patientRegistration),
+    [config.patientRegistration],
+  );
+  const registrationSchema = useMemo(
+    () => createQuickRegistrationSchema(config.patientRegistration),
+    [config.patientRegistration],
+  );
 
   // React Hook Form
   const {
@@ -203,7 +216,7 @@ const PatientSearchRegistration: React.FC<PatientSearchRegistrationProps> = ({ o
     control,
     watch,
   } = useForm<QuickRegistrationFormData>({
-    resolver: zodResolver(quickRegistrationSchema),
+    resolver: zodResolver(registrationSchema),
     defaultValues: {
       isUnknown: false,
       identifierType: config.patientRegistration.defaultIdentifierTypeUuid,
@@ -219,6 +232,10 @@ const PatientSearchRegistration: React.FC<PatientSearchRegistrationProps> = ({ o
   });
   const selectedIdentifierType = watch('identifierType');
   const identifierValue = watch('identifier');
+  const selectedIdentifierRule = useMemo(
+    () => getEmergencyIdentityDocumentRule(config.patientRegistration, selectedIdentifierType),
+    [config.patientRegistration, selectedIdentifierType],
+  );
   const nationalityValue = watch('nationality');
   const nationalityWasAutoAssigned = useRef(false);
   const hasCompletedDni =
@@ -230,6 +247,14 @@ const PatientSearchRegistration: React.FC<PatientSearchRegistrationProps> = ({ o
   const shouldLockNationalityToPeru =
     Boolean(canAutomaticallyAssignPeru) &&
     (!nationalityValue || nationalityValue === config.patientRegistration.peruNationalityConceptUuid);
+  const nationalityConceptRequiredForSubmit = !isPatientUnknown
+    ? nationalityValue?.trim() || (hasCompletedDni ? config.patientRegistration.peruNationalityConceptUuid : undefined)
+    : undefined;
+  const isNationalityUnverifiedForSubmit =
+    Boolean(nationalityConceptRequiredForSubmit) &&
+    (isLoadingNationalityOptions ||
+      Boolean(nationalityOptionsError) ||
+      !allowedNationalityConceptUuids?.has(nationalityConceptRequiredForSubmit));
 
   useEffect(() => {
     const update = getAutomaticNationalityUpdate({
@@ -350,6 +375,7 @@ const PatientSearchRegistration: React.FC<PatientSearchRegistrationProps> = ({ o
         setValue('givenName', '');
         setValue('familyName', '');
         setValue('familyName2', '');
+        setValue('yearsEstimated', undefined, { shouldDirty: true, shouldValidate: true });
         setValue('communicationCondition', 'communicates');
         setValue('identificationStatus', 'confirmed');
       } else {
@@ -359,12 +385,17 @@ const PatientSearchRegistration: React.FC<PatientSearchRegistrationProps> = ({ o
         setValue('givenName', 'DESCONOCIDO');
         setValue('familyName', 'DESCONOCIDO');
         setValue('familyName2', '');
+        setValue('identifier', '');
+        setValue('identifierType', config.patientRegistration.defaultIdentifierTypeUuid);
+        setValue('birthdate', undefined);
+        setValue('insuranceType', '');
+        setValue('insuranceCode', '');
         setValue('nationality', '', { shouldDirty: true, shouldValidate: true });
         setValue('communicationCondition', '');
         setValue('identificationStatus', 'pending');
       }
     },
-    [setValue],
+    [config.patientRegistration.defaultIdentifierTypeUuid, setValue],
   );
 
   // ============================================================================
@@ -372,9 +403,22 @@ const PatientSearchRegistration: React.FC<PatientSearchRegistrationProps> = ({ o
   // ============================================================================
 
   const onSubmitRegistration = useCallback(
-    async (data: QuickRegistrationFormData) => {
+    async (formData: QuickRegistrationFormData) => {
+      if (isNationalityUnverifiedForSubmit) {
+        showSnackbar({
+          title: t('errorRegisteringPatient', 'Error al registrar paciente'),
+          subtitle: t(
+            'nationalityVerificationRequired',
+            'Debe validarse la nacionalidad con el catálogo configurado antes de registrar al paciente.',
+          ),
+          kind: 'error',
+        });
+        return;
+      }
+
       setIsRegistering(true);
       try {
+        const data = normalizeEmergencyRegistrationData(formData, config.patientRegistration);
         // Validate and build attributes before consuming an identifier from idgen.
         const attributes = buildEmergencyPatientAttributes(
           data,
@@ -403,7 +447,7 @@ const PatientSearchRegistration: React.FC<PatientSearchRegistrationProps> = ({ o
         if (data.birthdate) {
           calculatedBirthdate = data.birthdate;
           birthdateEstimated = false;
-        } else if (data.yearsEstimated != null) {
+        } else if (data.isUnknown && data.yearsEstimated != null) {
           calculatedBirthdate = estimatePatientBirthdateFromAge(data.yearsEstimated) ?? undefined;
         }
 
@@ -423,10 +467,10 @@ const PatientSearchRegistration: React.FC<PatientSearchRegistrationProps> = ({ o
         ];
 
         // Si el usuario ingresó un documento de identidad, agregarlo como identifier clínico-administrativo.
-        if (data.identifier) {
+        if (!data.isUnknown && data.identifier && data.identifierType) {
           identifiers.push({
             identifier: data.identifier,
-            identifierType: data.identifierType || config.patientRegistration.defaultIdentifierTypeUuid,
+            identifierType: data.identifierType,
             location: config.patientRegistration.defaultLocationUuid,
             preferred: false,
           });
@@ -448,9 +492,11 @@ const PatientSearchRegistration: React.FC<PatientSearchRegistrationProps> = ({ o
           gender: data.gender,
           birthdateEstimated,
           attributes,
-          addresses: [addressObj],
           dead: false,
         };
+        if (!data.isUnknown) {
+          personPayload.addresses = [addressObj];
+        }
         if (calculatedBirthdate) {
           personPayload.birthdate = calculatedBirthdate;
         }
@@ -495,7 +541,7 @@ const PatientSearchRegistration: React.FC<PatientSearchRegistrationProps> = ({ o
           display: savedPatient.display || displayName,
           identifiers: savedPatientIdentifiers.length > 0 ? savedPatientIdentifiers : fallbackIdentifiers,
           person: {
-            age: data.yearsEstimated ?? undefined,
+            age: data.isUnknown ? (data.yearsEstimated ?? undefined) : undefined,
             gender: data.gender,
             birthdate: calculatedBirthdate,
             birthdateEstimated,
@@ -534,16 +580,21 @@ const PatientSearchRegistration: React.FC<PatientSearchRegistrationProps> = ({ o
           title: t('errorRegisteringPatient', 'Error al registrar paciente'),
           subtitle: isExpiredSession
             ? t('sessionExpiredError', 'Tu sesión ha expirado. Por favor inicia sesión nuevamente.')
-            : error instanceof Error
-              ? error.message
-              : t('unknownError', 'Error desconocido'),
+            : getUserFacingErrorMessage(
+                error,
+                t(
+                  'patientRegistrationSafeError',
+                  'No se pudo completar el registro. Intente nuevamente o contacte al administrador del sistema.',
+                ),
+                { logContext: 'Register emergency patient' },
+              ),
           kind: 'error',
         });
       } finally {
         setIsRegistering(false);
       }
     },
-    [t, config, identityDocumentTypes, allowedNationalityConceptUuids],
+    [t, config, identityDocumentTypes, allowedNationalityConceptUuids, isNationalityUnverifiedForSubmit],
   );
 
   // ============================================================================
@@ -687,7 +738,11 @@ const PatientSearchRegistration: React.FC<PatientSearchRegistrationProps> = ({ o
                 lowContrast
                 hideCloseButton
                 title={t('errorSearching', 'Error en búsqueda')}
-                subtitle={fetchError.message}
+                subtitle={getUserFacingErrorMessage(
+                  fetchError,
+                  t('patientSearchSafeError', 'No se pudo completar la búsqueda. Intente nuevamente.'),
+                  { logContext: 'Search emergency patients' },
+                )}
               />
             )}
 
@@ -811,6 +866,17 @@ const PatientSearchRegistration: React.FC<PatientSearchRegistrationProps> = ({ o
                         {!isPatientUnknown && (
                           <fieldset className={styles.formSection}>
                             <legend className={styles.sectionTitle}>{t('identification', 'Identificación')}</legend>
+                            {identityDocumentConfigurationError ? (
+                              <InlineNotification
+                                hideCloseButton
+                                kind="error"
+                                lowContrast
+                                title={t(
+                                  'identityDocumentConfigurationError',
+                                  'No es posible registrar el documento de identidad debido a una configuración inválida. Contacte al administrador.',
+                                )}
+                              />
+                            ) : null}
                             <div className={styles.fieldRow}>
                               <TextInput
                                 id="familyName"
@@ -891,6 +957,7 @@ const PatientSearchRegistration: React.FC<PatientSearchRegistrationProps> = ({ o
                                     value={field.value || config.patientRegistration.defaultIdentifierTypeUuid}
                                     onChange={(event) => {
                                       field.onChange(event.target.value);
+                                      setValue('identifier', '', { shouldDirty: true, shouldValidate: true });
                                     }}
                                   >
                                     {identityDocumentTypes.map((type) => (
@@ -899,14 +966,33 @@ const PatientSearchRegistration: React.FC<PatientSearchRegistrationProps> = ({ o
                                   </Select>
                                 )}
                               />
-                              <TextInput
-                                id="identifier"
-                                labelText={t('identityDocumentOptional', 'Documento de identidad (opcional)')}
-                                placeholder={t('enterIdentityDocument', 'Ingrese documento de identidad')}
-                                invalid={!!errors.identifier}
-                                invalidText={errors.identifier?.message}
-                                disabled={isRegistering}
-                                {...register('identifier')}
+                              <Controller
+                                name="identifier"
+                                control={control}
+                                render={({ field }) => (
+                                  <TextInput
+                                    id="identifier"
+                                    labelText={t('identityDocumentOptional', 'Documento de identidad (opcional)')}
+                                    placeholder={t('enterIdentityDocument', 'Ingrese documento de identidad')}
+                                    invalid={!!errors.identifier}
+                                    invalidText={errors.identifier?.message}
+                                    disabled={isRegistering}
+                                    inputMode={selectedIdentifierRule?.inputMode}
+                                    maxLength={
+                                      selectedIdentifierRule ? selectedIdentifierRule.maxLength + 1 : undefined
+                                    }
+                                    value={field.value ?? ''}
+                                    onBlur={field.onBlur}
+                                    onChange={(event) =>
+                                      field.onChange(
+                                        selectedIdentifierRule
+                                          ? selectedIdentifierRule.sanitize(event.target.value)
+                                          : event.target.value,
+                                      )
+                                    }
+                                    ref={field.ref}
+                                  />
+                                )}
                               />
                             </div>
                             <Controller
@@ -925,6 +1011,20 @@ const PatientSearchRegistration: React.FC<PatientSearchRegistrationProps> = ({ o
                                 />
                               )}
                             />
+                            {isNationalityUnverifiedForSubmit &&
+                            !isLoadingNationalityOptions &&
+                            !nationalityOptionsError &&
+                            nationalityOptions?.length ? (
+                              <InlineNotification
+                                hideCloseButton
+                                kind="error"
+                                lowContrast
+                                title={t(
+                                  'nationalityRequiredConceptUnavailable',
+                                  'No se puede validar la nacionalidad requerida con el catálogo disponible. Contacte al administrador.',
+                                )}
+                              />
+                            ) : null}
                           </fieldset>
                         )}
 
@@ -1131,7 +1231,7 @@ const PatientSearchRegistration: React.FC<PatientSearchRegistrationProps> = ({ o
                           >
                             {t('cancel', 'Cancelar')}
                           </Button>
-                          <Button type="submit" size="md" disabled={isRegistering}>
+                          <Button type="submit" size="md" disabled={isRegistering || isNationalityUnverifiedForSubmit}>
                             {isRegistering ? (
                               <InlineLoading description={t('registering', 'Registrando...')} />
                             ) : (

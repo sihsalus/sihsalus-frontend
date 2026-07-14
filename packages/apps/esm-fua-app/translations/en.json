@@ -45,6 +45,7 @@
   "fua": "Single Care Form",
   "fuaCancelledSuccessfully": "FUA cancelled successfully",
   "fuaDocument": "FUA Document",
+  "fuaEndpointUnavailable": "The FUA viewer requires a secure same-origin endpoint configured by an administrator.",
   "fuaGeneratedSuccessfully": "The FUA was generated successfully",
   "fuaGenerationAuthorizationError": "The server rejected FUA generation. Your session remains active; try again or contact the administrator.",
   "fuaGenerationDataError": "The FUA could not be generated with the current visit information. Review the data and try again.",

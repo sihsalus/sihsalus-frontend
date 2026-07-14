@@ -111,7 +111,7 @@ describe('ConditionsActionMenu', () => {
     await user.click(screen.getByRole('button'));
     await user.click(screen.getByText('Delete'));
 
-    expect(mockShowModal).toHaveBeenCalledWith('condition-delete-confirmation-dialog', {
+    expect(mockShowModal).toHaveBeenCalledWith('patient-conditions-delete-confirmation-dialog', {
       closeDeleteModal: expect.any(Function),
       conditionId: mockCondition.id,
       patientUuid: defaultProps.patientUuid,

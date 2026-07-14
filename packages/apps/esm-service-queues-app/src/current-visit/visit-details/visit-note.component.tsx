@@ -1,12 +1,11 @@
 import { Button, Tag } from '@carbon/react';
 import { ArrowRight } from '@carbon/react/icons';
-import { launchWorkspace2, usePatient, useSession } from '@openmrs/esm-framework';
+import { launchWorkspace2, usePatient, useSession, userHasAccess } from '@openmrs/esm-framework';
 import { isAdmissionUser } from '@sihsalus/esm-rbac';
 import React from 'react';
 import { useTranslation } from 'react-i18next';
 
-import { serviceQueuesVisitNotesWorkspace } from '../../constants';
-import { canEditServiceQueues } from '../../permissions';
+import { serviceQueuesVisitNotesEditPrivileges, serviceQueuesVisitNotesWorkspace } from '../../constants';
 import { type DiagnosisItem, type Note } from '../../types/index';
 
 import styles from './triage-note.scss';
@@ -21,12 +20,13 @@ const VisitNote: React.FC<VisitNoteProps> = ({ notes, patientUuid, diagnoses }) 
   const { t } = useTranslation();
   const { patient } = usePatient(patientUuid);
   const session = useSession();
-  const canEdit = canEditServiceQueues(session?.user);
 
   // Admission staff can manage the queue, but must not access the clinical visit summary.
   if (isAdmissionUser(session?.user)) {
     return null;
   }
+
+  const canEdit = userHasAccess(serviceQueuesVisitNotesEditPrivileges, session?.user);
 
   return (
     <div>

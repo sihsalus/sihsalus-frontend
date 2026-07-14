@@ -22,13 +22,42 @@ Ese contrato corresponde a la API REST. Internamente, OpenMRS convierte el UUID 
 
 - El catálogo visible se obtiene del conjunto de conceptos desplegado en OpenMRS.
 - Un DNI completo y válido en formato (ocho dígitos) puede establecer y bloquear automáticamente el concepto Perú.
+- Si un DNI completo no tiene una nacionalidad explícita, registro general y emergencia bloquean el envío hasta que
+  el catálogo cargue sin error y confirme que contiene el concepto Perú. La comprobación ocurre también antes de
+  consumir un identificador o crear el paciente, por lo que enviar el formulario con Enter no omite el control.
 - Una nacionalidad explícita ya registrada no se sobrescribe automáticamente al agregar un DNI.
+- Toda nacionalidad explícita debe seguir siendo un UUID perteneciente al catálogo desplegado; no basta con que tenga
+  forma de UUID. Un valor preexistente tampoco puede guardarse mientras el catálogo carga o no está disponible.
 - Una fila de DNI vacía no permite inferir nacionalidad.
 - CE, pasaporte y DIE no permiten inferir nacionalidad; el operador debe declararla.
 - Una nacionalidad ya registrada no se elimina por la presencia de otro documento.
 - Un paciente no identificado no recibe una nacionalidad inferida.
 - `Otro país` no se guarda salvo que exista un concepto formal dentro del conjunto configurado.
 - El país emisor del documento, si se necesita, debe modelarse como un dato separado.
+
+## Brecha conocida del catálogo desplegado
+
+La auditoría del 14 de julio de 2026 sobre los bundles
+`06_SIHSALUS_geografia_concepts_2026-07-10-02.zip` y
+`56_SIHSALUS_geografia_mappings_2026-07-10-02.zip` encontró 165 miembros activos en el conjunto `Países`.
+Perú está presente una sola vez, pero el catálogo no contiene países reales como República Dominicana,
+Filipinas e Irán. También conserva denominaciones que requieren curaduría, por ejemplo `Inglaterra` separada de
+`Islas del Reino Unido de Gran Bretaña e Irlanda del Norte`.
+
+Como referencia normativa, el [CodeSystem PaisesCS de RENHICE/MINSA](https://dyaku.minsa.gob.pe/guides/CodeSystem-PaisesCS.html)
+declara 248 códigos basados en ISO 3166 alfa-3. Esa fuente también debe pasar control terminológico antes de importarse;
+no corresponde copiar etiquetas o reemplazar UUIDs existentes de forma automática.
+
+La corrección pertenece a contenido/OCL, no al formulario:
+
+1. comparar el set actual con el CodeSystem normativo mediante código alfa-3;
+2. preservar los UUID de conceptos existentes y corregir etiquetas mediante versiones auditables;
+3. crear los conceptos ausentes y retirar duplicados solo con un mapeo aprobado;
+4. publicar un nuevo bundle versionado y probar pertenencia, unicidad y conteo antes del despliegue;
+5. verificar en OpenMRS que todos los miembros activos son seleccionables y persisten como concepto codificado.
+
+El frontend debe seguir consumiendo el set desplegado y fallar de forma visible y cerrada si no puede cargarlo; no
+debe hardcodear una lista paralela de países.
 
 ## Auditoría previa de datos históricos
 

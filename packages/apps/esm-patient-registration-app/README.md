@@ -62,10 +62,10 @@ Validación contra backend:
 
 ```bash
 source .env
-curl -fsS -u "$E2E_USER_ADMIN_USERNAME:$E2E_USER_ADMIN_PASSWORD" \
+curl -fsS -u "$E2E_USERNAME:$E2E_PASSWORD" \
   "$E2E_API_BASE_URL/ws/rest/v1/personattributetype/14d4f066-15f5-102d-96e4-000c29c2a5d7?v=full"
 
-curl -fsS -u "$E2E_USER_ADMIN_USERNAME:$E2E_USER_ADMIN_PASSWORD" \
+curl -fsS -u "$E2E_USERNAME:$E2E_PASSWORD" \
   "$E2E_API_BASE_URL/ws/rest/v1/systemsetting?q=layout.address.format&v=full"
 ```
 

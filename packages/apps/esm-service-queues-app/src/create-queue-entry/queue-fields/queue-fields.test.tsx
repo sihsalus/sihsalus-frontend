@@ -17,28 +17,31 @@ import { postQueueEntry } from './queue-fields.resource';
 const mockUseConfig = vi.mocked(useConfig<ConfigObject>);
 const mockUseLayoutType = vi.mocked(useLayoutType);
 const mockUseSession = vi.mocked(useSession);
+const mockQueueLocations = vi.fn(() => ({
+  queueLocations: [{ id: '1', name: 'Location 1' }],
+  error: undefined,
+  isLoading: false,
+}));
+const mockQueues = vi.fn(() => ({
+  queues: [
+    {
+      uuid: 'e2ec9cf0-ec38-4d2b-af6c-59c82fa30b90',
+      name: 'Service 1',
+      allowedPriorities: [{ uuid: '197852c7-5fd4-4b33-89cc-7bae6848c65a', display: 'High' }],
+      allowedStatuses: [{ uuid: '176052c7-5fd4-4b33-89cc-7bae6848c65a', display: 'In Progress' }],
+    },
+  ],
+  error: undefined,
+  isLoading: false,
+}));
 
 vi.mock('../hooks/useQueueLocations', () => ({
-  useQueueLocations: vi.fn(() => ({
-    queueLocations: [
-      { id: '1', name: 'Location 1' },
-      { id: 'obstetric-location', name: 'UPSS - CENTRO OBSTÉTRICO' },
-    ],
-  })),
+  useQueueLocations: () => mockQueueLocations(),
 }));
 
 vi.mock('../../hooks/useQueues', () => {
   return {
-    useQueues: vi.fn().mockReturnValue({
-      queues: [
-        {
-          uuid: 'e2ec9cf0-ec38-4d2b-af6c-59c82fa30b90',
-          name: 'Service 1',
-          allowedPriorities: [{ uuid: '197852c7-5fd4-4b33-89cc-7bae6848c65a', display: 'High' }],
-          allowedStatuses: [{ uuid: '176052c7-5fd4-4b33-89cc-7bae6848c65a', display: 'In Progress' }],
-        },
-      ],
-    }),
+    useQueues: () => mockQueues(),
   };
 });
 
@@ -54,6 +57,23 @@ const mockPostQueueEntry = vi.mocked(postQueueEntry).mockResolvedValue({
 
 describe('QueueFields', () => {
   beforeEach(() => {
+    mockQueueLocations.mockReturnValue({
+      queueLocations: [{ id: '1', name: 'Location 1' }],
+      error: undefined,
+      isLoading: false,
+    });
+    mockQueues.mockReturnValue({
+      queues: [
+        {
+          uuid: 'e2ec9cf0-ec38-4d2b-af6c-59c82fa30b90',
+          name: 'Service 1',
+          allowedPriorities: [{ uuid: '197852c7-5fd4-4b33-89cc-7bae6848c65a', display: 'High' }],
+          allowedStatuses: [{ uuid: '176052c7-5fd4-4b33-89cc-7bae6848c65a', display: 'In Progress' }],
+        },
+      ],
+      error: undefined,
+      isLoading: false,
+    });
     mockUseLayoutType.mockReturnValue('small-desktop');
     mockUseSession.mockReturnValue(mockSession.data);
     mockUseConfig.mockReturnValue({
@@ -149,8 +169,66 @@ describe('QueueFields', () => {
   });
 
   it('hides obstetric locations for male patients', () => {
+    mockQueueLocations.mockReturnValue({
+      queueLocations: [
+        { id: '1', name: 'Location 1' },
+        { id: 'obstetric-location', name: 'UPSS - CENTRO OBSTÉTRICO' },
+      ],
+      error: undefined,
+      isLoading: false,
+    });
+
     render(<QueueFields patientGender="M" setCallbacks={vi.fn()} />);
 
     expect(screen.queryByRole('option', { name: 'UPSS - CENTRO OBSTÉTRICO' })).not.toBeInTheDocument();
+  });
+
+  it('requires an explicit choice when several queue locations exist and none matches the session', async () => {
+    mockUseSession.mockReturnValue({
+      ...mockSession.data,
+      sessionLocation: null,
+    } as unknown as ReturnType<typeof useSession>);
+    mockQueueLocations.mockReturnValue({
+      queueLocations: [
+        { id: '1', name: 'Location 1' },
+        { id: '2', name: 'Location 2' },
+      ],
+      error: undefined,
+      isLoading: false,
+    });
+    let callbacks: QueueFieldsCallbacks | undefined;
+
+    render(<QueueFields setCallbacks={(value) => (callbacks = value)} />);
+
+    await waitFor(() => expect(screen.getByLabelText('Select a queue location')).toHaveValue(''));
+    await act(async () => expect(callbacks?.onBeforeVisitSave()).toBe(false));
+  });
+
+  it('blocks a forced queue location that is absent from the configured catalog', async () => {
+    let callbacks: QueueFieldsCallbacks | undefined;
+
+    render(<QueueFields currentQueueLocationUuid="missing-location" setCallbacks={(value) => (callbacks = value)} />);
+
+    expect(
+      await screen.findByText(
+        'La ubicación requerida no está configurada como ubicación de cola. Contacte al administrador.',
+      ),
+    ).toBeInTheDocument();
+    expect(screen.getByLabelText('Select a queue location')).toHaveValue('');
+    await act(async () => expect(callbacks?.onBeforeVisitSave()).toBe(false));
+  });
+
+  it('blocks a forced service that is absent from the selected queue location', async () => {
+    let callbacks: QueueFieldsCallbacks | undefined;
+
+    render(<QueueFields currentServiceQueueUuid="missing-service" setCallbacks={(value) => (callbacks = value)} />);
+
+    expect(
+      await screen.findByText(
+        'El servicio requerido no está configurado para esta ubicación de cola. Contacte al administrador.',
+      ),
+    ).toBeInTheDocument();
+    expect(screen.getByLabelText('Select a service')).toHaveValue('');
+    await act(async () => expect(callbacks?.onBeforeVisitSave()).toBe(false));
   });
 });

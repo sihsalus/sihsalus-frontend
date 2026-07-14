@@ -26,7 +26,11 @@ import {
 import { generateIdentifier, saveEncounter, savePatient } from './patient-registration.resource';
 import type { AddressTemplate, Encounter, FormValues } from './patient-registration.types';
 import { useInitialFormValues } from './patient-registration-hooks';
-import { peruDniPatientIdentifierTypeUuid } from './peru-registration-config';
+import {
+  peruDniPatientIdentifierTypeUuid,
+  peruNationalityAttributeTypeUuid,
+  peruNationalityConceptUuid,
+} from './peru-registration-config';
 
 const mockSaveEncounter = vi.mocked(saveEncounter);
 const mockGenerateIdentifier = vi.mocked(generateIdentifier);
@@ -500,6 +504,7 @@ describe('Registering a new patient', () => {
             selectedSource: null,
           },
         },
+        attributes: { [peruNationalityAttributeTypeUuid]: peruNationalityConceptUuid },
         address: {},
       } as unknown as FormValues,
       vi.fn(),
@@ -651,7 +656,12 @@ describe('Registering a new patient', () => {
     await waitFor(() => expect(mockSavePatient).toHaveBeenCalledTimes(1));
     expect(mockSaveEncounter).toHaveBeenCalledTimes(1);
 
-    expect(mockShowSnackbar).toHaveBeenCalledWith(expect.objectContaining({ subtitle: 'an error message' }));
+    expect(mockShowSnackbar).toHaveBeenCalledWith(
+      expect.objectContaining({
+        subtitle: 'Could not complete the registration. Try again or contact the system administrator.',
+      }),
+    );
+    expect(mockShowSnackbar).not.toHaveBeenCalledWith(expect.objectContaining({ subtitle: 'an error message' }));
     mockSaveEncounter.mockResolvedValue({} as FetchResponse);
 
     await user.click(registerPatientButton);
@@ -729,6 +739,20 @@ describe('Updating an existing patient record', () => {
     render(<PatientRegistration isOffline={false} savePatientForm={vi.fn()} />, { wrapper: Wrapper });
 
     expect(screen.getByText('Cargando datos del paciente...')).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /update patient/i })).not.toBeInTheDocument();
+  });
+
+  it('does not expose backend details when initial patient data cannot be loaded', () => {
+    mockUseInitialFormValues.mockReturnValue([
+      {} as FormValues,
+      vi.fn(),
+      { error: new Error('GET /ws/rest/v1/patient failed with SQLSTATE 42P01'), isLoading: false },
+    ]);
+
+    render(<PatientRegistration isOffline={false} savePatientForm={vi.fn()} />, { wrapper: Wrapper });
+
+    expect(screen.getByText('Recargue la página o contacte al administrador del sistema.')).toBeInTheDocument();
+    expect(screen.queryByText(/SQLSTATE|\/ws\/rest/u)).not.toBeInTheDocument();
     expect(screen.queryByRole('button', { name: /update patient/i })).not.toBeInTheDocument();
   });
 

@@ -66,21 +66,21 @@
   ],
   "modals": [
     {
-      "name": "condition-delete-confirmation-dialog",
+      "name": "ambulatory-condition-delete-confirmation-dialog",
       "component": "conditionFilterDeleteConfirmationDialog",
       "privileges": "app:hoja.clinica.historiaSocial.editar"
     }
   ],
   "workspaces": [
     {
-      "name": "conditions-filter-form-workspace",
+      "name": "ambulatory-conditions-filter-form-workspace",
       "component": "conditionsFilterWorkspace",
       "title": "Antecedentes",
       "type": "form",
       "privileges": "app:hoja.clinica.historiaSocial.editar"
     },
     {
-      "name": "forms-selector-workspace",
+      "name": "ambulatory-forms-selector-workspace",
       "component": "formsSelectorWorkspace",
       "privileges": "app:hoja.clinica.consultaExterna.editar",
       "title": "Selección de Formularios",

@@ -261,13 +261,13 @@
       "name": "service-queues-patient-vitals-workspace",
       "component": "@sihsalus/esm-patient-vitals-app#vitalsBiometricsFormWorkspace",
       "window": "service-queues-patient-vitals",
-      "privileges": "app:home.colasAtencion"
+      "privileges": ["app:home.colasAtencion.editar", "app:hoja.clinica.signosVitales.editar"]
     },
     {
       "name": "service-queues-visit-notes-workspace",
       "component": "@sihsalus/esm-patient-notes-app#visitNotesFormWorkspace",
       "window": "service-queues-visit-note",
-      "privileges": "app:home.colasAtencion"
+      "privileges": ["app:home.colasAtencion.editar", "app:hoja.clinica.resumenConsulta"]
     },
     {
       "name": "queue-patient-search-workspace",

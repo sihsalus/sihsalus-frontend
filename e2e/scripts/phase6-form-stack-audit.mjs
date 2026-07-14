@@ -7,14 +7,19 @@ import { chromium, request as playwrightRequest } from 'playwright';
 const spaBase = (process.env.PHASE6_SPA_BASE ?? 'http://localhost:3000/openmrs/spa').replace(/\/$/, '');
 const openmrsBase = spaBase.replace(/\/spa$/, '');
 const artifactRoot = path.resolve(process.cwd(), process.env.PHASE6_ARTIFACT_DIR ?? 'artifacts/phase6-e2e');
-const username = process.env.E2E_USER_ADMIN_USERNAME ?? 'admin';
-const password = process.env.E2E_USER_ADMIN_PASSWORD ?? 'Admin123';
-const defaultLocationUuid = process.env.E2E_LOGIN_DEFAULT_LOCATION_UUID ?? '44c3efb0-2583-4c80-a79e-1f756a03c0a1';
-const patientCandidates = [
-  process.env.E2E_PATIENT_UUID,
-  'e28a32ce-dd2b-4944-b26b-0fa9012aed45',
-  '8673ee4f-e2ab-4077-ba55-4980f408773e',
-].filter(Boolean);
+const username = process.env.E2E_USERNAME?.trim();
+const password = process.env.E2E_PASSWORD;
+const defaultLocationUuid = process.env.E2E_LOGIN_DEFAULT_LOCATION_UUID?.trim();
+const patientCandidates = (process.env.E2E_PATIENT_UUIDS ?? process.env.E2E_PATIENT_UUID ?? '')
+  .split(',')
+  .map((uuid) => uuid.trim())
+  .filter(Boolean);
+
+if (!username || !password || !defaultLocationUuid || patientCandidates.length === 0) {
+  throw new Error(
+    'E2E_USERNAME, E2E_PASSWORD, E2E_LOGIN_DEFAULT_LOCATION_UUID and synthetic E2E_PATIENT_UUIDS are required.',
+  );
+}
 
 const report = {
   startedAt: new Date().toISOString(),

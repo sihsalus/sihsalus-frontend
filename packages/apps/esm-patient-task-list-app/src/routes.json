@@ -14,7 +14,8 @@
     {
       "name": "task-list",
       "component": "taskListWorkspace",
-      "window": "task-list"
+      "window": "task-list",
+      "privileges": "app:hoja.clinica.listaTareas"
     }
   ],
   "workspaceWindows2": [

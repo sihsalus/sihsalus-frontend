@@ -1,5 +1,5 @@
 import type { Config } from '../config-schema';
-import { buildNationalityAttribute } from './patient-nationality';
+import { buildNationalityAttribute, isCompletedPeruDni } from './patient-nationality';
 import type { QuickRegistrationFormData } from './patient-search-registration.validation';
 
 export type PersonAttributeValue = string | { uuid: string };
@@ -39,6 +39,12 @@ export function buildEmergencyPatientAttributes(
   allowedNationalityConceptUuids?: ReadonlySet<string>,
 ): Array<PersonAttributePayload> {
   const attributes: Array<PersonAttributePayload> = [];
+  const shouldInferPeruFromDni =
+    !data.isUnknown &&
+    !data.nationality?.trim() &&
+    data.identifierType === config.defaultIdentifierTypeUuid &&
+    isCompletedPeruDni(data.identifier);
+  const effectiveNationality = shouldInferPeruFromDni ? config.peruNationalityConceptUuid : data.nationality;
 
   if (data.isUnknown) {
     attributes.push({
@@ -46,7 +52,7 @@ export function buildEmergencyPatientAttributes(
       value: 'true',
     });
   }
-  if (data.insuranceType) {
+  if (!data.isUnknown && data.insuranceType) {
     attributes.push({
       attributeType: config.insuranceTypeAttributeTypeUuid,
       value: data.insuranceType,
@@ -57,13 +63,13 @@ export function buildEmergencyPatientAttributes(
     allowedConceptUuids: allowedNationalityConceptUuids,
     attributeTypeUuid: config.nationalityAttributeTypeUuid,
     isUnknown: Boolean(data.isUnknown),
-    nationality: data.nationality,
+    nationality: effectiveNationality,
   });
   if (nationalityAttribute) {
     attributes.push(nationalityAttribute);
   }
 
-  if (data.insuranceCode) {
+  if (!data.isUnknown && data.insuranceCode) {
     attributes.push({
       attributeType: config.insuranceCodeAttributeTypeUuid,
       value: data.insuranceCode,

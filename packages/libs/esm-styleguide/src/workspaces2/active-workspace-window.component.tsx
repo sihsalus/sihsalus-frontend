@@ -6,7 +6,7 @@ import classNames from 'classnames';
 import React, { useEffect, useMemo, useState } from 'react';
 import { mountRootParcel, type ParcelConfig } from 'single-spa';
 import Parcel from 'single-spa-react/parcel';
-import { promptForClosingWorkspaces, useWorkspace2Store } from './workspace2';
+import { canCurrentUserLaunchWorkspace2, promptForClosingWorkspaces, useWorkspace2Store } from './workspace2';
 import { type Workspace2DefinitionProps } from './workspace2.component';
 import styles from './workspace2.module.scss';
 
@@ -29,7 +29,7 @@ const ActiveWorkspaceWindow: React.FC<WorkspaceWindowProps> = ({ openedWindow, s
         return loadLifeCycles(moduleName, component);
       }),
     ).then(setLifeCycles);
-  }, [openedWorkspaces]);
+  }, [openedWorkspaces, registeredWorkspacesByName]);
 
   return (
     <>
@@ -102,6 +102,10 @@ const ActiveWorkspace: React.FC<ActiveWorkspaceProps> = ({
           }
         },
         launchChildWorkspace: async (childWorkspaceName, childWorkspaceProps) => {
+          if (!canCurrentUserLaunchWorkspace2(workspace2Store.getState(), childWorkspaceName)) {
+            return;
+          }
+
           const parentWorkspaceName = openedWorkspace.workspaceName;
           const { openedWorkspaces } = openedWindow;
           const parentIndex = openedWorkspaces.findIndex((w) => w.workspaceName === parentWorkspaceName);
@@ -138,7 +142,16 @@ const ActiveWorkspace: React.FC<ActiveWorkspaceProps> = ({
         windowName: openedWindow.windowName,
         showActionMenu,
       },
-    [openedWorkspace, closeWorkspace, openedGroup, openedWindow],
+    [
+      openedWorkspace,
+      closeWorkspace,
+      openedGroup,
+      openedWindow,
+      openChildWorkspace,
+      isRootWorkspace,
+      isLeafWorkspace,
+      showActionMenu,
+    ],
   );
 
   if (!lifeCycle) {

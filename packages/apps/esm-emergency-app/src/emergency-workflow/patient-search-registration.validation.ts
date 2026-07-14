@@ -7,6 +7,8 @@ import {
 } from '@openmrs/esm-utils';
 import { z } from 'zod';
 
+import type { Config } from '../config-schema';
+import { type EmergencyIdentifierConfig, validateEmergencyIdentityDocument } from './emergency-identity-documents';
 import { isNationalityConceptUuid } from './patient-nationality';
 
 export const communicationConditionOptions = [
@@ -174,3 +176,51 @@ export const quickRegistrationSchema = z
   });
 
 export type QuickRegistrationFormData = z.infer<typeof quickRegistrationSchema>;
+
+export function createQuickRegistrationSchema(identifierConfig: EmergencyIdentifierConfig) {
+  return quickRegistrationSchema.superRefine((data, ctx) => {
+    if (data.isUnknown || !data.identifier) {
+      return;
+    }
+
+    const validation = validateEmergencyIdentityDocument(identifierConfig, data.identifierType, data.identifier);
+    if (validation.error) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ['identifier'],
+        message: validation.error,
+      });
+    }
+  });
+}
+
+export function normalizeEmergencyRegistrationData(
+  data: QuickRegistrationFormData,
+  identifierConfig: Config['patientRegistration'],
+): QuickRegistrationFormData {
+  if (data.isUnknown) {
+    return {
+      ...data,
+      birthdate: undefined,
+      address: undefined,
+      district: undefined,
+      identifier: undefined,
+      identifierType: undefined,
+      insuranceCode: undefined,
+      insuranceType: undefined,
+      nationality: undefined,
+      village: undefined,
+    };
+  }
+
+  const validation = validateEmergencyIdentityDocument(identifierConfig, data.identifierType, data.identifier);
+  if (validation.error) {
+    throw new Error(validation.error);
+  }
+
+  return {
+    ...data,
+    identifier: validation.identifier,
+    yearsEstimated: undefined,
+  };
+}

@@ -1,5 +1,6 @@
 /** @module @category Workspace */
 
+import { getSessionStore, userHasAccess } from '@openmrs/esm-api';
 import {
   getWorkspaceGroupRegistration,
   getWorkspaceRegistration,
@@ -12,6 +13,28 @@ import { createGlobalStore, getGlobalStore } from '@openmrs/esm-state';
 import { getCoreTranslation } from '@openmrs/esm-translations';
 import { type ReactNode, useMemo } from 'react';
 import type { StoreApi } from 'zustand/vanilla';
+
+type AccessUser = Parameters<typeof userHasAccess>[1];
+
+function hasDeclaredPrivileges(privileges: string | Array<string> | undefined) {
+  return typeof privileges === 'string' ? privileges.trim().length > 0 : Boolean(privileges?.length);
+}
+
+/**
+ * Checks whether a user may launch a legacy workspace. Protected workspaces
+ * fail closed while the session user is unavailable.
+ */
+export function canLaunchWorkspace(workspace: WorkspaceRegistration, user: AccessUser | undefined) {
+  return (
+    !hasDeclaredPrivileges(workspace.privileges) ||
+    Boolean(user && workspace.privileges && userHasAccess(workspace.privileges, user))
+  );
+}
+
+function canCurrentUserLaunchWorkspace(workspace: WorkspaceRegistration) {
+  const user = hasDeclaredPrivileges(workspace.privileges) ? getSessionStore().getState().session?.user : undefined;
+  return canLaunchWorkspace(workspace, user);
+}
 
 export interface CloseWorkspaceOptions {
   /**
@@ -217,6 +240,9 @@ interface LaunchWorkspaceGroupArg {
 export function launchWorkspaceGroup(groupName: string, args: LaunchWorkspaceGroupArg) {
   const workspaceGroupRegistration = getWorkspaceGroupRegistration(groupName);
   const { state, onWorkspaceGroupLaunch, workspaceGroupCleanup, workspaceToLaunch } = args;
+  if (workspaceToLaunch && !canCurrentUserLaunchWorkspace(getWorkspaceRegistration(workspaceToLaunch.name))) {
+    return;
+  }
   const store = getWorkspaceStore();
   if (store.getState().openWorkspaces.length) {
     const workspaceGroup = store.getState().workspaceGroup;
@@ -306,8 +332,11 @@ function promptBeforeLaunchingWorkspace(
 export function launchWorkspace<
   T extends DefaultWorkspaceProps | Record<string, unknown> = DefaultWorkspaceProps & Record<string, unknown>,
 >(name: string, additionalProps?: Omit<T, keyof DefaultWorkspaceProps> & { workspaceTitle?: string }) {
-  const store = getWorkspaceStore();
   const workspace = getWorkspaceRegistration(name);
+  if (!canCurrentUserLaunchWorkspace(workspace)) {
+    return;
+  }
+  const store = getWorkspaceStore();
   const currentWorkspaceGroup = store.getState().workspaceGroup;
 
   if (currentWorkspaceGroup && !currentWorkspaceGroup.members?.includes(name)) {
@@ -416,6 +445,9 @@ export function navigateAndLaunchWorkspace({
   workspaceName: string;
   additionalProps?: Record<string, unknown>;
 }) {
+  if (!canCurrentUserLaunchWorkspace(getWorkspaceRegistration(workspaceName))) {
+    return;
+  }
   changeWorkspaceContext(contextKey);
   launchWorkspace(workspaceName, additionalProps);
   navigate({ to: targetUrl });

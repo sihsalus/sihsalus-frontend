@@ -1,19 +1,59 @@
-import { registerExtension, registerWorkspace, registerWorkspaceGroup } from '@openmrs/esm-extensions';
+import { getSessionStore } from '@openmrs/esm-api';
+import {
+  registerExtension,
+  registerWorkspace,
+  registerWorkspaceGroup,
+  type WorkspaceRegistration,
+} from '@openmrs/esm-extensions';
 import { clearMockExtensionRegistry } from '@openmrs/esm-framework/mock';
+import { navigate } from '@openmrs/esm-navigation';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import {
   cancelPrompt,
+  canLaunchWorkspace,
   closeWorkspace,
   getWorkspaceGroupStore,
   getWorkspaceStore,
   launchWorkspace,
   launchWorkspaceGroup,
+  navigateAndLaunchWorkspace,
   type Prompt,
   resetWorkspaceStore,
 } from './workspaces';
 
+vi.mock('@openmrs/esm-api', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('@openmrs/esm-api')>();
+  return {
+    ...actual,
+    getSessionStore: vi.fn(),
+  };
+});
+
+vi.mock('@openmrs/esm-navigation', () => ({
+  navigate: vi.fn(),
+}));
+
+const mockGetSessionStore = vi.mocked(getSessionStore);
+const mockNavigate = vi.mocked(navigate);
+
+function makeUser(...privileges: Array<string>) {
+  return {
+    privileges: privileges.map((display) => ({ uuid: `${display}-uuid`, display, name: display })),
+    roles: [],
+  } as Parameters<typeof canLaunchWorkspace>[1];
+}
+
+function setCurrentUser(user: Parameters<typeof canLaunchWorkspace>[1]) {
+  mockGetSessionStore.mockReturnValue({
+    getState: () => ({ session: { user } }),
+  } as ReturnType<typeof getSessionStore>);
+}
+
 describe('workspace system', () => {
   beforeEach(() => {
+    mockGetSessionStore.mockReset();
+    mockNavigate.mockReset();
+    setCurrentUser(undefined);
     resetWorkspaceStore();
     clearMockExtensionRegistry();
   });
@@ -33,6 +73,121 @@ describe('workspace system', () => {
     allergies.closeWorkspace();
 
     expect(store.getState().openWorkspaces.length).toEqual(0);
+  });
+
+  describe('workspace access control', () => {
+    const registration = (privileges?: string | Array<string>) => ({ privileges }) as WorkspaceRegistration;
+
+    it('allows workspaces without a declared privilege', () => {
+      expect(canLaunchWorkspace(registration(), undefined)).toBe(true);
+      expect(canLaunchWorkspace(registration('   '), undefined)).toBe(true);
+      expect(canLaunchWorkspace(registration([]), undefined)).toBe(true);
+    });
+
+    it('fails closed and requires every declared privilege', () => {
+      expect(canLaunchWorkspace(registration('edit-clinical-data'), undefined)).toBe(false);
+      expect(canLaunchWorkspace(registration('edit-clinical-data'), makeUser('view-clinical-data'))).toBe(false);
+      expect(canLaunchWorkspace(registration('edit-clinical-data'), makeUser('edit-clinical-data'))).toBe(true);
+      expect(
+        canLaunchWorkspace(registration(['view-clinical-data', 'edit-clinical-data']), makeUser('view-clinical-data')),
+      ).toBe(false);
+      expect(
+        canLaunchWorkspace(
+          registration(['view-clinical-data', 'edit-clinical-data']),
+          makeUser('view-clinical-data', 'edit-clinical-data'),
+        ),
+      ).toBe(true);
+    });
+
+    it('denies a direct launch before prompting or mutating workspace state', () => {
+      const store = getWorkspaceStore();
+      registerWorkspace({
+        name: 'open-unprotected-workspace',
+        title: 'Open workspace',
+        load: vi.fn(),
+        moduleName: '@openmrs/foo',
+      });
+      launchWorkspace('open-unprotected-workspace');
+      store.getState().openWorkspaces[0].promptBeforeClosing(() => true);
+
+      registerWorkspace({
+        name: 'denied-protected-workspace',
+        title: 'Protected workspace',
+        load: vi.fn(),
+        moduleName: '@openmrs/foo',
+        privileges: 'edit-clinical-data',
+      });
+      setCurrentUser(makeUser('view-clinical-data'));
+
+      launchWorkspace('denied-protected-workspace');
+
+      expect(store.getState().openWorkspaces.map(({ name }) => name)).toEqual(['open-unprotected-workspace']);
+      expect(store.getState().prompt).toBeNull();
+      expect(store.getState().workspaceGroup).toBeUndefined();
+    });
+
+    it('allows an authorized launch and revalidates access when reopening it', () => {
+      const store = getWorkspaceStore();
+      registerWorkspace({
+        name: 'authorized-protected-workspace',
+        title: 'Protected workspace',
+        load: vi.fn(),
+        moduleName: '@openmrs/foo',
+        privileges: ['view-clinical-data', 'edit-clinical-data'],
+      });
+      setCurrentUser(makeUser('view-clinical-data', 'edit-clinical-data'));
+
+      launchWorkspace('authorized-protected-workspace', { version: 1 });
+      expect(store.getState().openWorkspaces[0].additionalProps).toEqual({ version: 1 });
+
+      setCurrentUser(makeUser('view-clinical-data'));
+      launchWorkspace('authorized-protected-workspace', { version: 2 });
+      expect(store.getState().openWorkspaces[0].additionalProps).toEqual({ version: 1 });
+    });
+
+    it('denies a grouped launch before creating the group or invoking callbacks', () => {
+      const onWorkspaceGroupLaunch = vi.fn();
+      registerWorkspace({
+        name: 'denied-group-workspace',
+        title: 'Protected grouped workspace',
+        load: vi.fn(),
+        moduleName: '@openmrs/foo',
+        groups: ['protected-group'],
+        privileges: 'edit-clinical-data',
+      });
+      registerWorkspaceGroup({ name: 'protected-group', members: ['denied-group-workspace'] });
+      setCurrentUser(makeUser('view-clinical-data'));
+
+      launchWorkspaceGroup('protected-group', {
+        state: { patientUuid: 'patient-uuid' },
+        onWorkspaceGroupLaunch,
+        workspaceToLaunch: { name: 'denied-group-workspace' },
+      });
+
+      expect(getWorkspaceStore().getState().workspaceGroup).toBeUndefined();
+      expect(getWorkspaceGroupStore('protected-group')?.getState()).toEqual({});
+      expect(onWorkspaceGroupLaunch).not.toHaveBeenCalled();
+    });
+
+    it('denies navigation before changing context or navigating', () => {
+      registerWorkspace({
+        name: 'denied-navigation-workspace',
+        title: 'Protected navigation workspace',
+        load: vi.fn(),
+        moduleName: '@openmrs/foo',
+        privileges: 'edit-clinical-data',
+      });
+      setCurrentUser(makeUser('view-clinical-data'));
+
+      navigateAndLaunchWorkspace({
+        targetUrl: '/patient/example/chart',
+        contextKey: 'patient-example',
+        workspaceName: 'denied-navigation-workspace',
+      });
+
+      expect(getWorkspaceStore().getState().context).toBe('');
+      expect(mockNavigate).not.toHaveBeenCalled();
+    });
   });
 
   describe('Testing launchPatientWorkspace', () => {
@@ -510,6 +665,24 @@ describe('workspace system', () => {
     expect(workspace.title).toBe('Lab Results');
     expect(workspace.preferredWindowSize).toBe('maximized');
     expect(console.warn).toHaveBeenCalled();
+  });
+
+  it('enforces privileges for workspaces registered as legacy extensions', () => {
+    console.warn = vi.fn();
+    const store = getWorkspaceStore();
+    registerExtension({
+      name: 'protected-legacy-workspace',
+      moduleName: '@openmrs/esm-protected-app',
+      load: vi.fn(),
+      meta: { title: 'Protected legacy workspace' },
+      privileges: 'edit-clinical-data',
+    });
+    setCurrentUser(makeUser('view-clinical-data'));
+
+    launchWorkspace('protected-legacy-workspace');
+
+    expect(store.getState().openWorkspaces).toEqual([]);
+    expect(store.getState().prompt).toBeNull();
   });
 
   it('launching unregistered workspace throws an error', () => {

@@ -16,7 +16,7 @@ export const ConditionsActionMenu = ({ condition, patientUuid }: conditionsActio
 
   const launchEditConditionsForm = useCallback(
     () =>
-      launchWorkspace('conditions-filter-form-workspace', {
+      launchWorkspace('ambulatory-conditions-filter-form-workspace', {
         workspaceTitle: t('editAntecedent', 'Edit antecedent'),
         condition,
         formContext: 'editing',
@@ -25,7 +25,7 @@ export const ConditionsActionMenu = ({ condition, patientUuid }: conditionsActio
   );
 
   const launchDeleteConditionDialog = (conditionId: string) => {
-    const dispose = showModal('condition-delete-confirmation-dialog', {
+    const dispose = showModal('ambulatory-condition-delete-confirmation-dialog', {
       closeDeleteModal: () => dispose(),
       conditionId,
       patientUuid,

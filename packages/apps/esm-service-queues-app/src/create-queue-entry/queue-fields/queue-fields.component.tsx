@@ -61,7 +61,7 @@ const QueueFields: React.FC<QueueFieldsProps> = ({
   setCallbacks,
 }) => {
   const { t } = useTranslation();
-  const { queueLocations, isLoading: isLoadingQueueLocations } = useQueueLocations();
+  const { queueLocations, error: queueLocationsError, isLoading: isLoadingQueueLocations } = useQueueLocations();
   const { sessionLocation } = useSession();
   const sessionLocationUuid = sessionLocation?.uuid;
   const {
@@ -81,7 +81,7 @@ const QueueFields: React.FC<QueueFieldsProps> = ({
       (location) => location.id === currentQueueLocationUuid || !/obst[eé]tric/i.test(location.name ?? ''),
     );
   }, [currentQueueLocationUuid, patientGender, queueLocations]);
-  const { queues, isLoading: isLoadingQueues } = useQueues(selectedQueueLocation);
+  const { queues, error: queuesError, isLoading: isLoadingQueues } = useQueues(selectedQueueLocation);
   const [selectedService, setSelectedService] = useState('');
   const { currentServiceQueueUuid: contextServiceQueueUuid } = useContext(AddPatientToQueueContext);
   const selectedServiceQueueUuid = currentServiceQueueUuid ?? contextServiceQueueUuid;
@@ -95,14 +95,30 @@ const QueueFields: React.FC<QueueFieldsProps> = ({
   const memoMutateQueueEntries = useCallback(mutateQueueEntries, [mutateQueueEntries]);
 
   const sortWeight = priority === emergencyPriorityConceptUuid ? 1 : 0;
+  const requiredQueueLocationIsConfigured = Boolean(
+    !currentQueueLocationUuid || queueLocations.some((location) => location.id === currentQueueLocationUuid),
+  );
+  const selectedQueueLocationIsConfigured = availableQueueLocations.some(
+    (location) => location.id === selectedQueueLocation,
+  );
+  const requiredServiceQueueIsConfigured = Boolean(
+    !selectedServiceQueueUuid || queues.some((queue) => queue.uuid === selectedServiceQueueUuid),
+  );
+  const selectedServiceIsConfigured = queues.some((queue) => queue.uuid === selectedService);
   const isValid = Boolean(
     selectedQueueLocation &&
+      selectedQueueLocationIsConfigured &&
+      requiredQueueLocationIsConfigured &&
       selectedService &&
+      selectedServiceIsConfigured &&
+      requiredServiceQueueIsConfigured &&
       priority &&
       status &&
       visitQueueNumberAttributeUuid &&
       !isLoadingQueueLocations &&
-      !isLoadingQueues,
+      !isLoadingQueues &&
+      !queueLocationsError &&
+      !queuesError,
   );
 
   const onBeforeVisitSave = useCallback(() => {
@@ -206,22 +222,30 @@ const QueueFields: React.FC<QueueFieldsProps> = ({
 
   useEffect(() => {
     if (selectedServiceQueueUuid) {
-      setSelectedService(selectedServiceQueueUuid);
-    }
-  }, [selectedServiceQueueUuid]);
-
-  useEffect(() => {
-    if (currentQueueLocationUuid) {
-      setSelectedQueueLocation(currentQueueLocationUuid);
+      const requiredService = queues.find((queue) => queue.uuid === selectedServiceQueueUuid);
+      setSelectedService(requiredService?.uuid ?? '');
       return;
     }
 
-    if (selectedQueueLocation) {
+    if (!queues.some((queue) => queue.uuid === selectedService)) {
+      setSelectedService('');
+    }
+  }, [queues, selectedService, selectedServiceQueueUuid]);
+
+  useEffect(() => {
+    if (currentQueueLocationUuid) {
+      const requiredLocation = queueLocations.find((location) => location.id === currentQueueLocationUuid);
+      setSelectedQueueLocation(requiredLocation?.id ?? '');
+      return;
+    }
+
+    if (availableQueueLocations.some((location) => location.id === selectedQueueLocation)) {
       return;
     }
 
     const defaultLocation =
-      availableQueueLocations.find((location) => location.id === sessionLocationUuid) ?? availableQueueLocations[0];
+      availableQueueLocations.find((location) => location.id === sessionLocationUuid) ??
+      (availableQueueLocations.length === 1 ? availableQueueLocations[0] : undefined);
     setSelectedQueueLocation(defaultLocation?.id ?? '');
   }, [availableQueueLocations, currentQueueLocationUuid, selectedQueueLocation, sessionLocationUuid]);
 
@@ -256,6 +280,51 @@ const QueueFields: React.FC<QueueFieldsProps> = ({
           title={t('queueTicketConfigurationMissing', 'No se configuró el atributo para generar el número de turno.')}
         />
       )}
+      {queueLocationsError && (
+        <InlineNotification
+          className={styles.inlineNotification}
+          hideCloseButton
+          kind="error"
+          lowContrast
+          title={t('queueLocationsUnavailable', 'No se pudieron cargar las ubicaciones de cola.')}
+        />
+      )}
+      {!isLoadingQueueLocations &&
+        !queueLocationsError &&
+        currentQueueLocationUuid &&
+        !requiredQueueLocationIsConfigured && (
+          <InlineNotification
+            className={styles.inlineNotification}
+            hideCloseButton
+            kind="error"
+            lowContrast
+            title={t(
+              'requiredQueueLocationUnavailable',
+              'La ubicación requerida no está configurada como ubicación de cola. Contacte al administrador.',
+            )}
+          />
+        )}
+      {!isLoadingQueues && queuesError && (
+        <InlineNotification
+          className={styles.inlineNotification}
+          hideCloseButton
+          kind="error"
+          lowContrast
+          title={t('queueServicesUnavailable', 'No se pudieron cargar los servicios de cola.')}
+        />
+      )}
+      {!isLoadingQueues && !queuesError && selectedServiceQueueUuid && !requiredServiceQueueIsConfigured && (
+        <InlineNotification
+          className={styles.inlineNotification}
+          hideCloseButton
+          kind="error"
+          lowContrast
+          title={t(
+            'requiredQueueServiceUnavailable',
+            'El servicio requerido no está configurado para esta ubicación de cola. Contacte al administrador.',
+          )}
+        />
+      )}
       <section className={styles.section}>
         <div className={styles.sectionTitle}>{t('queueLocation', 'Queue location')}</div>
         <ResponsiveWrapper>
@@ -267,7 +336,7 @@ const QueueFields: React.FC<QueueFieldsProps> = ({
               labelText={t('selectQueueLocation', 'Select a queue location')}
               id="queueLocation"
               name="queueLocation"
-              invalid={showValidationErrors && !selectedQueueLocation}
+              invalid={showValidationErrors && !selectedQueueLocationIsConfigured}
               invalidText={t('required', 'Required')}
               value={selectedQueueLocation}
               onChange={(event) => setSelectedQueueLocation(event.target.value)}
@@ -315,7 +384,7 @@ const QueueFields: React.FC<QueueFieldsProps> = ({
             labelText={t('selectService', 'Select a service')}
             id="service"
             name="service"
-            invalid={showValidationErrors && !selectedService}
+            invalid={showValidationErrors && !selectedServiceIsConfigured}
             invalidText={t('required', 'Required')}
             value={selectedService}
             onChange={(event) => setSelectedService(event.target.value)}

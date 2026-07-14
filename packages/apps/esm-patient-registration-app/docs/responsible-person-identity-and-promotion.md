@@ -924,7 +924,7 @@ Resultado esperado:
 Estos comandos no crean datos:
 
 ```bash
-curl -u "$E2E_USER_ADMIN_USERNAME:$E2E_USER_ADMIN_PASSWORD" \
+curl -u "$E2E_USERNAME:$E2E_PASSWORD" \
   "$E2E_API_BASE_URL/ws/rest/v1/patient/<uuid>?v=custom:(uuid,person:(uuid),identifiers:(uuid))"
 ```
 
@@ -935,7 +935,7 @@ Validar:
 - no se exponen datos sensibles en logs.
 
 ```bash
-curl -u "$E2E_USER_ADMIN_USERNAME:$E2E_USER_ADMIN_PASSWORD" \
+curl -u "$E2E_USERNAME:$E2E_PASSWORD" \
   "$E2E_API_BASE_URL/ws/rest/v1/person/<uuid>?v=custom:(uuid,display,attributes:(uuid,attributeType:(uuid,display),value),addresses:(uuid,preferred,address1))"
 ```
 

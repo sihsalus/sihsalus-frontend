@@ -428,8 +428,20 @@ export const configSchema = {
     },
     otherIdentifierTypeUuid: {
       _type: Type.UUID,
-      _default: '550e8400-e29b-41d4-a716-446655440004',
-      _description: 'UUID del tipo de identificador genérico OTROS para documentos no especificados',
+      _default: '',
+      _description:
+        'UUID opcional del tipo de identificador OTROS. Debe quedar vacío hasta que el tipo exista en el contenido OpenMRS desplegado.',
+    },
+    otherIdentifierFormat: {
+      _type: Type.String,
+      _default: '',
+      _description:
+        'Expresión regular completa, anclada y acotada para OTROS (por ejemplo ^[A-Z0-9]{6,20}$). No admite grupos, alternancias ni cuantificadores sin límite. OTROS solo se ofrece cuando UUID y formato están configurados.',
+    },
+    otherIdentifierMaxLength: {
+      _type: Type.Number,
+      _default: 50,
+      _description: 'Longitud máxima de OTROS; se aplica solo junto con un UUID y formato aprobados.',
     },
     defaultLocationUuid: {
       _type: Type.UUID,
@@ -650,6 +662,8 @@ export interface Config {
     dieIdentifierTypeUuid: string;
     liveBirthCertificateIdentifierTypeUuid: string;
     otherIdentifierTypeUuid: string;
+    otherIdentifierFormat: string;
+    otherIdentifierMaxLength: number;
     defaultLocationUuid: string;
     phoneNumberAttributeTypeUuid: string;
     identifierSourceUuid: string;

@@ -8,8 +8,9 @@ export const configSchema = {
   },
   fuaGeneratorEndpoint: {
     _type: Type.String,
-    _default: 'http://gidis-hsc-dev.inf.pucp.edu.pe/services/fua-generator/demo',
-    _description: 'URL del endpoint del generador de FUA (fallback cuando backend no disponible)',
+    _default: '',
+    _description:
+      'Ruta HTTPS del mismo origen para el generador de FUA. Debe publicarse detrás del gateway de SIH Salus; no se permiten fallbacks externos.',
   },
   encounterTypeUuid: {
     _type: Type.UUID,

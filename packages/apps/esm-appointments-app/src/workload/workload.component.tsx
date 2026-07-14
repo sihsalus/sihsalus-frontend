@@ -1,28 +1,27 @@
 import React, { useState } from 'react';
 
-import { useAppointmentService } from '../form/appointments-form.resource';
-
 import MonthlyCalendarView from './monthly-view-workload/monthly-view.component';
 import { useCalendarDistribution, useMonthlyCalendarDistribution } from './workload.resource';
 import styles from './workload.scss';
 
 interface WorkloadProps {
-  selectedService: string;
+  selectedServiceUuid: string;
   appointmentDate: Date;
   onWorkloadDateChange: (pickedDate: Date) => void;
 }
 
-const Workload: React.FC<WorkloadProps> = ({ selectedService, appointmentDate, onWorkloadDateChange }) => {
-  const { data: services } = useAppointmentService();
-  const serviceUuid = services?.find((service) => service.name === selectedService)?.uuid;
-
+const Workload: React.FC<WorkloadProps> = ({ selectedServiceUuid, appointmentDate, onWorkloadDateChange }) => {
   const [selectedTab] = useState(0);
 
   // Prefetch via SWR cache — result no se consume aún (semana vs mes pendiente de integrar).
-  const _calendarWorkload = useCalendarDistribution(serviceUuid, selectedTab === 0 ? 'week' : 'month', appointmentDate);
+  const _calendarWorkload = useCalendarDistribution(
+    selectedServiceUuid,
+    selectedTab === 0 ? 'week' : 'month',
+    appointmentDate,
+  );
 
   const monthlyCalendarWorkload = useMonthlyCalendarDistribution(
-    serviceUuid,
+    selectedServiceUuid,
     selectedTab === 0 ? 'week' : 'month',
     appointmentDate,
   );

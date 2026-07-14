@@ -82,22 +82,6 @@ const IdentifierInput: React.FC<IdentifierInputProps> = ({ patientIdentifier, fi
     },
     [identifierRule, name, setFieldValue],
   );
-  const handleIdentifierKeyDown = useCallback(
-    (event: React.KeyboardEvent<HTMLInputElement>) => {
-      if (!identifierRule || event.key.length !== 1) {
-        return;
-      }
-
-      const isValidKey =
-        identifierRule.inputMode === 'numeric' ? /^\d$/.test(event.key) : /^[a-zA-Z0-9]$/.test(event.key);
-
-      if (!isValidKey) {
-        event.preventDefault();
-      }
-    },
-    [identifierRule],
-  );
-
   const handleDelete = () => {
     /*
     If there is an initialValue to the identifier, a confirmation modal seeking
@@ -135,13 +119,12 @@ const IdentifierInput: React.FC<IdentifierInputProps> = ({ patientIdentifier, fi
           required={requiredForRegistration}
           helperText={identifierRule ? t(identifierRule.helperKey, identifierRule.helper) : undefined}
           inputMode={identifierRule?.inputMode}
-          maxLength={identifierRule?.maxLength}
+          maxLength={identifierRule ? identifierRule.maxLength + 1 : undefined}
           invalid={!!(identifierFieldMeta.touched && identifierFieldMeta.error)}
           invalidText={identifierFieldMeta.error && t(identifierFieldMeta.error)}
           // t('identifierValueRequired', 'Identifier value is required')
           {...identifierField}
           onChange={handleIdentifierChange}
-          onKeyDown={handleIdentifierKeyDown}
         />
       ) : (
         <div className={styles.textID}>

@@ -348,7 +348,7 @@ const CREDControlsWorkspace: React.FC<DefaultPatientWorkspaceProps> = ({
       const consultationDatetime = getConsultationDatetime(consultationData);
       setShowErrorNotification(false);
 
-      launchWorkspace2('forms-selector-workspace', {
+      launchWorkspace2('cred-forms-selector-workspace', {
         availableForms: allAvailableForms,
         patientUuid,
         patientAge: formattedAge,

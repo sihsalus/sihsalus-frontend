@@ -5,6 +5,7 @@ import { useTranslation } from 'react-i18next';
 
 import type { Config } from '../config-schema';
 import { ModuleFuaRestURL } from '../constant';
+import { createInertFuaHtml, resolveTrustedFuaEndpoint } from '../utils/fua-html-security';
 
 import styles from './fua-html-viewer.scss';
 
@@ -17,7 +18,7 @@ interface FuaHtmlViewerProps {
 const FuaHtmlViewer: React.FC<FuaHtmlViewerProps> = ({ fuaId, visitUuid, endpoint }) => {
   const config = useConfig<Config>();
   const { t } = useTranslation();
-  const fuaEndpoint = endpoint || config.fuaGeneratorEndpoint;
+  const fuaEndpoint = endpoint ?? config.fuaGeneratorEndpoint;
   const [htmlContent, setHtmlContent] = useState<string>('');
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -30,14 +31,32 @@ const FuaHtmlViewer: React.FC<FuaHtmlViewerProps> = ({ fuaId, visitUuid, endpoin
         setIsLoading(true);
         setError(null);
 
+        const trustedEndpoint = visitUuid
+          ? null
+          : resolveTrustedFuaEndpoint(fuaEndpoint, window.location.origin);
+        if (!visitUuid && !trustedEndpoint) {
+          throw new Error(
+            t(
+              'fuaEndpointUnavailable',
+              'The FUA viewer requires a secure same-origin endpoint configured by an administrator.',
+            ),
+          );
+        }
+
         const url = visitUuid
           ? `${ModuleFuaRestURL}/RenderFUA/${encodeURIComponent(visitUuid)}`
           : fuaId
-            ? `${fuaEndpoint}?fuaId=${encodeURIComponent(fuaId)}`
-            : fuaEndpoint;
+            ? (() => {
+                const target = new URL(trustedEndpoint);
+                target.searchParams.set('fuaId', fuaId);
+                return target.toString();
+              })()
+            : trustedEndpoint.toString();
 
         const response = await fetch(url, {
+          credentials: 'same-origin',
           method: visitUuid ? 'POST' : 'GET',
+          referrerPolicy: 'no-referrer',
           signal: abortController.signal,
         });
 
@@ -49,7 +68,10 @@ const FuaHtmlViewer: React.FC<FuaHtmlViewerProps> = ({ fuaId, visitUuid, endpoin
         setHtmlContent(html);
       } catch (err) {
         if (abortController.signal.aborted) return;
-        const errorMessage = err instanceof Error ? err.message : t('unknownError', 'Unknown error');
+        const errorMessage =
+          err instanceof Error && err.message === t('fuaEndpointUnavailable')
+            ? err.message
+            : t('couldNotLoadFuaDocument', 'Could not load FUA document');
         setError(errorMessage);
         showSnackbar({
           title: t('error', 'Error'),
@@ -88,10 +110,11 @@ const FuaHtmlViewer: React.FC<FuaHtmlViewerProps> = ({ fuaId, visitUuid, endpoin
   return (
     <div className={styles.container}>
       <iframe
-        srcDoc={htmlContent}
+        srcDoc={createInertFuaHtml(htmlContent)}
         title={t('fuaDocument', 'FUA Document')}
         className={styles.iframe}
-        sandbox="allow-scripts allow-same-origin allow-popups allow-popups-to-escape-sandbox"
+        referrerPolicy="no-referrer"
+        sandbox=""
       />
     </div>
   );

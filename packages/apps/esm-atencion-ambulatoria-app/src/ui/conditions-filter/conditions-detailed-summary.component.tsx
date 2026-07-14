@@ -101,7 +101,7 @@ function ConditionsDetailedSummary({ patient }) {
 
   const launchConditionsForm = useCallback(
     () =>
-      launchWorkspace('conditions-filter-form-workspace', {
+      launchWorkspace('ambulatory-conditions-filter-form-workspace', {
         formContext: 'creating',
       }),
     [],

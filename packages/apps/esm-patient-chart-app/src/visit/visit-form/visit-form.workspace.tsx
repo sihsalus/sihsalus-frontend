@@ -78,7 +78,7 @@ import {
   updateVisitAttribute,
   useConditionalVisitTypes,
   usePersonAttributesForVisitDefaults,
-  useVisitAttributeTypeExists,
+  useVisitAttributeTypeAvailability,
   useVisitFormCallbacks,
   VISIT_PERSISTENCE_CORRELATION_CONFLICT,
   type VisitFormCallbacks,
@@ -212,22 +212,37 @@ const StartVisitForm: React.FC<StartVisitFormProps> = (props) => {
   const visitPersistenceToken = useRef(uuidv4());
   const pendingVisitCreationPayload = useRef<NewVisitPayload | null>(null);
   const pendingVisitCreationError = useRef<unknown>(null);
-  // A missing attribute type would make the backend reject the whole visit payload,
-  // so the correlation token is dropped when the backend does not have it provisioned.
-  const persistenceAttributeTypeExists = useVisitAttributeTypeExists(config.visitPersistenceTokenAttributeTypeUuid);
+  const explicitVisitPersistenceCorrelationIsValid = Boolean(
+    visitPersistenceCorrelation?.attributeType?.trim() && visitPersistenceCorrelation?.value?.trim(),
+  );
+  const persistenceAttributeTypeUuid =
+    isOnline && !visitToEdit
+      ? explicitVisitPersistenceCorrelationIsValid
+        ? visitPersistenceCorrelation?.attributeType.trim()
+        : config.visitPersistenceTokenAttributeTypeUuid
+      : undefined;
+  // Every online correlation contract, including the appointment-specific one, must
+  // verify its attribute type before saving. Offline visits use their local persistence
+  // path and must not depend on an uncached backend metadata request.
+  const persistenceAttributeTypeAvailability = useVisitAttributeTypeAvailability(persistenceAttributeTypeUuid);
+  const visitPersistenceConfigurationBlocksSaving = Boolean(
+    isOnline &&
+      !visitToEdit &&
+      ((visitPersistenceCorrelation && !explicitVisitPersistenceCorrelationIsValid) ||
+        persistenceAttributeTypeAvailability.status !== 'available'),
+  );
   const effectiveVisitPersistenceCorrelation = useMemo<VisitPersistenceCorrelation | undefined>(() => {
     if (visitToEdit) {
       return undefined;
     }
 
     if (visitPersistenceCorrelation) {
-      return visitPersistenceCorrelation;
+      return explicitVisitPersistenceCorrelationIsValid && persistenceAttributeTypeAvailability.status === 'available'
+        ? visitPersistenceCorrelation
+        : undefined;
     }
 
-    if (!persistenceAttributeTypeExists) {
-      console.warn(
-        `The visit attribute type ${config.visitPersistenceTokenAttributeTypeUuid} configured as visitPersistenceTokenAttributeTypeUuid does not exist on the backend. Visits will be created without the persistence token.`,
-      );
+    if (persistenceAttributeTypeAvailability.status !== 'available') {
       return undefined;
     }
 
@@ -239,7 +254,8 @@ const StartVisitForm: React.FC<StartVisitFormProps> = (props) => {
       : undefined;
   }, [
     config.visitPersistenceTokenAttributeTypeUuid,
-    persistenceAttributeTypeExists,
+    explicitVisitPersistenceCorrelationIsValid,
+    persistenceAttributeTypeAvailability.status,
     visitPersistenceCorrelation,
     visitToEdit,
   ]);
@@ -673,6 +689,25 @@ const StartVisitForm: React.FC<StartVisitFormProps> = (props) => {
 
   const onSubmit = useCallback(
     async (data: VisitFormData) => {
+      if (visitPersistenceConfigurationBlocksSaving) {
+        showSnackbar({
+          title: t('visitPersistenceConfigurationUnavailable', 'No se puede iniciar la consulta'),
+          subtitle:
+            persistenceAttributeTypeAvailability.status === 'loading'
+              ? t(
+                  'visitPersistenceConfigurationLoadingMessage',
+                  'Se está verificando la configuración de guardado seguro. Espere y vuelva a intentar.',
+                )
+              : t(
+                  'visitPersistenceConfigurationErrorMessage',
+                  'No se pudo verificar la configuración de guardado seguro. Revise la conexión o contacte al administrador.',
+                ),
+          kind: 'error',
+          isLowContrast: false,
+        });
+        return;
+      }
+
       if (visitToEdit && !validateVisitStartStopDatetime()) {
         return;
       }
@@ -1130,6 +1165,8 @@ const StartVisitForm: React.FC<StartVisitFormProps> = (props) => {
       queueEntryPersistenceCompleted,
       visitFormCallbacks,
       visitPersistenceCorrelation,
+      visitPersistenceConfigurationBlocksSaving,
+      persistenceAttributeTypeAvailability.status,
       patientUuid,
       t,
       validateVisitStartStopDatetime,
@@ -1376,6 +1413,25 @@ const StartVisitForm: React.FC<StartVisitFormProps> = (props) => {
             </section>
           </Stack>
         </fieldset>
+        {visitPersistenceConfigurationBlocksSaving ? (
+          <InlineNotification
+            hideCloseButton
+            kind={persistenceAttributeTypeAvailability.status === 'loading' ? 'info' : 'error'}
+            lowContrast
+            title={t('visitPersistenceConfigurationUnavailable', 'No se puede iniciar la consulta')}
+            subtitle={
+              persistenceAttributeTypeAvailability.status === 'loading'
+                ? t(
+                    'visitPersistenceConfigurationLoadingMessage',
+                    'Se está verificando la configuración de guardado seguro. Espere y vuelva a intentar.',
+                  )
+                : t(
+                    'visitPersistenceConfigurationErrorMessage',
+                    'No se pudo verificar la configuración de guardado seguro. Revise la conexión o contacte al administrador.',
+                  )
+            }
+          />
+        ) : null}
         <ButtonSet
           className={classNames(styles.buttonSet, {
             [styles.tablet]: isTablet,
@@ -1390,6 +1446,7 @@ const StartVisitForm: React.FC<StartVisitFormProps> = (props) => {
             disabled={
               isSubmitting ||
               errorFetchingResources?.blockSavingForm ||
+              visitPersistenceConfigurationBlocksSaving ||
               (visitCreationRequiresReconciliation && !effectiveVisitPersistenceCorrelation)
             }
             kind="primary"

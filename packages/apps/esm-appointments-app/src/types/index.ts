@@ -31,6 +31,14 @@ export enum AppointmentKind {
   VIRTUAL = 'Virtual',
 }
 
+export type AppointmentProviderResponse = 'AWAITING' | 'ACCEPTED' | 'REJECTED' | 'TENTATIVE' | 'CANCELLED';
+
+export interface AppointmentProviderDetails extends OpenmrsResource {
+  comments?: string;
+  name?: string;
+  response?: AppointmentProviderResponse;
+}
+
 // TODO: remove interface elements that aren't actually present on the Appointment object returned from the Appointment API
 export interface Appointment {
   appointmentKind: AppointmentKind;
@@ -47,15 +55,15 @@ export interface Appointment {
     gender?: string;
   };
   provider: OpenmrsResource;
-  providers: Array<OpenmrsResource>;
+  providers: Array<AppointmentProviderDetails>;
   recurring: boolean;
   service: AppointmentService;
+  serviceType?: ServiceTypes | null;
   startDateTime: string | number | Date;
   dateAppointmentScheduled: string | number | Date;
   status: AppointmentStatus;
   uuid: string;
   additionalInfo?: string | null;
-  serviceTypes?: Array<ServiceTypes> | null;
   voided: boolean;
   extensions: Record<string, unknown>;
   teleconsultationLink: string | null;
@@ -125,11 +133,12 @@ export interface Observation {
 export interface AppointmentPayload {
   patientUuid: string;
   serviceUuid: string;
+  serviceTypeUuid?: string;
   dateAppointmentScheduled: string;
   startDateTime: string;
   endDateTime: string;
   appointmentKind: string;
-  providers?: Array<OpenmrsResource>;
+  providers?: Array<AppointmentProviderDetails>;
   locationUuid: string;
   comments: string;
   status?: string;
@@ -154,7 +163,7 @@ export interface Provider {
   uuid: string;
   display: string;
   comments?: string;
-  response?: string;
+  response?: AppointmentProviderResponse;
   person: OpenmrsResource;
   name?: string;
 }
@@ -182,7 +191,7 @@ export interface DailyAppointmentsCountByService {
 export interface RecurringPattern {
   type: 'DAY' | 'WEEK';
   period: number;
-  endDate: string;
+  endDate: string | null;
   daysOfWeek?: Array<string>; //'MONDAY' | 'TUESDAY' | 'TUESDAY' | 'WEDNESDAY' | 'THURSDAY' | 'FRIDAY' | 'SATURDAY' | 'SUNDAY'>;
 }
 

@@ -1,4 +1,4 @@
-import { Button } from '@carbon/react';
+import { Button, InlineLoading } from '@carbon/react';
 import { TaskComplete } from '@carbon/react/icons';
 import { navigate, showModal, useConfig, userHasAccess, useSession } from '@openmrs/esm-framework';
 import dayjs from 'dayjs';
@@ -10,7 +10,7 @@ import { useTranslation } from 'react-i18next';
 import { type ConfigObject } from '../../config-schema';
 import { appointmentsEditPrivilege } from '../../constants';
 import { canTransition } from '../../helpers';
-import { useTodaysVisits } from '../../hooks/useTodaysVisits';
+import { type ActiveAppointmentVisit, useTodaysVisits } from '../../hooks/useTodaysVisits';
 import { type Appointment, AppointmentStatus } from '../../types';
 
 import styles from './appointments-actions.scss';
@@ -43,17 +43,30 @@ const checkOutPrivileges = [
 
 interface AppointmentsActionsProps {
   appointment: Appointment;
+  activeVisits?: Array<ActiveAppointmentVisit>;
+  activeVisitsError?: unknown;
+  activeVisitsLoading?: boolean;
+  mutateActiveVisits?: () => void;
 }
 
-const AppointmentsActions: React.FC<AppointmentsActionsProps> = ({ appointment }) => {
+const AppointmentsActions: React.FC<AppointmentsActionsProps> = ({
+  appointment,
+  activeVisits: providedVisits,
+  activeVisitsError,
+  activeVisitsLoading,
+  mutateActiveVisits,
+}) => {
   const { t } = useTranslation();
   const { appointmentVisitAttributeTypeUuid, checkInButton, checkOutButton } = useConfig<ConfigObject>();
   const session = useSession();
   const canCheckIn = userHasAccess(checkInPrivileges, session?.user);
   const canCheckOut = userHasAccess(checkOutPrivileges, session?.user);
-  const { visits, mutateVisit } = useTodaysVisits();
-
   const patientUuid = appointment.patient.uuid;
+  const scopedVisits = useTodaysVisits(providedVisits ? [] : [patientUuid]);
+  const visits = providedVisits ?? scopedVisits.visits;
+  const visitsError = providedVisits ? activeVisitsError : scopedVisits.error;
+  const visitsLoading = providedVisits ? Boolean(activeVisitsLoading) : scopedVisits.isLoading;
+  const refreshVisits = mutateActiveVisits ?? scopedVisits.mutateVisit;
   const visitDate = dayjs(appointment.startDateTime);
 
   const hasActiveVisit = visits?.some(
@@ -76,6 +89,11 @@ const AppointmentsActions: React.FC<AppointmentsActionsProps> = ({ appointment }
   const isCheckedIn = appointment.status === AppointmentStatus.CHECKEDIN;
   const isCompleted = appointment.status === AppointmentStatus.COMPLETED;
   const isCancelled = appointment.status === AppointmentStatus.CANCELLED;
+  const isCheckInCandidate =
+    canCheckIn &&
+    checkInButton.enabled &&
+    isTodaysAppointment &&
+    canTransition(appointment.status, AppointmentStatus.CHECKEDIN);
 
   const handleCheckout = () => {
     if (checkOutButton.customUrl) {
@@ -89,7 +107,7 @@ const AppointmentsActions: React.FC<AppointmentsActionsProps> = ({ appointment }
     } else {
       const dispose = showModal('end-appointment-modal', {
         closeModal: () => {
-          mutateVisit();
+          refreshVisits();
           dispose();
         },
         patientUuid,
@@ -128,12 +146,18 @@ const AppointmentsActions: React.FC<AppointmentsActionsProps> = ({ appointment }
           </Button>
         );
 
-      case canCheckIn &&
-        checkInButton.enabled &&
-        (!hasActiveVisit || checkInButton.showIfActiveVisit) &&
-        isTodaysAppointment &&
-        canTransition(appointment.status, AppointmentStatus.CHECKEDIN):
-        return <CheckInButton patientUuid={patientUuid} appointment={appointment} mutateVisits={mutateVisit} />;
+      case isCheckInCandidate && visitsLoading:
+        return <InlineLoading description={t('checkingActiveVisit', 'Checking active visit')} />;
+
+      case isCheckInCandidate && Boolean(visitsError):
+        return (
+          <Button disabled kind="ghost" size="sm">
+            {t('activeVisitCheckFailed', 'Unable to verify active visit')}
+          </Button>
+        );
+
+      case isCheckInCandidate && (!hasActiveVisit || checkInButton.showIfActiveVisit):
+        return <CheckInButton patientUuid={patientUuid} appointment={appointment} mutateVisits={refreshVisits} />;
 
       default:
         return null;

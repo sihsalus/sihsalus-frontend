@@ -105,12 +105,20 @@ describe('RefineSearch', () => {
 
     expect(screen.getByText('Sex')).toBeInTheDocument();
     expect(screen.getByLabelText('Date of birth')).toBeInTheDocument();
-    expect(screen.queryByLabelText('Age')).not.toBeInTheDocument();
+    expect(screen.getByLabelText('Age')).toBeInTheDocument();
     expect(screen.queryByLabelText('Postcode')).not.toBeInTheDocument();
     expect(screen.getByText('Tipo de Documento de Identidad')).toBeInTheDocument();
     expect(screen.getByLabelText('Número de Documento de Identidad')).toBeInTheDocument();
     expect(screen.getByText('Estado de Verificación de Identidad')).toBeInTheDocument();
     expect(screen.getByText('Estado de Identificación en Admisión')).toBeInTheDocument();
+  });
+
+  it('passes the configured clinical age limits to the rendered input', () => {
+    renderComponent();
+
+    const ageInput = screen.getByRole('spinbutton', { name: /age/i });
+    expect(ageInput).toHaveAttribute('min', '0');
+    expect(ageInput).toHaveAttribute('max', '140');
   });
 
   it('shows number of filters applied in Search button when filters are active', () => {
@@ -163,6 +171,7 @@ describe('RefineSearch', () => {
     renderComponent();
 
     await user.type(screen.getByLabelText(/apellidos y nombres/i), 'Ahuanari');
+    await user.type(screen.getByRole('spinbutton', { name: /age/i }), '30');
     await user.click(screen.getByRole('button', { name: /search/i }));
 
     expect(mockSetFilters).toHaveBeenCalledWith(
@@ -179,7 +188,7 @@ describe('RefineSearch', () => {
           'a7e3f8c1-2d4b-4f9a-8c6e-1b2d3f4a5c6e': '',
           '787f1ea9-1792-45e5-9076-699b1a0638cb': '',
         },
-        age: null,
+        age: 30,
       }),
     );
   });
@@ -258,6 +267,18 @@ describe('RefineSearch', () => {
           yearOfBirth: 1990,
         }),
       );
+    });
+    it('rejects an age outside the clinical limit', async () => {
+      renderComponent();
+
+      const ageInput = screen.getByRole('spinbutton', { name: /age/i });
+
+      await user.type(screen.getByLabelText(/apellidos y nombres/i), 'Paciente prueba');
+      await user.type(ageInput, '141');
+      await user.click(screen.getByRole('button', { name: /search/i }));
+
+      expect(mockSetFilters).not.toHaveBeenCalled();
+      expect(ageInput).toHaveAttribute('aria-invalid', 'true');
     });
   });
 });

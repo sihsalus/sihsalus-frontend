@@ -1,6 +1,7 @@
 import { expect, type Page, test } from '@playwright/test';
+import { getRequiredSyntheticUuid } from '../utils/e2e-env';
 
-const patientUuid = process.env.E2E_PATIENT_UUID ?? '8673ee4f-e2ab-4077-ba55-4980f408773e';
+const patientUuid = getRequiredSyntheticUuid('E2E_PATIENT_UUID');
 
 function isEncounterPayload(payload: unknown): payload is { patient?: string; obs?: unknown[] } {
   return typeof payload === 'object' && payload !== null;

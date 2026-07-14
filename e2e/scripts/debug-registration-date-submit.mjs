@@ -2,7 +2,12 @@ import { chromium, request } from '@playwright/test';
 
 const spaBase = 'http://localhost:8090/openmrs/spa';
 const openmrsBase = spaBase.replace(/\/spa$/, '');
-const authorization = `Basic ${Buffer.from('admin:Admin123').toString('base64')}`;
+const username = process.env.E2E_USERNAME?.trim();
+const password = process.env.E2E_PASSWORD;
+if (!username || !password) {
+  throw new Error('E2E_USERNAME and E2E_PASSWORD are required for this synthetic test script.');
+}
+const authorization = `Basic ${Buffer.from(`${username}:${password}`).toString('base64')}`;
 
 const browser = await chromium.launch({ headless: true });
 const context = await browser.newContext({ viewport: { width: 1440, height: 1100 }, locale: 'es-PE' });

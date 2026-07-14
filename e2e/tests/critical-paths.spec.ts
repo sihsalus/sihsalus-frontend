@@ -1,5 +1,6 @@
 import type { Page } from '@playwright/test';
 import { expect, test } from '@playwright/test';
+import { getE2ECredentials } from '../utils/e2e-api';
 import { getSpaUrl } from '../utils/e2e-urls';
 
 // Global setup for authenticated tests
@@ -20,8 +21,9 @@ async function login(page: Page) {
     return;
   }
 
-  await usernameField.fill('admin');
-  await passwordField.fill('Admin123');
+  const { username, password } = getE2ECredentials();
+  await usernameField.fill(username);
+  await passwordField.fill(password);
   await page.getByRole('button', { name: /log in|login|iniciar sesión|entrar/i }).click();
 
   // Wait for location selector or redirect
@@ -55,8 +57,9 @@ test.describe('Critical User Journeys', () => {
     const usernameField = page.locator('input[type="text"]').first();
     const passwordField = page.locator('input[type="password"]').first();
 
-    await usernameField.fill('admin');
-    await passwordField.fill('Admin123');
+    const { username, password } = getE2ECredentials();
+    await usernameField.fill(username);
+    await passwordField.fill(password);
 
     // 2. Submit login
     await page.getByRole('button', { name: /log in|login|iniciar sesión|entrar/i }).click();
@@ -228,8 +231,9 @@ test.describe('Critical User Journeys', () => {
     const usernameField = page.locator('input[type="text"]').first();
     const passwordField = page.locator('input[type="password"]').first();
 
-    await usernameField.fill('admin');
-    await passwordField.fill('Admin123');
+    const { username, password } = getE2ECredentials();
+    await usernameField.fill(username);
+    await passwordField.fill(password);
 
     await page.getByRole('button', { name: /log in|login|iniciar sesión|entrar/i }).click();
 

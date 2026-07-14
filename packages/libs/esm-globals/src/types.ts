@@ -190,7 +190,7 @@ export type ExtensionDefinition = {
    */
   order?: number;
   /**
-   * The user must have ANY of these privileges to see this extension.
+   * The user must have ALL of these privileges to see this extension.
    */
   privileges?: string | Array<string>;
   /**
@@ -225,6 +225,11 @@ export type ModalDefinition = {
    * The name of the component exported by this frontend module.
    */
   component: string;
+  /**
+   * Privilege or privileges required to launch this modal. When an array is
+   * provided, the user must have every listed privilege.
+   */
+  privileges?: string | Array<string>;
 };
 
 /* The possible states a workspace window can be opened in. */
@@ -283,6 +288,11 @@ export type WorkspaceDefinition = {
    *
    */
   groups: Array<string>;
+  /**
+   * Privilege or privileges required to launch this workspace. When an array
+   * is provided, the user must have every listed privilege.
+   */
+  privileges?: string | Array<string>;
   /**
    * The name of the component exported by this frontend module.
    */
@@ -343,6 +353,8 @@ export interface WorkspaceDefinition2 {
   name: string;
   component: string;
   window: string;
+  /** Privilege or privileges required to launch this workspace. */
+  privileges?: string | Array<string>;
 }
 
 /**

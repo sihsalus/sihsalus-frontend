@@ -1,6 +1,14 @@
-import { quickRegistrationSchema } from './patient-search-registration.validation';
+import { getDefaultsFromConfigSchema } from '@openmrs/esm-framework';
 
-const validKnownPatient = {
+import { type Config, configSchema } from '../config-schema';
+import {
+  createQuickRegistrationSchema,
+  normalizeEmergencyRegistrationData,
+  type QuickRegistrationFormData,
+  quickRegistrationSchema,
+} from './patient-search-registration.validation';
+
+const validKnownPatient: QuickRegistrationFormData = {
   givenName: 'Ada',
   familyName: 'Lovelace',
   gender: 'F',
@@ -10,6 +18,8 @@ const validKnownPatient = {
   isUnknown: false,
 };
 const peruNationalityConceptUuid = 'e0370dea-d480-4721-a438-97a77d6c3349';
+const patientRegistrationConfig = (getDefaultsFromConfigSchema(configSchema) as Config).patientRegistration;
+const configuredQuickRegistrationSchema = createQuickRegistrationSchema(patientRegistrationConfig);
 
 describe('quickRegistrationSchema', () => {
   it('accepts a known communicative patient without a responsible party', () => {
@@ -119,5 +129,80 @@ describe('quickRegistrationSchema', () => {
     } finally {
       vi.useRealTimers();
     }
+  });
+
+  it.each([
+    [patientRegistrationConfig.defaultIdentifierTypeUuid, '12345678', '12345678'],
+    [patientRegistrationConfig.foreignCardIdentifierTypeUuid, 'ab123456', 'AB123456'],
+    [patientRegistrationConfig.passportIdentifierTypeUuid, 'pa123456', 'PA123456'],
+    [patientRegistrationConfig.dieIdentifierTypeUuid, 'die123456', 'DIE123456'],
+    [patientRegistrationConfig.liveBirthCertificateIdentifierTypeUuid, '123456789012', '123456789012'],
+  ])('accepts and normalizes a valid configured identity document', (identifierType, identifier, normalized) => {
+    const result = configuredQuickRegistrationSchema.safeParse({
+      ...validKnownPatient,
+      identifierType,
+      identifier,
+    });
+
+    expect(result.success).toBe(true);
+    if (result.success) {
+      expect(normalizeEmergencyRegistrationData(result.data, patientRegistrationConfig).identifier).toBe(normalized);
+    }
+  });
+
+  it.each([
+    [patientRegistrationConfig.defaultIdentifierTypeUuid, '1234567'],
+    [patientRegistrationConfig.foreignCardIdentifierTypeUuid, 'ABC12'],
+    [patientRegistrationConfig.passportIdentifierTypeUuid, 'ABC12'],
+    [patientRegistrationConfig.dieIdentifierTypeUuid, 'ABC1234567890123'],
+    [patientRegistrationConfig.liveBirthCertificateIdentifierTypeUuid, '12345678901'],
+    ['unknown-identifier-type', 'ABC123'],
+  ])('rejects an invalid document/type combination', (identifierType, identifier) => {
+    expect(
+      configuredQuickRegistrationSchema.safeParse({ ...validKnownPatient, identifierType, identifier }).success,
+    ).toBe(false);
+  });
+
+  it('strips hidden identity, birthdate, nationality, insurance and address data from an unidentified patient', () => {
+    const normalized = normalizeEmergencyRegistrationData(
+      {
+        ...validKnownPatient,
+        birthdate: '1990-01-01',
+        identifier: '12345678',
+        identifierType: patientRegistrationConfig.defaultIdentifierTypeUuid,
+        insuranceCode: 'SIS-STALE',
+        insuranceType: patientRegistrationConfig.insuranceTypeConcepts.sisGratuitoUuid,
+        isUnknown: true,
+        nationality: peruNationalityConceptUuid,
+        address: 'Jr. Oculto 123',
+        district: 'NAPO',
+        village: 'SANTA CLOTILDE',
+      },
+      patientRegistrationConfig,
+    );
+
+    expect(normalized).toEqual(
+      expect.objectContaining({
+        birthdate: undefined,
+        address: undefined,
+        district: undefined,
+        identifier: undefined,
+        identifierType: undefined,
+        insuranceCode: undefined,
+        insuranceType: undefined,
+        nationality: undefined,
+        village: undefined,
+      }),
+    );
+  });
+
+  it('strips a hidden estimated age from a known patient', () => {
+    const normalized = normalizeEmergencyRegistrationData(
+      { ...validKnownPatient, birthdate: '1990-01-01', yearsEstimated: 35 },
+      patientRegistrationConfig,
+    );
+
+    expect(normalized.birthdate).toBe('1990-01-01');
+    expect(normalized.yearsEstimated).toBeUndefined();
   });
 });

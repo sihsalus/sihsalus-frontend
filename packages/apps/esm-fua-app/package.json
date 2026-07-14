@@ -40,6 +40,7 @@
   "dependencies": {
     "@openmrs/esm-utils": "workspace:*",
     "@sihsalus/esm-rbac": "workspace:*",
+    "dompurify": "3.4.11",
     "exceljs": "^4.4.0",
     "lodash-es": "^4.17.21"
   },

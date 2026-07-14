@@ -103,7 +103,7 @@ yarn turbo run build --filter=<package>     # Build single package
 ```bash
 yarn test                                   # Run all unit tests
 yarn turbo run test --filter='@sihsalus/*' # Test SIH Salus packages only
-yarn test:e2e                               # Run Playwright E2E tests
+yarn test:e2e                               # Run Playwright E2E tests (see docs/e2e-testing.md)
 ```
 
 ### Quality

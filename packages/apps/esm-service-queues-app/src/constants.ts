@@ -18,6 +18,10 @@ export const getStartOfDay = () => dayjs().tz(timeZone).startOf('day').toISOStri
 export const serviceQueuesPrivilege = 'app:home.colasAtencion';
 export const serviceQueuesEditPrivilege = 'app:home.colasAtencion.editar';
 export const queueEntryCommentMaxLength = 600;
+export const patientVitalsEditPrivilege = 'app:hoja.clinica.signosVitales.editar';
+export const visitNotesEditPrivilege = 'app:hoja.clinica.resumenConsulta';
+export const serviceQueuesPatientVitalsEditPrivileges = [serviceQueuesEditPrivilege, patientVitalsEditPrivilege];
+export const serviceQueuesVisitNotesEditPrivileges = [serviceQueuesEditPrivilege, visitNotesEditPrivilege];
 
 export const datePickerPlaceHolder = 'dd/mm/yyyy';
 export const datePickerFormat = 'd/m/Y';

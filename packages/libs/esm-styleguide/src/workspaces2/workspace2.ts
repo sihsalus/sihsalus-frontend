@@ -1,3 +1,4 @@
+import { getSessionStore, userHasAccess } from '@openmrs/esm-api';
 import {
   getGroupByWindowName,
   getOpenedWindowIndexByWorkspace,
@@ -14,6 +15,50 @@ import { SingleSpaContext } from 'single-spa-react';
 import { v4 as uuidV4 } from 'uuid';
 import { showModal } from '../modals';
 import { type Workspace2DefinitionProps } from './workspace2.component';
+
+type AccessUser = Parameters<typeof userHasAccess>[1];
+
+function hasDeclaredPrivileges(privileges: string | Array<string> | undefined) {
+  return typeof privileges === 'string' ? privileges.trim().length > 0 : Boolean(privileges?.length);
+}
+
+function meetsPrivilegeRequirements(privileges: string | Array<string> | undefined, user: AccessUser | undefined) {
+  return !hasDeclaredPrivileges(privileges) || Boolean(user && privileges && userHasAccess(privileges, user));
+}
+
+/**
+ * Checks both layers that protect a Workspace2 surface. A protected workspace
+ * fails closed while the session user is unavailable.
+ */
+export function canLaunchWorkspace2(state: WorkspaceStoreState2, workspaceName: string, user: AccessUser | undefined) {
+  const workspaceDefinition = state.registeredWorkspacesByName[workspaceName];
+  if (!workspaceDefinition) {
+    return false;
+  }
+
+  const windowDefinition = state.registeredWindowsByName[workspaceDefinition.window];
+  if (!windowDefinition) {
+    return false;
+  }
+
+  return (
+    meetsPrivilegeRequirements(windowDefinition.privileges, user) &&
+    meetsPrivilegeRequirements(workspaceDefinition.privileges, user)
+  );
+}
+
+export function canCurrentUserLaunchWorkspace2(state: WorkspaceStoreState2, workspaceName: string) {
+  const workspaceDefinition = state.registeredWorkspacesByName[workspaceName];
+  const windowDefinition = workspaceDefinition && state.registeredWindowsByName[workspaceDefinition.window];
+  const requiresUser =
+    hasDeclaredPrivileges(workspaceDefinition?.privileges) || hasDeclaredPrivileges(windowDefinition?.privileges);
+
+  return canLaunchWorkspace2(
+    state,
+    workspaceName,
+    requiresUser ? getSessionStore().getState().session?.user : undefined,
+  );
+}
 
 /**
  * Attempts to launch the specified workspace group with the given group props. Note that only one workspace group
@@ -150,6 +195,9 @@ export async function launchWorkspace2<
   const windowDef = getWindowByWorkspaceName(workspaceName);
   if (!windowDef) {
     throw new Error(`Unable to launch workspace ${workspaceName}. Workspace is not registered to a workspace window`);
+  }
+  if (!canCurrentUserLaunchWorkspace2(storeState, workspaceName)) {
+    return false;
   }
 
   const { openedGroup } = storeState;
@@ -510,6 +558,9 @@ export const workspace2StoreActions = {
       throw new Error(
         `Child workspace ${childWorkspaceName} does not belong to the same workspace window as parent workspace ${parentWorkspaceName}`,
       );
+    }
+    if (!canCurrentUserLaunchWorkspace2(state, childWorkspaceName)) {
+      return state;
     }
 
     // as the request workspace should be a child workspace, the corresponding window

@@ -1,10 +1,10 @@
-import { useSession } from '@openmrs/esm-framework';
+import { getDefaultsFromConfigSchema, useConfig, useSession } from '@openmrs/esm-framework';
 import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { Field, Form, Formik, FormikProvider, useFormikContext } from 'formik';
 import { useCallback } from 'react';
 
-import type { FieldDefinition } from '../../../config-schema';
+import { esmPatientRegistrationSchema, type FieldDefinition, type RegistrationConfig } from '../../../config-schema';
 import { type FormValues } from '../../patient-registration.types';
 import { PatientRegistrationContext, type PatientRegistrationContextProps } from '../../patient-registration-context';
 import {
@@ -28,9 +28,11 @@ vi.mock('./person-attributes.resource', () => ({
 
 const mockUseConceptAnswers = vi.mocked(useConceptAnswers);
 const mockUsePersonAttributeType = vi.mocked(usePersonAttributeType);
+const mockUseConfig = vi.mocked(useConfig<RegistrationConfig>);
 const mockUseSession = vi.mocked(useSession);
 const nationalityAttributeTypeUuid = 'nationality-attribute-type-uuid';
 const unitedStatesConceptUuid = 'cb760cd0-e4dd-49cb-86c3-c3d4bde3b230';
+const unidentifiedPatientAttributeTypeUuid = '8b56eac7-5c76-4b9c-8c6f-1deab8d3fc47';
 
 const nationalityFieldDefinition = {
   id: 'nationality',
@@ -132,6 +134,7 @@ function StatefulNationalityFieldTestHarness({ onSetFieldValue }: { onSetFieldVa
 
 describe('NationalityField', () => {
   beforeEach(() => {
+    mockUseConfig.mockReturnValue(getDefaultsFromConfigSchema(esmPatientRegistrationSchema) as RegistrationConfig);
     mockUseSession.mockReturnValue({
       authenticated: true,
       sessionId: 'session-id',
@@ -176,6 +179,7 @@ describe('NationalityField', () => {
       expect(setFieldValue).toHaveBeenCalledWith(
         `attributes.${nationalityAttributeTypeUuid}`,
         peruNationalityConceptUuid,
+        false,
       ),
     );
   });
@@ -237,6 +241,47 @@ describe('NationalityField', () => {
     await waitFor(() => expect(onSetFieldValue).toHaveBeenCalledTimes(3));
   });
 
+  it('does not auto-assign Peru when the nationality catalog cannot be loaded', () => {
+    mockUseConceptAnswers.mockReturnValue({
+      data: undefined,
+      isLoading: false,
+      error: new Error('Forbidden'),
+    });
+
+    const { setFieldValue } = renderNationalityField({ identifiers: { dni: dniIdentifier } });
+
+    expect(setFieldValue).not.toHaveBeenCalled();
+    expect(screen.getByText('No se pudo validar la nacionalidad')).toBeInTheDocument();
+    expect(screen.queryByText('Forbidden')).not.toBeInTheDocument();
+  });
+
+  it('shows that DNI registration is waiting while the nationality catalog loads', () => {
+    mockUseConceptAnswers.mockReturnValue({
+      data: undefined,
+      isLoading: true,
+      error: undefined,
+    });
+
+    const { setFieldValue } = renderNationalityField({ identifiers: { dni: dniIdentifier } });
+
+    expect(setFieldValue).not.toHaveBeenCalled();
+    expect(screen.getByText('Validating nationality catalog...')).toBeInTheDocument();
+  });
+
+  it('does not auto-assign a concept that is absent from the deployed nationality set', () => {
+    mockUseConceptAnswers.mockReturnValue({
+      data: [{ uuid: unitedStatesConceptUuid, display: 'Estados Unidos de América' }],
+      isLoading: false,
+      error: null,
+    });
+
+    const { setFieldValue } = renderNationalityField({ identifiers: { dni: dniIdentifier } });
+
+    expect(setFieldValue).not.toHaveBeenCalled();
+    expect(screen.getByText('No se pudo validar la nacionalidad')).toBeInTheDocument();
+    expect(screen.queryByRole('combobox', { name: /Nacionalidad/u })).not.toBeInTheDocument();
+  });
+
   it('does not infer nationality from an empty DNI field', () => {
     const { setFieldValue } = renderNationalityField({
       identifiers: { dni: buildIdentifier(peruDniPatientIdentifierTypeUuid, '') },
@@ -257,6 +302,16 @@ describe('NationalityField', () => {
 
   it('does not infer nationality from a foreign identity document', () => {
     const { setFieldValue } = renderNationalityField({ identifiers: { ce: carnetExtranjeriaIdentifier } });
+
+    expect(screen.getByRole('combobox', { name: /Nacionalidad/u })).not.toBeDisabled();
+    expect(setFieldValue).not.toHaveBeenCalled();
+  });
+
+  it('does not infer nationality from stale DNI data when the patient is marked unidentified', () => {
+    const { setFieldValue } = renderNationalityField({
+      attributes: { [unidentifiedPatientAttributeTypeUuid]: 'true' },
+      identifiers: { dni: dniIdentifier },
+    });
 
     expect(screen.getByRole('combobox', { name: /Nacionalidad/u })).not.toBeDisabled();
     expect(setFieldValue).not.toHaveBeenCalled();
@@ -286,7 +341,9 @@ describe('NationalityField', () => {
   it('clears only a Peru nationality automatically assigned during the current edit', async () => {
     const { rerenderWithValues, setFieldValue } = renderNationalityField({ identifiers: { dni: dniIdentifier } });
 
-    await waitFor(() => expect(setFieldValue).toHaveBeenCalledWith(expect.any(String), peruNationalityConceptUuid));
+    await waitFor(() =>
+      expect(setFieldValue).toHaveBeenCalledWith(expect.any(String), peruNationalityConceptUuid, false),
+    );
     setFieldValue.mockClear();
 
     rerenderWithValues({
@@ -294,7 +351,9 @@ describe('NationalityField', () => {
       identifiers: { ce: carnetExtranjeriaIdentifier },
     });
 
-    await waitFor(() => expect(setFieldValue).toHaveBeenCalledWith(`attributes.${nationalityAttributeTypeUuid}`, ''));
+    await waitFor(() =>
+      expect(setFieldValue).toHaveBeenCalledWith(`attributes.${nationalityAttributeTypeUuid}`, '', false),
+    );
   });
 
   it('does not clear an existing Peru nationality after editing a patient with DNI', () => {

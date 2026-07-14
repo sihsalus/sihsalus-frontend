@@ -13,6 +13,11 @@ import { CodedPersonAttributeField } from './coded-person-attribute-field.compon
 
 const mockUseConceptAnswers = vi.mocked(useConceptAnswers);
 
+function ValidationErrors() {
+  const { errors } = useFormikContext();
+  return <output data-testid="validation-errors">{JSON.stringify(errors)}</output>;
+}
+
 vi.mock('../field.resource', async () => ({
   ...(await vi.importActual('../field.resource')),
   useConceptAnswers: vi.fn(),
@@ -479,6 +484,76 @@ describe('CodedPersonAttributeField', () => {
 
     await waitFor(() => expect(handleSubmit).not.toHaveBeenCalled());
     expect(screen.getByText('Select a valid option from the configured catalog')).toBeInTheDocument();
+  });
+
+  it('blocks an existing enforced value when the configured answer set cannot be loaded', async () => {
+    const user = userEvent.setup();
+    const handleSubmit = vi.fn();
+    mockUseConceptAnswers.mockReturnValue({
+      data: [],
+      isLoading: false,
+      error: Object.assign(new Error('Forbidden'), { response: { status: 403 } }),
+    });
+
+    render(
+      <Formik initialValues={{ attributes: { [personAttributeType.uuid]: '1' } }} onSubmit={handleSubmit}>
+        <Form>
+          <CodedPersonAttributeField
+            id="attributeId"
+            personAttributeType={personAttributeType}
+            answerConceptSetUuid={answerConceptSetUuid}
+            label={personAttributeType.display}
+            customConceptAnswers={[]}
+            required={false}
+            enforceAnswerSetMembership
+          />
+          <ValidationErrors />
+          <button type="submit">Save</button>
+        </Form>
+      </Formik>,
+    );
+
+    await user.click(screen.getByRole('button', { name: 'Save' }));
+
+    await waitFor(() => {
+      expect(screen.getByTestId('validation-errors')).toHaveTextContent(
+        'The selected value cannot be verified against the configured catalog',
+      );
+    });
+    expect(handleSubmit).not.toHaveBeenCalled();
+  });
+
+  it('blocks an existing enforced value while the configured answer set is still loading', async () => {
+    const user = userEvent.setup();
+    const handleSubmit = vi.fn();
+    mockUseConceptAnswers.mockReturnValue({ data: undefined, isLoading: true, error: undefined });
+
+    render(
+      <Formik initialValues={{ attributes: { [personAttributeType.uuid]: '1' } }} onSubmit={handleSubmit}>
+        <Form>
+          <CodedPersonAttributeField
+            id="attributeId"
+            personAttributeType={personAttributeType}
+            answerConceptSetUuid={answerConceptSetUuid}
+            label={personAttributeType.display}
+            customConceptAnswers={[]}
+            required={false}
+            enforceAnswerSetMembership
+          />
+          <ValidationErrors />
+          <button type="submit">Save</button>
+        </Form>
+      </Formik>,
+    );
+
+    await user.click(screen.getByRole('button', { name: 'Save' }));
+
+    await waitFor(() => {
+      expect(screen.getByTestId('validation-errors')).toHaveTextContent(
+        'Wait until the configured catalog has been validated',
+      );
+    });
+    expect(handleSubmit).not.toHaveBeenCalled();
   });
 
   it('shows an inline warning without reporting a forbidden response as an invalid answer set', () => {

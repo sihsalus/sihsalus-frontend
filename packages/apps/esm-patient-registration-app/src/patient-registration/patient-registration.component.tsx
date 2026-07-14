@@ -1,7 +1,7 @@
 import { Button, InlineLoading, InlineNotification, Link } from '@carbon/react';
 import { XAxis } from '@carbon/react/icons';
 import {
-  createErrorHandler,
+  getUserFacingErrorMessage,
   interpolateUrl,
   isDesktop,
   showSnackbar,
@@ -39,7 +39,7 @@ import {
 import { cancelRegistration, filterOutUndefinedPatientIdentifiers, scrollIntoView } from './patient-registration-utils';
 import { getEffectiveRegistrationConfig } from './peru-registration-config';
 import { SectionWrapper } from './section/section-wrapper.component';
-import { getValidationSchema } from './validation/patient-registration-validation';
+import { getValidationSchema, requiresDniNationalityVerification } from './validation/patient-registration-validation';
 
 export const initialFormValues = createInitialFormValues();
 
@@ -93,14 +93,9 @@ interface RegistrationSubmitError {
   message?: string;
   responseBody?: {
     error?: {
-      globalErrors?: Array<{ message?: string }>;
       message?: string;
     };
   };
-}
-
-function isRegistrationSubmitError(error: unknown): error is RegistrationSubmitError {
-  return typeof error === 'object' && error !== null && 'responseBody' in error;
 }
 
 function isSessionExpired(error: unknown): boolean {
@@ -440,14 +435,19 @@ export const PatientRegistration: React.FC<PatientRegistrationProps> = ({ savePa
           subtitle: t('sessionExpiredError', 'Your session has expired. Please sign in again.'),
           kind: 'error',
         });
-      } else if (isRegistrationSubmitError(error) && error.responseBody?.error?.globalErrors) {
-        error.responseBody.error.globalErrors.forEach((globalError) => {
-          showSnackbar({ title: errorTitle, subtitle: globalError.message, kind: 'error' });
-        });
-      } else if (isRegistrationSubmitError(error) && error.responseBody?.error?.message) {
-        showSnackbar({ title: errorTitle, subtitle: error.responseBody.error.message, kind: 'error' });
       } else {
-        createErrorHandler()(error);
+        showSnackbar({
+          title: errorTitle,
+          subtitle: getUserFacingErrorMessage(
+            error,
+            t(
+              'patientRegistrationSafeError',
+              'Could not complete the registration. Try again or contact the system administrator.',
+            ),
+            { logContext: inEditMode ? 'Update patient registration' : 'Create patient registration' },
+          ),
+          kind: 'error',
+        });
       }
 
       helpers.setSubmitting(false);
@@ -519,8 +519,8 @@ export const PatientRegistration: React.FC<PatientRegistrationProps> = ({ savePa
 
     return (
       <ul style={{ listStyle: 'inside' }}>
-        {errorMessages.map((error) => (
-          <li key={error}>{error}</li>
+        {errorMessages.map((validationMessage) => (
+          <li key={validationMessage}>{validationMessage}</li>
         ))}
       </ul>
     );
@@ -565,10 +565,11 @@ export const PatientRegistration: React.FC<PatientRegistrationProps> = ({ savePa
         hideCloseButton
         kind="error"
         title={t('patientRegistrationLoadErrorTitle', 'No se pudo cargar el registro del paciente')}
-        subtitle={
-          initialDataError?.message ??
-          t('patientRegistrationLoadErrorSubtitle', 'Recargue la página o contacte al administrador del sistema.')
-        }
+        subtitle={getUserFacingErrorMessage(
+          initialDataError,
+          t('patientRegistrationLoadErrorSubtitle', 'Recargue la página o contacte al administrador del sistema.'),
+          { logContext: 'Load patient registration' },
+        )}
       />
     );
   }
@@ -576,6 +577,7 @@ export const PatientRegistration: React.FC<PatientRegistrationProps> = ({ savePa
   return (
     <Formik initialValues={initialFormValuesState} validationSchema={validationSchema} onSubmit={onFormSubmit}>
       {(props) => {
+        const isDniNationalityVerificationPending = requiresDniNationalityVerification(props.values, config);
         const handleRegisterPatient = async () => {
           const errors = await props.validateForm();
 
@@ -600,6 +602,7 @@ export const PatientRegistration: React.FC<PatientRegistrationProps> = ({ savePa
               disabled={
                 !currentSession ||
                 areIdentifiersUnavailableForSubmit(!!Object.keys(props.values.identifiers ?? {}).length) ||
+                isDniNationalityVerificationPending ||
                 props.isSubmitting
               }
             >

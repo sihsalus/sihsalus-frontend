@@ -60,7 +60,7 @@
       "component": "conditionsWidget"
     },
     {
-      "name": "condition-delete-confirmation-dialog",
+      "name": "patient-conditions-delete-confirmation-dialog",
       "component": "conditionDeleteConfirmationDialog",
       "privileges": "app:hoja.clinica.condiciones.editar"
     }

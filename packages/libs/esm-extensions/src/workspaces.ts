@@ -18,6 +18,7 @@ export interface WorkspaceRegistration {
   load(): Promise<LifeCycles>;
   moduleName: string;
   groups: Array<string>;
+  privileges?: string | Array<string>;
 }
 
 export type WorkspaceGroupRegistration = WorkspaceGroupDefinition & {
@@ -52,6 +53,7 @@ export interface RegisterWorkspaceOptions {
   component: string;
   moduleName: string;
   groups?: Array<string>;
+  privileges?: string | Array<string>;
   load(): Promise<LifeCycles>;
 }
 
@@ -61,21 +63,30 @@ export interface RegisterWorkspaceOptions {
  * @internal
  */
 export function registerWorkspace(workspace: RegisterWorkspaceOptions) {
-  workspaceRegistrationStore.setState((state) => ({
-    workspaces: {
-      ...state.workspaces,
-      [workspace.name]: {
-        ...workspace,
-        load: workspace.load,
-        preferredWindowSize: workspace.preferredWindowSize ?? 'normal',
-        type: workspace.type ?? 'form',
-        canHide: workspace.canHide ?? false,
-        canMaximize: workspace.canMaximize ?? false,
-        width: workspace.width ?? 'narrow',
-        groups: workspace.groups ?? [],
+  workspaceRegistrationStore.setState((state) => {
+    const existingRegistration = state.workspaces[workspace.name];
+    if (existingRegistration && existingRegistration.moduleName !== workspace.moduleName) {
+      throw new Error(
+        `Workspace '${workspace.name}' is already registered by '${existingRegistration.moduleName}' and cannot be replaced by '${workspace.moduleName}'.`,
+      );
+    }
+
+    return {
+      workspaces: {
+        ...state.workspaces,
+        [workspace.name]: {
+          ...workspace,
+          load: workspace.load,
+          preferredWindowSize: workspace.preferredWindowSize ?? 'normal',
+          type: workspace.type ?? 'form',
+          canHide: workspace.canHide ?? false,
+          canMaximize: workspace.canMaximize ?? false,
+          width: workspace.width ?? 'narrow',
+          groups: workspace.groups ?? [],
+        },
       },
-    },
-  }));
+    };
+  });
 }
 
 /**
@@ -144,6 +155,7 @@ export function getWorkspaceRegistration(name: string): WorkspaceRegistration {
         canMaximize: workspaceExtension.meta?.canMaximize ?? false,
         width: workspaceExtension.meta?.width ?? 'narrow',
         groups: workspaceExtension.meta?.groups ?? [],
+        privileges: workspaceExtension.privileges,
       };
     } else {
       throw new Error(`No workspace named '${name}' has been registered.`);

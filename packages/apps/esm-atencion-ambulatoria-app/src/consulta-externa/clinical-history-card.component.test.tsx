@@ -2,27 +2,59 @@ import { render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import ClinicalHistoryCard from './clinical-history-card.component';
 
+const mockT = vi.hoisted(() =>
+  vi.fn(
+    (
+      key: string,
+      defaultValue?: string,
+      options: {
+        displayText?: string;
+        interpolation?: { escapeValue?: boolean };
+        title?: string;
+      } = {},
+    ) => {
+      let translation = defaultValue ?? key;
+      for (const variableName of ['displayText', 'title'] as const) {
+        const interpolationValue = options[variableName];
+        if (interpolationValue) {
+          const value =
+            options.interpolation?.escapeValue === false
+              ? interpolationValue
+              : interpolationValue.replaceAll('&', '&amp;').replaceAll('/', '&#x2F;');
+          translation = translation.replace(`{{${variableName}}}`, value);
+        }
+      }
+      return translation;
+    },
+  ),
+);
+
+vi.mock('react-i18next', () => ({
+  useTranslation: () => ({ t: mockT }),
+}));
+
 interface EmptyStateMockProps {
   displayText: string;
   headerTitle: string;
   launchForm?: () => void;
 }
 
-vi.mock('@openmrs/esm-patient-common-lib', async () => {
-  const actual = await vi.importActual('@openmrs/esm-patient-common-lib');
-
-  return {
-    ...actual,
-    EmptyState: ({ displayText, headerTitle, launchForm }: EmptyStateMockProps) => (
-      <section data-testid="empty-state" data-display-text={displayText} aria-label={headerTitle}>
-        <button type="button" onClick={launchForm}>
-          Registrar
-        </button>
-      </section>
-    ),
-    ErrorState: ({ headerTitle }: { headerTitle: string }) => <div role="alert">{headerTitle}</div>,
-  };
-});
+vi.mock('@openmrs/esm-patient-common-lib', () => ({
+  CardHeader: ({ children, title }: { children?: React.ReactNode; title: string }) => (
+    <header>
+      <h4>{title}</h4>
+      {children}
+    </header>
+  ),
+  EmptyState: ({ displayText, headerTitle, launchForm }: EmptyStateMockProps) => (
+    <section data-testid="empty-state" data-display-text={displayText} aria-label={headerTitle}>
+      <button type="button" onClick={launchForm}>
+        Registrar
+      </button>
+    </section>
+  ),
+  ErrorState: ({ headerTitle }: { headerTitle: string }) => <div role="alert">{headerTitle}</div>,
+}));
 
 const defaultProps = {
   emptyDisplayText: 'registros clínicos',
@@ -30,6 +62,10 @@ const defaultProps = {
 };
 
 describe('ClinicalHistoryCard', () => {
+  beforeEach(() => {
+    mockT.mockClear();
+  });
+
   it('renders a table skeleton with the configured columns', () => {
     const skeletonHeaders = [
       { key: 'date', header: 'Fecha' },
@@ -97,13 +133,31 @@ describe('ClinicalHistoryCard', () => {
   it('keeps pagination available when the current page has no section data', async () => {
     const user = userEvent.setup();
     const onPageChange = vi.fn();
+    const emptyDisplayText = 'registros de examen físico / SOAP';
+    const title = 'Historial de examen físico / SOAP';
 
     render(
-      <ClinicalHistoryCard {...defaultProps} empty pagination={{ currentPage: 1, totalPages: 3, onPageChange }} />,
+      <ClinicalHistoryCard
+        {...defaultProps}
+        empty
+        emptyDisplayText={emptyDisplayText}
+        pagination={{ currentPage: 1, totalPages: 3, onPageChange }}
+        title={title}
+      />,
     );
 
     expect(screen.queryByTestId('empty-state')).not.toBeInTheDocument();
-    expect(screen.getByRole('status')).toHaveTextContent(/registros clínicos/);
+    expect(screen.getByRole('status')).toHaveTextContent('No hay registros de examen físico / SOAP en esta página.');
+    expect(screen.getByRole('status')).not.toHaveTextContent('&#x2F;');
+    expect(screen.getByLabelText(`Páginas de ${title}`)).toBeInTheDocument();
+    expect(mockT).toHaveBeenCalledWith('noClinicalHistoryOnThisPage', 'No hay {{displayText}} en esta página.', {
+      displayText: emptyDisplayText,
+      interpolation: { escapeValue: false },
+    });
+    expect(mockT).toHaveBeenCalledWith('clinicalHistoryPagination', 'Páginas de {{title}}', {
+      title,
+      interpolation: { escapeValue: false },
+    });
     await user.click(screen.getByRole('button', { name: 'Page 2' }));
     expect(onPageChange).toHaveBeenCalledWith(2);
   });

@@ -4,8 +4,11 @@ import { chromium, request } from '@playwright/test';
 import { getOpenmrsBaseUrl, getSpaBaseUrl } from './e2e-urls.mjs';
 
 const spaBase = getSpaBaseUrl('http://localhost:8090/openmrs/spa');
-const username = process.env.E2E_USERNAME ?? 'admin';
-const password = process.env.E2E_PASSWORD ?? 'Admin123';
+const username = process.env.E2E_USERNAME?.trim();
+const password = process.env.E2E_PASSWORD;
+if (!username || !password) {
+  throw new Error('E2E_USERNAME and E2E_PASSWORD are required for this synthetic test script.');
+}
 const openmrsBase = getOpenmrsBaseUrl('http://localhost:8090/openmrs/spa');
 const outputDir = path.resolve('e2e/screenshots');
 const screenshotPath = path.join(outputDir, 'patient-registration-concepts-after-import.png');

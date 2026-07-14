@@ -16,8 +16,8 @@ const optionalEnvKeys = [
   'E2E_API_BASE_URL',
   'E2E_SKIP_AUTH',
   'E2E_DISABLE_WEB_SERVER',
-  'E2E_USER_ADMIN_USERNAME',
-  'E2E_USER_ADMIN_PASSWORD',
+  'E2E_USERNAME',
+  'E2E_PASSWORD',
   'E2E_LOGIN_DEFAULT_LOCATION_UUID',
 ];
 const urlEnvKeys = ['SIHSALUS_BACKEND_URL', 'SIHSALUS_FHIR_BASE', 'E2E_BASE_URL', 'E2E_API_BASE_URL'];
@@ -322,7 +322,7 @@ async function checkOpenmrsSession(url, options) {
   }
 
   if (!options.authHeaders) {
-    warn('OpenMRS authenticated session check skipped; configure E2E_USER_ADMIN_USERNAME and E2E_USER_ADMIN_PASSWORD');
+    warn('OpenMRS authenticated session check skipped; configure E2E_USERNAME and E2E_PASSWORD');
     return;
   }
 
@@ -380,7 +380,7 @@ async function checkFhirMetadata(rawUrl, options) {
 
   if ((result.status === 401 || result.status === 403) && !options.authHeaders) {
     warn(
-      `FHIR metadata endpoint requires auth (${result.status}); configure E2E_USER_ADMIN_USERNAME and E2E_USER_ADMIN_PASSWORD`,
+      `FHIR metadata endpoint requires auth (${result.status}); configure E2E_USERNAME and E2E_PASSWORD`,
     );
     return;
   }
@@ -457,8 +457,8 @@ function requestUrl(url, options) {
 }
 
 function getBasicAuthHeaders(fileValues) {
-  const username = getEnvValue(fileValues, 'E2E_USER_ADMIN_USERNAME');
-  const password = getEnvValue(fileValues, 'E2E_USER_ADMIN_PASSWORD');
+  const username = getEnvValue(fileValues, 'E2E_USERNAME');
+  const password = getEnvValue(fileValues, 'E2E_PASSWORD');
   if (!username || !password) {
     return null;
   }

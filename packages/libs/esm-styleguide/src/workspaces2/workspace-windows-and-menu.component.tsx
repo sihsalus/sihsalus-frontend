@@ -1,5 +1,6 @@
-import { subscribeOpenmrsEvent } from '@openmrs/esm-emr-api';
 import { userHasAccess } from '@openmrs/esm-api';
+import { subscribeOpenmrsEvent } from '@openmrs/esm-emr-api';
+import { type OpenedWindow, type WorkspaceStoreState2 } from '@openmrs/esm-extensions';
 import { useSession } from '@openmrs/esm-react-utils';
 import classNames from 'classnames';
 import { useEffect } from 'react';
@@ -8,7 +9,7 @@ import { ActionMenu } from './action-menu2/action-menu2.component';
 import ActiveWorkspaceWindow from './active-workspace-window.component';
 import { shouldCloseOnUrlChange } from './scope-utils';
 import styles from './workspace-windows-and-menu.module.scss';
-import { closeWorkspaceGroup2, useWorkspace2Store } from './workspace2';
+import { canLaunchWorkspace2, closeWorkspaceGroup2, useWorkspace2Store } from './workspace2';
 
 type AccessUser = Parameters<typeof userHasAccess>[1];
 
@@ -16,7 +17,17 @@ export function canDisplayWorkspaceWindow(
   privileges: string | Array<string> | undefined,
   user: AccessUser | undefined,
 ) {
-  return !privileges || Boolean(user && userHasAccess(privileges, user));
+  const hasDeclaredPrivileges =
+    typeof privileges === 'string' ? privileges.trim().length > 0 : Boolean(privileges?.length);
+  return !hasDeclaredPrivileges || Boolean(user && privileges && userHasAccess(privileges, user));
+}
+
+export function canDisplayOpenedWorkspaceWindow(
+  state: WorkspaceStoreState2,
+  openedWindow: OpenedWindow,
+  user: AccessUser | undefined,
+) {
+  return openedWindow.openedWorkspaces.every((workspace) => canLaunchWorkspace2(state, workspace.workspaceName, user));
 }
 
 export function renderWorkspaceWindowsAndMenu(target: HTMLElement | null) {
@@ -31,7 +42,8 @@ export function renderWorkspaceWindowsAndMenu(target: HTMLElement | null) {
  * and all the active workspace windows within that group.
  */
 function WorkspaceWindowsAndMenu() {
-  const { openedGroup, openedWindows, registeredGroupsByName, registeredWindowsByName } = useWorkspace2Store();
+  const workspaceState = useWorkspace2Store();
+  const { openedGroup, openedWindows, registeredGroupsByName, registeredWindowsByName } = workspaceState;
   const { user } = useSession();
 
   useEffect(() => {
@@ -78,7 +90,10 @@ function WorkspaceWindowsAndMenu() {
   }
 
   const group = registeredGroupsByName[openedGroup.groupName];
-  const hasMaximizedWindow = openedWindows.some((window) => window.maximized);
+  const visibleOpenedWindows = openedWindows.filter((window) =>
+    canDisplayOpenedWorkspaceWindow(workspaceState, window, user),
+  );
+  const hasMaximizedWindow = visibleOpenedWindows.some((window) => window.maximized);
 
   const { name: groupName } = group;
   const windowsWithIcons = Object.values(registeredWindowsByName)
@@ -99,7 +114,7 @@ function WorkspaceWindowsAndMenu() {
       })}
     >
       <div className={styles.workspaceWindowsContainer}>
-        {openedWindows.map((openedWindow) => {
+        {visibleOpenedWindows.map((openedWindow) => {
           return (
             <ActiveWorkspaceWindow
               key={openedWindow.windowName}

@@ -34,7 +34,8 @@
     {
       "name": "visit-notes-form-workspace",
       "component": "visitNotesFormWorkspace",
-      "window": "visit-note"
+      "window": "visit-note",
+      "privileges": "app:hoja.clinica.resumenConsulta"
     }
   ],
   "workspaceWindows2": [

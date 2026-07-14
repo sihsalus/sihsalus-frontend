@@ -19,7 +19,7 @@ export const ConditionsActionMenu = ({ condition, patientUuid }: conditionsActio
 
   const launchEditConditionsForm = useCallback(
     () =>
-      launchWorkspace2('maternal-conditions-form-workspace', {
+      launchWorkspace2('cred-maternal-conditions-form-workspace', {
         workspaceTitle: t('editCondition', 'Edit a Condition'),
         condition,
         formContext: 'editing',
@@ -28,7 +28,7 @@ export const ConditionsActionMenu = ({ condition, patientUuid }: conditionsActio
   );
 
   const launchDeleteConditionDialog = (conditionId: string) => {
-    const dispose = showModal('condition-delete-confirmation-dialog', {
+    const dispose = showModal('cred-condition-delete-confirmation-dialog', {
       closeDeleteModal: () => dispose(),
       conditionId,
       patientUuid,

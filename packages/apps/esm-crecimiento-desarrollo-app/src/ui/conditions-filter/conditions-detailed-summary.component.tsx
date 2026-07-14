@@ -92,7 +92,7 @@ function ConditionsDetailedSummary({ patient }) {
 
   const launchConditionsForm = useCallback(
     () =>
-      launchWorkspace2('maternal-conditions-form-workspace', {
+      launchWorkspace2('cred-maternal-conditions-form-workspace', {
         formContext: 'creating',
       }),
     [],

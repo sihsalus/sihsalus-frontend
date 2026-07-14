@@ -46,7 +46,7 @@
     "node-watch": "^0.7.4",
     "npm-registry-fetch": "^14.0.5",
     "open": "^10.1.1",
-    "pacote": "^15.0.0",
+    "pacote": "^21.2.0",
     "rimraf": "^6.0.1",
     "semver": "^7.7.3",
     "tar": "^7.5.3",

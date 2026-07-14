@@ -6,6 +6,7 @@ import { useTranslation } from 'react-i18next';
 
 import type { Config } from '../config-schema';
 import { fuaReadPrivilege } from '../constant';
+import { createInertFuaHtml, resolveTrustedFuaEndpoint } from '../utils/fua-html-security';
 
 import styles from './fua-viewer-page.scss';
 
@@ -25,7 +26,21 @@ const FuaViewerPageContent: React.FC = () => {
         setIsLoading(true);
         setError(null);
 
-        const response = await fetch(endpoint, { signal: abortController.signal });
+        const trustedEndpoint = resolveTrustedFuaEndpoint(endpoint, window.location.origin);
+        if (!trustedEndpoint) {
+          throw new Error(
+            t(
+              'fuaEndpointUnavailable',
+              'The FUA viewer requires a secure same-origin endpoint configured by an administrator.',
+            ),
+          );
+        }
+
+        const response = await fetch(trustedEndpoint, {
+          credentials: 'same-origin',
+          referrerPolicy: 'no-referrer',
+          signal: abortController.signal,
+        });
 
         if (!response.ok) {
           throw new Error(
@@ -38,7 +53,9 @@ const FuaViewerPageContent: React.FC = () => {
       } catch (err) {
         if (abortController.signal.aborted) return;
         const errorMessage =
-          err instanceof Error ? err.message : t('unknownErrorLoadingContent', 'Unknown error loading content');
+          err instanceof Error && err.message === t('fuaEndpointUnavailable')
+            ? err.message
+            : t('errorLoadingFuaViewer', 'Error loading FUA viewer');
         setError(errorMessage);
         showSnackbar({
           title: t('errorLoadingFua', 'Error loading FUA'),
@@ -70,28 +87,6 @@ const FuaViewerPageContent: React.FC = () => {
       <div className={styles.errorContainer}>
         <h3>{t('errorLoadingFuaViewer', 'Error loading FUA viewer')}</h3>
         <p>{error}</p>
-        <details>
-          <summary>{t('technicalInfo', 'Technical information')}</summary>
-          <p>
-            <strong>{t('endpoint', 'Endpoint')}:</strong> {endpoint}
-          </p>
-          <p>
-            <strong>{t('possibleCauses', 'Possible causes')}:</strong>
-          </p>
-          <ul>
-            <li>{t('serverNotResponding', 'The server is not responding')}</li>
-            <li>{t('corsBlocking', 'CORS policies blocking the connection')}</li>
-            <li>{t('incorrectEndpoint', 'The configured endpoint is incorrect')}</li>
-          </ul>
-          <p>
-            <strong>{t('solutions', 'Solutions')}:</strong>
-          </p>
-          <ul>
-            <li>{t('verifyServer', 'Verify that the server is running')}</li>
-            <li>{t('testEndpoint', 'Test the endpoint directly in your browser')}</li>
-            <li>{t('contactAdmin', 'Contact the system administrator')}</li>
-          </ul>
-        </details>
       </div>
     );
   }
@@ -99,10 +94,11 @@ const FuaViewerPageContent: React.FC = () => {
   return (
     <div className={styles.pageContainer}>
       <iframe
-        srcDoc={htmlContent}
+        srcDoc={createInertFuaHtml(htmlContent)}
         title={t('fuaViewer', 'FUA Viewer')}
         className={styles.fullIframe}
-        sandbox="allow-scripts allow-same-origin allow-popups allow-popups-to-escape-sandbox allow-forms"
+        referrerPolicy="no-referrer"
+        sandbox=""
       />
     </div>
   );

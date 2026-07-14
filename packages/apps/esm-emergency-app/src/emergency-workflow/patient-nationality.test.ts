@@ -47,6 +47,16 @@ describe('patient nationality', () => {
     ).toThrow(/no pertenece al catálogo/u);
   });
 
+  it('fails closed when a nationality exists but the configured catalog is unavailable', () => {
+    expect(() =>
+      buildNationalityAttribute({
+        attributeTypeUuid,
+        isUnknown: false,
+        nationality: peruConceptUuid,
+      }),
+    ).toThrow(/catálogo configurado no está disponible/u);
+  });
+
   it('recognizes concept UUIDs but not ISO country codes', () => {
     expect(isNationalityConceptUuid(peruConceptUuid)).toBe(true);
     expect(isNationalityConceptUuid('PE')).toBe(false);

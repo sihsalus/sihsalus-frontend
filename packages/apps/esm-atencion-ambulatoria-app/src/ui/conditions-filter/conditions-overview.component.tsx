@@ -91,7 +91,7 @@ const ConditionsOverview: React.FC<ConditionsOverviewProps> = ({ patientUuid }) 
   //TODO UPDATE THIS TO ASK FOR A VISIT FIRST
   const launchConditionsForm = useCallback(
     () =>
-      launchWorkspace('conditions-filter-form-workspace', {
+      launchWorkspace('ambulatory-conditions-filter-form-workspace', {
         formContext: 'creating',
       }),
     [],

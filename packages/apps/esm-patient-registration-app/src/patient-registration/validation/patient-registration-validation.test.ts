@@ -2,9 +2,13 @@ import { getConfig } from '@openmrs/esm-framework';
 import dayjs from 'dayjs';
 
 import { type RegistrationConfig } from '../../config-schema';
-import { peruNationalityConceptUuid } from '../peru-registration-config';
+import { peruDniPatientIdentifierTypeUuid, peruNationalityConceptUuid } from '../peru-registration-config';
 
-import { getValidationSchema, isMinorPatient } from './patient-registration-validation';
+import {
+  getValidationSchema,
+  isMinorPatient,
+  requiresDniNationalityVerification,
+} from './patient-registration-validation';
 
 const mockGetConfig = vi.mocked(getConfig);
 const phoneAttributeUuid = '14d4f066-15f5-102d-96e4-000c29c2a5d7';
@@ -293,6 +297,70 @@ describe('Patient registration validation', () => {
       attributes: { [nationalityAttributeUuid]: 'PE' },
     });
     expect(validationError).toBeTruthy();
+  });
+
+  it('should block a completed DNI until its nationality has been verified', async () => {
+    const identifierTypes = [
+      {
+        fieldName: 'dni',
+        format: '^[0-9]{8}$',
+        name: 'DNI',
+        uuid: peruDniPatientIdentifierTypeUuid,
+      },
+    ];
+    const valuesWithDni = {
+      ...validFormValues,
+      identifiers: {
+        dni: {
+          required: true,
+          identifierValue: '12345678',
+          identifierTypeUuid: peruDniPatientIdentifierTypeUuid,
+        },
+      },
+    };
+
+    const validationError = await validateFormValues(valuesWithDni, identifierTypes);
+    expect(validationError.inner).toContainEqual(
+      expect.objectContaining({
+        path: `attributes.${nationalityAttributeUuid}`,
+        message: 'nationalityRequiredForDni',
+      }),
+    );
+
+    expect(
+      await validateFormValues(
+        {
+          ...valuesWithDni,
+          attributes: { [nationalityAttributeUuid]: peruNationalityConceptUuid },
+        },
+        identifierTypes,
+      ),
+    ).toBeFalsy();
+  });
+
+  it('does not require nationality from stale DNI data for an unidentified patient', async () => {
+    const config = (await getConfig('@openmrs/esm-patient-registration-app')) as unknown as RegistrationConfig;
+
+    expect(
+      requiresDniNationalityVerification(
+        {
+          ...validFormValues,
+          attributes: { 'unknown-patient-attribute': 'true' },
+          identifiers: {
+            dni: {
+              required: false,
+              initialValue: '',
+              identifierName: 'DNI',
+              identifierValue: '12345678',
+              identifierTypeUuid: peruDniPatientIdentifierTypeUuid,
+              preferred: false,
+              selectedSource: undefined,
+            },
+          },
+        },
+        config,
+      ),
+    ).toBe(false);
   });
 
   it('should allow mobile phone contact attributes with an international prefix', async () => {

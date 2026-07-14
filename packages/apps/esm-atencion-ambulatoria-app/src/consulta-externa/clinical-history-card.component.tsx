@@ -104,6 +104,7 @@ const ClinicalHistoryCard: React.FC<ClinicalHistoryCardProps> = ({
           <p className={styles.emptyPage} role="status">
             {t('noClinicalHistoryOnThisPage', 'No hay {{displayText}} en esta página.', {
               displayText: emptyDisplayText,
+              interpolation: { escapeValue: false },
             })}
           </p>
         ) : (
@@ -113,7 +114,10 @@ const ClinicalHistoryCard: React.FC<ClinicalHistoryCardProps> = ({
       {hasPagination ? (
         <div className={styles.pagination}>
           <PaginationNav
-            aria-label={t('clinicalHistoryPagination', 'Páginas de {{title}}', { title })}
+            aria-label={t('clinicalHistoryPagination', 'Páginas de {{title}}', {
+              title,
+              interpolation: { escapeValue: false },
+            })}
             itemsShown={5}
             onChange={(page) => pagination.onPageChange(page + 1)}
             page={pagination.currentPage - 1}

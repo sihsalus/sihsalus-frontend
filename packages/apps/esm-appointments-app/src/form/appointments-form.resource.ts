@@ -6,6 +6,7 @@ import useSWR, { useSWRConfig } from 'swr';
 
 import {
   type AppointmentPayload,
+  type AppointmentProviderDetails,
   type AppointmentService,
   type AppointmentsFetchResponse,
   type RecurringAppointmentsPayload,
@@ -153,6 +154,12 @@ export const cancelAppointment = async (toStatus: string, appointmentUuid: strin
   });
 };
 
+const isAssignedProviderForConflictCheck = (provider: AppointmentProviderDetails) =>
+  !provider.response || provider.response === 'ACCEPTED' || provider.response === 'AWAITING';
+
+const getAssignedProvidersForConflictCheck = (appointmentPayload: AppointmentPayload) =>
+  (appointmentPayload.providers ?? []).filter(isAssignedProviderForConflictCheck);
+
 export const checkAppointmentConflict = async (appointmentPayload: AppointmentPayload) => {
   return await openmrsFetch(`${restBaseUrl}/appointments/conflicts`, {
     method: 'POST',
@@ -160,11 +167,29 @@ export const checkAppointmentConflict = async (appointmentPayload: AppointmentPa
       uuid: appointmentPayload.uuid,
       patientUuid: appointmentPayload.patientUuid,
       serviceUuid: appointmentPayload.serviceUuid,
+      serviceTypeUuid: appointmentPayload.serviceTypeUuid,
       startDateTime: appointmentPayload.startDateTime,
       endDateTime: appointmentPayload.endDateTime,
-      providers: [],
+      // REJECTED and TENTATIVE associations are retained when saving an edit,
+      // but the backend conflict mapper otherwise treats every submitted
+      // association as an assigned provider.
+      providers: getAssignedProvidersForConflictCheck(appointmentPayload),
       locationUuid: appointmentPayload.locationUuid,
       appointmentKind: appointmentPayload.appointmentKind,
+    },
+    headers: { 'Content-Type': 'application/json' },
+  });
+};
+
+export const checkRecurringAppointmentConflict = async (payload: RecurringAppointmentsPayload) => {
+  return await openmrsFetch(`${restBaseUrl}/recurring-appointments/conflicts`, {
+    method: 'POST',
+    body: {
+      ...payload,
+      appointmentRequest: {
+        ...payload.appointmentRequest,
+        providers: getAssignedProvidersForConflictCheck(payload.appointmentRequest),
+      },
     },
     headers: { 'Content-Type': 'application/json' },
   });

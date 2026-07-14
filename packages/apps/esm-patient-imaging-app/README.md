@@ -361,8 +361,8 @@ Update your orthanc setup by replacing and adding the following files:
 
 ### Login to **OpenMRSMRS 2.x**
 - User: **admin**
-- Password: **Admin123**
-> **Note**: If logging in with `Admin123` doesn’t work:
+- Password: use the dedicated non-production credential supplied out of band.
+> **Note**: Never document or reuse an administrative password in this repository:
   - Use the password `test` to log in.
   - After logging in, go to your `Admin account` settings OpenMRS and change the password.
 
@@ -417,7 +417,7 @@ Update your orthanc setup by replacing and adding the following files:
     ```
 ### Login to **OpenMRS 3.x**
     - User: **admin**
-    - Password: **Admin123**
+    - Password: use the dedicated non-production credential supplied out of band.
 
 ## Orthanc configuration in OpenMRS
 To connect with Orthanc, add the following configuration:

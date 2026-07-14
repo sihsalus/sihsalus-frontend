@@ -9,7 +9,10 @@ import {
   MultipleActiveVisitQueueEntriesError,
   postQueueEntry,
   QUEUE_ENTRY_CREATION_UNVERIFIED,
+  QUEUE_ENTRY_SEARCH_INVALID_RESPONSE,
   QueueEntryCreationVerificationError,
+  QueueEntrySearchInvalidResponseError,
+  QueueTicketGenerationError,
 } from './queue-fields.resource';
 
 const mockOpenmrsFetch = vi.mocked(openmrsFetch);
@@ -187,6 +190,21 @@ describe('postQueueEntry', () => {
     expect(error).toBeInstanceOf(MultipleActiveVisitQueueEntriesError);
     expect(error.code).toBe(MULTIPLE_ACTIVE_VISIT_QUEUE_ENTRIES);
     expect(mockOpenmrsFetch).toHaveBeenCalledTimes(1);
+  });
+
+  it.each([
+    { data: {} },
+    { data: null },
+    {},
+  ])('fails closed on a malformed active-entry search response', async (response) => {
+    mockOpenmrsFetch.mockResolvedValueOnce(response as never);
+
+    const error = await createQueueEntry().catch((reason) => reason);
+
+    expect(error).toBeInstanceOf(QueueEntrySearchInvalidResponseError);
+    expect(error.code).toBe(QUEUE_ENTRY_SEARCH_INVALID_RESPONSE);
+    expect(mockOpenmrsFetch).toHaveBeenCalledTimes(1);
+    expect(mockOpenmrsFetch.mock.calls.some(([url]) => String(url).includes('/visit-queue-entry'))).toBe(false);
   });
 
   it('blocks creating a second active queue entry for the same visit', async () => {

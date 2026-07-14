@@ -1,4 +1,10 @@
-import { getDefaultsFromConfigSchema, useConfig, userHasAccess, useSession } from '@openmrs/esm-framework';
+import {
+  formatDatetime,
+  getDefaultsFromConfigSchema,
+  useConfig,
+  userHasAccess,
+  useSession,
+} from '@openmrs/esm-framework';
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { getByTextWithMarkup } from 'test-utils';
@@ -119,9 +125,56 @@ describe('AppointmentsTable', () => {
     await screen.findByRole('heading', { name: /scheduled appointment/i });
     expect(screen.getByRole('search', { name: /filter table/i })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: /download/i })).toBeInTheDocument();
-    expect(screen.getByRole('row', { name: /john wilson 100gej .* hiv clinic outpatient/i })).toBeInTheDocument();
+    expect(screen.getByRole('columnheader', { name: /date & time/i })).toBeInTheDocument();
+    expect(screen.getByText('100GEJ')).toBeInTheDocument();
+    expect(screen.getByText(formatDatetime(new Date(mockAppointments[0].startDateTime)))).toBeInTheDocument();
+    expect(screen.getByText('HIV Clinic')).toBeInTheDocument();
+    expect(screen.getByText('Outpatient')).toBeInTheDocument();
     expect(screen.getByRole('link', { name: /john wilson/i })).toBeInTheDocument();
     expect(screen.getByRole('link', { name: /john wilson/i })).toHaveAttribute('href', 'url-to-patient-chart');
+    expect(mockUseTodaysVisits).toHaveBeenCalledWith([mockAppointments[0].patient.uuid]);
+  });
+
+  it('shows both the service and its subtype without mislabelling the service as a subtype', async () => {
+    const appointmentWithSubtype = {
+      ...mockAppointments[0],
+      serviceType: { uuid: 'telehealth-type', name: 'Teleconsulta', duration: 30 },
+    };
+
+    renderAppointmentsTable({ appointments: [appointmentWithSubtype] });
+
+    expect(await screen.findByRole('columnheader', { name: /date & time/i })).toBeInTheDocument();
+    expect(screen.getByText(formatDatetime(new Date(appointmentWithSubtype.startDateTime)))).toBeInTheDocument();
+    expect(await screen.findByRole('columnheader', { name: /service \/ type/i })).toBeInTheDocument();
+    expect(screen.getByText('Outpatient — Teleconsulta')).toBeInTheDocument();
+  });
+
+  it('does not expose same-day edit actions until active visits are verified', async () => {
+    mockUseTodaysVisits.mockReturnValue({
+      visits: [],
+      error: null,
+      isLoading: true,
+      mutateVisit: vi.fn(),
+    });
+
+    renderAppointmentsTable({ appointments: mockAppointments });
+
+    await screen.findByRole('heading', { name: /scheduled appointment/i });
+    expect(screen.queryByRole('button', { name: /^actions$/i })).not.toBeInTheDocument();
+  });
+
+  it('does not expose same-day edit actions when active visits cannot be verified', async () => {
+    mockUseTodaysVisits.mockReturnValue({
+      visits: [],
+      error: new Error('Visit query failed'),
+      isLoading: false,
+      mutateVisit: vi.fn(),
+    });
+
+    renderAppointmentsTable({ appointments: mockAppointments });
+
+    await screen.findByRole('heading', { name: /scheduled appointment/i });
+    expect(screen.queryByRole('button', { name: /^actions$/i })).not.toBeInTheDocument();
   });
 
   it('updates the search string when the search input changes', async () => {

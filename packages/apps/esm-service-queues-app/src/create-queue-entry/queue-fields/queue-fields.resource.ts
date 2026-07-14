@@ -33,6 +33,7 @@ export const ACTIVE_VISIT_QUEUE_CONFLICT = 'ACTIVE_VISIT_QUEUE_CONFLICT';
 export const MULTIPLE_ACTIVE_VISIT_QUEUE_ENTRIES = 'MULTIPLE_ACTIVE_VISIT_QUEUE_ENTRIES';
 export const QUEUE_TICKET_GENERATION_FAILED = 'QUEUE_TICKET_GENERATION_FAILED';
 export const QUEUE_ENTRY_CREATION_UNVERIFIED = 'QUEUE_ENTRY_CREATION_UNVERIFIED';
+export const QUEUE_ENTRY_SEARCH_INVALID_RESPONSE = 'QUEUE_ENTRY_SEARCH_INVALID_RESPONSE';
 
 export class ActiveQueueEntryConflictError extends Error {
   readonly code = ACTIVE_QUEUE_ENTRY_CONFLICT;
@@ -85,6 +86,15 @@ interface QueueTicketResponse {
   ticketNumber?: unknown;
 }
 
+export class QueueEntrySearchInvalidResponseError extends Error {
+  readonly code = QUEUE_ENTRY_SEARCH_INVALID_RESPONSE;
+
+  constructor() {
+    super('The active queue entry search returned an invalid response.');
+    this.name = 'QueueEntrySearchInvalidResponseError';
+  }
+}
+
 async function findActiveQueueEntries(params: Record<string, string>): Promise<Array<QueueEntrySummary>> {
   const searchParams = new URLSearchParams({
     ...params,
@@ -95,7 +105,11 @@ async function findActiveQueueEntries(params: Record<string, string>): Promise<A
     `${restBaseUrl}/queue-entry?${searchParams.toString()}`,
   );
 
-  return response.data?.results?.filter((entry) => !entry.endedAt) ?? [];
+  if (!Array.isArray(response.data?.results)) {
+    throw new QueueEntrySearchInvalidResponseError();
+  }
+
+  return response.data.results.filter((entry) => !entry.endedAt);
 }
 
 function getVisitQueueNumber(

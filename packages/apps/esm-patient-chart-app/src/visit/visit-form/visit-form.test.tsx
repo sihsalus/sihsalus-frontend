@@ -33,6 +33,7 @@ import {
   getVisitAttributes,
   reconcileVisitCreation,
   updateVisitAttribute,
+  useVisitAttributeTypeAvailability,
   usePersonAttributesForVisitDefaults,
   useVisitFormCallbacks,
 } from './visit-form.resource';
@@ -212,6 +213,7 @@ const mockUpdateVisitAttribute = vi.mocked(updateVisitAttribute).mockResolvedVal
 const mockDeleteVisitAttribute = vi.mocked(deleteVisitAttribute).mockResolvedValue({} as unknown as FetchResponse);
 const mockGetVisitAttributes = vi.mocked(getVisitAttributes);
 const mockReconcileVisitCreation = vi.mocked(reconcileVisitCreation);
+const mockUseVisitAttributeTypeAvailability = vi.mocked(useVisitAttributeTypeAvailability);
 const mockCreateOfflineVisitForPatient = vi.mocked(createOfflineVisitForPatient);
 const mockUsePersonAttributesForVisitDefaults = vi.mocked(usePersonAttributesForVisitDefaults);
 const mockUseVisitProvenanceAddressOptions = vi.mocked(useVisitProvenanceAddressOptions);
@@ -320,6 +322,7 @@ vi.mock('./visit-form.resource', async () => {
     deleteVisitAttribute: vi.fn(),
     getVisitAttributes: vi.fn(),
     reconcileVisitCreation: vi.fn(),
+    useVisitAttributeTypeAvailability: vi.fn(),
   };
 });
 
@@ -357,6 +360,7 @@ describe('Visit form', () => {
     mockDeleteVisitAttribute.mockResolvedValue({} as unknown as FetchResponse);
     mockGetVisitAttributes.mockResolvedValue([]);
     mockReconcileVisitCreation.mockResolvedValue(null);
+    mockUseVisitAttributeTypeAvailability.mockReturnValue({ status: 'available' });
     mockUseConnectivity.mockReturnValue(true);
     mockOnVisitCreatedOrUpdatedCallback.mockResolvedValue(undefined);
     mockUseSession.mockReturnValue({
@@ -889,6 +893,107 @@ describe('Visit form', () => {
     expect(mockCloseWorkspace).not.toHaveBeenCalled();
     expect(screen.getByRole('button', { name: /Reintentar registro|Retry registration/i })).toBeInTheDocument();
     expect(mockPromptBeforeClosing.mock.calls.at(-1)?.[0]()).toBe(true);
+  });
+
+  it('blocks generic visit creation until the persistence attribute type is verified', async () => {
+    mockUseVisitAttributeTypeAvailability.mockReturnValue({ status: 'loading' });
+    render(
+      React.createElement(StartVisitForm, {
+        ...testProps,
+        requiredVisitLocation: {
+          uuid: mockLocations.data.results[1].uuid,
+          display: mockLocations.data.results[1].display ?? 'Inpatient Ward',
+        },
+        requiredVisitTypeUuid: 'some-uuid2',
+      }),
+    );
+
+    const saveButton = screen.getByRole('button', { name: /Start visit/i });
+    expect(saveButton).toBeDisabled();
+    expect(
+      screen.getByText('Se está verificando la configuración de guardado seguro. Espere y vuelva a intentar.'),
+    ).toBeInTheDocument();
+
+    const form = saveButton.closest('form');
+    if (!form) {
+      throw new Error('The visit form was not rendered.');
+    }
+    fireEvent.submit(form);
+
+    await waitFor(() =>
+      expect(showSnackbar).toHaveBeenCalledWith(
+        expect.objectContaining({
+          kind: 'error',
+          title: 'No se puede iniciar la consulta',
+        }),
+      ),
+    );
+    expect(mockSaveVisit).not.toHaveBeenCalled();
+  });
+
+  it.each([
+    'missing',
+    'unconfigured',
+  ] as const)('blocks online visit creation when persistence metadata is %s', async (status) => {
+    mockUseVisitAttributeTypeAvailability.mockReturnValue({ status });
+    render(
+      React.createElement(StartVisitForm, {
+        ...testProps,
+        requiredVisitLocation: {
+          uuid: mockLocations.data.results[1].uuid,
+          display: mockLocations.data.results[1].display ?? 'Inpatient Ward',
+        },
+        requiredVisitTypeUuid: 'some-uuid2',
+      }),
+    );
+
+    const saveButton = screen.getByRole('button', { name: /Start visit/i });
+    expect(saveButton).toBeDisabled();
+    expect(screen.getByText(/No se pudo verificar la configuración de guardado seguro/i)).toBeInTheDocument();
+
+    const form = saveButton.closest('form');
+    if (!form) {
+      throw new Error('The visit form was not rendered.');
+    }
+    fireEvent.submit(form);
+
+    await waitFor(() =>
+      expect(showSnackbar).toHaveBeenCalledWith(
+        expect.objectContaining({
+          kind: 'error',
+          title: 'No se puede iniciar la consulta',
+        }),
+      ),
+    );
+    expect(mockSaveVisit).not.toHaveBeenCalled();
+  });
+
+  it('verifies the attribute type supplied by an explicit appointment correlation', () => {
+    const correlation = {
+      attributeType: 'appointment-visit-attribute-type',
+      value: 'appointment-uuid',
+    };
+    mockUseVisitAttributeTypeAvailability.mockReturnValue({
+      status: 'error',
+      error: new Error('appointment persistence type endpoint unavailable'),
+    });
+
+    render(React.createElement(StartVisitForm, { ...testProps, visitPersistenceCorrelation: correlation }));
+
+    expect(mockUseVisitAttributeTypeAvailability).toHaveBeenCalledWith(correlation.attributeType);
+    expect(screen.getByRole('button', { name: /Start visit/i })).toBeDisabled();
+    expect(screen.getByText(/No se pudo verificar la configuración de guardado seguro/i)).toBeInTheDocument();
+  });
+
+  it('does not gate a generic offline visit on backend persistence metadata', () => {
+    mockUseConnectivity.mockReturnValue(false);
+    mockUseVisitAttributeTypeAvailability.mockReturnValue({ status: 'loading' });
+
+    render(React.createElement(StartVisitForm, testProps));
+
+    expect(mockUseVisitAttributeTypeAvailability).toHaveBeenCalledWith(undefined);
+    expect(screen.getByRole('button', { name: /Start visit/i })).not.toBeDisabled();
+    expect(screen.queryByText(/configuración de guardado seguro/i)).not.toBeInTheDocument();
   });
 
   it('uses a stable technical token to reconcile an ambiguous service queue visit creation', async () => {

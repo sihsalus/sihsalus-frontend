@@ -40,9 +40,10 @@ describe('useConceptAnswers', () => {
       expect(mockShowSnackbar).toHaveBeenCalledTimes(1);
     });
     expect(mockShowSnackbar).toHaveBeenCalledWith({
-      title: 'Error',
-      subtitle: 'Server error',
+      title: 'No se pudo cargar el catálogo configurado',
+      subtitle: 'Intente nuevamente o contacte al administrador del sistema.',
       kind: 'error',
     });
+    expect(mockShowSnackbar).not.toHaveBeenCalledWith(expect.objectContaining({ subtitle: 'Server error' }));
   });
 });

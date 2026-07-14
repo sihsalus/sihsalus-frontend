@@ -1,16 +1,16 @@
 import { expect, type Page, test } from '@playwright/test';
+import { getRequiredSyntheticUuid } from '../utils/e2e-env';
 
 /**
  * E2E del formulario de citas (workspace del patient chart).
  *
- * Valida contra el frontend real:
+ * Valida contra el entorno sintético desplegado configurado para E2E:
  *  - La duración por defecto es 30 minutos (los servicios MINSA no traen durationMins).
  *  - El selector de servicios viene poblado desde el backend.
  *  - El flujo de cita recurrente exige una fecha de finalización.
  */
 
-// Paciente de prueba: 100001W - Franco Chiroque Santini (backend dev).
-const PATIENT_UUID = process.env.E2E_APPOINTMENTS_PATIENT_UUID ?? '8fa86bd4-819f-4140-b4f9-216dd77c7f7e';
+const PATIENT_UUID = getRequiredSyntheticUuid('E2E_APPOINTMENTS_PATIENT_UUID');
 
 async function openAppointmentsForm(page: Page) {
   await page.goto(`patient/${PATIENT_UUID}/chart/Appointments`, { waitUntil: 'domcontentloaded' });

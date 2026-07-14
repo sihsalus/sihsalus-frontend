@@ -1,5 +1,6 @@
 /** @module @category UI */
 
+import { getSessionStore, userHasAccess } from '@openmrs/esm-api';
 import { reportError } from '@openmrs/esm-error-handling';
 import { getModalRegistration } from '@openmrs/esm-extensions';
 import { createGlobalStore } from '@openmrs/esm-state';
@@ -31,6 +32,20 @@ const modalStore = createGlobalStore<ModalState>('modalState', {
   modalContainer: null,
   modalStack: [],
 });
+
+type AccessUser = Parameters<typeof userHasAccess>[1];
+
+function hasDeclaredModalPrivileges(privileges: string | Array<string> | undefined) {
+  return typeof privileges === 'string' ? privileges.trim().length > 0 : Boolean(privileges?.length);
+}
+
+/**
+ * Returns whether the current user may launch a modal. Modal privilege arrays
+ * use the same all-required semantics as the core access helper.
+ */
+export function canLaunchModal(privileges: string | Array<string> | undefined, user: AccessUser | undefined) {
+  return !hasDeclaredModalPrivileges(privileges) || Boolean(user && privileges && userHasAccess(privileges, user));
+}
 
 function createModalFrame({ size }: { size: ModalSize }) {
   const modalFrame = document.createElement('div');
@@ -212,15 +227,22 @@ export function showModal(modalName: string, props: ModalProps = {}, onClose: ()
   if (!modalRegistration) {
     reportError(`Failed to launch modal. Please notify your administrator. Modal name: "${modalName}"`);
   } else {
-    openInstance({
-      state: 'NEW',
-      onClose,
-      modalName,
-      props: {
-        close,
-        ...props,
-      },
-    });
+    const user = hasDeclaredModalPrivileges(modalRegistration.privileges)
+      ? getSessionStore().getState().session?.user
+      : undefined;
+    if (!canLaunchModal(modalRegistration.privileges, user)) {
+      reportError(`Access denied while launching modal. Modal name: "${modalName}"`);
+    } else {
+      openInstance({
+        state: 'NEW',
+        onClose,
+        modalName,
+        props: {
+          close,
+          ...props,
+        },
+      });
+    }
   }
 
   return close;

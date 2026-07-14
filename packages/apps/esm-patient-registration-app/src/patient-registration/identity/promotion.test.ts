@@ -59,9 +59,11 @@ describe('isValidDocumentNumber', () => {
     expect(isValidDocumentNumber('CE123ABC', ceDefinition)).toBe(true);
   });
 
-  it('accepts any non-empty value for types without regex', () => {
+  it('applies the canonical safety rule to foreign identity documents', () => {
     const dieDefinition = getDocumentTypeDefinitionByConcept(documentTypeConceptUuids.foreignIdentityDocument);
-    expect(isValidDocumentNumber('X-99', dieDefinition)).toBe(true);
+    expect(isValidDocumentNumber('X99', dieDefinition)).toBe(true);
+    expect(isValidDocumentNumber('X-99', dieDefinition)).toBe(false);
+    expect(isValidDocumentNumber('A'.repeat(16), dieDefinition)).toBe(false);
     expect(isValidDocumentNumber('', dieDefinition)).toBe(false);
   });
 });

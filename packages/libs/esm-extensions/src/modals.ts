@@ -7,6 +7,7 @@ export interface ModalRegistration {
   name: string;
   load(): Promise<LifeCycles>;
   moduleName: string;
+  privileges?: string | Array<string>;
 }
 
 interface ModalRegistry {
@@ -21,8 +22,19 @@ const modalRegistryStore = createGlobalStore<ModalRegistry>('modalRegistry', {
 /** @internal */
 export function registerModal(modalRegistration: ModalRegistration) {
   modalRegistryStore.setState((state) => {
-    state.modals[modalRegistration.name] = modalRegistration;
-    return state;
+    const existingRegistration = state.modals[modalRegistration.name];
+    if (existingRegistration && existingRegistration.moduleName !== modalRegistration.moduleName) {
+      throw new Error(
+        `Modal '${modalRegistration.name}' is already registered by '${existingRegistration.moduleName}' and cannot be replaced by '${modalRegistration.moduleName}'.`,
+      );
+    }
+
+    return {
+      modals: {
+        ...state.modals,
+        [modalRegistration.name]: modalRegistration,
+      },
+    };
   });
 }
 
@@ -36,6 +48,7 @@ export function getModalRegistration(modalName: string): ModalRegistration | und
         name: modalName,
         load: extensionRegistration.load,
         moduleName: extensionRegistration.moduleName,
+        privileges: extensionRegistration.privileges,
       };
       console.warn(
         `Modal ${modalName} was registered as an extension. This is deprecated and will be removed in the future. Please register it in the "modals" section of routes.json instead of the "extensions" section.`,

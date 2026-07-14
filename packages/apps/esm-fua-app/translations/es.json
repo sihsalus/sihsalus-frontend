@@ -45,6 +45,7 @@
   "fua": "FUA",
   "fuaCancelledSuccessfully": "El FUA se canceló correctamente",
   "fuaDocument": "Documento FUA",
+  "fuaEndpointUnavailable": "El visor FUA requiere un endpoint seguro del mismo origen configurado por un administrador.",
   "fuaGeneratedSuccessfully": "El FUA se generó correctamente",
   "fuaGenerationAuthorizationError": "El servidor rechazó la generación del FUA. Su sesión permanece activa; inténtelo nuevamente o contacte al administrador.",
   "fuaGenerationDataError": "No se pudo generar el FUA con la información actual de la consulta. Revise los datos e inténtelo nuevamente.",

@@ -14,12 +14,17 @@ import * as fs from 'node:fs';
 import * as path from 'node:path';
 import { chromium } from '@playwright/test';
 
-const BASE_URL = 'http://gidis-hsc-dev.inf.pucp.edu.pe/openmrs/spa';
-const USERNAME = 'admin';
-const PASSWORD = 'Admin123';
-// Pacientes de prueba obtenidos via API
-const FEMALE_PATIENT_UUID = '19af6b94-7114-47ef-831d-cc63c8601d67'; // María Paola REYES ORTIZ
-const CHILD_PATIENT_UUID = 'e222fb7f-9dad-4c2c-8b2b-98b79699e33c'; // María Beatriz RAMOS CHOQUE
+function requireEnvironmentVariable(name: string) {
+  const value = process.env[name]?.trim();
+  if (!value) throw new Error(`${name} is required for synthetic non-production screenshots.`);
+  return value;
+}
+
+const BASE_URL = requireEnvironmentVariable('E2E_BASE_URL').replace(/\/$/, '');
+const USERNAME = requireEnvironmentVariable('E2E_USERNAME');
+const PASSWORD = requireEnvironmentVariable('E2E_PASSWORD');
+const FEMALE_PATIENT_UUID = requireEnvironmentVariable('E2E_SCREENSHOT_FEMALE_PATIENT_UUID');
+const CHILD_PATIENT_UUID = requireEnvironmentVariable('E2E_SCREENSHOT_CHILD_PATIENT_UUID');
 
 const OUTPUT_DIR = path.join(__dirname, 'output');
 

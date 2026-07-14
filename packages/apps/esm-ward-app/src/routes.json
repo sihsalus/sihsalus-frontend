@@ -139,12 +139,14 @@
     {
       "name": "ward-patient-clinical-forms-workspace",
       "component": "@sihsalus/esm-patient-forms-app#clinicalFormsWorkspace",
-      "window": "ward-patient-clinical-forms"
+      "window": "ward-patient-clinical-forms",
+      "privileges": "app:hoja.clinica.formulariosClinicos"
     },
     {
       "name": "ward-patient-form-entry-workspace",
       "component": "@sihsalus/esm-patient-forms-app#patientFormEntryWorkspace",
-      "window": "ward-patient-clinical-forms"
+      "window": "ward-patient-clinical-forms",
+      "privileges": "app:hoja.clinica.formulariosClinicos"
     },
     {
       "name": "ward-patient-cancel-admission-request-workspace",
@@ -202,7 +204,8 @@
     {
       "name": "ward-patient-clinical-forms",
       "group": "ward-patient",
-      "icon": "clinicalFormWorkspaceSideRailIcon"
+      "icon": "clinicalFormWorkspaceSideRailIcon",
+      "privileges": "app:hoja.clinica.formulariosClinicos"
     },
     {
       "name": "ward-patient-order-basket",

@@ -29,8 +29,8 @@ import {
   useConfig,
   useLayoutType,
   usePagination,
-  useSession,
   userHasAccess,
+  useSession,
 } from '@openmrs/esm-framework';
 import dayjs from 'dayjs';
 import isToday from 'dayjs/plugin/isToday';
@@ -77,7 +77,12 @@ const AppointmentsTable: React.FC<AppointmentsTableProps> = ({
   const { customPatientChartUrl, patientIdentifierType } = useConfig<ConfigObject>();
   const session = useSession();
   const canEdit = userHasAccess(appointmentsEditPrivilege, session?.user);
-  const { visits } = useTodaysVisits();
+  const {
+    visits,
+    isLoading: areVisitsLoading,
+    error: visitsError,
+    mutateVisit,
+  } = useTodaysVisits(results.map((appointment) => appointment.patient.uuid));
   const layout = useLayoutType();
   const responsiveSize = isDesktop(layout) ? 'sm' : 'lg';
   const translatedTableHeading = t(tableHeading);
@@ -111,7 +116,7 @@ const AppointmentsTable: React.FC<AppointmentsTableProps> = ({
       key: 'location',
     },
     {
-      header: t('serviceType', 'Service type'),
+      header: t('serviceAndType', 'Service / type'),
       key: 'serviceType',
     },
     {
@@ -136,10 +141,20 @@ const AppointmentsTable: React.FC<AppointmentsTableProps> = ({
       ? (appointment.patient[patientIdentifierType.replaceAll(' ', '')] ?? appointment.patient.identifier)
       : appointment.patient.identifier,
     dateTime: formatDatetime(new Date(appointment.startDateTime)),
-    serviceType: appointment.service.name,
+    serviceType: appointment.serviceType?.name
+      ? `${appointment.service.name} — ${appointment.serviceType.name}`
+      : appointment.service.name,
     location: appointment.location?.name ?? appointment.service.location?.display ?? '—',
     provider: appointment.provider,
-    status: <AppointmentActions appointment={appointment} />,
+    status: (
+      <AppointmentActions
+        appointment={appointment}
+        activeVisits={visits}
+        activeVisitsError={visitsError}
+        activeVisitsLoading={areVisitsLoading}
+        mutateActiveVisits={mutateVisit}
+      />
+    ),
   }));
 
   if (isLoading) {
@@ -269,7 +284,8 @@ const AppointmentsTable: React.FC<AppointmentsTableProps> = ({
                               <TableCell className="cds--table-column-menu">
                                 {canEdit &&
                                 isAppointmentEditable(matchingAppointment.status) &&
-                                (isFutureAppointment || (isTodayAppointment && !hasActiveVisitToday)) ? (
+                                (isFutureAppointment ||
+                                  (isTodayAppointment && !areVisitsLoading && !visitsError && !hasActiveVisitToday)) ? (
                                   <OverflowMenu
                                     align="left"
                                     aria-label={t('actions', 'Actions')}

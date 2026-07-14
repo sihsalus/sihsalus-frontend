@@ -138,6 +138,46 @@ describe('AppointmentActions', () => {
     expect(screen.getByText(/check in/i)).toBeInTheDocument();
   });
 
+  it('fails closed while the active visit state is loading', () => {
+    appointment.status = AppointmentStatus.SCHEDULED;
+    mockUseConfig.mockReturnValue({
+      ...getDefaultsFromConfigSchema(configSchema),
+      checkInButton: { enabled: true, showIfActiveVisit: false, customUrl: '' },
+      checkOutButton: { enabled: true, customUrl: '' },
+    });
+    mockUseTodaysVisits.mockReturnValue({
+      visits: [],
+      error: null,
+      isLoading: true,
+      mutateVisit: vi.fn(),
+    });
+
+    render(<AppointmentActions {...defaultProps} />);
+
+    expect(screen.queryByRole('button', { name: /check in/i })).not.toBeInTheDocument();
+    expect(screen.getByText(/checking active visit/i)).toBeInTheDocument();
+  });
+
+  it('fails closed when the active visit state cannot be verified', () => {
+    appointment.status = AppointmentStatus.SCHEDULED;
+    mockUseConfig.mockReturnValue({
+      ...getDefaultsFromConfigSchema(configSchema),
+      checkInButton: { enabled: true, showIfActiveVisit: false, customUrl: '' },
+      checkOutButton: { enabled: true, customUrl: '' },
+    });
+    mockUseTodaysVisits.mockReturnValue({
+      visits: [],
+      error: new Error('Visit query failed'),
+      isLoading: false,
+      mutateVisit: vi.fn(),
+    });
+
+    render(<AppointmentActions {...defaultProps} />);
+
+    expect(screen.queryByRole('button', { name: /check in/i })).not.toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /unable to verify active visit/i })).toBeDisabled();
+  });
+
   it('does not offer check-in unless the user has every native visit and queue privilege', () => {
     appointment.status = AppointmentStatus.SCHEDULED;
     mockUserHasAccess.mockImplementation((requiredPrivileges) =>

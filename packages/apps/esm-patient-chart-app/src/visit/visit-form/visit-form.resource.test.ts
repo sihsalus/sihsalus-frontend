@@ -8,7 +8,7 @@ import {
   normalizeVisitTimeInput,
   reconcileVisitCreation,
   sanitizeVisitTimeInput,
-  useVisitAttributeTypeExists,
+  useVisitAttributeTypeAvailability,
   VISIT_PERSISTENCE_CORRELATION_CONFLICT,
 } from './visit-form.resource';
 
@@ -344,43 +344,60 @@ describe('getDefaultVisitAttributesFromPatientAddress', () => {
   });
 });
 
-describe('useVisitAttributeTypeExists', () => {
+describe('useVisitAttributeTypeAvailability', () => {
   beforeEach(() => {
     vi.clearAllMocks();
   });
 
-  it('returns false without querying when no attribute type is configured', () => {
-    const { result } = renderHook(() => useVisitAttributeTypeExists(undefined));
+  it('reports an unconfigured state without querying when no attribute type is configured', () => {
+    const { result } = renderHook(() => useVisitAttributeTypeAvailability(undefined));
 
-    expect(result.current).toBe(false);
+    expect(result.current).toEqual({ status: 'unconfigured' });
     expect(mockOpenmrsFetch).not.toHaveBeenCalled();
   });
 
-  it('returns false when the backend does not have the attribute type', async () => {
-    mockOpenmrsFetch.mockRejectedValue({ response: { status: 404 } });
+  it('does not treat the initial unanswered request as proof that the type exists', () => {
+    mockOpenmrsFetch.mockReturnValue(new Promise(() => undefined));
 
-    const { result } = renderHook(() => useVisitAttributeTypeExists('missing-attribute-type-uuid'));
+    const { result } = renderHook(() => useVisitAttributeTypeAvailability('pending-attribute-type-uuid'));
 
-    await waitFor(() => expect(result.current).toBe(false));
+    expect(result.current).toEqual({ status: 'loading' });
   });
 
-  it('returns true when the attribute type exists', async () => {
+  it('reports a definitive missing state when the backend returns 404', async () => {
+    mockOpenmrsFetch.mockRejectedValue({ response: { status: 404 } });
+
+    const { result } = renderHook(() => useVisitAttributeTypeAvailability('missing-attribute-type-uuid'));
+
+    await waitFor(() => expect(result.current).toEqual({ status: 'missing' }));
+  });
+
+  it('reports available only after the backend confirms the requested UUID', async () => {
     mockOpenmrsFetch.mockResolvedValue({
       data: { uuid: 'existing-attribute-type-uuid' },
     } as unknown as FetchResponse<unknown>);
 
-    const { result } = renderHook(() => useVisitAttributeTypeExists('existing-attribute-type-uuid'));
+    const { result } = renderHook(() => useVisitAttributeTypeAvailability('existing-attribute-type-uuid'));
 
-    await waitFor(() => expect(mockOpenmrsFetch).toHaveBeenCalled());
-    expect(result.current).toBe(true);
+    await waitFor(() => expect(result.current).toEqual({ status: 'available' }));
   });
 
-  it('keeps the attribute on transient errors', async () => {
-    mockOpenmrsFetch.mockRejectedValue({ response: { status: 500 } });
+  it('fails closed on transient errors', async () => {
+    const error = { response: { status: 500 } };
+    mockOpenmrsFetch.mockRejectedValue(error);
 
-    const { result } = renderHook(() => useVisitAttributeTypeExists('unreachable-attribute-type-uuid'));
+    const { result } = renderHook(() => useVisitAttributeTypeAvailability('unreachable-attribute-type-uuid'));
 
-    await waitFor(() => expect(mockOpenmrsFetch).toHaveBeenCalled());
-    expect(result.current).toBe(true);
+    await waitFor(() => expect(result.current).toEqual({ status: 'error', error }));
+  });
+
+  it('fails closed when the backend response does not confirm the requested UUID', async () => {
+    mockOpenmrsFetch.mockResolvedValue({
+      data: { uuid: 'different-attribute-type-uuid' },
+    } as unknown as FetchResponse<unknown>);
+
+    const { result } = renderHook(() => useVisitAttributeTypeAvailability('requested-attribute-type-uuid'));
+
+    await waitFor(() => expect(result.current.status).toBe('error'));
   });
 });

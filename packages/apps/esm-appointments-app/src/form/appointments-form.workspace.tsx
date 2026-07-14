@@ -31,6 +31,7 @@ import {
   useLocations,
   usePatient,
   useSession,
+  userHasAccess,
   Workspace2,
   type Workspace2DefinitionProps,
 } from '@openmrs/esm-framework';
@@ -50,6 +51,7 @@ import { type ConfigObject } from '../config-schema';
 import {
   appointmentLocationTagName,
   appointmentNoteMaxLength,
+  appointmentIssuedDateEditPrivilege,
   dateFormat,
   datePickerFormat,
   datePickerPlaceHolder,
@@ -135,6 +137,14 @@ const time12HourFormatRegexPattern = '^(1[0-2]|0?[1-9]):[0-5][0-9]$';
 const isValidTime = (timeStr: string) => timeStr.match(new RegExp(time12HourFormatRegexPattern));
 
 const isSuccessfulAppointmentResponse = (status?: number) => status >= 200 && status < 300 && status !== 204;
+
+function resolveAppointmentIssuedDate(
+  canEditIssuedDate: boolean,
+  submittedDate: Date | undefined,
+  originalDate: Date,
+): Date {
+  return canEditIssuedDate && submittedDate ? submittedDate : originalDate;
+}
 
 const normalizeAppointmentKind = (appointmentType: string): AppointmentKind => {
   const normalizedType = appointmentType.trim().toLowerCase();
@@ -251,6 +261,7 @@ const AppointmentsForm: React.FC<
   const locations = useLocations(appointmentLocationTagName);
   const providers = useProviders();
   const session = useSession();
+  const canEditAppointmentIssuedDate = userHasAccess(appointmentIssuedDateEditPrivilege, session?.user);
   const { selectedDate } = useContext(SelectedDateContext);
   const { data: services, isLoading } = useAppointmentService();
   const { appointmentTypes, allowAllDayAppointments } = useConfig<ConfigObject>();
@@ -639,6 +650,11 @@ const AppointmentsForm: React.FC<
     const endDateTime = isAllDayAppointment
       ? dayjs(startDate).endOf('day')
       : startDateTime.add(duration ?? 0, 'minutes');
+    const effectiveDateAppointmentScheduled = resolveAppointmentIssuedDate(
+      canEditAppointmentIssuedDate,
+      dateAppointmentScheduled,
+      defaultDateAppointmentScheduled,
+    );
 
     const payload: AppointmentPayload = {
       appointmentKind: normalizeAppointmentKind(selectedAppointmentType),
@@ -650,7 +666,7 @@ const AppointmentsForm: React.FC<
       patientUuid: patientUuid,
       comments: appointmentNote,
       uuid: context === 'editing' ? appointment.uuid : undefined,
-      dateAppointmentScheduled: dayjs(dateAppointmentScheduled).format(),
+      dateAppointmentScheduled: dayjs(effectiveDateAppointmentScheduled).format(),
     };
 
     if (context === 'creating') {
@@ -1064,6 +1080,7 @@ const AppointmentsForm: React.FC<
                       maxDate={new Date()}
                       id="dateAppointmentScheduledPickerInput"
                       data-testid="dateAppointmentScheduledPickerInput"
+                      isReadOnly={!canEditAppointmentIssuedDate}
                       labelText={t('dateScheduledDetail', 'Date appointment issued')}
                       style={{ width: '100%' }}
                     />

@@ -7,6 +7,7 @@ import {
   useConfig,
   useLocations,
   useSession,
+  userHasAccess,
 } from '@openmrs/esm-framework';
 import { fireEvent, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
@@ -21,7 +22,7 @@ import {
 } from 'test-utils';
 
 import { type ConfigObject, configSchema } from '../config-schema';
-import { appointmentNoteMaxLength } from '../constants';
+import { appointmentIssuedDateEditPrivilege, appointmentNoteMaxLength } from '../constants';
 import { useProviders } from '../hooks/useProviders';
 import { getAppointmentStatus } from '../patient-appointments/patient-appointments.resource';
 import { type Appointment, AppointmentKind, AppointmentStatus } from '../types';
@@ -47,6 +48,7 @@ const mockUseConfig = vi.mocked(useConfig<ConfigObject>);
 const mockUseLocations = vi.mocked(useLocations);
 const mockUseProviders = vi.mocked(useProviders);
 const mockUseSession = vi.mocked(useSession);
+const mockUserHasAccess = vi.mocked(userHasAccess);
 
 async function fillRequiredAppointmentFields(user: ReturnType<typeof userEvent.setup>, allDay = false) {
   await user.selectOptions(screen.getByRole('combobox', { name: /select a location/i }), ['Inpatient Ward']);
@@ -149,6 +151,7 @@ describe('AppointmentForm', () => {
     });
     mockUseLocations.mockReturnValue(mockLocations.data.results);
     mockUseSession.mockReturnValue(mockSession.data);
+    mockUserHasAccess.mockReturnValue(false);
     mockUseProviders.mockReturnValue({
       providers: mockProviders.data,
       isLoading: false,
@@ -610,5 +613,48 @@ describe('AppointmentForm', () => {
       }),
     );
     expect(mockSaveAppointment).not.toHaveBeenCalled();
+  });
+
+  it('keeps the appointment issue date read-only without the special privilege', async () => {
+    mockOpenmrsFetch.mockResolvedValue(mockUseAppointmentServiceData as unknown as FetchResponse);
+
+    renderWithSwr(<AppointmentForm {...defaultProps} />);
+
+    await waitForLoadingToFinish();
+
+    expect(mockUserHasAccess).toHaveBeenCalledWith(appointmentIssuedDateEditPrivilege, mockSession.data.user);
+    expect(screen.getByTestId('dateAppointmentScheduledPickerInput')).toHaveAttribute('readonly');
+  });
+
+  it('allows editing the appointment issue date with the special privilege', async () => {
+    mockUserHasAccess.mockReturnValue(true);
+    mockOpenmrsFetch.mockResolvedValue(mockUseAppointmentServiceData as unknown as FetchResponse);
+
+    renderWithSwr(<AppointmentForm {...defaultProps} />);
+
+    await waitForLoadingToFinish();
+
+    expect(screen.getByTestId('dateAppointmentScheduledPickerInput')).not.toHaveAttribute('readonly');
+  });
+
+  it('preserves the original issue date when a read-only form value is tampered with', async () => {
+    const user = userEvent.setup();
+    const appointment = makeEditableAppointment();
+    appointment.dateAppointmentScheduled = '2026-07-01T09:00:00-05:00';
+    mockOpenmrsFetch.mockResolvedValue({ data: mockUseAppointmentServiceData } as unknown as FetchResponse);
+    mockSaveAppointment.mockResolvedValue({ status: 200 } as FetchResponse);
+
+    renderWithSwr(<AppointmentForm {...defaultProps} context="editing" appointment={appointment} />);
+
+    await waitForLoadingToFinish();
+    fireEvent.change(screen.getByTestId('dateAppointmentScheduledPickerInput'), {
+      target: { value: '01/06/2026' },
+    });
+    await user.click(screen.getByRole('button', { name: /save and close/i }));
+
+    await waitFor(() => expect(mockSaveAppointment).toHaveBeenCalledTimes(1));
+    expect(new Date(mockSaveAppointment.mock.calls[0][0].dateAppointmentScheduled).toISOString()).toBe(
+      new Date(appointment.dateAppointmentScheduled).toISOString(),
+    );
   });
 });

@@ -20,6 +20,26 @@
   scroll-margin-top: layout.$spacing-10;
 }
 
+.sectionRequiresAttention {
+  .productiveHeading02 {
+    color: colors.$yellow-60;
+  }
+
+  .sectionTile {
+    box-shadow: inset 0 0 0 2px colors.$yellow-30;
+  }
+}
+
+.sectionHasError {
+  .productiveHeading02 {
+    color: colors.$red-60;
+  }
+
+  .sectionTile {
+    box-shadow: inset 0 0 0 2px colors.$red-60;
+  }
+}
+
 .sectionCard {
   margin: layout.$spacing-05 0 layout.$spacing-06;
 }

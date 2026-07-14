@@ -4,7 +4,7 @@ import { BrowserRouter, Route, Routes } from 'react-router-dom';
 
 import PatientSearchPageComponent from './patient-search-page/patient-search-page.component';
 
-const patientSearchPrivilege = 'Get Patients';
+const patientSearchPrivilege = 'app:opciones.busquedaPaciente';
 
 const PatientSearchRootComponent: React.FC = () => {
   return (

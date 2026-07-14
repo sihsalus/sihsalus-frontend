@@ -8,8 +8,8 @@
       "name": "active-visits-widget",
       "slot": "homepage-widgets-slot",
       "component": "activeVisits",
-      "order": 0,
-      "privileges": "app:hoja.clinica"
+      "privileges": "app:home.tabla.consultas.activas",
+      "order": 0
     },
     {
       "name": "visit-summary-widget",

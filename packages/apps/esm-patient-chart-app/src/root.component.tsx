@@ -1,16 +1,17 @@
-import { navigate, showSnackbar } from '@openmrs/esm-framework';
-import { AppErrorBoundary, RequirePrivilege } from '@sihsalus/esm-rbac';
-import { useEffect } from 'react';
+import { navigate, showSnackbar, useSession } from '@openmrs/esm-framework';
+import { AppErrorBoundary } from '@sihsalus/esm-rbac';
+import { type PropsWithChildren, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { BrowserRouter, Route, Routes } from 'react-router-dom';
 
-import { basePath, clinicalChartPrivilege, dashboardPath, spaRoot } from './constants';
+import { hasClinicalChartAccess } from './clinical-chart-access';
+import { basePath, dashboardPath, spaRoot } from './constants';
 import PatientChart from './patient-chart/patient-chart.component';
 import styles from './root.scss';
 
 let lastAccessDeniedRedirectAt = 0;
 
-function RedirectToHome() {
+function RedirectToPatientSearch() {
   const { t } = useTranslation();
 
   useEffect(() => {
@@ -36,14 +37,16 @@ function RedirectToHome() {
   return null;
 }
 
+function RequireClinicalChartAccess({ children }: PropsWithChildren) {
+  const { user } = useSession();
+
+  return hasClinicalChartAccess(user) ? <>{children}</> : <RedirectToPatientSearch />;
+}
+
 export default function Root() {
   return (
     <AppErrorBoundary appName="esm-patient-chart-app">
-      <RequirePrivilege
-        privilege={clinicalChartPrivilege}
-        description="Necesita el privilegio de historia clínica para acceder a la historia clínica del paciente."
-        fallback={<RedirectToHome />}
-      >
+      <RequireClinicalChartAccess>
         <div className={styles.patientChartWrapper}>
           <BrowserRouter basename={spaRoot}>
             <Routes>
@@ -52,7 +55,7 @@ export default function Root() {
             </Routes>
           </BrowserRouter>
         </div>
-      </RequirePrivilege>
+      </RequireClinicalChartAccess>
     </AppErrorBoundary>
   );
 }

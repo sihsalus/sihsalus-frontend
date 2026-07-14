@@ -1,6 +1,14 @@
 import { Button, InlineLoading, Tag, Toggletip, ToggletipButton, ToggletipContent } from '@carbon/react';
 import { ArrowRight, Information } from '@carbon/react/icons';
-import { ConfigurableLink, formatDate, parseDate, useConfig, type Visit } from '@openmrs/esm-framework';
+import {
+  ConfigurableLink,
+  formatDate,
+  parseDate,
+  useConfig,
+  useSession,
+  userHasAccess,
+  type Visit,
+} from '@openmrs/esm-framework';
 import { ErrorState, useVisitOrOfflineVisit } from '@openmrs/esm-patient-common-lib';
 import dayjs from 'dayjs';
 import duration from 'dayjs/plugin/duration';
@@ -38,6 +46,8 @@ const VitalsHeader: React.FC<VitalsHeaderProps> = ({
   launchCustomVitalsForm,
 }) => {
   const { t } = useTranslation();
+  const session = useSession();
+  const canEdit = userHasAccess('app:hoja.clinica.signosVitales.editar', session?.user);
   const config = useConfig<ConfigObject>();
   const { data: conceptUnits, conceptMetadata, conceptRangeMap, error: conceptsError } = useVitalsConceptMetadata();
   const { data: vitals, isLoading, isValidating, error: vitalsError } = useVitalsAndBiometrics(patientUuid, 'both');
@@ -175,7 +185,7 @@ const VitalsHeader: React.FC<VitalsHeaderProps> = ({
               </span>
             </div>
           ) : null}
-          {!hideLinks && (
+          {!hideLinks && canEdit && (
             <div className={styles.buttonContainer}>
               {conceptRangeMap?.size > 0 && (
                 <Toggletip>
@@ -310,7 +320,7 @@ const VitalsHeader: React.FC<VitalsHeaderProps> = ({
         <span className={styles.bodyText}>{t('noDataRecorded', 'No data has been recorded for this patient')}</span>
       </div>
 
-      {!hideLinks && (
+      {!hideLinks && canEdit && (
         <Button className={styles.recordVitalsButton} kind="ghost" onClick={launchVitalsAndBiometricsForm} size="sm">
           {t('recordVitals', 'Record vitals')}
           <ArrowRight size={16} className={styles.recordVitalsIconButton} />

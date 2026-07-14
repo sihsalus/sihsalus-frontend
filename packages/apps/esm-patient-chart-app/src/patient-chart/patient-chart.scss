@@ -60,6 +60,13 @@ $actionPanelExpandedOffset: $actionNavOffset + $actionPanelOffset;
   padding-right: 0;
 }
 
+// The workspace shell keeps extension mount points in the DOM even when every
+// action component renders null due to RBAC. Collapse the rail unless at least
+// one extension mount point contains an actual rendered element.
+:global(aside:has(> div > [data-extension-slot-name='patient-chart']):not(:has([data-extension-id] > *))) {
+  display: none;
+}
+
 // Overriding styles for RTL support
 html[dir='rtl'] {
   .chartContainer {

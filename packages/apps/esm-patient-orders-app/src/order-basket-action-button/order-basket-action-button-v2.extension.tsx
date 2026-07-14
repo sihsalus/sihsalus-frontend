@@ -1,4 +1,4 @@
-import { ActionMenuButton2, ShoppingCartIcon } from '@openmrs/esm-framework';
+import { ActionMenuButton2, ShoppingCartIcon, UserHasAccess } from '@openmrs/esm-framework';
 import {
   type PatientChartWorkspaceActionButtonProps,
   useOrderBasket,
@@ -26,18 +26,20 @@ const OrderBasketActionButton: React.FC<PatientChartWorkspaceActionButtonProps> 
   const startVisitIfNeeded = useStartVisitIfNeeded(patientUuid ?? undefined);
 
   return (
-    <ActionMenuButton2
-      icon={(props: ComponentProps<typeof ShoppingCartIcon>) => <ShoppingCartIcon {...props} />}
-      label={t('orderBasket', 'Order basket')}
-      tagContent={orders?.length > 0 ? orders.length : undefined}
-      workspaceToLaunch={{
-        workspaceName: 'order-basket',
-        workspaceProps: patientUuid ? { patientUuid } : undefined,
-        windowProps: patientUuid ? { patientUuid } : undefined,
-        groupProps: patientChartGroupProps ? { ...patientChartGroupProps } : null,
-      }}
-      onBeforeWorkspaceLaunch={startVisitIfNeeded}
-    />
+    <UserHasAccess privilege="app:hoja.clinica.canastaOrdenes">
+      <ActionMenuButton2
+        icon={(props: ComponentProps<typeof ShoppingCartIcon>) => <ShoppingCartIcon {...props} />}
+        label={t('orderBasket', 'Order basket')}
+        tagContent={orders?.length > 0 ? orders.length : undefined}
+        workspaceToLaunch={{
+          workspaceName: 'order-basket',
+          workspaceProps: patientUuid ? { patientUuid } : undefined,
+          windowProps: patientUuid ? { patientUuid } : undefined,
+          groupProps: patientChartGroupProps ? { ...patientChartGroupProps } : null,
+        }}
+        onBeforeWorkspaceLaunch={startVisitIfNeeded}
+      />
+    </UserHasAccess>
   );
 };
 

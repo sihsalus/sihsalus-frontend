@@ -20,8 +20,8 @@ type Action = {
   toneClass: string;
 };
 
-const admissionPrivilege = 'app:home.admision';
-const patientSearchPrivilege = 'Get Patients';
+const patientSearchPrivilege = 'app:opciones.busquedaPaciente';
+const patientRegistrationPrivilege = 'app:opciones.registrarPaciente';
 const appointmentsPrivilege = 'app:home.citas';
 const serviceQueuesPrivilege = 'app:home.colasAtencion';
 const laboratoryPrivilege = 'app:home.laboratorio';
@@ -56,7 +56,7 @@ const actions = [
     descriptionKey: 'registerPatientDescription',
     href: '/patient-registration',
     illustrationSrc: patientRegistrationIllustration,
-    privilege: admissionPrivilege,
+    privilege: patientRegistrationPrivilege,
     toneClass: 'admissionAction',
   },
   {

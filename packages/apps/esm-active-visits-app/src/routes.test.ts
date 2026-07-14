@@ -1,5 +1,6 @@
 import routes from './routes.json';
 
+const activeVisitsPrivilege = 'app:home.tabla.consultas.activas';
 const chartPrivilege = 'app:hoja.clinica';
 
 function extension(name: string) {
@@ -7,8 +8,11 @@ function extension(name: string) {
 }
 
 describe('active visits route privilege contract', () => {
-  it('protects patient-level active visit data with the chart privilege', () => {
-    expect(extension('active-visits-widget')).toMatchObject({ privileges: chartPrivilege });
+  it('protects the homepage active visits table with its dedicated privilege', () => {
+    expect(extension('active-visits-widget')).toMatchObject({ privileges: activeVisitsPrivilege });
+  });
+
+  it('protects the patient visit summary with the chart privilege', () => {
     expect(extension('visit-summary-widget')).toMatchObject({ privileges: chartPrivilege });
   });
 

@@ -285,6 +285,8 @@
   "relationshipTypeRequired": "Select the relationship to the patient before registering the person",
   "relationshipTypesUnavailableSubtitle": "Refresh the page. If the problem continues, check that relationship types are configured and that your session is active.",
   "relationshipTypesUnavailableTitle": "Relationship types unavailable",
+  "incompleteRelationshipHelpText": "Select the relationship and the related person before adding another family link.",
+  "incompleteRelationshipTitle": "Complete the pending family link",
   "patientCanOnlyHaveOneFather": "The patient can only have one father",
   "patientCanOnlyHaveOnePrimaryResponsible": "Select only one primary responsible person",
   "patientFamilyLinksHelpText": "Add the family members linked to the patient.",

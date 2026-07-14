@@ -1,7 +1,9 @@
 import { ContentSwitcher, NumberInput, Switch, TextInput } from '@carbon/react';
+import { OpenmrsDatePicker } from '@openmrs/esm-framework';
 import {
-  getEarliestPatientBirthYear,
+  calendarDateToLocalDate,
   getLocalCalendarDate,
+  getOldestAllowedPatientBirthdate,
   normalizePatientAgeRange,
   shouldPreventPlainNumberKey,
   shouldPreventPlainNumberPaste,
@@ -48,6 +50,63 @@ interface SearchFieldProps {
   isTablet: boolean;
 }
 
+const BirthdateSearchField: React.FC<Omit<SearchFieldProps, 'field'>> = ({ control, inTabletOrOverlay, isTablet }) => {
+  const { t } = useTranslation();
+  const referenceDate = getLocalCalendarDate();
+  const oldestAllowedBirthdate = getOldestAllowedPatientBirthdate(referenceDate);
+
+  return (
+    <div className={classNames(styles.birthdateField, { [styles.fieldTabletOrOverlay]: inTabletOrOverlay })}>
+      <Controller
+        name="dateOfBirth"
+        control={control}
+        render={({ field: dayField, fieldState: dayState }) => (
+          <Controller
+            name="monthOfBirth"
+            control={control}
+            render={({ field: monthField, fieldState: monthState }) => (
+              <Controller
+                name="yearOfBirth"
+                control={control}
+                render={({ field: yearField, fieldState: yearState }) => {
+                  const selectedDate =
+                    dayField.value && monthField.value && yearField.value
+                      ? calendarDateToLocalDate({
+                          day: dayField.value,
+                          month: monthField.value,
+                          year: yearField.value,
+                        })
+                      : null;
+                  const error = dayState.error ?? monthState.error ?? yearState.error;
+
+                  return (
+                    <OpenmrsDatePicker
+                      id="dateOfBirth"
+                      labelText={t('dateOfBirth', 'Date of birth')}
+                      value={selectedDate}
+                      onChange={(date) => {
+                        const nextDate = date ? getLocalCalendarDate(date) : null;
+                        dayField.onChange(nextDate?.day ?? null);
+                        monthField.onChange(nextDate?.month ?? null);
+                        yearField.onChange(nextDate?.year ?? null);
+                      }}
+                      minDate={oldestAllowedBirthdate ? calendarDateToLocalDate(oldestAllowedBirthdate) : undefined}
+                      maxDate={calendarDateToLocalDate(referenceDate)}
+                      invalid={!!error}
+                      invalidText={error?.message}
+                      size={isTablet ? 'lg' : 'md'}
+                    />
+                  );
+                }}
+              />
+            )}
+          />
+        )}
+      />
+    </div>
+  );
+};
+
 export const SearchField: React.FC<SearchFieldProps> = ({ field, control, inTabletOrOverlay, isTablet }) => {
   const { t } = useTranslation();
 
@@ -91,88 +150,7 @@ export const SearchField: React.FC<SearchFieldProps> = ({ field, control, inTabl
       );
 
     case 'dateOfBirth':
-      return (
-        <div className={classNames(styles.dobFields, { [styles.fieldTabletOrOverlay]: inTabletOrOverlay })}>
-          <Controller
-            name="dateOfBirth"
-            control={control}
-            render={({ field: { onChange, value }, fieldState: { error } }) => (
-              <NumberInput
-                id="dateOfBirth"
-                placeholder="DD"
-                value={value ?? ''}
-                onChange={(_event, { value: inputValue }) => onChange(getOptionalIntegerInputValue(inputValue))}
-                onKeyDown={preventInvalidIntegerKey}
-                onPaste={preventInvalidIntegerPaste(1, 31)}
-                className={styles.dobField}
-                type="number"
-                label={t('dayOfBirth', 'Day of Birth')}
-                invalid={!!error}
-                invalidText={error?.message}
-                min={1}
-                max={31}
-                allowEmpty
-                hideSteppers
-                size={isTablet ? 'lg' : 'md'}
-              />
-            )}
-          />
-          <Controller
-            name="monthOfBirth"
-            control={control}
-            render={({ field: { onChange, value }, fieldState: { error } }) => (
-              <NumberInput
-                id="monthOfBirth"
-                placeholder="MM"
-                value={value ?? ''}
-                onChange={(_event, { value: inputValue }) => onChange(getOptionalIntegerInputValue(inputValue))}
-                onKeyDown={preventInvalidIntegerKey}
-                onPaste={preventInvalidIntegerPaste(1, 12)}
-                className={styles.dobField}
-                type="number"
-                label={t('monthOfBirth', 'Month of Birth')}
-                invalid={!!error}
-                invalidText={error?.message}
-                min={1}
-                max={12}
-                allowEmpty
-                hideSteppers
-                size={isTablet ? 'lg' : 'md'}
-              />
-            )}
-          />
-          <Controller
-            name="yearOfBirth"
-            control={control}
-            render={({ field: { onChange, value }, fieldState: { error } }) => {
-              const referenceDate = getLocalCalendarDate();
-              const currentYear = referenceDate.year;
-              const earliestBirthYear = getEarliestPatientBirthYear(referenceDate);
-
-              return (
-                <NumberInput
-                  id="yearOfBirth"
-                  placeholder="YYYY"
-                  value={value ?? ''}
-                  onChange={(_event, { value: inputValue }) => onChange(getOptionalIntegerInputValue(inputValue))}
-                  onKeyDown={preventInvalidIntegerKey}
-                  onPaste={preventInvalidIntegerPaste(earliestBirthYear, currentYear)}
-                  className={styles.dobField}
-                  type="number"
-                  label={t('yearOfBirth', 'Year of Birth')}
-                  invalid={!!error}
-                  invalidText={error?.message}
-                  allowEmpty
-                  hideSteppers
-                  min={earliestBirthYear}
-                  max={currentYear}
-                  size={isTablet ? 'lg' : 'md'}
-                />
-              );
-            }}
-          />
-        </div>
-      );
+      return <BirthdateSearchField control={control} inTabletOrOverlay={inTabletOrOverlay} isTablet={isTablet} />;
 
     case 'age': {
       const { minimumAge: minAge, maximumAge: maxAge } = normalizePatientAgeRange(field.min, field.max);

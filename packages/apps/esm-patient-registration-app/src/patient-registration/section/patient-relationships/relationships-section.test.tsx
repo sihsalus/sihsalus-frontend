@@ -264,6 +264,40 @@ describe('RelationshipsSection', () => {
     expect(screen.queryByRole('textbox', { name: /first name/i })).not.toBeInTheDocument();
   });
 
+  it('warns when a family link is incomplete and prevents adding another row', () => {
+    mockResourcesContextValue = {
+      ...mockResourcesContextValue,
+      relationshipTypes,
+    };
+    const formValues = {
+      relationships: [
+        {
+          action: 'ADD',
+          relatedPersonUuid: '',
+          relationshipType: '42ae5ce0-d64b-11ea-9064-5adc43bbdd34/aIsToB',
+        },
+      ],
+    } as FormValues;
+
+    render(
+      <ResourcesContext.Provider value={mockResourcesContextValue}>
+        <Formik initialValues={formValues} onSubmit={vi.fn()}>
+          <Form>
+            <PatientRegistrationContext.Provider value={{ ...initialContextValues, values: formValues }}>
+              <RelationshipsSection />
+            </PatientRegistrationContext.Provider>
+          </Form>
+        </Formik>
+      </ResourcesContext.Provider>,
+    );
+
+    expect(screen.getByText('Complete the pending family link')).toBeInTheDocument();
+    expect(
+      screen.getByText('Select the relationship and the related person before adding another family link.'),
+    ).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /add family link/i })).toBeDisabled();
+  });
+
   it('orders family links by weight, hides operational roles, and keeps Other last', () => {
     mockResourcesContextValue = {
       ...mockResourcesContextValue,

@@ -133,34 +133,13 @@ describe('SearchField', () => {
       type: 'dateOfBirth',
     };
 
-    it('renders three number inputs for day, month, and year', () => {
+    it('renders one unified date of birth field', () => {
       render(<SearchField field={dobField} {...defaultProps} />);
 
-      expect(screen.getByLabelText('Day of Birth')).toBeInTheDocument();
-      expect(screen.getByLabelText('Month of Birth')).toBeInTheDocument();
-      expect(screen.getByLabelText('Year of Birth')).toBeInTheDocument();
-    });
-
-    it('applies correct validation constraints to date inputs', () => {
-      render(<SearchField field={dobField} {...defaultProps} />);
-
-      const dayInput = screen.getByLabelText('Day of Birth');
-      const monthInput = screen.getByLabelText('Month of Birth');
-      const yearInput = screen.getByLabelText('Year of Birth');
-
-      expect(dayInput).toHaveAttribute('min', '1');
-      expect(dayInput).toHaveAttribute('max', '31');
-      expect(monthInput).toHaveAttribute('min', '1');
-      expect(monthInput).toHaveAttribute('max', '12');
-      expect(yearInput).toHaveAttribute('min', (new Date().getFullYear() - 140).toString());
-      expect(yearInput).toHaveAttribute('max', new Date().getFullYear().toString());
-    });
-
-    it('prevents an out-of-range pasted month', () => {
-      render(<SearchField field={dobField} {...defaultProps} />);
-
-      const monthInput = screen.getByLabelText('Month of Birth');
-      expect(fireEvent.paste(monthInput, { clipboardData: { getData: () => '13' } })).toBe(false);
+      expect(screen.getByLabelText('Date of birth')).toBeInTheDocument();
+      expect(screen.queryByLabelText('Day of Birth')).not.toBeInTheDocument();
+      expect(screen.queryByLabelText('Month of Birth')).not.toBeInTheDocument();
+      expect(screen.queryByLabelText('Year of Birth')).not.toBeInTheDocument();
     });
   });
 

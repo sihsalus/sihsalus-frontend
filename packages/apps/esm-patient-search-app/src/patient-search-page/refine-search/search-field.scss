@@ -10,22 +10,27 @@
   }
 }
 
-.dobFields {
-  display: grid;
-  grid-template-columns: 1fr 1fr 1.25fr;
-  grid-gap: layout.$spacing-03;
-  align-items: end;
+.birthdateField {
+  inline-size: 100%;
 
-  input {
-    min-width: unset !important;
-    padding-right: layout.$spacing-02 !important;
+  :global(.cds--date-picker),
+  :global(.cds--date-picker-container) {
+    inline-size: 100%;
   }
 
-  :global(.cds--label) {
-    min-height: layout.$spacing-07;
-    line-height: 1.25;
-    display: flex;
-    align-items: flex-end;
+  :global(.cds--date-picker-container > [role="group"]) {
+    inline-size: 100%;
+  }
+
+  :global(.cds--date-picker-container > [role="group"] > button) {
+    cursor: pointer;
+  }
+
+  :global(.cds--date-picker-input__wrapper) {
+    flex: 1 1 auto;
+    inline-size: auto;
+    max-inline-size: none;
+    min-inline-size: 0;
   }
 }
 

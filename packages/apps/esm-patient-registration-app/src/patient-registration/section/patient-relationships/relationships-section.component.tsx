@@ -986,6 +986,17 @@ export const RelationshipsSection: React.FC<RelationshipsSectionProps> = ({ defa
                   {relationshipError}
                 </div>
               ) : null}
+              {hasIncompleteRelationship(relationships) ? (
+                <InlineNotification
+                  kind="warning"
+                  lowContrast
+                  title={t('incompleteRelationshipTitle', 'Complete the pending family link')}
+                  subtitle={t(
+                    'incompleteRelationshipHelpText',
+                    'Select the relationship and the related person before adding another family link.',
+                  )}
+                />
+              ) : null}
               {hasMultipleFatherRelationships(relationships) ? (
                 <InlineNotification
                   kind="error"
@@ -1006,6 +1017,7 @@ export const RelationshipsSection: React.FC<RelationshipsSectionProps> = ({ defa
                 />
               ) : requiresResponsibleRelationship &&
                 !hasResponsibleRelationship(relationships, minorResponsibleRelationshipTypes) &&
+                !hasIncompleteRelationship(relationships) &&
                 !relationshipsMeta.touched ? (
                 <InlineNotification
                   kind="warning"

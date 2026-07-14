@@ -5,7 +5,6 @@ import { type Concept, type QueueEntry } from '../../types';
 // see QueueEntryTransition.java in openmrs-module-queue
 interface TransitionQueueEntryParams {
   queueEntryToTransition: string;
-  transitionDate?: string;
   newQueue?: string;
   newStatus?: string;
   newPriority?: string;

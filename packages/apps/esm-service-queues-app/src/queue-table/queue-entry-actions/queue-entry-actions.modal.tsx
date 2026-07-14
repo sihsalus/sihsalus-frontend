@@ -331,49 +331,51 @@ export const QueueEntryActionModal: React.FC<QueueEntryActionModalProps> = ({
               />
             </section>
 
-            <section className={styles.section}>
-              <div className={styles.sectionTitle}>{t('timeOfTransition', 'Time of transition')}</div>
-              <Checkbox
-                labelText={t('modifyDefaultValue', 'Modify default value')}
-                id={'modifyTransitionTime'}
-                checked={formState.modifyDefaultTransitionDateTime}
-                onChange={(_, { checked }) => {
-                  setModifyDefaultTransitionDateTime(checked);
-                }}
-              />
-              <div className={styles.dateTimeFields}>
-                <OpenmrsDatePicker
-                  value={formState.transitionDate}
-                  maxDate={new Date()}
-                  onChange={setTransitionDate}
-                  id="datePickerInput"
-                  data-testid="datePickerInput"
-                  labelText={t('date', 'Date')}
-                  isDisabled={!formState.modifyDefaultTransitionDateTime}
+            {!isTransition && (
+              <section className={styles.section}>
+                <div className={styles.sectionTitle}>{t('queueEntryStartTime', 'Queue entry start time')}</div>
+                <Checkbox
+                  labelText={t('modifyDefaultValue', 'Modify default value')}
+                  id={'modifyTransitionTime'}
+                  checked={formState.modifyDefaultTransitionDateTime}
+                  onChange={(_, { checked }) => {
+                    setModifyDefaultTransitionDateTime(checked);
+                  }}
                 />
+                <div className={styles.dateTimeFields}>
+                  <OpenmrsDatePicker
+                    value={formState.transitionDate}
+                    maxDate={new Date()}
+                    onChange={setTransitionDate}
+                    id="datePickerInput"
+                    data-testid="datePickerInput"
+                    labelText={t('date', 'Date')}
+                    isDisabled={!formState.modifyDefaultTransitionDateTime}
+                  />
 
-                <TimePicker
-                  id="transitionTime"
-                  labelText={t('time', 'Time')}
-                  onChange={(event) => setTransitionTime(event.target.value)}
-                  pattern={time12HourFormatRegexPattern}
-                  value={formState.transitionTime}
-                  invalid={timeInvalidMessage != null}
-                  invalidText={timeInvalidMessage}
-                  disabled={!formState.modifyDefaultTransitionDateTime}
-                >
-                  <TimePickerSelect
-                    id="visitStartTimeSelect"
-                    onChange={(event) => setTransitionTimeFormat(event.target.value as amPm)}
-                    value={formState.transitionTimeFormat}
-                    aria-label={t('time', 'Time')}
+                  <TimePicker
+                    id="transitionTime"
+                    labelText={t('time', 'Time')}
+                    onChange={(event) => setTransitionTime(event.target.value)}
+                    pattern={time12HourFormatRegexPattern}
+                    value={formState.transitionTime}
+                    invalid={timeInvalidMessage != null}
+                    invalidText={timeInvalidMessage}
+                    disabled={!formState.modifyDefaultTransitionDateTime}
                   >
-                    <SelectItem value="AM" text="AM" />
-                    <SelectItem value="PM" text="PM" />
-                  </TimePickerSelect>
-                </TimePicker>
-              </div>
-            </section>
+                    <TimePickerSelect
+                      id="visitStartTimeSelect"
+                      onChange={(event) => setTransitionTimeFormat(event.target.value as amPm)}
+                      value={formState.transitionTimeFormat}
+                      aria-label={t('time', 'Time')}
+                    >
+                      <SelectItem value="AM" text="AM" />
+                      <SelectItem value="PM" text="PM" />
+                    </TimePickerSelect>
+                  </TimePicker>
+                </div>
+              </section>
+            )}
           </Stack>
         </div>
       </ModalBody>

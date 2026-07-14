@@ -11,7 +11,7 @@ export const configSchema = {
   appointmentStatuses: {
     _type: Type.Array,
     _description: 'Configurable appointment status (status of appointments)',
-    _default: ['Requested', 'Scheduled', 'CheckedIn', 'Completed', 'Cancelled', 'Missed'],
+    _default: ['Requested', 'WaitList', 'Scheduled', 'Arrived', 'CheckedIn', 'Completed', 'Cancelled', 'Missed'],
   },
   // TODO(SIHSALUS): move the MINSA appointment entry-condition catalog to a shared frontend/backend contract.
   // Frontend should only render labels; backend should own validation, persistence values, and migrations.

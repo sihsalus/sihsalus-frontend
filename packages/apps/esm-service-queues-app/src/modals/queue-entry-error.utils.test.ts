@@ -33,7 +33,7 @@ describe('queue entry error utilities', () => {
 
   it('detects a duplicate entry without exposing its technical message', () => {
     const error = {
-      responseBody: { error: { rawMessage: '[queue.entry.duplicate.patient] duplicate queue entry' } },
+      responseBody: { error: { rawMessage: '[queue.entry.error.duplicate] duplicate queue entry' } },
     };
 
     expect(isDuplicateQueueEntryError(error)).toBe(true);

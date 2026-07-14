@@ -24,6 +24,9 @@
       "bodyMassIndexUuid": "5b877648-ae50-4d45-ad36-0196042baa1a"
     }
   },
+  "@sihsalus/esm-service-queues-app": {
+    "visitQueueNumberAttributeUuid": "06a0b8c6-cbdf-4b42-9cbd-871129db8758"
+  },
   "@sihsalus/esm-patient-procedures-app": {
     "statusConceptUuid": "f0d47b45-8303-4cdc-a9f2-c37135a3700f",
     "statusConceptSourceType": "Answer to",

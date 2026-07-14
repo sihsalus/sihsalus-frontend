@@ -45,7 +45,10 @@ vi.mock('./queue-fields.resource', () => {
     postQueueEntry: vi.fn(),
   };
 });
-const mockPostQueueEntry = vi.mocked(postQueueEntry).mockResolvedValue({} as FetchResponse);
+const mockPostQueueEntry = vi.mocked(postQueueEntry).mockResolvedValue({
+  created: true,
+  response: {} as FetchResponse,
+});
 
 describe('QueueFields', () => {
   beforeEach(() => {

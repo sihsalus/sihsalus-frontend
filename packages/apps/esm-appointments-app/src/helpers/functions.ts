@@ -85,21 +85,29 @@ export const getGender = (gender: string, t: (key: string, defaultValue: string)
   }
 };
 
-/**
- * Return whether we can transition from one appointment status to another,
- * based on logic in backend. See:
- * https://github.com/Bahmni/openmrs-module-appointments/blob/master/api/src/main/java/org/openmrs/module/appointments/model/AppointmentStatus.java
- * https://github.com/Bahmni/openmrs-module-appointments/blob/master/api/src/main/java/org/openmrs/module/appointments/validator/impl/DefaultAppointmentStatusChangeValidator.java
- */
-export const canTransition = (fromStatus: AppointmentStatus, toStatus: AppointmentStatus): boolean => {
-  const sequences = {
-    [AppointmentStatus.REQUESTED]: 0,
-    [AppointmentStatus.SCHEDULED]: 1,
-    [AppointmentStatus.CHECKEDIN]: 3,
-    [AppointmentStatus.COMPLETED]: 4,
-    [AppointmentStatus.CANCELLED]: 4,
-    [AppointmentStatus.MISSED]: 4,
-  };
+const allowedAppointmentStatusTransitions: Record<AppointmentStatus, ReadonlySet<AppointmentStatus>> = {
+  [AppointmentStatus.REQUESTED]: new Set([AppointmentStatus.SCHEDULED, AppointmentStatus.CANCELLED]),
+  // Appointments 2.1.0 requires the broad Reset Appointment Status privilege for WaitList -> Scheduled.
+  // Keep this transition out of the routine UI until the backend offers a narrower authorization rule.
+  [AppointmentStatus.WAITLIST]: new Set([AppointmentStatus.CANCELLED]),
+  [AppointmentStatus.SCHEDULED]: new Set([
+    AppointmentStatus.ARRIVED,
+    AppointmentStatus.CHECKEDIN,
+    AppointmentStatus.CANCELLED,
+    AppointmentStatus.MISSED,
+  ]),
+  [AppointmentStatus.ARRIVED]: new Set([
+    AppointmentStatus.CHECKEDIN,
+    AppointmentStatus.CANCELLED,
+    AppointmentStatus.MISSED,
+  ]),
+  [AppointmentStatus.CHECKEDIN]: new Set([AppointmentStatus.COMPLETED]),
+  [AppointmentStatus.COMPLETED]: new Set(),
+  [AppointmentStatus.CANCELLED]: new Set(),
+  [AppointmentStatus.MISSED]: new Set(),
+};
 
-  return sequences[fromStatus] < sequences[toStatus] || toStatus === AppointmentStatus.SCHEDULED;
+/** Restricts routine UI actions to the hospital workflow, even though the OMOD accepts broader forward jumps. */
+export const canTransition = (fromStatus: AppointmentStatus, toStatus: AppointmentStatus): boolean => {
+  return allowedAppointmentStatusTransitions[fromStatus]?.has(toStatus) ?? false;
 };

@@ -66,12 +66,9 @@ export function usePatientAppointments(patientUuid: string, startDate: string, a
 
 // TODO: move?
 export const changeAppointmentStatus = async (toStatus: string, appointmentUuid: string) => {
-  const omrsDateFormat = 'YYYY-MM-DDTHH:mm:ss.SSSZZ';
-  const timeZone = Intl.DateTimeFormat().resolvedOptions().timeZone;
-  const statusChangeTime = dayjs(new Date()).format(omrsDateFormat);
   const url = `${restBaseUrl}/appointments/${appointmentUuid}/status-change`;
   return await openmrsFetch(url, {
-    body: { toStatus, onDate: statusChangeTime, timeZone: timeZone },
+    body: { toStatus, onDate: new Date().toISOString() },
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
   });

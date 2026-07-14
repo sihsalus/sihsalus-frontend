@@ -429,52 +429,54 @@ export const QueueEntryActionModal: React.FC<QueueEntryActionModalProps> = ({
               />
             </section>
 
-            <section>
-              <div className={styles.sectionTitle}>{t('timeOfTransition', 'Time of transition')}</div>
-              <Checkbox
-                labelText={t('now', 'Now')}
-                id={'modifyTransitionTime'}
-                checked={!formState.modifyDefaultTransitionDateTime}
-                onChange={(_, { checked }) => {
-                  setModifyDefaultTransitionDateTime(!checked);
-                }}
-              />
-              {formState.modifyDefaultTransitionDateTime && (
-                <div className={styles.dateTimeFields}>
-                  <OpenmrsDatePicker
-                    data-testid="datePickerInput"
-                    id="datePickerInput"
-                    labelText={t('date', 'Date')}
-                    maxDate={new Date()}
-                    onChange={setTransitionDate}
-                    value={formState.transitionDate}
-                  />
+            {isEdit && (
+              <section>
+                <div className={styles.sectionTitle}>{t('queueEntryStartTime', 'Queue entry start time')}</div>
+                <Checkbox
+                  labelText={t('now', 'Now')}
+                  id={'modifyTransitionTime'}
+                  checked={!formState.modifyDefaultTransitionDateTime}
+                  onChange={(_, { checked }) => {
+                    setModifyDefaultTransitionDateTime(!checked);
+                  }}
+                />
+                {formState.modifyDefaultTransitionDateTime && (
+                  <div className={styles.dateTimeFields}>
+                    <OpenmrsDatePicker
+                      data-testid="datePickerInput"
+                      id="datePickerInput"
+                      labelText={t('date', 'Date')}
+                      maxDate={new Date()}
+                      onChange={setTransitionDate}
+                      value={formState.transitionDate}
+                    />
 
-                  <TimePicker
-                    id="transitionTime"
-                    labelText={t('time', 'Time')}
-                    onChange={(event) => {
-                      const sanitized = event.target.value.replace(/[^0-9:]/g, '');
-                      setTransitionTime(sanitized); // ← sanitized, not raw value
-                    }}
-                    pattern={time12HourFormatRegexPattern}
-                    value={formState.transitionTime}
-                    invalid={timeInvalidMessage !== null}
-                    invalidText={timeInvalidMessage}
-                  >
-                    <TimePickerSelect
-                      id="visitStartTimeSelect"
-                      onChange={(event) => setTransitionTimeFormat(event.target.value as amPm)}
-                      value={formState.transitionTimeFormat}
-                      aria-label={t('time', 'Time')}
+                    <TimePicker
+                      id="transitionTime"
+                      labelText={t('time', 'Time')}
+                      onChange={(event) => {
+                        const sanitized = event.target.value.replace(/[^0-9:]/g, '');
+                        setTransitionTime(sanitized); // ← sanitized, not raw value
+                      }}
+                      pattern={time12HourFormatRegexPattern}
+                      value={formState.transitionTime}
+                      invalid={timeInvalidMessage !== null}
+                      invalidText={timeInvalidMessage}
                     >
-                      <SelectItem value="AM" text="AM" />
-                      <SelectItem value="PM" text="PM" />
-                    </TimePickerSelect>
-                  </TimePicker>
-                </div>
-              )}
-            </section>
+                      <TimePickerSelect
+                        id="visitStartTimeSelect"
+                        onChange={(event) => setTransitionTimeFormat(event.target.value as amPm)}
+                        value={formState.transitionTimeFormat}
+                        aria-label={t('time', 'Time')}
+                      >
+                        <SelectItem value="AM" text="AM" />
+                        <SelectItem value="PM" text="PM" />
+                      </TimePickerSelect>
+                    </TimePicker>
+                  </div>
+                )}
+              </section>
+            )}
 
             {userFacingSubmissionError && (
               <InlineNotification
@@ -496,7 +498,7 @@ export const QueueEntryActionModal: React.FC<QueueEntryActionModalProps> = ({
           disabled={
             isSubmitting ||
             disableSubmit(queueEntry, formState) ||
-            (formState.modifyDefaultTransitionDateTime && timeInvalidMessage !== null)
+            (isEdit && formState.modifyDefaultTransitionDateTime && timeInvalidMessage !== null)
           }
           onClick={submitForm}
         >

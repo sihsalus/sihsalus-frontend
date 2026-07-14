@@ -24,7 +24,7 @@ import { useQueues } from '../../hooks/useQueues';
 import { AddPatientToQueueContext } from '../create-queue-entry.workspace';
 import { useQueueLocations } from '../hooks/useQueueLocations';
 
-import { postQueueEntry } from './queue-fields.resource';
+import { ACTIVE_QUEUE_ENTRY_CONFLICT, postQueueEntry } from './queue-fields.resource';
 import styles from './queue-fields.scss';
 
 export interface QueueFieldsProps {
@@ -90,7 +90,15 @@ const QueueFields: React.FC<QueueFieldsProps> = ({ currentServiceQueueUuid, onQu
               subtitle: getUserFacingErrorMessage(
                 error,
                 t('queueEntryActionErrorMessage', 'The queue action could not be completed. Please try again.'),
-                { logContext: 'Add patient to queue' },
+                {
+                  codeMessages: {
+                    [ACTIVE_QUEUE_ENTRY_CONFLICT]: t(
+                      'activeQueueEntryForAnotherVisit',
+                      'El paciente ya tiene una entrada activa en esta cola asociada a otra consulta.',
+                    ),
+                  },
+                  logContext: 'Add patient to queue',
+                },
               ),
             });
             throw error;

@@ -1,7 +1,6 @@
 import React from 'react';
 import { useTranslation } from 'react-i18next';
 
-import { convertTime12to24 } from '../../helpers/time-helpers';
 import { type QueueEntry } from '../../types';
 
 import QueueEntryActionModal from './queue-entry-actions.modal';
@@ -33,20 +32,14 @@ const TransitionQueueEntryModal: React.FC<TransitionQueueEntryModalProps> = ({
         submitSuccessTitle: t('queueEntryTransitioned', 'Queue entry transitioned'),
         submitSuccessText: t('queueEntryTransitionedSuccessfully', 'Queue entry transitioned successfully'),
         submitFailureTitle: t('queueEntryTransitionFailed', 'Error transitioning queue entry'),
-        submitAction: (queueEntry, formState) => {
-          const transitionDate = new Date(formState.transitionDate);
-          const [hour, minute] = convertTime12to24(formState.transitionTime, formState.transitionTimeFormat);
-          transitionDate.setHours(hour, minute, 0, 0);
-
-          return transitionQueueEntry({
+        submitAction: (queueEntry, formState) =>
+          transitionQueueEntry({
             queueEntryToTransition: queueEntry.uuid,
             newQueue: formState.selectedQueue,
             newStatus: formState.selectedStatus,
             newPriority: formState.selectedPriority,
             newPriorityComment: formState.prioritycomment,
-            ...(formState.modifyDefaultTransitionDateTime ? { transitionDate: transitionDate.toISOString() } : {}),
-          });
-        },
+          }),
         disableSubmit: (queueEntry, formState) =>
           formState.selectedQueue === queueEntry.queue.uuid && formState.selectedStatus === queueEntry.status.uuid,
         isTransition: true,

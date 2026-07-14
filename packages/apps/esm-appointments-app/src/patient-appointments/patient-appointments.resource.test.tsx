@@ -2,7 +2,7 @@ import { openmrsFetch, restBaseUrl } from '@openmrs/esm-framework';
 import { renderHook, waitFor } from '@testing-library/react';
 import React from 'react';
 import { SWRConfig } from 'swr';
-import { getAppointmentStatus, usePatientAppointments } from './patient-appointments.resource';
+import { changeAppointmentStatus, getAppointmentStatus, usePatientAppointments } from './patient-appointments.resource';
 
 const mockOpenmrsFetch = vi.mocked(openmrsFetch);
 const mockFetchResponse = (data: Array<unknown>) => ({ data }) as Awaited<ReturnType<typeof openmrsFetch>>;
@@ -206,5 +206,21 @@ describe('usePatientAppointments', () => {
     await expect(getAppointmentStatus('appointment-uuid')).resolves.toBe('CheckedIn');
 
     expect(mockOpenmrsFetch).toHaveBeenCalledWith(`${restBaseUrl}/appointment?uuid=appointment-uuid`);
+  });
+
+  it('sends an unambiguous UTC timestamp when changing status', async () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date('2026-07-13T15:30:00.000Z'));
+
+    await changeAppointmentStatus('CheckedIn', 'appointment-uuid');
+
+    expect(mockOpenmrsFetch).toHaveBeenCalledWith(
+      `${restBaseUrl}/appointments/appointment-uuid/status-change`,
+      expect.objectContaining({
+        method: 'POST',
+        body: { toStatus: 'CheckedIn', onDate: '2026-07-13T15:30:00.000Z' },
+      }),
+    );
+    vi.useRealTimers();
   });
 });

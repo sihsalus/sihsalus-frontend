@@ -30,6 +30,8 @@ import styles from './well-child-controls-form.scss';
 export const createCREDControlsSchema = (
   t: (key: string, fallback: string) => string,
   patientBirthDate?: string | Date,
+  visitStartDatetime?: string | Date,
+  visitStopDatetime?: string | Date,
 ) =>
   z
     .object({
@@ -44,7 +46,13 @@ export const createCREDControlsSchema = (
     })
     .superRefine((data, context) => {
       const consultationDatetime = getConsultationDatetime(data);
-      const chronologyError = getCREDConsultationChronologyError(consultationDatetime, patientBirthDate);
+      const chronologyError = getCREDConsultationChronologyError(
+        consultationDatetime,
+        patientBirthDate,
+        new Date(),
+        visitStartDatetime,
+        visitStopDatetime,
+      );
 
       if (chronologyError === 'beforeBirth') {
         context.addIssue({
@@ -64,6 +72,34 @@ export const createCREDControlsSchema = (
           message: t('credConsultationInFuture', 'La fecha y hora de atención no puede estar en el futuro.'),
         });
       }
+
+      if (chronologyError === 'beforeVisit') {
+        context.addIssue({
+          code: z.ZodIssueCode.custom,
+          path:
+            visitStartDatetime && dayjs(consultationDatetime).isSame(dayjs(visitStartDatetime), 'day')
+              ? ['visitStartTime']
+              : ['visitStartDate'],
+          message: t(
+            'credConsultationBeforeVisit',
+            'La fecha y hora de atención no puede ser anterior al inicio de la visita.',
+          ),
+        });
+      }
+
+      if (chronologyError === 'afterVisit') {
+        context.addIssue({
+          code: z.ZodIssueCode.custom,
+          path:
+            visitStopDatetime && dayjs(consultationDatetime).isSame(dayjs(visitStopDatetime), 'day')
+              ? ['visitStartTime']
+              : ['visitStartDate'],
+          message: t(
+            'credConsultationAfterVisit',
+            'La fecha y hora de atención no puede ser posterior al cierre de la visita.',
+          ),
+        });
+      }
     });
 
 type CREDControlsFormType = z.infer<ReturnType<typeof createCREDControlsSchema>>;
@@ -81,12 +117,14 @@ export function getConsultationDatetime({
   return consultationDatetime;
 }
 
-export type CREDConsultationChronologyError = 'beforeBirth' | 'future' | null;
+export type CREDConsultationChronologyError = 'beforeBirth' | 'future' | 'beforeVisit' | 'afterVisit' | null;
 
 export function getCREDConsultationChronologyError(
   consultationDatetime: Date,
   patientBirthDate?: string | Date,
   now = new Date(),
+  visitStartDatetime?: string | Date,
+  visitStopDatetime?: string | Date,
 ): CREDConsultationChronologyError {
   if (
     patientBirthDate &&
@@ -96,7 +134,35 @@ export function getCREDConsultationChronologyError(
     return 'beforeBirth';
   }
 
-  return consultationDatetime > now ? 'future' : null;
+  if (consultationDatetime > now) return 'future';
+
+  if (
+    visitStartDatetime &&
+    dayjs(visitStartDatetime).isValid() &&
+    dayjs(consultationDatetime).isBefore(dayjs(visitStartDatetime))
+  ) {
+    return 'beforeVisit';
+  }
+
+  if (
+    visitStopDatetime &&
+    dayjs(visitStopDatetime).isValid() &&
+    dayjs(consultationDatetime).isAfter(dayjs(visitStopDatetime))
+  ) {
+    return 'afterVisit';
+  }
+
+  return null;
+}
+
+export function getCREDMinimumConsultationDate(
+  patientBirthDate?: string | Date,
+  visitStartDatetime?: string | Date,
+): string | Date | undefined {
+  if (!patientBirthDate) return visitStartDatetime;
+  if (!visitStartDatetime) return patientBirthDate;
+
+  return dayjs(visitStartDatetime).isAfter(dayjs(patientBirthDate)) ? visitStartDatetime : patientBirthDate;
 }
 
 export function resolveCREDControlNumber(
@@ -135,9 +201,12 @@ const CREDControlsWorkspace: React.FC<DefaultPatientWorkspaceProps> = ({
   const isTablet = useLayoutType() === 'tablet';
   const config = useConfig<ConfigObject>();
   const { patient, isLoading: isPatientLoading } = usePatient(patientUuid);
-  const CREDControlsSchema = useMemo(() => createCREDControlsSchema(t, patient?.birthDate), [patient?.birthDate, t]);
   const { activeVisit, currentVisit } = useVisit(patientUuid);
   const visit = currentVisit ?? activeVisit;
+  const CREDControlsSchema = useMemo(
+    () => createCREDControlsSchema(t, patient?.birthDate, visit?.startDatetime, visit?.stopDatetime),
+    [patient?.birthDate, t, visit?.startDatetime, visit?.stopDatetime],
+  );
   const { encounters: rawEncounters, isLoading: isEncountersLoading } = useCREDEncounters(patientUuid);
   const encounters = useMemo(() => groupCREDControlEncounters(rawEncounters ?? []), [rawEncounters]);
   const { getAgeGroupForForms } = useAgeGroups();
@@ -188,6 +257,10 @@ const CREDControlsWorkspace: React.FC<DefaultPatientWorkspaceProps> = ({
   );
 
   const allAvailableForms = useCREDFormsForAgeGroup(config, patient?.birthDate, consultationDate);
+  const minimumConsultationDate = useMemo(
+    () => getCREDMinimumConsultationDate(patient?.birthDate, visit?.startDatetime),
+    [patient?.birthDate, visit?.startDatetime],
+  );
 
   const handleStartControl = useCallback(
     (consultationData: CREDControlsFormType) => {
@@ -248,7 +321,7 @@ const CREDControlsWorkspace: React.FC<DefaultPatientWorkspaceProps> = ({
     <RequirePrivilege privilege={credCourseLifeEditPrivilege}>
       <Form className={styles.form} onSubmit={handleSubmit(handleStartControl, () => setShowErrorNotification(true))}>
         <div className={styles.grid}>
-          <EncounterDateTimeSection control={control} minDate={patient?.birthDate} />
+          <EncounterDateTimeSection control={control} minDate={minimumConsultationDate} />
 
           <div>
             <div className={styles.sectionTitle}>{t('detailsOfLastControl', 'Detalles del Último Control')}</div>

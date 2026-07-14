@@ -37,7 +37,6 @@
       "name": "start-visit-button",
       "component": "startVisitActionButton",
       "slot": "patient-actions-slot",
-      "privileges": "app:hoja.clinica",
       "online": true,
       "offline": true
     },
@@ -173,7 +172,6 @@
       "name": "start-visit-button-patient-search",
       "slot": "start-visit-button-slot",
       "component": "startVisitPatientSearchActionButton",
-      "privileges": "app:hoja.clinica",
       "online": true,
       "offline": true
     },
@@ -197,7 +195,6 @@
       "name": "edit-visit-action-button",
       "slot": "visit-detail-overview-actions",
       "component": "editVisitDetailsActionButton",
-      "privileges": "app:hoja.clinica.visitas.editar",
       "online": true,
       "offline": true,
       "order": 0
@@ -254,8 +251,7 @@
     },
     {
       "name": "start-visit-dialog",
-      "component": "startVisitModal",
-      "privileges": "app:hoja.clinica"
+      "component": "startVisitModal"
     }
   ],
   "pages": [
@@ -270,8 +266,7 @@
     {
       "name": "start-visit-workspace-form",
       "component": "startVisitWorkspace",
-      "window": "start-visit-workspace-window",
-      "privileges": "app:hoja.clinica"
+      "window": "start-visit-workspace-window"
     },
     {
       "name": "mark-patient-deceased-workspace-form",

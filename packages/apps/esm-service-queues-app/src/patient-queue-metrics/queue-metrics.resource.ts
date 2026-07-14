@@ -1,7 +1,7 @@
 import { openmrsFetch, restBaseUrl } from '@openmrs/esm-framework';
 import useSWR from 'swr';
 
-import { startOfDay } from '../constants';
+import { getStartOfDay } from '../constants';
 import { type Appointment } from '../types';
 
 export function useServiceMetricsCount(service?: string | null, location?: string | null) {
@@ -26,7 +26,7 @@ export function useServiceMetricsCount(service?: string | null, location?: strin
 }
 
 export const useAppointmentMetrics = () => {
-  const apiUrl = `${restBaseUrl}/appointment/all?forDate=${startOfDay}`;
+  const apiUrl = `${restBaseUrl}/appointment/all?forDate=${getStartOfDay()}`;
 
   const { data, error, isLoading } = useSWR<{
     data: Array<Appointment>;

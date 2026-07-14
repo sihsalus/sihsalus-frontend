@@ -3,7 +3,7 @@ import { Trans, useTranslation } from 'react-i18next';
 
 import { type QueueEntry } from '../../types';
 
-import { updateQueueEntry } from './queue-entry-actions.resource';
+import { endQueueEntry } from './queue-entry-actions.resource';
 import QueueEntryConfirmActionModal from './queue-entry-confirm-action.modal';
 
 interface EndQueueEntryModalProps {
@@ -32,10 +32,7 @@ const EndQueueEntryModal: React.FC<EndQueueEntryModalProps> = ({ queueEntry, clo
         submitSuccessTitle: t('patientRemoved', 'Patient removed'),
         submitSuccessText: t('patientRemovedSuccessfully', 'Patient removed from queue successfully'),
         submitFailureTitle: t('patientRemovedFailed', 'Error removing patient from queue'),
-        submitAction: (queueEntry) =>
-          updateQueueEntry(queueEntry.uuid, {
-            endedAt: new Date().toISOString(),
-          }),
+        submitAction: (queueEntry) => endQueueEntry(queueEntry.uuid),
       }}
       isRemovingPatientFromQueue
     />

@@ -89,6 +89,12 @@ export const esmPatientChartSchema = {
     _description: 'The UUID of the visit type to be used for the automatically created offline visits.',
     _default: 'a22733fa-3501-4020-a520-da024eeff088',
   },
+  visitPersistenceTokenAttributeTypeUuid: {
+    _type: Type.UUID,
+    _description:
+      'Visit attribute type used to persist a per-attempt idempotency token and reconcile ambiguous visit creation responses.',
+    _default: '',
+  },
   restrictByVisitLocationTag: {
     _type: Type.Boolean,
     _description:
@@ -296,6 +302,7 @@ export interface ChartConfig {
   diagnosisTypeConceptMap: Record<string, 'presuntivo' | 'definitivo' | 'repetitivo'>;
   numberOfVisitsToLoad: number;
   offlineVisitTypeUuid: string;
+  visitPersistenceTokenAttributeTypeUuid: string;
   restrictByVisitLocationTag: boolean;
   showAllEncountersTab: boolean;
   showExtraVisitAttributesSlot: boolean;

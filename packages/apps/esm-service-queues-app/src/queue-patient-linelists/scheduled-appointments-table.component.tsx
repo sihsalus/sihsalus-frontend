@@ -184,7 +184,8 @@ const AppointmentsTable: React.FC = () => {
         <div>
           <p className={styles.title}>{t('scheduledAppointmentsList', 'Scheduled appointments patient list')}</p>
           <p className={styles.subTitle}>
-            {appointmentQueueEntries?.length} · Last Updated: {formatDatetime(new Date(), { mode: 'standard' })}
+            {appointmentQueueEntries?.length} · {t('lastUpdated', 'Last updated')}:{' '}
+            {formatDatetime(new Date(), { mode: 'standard' })}
           </p>
         </div>
 

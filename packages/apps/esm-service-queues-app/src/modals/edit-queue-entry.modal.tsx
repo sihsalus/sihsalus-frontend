@@ -7,7 +7,7 @@ import { useQueueEntry } from '../hooks/useQueueEntry';
 import { useQueues } from '../hooks/useQueues';
 import { useUserFacingErrorMessage } from '../hooks/useUserFacingErrorMessage';
 import { type QueueEntry } from '../types';
-import { updateQueueEntry } from './queue-entry-actions.resource';
+import { updateActiveQueueEntry } from './queue-entry-actions.resource';
 import QueueEntryActionModal from './queue-entry-actions-modal.component';
 import { convertTime12to24 } from './time-helpers';
 
@@ -115,23 +115,27 @@ const EditQueueEntryModal: React.FC<EditQueueEntryModalProps> = ({ queueEntry, c
         submitFailureTitle: t('queueEntryEditingFailed', 'Error editing queue entry'),
         submitAction: (queueEntry, formState) => {
           const selectedQueue = queues.find((q) => q.uuid === formState.selectedQueue);
-          const statuses = selectedQueue?.allowedStatuses;
-          const priorities = selectedQueue?.allowedPriorities;
+          const status = selectedQueue?.allowedStatuses.find((item) => item.uuid === formState.selectedStatus);
+          const priority = selectedQueue?.allowedPriorities.find((item) => item.uuid === formState.selectedPriority);
+
+          if (!selectedQueue || !status || !priority) {
+            return Promise.reject(new Error('The selected queue configuration is not available.'));
+          }
 
           const startAtDate = new Date(formState.transitionDate);
           const [hour, minute] = convertTime12to24(formState.transitionTime, formState.transitionTimeFormat);
           startAtDate.setHours(hour, minute, 0, 0);
 
-          return updateQueueEntry(queueEntry.uuid, {
-            status: statuses.find((s) => s.uuid === formState.selectedStatus),
-            priority: priorities.find((p) => p.uuid === formState.selectedPriority),
+          return updateActiveQueueEntry(queueEntry.uuid, {
+            status,
+            priority,
             priorityComment: formState.priorityComment,
             ...(formState.modifyDefaultTransitionDateTime ? { startedAt: startAtDate.toISOString() } : {}),
           });
         },
         disableSubmit: () => false,
         isEdit: true,
-        showQueuePicker: true,
+        showQueuePicker: false,
         showStatusPicker: true,
       }}
     />

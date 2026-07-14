@@ -6,9 +6,8 @@ import { useMutateQueueEntries } from '../hooks/useQueueEntries';
 import { useQueueEntry } from '../hooks/useQueueEntry';
 import { useUserFacingErrorMessage } from '../hooks/useUserFacingErrorMessage';
 import { type QueueEntry } from '../types';
-import { transitionQueueEntry } from './queue-entry-actions.resource';
+import { isQueueEntryTransitionUnchanged, transitionQueueEntry } from './queue-entry-actions.resource';
 import QueueEntryActionModal from './queue-entry-actions-modal.component';
-import { convertTime12to24 } from './time-helpers';
 
 interface MoveQueueEntryModalProps {
   queueEntry: QueueEntry;
@@ -109,24 +108,15 @@ const MoveQueueEntryModal: React.FC<MoveQueueEntryModalProps> = ({ queueEntry, c
         submitSuccessTitle: t('queueEntryTransitioned', 'Queue entry transitioned'),
         submitSuccessText: t('queueEntryTransitionedSuccessfully', 'Queue entry transitioned successfully'),
         submitFailureTitle: t('queueEntryTransitionFailed', 'Error transitioning queue entry'),
-        submitAction: (queueEntry, formState) => {
-          const transitionDate = new Date(formState.transitionDate);
-          const [hour, minute] = convertTime12to24(formState.transitionTime, formState.transitionTimeFormat);
-          transitionDate.setHours(hour, minute, 0, 0);
-
-          return transitionQueueEntry({
+        submitAction: (queueEntry, formState) =>
+          transitionQueueEntry({
             queueEntryToTransition: queueEntry.uuid,
             newQueue: formState.selectedQueue,
             newStatus: formState.selectedStatus,
             newPriority: formState.selectedPriority,
             newPriorityComment: formState.priorityComment,
-            ...(formState.modifyDefaultTransitionDateTime ? { transitionDate: transitionDate.toISOString() } : {}),
-          });
-        },
-        disableSubmit: (queueEntry, formState) =>
-          formState.selectedQueue === queueEntry.queue.uuid &&
-          formState.selectedStatus === queueEntry.status.uuid &&
-          formState.selectedPriority === queueEntry.priority.uuid,
+          }),
+        disableSubmit: (queueEntry, formState) => isQueueEntryTransitionUnchanged(queueEntry, formState),
         isEdit: false,
         showQueuePicker: true,
         showStatusPicker: false,

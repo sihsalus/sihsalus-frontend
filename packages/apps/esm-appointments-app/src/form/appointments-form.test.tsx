@@ -1,6 +1,7 @@
 import {
   type FetchResponse,
   getDefaultsFromConfigSchema,
+  getUserFacingErrorMessage,
   openmrsFetch,
   showSnackbar,
   useConfig,
@@ -22,6 +23,8 @@ import {
 import { type ConfigObject, configSchema } from '../config-schema';
 import { appointmentNoteMaxLength } from '../constants';
 import { useProviders } from '../hooks/useProviders';
+import { getAppointmentStatus } from '../patient-appointments/patient-appointments.resource';
+import { type Appointment, AppointmentKind, AppointmentStatus } from '../types';
 
 import { saveAppointment } from './appointments-form.resource';
 import AppointmentForm from './appointments-form.workspace';
@@ -36,6 +39,8 @@ const defaultProps = {
 };
 
 const mockOpenmrsFetch = vi.mocked(openmrsFetch);
+const mockGetAppointmentStatus = vi.mocked(getAppointmentStatus);
+const mockGetUserFacingErrorMessage = vi.mocked(getUserFacingErrorMessage);
 const mockSaveAppointment = vi.mocked(saveAppointment);
 const mockShowSnackbar = vi.mocked(showSnackbar);
 const mockUseConfig = vi.mocked(useConfig<ConfigObject>);
@@ -63,6 +68,45 @@ async function fillRequiredAppointmentFields(user: ReturnType<typeof userEvent.s
   await user.selectOptions(screen.getByRole('combobox', { name: /time/i }), 'AM');
 }
 
+function makeEditableAppointment(): Appointment {
+  return {
+    uuid: 'appointment-uuid',
+    appointmentNumber: '0000',
+    patient: {
+      identifier: '100GEJ',
+      identifiers: [],
+      name: 'John Wilson',
+      uuid: mockPatient.id,
+    },
+    service: {
+      appointmentServiceId: 1,
+      creatorName: '',
+      description: '',
+      durationMins: 15,
+      endTime: '',
+      initialAppointmentStatus: AppointmentStatus.SCHEDULED,
+      location: { uuid: 'service-location-uuid' },
+      maxAppointmentsLimit: null,
+      name: 'Outpatient',
+      startTime: '',
+      uuid: 'e2ec9cf0-ec38-4d2b-af6c-59c82fa30b90',
+    },
+    provider: { uuid: 'f9badd80-ab76-11e2-9e96-0800200c9a66' },
+    providers: [{ uuid: 'f9badd80-ab76-11e2-9e96-0800200c9a66', response: 'ACCEPTED' }],
+    location: { name: 'Inpatient Ward', uuid: 'b1a8b05e-3542-4037-bbd3-998ee9c40574' },
+    startDateTime: new Date(Date.now() + 86_400_000).toISOString(),
+    endDateTime: new Date(Date.now() + 86_400_000 + 30 * 60_000).toISOString(),
+    dateAppointmentScheduled: new Date().toISOString(),
+    appointmentKind: AppointmentKind.SCHEDULED,
+    status: AppointmentStatus.SCHEDULED,
+    comments: 'Existing appointment',
+    recurring: false,
+    voided: false,
+    extensions: {},
+    teleconsultationLink: null,
+  };
+}
+
 vi.mock('./appointments-form.resource', async () => ({
   ...(await vi.importActual('./appointments-form.resource')),
   saveAppointment: vi.fn(),
@@ -71,6 +115,11 @@ vi.mock('./appointments-form.resource', async () => ({
 vi.mock('../hooks/useProviders', async () => ({
   ...(await vi.importActual('../hooks/useProviders')),
   useProviders: vi.fn(),
+}));
+
+vi.mock('../patient-appointments/patient-appointments.resource', async () => ({
+  ...(await vi.importActual('../patient-appointments/patient-appointments.resource')),
+  getAppointmentStatus: vi.fn(),
 }));
 
 vi.mock('../workload/workload.resource', async () => ({
@@ -89,6 +138,11 @@ describe('AppointmentForm', () => {
     vi.clearAllMocks();
     mockSaveAppointment.mockResolvedValue({} as FetchResponse<unknown>);
     mockOpenmrsFetch.mockResolvedValue({ data: {} } as FetchResponse<unknown>);
+    mockGetAppointmentStatus.mockResolvedValue(AppointmentStatus.SCHEDULED);
+    mockGetUserFacingErrorMessage.mockImplementation((error, fallback, options) => {
+      const code = error && typeof error === 'object' && 'code' in error ? error.code : undefined;
+      return code != null ? (options.codeMessages?.[code as string] ?? fallback) : fallback;
+    });
     mockUseConfig.mockReturnValue({
       ...getDefaultsFromConfigSchema(configSchema),
       appointmentTypes: ['Scheduled', 'WalkIn'],
@@ -225,7 +279,7 @@ describe('AppointmentForm', () => {
         providers: [{ uuid: 'f9badd80-ab76-11e2-9e96-0800200c9a66' }],
         serviceUuid: 'e2ec9cf0-ec38-4d2b-af6c-59c82fa30b90',
         startDateTime: expect.stringMatching(dateTimeRegex),
-        status: '',
+        status: AppointmentStatus.SCHEDULED,
         uuid: undefined,
       }),
       expect.anything(),
@@ -286,7 +340,7 @@ describe('AppointmentForm', () => {
       expect(mockShowSnackbar).toHaveBeenCalledWith({
         isLowContrast: false,
         kind: 'error',
-        subtitle: 'Conflict validation unavailable',
+        subtitle: 'No se pudieron verificar los conflictos de la cita. Intente nuevamente.',
         title: 'Error scheduling appointment',
       });
     });
@@ -330,7 +384,7 @@ describe('AppointmentForm', () => {
         providers: [{ uuid: 'f9badd80-ab76-11e2-9e96-0800200c9a66' }],
         serviceUuid: 'e2ec9cf0-ec38-4d2b-af6c-59c82fa30b90',
         startDateTime: expect.stringMatching(dateTimeRegex),
-        status: '',
+        status: AppointmentStatus.SCHEDULED,
         uuid: undefined,
       }),
       expect.anything(),
@@ -340,8 +394,199 @@ describe('AppointmentForm', () => {
     expect(mockShowSnackbar).toHaveBeenCalledWith({
       isLowContrast: false,
       kind: 'error',
-      subtitle: 'Internal Server Error',
+      subtitle: 'No se pudo guardar la cita. Revise los datos e intente nuevamente.',
       title: 'Error scheduling appointment',
     });
+  });
+
+  it('uses the selected service initial status when creating an appointment', async () => {
+    const user = userEvent.setup();
+    const requestedService = {
+      ...mockUseAppointmentServiceData[0],
+      initialAppointmentStatus: AppointmentStatus.REQUESTED,
+    };
+
+    mockOpenmrsFetch.mockResolvedValue({ data: [requestedService] } as unknown as FetchResponse);
+    mockSaveAppointment.mockResolvedValue({ status: 201 } as FetchResponse);
+
+    renderWithSwr(<AppointmentForm {...defaultProps} />);
+
+    await waitForLoadingToFinish();
+    await fillRequiredAppointmentFields(user);
+    await user.click(screen.getByRole('button', { name: /save and close/i }));
+
+    await waitFor(() => expect(mockSaveAppointment).toHaveBeenCalledTimes(1));
+    expect(mockSaveAppointment.mock.calls[0][0]).toEqual(
+      expect.objectContaining({ status: AppointmentStatus.REQUESTED }),
+    );
+  });
+
+  it('preserves WaitList when the selected service configures it as the initial status', async () => {
+    const user = userEvent.setup();
+    const waitListService = {
+      ...mockUseAppointmentServiceData[0],
+      initialAppointmentStatus: AppointmentStatus.WAITLIST,
+    };
+
+    mockOpenmrsFetch.mockResolvedValue({ data: [waitListService] } as unknown as FetchResponse);
+    mockSaveAppointment.mockResolvedValue({ status: 201 } as FetchResponse);
+
+    renderWithSwr(<AppointmentForm {...defaultProps} />);
+
+    await waitForLoadingToFinish();
+    await fillRequiredAppointmentFields(user);
+    await user.click(screen.getByRole('button', { name: /save and close/i }));
+
+    await waitFor(() => expect(mockSaveAppointment).toHaveBeenCalledTimes(1));
+    expect(mockSaveAppointment.mock.calls[0][0]).toEqual(
+      expect.objectContaining({ status: AppointmentStatus.WAITLIST }),
+    );
+  });
+
+  it('does not allow a workflow status as the initial status of a new appointment', async () => {
+    const user = userEvent.setup();
+    const serviceWithInvalidInitialStatus = {
+      ...mockUseAppointmentServiceData[0],
+      initialAppointmentStatus: AppointmentStatus.COMPLETED,
+    };
+
+    mockOpenmrsFetch.mockResolvedValue({ data: [serviceWithInvalidInitialStatus] } as unknown as FetchResponse);
+    mockSaveAppointment.mockResolvedValue({ status: 201 } as FetchResponse);
+
+    renderWithSwr(<AppointmentForm {...defaultProps} />);
+
+    await waitForLoadingToFinish();
+    await fillRequiredAppointmentFields(user);
+    await user.click(screen.getByRole('button', { name: /save and close/i }));
+
+    await waitFor(() => expect(mockSaveAppointment).toHaveBeenCalledTimes(1));
+    expect(mockSaveAppointment.mock.calls[0][0]).toEqual(
+      expect.objectContaining({ status: AppointmentStatus.SCHEDULED }),
+    );
+  });
+
+  it('does not expose or submit appointment status when editing', async () => {
+    const user = userEvent.setup();
+    const appointment = makeEditableAppointment();
+
+    mockOpenmrsFetch.mockResolvedValue({ data: mockUseAppointmentServiceData } as unknown as FetchResponse);
+    mockSaveAppointment.mockResolvedValue({ status: 200 } as FetchResponse);
+
+    renderWithSwr(<AppointmentForm {...defaultProps} context="editing" appointment={appointment} />);
+
+    await waitForLoadingToFinish();
+    expect(screen.queryByLabelText(/select status/i)).not.toBeInTheDocument();
+    expect(screen.queryByText(/appointment status/i)).not.toBeInTheDocument();
+
+    await user.click(screen.getByRole('button', { name: /save and close/i }));
+
+    await waitFor(() => expect(mockSaveAppointment).toHaveBeenCalledTimes(1));
+    expect(mockGetAppointmentStatus).toHaveBeenCalledWith(appointment.uuid);
+    expect(mockOpenmrsFetch).toHaveBeenCalledWith(
+      expect.stringContaining('/appointments/conflicts'),
+      expect.objectContaining({ body: expect.objectContaining({ uuid: appointment.uuid }) }),
+    );
+    expect(mockSaveAppointment.mock.calls[0][0]).not.toHaveProperty('status');
+    expect(mockSaveAppointment.mock.calls[0][0]).toEqual(expect.objectContaining({ uuid: appointment.uuid }));
+  });
+
+  it('blocks editing when another appointment causes a patient double-booking conflict', async () => {
+    const user = userEvent.setup();
+    const appointment = makeEditableAppointment();
+    mockOpenmrsFetch
+      .mockResolvedValueOnce({ data: mockUseAppointmentServiceData } as unknown as FetchResponse)
+      .mockResolvedValueOnce({
+        status: 200,
+        data: { PATIENT_DOUBLE_BOOKING: true },
+      } as unknown as FetchResponse);
+
+    renderWithSwr(<AppointmentForm {...defaultProps} context="editing" appointment={appointment} />);
+
+    await waitForLoadingToFinish();
+    await user.click(screen.getByRole('button', { name: /save and close/i }));
+
+    await waitFor(() =>
+      expect(mockShowSnackbar).toHaveBeenCalledWith(
+        expect.objectContaining({
+          kind: 'error',
+          title: 'Patient already booked for an appointment at this time',
+        }),
+      ),
+    );
+    expect(mockSaveAppointment).not.toHaveBeenCalled();
+  });
+
+  it('blocks editing when the fresh appointment status is no longer editable', async () => {
+    const user = userEvent.setup();
+    const appointment = makeEditableAppointment();
+    mockOpenmrsFetch.mockResolvedValue({ data: mockUseAppointmentServiceData } as unknown as FetchResponse);
+    mockGetAppointmentStatus.mockResolvedValue(AppointmentStatus.CHECKEDIN);
+
+    renderWithSwr(<AppointmentForm {...defaultProps} context="editing" appointment={appointment} />);
+
+    await waitForLoadingToFinish();
+    await user.click(screen.getByRole('button', { name: /save and close/i }));
+
+    await waitFor(() =>
+      expect(mockShowSnackbar).toHaveBeenCalledWith({
+        isLowContrast: false,
+        kind: 'error',
+        subtitle: 'El estado de la cita cambió y ya no permite editarla. Actualice la lista.',
+        title: 'Error editing appointment',
+      }),
+    );
+    expect(mockGetAppointmentStatus).toHaveBeenCalledWith(appointment.uuid);
+    expect(mockOpenmrsFetch).not.toHaveBeenCalledWith(
+      expect.stringContaining('/appointments/conflicts'),
+      expect.anything(),
+    );
+    expect(mockSaveAppointment).not.toHaveBeenCalled();
+  });
+
+  it('blocks an edit when check-in happens after conflict validation but before persistence', async () => {
+    const user = userEvent.setup();
+    const appointment = makeEditableAppointment();
+    mockOpenmrsFetch
+      .mockResolvedValueOnce({ data: mockUseAppointmentServiceData } as unknown as FetchResponse)
+      .mockResolvedValueOnce({ status: 200, data: null } as unknown as FetchResponse);
+    mockGetAppointmentStatus
+      .mockResolvedValueOnce(AppointmentStatus.SCHEDULED)
+      .mockResolvedValueOnce(AppointmentStatus.CHECKEDIN);
+
+    renderWithSwr(<AppointmentForm {...defaultProps} context="editing" appointment={appointment} />);
+
+    await waitForLoadingToFinish();
+    await user.click(screen.getByRole('button', { name: /save and close/i }));
+
+    await waitFor(() => expect(mockGetAppointmentStatus).toHaveBeenCalledTimes(2));
+    expect(mockShowSnackbar).toHaveBeenCalledWith(
+      expect.objectContaining({
+        kind: 'error',
+        subtitle: 'El estado de la cita cambió y ya no permite editarla. Actualice la lista.',
+      }),
+    );
+    expect(mockSaveAppointment).not.toHaveBeenCalled();
+  });
+
+  it('fails closed without exposing technical details when the fresh status check fails', async () => {
+    const user = userEvent.setup();
+    const appointment = makeEditableAppointment();
+    mockOpenmrsFetch.mockResolvedValue({ data: mockUseAppointmentServiceData } as unknown as FetchResponse);
+    mockGetAppointmentStatus.mockRejectedValue(new Error('SQL connection refused at db.internal'));
+
+    renderWithSwr(<AppointmentForm {...defaultProps} context="editing" appointment={appointment} />);
+
+    await waitForLoadingToFinish();
+    await user.click(screen.getByRole('button', { name: /save and close/i }));
+
+    await waitFor(() =>
+      expect(mockShowSnackbar).toHaveBeenCalledWith({
+        isLowContrast: false,
+        kind: 'error',
+        subtitle: 'No se pudo verificar el estado actual de la cita. Intente nuevamente.',
+        title: 'Error editing appointment',
+      }),
+    );
+    expect(mockSaveAppointment).not.toHaveBeenCalled();
   });
 });

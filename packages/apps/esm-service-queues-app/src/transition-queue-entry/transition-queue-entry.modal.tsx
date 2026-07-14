@@ -54,18 +54,12 @@ const TransitionQueueEntryModal: React.FC<TransitionQueueEntryModalProps> = ({ c
   const { mutateQueueEntries } = useMutateQueueEntries();
 
   const launchEditPriorityModal = useCallback(async () => {
-    const endedAt = new Date();
     try {
       await updateQueueEntry(
-        queueEntry?.visitUuid,
-        queueEntry?.queueUuid,
-        queueEntry?.queueUuid,
         queueEntry?.queueEntryUuid,
-        queueEntry?.patientUuid,
+        queueEntry?.queueUuid,
         queueEntry?.priority?.uuid,
         defaultTransitionStatus,
-        endedAt,
-        queueEntry?.sortWeight,
       );
       await serveQueueEntry(queueEntry?.queue.name, queueEntry?.visitQueueNumber, 'serving');
 
@@ -99,9 +93,7 @@ const TransitionQueueEntryModal: React.FC<TransitionQueueEntryModalProps> = ({ c
     queueEntry?.queue.name,
     queueEntry?.queueEntryUuid,
     queueEntry?.queueUuid,
-    queueEntry?.sortWeight,
     queueEntry?.visitQueueNumber,
-    queueEntry?.visitUuid,
     t,
   ]);
 

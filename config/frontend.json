@@ -24,6 +24,59 @@
       "bodyMassIndexUuid": "5b877648-ae50-4d45-ad36-0196042baa1a"
     }
   },
+  "@sihsalus/esm-patient-chart-app": {
+    "visitPersistenceTokenAttributeTypeUuid": "eb8b793b-f259-451d-9c09-53aa0ffd0d3f"
+  },
+  "@sihsalus/esm-appointments-app": {
+    "appointmentVisitAttributeTypeUuid": "193508ab-20c6-5291-9f23-0257335eaabd",
+    "appointmentQueueMappings": [
+      {
+        "appointmentServiceUuid": "7ba3aa21-cc56-47ca-bb4d-a60549f666c0",
+        "appointmentLocationUuid": "35d2234e-129a-4c40-abb2-1ae0b2400001",
+        "queueUuid": "d4e5f6a7-b8c9-40d1-e2f3-a4b5c6d7e8f9",
+        "queueLocationUuid": "35d2234e-129a-4c40-abb2-1ae0b2400001",
+        "requiredVisitTypeUuid": "f70a865a-6cae-4d04-8d05-acb5bf88fa16"
+      },
+      {
+        "appointmentServiceUuid": "a6d7f9b3-2c5e-48d1-93e4-7f8a6b5c2d02",
+        "appointmentLocationUuid": "35d2234e-129a-4c40-abb2-1ae0b2400004",
+        "queueUuid": "c9d0e1f2-a3b4-45c6-d7e8-f9a0b1c2d3e4",
+        "queueLocationUuid": "35d2234e-129a-4c40-abb2-1ae0b2400004",
+        "requiredVisitTypeUuid": "19fa588e-3185-41c2-a5d1-21c3a4af944b"
+      },
+      {
+        "appointmentServiceUuid": "115b9e98-0bb4-4791-afa6-d21d071cfd87",
+        "appointmentLocationUuid": "35d2234e-129a-4c40-abb2-1ae0b2400005",
+        "queueUuid": "d0e1f2a3-b4c5-46d7-e8f9-a0b1c2d3e4f5",
+        "queueLocationUuid": "35d2234e-129a-4c40-abb2-1ae0b2400005",
+        "requiredVisitTypeUuid": "f8238c67-4514-46d2-87d0-330b64c76311"
+      },
+      {
+        "appointmentServiceUuid": "e6a43c30-71ac-4ec6-9757-c78a50ee8e8b",
+        "appointmentLocationUuid": "35d2234e-129a-4c40-abb2-1ae0b2400006",
+        "queueUuid": "f6a7b8c9-d0e1-42f3-a4b5-c6d7e8f9a0b1",
+        "queueLocationUuid": "35d2234e-129a-4c40-abb2-1ae0b2400006",
+        "requiredVisitTypeUuid": "04ffb8cf-1761-42bb-9881-1150fdfbbc2d"
+      },
+      {
+        "appointmentServiceUuid": "70b7402d-fdfe-4707-94d8-5eb5780ffde5",
+        "appointmentLocationUuid": "35d2234e-129a-4c40-abb2-1ae0b2400013",
+        "queueUuid": "e1f2a3b4-c5d6-47e8-f9a0-b1c2d3e4f5a6",
+        "queueLocationUuid": "35d2234e-129a-4c40-abb2-1ae0b2400013",
+        "requiredVisitTypeUuid": "04ffb8cf-1761-42bb-9881-1150fdfbbc2d"
+      },
+      {
+        "appointmentServiceUuid": "74156b5c-b1b0-4432-b073-a8af65ebcb11",
+        "appointmentLocationUuid": "35d2234e-129a-4c40-abb2-1ae0b2400007",
+        "queueUuid": "e5f6a7b8-c9d0-41e2-f3a4-b5c6d7e8f9a0",
+        "queueLocationUuid": "35d2234e-129a-4c40-abb2-1ae0b2400007",
+        "requiredVisitTypeUuid": "110001d9-7f3a-4e7b-91a2-580b216a7c42"
+      }
+    ]
+  },
+  "@sihsalus/esm-service-queues-app": {
+    "visitQueueNumberAttributeUuid": "06a0b8c6-cbdf-4b42-9cbd-871129db8758"
+  },
   "@sihsalus/esm-patient-procedures-app": {
     "statusConceptUuid": "f0d47b45-8303-4cdc-a9f2-c37135a3700f",
     "statusConceptSourceType": "Answer to",

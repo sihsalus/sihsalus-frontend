@@ -128,7 +128,7 @@ export const QueueEntryActionModal: React.FC<QueueEntryActionModalProps> = ({
     transitionTime: dayjs(initialTransitionDate).format('hh:mm'),
     transitionTimeFormat: dayjs(initialTransitionDate).hour() < 12 ? 'AM' : 'PM',
   });
-  const { queues } = useQueues();
+  const { queues, isLoading: isLoadingQueues, error: queuesError } = useQueues();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [userFacingSubmissionError, setUserFacingSubmissionError] = useState<{
     type: 'duplicate' | 'error';
@@ -144,6 +144,13 @@ export const QueueEntryActionModal: React.FC<QueueEntryActionModalProps> = ({
   const hasNoStatusesConfigured = selectedQueue && statuses.length === 0;
   const priorities = selectedQueue?.allowedPriorities;
   const hasNoPrioritiesConfigured = selectedQueue && priorities.length === 0;
+  const hasValidQueueConfiguration = Boolean(
+    !isLoadingQueues &&
+      !queuesError &&
+      selectedQueue &&
+      priorities?.some(({ uuid }) => uuid === formState.selectedPriority) &&
+      (!showStatusPicker || statuses?.some(({ uuid }) => uuid === formState.selectedStatus)),
+  );
 
   const setSelectedQueueUuid = (selectedQueueUuid: string) => {
     clearSubmissionError();
@@ -199,7 +206,9 @@ export const QueueEntryActionModal: React.FC<QueueEntryActionModalProps> = ({
   const submitForm = () => {
     setIsSubmitting(true);
 
-    submitAction(queueEntry, formState)
+    // Normalize synchronous validation failures into the existing async error path.
+    Promise.resolve()
+      .then(() => submitAction(queueEntry, formState))
       .then(({ status }) => {
         if (status === 200) {
           showSnackbar({
@@ -306,6 +315,14 @@ export const QueueEntryActionModal: React.FC<QueueEntryActionModalProps> = ({
         <div className={styles.queueEntryActionModalBody}>
           <Stack gap={4}>
             {modalInstruction && <p>{modalInstruction}</p>}
+            {queuesError && (
+              <InlineNotification
+                hideCloseButton
+                kind="error"
+                lowContrast
+                title={t('queueDataLoadErrorMessage', 'No se pudo cargar la información de la cola. Inténtelo de nuevo.')}
+              />
+            )}
             {showQueuePicker && (
               <section>
                 {/* Read this issue description for why we're using 8 locations as the cut off https://openmrs.atlassian.net/jira/software/c/projects/O3/issues/O3-4131 */}
@@ -315,7 +332,7 @@ export const QueueEntryActionModal: React.FC<QueueEntryActionModalProps> = ({
                     className={styles.radioButtonGroup}
                     id="queue"
                     name="queue"
-                    invalidText="Required"
+                    invalidText={t('required', 'Required')}
                     valueSelected={formState.selectedQueue}
                     orientation="vertical"
                     onChange={(uuid) => setSelectedQueueUuid(String(uuid))}
@@ -429,52 +446,54 @@ export const QueueEntryActionModal: React.FC<QueueEntryActionModalProps> = ({
               />
             </section>
 
-            <section>
-              <div className={styles.sectionTitle}>{t('timeOfTransition', 'Time of transition')}</div>
-              <Checkbox
-                labelText={t('now', 'Now')}
-                id={'modifyTransitionTime'}
-                checked={!formState.modifyDefaultTransitionDateTime}
-                onChange={(_, { checked }) => {
-                  setModifyDefaultTransitionDateTime(!checked);
-                }}
-              />
-              {formState.modifyDefaultTransitionDateTime && (
-                <div className={styles.dateTimeFields}>
-                  <OpenmrsDatePicker
-                    data-testid="datePickerInput"
-                    id="datePickerInput"
-                    labelText={t('date', 'Date')}
-                    maxDate={new Date()}
-                    onChange={setTransitionDate}
-                    value={formState.transitionDate}
-                  />
+            {isEdit && (
+              <section>
+                <div className={styles.sectionTitle}>{t('queueEntryStartTime', 'Queue entry start time')}</div>
+                <Checkbox
+                  labelText={t('now', 'Now')}
+                  id={'modifyTransitionTime'}
+                  checked={!formState.modifyDefaultTransitionDateTime}
+                  onChange={(_, { checked }) => {
+                    setModifyDefaultTransitionDateTime(!checked);
+                  }}
+                />
+                {formState.modifyDefaultTransitionDateTime && (
+                  <div className={styles.dateTimeFields}>
+                    <OpenmrsDatePicker
+                      data-testid="datePickerInput"
+                      id="datePickerInput"
+                      labelText={t('date', 'Date')}
+                      maxDate={new Date()}
+                      onChange={setTransitionDate}
+                      value={formState.transitionDate}
+                    />
 
-                  <TimePicker
-                    id="transitionTime"
-                    labelText={t('time', 'Time')}
-                    onChange={(event) => {
-                      const sanitized = event.target.value.replace(/[^0-9:]/g, '');
-                      setTransitionTime(sanitized); // ← sanitized, not raw value
-                    }}
-                    pattern={time12HourFormatRegexPattern}
-                    value={formState.transitionTime}
-                    invalid={timeInvalidMessage !== null}
-                    invalidText={timeInvalidMessage}
-                  >
-                    <TimePickerSelect
-                      id="visitStartTimeSelect"
-                      onChange={(event) => setTransitionTimeFormat(event.target.value as amPm)}
-                      value={formState.transitionTimeFormat}
-                      aria-label={t('time', 'Time')}
+                    <TimePicker
+                      id="transitionTime"
+                      labelText={t('time', 'Time')}
+                      onChange={(event) => {
+                        const sanitized = event.target.value.replace(/[^0-9:]/g, '');
+                        setTransitionTime(sanitized); // ← sanitized, not raw value
+                      }}
+                      pattern={time12HourFormatRegexPattern}
+                      value={formState.transitionTime}
+                      invalid={timeInvalidMessage !== null}
+                      invalidText={timeInvalidMessage}
                     >
-                      <SelectItem value="AM" text="AM" />
-                      <SelectItem value="PM" text="PM" />
-                    </TimePickerSelect>
-                  </TimePicker>
-                </div>
-              )}
-            </section>
+                      <TimePickerSelect
+                        id="visitStartTimeSelect"
+                        onChange={(event) => setTransitionTimeFormat(event.target.value as amPm)}
+                        value={formState.transitionTimeFormat}
+                        aria-label={t('time', 'Time')}
+                      >
+                        <SelectItem value="AM" text="AM" />
+                        <SelectItem value="PM" text="PM" />
+                      </TimePickerSelect>
+                    </TimePicker>
+                  </div>
+                )}
+              </section>
+            )}
 
             {userFacingSubmissionError && (
               <InlineNotification
@@ -495,8 +514,9 @@ export const QueueEntryActionModal: React.FC<QueueEntryActionModalProps> = ({
         <Button
           disabled={
             isSubmitting ||
+            !hasValidQueueConfiguration ||
             disableSubmit(queueEntry, formState) ||
-            (formState.modifyDefaultTransitionDateTime && timeInvalidMessage !== null)
+            (isEdit && formState.modifyDefaultTransitionDateTime && timeInvalidMessage !== null)
           }
           onClick={submitForm}
         >

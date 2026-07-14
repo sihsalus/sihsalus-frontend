@@ -54,6 +54,6 @@ clasificaciones.
 
 ## TODO ya cubiertos en código
 
-- Calendario CRED alineado a NTS 238: `cred-schedule-rules.ts` define 27 controles y `cred-schedule-rules.test.ts` lo verifica.
+- Calendario CRED alineado a NTS 238: `cred-schedule-rules.ts` define las 27 edades ideales y `cred-control-intervals.ts` calcula el siguiente control desde la ultima atencion real.
 - Selector CRED: `useCREDFormsForAgeGroup` ya convierte keys de `formsList` en objetos `Form` válidos para el selector.
 - Traducciones base de dashboards: `dashboard-translations.test.ts` cubre keys principales como `neonatalCare`, `newbornVitals`, `wellChildCare` y `childNutrition`.

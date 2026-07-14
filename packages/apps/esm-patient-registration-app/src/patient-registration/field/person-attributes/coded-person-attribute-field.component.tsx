@@ -36,6 +36,7 @@ export function CodedPersonAttributeField({
   readOnly,
   enforceAnswerSetMembership = false,
 }: CodedPersonAttributeFieldProps) {
+  const { t } = useTranslation(moduleName);
   const { user } = useSession();
   const hasCustomConceptAnswers = customConceptAnswers.length > 0;
   const canGetConcepts = userHasAccess(getConceptsPrivilege, user);
@@ -52,17 +53,22 @@ export function CodedPersonAttributeField({
     shouldLoadConceptAnswers && !isLoadingConceptAnswers && !conceptAnswersError && conceptAnswers?.length === 0;
   const cannotLoadConceptAnswers = !hasCustomConceptAnswers && (!canGetConcepts || Boolean(conceptAnswersError));
 
-  const answers = useMemo(
-    () =>
-      hasCustomConceptAnswers
-        ? customConceptAnswers
-        : (conceptAnswers ?? [])
-            .map((answer) => ({ ...answer, label: answer.display }))
-            .sort((a, b) => a.label.localeCompare(b.label)),
-    [hasCustomConceptAnswers, customConceptAnswers, conceptAnswers],
-  );
+  const answers = useMemo(() => {
+    const availableAnswers = hasCustomConceptAnswers
+      ? customConceptAnswers
+      : (conceptAnswers ?? [])
+          .map((answer) => ({ ...answer, label: answer.display }))
+          .sort((a, b) => a.label.localeCompare(b.label));
 
-  const { t } = useTranslation(moduleName);
+    return availableAnswers.map((answer) => ({
+          ...answer,
+          label:
+            id === 'insuranceType' && /^particular\s*\/\s*sin seguro$/i.test(answer.label ?? '')
+              ? t('selfFinancing', 'Self-financing')
+              : answer.label,
+        }));
+  }, [conceptAnswers, customConceptAnswers, hasCustomConceptAnswers, id, t]);
+
   const fieldName = `attributes.${personAttributeType.uuid}`;
   const displayLabel = label ?? personAttributeType?.display;
   const labelText = required ? displayLabel : `${displayLabel} (${t('optional', 'optional')})`;

@@ -192,6 +192,35 @@ describe('CodedPersonAttributeField', () => {
     expect(screen.getByText('Another civil status option')).toBeInTheDocument();
   });
 
+  it('presents the database-funded private option as self-financing', () => {
+    mockUseConceptAnswers.mockReturnValue({
+      data: [
+        { uuid: 'self-funded-concept', display: 'Particular / Sin seguro' },
+        { uuid: 'public-concept', display: 'ESSALUD' },
+      ],
+      isLoading: false,
+      error: undefined,
+    });
+
+    render(
+      <Formik initialValues={{ attributes: {} }} onSubmit={() => {}}>
+        <Form>
+          <CodedPersonAttributeField
+            id="insuranceType"
+            personAttributeType={personAttributeType}
+            answerConceptSetUuid={answerConceptSetUuid}
+            label="Financiador"
+            customConceptAnswers={[]}
+            required={false}
+          />
+        </Form>
+      </Formik>,
+    );
+
+    expect(screen.getByRole('option', { name: 'Self-financing' })).toHaveValue('self-funded-concept');
+    expect(screen.queryByText('Particular / Sin seguro')).not.toBeInTheDocument();
+  });
+
   it('renders customConceptAnswers as select options when they are provided', () => {
     render(
       <Formik initialValues={{}} onSubmit={() => {}}>

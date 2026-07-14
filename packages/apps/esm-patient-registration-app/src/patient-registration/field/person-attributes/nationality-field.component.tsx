@@ -16,13 +16,17 @@ interface NationalityFieldProps {
   fieldDefinition: FieldDefinition;
 }
 
+const emptyConceptAnswers: Array<{ uuid: string; label?: string }> = [];
+
 export function NationalityField({ fieldDefinition }: NationalityFieldProps) {
   const { data: personAttributeType, isLoading, error } = usePersonAttributeType(fieldDefinition.uuid);
   const { setFieldValue, values } = useContext(PatientRegistrationContext);
   const { t } = useTranslation(moduleName);
   const nationalityWasAutoAssigned = useRef(false);
-  const fieldName = personAttributeType ? `attributes.${personAttributeType.uuid}` : null;
-  const nationalityValue = personAttributeType ? values.attributes?.[personAttributeType.uuid] : undefined;
+  const personAttributeTypeUuid = personAttributeType?.uuid;
+  const personAttributeTypeFormat = personAttributeType?.format;
+  const fieldName = personAttributeTypeUuid ? `attributes.${personAttributeTypeUuid}` : null;
+  const nationalityValue = personAttributeTypeUuid ? values.attributes?.[personAttributeTypeUuid] : undefined;
   const hasDniIdentifier = useMemo(
     () =>
       Object.values(values.identifiers ?? {}).some((identifier) => {
@@ -36,23 +40,32 @@ export function NationalityField({ fieldDefinition }: NationalityFieldProps) {
   );
 
   useEffect(() => {
-    if (!fieldName || !personAttributeType?.uuid || personAttributeType.format !== 'org.openmrs.Concept') {
+    if (!fieldName || !personAttributeTypeUuid || personAttributeTypeFormat !== 'org.openmrs.Concept') {
       return;
     }
 
     if (hasDniIdentifier) {
-      if (!nationalityValue) {
+      if (!nationalityValue && !nationalityWasAutoAssigned.current) {
         nationalityWasAutoAssigned.current = true;
         setFieldValue(fieldName, peruNationalityConceptUuid);
       }
       return;
     }
 
-    if (nationalityWasAutoAssigned.current && nationalityValue === peruNationalityConceptUuid) {
-      setFieldValue(fieldName, '');
+    if (nationalityWasAutoAssigned.current) {
+      nationalityWasAutoAssigned.current = false;
+      if (nationalityValue === peruNationalityConceptUuid) {
+        setFieldValue(fieldName, '');
+      }
     }
-    nationalityWasAutoAssigned.current = false;
-  }, [fieldName, hasDniIdentifier, nationalityValue, personAttributeType, setFieldValue]);
+  }, [
+    fieldName,
+    hasDniIdentifier,
+    nationalityValue,
+    personAttributeTypeFormat,
+    personAttributeTypeUuid,
+    setFieldValue,
+  ]);
 
   if (isLoading) {
     return (
@@ -89,7 +102,7 @@ export function NationalityField({ fieldDefinition }: NationalityFieldProps) {
       personAttributeType={personAttributeType}
       answerConceptSetUuid={fieldDefinition.answerConceptSetUuid}
       label={fieldDefinition.label}
-      customConceptAnswers={fieldDefinition.customConceptAnswers ?? []}
+      customConceptAnswers={fieldDefinition.customConceptAnswers ?? emptyConceptAnswers}
       required={fieldDefinition.validation?.required ?? false}
       searchable={fieldDefinition.searchable ?? true}
       readOnly={hasDniIdentifier && (!nationalityValue || nationalityValue === peruNationalityConceptUuid)}

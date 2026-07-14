@@ -7,6 +7,7 @@ export const appointmentsPrivilege = 'app:home.citas';
 export const appointmentsEditPrivilege = 'app:home.citas.editar';
 export const chartAppointmentsReadPrivilege = 'app:hoja.clinica.citas';
 export const chartAppointmentsEditPrivilege = 'app:hoja.clinica.citas.editar';
+export const appointmentNoteMaxLength = 500;
 
 export const moduleName = '@sihsalus/esm-appointments-app';
 

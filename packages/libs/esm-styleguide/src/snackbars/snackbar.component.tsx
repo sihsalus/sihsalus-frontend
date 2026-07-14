@@ -3,7 +3,7 @@
 import { ActionableNotification } from '@carbon/react';
 import { getCoreTranslation } from '@openmrs/esm-translations';
 import classnames from 'classnames';
-import React, { useCallback, useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import styles from './snackbar.module.scss';
 
 // Design documentation for Snackbars https://zeroheight.com/23a080e38/p/683580-notifications/t/468baf
@@ -38,22 +38,28 @@ export const Snackbar: React.FC<SnackbarProps> = ({ snackbar, closeSnackbar: rem
     isLowContrast = kind !== 'error',
     progressActionLabel,
     subtitle = '',
-    timeoutInMs = 5000,
-    autoClose = kind !== 'error',
+    timeoutInMs,
+    autoClose = true,
     title,
     id,
     ...props
   } = snackbar;
+  const effectiveTimeoutInMs = timeoutInMs ?? (kind === 'error' ? 8000 : 5000);
 
   const [actionText, setActionText] = useState(actionButtonLabel);
   const [applyAnimation, setApplyAnimation] = useState(true);
   const [isClosing, setIsClosing] = useState(false);
+  const removeSnackBarFromDomRef = useRef(removeSnackBarFromDom);
+
+  useEffect(() => {
+    removeSnackBarFromDomRef.current = removeSnackBarFromDom;
+  }, [removeSnackBarFromDom]);
 
   const closeSnackbar = useCallback(() => {
     // This is to add a slide out animation before closing the snackbar
     // The animation lasts for 250ms, thus the timeout
-    setTimeout(removeSnackBarFromDom, 250);
-  }, [removeSnackBarFromDom]);
+    setTimeout(() => removeSnackBarFromDomRef.current(), 250);
+  }, []);
 
   const onCloseSnackbar = useCallback(() => {
     setIsClosing(true);
@@ -70,10 +76,10 @@ export const Snackbar: React.FC<SnackbarProps> = ({ snackbar, closeSnackbar: rem
 
   useEffect(() => {
     if (autoClose) {
-      const timeoutId = setTimeout(onCloseSnackbar, timeoutInMs);
+      const timeoutId = setTimeout(onCloseSnackbar, effectiveTimeoutInMs);
       return () => clearTimeout(timeoutId);
     }
-  }, [timeoutInMs, autoClose, onCloseSnackbar]);
+  }, [effectiveTimeoutInMs, autoClose, onCloseSnackbar]);
 
   useEffect(() => {
     setApplyAnimation(false);
@@ -94,7 +100,7 @@ export const Snackbar: React.FC<SnackbarProps> = ({ snackbar, closeSnackbar: rem
       kind={kind as SnackbarType}
       lowContrast={isLowContrast}
       onActionButtonClick={handleActionClick}
-      onClose={closeSnackbar}
+      onClose={onCloseSnackbar}
       statusIconDescription={getCoreTranslation('snackbarNotification', 'Snackbar notification')}
       subtitle={subtitle}
       title={title}

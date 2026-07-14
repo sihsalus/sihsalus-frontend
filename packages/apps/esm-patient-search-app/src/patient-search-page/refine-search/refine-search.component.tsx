@@ -122,7 +122,7 @@ const RefineSearch: React.FC<RefineSearchProps> = ({
     const fields: Array<SearchFieldConfig> = [];
 
     Object.entries(config.search.searchFilterFields).forEach(([fieldName, fieldConfig]) => {
-      if (fieldName !== 'personAttributes' && (fieldConfig as BuiltInFieldConfig).enabled) {
+      if (fieldName !== 'personAttributes' && fieldName !== 'age' && (fieldConfig as BuiltInFieldConfig).enabled) {
         const { min, max } = fieldConfig as BuiltInFieldConfig;
         fields.push({
           name: fieldName,
@@ -179,7 +179,10 @@ const RefineSearch: React.FC<RefineSearchProps> = ({
                 id="patient-search-query"
                 labelText={t('patientSearchCriteria', 'Apellidos y nombres o documento de identidad')}
                 onChange={(event: React.ChangeEvent<HTMLInputElement>) => onChange(event.currentTarget.value)}
-                placeholder={t('patientSearchCriteriaPlaceholder', 'Ingrese apellidos, nombres, DNI, CE o pasaporte')}
+                placeholder={t(
+                  'patientSearchCriteriaPlaceholder',
+                  'Ingrese apellidos, nombres, N.° HC, DNI, CE, pasaporte, CNV, DIE, código SIS u otro documento',
+                )}
                 size={isTablet ? 'lg' : 'md'}
                 value={value ?? ''}
               />

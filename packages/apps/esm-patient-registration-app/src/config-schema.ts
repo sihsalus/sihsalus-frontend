@@ -25,6 +25,7 @@ export interface FieldDefinition {
   locationTag?: string;
   answerConceptSetUuid?: string;
   customConceptAnswers?: Array<CustomConceptAnswer>;
+  codedInputType?: 'select' | 'radio';
   searchable?: boolean;
   showIf?: {
     foreignIdentifierPresent?: boolean;
@@ -261,6 +262,12 @@ export const esmPatientRegistrationSchema = {
         _default: [],
         _description:
           'For coded questions only (obs or person attrbute). A list of custom concept answers. Overrides answers that come from the obs concept or from `answerSetConceptUuid`.',
+      },
+      codedInputType: {
+        _type: Type.String,
+        _default: 'select',
+        _validators: [validators.oneOf(['select', 'radio'])],
+        _description: 'For coded person attributes only. Render the answer list as a select or radio button group.',
       },
       searchable: {
         _type: Type.Boolean,

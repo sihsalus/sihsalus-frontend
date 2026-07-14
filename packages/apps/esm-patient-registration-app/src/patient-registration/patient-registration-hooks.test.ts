@@ -105,4 +105,51 @@ describe('queued patient registration hydration', () => {
     expect(result.current.uuidMap[0]).toEqual({ preferredNameUuid: 'queued-name-uuid' });
     expect(mockOpenmrsFetch).not.toHaveBeenCalled();
   });
+
+  it('prefers a confirmed server patient over a stale queued registration', async () => {
+    const patientUuid = 'server-patient-uuid';
+    const queuedRegistration = {
+      fhirPatient: {
+        resourceType: 'Patient',
+        id: patientUuid,
+        name: [{ given: ['Nombre guardado en cola'] }],
+      },
+      _patientRegistrationData: {
+        isNewPatient: true,
+        formValues: {
+          ...createInitialFormValues(),
+          patientUuid,
+          givenName: 'Nombre guardado en cola',
+        },
+      },
+    } as unknown as PatientRegistration;
+    const serverPatient = {
+      resourceType: 'Patient',
+      id: patientUuid,
+      active: true,
+      birthDate: '1990-01-01',
+      gender: 'female',
+      name: [{ family: 'Paciente', given: ['Nombre del servidor'] }],
+    } as fhir.Patient;
+
+    mockUsePatient.mockReturnValue({
+      error: null,
+      isLoading: false,
+      patient: serverPatient,
+    } as ReturnType<typeof usePatient>);
+    mockGetSynchronizationItems.mockResolvedValue([queuedRegistration]);
+    mockOpenmrsFetch.mockResolvedValue({ data: { results: [] } } as never);
+
+    const { result } = renderHook(() => useInitialFormValues(patientUuid));
+
+    await waitFor(() => expect(result.current[2].isLoading).toBe(false));
+
+    expect(result.current[0]).toMatchObject({
+      patientUuid,
+      givenName: 'Nombre del servidor',
+      familyName: 'Paciente',
+    });
+    expect(result.current[2]).toMatchObject({ isNewPatient: false });
+    expect(result.current[2].queuedRegistration).toBeUndefined();
+  });
 });

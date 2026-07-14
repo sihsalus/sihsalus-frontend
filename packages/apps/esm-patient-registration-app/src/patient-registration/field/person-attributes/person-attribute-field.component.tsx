@@ -80,6 +80,7 @@ export function PersonAttributeField({ fieldDefinition }: PersonAttributeFieldPr
             label={fieldDefinition.label}
             id={fieldDefinition?.id}
             customConceptAnswers={fieldDefinition.customConceptAnswers ?? []}
+            codedInputType={fieldDefinition.codedInputType}
             required={fieldDefinition.validation?.required ?? false}
             searchable={fieldDefinition.searchable ?? false}
             readOnly={readOnly}

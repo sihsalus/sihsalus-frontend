@@ -22,6 +22,26 @@
   row-gap: layout.$spacing-01;
 }
 
+.serviceTypeFilter {
+  inline-size: clamp(20rem, 36vw, 36rem);
+  max-inline-size: calc(100vw - #{layout.$spacing-05});
+
+  :global(.cds--list-box__menu-item),
+  :global(.cds--list-box__menu-item__option) {
+    block-size: auto;
+    min-block-size: 2.5rem;
+  }
+
+  :global(.cds--list-box__menu-item__option) {
+    display: flex;
+    align-items: center;
+    overflow: visible;
+    padding-block: layout.$spacing-03;
+    text-overflow: clip;
+    white-space: normal;
+  }
+}
+
 // Overriding styles for RTL support
 html[dir='rtl'] {
   .date-and-location {

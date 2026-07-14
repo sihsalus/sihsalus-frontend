@@ -49,6 +49,17 @@
   color: $text-02;
 }
 
+.requirementMessage {
+  margin: layout.$spacing-04 0;
+  color: $danger;
+}
+
+.emptyState {
+  padding: layout.$spacing-07 layout.$spacing-05;
+  color: $text-02;
+  text-align: center;
+}
+
 :global(.omrs-breakpoint-lt-desktop) {
   .radioButton label {
     height: layout.$spacing-09 !important;

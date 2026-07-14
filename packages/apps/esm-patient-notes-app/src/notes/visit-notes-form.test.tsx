@@ -122,6 +122,7 @@ mockUseConfig.mockReturnValue(getMockConfig());
 
 beforeEach(() => {
   vi.clearAllMocks();
+  mockUseSession.mockReturnValue(mockSessionDataResponse.data);
   mockUseConfig.mockReturnValue(getMockConfig());
   mockFetchDiagnosisConceptsByName.mockResolvedValue([]);
   mockFetchPrestacionalConceptsByName.mockResolvedValue([]);
@@ -139,6 +140,24 @@ beforeEach(() => {
     isLoading: false,
     isValidating: false,
   });
+});
+
+test('closes the visit summary workspace without rendering it for admission users', async () => {
+  const closeWorkspace = vi.fn();
+  mockUseSession.mockReturnValue({
+    ...mockSessionDataResponse.data,
+    user: {
+      ...mockSessionDataResponse.data.user,
+      roles: [{ display: 'Admisión', name: 'Admisión', uuid: 'admission-role-uuid' }],
+    },
+  });
+
+  render(<VisitNotesForm {...defaultProps} closeWorkspace={closeWorkspace} />);
+
+  expect(screen.queryByText(/visit note/i)).not.toBeInTheDocument();
+  await waitFor(() =>
+    expect(closeWorkspace).toHaveBeenCalledWith({ closeWindow: true, discardUnsavedChanges: true }),
+  );
 });
 
 test('renders the visit notes form with all the relevant fields and values', () => {

@@ -373,6 +373,38 @@ describe('Patient registration validation', () => {
     expect(validationError).toBeFalsy();
   });
 
+  it('should require a value for a selected DNI even when the backend marks its type optional', async () => {
+    const config = (await getConfig('@openmrs/esm-patient-registration-app')) as unknown as RegistrationConfig;
+    mockGetConfig.mockResolvedValueOnce({
+      ...config,
+      defaultPatientIdentifierTypes: ['dni-uuid'],
+    });
+    const identifierTypes = [
+      {
+        fieldName: 'dni',
+        format: '^[0-9]{8}$',
+        isPrimary: false,
+        name: 'DNI',
+        required: false,
+        uuid: 'dni-uuid',
+      },
+    ];
+    const validationError = await validateFormValues(
+      {
+        ...validFormValues,
+        identifiers: {
+          dni: { required: false, identifierValue: '', identifierTypeUuid: 'dni-uuid' },
+        },
+      },
+      identifierTypes,
+    );
+
+    expect(validationError.errors).toContain('identifierValueRequired');
+    expect(validationError.inner).toContainEqual(
+      expect.objectContaining({ path: 'identifiers.dni.identifierValue', message: 'identifierValueRequired' }),
+    );
+  });
+
   it('should enforce the Peru DNI length even when the backend format is absent', async () => {
     const identifierTypes = [{ fieldName: 'nationalId', format: '', name: 'DNI', uuid: 'dni-uuid' }];
     const invalidFormValues = {
@@ -604,6 +636,22 @@ describe('Patient registration validation', () => {
     const validationError = await validateFormValues(unidentifiedWithResponsibleRelationship);
 
     expect(validationError).toBeFalsy();
+  });
+
+  it('should translate the required relationship type validation error', async () => {
+    const validationError = await validateFormValues({
+      ...validFormValues,
+      relationships: [
+        {
+          action: 'ADD',
+          relatedPersonUuid: '11524ae7-3ef6-4ab6-aff6-804ffc58704a',
+          relationshipType: '',
+        },
+      ],
+    });
+
+    expect(validationError.errors).toContain('relationshipTypeRequired');
+    expect(validationError.errors.join(' ')).not.toContain('relationships[0].relationshipType is a required field');
   });
 
   it('should allow a minor patient with a responsible relationship', async () => {

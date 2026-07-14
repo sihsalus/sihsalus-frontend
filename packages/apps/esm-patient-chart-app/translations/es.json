@@ -160,6 +160,8 @@
   "saveAndClose": "Guardar y cerrar",
   "saving": "Guardando",
   "searchForAVisitType": "Buscar un tipo de consulta",
+  "addPatientToQueue": "Agregar paciente a la cola",
+  "addingPatientToQueue": "Agregando paciente a la cola",
   "searchForCauseOfDeath": "Buscar una causa de muerte",
   "searching": "Buscando...",
   "searchProvenance": "Buscar o escribir procedencia",

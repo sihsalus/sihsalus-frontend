@@ -169,8 +169,9 @@ export function useInitialFormValues(
     isLoading: isLoadingQueuedRegistration,
     registration: queuedPatientRegistration,
   } = useQueuedPatientRegistration(patientUuid);
-  const shouldLoadServerSupplementaryData =
-    !!patientUuid && !isLoadingQueuedRegistration && !queuedPatientRegistration && patientToEdit?.id === patientUuid;
+  const hasLoadedServerPatient =
+    !!patientUuid && !isLoadingPatientToEdit && patientToEdit?.id === patientUuid;
+  const shouldLoadServerSupplementaryData = !isLoadingQueuedRegistration && hasLoadedServerPatient;
   const serverPatientUuid = shouldLoadServerSupplementaryData ? patientUuid : '';
   const {
     data: deathInfo,
@@ -228,9 +229,8 @@ export function useInitialFormValues(
   useEffect(() => {
     if (
       !patientUuid ||
-      hydratedPatientUuid.current === patientUuid ||
+      (hydratedPatientUuid.current === patientUuid && !queuedRegistration) ||
       isLoadingQueuedRegistration ||
-      queuedPatientRegistration ||
       !patientToEdit ||
       patientToEdit.id !== patientUuid
     ) {
@@ -303,13 +303,18 @@ export function useInitialFormValues(
     isLoadingQueuedRegistration,
     patientToEdit,
     patientUuid,
-    queuedPatientRegistration,
+    queuedRegistration,
     relationships,
     supplementaryError,
   ]);
 
   useEffect(() => {
-    if (!patientUuid || !queuedPatientRegistration || hydratedPatientUuid.current === patientUuid) {
+    if (
+      !patientUuid ||
+      !queuedPatientRegistration ||
+      hydratedPatientUuid.current === patientUuid ||
+      hasLoadedServerPatient
+    ) {
       return;
     }
 
@@ -325,7 +330,7 @@ export function useInitialFormValues(
     setIsNewPatient(queuedPatientRegistration._patientRegistrationData.isNewPatient);
     setQueuedRegistration(queuedPatientRegistration);
     setIsHydrated(true);
-  }, [patientUuid, queuedPatientRegistration]);
+  }, [hasLoadedServerPatient, patientUuid, queuedPatientRegistration]);
 
   useEffect(() => {
     if (

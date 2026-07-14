@@ -21,13 +21,12 @@ import { builtInSections, type RegistrationConfig, type SectionDefinition } from
 import { moduleName } from '../constants';
 import { ResourcesContext } from '../offline.resources';
 import BeforeSavePrompt from './before-save-prompt';
+import { getDocumentIdentifierEntry } from './field/external-lookup/dni-identifier';
 import { type SavePatientForm, SavePatientTransactionManager } from './form-manager';
-import { fetchPersonForPromotion } from './identity/identity-search.resource';
-import { searchLocalIdentityByDocument } from './identity/identity-search.resource';
 import { getDocumentTypeDefinitionByIdentifierType, normalizeDocumentNumber } from './identity/identity-documents';
+import { fetchPersonForPromotion, searchLocalIdentityByDocument } from './identity/identity-search.resource';
 import { applyPersonToRegistrationForm } from './identity/promotion';
 import { DummyDataInput } from './input/dummy-data/dummy-data-input.component';
-import { getDocumentIdentifierEntry } from './field/external-lookup/dni-identifier';
 import styles from './patient-registration.scss';
 import { type CapturePhotoProps, type FormValues } from './patient-registration.types';
 import { PatientRegistrationContext } from './patient-registration-context';
@@ -43,6 +42,51 @@ import { SectionWrapper } from './section/section-wrapper.component';
 import { getValidationSchema } from './validation/patient-registration-validation';
 
 export const initialFormValues = createInitialFormValues();
+
+interface UserWithRoles {
+  roles?: Array<{ display?: string; name?: string }>;
+}
+
+const medicalRecordArchivistRole = 'archivador de historias clinicas';
+
+function normalizeRoleName(value?: string) {
+  return (value ?? '')
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .trim()
+    .toLowerCase();
+}
+
+export function hasMedicalRecordArchivistRole(user?: UserWithRoles | null) {
+  return (
+    user?.roles?.some((role) =>
+      [role.name, role.display].some((roleName) => normalizeRoleName(roleName) === medicalRecordArchivistRole),
+    ) ?? false
+  );
+}
+
+export function preserveMedicalRecordAttributes(
+  submittedAttributes: FormValues['attributes'],
+  initialAttributes: FormValues['attributes'],
+  medicalRecordAttributeUuids: Array<string>,
+  canEditMedicalRecord: boolean,
+) {
+  const protectedAttributes = { ...submittedAttributes };
+
+  if (canEditMedicalRecord) {
+    return protectedAttributes;
+  }
+
+  medicalRecordAttributeUuids.forEach((attributeUuid) => {
+    if (Object.hasOwn(initialAttributes ?? {}, attributeUuid)) {
+      protectedAttributes[attributeUuid] = initialAttributes?.[attributeUuid] ?? '';
+    } else {
+      delete protectedAttributes[attributeUuid];
+    }
+  });
+
+  return protectedAttributes;
+}
 
 interface RegistrationSubmitError {
   status?: number;
@@ -70,6 +114,75 @@ function isSessionExpired(error: unknown): boolean {
   return status === 401 || lowerCaseMessage.includes('session expired') || lowerCaseMessage.includes('sesión expirada');
 }
 
+const defaultRegistrationFieldLabels: Record<string, string> = {
+  address: 'Address',
+  attributes: 'Patient information',
+  birthdate: 'Date of birth',
+  dni: 'DNI',
+  familyName: 'Family name',
+  familyName2: 'Second family name',
+  gender: 'Gender',
+  givenName: 'First name',
+  identifiers: 'Identification data',
+  relationshipType: 'Relationship to patient',
+};
+
+const registrationFieldLabelTranslationKeys: Record<string, string> = {
+  address: 'addressLabelText',
+  birthdate: 'dateOfBirthLabelText',
+  relationshipType: 'relationshipToPatient',
+};
+
+export function getPatientRegistrationFieldLabel(
+  path: Array<string>,
+  translateWithFallback: (key: string, defaultValue: string) => string,
+  attributeFieldLabels: Record<string, string> = {},
+) {
+  const [section] = path;
+  const field = [...path.slice(1)].reverse().find((pathSegment) => !/^\d+$/.test(pathSegment));
+
+  if (!section) {
+    return translateWithFallback('fieldRequired', 'Field is required');
+  }
+
+  if (section === 'identifiers') {
+    const identifierField = path[1];
+    if (identifierField && defaultRegistrationFieldLabels[identifierField]) {
+      return translateWithFallback(
+        `${identifierField}IdentifierLabelText`,
+        defaultRegistrationFieldLabels[identifierField],
+      );
+    }
+    return translateWithFallback('idFieldLabelText', defaultRegistrationFieldLabels.identifiers);
+  }
+
+  if (section === 'attributes') {
+    const attributeLabel = path.slice(1).map((pathSegment) => attributeFieldLabels[pathSegment]).find(Boolean);
+    if (attributeLabel) {
+      return attributeLabel;
+    }
+  }
+
+  if (field) {
+    const labelKey = registrationFieldLabelTranslationKeys[field] ?? `${field}LabelText`;
+    const translatedLabel = translateWithFallback(labelKey, defaultRegistrationFieldLabels[field] ?? field);
+
+    if (translatedLabel !== field || defaultRegistrationFieldLabels[field]) {
+      return translatedLabel;
+    }
+  }
+
+  const defaultFieldLabel = defaultRegistrationFieldLabels[section];
+  const labelKey = registrationFieldLabelTranslationKeys[section] ?? `${section}LabelText`;
+  const fieldLabel = translateWithFallback(labelKey, defaultFieldLabel ?? section);
+
+  if (fieldLabel !== section || defaultFieldLabel) {
+    return fieldLabel;
+  }
+
+  return translateWithFallback(`${section}Section`, section);
+}
+
 export interface PatientRegistrationProps {
   savePatientForm: SavePatientForm;
   isOffline: boolean;
@@ -83,6 +196,23 @@ export const PatientRegistration: React.FC<PatientRegistrationProps> = ({ savePa
   const config = useMemo(
     () => getEffectiveRegistrationConfig(configuredRegistrationConfig),
     [configuredRegistrationConfig],
+  );
+  const attributeFieldLabels = useMemo(
+    () =>
+      Object.fromEntries(
+        (config.fieldDefinitions ?? [])
+          .filter((fieldDefinition) => fieldDefinition.type === 'person attribute' && fieldDefinition.uuid)
+          .map((fieldDefinition) => [fieldDefinition.uuid, fieldDefinition.label ?? fieldDefinition.id]),
+      ),
+    [config.fieldDefinitions],
+  );
+  const medicalRecordAttributeUuids = useMemo(
+    () =>
+      config.fieldDefinitions
+        .filter((fieldDefinition) => ['medicalRecordStatus', 'medicalRecordArchiveType'].includes(fieldDefinition.id))
+        .map((fieldDefinition) => fieldDefinition.uuid)
+        .filter(Boolean),
+    [config.fieldDefinitions],
   );
   const [target, setTarget] = useState<undefined | string>();
   const { patientUuid: uuidOfPatientToEdit } = useParams();
@@ -101,6 +231,7 @@ export const PatientRegistration: React.FC<PatientRegistrationProps> = ({ savePa
   const hasPatientRoute = !!uuidOfPatientToEdit;
   const isNewPatient = initialFormState.isNewPatient ?? !hasPatientRoute;
   const inEditMode = !isNewPatient;
+  const canEditMedicalRecord = inEditMode && hasMedicalRecordArchivistRole(currentSession?.user);
   const showDummyData = useMemo(
     () => window.spaEnv === 'development' && localStorage.getItem('openmrs:devtools') === 'true' && !hasPatientRoute,
     [hasPatientRoute],
@@ -199,14 +330,25 @@ export const PatientRegistration: React.FC<PatientRegistrationProps> = ({ savePa
           config.sectionDefinitions.filter((s) => s.id === sectionName)[0] ??
           builtInSections.filter((s) => s.id === sectionName)[0],
       )
-      .filter((s) => s);
-  }, [config.sections, config.sectionDefinitions]);
+      .filter((section) => section && (section.id !== 'medicalRecord' || canEditMedicalRecord));
+  }, [canEditMedicalRecord, config.sections, config.sectionDefinitions]);
 
   const onFormSubmit = async (values: FormValues, helpers: FormikHelpers<FormValues>) => {
     const abortController = new AbortController();
     helpers.setSubmitting(true);
 
-    const updatedFormValues = { ...values, identifiers: filterOutUndefinedPatientIdentifiers(values.identifiers) };
+    const submittedAttributes = preserveMedicalRecordAttributes(
+      values.attributes,
+      initialFormValuesState.attributes,
+      medicalRecordAttributeUuids,
+      canEditMedicalRecord,
+    );
+
+    const updatedFormValues = {
+      ...values,
+      attributes: submittedAttributes,
+      identifiers: filterOutUndefinedPatientIdentifiers(values.identifiers),
+    };
     try {
       if (isNewPatient && !isOffline && !savePatientTransactionManager.current.patientSaved) {
         const documentEntry = getDocumentIdentifierEntry(updatedFormValues.identifiers, identifierTypes ?? []);
@@ -311,14 +453,6 @@ export const PatientRegistration: React.FC<PatientRegistrationProps> = ({ savePa
 
   const getErrorMessages = (errors: FormikErrors<FormValues>) => {
     const messages = new Set<string>();
-    const defaultFieldLabels: Record<string, string> = {
-      birthdate: 'Date of birth',
-      familyName: 'Family name',
-      familyName2: 'Second family name',
-      gender: 'Gender',
-      givenName: 'First name',
-      identifiers: 'Identification data',
-    };
     const defaultErrorMessages: Record<string, string> = {
       birthdayRequired: 'Birthday is required',
       familyNameRequired: 'Family name is required',
@@ -334,42 +468,12 @@ export const PatientRegistration: React.FC<PatientRegistrationProps> = ({ savePa
       return translatedText === key ? defaultValue : translatedText;
     };
 
-    const getFieldLabel = (path: Array<string>) => {
-      const [section, field] = path;
-
-      if (!section) {
-        return translateWithFallback('fieldRequired', 'Field is required');
-      }
-
-      if (section === 'identifiers') {
-        return translateWithFallback('idFieldLabelText', defaultFieldLabels.identifiers);
-      }
-
-      if (field) {
-        const labelKey = `${field}LabelText`;
-        const translatedLabel = translateWithFallback(labelKey, defaultFieldLabels[field] ?? field);
-
-        if (translatedLabel !== field || defaultFieldLabels[field]) {
-          return translatedLabel;
-        }
-      }
-
-      const defaultFieldLabel = defaultFieldLabels[section];
-      const fieldLabel = translateWithFallback(`${section}LabelText`, defaultFieldLabel ?? section);
-
-      if (fieldLabel !== section || defaultFieldLabel) {
-        return fieldLabel;
-      }
-
-      return translateWithFallback(`${section}Section`, section);
-    };
-
     const collectMessages = (value: unknown, path: Array<string> = []) => {
       if (!value) {
         return;
       }
       if (typeof value === 'string') {
-        const fieldLabel = getFieldLabel(path);
+        const fieldLabel = getPatientRegistrationFieldLabel(path, translateWithFallback, attributeFieldLabels);
         const errorMessage = translateWithFallback(value, defaultErrorMessages[value] ?? value);
         messages.add(`${fieldLabel}: ${errorMessage}`);
         return;
@@ -522,7 +626,7 @@ export const PatientRegistration: React.FC<PatientRegistrationProps> = ({ savePa
                 <div className={styles.stickyColumn}>
                   <h4>
                     {inEditMode
-                      ? t('editPatientDetails', 'Edit patient details')
+                      ? t('updatePatient', 'Update patient')
                       : t('createNewPatient', 'Create new patient')}
                   </h4>
                   {showDummyData && <DummyDataInput setValues={props.setValues} />}

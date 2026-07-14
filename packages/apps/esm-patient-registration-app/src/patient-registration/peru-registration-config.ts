@@ -3,6 +3,7 @@ import { type FieldDefinition, type RegistrationConfig, type SectionDefinition }
 export const peruDniPatientIdentifierTypeUuid = '550e8400-e29b-41d4-a716-446655440001';
 export const peruCarnetExtranjeriaPatientIdentifierTypeUuid = '550e8400-e29b-41d4-a716-446655440002';
 export const peruPassportPatientIdentifierTypeUuid = '550e8400-e29b-41d4-a716-446655440003';
+export const peruOtherPatientIdentifierTypeUuid = '550e8400-e29b-41d4-a716-446655440004';
 export const peruDiePatientIdentifierTypeUuid = '8d793bee-c2cc-11de-8d13-0010c6dffd0f';
 export const peruInsuranceTypeAttributeTypeUuid = '56188294-b42c-481d-a987-4b495116c580';
 export const peruInsuranceCodeAttributeTypeUuid = '374b130f-7457-476f-87b1-f182aa77c434';
@@ -72,7 +73,7 @@ const peruSectionDefinitions: Array<SectionDefinition> = [
   },
   {
     id: 'insurance',
-    name: 'Seguro',
+    name: 'Financiador',
     fields: ['insuranceType', 'insuranceCode', 'insuranceAccreditationStatus', 'insuranceAccreditationCheckedAt'],
   },
   {
@@ -179,30 +180,22 @@ const peruFieldDefinitions: Array<FieldDefinition> = [
     id: 'insuranceType',
     type: 'person attribute',
     uuid: peruInsuranceTypeAttributeTypeUuid,
-    label: 'Tipo de seguro',
+    label: 'Financiador',
     showHeading: false,
     answerConceptSetUuid: '6b932638-242e-49ef-8ba7-0ae87199835c',
-    customConceptAnswers: [
-      { uuid: 'b61a9ff9-1485-4388-9f67-9c341f847f85', label: 'SIS Gratuito' },
-      { uuid: 'cc6958d9-7948-4f29-b244-4ff896c0b2ee', label: 'SIS Emprendedor' },
-      { uuid: 'e43e0a71-0b5d-4fc2-b599-a76e4562ae5a', label: 'SIS Semicontributivo' },
-      { uuid: 'b76a9a24-4905-4132-a215-8a567281852a', label: 'Plan de atención SIS' },
-      { uuid: 'f38b048f-ee8b-4244-b3eb-a47a34c38f04', label: 'ESSALUD' },
-      { uuid: '4e4f62f9-2171-4eef-8d67-1c7edc7735a8', label: 'FOSPOLI' },
-      { uuid: 'ec420364-fde1-452d-9c48-fafb4ea73a58', label: 'Seguro privado' },
-    ],
   },
   {
     id: 'insuranceCode',
     type: 'person attribute',
     uuid: peruInsuranceCodeAttributeTypeUuid,
-    label: 'Código de seguro',
+    label: 'Código del financiador',
     showHeading: false,
   },
   {
     id: 'bloodGroup',
     type: 'person attribute',
     uuid: '9b3df0a1-0c58-4f55-9868-9c38f1db1001',
+    codedInputType: 'radio',
     label: 'Grupo sanguíneo',
     showHeading: false,
     answerConceptSetUuid: '9b3df0a1-0c58-4f55-9868-9c38f1db2001',
@@ -217,6 +210,7 @@ const peruFieldDefinitions: Array<FieldDefinition> = [
     id: 'rhFactor',
     type: 'person attribute',
     uuid: '9b3df0a1-0c58-4f55-9868-9c38f1db1002',
+    codedInputType: 'radio',
     label: 'Factor Rh',
     showHeading: false,
     answerConceptSetUuid: '54b52ca9-8168-4f63-b2a3-a18899bf0baa',
@@ -258,7 +252,7 @@ const peruFieldDefinitions: Array<FieldDefinition> = [
     id: 'insuranceAccreditationStatus',
     type: 'person attribute',
     uuid: peruInsuranceAccreditationStatusAttributeTypeUuid,
-    label: 'Estado de acreditación de seguro',
+    label: 'Estado de acreditación del financiador',
     showHeading: false,
     answerConceptSetUuid: '9b3df0a1-0c58-4f55-9868-9c38f1db2005',
     customConceptAnswers: [

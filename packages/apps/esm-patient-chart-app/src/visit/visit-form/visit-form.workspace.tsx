@@ -125,6 +125,7 @@ const StartVisitForm: React.FC<StartVisitFormProps> = (props) => {
     openedFrom,
     workspaceTitle,
   } = workspaceProps;
+  const isQueueRegistration = openedFrom === 'service-queues-add-patient' && !visitToEdit;
   const initialPatientUuid = isWorkspace2
     ? (props.groupProps?.patientUuid ?? workspaceProps.patientUuid)
     : props.patientUuid;
@@ -578,21 +579,21 @@ const StartVisitForm: React.FC<StartVisitFormProps> = (props) => {
       } = data;
 
       const [hours, minutes] = convertTime12to24(visitStartTime, visitStartTimeFormat);
-      const currentSeconds = new Date().getSeconds();
+      const submissionDatetime = new Date();
+      const currentSeconds = submissionDatetime.getSeconds();
+      const startDatetime = isQueueRegistration
+        ? submissionDatetime
+        : new Date(
+            dayjs(visitStartDate).year(),
+            dayjs(visitStartDate).month(),
+            dayjs(visitStartDate).date(),
+            hours,
+            minutes,
+            currentSeconds,
+          );
       const payload: NewVisitPayload = {
         patient: patientUuid,
-        startDatetime: toDateObjectStrict(
-          toOmrsIsoString(
-            new Date(
-              dayjs(visitStartDate).year(),
-              dayjs(visitStartDate).month(),
-              dayjs(visitStartDate).date(),
-              hours,
-              minutes,
-              currentSeconds,
-            ),
-          ),
-        ),
+        startDatetime: toDateObjectStrict(toOmrsIsoString(startDatetime)),
         visitType: visitType,
         location: visitLocation?.uuid,
       };
@@ -639,20 +640,22 @@ const StartVisitForm: React.FC<StartVisitFormProps> = (props) => {
 
         visitRequest
           .then((response) => {
-            showSnackbar({
-              isLowContrast: true,
-              kind: 'success',
-              subtitle: !visitToEdit
-                ? t('visitStartedSuccessfully', '{{visit}} started successfully', {
-                    visit: response?.data?.visitType?.display ?? t('visit', 'Visit'),
-                  })
-                : t('visitDetailsUpdatedSuccessfully', '{{visit}} updated successfully', {
-                    visit: response?.data?.visitType?.display ?? t('pastVisit', 'Past visit'),
-                  }),
-              title: !visitToEdit
-                ? t('visitStarted', 'Visit started')
-                : t('visitDetailsUpdated', 'Visit details updated'),
-            });
+            if (!isQueueRegistration) {
+              showSnackbar({
+                isLowContrast: true,
+                kind: 'success',
+                subtitle: !visitToEdit
+                  ? t('visitStartedSuccessfully', '{{visit}} started successfully', {
+                      visit: response?.data?.visitType?.display ?? t('visit', 'Visit'),
+                    })
+                  : t('visitDetailsUpdatedSuccessfully', '{{visit}} updated successfully', {
+                      visit: response?.data?.visitType?.display ?? t('pastVisit', 'Past visit'),
+                    }),
+                title: !visitToEdit
+                  ? t('visitStarted', 'Visit started')
+                  : t('visitDetailsUpdated', 'Visit details updated'),
+              });
+            }
             return response;
           })
           .catch((error) => {
@@ -751,6 +754,7 @@ const StartVisitForm: React.FC<StartVisitFormProps> = (props) => {
       extraVisitInfo,
       handleVisitAttributes,
       isOnline,
+      isQueueRegistration,
       mutateCurrentVisit,
       mutateInfiniteVisits,
       onVisitStarted,
@@ -795,14 +799,16 @@ const StartVisitForm: React.FC<StartVisitFormProps> = (props) => {
             </Row>
           )}
           <Stack gap={1} className={styles.container}>
-            <VisitDateTimeField
-              dateFieldName="visitStartDate"
-              maxDate={maxVisitStartDatetime}
-              minDate={patientBirthDate?.valueOf()}
-              timeFieldName="visitStartTime"
-              timeFormatFieldName="visitStartTimeFormat"
-              visitDatetimeLabel={t('visitStartDatetime', 'Visit start date and time')}
-            />
+            {!isQueueRegistration ? (
+              <VisitDateTimeField
+                dateFieldName="visitStartDate"
+                maxDate={maxVisitStartDatetime}
+                minDate={patientBirthDate?.valueOf()}
+                timeFieldName="visitStartTime"
+                timeFormatFieldName="visitStartTimeFormat"
+                visitDatetimeLabel={t('visitStartDatetime', 'Visit start date and time')}
+              />
+            ) : null}
 
             {displayVisitStopDateTimeFields && (
               <VisitDateTimeField
@@ -971,11 +977,19 @@ const StartVisitForm: React.FC<StartVisitFormProps> = (props) => {
                 description={
                   visitToEdit
                     ? t('updatingVisit', 'Updating visit') + '...'
-                    : t('startingVisit', 'Starting visit') + '...'
+                    : isQueueRegistration
+                      ? t('addingPatientToQueue', 'Adding patient to queue') + '...'
+                      : t('startingVisit', 'Starting visit') + '...'
                 }
               />
             ) : (
-              <span>{visitToEdit ? t('updateVisit', 'Update visit') : t('startVisit', 'Start visit')}</span>
+              <span>
+                {visitToEdit
+                  ? t('updateVisit', 'Update visit')
+                  : isQueueRegistration
+                    ? t('addPatientToQueue', 'Add patient to queue')
+                    : t('startVisit', 'Start visit')}
+              </span>
             )}
           </Button>
         </ButtonSet>

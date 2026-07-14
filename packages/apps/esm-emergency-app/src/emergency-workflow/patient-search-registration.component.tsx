@@ -50,10 +50,11 @@ import type { Config } from '../config-schema';
 import { generateIdentifier, saveEmergencyPatient } from '../resources/patient-registration.resource';
 import InitialPrioritySelector, { type InitialPriority } from './components/initial-priority-selector.component';
 import { NationalityConceptField } from './components/nationality-concept-field.component';
-import styles from './patient-search-registration.component.scss';
-import { useNationalityConceptAnswers } from './patient-nationality.resource';
+import { getEmergencyIdentityDocumentTypes } from './emergency-identity-documents';
 import { getAutomaticNationalityUpdate, isCompletedPeruDni } from './patient-nationality';
+import { useNationalityConceptAnswers } from './patient-nationality.resource';
 import { buildEmergencyPatientAttributes } from './patient-registration-attributes';
+import styles from './patient-search-registration.component.scss';
 import {
   communicationConditionLabels,
   communicationConditionOptions,
@@ -188,14 +189,7 @@ const PatientSearchRegistration: React.FC<PatientSearchRegistrationProps> = ({ o
   // The patient ready to be queued (either selected or registered)
   const readyPatient = selectedPatient || registeredPatient;
   const identityDocumentTypes = useMemo(
-    () =>
-      [
-        { label: 'DNI', value: config.patientRegistration.defaultIdentifierTypeUuid },
-        { label: 'CE', value: config.patientRegistration.foreignCardIdentifierTypeUuid },
-        { label: 'Pasaporte', value: config.patientRegistration.passportIdentifierTypeUuid },
-        { label: 'DIE', value: config.patientRegistration.dieIdentifierTypeUuid },
-        { label: 'CNV', value: config.patientRegistration.liveBirthCertificateIdentifierTypeUuid },
-      ].filter((type) => type.value),
+    () => getEmergencyIdentityDocumentTypes(config.patientRegistration),
     [config.patientRegistration],
   );
 

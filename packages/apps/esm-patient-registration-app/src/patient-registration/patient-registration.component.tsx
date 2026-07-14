@@ -21,13 +21,12 @@ import { builtInSections, type RegistrationConfig, type SectionDefinition } from
 import { moduleName } from '../constants';
 import { ResourcesContext } from '../offline.resources';
 import BeforeSavePrompt from './before-save-prompt';
+import { getDocumentIdentifierEntry } from './field/external-lookup/dni-identifier';
 import { type SavePatientForm, SavePatientTransactionManager } from './form-manager';
-import { fetchPersonForPromotion } from './identity/identity-search.resource';
-import { searchLocalIdentityByDocument } from './identity/identity-search.resource';
 import { getDocumentTypeDefinitionByIdentifierType, normalizeDocumentNumber } from './identity/identity-documents';
+import { fetchPersonForPromotion, searchLocalIdentityByDocument } from './identity/identity-search.resource';
 import { applyPersonToRegistrationForm } from './identity/promotion';
 import { DummyDataInput } from './input/dummy-data/dummy-data-input.component';
-import { getDocumentIdentifierEntry } from './field/external-lookup/dni-identifier';
 import styles from './patient-registration.scss';
 import { type CapturePhotoProps, type FormValues } from './patient-registration.types';
 import { PatientRegistrationContext } from './patient-registration-context';
@@ -68,6 +67,58 @@ function isSessionExpired(error: unknown): boolean {
   const status = typedError.status ?? typedError.responseStatus;
   const lowerCaseMessage = `${typedError.message ?? ''} ${typedError.responseBody?.error?.message ?? ''}`.toLowerCase();
   return status === 401 || lowerCaseMessage.includes('session expired') || lowerCaseMessage.includes('sesión expirada');
+}
+
+const defaultRegistrationFieldLabels: Record<string, string> = {
+  address: 'Address',
+  birthdate: 'Date of birth',
+  familyName: 'Family name',
+  familyName2: 'Second family name',
+  gender: 'Gender',
+  givenName: 'First name',
+  identifiers: 'Identification data',
+  relationshipType: 'Relationship to patient',
+};
+
+const registrationFieldLabelTranslationKeys: Record<string, string> = {
+  address: 'addressLabelText',
+  birthdate: 'dateOfBirthLabelText',
+  relationshipType: 'relationshipToPatient',
+};
+
+export function getPatientRegistrationFieldLabel(
+  path: Array<string>,
+  translateWithFallback: (key: string, defaultValue: string) => string,
+) {
+  const [section] = path;
+  const field = [...path.slice(1)].reverse().find((pathSegment) => !/^\d+$/.test(pathSegment));
+
+  if (!section) {
+    return translateWithFallback('fieldRequired', 'Field is required');
+  }
+
+  if (section === 'identifiers') {
+    return translateWithFallback('idFieldLabelText', defaultRegistrationFieldLabels.identifiers);
+  }
+
+  if (field) {
+    const labelKey = registrationFieldLabelTranslationKeys[field] ?? `${field}LabelText`;
+    const translatedLabel = translateWithFallback(labelKey, defaultRegistrationFieldLabels[field] ?? field);
+
+    if (translatedLabel !== field || defaultRegistrationFieldLabels[field]) {
+      return translatedLabel;
+    }
+  }
+
+  const defaultFieldLabel = defaultRegistrationFieldLabels[section];
+  const labelKey = registrationFieldLabelTranslationKeys[section] ?? `${section}LabelText`;
+  const fieldLabel = translateWithFallback(labelKey, defaultFieldLabel ?? section);
+
+  if (fieldLabel !== section || defaultFieldLabel) {
+    return fieldLabel;
+  }
+
+  return translateWithFallback(`${section}Section`, section);
 }
 
 export interface PatientRegistrationProps {
@@ -311,14 +362,6 @@ export const PatientRegistration: React.FC<PatientRegistrationProps> = ({ savePa
 
   const getErrorMessages = (errors: FormikErrors<FormValues>) => {
     const messages = new Set<string>();
-    const defaultFieldLabels: Record<string, string> = {
-      birthdate: 'Date of birth',
-      familyName: 'Family name',
-      familyName2: 'Second family name',
-      gender: 'Gender',
-      givenName: 'First name',
-      identifiers: 'Identification data',
-    };
     const defaultErrorMessages: Record<string, string> = {
       birthdayRequired: 'Birthday is required',
       familyNameRequired: 'Family name is required',
@@ -334,42 +377,12 @@ export const PatientRegistration: React.FC<PatientRegistrationProps> = ({ savePa
       return translatedText === key ? defaultValue : translatedText;
     };
 
-    const getFieldLabel = (path: Array<string>) => {
-      const [section, field] = path;
-
-      if (!section) {
-        return translateWithFallback('fieldRequired', 'Field is required');
-      }
-
-      if (section === 'identifiers') {
-        return translateWithFallback('idFieldLabelText', defaultFieldLabels.identifiers);
-      }
-
-      if (field) {
-        const labelKey = `${field}LabelText`;
-        const translatedLabel = translateWithFallback(labelKey, defaultFieldLabels[field] ?? field);
-
-        if (translatedLabel !== field || defaultFieldLabels[field]) {
-          return translatedLabel;
-        }
-      }
-
-      const defaultFieldLabel = defaultFieldLabels[section];
-      const fieldLabel = translateWithFallback(`${section}LabelText`, defaultFieldLabel ?? section);
-
-      if (fieldLabel !== section || defaultFieldLabel) {
-        return fieldLabel;
-      }
-
-      return translateWithFallback(`${section}Section`, section);
-    };
-
     const collectMessages = (value: unknown, path: Array<string> = []) => {
       if (!value) {
         return;
       }
       if (typeof value === 'string') {
-        const fieldLabel = getFieldLabel(path);
+        const fieldLabel = getPatientRegistrationFieldLabel(path, translateWithFallback);
         const errorMessage = translateWithFallback(value, defaultErrorMessages[value] ?? value);
         messages.add(`${fieldLabel}: ${errorMessage}`);
         return;

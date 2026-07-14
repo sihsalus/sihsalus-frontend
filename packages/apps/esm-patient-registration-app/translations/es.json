@@ -9,6 +9,7 @@
   "addressFieldsUnavailableSubtitle": "Actualiza la página. Si el problema continúa, verifica que la plantilla de dirección esté configurada y que la sesión esté activa.",
   "addressFieldsUnavailableTitle": "Campos de dirección no disponibles",
   "addressHeader": "Dirección de residencia",
+  "addressLabelText": "Dirección",
   "allFieldsRequiredText": "Todos los campos son obligatorios, a menos que estén marcados como opcionales",
   "Archivo común": "Archivo común",
   "Archivo especial": "Archivo especial",

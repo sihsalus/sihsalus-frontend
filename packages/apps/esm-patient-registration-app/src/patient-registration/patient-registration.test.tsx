@@ -16,7 +16,7 @@ import { type Resources, ResourcesContext } from '../offline.resources';
 
 import { FormManager, SavePatientTransactionManager } from './form-manager';
 import { searchLocalIdentityByDocument } from './identity/identity-search.resource';
-import { PatientRegistration } from './patient-registration.component';
+import { getPatientRegistrationFieldLabel, PatientRegistration } from './patient-registration.component';
 import { generateIdentifier, saveEncounter, savePatient } from './patient-registration.resource';
 import type { AddressTemplate, Encounter, FormValues } from './patient-registration.types';
 import { useInitialFormValues } from './patient-registration-hooks';
@@ -504,8 +504,26 @@ describe('Registering a new patient', () => {
     const warningSnackbar = mockShowSnackbar.mock.calls.find(([snackbar]) => snackbar.kind === 'warning')?.[0];
     const warningText = getReactText(warningSnackbar?.subtitle);
 
+    expect(warningText).toContain('Date of birth: Birthday is required');
     expect(warningText).toContain('First name: First name is required');
+    expect(warningText).not.toContain('birthdate:');
     expect(warningText).not.toContain('relationships');
+  });
+
+  it('translates technical address and birthdate paths in the validation summary', () => {
+    const spanishLabels: Record<string, string> = {
+      addressLabelText: 'Dirección',
+      dateOfBirthLabelText: 'Fecha de nacimiento',
+      relationshipToPatient: 'Vínculo con el paciente',
+    };
+    const translate = (key: string, defaultValue: string) => spanishLabels[key] ?? defaultValue;
+
+    expect(getPatientRegistrationFieldLabel(['address'], translate)).toBe('Dirección');
+    expect(getPatientRegistrationFieldLabel(['address', 'address'], translate)).toBe('Dirección');
+    expect(getPatientRegistrationFieldLabel(['birthdate'], translate)).toBe('Fecha de nacimiento');
+    expect(getPatientRegistrationFieldLabel(['relationships', '0', 'relationshipType'], translate)).toBe(
+      'Vínculo con el paciente',
+    );
   });
 
   it('renders and saves registration obs', async () => {

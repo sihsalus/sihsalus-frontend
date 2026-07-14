@@ -606,6 +606,22 @@ describe('Patient registration validation', () => {
     expect(validationError).toBeFalsy();
   });
 
+  it('should translate the required relationship type validation error', async () => {
+    const validationError = await validateFormValues({
+      ...validFormValues,
+      relationships: [
+        {
+          action: 'ADD',
+          relatedPersonUuid: '11524ae7-3ef6-4ab6-aff6-804ffc58704a',
+          relationshipType: '',
+        },
+      ],
+    });
+
+    expect(validationError.errors).toContain('relationshipTypeRequired');
+    expect(validationError.errors.join(' ')).not.toContain('relationships[0].relationshipType is a required field');
+  });
+
   it('should allow a minor patient with a responsible relationship', async () => {
     const minorWithRelationship = {
       ...validFormValues,

@@ -612,7 +612,9 @@ export function getValidationSchema(
         Yup.object()
           .shape({
             relatedPersonUuid: Yup.string(),
-            relationshipType: Yup.string().required(),
+            relationshipType: Yup.string().required(
+              t('relationshipTypeRequired', 'Select the relationship to the patient before registering the person'),
+            ),
           })
           .test(
             'related-person-selected-or-pending',

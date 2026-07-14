@@ -10,6 +10,8 @@ export interface CREDControlIdentity {
   controlNumberConceptUuid?: string;
 }
 
+type CREDFormPostResponse = (encounter?: { uuid?: string }) => void;
+
 function isValidControlIdentity(
   controlNumber: number | undefined,
   controlNumberConceptUuid: string | undefined,
@@ -44,10 +46,11 @@ export function addCREDControlNumberToEncounter(
   return { ...encounter, obs };
 }
 
-export function buildNewCREDFormWorkspaceProps(
+export function buildCREDFormWorkspaceProps(
   form: Form,
+  encounterUuid: string,
   consultationDatetime: string | undefined,
-  onFormSubmitted: () => void,
+  onFormSubmitted: CREDFormPostResponse,
   controlIdentity: CREDControlIdentity = {},
 ) {
   const shouldPersistControlNumber = isValidControlIdentity(
@@ -57,11 +60,20 @@ export function buildNewCREDFormWorkspaceProps(
 
   return {
     form,
-    encounterUuid: '',
+    encounterUuid,
     handlePostResponse: onFormSubmitted,
     preFilledQuestions: consultationDatetime ? { encounterDatetime: new Date(consultationDatetime) } : undefined,
     ...(shouldPersistControlNumber && {
       handleEncounterCreate: (encounter: EncounterDraft) => addCREDControlNumberToEncounter(encounter, controlIdentity),
     }),
   };
+}
+
+export function buildNewCREDFormWorkspaceProps(
+  form: Form,
+  consultationDatetime: string | undefined,
+  onFormSubmitted: CREDFormPostResponse,
+  controlIdentity: CREDControlIdentity = {},
+) {
+  return buildCREDFormWorkspaceProps(form, '', consultationDatetime, onFormSubmitted, controlIdentity);
 }

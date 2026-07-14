@@ -56,6 +56,31 @@ export function getAgeGroupFromBirthDate(
 }
 
 /**
+ * Resolves mixed day- and month-based CRED age groups for a specific date.
+ */
+export function getConfiguredAgeGroupFromBirthDate(
+  birthDate: string | Date,
+  ageGroups: AgeGroup[],
+  referenceDate: string | Date = new Date(),
+): AgeGroup | null {
+  const ageInDays = calculateAgeInDays(birthDate, referenceDate);
+  const dayGroup = getAgeGroupInDays(ageInDays, ageGroups);
+  if (dayGroup) return dayGroup;
+
+  const ageInMonths = calculateAgeInMonths(birthDate, referenceDate);
+  const monthGroup = getAgeGroup(
+    ageInMonths,
+    ageGroups.filter((group) => group.minMonths !== undefined && group.maxMonths !== undefined),
+  );
+
+  if (monthGroup) return monthGroup;
+
+  return ageInDays >= 360 && ageInMonths < 12
+    ? (ageGroups.find((group) => group.minDays === 270 && group.maxDays === 359) ?? null)
+    : null;
+}
+
+/**
  * Devuelve el grupo etario en días usando la configuración proporcionada
  */
 export function getAgeGroupInDays(ageInDays: number, ageGroups: AgeGroup[]): AgeGroup | null {

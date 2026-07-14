@@ -82,6 +82,24 @@ export function encounterMatchesFormIdentifier(encounter: CREDEncounter, identif
     .some((formIdentifier) => formIdentifier === normalizedIdentifier);
 }
 
+export function findCREDFormEncounterForControl(
+  encounters: CREDEncounter[],
+  formIdentifier: string | undefined,
+  controlNumber: number,
+): string | undefined {
+  if (parseCREDControlNumber(controlNumber) === undefined) return undefined;
+
+  return [...encounters]
+    .filter(
+      (encounter) =>
+        encounter.controlNumber === controlNumber && encounterMatchesFormIdentifier(encounter, formIdentifier),
+    )
+    .sort(
+      (first, second) =>
+        new Date(second.encounterDatetime ?? 0).getTime() - new Date(first.encounterDatetime ?? 0).getTime(),
+    )[0]?.uuid;
+}
+
 export function getConfiguredCREDFormIdentifiers(config: ConfigObject): Set<string> {
   const configuredGroups = config.CREDFormsByAgeGroup;
   const groups =

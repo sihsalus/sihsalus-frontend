@@ -1,6 +1,10 @@
 import type { Form } from '../types';
 
-import { addCREDControlNumberToEncounter, buildNewCREDFormWorkspaceProps } from './cred-form-launch-utils';
+import {
+  addCREDControlNumberToEncounter,
+  buildCREDFormWorkspaceProps,
+  buildNewCREDFormWorkspaceProps,
+} from './cred-form-launch-utils';
 
 describe('buildNewCREDFormWorkspaceProps', () => {
   it('always launches a new encounter while preserving the consultation date', () => {
@@ -30,6 +34,33 @@ describe('buildNewCREDFormWorkspaceProps', () => {
     });
 
     expect(encounter).toEqual({
+      obs: [
+        { uuid: 'clinical-obs', concept: 'clinical-concept', value: 'clinical value' },
+        { concept: 'control-number-concept', value: 3 },
+      ],
+    });
+  });
+
+  it('reopens an encounter from the same control and preserves its control identity', () => {
+    const onSubmitted = vi.fn();
+    const form = { uuid: 'form-uuid', name: 'CRED form', display: 'CRED form' } as Form;
+    const props = buildCREDFormWorkspaceProps(
+      form,
+      'current-control-encounter',
+      '2026-07-10T09:30:00-05:00',
+      onSubmitted,
+      {
+        controlNumber: 3,
+        controlNumberConceptUuid: 'control-number-concept',
+      },
+    );
+
+    expect(props.encounterUuid).toBe('current-control-encounter');
+    expect(
+      props.handleEncounterCreate?.({
+        obs: [{ uuid: 'clinical-obs', concept: 'clinical-concept', value: 'clinical value' }],
+      }),
+    ).toEqual({
       obs: [
         { uuid: 'clinical-obs', concept: 'clinical-concept', value: 'clinical value' },
         { concept: 'control-number-concept', value: 3 },

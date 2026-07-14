@@ -2,6 +2,7 @@ import {
   createCREDControlsSchema,
   getConsultationDatetime,
   getCREDConsultationChronologyError,
+  getCREDMinimumConsultationDate,
   resolveCREDControlNumber,
 } from './well-child-controls-form.workspace';
 
@@ -57,6 +58,48 @@ describe('CRED consultation chronology', () => {
     expect(error).toBe('future');
   });
 
+  it('rejects a consultation before the visit start datetime', () => {
+    const error = getCREDConsultationChronologyError(
+      new Date(2026, 6, 14, 9),
+      new Date(2026, 4, 10),
+      new Date(2026, 6, 14, 15),
+      new Date(2026, 6, 14, 10),
+    );
+
+    expect(error).toBe('beforeVisit');
+  });
+
+  it('rejects a consultation after a closed visit', () => {
+    const error = getCREDConsultationChronologyError(
+      new Date(2026, 6, 14, 13),
+      new Date(2026, 4, 10),
+      new Date(2026, 6, 14, 15),
+      new Date(2026, 6, 14, 10),
+      new Date(2026, 6, 14, 12),
+    );
+
+    expect(error).toBe('afterVisit');
+  });
+
+  it('allows a consultation at the exact visit start datetime', () => {
+    const visitStart = new Date(2026, 6, 14, 10);
+    const error = getCREDConsultationChronologyError(
+      visitStart,
+      new Date(2026, 4, 10),
+      new Date(2026, 6, 14, 15),
+      visitStart,
+    );
+
+    expect(error).toBeNull();
+  });
+
+  it('uses the later of birth date and visit start as the calendar minimum without shifting date-only values', () => {
+    expect(getCREDMinimumConsultationDate('2026-07-10', '2026-07-14T10:00:00-05:00')).toBe(
+      '2026-07-14T10:00:00-05:00',
+    );
+    expect(getCREDMinimumConsultationDate('2026-07-10')).toBe('2026-07-10');
+  });
+
   it('exposes the birth-date validation on the date field', () => {
     vi.useFakeTimers().setSystemTime(new Date(2026, 6, 14, 15));
     const schema = createCREDControlsSchema(t, new Date(2026, 4, 10));
@@ -74,6 +117,34 @@ describe('CRED consultation chronology', () => {
           expect.objectContaining({
             path: ['visitStartDate'],
             message: 'La fecha de atención no puede ser anterior a la fecha de nacimiento del paciente.',
+          }),
+        ]),
+      );
+    }
+  });
+
+  it('exposes a same-day visit-range validation on the time field', () => {
+    vi.useFakeTimers().setSystemTime(new Date(2026, 6, 14, 15));
+    const schema = createCREDControlsSchema(
+      t,
+      new Date(2026, 4, 10),
+      new Date(2026, 6, 14, 10),
+      new Date(2026, 6, 14, 14),
+    );
+
+    const result = schema.safeParse({
+      visitStartDate: new Date(2026, 6, 14),
+      visitStartTime: '09:00',
+      visitStartTimeFormat: 'AM',
+    });
+
+    expect(result.success).toBe(false);
+    if (!result.success) {
+      expect(result.error.issues).toEqual(
+        expect.arrayContaining([
+          expect.objectContaining({
+            path: ['visitStartTime'],
+            message: 'La fecha y hora de atención no puede ser anterior al inicio de la visita.',
           }),
         ]),
       );

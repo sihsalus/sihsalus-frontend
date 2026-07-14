@@ -37,7 +37,6 @@
   "other": "Otro",
   "patientSearch": "Búsqueda de paciente",
   "patientSearchCriteria": "Apellidos y nombres o documento de identidad",
-  "patientSearchCriteriaPlaceholder": "Ingrese apellidos, nombres, N.° HC, DNI, CE, pasaporte, CNV, DIE, código SIS u otro documento",
   "postcode": "Código postal",
   "previousPage": "Página anterior",
   "recentSearchResultsCount_one": "{{count}} resultado de búsqueda reciente",
